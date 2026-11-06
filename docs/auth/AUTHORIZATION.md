@@ -54,6 +54,8 @@ Permission key означает существующую capability прилож
 - `forum.translation.generate`;
 - `access.authorization.manage`;
 - `admin.users.read`;
+- `admin.users.blocks.manage`;
+- `admin.users.blocks.managePrivileged`;
 - `admin.history.read`;
 - `forum.complaint.create`;
 - `forum.complaint.review`;
@@ -198,6 +200,21 @@ authorization-management user subset rather than gaining the general Users direc
 When both permissions are effective, the Users detail may compose the selected user's targeted
 authorization state with the same canonical management action. See `../ADMIN_PANEL.md` for
 the AP-09 read and mutation-composition contract.
+
+AP-10 adds two code-backed capabilities: `admin.users.blocks.manage` for exact-target
+user-measure create/change/lift, narrowly scoped private administrative reads and measure
+appeal review; and `admin.users.blocks.managePrivileged` as an **additional**
+privileged-target authority prerequisite, not an action grant by itself. **Neither
+capability is initially granted to any built-in role**, including admin; both require
+explicit dynamic grants or per-user overrides. A measure manager does not automatically
+gain the Users index, complete authorization-management directory or private History.
+
+The measures policy supplements request-scoped effective action permissions; raw RBAC
+grants, overrides and subject/issuer hierarchy remain unchanged. Existing
+`access.authorization.manage` lockout code is untouched by AP-10; no new
+manager-count veto is added. The separately planned owner-authority redesign
+follows ordinary-admin closeout. Exact administrative permission families and
+measure/appeal semantics are defined in `../ADMIN_PANEL.md`.
 
 ## Per-user overrides
 

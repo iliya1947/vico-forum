@@ -13,8 +13,12 @@ protected category/section browsing and dedicated object pages. AP-07 adds admin
 and shared source-locale/history actions for individual messages. AP-08 adds shared topic close/reopen.
 AP-09 adds protected Users index/detail with the independent `admin.users.read` capability and reuses
 the existing authorization assignment/override controls only when the actor also has
-`access.authorization.manage`; user blocking remains unimplemented. AP-02 itself added no schema
-or permission keys; AP-03 adds `admin.history.read`, and AP-09 adds `admin.users.read`.
+`access.authorization.manage`. AP-10 adds configurable administrative measures, exact-measure
+appeals, their affected-operation enforcement and the independent
+`admin.users.blocks.manage` / `admin.users.blocks.managePrivileged` capabilities.
+AP-02 itself added no schema
+or permission keys; AP-03 adds `admin.history.read`, AP-09 adds `admin.users.read`, and AP-10
+adds the two block-management capabilities plus its measure persistence.
 
 Other routes and capabilities described below as delivery targets become available only
 through their respective bounded implementation PRs. Unfinished Settings links use the shared
@@ -192,13 +196,14 @@ grant global admission either. Each section and action independently checks its 
 | Overview / shell | Authenticated actor with at least one applicable implemented section capability | Navigation is not mutation authority; only public aggregate statistics and permitted destinations are exposed |
 | Forum / category, section, topic pages | At least one of `forum.topic.pin`, `forum.solution.manageAny`, `forum.helpDuplicate.manage`, `forum.sourceLocale.correctAny`, `forum.post.history.read`, `forum.topic.close` | Exact operation permission and authoritative object/resource conditions, as below |
 | Roles & permissions | `access.authorization.manage` | Same existing permission, management validation and atomic lockout invariants |
-| Users | `admin.users.read` for the general index/detail; `access.authorization.manage` for the existing authorization subset; future block-management capability for minimal target/block lookup | Authorization controls only with `access.authorization.manage`; block/lift only with the implemented block capability |
+| Users / measures | `admin.users.read` for general index/detail; `access.authorization.manage` for the existing authorization subset; `admin.users.blocks.manage` for exact target/measures lookup | Authorization controls require `access.authorization.manage`; measure create/change/lift and appeal review require fresh `admin.users.blocks.manage` plus target/issuer hierarchy (and `admin.users.blocks.managePrivileged` for privileged targets) |
 | History / Overview recent actions | `admin.history.read` | History-read does not authorize recorded operations; actors do not need history-read merely to perform an otherwise permitted operation |
 | Settings placeholder | Actor already admitted to shell | No private settings data or mutation |
 
-Future capability labels in this document are requirements, not executable permission keys.
-Their exact keys and explicit initial grants are fixed with the real capability package;
-AP-01 does not register them. New keys are not automatically granted to custom roles.
+Capability labels described in this document but not present in the current code-backed catalog
+are requirements, not executable permission keys. Their exact keys and explicit initial grants
+are fixed with the real capability package; AP-01 itself registers none. New keys are not
+automatically granted to custom roles.
 Update the centralized catalog, DB constraints/seeds and relevant schema/privilege contracts
 together with implementation. Do not add a new authorization system to make navigation work.
 
@@ -227,7 +232,7 @@ reused without creating a second identity store.
 | Correct topic-title or post-body source locale | `forum.sourceLocale.correctAny`, or `forum.sourceLocale.correctOwn` with authoritative ownership | Existing current-revision CAS, canonical non-`und` source-locale validation; no general content-edit right |
 | Read message revision history | `forum.post.history.read` | Post belongs to target topic; read independently before loading revision bodies |
 | Close/reopen topic | `forum.topic.close` for both commands | Existing ordinary/Help topic, authoritative closure-version CAS and state transition; no author/role bypass or required reason |
-| Block/lift block on user | Future block-management capability | Approved block-effect, target, expiry and stale-block rules below precede implementation |
+| Create/change/lift measure; review measure appeal | `admin.users.blocks.manage` plus privileged-target capability when needed | Exact target/measure, no self/owner target, raw issuer/target hierarchy, current effective permission, active lifecycle and expected measure version |
 | Other category/section/topic/message mutations | Not authorized by page visibility | Define concrete behavior and capability in a separately bounded package first |
 
 These checks apply to full pages, list controls, contextual actions and direct requests.
@@ -376,7 +381,8 @@ security-upload events, notification inboxes and the future full owner audit sur
 The following matrix defines coverage to connect with the relevant implementation packages.
 AP-03 records the authorization-management rows. AP-05 connects the existing topic/Help
 rows through administrative source-locale correction, including both topic-title and post
-correction service paths. Closure records real state transitions through the AP-08 producer; blocking awaits its producer package. A reason marked “not required” preserves the
+correction service paths. Closure records real state transitions through the AP-08 producer; AP-10 connects an
+atomic measure and measure-appeal-review History producer. A reason marked “not required” preserves the
 current operation contract; it does not introduce a new reason form or persistence field.
 
 | Operation | Significant event when coverage is connected | Administrative reason rule |
@@ -391,7 +397,7 @@ current operation contract; it does not introduce a new reason form or persisten
 | Review Help signal | Actual persisted review outcome and applicable effect | No new mandatory reviewer reason; existing kind-specific submission explanations remain unchanged |
 | Administrative source-locale correction | Actual new revision/source-metadata change | Not required by current contract |
 | Close/reopen topic | Actual closed-state transition, recording before/after and previous/new closure versions | Not required by the approved AP-08 contract |
-| Temporary/permanent block; explicit lift | Actual block-state transition, including configured expiry and lifted block identity | Per-action reason decision required before blocking implementation |
+| Create/change/lift temporary or permanent measure; decide its appeal | Committed `measure.created`, `measure.changed`, `measure.lifted` or `measure.appealResolved` with exact measure ID and bounded state context | Nonblank reasons for create/change/explicit lift, and reviewer explanation for appeal decision; expiry creates no synthetic event |
 
 “Administrative” is determined by the authoritative operation/scope, not by actor role or
 the requesting URL. Ordinary own-content participation, own solution controls, signal
@@ -539,40 +545,120 @@ authorization-user subset, and permission-dependent success redirects are privat
 Users is no longer listed as unfinished. AP-09 does not implement blocking, account deletion,
 general edit-any user operations, Settings, a second RBAC or production rollout.
 
-## User blocking boundary and unresolved product gate
+## User administrative measures and appeals (AP-10)
 
-Ordinary administration includes temporary and permanent blocks. Temporary blocks support
-presets, arbitrary duration/end date and automatic expiry by authoritative time comparison.
-An actor with the applicable implemented permission can lift another administrator's block.
-Account deletion is excluded.
+AP-10 provides temporary and permanent **administrative measures**. A measure is not
+a new role, mass permission override, Better Auth ban or account deletion. Different
+violations generate **separate measures**, each with its own ID, original reason,
+restrictions, expiry/lift, version, issuer authority floor, history and appeal quota.
+Overlapping active measures remain independent. For non-administrative child restrictions,
+an operation is restricted while **any** active measure has that enabled key. Administrative
+family restrictions additionally obey the issuer-floor/current-target authority rule below.
+Ending measure A does not alter measure B. An expired or lifted measure is terminal and cannot
+be extended or reactivated; a subsequent violation requires a new measure.
 
-Before implementing blocking, the owner must decide the exact effect on:
+Administrators select individual restrictions, optionally using UI group checkboxes
+(including their indeterminate state). Only child keys are persisted; the group is
+a presentation shortcut and not a policy key. Expiry and restrictions are independent.
 
-- login and existing sessions;
-- public/private reading;
-- topic/Help-question/reply creation, own edits and profile changes;
-- signals/appeals, uploads and translation generation;
-- administrative actions, self-block and other access managers;
-- per-action required reasons and the capabilities restored on expiry/lift.
+| Group | Exact child restriction keys | Fresh operation affected |
+| --- | --- | --- |
+| Publication | `topics.create`, `replies.create`, `attachments.upload` | New ordinary/Help topics, replies, attachments |
+| Own content | `posts.edit`, `profile.edit` | Own published-post editing, public profile edits |
+| Submissions | `complaints.submit`, `helpSignals.submit` | New Complaint reports, Help signals |
+| Translation | `translations.generate` | New title, automatic/explicit body translation generation |
+| Administration | `admin.forum`, `admin.complaints`, `admin.security`, `admin.usersAccess` | Effective administrative permission families listed below |
 
-These are explicit implementation gates, not defaults chosen by this document. A block does
-not become a new role or mass deny override. Application restrictions supplement the existing
-permission/resource checks using one consistent policy at all affected entry points, including
-active sessions and direct attachment/forum APIs. Preserve committed publication replay and
-necessary cleanup so restrictions do not lose an acknowledged result or retain files forever.
+Four administrative restrictions suppress exactly these permissions on the current
+action/read request; they never modify raw role grants or user overrides:
 
-An expired temporary block is inactive without a cron/unlock job or write on public GET.
-Expiry/end dates are validated as unambiguous server-interpreted instants; authoritative time
-decides activity. Explicit lift checks the expected block identity/version so a stale action
-cannot remove a replacement block. History retains the configured expiry without inventing
-an unlock action by a synthetic system actor.
+- `admin.forum`: `forum.topic.pin`, `forum.topic.close`,
+  `forum.solution.manageAny`, `forum.helpNeedsDetails.manage`,
+  `forum.helpDuplicate.manage`, `forum.sourceLocale.correctAny`,
+  `forum.post.history.read`.
+- `admin.complaints`: `forum.complaint.review`,
+  `forum.complaint.appeal.review`, `forum.complaint.priority.manage`,
+  `forum.complaint.reporterIdentity.read`.
+- `admin.security`: `forum.attachmentSecurity.read`.
+- `admin.usersAccess`: `admin.users.read`, `access.authorization.manage`,
+  `admin.history.read`, `admin.users.blocks.manage`,
+  `admin.users.blocks.managePrivileged`.
 
-If the approved effect prevents login or authorization management, block changes and access
-management must coordinate through the existing serialization/lockout boundary to retain at
-least one usable access manager, including concurrent grant/override and block changes.
-The existing count of effective access managers alone is insufficient for that policy.
-If management remains usable, do not add that conditional recovery invariant unnecessarily.
-Do not build a generic ban framework before this decision.
+Public reading, login/session, notifications, the punished subject's private
+status/reasons and **all domain appeal submissions** stay outside this catalog.
+`helpSignals.submit` applies only to creating a new Help signal; withdrawal of an existing
+signal remains available. Own solved/best-answer and own source-locale correction have no
+separate punitive restriction. Expiry/lift restore only capabilities otherwise permitted by current
+RBAC, resource state and other active measures; they do not rewrite permissions,
+topic closure or Complaint/Help decision state.
+
+**Authority.** `admin.users.blocks.manage` is required for exact-ID target
+measure management and appeal review; it does not grant the general Users catalog,
+authorization-user directory or private History. Privileged targets also require
+`admin.users.blocks.managePrivileged` and a strictly higher **raw** authority
+than the target. Administrative-family restrictions can be selected only by an actor at the
+elevated raw authority level; server mutation checks remain authoritative even if presentation
+is stale. A stored measure issuer floor protects later change/lift/review, and an
+administrative-family restriction suppresses a current target capability only while that
+stored floor remains above the target's current raw authority. Self-target and owner-target
+operations are forbidden. An owner user ID is a server-controlled hierarchy binding, not an
+implicit management permission. **Neither management capability has built-in initial grants**,
+even for moderator/admin. Only explicit dynamic grants may provide them. AP-10 adds no
+last-access-manager count veto, extra recovery system or generalized owner-role redesign;
+existing authorization lockout implementation remains unchanged until a separate post-admin
+decision.
+
+**Lifecycle and reasons.** Creating a measure requires a nonblank reason and at
+least one valid child restriction. Manually changing its restrictions/expiry requires
+a new reason but preserves the original one; explicit lift has its own required
+reason. Temporary expiry is a validated instant, permanence has no expiry, and
+effective activity is checked against authoritative PostgreSQL time with no
+background unlock action. An ordinary change does not close a pending appeal; natural expiry
+makes a pending appeal effectively moot without a synthetic write, while explicit lift closes
+it as moot in the same transaction. Existing committed publication receipts and matching
+committed Complaint results remain replayable; changed/new operations are subject to fresh
+restriction admission before new side effects. Necessary cancel/cleanup continues to work;
+fresh denied writes produce no partial effect. If a new
+restriction arrives while Create Topic, Help Question or own published-post Edit is already
+mounted, that same editor operation retains its text/history and selected or in-flight
+attachments plus explicit Cancel/cleanup, while Publish/Save and keyboard submission are
+disabled. Fresh denied editors/actions are not offered, and revalidation never replays a POST.
+
+**Appeals** target an exact measure, never a Complaint Case or Complaint Appeal.
+The punished user may submit at most **three sequential appeals per measure**,
+with one pending at a time. A rejected appeal leaves the measure unchanged. An
+accepted appeal either fully lifts it or changes restrictions/expiry of that same
+measure, preserving ID, quota and timeline. Accepted + lifted stays accepted,
+rather than being marked moot. Appeal review requires a nonblank explanation.
+Expired/lifted measures cannot be reviewed as active; stale version/authority
+and duplicate pending/quota conditions are rejected. Identical committed retries
+do not consume a second appeal slot or create a second History event.
+
+**Routes and privacy.** `/:locale/account/measures` and
+`/:locale/account/measures/:measureId` derive subject identity only from the
+current authenticated session; their allowlisted private DTOs show reasons,
+status, active restrictions, expiry, transitions and appeal outcomes, **not**
+issuer/actor/reviewer identity or unfiltered administrative History context.
+`/:locale/admin/measures?target=:userId` and
+`/:locale/admin/measures/:measureId` expose exact targeted administration
+only after fresh block-management authority and current target hierarchy checks. Exact detail
+may remain readable when the target hierarchy permits it even if the actor is below that
+measure's stored issuer floor; in that case Change/Lift/pending-Appeal Review controls are not
+offered. They reappear only after a fresh current authority snapshot satisfies the floor and
+other mutation guards. The privileged actor identities remain accessible to separately
+authorized internal History readers; no public user directory is opened by these routes.
+
+Mutations validate same-origin, session identity, operation UUID, expected
+measure version and required input; compare-and-swap and admin History append
+are atomic with the underlying transition. Denied/stale/rolled-back/no-op/replayed
+requests do not invent History events. Success and controlled errors use private,
+no-store responses. UI revalidates protected loader state on failed
+403/404/409, displays current permission/measure status, and never automatically
+replays the write. Pending and revalidation states block repeated submission.
+
+This is the permanent **product/runtime contract** for the AP-10 implementation now present
+in the repository. Repository merge does not imply production/deployed rollout;
+`PROJECT_STATE.md` records the current factual project and external state.
 
 ## Delivery and acceptance
 
@@ -589,7 +675,7 @@ The technical sequence agreed for bounded delivery is:
 | AP-07 | Topic page and message actions within topic context after AP-06 |
 | AP-08 | Shared topic close/reopen, persisted closure CAS and reply admission after AP-07 |
 | AP-09 | Users index/page reusing existing authz controls after AP-08 and earlier shared foundations |
-| AP-10 | Block/lift and all affected enforcement after AP-09 and approved block-effect/reason matrix |
+| AP-10 | Administrative measures, exact-measure appeals and all affected enforcement after AP-09 and approved measure-effect/reason matrix |
 | AP-11 | Integration and factual closeout of delivered scope |
 
 Each implementation PR has its own applicable checks and stable-head review before merge;
