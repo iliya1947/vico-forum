@@ -33,12 +33,12 @@ function measureChange(action:UserMeasureHistoryChange["action"],
       before,after,...extras},
   };
 }
-const common=Object.fromEntries(
-  Object.entries(canonicalEnglishCatalog.common).flatMap(([key,descriptor])=>
-    typeof descriptor.source==="string"?[[key,descriptor.source]]:
-      Object.entries(descriptor.source).map(([suffix,value])=>[key+"_"+suffix,value]),
-  ),
-);
+const common:Record<string,string>={};
+for(const [key,descriptor] of Object.entries(canonicalEnglishCatalog.common)){
+  if(typeof descriptor.source==="string") common[key]=descriptor.source;
+  else for(const [suffix,value] of Object.entries(descriptor.source))
+    common[key+"_"+suffix]=value;
+}
 function translate(){
   return createTranslationRuntime({
     locale:{translationLocale:"en",direction:"ltr",fallbackLocales:[],
