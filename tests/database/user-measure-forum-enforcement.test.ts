@@ -15,7 +15,7 @@ import { InvalidProfileError } from "../../app/forum/profile";
 import { createHyperdriveForumWriter } from "../../db/hyperdrive-forum";
 import { createHyperdriveContentGenerationAdmission } from "../../db/hyperdrive-content-generation-admission";
 import { contentGenerationAdmissionContext, contentGenerationActionContext, localeContext } from "../../app/localization/request-context";
-import { action as topicAction } from "../../app/routes/topic";
+import { topicAction } from "../../app/forum/actions.server";
 import { ContentGenerationPlanningUnavailableError } from "../../app/localization/content-generation-action.server";
 import { ComplaintsService } from "../../db/complaints-service";
 import { DrizzleComplaintsRepository } from "../../db/complaints-repository";
