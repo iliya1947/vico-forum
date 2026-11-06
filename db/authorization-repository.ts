@@ -353,7 +353,7 @@ export class PostgresAuthorizationRepository {
       }
       // Keep the raw manager count and lockout invariants independent of
       // temporary administrative suppression. Admission shares this transaction.
-      await this.measureAdmission(client, actorId, "admin.usersAccess");
+      await this.measureAdmission(client, actorId, "admin.usersAccess", this.ownerUserId);
       const change = await operation(client);
       const after = await countManagers(client);
       if ((state.rows[0].managers_ever_existed || before > 0) && after === 0) {
