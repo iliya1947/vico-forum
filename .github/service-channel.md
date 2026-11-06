@@ -112,3 +112,7 @@
 - Pass 2 (authority/permissions/privileged targets) complete on the same exact head.
 - Confirmed current-scope: AP10-MIRA-03 ordinary manager can persist latent admin-family restrictions that later suppress newly granted privileged rights; AP10-MIRA-04 non-owner authorization UI exposes enabled elevated-authority controls although server rejects them.
 - Server-side current-target hierarchy, owner immunity, self-target denial, issuer floor, zero default grants and raw-vs-suppressed authority boundaries passed this pass.
+
+- Pass 3 (restriction enforcement) complete on the same exact head.
+- Confirmed current-scope AP10-MIRA-05: ordinary user action presentation is not restriction-aware; controls remain available and fail only after server-side denial instead of being hidden/disabled from current measure state as approved.
+- Server-side enforcement for publication/edit/profile/Complaints/Help/uploads/generation/admin families, plus replay/cleanup/expiry/overlap/private-read boundaries, passed this pass.
