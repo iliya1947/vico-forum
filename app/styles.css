@@ -6975,7 +6975,7 @@ p {
     justify-content: center;
     gap: 0.3rem;
     margin-inline-start: 0;
-    padding: 0.4rem 0.65rem;
+    padding: 0.4rem 0.35rem;
     border-block-start: 1px solid var(--color-border);
     background: var(--color-surface-muted);
   }
