@@ -601,7 +601,8 @@ try:
                         expect(page.locator("#admin-user-detail-heading")).to_have_text(heading)
                         expect(page.locator("#authorization")).to_have_count(1)
                         expect(page.locator("#authorization form.admin-role-assignment")).to_have_count(1)
-                        expect(page.locator('a[href="/' + locale + '/admin/users"]')).to_have_count(1)
+                        expect(page.locator('.admin-forum-trail a[href="/' +
+                            locale + '/admin/users"]')).to_have_count(1)
                         assert other_id in page.locator(".profile-identity").inner_text()
                         # Public identity is permitted, email and global authz directory are not.
                         assert prefix + "-other@test.invalid" not in page.content()
