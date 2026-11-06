@@ -4203,7 +4203,12 @@ describe("AP-08 closed topic participation and mounted reply recovery", () => {
       current = topicRenderData(topic, { canReply: false });
       return data({ error: "forbidden" }, { status: 403 });
     });
-    const loader = vi.fn(() => current);
+    let releaseRefresh!: () => void;
+    const refreshPending = new Promise<void>(resolve => { releaseRefresh = resolve; });
+    const loader = vi.fn(async () => {
+      if (loader.mock.calls.length > 1) await refreshPending;
+      return current;
+    });
     const router = createMemoryRouter([{
       id: "page", path: "*", Component: TopicRoute, loader, action,
     }], { initialEntries: ["/en/topics/typed-api"] });
@@ -4221,15 +4226,25 @@ describe("AP-08 closed topic participation and mounted reply recovery", () => {
       fireEvent.click(within(form).getByRole("button", { name: "Post reply" }));
       await waitFor(() => expect(action).toHaveBeenCalledTimes(1));
       await waitFor(() => expect(loader.mock.calls.length).toBeGreaterThan(1));
+      // The server's fresh permission snapshot is deliberately still pending.
+      expect(screen.getByRole("form", { name: "Add a reply" })).toBe(form);
+      expect(textarea).toHaveValue("Reply retained after deny");
+      expect(form.querySelector<HTMLInputElement>('input[name="editorOperationId"]')).toHaveValue(operationId);
+      expect(within(form).getByRole("button", { name: "Post reply" })).toBeDisabled();
+      expect(within(form).getByRole("button", { name: "Cancel" })).toBeEnabled();
+      expect(within(form).getByLabelText("Attach")).toBeDisabled();
+      fireEvent.submit(form);
+      expect(action).toHaveBeenCalledTimes(1);
+
+      releaseRefresh();
       expect(await screen.findByText("You cannot post replies here now. Your text remains in the editor.")).toBeVisible();
       expect(screen.getByRole("form", { name: "Add a reply" })).toBe(form);
       expect(textarea).toHaveValue("Reply retained after deny");
       expect(form.querySelector<HTMLInputElement>('input[name="editorOperationId"]')).toHaveValue(operationId);
       expect(within(form).getByRole("button", { name: "Post reply" })).toBeDisabled();
       expect(within(form).getByRole("button", { name: "Cancel" })).toBeEnabled();
-      fireEvent.submit(form);
       expect(action).toHaveBeenCalledTimes(1);
-    } finally { router.dispose(); }
+    } finally { releaseRefresh(); router.dispose(); }
   });
 
   it("uses a single 409 topicClosed response to revalidate without retry or editor loss", async () => {
