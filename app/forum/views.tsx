@@ -3060,7 +3060,14 @@ export function TopicView({
             className="forum-write-form topic-reply-form"
             aria-labelledby="reply-heading"
             aria-busy={isReplySubmitting}
-            onSubmit={event => { if (!replyPublicationAllowed) event.preventDefault(); }}
+            onSubmit={event => {
+              if (!replyPublicationAllowed) { event.preventDefault(); return; }
+              // Capture intent before a fast 403 can skip the submitting render.
+              replyPublicationRef.current = {
+                topicId: topic.id,
+                existingPostIds: new Set(topic.posts.map(post => post.id)),
+              };
+            }}
           >
             <input type="hidden" name="intent" value="reply" />
             {activeReplyTargetPostId && <input type="hidden" name="parentPostId" value={activeReplyTargetPostId} />}
