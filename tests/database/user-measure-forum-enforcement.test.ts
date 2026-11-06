@@ -287,7 +287,9 @@ describe("AP-10 admin.usersAccess effective roles and direct administrative writ
         }
         await expect(forum.pinTopic(targetTopicId, "target"))
           .rejects.toBeInstanceOf(UserMeasureRestrictedError);
-        await expect(complaints.savePrioritySettings("target", priority))
+        await expect(complaints.savePrioritySettings("target", {
+          expectedVersion:priority.version, weights:priority.weights,
+        }))
           .rejects.toBeInstanceOf(UserMeasureRestrictedError);
         await expect(authz.createCustomRole("target", {
           id:roleId, slug:"ap10-floor-regression", displayName:"Floor regression",
@@ -304,7 +306,9 @@ describe("AP-10 admin.usersAccess effective roles and direct administrative writ
         }
         await forum.pinTopic(targetTopicId, "target");
         expect(await forum.readTopicPinState(targetTopicId)).toBe(true);
-        await complaints.savePrioritySettings("target", priority);
+        await complaints.savePrioritySettings("target", {
+          expectedVersion:priority.version, weights:priority.weights,
+        });
         await authz.createCustomRole("target", {
           id:roleId, slug:"ap10-floor-regression", displayName:"Floor regression",
         });
@@ -323,7 +327,7 @@ describe("AP-10 admin.usersAccess effective roles and direct administrative writ
           .rejects.toBeInstanceOf(UserMeasureRestrictedError);
         expect(await forum.readTopicPinState(targetTopicId)).toBe(true);
         await expect(complaints.savePrioritySettings("target", {
-          ...priority, version:priority.version + 1,
+          expectedVersion:priority.version + 1, weights:priority.weights,
         })).rejects.toBeInstanceOf(UserMeasureRestrictedError);
         await expect(authz.deleteCustomRole("target", roleId))
           .rejects.toBeInstanceOf(UserMeasureRestrictedError);
