@@ -5,12 +5,12 @@
 ## Актуальный baseline и review
 
 - AP-01–AP-09 merged; current main / AP-10 base: `5cf80f38cbc06ed733a0618e706eb80c5a7b3c7b`, migration head main 0057.
-- AP-10 approved technical plan, coordinator PASS #6671217104; AP10-PLAN-MIRA-01..06 закрыты. Актуальный полный план сохранён в личном файле Лёвы; новые owner вопросы не открыты.
-- Implementation PR #290, Draft/open/unmerged; reviewed exact head `9fecd925a256062e9892235f4ba02ed3147de1e3`, implementation migration 0058. Head проверен перед публикацией review.
-- Coordinator whole-PR PASS на этом head завершён; AP10-MIRA-01..11 закрыты координатором.
-- **Independent technical review Лёвы завершён: NOT PASS, единственный подтверждённый current-scope defect AP10-LEV-01 [P3].** [Отчёт и evidence](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6684522908).
-- Exact-head CI #42213405436 и isolated browser #42213405385: SUCCESS. Это author CI, отдельно от собственного review evidence.
-- Documentation PR #291 остаётся отдельным closeout artifact; этот implementation review не выдаёт ему approval.
+- AP-10 technical plan approved; AP10-PLAN-MIRA-01..06 закрыты.
+- Implementation PR #290, Draft/open/unmerged; **reviewed exact head `ef313919f6613c54db6ddb50765c968744101306`**, migration 0058.
+- Coordinator whole-PR PASS на этом head завершён.
+- **Repeated independent technical review Лёвы: PASS**, [отчёт #6685133377](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6685133377). Подтверждённых current-scope defects не осталось; AP10-LEV-01 закрыт.
+- Exact-head CI #42218475676 и isolated browser #42218475943: SUCCESS; author CI отдельно от собственных review reruns.
+- Documentation PR #291 — отдельный Draft closeout artifact, не получает approval данным implementation verdict.
 - Implementation/docs не merged; production/Stage 6/owner visual acceptance не выполнялись.
 
 ## Решения владельца, обязательные для AP-10
@@ -40,99 +40,29 @@
 - User-facing measure/appeal/status/timeline не раскрывают concrete actor/issuer/reviewer ID/name или private internal History context. Identity остаётся в authorized internal History.
 - Обе block-management capabilities имеют zero initial grants у всех built-in roles, включая admin/moderator. Права только explicit dynamic grants/overrides. Owner binding сам по себе права не выдаёт.
 
-## AP10-LEV-01 [P3] — единый correction finding
 
-- Same-origin actual authenticated manager POST `/en/admin/measures` с valid create UUID/reason/restriction и urlencoded `targetId=invalid%00target` получает **500**. Correctly formed missing target даёт **404**. 0 новых measure/History и private/no-store в обоих случаях.
-- Причина подтверждена отдельно domain→PG probe: create action использует только measureFormText, service identity() не запрещает NUL, lockTarget передаёт text parameter; PostgreSQL 22021 вместо typed invalid input.
-- Lookup validator measureTargetId уже запрещает NUL/oversized target; write boundary с ним расходится.
-- Scope исправления: локальная bounded target-ID validation на create HTTP/domain boundary; typed InvalidUserMeasureInputError → 400 до DB; focused malformed-input/no-state-no-History regression. Не маскировать произвольные SQL/programming failures и не расширять authz/schema.
-- Привилегии не обходятся, данных не записывается; severity низкая. Других подтверждённых current-scope defects в whole-scope sweep нет.
+## Закрытие AP10-LEV-01
 
-## Независимое evidence Лёвы на exact head
+- Create HTTP и direct service валидируют target identity до repository/SQL: NUL и >2048 UTF-8 bytes → typed invalid input.
+- Собственный original HTTP reproducer на новом Worker: NUL → private/no-store 400, valid missing target → 404, 0 measure/History writes.
+- Собственный direct service probe: три malformed input → InvalidUserMeasureInputError, 0 repository calls; 2048-byte valid input проходит validation. Unknown SQL/programming failures не маскируются.
+- Вся 5-file correction delta проверена; schema/permissions/authority/enforcement/privacy/lifecycle/History/replay/Editor boundaries не менялись.
 
-- Detached checkout, Node 24.21.0 / pnpm 12.3.4, disposable loopback PostgreSQL 17.
-- 78/78 native PostgreSQL tests (5 files), 288/288 application/route/UI/Worker tests (19 files), 3 metadata/runtime-privilege/migration-history scripts PASS; build PASS.
-- Собственный actual Chromium→Worker→Better Auth→PostgreSQL rerun repository acceptance: 18 case groups PASS; EN/RU/HE × 320/768/1280, 0 layout/page errors/external browser requests. Environment adapter вне implementation tree.
-- Дополнительные independently written HTTP/domain probes подтвердили AP10-LEV-01 несмотря на green штатных проверок.
-- Локальные logs/reproducer/browser JSON/screenshots: `/workspace/work/ap10-review-evidence/`; полная воспроизводимая цепочка в linked report.
-- Реализацию во время review не менял; tracked checkout чист. Локальный Worker остановлен, одноразовая БД удалена, dummy .dev.vars удалён.
-- Deployed/production acceptance и owner visual acceptance из этих результатов не следуют.
+## Независимое evidence на ef313919
+
+- Node 24.21.0 / pnpm 12.3.4, одноразовый PostgreSQL 17 с migrations 0000–0058.
+- 289/289 application/domain/route/UI/Worker tests (19 files) и 78/78 native PostgreSQL tests (5 AP-10 files); собственная build PASS.
+- Actual Chromium→built Worker→Better Auth→PostgreSQL: 19 case groups PASS; malformed target/no writes, measures/appeals/admin families/overlap/stale revalidation, EN/RU/HE × 320/768/1280. 0 layout failures/page errors/external browser requests.
+- Первый browser attempt получил штатный signup 429 из-за параллельной собственной регистрации; затем отдельный прогон на очищенном rate-limit state disposable fixture прошёл. Application limiter не менялся.
+- Evidence: `/workspace/work/ap10-review2-evidence/`; original reproducer сохранён в `/workspace/work/ap10-review-evidence/`.
+- Предыдущий полный собственный scope review #6684522908 использован как проверенная база; новая delta и все существенные AP-10 boundaries повторно оценены, основные domain/route/UI/native/browser checks исполнены на новом head. Coordinator verdict не использовался как доказательство.
+- Реализацию не менял; tracked checkout чист. Worker остановлен, disposable DB и dummy .dev.vars удалены.
 
 ## Следующий шаг
 
-- **Мира:** принять один bounded finding AP10-LEV-01 и передать Лире correction PR #290 с полным контекстом linked report.
-- После исправления/нового stable exact head и applicable checks — новый coordinator cycle, затем independent technical review того же head.
-- Лёва review завершил и сам реализацию не исправляет; Марк не назначен.
-- Documentation PR #291 — отдельный review/closeout; AP-11/Settings, owner-role/last-manager cleanup и production/Stage 6 не начинать в рамках этой correction.
+- **Мира:** принять independent PASS #6685133377 и завершить readiness/отдельный documentation closeout #291 по рабочему процессу; merge выполняет владелец.
+- Лёва назначенную проверку завершил и останавливается. Любое изменение implementation head требует нового coordinator-first review cycle.
+- Documentation #291, owner visual acceptance и production/deployed acceptance не одобряются автоматически данным review.
+- AP-11/Settings и post-admin owner-role/last-manager cleanup не начинались; Марк не назначен.
 
-Общий утверждённый контракт: [ADMIN_PANEL_IMPLEMENTATION_PLAN.md](../ADMIN_PANEL_IMPLEMENTATION_PLAN.md).
-
-
-## AP-10 bounded correction AP10-LEV-01 — Лира
-
-Исполнитель: **Лира**. Implementation PR: **#290**. Reviewed exact head: `9fecd925a256062e9892235f4ba02ed3147de1e3`.
-
-Независимый review Лёвы завершён NOT PASS с одним finding `AP10-LEV-01 [P3]`. Мира перепроверила причинную цепочку и current-scope применимость: finding подтверждён.
-
-### AP10-LEV-01 — malformed create targetId должен давать controlled 400, а не PostgreSQL 500
-
-Фактическая проблема:
-- canonical POST `/:locale/admin/measures` принимает `targetId` из form data и передаёт его в AP-10 create path;
-- lookup-boundary уже валидирует target ID и запрещает NUL/недопустимый размер, но create path использует более слабую identity validation;
-- NUL-containing target ID проходит domain input validation и доходит до PostgreSQL text parameter, где возникает low-level database error вместо typed invalid-input result;
-- наблюдаемый HTTP outcome — 500; корректно сформированный, но отсутствующий target остаётся 404;
-- measure/History при этом не создаются.
-
-Требуемый результат:
-1. Malformed client-supplied target ID на create boundary, включая подтверждённый NUL case, отклоняется как typed invalid input до DB и даёт private/no-store HTTP 400.
-2. Valid-but-missing target продолжает давать 404.
-3. Неизвестные SQL/programming failures не маскируются общим 400.
-4. Session actor authority, target hierarchy, measure lifecycle, History, schema/permissions и read boundaries не меняются.
-
-Критерии готовности:
-- локальное исправление в текущем AP-10 scope без новой архитектуры, schema/migration/dependency changes;
-- focused regression воспроизводит malformed NUL target на create path и подтверждает 400 + отсутствие measure/History side effects;
-- существующие valid create, missing target 404, authorization/issuer-floor/privacy/replay invariants не регрессируют;
-- applicable exact-head CI/checks и AP-10 isolated browser acceptance выполняются на новом stable head;
-- #291, AP-11/Settings, owner-role/last-manager cleanup, Stage 6 и production не трогать;
-- после завершения Лира фиксирует новый stable implementation head и фактические результаты проверок в служебном PR и останавливается. Затем Мира начинает новый coordinator cycle; Лёва повторно проверяет только после coordinator PASS.
-
-
-## AP-10 AP10-LEV-01 corrected-head coordinator pass
-
-- Лира завершила bounded correction `AP10-LEV-01` в PR #290.
-- Новый stable implementation exact head: `ef313919f6613c54db6ddb50765c968744101306`; base/main остаётся `5cf80f38cbc06ed733a0618e706eb80c5a7b3c7b`. Delta относительно предыдущего reviewed head `9fecd925a256062e9892235f4ba02ed3147de1e3`: 7 commits / 5 files.
-- Exact-head CI #42218475676 — SUCCESS; exact-head isolated Chromium #42218475943 — SUCCESS. Это author engineering evidence, не independent review и не owner visual acceptance.
-- **AP10-LEV-01 закрыт по исходной причине.** Canonical create route применяет существующую target-ID validation до capability call; domain service отдельно повторно валидирует create target identity до fingerprint/repository/SQL boundary, поэтому прямой service caller также не может протащить NUL/oversized target в PostgreSQL text bind.
-- Malformed NUL и >2048-byte target дают typed private/no-store 400; valid-but-missing target сохраняет 404. Focused route/domain regressions подтверждают отсутствие capability/repository write для malformed input. Isolated browser acceptance дополнительно проверяет actual authenticated Worker POST: malformed 400, missing 404, неизменные counts `user_measures` и `admin_history`.
-- Unknown SQL/programming failures не превращены в общий 400; authorization, target hierarchy, issuer floor, replay, schema, migrations, History и permissions не менялись.
-- Correction delta проверен целиком; новых current-scope findings в пяти изменённых файлах не подтверждено.
-- Coordinator status пока не финальный PASS: следующий шаг — final regression/evidence sweep нового exact head против уже закрытого AP-10 scope. Лёву до завершения этого sweep и coordinator PASS повторно не подключать.
-
-
-## AP-10 post-LEV-correction coordinator PASS and repeated independent review handoff
-
-- Coordinator whole-PR cycle завершён на stable implementation exact head `ef313919f6613c54db6ddb50765c968744101306`; base/main `5cf80f38cbc06ed733a0618e706eb80c5a7b3c7b`.
-- PR #290 остаётся Draft/open/mergeable. Main не изменился. Служебный PR #251 по-прежнему содержит ровно 7 рабочих файлов. Documentation PR #291 остаётся отдельным Draft exact head `e54f1b23ea8030df6171932cb640d1706867af6c` и в этой correction не менялся.
-- Exact-head CI #42218475676 — SUCCESS: lint/typecheck/application tests/build/UI preview, migration protection/metadata/Drizzle parity, PostgreSQL 17 migrations/schema manifest/runtime privilege/provisioning/Worker smoke — SUCCESS.
-- Exact-head AP-10 isolated browser acceptance #42218475943 — SUCCESS: disposable PostgreSQL + built Worker + Better Auth + authenticated Chromium. Включён actual malformed-target regression: NUL/oversized create target → private/no-store 400, valid missing target → 404, без новых user_measures/admin_history.
-- **AP10-LEV-01 закрыт по исходной причине:** canonical create route и independent domain service reject malformed target identity до SQL. Unknown SQL/programming failures не маскируются; valid create/missing-target semantics сохранены.
-- Correction delta от `9fecd925a256062e9892235f4ba02ed3147de1e3` — 7 commits / 5 files; изменения локальны create-target validation и regressions. Они не меняют schema/migrations, permissions/grants, authority/issuer-floor hierarchy, restriction enforcement, privacy/identity projection, measure/appeal lifecycle, History semantics, replay/revalidation, Editor lifecycle или localization.
-- Ранее coordinator-closed AP10-MIRA-01..11 не регрессировали по затронутым boundaries. Дополнительных current-scope findings в final regression/evidence sweep не подтверждено.
-- **Coordinator verdict: PASS** на exact head `ef313919f6613c54db6ddb50765c968744101306`.
-- Owner visual acceptance не запрашивалась и не инициировалась. Production/Stage 6, AP-11/Settings и post-admin owner-role/last-manager cleanup не начинать в рамках этого review.
-
-### Repeated independent technical review — Лёва
-
-Review target: implementation PR #290, exact head `ef313919f6613c54db6ddb50765c968744101306`.
-
-Требуемый результат: независимо проверить весь AP-10 implementation scope против актуальных source-of-truth, approved technical plan и current Stage и выдать собственный verdict по этому exact head.
-
-Критерии готовности:
-- review относится именно к `ef313919f6613c54db6ddb50765c968744101306`; любое изменение implementation head прекращает этот review и возвращает workflow к coordinator-first cycle;
-- проверить весь AP-10 scope, а не только последнюю correction delta или статус CI;
-- возможный finding доказать по полной причинной цепочке и отдельно классифицировать как current-scope defect либо future groundwork;
-- не считать предыдущие coordinator/independent findings или их закрытие доказательством текущего результата;
-- не изменять implementation во время review;
-- проверить применимые authority/issuer-floor, input/HTTP boundaries, restriction enforcement, privacy, lifecycle/appeals, History, replay/revalidation и UI/browser boundaries;
-- зафиксировать собственный verdict и evidence в служебном PR и остановиться. Марк не подключается без отдельной необходимости.
+Общий контракт: [ADMIN_PANEL_IMPLEMENTATION_PLAN.md](../ADMIN_PANEL_IMPLEMENTATION_PLAN.md).
