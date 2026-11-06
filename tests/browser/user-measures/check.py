@@ -161,7 +161,7 @@ try:
         # An authenticated malformed create must fail before a PG text bind or any write.
         before_measures = sql("select count(*)::int as total from user_measures")[0]["total"]
         before_history = sql("select count(*)::int as total from admin_history")[0]["total"]
-        for invalid_target in ("invalid\\x00target", "x" * 2049):
+        for invalid_target in ("invalid\x00target", "x" * 2049):
             response = post(manager_ctx, "/en/admin/measures", {
                 "intent": "create", "measureId": str(uuid4()), "targetId": invalid_target,
                 "reason": "Invalid target rejection", "expiresAt": "",
