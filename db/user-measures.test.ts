@@ -14,7 +14,9 @@ const create = {
 function subject() {
   const repository = { create: vi.fn(async (input: unknown) => input),
     change: vi.fn(async (input: unknown) => input),
-    lift: vi.fn(async (input: unknown) => input) };
+    lift: vi.fn(async (input: unknown) => input),
+    submitAppeal: vi.fn(async (input: unknown) => input),
+    resolveAppeal: vi.fn(async (input: unknown) => input) };
   return { repository, service: new UserMeasuresService(repository as unknown as PostgresUserMeasuresRepository) };
 }
 
@@ -77,5 +79,46 @@ describe("AP-10 measure command normalization", () => {
     expect(change.fingerprint).toMatch(/^[0-9a-f]{64}$/);
     expect(lift.fingerprint).toMatch(/^[0-9a-f]{64}$/);
     expect(change.fingerprint).not.toBe(lift.fingerprint);
+  });
+});
+
+
+describe("AP-10 appeal input validation", () => {
+  it("normalizes exact appeal IDs and bounded body without touching admin capabilities", async () => {
+    const {service,repository}=subject();
+    await service.submitAppeal({id:op,measureId:id,actorId:"target",body:"  Please reconsider  "});
+    expect(repository.submitAppeal.mock.calls[0][0]).toEqual({
+      id:op,measureId:id,actorId:"target",body:"Please reconsider",
+    });
+    for (const input of [
+      {id:"not-uuid"}, {actorId:""}, {body:"  "}, {body:"a".repeat(2001)}, {body:"Bad\0reason"},
+    ]) {
+      await expect(service.submitAppeal({
+        id:op,measureId:id,actorId:"target",body:"Reason",...input,
+      })).rejects.toBeInstanceOf(InvalidUserMeasureInputError);
+    }
+    expect(repository.submitAppeal).toHaveBeenCalledTimes(1);
+  });
+
+  it("rejects invalid review outcomes, remedies and implicit date formats before DB mutation", async () => {
+    const {service,repository}=subject();
+    const valid={measureId:id,appealId:op,operationId:"30000000-0000-4000-8000-000000000001",
+      actorId:"manager",expectedVersion:1,outcome:"accepted",remedy:"change",
+      explanation:"Review rationale",restrictions:["topics.create"],expiresAt:null};
+    for (const bad of [
+      {outcome:"pending"}, {outcome:"rejected",remedy:"change"},
+      {outcome:"accepted",remedy:null}, {remedy:"lift",restrictions:["topics.create"]},
+      {remedy:"change",restrictions:["unknown"]}, {expiresAt:"2030-10-01T09:00:00"},
+      {explanation:"  "}, {expectedVersion:0}, {appealId:"not-uuid"},
+    ]) {
+      await expect(service.resolveAppeal({...valid,...bad}))
+        .rejects.toBeInstanceOf(InvalidUserMeasureInputError);
+    }
+    expect(repository.resolveAppeal).not.toHaveBeenCalled();
+    await service.resolveAppeal(valid);
+    const submitted = repository.resolveAppeal.mock.calls[0][0] as Record<string,unknown>;
+    expect(submitted.fingerprint).toMatch(/^[a-f0-9]{64}$/);
+    expect(submitted.restrictions).toEqual(["topics.create"]);
+    expect(submitted.remedy).toBe("change");
   });
 });

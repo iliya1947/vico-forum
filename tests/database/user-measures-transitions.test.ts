@@ -269,3 +269,226 @@ describe("AP-10 atomic measure lifecycle (PostgreSQL 17)", () => {
     expect(await history(id)).toHaveLength(1);
   });
 });
+
+
+const submit = (measureId: string, input: { id?: string; actorId?: string; body?: string } = {}) =>
+  measures.submitAppeal({
+    id: input.id ?? randomUUID(), measureId,
+    actorId: input.actorId ?? "target", body: input.body ?? "Please review this restriction",
+  });
+const decide = (
+  measureId: string, appealId: string, expectedVersion: number,
+  input: Partial<{
+    operationId: string; actorId: string; outcome: "accepted" | "rejected";
+    remedy: "change" | "lift" | null; explanation: string;
+    restrictions: string[] | null; expiresAt: string | null;
+  }> = {},
+) => {
+  const outcome = input.outcome ?? "rejected";
+  const remedy = input.remedy === undefined ? null : input.remedy;
+  return measures.resolveAppeal({
+    measureId, appealId, expectedVersion, operationId: input.operationId ?? randomUUID(),
+    actorId: input.actorId ?? "manager", outcome, remedy,
+    explanation: input.explanation ?? "Reviewed with rationale",
+    restrictions: input.restrictions === undefined ? null : input.restrictions,
+    expiresAt: input.expiresAt === undefined ? null : input.expiresAt,
+  });
+};
+async function appeals(measureId: string) {
+  const result = await client.query<{
+    id: string; ordinal: number; status: string; reviewer_user_id: string | null;
+    reviewer_explanation: string | null; remedy: string | null;
+  }>(
+    "select id,ordinal,status,reviewer_user_id,reviewer_explanation,remedy from user_measure_appeals where measure_id=$1 order by ordinal",
+    [measureId],
+  );
+  return result.rows;
+}
+
+describe("AP-10 own appeals and authoritative review (PostgreSQL 17)", () => {
+  it("preserves exact-ID retries, per-measure pending gate and three sequential submissions", async () => {
+    const a = await create();
+    const b = await create({ restrictions: ["topics.create"] });
+    const aid = randomUUID();
+    const first = await submit(a.id, { id: aid, body: "First appeal" });
+    expect(first).toEqual({ id: aid, measureId: a.id, ordinal: 1 });
+    expect(await submit(a.id, { id: aid, body: "First appeal" })).toEqual(first);
+    await expect(submit(a.id, { id: aid, body: "Changed body" }))
+      .rejects.toBeInstanceOf(UserMeasureConflictError);
+    await expect(submit(a.id)).rejects.toBeInstanceOf(UserMeasureConflictError);
+    expect((await submit(b.id)).ordinal).toBe(1);
+    expect((await appeals(a.id)).map(row => row.ordinal)).toEqual([1]);
+    const accepted = await decide(a.id, aid, 1);
+    expect(accepted).toEqual({
+      appealId: aid, measureId: a.id, outcome: "rejected", version: 1, remedy: null,
+    });
+    const second = await submit(a.id);
+    expect(second.ordinal).toBe(2);
+    await decide(a.id, second.id, 1);
+    const third = await submit(a.id);
+    expect(third.ordinal).toBe(3);
+    await decide(a.id, third.id, 1);
+    await expect(submit(a.id)).rejects.toBeInstanceOf(UserMeasureConflictError);
+    expect((await appeals(a.id)).map(row => row.status)).toEqual(["rejected", "rejected", "rejected"]);
+    expect((await appeals(b.id)).map(row => row.status)).toEqual(["pending"]);
+    expect((await history(a.id)).map(event => event.action))
+      .toEqual(["measure.created", "measure.appealResolved", "measure.appealResolved", "measure.appealResolved"]);
+    expect((await state(a.id)).version).toBe(1);
+  });
+
+  it("accepts a real change on the same measure, retaining pending across separate edits and quotas", async () => {
+    const { id } = await create();
+    const { id: appealId } = await submit(id);
+    await change(id, 1, { restrictions: ["topics.create"] });
+    const command = {
+      operationId: randomUUID(), outcome: "accepted" as const, remedy: "change" as const,
+      explanation: "A narrower restriction is appropriate",
+      restrictions: ["profile.edit", "attachments.upload"], expiresAt: futureWithOffset,
+    };
+    await expect(decide(id, appealId, 1, command)).rejects.toBeInstanceOf(UserMeasureConflictError);
+    expect((await appeals(id))[0].status).toBe("pending");
+    const result = await decide(id, appealId, 2, command);
+    expect(result).toEqual({ appealId, measureId:id, outcome:"accepted", version:3, remedy:"change" });
+    expect((await state(id)).initial_reason).toBe(reason);
+    expect((await state(id)).latest_change_reason).toBe(command.explanation);
+    expect((await state(id)).expires_at?.toISOString()).toBe("2033-02-01T13:20:00.000Z");
+    expect(await restrictions(id)).toEqual(["attachments.upload", "profile.edit"]);
+    expect((await appeals(id))[0]).toMatchObject({
+      status: "accepted", remedy: "change", reviewer_user_id: "manager",
+      reviewer_explanation: command.explanation,
+    });
+    expect((await history(id)).map(event=>event.action))
+      .toEqual(["measure.created", "measure.changed", "measure.appealResolved"]);
+    const resolvedHistory = (await history(id))[2].context;
+    expect(resolvedHistory).toMatchObject({
+      appealId, outcome:"accepted", remedy:"change", before:{version:2}, after:{version:3},
+    });
+    expect(await decide(id, appealId, 2, command)).toEqual(result);
+    await expect(decide(id, appealId, 2, { ...command, explanation: "Rewritten rationale" }))
+      .rejects.toBeInstanceOf(UserMeasureConflictError);
+    expect(await history(id)).toHaveLength(3);
+    expect((await submit(id)).ordinal).toBe(2);
+  });
+
+  it("commits accepted lift without converting the accepted appeal to moot", async () => {
+    const { id } = await create({ expiresAt:active });
+    const { id: appealId } = await submit(id);
+    const command = {
+      operationId:randomUUID(), outcome:"accepted" as const, remedy:"lift" as const,
+      explanation:"The restriction is no longer appropriate",
+    };
+    const result = await decide(id, appealId, 1, command);
+    expect(result).toEqual({ appealId, measureId:id, outcome:"accepted", version:2, remedy:"lift" });
+    expect((await appeals(id))[0]).toMatchObject({
+      status:"accepted", remedy:"lift", reviewer_user_id:"manager",
+    });
+    expect((await state(id)).lift_reason).toBe(command.explanation);
+    expect((await state(id)).lifted_at).not.toBeNull();
+    expect((await history(id)).map(event=>event.action))
+      .toEqual(["measure.created", "measure.appealResolved"]);
+    expect(await decide(id, appealId, 1, command)).toEqual(result);
+    await expect(submit(id)).rejects.toBeInstanceOf(UserMeasureConflictError);
+    await expect(change(id, 2)).rejects.toBeInstanceOf(UserMeasureConflictError);
+    const newMeasure = await create({ expiresAt:active });
+    expect((await submit(newMeasure.id)).ordinal).toBe(1);
+  });
+
+  it("denies cross-user and cross-measure submissions and stale review while keeping other measures intact", async () => {
+    const a = await create();
+    const b = await create({ restrictions:["topics.create"] });
+    await expect(submit(a.id, {actorId:"other"})).rejects.toBeInstanceOf(UserMeasureForbiddenError);
+    await expect(submit(randomUUID())).rejects.toBeInstanceOf(UserMeasureNotFoundError);
+    const appeal = await submit(a.id);
+    await expect(decide(b.id, appeal.id, 1)).rejects.toBeInstanceOf(UserMeasureNotFoundError);
+    await expect(decide(a.id, appeal.id, 1, {actorId:"target"}))
+      .rejects.toBeInstanceOf(UserMeasureForbiddenError);
+    expect((await appeals(a.id))[0].status).toBe("pending");
+    expect((await appeals(b.id)).toEqual([]);
+    await lift(b.id,1);
+    expect((await state(a.id)).lifted_at).toBeNull();
+    expect((await appeals(a.id))[0].status).toBe("pending");
+  });
+
+  it("treats expiry, explicit lift and concurrent review versus lift as terminal", async () => {
+    const a = await create({ expiresAt:active });
+    const first = await submit(a.id);
+    await client.query("update user_measures set expires_at=clock_timestamp()-interval '1 second' where id=$1", [a.id]);
+    await expect(decide(a.id, first.id, 1)).rejects.toBeInstanceOf(UserMeasureConflictError);
+    await expect(submit(a.id)).rejects.toBeInstanceOf(UserMeasureConflictError);
+    expect((await appeals(a.id))[0].status).toBe("pending"); // effective moot is read-derived
+    expect((await history(a.id)).map(x=>x.action)).toEqual(["measure.created"]);
+
+    const b = await create();
+    const second = await submit(b.id);
+    await lift(b.id,1);
+    expect((await appeals(b.id))[0].status).toBe("moot");
+    await expect(decide(b.id, second.id, 2)).rejects.toBeInstanceOf(UserMeasureConflictError);
+    expect((await history(b.id)).map(x=>x.action)).toEqual(["measure.created", "measure.lifted"]);
+
+    const c = await create();
+    const third = await submit(c.id);
+    const candidates = await Promise.allSettled([
+      decide(c.id, third.id, 1, {outcome:"accepted", remedy:"lift"}),
+      lift(c.id, 1),
+    ]);
+    expect(candidates.filter(x=>x.status==="fulfilled")).toHaveLength(1);
+    expect(candidates.filter(x=>x.status==="rejected")).toHaveLength(1);
+    expect((await state(c.id)).version).toBe(2);
+    expect((await history(c.id))).toHaveLength(2);
+    expect(["accepted","moot"]).toContain((await appeals(c.id))[0].status);
+  });
+
+  it("serializes two concurrent submissions without spending two quota slots", async () => {
+    const { id } = await create();
+    const submissions = await Promise.allSettled([submit(id),submit(id)]);
+    expect(submissions.filter(x=>x.status==="fulfilled")).toHaveLength(1);
+    expect(submissions.filter(x=>x.status==="rejected")).toHaveLength(1);
+    expect((await appeals(id)).map(x=>x.ordinal)).toEqual([1]);
+    const appeal = submissions.find(x=>x.status==="fulfilled") as PromiseFulfilledResult<{id:string;ordinal:number}>;
+    expect((await submit(id, {id:appeal.value.id})).ordinal).toBe(1);
+  });
+
+  it("rolls back rejected and accepted remedies on History failure without partial appeal or measure effects", async () => {
+    const { id } = await create();
+    const pending = await submit(id);
+    const priorHistory = await history(id);
+    const priorMeasure = await state(id);
+    const priorRestrictions = await restrictions(id);
+    await stopHistoryWrites();
+    try {
+      await expect(decide(id, pending.id, 1)).rejects.toThrow(/injected history failure/);
+      await expect(decide(id, pending.id, 1, {
+        outcome:"accepted", remedy:"change", restrictions:["topics.create"],
+      })).rejects.toThrow(/injected history failure/);
+      await expect(decide(id, pending.id, 1, {
+        outcome:"accepted", remedy:"lift",
+      })).rejects.toThrow(/injected history failure/);
+      expect((await appeals(id))[0].status).toBe("pending");
+      expect(await state(id)).toEqual(priorMeasure);
+      expect(await restrictions(id)).toEqual(priorRestrictions);
+      expect(await history(id)).toEqual(priorHistory);
+    } finally {
+      await restoreHistoryWrites();
+    }
+    await decide(id, pending.id, 1);
+    expect((await appeals(id))[0].status).toBe("rejected");
+  });
+
+  it("rejects no-op accepted change and honors revoked management grants and elevated issuer floor", async () => {
+    const a = await create();
+    const appeal = await submit(a.id);
+    await expect(decide(a.id, appeal.id, 1, {
+      outcome:"accepted",remedy:"change",restrictions:["replies.create"],
+    })).rejects.toBeInstanceOf(UserMeasureConflictError);
+    expect((await appeals(a.id))[0].status).toBe("pending");
+    await client.query("delete from authz_user_permission_overrides where user_id='manager' and permission_key=$1", [manage]);
+    await expect(decide(a.id, appeal.id, 1)).rejects.toBeInstanceOf(UserMeasureForbiddenError);
+    await client.query("insert into authz_user_permission_overrides(user_id,permission_key,effect) values('manager',$1,'allow')", [manage]);
+    const elevated = await create({actorId:"elevated"});
+    const privilegedAppeal = await submit(elevated.id);
+    await expect(decide(elevated.id,privilegedAppeal.id,1))
+      .rejects.toBeInstanceOf(UserMeasureForbiddenError);
+    await decide(elevated.id,privilegedAppeal.id,1,{actorId:"owner"});
+    expect((await appeals(elevated.id))[0].status).toBe("rejected");
+  });
+});
