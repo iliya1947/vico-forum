@@ -43,7 +43,7 @@ Vico Forum находится в pre-release разработке.
 - PostgreSQL 17 + Drizzle ORM `0.45.2`;
 - Better Auth `1.7.7` + PostgreSQL Drizzle adapter;
 - generic `/:locale/*`, runtime `LocaleRegistry`, BCP-47, LTR/RTL и request-scoped i18next;
-- repository migration history: `0000`–`0057`;
+- repository migration history: `0000`–`0058`;
 - externally accepted migration evidence: `0000`–`0020`.
 
 ## Реализованный продукт
@@ -98,20 +98,12 @@ Stage 5 завершён в repository/local-CI path.
 - AP-06 — защищённый Forum index и отдельные страницы категорий и разделов с поиском и реальной статистикой;
 - AP-07 — отдельная административная страница темы, ограниченный поиск тем раздела и общие действия над сообщениями (source locale и защищённая история ревизий);
 - AP-08 — close/reopen тем: независимое разрешение `forum.topic.close`, persisted closed/version с атомарной History, запрет новых ответов без исключения для ролей, общий public/admin Quick actions и сохранение уже открытого reply editor при закрытии. Matching committed publication receipt сохраняет idempotent replay после closure.
-- AP-09 — защищённый Users index/detail с независимым `admin.users.read`, поиском/пагинацией по публичной identity-проекции и переиспользованием существующих authorization assignment/override controls только при отдельном `access.authorization.manage`.
+- AP-09 — защищённый Users index/detail с независимым `admin.users.read`, поиском/пагинацией по публичной identity-проекции и переиспользованием существующих authorization assignment/override controls только при отдельном `access.authorization.manage`;
+- AP-10 — configurable temporary/permanent administrative measures с независимыми restrictions/expiry, exact-measure appeals, authority/issuer-floor hierarchy, request-scoped enforcement обычных и административных действий, приватными own/admin surfaces и атомарной History.
 
-AP-08 и AP-09 присутствуют в `main` и реализованы в repository/local-CI path. Отдельный authenticated Chromium→Worker→Better Auth→PostgreSQL flow для AP-08/AP-09 не выполнялся и не заявляется как выполненная acceptance; production/deployed acceptance остаётся отдельной release boundary.
+AP-08–AP-10 присутствуют в `main` и реализованы в repository/local-CI path. Для AP-10 дополнительно выполнен изолированный authenticated Chromium→Worker→Better Auth→PostgreSQL 17 flow с EN/RU/HE и responsive-проверками. Это не production/deployed acceptance. Отдельный package browser flow для AP-08/AP-09 не заявляется выполненным.
 
-В `main` AP-10/user blocking и реальные Settings operations ещё отсутствуют.
-Отдельная реализация **AP-10 находится в открытом Draft PR #290**, не merged:
-configurable temporary/permanent measures, независимые exact-measure appeals,
-request-scoped restrictions/authorization, защищённые собственные и административные
-страницы, атомарная History. На текущем implementation head пройдены обычный
-repository CI, PostgreSQL integration и изолированная **реальная браузерная**
-Chromium/Chrome → Worker → Better Auth → PostgreSQL 17 проверка EN/RU/HE на
-mobile/tablet/desktop. Это **авторские acceptance checks**, не independent
-whole-PR review, owner visual acceptance, изменение `main` или deployed/production
-rollout. Наличие PR не делает AP-10 доступным в `main`.
+Ещё не реализованы реальные Settings operations и AP-11 integration/factual closeout.
 
 ### Complaints
 
@@ -174,7 +166,7 @@ External topology является mutable state и должна перепро�
 ## Актуальные незавершённые продуктовые границы
 
 - UI/UX product pass ещё требует финального closeout и обязательной real-runtime product/visual acceptance по `docs/UI_UX_PASS.md`.
-- В `main` Admin Panel реализована до AP-09 включительно; AP-10 подготовлен и авторски проверен в отдельном Draft PR, но ещё ожидает независимых review/merge. Settings и AP-11 closeout не реализованы.
+- В `main` Admin Panel реализована до AP-10 включительно; Settings и AP-11 integration/factual closeout ещё не завершены.
 - Complaints integration/closeout покрыт repository/local-CI проверками; external/deployed acceptance Complaints не выполнялась.
 - Email verification/password recovery остаются отложенными.
 - Editor drafts/autosave остаются отложенными.
@@ -183,7 +175,7 @@ External topology является mutable state и должна перепро�
 ## Ближайший маршрут
 
 1. Продолжать утверждённую bounded product-разработку без превращения обычных PR в external rollout.
-2. Довести AP-10 через обязательный coordinator и независимый технический review, затем решение владельца о merge; оставшиеся Admin Panel / Complaints product packages вести по профильным контрактам и служебным каналам.
+2. Завершить оставшиеся Admin Panel / Complaints product packages по их профильным контрактам и служебным каналам; для Admin Panel после AP-10 остаются Settings и AP-11 closeout.
 3. Довести UI/UX product pass до финальной real-runtime acceptance.
 4. Возобновлять Stage 6 external integration только по отдельному указанию владельца и по `docs/database/*`.
 5. После завершения pre-release product и external gates перейти к финальному общепроектному refinement и Stage 7 production release по `ROADMAP.md`.
