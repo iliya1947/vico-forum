@@ -3,7 +3,7 @@ import { readFile, readdir } from "node:fs/promises";
 import { Client, Pool } from "pg";
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
 import { PostgresUserMeasureReader } from "../../db/user-measure-read";
-import { PostgresUserMeasuresRepository, UserMeasuresService, UserMeasureNotFoundError } from "../../db/user-measures";
+import { PostgresUserMeasuresRepository, UserMeasuresService, UserMeasureNotFoundError, UserMeasureConflictError } from "../../db/user-measures";
 import { UserMeasureConfigurationUnavailableError, UserMeasureForbiddenError } from "../../db/user-measure-authority";
 import { PostgresAuthorizationRepository } from "../../db/authorization-repository";
 
@@ -99,6 +99,45 @@ describe("AP-10 purpose-limited own/admin measure read (PostgreSQL 17)",()=>{
     await expect(reader.adminTarget(manager,subject)).rejects.toBeInstanceOf(UserMeasureForbiddenError);
     await expect(reader.adminDetail(manager,first.id)).rejects.toBeInstanceOf(UserMeasureForbiddenError);
     expect((await reader.ownDetail(subject,first.id)).status).toBe("active");
+  });
+
+  it("discovers only live pending appeals within raw target and issuer-floor authority",async()=>{
+    const ordinary=await create(subject);
+    const second=await create(other);
+    const ownerIssued=await writer.create({
+      id:uuid(),actorId:owner,targetUserId:subject,
+      reason:"Owner-only review",restrictions:["replies.create"],expiresAt:null,
+    });
+    const privileged=await writer.create({
+      id:uuid(),actorId:owner,targetUserId:manager,
+      reason:"Privileged target",restrictions:["replies.create"],expiresAt:null,
+    });
+    const ids=[ordinary.id,second.id,ownerIssued.id,privileged.id];
+    for(const [index,id] of ids.entries()) {
+      await writer.submitAppeal({id:uuid(),measureId:id,
+        actorId:index===1?other:index===3?manager:subject,body:"Review request"});
+    }
+    const normal=await reader.adminPendingAppeals(manager);
+    expect(normal.appeals).toHaveLength(2);
+    expect(new Set(normal.appeals.map(appeal=>appeal.measureId)))
+      .toEqual(new Set([ordinary.id,second.id]));
+    expect(normal.appeals.every(appeal=>
+      appeal.targetUserId!=="moderator" && appeal.targetName!=="Reviewer confidential")).toBe(true);
+    expect(JSON.stringify(normal)).not.toContain("Owner confidential");
+    expect(JSON.stringify(normal)).not.toContain("Owner-only review");
+    expect(normal.nextPage).toBeNull();
+    const ownerQueue=await reader.adminPendingAppeals(owner);
+    expect(new Set(ownerQueue.appeals.map(appeal=>appeal.measureId))).toEqual(new Set(ids));
+    expect(await reader.adminPendingAppeals(manager,1)).toMatchObject({appeals:[],nextPage:null});
+    await expect(reader.adminPendingAppeals(manager,-1)).rejects.toBeInstanceOf(UserMeasureConflictError);
+    await client.query(`update user_measures set expires_at=clock_timestamp()-interval '1 second'
+      where id=$1`,[ordinary.id]);
+    expect((await reader.adminPendingAppeals(manager)).appeals.map(item=>item.measureId))
+      .toEqual([second.id]);
+    await client.query(`delete from authz_user_permission_overrides
+      where user_id='moderator' and permission_key='admin.users.blocks.manage'`);
+    await expect(reader.adminPendingAppeals(manager)).rejects.toBeInstanceOf(UserMeasureForbiddenError);
+    expect((await reader.ownDetail(subject,ordinary.id)).pendingAppeal).toBe(false);
   });
 
   it("derives effective pending=moot on expiry without a write or History event",async()=>{
