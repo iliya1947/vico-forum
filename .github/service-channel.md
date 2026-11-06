@@ -134,3 +134,96 @@
 - exact implementation SHA присутствует в evidence;
 - нет подтверждённых current-scope defects на stable head;
 - после завершения Лиры следующий шаг — coordinator whole-PR review Миры; Лёву повторно не подключать до coordinator PASS.
+
+
+## AP-11 coordinator whole-PR review — CHANGES REQUIRED
+
+Review target: PR #292, stable exact head `079b98e29646db2024546fb52be4076186567ece`, base/main `7b452edfc0a759b4b65cd1cc535f207bb9e615c7`.
+
+Evidence checked:
+- whole 4-file delta reviewed: `app/admin/users.tsx`, `app/forum/views.tsx`, `app/forum/public-read.test.tsx`, `tests/browser/user-measures/check.py`;
+- exact-head CI #42238141456 SUCCESS;
+- exact-head isolated Chromium #42238141445 SUCCESS;
+- downloaded artifact #13512338818 verified: `implementationHead=079b98e...`, 30 recorded case groups, zero layout failures, zero page errors, zero external requests;
+- responsive screenshots for Users detail/Admin Topic inspected;
+- current main source-of-truth and approved AP-11 technical plan rechecked.
+- First finding did not stop review.
+
+### AP11-MIRA-01 [P2] — denied-reply manual revalidation does not block repeat submit during the revalidation window
+
+Confirmed current-scope runtime defect.
+
+Causal chain:
+1. A stale reply POST receives 403. React Router Framework Mode does not automatically revalidate failed 4xx/5xx submissions, so AP-11 correctly starts explicit `revalidator.revalidate()`.
+2. React Router tracks explicit revalidation in separate `revalidator.state`; it is not the same as `useNavigation().state`.
+3. Current `TopicView` computes `isReplySubmitting` only from `navigation.state` and computes `replyPublicationAllowed` from the stale loader's `canParticipate` plus closure state.
+4. The later existing completion effect clears `replyPublicationRef` when it sees the 403. While explicit revalidation is still loading, `navigation.state` is idle, stale `canParticipate` can still be true, retained editor content keeps `replyReady` true, and `publicationDisabled` remains false.
+5. Therefore Publish can re-enable temporarily between the 403 response and completion of the fresh loader. The same stale window can also expose stale upload availability until the fresh restriction projection arrives.
+6. Server authorization still denies the repeated write, so this is not a privilege bypass or unauthorized state write. It is a stale-presentation/repeated-submit defect in the exact AP-11 restriction/revalidation scope.
+7. Current DOM/browser regressions wait for the final post-revalidation disabled state; they do not hold revalidation open and therefore do not detect this window.
+
+Required result:
+- from the moment the denied submitted reply is known until its explicit revalidation completes, new reply publication/repeated submit remains blocked;
+- mounted text/operation/selected or in-flight attachments and Cancel remain retained;
+- no automatic POST replay;
+- after fresh loader state arrives, normal current permission/restriction state controls availability;
+- add a focused regression with deliberately pending revalidation that proves the submit cannot repeat during that window.
+
+### AP11-MIRA-02 [P3] — approved closure × measure composition matrix is not actually exercised
+
+Confirmed current-scope verification gap.
+
+The approved AP-11 plan required a small connected matrix proving independence of AP-08 closure and AP-10 `replies.create` restrictions:
+- open + measure → denied;
+- closed + measure → denied;
+- removing/lifting the measure while still closed does not restore replies;
+- reopening while a reply measure remains active does not restore replies;
+- only open + no applicable measure restores explicit reply.
+
+#292 currently verifies closure first and reopens the topic **before** creating the two AP-10 measures. The measures are then tested only while the topic is open. Artifact case list contains no state where `topic.isClosed=true` and an active reply measure coexist.
+
+Required result:
+- extend the existing connected browser scenario to exercise both constraints simultaneously and prove that removing either one does not incorrectly remove the other;
+- use existing canonical close/reopen and measure/lift actions; no new product policy;
+- no application change unless this scenario reproduces a real defect.
+
+### AP11-MIRA-03 [P3] — Users grant/revoke lifecycle bypasses the canonical authorization writer
+
+Confirmed current-scope verification gap.
+
+Approved AP-11 plan intentionally connected authorization mutation → History/state → next-request same-session Users presentation. The implementation uses direct SQL to change the manager's `access.authorization.manage` deny/allow state before the stale inline submit and later regrant. SQL is permitted for fixture/setup/inspection, but these grant/revoke transitions are themselves part of the connected scenario being verified.
+
+The inline assignment/override of the target user correctly uses canonical UI/HTTP and History, but the manager permission lifecycle that causes the fresh 403/recovery bypasses the canonical writer, its transaction/History path and normal request boundary.
+
+Required result:
+- use an already available authorized synthetic actor/session to perform the relevant grant/revoke through the existing authorization UI/canonical action; do not add a fourth signup;
+- retain same-session reviewer recovery and no replay assertions;
+- account for the real History deltas and restore fixture state through canonical operations where the scenario is testing those operations.
+
+### AP11-MIRA-04 [P3] — browser privacy evidence asserts `no-store` but not `private`
+
+Confirmed current-scope evidence gap.
+
+AP-11 claims actual protected Users/Admin Topic responses are `private, no-store`, but the shared browser `document()` helper and the new direct-denial checks assert only that `Cache-Control` contains `no-store`. A response such as bare `no-store` would pass this acceptance despite not proving the required private cache boundary.
+
+Required result:
+- for protected account/admin document responses in this harness, assert both `private` and `no-store`;
+- keep public topic GET outside that protected helper, as already done;
+- do not broaden into unrelated cache-policy changes unless the stronger assertion exposes a real current-scope defect.
+
+### Non-findings / scope guard
+
+- The final Users responsive fix reusing `profile-identity-copy` is local and confirmed by actual 320/768/1280 EN/RU/HE evidence; no defect found.
+- The 403 server boundary still prevents unauthorized writes; AP11-MIRA-01 is presentation/revalidation, not auth bypass.
+- No schema/migration/grant/dependency/public-contract defect found.
+- Workflow display name/path-trigger expansion is not a current AP-11 defect: the approved plan made that maintenance adjustment optional, and exact-head AP-11 browser evidence exists. Do not expand this correction into a workflow redesign.
+- Settings, owner/authorization redesign, Stage 6, production and owner visual acceptance remain out of scope.
+
+### Bounded correction — Лира
+
+Correct only AP11-MIRA-01..04 in PR #292. Keep scope minimal. After corrections:
+- run applicable full CI and exact-head isolated Chromium acceptance;
+- artifact must identify the new implementation SHA and show the corrected connected cases;
+- record new stable head/evidence in #251 and stop;
+- any discovered product defect must be independently diagnosed before widening app changes;
+- after handoff, Мира restarts coordinator whole-PR review on the new exact head. Лёва is not assigned until coordinator PASS.
