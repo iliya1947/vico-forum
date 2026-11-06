@@ -1,9 +1,9 @@
 # Admin panel — current workflow
 
 - Служебный PR: #251; общий план: `ADMIN_PANEL_IMPLEMENTATION_PLAN.md`
-- Текущий этап: AP-10 corrected-head coordinator whole-PR review
+- Текущий этап: AP-10 second correction cycle
 - Main/base: `5cf80f38cbc06ed733a0618e706eb80c5a7b3c7b`
-- Technical planner/reviewer: Лёва; implementer: Лира; coordinator/reviewer now: Мира
+- Technical planner/reviewer: Лёва; current executor: Лира; coordinator/reviewer next: Мира
 - Technical plan: coordinator PASS, AP10-PLAN-MIRA-01..06 closed
 - Implementation PR: #290 Draft/open/mergeable
 - Previous reviewed implementation head: `503a5c6dc570e2c6c0f64f59e7fe5bf390a90b13`
@@ -14,7 +14,7 @@
 - Documentation PR: #291 Draft/open/mergeable, exact head `e54f1b23ea8030df6171932cb640d1706867af6c`, 6 Markdown files
 - Documentation CI #42173496053: SUCCESS
 - Implementation/docs не merged; production/Stage 6 не менялись
-- Current reviewer: Мира; Лира correction package завершила; Лёва independent review не назначен до coordinator PASS
+- Current executor: Лира исправляет bounded package AP10-MIRA-08..10; Лёва independent review не назначен до coordinator PASS
 - Owner visual acceptance: не запрошен и не инициируется
 - Coordinator pass 1 complete: data model/lifecycle/reasons/appeals; confirmed AP10-MIRA-01..02, handoff deferred until full review complete
 - Coordinator pass 2 complete: authority/permissions/privileged targets; confirmed AP10-MIRA-03..04
@@ -27,6 +27,8 @@
 - AP10-MIRA-08: ordinary blocks.manage UI всё ещё предлагает administrative restriction families, которые authoritative server запрещает без elevated authority
 - AP10-MIRA-09: floor-aware permission projection расходится с direct authoritative admin-family guards, которые игнорируют issuer floor после equal/higher raw grant
 - AP10-MIRA-10: AP-10 restriction revalidation размонтирует already-open create-topic/Help/published-edit Editor operations вместо сохранения buffer + Cancel/cleanup при запрещённом Publish/Save
-- Coordinator verdict: NOT PASS. Следующий stage — bounded correction package AP10-MIRA-08..10 Лире; Лёва independent review только после нового coordinator PASS
+- Coordinator verdict на `52a1db67610357f514e8013b06f70af6bda629c6`: NOT PASS
+- Second correction package AP10-MIRA-08..10 зафиксирован для Лиры в service-channel.md
+- Следующий шаг: Лира исправляет PR #290, выполняет applicable exact-head CI/browser evidence и фиксирует новый stable head; затем Мира начинает новый coordinator whole-PR review. Лёва independent review только после coordinator PASS
 - Last-manager cleanup / owner-role redesign: отдельная задача после admin panel
 - AP-11/Settings/Stage 6/production не начинались; Марк не назначен
