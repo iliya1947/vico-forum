@@ -145,7 +145,8 @@ export function selectedMeasureExpiry(form: HTMLFormElement, now = Date.now()): 
 function encodeMeasureExpiry(event:FormEvent<HTMLFormElement>) {
   const expiresAt=selectedMeasureExpiry(event.currentTarget);
   const input=event.currentTarget.querySelector<HTMLInputElement>('input[name="expiresAt"]');
-  if(expiresAt===undefined || !input) { event.preventDefault();return; }
+  if(!input)return; // Rejected/lift decisions have no expiry field.
+  if(expiresAt===undefined) { event.preventDefault();return; }
   input.value=expiresAt;
 }
 

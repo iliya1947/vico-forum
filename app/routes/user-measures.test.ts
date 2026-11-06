@@ -117,6 +117,7 @@ describe("AP-10 own/private and admin measure routes",()=>{
     const anotherPage=await adminList({request:new Request("https://forum.test/en/admin/measures?page=2"),
       params:{locale:"en"},context:manager.context});
     expect(manager.capability.adminPendingAppeals).toHaveBeenCalledWith("subject",1);
+    expect(anotherPage.data.pendingAppeals.nextPage).toBeNull();
     await expect(adminList({request:new Request("https://forum.test/en/admin/measures?page=bad"),
       params:{locale:"en"},context:manager.context})).rejects.toMatchObject({status:400});
     await expect(adminList({request:new Request("https://forum.test/en/admin/measures?page=1&target=target"),

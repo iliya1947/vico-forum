@@ -155,6 +155,7 @@ describe("AP-10 private measure views and administrative choices",()=>{
       createId="30000000-0000-4000-8000-000000000001"
       access={access} feedback={undefined}/>,action);
     const form=formFor(root,"create");
+    fireEvent.click(children(groupFor(form))[0]!);
     const mode=form.querySelector<HTMLSelectElement>("[data-measure-expiry-mode]")!;
     expect(selectedMeasureExpiry(form,Date.parse(now))).toBe("");
     fireEvent.change(mode,{target:{value:"hour"}});
