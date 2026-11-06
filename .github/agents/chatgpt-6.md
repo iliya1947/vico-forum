@@ -1,5 +1,12 @@
 # Лира — ChatGPT-6
 
+## AP-11 subtask 1/3 — Users browser integration (2026-11-06)
+
+- Draft implementation PR #292, `feat/admin-ap11-connected-browser`, stable head `12fc3bffd1e62be145ae22a24e2785248c75b256`; test-only changes in `tests/browser/user-measures/check.py`.
+- Connected real Users detail, inline assignment and override, protected History, same-session permission revalidation, rejected stale POST and read-only recovery. Existing participant restored by UI before original scenarios.
+- Exact-head [CI #42232342014](https://github.com/iliya1947/vico-forum/actions/runs/42232342014): SUCCESS (1966 app tests, 561 PostgreSQL tests). Exact-head [Chromium #42232342031](https://github.com/iliya1947/vico-forum/actions/runs/42232342031): SUCCESS (23 cases: 19 original + 4 new).
+- AP-11 is incomplete. Stop after bounded subtask 1. Next: subtask 2/3 Forum close/reopen × reply Editor and AP-10 restrictions after explicit continuation. No coordinator PASS claimed.
+
 ## AP-10 independent-review correction AP10-LEV-01 — author complete (2026-11-06)
 
 - Independent Lev review of stable head `9fecd925a256062e9892235f4ba02ed3147de1e3` found one current-scope P3 defect AP10-LEV-01: authenticated canonical measure create accepted NUL-containing `targetId` and surfaced PostgreSQL 22021/HTTP 500 instead of private typed 400; correctly formed nonexistent target already returned 404. Mira independently confirmed this and assigned a bounded correction; prior AP10-MIRA-01..11 remain coordinator-closed.
