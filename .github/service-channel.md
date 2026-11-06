@@ -4,14 +4,14 @@
 
 ## Актуальный baseline и review
 
-- AP-01–AP-09 merged; current main / AP-10 base: `5cf80f38cbc06ed733a0618e706eb80c5a7b3c7b`, migration head main 0057.
+- AP-01–AP-10 merged; current `main`: `03c505370f44fa2640a489b647fba3929219093f`, migration head 0058.
 - AP-10 technical plan approved; AP10-PLAN-MIRA-01..06 закрыты.
-- Implementation PR #290, Draft/open/unmerged; **reviewed exact head `ef313919f6613c54db6ddb50765c968744101306`**, migration 0058.
+- Implementation PR #290 merged 2026-11-06; reviewed exact head `ef313919f6613c54db6ddb50765c968744101306`, merge commit `03c505370f44fa2640a489b647fba3929219093f`.
 - Coordinator whole-PR PASS на этом head завершён.
 - **Repeated independent technical review Лёвы: PASS**, [отчёт #6685133377](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6685133377). Подтверждённых current-scope defects не осталось; AP10-LEV-01 закрыт.
 - Exact-head CI #42218475676 и isolated browser #42218475943: SUCCESS; author CI отдельно от собственных review reruns.
-- Documentation PR #291 — отдельный Draft closeout artifact, не получает approval данным implementation verdict.
-- Implementation/docs не merged; production/Stage 6/owner visual acceptance не выполнялись.
+- Documentation PR #291 обновлён после merge #290: exact docs head `cabdd7d034bdd26f00fa67446b236f42c1c9a7ef`, open/Ready/mergeable; exact-head CI #42222511348 SUCCESS.
+- AP-10 implementation merged; documentation #291 ещё не merged. Production/Stage 6/owner visual acceptance не выполнялись.
 
 ## Решения владельца, обязательные для AP-10
 
@@ -76,3 +76,17 @@
 - Documentation PR #291 отдельно проверен на readiness до merge implementation. Он создан раньше финального review cycle и содержит фактически устаревшее current-state wording: `PROJECT_STATE.md` и PR body всё ещё говорят, что AP-10 ожидает coordinator/independent review; history file фиксирует pre-review snapshot. Это не implementation defect #290.
 - #291 не следует merge в текущем виде как финальный closeout. После фактического merge #290 Мира должна обновить documentation branch относительно нового `main`, зафиксировать AP-10 как merged repository state, сохранить значимую correction/review chain в PROJECT_HISTORY, проверить permanent contracts и выполнить applicable docs/CI review. Только после этого #291 готовится к owner merge.
 - AP-11/Settings, post-admin owner-role/last-manager cleanup, Stage 6 и production не начинать.
+
+
+## AP-10 documentation closeout ready for owner merge
+
+- Владелец merged implementation PR #290; `main` = `03c505370f44fa2640a489b647fba3929219093f`.
+- Мира полностью перечитала актуальные post-merge `AGENTS.md`, `PROJECT.md`, `PROJECT_STATE.md`, `ROADMAP.md`, `docs/ADMIN_PANEL.md` и `docs/auth/AUTHORIZATION.md` перед изменением documentation closeout.
+- PR #291 приведён из pre-review snapshot к фактическому post-merge состоянию. Изменяются ровно 6 Markdown files: `PROJECT_STATE.md`, `ROADMAP.md`, `docs/ADMIN_PANEL.md`, `docs/auth/AUTHORIZATION.md`, history index и новый `PROJECT_HISTORY_12.md`.
+- `PROJECT_STATE.md` содержит только актуальное состояние: AP-10 в main, migration head 0058, remaining Settings/AP-11; correction/review ledger перенесён в PROJECT_HISTORY.
+- Permanent contracts фиксируют actual AP-10 semantics, включая zero-default block-management grants, issuer-floor/current-target authority, exact-detail read-only mutation presentation, terminal/read-derived expiry semantics, Help-signal withdrawal boundary и сохранение mounted Editor/cleanup при fresh restriction.
+- `PROJECT_HISTORY_12.md` фиксирует implementation/correction/review chain AP10-MIRA-01..11, AP10-LEV-01, final coordinator PASS, repeated independent PASS и merge #290.
+- Final docs exact head: `cabdd7d034bdd26f00fa67446b236f42c1c9a7ef`.
+- Exact-head CI #42222511348 — SUCCESS, jobs `checks` и `database` SUCCESS.
+- PR #291 переведён из Draft в Ready; GitHub reports open/mergeable. Дополнительный Codex review документации не назначается: implementation уже прошёл coordinator + independent technical review, а #291 — отдельный documentation-only closeout.
+- Следующий шаг: owner merge #291. После merge можно переходить к следующему Admin Panel package; AP-11/Settings не начинались в рамках этого closeout.
