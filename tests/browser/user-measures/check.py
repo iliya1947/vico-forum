@@ -291,6 +291,98 @@ try:
         record("malformed-target-400-missing-target-404-no-database-write")
 
         topic_id = topic_fixture(other_id)
+
+        # AP-11: browser navigation across admin hierarchy, then the canonical
+        # closure action while an unrelated participant has a mounted reply editor.
+        topic_path = "/en/topics/" + quote(topic_id, safe="")
+        admin_topic_path = "/en/admin/forum/topics/" + quote(topic_id, safe="")
+        document(subject, topic_path)
+        editor = form_for(subject, "reply")
+        editor.get_by_role("button", name="Advanced", exact=True).click()
+        reply_text = "AP11 retained editor: close while composing"
+        editor.locator("textarea#reply-body").fill(reply_text)
+        expect(editor.locator('button[type="submit"]')).to_be_enabled()
+        operation_id = editor.locator('input[name="editorOperationId"]').input_value()
+        initial_post_count = replies(topic_id)
+        initial_closure_history = sql("""select action from admin_history
+          where target_type='topic' and target_id=$1
+          and action in ('topic.closed','topic.reopened') order by position""", [topic_id])
+        assert initial_closure_history == []
+
+        document(manager, "/en/admin/forum")
+        manager.locator('a[href="/en/admin/forum/categories/help-solutions"]').click()
+        manager.wait_for_url("**/en/admin/forum/categories/help-solutions")
+        manager.locator('a[href="/en/admin/forum/sections/help-solutions-questions"]').click()
+        manager.wait_for_url("**/en/admin/forum/sections/help-solutions-questions")
+        manager.locator('a[href="' + admin_topic_path + '"]').click()
+        manager.wait_for_url("**" + admin_topic_path)
+        expect(manager.locator(".admin-topic")).to_have_count(1)
+        manager.locator("details.topic-admin-tools > summary").click()
+        close = form_for(manager, "closeTopic")
+        expect(close.locator('input[name="expectedClosureVersion"]')).to_have_value("0")
+        expect(close.locator('input[name="editorActorId"]')).to_have_value(manager_id)
+        with manager.expect_response(lambda r: r.request.method == "POST"
+                                     and "/en/topics/" in r.url) as closed:
+            close.locator('button[type="submit"]').click()
+        assert closed.value.status == 200, ("close topic", closed.value.status)
+        expect(form_for(manager, "reopenTopic")).to_be_visible()
+        assert sql("select is_closed,closure_version from forum_topics where id=$1",
+                   [topic_id]) == [{"is_closed": True, "closure_version": 1}]
+        assert replies(topic_id) == initial_post_count
+        assert sql("""select action from admin_history where target_type='topic'
+          and target_id=$1 and action in ('topic.closed','topic.reopened')
+          order by position""", [topic_id]) == [{"action": "topic.closed"}]
+        record("ap11-admin-forum-hierarchy-canonical-topic-close-history")
+
+        # Stale submit must be rejected as topicClosed, revalidate exactly once
+        # without replay, and retain the same in-memory editor and operation.
+        with subject.expect_response(lambda r: r.request.method == "POST"
+                                     and "/en/topics/" in r.url) as closed_reply:
+            editor.locator('button[type="submit"]').click()
+        assert closed_reply.value.status == 409, ("closed reply", closed_reply.value.status)
+        expect(subject.locator(".topic-closed-notice")).to_have_count(1)
+        expect(editor).to_be_visible()
+        expect(editor.locator("textarea#reply-body")).to_have_value(reply_text)
+        expect(editor.locator('input[name="editorOperationId"]')).to_have_value(operation_id)
+        expect(editor.locator('button[type="submit"]')).to_be_disabled()
+        expect(editor.locator(".topic-reply-paused")).to_be_visible()
+        expect(editor.get_by_role("button", name="Cancel")).to_be_enabled()
+        assert replies(topic_id) == initial_post_count
+        assert sql("""select action from admin_history where target_type='topic'
+          and target_id=$1 and action in ('topic.closed','topic.reopened')
+          order by position""", [topic_id]) == [{"action": "topic.closed"}]
+        record("ap11-closed-topic-reply-409-editor-retained-no-write")
+
+        reopen = form_for(manager, "reopenTopic")
+        expect(reopen.locator('input[name="expectedClosureVersion"]')).to_have_value("1")
+        with manager.expect_response(lambda r: r.request.method == "POST"
+                                     and "/en/topics/" in r.url) as reopened:
+            reopen.locator('button[type="submit"]').click()
+        assert reopened.value.status == 200, ("reopen topic", reopened.value.status)
+        expect(form_for(manager, "closeTopic")).to_be_visible()
+        assert sql("select is_closed,closure_version from forum_topics where id=$1",
+                   [topic_id]) == [{"is_closed": False, "closure_version": 2}]
+        assert sql("""select action from admin_history where target_type='topic'
+          and target_id=$1 and action in ('topic.closed','topic.reopened')
+          order by position""", [topic_id]) == [
+            {"action": "topic.closed"}, {"action": "topic.reopened"}
+        ]
+        document(manager, "/en/admin/history")
+        expect(manager.locator(".admin-history-events > li").filter(
+            has=manager.get_by_role("heading", name="Topic closed")).filter(has_text=topic_id)).to_have_count(1)
+        expect(manager.locator(".admin-history-events > li").filter(
+            has=manager.get_by_role("heading", name="Topic reopened")).filter(has_text=topic_id)).to_have_count(1)
+        record("ap11-topic-reopen-independent-history-and-version")
+
+        # Newly reopened topic permits a fresh editor, which must remain mounted
+        # when the existing AP-10 restriction is subsequently imposed.
+        document(subject, topic_path)
+        restricted_editor = form_for(subject, "reply")
+        restricted_editor.get_by_role("button", name="Advanced", exact=True).click()
+        restricted_text = "AP11 retained editor: revoked reply permission"
+        restricted_editor.locator("textarea#reply-body").fill(restricted_text)
+        restricted_operation = restricted_editor.locator('input[name="editorOperationId"]').input_value()
+
         first_id = create_measure(
             manager, subject_id,
             ("replies.create", "topics.create", "attachments.upload", "profile.edit",
@@ -307,6 +399,28 @@ try:
         assert 3500 <= duration <= 3600, ("one-hour preset", duration)
         assert first_id != second_id
         record("manager-two-independent-measures", first=first_id, second=second_id)
+
+
+        # Closure was lifted, but two independent AP-10 reply restrictions are
+        # now active. A stale mounted editor cannot commit or disappear.
+        blocked_before = replies(topic_id)
+        blocked_history = sql("select count(*)::int as total from admin_history")[0]["total"]
+        with subject.expect_response(lambda r: r.request.method == "POST"
+                                     and "/en/topics/" in r.url) as denied_reply:
+            restricted_editor.locator('button[type="submit"]').click()
+        assert denied_reply.value.status == 403, ("restricted reply", denied_reply.value.status)
+        expect(restricted_editor).to_be_visible()
+        expect(restricted_editor.locator("textarea#reply-body")).to_have_value(restricted_text)
+        expect(restricted_editor.locator('input[name="editorOperationId"]')).to_have_value(restricted_operation)
+        expect(restricted_editor.locator('button[type="submit"]')).to_be_disabled()
+        expect(restricted_editor.locator(".topic-reply-paused")).to_be_visible()
+        expect(restricted_editor.get_by_role("button", name="Cancel")).to_be_enabled()
+        assert replies(topic_id) == blocked_before
+        assert sql("select count(*)::int as total from admin_history")[0]["total"] == blocked_history
+        assert sql("select is_closed,closure_version from forum_topics where id=$1",
+                   [topic_id]) == [{"is_closed": False, "closure_version": 2}]
+        record("ap11-reopened-topic-ap10-reply-sanction-retains-editor-no-write")
+
 
         document(subject, "/en/account/measures")
         expect(subject.locator('section[aria-label^="Active"] > ol.admin-forum-objects > li')).to_have_count(2)
@@ -432,6 +546,12 @@ try:
         assert allowed.status in (302, 303), ("restored reply", allowed.status, allowed.text()[:200])
         assert replies(topic_id) == count + 2
         record("stale-admin-409-revalidates-with-no-replay-and-replies-restore")
+        document(subject, topic_path)
+        expect(form_for(subject, "reply")).to_be_visible()
+        assert sql("select is_closed,closure_version from forum_topics where id=$1",
+                   [topic_id]) == [{"is_closed": False, "closure_version": 2}]
+        record("ap11-reopened-and-all-reply-measures-lifted-composer-restored")
+
 
         # Real browser reflow, current translated strings and keyboard operability.
         for locale, direction in (("en", "ltr"), ("ru", "ltr"), ("he", "rtl")):
