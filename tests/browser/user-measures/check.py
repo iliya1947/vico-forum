@@ -221,6 +221,8 @@ try:
         review.locator('button[type="submit"]').click()
         expect(manager.locator('input[name="intent"][value="review"]')).to_have_count(0)
         assert "Lifted" in manager.locator("main").inner_text()
+        document(manager, "/en/admin/measures")
+        expect(manager.locator('a[href^="/en/admin/measures/' + first_id + '#measure-review-"]')).to_have_count(0)
         document(subject, own_path)
         assert "Lifted" in subject.locator("main").inner_text()
         assert "Accepted" in subject.locator("main").inner_text()
