@@ -126,3 +126,26 @@
 - No additional current-scope defects confirmed. Migration 0058, Drizzle/schema manifest parity, PostgreSQL 17 constraints, zero initial grants, web-only SELECT/INSERT/UPDATE on measure tables, split database bindings, Worker composition and fail-closed owner binding are covered by exact-head CI and focused native tests.
 - Exact-head browser run #42171734414 is valid author engineering evidence for the flows it actually exercises: guest private denial, two independent measures, own privacy/appeal, current-session server denials, accepted lift/restoration, stale 409/no replay, EN/RU/HE, RTL/LTR, 320/768/1280 overflow and keyboard refresh. It does not disprove the seven coordinator findings because the missing reviewer queue, duration UX, latent privileged restrictions, elevated-control presentation, regular-action restriction-aware UI, History context rendering and localized document title are outside or insufficiently asserted by that script.
 - Final coordinator whole-PR review of PR #290 exact head `503a5c6dc570e2c6c0f64f59e7fe5bf390a90b13` is complete with seven confirmed current-scope defects AP10-MIRA-01..07. Coordinator status is NOT PASS. Do not start independent Codex review. Next workflow step is one consolidated correction package to Лира; after implementation head changes, rerun applicable CI/browser evidence and restart coordinator whole-PR review on the new stable exact head.
+
+
+## AP-10 correction package — Лира
+
+Исполнитель: **Лира**. Implementation PR: **#290**. Reviewed exact head: `503a5c6dc570e2c6c0f64f59e7fe5bf390a90b13`.
+
+Цель: исправить одним согласованным пакетом все семь подтверждённых current-scope дефектов coordinator review, не расширяя AP-10 и не меняя отдельный documentation PR #291.
+
+1. **AP10-MIRA-01 — pending block-appeal discovery.** Добавить нормальный административный способ обнаружить ожидающие рассмотрения block appeals и перейти к exact measure/appeal review. Это остаётся частью AP-10 measures workspace, не переносится в Complaint/Needs attention domain.
+2. **AP10-MIRA-02 — temporary duration UX.** Реализовать утверждённую presentation-модель: permanent, типовые временные presets и произвольная duration/end date. Presets остаются только UI shortcuts; persistence/domain contract не получает preset identity.
+3. **AP10-MIRA-03 — latent privileged restrictions.** Устранить возможность, при которой actor без достаточной authority сохраняет administrative-family restriction на текущем непривилегированном target, а та позже начинает подавлять вновь выданные privileged permissions. Ни текущая мера, ни последующее изменение grants не должны позволять actor фактически ограничить authority, которую он не имел права ограничивать.
+4. **AP10-MIRA-04 — elevated authorization presentation.** UI authorization management не должен показывать non-owner actor как доступные операции над elevated block-management capability, которые authoritative server всё равно запрещает. Server-side запрет сохраняется.
+5. **AP10-MIRA-05 — restriction-aware ordinary presentation.** First-party UI для fresh пользовательских действий должен учитывать актуальные active measure restrictions и скрывать/блокировать запрещённые действия до submit, сохраняя обязательные server-side guards. Own status/reason/appeal и разрешённые cleanup/cancel/read paths не блокировать.
+6. **AP10-MIRA-06 — Admin History context.** Внутренняя authorized History должна показывать сохранённый минимально полезный AP-10 change context: что изменилось в measure state и, для appeal resolution, outcome/remedy. Не добавлять вторые события и не менять subject privacy projection.
+7. **AP10-MIRA-07 — localized document metadata.** Own measures list/detail не должны иметь hard-coded English browser title в RU/HE; новый metadata text должен идти через существующий localization contract.
+
+Критерии готовности:
+- все AP10-MIRA-01..07 закрыты на одном новом stable exact head PR #290;
+- исправления остаются в текущем AP-10 scope и не начинают AP-11, Settings, last-manager cleanup, owner-role redesign, Stage 6 или production;
+- существующие privacy, appeal quota/lifecycle, terminal measure, zero-default-grants, replay, authority и server enforcement invariants не ослаблены;
+- добавить/обновить достаточные focused tests для исправленных причин, включая regression coverage там, где текущий green CI не ловил finding;
+- выполнить применимые обычные CI/checks и AP-10 isolated browser acceptance для нового head; owner visual acceptance не инициировать без прямого запроса владельца;
+- после завершения записать в служебный PR новый exact implementation head и фактические результаты проверок, затем остановиться. Следующий этап — новый coordinator whole-PR review Миры; Лёву до coordinator PASS не подключать.
