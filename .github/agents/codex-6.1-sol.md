@@ -1,3 +1,63 @@
+# Лёва — AP-10 independent technical review PR #290
+
+Текущее назначение выполнено. **NOT PASS:** AP10-LEV-01 [P3], malformed create targetId с NUL → PostgreSQL 22021 / HTTP 500 вместо typed 400. Полный [отчёт](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6684522908). Реализацию не менял; следующий шаг — Мира принимает bounded correction finding и передаёт Лире.
+
+Лёва — independent technical review AP-10 / PR #290 завершён.
+
+**Exact head:** `9fecd925a256062e9892235f4ba02ed3147de1e3`; base/main `5cf80f38cbc06ed733a0618e706eb80c5a7b3c7b`. Head повторно проверен перед публикацией и не менялся. Реализацию не изменял. Review выполнен самостоятельно, без вызова других агентов; coordinator verdict/старые findings не использованы как доказательство.
+
+**Verdict: NOT PASS — один подтверждённый current-scope defect низкого приоритета (P3).** Нарушения authority/privacy или потери данных не подтверждены; finding касается контролируемой валидации нового AP-10 write input.
+
+### AP10-LEV-01 [P3] — NUL в create targetId проходит в PostgreSQL и даёт HTTP 500
+
+Точки: [admin-measures.tsx:57](https://github.com/iliya1947/vico-forum/blob/9fecd925a256062e9892235f4ba02ed3147de1e3/app/routes/admin-measures.tsx#L57), [user-measures.ts:89](https://github.com/iliya1947/vico-forum/blob/9fecd925a256062e9892235f4ba02ed3147de1e3/db/user-measures.ts#L89), [identity():558](https://github.com/iliya1947/vico-forum/blob/9fecd925a256062e9892235f4ba02ed3147de1e3/db/user-measures.ts#L558).
+
+Подтверждённая цепочка:
+1. Actual Better Auth session с explicit `admin.users.blocks.manage`, same-origin POST `/en/admin/measures`, valid create UUID/reason/restriction и `targetId=invalid%00target` (urlencoded).
+2. Action читает target только через `measureFormText`. Service `identity()` проверяет string/nonempty/trim, но пропускает NUL.
+3. `lockTarget` отправляет значение в parameterized PostgreSQL query. PG отклоняет text parameter: **SQLSTATE 22021**, `invalid byte sequence for encoding "UTF8": 0x00`.
+4. Это не typed input error и не availability failure; response — **500**, а не controlled **400 invalid**. Отдельный direct service→PG probe подтвердил тот же code/message.
+5. Контрольный такой же запрос с корректно сформированным несуществующим ID дал ожидаемый **404**. В обоих случаях 0 новых measure и 0 History events, response `private, no-store`.
+
+Существующая `measureTargetId()` уже запрещает NUL и >2048 UTF-8 bytes для target lookup, но mutation этот validator не использует. Ошибка принадлежит текущему AP-10: bounded/runtime input validation и controlled 400 являются частью approved HTTP/service boundary. Это не privilege escalation и не причина расширять authorization architecture.
+
+Минимальное исправление: согласовать проверку target ID на create HTTP и domain boundary с существующим bounded target-ID contract; NUL должен стать typed InvalidUserMeasureInputError до DB. Не маскировать произвольные SQL errors как 400/503. Добавить focused regression malformed create target → 400 и отсутствие domain/History changes; корректный missing target остаётся 404. Новых permissions/schema/owner rules не требуется.
+
+### Независимая проверка всего AP-10 scope
+
+- Schema/forward 0058, closed child catalog, zero initial grants, raw hierarchy/owner identity, issuer floor и elevated-grant guards.
+- Create/change/lift terminal/CAS/no-op/replay, separate overlapping measures и EXISTS admission, reasons и atomic History; appeal exact identity/3 sequential slots/one pending, accepted change/lift, expiry/moot и concurrent operations.
+- Все ordinary child actions и four administrative families: canonical/direct writes, filtered resolver/private child reads, active-session freshness. Own vs Any, public reads/login/notifications/appeal rights сохранены.
+- Publication/Complaint receipts, attachment preflight + post-R2 metadata admission, durable cleanup/Cancel и ambiguous-commit safety.
+- Own allowlist serialization без actor/reviewer identity; authorized internal History; private/no-store statuses, route revalidation без POST replay; scope of pending controls и mounted Editor retention.
+- EN/RU/HE strings/fingerprints, duration controls, scope of forms, keyboard/RTL/responsive behavior; migration/manifest/runtime ACL и isolated browser workflow boundaries.
+- Новый last-manager veto/count/recovery mechanism не добавлен. Legacy authorization counts и post-admin redesign не переоценивались как требования AP-10.
+
+Других подтверждённых current-scope defects после общего sweep нет.
+
+### Фактически выполненное собственное evidence
+
+В отдельном detached checkout exact head, pinned Node **24.21.0** / pnpm **12.3.4**, одноразовый loopback PostgreSQL **17**:
+- **78/78 native PostgreSQL tests**, 5 AP-10 database files, реальные migrations 0000–0058.
+- **288/288 application/domain/route/UI/Worker tests**, 19 files (139 + 149), включая issuer-floor read-only controls, forged mutation denial, retained Editor и private route adapters.
+- 3 metadata/runtime-privilege/migration-history test scripts — PASS; собственная production build — PASS.
+- **Actual Chromium → built Worker → Better Auth → PostgreSQL:** заново исполнен repository acceptance script, только environment adapter указывает local checkout и установленный Chromium. **18 case groups PASS**, EN/RU/HE × 320/768/1280; 0 layout failures, 0 page errors, 0 external browser requests. Domain flows включают независимые меры, own appeals, queue discovery, active-session denial, accepted lift, overlap/restoration и stale 409 без replay.
+- Дополнительные independently written HTTP/domain probes выявили AP10-LEV-01; green штатных тестов не выдан за доказательство отсутствия этого дефекта.
+- На GitHub отдельно подтверждены exact-head **CI #42213405436 SUCCESS** и **isolated browser #42213405385 SUCCESS**; это CI автора, отдельно от собственных reruns.
+
+Local evidence: `/workspace/work/ap10-review-evidence/` (application.log, adapters-routes.log, database.log, metadata.log, build.log, browser/results.json/screenshots, input-boundary-probe.py/.json, input-domain-cause.json). Browser runner адаптирован только вне implementation tree. Tracked implementation diff остаётся пустым.
+
+Documentation PR #291 не является target этого implementation review и не получает approval данным verdict. Owner visual acceptance/deployed production acceptance не заявляются. AP-11/Settings, production/Stage 6 и owner-role/last-manager cleanup не затронуты.
+
+**Следующий шаг — Мира:** принять единый bounded finding AP10-LEV-01 и передать Лире локальную correction PR #290. После нового stable exact head/applicable checks — новый coordinator cycle, затем technical review того же head. Реализацию во время review не исправлял; review завершён.
+
+
+---
+
+## Справочный утверждённый технический план
+
+Ниже сохранён planning context. Все AP10-PLAN-MIRA-01..06 закрыты, plan approval #6671217104; прежние статусы ожидания plan review относятся к planning history и не являются текущим назначением.
+
 # Лёва — AP-10: технический план мер, restrictions и block appeals
 
 Planning baseline: `main` `5cf80f38cbc06ed733a0618e706eb80c5a7b3c7b`; migrations 0000–0057, Admin Panel AP-01–09 merged.
