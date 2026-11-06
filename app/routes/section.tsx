@@ -1,6 +1,7 @@
 import { forumReadLoader } from "../forum/read-availability.server";
 import { useActionData, useLoaderData, type RouterContextProvider } from "react-router";
 import { authSessionForRequest } from "../auth/request-context";
+import { measureRestrictionsForPresentation } from "../measures/presentation.server";
 import { authorizationForRequest } from "../authorization/request-context";
 import { AuthorizationUnavailableError } from "../../db/authorization-service";
 import { ForumStorageUnavailableError } from "../../db/hyperdrive-forum";
@@ -20,6 +21,7 @@ export const loader = forumReadLoader(async function loader({ params, context }:
   if (!section) throw new Response("Not Found", { status: 404 });
   const session = authSessionForRequest(context);
   let canCreateTopic = false;
+  let canUploadAttachments = false;
   let topicReadStates: Record<string, ForumTopicReadKind> | null = null;
   if (session) {
     try {
@@ -33,14 +35,17 @@ export const loader = forumReadLoader(async function loader({ params, context }:
       // Section reading remains available when optional per-user read state is unavailable.
     }
 
+    const restricted=await measureRestrictionsForPresentation(context,session.user.id);
+    canUploadAttachments=!restricted.has("attachments.upload");
     try {
-      canCreateTopic = await authorizationForRequest(context).forUser(session.user.id).has("forum.topic.create");
+      canCreateTopic = !restricted.has("topics.create") &&
+        await authorizationForRequest(context).forUser(session.user.id).has("forum.topic.create");
     } catch (error) {
       if (!(error instanceof AuthorizationUnavailableError)) throw error;
       // Public section reads remain available when optional presentation authorization is unavailable.
     }
   }
-  return { locale: params.locale ?? "en", section, canCreateTopic, topicReadStates };
+  return { locale: params.locale ?? "en", section, canCreateTopic, canUploadAttachments, topicReadStates };
 });
 
 export default function SectionRoute() {

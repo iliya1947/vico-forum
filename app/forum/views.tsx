@@ -1059,6 +1059,7 @@ export function HelpSolutionsView({
   referenceTime,
   isAuthenticated = false,
   canAskQuestion = false,
+  canUploadAttachments = true,
   canViewSolutionModeration = false,
   canViewDuplicateDispute = false,
   actionData,
@@ -1070,6 +1071,7 @@ export function HelpSolutionsView({
   referenceTime: string;
   isAuthenticated?: boolean;
   canAskQuestion?: boolean;
+  canUploadAttachments?: boolean;
   canViewSolutionModeration?: boolean;
   canViewDuplicateDispute?: boolean;
   actionData?: HelpQuestionActionData;
@@ -1324,6 +1326,7 @@ export function HelpSolutionsView({
                 <MarkdownEditor
                   id="help-question-body"
                   editorContextKey="help:new" editorLocale={locale}
+                  allowAttachmentUploads={canUploadAttachments}
                   publicationIntent="createHelpQuestion"
                   publicationPending={isQuestionSubmitting}
                   onPublicationReadyChange={setQuestionReady}
@@ -1878,12 +1881,14 @@ export function SectionView({
   locale,
   section,
   canCreateTopic,
+  canUploadAttachments = true,
   topicReadStates,
   actionData,
 }: {
   locale: string;
   section: ForumSectionPage;
   canCreateTopic: boolean;
+  canUploadAttachments?: boolean;
   topicReadStates: Readonly<Record<string, ForumTopicReadKind>> | null;
   actionData?: ForumMutationError;
 }) {
@@ -2039,6 +2044,7 @@ export function SectionView({
               <MarkdownEditor
                 id="create-topic-body"
                 editorContextKey={`section:${section.id}:new`} editorLocale={locale}
+                allowAttachmentUploads={canUploadAttachments}
                 publicationIntent="createTopic"
                 publicationPending={isCreateTopicSubmitting}
                 onPublicationReadyChange={setTopicReady}
@@ -2116,6 +2122,7 @@ export function TopicView({
   postPresentations,
   generationUnits,
   canReply,
+  canUploadAttachments = true,
   editablePostIds = [],
   canReadPostHistory = false,
   canSubmitComplaint = false,
@@ -2141,6 +2148,7 @@ export function TopicView({
   postPresentations: readonly ContentTranslationPresentation[];
   generationUnits: readonly ContentGenerationUnitView[];
   canReply: boolean;
+  canUploadAttachments?: boolean;
   editablePostIds?: readonly string[];
   canReadPostHistory?: boolean;
   canSubmitComplaint?: boolean;
@@ -2836,6 +2844,7 @@ export function TopicView({
                           initialPublishedRevisionId={post.body.id}
                           editorContextKey={`post:${post.id}:edit`}
                           editorLocale={locale}
+                          allowAttachmentUploads={canUploadAttachments}
                           publicationIntent="editPost"
                           publicationPending={isEditSubmitting}
                           onPublicationReadyChange={setEditReady}
@@ -3046,6 +3055,7 @@ export function TopicView({
                   ref={replyEditorRef}
                   id="reply-body"
                   editorContextKey={`topic:${topic.id}:reply`} editorLocale={locale}
+                  allowAttachmentUploads={canUploadAttachments}
                   publicationIntent="reply"
                   publicationPending={isReplySubmitting}
                   publicationDisabled={!replyPublicationAllowed}
