@@ -254,6 +254,92 @@ describe("AP-10 admin.usersAccess effective roles and direct administrative writ
       expect((await client.query<{version:number}>("select version from user_measures where id=$1", [created.id])).rows[0]?.version).toBe(2);
     });
   });
+
+  it("integrates owner-issued measures, active-session admission, private appeals and independent lift", async () => {
+    await withIssuerManager(async pool => {
+      await client.query("insert into authz_user_roles(user_id,role_id) values('target','builtin-admin')");
+      try {
+        const rawDb = createAuthorizationCapability(new PostgresAuthorizationRepository(pool));
+        const effective = () => withForumAdministrativeRestrictions(
+          rawDb as AuthorizationManagementCapability, databaseUrl!, () =>
+            new Pool({ connectionString: databaseUrl, options: "-c search_path=" + schema, max: 1 }),
+        );
+        const service = new UserMeasuresService(new PostgresUserMeasuresRepository(pool, "issuer"));
+        const reader = new PostgresUserMeasureReader(pool, "issuer");
+        const privateKeys = [
+          "forum.topic.pin", "forum.complaint.review",
+          "forum.attachmentSecurity.read", "admin.users.read",
+        ] as const satisfies readonly PermissionKey[];
+        for (const key of privateKeys) expect(await effective().forUser("target").has(key)).toBe(true);
+
+        const first = await service.create({
+          id: randomUUID(), actorId: "issuer", targetUserId: "target",
+          reason: "First independent violation", expiresAt: null,
+          restrictions: [
+            "replies.create", "admin.forum", "admin.complaints",
+            "admin.security", "admin.usersAccess",
+          ],
+        });
+        const second = await service.create({
+          id: randomUUID(), actorId: "issuer", targetUserId: "target",
+          reason: "Second independent violation", expiresAt: null,
+          restrictions: ["replies.create"],
+        });
+        const restricted = effective().forUser("target");
+        for (const key of privateKeys) expect(await restricted.has(key)).toBe(false);
+        expect(await restricted.has("forum.reply.create")).toBe(true); // raw RBAC is unchanged
+        await expect(forum.createPost(newReply())).rejects.toBeInstanceOf(UserMeasureRestrictedError);
+        await expect(forum.createPost({ ...newReply(), authorId: "other" })).resolves.toBeDefined();
+
+        const beforeAppeal = await reader.ownDetail("target", first.id);
+        expect(beforeAppeal).toMatchObject({status:"active", initialReason:"First independent violation"});
+        expect(JSON.stringify(beforeAppeal)).not.toMatch(/issuer_user_id|reviewer_user_id|actor_id|issuer@/);
+        const appeal = await service.submitAppeal({
+          id:randomUUID(), measureId:first.id, actorId:"target",
+          body:"I request a reconsideration of this measure.",
+        });
+        expect((await reader.ownDetail("target",first.id)).appeals)
+          .toMatchObject([{id:appeal.id,ordinal:1,status:"pending"}]);
+        expect((await reader.ownDetail("target",second.id)).usedAppeals).toBe(0);
+
+        // A separate RBAC revocation must survive lifting the punitive measure.
+        await client.query(`insert into authz_user_permission_overrides(user_id,permission_key,effect)
+          values('target','forum.topic.pin','deny')`);
+        const reviewed = await service.resolveAppeal({
+          measureId:first.id,appealId:appeal.id,operationId:randomUUID(),
+          actorId:"issuer",expectedVersion:1,outcome:"accepted",
+          explanation:"Appeal accepted",remedy:"lift",restrictions:null,expiresAt:null,
+        });
+        expect(reviewed).toMatchObject({outcome:"accepted",remedy:"lift"});
+        const ownAfter = await reader.ownDetail("target",first.id);
+        expect(ownAfter).toMatchObject({status:"lifted",usedAppeals:1});
+        expect(ownAfter.appeals[0]).toMatchObject({id:appeal.id,status:"accepted",remedy:"lift"});
+        expect(JSON.stringify(ownAfter)).not.toMatch(/issuer_user_id|reviewer_user_id|actor_id|issuer@/);
+        const restored = effective().forUser("target");
+        expect(await restored.has("forum.topic.pin")).toBe(false);
+        for (const key of privateKeys.slice(1)) expect(await restored.has(key)).toBe(true);
+        await expect(forum.createPost(newReply())).rejects.toBeInstanceOf(UserMeasureRestrictedError);
+        expect((await reader.ownDetail("target",second.id)).status).toBe("active");
+
+        await service.lift({
+          measureId:second.id,operationId:randomUUID(),actorId:"issuer",
+          expectedVersion:1,reason:"Second measure concluded",
+        });
+        await expect(forum.createPost(newReply())).resolves.toMatchObject({topicId});
+        expect((await reader.ownList("target")).filter(x =>
+          x.id===first.id || x.id===second.id).map(x=>x.status)).toEqual(["lifted","lifted"]);
+        const history = await client.query<{action:string}>(`
+          select action from admin_history where target_type='user-measure'
+            and target_id=any($1::text[]) order by position`, [[first.id,second.id]]);
+        expect(history.rows.map(row=>row.action)).toEqual([
+          "measure.created", "measure.created", "measure.appealResolved", "measure.lifted",
+        ]);
+      } finally {
+        await client.query("delete from authz_user_permission_overrides where user_id='target' and permission_key='forum.topic.pin'");
+        await client.query("delete from authz_user_roles where user_id='target'");
+      }
+    });
+  });
 });
 
 describe("AP-10 admin.security private attachment event admission", () => {
