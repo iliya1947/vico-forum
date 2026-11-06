@@ -132,7 +132,7 @@ export function selectedMeasureExpiry(form: HTMLFormElement, now = Date.now()): 
   let date:Date;
   if(mode==="date") {
     const value=form.querySelector<HTMLInputElement>("[data-measure-expiry-date]")?.value;
-    if(!value || !/^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}(?::\\d{2})?$/.test(value))return;
+    if(!value || !/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(?::\d{2})?$/.test(value))return;
     date=new Date(value+"Z");
   } else {
     if(!Number.isFinite(hours) || !hours || hours<=0)return;
