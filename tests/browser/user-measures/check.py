@@ -146,9 +146,17 @@ try:
         # Actual Better Auth identities, fixture-only explicit grants and raw role hierarchy.
         sql("insert into authz_user_roles(user_id,role_id) values($1,'builtin-admin'),($2,'builtin-admin')",
             [manager_id, subject_id])
-        for permission in ("admin.users.blocks.manage", "admin.users.blocks.managePrivileged"):
-            sql("insert into authz_user_permission_overrides(user_id,permission_key,effect) values($1,$2,'allow')",
-                [manager_id, permission])
+        sql("insert into authz_user_permission_overrides(user_id,permission_key,effect) values($1,$2,'allow')",
+            [manager_id, "admin.users.blocks.manage"])
+        document(manager, "/en/admin/measures?target=" + quote(other_id, safe=""))
+        expect(form_for(manager, "create").locator(
+            'input[name="restriction"][value="admin.forum"]')).to_have_count(0)
+        sql("insert into authz_user_permission_overrides(user_id,permission_key,effect) values($1,$2,'allow')",
+            [manager_id, "admin.users.blocks.managePrivileged"])
+        document(manager, "/en/admin/measures?target=" + quote(other_id, safe=""))
+        expect(form_for(manager, "create").locator(
+            'input[name="restriction"][value="admin.forum"]')).to_have_count(1)
+        record("restriction-selector-follows-current-elevated-grant")
 
         topic_id = topic_fixture(other_id)
         first_id = create_measure(
