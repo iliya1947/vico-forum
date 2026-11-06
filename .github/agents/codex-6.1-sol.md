@@ -1,3 +1,50 @@
+# Лёва — AP-11 independent technical review: PASS
+
+Текущее назначение выполнено: PR #292 exact head `3f608ce9a042fd7c78401d330f5865af4f3dee5c`, independent PASS. [Отчёт](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6689555134). Реализацию не менял; следующий шаг — Мира: отдельный factual documentation closeout; merge выполняет владелец.
+
+Лёва — independent technical review AP-11 / PR #292: **PASS**.
+
+Exact head: `3f608ce9a042fd7c78401d330f5865af4f3dee5c`; base/main `7b452edfc0a759b4b65cd1cc535f207bb9e615c7`. Review выполнен самостоятельно, без запуска других агентов и без изменения implementation.
+
+Проверены все **4 changed files**, полный diff к main и применимые связи с approved AP-11 plan #6686478629, current contract/Stage и existing Editor/authorization/History behavior. Coordinator PASS не использован как доказательство.
+
+### Вывод по реализации и verification scope
+
+- **Reply denial/revalidation:** intent фиксируется в submit handler до возможного fast 403; fresh-denial guard блокирует publication уже на render отказа, отдельный state удерживает блокировку до завершения explicit loader refresh. Обновление идемпотентно относительно actionData; automatic POST replay отсутствует. Revalidation не заменяет server guard.
+- Исходный completion effect очищает publication ref после отказа, но не снимает новый refresh latch. Publish/native form submit и keyboard publication используют актуальный publicationDisabled; новый Attach временно запрещён. Editor text/operation остаются mounted, Cancel доступен. allowNewUploads меняет возможность добавления/retry, но не abort уже выполняющихся uploads: abort связан с identity/unmount/reset.
+- **Users layout:** добавление существующего profile-identity-copy локально использует flex/min-width/word wrapping; не меняет projection/permission/authorization protocol.
+- **Connected Users:** same-session read-only → canonical explicit grant → inline assignRole/override → DB/History → canonical revoke → stale POST 403/read-only recovery/no state write → canonical restore. Тестируемый permission lifecycle больше не заменён SQL. SQL используется для synthetic setup/inspection.
+- **Closure × measures:** реально исполняются open+measure, closed+measure, reopened+measure, closed+lifted и open+lifted. Снятие одного запрета не снимает другой; denial не создаёт posts/History, closure CAS/History независимы.
+- **Privacy/evidence:** protected document/direct denial helper проверяет обе cache directives private и no-store; public topic GET остаётся отдельным. Existing own measure identity allowlist/AP-10 cases сохранены. Новые Users detail/admin topic проверены EN/RU/HE × 320/768/1280.
+- Нет schema/migration/permission/grant/dependency/owner-policy changes. Локальные app edits обоснованы выявленным connected runtime behavior. Last-manager принцип не распространён; его legacy code не менялся.
+
+Подтверждённых current-scope defects в полном AP-11 scope не найдено. AP11-MIRA-01..04 по собственной проверке закрыты.
+
+### Собственное evidence на exact head
+
+- Node 24.21.0 / pnpm 12.3.4.
+- **128/128 DOM/route/UI tests**, 6 файлов, включая regression с намеренно pending revalidation после 403: form/operation retained, Publish и Attach disabled, Cancel enabled, repeat submit не выполняется; свежий snapshot завершает recovery.
+- Собственная build PASS.
+- Одноразовая loopback PostgreSQL **17**, полные migrations **0000–0058**, built Worker, настоящие Better Auth sessions, установленный Chromium.
+- Заново исполнен repository browser acceptance с environment-only adapter вне implementation tree: **34 case groups PASS**, 0 layout failures, 0 page errors, 0 external browser requests; results.json содержит точный implementationHead.
+- Browser assertions проверяют реальные UI/canonical POST, PostgreSQL state/versions/History и no-write; closures/grants/measures не mock. Existing 19 AP-10 groups сохранены.
+- Exact-head GitHub **CI #42245766359 SUCCESS** и **isolated Chromium #42245766263 SUCCESS** подтверждены отдельно; author CI не выдан за собственный прогон.
+
+Локальные logs/JSON/screenshots: `/workspace/work/ap11-review-evidence/` (application.log, build.log, worker.log, browser.log, browser/results.json и screenshots). Новых exhaustive native race/receipt tests не добавлял: db/server semantics не менялись, их existing full CI остаётся отдельным evidence. Связанный scope достаточен для approved bounded AP-11; это не полный новый UI/UX audit или production acceptance.
+
+**Следующий шаг — Мира:** принять independent PASS и перейти к отдельному factual documentation closeout AP-11 по плану; implementation merge выполняет владелец. После завершения AP-11 отдельные следующие задачи: owner/authorization redesign → Settings. Settings, redesign, Stage 6/production и owner visual acceptance этим review не выполнялись и не одобрены.
+
+Лёва назначенную проверку завершил и останавливается. Implementation frozen; изменение head требует нового coordinator-first cycle.
+
+Head/main перепроверены перед публикацией. Просмотрены собственные narrow screenshots Users detail EN и admin topic EN/HE. Локальный Worker остановлен, одноразовая БД и dummy .dev.vars удалены; tracked checkout чист.
+
+
+---
+
+## Утверждённый технический план и предыдущий контекст
+
+Статусы ожидания plan review ниже исторические; план утверждён, implementation review завершён PASS на head выше.
+
 # Лёва — AP-11 technical planning
 
 Текущее назначение выполнено: [план AP-11](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6686478629) на main `7b452edfc0a759b4b65cd1cc535f207bb9e615c7`. Требуется coordinator review Миры; implementation не начинался.
