@@ -138,7 +138,7 @@ export async function runSourceLocaleCorrection<T>(
   } catch (error) {
     if (error instanceof InvalidForumContentError) return sourceLocaleCorrectionFailure("invalid", 400);
     if (error instanceof ForumEntityNotFoundError) return sourceLocaleCorrectionFailure("notFound", 404);
-    if (error instanceof ForumAuthorizationError) return sourceLocaleCorrectionFailure("forbidden", 403);
+    if (error instanceof ForumAuthorizationError || error instanceof UserMeasureRestrictedError) return sourceLocaleCorrectionFailure("forbidden", 403);
     if (error instanceof ForumStateConflictError || error instanceof ConcurrentRevisionError) {
       return sourceLocaleCorrectionFailure("conflict", 409);
     }

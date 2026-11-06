@@ -13,6 +13,10 @@ import { HELP_SOLUTIONS_SERVICE_SECTION_ID } from "../../db/forum-identifiers";
 import { ForumEntityNotFoundError, ForumStateConflictError } from "../../db/forum-repository";
 import { InvalidProfileError } from "../../app/forum/profile";
 import { createHyperdriveForumWriter } from "../../db/hyperdrive-forum";
+import { withForumAdministrativeRestrictions } from "../../db/user-measure-admin-forum";
+import { requireAdminForumAccess } from "../../app/admin/forum.server";
+import type { AuthorizationManagementCapability } from "../../db/authorization-service";
+import type { PermissionKey } from "../../app/authorization/catalog";
 import { createHyperdriveContentGenerationAdmission } from "../../db/hyperdrive-content-generation-admission";
 import { contentGenerationAdmissionContext, contentGenerationActionContext, localeContext } from "../../app/localization/request-context";
 import { topicAction } from "../../app/forum/actions.server";
@@ -115,6 +119,135 @@ afterEach(async () => {
 afterAll(async () => {
   await client.query("drop schema if exists " + schema + " cascade");
   await client.end();
+});
+
+describe("AP-10 admin.forum permission projection and authoritative moderation", () => {
+  const rawPermissions = [
+    "forum.topic.pin", "forum.topic.close", "forum.solution.manageAny",
+    "forum.helpNeedsDetails.manage", "forum.helpDuplicate.manage",
+    "forum.sourceLocale.correctAny", "forum.post.history.read",
+    "forum.solution.manageOwn", "forum.sourceLocale.correctOwn", "forum.reply.create",
+  ] as const satisfies readonly PermissionKey[];
+  const snapshot = {
+    role: { id: "role", slug: "admin", displayName: "Admin", isSystem: true },
+    explicitAssignment: false, grants: [...rawPermissions], overrides: {},
+    effectivePermissions: [...rawPermissions],
+  };
+  const raw = {
+    forUser: () => ({
+      has: async (p: PermissionKey) => rawPermissions.includes(p as typeof rawPermissions[number]),
+      resolve: async () => snapshot,
+    }),
+    resolveUser: async () => snapshot,
+    listRoles: async () => [],
+  } as unknown as AuthorizationManagementCapability;
+  const wrapped = () => withForumAdministrativeRestrictions(
+    raw, databaseUrl!,
+    () => new Pool({ connectionString: databaseUrl, options: "-c search_path=" + schema, max: 1 }),
+  );
+
+  it("filters all seven private/read/admin action permissions, not own or participation; raw hierarchy stays intact", async () => {
+    const before = wrapped().forUser("target");
+    expect(await before.has("forum.post.history.read")).toBe(true);
+    await createMeasure("admin.forum");
+    const resolver = wrapped().forUser("target");
+    for (const key of rawPermissions.slice(0, 7)) {
+      expect(await resolver.has(key)).toBe(false);
+    }
+    for (const key of rawPermissions.slice(7)) {
+      expect(await resolver.has(key)).toBe(true);
+    }
+    const projected = await resolver.resolve();
+    expect(projected.effectivePermissions).toEqual([...rawPermissions.slice(7)]);
+    expect(projected.grants).toEqual([...rawPermissions]);
+    expect((await raw.forUser("target").resolve()).effectivePermissions).toEqual([...rawPermissions]);
+    expect((await wrapped().resolveUser("target")).effectivePermissions).toEqual([...rawPermissions]);
+
+    const ctx = new RouterContextProvider();
+    ctx.set(authSessionContext, { user: { id: "target" } } as never);
+    ctx.set(authorizationContext, wrapped());
+    await expect(requireAdminForumAccess(ctx)).rejects.toMatchObject({status:403});
+    expect(await wrapped().forUser("other").has("forum.post.history.read")).toBe(true);
+    const active = await createMeasure("admin.forum");
+    await lift(active);
+    await expect(wrapped().forUser("target").has("forum.topic.pin")).resolves.toBe(false);
+    await client.query("update user_measure_restrictions set enabled=false where measure_id=(select id from user_measures where target_user_id='target' and lifted_at is null order by created_at asc limit 1)");
+    expect(await wrapped().forUser("target").has("forum.topic.pin")).toBe(true);
+    await expect(requireAdminForumAccess(ctx)).rejects.toMatchObject({status:403});
+  });
+
+  it("denies direct pin, closure and Any solution actions atomically without touching regular writes", async () => {
+    const id = randomUUID();
+    await forum.createTopicWithInitialPost(newTopic(id, "issuer"));
+    await createMeasure("admin.forum");
+    await expect(forum.pinTopic(id, "target")).rejects.toBeInstanceOf(UserMeasureRestrictedError);
+    expect(await forum.readTopicPinState(id)).toBe(false);
+    await expect(forum.setTopicClosed({
+      topicId: id, actorId: "target", isClosed: true, expectedClosureVersion: 0,
+    })).rejects.toBeInstanceOf(UserMeasureRestrictedError);
+    expect((await forum.readTopicPage(id))?.isClosed).toBe(false);
+    await expect(forum.markTopicSolved(id, "target", "any"))
+      .rejects.toBeInstanceOf(UserMeasureRestrictedError);
+    expect((await forum.readTopicPage(id))?.isSolved).toBe(false);
+    await forum.createPost({
+      id: randomUUID(), topicId: id, authorId: "target",
+      bodyRevision: { id: randomUUID(), originalContent: "Ordinary reply", sourceLocale: "en" },
+    });
+    const newOwn = newTopic(randomUUID(), "target");
+    await forum.createTopicWithInitialPost(newOwn);
+    await forum.markTopicSolved(newOwn.id, "target", "own");
+    expect((await forum.readTopicPage(newOwn.id))?.isSolved).toBe(true);
+  });
+
+  it("restricts Any source correction and Help signal review but not own source correction or signal submission", async () => {
+    const id = randomUUID();
+    const post = newTopic(id, "target");
+    await forum.createTopicWithInitialPost(post);
+    const help = newTopic(randomUUID(), "issuer");
+    await forum.createTopicWithInitialPost({
+      ...help, sectionId: HELP_SOLUTIONS_SERVICE_SECTION_ID,
+    });
+    const signal = await forum.createHelpSignal({
+      topicId: help.id, actorId: "other", kind: "needs-details",
+      explanation: "Please explain the error.",
+    });
+    await createMeasure("admin.forum");
+    await expect(forum.reviseTopicTitle(id, post.titleRevision.id, {
+      id: randomUUID(), originalContent: "Same title", sourceLocale: "ru",
+    }, "target", "any")).rejects.toBeInstanceOf(UserMeasureRestrictedError);
+    expect((await forum.readTopic(id))?.title.id).toBe(post.titleRevision.id);
+    await forum.reviseTopicTitle(id, post.titleRevision.id, {
+      id: randomUUID(), originalContent: "Own corrected title", sourceLocale: "ru",
+    }, "target", "own");
+    await expect(forum.resolveHelpSignal(signal.id, "target", "accepted"))
+      .rejects.toBeInstanceOf(UserMeasureRestrictedError);
+    await expect(forum.resolveHelpSignal(signal.id, "target", "rejected"))
+      .rejects.toBeInstanceOf(UserMeasureRestrictedError);
+    expect((await forum.readHelpSignal(signal.id))?.status).toBe("pending");
+    const nextHelp = newTopic(randomUUID(), "issuer");
+    await forum.createTopicWithInitialPost({
+      ...nextHelp, sectionId: HELP_SOLUTIONS_SERVICE_SECTION_ID,
+    });
+    const ownSignal = await forum.createHelpSignal({
+      topicId: nextHelp.id, actorId: "target", kind: "needs-details",
+      explanation: "Separate new signal remains available.",
+    });
+    expect(ownSignal.status).toBe("pending");
+  });
+
+  it("fails closed for missing measure state, and fresh independent measures resolve after expiry/lift", async () => {
+    const missing = withForumAdministrativeRestrictions(raw, databaseUrl!, () =>
+      new Pool({ connectionString: databaseUrl, options: "-c search_path=ap10_absent_schema", max: 1 }));
+    await expect(missing.forUser("target").has("forum.topic.pin")).rejects.toThrow();
+    await createMeasure("admin.forum", "target", "2000-01-01T00:00:00Z");
+    await createMeasure("admin.forum", "other");
+    const first = await createMeasure("admin.forum");
+    const second = await createMeasure("admin.forum");
+    await lift(first);
+    await expect(wrapped().forUser("target").has("forum.topic.pin")).resolves.toBe(false);
+    await lift(second);
+    await expect(wrapped().forUser("target").has("forum.topic.pin")).resolves.toBe(true);
+  });
 });
 
 describe("AP-10 new translation generation admission", () => {

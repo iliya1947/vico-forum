@@ -1561,6 +1561,7 @@ export class DrizzleForumRepository {
         throw new ForumStateConflictError("topic closure state changed");
       if (topic.isClosed === input.isClosed)
         return { isClosed: topic.isClosed, closureVersion: topic.closureVersion, changed: false };
+      await this.measureAdmission(tx, input.actorId, "admin.forum");
       if (topic.closureVersion >= 2_147_483_647)
         throw new ForumStateConflictError("topic closure version exhausted");
 
@@ -1587,6 +1588,7 @@ export class DrizzleForumRepository {
         .where(eq(forumTopics.id, topicId))
         .for("update");
       if (!topic) throw new ForumEntityNotFoundError("topic does not exist");
+      await this.measureAdmission(tx, pinnedByUserId, "admin.forum");
       const changed = await tx.insert(forumTopicPins)
         .values({ topicId, pinnedByUserId })
         .onConflictDoNothing({ target: forumTopicPins.topicId }).returning({topicId:forumTopicPins.topicId});
@@ -1601,6 +1603,7 @@ export class DrizzleForumRepository {
         .where(eq(forumTopics.id, topicId))
         .for("update");
       if (!topic) throw new ForumEntityNotFoundError("topic does not exist");
+      await this.measureAdmission(tx, actorId, "admin.forum");
       const changed=await tx.delete(forumTopicPins).where(eq(forumTopicPins.topicId, topicId)).returning({topicId:forumTopicPins.topicId});
       if(changed.length)await appendForumHistory(tx,actorId,{action:"topic.unpinned",targetType:"topic",targetId:topicId,context:{before:true,after:false}});
     });
@@ -3139,6 +3142,7 @@ export class DrizzleForumRepository {
         if (signal.status !== "pending") {
           throw new ForumStateConflictError("Help signal is no longer pending");
         }
+        await this.measureAdmission(tx, actorId, "admin.forum");
         await tx
           .update(forumHelpSignals)
           .set({
@@ -3200,6 +3204,7 @@ export class DrizzleForumRepository {
       if (signal.status !== "pending") {
         throw new ForumStateConflictError("Help signal is no longer pending");
       }
+      await this.measureAdmission(tx, actorId, "admin.forum");
 
       const topic = topics.find((row) => row.id === signal.topicId);
       let applicable = Boolean(topic && topic.sectionId === HELP_SOLUTIONS_SERVICE_SECTION_ID);
@@ -3448,6 +3453,7 @@ export class DrizzleForumRepository {
       if (topic.bestAnswerPostId !== expectedBestAnswerPostId) {
         throw new ForumStateConflictError("best answer is no longer the expected moderation target");
       }
+      await this.measureAdmission(tx, actorId, "admin.forum");
       const [previous]=await tx.select({status:forumPosts.solutionModerationStatus,reason:forumPosts.solutionOutdatedReason,kind:forumPosts.solutionOutdatedReasonKind}).from(forumPosts).where(eq(forumPosts.id,topic.bestAnswerPostId));
       await tx.update(forumPosts)
         .set({
@@ -3501,6 +3507,7 @@ export class DrizzleForumRepository {
         .orderBy(asc(forumTopics.id))
         .for("update");
       if (topics.length !== 2) throw new ForumEntityNotFoundError("duplicate question or original question does not exist");
+      await this.measureAdmission(tx, actorId, "admin.forum");
       if (topics.some((topic) => topic.sectionId !== HELP_SOLUTIONS_SERVICE_SECTION_ID)) {
         throw new ForumStateConflictError("duplicate relationships are only available between Help & solutions questions");
       }
@@ -3585,6 +3592,7 @@ export class DrizzleForumRepository {
       if (relationship.id !== expectedRelationshipId) {
         throw new ForumStateConflictError("duplicate relationship is no longer the expected relationship");
       }
+      await this.measureAdmission(tx, actorId, "admin.forum");
 
       const resolvedAt = sql`statement_timestamp()`;
       const [resolvedAppeal] = await tx.update(forumHelpDuplicateAppeals)
@@ -3681,6 +3689,7 @@ export class DrizzleForumRepository {
       if (!appeal || appeal.id !== expectedAppealId) {
         throw new ForumStateConflictError("duplicate appeal is no longer the expected pending appeal");
       }
+      await this.measureAdmission(tx, actorId, "admin.forum");
 
       const resolvedAt = sql`statement_timestamp()`;
       await tx.update(forumHelpDuplicateAppeals)
@@ -3705,6 +3714,7 @@ export class DrizzleForumRepository {
         .where(eq(forumTopics.id, topicId)).for("update");
       if (!topic) throw new ForumEntityNotFoundError("topic does not exist");
       if (scope === "own" && topic.authorId !== actorId) throw new ForumAuthorizationError("only the topic author may solve it");
+      if (scope === "any") await this.measureAdmission(tx, actorId, "admin.forum");
       if (topic.isSolved) throw new ForumStateConflictError("topic is already solved");
       const [activeDuplicate] = await tx
         .select({ id: forumHelpDuplicateRelationships.id })
@@ -3749,6 +3759,7 @@ export class DrizzleForumRepository {
         .for("update");
       if (!topic) throw new ForumEntityNotFoundError("topic does not exist");
       if (scope === "own" && topic.authorId !== actorId) throw new ForumAuthorizationError("only the topic author may select an answer");
+      if (scope === "any") await this.measureAdmission(tx, actorId, "admin.forum");
       const [activeDuplicate] = await tx
         .select({ id: forumHelpDuplicateRelationships.id })
         .from(forumHelpDuplicateRelationships)
@@ -3861,6 +3872,7 @@ export class DrizzleForumRepository {
 
   async reviseTopicTitle(topicId: string, expectedRevisionId: string, revision: ForumRevisionContent, authorId: string, correctionScope?: "own" | "any") {
     return this.database.transaction(async (tx) => {
+      if (correctionScope === "any") await this.measureAdmission(tx, authorId, "admin.forum");
       const [previous]=correctionScope==="any"?await tx.select({sourceLocale:forumTopicTitleRevisions.sourceLocale}).from(forumTopicTitleRevisions).where(eq(forumTopicTitleRevisions.id,expectedRevisionId)):[];
       await tx.insert(forumTopicTitleRevisions).values({ ...revision, topicId, authorId });
       const updated = await tx.update(forumTopics)
@@ -3875,6 +3887,7 @@ export class DrizzleForumRepository {
 
   async revisePostBody(postId: string, expectedRevisionId: string, revision: ForumRevisionContent, authorId: string, correctionScope?: "own" | "any") {
     return this.database.transaction(async (tx) => {
+      if (correctionScope === "any") await this.measureAdmission(tx, authorId, "admin.forum");
       const [previous]=correctionScope==="any"?await tx.select({sourceLocale:forumPostRevisions.sourceLocale}).from(forumPostRevisions).where(eq(forumPostRevisions.id,expectedRevisionId)):[];
       await tx.insert(forumPostRevisions).values({ ...revision, postId, authorId });
       const updated = await tx.update(forumPosts)
