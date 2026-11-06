@@ -11,7 +11,7 @@
 - **Repeated independent technical review Лёвы: PASS**, [отчёт #6685133377](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6685133377). Подтверждённых current-scope defects не осталось; AP10-LEV-01 закрыт.
 - Exact-head CI #42218475676 и isolated browser #42218475943: SUCCESS; author CI отдельно от собственных review reruns.
 - Documentation PR #291 merged 2026-11-06; exact docs head `cabdd7d034bdd26f00fa67446b236f42c1c9a7ef`, merge commit `7b452edfc0a759b4b65cd1cc535f207bb9e615c7`; exact-head CI #42222511348 SUCCESS.
-- AP-10 implementation и documentation closeout merged; AP-10 closed. Current stage: AP-11 technical planning. Production/Stage 6/owner visual acceptance не выполнялись.
+- AP-10 implementation и documentation closeout merged; AP-10 closed. Current stage: AP-11 technical plan на coordinator review. Production/Stage 6/owner visual acceptance не выполнялись.
 
 ## Решения владельца, обязательные для AP-10
 
@@ -85,4 +85,16 @@
 - не предполагать заранее, что AP-11 обязательно требует code changes: сначала установить фактические integration gaps;
 - реализацию не начинать; результат — только технический план и установленные gaps/отсутствие gaps.
 
-После планирования Лёва фиксирует план/выводы в служебном PR и останавливается. Затем Мира проводит coordinator review плана.
+Планирование выполнено; план/выводы опубликованы в #6686478629. Лёва остановился; текущий следующий шаг — coordinator review плана Мирой.
+
+## AP-11 technical planning result — Лёва
+
+- [План #6686478629](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6686478629) опубликован на main `7b452edfc0a759b4b65cd1cc535f207bb9e615c7`; полный текст в личном файле Лёвы.
+- Confirmed functional/product/code defects по planning inspection не установлены. Не назначены новые app/domain/schema/permissions/grants changes.
+- Один установленный verification gap: repository browser harnesses не проходят linked AP-07/08 protected topic/closure и AP-09 Users inline management совместно с AP-10 restrictions/revalidation/History. Route/DOM/PostgreSQL coverage этих пакетов уже существует; её отсутствие не заявляется.
+- Предложение: bounded test/verification-only PR, расширение existing `tests/browser/user-measures/check.py` и reuse `.github/workflows/ap10-browser.yml`, без нового test framework/параллельного дублирующего full job.
+- Connected cases: Users read-only → explicit authz grant → inline canonical assignment/override → fresh revoke/read-only recovery/History; admin Forum hierarchy/closure × independent reply measure with editor retention, no-write and independent restore boundaries. Existing AP-10 cases сохраняются.
+- EN/RU/HE/reflow checks ограничены newly connected Users detail/admin topic; нет нового owner visual/deployed gate или exhaustive cross-product.
+- После implementation/checks/stable-head coordinator+independent reviews — отдельный factual docs PR: delivered AP-01–10 closeout, Settings deferred, next owner/authorization redesign → Settings. Старый last-manager code/schema/tests не трогать до отдельной задачи.
+- Планирование read-only: implementation PR AP-11/runtime/DB changes и новая acceptance не выполнялись. Полный документационный аудит не заявлен.
+- **Следующий шаг — Мира:** review необходимости/достаточности выбранных linked cases и границ; после approval назначить Лиру. Новых owner product questions нет.
