@@ -158,6 +158,7 @@ describe("AP-10 own/private and admin measure routes",()=>{
       const result=await adminCreate({params:{locale:"en"},context:manager.context,
         request:post("admin/measures",form)});
       expect(actionStatus(result)).toBe(400);
+      if (result instanceof Response) throw new Error("expected typed invalid form response");
       expect(result.data).toEqual({error:"invalid"});
       expect(result.init?.headers).toEqual({"Cache-Control":"private, no-store"});
     }
