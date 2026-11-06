@@ -9,6 +9,9 @@ import {
 } from "../../db/forum-repository";
 import { UserMeasureRestrictedError } from "../../db/user-measure-policy";
 import { DrizzleForumAttachments, ForumAttachmentDraftConflictError } from "../../db/forum-attachments";
+import { ForumEntityNotFoundError } from "../../db/forum-repository";
+import { InvalidProfileError } from "../../app/forum/profile";
+import { createHyperdriveForumWriter } from "../../db/hyperdrive-forum";
 import { ForumAttachmentCleanup } from "../../db/forum-attachment-cleanup";
 import { action as uploadAction } from "../../app/routes/attachment-upload";
 import { authSessionContext } from "../../app/auth/request-context";
@@ -98,6 +101,68 @@ afterEach(async () => {
 afterAll(async () => {
   await client.query("drop schema if exists " + schema + " cascade");
   await client.end();
+});
+
+describe("AP-10 public profile field admission", () => {
+  const fields = { bio: "Public biography", githubUrl: "https://github.com/octocat", websiteUrl: "https://example.com" };
+  it("denies new public profile writes atomically without affecting reading or other users", async () => {
+    const before = await forum.readProfile("target");
+    const measure = await createMeasure("profile.edit");
+    await expect(forum.updateProfile("target", fields)).rejects.toMatchObject({
+      restriction: "profile.edit",
+    });
+    expect(await forum.readProfile("target")).toEqual(before);
+    expect((await client.query("select user_id from forum_profiles where user_id='target'")).rowCount).toBe(0);
+    await forum.updateProfile("other", fields);
+    expect(await forum.readProfile("other")).toMatchObject({
+      bio: fields.bio, githubUrl: fields.githubUrl, websiteUrl: "https://example.com/",
+    });
+    await lift(measure);
+    await forum.updateProfile("target", fields);
+    expect(await forum.readProfile("target")).toMatchObject({
+      bio: fields.bio, githubUrl: fields.githubUrl, websiteUrl: "https://example.com/",
+    });
+  });
+
+  it("uses active-session DB state, overlap and enabled membership for public edits", async () => {
+    await createMeasure("profile.edit", "target", "2000-01-01T00:00:00Z");
+    await createMeasure("profile.edit", "other");
+    const disabled = await createMeasure("profile.edit");
+    await client.query("update user_measure_restrictions set enabled=false where measure_id=$1", [disabled]);
+    await expect(forum.updateProfile("target", { ...fields, bio: "Allowed before blocking" }))
+      .resolves.toBeUndefined();
+    const first = await createMeasure("profile.edit");
+    const second = await createMeasure("profile.edit");
+    await lift(first);
+    await expect(forum.updateProfile("target", { ...fields, bio: "Denied" }))
+      .rejects.toBeInstanceOf(UserMeasureRestrictedError);
+    expect((await forum.readProfile("target"))?.bio).toBe("Allowed before blocking");
+    await client.query("update user_measure_restrictions set enabled=false where measure_id=$1", [second]);
+    await expect(forum.updateProfile("target", { ...fields, bio: "Allowed after lift" }))
+      .resolves.toBeUndefined();
+    expect((await forum.readProfile("target"))?.bio).toBe("Allowed after lift");
+  });
+
+  it("keeps missing-user and field validation failures independent of sanctions", async () => {
+    await createMeasure("profile.edit");
+    await expect(forum.updateProfile("missing", fields)).rejects.toBeInstanceOf(ForumEntityNotFoundError);
+    await expect(forum.updateProfile("target", { ...fields, bio: "x".repeat(501) }))
+      .rejects.toBeInstanceOf(InvalidProfileError);
+  });
+
+  it("checks the real request-scoped Hyperdrive writer and leaves other server writes available", async () => {
+    const measure = await createMeasure("profile.edit");
+    const writer = createHyperdriveForumWriter(databaseUrl, () =>
+      new Client({ connectionString: databaseUrl, options: "-c search_path=" + schema }));
+    await expect(writer.updateProfile({ actorId: "target", fields: { ...fields, bio: "Denied via Worker adapter" } }))
+      .rejects.toBeInstanceOf(UserMeasureRestrictedError);
+    expect((await forum.readProfile("target"))?.bio).not.toBe("Denied via Worker adapter");
+    await writer.recordOnlinePresence("target");
+    expect((await client.query("select user_id from forum_online_presence where user_id='target'")).rowCount).toBe(1);
+    await lift(measure);
+    await writer.updateProfile({ actorId: "target", fields: { ...fields, bio: "Allowed via Worker adapter" } });
+    expect((await forum.readProfile("target"))?.bio).toBe("Allowed via Worker adapter");
+  });
 });
 
 describe("AP-10 private attachment upload admission under active measures", () => {

@@ -5,6 +5,7 @@ import { authSessionContext, type AuthSession } from "../auth/request-context";
 import { forumReaderContext, forumWriterContext } from "../forum/request-context";
 import type { ForumReader } from "../../db/forum-repository";
 import { ForumStorageUnavailableError, type ForumWriter } from "../../db/hyperdrive-forum";
+import { UserMeasureRestrictedError } from "../../db/user-measure-policy";
 import { action, loader } from "./profile";
 
 const profile = { id: "owner", name: "Owner", image: null, joinedAt: new Date("2026-09-01"), bio: "", githubUrl: null, websiteUrl: null,
@@ -58,6 +59,23 @@ describe("profile route", () => {
     expect(env.updateProfile).toHaveBeenCalledExactlyOnceWith({ actorId: "owner", fields: { bio: "About me", githubUrl: "https://github.com/octocat", websiteUrl: null } });
     expect(result).toBeInstanceOf(Response);
     expect((result as Response).headers.get("Location")).toBe("/en/users/owner?saved=1");
+  });
+  it("returns private no-store 403 for a sanctioned owner without leaking measure details", async () => {
+    const env = setup();
+    env.updateProfile.mockRejectedValueOnce(new UserMeasureRestrictedError("profile.edit"));
+    const result = await action({ request: request(), params, context: env.context });
+    expect(status(result)).toBe(403);
+    expect((result as { init: { headers: Record<string, string> } }).init.headers)
+      .toMatchObject({ "Cache-Control": "private, no-store" });
+    const payload = (result as { data: { error: string; draft: { bio: string } } }).data;
+    expect(payload).toMatchObject({ error: "forbidden", draft: { bio: "About me" } });
+    expect(JSON.stringify(payload)).not.toContain("profile.edit");
+    expect(env.updateProfile).toHaveBeenCalledOnce();
+    const publicPage = await loader({
+      request: new Request("https://forum.test/en/users/owner"),
+      params, context: setup(null).context,
+    });
+    expect(publicPage.profile.bio).toBe("");
   });
   it("preserves draft on invalid input and transient storage failures; rethrows bugs", async () => {
     const env = setup();

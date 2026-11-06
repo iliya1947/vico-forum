@@ -8,6 +8,7 @@ import { ProfileView } from "../forum/profile-view";
 import { ForumRouteError } from "../forum/ui";
 import { ForumEntityNotFoundError } from "../../db/forum-repository";
 import { ForumStorageUnavailableError } from "../../db/hyperdrive-forum";
+import { UserMeasureRestrictedError } from "../../db/user-measure-policy";
 
 type ProfileArgs = { request: Request; params: { locale?: string; userId?: string }; context: RouterContextProvider };
 export type ProfileActionError = "invalid" | "unauthenticated" | "origin" | "forbidden" | "notFound" | "unavailable";
@@ -61,6 +62,11 @@ export async function action({ request, params, context }: ProfileArgs) {
   } catch (error) {
     if (error instanceof InvalidProfileError) return failure("invalid", 400, draft);
     if (error instanceof ForumEntityNotFoundError) return failure("notFound", 404);
+    if (error instanceof UserMeasureRestrictedError) {
+      return data<ProfileActionData>({ error: "forbidden", draft }, {
+        status: 403, headers: { "Cache-Control": "private, no-store" },
+      });
+    }
     if (error instanceof ForumStorageUnavailableError) return failure("unavailable", 503, draft);
     throw error;
   }

@@ -171,7 +171,7 @@ export function createHyperdriveForumWriter(
       const client = clientFactory();
       try {
         await client.connect();
-        await new DrizzleForumRepository(drizzle(client)).updateProfile(actorId, fields);
+        await new DrizzleForumRepository(drizzle(client), writePolicy, measureAdmission).updateProfile(actorId, fields);
       } catch (error) {
         if (isForumStorageAvailabilityFailure(error)) throw new ForumStorageUnavailableError({ cause: error });
         throw error;

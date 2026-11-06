@@ -565,10 +565,14 @@ export class DrizzleForumRepository {
 
   async updateProfile(actorId: string, input: ProfileFields): Promise<void> {
     const fields = validateProfileFields(input);
-    const [owner] = await this.database.select({ id: user.id }).from(user).where(eq(user.id, actorId));
-    if (!owner) throw new ForumEntityNotFoundError("user does not exist");
-    await this.database.insert(forumProfiles).values({ userId: actorId, ...fields })
-      .onConflictDoUpdate({ target: forumProfiles.userId, set: { ...fields, updatedAt: sql`now()` } });
+    await this.database.transaction(async (tx) => {
+      const [owner] = await tx.select({ id: user.id }).from(user)
+        .where(eq(user.id, actorId)).for("update");
+      if (!owner) throw new ForumEntityNotFoundError("user does not exist");
+      await this.measureAdmission(tx, actorId, "profile.edit");
+      await tx.insert(forumProfiles).values({ userId: actorId, ...fields })
+        .onConflictDoUpdate({ target: forumProfiles.userId, set: { ...fields, updatedAt: sql`now()` } });
+    });
   }
 
   async createCategory(input: { id: string; name: string }) {
