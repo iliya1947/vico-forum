@@ -551,10 +551,11 @@ AP-10 provides temporary and permanent **administrative measures**. A measure is
 a new role, mass permission override, Better Auth ban or account deletion. Different
 violations generate **separate measures**, each with its own ID, original reason,
 restrictions, expiry/lift, version, issuer authority floor, history and appeal quota.
-Overlapping active measures remain independent: an operation is restricted while **any**
-active measure has that enabled child restriction. Ending measure A does not affect B.
-An expired or lifted measure is terminal and cannot be extended or reactivated; a
-subsequent violation requires a new measure.
+Overlapping active measures remain independent. For non-administrative child restrictions,
+an operation is restricted while **any** active measure has that enabled key. Administrative
+family restrictions additionally obey the issuer-floor/current-target authority rule below.
+Ending measure A does not alter measure B. An expired or lifted measure is terminal and cannot
+be extended or reactivated; a subsequent violation requires a new measure.
 
 Administrators select individual restrictions, optionally using UI group checkboxes
 (including their indeterminate state). Only child keys are persisted; the group is
@@ -612,10 +613,12 @@ least one valid child restriction. Manually changing its restrictions/expiry req
 a new reason but preserves the original one; explicit lift has its own required
 reason. Temporary expiry is a validated instant, permanence has no expiry, and
 effective activity is checked against authoritative PostgreSQL time with no
-background unlock action. An ordinary change does not close a pending appeal;
-expiry or lift marks it moot. New operation admission is checked before side
-effects, after an exact already-committed publication-receipt replay. Necessary
-cancel/cleanup continues to work; fresh denied writes produce no partial effect. If a new
+background unlock action. An ordinary change does not close a pending appeal; natural expiry
+makes a pending appeal effectively moot without a synthetic write, while explicit lift closes
+it as moot in the same transaction. Existing committed publication receipts and matching
+committed Complaint results remain replayable; changed/new operations are subject to fresh
+restriction admission before new side effects. Necessary cancel/cleanup continues to work;
+fresh denied writes produce no partial effect. If a new
 restriction arrives while Create Topic, Help Question or own published-post Edit is already
 mounted, that same editor operation retains its text/history and selected or in-flight
 attachments plus explicit Cancel/cleanup, while Publish/Save and keyboard submission are
