@@ -226,7 +226,7 @@ describe("AP-10 private attachment upload admission under active measures", () =
     expect(await attachments.listDraftAttachments("target", contextKey, input.draftId))
       .toEqual([first]);
     await attachments.cancelOperation("target", contextKey, input.draftId);
-    expect(await attachments.listDraftAttachments("target", contextKey, input.draftId))
+    await expect(attachments.listDraftAttachments("target", contextKey, input.draftId))
       .rejects.toBeInstanceOf(ForumAttachmentDraftConflictError);
   });
 

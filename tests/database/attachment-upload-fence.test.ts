@@ -276,7 +276,7 @@ describe('v2 upload writer fencing with actual PostgreSQL',()=>{
   const {storage,objects}=memoryStorage();let key='';
   await client.query(`create function delay_metadata() returns trigger language plpgsql as $$begin perform pg_sleep(0.2);return new;end$$;
    create trigger delay_metadata before insert on forum_attachments for each row execute function delay_metadata()`);
-  const adapter=createHyperdriveForumAttachmentStore(databaseUrl!,()=>new Client({connectionString:databaseUrl,options:`-c search_path=${schema} -c statement_timeout=50`}));
+  const adapter=createHyperdriveForumAttachmentStore(databaseUrl!,()=>new Client({connectionString:databaseUrl,options:`-c search_path=${schema} -c statement_timeout=50`}),historicalForumMeasureAdmission);
   try{
    const response=await send(storage,{overrides:{recordUploadObject:async(k:string)=>{key=k;await store.recordUploadObject(k);},createDraftAttachment:(input:CreateDraftAttachmentInput)=>adapter.createDraftAttachment(input)}});
    expect(response.status).toBe(503);expect(objects.get(key)?.kind).toBe('data');
