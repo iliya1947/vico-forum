@@ -1,13 +1,12 @@
 # Admin panel — current workflow
 
 - Служебный PR: #251; общий план: `ADMIN_PANEL_IMPLEMENTATION_PLAN.md`
-- Текущий этап: AP-10 second corrected-head coordinator whole-PR review
+- Текущий этап: AP-10 AP10-MIRA-11 correction cycle
 - Main/base: `5cf80f38cbc06ed733a0618e706eb80c5a7b3c7b`
-- Technical planner/reviewer: Лёва; implementer: Лира; coordinator/reviewer now: Мира
+- Technical planner/reviewer: Лёва; current executor: Лира; coordinator/reviewer next: Мира
 - Technical plan: coordinator PASS, AP10-PLAN-MIRA-01..06 closed
 - Implementation PR: #290 Draft/open/mergeable
-- Previous reviewed implementation head: `503a5c6dc570e2c6c0f64f59e7fe5bf390a90b13`
-- Previous reviewed implementation head: `52a1db67610357f514e8013b06f70af6bda629c6`
+- Earlier reviewed implementation heads: `503a5c6dc570e2c6c0f64f59e7fe5bf390a90b13`, `52a1db67610357f514e8013b06f70af6bda629c6`
 - Current stable implementation exact head: `ad789c7bf28d4fe7896e8ddbf7757460e046da27`
 - Current implementation diff: 111 changed files; second correction delta from previous reviewed head: 15 commits / 13 files
 - Current exact-head CI #42209643642: SUCCESS
@@ -15,7 +14,7 @@
 - Documentation PR: #291 Draft/open/mergeable, exact head `e54f1b23ea8030df6171932cb640d1706867af6c`, 6 Markdown files
 - Documentation CI #42173496053: SUCCESS
 - Implementation/docs не merged; production/Stage 6 не менялись
-- Current reviewer: Мира; Лира second correction package завершила; Лёва independent review не назначен до coordinator PASS
+- Current executor: Лира исправляет bounded AP10-MIRA-11; Лёва independent review не назначен до coordinator PASS
 - Owner visual acceptance: не запрошен и не инициируется
 - Coordinator pass 1 complete: data model/lifecycle/reasons/appeals; confirmed AP10-MIRA-01..02, handoff deferred until full review complete
 - Coordinator pass 2 complete: authority/permissions/privileged targets; confirmed AP10-MIRA-03..04
@@ -43,3 +42,6 @@
 - Second corrected-head coordinator final sweep complete on `ad789c7bf28d4fe7896e8ddbf7757460e046da27`: AP10-MIRA-01..10 remain closed; no additional current-scope findings confirmed
 - Coordinator verdict: NOT PASS solely because AP10-MIRA-11 remains open (exact measure detail exposes Change/Lift/Review controls when actor is below stored issuer floor although authoritative mutations reject them)
 - Next stage: one bounded AP10-MIRA-11 correction package to Лира; after new stable exact head and applicable CI/browser evidence, restart coordinator review. Лёва remains blocked until coordinator PASS
+
+- AP10-MIRA-11 correction package зафиксирован для Лиры в service-channel.md на reviewed head `ad789c7bf28d4fe7896e8ddbf7757460e046da27`
+- Next step: Лира исправляет только exact-measure mutation presentation/floor mismatch, выполняет applicable exact-head checks/browser evidence и фиксирует новый stable head; затем Мира начинает новый coordinator review. Лёва remains blocked until coordinator PASS
