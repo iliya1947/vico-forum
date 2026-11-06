@@ -22,7 +22,7 @@ const forum = new DrizzleForumRepository(drizzle(client), {
 const sectionId = "ap10-section";
 const topicId = "ap10-fixture";
 
-function newTopic(id = randomUUID(), authorId = "target") {
+function newTopic(id: string = randomUUID(), authorId = "target") {
   return {
     id, authorId, sectionId,
     titleRevision: { id: randomUUID(), originalContent: "Subject", sourceLocale: "en" },
