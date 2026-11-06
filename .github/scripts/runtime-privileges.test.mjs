@@ -115,6 +115,20 @@ test("web capability includes the authenticated topic read-state relation", () =
   );
 });
 
+test("AP-10 measure tables grant web only SELECT/INSERT/UPDATE and localization none", () => {
+  for (const relation of ["user_measures", "user_measure_restrictions", "user_measure_appeals"]) {
+    assert.deepEqual(runtimeCapabilityContracts.web.relations[relation], ["INSERT", "SELECT", "UPDATE"]);
+    assert.equal(runtimeCapabilityContracts["localization-read"].relations[relation], undefined);
+    assert.equal(runtimeCapabilityContracts.web.relations[relation].includes("DELETE"), false);
+  }
+  const overgrant = fixture();
+  overgrant.relationPrivileges.push({
+    schema: "public", name: "user_measures", kind: "table",
+    grantee: roles.webRole, privilege: "DELETE", is_grantable: false,
+  });
+  assert.throws(() => assertRuntimeCapabilityPrivilegeContract(overgrant, roles), /unexpected|relation|privilege/i);
+});
+
 test("requires distinct runtime roles", () => {
   assert.throws(
     () => assertRuntimeCapabilityPrivilegeContract(fixture(), {

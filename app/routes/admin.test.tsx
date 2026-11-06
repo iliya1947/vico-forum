@@ -36,7 +36,12 @@ describe("global admin Overview loader",()=>{
   it.each(ADMIN_ADMISSION_PERMISSIONS)("admits an actor with only %s and exposes no private authz snapshot",async key=>{
     const state=environment([key]);const result=await loader(args(state.context,"he"));
     expect(result.data.locale).toBe("he");expect(result.data.access.canEnter).toBe(true);
-    expect(result.data.counts).toEqual({categories:1,sections:2,topics:3,posts:4});
+    if (key === "admin.users.blocks.manage") {
+      expect(result.data.counts).toBeNull();
+      expect(state.readAdminOverviewCounts).not.toHaveBeenCalled();
+    } else {
+      expect(result.data.counts).toEqual({categories:1,sections:2,topics:3,posts:4});
+    }
     expect(result.init?.headers).toEqual({"Cache-Control":"private, no-store"});
     expect(state.authorization.forUser).toHaveBeenCalledWith("actor");
     expect(state.authorization.readManagementState).not.toHaveBeenCalled();

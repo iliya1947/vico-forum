@@ -10,6 +10,7 @@ import {
 } from "../../db/forum-repository";
 import { InvalidForumContentError } from "../../db/forum-service";
 import { ForumWriteRateLimitError } from "../../db/forum-write-policy";
+import { UserMeasureRestrictedError } from "../../db/user-measure-policy";
 import { ForumStorageUnavailableError } from "../../db/hyperdrive-forum";
 import { forumWriterForRequest } from "./request-context";
 import { authorizationForRequest } from "../authorization/request-context";
@@ -110,7 +111,7 @@ export async function runForumMutation<T>(
   } catch (error) {
     if (error instanceof InvalidForumContentError) return mutationFailure("invalid", 400);
     if (error instanceof ForumEntityNotFoundError) return mutationFailure("notFound", 404);
-    if (error instanceof ForumAuthorizationError) return mutationFailure("forbidden", 403);
+    if (error instanceof ForumAuthorizationError || error instanceof UserMeasureRestrictedError) return mutationFailure("forbidden", 403);
     if (error instanceof ForumTopicClosedError) return mutationFailure("topicClosed", 409);
     if (error instanceof ForumStateConflictError || error instanceof ConcurrentRevisionError) return mutationFailure("conflict", 409);
     if (error instanceof ForumWriteRateLimitError) {
@@ -137,7 +138,7 @@ export async function runSourceLocaleCorrection<T>(
   } catch (error) {
     if (error instanceof InvalidForumContentError) return sourceLocaleCorrectionFailure("invalid", 400);
     if (error instanceof ForumEntityNotFoundError) return sourceLocaleCorrectionFailure("notFound", 404);
-    if (error instanceof ForumAuthorizationError) return sourceLocaleCorrectionFailure("forbidden", 403);
+    if (error instanceof ForumAuthorizationError || error instanceof UserMeasureRestrictedError) return sourceLocaleCorrectionFailure("forbidden", 403);
     if (error instanceof ForumStateConflictError || error instanceof ConcurrentRevisionError) {
       return sourceLocaleCorrectionFailure("conflict", 409);
     }

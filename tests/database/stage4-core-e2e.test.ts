@@ -11,6 +11,7 @@ import { sectionAction, topicAction } from "../../app/forum/actions.server";
 import { INITIAL_ROLE_GRANTS } from "../../app/authorization/catalog";
 import { createAuthorizationCapability, AuthorizationService } from "../../db/authorization-service";
 import { PostgresAuthorizationRepository } from "../../db/authorization-repository";
+import { historicalForumMeasureAdmission } from "./historical-forum-measure-admission";
 import { DrizzleForumRepository } from "../../db/forum-repository";
 import { createHyperdriveForumWriter } from "../../db/hyperdrive-forum";
 import { FORUM_WRITE_COOLDOWN_MS } from "../../db/forum-write-policy";
@@ -143,7 +144,7 @@ async function userContext(userId: string, name: string) {
   const pool = scopedPool();
   const context = new RouterContextProvider();
   context.set(authSessionContext, session(userId, name));
-  context.set(forumWriterContext, createHyperdriveForumWriter(databaseUrl, scopedClient, writePolicy));
+  context.set(forumWriterContext, createHyperdriveForumWriter(databaseUrl, scopedClient, writePolicy, historicalForumMeasureAdmission));
   context.set(authorizationContext, createAuthorizationCapability(new PostgresAuthorizationRepository(pool)) as never);
   return { context, close: () => pool.end() };
 }
@@ -343,7 +344,11 @@ describe("Stage 4 connected forum authorization flow", () => {
     await expect(forum.search("_")).resolves.toEqual([]);
 
     const managementPool = scopedPool();
-    const authorization = new AuthorizationService(new PostgresAuthorizationRepository(managementPool));
+    // Historical Stage 4 migration subset predates AP-10 measure tables.
+    // Only this legacy test writer opts out; production remains fail-closed.
+    const authorization = new AuthorizationService(new PostgresAuthorizationRepository(
+      managementPool, undefined, async () => {},
+    ));
     try {
       await authorization.assignUserRole("e2e-manager", "e2e-replier", "builtin-moderator");
       const moderatorTopic = await createTopic("e2e-author", "Author", "Moderator access");
@@ -394,7 +399,7 @@ describe("Stage 4 connected forum authorization flow", () => {
   it("searches one global result set ordered by source priority, activity, and topic ID", async () => {
     await insertUser("search-rank-author", "Search Rank Author");
 
-    const forum = new DrizzleForumRepository(drizzle(client), writePolicy);
+    const forum = new DrizzleForumRepository(drizzle(client), writePolicy, historicalForumMeasureAdmission);
     await forum.createCategory({ id: "search-rank-category", name: "Search Rank Category" });
     await forum.createSection({
       id: "search-rank-section",
@@ -489,7 +494,7 @@ describe("DISCOVERY-01 public Help location projection", () => {
   it("keeps Help questions discoverable without leaking their service-section identity", async () => {
     await insertUser("discovery-author", "Discovery Author");
     await insertUser("discovery-reader", "Discovery Reader");
-    const forum = new DrizzleForumRepository(drizzle(client), writePolicy);
+    const forum = new DrizzleForumRepository(drizzle(client), writePolicy, historicalForumMeasureAdmission);
     await forum.createCategory({ id: "discovery-category", name: "Public discovery" });
     await forum.createSection({ id: "discovery-section", categoryId: "discovery-category", name: "Public section" });
 
@@ -549,7 +554,7 @@ describe("DISCOVERY-01 public Help location projection", () => {
 describe("I18N-UGC-META-01 current title revision locale", () => {
   it("returns source locale of the authoritative title revision, not a matching post", async () => {
     await insertUser("meta-author", "Meta Author");
-    const forum = new DrizzleForumRepository(drizzle(client), writePolicy);
+    const forum = new DrizzleForumRepository(drizzle(client), writePolicy, historicalForumMeasureAdmission);
     await forum.createCategory({ id: "meta-category", name: "Meta Category" });
     await forum.createSection({ id: "meta-section", categoryId: "meta-category", name: "Meta Section" });
 

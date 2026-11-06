@@ -13,6 +13,7 @@ import { action as uploadAction } from "../../app/routes/attachment-upload";
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 import { DrizzleForumAttachments, InvalidForumAttachmentError, type CreateDraftAttachmentInput } from "../../db/forum-attachments";
 import { ForumAttachmentCleanup } from "../../db/forum-attachment-cleanup";
+import { historicalForumMeasureAdmission } from "./historical-forum-measure-admission";
 
 const databaseUrl = process.env.DATABASE_URL;
 if (!databaseUrl) throw new Error("DATABASE_URL is required");
@@ -23,7 +24,7 @@ if (!["localhost", "127.0.0.1"].includes(url.hostname) || !url.pathname.endsWith
 
 const schema = "attachment_fence_test";
 const client = new Client({ connectionString: databaseUrl, options: `-c search_path=${schema}` });
-const store = new DrizzleForumAttachments(drizzle(client));
+const store = new DrizzleForumAttachments(drizzle(client), historicalForumMeasureAdmission);
 const migrations = [
   "0000_tan_johnny_storm", "0001_seed-locales", "0002_ui_translation_storage",
   "0003_gorgeous_donald_blake", "0004_forum_domain_foundation",
@@ -160,6 +161,8 @@ function uploadContext(storage:PrivateAttachmentBucket, overrides:Record<string,
   context.set(authorizationContext,{forUser:()=>({has:async()=>true})}as never);
   context.set(privateAttachmentBucketContext,storage);
   context.set(forumAttachmentStoreContext,{
+    admitUpload:(ownerId:string,contextKey:string,draftId:string,attachmentId:string)=>
+      store.admitUpload(ownerId,contextKey,draftId,attachmentId),
     recordUploadObject:(key:string)=>store.recordUploadObject(key),
     activateUploadObject:(key:string,etag:string)=>store.activateUploadObject(key,etag),
     createDraftAttachment:(input:CreateDraftAttachmentInput)=>store.createDraftAttachment(input),...overrides,
@@ -273,7 +276,7 @@ describe('v2 upload writer fencing with actual PostgreSQL',()=>{
   const {storage,objects}=memoryStorage();let key='';
   await client.query(`create function delay_metadata() returns trigger language plpgsql as $$begin perform pg_sleep(0.2);return new;end$$;
    create trigger delay_metadata before insert on forum_attachments for each row execute function delay_metadata()`);
-  const adapter=createHyperdriveForumAttachmentStore(databaseUrl!,()=>new Client({connectionString:databaseUrl,options:`-c search_path=${schema} -c statement_timeout=50`}));
+  const adapter=createHyperdriveForumAttachmentStore(databaseUrl!,()=>new Client({connectionString:databaseUrl,options:`-c search_path=${schema} -c statement_timeout=50`}),historicalForumMeasureAdmission);
   try{
    const response=await send(storage,{overrides:{recordUploadObject:async(k:string)=>{key=k;await store.recordUploadObject(k);},createDraftAttachment:(input:CreateDraftAttachmentInput)=>adapter.createDraftAttachment(input)}});
    expect(response.status).toBe(503);expect(objects.get(key)?.kind).toBe('data');

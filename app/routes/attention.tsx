@@ -85,7 +85,7 @@ export async function loader({ request, params, context, url }: {
     throw redirect(`/${encodeURIComponent(params.locale??"en")}/attention/complaints/settings`);
   // Each mode checks its own capability before reading a protected queue.
   if (mode === "security" ? !canReadSecurityAttachments : mode === "complaints" ? (group==="group2"?!canReviewAppeals:!canReviewComplaints) : !canViewHelpAttention) {
-    throw new Response("Forbidden", { status: 403 });
+    throw new Response("Forbidden", { status: 403, headers: { "Cache-Control": "private, no-store" } });
   }
   const pageParam = query.get("page") ?? "0";
   const pageNumber = Number(pageParam);
@@ -217,6 +217,20 @@ export async function action({ request, context }: {
   if (!topicId || !caseId) return mutationFailure("invalid", 400);
 
   if (intent === "acceptHelpSignal" || intent === "rejectHelpSignal") {
+    // Do not read an arbitrary private signal ID for actors without any
+    // current Help-review entitlement (including sanctioned admins).
+    try {
+      const resolver = authorizationForRequest(context).forUser(authSessionForRequest(context)!.user.id);
+      const allowed = await Promise.all([
+        resolver.has("forum.helpNeedsDetails.manage"),
+        resolver.has("forum.helpDuplicate.manage"),
+        resolver.has("forum.solution.manageAny"),
+      ]);
+      if (!allowed.some(Boolean)) return mutationFailure("forbidden", 403);
+    } catch (error) {
+      if (error instanceof AuthorizationUnavailableError) return mutationFailure("unavailable", 503);
+      throw error;
+    }
     let signal;
     try {
       signal = await forumReaderForRequest(context).readHelpSignal(caseId);

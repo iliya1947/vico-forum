@@ -10,6 +10,7 @@ import { PostgresAuthorizationRepository } from "../../db/authorization-reposito
 import { AuthorizationService, AuthorizationUnavailableError, createAuthorizationCapability } from "../../db/authorization-service";
 import { createHyperdriveAuthorization } from "../../db/hyperdrive-authorization";
 import type { PermissionKey } from "../../app/authorization/catalog";
+import { historicalForumMeasureAdmission } from "./historical-forum-measure-admission";
 import { DrizzleForumRepository } from "../../db/forum-repository";
 import { ForumAttachmentCleanup } from "../../db/forum-attachment-cleanup";
 import { RouterContextProvider } from "react-router";
@@ -95,7 +96,7 @@ describe("Package 6 populated 0054 to 0055 PostgreSQL upgrade",()=>{
       await upgrade.query("alter table forum_topics add column is_closed boolean not null default false, add column closure_version integer not null default 0");
       for(const id of ["upgrade-author","upgrade-reporter-one","upgrade-reporter-two","upgrade-reviewer"])
         await upgrade.query('insert into "user"(id,name,email) values($1,$1,$2)',[id,`${id}@test.invalid`]);
-      const forumUpgrade=new DrizzleForumRepository(drizzle(upgrade),{cooldownMs:0,now:()=>new Date()});
+      const forumUpgrade=new DrizzleForumRepository(drizzle(upgrade),{cooldownMs:0,now:()=>new Date()},historicalForumMeasureAdmission);
       await forumUpgrade.createCategory({id:"upgrade-category",name:"Upgrade"});
       await forumUpgrade.createSection({id:"upgrade-section",categoryId:"upgrade-category",name:"Upgrade"});
       await forumUpgrade.createTopicWithInitialPost({

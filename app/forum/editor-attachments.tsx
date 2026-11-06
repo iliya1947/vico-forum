@@ -28,6 +28,7 @@ interface Props {
     ownerId: string | null;
     contextKey?: string;
     disabled: boolean;
+    allowNewUploads?: boolean;
     publishedEdit?: boolean;
     publishedAttachments?: readonly {
         id: string;
@@ -131,7 +132,7 @@ function likelySecretFile(name: string): boolean {
     const lower = name.trim().toLowerCase();
     return lower === ".env" || lower.startsWith(".env.");
 }
-export function useEditorAttachments({ ownerId, contextKey, disabled, publishedEdit = false, publishedAttachments = [], insertImage, removeImage, replaceImage }: Props) {
+export function useEditorAttachments({ ownerId, contextKey, disabled, allowNewUploads = true, publishedEdit = false, publishedAttachments = [], insertImage, removeImage, replaceImage }: Props) {
     const { t, i18n } = useTranslation("common");
     const [draftId, setOperationId] = useState("");
     const [entries, setEntries] = useState<UploadEntry[]>([]);
@@ -172,7 +173,7 @@ export function useEditorAttachments({ ownerId, contextKey, disabled, publishedE
     }, [identity]);
     const attachmentUrl = (entry: UploadEntry) => entry.publishedUrl
         ?? `/api/attachments/file/${encoded(entry.id)}?operation=${encoded(entry.draftId)}&context=${encoded(contextKey ?? "")}`;
-    const canAdd = !!ownerId && !!contextKey && initialized && !disabled;
+    const canAdd = !!ownerId && !!contextKey && initialized && !disabled && allowNewUploads;
     const hasUnsettled = entries.some((entry) => entry.status !== "stored");
     const blocking = !!contextKey && (!initialized || hasUnsettled);
     const selectedIds = entries.filter((entry) => entry.status === "stored" && entry.publishedUrl === null).map((entry) => entry.id).sort();
@@ -341,7 +342,7 @@ export function useEditorAttachments({ ownerId, contextKey, disabled, publishedE
               </div>
               {entry.status === "stored" && entry.attachment && contextKey ? (<ForumAttachmentDisplay attachment={entry.attachment} url={attachmentUrl(entry)} deferImage compact/>) : null}
               <div className="markdown-editor-attachment-actions">
-                {entry.status === "error" ? (<button type="button" disabled={disabled} onClick={() => retry(entry)}>
+                {entry.status === "error" ? (<button type="button" disabled={disabled || !allowNewUploads} onClick={() => retry(entry)}>
                     {t("editorAttachmentRetry")}
                   </button>) : null}
                 {entry.status !== "removing" ? (<button type="button" disabled={disabled} onClick={() => void remove(entry)}>

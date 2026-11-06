@@ -12,6 +12,7 @@ import type { AuthorizationFailure } from "../authorization/admin-view";
 import { AuthorizationUserControls } from "../authorization/user-controls";
 import { AdminShell } from "./shell";
 import { adminUserPath, adminUsersPath, adminUsersBrowsePath } from "./users-paths";
+import { adminMeasuresPath } from "../measures/paths";
 
 export interface AdminUserDetailData extends AdminUserSummary {
   bio: string;
@@ -66,11 +67,13 @@ export function AdminUsersIndex({ locale, access, query, page }: {
   </AdminShell>;
 }
 
-export function AdminUserDetail({ locale, access, user, management, managerActorId, permissions }: {
+export function AdminUserDetail({ locale, access, user, management, managerActorId,
+  permissions, canManageElevated = false }: {
   locale: string; access: AdminAccess; user: AdminUserDetailData;
   management?: AuthorizationUserManagementState;
   managerActorId?: string;
   permissions?: readonly PermissionKey[];
+  canManageElevated?: boolean;
 }) {
   const { t } = useTranslation("common");
   const github = safeHttpUrl(user.githubUrl), website = safeHttpUrl(user.websiteUrl);
@@ -105,18 +108,23 @@ export function AdminUserDetail({ locale, access, user, management, managerActor
         </nav> : null}
       </section>
       <Link to={forumProfilePath(locale, user.id)}>{t("adminUsersPublicProfile")}</Link>
+      {access.canManageMeasures ? <p><Link to={adminMeasuresPath(locale)+"?target="+encodeURIComponent(user.id)}>
+        {t("measuresAdmin")}</Link></p> : null}
       {access.canManageAuthorization && management && managerActorId && permissions
         ? <InlineUserAuthorization key={managerActorId + ":" + user.id}
           locale={locale} userId={user.id} actorId={managerActorId}
-          management={management} permissions={permissions}/>
+          management={management} permissions={permissions}
+          canManageElevated={canManageElevated}/>
         : null}
     </section>
   </AdminShell>;
 }
 
-function InlineUserAuthorization({ locale, actorId, userId, management, permissions }: {
+function InlineUserAuthorization({ locale, actorId, userId, management,
+  permissions, canManageElevated }: {
   locale: string; actorId: string; userId: string;
   management: AuthorizationUserManagementState; permissions: readonly PermissionKey[];
+  canManageElevated: boolean;
 }) {
   const { t } = useTranslation("common");
   const fetcherKey = `ap09-user-authz:${actorId}:${userId}`;
@@ -136,6 +144,7 @@ function InlineUserAuthorization({ locale, actorId, userId, management, permissi
       : null}
     <AuthorizationUserControls userId={userId} authorization={management.authorization}
       roles={management.roles} permissions={permissions}
+      canManageElevated={canManageElevated} elevatedRoleIds={management.elevatedRoleIds}
       inline={{ action: `/${encodeURIComponent(locale)}/admin/authorization`, fetcherKey }}
       pending={pending}/>
   </section>;

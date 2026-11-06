@@ -15,13 +15,15 @@ export function adminDestinations(locale: string, access: AdminAccess) {
     ...(access.canReadForum ? [{ id: "forum", label: "adminForum" as const, href: adminForumPath(locale), pending: false }] : []),
     ...(access.canReadUsers ? [{ id: "users", label: "adminUsers" as const, href: adminUsersPath(locale), pending: false }]
       : access.canManageAuthorization ? [{ id: "users", label: "adminUsers" as const, href: `${base}/authorization#authorization-users-heading`, pending: false }] : []),
+    ...(access.canManageMeasures ? [{ id: "measures", label: "measuresAdmin" as const,
+      href: base + "/measures", pending: false }] : []),
     ...(access.canManageAuthorization ? [{ id: "roles", label: "adminRoles" as const, href: `${base}/authorization`, pending: false }] : []),
     ...(access.canReadHistory ? [{ id: "history", label: "adminHistory" as const, href: `${base}/history`, pending: false }] : []),
     { id: "settings", label: "adminSettings" as const, href: underDevelopmentPath(locale,"admin-settings"), pending: true },
   ];
 }
 
-export function AdminShell({locale,access,children,current="overview"}: {locale: string; access: AdminAccess; children: ReactNode; current?: "overview" | "history" | "roles" | "forum" | "users"}) {
+export function AdminShell({locale,access,children,current="overview"}: {locale: string; access: AdminAccess; children: ReactNode; current?: "overview" | "history" | "roles" | "forum" | "users" | "measures"}) {
   const {t} = useTranslation("common");
   return <ForumShell locale={locale} variant="admin">
     <div className="admin-panel">

@@ -1,5 +1,7 @@
 import type { Pool, PoolClient, QueryResultRow } from "pg";
 import { AUTHORIZATION_MANAGE_PERMISSION, type PermissionKey } from "../app/authorization/catalog";
+import { BLOCK_MANAGE_PRIVILEGED_PERMISSION } from "./user-measure-authority";
+import { assertNoActiveUserMeasureRestrictionPg } from "./user-measure-policy";
 
 import { appendAuthorizationHistory, historyLabel, type AuthorizationHistoryChange, type HistoryRole } from "./admin-history";
 
@@ -16,7 +18,10 @@ export interface AuthorizationUserSummary { id: string; name: string; email: str
 export interface AuthorizationRoleDetails extends AuthorizationRole { grants: PermissionKey[] }
 export interface AuthorizationUserDetails extends AuthorizationUserSummary { authorization: UserAuthorization }
 export interface AuthorizationManagementState { roles: AuthorizationRoleDetails[]; users: AuthorizationUserDetails[] }
-export interface AuthorizationUserManagementState { userId: string; roles: AuthorizationRole[]; authorization: UserAuthorization }
+export interface AuthorizationUserManagementState {
+  userId: string; roles: AuthorizationRole[]; authorization: UserAuthorization;
+  elevatedRoleIds?: string[];
+}
 
 export class AuthorizationForbiddenError extends Error {}
 export class AuthorizationLockoutError extends Error {}
@@ -27,7 +32,19 @@ export class AuthorizationRoleSlugConflictError extends Error {}
 type Queryable = Pick<Pool | PoolClient, "query">;
 
 export class PostgresAuthorizationRepository {
-  constructor(private readonly pool: Pool) {}
+  constructor(
+    private readonly pool: Pool,
+    private readonly ownerUserId?: string,
+    private readonly measureAdmission: typeof assertNoActiveUserMeasureRestrictionPg =
+      assertNoActiveUserMeasureRestrictionPg,
+  ) {}
+
+  /** Guard the elevated key inside the existing serialized authorization transaction. */
+  private requireBoundOwner(actorId: string): void {
+    if (!this.ownerUserId || this.ownerUserId.trim() !== this.ownerUserId || actorId !== this.ownerUserId) {
+      throw new AuthorizationForbiddenError("only the bound owner may change elevated block-management authority");
+    }
+  }
 
   async listRoles(): Promise<AuthorizationRole[]> {
     return this.readRoles(this.pool);
@@ -93,6 +110,10 @@ export class PostgresAuthorizationRepository {
     return this.withReadSnapshot(async (database) => ({
       userId,
       roles: await this.readRoles(database),
+      elevatedRoleIds: (await database.query<{ role_id: string }>(
+        "select role_id from authz_role_permissions where permission_key=$1",
+        [BLOCK_MANAGE_PRIVILEGED_PERMISSION],
+      )).rows.map(row=>row.role_id),
       authorization: await this.resolveUserFrom(userId, database),
     }));
   }
@@ -191,6 +212,9 @@ export class PostgresAuthorizationRepository {
       const added = [...new Set(permissions)].filter(key => !before.includes(key)).sort();
       const removed = before.filter(key => !permissions.includes(key));
       if (!added.length && !removed.length) return;
+      if (added.includes(BLOCK_MANAGE_PRIVILEGED_PERMISSION) || removed.includes(BLOCK_MANAGE_PRIVILEGED_PERMISSION)) {
+        this.requireBoundOwner(actorId);
+      }
       await client.query("delete from authz_role_permissions where role_id = $1", [roleId]);
       for (const permission of permissions) {
         await client.query("insert into authz_role_permissions (role_id, permission_key) values ($1, $2)", [roleId, permission]);
@@ -220,6 +244,19 @@ export class PostgresAuthorizationRepository {
       const user = await this.historyUser(client, userId);
       const previous = await client.query<{role_id: string}>("select role_id from authz_user_roles where user_id = $1", [userId]);
       if (previous.rows[0]?.role_id === roleId) return;
+      // Neither granting nor stripping elevated authority through a role switch may bypass the owner gate.
+      // The previous role includes the implicit built-in user role when no assignment exists.
+      const elevatedRoleSwitch = await client.query<{ protected_change: boolean }>(`
+        select exists (
+          select 1 from authz_role_permissions
+          where permission_key = $3
+            and role_id in (
+              $1, coalesce($2, (select id from authz_roles where slug = 'user'))
+            )
+        ) protected_change`,
+        [roleId, previous.rows[0]?.role_id ?? null, BLOCK_MANAGE_PRIVILEGED_PERMISSION],
+      );
+      if (elevatedRoleSwitch.rows[0]?.protected_change) this.requireBoundOwner(actorId);
       const old = previous.rows[0] ? await this.historyRole(client, previous.rows[0].role_id) : null;
       await client.query(`insert into authz_user_roles (user_id, role_id) values ($1, $2)
         on conflict (user_id) do update set role_id = excluded.role_id, assigned_at = now()`, [userId, roleId]);
@@ -234,6 +271,7 @@ export class PostgresAuthorizationRepository {
       const previous = await client.query<{effect: OverrideEffect}>("select effect from authz_user_permission_overrides where user_id = $1 and permission_key = $2", [userId, permission]);
       const before = previous.rows[0]?.effect ?? null;
       if (before === effect) return;
+      if (permission === BLOCK_MANAGE_PRIVILEGED_PERMISSION) this.requireBoundOwner(actorId);
       if (effect === null) {
         await client.query("delete from authz_user_permission_overrides where user_id = $1 and permission_key = $2", [userId, permission]);
       } else {
@@ -313,6 +351,9 @@ export class PostgresAuthorizationRepository {
       if (!(await effectivePermission(client, actorId, AUTHORIZATION_MANAGE_PERMISSION))) {
         throw new AuthorizationForbiddenError("actor cannot manage authorization");
       }
+      // Keep the raw manager count and lockout invariants independent of
+      // temporary administrative suppression. Admission shares this transaction.
+      await this.measureAdmission(client, actorId, "admin.usersAccess", this.ownerUserId);
       const change = await operation(client);
       const after = await countManagers(client);
       if ((state.rows[0].managers_ever_existed || before > 0) && after === 0) {

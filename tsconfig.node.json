@@ -13,6 +13,8 @@
     "app/auth/session-context.ts",
     "app/authorization/catalog.ts",
     "app/admin/access.ts",
+    "app/admin/user-measure-restrictions.ts",
+    "app/measures/request-context.ts",
     "app/admin/access.server.ts",
     "app/admin/history.server.ts",
     "app/admin/forum.server.ts",

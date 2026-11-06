@@ -33,7 +33,7 @@ export class ComplaintsService {
       !COMPLAINT_REASONS.every(reason => Object.hasOwn(input.weights,reason) && [1,2,3].includes(input.weights[reason])))
       throw new ComplaintInputError("invalid priority settings");
     const weights = Object.fromEntries(COMPLAINT_REASONS.map(reason => [reason,input.weights[reason]])) as ComplaintPriorityWeights;
-    return this.repository.savePrioritySettings({expectedVersion:input.expectedVersion,weights});
+    return this.repository.savePrioritySettings(actor, {expectedVersion:input.expectedVersion,weights});
   }
   async readQueue(actor: string, page: number) {
     await this.require(actor,"forum.complaint.review");

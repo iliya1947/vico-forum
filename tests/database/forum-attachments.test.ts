@@ -13,6 +13,7 @@ import { action as uploadAction } from "../../app/routes/attachment-upload";
 import type { RecordAttachmentSecurityEventInput } from "../../db/forum-attachments";
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 import { DrizzleForumAttachments, ForumAttachmentDraftConflictError, InvalidForumAttachmentError, type CreateDraftAttachmentInput } from "../../db/forum-attachments";
+import { historicalForumMeasureAdmission } from "./historical-forum-measure-admission";
 import { DrizzleForumRepository, ForumStateConflictError } from "../../db/forum-repository";
 import { HELP_SOLUTIONS_CATEGORY_ID, HELP_SOLUTIONS_SERVICE_SECTION_ID } from "../../db/forum-identifiers";
 import { lockAttachmentDraftScope } from "../../db/attachment-draft-generation";
@@ -32,7 +33,7 @@ if (!["localhost", "127.0.0.1"].includes(url.hostname) || !url.pathname.endsWith
 
 const schema = "forum_attachments_test";
 const client = new Client({ connectionString: databaseUrl, options: `-c search_path=${schema}` });
-const store = new DrizzleForumAttachments(drizzle(client));
+const store = new DrizzleForumAttachments(drizzle(client), historicalForumMeasureAdmission);
 const migrations = [
   "0000_tan_johnny_storm", "0001_seed-locales", "0002_ui_translation_storage",
   "0003_gorgeous_donald_blake", "0004_forum_domain_foundation",
@@ -119,12 +120,12 @@ async function queuedOperations<T, U>(
   try {
     await blocker.query("begin");
     await lockAttachmentDraftScope(drizzle(blocker), ownerId, context);
-    firstResult = first(new DrizzleForumAttachments(drizzle(firstConnection)),
-      new DrizzleForumRepository(drizzle(firstConnection), { cooldownMs: 0, now: () => new Date() }));
+    firstResult = first(new DrizzleForumAttachments(drizzle(firstConnection), historicalForumMeasureAdmission),
+      new DrizzleForumRepository(drizzle(firstConnection), { cooldownMs: 0, now: () => new Date() }, historicalForumMeasureAdmission));
     void firstResult.catch(() => {});
     await waiting(firstPid);
-    secondResult = second(new DrizzleForumAttachments(drizzle(secondConnection)),
-      new DrizzleForumRepository(drizzle(secondConnection), { cooldownMs: 0, now: () => new Date() }));
+    secondResult = second(new DrizzleForumAttachments(drizzle(secondConnection), historicalForumMeasureAdmission),
+      new DrizzleForumRepository(drizzle(secondConnection), { cooldownMs: 0, now: () => new Date() }, historicalForumMeasureAdmission));
     void secondResult.catch(() => {});
     await waiting(secondPid);
     await blocker.query("commit");
@@ -265,7 +266,7 @@ describe("forum attachment lifecycle foundation", () => {
     await Promise.all(connections.map((connection) => connection.connect()));
     try {
       await Promise.all(connections.map((connection) =>
-        new DrizzleForumAttachments(drizzle(connection)).recordSecurityEvent(event)));
+        new DrizzleForumAttachments(drizzle(connection), historicalForumMeasureAdmission).recordSecurityEvent(event)));
     } finally {
       await Promise.all(connections.map((connection) => connection.end()));
     }
@@ -356,7 +357,7 @@ async function withSecurityUploadRoute(run: (fixture: {
   // A pool lets the actual route/repository execute simultaneous INSERTs on
   // independent PostgreSQL connections, rather than a single client's queue.
   const pool = new Pool({ connectionString: databaseUrl, options: `-c search_path=${schema}`, max: 4 });
-  const repository = new DrizzleForumAttachments(drizzle(pool));
+  const repository = new DrizzleForumAttachments(drizzle(pool), historicalForumMeasureAdmission);
   const events: RecordAttachmentSecurityEventInput[] = [];
   const clientId = crypto.randomUUID();
   let loseAck = false;
@@ -375,6 +376,7 @@ async function withSecurityUploadRoute(run: (fixture: {
         context.set(authorizationContext, { forUser: () => ({ has: async () => true }) } as never);
         context.set(privateAttachmentBucketContext, bucket);
         context.set(forumAttachmentStoreContext, {
+          admitUpload: async () => null,
           async recordSecurityEvent(event: RecordAttachmentSecurityEventInput) {
             events.push(event);
             await repository.recordSecurityEvent(event);
@@ -546,7 +548,7 @@ describe("atomic publication of selected draft refs", () => {
     },
   );
 
-  const repository = new DrizzleForumRepository(drizzle(client), { cooldownMs: 0, now: () => new Date() });
+  const repository = new DrizzleForumRepository(drizzle(client), { cooldownMs: 0, now: () => new Date() }, historicalForumMeasureAdmission);
 
   async function topicFixture() {
     const topicId = crypto.randomUUID();
@@ -634,7 +636,7 @@ describe("live action → writer/service → PostgreSQL attachment publication",
   const realWriter = createHyperdriveForumWriter(
     databaseUrl,
     () => new Client({ connectionString: databaseUrl, options: `-c search_path=${schema}` }),
-    { cooldownMs: 0, now: () => new Date() },
+    { cooldownMs: 0, now: () => new Date() }, historicalForumMeasureAdmission,
   );
 
   function realContext() {
@@ -674,7 +676,7 @@ describe("live action → writer/service → PostgreSQL attachment publication",
         return Promise.reject(new Error("synthetic cleanup failure"));
       }) as never);
       return connection;
-    }, { cooldownMs: 0, now: () => new Date() });
+    }, { cooldownMs: 0, now: () => new Date() }, historicalForumMeasureAdmission);
     try {
       const result = await writer.createReply({ topicId: "attachment-topic", authorId: ownerId, body: "Committed despite cleanup" });
       expect((await client.query("select id from forum_posts where id=$1", [result.postId])).rowCount).toBe(1);
@@ -687,7 +689,7 @@ describe("live action → writer/service → PostgreSQL attachment publication",
 
   it.each([false, true])("recovers a modified replay after committed edit with attachment=%s", async (withAttachment) => {
     const topicId = crypto.randomUUID(), postId = crypto.randomUUID(), revisionId = crypto.randomUUID();
-    await new DrizzleForumRepository(drizzle(client), { cooldownMs: 0, now: () => new Date() }).createTopicWithInitialPost({
+    await new DrizzleForumRepository(drizzle(client), { cooldownMs: 0, now: () => new Date() }, historicalForumMeasureAdmission).createTopicWithInitialPost({
       id: topicId, sectionId: "attachment-section", authorId: ownerId,
       titleRevision: { id: crypto.randomUUID(), originalContent: "Ambiguous edit", sourceLocale: "en" },
       initialPost: { id: postId, topicId, authorId: ownerId,
@@ -721,7 +723,7 @@ describe("live action → writer/service → PostgreSQL attachment publication",
 
   it.each([false, true])("recovers a new upload before retrying a lost-ACK edit; prior attachment=%s", async (withPriorAttachment) => {
     const topicId = crypto.randomUUID(), postId = crypto.randomUUID(), revisionId = crypto.randomUUID();
-    await new DrizzleForumRepository(drizzle(client), { cooldownMs: 0, now: () => new Date() }).createTopicWithInitialPost({
+    await new DrizzleForumRepository(drizzle(client), { cooldownMs: 0, now: () => new Date() }, historicalForumMeasureAdmission).createTopicWithInitialPost({
       id: topicId, sectionId: "attachment-section", authorId: ownerId,
       titleRevision: { id: crypto.randomUUID(), originalContent: "Upload before recovery", sourceLocale: "en" },
       initialPost: { id: postId, topicId, authorId: ownerId,
@@ -771,7 +773,7 @@ describe("live action → writer/service → PostgreSQL attachment publication",
 
   it("refreshes a real stale published edit after PostgreSQL rejects its old revision", async () => {
     const topicId = crypto.randomUUID(), postId = crypto.randomUUID(), revisionId = crypto.randomUUID();
-    await new DrizzleForumRepository(drizzle(client), { cooldownMs: 0, now: () => new Date() }).createTopicWithInitialPost({
+    await new DrizzleForumRepository(drizzle(client), { cooldownMs: 0, now: () => new Date() }, historicalForumMeasureAdmission).createTopicWithInitialPost({
       id: topicId, sectionId: "attachment-section", authorId: ownerId,
       titleRevision: { id: crypto.randomUUID(), originalContent: "Conflict recovery", sourceLocale: "en" },
       initialPost: { id: postId, topicId, authorId: ownerId,
@@ -807,7 +809,7 @@ describe("live action → writer/service → PostgreSQL attachment publication",
         context = "help:new";
       } else {
         topicId = crypto.randomUUID();
-        await new DrizzleForumRepository(drizzle(client), { cooldownMs: 0, now: () => new Date() })
+        await new DrizzleForumRepository(drizzle(client), { cooldownMs: 0, now: () => new Date() }, historicalForumMeasureAdmission)
           .createTopicWithInitialPost({
             id: topicId, sectionId: "attachment-section", authorId: ownerId,
             titleRevision: { id: crypto.randomUUID(), originalContent: "Live parent", sourceLocale: "en" },
@@ -868,7 +870,7 @@ describe("live action → writer/service → PostgreSQL attachment publication",
         params = { locale: "en", categoryId: HELP_SOLUTIONS_CATEGORY_ID };
       } else {
         const id = crypto.randomUUID();
-        await new DrizzleForumRepository(drizzle(client), { cooldownMs: 0, now: () => new Date() }).createTopicWithInitialPost({
+        await new DrizzleForumRepository(drizzle(client), { cooldownMs: 0, now: () => new Date() }, historicalForumMeasureAdmission).createTopicWithInitialPost({
           id, sectionId: "attachment-section", authorId: ownerId,
           titleRevision: { id: crypto.randomUUID(), originalContent: "Parent for file-only reply", sourceLocale: "en" },
           initialPost: { id: crypto.randomUUID(), topicId: id, authorId: ownerId,
@@ -912,7 +914,7 @@ describe("live action → writer/service → PostgreSQL attachment publication",
   );
 
   it("returns an HTTP conflict and preserves post and refs on an unavailable selection", async () => {
-    const repository = new DrizzleForumRepository(drizzle(client), { cooldownMs: 0, now: () => new Date() });
+    const repository = new DrizzleForumRepository(drizzle(client), { cooldownMs: 0, now: () => new Date() }, historicalForumMeasureAdmission);
     const topicId = crypto.randomUUID();
     await repository.createTopicWithInitialPost({
       id: topicId, sectionId: "attachment-section", authorId: ownerId,
@@ -947,7 +949,7 @@ describe("live action → writer/service → PostgreSQL attachment publication",
 
 
 describe("durable orphan cleanup behind the existing private storage boundary", () => {
-  const repository = new DrizzleForumRepository(drizzle(client), { cooldownMs: 0, now: () => new Date() });
+  const repository = new DrizzleForumRepository(drizzle(client), { cooldownMs: 0, now: () => new Date() }, historicalForumMeasureAdmission);
 
   async function contextFixture() {
     const section = `attachment-cleanup-${crypto.randomUUID()}`;

@@ -13,6 +13,7 @@ import { ContentTranslationService } from "../../app/localization/content-transl
 import { createAuthorizationCapability } from "../../db/authorization-service";
 import { PostgresAuthorizationRepository } from "../../db/authorization-repository";
 import { DrizzleContentTranslationStore } from "../../db/content-translation-store";
+import { historicalForumMeasureAdmission } from "./historical-forum-measure-admission";
 import { DrizzleForumRepository } from "../../db/forum-repository";
 import { ForumService } from "../../db/forum-service";
 import { createHyperdriveForumWriter } from "../../db/hyperdrive-forum";
@@ -54,7 +55,7 @@ async function context(userId: string | null) {
   const pool = scopedPool();
   const value = new RouterContextProvider();
   value.set(authSessionContext, userId ? session(userId) : null);
-  value.set(forumWriterContext, createHyperdriveForumWriter(databaseUrl, scopedClient));
+  value.set(forumWriterContext, createHyperdriveForumWriter(databaseUrl, scopedClient, undefined, historicalForumMeasureAdmission));
   value.set(authorizationContext, createAuthorizationCapability(new PostgresAuthorizationRepository(pool)) as never);
   return { value, close: () => pool.end() };
 }
@@ -159,7 +160,7 @@ beforeEach(async () => {
   await client.query("insert into forum_categories (id, name) values ('category-1', 'Category')");
   await client.query("insert into forum_sections (id, category_id, name) values ('section-1', 'category-1', 'Section')");
 
-  const forum = new ForumService(new DrizzleForumRepository(drizzle(client)));
+  const forum = new ForumService(new DrizzleForumRepository(drizzle(client), undefined, historicalForumMeasureAdmission));
   await forum.createTopicWithInitialPost({
     id: "topic-1",
     sectionId: "section-1",

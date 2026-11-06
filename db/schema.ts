@@ -628,7 +628,8 @@ export const authzPermissions = pgTable("authz_permissions", {
   'forum.solution.manageAny', 'forum.helpSignal.create', 'forum.helpNeedsDetails.manage',
   'forum.helpDuplicate.manage', 'forum.attachmentSecurity.read', 'forum.sourceLocale.correctOwn', 'forum.sourceLocale.correctAny',
   'forum.translation.generate', 'forum.post.editOwn', 'forum.post.history.read',
-  'access.authorization.manage', 'admin.history.read', 'admin.users.read', 'forum.complaint.create', 'forum.complaint.review',
+  'access.authorization.manage', 'admin.history.read', 'admin.users.read',
+  'admin.users.blocks.manage', 'admin.users.blocks.managePrivileged', 'forum.complaint.create', 'forum.complaint.review',
   'forum.complaint.reporterIdentity.read', 'forum.complaint.appeal.review', 'forum.complaint.priority.manage'
 )`)]);
 
@@ -1780,7 +1781,9 @@ export const adminHistory = pgTable("admin_history", {
     'help.solutionModerationChanged', 'help.duplicateConfirmed', 'help.duplicateRemoved',
     'help.duplicateAppealResolved', 'help.signalReviewed', 'topic.sourceLocaleCorrected',
     'topic.closed', 'topic.reopened') and ${table.targetType} = 'topic')
-  or (${table.action} = 'post.sourceLocaleCorrected' and ${table.targetType} = 'post')`),
+  or (${table.action} = 'post.sourceLocaleCorrected' and ${table.targetType} = 'post')
+  or (${table.action} in ('measure.created', 'measure.changed', 'measure.lifted', 'measure.appealResolved')
+    and ${table.targetType} = 'user-measure')`),
   check("admin_history_context_check", sql`jsonb_typeof(${table.context}) = 'object' and octet_length(${table.context}::text) <= 16384`),
   check("admin_history_labels_check", sql`char_length(${table.actorLabel}) <= 200 and char_length(${table.targetLabel}) <= 200`),
   check("admin_history_reason_check", sql`${table.reason} is null or (char_length(${table.reason}) <= 2000 and btrim(${table.reason}) <> '')`),
@@ -1814,4 +1817,87 @@ export const forumComplaintPrioritySettings = pgTable("forum_complaint_priority_
     and ${t.weights}->'impersonation' in ('1'::jsonb,'2'::jsonb,'3'::jsonb)
     and ${t.weights}->'other' in ('1'::jsonb,'2'::jsonb,'3'::jsonb)
     and ${t.weights} ?& array['spam','harassment','threats','fraud-phishing','malicious-content','personal-data','impersonation','other']`),
+]);
+
+
+// AP-10 administrative measures retain their own identity and terminal lifecycle.
+// The web capability updates restriction membership; it does not delete measures or appeals.
+export const userMeasures = pgTable("user_measures", {
+  id: uuid("id").primaryKey(),
+  targetUserId: text("target_user_id").notNull().references(() => user.id, { onDelete: "restrict" }),
+  issuerUserId: text("issuer_user_id").notNull().references(() => user.id, { onDelete: "restrict" }),
+  issuerAuthorityFloor: integer("issuer_authority_floor").notNull(),
+  createFingerprint: text("create_fingerprint").notNull(),
+  initialReason: text("initial_reason").notNull(),
+  latestChangeReason: text("latest_change_reason"),
+  createdAt: timestamp("created_at", { withTimezone: true, precision: 3 }).notNull().default(sql`clock_timestamp()`),
+  expiresAt: timestamp("expires_at", { withTimezone: true, precision: 3 }),
+  version: integer("version").notNull().default(1),
+  liftedAt: timestamp("lifted_at", { withTimezone: true, precision: 3 }),
+  liftedByUserId: text("lifted_by_user_id").references(() => user.id, { onDelete: "restrict" }),
+  liftReason: text("lift_reason"),
+}, t => [
+  index("user_measures_target_created_idx").on(t.targetUserId, t.createdAt, t.id),
+  check("user_measures_issuer_floor_check", sql`${t.issuerAuthorityFloor} between 1 and 3`),
+  check("user_measures_version_check", sql`${t.version} > 0`),
+  check("user_measures_fingerprint_check", sql`char_length(${t.createFingerprint}) = 64 and ${t.createFingerprint} ~ '^[0-9a-f]{64}$'`),
+  check("user_measures_initial_reason_check", sql`btrim(${t.initialReason}) <> '' and char_length(${t.initialReason}) <= 2000`),
+  check("user_measures_change_reason_check", sql`${t.latestChangeReason} is null or (btrim(${t.latestChangeReason}) <> '' and char_length(${t.latestChangeReason}) <= 2000)`),
+  check("user_measures_lift_reason_check", sql`${t.liftReason} is null or (btrim(${t.liftReason}) <> '' and char_length(${t.liftReason}) <= 2000)`),
+  check("user_measures_lift_consistency_check", sql`(
+    ${t.liftedAt} is null and ${t.liftedByUserId} is null and ${t.liftReason} is null
+  ) or (
+    ${t.liftedAt} is not null and ${t.liftedByUserId} is not null and ${t.liftReason} is not null
+  )`),
+]);
+
+// Soft membership preserves SELECT/INSERT/UPDATE-only web grants on AP-10 tables.
+export const userMeasureRestrictions = pgTable("user_measure_restrictions", {
+  measureId: uuid("measure_id").notNull().references(() => userMeasures.id, { onDelete: "restrict" }),
+  restrictionKey: text("restriction_key").notNull(),
+  enabled: boolean("enabled").notNull().default(true),
+}, t => [
+  primaryKey({ name: "user_measure_restrictions_pk", columns: [t.measureId, t.restrictionKey] }),
+  check("user_measure_restrictions_key_check", sql`${t.restrictionKey} in (
+    'topics.create', 'replies.create', 'attachments.upload',
+    'posts.edit', 'profile.edit', 'complaints.submit', 'helpSignals.submit',
+    'translations.generate', 'admin.forum', 'admin.complaints',
+    'admin.security', 'admin.usersAccess'
+  )`),
+]);
+
+// A measure may receive at most three sequential appeals, never two pending at once.
+export const userMeasureAppeals = pgTable("user_measure_appeals", {
+  id: uuid("id").primaryKey(),
+  measureId: uuid("measure_id").notNull().references(() => userMeasures.id, { onDelete: "restrict" }),
+  subjectUserId: text("subject_user_id").notNull().references(() => user.id, { onDelete: "restrict" }),
+  ordinal: integer("ordinal").notNull(),
+  body: text("body").notNull(),
+  status: text("status").notNull().default("pending"),
+  createdAt: timestamp("created_at", { withTimezone: true, precision: 3 }).notNull().default(sql`clock_timestamp()`),
+  reviewerUserId: text("reviewer_user_id").references(() => user.id, { onDelete: "restrict" }),
+  resolvedAt: timestamp("resolved_at", { withTimezone: true, precision: 3 }),
+  reviewerExplanation: text("reviewer_explanation"),
+  remedy: text("remedy"),
+}, t => [
+  unique("user_measure_appeals_measure_ordinal_unique").on(t.measureId, t.ordinal),
+  uniqueIndex("user_measure_appeals_one_pending_idx").on(t.measureId).where(sql`${t.status} = 'pending'`),
+  index("user_measure_appeals_measure_created_idx").on(t.measureId, t.createdAt, t.id),
+  check("user_measure_appeals_ordinal_check", sql`${t.ordinal} between 1 and 3`),
+  check("user_measure_appeals_status_check", sql`${t.status} in ('pending', 'rejected', 'accepted', 'moot')`),
+  check("user_measure_appeals_body_check", sql`btrim(${t.body}) <> '' and char_length(${t.body}) <= 2000`),
+  check("user_measure_appeals_explanation_check", sql`${t.reviewerExplanation} is null or (btrim(${t.reviewerExplanation}) <> '' and char_length(${t.reviewerExplanation}) <= 2000)`),
+  check("user_measure_appeals_remedy_check", sql`${t.remedy} is null or ${t.remedy} in ('lift', 'change')`),
+  check("user_measure_appeals_resolution_check", sql`(
+    ${t.status} = 'pending' and ${t.reviewerUserId} is null and ${t.resolvedAt} is null
+      and ${t.reviewerExplanation} is null and ${t.remedy} is null
+  ) or (
+    ${t.status} = 'rejected' and ${t.reviewerUserId} is not null and ${t.resolvedAt} is not null
+      and ${t.reviewerExplanation} is not null and ${t.remedy} is null
+  ) or (
+    ${t.status} = 'accepted' and ${t.reviewerUserId} is not null and ${t.resolvedAt} is not null
+      and ${t.reviewerExplanation} is not null and ${t.remedy} in ('lift', 'change')
+  ) or (
+    ${t.status} = 'moot' and ${t.reviewerUserId} is null and ${t.remedy} is null
+  )`),
 ]);

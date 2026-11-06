@@ -7,10 +7,13 @@ import { ForumAvatar } from "./avatar";
 import { forumIndexPath, forumProfilePath } from "./paths";
 import { ForumShell } from "./ui";
 import { GoogleAccountLink } from "../auth/google-account-link";
+import { ownMeasuresPath } from "../measures/paths";
 
-export function ProfileView({ locale, profile, isOwner = false, editing = false, saved = false, feedback }: {
+export function ProfileView({ locale, profile, isOwner = false, canEditProfile = true,
+  editing = false, saved = false, feedback }: {
   locale: string; profile: Omit<ForumProfile, "joinedAt"> & { joinedAt: string };
-  isOwner?: boolean; editing?: boolean; saved?: boolean; feedback?: ProfileActionData;
+  isOwner?: boolean; canEditProfile?: boolean;
+  editing?: boolean; saved?: boolean; feedback?: ProfileActionData;
 }) {
   const { t } = useTranslation("common");
   const navigation = useNavigation();
@@ -27,16 +30,17 @@ export function ProfileView({ locale, profile, isOwner = false, editing = false,
       <header className="profile-identity">
         <ForumAvatar name={profile.name} image={profile.image} className="profile-avatar" />
         <div className="profile-identity-copy"><p className="profile-eyebrow">{t("profileHeading")}</p><h1 id="profile-name"><bdi dir="auto">{profile.name}</bdi></h1><span className="profile-role" dir="auto">{role}</span></div>
-        {isOwner && !editing && <Link className="profile-button" to={`${path}?edit=1`}>{t("profileEdit")}</Link>}
+        {isOwner && canEditProfile && !editing && <Link className="profile-button" to={`${path}?edit=1`}>{t("profileEdit")}</Link>}
       </header>
       {isOwner && !editing ? <GoogleAccountLink callbackURL={path} expectedUserId={profile.id} /> : null}
+      {isOwner ? <nav><Link to={ownMeasuresPath(locale)}>{t("measuresOwn")}</Link></nav> : null}
       <dl className="profile-statistics">
         <div><dt>{t("profileJoined")}</dt><dd><time dateTime={profile.joinedAt}>{new Intl.DateTimeFormat(locale, { year: "numeric", month: "short", day: "numeric", timeZone: "UTC" }).format(new Date(profile.joinedAt))}</time></dd></div>
         <div><dt>{t("profileMessages")}</dt><dd>{new Intl.NumberFormat(locale).format(profile.messageCount)}</dd></div>
         <div><dt>{t("profileBestAnswers")}</dt><dd>{new Intl.NumberFormat(locale).format(profile.bestAnswerCount)}</dd></div>
       </dl>
       {saved && !editing && <p className="profile-feedback" role="status">{t("profileSaved")}</p>}
-      {editing && isOwner ? <Form className="profile-form" method="post" action={`${path}?edit=1`} aria-label={t("profileEdit")} aria-busy={pending}>
+      {editing && isOwner && canEditProfile ? <Form className="profile-form" method="post" action={`${path}?edit=1`} aria-label={t("profileEdit")} aria-busy={pending}>
         <input type="hidden" name="intent" value="save-profile" />
         {feedback && <p className="profile-feedback is-error" role="alert">{t(feedback.error === "invalid" ? "profileInvalid" : `profileError_${feedback.error}`)}</p>}
         <label htmlFor="profile-bio">{t("profileBio")}</label><p id="profile-bio-hint">{t("profileBioHint")}</p>

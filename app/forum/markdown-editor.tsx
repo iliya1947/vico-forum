@@ -60,6 +60,7 @@ export interface MarkdownEditorProps {
   required?: boolean;
   rows?: number;
   disabled?: boolean;
+  allowAttachmentUploads?: boolean;
   describedBy?: string;
   defaultValue?: string;
   defaultPreviewOpen?: boolean;
@@ -96,6 +97,7 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
       required = false,
       rows = 8,
       disabled = false,
+      allowAttachmentUploads = true,
       describedBy,
       defaultValue = "",
       defaultPreviewOpen = false,
@@ -269,6 +271,7 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
       ownerId: accountId,
       contextKey: accountId ? editorContextKey : undefined,
       disabled: disabled || publicationPending,
+      allowNewUploads: allowAttachmentUploads,
       publishedEdit: publicationIntent === "editPost",
       publishedAttachments: existingInlineAttachments,
       insertImage,

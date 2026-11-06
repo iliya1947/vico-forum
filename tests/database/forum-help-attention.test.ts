@@ -2,6 +2,7 @@ import { readFile } from "node:fs/promises";
 import { drizzle } from "drizzle-orm/node-postgres";
 import { Client } from "pg";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { historicalForumMeasureAdmission } from "./historical-forum-measure-admission";
 import { DrizzleForumRepository } from "../../db/forum-repository";
 import { HELP_SOLUTIONS_SERVICE_SECTION_ID } from "../../db/forum-identifiers";
 
@@ -44,7 +45,7 @@ let clock = Date.parse("2026-10-01T00:00:00Z");
 const forum = new DrizzleForumRepository(drizzle(client), {
   cooldownMs: 5000,
   now: () => new Date(clock += 5001),
-});
+}, historicalForumMeasureAdmission);
 
 beforeAll(async () => {
   await client.connect();

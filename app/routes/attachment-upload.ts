@@ -20,6 +20,7 @@ import {
   type ForumAttachmentMetadata,
 } from "../../db/forum-attachments";
 import { ForumAttachmentStorageUnavailableError } from "../../db/hyperdrive-forum-attachments";
+import { UserMeasureRestrictedError } from "../../db/user-measure-policy";
 
 const json = (payload: unknown, status = 200): Response => Response.json(payload, {
   status,
@@ -128,6 +129,7 @@ function attachmentStoreFailure(error: unknown): Response | null {
     return json({ error: error.reason }, error.reason === "gone" ? 410 : 409);
   }
   if (error instanceof InvalidForumAttachmentError) return json({ error: "invalid" }, 400);
+  if (error instanceof UserMeasureRestrictedError) return json({ error: "forbidden" }, 403);
   if (error instanceof ForumAttachmentStorageUnavailableError) return json({ error: "unavailable" }, 503);
   return null;
 }
@@ -173,6 +175,18 @@ export async function action({ request, context }: { request: Request; context: 
     || !request.body
   ) {
     return json({ error: "invalid" }, 400);
+  }
+
+  // Before streaming/R2, allow a previously committed stable-ID result. New
+  // uploads require current admission; the metadata transaction checks again
+  // after R2 because a measure can become active during the upload.
+  try {
+    const committed = await store.admitUpload(scope.userId, scope.contextKey, scope.draftId, attachmentId);
+    if (committed) return json({ outcome: "stored", attachment: safeAttachment(committed) }, 201);
+  } catch (error) {
+    const failure = attachmentStoreFailure(error);
+    if (failure) return failure;
+    throw error;
   }
 
   let bucket;

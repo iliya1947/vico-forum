@@ -1,7 +1,7 @@
 {
   "version": 1,
   "schema": "public",
-  "targetMigration": "0057_admin_users_read",
+  "targetMigration": "0058_user_measures",
   "tables": {
     "account": {
       "columns": [
@@ -186,7 +186,7 @@
           "columns": [
             "key"
           ],
-          "definitionSha256": "c1a0befb69be72b1fb555cdb90d4d37ca51ed212ceb264b2cad9363cffabd73c"
+          "definitionSha256": "33d905f654dfdcef87b5b5f5282d62795a8fa59537bd544d2518016b847aee07"
         }
       ],
       "indexes": []
@@ -7065,7 +7065,7 @@
             "action",
             "target_type"
           ],
-          "definitionSha256": "92f539658048cc735cc9354d92f3e0cc55f58d513d208a25dd741dc42c729b42"
+          "definitionSha256": "c8d22b9f8b6c3051bfafdcd62454d0538074677c4f1232a9034838ecca1dda4b"
         },
         {
           "name": "admin_history_context_check",
@@ -7244,6 +7244,495 @@
         }
       ],
       "indexes": []
+    },
+    "user_measures": {
+      "columns": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "nullable": false,
+          "defaultSha256": null
+        },
+        {
+          "name": "target_user_id",
+          "type": "text",
+          "nullable": false,
+          "defaultSha256": null
+        },
+        {
+          "name": "issuer_user_id",
+          "type": "text",
+          "nullable": false,
+          "defaultSha256": null
+        },
+        {
+          "name": "issuer_authority_floor",
+          "type": "integer",
+          "nullable": false,
+          "defaultSha256": null
+        },
+        {
+          "name": "create_fingerprint",
+          "type": "text",
+          "nullable": false,
+          "defaultSha256": null
+        },
+        {
+          "name": "initial_reason",
+          "type": "text",
+          "nullable": false,
+          "defaultSha256": null
+        },
+        {
+          "name": "latest_change_reason",
+          "type": "text",
+          "nullable": true,
+          "defaultSha256": null
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp(3) with time zone",
+          "nullable": false,
+          "defaultSha256": "4b1d66350efe3913ebc4851cda50bbd44dd30a5f59bafb1c24c2edec4301816e"
+        },
+        {
+          "name": "expires_at",
+          "type": "timestamp(3) with time zone",
+          "nullable": true,
+          "defaultSha256": null
+        },
+        {
+          "name": "version",
+          "type": "integer",
+          "nullable": false,
+          "defaultSha256": "6b86b273ff34fce19d6b804eff5a3f5747ada4eaa22f1d49c01e52ddb7875b4b"
+        },
+        {
+          "name": "lifted_at",
+          "type": "timestamp(3) with time zone",
+          "nullable": true,
+          "defaultSha256": null
+        },
+        {
+          "name": "lifted_by_user_id",
+          "type": "text",
+          "nullable": true,
+          "defaultSha256": null
+        },
+        {
+          "name": "lift_reason",
+          "type": "text",
+          "nullable": true,
+          "defaultSha256": null
+        }
+      ],
+      "primaryKeys": [
+        {
+          "name": "user_measures_pkey",
+          "columns": [
+            "id"
+          ]
+        }
+      ],
+      "uniqueConstraints": [],
+      "foreignKeys": [
+        {
+          "name": "user_measures_issuer_user_id_user_id_fk",
+          "columns": [
+            "issuer_user_id"
+          ],
+          "referencedTable": "user",
+          "referencedColumns": [
+            "id"
+          ],
+          "onDelete": "RESTRICT",
+          "onUpdate": "NO ACTION",
+          "deferrable": false,
+          "initiallyDeferred": false
+        },
+        {
+          "name": "user_measures_lifted_by_user_id_user_id_fk",
+          "columns": [
+            "lifted_by_user_id"
+          ],
+          "referencedTable": "user",
+          "referencedColumns": [
+            "id"
+          ],
+          "onDelete": "RESTRICT",
+          "onUpdate": "NO ACTION",
+          "deferrable": false,
+          "initiallyDeferred": false
+        },
+        {
+          "name": "user_measures_target_user_id_user_id_fk",
+          "columns": [
+            "target_user_id"
+          ],
+          "referencedTable": "user",
+          "referencedColumns": [
+            "id"
+          ],
+          "onDelete": "RESTRICT",
+          "onUpdate": "NO ACTION",
+          "deferrable": false,
+          "initiallyDeferred": false
+        }
+      ],
+      "checks": [
+        {
+          "name": "user_measures_change_reason_check",
+          "columns": [
+            "latest_change_reason"
+          ],
+          "definitionSha256": "9a9e97a645c493241b1eae800c58cd02a936a0955a0851f3d0301c6024e95c88"
+        },
+        {
+          "name": "user_measures_fingerprint_check",
+          "columns": [
+            "create_fingerprint"
+          ],
+          "definitionSha256": "5025a7d7d35cefb9f43e9ed9123190e2574f78fef28ffd48d42eb8e8f5c0e52a"
+        },
+        {
+          "name": "user_measures_initial_reason_check",
+          "columns": [
+            "initial_reason"
+          ],
+          "definitionSha256": "ab21d14c1c5ebca2f4a762a21ba70a55e71c49c3bbb8d301a4b125a07ac99c29"
+        },
+        {
+          "name": "user_measures_issuer_floor_check",
+          "columns": [
+            "issuer_authority_floor"
+          ],
+          "definitionSha256": "3cf79b95a9e10e400c3c5309ab4b48643a91482b9fb188f8c284fd1c75157b1c"
+        },
+        {
+          "name": "user_measures_lift_consistency_check",
+          "columns": [
+            "lift_reason",
+            "lifted_at",
+            "lifted_by_user_id"
+          ],
+          "definitionSha256": "fbb73309bac83be25f3a61509ce466ef80181b45696c84077f91672305a1e7b0"
+        },
+        {
+          "name": "user_measures_lift_reason_check",
+          "columns": [
+            "lift_reason"
+          ],
+          "definitionSha256": "0fff5402a6236990ebeace615fe736793a20ed8ac8bc0786a7d5a6820ec889c9"
+        },
+        {
+          "name": "user_measures_version_check",
+          "columns": [
+            "version"
+          ],
+          "definitionSha256": "ead4c32a9354da34bc9fcfc3256e203ca5c57f24d0a7e4cac58c9a7bf974868b"
+        }
+      ],
+      "indexes": [
+        {
+          "name": "user_measures_target_created_idx",
+          "unique": false,
+          "method": "btree",
+          "columns": [
+            {
+              "name": "target_user_id",
+              "nulls": "last",
+              "order": "asc"
+            },
+            {
+              "name": "created_at",
+              "nulls": "last",
+              "order": "asc"
+            },
+            {
+              "name": "id",
+              "nulls": "last",
+              "order": "asc"
+            }
+          ],
+          "predicateSha256": null
+        }
+      ]
+    },
+    "user_measure_restrictions": {
+      "columns": [
+        {
+          "name": "measure_id",
+          "type": "uuid",
+          "nullable": false,
+          "defaultSha256": null
+        },
+        {
+          "name": "restriction_key",
+          "type": "text",
+          "nullable": false,
+          "defaultSha256": null
+        },
+        {
+          "name": "enabled",
+          "type": "boolean",
+          "nullable": false,
+          "defaultSha256": "b5bea41b6c623f7c09f1bf24dcae58ebab3c0cdd90ad966bc43a45b44867e12b"
+        }
+      ],
+      "primaryKeys": [
+        {
+          "name": "user_measure_restrictions_pk",
+          "columns": [
+            "measure_id",
+            "restriction_key"
+          ]
+        }
+      ],
+      "uniqueConstraints": [],
+      "foreignKeys": [
+        {
+          "name": "user_measure_restrictions_measure_id_user_measures_id_fk",
+          "columns": [
+            "measure_id"
+          ],
+          "referencedTable": "user_measures",
+          "referencedColumns": [
+            "id"
+          ],
+          "onDelete": "RESTRICT",
+          "onUpdate": "NO ACTION",
+          "deferrable": false,
+          "initiallyDeferred": false
+        }
+      ],
+      "checks": [
+        {
+          "name": "user_measure_restrictions_key_check",
+          "columns": [
+            "restriction_key"
+          ],
+          "definitionSha256": "5c96100dbb20cca53930616c4e13671c2ecb6b6fbac482ae6a982a9b6c350e3f"
+        }
+      ],
+      "indexes": []
+    },
+    "user_measure_appeals": {
+      "columns": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "nullable": false,
+          "defaultSha256": null
+        },
+        {
+          "name": "measure_id",
+          "type": "uuid",
+          "nullable": false,
+          "defaultSha256": null
+        },
+        {
+          "name": "subject_user_id",
+          "type": "text",
+          "nullable": false,
+          "defaultSha256": null
+        },
+        {
+          "name": "ordinal",
+          "type": "integer",
+          "nullable": false,
+          "defaultSha256": null
+        },
+        {
+          "name": "body",
+          "type": "text",
+          "nullable": false,
+          "defaultSha256": null
+        },
+        {
+          "name": "status",
+          "type": "text",
+          "nullable": false,
+          "defaultSha256": "a89df8d14a00b7bd2ead7e86414dcd5232bff306786856171b38584e153bb73f"
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp(3) with time zone",
+          "nullable": false,
+          "defaultSha256": "4b1d66350efe3913ebc4851cda50bbd44dd30a5f59bafb1c24c2edec4301816e"
+        },
+        {
+          "name": "reviewer_user_id",
+          "type": "text",
+          "nullable": true,
+          "defaultSha256": null
+        },
+        {
+          "name": "resolved_at",
+          "type": "timestamp(3) with time zone",
+          "nullable": true,
+          "defaultSha256": null
+        },
+        {
+          "name": "reviewer_explanation",
+          "type": "text",
+          "nullable": true,
+          "defaultSha256": null
+        },
+        {
+          "name": "remedy",
+          "type": "text",
+          "nullable": true,
+          "defaultSha256": null
+        }
+      ],
+      "primaryKeys": [
+        {
+          "name": "user_measure_appeals_pkey",
+          "columns": [
+            "id"
+          ]
+        }
+      ],
+      "uniqueConstraints": [
+        {
+          "name": "user_measure_appeals_measure_ordinal_unique",
+          "columns": [
+            "measure_id",
+            "ordinal"
+          ],
+          "nullsNotDistinct": false
+        }
+      ],
+      "foreignKeys": [
+        {
+          "name": "user_measure_appeals_measure_id_user_measures_id_fk",
+          "columns": [
+            "measure_id"
+          ],
+          "referencedTable": "user_measures",
+          "referencedColumns": [
+            "id"
+          ],
+          "onDelete": "RESTRICT",
+          "onUpdate": "NO ACTION",
+          "deferrable": false,
+          "initiallyDeferred": false
+        },
+        {
+          "name": "user_measure_appeals_reviewer_user_id_user_id_fk",
+          "columns": [
+            "reviewer_user_id"
+          ],
+          "referencedTable": "user",
+          "referencedColumns": [
+            "id"
+          ],
+          "onDelete": "RESTRICT",
+          "onUpdate": "NO ACTION",
+          "deferrable": false,
+          "initiallyDeferred": false
+        },
+        {
+          "name": "user_measure_appeals_subject_user_id_user_id_fk",
+          "columns": [
+            "subject_user_id"
+          ],
+          "referencedTable": "user",
+          "referencedColumns": [
+            "id"
+          ],
+          "onDelete": "RESTRICT",
+          "onUpdate": "NO ACTION",
+          "deferrable": false,
+          "initiallyDeferred": false
+        }
+      ],
+      "checks": [
+        {
+          "name": "user_measure_appeals_body_check",
+          "columns": [
+            "body"
+          ],
+          "definitionSha256": "679f180e636ff884601d324e6e16c19f5e642da8fbd050f0d48c4afc9d1bd258"
+        },
+        {
+          "name": "user_measure_appeals_explanation_check",
+          "columns": [
+            "reviewer_explanation"
+          ],
+          "definitionSha256": "9200a947a9a719d1348f017c48ca1093cddca2501a15c92c7fc19dd01e244285"
+        },
+        {
+          "name": "user_measure_appeals_ordinal_check",
+          "columns": [
+            "ordinal"
+          ],
+          "definitionSha256": "4fbb3933ef59b3368c74b5e4cb9e764bf8af2790be6ef1f9b1bae7df9cfaf2c5"
+        },
+        {
+          "name": "user_measure_appeals_remedy_check",
+          "columns": [
+            "remedy"
+          ],
+          "definitionSha256": "bf5b2969a03070bed3e549c8e19b7b36fc910df490782c2df34ab9f18e4a0cb6"
+        },
+        {
+          "name": "user_measure_appeals_resolution_check",
+          "columns": [
+            "remedy",
+            "resolved_at",
+            "reviewer_explanation",
+            "reviewer_user_id",
+            "status"
+          ],
+          "definitionSha256": "b4d5ceb02f679d4651bd5c327cf905d3895c694985fe6b8cae8f754ec0bffeac"
+        },
+        {
+          "name": "user_measure_appeals_status_check",
+          "columns": [
+            "status"
+          ],
+          "definitionSha256": "1bfe2656ea620e140380e3b136b87d5d0c5b5b358883be4560bb4b236176cae4"
+        }
+      ],
+      "indexes": [
+        {
+          "name": "user_measure_appeals_measure_created_idx",
+          "unique": false,
+          "method": "btree",
+          "columns": [
+            {
+              "name": "measure_id",
+              "nulls": "last",
+              "order": "asc"
+            },
+            {
+              "name": "created_at",
+              "nulls": "last",
+              "order": "asc"
+            },
+            {
+              "name": "id",
+              "nulls": "last",
+              "order": "asc"
+            }
+          ],
+          "predicateSha256": null
+        },
+        {
+          "name": "user_measure_appeals_one_pending_idx",
+          "unique": true,
+          "method": "btree",
+          "columns": [
+            {
+              "name": "measure_id",
+              "nulls": "last",
+              "order": "asc"
+            }
+          ],
+          "predicateSha256": "e30b7393d8275a22b24ae598f3a49e69195cf6e267ddb0619fed49298df6d656"
+        }
+      ]
     }
   },
   "triggerFunctions": [

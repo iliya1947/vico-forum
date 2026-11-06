@@ -20,6 +20,7 @@ import type {
 import { DrizzleForumRepository } from "./forum-repository";
 import { ForumService, type SourceLocaleCorrectionScope } from "./forum-service";
 import { forumWritePolicy, type ForumWritePolicy } from "./forum-write-policy";
+import { assertNoActiveUserMeasureRestriction } from "./user-measure-policy";
 
 export interface ForumWriter {
   updateProfile(input: { actorId: string; fields: ProfileFields }): Promise<void>;
@@ -127,12 +128,13 @@ export function createHyperdriveForumWriter(
   connectionString: string,
   clientFactory: ClientFactory = () => createWebClient(connectionString),
   writePolicy: ForumWritePolicy = forumWritePolicy,
+  measureAdmission: typeof assertNoActiveUserMeasureRestriction = assertNoActiveUserMeasureRestriction,
 ): ForumWriter {
   async function write<T>(operation: (service: ForumService) => Promise<T>): Promise<T> {
     const client = clientFactory();
     try {
       await client.connect();
-      return await operation(new ForumService(new DrizzleForumRepository(drizzle(client), writePolicy)));
+      return await operation(new ForumService(new DrizzleForumRepository(drizzle(client), writePolicy, measureAdmission)));
     } catch (error) {
       if (isForumStorageAvailabilityFailure(error)) throw new ForumStorageUnavailableError({ cause: error });
       throw error;
@@ -169,7 +171,7 @@ export function createHyperdriveForumWriter(
       const client = clientFactory();
       try {
         await client.connect();
-        await new DrizzleForumRepository(drizzle(client)).updateProfile(actorId, fields);
+        await new DrizzleForumRepository(drizzle(client), writePolicy, measureAdmission).updateProfile(actorId, fields);
       } catch (error) {
         if (isForumStorageAvailabilityFailure(error)) throw new ForumStorageUnavailableError({ cause: error });
         throw error;

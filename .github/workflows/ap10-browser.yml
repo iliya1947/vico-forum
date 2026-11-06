@@ -1,0 +1,109 @@
+name: AP-10 isolated browser acceptance
+
+on:
+  pull_request:
+    paths:
+      - ".github/workflows/ap10-browser.yml"
+      - "tests/browser/user-measures/**"
+      - "app/measures/**"
+      - "app/routes/account-measure*.tsx"
+      - "app/routes/admin-measure*.tsx"
+      - "db/user-measure*.ts"
+
+permissions:
+  contents: read
+
+jobs:
+  browser:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_DB: vico_ap10_browser_test
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_USER: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d vico_ap10_browser_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      CI: "true"
+      DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:5432/vico_ap10_browser_test
+      CLOUDFLARE_HYPERDRIVE_LOCAL_CONNECTION_STRING_HYPERDRIVE: postgresql://postgres:postgres@127.0.0.1:5432/vico_ap10_browser_test
+      CLOUDFLARE_HYPERDRIVE_LOCAL_CONNECTION_STRING_WEB_HYPERDRIVE: postgresql://postgres:postgres@127.0.0.1:5432/vico_ap10_browser_test
+      IMPLEMENTATION_SHA: ${{ github.event.pull_request.head.sha }}
+      PLAYWRIGHT_CHANNEL: chrome
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+      - uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1 # v4
+        with:
+          version: 12.3.4
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+        with:
+          node-version-file: .node-version
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Migrate disposable PostgreSQL
+        run: |
+          node --input-type=module -e '
+            import pg from "pg";
+            import {drizzle} from "drizzle-orm/node-postgres";
+            import {migrate} from "drizzle-orm/node-postgres/migrator";
+            const client = new pg.Client({connectionString:process.env.DATABASE_URL});
+            await client.connect();
+            try { await migrate(drizzle(client), {migrationsFolder:"./drizzle"}); }
+            finally { await client.end(); }
+          '
+      - name: Install Playwright Python bindings
+        run: |
+          python3 -m venv "$RUNNER_TEMP/ap10-playwright"
+          "$RUNNER_TEMP/ap10-playwright/bin/pip" install playwright==1.62.0
+      - name: Build Worker with synthetic local configuration
+        run: |
+          umask 077
+          printf '%s\n' \
+            'BETTER_AUTH_SECRET=ap10-browser-only-secret-0123456789abcdef0123456789abcdef' \
+            'BETTER_AUTH_URL=http://127.0.0.1:4188' \
+            'GOOGLE_CLIENT_ID=local-test-unused' \
+            'GOOGLE_CLIENT_SECRET=local-test-unused' \
+            'VICO_OWNER_USER_ID=ap10-synthetic-owner' > .dev.vars
+          pnpm build
+      - name: Authenticated Chromium acceptance
+        run: |
+          pnpm exec vite preview --host 127.0.0.1 --port 4188 --strictPort > "$RUNNER_TEMP/ap10-preview.log" 2>&1 &
+          preview_pid=$!
+          trap 'kill "$preview_pid" 2>/dev/null || true; rm -f .dev.vars' EXIT
+          ready=false
+          for attempt in $(seq 1 90); do
+            if curl --silent --show-error --fail --max-time 2 http://127.0.0.1:4188/he/ > /dev/null 2>&1; then
+              ready=true
+              break
+            fi
+            if ! kill -0 "$preview_pid" 2>/dev/null; then
+              tail -n 100 "$RUNNER_TEMP/ap10-preview.log"
+              exit 1
+            fi
+            sleep 1
+          done
+          if [ "$ready" != true ]; then
+            tail -n 100 "$RUNNER_TEMP/ap10-preview.log"
+            exit 1
+          fi
+          "$RUNNER_TEMP/ap10-playwright/bin/python" tests/browser/user-measures/check.py \
+            --url http://127.0.0.1:4188 --output "$RUNNER_TEMP/ap10-evidence" || {
+              tail -n 100 "$RUNNER_TEMP/ap10-preview.log"
+              exit 1
+            }
+      - name: Preserve synthetic browser evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: ap10-browser-evidence
+          path: ${{ runner.temp }}/ap10-evidence/
+          if-no-files-found: warn
+          retention-days: 7

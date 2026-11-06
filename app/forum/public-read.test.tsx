@@ -15,6 +15,7 @@ import { HeaderAuthProvider, type HeaderAuthUser } from "../auth/auth-controls";
 import { complaintQueueContext } from "../complaints/queue-context";
 import {complaintAppealContext} from "../complaints/appeal-context";
 import { authorizationContext } from "../authorization/request-context";
+import { userMeasureContext } from "../measures/request-context";
 import { canonicalEnglishCatalog } from "../localization/catalog";
 import { createTranslationRuntime } from "../localization/runtime";
 import { ContentTranslationPresentationService, type ContentTranslationPresentation } from "../localization/content-translation-presentation";
@@ -301,6 +302,7 @@ function context(
 ) {
   const value = new RouterContextProvider();
   value.set(forumReaderContext, reader);
+  value.set(userMeasureContext, {activeRestrictions:async()=>[]} as never);
   value.set(forumAttachmentStoreContext, {
     readSecurityAttachmentEvents: async (page: number) => ({ events: [], hasMore: false, page }),
   } as never);
@@ -459,6 +461,45 @@ describe.each([
     expect(authorLink?.querySelector(".topic-message-avatar")).toBeInTheDocument();
     expect(authorLink?.querySelector(".topic-message-author-copy > strong")).toHaveTextContent("Lin");
     expect(messageAuthor?.querySelector(".topic-message-author-statuses")).toBeInTheDocument();
+  });
+});
+
+describe("AP-10 restriction-aware first-party presentation",()=>{
+  it("removes only sanctioned fresh controls while preserving public read and owner tools",async()=>{
+    const ctx=context();
+    ctx.set(authSessionContext,{user:{id:"lin",name:"Lin"}} as never);
+    const granted=new Set([
+      "forum.topic.create","forum.reply.create","forum.post.editOwn",
+      "forum.complaint.create","forum.solution.manageOwn",
+    ]);
+    ctx.set(authorizationContext,{forUser:()=>({
+      has:async(permission:string)=>granted.has(permission),
+    })} as never);
+    const active=vi.fn(async()=>[
+      "topics.create","replies.create","posts.edit","attachments.upload",
+      "complaints.submit","translations.generate",
+    ]);
+    ctx.set(userMeasureContext,{activeRestrictions:active} as never);
+    const sectionData=await sectionLoader({params:{locale:"en",sectionId:section.id},context:ctx});
+    expect(sectionData.canCreateTopic).toBe(false);
+    expect(sectionData.canUploadAttachments).toBe(false);
+    const help=await categoryLoader({params:{locale:"en",categoryId:HELP_SOLUTIONS_CATEGORY_ID},context:ctx});
+    expect(help.kind).toBe("help-solutions");
+    if(help.kind!=="help-solutions")throw Error("expected help");
+    expect(help.canAskQuestion).toBe(false);
+    expect(help.canUploadAttachments).toBe(false);
+    const loaded=await topicLoader({params:{locale:"en",topicId:topic.id},context:ctx});
+    expect(loaded.topic.id).toBe(topic.id);
+    expect(loaded).toMatchObject({
+      canReply:false,canSubmitComplaint:false,editablePostIds:[],canUploadAttachments:false,
+    });
+    expect(loaded.canManageSolution).toBe(false); // Non-owner of the topic, not a sanction.
+    expect(active).toHaveBeenCalledWith("lin");
+    ctx.set(userMeasureContext,{activeRestrictions:async()=>[]} as never);
+    const restored=await topicLoader({params:{locale:"en",topicId:topic.id},context:ctx});
+    expect(restored).toMatchObject({
+      canReply:true,canSubmitComplaint:true,editablePostIds:["answer"],canUploadAttachments:true,
+    });
   });
 });
 
@@ -3797,6 +3838,200 @@ describe("forum read states", () => {
   });
 });
 
+
+describe("AP10-MIRA-10 fresh restriction keeps existing Editor 2.0 operations", () => {
+  const author = { id: "retained-editor", name: "Editor" };
+  function stubAttachmentEndpoints() {
+    vi.stubGlobal("fetch", vi.fn(async (url: string, options?: RequestInit) => {
+      if (url === "/api/attachments" && options?.method === "DELETE")
+        return new Response(null, { status: 204 });
+      if (url.includes("mode=head")) return new Response(null, { status: 404 });
+      if (url.includes("mode=metadata"))
+        return new Response(JSON.stringify({ drafts: [] }), { headers: { "Content-Type": "application/json" } });
+      if (url === "/api/attachments")
+        return new Response(JSON.stringify({ attachments: [] }), { headers: { "Content-Type": "application/json" } });
+      throw new Error("Unexpected editor attachment request: " + url);
+    }));
+  }
+  function mount<T>(Component: ComponentType, initial: T, path: string) {
+    let current = initial;
+    const action = vi.fn(async () => null);
+    const router = createMemoryRouter([{
+      id: "page", path: "*", Component, loader: () => current, action,
+    }], { initialEntries: [path] });
+    render(<I18nextProvider i18n={runtime("en", "ltr")}>
+      <HeaderAuthProvider initialUser={author}><RouterProvider router={router} /></HeaderAuthProvider>
+    </I18nextProvider>);
+    return {
+      action, router,
+      update: async (next: T) => {
+        current = next;
+        await act(async () => { await router.revalidate(); });
+      },
+    };
+  }
+  function typeAndCheckHistory(form: HTMLElement, text: string) {
+    const advanced = within(form).queryByRole("button", { name: "Advanced" });
+    if (advanced) fireEvent.click(advanced);
+    const textarea = form.querySelector("textarea")!;
+    fireEvent.change(textarea, { target: { value: text } });
+    fireEvent.change(textarea, { target: { value: text + " more" } });
+    return textarea;
+  }
+  function verifyHistory(form: HTMLElement, textarea: HTMLTextAreaElement, text: string) {
+    expect(textarea).toHaveValue(text + " more");
+    fireEvent.click(within(form).getByRole("button", { name: "Undo" }));
+    expect(textarea).toHaveValue(text);
+    fireEvent.click(within(form).getByRole("button", { name: "Redo" }));
+    expect(textarea).toHaveValue(text + " more");
+  }
+
+  it("retains Create Topic text, Undo/Redo, in-flight upload and Cancel without reopening a forbidden create", async () => {
+    stubAttachmentEndpoints();
+    class HeldUpload {
+      static instances: HeldUpload[] = [];
+      aborted = false;
+      status = 0;
+      responseText = "";
+      responseType: XMLHttpRequestResponseType = "";
+      upload = { onprogress: null };
+      onload: null | (() => void) = null;
+      onerror: null | (() => void) = null;
+      onabort: null | (() => void) = null;
+      constructor() { HeldUpload.instances.push(this); }
+      open() {}
+      setRequestHeader() {}
+      send() {}
+      abort() { this.aborted = true; this.onabort?.(); }
+    }
+    vi.stubGlobal("XMLHttpRequest", HeldUpload as unknown as typeof XMLHttpRequest);
+    const initial = {
+      locale: "en", section, canCreateTopic: true,
+      canUploadAttachments: true, topicReadStates: null,
+    };
+    const state = mount(SectionRoute, initial, "/en/sections/typescript");
+    try {
+      const form = await screen.findByRole("form", { name: "Create a new topic" });
+      const title = within(form).getByLabelText("Topic title");
+      fireEvent.change(title, { target: { value: "Unsent topic title" } });
+      const textarea = typeAndCheckHistory(form, "Unsent topic body");
+      const attach = within(form).getByLabelText("Attach");
+      const operationId = await waitFor(() => {
+        expect(attach).toBeEnabled();
+        const id = form.querySelector<HTMLInputElement>('input[name="editorOperationId"]')?.value;
+        expect(id).toMatch(/^[0-9a-f-]{36}$/i);
+        return id!;
+      });
+      fireEvent.change(attach, {
+        target: { files: [new File(["unpublished"], "trace.txt", { type: "text/plain" })] },
+      });
+      expect(HeldUpload.instances).toHaveLength(1);
+      const upload = HeldUpload.instances[0]!;
+      expect(upload.aborted).toBe(false);
+      expect(within(form).getByRole("button", { name: "Remove" })).toBeEnabled();
+
+      await state.update({ ...initial, canCreateTopic: false });
+      expect(screen.getByRole("form", { name: "Create a new topic" })).toBe(form);
+      expect(title).toHaveValue("Unsent topic title");
+      expect(form.querySelector("textarea")).toBe(textarea);
+      expect(form.querySelector<HTMLInputElement>('input[name="editorOperationId"]')).toHaveValue(operationId);
+      expect(upload.aborted).toBe(false);
+      verifyHistory(form, textarea, "Unsent topic body");
+      expect(within(form).getByRole("button", { name: "Create topic" })).toBeDisabled();
+      expect(within(form).getByRole("button", { name: "Cancel" })).toBeEnabled();
+      expect(screen.queryByRole("link", { name: "Create a new topic" })).not.toBeInTheDocument();
+      fireEvent.submit(form);
+      expect(state.action).not.toHaveBeenCalled();
+
+      fireEvent.click(within(form).getByRole("button", { name: "Cancel" }));
+      expect(screen.queryByRole("form", { name: "Create a new topic" })).not.toBeInTheDocument();
+      await waitFor(() => expect(fetch).toHaveBeenCalledWith("/api/attachments", expect.objectContaining({ method: "DELETE" })));
+      await state.update({ ...initial, canCreateTopic: false });
+      expect(screen.queryByRole("form", { name: "Create a new topic" })).not.toBeInTheDocument();
+    } finally { state.router.dispose(); }
+  });
+
+  it("retains an opened Help question and disables both publication and similarity submit", async () => {
+    stubAttachmentEndpoints();
+    const initial = {
+      kind: "help-solutions" as const, locale: "en", mode: "all" as const, filters: {},
+      page: { ...helpPage, questions: helpPage.questions.map(question => ({
+        ...question, createdAt: question.createdAt.toISOString(), activityAt: question.activityAt.toISOString(),
+      })) },
+      referenceTime: "2026-11-06T00:00:00.000Z",
+      isAuthenticated: true, canAskQuestion: true, canUploadAttachments: true,
+      canViewSolutionModeration: false, canViewDuplicateDispute: false,
+    };
+    const state = mount(CategoryRoute, initial, forumCategoryPath("en", HELP_SOLUTIONS_CATEGORY_ID));
+    try {
+      fireEvent.click(await screen.findByRole("button", { name: "Ask a question" }));
+      const form = await screen.findByRole("form", { name: "Ask a question" });
+      const title = within(form).getByLabelText("Question title");
+      fireEvent.change(title, { target: { value: "Unsent Help question" } });
+      const textarea = typeAndCheckHistory(form, "Unsent Help text");
+      const operationId = await waitFor(() => {
+        const id = form.querySelector<HTMLInputElement>('input[name="editorOperationId"]')?.value;
+        expect(id).toMatch(/^[0-9a-f-]{36}$/i);
+        return id!;
+      });
+
+      await state.update({ ...initial, canAskQuestion: false });
+      expect(screen.getByRole("form", { name: "Ask a question" })).toBe(form);
+      expect(title).toHaveValue("Unsent Help question");
+      expect(form.querySelector("textarea")).toBe(textarea);
+      expect(form.querySelector<HTMLInputElement>('input[name="editorOperationId"]')).toHaveValue(operationId);
+      verifyHistory(form, textarea, "Unsent Help text");
+      expect(within(form).getByRole("button", { name: "Ask question" })).toBeDisabled();
+      expect(within(form).getByRole("button", { name: "Check similar questions" })).toBeDisabled();
+      expect(within(form).getByRole("button", { name: "Cancel" })).toBeEnabled();
+      fireEvent.submit(form);
+      expect(state.action).not.toHaveBeenCalled();
+
+      fireEvent.click(within(form).getByRole("button", { name: "Cancel" }));
+      expect(screen.queryByRole("form", { name: "Ask a question" })).not.toBeInTheDocument();
+      await waitFor(() => expect(fetch).toHaveBeenCalledWith("/api/attachments", expect.objectContaining({ method: "DELETE" })));
+      await state.update({ ...initial, canAskQuestion: false });
+      expect(screen.queryByRole("form", { name: "Ask a question" })).not.toBeInTheDocument();
+      expect(screen.queryByRole("button", { name: "Ask a question" })).not.toBeInTheDocument();
+    } finally { state.router.dispose(); }
+  });
+
+  it("retains Published Edit content, revision and operation until Cancel after posts.edit restriction", async () => {
+    stubAttachmentEndpoints();
+    const initial = topicRenderData(topic, { editablePostIds: ["answer"], canReadPostHistory: false });
+    const state = mount(TopicRoute, initial, "/en/topics/typed-api");
+    try {
+      fireEvent.click(await screen.findByRole("button", { name: "Edit" }));
+      const form = await screen.findByRole("form", { name: "Edit published message" });
+      const textarea = typeAndCheckHistory(form, "Unsent published edit");
+      const operationId = await waitFor(() => {
+        const id = form.querySelector<HTMLInputElement>('input[name="editorOperationId"]')?.value;
+        expect(id).toMatch(/^[0-9a-f-]{36}$/i);
+        return id!;
+      });
+      expect(form.querySelector('input[name="expectedRevisionId"]')).toHaveValue("post-r1");
+
+      await state.update(topicRenderData(topic, { editablePostIds: [], canReadPostHistory: false }));
+      expect(screen.getByRole("form", { name: "Edit published message" })).toBe(form);
+      expect(form.querySelector("textarea")).toBe(textarea);
+      expect(form.querySelector<HTMLInputElement>('input[name="editorOperationId"]')).toHaveValue(operationId);
+      expect(form.querySelector('input[name="expectedRevisionId"]')).toHaveValue("post-r1");
+      verifyHistory(form, textarea, "Unsent published edit");
+      expect(within(form).getByRole("button", { name: "Save changes" })).toBeDisabled();
+      expect(within(form).getByRole("button", { name: "Cancel" })).toBeEnabled();
+      expect(screen.queryByRole("button", { name: "Edit" })).not.toBeInTheDocument();
+      fireEvent.submit(form);
+      expect(state.action).not.toHaveBeenCalled();
+
+      fireEvent.click(within(form).getByRole("button", { name: "Cancel" }));
+      expect(screen.queryByRole("form", { name: "Edit published message" })).not.toBeInTheDocument();
+      await waitFor(() => expect(fetch).toHaveBeenCalledWith("/api/attachments", expect.objectContaining({ method: "DELETE" })));
+      await state.update(topicRenderData(topic, { editablePostIds: [], canReadPostHistory: false }));
+      expect(screen.queryByRole("form", { name: "Edit published message" })).not.toBeInTheDocument();
+      expect(screen.queryByRole("button", { name: "Edit" })).not.toBeInTheDocument();
+    } finally { state.router.dispose(); }
+  });
+});
 
 describe("AP-08 closed topic participation and mounted reply recovery", () => {
   const editorActor = { id: "reply-closure-editor", name: "Reply author" };

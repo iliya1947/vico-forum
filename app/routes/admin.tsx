@@ -25,7 +25,11 @@ export function meta({ matches }: Pick<Route.MetaArgs, "matches">) {
 export async function loader({params,context}: {params: {locale?: string}; context: RouterContextProvider}) {
   const access=await requireAdminAccess(context);
   let counts;
-  try { counts=await forumReaderForRequest(context).readAdminOverviewCounts(); }
+  try {
+    counts=access.canManageMeasures && !access.canReadForum && !access.canManageAuthorization &&
+      !access.canReadUsers && !access.canReadHistory
+      ? null : await forumReaderForRequest(context).readAdminOverviewCounts();
+  }
   catch (error) {
     if (!(error instanceof ForumStorageUnavailableError)) throw error;
     counts=null;

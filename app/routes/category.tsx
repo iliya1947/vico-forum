@@ -1,6 +1,7 @@
 import { forumReadLoader } from "../forum/read-availability.server";
 import { redirect, useActionData, useLoaderData, type RouterContextProvider } from "react-router";
 import { authSessionForRequest } from "../auth/request-context";
+import { measureRestrictionsForPresentation } from "../measures/presentation.server";
 import { authorizationForRequest } from "../authorization/request-context";
 import { AuthorizationUnavailableError } from "../../db/authorization-service";
 import { forumReaderForRequest } from "../forum/request-context";
@@ -75,6 +76,7 @@ export const loader = forumReadLoader(async function loader({ request, params, c
     }
 
     let canAskQuestion = false;
+    let canUploadAttachments = false;
     let canViewSolutionModeration = false;
     let canViewDuplicateDispute = false;
     if (session) {
@@ -90,6 +92,11 @@ export const loader = forumReadLoader(async function loader({ request, params, c
         if (needsReviewFilter) throw new Response("Unavailable", { status: 503 });
         // Public Q&A reading remains available when optional presentation authorization is unavailable.
       }
+    }
+    if (session) {
+      const restricted=await measureRestrictionsForPresentation(context,session.user.id);
+      canAskQuestion=canAskQuestion && !restricted.has("topics.create");
+      canUploadAttachments=!restricted.has("attachments.upload");
     }
     if (needsReviewFilter && !canViewSolutionModeration) {
       throw new Response("Forbidden", { status: 403 });
@@ -119,6 +126,7 @@ export const loader = forumReadLoader(async function loader({ request, params, c
       filters,
       isAuthenticated: Boolean(session),
       canAskQuestion,
+      canUploadAttachments,
       canViewSolutionModeration,
       canViewDuplicateDispute,
       referenceTime,
@@ -170,6 +178,7 @@ export default function CategoryRoute() {
         referenceTime={data.referenceTime}
         isAuthenticated={data.isAuthenticated}
         canAskQuestion={data.canAskQuestion}
+        canUploadAttachments={data.canUploadAttachments}
         canViewSolutionModeration={data.canViewSolutionModeration}
         canViewDuplicateDispute={data.canViewDuplicateDispute}
         actionData={actionData}

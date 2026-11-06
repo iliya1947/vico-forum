@@ -6,6 +6,7 @@ import { createHyperdriveForumAttachmentStore } from "../db/hyperdrive-forum-att
 import {
   contentTranslationPresentationContext,
   contentGenerationActionContext,
+  contentGenerationAdmissionContext,
   DISABLED_CONTENT_GENERATION_ACTION_RUNTIME,
   registryLoaderContext,
   uiTranslationStoreContext,
@@ -15,6 +16,7 @@ import { createHyperdriveForumReader, createHyperdriveForumWriter } from "../db/
 import { createHyperdriveUiTranslationStore } from "../db/hyperdrive-ui-translations";
 import { ContentTranslationPresentationService } from "../app/localization/content-translation-presentation";
 import { createHyperdriveContentTranslationBatchReader } from "../db/hyperdrive-content-translations";
+import { createHyperdriveContentGenerationAdmission } from "../db/hyperdrive-content-generation-admission";
 import { createHyperdriveAuthRuntime, type BetterAuthEnvironment } from "../app/auth/auth.server";
 import { initializeAuthContext, withAuthSessionCookies } from "../app/auth/session-context";
 import { AuthSessionUnavailableError } from "../app/auth/request-context";
@@ -22,10 +24,13 @@ import {adminForumContext} from "../app/admin/forum.server";
 import {createHyperdriveAdminForum} from "../db/hyperdrive-admin-forum";
 import { adminUsersContext } from "../app/admin/users.server";
 import { createHyperdriveAdminUsers } from "../db/hyperdrive-admin-users";
+import { userMeasureContext } from "../app/measures/request-context";
+import { createHyperdriveUserMeasures } from "../db/hyperdrive-user-measures";
 import { adminHistoryContext } from "../app/admin/history.server";
 import { createHyperdriveAdminHistory } from "../db/hyperdrive-admin-history";
-import { authorizationContext } from "../app/authorization/request-context";
+import { authorizationContext, authorizationOwnerContext } from "../app/authorization/request-context";
 import { createHyperdriveAuthorization } from "../db/hyperdrive-authorization";
+import { withForumAdministrativeRestrictions } from "../db/user-measure-admin-forum";
 import { createHyperdriveComplaintSubmission } from "../db/hyperdrive-complaints";
 import { complaintSubmissionContext } from "../app/complaints/request-context";
 import { complaintQueueContext } from "../app/complaints/queue-context";
@@ -72,12 +77,19 @@ export default {
     context.set(adminForumContext,createHyperdriveAdminForum(webConnectionString));
     context.set(adminUsersContext, createHyperdriveAdminUsers(webConnectionString));
     context.set(adminHistoryContext, createHyperdriveAdminHistory(webConnectionString));
-    const authorization = createHyperdriveAuthorization(webConnectionString);
-    context.set(authorizationContext, authorization);
+    const ownerUserId = (env as Env & { VICO_OWNER_USER_ID?: string }).VICO_OWNER_USER_ID;
+    context.set(authorizationOwnerContext, ownerUserId);
+    const authorization = createHyperdriveAuthorization(webConnectionString, undefined, ownerUserId);
+    const effectiveAuthorization = withForumAdministrativeRestrictions(
+      authorization, webConnectionString, undefined, ownerUserId,
+    );
+    context.set(authorizationContext, effectiveAuthorization);
+    context.set(userMeasureContext, createHyperdriveUserMeasures(webConnectionString, ownerUserId));
     context.set(complaintSubmissionContext, createHyperdriveComplaintSubmission(webConnectionString, authorization));
-    context.set(complaintQueueContext, createHyperdriveComplaintQueue(webConnectionString, authorization));
-    context.set(complaintReviewContext, createHyperdriveComplaintReview(webConnectionString, authorization));
-    context.set(complaintAppealContext,createHyperdriveComplaintAppeal(webConnectionString,authorization));
+    context.set(complaintQueueContext, createHyperdriveComplaintQueue(webConnectionString, effectiveAuthorization));
+    context.set(complaintReviewContext, createHyperdriveComplaintReview(webConnectionString, effectiveAuthorization));
+    context.set(complaintAppealContext,createHyperdriveComplaintAppeal(webConnectionString,effectiveAuthorization));
+    context.set(contentGenerationAdmissionContext, createHyperdriveContentGenerationAdmission(webConnectionString));
     context.set(contentGenerationActionContext, DISABLED_CONTENT_GENERATION_ACTION_RUNTIME);
     const response = await requestHandler(request, context);
     return withAuthSessionCookies(response, authHeaders);

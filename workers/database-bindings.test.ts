@@ -61,7 +61,8 @@ describe("Worker capability composition", () => {
     expect(source).toContain("createHyperdriveForumReader(webConnectionString)");
     expect(source).toContain("createHyperdriveForumWriter(webConnectionString)");
     expect(source).toContain("createHyperdriveContentTranslationBatchReader(webConnectionString)");
-    expect(source).toContain("createHyperdriveAuthorization(webConnectionString)");
+    expect(source).toContain("createHyperdriveAuthorization(webConnectionString, undefined, ownerUserId)");
+    expect(source).toContain("VICO_OWNER_USER_ID");
   });
 
   it("keeps database binding lookup fail-closed and content generation disabled", () => {

@@ -96,7 +96,7 @@ export async function loader(args: LocaleBoundaryArgs) {
   if (session) {
     try {
       const resolver = authorizationForRequest(args.context).forUser(session.user.id);
-      const [authorizationManage, helpModeration, duplicateManage, needsDetailsManage, attachmentSecurityRead, pin, sourceAny, historyRead, adminHistoryRead, adminUsersRead, complaintReview, complaintPriorityManage,complaintAppealReview] = await Promise.all([
+      const [authorizationManage, helpModeration, duplicateManage, needsDetailsManage, attachmentSecurityRead, pin, sourceAny, historyRead, adminHistoryRead, adminUsersRead, blockManage, complaintReview, complaintPriorityManage,complaintAppealReview] = await Promise.all([
         resolver.has("access.authorization.manage"),
         resolver.has("forum.solution.manageAny"),
         resolver.has("forum.helpDuplicate.manage"),
@@ -107,6 +107,7 @@ export async function loader(args: LocaleBoundaryArgs) {
         resolver.has("forum.post.history.read"),
         resolver.has("admin.history.read"),
         resolver.has("admin.users.read"),
+        resolver.has("admin.users.blocks.manage"),
         resolver.has("forum.complaint.review"),
         resolver.has("forum.complaint.priority.manage"),
         resolver.has("forum.complaint.appeal.review"),
@@ -121,6 +122,7 @@ export async function loader(args: LocaleBoundaryArgs) {
         ...(historyRead ? ["forum.post.history.read" as const] : []),
         ...(adminHistoryRead ? ["admin.history.read" as const] : []),
         ...(adminUsersRead ? ["admin.users.read" as const] : []),
+        ...(blockManage ? ["admin.users.blocks.manage" as const] : []),
       ])).canEnter;
       canViewModerationAttention = helpModeration || duplicateManage || needsDetailsManage || attachmentSecurityRead || complaintReview || complaintPriorityManage || complaintAppealReview;
     } catch (error) {

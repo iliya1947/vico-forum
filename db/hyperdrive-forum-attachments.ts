@@ -1,4 +1,5 @@
 import { drizzle } from "drizzle-orm/node-postgres";
+import { assertNoActiveUserMeasureRestriction } from "./user-measure-policy";
 import type { Client } from "pg";
 import { isPostgresAvailabilityFailure } from "../app/localization/persistent-registry";
 import {
@@ -16,6 +17,7 @@ import {
 } from "./forum-attachments";
 
 export interface ForumAttachmentStore {
+  admitUpload(ownerId: string, contextKey: string, draftId: string, attachmentId: string): Promise<ForumAttachmentMetadata | null>;
   recordUploadObject(objectKey: string): Promise<void>;
   activateUploadObject(objectKey: string, reservationEtag: string): Promise<void>;
   cancelOperation(ownerId: string, contextKey: string, operationId: string): Promise<void>;
@@ -58,12 +60,13 @@ function isAttachmentStorageAvailabilityFailure(error: unknown): boolean {
 export function createHyperdriveForumAttachmentStore(
   connectionString: string,
   clientFactory: () => Client = () => createWebClient(connectionString),
+  measureAdmission: typeof assertNoActiveUserMeasureRestriction = assertNoActiveUserMeasureRestriction,
 ): ForumAttachmentStore {
   async function apply<T>(operation: (store: DrizzleForumAttachments) => Promise<T>): Promise<T> {
     const client = clientFactory();
     try {
       await client.connect();
-      return await operation(new DrizzleForumAttachments(drizzle(client)));
+      return await operation(new DrizzleForumAttachments(drizzle(client), measureAdmission));
     } catch (error) {
       if (isAttachmentStorageAvailabilityFailure(error)) {
         throw new ForumAttachmentStorageUnavailableError({ cause: error });
@@ -75,6 +78,8 @@ export function createHyperdriveForumAttachmentStore(
   }
 
   return {
+    admitUpload: (ownerId, contextKey, draftId, attachmentId) =>
+      apply((store) => store.admitUpload(ownerId, contextKey, draftId, attachmentId)),
     recordUploadObject: (key) => apply((store) => store.recordUploadObject(key)),
     activateUploadObject: (key, etag) => apply((store) => store.activateUploadObject(key, etag)),
     cancelOperation: (ownerId, contextKey, operationId) => apply((store) => store.cancelOperation(ownerId, contextKey, operationId)),

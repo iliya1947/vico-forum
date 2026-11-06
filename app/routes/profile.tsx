@@ -1,5 +1,6 @@
 import { data, redirect, useActionData, useLoaderData, type RouterContextProvider } from "react-router";
 import { authSessionForRequest } from "../auth/request-context";
+import { measureRestrictionsForPresentation } from "../measures/presentation.server";
 import { forumReaderForRequest, forumWriterForRequest } from "../forum/request-context";
 import { requireSameOrigin } from "../forum/mutations.server";
 import { forumProfilePath } from "../forum/paths";
@@ -8,6 +9,7 @@ import { ProfileView } from "../forum/profile-view";
 import { ForumRouteError } from "../forum/ui";
 import { ForumEntityNotFoundError } from "../../db/forum-repository";
 import { ForumStorageUnavailableError } from "../../db/hyperdrive-forum";
+import { UserMeasureRestrictedError } from "../../db/user-measure-policy";
 
 type ProfileArgs = { request: Request; params: { locale?: string; userId?: string }; context: RouterContextProvider };
 export type ProfileActionError = "invalid" | "unauthenticated" | "origin" | "forbidden" | "notFound" | "unavailable";
@@ -22,6 +24,8 @@ export async function loader({ request, params, context }: ProfileArgs) {
     const profile = await forumReaderForRequest(context).readProfile(params.userId);
     if (!profile) throw new Response("Not Found", { status: 404 });
     const isOwner = authSessionForRequest(context)?.user.id === profile.id;
+    const canEditProfile = isOwner &&
+      !(await measureRestrictionsForPresentation(context,profile.id)).has("profile.edit");
     const query = new URL(request.url).searchParams;
     return {
       locale: params.locale ?? "en",
@@ -31,7 +35,8 @@ export async function loader({ request, params, context }: ProfileArgs) {
         role: { slug: profile.role.slug, displayName: profile.role.displayName, isSystem: profile.role.isSystem },
         messageCount: profile.messageCount, bestAnswerCount: profile.bestAnswerCount,
       },
-      isOwner, editing: isOwner && query.get("edit") === "1", saved: isOwner && query.get("saved") === "1",
+      isOwner, canEditProfile,
+      editing: canEditProfile && query.get("edit") === "1", saved: isOwner && query.get("saved") === "1",
     };
   } catch (error) {
     if (error instanceof ForumStorageUnavailableError) throw new Response("Unavailable", { status: 503 });
@@ -61,6 +66,11 @@ export async function action({ request, params, context }: ProfileArgs) {
   } catch (error) {
     if (error instanceof InvalidProfileError) return failure("invalid", 400, draft);
     if (error instanceof ForumEntityNotFoundError) return failure("notFound", 404);
+    if (error instanceof UserMeasureRestrictedError) {
+      return data<ProfileActionData>({ error: "forbidden", draft }, {
+        status: 403, headers: { "Cache-Control": "private, no-store" },
+      });
+    }
     if (error instanceof ForumStorageUnavailableError) return failure("unavailable", 503, draft);
     throw error;
   }

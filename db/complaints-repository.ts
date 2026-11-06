@@ -6,6 +6,7 @@ import {readComplaintReview,readComplaintContextPost,readComplaintEvidenceObject
 import type {ReviewPages,ReviewCase} from "../app/complaints/review-contract";
 import { createHash, randomUUID } from "node:crypto";
 import { sql } from "drizzle-orm";
+import { assertNoActiveUserMeasureRestriction } from "./user-measure-policy";
 import type { NodePgDatabase } from "drizzle-orm/node-postgres";
 import { readComplaintQueue } from "./complaint-queue-read";
 import { COMPLAINT_ACTIVITY_SECONDS, type ComplaintPrioritySettings, type ComplaintPrioritySettingsCommand, type ComplaintPriorityCommand } from "../app/complaints/queue-contract";
@@ -47,7 +48,8 @@ interface ReplayRow extends Record<string, unknown> { fingerprint: string; entit
 /** Trusted DB adapter; application callers use ComplaintsService, never browser-supplied access flags. */
 export class DrizzleComplaintsRepository {
   constructor(private readonly database: NodePgDatabase,
-    private readonly limits: { tenMinutes: number; day: number } = COMPLAINT_SUBMISSION_LIMITS) {}
+    private readonly limits: { tenMinutes: number; day: number } = COMPLAINT_SUBMISSION_LIMITS,
+    private readonly measureAdmission: typeof assertNoActiveUserMeasureRestriction = assertNoActiveUserMeasureRestriction) {}
 
   private async submissionBudget(tx: Tx, actorId: string) {
     // The caller holds the actor mutex across this read and the complaint INSERT.
@@ -104,12 +106,15 @@ export class DrizzleComplaintsRepository {
     return result.rows[0];
   }
 
-  async savePrioritySettings(input: ComplaintPrioritySettingsCommand) {
-    // One atomic full-map CAS: concurrent managers cannot partially overwrite a configuration.
-    const result = await this.database.execute(sql`update forum_complaint_priority_settings
-      set weights=${JSON.stringify(input.weights)}::jsonb,version=version+1
-      where id=1 and version=${input.expectedVersion} returning id`);
-    if (!result.rows.length) throw new ComplaintConflictError("priority settings changed");
+  async savePrioritySettings(actorId: string, input: ComplaintPrioritySettingsCommand) {
+    // One atomic full-map CAS; a newly restricted manager cannot commit a change.
+    await this.database.transaction(async tx => {
+      await this.measureAdmission(tx, actorId, "admin.complaints");
+      const result = await tx.execute(sql`update forum_complaint_priority_settings
+        set weights=${JSON.stringify(input.weights)}::jsonb,version=version+1
+        where id=1 and version=${input.expectedVersion} returning id`);
+      if (!result.rows.length) throw new ComplaintConflictError("priority settings changed");
+    });
   }
 
   async readQueue(actorId: string, page: number) { return readComplaintQueue(this.database,actorId,page); }
@@ -136,6 +141,7 @@ export class DrizzleComplaintsRepository {
       await this.actorMutex(tx,actorId);
       const c=await this.lockCase(tx,input.caseId);
       if(await this.replay(tx,actorId,input.operationId,fingerprint))return;
+      await this.measureAdmission(tx, actorId, "admin.complaints");
       if(c.state!=="open"||c.version!==input.expectedVersion)throw new ComplaintConflictError("case changed");
       await tx.execute(sql`update forum_complaint_cases set priority_override=${input.priority},version=version+1 where id=${c.id}`);
       await this.event(tx,actorId,input,fingerprint,"priority-changed",c.id,input.priority);
@@ -146,6 +152,7 @@ export class DrizzleComplaintsRepository {
     await this.database.transaction(async tx=>{
       // Actor mutex before Case: concurrent tabs cannot double-record a lease start.
       await this.actorMutex(tx,actorId);
+      await this.measureAdmission(tx, actorId, "admin.complaints");
       const c=await tx.execute(sql`select id from forum_complaint_cases where id=${caseId} and state='open' for share`);
       if(!c.rows.length)throw new ComplaintNotFoundError("open case not found");
       const previous=await tx.execute<{wasActive:boolean}>(sql`select expires_at>statement_timestamp() as "wasActive"
@@ -198,6 +205,9 @@ export class DrizzleComplaintsRepository {
         if (d.reason !== input.reason || d.explanation !== input.explanation) throw new ComplaintConflictError("report already submitted");
         return { complaintId: d.id, caseId: d.caseId };
       }
+      // Existing exact-operation and lifetime duplicate receipts must remain
+      // replayable even after a measure; admit only genuinely new reports.
+      await this.measureAdmission(tx, actorId, "complaints.submit");
       await this.submissionBudget(tx, actorId);
       const cases = await tx.execute<{ id: string }>(sql`select id from forum_complaint_cases where target_id=${targetId} and state='open' for update`);
       let caseId = cases.rows[0]?.id;
@@ -236,6 +246,7 @@ export class DrizzleComplaintsRepository {
       const c = await this.lockCase(tx, input.caseId);
       const replay = await this.replay(tx, actorId, input.operationId, fingerprint);
       if (replay) return replay.entityId;
+      await this.measureAdmission(tx, actorId, "admin.complaints");
       const id = randomUUID();
       await tx.execute(sql`insert into forum_complaint_notes(id,case_id,author_user_id,body,created_at)
         values (${id},${c.id},${actorId},${input.body},statement_timestamp())`);
@@ -252,6 +263,7 @@ export class DrizzleComplaintsRepository {
       const c = await this.lockCase(tx, input.caseId);
       const replay = await this.replay(tx, actorId, input.operationId, fingerprint);
       if (replay) return replay.entityId;
+      await this.measureAdmission(tx, actorId, "admin.complaints");
       if (c.state !== "open" || c.version !== input.expectedVersion) throw new ComplaintConflictError("case changed");
       const id = randomUUID();
       await tx.execute(sql`insert into forum_complaint_decisions(id,case_id,outcome,reviewer_user_id,reasoning,created_at)
@@ -309,6 +321,7 @@ export class DrizzleComplaintsRepository {
       const c=await this.lockCase(tx,input.caseId);
       const replay=await this.replay(tx,actorId,input.operationId,fingerprint);
       if(replay)return replay.entityId;
+      await this.measureAdmission(tx, actorId, "admin.complaints");
       if(c.state!=="resolved"||!c.initialDecisionId)throw new ComplaintConflictError("case not resolved");
       const updated=await tx.execute(sql`
         update forum_complaint_appeals set status='resolved',outcome=${input.outcome},

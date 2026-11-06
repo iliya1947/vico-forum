@@ -1059,6 +1059,7 @@ export function HelpSolutionsView({
   referenceTime,
   isAuthenticated = false,
   canAskQuestion = false,
+  canUploadAttachments = true,
   canViewSolutionModeration = false,
   canViewDuplicateDispute = false,
   actionData,
@@ -1070,6 +1071,7 @@ export function HelpSolutionsView({
   referenceTime: string;
   isAuthenticated?: boolean;
   canAskQuestion?: boolean;
+  canUploadAttachments?: boolean;
   canViewSolutionModeration?: boolean;
   canViewDuplicateDispute?: boolean;
   actionData?: HelpQuestionActionData;
@@ -1083,6 +1085,17 @@ export function HelpSolutionsView({
   const mutationError = actionData && "error" in actionData ? actionData.error : undefined;
   const [questionComposerOpen, setQuestionComposerOpen] = useState(Boolean(similarAction));
   const [questionReady, setQuestionReady] = useState(false);
+  const questionScope = JSON.stringify([locale, useHeaderAuthUser()?.id ?? null]);
+  const [retainedQuestionScope, setRetainedQuestionScope] = useState<string | null>(
+    canAskQuestion && questionComposerOpen ? questionScope : null,
+  );
+  // Only a previously opened composer survives a permission change; a fresh one stays gated.
+  useEffect(() => {
+    setRetainedQuestionScope(current => canAskQuestion && questionComposerOpen
+      ? questionScope : questionComposerOpen && current === questionScope ? current : null);
+  }, [canAskQuestion, questionComposerOpen, questionScope]);
+  const questionEditorMounted = questionComposerOpen
+    && (canAskQuestion || retainedQuestionScope === questionScope);
 
   const submittingHelpQuestion = navigation.state !== "idle";
   const submittingIntent = navigation.formData?.get("intent");
@@ -1283,10 +1296,11 @@ export function HelpSolutionsView({
           </div>
         </Form>
 
-        {canAskQuestion && questionComposerOpen ? (
+        {questionEditorMounted ? (
           <Form
             id="help-question-create-form"
             method="post"
+            onSubmit={event => { if (!canAskQuestion) event.preventDefault(); }}
             className="forum-write-form help-question-create-form"
             aria-labelledby="help-question-create-heading"
             aria-busy={isQuestionFormBusy}
@@ -1324,12 +1338,14 @@ export function HelpSolutionsView({
                 <MarkdownEditor
                   id="help-question-body"
                   editorContextKey="help:new" editorLocale={locale}
+                  allowAttachmentUploads={canUploadAttachments}
                   publicationIntent="createHelpQuestion"
                   publicationPending={isQuestionSubmitting}
+                  publicationDisabled={!canAskQuestion}
                   onPublicationReadyChange={setQuestionReady}
                   actions={<>
                     <button type="button" data-editor-cancel disabled={isQuestionFormBusy} onClick={() => setQuestionComposerOpen(false)}>{t("postEditCancel")}</button>
-                    <button type="submit" name="intent" value="createHelpQuestion" disabled={isQuestionFormBusy || !questionReady}>
+                    <button type="submit" name="intent" value="createHelpQuestion" disabled={isQuestionFormBusy || !questionReady || !canAskQuestion}>
                       {t(isQuestionSubmitting ? "helpSolutionsAskSubmitting" : "helpSolutionsAskSubmit")}
                     </button>
                   </>}
@@ -1410,7 +1426,7 @@ export function HelpSolutionsView({
                 value="checkSimilarHelpQuestions"
                 formNoValidate
                 className="help-similar-check"
-                disabled={isQuestionFormBusy}
+                disabled={isQuestionFormBusy || !canAskQuestion}
               >
                 {t(isSimilarChecking ? "helpSolutionsSimilarChecking" : "helpSolutionsSimilarCheck")}
               </button>
@@ -1878,12 +1894,14 @@ export function SectionView({
   locale,
   section,
   canCreateTopic,
+  canUploadAttachments = true,
   topicReadStates,
   actionData,
 }: {
   locale: string;
   section: ForumSectionPage;
   canCreateTopic: boolean;
+  canUploadAttachments?: boolean;
   topicReadStates: Readonly<Record<string, ForumTopicReadKind>> | null;
   actionData?: ForumMutationError;
 }) {
@@ -1891,6 +1909,15 @@ export function SectionView({
   const navigation = useNavigation();
   const [topicReady, setTopicReady] = useState(false);
   const [composerOpen, setComposerOpen] = useState(true);
+  const createScope = JSON.stringify([section.id, useHeaderAuthUser()?.id ?? null]);
+  const [retainedCreateScope, setRetainedCreateScope] = useState<string | null>(
+    canCreateTopic && composerOpen ? createScope : null,
+  );
+  useEffect(() => {
+    setRetainedCreateScope(current => canCreateTopic && composerOpen
+      ? createScope : composerOpen && current === createScope ? current : null);
+  }, [canCreateTopic, composerOpen, createScope]);
+  const createEditorMounted = canCreateTopic || (composerOpen && retainedCreateScope === createScope);
   const isCreateTopicSubmitting =
     navigation.state !== "idle"
     && navigation.formData?.get("intent") === "createTopic";
@@ -1984,9 +2011,10 @@ export function SectionView({
         </section>
       )}
 
-      {canCreateTopic && (
+      {createEditorMounted && (
         <Form
           hidden={!composerOpen}
+          onSubmit={event => { if (!canCreateTopic) event.preventDefault(); }}
           key={section.id}
           id="create-topic"
           method="post"
@@ -2039,12 +2067,14 @@ export function SectionView({
               <MarkdownEditor
                 id="create-topic-body"
                 editorContextKey={`section:${section.id}:new`} editorLocale={locale}
+                allowAttachmentUploads={canUploadAttachments}
                 publicationIntent="createTopic"
                 publicationPending={isCreateTopicSubmitting}
+                publicationDisabled={!canCreateTopic}
                 onPublicationReadyChange={setTopicReady}
                 actions={<>
                   <button type="button" data-editor-cancel disabled={isCreateTopicSubmitting} onClick={() => setComposerOpen(false)}>{t("postEditCancel")}</button>
-                  <button type="submit" disabled={isCreateTopicSubmitting || !topicReady}>
+                  <button type="submit" disabled={isCreateTopicSubmitting || !topicReady || !canCreateTopic}>
                     {t(isCreateTopicSubmitting ? "createTopicSubmitting" : "createTopicSubmit")}
                   </button>
                 </>}
@@ -2116,6 +2146,7 @@ export function TopicView({
   postPresentations,
   generationUnits,
   canReply,
+  canUploadAttachments = true,
   editablePostIds = [],
   canReadPostHistory = false,
   canSubmitComplaint = false,
@@ -2141,6 +2172,7 @@ export function TopicView({
   postPresentations: readonly ContentTranslationPresentation[];
   generationUnits: readonly ContentGenerationUnitView[];
   canReply: boolean;
+  canUploadAttachments?: boolean;
   editablePostIds?: readonly string[];
   canReadPostHistory?: boolean;
   canSubmitComplaint?: boolean;
@@ -2249,6 +2281,8 @@ export function TopicView({
   const [replyComposerOpen, setReplyComposerOpen] = useState(true);
   const replyNeedsFocusRef = useRef(false);
   const [editingPostId, setEditingPostId] = useState<string | null>(null);
+  const editScope = JSON.stringify([topic.id, headerActorId]);
+  const [editingPostScope, setEditingPostScope] = useState<string | null>(null);
   const [editBaseRevisionId, setEditBaseRevisionId] = useState<string | null>(null);
   const [editReady, setEditReady] = useState(false);
   const editEditorRef = useRef<MarkdownEditorHandle>(null);
@@ -2291,6 +2325,7 @@ export function TopicView({
     replyPublicationRef.current = null;
     editPublicationRef.current = null;
     setEditingPostId(null);
+    setEditingPostScope(null);
     setEditBaseRevisionId(null);
   }, [topic.id]);
 
@@ -2298,12 +2333,14 @@ export function TopicView({
 
   useEffect(() => {
     const requested = new URLSearchParams(location.search).get("editPost");
-    if (requested && editablePostIds.includes(requested) && editingPostId !== requested) {
+    if (requested && editablePostIds.includes(requested)
+      && (editingPostId !== requested || editingPostScope !== editScope)) {
       setEditBaseRevisionId(topic.posts.find((post) => post.id === requested)?.body.id ?? null);
       setEditReady(false);
       setEditingPostId(requested);
+      setEditingPostScope(editScope);
     }
-  }, [location.search, topic.id, editablePostIds]);
+  }, [location.search, topic.id, editablePostIds, editScope]);
 
   function openPostEditor(postId: string, revisionId: string) {
     if (editingPostId === postId) { editEditorRef.current?.focus(); return; }
@@ -2311,12 +2348,14 @@ export function TopicView({
     setEditBaseRevisionId(revisionId);
     setEditReady(false);
     setEditingPostId(postId);
+    setEditingPostScope(editScope);
   }
 
   function closePostEditor() {
     setEditRecovery((current) => current ? { ...current, completedOperationId: undefined } : current);
     editEditorRef.current?.cancelOperation();
     setEditingPostId(null);
+    setEditingPostScope(null);
     setEditBaseRevisionId(null);
     setEditReady(false);
     const params = new URLSearchParams(location.search);
@@ -2820,8 +2859,9 @@ export function TopicView({
                       </small>
                     ) : null}
 
-                    {editingPostId === post.id && editablePostIds.includes(post.id) ? (
+                    {editingPostId === post.id && editingPostScope === editScope ? (
                       <Form method="post" className="forum-write-form topic-post-edit-form"
+                        onSubmit={event => { if (!editablePostIds.includes(post.id)) event.preventDefault(); }}
                         aria-label={t("postEditHeading")} aria-busy={isEditSubmitting}>
                         <input type="hidden" name="postId" value={post.id} />
                         <input type="hidden" name="expectedRevisionId" value={editBaseRevisionId ?? ""} />
@@ -2836,13 +2876,15 @@ export function TopicView({
                           initialPublishedRevisionId={post.body.id}
                           editorContextKey={`post:${post.id}:edit`}
                           editorLocale={locale}
+                          allowAttachmentUploads={canUploadAttachments}
                           publicationIntent="editPost"
                           publicationPending={isEditSubmitting}
+                          publicationDisabled={!editablePostIds.includes(post.id)}
                           onPublicationReadyChange={setEditReady}
                           actions={<>
                             <button type="button" disabled={isEditSubmitting} onClick={closePostEditor}>{t("postEditCancel")}</button>
                             <button type="submit" name="intent" value="editPost"
-                              disabled={!editReady || isEditSubmitting || !!completedEditOperationId || editBaseRevisionId !== post.body.id}>{t("postEditSave")}</button>
+                              disabled={!editReady || isEditSubmitting || !editablePostIds.includes(post.id) || !!completedEditOperationId || editBaseRevisionId !== post.body.id}>{t("postEditSave")}</button>
                           </>}
                           disabled={isEditSubmitting}
                           existingInlineAttachments={(post.attachments ?? []).map((attachment) => ({
@@ -3046,6 +3088,7 @@ export function TopicView({
                   ref={replyEditorRef}
                   id="reply-body"
                   editorContextKey={`topic:${topic.id}:reply`} editorLocale={locale}
+                  allowAttachmentUploads={canUploadAttachments}
                   publicationIntent="reply"
                   publicationPending={isReplySubmitting}
                   publicationDisabled={!replyPublicationAllowed}

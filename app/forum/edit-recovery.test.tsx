@@ -8,6 +8,7 @@ import { topicAction } from "./actions.server";
 import { authSessionContext } from "../auth/request-context";
 import { HeaderAuthProvider } from "../auth/auth-controls";
 import { authorizationContext } from "../authorization/request-context";
+import { userMeasureContext } from "../measures/request-context";
 import { forumReaderContext, forumWriterContext } from "./request-context";
 import { localeContext, registryLoaderContext, contentTranslationPresentationContext } from "../localization/request-context";
 import { ContentTranslationPresentationService } from "../localization/content-translation-presentation";
@@ -56,6 +57,7 @@ function setup() {
   localStorage.clear();
   const context = new RouterContextProvider();
   context.set(authSessionContext, { user: { id: "owner" } } as never);
+  context.set(userMeasureContext,{activeRestrictions:async()=>[]} as never);
   context.set(localeContext, { translationLocale: "en", direction: "ltr" } as never);
   context.set(registryLoaderContext, async () => ({ registry: localeRegistry, semanticIdentity: "test", health: { status: "healthy" } }));
   context.set(contentTranslationPresentationContext, new ContentTranslationPresentationService({ readBatch: async () => ({ translations: [] }) }));

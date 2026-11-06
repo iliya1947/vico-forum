@@ -1,6 +1,7 @@
 import { forumReadLoader } from "../forum/read-availability.server";
 import { useActionData, useLoaderData, type RouterContextProvider, type HeadersArgs } from "react-router";
 import { authSessionForRequest } from "../auth/request-context";
+import { measureRestrictionsForPresentation } from "../measures/presentation.server";
 import { authorizationForRequest } from "../authorization/request-context";
 import { AuthorizationUnavailableError } from "../../db/authorization-service";
 import { forumReaderForRequest } from "../forum/request-context";
@@ -103,6 +104,7 @@ export const loader = forumReadLoader(async function loader({ params, context }:
   let editablePostIds: string[] = [];
   let canReadPostHistory = false;
   let canSubmitComplaint = false;
+  let canUploadAttachments = false;
   let topicReadState: ForumTopicReadState | null = null;
   if (session) {
     try {
@@ -151,6 +153,12 @@ export const loader = forumReadLoader(async function loader({ params, context }:
       if (!(error instanceof AuthorizationUnavailableError)) throw error;
       // Public topic reads remain available when optional presentation authorization is unavailable.
     }
+    const restricted=await measureRestrictionsForPresentation(context,session.user.id);
+    canReply=canReply && !restricted.has("replies.create");
+    canSubmitComplaint=canSubmitComplaint && !restricted.has("complaints.submit");
+    canGenerateTranslations=canGenerateTranslations && !restricted.has("translations.generate");
+    if(restricted.has("posts.edit"))editablePostIds=[];
+    canUploadAttachments=!restricted.has("attachments.upload");
   }
 
   let pendingDuplicateAppeal: {
@@ -209,6 +217,7 @@ export const loader = forumReadLoader(async function loader({ params, context }:
     postPresentations,
     generationUnits,
     canReply,
+    canUploadAttachments,
     canManageSolution,
     canConfirmOwnSolution,
     canManageAnySolution,
