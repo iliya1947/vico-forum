@@ -918,3 +918,31 @@ Checked and not findings in this pass:
 - CAS, rollback and committed replay paths exercised by PostgreSQL tests.
 
 Do not hand findings to Lira yet; coordinator whole-PR review is still in progress and confirmed findings must be returned as one package after all passes.
+
+
+## AP-10 coordinator whole-PR review — pass 2: authority / permissions / privileged targets
+
+Reviewed stable PR #290 exact head `503a5c6dc570e2c6c0f64f59e7fe5bf390a90b13`.
+
+Confirmed current-scope defects:
+
+1. **AP10-MIRA-03 — ordinary block manager can persist latent administrative restrictions that later suppress privileged authority.**
+   Current create/change validation accepts `admin.forum/admin.complaints/admin.security/admin.usersAccess` for any ordinary target as long as actor has ordinary `admin.users.blocks.manage`. Those restrictions may be inert initially, but if the target later receives administrative permissions, the old measure immediately suppresses the newly granted administrative family. This bypasses the approved privileged-target boundary: an actor without `admin.users.blocks.managePrivileged` can pre-position an administrative sanction against a future moderator/admin. At minimum, an ordinary block manager must not be able to persist administrative-family restrictions whose later activation can affect privileged capabilities.
+
+2. **AP10-MIRA-04 — elevated-authority controls are not read-only for non-owner authorization managers.**
+   Server correctly guards mutations of `admin.users.blocks.managePrivileged` and role assignment to/from a role containing it with bound-owner checks. However the existing authorization UI receives the new permission through `PERMISSION_CATALOG` and renders its role-grant checkbox, per-user override selector, and elevated-role assignment options as ordinary enabled controls for any `access.authorization.manage` actor. Non-owner attempts only fail after submit with 403. The approved technical plan explicitly requires these variants to be read-only in UI while server remains authoritative.
+
+Checked and not findings in this pass:
+- both block-management permissions have zero initial grants;
+- elevated permission is supplementary to ordinary manage and cannot self-escalate through role grants/overrides/role assignment;
+- owner target is immune to AP-10 measures;
+- self-target is rejected;
+- ordinary manager cannot act on currently privileged target;
+- elevated manager cannot act on peer elevated target; owner can;
+- target hierarchy uses raw RBAC state, so an active admin restriction does not down-rank a privileged target;
+- issuer authority floor prevents lower authority from undoing higher-authority measure decisions;
+- admin.usersAccess restriction suppresses effective administrative actions without rewriting raw grants;
+- AP-10 adds no last-manager veto; existing legacy lockout remains separate and unchanged;
+- missing production `VICO_OWNER_USER_ID` configuration is not a current repository/local-CI defect; production rollout is outside current stage and operations fail closed without the binding.
+
+Coordinator whole-PR review remains in progress. Findings are not handed to Lira until all passes complete.
