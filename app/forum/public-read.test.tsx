@@ -4198,9 +4198,9 @@ describe("AP-08 closed topic participation and mounted reply recovery", () => {
 
   it("revalidates once after a stale reply 403 restriction while retaining the mounted editor", async () => {
     stubUploads();
-    let current = topicRenderData(topic, { canReply: true });
+    let current = topicRenderData(topic, { canReply: true, canUploadAttachments: true });
     const action = vi.fn(async () => {
-      current = topicRenderData(topic, { canReply: false });
+      current = topicRenderData(topic, { canReply: false, canUploadAttachments: true });
       return data({ error: "forbidden" }, { status: 403 });
     });
     let releaseRefresh!: () => void;
@@ -4223,6 +4223,7 @@ describe("AP-08 closed topic participation and mounted reply recovery", () => {
       fireEvent.change(textarea, { target: { value: "Reply retained after deny" } });
       const operationId = form.querySelector<HTMLInputElement>('input[name="editorOperationId"]')?.value;
       await waitFor(() => expect(within(form).getByRole("button", { name: "Post reply" })).toBeEnabled());
+      await waitFor(() => expect(within(form).getByLabelText("Attach")).toBeEnabled());
       fireEvent.click(within(form).getByRole("button", { name: "Post reply" }));
       await waitFor(() => expect(action).toHaveBeenCalledTimes(1));
       await waitFor(() => expect(loader.mock.calls.length).toBeGreaterThan(1));
