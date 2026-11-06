@@ -1,5 +1,13 @@
 # Лира — ChatGPT-6
 
+## AP-11 subtask 2/3 — Forum × measures browser integration (2026-11-06)
+
+- [Draft implementation PR #292](https://github.com/iliya1947/vico-forum/pull/292), stage-2 author-verified head `1edc00abf6dd40ba7cb36ece0e2c204d093c4d7d`. Stage 1 Users coverage remains intact; only subtask 2 completed, AP-11 overall not finished.
+- Existing Chromium harness `tests/browser/user-measures/check.py` now covers admin Forum→category→section→topic navigation; shared canonical closeTopic/reopenTopic with real History, closure versions 0→1→2, and no-write 409 reply while an unsent editor remains mounted (text, operation ID, Cancel, disabled Publish). After reopen, two independent AP-10 reply measures prohibit stale POST 403; editor remains mounted and Publisher disables after revalidation; both measures lifted restores composer. Old 19 AP-10 + four Users cases preserved. Public GET is not incorrectly asserted private/no-store; protected admin reads and denied writes remain checked.
+- Confirmed live current-scope frontend bug: stale 403 reply returned correctly, but did not refresh UI; Publish stayed enabled. Local fix in `app/forum/views.tsx` adds a once-per-response denied-reply revalidation (without replay), with synchronous submit intent capture for immediate 403 responses. One focused DOM regression in `app/forum/public-read.test.tsx` covers fast 403 and preserved form/input/Cancel/operation identity. Domain/authorization/DB/schema/grants untouched.
+- [Exact-head CI #42235958218](https://github.com/iliya1947/vico-forum/actions/runs/42235958218) **SUCCESS**: 1967/1967 application, 561/561 PostgreSQL 17, lint/typecheck/build plus applicable checks. [Exact-head Chromium #42235958446](https://github.com/iliya1947/vico-forum/actions/runs/42235958446) **SUCCESS**: 28 recorded groups (19 original + 4 Users + 5 Forum). Earlier tests exposed public GET/private header assertion, saved editor mode and immediate 403 tracking; these were fixed locally before final exact-head success.
+- Stop at bounded subtask 2. Next explicit developer continuation advances **only subtask 3/3**: bounded EN/RU/HE × 320/768/1280 Users detail/admin topic and privacy/no-store, then final AP-11 exact-head CI/browser. Coordinator whole-PR Mira after stable complete head; Lev only after coordinator PASS. Settings, owner redesign, Stage 6, production and docs closeout untouched.
+
 ## AP-11 subtask 1/3 — Users browser integration (2026-11-06)
 
 - Draft implementation PR #292, `feat/admin-ap11-connected-browser`, stable head `12fc3bffd1e62be145ae22a24e2785248c75b256`; test-only changes in `tests/browser/user-measures/check.py`.
