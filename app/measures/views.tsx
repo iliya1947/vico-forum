@@ -408,7 +408,7 @@ function AppealReviewForm({measure,appealId,ordinal,operationId,pending,allowAdm
 
 export function AdminMeasureDetail({locale,measure,access,changeId,liftId,reviewIds,
   maySelectAdministrativeRestrictions=false,feedback}:{
-  locale:string;measure:UserMeasureDetail&{targetUserId:string;targetName:string};
+  locale:string;measure:UserMeasureDetail&{targetUserId:string;targetName:string;canMutate:boolean};
   access:AdminAccess;changeId:string;liftId:string;reviewIds:{appealId:string;operationId:string}[];
   maySelectAdministrativeRestrictions?:boolean;feedback:Feedback;
 }) {
@@ -423,7 +423,7 @@ export function AdminMeasureDetail({locale,measure,access,changeId,liftId,review
       <button type="button" disabled={pending} onClick={refresh}>{t("measuresRefresh")}</button>
       <FeedbackMessage feedback={feedback}/>
       <MeasureInfo measure={measure} locale={locale}/>
-      {isActive&&<>
+      {isActive&&measure.canMutate&&<>
         <Form method="post" key={changeId} className="profile-form" aria-busy={pending}
           onSubmitCapture={encodeMeasureExpiry}>
           <h3>{t("measuresChange")}</h3>
@@ -448,7 +448,7 @@ export function AdminMeasureDetail({locale,measure,access,changeId,liftId,review
         </Form>
       </>}
       <AppealsAndTimeline measure={measure} locale={locale}/>
-      {isActive&&measure.appeals.filter(appeal=>appeal.status==="pending").map(appeal=>
+      {isActive&&measure.canMutate&&measure.appeals.filter(appeal=>appeal.status==="pending").map(appeal=>
         <AppealReviewForm key={appeal.id+":"+measure.version} measure={measure}
           appealId={appeal.id} ordinal={appeal.ordinal}
           operationId={reviewIds.find(x=>x.appealId===appeal.id)?.operationId??""}
