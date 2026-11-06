@@ -82,7 +82,7 @@ async function restoreHistoryWrites() {
 beforeAll(async () => {
   await client.connect();
   await client.query(`drop schema if exists ${schema} cascade; create schema ${schema}`);
-  for (const file of (await readdir("drizzle")).filter(name => /^\\d{4}_.+\\.sql$/.test(name)).sort()) {
+  for (const file of (await readdir("drizzle")).filter(name => /^\d{4}_.+\.sql$/.test(name)).sort()) {
     await client.query((await readFile(`drizzle/${file}`, "utf8")).replaceAll('"public".', `"${schema}".`));
   }
   await client.query(`insert into "user"(id,name,email) values
