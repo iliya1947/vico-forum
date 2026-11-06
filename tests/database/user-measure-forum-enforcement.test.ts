@@ -121,6 +121,80 @@ afterAll(async () => {
   await client.end();
 });
 
+describe("AP-10 admin.security private attachment event admission", () => {
+  const keys = [
+    "forum.attachmentSecurity.read", "forum.helpNeedsDetails.manage",
+    "forum.complaint.review", "forum.topic.create", "forum.post.editOwn",
+  ] as const satisfies readonly PermissionKey[];
+  const snapshot = {
+    role: { id: "moderator", slug: "moderator", displayName: "Moderator", isSystem: true },
+    explicitAssignment: false, grants: [...keys], overrides: {},
+    effectivePermissions: [...keys],
+  };
+  const raw = {
+    forUser: () => ({
+      has: async (permission: PermissionKey) => keys.includes(permission as typeof keys[number]),
+      resolve: async () => snapshot,
+    }),
+    resolveUser: async () => snapshot,
+  } as unknown as AuthorizationManagementCapability;
+  const effective = (searchPath = schema) => withForumAdministrativeRestrictions(
+    raw, databaseUrl!, () => new Pool({
+      connectionString: databaseUrl, options: "-c search_path=" + searchPath, max: 1,
+    }),
+  );
+
+  it("hides Security event access in has/resolve, retains raw grants, unrelated modes and other users", async () => {
+    expect(await effective().forUser("target").has("forum.attachmentSecurity.read")).toBe(true);
+    const active = await createMeasure("admin.security");
+    const sanctioned = effective().forUser("target");
+    expect(await sanctioned.has("forum.attachmentSecurity.read")).toBe(false);
+    for (const permission of keys.slice(1)) {
+      expect(await sanctioned.has(permission)).toBe(true);
+    }
+    const projected = await sanctioned.resolve();
+    expect(projected.effectivePermissions).toEqual([...keys.slice(1)]);
+    expect(projected.grants).toEqual([...keys]);
+    expect((await raw.forUser("target").resolve()).effectivePermissions).toEqual([...keys]);
+    expect((await effective().resolveUser("target")).effectivePermissions).toEqual([...keys]);
+    expect(await effective().forUser("other").has("forum.attachmentSecurity.read")).toBe(true);
+    await lift(active);
+    // New request sees the committed lift, without changing any role grant.
+    expect(await effective().forUser("target").has("forum.attachmentSecurity.read")).toBe(true);
+  });
+
+  it("keeps Security separate from Forum/Complaints measures, and honors overlapping active status", async () => {
+    await createMeasure("admin.forum");
+    await createMeasure("admin.complaints");
+    expect(await effective().forUser("target").has("forum.attachmentSecurity.read")).toBe(true);
+    expect(await effective().forUser("target").has("forum.helpNeedsDetails.manage")).toBe(false);
+    expect(await effective().forUser("target").has("forum.complaint.review")).toBe(false);
+
+    await createMeasure("admin.security", "target", "2000-01-01T00:00:00Z");
+    await createMeasure("admin.security", "other");
+    const disabled = await createMeasure("admin.security");
+    await client.query(
+      "update user_measure_restrictions set enabled=false where measure_id=$1", [disabled],
+    );
+    expect(await effective().forUser("target").has("forum.attachmentSecurity.read")).toBe(true);
+    const first = await createMeasure("admin.security");
+    const second = await createMeasure("admin.security");
+    await lift(first);
+    expect(await effective().forUser("target").has("forum.attachmentSecurity.read")).toBe(false);
+    await lift(second);
+    expect(await effective().forUser("target").has("forum.attachmentSecurity.read")).toBe(true);
+    const projected = await effective().forUser("target").resolve();
+    expect(projected.effectivePermissions).toEqual([
+      "forum.attachmentSecurity.read", "forum.topic.create", "forum.post.editOwn",
+    ]);
+  });
+
+  it("does not silently authorize a Security reader when measure tables are absent", async () => {
+    await expect(effective("ap10_missing_security_schema")
+      .forUser("target").has("forum.attachmentSecurity.read")).rejects.toThrow();
+  });
+});
+
 describe("AP-10 admin.complaints effective access and reviewer transactions", () => {
   const reviewPermissions = [
     "forum.complaint.review", "forum.complaint.appeal.review",

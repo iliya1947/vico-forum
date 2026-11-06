@@ -20,17 +20,18 @@ const COMPLAINT_ADMIN_PERMISSIONS = new Set<PermissionKey>([
   "forum.complaint.priority.manage", "forum.complaint.reporterIdentity.read",
 ]);
 
-type RestrictedFamily = "admin.forum" | "admin.complaints";
+type RestrictedFamily = "admin.forum" | "admin.complaints" | "admin.security";
 function familyFor(permission: PermissionKey): RestrictedFamily | null {
   if (FORUM_ADMIN_PERMISSIONS.has(permission)) return "admin.forum";
   if (COMPLAINT_ADMIN_PERMISSIONS.has(permission)) return "admin.complaints";
+  if (permission === "forum.attachmentSecurity.read") return "admin.security";
   return null;
 }
 
 type PoolFactory = (connectionString: string) => Pool;
 
 /**
- * Request-local Forum/Complaints action view. Raw role grants, overrides and
+ * Request-local Forum/Complaints/Security action view. Raw role grants, overrides and
  * management/authority methods are untouched. Each Worker request creates a
  * new wrapper and checks current database state, with no cross-request cache.
  */

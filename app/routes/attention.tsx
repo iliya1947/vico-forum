@@ -85,7 +85,7 @@ export async function loader({ request, params, context, url }: {
     throw redirect(`/${encodeURIComponent(params.locale??"en")}/attention/complaints/settings`);
   // Each mode checks its own capability before reading a protected queue.
   if (mode === "security" ? !canReadSecurityAttachments : mode === "complaints" ? (group==="group2"?!canReviewAppeals:!canReviewComplaints) : !canViewHelpAttention) {
-    throw new Response("Forbidden", { status: 403 });
+    throw new Response("Forbidden", { status: 403, headers: { "Cache-Control": "private, no-store" } });
   }
   const pageParam = query.get("page") ?? "0";
   const pageNumber = Number(pageParam);
