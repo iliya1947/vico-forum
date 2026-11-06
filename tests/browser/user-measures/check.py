@@ -301,7 +301,8 @@ try:
             topic_path, getattr(public_response, "status", None)
         )
         editor = form_for(subject, "reply")
-        editor.get_by_role("button", name="Advanced", exact=True).click()
+        if editor.locator(".markdown-editor").get_attribute("data-authoring") != "advanced":
+            editor.get_by_role("button", name="Advanced", exact=True).click()
         reply_text = "AP11 retained editor: close while composing"
         editor.locator("textarea#reply-body").fill(reply_text)
         expect(editor.locator('button[type="submit"]')).to_be_enabled()
@@ -384,7 +385,8 @@ try:
             topic_path, getattr(public_response, "status", None)
         )
         restricted_editor = form_for(subject, "reply")
-        restricted_editor.get_by_role("button", name="Advanced", exact=True).click()
+        if restricted_editor.locator(".markdown-editor").get_attribute("data-authoring") != "advanced":
+            restricted_editor.get_by_role("button", name="Advanced", exact=True).click()
         restricted_text = "AP11 retained editor: revoked reply permission"
         restricted_editor.locator("textarea#reply-body").fill(restricted_text)
         restricted_operation = restricted_editor.locator('input[name="editorOperationId"]').input_value()
