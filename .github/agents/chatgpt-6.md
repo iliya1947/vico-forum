@@ -1,5 +1,16 @@
 # Лира — ChatGPT-6
 
+## AP-11 corrections AP11-MIRA-01..04 — author complete (2026-11-06)
+
+- **Coordinator assignment:** Mira reviewed old AP-11 head `079b98e29646db2024546fb52be4076186567ece` and reported CHANGES REQUIRED for bounded confirmed AP11-MIRA-01..04. Lira corrected only these in [Draft PR #292](https://github.com/iliya1947/vico-forum/pull/292), final implementation exact head `3f608ce9a042fd7c78401d330f5865af4f3dee5c`, open/unmerged.
+- **01:** React Router v8 explicit loader revalidation after rejected 403 now maintains a temporary Publish/new-attachment-upload block through its promise, including the immediate 403 render before effect. Editor text, operation, Cancel and existing attachment state remain mounted; no POST replay. Focused DOM regression uses an intentionally pending loader and verifies pre-denial enabled and in-flight disabled Publish/Attach, editor retention and one action.
+- **02:** separate actual-browser closure/measure composition topic on existing synthetic user; real UI measure create/lift and shared close/reopen; checks open+measure 403, closed+measure 409, reopened+measure 403, closed+lifted 409, restored only open+lifted. No posts/History on denied attempts, 4 ordered closure History events and CAS versions; original AP-10 subject measures unchanged.
+- **03:** manager grant/deny/allow transitions now use already authenticated builtin-admin subject's real authorization-management UI with canonical `/:locale/admin/authorization` writer and 4 verified `user.overrideChanged` History events; removed direct SQL mutation for lifecycle under test. Same-session stale form 403, read-only revalidation, no-write/no-replay and restoration preserved; no 4th signup.
+- **04:** protected document helper/guest/member denials verify both `private` and `no-store`; public topic GET remains outside.
+- **[Exact-head CI #42245766359](https://github.com/iliya1947/vico-forum/actions/runs/42245766359) SUCCESS:** 1967 app tests / 154 files, 561 PostgreSQL 17 tests / 46 files, lint/typecheck/build/schema/Worker checks PASS. An unrelated unchanged content-generation-navigation test showed nondeterministic result (two failures then PASS on same SHA job retry), so no unrelated code modification.
+- **[Exact-head Chromium #42245766263](https://github.com/iliya1947/vico-forum/actions/runs/42245766263) SUCCESS:** 34 case groups, zero overflow/page errors/external requests. Artifact `ap10-browser-evidence` #13517504953 verified unexpired on same exact SHA. Four files changed total, no permissions/grants/schema/dependencies/Settings/owner redesign/Stage6/production.
+- **Stop/handoff:** implementation and author checks finished; PR #292 Draft. Await Mira's new coordinator whole-PR review on `3f608ce9`. No PASS presumed, Lev only after coordinator PASS. Factual docs/PROJECT_STATE closeout separate after implementation reviews.
+
 ## AP-11 complete — subtask 3/3 localization/privacy and stable author handoff (2026-11-06)
 
 - Implementation [Draft PR #292](https://github.com/iliya1947/vico-forum/pull/292), base main `7b452edfc0a759b4b65cd1cc535f207bb9e615c7`, **stable author-verified exact head `079b98e29646db2024546fb52be4076186567ece`**. All three bounded implementation subtasks now complete; PR still Draft/open/unmerged. Do not claim coordinator PASS or Lev review.
