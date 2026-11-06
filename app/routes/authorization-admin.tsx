@@ -1,6 +1,6 @@
 import { useActionData, useLoaderData, type RouterContextProvider } from "react-router";
 import { authSessionForRequest } from "../auth/request-context";
-import { authorizationForRequest } from "../authorization/request-context";
+import { authorizationForRequest, authorizationOwnerContext } from "../authorization/request-context";
 import { adminAccess } from "../admin/access";
 import { PERMISSION_CATALOG } from "../authorization/catalog";
 import { requireSameOrigin, requiredFormText } from "../forum/mutations.server";
@@ -36,10 +36,12 @@ async function manager(context: RouterContextProvider) {
 }
 
 export async function loader({ params, context }: { params: { locale?: string }; context: RouterContextProvider }) {
-  const { capability, resolver } = await manager(context);
+  const { capability, resolver, actorId } = await manager(context);
   try {
     const [state, resolved] = await Promise.all([capability.readManagementState(), resolver.resolve()]);
     return { locale: params.locale ?? "en", ...state, permissions: PERMISSION_CATALOG,
+      canManageElevated: Boolean(context.get(authorizationOwnerContext)) &&
+        actorId === context.get(authorizationOwnerContext),
       access: adminAccess(new Set(resolved.effectivePermissions)) };
   } catch (error) {
     if (error instanceof Response) throw error;

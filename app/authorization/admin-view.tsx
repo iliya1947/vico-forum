@@ -8,6 +8,7 @@ import type {
   AuthorizationUserDetails,
 } from "../../db/authorization-repository";
 import { AdminShell } from "../admin/shell";
+import { BLOCK_MANAGE_PRIVILEGED_PERMISSION } from "../../db/user-measure-authority";
 import type { AdminAccess } from "../admin/access";
 
 export type AuthorizationFailure =
@@ -23,6 +24,7 @@ export function AuthorizationAdminView({
   permissions,
   roles,
   users,
+  canManageElevated = false,
   result,
 }: {
   locale: string;
@@ -30,6 +32,7 @@ export function AuthorizationAdminView({
   permissions: readonly PermissionKey[];
   roles: readonly AuthorizationRoleDetails[];
   users: readonly AuthorizationUserDetails[];
+  canManageElevated?: boolean;
   result?: { readonly ok?: boolean; readonly error?: AuthorizationFailure };
 }) {
   const { t } = useTranslation("common");
@@ -117,7 +120,8 @@ export function AuthorizationAdminView({
                   <fieldset>
                     <legend>{t("permissionsHeading")}</legend>
                     <div className="admin-permission-grid">
-                      {permissions.map((permission) => (
+                      {permissions.filter(permission=>canManageElevated ||
+                        permission!==BLOCK_MANAGE_PRIVILEGED_PERMISSION).map((permission) => (
                         <label className="admin-permission-option" key={permission}>
                           <input
                             type="checkbox"
@@ -129,6 +133,9 @@ export function AuthorizationAdminView({
                         </label>
                       ))}
                     </div>
+                    {!canManageElevated && role.grants.includes(BLOCK_MANAGE_PRIVILEGED_PERMISSION)
+                      ? <input type="hidden" name="permission" value={BLOCK_MANAGE_PRIVILEGED_PERMISSION}/>
+                      : null}
                   </fieldset>
                   <div className="admin-form-actions">
                     <button className="admin-primary-action" type="submit">{t("save")}</button>
@@ -177,7 +184,9 @@ export function AuthorizationAdminView({
                 </header>
 
                 <AuthorizationUserControls userId={user.id} authorization={user.authorization}
-                  roles={roles} permissions={permissions} />
+                  roles={roles} permissions={permissions} canManageElevated={canManageElevated}
+                  elevatedRoleIds={roles.filter(role=>role.grants.includes(
+                    BLOCK_MANAGE_PRIVILEGED_PERMISSION)).map(role=>role.id)}/>
               </article>
             ))}
           </div>

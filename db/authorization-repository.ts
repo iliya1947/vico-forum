@@ -18,7 +18,10 @@ export interface AuthorizationUserSummary { id: string; name: string; email: str
 export interface AuthorizationRoleDetails extends AuthorizationRole { grants: PermissionKey[] }
 export interface AuthorizationUserDetails extends AuthorizationUserSummary { authorization: UserAuthorization }
 export interface AuthorizationManagementState { roles: AuthorizationRoleDetails[]; users: AuthorizationUserDetails[] }
-export interface AuthorizationUserManagementState { userId: string; roles: AuthorizationRole[]; authorization: UserAuthorization }
+export interface AuthorizationUserManagementState {
+  userId: string; roles: AuthorizationRole[]; authorization: UserAuthorization;
+  elevatedRoleIds?: string[];
+}
 
 export class AuthorizationForbiddenError extends Error {}
 export class AuthorizationLockoutError extends Error {}
@@ -107,6 +110,10 @@ export class PostgresAuthorizationRepository {
     return this.withReadSnapshot(async (database) => ({
       userId,
       roles: await this.readRoles(database),
+      elevatedRoleIds: (await database.query<{ role_id: string }>(
+        "select role_id from authz_role_permissions where permission_key=$1",
+        [BLOCK_MANAGE_PRIVILEGED_PERMISSION],
+      )).rows.map(row=>row.role_id),
       authorization: await this.resolveUserFrom(userId, database),
     }));
   }

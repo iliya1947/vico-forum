@@ -4,7 +4,7 @@ import { requireAdminUsersAccess, adminObjectId, adminPrivateHeaders } from "../
 import { forumReaderForRequest } from "../forum/request-context";
 import { ForumStorageUnavailableError } from "../../db/hyperdrive-forum";
 import { authSessionForRequest } from "../auth/request-context";
-import { authorizationForRequest } from "../authorization/request-context";
+import { authorizationForRequest, authorizationOwnerContext } from "../authorization/request-context";
 import { AuthorizationNotFoundError } from "../../db/authorization-repository";
 import { AuthorizationUnavailableError } from "../../db/authorization-service";
 import { PERMISSION_CATALOG } from "../authorization/catalog";
@@ -34,7 +34,9 @@ export async function loader({ params, context }: {
     const management = await authorizationForRequest(context).readUserManagementState(id);
     const managerActorId = authSessionForRequest(context)!.user.id;
     return data({ locale: params.locale ?? "en", access, user,
-      management, managerActorId, permissions: PERMISSION_CATALOG }, { headers: adminPrivateHeaders });
+      management, managerActorId, permissions: PERMISSION_CATALOG,
+      canManageElevated: Boolean(context.get(authorizationOwnerContext)) &&
+        managerActorId===context.get(authorizationOwnerContext) }, { headers: adminPrivateHeaders });
   } catch (error) {
     if (error instanceof AuthorizationNotFoundError) {
       throw new Response("Not found", { status: 404, headers: adminPrivateHeaders });
