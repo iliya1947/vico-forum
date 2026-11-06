@@ -94,7 +94,9 @@ function RestrictionGroupChoices({group,chosen,onToggle}:{
     </label>)}
   </fieldset>;
 }
-function RestrictionChoices({selected=[]}:{selected?:readonly string[]}) {
+function RestrictionChoices({selected=[],allowAdministration=false}:{
+  selected?:readonly string[];allowAdministration?:boolean;
+}) {
   const [chosen,setChosen]=useState<ReadonlySet<string>>(()=>new Set(selected));
   const onToggle=(ids:readonly UserMeasureRestrictionId[],checked:boolean)=>{
     setChosen(previous=>{
@@ -104,7 +106,8 @@ function RestrictionChoices({selected=[]}:{selected?:readonly string[]}) {
     });
   };
   return <div className="admin-forum-objects">
-    {USER_MEASURE_RESTRICTION_GROUPS.map(group=>
+    {USER_MEASURE_RESTRICTION_GROUPS.filter(group=>
+      allowAdministration || group.id!=="administration").map(group=>
       <RestrictionGroupChoices key={group.id} group={group} chosen={chosen} onToggle={onToggle}/>)}
   </div>;
 }
@@ -304,10 +307,11 @@ export function OwnMeasureDetail({locale,measure,appealId,feedback}:{
   </ForumShell>;
 }
 
-export function AdminMeasuresIndex({locale,target,pendingAppeals,requestedTarget,createId,access,feedback}:{
+export function AdminMeasuresIndex({locale,target,pendingAppeals,requestedTarget,createId,
+  access,maySelectAdministrativeRestrictions=false,feedback}:{
   locale:string;target:UserMeasureTargetView|null;pendingAppeals?:UserMeasurePendingAppealPage|null;
   requestedTarget:string;createId:string;
-  access:AdminAccess;feedback:Feedback;
+  access:AdminAccess;maySelectAdministrativeRestrictions?:boolean;feedback:Feedback;
 }) {
   const {t}=useTranslation("common");
   const {pending,refresh}=useMeasurePageState();
@@ -350,7 +354,7 @@ export function AdminMeasuresIndex({locale,target,pendingAppeals,requestedTarget
           <label htmlFor="measure-create-reason">{t("measuresReason")}</label>
           <textarea id="measure-create-reason" name="reason" required rows={4} maxLength={2000} dir="auto"/>
           <MeasureExpiryField/>
-          <RestrictionChoices/>
+          <RestrictionChoices allowAdministration={maySelectAdministrativeRestrictions}/>
           <button type="submit" disabled={pending}>{t("measuresCreate")}</button>
         </Form>
       </>}
@@ -358,8 +362,9 @@ export function AdminMeasuresIndex({locale,target,pendingAppeals,requestedTarget
   </AdminShell>;
 }
 
-function AppealReviewForm({measure,appealId,ordinal,operationId,pending}:{
+function AppealReviewForm({measure,appealId,ordinal,operationId,pending,allowAdministration}:{
   measure:UserMeasureDetail;appealId:string;ordinal:number;operationId:string;pending:boolean;
+  allowAdministration:boolean;
 }) {
   const {t}=useTranslation("common");
   const [outcome,setOutcome]=useState<"accepted"|"rejected">("rejected");
@@ -395,16 +400,17 @@ function AppealReviewForm({measure,appealId,ordinal,operationId,pending}:{
     </label>
     {changing&&<>
       <MeasureExpiryField initial={measure.expiresAt}/>
-      <RestrictionChoices selected={measure.restrictions}/>
+      <RestrictionChoices selected={measure.restrictions} allowAdministration={allowAdministration}/>
     </>}
     <button type="submit" disabled={pending}>{t("measuresReview")}</button>
   </Form>;
 }
 
-export function AdminMeasureDetail({locale,measure,access,changeId,liftId,reviewIds,feedback}:{
+export function AdminMeasureDetail({locale,measure,access,changeId,liftId,reviewIds,
+  maySelectAdministrativeRestrictions=false,feedback}:{
   locale:string;measure:UserMeasureDetail&{targetUserId:string;targetName:string};
   access:AdminAccess;changeId:string;liftId:string;reviewIds:{appealId:string;operationId:string}[];
-  feedback:Feedback;
+  maySelectAdministrativeRestrictions?:boolean;feedback:Feedback;
 }) {
   const {t}=useTranslation("common");
   const {pending,refresh}=useMeasurePageState();
@@ -427,7 +433,8 @@ export function AdminMeasureDetail({locale,measure,access,changeId,liftId,review
           <label htmlFor="measure-change-reason">{t("measuresExplanation")}</label>
           <textarea id="measure-change-reason" name="reason" required maxLength={2000} rows={3} dir="auto"/>
           <MeasureExpiryField initial={measure.expiresAt}/>
-          <RestrictionChoices selected={measure.restrictions}/>
+          <RestrictionChoices selected={measure.restrictions}
+            allowAdministration={maySelectAdministrativeRestrictions}/>
           <button type="submit" disabled={pending}>{t("measuresChange")}</button>
         </Form>
         <Form method="post" key={liftId} className="profile-form" aria-busy={pending}>
@@ -445,7 +452,7 @@ export function AdminMeasureDetail({locale,measure,access,changeId,liftId,review
         <AppealReviewForm key={appeal.id+":"+measure.version} measure={measure}
           appealId={appeal.id} ordinal={appeal.ordinal}
           operationId={reviewIds.find(x=>x.appealId===appeal.id)?.operationId??""}
-          pending={pending}/>)}
+          pending={pending} allowAdministration={maySelectAdministrativeRestrictions}/>)}
     </section>
   </AdminShell>;
 }
