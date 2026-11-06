@@ -13,10 +13,12 @@ protected category/section browsing and dedicated object pages. AP-07 adds admin
 and shared source-locale/history actions for individual messages. AP-08 adds shared topic close/reopen.
 AP-09 adds protected Users index/detail with the independent `admin.users.read` capability and reuses
 the existing authorization assignment/override controls only when the actor also has
-`access.authorization.manage`. AP-10's measures contract is defined below; whether its
-separate implementation has entered `main` is recorded in `PROJECT_STATE.md`.
+`access.authorization.manage`. AP-10 adds configurable administrative measures, exact-measure
+appeals, their affected-operation enforcement and the independent
+`admin.users.blocks.manage` / `admin.users.blocks.managePrivileged` capabilities.
 AP-02 itself added no schema
-or permission keys; AP-03 adds `admin.history.read`, and AP-09 adds `admin.users.read`.
+or permission keys; AP-03 adds `admin.history.read`, AP-09 adds `admin.users.read`, and AP-10
+adds the two block-management capabilities plus its measure persistence.
 
 Other routes and capabilities described below as delivery targets become available only
 through their respective bounded implementation PRs. Unfinished Settings links use the shared
@@ -198,9 +200,10 @@ grant global admission either. Each section and action independently checks its 
 | History / Overview recent actions | `admin.history.read` | History-read does not authorize recorded operations; actors do not need history-read merely to perform an otherwise permitted operation |
 | Settings placeholder | Actor already admitted to shell | No private settings data or mutation |
 
-Future capability labels in this document are requirements, not executable permission keys.
-Their exact keys and explicit initial grants are fixed with the real capability package;
-AP-01 does not register them. New keys are not automatically granted to custom roles.
+Capability labels described in this document but not present in the current code-backed catalog
+are requirements, not executable permission keys. Their exact keys and explicit initial grants
+are fixed with the real capability package; AP-01 itself registers none. New keys are not
+automatically granted to custom roles.
 Update the centralized catalog, DB constraints/seeds and relevant schema/privilege contracts
 together with implementation. Do not add a new authorization system to make navigation work.
 
@@ -591,13 +594,17 @@ topic closure or Complaint/Help decision state.
 measure management and appeal review; it does not grant the general Users catalog,
 authorization-user directory or private History. Privileged targets also require
 `admin.users.blocks.managePrivileged` and a strictly higher **raw** authority
-than the target; measure issuer floor protects later change/lift/review. Self-target
-and owner-target operations are forbidden. An owner user ID is a server-controlled
-hierarchy binding, not an implicit management permission. **Neither management
-capability has built-in initial grants**, even for moderator/admin. Only explicit
-dynamic grants may provide them. AP-10 adds no last-access-manager count veto,
-extra recovery system or generalized owner-role redesign; existing authorization
-lockout implementation remains unchanged until a separate post-admin decision.
+than the target. Administrative-family restrictions can be selected only by an actor at the
+elevated raw authority level; server mutation checks remain authoritative even if presentation
+is stale. A stored measure issuer floor protects later change/lift/review, and an
+administrative-family restriction suppresses a current target capability only while that
+stored floor remains above the target's current raw authority. Self-target and owner-target
+operations are forbidden. An owner user ID is a server-controlled hierarchy binding, not an
+implicit management permission. **Neither management capability has built-in initial grants**,
+even for moderator/admin. Only explicit dynamic grants may provide them. AP-10 adds no
+last-access-manager count veto, extra recovery system or generalized owner-role redesign;
+existing authorization lockout implementation remains unchanged until a separate post-admin
+decision.
 
 **Lifecycle and reasons.** Creating a measure requires a nonblank reason and at
 least one valid child restriction. Manually changing its restrictions/expiry requires
@@ -607,7 +614,11 @@ effective activity is checked against authoritative PostgreSQL time with no
 background unlock action. An ordinary change does not close a pending appeal;
 expiry or lift marks it moot. New operation admission is checked before side
 effects, after an exact already-committed publication-receipt replay. Necessary
-cancel/cleanup continues to work; fresh denied writes produce no partial effect.
+cancel/cleanup continues to work; fresh denied writes produce no partial effect. If a new
+restriction arrives while Create Topic, Help Question or own published-post Edit is already
+mounted, that same editor operation retains its text/history and selected or in-flight
+attachments plus explicit Cancel/cleanup, while Publish/Save and keyboard submission are
+disabled. Fresh denied editors/actions are not offered, and revalidation never replays a POST.
 
 **Appeals** target an exact measure, never a Complaint Case or Complaint Appeal.
 The punished user may submit at most **three sequential appeals per measure**,
@@ -626,9 +637,12 @@ status, active restrictions, expiry, transitions and appeal outcomes, **not**
 issuer/actor/reviewer identity or unfiltered administrative History context.
 `/:locale/admin/measures?target=:userId` and
 `/:locale/admin/measures/:measureId` expose exact targeted administration
-only after fresh block-management authority and current target hierarchy checks.
-The privileged actor identities remain accessible to separately authorized
-internal History readers; no public user directory is opened by these routes.
+only after fresh block-management authority and current target hierarchy checks. Exact detail
+may remain readable when the target hierarchy permits it even if the actor is below that
+measure's stored issuer floor; in that case Change/Lift/pending-Appeal Review controls are not
+offered. They reappear only after a fresh current authority snapshot satisfies the floor and
+other mutation guards. The privileged actor identities remain accessible to separately
+authorized internal History readers; no public user directory is opened by these routes.
 
 Mutations validate same-origin, session identity, operation UUID, expected
 measure version and required input; compare-and-swap and admin History append
@@ -638,9 +652,9 @@ no-store responses. UI revalidates protected loader state on failed
 403/404/409, displays current permission/measure status, and never automatically
 replays the write. Pending and revalidation states block repeated submission.
 
-This is a permanent **product/runtime contract**, not proof of acceptance/merge
-into `main`. `PROJECT_STATE.md` distinguishes open implementation PRs, author
-CI/browser verification, independent reviews and production/deployed status.
+This is the permanent **product/runtime contract** for the AP-10 implementation now present
+in the repository. Repository merge does not imply production/deployed rollout;
+`PROJECT_STATE.md` records the current factual project and external state.
 
 ## Delivery and acceptance
 
@@ -657,7 +671,7 @@ The technical sequence agreed for bounded delivery is:
 | AP-07 | Topic page and message actions within topic context after AP-06 |
 | AP-08 | Shared topic close/reopen, persisted closure CAS and reply admission after AP-07 |
 | AP-09 | Users index/page reusing existing authz controls after AP-08 and earlier shared foundations |
-| AP-10 | Block/lift and all affected enforcement after AP-09 and approved block-effect/reason matrix |
+| AP-10 | Administrative measures, exact-measure appeals and all affected enforcement after AP-09 and approved measure-effect/reason matrix |
 | AP-11 | Integration and factual closeout of delivered scope |
 
 Each implementation PR has its own applicable checks and stable-head review before merge;
