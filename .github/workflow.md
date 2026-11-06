@@ -1,9 +1,9 @@
 # Admin panel — current workflow
 
 - Служебный PR: #251; общий план: `ADMIN_PANEL_IMPLEMENTATION_PLAN.md`
-- Текущий этап: AP-10 AP10-MIRA-11 correction cycle
+- Текущий этап: AP-10 AP10-MIRA-11 corrected-head coordinator review
 - Main/base: `5cf80f38cbc06ed733a0618e706eb80c5a7b3c7b`
-- Technical planner/reviewer: Лёва; current executor: Лира; coordinator/reviewer next: Мира
+- Technical planner/reviewer: Лёва; implementer: Лира; coordinator/reviewer now: Мира
 - Technical plan: coordinator PASS, AP10-PLAN-MIRA-01..06 closed
 - Implementation PR: #290 Draft/open/mergeable
 - Earlier reviewed implementation heads: `503a5c6dc570e2c6c0f64f59e7fe5bf390a90b13`, `52a1db67610357f514e8013b06f70af6bda629c6`
@@ -14,7 +14,7 @@
 - Documentation PR: #291 Draft/open/mergeable, exact head `e54f1b23ea8030df6171932cb640d1706867af6c`, 6 Markdown files
 - Documentation CI #42173496053: SUCCESS
 - Implementation/docs не merged; production/Stage 6 не менялись
-- Current executor: Лира исправляет bounded AP10-MIRA-11; Лёва independent review не назначен до coordinator PASS
+- Current reviewer: Мира; Лира AP10-MIRA-11 correction завершила; Лёва independent review не назначен до coordinator PASS
 - Owner visual acceptance: не запрошен и не инициируется
 - Coordinator pass 1 complete: data model/lifecycle/reasons/appeals; confirmed AP10-MIRA-01..02, handoff deferred until full review complete
 - Coordinator pass 2 complete: authority/permissions/privileged targets; confirmed AP10-MIRA-03..04
@@ -45,3 +45,7 @@
 
 - AP10-MIRA-11 correction package зафиксирован для Лиры в service-channel.md на reviewed head `ad789c7bf28d4fe7896e8ddbf7757460e046da27`
 - Next step: Лира исправляет только exact-measure mutation presentation/floor mismatch, выполняет applicable exact-head checks/browser evidence и фиксирует новый stable head; затем Мира начинает новый coordinator review. Лёва remains blocked until coordinator PASS
+
+- AP10-MIRA-11 targeted corrected-head pass complete on `9fecd925a256062e9892235f4ba02ed3147de1e3`: original cause closed; 5-file delta reviewed with no new current-scope finding
+- Exact-head CI #42213405436 and isolated Chromium #42213405385: SUCCESS
+- Next step: final regression/evidence sweep of the same stable head against AP10-MIRA-01..10 and correction interactions; only after coordinator PASS hand off the same exact head to Лёва
