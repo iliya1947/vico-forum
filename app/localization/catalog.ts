@@ -210,6 +210,7 @@ export const canonicalEnglishCatalog = {
     measuresNoAppeals: message("measuresNoAppeals", "No appeals submitted.", "AP-10 measures: measuresNoAppeals."),
     measuresTimeline: message("measuresTimeline", "Measure history", "AP-10 measures: measuresTimeline."),
     measuresSaved: message("measuresSaved", "Change saved.", "AP-10 measures: measuresSaved."),
+    measuresRefresh: message("measuresRefresh", "Refresh current status", "AP-10 measures: reload private status and permissions, never replay a submitted operation."),
     measuresAppealBody: message("measuresAppealBody", "Appeal explanation", "AP-10 measures: measuresAppealBody."),
     measuresAppealSubmit: message("measuresAppealSubmit", "Submit appeal", "AP-10 measures: measuresAppealSubmit."),
     measuresTargetId: message("measuresTargetId", "Exact user ID", "AP-10 measures: measuresTargetId."),

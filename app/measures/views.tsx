@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { Form, Link, useNavigation } from "react-router";
+import { Form, Link, useNavigation, useRevalidator } from "react-router";
 import { useTranslation } from "react-i18next";
 import { ForumShell } from "../forum/ui";
 import { AdminShell } from "../admin/shell";
@@ -43,6 +43,13 @@ const errorKeys = {
   forbidden:"measuresErrorForbidden",notFound:"measuresErrorNotFound",
   conflict:"measuresErrorConflict",unavailable:"measuresErrorUnavailable",
 } as const;
+
+function useMeasurePageState() {
+  const navigation=useNavigation();
+  const revalidator=useRevalidator();
+  const pending=navigation.state!=="idle" || revalidator.state!=="idle";
+  return {pending,refresh:()=>{if(!pending)void revalidator.revalidate();}};
+}
 
 function FeedbackMessage({feedback}:{feedback:Feedback}) {
   const {t}=useTranslation("common");
@@ -180,9 +187,11 @@ function AppealsAndTimeline({measure,locale}:{measure:UserMeasureDetail;locale:s
 
 export function OwnMeasuresIndex({locale,measures}: {locale:string;measures:UserMeasureSummary[]}) {
   const {t}=useTranslation("common");
+  const {pending,refresh}=useMeasurePageState();
   return <ForumShell locale={locale} variant="profile">
     <section className="profile-card">
       <h1>{t("measuresOwn")}</h1>
+      <button type="button" disabled={pending} onClick={refresh}>{t("measuresRefresh")}</button>
       {measures.length?<GroupedMeasures measures={measures} locale={locale}/>:<p>{t("measuresNone")}</p>}
     </section>
   </ForumShell>;
@@ -191,13 +200,13 @@ export function OwnMeasureDetail({locale,measure,appealId,feedback}:{
   locale:string;measure:UserMeasureDetail;appealId:string;feedback:Feedback;
 }) {
   const {t}=useTranslation("common");
-  const navigation=useNavigation();
-  const pending=navigation.state!=="idle";
+  const {pending,refresh}=useMeasurePageState();
   const canAppeal=measure.status==="active"&&!measure.pendingAppeal&&measure.usedAppeals<3;
   return <ForumShell locale={locale} variant="profile">
     <section className="profile-card">
       <nav><Link to={ownMeasuresPath(locale)}>{t("measuresOwn")}</Link></nav>
       <h1>{t("measuresDetail")}</h1>
+      <button type="button" disabled={pending} onClick={refresh}>{t("measuresRefresh")}</button>
       <FeedbackMessage feedback={feedback}/>
       <MeasureInfo measure={measure} locale={locale}/>
       {canAppeal&&<Form method="post" className="profile-form" aria-busy={pending}>
@@ -217,11 +226,11 @@ export function AdminMeasuresIndex({locale,target,requestedTarget,createId,acces
   access:AdminAccess;feedback:Feedback;
 }) {
   const {t}=useTranslation("common");
-  const navigation=useNavigation();
-  const pending=navigation.state!=="idle";
+  const {pending,refresh}=useMeasurePageState();
   return <AdminShell locale={locale} access={access} current="measures">
     <section className="admin-forum">
       <h2>{t("measuresAdmin")}</h2>
+      <button type="button" disabled={pending} onClick={refresh}>{t("measuresRefresh")}</button>
       <FeedbackMessage feedback={feedback}/>
       <Form method="get" className="admin-forum-search">
         <label htmlFor="measure-target">{t("measuresTargetId")}</label>
@@ -302,14 +311,14 @@ export function AdminMeasureDetail({locale,measure,access,changeId,liftId,review
   feedback:Feedback;
 }) {
   const {t}=useTranslation("common");
-  const navigation=useNavigation();
-  const pending=navigation.state!=="idle";
+  const {pending,refresh}=useMeasurePageState();
   const isActive=measure.status==="active";
   return <AdminShell locale={locale} access={access} current="measures">
     <section className="admin-forum">
       <nav><Link to={adminMeasuresPath(locale)+"?target="+encodeURIComponent(measure.targetUserId)}>
         {t("measuresAdmin")}</Link></nav>
       <h2><bdi dir="auto">{measure.targetName}</bdi></h2>
+      <button type="button" disabled={pending} onClick={refresh}>{t("measuresRefresh")}</button>
       <FeedbackMessage feedback={feedback}/>
       <MeasureInfo measure={measure} locale={locale}/>
       {isActive&&<>

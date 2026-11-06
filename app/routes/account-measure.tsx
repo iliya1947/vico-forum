@@ -37,3 +37,5 @@ export default function AccountMeasureRoute() {
   return <OwnMeasureDetail {...useLoaderData<typeof loader>()} feedback={useActionData<typeof action>()}/>;
 }
 export const ErrorBoundary=ForumRouteError;
+
+export { measureShouldRevalidate as shouldRevalidate } from "../measures/revalidation";

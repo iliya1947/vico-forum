@@ -2,14 +2,15 @@ import "@testing-library/jest-dom/vitest";
 import { cleanup, fireEvent, render, waitFor } from "@testing-library/react";
 import type { ReactNode } from "react";
 import { I18nextProvider } from "react-i18next";
-import { createMemoryRouter, data, RouterProvider } from "react-router";
+import { createMemoryRouter, data, RouterProvider, useActionData, useLoaderData } from "react-router";
 import { afterEach, describe, expect, it } from "vitest";
 import { createTranslationRuntime } from "../localization/runtime";
 import { canonicalEnglishCatalog } from "../localization/catalog";
 import { russianCommonValues, hebrewCommonValues } from "../localization/manual-values";
 import { adminAccess } from "../admin/access";
 import type { UserMeasureDetail, UserMeasureSummary } from "../../db/user-measure-read";
-import { AdminMeasuresIndex, AdminMeasureDetail, OwnMeasuresIndex } from "./views";
+import { AdminMeasuresIndex, AdminMeasureDetail, OwnMeasuresIndex, OwnMeasureDetail } from "./views";
+import { measureShouldRevalidate } from "./revalidation";
 
 const id="10000000-0000-4000-8000-000000000001";
 const now="2026-11-06T10:00:00.000Z";
@@ -170,5 +171,124 @@ describe("AP-10 private measure views and administrative choices",()=>{
     finish();
     await waitFor(()=>expect(submit).toBeEnabled());
     expect(form).toHaveAttribute("aria-busy","false");
+  });
+});
+
+describe("AP-10 live status and stale-action recovery",()=>{
+  function mountDataRouter(locale:string,router:ReturnType<typeof createMemoryRouter>) {
+    dispose=()=>router.dispose();
+    return render(<I18nextProvider i18n={i18n(locale)}><RouterProvider router={router}/></I18nextProvider>).container;
+  }
+
+  it("revalidates an admin stale 409, replacing the expected version and operation ID without replay",async()=>{
+    let version=1,reads=0,posts=0;
+    function CurrentDetail() {
+      const state=useLoaderData() as {measure:UserMeasureDetail;changeId:string};
+      const feedback=useActionData() as {error?:"conflict"}|undefined;
+      return <AdminMeasureDetail locale="en"
+        measure={{...state.measure,targetUserId:"target",targetName:"Target"}}
+        access={access} changeId={state.changeId} liftId="lift" reviewIds={[]}
+        feedback={feedback}/>;
+    }
+    const router=createMemoryRouter([{
+      path:"/en/admin/measures/:measureId",
+      loader:()=>({measure:{...detail,version},changeId:"change-"+(++reads)}),
+      action:async()=>{posts++;version=2;return data({error:"conflict"},{status:409});},
+      shouldRevalidate:measureShouldRevalidate,element:<CurrentDetail/>,
+    }],{initialEntries:["/en/admin/measures/"+id]});
+    const root=mountDataRouter("en",router);
+    await waitFor(()=>expect(root.querySelector('input[name="expectedVersion"]')).toBeInTheDocument());
+    const form=formFor(root,"change");
+    const before=form.querySelector<HTMLInputElement>('input[name="operationId"]')!.value;
+    fireEvent.change(form.querySelector<HTMLTextAreaElement>('textarea[name="reason"]')!,{
+      target:{value:"Updated explanation"},
+    });
+    fireEvent.click(form.querySelector('button[type="submit"]')!);
+    await waitFor(()=>expect(formFor(root,"change").querySelector<HTMLInputElement>(
+      'input[name="expectedVersion"]')!.value).toBe("2"));
+    const after=formFor(root,"change").querySelector<HTMLInputElement>('input[name="operationId"]')!.value;
+    expect(after).not.toBe(before);
+    expect(reads).toBe(2);
+    expect(posts).toBe(1);
+    expect(root.querySelector('[role="alert"]')).toBeInTheDocument();
+  });
+
+  it("rechecks revoked admin access after a failed POST and removes private controls",async()=>{
+    let granted=true,posts=0,reads=0;
+    function CurrentDetail() {
+      const measure=useLoaderData() as UserMeasureDetail;
+      return <AdminMeasureDetail locale="en"
+        measure={{...measure,targetUserId:"target",targetName:"Target"}}
+        access={access} changeId="change" liftId="lift" reviewIds={[]}
+        feedback={useActionData() as {error?:"forbidden"}|undefined}/>;
+    }
+    const router=createMemoryRouter([{
+      path:"/en/admin/measures/:measureId",
+      loader:()=>{reads++;if(!granted)throw new Response("Forbidden",{
+        status:403,headers:{"Cache-Control":"private, no-store"},
+      });return detail;},
+      action:async()=>{posts++;granted=false;return data({error:"forbidden"},{status:403});},
+      shouldRevalidate:measureShouldRevalidate,element:<CurrentDetail/>,
+      errorElement:<p>Access revoked</p>,
+    }],{initialEntries:["/en/admin/measures/"+id]});
+    const root=mountDataRouter("en",router);
+    await waitFor(()=>expect(root.querySelector('input[name="intent"][value="lift"]')).toBeInTheDocument());
+    const form=formFor(root,"lift");
+    fireEvent.change(form.querySelector<HTMLTextAreaElement>('textarea[name="reason"]')!,{
+      target:{value:"A reason"},
+    });
+    fireEvent.click(form.querySelector('button[type="submit"]')!);
+    await waitFor(()=>expect(root.textContent).toContain("Access revoked"));
+    expect(root.querySelector('input[name="expectedVersion"]')).toBeNull();
+    expect(reads).toBe(2);
+    expect(posts).toBe(1);
+  });
+
+  it("refreshes the own appeal status after a 409 without repeating the appeal",async()=>{
+    let measure:UserMeasureDetail={...detail,usedAppeals:0,pendingAppeal:false,appeals:[]},posts=0;
+    function CurrentOwn() {
+      const state=useLoaderData() as {measure:UserMeasureDetail;appealId:string};
+      return <OwnMeasureDetail locale="en" {...state}
+        feedback={useActionData() as {error?:"conflict"}|undefined}/>;
+    }
+    const router=createMemoryRouter([{
+      path:"/en/account/measures/:measureId",
+      loader:()=>({measure,appealId:"new-appeal"}),
+      action:async()=>{posts++;measure={...measure,status:"lifted",liftedAt:now};
+        return data({error:"conflict"},{status:409});},
+      shouldRevalidate:measureShouldRevalidate,element:<CurrentOwn/>,
+    }],{initialEntries:["/en/account/measures/"+id]});
+    const root=mountDataRouter("en",router);
+    await waitFor(()=>expect(root.querySelector('input[name="intent"][value="appeal"]')).toBeInTheDocument());
+    const form=formFor(root,"appeal");
+    fireEvent.change(form.querySelector<HTMLTextAreaElement>('textarea[name="body"]')!,{
+      target:{value:"Please reconsider"},
+    });
+    fireEvent.click(form.querySelector('button[type="submit"]')!);
+    await waitFor(()=>expect(root.querySelector('input[name="intent"][value="appeal"]')).toBeNull());
+    expect(root.textContent).toContain("Lifted");
+    expect(posts).toBe(1);
+  });
+
+  it.each(["en","ru","he"])("offers manual refresh of private status in %s",async locale=>{
+    let measures:UserMeasureSummary[]=[base],reads=0;
+    function OwnIndex() {
+      return <OwnMeasuresIndex locale={locale} measures={useLoaderData() as UserMeasureSummary[]}/>;
+    }
+    const router=createMemoryRouter([{
+      path:"/:locale/account/measures",
+      loader:()=>{reads++;return measures;},
+      element:<OwnIndex/>,
+    }],{initialEntries:["/"+locale+"/account/measures"]});
+    const root=mountDataRouter(locale,router);
+    await waitFor(()=>expect(root.querySelector("ol.admin-forum-objects")).toBeInTheDocument());
+    const refresh=root.querySelector<HTMLButtonElement>('button[type="button"]')!;
+    expect(refresh).toBeEnabled();
+    expect(refresh.textContent).not.toContain("measuresRefresh");
+    measures=[{...base,status:"expired"}];
+    fireEvent.click(refresh);
+    await waitFor(()=>expect(root.textContent).toContain(
+      locale==="ru"?"Истекла":locale==="he"?"פג תוקפה":"Expired"));
+    expect(reads).toBe(2);
   });
 });
