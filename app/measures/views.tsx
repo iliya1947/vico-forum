@@ -11,6 +11,7 @@ import {
 import type {
   UserMeasureSummary, UserMeasureDetail,
   UserMeasureTargetView, UserMeasureAppealDisplayStatus, UserMeasureDisplayStatus,
+  UserMeasurePendingAppealPage,
 } from "../../db/user-measure-read";
 import type { MeasureActionError } from "./routes.server";
 
@@ -221,8 +222,9 @@ export function OwnMeasureDetail({locale,measure,appealId,feedback}:{
   </ForumShell>;
 }
 
-export function AdminMeasuresIndex({locale,target,requestedTarget,createId,access,feedback}:{
-  locale:string;target:UserMeasureTargetView|null;requestedTarget:string;createId:string;
+export function AdminMeasuresIndex({locale,target,pendingAppeals,requestedTarget,createId,access,feedback}:{
+  locale:string;target:UserMeasureTargetView|null;pendingAppeals?:UserMeasurePendingAppealPage|null;
+  requestedTarget:string;createId:string;
   access:AdminAccess;feedback:Feedback;
 }) {
   const {t}=useTranslation("common");
@@ -237,6 +239,21 @@ export function AdminMeasuresIndex({locale,target,requestedTarget,createId,acces
         <div><input id="measure-target" key={requestedTarget} name="target" defaultValue={requestedTarget}
           maxLength={2048} required/><button type="submit">{t("measuresFindTarget")}</button></div>
       </Form>
+      {pendingAppeals&&<section aria-label={t("measuresPendingHeading")}>
+        <h3>{t("measuresPendingHeading")}</h3>
+        {pendingAppeals.appeals.length?<ol className="admin-forum-objects">
+          {pendingAppeals.appeals.map(appeal=><li key={appeal.id}>
+            <p><bdi dir="auto">{appeal.targetName}</bdi> <code dir="ltr">{appeal.targetUserId}</code></p>
+            <p>{t("measuresCreated")}: <DateText date={appeal.submittedAt} locale={locale}/></p>
+            <p><Link to={adminMeasurePath(locale,appeal.measureId)+"#measure-review-"+appeal.id}>
+              {t("measuresPendingOpen")} #{appeal.ordinal}
+            </Link></p>
+          </li>)}
+        </ol>:<p>{t("measuresPendingNone")}</p>}
+        {pendingAppeals.nextPage!==null&&<Link
+          to={adminMeasuresPath(locale)+"?page="+(pendingAppeals.nextPage+1)}>
+          {t("measuresPendingMore")}</Link>}
+      </section>}
       {target&&<>
         <h3><bdi dir="auto">{target.name}</bdi></h3>
         <p><bdi dir="ltr">{target.id}</bdi></p>
@@ -269,7 +286,7 @@ function AppealReviewForm({measure,appealId,ordinal,operationId,pending}:{
   const [remedy,setRemedy]=useState<""|"change"|"lift">("");
   const accepting=outcome==="accepted";
   const changing=accepting&&remedy==="change";
-  return <Form method="post" className="profile-form" aria-busy={pending}>
+  return <Form method="post" id={"measure-review-"+appealId} className="profile-form" aria-busy={pending}>
     <h3>{t("measuresReview")} #{ordinal}</h3>
     <input type="hidden" name="intent" value="review"/>
     <input type="hidden" name="appealId" value={appealId}/>

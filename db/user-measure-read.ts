@@ -1,7 +1,8 @@
 import type { Pool, PoolClient } from "pg";
 import { PostgresAuthorizationRepository } from "./authorization-repository";
 import { assertNoActiveUserMeasureRestrictionPg } from "./user-measure-policy";
-import { assertUserMeasureAuthority, requireUserMeasureOwnerId } from "./user-measure-authority";
+import { assertUserMeasureAuthority, requireUserMeasureOwnerId,
+  UserMeasureForbiddenError, BLOCK_MANAGE_PERMISSION } from "./user-measure-authority";
 import { UserMeasureNotFoundError, UserMeasureConflictError } from "./user-measures";
 import type { UserMeasureRestrictionId } from "../app/admin/user-measure-restrictions";
 
@@ -42,6 +43,16 @@ export interface UserMeasureDetail extends UserMeasureSummary {
 }
 export interface UserMeasureTargetView {
   id: string; name: string; measures: UserMeasureSummary[];
+}
+
+/** Private reviewer discovery. Only entries currently actionable by this actor are returned. */
+export interface UserMeasurePendingAppeal {
+  id: string; measureId: string; ordinal: number; submittedAt: string;
+  targetUserId: string; targetName: string;
+}
+export interface UserMeasurePendingAppealPage {
+  appeals: UserMeasurePendingAppeal[];
+  nextPage: number | null;
 }
 
 interface MeasureRow {
@@ -112,6 +123,60 @@ export class PostgresUserMeasureReader {
         targetName: row.rows[0].name,
       };
     }, measureId);
+  }
+
+  /**
+   * Discover pending AP-10 appeals without granting a general Users directory.
+   * The authorization mutation lock protects raw target hierarchy and issuer floor for
+   * every returned item. A bounded page cannot reveal denied target identities.
+   */
+  async adminPendingAppeals(actorId: string, page = 0): Promise<UserMeasurePendingAppealPage> {
+    if (!Number.isSafeInteger(page) || page < 0 || page > 1000) {
+      throw new UserMeasureConflictError("invalid pending appeal page");
+    }
+    const ownerId = requireUserMeasureOwnerId(this.ownerUserId);
+    return this.read(async client => {
+      const lock = await client.query("select id from authz_mutation_lock where id=1 for update");
+      if (lock.rowCount !== 1) throw new UserMeasureConflictError("authorization lock missing");
+      await assertNoActiveUserMeasureRestrictionPg(client, actorId, "admin.usersAccess");
+      const authorization = new PostgresAuthorizationRepository(this.pool, ownerId);
+      const actor = await authorization.resolveUser(actorId, client);
+      const actorRawPermissions = new Set(actor.effectivePermissions);
+      if (!actorRawPermissions.has(BLOCK_MANAGE_PERMISSION)) throw new UserMeasureForbiddenError();
+
+      const result = await client.query<{
+        id: string; measure_id: string; ordinal: number; created_at: Date;
+        target_user_id: string; target_name: string; issuer_authority_floor: number;
+      }>(`select a.id,a.measure_id,a.ordinal,a.created_at,
+        m.target_user_id,m.issuer_authority_floor,u.name as target_name
+        from user_measure_appeals a
+        join user_measures m on m.id=a.measure_id
+        join "user" u on u.id=m.target_user_id
+        where a.status='pending' and m.lifted_at is null
+          and (m.expires_at is null or m.expires_at>clock_timestamp())
+        order by a.created_at desc,a.id desc limit 26 offset $1`, [page * 25]);
+
+      const appeals: UserMeasurePendingAppeal[] = [];
+      for (const item of result.rows.slice(0,25)) {
+        const target = await authorization.resolveUser(item.target_user_id, client);
+        try {
+          assertUserMeasureAuthority({
+            actorId, targetUserId:item.target_user_id, ownerUserId:ownerId,
+            actorRawPermissions, targetRawPermissions:new Set(target.effectivePermissions),
+            issuerAuthorityFloor:item.issuer_authority_floor,
+          });
+        } catch(error) {
+          if (error instanceof UserMeasureForbiddenError) continue;
+          throw error;
+        }
+        appeals.push({
+          id:item.id,measureId:item.measure_id,ordinal:item.ordinal,
+          submittedAt:item.created_at.toISOString(),
+          targetUserId:item.target_user_id,targetName:item.target_name,
+        });
+      }
+      return { appeals, nextPage:result.rows.length>25?page+1:null };
+    }, false);
   }
 
   private async adminRead<T>(

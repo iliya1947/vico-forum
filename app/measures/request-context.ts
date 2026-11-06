@@ -5,12 +5,14 @@ import type {
   MeasureCreateResult, MeasureTransitionResult,
   UserMeasureAppealResolutionResult, UserMeasureAppealSubmissionResult,
 } from "../../db/user-measures";
-import type { UserMeasureSummary, UserMeasureDetail, UserMeasureTargetView } from "../../db/user-measure-read";
+import type { UserMeasureSummary, UserMeasureDetail, UserMeasureTargetView,
+  UserMeasurePendingAppealPage } from "../../db/user-measure-read";
 
 export interface UserMeasureCapability {
   ownList(subjectId: string): Promise<UserMeasureSummary[]>;
   ownDetail(subjectId: string, measureId: string): Promise<UserMeasureDetail>;
   adminTarget(actorId: string, targetId: string): Promise<UserMeasureTargetView>;
+  adminPendingAppeals(actorId: string, page?: number): Promise<UserMeasurePendingAppealPage>;
   adminDetail(actorId: string, measureId: string): Promise<UserMeasureDetail & { targetUserId: string; targetName: string }>;
   create(input: CreateUserMeasureInput): Promise<MeasureCreateResult>;
   change(input: ChangeUserMeasureInput): Promise<MeasureTransitionResult>;

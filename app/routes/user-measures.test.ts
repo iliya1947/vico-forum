@@ -35,6 +35,8 @@ function env(authorized=true, signedIn=true) {
     ownList:vi.fn(async ()=>[detail]),
     ownDetail:vi.fn(async()=>detail),
     adminTarget:vi.fn(async()=>({id:"target",name:"Target",measures:[detail]})),
+    adminPendingAppeals:vi.fn(async()=>({appeals:[{id:appealId,measureId,ordinal:1,
+      submittedAt:detail.appeals[0].createdAt,targetUserId:"target",targetName:"Target"}],nextPage:null})),
     adminDetail:vi.fn(async()=>({...detail,targetUserId:"target",targetName:"Target"})),
     create:vi.fn(async()=>({id:measureId,version:1})),
     change:vi.fn(async()=>({id:measureId,version:2,changed:true})),
@@ -107,6 +109,18 @@ describe("AP-10 own/private and admin measure routes",()=>{
     expect(page.data.access.canReadUsers).toBeUndefined();
     expect(JSON.stringify(page.data)).not.toContain(secret);
     expect((await adminDetail(adminArgs(manager.context))).data.measure.targetUserId).toBe("target");
+    const pending=await adminList({request:new Request("https://forum.test/en/admin/measures"),
+      params:{locale:"en"},context:manager.context});
+    expect(manager.capability.adminPendingAppeals).toHaveBeenCalledWith("subject",0);
+    expect(pending.data.pendingAppeals.appeals[0]).toMatchObject({measureId,id:appealId});
+    expect(pending.init?.headers).toEqual({"Cache-Control":"private, no-store"});
+    const anotherPage=await adminList({request:new Request("https://forum.test/en/admin/measures?page=2"),
+      params:{locale:"en"},context:manager.context});
+    expect(manager.capability.adminPendingAppeals).toHaveBeenCalledWith("subject",1);
+    await expect(adminList({request:new Request("https://forum.test/en/admin/measures?page=bad"),
+      params:{locale:"en"},context:manager.context})).rejects.toMatchObject({status:400});
+    await expect(adminList({request:new Request("https://forum.test/en/admin/measures?page=1&target=target"),
+      params:{locale:"en"},context:manager.context})).rejects.toMatchObject({status:400});
   });
 
   it("uses session actor for create and direct change/lift/review with exact measure/version",async()=>{

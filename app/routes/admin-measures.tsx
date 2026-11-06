@@ -16,13 +16,25 @@ export async function loader({request,params,context}:{
   const actorId=await requireMeasureManager(context);
   try {
     const query=new URL(request.url).searchParams;
-    if (query.getAll("target").length>1 || [...query.keys()].some(key=>key!=="target")) {
+    if ([...query.keys()].some(key=>key!=="target" && key!=="page") ||
+        query.getAll("target").length>1 || query.getAll("page").length>1 ||
+        (query.has("target") && query.has("page"))) {
       throw new Response("Invalid query",{status:400,headers:measurePrivateHeaders});
     }
     const input=query.get("target");
-    const target=input ? await userMeasuresForRequest(context).adminTarget(actorId,measureTargetId(input)) : null;
-    const permissions=await authorizationForRequest(context).forUser(actorId).resolve();
-    return data({locale:params.locale??"en",target,requestedTarget:input??"",
+    const rawPage=query.get("page");
+    if (rawPage!==null && !/^[1-9][0-9]{0,3}$/.test(rawPage)) {
+      throw new Response("Invalid page",{status:400,headers:measurePrivateHeaders});
+    }
+    const page=rawPage===null?0:Number(rawPage)-1;
+    if(page>1000)throw new Response("Invalid page",{status:400,headers:measurePrivateHeaders});
+    const capability=userMeasuresForRequest(context);
+    const [target,pendingAppeals,permissions] = await Promise.all([
+      input ? capability.adminTarget(actorId,measureTargetId(input)) : Promise.resolve(null),
+      !input ? capability.adminPendingAppeals(actorId,page) : Promise.resolve(null),
+      authorizationForRequest(context).forUser(actorId).resolve(),
+    ]);
+    return data({locale:params.locale??"en",target,pendingAppeals,requestedTarget:input??"",
       createId:crypto.randomUUID(),access:adminAccess(new Set(permissions.effectivePermissions))},
       {headers:measurePrivateHeaders});
   } catch(error) { if(error instanceof Response)throw error; throw measureResponseError(error); }

@@ -33,6 +33,7 @@ export function createHyperdriveUserMeasures(connectionString: string, ownerUser
     ownList: subjectId => run(reader => reader.ownList(subjectId)),
     ownDetail: (subjectId, measureId) => run(reader => reader.ownDetail(subjectId, measureId)),
     adminTarget: (actorId, targetId) => run(reader => reader.adminTarget(actorId, targetId)),
+    adminPendingAppeals: (actorId, page) => run(reader => reader.adminPendingAppeals(actorId, page)),
     adminDetail: (actorId, measureId) => run(reader => reader.adminDetail(actorId, measureId)),
     create: (input: CreateUserMeasureInput) => run((_, service) => service.create(input)),
     change: (input: ChangeUserMeasureInput) => run((_, service) => service.change(input)),
