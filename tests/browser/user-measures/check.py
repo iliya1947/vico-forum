@@ -296,7 +296,10 @@ try:
         # closure action while an unrelated participant has a mounted reply editor.
         topic_path = "/en/topics/" + quote(topic_id, safe="")
         admin_topic_path = "/en/admin/forum/topics/" + quote(topic_id, safe="")
-        document(subject, topic_path)
+        public_response = subject.goto(base + topic_path, wait_until="networkidle")
+        assert public_response and public_response.status == 200, (
+            topic_path, getattr(public_response, "status", None)
+        )
         editor = form_for(subject, "reply")
         editor.get_by_role("button", name="Advanced", exact=True).click()
         reply_text = "AP11 retained editor: close while composing"
@@ -376,7 +379,10 @@ try:
 
         # Newly reopened topic permits a fresh editor, which must remain mounted
         # when the existing AP-10 restriction is subsequently imposed.
-        document(subject, topic_path)
+        public_response = subject.goto(base + topic_path, wait_until="networkidle")
+        assert public_response and public_response.status == 200, (
+            topic_path, getattr(public_response, "status", None)
+        )
         restricted_editor = form_for(subject, "reply")
         restricted_editor.get_by_role("button", name="Advanced", exact=True).click()
         restricted_text = "AP11 retained editor: revoked reply permission"
@@ -546,7 +552,10 @@ try:
         assert allowed.status in (302, 303), ("restored reply", allowed.status, allowed.text()[:200])
         assert replies(topic_id) == count + 2
         record("stale-admin-409-revalidates-with-no-replay-and-replies-restore")
-        document(subject, topic_path)
+        public_response = subject.goto(base + topic_path, wait_until="networkidle")
+        assert public_response and public_response.status == 200, (
+            topic_path, getattr(public_response, "status", None)
+        )
         expect(form_for(subject, "reply")).to_be_visible()
         assert sql("select is_closed,closure_version from forum_topics where id=$1",
                    [topic_id]) == [{"is_closed": False, "closure_version": 2}]
