@@ -101,6 +101,74 @@ describe("AP-10 purpose-limited own/admin measure read (PostgreSQL 17)",()=>{
     expect((await reader.ownDetail(subject,first.id)).status).toBe("active");
   });
 
+  it("projects exact-measure mutation authority below and at issuer floor without weakening direct writes",async()=>{
+    // A level-2 issuer may sanction a level-0 target. A level-1 manager may
+    // still read that target but must not change this particular measure.
+    await client.query(`insert into authz_user_permission_overrides(user_id,permission_key,effect)
+      values ('other','admin.users.blocks.manage','allow'),
+        ('other','admin.users.blocks.managePrivileged','allow')`);
+    try {
+      const measure=await writer.create({
+        id:uuid(),actorId:other,targetUserId:subject,
+        reason:"Privileged issuer restriction",restrictions:["replies.create"],expiresAt:null,
+      });
+      const appeal=await writer.submitAppeal({
+        id:uuid(),measureId:measure.id,actorId:subject,body:"Please review this",
+      });
+      const admin=await reader.adminDetail(manager,measure.id);
+      expect(admin).toMatchObject({
+        id:measure.id,targetUserId:subject,status:"active",canMutate:false,
+      });
+      expect(admin.appeals).toMatchObject([{id:appeal.id,status:"pending"}]);
+      expect((await reader.adminTarget(manager,subject)).measures.map(item=>item.id))
+        .toContain(measure.id);
+      expect((await reader.ownDetail(subject,measure.id))).not.toHaveProperty("canMutate");
+      const historyCount=async()=>(await client.query<{count:number}>(
+        "select count(*)::int as count from admin_history where target_id=$1",
+        [measure.id])).rows[0]!.count;
+      const before=await historyCount();
+      const change={
+        measureId:measure.id,operationId:uuid(),actorId:manager,expectedVersion:1,
+        reason:"Unauthorized change",restrictions:["topics.create" as const],expiresAt:null,
+      };
+      await expect(writer.change(change)).rejects.toBeInstanceOf(UserMeasureForbiddenError);
+      await expect(writer.lift({measureId:measure.id,operationId:uuid(),
+        actorId:manager,expectedVersion:1,reason:"Unauthorized lift"}))
+        .rejects.toBeInstanceOf(UserMeasureForbiddenError);
+      await expect(writer.resolveAppeal({measureId:measure.id,appealId:appeal.id,
+        operationId:uuid(),actorId:manager,expectedVersion:1,
+        outcome:"rejected",explanation:"Unauthorized review",remedy:null,
+        restrictions:null,expiresAt:null})).rejects.toBeInstanceOf(UserMeasureForbiddenError);
+      expect(await historyCount()).toBe(before);
+      expect((await reader.adminDetail(manager,measure.id))).toMatchObject({
+        version:1,canMutate:false,appeals:[{status:"pending"}],
+      });
+      expect((await reader.adminPendingAppeals(manager)).appeals.map(item=>item.measureId))
+        .not.toContain(measure.id);
+
+      // A fresh raw authority grant reaches the issuer's floor without changing the measure.
+      await client.query(`insert into authz_user_permission_overrides(user_id,permission_key,effect)
+        values ('moderator','admin.users.blocks.managePrivileged','allow')`);
+      expect((await reader.adminDetail(manager,measure.id)).canMutate).toBe(true);
+      expect((await reader.adminPendingAppeals(manager)).appeals.map(item=>item.measureId))
+        .toContain(measure.id);
+      // Revocation takes effect on the next admin read, while the exact target stays visible.
+      await client.query(`update authz_user_permission_overrides set effect='deny'
+        where user_id='moderator' and permission_key='admin.users.blocks.managePrivileged'`);
+      expect((await reader.adminDetail(manager,measure.id)).canMutate).toBe(false);
+      expect((await reader.adminTarget(manager,subject)).measures.map(item=>item.id))
+        .toContain(measure.id);
+      expect((await reader.adminPendingAppeals(manager)).appeals.map(item=>item.measureId))
+        .not.toContain(measure.id);
+      expect(await historyCount()).toBe(before);
+    } finally {
+      await client.query(`delete from authz_user_permission_overrides
+        where (user_id='other' and permission_key in
+          ('admin.users.blocks.manage','admin.users.blocks.managePrivileged'))
+          or (user_id='moderator' and permission_key='admin.users.blocks.managePrivileged')`);
+    }
+  });
+
   it("discovers only live pending appeals within raw target and issuer-floor authority",async()=>{
     const ordinary=await create(subject);
     const second=await create(other);
