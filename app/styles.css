@@ -7019,7 +7019,7 @@ p {
   .home-shell .site-account-actions .auth-action {
     flex-shrink: 0;
     min-height: 2.15rem;
-    padding-inline: 0.48rem;
+    padding-inline: 0.3rem;
     font-size: 0.68rem;
     white-space: nowrap;
   }

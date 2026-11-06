@@ -23,7 +23,7 @@ node = shutil.which("node")
 assert node
 args.output.mkdir(parents=True, exist_ok=True)
 prefix = "ap10-browser-" + uuid4().hex
-records, page_errors, external = [], [], []
+records, page_errors, external, layout_failures = [], [], [], []
 
 
 def sql(query, params=None):
@@ -289,9 +289,9 @@ try:
                         page.screenshot(path=str(args.output / (
                             "overflow-" + name + "-" + locale + "-" + str(width) + ".png"
                         )), full_page=True)
-                    assert layout["scrollWidth"] <= width + 1, (
-                        name, locale, width, layout["scrollWidth"]
-                    )
+                        layout_failures.append({
+                            "surface": name, "locale": locale, **layout,
+                        })
                     assert "measuresRefresh" not in page.locator("main").inner_text()
                     refresh = page.get_by_role("button", name={
                         "en": "Refresh current status",
@@ -307,6 +307,7 @@ try:
                             full_page=True,
                         )
                 record("localized-reflow-" + locale + "-" + str(width))
+        assert not layout_failures, layout_failures
         assert not page_errors, page_errors
         assert not external, external
         stale.close()
@@ -318,5 +319,6 @@ try:
 finally:
     (args.output / "results.json").write_text(json.dumps({
         "implementationHead": os.environ.get("IMPLEMENTATION_SHA"),
-        "cases": records, "pageErrors": page_errors, "externalRequests": external,
+        "cases": records, "layoutFailures": layout_failures,
+        "pageErrors": page_errors, "externalRequests": external,
     }, ensure_ascii=False, indent=2))
