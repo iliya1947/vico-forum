@@ -91,8 +91,8 @@ export class PostgresUserMeasuresRepository {
       // A committed create is a replay even after natural expiry or explicit lift.
       const prior = await client.query<{
         target_user_id: string; issuer_user_id: string; create_fingerprint: string;
-      }>(\`select target_user_id, issuer_user_id, create_fingerprint
-          from user_measures where id = $1 for update\`, [input.id]);
+      }>(`select target_user_id, issuer_user_id, create_fingerprint
+          from user_measures where id = $1 for update`, [input.id]);
       if (prior.rows[0]) {
         const existing = prior.rows[0];
         if (existing.target_user_id !== target.id || existing.issuer_user_id !== input.actorId ||
@@ -103,13 +103,13 @@ export class PostgresUserMeasuresRepository {
       }
 
       await this.requireFutureExpiry(client, input.expiresAt);
-      await client.query(\`insert into user_measures
+      await client.query(`insert into user_measures
         (id, target_user_id, issuer_user_id, issuer_authority_floor, create_fingerprint, initial_reason, expires_at)
-        values ($1,$2,$3,$4,$5,$6,$7::timestamptz)\`,
+        values ($1,$2,$3,$4,$5,$6,$7::timestamptz)`,
       [input.id, target.id, input.actorId, issuerLevel, input.fingerprint, input.reason, input.expiresAt]);
       for (const restriction of input.restrictions) {
-        await client.query(\`insert into user_measure_restrictions(measure_id,restriction_key)
-          values ($1,$2)\`, [input.id, restriction]);
+        await client.query(`insert into user_measure_restrictions(measure_id,restriction_key)
+          values ($1,$2)`, [input.id, restriction]);
       }
       await appendUserMeasureHistory(client, input.actorId, {
         action: "measure.created", targetType: "user-measure", targetId: input.id, targetLabel: target.name,
@@ -143,8 +143,8 @@ export class PostgresUserMeasuresRepository {
       if (!pointer.rows[0]) throw new UserMeasureNotFoundError("measure does not exist");
       const target = await this.lockTarget(client, pointer.rows[0].target_user_id);
       const found = await client.query<LockedMeasure>(
-        \`select id, target_user_id, issuer_authority_floor, version, expires_at, lifted_at
-          from user_measures where id=$1 for update\`, [input.measureId],
+        `select id, target_user_id, issuer_authority_floor, version, expires_at, lifted_at
+          from user_measures where id=$1 for update`, [input.measureId],
       );
       const current = found.rows[0];
       if (!current || current.target_user_id !== target.id) {
@@ -160,10 +160,10 @@ export class PostgresUserMeasuresRepository {
         actor_id: string; action: string; context: {
           fingerprint?: unknown; after?: { version?: unknown };
         };
-      }>(\`select actor_id, action, context from admin_history
+      }>(`select actor_id, action, context from admin_history
         where target_type='user-measure' and target_id=$1
           and context->>'operationId'=$2
-        order by position desc limit 1\`, [input.measureId, input.operationId]);
+        order by position desc limit 1`, [input.measureId, input.operationId]);
       if (replay.rows[0]) {
         const previous = replay.rows[0];
         if (previous.actor_id !== input.actorId || previous.action !== action ||
@@ -194,18 +194,18 @@ export class PostgresUserMeasuresRepository {
           return { id: current.id, version: current.version, changed: false };
         }
         await this.requireFutureExpiry(client, change.expiresAt);
-        await client.query(\`update user_measures
+        await client.query(`update user_measures
           set expires_at=$2::timestamptz, latest_change_reason=$3,
             issuer_authority_floor=greatest(issuer_authority_floor,$4), version=version+1
-          where id=$1 and version=$5\`,
+          where id=$1 and version=$5`,
           [current.id, change.expiresAt, change.reason, issuerLevel, current.version]);
-        await client.query(\`update user_measure_restrictions set enabled=false
-          where measure_id=$1 and restriction_key <> all($2::text[])\`,
+        await client.query(`update user_measure_restrictions set enabled=false
+          where measure_id=$1 and restriction_key <> all($2::text[])`,
           [current.id, change.restrictions]);
         for (const restriction of change.restrictions) {
-          await client.query(\`insert into user_measure_restrictions(measure_id, restriction_key, enabled)
+          await client.query(`insert into user_measure_restrictions(measure_id, restriction_key, enabled)
             values($1,$2,true) on conflict(measure_id, restriction_key)
-            do update set enabled=true\`, [current.id, restriction]);
+            do update set enabled=true`, [current.id, restriction]);
         }
         await appendUserMeasureHistory(client, input.actorId, {
           action, targetType: "user-measure", targetId: current.id, targetLabel: target.name,
@@ -216,15 +216,15 @@ export class PostgresUserMeasuresRepository {
         });
       } else {
         const lift = input as ValidatedLift;
-        await client.query(\`update user_measures set lifted_at=clock_timestamp(),
+        await client.query(`update user_measures set lifted_at=clock_timestamp(),
           lifted_by_user_id=$2, lift_reason=$3,
           issuer_authority_floor=greatest(issuer_authority_floor,$4),
-          version=version+1 where id=$1 and version=$5\`,
+          version=version+1 where id=$1 and version=$5`,
         [current.id, input.actorId, lift.reason, issuerLevel, current.version]);
         // Explicit lift makes pending appeals moot in the same transaction. An accepted
         // reviewer resolution will reuse this primitive in the appeal subtask.
-        await client.query(\`update user_measure_appeals set status='moot', resolved_at=clock_timestamp()
-          where measure_id=$1 and status='pending'\`, [current.id]);
+        await client.query(`update user_measure_appeals set status='moot', resolved_at=clock_timestamp()
+          where measure_id=$1 and status='pending'`, [current.id]);
         await appendUserMeasureHistory(client, input.actorId, {
           action, targetType: "user-measure", targetId: current.id, targetLabel: target.name,
           reason: lift.reason,
@@ -239,8 +239,8 @@ export class PostgresUserMeasuresRepository {
 
   private async readRestrictions(client: PoolClient, measureId: string): Promise<UserMeasureRestrictionId[]> {
     const result = await client.query<{ restriction_key: UserMeasureRestrictionId }>(
-      \`select restriction_key from user_measure_restrictions
-        where measure_id=$1 and enabled=true order by restriction_key\`, [measureId],
+      `select restriction_key from user_measure_restrictions
+        where measure_id=$1 and enabled=true order by restriction_key`, [measureId],
     );
     return result.rows.map(row => row.restriction_key);
   }
