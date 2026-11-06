@@ -184,7 +184,7 @@ export function AdminMeasuresIndex({locale,target,requestedTarget,createId,acces
       <FeedbackMessage feedback={feedback}/>
       <Form method="get" className="admin-forum-search">
         <label htmlFor="measure-target">{t("measuresTargetId")}</label>
-        <div><input id="measure-target" name="target" value={undefined} defaultValue={requestedTarget}
+        <div><input id="measure-target" name="target" defaultValue={requestedTarget}
           maxLength={2048} required/><button type="submit">{t("measuresFindTarget")}</button></div>
       </Form>
       {target&&<>

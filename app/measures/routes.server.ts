@@ -12,19 +12,23 @@ export type MeasureActionError = "invalid" | "unauthenticated" | "forbidden" | "
 export function measureFailure(error: MeasureActionError, status: number) {
   return data({ error }, { status, headers: measurePrivateHeaders });
 }
+function mappedMeasureError(error: unknown): [MeasureActionError, number] {
+  if (error instanceof Response) throw error;
+  if (error instanceof InvalidUserMeasureInputError) return ["invalid",400];
+  if (error instanceof UserMeasureForbiddenError) return ["forbidden",403];
+  if (error instanceof UserMeasureNotFoundError) return ["notFound",404];
+  if (error instanceof UserMeasureConflictError) return ["conflict",409];
+  if (error instanceof UserMeasuresUnavailableError || error instanceof AuthorizationUnavailableError ||
+      error instanceof UserMeasureConfigurationUnavailableError) return ["unavailable",503];
+  throw error;
+}
 export function measureResponseError(error: unknown): Response {
-  const mapped: [MeasureActionError,number] =
-    error instanceof InvalidUserMeasureInputError ? ["invalid",400] :
-    error instanceof UserMeasureForbiddenError ? ["forbidden",403] :
-    error instanceof UserMeasureNotFoundError ? ["notFound",404] :
-    error instanceof UserMeasureConflictError ? ["conflict",409] :
-    error instanceof UserMeasuresUnavailableError || error instanceof AuthorizationUnavailableError ||
-      error instanceof UserMeasureConfigurationUnavailableError ? ["unavailable",503] : (()=>{throw error;})();
-  return new Response(mapped[0], { status:mapped[1], headers:measurePrivateHeaders });
+  const [message,status]=mappedMeasureError(error);
+  return new Response(message,{status,headers:measurePrivateHeaders});
 }
 export function measureActionError(error: unknown) {
-  const response = measureResponseError(error);
-  return measureFailure(response.statusText === "" ? "invalid" : response.statusText as MeasureActionError, response.status);
+  const [message,status]=mappedMeasureError(error);
+  return measureFailure(message,status);
 }
 export function requireMeasureSession(context: RouterContextProvider): string {
   const id = authSessionForRequest(context)?.user.id;
