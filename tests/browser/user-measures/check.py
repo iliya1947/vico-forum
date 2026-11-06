@@ -142,7 +142,6 @@ try:
         manager_ctx, manager, manager_id = new_actor(browser, "manager")
         subject_ctx, subject, subject_id = new_actor(browser, "subject")
         other_ctx, other, other_id = new_actor(browser, "other")
-        users_ctx, users_page, users_id = new_actor(browser, "users-target")
 
         # Actual Better Auth identities, fixture-only explicit grants and raw role hierarchy.
         sql("insert into authz_user_roles(user_id,role_id) values($1,'builtin-admin'),($2,'builtin-admin')",
@@ -161,15 +160,15 @@ try:
 
         # AP-11 connected Users detail -> canonical inline authz -> History ->
         # same-session read-only recovery after fresh permission revocation.
-        user_path = "/en/admin/users/" + quote(users_id, safe="")
-        document(users_page, user_path, 403)
+        user_path = "/en/admin/users/" + quote(other_id, safe="")
+        document(other, user_path, 403)
         sql("""insert into authz_user_permission_overrides(user_id,permission_key,effect)
           values($1,'access.authorization.manage','deny')
           on conflict(user_id,permission_key) do update set effect='deny'""", [manager_id])
         document(manager, user_path)
         expect(manager.locator("#authorization")).to_have_count(0)
         expect(manager.locator("#admin-user-detail-heading")).to_have_count(1)
-        assert users_id in manager.locator("main").inner_text()
+        assert other_id in manager.locator("main").inner_text()
         document(manager, "/en/admin/authorization", 403)
         record("ap11-users-readonly-independent-of-authz-management")
 
@@ -179,7 +178,7 @@ try:
         document(manager, user_path)
         expect(manager.locator("#authorization")).to_have_count(1)
         history_before = sql("""select count(*)::int as total from admin_history
-          where target_type='user' and target_id=$1""", [users_id])[0]["total"]
+          where target_type='user' and target_id=$1""", [other_id])[0]["total"]
 
         assignment = manager.locator("#authorization form.admin-role-assignment")
         expect(assignment).to_have_count(1)
@@ -189,7 +188,7 @@ try:
             assignment.locator('button[type="submit"]').click()
         assert assigned.value.status == 200, ("inline assignment", assigned.value.status)
         expect(manager.locator("#authorization form.admin-role-assignment select[name='roleId']")).to_have_value("builtin-moderator")
-        assert sql("select role_id from authz_user_roles where user_id=$1", [users_id]) == [
+        assert sql("select role_id from authz_user_roles where user_id=$1", [other_id]) == [
             {"role_id": "builtin-moderator"}
         ]
 
@@ -203,17 +202,17 @@ try:
         assert overridden.value.status == 200, ("inline override", overridden.value.status)
         expect(manager.locator(override_path + ' select[name="effect"]')).to_have_value("deny")
         assert sql("""select effect from authz_user_permission_overrides
-          where user_id=$1 and permission_key='forum.reply.create'""", [users_id]) == [{"effect": "deny"}]
+          where user_id=$1 and permission_key='forum.reply.create'""", [other_id]) == [{"effect": "deny"}]
         history = sql("""select action from admin_history
-          where target_type='user' and target_id=$1 order by position""", [users_id])
+          where target_type='user' and target_id=$1 order by position""", [other_id])
         assert [item["action"] for item in history][history_before:] == [
             "user.roleAssigned", "user.overrideChanged"
         ], history
         document(manager, "/en/admin/history")
         role_event = manager.locator(".admin-history-events > li").filter(
-            has=manager.get_by_role("heading", name="User role assigned")).filter(has_text=users_id)
+            has=manager.get_by_role("heading", name="User role assigned")).filter(has_text=other_id)
         override_event = manager.locator(".admin-history-events > li").filter(
-            has=manager.get_by_role("heading", name="User permission override changed")).filter(has_text=users_id)
+            has=manager.get_by_role("heading", name="User permission override changed")).filter(has_text=other_id)
         expect(role_event).to_have_count(1)
         expect(override_event).to_have_count(1)
         expect(override_event).to_contain_text("forum.reply.create")
@@ -232,11 +231,11 @@ try:
         assert denied.value.status == 403, ("revoked inline POST", denied.value.status)
         expect(manager.locator("#authorization")).to_have_count(0)
         expect(manager.locator("#admin-user-detail-heading")).to_have_count(1)
-        assert users_id in manager.locator("main").inner_text()
+        assert other_id in manager.locator("main").inner_text()
         assert sql("""select effect from authz_user_permission_overrides
-          where user_id=$1 and permission_key='forum.reply.create'""", [users_id]) == [{"effect": "deny"}]
+          where user_id=$1 and permission_key='forum.reply.create'""", [other_id]) == [{"effect": "deny"}]
         assert sql("""select count(*)::int as total from admin_history
-          where target_type='user' and target_id=$1""", [users_id])[0]["total"] == len(history)
+          where target_type='user' and target_id=$1""", [other_id])[0]["total"] == len(history)
 
         sql("""update authz_user_permission_overrides set effect='allow'
           where user_id=$1 and permission_key='access.authorization.manage'""", [manager_id])
@@ -244,6 +243,29 @@ try:
         expect(manager.locator("#authorization")).to_have_count(1)
         expect(manager.locator(override_path + ' select[name="effect"]')).to_have_value("deny")
         record("ap11-users-same-session-revoke-readonly-no-replay")
+
+        # Restore the existing participant through canonical UI before the AP-10 cases.
+        restored_override = manager.locator(override_path)
+        restored_override.locator('select[name="effect"]').select_option("inherit")
+        with manager.expect_response(lambda r: r.request.method == "POST" and
+                                     "/admin/authorization" in r.url) as reset_effect:
+            restored_override.locator('button[type="submit"]').click()
+        assert reset_effect.value.status == 200
+        expect(manager.locator(override_path + ' select[name="effect"]')).to_have_value("inherit")
+        assert sql("""select effect from authz_user_permission_overrides
+          where user_id=$1 and permission_key='forum.reply.create'""", [other_id]) == []
+        restored_role = manager.locator("#authorization form.admin-role-assignment")
+        restored_role.locator('select[name="roleId"]').select_option("builtin-user")
+        with manager.expect_response(lambda r: r.request.method == "POST" and
+                                     "/admin/authorization" in r.url) as reset_role:
+            restored_role.locator('button[type="submit"]').click()
+        assert reset_role.value.status == 200
+        expect(manager.locator("#authorization form.admin-role-assignment select[name='roleId']")).to_have_value("builtin-user")
+        assert sql("select role_id from authz_user_roles where user_id=$1", [other_id]) == [
+            {"role_id": "builtin-user"}
+        ]
+        record("ap11-users-fixture-restored-via-canonical-ui")
+
 
 
         # An authenticated malformed create must fail before a PG text bind or any write.
@@ -483,7 +505,6 @@ try:
         manager_ctx.close()
         subject_ctx.close()
         other_ctx.close()
-        users_ctx.close()
         guest.close()
         browser.close()
 finally:
