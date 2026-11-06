@@ -5,6 +5,7 @@ import { authorizationContext } from "../authorization/request-context";
 import { complaintSubmissionContext } from "../complaints/request-context";
 import { ComplaintConflictError, ComplaintRateLimitError } from "../../db/complaints-domain";
 import { ComplaintStorageUnavailableError } from "../../db/hyperdrive-complaints";
+import { UserMeasureRestrictedError } from "../../db/user-measure-policy";
 import { AuthorizationUnavailableError } from "../../db/authorization-service";
 import { action,loader,headers } from "./complaint-submit";
 
@@ -48,6 +49,16 @@ describe("complaint submission HTTP boundary",()=>{
     const s=state();s.submit.mockRejectedValueOnce(error);const r=await run(s);expect(r.status).toBe(status);
     expect(r.headers.get("Cache-Control")).toBe("private, no-store");
     if(status===429)expect(r.headers.get("Retry-After")).toBe("2");
+  });
+  it("returns only a generic private 403 on active complaint restriction", async () => {
+    const s = state();
+    s.submit.mockRejectedValueOnce(new UserMeasureRestrictedError("complaints.submit"));
+    const result = await run(s);
+    expect(result.status).toBe(403);
+    expect(result.body).toEqual({error:"forbidden"});
+    expect(result.headers.get("Cache-Control")).toBe("private, no-store");
+    expect(JSON.stringify(result.body)).not.toContain("complaints.submit");
+    expect(s.submit).toHaveBeenCalledOnce();
   });
   it("fails closed for typed auth outages and propagates unexpected failures",async()=>{
     const s=state(true,new AuthorizationUnavailableError());expect((await run(s)).status).toBe(503);expect(s.submit).not.toHaveBeenCalled();

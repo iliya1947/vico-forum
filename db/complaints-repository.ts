@@ -6,6 +6,7 @@ import {readComplaintReview,readComplaintContextPost,readComplaintEvidenceObject
 import type {ReviewPages,ReviewCase} from "../app/complaints/review-contract";
 import { createHash, randomUUID } from "node:crypto";
 import { sql } from "drizzle-orm";
+import { assertNoActiveUserMeasureRestriction } from "./user-measure-policy";
 import type { NodePgDatabase } from "drizzle-orm/node-postgres";
 import { readComplaintQueue } from "./complaint-queue-read";
 import { COMPLAINT_ACTIVITY_SECONDS, type ComplaintPrioritySettings, type ComplaintPrioritySettingsCommand, type ComplaintPriorityCommand } from "../app/complaints/queue-contract";
@@ -47,7 +48,8 @@ interface ReplayRow extends Record<string, unknown> { fingerprint: string; entit
 /** Trusted DB adapter; application callers use ComplaintsService, never browser-supplied access flags. */
 export class DrizzleComplaintsRepository {
   constructor(private readonly database: NodePgDatabase,
-    private readonly limits: { tenMinutes: number; day: number } = COMPLAINT_SUBMISSION_LIMITS) {}
+    private readonly limits: { tenMinutes: number; day: number } = COMPLAINT_SUBMISSION_LIMITS,
+    private readonly measureAdmission: typeof assertNoActiveUserMeasureRestriction = assertNoActiveUserMeasureRestriction) {}
 
   private async submissionBudget(tx: Tx, actorId: string) {
     // The caller holds the actor mutex across this read and the complaint INSERT.
@@ -198,6 +200,9 @@ export class DrizzleComplaintsRepository {
         if (d.reason !== input.reason || d.explanation !== input.explanation) throw new ComplaintConflictError("report already submitted");
         return { complaintId: d.id, caseId: d.caseId };
       }
+      // Existing exact-operation and lifetime duplicate receipts must remain
+      // replayable even after a measure; admit only genuinely new reports.
+      await this.measureAdmission(tx, actorId, "complaints.submit");
       await this.submissionBudget(tx, actorId);
       const cases = await tx.execute<{ id: string }>(sql`select id from forum_complaint_cases where target_id=${targetId} and state='open' for update`);
       let caseId = cases.rows[0]?.id;

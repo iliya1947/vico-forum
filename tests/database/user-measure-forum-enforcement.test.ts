@@ -12,6 +12,15 @@ import { DrizzleForumAttachments, ForumAttachmentDraftConflictError } from "../.
 import { ForumEntityNotFoundError } from "../../db/forum-repository";
 import { InvalidProfileError } from "../../app/forum/profile";
 import { createHyperdriveForumWriter } from "../../db/hyperdrive-forum";
+import { ComplaintsService } from "../../db/complaints-service";
+import { DrizzleComplaintsRepository } from "../../db/complaints-repository";
+import { ComplaintConflictError } from "../../db/complaints-domain";
+import { createHyperdriveComplaintSubmission } from "../../db/hyperdrive-complaints";
+import { createAuthorizationCapability } from "../../db/authorization-service";
+import { PostgresAuthorizationRepository } from "../../db/authorization-repository";
+import { action as complaintSubmitAction } from "../../app/routes/complaint-submit";
+import { complaintSubmissionContext } from "../../app/complaints/request-context";
+import { Pool } from "pg";
 import { ForumAttachmentCleanup } from "../../db/forum-attachment-cleanup";
 import { action as uploadAction } from "../../app/routes/attachment-upload";
 import { authSessionContext } from "../../app/auth/request-context";
@@ -101,6 +110,148 @@ afterEach(async () => {
 afterAll(async () => {
   await client.query("drop schema if exists " + schema + " cascade");
   await client.end();
+});
+
+describe("AP-10 new complaint submission admission", () => {
+  const complaints = new DrizzleComplaintsRepository(drizzle(client));
+  const allowed = { forUser: () => ({ has: async () => true }) } as never;
+  const service = new ComplaintsService(complaints, allowed);
+
+  async function reportTarget() {
+    const topic = newTopic(randomUUID(), "issuer");
+    await forum.createTopicWithInitialPost(topic);
+    return {
+      post: { kind: "post" as const, topicId: topic.id, postId: topic.initialPost.id,
+        revisionId: topic.initialPost.bodyRevision.id },
+      title: { kind: "topic-title" as const, topicId: topic.id,
+        revisionId: topic.titleRevision.id },
+    };
+  }
+  function report(target: Awaited<ReturnType<typeof reportTarget>>["post"|"title"], operationId = randomUUID()) {
+    return { target, operationId, reason: "spam" as const, explanation: null };
+  }
+  async function count(actorId: string) {
+    const result = await client.query<{ total: number }>(
+      "select count(*)::int as total from forum_complaints where reporter_user_id=$1", [actorId],
+    );
+    return result.rows[0]!.total;
+  }
+
+  it("denies both new post and topic-title complaints without cases, events or quota consumption", async () => {
+    const target = await reportTarget();
+    const before = await count("target");
+    const measure = await createMeasure("complaints.submit");
+    for (const input of [report(target.post), report(target.title)]) {
+      await expect(service.submit("target", input)).rejects.toMatchObject({
+        restriction: "complaints.submit",
+      });
+    }
+    expect(await count("target")).toBe(before);
+    expect((await client.query(
+      "select id from forum_complaint_targets where topic_id=$1", [target.post.topicId],
+    )).rowCount).toBe(0);
+    expect((await client.query(
+      "select id from forum_complaint_cases where target_id in (select id from forum_complaint_targets where topic_id=$1)",
+      [target.post.topicId],
+    )).rowCount).toBe(0);
+    const other = await service.submit("other", report(target.title));
+    expect(other.caseId).toBeTruthy();
+    await lift(measure);
+    await expect(service.submit("target", report(target.post))).resolves.toMatchObject({
+      complaintId: expect.any(String), caseId: expect.any(String),
+    });
+  });
+
+  it("preserves same-operation and lifetime duplicate replay after restriction, but not fresh reports", async () => {
+    const target = await reportTarget();
+    const input = report(target.post);
+    const created = await service.submit("target", input);
+    const before = await count("target");
+    await createMeasure("complaints.submit");
+    await expect(service.submit("target", input)).resolves.toEqual(created);
+    await expect(service.submit("target", { ...input, operationId: randomUUID() })).resolves.toEqual(created);
+    await expect(service.submit("target", { ...input, reason: "threats" }))
+      .rejects.toBeInstanceOf(ComplaintConflictError);
+    await expect(service.submit("target", report(target.title)))
+      .rejects.toBeInstanceOf(UserMeasureRestrictedError);
+    expect(await count("target")).toBe(before);
+    expect((await client.query(
+      "select kind from forum_complaint_events where case_id=$1 order by created_at", [created.caseId],
+    )).rows).toEqual([{ kind: "submitted" }]);
+  });
+
+  it("reacts to active-session overlap, lift, disabled membership and database expiry", async () => {
+    const target = await reportTarget();
+    await createMeasure("complaints.submit", "target", "2000-01-01T00:00:00Z");
+    await createMeasure("complaints.submit", "other");
+    const disabled = await createMeasure("complaints.submit");
+    await client.query("update user_measure_restrictions set enabled=false where measure_id=$1", [disabled]);
+    const first = await createMeasure("complaints.submit");
+    const second = await createMeasure("complaints.submit");
+    await lift(first);
+    await expect(complaints.submit("target", report(target.post)))
+      .rejects.toBeInstanceOf(UserMeasureRestrictedError);
+    await client.query("update user_measure_restrictions set enabled=false where measure_id=$1", [second]);
+    await expect(complaints.submit("target", report(target.post))).resolves.toMatchObject({
+      complaintId: expect.any(String),
+    });
+  });
+
+  it("does not restrict a participant's existing Complaint Appeal", async () => {
+    const target = await reportTarget();
+    const saved = await complaints.submit("target", report(target.post));
+    const decisionId = await complaints.decide("issuer", {
+      caseId: saved.caseId, operationId: randomUUID(), expectedVersion: 1,
+      outcome: "not-confirmed", reasoning: "Decision evidence",
+    });
+    await createMeasure("complaints.submit");
+    const operationId = randomUUID();
+    const appeal = await service.appeal("target", {
+      caseId: saved.caseId, decisionId, operationId, argument: "Please reconsider",
+    });
+    expect(appeal).toBeTruthy();
+    await expect(service.appeal("target", {
+      caseId: saved.caseId, decisionId, operationId, argument: "Please reconsider",
+    })).resolves.toBe(appeal);
+  });
+
+  it("applies measure admission through the real Hyperdrive-backed HTTP submission", async () => {
+    const target = await reportTarget();
+    const pool = new Pool({ connectionString: databaseUrl, options: "-c search_path=" + schema });
+    const capability = createAuthorizationCapability(new PostgresAuthorizationRepository(pool));
+    const context = new RouterContextProvider();
+    context.set(authSessionContext, { user: { id: "target" } } as never);
+    context.set(authorizationContext, capability as never);
+    context.set(complaintSubmissionContext, createHyperdriveComplaintSubmission(
+      databaseUrl!, capability, () => new Client({ connectionString: databaseUrl, options: "-c search_path=" + schema }),
+    ));
+    const operationId = randomUUID();
+    const send = () => complaintSubmitAction({
+      context, params: { topicId: target.post.topicId },
+      request: new Request("https://forum.test/en/topics/" + target.post.topicId + "/complaints", {
+        method: "POST", headers: { Origin: "https://forum.test" },
+        body: new URLSearchParams({ kind: "post", postId: target.post.postId,
+          revisionId: target.post.revisionId, operationId, reason: "spam" }),
+      }),
+    });
+    const measure = await createMeasure("complaints.submit");
+    try {
+      const denied = await send();
+      expect(denied).toMatchObject({ data: { error: "forbidden" }, init: { status: 403 } });
+      expect(JSON.stringify(denied)).not.toContain("complaints.submit");
+      expect((denied as { init: { headers: Record<string,string> } }).init.headers)
+        .toMatchObject({ "Cache-Control": "private, no-store" });
+      await lift(measure);
+      const granted = await send();
+      expect(granted).toMatchObject({ data: { ok: true, operationId } });
+      await createMeasure("complaints.submit");
+      const replay = await send();
+      expect(replay).toMatchObject({ data: { ok: true, operationId } });
+      expect((await client.query("select id from forum_complaints where reporter_user_id='target' and target_id in (select id from forum_complaint_targets where topic_id=$1)", [target.post.topicId])).rowCount).toBe(1);
+    } finally {
+      await pool.end();
+    }
+  });
 });
 
 describe("AP-10 public profile field admission", () => {
