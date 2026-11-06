@@ -54,7 +54,7 @@ function mount(locale:string,view:ReactNode,action?:(args:{request:Request})=>Pr
   </I18nextProvider>).container;
 }
 function adminView(locale="en",measure:UserMeasureDetail=detail) {
-  return <AdminMeasureDetail locale={locale} measure={{...measure,targetUserId:"target",targetName:"Target"}}
+  return <AdminMeasureDetail locale={locale} measure={{...measure,targetUserId:"target",targetName:"Target",canMutate:true}}
     access={access} changeId="30000000-0000-4000-8000-000000000001"
     liftId="40000000-0000-4000-8000-000000000001"
     reviewIds={[{appealId:detail.appeals[0]!.id,operationId:"50000000-0000-4000-8000-000000000001"}]}
@@ -149,7 +149,7 @@ describe("AP-10 private measure views and administrative choices",()=>{
   it("scopes both change and accepted-appeal-change selectors by the same authority hint",()=>{
     for(const elevated of [false,true]){
       const root=mount("en",<AdminMeasureDetail locale="en"
-        measure={{...detail,targetUserId:"target",targetName:"Target"}}
+        measure={{...detail,targetUserId:"target",targetName:"Target",canMutate:true}}
         access={access} changeId="change" liftId="lift" feedback={undefined}
         reviewIds={[{appealId:detail.appeals[0]!.id,operationId:"review"}]}
         maySelectAdministrativeRestrictions={elevated}/>);
@@ -288,13 +288,49 @@ describe("AP-10 live status and stale-action recovery",()=>{
     return render(<I18nextProvider i18n={i18n(locale)}><RouterProvider router={router}/></I18nextProvider>).container;
   }
 
+  it("keeps exact detail read-only below issuer floor and refreshes all mutation controls on grant and revoke",async()=>{
+    let canMutate=false,reads=0,posts=0;
+    function CurrentDetail() {
+      const measure=useLoaderData() as UserMeasureDetail&{
+        targetUserId:string;targetName:string;canMutate:boolean;
+      };
+      return <AdminMeasureDetail locale="en" measure={measure} access={access}
+        changeId="change" liftId="lift"
+        reviewIds={[{appealId:detail.appeals[0]!.id,operationId:"review"}]}
+        feedback={undefined}/>;
+    }
+    const router=createMemoryRouter([{
+      path:"/en/admin/measures/:measureId",
+      loader:()=>{reads++;return {...detail,targetUserId:"target",targetName:"Target",canMutate};},
+      action:async()=>{posts++;return data({error:"forbidden"},{status:403});},
+      element:<CurrentDetail/>,
+    }],{initialEntries:["/en/admin/measures/"+id]});
+    const root=mountDataRouter("en",router);
+    const intents=()=>[...root.querySelectorAll<HTMLInputElement>('input[name="intent"]')]
+      .map(node=>node.value);
+    await waitFor(()=>expect(root.textContent).toContain("Reason"));
+    expect(intents()).toEqual([]);
+    expect(root.textContent).toContain("I disagree");
+    canMutate=true;
+    await router.revalidate();
+    await waitFor(()=>expect(intents()).toEqual(["change","lift","review"]));
+    expect(formFor(root,"review").getAttribute("id"))
+      .toBe("measure-review-"+detail.appeals[0]!.id);
+    canMutate=false;
+    await router.revalidate();
+    await waitFor(()=>expect(intents()).toEqual([]));
+    expect(root.textContent).toContain("I disagree");
+    expect(posts).toBe(0);
+    expect(reads).toBe(3);
+  });
+
   it("revalidates an admin stale 409, replacing the expected version and operation ID without replay",async()=>{
     let version=1,reads=0,posts=0;
     function CurrentDetail() {
       const state=useLoaderData() as {measure:UserMeasureDetail;changeId:string};
       const feedback=useActionData() as {error?:"conflict"}|undefined;
       return <AdminMeasureDetail locale="en"
-        measure={{...state.measure,targetUserId:"target",targetName:"Target"}}
+        measure={{...state.measure,targetUserId:"target",targetName:"Target",canMutate:true}}
         access={access} changeId={state.changeId} liftId="lift" reviewIds={[]}
         feedback={feedback}/>;
     }
@@ -326,7 +362,7 @@ describe("AP-10 live status and stale-action recovery",()=>{
     function CurrentDetail() {
       const measure=useLoaderData() as UserMeasureDetail;
       return <AdminMeasureDetail locale="en"
-        measure={{...measure,targetUserId:"target",targetName:"Target"}}
+        measure={{...measure,targetUserId:"target",targetName:"Target",canMutate:true}}
         access={access} changeId="change" liftId="lift" reviewIds={[]}
         feedback={useActionData() as {error?:"forbidden"}|undefined}/>;
     }
