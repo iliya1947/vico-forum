@@ -1,4 +1,5 @@
 import { isFencedAttachmentKey } from "../app/forum/attachment-storage-protocol";
+import { assertNoActiveUserMeasureRestriction } from "./user-measure-policy";
 import { and, asc, desc, eq, isNull } from "drizzle-orm";
 import type { NodePgDatabase } from "drizzle-orm/node-postgres";
 import {
@@ -132,7 +133,36 @@ function toMetadata(row: typeof forumAttachments.$inferSelect): ForumAttachmentM
 }
 
 export class DrizzleForumAttachments {
-  constructor(private readonly db: NodePgDatabase) {}
+  constructor(
+    private readonly db: NodePgDatabase,
+    private readonly measureAdmission: typeof assertNoActiveUserMeasureRestriction = assertNoActiveUserMeasureRestriction,
+  ) {}
+
+  /** Exact committed upload replay is checked before restricting new uploads. */
+  async admitUpload(
+    ownerId: string, contextKey: string, draftId: string, attachmentId: string,
+  ): Promise<ForumAttachmentMetadata | null> {
+    if (!ownerId || !isEditorDraftContextKey(contextKey)
+      || !isForumAttachmentUuid(draftId) || !isForumAttachmentUuid(attachmentId)) {
+      throw new InvalidForumAttachmentError();
+    }
+    return this.db.transaction(async (tx) => {
+      await lockAttachmentDraftScope(tx, ownerId, contextKey);
+      const generation = await resolveAttachmentDraftGeneration(tx, ownerId, contextKey, draftId);
+      const [committed] = await tx.select({ attachment: forumAttachments }).from(forumAttachmentDraftRefs)
+        .innerJoin(forumAttachments, eq(forumAttachments.id, forumAttachmentDraftRefs.attachmentId))
+        .where(and(
+          eq(forumAttachmentDraftRefs.ownerId, ownerId),
+          eq(forumAttachmentDraftRefs.contextKey, contextKey),
+          eq(forumAttachmentDraftRefs.draftId, generation),
+          eq(forumAttachmentDraftRefs.attachmentId, attachmentId),
+          eq(forumAttachments.ownerId, ownerId),
+        )).limit(1);
+      if (committed) return toMetadata(committed.attachment);
+      await this.measureAdmission(tx, ownerId, "attachments.upload");
+      return null;
+    });
+  }
 
   async recordUploadObject(objectKey: string): Promise<void> {
     if (!isFencedAttachmentKey(objectKey)) throw new InvalidForumAttachmentError();
@@ -164,6 +194,23 @@ export class DrizzleForumAttachments {
           .where(eq(forumAttachmentUploadObjects.objectKey, input.objectKey)).for("update");
         if (!record || !record.reservationEtag || record.claimToken !== null) throw new InvalidForumAttachmentError();
       }
+      // Stable-ID retries preserve an already committed private asset even after a
+      // measure begins. A new asset must pass the fresh in-transaction policy.
+      const [committed] = await tx.select().from(forumAttachments)
+        .where(eq(forumAttachments.id, input.id)).limit(1);
+      if (committed) {
+        if (committed.ownerId !== input.ownerId) throw new InvalidForumAttachmentError();
+        const [reference] = await tx.select({ id: forumAttachmentDraftRefs.attachmentId })
+          .from(forumAttachmentDraftRefs).where(and(
+            eq(forumAttachmentDraftRefs.attachmentId, input.id),
+            eq(forumAttachmentDraftRefs.ownerId, input.ownerId),
+            eq(forumAttachmentDraftRefs.contextKey, input.contextKey),
+            eq(forumAttachmentDraftRefs.draftId, draftId),
+          )).limit(1);
+        if (!reference) throw new InvalidForumAttachmentError();
+        return toMetadata(committed);
+      }
+      await this.measureAdmission(tx, input.ownerId, "attachments.upload");
       const [created] = await tx.insert(forumAttachments).values({
         id: input.id,
         ownerId: input.ownerId,

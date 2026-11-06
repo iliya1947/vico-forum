@@ -15,6 +15,7 @@ import type {
 } from "../../db/forum-attachments";
 import { ForumAttachmentStorageUnavailableError } from "../../db/hyperdrive-forum-attachments";
 import { ForumAttachmentDraftConflictError } from "../../db/forum-attachments";
+import { UserMeasureRestrictedError } from "../../db/user-measure-policy";
 import { action, loader } from "./attachment-upload";
 import routes from "../routes";
 import { classicManyEntryZip } from "../forum/attachment-zip.test-fixtures";
@@ -70,9 +71,11 @@ function setup({ owner = "real-user", allowed = true, withBucket = true } = {}) 
   const cancelOperation = vi.fn(async () => {});
   const rebindDraftAttachments = vi.fn(async () => 0);
   const initializePostEditAttachments = vi.fn(async () => {});
+  const admitUpload = vi.fn(async (): Promise<ForumAttachmentMetadata | null> => null);
   const recordUploadObject = vi.fn(async (key: string) => { void key; });
   const activateUploadObject = vi.fn(async () => {});
   ctx.set(forumAttachmentStoreContext, {
+    admitUpload,
     recordUploadObject,
     activateUploadObject,
     createDraftAttachment,
@@ -86,7 +89,7 @@ function setup({ owner = "real-user", allowed = true, withBucket = true } = {}) 
   const r2 = bucket();
   if (withBucket) ctx.set(privateAttachmentBucketContext, r2);
   return {
-    ctx, r2, assertContextExists, createDraftAttachment, recordSecurityEvent, recordUploadObject, activateUploadObject,
+    ctx, r2, admitUpload, assertContextExists, createDraftAttachment, recordSecurityEvent, recordUploadObject, activateUploadObject,
     listDraftAttachments, cancelOperation, rebindDraftAttachments, initializePostEditAttachments,
   };
 }
@@ -151,6 +154,51 @@ function scopedRequest(
 }
 
 describe("private attachment upload API", () => {
+  it("denies every new context upload before R2, while preserving GET and Cancel", async () => {
+    for (const key of [contextKey, "post:existing:edit", "section:section-1:new"]) {
+      const env = setup();
+      env.admitUpload.mockRejectedValueOnce(new UserMeasureRestrictedError("attachments.upload"));
+      const blocked = await action({ request: request(new TextEncoder().encode("hello"), { key }), context: env.ctx });
+      expect(blocked.status).toBe(403);
+      expect(blocked.headers.get("Cache-Control")).toBe("no-store");
+      expect(await blocked.json()).toEqual({ error: "forbidden" });
+      expect(env.r2.reserve).not.toHaveBeenCalled();
+      expect(env.r2.put).not.toHaveBeenCalled();
+      expect(env.createDraftAttachment).not.toHaveBeenCalled();
+      expect((await loader({ request: scopedRequest("GET", { key }), context: env.ctx })).status).toBe(200);
+      expect((await action({ request: scopedRequest("DELETE", { key }), context: env.ctx })).status).toBe(200);
+    }
+  });
+
+  it("returns a committed stable-ID upload even when new-upload admission is blocked", async () => {
+    const env = setup();
+    const committed = {
+      id: uploadId, objectKey: "private/8cd55954-9cb6-48fd-a42f-e4a5e85ae90c",
+      fileName: "notes.txt", declaredMime: "text/plain", detectedType: "text",
+      responseMime: "text/plain; charset=utf-8", byteSize: 5,
+      verificationStatus: "type-checked" as const, createdAt: new Date().toISOString(),
+    };
+    env.admitUpload.mockResolvedValueOnce(committed);
+    const response = await action({ request: request(new TextEncoder().encode("hello")), context: env.ctx });
+    expect(response.status).toBe(201);
+    expect(await response.json()).toMatchObject({ outcome: "stored", attachment: { id: uploadId } });
+    expect(env.r2.reserve).not.toHaveBeenCalled();
+    expect(env.r2.put).not.toHaveBeenCalled();
+    expect(env.createDraftAttachment).not.toHaveBeenCalled();
+  });
+
+  it("rejects metadata when restriction changes after R2, without blind-delete", async () => {
+    const env = setup();
+    env.createDraftAttachment.mockRejectedValueOnce(new UserMeasureRestrictedError("attachments.upload"));
+    const response = await action({ request: request(new TextEncoder().encode("hello")), context: env.ctx });
+    expect(response.status).toBe(403);
+    expect(await response.json()).toEqual({ error: "forbidden" });
+    expect(env.r2.put).toHaveBeenCalledOnce();
+    expect(env.r2.delete).not.toHaveBeenCalled();
+    expect(env.recordUploadObject).toHaveBeenCalledOnce();
+  });
+
+
   it("registers classic 65535 through the storage/action path within the default internal-service budget", async () => {
     const env = setup(), data = classicManyEntryZip(65535, true);
     let gets = 0;

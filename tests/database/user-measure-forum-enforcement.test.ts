@@ -1,4 +1,5 @@
 import { randomUUID } from "node:crypto";
+import { RouterContextProvider } from "react-router";
 import { readdir, readFile } from "node:fs/promises";
 import { drizzle } from "drizzle-orm/node-postgres";
 import { Client } from "pg";
@@ -7,6 +8,14 @@ import {
   DrizzleForumRepository, ForumPublicationReplayConflictError,
 } from "../../db/forum-repository";
 import { UserMeasureRestrictedError } from "../../db/user-measure-policy";
+import { DrizzleForumAttachments, ForumAttachmentDraftConflictError } from "../../db/forum-attachments";
+import { ForumAttachmentCleanup } from "../../db/forum-attachment-cleanup";
+import { action as uploadAction } from "../../app/routes/attachment-upload";
+import { authSessionContext } from "../../app/auth/request-context";
+import { authorizationContext } from "../../app/authorization/request-context";
+import { forumReaderContext } from "../../app/forum/request-context";
+import { forumAttachmentStoreContext, privateAttachmentBucketContext } from "../../app/forum/attachment-request-context";
+import type { PrivateAttachmentBucket } from "../../app/forum/attachment-r2";
 import type { UserMeasureRestrictionId } from "../../app/admin/user-measure-restrictions";
 
 const databaseUrl = process.env.DATABASE_URL;
@@ -16,6 +25,7 @@ if (!databaseUrl || !["127.0.0.1", "localhost"].includes(new URL(databaseUrl).ho
 }
 const schema = "ap10_forum_restriction_test";
 const client = new Client({ connectionString: databaseUrl, options: "-c search_path=" + schema });
+const attachments = new DrizzleForumAttachments(drizzle(client));
 const forum = new DrizzleForumRepository(drizzle(client), {
   cooldownMs: 0, now: () => new Date(),
 });
@@ -88,6 +98,156 @@ afterEach(async () => {
 afterAll(async () => {
   await client.query("drop schema if exists " + schema + " cascade");
   await client.end();
+});
+
+describe("AP-10 private attachment upload admission under active measures", () => {
+  it("keeps post-R2 denied bytes in the durable cleanup journal and reclaims them safely", async () => {
+    const objects = new Map<string, Uint8Array>();
+    const deleted: string[] = [];
+    const bucket: PrivateAttachmentBucket = {
+      async reserve(key) { if (objects.has(key)) return null; return { etag: "guard" }; },
+      async put(key, body) {
+        const bytes = new Uint8Array(await new Response(body).arrayBuffer());
+        objects.set(key, bytes);
+        return { size: bytes.length };
+      },
+      async get() { return null; },
+      async delete(key) { deleted.push(key); objects.delete(key); },
+      async listReservations() { return { keys: [] }; },
+    };
+    const ctx = new RouterContextProvider();
+    ctx.set(authSessionContext, { user: { id: "target" } } as never);
+    ctx.set(authorizationContext, { forUser: () => ({ has: async () => true }) } as never);
+    ctx.set(forumReaderContext, { readSection: async () => ({ id: sectionId }) } as never);
+    ctx.set(privateAttachmentBucketContext, bucket);
+    ctx.set(forumAttachmentStoreContext, {
+      admitUpload: (owner: string, key: string, draft: string, id: string) =>
+        attachments.admitUpload(owner, key, draft, id),
+      recordUploadObject: (key: string) => attachments.recordUploadObject(key),
+      activateUploadObject: (key: string, etag: string) => attachments.activateUploadObject(key, etag),
+      createDraftAttachment: async (input: Parameters<typeof attachments.createDraftAttachment>[0]) => {
+        await createMeasure("attachments.upload");
+        return attachments.createDraftAttachment(input);
+      },
+    } as never);
+    const attachmentId = randomUUID();
+    const response = await uploadAction({ context: ctx, request: new Request("https://forum.test/api/attachments", {
+      method: "POST",
+      headers: {
+        Origin: "https://forum.test", "Content-Type": "text/plain",
+        "X-Vico-Attachment-Id": attachmentId,
+        "X-Vico-Attachment-Name": "blocked.txt",
+        "X-Vico-Attachment-Size": "5",
+        "X-Vico-Editor-Context": encodeURIComponent("section:ap10-section:new"),
+        "X-Vico-Operation-Id": randomUUID(),
+      },
+      body: "hello",
+    }) });
+    expect(response.status).toBe(403);
+    expect(await response.json()).toEqual({ error: "forbidden" });
+    expect((await client.query("select id from forum_attachments where id=$1", [attachmentId])).rowCount).toBe(0);
+    expect(objects.size).toBe(1);
+    expect(deleted).toEqual([]);
+    const key = [...objects.keys()][0]!;
+    expect((await client.query(
+      "select object_key from forum_attachment_upload_objects where object_key=$1", [key],
+    )).rowCount).toBe(1);
+    await client.query(
+      "update forum_attachment_upload_objects set created_at=clock_timestamp()-interval '2 hours' where object_key=$1",
+      [key],
+    );
+    await new ForumAttachmentCleanup(drizzle(client), bucket).runOnce();
+    expect(objects.has(key)).toBe(false);
+    expect(deleted).toContain(key);
+    expect((await client.query(
+      "select object_key from forum_attachment_upload_objects where object_key=$1", [key],
+    )).rowCount).toBe(0);
+  });
+
+  const contextKey = "topic:ap10-fixture:reply";
+
+  function upload(draftId = randomUUID(), id = randomUUID(), ownerId = "target") {
+    return {
+      id, ownerId, contextKey, draftId,
+      objectKey: "private/" + randomUUID(),
+      fileName: "new.txt", declaredMime: "text/plain", detectedType: "text",
+      responseMime: "text/plain; charset=utf-8", byteSize: 5,
+      verificationStatus: "type-checked" as const,
+    };
+  }
+
+  it("blocks a new upload before storage in any editor context and at direct metadata write", async () => {
+    const measure = await createMeasure("attachments.upload");
+    const draftId = randomUUID();
+    for (const key of [contextKey, "post:ap10-fixture:edit", "section:ap10-section:new"]) {
+      await expect(attachments.admitUpload("target", key, draftId, randomUUID()))
+        .rejects.toBeInstanceOf(UserMeasureRestrictedError);
+    }
+    const input = upload(draftId);
+    await expect(attachments.createDraftAttachment(input))
+      .rejects.toBeInstanceOf(UserMeasureRestrictedError);
+    expect((await client.query("select id from forum_attachments where id=$1", [input.id])).rowCount).toBe(0);
+    expect((await client.query(
+      "select attachment_id from forum_attachment_draft_refs where attachment_id=$1", [input.id],
+    )).rowCount).toBe(0);
+    await lift(measure);
+    await expect(attachments.admitUpload("target", contextKey, draftId, input.id)).resolves.toBeNull();
+    await expect(attachments.createDraftAttachment(input)).resolves.toMatchObject({ id: input.id });
+  });
+
+  it("rechecks a restriction committed after preflight, without orphaning metadata or a private ref", async () => {
+    const input = upload();
+    await expect(attachments.admitUpload(input.ownerId, input.contextKey, input.draftId, input.id))
+      .resolves.toBeNull();
+    const measure = await createMeasure("attachments.upload");
+    await expect(attachments.createDraftAttachment(input))
+      .rejects.toBeInstanceOf(UserMeasureRestrictedError);
+    expect((await client.query("select id from forum_attachments where id=$1", [input.id])).rowCount).toBe(0);
+    await lift(measure);
+    await expect(attachments.createDraftAttachment(input)).resolves.toMatchObject({ id: input.id });
+  });
+
+  it("replays an already committed exact asset during restriction without creating a second ref", async () => {
+    const input = upload();
+    const first = await attachments.createDraftAttachment(input);
+    await createMeasure("attachments.upload");
+    await expect(attachments.admitUpload(input.ownerId, contextKey, input.draftId, input.id))
+      .resolves.toEqual(first);
+    await expect(attachments.createDraftAttachment({
+      ...input, objectKey: "private/" + randomUUID(), fileName: "ignored-retry.txt",
+    })).resolves.toEqual(first);
+    expect((await client.query("select id from forum_attachments where id=$1", [input.id])).rowCount).toBe(1);
+    expect((await client.query(
+      "select attachment_id from forum_attachment_draft_refs where attachment_id=$1", [input.id],
+    )).rowCount).toBe(1);
+    await expect(attachments.admitUpload("other", contextKey, input.draftId, input.id)).resolves.toBeNull();
+    await expect(attachments.admitUpload("target", contextKey, input.draftId, randomUUID()))
+      .rejects.toBeInstanceOf(UserMeasureRestrictedError);
+    expect(await attachments.listDraftAttachments("target", contextKey, input.draftId))
+      .toEqual([first]);
+    await attachments.cancelOperation("target", contextKey, input.draftId);
+    expect(await attachments.listDraftAttachments("target", contextKey, input.draftId))
+      .rejects.toBeInstanceOf(ForumAttachmentDraftConflictError);
+  });
+
+  it("preserves overlapping restrictions and ignores expired, disabled and other-subject measures", async () => {
+    const expired = await createMeasure("attachments.upload", "target", "2000-01-01T00:00:00Z");
+    const other = await createMeasure("attachments.upload", "other");
+    const disabled = await createMeasure("attachments.upload");
+    await client.query("update user_measure_restrictions set enabled=false where measure_id=$1", [disabled]);
+    await expect(attachments.admitUpload("target", contextKey, randomUUID(), randomUUID()))
+      .resolves.toBeNull();
+    const first = await createMeasure("attachments.upload");
+    const second = await createMeasure("attachments.upload");
+    await lift(first);
+    await expect(attachments.admitUpload("target", contextKey, randomUUID(), randomUUID()))
+      .rejects.toBeInstanceOf(UserMeasureRestrictedError);
+    await lift(second);
+    await expect(attachments.admitUpload("target", contextKey, randomUUID(), randomUUID()))
+      .resolves.toBeNull();
+    void expired;
+    void other;
+  });
 });
 
 describe("AP-10 forum publication admission under active measures", () => {

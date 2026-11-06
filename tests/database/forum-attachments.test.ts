@@ -33,7 +33,7 @@ if (!["localhost", "127.0.0.1"].includes(url.hostname) || !url.pathname.endsWith
 
 const schema = "forum_attachments_test";
 const client = new Client({ connectionString: databaseUrl, options: `-c search_path=${schema}` });
-const store = new DrizzleForumAttachments(drizzle(client));
+const store = new DrizzleForumAttachments(drizzle(client), historicalForumMeasureAdmission);
 const migrations = [
   "0000_tan_johnny_storm", "0001_seed-locales", "0002_ui_translation_storage",
   "0003_gorgeous_donald_blake", "0004_forum_domain_foundation",
@@ -120,11 +120,11 @@ async function queuedOperations<T, U>(
   try {
     await blocker.query("begin");
     await lockAttachmentDraftScope(drizzle(blocker), ownerId, context);
-    firstResult = first(new DrizzleForumAttachments(drizzle(firstConnection)),
+    firstResult = first(new DrizzleForumAttachments(drizzle(firstConnection), historicalForumMeasureAdmission),
       new DrizzleForumRepository(drizzle(firstConnection), { cooldownMs: 0, now: () => new Date() }, historicalForumMeasureAdmission));
     void firstResult.catch(() => {});
     await waiting(firstPid);
-    secondResult = second(new DrizzleForumAttachments(drizzle(secondConnection)),
+    secondResult = second(new DrizzleForumAttachments(drizzle(secondConnection), historicalForumMeasureAdmission),
       new DrizzleForumRepository(drizzle(secondConnection), { cooldownMs: 0, now: () => new Date() }, historicalForumMeasureAdmission));
     void secondResult.catch(() => {});
     await waiting(secondPid);
@@ -266,7 +266,7 @@ describe("forum attachment lifecycle foundation", () => {
     await Promise.all(connections.map((connection) => connection.connect()));
     try {
       await Promise.all(connections.map((connection) =>
-        new DrizzleForumAttachments(drizzle(connection)).recordSecurityEvent(event)));
+        new DrizzleForumAttachments(drizzle(connection), historicalForumMeasureAdmission).recordSecurityEvent(event)));
     } finally {
       await Promise.all(connections.map((connection) => connection.end()));
     }
@@ -357,7 +357,7 @@ async function withSecurityUploadRoute(run: (fixture: {
   // A pool lets the actual route/repository execute simultaneous INSERTs on
   // independent PostgreSQL connections, rather than a single client's queue.
   const pool = new Pool({ connectionString: databaseUrl, options: `-c search_path=${schema}`, max: 4 });
-  const repository = new DrizzleForumAttachments(drizzle(pool));
+  const repository = new DrizzleForumAttachments(drizzle(pool), historicalForumMeasureAdmission);
   const events: RecordAttachmentSecurityEventInput[] = [];
   const clientId = crypto.randomUUID();
   let loseAck = false;
@@ -376,6 +376,7 @@ async function withSecurityUploadRoute(run: (fixture: {
         context.set(authorizationContext, { forUser: () => ({ has: async () => true }) } as never);
         context.set(privateAttachmentBucketContext, bucket);
         context.set(forumAttachmentStoreContext, {
+          admitUpload: async () => null,
           async recordSecurityEvent(event: RecordAttachmentSecurityEventInput) {
             events.push(event);
             await repository.recordSecurityEvent(event);
