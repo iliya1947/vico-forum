@@ -4,14 +4,14 @@
 
 ## Актуальный baseline и review
 
-- AP-01–AP-10 merged; current `main`: `03c505370f44fa2640a489b647fba3929219093f`, migration head 0058.
+- AP-01–AP-10 merged and AP-10 documentation closeout merged; current `main`: `7b452edfc0a759b4b65cd1cc535f207bb9e615c7`, migration head 0058.
 - AP-10 technical plan approved; AP10-PLAN-MIRA-01..06 закрыты.
 - Implementation PR #290 merged 2026-11-06; reviewed exact head `ef313919f6613c54db6ddb50765c968744101306`, merge commit `03c505370f44fa2640a489b647fba3929219093f`.
 - Coordinator whole-PR PASS на этом head завершён.
 - **Repeated independent technical review Лёвы: PASS**, [отчёт #6685133377](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6685133377). Подтверждённых current-scope defects не осталось; AP10-LEV-01 закрыт.
 - Exact-head CI #42218475676 и isolated browser #42218475943: SUCCESS; author CI отдельно от собственных review reruns.
-- Documentation PR #291 обновлён после merge #290: exact docs head `cabdd7d034bdd26f00fa67446b236f42c1c9a7ef`, open/Ready/mergeable; exact-head CI #42222511348 SUCCESS.
-- AP-10 implementation merged; documentation #291 ещё не merged. Production/Stage 6/owner visual acceptance не выполнялись.
+- Documentation PR #291 merged 2026-11-06; exact docs head `cabdd7d034bdd26f00fa67446b236f42c1c9a7ef`, merge commit `7b452edfc0a759b4b65cd1cc535f207bb9e615c7`; exact-head CI #42222511348 SUCCESS.
+- AP-10 implementation и documentation closeout merged. Production/Stage 6/owner visual acceptance не выполнялись.
 
 ## Решения владельца, обязательные для AP-10
 
@@ -90,3 +90,16 @@
 - Exact-head CI #42222511348 — SUCCESS, jobs `checks` и `database` SUCCESS.
 - PR #291 переведён из Draft в Ready; GitHub reports open/mergeable. Дополнительный Codex review документации не назначается: implementation уже прошёл coordinator + independent technical review, а #291 — отдельный documentation-only closeout.
 - Следующий шаг: owner merge #291. После merge можно переходить к следующему Admin Panel package; AP-11/Settings не начинались в рамках этого closeout.
+
+
+## AP-10 closed; AP-11 pre-scope gate
+
+- PR #291 merged; AP-10 полностью закрыт на repository/documentation уровне. Current `main`: `7b452edfc0a759b4b65cd1cc535f207bb9e615c7`.
+- Следующий утверждённый technical package — **AP-11 / Package 8: integration and factual closeout of delivered admin-panel scope**.
+- До передачи AP-11 Лёве есть один продуктовый gate, который нельзя решить техническим планированием: **Settings** остаётся утверждённым top-level разделом, но в permanent contract у него нет ни одной конкретной approved operation и он остаётся placeholder.
+- `docs/ADMIN_PANEL.md` прямо требует: whole admin-panel umbrella нельзя объявить complete, пока required approved functionality остаётся placeholder, если только владелец явно не отделит её в более позднюю фазу.
+- Поэтому AP-11 нельзя формулировать как финальное завершение всей ordinary admin panel без owner decision по Settings.
+- Нужен один выбор владельца:
+  1. **Settings остаётся отдельной будущей фазой после AP-11** — тогда AP-11 закрывает интеграцию фактически delivered AP-01–AP-10 scope, честно оставляя Settings unfinished;
+  2. **Settings входит в текущую ordinary-admin completion** — тогда перед AP-11 сначала нужен отдельный product-design/bounded implementation package для конкретных Settings operations.
+- До этого решения Лёве technical plan AP-11 не назначать; owner-role/last-manager cleanup также не начинать, потому что она зафиксирована только после завершения ordinary-admin work.
