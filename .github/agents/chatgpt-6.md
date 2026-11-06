@@ -1,5 +1,15 @@
 # Лира — ChatGPT-6
 
+## AP-10 — stage 3.5: complaint submission restrictions (2026-11-06)
+
+- [Draft PR #290](https://github.com/iliya1947/vico-forum/pull/290), stable implementation head **`01abaf59cbb38fc988e9051dca5e3368eb9a62c4`**. Enforcement bounded slices 3.1–3.5 now implemented; AP-10 still incomplete, open/Draft, no merge.
+- `db/complaints-repository.ts`: `submit` gains the already-shared authoritative transaction-local `this.measureAdmission(tx, reporterId, "complaints.submit")` after content lock, actor mutex, matching operation-event replay and lifetime reporter/target identical duplicate, and before per-actor submission budget/new Case/Complaint/event. Exact or lifetime replay after a new measure remains available; changed operation payload conflicts; new reports roll back target creation and all other database effects. No budget, appeal, Decision, review or notification policy altered. Default writer fails closed on missing/invalid measure tables and DB errors.
+- `app/routes/complaint-submit.ts`: typed `UserMeasureRestrictedError` maps to generic `forbidden` private/no-store 403 at protected POST; independent session/Origin/permission validation remains, no internal measure/reviewer/case fields leak.
+- New route test and **5 native PostgreSQL tests** in `tests/database/user-measure-forum-enforcement.test.ts`: new post/title reports denied without target/Case/events, unblocked other reporter/lift, exact operation and lifetime duplicate retry after block without duplication, changed payload conflict, DB expiry/overlap/disable/other-user, participant Complaint Appeal unaffected, **real scoped Hyperdrive writer + HTTP** denial → lift → first commit → subsequent block still returns existing committed success. Existing complaint integration suites also run unmodified under full 0058 schema.
+- **[Exact-head CI #42153586817](https://github.com/iliya1947/vico-forum/actions/runs/42153586817) SUCCESS**: application **147/147 files, 1916/1916 tests**, native PostgreSQL **46/46 files, 531/531 tests**, lint/typecheck/build, accepted migration/Drizzle/schema manifest, Workers local HTTP smoke PASS. Head verified equal to CI SHA; PR description updated.
+- **Next bounded step only after «...»**: `helpSignals.submit` on new Help signals, preserving withdrawal, solved/best-answer and Help/Complaint/Block appeals, source correction, and existing permission/state checks. Other restrictions (translation generation, four privileged administrative families, presentation) are independent later slices. No permanent docs/PROJECT_STATE, shared coordinator files, AP-11/Settings/production/merge touched. Stopped after 3.5.
+
+
 ## AP-10 — stage 3.4: public profile bio/URLs enforcement (2026-11-06)
 
 - [Draft implementation PR #290](https://github.com/iliya1947/vico-forum/pull/290), exact stable head **`71e27a51a18894c721a675c2e8b0e6be2eece3aa`**. Stage 3.1–3.4 completed in bounded increments; AP-10 remains incomplete, Draft/open, not merged.
