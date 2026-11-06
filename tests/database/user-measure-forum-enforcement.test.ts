@@ -14,6 +14,13 @@ import { ForumEntityNotFoundError, ForumStateConflictError } from "../../db/foru
 import { InvalidProfileError } from "../../app/forum/profile";
 import { createHyperdriveForumWriter } from "../../db/hyperdrive-forum";
 import { withForumAdministrativeRestrictions } from "../../db/user-measure-admin-forum";
+import { complaintReviewContext } from "../../app/complaints/review-context";
+import { complaintAppealContext } from "../../app/complaints/appeal-context";
+import { loader as caseContextLoader } from "../../app/routes/complaint-review-context";
+import { loader as caseEvidenceLoader } from "../../app/routes/complaint-review-evidence";
+import { loader as appealContextLoader } from "../../app/routes/complaint-appeal-context";
+import { loader as appealEvidenceLoader } from "../../app/routes/complaint-appeal-evidence";
+import { vi } from "vitest";
 import { requireAdminForumAccess } from "../../app/admin/forum.server";
 import type { AuthorizationManagementCapability } from "../../db/authorization-service";
 import type { PermissionKey } from "../../app/authorization/catalog";
@@ -23,7 +30,7 @@ import { topicAction } from "../../app/forum/actions.server";
 import { ContentGenerationPlanningUnavailableError } from "../../app/localization/content-generation-action.server";
 import { ComplaintsService } from "../../db/complaints-service";
 import { DrizzleComplaintsRepository } from "../../db/complaints-repository";
-import { ComplaintConflictError } from "../../db/complaints-domain";
+import { ComplaintConflictError, ComplaintForbiddenError } from "../../db/complaints-domain";
 import { createHyperdriveComplaintSubmission } from "../../db/hyperdrive-complaints";
 import { createAuthorizationCapability } from "../../db/authorization-service";
 import { PostgresAuthorizationRepository } from "../../db/authorization-repository";
@@ -119,6 +126,176 @@ afterEach(async () => {
 afterAll(async () => {
   await client.query("drop schema if exists " + schema + " cascade");
   await client.end();
+});
+
+describe("AP-10 admin.complaints effective access and reviewer transactions", () => {
+  const reviewPermissions = [
+    "forum.complaint.review", "forum.complaint.appeal.review",
+    "forum.complaint.priority.manage", "forum.complaint.reporterIdentity.read",
+  ] as const satisfies readonly PermissionKey[];
+  const allRights = [
+    ...reviewPermissions, "forum.topic.pin", "forum.complaint.create",
+  ] as const satisfies readonly PermissionKey[];
+  const snapshot = {
+    role: { id: "role", slug: "moderator", displayName: "Moderator", isSystem: true },
+    explicitAssignment: false, grants: [...allRights], overrides: {},
+    effectivePermissions: [...allRights],
+  };
+  const raw = {
+    forUser: (_: string) => ({
+      has: async (key: PermissionKey) => allRights.includes(key as typeof allRights[number]),
+      resolve: async () => snapshot,
+    }),
+    resolveUser: async () => snapshot,
+  } as unknown as AuthorizationManagementCapability;
+  function effective() {
+    return withForumAdministrativeRestrictions(raw, databaseUrl!, () =>
+      new Pool({ connectionString: databaseUrl, options: "-c search_path=" + schema, max: 1 }));
+  }
+  const repo = new DrizzleComplaintsRepository(drizzle(client));
+  async function createCase() {
+    const question = newTopic(randomUUID(), "issuer");
+    await forum.createTopicWithInitialPost(question);
+    const saved = await repo.submit("target", {
+      operationId: randomUUID(), reason: "spam", explanation: null,
+      target: { kind: "post", topicId: question.id, postId: question.initialPost.id,
+        revisionId: question.initialPost.bodyRevision.id },
+    });
+    return saved;
+  }
+
+  it("filters all four complaint rights from has and effective snapshot while preserving raw grants and forum rights", async () => {
+    const original = effective().forUser("issuer");
+    expect(await original.has("forum.complaint.review")).toBe(true);
+    await createMeasure("admin.complaints", "issuer");
+    const after = effective().forUser("issuer");
+    for (const key of reviewPermissions) expect(await after.has(key)).toBe(false);
+    expect(await after.has("forum.topic.pin")).toBe(true);
+    expect(await after.has("forum.complaint.create")).toBe(true);
+    const view = await after.resolve();
+    expect(view.effectivePermissions).toEqual(["forum.topic.pin", "forum.complaint.create"]);
+    expect(view.grants).toEqual([...allRights]);
+    expect((await raw.forUser("issuer").resolve()).effectivePermissions).toEqual([...allRights]);
+    expect((await effective().resolveUser("issuer")).effectivePermissions).toEqual([...allRights]);
+    expect(await effective().forUser("target").has("forum.complaint.review")).toBe(true);
+    const blocked = await createMeasure("admin.complaints", "issuer");
+    await lift(blocked);
+    expect(await effective().forUser("issuer").has("forum.complaint.review")).toBe(false);
+  });
+
+  it("refuses all direct private Case and Appeal context/evidence endpoints before any backend or R2 reads", async () => {
+    await createMeasure("admin.complaints", "issuer");
+    const context = new RouterContextProvider();
+    context.set(authSessionContext, { user: { id: "issuer" } } as never);
+    context.set(authorizationContext, effective());
+    const readCase = vi.fn(async () => { throw new Error("private Case access"); });
+    const readAppeal = vi.fn(async () => { throw new Error("private Appeal access"); });
+    context.set(complaintReviewContext, { context: readCase, evidence: readCase } as never);
+    context.set(complaintAppealContext, { context: readAppeal, evidence: readAppeal } as never);
+    const cases = [
+      [caseContextLoader, { caseId: "secret-case", postId: "secret-post" }],
+      [caseEvidenceLoader, { caseId: "secret-case", attachmentId: "secret-file" }],
+      [appealContextLoader, { caseId: "secret-case", appealId: "secret-appeal", postId: "secret-post" }],
+      [appealEvidenceLoader, { caseId: "secret-case", appealId: "secret-appeal", attachmentId: "secret-file" }],
+    ] as const;
+    for (const [loader, params] of cases) {
+      try {
+        await loader({ params, context } as never);
+        throw new Error("private route was not denied");
+      } catch (error) {
+        expect(error).toBeInstanceOf(Response);
+        const response = error as Response;
+        expect(response.status).toBe(403);
+        expect(response.headers.get("Cache-Control")).toBe("private, no-store");
+      }
+    }
+    expect(readCase).not.toHaveBeenCalled();
+    expect(readAppeal).not.toHaveBeenCalled();
+  });
+
+  it("blocks new Case reviewer commands inside locked transactions without changing cases, notes, events or settings", async () => {
+    const saved = await createCase();
+    const service = new ComplaintsService(repo, effective());
+    const original = await repo.readPrioritySettings();
+    await createMeasure("admin.complaints", "issuer");
+    await expect(service.readQueue("issuer", 0)).rejects.toBeInstanceOf(ComplaintForbiddenError);
+    await expect(service.readResolvedHistory("issuer", 0)).rejects.toBeInstanceOf(ComplaintForbiddenError);
+    await expect(service.readReview("issuer", saved.caseId, { reports: 0, notes: 0, evidence: 0, context: 0 }))
+      .rejects.toBeInstanceOf(ComplaintForbiddenError);
+    await expect(service.readPrioritySettings("issuer")).rejects.toBeInstanceOf(ComplaintForbiddenError);
+    await expect(service.readAppealQueue("issuer", 0)).rejects.toBeInstanceOf(ComplaintForbiddenError);
+    await expect(repo.addNote("issuer", { caseId: saved.caseId, operationId: randomUUID(), body: "Private note" }))
+      .rejects.toBeInstanceOf(UserMeasureRestrictedError);
+    await expect(repo.decide("issuer", { caseId: saved.caseId, operationId: randomUUID(),
+      expectedVersion: 1, outcome: "not-confirmed", reasoning: "Review" }))
+      .rejects.toBeInstanceOf(UserMeasureRestrictedError);
+    await expect(repo.changePriority("issuer", { caseId: saved.caseId, operationId: randomUUID(),
+      expectedVersion: 1, priority: 3 })).rejects.toBeInstanceOf(UserMeasureRestrictedError);
+    await expect(repo.activity("issuer", saved.caseId, true)).rejects.toBeInstanceOf(UserMeasureRestrictedError);
+    await expect(repo.savePrioritySettings("issuer", {
+      expectedVersion: original.version, weights: original.weights,
+    })).rejects.toBeInstanceOf(UserMeasureRestrictedError);
+    const rows = await client.query<{ version: number; state: string }>(
+      "select version,state from forum_complaint_cases where id=$1", [saved.caseId],
+    );
+    expect(rows.rows[0]).toEqual({version:1,state:"open"});
+    expect((await client.query("select id from forum_complaint_notes where case_id=$1", [saved.caseId])).rowCount).toBe(0);
+    expect((await client.query("select id from forum_complaint_events where case_id=$1 and kind<>'submitted'", [saved.caseId])).rowCount).toBe(0);
+    expect((await repo.readPrioritySettings()).version).toBe(original.version);
+  });
+
+  it("preserves participant Complaint appeals, status and committed reviewer idempotency", async () => {
+    const saved = await createCase();
+    const decision = {
+      caseId: saved.caseId, operationId: randomUUID(), expectedVersion: 1,
+      outcome: "not-confirmed" as const, reasoning: "Review completed",
+    };
+    const decidedId = await repo.decide("issuer", decision);
+    const appeal = {
+      caseId: saved.caseId, decisionId: decidedId,
+      operationId: randomUUID(), argument: "Please reconsider",
+    };
+    await createMeasure("admin.complaints", "issuer");
+    expect(await repo.decide("issuer", decision)).toBe(decidedId);
+    const participant = new ComplaintsService(repo, effective());
+    const appealId = await participant.appeal("target", appeal);
+    expect(appealId).toBeTruthy();
+    expect(await participant.appeal("target", appeal)).toBe(appealId);
+    expect(await participant.readOwnResult("target", saved.caseId)).toBeTruthy();
+    const resolution = {
+      caseId: saved.caseId, appealId, operationId: randomUUID(),
+      outcome: "upheld" as const, reasoning: "Case reviewed",
+    };
+    await expect(repo.resolveAppeal("issuer", resolution))
+      .rejects.toBeInstanceOf(UserMeasureRestrictedError);
+    const status = await client.query<{ status: string }>(
+      "select status from forum_complaint_appeals where id=$1", [appealId],
+    );
+    expect(status.rows[0]?.status).toBe("pending");
+    await client.query("update user_measures set lifted_at=clock_timestamp(),lifted_by_user_id='issuer',lift_reason='Test lift' where target_user_id='issuer' and lifted_at is null");
+    expect(await repo.resolveAppeal("issuer", resolution)).toBe(appealId);
+    await createMeasure("admin.complaints", "issuer");
+    expect(await repo.resolveAppeal("issuer", resolution)).toBe(appealId);
+    await expect(participant.readAppealCaseForReviewer("issuer",saved.caseId,appealId,
+      { reports:0,notes:0,evidence:0,context:0 })).rejects.toBeInstanceOf(ComplaintForbiddenError);
+  });
+
+  it("treats expired, disabled and unrelated measures independently; refreshes on next request and fails closed on absent tables", async () => {
+    await createMeasure("admin.complaints", "issuer", "2000-01-01T00:00:00Z");
+    await createMeasure("admin.complaints", "target");
+    const disabled = await createMeasure("admin.complaints", "issuer");
+    await client.query("update user_measure_restrictions set enabled=false where measure_id=$1", [disabled]);
+    await effective().forUser("issuer").has("forum.complaint.review").then(v => expect(v).toBe(true));
+    const one = await createMeasure("admin.complaints", "issuer");
+    const two = await createMeasure("admin.complaints", "issuer");
+    await lift(one);
+    expect(await effective().forUser("issuer").has("forum.complaint.review")).toBe(false);
+    await lift(two);
+    expect(await effective().forUser("issuer").has("forum.complaint.review")).toBe(true);
+    const missing = withForumAdministrativeRestrictions(raw, databaseUrl!, () =>
+      new Pool({ connectionString: databaseUrl, options: "-c search_path=ap10_nonexistent_complaint", max: 1 }));
+    await expect(missing.forUser("issuer").has("forum.complaint.review")).rejects.toThrow();
+  });
 });
 
 describe("AP-10 admin.forum permission projection and authoritative moderation", () => {

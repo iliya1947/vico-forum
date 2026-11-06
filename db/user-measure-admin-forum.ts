@@ -15,10 +15,22 @@ const FORUM_ADMIN_PERMISSIONS = new Set<PermissionKey>([
   "forum.sourceLocale.correctAny", "forum.post.history.read",
 ]);
 
+const COMPLAINT_ADMIN_PERMISSIONS = new Set<PermissionKey>([
+  "forum.complaint.review", "forum.complaint.appeal.review",
+  "forum.complaint.priority.manage", "forum.complaint.reporterIdentity.read",
+]);
+
+type RestrictedFamily = "admin.forum" | "admin.complaints";
+function familyFor(permission: PermissionKey): RestrictedFamily | null {
+  if (FORUM_ADMIN_PERMISSIONS.has(permission)) return "admin.forum";
+  if (COMPLAINT_ADMIN_PERMISSIONS.has(permission)) return "admin.complaints";
+  return null;
+}
+
 type PoolFactory = (connectionString: string) => Pool;
 
 /**
- * Request-local effective action view. Raw role grants, overrides and
+ * Request-local Forum/Complaints action view. Raw role grants, overrides and
  * management/authority methods are untouched. Each Worker request creates a
  * new wrapper and checks current database state, with no cross-request cache.
  */
@@ -28,15 +40,16 @@ export function withForumAdministrativeRestrictions(
   poolFactory: PoolFactory = createWebPool,
 ): AuthorizationManagementCapability {
   const blocked = new Map<string, Promise<boolean>>();
-  function isRestricted(actorId: string): Promise<boolean> {
-    let current = blocked.get(actorId);
+  function isRestricted(actorId: string, family: RestrictedFamily): Promise<boolean> {
+    const key = family + ":" + actorId;
+    let current = blocked.get(key);
     if (!current) {
       current = (async () => {
         const pool = poolFactory(connectionString);
         try {
           return await drizzle(pool).transaction(async tx => {
             try {
-              await assertNoActiveUserMeasureRestriction(tx, actorId, "admin.forum");
+              await assertNoActiveUserMeasureRestriction(tx, actorId, family);
               return false;
             } catch (error) {
               if (error instanceof UserMeasureRestrictedError) return true;
@@ -54,7 +67,7 @@ export function withForumAdministrativeRestrictions(
           bestEffortDiscardClient(pool);
         }
       })();
-      blocked.set(actorId, current);
+      blocked.set(key, current);
     }
     return current;
   }
@@ -64,17 +77,26 @@ export function withForumAdministrativeRestrictions(
       const resolver = raw.forUser(actorId);
       return {
         async has(permission) {
-          if (!FORUM_ADMIN_PERMISSIONS.has(permission)) return resolver.has(permission);
+          const family = familyFor(permission);
+          if (!family) return resolver.has(permission);
           if (!await resolver.has(permission)) return false;
-          return !(await isRestricted(actorId));
+          return !(await isRestricted(actorId, family));
         },
         async resolve() {
           const snapshot = await resolver.resolve();
-          if (!snapshot.effectivePermissions.some(p => FORUM_ADMIN_PERMISSIONS.has(p))) return snapshot;
-          if (!await isRestricted(actorId)) return snapshot;
+          const families = [...new Set(snapshot.effectivePermissions
+            .map(familyFor).filter((family): family is RestrictedFamily => family !== null))];
+          if (!families.length) return snapshot;
+          const denied = new Set((await Promise.all(families.map(async family =>
+            (await isRestricted(actorId, family)) ? family : null)))
+            .filter((family): family is RestrictedFamily => family !== null));
+          if (!denied.size) return snapshot;
           return {
             ...snapshot,
-            effectivePermissions: snapshot.effectivePermissions.filter(p => !FORUM_ADMIN_PERMISSIONS.has(p)),
+            effectivePermissions: snapshot.effectivePermissions.filter(p => {
+              const family = familyFor(p);
+              return family === null || !denied.has(family);
+            }),
           };
         },
       };

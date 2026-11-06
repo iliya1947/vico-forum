@@ -79,12 +79,13 @@ export default {
     context.set(adminHistoryContext, createHyperdriveAdminHistory(webConnectionString));
     const ownerUserId = (env as Env & { VICO_OWNER_USER_ID?: string }).VICO_OWNER_USER_ID;
     const authorization = createHyperdriveAuthorization(webConnectionString, undefined, ownerUserId);
-    context.set(authorizationContext, withForumAdministrativeRestrictions(authorization, webConnectionString));
+    const effectiveAuthorization = withForumAdministrativeRestrictions(authorization, webConnectionString);
+    context.set(authorizationContext, effectiveAuthorization);
     context.set(userMeasureContext, createHyperdriveUserMeasures(webConnectionString, ownerUserId));
     context.set(complaintSubmissionContext, createHyperdriveComplaintSubmission(webConnectionString, authorization));
-    context.set(complaintQueueContext, createHyperdriveComplaintQueue(webConnectionString, authorization));
-    context.set(complaintReviewContext, createHyperdriveComplaintReview(webConnectionString, authorization));
-    context.set(complaintAppealContext,createHyperdriveComplaintAppeal(webConnectionString,authorization));
+    context.set(complaintQueueContext, createHyperdriveComplaintQueue(webConnectionString, effectiveAuthorization));
+    context.set(complaintReviewContext, createHyperdriveComplaintReview(webConnectionString, effectiveAuthorization));
+    context.set(complaintAppealContext,createHyperdriveComplaintAppeal(webConnectionString,effectiveAuthorization));
     context.set(contentGenerationAdmissionContext, createHyperdriveContentGenerationAdmission(webConnectionString));
     context.set(contentGenerationActionContext, DISABLED_CONTENT_GENERATION_ACTION_RUNTIME);
     const response = await requestHandler(request, context);
