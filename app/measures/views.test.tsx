@@ -3,13 +3,14 @@ import { cleanup, fireEvent, render, waitFor } from "@testing-library/react";
 import type { ReactNode } from "react";
 import { I18nextProvider } from "react-i18next";
 import { createMemoryRouter, data, RouterProvider, useActionData, useLoaderData } from "react-router";
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { createTranslationRuntime } from "../localization/runtime";
 import { canonicalEnglishCatalog } from "../localization/catalog";
 import { russianCommonValues, hebrewCommonValues } from "../localization/manual-values";
 import { adminAccess } from "../admin/access";
 import type { UserMeasureDetail, UserMeasureSummary } from "../../db/user-measure-read";
-import { AdminMeasuresIndex, AdminMeasureDetail, OwnMeasuresIndex, OwnMeasureDetail } from "./views";
+import { AdminMeasuresIndex, AdminMeasureDetail, OwnMeasuresIndex, OwnMeasureDetail,
+  selectedMeasureExpiry } from "./views";
 import { measureShouldRevalidate } from "./revalidation";
 
 const id="10000000-0000-4000-8000-000000000001";
@@ -44,7 +45,7 @@ function i18n(locale:string) {
 }
 let dispose=()=>{};
 afterEach(()=>{cleanup();dispose();dispose=()=>{};});
-function mount(locale:string,view:ReactNode,action?:()=>Promise<unknown>) {
+function mount(locale:string,view:ReactNode,action?:(args:{request:Request})=>Promise<unknown>) {
   const router=createMemoryRouter([{path:"*",element:view,...(action?{action}:{})}],
     {initialEntries:["/"+locale+"/admin/measures/"+id]});
   dispose=()=>router.dispose();
@@ -119,6 +120,71 @@ describe("AP-10 private measure views and administrative choices",()=>{
     expect(items.every(item=>!item.checked)).toBe(true);
     expect(toggle).toHaveProperty("indeterminate",false);
     expect(root.textContent).not.toContain("measuresGroupPublication");
+  });
+
+  it.each(["en","ru","he"])("discovers scoped pending appeals with a link to exact review in %s",locale=>{
+    const root=mount(locale,<AdminMeasuresIndex locale={locale} target={null}
+      pendingAppeals={{appeals:[{
+        id:detail.appeals[0].id,measureId:id,ordinal:1,submittedAt:now,
+        targetUserId:"target",targetName:"Test target",
+      }],nextPage:1}}
+      requestedTarget="" createId="create" access={access} feedback={undefined}/>);
+    expect(root.querySelector('a[href$="#measure-review-'+detail.appeals[0].id+'"]'))
+      .toHaveAttribute("href","/"+locale+"/admin/measures/"+id+
+        "#measure-review-"+detail.appeals[0].id);
+    expect(root.querySelector('a[href="/'+locale+'/admin/measures?page=2"]'))
+      .toBeInTheDocument();
+    expect(root.textContent).toContain("Test target");
+    expect(root.textContent).not.toContain("measuresPendingHeading");
+    expect(root.textContent).not.toContain("measuresPendingOpen");
+  });
+
+  it("encodes permanent, preset and arbitrary UTC expiries without submitting UI mode fields",async()=>{
+    const seen:string[]=[];
+    const action=async({request}:{request:Request})=>{
+      const form=await request.formData();
+      seen.push(String(form.get("expiresAt")));
+      expect(form.has("expiryMode")).toBe(false);
+      expect([...form.keys()].sort()).toEqual([
+        "expiresAt","intent","measureId","reason","restriction","targetId",
+      ]);
+      return data({ok:true});
+    };
+    const root=mount("en",<AdminMeasuresIndex locale="en"
+      target={{id:"target",name:"Target",measures:[]}} requestedTarget="target"
+      createId="30000000-0000-4000-8000-000000000001"
+      access={access} feedback={undefined}/>,action);
+    const form=formFor(root,"create");
+    const mode=form.querySelector<HTMLSelectElement>("[data-measure-expiry-mode]")!;
+    expect(selectedMeasureExpiry(form,Date.parse(now))).toBe("");
+    fireEvent.change(mode,{target:{value:"hour"}});
+    expect(selectedMeasureExpiry(form,Date.parse(now))).toBe("2026-11-06T11:00:00.000Z");
+    fireEvent.change(mode,{target:{value:"week"}});
+    expect(selectedMeasureExpiry(form,Date.parse(now))).toBe("2026-11-13T10:00:00.000Z");
+    fireEvent.change(mode,{target:{value:"month"}});
+    expect(selectedMeasureExpiry(form,Date.parse(now))).toBe("2026-12-06T10:00:00.000Z");
+    fireEvent.change(mode,{target:{value:"duration"}});
+    fireEvent.change(form.querySelector<HTMLInputElement>("[data-measure-expiry-amount]")!,{
+      target:{value:"3"},
+    });
+    fireEvent.change(form.querySelector<HTMLSelectElement>("[data-measure-expiry-unit]")!,{
+      target:{value:"days"},
+    });
+    expect(selectedMeasureExpiry(form,Date.parse(now))).toBe("2026-11-09T10:00:00.000Z");
+    fireEvent.change(mode,{target:{value:"date"}});
+    const date=form.querySelector<HTMLInputElement>("[data-measure-expiry-date]")!;
+    fireEvent.change(date,{target:{value:"2026-11-24T16:30"}});
+    expect(selectedMeasureExpiry(form,Date.parse(now))).toBe("2026-11-24T16:30:00.000Z");
+    fireEvent.change(date,{target:{value:"invalid"}});
+    expect(selectedMeasureExpiry(form,Date.parse(now))).toBeUndefined();
+    fireEvent.change(date,{target:{value:"2027-01-01T00:00"}});
+    const nowSpy=vi.spyOn(Date,"now").mockReturnValue(Date.parse(now));
+    try {
+      fireEvent.submit(form);
+      await waitFor(()=>expect(seen).toEqual(["2027-01-01T00:00:00.000Z"]));
+      expect(form.querySelector<HTMLInputElement>('input[name="expiresAt"]')?.value)
+        .toBe("2027-01-01T00:00:00.000Z");
+    } finally {nowSpy.mockRestore();}
   });
 
   it("preselects individual restrictions in change mode and reflects mixed group states",()=>{
