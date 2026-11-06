@@ -4017,7 +4017,7 @@ describe("AP10-MIRA-10 fresh restriction keeps existing Editor 2.0 operations", 
       expect(form.querySelector<HTMLInputElement>('input[name="editorOperationId"]')).toHaveValue(operationId);
       expect(form.querySelector('input[name="expectedRevisionId"]')).toHaveValue("post-r1");
       verifyHistory(form, textarea, "Unsent published edit");
-      expect(within(form).getByRole("button", { name: "Save" })).toBeDisabled();
+      expect(within(form).getByRole("button", { name: "Save changes" })).toBeDisabled();
       expect(within(form).getByRole("button", { name: "Cancel" })).toBeEnabled();
       expect(screen.queryByRole("button", { name: "Edit" })).not.toBeInTheDocument();
       fireEvent.submit(form);
