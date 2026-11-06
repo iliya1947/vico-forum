@@ -12,6 +12,7 @@ import type { AuthorizationFailure } from "../authorization/admin-view";
 import { AuthorizationUserControls } from "../authorization/user-controls";
 import { AdminShell } from "./shell";
 import { adminUserPath, adminUsersPath, adminUsersBrowsePath } from "./users-paths";
+import { adminMeasuresPath } from "../measures/paths";
 
 export interface AdminUserDetailData extends AdminUserSummary {
   bio: string;
@@ -105,6 +106,8 @@ export function AdminUserDetail({ locale, access, user, management, managerActor
         </nav> : null}
       </section>
       <Link to={forumProfilePath(locale, user.id)}>{t("adminUsersPublicProfile")}</Link>
+      {access.canManageMeasures ? <p><Link to={adminMeasuresPath(locale)+"?target="+encodeURIComponent(user.id)}>
+        {t("measuresAdmin")}</Link></p> : null}
       {access.canManageAuthorization && management && managerActorId && permissions
         ? <InlineUserAuthorization key={managerActorId + ":" + user.id}
           locale={locale} userId={user.id} actorId={managerActorId}

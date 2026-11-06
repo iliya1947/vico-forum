@@ -2,6 +2,7 @@ import { Form, Link, useNavigation } from "react-router";
 import { useTranslation } from "react-i18next";
 import { ForumShell } from "../forum/ui";
 import { AdminShell } from "../admin/shell";
+import { ownMeasuresPath, ownMeasurePath, adminMeasuresPath, adminMeasurePath } from "./paths";
 import type { AdminAccess } from "../admin/access";
 import {
   USER_MEASURE_RESTRICTION_GROUPS, type UserMeasureRestrictionId,
@@ -12,13 +13,6 @@ import type {
 } from "../../db/user-measure-read";
 import type { MeasureActionError } from "./routes.server";
 
-export const ownMeasuresPath = (locale: string) => "/" + encodeURIComponent(locale) + "/account/measures";
-export const ownMeasurePath = (locale: string, id: string) =>
-  ownMeasuresPath(locale) + "/" + encodeURIComponent(id);
-export const adminMeasuresPath = (locale: string) =>
-  "/" + encodeURIComponent(locale) + "/admin/measures";
-export const adminMeasurePath = (locale: string, id: string) =>
-  adminMeasuresPath(locale) + "/" + encodeURIComponent(id);
 type Feedback = {ok?:boolean;error?:MeasureActionError;ordinal?:number} | undefined;
 
 const restrictionKeys = {
@@ -142,11 +136,11 @@ function AppealsAndTimeline({measure,locale}:{measure:UserMeasureDetail;locale:s
 export function OwnMeasuresIndex({locale,measures}: {locale:string;measures:UserMeasureSummary[]}) {
   const {t}=useTranslation("common");
   return <ForumShell locale={locale} variant="profile">
-    <main className="profile-card">
+    <section className="profile-card">
       <h1>{t("measuresOwn")}</h1>
       {measures.length?<ol className="admin-forum-objects">{measures.map(item=>
         <MeasureSummary key={item.id} measure={item} locale={locale}/>)}</ol>:<p>{t("measuresNone")}</p>}
-    </main>
+    </section>
   </ForumShell>;
 }
 export function OwnMeasureDetail({locale,measure,appealId,feedback}:{
@@ -156,7 +150,7 @@ export function OwnMeasureDetail({locale,measure,appealId,feedback}:{
   const navigation=useNavigation();
   const canAppeal=measure.status==="active"&&!measure.pendingAppeal&&measure.usedAppeals<3;
   return <ForumShell locale={locale} variant="profile">
-    <main className="profile-card">
+    <section className="profile-card">
       <nav><Link to={ownMeasuresPath(locale)}>{t("measuresOwn")}</Link></nav>
       <h1>{t("measuresDetail")}</h1>
       <FeedbackMessage feedback={feedback}/>
@@ -169,7 +163,7 @@ export function OwnMeasureDetail({locale,measure,appealId,feedback}:{
         <button type="submit" disabled={navigation.state==="submitting"}>{t("measuresAppealSubmit")}</button>
       </Form>}
       <AppealsAndTimeline measure={measure} locale={locale}/>
-    </main>
+    </section>
   </ForumShell>;
 }
 
@@ -184,7 +178,7 @@ export function AdminMeasuresIndex({locale,target,requestedTarget,createId,acces
       <FeedbackMessage feedback={feedback}/>
       <Form method="get" className="admin-forum-search">
         <label htmlFor="measure-target">{t("measuresTargetId")}</label>
-        <div><input id="measure-target" name="target" defaultValue={requestedTarget}
+        <div><input id="measure-target" key={requestedTarget} name="target" defaultValue={requestedTarget}
           maxLength={2048} required/><button type="submit">{t("measuresFindTarget")}</button></div>
       </Form>
       {target&&<>

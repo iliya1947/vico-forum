@@ -7,7 +7,7 @@ import { ForumAvatar } from "./avatar";
 import { forumIndexPath, forumProfilePath } from "./paths";
 import { ForumShell } from "./ui";
 import { GoogleAccountLink } from "../auth/google-account-link";
-import { ownMeasuresPath } from "../measures/views";
+import { ownMeasuresPath } from "../measures/paths";
 
 export function ProfileView({ locale, profile, isOwner = false, editing = false, saved = false, feedback }: {
   locale: string; profile: Omit<ForumProfile, "joinedAt"> & { joinedAt: string };
