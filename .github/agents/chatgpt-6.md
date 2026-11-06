@@ -1,5 +1,15 @@
 # Лира — ChatGPT-6
 
+## AP-10 — stage 4.1: measures UI presentation (2026-11-06)
+
+- [Draft PR #290](https://github.com/iliya1947/vico-forum/pull/290) exact verified implementation head `a11d1738f62ec2936cd073b7a81c69b2fbead1e7`. This bounded UI slice is complete; overall AP-10 remains incomplete, Draft/open without merge.
+- `app/measures/views.tsx`: existing private subject and administrator target measure lists now group by actual server-projected `active`, `expired`, and `lifted` statuses, active first, with separate measure cards and original appeal counts/reasons. No user/issuer/reviewer identity is introduced in public profile responses or private subject DTOs; existing owner profile links, dedicated status/appeal paths and no-store boundaries remain.
+- Existing restriction groups now have accessible parent checkboxes with checked/indeterminate/mixed semantics; a group switch updates only its fixed child IDs. The FormData keeps only named checked `restriction` child keys, not presentation-group keys, so server's unique nonempty child validation remains authoritative. Controlled selection resets with authoritative server-generated create/change IDs after action revalidation, not by persisting role/permission changes.
+- Administrative review form now offers valid conditional payload paths: reject with blank remedy, accept+lift without expiry/restriction extras, accept+change with expiry and child restriction controls. Accept remedy is required. Own appeal/admin create/change/lift/review submit buttons disabled during pending/loading request; no automatic stale retry or new client admission cache introduced.
+- `app/measures/views.test.tsx`: 9 application UI cases across EN/RU/HE measure grouping, group checkbox partial/complete/reset, child-only submission, selected change, conditional appeal remedy branches and pending action UI. First CI #42164845716: database green but typecheck rejected two new test-only `HTMLSelectElement` selector generics; changed those to DOM-safe queries (no production change). **[Exact-head CI #42165063789](https://github.com/iliya1947/vico-forum/actions/runs/42165063789) SUCCESS**: application 152/152 files, 1936/1936 tests; PostgreSQL 46/46 files, 554/554 tests; lint/typecheck/build, migration/Drizzle/manifest and local Worker smoke PASS. PR description updated.
+- **Next bounded task only after «...»**: stage 4.2 active-session revalidation and explicit stale/denial feedback for changed/lifted measures and authorization; preserve no-replay of stale actions and independent status/appeal. Then separate integration and applicable browser acceptance. No unrelated docs, coordinator/shared files, AP-11/Settings, production or merge. Stopped after 4.1.
+
+
 ## AP-10 — stage 3.11: admin.usersAccess (2026-11-06)
 
 - [Draft implementation PR #290](https://github.com/iliya1947/vico-forum/pull/290), exact stable head **`afcf28848f8c52f340fc44b79da935eec0d23c31`**. Enforcement slices 3.1–3.11 implemented; AP-10 remains incomplete, Draft/open, no merge.
