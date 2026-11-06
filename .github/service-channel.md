@@ -172,3 +172,27 @@
 - Не подтверждены как defects: filtered pending-appeal pagination может давать пустые страницы из-за hidden higher-authority items, но authorized appeal не теряется и target identity не сериализуется; отдельного current-stage требования cursor/compact paging нет. Admin-index browser matrix не включает все widths/locales, но это evidence coverage difference, а не установленный runtime defect.
 - Остальные corrected areas прошли финальную повторную проверку: AP10-MIRA-01..07 исходные причины закрыты; own privacy allowlist, Admin History actor gate/context rendering, localized own metadata, 403/404/409 revalidation without POST replay, zero default grants, migration/runtime privileges и current exact-head CI/browser boundaries не ослаблены.
 - **Coordinator verdict: NOT PASS.** До correction AP10-MIRA-08..10 independent Lev review не запускать. Следующий workflow stage — один bounded correction package Лире; после нового stable head повторить applicable tests/CI/browser и новый coordinator review.
+
+
+## AP-10 second correction package — Лира
+
+Исполнитель: **Лира**. Implementation PR: **#290**. Reviewed exact head: `52a1db67610357f514e8013b06f70af6bda629c6`.
+
+Цель: одним bounded-пакетом исправить три подтверждённых current-scope interaction defect `AP10-MIRA-08..10`. Исходные `AP10-MIRA-01..07` считаются закрытыми и не должны регрессировать. Технический план AP-10 не пересматривается.
+
+1. **AP10-MIRA-08 — authority-aware restriction presentation.**
+   Measure create/change и accepted-appeal-change UI не должен предлагать actor административные child restrictions, которые authoritative AP-10 authority boundary ему заведомо запрещает. Ordinary `admin.users.blocks.manage` сохраняет доступ к обычным restrictions; administrative families становятся доступными только при достаточной текущей authority. Server-side validation остаётся authoritative.
+
+2. **AP10-MIRA-09 — единая issuer-floor semantics во всех administrative-family boundaries.**
+   После изменения raw target authority одна и та же активная administrative-family measure должна давать одинаковый результат в permission projection и direct authoritative reads/writes. Если current raw target authority достигла уровня, на котором сохранённая lower-authority measure больше не имеет права подавлять эту административную семью, direct Forum/Complaints/Users-access/measure-management boundaries также не должны продолжать denial только из-за существования child restriction. При последующем падении raw authority ниже действующего floor effect меры снова применяется, пока сама measure остаётся active. Обычные non-admin restrictions не меняют семантику.
+
+3. **AP10-MIRA-10 — сохранять already-mounted Editor operations при fresh restriction.**
+   Fresh `topics.create` / `posts.edit` restriction должен запрещать новые create/edit actions и Publish/Save, но не уничтожать уже открытый editor operation. Для уже mounted Create Topic, Help Question и Published Edit необходимо сохранить in-memory text, Undo/Redo и текущую attachment selection/operation; Cancel и разрешённый cleanup остаются доступны. После Cancel или естественного завершения запрещённый fresh action не должен снова открываться, пока restriction действует. Reply flow, где эта модель уже реализована, не регрессирует.
+
+Критерии готовности:
+- `AP10-MIRA-08..10` закрыты на одном новом stable exact head PR #290;
+- исправление локально текущему AP-10: без AP-11/Settings, owner-role redesign, last-manager cleanup, Stage 6, production и без изменений documentation PR #291;
+- authority hierarchy, issuer-floor persistence, zero-default-grants, privacy/identity boundaries, appeal lifecycle/quota, terminal measure, replay/no-replay и server enforcement invariants не ослаблены;
+- focused regressions подтверждают ordinary vs elevated restriction presentation; согласованность projection и direct authoritative boundaries при повышении/понижении raw target authority для administrative families; сохранение уже mounted Create Topic / Help Question / Published Edit state + Cancel при fresh restriction;
+- применимые exact-head CI/checks и AP-10 isolated browser acceptance выполняются на новом head; owner visual acceptance не инициировать без прямого запроса владельца;
+- после завершения Лира фиксирует в служебном PR новый stable exact head и фактические результаты проверок и останавливается. Затем Мира начинает новый coordinator whole-PR review; Лёву до coordinator PASS не подключать.
