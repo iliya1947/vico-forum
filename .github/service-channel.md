@@ -209,3 +209,17 @@
 - **AP10-MIRA-11 — confirmed current-scope:** exact admin measure detail не учитывает `issuer_authority_floor` при presentation mutation controls. `PostgresUserMeasureReader.adminRead()` для exact measure проверяет current target hierarchy, но не передаёт stored issuer floor в `assertUserMeasureAuthority`; затем `AdminMeasureDetail` для любой active measure показывает Change/Lift и pending Appeal Review forms. При этом authoritative `transition()` и `resolveAppeal()` повторно проверяют `current.issuer_authority_floor` и actor ниже floor гарантированно получает forbidden. Pending-appeal queue уже фильтрует такие меры по issuer floor, поэтому exact-detail mutation presentation расходится с той же authority model. Read-only detail само по себе finding не является; проблема — предоставление заведомо недоступных mutation controls.
 - Scope AP10-MIRA-11 текущий: approved plan прямо требует для change/lift actor authority не ниже issuer floor; reviewer resolution использует fresh authority/floor, а UI/HTTP acceptance требует capability-scoped forms. Это не owner-role redesign и не future groundwork.
 - Whole-PR coordinator verdict пока не выдан: следующий проход — AP10-MIRA-10 / Editor lifecycle на том же exact head. Лёву до полного coordinator PASS не подключать.
+
+
+## AP-10 second corrected-head coordinator review — pass 2
+
+- Coordinator pass 2 (AP10-MIRA-10 / Editor lifecycle) завершён на том же stable exact head `ad789c7bf28d4fe7896e8ddbf7757460e046da27`.
+- **AP10-MIRA-10 закрыт по исходной причине.**
+- Create Topic, Help Question и Published Edit сохраняют уже mounted form/editor operation при fresh loss соответствующей create/edit capability: тот же Markdown source, Undo/Redo history, operation ID и текущая attachment state остаются mounted.
+- Fresh action trigger скрывается; Publish/Save и Help similarity submit блокируются presentation-side, а MarkdownEditor `publicationDisabled` дополнительно блокирует native/keyboard publication preparation. Серверные guards остаются authoritative.
+- `attachments.upload` presentation остаётся независимой: fresh upload restriction запрещает новые uploads, но не уничтожает уже выбранные/идущие attachments текущей retained operation.
+- Cancel остаётся доступен и вызывает explicit editor cancel/attachment DELETE; после Cancel denied fresh action не открывается заново до нового разрешающего loader snapshot.
+- Published Edit retention ограничен текущим topic/actor/post scope; Reply flow AP-08 не изменён. Route/client action не делает автоматический POST replay после restriction/revalidation.
+- Focused DOM regressions покрывают три retained flows, включая text/Undo/Redo/operation identity, disabled submit, Cancel/cleanup и отсутствие denied reopen; Create Topic дополнительно держит in-flight XHR без abort. Exact-head CI #42209643642 и isolated Chromium #42209643650 остаются SUCCESS. Browser workflow не заявляется как отдельное end-to-end покрытие всех трёх новых revalidation сценариев; их непосредственное evidence — focused DOM regressions.
+- Новых current-scope findings в Editor lifecycle на этом проходе не подтверждено.
+- Coordinator whole-PR review пока не завершён из-за уже подтверждённого AP10-MIRA-11. Следующий проход — final regression/evidence sweep всего exact head, после которого будет итоговый verdict и единый correction handoff при необходимости. Лёву пока не подключать.
