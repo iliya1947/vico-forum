@@ -89,11 +89,12 @@ def form_for(page, intent):
     return form
 
 
-def create_measure(page, target_id, restrictions, explanation):
+def create_measure(page, target_id, restrictions, explanation, expiry_mode="permanent"):
     document(page, "/en/admin/measures?target=" + quote(target_id, safe=""))
     form = form_for(page, "create")
     measure_id = form.locator('input[name="measureId"]').input_value()
     form.locator('textarea[name="reason"]').fill(explanation)
+    form.locator("[data-measure-expiry-mode]").select_option(expiry_mode)
     for key in restrictions:
         form.locator('input[name="restriction"][value="' + key + '"]').check()
     with page.expect_response(lambda r: r.request.method == "POST" and
