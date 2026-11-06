@@ -1,3 +1,40 @@
+# Лёва — AP-10 repeated independent review: PASS
+
+Актуальный результат: PR #290, exact head `ef313919f6613c54db6ddb50765c968744101306`, independent PASS. AP10-LEV-01 закрыт. [Полный отчёт](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6685133377). Проверка завершена; реализацию не менял. Следующий шаг — Мира: readiness и отдельный documentation closeout #291; merge выполняет владелец.
+
+Лёва — повторный independent technical review PR #290: **PASS**.
+
+Review exact head: `ef313919f6613c54db6ddb50765c968744101306`; base/main `5cf80f38cbc06ed733a0618e706eb80c5a7b3c7b`. Реализацию не изменял, других агентов не вызывал. Вердикт относится только к этому head.
+
+**AP10-LEV-01 закрыт по исходной причине.** Проверены обе независимые границы: canonical create action применяет bounded target-ID validator; direct service create отдельно отклоняет NUL и >2048 UTF-8 bytes до fingerprint/repository/SQL. Ошибки PostgreSQL не маскируются общим catch. Собственный прежний HTTP reproducer на новом built Worker получил **400 private/no-store** для NUL вместо прежнего 500; valid missing target сохранил **404**, measure/History counts не изменились. Дополнительный собственный direct-service probe: NUL, 2049 ASCII bytes и 513 emoji → typed InvalidUserMeasureInputError и **0 repository calls**; допустимые 2048 bytes проходят validation.
+
+Проверка охватывает весь AP-10 scope, включая authority/raw RBAC/issuer floor/owner boundary, explicit-grant-only capabilities, restriction enforcement всех child actions и administrative families, privacy/subject allowlist, terminal/CAS/replay, sequential appeals/accepted change or lift, atomic History, attachments cleanup, route errors/revalidation и retained Editor state. Полная исходная собственная проверка зафиксирована в #6684522908; при повторной проверке установлена точная 5-file delta (50 additions/3 deletions), повторно оценены затронутые связи и заново выполнены основные cross-domain tests/browser flows. Остальные implementation файлы, schema/migrations/manifest/ACL, permissions, enforcement и UI boundaries побайтово совпадают с ранее проверенными; прежний coordinator verdict не использован как доказательство.
+
+**Собственное evidence на новом exact head:**
+- Node 24.21.0 / pnpm 12.3.4; отдельная disposable loopback PostgreSQL 17, полные migrations 0000–0058.
+- **289/289 application/domain/route/UI/Worker tests**, 19 files.
+- **78/78 native PostgreSQL tests**, 5 AP-10 files: transitions, hierarchy, reader/privacy, forum/attachments/Complaints/translation enforcement и schema constraints.
+- Собственная build — PASS.
+- Actual Chromium → built Worker → Better Auth → PostgreSQL: **19 case groups PASS**, включая malformed-target 400/missing-target 404/no writes; EN/RU/HE × 320/768/1280; 0 layout failures, 0 page errors и 0 external browser requests. Repository acceptance script заново исполнен с environment-only adapter вне implementation tree.
+- Первый browser attempt остановился на штатном signup 429: параллельный собственный input probe добавил регистрацию к трём browser fixture accounts. После завершения probe/reset rate_limit только одноразовой test DB browser исполнен отдельно успешно; application limiter не менялся.
+- Дополнительные самостоятельно написанные HTTP/domain probes отдельно от штатных regressions подтвердили закрытие finding.
+- GitHub exact-head CI **#42218475676 SUCCESS** и isolated browser **#42218475943 SUCCESS** перепроверены отдельно; это CI автора, не замена собственным reruns.
+
+Evidence: `/workspace/work/ap10-review2-evidence/` — application.log, database.log, build.log, browser.log/results.json/screenshots, input-boundary-probe.json, domain-validation.json; исходный reproducer — `/workspace/work/ap10-review-evidence/input-boundary-probe.py`. Первый rate-limit attempt сохранён отдельно.
+
+Подтверждённых current-scope defects на review head не осталось. Last-manager принцип не применялся и не распространялся; его существующая реализация не изменялась. Documentation PR #291 не получает approval этим implementation verdict. Merge, owner visual acceptance и production/deployed acceptance не выполнялись.
+
+**Следующий шаг — Мира:** принять independent PASS и завершить readiness/отдельный documentation closeout #291 по рабочему процессу; merge выполняет владелец. Implementation head остаётся frozen; любое его изменение требует coordinator-first review cycle. Лёва назначенную проверку завершил и останавливается.
+
+Локальный Worker остановлен, disposable DB удалена, synthetic .dev.vars и dependency symlink удалены; tracked checkout чист.
+
+
+---
+
+## Предыдущие рабочие записи и утверждённый план
+
+Статусы предыдущей проверки на 9fecd925 ниже исторические; актуальный implementation verdict — PASS на ef313919, записанный выше.
+
 # Лёва — AP-10 independent technical review PR #290
 
 Текущее назначение выполнено. **NOT PASS:** AP10-LEV-01 [P3], malformed create targetId с NUL → PostgreSQL 22021 / HTTP 500 вместо typed 400. Полный [отчёт](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6684522908). Реализацию не менял; следующий шаг — Мира принимает bounded correction finding и передаёт Лире.
