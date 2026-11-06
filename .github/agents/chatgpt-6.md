@@ -1,5 +1,14 @@
 # Лира — ChatGPT-6
 
+## AP-10 — stage 3.2: own published-post edit restriction (2026-11-06)
+
+- [Draft implementation PR #290](https://github.com/iliya1947/vico-forum/pull/290), stable exact head **`c48dd3e3a2f399e86ed6b6c3ee4480c14e7b85a5`**. Prior 3.1 complete, 3.2 newly complete; AP-10 still Draft/open and incomplete, no merge.
+- `db/forum-repository.ts` adds existing `this.measureAdmission(tx, actorId, "posts.edit")` in authoritative `editPublishedPost` transaction, **after** existing lock + committed receipt replay and owner/revision CAS guards, **before** attachment-ref selection/removal, new revision/mentions and receipt. No duplicate policy reader, no change to source-locale correction, Cancel or historical-fixture injection.
+- Three native PostgreSQL tests in `tests/database/user-measure-forum-enforcement.test.ts`: denied new edit retains original revision/body/published ref and creates no receipt; lift permits intended body/ref update; exact previously committed edit receipt replays after sanction without another revision and changed fingerprint is rejected; fresh edit denied; overlapping/inactive/other-subject measures independently evaluated. Route unit test in `app/forum/write-actions.test.ts` verifies fresh permission allows entry and domain denial returns 403, private/no-store with generic error.
+- **[Exact-head CI #42150122013](https://github.com/iliya1947/vico-forum/actions/runs/42150122013) SUCCESS**: application **147/147 files, 1911/1911 tests**, PostgreSQL **46/46 files, 517/517 tests**, lint/typecheck/build, migration/Drizzle/schema manifest, Worker local HTTP smoke PASS. Implementation head unchanged after checks.
+- Next bounded work after «...»: `attachments.upload` at direct upload API and authoritative metadata/ref commit while preserving already committed upload/asset result, no deleting bytes/shared refs on partial failure, Cancel/cleanup untouched. Other restrictions remain separate later slices. No permanent docs, PROJECT_STATE, shared coordinator files, AP-11/Settings/production touched. Stopped after 3.2.
+
+
 ## AP-10 — stage 3.1: enforce active measures on topic/Help and reply publication (2026-11-06)
 
 - [Draft implementation PR #290](https://github.com/iliya1947/vico-forum/pull/290) exact stable head **`50642524ecb3821a2ed43a77f142dcc638b42c4e`**. Stage 2.4 unchanged; AP-10 still incomplete and Draft/open.
