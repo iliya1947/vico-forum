@@ -3,7 +3,7 @@
 - Служебный PR: #251; общий план: `ADMIN_PANEL_IMPLEMENTATION_PLAN.md`
 - Current main: `df57dabf2a4cbc44d85138d8809079878490a7c8`, migrations 0000–0059
 - Ordinary AP-01–AP-11 closed; redesign Stage1 fully closed
-- Current stage: **owner/authorization redesign Stage 2 — docs PR #297 third wording correction, pending exact browser**
+- Current stage: **owner/authorization redesign Stage 2 — docs PR #297 corrected, awaiting Mira coordinator re-review**
 - Approved plan: #6702391114 + AP-10 revision #6702520494 + Owner all-catalog clarification, coordinator PASS
 - Implementer: Лира
 - Implementation #296: **merged**; merge commit `df57dabf2a4cbc44d85138d8809079878490a7c8`
@@ -12,11 +12,11 @@
 - Own evidence: build;56 unit/route/UI +96 native PG; independent mutex/History probe; actual Chromium Stage2/AP-10/AP-11 37 groups + isolated History35 PASS
 - Exact-head GitHub CI #42349494000 and browser #42349494094 SUCCESS, separately verified
 - Documentation executor: **Лира**, STAGE2-DOC-MIRA-03 text correction committed in Draft docs-only PR #297 head `a63bfb6d52052e1dd0905eb498dabb1d38c8f10a`, base `df57dabf2a4cbc44d85138d8809079878490a7c8`; one-line delta in PROJECT_STATE.md
-- Docs-only PR #297 current exact-head checks: CI #42355616281 SUCCESS (checks + PostgreSQL17); Chromium #42355616335: history_browser SUCCESS, browser attempt1 failed on intermittent AP-11 `AbortError` (Owner cases passed), unchanged-head targeted attempt2 in progress. No browser PASS claimed until attempt2 completed
+- Docs-only PR #297 current exact-head checks: CI #42355616281 SUCCESS (checks + PostgreSQL17); Chromium #42355616335 SUCCESS attempt2, both jobs passed, 37 AP-10/AP-11/Owner groups and History. Attempt1 had previously observed AP-11 `AbortError`; cause not established, no runtime or script changes
 - Previous coordinator docs review on `69581a0a...`: **CHANGES REQUIRED**, `STAGE2-DOC-MIRA-01/02`. Both corrected only in ROADMAP.md and PROJECT_STATE.md; author exact-head checks complete; **fresh coordinator verdict pending**
 - Fresh coordinator docs review of `9d0c7baa`: **CHANGES REQUIRED**, `STAGE2-DOC-MIRA-03` unapproved future bootstrap wording; Лира removed only the unapproved phrase on `a63bfb6d`, one docs file changed, new review pending
 - Stage2 fully closed only after implementation/docs merge; no production/owner visual acceptance claimed
 - Лёва review завершил и остановился; Марк не назначен
 - Implementation head change requires new coordinator-first review cycle
 - Settings after redesign; no new role/RBAC/schema/migration/infra/super-admin/mutex redesign or last-manager rule
-- Next: **Лира checks exact-head Chromium #42355616335 completion**, records final evidence and stops for Mira fresh docs-only review PR #297 on frozen `a63bfb6d52052e1dd0905eb498dabb1d38c8f10a`
+- Next: **Мира — fresh coordinator docs-only review** Draft PR #297 on frozen `a63bfb6d52052e1dd0905eb498dabb1d38c8f10a`. Лира завершила исправление и остановилась; coordinator PASS и docs merge ещё не подтверждены
