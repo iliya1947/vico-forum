@@ -406,3 +406,58 @@ Mira owns the initial product analysis. Do not assign Lev/Lira/Mark yet.
 Goal: establish what Settings should actually contain for the first release, reusing existing forum/auth/admin mechanisms and avoiding speculative infrastructure/super-admin/provider controls.
 
 First step only: inspect the current Settings placeholder, existing configurable mechanisms already implemented elsewhere, and current product/release boundaries; then present only the owner decisions that are genuinely required before technical planning.
+
+
+## Settings product-definition analysis — current state and minimal concept
+
+### Confirmed current state
+
+- Global Admin navigation contains Settings only as `Under development`; it has no real route/data/mutations and no Settings-specific permission.
+- There is no generic forum-settings persistence table in the current schema.
+- Existing configurable behavior is already separated by domain:
+  - Roles/permissions are managed in their own authorization section.
+  - Complaint reason-priority weights are persisted and managed under `Needs attention → Complaints → Settings` with `forum.complaint.priority.manage`.
+  - Light/Dark theme is a user/browser preference, not a forum-wide admin setting.
+  - LocaleRegistry is persistent and has a controlled lifecycle contract, but production runtime is currently read-only for registry writes; no general locale-management admin UI exists.
+  - Infrastructure/provider/deployment/secrets and Owner binding remain outside forum RBAC/ordinary Settings.
+- Public Rules/Help/About/Feedback/Privacy entries are unfinished product/content pages, not currently defined as forum setting values.
+- Current source-of-truth explicitly says Settings has no approved concrete operations.
+
+### Product boundary proposed by Mira
+
+Settings should mean **forum-wide product parameters that are intentionally changeable from the site UI**. It should not become a catch-all for domain management, personal preferences, infrastructure, secrets or future super-admin functions.
+
+For the first release, the minimal useful Settings package should be small.
+
+**Recommended first concrete setting: registration state.**
+- `Open`: new accounts may be created.
+- `Closed`: existing accounts may still sign in, but creation of a new account is rejected regardless of whether the attempt starts through email/password or first-time Google sign-in.
+- This controls registration only; it does not change roles, permissions or existing sessions.
+
+Do not pull into the first Settings package by default:
+- complaint priority settings — keep in Complaints;
+- roles/permissions — keep in Roles & permissions;
+- forum structure — belongs in Forum;
+- user theme/language/account security — user/account preferences;
+- locale registry/language publication lifecycle — separate translation/admin work unless owner explicitly includes it;
+- attachment/rate-limit/anti-abuse thresholds — technical/security policy, not ordinary first-release settings without a concrete need;
+- providers, OAuth credentials, email provider, Cloudflare, DB, deployments, secrets, Owner binding — infrastructure/outside forum RBAC;
+- account deletion/full audit/super-admin operations — deferred super-admin scope;
+- Rules/About/Privacy/Help/Feedback content — content/page management, not automatically Settings.
+
+### Owner decisions required before technical planning
+
+1. **Who may change Settings?**
+   - A. Owner only.
+   - B. A normal explicit forum permission, initially granted to nobody; Owner has it automatically and may delegate later. **Mira recommends B** because it preserves the existing permission-based model without creating a second hierarchy.
+
+2. **First Settings package scope**
+   - A. Registration open/closed only. **Mira recommends A** for the first bounded package.
+   - B. Registration + global read-only/maintenance mode.
+   - C. Broader general configuration now.
+
+3. **Locale/language management**
+   - A. Keep out of this Settings package and design separately when needed. **Mira recommends A**.
+   - B. Include locale activation/management in Settings now.
+
+No implementation, schema or permission changes are authorized until these decisions are fixed.
