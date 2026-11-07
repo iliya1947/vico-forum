@@ -106,11 +106,13 @@ AP-01–AP-11 присутствуют в `main` и завершены в reposi
 
 Settings не входит в завершённый AP-01–AP-11 scope: по решению владельца он перенесён в отдельную будущую фазу после owner/authorization redesign.
 
-Первый bounded этап owner/authorization redesign уже merged: obsolete last-manager veto
-(`AuthorizationLockoutError`, manager counting и `managers_ever_existed`) удалён forward migration
-`0059`. Singleton `authz_mutation_lock` сохранён как общий transaction mutex для authorization
-mutations и AP-10 authority paths; fresh permission checks и atomic History/rollback сохранены.
-Целевая owner authority/recovery модель остаётся отдельным следующим этапом redesign.
+Два bounded этапа owner/authorization redesign реализованы в `main`. Stage 1 удалил
+obsolete last-manager veto и manager-count state миграцией `0059`, сохранив общий
+`authz_mutation_lock`, fresh checks и атомарную History. Stage 2 реализовал server-bound
+Owner authority для всех code-backed permissions, независимую от сохранённой обычной роли
+и overrides; согласовал AP-10 authority, иммунитет Owner к сохранённым административным мерам
+и Owner-only выдачу/отзыв повышенного права. Детали — в `docs/auth/AUTHORIZATION.md`
+и `docs/ADMIN_PANEL.md`. Recovery/bootstrap и production acceptance этим не реализованы.
 
 ### Complaints
 
@@ -173,7 +175,7 @@ External topology является mutable state и должна перепро�
 ## Актуальные незавершённые продуктовые границы
 
 - UI/UX product pass ещё требует финального closeout и обязательной real-runtime product/visual acceptance по `docs/UI_UX_PASS.md`.
-- В `main` ordinary Admin Panel AP-01–AP-11 завершён в утверждённом repository/local-CI scope. Первый этап owner/authorization redesign — удаление obsolete last-manager veto при сохранении shared mutex — также merged; Settings остаётся отложен до завершения redesign.
+- В `main` ordinary Admin Panel AP-01–AP-11 и owner/authorization redesign Stage 1–2 реализованы в repository/local-CI scope; recovery/bootstrap и production acceptance ещё не выполнены. Settings остаётся отложен до завершения redesign.
 - Complaints integration/closeout покрыт repository/local-CI проверками; external/deployed acceptance Complaints не выполнялась.
 - Email verification/password recovery остаются отложенными.
 - Editor drafts/autosave остаются отложенными.
@@ -182,7 +184,7 @@ External topology является mutable state и должна перепро�
 ## Ближайший маршрут
 
 1. Продолжать утверждённую bounded product-разработку без превращения обычных PR в external rollout.
-2. Продолжить owner/authorization redesign с целевой owner/administrative hierarchy и recovery boundary; после завершения redesign проектировать и реализовывать Settings отдельным package. Complaints продолжать по его профильному контракту/служебному каналу.
+2. Продолжить оставшуюся owner/authorization redesign работу по recovery/bootstrap boundary; реализованную Stage 2 Owner/administrative hierarchy не планировать заново. После завершения redesign проектировать и реализовывать Settings отдельным package. Complaints продолжать по его профильному контракту/служебному каналу.
 3. Довести UI/UX product pass до финальной real-runtime acceptance.
 4. Возобновлять Stage 6 external integration только по отдельному указанию владельца и по `docs/database/*`.
 5. После завершения pre-release product и external gates перейти к финальному общепроектному refinement и Stage 7 production release по `ROADMAP.md`.
