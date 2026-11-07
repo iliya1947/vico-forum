@@ -1,146 +1,105 @@
-# Лёва — AP-11 independent technical review: PASS
+# Лёва — owner/authorization Stage 1 technical planning
 
-Текущее назначение выполнено: PR #292 exact head `3f608ce9a042fd7c78401d330f5865af4f3dee5c`, independent PASS. [Отчёт](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6689555134). Реализацию не менял; следующий шаг — Мира: отдельный factual documentation closeout; merge выполняет владелец.
+Текущее назначение выполнено: [план удаления last-manager](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6700603167) на main `bcf02193f82aa0d448444c6943d6ebdcf09f7896`. Требуется coordinator review Миры. Implementation не начинался; authz_mutation_lock сохраняется.
 
-Лёва — independent technical review AP-11 / PR #292: **PASS**.
+Лёва — owner/authorization redesign, Stage 1: минимальный technical plan удаления last-manager.
 
-Exact head: `3f608ce9a042fd7c78401d330f5865af4f3dee5c`; base/main `7b452edfc0a759b4b65cd1cc535f207bb9e615c7`. Review выполнен самостоятельно, без запуска других агентов и без изменения implementation.
+Baseline: `main bcf02193f82aa0d448444c6943d6ebdcf09f7896`, migrations 0000–0058. Ordinary Admin Panel AP-01–AP-11 закрыт. Это **planning only**: implementation/PR/DB migrations не выполнялись.
 
-Проверены все **4 changed files**, полный diff к main и применимые связи с approved AP-11 plan #6686478629, current contract/Stage и existing Editor/authorization/History behavior. Coordinator PASS не использован как доказательство.
+## 1. Результат dependency check и точный scope
 
-### Вывод по реализации и verification scope
+Удалить `AuthorizationLockoutError`, `countManagers()`, `managers_ever_existed` и выделенные last-manager veto/checks/tests. **Сохранить `authz_mutation_lock`, singleton id=1, row FOR UPDATE, transaction/History boundaries и current AP-10 authority synchronization.**
 
-- **Reply denial/revalidation:** intent фиксируется в submit handler до возможного fast 403; fresh-denial guard блокирует publication уже на render отказа, отдельный state удерживает блокировку до завершения explicit loader refresh. Обновление идемпотентно относительно actionData; automatic POST replay отсутствует. Revalidation не заменяет server guard.
-- Исходный completion effect очищает publication ref после отказа, но не снимает новый refresh latch. Publish/native form submit и keyboard publication используют актуальный publicationDisabled; новый Attach временно запрещён. Editor text/operation остаются mounted, Cancel доступен. allowNewUploads меняет возможность добавления/retry, но не abort уже выполняющихся uploads: abort связан с identity/unmount/reset.
-- **Users layout:** добавление существующего profile-identity-copy локально использует flex/min-width/word wrapping; не меняет projection/permission/authorization protocol.
-- **Connected Users:** same-session read-only → canonical explicit grant → inline assignRole/override → DB/History → canonical revoke → stale POST 403/read-only recovery/no state write → canonical restore. Тестируемый permission lifecycle больше не заменён SQL. SQL используется для synthetic setup/inspection.
-- **Closure × measures:** реально исполняются open+measure, closed+measure, reopened+measure, closed+lifted и open+lifted. Снятие одного запрета не снимает другой; denial не создаёт posts/History, closure CAS/History независимы.
-- **Privacy/evidence:** protected document/direct denial helper проверяет обе cache directives private и no-store; public topic GET остаётся отдельным. Existing own measure identity allowlist/AP-10 cases сохранены. Новые Users detail/admin topic проверены EN/RU/HE × 320/768/1280.
-- Нет schema/migration/permission/grant/dependency/owner-policy changes. Локальные app edits обоснованы выявленным connected runtime behavior. Last-manager принцип не распространён; его legacy code не менялся.
+По repository search и чтению callers:
+- Runtime flag/count используется только в `PostgresAuthorizationRepository.mutate()`; других runtime consumers не найдено.
+- Отдельные AP-10 consumers `db/user-measures.ts:withLockedTransaction`, `db/user-measure-read.ts:adminRead/adminPendingAppeals` уже читают **id**, не флаг. `db/user-measure-authority.ts` требует удерживать этот mutex при raw hierarchy resolution.
+- `.github/scripts/runtime-privileges.mjs` сохраняет SELECT/UPDATE на lock table; `verify-runtime-privilege-probes.mjs` выполняет SELECT…FOR UPDATE. Это реальные независимые от last-manager зависимости; удалять/ослаблять их нельзя.
+- Другие следы флага — текущая Drizzle schema, current structural manifest, unit mock и immutable historical SQL/snapshots. Нет зависимости bootstrap/другого writer от managers_ever_existed вне этой invariant.
+- Есть пользовательский текст/route mapping, native/DOM/browser assertions старого запрета. Их нужно убрать вместе с runtime, а не оставить «мёртвую» last-manager семантику.
 
-Подтверждённых current-scope defects в полном AP-11 scope не найдено. AP11-MIRA-01..04 по собственной проверке закрыты.
+Owner authority implementation, новый bootstrap/recovery, super-admin UI, Settings, смена/удаление mutex, Stage 6/production — вне scope. Никаких новых confirmation dialogs, last-admin исключений или замены счётчика другим veto.
 
-### Собственное evidence на exact head
+## 2. Runtime и HTTP/UI — одна локальная корректировка
 
-- Node 24.21.0 / pnpm 12.3.4.
-- **128/128 DOM/route/UI tests**, 6 файлов, включая regression с намеренно pending revalidation после 403: form/operation retained, Publish и Attach disabled, Cancel enabled, repeat submit не выполняется; свежий snapshot завершает recovery.
-- Собственная build PASS.
-- Одноразовая loopback PostgreSQL **17**, полные migrations **0000–0058**, built Worker, настоящие Better Auth sessions, установленный Chromium.
-- Заново исполнен repository browser acceptance с environment-only adapter вне implementation tree: **34 case groups PASS**, 0 layout failures, 0 page errors, 0 external browser requests; results.json содержит точный implementationHead.
-- Browser assertions проверяют реальные UI/canonical POST, PostgreSQL state/versions/History и no-write; closures/grants/measures не mock. Existing 19 AP-10 groups сохранены.
-- Exact-head GitHub **CI #42245766359 SUCCESS** и **isolated Chromium #42245766263 SUCCESS** подтверждены отдельно; author CI не выдан за собственный прогон.
+**`db/authorization-repository.ts`:**
+1. Удалить class export AuthorizationLockoutError и function countManagers, оба before/after count calls, условие запрета after=0 и запись managers_ever_existed=true.
+2. В mutate заменить flag-select на `select id from authz_mutation_lock where id=1 for update`; оставить существующий missing-row fail-closed error.
+3. Порядок остаётся: begin → singleton row lock → **fresh** actor access.authorization.manage → existing admin.usersAccess measure admission → operation/elevated-key owner guards → shared final History order lock/append, если change → commit. Ошибка operation/History по-прежнему rollback.
+4. Текущий actor может своим легитимным действием отозвать собственное последнее право — операция committed и получает обычный History. Следующий request уже проверяет отсутствие права и denied. Имя роли/количество других managers не влияют.
+5. Удалить только устаревший комментарий о raw manager count. PermissionResolver/raw grants/effectivePermission()/History producer/elevated authority не перепроектировать.
 
-Локальные logs/JSON/screenshots: `/workspace/work/ap11-review-evidence/` (application.log, build.log, worker.log, browser.log, browser/results.json и screenshots). Новых exhaustive native race/receipt tests не добавлял: db/server semantics не менялись, их existing full CI остаётся отдельным evidence. Связанный scope достаточен для approved bounded AP-11; это не полный новый UI/UX audit или production acceptance.
+**`app/routes/authorization-admin.tsx`:** убрать import/type branch AuthorizationLockoutError. Оставить 409 conflict для AuthorizationRoleAssignedError; invalid/forbidden/notFound/unavailable и private/no-store сохраняются. Inline Users по-прежнему использует этот canonical action и существующую fresh-403 recovery.
 
-**Следующий шаг — Мира:** принять independent PASS и перейти к отдельному factual documentation closeout AP-11 по плану; implementation merge выполняет владелец. После завершения AP-11 отдельные следующие задачи: owner/authorization redesign → Settings. Settings, redesign, Stage 6/production и owner visual acceptance этим review не выполнялись и не одобрены.
+**`app/localization/catalog.ts`, `manual-values.ts`, `manual-fingerprints.ts`:** сохранить key `authorizationError_conflict`, но убрать ложное «would cause a lockout». Remaining concrete meaning — assigned role cannot be deleted (например, canonical EN “This role is assigned to users and cannot be deleted.” с согласованными RU/HE/fingerprint). Новых keys/UX flows не нужно.
 
-Лёва назначенную проверку завершил и останавливается. Implementation frozen; изменение head требует нового coordinator-first cycle.
+## 3. Schema / forward migration / ACL
 
-Head/main перепроверены перед публикацией. Просмотрены собственные narrow screenshots Users detail EN и admin topic EN/HE. Локальный Worker остановлен, одноразовая БД и dummy .dev.vars удалены; tracked checkout чист.
+- `db/schema.ts:authzMutationLock`: удалить только managersEverExisted field. Таблица, PK(id), singleton CHECK(id=1), существующая row остаются.
+- Новая forward migration **0059** (если head не изменился): `ALTER TABLE "authz_mutation_lock" DROP COLUMN "managers_ever_existed";`. Без CASCADE, DROP TABLE, пересоздания row, изменения grants или unrelated ALTER.
+- Согласовать новый Drizzle snapshot/journal и `.github/production-schema-manifest.json`: current lock table теперь имеет только id. Число таблиц не меняется.
+- **0000–0058 SQL и их historical snapshots не редактировать**, включая 0006, где поле создано. Старые migration artifacts и исторические записи закономерно сохранят старое имя; global grep-zero по всему Git tree не является критерием.
+- Сохраняются current runtime SELECT/UPDATE lock-table privileges и existing probe. Localization role не расширяется. Production migration/deploy не выполнять.
+- Проверить clean chain и upgrade существующей 0058 schema с row id=1/значением флага true и false: после 0059 row/PK/CHECK сохраняются, поле отсутствует, данные ролей/overrides/measures/History не меняются. Новые runtime queries работают и на старой таблице с лишним полем; никаких runtime fallback по ошибке missing-column не добавлять.
 
+## 4. Точные test changes и минимальные новые assertions
 
----
+**Снять устаревшие ожидания, не удаляя соседнюю защиту:**
+- `db/authorization-repository.test.ts`: mock на select id FOR UPDATE; удалить count/flag replies, сохранить rollback/availability/error cases.
+- `tests/database/migrations.test.ts`: убрать импорт/last-manager отказ внутри mixed authorization test и dedicated “last two managers cannot both be removed” test. Historical schema expectations ранних migrations оставить исторически точными. Не убирать обычные role/grant/override/forbidden/assigned-role tests.
+- `tests/database/admin-history.test.ts`, `admin-users-authorization.test.ts`: убрать только lockout rejection parts, **сохранить** реальные no-op/denied/invalid/failed History rollback assertions и независимость Users-read/management.
+- `app/routes/authorization-admin.test.ts`: удалить fake lockout 409 cases; existing assigned-role delete conflict должен остаться проверенным (добавить focused test, если после удаления отсутствует).
+- `app/authorization/admin-view.test.tsx`: обновить конфликтный текст и название test, сохранить безопасную локализованную feedback boundary.
+- `tests/database/user-measure-forum-enforcement.test.ts`: заголовок о “last-manager accounting” сделать актуальным; существующие assertions roles/History/raw permission и AP-10 admission сохранить.
+- По завершении повторить scoped search по active app/db/tests; не маскировать компиляционные ошибки удалением соседних suites.
 
-## Утверждённый технический план и предыдущий контекст
+**Изменённое поведение проверяется native PostgreSQL, без нового подсчётного механизма:**
+1. Изолированные fixtures для grant removal из role, назначения роли без manage и personal deny/removal allow. Включая ситуацию, где действие действительно убирает последнее effective manage: commit разрешён, одно соответствующее History change, следующая management mutation этого actor denied и не пишет event. Fixture reset/provision через test SQL не является новым recovery API.
+2. При двух actors, независимо отзывающих своё право, обе допустимые операции могут committed. Старое ожидание «обязательно оставить одного» удалено. Не утверждать, что **любой** concurrent revoke должен succeed: если другой actor уже отозвал право у caller, caller обязан получить fresh forbidden.
+3. Отдельный controlled concurrency regression подтверждает mutex без count: удержать singleton row в fixture transaction, запустить реальную authorization mutation и AP-10 operation; они ждут row lock. После изменения relevant grant и освобождения lock authoritative path читает fresh state и применяет current guard. Использовать barriers/PG lock observation, не sleeps как доказательство.
+4. Missing singleton row остаётся fail-closed; failed History append откатывает grant/override даже при допустимом уходе к нулю managers.
+5. Existing AP-10 authority/issuer-floor/elevated-key/privacy/appeal/enforcement tests не ослаблять; полные suites должны проходить без managers_ever_existed.
 
-Статусы ожидания plan review ниже исторические; план утверждён, implementation review завершён PASS на head выше.
+Не добавлять новый property-based matrix, “owner recovery” tests или SQL manager counts в production ради проверки того, что count удалён.
 
-# Лёва — AP-11 technical planning
+## 5. Browser evidence без старой lockout зависимости
 
-Текущее назначение выполнено: [план AP-11](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6686478629) на main `7b452edfc0a759b4b65cd1cc535f207bb9e615c7`. Требуется coordinator review Миры; implementation не начинался.
+`tests/browser/admin-history/check.py` сейчас пытается self-deny с expected409 **посреди** сценария, затем продолжает пользоваться тем же manager. Простая замена 409→200 испортит остальной flow.
 
-Лёва — AP-11 technical plan для coordinator review.
+Минимально:
+- убрать этот dedicated старый rejection и lockout case labels;
+- сохранить шесть producers, no-op/retry, actual forbidden/invalid/notFound/cross-origin, history paging и настоящий failure rollback/read isolation;
+- положительный self-revoke с действительной canonical UI mutation выполнить в **конце** browser flow: observe allowed commit/одно History событие, следующий management read/POST 403. History проверить уже разрешённым reader либо DB inspection. Не создавать новый recovery endpoint/автоматический regrant.
+- Остальные fixture cleanup SQL остаются только для disposable DB.
+- EN/RU/HE feedback assigned-role conflict проверяется DOM/runtime там, где применимо; owner visual acceptance не назначать.
+- Запустить updated admin-history harness + существующий AP-10/AP-11 integrated user-measures harness на stable exact head. Последний проверяет current grant/revoke/measure/session interactions и не должен требовать переписывания политики или нового job.
 
-Baseline: current main `7b452edfc0a759b4b65cd1cc535f207bb9e615c7`, migrations 0000–0058. AP-10 implementation #290 и docs #291 merged. Результат этого шага — план, не реализация и не новая acceptance. Implementation PR AP-11 не создавался.
+## 6. Постоянная документация — отдельный closeout PR
 
-## 1. Вывод и bounded scope
+После принятой реализации убрать **активное требование** last-manager из:
+- `docs/auth/AUTHORIZATION.md`: section Lockout protection и связанные active references; вместо него описать fresh authorization и retained transaction mutex. Не добавлять новую owner модель или объявлять bootstrap реализованным.
+- `docs/ADMIN_PANEL.md`: admission/action/History paragraphs, которые продолжают требовать lockout; сохранить все прочие safeguards/AP-10 hierarchy.
+- `PROJECT_STATE.md`: фактический post-Stage1 runtime/schema state, next separate owner/authorization step; без исторической хроники.
+- `ROADMAP.md`: current/release requirements больше не требуют last-manager. Сведения о прошлом Stage4 могут сохраняться как факт с явным superseded boundary, не как активный invariant.
+- `docs/UI_UX_PASS.md`: актуальный “keep lockout” пункт больше не является будущим требованием. Исторический факт PR165 не переписывать; при необходимости дать короткую supersession note.
+- `tests/browser/admin-history/README.md`: актуализировать coverage описание вместе с отдельным docs closeout.
+- `docs/PROJECT_HISTORY/` и индекс: factual Stage1 snapshot; уже существующую историю/doc_old не “чистить” задним числом.
 
-Подтверждённого product/code defect по выполненной planning inspection не установлено. AP-11 не требует новой domain functionality, permissions, schema/migrations, runtime grants или product UI.
+Service source-of-truth #251 обновляется сразу как координация. Мира синхронизирует общий master plan: его старые last-manager формулировки superseded прямым owner decision. Это не новое owner согласование и не основание тормозить Stage1.
 
-Выявлен **один verification gap**: нет repository-owned связанного actual-browser сценария, который проходит AP-07/08 protected topic/closure и AP-09 Users inline management вместе с уже проверенными AP-10 restriction/revalidation/History paths на одном current runtime. Это ограничение покрытия, не доказательство неисправности и не основание объявить прежние пакеты непринятыми.
+## 7. Готовность и handoff
 
-Предлагаемый AP-11: небольшой **test/verification-only implementation PR**, затем отдельный factual docs closeout. Не создавать пустой application-code PR ради номера этапа. Если при исполнении обнаружится реальный дефект — сначала подтвердить полную цепочку, затем согласовать локальное исправление; заранее app/db файлы в change list не включать.
+Один implementation PR с согласованными runtime/schema/manifest/locale/tests changes, затем отдельный docs PR. Stage1 готов к review, когда:
+- старый veto/error/flag/count отсутствуют в active runtime/current schema; dedicated veto tests больше не требуют сохранения manager;
+- mutex/row lock/fresh permission/AP-10 guards/atomic History сохранены; behavior и concurrency подтверждены PostgreSQL;
+- новое current schema metadata/upgrade/manifest/ACL probes и existing full exact-head CI green;
+- реальные browser self-revoke и AP-10/AP-11 connected flow проходят с synthetic sessions/disposable DB; evidence фиксирует exact SHA, no-store и отсутствие новых partial writes;
+- unknown errors не превращены в permission success; нет scope drift в owner/Settings/production.
 
-Scope по решению владельца — только delivered AP-01–AP-10. **Settings отложен; последовательность AP-11 → owner/authorization redesign → отдельный Settings package.** Settings placeholder не defect/blocker AP-11. Last-manager правило не применяется как новое требование; legacy code/tests и redesign сейчас не менять.
+После approval плана: Лира implementation → stable head/checks → Мира whole-PR → Лёва independent review того же head → owner merge → отдельный factual docs closeout. Полностью разрабатывать owner authority в этом пакете не нужно.
 
-## 2. Что уже покрыто и почему не нужно проверять всё заново с нуля
-
-| Delivered boundary | Проверенное наличие evidence в current repo | Остаток AP-11 |
-| --- | --- | --- |
-| AP-02/03/04 shell, Overview, Roles, History | tests/browser/admin-overview, admin-history; app/admin/overview/history и authorization route tests; native admin-overview/admin-history/authorization-snapshot | Существующие suites сохраняются; новый связанный сценарий использует тот же shell/History, без нового Overview или RBAC |
-| AP-05/06/07 Quick actions и Forum hierarchy | tests/browser/quick-actions и admin-forum; app/routes/admin-topic.test.ts, app/admin/message-quick-actions.test.tsx, native admin-forum/forum-admin-history | В новом flow пройти hierarchy до protected topic и вызвать существующий canonical action из admin context |
-| AP-08 closure/CAS/replay/editor | native topic-closure.test.ts и topic-closure-races.test.ts; app/admin/topic-closure-ui.test.tsx и public-read.test.tsx | Actual browser: admin close/reopen → уже открытый public reply editor → AP-10 reply restriction; отсутствует в имеющихся browser scripts |
-| AP-09 Users / inline authorization | app/routes/admin-users*.test.ts, app/admin/users-authorization.test.tsx; native admin-users/admin-users-authorization | Actual browser: Users lookup/detail → inline canonical assignment/override → fresh revoke/read-only recovery; отсутствует в имеющихся browser scripts |
-| AP-10 measures/appeals/enforcement/privacy | tests/browser/user-measures/check.py; 5 native AP-10 files и route/DOM tests; собственный PASS #6685133377 | Сохранить действующие 19 case groups; добавить только межпакетные связи из §3 |
-
-Метод: прочитаны current PROJECT.md/PROJECT_STATE.md, профильный AP-10 contract/docs delta #291, service owner decisions, реализация Users controls и existing harness/test cases. Поиск closeTopic/reopenTopic и /admin/users в repository browser harnesses не нашёл соответствующего connected positive flow. user-measures browser проверяет 403/последующий GET Users/Forum и standalone measures/History; он **не** выполняет Users inline submit или topic close/reopen. PROJECT_STATE прямо не заявляет отдельный AP-08/AP-09 package browser flow. Route/DOM/native evidence остаётся действительным; browser отсутствие не выдаётся за отсутствие всей проверки.
-
-Это bounded integration verification текущего AP-11, не новый обязательный browser/owner-visual gate для каждого пакета и не полный UI/UX/release audit.
-
-## 3. Минимальные добавленные connected cases
-
-### A. Users → canonical authorization → History → свежая session presentation
-
-1. На synthetic user с только Users-read открыть через shell Users index/search и выбранный detail. Public identity доступна; email/full authorization state/management forms отсутствуют. Прямой canonical management POST запрещён.
-2. Уже authorized fixture manager выдаёт этому reviewer `access.authorization.manage` через существующий management UI/canonical writer. На следующем read **той же Better Auth session**, без login, detail показывает targeted controls.
-3. Выполнить из inline detail реальный assignRole/override для другого synthetic target. Проверить сохранение URL/detail, актуальный result, DB assignment/override и ровно соответствующий History delta. Не трогать elevated key/role switch с ним: AP-11 не проектирует новые owner powers.
-4. Открыть inline form, другой authorized actor отзывает management grant, сохранив Users-read. Fresh stale submit → 403, однократное GET/revalidation → read-only detail, без автоматического повторного POST и без лишних History/state changes. Затем отдельно revoke Users-read → fail-closed direct detail.
-5. Проверить blocks-only admission: нет broad Users/authorization directory, exact measures lookup сохраняет собственный gate. Это не создание новой комбинации прав, а проверка существующего разделения.
-
-### B. Forum hierarchy / Quick action → closure × measure admission
-
-1. Через Forum category → section → protected topic открыть существующую ordinary topic fixture. Public actor заранее открывает reply editor и вводит buffer. Использовать существующие topic Quick actions, не новый admin writer.
-2. Close из admin topic: public revalidation показывает Closed, тот же mounted reply buffer/operation сохраняется, Publish/keyboard запрещены, Cancel доступен; crafted fresh reply получает controlled topicClosed 409.
-3. Сочетание с независимой AP-10 replies restriction проверить по простой матрице: open+measure → forbidden; closed+measure → fresh reply запрещён; lift measure при closed **не** разрешает reply; reopen при оставшейся measure **не** разрешает reply; open без measure разрешает новый explicit reply.
-4. Для двух порядков снятия можно использовать две small topic fixtures либо последовательный reset через реальные actions. Не менять frozen policy/CAS semantics. Не требовать конкретный приоритет error code при одновременно действующих двух запретах; важен no-write и соответствующий ответ после снятия одного из них.
-5. PostgreSQL и protected History подтверждают реальные closure/measure transitions: существующие versions/reasons/target IDs; failed/stale/replay не создают новых effects. Ранее принятые receipt replay/close races/attachment cleanup проверяются существующими native suites, не дублируются новой системой race simulation в browser.
-6. Accepted appeal/lift, own identity-safe projection и независимость нескольких measures остаются действующими AP-10 cases. Новых appeal rules, moderation actions или user UI не добавлять.
-
-### C. Общая оболочка, privacy и locale
-
-- У связанного flow правильные locale links, одна shell/main, current destination и защищённые document/data responses private/no-store.
-- На Users detail и admin topic, которых нет в нынешней AP-10 reflow matrix, проверить EN/RU/HE × 320/768/1280: читабельность, отсутствие horizontal overflow, доступность основных controls/keyboard. Не перезапускать визуальный аудит всех ранее принятых страниц.
-- На read-only Users serialized loader/.data не должно появляться management/email snapshot; own measures по-прежнему не содержат actor/reviewer identity. У authorization-manager email из прежней authorized subset не объявлять новой утечкой: проверять именно Users-read-only projection.
-- Любая новая UI проблема сначала диагностируется; никаких профилактических CSS/refactoring changes.
-
-## 4. Конкретный change list и runtime
-
-Основной выбор — расширить **существующий** `tests/browser/user-measures/check.py` секциями §3, reuse его signup/sql/document/post/fixtures/assertions. Сохранить 19 AP-10 groups; не копировать весь runner в новый framework. Небольшой локальный helper допустим только для читаемости повторяющихся browser interactions.
-
-`.github/workflows/ap10-browser.yml`: reuse существующего disposable PostgreSQL 17 + built Worker + synthetic Better Auth/owner binding + Chromium job и artifact. Допустимо уточнить display name как admin-panel integration и bounded paths для затронутых admin Users/topic/authorization consumers. Не создавать второй параллельный job с той же полной AP-10 матрицей или включать production/OAuth/provider resources. Сама filename AP-10 может остаться ради минимального diff.
-
-Runtime: pinned Node 24.21.0/pnpm 12.3.4, full migrations through0058, только loopback *_test DB, три synthetic actors либо минимально необходимый дополнительный isolated actor. Fixture grants явные; обе block capabilities без default grants. Signup sequential; не запускать одновременно другие signup probes, чтобы штатный limiter не исчерпывался тестами. Не отключать limiter/permission enforcement. Initial identity/grants/data setup через fixture SQL допустим; **операции, которые проверяет сценарий, выполняются через настоящий UI/canonical HTTP**, не подменяются SQL updates.
-
-Raw results/JSON/screenshots включают exact implementation SHA, executed cases и failures; fixture cleanup/остановка Worker/DB обязательны. Сравнение state/History привязывать к run IDs, а не требовать абсолютного глобального count, чувствительного к соседним fixture actions.
-
-Application files `app/admin/users.tsx`, `app/routes/admin-user.tsx`, `app/routes/admin-topic.tsx`, `app/admin/quick-actions.tsx`, `db/forum-repository.ts`, `db/user-measure-policy.ts`, `db/authorization-repository.ts` — **verification targets, не заранее назначенные edits**. Схема, grants, dependencies, public contracts не меняются. Новые unit/native tests добавлять только если подтверждённый gap не проверяется связанным flow/существующими suites.
-
-## 5. Checks, handoff и factual closeout
-
-Implementation PR acceptance:
-- test/verification diff ограничен §3/4; все новые assertions исполняются, не skipped/mocked;
-- исходные AP-10 cases и новые cross-package cases проходят на одном stable exact head с actual session/Worker/DB; implementation SHA в evidence проверен;
-- existing full CI: lint/typecheck/application/native PostgreSQL/build/UI preview/migration history/Drizzle parity/manifest/runtime privilege/provisioning/Worker smoke — green;
-- connected behavior checked, Settings явно остаётся deferred, ни одного подтверждённого current-scope дефекта не остаётся;
-- Лира фиксирует stable PR/head/evidence в #251 → Мира whole-PR review → Лёва independent review того же head → owner merge. Марк не назначен.
-
-Не нужно rerun всех legacy opt-in browser harnesses/fault injections или полный exhaustive permissions×locale×actions cross-product: уже существующие meaningful tests покрывают эти boundaries; AP-11 закрывает конкретную связь. Проверки старого last-manager invariant могут оставаться в неизменённом legacy suite, но не становятся новым acceptance requirement AP-11.
-
-Отдельный documentation PR **после принятой реализации**:
-- `PROJECT_STATE.md`: AP-11 фактически завершён только после evidence/review; ближайший маршрут owner/authorization redesign → отдельный Settings package; не писать «все Settings реализованы» или «production ready»;
-- `docs/ADMIN_PANEL.md`: delivered AP-01–AP-10 integration closeout и явная граница deferred Settings по owner decision;
-- `ROADMAP.md`: согласовать ближайший ordinary-admin маршрут, не возобновлять Stage6;
-- завершённый exact-head evidence snapshot в текущем `docs/PROJECT_HISTORY/PROJECT_HISTORY_12.md` либо следующем файле по принятому размеру, и индекс `docs/PROJECT_HISTORY/PROJECT_HISTORY.md`;
-- `docs/auth/AUTHORIZATION.md` и code/schema counts сейчас не переписывать; эта очистка относится к следующей отдельной задаче.
-Общие service files #251 обновляются как координация; это не project documentation PR и не merge в main.
-
-## 6. Решение на review
-
-Предлагается один bounded test/verification PR + отдельный docs closeout. Новых owner product decisions не требуется. **Мира:** проверить необходимость и достаточность именно этих connected cases и границы AP-11; после approval назначить Лиру. Если выбранные assertions уже доказуемо покрыты существующим connected runtime evidence, убрать дубль, а не наращивать матрицу.
-
-Planning inspection не является полным аудитом документации, новым implementation PASS или выполненной AP-11 acceptance. Код/БД/runtime/production не менялись; реализацию не начинал.
+**Мира:** coordinator review этого минимального плана; после approval назначить Лиру. Новых owner product decisions не требуется. Код/схему/тесты в этом planning turn не менял и ничего из будущей проверки не объявляю выполненным.
 
 
-## Предыдущий завершённый этап
+## Завершённый предыдущий этап
 
-AP-10 implementation #290 и docs #291 merged. Собственный repeated independent PASS на exact head ef313919: https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6685133377 . AP10-LEV-01 закрыт; planning AP-11 не переоткрывает принятые AP-10 requirements.
+Ordinary Admin Panel AP-01–AP-11 закрыт; #293 merged. Собственный independent AP-11 PASS: https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6689555134 . После Stage1 остаются отдельные owner/authorization design steps, затем Settings.
