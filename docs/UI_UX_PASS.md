@@ -599,10 +599,13 @@ on 2026-10-01:
 - built-in/custom-role distinctions stay explicit and custom-role deletion is visually separated
   as a destructive action;
 - representative Pages data includes a custom role/user plus saved/conflict feedback states;
-- dynamic DB-backed authorization, same-origin checks and lockout safeguards remain unchanged;
+- at the time of PR #165, dynamic DB-backed authorization, same-origin checks and then-current
+  lockout safeguards were unchanged. Owner/authorization redesign Stage 1 later removed only the
+  manager-count/last-manager veto while preserving this accepted presentation and the current
+  serialized mutation/fresh-permission safeguards;
 - the owner noted that the underlying role/permission-management product workflow may warrant a
-  separate later redesign; that future product work is not a defect or scope expansion of this
-  accepted presentation slice.
+  separate later redesign; that work is now proceeding separately and is not a defect or scope
+  expansion of this accepted presentation slice.
 
 System/error-state presentation in PR #166 passed owner visual acceptance in GitHub Pages on
 2026-10-01:
@@ -619,7 +622,8 @@ System/error-state presentation in PR #166 passed owner visual acceptance in Git
 Remaining work:
 
 - responsive/bidirectional/accessibility hardening and the final full browser acceptance matrix;
-- keep lockout and existing mutation safeguards intact during closeout.
+- keep current server-side authorization, serialized mutation, origin and validation safeguards
+  intact during closeout. The superseded manager-count/last-manager veto is no longer a requirement.
 
 ### 6. Responsive, bidirectional and accessibility hardening
 

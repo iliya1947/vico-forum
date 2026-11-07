@@ -183,13 +183,14 @@ retain their own permissions and do not follow from complaint review.
 - `admin.history.read`.
 
 После bootstrap пользователь с `access.authorization.manage` может через сайт менять grants
-любой роли, включая built-in roles, с учётом lockout invariant ниже.
+любой роли, включая built-in roles. Каждая management mutation повторно проверяет fresh effective
+permission внутри serialized transaction boundary; manager-count/last-manager veto больше не действует.
 
 `admin.history.read` independently admits ordinary admin History and Overview recent actions.
 AP-03 initially grants it only to built-in admin; custom roles, moderator grants and personal
 overrides stay explicit. It grants no management authority. Significant authorization changes
-append a minimal event in the same transaction after lockout validation; no-op and rejected
-changes do not create events. See `../ADMIN_PANEL.md` for coverage and read semantics.
+append a minimal event in the same transaction after fresh authorization/admission checks; no-op
+and rejected changes do not create events. See `../ADMIN_PANEL.md` for coverage and read semantics.
 
 `admin.users.read` independently admits the ordinary admin Users index and detail. AP-09
 initially grants it only to built-in admin; custom roles, moderator grants and per-user
@@ -210,10 +211,10 @@ explicit dynamic grants or per-user overrides. A measure manager does not automa
 gain the Users index, complete authorization-management directory or private History.
 
 The measures policy supplements request-scoped effective action permissions; raw RBAC
-grants, overrides and subject/issuer hierarchy remain unchanged. Existing
-`access.authorization.manage` lockout code is untouched by AP-10; no new
-manager-count veto is added. The separately planned owner-authority redesign
-follows ordinary-admin closeout. Exact administrative permission families and
+grants, overrides and subject/issuer hierarchy remain unchanged. Owner/authorization redesign
+Stage 1 subsequently removed the obsolete manager-count/last-manager veto while retaining the
+shared authorization/AP-10 transaction mutex and fresh permission checks. The target owner-authority
+model remains a separate later redesign step. Exact administrative permission families and
 measure/appeal semantics are defined in `../ADMIN_PANEL.md`.
 
 ## Per-user overrides
@@ -316,18 +317,23 @@ PermissionResolver errors не входит в authorization contract.
 Скрытие кнопки в UI не является authorization boundary. Каждая mutation повторно проверяет
 актуальный server-side permission, runtime validation и same-origin/CSRF boundary.
 
-## Lockout protection
+## Authorization mutation serialization
 
-`access.authorization.manage` — recovery-critical permission текущей модели.
+`access.authorization.manage` остаётся capability для управления ролями, grants, assignments
+и overrides. Каждая management mutation в одной PostgreSQL transaction сначала захватывает
+singleton row `authz_mutation_lock` через `FOR UPDATE`, затем проверяет fresh effective
+`access.authorization.manage`, применимые AP-10 restrictions/authority и только после этого
+выполняет изменение и atomic History append.
 
-После появления первого access manager ни одна management mutation не должна атомарно
-оставлять систему с нулём пользователей, имеющих effective `access.authorization.manage`.
-Источник permission не важен: это может быть built-in/custom role grant или per-user `allow`.
+Этот mutex сериализует authorization mutations и связанные AP-10 authority decisions; он не
+является permission или recovery-механизмом. Manager-count/last-manager invariant удалён:
+допустимая mutation может оставить ноль пользователей с effective
+`access.authorization.manage`, включая self-revoke последнего manager. Успешная mutation
+фиксируется обычным History event, а следующий protected request уже получает fresh denial.
 
-До external release первый access manager provisioned отдельным server-controlled bootstrap
-путём. Для Stage 4 local/CI допускаются test fixtures/direct controlled DB setup. Публичного
-unauthenticated endpoint для bootstrap быть не должно. Real external bootstrap/verification
-входит в Stage 6.
+Целевая owner authority и recovery/bootstrap model проектируются отдельно в следующем этапе
+owner/authorization redesign. Stage 1 не добавляет публичный unauthenticated bootstrap endpoint
+и не объявляет external rollout выполненным.
 
 ## Better Auth boundary
 

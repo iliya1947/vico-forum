@@ -28,7 +28,7 @@ Vico Forum находится в pre-release разработке.
 
 - Stage 0–5 завершены в repository/local-CI path.
 - Текущий standalone product priority по `ROADMAP.md` — UI/UX product pass.
-- Параллельно bounded-пакетами развиваются обычная админ-панель и Complaints.
+- Ordinary Admin Panel AP-01–AP-11 завершена; отдельно продолжаются owner/authorization redesign и Complaints.
 - Stage 6 external integration поставлен владельцем на паузу и не продолжается без отдельного указания.
 - Публичный production release не выполнен.
 
@@ -43,7 +43,7 @@ Vico Forum находится в pre-release разработке.
 - PostgreSQL 17 + Drizzle ORM `0.45.2`;
 - Better Auth `1.7.7` + PostgreSQL Drizzle adapter;
 - generic `/:locale/*`, runtime `LocaleRegistry`, BCP-47, LTR/RTL и request-scoped i18next;
-- repository migration history: `0000`–`0058`;
+- repository migration history: `0000`–`0059`;
 - externally accepted migration evidence: `0000`–`0020`.
 
 ## Реализованный продукт
@@ -61,7 +61,7 @@ Vico Forum находится в pre-release разработке.
 - solved topics и best answer;
 - immutable topic-title/post-body revisions с независимым source locale;
 - dynamic PostgreSQL-backed roles, permissions и per-user overrides;
-- единый server-side `PermissionResolver`, snapshot-consistent authorization reads и lockout protection;
+- единый server-side `PermissionResolver`, snapshot-consistent authorization reads, fresh protected-request checks и serialized authorization mutations;
 - public discovery и participation surfaces, включая Popular, Unanswered, Tags, Search, permanent message links и Reply/Quote;
 - public profiles, profile navigation и online presence foundation;
 - `/:locale/attention` как отдельный permission-scoped Signals / Complaints / Security workspace.
@@ -105,6 +105,12 @@ Stage 5 завершён в repository/local-CI path.
 AP-01–AP-11 присутствуют в `main` и завершены в repository/local-CI path. AP-11 использует настоящий built Worker + Better Auth + PostgreSQL 17 + Chromium и не добавляет новую domain functionality, schema, permissions или grants. Это не production/deployed acceptance и не owner visual acceptance.
 
 Settings не входит в завершённый AP-01–AP-11 scope: по решению владельца он перенесён в отдельную будущую фазу после owner/authorization redesign.
+
+Первый bounded этап owner/authorization redesign уже merged: obsolete last-manager veto
+(`AuthorizationLockoutError`, manager counting и `managers_ever_existed`) удалён forward migration
+`0059`. Singleton `authz_mutation_lock` сохранён как общий transaction mutex для authorization
+mutations и AP-10 authority paths; fresh permission checks и atomic History/rollback сохранены.
+Целевая owner authority/recovery модель остаётся отдельным следующим этапом redesign.
 
 ### Complaints
 
@@ -167,7 +173,7 @@ External topology является mutable state и должна перепро�
 ## Актуальные незавершённые продуктовые границы
 
 - UI/UX product pass ещё требует финального closeout и обязательной real-runtime product/visual acceptance по `docs/UI_UX_PASS.md`.
-- В `main` ordinary Admin Panel AP-01–AP-11 завершён в утверждённом repository/local-CI scope; Settings отдельно отложен до owner/authorization redesign.
+- В `main` ordinary Admin Panel AP-01–AP-11 завершён в утверждённом repository/local-CI scope. Первый этап owner/authorization redesign — удаление obsolete last-manager veto при сохранении shared mutex — также merged; Settings остаётся отложен до завершения redesign.
 - Complaints integration/closeout покрыт repository/local-CI проверками; external/deployed acceptance Complaints не выполнялась.
 - Email verification/password recovery остаются отложенными.
 - Editor drafts/autosave остаются отложенными.
@@ -176,7 +182,7 @@ External topology является mutable state и должна перепро�
 ## Ближайший маршрут
 
 1. Продолжать утверждённую bounded product-разработку без превращения обычных PR в external rollout.
-2. Следующий отдельный Admin Panel этап — owner/authorization redesign; после него проектировать и реализовывать Settings как отдельный будущий package. Complaints продолжать по его профильному контракту/служебному каналу.
+2. Продолжить owner/authorization redesign с целевой owner/administrative hierarchy и recovery boundary; после завершения redesign проектировать и реализовывать Settings отдельным package. Complaints продолжать по его профильному контракту/служебному каналу.
 3. Довести UI/UX product pass до финальной real-runtime acceptance.
 4. Возобновлять Stage 6 external integration только по отдельному указанию владельца и по `docs/database/*`.
 5. После завершения pre-release product и external gates перейти к финальному общепроектному refinement и Stage 7 production release по `ROADMAP.md`.

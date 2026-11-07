@@ -25,6 +25,7 @@ Git history и PR остаются первичными историческим
 11. [`PROJECT_HISTORY_11.md`](./PROJECT_HISTORY_11.md) — 2026-11-05: Admin Panel AP-09 Users, correction cycles, merge #287 и test stabilization #289.
 12. [`PROJECT_HISTORY_12.md`](./PROJECT_HISTORY_12.md) — 2026-11-06: Admin Panel AP-10 measures, correction/review cycles, final PASS и merge #290.
 13. [`PROJECT_HISTORY_13.md`](./PROJECT_HISTORY_13.md) — 2026-11-07: Admin Panel AP-11 integration closeout, correction/review cycles, final PASS и merge #292.
+14. [`PROJECT_HISTORY_14.md`](./PROJECT_HISTORY_14.md) — 2026-11-07: owner/authorization redesign Stage 1, удаление obsolete last-manager invariant при сохранении transaction mutex, final PASS и merge #294.
 
 ## Архивные снимки
 

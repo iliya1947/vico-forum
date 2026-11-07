@@ -188,7 +188,7 @@ acceptance remains a separate release boundary.
 Use the existing server-side PermissionResolver, dynamic code-backed catalog, role grants
 and per-user `allow` / `deny` / `inherit` overrides. Better Auth supplies authoritative
 session identity. Role names, client input and long-lived session claims do not grant access.
-Preserve snapshot consistency, next-request freshness and existing lockout protection.
+Preserve snapshot consistency, next-request freshness and the retained serialized authorization-mutation boundary.
 
 Global admission is the union of applicable **implemented** section capabilities below.
 There is no additional mandatory global `admin.access` permission. Own-only participation
@@ -199,7 +199,7 @@ grant global admission either. Each section and action independently checks its 
 | --- | --- | --- |
 | Overview / shell | Authenticated actor with at least one applicable implemented section capability | Navigation is not mutation authority; only public aggregate statistics and permitted destinations are exposed |
 | Forum / category, section, topic pages | At least one of `forum.topic.pin`, `forum.solution.manageAny`, `forum.helpDuplicate.manage`, `forum.sourceLocale.correctAny`, `forum.post.history.read`, `forum.topic.close` | Exact operation permission and authoritative object/resource conditions, as below |
-| Roles & permissions | `access.authorization.manage` | Same existing permission, management validation and atomic lockout invariants |
+| Roles & permissions | `access.authorization.manage` | Same existing permission, management validation, shared transaction mutex and fresh permission/admission checks |
 | Users / measures | `admin.users.read` for general index/detail; `access.authorization.manage` for the existing authorization subset; `admin.users.blocks.manage` for exact target/measures lookup | Authorization controls require `access.authorization.manage`; measure create/change/lift and appeal review require fresh `admin.users.blocks.manage` plus target/issuer hierarchy (and `admin.users.blocks.managePrivileged` for privileged targets) |
 | History / Overview recent actions | `admin.history.read` | History-read does not authorize recorded operations; actors do not need history-read merely to perform an otherwise permitted operation |
 | Settings placeholder | Actor already admitted to shell | No private settings data or mutation |
@@ -226,7 +226,7 @@ reused without creating a second identity store.
 
 | Object/action | Effective permission | Authoritative applicability |
 | --- | --- | --- |
-| Create/rename/delete custom role; change role grants, assignment or user override | `access.authorization.manage` | Existing built-in/custom rules, assigned-role deletion restriction and last-manager lockout |
+| Create/rename/delete custom role; change role grants, assignment or user override | `access.authorization.manage` | Existing built-in/custom rules, assigned-role deletion restriction, fresh server-side permission/admission checks and serialized mutation boundary |
 | Pin/unpin topic | `forum.topic.pin` | Target topic exists; authorship alone is insufficient |
 | Mark solved / select best answer administratively | `forum.solution.manageAny` | Existing topic/post identity and solution/duplicate state rules |
 | Own-topic solution controls | `forum.solution.manageOwn` | Authoritative topic author is the actor; does not independently admit the global panel |
@@ -285,9 +285,8 @@ replace role grants, explicit user-role assignment and per-user allow/deny/inher
 An implicit default → explicit assignment is a configuration change even if the effective
 role remains the same; setting an already identical explicit assignment is a no-op. Grants
 record only added/removed permissions. Successful identical retries do not add events;
-rejected/rolled-back changes do not either. The existing mutation serialization and lockout
-check stay authoritative; event insertion uses the same transaction/client, and insertion
-failure rolls back the mutation.
+rejected/rolled-back changes do not either. The existing mutation serialization and fresh authorization/admission checks stay authoritative;
+event insertion uses the same transaction/client, and insertion failure rolls back the mutation.
 
 `admin_history` retains immutable event UUID, database time at millisecond precision,
 actor ID/display label, action/target identity and bounded typed context. Labels are limited
@@ -326,9 +325,9 @@ Direct loader and action retain independent `access.authorization.manage` gates;
 parent loader nor shell admission replaces them. The loader derives presentation flags from
 the same resolver handle as its management gate, using the existing internally consistent
 resolution/cache and next-request freshness. History-read is not required for management.
-The six existing intents continue through the same service/repository transaction, lockout
-and AP-03 event producer. Invalid/not-found/assigned-role/lockout/unavailable feedback stays
-controlled. Canonical URL and built-in/custom rules are retained; shared localized metadata and
+The six existing intents continue through the same service/repository transaction, retained
+mutex/fresh permission checks and AP-03 event producer. Invalid/not-found/assigned-role/unavailable
+feedback stays controlled. Canonical URL and built-in/custom rules are retained; shared localized metadata and
 no-store headers apply to the composed route; no new keys, schema, permission or API is introduced.
 
 ## Shared Quick actions contract
@@ -535,7 +534,7 @@ rendered.
 
 Assignment and per-permission override controls reuse the existing canonical
 `/:locale/admin/authorization` action and its `assignRole` / `override` intents. AP-09 adds
-no second writer, mutation protocol, actor authority field, lockout model or History event kind.
+no second writer, mutation protocol, actor authority field, authorization-serialization model or History event kind.
 The session remains actor authority, the canonical action rechecks fresh
 `access.authorization.manage`, and successful writes revalidate the current Users detail.
 If a management submit is freshly denied while `admin.users.read` still remains effective,
@@ -607,10 +606,10 @@ administrative-family restriction suppresses a current target capability only wh
 stored floor remains above the target's current raw authority. Self-target and owner-target
 operations are forbidden. An owner user ID is a server-controlled hierarchy binding, not an
 implicit management permission. **Neither management capability has built-in initial grants**,
-even for moderator/admin. Only explicit dynamic grants may provide them. AP-10 adds no
-last-access-manager count veto, extra recovery system or generalized owner-role redesign;
-existing authorization lockout implementation remains unchanged until a separate post-admin
-decision.
+even for moderator/admin. Only explicit dynamic grants may provide them. AP-10 itself added no last-access-manager count veto, extra recovery system or generalized
+owner-role redesign. Owner/authorization redesign Stage 1 later removed the obsolete manager-count
+veto while retaining the shared `authz_mutation_lock` transaction mutex, fresh authorization checks
+and AP-10 authority/issuer-floor semantics. Target owner authority/recovery remains a separate next step.
 
 **Lifecycle and reasons.** Creating a measure requires a nonblank reason and at
 least one valid child restriction. Manually changing its restrictions/expiry requires
