@@ -220,3 +220,14 @@ Close only `STAGE2-MIRA-01` in PR #296. Complete the approved Stage2 elevated-au
 - AP-10 environment adapter изменяет только checkout path/Chromium executable; все assertions/cases сохранены, exact comparison проверен. History runner из exact checkout. Full1974/571 локально не заявлены как rerun; GitHub exact-head runs отдельно SUCCESS.
 - Evidence: `/workspace/work/owner-stage2-review-evidence/` (logs/probe/results/screenshots/manifest/hashes). Tracked checkout clean, task-owned Workers/disposable container/DBs/dummy vars/dependency symlink removed.
 - **Мира — next:** readiness/owner merge route, затем separate factual docs closeout. Лёва остановился, implementation frozen; Марк не назначен.
+
+
+## PR #296 — Stage 2 implementation readiness complete
+
+- Frozen exact head `824ab8eccb091664c2e7d37f81f2737e7fd43e87`; base/current main `8301087f9322b34bdd325ed9298fdf3fddd84561`.
+- Mira coordinator whole-PR review: PASS, zero confirmed current-scope defects.
+- Lev independent technical review: PASS, zero confirmed current-scope defects; full 34-file diff independently checked against approved Stage2 contract.
+- Exact-head GitHub checks remain green; independent review also reran bounded unit/native PG/browser evidence.
+- PR #296 was converted from Draft to Ready for review and is mergeable. Implementation remains frozen.
+- No owner visual acceptance or production/deployed acceptance is implied or required by this readiness step.
+- Next step belongs to the owner: merge PR #296. Only after merge should a separate factual documentation closeout update Owner effective-vs-raw authorization, immunity/elevated boundary, PROJECT_STATE and history. Settings remains deferred until redesign closeout.
