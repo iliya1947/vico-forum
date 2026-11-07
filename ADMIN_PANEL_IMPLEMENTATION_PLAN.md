@@ -517,3 +517,16 @@ Future mute/block/visibility controls may join Privacy only after those features
 Subsystem operational settings stay subsystem-local. No sixth top-level surface is currently justified; Notifications, Accessibility and reading/translation remain sections under User preferences unless they later grow into independent domains.
 
 No implementation starts until the owner approves the full map and resolves the remaining product decisions.
+
+
+## Settings consolidated scope status
+
+The detailed Settings sections above are a **product proposal pending owner approval**, not implementation authorization.
+
+Before technical planning, the owner must resolve:
+- S1 authorization-management split;
+- S2 notification toggles now/later;
+- S3 online-presence default;
+- S4 global vs per-method registration control.
+
+After those decisions, Mira freezes the first-release product scope and only then hands bounded technical planning to Lev.
