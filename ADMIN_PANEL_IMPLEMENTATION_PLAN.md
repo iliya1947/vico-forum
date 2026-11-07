@@ -395,3 +395,22 @@ Existing preference behavior to preserve when designing the user surface:
 Role boundary pending owner decision:
 - role definitions + permission sets are Owner-only settings;
 - still undecided whether assigning existing roles and per-user overrides remains delegatable user administration or also becomes Owner-only.
+
+
+## Owner/system Settings — concrete map
+
+Owner-only system Settings is divided into:
+1. **Registration** — first-release candidate: open/closed. Optional later split of new-account methods (Google and email/password) without exposing provider secrets.
+2. **Role configuration** — create/rename/delete custom roles and change permission sets of all roles. Exact bound Owner only. Assignment of an existing role/per-user overrides remains a separate unresolved boundary.
+3. **Participation/anti-spam** — current 5-second global forum write cooldown is a valid later Owner-setting candidate; domain/security rate limits remain outside by default.
+4. **Attachments** — current 50 MB per-file maximum is a valid later Owner-setting candidate; executable/type/signature/antivirus security rules remain code/security policy.
+5. **Languages** — future Owner control of publication active/inactive state for already valid/prepared locales; bootstrap English remains mandatory, and locale creation/translation/provider rollout is not reduced to a simple setting.
+6. **Emergency mode** — read-only/maintenance is a reasonable later Owner-only control, not currently implemented or required.
+
+Explicitly outside Owner/system Settings: branding just for configurability, Forum object administration, public page content, subsystem-local settings, personal preferences, account security, infrastructure/secrets/provider credentials/Owner binding, implementation constants.
+
+Recommended first bounded Owner/system implementation remains intentionally small:
+- Owner-only role configuration;
+- registration open/closed.
+
+No implementation starts until owner approves product contents and resolves the role-assignment/per-user-override boundary.
