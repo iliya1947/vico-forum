@@ -23,7 +23,6 @@ import { PERMISSION_CATALOG, INITIAL_ROLE_GRANTS } from "../../app/authorization
 import { AuthorizationService, InvalidAuthorizationInputError } from "../../db/authorization-service";
 import {
   AuthorizationForbiddenError,
-  AuthorizationLockoutError,
   AuthorizationNotFoundError,
   AuthorizationRoleAssignedError,
   PostgresAuthorizationRepository,
@@ -80,7 +79,7 @@ describe("PostgreSQL 17 locale migrations", () => {
     const applied = await client.query<{ count: string }>(
       'select count(*)::text as count from drizzle."__drizzle_migrations"',
     );
-    expect(applied.rows[0]?.count).toBe("59");
+    expect(applied.rows[0]?.count).toBe("60");
     // The AP-08 manifest hashes are computed from PostgreSQL 17 catalog expressions,
     // rather than assumed from SQL formatting or hand-entered normalized forms.
     const definitions = await client.query<{ key: string; definition: string }>(`
@@ -1867,8 +1866,24 @@ describe("PostgreSQL 17 locale migrations", () => {
         .rejects.toBeDefined();
 
       const grantsBefore = await repository.readRoleGrants("builtin-admin");
-      await expect(service.replaceRoleGrants("authz-admin", "builtin-admin", grantsBefore.filter((key) => key !== "access.authorization.manage")))
-        .rejects.toBeInstanceOf(AuthorizationLockoutError);
+      const historyBefore = Number((await client.query<{ n: number }>(
+        "select count(*)::int n from admin_history where actor_id='authz-admin' and action='role.grantsChanged'",
+      )).rows[0]?.n);
+      try {
+        await service.replaceRoleGrants("authz-admin", "builtin-admin",
+          grantsBefore.filter((key) => key !== "access.authorization.manage"));
+        expect(await repository.readRoleGrants("builtin-admin")).not.toContain("access.authorization.manage");
+        expect(await repository.hasPermission("authz-admin", "access.authorization.manage")).toBe(false);
+        expect(Number((await client.query<{ n: number }>(
+          "select count(*)::int n from admin_history where actor_id='authz-admin' and action='role.grantsChanged'",
+        )).rows[0]?.n)).toBe(historyBefore + 1);
+        await expect(service.createCustomRole("authz-admin", {slug:"unavailable-self",displayName:"Unavailable Self"}))
+          .rejects.toBeInstanceOf(AuthorizationForbiddenError);
+      } finally {
+        // Restore the shared built-in grant as disposable fixture setup, not a recovery API.
+        await client.query(`insert into authz_role_permissions (role_id, permission_key)
+          values ('builtin-admin', 'access.authorization.manage') on conflict do nothing`);
+      }
       expect(await repository.readRoleGrants("builtin-admin")).toEqual(grantsBefore);
     } finally {
       await pool.end();
@@ -1879,7 +1894,8 @@ describe("PostgreSQL 17 locale migrations", () => {
     }
   });
 
-  it("serializes concurrent mutations so the last two managers cannot both be removed", async () => {
+  it("commits two independent self-revocations and enforces fresh next-request denial", async () => {
+    const ids = ["manager-one", "manager-two"];
     await insertForumAuthor("manager-one", "manager-one@example.test", null);
     await insertForumAuthor("manager-two", "manager-two@example.test", null);
     await client.query("insert into authz_user_roles (user_id, role_id) values ('manager-one', 'builtin-admin'), ('manager-two', 'builtin-admin')");
@@ -1892,19 +1908,27 @@ describe("PostgreSQL 17 locale migrations", () => {
         first.setUserOverride("manager-one", "manager-one", "access.authorization.manage", "deny"),
         second.setUserOverride("manager-two", "manager-two", "access.authorization.manage", "deny"),
       ]);
-      expect(outcomes.filter((result) => result.status === "fulfilled")).toHaveLength(1);
-      const rejected = outcomes.find((result) => result.status === "rejected");
-      expect(rejected).toMatchObject({ status: "rejected", reason: expect.any(AuthorizationLockoutError) });
-      const states = await Promise.all([
-        first.resolveUser("manager-one"),
-        second.resolveUser("manager-two"),
-      ]);
-      expect(states.filter((state) => state.effectivePermissions.includes("access.authorization.manage"))).toHaveLength(1);
+      expect(outcomes).toEqual([{ status: "fulfilled", value: undefined }, { status: "fulfilled", value: undefined }]);
+      const states = await Promise.all(ids.map(id => first.resolveUser(id)));
+      expect(states.every(state => !state.effectivePermissions.includes("access.authorization.manage"))).toBe(true);
+      const events = await client.query<{ actor_id: string; target_id: string; action: string }>(
+        "select actor_id, target_id, action from admin_history where actor_id = any($1::text[]) order by position", [ids],
+      );
+      expect(events.rows).toHaveLength(2);
+      expect(events.rows.map(e=>e.action)).toEqual(["user.overrideChanged", "user.overrideChanged"]);
+      expect(events.rows.map(e=>e.actor_id).sort()).toEqual(ids);
+      await expect(first.setUserOverride("manager-one", "manager-one", "forum.topic.pin", "allow"))
+        .rejects.toBeInstanceOf(AuthorizationForbiddenError);
+      expect((await client.query(
+        "select count(*)::int n from admin_history where actor_id = any($1::text[])", [ids],
+      )).rows[0].n).toBe(2);
+      expect((await client.query("select id from authz_mutation_lock")).rows).toEqual([{ id: 1 }]);
     } finally {
       await firstPool.end(); await secondPool.end();
-      await client.query("delete from authz_user_permission_overrides where user_id in ('manager-one', 'manager-two')");
-      await client.query("delete from authz_user_roles where user_id in ('manager-one', 'manager-two')");
-      await client.query('delete from "user" where id in (\'manager-one\', \'manager-two\')');
+      await client.query("delete from admin_history where actor_id = any($1::text[])", [ids]);
+      await client.query("delete from authz_user_permission_overrides where user_id = any($1::text[])", [ids]);
+      await client.query("delete from authz_user_roles where user_id = any($1::text[])", [ids]);
+      await client.query('delete from "user" where id = any($1::text[])', [ids]);
     }
   });
 
