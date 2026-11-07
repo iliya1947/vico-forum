@@ -1,3 +1,15 @@
+# Мира — consolidated Settings proposal
+
+Five-page first-release proposal is complete and pending owner decisions.
+
+Recommended unresolved choices:
+- S1: Owner-only role definitions/grants + per-user overrides; delegatable assignment of existing roles.
+- S2: defer reply/mention toggles to next slice.
+- S3: online visibility default ON / opt-out.
+- S4: one global registration open/closed switch.
+
+After owner resolves S1–S4, freeze scope and hand technical planning to Lev. No implementation before that.
+
 # Мира — Account/security + Privacy map
 
 Account & security first useful scope:
