@@ -1,3 +1,9 @@
+# Мира — next bounded task: recovery/bootstrap product-definition
+
+Stage2 is fully closed after #297 merge (`96186cc9158dd7a91c9d2c0124ed4556f133f15c`).
+
+Next task is not implementation: analyze the current repository/source-of-truth and define the unresolved recovery/bootstrap product boundary without reviving last-manager/count-veto assumptions. Prepare only the owner decisions actually required before Lev technical planning. Do not assign Codex/implementation yet.
+
 # Мира — PR #297 final docs PASS
 
 Final docs exact head `a63bfb6d52052e1dd0905eb498dabb1d38c8f10a` passed coordinator review with zero confirmed current-scope defects.
