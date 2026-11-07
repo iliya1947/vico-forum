@@ -2,17 +2,13 @@
 
 Служебный PR: #251. Оперативное состояние: [workflow.md](./workflow.md).
 
-## Актуальный baseline и AP-11 review
+## Актуальный baseline и назначение
 
-- Current main: `7b452edfc0a759b4b65cd1cc535f207bb9e615c7`, migration head 0058.
-- AP-01–AP-10 merged; AP-10 implementation #290 и documentation #291 закрыты.
-- AP-11 technical plan #6686478629 APPROVED; scope — bounded integration/factual closeout delivered AP-01–10.
-- Implementation PR #292 Draft/open/unmerged; reviewed exact head **`3f608ce9a042fd7c78401d330f5865af4f3dee5c`**, base main unchanged.
-- Coordinator whole-PR PASS и independent technical PASS на одном exact head; [independent report #6689555134](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6689555134).
-- Подтверждённых current-scope defects не осталось; AP11-MIRA-01..04 закрыты по собственной code/runtime проверке Лёвы.
-- Exact-head CI #42245766359 и isolated Chromium #42245766263 SUCCESS; author CI отдельно от собственных reruns.
-- Implementation не merged; factual documentation closeout AP-11 ещё не выполнен. AP-11 целиком пока не объявлен закрытым.
-- Stage 6/production и owner visual acceptance не выполнялись.
+- Current main: `bcf02193f82aa0d448444c6943d6ebdcf09f7896`, migrations 0000–0058.
+- AP-01–AP-11 полностью закрыты; #292 implementation и #293 factual docs merged.
+- Текущий этап — owner/authorization redesign Stage1: технический план удаления last-manager опубликован, ожидает coordinator review.
+- [План #6700603167](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6700603167); implementation не начинался.
+- Current next actor: Мира — review плана; Лира после approval.
 
 ## Решения владельца, обязательные для AP-10
 
@@ -28,7 +24,7 @@
 ## Последний управляющий — решение владельца
 
 - Принцип сохранения хотя бы одного доступного access manager не применяется при дальнейших planning/review/enforcement админ-панели. В AP-10 нет manager-count veto, специального recovery/lockout слоя или требования сохранить доступного управляющего.
-- Existing `AuthorizationLockoutError` / `managers_ever_existed` / counts до завершения админ-панели не переделывать. Затем отдельная очистка кода/схемы/тестов/контрактов и owner-role design.
+- Админ-панель завершена; owner явно назначил Stage1 удаления `AuthorizationLockoutError` / `managers_ever_existed` / counts. Прежнее ожидание окончания админ-панели выполнено. Mutex сохраняется; owner authority implementation остаётся отдельным этапом.
 - Старые условные формулировки source-of-truth не становятся AP-10 requirement вопреки прямому решению владельца.
 - Не смешивать block appeal с Complaint-подобным пересмотром violation или отдельным owner recovery subsystem.
 
@@ -72,15 +68,8 @@
 
 ## Следующий шаг
 
-- **Мира:** принять independent PASS и подготовить/координировать отдельный factual documentation closeout AP-11 по approved plan. Merge implementation/docs выполняет владелец.
-- Не объявлять entire umbrella/Settings или production готовыми: Settings explicitly deferred; после завершения AP-11 следующий отдельный этап — owner/authorization redesign, затем Settings.
-- Лёва назначенную проверку завершил и останавливается; любое изменение implementation head требует coordinator-first cycle.
-- Stage 6/production/owner visual acceptance вне scope; Марк не назначен.
-
-Общий контракт: [ADMIN_PANEL_IMPLEMENTATION_PLAN.md](../ADMIN_PANEL_IMPLEMENTATION_PLAN.md).
-
-
-
+- Мира review Stage1 technical plan #6700603167; после approval назначить Лиру. Ordinary Admin Panel уже закрыт.
+- Owner authority implementation, Settings, Stage6/production не начинаются в Stage1; Марк не назначен.
 
 ## AP-11 fully closed; owner/authorization redesign Stage 1
 
@@ -107,4 +96,17 @@ Required result:
 - identify exact code, forward-migration/schema and test changes that must move together;
 - verify there is no hidden dependency on `managers_ever_existed`/manager counting outside the obsolete invariant;
 - do not implement the change yet;
-- record the plan in #251 and stop.
+- record the plan in #251 and stop. Выполнено: #6700603167; следующий шаг — coordinator review Миры.
+
+## Stage1 technical planning result — Лёва
+
+- [План #6700603167](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6700603167) подготовлен на current main; полный контекст в личном файле.
+- Runtime flag/count используется только AuthorizationRepository.mutate; не выявлено hidden callers вне старого invariant. Есть schema/manifest/mock и historical migration artifacts.
+- authz_mutation_lock independently нужен authorization mutations, AP-10 writers/readers и SELECT/UPDATE runtime probe. Row/table/PK/CHECK/FOR UPDATE сохраняются.
+- Implementation target: удалить veto/error/count/flag path; forward0059 DROP COLUMN без удаления mutex; Drizzle current snapshot/journal и structural manifest согласуются. Accepted0000–0058 не переписываются.
+- Удаляется lockout route mapping и ложная canonical EN/RU/HE conflict copy, сохраняется assigned-role409. Dedicated старые tests/assertions снимаются локально, соседние forbidden/History rollback/atomicity tests сохраняются.
+- Native checks: допустимый self-revoke/role/grant removal committed с History; следующий request forbidden; controlled mutex/fresh-authority concurrency и AP-10 suite; clean/upgrade schema+fullCI.
+- Updated admin-history browser переносит positive self-revoke в конец, чтобы не ломать последующие assertions; existing AP-10/AP-11 browser остаётся regression. Новых recovery/confirmation/owner flows нет.
+- Постоянные active lockout requirements в AUTHORIZATION/ADMIN_PANEL/PROJECT_STATE/ROADMAP/UI_UX_PASS и browser README обновляются отдельным docs closeout. History/doc_old/старые accepted snapshots не чистятся задним числом.
+- Code/schema/tests/runtime/production не менялись; implementation PR не создан. Новых owner product decisions нет.
+- **Мира:** coordinator review, синхронизировать superseded master-plan clauses с уже данным owner decision; после approval назначение Лиры. Лёва planning завершил и остановился.
