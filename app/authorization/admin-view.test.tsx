@@ -67,6 +67,14 @@ const customRole = {
   grants: ["forum.reply.create","admin.users.blocks.managePrivileged"] as PermissionKey[],
 };
 
+const normalRole = {
+  id: "role-helper",
+  slug: "helper",
+  displayName: "Helper",
+  isSystem: false,
+  grants: ["forum.reply.create"] as PermissionKey[],
+};
+
 const users = [{
   id: "alex",
   name: "Alex Rivera",
@@ -82,7 +90,12 @@ const users = [{
   },
 }];
 
-function renderView(result?: { ok?: boolean; error?: "conflict" }, grants: PermissionKey[] = ["access.authorization.manage"], canManageElevated=false) {
+function renderView(
+  result?: { ok?: boolean; error?: "conflict" },
+  grants: PermissionKey[] = ["access.authorization.manage"],
+  canManageElevated = false,
+  targetUsers: typeof users = users,
+) {
   const router = createMemoryRouter([{
     path: "*",
     element: (
@@ -92,8 +105,8 @@ function renderView(result?: { ok?: boolean; error?: "conflict" }, grants: Permi
           access={adminAccess(new Set(grants))}
           permissions={permissions}
           canManageElevated={canManageElevated}
-          roles={[systemRole, customRole]}
-          users={users}
+          roles={[systemRole, customRole, normalRole]}
+          users={targetUsers}
           result={result}
         />
       </HeaderAuthProvider>
@@ -175,7 +188,7 @@ describe("authorization management presentation", () => {
     expect(container.querySelector('.admin-panel-nav a[href$="/admin/forum"]')).toBeTruthy();
   });
 
-  it("keeps custom-role deletion visually distinct and never offers it for built-in roles", async () => {
+  it("hides elevated role deletion from non-Owner but retains ordinary custom role delete", async () => {
     const { container } = renderView();
     await screen.findByRole("heading", { name: "Authorization management" });
 
@@ -183,8 +196,44 @@ describe("authorization management presentation", () => {
       form.querySelector<HTMLInputElement>('input[name="intent"]')?.value === "deleteRole"
     );
     expect(deleteForms).toHaveLength(1);
-    expect(deleteForms[0]?.querySelector<HTMLInputElement>('input[name="roleId"]')?.value).toBe("role-reviewer");
+    expect(deleteForms[0]?.querySelector<HTMLInputElement>('input[name="roleId"]')?.value).toBe("role-helper");
     expect(screen.getByRole("button", { name: "Delete role" })).toHaveClass("admin-danger-action");
+    expect(container.querySelector('form:has(input[name="roleId"][value="role-reviewer"]) input[name="intent"][value="deleteRole"]'))
+      .not.toBeInTheDocument();
+  });
+
+  it("shows Owner-only elevated role deletion and keeps its actual saved grant visible", async () => {
+    const { container } = renderView(undefined, ["access.authorization.manage"], true);
+    await screen.findByRole("heading", { name: "Authorization management", level: 2 });
+    const deletes = [...container.querySelectorAll<HTMLFormElement>("form")].filter(form =>
+      form.querySelector<HTMLInputElement>('input[name="intent"]')?.value === "deleteRole");
+    expect(deletes.map(form => form.querySelector<HTMLInputElement>('input[name="roleId"]')?.value).sort())
+      .toEqual(["role-helper", "role-reviewer"]);
+    expect(container.querySelector('form.admin-permissions-form input[value="admin.users.blocks.managePrivileged"]'))
+      .toBeInTheDocument();
+  });
+
+  it("explains bound Owner permissions without replacing saved role or explicit raw deny", async () => {
+    const ownerTarget = [{
+      ...users[0]!,
+      id: "bound-owner",
+      authorization: {
+        ...users[0]!.authorization,
+        role: systemRole,
+        grants: systemRole.grants,
+        overrides: { "forum.topic.create": "deny" as const },
+        authoritySource: "owner" as const,
+        effectivePermissions: [...permissions],
+      },
+    }];
+    const { container } = renderView(undefined, ["access.authorization.manage"], true, ownerTarget);
+    await screen.findByRole("heading", { name: "Authorization management", level: 2 });
+    expect(screen.getByText(/Owner authority grants all current permissions/)).toBeVisible();
+    expect(container.querySelector(".admin-user-card .admin-badge")).toHaveTextContent("User");
+    expect(container.querySelector('form.admin-override-row input[value="forum.topic.create"]'))
+      ?.closest("form")?.querySelector('select[name="effect"]')).toHaveValue("deny");
+    expect(container.querySelector(".admin-effective-permissions")).toHaveTextContent("forum.topic.create");
+    expect(container.querySelector("input[name='VICO_OWNER_USER_ID']")).toBeNull();
   });
 
   it("presents success and assigned-role conflict feedback through safe localized messages", async () => {
