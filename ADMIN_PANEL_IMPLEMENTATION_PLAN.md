@@ -314,7 +314,7 @@ Owner — отдельная server-controlled authority поверх сущес
 6. Инфраструктура, deployments, secrets и изменение самой server-controlled owner binding остаются вне forum RBAC.
 7. Settings проектируется только после завершения этой owner authority модели.
 
-Открытый продуктовый вопрос перед техническим планированием: сохраняется ли текущая специальная граница, где **только bound Owner** может выдавать/отзывать `admin.users.blocks.managePrivileged` (в том числе через role grants, role assignment и per-user override), либо этот permission должен управляться обычным `access.authorization.manage` как остальные permissions.
+Решение владельца: специальная граница сохраняется. **Только bound Owner** может выдавать/отзывать `admin.users.blocks.managePrivileged`, включая изменения через role grants, назначение роли с этим permission и per-user override. Обычный `access.authorization.manage` не даёт права выдавать себе или другим эту capability.
 
 
 ## AP-10 owner decisions — multiple measures and appeal handling
