@@ -15,10 +15,13 @@ import SettingsForumRoute from "../routes/settings-forum";
 afterEach(cleanup);
 
 function runtime(locale: "en" | "ru" | "he" = "en") {
-  const english = Object.fromEntries(Object.entries(canonicalEnglishCatalog.common).flatMap(([key, descriptor]) =>
-    typeof descriptor.source === "string"
-      ? [[key, descriptor.source]]
-      : Object.entries(descriptor.source).map(([branch, value]) => [`${key}_${branch}`, value])));
+  const flatten = (values: Record<string, unknown>): Record<string, string> =>
+    Object.fromEntries(Object.entries(values).flatMap(([key, value]) =>
+      typeof value === "string"
+        ? [[key, value]]
+        : Object.entries(value as Record<string, string>).map(([branch, source]) => [`${key}_${branch}`, source])));
+  const english = flatten(Object.fromEntries(Object.entries(canonicalEnglishCatalog.common)
+    .map(([key, descriptor]) => [key, descriptor.source])));
   const localized = locale === "he" ? hebrewCommonValues : locale === "ru" ? russianCommonValues : english;
   return createTranslationRuntime({
     locale: {
@@ -27,7 +30,7 @@ function runtime(locale: "en" | "ru" | "he" = "en") {
       formatting: { locale, timeZone: "UTC" }, nativeName: locale, presentationMetadata: {},
     },
     fallbackLocales: locale === "en" ? [] : ["en"],
-    resourcesByLocale: { en: { common: english }, [locale]: { common: localized } },
+    resourcesByLocale: { en: { common: english }, [locale]: { common: flatten(localized) } },
     bundleVersions: { en: { common: "test" }, [locale]: { common: "test" } },
     staleKeys: {},
   });
