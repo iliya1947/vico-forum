@@ -304,37 +304,14 @@ Change only that wording in `PROJECT_STATE.md` on PR #297. Do not alter the alre
 - Mira owns the next analysis. Lev/Lira/Mark are not assigned until the owner-facing product boundary is clear.
 
 
-## Recovery/bootstrap source analysis — product boundary
+## Owner/authorization redesign — final bootstrap decision
 
-Confirmed on current main `96186cc9158dd7a91c9d2c0124ed4556f133f15c`:
-
-- Stage2 Owner authority needs only an exact valid server-side `VICO_OWNER_USER_ID` matching an existing authenticated Better Auth user. It does not require an admin role/grant and does not create a user/session.
-- Ordinary email/password signup is already enabled and creates authenticated users; the user's own public profile URL contains the exact `user.id` (`/:locale/users/:userId`). Therefore first binding does not require a special bootstrap UI merely to discover identity.
-- Owner binding is not editable through forum RBAC/UI; changing it is already an infrastructure/server-controlled action by contract.
-- Rebinding naturally transfers effective Owner authority: only the account matching the current binding receives catalog-wide Owner projection; an old account falls back to its stored raw role/grants/overrides.
-- Missing/malformed binding does not elevate anybody. Owner-dependent AP-10 administration fails closed rather than inventing a fallback owner.
-- Current production rollout wiring does not yet supply `VICO_OWNER_USER_ID`; external binding/acceptance belongs to Stage6, not this product-definition turn.
-- There is no current account-delete product path and no public unauthenticated bootstrap endpoint.
-
-### Owner decisions required
-
-1. Bootstrap model: use normal account creation/sign-in, then protected server-side binding of that user's ID; no seed-owner row and no special claim/setup endpoint.
-2. Recovery model: recover/transfer Owner authority by protected server-side rebinding to another authenticated account; no in-app recovery codes, public emergency endpoint or multiple simultaneous Owners. Authentication credential recovery remains a separate auth concern.
-3. Compromise semantics: on emergency rebind, old Owner authority disappears immediately; decide whether recovery contract also requires revoking all sessions of the old account. If yes, this becomes an explicit recovery operation/evidence requirement.
-
-If 1–2 are accepted and no application-level recovery feature is requested, repository Owner redesign may need no further application implementation; only the agreed recovery procedure/documentation and later Stage6 external wiring/acceptance remain. Settings can then be reconsidered as the next product package after closeout.
-
-
-## Owner decision — single Owner and Google bootstrap
-
-- Owner Vico Forum is exactly one person: the developer/owner. Ownership transfer/delegation is not a planned product feature.
-- Do not design multiple Owners, ownership-transfer UI, emergency recipient selection, or ordinary-admin succession around hypothetical future delegation.
-- Bootstrap identity should be established through the developer's Google account.
-- Google identity is the authentication/bootstrap proof, **not** the application authorization key: the authoritative Owner projection remains the trusted server-side `VICO_OWNER_USER_ID` matching the resulting Better Auth `user.id`.
-- Do not derive Owner authority directly from Google email, display name, client claims, role name or provider data on each request.
-- Existing Better Auth Google/local identity-link protection remains relevant: verified provider identity can attach to the intended existing account only through the protected linking flow; external Google acceptance remains Stage6.
-- No ownership-transfer recovery feature is approved. Loss/compromise recovery beyond restoring access to the same owner is not part of the current product scope unless the owner later explicitly adds it.
-
-### Current implication
-
-The remaining bootstrap boundary is therefore: authenticate/create the developer's intended account through Google (or link Google to that intended account), obtain the resulting internal Better Auth `user.id`, configure that exact value as server-controlled `VICO_OWNER_USER_ID`, then verify Owner authority externally in Stage6. No first-manager grant/bootstrap and no transfer UI are required.
+- Vico Forum has exactly one Owner: the developer.
+- Ownership transfer, second Owner, successor and transfer UI/API are not part of the current product scope.
+- The Owner account is established by signing in through the developer's Google account.
+- After sign-in, the forum's internal account ID is bound server-side as the Owner identity.
+- Email, display name or role do not grant Owner rights by themselves.
+- No separate first-admin/first-manager bootstrap is needed.
+- No additional application feature is required for this bootstrap model: Google sign-in and server-side Owner authority already exist in the repository.
+- Production Google configuration, Owner binding and real external acceptance remain Stage 6 and are not authorized by this decision.
+- Owner/authorization redesign application work is complete; only final factual documentation closeout remains before moving to Settings.
