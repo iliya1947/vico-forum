@@ -28,6 +28,7 @@ Git history и PR остаются первичными историческим
 14. [`PROJECT_HISTORY_14.md`](./PROJECT_HISTORY_14.md) — 2026-11-07: owner/authorization redesign Stage 1, удаление obsolete last-manager invariant при сохранении transaction mutex, final PASS и merge #294.
 15. [`PROJECT_HISTORY_15.md`](./PROJECT_HISTORY_15.md) — 2026-11-07: owner/authorization redesign Stage 2, bound Owner all-catalog authority, raw AP-10 hierarchy, immunity/elevated gate, acceptance correction и merge #296.
 16. [`PROJECT_HISTORY_16.md`](./PROJECT_HISTORY_16.md) — 2026-11-07: финальное single-Owner/bootstrap решение, отсутствие новой application-реализации и граница Stage 6 для Google/Owner binding acceptance.
+17. [`PROJECT_HISTORY_17.md`](./PROJECT_HISTORY_17.md) — 2026-11-07: Settings SET-01, Owner-only authorization writes, independent reviews, exact-head CI/Chromium и merge #299.
 
 ## Архивные снимки
 
