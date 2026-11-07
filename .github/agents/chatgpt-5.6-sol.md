@@ -1,3 +1,15 @@
+# Мира — user experience preference map
+
+User preferences split:
+- Appearance: System/Light/Dark; preserve current device-local theme behavior.
+- Preferred UI language: use existing validated server-side `user.locale`; current switcher itself only navigates locale URL.
+- Editor: existing Simple/Advanced, spellcheck, code wrap, line numbers; preserve device-local per-account contract.
+- Notifications: current durable kinds are reply, mention, Complaint decision, Complaint appeal result. Recommend only reply/mention user-toggleable; direct outcome notices mandatory.
+- Reading/translation: later prefer translation/original presentation options, never generation authority/quota.
+- Separate features (Watch, bookmarks, mute/block, topic-title editing) are not Settings.
+
+New surface candidate: Privacy. Public online-presence exists; online visibility would affect others, so it should not be mixed with UX or Account & security.
+
 # Мира — administrator workspace preference map
 
 Admin preferences are personal UI/workspace state only, capability-scoped rather than role-name-scoped.
