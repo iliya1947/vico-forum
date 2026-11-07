@@ -472,6 +472,23 @@ select {
   text-decoration: none;
 }
 
+.auth-settings-link {
+  display: inline-flex;
+  align-items: center;
+  min-height: 2.1rem;
+  padding-inline: 0.55rem;
+  border-radius: 999px;
+  color: var(--color-text);
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+}
+.auth-settings-link:hover,
+.auth-settings-link:focus-visible {
+  border-color: var(--color-accent);
+  color: var(--color-accent-hover);
+  text-decoration: none;
+}
+
 .auth-action {
   display: inline-flex;
   min-height: 2.1rem;
@@ -9741,6 +9758,25 @@ a.topic-tag:focus-visible {
   border-radius: 0.45rem;
   text-decoration: none;
   overflow-wrap: anywhere;
+}
+.settings-panel-nav .settings-panel-pending-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.4rem 0.8rem;
+  min-inline-size: 0;
+  min-block-size: 2.75rem;
+  padding: 0.65rem 0.8rem;
+  border: 1px dashed var(--color-border);
+  border-radius: 0.45rem;
+  color: var(--color-text-muted);
+  background: var(--color-surface);
+  overflow-wrap: anywhere;
+}
+.settings-panel .settings-overview .admin-destination {
+  display: inline-flex;
+  margin-block-start: 0.75rem;
 }
 .admin-panel-nav a[aria-current="page"] {
   border-color: var(--color-accent);
