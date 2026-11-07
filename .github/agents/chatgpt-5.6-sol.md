@@ -1,3 +1,16 @@
+# Мира — Settings surface map
+
+Five classes identified:
+1. Owner/system (Owner-only, whole-forum policy + role definitions/grants).
+2. Administrator workspace preferences (personal, capability-based audience).
+3. User experience preferences (personal; preserve existing local theme/editor contracts unless separately changed).
+4. Account & security (identity/security, separate from UX).
+5. Subsystem operational settings (stay in subsystem by default; Complaints priority settings are current example).
+
+Outside Settings: infra/secrets/deployments/Owner binding, object administration, public profile content.
+
+Open owner boundary: role configuration is Owner-only; decide later whether assignment of existing roles/per-user overrides remains delegatable administration.
+
 # Мира — Settings architecture correction
 
 Owner corrected the model: Settings is a family of separate surfaces, not one admin page.
