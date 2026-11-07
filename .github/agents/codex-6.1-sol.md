@@ -1,3 +1,9 @@
+# Лёва — active task: PR #296 independent technical review
+
+Review frozen exact head `824ab8eccb091664c2e7d37f81f2737e7fd43e87` independently against current Stage2 contract and base/main `8301087f9322b34bdd325ed9298fdf3fddd84561`.
+
+Coordinator PASS exists but is not evidence. Review implementation + required acceptance independently, classify only current-scope defects, do not modify implementation during review. Publish verdict/evidence in #251 and stop.
+
 # Лёва — Stage2 owner authority: revised technical plan готов
 
 [Исходный план](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6702391114) + [authoritative AP-10 revision](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6702520494). Полный текст ниже включает поправку. Owner all-catalog модель подтверждена владельцем; coordinator finding 1 отозван. Finding 2 учтён явно; повторный coordinator PASS ещё не получен. Baseline main `8301087f9322b34bdd325ed9298fdf3fddd84561`; migrations 0000–0059. Статус: revised plan передан Мире для повторного coordinator review; не implementation/acceptance. Исполнитель не назначен; Марк не назначен.
