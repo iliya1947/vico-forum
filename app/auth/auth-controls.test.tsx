@@ -101,10 +101,12 @@ describe("forum header auth controls", () => {
     expect(await screen.findByRole("link", { name: "Sign in" }))
       .toHaveClass("auth-sign-in");
     expect(document.querySelector(".auth-controls")).toHaveAttribute("data-state", "guest");
+    expect(screen.queryByRole("link", { name: "Settings" })).not.toBeInTheDocument();
     guest.unmount();
 
     renderControls({ name: "Ada Lovelace" }, actions());
     expect(await screen.findByRole("link", { name: "Ada Lovelace" })).toHaveClass("auth-user");
+    expect(screen.getByRole("link", { name: "Settings" })).toHaveAttribute("href", "/en/settings");
     expect(screen.getByRole("button", { name: "Sign out" })).toHaveClass("auth-sign-out");
     expect(document.querySelector(".auth-controls")).toHaveAttribute("data-state", "signed-in");
   });
@@ -152,6 +154,7 @@ describe("forum header auth controls", () => {
     await userEvent.click(screen.getByRole("button", { name: "Sign out" }));
     expect(await screen.findByRole("link", { name: "Sign in" })).toBeVisible();
     expect(screen.queryByText("Ada Lovelace")).not.toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: "Settings" })).not.toBeInTheDocument();
   });
 
   it("reconciles the header when revalidation changes the server auth snapshot to guest", async () => {
