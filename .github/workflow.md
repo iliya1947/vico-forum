@@ -1,17 +1,14 @@
 # Admin panel — current workflow
 
 - Служебный PR: #251; общий план: `ADMIN_PANEL_IMPLEMENTATION_PLAN.md`
-- Current `main`: `57f0b5a1675053b556bc68b24c4a0b9a8177a8f2`, migrations 0000–0058
-- AP-11 implementation PR #292: merged
-- Final reviewed implementation head: `3f608ce9a042fd7c78401d330f5865af4f3dee5c`
-- Coordinator whole-PR review: PASS
-- Independent technical review Лёвы: PASS
-- Текущий этап: **AP-11 factual documentation ready for owner merge**
-- Documentation PR #293: open/Ready/mergeable
-- Final docs head: `6a7ce209bcb16e47a0c3054241c506fc1e305088`
-- Exact-head docs CI #42322343511: SUCCESS
-- Scope: exactly 5 Markdown files; factual state + permanent AP-11 boundary + roadmap + history
-- Следующий шаг: **owner merge #293**
-- После merge #293 AP-11 закрывается целиком
-- Затем отдельный этап: owner/authorization redesign → Settings
-- Stage 6/production и owner visual acceptance вне scope; Марк не назначен
+- Current `main`: `bcf02193f82aa0d448444c6943d6ebdcf09f7896`, migrations 0000–0058
+- Ordinary Admin Panel AP-01–AP-11: **fully closed** (implementation #292 + documentation #293 merged)
+- Текущий этап: **owner/authorization redesign — product model**
+- Technical planner: не назначен
+- Implementer: не назначен
+- Current requirement: close remaining owner product decisions before technical planning
+- Fixed boundary: explicit owner authority replaces the target-model dependency on the last ordinary `access.authorization.manage` holder; current lockout code remains until replacement is designed/implemented
+- Settings: deferred until after owner/authorization redesign
+- Stage 6/production and owner visual acceptance: outside current scope
+- Марк не назначен
+- Следующий шаг: Мира формирует минимальную target owner/administrative hierarchy model и owner decision set; после owner decisions — Лёва technical planning
