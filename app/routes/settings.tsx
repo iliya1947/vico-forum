@@ -1,0 +1,37 @@
+import { data, useLoaderData, type RouterContextProvider } from "react-router";
+import { authSessionForRequest } from "../auth/request-context";
+import { authorizationOwnerContext } from "../authorization/request-context";
+import { isBoundOwner } from "../authorization/owner";
+import { ForumRouteError } from "../forum/ui";
+import { SettingsShell } from "../settings/shell";
+import { settingsForumPath } from "../settings/paths";
+import { Link } from "react-router";
+import { useTranslation } from "react-i18next";
+
+export const settingsPrivateHeaders = { "Cache-Control": "private, no-store" } as const;
+export function headers() { return settingsPrivateHeaders; }
+
+export function loader({ params, context }: { params: { locale?: string }; context: RouterContextProvider }) {
+  const session = authSessionForRequest(context);
+  if (!session) throw new Response("Unauthenticated", { status: 401, headers: settingsPrivateHeaders });
+  return data({
+    locale: params.locale ?? "en",
+    canViewForum: isBoundOwner(session.user.id, context.get(authorizationOwnerContext)),
+  }, { headers: settingsPrivateHeaders });
+}
+
+export default function SettingsRoute() {
+  const { locale, canViewForum } = useLoaderData<typeof loader>();
+  const { t } = useTranslation("common");
+  return <SettingsShell locale={locale} canViewForum={canViewForum}>
+    <section className="admin-overview settings-overview">
+      <h2>{t("adminSettings")}</h2>
+      <p>{t("settingsIntro")}</p>
+      {canViewForum
+        ? <Link className="admin-destination" to={settingsForumPath(locale)}>{t("settingsForumRoles")}</Link>
+        : <p className="empty-state">{t("settingsNoAvailable")}</p>}
+    </section>
+  </SettingsShell>;
+}
+
+export const ErrorBoundary = ForumRouteError;
