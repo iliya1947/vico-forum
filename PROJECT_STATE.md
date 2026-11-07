@@ -28,7 +28,7 @@ Vico Forum находится в pre-release разработке.
 
 - Stage 0–5 завершены в repository/local-CI path.
 - Текущий standalone product priority по `ROADMAP.md` — UI/UX product pass.
-- Ordinary Admin Panel AP-01–AP-11, owner/authorization redesign Stage 1–2 и Settings SET-01 реализованы в repository/local-CI; отдельный docs closeout SET-01 — текущий шаг. Complaints ведутся отдельно.
+- Ordinary Admin Panel AP-01–AP-11, owner/authorization redesign Stage 1–2 и Settings SET-01 реализованы в repository/local-CI; SET-02–SET-06 ещё не реализованы и не назначены. Complaints ведутся отдельно.
 - Stage 6 external integration поставлен владельцем на паузу и не продолжается без отдельного указания.
 - Публичный production release не выполнен.
 
@@ -186,7 +186,7 @@ External topology является mutable state и должна перепро�
 ## Актуальные незавершённые продуктовые границы
 
 - UI/UX product pass ещё требует финального closeout и обязательной real-runtime product/visual acceptance по `docs/UI_UX_PASS.md`.
-- В `main` ordinary Admin Panel AP-01–AP-11, owner/authorization redesign Stage 1–2 и Settings SET-01 реализованы в repository/local-CI. Текущий Settings шаг — отдельное factual documentation closeout; SET-02–SET-06 ещё не реализованы и не назначены. Реальные Google/Owner binding и production acceptance остаются Stage 6.
+- В `main` ordinary Admin Panel AP-01–AP-11, owner/authorization redesign Stage 1–2 и Settings SET-01 реализованы в repository/local-CI. Следующий по утверждённой последовательности — SET-02, но SET-02–SET-06 ещё не реализованы и не назначены. Реальные Google/Owner binding и production acceptance остаются Stage 6.
 - Complaints integration/closeout покрыт repository/local-CI проверками; external/deployed acceptance Complaints не выполнялась.
 - Email verification/password recovery остаются отложенными.
 - Editor drafts/autosave остаются отложенными.
@@ -195,7 +195,7 @@ External topology является mutable state и должна перепро�
 ## Ближайший маршрут
 
 1. Продолжать утверждённую bounded product-разработку без превращения обычных PR в external rollout.
-2. Завершить отдельный factual documentation closeout Settings SET-01. Следующие Settings пакеты SET-02–SET-06 выполнять только после отдельного назначения, без переоткрытия текущей Owner-only mutation policy. Реальную Google/Owner binding acceptance оставить Stage 6. Complaints продолжать по его профильному контракту/служебному каналу.
+2. Следующий по утверждённой последовательности Settings пакет — SET-02; начинать его только после отдельного назначения. SET-03–SET-06 также не назначены. Сохранить текущую Owner-only mutation policy, а реальную Google/Owner binding acceptance оставить Stage 6. Complaints продолжать по его профильному контракту/служебному каналу.
 3. Довести UI/UX product pass до финальной real-runtime acceptance.
 4. Возобновлять Stage 6 external integration только по отдельному указанию владельца и по `docs/database/*`.
 5. После завершения pre-release product и external gates перейти к финальному общепроектному refinement и Stage 7 production release по `ROADMAP.md`.
