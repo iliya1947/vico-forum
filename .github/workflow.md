@@ -28,3 +28,9 @@
 - SET01-DOC-MIRA-01: **closed**
 - Exact-head docs CI #42417637551: SUCCESS
 - Exact-head docs Chromium #42417637555: SUCCESS
+
+- SET-01: **closed** — implementation #299 + docs #301 merged
+- SET-01 docs merge commit/current main: `681e8bab0eda595186acebae9ce4b2d47d06b936`
+- SET-02 technical plan: **approved**, #251 comment #6711736883
+- SET-02 implementer: **Лира**
+- SET-03–SET-06: **unassigned**
