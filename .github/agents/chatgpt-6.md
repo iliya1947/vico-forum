@@ -9,6 +9,14 @@ Leave the other six Stage2 descriptions unchanged unless mechanically necessary.
 
 # Лира — ChatGPT-6
 
+## Stage 2 / PR #297 — STAGE2-DOC-MIRA-01/02 correction (2026-11-07)
+
+- Mira docs-only coordinator review of prior PR #297 head `69581a0a95a3ebf739c78b047371a0c66d2b8ffc` returned **CHANGES REQUIRED**, precisely 2 current-scope docs findings per service comment #6704370856; remaining six docs were accepted. No source/runtime defects found.
+- Fixed on [Draft PR #297](https://github.com/iliya1947/vico-forum/pull/297) **new exact head `9d0c7baa9b9f96a79ee8b7b79c7a736a872c83b6`**, base/main `df57dabf2a4cbc44d85138d8809079878490a7c8`. `STAGE2-DOC-MIRA-01`: updated `ROADMAP.md` as the 7th bounded docs file to separate completed Stage2 server-bound Owner authority in repository/local-CI from pending external acceptance and future recovery/bootstrap decisions, retaining Stage6/Settings sequencing. `STAGE2-DOC-MIRA-02`: changed `PROJECT_STATE.md` external unfinished bullet from obsolete bootstrap of first manager to external validation of implemented Owner binding and separately approved recovery/bootstrap/initial-management-access boundary. No recovery implementation model invented.
+- Direct PR patch verified: **exactly seven documentation files**, no production source/tests/scripts/migrations/schema/deps/infra/Settings changes; only `ROADMAP.md` and `PROJECT_STATE.md` changed compared to prior Mira-reviewed head. PR body contains accurate changes/request for fresh coordinator review.
+- [New exact-head CI #42354904989](https://github.com/iliya1947/vico-forum/actions/runs/42354904989): **SUCCESS**, both application checks and PostgreSQL DB jobs. New [browser #42354905142](https://github.com/iliya1947/vico-forum/actions/runs/42354905142): `history_browser` SUCCESS; main `browser` **in progress at record time**. Do not claim complete browser PASS until run reports it. Prior docs-only SHA `69581a0a` had exact-head browser SUCCESS on attempt 2, first attempt intermittent preexisting AP-11 AbortError; no runtime changes in this correction.
+- **Status at this record:** docs correction complete; current implementation PR remains Draft for fresh Mira docs-only coordinator review **after browser result is checked**. This author note is not a coordinator verdict or agent activation. No further Stage2 implementation changes planned.
+
 ## Stage 2 / PR #297 — factual documentation closeout author handoff (2026-11-07)
 
 - Implementation #296 merged as `main df57dabf2a4cbc44d85138d8809079878490a7c8`, following coordinator Mira PASS and independent Lev PASS on `824ab8eccb091664c2e7d37f81f2737e7fd43e87`. Implementation CI #42349494000 SUCCESS (1974 application / 571 native PG), Chromium #42349494094 SUCCESS (37 AP10/Stage2 groups + History35), not owner visual/production acceptance.
