@@ -302,3 +302,24 @@ Change only that wording in `PROJECT_STATE.md` on PR #297. Do not alter the alre
 - This does **not** authorize Stage6/production work or Settings.
 - Next bounded work is product-definition of the remaining recovery/bootstrap boundary. No first-manager/count-veto model is assumed; no recovery mechanism is considered approved yet.
 - Mira owns the next analysis. Lev/Lira/Mark are not assigned until the owner-facing product boundary is clear.
+
+
+## Recovery/bootstrap source analysis — product boundary
+
+Confirmed on current main `96186cc9158dd7a91c9d2c0124ed4556f133f15c`:
+
+- Stage2 Owner authority needs only an exact valid server-side `VICO_OWNER_USER_ID` matching an existing authenticated Better Auth user. It does not require an admin role/grant and does not create a user/session.
+- Ordinary email/password signup is already enabled and creates authenticated users; the user's own public profile URL contains the exact `user.id` (`/:locale/users/:userId`). Therefore first binding does not require a special bootstrap UI merely to discover identity.
+- Owner binding is not editable through forum RBAC/UI; changing it is already an infrastructure/server-controlled action by contract.
+- Rebinding naturally transfers effective Owner authority: only the account matching the current binding receives catalog-wide Owner projection; an old account falls back to its stored raw role/grants/overrides.
+- Missing/malformed binding does not elevate anybody. Owner-dependent AP-10 administration fails closed rather than inventing a fallback owner.
+- Current production rollout wiring does not yet supply `VICO_OWNER_USER_ID`; external binding/acceptance belongs to Stage6, not this product-definition turn.
+- There is no current account-delete product path and no public unauthenticated bootstrap endpoint.
+
+### Owner decisions required
+
+1. Bootstrap model: use normal account creation/sign-in, then protected server-side binding of that user's ID; no seed-owner row and no special claim/setup endpoint.
+2. Recovery model: recover/transfer Owner authority by protected server-side rebinding to another authenticated account; no in-app recovery codes, public emergency endpoint or multiple simultaneous Owners. Authentication credential recovery remains a separate auth concern.
+3. Compromise semantics: on emergency rebind, old Owner authority disappears immediately; decide whether recovery contract also requires revoking all sessions of the old account. If yes, this becomes an explicit recovery operation/evidence requirement.
+
+If 1–2 are accepted and no application-level recovery feature is requested, repository Owner redesign may need no further application implementation; only the agreed recovery procedure/documentation and later Stage6 external wiring/acceptance remain. Settings can then be reconsidered as the next product package after closeout.
