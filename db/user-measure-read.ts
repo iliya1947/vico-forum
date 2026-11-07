@@ -1,6 +1,7 @@
 import type { Pool, PoolClient } from "pg";
 import { PostgresAuthorizationRepository } from "./authorization-repository";
 import { assertNoActiveUserMeasureRestrictionPg } from "./user-measure-policy";
+import { validOwnerUserId } from "../app/authorization/owner";
 import { assertUserMeasureAuthority, rawUserMeasurePermissions, requireUserMeasureOwnerId,
   UserMeasureForbiddenError, BLOCK_MANAGE_PERMISSION, type UserMeasureAuthorityLevel } from "./user-measure-authority";
 import { UserMeasureNotFoundError, UserMeasureConflictError } from "./user-measures";
@@ -90,10 +91,11 @@ export class PostgresUserMeasureReader {
         from user_measure_restrictions child
         join user_measures measure on measure.id=child.measure_id
         where measure.target_user_id=$1 and child.enabled=true
+          and ($2::text is null or measure.target_user_id <> $2)
           and measure.lifted_at is null
           and (measure.expires_at is null or measure.expires_at>clock_timestamp())
         order by child.restriction_key
-      `,[subjectId]);
+      `,[subjectId, validOwnerUserId(this.ownerUserId) ?? null]);
       return rows.rows.map(row=>row.restriction_key);
     });
   }
