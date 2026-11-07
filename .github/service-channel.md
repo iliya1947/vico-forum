@@ -1355,3 +1355,42 @@ Done criteria:
 - direct/server mutation paths and UI write controls enforce the same Owner-only policy;
 - applicable tests/checks cover Owner success and non-Owner denial without state/History mutation;
 - stable exact head and check results are reported back through #251 for Mira's coordinator whole-PR review.
+
+
+## SET-01 — Mira coordinator whole-PR review
+
+Implementation PR: **#299**  
+Stable exact head: `e52c97eed86283fff11976124a9216442fbe6bc3`  
+Base/current main: `856b93cb65b01e2389eb97276b37b3a0d8eef265`
+
+**Verdict: PASS — 0 confirmed current-scope defects.**
+
+Reviewed whole 28-file delta against frozen SET-01 scope.
+
+Confirmed:
+- one shared application policy seam `canMutateAuthorization` currently admits only exact bound Owner;
+- authoritative repository mutation transaction checks fresh effective management authority and the Owner-only mutation policy before every one of the six mutation families, including no-op requests;
+- role create/rename/delete, role grants, user role assignment and per-user overrides all flow through the same repository mutation boundary;
+- canonical authorization POST independently rejects non-Owner writers before parsing mutation payload;
+- Roles and targeted Users surfaces retain authorized read-only state for non-Owner actors but expose no authorization mutation forms;
+- Owner raw role/grants/deny remain truthful while effective Owner authority and write access remain server-bound;
+- shared mutation mutex, atomic History, AP-10 boundaries and existing elevated-key guard remain intact;
+- missing/malformed Owner binding does not fall back to ordinary management grants;
+- future deputy delegation is not implemented, but the new general mutation policy is centralized rather than encoded in schema/role identity.
+
+Scope check:
+- 28 changed files are authorization source/UI plus directly affected tests/browser fixtures;
+- no schema, migrations, dependencies, workflows, Settings shell, deputies, SET-02–06, Stage6 or production/secrets changes;
+- documentation remains intentionally separate final closeout work and is not an implementation defect in this PR.
+
+Exact-head evidence:
+- CI #42411014276 SUCCESS: both `checks` and `database`;
+- AP-10 isolated browser acceptance #42411014284 SUCCESS: both `history_browser` and `browser`;
+- Git compare confirms head is 42 commits ahead of exact base and 0 behind, with the same 28-file bounded delta.
+
+Potential future work (not SET-01 defects):
+- future deputy authorization policy;
+- SET-02 Settings shell/Forum & roles/registration controls;
+- final factual documentation closeout.
+
+Next required review under the standard workflow is Lev technical review of this same exact head. It has not been assigned yet.
