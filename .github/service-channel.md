@@ -100,5 +100,5 @@
 - #293 changes exactly five Markdown files: `PROJECT_STATE.md`, `ROADMAP.md`, `docs/ADMIN_PANEL.md`, history index and new `PROJECT_HISTORY_13.md`.
 - Factual state records AP-01–AP-11 complete in repository/local-CI scope; Settings explicitly remains a separate future phase after owner/authorization redesign.
 - No authorization/schema/runtime code is changed in docs closeout; `docs/auth/AUTHORIZATION.md` remains untouched because AP-11 changed no authorization contract.
-- #293 is Draft/open/mergeable. Exact-head CI has not yet been observed on the current docs head; do not mark docs merge-ready until applicable checks complete successfully.
-- Next: Mira verifies #293 exact-head checks and final consistency, then owner merge #293.
+- #293 final docs head `6a7ce209bcb16e47a0c3054241c506fc1e305088`; exact-head CI #42322343511 SUCCESS (`checks` + `database`). Final consistency sweep PASS.
+- PR #293 переведён из Draft в Ready и остаётся mergeable. **Следующий шаг: owner merge #293.**
