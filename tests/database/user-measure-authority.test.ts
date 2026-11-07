@@ -99,11 +99,11 @@ describe("AP-10 owner-only elevated permission changes inside authorization tran
 
   it("denies ordinary manager writes but permits Owner edits of non-elevated configuration", async () => {
     const before = await historyCount();
-    await expect(owner.setUserOverride("manager", "plain", "forum.topic.create", "allow"))
+    await expect(owner.setUserOverride("manager", "plain", "forum.topic.pin", "allow"))
       .rejects.toBeInstanceOf(AuthorizationForbiddenError);
-    expect((await owner.resolveUser("plain")).effectivePermissions).not.toContain("forum.topic.create");
-    await owner.setUserOverride("owner", "plain", "forum.topic.create", "allow");
-    expect((await owner.resolveUser("plain")).effectivePermissions).toContain("forum.topic.create");
+    expect((await owner.resolveUser("plain")).effectivePermissions).not.toContain("forum.topic.pin");
+    await owner.setUserOverride("owner", "plain", "forum.topic.pin", "allow");
+    expect((await owner.resolveUser("plain")).effectivePermissions).toContain("forum.topic.pin");
     await expect(owner.replaceRoleGrants("manager", "ap10-elevated-role", [elevated, "forum.reply.create"]))
       .rejects.toBeInstanceOf(AuthorizationForbiddenError);
     await owner.replaceRoleGrants("owner", "ap10-elevated-role", [elevated, "forum.reply.create"]);
