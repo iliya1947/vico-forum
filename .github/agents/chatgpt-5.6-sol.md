@@ -1,3 +1,13 @@
+# Мира — PR #296 coordinator whole-PR review: CHANGES REQUIRED
+
+Frozen exact head `04865401cd5c2a69941cb458d0df1fc7424a37f7`, base `8301087f9322b34bdd325ed9298fdf3fddd84561`.
+
+Final result: exactly one confirmed current-scope finding, `STAGE2-MIRA-01`. No additional findings from block 4 privacy/History/Worker/localization/regression review. CI exact head SUCCESS; isolated browser exact head SUCCESS on attempt 2. No schema/migration/docs/Settings/super-admin/infra overscope.
+
+`STAGE2-MIRA-01`: approved elevated grant/revoke acceptance is incomplete. Exact-head evidence proves all four non-Owner denials and Owner role-grant add + elevated-role delete, but not Owner-success assignment into/out of elevated role, per-user elevated override transitions, or explicit role-grant removal; native Owner PG test has no elevated-key mutation acceptance. Runtime elevated gate is not currently shown defective.
+
+Handoff to Лира: complete only this required acceptance, change runtime only if tests expose an actual defect, rerun applicable exact-head checks/browser, publish new stable head, stop for fresh Mira review.
+
 # Мира — PR #296 coordinator review block 3/4: STAGE2-MIRA-01
 
 Stable exact head: `04865401cd5c2a69941cb458d0df1fc7424a37f7`.
