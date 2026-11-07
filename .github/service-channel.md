@@ -147,3 +147,19 @@ Read Lev's full approved plan before implementation. Reuse existing test/browser
 - Focused unit/native PG coverage verifies Owner raw-deny create/change/lift, accepted/rejected appeal handling, private reads/queue, floor3, direct Drizzle/native admissions, stored-sanction retention and invalid-binding behavior.
 - Verdict for block 2/4: **PASS**, zero confirmed current-scope defects.
 - Whole-PR coordinator PASS is NOT yet claimed. Next block: private UI / Owner explanation / elevated-permission grant-revoke surfaces including elevated custom-role deletion.
+
+
+## PR #296 coordinator review — block 3/4: 1 current-scope verification finding
+
+- Stable exact head remains `04865401cd5c2a69941cb458d0df1fc7424a37f7`.
+- Reviewed closed Owner management UI and the complete elevated-permission mutation chain for `admin.users.blocks.managePrivileged`.
+- Runtime/source chain confirmed:
+  - server-derived `canManageElevated` is true only for the exact bound Owner; no form field/binding editor/public Owner role is introduced;
+  - stored ordinary role, grants and explicit denies remain visible/factual while Owner effective authority is explained separately;
+  - non-Owner UI hides the elevated role-grant checkbox and per-user override, filters elevated assignment targets, disables assignment away from a currently elevated role, and hides deletion of elevated custom roles;
+  - ordinary edits to other grants on an elevated role preserve the protected key through a hidden field rather than silently revoking it;
+  - authoritative repository gate is inside the serialized authorization mutation transaction and covers add/remove role grant, assignment into/out of an elevated role (including implicit default role), per-user allow/deny/inherit, and deletion of an elevated custom role;
+  - direct malicious POST does not rely on UI filtering; service/hyperdrive paths terminate in the same repository mutation methods; ordinary role rename/other grants remain ordinary operations.
+- **STAGE2-MIRA-01 — required elevated grant/revoke acceptance is incomplete.** Approved Stage2 plan §7 requires the Owner-only gate to be verified for all four mutation families and the real browser acceptance to prove Owner grant to role/user with fresh-request reflection. Current exact-head evidence proves non-Owner direct 403 for all four families and Owner success for adding the elevated role grant plus deleting that elevated role, but it does not exercise Owner-success for assignment into/out of an elevated role, per-user elevated override transitions, or explicit Owner removal of the elevated role grant. `tests/database/owner-authorization.test.ts` contains no elevated-key mutation coverage; UI tests cover presentation only. Therefore the implementation logic is not currently shown defective, but the mandatory Stage2 verification contract is not fully satisfied.
+- Verdict for block 3/4: **NOT PASS because of STAGE2-MIRA-01**. Whole-PR coordinator review continues; do not hand this finding to Лира yet so confirmed findings can be returned as one package after block 4/4.
+- Next block: remaining integration/privacy/History/localization/regression boundaries and final coordinator verdict.
