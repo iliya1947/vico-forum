@@ -6,6 +6,7 @@ import { forumProfilePath } from "../forum/paths";
 import { credentialPagePath, credentialReturnPath, safeForumReturnPath } from "./credential-path";
 export { safeForumReturnPath } from "./credential-path";
 import { authClientActions, type AuthClientActions } from "./auth-client";
+import { settingsPath } from "../settings/paths";
 
 export interface HeaderAuthUser {
   readonly id: string;
@@ -108,6 +109,9 @@ export function AuthControls({ locale, actions = authClientActions }: {
             {t("adminPanelTitle")}
           </Link>
         ) : null}
+        {user ? <Link className="auth-settings-link" to={settingsPath(locale)}>
+          {t("adminSettings")}
+        </Link> : null}
         {user || pending ? (
           <button className={user ? "auth-action auth-sign-out" : "auth-action auth-sign-in"}
             type="button" disabled={pending} onClick={user ? signOut : undefined}>
