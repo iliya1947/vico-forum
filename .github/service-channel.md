@@ -148,3 +148,30 @@ Mira verifies exact-head CI for #295. If green and head unchanged, #295 is ready
 - Exact-head browser #42335079658: **SUCCESS**.
 - Documentation closeout is ready for owner merge.
 - Stage1 becomes fully closed after #295 merge.
+
+
+## Owner/authorization redesign Stage 1 — fully closed
+
+- Documentation PR #295 merged 2026-11-07.
+- Current `main`: `8301087f9322b34bdd325ed9298fdf3fddd84561`.
+- Repository migrations: 0000–0059.
+- Stage 1 is fully closed:
+  - implementation #294 merged;
+  - coordinator PASS;
+  - independent Лёва PASS;
+  - factual docs closeout #295 merged;
+  - active source-of-truth aligned.
+- Current runtime has no manager-count/last-manager veto.
+- `authz_mutation_lock` remains only as the shared authorization/AP-10 transaction mutex.
+- Fresh authorization/admission checks and atomic History/rollback remain.
+- No production/deployed acceptance or owner visual acceptance is claimed.
+
+## Next stage — target owner authority product model
+
+- Technical planner: not assigned.
+- Implementer: not assigned.
+- Before technical planning, owner-level product semantics must be fixed.
+- No implementation task is assigned to Лёва/Лира yet.
+- Settings remains after completion of owner/authorization redesign.
+- Mutex redesign/removal is not automatically part of the next stage; only if the target model technically requires it.
+- Stage 6/production remains out of scope.
