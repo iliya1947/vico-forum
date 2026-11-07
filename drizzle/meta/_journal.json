@@ -414,6 +414,13 @@
       "when": 1793932800000,
       "tag": "0058_user_measures",
       "breakpoints": true
+    },
+    {
+      "idx": 59,
+      "version": "7",
+      "when": 1794009600000,
+      "tag": "0059_remove_last_manager_flag",
+      "breakpoints": true
     }
   ]
 }
