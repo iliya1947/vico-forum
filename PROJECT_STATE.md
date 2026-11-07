@@ -112,8 +112,8 @@ obsolete last-manager veto и manager-count state миграцией `0059`, с�
 Owner authority для всех code-backed permissions, независимую от сохранённой обычной роли
 и overrides; согласовал AP-10 authority, иммунитет Owner к сохранённым административным мерам
 и Owner-only выдачу/отзыв повышенного права. Единственный Owner — разработчик:
-Google authentication/linking определяет предназначенный внутренний Better Auth
-аккаунт, точный `user.id` которого привязывается сервером через `VICO_OWNER_USER_ID`;
+разработчик входит через Google; внутренний Better Auth `user.id` его
+аккаунта фиксируется server-side через `VICO_OWNER_USER_ID`;
 email/name/role не создают эту authority. Передача владения, второй Owner,
 наследник и first-manager bootstrap не предусмотрены; дополнительная
 application-реализация не требуется. Детали — в `docs/auth/AUTHORIZATION.md`
@@ -171,7 +171,7 @@ External topology является mutable state и должна перепро�
 
 - production Worker rollout с web-runtime binding/acceptance;
 - real Google OAuth configuration и interactive smoke;
-- установка точного server-only `VICO_OWNER_USER_ID` для внутреннего Better Auth аккаунта разработчика после Google sign-in/linking и external acceptance реализованной Owner authority;
+- установка точного server-only `VICO_OWNER_USER_ID` для внутреннего Better Auth аккаунта разработчика после Google sign-in и external acceptance реализованной Owner authority;
 - translation Queue/provider/background runtime;
 - authoritative production translation allowance/anti-abuse configuration;
 - final preview/private-data isolation recheck перед write-capability rollout;
