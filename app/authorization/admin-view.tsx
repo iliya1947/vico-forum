@@ -142,7 +142,8 @@ export function AuthorizationAdminView({
                   </div>
                 </Form>
 
-                {!role.isSystem ? (
+                {!role.isSystem && (canManageElevated ||
+                  !role.grants.includes(BLOCK_MANAGE_PRIVILEGED_PERMISSION)) ? (
                   <div className="admin-danger-zone">
                     <Form method="post">
                       <input type="hidden" name="intent" value="deleteRole" />
