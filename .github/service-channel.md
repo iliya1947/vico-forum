@@ -692,3 +692,97 @@ Keep implementation small:
 Do **not** pull cooldown, attachment limit, locale publication or maintenance mode into the first implementation solely because they belong conceptually to this surface. They can be added as later bounded system-settings packages when there is a concrete need.
 
 No implementation is authorized yet.
+
+
+## Administrator workspace preferences — detailed product map
+
+This is a **personal convenience surface** for an authenticated actor who has current administrative/moderation workspace capabilities. Eligibility follows actual capabilities, not the literal built-in role name `admin`.
+
+Core rule: these preferences may change only this actor's navigation/presentation. They must not change forum policy, permissions, moderation outcomes, queue priority semantics or another administrator's workspace.
+
+### A. Admin entry and navigation
+
+Useful personal settings:
+- default administrative destination when entering the service area: Overview, Forum, Users, Measures, Roles, History, Needs attention, or **last visited**;
+- remembered last administrative destination;
+- optional later pinned/favorite administrative destinations.
+
+The chosen destination is only a preference. It never grants access. If the actor no longer has permission for the stored destination, navigation must fall back to an actually accessible destination.
+
+### B. Needs attention workspace
+
+Strong practical settings:
+- default / last-used mode: Signals, Complaints or Security, limited to modes the actor can currently access;
+- default / last-used group within each accessible mode;
+- returning to the workspace may restore that personal mode/group instead of the current fixed default.
+
+Do not persist page cursor, free-text search, target user ID, Case ID or other private work item identifiers as a preference by default.
+
+Possible later convenience:
+- auto-refresh of queue lists with a bounded selectable interval;
+- notification/sound preference for newly available work, but only if a real admin-notification mechanism is separately implemented.
+
+Current repository has no generic queue auto-refresh or admin work notification feature, so these are later candidates rather than first-package requirements.
+
+### C. Presentation density and information detail
+
+Useful display-only preferences:
+- comfortable / compact list density;
+- whether secondary technical metadata is expanded by default where a view already has such metadata;
+- whether long administrative sections/panels open expanded or collapsed by default.
+
+These controls must not hide mandatory state/reasons/warnings needed to make an administrative decision. Permission-protected information is still controlled server-side; a display preference never authorizes data.
+
+### D. List paging and sorting
+
+Possible later preferences:
+- bounded page size choices where the underlying reader explicitly supports them;
+- remember a selected sort/filter mode only where the domain actually defines multiple valid presentation orders.
+
+Current state is mixed:
+- Forum and Users use a fixed 25-item page size;
+- History defaults to 25 and its reader can accept up to 50;
+- Attention/Complaints have domain-specific pagination and ordering.
+
+Therefore a universal “items per page” or universal sort setting should **not** be invented now. Queue priority/order that carries moderation meaning remains domain policy, not a personal preference.
+
+### E. Local persistence recommendation for the first package
+
+The first administrator-preference slice does not need database/schema work.
+
+Recommended persistence:
+- browser-local;
+- keyed by authenticated account ID;
+- independent between devices;
+- no sensitive free-text queries or target identifiers stored;
+- same model as existing per-account Editor preferences where practical.
+
+This is appropriate because these values affect only convenience/presentation. Cross-device synchronization can be added later only if it proves useful.
+
+### Recommended first bounded administrator-preferences package
+
+1. Default/last administrative destination.
+2. Default/last Needs attention mode + group.
+3. Comfortable/compact density.
+4. Expanded/collapsed default for secondary technical details where applicable.
+
+Keep out of the first package:
+- auto-refresh;
+- admin sounds/notifications;
+- customizable page size/sorting;
+- favorites/pinned destinations.
+
+### Not administrator personal preferences
+
+Never place here:
+- role/permission configuration;
+- assignment authority or sanction authority;
+- Complaint priority weights;
+- global registration/cooldown/attachment/language policy;
+- authoritative queue ordering/priority semantics;
+- mandatory confirmations, validation or security checks;
+- History/audit retention/content;
+- administrator identity visibility policy;
+- production/infrastructure settings.
+
+No implementation is authorized yet.
