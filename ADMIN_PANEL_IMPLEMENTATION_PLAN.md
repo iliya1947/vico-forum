@@ -274,7 +274,7 @@ Owner decision:
 
 Причина конкретной administrative measure должна быть видна самому наказанному пользователю на его собственной защищённой surface этой меры. Причина меры **не является публичной информацией**: она не показывается другим обычным пользователям и не становится частью публичного профиля/публичного форума только из-за существования санкции.
 
-Ограничения на обычных пользователей и ограничения на пользователей с модераторской/административной властью имеют разные authority levels. Обычный block-management authority не даёт права накладывать block/restrictions на модераторов или администраторов. Такие target'ы доступны только владельцу проекта и старшему/главному администратору с отдельной повышенной authority. Это продуктовый иерархический safety-rule, а не checkbox restriction и не hard-coded проверка role name. Техническое выражение этой authority должно сохранить permission-based authorization Vico; вопрос о том, является ли «старший/главный админ» новой built-in role, отдельной capability или иным разрешённым механизмом текущей модели, оставляется техническому планированию. Владелец проекта является верхней authority: старший/главный администратор не может накладывать на владельца block/restrictions. Владелец не является допустимым target для subordinate administrative block-authority.
+Ограничения на обычных пользователей и ограничения на пользователей с модераторской/административной властью имеют разные authority levels. Обычный block-management authority не даёт права накладывать block/restrictions на privileged administrative targets. Повышенная authority ниже Owner выражается **обычным permission `admin.users.blocks.managePrivileged` внутри существующего конструктора ролей и per-user overrides**, а не отдельной built-in ролью «старший/главный администратор» и не второй системой иерархии. Владелец проекта является верхней authority и не является допустимым target для subordinate administrative block-authority.
 
 AP-10 не получает отдельное product requirement на несколько одновременно действующих мер и не должен заранее проектировать aggregation/conflict-resolution. Техническое планирование выбирает минимальную модель, достаточную для утверждённого поведения; owner-вопрос возникает только если без выбора пользовательски наблюдаемой multi-measure semantics реализацию действительно нельзя определить.
 
@@ -301,21 +301,20 @@ Reason policy:
 Иерархия, self-target, лимит до 3 апелляций на меру и lifecycle pending appeal закрыты. Новых owner product gates перед техническим планированием AP-10 сейчас нет.
 
 
-## 6. Будущая owner-role / super-admin задача
+## 6. Owner authority redesign
 
-После завершения текущей ordinary-admin работы отдельно спроектировать роль владельца проекта и всё связанное с ней. Это отдельная продуктовая задача, а не часть AP-10.
+Owner — отдельная server-controlled authority поверх существующей dynamic RBAC, **не роль из конструктора**. Все остальные административные шаблоны (`admin`, `moderator`, любые custom roles) и индивидуальные исключения продолжают задаваться существующими role permissions + per-user `allow/deny/inherit`. Отдельной встроенной роли «старший/главный администратор» и второго hierarchy/RBAC слоя не вводится.
 
-Нужно определить как минимум:
-1. место owner authority в общей административной иерархии;
-2. какие действия доступны только владельцу и не делегируются обычным/старшим администраторам;
-3. какие owner-only recovery и emergency-механизмы нужны для восстановления управления;
-4. защиту owner identity от блокировок, понижения authority, lockout и других действий нижестоящих администраторов;
-5. правила назначения, отзыва и границ старшего/главного администратора;
-6. owner-only аудит, видимость чувствительных административных данных и управление критическими настройками;
-7. взаимодействие owner authority с dynamic permissions/RBAC так, чтобы не разрушить существующую permission-based модель;
-8. какие операции существуют только на уровне владельца инфраструктуры/проекта и вообще не должны моделироваться как обычные forum permissions.
+Уже зафиксировано:
+1. Owner identity задаётся server-side и не определяется названием роли, email, client input или permission snapshot.
+2. Owner — верхняя административная authority; subordinate administrative measures не могут target Owner.
+3. Owner должен сохранять полный forum-management control, включая roles/permissions, независимо от случайной конфигурации собственной обычной роли/override.
+4. Все обычные и повышенные полномочия ниже Owner выражаются существующими permissions и назначаются через тот же конструктор ролей/per-user overrides. В частности AP-10 elevated authority уже выражена `admin.users.blocks.managePrivileged`.
+5. Не вводить новую системную роль «Senior/Head Admin» и не кодировать власть по role name.
+6. Инфраструктура, deployments, secrets и изменение самой server-controlled owner binding остаются вне forum RBAC.
+7. Settings проектируется только после завершения этой owner authority модели.
 
-До отдельного проектирования не расширять AP-10 или обычную админ-панель спекулятивными owner-only механизмами, кроме уже необходимых инвариантов безопасности.
+Открытый продуктовый вопрос перед техническим планированием: сохраняется ли текущая специальная граница, где **только bound Owner** может выдавать/отзывать `admin.users.blocks.managePrivileged` (в том числе через role grants, role assignment и per-user override), либо этот permission должен управляться обычным `access.authorization.manage` как остальные permissions.
 
 
 ## AP-10 owner decisions — multiple measures and appeal handling
