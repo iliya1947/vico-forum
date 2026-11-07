@@ -233,8 +233,9 @@ production rollout не является критерием завершения
 4. Все protected forum/admin actions разрешать через единый server-side PermissionResolver;
    Better Auth session используется только как authoritative identity source, а изменения
    permissions должны действовать на следующий request без logout/login.
-5. Добавить защищённый locale-aware authorization management UI и lockout protection для
-   recovery-critical access-management capability.
+5. Добавить защищённый locale-aware authorization management UI и тогдашнюю lockout protection
+   для recovery-critical access-management capability. Этот historical Stage 4 manager-count
+   invariant позднее superseded owner decision и удалён в owner/authorization redesign Stage 1.
 6. Покрыть state-changing solved/best-answer и authorization-management actions существующей
    security boundary.
 7. Провести core E2E: guest read → authenticated topic → reply → solved/best answer, а также
@@ -249,7 +250,8 @@ production rollout не является критерием завершения
 - roles и role permissions динамически управляются через сайт, custom roles создаются, а
   конкретному пользователю permission можно как выдать, так и явно запретить;
 - effective authorization определяется актуальным server-side DB state через единый resolver;
-- базовые authz/security invariants и lockout protection покрыты negative tests;
+- базовые authz/security invariants были покрыты negative tests; historical manager-count lockout
+  позднее superseded и удалён отдельным owner/authorization redesign Stage 1;
 - translation foundation не сломан;
 - external production infrastructure всё ещё может оставаться выключенной/необновлённой.
 
@@ -328,8 +330,9 @@ Stage 6 впервые собирает локально готовый прод
 8. Проверить deployment ordering, Worker bindings, logs/observability и external failure paths.
 9. Выполнить real deployed smoke core forum flow + LTR/RTL + auth + translations.
 10. Настроить и проверить PostgreSQL backup/restore до release.
-11. Выполнить server-controlled bootstrap/verification первого пользователя с effective
-    `access.authorization.manage` без публичного unauthenticated bootstrap endpoint.
+11. После завершения owner/authorization redesign проверить его финальную owner/recovery/bootstrap
+    модель во внешнем окружении; не восстанавливать superseded manager-count/last-manager invariant
+    и не добавлять публичный unauthenticated bootstrap endpoint.
 
 ### Критерий завершения
 
@@ -426,7 +429,8 @@ infrastructure diagnostics в production прекращаются; рисков�
 - solved topic + best answer;
 - dynamic DB-backed roles/permissions: built-in defaults `user/moderator/admin`, custom role
   creation/editing, редактируемые role permissions и per-user `allow | deny | inherit` overrides;
-- protected site UI для role/user permission management и lockout protection;
+- protected site UI для role/user permission management с fresh server-side checks и serialized
+  authorization mutations; финальная owner/recovery boundary определяется отдельным owner/authorization redesign;
 - generic BCP-47 locale routing, SSR, LTR/RTL, canonical English + local/manual/machine UI translation;
 - revision-bound on-demand translation пользовательского контента с original fallback;
 - server-side validation/authz, применимая CSRF/origin protection и basic anti-spam/rate limiting;
