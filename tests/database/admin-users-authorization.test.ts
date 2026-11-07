@@ -13,7 +13,7 @@ if (!url || !["127.0.0.1", "localhost"].includes(new URL(url).hostname)
 const schema = "admin_users_authorization_test";
 const client = new Client({ connectionString: url, options: `-c search_path=${schema}` });
 const pool = new Pool({ connectionString: url, options: `-c search_path=${schema}` });
-const repository = new PostgresAuthorizationRepository(pool);
+const repository = new PostgresAuthorizationRepository(pool, "owner");
 const service = new AuthorizationService(repository);
 async function access(userId: string) {
   const value = adminAccess(new Set((await repository.resolveUser(userId)).effectivePermissions));
@@ -36,6 +36,7 @@ beforeAll(async () => {
   }
   await client.query(`insert into "user"(id,name,email) values
     ('manager','Manager','secret-manager@example.invalid'),
+    ('owner','Owner','owner@example.invalid'),
     ('target','Target','secret-target@example.invalid');
     insert into authz_user_roles(user_id,role_id) values ('manager','builtin-admin')`);
 });
@@ -50,28 +51,28 @@ describe("AP-09 dynamic Users permissions and atomic authorization History", () 
     expect(await history()).toHaveLength(0);
     expect(await access("manager")).toMatchObject({ canReadUsers: true, canManageAuthorization: true });
     expect(await access("target")).toMatchObject({ canReadUsers: false, canManageAuthorization: false });
-    await override("manager", "admin.users.read", "allow");
+    await override("owner", "admin.users.read", "allow");
     expect(await access("target")).toMatchObject({ canReadUsers: true, canManageAuthorization: false });
-    await override("manager", "access.authorization.manage", "allow");
+    await override("owner", "access.authorization.manage", "allow");
     expect(await access("target")).toMatchObject({ canReadUsers: true, canManageAuthorization: true });
     const snapshot = await service.readUserManagementState("target");
     expect(snapshot.roles.every(role => !("grants" in role) && !("email" in role))).toBe(true);
     expect(JSON.stringify(snapshot)).not.toContain("secret-manager@example.invalid");
-    await override("manager", "admin.users.read", "deny");
+    await override("owner", "admin.users.read", "deny");
     expect(await access("target")).toMatchObject({ canReadUsers: false, canManageAuthorization: true });
     await override("target", "forum.topic.pin", "allow");
-    await service.assignUserRole("manager", "target", "builtin-admin");
+    await service.assignUserRole("owner", "target", "builtin-admin");
     expect(await access("target")).toMatchObject({ canReadUsers: false, canManageAuthorization: true });
-    await override("manager", "admin.users.read", null);
+    await override("owner", "admin.users.read", null);
     expect(await access("target")).toMatchObject({ canReadUsers: true, canManageAuthorization: true });
     const inherited = await service.readUserManagementState("target");
     expect(inherited.authorization).toMatchObject({ role: { slug: "admin" }, explicitAssignment: true });
     expect(inherited.authorization.effectivePermissions).toContain("admin.users.read");
-    await override("manager", "access.authorization.manage", "deny");
+    await override("owner", "access.authorization.manage", "deny");
     expect(await access("target")).toMatchObject({ canReadUsers: true, canManageAuthorization: false });
     await expect(override("target", "forum.topic.pin", "deny")).rejects.toBeInstanceOf(AuthorizationForbiddenError);
     const beforeNoop = (await history()).length;
-    await override("manager", "admin.users.read", null);
+    await override("owner", "admin.users.read", null);
     expect((await history())).toHaveLength(beforeNoop);
     const changes = await history();
     expect(changes.filter(change => change.action === "user.roleAssigned")).toHaveLength(1);
@@ -95,7 +96,7 @@ describe("AP-09 dynamic Users permissions and atomic authorization History", () 
     } finally {
       await client.query("drop trigger reject_ap09_history on admin_history; drop function reject_ap09_history()");
     }
-    await override("manager", "forum.topic.pin", "deny");
+    await override("owner", "forum.topic.pin", "deny");
     expect((await history())).toHaveLength(before + 1);
   });
 });
