@@ -2,7 +2,7 @@ import { readFile, readdir } from "node:fs/promises";
 import { randomUUID } from "node:crypto";
 import { Client, Pool } from "pg";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { AuthorizationForbiddenError, AuthorizationNotFoundError, AuthorizationRoleAssignedError, PostgresAuthorizationRepository } from "../../db/authorization-repository";
+import { AuthorizationForbiddenError, AuthorizationRoleAssignedError, PostgresAuthorizationRepository } from "../../db/authorization-repository";
 import { AuthorizationService } from "../../db/authorization-service";
 import { PostgresUserMeasuresRepository, UserMeasuresService } from "../../db/user-measures";
 import { PostgresUserMeasureReader } from "../../db/user-measure-read";
