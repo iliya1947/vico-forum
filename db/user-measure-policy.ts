@@ -7,7 +7,7 @@ import {
   type UserMeasureRestrictionId,
 } from "../app/admin/user-measure-restrictions";
 import { BLOCK_MANAGE_PRIVILEGED_PERMISSION } from "./user-measure-authority";
-import { isBoundOwner } from "../app/authorization/owner";
+import { isBoundOwner, validOwnerUserId } from "../app/authorization/owner";
 
 type ForumTransaction = Parameters<Parameters<NodePgDatabase["transaction"]>[0]>[0];
 
@@ -90,6 +90,16 @@ export async function assertNoActiveUserMeasureRestriction(
     activeRestrictionQuery(subjectId, restriction, ownerUserId),
   );
   if (result.rows[0]?.restricted === true) throw new UserMeasureRestrictedError(restriction);
+}
+
+/** Bind the verified Worker owner to existing Drizzle admission injection seams. */
+export function withOwnerUserMeasureAdmission(
+  ownerUserId?: string,
+): typeof assertNoActiveUserMeasureRestriction {
+  const binding = validOwnerUserId(ownerUserId);
+  return binding
+    ? (tx, subjectId, restriction) => assertNoActiveUserMeasureRestriction(tx, subjectId, restriction, binding)
+    : assertNoActiveUserMeasureRestriction;
 }
 
 /** Native pg uses the exact same parameterized SQL as the Drizzle direct writers. */
