@@ -438,3 +438,45 @@ Recommended first bounded package:
 Not personal admin settings: authority, roles, sanctions, Complaint priority policy, global forum policy, queue-order policy, mandatory safety checks/audit semantics, infrastructure.
 
 No implementation starts until owner approves product contents.
+
+
+## User experience preferences — concrete map
+
+1. **Appearance**
+   - System / Light / Dark.
+   - Current manual theme is browser/device-local and not account-keyed; absence of override follows OS/browser theme.
+   - Do not silently convert it to server/account synchronization.
+
+2. **Language & regional**
+   - Preferred UI locale is a strong account-level setting using the existing validated `user.locale` boundary.
+   - Current language switcher changes URL; no user-facing `user.locale` save flow was found.
+   - Time zone is a valid later regional preference; current formatting baseline is UTC.
+
+3. **Editor**
+   - Simple/Advanced;
+   - spellcheck;
+   - code wrap;
+   - code line numbers.
+   - Preserve existing browser-local, per-account, per-device contract. Optional local reset is allowed.
+   - Draft/autosave settings remain out of scope.
+
+4. **Notifications**
+   - Current kinds: reply, mention, Complaint decision result, Complaint appeal result.
+   - Reasonable configurable kinds: reply + mention.
+   - Coordinator recommendation: direct Complaint outcome notifications remain mandatory.
+   - No email/push/channel controls until those channels exist.
+
+5. **Reading/translation presentation**
+   - current behavior prefers an available translation and allows revealing original;
+   - later candidates: prefer translation/original and original-expanded presentation;
+   - never use a display preference to authorize/generate translations or spend quota.
+
+Not user-experience Settings: Watch/Subscribe, bookmarks, mute/block, title editing, profile fields, account security, admin workspace, global policy.
+
+Persistence is intentionally heterogeneous: browser-local theme; device-local per-account Editor; server/account locale; notification preferences server-side if approved.
+
+Recommended first slice: theme + preferred language + existing Editor preferences; optional reply/mention notification settings as a larger first-release addition.
+
+### Privacy candidate
+
+Public recent online-presence currently exposes signed-in members. A future “show my online status” preference affects visibility to others and therefore belongs to a separate **Privacy** surface, not convenience or account-security Settings.
