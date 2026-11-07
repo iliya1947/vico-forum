@@ -344,3 +344,31 @@ Content boundary:
 Do not change runtime/code/tests/schema/migrations/workflows/infra. Do not invent recovery/transfer behavior or security features beyond the confirmed model.
 
 Run applicable docs/CI checks, publish the PR number + stable exact head + check evidence in #251, then stop for Mira coordinator docs review.
+
+
+## PR #298 initial coordinator docs review — CHANGES REQUIRED
+
+Reviewed the complete 6-file docs scope on exact head `514dff7c2e262d63a3cf0dbbebd5a845f43571e1` against current main `96186cc9158dd7a91c9d2c0124ed4556f133f15c`, the final owner decision and current runtime/auth boundaries. CI #42360481160 is SUCCESS; both checks/database jobs passed. PR is Draft, mergeable, docs-only, exact requested six-file scope.
+
+### OWNER-DOC-MIRA-01 — bootstrap wording broadens the approved owner decision
+
+The approved final product decision is specific: the sole Owner is the developer; the developer **signs in through Google**, and the resulting internal forum account is bound server-side as Owner. No second Owner/transfer/first-manager bootstrap is in scope.
+
+The new docs repeatedly use `Google authentication/linking`, `sign-in/linking` or `входа/привязки аккаунта` in the **new Owner-bootstrap text**. That introduces an additional bootstrap path through linking an already-existing account, which was not part of the final approved wording. This is a current-scope documentation defect, not a runtime defect.
+
+Correct only the new Owner-bootstrap wording to the approved model: **developer signs in through Google → resulting internal Better Auth user ID is bound server-side as Owner**.
+
+Affected new text:
+- `docs/auth/AUTHORIZATION.md` — single-Owner bootstrap section;
+- `docs/ADMIN_PANEL.md` — single-Owner bootstrap paragraph;
+- `PROJECT_STATE.md` — Owner model + unfinished external item;
+- `ROADMAP.md` — Stage 6 Owner step where it says sign-in/linking / входа/привязки;
+- `docs/PROJECT_HISTORY/PROJECT_HISTORY_16.md` — decision snapshot.
+
+Do **not** alter the existing general `Local email and Google linking` authorization section: that documents an already implemented general account feature and is not the Owner-bootstrap decision. Do not change runtime/code/tests/schema/migrations/workflows/infra or broaden recovery/transfer semantics.
+
+All other reviewed changes, including history index, Stage6 deferral, Settings sequencing and “no additional application implementation” conclusion, are accepted on this head.
+
+### Handoff — Лира
+
+Fix only OWNER-DOC-MIRA-01 on PR #298. Run applicable exact-head checks, publish the new stable head/evidence in #251, then stop for fresh Mira review.
