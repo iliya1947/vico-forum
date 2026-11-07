@@ -744,7 +744,7 @@ try:
         create_role = owner_page.locator("form.admin-create-role")
         create_role.locator('input[name="slug"]').fill(role_slug)
         create_role.locator('input[name="displayName"]').fill("Owner-created elevated role")
-        before_owner_history = count = sql("select count(*)::int n from admin_history")[0]["n"]
+        before_owner_history = sql("select count(*)::int n from admin_history")[0]["n"]
         with owner_page.expect_response(lambda r: r.request.method == "POST" and
                                        "/admin/authorization" in r.url) as owner_create:
             create_role.locator('button[type="submit"]').click()
