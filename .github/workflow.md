@@ -3,7 +3,7 @@
 - Служебный PR: #251; общий план: `ADMIN_PANEL_IMPLEMENTATION_PLAN.md`
 - Current main: `df57dabf2a4cbc44d85138d8809079878490a7c8`, migrations 0000–0059
 - Ordinary AP-01–AP-11 closed; redesign Stage1 fully closed
-- Current stage: **owner/authorization redesign Stage 2 — corrected docs PR #297 awaiting fresh Mira review**
+- Current stage: **owner/authorization redesign Stage 2 — docs PR #297 second correction**
 - Approved plan: #6702391114 + AP-10 revision #6702520494 + Owner all-catalog clarification, coordinator PASS
 - Implementer: Лира
 - Implementation #296: **merged**; merge commit `df57dabf2a4cbc44d85138d8809079878490a7c8`
@@ -14,7 +14,7 @@
 - Documentation executor: **Лира**, correction complete; Draft docs-only PR #297 exact head `9d0c7baa9b9f96a79ee8b7b79c7a736a872c83b6`, base `df57dabf2a4cbc44d85138d8809079878490a7c8`, exactly 7 documentation files
 - Docs-only PR #297 current exact-head checks: CI #42354904989 **SUCCESS attempt 1** (1974 app / 571 PG, lint/typecheck/build); Chromium #42354905142 **SUCCESS attempt 1** (37 AP-10/AP-11/Owner groups + Admin History), strict pageerror/layout gates PASS
 - Previous coordinator docs review on `69581a0a...`: **CHANGES REQUIRED**, `STAGE2-DOC-MIRA-01/02`. Both corrected only in ROADMAP.md and PROJECT_STATE.md; author exact-head checks complete; **fresh coordinator verdict pending**
-- Next: **Мира — fresh coordinator whole-docs review** Draft PR #297 exact head `9d0c7baa9b9f96a79ee8b7b79c7a736a872c83b6`. Лира остановилась после docs-only correction; coordinator PASS и docs merge ещё не заявлены
+- Fresh coordinator docs review: **CHANGES REQUIRED**, one current-scope wording defect `STAGE2-DOC-MIRA-03`; Лира assigned a minimal docs-only correction
 - Stage2 fully closed only after implementation/docs merge; no production/owner visual acceptance claimed
 - Лёва review завершил и остановился; Марк не назначен
 - Implementation head change requires new coordinator-first review cycle
