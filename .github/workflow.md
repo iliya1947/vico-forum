@@ -3,7 +3,7 @@
 - Служебный PR: #251; общий план: `ADMIN_PANEL_IMPLEMENTATION_PLAN.md`
 - Current main: `df57dabf2a4cbc44d85138d8809079878490a7c8`, migrations 0000–0059
 - Ordinary AP-01–AP-11 closed; redesign Stage1 fully closed
-- Current stage: **owner/authorization redesign Stage 2 — docs PR #297 corrected, awaiting Mira coordinator re-review**
+- Current stage: **owner/authorization redesign Stage 2 — docs closeout ready for owner merge**
 - Approved plan: #6702391114 + AP-10 revision #6702520494 + Owner all-catalog clarification, coordinator PASS
 - Implementer: Лира
 - Implementation #296: **merged**; merge commit `df57dabf2a4cbc44d85138d8809079878490a7c8`
@@ -19,4 +19,4 @@
 - Лёва review завершил и остановился; Марк не назначен
 - Implementation head change requires new coordinator-first review cycle
 - Settings after redesign; no new role/RBAC/schema/migration/infra/super-admin/mutex redesign or last-manager rule
-- Next: **Мира — fresh coordinator docs-only review** Draft PR #297 on frozen `a63bfb6d52052e1dd0905eb498dabb1d38c8f10a`. Лира завершила исправление и остановилась; coordinator PASS и docs merge ещё не подтверждены
+- Coordinator docs review: **PASS**, zero confirmed current-scope docs defects on exact head `a63bfb6d52052e1dd0905eb498dabb1d38c8f10a`; PR #297 Ready for review
