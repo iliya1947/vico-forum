@@ -2,7 +2,7 @@ import { Form } from "react-router";
 import { useTranslation } from "react-i18next";
 
 import type { PermissionKey } from "./catalog";
-import { AuthorizationUserControls } from "./user-controls";
+import { AuthorizationUserControls, type InlineAuthorizationSubmission } from "./user-controls";
 import type {
   AuthorizationRoleDetails,
   AuthorizationUserDetails,
@@ -18,16 +18,7 @@ export type AuthorizationFailure =
   | "conflict"
   | "unavailable";
 
-export function AuthorizationAdminView({
-  locale,
-  access,
-  permissions,
-  roles,
-  users,
-  canManageElevated = false,
-  canMutateAuthorization,
-  result,
-}: {
+export interface AuthorizationManagementProps {
   locale: string;
   access: AdminAccess;
   permissions: readonly PermissionKey[];
@@ -36,11 +27,25 @@ export function AuthorizationAdminView({
   canManageElevated?: boolean;
   canMutateAuthorization: boolean;
   result?: { readonly ok?: boolean; readonly error?: AuthorizationFailure };
-}) {
+  inline?: InlineAuthorizationSubmission;
+}
+
+/** Legacy Admin URL remains independently readable and uses the canonical writer. */
+export function AuthorizationAdminView(props: AuthorizationManagementProps) {
+  return <AdminShell locale={props.locale} access={props.access} current="roles">
+    <AuthorizationManagementContent {...props} />
+  </AdminShell>;
+}
+
+/** Reused by Settings; never installs a second role/permission writer. */
+export function AuthorizationManagementContent({
+  permissions, roles, users, canManageElevated = false, canMutateAuthorization, result, inline,
+}: AuthorizationManagementProps) {
   const { t } = useTranslation("common");
+  const submit = inline ? { action: inline.action, navigate: false as const, fetcherKey: inline.fetcherKey } : {};
 
   return (
-    <AdminShell locale={locale} access={access} current="roles">
+    <>
       <section className="admin-heading">
         <div>
           <p className="eyebrow">{t("authorizationNav")}</p>
@@ -70,7 +75,7 @@ export function AuthorizationAdminView({
             </span>
           </div>
 
-          {canMutateAuthorization ? <Form method="post" className="admin-create-role">
+          {canMutateAuthorization ? <Form method="post" className="admin-create-role" {...submit}>
             <input type="hidden" name="intent" value="createRole" />
             <label>
               <span>{t("roleSlug")}</span>
@@ -105,7 +110,7 @@ export function AuthorizationAdminView({
                 </header>
 
                 {canMutateAuthorization && !role.isSystem ? (
-                  <Form method="post" className="admin-rename-role">
+                  <Form method="post" className="admin-rename-role" {...submit}>
                     <input type="hidden" name="intent" value="renameRole" />
                     <input type="hidden" name="roleId" value={role.id} />
                     <label>
@@ -116,7 +121,7 @@ export function AuthorizationAdminView({
                   </Form>
                 ) : null}
 
-                {canMutateAuthorization ? <Form method="post" className="admin-permissions-form">
+                {canMutateAuthorization ? <Form method="post" className="admin-permissions-form" {...submit}>
                   <input type="hidden" name="intent" value="roleGrants" />
                   <input type="hidden" name="roleId" value={role.id} />
                   <fieldset>
@@ -149,7 +154,7 @@ export function AuthorizationAdminView({
                 {canMutateAuthorization && !role.isSystem && (canManageElevated ||
                   !role.grants.includes(BLOCK_MANAGE_PRIVILEGED_PERMISSION)) ? (
                   <div className="admin-danger-zone">
-                    <Form method="post">
+                    <Form method="post" {...submit}>
                       <input type="hidden" name="intent" value="deleteRole" />
                       <input type="hidden" name="roleId" value={role.id} />
                       <button className="admin-danger-action" type="submit">{t("deleteRole")}</button>
@@ -190,13 +195,13 @@ export function AuthorizationAdminView({
 
                 <AuthorizationUserControls userId={user.id} authorization={user.authorization}
                   roles={roles} permissions={permissions} canManageElevated={canManageElevated}
-                  canMutateAuthorization={canMutateAuthorization} elevatedRoleIds={roles.filter(role=>role.grants.includes(
+                  canMutateAuthorization={canMutateAuthorization} inline={inline} elevatedRoleIds={roles.filter(role=>role.grants.includes(
                     BLOCK_MANAGE_PRIVILEGED_PERMISSION)).map(role=>role.id)}/>
               </article>
             ))}
           </div>
         </section>
       </div>
-    </AdminShell>
+    </>
   );
 }
