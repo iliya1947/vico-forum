@@ -1,3 +1,12 @@
+# Мира — Settings owner decisions update
+
+Fixed:
+- S1: authorization management Owner-only for current release; future deputy delegation required, mechanism deferred.
+- S3: online visibility default ON / opt-out.
+- S4: separate Google-registration and email/password-registration controls.
+
+S2 remains open. Recommendation to defer reply/mention toggles is scope-driven: correct behavior needs server-side persisted notification policy and integration with creation + unread/badge semantics; UI hiding alone is wrong.
+
 # Мира — consolidated Settings proposal
 
 Five-page first-release proposal is complete and pending owner decisions.
