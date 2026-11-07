@@ -32,7 +32,9 @@ const auth = betterAuth({
     getUserInfo: async () => ({
       user: { email: googleEmail, emailVerified: true, name: "Synthetic Google member" },
       data: { sub: `google-${googleEmail}`, email: googleEmail, email_verified: true,
-        name: "Synthetic Google member", iss: "https://accounts.google.com", aud: env.GOOGLE_CLIENT_ID },
+        name: "Synthetic Google member", iss: "https://accounts.google.com", aud: env.GOOGLE_CLIENT_ID,
+        azp: env.GOOGLE_CLIENT_ID, exp: 2000000000, iat: 1900000000,
+        jti: "synthetic-jti", family_name: "Member", given_name: "Google", picture: "" },
     }),
   } },
 });
