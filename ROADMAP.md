@@ -129,6 +129,13 @@ implementation впоследствии завершены в local/CI path; с�
 Scope, порядок реализации, GitHub Pages progress preview, обязательная real-runtime browser
 acceptance matrix и definition of done зафиксированы в [`docs/UI_UX_PASS.md`](docs/UI_UX_PASS.md).
 
+Отдельная Settings-последовательность идёт после завершённых AP-01–AP-11 и
+owner/authorization redesign. **SET-01 уже реализован в repository/local-CI**:
+все authorization-management writes разрешены только exact server-bound Owner,
+а `access.authorization.manage` сохраняет прежние защищённые read surfaces.
+Текущий шаг — его отдельный factual docs closeout; SET-02 (Settings shell и
+registration controls), SET-03–SET-06 ещё не реализованы и не назначены.
+
 Владелец отдельно утвердил target-product подход: UI проектируется как целевой Vico Forum, а не
 только как косметика поверх текущего MVP. Небольшое self-contained frontend behavior может
 закрываться внутри UI/UX pass, если это естественно и дёшево; тяжёлые ещё отсутствующие
@@ -345,7 +352,8 @@ Stage 6 впервые собирает локально готовый прод
 - real Google OAuth работает;
 - forum/auth/translation runtime capabilities используют least privilege;
 - pending schema доказанно применена до schema-dependent runtime rollout;
-- exact server-side Owner binding после Google sign-in разработчика и dynamic role/user permission management проверены;
+- exact server-side Owner binding после Google sign-in разработчика и Owner-only role/user
+  authorization-management mutations проверены в deployed runtime;
 - Queues/providers работают в реальной конфигурации;
 - preview isolation/private-data boundary проверены;
 - backup/restore проверен;
@@ -387,8 +395,9 @@ Refinement не должен заново открывать уже работа
 - guest/user/solved-topic core flow работает;
 - Google OAuth/session/logout работает;
 - automatic UI translation и on-demand content translation работают с безопасными fallback;
-- dynamic application roles/permissions и per-user allow/deny overrides управляются через
-  защищённый сайт и применяются без повторного login;
+- dynamic application roles/permissions и per-user allow/deny overrides меняются только
+  exact server-bound Owner через защищённый сайт; изменения действуют без повторного login,
+  а другие обладатели `access.authorization.manage` сохраняют только разрешённое чтение;
 - write boundaries имеют проверенные authz, CSRF/origin и basic anti-abuse controls;
 - backup/restore и operational diagnostics готовы;
 - release revision имеет зелёный обязательный CI.
@@ -435,8 +444,10 @@ infrastructure diagnostics в production прекращаются; рисков�
 - dynamic DB-backed roles/permissions: built-in defaults `user/moderator/admin`, custom role
   creation/editing, редактируемые role permissions и per-user `allow | deny | inherit` overrides;
 - protected site UI для role/user permission management с fresh server-side checks и serialized
-  authorization mutations; server-bound Owner effective authority, immunity и Owner-only elevated
-  operations реализованы в owner/authorization redesign Stage 2 (repository/local-CI).
+  authorization mutations. Owner effective authority, immunity и Owner-only elevated
+  operations реализованы в owner/authorization redesign Stage 2; **SET-01** требует exact
+  server-bound Owner для **всех** authorization-management mutations и сохраняет
+  authorization reads для non-Owner holders `access.authorization.manage` (repository/local-CI).
   Single-Owner bootstrap product boundary утверждена: разработчик входит через Google,
   затем его внутренний Better Auth `user.id` задаётся server-side как Owner; отдельная
   application-функция или first-manager bootstrap не требуется. Реальные Google OAuth,
@@ -457,8 +468,9 @@ Reputation, полный owner-only audit, social-network profile mechanics и �
 scope, включая временные/постоянные administrative measures и историю значимых административных действий, зафиксирован в
 [`docs/ADMIN_PANEL.md`](docs/ADMIN_PANEL.md). Bounded delivery AP-01–AP-11 завершён в
 repository/local-CI path; фактическое состояние указано в `PROJECT_STATE.md`.
-Settings по решению владельца — следующий отдельный package после финального
-документационного закрытия owner/authorization redesign; он не переоткрывает AP-11.
+Settings по решению владельца отделён от AP-11: SET-01 Owner-only authorization writes
+уже реализован в `main`; его отдельное factual documentation closeout — текущий шаг.
+SET-02–SET-06 и Settings shell ещё не реализованы и не назначены.
 
 Черновики и автосохранение перенесены владельцем 2026-10-20 в возможные будущие функции
 (`Under development: drafts`) и не являются обязательным объёмом текущего Editor 2.0.
