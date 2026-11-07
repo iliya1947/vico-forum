@@ -1,14 +1,14 @@
-# Лира — active task: Stage2 factual documentation closeout
-
-Create a separate docs-only PR from current main `df57dabf2a4cbc44d85138d8809079878490a7c8` after merged implementation #296.
-
-Update only these bounded files: `docs/auth/AUTHORIZATION.md`, `docs/ADMIN_PANEL.md`, `PROJECT_STATE.md`, `ROADMAP.md`, `tests/browser/user-measures/README.md`, `docs/PROJECT_HISTORY/PROJECT_HISTORY.md`, and new `docs/PROJECT_HISTORY/PROJECT_HISTORY_15.md`.
-
-Synchronize them factually with the merged Stage2 Owner model and verified repository/local-CI evidence. Keep production/deployed/owner-visual acceptance unclaimed; keep Settings deferred and external owner binding/bootstrap acceptance in Stage6. No runtime/code/schema/migration/infra changes.
-
-Publish the docs PR + stable exact head and applicable checks in #251, then stop for Mira review.
-
 # Лира — ChatGPT-6
+
+## Stage 2 / PR #297 — factual documentation closeout author handoff (2026-11-07)
+
+- Implementation #296 merged as `main df57dabf2a4cbc44d85138d8809079878490a7c8`, following coordinator Mira PASS and independent Lev PASS on `824ab8eccb091664c2e7d37f81f2737e7fd43e87`. Implementation CI #42349494000 SUCCESS (1974 application / 571 native PG), Chromium #42349494094 SUCCESS (37 AP10/Stage2 groups + History35), not owner visual/production acceptance.
+- Separate [Draft docs-only PR #297](https://github.com/iliya1947/vico-forum/pull/297), base `df57dabf2a4cbc44d85138d8809079878490a7c8`, **stable exact head `69581a0a95a3ebf739c78b047371a0c66d2b8ffc`**. Six files only: `PROJECT_STATE.md`, `docs/auth/AUTHORIZATION.md`, `docs/ADMIN_PANEL.md`, `tests/browser/user-measures/README.md`, `docs/PROJECT_HISTORY/PROJECT_HISTORY_15.md` and index. No runtime code, test code, schema, migrations, deps, infra or settings changes. `ROADMAP.md` read to end, unchanged because no current contractual update needed; Stage6 future owner recovery/bootstrap gate already remains explicit.
+- Factual contracts: bound authenticated existing Owner from exact server env ID gets full code-backed permission catalog effective rights despite preserved raw role/grants/deny; independent raw AP10 issuer/target rank, Owner rank3 and exact target/self/floor rules; stored sanctions ineffective against current Owner yet preserved and History unchanged; elevated role/assignment/override/delete requires bound Owner; truthful private EN/RU/HE UI. Recovery/bootstrap, Settings, deployed Stage6, owner visual acceptance not claimed. Historic review/CI merged evidence archived in `PROJECT_HISTORY_15`.
+- Author patch inspection: exactly the six documented files. No leftover wording asserting Owner authority is unimplemented in modified documents; updated markdown files retain trailing newline and history index resolves to its new file.
+- [PR #297 exact-head CI #42353586211](https://github.com/iliya1947/vico-forum/actions/runs/42353586211): both `checks` and `database` **SUCCESS**, 155/155 app files, 1974/1974 tests, 47/47 PG17 files, 571/571 tests, lint/typecheck/build and Worker smoke.
+- [Automatic Chromium #42353586139](https://github.com/iliya1947/vico-forum/actions/runs/42353586139) on docs-only SHA: `history_browser` SUCCESS; `browser` attempt1 FAILURE on two known intermittent client `AbortError: signal is aborted without reason` after `ap11-users-inline-role-override-history`, despite Owner Stage2 acceptance cases passing, at final strict `page_errors` guard. **No new runtime code in PR**. Identical-SHA targeted `browser` rerun attempt2 initiated; status **IN PROGRESS** when note written. Do **not** claim Chromium overall PASS until checked. Neither test assertions nor scripts changed.
+- PR #297 remains Draft, no Mira docs review requested or performed by implementer. Stable head is published in workflow; coordinator should use this evidence, inspect the narrow docs diff, and distinguish prior runtime browser fluctuation from docs correctness. Stage2 full closeout only after docs review and merge. Implementer stops after bounded docs task.
 
 ## Stage 2 / PR #296 — STAGE2-MIRA-01 corrected; stable exact-head author re-handoff (2026-11-07)
 
