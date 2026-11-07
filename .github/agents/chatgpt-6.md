@@ -1,3 +1,11 @@
+# Лира — PR #298 correction
+
+Mira coordinator review on exact head `514dff7c2e262d63a3cf0dbbebd5a845f43571e1`: CHANGES REQUIRED, one docs-only current-scope finding `OWNER-DOC-MIRA-01`.
+
+In the newly added Owner-bootstrap wording only, replace `authentication/linking`, `sign-in/linking` and `входа/привязки` alternatives with the approved product model: developer signs in through Google → resulting internal Better Auth user ID is bound server-side as Owner. Apply where present in `docs/auth/AUTHORIZATION.md`, `docs/ADMIN_PANEL.md`, `PROJECT_STATE.md`, `ROADMAP.md`, and `docs/PROJECT_HISTORY/PROJECT_HISTORY_16.md`.
+
+Do not touch the pre-existing general “Local email and Google linking” section; it is separate existing auth functionality. No other changes. Run applicable checks, publish new stable head/evidence in #251, stop for fresh Mira review.
+
 # Лира — PR #298 final single-Owner docs closeout: author handoff (2026-11-07)
 
 - [Draft PR #298](https://github.com/iliya1947/vico-forum/pull/298), exact stable head `514dff7c2e262d63a3cf0dbbebd5a845f43571e1`, base/main `96186cc9158dd7a91c9d2c0124ed4556f133f15c`. GitHub compare and PR file list confirm **exactly six documentation files**: `docs/auth/AUTHORIZATION.md`, `docs/ADMIN_PANEL.md`, `PROJECT_STATE.md`, `ROADMAP.md`, `docs/PROJECT_HISTORY/PROJECT_HISTORY.md`, and new `docs/PROJECT_HISTORY/PROJECT_HISTORY_16.md`. No runtime, tests, schema, migrations, workflows, dependencies or infrastructure changes.
