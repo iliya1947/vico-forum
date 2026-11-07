@@ -492,3 +492,105 @@ Do not yet assume whether Owner-only applies to:
 - also assigning existing roles to users and per-user permission overrides.
 
 That exact split remains an owner decision. No code/permission/schema change is authorized yet.
+
+
+## Settings surface map — coordinator analysis
+
+The Settings family should not be modeled as one page or one generic key/value store.
+
+### 1. Owner / system settings — separate Owner-only surface
+
+Audience: only the exact server-bound Owner, never a role name or ordinary permission holder.
+
+Purpose: configuration that changes the forum for everyone or changes the forum's authority model.
+
+Confirmed/strong candidates:
+- forum registration policy (for example open/closed);
+- role definitions and each role's permission set;
+- forum-wide defaults/policies that are intentionally made runtime-configurable.
+
+Possible later system subsections, only when separately approved:
+- locale/publication management for forum languages;
+- global attachment limit and similar owner-controlled product limits;
+- global anti-spam/participation policy values;
+- maintenance/read-only mode;
+- other whole-forum policy knobs with a concrete product need.
+
+Do not place production secrets, Cloudflare/DB/deployment/provider credentials or the Owner binding here. Those remain developer/infrastructure operations outside forum UI.
+
+### 2. Administrator workspace preferences — separate personal surface
+
+Audience: an authenticated actor who actually has administrative/moderation workspace capabilities; not determined by the literal built-in role name `admin`.
+
+Purpose: convenience for this person's own administrative work. These preferences must not change forum behavior, permissions or other administrators' experience.
+
+Candidate groups:
+- preferred/default admin/Attention destination;
+- remembered queue mode/group/filter/sort choices;
+- compact/dense presentation and table/list preferences;
+- other personal workflow/display choices that prove useful.
+
+Current repository has no persisted admin-personal preference model; these are product candidates, not implemented facts.
+
+### 3. User experience preferences — separate personal surface
+
+Purpose: how the current person reads/writes/uses the forum without changing global forum policy.
+
+Already-existing preference-like behavior that belongs conceptually here:
+- Light/Dark theme (currently browser-local);
+- interface language choice / locale preference boundary;
+- Editor preferences already kept locally per account/device: Simple/Advanced mode, spellcheck, code wrapping, code line numbers.
+
+Natural later candidates:
+- notification preferences;
+- reading/display/accessibility preferences;
+- formatting/time-zone preferences if/when exposed as actual product controls.
+
+The Settings page may expose or organize existing controls without automatically changing their persistence/sync contract. In particular, Editor preferences are currently intentionally device-local and must not silently become cross-device server settings.
+
+### 4. Account & security — separate personal surface
+
+Purpose: identity and security of the current account, not UI convenience.
+
+Current relevant behavior:
+- explicit Google account linking exists on the user's own profile;
+- sign-in/sign-out and email/password authentication exist.
+
+Potential account/security controls require separate product/technical approval before implementation:
+- password management;
+- linked sign-in methods;
+- session/device management;
+- email/account identity changes;
+- other recovery/security controls.
+
+Public profile content (bio/GitHub/website) remains profile editing, not Settings.
+
+### 5. Subsystem operational settings — stay with the owning subsystem by default
+
+These settings alter a specific administrative/moderation subsystem and may have their own permission. They are neither personal admin preferences nor automatically Owner-only system settings.
+
+Existing example:
+- Complaint reason-priority settings stay under `Needs attention → Complaints → Settings` with their existing independent authority.
+
+Future subsystem settings should remain near the subsystem unless the owner explicitly chooses to centralize them.
+
+### Outside the Settings family
+
+- infrastructure/deployment/secrets/provider credentials/DB/Cloudflare;
+- server-side Owner binding;
+- project/developer tooling;
+- ordinary object management such as categories/sections/topics/users;
+- public profile editing;
+- administrative actions on users/cases/topics.
+
+Those are not personal/system Settings merely because they are configurable or mutable.
+
+### Role-management boundary that still requires owner decision
+
+The owner has established that **role settings** belong to the Owner-only system surface.
+
+A useful product distinction is:
+- **role configuration**: create/rename/delete roles and change the permissions contained in a role;
+- **user administration**: assign an already-defined role to a user and apply per-user permission overrides.
+
+Current main groups both under `access.authorization.manage`. Do not change this yet. Before technical planning the owner must decide whether only role configuration becomes Owner-only, or user assignment/overrides also become Owner-only.
