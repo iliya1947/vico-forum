@@ -308,7 +308,7 @@ Owner — отдельная server-controlled authority поверх сущес
 Уже зафиксировано:
 1. Owner identity задаётся server-side и не определяется названием роли, email, client input или permission snapshot.
 2. Owner — верхняя административная authority; subordinate administrative measures не могут target Owner.
-3. Owner должен сохранять полный forum-management control, включая roles/permissions, независимо от случайной конфигурации собственной обычной роли/override.
+3. Owner должен иметь полный доступ ко всем существующим code-backed permissions форума независимо от собственной обычной роли/override. При добавлении новой реализованной permission в централизованный catalog она также автоматически входит в Owner authority; Owner не получает только неизвестные/несуществующие capability вне catalog.
 4. Owner bypass относится только к **административным/forum-management capabilities**. Обычные пользовательские permissions — создание тем/ответов, own-edit, own-solution/source-locale, Help signal/Complaint submission, translation generation и другие participation capabilities — продолжают определяться обычной ролью и per-user overrides Owner.
 5. Все обычные и повышенные полномочия ниже Owner выражаются существующими permissions и назначаются через тот же конструктор ролей/per-user overrides. В частности AP-10 elevated authority уже выражена `admin.users.blocks.managePrivileged`.
 6. Не вводить новую системную роль «Senior/Head Admin» и не кодировать власть по role name.
