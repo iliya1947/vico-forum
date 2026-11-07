@@ -379,7 +379,7 @@ describe("AP-10 admin.usersAccess effective roles and direct administrative writ
     await expect(missing.forUser("target").has("admin.users.read")).rejects.toThrow();
   });
 
-  it("denies direct authorization mutations transactionally without changing roles, History, or last-manager accounting", async () => {
+  it("denies direct authorization mutations transactionally without changing roles or History", async () => {
     await withIssuerManager(async pool => {
       const repo = new PostgresAuthorizationRepository(pool);
       const roleId = randomUUID();
