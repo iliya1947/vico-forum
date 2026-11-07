@@ -552,3 +552,52 @@ Owner decisions:
 - S4: separate Google-registration and email/password-registration controls.
 
 The five-page product map above is frozen for technical planning. Lev now owns decomposition into bounded implementation packages. No implementation starts until the technical plan is complete and reviewed by Mira.
+
+
+## Settings technical decomposition — approved by Mira
+
+Coordinator review of Lev's technical plan: **PASS, 0 confirmed current-scope defects**.
+
+Approved package sequence:
+
+1. **SET-01 — Owner-only authorization mutations**
+   - current release: role create/rename/delete, role grants, user role assignment and per-user overrides are writable only by exact bound Owner;
+   - keep one application-policy seam so future deputy delegation can be added without implementing deputies now;
+   - no schema/migration required.
+
+2. **SET-02 — Settings shell + Forum & roles + registration policy**
+   - introduce the five-surface Settings navigation/shell;
+   - Owner Forum & roles surface reuses canonical authorization UI/writers;
+   - persist independent Google-registration and email/password-registration flags;
+   - registration gate applies only to new-user creation, not existing sign-in or explicit account linking;
+   - one forward migration expected from actual main at implementation time.
+
+3. **SET-03 — User preferences**
+   - System/Light/Dark using current theme persistence;
+   - account preferred locale through existing validated `user.locale`;
+   - existing device-local Editor preferences;
+   - reply/mention preferences remain deferred.
+
+4. **SET-04 — Administrator preferences**
+   - device-local per-account workspace preferences only;
+   - default/last admin destination, Attention mode/group, density and secondary-detail expansion;
+   - no server authority or domain semantics stored in local preferences.
+
+5. **SET-05 — Account & security**
+   - linked sign-in method summary + existing Google link flow;
+   - change existing credential password;
+   - active sessions, revoke one other session / all other sessions;
+   - keep tokens server-side; no unlink/email-change/recovery/deletion/2FA/passkeys.
+
+6. **SET-06 — Privacy**
+   - persisted `show online` preference, default ON;
+   - hidden user excluded authoritatively from both public online member list and count;
+   - heartbeat cannot republish an opted-out user;
+   - one forward migration expected from actual main at implementation time.
+
+Sequence is bounded: only the nearest package is assigned at a time. SET-03–SET-06 depend on the Settings shell from SET-02, but otherwise are not forced into one implementation PR.
+
+Technical verification notes:
+- Better Auth `user.validateUserInfo` is a valid lifecycle seam for distinguishing new-user creation from link/sign-in and for identifying Google OAuth source.
+- Better Auth session-management APIs support the planned list/revoke flow; list-sessions carries freshness requirements.
+- These findings validate the technical plan only; no Settings implementation/CI/acceptance has run yet.
