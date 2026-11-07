@@ -33,8 +33,11 @@ function ReturnDestination() {
 }
 
 function show(mode: "sign-up" | "sign-in", emailActions: EmailAuthActions, googleActions: AuthClientActions,
-  target = "/en/topics/welcome?from=home") {
+  target = "/en/topics/welcome?from=home",
+  registrationFlags = { googleRegistrationEnabled: true, emailRegistrationEnabled: true },
+  callbackError: "google-closed" | "email-closed" | "authentication" | null = null) {
   const element = <CredentialView locale="en" mode={mode} returnTo={target}
+    registrationFlags={registrationFlags} callbackError={callbackError}
     emailActions={emailActions} googleActions={googleActions} />;
   const router = createMemoryRouter([
     { path: "/en/:mode", element },
@@ -83,7 +86,8 @@ describe("credential registration and sign-in", () => {
     expect(screen.getByRole("link", { name: "Need an account? Sign up" }))
       .toHaveAttribute("href", "/en/sign-up?returnTo=%2Fen%2Ftopics%2Fwelcome%3Ffrom%3Dhome");
     await user.click(screen.getByRole("button", { name: "Continue with Google" }));
-    expect(a.googleActions.signInWithGoogle).toHaveBeenCalledWith("/en/topics/welcome?from=home", expect.any(Object));
+    expect(a.googleActions.signInWithGoogle).toHaveBeenCalledWith("/en/topics/welcome?from=home", expect.any(Object),
+      "/en/sign-in?returnTo=%2Fen%2Ftopics%2Fwelcome%3Ffrom%3Dhome");
     await user.type(screen.getByRole("textbox", { name: "Email" }), "alice@example.org");
     await user.type(screen.getByLabelText("Password"), "correct horse");
     await user.click(screen.getByRole("button", { name: "Sign in with email" }));
@@ -129,7 +133,8 @@ describe("credential registration and sign-in", () => {
         Component: Boundary,
         children: [
           { path: mode, element: <CredentialView locale="en" mode={mode} returnTo="/en"
-            emailActions={a.emailActions} googleActions={a.googleActions} /> },
+            emailActions={a.emailActions} googleActions={a.googleActions}
+            registrationFlags={{ googleRegistrationEnabled: true, emailRegistrationEnabled: true }} /> },
           { index: true, element: <HomeAuthStatus /> },
         ],
       }], { initialEntries: [`/en/${mode}`] });
@@ -181,5 +186,50 @@ describe("credential callback safety", () => {
     expect(credentialReturnPath("en", "https://evil.example")).toBe("/en");
     expect(credentialReturnPath("en", "/he/topics/t#post-p3")).toBe("/en");
     expect(credentialReturnPath("he", "/he/sections/start")).toBe("/he/sections/start");
+  });
+});
+
+describe("SET-02 sign-up policy presentation", () => {
+  it.each([
+    [true, true],
+    [true, false],
+    [false, true],
+    [false, false],
+  ])("respects independent Google=%s and email=%s flags without hiding sign-in", async (google, email) => {
+    const a = actions();
+    show("sign-up", a.emailActions, a.googleActions, "/en",
+      { googleRegistrationEnabled: google, emailRegistrationEnabled: email });
+    expect(Boolean(screen.queryByRole("button", { name: "Create account" }))).toBe(email);
+    expect(Boolean(screen.queryByRole("button", { name: "Continue with Google" }))).toBe(google);
+    expect(screen.getByRole("link", { name: "Already registered? Sign in" })).toBeInTheDocument();
+    if (!email) expect(screen.getByText(/New email registrations are currently closed/)).toBeInTheDocument();
+    if (!google) expect(screen.getByText(/New Google registrations are currently closed/)).toBeInTheDocument();
+    // Existing sign-in pages are not governed by new-user registration policy.
+    cleanup();
+    show("sign-in", a.emailActions, a.googleActions, "/en",
+      { googleRegistrationEnabled: google, emailRegistrationEnabled: email });
+    expect(screen.getByRole("button", { name: "Sign in with email" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Continue with Google" })).toBeInTheDocument();
+  });
+
+  it("shows a safe method-specific server rejection if registration closes between SSR and POST", async () => {
+    const a = actions();
+    a.emailActions.signUpWithEmail = vi.fn(async () => "closed" as const);
+    show("sign-up", a.emailActions, a.googleActions);
+    const user = userEvent.setup();
+    await user.type(screen.getByRole("textbox", { name: "Display name" }), "Alice");
+    await user.type(screen.getByRole("textbox", { name: "Email" }), "alice@example.org");
+    await user.type(screen.getByLabelText("Password"), "correct horse");
+    await user.click(screen.getByRole("button", { name: "Create account" }));
+    expect(await screen.findByRole("alert")).toHaveTextContent("New email registrations are currently closed");
+    expect(screen.queryByText("Returned to the topic")).not.toBeInTheDocument();
+  });
+
+  it("renders a localized safe OAuth callback error without trusting provider descriptions", async () => {
+    const a = actions();
+    show("sign-up", a.emailActions, a.googleActions, "/en",
+      { googleRegistrationEnabled: true, emailRegistrationEnabled: true }, "google-closed");
+    expect(await screen.findByRole("alert")).toHaveTextContent("New Google registrations are currently closed");
+    expect(screen.queryByText(/secret|provider stack/i)).not.toBeInTheDocument();
   });
 });

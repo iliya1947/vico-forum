@@ -1,9 +1,11 @@
-import { redirect, useLoaderData, type RouterContextProvider } from "react-router";
+import { data, redirect, useLoaderData, type RouterContextProvider } from "react-router";
 import { authSessionForRequest } from "../auth/request-context";
 import { credentialReturnPath } from "../auth/credential-path";
 import { CredentialView } from "../auth/credential-view";
 import { registrationSettingsContext } from "../settings/request-context";
 import { RegistrationSettingsUnavailableError } from "../../db/hyperdrive-registration-settings";
+
+export function headers() { return { "Cache-Control": "no-store" }; }
 
 export async function loader({ request, params, context }: {
   request: Request; params: { locale?: string }; context: RouterContextProvider;
@@ -25,7 +27,7 @@ export async function loader({ request, params, context }: {
     // Presentation may degrade to both disabled; no open-by-default fallback.
     flags = { googleRegistrationEnabled: false, emailRegistrationEnabled: false };
   }
-  return { locale, returnTo, registrationFlags: flags, callbackError };
+  return data({ locale, returnTo, registrationFlags: flags, callbackError }, { headers: { "Cache-Control": "no-store" } });
 }
 
 export default function CredentialSignUp() {
