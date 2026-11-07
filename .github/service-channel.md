@@ -261,3 +261,20 @@ Close only `STAGE2-MIRA-01` in PR #296. Complete the approved Stage2 elevated-au
 ### Handoff — Лира
 
 Correct only these two docs findings on PR #297. Do not reopen the six already-correct Stage2 descriptions, do not change runtime/code/schema/migrations/infra, and do not design recovery/bootstrap or Settings. Run applicable exact-head checks, publish the new stable head/evidence in #251, then stop for fresh Mira docs review.
+
+
+## PR #297 fresh docs coordinator review — CHANGES REQUIRED
+
+- Reviewed corrected exact head `9d0c7baa9b9f96a79ee8b7b79c7a736a872c83b6` against merged Stage2 main and the full current 7-file docs diff.
+- Previous findings `STAGE2-DOC-MIRA-01/02` are substantively closed: `ROADMAP.md` is present and correctly separates implemented Stage2 Owner authority from future recovery/bootstrap/external acceptance; the obsolete first-manager bootstrap wording is removed.
+- Exact-head CI #42354904989 and AP-10 browser #42354905142 are SUCCESS.
+
+### STAGE2-DOC-MIRA-03 — unapproved recovery/bootstrap detail
+
+`PROJECT_STATE.md` now says the future boundary includes `первоначальное назначение управленческого доступа`. That detail is not established by the approved Stage2 model or current source-of-truth and partially reintroduces a first-manager/bootstrap assumption. The closeout task explicitly requires recording the unresolved Owner binding/recovery/bootstrap boundary **without designing it**.
+
+Minimal correction: keep the factual statement that external acceptance of the implemented `VICO_OWNER_USER_ID` authority and a separately approved recovery/bootstrap boundary remain unfinished, but remove the added assumption about initial management-access assignment. No other document needs correction.
+
+### Handoff — Лира
+
+Change only that wording in `PROJECT_STATE.md` on PR #297. Do not alter the already-correct `ROADMAP.md` or the other Stage2 docs. Run applicable exact-head checks, publish the new stable head in #251, then stop for final Mira review.
