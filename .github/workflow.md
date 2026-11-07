@@ -4,7 +4,7 @@
 - Current `main`: `8301087f9322b34bdd325ed9298fdf3fddd84561`, migrations 0000–0059
 - Ordinary Admin Panel AP-01–AP-11: closed
 - Owner/authorization redesign Stage 1: fully closed
-- Current stage: **owner/authorization redesign — Stage 2 coordinator PASS; awaiting independent technical review**
+- Current stage: **owner/authorization redesign — Stage 2 independent technical review**
 - Technical plan: **coordinator PASS**
 - Approved plan: Лёва #6702391114 + AP-10 revision #6702520494 + Owner all-catalog clarification
 - Implementer: **Лира**
@@ -17,4 +17,5 @@
 - Fresh coordinator whole-PR review of `824ab8eccb091664c2e7d37f81f2737e7fd43e87`: **PASS**, zero confirmed current-scope defects; `STAGE2-MIRA-01` closed by verification-only correction
 - Correction delta from previously reviewed `04865401cd5c2a69941cb458d0df1fc7424a37f7`: exactly 2 test files, no runtime changes
 - Exact-head evidence verified: CI #42349494000 SUCCESS (1974 app / 571 PG tests); Chromium #42349494094 SUCCESS attempt 1, including `stage2-owner-elevated-assignment-overrides-explicit-grant-revoke-fresh-requests-history`; Admin History browser also SUCCESS
-- Следующий шаг: **Лёва — independent technical review** of PR #296 exact head `824ab8eccb091664c2e7d37f81f2737e7fd43e87`; implementation remains frozen
+- Лёва назначен на **independent technical review** PR #296 exact head `824ab8eccb091664c2e7d37f81f2737e7fd43e87`; implementation remains frozen
+- Следующий шаг: **ожидаем результат Лёвы**; любое изменение implementation head аннулирует текущий coordinator PASS и требует нового coordinator-first cycle
