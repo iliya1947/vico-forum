@@ -1,21 +1,17 @@
 # Admin panel — current workflow
 
 - Служебный PR: #251; общий план: `ADMIN_PANEL_IMPLEMENTATION_PLAN.md`
-- Current `main`: `8301087f9322b34bdd325ed9298fdf3fddd84561`, migrations 0000–0059
-- Ordinary Admin Panel AP-01–AP-11: closed
-- Owner/authorization redesign Stage 1: fully closed
-- Current stage: **owner/authorization redesign — Stage 2 technical plan correction**
-- Technical planner: **Лёва**
-- Stage2 plan #6702391114: coordinator correction narrowed to **one** remaining issue
-- Owner decision:
-  - bound Owner gets all code-backed permissions from `PERMISSION_CATALOG` regardless of ordinary role/grants/overrides
-  - future code-backed permissions added to the catalog also belong to Owner authority
-  - no Senior/Head Admin role or second RBAC layer
-  - Owner-only grant/revoke gate for `admin.users.blocks.managePrivileged` remains
-- Remaining plan correction:
-  - explicitly cover AP-10 authoritative raw `admin.users.blocks.manage` check for bound Owner while preserving non-Owner raw hierarchy/issuer-floor semantics
-- Implementer: not assigned
-- No implementation until corrected plan receives coordinator PASS
-- Settings/super-admin/Stage6 remain out of scope
+- Current main: `8301087f9322b34bdd325ed9298fdf3fddd84561`, migrations 0000–0059
+- Ordinary Admin Panel AP-01–AP-11: closed; redesign Stage1 fully closed
+- Current stage: **Stage2 revised technical plan — awaiting coordinator review**
+- Technical planner: **Лёва**, remaining AP-10 plan correction completed
+- Plan: [#6702391114](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6702391114) + [revision #6702520494](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6702520494); полный исправленный текст в личном файле Лёвы
+- Owner decision: all current/future real code-backed catalog permissions, independent of ordinary role/grants/overrides; no unknown capabilities, new role or second RBAC; Owner-only elevated grant/revoke gate retained
+- Correction: explicit bound Owner admission at authoritative AP-10 raw-manage gate, including pending-appeal queue precheck; raw actor/target RBAC kept separate from Owner projection; non-Owner hierarchy/issuer-floor and all domain/transaction guards preserved
+- Coordinator reviewer: **Мира — revised plan review next**, PASS not yet recorded
+- Implementer: **not assigned**
+- Implementation PR/head: **none**; no implementation until coordinator PASS
+- Stage2 tests/browser/CI not run
+- Shared mutex retained; Settings/super-admin/Stage6/infrastructure out of scope
 - Марк не назначен
-- Следующий шаг: Лёва revises only the remaining AP-10 authoritative-path point in #251 and stops
+- Следующий шаг: Мира проверяет revision, синхронизирует superseded master-plan clause и при PASS назначает исполнителя. Лёва остановился на planning handoff
