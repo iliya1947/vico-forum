@@ -7020,7 +7020,8 @@ p {
 
   .home-shell .site-account-actions .auth-controls-main {
     inline-size: 100%;
-    flex-wrap: nowrap;
+    /* SET-02 adds an authenticated Settings link: keep all actions in the viewport. */
+    flex-wrap: wrap;
     gap: 0.3rem;
   }
 
