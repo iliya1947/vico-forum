@@ -1,3 +1,15 @@
+# Мира — PR #296 coordinator review block 3/4: STAGE2-MIRA-01
+
+Stable exact head: `04865401cd5c2a69941cb458d0df1fc7424a37f7`.
+
+Runtime/source review of private Owner UI + `admin.users.blocks.managePrivileged` mutation surfaces found no confirmed logic bypass. The bound-Owner flag is server-derived; raw role/grants/denies stay factual; non-Owner UI cannot directly edit elevated grant/override/assignment/delete controls; and repository authorization transaction guards all four mutation families, including indirect revoke by custom-role deletion.
+
+Confirmed current-scope verification finding:
+
+1. **STAGE2-MIRA-01 — elevated grant/revoke acceptance is incomplete.** The approved Stage2 plan explicitly requires Owner-only gate verification for all four mutation families and browser proof that Owner can grant elevated authority to role/user with the next request reflecting it. Exact-head browser evidence proves non-Owner direct 403 for role-grant/assignment/override/delete and Owner success for role-grant add + elevated-role delete, but does not prove Owner-success assignment into/out of elevated role, per-user elevated override transitions, or explicit Owner role-grant removal. `tests/database/owner-authorization.test.ts` contains no elevated-key mutation cases. This is a required verification gap, not a confirmed runtime defect.
+
+Block 3/4 is therefore not PASS. Continue block 4/4 before returning findings to Лира; first finding does not end whole-PR review.
+
 # Мира — PR #296 coordinator review block 2/4: PASS
 
 ## PR #296 coordinator review — block 2/4 PASS
