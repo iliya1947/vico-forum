@@ -594,3 +594,101 @@ A useful product distinction is:
 - **user administration**: assign an already-defined role to a user and apply per-user permission overrides.
 
 Current main groups both under `access.authorization.manage`. Do not change this yet. Before technical planning the owner must decide whether only role configuration becomes Owner-only, or user assignment/overrides also become Owner-only.
+
+
+## Owner/system Settings — detailed product map
+
+This is the exact bound Owner's surface. It contains only whole-forum product policy that is genuinely useful to change from the forum UI. It must not become a generic dump of constants.
+
+### A. Registration and account-entry policy
+
+Strong first-release setting:
+- **Registration: open / closed.** Closing registration blocks creation of new forum accounts while existing accounts can continue signing in.
+
+Useful later split if owner wants independent control:
+- allow new registration through Google;
+- allow new registration through email/password.
+
+Do not turn provider credentials into settings. Google client credentials and email-provider secrets remain infrastructure. Email verification policy is deferred with the email-verification/sender work and should not be pulled into the first Settings package prematurely.
+
+### B. Roles and authority model
+
+Owner-only role configuration:
+- create custom role;
+- rename custom role;
+- delete eligible custom role;
+- view and change the permission set of every role, including built-ins.
+
+This supersedes the product direction where ordinary `access.authorization.manage` holders could alter role definitions/grants. The exact migration of that existing capability is a future implementation concern, not something to patch during product definition.
+
+Still unresolved:
+- assigning an already-defined role to a user;
+- per-user permission `allow/deny/inherit`.
+
+Those may remain delegatable user administration or also become Owner-only; owner must decide later.
+
+Do not expose Owner itself as a role or editable Owner binding.
+
+### C. Global participation / anti-spam policy
+
+Current repository has one real global forum-write cooldown:
+- `FORUM_WRITE_COOLDOWN_MS = 5000` (5 seconds).
+
+This is a valid later Owner-setting candidate because it changes forum-wide participation policy and the repository already treats cooldown as an injected policy value.
+
+Do not expose every rate limit:
+- Complaint submission limits belong to Complaints;
+- Better Auth/provider protection is security/auth infrastructure;
+- internal pagination, retry, polling and batch sizes are implementation details.
+
+### D. Attachments policy
+
+Current product contract sets:
+- maximum one-file attachment size = **50 MB**;
+- runtime validation already accepts an explicit max-byte policy with 50 MB as the default.
+
+Therefore **maximum attachment size** is a valid Owner-setting candidate.
+
+Do not expose dangerous security-policy switches merely because they are constants:
+- forbidden executable formats;
+- signature/MIME validation rules;
+- archive structural validation;
+- future antivirus mandatory checks.
+
+Those remain code/security policy unless there is a separate explicit product decision.
+
+### E. Languages / publication
+
+The persistent LocaleRegistry already distinguishes a locale's publication state from translation readiness. A future Owner-only language-management subsection can legitimately control **which prepared/registered forum locales are publicly active/inactive**, subject to existing locale validation/readiness rules.
+
+Do not make bootstrap English removable: current architecture requires `en` as the hard active fallback.
+
+Adding a brand-new locale, translation generation/readiness, provider credentials, Queue/provider rollout and production translation allowance remain translation-domain/Stage6 work; do not pretend a simple Settings toggle replaces those workflows.
+
+### F. Useful later emergency mode
+
+A global **read-only / maintenance mode** is a reasonable Owner-only future control, but it does not exist today and there is no current release blocker requiring it. Keep it out of the first bounded package unless owner explicitly wants it now.
+
+### Not Owner/system Settings
+
+Do not expose:
+- Vico Forum name/logo/branding merely to make them configurable;
+- forum categories/sections/topics — object administration belongs to Forum;
+- public Rules/About/Privacy/Help page content — content management;
+- Complaint priority policy — Complaints-local settings;
+- user theme/editor/notification choices — user preferences;
+- admin workspace display/filter choices — admin personal preferences;
+- profile bio/GitHub/site — profile editing;
+- passwords, linked Google, sessions — Account & security;
+- DB/Cloudflare/deployments/secrets/provider credentials/Owner binding;
+- internal request sizes, pagination limits, retry counts, poll intervals, DB timeouts, translation parser/provider hard limits and similar implementation/security constants.
+
+### Coordinator recommendation for first bounded Owner/system package
+
+Keep implementation small:
+1. Owner-only role configuration boundary.
+2. Registration open/closed.
+
+Do **not** pull cooldown, attachment limit, locale publication or maintenance mode into the first implementation solely because they belong conceptually to this surface. They can be added as later bounded system-settings packages when there is a concrete need.
+
+No implementation is authorized yet.
