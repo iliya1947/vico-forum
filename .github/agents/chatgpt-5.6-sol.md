@@ -1,3 +1,11 @@
+# Мира — PR #297 final docs PASS
+
+Final docs exact head `a63bfb6d52052e1dd0905eb498dabb1d38c8f10a` passed coordinator review with zero confirmed current-scope defects.
+
+`STAGE2-DOC-MIRA-01/02/03` are closed; final correction was one-line only in `PROJECT_STATE.md`. Exact-head CI and isolated browser workflow are green. PR #297 is Ready for review.
+
+Next: owner merge #297. After merge Stage2 closeout is complete; no Codex docs review required.
+
 # Мира — PR #296 readiness complete
 
 Lev independent technical review PASS accepted on exact head `824ab8eccb091664c2e7d37f81f2737e7fd43e87`; zero confirmed current-scope defects. Current main/base remains `8301087f9322b34bdd325ed9298fdf3fddd84561`.
