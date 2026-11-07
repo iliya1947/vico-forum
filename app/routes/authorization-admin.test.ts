@@ -66,6 +66,11 @@ describe("authorization management route", () => {
     expect((await loader({params:{locale:"en"},context:actor.context})).canManageElevated).toBe(false);
     actor.context.set(authorizationOwnerContext,"manager");
     expect((await loader({params:{locale:"en"},context:actor.context})).canManageElevated).toBe(true);
+    for (const binding of [" manager", "manager ", "", "other-manager"]) {
+      actor.context.set(authorizationOwnerContext,binding);
+      expect((await loader({params:{locale:"en"},context:actor.context})).canManageElevated)
+        .toBe(false);
+    }
   });
   it("derives navigation from the same resolver handle as the independent management gate", async () => {
     const state=context();
