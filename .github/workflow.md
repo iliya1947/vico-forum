@@ -1,17 +1,16 @@
 # Admin panel — current workflow
 
 - Служебный PR: #251
-- Current main: `96186cc9158dd7a91c9d2c0124ed4556f133f15c`, migrations 0000–0059
+- Current main: `856b93cb65b01e2389eb97276b37b3a0d8eef265`, migrations 0000–0059
 - Ordinary Admin Panel AP-01–AP-11: closed
-- Owner/authorization redesign Stage 1–2: implementation + docs merged
-- Single-Owner bootstrap product decision: fixed
-- Current stage: **final owner/authorization documentation closeout — coordinator PASS**
-- Docs PR: **#298**
-- Stable exact head: `7cfa68a8a2c587314393d60a9bf90923604ee0c0`
-- Scope: exactly 6 docs files; no runtime/code/schema/migration/infra changes
-- Coordinator reviewer Мира: **PASS**, OWNER-DOC-MIRA-01 closed; zero confirmed current-scope defects
-- Exact-head CI #42361836324: **SUCCESS**, checks + database
-- Codex review: not assigned
-- Stage 6 remains paused; real Google/Owner binding and deployed acceptance remain Stage 6
-- Settings remains next separate package only after #298 merge
-- Next: **owner merges PR #298; after merge owner/authorization redesign is closed in repository/local-CI and Settings may start**
+- Owner/authorization redesign Stage 1–2 + final single-Owner documentation closeout: **closed**
+- Final docs PR #298: merged; merge commit `856b93cb65b01e2389eb97276b37b3a0d8eef265`
+- Repository/local-CI Owner model: one Owner — developer; Google sign-in → internal Better Auth user ID → server-side Owner binding
+- Stage 6 external Google/Owner binding and deployed acceptance: unfinished and paused
+- Current stage: **Settings — product definition**
+- Coordinator: **Мира**
+- Technical planner: not assigned
+- Implementer: not assigned
+- Reviewers: not assigned
+- Settings implementation has not started; no concrete Settings operations are approved yet
+- Next: **Мира analyzes existing Settings placeholder/current mechanisms and prepares only the necessary product decisions for the owner**
