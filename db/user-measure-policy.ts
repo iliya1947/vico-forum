@@ -31,6 +31,7 @@ export class UserMeasureRestrictedError extends Error {
 function activeRestrictionQuery(
   subjectId: string, restriction: UserMeasureRestrictionId, ownerUserId?: string,
 ): SQL {
+  const ownerId = validOwnerUserId(ownerUserId) ?? "";
   const floorFilter = administrativeRestrictions.has(restriction) ? sql`
     and measure.issuer_authority_floor > (
       with raw_permissions as (
@@ -50,7 +51,7 @@ function activeRestrictionQuery(
         where o.user_id = ${subjectId} and o.effect = 'deny'
       )
       select case
-        when ${ownerUserId ?? ""} <> '' and ${subjectId} = ${ownerUserId ?? ""} then 3
+        when ${ownerId} <> '' and ${subjectId} = ${ownerId} then 3
         when exists (select 1 from raw_permissions
           where permission_key = ${BLOCK_MANAGE_PRIVILEGED_PERMISSION}) then 2
         when exists (select 1 from raw_permissions
