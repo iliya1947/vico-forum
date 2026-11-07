@@ -18,8 +18,25 @@ The script creates actual Better Auth accounts, explicitly scoped authority gran
 measures, a private appeal and a real forum topic. It checks active-session policy, own-only
 privacy, admin-family revocation, accepted appeal/lift, overlapping restriction removal,
 stale form 409/no replay, EN/RU/HE at 320/768/1280, keyboard focus and overflow.
-Evidence JSON and synthetic-data screenshots are written outside the tracked source.
-The disposable CI database and test Worker are destroyed after the run.
+
+For Stage 2 the isolated CI Worker binds `VICO_OWNER_USER_ID=ap10-synthetic-owner`.
+The browser fixture creates a **real authenticated Better Auth session** whose database
+session is associated with the existing synthetic bound Owner user. That user's saved role
+has no grants, and explicit raw overrides deny every catalog permission; only the
+server binding supplies the displayed catalog-wide effective permissions. The fixture
+checks the private Owner explanation in EN/RU/HE at 320, 768 and 1280 pixels,
+target/self guards, the non-Owner hidden elevated controls and direct forbidden POSTs.
+Canonical UI operations then create an elevated role, add/remove/readd
+`admin.users.blocks.managePrivileged`, assign/unassign a recipient, change personal
+`allow`/`deny`/`inherit` overrides and delete the elevated role. It checks fresh
+recipient requests, actual PostgreSQL role/override state and committed History
+after these transitions. A separate freshly registered rank-zero target keeps AP-10
+issuer/target hierarchy assertions independent of earlier measures.
+
+The binding is configured only for the disposable Worker environment; neither
+client input nor a saved role supplies Owner identity. Evidence JSON and synthetic-data
+screenshots are written outside tracked source. The disposable CI database and test
+Worker are destroyed after the run.
 
 Engineering browser evidence does not substitute for independent review, owner visual
 acceptance or production deployment verification.

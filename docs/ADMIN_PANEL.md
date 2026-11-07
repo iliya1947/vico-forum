@@ -330,6 +330,17 @@ mutex/fresh permission checks and AP-03 event producer. Invalid/not-found/assign
 feedback stays controlled. Canonical URL and built-in/custom rules are retained; shared localized metadata and
 no-store headers apply to the composed route; no new keys, schema, permission or API is introduced.
 
+Stage 2 keeps the same management writer and now exposes actual bound Owner effective
+authority in the **private** Roles and Users authorization projection, alongside the
+unchanged stored role/grants/overrides. The explanation is localized EN/RU/HE; no
+editable Owner binding or public Owner role is introduced. Only the exact server-bound
+Owner may grant or revoke `admin.users.blocks.managePrivileged`, including through
+role grants, assignment into/out of a role carrying the key, per-user overrides
+(`allow`/`deny`/`inherit`) and deletion of an unassigned elevated custom role.
+Ordinary managers retain ordinary role/user changes but cannot use a role deletion to
+circumvent the elevated gate. Hidden controls are not the admission boundary:
+the server rechecks fresh authority in the serialized transaction.
+
 ## Shared Quick actions contract
 
 Quick actions is one reusable interaction concept across admin lists/pages, public section
@@ -592,24 +603,46 @@ status/reasons and **all domain appeal submissions** stay outside this catalog.
 `helpSignals.submit` applies only to creating a new Help signal; withdrawal of an existing
 signal remains available. Own solved/best-answer and own source-locale correction have no
 separate punitive restriction. Expiry/lift restore only capabilities otherwise permitted by current
-RBAC, resource state and other active measures; they do not rewrite permissions,
-topic closure or Complaint/Help decision state.
+effective authorization, resource state and other active measures; they do not rewrite
+permissions, topic closure or Complaint/Help decision state.
 
-**Authority.** `admin.users.blocks.manage` is required for exact-ID target
-measure management and appeal review; it does not grant the general Users catalog,
-authorization-user directory or private History. Privileged targets also require
-`admin.users.blocks.managePrivileged` and a strictly higher **raw** authority
-than the target. Administrative-family restrictions can be selected only by an actor at the
-elevated raw authority level; server mutation checks remain authoritative even if presentation
-is stale. A stored measure issuer floor protects later change/lift/review, and an
-administrative-family restriction suppresses a current target capability only while that
-stored floor remains above the target's current raw authority. Self-target and owner-target
-operations are forbidden. An owner user ID is a server-controlled hierarchy binding, not an
-implicit management permission. **Neither management capability has built-in initial grants**,
-even for moderator/admin. Only explicit dynamic grants may provide them. AP-10 itself added no last-access-manager count veto, extra recovery system or generalized
-owner-role redesign. Owner/authorization redesign Stage 1 later removed the obsolete manager-count
-veto while retaining the shared `authz_mutation_lock` transaction mutex, fresh authorization checks
-and AP-10 authority/issuer-floor semantics. Target owner authority/recovery remains a separate next step.
+**Bound Owner immunity (redesign Stage 2).** A measure that was previously stored
+against the user now bound by `VICO_OWNER_USER_ID` remains persisted with its reason,
+restrictions, expiry/lift state, appeals and History, but does **not** suppress that
+Owner's current permissions or block admission for the affected Forum actions,
+attachments, Complaints operations or translation-generation preflight. The same rule
+applies to administrative permission filtering and the Owner's own active-restriction
+hints. Common native PostgreSQL and Drizzle policy paths use the server binding;
+ordinary users remain subject to all stored measures. This does not bypass session,
+Origin, ownership, revision/CAS, lifecycle or independent domain checks
+for operations that still require them. No synthetic lift or rewrite is performed.
+
+**Authority.** Non-Owner measure managers require raw
+`admin.users.blocks.manage` for exact-ID management and appeal review; that capability
+does not grant the general Users catalog, authorization-user directory or private History.
+For ordinary actors the fresh raw role grants plus per-user overrides (deny precedence),
+**before** Owner effective projection or sanction filtering, determine hierarchy:
+rank 0 (ordinary), rank 1 (administrative-family capability), rank 2
+(`admin.users.blocks.managePrivileged`). A privileged-target operation requires
+strictly greater actor rank, including the elevated key where applicable.
+
+The exact authenticated server-bound Owner is **rank 3** even when the saved role has
+no grants and both block-management permissions are denied as raw overrides. Only this
+Owner bypasses the raw basic-manage prerequisite; it does **not** bypass the target
+comparison, stored issuer floor, lock, CAS or lifecycle. Administrative-family
+restrictions may be selected by a rank-2 non-Owner or rank-3 Owner; UI hints and
+authoritative checks use the same raw hierarchy. A stored issuer floor protects later
+change/lift/review. Administrative-family restrictions suppress a non-Owner's current
+capability only while the floor exceeds that target's current raw rank. Self-target
+and Owner-target operations remain forbidden, including attempts by Owner.
+
+Neither block-management capability has built-in seed grants, including for
+moderator/admin; ordinary actors gain them only by explicit dynamic grants/overrides.
+Stage 1 removed obsolete manager-count veto without changing the retained shared
+`authz_mutation_lock` mutex, fresh checks or atomic History. Stage 2 implemented
+Owner authority, targeted/queue reads, issuer-floor semantics and the immunity above;
+it did not create a role named Owner, recovery/bootstrap, general Users directory
+for measure managers, Settings or production rollout.
 
 **Lifecycle and reasons.** Creating a measure requires a nonblank reason and at
 least one valid child restriction. Manually changing its restrictions/expiry requires

@@ -330,8 +330,9 @@ Stage 6 впервые собирает локально готовый прод
 8. Проверить deployment ordering, Worker bindings, logs/observability и external failure paths.
 9. Выполнить real deployed smoke core forum flow + LTR/RTL + auth + translations.
 10. Настроить и проверить PostgreSQL backup/restore до release.
-11. После завершения owner/authorization redesign проверить его финальную owner/recovery/bootstrap
-    модель во внешнем окружении; не восстанавливать superseded manager-count/last-manager invariant
+11. Проверить во внешнем окружении реализованную в repository/local-CI Stage 2
+    server-bound Owner authority и отдельно завершённые к тому моменту recovery/bootstrap
+    решения. Не восстанавливать superseded manager-count/last-manager invariant
     и не добавлять публичный unauthenticated bootstrap endpoint.
 
 ### Критерий завершения
@@ -430,7 +431,9 @@ infrastructure diagnostics в production прекращаются; рисков�
 - dynamic DB-backed roles/permissions: built-in defaults `user/moderator/admin`, custom role
   creation/editing, редактируемые role permissions и per-user `allow | deny | inherit` overrides;
 - protected site UI для role/user permission management с fresh server-side checks и serialized
-  authorization mutations; финальная owner/recovery boundary определяется отдельным owner/authorization redesign;
+  authorization mutations; server-bound Owner effective authority, immunity и Owner-only elevated
+  operations реализованы в owner/authorization redesign Stage 2 (repository/local-CI).
+  Recovery/bootstrap и external acceptance остаются отдельными незавершёнными границами;
 - generic BCP-47 locale routing, SSR, LTR/RTL, canonical English + local/manual/machine UI translation;
 - revision-bound on-demand translation пользовательского контента с original fallback;
 - server-side validation/authz, применимая CSRF/origin protection и basic anti-spam/rate limiting;
