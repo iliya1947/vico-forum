@@ -175,7 +175,9 @@ try:
         # existing synthetic bound Owner row. No form field, cookie claim, or role name
         # is ever treated as the Owner binding.
         owner_id = "ap10-synthetic-owner"
-        owner_ctx, owner_page, signed_up_id = new_actor(browser, "owner-session")
+        # Reuse the subject's actual Better Auth session for early Owner-only writes.
+        # It is restored before AP-10 measures; a fourth immediate sign-up hits rate limit.
+        owner_ctx, owner_page, signed_up_id = subject_ctx, subject, subject_id
         sql("""insert into "user"(id,name,email)
           values($1,'Stored ordinary role', $2)""",
             [owner_id, prefix + "-synthetic-owner@test.invalid"])
@@ -347,7 +349,12 @@ try:
             {"role_id": "builtin-user"}
         ]
         record("ap11-users-fixture-restored-via-canonical-owner-ui")
-
+        # Restore the actual ordinary user's session for later AP-10 measure/appeal coverage.
+        subject_sessions = sql('update "session" set user_id=$1 where user_id=$2 returning id',
+                               [subject_id, owner_id])
+        assert subject_sessions, "Original subject session must be restored"
+        document(subject, "/en/account/measures")
+        record("ap11-owner-phase-session-restored-to-ordinary-subject")
 
         # An authenticated malformed create must fail before a PG text bind or any write.
         before_measures = sql("select count(*)::int as total from user_measures")[0]["total"]
@@ -733,6 +740,11 @@ try:
             assert "AP10 acceptance topic" not in denied_guest.text(), private_path
         record("ap11-users-topic-guest-and-member-private-denials")
 
+        # Use a separate real Owner session for Stage 2 after the original AP-10 flow.
+        owner_ctx, owner_page, signed_up_id = new_actor(browser, "owner-session")
+        session_rows = sql('update "session" set user_id=$1 where user_id=$2 returning id',
+                           [owner_id, signed_up_id])
+        assert session_rows, "Stage 2 requires a real bound Owner session"
         nonowner_ctx, nonowner_page, nonowner_id = new_actor(browser, "nonowner-manager")
         sql("insert into authz_user_roles(user_id,role_id) values($1,'builtin-admin')",
             [nonowner_id])
