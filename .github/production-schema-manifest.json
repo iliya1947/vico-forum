@@ -1,7 +1,7 @@
 {
   "version": 1,
   "schema": "public",
-  "targetMigration": "0058_user_measures",
+  "targetMigration": "0059_remove_last_manager_flag",
   "tables": {
     "account": {
       "columns": [
@@ -132,12 +132,6 @@
           "type": "integer",
           "nullable": false,
           "defaultSha256": null
-        },
-        {
-          "name": "managers_ever_existed",
-          "type": "boolean",
-          "nullable": false,
-          "defaultSha256": "fcbcf165908dd18a9e49f7ff27810176db8e9f63b4352213741664245224f8aa"
         }
       ],
       "primaryKeys": [

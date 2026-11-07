@@ -66,8 +66,7 @@ function snapshotPool(handler: (sql: string) => unknown | Promise<unknown>) {
 function mutationPool(insertError: unknown) {
   const query = vi.fn(async (sql: string) => {
     if (sql === "begin" || sql === "rollback") return { rows: [] };
-    if (sql.includes("select managers_ever_existed")) return { rows: [{ managers_ever_existed: true }] };
-    if (sql.startsWith("select count(*)::int count")) return { rows: [{ count: 1 }] };
+    if (sql.includes("select id from authz_mutation_lock")) return { rows: [{ id: 1 }] };
     if (sql.startsWith("select case")) return { rows: [{ allowed: true }] };
     if (sql.includes("from user_measures as measure")) return { rows: [{ restricted: false }] };
     if (sql.startsWith("insert into authz_roles")) throw insertError;

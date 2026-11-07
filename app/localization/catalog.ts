@@ -913,7 +913,7 @@ export const canonicalEnglishCatalog = {
     authorizationError_invalid: message("authorizationError_invalid", "Check the submitted values.", "Invalid authorization mutation."),
     authorizationError_forbidden: message("authorizationError_forbidden", "You cannot manage authorization.", "Forbidden authorization mutation."),
     authorizationError_notFound: message("authorizationError_notFound", "The selected role or user no longer exists.", "Missing authorization entity."),
-    authorizationError_conflict: message("authorizationError_conflict", "This change would cause a lockout or the role is assigned.", "Authorization conflict."),
+    authorizationError_conflict: message("authorizationError_conflict", "This role is assigned to users and cannot be deleted.", "Authorization conflict."),
     authorizationError_unavailable: message("authorizationError_unavailable", "Authorization is temporarily unavailable.", "Authorization infrastructure error."),
   },
 } as const satisfies Record<string, Record<string, UiMessageDescriptor>>;

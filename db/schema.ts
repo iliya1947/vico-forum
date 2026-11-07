@@ -657,7 +657,6 @@ export const authzUserPermissionOverrides = pgTable("authz_user_permission_overr
 // The singleton row is the serialization boundary for every authorization mutation.
 export const authzMutationLock = pgTable("authz_mutation_lock", {
   id: integer("id").primaryKey(),
-  managersEverExisted: boolean("managers_ever_existed").notNull().default(false),
 }, (table) => [check("authz_mutation_lock_singleton_check", sql`${table.id} = 1`)]);
 
 export const forumCategories = pgTable(

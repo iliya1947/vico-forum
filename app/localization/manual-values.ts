@@ -873,7 +873,7 @@ export const russianCommonValues = {
   authorizationError_invalid: "Проверьте отправленные значения.",
   authorizationError_forbidden: "У вас нет права управлять доступом.",
   authorizationError_notFound: "Выбранная роль или пользователь больше не существует.",
-  authorizationError_conflict: "Это изменение приведёт к блокировке доступа или роль уже назначена.",
+  authorizationError_conflict: "Эта роль назначена пользователям, поэтому её нельзя удалить.",
   authorizationError_unavailable: "Управление правами доступа временно недоступно.",
 } as const satisfies CommonTranslationValues;
 
@@ -1739,6 +1739,6 @@ export const hebrewCommonValues = {
   authorizationError_invalid: "בדקו את הערכים שנשלחו.",
   authorizationError_forbidden: "אין לכם הרשאה לנהל הרשאות.",
   authorizationError_notFound: "התפקיד או המשתמש שנבחרו כבר אינם קיימים.",
-  authorizationError_conflict: "השינוי יגרום לחסימת גישה או שהתפקיד כבר משויך.",
+  authorizationError_conflict: "התפקיד משויך למשתמשים ולכן אי אפשר למחוק אותו.",
   authorizationError_unavailable: "ניהול ההרשאות אינו זמין זמנית.",
 } as const satisfies CommonTranslationValues;

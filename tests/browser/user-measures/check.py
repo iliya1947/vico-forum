@@ -26,6 +26,16 @@ prefix = "ap10-browser-" + uuid4().hex
 records, page_errors, external, layout_failures = [], [], [], []
 
 
+def record_page_error(page, error):
+    detail = {
+        "url": page.url, "message": str(error),
+        "stack": getattr(error, "stack", None),
+        "afterCase": records[-1]["case"] if records else None,
+    }
+    page_errors.append(detail)
+    print("BROWSER_PAGE_ERROR " + json.dumps(detail, ensure_ascii=False), flush=True)
+
+
 def sql(query, params=None):
     code = """import pg from 'pg';
 const payload=JSON.parse(await new Promise(resolve=>{let s='';
@@ -81,7 +91,7 @@ def new_actor(browser, suffix):
     actor_id = response.json()["user"]["id"]
     page = context.new_page()
     page.set_default_timeout(20000)
-    page.on("pageerror", lambda error: page_errors.append(str(error)))
+    page.on("pageerror", lambda error, p=page: record_page_error(p, error))
     return context, page, actor_id
 
 
@@ -136,7 +146,7 @@ try:
         browser = playwright.chromium.launch(channel=os.environ.get("PLAYWRIGHT_CHANNEL", "chromium"),
                                              headless=True, args=["--no-sandbox"])
         guest = browser.new_page(viewport={"width": 1280, "height": 900})
-        guest.on("pageerror", lambda error: page_errors.append(str(error)))
+        guest.on("pageerror", lambda error: record_page_error(guest, error))
         document(guest, "/en/account/measures", 401)
         document(guest, "/en/admin/measures", 401)
         record("guest-denied-private-reads")
@@ -634,7 +644,7 @@ try:
         # An already-open stale form must never be replayed after the other tab lifts B.
         stale = manager_ctx.new_page()
         stale.set_default_timeout(20000)
-        stale.on("pageerror", lambda error: page_errors.append(str(error)))
+        stale.on("pageerror", lambda error: record_page_error(stale, error))
         document(stale, "/en/admin/measures/" + second_id)
         assert form_for(stale, "change").locator('input[name="expectedVersion"]').input_value() == "1"
         document(manager, "/en/admin/measures/" + second_id)

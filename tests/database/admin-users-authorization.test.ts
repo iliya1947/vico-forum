@@ -2,7 +2,7 @@ import { readFile, readdir } from "node:fs/promises";
 import { Client, Pool } from "pg";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { AuthorizationService } from "../../db/authorization-service";
-import { AuthorizationForbiddenError, AuthorizationLockoutError, PostgresAuthorizationRepository } from "../../db/authorization-repository";
+import { AuthorizationForbiddenError, PostgresAuthorizationRepository } from "../../db/authorization-repository";
 import { adminAccess } from "../../app/admin/access";
 
 const url = process.env.DATABASE_URL;
@@ -79,18 +79,16 @@ describe("AP-09 dynamic Users permissions and atomic authorization History", () 
     expect(changes.every(change => change.target_id === "target")).toBe(true);
   });
 
-  it("rolls back last-manager lockout and failed History append", async () => {
+  it("rolls back failed History append without losing authoritative access", async () => {
     const before = (await history()).length;
-    await expect(override("manager", "access.authorization.manage", "deny", "manager"))
-      .rejects.toBeInstanceOf(AuthorizationLockoutError);
-    expect(await repository.hasPermission("manager", "access.authorization.manage")).toBe(true);
-    expect((await history())).toHaveLength(before);
     await client.query(`create function reject_ap09_history() returns trigger language plpgsql as
       $$ begin raise exception 'AP-09 history rollback'; end $$;
       create trigger reject_ap09_history before insert on admin_history
       for each row execute function reject_ap09_history()`);
     try {
-      await expect(override("manager", "forum.topic.pin", "deny")).rejects.toThrow("AP-09 history rollback");
+      await expect(override("manager", "access.authorization.manage", "deny", "manager"))
+        .rejects.toThrow("AP-09 history rollback");
+      expect(await repository.hasPermission("manager", "access.authorization.manage")).toBe(true);
       expect((await repository.readUserManagementState("target")).authorization.overrides)
         .toMatchObject({ "forum.topic.pin": "allow" });
       expect((await history())).toHaveLength(before);

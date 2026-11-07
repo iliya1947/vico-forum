@@ -187,14 +187,14 @@ describe("authorization management presentation", () => {
     expect(screen.getByRole("button", { name: "Delete role" })).toHaveClass("admin-danger-action");
   });
 
-  it("presents success and lockout/conflict feedback through safe localized messages", async () => {
+  it("presents success and assigned-role conflict feedback through safe localized messages", async () => {
     const saved = renderView({ ok: true });
     expect(await screen.findByRole("status")).toHaveTextContent("Authorization was updated.");
     saved.unmount();
 
     renderView({ error: "conflict" });
     expect(await screen.findByRole("alert")).toHaveTextContent(
-      "This change would cause a lockout or the role is assigned.",
+      "This role is assigned to users and cannot be deleted.",
     );
   });
 });

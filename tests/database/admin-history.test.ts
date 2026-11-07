@@ -1,7 +1,7 @@
 import {readFile,readdir} from "node:fs/promises";
 import {Client,Pool} from "pg";
 import {beforeAll,afterAll,describe,it,expect,vi} from "vitest";
-import {PostgresAuthorizationRepository,AuthorizationLockoutError,AuthorizationForbiddenError} from "../../db/authorization-repository";
+import {PostgresAuthorizationRepository,AuthorizationForbiddenError} from "../../db/authorization-repository";
 import {historyPagePath} from "../../app/admin/history-path";
 import {parseHistoryCursor} from "../../app/admin/history.server";
 import {PostgresAdminHistoryReader} from "../../db/admin-history";
@@ -37,7 +37,7 @@ describe("atomic authorization History",()=>{
   expect(JSON.stringify(page)).not.toContain("secret-");
   expect(await auth.hasPermission("manager","admin.history.read")).toBe(false);
  });
- it("suppresses unchanged retries and rejects denied, lockout and invalid mutations without events",async()=>{
+ it("suppresses unchanged retries and rejects denied and invalid mutations without events",async()=>{
   const before=await count();
   await auth.assignUserRole("manager","target","builtin-moderator");
   await auth.setUserOverride("manager","target","forum.topic.pin","deny");
@@ -49,7 +49,6 @@ describe("atomic authorization History",()=>{
   await auth.replaceRoleGrants("manager","retry-role",["forum.topic.pin"]);
   await auth.replaceRoleGrants("manager","retry-role",["forum.topic.pin"]);
   expect(await count()).toBe(before+2);
-  await expect(auth.setUserOverride("manager","manager","access.authorization.manage","deny")).rejects.toBeInstanceOf(AuthorizationLockoutError);
   await expect(auth.createCustomRole("target",{id:"bad",slug:"bad",displayName:"bad"})).rejects.toBeInstanceOf(AuthorizationForbiddenError);
   await expect(auth.createCustomRole("manager",{id:"retry2",slug:"retry-role",displayName:"Duplicate"})).rejects.toThrow();
   expect(await count()).toBe(before+2);

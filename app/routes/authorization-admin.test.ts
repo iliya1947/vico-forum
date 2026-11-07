@@ -2,7 +2,7 @@ import { RouterContextProvider } from "react-router";
 import { describe, expect, it, vi } from "vitest";
 import { authSessionContext, type AuthSession } from "../auth/request-context";
 import { authorizationContext, authorizationOwnerContext } from "../authorization/request-context";
-import { AuthorizationLockoutError, AuthorizationRoleSlugConflictError } from "../../db/authorization-repository";
+import { AuthorizationRoleAssignedError, AuthorizationRoleSlugConflictError } from "../../db/authorization-repository";
 import { AuthorizationUnavailableError } from "../../db/authorization-service";
 import { action, loader } from "./authorization-admin";
 
@@ -88,10 +88,13 @@ describe("authorization management route", () => {
     const response = await action({ request: request({ intent: "createRole", slug: "duplicate", displayName: "Duplicate" }), context: state.context });
     expect(response).toMatchObject({ status: 400 }); expect(await (response as Response).json()).toEqual({ error: "invalid" });
   });
-  it("maps atomic lockout protection to a controlled 409", async () => {
-    const state = context(); state.value.replaceRoleGrants.mockRejectedValueOnce(new AuthorizationLockoutError("database detail"));
-    const response = await action({ request: request({ intent: "roleGrants", roleId: "admin" }), context: state.context });
-    expect(response).toMatchObject({ status: 409 }); expect(await (response as Response).json()).toEqual({ error: "conflict" });
+  it("maps assigned-role deletion to a controlled private 409", async () => {
+    const state = context(); state.value.deleteCustomRole.mockRejectedValueOnce(new AuthorizationRoleAssignedError("database detail"));
+    const response = await action({ request: request({ intent: "deleteRole", roleId: "assigned-custom" }), context: state.context });
+    expect(response).toMatchObject({ status: 409 });
+    expect((response as Response).headers.get("cache-control")).toContain("private");
+    expect((response as Response).headers.get("cache-control")).toContain("no-store");
+    expect(await (response as Response).json()).toEqual({ error: "conflict" });
   });
   it("maps only classified management operation outages to unavailable", async () => {
     const loaderState = context();
@@ -147,12 +150,6 @@ describe("authorization management route", () => {
     expect((rejected as Response).status).toBe(403);
     expect(wrongOrigin.value.assignUserRole).not.toHaveBeenCalled();
 
-    const lockout = context();
-    lockout.value.setUserOverride.mockRejectedValueOnce(new AuthorizationLockoutError("last manager"));
-    const conflict = await action({ request: request({ intent: "override", userId: "target",
-      permission: "access.authorization.manage", effect: "deny" }), context: lockout.context });
-    expect((conflict as Response).status).toBe(409);
-    expect(await (conflict as Response).json()).toEqual({ error: "conflict" });
   });
 
 });
