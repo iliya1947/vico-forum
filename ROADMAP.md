@@ -330,10 +330,14 @@ Stage 6 впервые собирает локально готовый прод
 8. Проверить deployment ordering, Worker bindings, logs/observability и external failure paths.
 9. Выполнить real deployed smoke core forum flow + LTR/RTL + auth + translations.
 10. Настроить и проверить PostgreSQL backup/restore до release.
-11. Проверить во внешнем окружении реализованную в repository/local-CI Stage 2
-    server-bound Owner authority и отдельно завершённые к тому моменту recovery/bootstrap
-    решения. Не восстанавливать superseded manager-count/last-manager invariant
-    и не добавлять публичный unauthenticated bootstrap endpoint.
+11. После настройки реального Google OAuth и входа разработчика через Google
+    определить внутренний Better Auth `user.id` его аккаунта, установить ровно этот ID
+    в server-only `VICO_OWNER_USER_ID` и проверить deployed Owner authority Stage 2.
+    Google email/name/provider claim и сохранённая роль не назначают Owner.
+    Второй Owner, transfer, successor и first-manager bootstrap не предусмотрены;
+    не восстанавливать manager-count/last-manager invariant и не добавлять
+    публичный unauthenticated bootstrap endpoint. Более широкая recovery-модель
+    требует отдельного owner decision.
 
 ### Критерий завершения
 
@@ -341,7 +345,7 @@ Stage 6 впервые собирает локально готовый прод
 - real Google OAuth работает;
 - forum/auth/translation runtime capabilities используют least privilege;
 - pending schema доказанно применена до schema-dependent runtime rollout;
-- application authorization bootstrap и dynamic role/user permission management проверены;
+- exact server-side Owner binding после Google sign-in разработчика и dynamic role/user permission management проверены;
 - Queues/providers работают в реальной конфигурации;
 - preview isolation/private-data boundary проверены;
 - backup/restore проверен;
@@ -433,7 +437,10 @@ infrastructure diagnostics в production прекращаются; рисков�
 - protected site UI для role/user permission management с fresh server-side checks и serialized
   authorization mutations; server-bound Owner effective authority, immunity и Owner-only elevated
   operations реализованы в owner/authorization redesign Stage 2 (repository/local-CI).
-  Recovery/bootstrap и external acceptance остаются отдельными незавершёнными границами;
+  Single-Owner bootstrap product boundary утверждена: разработчик входит через Google,
+  затем его внутренний Better Auth `user.id` задаётся server-side как Owner; отдельная
+  application-функция или first-manager bootstrap не требуется. Реальные Google OAuth,
+  Owner binding и deployed acceptance остаются Stage 6;
 - generic BCP-47 locale routing, SSR, LTR/RTL, canonical English + local/manual/machine UI translation;
 - revision-bound on-demand translation пользовательского контента с original fallback;
 - server-side validation/authz, применимая CSRF/origin protection и basic anti-spam/rate limiting;
@@ -450,8 +457,8 @@ Reputation, полный owner-only audit, social-network profile mechanics и �
 scope, включая временные/постоянные administrative measures и историю значимых административных действий, зафиксирован в
 [`docs/ADMIN_PANEL.md`](docs/ADMIN_PANEL.md). Bounded delivery AP-01–AP-11 завершён в
 repository/local-CI path; фактическое состояние указано в `PROJECT_STATE.md`.
-Settings по решению владельца вынесен в отдельную будущую фазу после owner/authorization redesign
-и не переоткрывает завершённый AP-11 closeout.
+Settings по решению владельца — следующий отдельный package после финального
+документационного закрытия owner/authorization redesign; он не переоткрывает AP-11.
 
 Черновики и автосохранение перенесены владельцем 2026-10-20 в возможные будущие функции
 (`Under development: drafts`) и не являются обязательным объёмом текущего Editor 2.0.
