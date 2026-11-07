@@ -864,6 +864,7 @@ export const russianCommonValues = {
   builtInRole: "Встроенная",
   permissionsHeading: "Разрешения",
   effectivePermissions: "Действующие разрешения",
+  authorizationOwnerEffective: "Полномочия владельца дают все действующие разрешения независимо от назначенной роли и персональных исключений. Сохранённые роль и исключения не изменяются.",
   assignedRole: "Назначенная роль",
   defaultRole: "Роль по умолчанию",
   overrideInherit: "Наследовать",
