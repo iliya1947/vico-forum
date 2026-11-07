@@ -87,7 +87,7 @@ describe("AP-09 dynamic Users permissions and atomic authorization History", () 
       create trigger reject_ap09_history before insert on admin_history
       for each row execute function reject_ap09_history()`);
     try {
-      await expect(override("manager", "access.authorization.manage", "deny", "manager"))
+      await expect(override("owner", "access.authorization.manage", "deny", "manager"))
         .rejects.toThrow("AP-09 history rollback");
       expect(await repository.hasPermission("manager", "access.authorization.manage")).toBe(true);
       expect((await repository.readUserManagementState("target")).authorization.overrides)
