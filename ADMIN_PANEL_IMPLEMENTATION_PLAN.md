@@ -541,3 +541,14 @@ After those decisions, Mira freezes the first-release product scope and only the
 **S2 remains pending:** reply/mention notification preferences now vs later.
 
 Reason for coordinator's S2.1 recommendation: correct notification preferences require authoritative server-side policy affecting notification creation/unread badge semantics; a UI-only hide toggle is insufficient. Deferral keeps the first Settings slice bounded, but S2.2 remains valid if owner prioritizes it.
+
+
+## Settings product scope — frozen for technical planning
+
+Owner decisions:
+- S1: current release authorization management is Owner-only for role definitions/grants, assignments and per-user overrides; future deputy delegation remains a required extension, not part of this release.
+- S2: reply/mention notification preferences deferred.
+- S3: online status default ON / opt-out.
+- S4: separate Google-registration and email/password-registration controls.
+
+The five-page product map above is frozen for technical planning. Lev now owns decomposition into bounded implementation packages. No implementation starts until the technical plan is complete and reviewed by Mira.
