@@ -2,13 +2,17 @@
 
 - Служебный PR: #251; общий план: `ADMIN_PANEL_IMPLEMENTATION_PLAN.md`
 - Current `main`: `bcf02193f82aa0d448444c6943d6ebdcf09f7896`, migrations 0000–0058
-- Ordinary Admin Panel AP-01–AP-11: fully closed
-- Текущий этап: **owner/authorization redesign — Stage 1 last-manager removal implementation**
-- Technical plan: Лёва #6700603167 — **coordinator approved**
-- Implementer: **Лира**
-- Fixed implementation scope: remove `AuthorizationLockoutError`, `managers_ever_existed`, `countManagers()` and dedicated last-manager behavior/tests; forward migration 0059
-- Preserve: `authz_mutation_lock` singleton mutex, FOR UPDATE synchronization, SELECT/UPDATE runtime capability, fresh authz, AP-10 authority and atomic History
+- Текущий этап: **owner/authorization redesign — Stage 1 independent technical review**
+- Implementation PR: **#294**
+- Stable exact head: `e3604222ae8cecb4b1f2f94cdd5d7e9f76c15e61`
+- Technical plan: Лёва #6700603167
+- Implementer: Лира
+- Coordinator whole-PR review: **PASS**
+- Exact-head CI #42328843126: SUCCESS
+- Exact-head browser #42328843151: SUCCESS
+- Independent reviewer: **Лёва**
+- Implementation frozen; any head change restarts coordinator-first review
+- Preserve: `authz_mutation_lock` mutex/FOR UPDATE/runtime privilege, fresh authz, AP-10 authority, atomic History
 - Out of scope: owner authority, mutex redesign/removal, Settings, super-admin UI, Stage 6/production
-- Reviewer order after stable implementation: Мира → Лёва
 - Марк не назначен
-- Следующий шаг: Лира реализует approved plan in a separate implementation PR, records stable exact head/evidence in #251 and stops
+- Следующий шаг: Лёва independently reviews exact head #294 and records PASS/findings in #251
