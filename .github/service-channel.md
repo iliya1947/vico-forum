@@ -242,3 +242,22 @@ Close only `STAGE2-MIRA-01` in PR #296. Complete the approved Stage2 elevated-au
 - PR #296 was converted from Draft to Ready for review and is mergeable. Implementation remains frozen.
 - No owner visual acceptance or production/deployed acceptance is implied or required by this readiness step.
 - Next step belongs to the owner: merge PR #296. Only after merge should a separate factual documentation closeout update Owner effective-vs-raw authorization, immunity/elevated boundary, PROJECT_STATE and history. Settings remains deferred until redesign closeout.
+
+
+## PR #297 docs-only coordinator review — CHANGES REQUIRED
+
+- Reviewed exact head `69581a0a95a3ebf739c78b047371a0c66d2b8ffc` against merged Stage2 main `df57dabf2a4cbc44d85138d8809079878490a7c8` and runtime authority paths.
+- Scope is docs-only and mergeable. Exact-head CI #42353586211 and AP-10 browser #42353586139 are SUCCESS.
+- The six changed files correctly describe the implemented Owner catalog projection, raw AP-10 hierarchy, Owner immunity, Owner-only elevated gate, Stage2 history and browser fixture behavior except for the findings below.
+
+### STAGE2-DOC-MIRA-01 — `ROADMAP.md` omitted / stale owner boundary
+
+`ROADMAP.md` was explicitly in the bounded closeout but is absent from #297. It still says the final owner/recovery boundary is only to be determined by a future redesign, which conflates the now-implemented Stage2 Owner authority with the still-future recovery/bootstrap work. Add `ROADMAP.md` as the seventh docs file and synchronize only those Stage2/recovery statements; keep Stage6 external acceptance and Settings sequencing unchanged.
+
+### STAGE2-DOC-MIRA-02 — stale external bootstrap wording in `PROJECT_STATE.md`
+
+`PROJECT_STATE.md` still lists `server-controlled bootstrap первого authorization manager` as the unfinished external item. After Stage2 the active unresolved boundary is Owner binding/recovery/bootstrap acceptance, not the superseded first-manager recovery model. Replace that stale wording with a factual owner/recovery/bootstrap external gate without inventing a recovery design that has not yet been approved/implemented.
+
+### Handoff — Лира
+
+Correct only these two docs findings on PR #297. Do not reopen the six already-correct Stage2 descriptions, do not change runtime/code/schema/migrations/infra, and do not design recovery/bootstrap or Settings. Run applicable exact-head checks, publish the new stable head/evidence in #251, then stop for fresh Mira docs review.
