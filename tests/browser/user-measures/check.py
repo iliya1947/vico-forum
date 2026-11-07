@@ -756,6 +756,8 @@ try:
             '.admin-role-card:has(input[name="roleId"][value="' + role_id + '"])'
             ' form.admin-permissions-form')
         expect(role_grants_form).to_have_count(1)
+        # Basic AP-10 management makes the recipient's next real request observable.
+        role_grants_form.locator('input[type="checkbox"][value="admin.users.blocks.manage"]').check()
         role_grants_form.locator('input[type="checkbox"][value="admin.users.blocks.managePrivileged"]').check()
         with owner_page.expect_response(lambda r: r.request.method == "POST" and
                                        "/admin/authorization" in r.url) as owner_grant:
@@ -780,6 +782,119 @@ try:
             response = post(nonowner_ctx, "/en/admin/authorization", forbidden)
             assert response.status == 403, (forbidden["intent"], response.status, response.text()[:180])
         assert sql("select count(*)::int n from admin_history")[0]["n"] == before_owner_history + 2
+
+        # The same canonical Owner UI must perform actual elevated grant/revoke
+        # through every protected mutation family. Observe *fresh* server reads.
+        elevated_key = "admin.users.blocks.managePrivileged"
+        recipient_card_selector = (
+            '.admin-user-card:has(input[name="userId"][value="' + other_id + '"])'
+        )
+        elevated_override_selector = (
+            'form.admin-override-row:has(input[name="permission"]'
+            '[value="' + elevated_key + '"])'
+        )
+        recipient_measure_path = "/en/admin/measures?target=" + quote(subject_id, safe="")
+
+        def owner_recipient_card():
+            document(owner_page, "/en/admin/authorization")
+            card = owner_page.locator(recipient_card_selector)
+            expect(card).to_have_count(1)
+            return card
+
+        def assign_by_owner(new_role):
+            form = owner_recipient_card().locator("form.admin-role-assignment")
+            expect(form).to_have_count(1)
+            form.locator('select[name="roleId"]').select_option(new_role)
+            with owner_page.expect_response(lambda r: r.request.method == "POST" and
+                                            "/admin/authorization" in r.url) as assignment:
+                form.locator('button[type="submit"]').click()
+            assert assignment.value.status == 200, (
+                "Owner role assignment", new_role, assignment.value.status)
+            card = owner_recipient_card()
+            expect(card.locator('form.admin-role-assignment select[name="roleId"]')).to_have_value(new_role)
+            assert sql("select role_id from authz_user_roles where user_id=$1",
+                       [other_id]) == [{"role_id": new_role}]
+            return card
+
+        def override_by_owner(effect, allowed):
+            form = owner_recipient_card().locator(elevated_override_selector)
+            expect(form).to_have_count(1)
+            form.locator('select[name="effect"]').select_option(effect)
+            with owner_page.expect_response(lambda r: r.request.method == "POST" and
+                                            "/admin/authorization" in r.url) as changed:
+                form.locator('button[type="submit"]').click()
+            assert changed.value.status == 200, (
+                "Owner elevated override", effect, changed.value.status)
+            card = owner_recipient_card()
+            expect(card.locator(elevated_override_selector +
+                                ' select[name="effect"]')).to_have_value(effect)
+            actual = sql("""select effect from authz_user_permission_overrides
+              where user_id=$1 and permission_key=$2""", [other_id, elevated_key])
+            assert actual == ([] if effect == "inherit" else [{"effect": effect}]), actual
+            effective = card.locator(".admin-effective-permissions")
+            if allowed:
+                expect(effective).to_contain_text(elevated_key)
+            else:
+                expect(effective).not_to_contain_text(elevated_key)
+
+        recipient = assign_by_owner(role_id)
+        expect(recipient.locator(".admin-effective-permissions")).to_contain_text(elevated_key)
+        # A new authenticated request from the newly elevated subject must
+        # exercise real AP-10 rank2, not merely echo the Owner's submitted form.
+        document(other, recipient_measure_path)
+        expect(form_for(other, "create").locator(
+            'input[name="restriction"][value="admin.forum"]')).to_have_count(1)
+
+        override_by_owner("deny", False)
+        document(other, recipient_measure_path)
+        expect(form_for(other, "create").locator(
+            'input[name="restriction"][value="admin.forum"]')).to_have_count(0)
+        override_by_owner("allow", True)
+        document(other, recipient_measure_path)
+        expect(form_for(other, "create").locator(
+            'input[name="restriction"][value="admin.forum"]')).to_have_count(1)
+        override_by_owner("inherit", True)
+
+        # An explicit Owner role-grant removal must revoke rank2 immediately,
+        # even while a recipient still has this role assigned.
+        def change_elevated_role_grant(enabled):
+            document(owner_page, "/en/admin/authorization")
+            form = owner_page.locator(
+                '.admin-role-card:has(input[name="roleId"][value="' + role_id + '"])'
+                ' form.admin-permissions-form')
+            checkbox = form.locator('input[type="checkbox"][value="' + elevated_key + '"]')
+            if enabled:
+                checkbox.check()
+            else:
+                checkbox.uncheck()
+            with owner_page.expect_response(lambda r: r.request.method == "POST" and
+                                            "/admin/authorization" in r.url) as changed:
+                form.locator('button[type="submit"]').click()
+            assert changed.value.status == 200, (
+                "Owner role grant", enabled, changed.value.status)
+            actual = sql("""select permission_key from authz_role_permissions
+              where role_id=$1 and permission_key=$2""", [role_id, elevated_key])
+            assert actual == ([{"permission_key": elevated_key}] if enabled else []), actual
+
+        change_elevated_role_grant(False)
+        document(other, recipient_measure_path)
+        expect(form_for(other, "create").locator(
+            'input[name="restriction"][value="admin.forum"]')).to_have_count(0)
+        change_elevated_role_grant(True)
+        document(other, recipient_measure_path)
+        expect(form_for(other, "create").locator(
+            'input[name="restriction"][value="admin.forum"]')).to_have_count(1)
+
+        recipient = assign_by_owner("builtin-user")
+        expect(recipient.locator(".admin-effective-permissions")).not_to_contain_text(elevated_key)
+        document(other, recipient_measure_path, 403)
+        # Per-user elevation is independent of any assigned elevated role.
+        override_by_owner("allow", True)
+        override_by_owner("deny", False)
+        override_by_owner("inherit", False)
+        assert sql("select count(*)::int n from admin_history")[0]["n"] == before_owner_history + 12
+        record("stage2-owner-elevated-assignment-overrides-explicit-grant-revoke-fresh-requests-history")
+
         document(owner_page, "/en/admin/authorization")
         owner_elevated = owner_page.locator(
             '.admin-role-card:has(input[name="roleId"][value="' + role_id + '"])')
@@ -790,7 +905,7 @@ try:
             owner_delete.locator('button[type="submit"]').click()
         assert deletion.value.status == 200, deletion.value.status
         assert sql("select count(*)::int n from authz_roles where id=$1", [role_id])[0]["n"] == 0
-        assert sql("select count(*)::int n from admin_history")[0]["n"] == before_owner_history + 3
+        assert sql("select count(*)::int n from admin_history")[0]["n"] == before_owner_history + 13
         record("stage2-browser-owner-session-all-catalog-and-elevated-authority-mutations")
 
         notes = {
