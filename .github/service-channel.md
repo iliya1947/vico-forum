@@ -90,3 +90,15 @@
 - Factual documentation closeout выполнять **после фактического merge #292**, чтобы `PROJECT_STATE.md` и history отражали repository truth, а не прогноз незамерженного PR.
 - После merge #292 Мира создаёт/координирует отдельный documentation PR: factual AP-11 state, final implementation/review/evidence snapshot и ближайший маршрут **owner/authorization redesign → Settings**.
 - До docs closeout AP-11 целиком не объявлять закрытым. Settings, redesign, Stage 6/production и owner visual acceptance не входят в #292.
+
+
+## AP-11 implementation merged; documentation closeout #293
+
+- Owner merged implementation PR #292. Final reviewed implementation head: `3f608ce9a042fd7c78401d330f5865af4f3dee5c`; merge commit/current main: `57f0b5a1675053b556bc68b24c4a0b9a8177a8f2`.
+- Coordinator PASS + independent PASS remain attached to the merged exact implementation head.
+- Separate documentation PR **#293** created from post-merge main. Current docs head: `6a7ce209bcb16e47a0c3054241c506fc1e305088`.
+- #293 changes exactly five Markdown files: `PROJECT_STATE.md`, `ROADMAP.md`, `docs/ADMIN_PANEL.md`, history index and new `PROJECT_HISTORY_13.md`.
+- Factual state records AP-01–AP-11 complete in repository/local-CI scope; Settings explicitly remains a separate future phase after owner/authorization redesign.
+- No authorization/schema/runtime code is changed in docs closeout; `docs/auth/AUTHORIZATION.md` remains untouched because AP-11 changed no authorization contract.
+- #293 is Draft/open/mergeable. Exact-head CI has not yet been observed on the current docs head; do not mark docs merge-ready until applicable checks complete successfully.
+- Next: Mira verifies #293 exact-head checks and final consistency, then owner merge #293.
