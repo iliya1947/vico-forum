@@ -165,7 +165,7 @@ External topology является mutable state и должна перепро�
 
 - production Worker rollout с web-runtime binding/acceptance;
 - real Google OAuth configuration и interactive smoke;
-- external acceptance реализованной server-bound Owner authority (`VICO_OWNER_USER_ID`) и отдельно утверждаемая recovery/bootstrap boundary, включая первоначальное назначение управленческого доступа;
+- external acceptance реализованной server-bound Owner authority (`VICO_OWNER_USER_ID`) и отдельно утверждаемая recovery/bootstrap boundary;
 - translation Queue/provider/background runtime;
 - authoritative production translation allowance/anti-abuse configuration;
 - final preview/private-data isolation recheck перед write-capability rollout;
