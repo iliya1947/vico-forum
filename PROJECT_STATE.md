@@ -28,7 +28,7 @@ Vico Forum находится в pre-release разработке.
 
 - Stage 0–5 завершены в repository/local-CI path.
 - Текущий standalone product priority по `ROADMAP.md` — UI/UX product pass.
-- Ordinary Admin Panel AP-01–AP-11 завершена; отдельно продолжаются owner/authorization redesign и Complaints.
+- Ordinary Admin Panel AP-01–AP-11 и owner/authorization redesign Stage 1–2 реализованы в repository/local-CI; Complaints ведутся отдельно.
 - Stage 6 external integration поставлен владельцем на паузу и не продолжается без отдельного указания.
 - Публичный production release не выполнен.
 
@@ -111,8 +111,14 @@ obsolete last-manager veto и manager-count state миграцией `0059`, с�
 `authz_mutation_lock`, fresh checks и атомарную History. Stage 2 реализовал server-bound
 Owner authority для всех code-backed permissions, независимую от сохранённой обычной роли
 и overrides; согласовал AP-10 authority, иммунитет Owner к сохранённым административным мерам
-и Owner-only выдачу/отзыв повышенного права. Детали — в `docs/auth/AUTHORIZATION.md`
-и `docs/ADMIN_PANEL.md`. Recovery/bootstrap и production acceptance этим не реализованы.
+и Owner-only выдачу/отзыв повышенного права. Единственный Owner — разработчик:
+Google authentication/linking определяет предназначенный внутренний Better Auth
+аккаунт, точный `user.id` которого привязывается сервером через `VICO_OWNER_USER_ID`;
+email/name/role не создают эту authority. Передача владения, второй Owner,
+наследник и first-manager bootstrap не предусмотрены; дополнительная
+application-реализация не требуется. Детали — в `docs/auth/AUTHORIZATION.md`
+и `docs/ADMIN_PANEL.md`. Реальная Google-настройка, binding и deployed acceptance
+остаются Stage 6.
 
 ### Complaints
 
@@ -165,7 +171,7 @@ External topology является mutable state и должна перепро�
 
 - production Worker rollout с web-runtime binding/acceptance;
 - real Google OAuth configuration и interactive smoke;
-- external acceptance реализованной server-bound Owner authority (`VICO_OWNER_USER_ID`) и отдельно утверждаемая recovery/bootstrap boundary;
+- установка точного server-only `VICO_OWNER_USER_ID` для внутреннего Better Auth аккаунта разработчика после Google sign-in/linking и external acceptance реализованной Owner authority;
 - translation Queue/provider/background runtime;
 - authoritative production translation allowance/anti-abuse configuration;
 - final preview/private-data isolation recheck перед write-capability rollout;
@@ -175,7 +181,7 @@ External topology является mutable state и должна перепро�
 ## Актуальные незавершённые продуктовые границы
 
 - UI/UX product pass ещё требует финального closeout и обязательной real-runtime product/visual acceptance по `docs/UI_UX_PASS.md`.
-- В `main` ordinary Admin Panel AP-01–AP-11 и owner/authorization redesign Stage 1–2 реализованы в repository/local-CI scope; recovery/bootstrap и production acceptance ещё не выполнены. Settings остаётся отложен до завершения redesign.
+- В `main` ordinary Admin Panel AP-01–AP-11 и owner/authorization redesign Stage 1–2 реализованы в repository/local-CI scope; модель единственного Owner утверждена без дополнительной application-функции. Settings — следующий отдельный package после финального documentation closeout; real Google/Owner binding и production acceptance остаются Stage 6.
 - Complaints integration/closeout покрыт repository/local-CI проверками; external/deployed acceptance Complaints не выполнялась.
 - Email verification/password recovery остаются отложенными.
 - Editor drafts/autosave остаются отложенными.
@@ -184,7 +190,7 @@ External topology является mutable state и должна перепро�
 ## Ближайший маршрут
 
 1. Продолжать утверждённую bounded product-разработку без превращения обычных PR в external rollout.
-2. Продолжить оставшуюся owner/authorization redesign работу по recovery/bootstrap boundary; реализованную Stage 2 Owner/administrative hierarchy не планировать заново. После завершения redesign проектировать и реализовывать Settings отдельным package. Complaints продолжать по его профильному контракту/служебному каналу.
+2. После финального owner/authorization documentation closeout перейти к Settings как отдельному package, не переоткрывая реализованную Owner authority и решение об одном владельце. Реальную Google/Owner binding acceptance оставить Stage 6. Complaints продолжать по его профильному контракту/служебному каналу.
 3. Довести UI/UX product pass до финальной real-runtime acceptance.
 4. Возобновлять Stage 6 external integration только по отдельному указанию владельца и по `docs/database/*`.
 5. После завершения pre-release product и external gates перейти к финальному общепроектному refinement и Stage 7 production release по `ROADMAP.md`.
