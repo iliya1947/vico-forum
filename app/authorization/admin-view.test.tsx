@@ -174,7 +174,7 @@ describe("authorization management presentation", () => {
     const {container}=renderView(undefined,["access.authorization.manage"],true);
     await screen.findByRole("heading",{name:"Authorization management",level:2});
     expect(container.querySelectorAll('input[type="checkbox"][value="admin.users.blocks.managePrivileged"]'))
-      .toHaveLength(2);
+      .toHaveLength(3);
     const option=container.querySelector(
       'form.admin-override-row input[value="admin.users.blocks.managePrivileged"]');
     expect(option).toBeInTheDocument();
