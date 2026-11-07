@@ -1826,7 +1826,7 @@ describe("PostgreSQL 17 locale migrations", () => {
     await insertForumAuthor("authz-user", "authz-user@example.test", null);
     await client.query("insert into authz_user_roles (user_id, role_id) values ('authz-admin', 'builtin-admin')");
     const pool = new Pool({ connectionString: databaseUrl });
-    const repository = new PostgresAuthorizationRepository(pool);
+    const repository = new PostgresAuthorizationRepository(pool, "authz-admin");
     const service = new AuthorizationService(repository);
     try {
       const defaultState = await service.resolveUser("authz-user");
@@ -1900,11 +1900,12 @@ describe("PostgreSQL 17 locale migrations", () => {
         await service.replaceRoleGrants("authz-admin", "builtin-admin",
           grantsBefore.filter((key) => key !== "access.authorization.manage"));
         expect(await repository.readRoleGrants("builtin-admin")).not.toContain("access.authorization.manage");
-        expect(await repository.hasPermission("authz-admin", "access.authorization.manage")).toBe(false);
+        expect(await repository.hasPermission("authz-admin", "access.authorization.manage")).toBe(true);
         expect(Number((await client.query<{ n: number }>(
           "select count(*)::int n from admin_history where actor_id='authz-admin' and action='role.grantsChanged'",
         )).rows[0]?.n)).toBe(historyBefore + 1);
-        await expect(service.createCustomRole("authz-admin", {slug:"unavailable-self",displayName:"Unavailable Self"}))
+        // Owner retains effective authority despite loss of the raw admin grant.
+        await expect(service.createCustomRole("authz-user", {slug:"unavailable-self",displayName:"Forbidden"}))
           .rejects.toBeInstanceOf(AuthorizationForbiddenError);
       } finally {
         // Restore the shared built-in grant as disposable fixture setup, not a recovery API.
@@ -1917,12 +1918,16 @@ describe("PostgreSQL 17 locale migrations", () => {
       )).rows[0]!.n;
       try {
         await service.assignUserRole("authz-admin", "authz-admin", "builtin-user");
-        expect(await repository.hasPermission("authz-admin", "access.authorization.manage")).toBe(false);
+        expect(await repository.hasPermission("authz-admin", "access.authorization.manage")).toBe(true);
         expect((await client.query<{ n: number }>(
           "select count(*)::int n from admin_history where actor_id='authz-admin' and action='user.roleAssigned'",
         )).rows[0]!.n).toBe(assignmentBefore + 1);
-        await expect(service.createCustomRole("authz-admin", {slug:"post-self-reassign",displayName:"Forbidden"}))
-          .rejects.toBeInstanceOf(AuthorizationForbiddenError);
+        await service.setUserOverride("authz-admin", "authz-admin", "access.authorization.manage", "deny");
+        expect((await service.resolveUser("authz-admin")).overrides["access.authorization.manage"]).toBe("deny");
+        expect(await repository.hasPermission("authz-admin", "access.authorization.manage")).toBe(true);
+        await service.createCustomRole("authz-admin", {slug:"post-self-reassign",displayName:"Owner remains active"});
+        const created = (await service.listRoles()).find(role => role.slug === "post-self-reassign")!;
+        await service.deleteCustomRole("authz-admin", created.id);
       } finally {
         // Only the disposable fixture restores its prior role; the product does not auto-recover.
         await client.query("update authz_user_roles set role_id='builtin-admin' where user_id='authz-admin'");
@@ -1936,41 +1941,44 @@ describe("PostgreSQL 17 locale migrations", () => {
     }
   });
 
-  it("commits two independent self-revocations and enforces fresh next-request denial", async () => {
+  it("serializes two Owner-written revocations and enforces fresh denial for non-Owner recipients", async () => {
     const ids = ["manager-one", "manager-two"];
+    const ownerId = "synthetic-revocation-owner";
+    await insertForumAuthor(ownerId, "synthetic-revocation-owner@example.test", null);
     await insertForumAuthor("manager-one", "manager-one@example.test", null);
     await insertForumAuthor("manager-two", "manager-two@example.test", null);
     await client.query("insert into authz_user_roles (user_id, role_id) values ('manager-one', 'builtin-admin'), ('manager-two', 'builtin-admin')");
     const firstPool = new Pool({ connectionString: databaseUrl });
     const secondPool = new Pool({ connectionString: databaseUrl });
-    const first = new AuthorizationService(new PostgresAuthorizationRepository(firstPool));
-    const second = new AuthorizationService(new PostgresAuthorizationRepository(secondPool));
+    const first = new AuthorizationService(new PostgresAuthorizationRepository(firstPool, ownerId));
+    const second = new AuthorizationService(new PostgresAuthorizationRepository(secondPool, ownerId));
     try {
       const outcomes = await Promise.allSettled([
-        first.setUserOverride("manager-one", "manager-one", "access.authorization.manage", "deny"),
-        second.setUserOverride("manager-two", "manager-two", "access.authorization.manage", "deny"),
+        first.setUserOverride(ownerId, ids[0], "access.authorization.manage", "deny"),
+        second.setUserOverride(ownerId, ids[1], "access.authorization.manage", "deny"),
       ]);
       expect(outcomes).toEqual([{ status: "fulfilled", value: undefined }, { status: "fulfilled", value: undefined }]);
       const states = await Promise.all(ids.map(id => first.resolveUser(id)));
       expect(states.every(state => !state.effectivePermissions.includes("access.authorization.manage"))).toBe(true);
       const events = await client.query<{ actor_id: string; target_id: string; action: string }>(
-        "select actor_id, target_id, action from admin_history where actor_id = any($1::text[]) order by position", [ids],
+        "select actor_id, target_id, action from admin_history where actor_id=$1 and target_id=any($2::text[]) order by position", [ownerId, ids],
       );
       expect(events.rows).toHaveLength(2);
       expect(events.rows.map(e=>e.action)).toEqual(["user.overrideChanged", "user.overrideChanged"]);
-      expect(events.rows.map(e=>e.actor_id).sort()).toEqual(ids);
-      await expect(first.setUserOverride("manager-one", "manager-one", "forum.topic.pin", "allow"))
+      expect(events.rows.map(e=>e.actor_id)).toEqual([ownerId, ownerId]);
+      expect(events.rows.map(e=>e.target_id).sort()).toEqual(ids);
+      await expect(first.setUserOverride(ids[0], ids[0], "forum.topic.pin", "allow"))
         .rejects.toBeInstanceOf(AuthorizationForbiddenError);
       expect((await client.query(
-        "select count(*)::int n from admin_history where actor_id = any($1::text[])", [ids],
+        "select count(*)::int n from admin_history where actor_id=$1 and target_id=any($2::text[])", [ownerId, ids],
       )).rows[0].n).toBe(2);
       expect((await client.query("select id from authz_mutation_lock")).rows).toEqual([{ id: 1 }]);
     } finally {
       await firstPool.end(); await secondPool.end();
-      await client.query("delete from admin_history where actor_id = any($1::text[])", [ids]);
+      await client.query("delete from admin_history where actor_id=$1 and target_id=any($2::text[])", [ownerId, ids]);
       await client.query("delete from authz_user_permission_overrides where user_id = any($1::text[])", [ids]);
       await client.query("delete from authz_user_roles where user_id = any($1::text[])", [ids]);
-      await client.query('delete from "user" where id = any($1::text[])', [ids]);
+      await client.query('delete from "user" where id = any($1::text[])', [[...ids, ownerId]]);
     }
   });
 
