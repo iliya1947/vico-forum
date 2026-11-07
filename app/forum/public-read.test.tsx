@@ -4196,6 +4196,58 @@ describe("AP-08 closed topic participation and mounted reply recovery", () => {
     } finally { state.router.dispose(); }
   });
 
+  it("revalidates once after a stale reply 403 restriction while retaining the mounted editor", async () => {
+    stubUploads();
+    let current = topicRenderData(topic, { canReply: true, canUploadAttachments: true });
+    const action = vi.fn(async () => {
+      current = topicRenderData(topic, { canReply: false, canUploadAttachments: true });
+      return data({ error: "forbidden" }, { status: 403 });
+    });
+    let releaseRefresh!: () => void;
+    const refreshPending = new Promise<void>(resolve => { releaseRefresh = resolve; });
+    const loader = vi.fn(async () => {
+      if (loader.mock.calls.length > 1) await refreshPending;
+      return current;
+    });
+    const router = createMemoryRouter([{
+      id: "page", path: "*", Component: TopicRoute, loader, action,
+    }], { initialEntries: ["/en/topics/typed-api"] });
+    try {
+      render(<I18nextProvider i18n={runtime("en", "ltr")}>
+        <HeaderAuthProvider initialUser={editorActor}><RouterProvider router={router}/></HeaderAuthProvider>
+      </I18nextProvider>);
+      const form = await screen.findByRole("form", { name: "Add a reply" });
+      const advanced = within(form).queryByRole("button", { name: "Advanced" });
+      if (advanced) fireEvent.click(advanced);
+      const textarea = form.querySelector("textarea")!;
+      fireEvent.change(textarea, { target: { value: "Reply retained after deny" } });
+      const operationId = form.querySelector<HTMLInputElement>('input[name="editorOperationId"]')?.value;
+      await waitFor(() => expect(within(form).getByRole("button", { name: "Post reply" })).toBeEnabled());
+      await waitFor(() => expect(within(form).getByLabelText("Attach")).toBeEnabled());
+      fireEvent.click(within(form).getByRole("button", { name: "Post reply" }));
+      await waitFor(() => expect(action).toHaveBeenCalledTimes(1));
+      await waitFor(() => expect(loader.mock.calls.length).toBeGreaterThan(1));
+      // The server's fresh permission snapshot is deliberately still pending.
+      expect(screen.getByRole("form", { name: "Add a reply" })).toBe(form);
+      expect(textarea).toHaveValue("Reply retained after deny");
+      expect(form.querySelector<HTMLInputElement>('input[name="editorOperationId"]')).toHaveValue(operationId);
+      expect(within(form).getByRole("button", { name: "Post reply" })).toBeDisabled();
+      expect(within(form).getByRole("button", { name: "Cancel" })).toBeEnabled();
+      expect(within(form).getByLabelText("Attach")).toBeDisabled();
+      fireEvent.submit(form);
+      expect(action).toHaveBeenCalledTimes(1);
+
+      releaseRefresh();
+      await waitFor(() => expect(screen.getByText("You cannot post replies here now. Your text remains in the editor.")).toBeVisible());
+      expect(screen.getByRole("form", { name: "Add a reply" })).toBe(form);
+      expect(textarea).toHaveValue("Reply retained after deny");
+      expect(form.querySelector<HTMLInputElement>('input[name="editorOperationId"]')).toHaveValue(operationId);
+      expect(within(form).getByRole("button", { name: "Post reply" })).toBeDisabled();
+      expect(within(form).getByRole("button", { name: "Cancel" })).toBeEnabled();
+      expect(action).toHaveBeenCalledTimes(1);
+    } finally { releaseRefresh(); router.dispose(); }
+  });
+
   it("uses a single 409 topicClosed response to revalidate without retry or editor loss", async () => {
     stubUploads();
     let current = topicRenderData(topic, { canReply: true });

@@ -90,7 +90,7 @@ export function AdminUserDetail({ locale, access, user, management, managerActor
       <h2 id="admin-user-detail-heading">{t("adminUsersDetail")}</h2>
       <div className="profile-identity">
         <ForumAvatar name={user.name} image={user.image} className="profile-avatar" />
-        <div><h3><bdi dir="auto">{user.name}</bdi></h3><bdi dir="ltr">{user.id}</bdi></div>
+        <div className="profile-identity-copy"><h3><bdi dir="auto">{user.name}</bdi></h3><bdi dir="ltr">{user.id}</bdi></div>
       </div>
       <dl className="profile-statistics">
         <div><dt>{t("profileJoined")}</dt><dd><time dateTime={user.joinedAt}>{new Intl.DateTimeFormat(locale, {

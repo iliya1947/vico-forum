@@ -51,7 +51,9 @@ def record(case, **details):
 def document(page, path, status=200):
     response = page.goto(base + path, wait_until="networkidle")
     assert response is not None and response.status == status, (path, getattr(response, "status", None))
-    assert "no-store" in response.headers.get("cache-control", ""), (path, response.headers)
+    cache_directives = {part.strip().lower() for part in
+                        response.headers.get("cache-control", "").split(",")}
+    assert {"private", "no-store"} <= cache_directives, (path, response.headers)
     return response
 
 
@@ -105,11 +107,11 @@ def create_measure(page, target_id, restrictions, explanation, expiry_mode="perm
     return measure_id
 
 
-def topic_fixture(author_id):
-    topic_id = prefix + "-topic"
-    title_id = prefix + "-title"
-    post_id = prefix + "-post"
-    revision_id = prefix + "-body"
+def topic_fixture(author_id, tag=""):
+    topic_id = prefix + tag + "-topic"
+    title_id = prefix + tag + "-title"
+    post_id = prefix + tag + "-post"
+    revision_id = prefix + tag + "-body"
     sql("""with topic as (
       insert into forum_topics(id,section_id,author_id,current_title_revision_id)
       values($1,'help-solutions-questions',$2,$3) returning id)
@@ -158,6 +160,151 @@ try:
             'input[name="restriction"][value="admin.forum"]')).to_have_count(1)
         record("restriction-selector-follows-current-elevated-grant")
 
+        # The subject is an existing builtin-admin test actor and therefore has
+        # independent authorization management. Use its real UI to revoke/grant
+        # the manager; the target's inline writes remain performed by the manager.
+        manager_authorization_events_before = sql("""select count(*)::int as total
+          from admin_history where target_type='user' and target_id=$1
+          and action='user.overrideChanged'""", [manager_id])[0]["total"]
+
+        def set_manager_authz(effect):
+            document(subject, "/en/admin/authorization")
+            card = subject.locator('.admin-user-card:has(input[name="userId"][value="' +
+                                   manager_id + '"])')
+            expect(card).to_have_count(1)
+            row = card.locator('form.admin-override-row:has(input[name="permission"]'
+                               '[value="access.authorization.manage"])')
+            expect(row).to_have_count(1)
+            before_events = sql("""select count(*)::int as total from admin_history
+              where target_type='user' and target_id=$1
+              and action='user.overrideChanged'""", [manager_id])[0]["total"]
+            row.locator('select[name="effect"]').select_option(effect)
+            with subject.expect_response(lambda r: r.request.method == "POST"
+                                         and "/admin/authorization" in r.url) as changed:
+                row.locator('button[type="submit"]').click()
+            assert changed.value.status == 200, ("manager authorization", effect, changed.value.status)
+            expect(subject.locator('.admin-user-card:has(input[name="userId"][value="' +
+                manager_id + '"]) form.admin-override-row:has(input[name="permission"]'
+                '[value="access.authorization.manage"]) select[name="effect"]')).to_have_value(effect)
+            assert sql("""select effect from authz_user_permission_overrides
+              where user_id=$1 and permission_key='access.authorization.manage'""",
+              [manager_id]) == [{"effect": effect}]
+            assert sql("""select count(*)::int as total from admin_history
+              where target_type='user' and target_id=$1
+              and action='user.overrideChanged'""", [manager_id])[0]["total"] == before_events + 1
+
+        # AP-11 connected Users detail -> canonical inline authz -> History ->
+        # same-session read-only recovery after fresh permission revocation.
+        user_path = "/en/admin/users/" + quote(other_id, safe="")
+        document(other, user_path, 403)
+        set_manager_authz("deny")
+        document(manager, user_path)
+        expect(manager.locator("#authorization")).to_have_count(0)
+        expect(manager.locator("#admin-user-detail-heading")).to_have_count(1)
+        assert other_id in manager.locator("main").inner_text()
+        document(manager, "/en/admin/authorization", 403)
+        record("ap11-users-readonly-independent-of-authz-management")
+
+        set_manager_authz("allow")
+        document(manager, user_path)
+        expect(manager.locator("#authorization")).to_have_count(1)
+        history_before = sql("""select count(*)::int as total from admin_history
+          where target_type='user' and target_id=$1""", [other_id])[0]["total"]
+
+        assignment = manager.locator("#authorization form.admin-role-assignment")
+        expect(assignment).to_have_count(1)
+        assignment.locator('select[name="roleId"]').select_option("builtin-moderator")
+        with manager.expect_response(lambda r: r.request.method == "POST" and
+                                     "/admin/authorization" in r.url) as assigned:
+            assignment.locator('button[type="submit"]').click()
+        assert assigned.value.status == 200, ("inline assignment", assigned.value.status)
+        expect(manager.locator("#authorization form.admin-role-assignment select[name='roleId']")).to_have_value("builtin-moderator")
+        assert sql("select role_id from authz_user_roles where user_id=$1", [other_id]) == [
+            {"role_id": "builtin-moderator"}
+        ]
+
+        override_path = '#authorization form.admin-override-row:has(input[name="permission"][value="forum.reply.create"])'
+        override = manager.locator(override_path)
+        expect(override).to_have_count(1)
+        override.locator('select[name="effect"]').select_option("deny")
+        with manager.expect_response(lambda r: r.request.method == "POST" and
+                                     "/admin/authorization" in r.url) as overridden:
+            override.locator('button[type="submit"]').click()
+        assert overridden.value.status == 200, ("inline override", overridden.value.status)
+        expect(manager.locator(override_path + ' select[name="effect"]')).to_have_value("deny")
+        assert sql("""select effect from authz_user_permission_overrides
+          where user_id=$1 and permission_key='forum.reply.create'""", [other_id]) == [{"effect": "deny"}]
+        history = sql("""select action from admin_history
+          where target_type='user' and target_id=$1 order by position""", [other_id])
+        assert [item["action"] for item in history][history_before:] == [
+            "user.roleAssigned", "user.overrideChanged"
+        ], history
+        document(manager, "/en/admin/history")
+        role_event = manager.locator(".admin-history-events > li").filter(
+            has=manager.get_by_role("heading", name="User role assigned")).filter(has_text=other_id)
+        override_event = manager.locator(".admin-history-events > li").filter(
+            has=manager.get_by_role("heading", name="User permission override changed")).filter(has_text=other_id)
+        expect(role_event).to_have_count(1)
+        expect(override_event).to_have_count(1)
+        expect(override_event).to_contain_text("forum.reply.create")
+        record("ap11-users-inline-role-override-history")
+
+        # Revoke while the actual inline form remains mounted, then submit its stale intent.
+        document(manager, user_path)
+        override = manager.locator(override_path)
+        expect(override).to_have_count(1)
+        set_manager_authz("deny")
+        override.locator('select[name="effect"]').select_option("inherit")
+        with manager.expect_response(lambda r: r.request.method == "POST" and
+                                     "/admin/authorization" in r.url) as denied:
+            override.locator('button[type="submit"]').click()
+        assert denied.value.status == 403, ("revoked inline POST", denied.value.status)
+        expect(manager.locator("#authorization")).to_have_count(0)
+        expect(manager.locator("#admin-user-detail-heading")).to_have_count(1)
+        assert other_id in manager.locator("main").inner_text()
+        assert sql("""select effect from authz_user_permission_overrides
+          where user_id=$1 and permission_key='forum.reply.create'""", [other_id]) == [{"effect": "deny"}]
+        assert sql("""select count(*)::int as total from admin_history
+          where target_type='user' and target_id=$1""", [other_id])[0]["total"] == len(history)
+
+        set_manager_authz("allow")
+        document(manager, user_path)
+        expect(manager.locator("#authorization")).to_have_count(1)
+        expect(manager.locator(override_path + ' select[name="effect"]')).to_have_value("deny")
+        record("ap11-users-same-session-revoke-readonly-no-replay")
+        manager_events = sql("""select action from admin_history where target_type='user'
+          and target_id=$1 and action='user.overrideChanged' order by position""", [manager_id])
+        assert [event["action"] for event in manager_events][manager_authorization_events_before:] == [
+            "user.overrideChanged", "user.overrideChanged",
+            "user.overrideChanged", "user.overrideChanged"
+        ], manager_events
+        record("ap11-canonical-manager-authz-grant-revoke-history")
+
+
+        # Restore the existing participant through canonical UI before the AP-10 cases.
+        restored_override = manager.locator(override_path)
+        restored_override.locator('select[name="effect"]').select_option("inherit")
+        with manager.expect_response(lambda r: r.request.method == "POST" and
+                                     "/admin/authorization" in r.url) as reset_effect:
+            restored_override.locator('button[type="submit"]').click()
+        assert reset_effect.value.status == 200
+        expect(manager.locator(override_path + ' select[name="effect"]')).to_have_value("inherit")
+        assert sql("""select effect from authz_user_permission_overrides
+          where user_id=$1 and permission_key='forum.reply.create'""", [other_id]) == []
+        restored_role = manager.locator("#authorization form.admin-role-assignment")
+        restored_role.locator('select[name="roleId"]').select_option("builtin-user")
+        with manager.expect_response(lambda r: r.request.method == "POST" and
+                                     "/admin/authorization" in r.url) as reset_role:
+            restored_role.locator('button[type="submit"]').click()
+        assert reset_role.value.status == 200
+        expect(manager.locator("#authorization form.admin-role-assignment select[name='roleId']")).to_have_value("builtin-user")
+        assert sql("select role_id from authz_user_roles where user_id=$1", [other_id]) == [
+            {"role_id": "builtin-user"}
+        ]
+        record("ap11-users-fixture-restored-via-canonical-ui")
+
+
+
         # An authenticated malformed create must fail before a PG text bind or any write.
         before_measures = sql("select count(*)::int as total from user_measures")[0]["total"]
         before_history = sql("select count(*)::int as total from admin_history")[0]["total"]
@@ -181,6 +328,179 @@ try:
         record("malformed-target-400-missing-target-404-no-database-write")
 
         topic_id = topic_fixture(other_id)
+
+        # AP-11: browser navigation across admin hierarchy, then the canonical
+        # closure action while an unrelated participant has a mounted reply editor.
+        topic_path = "/en/topics/" + quote(topic_id, safe="")
+        admin_topic_path = "/en/admin/forum/topics/" + quote(topic_id, safe="")
+        public_response = subject.goto(base + topic_path, wait_until="networkidle")
+        assert public_response and public_response.status == 200, (
+            topic_path, getattr(public_response, "status", None)
+        )
+        editor = form_for(subject, "reply")
+        if editor.locator(".markdown-editor").get_attribute("data-authoring") != "advanced":
+            editor.get_by_role("button", name="Advanced", exact=True).click()
+        reply_text = "AP11 retained editor: close while composing"
+        editor.locator("textarea#reply-body").fill(reply_text)
+        expect(editor.locator('button[type="submit"]')).to_be_enabled()
+        operation_id = editor.locator('input[name="editorOperationId"]').input_value()
+        initial_post_count = replies(topic_id)
+        initial_closure_history = sql("""select action from admin_history
+          where target_type='topic' and target_id=$1
+          and action in ('topic.closed','topic.reopened') order by position""", [topic_id])
+        assert initial_closure_history == []
+
+        document(manager, "/en/admin/forum")
+        manager.locator('a[href="/en/admin/forum/categories/help-solutions"]').click()
+        manager.wait_for_url("**/en/admin/forum/categories/help-solutions")
+        manager.locator('a[href="/en/admin/forum/sections/help-solutions-questions"]').click()
+        manager.wait_for_url("**/en/admin/forum/sections/help-solutions-questions")
+        manager.locator('a[href="' + admin_topic_path + '"]').click()
+        manager.wait_for_url("**" + admin_topic_path)
+        expect(manager.locator(".admin-topic")).to_have_count(1)
+        manager.locator("details.topic-admin-tools > summary").click()
+        close = form_for(manager, "closeTopic")
+        expect(close.locator('input[name="expectedClosureVersion"]')).to_have_value("0")
+        expect(close.locator('input[name="editorActorId"]')).to_have_value(manager_id)
+        with manager.expect_response(lambda r: r.request.method == "POST"
+                                     and "/en/topics/" in r.url) as closed:
+            close.locator('button[type="submit"]').click()
+        assert closed.value.status == 200, ("close topic", closed.value.status)
+        expect(form_for(manager, "reopenTopic")).to_be_visible()
+        assert sql("select is_closed,closure_version from forum_topics where id=$1",
+                   [topic_id]) == [{"is_closed": True, "closure_version": 1}]
+        assert replies(topic_id) == initial_post_count
+        assert sql("""select action from admin_history where target_type='topic'
+          and target_id=$1 and action in ('topic.closed','topic.reopened')
+          order by position""", [topic_id]) == [{"action": "topic.closed"}]
+        record("ap11-admin-forum-hierarchy-canonical-topic-close-history")
+
+        # Stale submit must be rejected as topicClosed, revalidate exactly once
+        # without replay, and retain the same in-memory editor and operation.
+        with subject.expect_response(lambda r: r.request.method == "POST"
+                                     and "/en/topics/" in r.url) as closed_reply:
+            editor.locator('button[type="submit"]').click()
+        assert closed_reply.value.status == 409, ("closed reply", closed_reply.value.status)
+        expect(subject.locator(".topic-closed-notice")).to_have_count(1)
+        expect(editor).to_be_visible()
+        expect(editor.locator("textarea#reply-body")).to_have_value(reply_text)
+        expect(editor.locator('input[name="editorOperationId"]')).to_have_value(operation_id)
+        expect(editor.locator('button[type="submit"]')).to_be_disabled()
+        expect(editor.locator(".topic-reply-paused")).to_be_visible()
+        expect(editor.get_by_role("button", name="Cancel")).to_be_enabled()
+        assert replies(topic_id) == initial_post_count
+        assert sql("""select action from admin_history where target_type='topic'
+          and target_id=$1 and action in ('topic.closed','topic.reopened')
+          order by position""", [topic_id]) == [{"action": "topic.closed"}]
+        record("ap11-closed-topic-reply-409-editor-retained-no-write")
+
+        reopen = form_for(manager, "reopenTopic")
+        expect(reopen.locator('input[name="expectedClosureVersion"]')).to_have_value("1")
+        with manager.expect_response(lambda r: r.request.method == "POST"
+                                     and "/en/topics/" in r.url) as reopened:
+            reopen.locator('button[type="submit"]').click()
+        assert reopened.value.status == 200, ("reopen topic", reopened.value.status)
+        expect(form_for(manager, "closeTopic")).to_be_visible()
+        assert sql("select is_closed,closure_version from forum_topics where id=$1",
+                   [topic_id]) == [{"is_closed": False, "closure_version": 2}]
+        assert sql("""select action from admin_history where target_type='topic'
+          and target_id=$1 and action in ('topic.closed','topic.reopened')
+          order by position""", [topic_id]) == [
+            {"action": "topic.closed"}, {"action": "topic.reopened"}
+        ]
+        document(manager, "/en/admin/history")
+        expect(manager.locator(".admin-history-events > li").filter(
+            has=manager.get_by_role("heading", name="Topic closed")).filter(has_text=topic_id)).to_have_count(1)
+        expect(manager.locator(".admin-history-events > li").filter(
+            has=manager.get_by_role("heading", name="Topic reopened")).filter(has_text=topic_id)).to_have_count(1)
+        record("ap11-topic-reopen-independent-history-and-version")
+
+        # Independent AP-08 closure × AP-10 measure state matrix on a separate
+        # real topic/actor. Do not disturb the original subject's two appeal cases.
+        matrix_topic_id = topic_fixture(other_id, "-closure-matrix")
+        matrix_admin_path = "/en/admin/forum/topics/" + quote(matrix_topic_id, safe="")
+        matrix_measure_id = create_measure(manager, other_id, ("replies.create",),
+                                           "Independent closure matrix violation")
+        matrix_initial_posts = replies(matrix_topic_id)
+
+        def matrix_denied_reply(expected, phase):
+            history_count = sql("""select count(*)::int as total from admin_history
+              where target_type='topic' and target_id=$1""", [matrix_topic_id])[0]["total"]
+            response = post(other_ctx, "/en/topics/" + matrix_topic_id, {
+                "intent": "reply", "body": "Forbidden matrix reply " + phase,
+            })
+            assert response.status == expected, (phase, response.status, response.text()[:160])
+            assert replies(matrix_topic_id) == matrix_initial_posts, phase
+            assert sql("""select count(*)::int as total from admin_history
+              where target_type='topic' and target_id=$1""", [matrix_topic_id])[0]["total"] == history_count
+
+        def matrix_closure(intent, expected_version, next_state):
+            document(manager, matrix_admin_path)
+            manager.locator("details.topic-admin-tools > summary").click()
+            mutation = form_for(manager, intent)
+            expect(mutation.locator('input[name="expectedClosureVersion"]')).to_have_value(
+                str(expected_version))
+            with manager.expect_response(lambda r: r.request.method == "POST"
+                                         and "/en/topics/" + matrix_topic_id in r.url) as changed:
+                mutation.locator('button[type="submit"]').click()
+            assert changed.value.status == 200, (intent, changed.value.status)
+            assert sql("select is_closed,closure_version from forum_topics where id=$1",
+                       [matrix_topic_id]) == [{"is_closed": next_state,
+                                                "closure_version": expected_version + 1}]
+
+        # Both independent constraints present: open+measure, closed+measure.
+        matrix_denied_reply(403, "open+measure")
+        matrix_closure("closeTopic", 0, True)
+        matrix_denied_reply(409, "closed+measure")
+        record("ap11-matrix-open-and-closed-with-active-reply-measure")
+
+        # Removing closure alone cannot restore the restricted actor.
+        matrix_closure("reopenTopic", 1, False)
+        matrix_denied_reply(403, "reopened+measure")
+        matrix_closure("closeTopic", 2, True)
+
+        # Removing the measure alone cannot restore replies to the closed topic.
+        document(manager, "/en/admin/measures/" + matrix_measure_id)
+        matrix_lift = form_for(manager, "lift")
+        matrix_lift.locator('textarea[name="reason"]').fill("Matrix violation resolved")
+        with manager.expect_response(lambda r: r.request.method == "POST"
+                                     and matrix_measure_id in r.url) as lifted:
+            matrix_lift.locator('button[type="submit"]').click()
+        assert lifted.value.status == 200, ("matrix measure lift", lifted.value.status)
+        assert sql("select lifted_at is not null as lifted from user_measures where id=$1",
+                   [matrix_measure_id]) == [{"lifted": True}]
+        matrix_denied_reply(409, "closed+lifted-measure")
+        record("ap11-matrix-reopen-cannot-override-measure-lift-cannot-override-closure")
+
+        # Only both lifted/absent constraints permit an explicit new reply.
+        matrix_closure("reopenTopic", 3, False)
+        allowed_matrix = post(other_ctx, "/en/topics/" + matrix_topic_id, {
+            "intent": "reply", "body": "Allowed only when open and unsanctioned",
+        })
+        assert allowed_matrix.status in (302, 303), (
+            "matrix reply restored", allowed_matrix.status, allowed_matrix.text()[:160])
+        assert replies(matrix_topic_id) == matrix_initial_posts + 1
+        assert sql("""select action from admin_history where target_type='topic'
+          and target_id=$1 and action in ('topic.closed','topic.reopened')
+          order by position""", [matrix_topic_id]) == [
+            {"action": "topic.closed"}, {"action": "topic.reopened"},
+            {"action": "topic.closed"}, {"action": "topic.reopened"},
+        ]
+        record("ap11-matrix-only-open-and-unrestricted-permits-reply")
+
+        # Newly reopened topic permits a fresh editor, which must remain mounted
+        # when the existing AP-10 restriction is subsequently imposed.
+        public_response = subject.goto(base + topic_path, wait_until="networkidle")
+        assert public_response and public_response.status == 200, (
+            topic_path, getattr(public_response, "status", None)
+        )
+        restricted_editor = form_for(subject, "reply")
+        if restricted_editor.locator(".markdown-editor").get_attribute("data-authoring") != "advanced":
+            restricted_editor.get_by_role("button", name="Advanced", exact=True).click()
+        restricted_text = "AP11 retained editor: revoked reply permission"
+        restricted_editor.locator("textarea#reply-body").fill(restricted_text)
+        restricted_operation = restricted_editor.locator('input[name="editorOperationId"]').input_value()
+
         first_id = create_measure(
             manager, subject_id,
             ("replies.create", "topics.create", "attachments.upload", "profile.edit",
@@ -197,6 +517,28 @@ try:
         assert 3500 <= duration <= 3600, ("one-hour preset", duration)
         assert first_id != second_id
         record("manager-two-independent-measures", first=first_id, second=second_id)
+
+
+        # Closure was lifted, but two independent AP-10 reply restrictions are
+        # now active. A stale mounted editor cannot commit or disappear.
+        blocked_before = replies(topic_id)
+        blocked_history = sql("select count(*)::int as total from admin_history")[0]["total"]
+        with subject.expect_response(lambda r: r.request.method == "POST"
+                                     and "/en/topics/" in r.url) as denied_reply:
+            restricted_editor.locator('button[type="submit"]').click()
+        assert denied_reply.value.status == 403, ("restricted reply", denied_reply.value.status)
+        expect(restricted_editor).to_be_visible()
+        expect(restricted_editor.locator("textarea#reply-body")).to_have_value(restricted_text)
+        expect(restricted_editor.locator('input[name="editorOperationId"]')).to_have_value(restricted_operation)
+        expect(restricted_editor.locator('button[type="submit"]')).to_be_disabled()
+        expect(restricted_editor.locator(".topic-reply-paused")).to_be_visible()
+        expect(restricted_editor.get_by_role("button", name="Cancel")).to_be_enabled()
+        assert replies(topic_id) == blocked_before
+        assert sql("select count(*)::int as total from admin_history")[0]["total"] == blocked_history
+        assert sql("select is_closed,closure_version from forum_topics where id=$1",
+                   [topic_id]) == [{"is_closed": False, "closure_version": 2}]
+        record("ap11-reopened-topic-ap10-reply-sanction-retains-editor-no-write")
+
 
         document(subject, "/en/account/measures")
         expect(subject.locator('section[aria-label^="Active"] > ol.admin-forum-objects > li')).to_have_count(2)
@@ -322,6 +664,30 @@ try:
         assert allowed.status in (302, 303), ("restored reply", allowed.status, allowed.text()[:200])
         assert replies(topic_id) == count + 2
         record("stale-admin-409-revalidates-with-no-replay-and-replies-restore")
+        public_response = subject.goto(base + topic_path, wait_until="networkidle")
+        assert public_response and public_response.status == 200, (
+            topic_path, getattr(public_response, "status", None)
+        )
+        expect(form_for(subject, "reply")).to_be_visible()
+        assert sql("select is_closed,closure_version from forum_topics where id=$1",
+                   [topic_id]) == [{"is_closed": False, "closure_version": 2}]
+        record("ap11-reopened-and-all-reply-measures-lifted-composer-restored")
+
+
+        # AP-11: direct private admin surfaces admit only authorized sessions.
+        for private_path in (
+            "/en/admin/users/" + quote(other_id, safe=""),
+            "/en/admin/forum/topics/" + quote(topic_id, safe=""),
+        ):
+            denied_guest = document(guest, private_path, 401)
+            denied_member = document(other, private_path, 403)
+            for denied in (denied_guest, denied_member):
+                cache = {part.strip().lower() for part in
+                         denied.headers.get("cache-control", "").split(",")}
+                assert {"private", "no-store"} <= cache, (private_path, denied.headers)
+            assert "AP10 acceptance topic" not in denied_member.text(), private_path
+            assert "AP10 acceptance topic" not in denied_guest.text(), private_path
+        record("ap11-users-topic-guest-and-member-private-denials")
 
         # Real browser reflow, current translated strings and keyboard operability.
         for locale, direction in (("en", "ltr"), ("ru", "ltr"), ("he", "rtl")):
@@ -332,9 +698,45 @@ try:
                     (subject, "/" + locale + "/account/measures", "own-list"),
                     (subject, "/" + locale + "/account/measures/" + first_id, "own-detail"),
                     (manager, "/" + locale + "/admin/measures/" + first_id, "admin-detail"),
+                    (manager, "/" + locale + "/admin/users/" + quote(other_id, safe=""), "users-detail"),
+                    (manager, "/" + locale + "/admin/forum/topics/" + quote(topic_id, safe=""), "admin-topic"),
                 ):
                     document(page, path)
                     assert page.locator("html").get_attribute("dir") == direction
+                    assert page.locator("html").get_attribute("lang") == locale
+                    if name == "users-detail":
+                        heading = {
+                            "en": "User details",
+                            "ru": "Информация о пользователе",
+                            "he": "פרטי משתמש",
+                        }[locale]
+                        expect(page.locator("#admin-user-detail-heading")).to_have_text(heading)
+                        expect(page.locator("#authorization")).to_have_count(1)
+                        expect(page.locator("#authorization form.admin-role-assignment")).to_have_count(1)
+                        expect(page.locator('.admin-forum-trail a[href="/' +
+                            locale + '/admin/users"]')).to_have_count(1)
+                        assert other_id in page.locator(".profile-identity").inner_text()
+                        # Public identity is permitted, email and global authz directory are not.
+                        assert prefix + "-other@test.invalid" not in page.content()
+                    if name == "admin-topic":
+                        expect(page.locator("#admin-topic-heading h2")).to_have_text("AP10 acceptance topic")
+                        expect(page.locator(".admin-forum-trail")).to_have_count(1)
+                        expect(page.locator(".admin-topic-status")).to_have_count(1)
+                        expect(page.locator('a[href="/' + locale + '/topics/' +
+                            quote(topic_id, safe="") + '"]')).to_have_count(1)
+                        tools = page.locator("details.topic-admin-tools")
+                        expect(tools).to_have_count(1)
+                        tools.locator("summary").focus()
+                        assert tools.locator("summary").evaluate(
+                            "node => node === document.activeElement")
+                        tools.locator("summary").click()
+                        close_form = form_for(page, "closeTopic")
+                        expect(close_form.locator('button[type="submit"]')).to_have_text({
+                            "en": "Close topic",
+                            "ru": "Закрыть тему",
+                            "he": "סגירת נושא",
+                        }[locale])
+                        expect(close_form.locator('button[type="submit"]')).to_be_enabled()
                     if name in ("own-list", "own-detail"):
                         titles = {
                             "en": ("My measures", "Measure details"),
@@ -374,6 +776,13 @@ try:
                             "surface": name, "locale": locale, **layout,
                         })
                     assert "measuresRefresh" not in page.locator("main").inner_text()
+                    if name in ("users-detail", "admin-topic"):
+                        # No measure-refresh UI is required on the newly checked admin pages.
+                        if width in (320, 1280):
+                            page.screenshot(path=str(args.output / (
+                                name + "-" + locale + "-" + str(width) + ".png"
+                            )), full_page=True)
+                        continue
                     refresh = page.get_by_role("button", name={
                         "en": "Refresh current status",
                         "ru": "Обновить состояние",
@@ -388,6 +797,7 @@ try:
                             full_page=True,
                         )
                 record("localized-reflow-" + locale + "-" + str(width))
+        record("ap11-users-topic-en-ru-he-320-768-1280-layout-and-privacy")
         assert not layout_failures, layout_failures
         assert not page_errors, page_errors
         assert not external, external
