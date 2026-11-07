@@ -1,3 +1,9 @@
+# Мира — recovery/bootstrap analysis complete
+
+Source-level result: Stage2 already removes the need for a first-manager bootstrap. Normal signup + protected `VICO_OWNER_USER_ID` binding can bootstrap Owner without application-level special endpoints; protected rebinding can serve transfer/recovery.
+
+Three owner decisions remain: normal-account bootstrap vs special flow; infra-only rebind vs app recovery system; whether emergency rebind must revoke old-account sessions. No Lev/Lira assignment until these are answered.
+
 # Мира — next bounded task: recovery/bootstrap product-definition
 
 Stage2 is fully closed after #297 merge (`96186cc9158dd7a91c9d2c0124ed4556f133f15c`).
