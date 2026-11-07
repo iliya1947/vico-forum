@@ -353,3 +353,22 @@ Owner — отдельная server-controlled authority поверх сущес
 6. Отдельный «первый администратор» или «первый менеджер» не нужен.
 7. Дополнительная функция форума для этой привязки не требуется; реальная Google-настройка и привязка владельца выполняются и проверяются позже в Stage 6.
 8. После отдельного финального documentation closeout owner/authorization redesign считается завершённым, и можно переходить к Settings.
+
+
+## Settings — product architecture
+
+Owner rejected the single-page Settings concept.
+
+Minimum surface model:
+1. **Owner/system settings** — forum-wide configuration and role settings; Owner-only.
+2. **Administrator personal settings** — per-admin convenience/workspace preferences only.
+3. **User personal settings** — per-user convenience/forum-experience preferences only.
+4. **Account & security** is a separate candidate surface and should not be merged into generic convenience settings.
+5. Domain-specific settings should normally remain inside the owning subsystem (for example Complaint priority settings).
+
+Current authorization contract conflict to resolve before technical planning:
+- role definitions/grants are currently manageable by `access.authorization.manage`;
+- owner now requires role settings to be Owner-only;
+- still undecided whether role assignment/per-user overrides are also Owner-only or remain delegatable operational administration.
+
+No implementation starts until the surface map and this boundary are fixed.
