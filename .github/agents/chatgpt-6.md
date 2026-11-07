@@ -729,3 +729,12 @@ Leave the other six Stage2 descriptions unchanged unless mechanically necessary.
 - [Exact-head CI #41755521661](https://github.com/iliya1947/vico-forum/actions/runs/41755521661): SUCCESS on `985160867001fd42b3ad2614262927aab3edfb3e`, `checks` + `database` both SUCCESS. PR mergeable; remains draft/unmerged.
 - **Real HTTP/browser re-test on corrected head not performed here.** Must check document and .data on success/controlled errors and responsive EN/RU/HE at 320/768 with valid 96-character names. Only Lev's earlier defective-head browser evidence available, so do not claim browser PASS.
 - Next: Лёва targeted browser re-test in his independent isolated Worker/BetterAuth/disposable-PG setup, then Мира coordinator whole-PR verdict. Owner visual acceptance not requested. Не открывать пользовательский браузер.
+
+
+## SET-01 factual documentation closeout — active assignment
+
+Base/current main: `137cecfe6a553b2df9be8e3642e5de8b16e22fee`. Implementation PR #299 is merged.
+
+Create one docs-only PR touching exactly: `PROJECT.md`, `PROJECT_STATE.md`, `ROADMAP.md`, `docs/auth/AUTHORIZATION.md`, `docs/ADMIN_PANEL.md`, `tests/browser/admin-history/README.md`, `docs/PROJECT_HISTORY/PROJECT_HISTORY.md`, and new `docs/PROJECT_HISTORY/PROJECT_HISTORY_17.md`.
+
+Synchronize only factual SET-01 behavior: authorization mutations are exact-bound-Owner-only in the current release; permitted non-Owner authorization reads remain read-only; future deputy delegation stays deferred. Update stale ordinary-manager write/self-revoke documentation, current Settings state and historical snapshot. No runtime/schema/migration/workflow/infra or SET-02–06 changes. Publish PR/head/check evidence in #251 and stop for Mira review.
