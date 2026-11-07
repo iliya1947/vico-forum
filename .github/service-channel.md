@@ -5,14 +5,16 @@
 ## Актуальный baseline и назначение
 
 - Current main: `856b93cb65b01e2389eb97276b37b3a0d8eef265`; migrations0000–0059.
-- Ordinary AP-01–AP-11 и owner/authorization redesign закрыты. Единственный Owner — разработчик; Google/internal user ID binding вне forum Settings, live acceptance Stage6.
-- Current stage: **Settings technical plan готов для coordinator review**.
-- [Полный bounded plan Лёвы #6711736883](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6711736883), также в личном файле Лёвы. Пять approved surfaces покрываются шестью последовательными implementation packages.
-- Frozen decisions: S1 все authorization-management mutations Owner-only в текущем release, future deputies deferred; S2 notification toggles deferred; S3 online visibility defaultON/opt-out; S4 independent Google/email registration controls с сохранением existing sign-in/link.
-- Это целевая Settings policy, а не уже реализованный main: новые Settings routes/persistence/S1 gate ещё не написаны.
-- **Мира:** review плана, синхронизация master plan после approval, назначение только ближайшего bounded SET-01.
-- Исполнитель/implementation PR/head не назначены. Лёва planning завершил и остановился; Марк не назначен.
-- Код/схема/миграции не менялись; Settings tests/CI/browser не выполнялись. Нет production/deployed/owner-visual acceptance.
+- Ordinary AP-01–AP-11 и owner/authorization redesign closed.
+- Current stage: **Settings SET-01 review completed — readiness / merge handoff**.
+- PR **#299**, ready/open/mergeable, exact head `e52c97eed86283fff11976124a9216442fbe6bc3`, implementation пока не merged.
+- Approved plan #6711736883 (SET-01); исполнитель Лира. Coordinator Мира PASS и [independent Лёва PASS #6713064366](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6713064366) относятся к одному head; 0 confirmed current-scope defects.
+- Собственные checks: build;63 unit/route/UI (9 files),255 native PG (13 files), отдельный Owner-policy native probe; Chromium AP-10/AP-11/SET-01 39 groups + separate History38 PASS. Реализацию при review не менял.
+- Exact-head GitHub CI #42411014276 и browser #42411014284 SUCCESS, проверены отдельно.
+- **Мира:** принять independent PASS и завершить readiness #299. Merge — владелец; затем отдельный factual docs closeout SET-01. До implementation/docs merge пакет целиком не closed.
+- SET-02–06 unassigned; Settings shell/остальные surfaces не реализованы. Frozen S1–S4 не изменены.
+- Лёва review завершил и остановился; Марк не назначен. Новый implementation head требует coordinator-first cycle.
+- Production/Stage6/owner visual acceptance не заявляются.
 
 
 ## Handoff — Лира: Stage2 factual documentation closeout
@@ -1394,3 +1396,16 @@ Potential future work (not SET-01 defects):
 - final factual documentation closeout.
 
 Next required review under the standard workflow is Lev technical review of this same exact head. It has not been assigned yet.
+
+
+## SET-01 independent technical review — Лёва PASS
+
+- [Report #6713064366](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6713064366), exact `e52c97eed86283fff11976124a9216442fbe6bc3`, base/main `856b93cb65b01e2389eb97276b37b3a0d8eef265`. Весь28-file delta проверен самостоятельно; implementation unchanged.
+- Shared current-release Owner-only policy применяется ко всем6 repository operations/no-ops после mutex/fresh existing-actor check. Route early guard, service/Hyperdrive и UI согласованы; ordinary manage/elevated grants не являются write authority.
+- Прежние Roles/targeted Users reads сохраняют capability/private boundaries; readonly presentation без mutation forms, отдельный write flag. Owner raw role/grants/deny и effective authority truthful; missing/malformed binding не даёт fallback.
+- Mutex/History/freshness/AP-10/elevated gate сохранены. Нет schema/migration/catalog/dependency/workflow/SET-02+ или deputy changes; нет возврата last-manager.
+- Самостоятельно:63 unit/route/UI,255 PG/build PASS. Own PG probe проверил6 denied operations/no-ops при реальном non-Owner manage+elevated grant без state/History changes, forced Owner History failure rollback, реальный mutex wait + fresh denial после исчезновения DB actor.
+- Actual Chromium→Worker→Better Auth→PG:39 AP-10/AP-11/SET-01 groups + separate History38 PASS;0 page errors/external requests, AP-10 layout failures0. Owner UI writes/self-deny, non-Owner readonly/direct403, fresh recipient reads, History timeouts/recovery и EN/RU/HE сохранены.
+- Browser assertions не изменялись для local run; AP-10 adapter только checkout path/executable. History использует exact runner. Два synthetic Owner bindings/БД применялись раздельно согласно fixture contract, без code changes.
+- Evidence `/workspace/work/set01-review-evidence/`: logs/probe/results/screenshots/manifest/hashes. Task-owned runtime удалён, dummy vars/dependency symlink удалены, tracked checkout clean.
+- **Next — Мира:** readiness/owner merge + separate factual docs closeout (current Owner-only writes vs retained reads, future delegation seam, revised test semantics). SET-02–06 не назначены; Лёва остановился.
