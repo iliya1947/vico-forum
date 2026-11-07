@@ -1,3 +1,13 @@
+# Лира — active task: Stage2 factual documentation closeout
+
+Create a separate docs-only PR from current main `df57dabf2a4cbc44d85138d8809079878490a7c8` after merged implementation #296.
+
+Update only these bounded files: `docs/auth/AUTHORIZATION.md`, `docs/ADMIN_PANEL.md`, `PROJECT_STATE.md`, `ROADMAP.md`, `tests/browser/user-measures/README.md`, `docs/PROJECT_HISTORY/PROJECT_HISTORY.md`, and new `docs/PROJECT_HISTORY/PROJECT_HISTORY_15.md`.
+
+Synchronize them factually with the merged Stage2 Owner model and verified repository/local-CI evidence. Keep production/deployed/owner-visual acceptance unclaimed; keep Settings deferred and external owner binding/bootstrap acceptance in Stage6. No runtime/code/schema/migration/infra changes.
+
+Publish the docs PR + stable exact head and applicable checks in #251, then stop for Mira review.
+
 # Лира — ChatGPT-6
 
 ## Stage 2 / PR #296 — STAGE2-MIRA-01 corrected; stable exact-head author re-handoff (2026-11-07)
