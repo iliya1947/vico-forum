@@ -170,17 +170,39 @@ try:
             'input[name="restriction"][value="admin.forum"]')).to_have_count(1)
         record("restriction-selector-follows-current-elevated-grant")
 
-        # The subject is an existing builtin-admin test actor and therefore has
-        # independent authorization management. Use its real UI to revoke/grant
-        # the manager; the target's inline writes remain performed by the manager.
+        # Stage 2: the isolated Worker has VICO_OWNER_USER_ID=ap10-synthetic-owner.
+        # Use a genuine Better Auth session and transfer its DB session user_id to an
+        # existing synthetic bound Owner row. No form field, cookie claim, or role name
+        # is ever treated as the Owner binding.
+        owner_id = "ap10-synthetic-owner"
+        owner_ctx, owner_page, signed_up_id = new_actor(browser, "owner-session")
+        sql("""insert into "user"(id,name,email)
+          values($1,'Stored ordinary role', $2)""",
+            [owner_id, prefix + "-synthetic-owner@test.invalid"])
+        session_rows = sql('update "session" set user_id=$1 where user_id=$2 returning id',
+                           [owner_id, signed_up_id])
+        assert len(session_rows) >= 1, "Better Auth owner test requires a real session"
+        stored_owner_role = prefix + "-empty-owner"
+        sql("insert into authz_roles(id,slug,display_name,is_system) values($1,$1,'Saved ordinary role',false)",
+            [stored_owner_role])
+        sql("insert into authz_user_roles(user_id,role_id) values($1,$2)",
+            [owner_id, stored_owner_role])
+        sql("""insert into authz_user_permission_overrides(user_id,permission_key,effect)
+          select $1,key,'deny' from authz_permissions""", [owner_id])
+        assert sql("""select count(*)::int total from authz_user_permission_overrides
+          where user_id=$1 and effect='deny'""", [owner_id])[0]["total"] >= 20
+
+
+        # The already-configured bound Owner is the only authorization writer.
+        # The ordinary admin still has real management read capability, but no write forms.
         manager_authorization_events_before = sql("""select count(*)::int as total
           from admin_history where target_type='user' and target_id=$1
           and action='user.overrideChanged'""", [manager_id])[0]["total"]
 
         def set_manager_authz(effect):
-            document(subject, "/en/admin/authorization")
-            card = subject.locator('.admin-user-card:has(input[name="userId"][value="' +
-                                   manager_id + '"])')
+            document(owner_page, "/en/admin/authorization")
+            card = owner_page.locator('.admin-user-card:has(input[name="userId"][value="' +
+                                    manager_id + '"])')
             expect(card).to_have_count(1)
             row = card.locator('form.admin-override-row:has(input[name="permission"]'
                                '[value="access.authorization.manage"])')
@@ -189,11 +211,11 @@ try:
               where target_type='user' and target_id=$1
               and action='user.overrideChanged'""", [manager_id])[0]["total"]
             row.locator('select[name="effect"]').select_option(effect)
-            with subject.expect_response(lambda r: r.request.method == "POST"
-                                         and "/admin/authorization" in r.url) as changed:
+            with owner_page.expect_response(lambda r: r.request.method == "POST"
+                                            and "/admin/authorization" in r.url) as changed:
                 row.locator('button[type="submit"]').click()
             assert changed.value.status == 200, ("manager authorization", effect, changed.value.status)
-            expect(subject.locator('.admin-user-card:has(input[name="userId"][value="' +
+            expect(owner_page.locator('.admin-user-card:has(input[name="userId"][value="' +
                 manager_id + '"]) form.admin-override-row:has(input[name="permission"]'
                 '[value="access.authorization.manage"]) select[name="effect"]')).to_have_value(effect)
             assert sql("""select effect from authz_user_permission_overrides
@@ -203,8 +225,8 @@ try:
               where target_type='user' and target_id=$1
               and action='user.overrideChanged'""", [manager_id])[0]["total"] == before_events + 1
 
-        # AP-11 connected Users detail -> canonical inline authz -> History ->
-        # same-session read-only recovery after fresh permission revocation.
+        # AP-11 connected Users detail -> Owner canonical inline mutations -> History.
+        # The manager's permitted targeted management snapshot remains read-only.
         user_path = "/en/admin/users/" + quote(other_id, safe="")
         document(other, user_path, 403)
         set_manager_authz("deny")
@@ -218,30 +240,41 @@ try:
         set_manager_authz("allow")
         document(manager, user_path)
         expect(manager.locator("#authorization")).to_have_count(1)
+        expect(manager.locator("#authorization form")).to_have_count(0)
+        document(manager, "/en/admin/authorization")
+        expect(manager.locator(".admin-role-card")).not_to_have_count(0)
+        expect(manager.locator('form:has(input[name="intent"])')).to_have_count(0)
+        nonowner_denial = post(manager_ctx, "/en/admin/authorization", {
+            "intent": "assignRole", "userId": other_id, "roleId": "builtin-moderator",
+        })
+        assert nonowner_denial.status == 403, ("raw manager direct write", nonowner_denial.status)
+        record("set01-manager-readonly-roles-users-and-direct-post-forbidden")
+
         history_before = sql("""select count(*)::int as total from admin_history
           where target_type='user' and target_id=$1""", [other_id])[0]["total"]
-
-        assignment = manager.locator("#authorization form.admin-role-assignment")
+        document(owner_page, user_path)
+        assignment = owner_page.locator("#authorization form.admin-role-assignment")
         expect(assignment).to_have_count(1)
         assignment.locator('select[name="roleId"]').select_option("builtin-moderator")
-        with manager.expect_response(lambda r: r.request.method == "POST" and
-                                     "/admin/authorization" in r.url) as assigned:
+        with owner_page.expect_response(lambda r: r.request.method == "POST" and
+                                        "/admin/authorization" in r.url) as assigned:
             assignment.locator('button[type="submit"]').click()
-        assert assigned.value.status == 200, ("inline assignment", assigned.value.status)
-        expect(manager.locator("#authorization form.admin-role-assignment select[name='roleId']")).to_have_value("builtin-moderator")
+        assert assigned.value.status == 200, ("Owner inline assignment", assigned.value.status)
+        expect(owner_page.locator("#authorization form.admin-role-assignment select[name='roleId']")).to_have_value(
+            "builtin-moderator")
         assert sql("select role_id from authz_user_roles where user_id=$1", [other_id]) == [
             {"role_id": "builtin-moderator"}
         ]
 
         override_path = '#authorization form.admin-override-row:has(input[name="permission"][value="forum.reply.create"])'
-        override = manager.locator(override_path)
+        override = owner_page.locator(override_path)
         expect(override).to_have_count(1)
         override.locator('select[name="effect"]').select_option("deny")
-        with manager.expect_response(lambda r: r.request.method == "POST" and
-                                     "/admin/authorization" in r.url) as overridden:
+        with owner_page.expect_response(lambda r: r.request.method == "POST" and
+                                        "/admin/authorization" in r.url) as overridden:
             override.locator('button[type="submit"]').click()
-        assert overridden.value.status == 200, ("inline override", overridden.value.status)
-        expect(manager.locator(override_path + ' select[name="effect"]')).to_have_value("deny")
+        assert overridden.value.status == 200, ("Owner inline override", overridden.value.status)
+        expect(owner_page.locator(override_path + ' select[name="effect"]')).to_have_value("deny")
         assert sql("""select effect from authz_user_permission_overrides
           where user_id=$1 and permission_key='forum.reply.create'""", [other_id]) == [{"effect": "deny"}]
         history = sql("""select action from admin_history
@@ -249,6 +282,10 @@ try:
         assert [item["action"] for item in history][history_before:] == [
             "user.roleAssigned", "user.overrideChanged"
         ], history
+        document(manager, user_path)
+        expect(manager.locator("#authorization")).to_have_count(1)
+        expect(manager.locator("#authorization form")).to_have_count(0)
+        assert "Moderator" in manager.locator("#authorization").inner_text()
         document(manager, "/en/admin/history")
         role_event = manager.locator(".admin-history-events > li").filter(
             has=manager.get_by_role("heading", name="User role assigned")).filter(has_text=other_id)
@@ -257,62 +294,59 @@ try:
         expect(role_event).to_have_count(1)
         expect(override_event).to_have_count(1)
         expect(override_event).to_contain_text("forum.reply.create")
-        record("ap11-users-inline-role-override-history")
+        record("ap11-owner-inline-role-override-and-manager-readonly-history")
 
-        # Revoke while the actual inline form remains mounted, then submit its stale intent.
-        document(manager, user_path)
-        override = manager.locator(override_path)
-        expect(override).to_have_count(1)
+        # A changed ordinary grant immediately affects next GET reads; it never
+        # permits the manager to submit old or forged mutation intents.
         set_manager_authz("deny")
-        override.locator('select[name="effect"]').select_option("inherit")
-        with manager.expect_response(lambda r: r.request.method == "POST" and
-                                     "/admin/authorization" in r.url) as denied:
-            override.locator('button[type="submit"]').click()
-        assert denied.value.status == 403, ("revoked inline POST", denied.value.status)
+        document(manager, user_path)
         expect(manager.locator("#authorization")).to_have_count(0)
-        expect(manager.locator("#admin-user-detail-heading")).to_have_count(1)
-        assert other_id in manager.locator("main").inner_text()
+        denied = post(manager_ctx, "/en/admin/authorization", {
+            "intent": "override", "userId": other_id,
+            "permission": "forum.reply.create", "effect": "inherit",
+        })
+        assert denied.status == 403, ("revoked non-Owner POST", denied.status)
         assert sql("""select effect from authz_user_permission_overrides
           where user_id=$1 and permission_key='forum.reply.create'""", [other_id]) == [{"effect": "deny"}]
         assert sql("""select count(*)::int as total from admin_history
           where target_type='user' and target_id=$1""", [other_id])[0]["total"] == len(history)
-
         set_manager_authz("allow")
         document(manager, user_path)
         expect(manager.locator("#authorization")).to_have_count(1)
-        expect(manager.locator(override_path + ' select[name="effect"]')).to_have_value("deny")
-        record("ap11-users-same-session-revoke-readonly-no-replay")
+        expect(manager.locator("#authorization form")).to_have_count(0)
+        assert "forum.reply.create" in manager.locator("#authorization").inner_text()
+        record("set01-users-fresh-manager-read-revocation-no-write-replay")
         manager_events = sql("""select action from admin_history where target_type='user'
           and target_id=$1 and action='user.overrideChanged' order by position""", [manager_id])
         assert [event["action"] for event in manager_events][manager_authorization_events_before:] == [
             "user.overrideChanged", "user.overrideChanged",
             "user.overrideChanged", "user.overrideChanged"
         ], manager_events
-        record("ap11-canonical-manager-authz-grant-revoke-history")
+        record("ap11-canonical-owner-management-grant-revoke-history")
 
-
-        # Restore the existing participant through canonical UI before the AP-10 cases.
-        restored_override = manager.locator(override_path)
+        # Restore the participant through the canonical Owner UI before AP-10.
+        document(owner_page, user_path)
+        restored_override = owner_page.locator(override_path)
         restored_override.locator('select[name="effect"]').select_option("inherit")
-        with manager.expect_response(lambda r: r.request.method == "POST" and
-                                     "/admin/authorization" in r.url) as reset_effect:
+        with owner_page.expect_response(lambda r: r.request.method == "POST" and
+                                        "/admin/authorization" in r.url) as reset_effect:
             restored_override.locator('button[type="submit"]').click()
         assert reset_effect.value.status == 200
-        expect(manager.locator(override_path + ' select[name="effect"]')).to_have_value("inherit")
+        expect(owner_page.locator(override_path + ' select[name="effect"]')).to_have_value("inherit")
         assert sql("""select effect from authz_user_permission_overrides
           where user_id=$1 and permission_key='forum.reply.create'""", [other_id]) == []
-        restored_role = manager.locator("#authorization form.admin-role-assignment")
+        restored_role = owner_page.locator("#authorization form.admin-role-assignment")
         restored_role.locator('select[name="roleId"]').select_option("builtin-user")
-        with manager.expect_response(lambda r: r.request.method == "POST" and
-                                     "/admin/authorization" in r.url) as reset_role:
+        with owner_page.expect_response(lambda r: r.request.method == "POST" and
+                                        "/admin/authorization" in r.url) as reset_role:
             restored_role.locator('button[type="submit"]').click()
         assert reset_role.value.status == 200
-        expect(manager.locator("#authorization form.admin-role-assignment select[name='roleId']")).to_have_value("builtin-user")
+        expect(owner_page.locator("#authorization form.admin-role-assignment select[name='roleId']")).to_have_value(
+            "builtin-user")
         assert sql("select role_id from authz_user_roles where user_id=$1", [other_id]) == [
             {"role_id": "builtin-user"}
         ]
-        record("ap11-users-fixture-restored-via-canonical-ui")
-
+        record("ap11-users-fixture-restored-via-canonical-owner-ui")
 
 
         # An authenticated malformed create must fail before a PG text bind or any write.
@@ -699,28 +733,6 @@ try:
             assert "AP10 acceptance topic" not in denied_guest.text(), private_path
         record("ap11-users-topic-guest-and-member-private-denials")
 
-        # Stage 2: the isolated Worker has VICO_OWNER_USER_ID=ap10-synthetic-owner.
-        # Use a genuine Better Auth session and transfer its DB session user_id to an
-        # existing synthetic bound Owner row. No form field, cookie claim, or role name
-        # is ever treated as the Owner binding.
-        owner_id = "ap10-synthetic-owner"
-        owner_ctx, owner_page, signed_up_id = new_actor(browser, "owner-session")
-        sql("""insert into "user"(id,name,email)
-          values($1,'Stored ordinary role', $2)""",
-            [owner_id, prefix + "-synthetic-owner@test.invalid"])
-        session_rows = sql('update "session" set user_id=$1 where user_id=$2 returning id',
-                           [owner_id, signed_up_id])
-        assert len(session_rows) >= 1, "Better Auth owner test requires a real session"
-        stored_owner_role = prefix + "-empty-owner"
-        sql("insert into authz_roles(id,slug,display_name,is_system) values($1,$1,'Saved ordinary role',false)",
-            [stored_owner_role])
-        sql("insert into authz_user_roles(user_id,role_id) values($1,$2)",
-            [owner_id, stored_owner_role])
-        sql("""insert into authz_user_permission_overrides(user_id,permission_key,effect)
-          select $1,key,'deny' from authz_permissions""", [owner_id])
-        assert sql("""select count(*)::int total from authz_user_permission_overrides
-          where user_id=$1 and effect='deny'""", [owner_id])[0]["total"] >= 20
-
         nonowner_ctx, nonowner_page, nonowner_id = new_actor(browser, "nonowner-manager")
         sql("insert into authz_user_roles(user_id,role_id) values($1,'builtin-admin')",
             [nonowner_id])
@@ -768,11 +780,14 @@ try:
           where role_id=$1 and permission_key='admin.users.blocks.managePrivileged'""",
           [role_id]) == [{"permission_key": "admin.users.blocks.managePrivileged"}]
         document(nonowner_page, "/en/admin/authorization")
-        elevated_card = nonowner_page.locator(
-            '.admin-role-card:has(input[name="roleId"][value="' + role_id + '"])')
+        elevated_card = nonowner_page.locator(".admin-role-card").filter(
+            has=nonowner_page.locator(".admin-card-title code", has_text=role_slug))
         expect(elevated_card).to_have_count(1)
         expect(elevated_card.locator('form:has(input[name="intent"][value="deleteRole"])')).to_have_count(0)
         expect(elevated_card.locator('input[type="checkbox"][value="admin.users.blocks.managePrivileged"]')).to_have_count(0)
+        expect(elevated_card.locator("form")).to_have_count(0)
+        expect(elevated_card.locator(".admin-effective-permissions")).to_contain_text(
+            "admin.users.blocks.managePrivileged")
         for forbidden in (
             {"intent":"deleteRole", "roleId":role_id},
             {"intent":"roleGrants", "roleId":role_id},
@@ -979,7 +994,8 @@ try:
                         }[locale]
                         expect(page.locator("#admin-user-detail-heading")).to_have_text(heading)
                         expect(page.locator("#authorization")).to_have_count(1)
-                        expect(page.locator("#authorization form.admin-role-assignment")).to_have_count(1)
+                        expect(page.locator("#authorization form.admin-role-assignment")).to_have_count(0)
+                        expect(page.locator("#authorization")).to_contain_text("User")
                         expect(page.locator('.admin-forum-trail a[href="/' +
                             locale + '/admin/users"]')).to_have_count(1)
                         assert other_id in page.locator(".profile-identity").inner_text()
