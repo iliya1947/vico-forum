@@ -1230,3 +1230,38 @@ Current example:
 2. Independent Google-registration and email/password-registration switches in the first release.
 
 Once S1–S4 are fixed, product scope is sufficiently defined for Lev to prepare the technical decomposition. Do not assign implementation before then.
+
+
+## Settings owner decisions — partial resolution
+
+Owner fixed:
+
+### S1 — authorization management
+- **Current release:** only the bound Owner may perform authorization-management mutations: role definitions, role grants, role assignment and per-user overrides.
+- **Future requirement:** deputy administrators must eventually be able to receive equivalent delegated authorization-management capabilities.
+- Do not introduce deputy roles/permissions in the current Settings release merely to anticipate that future need.
+- Technical design for the current release must avoid baking in a product assumption that authorization management can never be delegated; exact future delegation mechanism is intentionally deferred.
+
+### S3 — online privacy
+- Default is **ON / opt-out**.
+- User may turn public online visibility off.
+
+### S4 — registration
+- First Settings release needs **independent registration controls** for:
+  - new Google registration;
+  - new email/password registration.
+- These controls govern creation of new accounts through each method; existing users' sign-in is a separate behavior and must not be disabled merely by closing registration for that method.
+
+### S2 — notification preferences remains open
+
+Coordinator recommendation remains to defer reply/mention notification toggles from the first Settings release for scope reasons, not because the feature is undesirable.
+
+Reason:
+1. Current reply/mention inbox is authoritative server-side data, not a presentation-only list.
+2. A real user preference must define whether disabled notification types are created at all (or otherwise how unread/badge semantics work).
+3. A UI-only hide switch would be incorrect because hidden notifications could still remain unread and affect the global badge/count.
+4. Therefore S2.2 requires a new persisted per-user notification-policy boundary plus integration with notification creation and unread counting.
+5. The first User preferences page is already useful with theme, language and existing Editor preferences; deferring notifications keeps the first bounded package smaller and easier to review/revert.
+6. Nothing about this blocks adding notification preferences immediately if the owner considers them important enough for first release; it only makes that slice materially larger.
+
+No implementation is authorized until S2 is resolved.
