@@ -1409,3 +1409,18 @@ Next required review under the standard workflow is Lev technical review of this
 - Browser assertions не изменялись для local run; AP-10 adapter только checkout path/executable. History использует exact runner. Два synthetic Owner bindings/БД применялись раздельно согласно fixture contract, без code changes.
 - Evidence `/workspace/work/set01-review-evidence/`: logs/probe/results/screenshots/manifest/hashes. Task-owned runtime удалён, dummy vars/dependency symlink удалены, tracked checkout clean.
 - **Next — Мира:** readiness/owner merge + separate factual docs closeout (current Owner-only writes vs retained reads, future delegation seam, revised test semantics). SET-02–06 не назначены; Лёва остановился.
+
+
+## SET-01 — independent technical review and readiness complete
+
+- Implementation PR: **#299**
+- Frozen exact head: `e52c97eed86283fff11976124a9216442fbe6bc3`
+- Base/current main: `856b93cb65b01e2389eb97276b37b3a0d8eef265`
+- Mira coordinator whole-PR review: **PASS, 0 confirmed current-scope defects**.
+- Lev independent technical review: **PASS, 0 confirmed current-scope defects**; whole 28-file diff independently reviewed against approved SET-01 scope. Implementation was not changed during review.
+- Lev independently reran bounded unit/route/UI, native PostgreSQL, build and real Chromium→Worker→Better Auth→PG evidence; exact-head GitHub CI/browser runs remain SUCCESS.
+- PR #299 is open, **Ready for review**, mergeable, and the implementation head remains frozen.
+- SET-02–SET-06 remain unassigned and must not start before SET-01 merge/closeout route.
+- After owner merge, SET-01 requires a separate factual documentation closeout; implementation and permanent documentation remain separate PRs.
+
+**Next:** owner merges PR #299. No production/Stage6/owner-visual acceptance is implied by this readiness state.
