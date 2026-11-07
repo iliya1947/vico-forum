@@ -1758,6 +1758,18 @@ export const forumComplaintEvidenceAttachments = pgTable("forum_complaint_eviden
   index("complaint_evidence_attachment_idx").on(t.attachmentId),
 ]);
 
+// SET-02 global admission policy. The migration owns the one required row.
+export const forumRegistrationSettings = pgTable("forum_registration_settings", {
+  id: integer("id").primaryKey(),
+  googleRegistrationEnabled: boolean("google_registration_enabled").notNull().default(true),
+  emailRegistrationEnabled: boolean("email_registration_enabled").notNull().default(true),
+  version: integer("version").notNull().default(1),
+  updatedAt: timestamp("updated_at", { withTimezone: true, precision: 3 }).notNull().default(sql`clock_timestamp()`),
+}, t => [
+  check("forum_registration_settings_singleton_check", sql`${t.id} = 1`),
+  check("forum_registration_settings_version_check", sql`${t.version} > 0`),
+]);
+
 // Append-only for the web capability: INSERT/SELECT only; no target FK or deletion cascade.
 export const adminHistory = pgTable("admin_history", {
   id: uuid("id").primaryKey(),
@@ -1782,7 +1794,8 @@ export const adminHistory = pgTable("admin_history", {
     'topic.closed', 'topic.reopened') and ${table.targetType} = 'topic')
   or (${table.action} = 'post.sourceLocaleCorrected' and ${table.targetType} = 'post')
   or (${table.action} in ('measure.created', 'measure.changed', 'measure.lifted', 'measure.appealResolved')
-    and ${table.targetType} = 'user-measure')`),
+    and ${table.targetType} = 'user-measure')
+  or (${table.action} = 'settings.registrationChanged' and ${table.targetType} = 'forum-settings')`),
   check("admin_history_context_check", sql`jsonb_typeof(${table.context}) = 'object' and octet_length(${table.context}::text) <= 16384`),
   check("admin_history_labels_check", sql`char_length(${table.actorLabel}) <= 200 and char_length(${table.targetLabel}) <= 200`),
   check("admin_history_reason_check", sql`${table.reason} is null or (char_length(${table.reason}) <= 2000 and btrim(${table.reason}) <> '')`),
