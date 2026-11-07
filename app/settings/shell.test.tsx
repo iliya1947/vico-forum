@@ -138,7 +138,8 @@ describe("SET-02 live registration controls in shared Owner Settings", () => {
           <RouterProvider router={router}/>
         </HeaderAuthProvider>
       </I18nextProvider>);
-      expect((await screen.findAllByRole("checkbox"))).toHaveLength(2);
+      await screen.findAllByRole("checkbox");
+      expect(page.container.querySelectorAll('.settings-registration-form input[type="checkbox"]')).toHaveLength(2);
       expect(page.container.querySelectorAll(".settings-registration-form")).toHaveLength(1);
       expect(page.container.querySelector('input[name="expectedVersion"]')).toHaveValue("7");
       expect(page.container.querySelectorAll(".settings-panel-nav")).toHaveLength(1);
