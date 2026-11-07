@@ -82,27 +82,29 @@
 
 
 
-## AP-11 fully closed; owner/authorization redesign product gate
+## AP-11 fully closed; owner/authorization redesign Stage 1
 
-- Documentation PR #293 merged 2026-11-07. Final docs head: `6a7ce209bcb16e47a0c3054241c506fc1e305088`; merge commit/current `main`: `bcf02193f82aa0d448444c6943d6ebdcf09f7896`.
-- AP-11 implementation #292 + documentation #293 are merged. **AP-11 is fully closed** in the approved repository/local-CI scope.
-- Settings remains explicitly deferred. Approved sequence is now: **owner/authorization redesign → Settings**.
-- Existing owner decisions already fixed:
-  - the current last-access-manager invariant is architecturally wrong for the target model;
-  - owner is the highest administrative authority;
-  - subordinate authority cannot block/demote/lock out the owner;
-  - owner must retain full forum administration, including roles/permissions;
-  - recoverability must rely on explicit owner authority, not counting ordinary holders of `access.authorization.manage`;
-  - the current `AuthorizationLockoutError` / `authz_mutation_lock.managers_ever_existed` / `countManagers()` protection must **not** simply be removed before a replacement owner model exists.
-- The current permanent authorization contract still truthfully describes the old lockout implementation; it is now the target of this separate redesign, not a requirement to preserve unchanged.
+- Documentation PR #293 merged; current `main`: `bcf02193f82aa0d448444c6943d6ebdcf09f7896`.
+- AP-11 fully closed. Settings remains deferred until owner/authorization redesign is complete.
 
-### Product decisions still required before technical planning
+### Owner decision — first redesign stage
 
-Do **not** assign Лёва a technical implementation plan yet. The target owner model still needs owner-level product decisions on at least:
-1. which forum actions are strictly owner-only and cannot be delegated;
-2. whether a senior/head-admin authority exists, how it is granted/revoked, and its boundary below owner;
-3. what owner recovery/emergency path exists if ordinary authorization grants are removed or misconfigured;
-4. what sensitive administrative audit/data is owner-only versus permission-delegable;
-5. which infrastructure/project-owner operations remain outside forum RBAC entirely.
+- Forum is still pre-release/not launched.
+- Remove the obsolete **last-manager** mechanism now:
+  - `AuthorizationLockoutError`;
+  - `managers_ever_existed`;
+  - `countManagers()`;
+  - dedicated last-manager checks/tests.
+- **Do not remove `authz_mutation_lock` in this stage.** Current AP-10 authorization/measure authority paths use the singleton row as a transaction mutex independently of last-manager.
+- Mutex redesign/removal is a separate later technical question.
+- Owner authority implementation, Settings and super-admin UI are not part of this first stage.
 
-These are product semantics, not implementation details. Technical planning starts only after this bounded owner model is fixed. Settings remains out of scope until the redesign is completed.
+### Technical planning handoff — Лёва
+
+Required result:
+- prepare a minimal technical plan for removing only the last-manager mechanism;
+- preserve current `authz_mutation_lock` synchronization semantics needed by authorization mutations and AP-10 measure authority;
+- identify exact code, forward-migration/schema and test changes that must move together;
+- verify there is no hidden dependency on `managers_ever_existed`/manager counting outside the obsolete invariant;
+- do not implement the change yet;
+- record the plan in #251 and stop.
