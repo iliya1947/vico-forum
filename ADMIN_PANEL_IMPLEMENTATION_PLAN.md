@@ -530,3 +530,14 @@ Before technical planning, the owner must resolve:
 - S4 global vs per-method registration control.
 
 After those decisions, Mira freezes the first-release product scope and only then hands bounded technical planning to Lev.
+
+
+## Settings owner decisions — fixed
+
+- **S1:** current release authorization management is Owner-only across role definitions/grants, role assignments and per-user overrides. Future deputy delegation is a required future extension; do not implement deputies now and do not make current design inherently non-delegatable.
+- **S3:** online status default ON / opt-out.
+- **S4:** independent new-registration controls for Google and email/password.
+
+**S2 remains pending:** reply/mention notification preferences now vs later.
+
+Reason for coordinator's S2.1 recommendation: correct notification preferences require authoritative server-side policy affecting notification creation/unread badge semantics; a UI-only hide toggle is insufficient. Deferral keeps the first Settings slice bounded, but S2.2 remains valid if owner prioritizes it.
