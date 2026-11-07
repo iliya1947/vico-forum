@@ -372,3 +372,18 @@ All other reviewed changes, including history index, Stage6 deferral, Settings s
 ### Handoff — Лира
 
 Fix only OWNER-DOC-MIRA-01 on PR #298. Run applicable exact-head checks, publish the new stable head/evidence in #251, then stop for fresh Mira review.
+
+
+## PR #298 fresh coordinator docs review — PASS
+
+- Reviewed stable exact head `7cfa68a8a2c587314393d60a9bf90923604ee0c0` against base/current main `96186cc9158dd7a91c9d2c0124ed4556f133f15c`.
+- Whole PR remains exactly the approved 6 documentation files; no code/tests/schema/migrations/workflows/infra changes.
+- Delta from previously reviewed head `514dff7c...` changes only the five Owner-bootstrap wording sections required by `OWNER-DOC-MIRA-01`.
+- `OWNER-DOC-MIRA-01` is closed: all new Owner-bootstrap text now states the approved path only — developer signs in through Google → resulting internal Better Auth `user.id` → server-only `VICO_OWNER_USER_ID`.
+- Existing general Local email/Google linking contract remains unchanged and is not presented as an alternative Owner bootstrap.
+- Single Owner, no transfer/second Owner/successor/first-manager bootstrap, no additional application implementation, Stage6 external Google/Owner binding and Settings sequencing are consistent across the six documents.
+- Exact-head CI #42361836324 SUCCESS: both `checks` and `database` jobs passed.
+- Browser workflow is not applicable to the docs-only paths and was not required/claimed.
+- Coordinator verdict: **PASS**, zero confirmed current-scope documentation defects.
+- No independent Codex docs review assigned.
+- PR #298 is ready for owner merge. After merge, owner/authorization redesign is closed in repository/local-CI; Stage6 external acceptance remains unfinished/paused.
