@@ -1,5 +1,6 @@
 import type { Pool, PoolClient, QueryResultRow } from "pg";
-import { AUTHORIZATION_MANAGE_PERMISSION, type PermissionKey } from "../app/authorization/catalog";
+import { AUTHORIZATION_MANAGE_PERMISSION, isPermissionKey, type PermissionKey } from "../app/authorization/catalog";
+import { isBoundOwner, ownerAwareEffectivePermissions, validOwnerUserId } from "../app/authorization/owner";
 import { BLOCK_MANAGE_PRIVILEGED_PERMISSION } from "./user-measure-authority";
 import { assertNoActiveUserMeasureRestrictionPg } from "./user-measure-policy";
 
@@ -40,7 +41,7 @@ export class PostgresAuthorizationRepository {
 
   /** Guard the elevated key inside the existing serialized authorization transaction. */
   private requireBoundOwner(actorId: string): void {
-    if (!this.ownerUserId || this.ownerUserId.trim() !== this.ownerUserId || actorId !== this.ownerUserId) {
+    if (!isBoundOwner(actorId, this.ownerUserId)) {
       throw new AuthorizationForbiddenError("only the bound owner may change elevated block-management authority");
     }
   }
@@ -96,7 +97,7 @@ export class PostgresAuthorizationRepository {
               explicitAssignment: user.explicitAssignment,
               grants: roleGrants,
               overrides: overrideMap,
-              effectivePermissions: [...effectivePermissions].sort(),
+              effectivePermissions: ownerAwareEffectivePermissions(user.id, this.ownerUserId, effectivePermissions),
             },
           };
         }),
@@ -165,12 +166,12 @@ export class PostgresAuthorizationRepository {
     }
     return {
       role: mapRole(selected), explicitAssignment: selected.explicit_assignment,
-      grants, overrides, effectivePermissions: [...keys].sort(),
+      grants, overrides, effectivePermissions: ownerAwareEffectivePermissions(userId, this.ownerUserId, keys),
     };
   }
 
   async hasPermission(userId: string, permission: PermissionKey): Promise<boolean> {
-    return effectivePermission(this.pool, userId, permission);
+    return effectivePermission(this.pool, userId, permission, this.ownerUserId);
   }
 
   createCustomRole(actorId: string, role: { id: string; slug: string; displayName: string }) {
@@ -346,7 +347,7 @@ export class PostgresAuthorizationRepository {
         "select id from authz_mutation_lock where id = 1 for update",
       );
       if (!lock.rows[0]) throw new AuthorizationNotFoundError("authorization mutation lock is missing");
-      if (!(await effectivePermission(client, actorId, AUTHORIZATION_MANAGE_PERMISSION))) {
+      if (!(await effectivePermission(client, actorId, AUTHORIZATION_MANAGE_PERMISSION, this.ownerUserId))) {
         throw new AuthorizationForbiddenError("actor cannot manage authorization");
       }
       // Administrative suppression is checked in the same serialized transaction.
@@ -368,8 +369,12 @@ function mapRole(row: RoleRow): AuthorizationRole {
   return { id: row.id, slug: row.slug, displayName: row.display_name, isSystem: row.is_system };
 }
 
-async function effectivePermission(database: Queryable, userId: string, permission: PermissionKey): Promise<boolean> {
+async function effectivePermission(
+  database: Queryable, userId: string, permission: PermissionKey, ownerUserId?: string,
+): Promise<boolean> {
+  if (!isPermissionKey(permission)) return false;
   const result = await database.query<{ allowed: boolean }>(`select case
+    when $3::text is not null and u.id = $3 then true
     when o.effect = 'deny' then false when o.effect = 'allow' then true
     when rp.permission_key is not null then true else false end allowed
     from "user" u
@@ -377,7 +382,7 @@ async function effectivePermission(database: Queryable, userId: string, permissi
     left join authz_user_roles ur on ur.user_id = u.id
     join authz_roles r on r.id = coalesce(ur.role_id, (select id from authz_roles where slug = 'user'))
     left join authz_role_permissions rp on rp.role_id = r.id and rp.permission_key = $2
-    where u.id = $1`, [userId, permission]);
+    where u.id = $1`, [userId, permission, validOwnerUserId(ownerUserId) ?? null]);
   return result.rows[0]?.allowed ?? false;
 }
 
