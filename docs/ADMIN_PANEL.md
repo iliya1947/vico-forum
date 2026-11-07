@@ -614,7 +614,7 @@ attachments, Complaints operations or translation-generation preflight. The same
 applies to administrative permission filtering and the Owner's own active-restriction
 hints. Common native PostgreSQL and Drizzle policy paths use the server binding;
 ordinary users remain subject to all stored measures. This does not bypass session,
-Origin, ownership, revision/CAS, lifecycle, overlapping-measure or domain checks
+Origin, ownership, revision/CAS, lifecycle or independent domain checks
 for operations that still require them. No synthetic lift or rewrite is performed.
 
 **Authority.** Non-Owner measure managers require raw
