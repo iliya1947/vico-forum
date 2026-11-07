@@ -4,7 +4,7 @@ import { appendUserMeasureHistory, type UserMeasureHistoryState } from "./admin-
 import { PostgresAuthorizationRepository } from "./authorization-repository";
 import { assertNoActiveUserMeasureRestrictionPg } from "./user-measure-policy";
 import { assertUserMeasureAuthority, assertUserMeasureAdminRestrictionsAuthority,
-  requireUserMeasureOwnerId, UserMeasureForbiddenError } from "./user-measure-authority";
+  requireUserMeasureOwnerId, rawUserMeasurePermissions, UserMeasureForbiddenError } from "./user-measure-authority";
 
 export class InvalidUserMeasureInputError extends Error {}
 export class UserMeasureNotFoundError extends Error {}
@@ -507,8 +507,8 @@ export class PostgresUserMeasuresRepository {
     const target = await authorization.resolveUser(targetId, client);
     return assertUserMeasureAuthority({
       actorId, targetUserId: targetId, ownerUserId: ownerId,
-      actorRawPermissions: new Set(actor.effectivePermissions),
-      targetRawPermissions: new Set(target.effectivePermissions),
+      actorRawPermissions: rawUserMeasurePermissions(actor),
+      targetRawPermissions: rawUserMeasurePermissions(target),
       ...(issuerFloor === undefined ? {} : { issuerAuthorityFloor: issuerFloor }),
     });
   }

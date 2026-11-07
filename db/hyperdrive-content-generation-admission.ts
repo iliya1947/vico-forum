@@ -22,6 +22,7 @@ type ClientFactory = () => Client;
 export function createHyperdriveContentGenerationAdmission(
   connectionString: string,
   clientFactory: ClientFactory = () => createWebClient(connectionString),
+  ownerUserId?: string,
 ): ContentGenerationAdmission {
   return {
     async assertAllowed(actorId) {
@@ -30,7 +31,7 @@ export function createHyperdriveContentGenerationAdmission(
       try {
         await client.connect();
         await drizzle(client).transaction(async tx => {
-          await assertNoActiveUserMeasureRestriction(tx, actorId, "translations.generate");
+          await assertNoActiveUserMeasureRestriction(tx, actorId, "translations.generate", ownerUserId);
         });
       } catch (error) {
         if (isPostgresAvailabilityFailure(error) ||

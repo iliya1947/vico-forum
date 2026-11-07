@@ -1,4 +1,5 @@
 import type { PermissionKey } from "../app/authorization/catalog";
+import { isBoundOwner, validOwnerUserId } from "../app/authorization/owner";
 import { hasAdministrativeUserMeasureRestrictions, USER_MEASURE_ADMIN_PERMISSION_FAMILIES,
   type UserMeasureRestrictionId } from "../app/admin/user-measure-restrictions";
 
@@ -29,10 +30,22 @@ const privateAdministrativePermissions = new Set<PermissionKey>(
 
 /** The owner binding is server-owned; no role name, email or client-provided identity is valid. */
 export function requireUserMeasureOwnerId(value: unknown): string {
-  if (typeof value !== "string" || !value || value.trim() !== value) {
-    throw new UserMeasureConfigurationUnavailableError();
+  const owner = validOwnerUserId(value);
+  if (!owner) throw new UserMeasureConfigurationUnavailableError();
+  return owner;
+}
+
+/** Reconstruct ordinary RBAC from the stored configuration, before Owner or sanction projection. */
+export function rawUserMeasurePermissions(authorization: {
+  grants: readonly PermissionKey[];
+  overrides: Partial<Record<PermissionKey, "allow" | "deny">>;
+}): Set<PermissionKey> {
+  const raw = new Set(authorization.grants);
+  for (const [key, effect] of Object.entries(authorization.overrides)) {
+    if (effect === "allow") raw.add(key as PermissionKey);
+    else if (effect === "deny") raw.delete(key as PermissionKey);
   }
-  return value;
+  return raw;
 }
 
 /**
@@ -44,7 +57,7 @@ export function rawUserMeasureAuthorityLevel(
   permissions: ReadonlySet<PermissionKey>,
   ownerUserId: string,
 ): UserMeasureAuthorityLevel {
-  if (userId === ownerUserId) return 3;
+  if (isBoundOwner(userId, ownerUserId)) return 3;
   if (permissions.has(BLOCK_MANAGE_PRIVILEGED_PERMISSION)) return 2;
   for (const permission of privateAdministrativePermissions) {
     if (permissions.has(permission)) return 1;
@@ -80,7 +93,7 @@ export function assertUserMeasureAuthority(input: UserMeasureAuthorityInput): Us
   if (input.actorId === input.targetUserId || input.targetUserId === ownerId) {
     throw new UserMeasureForbiddenError();
   }
-  if (!input.actorRawPermissions.has(BLOCK_MANAGE_PERMISSION)) {
+  if (!isBoundOwner(input.actorId, ownerId) && !input.actorRawPermissions.has(BLOCK_MANAGE_PERMISSION)) {
     throw new UserMeasureForbiddenError();
   }
   const actorLevel = rawUserMeasureAuthorityLevel(input.actorId, input.actorRawPermissions, ownerId);

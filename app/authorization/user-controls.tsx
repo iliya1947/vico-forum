@@ -66,6 +66,9 @@ export function AuthorizationUserControls({
     </section>
     <section className="admin-user-panel">
       <h5>{t("effectivePermissions")}</h5>
+      {authorization.authoritySource === "owner" ? <p className="admin-owner-authority-note">
+        {t("authorizationOwnerEffective")}
+      </p> : null}
       <ul className="admin-effective-permissions">
         {authorization.effectivePermissions.map(permission => <li key={permission}><code>{permission}</code></li>)}
       </ul>

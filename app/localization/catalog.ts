@@ -904,6 +904,7 @@ export const canonicalEnglishCatalog = {
     builtInRole: message("builtInRole", "Built-in", "Built-in role marker."),
     permissionsHeading: message("permissionsHeading", "Permissions", "Permissions heading."),
     effectivePermissions: message("effectivePermissions", "Effective permissions", "Effective permissions heading."),
+    authorizationOwnerEffective: message("authorizationOwnerEffective", "Owner authority grants all current permissions regardless of the assigned role or overrides. The saved role and overrides remain unchanged.", "Protected authorization management: explain why the bound Owner's effective permissions ignore stored role grants and overrides."),
     assignedRole: message("assignedRole", "Assigned role", "Assigned role field label."),
     defaultRole: message("defaultRole", "Default role", "Default role marker."),
     overrideInherit: message("overrideInherit", "Inherit", "Inherited permission option."),

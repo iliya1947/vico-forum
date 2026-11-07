@@ -3,6 +3,7 @@ import { authSessionForRequest } from "../auth/request-context";
 import { authorizationForRequest, authorizationOwnerContext } from "../authorization/request-context";
 import { adminAccess } from "../admin/access";
 import { PERMISSION_CATALOG } from "../authorization/catalog";
+import { isBoundOwner } from "../authorization/owner";
 import { requireSameOrigin, requiredFormText } from "../forum/mutations.server";
 import { AuthorizationForbiddenError, AuthorizationNotFoundError, AuthorizationRoleAssignedError, AuthorizationRoleSlugConflictError } from "../../db/authorization-repository";
 import { AuthorizationUnavailableError, InvalidAuthorizationInputError } from "../../db/authorization-service";
@@ -40,8 +41,7 @@ export async function loader({ params, context }: { params: { locale?: string };
   try {
     const [state, resolved] = await Promise.all([capability.readManagementState(), resolver.resolve()]);
     return { locale: params.locale ?? "en", ...state, permissions: PERMISSION_CATALOG,
-      canManageElevated: Boolean(context.get(authorizationOwnerContext)) &&
-        actorId === context.get(authorizationOwnerContext),
+      canManageElevated: isBoundOwner(actorId, context.get(authorizationOwnerContext)),
       access: adminAccess(new Set(resolved.effectivePermissions)) };
   } catch (error) {
     if (error instanceof Response) throw error;

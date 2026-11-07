@@ -4,16 +4,17 @@ import {createWebClient,bestEffortDiscardClient} from "./postgres-deadlines";
 import {ComplaintStorageUnavailableError,isComplaintStorageUnavailable} from "./hyperdrive-complaints";
 import {ComplaintsService} from "./complaints-service";
 import {DrizzleComplaintsRepository} from "./complaints-repository";
+import { withOwnerUserMeasureAdmission } from "./user-measure-policy";
 import type {AuthorizationCapability} from "./authorization-service";
 import type {ComplaintAppeal} from "../app/complaints/appeal-context";
 
 export function createHyperdriveComplaintAppeal(connectionString:string,authorization:AuthorizationCapability,
- clientFactory:()=>Client=()=>createWebClient(connectionString)):ComplaintAppeal{
+ clientFactory:()=>Client=()=>createWebClient(connectionString), ownerUserId?: string):ComplaintAppeal{
  async function run<T>(fn:(s:ComplaintsService)=>Promise<T>):Promise<T>{
   const client=clientFactory();
   try{
    await client.connect();
-   return await fn(new ComplaintsService(new DrizzleComplaintsRepository(drizzle(client)),authorization));
+   return await fn(new ComplaintsService(new DrizzleComplaintsRepository(drizzle(client), undefined, withOwnerUserMeasureAdmission(ownerUserId)),authorization));
   }catch(error){
    if(isComplaintStorageUnavailable(error))throw new ComplaintStorageUnavailableError("complaint Appeal unavailable",{cause:error});
    throw error;

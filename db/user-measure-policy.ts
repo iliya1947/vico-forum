@@ -7,6 +7,7 @@ import {
   type UserMeasureRestrictionId,
 } from "../app/admin/user-measure-restrictions";
 import { BLOCK_MANAGE_PRIVILEGED_PERMISSION } from "./user-measure-authority";
+import { isBoundOwner, validOwnerUserId } from "../app/authorization/owner";
 
 type ForumTransaction = Parameters<Parameters<NodePgDatabase["transaction"]>[0]>[0];
 
@@ -30,6 +31,7 @@ export class UserMeasureRestrictedError extends Error {
 function activeRestrictionQuery(
   subjectId: string, restriction: UserMeasureRestrictionId, ownerUserId?: string,
 ): SQL {
+  const ownerId = validOwnerUserId(ownerUserId) ?? "";
   const floorFilter = administrativeRestrictions.has(restriction) ? sql`
     and measure.issuer_authority_floor > (
       with raw_permissions as (
@@ -49,7 +51,7 @@ function activeRestrictionQuery(
         where o.user_id = ${subjectId} and o.effect = 'deny'
       )
       select case
-        when ${ownerUserId ?? ""} <> '' and ${subjectId} = ${ownerUserId ?? ""} then 3
+        when ${ownerId} <> '' and ${subjectId} = ${ownerId} then 3
         when exists (select 1 from raw_permissions
           where permission_key = ${BLOCK_MANAGE_PRIVILEGED_PERMISSION}) then 2
         when exists (select 1 from raw_permissions
@@ -65,6 +67,7 @@ function activeRestrictionQuery(
       from user_measures as measure
       join user_measure_restrictions as child on child.measure_id = measure.id
       where measure.target_user_id = ${subjectId}
+        and ${!isBoundOwner(subjectId, ownerUserId)}
         and child.restriction_key = ${restriction}
         and child.enabled = true
         and measure.lifted_at is null
@@ -88,6 +91,16 @@ export async function assertNoActiveUserMeasureRestriction(
     activeRestrictionQuery(subjectId, restriction, ownerUserId),
   );
   if (result.rows[0]?.restricted === true) throw new UserMeasureRestrictedError(restriction);
+}
+
+/** Bind the verified Worker owner to existing Drizzle admission injection seams. */
+export function withOwnerUserMeasureAdmission(
+  ownerUserId?: string,
+): typeof assertNoActiveUserMeasureRestriction {
+  const binding = validOwnerUserId(ownerUserId);
+  return binding
+    ? (tx, subjectId, restriction) => assertNoActiveUserMeasureRestriction(tx, subjectId, restriction, binding)
+    : assertNoActiveUserMeasureRestriction;
 }
 
 /** Native pg uses the exact same parameterized SQL as the Drizzle direct writers. */

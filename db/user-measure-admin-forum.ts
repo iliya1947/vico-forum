@@ -8,7 +8,8 @@ import { isPostgresAvailabilityFailure } from "../app/localization/persistent-re
 import {
   bestEffortDiscardClient, createWebPool, isPostgresConnectionTimeout, isPostgresQueryTimeout,
 } from "./postgres-deadlines";
-import { rawUserMeasureAuthorityLevel } from "./user-measure-authority";
+import { rawUserMeasureAuthorityLevel, rawUserMeasurePermissions } from "./user-measure-authority";
+import { isBoundOwner } from "../app/authorization/owner";
 
 const FORUM_ADMIN_PERMISSIONS = new Set<PermissionKey>([
   "forum.topic.pin", "forum.topic.close", "forum.solution.manageAny",
@@ -90,6 +91,8 @@ export function withForumAdministrativeRestrictions(
     ...raw,
     forUser(actorId) {
       const resolver = raw.forUser(actorId);
+      // Owner's saved measures never suppress his current effective permissions.
+      if (isBoundOwner(actorId, ownerUserId)) return resolver;
       return {
         async has(permission) {
           const family = familyFor(permission);
@@ -97,14 +100,14 @@ export function withForumAdministrativeRestrictions(
           const snapshot = await resolver.resolve();
           if (!snapshot.effectivePermissions.includes(permission)) return false;
           const rawLevel = rawUserMeasureAuthorityLevel(
-            actorId, new Set(snapshot.effectivePermissions), ownerUserId ?? "",
+            actorId, rawUserMeasurePermissions(snapshot), ownerUserId ?? "",
           );
           return !(await isRestricted(actorId, family, rawLevel));
         },
         async resolve() {
           const snapshot = await resolver.resolve();
           const rawLevel = rawUserMeasureAuthorityLevel(
-            actorId, new Set(snapshot.effectivePermissions), ownerUserId ?? "",
+            actorId, rawUserMeasurePermissions(snapshot), ownerUserId ?? "",
           );
           const families = [...new Set(snapshot.effectivePermissions
             .map(familyFor).filter((family): family is RestrictedFamily => family !== null))];

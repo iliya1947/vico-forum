@@ -7,7 +7,8 @@ import { afterAll, afterEach, beforeAll, describe, expect, it } from "vitest";
 import {
   DrizzleForumRepository, ForumPublicationReplayConflictError,
 } from "../../db/forum-repository";
-import { UserMeasureRestrictedError } from "../../db/user-measure-policy";
+import { UserMeasureRestrictedError, assertNoActiveUserMeasureRestrictionPg,
+  withOwnerUserMeasureAdmission } from "../../db/user-measure-policy";
 import { DrizzleForumAttachments, ForumAttachmentDraftConflictError } from "../../db/forum-attachments";
 import { HELP_SOLUTIONS_SERVICE_SECTION_ID } from "../../db/forum-identifiers";
 import { ForumEntityNotFoundError, ForumStateConflictError } from "../../db/forum-repository";
@@ -123,6 +124,79 @@ afterEach(async () => {
 afterAll(async () => {
   await client.query("drop schema if exists " + schema + " cascade");
   await client.end();
+});
+
+describe("Stage2 bound Owner immunity to stored AP-10 restrictions", () => {
+  it("preserves stored measures but exempts valid bound Owner in native/Drizzle writers and private hints", async () => {
+    const keys = [
+      "topics.create", "attachments.upload", "admin.forum",
+      "admin.complaints", "translations.generate",
+    ] as const satisfies readonly UserMeasureRestrictionId[];
+    const ids = [];
+    for (const key of keys) ids.push(await createMeasure(key, "target"));
+
+    const pool = new Pool({ connectionString: databaseUrl, options: "-c search_path=" + schema });
+    try {
+      const ownerAuth = createAuthorizationCapability(new PostgresAuthorizationRepository(pool, "target"));
+      const managed = withForumAdministrativeRestrictions(
+        ownerAuth as AuthorizationManagementCapability, databaseUrl!,
+        () => new Pool({ connectionString: databaseUrl, options: "-c search_path=" + schema }), "target",
+      );
+      expect(await managed.forUser("target").has("forum.topic.pin")).toBe(true);
+      expect((await managed.forUser("target").resolve()).effectivePermissions)
+        .toContain("forum.complaint.review");
+      expect(await new PostgresUserMeasureReader(pool, "target").activeRestrictions("target")).toEqual([]);
+      expect((await client.query("select count(*)::int n from user_measures where id=any($1::uuid[])", [ids])).rows[0].n)
+        .toBe(ids.length);
+
+      await expect(assertNoActiveUserMeasureRestrictionPg(client, "target", "topics.create"))
+        .rejects.toBeInstanceOf(UserMeasureRestrictedError);
+      await expect(assertNoActiveUserMeasureRestrictionPg(client, "target", "topics.create", "target"))
+        .resolves.toBeUndefined();
+      await expect(assertNoActiveUserMeasureRestrictionPg(client, "target", "topics.create", " target"))
+        .rejects.toBeInstanceOf(UserMeasureRestrictedError);
+
+      const topic = newTopic(randomUUID(), "target");
+      await expect(forum.createTopicWithInitialPost(topic)).rejects.toBeInstanceOf(UserMeasureRestrictedError);
+      const ownerForum = new DrizzleForumRepository(drizzle(client), { cooldownMs: 0, now: () => new Date() },
+        withOwnerUserMeasureAdmission("target"));
+      await expect(ownerForum.createTopicWithInitialPost(topic)).resolves.toBeDefined();
+      expect((await client.query("select id from forum_topics where id=$1", [topic.id])).rows).toHaveLength(1);
+
+      const draftId = randomUUID(), attachmentId = randomUUID();
+      await expect(attachments.admitUpload("target", "topic:ap10-fixture:reply", draftId, attachmentId))
+        .rejects.toBeInstanceOf(UserMeasureRestrictedError);
+      const ownerAttachments = new DrizzleForumAttachments(drizzle(client), withOwnerUserMeasureAdmission("target"));
+      await expect(ownerAttachments.admitUpload("target", "topic:ap10-fixture:reply", draftId, attachmentId))
+        .resolves.toBeNull();
+
+      const defaultComplaints = new DrizzleComplaintsRepository(drizzle(client));
+      const ownerComplaints = new DrizzleComplaintsRepository(drizzle(client), undefined,
+        withOwnerUserMeasureAdmission("target"));
+      const before = await defaultComplaints.readPrioritySettings();
+      await expect(defaultComplaints.savePrioritySettings("target", {
+        expectedVersion: before.version, weights: before.weights,
+      })).rejects.toBeInstanceOf(UserMeasureRestrictedError);
+      await expect(ownerComplaints.savePrioritySettings("target", {
+        expectedVersion: before.version, weights: before.weights,
+      })).resolves.toBeUndefined();
+
+      const webClient = () => new Client({ connectionString: databaseUrl,
+        options: "-c search_path=" + schema });
+      await expect(createHyperdriveContentGenerationAdmission(databaseUrl!, webClient).assertAllowed("target"))
+        .rejects.toBeInstanceOf(UserMeasureRestrictedError);
+      await expect(createHyperdriveContentGenerationAdmission(databaseUrl!, webClient, "target")
+        .assertAllowed("target")).resolves.toBeUndefined();
+
+      const stillStored = await client.query<{ lifted_at: Date | null }>(
+        "select lifted_at from user_measures where id=any($1::uuid[])", [ids],
+      );
+      expect(stillStored.rows).toHaveLength(ids.length);
+      expect(stillStored.rows.every(row => row.lifted_at === null)).toBe(true);
+    } finally {
+      await pool.end();
+    }
+  });
 });
 
 describe("AP-10 admin.usersAccess effective roles and direct administrative writers", () => {

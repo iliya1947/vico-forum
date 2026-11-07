@@ -699,6 +699,263 @@ try:
             assert "AP10 acceptance topic" not in denied_guest.text(), private_path
         record("ap11-users-topic-guest-and-member-private-denials")
 
+        # Stage 2: the isolated Worker has VICO_OWNER_USER_ID=ap10-synthetic-owner.
+        # Use a genuine Better Auth session and transfer its DB session user_id to an
+        # existing synthetic bound Owner row. No form field, cookie claim, or role name
+        # is ever treated as the Owner binding.
+        owner_id = "ap10-synthetic-owner"
+        owner_ctx, owner_page, signed_up_id = new_actor(browser, "owner-session")
+        sql("""insert into "user"(id,name,email)
+          values($1,'Stored ordinary role', $2)""",
+            [owner_id, prefix + "-synthetic-owner@test.invalid"])
+        session_rows = sql('update "session" set user_id=$1 where user_id=$2 returning id',
+                           [owner_id, signed_up_id])
+        assert len(session_rows) >= 1, "Better Auth owner test requires a real session"
+        stored_owner_role = prefix + "-empty-owner"
+        sql("insert into authz_roles(id,slug,display_name,is_system) values($1,$1,'Saved ordinary role',false)",
+            [stored_owner_role])
+        sql("insert into authz_user_roles(user_id,role_id) values($1,$2)",
+            [owner_id, stored_owner_role])
+        sql("""insert into authz_user_permission_overrides(user_id,permission_key,effect)
+          select $1,key,'deny' from authz_permissions""", [owner_id])
+        assert sql("""select count(*)::int total from authz_user_permission_overrides
+          where user_id=$1 and effect='deny'""", [owner_id])[0]["total"] >= 20
+
+        nonowner_ctx, nonowner_page, nonowner_id = new_actor(browser, "nonowner-manager")
+        sql("insert into authz_user_roles(user_id,role_id) values($1,'builtin-admin')",
+            [nonowner_id])
+        low_target_ctx, low_target_page, low_target_id = new_actor(browser, "elevated-rank-zero-target")
+        document(owner_page, "/en/admin/authorization")
+        expect(owner_page.locator(".admin-owner-authority-note")).to_contain_text(
+            "Owner authority grants all current permissions")
+        owner_card = owner_page.locator('.admin-user-card:has(input[name="userId"][value="' + owner_id + '"])')
+        expect(owner_card).to_have_count(1)
+        expect(owner_card.locator(".admin-badge")).to_have_text("Saved ordinary role")
+        expect(owner_card.locator('.admin-effective-permissions')).to_contain_text(
+            "admin.users.blocks.managePrivileged")
+        expect(owner_card.locator('form.admin-override-row:has(input[name="permission"]'
+            '[value="access.authorization.manage"]) select[name="effect"]')).to_have_value("deny")
+        document(owner_page, "/en/admin/measures?target=" + quote(other_id, safe=""))
+        expect(form_for(owner_page, "create").locator(
+            'input[name="restriction"][value="admin.usersAccess"]')).to_have_count(1)
+        document(owner_page, "/en/admin/measures?target=" + quote(owner_id, safe=""), 403)
+
+        role_slug = prefix + "-owner-elevated"
+        document(owner_page, "/en/admin/authorization")
+        create_role = owner_page.locator("form.admin-create-role")
+        create_role.locator('input[name="slug"]').fill(role_slug)
+        create_role.locator('input[name="displayName"]').fill("Owner-created elevated role")
+        before_owner_history = sql("select count(*)::int n from admin_history")[0]["n"]
+        with owner_page.expect_response(lambda r: r.request.method == "POST" and
+                                       "/admin/authorization" in r.url) as owner_create:
+            create_role.locator('button[type="submit"]').click()
+        assert owner_create.value.status == 200, owner_create.value.status
+        role_id = sql("select id from authz_roles where slug=$1", [role_slug])[0]["id"]
+        assert sql("""select count(*)::int n from admin_history where
+          actor_id=$1 and action='role.created' and target_id=$2""", [owner_id, role_id])[0]["n"] == 1
+        role_grants_form = owner_page.locator(
+            '.admin-role-card:has(input[name="roleId"][value="' + role_id + '"])'
+            ' form.admin-permissions-form')
+        expect(role_grants_form).to_have_count(1)
+        # Basic AP-10 management makes the recipient's next real request observable.
+        role_grants_form.locator('input[type="checkbox"][value="admin.users.blocks.manage"]').check()
+        role_grants_form.locator('input[type="checkbox"][value="admin.users.blocks.managePrivileged"]').check()
+        with owner_page.expect_response(lambda r: r.request.method == "POST" and
+                                       "/admin/authorization" in r.url) as owner_grant:
+            role_grants_form.locator('button[type="submit"]').click()
+        assert owner_grant.value.status == 200, owner_grant.value.status
+        assert sql("""select permission_key from authz_role_permissions
+          where role_id=$1 and permission_key='admin.users.blocks.managePrivileged'""",
+          [role_id]) == [{"permission_key": "admin.users.blocks.managePrivileged"}]
+        document(nonowner_page, "/en/admin/authorization")
+        elevated_card = nonowner_page.locator(
+            '.admin-role-card:has(input[name="roleId"][value="' + role_id + '"])')
+        expect(elevated_card).to_have_count(1)
+        expect(elevated_card.locator('form:has(input[name="intent"][value="deleteRole"])')).to_have_count(0)
+        expect(elevated_card.locator('input[type="checkbox"][value="admin.users.blocks.managePrivileged"]')).to_have_count(0)
+        for forbidden in (
+            {"intent":"deleteRole", "roleId":role_id},
+            {"intent":"roleGrants", "roleId":role_id},
+            {"intent":"assignRole", "userId":other_id, "roleId":role_id},
+            {"intent":"override", "userId":other_id,
+             "permission":"admin.users.blocks.managePrivileged", "effect":"allow"},
+        ):
+            response = post(nonowner_ctx, "/en/admin/authorization", forbidden)
+            assert response.status == 403, (forbidden["intent"], response.status, response.text()[:180])
+        assert sql("select count(*)::int n from admin_history")[0]["n"] == before_owner_history + 2
+
+        # The same canonical Owner UI must perform actual elevated grant/revoke
+        # through every protected mutation family. Observe *fresh* server reads.
+        elevated_key = "admin.users.blocks.managePrivileged"
+        recipient_card_selector = (
+            '.admin-user-card:has(input[name="userId"][value="' + other_id + '"])'
+        )
+        elevated_override_selector = (
+            'form.admin-override-row:has(input[name="permission"]'
+            '[value="' + elevated_key + '"])'
+        )
+        # A newly registered user has no grant, override or measure fixture.
+        # Neither a previously sanctioned subject nor an admin-role user is an
+        # appropriate uncontested lower-rank target for this acceptance.
+        recipient_measure_path = "/en/admin/measures?target=" + quote(low_target_id, safe="")
+
+        def owner_recipient_card():
+            document(owner_page, "/en/admin/authorization")
+            card = owner_page.locator(recipient_card_selector)
+            expect(card).to_have_count(1)
+            return card
+
+        def assign_by_owner(new_role):
+            form = owner_recipient_card().locator("form.admin-role-assignment")
+            expect(form).to_have_count(1)
+            form.locator('select[name="roleId"]').select_option(new_role)
+            with owner_page.expect_response(lambda r: r.request.method == "POST" and
+                                            "/admin/authorization" in r.url) as assignment:
+                form.locator('button[type="submit"]').click()
+            assert assignment.value.status == 200, (
+                "Owner role assignment", new_role, assignment.value.status)
+            card = owner_recipient_card()
+            expect(card.locator('form.admin-role-assignment select[name="roleId"]')).to_have_value(new_role)
+            assert sql("select role_id from authz_user_roles where user_id=$1",
+                       [other_id]) == [{"role_id": new_role}]
+            return card
+
+        def override_by_owner(effect, allowed):
+            form = owner_recipient_card().locator(elevated_override_selector)
+            expect(form).to_have_count(1)
+            form.locator('select[name="effect"]').select_option(effect)
+            with owner_page.expect_response(lambda r: r.request.method == "POST" and
+                                            "/admin/authorization" in r.url) as changed:
+                form.locator('button[type="submit"]').click()
+            assert changed.value.status == 200, (
+                "Owner elevated override", effect, changed.value.status)
+            card = owner_recipient_card()
+            expect(card.locator(elevated_override_selector +
+                                ' select[name="effect"]')).to_have_value(effect)
+            actual = sql("""select effect from authz_user_permission_overrides
+              where user_id=$1 and permission_key=$2""", [other_id, elevated_key])
+            assert actual == ([] if effect == "inherit" else [{"effect": effect}]), actual
+            effective = card.locator(".admin-effective-permissions")
+            if allowed:
+                expect(effective).to_contain_text(elevated_key)
+            else:
+                expect(effective).not_to_contain_text(elevated_key)
+
+        recipient = assign_by_owner(role_id)
+        expect(recipient.locator(".admin-effective-permissions")).to_contain_text(elevated_key)
+        # Verify the whole raw-authority chain before involving AP-10 target hierarchy:
+        # role-based basic + privileged grants; no overriding deny, no direct
+        # administrative restriction; fresh target has no role/override/measure.
+        actual_actor_grants = sql("""select p.permission_key
+          from authz_role_permissions p join authz_user_roles ur on ur.role_id=p.role_id
+          where ur.user_id=$1 and p.permission_key=any($2::text[])
+          order by p.permission_key""",
+          [other_id, ["admin.users.blocks.manage", elevated_key]])
+        assert actual_actor_grants == [
+            {"permission_key": "admin.users.blocks.manage"},
+            {"permission_key": elevated_key},
+        ], actual_actor_grants
+        assert sql("""select effect from authz_user_permission_overrides where user_id=$1
+          and permission_key=any($2::text[])""",
+          [other_id, ["admin.users.blocks.manage", elevated_key]]) == []
+        assert sql("""select r.restriction_key from user_measure_restrictions r
+          join user_measures m on m.id=r.measure_id
+          where m.target_user_id=$1 and r.restriction_key='admin.usersAccess'
+          and r.enabled and m.lifted_at is null and
+          (m.expires_at is null or m.expires_at>clock_timestamp())""", [other_id]) == []
+        assert sql("select role_id from authz_user_roles where user_id=$1", [low_target_id]) == []
+        assert sql("select permission_key from authz_user_permission_overrides where user_id=$1", [low_target_id]) == []
+        assert sql("select id from user_measures where target_user_id=$1", [low_target_id]) == []
+        # Both the basic admission and the strictly lower target must work
+        # on new requests from the actual recipient, not Owner's session.
+        document(other, "/en/admin/measures")
+        document(other, recipient_measure_path)
+        expect(form_for(other, "create").locator(
+            'input[name="restriction"][value="admin.forum"]')).to_have_count(1)
+
+        override_by_owner("deny", False)
+        document(other, recipient_measure_path)
+        expect(form_for(other, "create").locator(
+            'input[name="restriction"][value="admin.forum"]')).to_have_count(0)
+        override_by_owner("allow", True)
+        document(other, recipient_measure_path)
+        expect(form_for(other, "create").locator(
+            'input[name="restriction"][value="admin.forum"]')).to_have_count(1)
+        override_by_owner("inherit", True)
+
+        # An explicit Owner role-grant removal must revoke rank2 immediately,
+        # even while a recipient still has this role assigned.
+        def change_elevated_role_grant(enabled):
+            document(owner_page, "/en/admin/authorization")
+            form = owner_page.locator(
+                '.admin-role-card:has(input[name="roleId"][value="' + role_id + '"])'
+                ' form.admin-permissions-form')
+            checkbox = form.locator('input[type="checkbox"][value="' + elevated_key + '"]')
+            if enabled:
+                checkbox.check()
+            else:
+                checkbox.uncheck()
+            with owner_page.expect_response(lambda r: r.request.method == "POST" and
+                                            "/admin/authorization" in r.url) as changed:
+                form.locator('button[type="submit"]').click()
+            assert changed.value.status == 200, (
+                "Owner role grant", enabled, changed.value.status)
+            actual = sql("""select permission_key from authz_role_permissions
+              where role_id=$1 and permission_key=$2""", [role_id, elevated_key])
+            assert actual == ([{"permission_key": elevated_key}] if enabled else []), actual
+
+        change_elevated_role_grant(False)
+        document(other, recipient_measure_path)
+        expect(form_for(other, "create").locator(
+            'input[name="restriction"][value="admin.forum"]')).to_have_count(0)
+        change_elevated_role_grant(True)
+        document(other, recipient_measure_path)
+        expect(form_for(other, "create").locator(
+            'input[name="restriction"][value="admin.forum"]')).to_have_count(1)
+
+        recipient = assign_by_owner("builtin-user")
+        expect(recipient.locator(".admin-effective-permissions")).not_to_contain_text(elevated_key)
+        document(other, recipient_measure_path, 403)
+        # Per-user elevation is independent of any assigned elevated role.
+        override_by_owner("allow", True)
+        override_by_owner("deny", False)
+        override_by_owner("inherit", False)
+        assert sql("select count(*)::int n from admin_history")[0]["n"] == before_owner_history + 12
+        record("stage2-owner-elevated-assignment-overrides-explicit-grant-revoke-fresh-requests-history")
+
+        document(owner_page, "/en/admin/authorization")
+        owner_elevated = owner_page.locator(
+            '.admin-role-card:has(input[name="roleId"][value="' + role_id + '"])')
+        expect(owner_elevated.locator('form:has(input[name="intent"][value="deleteRole"])')).to_have_count(1)
+        owner_delete = owner_elevated.locator('form:has(input[name="intent"][value="deleteRole"])')
+        with owner_page.expect_response(lambda r: r.request.method == "POST" and
+                                       "/admin/authorization" in r.url) as deletion:
+            owner_delete.locator('button[type="submit"]').click()
+        assert deletion.value.status == 200, deletion.value.status
+        assert sql("select count(*)::int n from authz_roles where id=$1", [role_id])[0]["n"] == 0
+        assert sql("select count(*)::int n from admin_history")[0]["n"] == before_owner_history + 13
+        record("stage2-browser-owner-session-all-catalog-and-elevated-authority-mutations")
+
+        notes = {
+            "en": "Owner authority grants all current permissions",
+            "ru": "Полномочия владельца дают все действующие разрешения",
+            "he": "סמכות הבעלים מעניקה את כל ההרשאות הקיימות",
+        }
+        for locale, text in notes.items():
+            for width in (320, 768, 1280):
+                owner_page.set_viewport_size({"width": width, "height": 900})
+                document(owner_page, "/" + locale + "/admin/authorization")
+                expect(owner_page.locator(".admin-owner-authority-note")).to_contain_text(text)
+                assert owner_page.evaluate("document.documentElement.scrollWidth <= innerWidth + 1"), (
+                    "owner authority layout overflow", locale, width)
+                if width == 320:
+                    owner_page.screenshot(path=str(args.output / (
+                        "stage2-owner-roles-" + locale + "-320.png")), full_page=True)
+        record("stage2-owner-raw-deny-explanation-en-ru-he-320-768-1280")
+        owner_ctx.close()
+        nonowner_ctx.close()
+        low_target_ctx.close()
+
         # Real browser reflow, current translated strings and keyboard operability.
         for locale, direction in (("en", "ltr"), ("ru", "ltr"), ("he", "rtl")):
             for width in (320, 768, 1280):

@@ -28,7 +28,10 @@ function env(authorized=true, signedIn=true) {
   context.set(authSessionContext,signedIn?{user:{id:"subject",email:secret}} as never:null);
   const has=vi.fn(async (key:string)=>authorized&&key==="admin.users.blocks.manage");
   const resolve=vi.fn(async ()=>({
-    role:{slug:"user"},effectivePermissions:authorized?["admin.users.blocks.manage"]:[],
+    role:{slug:"user"},
+    grants:authorized?["admin.users.blocks.manage"]:[],
+    overrides:{},
+    effectivePermissions:authorized?["admin.users.blocks.manage"]:[],
   }));
   context.set(authorizationContext,{forUser:()=>({has,resolve})} as never);
   context.set(authorizationOwnerContext,"server-owner");
@@ -134,14 +137,18 @@ describe("AP-10 own/private and admin measure routes",()=>{
     expect((await list()).data.maySelectAdministrativeRestrictions).toBe(false);
     expect((await detail()).data.maySelectAdministrativeRestrictions).toBe(false);
     manager.resolve.mockResolvedValue({
-      role:{slug:"user"},effectivePermissions:[
-        "admin.users.blocks.manage","admin.users.blocks.managePrivileged",
-      ],
+      role:{slug:"user"},
+      grants:["admin.users.blocks.manage","admin.users.blocks.managePrivileged"],
+      overrides:{},
+      effectivePermissions:["admin.users.blocks.manage","admin.users.blocks.managePrivileged"],
     });
     expect((await list()).data.maySelectAdministrativeRestrictions).toBe(true);
     expect((await detail()).data.maySelectAdministrativeRestrictions).toBe(true);
     manager.resolve.mockResolvedValue({
-      role:{slug:"admin"},effectivePermissions:["admin.users.blocks.manage"],
+      role:{slug:"admin"},
+      grants:["admin.users.blocks.manage"],
+      overrides:{},
+      effectivePermissions:["admin.users.blocks.manage"],
     });
     manager.context.set(authorizationOwnerContext,"subject");
     expect((await list()).data.maySelectAdministrativeRestrictions).toBe(true);

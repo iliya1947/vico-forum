@@ -30,7 +30,9 @@ import { adminHistoryContext } from "../app/admin/history.server";
 import { createHyperdriveAdminHistory } from "../db/hyperdrive-admin-history";
 import { authorizationContext, authorizationOwnerContext } from "../app/authorization/request-context";
 import { createHyperdriveAuthorization } from "../db/hyperdrive-authorization";
+import { validOwnerUserId } from "../app/authorization/owner";
 import { withForumAdministrativeRestrictions } from "../db/user-measure-admin-forum";
+import { withOwnerUserMeasureAdmission } from "../db/user-measure-policy";
 import { createHyperdriveComplaintSubmission } from "../db/hyperdrive-complaints";
 import { complaintSubmissionContext } from "../app/complaints/request-context";
 import { complaintQueueContext } from "../app/complaints/queue-context";
@@ -61,9 +63,11 @@ export default {
         headers: { "Content-Type": "text/plain; charset=utf-8", "Cache-Control": "no-store" },
       });
     }
+    const ownerUserId = validOwnerUserId((env as Env & { VICO_OWNER_USER_ID?: string }).VICO_OWNER_USER_ID);
+    const measureAdmission = withOwnerUserMeasureAdmission(ownerUserId);
     context.set(forumReaderContext, createHyperdriveForumReader(webConnectionString));
-    context.set(forumWriterContext, createHyperdriveForumWriter(webConnectionString));
-    context.set(forumAttachmentStoreContext, createHyperdriveForumAttachmentStore(webConnectionString));
+    context.set(forumWriterContext, createHyperdriveForumWriter(webConnectionString, undefined, undefined, measureAdmission));
+    context.set(forumAttachmentStoreContext, createHyperdriveForumAttachmentStore(webConnectionString, undefined, measureAdmission));
     const attachmentBucket = (env as Env & { ATTACHMENT_R2?: R2Bucket }).ATTACHMENT_R2;
     context.set(privateAttachmentBucketContext, attachmentBucket ? privateAttachmentBucket(attachmentBucket) : null);
     context.set(registryLoaderContext, createHyperdriveRegistryLoader(localizationConnectionString));
@@ -77,7 +81,6 @@ export default {
     context.set(adminForumContext,createHyperdriveAdminForum(webConnectionString));
     context.set(adminUsersContext, createHyperdriveAdminUsers(webConnectionString));
     context.set(adminHistoryContext, createHyperdriveAdminHistory(webConnectionString));
-    const ownerUserId = (env as Env & { VICO_OWNER_USER_ID?: string }).VICO_OWNER_USER_ID;
     context.set(authorizationOwnerContext, ownerUserId);
     const authorization = createHyperdriveAuthorization(webConnectionString, undefined, ownerUserId);
     const effectiveAuthorization = withForumAdministrativeRestrictions(
@@ -85,11 +88,11 @@ export default {
     );
     context.set(authorizationContext, effectiveAuthorization);
     context.set(userMeasureContext, createHyperdriveUserMeasures(webConnectionString, ownerUserId));
-    context.set(complaintSubmissionContext, createHyperdriveComplaintSubmission(webConnectionString, authorization));
-    context.set(complaintQueueContext, createHyperdriveComplaintQueue(webConnectionString, effectiveAuthorization));
-    context.set(complaintReviewContext, createHyperdriveComplaintReview(webConnectionString, effectiveAuthorization));
-    context.set(complaintAppealContext,createHyperdriveComplaintAppeal(webConnectionString,effectiveAuthorization));
-    context.set(contentGenerationAdmissionContext, createHyperdriveContentGenerationAdmission(webConnectionString));
+    context.set(complaintSubmissionContext, createHyperdriveComplaintSubmission(webConnectionString, authorization, undefined, ownerUserId));
+    context.set(complaintQueueContext, createHyperdriveComplaintQueue(webConnectionString, effectiveAuthorization, undefined, ownerUserId));
+    context.set(complaintReviewContext, createHyperdriveComplaintReview(webConnectionString, effectiveAuthorization, undefined, ownerUserId));
+    context.set(complaintAppealContext,createHyperdriveComplaintAppeal(webConnectionString,effectiveAuthorization,undefined,ownerUserId));
+    context.set(contentGenerationAdmissionContext, createHyperdriveContentGenerationAdmission(webConnectionString, undefined, ownerUserId));
     context.set(contentGenerationActionContext, DISABLED_CONTENT_GENERATION_ACTION_RUNTIME);
     const response = await requestHandler(request, context);
     return withAuthSessionCookies(response, authHeaders);

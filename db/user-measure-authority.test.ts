@@ -5,6 +5,7 @@ import {
   BLOCK_MANAGE_PERMISSION,
   BLOCK_MANAGE_PRIVILEGED_PERMISSION,
   rawUserMeasureAuthorityLevel,
+  rawUserMeasurePermissions,
   UserMeasureConfigurationUnavailableError,
   UserMeasureForbiddenError,
 } from "./user-measure-authority";
@@ -44,12 +45,33 @@ describe("AP-10 raw authority and owner binding", () => {
     expect(rawUserMeasureAuthorityLevel("owner", ordinary, "owner")).toBe(3);
   });
 
-  it("requires explicit blocks.manage even for bound owner and elevated holder", () => {
+  it("requires explicit blocks.manage for ordinary actors but permits bound Owner with raw deny", () => {
     expect(check()).toBe(1);
     expect(() => check({ actorRawPermissions: ordinary })).toThrow(UserMeasureForbiddenError);
-    expect(() => check({ actorId: "owner", actorRawPermissions: ordinary })).toThrow(UserMeasureForbiddenError);
+    expect(check({ actorId: "owner", actorRawPermissions: ordinary })).toBe(3);
+    expect(check({ actorId: "owner", actorRawPermissions: ordinary, issuerAuthorityFloor: 3 })).toBe(3);
     expect(() => check({ actorRawPermissions: perms(BLOCK_MANAGE_PRIVILEGED_PERMISSION) })).toThrow(UserMeasureForbiddenError);
     expect(check({ actorId: "owner", actorRawPermissions: manager, targetRawPermissions: elevatedTarget })).toBe(3);
+    expect(() => check({ actorId: "owner", targetUserId: "owner", actorRawPermissions: ordinary }))
+      .toThrow(UserMeasureForbiddenError);
+    expect(() => check({ actorId: "owner", targetUserId: "owner", actorRawPermissions: ordinary, issuerAuthorityFloor: 3 }))
+      .toThrow(UserMeasureForbiddenError);
+    expect(() => check({ actorId: "owner", actorRawPermissions: ordinary, issuerAuthorityFloor: 0 }))
+      .toThrow(RangeError);
+  });
+
+  it("reconstructs non-Owner raw rights from persisted role and overrides, excluding Owner projection", () => {
+    const input = {
+      grants: ["admin.users.blocks.manage", "forum.complaint.review"] as PermissionKey[],
+      overrides: {
+        "admin.users.blocks.manage": "deny",
+        "forum.topic.pin": "allow",
+      } as const,
+    };
+    const actual = rawUserMeasurePermissions(input);
+    expect([...actual].sort()).toEqual(["forum.complaint.review", "forum.topic.pin"]);
+    expect(input.grants).toEqual(["admin.users.blocks.manage", "forum.complaint.review"]);
+    expect(rawUserMeasureAuthorityLevel("ordinary", actual, "owner")).toBe(1);
   });
 
   it("refuses self, owner and same/higher target tiers", () => {

@@ -7,9 +7,9 @@ import {
 import { AdminMeasuresIndex } from "../measures/views";
 import { ForumRouteError } from "../forum/ui";
 import { authorizationForRequest, authorizationOwnerContext } from "../authorization/request-context";
-import { rawUserMeasureAuthorityLevel } from "../../db/user-measure-authority";
+import { rawUserMeasureAuthorityLevel, rawUserMeasurePermissions } from "../../db/user-measure-authority";
 import { adminAccess } from "../admin/access";
-import type { PermissionKey } from "../authorization/catalog";
+
 export {headers,meta} from "./admin";
 
 export async function loader({request,params,context}:{
@@ -39,7 +39,7 @@ export async function loader({request,params,context}:{
     return data({locale:params.locale??"en",target,pendingAppeals,requestedTarget:input??"",
       createId:crypto.randomUUID(),access:adminAccess(new Set(permissions.effectivePermissions)),
       maySelectAdministrativeRestrictions:rawUserMeasureAuthorityLevel(actorId,
-        new Set<PermissionKey>(permissions.effectivePermissions),
+        rawUserMeasurePermissions(permissions),
         context.get(authorizationOwnerContext)??"")>=2},
       {headers:measurePrivateHeaders});
   } catch(error) { if(error instanceof Response)throw error; throw measureResponseError(error); }
