@@ -1,22 +1,20 @@
 # Admin panel — current workflow
 
 - Служебный PR: #251; общий план: `ADMIN_PANEL_IMPLEMENTATION_PLAN.md`
-- Current `main`: `8301087f9322b34bdd325ed9298fdf3fddd84561`, migrations 0000–0059
+- Current main: `8301087f9322b34bdd325ed9298fdf3fddd84561`, migrations 0000–0059
 - Ordinary Admin Panel AP-01–AP-11: closed
-- Owner/authorization redesign Stage 1: fully closed
-- Current stage: **owner/authorization redesign — Stage 2 owner authority technical planning**
-- Target product model fixed:
-  - Owner = separate server-controlled top authority, not a role
-  - all authority below Owner stays in existing roles + per-user overrides
-  - no Senior/Head Admin built-in role or second RBAC/hierarchy layer
-  - Owner must retain forum-management control independent of ordinary role/override configuration
-  - Owner cannot be targeted by subordinate administrative measures
-  - `admin.users.blocks.managePrivileged` remains an ordinary permission but only bound Owner may grant/revoke it
-  - infrastructure/deployments/secrets/owner-binding changes remain outside forum RBAC
-- Technical planner: **Лёва**
-- Implementer: not assigned
-- Technical-planning scope: determine the minimal implementation needed to make Owner authority effective across current authorization/admin paths without redesigning unrelated RBAC or Settings
-- Mutex redesign/removal only if technically required by this target model; do not expand by default
-- Settings remains after owner/authorization redesign
+- Owner/authorization redesign Stage1: fully closed (#294 + #295 merged)
+- Current stage: **Stage2 owner authority — technical plan ready for coordinator review**
+- Technical planner: **Лёва**, planning completed; no implementation started
+- Plan: [#6702391114](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6702391114); полный текст — личный файл Лёвы
+- Target: separate server-controlled Owner authority; ordinary roles/overrides below it; Owner-independent forum control and immunity; only Owner grants/revokes `admin.users.blocks.managePrivileged`
+- Proposed scope: common Owner-aware effective projection + fresh transaction checks, measure admission/request wiring, complete elevated gate including role deletion, minimal truthful management UI
+- Existing mutex retained; no manager-preservation rule, new RBAC/role, schema/migration, infrastructure/binding editor, Settings or super-admin UI
+- Implementer: **not assigned**
+- Implementation PR/head: **none**
+- Coordinator reviewer: **Мира — review technical plan next**
+- Independent implementation reviewer: not active; standard route Лёва after coordinator PASS on stable exact head
 - Марк не назначен
-- Следующий шаг: Лёва prepares the bounded Stage 2 technical plan in #251 and stops; no implementation yet
+- Stage2 tests/browser/CI not run; future results not claimed
+- Следующий шаг: Мира проверяет план и синхронизирует master plan; после approval назначает исполнителя. Лёва остановился на planning handoff
+- Settings after owner/authorization redesign; Stage6/production out of scope
