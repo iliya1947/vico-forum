@@ -1443,3 +1443,12 @@ PR #301 exact head `83d7137010ba21f58a6b414c3df85f74bd9ca569`: one confirmed cur
 ## SET-01 factual documentation closeout — coordinator PASS
 
 PR #301 exact head `741da8cd534998defb02691dffa53823f389cf1b`: **PASS, 0 confirmed current-scope defects**. `SET01-DOC-MIRA-01` is closed; correction changed only `PROJECT_STATE.md` and `ROADMAP.md` from the previously reviewed head and now records stable post-merge state. Whole PR remains exactly 8 assigned docs files with no runtime/schema/workflow/SET-02 implementation changes. Exact-head CI #42417637551 and Chromium #42417637555 are SUCCESS. PR #301 is clean/mergeable and ready for owner merge. SET-02–SET-06 remain unassigned.
+
+
+## SET-01 closed; SET-02 implementation assigned
+
+- PR #301 merged; current main `681e8bab0eda595186acebae9ce4b2d47d06b936`. SET-01 implementation and factual documentation are fully closed in repository/local-CI scope.
+- SET-02 technical plan already exists in #251 comment #6711736883 and previously passed coordinator review; no repeat planning is required.
+- Lira is assigned SET-02 implementation only: Settings shell/navigation, Forum & roles surface, and independent new-account registration controls for Google and email/password with existing sign-in/link preserved.
+- SET-03–SET-06, deputies, Stage6/production/live Google/Owner binding and factual permanent docs are outside the implementation PR.
+- Next handoff is Lira stable implementation PR/head + actual checks for Mira coordinator whole-PR review.
