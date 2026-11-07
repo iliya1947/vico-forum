@@ -133,8 +133,8 @@ acceptance matrix и definition of done зафиксированы в [`docs/UI_
 owner/authorization redesign. **SET-01 уже реализован в repository/local-CI**:
 все authorization-management writes разрешены только exact server-bound Owner,
 а `access.authorization.manage` сохраняет прежние защищённые read surfaces.
-Текущий шаг — его отдельный factual docs closeout; SET-02 (Settings shell и
-registration controls), SET-03–SET-06 ещё не реализованы и не назначены.
+Следующий по утверждённой последовательности — SET-02 (Settings shell и
+registration controls), но SET-02–SET-06 ещё не реализованы и не назначены.
 
 Владелец отдельно утвердил target-product подход: UI проектируется как целевой Vico Forum, а не
 только как косметика поверх текущего MVP. Небольшое self-contained frontend behavior может
@@ -469,8 +469,8 @@ scope, включая временные/постоянные administrative mea
 [`docs/ADMIN_PANEL.md`](docs/ADMIN_PANEL.md). Bounded delivery AP-01–AP-11 завершён в
 repository/local-CI path; фактическое состояние указано в `PROJECT_STATE.md`.
 Settings по решению владельца отделён от AP-11: SET-01 Owner-only authorization writes
-уже реализован в `main`; его отдельное factual documentation closeout — текущий шаг.
-SET-02–SET-06 и Settings shell ещё не реализованы и не назначены.
+уже реализован в `main`. Следующим по утверждённой последовательности идёт SET-02,
+но SET-02–SET-06 и Settings shell ещё не реализованы и не назначены.
 
 Черновики и автосохранение перенесены владельцем 2026-10-20 в возможные будущие функции
 (`Under development: drafts`) и не являются обязательным объёмом текущего Editor 2.0.
