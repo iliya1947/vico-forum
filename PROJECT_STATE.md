@@ -1,6 +1,6 @@
 # PROJECT_STATE.md
 
-Последнее обновление: 2026-11-06
+Последнее обновление: 2026-11-07
 
 ## Назначение
 
@@ -99,11 +99,12 @@ Stage 5 завершён в repository/local-CI path.
 - AP-07 — отдельная административная страница темы, ограниченный поиск тем раздела и общие действия над сообщениями (source locale и защищённая история ревизий);
 - AP-08 — close/reopen тем: независимое разрешение `forum.topic.close`, persisted closed/version с атомарной History, запрет новых ответов без исключения для ролей, общий public/admin Quick actions и сохранение уже открытого reply editor при закрытии. Matching committed publication receipt сохраняет idempotent replay после closure.
 - AP-09 — защищённый Users index/detail с независимым `admin.users.read`, поиском/пагинацией по публичной identity-проекции и переиспользованием существующих authorization assignment/override controls только при отдельном `access.authorization.manage`;
-- AP-10 — configurable temporary/permanent administrative measures с независимыми restrictions/expiry, exact-measure appeals, authority/issuer-floor hierarchy, request-scoped enforcement обычных и административных действий, приватными own/admin surfaces и атомарной History.
+- AP-10 — configurable temporary/permanent administrative measures с независимыми restrictions/expiry, exact-measure appeals, authority/issuer-floor hierarchy, request-scoped enforcement обычных и административных действий, приватными own/admin surfaces и атомарной History;
+- AP-11 — integration/factual closeout delivered AP-01–AP-10: connected Users authorization/History recovery, Forum closure × administrative-measure admission, protected cache/privacy boundaries и bounded EN/RU/HE responsive browser verification.
 
-AP-08–AP-10 присутствуют в `main` и реализованы в repository/local-CI path. Для AP-10 дополнительно выполнен изолированный authenticated Chromium→Worker→Better Auth→PostgreSQL 17 flow с EN/RU/HE и responsive-проверками. Это не production/deployed acceptance. Отдельный package browser flow для AP-08/AP-09 не заявляется выполненным.
+AP-01–AP-11 присутствуют в `main` и завершены в repository/local-CI path. AP-11 использует настоящий built Worker + Better Auth + PostgreSQL 17 + Chromium и не добавляет новую domain functionality, schema, permissions или grants. Это не production/deployed acceptance и не owner visual acceptance.
 
-Ещё не реализованы реальные Settings operations и AP-11 integration/factual closeout.
+Settings не входит в завершённый AP-01–AP-11 scope: по решению владельца он перенесён в отдельную будущую фазу после owner/authorization redesign.
 
 ### Complaints
 
@@ -166,7 +167,7 @@ External topology является mutable state и должна перепро�
 ## Актуальные незавершённые продуктовые границы
 
 - UI/UX product pass ещё требует финального closeout и обязательной real-runtime product/visual acceptance по `docs/UI_UX_PASS.md`.
-- В `main` Admin Panel реализована до AP-10 включительно; Settings и AP-11 integration/factual closeout ещё не завершены.
+- В `main` ordinary Admin Panel AP-01–AP-11 завершён в утверждённом repository/local-CI scope; Settings отдельно отложен до owner/authorization redesign.
 - Complaints integration/closeout покрыт repository/local-CI проверками; external/deployed acceptance Complaints не выполнялась.
 - Email verification/password recovery остаются отложенными.
 - Editor drafts/autosave остаются отложенными.
@@ -175,7 +176,7 @@ External topology является mutable state и должна перепро�
 ## Ближайший маршрут
 
 1. Продолжать утверждённую bounded product-разработку без превращения обычных PR в external rollout.
-2. Завершить оставшиеся Admin Panel / Complaints product packages по их профильным контрактам и служебным каналам; для Admin Panel после AP-10 остаются Settings и AP-11 closeout.
+2. Следующий отдельный Admin Panel этап — owner/authorization redesign; после него проектировать и реализовывать Settings как отдельный будущий package. Complaints продолжать по его профильному контракту/служебному каналу.
 3. Довести UI/UX product pass до финальной real-runtime acceptance.
 4. Возобновлять Stage 6 external integration только по отдельному указанию владельца и по `docs/database/*`.
 5. После завершения pre-release product и external gates перейти к финальному общепроектному refinement и Stage 7 production release по `ROADMAP.md`.
