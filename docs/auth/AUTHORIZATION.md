@@ -29,6 +29,31 @@ session snapshot: effective permissions разрешаются сервером 
 9. Role inheritance не входит в текущую модель: каждая роль имеет собственный явный набор
    permission grants.
 
+## Server-bound Owner authority (redesign Stage 2)
+
+Owner — это **существующий authenticated пользователь**, чей `user.id` точно совпадает с
+валидным server-only binding `VICO_OWNER_USER_ID` (непустая строка без краевых пробелов).
+Email, название роли, клиентское поле или session role claim не могут назначить Owner.
+Binding сам по себе не создаёт пользователя или сессию; отсутствие/ошибка binding не
+отключает обычный RBAC и не повышает другие аккаунты.
+
+Для bound Owner серверная effective-authority projection включает **все текущие и
+будущие реально реализованные ключи** централизованного `PERMISSION_CATALOG`,
+включая ordinary participation. Произвольный неизвестный ключ остаётся запрещённым.
+Raw назначенная роль, её grants и персональные `allow`/`deny` остаются в PostgreSQL
+без преобразования и отображаются как сохранённая конфигурация. Даже `deny` на
+`access.authorization.manage` не уменьшает Owner effective authority. Для остальных
+пользователей сохраняется обычный порядок `deny > allow > role grant`.
+
+Owner projection единообразно действует в targeted/bulk authorization reads,
+`forUser().has` и fresh транзакционной проверке после mutex. Закрытый Roles/Users UI
+показывает raw роль и overrides наряду с фактическими effective permissions, с
+объяснением источника Owner authority; не создаёт Owner role или binding editor.
+Owner permission устраняет только capability barrier: остаются обязательными
+authenticated session, resource ownership для `*Own` действий, validation,
+Origin, CAS/revision, lifecycle, target/issuer hierarchy и atomic History. Нового
+generic edit-any/delete-any или публичного super-admin интерфейса нет.
+
 ## Permission catalog
 
 Permission key означает существующую capability приложения. UI может назначать/отнимать
@@ -206,16 +231,19 @@ AP-10 adds two code-backed capabilities: `admin.users.blocks.manage` for exact-t
 user-measure create/change/lift, narrowly scoped private administrative reads and measure
 appeal review; and `admin.users.blocks.managePrivileged` as an **additional**
 privileged-target authority prerequisite, not an action grant by itself. **Neither
-capability is initially granted to any built-in role**, including admin; both require
-explicit dynamic grants or per-user overrides. A measure manager does not automatically
+capability is initially granted to any built-in role**, including admin; ordinary
+non-Owner actors require explicit dynamic grants or per-user overrides. Bound Owner
+receives both through the catalog-wide effective authority described above. A measure manager does not automatically
 gain the Users index, complete authorization-management directory or private History.
 
-The measures policy supplements request-scoped effective action permissions; raw RBAC
-grants, overrides and subject/issuer hierarchy remain unchanged. Owner/authorization redesign
-Stage 1 subsequently removed the obsolete manager-count/last-manager veto while retaining the
-shared authorization/AP-10 transaction mutex and fresh permission checks. The target owner-authority
-model remains a separate later redesign step. Exact administrative permission families and
-measure/appeal semantics are defined in `../ADMIN_PANEL.md`.
+The measures policy supplements request-scoped effective action permissions; stored raw RBAC
+and issuer/target hierarchy remain independent of Owner projection and sanction filtering.
+Stage 1 removed the obsolete manager-count/last-manager veto while retaining the shared
+authorization/AP-10 mutex and fresh checks. Stage 2 now grants bound Owner rank 3 on
+AP-10 authoritative paths, without requiring raw `admin.users.blocks.manage`; self/Owner
+targets, strict rank comparison, issuer floor and transaction/lifecycle checks still apply.
+Exact administrative permission families, appeals and Owner immunity are defined in
+`../ADMIN_PANEL.md`.
 
 ## Per-user overrides
 
@@ -312,7 +340,14 @@ PermissionResolver errors не входит в authorization contract.
 - просматривать пользователей, необходимых для assignment;
 - назначать пользователю роль;
 - для каждого permission пользователя выбирать `inherit`, `allow` или `deny`;
-- видеть effective permissions пользователя после role + override resolution.
+- видеть effective permissions пользователя после role + override resolution (с
+  дополнительной server-bound Owner projection там, где она применима).
+
+Изменение `admin.users.blocks.managePrivileged` — выдача/отзыв role grant,
+назначение/снятие роли с таким grant, персональный `allow | deny | inherit` и косвенный
+отзыв через удаление elevated custom role — разрешено **только bound Owner**.
+Обычный authorization manager сохраняет остальные допустимые role/user mutations.
+Non-Owner UI скрывает недоступные elevated controls, но не заменяет серверный запрет.
 
 Скрытие кнопки в UI не является authorization boundary. Каждая mutation повторно проверяет
 актуальный server-side permission, runtime validation и same-origin/CSRF boundary.
@@ -331,9 +366,10 @@ singleton row `authz_mutation_lock` через `FOR UPDATE`, затем пров
 `access.authorization.manage`, включая self-revoke последнего manager. Успешная mutation
 фиксируется обычным History event, а следующий protected request уже получает fresh denial.
 
-Целевая owner authority и recovery/bootstrap model проектируются отдельно в следующем этапе
-owner/authorization redesign. Stage 1 не добавляет публичный unauthenticated bootstrap endpoint
-и не объявляет external rollout выполненным.
+Owner authority реализована Stage 2 в пределах указанного server binding;
+recovery/bootstrap и внешняя проверка этой модели остаются отдельными будущими работами.
+Stage 1–2 не добавляли публичный unauthenticated bootstrap endpoint и не выполняли
+external rollout.
 
 ## Better Auth boundary
 
