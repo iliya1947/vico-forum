@@ -4,12 +4,16 @@
 
 ## Актуальный baseline и назначение
 
-- Current main: `df57dabf2a4cbc44d85138d8809079878490a7c8`; migrations 0000–0059.
-- Owner/authorization redesign Stage2 implementation #296 merged. Merge commit: `df57dabf2a4cbc44d85138d8809079878490a7c8`.
-- Final implementation exact head `824ab8eccb091664c2e7d37f81f2737e7fd43e87`: Mira coordinator PASS + Lev independent technical PASS, zero confirmed current-scope defects.
-- Current stage: **separate factual documentation closeout**. Stage2 repository implementation is merged; permanent source-of-truth still contains pre-Stage2 wording and must be synchronized before Stage2 is considered fully closed.
-- Settings remains deferred until this redesign documentation closeout is merged. No production/deployed/owner-visual acceptance is implied.
-- Documentation executor: **Лира**. Лёва/Марк are not assigned.
+- Current main: `856b93cb65b01e2389eb97276b37b3a0d8eef265`; migrations0000–0059.
+- Ordinary AP-01–AP-11 и owner/authorization redesign закрыты. Единственный Owner — разработчик; Google/internal user ID binding вне forum Settings, live acceptance Stage6.
+- Current stage: **Settings technical plan готов для coordinator review**.
+- [Полный bounded plan Лёвы #6711736883](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6711736883), также в личном файле Лёвы. Пять approved surfaces покрываются шестью последовательными implementation packages.
+- Frozen decisions: S1 все authorization-management mutations Owner-only в текущем release, future deputies deferred; S2 notification toggles deferred; S3 online visibility defaultON/opt-out; S4 independent Google/email registration controls с сохранением existing sign-in/link.
+- Это целевая Settings policy, а не уже реализованный main: новые Settings routes/persistence/S1 gate ещё не написаны.
+- **Мира:** review плана, синхронизация master plan после approval, назначение только ближайшего bounded SET-01.
+- Исполнитель/implementation PR/head не назначены. Лёва planning завершил и остановился; Марк не назначен.
+- Код/схема/миграции не менялись; Settings tests/CI/browser не выполнялись. Нет production/deployed/owner-visual acceptance.
+
 
 ## Handoff — Лира: Stage2 factual documentation closeout
 
@@ -1294,3 +1298,18 @@ Done criteria:
 - dependencies and migration/schema needs are identified;
 - applicable tests/checks and any browser acceptance needs are identified per package;
 - no implementation code is changed.
+
+
+## Settings technical plan — ready for coordinator review
+
+- [Лёва #6711736883](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6711736883); source baseline main856b93c, existing schema through0059. Scope — frozen five surfaces/S1–S4; deputy authority, notification policy, subsystem operational settings и Stage6 не реализуются.
+- **SET-01:** Owner-only все6 authorization mutations в общей fresh serialized policy; existing non-Owner reads readonly; future delegation seam без deputy implementation; no migration. Обязательно адаптировать positive authz/History fixtures к synthetic bound Owner, сохранив non-Owner denials и fresh recipient revocation; no test-only fallback/no last-manager.
+- **SET-02:** Settings navigation + полезный Owner Forum & roles surface + независимая Google/email registration policy в singleton PG/CAS. Нужна следующая forward migration с metadata/privileges; минимальный registration History event — явное technical proposal. Existing constructor/writer переиспользуется, не копируется.
+- **SET-03:** User preferences: существующие theme/local Editor keys и `user.locale` с Runtime LocaleRegistry; no new schema, no server sync local preferences.
+- **SET-04:** Administrator preferences: local per account/device defaults/last accessible workspace, density, secondary technical disclosures с реальными consumers; no DB/raw private URLs/capability changes.
+- **SET-05:** Account & security: Better Auth own-method/password/session API через safe DTO/BFF; session tokens остаются server-side, cookies/freshness/ownership сохраняются; existing Google link; no new auth schema.
+- **SET-06:** Privacy: маленькая own preference relation default-on; presence SQL filter до window count/LIMIT, conditional heartbeat, own off+presence cleanup и точные privileges. Hidden user исключён из public members **и count**.
+- Реальная dependency: SET-01 → SET-02 shell; последующие feature packages зависят от SET-02 и могут independently review/merge. Предлагаемый рабочий маршрут01→02→03→04→05→06.
+- Для registration найден поддерживаемый installed Better Auth1.7.7 `user.validateUserInfo`: проверять source.action=create-user + trusted method/provider; sign-in/link-account не veto. Official docs и установленный source сверены; no client/email inference, no provider disable. Существующие native auth-runtime/auth-link-identity harnesses дают synthetic real-state/callback testing без live Google.
+- На пакет: применимые tests/build/PG/browser/metadata, coordinator-first→independent same-head, owner merge и отдельный factual docs closeout. Новые migration numbers сверять с actual main, accepted0000–0059 unchanged.
+- Code/DB/runtime не изменялись; acceptance будущих пакетов не объявляется выполненным. Лёва остановился на planning handoff.
