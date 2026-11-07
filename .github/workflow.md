@@ -21,3 +21,10 @@
 - Docs PR: **#301**
 - Reviewed docs head: `83d7137010ba21f58a6b414c3df85f74bd9ca569`
 - Coordinator docs review: **CHANGES REQUIRED — SET01-DOC-MIRA-01**
+
+- Docs PR: **#301**
+- Docs stable exact head: `741da8cd534998defb02691dffa53823f389cf1b`
+- Coordinator docs review: **PASS, 0 confirmed current-scope defects**
+- SET01-DOC-MIRA-01: **closed**
+- Exact-head docs CI #42417637551: SUCCESS
+- Exact-head docs Chromium #42417637555: SUCCESS
