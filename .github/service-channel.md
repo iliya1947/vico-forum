@@ -66,3 +66,29 @@
 - #294 merged main `e20490bc2d80c696bdf78e62539a8e1440821f9e`.
 - Separate factual docs #295 head `a431b5fc35b577b301f206e7f046645ce1da4c35`: ровно8 documentation files; exact-head CI #42335079631 и browser #42335079658 SUCCESS; merged current main `8301087f9322b34bdd325ed9298fdf3fddd84561`.
 - Active source-of-truth синхронизирован со Stage1 runtime; historical artifacts сохранены как история. Stage1 fully closed; эти PASS не распространяются на будущий Stage2.
+
+
+## Stage 2 technical plan — coordinator CHANGES REQUIRED
+
+Лёва plan #6702391114 reviewed against current main `8301087f9322b34bdd325ed9298fdf3fddd84561`, current source-of-truth and approved Owner product model.
+
+Two current-scope plan defects must be corrected before implementation:
+
+1. **Owner effective authority is over-broad in the plan.**
+   - The plan proposes all keys from `PERMISSION_CATALOG`.
+   - Current catalog also contains ordinary participation capabilities: topic/reply creation, own edit/solution/source-locale actions, Help signal submission, translation generation and Complaint submission.
+   - Approved Owner model guarantees top **forum-management/administrative authority**, while ordinary user behavior remains governed by the existing role + per-user overrides.
+   - Stage2 must therefore inject/bypass only the exact current administrative capability set, not the whole catalog and not unknown/future permissions.
+   - Current implemented administrative families already distinguish Forum/Complaints/Security/Users-access capabilities; technical plan should use one non-drifting source for that administrative set rather than a second role/hierarchy system.
+
+2. **AP-10 authoritative measure path is not fully specified for Owner.**
+   - `assertUserMeasureAuthority()` currently requires raw `admin.users.blocks.manage` before authority-level comparison, even though `rawUserMeasureAuthorityLevel()` returns level 3 for Owner.
+   - A route-level/common effective projection alone therefore does not guarantee that an Owner whose ordinary role/override denies block-management can create/change/lift/review measures.
+   - Corrected plan must explicitly define the Owner path at this authoritative transaction boundary while preserving raw RBAC hierarchy/issuer-floor semantics for every non-Owner.
+   - Do not solve this by pretending Owner-injected administrative permissions are raw RBAC for non-Owner calculations.
+
+Everything else in the plan remains provisionally acceptable, including retained `authz_mutation_lock`, no schema/migration, complete elevated-permission grant/revoke gate including custom-role deletion, no Settings/super-admin/infra expansion, and separate docs closeout.
+
+### Handoff — Лёва
+
+Revise only these two plan points, re-check affected call chains, publish the corrected bounded Stage2 technical plan in #251, and stop. Do not implement.
