@@ -1,3 +1,15 @@
+# Мира — Owner/system Settings map
+
+Owner/system Settings has five practical product groups plus one optional later emergency mode:
+- registration;
+- Owner-only role definitions/grants;
+- global forum-write cooldown (later candidate; current default 5s);
+- attachment maximum size (later candidate; current default 50 MB);
+- locale publication active/inactive (later candidate, preserving mandatory en fallback);
+- optional later read-only/maintenance mode.
+
+Do not expose technical/security constants or infrastructure. First bounded recommendation: Owner-only role configuration + registration open/closed only. Role assignment/per-user overrides remain an owner decision.
+
 # Мира — Settings surface map
 
 Five classes identified:
