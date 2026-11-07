@@ -36,8 +36,7 @@ export async function loader({ params, context }: {
     const managerActorId = authSessionForRequest(context)!.user.id;
     return data({ locale: params.locale ?? "en", access, user,
       management, managerActorId, permissions: PERMISSION_CATALOG,
-      canManageElevated: Boolean(context.get(authorizationOwnerContext)) &&
-        managerActorId===context.get(authorizationOwnerContext) }, { headers: adminPrivateHeaders });
+      canManageElevated: isBoundOwner(managerActorId, context.get(authorizationOwnerContext)) }, { headers: adminPrivateHeaders });
   } catch (error) {
     if (error instanceof AuthorizationNotFoundError) {
       throw new Response("Not found", { status: 404, headers: adminPrivateHeaders });
