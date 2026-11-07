@@ -414,3 +414,27 @@ Recommended first bounded Owner/system implementation remains intentionally smal
 - registration open/closed.
 
 No implementation starts until owner approves product contents and resolves the role-assignment/per-user-override boundary.
+
+
+## Administrator workspace preferences — concrete map
+
+Audience: actors with actual administrative/moderation workspace capabilities, not a literal role-name check.
+
+Personal-only groups:
+1. **Entry/navigation** — default or last administrative destination, with permission-aware fallback; optional favorites later.
+2. **Needs attention** — default/last accessible mode and group.
+3. **Presentation** — comfortable/compact density; default expanded/collapsed state for secondary technical detail.
+4. **Paging/sorting later** — only where a domain exposes safe alternatives; do not override domain queue priority semantics.
+5. **Future workflow conveniences** — bounded auto-refresh and admin work notifications only after those mechanisms exist.
+
+Recommended first persistence: browser-local per authenticated account/device, no DB/schema and no sensitive search/target identifiers.
+
+Recommended first bounded package:
+- default/last admin destination;
+- default/last Attention mode/group;
+- density;
+- secondary-detail expansion preference.
+
+Not personal admin settings: authority, roles, sanctions, Complaint priority policy, global forum policy, queue-order policy, mandatory safety checks/audit semantics, infrastructure.
+
+No implementation starts until owner approves product contents.
