@@ -4,12 +4,13 @@
 - Current main: `96186cc9158dd7a91c9d2c0124ed4556f133f15c`, migrations 0000–0059
 - Ordinary Admin Panel AP-01–AP-11: closed
 - Owner/authorization redesign Stage 1–2: implementation + docs merged
-- Current stage: **single-Owner bootstrap decision fixed; application implementation complete**
-- Owner: **one person — developer**
-- Bootstrap: developer signs in through Google; the resulting internal account ID is bound server-side as Owner
-- Ownership transfer / multiple Owners: **not in current product scope**
-- Separate first-admin/first-manager bootstrap: **not required**
-- Remaining Owner work: external Google/Owner binding and acceptance in Stage 6 only
-- Stage 6 remains paused until explicit owner instruction
-- Settings remains next product package after final documentation closeout of this redesign
-- Next: **separate final documentation closeout for the confirmed single-Owner bootstrap boundary**
+- Single-Owner bootstrap product decision: fixed
+- Current stage: **final owner/authorization documentation closeout**
+- Executor: **Лира**
+- Scope: docs-only, 6 files; no runtime/code/schema/migration/infra changes
+- Owner: one person — developer; Google sign-in identifies the intended account; server-side binding grants Owner authority
+- Ownership transfer / multiple Owners / first-manager bootstrap: not in current scope
+- Stage 6 remains paused; real Google/Owner binding and deployed acceptance remain Stage 6
+- Reviewer after stable head/checks: **Мира**
+- Codex review: not assigned
+- Next: **Лира prepares the bounded docs-only PR and publishes stable head/check evidence; then stop for Mira review**
