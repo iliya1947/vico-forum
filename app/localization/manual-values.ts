@@ -1731,6 +1731,7 @@ export const hebrewCommonValues = {
   builtInRole: "מובנה",
   permissionsHeading: "הרשאות",
   effectivePermissions: "הרשאות בפועל",
+  authorizationOwnerEffective: "סמכות הבעלים מעניקה את כל ההרשאות הקיימות ללא קשר לתפקיד המשויך או לחריגות האישיות. התפקיד והחריגות השמורים אינם משתנים.",
   assignedRole: "תפקיד משויך",
   defaultRole: "תפקיד ברירת מחדל",
   overrideInherit: "ירושה",
