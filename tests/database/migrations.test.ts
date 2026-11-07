@@ -1885,6 +1885,21 @@ describe("PostgreSQL 17 locale migrations", () => {
           values ('builtin-admin', 'access.authorization.manage') on conflict do nothing`);
       }
       expect(await repository.readRoleGrants("builtin-admin")).toEqual(grantsBefore);
+      const assignmentBefore = (await client.query<{ n: number }>(
+        "select count(*)::int n from admin_history where actor_id='authz-admin' and action='user.roleAssigned'",
+      )).rows[0]!.n;
+      try {
+        await service.assignUserRole("authz-admin", "authz-admin", "builtin-user");
+        expect(await repository.hasPermission("authz-admin", "access.authorization.manage")).toBe(false);
+        expect((await client.query<{ n: number }>(
+          "select count(*)::int n from admin_history where actor_id='authz-admin' and action='user.roleAssigned'",
+        )).rows[0]!.n).toBe(assignmentBefore + 1);
+        await expect(service.createCustomRole("authz-admin", {slug:"post-self-reassign",displayName:"Forbidden"}))
+          .rejects.toBeInstanceOf(AuthorizationForbiddenError);
+      } finally {
+        // Only the disposable fixture restores its prior role; the product does not auto-recover.
+        await client.query("update authz_user_roles set role_id='builtin-admin' where user_id='authz-admin'");
+      }
     } finally {
       await pool.end();
       await client.query("delete from authz_user_permission_overrides where user_id in ('authz-admin', 'authz-user')");
