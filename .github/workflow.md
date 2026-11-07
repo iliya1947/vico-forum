@@ -3,7 +3,7 @@
 - Служебный PR: #251; общий план: `ADMIN_PANEL_IMPLEMENTATION_PLAN.md`
 - Current main: `96186cc9158dd7a91c9d2c0124ed4556f133f15c`, migrations 0000–0059
 - Ordinary AP-01–AP-11 closed; redesign Stage1 fully closed
-- Current stage: **owner/authorization recovery/bootstrap — owner decisions pending**
+- Current stage: **owner/authorization recovery/bootstrap product boundary fixed; no transfer feature**
 - Approved plan: #6702391114 + AP-10 revision #6702520494 + Owner all-catalog clarification, coordinator PASS
 - Implementer: Лира
 - Implementation #296: **merged**; merge commit `df57dabf2a4cbc44d85138d8809079878490a7c8`
