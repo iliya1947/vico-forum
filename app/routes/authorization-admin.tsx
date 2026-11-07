@@ -41,8 +41,7 @@ export async function loader({ params, context }: { params: { locale?: string };
   try {
     const [state, resolved] = await Promise.all([capability.readManagementState(), resolver.resolve()]);
     return { locale: params.locale ?? "en", ...state, permissions: PERMISSION_CATALOG,
-      canManageElevated: Boolean(context.get(authorizationOwnerContext)) &&
-        actorId === context.get(authorizationOwnerContext),
+      canManageElevated: isBoundOwner(actorId, context.get(authorizationOwnerContext)),
       access: adminAccess(new Set(resolved.effectivePermissions)) };
   } catch (error) {
     if (error instanceof Response) throw error;
