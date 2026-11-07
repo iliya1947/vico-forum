@@ -20,6 +20,12 @@ import { settingsPrivateHeaders } from "./settings";
 const authorizationFetcherKey = "settings-forum-authorization";
 const registrationFetcherKey = "settings-forum-registration";
 type RegistrationError = "invalid" | "forbidden" | "conflict" | "unavailable";
+const registrationErrorMessages = {
+  invalid: "settingsRegistrationInvalid",
+  forbidden: "settingsRegistrationForbidden",
+  conflict: "settingsRegistrationConflict",
+  unavailable: "settingsRegistrationUnavailable",
+} as const;
 
 export function headers() { return settingsPrivateHeaders; }
 function requireOwner(context: RouterContextProvider): string {
@@ -107,10 +113,7 @@ function RegistrationControls({ registration }: {
       <button type="submit" disabled={pending}>{pending ? t("authPending") : t("settingsRegistrationSave")}</button>
     </fetcher.Form>
     {fetcher.data?.ok ? <p role="status">{t("settingsRegistrationSaved")}</p> : null}
-    {fetcher.data?.error ? <p role="alert">{t({
-      invalid: "settingsRegistrationInvalid", forbidden: "settingsRegistrationForbidden",
-      conflict: "settingsRegistrationConflict", unavailable: "settingsRegistrationUnavailable",
-    }[fetcher.data.error])}</p> : null}
+    {fetcher.data?.error ? <p role="alert">{t(registrationErrorMessages[fetcher.data.error])}</p> : null}
   </section>;
 }
 
