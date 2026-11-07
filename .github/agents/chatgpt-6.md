@@ -1,5 +1,14 @@
 # Лира — ChatGPT-6
 
+## Stage 1 / PR #294 — Chromium necessity check, subtask 2/4 (2026-11-07)
+
+- **Decision: no additional patch justified on current exact implementation head** `e3604222ae8cecb4b1f2f94cdd5d7e9f76c15e61`; PR #294 remains Draft. This is bounded author-side diagnosis, not a whole-PR review or coordinator PASS.
+- Independently rechecked [failed browser run #42327536927](https://github.com/iliya1947/vico-forum/actions/runs/42327536927) job log and [current browser #42328843151](https://github.com/iliya1947/vico-forum/actions/runs/42328843151) job logs against the source. The old run finished the full set of 34 AP-10/AP-11 case groups, then failed only at `assert not page_errors` with two identical `signal is aborted without reason` strings; the old log lacks page URL/stack/call site. It stopped before Admin History in that combined job.
+- GitHub compare `e84b8f8...e360422`: only `.github/workflows/ap10-browser.yml` and `tests/browser/user-measures/check.py` changed. No app runtime code change could be shown to have fixed the old abort. Existing `page.on("pageerror", ...)` handlers remain on guest, actor and stale pages, and final `assert not page_errors` remains strict. New diagnostics log URL, stack, and latest recorded case without suppressing any browser errors.
+- Current independent Chromium jobs use distinct PostgreSQL 17 services, Worker previews, synthetic sessions and evidence paths. `browser` completed the same 34 case groups without `BROWSER_PAGE_ERROR`; `history_browser` completed the Stage1 terminal canonical self-revoke → History → fresh management denial flow. Both successful, artifacts uploaded; [CI #42328843126](https://github.com/iliya1947/vico-forum/actions/runs/42328843126) successful on same head.
+- No reproducible current-scope defect, broken error reporting or missing required browser coverage was confirmed in the targeted inspection. **Information not verified:** exact source/root cause of the old two client abort errors or whether they could recur under other timing. This uncertainty alone does not justify modifying current runtime/test behavior, silently suppressing page errors, or adding speculative workarounds.
+- **Scope:** no changes to PR #294, app runtime, tests, workflow, documentation or other agent files. Stop after subtask 2/4. Next explicit developer `...`: subtask 3/4 — bounded final author-side verification/evidence inventory for current Stage1 implementation (without whole-PR coordinator review); stop again before subtask 4/4 stable author handoff.
+
 ## Stage 1 / PR #294 — Chromium failure diagnostic, subtask 1/4 (2026-11-07)
 
 - Bounded **diagnostic only**, no PR #294 code/workflow changes in this subtask. Current [Draft PR #294](https://github.com/iliya1947/vico-forum/pull/294) head `e3604222ae8cecb4b1f2f94cdd5d7e9f76c15e61`.
