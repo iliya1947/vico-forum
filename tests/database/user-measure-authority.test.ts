@@ -97,16 +97,20 @@ describe("AP-10 owner-only elevated permission changes inside authorization tran
     expect((await owner.resolveUser("plain")).effectivePermissions).not.toContain(elevated);
   });
 
-  it("does not block ordinary authorization changes or unrelated role grants", async () => {
+  it("denies ordinary manager writes but permits Owner edits of non-elevated configuration", async () => {
     const before = await historyCount();
-    await owner.setUserOverride("manager", "plain", "forum.topic.create", "allow");
+    await expect(owner.setUserOverride("manager", "plain", "forum.topic.create", "allow"))
+      .rejects.toBeInstanceOf(AuthorizationForbiddenError);
+    expect((await owner.resolveUser("plain")).effectivePermissions).not.toContain("forum.topic.create");
+    await owner.setUserOverride("owner", "plain", "forum.topic.create", "allow");
     expect((await owner.resolveUser("plain")).effectivePermissions).toContain("forum.topic.create");
-    // Keeping the elevated grant unchanged while editing other role grants is not elevated-key mutation.
-    await owner.replaceRoleGrants("manager", "ap10-elevated-role", [elevated, "forum.reply.create"]);
+    await expect(owner.replaceRoleGrants("manager", "ap10-elevated-role", [elevated, "forum.reply.create"]))
+      .rejects.toBeInstanceOf(AuthorizationForbiddenError);
+    await owner.replaceRoleGrants("owner", "ap10-elevated-role", [elevated, "forum.reply.create"]);
     expect((await owner.readRole("ap10-elevated-role"))?.grants).toEqual([elevated, "forum.reply.create"].sort());
     expect(await historyCount()).toBe(before + 2);
   });
-  it("guards indirect elevated revocation by deleting an unassigned custom role, without blocking ordinary deletion", async () => {
+  it("guards role deletion for elevated and ordinary roles under the same Owner-only policy", async () => {
     const suffix = randomUUID();
     await owner.createCustomRole("owner", {
       slug: "elevated-deletion-" + suffix, displayName: "Elevated cascade",
@@ -132,9 +136,13 @@ describe("AP-10 owner-only elevated permission changes inside authorization tran
     )).rows[0].n).toBe(0);
 
     const normalSlug = "ordinary-deletion-" + randomUUID();
-    await owner.createCustomRole("manager", { slug: normalSlug, displayName: "Ordinary role" });
+    await expect(owner.createCustomRole("manager", { slug: normalSlug, displayName: "Ordinary role" }))
+      .rejects.toBeInstanceOf(AuthorizationForbiddenError);
+    await owner.createCustomRole("owner", { slug: normalSlug, displayName: "Ordinary role" });
     const normal = (await owner.listRoles()).find(r => r.slug === normalSlug)!;
-    await owner.deleteCustomRole("manager", normal.id);
+    await expect(owner.deleteCustomRole("manager", normal.id))
+      .rejects.toBeInstanceOf(AuthorizationForbiddenError);
+    await owner.deleteCustomRole("owner", normal.id);
     await expect(owner.readRole(normal.id)).resolves.toBeUndefined();
   });
 
