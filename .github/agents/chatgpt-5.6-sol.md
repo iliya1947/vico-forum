@@ -1,3 +1,11 @@
+# Мира — Settings architecture correction
+
+Owner corrected the model: Settings is a family of separate surfaces, not one admin page.
+
+Minimum: Owner/system settings (Owner-only, includes role settings), administrator personal settings, user personal settings. Additional candidate: Account & security as a distinct personal-security surface. Domain-specific settings normally remain in their subsystem.
+
+Current contract impact: `access.authorization.manage` presently delegates role definition/grant management. Owner now requires role settings Owner-only; exact treatment of role assignment and per-user overrides remains to define before planning.
+
 # Мира — Settings product-definition analysis
 
 Current Settings is only an Under development placeholder. No generic settings store/permission exists. Existing configuration is domain-separated.
