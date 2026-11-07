@@ -21,10 +21,12 @@ or permission keys; AP-03 adds `admin.history.read`, AP-09 adds `admin.users.rea
 adds the two block-management capabilities plus its measure persistence.
 
 Other routes and capabilities described below as delivery targets become available only
-through their respective bounded implementation PRs. Unfinished Settings links use the shared
-Under development surface and grant no future read/action permission. Users is now a real
-destination for `admin.users.read`; an authorization-manager without that permission keeps
-the existing authorization-user-management subset rather than gaining the general Users directory.
+through their respective bounded implementation PRs. Settings remains on the shared
+Under development surface and grants no future read/action permission. By owner decision it is
+explicitly deferred until after the separate owner/authorization redesign and is not part of the
+completed AP-01–AP-11 delivery scope. Users is now a real destination for `admin.users.read`;
+an authorization-manager without that permission keeps the existing authorization-user-management
+subset rather than gaining the general Users directory.
 
 Related sources of truth:
 
@@ -89,7 +91,9 @@ admin projection is separately protected and does not alter that public contract
 During owner-only pre-release, approved unfinished destinations may use the shared localized
 Under development mechanism. This does not grant a private read or mutation. Settings has no
 approved concrete operations yet; its placeholder does not authorize a settings store or API.
-An unfinished section is not reported as implemented or accepted at closeout.
+The owner explicitly separated Settings from AP-01–AP-11: first complete the delivered admin
+scope, then redesign owner/authorization boundaries, then design/implement Settings as a separate
+future package. Settings therefore remains truthfully unfinished without blocking AP-11 closeout.
 
 ## Implemented category/section browsing (AP-06)
 
@@ -660,6 +664,26 @@ This is the permanent **product/runtime contract** for the AP-10 implementation 
 in the repository. Repository merge does not imply production/deployed rollout;
 `PROJECT_STATE.md` records the current factual project and external state.
 
+## Integration closeout (AP-11)
+
+AP-11 adds no new domain capability, schema, permission or grant. It closes the delivered
+AP-01–AP-10 scope by exercising existing boundaries together in a real local runtime:
+Users detail + canonical authorization mutation + History + same-session revoke/recovery,
+Forum hierarchy/topic close/reopen + mounted reply editor + AP-10 reply restrictions, and
+protected response/privacy plus EN/RU/HE responsive behavior on the connected admin surfaces.
+
+The connected admission constraints remain independent: topic closure does not replace or lift
+an active reply restriction, and lifting the measure does not reopen a closed topic. A stale
+denied reply preserves the mounted editor/operation and existing attachment state, blocks repeat
+Publish/new Attach through the explicit fresh-loader revalidation, keeps Cancel available, and
+never automatically replays the POST. Users authorization grant/revoke transitions under this
+closeout use the existing canonical authorization writer and History path, not fixture SQL as a
+substitute for the operation being verified.
+
+AP-11 is repository/local-CI integration evidence, not production/deployed acceptance or owner
+visual acceptance. Settings is intentionally outside this closeout and follows the separately
+approved sequence: owner/authorization redesign → Settings.
+
 ## Delivery and acceptance
 
 The technical sequence agreed for bounded delivery is:
@@ -676,7 +700,7 @@ The technical sequence agreed for bounded delivery is:
 | AP-08 | Shared topic close/reopen, persisted closure CAS and reply admission after AP-07 |
 | AP-09 | Users index/page reusing existing authz controls after AP-08 and earlier shared foundations |
 | AP-10 | Administrative measures, exact-measure appeals and all affected enforcement after AP-09 and approved measure-effect/reason matrix |
-| AP-11 | Integration and factual closeout of delivered scope |
+| AP-11 | Integration and factual closeout of delivered AP-01–AP-10 scope; Settings explicitly deferred |
 
 Each implementation PR has its own applicable checks and stable-head review before merge;
 AP-11 is not the first security or integration check. Schema-changing work follows existing
@@ -692,7 +716,8 @@ by the existing release requirements.
 
 AP-01 is complete when this contract is self-contained and consistent with current sources of
 truth, necessary links are aligned, and the change remains documentation-only. It must not
-report AP-02+ behavior, unrun CI or future runtime acceptance as completed. Later closeout must
-identify remaining Settings/unspecified-operation decisions; the whole umbrella is not complete
-while required approved functionality is only a placeholder, unless the owner explicitly
-separates it into a later phase.
+report AP-02+ behavior, unrun CI or future runtime acceptance as completed. AP-11 now closes the
+approved AP-01–AP-10 delivered scope. The remaining Settings placeholder does not make that
+closeout false because the owner explicitly separated Settings into a later phase after the
+owner/authorization redesign; Settings itself must not be reported as implemented until that
+separate package is actually delivered.

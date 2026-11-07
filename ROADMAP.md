@@ -441,9 +441,10 @@ Reputation, полный owner-only audit, social-network profile mechanics и �
 возможности, которые владелец отдельно не утвердил, не входят в обязательный объём без нового
 продуктового решения. Система жалоб утверждена отдельно и ведётся по собственному плану; ordinary-admin
 scope, включая временные/постоянные administrative measures и историю значимых административных действий, зафиксирован в
-[`docs/ADMIN_PANEL.md`](docs/ADMIN_PANEL.md). AP-01 добавляет только постоянный контракт;
-реализация идёт последующими bounded PR; эффект AP-10 определён в профильном контракте,
-а фактическое состояние реализации и оставшиеся admin-panel packages указаны в `PROJECT_STATE.md`.
+[`docs/ADMIN_PANEL.md`](docs/ADMIN_PANEL.md). Bounded delivery AP-01–AP-11 завершён в
+repository/local-CI path; фактическое состояние указано в `PROJECT_STATE.md`.
+Settings по решению владельца вынесен в отдельную будущую фазу после owner/authorization redesign
+и не переоткрывает завершённый AP-11 closeout.
 
 Черновики и автосохранение перенесены владельцем 2026-10-20 в возможные будущие функции
 (`Under development: drafts`) и не являются обязательным объёмом текущего Editor 2.0.
