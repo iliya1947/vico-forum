@@ -480,3 +480,40 @@ Recommended first slice: theme + preferred language + existing Editor preference
 ### Privacy candidate
 
 Public recent online-presence currently exposes signed-in members. A future “show my online status” preference affects visibility to others and therefore belongs to a separate **Privacy** surface, not convenience or account-security Settings.
+
+
+## Account & security Settings
+
+First useful package:
+1. show linked sign-in methods;
+2. existing explicit Google connect control belongs here;
+3. change password for accounts that already have password credentials;
+4. list active sessions/devices;
+5. revoke one other session or all other sessions.
+
+Current Vico has email/password + Google foundation and explicit Google linking, but no account-list/unlink/change-password/session-management UI. Session storage already contains expiry/IP/user-agent/user ownership.
+
+Defer: unlinking, email change, password reset/set-password for OAuth-only accounts, account deletion, passkeys and 2FA until their product/security/email boundaries are defined. Public Profile fields remain Profile, not Account settings.
+
+## Privacy Settings
+
+First concrete privacy control:
+- **Show my online status**, default on.
+
+Current public online-presence surface exposes recent signed-in member count plus member identities/profile links for users active within five minutes. Privacy-off should exclude the user from both public member list and public count. Exact persistence/cleanup is a later technical-plan detail.
+
+Do not add a generic private-account/hide-posts model: Vico remains a public forum.
+
+Future mute/block/visibility controls may join Privacy only after those features exist. Account deletion/data-export do not justify a separate Data page yet.
+
+## Complete Settings top-level architecture
+
+1. Forum & roles — Owner only.
+2. Administrator preferences.
+3. User preferences.
+4. Account & security.
+5. Privacy.
+
+Subsystem operational settings stay subsystem-local. No sixth top-level surface is currently justified; Notifications, Accessibility and reading/translation remain sections under User preferences unless they later grow into independent domains.
+
+No implementation starts until the owner approves the full map and resolves the remaining product decisions.
