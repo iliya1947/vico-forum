@@ -1,3 +1,26 @@
+# Мира — PR #296 coordinator review block 1/4: PASS
+
+## PR #296 coordinator review — block 1/4 PASS
+
+- Stable exact head: `04865401cd5c2a69941cb458d0df1fc7424a37f7`; base `8301087f9322b34bdd325ed9298fdf3fddd84561`.
+- Reviewed central Owner authority implementation and focused tests:
+  - `app/authorization/owner.ts`
+  - `db/authorization-repository.ts`
+  - authorization/admin route Owner predicates
+  - Worker trusted binding composition relevant to central authority
+  - Owner/repository/PostgreSQL tests and Node TS inclusion.
+- Confirmed:
+  - only exact valid server binding creates Owner authority;
+  - existing DB user is still required;
+  - bound Owner receives all current code-backed `PERMISSION_CATALOG` entries;
+  - unknown permission strings do not become authority;
+  - bulk, targeted, resolver/direct `hasPermission` and fresh authorization mutation paths agree;
+  - stored role/grants/overrides remain factual and unchanged; `authoritySource: owner` is projection metadata only;
+  - non-Owner deny > allow > role behavior is unchanged;
+  - no schema/migration/seed/new role layer introduced.
+- Verdict for block 1/4: **PASS**, zero confirmed current-scope defects.
+- Whole-PR coordinator PASS is NOT yet claimed. Next block: AP-10 authority/immunity/direct admission wiring.
+
 # Мира — Stage 2 technical plan coordinator review: PASS
 
 Revised Lev plan (#6702391114 + #6702520494) checked against current main/source and Owner clarification.
