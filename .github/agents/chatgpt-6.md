@@ -1,3 +1,26 @@
+# Лира — active task: SET-01 implementation
+
+Implement **SET-01 — current-release Owner-only authorization mutations** from the approved Settings technical plan in #251.
+
+Required result:
+- all existing authorization-management mutations are writable only by the exact bound Owner.
+
+Scope:
+- role create/rename/delete;
+- role grant/revoke;
+- user role assignment;
+- per-user allow/deny/inherit overrides;
+- every existing mutation entry point for those operations.
+
+Done:
+- one bounded implementation PR;
+- server and UI mutation paths enforce the same policy;
+- existing reads remain read-only where still authorized;
+- applicable tests/checks pass for Owner success and non-Owner denial with no state/History mutation;
+- report stable exact PR/head and checks to #251.
+
+Do not implement SET-02–SET-06 or deputy authority.
+
 # Лира — PR #298 OWNER-DOC-MIRA-01: correction author handoff (2026-11-07)
 
 - Initial coordinator docs review Mira on `514dff7c2e262d63a3cf0dbbebd5a845f43571e1`: CHANGES REQUIRED, one current-scope wording finding `OWNER-DOC-MIRA-01` ([#6705298350](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6705298350)). Original bootstrap copy mistakenly included Google sign-in/linking as alternative to approved **developer Google sign-in → internal Better Auth `user.id` → server-only `VICO_OWNER_USER_ID`**.
