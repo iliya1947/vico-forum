@@ -10,7 +10,7 @@ if(!url || !["127.0.0.1","localhost"].includes(new URL(url).hostname) || !new UR
 const schema="admin_history_test";
 const client=new Client({connectionString:url,options:`-c search_path=${schema}`});
 const pool=new Pool({connectionString:url,options:`-c search_path=${schema}`});
-const auth=new PostgresAuthorizationRepository(pool);
+const auth=new PostgresAuthorizationRepository(pool,"manager");
 const reader=new PostgresAdminHistoryReader(pool);
 const count=async()=>Number((await client.query("select count(*) from admin_history")).rows[0].count);
 beforeAll(async()=>{
@@ -35,7 +35,8 @@ describe("atomic authorization History",()=>{
   expect(page.events.map(e=>e.change.action).sort()).toEqual(["role.created","role.renamed","role.grantsChanged","user.roleAssigned","user.overrideChanged","role.deleted"].sort());
   expect(page.events.find(e=>e.change.action==="role.deleted")?.change).toMatchObject({targetId:"history-role",targetLabel:"After עברית",context:{slug:"history-role"}});
   expect(JSON.stringify(page)).not.toContain("secret-");
-  expect(await auth.hasPermission("manager","admin.history.read")).toBe(false);
+  expect(await auth.hasPermission("manager","admin.history.read")).toBe(true);
+  expect((await auth.resolveUser("manager")).overrides["admin.history.read"]).toBe("deny");
  });
  it("suppresses unchanged retries and rejects denied and invalid mutations without events",async()=>{
   const before=await count();
