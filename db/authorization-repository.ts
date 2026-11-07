@@ -227,6 +227,15 @@ export class PostgresAuthorizationRepository {
   deleteCustomRole(actorId: string, roleId: string) {
     return this.mutate(actorId, async (client) => {
       const role = await this.historyRole(client, roleId);
+      // Deleting an unassigned elevated custom role cascades its grants: this is
+      // a privileged revoke and must pass the same fresh Owner gate.
+      const elevated = await client.query<{ protected_change: boolean }>(`
+        select exists (
+          select 1 from authz_role_permissions p
+          join authz_roles r on r.id = p.role_id
+          where p.role_id = $1 and p.permission_key = $2 and not r.is_system
+        ) protected_change`, [roleId, BLOCK_MANAGE_PRIVILEGED_PERMISSION]);
+      if (elevated.rows[0]?.protected_change) this.requireBoundOwner(actorId);
       try {
         const result = await client.query("delete from authz_roles where id = $1 and not is_system", [roleId]);
         if (result.rowCount === 0) throw new AuthorizationNotFoundError("custom role does not exist");
