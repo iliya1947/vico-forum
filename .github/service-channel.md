@@ -106,3 +106,24 @@ Required result:
 - no new role hierarchy, no schema/migration, no Settings/super-admin/infra work, no mutex redesign unless an actual implementation blocker proves it necessary.
 
 Read Lev's full approved plan before implementation. Reuse existing test/browser harnesses and complete applicable checks. Do not update permanent project documentation in the implementation PR; docs remain a separate closeout PR after merge. When implementation and checks are complete, publish the implementation PR + stable exact head in #251 and stop for Mira coordinator review.
+
+## PR #296 coordinator review — block 1/4 PASS
+
+- Stable exact head: `04865401cd5c2a69941cb458d0df1fc7424a37f7`; base `8301087f9322b34bdd325ed9298fdf3fddd84561`.
+- Reviewed central Owner authority implementation and focused tests:
+  - `app/authorization/owner.ts`
+  - `db/authorization-repository.ts`
+  - authorization/admin route Owner predicates
+  - Worker trusted binding composition relevant to central authority
+  - Owner/repository/PostgreSQL tests and Node TS inclusion.
+- Confirmed:
+  - only exact valid server binding creates Owner authority;
+  - existing DB user is still required;
+  - bound Owner receives all current code-backed `PERMISSION_CATALOG` entries;
+  - unknown permission strings do not become authority;
+  - bulk, targeted, resolver/direct `hasPermission` and fresh authorization mutation paths agree;
+  - stored role/grants/overrides remain factual and unchanged; `authoritySource: owner` is projection metadata only;
+  - non-Owner deny > allow > role behavior is unchanged;
+  - no schema/migration/seed/new role layer introduced.
+- Verdict for block 1/4: **PASS**, zero confirmed current-scope defects.
+- Whole-PR coordinator PASS is NOT yet claimed. Next block: AP-10 authority/immunity/direct admission wiring.
