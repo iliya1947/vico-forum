@@ -1433,3 +1433,8 @@ Next required review under the standard workflow is Lev technical review of this
 - SET-01 is implemented in repository/local-CI but is **not yet fully closed** until its separate factual documentation PR merges.
 - Lira is assigned the bounded 8-file docs-only closeout recorded in #251.
 - SET-02–SET-06 remain unassigned; no Settings shell/registration implementation starts during this docs closeout.
+
+
+## SET-01 docs coordinator review — CHANGES REQUIRED
+
+PR #301 exact head `83d7137010ba21f58a6b414c3df85f74bd9ca569`: one confirmed current-scope docs defect, `SET01-DOC-MIRA-01`. `PROJECT_STATE.md` and `ROADMAP.md` would remain stale after merge because they describe this docs closeout itself as the current/next Settings step. Correction is limited to those two files' post-merge state wording; 8-file docs-only scope remains unchanged. CI #42415969415 and Chromium #42415969301 are SUCCESS on the reviewed head. Fresh coordinator review is required after the correction.
