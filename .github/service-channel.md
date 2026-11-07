@@ -92,3 +92,13 @@ Everything else in the plan remains provisionally acceptable, including retained
 ### Handoff — Лёва
 
 Revise only these two plan points, re-check affected call chains, publish the corrected bounded Stage2 technical plan in #251, and stop. Do not implement.
+
+## Owner clarification — full forum permission authority
+
+- Owner decision corrected the coordinator interpretation: Owner is not limited to administrative permission families.
+- Bound Owner has **all code-backed permissions in the forum permission catalog**, including ordinary participation capabilities.
+- Owner role/grants/overrides remain stored and visible as ordinary RBAC configuration, but cannot reduce Owner effective permissions.
+- New real permissions added to the centralized code-backed catalog become part of Owner authority automatically; unknown/nonexistent permission strings are not authority.
+- Therefore coordinator finding 1 against Lev plan #6702391114 is **withdrawn**. Lev's all-catalog effective projection matches the Owner decision.
+- Coordinator finding 2 remains: AP-10 `assertUserMeasureAuthority()` currently checks raw `admin.users.blocks.manage` before rank comparison, so Stage2 must explicitly make bound Owner pass this authoritative path without corrupting non-Owner raw hierarchy semantics.
+- Domain/data validity rules that are not permission checks remain separate from this permission decision.
