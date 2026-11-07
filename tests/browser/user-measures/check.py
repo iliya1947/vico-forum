@@ -973,8 +973,18 @@ try:
                 owner_page.set_viewport_size({"width": width, "height": 900})
                 document(owner_page, "/" + locale + "/admin/authorization")
                 expect(owner_page.locator(".admin-owner-authority-note")).to_contain_text(text)
-                assert owner_page.evaluate("document.documentElement.scrollWidth <= innerWidth + 1"), (
-                    "owner authority layout overflow", locale, width)
+                overflow_ok = owner_page.evaluate("document.documentElement.scrollWidth <= innerWidth + 1")
+                if not overflow_ok:
+                    print("SET02_LAYOUT_DIAGNOSTIC " + json.dumps(owner_page.evaluate("""() => ({
+                        width: innerWidth, scrollWidth: document.documentElement.scrollWidth,
+                        offenders: [...document.querySelectorAll('body *')].map(e => {
+                            const r = e.getBoundingClientRect();
+                            return { tag: e.tagName, cls: String(e.className || '').slice(0,95),
+                              left: Math.round(r.left), right: Math.round(r.right), width: Math.round(r.width),
+                              text: e.textContent?.trim().slice(0,45) };
+                        }).filter(x => x.right > innerWidth + 1 || x.left < -1).slice(0,25)
+                    })"""), ensure_ascii=False), flush=True)
+                assert overflow_ok, ("owner authority layout overflow", locale, width)
                 if width == 320:
                     owner_page.screenshot(path=str(args.output / (
                         "stage2-owner-roles-" + locale + "-320.png")), full_page=True)
