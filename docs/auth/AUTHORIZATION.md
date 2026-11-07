@@ -54,6 +54,27 @@ authenticated session, resource ownership для `*Own` действий, valida
 Origin, CAS/revision, lifecycle, target/issuer hierarchy и atomic History. Нового
 generic edit-any/delete-any или публичного super-admin интерфейса нет.
 
+### Единственный Owner — bootstrap identity
+
+В Vico Forum ровно один Owner — разработчик. Его Google-аккаунт используется для
+входа в предназначенный ему аккаунт форума, а не как самостоятельное доказательство
+полномочий. После Google authentication/linking авторитетной identity является
+внутренний Better Auth `user.id` этого аккаунта; сервер задаёт ровно этот ID
+в `VICO_OWNER_USER_ID`. Google email, provider claim, имя, обычная роль и
+grants/overrides сами по себе не создают Owner authority.
+
+Передача владения, второй Owner, наследование и перенос Owner authority на другого
+человека не предусмотрены; отдельных UI/API для этого нет. Не требуется
+first-admin/first-manager bootstrap, выдача стартового grant или новая
+application-функция: существующие Google authentication/linking и server-bound
+Owner authority обеспечивают утверждённую модель.
+
+Реальные Google credentials/redirects, определение и установка binding для
+внутреннего аккаунта разработчика, а также deployed Owner acceptance остаются
+незавершёнными операционными шагами Stage 6. Восстановление после потери или
+компрометации доступа за пределами восстановления доступа тому же Owner
+не проектируется без отдельного решения владельца.
+
 ## Permission catalog
 
 Permission key означает существующую capability приложения. UI может назначать/отнимать
@@ -207,7 +228,7 @@ retain their own permissions and do not follow from complaint review.
 - `admin.users.read`;
 - `admin.history.read`.
 
-После bootstrap пользователь с `access.authorization.manage` может через сайт менять grants
+Пользователь с `access.authorization.manage` может через сайт менять grants
 любой роли, включая built-in roles. Каждая management mutation повторно проверяет fresh effective
 permission внутри serialized transaction boundary; manager-count/last-manager veto больше не действует.
 
@@ -367,10 +388,10 @@ singleton row `authz_mutation_lock` через `FOR UPDATE`, затем пров
 `access.authorization.manage`, включая self-revoke последнего manager. Успешная mutation
 фиксируется обычным History event, а следующий protected request уже получает fresh denial.
 
-Owner authority реализована Stage 2 в пределах указанного server binding;
-recovery/bootstrap и внешняя проверка этой модели остаются отдельными будущими работами.
-Stage 1–2 не добавляли публичный unauthenticated bootstrap endpoint и не выполняли
-external rollout.
+Owner authority реализована Stage 2; отдельный first-manager/bootstrap механизм
+в приложении не требуется. Google configuration, установка server-only Owner binding
+и deployed acceptance остаются Stage 6. Stage 1–2 не добавляли публичный
+unauthenticated bootstrap endpoint и не выполняли external rollout.
 
 ## Better Auth boundary
 
