@@ -1,3 +1,16 @@
+# Лёва — active task: Settings technical plan
+
+Prepare the technical plan for the frozen first-release Settings scope recorded in the current service plan/channel.
+
+Required result:
+- map the approved five Settings surfaces onto the current implementation;
+- split work into bounded implementation packages with clear dependencies and done criteria;
+- identify schema/migration, authorization, auth/session, persistence, routing/UI and test/browser-acceptance needs per package;
+- preserve future authorization-management delegation to deputies without implementing deputies now;
+- exclude deferred Settings items and subsystem-local settings.
+
+Do not implement code. Record the plan in the service PR and hand back to Mira for coordinator review.
+
 # Лёва — Stage2 / PR #296 independent technical review: PASS
 
 [Полный отчёт #6704068605](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6704068605). Назначенная independent review завершена на exact head `824ab8eccb091664c2e7d37f81f2737e7fd43e87`. Подтверждённых current-scope defects: 0. Следующий шаг — Мира: readiness; merge выполняет владелец, затем separate factual docs closeout.
