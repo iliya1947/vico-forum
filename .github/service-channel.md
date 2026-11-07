@@ -921,3 +921,167 @@ A future choice such as **“Show my online status”** changes what other peopl
 Treat **Privacy** as a separate Settings surface candidate. Other future visibility/block/mute choices may belong there if those product features are later implemented. Do not invent them now.
 
 No privacy implementation is authorized yet.
+
+
+## Account & security — detailed product map
+
+This is the signed-in user's personal authentication/security surface. It is separate from public Profile, user convenience preferences and Privacy.
+
+### A. Sign-in methods
+
+Current Vico facts:
+- email/password authentication is enabled;
+- Google authentication is configured in the application foundation;
+- own Profile already exposes explicit Google linking through the protected `linkSocial` flow;
+- Vico currently has no account-list/unlink UI.
+
+The Account & security page should become the canonical place to show **which sign-in methods are actually linked** to the current account.
+
+Strong product controls:
+- show whether password credentials exist;
+- show whether Google is linked;
+- connect Google when it is not linked.
+
+Possible later control:
+- unlink Google only when another valid sign-in method remains and lockout prevention is preserved.
+
+Do not expose OAuth tokens/scopes/provider secrets. Do not infer Owner authority from linked Google state; Owner remains the independent server-bound `user.id` model.
+
+Better Auth's current account-management contract supports listing linked accounts and unlinking by account record ID, and prevents unlinking the only account unless explicitly configured otherwise. Vico does not currently expose those calls.
+
+### B. Password
+
+Current Vico facts:
+- email/password sign-in is enabled;
+- password recovery/email sender remain intentionally deferred;
+- no Vico change-password UI exists.
+
+Strong candidate:
+- **change current password** for an account that already has password credentials, requiring the current password.
+
+Keep out of the first package:
+- forgot/reset password, because the project's email sender/recovery flow is separately deferred;
+- silently creating a password for Google-only accounts. Better Auth has a server-side set-password capability, but its own guidance prefers a recovery-style flow; Vico should decide that together with its email-verification/recovery work rather than inventing a shortcut here.
+
+### C. Active sessions / devices
+
+Current Vico session schema already stores:
+- session identity/token;
+- expiry;
+- IP address;
+- user agent;
+- owning user ID.
+
+The page should support:
+- list the current user's active sessions/devices;
+- clearly mark the current session;
+- revoke one other session;
+- “sign out all other sessions”.
+
+This is a strong first-release security control. Better Auth documents list/revoke single/other/all session operations; Vico currently exposes only ordinary sign-out.
+
+Do not turn session duration, cookie policy or global auth rate limits into user settings; those are security/system policy.
+
+### D. Account identity changes — later
+
+Do not put these into the first package without separate product decisions:
+- change authentication email;
+- change authoritative account name/image;
+- self-delete account;
+- set password on an OAuth-only account;
+- disconnect the last remaining sign-in method.
+
+Email change/recovery/deletion interact with verification, email delivery and data-retention semantics that are not yet product-complete.
+
+Public bio/GitHub/website remain Profile editing, not Account & security.
+
+### E. Stronger authentication — later separate auth work
+
+Possible future controls:
+- passkeys;
+- 2FA;
+- recovery codes or similar stronger-auth mechanisms.
+
+None is currently configured in Vico. Do not add placeholder switches before the corresponding authentication capability exists.
+
+### Coordinator recommendation for the first Account & security package
+
+1. Show linked sign-in methods.
+2. Keep/move the existing “Connect Google” control here.
+3. Change password for accounts that already have password credentials.
+4. List active sessions.
+5. Revoke one other session / all other sessions.
+
+Defer unlinking, email changes, password recovery/set-password, account deletion, passkeys and 2FA until their product/security boundaries are explicitly designed.
+
+No implementation is authorized yet.
+
+## Privacy — detailed product map
+
+Privacy controls what other people can learn/see about the current user. It is not the same as Account security or personal UI convenience.
+
+### A. Online presence
+
+Current Vico behavior:
+- signed-in clients send authenticated presence heartbeats;
+- the server treats users active in the last five minutes as online;
+- the public home page exposes both the active-member count and up to 12 recent member identities/profile links;
+- there is currently no opt-out preference.
+
+Strong first Privacy setting:
+- **Show my online status: on/off**.
+
+Recommended semantics:
+- default **on** to preserve current behavior for existing accounts;
+- when off, the user must not appear in the public online member list and must not contribute to its public active-member count;
+- changing it off should stop future public presence publication; exact cleanup/storage mechanics are implementation details.
+
+This is a genuine privacy control because it changes information visible to guests/other users.
+
+### B. Public forum identity is not optional privacy
+
+Vico is a public forum. Do not add generic “private account” or “hide my posts/profile while participating” toggles that conflict with the forum's public-content model.
+
+Public Profile fields are separately edited by the user; Privacy does not replace Profile.
+
+### C. Future social/privacy controls
+
+When/if these product features are implemented, their preference/management surfaces may belong here:
+- mute another user;
+- block another user;
+- other visibility/contact restrictions.
+
+Do not create empty controls for them before the underlying feature exists.
+
+### D. Data controls
+
+Account deletion/export or legal data-request workflows are not yet implemented. At current scope:
+- account deletion belongs primarily to Account & security/destructive account management;
+- a broader “Data & privacy” page is not justified yet.
+
+If future privacy/data functionality becomes substantial, the Privacy surface can be renamed/split then rather than building an empty sixth page now.
+
+### Coordinator conclusion — complete top-level Settings architecture
+
+Five top-level Settings surfaces are currently justified:
+
+1. **Forum & roles** — Owner-only global system policy and role configuration.
+2. **Administrator preferences** — personal admin workspace convenience.
+3. **User preferences** — appearance, language, Editor, notifications, reading/translation presentation.
+4. **Account & security** — sign-in methods, password and sessions.
+5. **Privacy** — visibility/privacy choices, starting with online presence.
+
+Subsystem-specific operational settings remain within their subsystem by default.
+
+No additional top-level page is currently justified:
+- Notifications remain a User preferences section at present;
+- Accessibility remains a User preferences section;
+- translation-reading preferences remain User preferences;
+- Profile remains its own profile surface;
+- Forum structure remains object administration;
+- developer/infrastructure/secrets remain outside Settings;
+- subsystem settings remain subsystem-local.
+
+A new top-level page should be created later only when a real independent domain grows enough that combining it with one of these five harms clarity.
+
+No implementation is authorized yet.
