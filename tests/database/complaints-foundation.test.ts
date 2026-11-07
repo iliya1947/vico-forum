@@ -989,7 +989,7 @@ function observedAuthorizationPool(afterQuery: (sql: string) => Promise<void>): 
 
 const identityPermission = "forum.complaint.reporterIdentity.read" as const;
 const snapshotActor = "snapshot-reader";
-const authorizationRepository = new PostgresAuthorizationRepository(pool);
+const authorizationRepository = new PostgresAuthorizationRepository(pool,"admin");
 const management = new AuthorizationService(authorizationRepository);
 function readAuthorization(adapter: "postgres" | "hyperdrive", database = pool) {
   return adapter === "postgres"
