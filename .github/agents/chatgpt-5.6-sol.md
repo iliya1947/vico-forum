@@ -1,3 +1,13 @@
+# Мира — Stage 2 technical plan review: CHANGES REQUIRED
+
+Plan #6702391114 reviewed on main `8301087f9322b34bdd325ed9298fdf3fddd84561`.
+
+Current-scope findings:
+1. Whole `PERMISSION_CATALOG` Owner projection is broader than approved Owner management authority because the catalog contains ordinary participation permissions.
+2. AP-10 `assertUserMeasureAuthority()` still requires raw `admin.users.blocks.manage`; common effective projection alone does not implement Owner management authority at that transaction boundary.
+
+Plan returned to Лёва for bounded correction. No implementation assigned.
+
 # Мира — Stage 1 last-manager removal coordinator review: PASS
 
 PR #294, exact head `e3604222ae8cecb4b1f2f94cdd5d7e9f76c15e61`, base `bcf02193f82aa0d448444c6943d6ebdcf09f7896`.
