@@ -230,7 +230,7 @@ describe("authorization management presentation", () => {
     await screen.findByRole("heading", { name: "Authorization management", level: 2 });
     expect(screen.getByText(/Owner authority grants all current permissions/)).toBeVisible();
     expect(container.querySelector(".admin-user-card .admin-badge")).toHaveTextContent("User");
-    expect(container.querySelector('form.admin-override-row input[value="forum.topic.create"]'))
+    expect(container.querySelector('form.admin-override-row input[value="forum.topic.create"]')
       ?.closest("form")?.querySelector('select[name="effect"]')).toHaveValue("deny");
     expect(container.querySelector(".admin-effective-permissions")).toHaveTextContent("forum.topic.create");
     expect(container.querySelector("input[name='VICO_OWNER_USER_ID']")).toBeNull();
