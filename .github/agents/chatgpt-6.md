@@ -1,3 +1,11 @@
+# Лира — PR #298 OWNER-DOC-MIRA-01: correction author handoff (2026-11-07)
+
+- Initial coordinator docs review Mira on `514dff7c2e262d63a3cf0dbbebd5a845f43571e1`: CHANGES REQUIRED, one current-scope wording finding `OWNER-DOC-MIRA-01` ([#6705298350](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6705298350)). Original bootstrap copy mistakenly included Google sign-in/linking as alternative to approved **developer Google sign-in → internal Better Auth `user.id` → server-only `VICO_OWNER_USER_ID`**.
+- Corrected **only five** new bootstrap descriptions in [Draft PR #298](https://github.com/iliya1947/vico-forum/pull/298): `docs/auth/AUTHORIZATION.md`, `docs/ADMIN_PANEL.md`, `PROJECT_STATE.md`, `ROADMAP.md`, `docs/PROJECT_HISTORY/PROJECT_HISTORY_16.md`. The pre-existing `Local email and Google linking` section is unchanged by exact text comparison. History index unchanged. Current PR changed-file scope remains exactly six documentation files; no application code/tests/migrations/schema/workflows/infra.
+- New frozen **exact head `7cfa68a8a2c587314393d60a9bf90923604ee0c0`**, base/current main `96186cc9158dd7a91c9d2c0124ed4556f133f15c`. GitHub compare from Mira-reviewed head confirms exactly five docs files in correction delta, no other paths. PR body corrected to avoid stale `sign-in/linking` wording and to display exact-head CI.
+- [CI #42361836324](https://github.com/iliya1947/vico-forum/actions/runs/42361836324): **SUCCESS, attempt 1**, both jobs. `checks`: 155/155 application test files, 1974/1974 tests, lint/typecheck/build/preview/migration/schema gates PASS; `database`: 47/47 native PostgreSQL17 files, 571/571 tests, runtime privileges and Worker/Better Auth smoke PASS. AP-10 Chromium trigger paths unchanged and browser workflow not applicable. No owner visual, real Google, deployed/production acceptance claimed.
+- This is **author correction and verification**, not coordinator PASS. PR #298 remains Draft/mergeable on frozen exact head. Next Mira fresh coordinator docs-only review; no Codex or implementation work initiated. Lira stops.
+
 # Лира — PR #298 correction
 
 Mira coordinator review on exact head `514dff7c2e262d63a3cf0dbbebd5a845f43571e1`: CHANGES REQUIRED, one docs-only current-scope finding `OWNER-DOC-MIRA-01`.
