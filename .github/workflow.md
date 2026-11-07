@@ -1,22 +1,15 @@
 # Admin panel — current workflow
 
-- Служебный PR: #251; общий план: `ADMIN_PANEL_IMPLEMENTATION_PLAN.md`
+- Служебный PR: #251
 - Current main: `96186cc9158dd7a91c9d2c0124ed4556f133f15c`, migrations 0000–0059
-- Ordinary AP-01–AP-11 closed; redesign Stage1 fully closed
-- Current stage: **owner/authorization recovery/bootstrap product boundary fixed; no transfer feature**
-- Approved plan: #6702391114 + AP-10 revision #6702520494 + Owner all-catalog clarification, coordinator PASS
-- Implementer: Лира
-- Implementation #296: **merged**; merge commit `df57dabf2a4cbc44d85138d8809079878490a7c8`
-- Coordinator whole-PR reviewer Мира: **PASS** on same exact head; STAGE2-MIRA-01 closed
-- Independent technical reviewer Лёва: **PASS**, zero confirmed current-scope defects; [report #6704068605](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6704068605)
-- Own evidence: build;56 unit/route/UI +96 native PG; independent mutex/History probe; actual Chromium Stage2/AP-10/AP-11 37 groups + isolated History35 PASS
-- Exact-head GitHub CI #42349494000 and browser #42349494094 SUCCESS, separately verified
-- Documentation executor: **Лира**, STAGE2-DOC-MIRA-03 text correction committed in Draft docs-only PR #297 head `a63bfb6d52052e1dd0905eb498dabb1d38c8f10a`, base `df57dabf2a4cbc44d85138d8809079878490a7c8`; one-line delta in PROJECT_STATE.md
-- Docs-only PR #297 current exact-head checks: CI #42355616281 SUCCESS (checks + PostgreSQL17); Chromium #42355616335 SUCCESS attempt2, both jobs passed, 37 AP-10/AP-11/Owner groups and History. Attempt1 had previously observed AP-11 `AbortError`; cause not established, no runtime or script changes
-- Previous coordinator docs review on `69581a0a...`: **CHANGES REQUIRED**, `STAGE2-DOC-MIRA-01/02`. Both corrected only in ROADMAP.md and PROJECT_STATE.md; author exact-head checks complete; **fresh coordinator verdict pending**
-- Fresh coordinator docs review of `9d0c7baa`: **CHANGES REQUIRED**, `STAGE2-DOC-MIRA-03` unapproved future bootstrap wording; Лира removed only the unapproved phrase on `a63bfb6d`, one docs file changed, new review pending
-- Stage2 fully closed only after implementation/docs merge; no production/owner visual acceptance claimed
-- Лёва review завершил и остановился; Марк не назначен
-- Implementation head change requires new coordinator-first review cycle
-- Settings after redesign; no new role/RBAC/schema/migration/infra/super-admin/mutex redesign or last-manager rule
-- Coordinator docs review: **PASS**, zero confirmed current-scope docs defects on exact head `a63bfb6d52052e1dd0905eb498dabb1d38c8f10a`; PR #297 Ready for review
+- Ordinary Admin Panel AP-01–AP-11: closed
+- Owner/authorization redesign Stage 1–2: implementation + docs merged
+- Current stage: **single-Owner bootstrap decision fixed; application implementation complete**
+- Owner: **one person — developer**
+- Bootstrap: developer signs in through Google; the resulting internal account ID is bound server-side as Owner
+- Ownership transfer / multiple Owners: **not in current product scope**
+- Separate first-admin/first-manager bootstrap: **not required**
+- Remaining Owner work: external Google/Owner binding and acceptance in Stage 6 only
+- Stage 6 remains paused until explicit owner instruction
+- Settings remains next product package after final documentation closeout of this redesign
+- Next: **separate final documentation closeout for the confirmed single-Owner bootstrap boundary**
