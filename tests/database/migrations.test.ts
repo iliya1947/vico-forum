@@ -79,7 +79,7 @@ describe("PostgreSQL 17 locale migrations", () => {
     const applied = await client.query<{ count: string }>(
       'select count(*)::text as count from drizzle."__drizzle_migrations"',
     );
-    expect(applied.rows[0]?.count).toBe("60");
+    expect(applied.rows[0]?.count).toBe("61");
     // The AP-08 manifest hashes are computed from PostgreSQL 17 catalog expressions,
     // rather than assumed from SQL formatting or hand-entered normalized forms.
     const definitions = await client.query<{ key: string; definition: string }>(`
