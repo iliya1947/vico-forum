@@ -163,3 +163,26 @@ Read Lev's full approved plan before implementation. Reuse existing test/browser
 - **STAGE2-MIRA-01 — required elevated grant/revoke acceptance is incomplete.** Approved Stage2 plan §7 requires the Owner-only gate to be verified for all four mutation families and the real browser acceptance to prove Owner grant to role/user with fresh-request reflection. Current exact-head evidence proves non-Owner direct 403 for all four families and Owner success for adding the elevated role grant plus deleting that elevated role, but it does not exercise Owner-success for assignment into/out of an elevated role, per-user elevated override transitions, or explicit Owner removal of the elevated role grant. `tests/database/owner-authorization.test.ts` contains no elevated-key mutation coverage; UI tests cover presentation only. Therefore the implementation logic is not currently shown defective, but the mandatory Stage2 verification contract is not fully satisfied.
 - Verdict for block 3/4: **NOT PASS because of STAGE2-MIRA-01**. Whole-PR coordinator review continues; do not hand this finding to Лира yet so confirmed findings can be returned as one package after block 4/4.
 - Next block: remaining integration/privacy/History/localization/regression boundaries and final coordinator verdict.
+
+
+## PR #296 coordinator whole-PR review — final verdict: CHANGES REQUIRED
+
+- Reviewed frozen exact head `04865401cd5c2a69941cb458d0df1fc7424a37f7` against approved Stage2 plan and current main `8301087f9322b34bdd325ed9298fdf3fddd84561`.
+- Blocks 1/2 passed: central Owner authority and AP-10 authority/immunity/direct admissions are coherent and no current-scope defect was confirmed there.
+- Block 3 confirmed one current-scope verification finding, `STAGE2-MIRA-01`.
+- Block 4 checked remaining integration/privacy/History/localization/Worker/regression boundaries and found no additional current-scope defects:
+  - subject measure DTO/history projection remains an explicit allowlist and still excludes issuer/reviewer/History actor identity and raw private context;
+  - private admin routes retain authentication/permission guards and private no-store behavior; Owner projection does not become a public badge/binding editor;
+  - Worker validates `VICO_OWNER_USER_ID` once and propagates the trusted result through authorization, measures, Forum/attachments, Complaints and dormant generation admission;
+  - Owner authority explanation is present in EN/RU/HE with reviewed manual fingerprints; exact-head browser acceptance covers EN/RU/HE at 320/768/1280 without reported layout/page-error/external-request failures;
+  - CI #42345404967 is SUCCESS on exact head; AP-10 isolated browser #42345404812 is SUCCESS on attempt 2 on the same exact head. The first browser attempt's AP-11 Users-detail 503 remains unroot-caused; unchanged head passed rerun, so no reproducible current-scope defect is established from that transient alone;
+  - PR #296 changed-file set contains no schema/migration/permanent-doc/Settings/super-admin/infra expansion.
+- **Final coordinator verdict: CHANGES REQUIRED, exactly one confirmed current-scope finding: `STAGE2-MIRA-01`.**
+
+### STAGE2-MIRA-01 — required elevated grant/revoke acceptance incomplete
+
+The approved Stage2 plan requires Owner-only verification for all four elevated-authority mutation families and real-browser proof that Owner can grant elevated authority to role/user and that the next request reflects it. Current exact-head evidence proves non-Owner direct 403 for all four families and Owner success for adding an elevated role grant plus deleting the elevated role, but does not prove Owner-success assignment into/out of an elevated role, per-user elevated override transitions, or explicit Owner removal of the elevated role grant. Native PostgreSQL Owner authorization tests also contain no elevated-key mutation acceptance. No runtime bypass is currently confirmed; the required acceptance contract is incomplete.
+
+### Handoff — Лира
+
+Close only `STAGE2-MIRA-01` in PR #296. Complete the approved Stage2 elevated-authority acceptance so Owner-success is demonstrated for the missing mutation paths and the required fresh-request behavior, while existing non-Owner denial/History semantics remain intact. Change runtime code only if the completed verification exposes an actual defect. Run applicable exact-head CI/browser checks, publish the new stable head and evidence in #251, then stop for a fresh Mira coordinator whole-PR review. Do not update permanent documentation in this implementation PR.
