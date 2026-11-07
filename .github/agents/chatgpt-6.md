@@ -17,6 +17,12 @@ Leave the other six Stage2 descriptions unchanged unless mechanically necessary.
 
 # Лира — ChatGPT-6
 
+## PR #297 — завершённая авторская передача STAGE2-DOC-MIRA-03 (2026-11-07)
+
+- Документационное замечание Миры `STAGE2-DOC-MIRA-03` устранено в [Draft PR #297](https://github.com/iliya1947/vico-forum/pull/297), frozen exact head `a63bfb6d52052e1dd0905eb498dabb1d38c8f10a`, base/main `df57dabf2a4cbc44d85138d8809079878490a7c8`. От прошлого проверенного head один commit и одно изменение в `PROJECT_STATE.md`: удалена неутверждённая конкретизация будущей recovery/bootstrap модели. Остальные шесть документов, ROADMAP, реализация, тесты и инфраструктура неизменны.
+- [CI #42355616281](https://github.com/iliya1947/vico-forum/actions/runs/42355616281) — **SUCCESS**, проверки `checks` и `database`. [Chromium #42355616335](https://github.com/iliya1947/vico-forum/actions/runs/42355616335) — **SUCCESS на попытке 2**, оба job `browser` и `history_browser`, 37 browser-групп и все Stage2 Owner scenarios; в успешном логе нет page/layout errors. Первая попытка упала на ранее наблюдавшихся `AbortError` существующей страницы AP-11; первопричина не установлена, никакие тесты или runtime не менялись для повтора.
+- Авторская коррекция завершена. PR #297 остаётся Draft. **Следующий шаг — повторный coordinator docs-only review Миры на exact head `a63bfb6d52052e1dd0905eb498dabb1d38c8f10a`**, затем решение о merge по установленному процессу. Coordinator PASS не заявлен. Лира останавливается.
+
 ## Stage 2 docs PR #297 — STAGE2-DOC-MIRA-03 correction (2026-11-07)
 
 - Latest Mira docs-only coordinator review on frozen PR #297 head `9d0c7baa9b9f96a79ee8b7b79c7a736a872c83b6`: **CHANGES REQUIRED**, exactly one wording-only current-scope finding `STAGE2-DOC-MIRA-03` ([service comment #6704476437](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6704476437)). Prior 01/02 closed, other docs accepted.
