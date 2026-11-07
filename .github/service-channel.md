@@ -142,3 +142,35 @@ Required result:
 - do not implement owner authority, Settings, super-admin UI, mutex redesign/removal or production changes.
 
 When implementation and evidence are complete, record PR number/exact head/checks in #251 and stop for coordinator review.
+
+
+## Stage 1 implementation — coordinator PASS
+
+- Implementation PR **#294** reviewed as a whole on stable exact head `e3604222ae8cecb4b1f2f94cdd5d7e9f76c15e61`, base/main `bcf02193f82aa0d448444c6943d6ebdcf09f7896`.
+- Coordinator verdict: **PASS**. No confirmed current-scope defects.
+- Reviewed all 21 changed files, including runtime, route/UI feedback, migration 0059, Drizzle snapshot/journal, production schema manifest, PostgreSQL tests, both browser harnesses and workflow.
+- Verified schema delta: 0058→0059 changes only `authz_mutation_lock.managers_ever_existed`; table/row/PK/CHECK remain.
+- Verified runtime: last-manager veto/error/count/flag removed; singleton `FOR UPDATE` mutex, fresh `access.authorization.manage` check, AP-10 measure admission/authority and atomic History rollback remain.
+- Verified behavior: self-revoke may commit with one History event; next fresh management request is denied; failed History append still rolls back the mutation.
+- Verified synchronization: controlled PostgreSQL concurrency test shows authorization and AP-10 writers wait on the retained mutex and reevaluate fresh authority after release.
+- Exact-head CI #42328843126 SUCCESS: 1967/1967 app tests, 563/563 PostgreSQL tests, lint/typecheck/build/migrations/manifest/runtime probes/Worker smoke.
+- Exact-head browser #42328843151 SUCCESS:
+  - Stage1 Admin History artifact: 35 cases, no page errors, no external requests, terminal canonical self-revoke + next-request denial;
+  - AP-10/AP-11 artifact: 34 cases, zero layout failures/page errors/external requests, exact implementation head recorded.
+- The absence of a separate populated-full-0058 upgrade rehearsal is not a current-scope defect: the migration is a single bounded DROP COLUMN, clean full migration chain passes, and the compatibility test verifies both historical flag values while preserving mutex row/PK/CHECK. No unrelated table mutation is present in 0059.
+- Implementation remains frozen. Any implementation-head change restarts coordinator review.
+
+### Independent review handoff — Лёва
+
+Review PR #294 independently on exact head `e3604222ae8cecb4b1f2f94cdd5d7e9f76c15e61`.
+
+Scope:
+- verify the full Stage1 diff against approved plan #6700603167 and current main/source-of-truth;
+- independently confirm that only obsolete last-manager semantics are removed;
+- confirm `authz_mutation_lock` still correctly synchronizes authorization/AP-10 authority and that runtime privileges remain sufficient;
+- verify migration/schema/manifest/test/browser evidence and the new self-revoke/fresh-denial behavior;
+- classify any issue as current Stage1 defect vs later owner/mutex redesign; do not request future-stage work as a Stage1 fix;
+- do not modify implementation during review;
+- record PASS or findings in #251 and stop.
+
+Owner authority, mutex redesign/removal, Settings, Stage6/production remain outside Stage1.
