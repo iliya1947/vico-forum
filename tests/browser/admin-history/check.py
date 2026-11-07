@@ -92,7 +92,9 @@ def submit_management(page, fields, status=200):
 
 try:
     with sync_playwright() as p:
-        browser = p.chromium.launch(executable_path=os.environ.get('CHROMIUM', '/usr/bin/chromium'), headless=True, args=['--no-sandbox'])
+        browser = p.chromium.launch(**({'executable_path': os.environ['CHROMIUM']} if os.environ.get('CHROMIUM')
+                                       else {'channel': os.environ.get('PLAYWRIGHT_CHANNEL', 'chromium')}),
+                                    headless=True, args=['--no-sandbox'])
         manager = browser.new_context(viewport={'width': 1280, 'height': 900})
         reader = browser.new_context(viewport={'width': 1280, 'height': 900})
         for c in [manager, reader]:
