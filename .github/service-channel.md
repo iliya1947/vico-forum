@@ -323,3 +323,18 @@ Confirmed on current main `96186cc9158dd7a91c9d2c0124ed4556f133f15c`:
 3. Compromise semantics: on emergency rebind, old Owner authority disappears immediately; decide whether recovery contract also requires revoking all sessions of the old account. If yes, this becomes an explicit recovery operation/evidence requirement.
 
 If 1–2 are accepted and no application-level recovery feature is requested, repository Owner redesign may need no further application implementation; only the agreed recovery procedure/documentation and later Stage6 external wiring/acceptance remain. Settings can then be reconsidered as the next product package after closeout.
+
+
+## Owner decision — single Owner and Google bootstrap
+
+- Owner Vico Forum is exactly one person: the developer/owner. Ownership transfer/delegation is not a planned product feature.
+- Do not design multiple Owners, ownership-transfer UI, emergency recipient selection, or ordinary-admin succession around hypothetical future delegation.
+- Bootstrap identity should be established through the developer's Google account.
+- Google identity is the authentication/bootstrap proof, **not** the application authorization key: the authoritative Owner projection remains the trusted server-side `VICO_OWNER_USER_ID` matching the resulting Better Auth `user.id`.
+- Do not derive Owner authority directly from Google email, display name, client claims, role name or provider data on each request.
+- Existing Better Auth Google/local identity-link protection remains relevant: verified provider identity can attach to the intended existing account only through the protected linking flow; external Google acceptance remains Stage6.
+- No ownership-transfer recovery feature is approved. Loss/compromise recovery beyond restoring access to the same owner is not part of the current product scope unless the owner later explicitly adds it.
+
+### Current implication
+
+The remaining bootstrap boundary is therefore: authenticate/create the developer's intended account through Google (or link Google to that intended account), obtain the resulting internal Better Auth `user.id`, configure that exact value as server-controlled `VICO_OWNER_USER_ID`, then verify Owner authority externally in Stage6. No first-manager grant/bootstrap and no transfer UI are required.
