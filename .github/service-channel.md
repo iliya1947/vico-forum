@@ -185,3 +185,12 @@ Mira verifies exact-head CI for #295. If green and head unchanged, #295 is ready
 - AP-10 elevated administrative authority already uses the ordinary permission `admin.users.blocks.managePrivileged`; a custom role may carry it.
 - Current code has one special Owner gate: only bound `VICO_OWNER_USER_ID` may add/remove that elevated permission through role grants, assignments involving an elevated role, or per-user override.
 - The only unresolved product question at this point is whether that grant/revoke gate itself should remain Owner-only or should behave like ordinary permission management under `access.authorization.manage`.
+
+## Owner decision — elevated AP-10 permission remains Owner-only
+
+- `admin.users.blocks.managePrivileged` remains an ordinary permission in the existing role constructor/RBAC model.
+- Its **grant/revoke boundary is special**: only the bound Owner may add or remove it.
+- This applies to role grant changes, assignment into/out of a role carrying it, and per-user override changes.
+- `access.authorization.manage` alone does not authorize self-grant or delegation of this permission.
+- No Senior/Head Admin role or second RBAC layer is introduced.
+- With this decision, the target Owner product model is sufficiently fixed for technical planning.
