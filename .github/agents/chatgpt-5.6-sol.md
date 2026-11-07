@@ -1,3 +1,9 @@
+# Мира — single Owner / Google bootstrap decision
+
+Owner один: разработчик. Transfer/multiple-owner/recovery-to-another-person feature не планируется.
+
+Bootstrap должен подтверждать identity через Google, но runtime authority остаётся на trusted `VICO_OWNER_USER_ID` → internal Better Auth `user.id`, не на email/provider claim. Current task: определить, требует ли это вообще нового repository implementation или только operational Stage6 wiring/acceptance.
+
 # Мира — recovery/bootstrap analysis complete
 
 Source-level result: Stage2 already removes the need for a first-manager bootstrap. Normal signup + protected `VICO_OWNER_USER_ID` binding can bootstrap Owner without application-level special endpoints; protected rebinding can serve transfer/recovery.
