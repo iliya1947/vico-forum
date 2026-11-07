@@ -1,3 +1,21 @@
+# Мира — Account/security + Privacy map
+
+Account & security first useful scope:
+- linked sign-in methods + existing Google connect;
+- change existing password;
+- list active sessions;
+- revoke one/all other sessions.
+Defer unlink/email change/recovery/set-password/deletion/passkeys/2FA.
+
+Privacy first useful scope:
+- Show my online status, default on;
+- off excludes user from public online list and count.
+No private-account/hide-public-posts model.
+
+Complete top-level Settings architecture now has 5 justified pages:
+Forum & roles; Administrator preferences; User preferences; Account & security; Privacy.
+No sixth page is justified now; Notifications/Accessibility/reading remain sections.
+
 # Мира — user experience preference map
 
 User preferences split:
