@@ -2,6 +2,7 @@ import type { Pool, PoolClient } from "pg";
 import { describe, expect, it, vi } from "vitest";
 import { PERMISSION_CATALOG } from "../app/authorization/catalog";
 import {
+  AuthorizationForbiddenError,
   AuthorizationRoleSlugConflictError,
   PostgresAuthorizationRepository,
 } from "./authorization-repository";
