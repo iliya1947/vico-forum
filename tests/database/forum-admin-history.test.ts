@@ -231,7 +231,7 @@ describe("ordinary History from authoritative forum transactions",()=>{
    await blocker.query("begin");await blocker.query(ADMIN_HISTORY_ORDER_LOCK_SQL);
    pending.push(forum.pinTopic("order","manager"));
    await waitForProducers(1);
-   const auth=new PostgresAuthorizationRepository(pool);
+   const auth=new PostgresAuthorizationRepository(pool,"manager");
    pending.push(auth.createCustomRole("manager",{id:"ordered-role",slug:"ordered-role",displayName:"Ordered"}));
    await waitForProducers(2);
    await blocker.query(`insert into admin_history(id,actor_id,actor_label,action,target_type,target_id,target_label,context) values(gen_random_uuid(),'manager','Manager','role.created','role','order-role','Order','{"slug":"order-role"}')`);
