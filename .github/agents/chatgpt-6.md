@@ -758,3 +758,12 @@ Synchronize only factual SET-01 behavior: authorization mutations are exact-boun
 ## SET01-DOC-MIRA-01 — correction assigned
 
 PR #301 exact head `83d7137010ba21f58a6b414c3df85f74bd9ca569` received coordinator **CHANGES REQUIRED** with one docs-only finding: `PROJECT_STATE.md` and `ROADMAP.md` currently describe the SET-01 docs closeout itself as still current/pending, which would be stale immediately after merge. Correct only those post-merge state phrases; keep SET-01 implemented, SET-02–06 unimplemented/unassigned, Stage6 boundary unchanged, and preserve the same 8-file docs-only scope. Re-run applicable checks, publish new stable head in #251, stop for Mira review.
+
+
+## Settings SET-02 — active implementation assignment
+
+Base/current main: `681e8bab0eda595186acebae9ce4b2d47d06b936`. SET-01 is closed (#299 implementation + #301 docs). Implement SET-02 in one separate implementation PR per the already approved technical plan in #251 comment #6711736883; do not re-plan or start SET-03–06.
+
+Required package result: Settings shell/navigation + Forum & roles surface + independent Google/email-password **new-registration** controls, reusing existing SET-01 authorization writer and preserving existing-user sign-in/link flows. Include only SET-02-required persistence/migration, History, auth admission, UI and acceptance. Permanent docs remain a separate post-merge PR; Stage6/production/live Google/Owner binding/deputies are out of scope.
+
+Publish implementation PR number, stable exact head and actual check evidence in #251, then stop for Mira coordinator whole-PR review.
