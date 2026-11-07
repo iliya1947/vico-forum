@@ -746,3 +746,8 @@ Base/current main: `137cecfe6a553b2df9be8e3642e5de8b16e22fee`. Implementation PR
 Create one docs-only PR touching exactly: `PROJECT.md`, `PROJECT_STATE.md`, `ROADMAP.md`, `docs/auth/AUTHORIZATION.md`, `docs/ADMIN_PANEL.md`, `tests/browser/admin-history/README.md`, `docs/PROJECT_HISTORY/PROJECT_HISTORY.md`, and new `docs/PROJECT_HISTORY/PROJECT_HISTORY_17.md`.
 
 Synchronize only factual SET-01 behavior: authorization mutations are exact-bound-Owner-only in the current release; permitted non-Owner authorization reads remain read-only; future deputy delegation stays deferred. Update stale ordinary-manager write/self-revoke documentation, current Settings state and historical snapshot. No runtime/schema/migration/workflow/infra or SET-02–06 changes. Publish PR/head/check evidence in #251 and stop for Mira review.
+
+
+## SET01-DOC-MIRA-01 — correction assigned
+
+PR #301 exact head `83d7137010ba21f58a6b414c3df85f74bd9ca569` received coordinator **CHANGES REQUIRED** with one docs-only finding: `PROJECT_STATE.md` and `ROADMAP.md` currently describe the SET-01 docs closeout itself as still current/pending, which would be stale immediately after merge. Correct only those post-merge state phrases; keep SET-01 implemented, SET-02–06 unimplemented/unassigned, Stage6 boundary unchanged, and preserve the same 8-file docs-only scope. Re-run applicable checks, publish new stable head in #251, stop for Mira review.
