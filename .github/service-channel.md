@@ -1424,3 +1424,12 @@ Next required review under the standard workflow is Lev technical review of this
 - After owner merge, SET-01 requires a separate factual documentation closeout; implementation and permanent documentation remain separate PRs.
 
 **Next:** owner merges PR #299. No production/Stage6/owner-visual acceptance is implied by this readiness state.
+
+
+## SET-01 implementation merged; factual documentation closeout assigned
+
+- PR #299 merged into `main`; merge commit/current main `137cecfe6a553b2df9be8e3642e5de8b16e22fee`.
+- Frozen implementation head `e52c97eed86283fff11976124a9216442fbe6bc3` had Mira coordinator PASS and Lev independent technical PASS, both with zero confirmed current-scope defects.
+- SET-01 is implemented in repository/local-CI but is **not yet fully closed** until its separate factual documentation PR merges.
+- Lira is assigned the bounded 8-file docs-only closeout recorded in #251.
+- SET-02–SET-06 remain unassigned; no Settings shell/registration implementation starts during this docs closeout.
