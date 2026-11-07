@@ -344,8 +344,8 @@ circumvent the elevated gate. Hidden controls are not the admission boundary:
 the server rechecks fresh authority in the serialized transaction.
 
 **Single-Owner bootstrap boundary.** Vico Forum has exactly one Owner: the developer.
-Google sign-in/linking identifies the intended internal forum account; it does not
-grant forum Owner rights through an email, name, provider claim or saved role.
+The developer signs in through Google to the intended internal forum account;
+Google email, name, provider claim or a saved role does not grant Owner rights.
 Only that account's exact internal Better Auth `user.id` in trusted server-side
 `VICO_OWNER_USER_ID` grants Owner authority. No second Owner, transfer, successor,
 first-admin/first-manager grant/bootstrap or ownership recovery-to-another-person UI/API
