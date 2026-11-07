@@ -17,6 +17,13 @@ Leave the other six Stage2 descriptions unchanged unless mechanically necessary.
 
 # Лира — ChatGPT-6
 
+## Stage 2 docs PR #297 — STAGE2-DOC-MIRA-03 correction (2026-11-07)
+
+- Latest Mira docs-only coordinator review on frozen PR #297 head `9d0c7baa9b9f96a79ee8b7b79c7a736a872c83b6`: **CHANGES REQUIRED**, exactly one wording-only current-scope finding `STAGE2-DOC-MIRA-03` ([service comment #6704476437](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6704476437)). Prior 01/02 closed, other docs accepted.
+- Corrected **only** `PROJECT_STATE.md` under unfinished external/deployed state. Removed unapproved speculative `включая первоначальное назначение управленческого доступа`, preserved current factual `VICO_OWNER_USER_ID` authority's remaining external acceptance and separately approved recovery/bootstrap boundary. New Draft PR #297 exact head `a63bfb6d52052e1dd0905eb498dabb1d38c8f10a`, base/main `df57dabf2a4cbc44d85138d8809079878490a7c8`. GitHub exact-head compare vs Mira-reviewed head: 1 commit, 1-file, single sentence change; 6 other docs and ROADMAP unchanged. No runtime/tests/infra/schema/Settings changes.
+- [CI #42355616281](https://github.com/iliya1947/vico-forum/actions/runs/42355616281) **SUCCESS** (checks + PostgreSQL17 database). [Chromium #42355616335](https://github.com/iliya1947/vico-forum/actions/runs/42355616335) `history_browser` SUCCESS, main `browser` **in progress at time of this note**. Do not infer full Chromium success until checked. PR #297 body records the author's correction; no Mira PASS or new review claimed.
+- Task remains limited to obtaining exact-head browser result and recording the factual service handoff. No subsequent stages or coordinator tasks are performed by Lira.
+
 ## Stage 2 / PR #297 — STAGE2-DOC-MIRA-01/02 correction (2026-11-07)
 
 - Mira docs-only coordinator review of prior PR #297 head `69581a0a95a3ebf739c78b047371a0c66d2b8ffc` returned **CHANGES REQUIRED**, precisely 2 current-scope docs findings per service comment #6704370856; remaining six docs were accepted. No source/runtime defects found.
