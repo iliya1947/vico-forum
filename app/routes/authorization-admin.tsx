@@ -4,7 +4,7 @@ import { authorizationForRequest, authorizationOwnerContext } from "../authoriza
 import { adminAccess } from "../admin/access";
 import { PERMISSION_CATALOG } from "../authorization/catalog";
 import { requireSameOrigin, requiredFormText } from "../forum/mutations.server";
-import { AuthorizationForbiddenError, AuthorizationLockoutError, AuthorizationNotFoundError, AuthorizationRoleAssignedError, AuthorizationRoleSlugConflictError } from "../../db/authorization-repository";
+import { AuthorizationForbiddenError, AuthorizationNotFoundError, AuthorizationRoleAssignedError, AuthorizationRoleSlugConflictError } from "../../db/authorization-repository";
 import { AuthorizationUnavailableError, InvalidAuthorizationInputError } from "../../db/authorization-service";
 import { UserMeasureRestrictedError } from "../../db/user-measure-policy";
 import {
@@ -72,7 +72,7 @@ export async function action({ request, context }: { request: Request; context: 
       error instanceof InvalidAuthorizationInputError || error instanceof AuthorizationRoleSlugConflictError ? ["invalid", 400]
       : error instanceof AuthorizationForbiddenError || error instanceof UserMeasureRestrictedError ? ["forbidden", 403]
       : error instanceof AuthorizationNotFoundError ? ["notFound", 404]
-      : error instanceof AuthorizationLockoutError || error instanceof AuthorizationRoleAssignedError ? ["conflict", 409]
+      : error instanceof AuthorizationRoleAssignedError ? ["conflict", 409]
       : error instanceof AuthorizationUnavailableError ? ["unavailable", 503]
       : undefined;
     if (!mapped) throw error;
