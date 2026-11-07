@@ -1,6 +1,6 @@
 import type { Pool, PoolClient, QueryResultRow } from "pg";
 import { AUTHORIZATION_MANAGE_PERMISSION, isPermissionKey, type PermissionKey } from "../app/authorization/catalog";
-import { isBoundOwner, ownerAwareEffectivePermissions, validOwnerUserId } from "../app/authorization/owner";
+import { canMutateAuthorization, isBoundOwner, ownerAwareEffectivePermissions, validOwnerUserId } from "../app/authorization/owner";
 import { BLOCK_MANAGE_PRIVILEGED_PERMISSION } from "./user-measure-authority";
 import { assertNoActiveUserMeasureRestrictionPg } from "./user-measure-policy";
 
@@ -362,6 +362,11 @@ export class PostgresAuthorizationRepository {
       if (!lock.rows[0]) throw new AuthorizationNotFoundError("authorization mutation lock is missing");
       if (!(await effectivePermission(client, actorId, AUTHORIZATION_MANAGE_PERMISSION, this.ownerUserId))) {
         throw new AuthorizationForbiddenError("actor cannot manage authorization");
+      }
+      // This current-release application policy is independent of ordinary management grants.
+      // Apply it before dispatching any operation, including unchanged/no-op requests.
+      if (!canMutateAuthorization(actorId, this.ownerUserId)) {
+        throw new AuthorizationForbiddenError("only the bound owner may mutate authorization");
       }
       // Administrative suppression is checked in the same serialized transaction.
       await this.measureAdmission(client, actorId, "admin.usersAccess", this.ownerUserId);

@@ -89,7 +89,9 @@ describe("AP-09 independent Users route protection and minimal DTO", () => {
       if (permissions.includes("access.authorization.manage")) {
         expect(e.readUserManagementState).toHaveBeenCalledTimes(1);
         expect(e.readUserManagementState).toHaveBeenCalledWith(profile.id);
-        expect(detailResult.data).toMatchObject({ management, managerActorId: "actor", canManageElevated:false });
+        expect(detailResult.data).toMatchObject({
+          management, managerActorId: "actor", canManageElevated: false, canMutateAuthorization: false,
+        });
         expect(JSON.stringify(detailResult.data)).not.toContain("email");
       } else {
         expect(e.readUserManagementState).not.toHaveBeenCalled();
@@ -100,6 +102,15 @@ describe("AP-09 independent Users route protection and minimal DTO", () => {
     }
   });
 
+  it("exposes a separate Owner-only write flag without changing management read admission", async () => {
+    const actor = environment(["admin.users.read", "access.authorization.manage"]);
+    actor.context.set(authorizationOwnerContext, "actor");
+    const result = await detail(detailArgs(actor.context));
+    expect(result.data).toMatchObject({
+      management, managerActorId: "actor", canManageElevated: true, canMutateAuthorization: true,
+    });
+    expect(actor.readUserManagementState).toHaveBeenCalledExactlyOnceWith(profile.id);
+  });
   it("validates bounded search/cursor and user ID after permission gate", async () => {
     for (const query of ["?q=x&q=y", "?after=x&after=y", "?after=", "?q=%00", "?after=%00",
       "?q=" + "x".repeat(201), "?after=" + "x".repeat(2049)]) {

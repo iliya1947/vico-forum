@@ -347,7 +347,7 @@ describe("Stage 4 connected forum authorization flow", () => {
     // Historical Stage 4 migration subset predates AP-10 measure tables.
     // Only this legacy test writer opts out; production remains fail-closed.
     const authorization = new AuthorizationService(new PostgresAuthorizationRepository(
-      managementPool, undefined, async () => {},
+      managementPool, "e2e-manager", async () => {},
     ));
     try {
       await authorization.assignUserRole("e2e-manager", "e2e-replier", "builtin-moderator");

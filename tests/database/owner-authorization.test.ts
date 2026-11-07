@@ -28,11 +28,13 @@ beforeAll(async () => {
   await client.query(`insert into "user"(id,name,email) values
     ('owner','Owner','stage2-owner@example.invalid'),
     ('ordinary','Ordinary','stage2-ordinary@example.invalid'),
-    ('manager','Manager','stage2-manager@example.invalid')`);
+    ('manager','Manager','stage2-manager@example.invalid'),
+    ('delegated-manager','Delegated manager','stage2-delegated@example.invalid')`);
   await client.query(`insert into authz_roles(id,slug,display_name,is_system) values
     ('owner-empty','owner-empty','Owner',false)`);
   await client.query(`insert into authz_user_roles(user_id,role_id) values
-    ('owner','owner-empty'),('ordinary','owner-empty'),('manager','builtin-admin')`);
+    ('owner','owner-empty'),('ordinary','owner-empty'),
+    ('manager','builtin-admin'),('delegated-manager','builtin-admin')`);
   await client.query(`insert into authz_user_permission_overrides(user_id,permission_key,effect)
     select 'owner', key, 'deny' from authz_permissions`);
   await client.query(`insert into authz_user_permission_overrides(user_id,permission_key,effect)
@@ -191,5 +193,39 @@ describe("Stage 2 central Owner effective authority, PostgreSQL 17", () => {
       .toBe(initialHistory.rows[0]!.total + 1);
     expect((await client.query("select count(*)::int total from authz_roles where slug='manager-forbidden'")).rows[0].total)
       .toBe(0);
+  });
+  it("rejects all six direct writes from a non-Owner with the management grant, including no-ops", async () => {
+    const actor = "delegated-manager";
+    expect(await repository.hasPermission(actor, "access.authorization.manage")).toBe(true);
+    await service.createCustomRole("owner", { slug: "set01-protected-role", displayName: "Protected" });
+    const protectedRole = (await service.listRoles()).find(role => role.slug === "set01-protected-role")!;
+    const beforeState = await repository.readManagementState();
+    const beforeHistory = (await client.query<{ total: number }>(
+      "select count(*)::int total from admin_history",
+    )).rows[0]!.total;
+
+    const forbidden = [
+      () => repository.createCustomRole(actor, {
+        id: "set01-forged-create", slug: "set01-forged-create", displayName: "Forged",
+      }),
+      () => repository.renameCustomRole(actor, protectedRole.id, { displayName: "Forged" }),
+      () => repository.replaceRoleGrants(actor, protectedRole.id, []), // unchanged grant set
+      () => repository.deleteCustomRole(actor, protectedRole.id),
+      () => repository.assignUserRole(actor, "ordinary", "owner-empty"), // unchanged role
+      () => repository.setUserOverride(actor, "ordinary", "forum.topic.pin", null), // unchanged override
+    ];
+    for (const attempt of forbidden) {
+      await expect(attempt()).rejects.toBeInstanceOf(AuthorizationForbiddenError);
+    }
+    for (const binding of [undefined, "", "delegated-manager ", " delegated-manager"]) {
+      const unbound = new PostgresAuthorizationRepository(pool, binding);
+      await expect(unbound.createCustomRole(actor, {
+        id: "set01-unbound", slug: "set01-unbound", displayName: "Unbound",
+      })).rejects.toBeInstanceOf(AuthorizationForbiddenError);
+    }
+    expect(await repository.readManagementState()).toEqual(beforeState);
+    expect((await client.query<{ total: number }>(
+      "select count(*)::int total from admin_history",
+    )).rows[0]!.total).toBe(beforeHistory);
   });
 });

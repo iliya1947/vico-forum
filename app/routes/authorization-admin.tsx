@@ -3,7 +3,7 @@ import { authSessionForRequest } from "../auth/request-context";
 import { authorizationForRequest, authorizationOwnerContext } from "../authorization/request-context";
 import { adminAccess } from "../admin/access";
 import { PERMISSION_CATALOG } from "../authorization/catalog";
-import { isBoundOwner } from "../authorization/owner";
+import { canMutateAuthorization, isBoundOwner } from "../authorization/owner";
 import { requireSameOrigin, requiredFormText } from "../forum/mutations.server";
 import { AuthorizationForbiddenError, AuthorizationNotFoundError, AuthorizationRoleAssignedError, AuthorizationRoleSlugConflictError } from "../../db/authorization-repository";
 import { AuthorizationUnavailableError, InvalidAuthorizationInputError } from "../../db/authorization-service";
@@ -42,6 +42,7 @@ export async function loader({ params, context }: { params: { locale?: string };
     const [state, resolved] = await Promise.all([capability.readManagementState(), resolver.resolve()]);
     return { locale: params.locale ?? "en", ...state, permissions: PERMISSION_CATALOG,
       canManageElevated: isBoundOwner(actorId, context.get(authorizationOwnerContext)),
+      canMutateAuthorization: canMutateAuthorization(actorId, context.get(authorizationOwnerContext)),
       access: adminAccess(new Set(resolved.effectivePermissions)) };
   } catch (error) {
     if (error instanceof Response) throw error;
@@ -54,6 +55,9 @@ export async function loader({ params, context }: { params: { locale?: string };
 
 export async function action({ request, context }: { request: Request; context: RouterContextProvider }) {
   const { actorId, capability } = await manager(context);
+  if (!canMutateAuthorization(actorId, context.get(authorizationOwnerContext))) {
+    return Response.json({ error: "forbidden" as Failure }, { status: 403, headers: { "Cache-Control": "private, no-store" } });
+  }
   if (!requireSameOrigin(request)) return Response.json({ error: "forbidden" as Failure }, { status: 403 });
   let form: FormData;
   try { form = await request.formData(); } catch { return Response.json({ error: "invalid" }, { status: 400 }); }

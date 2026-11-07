@@ -19,7 +19,7 @@ const client=new Client({connectionString:databaseUrl,options});
 const pool=new Pool({connectionString:databaseUrl,options});
 let clock=Date.parse("2030-01-01T00:00:00Z");
 const repository=new DrizzleForumRepository(drizzle(client),{cooldownMs:0,now:()=>new Date(clock+=1)});
-const authRepository=new PostgresAuthorizationRepository(pool);
+const authRepository=new PostgresAuthorizationRepository(pool,"admin-counter-manager");
 const authorization=createAuthorizationCapability(authRepository);
 const management=new AuthorizationService(authRepository);
 function context(actor:string){const c=new RouterContextProvider();c.set(authSessionContext,{user:{id:actor}} as never);c.set(authorizationContext,authorization as never);return c;}

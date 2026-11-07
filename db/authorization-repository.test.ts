@@ -2,6 +2,7 @@ import type { Pool, PoolClient } from "pg";
 import { describe, expect, it, vi } from "vitest";
 import { PERMISSION_CATALOG } from "../app/authorization/catalog";
 import {
+  AuthorizationForbiddenError,
   AuthorizationRoleSlugConflictError,
   PostgresAuthorizationRepository,
 } from "./authorization-repository";
@@ -197,10 +198,54 @@ describe("PostgresAuthorizationRepository snapshot reads", () => {
 });
 
 describe("PostgresAuthorizationRepository mutations", () => {
+
+  it("denies every direct authorization mutation for an ordinary manager before state or History writes", async () => {
+    const { pool, query } = mutationPool(new Error("mutation operation must not run"));
+    const repository = new PostgresAuthorizationRepository(pool, "actual-owner");
+
+    const attempts = [
+      () => repository.createCustomRole("manager", { id: "r", slug: "role", displayName: "Role" }),
+      () => repository.renameCustomRole("manager", "r", { displayName: "Other" }),
+      () => repository.replaceRoleGrants("manager", "r", []),
+      () => repository.deleteCustomRole("manager", "r"),
+      () => repository.assignUserRole("manager", "target", "r"),
+      () => repository.setUserOverride("manager", "target", "forum.topic.pin", null),
+    ];
+    for (const mutate of attempts) {
+      await expect(mutate()).rejects.toBeInstanceOf(AuthorizationForbiddenError);
+    }
+    const statements = query.mock.calls.map(([sql]) => sql);
+    expect(statements).toHaveLength(attempts.length * 4);
+    for (let index = 0; index < attempts.length; index++) {
+      expect(statements.slice(index * 4, index * 4 + 4)).toEqual([
+        "begin",
+        expect.stringContaining("select id from authz_mutation_lock"),
+        expect.stringContaining("select case"),
+        "rollback",
+      ]);
+    }
+    expect(statements.join("\n")).not.toMatch(/insert into authz_|update authz_|delete from authz_|admin_history/);
+  });
+
+  it("denies ordinary managers when Owner binding is missing or invalid", async () => {
+    for (const binding of [undefined, "", " manager", "manager "]) {
+      const { pool, query } = mutationPool(new Error("mutation must not run"));
+      const repository = new PostgresAuthorizationRepository(pool, binding);
+      await expect(repository.createCustomRole("manager", {
+        id: "r", slug: "r", displayName: "Role",
+      })).rejects.toBeInstanceOf(AuthorizationForbiddenError);
+      expect(query.mock.calls.map(([sql]) => sql)).toEqual([
+        "begin",
+        expect.stringContaining("select id from authz_mutation_lock"),
+        expect.stringContaining("select case"),
+        "rollback",
+      ]);
+    }
+  });
   it("translates only the role-slug unique violation to a domain conflict", async () => {
     const error = { code: "23505", constraint: "authz_roles_slug_unique" };
     const { pool, query } = mutationPool(error);
-    const repository = new PostgresAuthorizationRepository(pool);
+    const repository = new PostgresAuthorizationRepository(pool, "manager");
 
     await expect(repository.createCustomRole("manager", {
       id: "custom-1", slug: "duplicate", displayName: "Duplicate",

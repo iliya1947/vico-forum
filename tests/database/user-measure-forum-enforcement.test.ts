@@ -27,7 +27,7 @@ import { DrizzleComplaintsRepository } from "../../db/complaints-repository";
 import { ComplaintConflictError, ComplaintForbiddenError } from "../../db/complaints-domain";
 import { createHyperdriveComplaintSubmission } from "../../db/hyperdrive-complaints";
 import { createAuthorizationCapability } from "../../db/authorization-service";
-import { PostgresAuthorizationRepository } from "../../db/authorization-repository";
+import { AuthorizationForbiddenError, PostgresAuthorizationRepository } from "../../db/authorization-repository";
 import { PostgresUserMeasuresRepository, UserMeasuresService } from "../../db/user-measures";
 import { PostgresUserMeasureReader } from "../../db/user-measure-read";
 import { action as complaintSubmitAction } from "../../app/routes/complaint-submit";
@@ -367,7 +367,7 @@ describe("AP-10 admin.usersAccess effective roles and direct administrative writ
           .rejects.toBeInstanceOf(UserMeasureRestrictedError);
         await expect(authz.createCustomRole("target", {
           id:roleId, slug:"ap10-floor-regression", displayName:"Floor regression",
-        })).rejects.toBeInstanceOf(UserMeasureRestrictedError);
+        })).rejects.toBeInstanceOf(AuthorizationForbiddenError);
         await expect(reader.adminTarget("target", "other"))
           .rejects.toBeInstanceOf(UserMeasureRestrictedError);
         await expect(measures.create(nextMeasure()))
@@ -383,9 +383,11 @@ describe("AP-10 admin.usersAccess effective roles and direct administrative writ
         await complaints.savePrioritySettings("target", {
           expectedVersion:priority.version, weights:priority.weights,
         });
-        await authz.createCustomRole("target", {
+        // Other admin operations regain authority at the raised floor; authorization writes remain Owner-only.
+        await expect(authz.createCustomRole("target", {
           id:roleId, slug:"ap10-floor-regression", displayName:"Floor regression",
-        });
+        })).rejects.toBeInstanceOf(AuthorizationForbiddenError);
+        expect((await client.query("select id from authz_roles where id=$1", [roleId])).rowCount).toBe(0);
         const created = await measures.create(nextMeasure());
         expect((await reader.adminTarget("target", "other")).measures.some(m => m.id === created.id))
           .toBe(true);
@@ -404,7 +406,7 @@ describe("AP-10 admin.usersAccess effective roles and direct administrative writ
           expectedVersion:priority.version + 1, weights:priority.weights,
         })).rejects.toBeInstanceOf(UserMeasureRestrictedError);
         await expect(authz.deleteCustomRole("target", roleId))
-          .rejects.toBeInstanceOf(UserMeasureRestrictedError);
+          .rejects.toBeInstanceOf(AuthorizationForbiddenError);
         await expect(reader.adminTarget("target", "other"))
           .rejects.toBeInstanceOf(UserMeasureRestrictedError);
         await expect(measures.create(nextMeasure()))
@@ -453,22 +455,24 @@ describe("AP-10 admin.usersAccess effective roles and direct administrative writ
     await expect(missing.forUser("target").has("admin.users.read")).rejects.toThrow();
   });
 
-  it("denies direct authorization mutations transactionally without changing roles or History", async () => {
+  it("denies non-Owner authorization writes both before and after administrative measures lift", async () => {
     await withIssuerManager(async pool => {
       const repo = new PostgresAuthorizationRepository(pool);
       const roleId = randomUUID();
       const before = await client.query<{ total: string }>("select count(*)::text as total from admin_history");
       const active = await createMeasure("admin.usersAccess", "issuer");
       await expect(repo.createCustomRole("issuer", {id:roleId,slug:"sanctioned-role",displayName:"Sanctioned Role"}))
-        .rejects.toBeInstanceOf(UserMeasureRestrictedError);
+        .rejects.toBeInstanceOf(AuthorizationForbiddenError);
       expect((await client.query("select id from authz_roles where id=$1", [roleId])).rowCount).toBe(0);
       expect((await client.query<{total:string}>("select count(*)::text as total from admin_history")).rows[0]?.total)
         .toBe(before.rows[0]?.total);
       expect((await client.query<{n:number}>("select count(*)::int as n from authz_user_permission_overrides where user_id='issuer' and permission_key='admin.users.blocks.manage'")).rows[0]?.n).toBe(1);
       await lift(active);
-      await repo.createCustomRole("issuer", {id:roleId,slug:"sanctioned-role",displayName:"Sanctioned Role"});
-      expect((await client.query("select id from authz_roles where id=$1", [roleId])).rowCount).toBe(1);
-      await repo.deleteCustomRole("issuer", roleId);
+      await expect(repo.createCustomRole("issuer", {id:roleId,slug:"sanctioned-role",displayName:"Sanctioned Role"}))
+        .rejects.toBeInstanceOf(AuthorizationForbiddenError);
+      expect((await client.query("select id from authz_roles where id=$1", [roleId])).rowCount).toBe(0);
+      expect((await client.query<{total:string}>("select count(*)::text as total from admin_history")).rows[0]?.total)
+        .toBe(before.rows[0]?.total);
     });
   });
 

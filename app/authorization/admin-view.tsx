@@ -25,6 +25,7 @@ export function AuthorizationAdminView({
   roles,
   users,
   canManageElevated = false,
+  canMutateAuthorization,
   result,
 }: {
   locale: string;
@@ -33,6 +34,7 @@ export function AuthorizationAdminView({
   roles: readonly AuthorizationRoleDetails[];
   users: readonly AuthorizationUserDetails[];
   canManageElevated?: boolean;
+  canMutateAuthorization: boolean;
   result?: { readonly ok?: boolean; readonly error?: AuthorizationFailure };
 }) {
   const { t } = useTranslation("common");
@@ -68,7 +70,7 @@ export function AuthorizationAdminView({
             </span>
           </div>
 
-          <Form method="post" className="admin-create-role">
+          {canMutateAuthorization ? <Form method="post" className="admin-create-role">
             <input type="hidden" name="intent" value="createRole" />
             <label>
               <span>{t("roleSlug")}</span>
@@ -81,7 +83,7 @@ export function AuthorizationAdminView({
             <button className="admin-primary-action" type="submit">
               {t("createRole")}
             </button>
-          </Form>
+          </Form> : null}
 
           <div className="admin-role-list">
             {roles.map((role) => (
@@ -102,7 +104,7 @@ export function AuthorizationAdminView({
                   </div>
                 </header>
 
-                {!role.isSystem ? (
+                {canMutateAuthorization && !role.isSystem ? (
                   <Form method="post" className="admin-rename-role">
                     <input type="hidden" name="intent" value="renameRole" />
                     <input type="hidden" name="roleId" value={role.id} />
@@ -114,7 +116,7 @@ export function AuthorizationAdminView({
                   </Form>
                 ) : null}
 
-                <Form method="post" className="admin-permissions-form">
+                {canMutateAuthorization ? <Form method="post" className="admin-permissions-form">
                   <input type="hidden" name="intent" value="roleGrants" />
                   <input type="hidden" name="roleId" value={role.id} />
                   <fieldset>
@@ -140,9 +142,11 @@ export function AuthorizationAdminView({
                   <div className="admin-form-actions">
                     <button className="admin-primary-action" type="submit">{t("save")}</button>
                   </div>
-                </Form>
+                </Form> : <ul className="admin-effective-permissions" aria-label={t("permissionsHeading")}>
+                  {role.grants.map(permission => <li key={permission}><code>{permission}</code></li>)}
+                </ul>}
 
-                {!role.isSystem && (canManageElevated ||
+                {canMutateAuthorization && !role.isSystem && (canManageElevated ||
                   !role.grants.includes(BLOCK_MANAGE_PRIVILEGED_PERMISSION)) ? (
                   <div className="admin-danger-zone">
                     <Form method="post">
@@ -186,7 +190,7 @@ export function AuthorizationAdminView({
 
                 <AuthorizationUserControls userId={user.id} authorization={user.authorization}
                   roles={roles} permissions={permissions} canManageElevated={canManageElevated}
-                  elevatedRoleIds={roles.filter(role=>role.grants.includes(
+                  canMutateAuthorization={canMutateAuthorization} elevatedRoleIds={roles.filter(role=>role.grants.includes(
                     BLOCK_MANAGE_PRIVILEGED_PERMISSION)).map(role=>role.id)}/>
               </article>
             ))}
