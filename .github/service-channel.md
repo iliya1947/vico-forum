@@ -786,3 +786,138 @@ Never place here:
 - production/infrastructure settings.
 
 No implementation is authorized yet.
+
+
+## User experience preferences — detailed product map
+
+This surface controls the signed-in user's own forum experience. It must not contain profile identity, account credentials/security, administrative workspace settings or whole-forum policy.
+
+### A. Appearance
+
+Current facts:
+- Light/Dark theme already exists.
+- The manual choice is stored browser-locally under one device-wide `vico-theme` key.
+- If no manual value exists, the forum follows the OS/browser `prefers-color-scheme` value.
+- Theme is currently **not keyed by account**.
+
+Therefore the Settings UI can truthfully expose three presentation choices:
+- System;
+- Light;
+- Dark.
+
+“System” can represent absence of the manual override. Do not silently change theme to per-account or server-synchronized persistence; that is a separate product decision because it would change current behavior.
+
+Possible later appearance/accessibility choices, only when needed:
+- user-facing compact/comfortable density;
+- explicit text-size preference;
+- reduced-animation preference in addition to respecting OS preferences.
+
+Do not invent these merely to fill the page.
+
+### B. Interface language and regional formatting
+
+Current facts:
+- the public language switcher changes the locale in the URL;
+- authenticated `user.locale` already exists in the Better Auth user model and is the highest-priority source when negotiating an unprefixed route;
+- the current repository has no discovered user-facing mutation that saves a new `user.locale` value from the language switcher;
+- locale contract already separates translation locale from formatting preferences;
+- current formatting context uses UTC as the baseline time zone.
+
+Strong Settings candidate:
+- **preferred interface language**, saved to validated `user.locale`, so the authenticated preference follows the account across devices while explicit URL locale remains authoritative for the current page.
+
+Useful later regional candidate:
+- **time zone** for date/time display.
+
+Do not add calendar/numbering-system controls without a concrete product need.
+
+### C. Editor preferences
+
+Already implemented and intentionally device-local per authenticated account:
+- Simple / Advanced authoring mode;
+- browser spellcheck on/off;
+- wrap long code lines;
+- show code line numbers.
+
+Current contract explicitly says these preferences remain independent between PC/phone and do not require server synchronization.
+
+The user Settings page should centralize the same four controls without changing that persistence contract. A “Reset editor preferences on this device” action is a reasonable convenience because it only clears these preference values, not message content.
+
+Do not add drafts/autosave settings: drafts/autosave are intentionally outside current Editor 2.0.
+
+### D. Notification preferences
+
+Current inbox has four durable notification kinds:
+- reply;
+- mention;
+- Complaint decision result;
+- Complaint appeal result.
+
+Current repository has no user notification-preference model; these notifications are created according to domain behavior.
+
+Recommended product split:
+- **optional participation notifications:** replies and mentions — reasonable user-configurable toggles;
+- **direct system/result notifications:** Complaint decision and Complaint appeal result — keep mandatory by default because they communicate an outcome directly concerning the user.
+
+If optional notification toggles are implemented, they should affect authoritative notification creation/badge semantics, not merely hide already-created rows from one page.
+
+Do not add email/push/browser-notification channel settings until those channels actually exist.
+
+### E. Reading and translation presentation
+
+Current facts:
+- if a current translation exists for the current target locale, forum content is presented translated by default;
+- the user can reveal the original content for that item;
+- missing/invalid/unavailable translation safely falls back to original.
+
+Valid later presentation preferences:
+- prefer available translation (current behavior) / prefer original;
+- optionally show original expanded alongside a translation.
+
+These preferences must affect presentation only. They must not automatically authorize translation generation, spend translation quota or change source content.
+
+Do not treat Unread state, solved state or topic ordering semantics as personal settings merely because they affect reading.
+
+### F. Things that are separate features, not Settings toggles
+
+Keep out of this surface:
+- Watch/Subscribe to topic — separate participation feature;
+- bookmarks/favorites — separate feature;
+- mute/block another user — separate user-interaction/privacy feature;
+- editing own topic title — separate content capability;
+- profile bio/GitHub/site — Profile editing;
+- password, Google linking, sessions — Account & security;
+- online-status visibility — Privacy;
+- administrative workspace choices — Administrator preferences.
+
+### Persistence model by preference type
+
+Do not force one storage model onto all user settings.
+
+- Theme: current browser/device-local behavior unless owner separately changes it.
+- Editor preferences: browser-local, keyed by authenticated account, explicitly device-independent from other devices.
+- Preferred interface language: natural server/account preference via existing validated `user.locale`.
+- Notification preferences: if approved, server/account state because notification production and badge semantics are server-side.
+- Translation/read presentation: storage choice should follow the desired cross-device behavior; do not decide it merely for implementation convenience.
+
+### Coordinator recommendation for the first user-preferences package
+
+Useful initial slice:
+1. Appearance: System / Light / Dark, reusing current theme behavior.
+2. Preferred interface language, using the existing `user.locale` domain boundary.
+3. Existing four Editor preferences, preserving their device-local per-account semantics.
+4. Reply and mention notification toggles **only if owner wants notification preferences in the first release**; this requires real server-side preference semantics and is a larger slice.
+
+Leave time zone, translation-display preference and accessibility refinements for later unless owner explicitly wants them in the first release.
+
+No implementation is authorized yet.
+
+## Additional Settings surface candidate — Privacy
+
+Current forum has public “Who's online” presence for signed-in members active in the recent window. There is currently no personal privacy preference for this visibility.
+
+A future choice such as **“Show my online status”** changes what other people can see. It therefore should not be mixed into User experience preferences or Account & security.
+
+Treat **Privacy** as a separate Settings surface candidate. Other future visibility/block/mute choices may belong there if those product features are later implemented. Do not invent them now.
+
+No privacy implementation is authorized yet.
