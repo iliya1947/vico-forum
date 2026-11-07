@@ -793,7 +793,9 @@ try:
             'form.admin-override-row:has(input[name="permission"]'
             '[value="' + elevated_key + '"])'
         )
-        recipient_measure_path = "/en/admin/measures?target=" + quote(subject_id, safe="")
+        # The previously sanctioned subject carries an issuer floor; use a
+        # fresh unsanctioned rank-0 target to test the recipient's own rank.
+        recipient_measure_path = "/en/admin/measures?target=" + quote(nonowner_id, safe="")
 
         def owner_recipient_card():
             document(owner_page, "/en/admin/authorization")
