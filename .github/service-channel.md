@@ -110,3 +110,35 @@ Required result:
 - Постоянные active lockout requirements в AUTHORIZATION/ADMIN_PANEL/PROJECT_STATE/ROADMAP/UI_UX_PASS и browser README обновляются отдельным docs closeout. History/doc_old/старые accepted snapshots не чистятся задним числом.
 - Code/schema/tests/runtime/production не менялись; implementation PR не создан. Новых owner product decisions нет.
 - **Мира:** coordinator review, синхронизировать superseded master-plan clauses с уже данным owner decision; после approval назначение Лиры. Лёва planning завершил и остановился.
+
+
+## Stage 1 technical plan — coordinator PASS
+
+- Лёва completed technical plan #6700603167 on current main `bcf02193f82aa0d448444c6943d6ebdcf09f7896`.
+- Coordinator review: **PASS**.
+- Confirmed scope is minimal and current-stage:
+  - remove `AuthorizationLockoutError`, `countManagers()`, `managers_ever_existed` and dedicated veto semantics/tests;
+  - forward migration 0059 drops only `managers_ever_existed`;
+  - keep `authz_mutation_lock` singleton row/table/PK/CHECK and `FOR UPDATE` synchronization;
+  - keep existing SELECT + UPDATE runtime privilege on the mutex because PostgreSQL 17 requires UPDATE privilege for row-locking SELECT ... FOR UPDATE;
+  - preserve fresh authorization checks, AP-10 raw authority/issuer-floor semantics, atomic History and rollback behavior;
+  - no owner authority, Settings, super-admin UI, mutex redesign/removal or production rollout in Stage 1.
+- No hidden runtime caller of manager counting/flag was found outside the obsolete last-manager invariant.
+- Old master-plan AP clauses that could read as active last-manager requirements were marked superseded; historical implementation meaning is retained.
+- Implementation sequence approved: one bounded implementation PR → stable exact-head CI/browser evidence → Mira whole-PR review → Лёва independent review → owner merge → separate documentation closeout.
+
+### Implementation handoff — Лира
+
+Implement the approved Stage 1 plan from #6700603167 against current `main`.
+
+Required result:
+- remove only the obsolete last-manager mechanism and its active runtime/UI/test/schema semantics;
+- add the forward migration/current schema metadata required by the approved plan;
+- preserve `authz_mutation_lock` as the shared authorization/AP-10 mutex and preserve its runtime privileges/lock probes;
+- preserve all non-lockout authorization, History, AP-10 authority, privacy and revalidation behavior;
+- update the affected browser verification so permitted self-revoke is tested at the end without breaking later steps;
+- run applicable full CI and the approved admin-history + AP-10/AP-11 browser regression on a stable exact head;
+- do not change permanent documentation in the implementation PR; docs closeout is separate;
+- do not implement owner authority, Settings, super-admin UI, mutex redesign/removal or production changes.
+
+When implementation and evidence are complete, record PR number/exact head/checks in #251 and stop for coordinator review.
