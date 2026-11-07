@@ -341,3 +341,13 @@ Owner — отдельная server-controlled authority поверх сущес
 3. Initial role grants не должны автоматически включать AP-10 block-management capability.
 4. Elevated capability для privileged targets также не имеет initial grants.
 5. Истёкшая или явно снятая мера terminal: её нельзя реактивировать продлением/изменением срока; повторное наказание оформляется новой measure.
+
+
+## Owner decision — single Owner bootstrap
+
+1. Владелец Vico Forum один — разработчик. Передача владения другому пользователю не входит в планируемую продуктовую модель.
+2. Не проектировать multiple-owner, ownership-transfer, successor или emergency-recipient UI/API без нового прямого решения владельца.
+3. Первичная идентификация Owner должна опираться на Google account владельца.
+4. Google account служит доказательством identity при bootstrap/authentication, но application Owner authority остаётся привязана server-side к внутреннему Better Auth `user.id` через `VICO_OWNER_USER_ID`; email/Google claims/role name не являются authority.
+5. После Google authentication/linking exact внутренний `user.id` владельца фиксируется в server-controlled binding. Отдельный first-manager grant/bootstrap не нужен.
+6. Recovery/transfer на другого владельца сейчас не проектируется. Если позже понадобится аварийное восстановление доступа к Owner, это будет отдельное owner decision, а не скрытая часть текущего redesign.
