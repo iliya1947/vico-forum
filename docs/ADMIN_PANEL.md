@@ -91,9 +91,11 @@ admin projection is separately protected and does not alter that public contract
 During owner-only pre-release, approved unfinished destinations may use the shared localized
 Under development mechanism. This does not grant a private read or mutation. Settings has no
 approved concrete operations yet; its placeholder does not authorize a settings store or API.
-The owner explicitly separated Settings from AP-01–AP-11: first complete the delivered admin
-scope, then redesign owner/authorization boundaries, then design/implement Settings as a separate
-future package. Settings therefore remains truthfully unfinished without blocking AP-11 closeout.
+The owner explicitly separated Settings from AP-01–AP-11. The subsequent
+owner/authorization implementation and single-Owner bootstrap product decision are
+complete in repository/local-CI scope. Settings is the next separate package after
+the final redesign documentation closeout; real Google/Owner binding acceptance remains
+Stage 6. Settings is still unfinished and has no approved concrete operations.
 
 ## Implemented category/section browsing (AP-06)
 
@@ -340,6 +342,15 @@ role grants, assignment into/out of a role carrying the key, per-user overrides
 Ordinary managers retain ordinary role/user changes but cannot use a role deletion to
 circumvent the elevated gate. Hidden controls are not the admission boundary:
 the server rechecks fresh authority in the serialized transaction.
+
+**Single-Owner bootstrap boundary.** Vico Forum has exactly one Owner: the developer.
+Google sign-in/linking identifies the intended internal forum account; it does not
+grant forum Owner rights through an email, name, provider claim or saved role.
+Only that account's exact internal Better Auth `user.id` in trusted server-side
+`VICO_OWNER_USER_ID` grants Owner authority. No second Owner, transfer, successor,
+first-admin/first-manager grant/bootstrap or ownership recovery-to-another-person UI/API
+is part of this model. No additional application feature is needed; real Google
+configuration, Owner binding and deployed acceptance remain unfinished Stage 6 work.
 
 ## Shared Quick actions contract
 
