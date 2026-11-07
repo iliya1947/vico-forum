@@ -36,10 +36,13 @@ application permissions разрешаются отдельно server-side.
 Права доступа строятся как dynamic permission-based authorization:
 
 - built-in роли `user`, `moderator`, `admin` существуют как стартовые системные роли;
-- администратор может через сайт создавать custom roles;
-- набор permissions любой роли, включая built-in roles, можно динамически изменять;
-- конкретному пользователю можно назначить роль и дополнительно поставить для permission
-  персональный `allow` или `deny`;
+- только точный server-bound Owner может через сайт создавать, переименовывать и удалять
+  custom roles, изменять permissions любых ролей (включая built-in), назначать роли
+  пользователям и менять персональные permission overrides `allow` / `deny` / `inherit`;
+- `access.authorization.manage` сохраняет защищённое чтение Roles и существующего
+  authorization-user subset, но не даёт non-Owner права записи: формы остаются read-only;
+- Owner определяется точным совпадением session `user.id` с валидным server-only
+  `VICO_OWNER_USER_ID`; его effective authority не подменяет raw роль/grants/overrides;
 - effective permissions берутся из актуального server-side DB state, а не из client input или
   долгоживущего session role claim;
 - permission catalog состоит из реальных code-backed capabilities приложения: UI назначает
@@ -48,8 +51,9 @@ application permissions разрешаются отдельно server-side.
 Полный source of truth для authorization — [`docs/auth/AUTHORIZATION.md`](./docs/auth/AUTHORIZATION.md).
 
 Постоянный контракт обычной админ-панели — [`docs/ADMIN_PANEL.md`](./docs/ADMIN_PANEL.md).
-Он задаёт утверждённую структуру, permission boundaries и последовательность будущих
-bounded реализаций; наличие контракта не означает, что глобальная админ-панель уже реализована.
+Он задаёт структуру и permission boundaries: AP-01–AP-11 реализованы в repository/local-CI.
+Settings ведётся отдельно: SET-01 Owner-only authorization writes реализован, но Settings
+shell и остальные поверхности ещё не реализованы. Реальная Owner binding — задача Stage 6.
 
 ## Техническая основа
 
