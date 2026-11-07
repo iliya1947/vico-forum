@@ -11,10 +11,10 @@ Google OAuth, Owner binding, production rollout или owner visual acceptance.
   docs PR #295/#297, merged в `main`) владелец определил финальную
   bootstrap product boundary. Решения зафиксированы в служебном PR #251:
   комментарии #6704864380, #6704951180 и handoff #6704973951.
-- Vico Forum имеет ровно одного Owner — разработчика. Его Google-аккаунт
-  предназначен для входа в собственную identity форума; после
-  authentication/linking серверная привязка указывает на точный
-  внутренний Better Auth `user.id` через `VICO_OWNER_USER_ID`.
+- Vico Forum имеет ровно одного Owner — разработчика. Разработчик входит
+  в форум через Google; после Google sign-in серверная Owner binding
+  указывает на точный внутренний Better Auth `user.id` этого аккаунта
+  через `VICO_OWNER_USER_ID`.
   Google email, имя, provider claim или обычная роль не дают Owner authority.
 - Transfer, multiple Owners, successor и recovery-to-another-person UI/API
   не утверждены. First-admin/first-manager grant/bootstrap и отдельная
