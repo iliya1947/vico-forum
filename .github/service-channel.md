@@ -127,3 +127,23 @@ Read Lev's full approved plan before implementation. Reuse existing test/browser
   - no schema/migration/seed/new role layer introduced.
 - Verdict for block 1/4: **PASS**, zero confirmed current-scope defects.
 - Whole-PR coordinator PASS is NOT yet claimed. Next block: AP-10 authority/immunity/direct admission wiring.
+
+
+## PR #296 coordinator review — block 2/4 PASS
+
+- Stable exact head remains `04865401cd5c2a69941cb458d0df1fc7424a37f7`.
+- Reviewed AP-10 authoritative authority, persisted-measure immunity and direct admission wiring end-to-end.
+- Confirmed:
+  - AP-10 derives raw actor/target authority from stored grants + overrides, not Owner-enriched effective permissions;
+  - only bound Owner bypasses the raw `admin.users.blocks.manage` prerequisite; rank3, self/Owner-target prohibition, strict target hierarchy and issuer-floor checks remain;
+  - pending-appeal discovery uses the same Owner-or-raw-manage admission and still applies per-target/floor filtering;
+  - stored active measures remain persisted/history-preserving but do not restrict the currently bound Owner;
+  - invalid/malformed Owner binding does not grant immunity;
+  - one Owner-aware admission closure is wired from Worker into the existing Forum repository path, covering topic/reply/profile/post/help-signal and other existing forum measure checks, plus attachment store;
+  - Complaint submission/queue/review/appeal repositories receive the same Owner-aware measure admission;
+  - content-generation admission receives trusted Owner binding; generation remains otherwise unchanged/disabled;
+  - administrative permission suppression wrapper bypasses saved sanctions only for exact bound Owner; non-Owner raw rank and restriction semantics remain unchanged;
+  - no historical measure rows/events are rewritten or synthetically lifted.
+- Focused unit/native PG coverage verifies Owner raw-deny create/change/lift, accepted/rejected appeal handling, private reads/queue, floor3, direct Drizzle/native admissions, stored-sanction retention and invalid-binding behavior.
+- Verdict for block 2/4: **PASS**, zero confirmed current-scope defects.
+- Whole-PR coordinator PASS is NOT yet claimed. Next block: private UI / Owner explanation / elevated-permission grant-revoke surfaces including elevated custom-role deletion.
