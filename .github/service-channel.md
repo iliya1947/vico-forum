@@ -78,3 +78,31 @@
 - Остальной scope исходного плана сохраняется: shared mutex, no schema/migration, полный elevated grant/revoke gate включая role deletion, отдельный docs closeout. Implementation/CI/browser не выполнялись.
 - **Мира:** повторно проверить revised plan; при PASS назначить исполнителя. В master plan §6.4 ещё осталась superseded administrative-only формулировка — синхронизировать с уже принятым all-catalog Owner decision, не выносить повторный product question.
 - Исполнитель/implementation PR не назначены. Лёва завершил локальную правку и остановился; Марк не назначен.
+
+
+## Stage 2 revised technical plan — coordinator PASS
+
+- Revised Lev plan reviewed against main `8301087f9322b34bdd325ed9298fdf3fddd84561` and current source.
+- Owner all-catalog decision is now reflected consistently in the master plan; superseded administrative-only clause removed.
+- AP-10 revision #6702520494 correctly closes the remaining authoritative path:
+  - bound Owner bypasses only the raw basic `admin.users.blocks.manage` admission requirement;
+  - Owner still receives rank 3 from server binding;
+  - self/Owner-target prohibition, strict actor>target, issuer-floor validation/comparison and lifecycle guards remain;
+  - non-Owner hierarchy continues to use raw RBAC, not Owner-enriched effective permissions;
+  - pending-appeal discovery receives the same Owner-or-raw-manage admission rule and still filters each target/floor.
+- Coordinator verdict: **PASS**, zero remaining confirmed plan defects.
+- Approved Stage2 plan = #6702391114 + AP-10 authoritative revision #6702520494 + Owner all-catalog clarification already recorded in #251.
+
+### Handoff — Лира
+
+Implement the approved bounded Owner/authorization Stage2 plan on a separate implementation PR from current main.
+
+Required result:
+- bound `VICO_OWNER_USER_ID` gets all current/future code-backed catalog permissions regardless of stored role/grants/overrides;
+- Owner authority works consistently in central authorization reads, fresh transactional authorization, admin/measure UI and direct admission paths;
+- AP-10 authoritative paths allow bound Owner while preserving raw-RBAC hierarchy for every non-Owner;
+- `admin.users.blocks.managePrivileged` remains grant/revoke Owner-only, including indirect revoke via deleting an elevated custom role;
+- Owner is immune to subordinate administrative measures without rewriting historical measure rows/events;
+- no new role hierarchy, no schema/migration, no Settings/super-admin/infra work, no mutex redesign unless an actual implementation blocker proves it necessary.
+
+Read Lev's full approved plan before implementation. Reuse existing test/browser harnesses and complete applicable checks. Do not update permanent project documentation in the implementation PR; docs remain a separate closeout PR after merge. When implementation and checks are complete, publish the implementation PR + stable exact head in #251 and stop for Mira coordinator review.
