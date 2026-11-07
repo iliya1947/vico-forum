@@ -88,3 +88,27 @@
 - Stage6/production и owner visual acceptance вне scope.
 
 Общий контракт: [ADMIN_PANEL_IMPLEMENTATION_PLAN.md](../ADMIN_PANEL_IMPLEMENTATION_PLAN.md).
+
+
+## Stage 1 independent technical review — PASS
+
+- Лёва independently reviewed PR #294 on exact head `e3604222ae8cecb4b1f2f94cdd5d7e9f76c15e61`.
+- Report: #6701647394.
+- Verdict: **PASS**, zero confirmed current-scope defects.
+- Independently confirmed:
+  - obsolete last-manager veto/error/count/flag removed;
+  - retained `authz_mutation_lock` still serializes authorization/AP-10 authority;
+  - fresh permission denial after self-revoke;
+  - History rollback/atomicity preserved;
+  - 0058→0059 upgrade probe preserves mutex row/PK/CHECK and populated authorization/measure data;
+  - own PostgreSQL/browser reruns PASS;
+  - GitHub exact-head CI #42328843126 and browser #42328843151 SUCCESS.
+- Implementation head remains frozen and unchanged.
+- Stage1 implementation is ready for owner merge. Permanent documentation is still intentionally separate and must be updated after implementation merge.
+
+### Next
+
+1. Owner merges PR #294.
+2. Mira verifies merged `main`.
+3. Mira prepares separate factual documentation closeout for Stage1.
+4. Only after docs closeout is merged does Stage1 become fully closed.
