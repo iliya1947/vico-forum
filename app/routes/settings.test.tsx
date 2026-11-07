@@ -20,7 +20,7 @@ function environment(actorId: string | null = "owner", ownerBinding: unknown = "
     })),
     readManagementState: vi.fn(async () => ({ roles: [], users: [] })),
   };
-  context.set(authorizationContext, state as unknown as ReturnType<typeof context.get<typeof authorizationContext>>);
+  context.set(authorizationContext, state as never);
   return { context, state };
 }
 
