@@ -1328,3 +1328,30 @@ Independent check of the highest-risk external assumptions also passed:
 No future-scope item was promoted into the current release. Deferred notifications, deputies, extra system controls, account deletion/recovery/unlink/2FA/passkeys and Stage6 remain outside.
 
 Approved sequence is now recorded in the master service plan. No implementer is assigned yet. Next bounded package is SET-01 only.
+
+
+## SET-01 implementation assignment — Lira
+
+Assigned to **Lira (ChatGPT-6)**.
+
+Required result:
+- implement the approved SET-01 current-release authorization-management policy so all existing authorization mutations are writable only by the exact bound Owner.
+
+Scope:
+- role create/rename/delete;
+- role permission grant/revoke;
+- user role assignment;
+- per-user permission allow/deny/inherit;
+- all existing mutation entry points that can perform those operations.
+
+Boundary:
+- preserve existing read access behavior unless a write control must become read-only;
+- preserve current Owner effective-authority model, History/freshness/mutex/AP-10 behavior;
+- keep the policy extensible for future deputy delegation, but do not implement deputies or any dormant deputy authority now;
+- SET-02–SET-06 and Settings UI are out of scope.
+
+Done criteria:
+- implementation is in one bounded implementation PR;
+- direct/server mutation paths and UI write controls enforce the same Owner-only policy;
+- applicable tests/checks cover Owner success and non-Owner denial without state/History mutation;
+- stable exact head and check results are reported back through #251 for Mira's coordinator whole-PR review.
