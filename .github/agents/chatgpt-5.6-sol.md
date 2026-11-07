@@ -1,0 +1,1197 @@
+# Мира — administrator workspace preference map
+
+Admin preferences are personal UI/workspace state only, capability-scoped rather than role-name-scoped.
+
+Recommended first slice:
+- default/last admin destination;
+- default/last accessible Attention mode/group;
+- compact/comfortable density;
+- default expansion of secondary technical detail.
+
+Recommended persistence for first slice: browser-local per account/device, no DB/schema, no saved sensitive search/target identifiers.
+
+Queue priority/order, permissions, sanctions, complaint policy, mandatory safety and audit semantics are not personal preferences.
+
+# Мира — Owner/system Settings map
+
+Owner/system Settings has five practical product groups plus one optional later emergency mode:
+- registration;
+- Owner-only role definitions/grants;
+- global forum-write cooldown (later candidate; current default 5s);
+- attachment maximum size (later candidate; current default 50 MB);
+- locale publication active/inactive (later candidate, preserving mandatory en fallback);
+- optional later read-only/maintenance mode.
+
+Do not expose technical/security constants or infrastructure. First bounded recommendation: Owner-only role configuration + registration open/closed only. Role assignment/per-user overrides remain an owner decision.
+
+# Мира — Settings surface map
+
+Five classes identified:
+1. Owner/system (Owner-only, whole-forum policy + role definitions/grants).
+2. Administrator workspace preferences (personal, capability-based audience).
+3. User experience preferences (personal; preserve existing local theme/editor contracts unless separately changed).
+4. Account & security (identity/security, separate from UX).
+5. Subsystem operational settings (stay in subsystem by default; Complaints priority settings are current example).
+
+Outside Settings: infra/secrets/deployments/Owner binding, object administration, public profile content.
+
+Open owner boundary: role configuration is Owner-only; decide later whether assignment of existing roles/per-user overrides remains delegatable administration.
+
+# Мира — Settings architecture correction
+
+Owner corrected the model: Settings is a family of separate surfaces, not one admin page.
+
+Minimum: Owner/system settings (Owner-only, includes role settings), administrator personal settings, user personal settings. Additional candidate: Account & security as a distinct personal-security surface. Domain-specific settings normally remain in their subsystem.
+
+Current contract impact: `access.authorization.manage` presently delegates role definition/grant management. Owner now requires role settings Owner-only; exact treatment of role assignment and per-user overrides remains to define before planning.
+
+# Мира — Settings product-definition analysis
+
+Current Settings is only an Under development placeholder. No generic settings store/permission exists. Existing configuration is domain-separated.
+
+Recommended first package: only registration open/closed. Keep complaints, Roles, locale lifecycle, user preferences, infra/secrets and super-admin functions outside this first slice.
+
+Owner decisions pending:
+1. Settings authority: Owner-only vs explicit delegatable permission (recommend explicit permission, zero initial grants; Owner gets it through catalog-wide authority).
+2. Scope: registration only vs registration + read-only mode vs broader configuration (recommend registration only).
+3. Locale management: separate later vs include now (recommend separate later).
+
+# Мира — Settings product-definition start
+
+Owner/authorization redesign is fully closed after merged PR #298; current main `856b93cb65b01e2389eb97276b37b3a0d8eef265`.
+
+Current bounded task: Settings product definition only. First analyze current placeholder + existing configurable mechanisms + release boundaries; identify genuinely required owner decisions. Do not assign Lev/Lira/Mark or start implementation before product scope is fixed.
+
+# Мира — PR #298 final coordinator result
+
+Exact head `7cfa68a8a2c587314393d60a9bf90923604ee0c0`: PASS. OWNER-DOC-MIRA-01 closed; 6-file docs scope consistent; CI #42361836324 success; zero confirmed current-scope defects. No Codex docs review needed. Next: owner merge #298.
+
+# Мира — single-Owner bootstrap fixed
+
+Owner decision confirmed: one Owner only; Google sign-in identifies the developer account; no ownership-transfer feature and no first-manager bootstrap. Repository already has the required application pieces. Remaining real Google/Owner binding is Stage6 external work. Next bounded step is docs-only closeout before Settings.
+
+# Мира — single Owner / Google bootstrap decision
+
+Owner один: разработчик. Transfer/multiple-owner/recovery-to-another-person feature не планируется.
+
+Bootstrap должен подтверждать identity через Google, но runtime authority остаётся на trusted `VICO_OWNER_USER_ID` → internal Better Auth `user.id`, не на email/provider claim. Current task: определить, требует ли это вообще нового repository implementation или только operational Stage6 wiring/acceptance.
+
+# Мира — recovery/bootstrap analysis complete
+
+Source-level result: Stage2 already removes the need for a first-manager bootstrap. Normal signup + protected `VICO_OWNER_USER_ID` binding can bootstrap Owner without application-level special endpoints; protected rebinding can serve transfer/recovery.
+
+Three owner decisions remain: normal-account bootstrap vs special flow; infra-only rebind vs app recovery system; whether emergency rebind must revoke old-account sessions. No Lev/Lira assignment until these are answered.
+
+# Мира — next bounded task: recovery/bootstrap product-definition
+
+Stage2 is fully closed after #297 merge (`96186cc9158dd7a91c9d2c0124ed4556f133f15c`).
+
+Next task is not implementation: analyze the current repository/source-of-truth and define the unresolved recovery/bootstrap product boundary without reviving last-manager/count-veto assumptions. Prepare only the owner decisions actually required before Lev technical planning. Do not assign Codex/implementation yet.
+
+# Мира — PR #297 final docs PASS
+
+Final docs exact head `a63bfb6d52052e1dd0905eb498dabb1d38c8f10a` passed coordinator review with zero confirmed current-scope defects.
+
+`STAGE2-DOC-MIRA-01/02/03` are closed; final correction was one-line only in `PROJECT_STATE.md`. Exact-head CI and isolated browser workflow are green. PR #297 is Ready for review.
+
+Next: owner merge #297. After merge Stage2 closeout is complete; no Codex docs review required.
+
+# Мира — PR #296 readiness complete
+
+Lev independent technical review PASS accepted on exact head `824ab8eccb091664c2e7d37f81f2737e7fd43e87`; zero confirmed current-scope defects. Current main/base remains `8301087f9322b34bdd325ed9298fdf3fddd84561`.
+
+PR #296 is now Ready for review and mergeable. No implementation change occurred after coordinator PASS.
+
+Next: owner merge #296; after merge create separate factual documentation closeout. Do not start Settings or further redesign before merged state is recorded.
+
+# Мира — PR #296 fresh coordinator whole-PR review: PASS
+
+Exact head `824ab8eccb091664c2e7d37f81f2737e7fd43e87`, base `8301087f9322b34bdd325ed9298fdf3fddd84561`.
+
+`STAGE2-MIRA-01` closed. Delta from the previously reviewed head is exactly two test files and no runtime changes. Native PG now covers Owner elevated role-grant add/remove, assignment in/out, per-user allow/deny/inherit, fresh permission results and History. Real browser covers the same canonical Owner paths plus fresh recipient requests and retained non-Owner direct 403 checks.
+
+Exact-head evidence verified: CI #42349494000 SUCCESS (1974 app / 571 PG); browser #42349494094 SUCCESS attempt 1, including the new Stage2 elevated acceptance case; History browser SUCCESS.
+
+Final coordinator verdict: **PASS, zero confirmed current-scope defects**. Implementation remains frozen; next step is Лёва independent technical review of the same exact head.
+
+# Мира — PR #296 coordinator whole-PR review: CHANGES REQUIRED
+
+Frozen exact head `04865401cd5c2a69941cb458d0df1fc7424a37f7`, base `8301087f9322b34bdd325ed9298fdf3fddd84561`.
+
+Final result: exactly one confirmed current-scope finding, `STAGE2-MIRA-01`. No additional findings from block 4 privacy/History/Worker/localization/regression review. CI exact head SUCCESS; isolated browser exact head SUCCESS on attempt 2. No schema/migration/docs/Settings/super-admin/infra overscope.
+
+`STAGE2-MIRA-01`: approved elevated grant/revoke acceptance is incomplete. Exact-head evidence proves all four non-Owner denials and Owner role-grant add + elevated-role delete, but not Owner-success assignment into/out of elevated role, per-user elevated override transitions, or explicit role-grant removal; native Owner PG test has no elevated-key mutation acceptance. Runtime elevated gate is not currently shown defective.
+
+Handoff to Лира: complete only this required acceptance, change runtime only if tests expose an actual defect, rerun applicable exact-head checks/browser, publish new stable head, stop for fresh Mira review.
+
+# Мира — PR #296 coordinator review block 3/4: STAGE2-MIRA-01
+
+Stable exact head: `04865401cd5c2a69941cb458d0df1fc7424a37f7`.
+
+Runtime/source review of private Owner UI + `admin.users.blocks.managePrivileged` mutation surfaces found no confirmed logic bypass. The bound-Owner flag is server-derived; raw role/grants/denies stay factual; non-Owner UI cannot directly edit elevated grant/override/assignment/delete controls; and repository authorization transaction guards all four mutation families, including indirect revoke by custom-role deletion.
+
+Confirmed current-scope verification finding:
+
+1. **STAGE2-MIRA-01 — elevated grant/revoke acceptance is incomplete.** The approved Stage2 plan explicitly requires Owner-only gate verification for all four mutation families and browser proof that Owner can grant elevated authority to role/user with the next request reflecting it. Exact-head browser evidence proves non-Owner direct 403 for role-grant/assignment/override/delete and Owner success for role-grant add + elevated-role delete, but does not prove Owner-success assignment into/out of elevated role, per-user elevated override transitions, or explicit Owner role-grant removal. `tests/database/owner-authorization.test.ts` contains no elevated-key mutation cases. This is a required verification gap, not a confirmed runtime defect.
+
+Block 3/4 is therefore not PASS. Continue block 4/4 before returning findings to Лира; first finding does not end whole-PR review.
+
+# Мира — PR #296 coordinator review block 2/4: PASS
+
+## PR #296 coordinator review — block 2/4 PASS
+
+- Stable exact head remains `04865401cd5c2a69941cb458d0df1fc7424a37f7`.
+- Reviewed AP-10 authoritative authority, persisted-measure immunity and direct admission wiring end-to-end.
+- Confirmed:
+  - AP-10 derives raw actor/target authority from stored grants + overrides, not Owner-enriched effective permissions;
+  - only bound Owner bypasses the raw `admin.users.blocks.manage` prerequisite; rank3, self/Owner-target prohibition, strict target hierarchy and issuer-floor checks remain;
+  - pending-appeal discovery uses the same Owner-or-raw-manage admission and still applies per-target/floor filtering;
+  - stored active measures remain persisted/history-preserving but do not restrict the currently bound Owner;
+  - invalid/malformed Owner binding does not grant immunity;
+  - one Owner-aware admission closure is wired from Worker into the existing Forum repository path, covering topic/reply/profile/post/help-signal and other existing forum measure checks, plus attachment store;
+  - Complaint submission/queue/review/appeal repositories receive the same Owner-aware measure admission;
+  - content-generation admission receives trusted Owner binding; generation remains otherwise unchanged/disabled;
+  - administrative permission suppression wrapper bypasses saved sanctions only for exact bound Owner; non-Owner raw rank and restriction semantics remain unchanged;
+  - no historical measure rows/events are rewritten or synthetically lifted.
+- Focused unit/native PG coverage verifies Owner raw-deny create/change/lift, accepted/rejected appeal handling, private reads/queue, floor3, direct Drizzle/native admissions, stored-sanction retention and invalid-binding behavior.
+- Verdict for block 2/4: **PASS**, zero confirmed current-scope defects.
+- Whole-PR coordinator PASS is NOT yet claimed. Next block: private UI / Owner explanation / elevated-permission grant-revoke surfaces including elevated custom-role deletion.
+
+# Мира — PR #296 coordinator review block 1/4: PASS
+
+## PR #296 coordinator review — block 1/4 PASS
+
+- Stable exact head: `04865401cd5c2a69941cb458d0df1fc7424a37f7`; base `8301087f9322b34bdd325ed9298fdf3fddd84561`.
+- Reviewed central Owner authority implementation and focused tests:
+  - `app/authorization/owner.ts`
+  - `db/authorization-repository.ts`
+  - authorization/admin route Owner predicates
+  - Worker trusted binding composition relevant to central authority
+  - Owner/repository/PostgreSQL tests and Node TS inclusion.
+- Confirmed:
+  - only exact valid server binding creates Owner authority;
+  - existing DB user is still required;
+  - bound Owner receives all current code-backed `PERMISSION_CATALOG` entries;
+  - unknown permission strings do not become authority;
+  - bulk, targeted, resolver/direct `hasPermission` and fresh authorization mutation paths agree;
+  - stored role/grants/overrides remain factual and unchanged; `authoritySource: owner` is projection metadata only;
+  - non-Owner deny > allow > role behavior is unchanged;
+  - no schema/migration/seed/new role layer introduced.
+- Verdict for block 1/4: **PASS**, zero confirmed current-scope defects.
+- Whole-PR coordinator PASS is NOT yet claimed. Next block: AP-10 authority/immunity/direct admission wiring.
+
+# Мира — Stage 2 technical plan coordinator review: PASS
+
+Revised Lev plan (#6702391114 + #6702520494) checked against current main/source and Owner clarification.
+
+PASS, zero remaining current-scope plan defects.
+- all-catalog Owner authority retained;
+- AP-10 raw basic-manage gate becomes Owner-aware without contaminating non-Owner raw hierarchy;
+- remaining self/target/floor/lifecycle guards preserved;
+- elevated grant/revoke gate covers role grant, assignment, override and elevated custom-role deletion;
+- no schema/migration/Settings/super-admin/infra/mutex redesign.
+
+Implementation assigned to Лира via #251. No implementation acceptance claimed yet.
+# Мира — Stage 2 technical plan review: CHANGES REQUIRED (narrowed)
+
+Plan #6702391114 reviewed on main `8301087f9322b34bdd325ed9298fdf3fddd84561`.
+
+Owner corrected coordinator interpretation: bound Owner must have **all code-backed permissions in `PERMISSION_CATALOG`**, including ordinary participation permissions. Therefore my former finding about the all-catalog projection is withdrawn.
+
+One current-scope finding remains:
+1. AP-10 `assertUserMeasureAuthority()` still requires raw `admin.users.blocks.manage`; common effective projection alone does not implement Owner authority at that transaction boundary. Corrected plan must explicitly cover bound Owner there while preserving raw hierarchy/issuer-floor semantics for non-Owner.
+
+Plan returned to Лёва only for this remaining bounded correction. No implementation assigned.
+
+# Мира — Stage 1 last-manager removal coordinator review: PASS
+
+PR #294, exact head `e3604222ae8cecb4b1f2f94cdd5d7e9f76c15e61`, base `bcf02193f82aa0d448444c6943d6ebdcf09f7896`.
+
+Whole-PR review completed across all 21 changed files. PASS, zero confirmed current-scope defects.
+
+Confirmed:
+- obsolete last-manager error/count/flag/veto removed;
+- `authz_mutation_lock` retained solely as shared transaction mutex;
+- 0059 schema delta is only DROP COLUMN `managers_ever_existed`;
+- fresh authz/AP-10 hierarchy/History rollback remain;
+- canonical self-revoke commits once, next request denies;
+- mutex concurrency regression proves fresh authority after wait;
+- CI #42328843126 and browser #42328843151 SUCCESS on exact head;
+- artifacts inspected directly: Stage1 35 clean cases; AP-10/AP-11 34 clean cases.
+
+Implementation frozen for independent Lev review. Future owner authority/mutex redesign/Settings are not Stage1 defects.
+
+# Мира — ChatGPT-5.6 Sol
+
+## AP-10 restriction catalog — purpose-first coordinator conclusion
+
+Не owner decision. Каждый пункт проверен по вопросу: какую конкретную вредную возможность он позволяет прекратить, не отбирая у пользователя несвязанные функции.
+
+### 1. Публикация и участие — оставить
+
+- **Создавать новые темы / Help-вопросы.**
+  Практический смысл: остановить спам/флуд новыми обсуждениями, не запрещая пользователю отвечать в существующих.
+- **Отправлять ответы.**
+  Практический смысл: остановить флуд, harassment и другое вредное участие в чужих/существующих темах, не обязательно запрещая создание собственных тем.
+- **Загружать новые вложения.**
+  Практический смысл: отдельно остановить вредные/нежелательные файлы и расход storage. Это должна быть самостоятельная restriction, потому что upload имеет собственный direct API lifecycle и не должен оставаться обходом при запрете публикации.
+
+### 2. Изменение собственного контента — оставить только реальные санкционные цели
+
+- **Редактировать свои опубликованные сообщения — оставить.**
+  Практический смысл: пользователь может менять уже опубликованный материал после модерации и снова добавлять запрещённое содержимое.
+- **Изменять публичный профиль — оставить.**
+  Практический смысл: профиль реально редактируется сейчас (bio / GitHub / website) и может использоваться для abusive/spam/phishing content.
+
+Не делать отдельными restrictions:
+- **source-locale correction** — внутренняя техническая гранулярность; отдельной модерационной цели нет;
+- **управление solved / best answer своей темы** — отдельный punitive restriction сейчас не оправдан: действие не является самостоятельным каналом публикации/контакта/ресурсного abuse, а административная коррекция уже существует. Не добавлять без реального abuse-case.
+
+### 3. Обращения к модерации — оставить submission, не ограничивать appeals
+
+- **Отправлять Complaints — оставить.**
+  Практический смысл: targeted restriction против систематически ложных/злонамеренных reports. Existing rate limit ограничивает объём, но не решает сам факт устойчивого misuse.
+- **Отправлять Help signals — оставить.**
+  Практический смысл: отдельный moderation-input channel, который также может использоваться для спама/misuse.
+
+Не включать в restriction catalog:
+- **Complaint Appeals, Help duplicate appeals и другие существующие domain appeals**;
+- **AP-10 block appeal**.
+
+Причина: appeal — путь пересмотра уже принятого решения/меры. Санкция не должна сама отключать механизм её или другого moderation decision пересмотра. Eligibility каждого appeal по-прежнему определяется его собственным domain contract.
+
+### 4. Ресурсоёмкие действия — оставить
+
+- **Генерировать переводы.**
+  Практический смысл: отдельная code-backed generation capability может расходовать provider/queue/allowance resources независимо от обычного чтения форума.
+
+### 5. Служебные полномочия — оставить только для privileged target
+
+Эта группа не относится к обычным пользователям. Она нужна только когда owner/senior-head-admin authority применяет меру к пользователю с реальными moderator/admin capabilities.
+
+Child restrictions:
+- **Forum / Help moderation** — forum/topic/solution/Help moderation и связанные private moderation reads;
+- **Complaints moderation** — Case/Appeal review, priority/identity access и связанные mutations;
+- **Security review** — private attachment-security review surface;
+- **Users / access administration** — Users admin read, roles/permissions management и ordinary admin History/private administration surfaces.
+
+Правило семьи: выбранная service restriction подавляет и privileged reads, и mutations этой области; иначе пользователь сохраняет чувствительный доступ после suspension. Exact permission mapping — technical planning после owner approval, не часть product catalog.
+
+### 6. Не включать в restriction catalog
+
+- login/session;
+- public reading;
+- notifications;
+- read-only own account / block-status surface;
+- любые appeal submission flows;
+- own solved/best-answer management;
+- source-locale correction как отдельный пункт;
+- future/unimplemented capabilities;
+- internal permission keys или route names как пользовательские checkbox labels.
+
+### 7. Group behavior
+
+- group checkbox — UI shortcut выбрать/снять все child restrictions;
+- child restrictions остаются самостоятельно выбираемыми;
+- catalog описывает продуктовые действия, а не копирует RBAC permission catalog;
+- restriction не переписывает role/grants/overrides;
+- authoritative enforcement нужен на server/domain boundary каждого реально запрещённого действия.
+
+
+## AP-10 reason rules — purpose-first coordinator conclusion
+
+Не owner decision.
+
+### Зачем reason вообще нужен
+
+Reason нужен не ради формы и не ради красивого History. Он должен:
+1. объяснять наказанному пользователю, почему к нему применили меру;
+2. позволять следующему администратору понять, почему sanction была назначена/изменена/снята;
+3. сохранять смысл административного решения в History без необходимости восстанавливать его из чужих private workflows.
+
+### Кандидат правил
+
+1. **Создание temporary/permanent measure — reason обязателен.**
+   - Это user-visible объяснение, достаточное, чтобы понять основание административной меры.
+   - Не требовать существования Complaint/Case: мера может возникнуть из другого moderation context.
+   - Не копировать private Complaint explanations, reporter identity или иные закрытые данные.
+
+2. **Ручное изменение restriction set или срока — reason обязателен.**
+   - Новая причина объясняет именно изменение sanction.
+   - Исходный reason назначения не перезаписывается.
+   - History должен показывать before/after + reason конкретного изменения.
+
+3. **Explicit lift до автоматического expiry — reason обязателен.**
+   - Другой authorized admin тоже может снять меру, поэтому без объяснения History теряет смысл.
+   - Lift reason не обязан означать, что исходная мера была ошибочной: это только объяснение, почему её действие прекращено вручную.
+
+4. **Automatic expiry — нового reason нет.**
+   - Это не новое administrative decision, а заранее заданное окончание срока.
+   - Не создавать synthetic admin/system reason/event только ради expiry.
+
+5. **Denied / stale / failed / no-op / replay — нового reason/history event нет.**
+   - Reason относится к реально committed administrative transition.
+
+### Presentation boundary
+
+- reason меры и причины её последующих изменений должны быть доступны самому санкционированному пользователю вместе с соответствующей measure/history surface;
+- ordinary Admin History сохраняет bounded useful reason;
+- private moderation evidence/notes не раскрываются через reason;
+- отдельный internal-note слой для AP-10 сейчас не нужен без подтверждённой product-задачи.
+
+### Не проектировать сейчас
+
+- глобальную taxonomy нарушений;
+- mandatory reason categories;
+- шаблоны/справочник причин;
+- отдельный private moderator-note workflow;
+- связь reason с Complaint Case как обязательное условие;
+- редактирование исторических reasons задним числом.
+
+
+## AP-10 administrative hierarchy safety — corrected draft
+
+Предыдущая попытка добавить в AP-10 специальную защиту «последнего работоспособного управляющего ролями/разрешениями» от блокировки отозвана как ненужная и ошибочно перенесённая из authorization lockout concerns.
+
+Owner decision:
+1. AP-10 не должен добавлять специальный механизм, который запрещает блокировать/ограничивать администратора только ради сохранения хотя бы одного пользователя, способного управлять ролями и разрешениями.
+2. Такой сценарий не является отдельной задачей админ-панели/AP-10.
+3. В принятой иерархии административную меру против администратора применяет actor с достаточной более высокой authority; не строить отдельный recovery/last-manager слой поверх этого.
+4. Не связывать блокировки AP-10 с существующей защитой authorization-management mutations от потери последнего access manager, если это не требуется конкретной реализацией позже.
+5. Если постоянный ADMIN_PANEL source-of-truth содержит старую условную формулировку про usable access manager при блокировке, её нужно скорректировать в отдельном финальном documentation PR, а не реализовывать как AP-10 requirement.
+
+Остаются отдельно на owner review только действительно относящиеся к санкциям вопросы:
+- может ли actor применять/изменять/снимать меру относительно самого себя;
+- должна ли target-authority проверка действовать одинаково на создание, изменение и снятие меры;
+- какие административные возможности входят в выбранную restriction-группу для privileged target.
+
+## AP-10 measure aggregation — not a current requirement
+
+Два прежних черновика Миры были ошибочно построены от структуры данных:
+- сначала «не более одной active measure на пользователя»;
+- затем «несколько measures + union restrictions».
+
+Обе прежние модели отозваны как преждевременные. AP-10 не получает requirement на несколько одновременно активных measures, aggregation или conflict-resolution. Технический план должен выбрать минимальную модель для утверждённого поведения и не строить multi-measure subsystem заранее. Только если без пользовательски наблюдаемого выбора реализацию невозможно определить, возникает реальный owner fork.
+
+## AP-10 block appeal boundary — corrected draft
+
+Предыдущая попытка описать block appeal как пересмотр «нарушения + наказания» отозвана: она смешивала AP-10 с Complaint semantics.
+
+Корректная граница:
+1. Complaint — report о возможном нарушении; это отдельный moderation domain.
+2. Administrative measure — отдельная санкция, назначенная пользователю и содержащая собственный stated reason/violation context.
+3. Block appeal — действие уже наказанного пользователя против exact measure.
+4. Existing Complaint Appeal — appeal по Complaint Decision/effective outcome и не является block appeal.
+5. Даже если measure когда-либо будет связана с Complaint Case, оба workflows сохраняют собственные identities, permissions, outcomes и history.
+6. Для одной конкретной administrative measure пользователь может подать до **3 block appeals**. Это уже owner decision; quota/repeat не считать открытым вопросом.
+7. Нельзя автоматически выводить остальные block-appeal outcomes/lifecycle из текущего Complaints Appeal contract.
+8. Pending block appeal относится к самой administrative measure, а не к отдельной версии её состояния. Expiry или explicit lift закрывают её как утратившую предмет. Изменение restrictions, срока или причины не закрывает appeal; она продолжает относиться к той же мере, а History сохраняет изменения.
+
+
+## AP-10 purpose filter
+
+Перед добавлением любого правила проверять:
+1. какую реальную проблему модерации оно решает;
+2. нужно ли оно, чтобы мера была понятной, соразмерной и реально исполнимой;
+3. нужно ли оно для защиты пользователя от произвольной/ошибочной меры;
+4. существует ли соответствующее действие в текущем продукте;
+5. нельзя ли отложить решение без дорогой переделки.
+
+Если конкретной необходимости нет — не превращать технически возможный edge case в product contract.
+
+
+## AP-09 completion / AP-10 gate
+
+PR #288 merged в main: `5cf80f38cbc06ed733a0618e706eb80c5a7b3c7b`.
+
+AP-09 полностью закрыт:
+- implementation #287 merged;
+- AP09-MIRA-05 test stabilization #289 merged;
+- documentation closeout #288 merged;
+- source-of-truth main reflects AP-09 and migration head 0057;
+- confirmed open current-scope defects: 0.
+
+Следующий пакет AP-10 нельзя планировать до owner product decision по blocking effect/reasons.
+Не выбирать эти semantics самостоятельно и не передавать Лёве planning task до решения владельца.
+
+## AP-09 documentation closeout — final PASS
+
+#289 merged into main at `0521669eadc3b927b3f8d0651b98291ffda137a2`.
+
+#288 was synchronized onto that main and the same five docs changes were reapplied. Final exact head
+`d6ecb2005da02b4eaf4528b17f0530767ebddadd`.
+
+Final review:
+- diff exactly 5 docs files;
+- no implementation/schema/dependency changes;
+- factual consistency/overscope PASS;
+- HISTORY_11 includes AP09-MIRA-05/#289 closeout;
+- CI #41955225394 SUCCESS;
+- application 143/143 files, 1888/1888 tests;
+- users-authorization regression 6/6 PASS;
+- PostgreSQL 41/41 files, 483/483 tests;
+- build/UI preview/migration/schema/Worker checks SUCCESS.
+
+#288 marked Ready/open/mergeable.
+
+Next owner action: merge #288.
+
+## AP09-MIRA-05 — coordinator review PR #289
+
+**Stable exact head:** `7c0f7b513e6908f98151665a6839626b91f58fac`.
+
+**Coordinator verdict: PASS. AP09-MIRA-05 CLOSED. Confirmed current-scope defects: 0.**
+
+Independent verification:
+- #289 Draft/open/mergeable; base/current main `386023ce892044e623ec3d24f8a724e92af61a31`;
+- main has no drift from base;
+- diff exactly one file, 2 additions / 2 deletions;
+- both race-prone synchronous `Public details` assertions after recovery are now positive-state `await waitFor(...)`;
+- existing loader-count, action-count, history-state, same-path, privileged-DOM and terminal both-rights-revoked assertions remain unchanged;
+- runtime code/schema/dependencies/docs untouched;
+- exact-head CI #41953193998 SUCCESS;
+- job logs: test file 6/6 PASS, application 143/143 files and 1888/1888 tests; PostgreSQL 41/41 files and 483/483 tests; all applicable steps SUCCESS.
+
+The previous service note that Codex review was unnecessary was incorrect: current AGENTS requires independent technical review after coordinator PASS even for this test-only implementation PR. Next reviewer: Лёва, same exact head.
+
+#288 remains Draft until #289 is accepted and merged.
+
+## AP-09 documentation closeout — подзадача 3/3
+
+**Docs-content verdict: PASS. Overall closeout: BLOCKED by `AP09-MIRA-05`.**
+
+#288 exact head `c1e20a79d69918bb0bf62d9f3acec0d013ddfd45`, base/main `386023ce892044e623ec3d24f8a724e92af61a31`.
+
+Проверено:
+- diff ровно 5 docs-файлов, implementation/schema/dependencies отсутствуют;
+- PROJECT_STATE, ADMIN_PANEL, AUTHORIZATION и HISTORY_11 соответствуют merged AP-09 code/migration/catalog/routes;
+- main не сдвинулся;
+- factual docs contradictions/overscope не найдено.
+
+CI выявил новый current-scope test-layer defect:
+- run #41951777119: database SUCCESS, checks FAIL;
+- attempt 1: repeated-revocation regression падает на line 196 после второго recovery-cycle;
+- rerun same unchanged head: тот же test падает уже на line 180 после первого recovery-cycle;
+- prior implementation CI #41941892340 на том же runtime code: test file 6/6 PASS, full application 1888/1888 PASS.
+
+Root cause:
+- test ждёт loader call count и negative state `#authorization === null`;
+- ErrorBoundary также удовлетворяет negative state до завершения recovery render;
+- immediate `Public details` assertion гоняется с successful detail commit;
+- различное место failure на двух attempts подтверждает synchronization race.
+
+**AP09-MIRA-05:** test-only synchronization defect. Runtime defect не подтверждён.
+
+Correction boundary:
+- separate test-only PR;
+- only `app/admin/users-authorization.test.tsx` unless new evidence requires broader scope;
+- wait positive recovered detail state in each cycle before terminal assertions;
+- preserve semantic assertions/no replay/no loop/history identity;
+- no runtime change;
+- full applicable CI.
+
+#288 остаётся Draft до correction merge + sync + green docs CI.
+
+## AP-09 documentation closeout — подзадача 2/3
+
+Implementation #287 merged в `main`: `386023ce892044e623ec3d24f8a724e92af61a31`.
+
+Создан отдельный docs-only PR #288, Draft, head
+`c1e20a79d69918bb0bf62d9f3acec0d013ddfd45`.
+
+Изменены только пять согласованных документов:
+- `PROJECT_STATE.md`;
+- `docs/ADMIN_PANEL.md`;
+- `docs/auth/AUTHORIZATION.md`;
+- `docs/PROJECT_HISTORY/PROJECT_HISTORY_11.md`;
+- `docs/PROJECT_HISTORY/PROJECT_HISTORY.md`.
+
+Implementation/schema/dependencies/AP-10/Stage 6/production не менялись.
+
+Следующая подзадача 3/3: финально проверить diff #288 на factual consistency с merged main и отсутствие docs overscope; при PASS перевести PR из Draft в Ready.
+
+## AP-09 independent review — final reconciliation
+
+**Stable exact head:** `b85c3809befe3a1dcc83fe654dde4cd093f625ba`.
+
+Лёва повторно проверил `AP09-LEVA-01` на accepted schema и **отозвал finding**.
+
+Подтверждено:
+- accepted `user.created_at` — PostgreSQL `timestamp without time zone`;
+- прежний synthetic repro использовал неверный `timestamptz`;
+- disposable PostgreSQL 17 с migrations 0000–0057 + exact-head `PostgresAdminUsersReader` + real Drizzle profile reader дала 9/9 PASS для трёх boundary timestamps × UTC/Asia-Jerusalem/America-New_York;
+- proposed `AT TIME ZONE 'UTC'` correction на actual column type применять нельзя;
+- implementation не менялась, новый coordinator cycle не нужен.
+
+**Final independent technical verdict Лёвы: PASS. Confirmed open current-scope defects: 0.**
+Coordinator PASS и independent PASS относятся к одному exact head.
+
+Следующий шаг владельца: merge PR #287. После merge — отдельный documentation closeout PR по текущему process rule.
+
+## AP-09 independent review — verification of AP09-LEVA-01
+
+**Reviewed exact head remains:** `b85c3809befe3a1dcc83fe654dde4cd093f625ba`.
+
+Лёва сообщил `AP09-LEVA-01`: `to_char(user.created_at,...Z)` якобы сдвигает instant по PostgreSQL session TimeZone, потому что `created_at` — timestamptz.
+
+Coordinator verification выявила mismatch premise:
+- accepted migration `drizzle/0003_gorgeous_donald_blake.sql`: `user.created_at timestamp DEFAULT now() NOT NULL`;
+- current `db/schema.ts`: `timestamp("created_at")` без `withTimezone:true`;
+- current `drizzle/meta/0057_snapshot.json`: type `timestamp`;
+- migration search не выявил последующего перевода `user.created_at` в timestamptz;
+- finding repro использовал synthetic table с `timestamptz`, то есть другой тип.
+
+PostgreSQL 17 имеет отдельные overloads `to_char(timestamp,text)` и `to_char(timestamp with time zone,text)`; session TimeZone conversion, на котором основан repro, относится к timestamptz path. Поэтому заявленная causal chain не воспроизводит фактический AP-09 schema path.
+
+**Coordinator status:** AP09-LEVA-01 NOT CONFIRMED. Лире correction не назначать.
+
+Следующий шаг: Лёва повторно проверяет actual `timestamp without time zone` path и либо даёт корректный current-scope repro, либо снимает finding.
+
+## AP-09 MIRA-04 correction — coordinator restart, подзадача 3/3 / final verdict
+
+**Reviewed exact head:** `b85c3809befe3a1dcc83fe654dde4cd093f625ba`.
+
+**Final coordinator verdict: PASS. Confirmed current-scope defects: 0.**
+
+Final gap-sweep:
+- head не сдвинулся;
+- `main` идентичен baseline `2651d2bf7de7212068c54674dca7d90716ea92c3`;
+- correction delta ограничен двумя уже проверенными файлами;
+- `AP09-MIRA-01..04` закрыты;
+- direct loader 403 остаётся fail-closed и максимум вызывает один лишний recovery GET без loop/authority expansion;
+- exact-head CI #41941892340 остаётся SUCCESS: app 143/143 files, 1888/1888 tests; PostgreSQL 41/41 files, 483/483 tests.
+
+Actual authenticated Chromium→Worker→PostgreSQL AP-09 flow не выполнялся. **Информация не проверена.** Отдельный mandatory browser/owner visual gate не назначен.
+
+Следующий этап: independent technical review Лёвы того же stable exact head.
+
+## AP-09 MIRA-04 correction — coordinator restart, подзадача 2/3
+
+**Stable exact head:** `b85c3809befe3a1dcc83fe654dde4cd093f625ba`.
+
+**Verdict 2/3: PASS. `AP09-MIRA-04` CLOSED. Новых current-scope defects: 0.**
+
+Проверено:
+- первый denied canonical action вызывает один same-URL GET без mutation replay;
+- successful read-only recovery размонтирует error subtree и сбрасывает recovery guard для следующего независимого denial;
+- Users-read loss оставляет тот же mounted error boundary и `useRef=true`, поэтому второго GET/loop нет;
+- React Router 8.3.1 source подтверждает stable errorElement/error-subtree lifecycle;
+- mounted regression покрывает два независимых denial-cycle на одной history entry и terminal both-rights-revoked branch.
+
+## AP-09 MIRA-04 correction — coordinator restart, подзадача 1/3
+
+**Stable exact head:** `b85c3809befe3a1dcc83fe654dde4cd093f625ba`.
+**Superseded reviewed head:** `13bae37dd3b7d033b271788fadb7e8be63d66a43`.
+**Baseline/current main:** `2651d2bf7de7212068c54674dca7d90716ea92c3`.
+
+**Verdict 1/3: PASS по stable-head / scope / CI boundary. Implementation correctness ещё не оценивается.**
+
+Проверено:
+- #287 Draft/open/mergeable;
+- delta: 2 commits, 2 files;
+- изменены только `app/routes/admin-user.tsx` и `app/admin/users-authorization.test.tsx`;
+- schema, migrations/catalog, authz writers, dependencies, MIRA-02/03 implementation и lasting docs не затронуты;
+- exact-head CI #41941892340 SUCCESS;
+- job logs: application 143/143 files, 1888/1888 tests; PostgreSQL 41/41 files, 483/483 tests;
+- lint/typecheck/build/UI preview/migration/schema/manifest/runtime privilege/credential probes/Worker smoke — SUCCESS.
+
+Actual authenticated Chromium→Worker→PostgreSQL AP-09 flow не выполнялся. **Информация не проверена.** Отдельный mandatory browser/owner visual gate не назначен.
+
+Следующая подзадача 2/3: проверить useRef recovery guard и repeated-denial lifecycle.
+
+## AP-09 corrected head — coordinator restart, подзадача 4/4 / final verdict
+
+**Reviewed exact head:** `13bae37dd3b7d033b271788fadb7e8be63d66a43`.
+
+**Final coordinator verdict: CHANGES REQUIRED. Подтверждённых current-scope defects: 1 — `AP09-MIRA-04`.**
+
+Final gap-sweep подтвердил:
+- AP09-MIRA-02 закрыт;
+- AP09-MIRA-03 закрыт;
+- других current-scope defects в correction delta и ранее проверенном неизменённом AP-09 scope не найдено;
+- actual authenticated Chromium→Worker→PostgreSQL AP-09 browser flow не выполнялся и не назначен mandatory gate. **Информация не проверена** в этой границе.
+
+### AP09-MIRA-04 — final confirmation
+
+Первый denied mutation recovery корректен, но guard lifetime неверен:
+- первый thrown management 403 → один same-URL GET;
+- mutation не replay;
+- Users-read retained → read-only detail;
+- marker `ap09AccessRechecked: true` остаётся в history location state;
+- после последующего возврата management новая loader/reload/revalidation может снова показать controls на той же history entry;
+- новый revoke + submit снова даёт canonical 403;
+- ErrorBoundary видит старый marker и не запускает fresh GET;
+- actor снова получает terminal 403 вместо всё ещё разрешённого read-only detail.
+
+Следовательно guard должен ограничивать retry **одного denial event**, а не permanently consume recovery всей history entry.
+
+### Bounded correction package Лире
+
+Исправить только `AP09-MIRA-04`:
+1. каждый независимый fresh management denial может вызвать не более одного fresh GET recovery;
+2. успешный recovery не должен блокировать последующие независимые denial cycles;
+3. если `admin.users.read` тоже отозван, fail-closed 403 остаётся terminal без loop;
+4. mutation не retry/replay;
+5. regression должен доказать минимум два независимых grant/revoke denial cycles на одной history entry и сохранить existing first-denial/both-revoked behavior;
+6. после correction предоставить новый stable exact head + применимый full CI.
+
+После implementation change coordinator whole-PR cycle начинается заново. Лёва не подключается до coordinator PASS.
+
+## AP-09 corrected head — coordinator restart, подзадача 3/4
+
+**Stable exact head:** `13bae37dd3b7d033b271788fadb7e8be63d66a43`.
+
+**Verdict: PASS по AP09-MIRA-02/03 и оставшемуся correction delta. Новых current-scope defects: 0.**
+
+### AP09-MIRA-02 — CLOSED
+
+- `under-development?feature=admin-users` остаётся compatibility route;
+- loader сначала распознаёт literal `admin-users`, затем выполняет protected `requireAdminAccess`;
+- `admin.users.read` actor получает redirect на `/:locale/admin/users`;
+- management-only actor получает redirect на `/:locale/admin/authorization#authorization-users-heading`;
+- обе success branches передают `adminPrivateHeaders` в `redirect(...)`, то есть `Cache-Control: private, no-store`;
+- mounted/route regression проверяет оба Location и оба no-store headers;
+- guest/forbidden branches остаются controlled protected 401/403.
+
+### AP09-MIRA-03 — CLOSED
+
+- `admin-users` удалён из `UNDER_DEVELOPMENT_FEATURES`;
+- `UnderDevelopmentView` рендерит только оставшиеся реальные unfinished entries;
+- regression проверяет отсутствие `admin-users` и сохранение `admin-settings`;
+- compatibility URL не зависит от registry type: route loader перехватывает literal `admin-users` до передачи requestedFeature в view;
+- `adminDestinations` больше не генерирует Users placeholder: Users-read ведёт в real Users index, management-only — в existing authorization subset.
+
+### Remaining correction delta
+
+Шесть correction-файлов полностью распределены:
+- `admin-user.tsx` + `users-authorization.test.tsx` — проверены в 2/4;
+- `under-development.tsx` + `admin-users.test.ts` — MIRA-02, проверены в 3/4;
+- `under-development.ts` + `users.test.tsx` — MIRA-03, проверены в 3/4.
+
+Stable head не сдвинулся; #287 Draft/open/mergeable.
+
+Единственный открытый confirmed finding текущего coordinator cycle: `AP09-MIRA-04`.
+
+Следующая подзадача: 4/4 — final gap-sweep/verdict и bounded return package, если finding останется.
+
+## AP-09 corrected head — coordinator restart, подзадача 2/4
+
+**Stable exact head:** `13bae37dd3b7d033b271788fadb7e8be63d66a43`.
+
+**Verdict: 1 confirmed current-scope defect — `AP09-MIRA-04`.**
+
+### Что в AP09-MIRA-01 correction работает
+
+- thrown 403 из canonical management action действительно попадает в `admin-user` ErrorBoundary;
+- первый denial запускает одну replace-navigation на тот же URL и новый GET loader;
+- mutation не replay: mounted regression подтверждает один вызов action;
+- если `admin.users.read` ещё effective, второй loader возвращает read-only detail без management payload/controls;
+- если Users-read тоже отозван, второй loader снова 403 и из-за marker повторного GET loop нет.
+
+### AP09-MIRA-04 — recovery marker permanently consumes recovery for the history entry
+
+Correction записывает `{ ap09AccessRechecked: true }` в `location.state` через:
+`navigate(currentUrl, { replace: true, state: { ap09AccessRechecked: true } })`.
+
+После успешного recovery этот state нигде не очищается. В React Router 8.3.1:
+- navigation создаёт next location из переданного `opts.state`;
+- successful replace commit вызывает `history.replace(location, location.state)`;
+- BrowserHistory создаёт location из `window.history.state.usr`.
+
+Следовательно marker относится не к одному конкретному 403, а остаётся привязанным к session-history entry. Existing test после успешного recovery прямо утверждает, что current location state всё ещё равен `{ ap09AccessRechecked: true }`.
+
+Причинная цепочка дефекта:
+1. management effective → detail содержит controls;
+2. management revoke → submit → thrown 403;
+3. correction делает recovery GET; Users-read сохранён → read-only detail;
+4. marker остаётся `true`;
+5. management позже снова становится effective и fresh loader на этой же history entry снова может показать controls;
+6. при следующем revoke и submit canonical action снова бросает 403;
+7. ErrorBoundary видит `alreadyRechecked === true` и больше не делает GET recovery → снова terminal 403 вместо fresh read-only snapshot.
+
+Это current-scope: dynamic grants/overrides и next-request freshness уже являются контрактом AP-09; повторное grant/revoke не относится к AP-10 или future hardening.
+
+Regression tests покрывают только первый revoke/recovery и terminal branch при одновременном revoke Users-read; repeated grant→revoke cycle отсутствует.
+
+Других дефектов в рамках подзадачи 2/4 не подтверждено.
+
+Следующая подзадача: 3/4 — AP09-MIRA-02/03 corrections + remaining correction delta.
+
+## AP-09 corrected head — coordinator restart, подзадача 1/4
+
+**Stable exact head:** `13bae37dd3b7d033b271788fadb7e8be63d66a43`.
+**Superseded reviewed head:** `f5117f22bd891d3892357fc984009388481001f7`.
+**Baseline/current main:** `2651d2bf7de7212068c54674dca7d90716ea92c3`.
+
+**Verdict подзадачи 1/4: PASS по stable-head / scope / CI boundary. Implementation correctness correction ещё не оценивается.**
+
+Проверено:
+- #287 остаётся Draft/open/mergeable на новом stable head;
+- correction delta от старого reviewed head: 7 commits, 6 files;
+- изменены только:
+  - `app/routes/admin-user.tsx`;
+  - `app/routes/under-development.tsx`;
+  - `app/forum/under-development.ts`;
+  - `app/admin/users-authorization.test.tsx`;
+  - `app/admin/users.test.tsx`;
+  - `app/routes/admin-users.test.ts`;
+- delta соответствует только bounded correction AP09-MIRA-01..03 и regression coverage; schema, dependencies, authz writers, migration/catalog, lasting docs/PROJECT_STATE не менялись;
+- exact-head CI #41939426331 завершён SUCCESS;
+- job logs подтверждают application 143/143 files, 1887/1887 tests; PostgreSQL 41/41 files, 483/483 tests;
+- lint, typecheck, build, UI preview build, migration history/metadata, schema parity, production manifest, runtime privilege/credential probes и Worker smoke steps SUCCESS.
+
+Actual authenticated Chromium→Worker→PostgreSQL AP-09 flow не выполнялся. **Информация не проверена.** Отдельный mandatory browser/owner visual gate для AP-09 не назначен.
+
+Следующая подзадача 2/4: AP09-MIRA-01 recovery chain и её regression coverage.
+
+## AP-09 coordinator whole-PR review — подзадача 4/4: gap-sweep / final verdict
+
+**Reviewed exact head:** `f5117f22bd891d3892357fc984009388481001f7`.
+
+**Final coordinator verdict: CHANGES REQUIRED. Подтверждённых current-scope дефектов: 3.**
+
+### AP09-MIRA-01 — fresh management denial loses still-authorized read-only detail
+
+Подтверждён в подзадаче 3/4. При сохранённом `admin.users.read` и отозванном `access.authorization.manage` следующий canonical fetcher submit получает thrown 403 из fresh manager gate. React Router поднимает error в boundary владельца fetcher (`admin-user`), а `ForumRouteError` не revalidate текущий detail. Привилегированный DOM безопасно исчезает, но вместе с ним теряется всё ещё разрешённый read-only user detail до отдельной навигации/reload.
+
+### AP09-MIRA-02 — permission-dependent legacy Users redirects не имеют private/no-store
+
+`app/routes/under-development.tsx` для `feature=admin-users` после protected `requireAdminAccess` выбирает разные success destinations:
+- `admin.users.read` → `/:locale/admin/users`;
+- management-only → `/:locale/admin/authorization#authorization-users-heading`.
+
+Оба success path вызывают `redirect(location)` без headers. Exact React Router 8.3.1 implementation `redirect()` при таком вызове создаёт Response с status + `Location`; `Cache-Control` сам не добавляется. Route `under-development`, parent locale boundary и root не задают private/no-store headers для этого ответа. Следовательно capability-dependent protected compatibility response выходит из AP-09 private/no-store envelope. Тест проверяет только `Location` и gap не ловит.
+
+### AP09-MIRA-03 — Users всё ещё ложно числится незавершённым
+
+Exact head сохраняет в `app/forum/under-development.ts`:
+`{ id: "admin-users", labelKey: "adminUsers" }`.
+
+`UnderDevelopmentView` безусловно рендерит весь `UNDER_DEVELOPMENT_FEATURES`, поэтому на общей странице статуса Users остаётся в списке «Still in development» после реализации AP-09. Approved AP-09 plan прямо требовал после реализации убрать только `admin-users` из реально unfinished feature list; existing homepage test этот элемент не проверяет.
+
+### Gap-sweep без дополнительных findings
+
+Проверены оставшиеся интеграционные стыки:
+- Worker context создаёт AdminUsers reader из `WEB_HYPERDRIVE`;
+- locale/header admission добавляет только `admin.users.read` в существующий union;
+- new routes зарегистрированы без конфликта с public profile/Forum routes;
+- EN/RU/HE Users labels и reviewed fingerprints согласованы;
+- Users-read / management-only / both navigation остаётся capability-distinct;
+- extracted legacy Roles controls продолжают использовать canonical writers/intents;
+- lasting docs/PROJECT_STATE отсутствуют в implementation PR по текущему process rule;
+- AP-10/blocking/Settings/Stage 6/production не затронуты.
+
+Actual authenticated Chromium→Worker→PostgreSQL AP-09 flow по-прежнему не выполнялся и не является назначенным mandatory gate. **Информация не проверена** в этой границе.
+
+### Bounded correction package
+
+Лире исправить только `AP09-MIRA-01..03`:
+1. после fresh management denial не оставлять stale privileged surface и сохранять доступ к user detail, если новый loader snapshot всё ещё разрешает `admin.users.read`; mutation не retry/replay;
+2. permission-dependent legacy Users success redirects должны иметь protected private/no-store cache policy;
+3. убрать реализованный Users из общего unfinished checklist, сохранив compatibility redirect старого URL;
+4. добавить regression coverage этих трёх цепочек и выполнить применимый full CI.
+
+После implementation changes нужен новый stable exact head и новый coordinator whole-PR cycle. Codex technical review до нового coordinator PASS не запускается.
+
+## AP-09 coordinator whole-PR review — подзадача 3/4: routes / canonical authz reuse / UI lifecycle
+
+**Exact head:** `f5117f22bd891d3892357fc984009388481001f7`.
+
+**Verdict: 1 confirmed current-scope defect.**
+
+### AP09-MIRA-01 — failed fresh management gate cannot recover to still-authorized read-only detail
+
+Подтверждённая цепочка:
+- Users detail loader допускает actor с `admin.users.read`; management section добавляется только при одновременно effective `access.authorization.manage`.
+- Inline assignment/override forms корректно переиспользуют canonical `/:locale/admin/authorization` через `Form navigate={false}` + scoped `fetcherKey`; новый protocol/writer отсутствует.
+- Если после loader snapshot у actor отозван только `access.authorization.manage`, но `admin.users.read` сохранён, следующий canonical action вызывает fresh `manager(context)` и **бросает 403** до mutation.
+- React Router 8.3.1 для fetcher action error вызывает `setFetcherError(key, routeId, ...)`; boundary выбирается по route, владеющему fetcher. Здесь это current `admin-user` route.
+- `admin-user` экспортирует `ForumRouteError`; он безопасно снимает весь detail/privileged DOM, но показывает terminal 403 с единственной ссылкой «назад на форум» и не имеет revalidate/retry.
+- Failed submission 4xx сам по себе loader revalidation не запускает. Поэтому actor, который всё ещё имеет `admin.users.read`, не переходит к корректному read-only snapshot и теряет доступный ему detail до отдельной навигации/ручного reload.
+- Это противоречит approved AP-09 lifecycle: fresh grant loss должен убрать management data/controls из нового snapshot, а Users-read остаётся независимым правом на detail.
+
+Existing mounted test покрывает только success→revalidation с simulated management revocation; canonical fresh-gate 403 path не смонтирован, поэтому дефект CI не ловит.
+
+Остальное проверено без дополнительных confirmed defects:
+- successful canonical `assignRole`/`override` revalidate current detail и не навигируют;
+- actor/target-specific fetcher key изолирует late feedback при target/actor lifecycle change;
+- controlled returned 409/other domain errors имеют explicit revalidate control;
+- read-only actor не получает management DOM/payload; management-only actor сохраняет старый AuthorizationAdmin subset и не получает новый directory;
+- extracted `AuthorizationUserControls` сохраняет legacy Roles writer/intents и не создаёт второй authz backend;
+- Users/roles/history/forum navigation остаётся capability-distinct;
+- EN/RU/HE mounted presentation и existing responsive primitives проверены; отдельный owner visual/browser gate для AP-09 не назначен.
+
+Следующая подзадача: gap-sweep/final verdict.
+
+## AP-09 coordinator whole-PR review — подзадача 2/4: permission / migration / DB / read privacy
+
+**Exact head:** `f5117f22bd891d3892357fc984009388481001f7`.
+
+**Verdict: PASS. Подтверждённых current-scope дефектов: 0.**
+
+Проверено:
+- `admin.users.read` добавлен в code-backed catalog и schema CHECK; initial grant есть только у built-in admin, отсутствует у user/moderator; dynamic role/override semantics сохраняются;
+- forward migration `0057_admin_users_read` не переписывает accepted history: расширяет catalog constraint, вставляет permission и exact built-in-admin grant;
+- Drizzle schema и production manifest переведены на 0057; exact-head CI подтвердил migration/schema/manifest parity;
+- `PostgresAdminUsersReader` выбирает только `id/name/image/created_at`, не email/session/account/authz state; search по name/ID параметризован, literal wildcard escaping есть, email не участвует;
+- paging: 25 + lookahead, C-collated ID keyset, exact total считается по полному matching set в том же SQL statement;
+- targeted `readUserManagementState(userId)` выполняется в existing REPEATABLE READ READ ONLY snapshot, возвращает role choices без grants и authorization только выбранного target; другие users/email не читаются;
+- target grants/overrides/effective permissions присутствуют только в manager-targeted read и используют существующую resolution formula;
+- typed DB availability mapping для Users reader сохраняет controlled unavailable, unexpected errors не маскируются;
+- current web runtime contract уже имеет SELECT на `user` и необходимые authz relations; AP-09 не требует новых runtime relation grants;
+- PostgreSQL tests подтверждают >50 users paging, Unicode/slash IDs, literal `%_\\`, no-email search/projection, targeted snapshot consistency, allow/deny/inherit, lockout, no-op History и rollback при History failure.
+
+Следующая подзадача: routes/authz reuse/UI lifecycle.
+
+## AP-09 coordinator whole-PR review — подзадача 1/4: stable head / scope / CI
+
+**Exact head:** `f5117f22bd891d3892357fc984009388481001f7`.
+**Baseline/current main:** `2651d2bf7de7212068c54674dca7d90716ea92c3`.
+
+- PR #287 Draft/open/mergeable; ahead 53, behind 0.
+- Diff: 36 files, 8082 additions / 69 deletions; lasting docs/PROJECT_STATE отсутствуют.
+- Changed scope соответствует AP-09: permission/catalog/migration/manifest, Users reader/routes/views, targeted authorization read, shared user controls, navigation/localization/tests/wiring.
+- Exact-head CI #41931562275 SUCCESS.
+- Независимо подтверждены summaries: application 143/143 files, 1884/1884 tests; database 41/41 files, 483/483 tests.
+- Lint, typecheck, build, UI preview build, migration history/metadata, Drizzle parity, PostgreSQL migrations/manifest/runtime probes и Worker smoke steps SUCCESS.
+- Actual authenticated Chromium→Worker→PostgreSQL AP-09 browser flow не выполнялся. **Информация не проверена.** По approved plan отдельным mandatory gate он не назначен.
+- На этой подзадаче implementation correctness ещё не оценивается; findings отсутствуют только по stable-head/scope/CI boundary.
+
+## AP-09 technical plan review — итог
+
+Baseline `main`: `2651d2bf7de7212068c54674dca7d90716ea92c3`.
+
+**Verdict: APPROVED с одним уточнением.**
+
+- Принимаются `admin.users.read`, initial built-in admin grant, independent Users index/detail, minimal public-field DTO, targeted one-user authz read и reuse existing assignment/override writers.
+- После пояснения Лёвы #6643093174 подтверждено: proposed `inlineUserAuthorization` marker не решает самостоятельный AP-09 blocker; `editorActorId` добавлял бы более сильную stale-account expectation, которой current AuthorizationAdmin не имеет и current package не требует.
+- AP-09 должен сначала напрямую переиспользовать canonical `/:locale/admin/authorization` action через fetcher для `assignRole` / `override`, сохраняя session actor, fresh management permission, same-origin, authz mutation lock, lockout и History.
+- Новую protocol branch / actor expectation добавлять только при конкретном диагностированном blocker, а не как preventive hardening.
+- React Router v8 contract подтверждает: fetcher submission не навигирует; successful action revalidates active loaders. 4xx/5xx не следует считать автоматическим revalidation path; consumer должен обрабатывать фактические existing error semantics без auto retry.
+- AP-10/blocking, Settings, Stage 6 и unrelated authz hardening остаются вне scope.
+
+## AP-08 coordinator whole-PR review — final verdict
+
+**Exact head:** `7b6adbf8c92e1706064cb5845248813668a287d0`.
+
+**Coordinator verdict: PASS. Подтверждённых current-scope implementation-дефектов: 0.**
+
+Проверен весь changed-file scope #283, включая:
+- schema/migration/meta/production manifest;
+- permission catalog/grants, public/admin authorization and canonical HTTP boundaries;
+- repository transaction, closure CAS/History, reply admission, receipt replay and deterministic PostgreSQL races;
+- public/admin Quick actions, Closed presentation, mounted reply editor, Undo/Redo/attachments and topicClosed revalidation;
+- History action typing/presentation;
+- EN/RU/HE localization values and reviewed fingerprints;
+- Hyperdrive/ForumWriter/service boundaries, UI preview and historical DB fixtures;
+- corrected AP08-MIRA-01 test stabilization.
+
+Exact-head CI #41904456264 attempts 1 and 2: checks SUCCESS and database SUCCESS; application 140/140 files, 1863/1863 tests; PostgreSQL 39/39 suites, 477/477 tests.
+
+### Verification boundary
+
+Actual isolated authenticated Chromium→Worker→Better Auth→PostgreSQL AP-08 behavior was not performed. По актуальному contract это не mandatory blocker текущего pre-release package. **Информация не проверена:** фактическое поведение этой real-browser/runtime цепочки.
+
+### Documentation closeout
+
+Существующие documentation commits вошли в #283 до нового правила #285 и не откатываются ретроактивно только ради смены процесса. При этом `PROJECT_STATE.md` на head #283 содержит stale формулировку, называющую real Worker/browser acceptance обязательным для AP-08. Это не implementation defect и не исправляется внутри #283: по актуальному `AGENTS.md` документация задачи корректируется отдельным documentation PR в конце задачи. Финальный documentation PR должен привести PROJECT_STATE/source-of-truth к фактическому принятому состоянию AP-08 и текущей verification boundary.
+
+## AP-08 coordinator review restart — подзадача 4: Quick actions / Closed UI / mounted reply editor / AP08-MIRA-01
+
+**Exact head:** `7b6adbf8c92e1706064cb5845248813668a287d0`.
+
+**Verdict: PASS. Подтверждённых current-scope дефектов: 0. AP08-MIRA-01 закрыт.**
+
+Повторно проверено:
+- shared public/admin closure Quick actions используют canonical topic endpoint, isolated fetcher, CAS version и no automatic retry;
+- stale/denied closure responses revalidate once; actor/topic/grant/version lifetime изолирует старый fetcher state;
+- Closed status независим от Solved/duplicate;
+- изначально закрытая тема не монтирует новый reply composer и не показывает Reply/Quote controls;
+- уже смонтированный reply editor сохраняет тот же form/textarea, text, Undo/Redo и Cancel при closure/revalidation;
+- publication блокируется одновременно на form и MarkdownEditor layers; reopen не вызывает автоматическую публикацию;
+- `topicClosed` 409 revalidates once без replay/resubmit и без потери editor buffer;
+- editor scope остаётся `[accountId, contextKey, locale]`; closure не меняет owner/context identity;
+- attachment operation identity `[ownerId, contextKey, draftId]` не меняется из-за closure; operation cleanup abort выполняется только при identity change/unmount.
+
+### AP08-MIRA-01 correction
+
+Commit `7b6adbf8c92e1706064cb5845248813668a287d0` меняет только `app/forum/public-read.test.tsx` (19+/3-):
+- тест ждёт enabled Attach и реальный UUID `editorOperationId` до выбора файла;
+- XHR сохраняет фактически отправленный `X-Vico-Operation-Id`;
+- тест доказывает совпадение request operation с mounted editor operation;
+- `aborted === false` проверяется уже **до** closure, затем после close и reopen;
+- проверяются неизменность mounted form и operation ID через обе revalidation;
+- assertions не ослаблены и runtime implementation не изменён.
+
+CI #41904456264:
+- attempt 1: `app/forum/public-read.test.tsx` 84/84 PASS; application 140/140 files, 1863/1863 tests PASS;
+- attempt 2: тот же файл 84/84 PASS; application 140/140 files, 1863/1863 tests PASS.
+
+Точная причина старого abort на `381a046b...` остаётся не доказанной, но это больше не меняет выбранное исправление: тест теперь начинает проверку только после подтверждённой готовности upload operation и дважды стабильно проходит на неизменном corrected head. Product/runtime defect по старой нестабильности не подтверждён.
+
+## AP-08 coordinator review restart — подзадача 3: authorization/HTTP/read boundaries
+
+**Exact head:** `7b6adbf8c92e1706064cb5845248813668a287d0`.
+
+**Verdict: PASS. Подтверждённых current-scope дефектов: 0.**
+
+Повторно проверено:
+- `forum.topic.close` остаётся отдельной code-backed capability; initial grants — moderator/admin, user не получает её;
+- close/reopen требуют одну fresh capability без role/owner bypass;
+- canonical topic action берёт target из route и actor из authenticated session; submitted actor/topic fields не становятся authority;
+- closure form строго валидирует intent, single CAS version, stale actor expectation и не принимает operationScope;
+- same-origin/session boundary и error mapping сохраняют controlled 400/401/403/404/409/503, private no-store и propagation неожиданных ошибок;
+- rejected fresh reply получает отдельный `topicClosed` 409; HTTP layer не делает preflight, authoritative closure admission остаётся в repository;
+- public topic loader разрешает closure presentation отдельно и при classified authz outage fail-closed скрывает actions, не ломая публичное чтение;
+- global/admin Forum admission включает closure capability; closure-only actor допускается к Forum surface, но не получает pin/solution/duplicate/source/history actions;
+- private admin loader авторизует до target validation/private reads и не сериализует protected duplicate explanation;
+- persisted `isClosed/closureVersion` проходят public/admin read DTO;
+- correction commit `7b6adbf...` затрагивает только AP-08 UI test и эту runtime authorization/HTTP/read цепочку не меняет.
+
+## AP-08 coordinator review restart — подзадача 2: schema/DB/concurrency/reply admission
+
+**Exact head:** `7b6adbf8c92e1706064cb5845248813668a287d0`.
+
+**Verdict: PASS. Подтверждённых current-scope дефектов: 0.**
+
+Повторно проверено на новом head:
+- migration/schema: persisted `is_closed`, nonnegative `closure_version`, `forum.topic.close`, moderator/admin initial grants, History actions;
+- `createPost`: matching committed publication receipt replay выполняется до topic closure admission;
+- fresh reply: authoritative topic row `FOR UPDATE` → closed rejection до cooldown/post/revision/notifications/publication receipt;
+- `setTopicClosed`: тот же topic-row serialization point, expected-version CAS, no-op, int32 exhaustion, state/version + History в одной transaction;
+- History append failure откатывает closure/version;
+- attachment-only rejected reply сохраняет operation/selection для явной публикации после reopen;
+- native PostgreSQL races покрывают reply-first, close-first, failed close rollback с queued reply и concurrent same-version closes;
+- current exact-head CI #41904456264 attempts 1 и 2: `database` SUCCESS (39/39 suites, 477/477 tests) и `checks` SUCCESS.
+
+Correction commit `7b6adbf...` меняет только `app/forum/public-read.test.tsx` и не затрагивает эту runtime/DB цепочку.
+
+## AP-08 coordinator review restart — подзадача 1: stable-head scope
+
+**Exact head:** `7b6adbf8c92e1706064cb5845248813668a287d0`.
+
+- AP08-MIRA-01 исправлен одним commit поверх прежнего review head.
+- Delta `381a046b... → 7b6adbf...`: только `app/forum/public-read.test.tsx`, 19 additions / 3 deletions.
+- Runtime implementation, schema, authorization, routes, UI code и docs не изменялись этим correction commit.
+- CI #41904456264 attempts 1 и 2: `checks` SUCCESS, `database` SUCCESS.
+- PR #283 остаётся Draft/open/mergeable.
+- По AGENTS whole-PR cycle начат заново на новом stable exact head.
+
+## AP-08 coordinator review — подзадача 4: Quick actions / Closed UI / mounted reply editor
+
+**Exact head:** `381a046bfb5b44a6a6b5dcbce7c73c40b7085ecd`.
+
+**Verdict: 1 current-scope defect in the new AP-08 test layer; no confirmed closure/UI implementation defect found in this subtask.**
+
+### AP08-MIRA-01 — flaky in-flight attachment retention test
+
+Confirmed evidence on the same unchanged head:
+- CI run #41777691776 attempt 1: `checks` FAIL at `app/forum/public-read.test.tsx:3919`; expected `HeldUpload.instances[0].aborted === false`, received `true`.
+- attempt 2: identical failure at the same assertion.
+- attempt 3: SUCCESS without implementation-head change.
+
+The test creates the upload immediately after `findByLabelText("Attach")`; the established attachment UI test waits for Attach to become enabled before starting an upload. `useEditorAttachments` initializes/rotates operation identity in effects, and identity cleanup aborts outstanding XHR. This makes an initialization race a plausible explanation, but **the exact abort cause is not yet verified**.
+
+Current-scope classification: this test was added by #283 to prove AP-08 preservation of an in-flight attachment, and it caused two real CI failures. Therefore the instability itself must be resolved before coordinator PASS. Do not treat it as proof of a product defect until diagnosis distinguishes test-harness timing from runtime behavior.
+
+Other checked UI behavior in this subtask:
+- shared public/admin closure Quick actions use isolated fetcher + CAS and no automatic retry;
+- stale/denied closure responses revalidate once;
+- Closed status remains independent of Solved/duplicate;
+- initially closed topics expose no new Reply/Quote/composer;
+- an already-mounted composer remains mounted across closure, publication is disabled at form and editor layers, Cancel remains enabled, and reopen requires explicit submit;
+- topicClosed 409 revalidates once without resubmission;
+- actor/topic editor scope resets are backed by existing editor/attachment scope isolation.
+
+## AP-08 coordinator review — подзадача 3: authorization/HTTP/read boundaries
+
+**Exact head:** `381a046bfb5b44a6a6b5dcbce7c73c40b7085ecd`.
+
+**Verdict: PASS. Подтверждённых current-scope дефектов: 0.**
+
+Проверено:
+- `forum.topic.close` зарегистрирован в code-backed catalog и initial moderator/admin grants; user grant отсутствует;
+- close/reopen используют одну fresh capability без own/role exception;
+- canonical `topicAction` берёт target только из route и actor только из authenticated session;
+- closure form строго валидирует единственный intent, canonical CAS version и actor expectation; client `actorId/topicId/operationScope` не становятся authority;
+- Origin/session guards, 401/403/404/409/503 и private no-store mapping не раскрывают внутренние ошибки;
+- `ForumTopicClosedError` даёт отдельный `topicClosed` 409 для fresh reply;
+- public loader вычисляет closure permission отдельно и fail-closed при authorization outage, сохраняя публичное чтение;
+- admin Forum admission включает closure capability; closure-only actor не получает unrelated action flags;
+- public/admin read DTO получают persisted `isClosed/closureVersion`;
+- reply HTTP path по-прежнему требует `forum.reply.create`, а окончательный запрет закрытой темы остаётся authoritative в repository, поэтому moderator/admin/closure permission не создают bypass.
+
+## AP-08 coordinator review — подзадача 2: schema/DB/concurrency/reply admission
+
+**Exact head:** `381a046bfb5b44a6a6b5dcbce7c73c40b7085ecd`.
+
+**Verdict: PASS. Подтверждённых current-scope дефектов: 0.**
+
+Проверена единая цепочка:
+- migration/schema: `is_closed`, `closure_version`, nonnegative CHECK, capability/grants и History actions;
+- `ForumService.setTopicClosed` → repository → Hyperdrive writer;
+- closure CAS/no-op/version exhaustion и atomic History rollback;
+- reply admission: committed publication receipt replay остаётся до closure check, fresh reply проверяет locked topic row до cooldown/post/notification/attachment publication;
+- close/reply используют один `forum_topics ... FOR UPDATE` serialization point;
+- native PG races: reply-first, close-first, rollback close, concurrent same-version close;
+- attachment-only rejected reply и committed receipt replay после closure;
+- exact-head CI run #41777691776 завершён SUCCESS.
+
+Отдельный authenticated browser run сюда не подменялся; его отсутствие ранее зафиксировано как непроверенная runtime/browser граница, а не DB defect.
+
+## AP-08 coordinator correction
+
+Установлен coordinator reasoning failure Миры: при постановке и approval AP-08 техническая связанность части изменений была принята за достаточное обоснование их необходимости.
+
+Это не является finding к реализации Лиры и не означает, что уже реализованный overscope нужно удалять, откатывать или переписывать.
+
+Текущее фактическое состояние:
+- implementation PR #283 сохранён на head `381a046bfb5b44a6a6b5dcbce7c73c40b7085ecd`;
+- дальнейшая работа Лиры остановлена владельцем;
+- реализация #283 не меняется только из-за coordinator scope-ошибки;
+- прежний PASS Миры не использовать как доказательство необходимости каждого отдельного изменения.
+
+## Следующий шаг
+
+Исправлять только подтверждённые служебные последствия coordinator-сбоя; implementation #283 не трогать без отдельного current-scope дефекта.
+
+
+## AP-10 correction — hierarchy/self-target are resolved
+
+Предыдущая запись Миры, которая снова вынесла self-target и lifecycle hierarchy как вопросы owner review, была ошибочной.
+
+1. Self-target: administrative measure нельзя создавать, изменять или снимать относительно самого себя.
+2. Уже утверждённая privileged-target hierarchy распространяется на create/change/lift; отдельного owner decision для этого не требуется.
+3. Причина: если нижестоящий actor мог бы менять/снимать меру вышестоящего уровня, он обходил бы саму target-authority boundary.
+4. Эти пункты больше не считать незакрытыми AP-10 product gaps.
+
+
+## AP-10 technical plan coordinator review — revision required
+
+Проверен план Лёвы из #6667784146 против утверждённой AP-10 модели и current main.
+
+Итог: техническая основа в целом пригодна, но до approval нужны локальные исправления плана.
+
+1. **AP10-PLAN-MIRA-01 — §9 преждевременно объявляет owner product blocker.**
+   План не доказал, что повторное наложение требует отдельной product-модели. Сначала нужно проверить минимальный current-scope вариант: одна активная measure для target, а новое санкционное решение выражается change той же measure с отдельной причиной/History. Если этот вариант реально противоречит уже утверждённым appeal/expiry/lift требованиям, Лёва должен показать конкретное противоречие; только тогда возникает owner fork. Multi-measure/aggregation нельзя вводить заранее.
+
+2. **AP10-PLAN-MIRA-02 — три одновременные pending appeals не нужны.**
+   Формулировка «не вводить one-pending, потому что владелец отдельно не задавал» ошибочно превращает отсутствие запрета в новую возможность. Утверждённые «до 3 апелляций» достаточно реализуются как максимум три последовательных submission slots; пока одна appeal pending, следующая не создаётся. Это минимальная модель и исключает дублирующие concurrent reviews.
+
+3. **AP10-PLAN-MIRA-03 — accepted appeal нельзя сводить только к full lift.**
+   Уже утверждено, что изменение measure не закрывает pending appeal. Следовательно appeal может быть удовлетворена после корректировки restrictions/срока той же measure, а не только полным снятием. План должен позволять resolution после соответствующего change и не навязывать full-lift-only semantics.
+
+4. **AP10-PLAN-MIRA-04 — own measure timeline не должна неявно раскрывать identity администратора.**
+   Owner decision гарантирует пользователю reason/status/appeal, но не утверждает публичность или subject-visible identity actor/reviewer. Если timeline читает ordinary Admin History, subject projection должна быть явным allowlist и по умолчанию не включать actorId/actorLabel, private context или другие admin-only поля.
+
+Не finding:
+- узкий configured owner identity boundary сам по себе допустим как минимальная техническая необходимость для owner target immunity, если не превращается в owner-role/super-admin subsystem;
+- existing AuthorizationLockoutError/countManagers не переделывать в AP-10.
+
+
+## AP-10 owner decision — administrator identity privacy
+
+Пользовательская projection меры/appeal не раскрывает identity actor/reviewer. Конкретные admin IDs/names остаются только во внутренней administrative History для owner/authorized admins. User-facing timeline показывает действия и их смысл без технической информации о конкретных администраторах.
+
+
+## AP-10 technical plan coordinator review — second revision required
+
+Revision #6670064497 closes AP10-PLAN-MIRA-01..04. Two current-scope plan defects remain:
+
+1. **AP10-PLAN-MIRA-05 — expired/lifted measure must be terminal.**
+   The revised plan allows an expired measure to be edited to a future expiry and then tries to preserve the old appeal as moot. This reactivates restrictions under an already-ended measure identity and old appeal quota. It conflicts with the accepted lifecycle where expiry/lift ends the measure and pending appeal loses its subject. AP-10 should reject change/revival after expiry or explicit lift. Any later sanction is a new measure with its own reason/lifecycle/appeal quota.
+
+2. **AP10-PLAN-MIRA-06 — unapproved initial moderator grant.**
+   `admin.users.blocks.manage` was proposed with initial moderator/admin grants, but the approved model only defines a dynamic block-management authority and the ordinary admin-panel boundary; it does not grant user-blocking power to all built-in moderators. Owner correction: there is no initial seed at all. Neither built-in admin nor moderator receives `admin.users.blocks.manage` automatically. Access is explicit-grant-only through the existing dynamic role grants/overrides. The elevated capability likewise has no initial grants.
+
+
+## AP-10 technical plan coordinator PASS
+
+Проверена последняя delta Лёвы #6670909257 и актуальный полный план в `.github/agents/codex-6.1-sol.md`.
+
+Результат: PASS.
+1. AP10-PLAN-MIRA-05 закрыт: expired/lifted measure terminal; revival запрещён; повторное наказание создаёт новую measure с новой identity/reason/lifecycle/appeal quota.
+2. AP10-PLAN-MIRA-06 закрыт: `admin.users.blocks.manage` и `admin.users.blocks.managePrivileged` не имеют initial grants ни у одной built-in role; доступ только explicit grant через существующий dynamic authorization.
+3. AP10-PLAN-MIRA-01..04 остаются закрытыми предыдущей revision.
+4. Новых current-scope product/technical blockers в плане не найдено.
+5. Implementation ещё не начат; следующий bounded этап — реализация Лирой по утверждённому плану.
+
+
+## AP-10 coordinator whole-PR review — pass 1: data model / lifecycle / reasons / appeals
+
+Reviewed stable PR #290 exact head `503a5c6dc570e2c6c0f64f59e7fe5bf390a90b13`.
+
+Confirmed current-scope defects:
+
+1. **AP10-MIRA-01 — pending block appeals have no reviewer queue/discovery surface.**
+   Approved technical plan requires the measures workspace to include exact-target lookup, measures, and a queue of block appeals. Implementation exposes only `/admin/measures?target=<exact user id>` and `/admin/measures/:measureId`; routes.ts contains no AP-10 appeal queue route and repository/reader has no pending-appeal list. A subject can submit an appeal, but an administrator cannot discover pending appeals without already knowing and opening that user's exact measure. This makes the approved review workflow incomplete.
+
+2. **AP10-MIRA-02 — approved temporary-duration UX is incomplete.**
+   Product/technical plan requires temporary presets plus arbitrary duration/end-time support, with presets as UI shortcuts rather than policy types. Current create/change/accepted-change forms expose only a raw `expiresAt` ISO-with-timezone text field (or blank = permanent). There are no preset duration choices and no arbitrary-duration input. Server expiry semantics are correct; the missing part is current-scope administrative UX.
+
+Checked and not findings in this pass:
+- independent overlapping measures and EXISTS-style effect;
+- terminal natural expiry / explicit lift and new-measure repeat sanction;
+- one pending appeal and up to three sequential submissions per measure;
+- pending appeal survives ordinary active-measure edit;
+- expiry/lift effective moot handling;
+- accepted appeal supports lift or in-place change, with atomic History;
+- mandatory reasons and immutable original reason/history;
+- subject projection omits admin identity;
+- CAS, rollback and committed replay paths exercised by PostgreSQL tests.
+
+Do not hand findings to Lira yet; coordinator whole-PR review is still in progress and confirmed findings must be returned as one package after all passes.
+
+
+## AP-10 coordinator whole-PR review — pass 2: authority / permissions / privileged targets
+
+Reviewed stable PR #290 exact head `503a5c6dc570e2c6c0f64f59e7fe5bf390a90b13`.
+
+Confirmed current-scope defects:
+
+1. **AP10-MIRA-03 — ordinary block manager can persist latent administrative restrictions that later suppress privileged authority.**
+   Current create/change validation accepts `admin.forum/admin.complaints/admin.security/admin.usersAccess` for any ordinary target as long as actor has ordinary `admin.users.blocks.manage`. Those restrictions may be inert initially, but if the target later receives administrative permissions, the old measure immediately suppresses the newly granted administrative family. This bypasses the approved privileged-target boundary: an actor without `admin.users.blocks.managePrivileged` can pre-position an administrative sanction against a future moderator/admin. At minimum, an ordinary block manager must not be able to persist administrative-family restrictions whose later activation can affect privileged capabilities.
+
+2. **AP10-MIRA-04 — elevated-authority controls are not read-only for non-owner authorization managers.**
+   Server correctly guards mutations of `admin.users.blocks.managePrivileged` and role assignment to/from a role containing it with bound-owner checks. However the existing authorization UI receives the new permission through `PERMISSION_CATALOG` and renders its role-grant checkbox, per-user override selector, and elevated-role assignment options as ordinary enabled controls for any `access.authorization.manage` actor. Non-owner attempts only fail after submit with 403. The approved technical plan explicitly requires these variants to be read-only in UI while server remains authoritative.
+
+Checked and not findings in this pass:
+- both block-management permissions have zero initial grants;
+- elevated permission is supplementary to ordinary manage and cannot self-escalate through role grants/overrides/role assignment;
+- owner target is immune to AP-10 measures;
+- self-target is rejected;
+- ordinary manager cannot act on currently privileged target;
+- elevated manager cannot act on peer elevated target; owner can;
+- target hierarchy uses raw RBAC state, so an active admin restriction does not down-rank a privileged target;
+- issuer authority floor prevents lower authority from undoing higher-authority measure decisions;
+- admin.usersAccess restriction suppresses effective administrative actions without rewriting raw grants;
+- AP-10 adds no last-manager veto; existing legacy lockout remains separate and unchanged;
+- missing production `VICO_OWNER_USER_ID` configuration is not a current repository/local-CI defect; production rollout is outside current stage and operations fail closed without the binding.
+
+Coordinator whole-PR review remains in progress. Findings are not handed to Lira until all passes complete.
+
+
+## AP-10 coordinator whole-PR review — pass 3: restriction enforcement
+
+Reviewed stable PR #290 exact head `503a5c6dc570e2c6c0f64f59e7fe5bf390a90b13`.
+
+Confirmed current-scope defect:
+
+1. **AP10-MIRA-05 — ordinary user action presentation is not restriction-aware.**
+   Server-side admission correctly denies restricted actions, but the normal user-facing controls are not driven by current measure state. Example: `ProfileView` still exposes the Edit link/form whenever the viewer owns the profile; the loader does not project whether `profile.edit` is currently restricted. The same AP-10 implementation does not add a restriction-aware presentation path for ordinary forum publication/edit, Complaint submit, Help signal submit or attachment upload controls; those actions remain visually available and only fail after submit/upload with generic 403. The approved technical plan explicitly requires presentation to hide/disable newly prohibited actions from a current restriction snapshot while preserving server authority/replay semantics. This is a current AP-10 UX/contract gap, not a future enhancement.
+
+Checked and not findings in this pass:
+- topic creation and topic+initial-post creation enforce `topics.create`;
+- reply creation enforces `replies.create`;
+- own published post edits enforce `posts.edit` after exact committed replay lookup;
+- public profile writes enforce `profile.edit` transactionally;
+- new Complaint submissions enforce `complaints.submit`, while exact/lifetime replay and Complaint appeals remain available;
+- new Help signals enforce `helpSignals.submit`, while withdrawal/other approved Help flows remain available;
+- attachment upload is checked both before R2 storage and before metadata/ref commit; denial uses durable cleanup and committed replay remains available;
+- new translation-generation planning checks `translations.generate`; currently disabled runtime remains disabled;
+- `admin.forum`, `admin.complaints`, `admin.security`, `admin.usersAccess` are filtered from effective private route permissions and authoritative administrative writes recheck their family restriction;
+- Users/Authorization/History/exact-measure private loaders and Complaint context/evidence child routes are denied before private reads when their family is restricted;
+- overlapping measures, natural expiry, explicit lift, disabled child membership and other-user measures are handled independently;
+- missing restriction tables fail closed rather than granting access.
+
+Coordinator whole-PR review remains in progress. Do not hand the accumulated findings to Lira until all passes complete.

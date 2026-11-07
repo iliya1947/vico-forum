@@ -1,0 +1,788 @@
+# Admin panel — communication
+
+Служебный PR: #251. Оперативное состояние: [workflow.md](./workflow.md). Общий контракт: [ADMIN_PANEL_IMPLEMENTATION_PLAN.md](../ADMIN_PANEL_IMPLEMENTATION_PLAN.md).
+
+## Актуальный baseline и назначение
+
+- Current main: `df57dabf2a4cbc44d85138d8809079878490a7c8`; migrations 0000–0059.
+- Owner/authorization redesign Stage2 implementation #296 merged. Merge commit: `df57dabf2a4cbc44d85138d8809079878490a7c8`.
+- Final implementation exact head `824ab8eccb091664c2e7d37f81f2737e7fd43e87`: Mira coordinator PASS + Lev independent technical PASS, zero confirmed current-scope defects.
+- Current stage: **separate factual documentation closeout**. Stage2 repository implementation is merged; permanent source-of-truth still contains pre-Stage2 wording and must be synchronized before Stage2 is considered fully closed.
+- Settings remains deferred until this redesign documentation closeout is merged. No production/deployed/owner-visual acceptance is implied.
+- Documentation executor: **Лира**. Лёва/Марк are not assigned.
+
+## Handoff — Лира: Stage2 factual documentation closeout
+
+Create a separate docs-only PR from current main `df57dabf2a4cbc44d85138d8809079878490a7c8`.
+
+Required result: synchronize permanent documentation with the Stage2 implementation that is now in main, without changing runtime behavior or expanding scope.
+
+Bounded files:
+1. `docs/auth/AUTHORIZATION.md` — replace obsolete future-Owner wording with the implemented server-bound Owner authority: all code-backed catalog permissions, raw role/grant/override preservation, trusted binding, fresh resolution, Owner-only elevated grant/revoke boundary, measure immunity, retained mutex/no last-manager veto, and external binding/production acceptance boundary.
+2. `docs/ADMIN_PANEL.md` — update AP-10/Owner wording so Owner is no longer described as a future redesign; preserve raw non-Owner hierarchy, Owner-target prohibition, Settings deferral, privacy and measure semantics.
+3. `PROJECT_STATE.md` — record Stage2 as merged in repository/local-CI state, keep production/external acceptance explicitly unfinished, and update nearest route accordingly.
+4. `ROADMAP.md` — replace superseded future owner-authority wording with the implemented repository model; keep external owner binding/bootstrap/deployed acceptance in Stage6 and keep Settings after redesign closeout.
+5. `tests/browser/user-measures/README.md` — factually describe the Stage2 Owner/elevated-authority cases already exercised by the existing browser harness; do not claim owner visual or production acceptance.
+6. `docs/PROJECT_HISTORY/PROJECT_HISTORY.md` — add navigation entry for the Stage2 snapshot.
+7. `docs/PROJECT_HISTORY/PROJECT_HISTORY_15.md` — new dated historical snapshot for Stage2 implementation/review/correction/merge, including final exact head, merge commit and verified acceptance status; clearly historical, not source of truth.
+
+Do not modify code, schema, migrations, dependencies, Settings, super-admin UI, infrastructure or production state. Do not invent unperformed acceptance. When the docs PR and applicable checks are complete, publish PR + stable exact head in #251 and stop for Mira review.
+
+## Зафиксированная целевая Owner модель
+
+- Owner — отдельная server-controlled верхняя authority, **не роль из конструктора**. Identity не определяется ролью, email, client input или permission snapshot.
+- Ниже Owner сохраняются существующие dynamic role permissions, одна назначенная роль на пользователя и per-user allow/deny/inherit. Нет новой встроенной Senior/Head Admin роли или второго RBAC/hierarchy слоя.
+- Owner получает все существующие code-backed permissions централизованного `PERMISSION_CATALOG`, включая participation, независимо от обычной роли и overrides. Новые реально добавленные catalog permissions автоматически входят в Owner authority; неизвестные capability strings права не дают. Subordinate administrative measures не могут target Owner.
+- `admin.users.blocks.managePrivileged` остаётся обычным permission в существующем конструкторе; custom role может его содержать. **Только bound Owner** может выдавать/отзывать его через role grants, назначения в/из elevated role и per-user overrides. Одного `access.authorization.manage` недостаточно для делегирования/self-grant.
+- Infrastructure/deployments/secrets и изменение server-controlled owner binding вне forum RBAC. Settings проектируется после этой модели.
+- Продуктовая модель зафиксирована; новых owner-level product questions для текущего технического плана нет.
+
+### Текущее поведение и предлагаемый Stage2 — различать
+
+В baseline main binding уже применяется для AP-10 target/rank и elevated gate, но **ещё не даёт Owner независимых effective permissions**. Это ограничение текущей реализации, а не целевой контракт. Zero initial block grants у обычных built-in roles сохраняются; будущая Owner authority не является seed grant.
+
+Предлагаемый план Stage2:
+1. Общий trusted Owner predicate и effective projection по текущему code-backed catalog; raw roles/grants/overrides не переписываются. У non-Owner прежний deny > allow > role.
+2. Согласовать resolve/has/bulk/targeted и fresh transaction authorization, не ограничиваться route/header bypass.
+3. Применить Owner immunity согласованно в permission filtering, native/Drizzle admissions, request wiring и UI hints. Существующие measure строки/History не переписывать; domain/session/Origin/ownership/CAS/lifecycle constraints сохранить.
+4. Сохранить Owner-only elevated gate; покрыть косвенный revoke удалением неназначенной elevated custom role: source chain подтверждён `deleteCustomRole` + ON DELETE CASCADE role grants. Runtime exploit в planning turn не запускался.
+5. Минимально согласовать закрытый UI, сохранить правдивую обычную роль и объяснить Owner effective authority. Нет публичной Owner роли, binding editor или super-admin UI.
+6. Mutex оставить без redesign; schema/migrations/seeds/dependencies не расширять. Проверки и отдельный factual docs closeout описаны в полном плане.
+
+Эти пункты — техническое предложение до coordinator approval, не реализованные результаты.
+
+## Последний управляющий — действующее решение владельца
+
+- Принцип сохранения хотя бы одного доступного access manager не применяется в planning/review/enforcement. Нет manager-count veto, специального recovery/lockout слоя или требования сохранить доступного управляющего.
+- Stage1 удалил `AuthorizationLockoutError`, `countManagers`, `managers_ever_existed` и dedicated veto. Self-revoke/role/grant changes могут оставить zero ordinary managers; следующий fresh request отозванного actor denied.
+- `authz_mutation_lock` сохранён как shared mutex: singleton id=1, table/PK/CHECK, FOR UPDATE, SELECT+UPDATE privileges и lock probe. Fresh authorization/AP-10 authority/elevated-key/issuer-floor guards и atomic History сохранены.
+- Owner authority не заменяет отменённый принцип новым count/veto. Mutex redesign/removal включается только при доказанной технической необходимости; текущий Stage2 план её не обнаружил.
+
+## Остальные обязательные owner decisions AP-10
+
+- Мера — configurable child restriction set. Group checkboxes выбирают дочерние пункты; duration temporary/permanent независим от состава. Presets — только UI shortcuts.
+- Catalog: create topics/Help, replies, new uploads, own published edits, public profile edits, Complaint reports, Help signals, translation generation. Для privileged target — соответствующие Forum/Help, Complaints, Security, Users/access administrative families с private reads и mutations.
+- Public reading/login/session/notifications/own status и любые domain appeal submissions не входят в restriction catalog. Own solved/best answer и source-locale correction не выделяются отдельными punitive restrictions.
+- Причина обязательна для create, manual restrictions/срок changes и explicit lift. Original reason не затирается; automatic expiry не создаёт synthetic reason/admin event. Denied/stale/failed/no-op/replay не создают reason/history event.
+- Self-target create/change/lift запрещён. Target/issuer comparison действует на create/change/lift по текущим permissions, не по имени роли. Повышенная capability сама по себе не заменяет basic block-management action grant.
+- Разные нарушения создают независимые measures: identity/reason/restrictions/lifecycle/History/quota отдельные. Overlap допустим; EXISTS применимой active restriction запрещает действие. Lift/expiry A не снимает effect B. Возвращаются лишь возможности актуального RBAC/resource state.
+- Block appeal — отдельный domain exact measure, не Complaint/Complaint Appeal. До 3 последовательных submissions на measure, одновременно одна pending. Право подачи не отключается restrictions. Accepted appeal может снять либо изменить restrictions/срок той же active measure с атомарным History/outcome.
+- Edit measure не меняет identity/quota и не закрывает pending appeal. Expiry/lift делают pending appeal утратившей предмет; terminal measure нельзя реактивировать, повторное наказание — новая measure.
+- User-facing own measure/appeal/status/timeline не раскрывают concrete actor/issuer/reviewer ID/name или private internal History context. Identity остаётся в authorized internal History.
+- Обе block-management capabilities имеют zero initial grants у всех built-in roles, включая admin/moderator. Для обычных пользователей права выдаются explicit grants/overrides; это не ограничивает целевую отдельную Owner authority.
+
+## Подтверждённый закрытый Stage1 result
+
+- #294 exact head `e3604222ae8cecb4b1f2f94cdd5d7e9f76c15e61`: coordinator whole-PR PASS + [independent Лёва PASS #6701647394](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6701647394), zero confirmed current-scope defects. Approved plan #6700603167.
+- Whole21-file diff; active runtime/count/error/flag veto удалены без замены. Допустимые zero-manager changes committed с History; History failure rollback сохранён.
+- 0059 drops только `managers_ever_existed`; snapshot/manifest/schema/journal согласованы. Accepted0000–0058 unchanged; mutex row/PK/CHECK сохранены.
+- Собственные проверки Лёвы: 23 unit/route/UI + 112 native PostgreSQL tests; metadata3/build; populated0058→0059 probe для false/true с payload9 relations; Chromium→Worker→Better Auth→PG History35 и AP-10/AP-11 34 cases. Exact-head author CI #42328843126 и browser #42328843151 SUCCESS отдельно от собственных reruns.
+- Evidence: `/workspace/work/stage1-review-evidence/`. Implementation не менялся во время review; disposable runtime остановлен/удалён.
+- #294 merged main `e20490bc2d80c696bdf78e62539a8e1440821f9e`.
+- Separate factual docs #295 head `a431b5fc35b577b301f206e7f046645ce1da4c35`: ровно8 documentation files; exact-head CI #42335079631 и browser #42335079658 SUCCESS; merged current main `8301087f9322b34bdd325ed9298fdf3fddd84561`.
+- Active source-of-truth синхронизирован со Stage1 runtime; historical artifacts сохранены как история. Stage1 fully closed; эти PASS не распространяются на будущий Stage2.
+
+
+## Stage2 revised plan — authoritative AP-10 path
+
+- Coordinator finding 1 (administrative-only Owner) отозван после Owner clarification. Действует all-catalog Owner model, включая future real catalog entries; raw ordinary RBAC не уменьшает Owner authority.
+- Remaining coordinator finding 2 учтён в [revision #6702520494](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6702520494) и полном личном плане Лёвы. Это исправление плана, не runtime fix и не coordinator PASS.
+- Source chain подтверждена на baseline: create/change/lift/resolveAppeal → transaction mutex → fresh actor/target → `authority()` → `assertUserMeasureAuthority()`; private `adminRead()` и `adminPendingAppeals()` используют тот же assertion, а очередь имеет отдельный ранний raw-manage precheck.
+- План явно требует: raw actor/target sets из фактических grants/overrides до Owner projection/sanction filtering; не передавать enriched effective list как raw. Только non-Owner обязан иметь raw basic block-manage key. Bound Owner определяется общим server predicate и получает rank3; затем проходят прежние self/Owner-target, strict actor>target, issuer-floor validation/comparison и прочие guards. Early-success return не вводится.
+- Precheck очереди получает то же Owner-or-raw-manage правило; per-target/floor visibility сохраняется. Native PG acceptance дополняется Owner raw-deny create/change/lift/accepted+rejected review, target/detail/queue и floor3; non-Owner raw hierarchy/deny/privacy не изменяются.
+- Остальной scope исходного плана сохраняется: shared mutex, no schema/migration, полный elevated grant/revoke gate включая role deletion, отдельный docs closeout. Implementation/CI/browser не выполнялись.
+- **Мира:** повторно проверить revised plan; при PASS назначить исполнителя. В master plan §6.4 ещё осталась superseded administrative-only формулировка — синхронизировать с уже принятым all-catalog Owner decision, не выносить повторный product question.
+- Исполнитель/implementation PR не назначены. Лёва завершил локальную правку и остановился; Марк не назначен.
+
+
+## Stage 2 revised technical plan — coordinator PASS
+
+- Revised Lev plan reviewed against main `8301087f9322b34bdd325ed9298fdf3fddd84561` and current source.
+- Owner all-catalog decision is now reflected consistently in the master plan; superseded administrative-only clause removed.
+- AP-10 revision #6702520494 correctly closes the remaining authoritative path:
+  - bound Owner bypasses only the raw basic `admin.users.blocks.manage` admission requirement;
+  - Owner still receives rank 3 from server binding;
+  - self/Owner-target prohibition, strict actor>target, issuer-floor validation/comparison and lifecycle guards remain;
+  - non-Owner hierarchy continues to use raw RBAC, not Owner-enriched effective permissions;
+  - pending-appeal discovery receives the same Owner-or-raw-manage admission rule and still filters each target/floor.
+- Coordinator verdict: **PASS**, zero remaining confirmed plan defects.
+- Approved Stage2 plan = #6702391114 + AP-10 authoritative revision #6702520494 + Owner all-catalog clarification already recorded in #251.
+
+### Handoff — Лира
+
+Implement the approved bounded Owner/authorization Stage2 plan on a separate implementation PR from current main.
+
+Required result:
+- bound `VICO_OWNER_USER_ID` gets all current/future code-backed catalog permissions regardless of stored role/grants/overrides;
+- Owner authority works consistently in central authorization reads, fresh transactional authorization, admin/measure UI and direct admission paths;
+- AP-10 authoritative paths allow bound Owner while preserving raw-RBAC hierarchy for every non-Owner;
+- `admin.users.blocks.managePrivileged` remains grant/revoke Owner-only, including indirect revoke via deleting an elevated custom role;
+- Owner is immune to subordinate administrative measures without rewriting historical measure rows/events;
+- no new role hierarchy, no schema/migration, no Settings/super-admin/infra work, no mutex redesign unless an actual implementation blocker proves it necessary.
+
+Read Lev's full approved plan before implementation. Reuse existing test/browser harnesses and complete applicable checks. Do not update permanent project documentation in the implementation PR; docs remain a separate closeout PR after merge. When implementation and checks are complete, publish the implementation PR + stable exact head in #251 and stop for Mira coordinator review.
+
+## PR #296 coordinator review — block 1/4 PASS
+
+- Stable exact head: `04865401cd5c2a69941cb458d0df1fc7424a37f7`; base `8301087f9322b34bdd325ed9298fdf3fddd84561`.
+- Reviewed central Owner authority implementation and focused tests:
+  - `app/authorization/owner.ts`
+  - `db/authorization-repository.ts`
+  - authorization/admin route Owner predicates
+  - Worker trusted binding composition relevant to central authority
+  - Owner/repository/PostgreSQL tests and Node TS inclusion.
+- Confirmed:
+  - only exact valid server binding creates Owner authority;
+  - existing DB user is still required;
+  - bound Owner receives all current code-backed `PERMISSION_CATALOG` entries;
+  - unknown permission strings do not become authority;
+  - bulk, targeted, resolver/direct `hasPermission` and fresh authorization mutation paths agree;
+  - stored role/grants/overrides remain factual and unchanged; `authoritySource: owner` is projection metadata only;
+  - non-Owner deny > allow > role behavior is unchanged;
+  - no schema/migration/seed/new role layer introduced.
+- Verdict for block 1/4: **PASS**, zero confirmed current-scope defects.
+- Whole-PR coordinator PASS is NOT yet claimed. Next block: AP-10 authority/immunity/direct admission wiring.
+
+
+## PR #296 coordinator review — block 2/4 PASS
+
+- Stable exact head remains `04865401cd5c2a69941cb458d0df1fc7424a37f7`.
+- Reviewed AP-10 authoritative authority, persisted-measure immunity and direct admission wiring end-to-end.
+- Confirmed:
+  - AP-10 derives raw actor/target authority from stored grants + overrides, not Owner-enriched effective permissions;
+  - only bound Owner bypasses the raw `admin.users.blocks.manage` prerequisite; rank3, self/Owner-target prohibition, strict target hierarchy and issuer-floor checks remain;
+  - pending-appeal discovery uses the same Owner-or-raw-manage admission and still applies per-target/floor filtering;
+  - stored active measures remain persisted/history-preserving but do not restrict the currently bound Owner;
+  - invalid/malformed Owner binding does not grant immunity;
+  - one Owner-aware admission closure is wired from Worker into the existing Forum repository path, covering topic/reply/profile/post/help-signal and other existing forum measure checks, plus attachment store;
+  - Complaint submission/queue/review/appeal repositories receive the same Owner-aware measure admission;
+  - content-generation admission receives trusted Owner binding; generation remains otherwise unchanged/disabled;
+  - administrative permission suppression wrapper bypasses saved sanctions only for exact bound Owner; non-Owner raw rank and restriction semantics remain unchanged;
+  - no historical measure rows/events are rewritten or synthetically lifted.
+- Focused unit/native PG coverage verifies Owner raw-deny create/change/lift, accepted/rejected appeal handling, private reads/queue, floor3, direct Drizzle/native admissions, stored-sanction retention and invalid-binding behavior.
+- Verdict for block 2/4: **PASS**, zero confirmed current-scope defects.
+- Whole-PR coordinator PASS is NOT yet claimed. Next block: private UI / Owner explanation / elevated-permission grant-revoke surfaces including elevated custom-role deletion.
+
+
+## PR #296 coordinator review — block 3/4: 1 current-scope verification finding
+
+- Stable exact head remains `04865401cd5c2a69941cb458d0df1fc7424a37f7`.
+- Reviewed closed Owner management UI and the complete elevated-permission mutation chain for `admin.users.blocks.managePrivileged`.
+- Runtime/source chain confirmed:
+  - server-derived `canManageElevated` is true only for the exact bound Owner; no form field/binding editor/public Owner role is introduced;
+  - stored ordinary role, grants and explicit denies remain visible/factual while Owner effective authority is explained separately;
+  - non-Owner UI hides the elevated role-grant checkbox and per-user override, filters elevated assignment targets, disables assignment away from a currently elevated role, and hides deletion of elevated custom roles;
+  - ordinary edits to other grants on an elevated role preserve the protected key through a hidden field rather than silently revoking it;
+  - authoritative repository gate is inside the serialized authorization mutation transaction and covers add/remove role grant, assignment into/out of an elevated role (including implicit default role), per-user allow/deny/inherit, and deletion of an elevated custom role;
+  - direct malicious POST does not rely on UI filtering; service/hyperdrive paths terminate in the same repository mutation methods; ordinary role rename/other grants remain ordinary operations.
+- **STAGE2-MIRA-01 — required elevated grant/revoke acceptance is incomplete.** Approved Stage2 plan §7 requires the Owner-only gate to be verified for all four mutation families and the real browser acceptance to prove Owner grant to role/user with fresh-request reflection. Current exact-head evidence proves non-Owner direct 403 for all four families and Owner success for adding the elevated role grant plus deleting that elevated role, but it does not exercise Owner-success for assignment into/out of an elevated role, per-user elevated override transitions, or explicit Owner removal of the elevated role grant. `tests/database/owner-authorization.test.ts` contains no elevated-key mutation coverage; UI tests cover presentation only. Therefore the implementation logic is not currently shown defective, but the mandatory Stage2 verification contract is not fully satisfied.
+- Verdict for block 3/4: **NOT PASS because of STAGE2-MIRA-01**. Whole-PR coordinator review continues; do not hand this finding to Лира yet so confirmed findings can be returned as one package after block 4/4.
+- Next block: remaining integration/privacy/History/localization/regression boundaries and final coordinator verdict.
+
+
+## PR #296 coordinator whole-PR review — final verdict: CHANGES REQUIRED
+
+- Reviewed frozen exact head `04865401cd5c2a69941cb458d0df1fc7424a37f7` against approved Stage2 plan and current main `8301087f9322b34bdd325ed9298fdf3fddd84561`.
+- Blocks 1/2 passed: central Owner authority and AP-10 authority/immunity/direct admissions are coherent and no current-scope defect was confirmed there.
+- Block 3 confirmed one current-scope verification finding, `STAGE2-MIRA-01`.
+- Block 4 checked remaining integration/privacy/History/localization/Worker/regression boundaries and found no additional current-scope defects:
+  - subject measure DTO/history projection remains an explicit allowlist and still excludes issuer/reviewer/History actor identity and raw private context;
+  - private admin routes retain authentication/permission guards and private no-store behavior; Owner projection does not become a public badge/binding editor;
+  - Worker validates `VICO_OWNER_USER_ID` once and propagates the trusted result through authorization, measures, Forum/attachments, Complaints and dormant generation admission;
+  - Owner authority explanation is present in EN/RU/HE with reviewed manual fingerprints; exact-head browser acceptance covers EN/RU/HE at 320/768/1280 without reported layout/page-error/external-request failures;
+  - CI #42345404967 is SUCCESS on exact head; AP-10 isolated browser #42345404812 is SUCCESS on attempt 2 on the same exact head. The first browser attempt's AP-11 Users-detail 503 remains unroot-caused; unchanged head passed rerun, so no reproducible current-scope defect is established from that transient alone;
+  - PR #296 changed-file set contains no schema/migration/permanent-doc/Settings/super-admin/infra expansion.
+- **Final coordinator verdict: CHANGES REQUIRED, exactly one confirmed current-scope finding: `STAGE2-MIRA-01`.**
+
+### STAGE2-MIRA-01 — required elevated grant/revoke acceptance incomplete
+
+The approved Stage2 plan requires Owner-only verification for all four elevated-authority mutation families and real-browser proof that Owner can grant elevated authority to role/user and that the next request reflects it. Current exact-head evidence proves non-Owner direct 403 for all four families and Owner success for adding an elevated role grant plus deleting the elevated role, but does not prove Owner-success assignment into/out of an elevated role, per-user elevated override transitions, or explicit Owner removal of the elevated role grant. Native PostgreSQL Owner authorization tests also contain no elevated-key mutation acceptance. No runtime bypass is currently confirmed; the required acceptance contract is incomplete.
+
+### Handoff — Лира
+
+Close only `STAGE2-MIRA-01` in PR #296. Complete the approved Stage2 elevated-authority acceptance so Owner-success is demonstrated for the missing mutation paths and the required fresh-request behavior, while existing non-Owner denial/History semantics remain intact. Change runtime code only if the completed verification exposes an actual defect. Run applicable exact-head CI/browser checks, publish the new stable head and evidence in #251, then stop for a fresh Mira coordinator whole-PR review. Do not update permanent documentation in this implementation PR.
+
+
+## PR #296 fresh coordinator whole-PR review — PASS
+
+- Exact head: `824ab8eccb091664c2e7d37f81f2737e7fd43e87`; base/main: `8301087f9322b34bdd325ed9298fdf3fddd84561`.
+- Compared against the previously reviewed failing head `04865401cd5c2a69941cb458d0df1fc7424a37f7`: 4 commits ahead, exactly two changed files (`tests/database/owner-authorization.test.ts`, `tests/browser/user-measures/check.py`), no runtime/application/schema/migration/docs change.
+- `STAGE2-MIRA-01` is closed:
+  - native PostgreSQL acceptance now exercises Owner role grant add/remove, assignment into/out of elevated role, per-user elevated allow/deny/inherit, immediate fresh `hasPermission` results and exact History sequence;
+  - real Chromium → built Worker → Better Auth → PostgreSQL uses canonical Owner UI for all protected mutation families, verifies DB state, fresh recipient requests, rank2 presentation changes, explicit role-grant removal, assignment revoke and History count;
+  - existing direct non-Owner 403 checks remain in the same browser path.
+- Exact-head GitHub evidence independently checked:
+  - CI #42349494000: `checks` SUCCESS with 155/155 files and 1974/1974 app tests; `database` SUCCESS with 47/47 files and 571/571 tests; `owner-authorization.test.ts` 5/5;
+  - AP-10 isolated browser #42349494094: `browser` SUCCESS and `history_browser` SUCCESS; log includes `stage2-owner-elevated-assignment-overrides-explicit-grant-revoke-fresh-requests-history` and final Stage2 Owner elevated-authority case.
+- Runtime implementation is byte-for-byte unchanged from the head already reviewed across coordinator blocks 1–4, so the prior confirmed runtime conclusions remain applicable; the only former blocker was missing required acceptance evidence.
+- Final coordinator verdict on PR #296 exact head `824ab8eccb091664c2e7d37f81f2737e7fd43e87`: **PASS, zero confirmed current-scope defects**.
+- Implementation stays frozen. Next workflow step is independent technical review by Лёва on this same exact head.
+
+
+## Independent technical review Лёвы — PASS
+
+- [Report #6704068605](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6704068605) на exact `824ab8eccb091664c2e7d37f81f2737e7fd43e87`, base/main `8301087f9322b34bdd325ed9298fdf3fddd84561`. Весь34-file diff проверен самостоятельно; code/schema/migrations при review не изменялись.
+- Central catalog-bound Owner projection согласована с resolver/has/bulk/targeted/fresh transaction check; raw role/grants/overrides сохранены. Неизвестные permissions и отсутствующий user не повышаются.
+- AP-10 raw actor/target evaluation отделён от Owner projection. Owner-only basic-manage admission, rank3, self/Owner target, strict target/issuer floor, private discovery и all lifecycle/appeal paths согласованы.
+- Owner immunity применена в native/Drizzle admission, Worker wiring и hints без удаления старых measures/History. Non-Owner/domain/session/Origin/ownership/CAS boundaries сохранены.
+- Elevated grant/revoke покрывает role grants, assignment, override и role deletion; UI truthful/private/localized. Нет второго RBAC, schema/migration/seed/Settings/super-admin/infra/mutex redesign или возврата last-manager.
+- Собственные local checks: 56 unit/route/UI (8 files),96 native PG (8 files), build PASS; дополнительный собственный PG probe —2 observed mutex waits, Owner commit vs fresh revoked actor denial, forced History failure rollback, preserved stored restrictions/History.
+- Actual Chromium→built Worker→Better Auth→PG: AP-10/AP-11/Stage2 37 groups + отдельная History35 PASS. AP-10:0 layout/page errors/external requests; History:0 page errors/external requests. Canonical Owner elevated success/revoke/fresh recipient state и ordinary self-revoke подтверждены.
+- AP-10 environment adapter изменяет только checkout path/Chromium executable; все assertions/cases сохранены, exact comparison проверен. History runner из exact checkout. Full1974/571 локально не заявлены как rerun; GitHub exact-head runs отдельно SUCCESS.
+- Evidence: `/workspace/work/owner-stage2-review-evidence/` (logs/probe/results/screenshots/manifest/hashes). Tracked checkout clean, task-owned Workers/disposable container/DBs/dummy vars/dependency symlink removed.
+- **Мира — next:** readiness/owner merge route, затем separate factual docs closeout. Лёва остановился, implementation frozen; Марк не назначен.
+
+
+## PR #296 — Stage 2 implementation readiness complete
+
+- Frozen exact head `824ab8eccb091664c2e7d37f81f2737e7fd43e87`; base/current main `8301087f9322b34bdd325ed9298fdf3fddd84561`.
+- Mira coordinator whole-PR review: PASS, zero confirmed current-scope defects.
+- Lev independent technical review: PASS, zero confirmed current-scope defects; full 34-file diff independently checked against approved Stage2 contract.
+- Exact-head GitHub checks remain green; independent review also reran bounded unit/native PG/browser evidence.
+- PR #296 was converted from Draft to Ready for review and is mergeable. Implementation remains frozen.
+- No owner visual acceptance or production/deployed acceptance is implied or required by this readiness step.
+- Next step belongs to the owner: merge PR #296. Only after merge should a separate factual documentation closeout update Owner effective-vs-raw authorization, immunity/elevated boundary, PROJECT_STATE and history. Settings remains deferred until redesign closeout.
+
+
+## PR #297 docs-only coordinator review — CHANGES REQUIRED
+
+- Reviewed exact head `69581a0a95a3ebf739c78b047371a0c66d2b8ffc` against merged Stage2 main `df57dabf2a4cbc44d85138d8809079878490a7c8` and runtime authority paths.
+- Scope is docs-only and mergeable. Exact-head CI #42353586211 and AP-10 browser #42353586139 are SUCCESS.
+- The six changed files correctly describe the implemented Owner catalog projection, raw AP-10 hierarchy, Owner immunity, Owner-only elevated gate, Stage2 history and browser fixture behavior except for the findings below.
+
+### STAGE2-DOC-MIRA-01 — `ROADMAP.md` omitted / stale owner boundary
+
+`ROADMAP.md` was explicitly in the bounded closeout but is absent from #297. It still says the final owner/recovery boundary is only to be determined by a future redesign, which conflates the now-implemented Stage2 Owner authority with the still-future recovery/bootstrap work. Add `ROADMAP.md` as the seventh docs file and synchronize only those Stage2/recovery statements; keep Stage6 external acceptance and Settings sequencing unchanged.
+
+### STAGE2-DOC-MIRA-02 — stale external bootstrap wording in `PROJECT_STATE.md`
+
+`PROJECT_STATE.md` still lists `server-controlled bootstrap первого authorization manager` as the unfinished external item. After Stage2 the active unresolved boundary is Owner binding/recovery/bootstrap acceptance, not the superseded first-manager recovery model. Replace that stale wording with a factual owner/recovery/bootstrap external gate without inventing a recovery design that has not yet been approved/implemented.
+
+### Handoff — Лира
+
+Correct only these two docs findings on PR #297. Do not reopen the six already-correct Stage2 descriptions, do not change runtime/code/schema/migrations/infra, and do not design recovery/bootstrap or Settings. Run applicable exact-head checks, publish the new stable head/evidence in #251, then stop for fresh Mira docs review.
+
+
+## PR #297 fresh docs coordinator review — CHANGES REQUIRED
+
+- Reviewed corrected exact head `9d0c7baa9b9f96a79ee8b7b79c7a736a872c83b6` against merged Stage2 main and the full current 7-file docs diff.
+- Previous findings `STAGE2-DOC-MIRA-01/02` are substantively closed: `ROADMAP.md` is present and correctly separates implemented Stage2 Owner authority from future recovery/bootstrap/external acceptance; the obsolete first-manager bootstrap wording is removed.
+- Exact-head CI #42354904989 and AP-10 browser #42354905142 are SUCCESS.
+
+### STAGE2-DOC-MIRA-03 — unapproved recovery/bootstrap detail
+
+`PROJECT_STATE.md` now says the future boundary includes `первоначальное назначение управленческого доступа`. That detail is not established by the approved Stage2 model or current source-of-truth and partially reintroduces a first-manager/bootstrap assumption. The closeout task explicitly requires recording the unresolved Owner binding/recovery/bootstrap boundary **without designing it**.
+
+Minimal correction: keep the factual statement that external acceptance of the implemented `VICO_OWNER_USER_ID` authority and a separately approved recovery/bootstrap boundary remain unfinished, but remove the added assumption about initial management-access assignment. No other document needs correction.
+
+### Handoff — Лира
+
+Change only that wording in `PROJECT_STATE.md` on PR #297. Do not alter the already-correct `ROADMAP.md` or the other Stage2 docs. Run applicable exact-head checks, publish the new stable head in #251, then stop for final Mira review.
+
+
+## PR #297 final docs coordinator review — PASS
+
+- Final exact head: `a63bfb6d52052e1dd0905eb498dabb1d38c8f10a`; base/current main `df57dabf2a4cbc44d85138d8809079878490a7c8`.
+- Final delta after previous review: exactly one line in `PROJECT_STATE.md`, removing the unapproved `первоначальное назначение управленческого доступа` assumption.
+- `STAGE2-DOC-MIRA-01/02/03` are all closed.
+- Full bounded scope is now exactly 7 documentation files; no code/schema/migration/runtime/infra changes.
+- `ROADMAP.md` correctly separates implemented repository/local-CI Stage2 Owner authority from still-future recovery/bootstrap and external acceptance.
+- `PROJECT_STATE.md` now records only the unresolved external Owner authority + separately approved recovery/bootstrap boundary without inventing its design.
+- Exact-head CI #42355616281 SUCCESS; AP-10 isolated browser acceptance #42355616335 SUCCESS.
+- Coordinator verdict: **PASS**, zero confirmed current-scope documentation defects.
+- PR #297 converted from Draft to Ready for review. No independent Codex docs review assigned.
+- Next: owner merge PR #297. After merge Stage2 implementation + factual documentation closeout is fully closed; then next bounded owner/authorization work may be selected.
+
+
+## Stage 2 fully closed after docs merge
+
+- PR #297 merged into `main`; merge commit `96186cc9158dd7a91c9d2c0124ed4556f133f15c`.
+- Stage2 implementation #296 + factual documentation #297 are both merged. Coordinator implementation/docs findings are closed.
+- Current source-of-truth now records server-bound Owner authority as implemented in repository/local-CI, while recovery/bootstrap and external acceptance remain unfinished.
+- This does **not** authorize Stage6/production work or Settings.
+- Next bounded work is product-definition of the remaining recovery/bootstrap boundary. No first-manager/count-veto model is assumed; no recovery mechanism is considered approved yet.
+- Mira owns the next analysis. Lev/Lira/Mark are not assigned until the owner-facing product boundary is clear.
+
+
+## Owner/authorization redesign — final bootstrap decision
+
+- Vico Forum has exactly one Owner: the developer.
+- Ownership transfer, second Owner, successor and transfer UI/API are not part of the current product scope.
+- The Owner account is established by signing in through the developer's Google account.
+- After sign-in, the forum's internal account ID is bound server-side as the Owner identity.
+- Email, display name or role do not grant Owner rights by themselves.
+- No separate first-admin/first-manager bootstrap is needed.
+- No additional application feature is required for this bootstrap model: Google sign-in and server-side Owner authority already exist in the repository.
+- Production Google configuration, Owner binding and real external acceptance remain Stage 6 and are not authorized by this decision.
+- Owner/authorization redesign application work is complete; only final factual documentation closeout remains before moving to Settings.
+
+
+## Final owner/authorization documentation closeout — handoff to Лира
+
+Create one separate docs-only PR from current main `96186cc9158dd7a91c9d2c0124ed4556f133f15c`.
+
+Required result: synchronize permanent/current documentation with the confirmed final product model and close the repository-side owner/authorization redesign without claiming Stage 6 work.
+
+Bounded file scope — exactly these 6 documentation files:
+1. `docs/auth/AUTHORIZATION.md`
+2. `docs/ADMIN_PANEL.md`
+3. `PROJECT_STATE.md`
+4. `ROADMAP.md`
+5. `docs/PROJECT_HISTORY/PROJECT_HISTORY.md`
+6. new `docs/PROJECT_HISTORY/PROJECT_HISTORY_16.md`
+
+Content boundary:
+- One Owner only: developer.
+- Owner account is established through developer Google sign-in; the resulting internal forum account identity is the server-bound Owner.
+- Email/name/ordinary role do not themselves grant Owner authority.
+- No ownership transfer, second Owner, successor flow, transfer UI/API or first-manager bootstrap in current scope.
+- No additional application implementation is required for this bootstrap decision; Stage 1–2 runtime remains the implemented repository/local-CI model.
+- Real Google configuration, server-side Owner binding and external/deployed acceptance remain Stage 6 and must not be claimed complete.
+- After this docs closeout merges, owner/authorization redesign is complete in repository/local-CI scope and Settings becomes eligible as the next separate product package.
+- Keep Stage 6 paused and do not alter unrelated roadmap priorities.
+
+Do not change runtime/code/tests/schema/migrations/workflows/infra. Do not invent recovery/transfer behavior or security features beyond the confirmed model.
+
+Run applicable docs/CI checks, publish the PR number + stable exact head + check evidence in #251, then stop for Mira coordinator docs review.
+
+
+## PR #298 initial coordinator docs review — CHANGES REQUIRED
+
+Reviewed the complete 6-file docs scope on exact head `514dff7c2e262d63a3cf0dbbebd5a845f43571e1` against current main `96186cc9158dd7a91c9d2c0124ed4556f133f15c`, the final owner decision and current runtime/auth boundaries. CI #42360481160 is SUCCESS; both checks/database jobs passed. PR is Draft, mergeable, docs-only, exact requested six-file scope.
+
+### OWNER-DOC-MIRA-01 — bootstrap wording broadens the approved owner decision
+
+The approved final product decision is specific: the sole Owner is the developer; the developer **signs in through Google**, and the resulting internal forum account is bound server-side as Owner. No second Owner/transfer/first-manager bootstrap is in scope.
+
+The new docs repeatedly use `Google authentication/linking`, `sign-in/linking` or `входа/привязки аккаунта` in the **new Owner-bootstrap text**. That introduces an additional bootstrap path through linking an already-existing account, which was not part of the final approved wording. This is a current-scope documentation defect, not a runtime defect.
+
+Correct only the new Owner-bootstrap wording to the approved model: **developer signs in through Google → resulting internal Better Auth user ID is bound server-side as Owner**.
+
+Affected new text:
+- `docs/auth/AUTHORIZATION.md` — single-Owner bootstrap section;
+- `docs/ADMIN_PANEL.md` — single-Owner bootstrap paragraph;
+- `PROJECT_STATE.md` — Owner model + unfinished external item;
+- `ROADMAP.md` — Stage 6 Owner step where it says sign-in/linking / входа/привязки;
+- `docs/PROJECT_HISTORY/PROJECT_HISTORY_16.md` — decision snapshot.
+
+Do **not** alter the existing general `Local email and Google linking` authorization section: that documents an already implemented general account feature and is not the Owner-bootstrap decision. Do not change runtime/code/tests/schema/migrations/workflows/infra or broaden recovery/transfer semantics.
+
+All other reviewed changes, including history index, Stage6 deferral, Settings sequencing and “no additional application implementation” conclusion, are accepted on this head.
+
+### Handoff — Лира
+
+Fix only OWNER-DOC-MIRA-01 on PR #298. Run applicable exact-head checks, publish the new stable head/evidence in #251, then stop for fresh Mira review.
+
+
+## PR #298 fresh coordinator docs review — PASS
+
+- Reviewed stable exact head `7cfa68a8a2c587314393d60a9bf90923604ee0c0` against base/current main `96186cc9158dd7a91c9d2c0124ed4556f133f15c`.
+- Whole PR remains exactly the approved 6 documentation files; no code/tests/schema/migrations/workflows/infra changes.
+- Delta from previously reviewed head `514dff7c...` changes only the five Owner-bootstrap wording sections required by `OWNER-DOC-MIRA-01`.
+- `OWNER-DOC-MIRA-01` is closed: all new Owner-bootstrap text now states the approved path only — developer signs in through Google → resulting internal Better Auth `user.id` → server-only `VICO_OWNER_USER_ID`.
+- Existing general Local email/Google linking contract remains unchanged and is not presented as an alternative Owner bootstrap.
+- Single Owner, no transfer/second Owner/successor/first-manager bootstrap, no additional application implementation, Stage6 external Google/Owner binding and Settings sequencing are consistent across the six documents.
+- Exact-head CI #42361836324 SUCCESS: both `checks` and `database` jobs passed.
+- Browser workflow is not applicable to the docs-only paths and was not required/claimed.
+- Coordinator verdict: **PASS**, zero confirmed current-scope documentation defects.
+- No independent Codex docs review assigned.
+- PR #298 is ready for owner merge. After merge, owner/authorization redesign is closed in repository/local-CI; Stage6 external acceptance remains unfinished/paused.
+
+
+## Owner/authorization redesign — fully closed after PR #298 merge
+
+- PR #298 merged into `main`; merge commit/current main `856b93cb65b01e2389eb97276b37b3a0d8eef265`.
+- Final single-Owner/bootstrap documentation is now in current source-of-truth.
+- Owner/authorization redesign is closed in repository/local-CI scope: Stage 1–2 runtime, factual docs and final product boundary are all merged.
+- One Owner only: developer. Developer signs in through Google; the resulting internal Better Auth user ID is bound server-side as Owner. Transfer/second Owner/successor/first-manager bootstrap are not current product features.
+- Real Google configuration, server-side Owner binding and deployed acceptance remain Stage 6; Stage 6 remains paused.
+- No further owner/authorization application or documentation work is active.
+- Per current source-of-truth, Settings is now eligible as the next separate package.
+
+### Next bounded stage — Settings product definition
+
+Mira owns the initial product analysis. Do not assign Lev/Lira/Mark yet.
+
+Goal: establish what Settings should actually contain for the first release, reusing existing forum/auth/admin mechanisms and avoiding speculative infrastructure/super-admin/provider controls.
+
+First step only: inspect the current Settings placeholder, existing configurable mechanisms already implemented elsewhere, and current product/release boundaries; then present only the owner decisions that are genuinely required before technical planning.
+
+
+## Settings product-definition analysis — current state and minimal concept
+
+### Confirmed current state
+
+- Global Admin navigation contains Settings only as `Under development`; it has no real route/data/mutations and no Settings-specific permission.
+- There is no generic forum-settings persistence table in the current schema.
+- Existing configurable behavior is already separated by domain:
+  - Roles/permissions are managed in their own authorization section.
+  - Complaint reason-priority weights are persisted and managed under `Needs attention → Complaints → Settings` with `forum.complaint.priority.manage`.
+  - Light/Dark theme is a user/browser preference, not a forum-wide admin setting.
+  - LocaleRegistry is persistent and has a controlled lifecycle contract, but production runtime is currently read-only for registry writes; no general locale-management admin UI exists.
+  - Infrastructure/provider/deployment/secrets and Owner binding remain outside forum RBAC/ordinary Settings.
+- Public Rules/Help/About/Feedback/Privacy entries are unfinished product/content pages, not currently defined as forum setting values.
+- Current source-of-truth explicitly says Settings has no approved concrete operations.
+
+### Product boundary proposed by Mira
+
+Settings should mean **forum-wide product parameters that are intentionally changeable from the site UI**. It should not become a catch-all for domain management, personal preferences, infrastructure, secrets or future super-admin functions.
+
+For the first release, the minimal useful Settings package should be small.
+
+**Recommended first concrete setting: registration state.**
+- `Open`: new accounts may be created.
+- `Closed`: existing accounts may still sign in, but creation of a new account is rejected regardless of whether the attempt starts through email/password or first-time Google sign-in.
+- This controls registration only; it does not change roles, permissions or existing sessions.
+
+Do not pull into the first Settings package by default:
+- complaint priority settings — keep in Complaints;
+- roles/permissions — keep in Roles & permissions;
+- forum structure — belongs in Forum;
+- user theme/language/account security — user/account preferences;
+- locale registry/language publication lifecycle — separate translation/admin work unless owner explicitly includes it;
+- attachment/rate-limit/anti-abuse thresholds — technical/security policy, not ordinary first-release settings without a concrete need;
+- providers, OAuth credentials, email provider, Cloudflare, DB, deployments, secrets, Owner binding — infrastructure/outside forum RBAC;
+- account deletion/full audit/super-admin operations — deferred super-admin scope;
+- Rules/About/Privacy/Help/Feedback content — content/page management, not automatically Settings.
+
+### Owner decisions required before technical planning
+
+1. **Who may change Settings?**
+   - A. Owner only.
+   - B. A normal explicit forum permission, initially granted to nobody; Owner has it automatically and may delegate later. **Mira recommends B** because it preserves the existing permission-based model without creating a second hierarchy.
+
+2. **First Settings package scope**
+   - A. Registration open/closed only. **Mira recommends A** for the first bounded package.
+   - B. Registration + global read-only/maintenance mode.
+   - C. Broader general configuration now.
+
+3. **Locale/language management**
+   - A. Keep out of this Settings package and design separately when needed. **Mira recommends A**.
+   - B. Include locale activation/management in Settings now.
+
+No implementation, schema or permission changes are authorized until these decisions are fixed.
+
+
+## Settings product architecture — owner correction
+
+The previous “single admin Settings page / first setting = registration” concept is superseded.
+
+Owner direction:
+1. Settings must be split into at least three distinct surfaces.
+2. **Owner/system settings** — forum-wide configuration and role settings; this surface is available only to the sole Owner.
+3. **Administrator personal settings** — convenience/preferences for an administrator's own working experience; these settings do not change forum behavior for other users.
+4. **User personal settings** — convenience/preferences for an ordinary user's own forum experience.
+5. The list is intentionally not considered complete yet.
+
+Mira identifies one additional category that should not be mixed with convenience preferences:
+- **Account & security** — password/account credentials, linked Google account, sessions and similar identity/security controls. This is personal account management, not UI convenience.
+
+Domain-specific configuration is a separate axis:
+- complaint priority settings already belong to Complaints;
+- similar future subsystem-specific controls should stay with their subsystem unless there is a concrete product reason to centralize them.
+
+### Important authorization impact
+
+Current main permits a non-Owner with `access.authorization.manage` to create/edit roles, change role grants, assign users and manage overrides (except the existing Owner-only elevated capability boundary).
+
+The new owner statement “forum and role settings are available only to me” changes that product direction for **role settings**. This is not treated as an accidental current defect; it is a new Settings/authorization product requirement to define before implementation.
+
+Do not yet assume whether Owner-only applies to:
+- role definitions + permission sets only; or
+- also assigning existing roles to users and per-user permission overrides.
+
+That exact split remains an owner decision. No code/permission/schema change is authorized yet.
+
+
+## Settings surface map — coordinator analysis
+
+The Settings family should not be modeled as one page or one generic key/value store.
+
+### 1. Owner / system settings — separate Owner-only surface
+
+Audience: only the exact server-bound Owner, never a role name or ordinary permission holder.
+
+Purpose: configuration that changes the forum for everyone or changes the forum's authority model.
+
+Confirmed/strong candidates:
+- forum registration policy (for example open/closed);
+- role definitions and each role's permission set;
+- forum-wide defaults/policies that are intentionally made runtime-configurable.
+
+Possible later system subsections, only when separately approved:
+- locale/publication management for forum languages;
+- global attachment limit and similar owner-controlled product limits;
+- global anti-spam/participation policy values;
+- maintenance/read-only mode;
+- other whole-forum policy knobs with a concrete product need.
+
+Do not place production secrets, Cloudflare/DB/deployment/provider credentials or the Owner binding here. Those remain developer/infrastructure operations outside forum UI.
+
+### 2. Administrator workspace preferences — separate personal surface
+
+Audience: an authenticated actor who actually has administrative/moderation workspace capabilities; not determined by the literal built-in role name `admin`.
+
+Purpose: convenience for this person's own administrative work. These preferences must not change forum behavior, permissions or other administrators' experience.
+
+Candidate groups:
+- preferred/default admin/Attention destination;
+- remembered queue mode/group/filter/sort choices;
+- compact/dense presentation and table/list preferences;
+- other personal workflow/display choices that prove useful.
+
+Current repository has no persisted admin-personal preference model; these are product candidates, not implemented facts.
+
+### 3. User experience preferences — separate personal surface
+
+Purpose: how the current person reads/writes/uses the forum without changing global forum policy.
+
+Already-existing preference-like behavior that belongs conceptually here:
+- Light/Dark theme (currently browser-local);
+- interface language choice / locale preference boundary;
+- Editor preferences already kept locally per account/device: Simple/Advanced mode, spellcheck, code wrapping, code line numbers.
+
+Natural later candidates:
+- notification preferences;
+- reading/display/accessibility preferences;
+- formatting/time-zone preferences if/when exposed as actual product controls.
+
+The Settings page may expose or organize existing controls without automatically changing their persistence/sync contract. In particular, Editor preferences are currently intentionally device-local and must not silently become cross-device server settings.
+
+### 4. Account & security — separate personal surface
+
+Purpose: identity and security of the current account, not UI convenience.
+
+Current relevant behavior:
+- explicit Google account linking exists on the user's own profile;
+- sign-in/sign-out and email/password authentication exist.
+
+Potential account/security controls require separate product/technical approval before implementation:
+- password management;
+- linked sign-in methods;
+- session/device management;
+- email/account identity changes;
+- other recovery/security controls.
+
+Public profile content (bio/GitHub/website) remains profile editing, not Settings.
+
+### 5. Subsystem operational settings — stay with the owning subsystem by default
+
+These settings alter a specific administrative/moderation subsystem and may have their own permission. They are neither personal admin preferences nor automatically Owner-only system settings.
+
+Existing example:
+- Complaint reason-priority settings stay under `Needs attention → Complaints → Settings` with their existing independent authority.
+
+Future subsystem settings should remain near the subsystem unless the owner explicitly chooses to centralize them.
+
+### Outside the Settings family
+
+- infrastructure/deployment/secrets/provider credentials/DB/Cloudflare;
+- server-side Owner binding;
+- project/developer tooling;
+- ordinary object management such as categories/sections/topics/users;
+- public profile editing;
+- administrative actions on users/cases/topics.
+
+Those are not personal/system Settings merely because they are configurable or mutable.
+
+### Role-management boundary that still requires owner decision
+
+The owner has established that **role settings** belong to the Owner-only system surface.
+
+A useful product distinction is:
+- **role configuration**: create/rename/delete roles and change the permissions contained in a role;
+- **user administration**: assign an already-defined role to a user and apply per-user permission overrides.
+
+Current main groups both under `access.authorization.manage`. Do not change this yet. Before technical planning the owner must decide whether only role configuration becomes Owner-only, or user assignment/overrides also become Owner-only.
+
+
+## Owner/system Settings — detailed product map
+
+This is the exact bound Owner's surface. It contains only whole-forum product policy that is genuinely useful to change from the forum UI. It must not become a generic dump of constants.
+
+### A. Registration and account-entry policy
+
+Strong first-release setting:
+- **Registration: open / closed.** Closing registration blocks creation of new forum accounts while existing accounts can continue signing in.
+
+Useful later split if owner wants independent control:
+- allow new registration through Google;
+- allow new registration through email/password.
+
+Do not turn provider credentials into settings. Google client credentials and email-provider secrets remain infrastructure. Email verification policy is deferred with the email-verification/sender work and should not be pulled into the first Settings package prematurely.
+
+### B. Roles and authority model
+
+Owner-only role configuration:
+- create custom role;
+- rename custom role;
+- delete eligible custom role;
+- view and change the permission set of every role, including built-ins.
+
+This supersedes the product direction where ordinary `access.authorization.manage` holders could alter role definitions/grants. The exact migration of that existing capability is a future implementation concern, not something to patch during product definition.
+
+Still unresolved:
+- assigning an already-defined role to a user;
+- per-user permission `allow/deny/inherit`.
+
+Those may remain delegatable user administration or also become Owner-only; owner must decide later.
+
+Do not expose Owner itself as a role or editable Owner binding.
+
+### C. Global participation / anti-spam policy
+
+Current repository has one real global forum-write cooldown:
+- `FORUM_WRITE_COOLDOWN_MS = 5000` (5 seconds).
+
+This is a valid later Owner-setting candidate because it changes forum-wide participation policy and the repository already treats cooldown as an injected policy value.
+
+Do not expose every rate limit:
+- Complaint submission limits belong to Complaints;
+- Better Auth/provider protection is security/auth infrastructure;
+- internal pagination, retry, polling and batch sizes are implementation details.
+
+### D. Attachments policy
+
+Current product contract sets:
+- maximum one-file attachment size = **50 MB**;
+- runtime validation already accepts an explicit max-byte policy with 50 MB as the default.
+
+Therefore **maximum attachment size** is a valid Owner-setting candidate.
+
+Do not expose dangerous security-policy switches merely because they are constants:
+- forbidden executable formats;
+- signature/MIME validation rules;
+- archive structural validation;
+- future antivirus mandatory checks.
+
+Those remain code/security policy unless there is a separate explicit product decision.
+
+### E. Languages / publication
+
+The persistent LocaleRegistry already distinguishes a locale's publication state from translation readiness. A future Owner-only language-management subsection can legitimately control **which prepared/registered forum locales are publicly active/inactive**, subject to existing locale validation/readiness rules.
+
+Do not make bootstrap English removable: current architecture requires `en` as the hard active fallback.
+
+Adding a brand-new locale, translation generation/readiness, provider credentials, Queue/provider rollout and production translation allowance remain translation-domain/Stage6 work; do not pretend a simple Settings toggle replaces those workflows.
+
+### F. Useful later emergency mode
+
+A global **read-only / maintenance mode** is a reasonable Owner-only future control, but it does not exist today and there is no current release blocker requiring it. Keep it out of the first bounded package unless owner explicitly wants it now.
+
+### Not Owner/system Settings
+
+Do not expose:
+- Vico Forum name/logo/branding merely to make them configurable;
+- forum categories/sections/topics — object administration belongs to Forum;
+- public Rules/About/Privacy/Help page content — content management;
+- Complaint priority policy — Complaints-local settings;
+- user theme/editor/notification choices — user preferences;
+- admin workspace display/filter choices — admin personal preferences;
+- profile bio/GitHub/site — profile editing;
+- passwords, linked Google, sessions — Account & security;
+- DB/Cloudflare/deployments/secrets/provider credentials/Owner binding;
+- internal request sizes, pagination limits, retry counts, poll intervals, DB timeouts, translation parser/provider hard limits and similar implementation/security constants.
+
+### Coordinator recommendation for first bounded Owner/system package
+
+Keep implementation small:
+1. Owner-only role configuration boundary.
+2. Registration open/closed.
+
+Do **not** pull cooldown, attachment limit, locale publication or maintenance mode into the first implementation solely because they belong conceptually to this surface. They can be added as later bounded system-settings packages when there is a concrete need.
+
+No implementation is authorized yet.
+
+
+## Administrator workspace preferences — detailed product map
+
+This is a **personal convenience surface** for an authenticated actor who has current administrative/moderation workspace capabilities. Eligibility follows actual capabilities, not the literal built-in role name `admin`.
+
+Core rule: these preferences may change only this actor's navigation/presentation. They must not change forum policy, permissions, moderation outcomes, queue priority semantics or another administrator's workspace.
+
+### A. Admin entry and navigation
+
+Useful personal settings:
+- default administrative destination when entering the service area: Overview, Forum, Users, Measures, Roles, History, Needs attention, or **last visited**;
+- remembered last administrative destination;
+- optional later pinned/favorite administrative destinations.
+
+The chosen destination is only a preference. It never grants access. If the actor no longer has permission for the stored destination, navigation must fall back to an actually accessible destination.
+
+### B. Needs attention workspace
+
+Strong practical settings:
+- default / last-used mode: Signals, Complaints or Security, limited to modes the actor can currently access;
+- default / last-used group within each accessible mode;
+- returning to the workspace may restore that personal mode/group instead of the current fixed default.
+
+Do not persist page cursor, free-text search, target user ID, Case ID or other private work item identifiers as a preference by default.
+
+Possible later convenience:
+- auto-refresh of queue lists with a bounded selectable interval;
+- notification/sound preference for newly available work, but only if a real admin-notification mechanism is separately implemented.
+
+Current repository has no generic queue auto-refresh or admin work notification feature, so these are later candidates rather than first-package requirements.
+
+### C. Presentation density and information detail
+
+Useful display-only preferences:
+- comfortable / compact list density;
+- whether secondary technical metadata is expanded by default where a view already has such metadata;
+- whether long administrative sections/panels open expanded or collapsed by default.
+
+These controls must not hide mandatory state/reasons/warnings needed to make an administrative decision. Permission-protected information is still controlled server-side; a display preference never authorizes data.
+
+### D. List paging and sorting
+
+Possible later preferences:
+- bounded page size choices where the underlying reader explicitly supports them;
+- remember a selected sort/filter mode only where the domain actually defines multiple valid presentation orders.
+
+Current state is mixed:
+- Forum and Users use a fixed 25-item page size;
+- History defaults to 25 and its reader can accept up to 50;
+- Attention/Complaints have domain-specific pagination and ordering.
+
+Therefore a universal “items per page” or universal sort setting should **not** be invented now. Queue priority/order that carries moderation meaning remains domain policy, not a personal preference.
+
+### E. Local persistence recommendation for the first package
+
+The first administrator-preference slice does not need database/schema work.
+
+Recommended persistence:
+- browser-local;
+- keyed by authenticated account ID;
+- independent between devices;
+- no sensitive free-text queries or target identifiers stored;
+- same model as existing per-account Editor preferences where practical.
+
+This is appropriate because these values affect only convenience/presentation. Cross-device synchronization can be added later only if it proves useful.
+
+### Recommended first bounded administrator-preferences package
+
+1. Default/last administrative destination.
+2. Default/last Needs attention mode + group.
+3. Comfortable/compact density.
+4. Expanded/collapsed default for secondary technical details where applicable.
+
+Keep out of the first package:
+- auto-refresh;
+- admin sounds/notifications;
+- customizable page size/sorting;
+- favorites/pinned destinations.
+
+### Not administrator personal preferences
+
+Never place here:
+- role/permission configuration;
+- assignment authority or sanction authority;
+- Complaint priority weights;
+- global registration/cooldown/attachment/language policy;
+- authoritative queue ordering/priority semantics;
+- mandatory confirmations, validation or security checks;
+- History/audit retention/content;
+- administrator identity visibility policy;
+- production/infrastructure settings.
+
+No implementation is authorized yet.
