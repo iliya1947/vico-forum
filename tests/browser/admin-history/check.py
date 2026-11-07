@@ -103,7 +103,7 @@ try:
         page = manager.new_page()
         page.on('pageerror', lambda e: errors.append(str(e)))
         document(page, '/en/admin/history', 401)
-        for c, name in [(manager, 'Owner session'), (reader, 'Reader'), (nonowner, 'Non-owner manager')]:
+        for c, name in [(manager, 'Owner'), (reader, 'Reader'), (nonowner, 'Nonowner')]:
             r = c.request.post(base + '/api/auth/sign-up/email', headers={'Origin': base}, data={'name': name + ' עברית', 'email': prefix + name + '@test.invalid', 'password': prefix + '-local-only'})
             assert r.status == 200, r.status
             accounts.append(r.json()['user']['id'])
