@@ -96,6 +96,7 @@ function renderView(
   grants: PermissionKey[] = ["access.authorization.manage"],
   canManageElevated = false,
   targetUsers: readonly AuthorizationUserDetails[] = users,
+  canMutateAuthorization = canManageElevated,
 ) {
   const router = createMemoryRouter([{
     path: "*",
@@ -106,6 +107,7 @@ function renderView(
           access={adminAccess(new Set(grants))}
           permissions={permissions}
           canManageElevated={canManageElevated}
+          canMutateAuthorization={canMutateAuthorization}
           roles={[systemRole, customRole, normalRole]}
           users={targetUsers}
           result={result}
@@ -129,7 +131,7 @@ function formByIntent(container: HTMLElement, intent: string) {
 
 describe("authorization management presentation", () => {
   it("keeps every existing management mutation intent and field contract visible", async () => {
-    const { container } = renderView();
+    const { container } = renderView(undefined, undefined, true);
 
     expect(await screen.findByRole("heading", { name: "Authorization management", level: 2 })).toBeVisible();
     expect(screen.getAllByRole("main")).toHaveLength(1);
@@ -154,20 +156,16 @@ describe("authorization management presentation", () => {
     expect(formByIntent(container, "override")?.querySelector('[name="effect"]')).toBeTruthy();
   });
 
-  it("hides non-owner elevated grant and override actions without deleting an existing role grant",async()=>{
-    const {container}=renderView();
-    await screen.findByRole("heading",{name:"Authorization management",level:2});
-    expect(container.querySelectorAll('input[type="checkbox"][value="admin.users.blocks.managePrivileged"]'))
-      .toHaveLength(0);
-    expect(container.querySelector('form.admin-override-row input[value="admin.users.blocks.managePrivileged"]'))
-      .toBeNull();
-    const roleGrants=[...container.querySelectorAll<HTMLFormElement>('form.admin-permissions-form')]
-      .find(form=>form.querySelector<HTMLInputElement>('input[name="roleId"]')?.value==="role-reviewer")!;
-    expect([...new FormData(roleGrants).getAll("permission")])
+  it("preserves read-only grants, role assignment, overrides and effective permissions for non-Owner", async () => {
+    const { container } = renderView();
+    await screen.findByRole("heading", { name: "Authorization management", level: 2 });
+    expect(container.querySelectorAll("form")).toHaveLength(0);
+    expect(container.querySelector(".admin-role-card .admin-effective-permissions")).toBeInTheDocument();
+    expect(container.querySelector(".admin-role-list")?.textContent)
       .toContain("admin.users.blocks.managePrivileged");
-    const assign=[...container.querySelectorAll<HTMLFormElement>('form.admin-role-assignment')][0]!;
-    expect(assign.querySelector('select[name="roleId"]')).toBeDisabled();
-    expect(assign.querySelector('button[type="submit"]')).toBeDisabled();
+    expect(container.querySelector(".admin-user-body")?.textContent).toContain("Reviewer");
+    expect(container.querySelector(".admin-override-list")?.textContent).toContain("forum.topic.create");
+    expect(container.querySelector(".admin-effective-permissions")?.textContent).toContain("forum.topic.create");
   });
 
   it("allows the bound owner to edit elevated role and per-user overrides",async()=>{
@@ -189,18 +187,12 @@ describe("authorization management presentation", () => {
     expect(container.querySelector('.admin-panel-nav a[href$="/admin/forum"]')).toBeTruthy();
   });
 
-  it("hides elevated role deletion from non-Owner but retains ordinary custom role delete", async () => {
-    const { container } = renderView();
+  it("does not expose any role deletion to non-Owner even if elevated flags were supplied", async () => {
+    const { container } = renderView(undefined, ["access.authorization.manage"], true, users, false);
     await screen.findByRole("heading", { name: "Authorization management" });
-
-    const deleteForms = [...container.querySelectorAll('form')].filter((form) =>
-      form.querySelector<HTMLInputElement>('input[name="intent"]')?.value === "deleteRole"
-    );
-    expect(deleteForms).toHaveLength(1);
-    expect(deleteForms[0]?.querySelector<HTMLInputElement>('input[name="roleId"]')?.value).toBe("role-helper");
-    expect(screen.getByRole("button", { name: "Delete role" })).toHaveClass("admin-danger-action");
-    expect(container.querySelector('form:has(input[name="roleId"][value="role-reviewer"]) input[name="intent"][value="deleteRole"]'))
-      .not.toBeInTheDocument();
+    expect(container.querySelectorAll("form")).toHaveLength(0);
+    expect(screen.queryByRole("button", { name: "Delete role" })).not.toBeInTheDocument();
+    expect(container.querySelector(".admin-role-list")?.textContent).toContain("reviewer");
   });
 
   it("shows Owner-only elevated role deletion and keeps its actual saved grant visible", async () => {
