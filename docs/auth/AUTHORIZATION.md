@@ -17,7 +17,7 @@ session snapshot: effective permissions разрешаются сервером 
 
 1. Authorization permission-based: код проверяет capability/permission, а не названия ролей.
 2. Роли динамические и хранятся в БД.
-3. Через защищённый UI можно создавать custom roles, менять их display name и набор permissions.
+3. Через защищённый UI exact server-bound Owner может создавать custom roles, менять их display name и набор permissions. Non-Owner с `access.authorization.manage` видит разрешённые данные без форм записи.
 4. Built-in roles `user`, `moderator`, `admin` создаются как стабильные стартовые роли, но их
    permissions являются редактируемыми данными, а не hard-coded поведением приложения.
 5. Built-in roles нельзя удалить или изменить их stable slug. Custom role можно удалить только
@@ -227,9 +227,12 @@ retain their own permissions and do not follow from complaint review.
 - `admin.users.read`;
 - `admin.history.read`.
 
-Пользователь с `access.authorization.manage` может через сайт менять grants
-любой роли, включая built-in roles. Каждая management mutation повторно проверяет fresh effective
-permission внутри serialized transaction boundary; manager-count/last-manager veto больше не действует.
+`access.authorization.manage` по-прежнему предоставляет защищённое чтение Roles
+и существующего authorization-user subset, но **не разрешает изменения** обычному manager.
+В текущем выпуске все role/grant/assignment/override writes выполняет только
+exact server-bound Owner. Для каждого запроса сервер повторно проверяет fresh effective
+permission и Owner policy внутри serialized transaction; obsolete manager-count/last-manager
+veto остаётся удалённым. Начальные grants роли `admin` не меняются.
 
 `admin.history.read` independently admits ordinary admin History and Overview recent actions.
 AP-03 initially grants it only to built-in admin; custom roles, moderator grants and personal
@@ -243,9 +246,9 @@ allow/deny/inherit remain explicit and dynamic. It grants no authorization-manag
 authority and does not expose email or a full authorization snapshot. An actor with
 `access.authorization.manage` but without `admin.users.read` retains the existing
 authorization-management user subset rather than gaining the general Users directory.
-When both permissions are effective, the Users detail may compose the selected user's targeted
-authorization state with the same canonical management action. See `../ADMIN_PANEL.md` for
-the AP-09 read and mutation-composition contract.
+When both permissions are effective, the Users detail may read the selected user's targeted
+authorization state; only the exact bound Owner receives mutation forms using the same
+canonical management action. See `../ADMIN_PANEL.md` for AP-09 read and mutation composition.
 
 AP-10 adds two code-backed capabilities: `admin.users.blocks.manage` for exact-target
 user-measure create/change/lift, narrowly scoped private administrative reads and measure
@@ -350,8 +353,11 @@ PermissionResolver errors не входит в authorization contract.
 
 ## Authorization management UI
 
-Пользователь с effective `access.authorization.manage` должен иметь locale-aware protected UI,
-который позволяет:
+Пользователь с effective `access.authorization.manage` сохраняет locale-aware protected
+**read-only** UI для ролей и существующего authorization-user subset: raw роль/grants/
+overrides и effective permissions остаются различимыми. Доступ `admin.users.read` к
+общему Users index по-прежнему независим. Только точный bound Owner получает формы
+изменения и может:
 
 - просматривать роли;
 - создавать custom roles;
@@ -364,28 +370,38 @@ PermissionResolver errors не входит в authorization contract.
 - видеть effective permissions пользователя после role + override resolution (с
   дополнительной server-bound Owner projection там, где она применима).
 
-Изменение `admin.users.blocks.managePrivileged` — выдача/отзыв role grant,
-назначение/снятие роли с таким grant, персональный `allow | deny | inherit` и косвенный
-отзыв через удаление elevated custom role — разрешено **только bound Owner**.
-Обычный authorization manager сохраняет остальные допустимые role/user mutations.
-Non-Owner UI скрывает недоступные elevated controls, но не заменяет серверный запрет.
+В текущем выпуске **все шесть семейств записи** (create/rename/delete роли,
+replace grants, assign role, user permission allow/deny/inherit) разрешены **только**
+точному bound Owner, включая direct service/HTTP paths и no-op запросы.
+Повышенный `admin.users.blocks.managePrivileged` guard (grant, assignment, override
+и удаление elevated custom role) остаётся дополнительным, не заменяющим общего запрета.
+У non-Owner нет ни обычных, ни elevated write controls; скрытые формы сами по себе
+не являются границей безопасности. Отсутствующий/невалидный Owner binding не даёт
+fallback к ordinary manager. Политика централизована в application helper
+`canMutateAuthorization` и оставляет точку для **отдельно проектируемого будущего**
+делегирования; deputies, их grants и обходные ветви сейчас не реализованы.
 
 Скрытие кнопки в UI не является authorization boundary. Каждая mutation повторно проверяет
 актуальный server-side permission, runtime validation и same-origin/CSRF boundary.
 
 ## Authorization mutation serialization
 
-`access.authorization.manage` остаётся capability для управления ролями, grants, assignments
-и overrides. Каждая management mutation в одной PostgreSQL transaction сначала захватывает
-singleton row `authz_mutation_lock` через `FOR UPDATE`, затем проверяет fresh effective
-`access.authorization.manage`, применимые AP-10 restrictions/authority и только после этого
-выполняет изменение и atomic History append.
+`access.authorization.manage` сохраняет read admission и fresh проверку existing actor,
+но не является самостоятельным разрешением на запись. Каждая из шести management
+mutations в одной PostgreSQL transaction захватывает singleton
+`authz_mutation_lock` через `FOR UPDATE`, проверяет fresh effective
+`access.authorization.manage`, **current-release Owner-only policy**
+(`canMutateAuthorization`) и применимые AP-10 restrictions/authority, затем
+выполняет изменение и атомарный History append. Проверки предшествуют и no-op
+requests; отказ/rollback не меняет состояние и не добавляет History.
 
-Этот mutex сериализует authorization mutations и связанные AP-10 authority decisions; он не
-является permission или recovery-механизмом. Manager-count/last-manager invariant удалён:
-допустимая mutation может оставить ноль пользователей с effective
-`access.authorization.manage`, включая self-revoke последнего manager. Успешная mutation
-фиксируется обычным History event, а следующий protected request уже получает fresh denial.
+Mutex сериализует authorization mutations и связанные AP-10 authority decisions; он
+не является permission или recovery-механизмом. Старый manager-count/last-manager veto
+остаётся удалённым, но обычный manager теперь не может выполнять даже self-revoke
+через management writer. Exact bound Owner может сохранить raw `deny` на собственный
+`access.authorization.manage` и продолжить писать благодаря отдельной effective Owner
+authority. Запросы других пользователей получают свежую проверку их capability на
+следующем request; History фиксирует только committed изменения.
 
 Owner authority реализована Stage 2; отдельный first-manager/bootstrap механизм
 в приложении не требуется. Google configuration, установка server-only Owner binding
