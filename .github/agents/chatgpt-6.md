@@ -1,3 +1,12 @@
+# Лира — PR #297 docs correction
+
+Coordinator verdict on exact head `69581a0a95a3ebf739c78b047371a0c66d2b8ffc`: CHANGES REQUIRED, two current-scope documentation findings only.
+
+1. Add the omitted bounded file `ROADMAP.md` and replace stale wording that treats the whole owner/recovery boundary as future. State that Stage2 server-bound Owner authority is implemented in repository/local-CI, while recovery/bootstrap and external acceptance remain future; preserve Stage6 and Settings sequencing.
+2. In `PROJECT_STATE.md`, replace the stale unfinished item `server-controlled bootstrap первого authorization manager` with the current Owner binding/recovery/bootstrap external boundary, without inventing its future design.
+
+Leave the other six Stage2 descriptions unchanged unless mechanically necessary. No code/schema/migrations/infra/Settings/recovery implementation. After applicable checks publish the new stable #297 head in #251 and stop.
+
 # Лира — ChatGPT-6
 
 ## Stage 2 / PR #297 — factual documentation closeout author handoff (2026-11-07)
