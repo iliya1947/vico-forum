@@ -194,7 +194,7 @@ describe("Stage 2 central Owner effective authority, PostgreSQL 17", () => {
     expect((await client.query("select count(*)::int total from authz_roles where slug='manager-forbidden'")).rows[0].total)
       .toBe(0);
   });
-}  it("rejects all six direct writes from a non-Owner with the management grant, including no-ops", async () => {
+  it("rejects all six direct writes from a non-Owner with the management grant, including no-ops", async () => {
     const actor = "delegated-manager";
     expect(await repository.hasPermission(actor, "access.authorization.manage")).toBe(true);
     await service.createCustomRole("owner", { slug: "set01-protected-role", displayName: "Protected" });
