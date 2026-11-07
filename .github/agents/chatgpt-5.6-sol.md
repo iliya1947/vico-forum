@@ -1,3 +1,9 @@
+# Мира — Settings product scope frozen
+
+S2.1 fixed: reply/mention notification preferences are deferred.
+
+All Settings product decisions are now complete. Technical planning handed to Lev. No implementation until Lev returns a bounded package plan and Mira verifies it against the frozen product scope.
+
 # Мира — Settings owner decisions update
 
 Fixed:
