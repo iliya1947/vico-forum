@@ -1,155 +1,116 @@
-# Лёва — Stage1 independent technical review: PASS
+# Лёва — Stage2 owner authority: технический план готов
 
-Текущее назначение выполнено: PR #294 exact head `e3604222ae8cecb4b1f2f94cdd5d7e9f76c15e61`, independent PASS. [Полный отчёт](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6701647394). Следующий шаг — Мира: readiness/отдельный factual documentation closeout. Merge выполняет владелец; Stage1 в main ещё не закрыт.
+[Полный план в #251](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6702391114). Baseline main `8301087f9322b34bdd325ed9298fdf3fddd84561`; migrations 0000–0059. Статус: предложен для coordinator review Миры, не implementation/acceptance. Исполнитель не назначен; Марк не назначен.
 
-Лёва — independent technical review Stage1 / PR #294: **PASS**.
+Лёва — owner/authorization redesign Stage 2: технический план для coordinator review.
 
-Exact head: `e3604222ae8cecb4b1f2f94cdd5d7e9f76c15e61`; base/current main `bcf02193f82aa0d448444c6943d6ebdcf09f7896`. Проверен весь 21-file diff против approved plan #6700603167 и прямого owner decision. Самостоятельно, без вызова других агентов и без изменения implementation; coordinator PASS не использован как доказательство.
+Baseline: main `8301087f9322b34bdd325ed9298fdf3fddd84561`, migrations 0000–0059. Stage1 полностью закрыт: implementation #294 и factual docs #295 merged. Ни implementation PR, ни исполнитель Stage2 пока не назначены. Ниже — предлагаемый технический план, не описание уже реализованного поведения.
 
-### Whole-PR выводы
+### 1. Цель и границы
 
-- AuthorizationLockoutError, countManagers(), before/after counting, flag read/update и zero-manager veto удалены из active runtime. Scoped search app/db это подтверждает.
-- mutate() сохраняет begin → singleton id=1 FOR UPDATE → **fresh actor permission** → AP-10 admission → operation/elevated-key guards → final atomic History → commit/rollback. Missing mutex fail closed. Нового last-manager veto/recovery mechanism нет.
-- authz_mutation_lock table/row/PK/CHECK и SELECT+UPDATE runtime privileges/lock probe сохранены. AP-10 writers/readers/issuer-floor boundary не переделаны; PG regression подтверждает ожидание обоих writers на mutex и fresh forbidden после grant change до release.
-- Self-revoke/удаление manage role grant/self-role reassignment могут committed с обычной History, в том числе без оставшегося effective manager. Следующие requests отозванного actor denied. History failure откатывает и такой self-revoke.
-- Route убирает только obsolete lockout mapping; assigned-role deletion остаётся private/no-store409, прочие ошибки сохраняются. EN/RU/HE conflict copy и fingerprint соответствуют remaining assigned-role conflict.
-- Forward0059 — один DROP COLUMN без CASCADE. Current schema/snapshot/journal/manifest согласованы. Deep comparison0058/0059 snapshots без id/prevId и удалённой колонки дал equality; accepted0000–0058 не переписаны.
-- Dedicated veto expectations сняты локально; соседние forbidden/no-op/assigned-role/History rollback tests сохранены. Historical flag в compatibility fixture не является active invariant.
-- Browser self-deny перенесён в конец admin-history flow, AP-10/AP-11 cases сохранены. Два browser jobs используют отдельные PostgreSQL services, обоснованно изолируя global History/authorization fixtures.
-- Permanent docs ждут отдельного closeout; старые формулировки не использованы как основание вернуть отменённое правило. Owner authority, Settings, mutex redesign, super-admin, Stage6/production не добавлены.
+Сделать bound Owner действующей server-controlled верхней authority поверх существующих dynamic roles + per-user allow/deny/inherit. Owner не становится ролью, grant, override или claim из клиента. Его возможность управлять форумом не зависит от назначенной обычной роли, её grants и собственных deny.
 
-**Подтверждённых current-Stage1 defects не найдено.**
+Минимальная реализация: одна общая Owner-aware семантика эффективных permissions, её применение во всех существующих read/write путях, согласованная immunity от administrative measures и завершённая Owner-only граница повышенного permission. Без новой схемы/миграции, новых permissions/seed grants, второй RBAC, Senior/Head Admin, Settings, super-admin UI, owner-binding editor, bootstrap/recovery subsystem или изменений инфраструктуры. Миграции остаются до 0059.
 
-### Собственное evidence на exact head
+`authz_mutation_lock` сохраняется без redesign/removal: target-модель не требует менять сериализацию. Stage1 остаётся действующим: нет manager counts, zero-manager veto или обязанности сохранить обычного access manager. Нулевое число обычных managers допустимо.
 
-Pinned Node24.21.0/pnpm12.3.4, disposable loopback PostgreSQL17:
-1. **23/23 unit/route/UI tests**, **112/112 native PostgreSQL tests** (5 files). Проверены self-revocations/role/grant changes, next-request denial, History rollback, controlled real mutex waits и AP-10 enforcement.
-2. Build PASS; 3 migration-history/manifest/runtime-privilege script suites PASS.
-3. Самостоятельный **full0058→0059 SQL upgrade probe** для oldFlag=false и true: полная цепочка до0058, populated users/roles/overrides/measures/restrictions/pending appeal/History; фактический0059 SQL сохраняет payload9 relations, mutex row id=1, PK и CHECK. Это собственное evidence, не требование нового implementation refactor/test subsystem.
-4. **Actual Chromium→built Worker→Better Auth→PostgreSQL**, отдельная БД для каждого harness:
-   - updated Admin History: **35 case groups PASS**, canonical self-revoke200 + один event, next management GET/POST403, no extra role/event; 0 page errors/external requests;
-   - AP-10/AP-11: **34 case groups PASS**, exact implementationHead recorded, 0 layout failures/page errors/external requests; session grant/revoke, measures/appeals, closure composition, stale revalidation и EN/RU/HE сохранены.
-5. GitHub exact-head **CI #42328843126 SUCCESS** и **browser #42328843151 SUCCESS** подтверждены отдельно; author CI не замена собственным reruns.
+### 2. Единый источник Owner authority
 
-Evidence: `/workspace/work/stage1-review-evidence/` — application.log, database.log, metadata.log, build.log, history-browser/results.json, measures-browser/results.json/screenshots, independently written upgrade-probe.mjs/upgrade.json. AP-10 environment adapter вне implementation tree; History harness исполнен непосредственно из exact checkout.
+Переиспользовать `VICO_OWNER_USER_ID`, полученный только из server environment. Небольшой общий helper нормализует не identity, а правило проверки: binding должен быть валидной непустой строкой без обрезаемых краевых пробелов; сравнение с реальным user ID точное. Email, имя роли, submitted actor ID, session role и произвольные form fields не являются источниками Owner authority.
 
-Review не означает production migration/deploy, owner visual acceptance или завершение всей owner/authorization redesign.
+Owner-aware effective projection для существующего пользователя: все keys текущего code-backed `PERMISSION_CATALOG` независимо от raw role grants/overrides. Это ограниченный набор реализованных возможностей, не wildcard и не разрешение неизвестного permission. Для остальных пользователей сохраняется текущий deny > allow > role. В DB не добавлять Owner grants и не переписывать его обычную конфигурацию.
 
-**Следующий шаг — Мира:** принять independent PASS и завершить readiness/отдельный factual documentation closeout Stage1; merge выполняет владелец. Активные last-manager clauses обновить по уже утверждённому решению, historical evidence сохранить. Stage1 целиком не closed до implementation/docs acceptance/merge; следующие owner/mutex/Settings этапы отдельно.
+Raw `role/grants/overrides` продолжают показывать фактическую сохранённую конфигурацию. `effectivePermissions` показывает реальное действие Owner authority. Допустим минимальный внутренний признак источника authority в закрытой management projection, чтобы UI мог объяснить эффективные права при raw deny; отдельного публичного Owner role/badge и редактирования binding не вводить.
 
-Лёва проверку завершил и останавливается. Implementation frozen; изменение head требует coordinator-first cycle.
+Существование DB user и действительная session обязательны. Совпадение env со строкой не создаёт пользователя или authenticated actor. Missing/invalid binding не выдаёт Owner authority; ordinary RBAC продолжает работать. Существующие специальные AP-10/elevated операции, которым необходим валидный binding, сохраняют configuration-unavailable поведение. Не вводить глобальную недоступность форума из-за отсутствия binding.
 
-Head/main перепроверены перед публикацией; tracked checkout чист. Локальный Worker остановлен, disposable container/DBs и dummy .dev.vars удалены. History runner не пишет SHA в собственный results.json: привязка этого прогона подтверждена exact checkout/build/command log и данным отчётом; AP-10 results.json содержит implementationHead.
+Owner permissions снимают только capability barrier. Сохраняются resource ownership для Own-операций, lifecycle, closed-topic rules, revision/CAS, причины, validation, Origin/session checks, private no-store, deadlines и атомарная History. Нового edit-any/delete-any права этим этапом не создаётся.
 
+### 3. Authorization: покрыть центральные и транзакционные пути
 
----
+Основные файлы: `app/authorization/catalog.ts`, общий Owner helper, `db/authorization-repository.ts`, `db/authorization-service.ts`, `db/hyperdrive-authorization.ts`, `workers/app.ts`.
 
-## Утверждённый технический план и предыдущий контекст
+В repository согласовать:
+- `resolveUserFrom/resolveUser`;
+- отдельный bulk resolver внутри `readManagementState`;
+- targeted `readUserManagementState`;
+- SQL `effectivePermission/hasPermission`;
+- fresh actor check внутри `mutate` после `FOR UPDATE`.
 
-Planning статусы ниже исторические: implementation review завершён PASS на exact head выше.
+Сейчас последние два пути читают только обычный RBAC. Поэтому bypass в loader или добавление кнопки Owner недостаточны. Общая семантика должна работать и в транзакции на том же client/snapshot; не разрешать mutation по закэшированному route snapshot. Сохраняются фактический actor в History и rollback при ошибке её записи.
 
-# Лёва — owner/authorization Stage 1 technical planning
+Service/Hyperdrive должны давать одинаковый результат для `forUser().resolve()`, `.has()`, directory и inline user controls. Cache остаётся request-local; не добавлять межзапросный Owner/permission cache. Не менять существующие guards всех маршрутов по отдельности, если они уже используют общий capability.
 
-Текущее назначение выполнено: [план удаления last-manager](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6700603167) на main `bcf02193f82aa0d448444c6943d6ebdcf09f7896`. Требуется coordinator review Миры. Implementation не начинался; authz_mutation_lock сохраняется.
+### 4. Меры: один Owner boundary на представление и authoritative admission
 
-Лёва — owner/authorization redesign, Stage 1: минимальный technical plan удаления last-manager.
+Основные файлы: `db/user-measure-authority.ts`, `db/user-measures.ts`, `db/user-measure-read.ts`, `db/user-measure-policy.ts`, `db/user-measure-admin-forum.ts` и затронутые Hyperdrive factories.
 
-Baseline: `main bcf02193f82aa0d448444c6943d6ebdcf09f7896`, migrations 0000–0058. Ordinary Admin Panel AP-01–AP-11 закрыт. Это **planning only**: implementation/PR/DB migrations не выполнялись.
+Существующий AP-10 rank Owner=3 остаётся производным правилом сравнения меры, не новым RBAC. Owner получает обе block capabilities через общую effective projection. Non-Owner rank по raw обычному RBAC, issuer floor, self-target prohibition, strict target comparison и lifecycle сохраняются. Create/change/lift/appeal review не могут использовать Owner как target.
 
-## 1. Результат dependency check и точный scope
+Immunity текущего bound Owner должна действовать и при enforcement: сохранённая мера не может отключать его forum-management authority или участие. Проверить seeded existing measure на пользователя, являющегося текущим Owner; такая строка не создаёт ограничения Owner. Старые строки/History не удалять и не переписывать, synthetic lift/event не создавать. Это применение текущей server binding, не новая система восстановления или изменения binding.
 
-Удалить `AuthorizationLockoutError`, `countManagers()`, `managers_ever_existed` и выделенные last-manager veto/checks/tests. **Сохранить `authz_mutation_lock`, singleton id=1, row FOR UPDATE, transaction/History boundaries и current AP-10 authority synchronization.**
+Общая Owner-aware policy покрывает и Drizzle, и native PG admission. Сейчас прямые writers Forum/attachments/Complaints и generation admission не везде получают owner binding; одной правки permission wrapper недостаточно. Передавать доверенный binding/замкнутую admission function при сборке request в Worker через существующие injection seams, минимально расширив signatures там, где требуется:
+- `db/hyperdrive-forum.ts`, `db/hyperdrive-forum-attachments.ts`;
+- `db/hyperdrive-complaints.ts`, `db/hyperdrive-complaint-queue.ts`, `db/hyperdrive-complaint-review.ts`, `db/hyperdrive-complaint-appeal.ts`;
+- `db/hyperdrive-content-generation-admission.ts` (generation остаётся disabled; consumers/queued tasks не менять);
+- authorization/AP-10 native paths и reader `activeRestrictions`.
 
-По repository search и чтению callers:
-- Runtime flag/count используется только в `PostgresAuthorizationRepository.mutate()`; других runtime consumers не найдено.
-- Отдельные AP-10 consumers `db/user-measures.ts:withLockedTransaction`, `db/user-measure-read.ts:adminRead/adminPendingAppeals` уже читают **id**, не флаг. `db/user-measure-authority.ts` требует удерживать этот mutex при raw hierarchy resolution.
-- `.github/scripts/runtime-privileges.mjs` сохраняет SELECT/UPDATE на lock table; `verify-runtime-privilege-probes.mjs` выполняет SELECT…FOR UPDATE. Это реальные независимые от last-manager зависимости; удалять/ослаблять их нельзя.
-- Другие следы флага — текущая Drizzle schema, current structural manifest, unit mock и immutable historical SQL/snapshots. Нет зависимости bootstrap/другого writer от managers_ever_existed вне этой invariant.
-- Есть пользовательский текст/route mapping, native/DOM/browser assertions старого запрета. Их нужно убрать вместе с runtime, а не оставить «мёртвую» last-manager семантику.
+`withForumAdministrativeRestrictions`, transaction-local checks и UI hints должны одинаково трактовать Owner. Не оставлять скрытую кнопку при разрешённой сервером операции или обратное расхождение. Для non-Owner не менять overlap/expiry/issuer-floor semantics и обычные participation restrictions. Никакого общего обхода domain validation для Owner.
 
-Owner authority implementation, новый bootstrap/recovery, super-admin UI, Settings, смена/удаление mutex, Stage 6/production — вне scope. Никаких новых confirmation dialogs, last-admin исключений или замены счётчика другим veto.
+### 5. Повышенный permission: сохранить особую границу и закрыть косвенный отзыв
 
-## 2. Runtime и HTTP/UI — одна локальная корректировка
+`admin.users.blocks.managePrivileged` остаётся обычным key конструктора, но изменить его grant/revoke может только bound Owner. Общий helper Owner identity используется и существующим `requireBoundOwner`, и приватными UI flags.
 
-**`db/authorization-repository.ts`:**
-1. Удалить class export AuthorizationLockoutError и function countManagers, оба before/after count calls, условие запрета after=0 и запись managers_ever_existed=true.
-2. В mutate заменить flag-select на `select id from authz_mutation_lock where id=1 for update`; оставить существующий missing-row fail-closed error.
-3. Порядок остаётся: begin → singleton row lock → **fresh** actor access.authorization.manage → existing admin.usersAccess measure admission → operation/elevated-key owner guards → shared final History order lock/append, если change → commit. Ошибка operation/History по-прежнему rollback.
-4. Текущий actor может своим легитимным действием отозвать собственное последнее право — операция committed и получает обычный History. Следующий request уже проверяет отсутствие права и denied. Имя роли/количество других managers не влияют.
-5. Удалить только устаревший комментарий о raw manager count. PermissionResolver/raw grants/effectivePermission()/History producer/elevated authority не перепроектировать.
+Проверить все текущие способы изменения:
+1. добавление/удаление role grant;
+2. role assignment в/из роли с elevated key, включая implicit default role;
+3. per-user allow/deny/inherit;
+4. удаление custom role, содержащей elevated grant.
 
-**`app/routes/authorization-admin.tsx`:** убрать import/type branch AuthorizationLockoutError. Оставить 409 conflict для AuthorizationRoleAssignedError; invalid/forbidden/notFound/unavailable и private/no-store сохраняются. Inline Users по-прежнему использует этот canonical action и существующую fresh-403 recovery.
+Пункт 4 подтверждён чтением кода: `deleteCustomRole` сейчас не вызывает Owner gate, а `authz_role_permissions.role_id` имеет ON DELETE CASCADE. Неназначенную elevated role можно удалить и тем самым отозвать её grant. В Stage2 добавить минимальный fresh Owner guard в существующей transaction и соответствующую видимость delete control. Это не общий запрет удаления обычных ролей: assigned-role conflict, system-role protection, no-op и History semantics сохраняются.
 
-**`app/localization/catalog.ts`, `manual-values.ts`, `manual-fingerprints.ts`:** сохранить key `authorizationError_conflict`, но убрать ложное «would cause a lockout». Remaining concrete meaning — assigned role cannot be deleted (например, canonical EN “This role is assigned to users and cannot be deleted.” с согласованными RU/HE/fingerprint). Новых keys/UX flows не нужно.
+Non-Owner с одним `access.authorization.manage` не может выдать себе elevated authority или отозвать её указанными путями. Обычные role/grant/override изменения не получают дополнительных Owner-only ограничений.
 
-## 3. Schema / forward migration / ACL
+### 6. Закрытый UI и текущие consumers
 
-- `db/schema.ts:authzMutationLock`: удалить только managersEverExisted field. Таблица, PK(id), singleton CHECK(id=1), существующая row остаются.
-- Новая forward migration **0059** (если head не изменился): `ALTER TABLE "authz_mutation_lock" DROP COLUMN "managers_ever_existed";`. Без CASCADE, DROP TABLE, пересоздания row, изменения grants или unrelated ALTER.
-- Согласовать новый Drizzle snapshot/journal и `.github/production-schema-manifest.json`: current lock table теперь имеет только id. Число таблиц не меняется.
-- **0000–0058 SQL и их historical snapshots не редактировать**, включая 0006, где поле создано. Старые migration artifacts и исторические записи закономерно сохранят старое имя; global grep-zero по всему Git tree не является критерием.
-- Сохраняются current runtime SELECT/UPDATE lock-table privileges и existing probe. Localization role не расширяется. Production migration/deploy не выполнять.
-- Проверить clean chain и upgrade существующей 0058 schema с row id=1/значением флага true и false: после 0059 row/PK/CHECK сохраняются, поле отсутствует, данные ролей/overrides/measures/History не меняются. Новые runtime queries работают и на старой таблице с лишним полем; никаких runtime fallback по ошибке missing-column не добавлять.
+Минимальные изменения `app/authorization/admin-view.tsx`, `app/authorization/user-controls.tsx`, `app/routes/authorization-admin.tsx`, `app/routes/admin-user.tsx` и затронутых measure views: truthful effective list и краткое объяснение authority source для Owner; единая проверка Owner-only controls; защита elevated-role deletion в UI.
 
-## 4. Точные test changes и минимальные новые assertions
+Не подменять сохранённую обычную роль словом Owner и не запрещать редактировать её/overrides только потому, что target — Owner: raw конфигурация остаётся обычной, её deny просто не перекрывают верхнюю authority. Не делать отдельный Owner management экран. Existing Header/admin shell, Overview, Forum, Users/access, History, Attention/Complaints/Security должны получить доступ через общий resolver. Поддержать применимую EN/RU/HE copy и действующий localization fingerprint.
 
-**Снять устаревшие ожидания, не удаляя соседнюю защиту:**
-- `db/authorization-repository.test.ts`: mock на select id FOR UPDATE; удалить count/flag replies, сохранить rollback/availability/error cases.
-- `tests/database/migrations.test.ts`: убрать импорт/last-manager отказ внутри mixed authorization test и dedicated “last two managers cannot both be removed” test. Historical schema expectations ранних migrations оставить исторически точными. Не убирать обычные role/grant/override/forbidden/assigned-role tests.
-- `tests/database/admin-history.test.ts`, `admin-users-authorization.test.ts`: убрать только lockout rejection parts, **сохранить** реальные no-op/denied/invalid/failed History rollback assertions и независимость Users-read/management.
-- `app/routes/authorization-admin.test.ts`: удалить fake lockout 409 cases; existing assigned-role delete conflict должен остаться проверенным (добавить focused test, если после удаления отсутствует).
-- `app/authorization/admin-view.test.tsx`: обновить конфликтный текст и название test, сохранить безопасную локализованную feedback boundary.
-- `tests/database/user-measure-forum-enforcement.test.ts`: заголовок о “last-manager accounting” сделать актуальным; существующие assertions roles/History/raw permission и AP-10 admission сохранить.
-- По завершении повторить scoped search по active app/db/tests; не маскировать компиляционные ошибки удалением соседних suites.
+Не сериализовать env binding как настройку/поле формы. User-facing own measure projection по-прежнему не раскрывает actor/issuer/reviewer identity. Внутренняя History сохраняет настоящего session actor.
 
-**Изменённое поведение проверяется native PostgreSQL, без нового подсчётного механизма:**
-1. Изолированные fixtures для grant removal из role, назначения роли без manage и personal deny/removal allow. Включая ситуацию, где действие действительно убирает последнее effective manage: commit разрешён, одно соответствующее History change, следующая management mutation этого actor denied и не пишет event. Fixture reset/provision через test SQL не является новым recovery API.
-2. При двух actors, независимо отзывающих своё право, обе допустимые операции могут committed. Старое ожидание «обязательно оставить одного» удалено. Не утверждать, что **любой** concurrent revoke должен succeed: если другой actor уже отозвал право у caller, caller обязан получить fresh forbidden.
-3. Отдельный controlled concurrency regression подтверждает mutex без count: удержать singleton row в fixture transaction, запустить реальную authorization mutation и AP-10 operation; они ждут row lock. После изменения relevant grant и освобождения lock authoritative path читает fresh state и применяет current guard. Использовать barriers/PG lock observation, не sleeps как доказательство.
-4. Missing singleton row остаётся fail-closed; failed History append откатывает grant/override даже при допустимом уходе к нулю managers.
-5. Existing AP-10 authority/issuer-floor/elevated-key/privacy/appeal/enforcement tests не ослаблять; полные suites должны проходить без managers_ever_existed.
+### 7. Проверки реализации и критерии приёмки
 
-Не добавлять новый property-based matrix, “owner recovery” tests или SQL manager counts в production ради проверки того, что count удалён.
+**Unit/route/UI + native PostgreSQL:**
+- существующий Owner с пустой custom role и deny на весь текущий catalog получает все известные effective permissions; raw grants/overrides не меняются; resolve/has/bulk/targeted/transaction согласованы;
+- user с ролью по имени Owner, чужой user ID, неизвестный permission, отсутствующий DB user и missing/invalid binding не дают ложного Owner доступа; обычный deny precedence сохранён;
+- Owner может выполнить реальную authorization mutation при deny на `access.authorization.manage` и отсутствии ordinary managers; actual History записана атомарно. Ordinary self-revoke до zero managers всё ещё допустим, следующий fresh non-Owner request denied;
+- Owner-only gate проверен для всех четырёх способов elevated grant/revoke, в том числе delete неназначенной elevated role. Unauthorized/failed/stale/no-op не создают административных событий;
+- Owner не target мер на всех lifecycle/appeal mutation paths; seeded old restrictions не блокируют текущего Owner в permission wrapper, прямых Drizzle/native admissions и UI hints. Non-Owner overlap/issuer-floor/expiry и target guards не изменены;
+- fresh state после ожидания существующего mutex и rollback при History failure реально проверены PostgreSQL; не заменять их mock equality;
+- Owner не обходит authentication/Origin, ownership, closed-topic/lifecycle/CAS и validation; availability failures не превращаются в permission success.
 
-## 5. Browser evidence без старой lockout зависимости
+**Реальный браузер → built Worker → Better Auth → disposable PostgreSQL:**
+- synthetic Owner с пустым raw role/deny видит применимые Overview/Forum/Users/roles/History/Attention/measure controls и выполняет canonical administrative action с проверкой результата в DB/History;
+- raw deny остаётся сохранённым и корректно объясняется в management UI;
+- non-Owner access manager не может изменить elevated grant/assignment/override/delete; Owner может выдать его custom role/пользователю, следующий request отражает изменение;
+- проверки покрывают согласованность UI/серверного отказа, применимые EN/RU/HE и существующие privacy/no-store regression. Переиспользовать History и AP-10/AP-11 browser harness с изолированными fixtures/DB, не строить новый общий test framework;
+- build и применимые действующие CI/checks. Точный набор команд/evidence записывает реализатор; технический reviewer делает самостоятельные проверки stable exact head.
 
-`tests/browser/admin-history/check.py` сейчас пытается self-deny с expected409 **посреди** сценария, затем продолжает пользоваться тем же manager. Простая замена 409→200 испортит остальной flow.
+Никакой production binding, реальных аккаунтов владельца, secrets/deployments или production-data для этих проверок не требуется.
 
-Минимально:
-- убрать этот dedicated старый rejection и lockout case labels;
-- сохранить шесть producers, no-op/retry, actual forbidden/invalid/notFound/cross-origin, history paging и настоящий failure rollback/read isolation;
-- положительный self-revoke с действительной canonical UI mutation выполнить в **конце** browser flow: observe allowed commit/одно History событие, следующий management read/POST 403. History проверить уже разрешённым reader либо DB inspection. Не создавать новый recovery endpoint/автоматический regrant.
-- Остальные fixture cleanup SQL остаются только для disposable DB.
-- EN/RU/HE feedback assigned-role conflict проверяется DOM/runtime там, где применимо; owner visual acceptance не назначать.
-- Запустить updated admin-history harness + существующий AP-10/AP-11 integrated user-measures harness на stable exact head. Последний проверяет current grant/revoke/measure/session interactions и не должен требовать переписывания политики или нового job.
+### 8. Передача и документация
 
-## 6. Постоянная документация — отдельный closeout PR
+После coordinator approval: Мира назначает Лиру → отдельный bounded implementation PR → stable head и применимые checks/browser evidence → Мира whole-PR review → Лёва independent technical review того же head → merge владельцем → отдельный factual docs closeout.
 
-После принятой реализации убрать **активное требование** last-manager из:
-- `docs/auth/AUTHORIZATION.md`: section Lockout protection и связанные active references; вместо него описать fresh authorization и retained transaction mutex. Не добавлять новую owner модель или объявлять bootstrap реализованным.
-- `docs/ADMIN_PANEL.md`: admission/action/History paragraphs, которые продолжают требовать lockout; сохранить все прочие safeguards/AP-10 hierarchy.
-- `PROJECT_STATE.md`: фактический post-Stage1 runtime/schema state, next separate owner/authorization step; без исторической хроники.
-- `ROADMAP.md`: current/release requirements больше не требуют last-manager. Сведения о прошлом Stage4 могут сохраняться как факт с явным superseded boundary, не как активный invariant.
-- `docs/UI_UX_PASS.md`: актуальный “keep lockout” пункт больше не является будущим требованием. Исторический факт PR165 не переписывать; при необходимости дать короткую supersession note.
-- `tests/browser/admin-history/README.md`: актуализировать coverage описание вместе с отдельным docs closeout.
-- `docs/PROJECT_HISTORY/` и индекс: factual Stage1 snapshot; уже существующую историю/doc_old не “чистить” задним числом.
+В docs closeout обновить `docs/auth/AUTHORIZATION.md`, соответствующие clauses `docs/ADMIN_PANEL.md`, browser README по фактическим изменённым flows, `PROJECT_STATE.md`/roadmap и historical index/snapshot. Объяснить различие raw RBAC и Owner effective authority, актуальную immunity и полный elevated gate. Устаревшее «owner binding не выдаёт прав» относится к текущему baseline до Stage2; не сохранять его как будущий контракт. Не объявлять redesign/Settings/production завершёнными заранее.
 
-Service source-of-truth #251 обновляется сразу как координация. Мира синхронизирует общий master plan: его старые last-manager формулировки superseded прямым owner decision. Это не новое owner согласование и не основание тормозить Stage1.
+**Мира:** проверить bounded-план, синхронизировать общий master plan с принятым решением и при approval назначить исполнителя. Не требуется новый продуктовый вопрос владельцу: модель уже зафиксирована. Марк не назначен.
 
-## 7. Готовность и handoff
+В этом turn выполнена source-level инспекция и техническое планирование. Код/схема/миграции не менялись; перечисленные acceptance tests ещё не выполнялись и не объявляются PASS.
 
-Один implementation PR с согласованными runtime/schema/manifest/locale/tests changes, затем отдельный docs PR. Stage1 готов к review, когда:
-- старый veto/error/flag/count отсутствуют в active runtime/current schema; dedicated veto tests больше не требуют сохранения manager;
-- mutex/row lock/fresh permission/AP-10 guards/atomic History сохранены; behavior и concurrency подтверждены PostgreSQL;
-- новое current schema metadata/upgrade/manifest/ACL probes и existing full exact-head CI green;
-- реальные browser self-revoke и AP-10/AP-11 connected flow проходят с synthetic sessions/disposable DB; evidence фиксирует exact SHA, no-store и отсутствие новых partial writes;
-- unknown errors не превращены в permission success; нет scope drift в owner/Settings/production.
+## Закрытый предыдущий этап
 
-После approval плана: Лира implementation → stable head/checks → Мира whole-PR → Лёва independent review того же head → owner merge → отдельный factual docs closeout. Полностью разрабатывать owner authority в этом пакете не нужно.
+Stage1 fully closed: implementation #294 merged main `e20490bc2d80c696bdf78e62539a8e1440821f9e`; factual docs #295 merged main `8301087f9322b34bdd325ed9298fdf3fddd84561`. [Independent PASS Лёвы](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6701647394) относится к head `e3604222ae8cecb4b1f2f94cdd5d7e9f76c15e61`: собственные 23 unit/route/UI + 112 native PG tests, 0058→0059 populated upgrade probe, Chromium/Worker/Better Auth/PG History35 и AP-10/AP-11 34 cases. Evidence: `/workspace/work/stage1-review-evidence/`. Эти результаты не являются acceptance будущего Stage2.
 
-**Мира:** coordinator review этого минимального плана; после approval назначить Лиру. Новых owner product decisions не требуется. Код/схему/тесты в этом planning turn не менял и ничего из будущей проверки не объявляю выполненным.
-
-
-## Завершённый предыдущий этап
-
-Ordinary Admin Panel AP-01–AP-11 закрыт; #293 merged. Собственный independent AP-11 PASS: https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6689555134 . После Stage1 остаются отдельные owner/authorization design steps, затем Settings.
+Ordinary AP-01–AP-11 закрыт; [AP-11 independent PASS](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6689555134). Settings после owner/authorization redesign.
