@@ -1,7 +1,6 @@
 import type { Pool, PoolClient, QueryResultRow } from "pg";
 import { AUTHORIZATION_MANAGE_PERMISSION, isPermissionKey, type PermissionKey } from "../app/authorization/catalog";
-import { isBoundOwner, ownerAwareEffectivePermissions, validOwnerUserId } from "../app/authorization/owner";
-import { canMutateAuthorization } from "../app/authorization/management-policy";
+import { canMutateAuthorization, isBoundOwner, ownerAwareEffectivePermissions, validOwnerUserId } from "../app/authorization/owner";
 import { BLOCK_MANAGE_PRIVILEGED_PERMISSION } from "./user-measure-authority";
 import { assertNoActiveUserMeasureRestrictionPg } from "./user-measure-policy";
 
