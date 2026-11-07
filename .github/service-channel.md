@@ -387,3 +387,22 @@ Fix only OWNER-DOC-MIRA-01 on PR #298. Run applicable exact-head checks, publish
 - Coordinator verdict: **PASS**, zero confirmed current-scope documentation defects.
 - No independent Codex docs review assigned.
 - PR #298 is ready for owner merge. After merge, owner/authorization redesign is closed in repository/local-CI; Stage6 external acceptance remains unfinished/paused.
+
+
+## Owner/authorization redesign — fully closed after PR #298 merge
+
+- PR #298 merged into `main`; merge commit/current main `856b93cb65b01e2389eb97276b37b3a0d8eef265`.
+- Final single-Owner/bootstrap documentation is now in current source-of-truth.
+- Owner/authorization redesign is closed in repository/local-CI scope: Stage 1–2 runtime, factual docs and final product boundary are all merged.
+- One Owner only: developer. Developer signs in through Google; the resulting internal Better Auth user ID is bound server-side as Owner. Transfer/second Owner/successor/first-manager bootstrap are not current product features.
+- Real Google configuration, server-side Owner binding and deployed acceptance remain Stage 6; Stage 6 remains paused.
+- No further owner/authorization application or documentation work is active.
+- Per current source-of-truth, Settings is now eligible as the next separate package.
+
+### Next bounded stage — Settings product definition
+
+Mira owns the initial product analysis. Do not assign Lev/Lira/Mark yet.
+
+Goal: establish what Settings should actually contain for the first release, reusing existing forum/auth/admin mechanisms and avoiding speculative infrastructure/super-admin/provider controls.
+
+First step only: inspect the current Settings placeholder, existing configurable mechanisms already implemented elsewhere, and current product/release boundaries; then present only the owner decisions that are genuinely required before technical planning.
