@@ -39,5 +39,7 @@
   отдельный Chromium→built Worker→Better Auth→PostgreSQL 17 rerun всех 34 case groups.
 - PR #292 merged в `main` 2026-11-07; merge commit
   `57f0b5a1675053b556bc68b24c4a0b9a8177a8f2`.
+- Documentation closeout после implementation merge оформлен отдельным PR #293: factual current state,
+  permanent AP-11 boundary, roadmap и данный historical snapshot.
 - AP-11 merge не выполнял production/deployed acceptance, owner visual acceptance, Stage 6,
   owner/authorization redesign или Settings. Эти границы остаются отдельными следующими задачами.
