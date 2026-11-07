@@ -78,3 +78,15 @@
 - Stage 6/production/owner visual acceptance вне scope; Марк не назначен.
 
 Общий контракт: [ADMIN_PANEL_IMPLEMENTATION_PLAN.md](../ADMIN_PANEL_IMPLEMENTATION_PLAN.md).
+
+
+## AP-11 implementation ready for owner merge
+
+- Independent technical review Лёвы завершён **PASS** на неизменном exact head `3f608ce9a042fd7c78401d330f5865af4f3dee5c`.
+- Coordinator PASS и independent PASS относятся к одному stable exact head; implementation после review не менялся.
+- PR #292 open/mergeable; exact-head CI #42245766359 SUCCESS и isolated Chromium #42245766263 SUCCESS.
+- Подтверждённых current-scope defects AP-11 не осталось.
+- **Implementation #292 готов к owner merge.**
+- Factual documentation closeout выполнять **после фактического merge #292**, чтобы `PROJECT_STATE.md` и history отражали repository truth, а не прогноз незамерженного PR.
+- После merge #292 Мира создаёт/координирует отдельный documentation PR: factual AP-11 state, final implementation/review/evidence snapshot и ближайший маршрут **owner/authorization redesign → Settings**.
+- До docs closeout AP-11 целиком не объявлять закрытым. Settings, redesign, Stage 6/production и owner visual acceptance не входят в #292.
