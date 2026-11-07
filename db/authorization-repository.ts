@@ -14,6 +14,8 @@ export interface UserAuthorization {
   grants: PermissionKey[];
   overrides: Partial<Record<PermissionKey, OverrideEffect>>;
   effectivePermissions: PermissionKey[];
+  /** Trusted effective-authority source, not a persisted role or grant. */
+  authoritySource?: "owner";
 }
 export interface AuthorizationUserSummary { id: string; name: string; email: string; role: AuthorizationRole; explicitAssignment: boolean }
 export interface AuthorizationRoleDetails extends AuthorizationRole { grants: PermissionKey[] }
@@ -98,6 +100,7 @@ export class PostgresAuthorizationRepository {
               grants: roleGrants,
               overrides: overrideMap,
               effectivePermissions: ownerAwareEffectivePermissions(user.id, this.ownerUserId, effectivePermissions),
+              ...(isBoundOwner(user.id, this.ownerUserId) ? { authoritySource: "owner" as const } : {}),
             },
           };
         }),
@@ -167,6 +170,7 @@ export class PostgresAuthorizationRepository {
     return {
       role: mapRole(selected), explicitAssignment: selected.explicit_assignment,
       grants, overrides, effectivePermissions: ownerAwareEffectivePermissions(userId, this.ownerUserId, keys),
+      ...(isBoundOwner(userId, this.ownerUserId) ? { authoritySource: "owner" as const } : {}),
     };
   }
 
