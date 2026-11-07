@@ -10,7 +10,7 @@ export interface InlineAuthorizationSubmission {
 }
 export function AuthorizationUserControls({
   userId, authorization, roles, permissions, inline, pending = false,
-  canManageElevated = false, elevatedRoleIds = [],
+  canManageElevated = false, elevatedRoleIds = [], canMutateAuthorization,
 }: {
   userId: string;
   authorization: UserAuthorization;
@@ -19,6 +19,7 @@ export function AuthorizationUserControls({
   inline?: InlineAuthorizationSubmission;
   pending?: boolean;
   canManageElevated?: boolean;
+  canMutateAuthorization: boolean;
   elevatedRoleIds?: readonly string[];
 }) {
   const { t } = useTranslation("common");
@@ -32,7 +33,7 @@ export function AuthorizationUserControls({
   return <div className="admin-user-body">
     <section className="admin-user-panel">
       <h5>{t("assignedRole")}</h5>
-      <Form method="post" className="admin-role-assignment" key={authorization.role.id} {...submit}>
+      {canMutateAuthorization ? <Form method="post" className="admin-role-assignment" key={authorization.role.id} {...submit}>
         <input type="hidden" name="intent" value="assignRole" />
         <input type="hidden" name="userId" value={userId} />
         <label>
@@ -43,12 +44,13 @@ export function AuthorizationUserControls({
         </label>
         {!authorization.explicitAssignment ? <span className="admin-muted-badge">{t("defaultRole")}</span> : null}
         <button className="admin-secondary-action" type="submit" disabled={roleAssignmentDisabled}>{t("save")}</button>
-      </Form>
+      </Form> : <p>{authorization.role.displayName}{!authorization.explicitAssignment
+        ? <span className="admin-muted-badge">{t("defaultRole")}</span> : null}</p>}
     </section>
     <section className="admin-user-panel admin-user-permissions">
       <h5>{t("permissionsHeading")}</h5>
       <div className="admin-override-list">
-        {displayedPermissions.map(permission => <Form method="post" className="admin-override-row"
+        {displayedPermissions.map(permission => canMutateAuthorization ? <Form method="post" className="admin-override-row"
           key={permission + ":" + (authorization.overrides[permission] ?? "inherit")} {...submit}>
           <input type="hidden" name="intent" value="override" />
           <input type="hidden" name="userId" value={userId} />
@@ -61,7 +63,11 @@ export function AuthorizationUserControls({
             <option value="deny">{t("overrideDeny")}</option>
           </select>
           <button className="admin-compact-action" type="submit" disabled={pending}>{t("save")}</button>
-        </Form>)}
+        </Form> : <div className="admin-override-row" key={permission}>
+          <code>{permission}</code>
+          <span>{t(authorization.overrides[permission] === "allow" ? "overrideAllow"
+            : authorization.overrides[permission] === "deny" ? "overrideDeny" : "overrideInherit")}</span>
+        </div>)}
       </div>
     </section>
     <section className="admin-user-panel">
