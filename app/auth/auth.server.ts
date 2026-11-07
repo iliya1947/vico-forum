@@ -4,6 +4,7 @@ import { APIError, createAuthMiddleware, getAuthoritativeSessionFromCtx } from "
 import { drizzle, type NodePgDatabase } from "drizzle-orm/node-postgres";
 import type { Client } from "pg";
 import { AuthSessionUnavailableError, type AuthRuntime, type AuthSession } from "./request-context";
+import { createRegistrationAdmission } from "./registration-admission";
 import {
   account,
   betterAuthUserAdditionalFields,
@@ -74,7 +75,7 @@ export function betterAuthOptions(database: NodePgDatabase, env: BetterAuthEnvir
       provider: "pg" as const,
       schema: betterAuthSchema,
     }),
-    user: { additionalFields: betterAuthUserAdditionalFields },
+    user: { additionalFields: betterAuthUserAdditionalFields, validateUserInfo: createRegistrationAdmission(database) },
     emailAndPassword: betterAuthEmailPasswordOptions,
     hooks: betterAuthRequestHooks,
     socialProviders: {

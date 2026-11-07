@@ -12,6 +12,7 @@ import {
 } from "../../app/auth/auth.server";
 import { AuthSessionUnavailableError, authSessionForRequest } from "../../app/auth/request-context";
 import { initializeAuthContext, withAuthSessionCookies } from "../../app/auth/session-context";
+import { installRegistrationPolicyFixture } from "./registration-policy-fixture";
 
 const databaseUrl = process.env.DATABASE_URL;
 
@@ -52,6 +53,7 @@ beforeAll(async () => {
     .replaceAll('"public".', `"${schemaName}".`)
     .replaceAll("--> statement-breakpoint", "");
   await client.query(authMigration);
+  await installRegistrationPolicyFixture(client);
 });
 
 afterAll(async () => {

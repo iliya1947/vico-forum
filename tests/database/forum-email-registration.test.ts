@@ -2,6 +2,7 @@ import { readFile } from "node:fs/promises";
 import { Client } from "pg";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { createHyperdriveAuthRuntime } from "../../app/auth/auth.server";
+import { installRegistrationPolicyFixture } from "./registration-policy-fixture";
 
 const databaseUrl = process.env.DATABASE_URL;
 if (!databaseUrl) throw new Error("DATABASE_URL is required");
@@ -41,7 +42,10 @@ beforeAll(async () => {
     .replaceAll('"public".', `"${schema}".`);
   const migrator = new Client({ connectionString: databaseUrl, options: `-c search_path=${schema}` });
   await migrator.connect();
-  try { await migrator.query(sql); } finally { await migrator.end(); }
+  try {
+    await migrator.query(sql);
+    await installRegistrationPolicyFixture(migrator);
+  } finally { await migrator.end(); }
 });
 
 afterAll(async () => {
