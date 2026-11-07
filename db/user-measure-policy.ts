@@ -7,6 +7,7 @@ import {
   type UserMeasureRestrictionId,
 } from "../app/admin/user-measure-restrictions";
 import { BLOCK_MANAGE_PRIVILEGED_PERMISSION } from "./user-measure-authority";
+import { isBoundOwner } from "../app/authorization/owner";
 
 type ForumTransaction = Parameters<Parameters<NodePgDatabase["transaction"]>[0]>[0];
 
@@ -65,6 +66,7 @@ function activeRestrictionQuery(
       from user_measures as measure
       join user_measure_restrictions as child on child.measure_id = measure.id
       where measure.target_user_id = ${subjectId}
+        and ${!isBoundOwner(subjectId, ownerUserId)}
         and child.restriction_key = ${restriction}
         and child.enabled = true
         and measure.lifted_at is null
