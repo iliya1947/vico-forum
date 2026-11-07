@@ -24,7 +24,7 @@ function i18n() {
   });
 }
 
-const actorId = "admin-actor";
+const actorId = "bound-owner";
 const userId = "target/עברית";
 const roles: AuthorizationRole[] = [
   { id: "builtin-user", slug: "user", displayName: "User", isSystem: true },
@@ -80,7 +80,8 @@ function mount(options: { revokeManagementOnSubmit?: boolean; denyManagementOnSu
     return {
       locale: "en", access: canManage ? access : adminAccess(new Set(["admin.users.read"])),
       user: { ...profile, role: currentRole },
-      ...(canManage ? { managerActorId: actorId, permissions, management: { userId, roles, authorization } } : {}),
+      ...(canManage ? { managerActorId: actorId, canMutateAuthorization: true,
+        permissions, management: { userId, roles, authorization } } : {}),
     };
   });
   function Detail() { return <AdminUserDetail {...useLoaderData<typeof loader>()} />; }
@@ -181,7 +182,7 @@ describe("AP-09 canonical fetcher composition", () => {
     expect(mounted.action).toHaveBeenCalledOnce();
     expect(mounted.router.state.location.state).toBeNull();
 
-    // Another manager restores the grant; revalidation keeps the same history entry.
+    // Restored management state revalidates the same history entry.
     mounted.grantManagement();
     mounted.router.revalidate();
     await screen.findByRole("heading", { name: "Authorization management", level: 3 });
