@@ -309,10 +309,11 @@ Owner — отдельная server-controlled authority поверх сущес
 1. Owner identity задаётся server-side и не определяется названием роли, email, client input или permission snapshot.
 2. Owner — верхняя административная authority; subordinate administrative measures не могут target Owner.
 3. Owner должен сохранять полный forum-management control, включая roles/permissions, независимо от случайной конфигурации собственной обычной роли/override.
-4. Все обычные и повышенные полномочия ниже Owner выражаются существующими permissions и назначаются через тот же конструктор ролей/per-user overrides. В частности AP-10 elevated authority уже выражена `admin.users.blocks.managePrivileged`.
-5. Не вводить новую системную роль «Senior/Head Admin» и не кодировать власть по role name.
-6. Инфраструктура, deployments, secrets и изменение самой server-controlled owner binding остаются вне forum RBAC.
-7. Settings проектируется только после завершения этой owner authority модели.
+4. Owner bypass относится только к **административным/forum-management capabilities**. Обычные пользовательские permissions — создание тем/ответов, own-edit, own-solution/source-locale, Help signal/Complaint submission, translation generation и другие participation capabilities — продолжают определяться обычной ролью и per-user overrides Owner.
+5. Все обычные и повышенные полномочия ниже Owner выражаются существующими permissions и назначаются через тот же конструктор ролей/per-user overrides. В частности AP-10 elevated authority уже выражена `admin.users.blocks.managePrivileged`.
+6. Не вводить новую системную роль «Senior/Head Admin» и не кодировать власть по role name.
+7. Инфраструктура, deployments, secrets и изменение самой server-controlled owner binding остаются вне forum RBAC.
+8. Settings проектируется только после завершения этой owner authority модели.
 
 Решение владельца: специальная граница сохраняется. **Только bound Owner** может выдавать/отзывать `admin.users.blocks.managePrivileged`, включая изменения через role grants, назначение роли с этим permission и per-user override. Обычный `access.authorization.manage` не даёт права выдавать себе или другим эту capability.
 
