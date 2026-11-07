@@ -5,13 +5,17 @@
 ## Актуальный baseline и назначение
 
 - Current main: `8301087f9322b34bdd325ed9298fdf3fddd84561`; migrations 0000–0059.
-- Ordinary Admin Panel AP-01–AP–11 fully closed. Owner/authorization redesign Stage1 полностью закрыт: implementation #294 и factual docs #295 merged.
-- Current stage: **Stage2 owner authority — revised technical plan готов для повторного coordinator review**.
-- Планировщик Лёва выполнил source-level инспекцию. [Предлагаемый bounded-план #6702391114](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6702391114); [Локальная authoritative AP-10 revision #6702520494](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6702520494); полный обновлённый текст в личном файле Лёвы.
-- **Мира:** проверить план, синхронизировать master plan и после approval назначить исполнителя.
-- Исполнитель и implementation PR/head Stage2 не назначены. Марк не назначен. Лёва реализацию не начинает.
-- Код/схема/миграции не изменены; Stage2 tests/browser/CI ещё не выполнялись. Future acceptance не объявлена.
-- Settings после завершения owner/authorization redesign; Stage6/production вне scope. Owner visual/deployed acceptance не заявляется.
+- Ordinary Admin Panel AP-01–AP-11 closed. Owner/authorization redesign Stage1 fully closed (#294 + #295 merged).
+- Current stage: **Stage2 implementation review completed — coordinator PASS + independent Лёва PASS**.
+- PR #296 open/draft/mergeable; frozen exact head `824ab8eccb091664c2e7d37f81f2737e7fd43e87`; implementation не merged, factual docs closeout ещё не выполнен.
+- Approved plan #6702391114 + authoritative AP-10 revision #6702520494 + Owner all-catalog clarification. Исполнитель Лира.
+- Coordinator whole-PR PASS на этом же head; STAGE2-MIRA-01 закрыт verification-only correction.
+- [Independent technical PASS Лёвы #6704068605](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6704068605), zero confirmed current-scope defects. Это самостоятельная проверка, не повторение coordinator/author verdict.
+- Собственные checks: build; 56 unit/route/UI +96 native PG; дополнительный самостоятельно написанный PG probe (real mutex waits/fresh denial/Owner History rollback); actual Chromium AP-10/AP-11/Stage2 37 groups и separate History35. Stage2 implementation не менялась при review.
+- Exact-head GitHub CI #42349494000 и browser #42349494094 SUCCESS; это отдельное author/CI evidence.
+- **Мира:** принять independent PASS и завершить readiness #296. Merge выполняет владелец; после implementation merge отдельный factual docs closeout. До implementation/docs merge Stage2 целиком не closed.
+- Лёва review завершил и остановился; Марк не назначен. Изменение implementation head требует нового coordinator-first cycle.
+- Settings после завершения owner/authorization redesign; Stage6/production/owner visual acceptance вне результата этого review.
 
 ## Зафиксированная целевая Owner модель
 
@@ -204,11 +208,15 @@ Close only `STAGE2-MIRA-01` in PR #296. Complete the approved Stage2 elevated-au
 - Implementation stays frozen. Next workflow step is independent technical review by Лёва on this same exact head.
 
 
-## Handoff — Лёва: PR #296 independent technical review
+## Independent technical review Лёвы — PASS
 
-- Review exact frozen head: `824ab8eccb091664c2e7d37f81f2737e7fd43e87` against base/main `8301087f9322b34bdd325ed9298fdf3fddd84561`.
-- Coordinator whole-PR verdict on this exact head: PASS, zero confirmed current-scope defects.
-- Perform an independent technical review of the implementation and required Stage2 acceptance; do not treat coordinator conclusions as proof.
-- The only correction since the prior coordinator-failing head is verification-only: exactly two test files changed; runtime implementation did not change.
-- Confirm current-stage correctness only; future-scope improvements are not defects.
-- Do not modify implementation during review. If a defect is confirmed, report the full causal chain and stop for coordinator routing. If PASS, publish the independent verdict/evidence in #251 and stop.
+- [Report #6704068605](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6704068605) на exact `824ab8eccb091664c2e7d37f81f2737e7fd43e87`, base/main `8301087f9322b34bdd325ed9298fdf3fddd84561`. Весь34-file diff проверен самостоятельно; code/schema/migrations при review не изменялись.
+- Central catalog-bound Owner projection согласована с resolver/has/bulk/targeted/fresh transaction check; raw role/grants/overrides сохранены. Неизвестные permissions и отсутствующий user не повышаются.
+- AP-10 raw actor/target evaluation отделён от Owner projection. Owner-only basic-manage admission, rank3, self/Owner target, strict target/issuer floor, private discovery и all lifecycle/appeal paths согласованы.
+- Owner immunity применена в native/Drizzle admission, Worker wiring и hints без удаления старых measures/History. Non-Owner/domain/session/Origin/ownership/CAS boundaries сохранены.
+- Elevated grant/revoke покрывает role grants, assignment, override и role deletion; UI truthful/private/localized. Нет второго RBAC, schema/migration/seed/Settings/super-admin/infra/mutex redesign или возврата last-manager.
+- Собственные local checks: 56 unit/route/UI (8 files),96 native PG (8 files), build PASS; дополнительный собственный PG probe —2 observed mutex waits, Owner commit vs fresh revoked actor denial, forced History failure rollback, preserved stored restrictions/History.
+- Actual Chromium→built Worker→Better Auth→PG: AP-10/AP-11/Stage2 37 groups + отдельная History35 PASS. AP-10:0 layout/page errors/external requests; History:0 page errors/external requests. Canonical Owner elevated success/revoke/fresh recipient state и ordinary self-revoke подтверждены.
+- AP-10 environment adapter изменяет только checkout path/Chromium executable; все assertions/cases сохранены, exact comparison проверен. History runner из exact checkout. Full1974/571 локально не заявлены как rerun; GitHub exact-head runs отдельно SUCCESS.
+- Evidence: `/workspace/work/owner-stage2-review-evidence/` (logs/probe/results/screenshots/manifest/hashes). Tracked checkout clean, task-owned Workers/disposable container/DBs/dummy vars/dependency symlink removed.
+- **Мира — next:** readiness/owner merge route, затем separate factual docs closeout. Лёва остановился, implementation frozen; Марк не назначен.
