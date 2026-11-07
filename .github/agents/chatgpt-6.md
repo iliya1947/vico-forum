@@ -1,3 +1,11 @@
+# Лира — PR #297 second docs correction
+
+Fresh coordinator review of exact head `9d0c7baa9b9f96a79ee8b7b79c7a736a872c83b6`: CHANGES REQUIRED, one wording-only current-scope finding.
+
+`STAGE2-DOC-MIRA-03`: in `PROJECT_STATE.md`, remove `включая первоначальное назначение управленческого доступа`. This is an unapproved design assumption about the future recovery/bootstrap boundary. Keep only the factual unresolved external Owner binding/recovery/bootstrap acceptance boundary.
+
+Do not change ROADMAP or the other six docs. No code/runtime/schema/infra/Settings/recovery design. After applicable checks publish the new stable head in #251 and stop.
+
 # Лира — PR #297 docs correction
 
 Coordinator verdict on exact head `69581a0a95a3ebf739c78b047371a0c66d2b8ffc`: CHANGES REQUIRED, two current-scope documentation findings only.
