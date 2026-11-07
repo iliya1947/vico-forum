@@ -8,6 +8,7 @@ import { HeaderAuthProvider } from "../auth/auth-controls";
 import { canonicalEnglishCatalog } from "../localization/catalog";
 import { createTranslationRuntime } from "../localization/runtime";
 import type { PermissionKey } from "./catalog";
+import type { AuthorizationUserDetails } from "../../db/authorization-repository";
 import { adminAccess } from "../admin/access";
 import { AuthorizationAdminView } from "./admin-view";
 
@@ -94,7 +95,7 @@ function renderView(
   result?: { ok?: boolean; error?: "conflict" },
   grants: PermissionKey[] = ["access.authorization.manage"],
   canManageElevated = false,
-  targetUsers: typeof users = users,
+  targetUsers: readonly AuthorizationUserDetails[] = users,
 ) {
   const router = createMemoryRouter([{
     path: "*",
