@@ -60,7 +60,9 @@ describe("AP-09 dynamic Users permissions and atomic authorization History", () 
     expect(JSON.stringify(snapshot)).not.toContain("secret-manager@example.invalid");
     await override("owner", "admin.users.read", "deny");
     expect(await access("target")).toMatchObject({ canReadUsers: false, canManageAuthorization: true });
-    await override("target", "forum.topic.pin", "allow");
+    await expect(override("target", "forum.topic.pin", "allow"))
+      .rejects.toBeInstanceOf(AuthorizationForbiddenError);
+    await override("owner", "forum.topic.pin", "allow");
     await service.assignUserRole("owner", "target", "builtin-admin");
     expect(await access("target")).toMatchObject({ canReadUsers: false, canManageAuthorization: true });
     await override("owner", "admin.users.read", null);
