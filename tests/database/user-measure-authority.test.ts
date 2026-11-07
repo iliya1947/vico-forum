@@ -2,9 +2,11 @@ import { readFile, readdir } from "node:fs/promises";
 import { randomUUID } from "node:crypto";
 import { Client, Pool } from "pg";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { AuthorizationForbiddenError, PostgresAuthorizationRepository } from "../../db/authorization-repository";
+import { AuthorizationForbiddenError, AuthorizationNotFoundError, AuthorizationRoleAssignedError, PostgresAuthorizationRepository } from "../../db/authorization-repository";
 import { AuthorizationService } from "../../db/authorization-service";
 import { PostgresUserMeasuresRepository, UserMeasuresService } from "../../db/user-measures";
+import { PostgresUserMeasureReader } from "../../db/user-measure-read";
+import { PERMISSION_CATALOG } from "../../app/authorization/catalog";
 import { UserMeasureForbiddenError } from "../../db/user-measure-authority";
 
 const databaseUrl = process.env.DATABASE_URL;
@@ -88,7 +90,7 @@ describe("AP-10 owner-only elevated permission changes inside authorization tran
     expect((await owner.resolveUser("plain")).effectivePermissions).toContain(elevated);
     expect(await historyCount()).toBe(afterOwner);
 
-    // The configured owner is not automatically able to bypass the normal access-manage requirement.
+    // Unbound repositories reject elevated-key changes regardless of the ordinary admin role.
     await expect(unbound.setUserOverride("owner", "plain", elevated, null))
       .rejects.toBeInstanceOf(AuthorizationForbiddenError);
     await owner.setUserOverride("owner", "plain", elevated, null);
@@ -104,6 +106,136 @@ describe("AP-10 owner-only elevated permission changes inside authorization tran
     expect((await owner.readRole("ap10-elevated-role"))?.grants).toEqual([elevated, "forum.reply.create"].sort());
     expect(await historyCount()).toBe(before + 2);
   });
+  it("guards indirect elevated revocation by deleting an unassigned custom role, without blocking ordinary deletion", async () => {
+    const suffix = randomUUID();
+    await owner.createCustomRole("owner", {
+      slug: "elevated-deletion-" + suffix, displayName: "Elevated cascade",
+    });
+    const elevatedRole = (await owner.listRoles()).find(r => r.slug === "elevated-deletion-" + suffix)!;
+    await owner.replaceRoleGrants("owner", elevatedRole.id, [elevated]);
+    const before = await historyCount();
+    await expect(owner.deleteCustomRole("manager", elevatedRole.id))
+      .rejects.toBeInstanceOf(AuthorizationForbiddenError);
+    expect((await owner.readRole(elevatedRole.id))?.grants).toEqual([elevated]);
+    expect(await historyCount()).toBe(before);
+
+    await owner.assignUserRole("owner", "plain", elevatedRole.id);
+    await expect(owner.deleteCustomRole("owner", elevatedRole.id))
+      .rejects.toBeInstanceOf(AuthorizationRoleAssignedError);
+    await owner.assignUserRole("owner", "plain", "builtin-user");
+    const beforeDeletion = await historyCount();
+    await owner.deleteCustomRole("owner", elevatedRole.id);
+    await expect(owner.readRole(elevatedRole.id)).resolves.toBeUndefined();
+    expect(await historyCount()).toBe(beforeDeletion + 1);
+    expect((await client.query(
+      "select count(*)::int n from authz_role_permissions where role_id=$1", [elevatedRole.id],
+    )).rows[0].n).toBe(0);
+
+    const normalSlug = "ordinary-deletion-" + randomUUID();
+    await owner.createCustomRole("manager", { slug: normalSlug, displayName: "Ordinary role" });
+    const normal = (await owner.listRoles()).find(r => r.slug === normalSlug)!;
+    await owner.deleteCustomRole("manager", normal.id);
+    await expect(owner.readRole(normal.id)).resolves.toBeUndefined();
+  });
+
+  it("admits bound Owner with zero raw grants and denied block keys through measures, appeals and privacy reads", async () => {
+    const emptyRole = "stage2-owner-no-raw-keys";
+    const measures = new UserMeasuresService(new PostgresUserMeasuresRepository(pool, "owner"));
+    const reader = new PostgresUserMeasureReader(pool, "owner");
+    const firstId = randomUUID();
+    const secondId = randomUUID();
+    const startHistory = await historyCount();
+
+    await client.query("insert into authz_roles(id,slug,display_name,is_system) values($1,$1,'Stored Owner role',false)", [emptyRole]);
+    await client.query("update authz_user_roles set role_id=$1 where user_id='owner'", [emptyRole]);
+    await client.query(`insert into authz_user_permission_overrides(user_id,permission_key,effect)
+      values('owner','admin.users.blocks.manage','deny'),
+            ('owner','admin.users.blocks.managePrivileged','deny')`);
+    try {
+      const ownAuth = await owner.resolveUser("owner");
+      expect(ownAuth.grants).toEqual([]);
+      expect(ownAuth.overrides).toMatchObject({
+        "admin.users.blocks.manage": "deny", "admin.users.blocks.managePrivileged": "deny",
+      });
+      expect(ownAuth.effectivePermissions).toEqual([...PERMISSION_CATALOG].sort());
+      expect(await owner.resolveUser("plain")).not.toMatchObject({ effectivePermissions: [...PERMISSION_CATALOG].sort() });
+
+      const first = await measures.create({
+        id: firstId, actorId: "owner", targetUserId: "plain",
+        reason: "Owner reviews suspicious posting", restrictions: ["topics.create"], expiresAt: null,
+      });
+      expect(first).toEqual({ id: firstId, version: 1 });
+      expect((await client.query(
+        "select issuer_authority_floor from user_measures where id=$1", [firstId],
+      )).rows[0].issuer_authority_floor).toBe(3);
+      expect((await reader.adminTarget("owner", "plain")).measures.some(m => m.id === firstId)).toBe(true);
+      expect((await reader.adminDetail("owner", firstId)).canMutate).toBe(true);
+      await expect(reader.adminTarget("owner", "owner")).rejects.toBeInstanceOf(UserMeasureForbiddenError);
+      await expect(measures.create({
+        id: randomUUID(), actorId: "owner", targetUserId: "owner", reason: "Self-target denied",
+        restrictions: ["topics.create"], expiresAt: null,
+      })).rejects.toBeInstanceOf(UserMeasureForbiddenError);
+      await expect(measures.create({
+        id: randomUUID(), actorId: "manager", targetUserId: "plain", reason: "No raw basic manage",
+        restrictions: ["topics.create"], expiresAt: null,
+      })).rejects.toBeInstanceOf(UserMeasureForbiddenError);
+
+      const changed = await measures.change({
+        measureId: firstId, operationId: randomUUID(), actorId: "owner",
+        expectedVersion: 1, reason: "Reconsider posting scope",
+        restrictions: ["replies.create"], expiresAt: null,
+      });
+      expect(changed.version).toBe(2);
+      const rejected = await measures.submitAppeal({
+        id: randomUUID(), measureId: firstId, actorId: "plain", body: "Please reconsider",
+      });
+      expect((await reader.adminPendingAppeals("owner")).appeals.some(a => a.id === rejected.id)).toBe(true);
+      const denied = await measures.resolveAppeal({
+        measureId: firstId, appealId: rejected.id, operationId: randomUUID(), actorId: "owner",
+        expectedVersion: 2, outcome: "rejected", explanation: "Evidence remains valid",
+        remedy: null, restrictions: null, expiresAt: null,
+      });
+      expect(denied.outcome).toBe("rejected");
+
+      const changeAppeal = await measures.submitAppeal({
+        id: randomUUID(), measureId: firstId, actorId: "plain", body: "New supporting information",
+      });
+      const changeResult = await measures.resolveAppeal({
+        measureId: firstId, appealId: changeAppeal.id, operationId: randomUUID(), actorId: "owner",
+        expectedVersion: 2, outcome: "accepted", explanation: "Change accepted",
+        remedy: "change", restrictions: ["posts.edit"], expiresAt: null,
+      });
+      expect(changeResult).toMatchObject({ outcome: "accepted", remedy: "change", version: 3 });
+
+      const liftAppeal = await measures.submitAppeal({
+        id: randomUUID(), measureId: firstId, actorId: "plain", body: "Final reconsideration",
+      });
+      const liftResult = await measures.resolveAppeal({
+        measureId: firstId, appealId: liftAppeal.id, operationId: randomUUID(), actorId: "owner",
+        expectedVersion: 3, outcome: "accepted", explanation: "Lift accepted",
+        remedy: "lift", restrictions: null, expiresAt: null,
+      });
+      expect(liftResult).toMatchObject({ outcome: "accepted", remedy: "lift", version: 4 });
+
+      const second = await measures.create({
+        id: secondId, actorId: "owner", targetUserId: "plain",
+        reason: "Separate violation", restrictions: ["profile.edit"], expiresAt: null,
+      });
+      expect(second.version).toBe(1);
+      const directLift = await measures.lift({
+        measureId: secondId, operationId: randomUUID(), actorId: "owner",
+        expectedVersion: 1, reason: "Direct lift after review",
+      });
+      expect(directLift.version).toBe(2);
+      expect((await reader.adminPendingAppeals("owner")).appeals.some(a => a.measureId === firstId)).toBe(false);
+      expect(await historyCount()).toBe(startHistory + 7);
+    } finally {
+      await client.query("delete from authz_user_permission_overrides where user_id='owner' and permission_key in ('admin.users.blocks.manage','admin.users.blocks.managePrivileged')");
+      await client.query("update authz_user_roles set role_id='builtin-admin' where user_id='owner'");
+      await client.query("delete from authz_roles where id=$1", [emptyRole]);
+    }
+  });
+
   it("retains the singleton mutex for both authz and AP-10 while reevaluating fresh authority", async () => {
     const waiters = ["stage1-authz-waiter", "stage1-measure-waiter"];
     const authPool = new Pool({ connectionString: databaseUrl, options: `-c search_path=${schema}`,
