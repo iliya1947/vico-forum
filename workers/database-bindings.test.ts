@@ -59,7 +59,11 @@ describe("Worker capability composition", () => {
   it("routes web adapters through webConnectionString", () => {
     expect(source).toContain("createHyperdriveAuthRuntime(webConnectionString");
     expect(source).toContain("createHyperdriveForumReader(webConnectionString)");
-    expect(source).toContain("createHyperdriveForumWriter(webConnectionString)");
+    expect(source).toContain("createHyperdriveForumWriter(webConnectionString, undefined, undefined, measureAdmission)");
+    expect(source).toContain("createHyperdriveForumAttachmentStore(webConnectionString, undefined, measureAdmission)");
+    expect(source).toContain("withOwnerUserMeasureAdmission(ownerUserId)");
+    expect(source).toContain("createHyperdriveComplaintQueue(webConnectionString, effectiveAuthorization, undefined, ownerUserId)");
+    expect(source).toContain("createHyperdriveContentGenerationAdmission(webConnectionString, undefined, ownerUserId)");
     expect(source).toContain("createHyperdriveContentTranslationBatchReader(webConnectionString)");
     expect(source).toContain("createHyperdriveAuthorization(webConnectionString, undefined, ownerUserId)");
     expect(source).toContain("VICO_OWNER_USER_ID");
