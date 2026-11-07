@@ -7059,7 +7059,7 @@
             "action",
             "target_type"
           ],
-          "definitionSha256": "PENDING"
+          "definitionSha256": "c7a1abca6c837c455ef9ad17956a9c333f90156996253d61881752c7bb89503e"
         },
         {
           "name": "admin_history_context_check",
