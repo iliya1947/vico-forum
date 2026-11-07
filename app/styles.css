@@ -9925,3 +9925,25 @@ a.topic-tag:focus-visible {
 .topic-reply-paused { margin: 0.5rem 0; }
 .topic-closed-notice strong { color: var(--color-text); }
 .topic-closure-form button:disabled { cursor: wait; opacity: 0.65; }
+
+/* SET-02: bounded Owner registration controls, including 320px/RTL layout. */
+.settings-registration {
+  min-inline-size: 0;
+  max-inline-size: 100%;
+  padding: 1rem;
+  margin-block: 1rem;
+  border: 1px solid var(--color-border);
+  border-radius: 0.5rem;
+  background: var(--color-surface);
+  overflow-wrap: anywhere;
+}
+.settings-registration h2 { margin-block-start: 0; }
+.settings-registration-form { display: grid; gap: 0.8rem; max-inline-size: 36rem; }
+.settings-registration-option { display: flex; align-items: center; gap: 0.75rem; min-inline-size: 0; }
+.settings-registration-option input { inline-size: 1.15rem; block-size: 1.15rem; flex: none; }
+.settings-registration-form button {
+  justify-self: start; min-block-size: 2.75rem; padding: 0.55rem 1rem;
+  border: 1px solid var(--color-border-strong); border-radius: 0.4rem;
+  font: inherit; background: var(--color-accent); color: var(--color-action-on-accent);
+}
+.settings-registration-form button:disabled { opacity: 0.6; cursor: wait; }

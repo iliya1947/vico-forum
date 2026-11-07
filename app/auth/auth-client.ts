@@ -12,7 +12,7 @@ export async function linkGoogleAccount(callbackURL: string, expectedUserId: str
 
 export interface EmailAuthActions {
   signInWithEmail(email: string, password: string): Promise<boolean>;
-  signUpWithEmail(name: string, email: string, password: string): Promise<boolean>;
+  signUpWithEmail(name: string, email: string, password: string): Promise<boolean | "closed">;
 }
 
 export const emailAuthClientActions: EmailAuthActions = {
@@ -22,12 +22,13 @@ export const emailAuthClientActions: EmailAuthActions = {
   },
   async signUpWithEmail(name, email, password) {
     const { data, error } = await client.signUp.email({ name, email, password });
+    if (error?.code === "vico_email_registration_closed") return "closed";
     return !error && data != null;
   },
 };
 
 export interface AuthClientActions {
-  signInWithGoogle(callbackURL: string, handlers: AuthResultHandlers): Promise<unknown>;
+  signInWithGoogle(callbackURL: string, handlers: AuthResultHandlers, errorCallbackURL?: string): Promise<unknown>;
   signOut(handlers: AuthResultHandlers): Promise<unknown>;
 }
 
@@ -37,9 +38,9 @@ interface AuthResultHandlers {
 }
 
 export const authClientActions: AuthClientActions = {
-  signInWithGoogle(callbackURL, handlers) {
+  signInWithGoogle(callbackURL, handlers, errorCallbackURL) {
     return client.signIn.social(
-      { provider: "google", callbackURL },
+      { provider: "google", callbackURL, ...(errorCallbackURL ? { errorCallbackURL } : {}) },
       { onSuccess: handlers.onSuccess, onError: handlers.onError },
     );
   },
