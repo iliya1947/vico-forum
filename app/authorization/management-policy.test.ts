@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { canMutateAuthorization } from "./management-policy";
+import { canMutateAuthorization } from "./owner";
 
 describe("authorization mutation admission policy", () => {
   it("admits only the exact server-bound Owner", () => {
