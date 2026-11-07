@@ -98,6 +98,75 @@ describe("Stage 2 central Owner effective authority, PostgreSQL 17", () => {
     await expect(missingOwner.resolveUser("nonexistent")).rejects.toBeInstanceOf(AuthorizationNotFoundError);
   });
 
+  it("commits Owner-only elevated role, assignment and override grant/revoke with fresh permissions and History", async () => {
+    const elevated: PermissionKey = "admin.users.blocks.managePrivileged";
+    const before = (await client.query<{ total: number }>(
+      "select count(*)::int total from admin_history",
+    )).rows[0]!.total;
+
+    await service.createCustomRole("owner", {
+      slug: "owner-elevated-lifecycle", displayName: "Owner elevated lifecycle",
+    });
+    const role = (await service.readManagementState()).roles
+      .find(item => item.slug === "owner-elevated-lifecycle");
+    expect(role).toBeDefined();
+    const roleId = role!.id;
+
+    await service.replaceRoleGrants("owner", roleId, [elevated]);
+    expect((await service.readRole(roleId))?.grants).toEqual([elevated]);
+    await service.assignUserRole("owner", "ordinary", roleId);
+    expect((await service.resolveUser("ordinary")).role.id).toBe(roleId);
+    expect(await repository.hasPermission("ordinary", elevated)).toBe(true);
+
+    // Explicit deny overrides the elevated role, and inherit restores its grant.
+    for (const [effect, allowed] of [
+      ["deny", false], ["allow", true], [null, true],
+    ] as const) {
+      await service.setUserOverride("owner", "ordinary", elevated, effect);
+      expect(await repository.hasPermission("ordinary", elevated)).toBe(allowed);
+      expect((await service.resolveUser("ordinary")).overrides[elevated])
+        .toBe(effect ?? undefined);
+    }
+
+    // A changed role grant must affect the assigned user's very next query.
+    await service.replaceRoleGrants("owner", roleId, []);
+    expect((await service.readRole(roleId))?.grants).toEqual([]);
+    expect(await repository.hasPermission("ordinary", elevated)).toBe(false);
+    await service.replaceRoleGrants("owner", roleId, [elevated]);
+    expect(await repository.hasPermission("ordinary", elevated)).toBe(true);
+
+    // Switching out of an elevated role is also a privileged revoke.
+    await service.assignUserRole("owner", "ordinary", "owner-empty");
+    expect((await service.resolveUser("ordinary")).role.id).toBe("owner-empty");
+    expect(await repository.hasPermission("ordinary", elevated)).toBe(false);
+
+    // Per-user elevation works independently of role grants; deny and inherit revoke it.
+    for (const [effect, allowed] of [
+      ["allow", true], ["deny", false], [null, false],
+    ] as const) {
+      await service.setUserOverride("owner", "ordinary", elevated, effect);
+      expect(await repository.hasPermission("ordinary", elevated)).toBe(allowed);
+      expect((await service.resolveUser("ordinary")).overrides[elevated])
+        .toBe(effect ?? undefined);
+    }
+
+    const events = await client.query<{ action: string; target_id: string; actor_id: string }>(
+      "select action,target_id,actor_id from admin_history order by position offset $1",
+      [before],
+    );
+    expect(events.rows.map(item => item.action)).toEqual([
+      "role.created", "role.grantsChanged", "user.roleAssigned",
+      "user.overrideChanged", "user.overrideChanged", "user.overrideChanged",
+      "role.grantsChanged", "role.grantsChanged", "user.roleAssigned",
+      "user.overrideChanged", "user.overrideChanged", "user.overrideChanged",
+    ]);
+    expect(events.rows.every(item => item.actor_id === "owner")).toBe(true);
+    expect(events.rows.filter(item => item.action === "role.grantsChanged")
+      .every(item => item.target_id === roleId)).toBe(true);
+    expect(events.rows.filter(item => item.action.startsWith("user."))
+      .every(item => item.target_id === "ordinary")).toBe(true);
+  });
+
   it("accepts Owner authorization mutation despite own deny and zero ordinary managers, with atomic History", async () => {
     const initialHistory = await client.query<{ total: number }>(
       "select count(*)::int total from admin_history",
