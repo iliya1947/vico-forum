@@ -56,17 +56,16 @@ generic edit-any/delete-any или публичного super-admin интерф
 
 ### Единственный Owner — bootstrap identity
 
-В Vico Forum ровно один Owner — разработчик. Его Google-аккаунт используется для
-входа в предназначенный ему аккаунт форума, а не как самостоятельное доказательство
-полномочий. После Google authentication/linking авторитетной identity является
-внутренний Better Auth `user.id` этого аккаунта; сервер задаёт ровно этот ID
-в `VICO_OWNER_USER_ID`. Google email, provider claim, имя, обычная роль и
+В Vico Forum ровно один Owner — разработчик. Он входит в форум через свой
+Google-аккаунт. После Google sign-in серверная Owner binding указывает на
+точный внутренний Better Auth `user.id` этого аккаунта через
+`VICO_OWNER_USER_ID`. Google email, provider claim, имя, обычная роль и
 grants/overrides сами по себе не создают Owner authority.
 
 Передача владения, второй Owner, наследование и перенос Owner authority на другого
 человека не предусмотрены; отдельных UI/API для этого нет. Не требуется
 first-admin/first-manager bootstrap, выдача стартового grant или новая
-application-функция: существующие Google authentication/linking и server-bound
+application-функция: существующие Google sign-in и server-bound
 Owner authority обеспечивают утверждённую модель.
 
 Реальные Google credentials/redirects, определение и установка binding для
