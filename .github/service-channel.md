@@ -1085,3 +1085,148 @@ No additional top-level page is currently justified:
 A new top-level page should be created later only when a real independent domain grows enough that combining it with one of these five harms clarity.
 
 No implementation is authorized yet.
+
+
+## Settings — consolidated first-release proposal (pending owner approval)
+
+The five-surface map is now consolidated into one proposed first-release package. This is still product definition, not implementation authorization.
+
+### 1. Forum & roles — exact Owner only
+
+First-release proposal:
+- global registration state: open / closed;
+- create/rename/delete eligible custom roles;
+- change permission sets of all roles;
+- Owner identity/binding itself remains outside Settings.
+
+Authorization-management split requires an explicit owner decision:
+- assigning an already-defined role is operational user administration and can reasonably remain delegatable;
+- a per-user permission override can grant a capability even when the user's role does not contain it, so leaving overrides delegatable would let an authorization manager bypass Owner-controlled role permission sets for individual users.
+
+Coordinator recommendation:
+- **Owner-only:** role definitions, role permission sets, per-user permission overrides;
+- **delegatable:** assign an already-defined role to a user;
+- existing special Owner-only protection for the elevated privileged-target capability remains stricter as already implemented.
+
+First-release registration recommendation:
+- one global open/closed switch only.
+- Per-method Google/email registration switches can be added later if a real need appears.
+
+Deferred system controls:
+- forum-write cooldown;
+- attachment-size maximum;
+- locale publication management;
+- read-only/maintenance mode;
+- separate Google/email registration switches.
+
+### 2. Administrator preferences
+
+First-release proposal, personal and device-local:
+- default/last accessible admin destination;
+- default/last accessible Needs attention mode and group;
+- compact/comfortable density;
+- default expansion/collapse of secondary technical detail.
+
+No database persistence required for this slice.
+
+Deferred:
+- favorites/pinned destinations;
+- auto-refresh;
+- administrative work notifications/sounds;
+- customizable page sizes/sorts.
+
+### 3. User preferences
+
+First-release proposal:
+- appearance: System / Light / Dark, preserving current local theme behavior;
+- preferred interface language via the existing account-level `user.locale` boundary;
+- existing Editor preferences: Simple/Advanced, spellcheck, code wrap, code line numbers, preserving device-local per-account behavior.
+
+Open owner decision:
+- whether reply/mention notification toggles belong in the first release.
+- They require new server-side preference semantics because simply hiding created notifications would leave unread/badge behavior incorrect.
+- Coordinator recommendation: **defer them to the next bounded user-preferences slice**. The first page is already useful without creating a new notification-policy subsystem.
+
+Deferred:
+- reply/mention toggles if owner accepts the recommendation;
+- time zone;
+- translation/original default presentation;
+- expanded-original preference;
+- accessibility refinements beyond current platform behavior.
+
+### 4. Account & security
+
+First-release proposal:
+- show linked sign-in methods;
+- expose the existing protected Google-connect action here;
+- allow current-password change for accounts that already have password credentials;
+- show active sessions/devices;
+- revoke one other session;
+- sign out all other sessions.
+
+Deferred:
+- unlink Google;
+- change authentication email;
+- password recovery/reset and setting a password for OAuth-only accounts;
+- account deletion;
+- passkeys/2FA/recovery codes.
+
+These deferred items depend on still-unfinished email/recovery/data-lifecycle/security product decisions.
+
+### 5. Privacy
+
+First-release proposal:
+- `Show my online status`.
+
+When disabled:
+- the user does not appear in the public recent-online member list;
+- the user does not contribute to the public recent-online count.
+
+Open owner decision:
+- default ON preserves current forum behavior;
+- default OFF is more privacy-conservative.
+- Coordinator recommendation: **ON**, because the current product already exposes online presence and the new control becomes an opt-out rather than silently changing existing behavior.
+
+Deferred:
+- mute/block users until those underlying features exist;
+- broader contact/visibility controls;
+- data export/privacy-request flows.
+
+### Subsystem-local settings
+
+Keep these out of the five general pages unless the owner later has a concrete reason to centralize them.
+
+Current example:
+- Complaint priority settings remain inside Complaints with their own authority.
+
+### Separate features that remain outside Settings
+
+- Watch/Subscribe;
+- bookmarks/favorites;
+- mute/block implementation itself;
+- edit own topic title;
+- public Profile fields;
+- forum category/section/topic administration;
+- infrastructure/secrets/providers/deployments/DB/Cloudflare;
+- server-side Owner binding.
+
+### Four product decisions still required before technical planning
+
+**S1 — Authorization management**
+1. Owner-only role definitions/grants + per-user overrides; delegated admins may assign existing roles. **Coordinator recommendation.**
+2. Owner-only all authorization mutations, including role assignment.
+3. Owner-only role definitions/grants; delegated admins may assign roles and edit per-user overrides.
+
+**S2 — Reply/mention notification preferences**
+1. Defer from first Settings release. **Coordinator recommendation.**
+2. Include in first Settings release.
+
+**S3 — Online status default**
+1. ON / opt-out. **Coordinator recommendation.**
+2. OFF / opt-in.
+
+**S4 — Registration control**
+1. One global registration open/closed switch. **Coordinator recommendation.**
+2. Independent Google-registration and email/password-registration switches in the first release.
+
+Once S1–S4 are fixed, product scope is sufficiently defined for Lev to prepare the technical decomposition. Do not assign implementation before then.
