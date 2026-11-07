@@ -8,6 +8,7 @@ import { authorizationForRequest, authorizationOwnerContext } from "../authoriza
 import { AuthorizationNotFoundError } from "../../db/authorization-repository";
 import { AuthorizationUnavailableError } from "../../db/authorization-service";
 import { PERMISSION_CATALOG } from "../authorization/catalog";
+import { isBoundOwner } from "../authorization/owner";
 import { AdminUserDetail } from "../admin/users";
 import { ForumRouteError } from "../forum/ui";
 export { headers, meta } from "./admin";
