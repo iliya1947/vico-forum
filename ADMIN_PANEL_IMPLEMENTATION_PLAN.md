@@ -372,3 +372,26 @@ Current authorization contract conflict to resolve before technical planning:
 - still undecided whether role assignment/per-user overrides are also Owner-only or remain delegatable operational administration.
 
 No implementation starts until the surface map and this boundary are fixed.
+
+
+## Settings surface map
+
+Settings is a family of distinct surfaces:
+
+1. **Owner / system settings** — exact bound Owner only. Whole-forum policy and role configuration.
+2. **Administrator workspace preferences** — personal convenience for actors with administrative/moderation workspace access; no global effects.
+3. **User experience preferences** — personal forum UI/reading/editor preferences.
+4. **Account & security** — personal identity/authentication/security controls.
+5. **Subsystem operational settings** — remain inside the owning subsystem by default and use that subsystem's authority.
+
+Not Settings: infrastructure/deployments/secrets/provider credentials/DB/Cloudflare, Owner binding, object administration, public profile content.
+
+Existing preference behavior to preserve when designing the user surface:
+- theme is browser-local;
+- Editor Simple/Advanced, spellcheck, code-wrap and code-line-number preferences are local per account/device and intentionally not cross-device synchronized;
+- Google account linking is an account/security operation, currently surfaced on own profile;
+- Complaint priority settings are a subsystem-local example.
+
+Role boundary pending owner decision:
+- role definitions + permission sets are Owner-only settings;
+- still undecided whether assigning existing roles and per-user overrides remains delegatable user administration or also becomes Owner-only.
