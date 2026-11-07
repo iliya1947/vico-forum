@@ -1,3 +1,7 @@
+# Мира — single-Owner bootstrap fixed
+
+Owner decision confirmed: one Owner only; Google sign-in identifies the developer account; no ownership-transfer feature and no first-manager bootstrap. Repository already has the required application pieces. Remaining real Google/Owner binding is Stage6 external work. Next bounded step is docs-only closeout before Settings.
+
 # Мира — single Owner / Google bootstrap decision
 
 Owner один: разработчик. Transfer/multiple-owner/recovery-to-another-person feature не планируется.
