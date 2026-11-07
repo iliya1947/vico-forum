@@ -1,6 +1,6 @@
-# Лёва — Stage2 owner authority: технический план готов
+# Лёва — Stage2 owner authority: revised technical plan готов
 
-[Полный план в #251](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6702391114). Baseline main `8301087f9322b34bdd325ed9298fdf3fddd84561`; migrations 0000–0059. Статус: предложен для coordinator review Миры, не implementation/acceptance. Исполнитель не назначен; Марк не назначен.
+[Исходный план](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6702391114) + [authoritative AP-10 revision](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6702520494). Полный текст ниже включает поправку. Owner all-catalog модель подтверждена владельцем; coordinator finding 1 отозван. Finding 2 учтён явно; повторный coordinator PASS ещё не получен. Baseline main `8301087f9322b34bdd325ed9298fdf3fddd84561`; migrations 0000–0059. Статус: revised plan передан Мире для повторного coordinator review; не implementation/acceptance. Исполнитель не назначен; Марк не назначен.
 
 Лёва — owner/authorization redesign Stage 2: технический план для coordinator review.
 
@@ -18,7 +18,7 @@ Baseline: main `8301087f9322b34bdd325ed9298fdf3fddd84561`, migrations 0000–005
 
 Переиспользовать `VICO_OWNER_USER_ID`, полученный только из server environment. Небольшой общий helper нормализует не identity, а правило проверки: binding должен быть валидной непустой строкой без обрезаемых краевых пробелов; сравнение с реальным user ID точное. Email, имя роли, submitted actor ID, session role и произвольные form fields не являются источниками Owner authority.
 
-Owner-aware effective projection для существующего пользователя: все keys текущего code-backed `PERMISSION_CATALOG` независимо от raw role grants/overrides. Это ограниченный набор реализованных возможностей, не wildcard и не разрешение неизвестного permission. Для остальных пользователей сохраняется текущий deny > allow > role. В DB не добавлять Owner grants и не переписывать его обычную конфигурацию.
+Owner-aware effective projection для существующего пользователя: все keys централизованного code-backed `PERMISSION_CATALOG` независимо от raw role grants/overrides; новые реально добавленные в catalog permissions автоматически входят в Owner authority по решению владельца. Это ограниченный набор реализованных возможностей, не wildcard и не разрешение неизвестного permission. Для остальных пользователей сохраняется текущий deny > allow > role. В DB не добавлять Owner grants и не переписывать его обычную конфигурацию.
 
 Raw `role/grants/overrides` продолжают показывать фактическую сохранённую конфигурацию. `effectivePermissions` показывает реальное действие Owner authority. Допустим минимальный внутренний признак источника authority в закрытой management projection, чтобы UI мог объяснить эффективные права при raw deny; отдельного публичного Owner role/badge и редактирования binding не вводить.
 
@@ -44,6 +44,12 @@ Service/Hyperdrive должны давать одинаковый результ
 ### 4. Меры: один Owner boundary на представление и authoritative admission
 
 Основные файлы: `db/user-measure-authority.ts`, `db/user-measures.ts`, `db/user-measure-read.ts`, `db/user-measure-policy.ts`, `db/user-measure-admin-forum.ts` и затронутые Hyperdrive factories.
+
+**Уточнение authoritative AP-10 path (revision после coordinator finding 2).** Raw RBAC вычисляется общим обычным evaluator из freshly resolved `grants + overrides` до Owner projection и sanction filtering. В `db/user-measures.ts authority()` и `db/user-measure-read.ts adminRead()/adminPendingAppeals()` передавать в `actorRawPermissions/targetRawPermissions` этот raw результат, а не Owner-enriched `effectivePermissions`. Новой публичной projection/таблицы для этого не требуется.
+
+В `assertUserMeasureAuthority()` сначала сохранить binding validation и self/Owner-target запреты; затем требовать raw `admin.users.blocks.manage` только для non-Owner: `if (!actorIsBoundOwner && !actorRawPermissions.has(BLOCK_MANAGE_PERMISSION)) forbidden`. Bound Owner получает rank3 по server binding и проходит далее через прежние strict actor>target, проверку валидности issuer floor и actor>=floor; раннего успешного return до этих guards не делать. Non-Owner ranks по raw RBAC, без Owner-injected capabilities.
+
+Общий `authority()` применяется после shared mutex/fresh actor+target reads на том же transaction client к create/change/lift и обоим исходам appeal review. В `adminRead()` сохраняется тот же assertion; ранний raw-manage precheck `adminPendingAppeals()` тоже использует Owner-or-raw-manage predicate, а каждая строка сохраняет target/floor guard. Route/UI effective authority не заменяет repository checks. Owner с raw deny на basic/elevated block keys может выполнить допустимую операцию при floor3; non-Owner без basic manage не проходит даже с elevated key.
 
 Существующий AP-10 rank Owner=3 остаётся производным правилом сравнения меры, не новым RBAC. Owner получает обе block capabilities через общую effective projection. Non-Owner rank по raw обычному RBAC, issuer floor, self-target prohibition, strict target comparison и lifecycle сохраняются. Create/change/lift/appeal review не могут использовать Owner как target.
 
@@ -89,6 +95,8 @@ Non-Owner с одним `access.authorization.manage` не может выдат
 - Owner не target мер на всех lifecycle/appeal mutation paths; seeded old restrictions не блокируют текущего Owner в permission wrapper, прямых Drizzle/native admissions и UI hints. Non-Owner overlap/issuer-floor/expiry и target guards не изменены;
 - fresh state после ожидания существующего mutex и rollback при History failure реально проверены PostgreSQL; не заменять их mock equality;
 - Owner не обходит authentication/Origin, ownership, closed-topic/lifecycle/CAS и validation; availability failures не превращаются в permission success.
+
+**Дополнение AP-10 authoritative acceptance:** unit assertion с пустым raw set bound Owner возвращает3, но сохраняет self/Owner target и invalid issuer-floor отказы; non-Owner без basic manage, включая elevated-only actor, denied. Native PG с raw deny basic/elevated проверяет Owner create/change/lift и accepted/rejected appeal review (accepted remedies change/lift), floor3, atomic History; adminTarget/adminDetail/adminPendingAppeals не отсекают Owner. Проверить, что raw sets сформированы из grants/overrides, а не enriched projection; non-Owner raw hierarchy, sanction-independent rank, peer/floor и discovery privacy неизменны.
 
 **Реальный браузер → built Worker → Better Auth → disposable PostgreSQL:**
 - synthetic Owner с пустым raw role/deny видит применимые Overview/Forum/Users/roles/History/Attention/measure controls и выполняет canonical administrative action с проверкой результата в DB/History;
