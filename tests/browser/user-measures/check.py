@@ -724,6 +724,7 @@ try:
         nonowner_ctx, nonowner_page, nonowner_id = new_actor(browser, "nonowner-manager")
         sql("insert into authz_user_roles(user_id,role_id) values($1,'builtin-admin')",
             [nonowner_id])
+        low_target_ctx, low_target_page, low_target_id = new_actor(browser, "elevated-rank-zero-target")
         document(owner_page, "/en/admin/authorization")
         expect(owner_page.locator(".admin-owner-authority-note")).to_contain_text(
             "Owner authority grants all current permissions")
@@ -793,9 +794,10 @@ try:
             'form.admin-override-row:has(input[name="permission"]'
             '[value="' + elevated_key + '"])'
         )
-        # The previously sanctioned subject carries an issuer floor; use a
-        # fresh unsanctioned rank-0 target to test the recipient's own rank.
-        recipient_measure_path = "/en/admin/measures?target=" + quote(nonowner_id, safe="")
+        # A newly registered user has no grant, override or measure fixture.
+        # Neither a previously sanctioned subject nor an admin-role user is an
+        # appropriate uncontested lower-rank target for this acceptance.
+        recipient_measure_path = "/en/admin/measures?target=" + quote(low_target_id, safe="")
 
         def owner_recipient_card():
             document(owner_page, "/en/admin/authorization")
@@ -841,8 +843,32 @@ try:
 
         recipient = assign_by_owner(role_id)
         expect(recipient.locator(".admin-effective-permissions")).to_contain_text(elevated_key)
-        # A new authenticated request from the newly elevated subject must
-        # exercise real AP-10 rank2, not merely echo the Owner's submitted form.
+        # Verify the whole raw-authority chain before involving AP-10 target hierarchy:
+        # role-based basic + privileged grants; no overriding deny, no direct
+        # administrative restriction; fresh target has no role/override/measure.
+        actual_actor_grants = sql("""select p.permission_key
+          from authz_role_permissions p join authz_user_roles ur on ur.role_id=p.role_id
+          where ur.user_id=$1 and p.permission_key=any($2::text[])
+          order by p.permission_key""",
+          [other_id, ["admin.users.blocks.manage", elevated_key]])
+        assert actual_actor_grants == [
+            {"permission_key": "admin.users.blocks.manage"},
+            {"permission_key": elevated_key},
+        ], actual_actor_grants
+        assert sql("""select effect from authz_user_permission_overrides where user_id=$1
+          and permission_key=any($2::text[])""",
+          [other_id, ["admin.users.blocks.manage", elevated_key]]) == []
+        assert sql("""select r.restriction_key from user_measure_restrictions r
+          join user_measures m on m.id=r.measure_id
+          where m.target_user_id=$1 and r.restriction_key='admin.usersAccess'
+          and r.enabled and m.lifted_at is null and
+          (m.expires_at is null or m.expires_at>clock_timestamp())""", [other_id]) == []
+        assert sql("select role_id from authz_user_roles where user_id=$1", [low_target_id]) == []
+        assert sql("select permission_key from authz_user_permission_overrides where user_id=$1", [low_target_id]) == []
+        assert sql("select id from user_measures where target_user_id=$1", [low_target_id]) == []
+        # Both the basic admission and the strictly lower target must work
+        # on new requests from the actual recipient, not Owner's session.
+        document(other, "/en/admin/measures")
         document(other, recipient_measure_path)
         expect(form_for(other, "create").locator(
             'input[name="restriction"][value="admin.forum"]')).to_have_count(1)
@@ -928,6 +954,7 @@ try:
         record("stage2-owner-raw-deny-explanation-en-ru-he-320-768-1280")
         owner_ctx.close()
         nonowner_ctx.close()
+        low_target_ctx.close()
 
         # Real browser reflow, current translated strings and keyboard operability.
         for locale, direction in (("en", "ltr"), ("ru", "ltr"), ("he", "rtl")):
