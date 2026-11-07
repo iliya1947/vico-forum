@@ -97,20 +97,43 @@ try:
                                     headless=True, args=['--no-sandbox'])
         manager = browser.new_context(viewport={'width': 1280, 'height': 900})
         reader = browser.new_context(viewport={'width': 1280, 'height': 900})
-        for c in [manager, reader]:
+        nonowner = browser.new_context(viewport={'width': 1280, 'height': 900})
+        for c in [manager, reader, nonowner]:
             c.route('**/*', lambda route: route.continue_() if route.request.url.startswith(base + '/') else (external.append(route.request.url), route.abort())[-1])
         page = manager.new_page()
         page.on('pageerror', lambda e: errors.append(str(e)))
         document(page, '/en/admin/history', 401)
-        for c, name in [(manager, 'Manager'), (reader, 'Reader')]:
+        for c, name in [(manager, 'Owner session'), (reader, 'Reader'), (nonowner, 'Non-owner manager')]:
             r = c.request.post(base + '/api/auth/sign-up/email', headers={'Origin': base}, data={'name': name + ' עברית', 'email': prefix + name + '@test.invalid', 'password': prefix + '-local-only'})
             assert r.status == 200, r.status
             accounts.append(r.json()['user']['id'])
-        actor, target = accounts
+        signed_up_actor, target, nonowner_id = accounts
         document(page, '/en/admin/history', 403)
-        sql("insert into authz_user_roles(user_id,role_id) values($1,'builtin-admin')", [actor])
-        sql("insert into authz_user_permission_overrides(user_id,permission_key,effect) values($1,'admin.history.read','deny')", [actor])
-        document(page, '/en/admin/history', 403)
+        # The Worker is bound to this synthetic Owner ID. Keep real Better Auth
+        # session cookies, but resolve their database identity to the bound row.
+        actor = 'ap03-synthetic-owner'
+        sql('insert into "user"(id,name,email) values($1,$2,$3)',
+            [actor, 'Bound Owner', prefix + '-owner@test.invalid'])
+        sessions = sql('update "session" set user_id=$1 where user_id=$2 returning id',
+                       [actor, signed_up_actor])
+        assert sessions, 'Owner acceptance requires a genuine Better Auth session'
+        accounts.append(actor)
+        sql("""insert into authz_user_roles(user_id,role_id)
+          values($1,'builtin-admin'),($2,'builtin-admin')""", [actor, nonowner_id])
+        sql("""insert into authz_user_permission_overrides(user_id,permission_key,effect)
+          values($1,'admin.history.read','deny'),($2,'admin.history.read','deny')""",
+            [actor, nonowner_id])
+        # Owner has all effective permissions even with a saved history-read deny.
+        document(page, '/en/admin/history')
+        np = nonowner.new_page()
+        np.on('pageerror', lambda e: errors.append(str(e)))
+        document(np, '/en/admin/authorization')
+        assert np.locator('.admin-role-card').count() >= 1
+        assert np.locator('form:has(input[name="intent"])').count() == 0
+        document(np, '/en/admin/history', 403)
+        mutate(nonowner, {'intent': 'createRole', 'slug': prefix + '-blocked',
+                          'displayName': 'Must deny'}, 403)
+        record('nonowner-with-raw-manage-can-read-roles-but-has-no-writes-or-history')
         before = count()
         submit_management(page, {'intent': 'createRole', 'slug': prefix, 'displayName': 'Before ' + prefix})
         role = sql('select id from authz_roles where slug=$1', [prefix])[0]['id']
@@ -135,11 +158,19 @@ try:
         assert count() == before + 6
         record('controlled-stale-invalid-cross-origin-states')
         record('six-real-management-producers-noop-retry-and-denial')
+        document(np, '/en/admin')
+        assert np.locator('.admin-history-events').count() == 0
+        assert 'Deleted role עברית ' + prefix not in np.content()
+        record('nonowner-overview-omits-history-without-read')
         document(page, '/en/admin')
-        assert page.locator('.admin-history-events').count() == 0
-        assert 'Deleted role עברית ' + prefix not in page.content()
-        record('no-private-overview-history-without-read')
-        sql("update authz_user_permission_overrides set effect='allow' where user_id=$1 and permission_key='admin.history.read'", [actor])
+        assert page.locator('.admin-history-events li').count() == 5
+        record('owner-history-projection-ignores-saved-read-deny')
+        sql("update authz_user_permission_overrides set effect='allow' where user_id=$1 and permission_key='admin.history.read'", [nonowner_id])
+        document(np, '/en/admin/history')
+        assert np.locator('.admin-history-events li').count() == 6
+        document(np, '/en/admin/authorization')
+        assert np.locator('form:has(input[name="intent"])').count() == 0
+        record('nonowner-history-read-does-not-delegate-authorization-writes')
         document(page, '/en/admin/history')
         assert page.locator('.admin-history-events li').count() == 6
         assert 'Deleted role עברית ' + prefix in page.locator('.admin-history-events').inner_text()
@@ -230,8 +261,8 @@ try:
         assert page.locator('.admin-history-events li').count() == 25
         record('history-recovery')
 
-        # Real canonical self-revocation is permitted. Run last: the same actor
-        # cannot perform any subsequent management operations on fresh requests.
+        # Owner can persist a raw self-deny, but this must not revoke
+        # server-bound effective Owner authority on subsequent requests.
         management(page)
         self_override = page.locator(
             'form.admin-override-row:has(input[name="userId"][value="' + actor +
@@ -254,14 +285,17 @@ try:
         assert self_event == {'action': 'user.overrideChanged', 'target_type': 'user',
                               'target_id': actor}, self_event
         document(page, '/en/admin/history')
-        assert page.locator('.admin-history-events li').first.inner_text().find('Manager') >= 0
-        document(page, '/en/admin/authorization', 403)
+        assert 'Bound Owner' in page.locator('.admin-history-events li').first.inner_text()
+        document(page, '/en/admin/authorization')
         mutate(manager, {'intent':'createRole', 'slug':prefix+'-after-revoke',
-                         'displayName':'Must deny'}, 403)
-        assert count() == before_self_revoke + 1
+                         'displayName':'Owner remains authorized'})
+        assert count() == before_self_revoke + 2
         assert sql("select count(*)::int n from authz_roles where slug=$1",
-                   [prefix + '-after-revoke']) == [{'n': 0}]
-        record('canonical-last-manager-self-revoke-commits-history-next-request-denied')
+                   [prefix + '-after-revoke']) == [{'n': 1}]
+        mutate(nonowner, {'intent':'createRole', 'slug':prefix+'-manager-attempt',
+                          'displayName':'Must deny'}, 403)
+        assert count() == before_self_revoke + 2
+        record('owner-self-deny-does-not-revoke-effective-writes-nonowner-still-forbidden')
         browser.close()
     assert not errors, errors
     assert not external, external
