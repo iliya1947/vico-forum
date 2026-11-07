@@ -123,6 +123,33 @@ describe("PostgreSQL 17 locale migrations", () => {
 
   });
 
+  it("migrates a pre-0059 mutex row for both historical flag values without dropping its PK or check", async () => {
+    const { readFile } = await import("node:fs/promises");
+    const migration = await readFile("drizzle/0059_remove_last_manager_flag.sql", "utf8");
+    for (const oldFlag of [false, true]) {
+      try {
+        // pg_temp shadows only this session's public lock table: no shared actor state changes.
+        await client.query(`create temporary table authz_mutation_lock (
+          id integer primary key, managers_ever_existed boolean not null default false,
+          constraint authz_mutation_lock_singleton_check check (id = 1))`);
+        await client.query(
+          "insert into authz_mutation_lock(id,managers_ever_existed) values(1,$1)", [oldFlag],
+        );
+        await client.query(migration);
+        expect((await client.query("select * from authz_mutation_lock")).rows).toEqual([{ id: 1 }]);
+        await expectDatabaseCode(client.query("insert into authz_mutation_lock(id) values(1)"), "23505");
+        await expectDatabaseCode(client.query("insert into authz_mutation_lock(id) values(2)"), "23514");
+      } finally {
+        await client.query("drop table if exists pg_temp.authz_mutation_lock");
+      }
+    }
+    expect((await client.query("select * from authz_mutation_lock")).rows).toEqual([{ id: 1 }]);
+    const publicColumns = await client.query<{ column_name: string }>(
+      "select column_name from information_schema.columns where table_schema='public' and table_name='authz_mutation_lock'",
+    );
+    expect(publicColumns.rows).toEqual([{ column_name: "id" }]);
+  });
+
   it("rejects partial NULL allowance occurrence metadata", async () => {
     const columns = ["allowance_state", "allowance_generation", "allowance_attempt"] as const;
     for (const [index, nullableColumn] of columns.entries()) {
