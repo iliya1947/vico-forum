@@ -699,6 +699,119 @@ try:
             assert "AP10 acceptance topic" not in denied_guest.text(), private_path
         record("ap11-users-topic-guest-and-member-private-denials")
 
+        # Stage 2: the isolated Worker has VICO_OWNER_USER_ID=ap10-synthetic-owner.
+        # Use a genuine Better Auth session and transfer its DB session user_id to an
+        # existing synthetic bound Owner row. No form field, cookie claim, or role name
+        # is ever treated as the Owner binding.
+        owner_id = "ap10-synthetic-owner"
+        owner_ctx, owner_page, signed_up_id = new_actor(browser, "owner-session")
+        sql("""insert into "user"(id,name,email)
+          values($1,'Stored ordinary role', $2)""",
+            [owner_id, prefix + "-synthetic-owner@test.invalid"])
+        session_rows = sql('update "session" set user_id=$1 where user_id=$2 returning id',
+                           [owner_id, signed_up_id])
+        assert len(session_rows) >= 1, "Better Auth owner test requires a real session"
+        stored_owner_role = prefix + "-empty-owner"
+        sql("insert into authz_roles(id,slug,display_name,is_system) values($1,$1,'Saved ordinary role',false)",
+            [stored_owner_role])
+        sql("insert into authz_user_roles(user_id,role_id) values($1,$2)",
+            [owner_id, stored_owner_role])
+        sql("""insert into authz_user_permission_overrides(user_id,permission_key,effect)
+          select $1,key,'deny' from authz_permissions""", [owner_id])
+        assert sql("""select count(*)::int total from authz_user_permission_overrides
+          where user_id=$1 and effect='deny'""", [owner_id])[0]["total"] >= 20
+
+        nonowner_ctx, nonowner_page, nonowner_id = new_actor(browser, "nonowner-manager")
+        sql("insert into authz_user_roles(user_id,role_id) values($1,'builtin-admin')",
+            [nonowner_id])
+        document(owner_page, "/en/admin/authorization")
+        expect(owner_page.locator(".admin-owner-authority-note")).to_contain_text(
+            "Owner authority grants all current permissions")
+        owner_card = owner_page.locator('.admin-user-card:has(input[name="userId"][value="' + owner_id + '"])')
+        expect(owner_card).to_have_count(1)
+        expect(owner_card.locator(".admin-badge")).to_have_text("Saved ordinary role")
+        expect(owner_card.locator('.admin-effective-permissions')).to_contain_text(
+            "admin.users.blocks.managePrivileged")
+        expect(owner_card.locator('form.admin-override-row:has(input[name="permission"]'
+            '[value="access.authorization.manage"]) select[name="effect"]')).to_have_value("deny")
+        document(owner_page, "/en/admin/measures?target=" + quote(other_id, safe=""))
+        expect(form_for(owner_page, "create").locator(
+            'input[name="restriction"][value="admin.usersAccess"]')).to_have_count(1)
+        document(owner_page, "/en/admin/measures?target=" + quote(owner_id, safe=""), 403)
+
+        role_slug = prefix + "-owner-elevated"
+        document(owner_page, "/en/admin/authorization")
+        create_role = owner_page.locator("form.admin-create-role")
+        create_role.locator('input[name="slug"]').fill(role_slug)
+        create_role.locator('input[name="displayName"]').fill("Owner-created elevated role")
+        before_owner_history = count = sql("select count(*)::int n from admin_history")[0]["n"]
+        with owner_page.expect_response(lambda r: r.request.method == "POST" and
+                                       "/admin/authorization" in r.url) as owner_create:
+            create_role.locator('button[type="submit"]').click()
+        assert owner_create.value.status == 200, owner_create.value.status
+        role_id = sql("select id from authz_roles where slug=$1", [role_slug])[0]["id"]
+        assert sql("""select count(*)::int n from admin_history where
+          actor_id=$1 and action='role.created' and target_id=$2""", [owner_id, role_id])[0]["n"] == 1
+        role_grants_form = owner_page.locator(
+            '.admin-role-card:has(input[name="roleId"][value="' + role_id + '"])'
+            ' form.admin-permissions-form')
+        expect(role_grants_form).to_have_count(1)
+        role_grants_form.locator('input[type="checkbox"][value="admin.users.blocks.managePrivileged"]').check()
+        with owner_page.expect_response(lambda r: r.request.method == "POST" and
+                                       "/admin/authorization" in r.url) as owner_grant:
+            role_grants_form.locator('button[type="submit"]').click()
+        assert owner_grant.value.status == 200, owner_grant.value.status
+        assert sql("""select permission_key from authz_role_permissions
+          where role_id=$1 and permission_key='admin.users.blocks.managePrivileged'""",
+          [role_id]) == [{"permission_key": "admin.users.blocks.managePrivileged"}]
+        document(nonowner_page, "/en/admin/authorization")
+        elevated_card = nonowner_page.locator(
+            '.admin-role-card:has(input[name="roleId"][value="' + role_id + '"])')
+        expect(elevated_card).to_have_count(1)
+        expect(elevated_card.locator('form:has(input[name="intent"][value="deleteRole"])')).to_have_count(0)
+        expect(elevated_card.locator('input[type="checkbox"][value="admin.users.blocks.managePrivileged"]')).to_have_count(0)
+        for forbidden in (
+            {"intent":"deleteRole", "roleId":role_id},
+            {"intent":"roleGrants", "roleId":role_id},
+            {"intent":"assignRole", "userId":other_id, "roleId":role_id},
+            {"intent":"override", "userId":other_id,
+             "permission":"admin.users.blocks.managePrivileged", "effect":"allow"},
+        ):
+            response = post(nonowner_ctx, "/en/admin/authorization", forbidden)
+            assert response.status == 403, (forbidden["intent"], response.status, response.text()[:180])
+        assert sql("select count(*)::int n from admin_history")[0]["n"] == before_owner_history + 2
+        document(owner_page, "/en/admin/authorization")
+        owner_elevated = owner_page.locator(
+            '.admin-role-card:has(input[name="roleId"][value="' + role_id + '"])')
+        expect(owner_elevated.locator('form:has(input[name="intent"][value="deleteRole"])')).to_have_count(1)
+        owner_delete = owner_elevated.locator('form:has(input[name="intent"][value="deleteRole"])')
+        with owner_page.expect_response(lambda r: r.request.method == "POST" and
+                                       "/admin/authorization" in r.url) as deletion:
+            owner_delete.locator('button[type="submit"]').click()
+        assert deletion.value.status == 200, deletion.value.status
+        assert sql("select count(*)::int n from authz_roles where id=$1", [role_id])[0]["n"] == 0
+        assert sql("select count(*)::int n from admin_history")[0]["n"] == before_owner_history + 3
+        record("stage2-browser-owner-session-all-catalog-and-elevated-authority-mutations")
+
+        notes = {
+            "en": "Owner authority grants all current permissions",
+            "ru": "Полномочия владельца дают все действующие разрешения",
+            "he": "סמכות הבעלים מעניקה את כל ההרשאות הקיימות",
+        }
+        for locale, text in notes.items():
+            for width in (320, 768, 1280):
+                owner_page.set_viewport_size({"width": width, "height": 900})
+                document(owner_page, "/" + locale + "/admin/authorization")
+                expect(owner_page.locator(".admin-owner-authority-note")).to_contain_text(text)
+                assert owner_page.evaluate("document.documentElement.scrollWidth <= innerWidth + 1"), (
+                    "owner authority layout overflow", locale, width)
+                if width == 320:
+                    owner_page.screenshot(path=str(args.output / (
+                        "stage2-owner-roles-" + locale + "-320.png")), full_page=True)
+        record("stage2-owner-raw-deny-explanation-en-ru-he-320-768-1280")
+        owner_ctx.close()
+        nonowner_ctx.close()
+
         # Real browser reflow, current translated strings and keyboard operability.
         for locale, direction in (("en", "ltr"), ("ru", "ltr"), ("he", "rtl")):
             for width in (320, 768, 1280):
