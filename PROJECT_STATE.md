@@ -28,7 +28,7 @@ Vico Forum находится в pre-release разработке.
 
 - Stage 0–5 завершены в repository/local-CI path.
 - Текущий standalone product priority по `ROADMAP.md` — UI/UX product pass.
-- Ordinary Admin Panel AP-01–AP-11 и owner/authorization redesign Stage 1–2 реализованы в repository/local-CI; Complaints ведутся отдельно.
+- Ordinary Admin Panel AP-01–AP-11, owner/authorization redesign Stage 1–2 и Settings SET-01 реализованы в repository/local-CI; SET-02–SET-06 ещё не реализованы и не назначены. Complaints ведутся отдельно.
 - Stage 6 external integration поставлен владельцем на паузу и не продолжается без отдельного указания.
 - Публичный production release не выполнен.
 
@@ -98,13 +98,14 @@ Stage 5 завершён в repository/local-CI path.
 - AP-06 — защищённый Forum index и отдельные страницы категорий и разделов с поиском и реальной статистикой;
 - AP-07 — отдельная административная страница темы, ограниченный поиск тем раздела и общие действия над сообщениями (source locale и защищённая история ревизий);
 - AP-08 — close/reopen тем: независимое разрешение `forum.topic.close`, persisted closed/version с атомарной History, запрет новых ответов без исключения для ролей, общий public/admin Quick actions и сохранение уже открытого reply editor при закрытии. Matching committed publication receipt сохраняет idempotent replay после closure.
-- AP-09 — защищённый Users index/detail с независимым `admin.users.read`, поиском/пагинацией по публичной identity-проекции и переиспользованием существующих authorization assignment/override controls только при отдельном `access.authorization.manage`;
+- AP-09 — защищённый Users index/detail с независимым `admin.users.read`, поиском/пагинацией по публичной identity-проекции и точечным authorization snapshot при `access.authorization.manage`; assignment/override forms доступны только server-bound Owner;
 - AP-10 — configurable temporary/permanent administrative measures с независимыми restrictions/expiry, exact-measure appeals, authority/issuer-floor hierarchy, request-scoped enforcement обычных и административных действий, приватными own/admin surfaces и атомарной History;
 - AP-11 — integration/factual closeout delivered AP-01–AP-10: connected Users authorization/History recovery, Forum closure × administrative-measure admission, protected cache/privacy boundaries и bounded EN/RU/HE responsive browser verification.
 
 AP-01–AP-11 присутствуют в `main` и завершены в repository/local-CI path. AP-11 использует настоящий built Worker + Better Auth + PostgreSQL 17 + Chromium и не добавляет новую domain functionality, schema, permissions или grants. Это не production/deployed acceptance и не owner visual acceptance.
 
-Settings не входит в завершённый AP-01–AP-11 scope: по решению владельца он перенесён в отдельную будущую фазу после owner/authorization redesign.
+Settings не входит в AP-01–AP-11: его первый отдельный пакет SET-01 реализован в `main`
+в repository/local-CI; Settings shell и остальные пакеты SET-02–SET-06 ещё не реализованы.
 
 Два bounded этапа owner/authorization redesign реализованы в `main`. Stage 1 удалил
 obsolete last-manager veto и manager-count state миграцией `0059`, сохранив общий
@@ -116,7 +117,11 @@ Owner authority для всех code-backed permissions, независимую 
 аккаунта фиксируется server-side через `VICO_OWNER_USER_ID`;
 email/name/role не создают эту authority. Передача владения, второй Owner,
 наследник и first-manager bootstrap не предусмотрены; дополнительная
-application-реализация не требуется. Детали — в `docs/auth/AUTHORIZATION.md`
+application-реализация для bootstrap identity не требуется. SET-01 дополнительно
+закрепил Owner-only запись для всех шести семейств authorization-management mutations
+(роли/grants, assignments, overrides) при сохранении read-only доступа обычных holders
+`access.authorization.manage`. Проверки, History, mutex и сохранённые raw данные
+не заменены новым RBAC. Детали — в `docs/auth/AUTHORIZATION.md`
 и `docs/ADMIN_PANEL.md`. Реальная Google-настройка, binding и deployed acceptance
 остаются Stage 6.
 
@@ -181,7 +186,7 @@ External topology является mutable state и должна перепро�
 ## Актуальные незавершённые продуктовые границы
 
 - UI/UX product pass ещё требует финального closeout и обязательной real-runtime product/visual acceptance по `docs/UI_UX_PASS.md`.
-- В `main` ordinary Admin Panel AP-01–AP-11 и owner/authorization redesign Stage 1–2 реализованы в repository/local-CI scope; модель единственного Owner утверждена без дополнительной application-функции. Settings — следующий отдельный package после финального documentation closeout; real Google/Owner binding и production acceptance остаются Stage 6.
+- В `main` ordinary Admin Panel AP-01–AP-11, owner/authorization redesign Stage 1–2 и Settings SET-01 реализованы в repository/local-CI. Следующий по утверждённой последовательности — SET-02, но SET-02–SET-06 ещё не реализованы и не назначены. Реальные Google/Owner binding и production acceptance остаются Stage 6.
 - Complaints integration/closeout покрыт repository/local-CI проверками; external/deployed acceptance Complaints не выполнялась.
 - Email verification/password recovery остаются отложенными.
 - Editor drafts/autosave остаются отложенными.
@@ -190,7 +195,7 @@ External topology является mutable state и должна перепро�
 ## Ближайший маршрут
 
 1. Продолжать утверждённую bounded product-разработку без превращения обычных PR в external rollout.
-2. После финального owner/authorization documentation closeout перейти к Settings как отдельному package, не переоткрывая реализованную Owner authority и решение об одном владельце. Реальную Google/Owner binding acceptance оставить Stage 6. Complaints продолжать по его профильному контракту/служебному каналу.
+2. Следующий по утверждённой последовательности Settings пакет — SET-02; начинать его только после отдельного назначения. SET-03–SET-06 также не назначены. Сохранить текущую Owner-only mutation policy, а реальную Google/Owner binding acceptance оставить Stage 6. Complaints продолжать по его профильному контракту/служебному каналу.
 3. Довести UI/UX product pass до финальной real-runtime acceptance.
 4. Возобновлять Stage 6 external integration только по отдельному указанию владельца и по `docs/database/*`.
 5. После завершения pre-release product и external gates перейти к финальному общепроектному refinement и Stage 7 production release по `ROADMAP.md`.

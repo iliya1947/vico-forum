@@ -11,9 +11,10 @@ AP-03 adds authorization-change History and protected Overview recent actions. A
 existing topic operations in shared Quick actions and connects their forum/Help History producers. AP-06 adds
 protected category/section browsing and dedicated object pages. AP-07 adds administrative topic detail
 and shared source-locale/history actions for individual messages. AP-08 adds shared topic close/reopen.
-AP-09 adds protected Users index/detail with the independent `admin.users.read` capability and reuses
-the existing authorization assignment/override controls only when the actor also has
-`access.authorization.manage`. AP-10 adds configurable administrative measures, exact-measure
+AP-09 adds protected Users index/detail with the independent `admin.users.read` capability.
+The selected user's authorization snapshot requires the separate
+`access.authorization.manage` read capability; inline assignment/override controls
+are writable only for the exact server-bound Owner (SET-01). AP-10 adds configurable administrative measures, exact-measure
 appeals, their affected-operation enforcement and the independent
 `admin.users.blocks.manage` / `admin.users.blocks.managePrivileged` capabilities.
 AP-02 itself added no schema
@@ -89,13 +90,12 @@ location projection, including `section: null` for Help questions. Any necessary
 admin projection is separately protected and does not alter that public contract.
 
 During owner-only pre-release, approved unfinished destinations may use the shared localized
-Under development mechanism. This does not grant a private read or mutation. Settings has no
-approved concrete operations yet; its placeholder does not authorize a settings store or API.
-The owner explicitly separated Settings from AP-01–AP-11. The subsequent
-owner/authorization implementation and single-Owner bootstrap product decision are
-complete in repository/local-CI scope. Settings is the next separate package after
-the final redesign documentation closeout; real Google/Owner binding acceptance remains
-Stage 6. Settings is still unfinished and has no approved concrete operations.
+Under development mechanism. This does not grant a private read or mutation. Settings is
+a separate approved five-surface product sequence outside AP-01–AP-11:
+SET-01 has implemented Owner-only authorization writes in repository/local-CI,
+but the actual Settings shell, registration controls and remaining SET-02–SET-06
+surfaces are not implemented. The placeholder authorizes no settings store or API.
+Real Google/Owner binding acceptance remains Stage 6.
 
 ## Implemented category/section browsing (AP-06)
 
@@ -201,8 +201,8 @@ grant global admission either. Each section and action independently checks its 
 | --- | --- | --- |
 | Overview / shell | Authenticated actor with at least one applicable implemented section capability | Navigation is not mutation authority; only public aggregate statistics and permitted destinations are exposed |
 | Forum / category, section, topic pages | At least one of `forum.topic.pin`, `forum.solution.manageAny`, `forum.helpDuplicate.manage`, `forum.sourceLocale.correctAny`, `forum.post.history.read`, `forum.topic.close` | Exact operation permission and authoritative object/resource conditions, as below |
-| Roles & permissions | `access.authorization.manage` | Same existing permission, management validation, shared transaction mutex and fresh permission/admission checks |
-| Users / measures | `admin.users.read` for general index/detail; `access.authorization.manage` for the existing authorization subset; `admin.users.blocks.manage` for exact target/measures lookup | Authorization controls require `access.authorization.manage`; measure create/change/lift and appeal review require fresh `admin.users.blocks.manage` plus target/issuer hierarchy (and `admin.users.blocks.managePrivileged` for privileged targets) |
+| Roles & permissions | `access.authorization.manage` for protected reads | Exact server-bound Owner only for all role/grant/user authorization mutations; existing validation, shared mutex and fresh permission/admission checks |
+| Users / measures | `admin.users.read` for general index/detail; `access.authorization.manage` for the existing authorization subset; `admin.users.blocks.manage` for exact target/measures lookup | Authorization assignment/override writes require exact bound Owner (non-Owner read-only); measure create/change/lift and appeal review retain fresh `admin.users.blocks.manage` plus target/issuer hierarchy (and `admin.users.blocks.managePrivileged` for privileged targets) |
 | History / Overview recent actions | `admin.history.read` | History-read does not authorize recorded operations; actors do not need history-read merely to perform an otherwise permitted operation |
 | Settings placeholder | Actor already admitted to shell | No private settings data or mutation |
 
@@ -218,8 +218,9 @@ separate attention workflow and do not independently grant global admission. Thi
 remove their existing direct-route or contextual capabilities. A new concrete administrative
 use can extend the admission matrix with its implementation, rather than by role membership.
 
-`access.authorization.manage` retains its existing direct URL and role/user management
-functionality without a new mandatory user-read gate. Conversely, user-read or block-management
+`access.authorization.manage` retains its existing direct URL and role/user
+**read** functionality without a new mandatory user-read gate; SET-01 permits
+mutation there only for exact bound Owner. Conversely, user-read or block-management
 must not expose the full authorization-management snapshot, email, grants or overrides.
 User DTOs explicitly project fields for the actor's capability; public profile fields can be
 reused without creating a second identity store.
@@ -228,7 +229,7 @@ reused without creating a second identity store.
 
 | Object/action | Effective permission | Authoritative applicability |
 | --- | --- | --- |
-| Create/rename/delete custom role; change role grants, assignment or user override | `access.authorization.manage` | Existing built-in/custom rules, assigned-role deletion restriction, fresh server-side permission/admission checks and serialized mutation boundary |
+| Create/rename/delete custom role; change role grants, assignment or user override | Exact bound Owner + fresh `access.authorization.manage` | Existing built-in/custom rules, assigned-role deletion restriction, current-release Owner-only policy, fresh server-side permission/admission checks and serialized mutation boundary (including no-ops) |
 | Pin/unpin topic | `forum.topic.pin` | Target topic exists; authorship alone is insufficient |
 | Mark solved / select best answer administratively | `forum.solution.manageAny` | Existing topic/post identity and solution/duplicate state rules |
 | Own-topic solution controls | `forum.solution.manageOwn` | Authoritative topic author is the actor; does not independently admit the global panel |
@@ -259,8 +260,8 @@ Global admission is evaluated from the implemented union above, including a cust
 per-user grant of only one capability. The header links to the global panel using a fresh
 server presentation boolean; the protected loader independently rechecks access before its
 count query. Attention-only and own-only capabilities do not grant entry. Existing direct
-Roles & permissions loader/actions keep `access.authorization.manage` and are not gated by
-an additional global permission.
+Roles & permissions loader retains `access.authorization.manage`; actions also require
+the separate Owner-only mutation policy, without any additional global permission.
 
 One PostgreSQL statement reads scalar totals for categories, public sections (excluding the
 reserved internal Help service section), topics and messages. Help content remains included
@@ -323,8 +324,9 @@ AdminShell, with Roles marked current and capability-derived Overview/Forum/Hist
 There is one forum shell/main landmark and one admin-panel h1. Management headings nest below
 it without changing the forms, intents or field names. UI Preview reuses that same view.
 
-Direct loader and action retain independent `access.authorization.manage` gates; neither a
-parent loader nor shell admission replaces them. The loader derives presentation flags from
+Direct loader and action retain independent `access.authorization.manage` checks;
+the action additionally rejects every non-Owner with private `403` before parsing mutation
+payload, independently of the UI. Neither a parent loader nor shell admission replaces them. The loader derives presentation flags from
 the same resolver handle as its management gate, using the existing internally consistent
 resolution/cache and next-request freshness. History-read is not required for management.
 The six existing intents continue through the same service/repository transaction, retained
@@ -332,16 +334,18 @@ mutex/fresh permission checks and AP-03 event producer. Invalid/not-found/assign
 feedback stays controlled. Canonical URL and built-in/custom rules are retained; shared localized metadata and
 no-store headers apply to the composed route; no new keys, schema, permission or API is introduced.
 
-Stage 2 keeps the same management writer and now exposes actual bound Owner effective
-authority in the **private** Roles and Users authorization projection, alongside the
-unchanged stored role/grants/overrides. The explanation is localized EN/RU/HE; no
-editable Owner binding or public Owner role is introduced. Only the exact server-bound
-Owner may grant or revoke `admin.users.blocks.managePrivileged`, including through
-role grants, assignment into/out of a role carrying the key, per-user overrides
-(`allow`/`deny`/`inherit`) and deletion of an unassigned elevated custom role.
-Ordinary managers retain ordinary role/user changes but cannot use a role deletion to
-circumvent the elevated gate. Hidden controls are not the admission boundary:
-the server rechecks fresh authority in the serialized transaction.
+Stage 2 exposes the actual bound Owner effective authority in the **private** Roles and
+Users authorization projection alongside unchanged stored role/grants/overrides; the
+explanation is localized EN/RU/HE. SET-01 now makes **every** authorization-management
+write Owner-only: role create/rename/delete, grants, assignment and per-user overrides.
+A non-Owner with `access.authorization.manage` can still read permitted Roles and
+targeted Users authorization state, including raw vs effective values, but sees no
+mutation forms. Existing elevated-key checks for
+`admin.users.blocks.managePrivileged` remain an additional constraint. The single
+application policy seam `canMutateAuthorization` is extensible for separately approved
+future deputy delegation; no deputy authority or new role is implemented.
+Server enforcement inside the shared serialized/fresh writer is authoritative,
+including for no-op and direct requests; hiding forms is not the authorization boundary.
 
 **Single-Owner bootstrap boundary.** Vico Forum has exactly one Owner: the developer.
 The developer signs in through Google to the intended internal forum account;
@@ -554,15 +558,18 @@ authorization-read contract. It does not load the full authorization-management 
 other users' state. Without the management permission, none of that management payload or UI is
 rendered.
 
-Assignment and per-permission override controls reuse the existing canonical
-`/:locale/admin/authorization` action and its `assignRole` / `override` intents. AP-09 adds
-no second writer, mutation protocol, actor authority field, authorization-serialization model or History event kind.
-The session remains actor authority, the canonical action rechecks fresh
-`access.authorization.manage`, and successful writes revalidate the current Users detail.
-If a management submit is freshly denied while `admin.users.read` still remains effective,
-the route performs at most one same-URL GET recovery and returns to read-only detail without
-replaying the denied mutation. If Users-read is also gone, the result remains fail-closed 403
-without a recovery loop. A later independent permission change can recover independently.
+The selected user's authorization details remain visible to actors with
+`access.authorization.manage`, but **only the exact bound Owner** sees assignment
+and per-permission override Forms. Those Owner forms reuse the existing canonical
+`/:locale/admin/authorization` action with `assignRole` / `override` intents.
+AP-09 adds no second writer, mutation protocol, actor authority field,
+authorization-serialization model or History event kind. The session remains actor
+authority; the canonical action rechecks fresh `access.authorization.manage` and the
+Owner-only write policy. On success, inline Users detail revalidates; on fresh
+403 with `admin.users.read` still effective, it performs at most one same-URL
+GET recovery without replay. Without Users-read, denial remains fail-closed.
+A later independent permission change can recover the protected read view,
+but never confers write authority on a non-Owner.
 
 The old `under-development?feature=admin-users` URL remains only as a compatibility redirect:
 Users-read actors go to the real Users index, management-only actors go to the existing
@@ -719,8 +726,8 @@ The connected admission constraints remain independent: topic closure does not r
 an active reply restriction, and lifting the measure does not reopen a closed topic. A stale
 denied reply preserves the mounted editor/operation and existing attachment state, blocks repeat
 Publish/new Attach through the explicit fresh-loader revalidation, keeps Cancel available, and
-never automatically replays the POST. Users authorization grant/revoke transitions under this
-closeout use the existing canonical authorization writer and History path, not fixture SQL as a
+never automatically replays the POST. Users authorization grant/revoke transitions now use the bound Owner through the existing
+canonical authorization writer and History path, not non-Owner writes or fixture SQL as a
 substitute for the operation being verified.
 
 AP-11 is repository/local-CI integration evidence, not production/deployed acceptance or owner
@@ -761,6 +768,6 @@ AP-01 is complete when this contract is self-contained and consistent with curre
 truth, necessary links are aligned, and the change remains documentation-only. It must not
 report AP-02+ behavior, unrun CI or future runtime acceptance as completed. AP-11 now closes the
 approved AP-01–AP-10 delivered scope. The remaining Settings placeholder does not make that
-closeout false because the owner explicitly separated Settings into a later phase after the
-owner/authorization redesign; Settings itself must not be reported as implemented until that
-separate package is actually delivered.
+closeout false: Settings is a separate product sequence, and only SET-01
+Owner-only authorization write policy is implemented. Settings shell and
+SET-02–SET-06 must not be reported as delivered.
