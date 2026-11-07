@@ -80,25 +80,29 @@
 Общий контракт: [ADMIN_PANEL_IMPLEMENTATION_PLAN.md](../ADMIN_PANEL_IMPLEMENTATION_PLAN.md).
 
 
-## AP-11 implementation ready for owner merge
-
-- Independent technical review Лёвы завершён **PASS** на неизменном exact head `3f608ce9a042fd7c78401d330f5865af4f3dee5c`.
-- Coordinator PASS и independent PASS относятся к одному stable exact head; implementation после review не менялся.
-- PR #292 open/mergeable; exact-head CI #42245766359 SUCCESS и isolated Chromium #42245766263 SUCCESS.
-- Подтверждённых current-scope defects AP-11 не осталось.
-- **Implementation #292 готов к owner merge.**
-- Factual documentation closeout выполнять **после фактического merge #292**, чтобы `PROJECT_STATE.md` и history отражали repository truth, а не прогноз незамерженного PR.
-- После merge #292 Мира создаёт/координирует отдельный documentation PR: factual AP-11 state, final implementation/review/evidence snapshot и ближайший маршрут **owner/authorization redesign → Settings**.
-- До docs closeout AP-11 целиком не объявлять закрытым. Settings, redesign, Stage 6/production и owner visual acceptance не входят в #292.
 
 
-## AP-11 implementation merged; documentation closeout #293
+## AP-11 fully closed; owner/authorization redesign product gate
 
-- Owner merged implementation PR #292. Final reviewed implementation head: `3f608ce9a042fd7c78401d330f5865af4f3dee5c`; merge commit/current main: `57f0b5a1675053b556bc68b24c4a0b9a8177a8f2`.
-- Coordinator PASS + independent PASS remain attached to the merged exact implementation head.
-- Separate documentation PR **#293** created from post-merge main. Current docs head: `6a7ce209bcb16e47a0c3054241c506fc1e305088`.
-- #293 changes exactly five Markdown files: `PROJECT_STATE.md`, `ROADMAP.md`, `docs/ADMIN_PANEL.md`, history index and new `PROJECT_HISTORY_13.md`.
-- Factual state records AP-01–AP-11 complete in repository/local-CI scope; Settings explicitly remains a separate future phase after owner/authorization redesign.
-- No authorization/schema/runtime code is changed in docs closeout; `docs/auth/AUTHORIZATION.md` remains untouched because AP-11 changed no authorization contract.
-- #293 final docs head `6a7ce209bcb16e47a0c3054241c506fc1e305088`; exact-head CI #42322343511 SUCCESS (`checks` + `database`). Final consistency sweep PASS.
-- PR #293 переведён из Draft в Ready и остаётся mergeable. **Следующий шаг: owner merge #293.**
+- Documentation PR #293 merged 2026-11-07. Final docs head: `6a7ce209bcb16e47a0c3054241c506fc1e305088`; merge commit/current `main`: `bcf02193f82aa0d448444c6943d6ebdcf09f7896`.
+- AP-11 implementation #292 + documentation #293 are merged. **AP-11 is fully closed** in the approved repository/local-CI scope.
+- Settings remains explicitly deferred. Approved sequence is now: **owner/authorization redesign → Settings**.
+- Existing owner decisions already fixed:
+  - the current last-access-manager invariant is architecturally wrong for the target model;
+  - owner is the highest administrative authority;
+  - subordinate authority cannot block/demote/lock out the owner;
+  - owner must retain full forum administration, including roles/permissions;
+  - recoverability must rely on explicit owner authority, not counting ordinary holders of `access.authorization.manage`;
+  - the current `AuthorizationLockoutError` / `authz_mutation_lock.managers_ever_existed` / `countManagers()` protection must **not** simply be removed before a replacement owner model exists.
+- The current permanent authorization contract still truthfully describes the old lockout implementation; it is now the target of this separate redesign, not a requirement to preserve unchanged.
+
+### Product decisions still required before technical planning
+
+Do **not** assign Лёва a technical implementation plan yet. The target owner model still needs owner-level product decisions on at least:
+1. which forum actions are strictly owner-only and cannot be delegated;
+2. whether a senior/head-admin authority exists, how it is granted/revoked, and its boundary below owner;
+3. what owner recovery/emergency path exists if ordinary authorization grants are removed or misconfigured;
+4. what sensitive administrative audit/data is owner-only versus permission-delegable;
+5. which infrastructure/project-owner operations remain outside forum RBAC entirely.
+
+These are product semantics, not implementation details. Technical planning starts only after this bounded owner model is fixed. Settings remains out of scope until the redesign is completed.
