@@ -3,17 +3,18 @@ import {drizzle} from "drizzle-orm/node-postgres";
 import {createWebClient,bestEffortDiscardClient} from "./postgres-deadlines";
 import {ComplaintsService} from "./complaints-service";
 import {DrizzleComplaintsRepository} from "./complaints-repository";
+import { withOwnerUserMeasureAdmission } from "./user-measure-policy";
 import {ComplaintStorageUnavailableError,isComplaintStorageUnavailable} from "./hyperdrive-complaints";
 import type {AuthorizationCapability} from "./authorization-service";
 import type {ComplaintReview} from "../app/complaints/review-context";
 
 export function createHyperdriveComplaintReview(connectionString:string, authorization:AuthorizationCapability,
- clientFactory:()=>Client=()=>createWebClient(connectionString)):ComplaintReview {
+ clientFactory:()=>Client=()=>createWebClient(connectionString), ownerUserId?: string):ComplaintReview {
  async function run<T>(fn:(s:ComplaintsService)=>Promise<T>):Promise<T> {
    const client=clientFactory();
    try {
      await client.connect();
-     return await fn(new ComplaintsService(new DrizzleComplaintsRepository(drizzle(client)),authorization));
+     return await fn(new ComplaintsService(new DrizzleComplaintsRepository(drizzle(client), undefined, withOwnerUserMeasureAdmission(ownerUserId)),authorization));
    } catch(error) {
      if(isComplaintStorageUnavailable(error))throw new ComplaintStorageUnavailableError("complaint review unavailable",{cause:error});
      throw error;
