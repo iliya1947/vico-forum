@@ -330,8 +330,8 @@ Stage 6 впервые собирает локально готовый прод
 8. Проверить deployment ordering, Worker bindings, logs/observability и external failure paths.
 9. Выполнить real deployed smoke core forum flow + LTR/RTL + auth + translations.
 10. Настроить и проверить PostgreSQL backup/restore до release.
-11. После настройки реального Google OAuth и входа/привязки аккаунта разработчика
-    определить его внутренний Better Auth `user.id`, установить ровно этот ID
+11. После настройки реального Google OAuth и входа разработчика через Google
+    определить внутренний Better Auth `user.id` его аккаунта, установить ровно этот ID
     в server-only `VICO_OWNER_USER_ID` и проверить deployed Owner authority Stage 2.
     Google email/name/provider claim и сохранённая роль не назначают Owner.
     Второй Owner, transfer, successor и first-manager bootstrap не предусмотрены;
