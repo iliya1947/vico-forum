@@ -825,6 +825,7 @@ export const reviewedCommonFingerprints = {
   deleteRole: "952780889e81bce9b7abd01cf7cc51bf2ec7ada372627f65a361d11c985113d2",
   builtInRole: "40b424c3c211ee36e1ae5095a10316bb1ce21ea99f4eb498e9ea54be6b0d976a",
   permissionsHeading: "c9bf818a168a972b0ceee5499d797843a95acbb38c253c7bb489598c718f290e",
+  authorizationOwnerEffective: "4675fa570d6ec376388b3fd94571fb3380b974d231efd156601fd6b57dbaee3c",
   effectivePermissions: "be9e3afa50925638baa9acab8460f861d5eebc4fd12539ef44a42a8fdc93164e",
   assignedRole: "c73b75f1bc757cfe8b6a63a9c14d653604fb4cfa96a13b7e29bd9614a8ab88cf",
   defaultRole: "b36bd3e4c2c29034c56cac21e3c0faa1c196d1eaf596dbafeb9373c0326c1e7c",
