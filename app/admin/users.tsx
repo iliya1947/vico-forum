@@ -68,12 +68,13 @@ export function AdminUsersIndex({ locale, access, query, page }: {
 }
 
 export function AdminUserDetail({ locale, access, user, management, managerActorId,
-  permissions, canManageElevated = false }: {
+  permissions, canManageElevated = false, canMutateAuthorization = false }: {
   locale: string; access: AdminAccess; user: AdminUserDetailData;
   management?: AuthorizationUserManagementState;
   managerActorId?: string;
   permissions?: readonly PermissionKey[];
   canManageElevated?: boolean;
+  canMutateAuthorization?: boolean;
 }) {
   const { t } = useTranslation("common");
   const github = safeHttpUrl(user.githubUrl), website = safeHttpUrl(user.websiteUrl);
@@ -114,17 +115,18 @@ export function AdminUserDetail({ locale, access, user, management, managerActor
         ? <InlineUserAuthorization key={managerActorId + ":" + user.id}
           locale={locale} userId={user.id} actorId={managerActorId}
           management={management} permissions={permissions}
-          canManageElevated={canManageElevated}/>
+          canManageElevated={canManageElevated} canMutateAuthorization={canMutateAuthorization}/>
         : null}
     </section>
   </AdminShell>;
 }
 
 function InlineUserAuthorization({ locale, actorId, userId, management,
-  permissions, canManageElevated }: {
+  permissions, canManageElevated, canMutateAuthorization }: {
   locale: string; actorId: string; userId: string;
   management: AuthorizationUserManagementState; permissions: readonly PermissionKey[];
   canManageElevated: boolean;
+  canMutateAuthorization: boolean;
 }) {
   const { t } = useTranslation("common");
   const fetcherKey = `ap09-user-authz:${actorId}:${userId}`;
@@ -144,7 +146,8 @@ function InlineUserAuthorization({ locale, actorId, userId, management,
       : null}
     <AuthorizationUserControls userId={userId} authorization={management.authorization}
       roles={management.roles} permissions={permissions}
-      canManageElevated={canManageElevated} elevatedRoleIds={management.elevatedRoleIds}
+      canManageElevated={canManageElevated} canMutateAuthorization={canMutateAuthorization}
+      elevatedRoleIds={management.elevatedRoleIds}
       inline={{ action: `/${encodeURIComponent(locale)}/admin/authorization`, fetcherKey }}
       pending={pending}/>
   </section>;
