@@ -1,3 +1,14 @@
+# Мира — Settings product-definition analysis
+
+Current Settings is only an Under development placeholder. No generic settings store/permission exists. Existing configuration is domain-separated.
+
+Recommended first package: only registration open/closed. Keep complaints, Roles, locale lifecycle, user preferences, infra/secrets and super-admin functions outside this first slice.
+
+Owner decisions pending:
+1. Settings authority: Owner-only vs explicit delegatable permission (recommend explicit permission, zero initial grants; Owner gets it through catalog-wide authority).
+2. Scope: registration only vs registration + read-only mode vs broader configuration (recommend registration only).
+3. Locale management: separate later vs include now (recommend separate later).
+
 # Мира — Settings product-definition start
 
 Owner/authorization redesign is fully closed after merged PR #298; current main `856b93cb65b01e2389eb97276b37b3a0d8eef265`.
