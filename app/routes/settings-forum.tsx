@@ -1,4 +1,5 @@
-import { data, useFetcher, useLoaderData, type RouterContextProvider } from "react-router";
+import { data, useFetcher, useLoaderData, useRevalidator, type RouterContextProvider } from "react-router";
+import { useEffect, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { authSessionForRequest } from "../auth/request-context";
 import { authorizationOwnerContext } from "../authorization/request-context";
@@ -92,6 +93,17 @@ function RegistrationControls({ registration }: {
   registration: { googleRegistrationEnabled: boolean; emailRegistrationEnabled: boolean; version: number };
 }) {
   const fetcher = useFetcher<{ok: boolean; error?: RegistrationError}>({ key: registrationFetcherKey });
+  const revalidator = useRevalidator();
+  const handledConflict = useRef<unknown>(null);
+  // RR does not automatically refresh loader data after an action's 409 response.
+  // Refresh exactly once per rejected version so the next submit uses current policy.
+  useEffect(() => {
+    if (fetcher.state === "idle" && fetcher.data?.error === "conflict"
+      && handledConflict.current !== fetcher.data) {
+      handledConflict.current = fetcher.data;
+      void revalidator.revalidate();
+    }
+  }, [fetcher.state, fetcher.data, revalidator]);
   const { t } = useTranslation("common");
   const pending = fetcher.state !== "idle";
   return <section className="settings-registration" aria-labelledby="settings-registration-heading">

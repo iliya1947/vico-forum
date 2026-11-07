@@ -202,18 +202,7 @@ try:
                 assert page.locator('#admin-history-heading').inner_text() == heading
                 assert page.locator('html').get_attribute('dir') == direction
                 assert page.locator('.admin-panel-nav [aria-current="page"]').get_attribute('href').endswith('/admin/history')
-                overflow_ok = page.evaluate('document.documentElement.scrollWidth<=innerWidth+1')
-                if not overflow_ok:
-                    print("SET02_LAYOUT_DIAGNOSTIC " + json.dumps(page.evaluate("""() => ({
-                        width: innerWidth, scrollWidth: document.documentElement.scrollWidth,
-                        offenders: [...document.querySelectorAll('body *')].map(e => {
-                            const r = e.getBoundingClientRect();
-                            return { tag: e.tagName, cls: String(e.className || '').slice(0,95),
-                              left: Math.round(r.left), right: Math.round(r.right), width: Math.round(r.width),
-                              text: e.textContent?.trim().slice(0,45) };
-                        }).filter(x => x.right > innerWidth + 1 || x.left < -1).slice(0,25)
-                    })"""), ensure_ascii=False), flush=True)
-                assert overflow_ok
+                assert page.evaluate('document.documentElement.scrollWidth<=innerWidth+1')
                 page.locator('.admin-panel-nav a').first.focus()
                 page.keyboard.press('Tab')
                 assert page.locator('.admin-panel-nav').evaluate('e=>e.contains(document.activeElement)')

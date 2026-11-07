@@ -4,6 +4,7 @@ import { authSessionContext, type AuthSession } from "../auth/request-context";
 import { registrationSettingsContext } from "../settings/request-context";
 import { RegistrationSettingsUnavailableError } from "../../db/hyperdrive-registration-settings";
 import { loader } from "./credential-sign-up";
+import { loader as signInLoader } from "./credential-sign-in";
 
 function context(user: string | null = null) {
   const instance = new RouterContextProvider();
@@ -58,5 +59,21 @@ describe("SET-02 public sign-up loader", () => {
     const ctx = context();
     ctx.read.mockRejectedValueOnce(new Error("missing singleton"));
     await expect(page("/en/sign-up", ctx.instance)).rejects.toThrow("missing singleton");
+  });
+});
+
+describe("SET-02 Google sign-in callback error presentation", () => {
+  it("shows only generic feedback, ignores provider error_description and retains safe returnTo", () => {
+    const ctx = context();
+    const response = signInLoader({
+      request: new Request("https://vico.test/en/sign-in?returnTo=%2Fen%2Ftopics%2Fone&error=internal-token&error_description=PRIVATE"),
+      params: { locale: "en" }, context: ctx.instance,
+    });
+    expect(response).toEqual({
+      locale: "en", returnTo: "/en/topics/one", callbackError: "authentication",
+    });
+    expect(JSON.stringify(response)).not.toContain("PRIVATE");
+    expect(JSON.stringify(response)).not.toContain("internal-token");
+    expect(ctx.read).not.toHaveBeenCalled();
   });
 });
