@@ -315,3 +315,32 @@ Change only that wording in `PROJECT_STATE.md` on PR #297. Do not alter the alre
 - No additional application feature is required for this bootstrap model: Google sign-in and server-side Owner authority already exist in the repository.
 - Production Google configuration, Owner binding and real external acceptance remain Stage 6 and are not authorized by this decision.
 - Owner/authorization redesign application work is complete; only final factual documentation closeout remains before moving to Settings.
+
+
+## Final owner/authorization documentation closeout — handoff to Лира
+
+Create one separate docs-only PR from current main `96186cc9158dd7a91c9d2c0124ed4556f133f15c`.
+
+Required result: synchronize permanent/current documentation with the confirmed final product model and close the repository-side owner/authorization redesign without claiming Stage 6 work.
+
+Bounded file scope — exactly these 6 documentation files:
+1. `docs/auth/AUTHORIZATION.md`
+2. `docs/ADMIN_PANEL.md`
+3. `PROJECT_STATE.md`
+4. `ROADMAP.md`
+5. `docs/PROJECT_HISTORY/PROJECT_HISTORY.md`
+6. new `docs/PROJECT_HISTORY/PROJECT_HISTORY_16.md`
+
+Content boundary:
+- One Owner only: developer.
+- Owner account is established through developer Google sign-in; the resulting internal forum account identity is the server-bound Owner.
+- Email/name/ordinary role do not themselves grant Owner authority.
+- No ownership transfer, second Owner, successor flow, transfer UI/API or first-manager bootstrap in current scope.
+- No additional application implementation is required for this bootstrap decision; Stage 1–2 runtime remains the implemented repository/local-CI model.
+- Real Google configuration, server-side Owner binding and external/deployed acceptance remain Stage 6 and must not be claimed complete.
+- After this docs closeout merges, owner/authorization redesign is complete in repository/local-CI scope and Settings becomes eligible as the next separate product package.
+- Keep Stage 6 paused and do not alter unrelated roadmap priorities.
+
+Do not change runtime/code/tests/schema/migrations/workflows/infra. Do not invent recovery/transfer behavior or security features beyond the confirmed model.
+
+Run applicable docs/CI checks, publish the PR number + stable exact head + check evidence in #251, then stop for Mira coordinator docs review.
