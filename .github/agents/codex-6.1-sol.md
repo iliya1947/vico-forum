@@ -1,3 +1,53 @@
+# Лёва — Stage1 independent technical review: PASS
+
+Текущее назначение выполнено: PR #294 exact head `e3604222ae8cecb4b1f2f94cdd5d7e9f76c15e61`, independent PASS. [Полный отчёт](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6701647394). Следующий шаг — Мира: readiness/отдельный factual documentation closeout. Merge выполняет владелец; Stage1 в main ещё не закрыт.
+
+Лёва — independent technical review Stage1 / PR #294: **PASS**.
+
+Exact head: `e3604222ae8cecb4b1f2f94cdd5d7e9f76c15e61`; base/current main `bcf02193f82aa0d448444c6943d6ebdcf09f7896`. Проверен весь 21-file diff против approved plan #6700603167 и прямого owner decision. Самостоятельно, без вызова других агентов и без изменения implementation; coordinator PASS не использован как доказательство.
+
+### Whole-PR выводы
+
+- AuthorizationLockoutError, countManagers(), before/after counting, flag read/update и zero-manager veto удалены из active runtime. Scoped search app/db это подтверждает.
+- mutate() сохраняет begin → singleton id=1 FOR UPDATE → **fresh actor permission** → AP-10 admission → operation/elevated-key guards → final atomic History → commit/rollback. Missing mutex fail closed. Нового last-manager veto/recovery mechanism нет.
+- authz_mutation_lock table/row/PK/CHECK и SELECT+UPDATE runtime privileges/lock probe сохранены. AP-10 writers/readers/issuer-floor boundary не переделаны; PG regression подтверждает ожидание обоих writers на mutex и fresh forbidden после grant change до release.
+- Self-revoke/удаление manage role grant/self-role reassignment могут committed с обычной History, в том числе без оставшегося effective manager. Следующие requests отозванного actor denied. History failure откатывает и такой self-revoke.
+- Route убирает только obsolete lockout mapping; assigned-role deletion остаётся private/no-store409, прочие ошибки сохраняются. EN/RU/HE conflict copy и fingerprint соответствуют remaining assigned-role conflict.
+- Forward0059 — один DROP COLUMN без CASCADE. Current schema/snapshot/journal/manifest согласованы. Deep comparison0058/0059 snapshots без id/prevId и удалённой колонки дал equality; accepted0000–0058 не переписаны.
+- Dedicated veto expectations сняты локально; соседние forbidden/no-op/assigned-role/History rollback tests сохранены. Historical flag в compatibility fixture не является active invariant.
+- Browser self-deny перенесён в конец admin-history flow, AP-10/AP-11 cases сохранены. Два browser jobs используют отдельные PostgreSQL services, обоснованно изолируя global History/authorization fixtures.
+- Permanent docs ждут отдельного closeout; старые формулировки не использованы как основание вернуть отменённое правило. Owner authority, Settings, mutex redesign, super-admin, Stage6/production не добавлены.
+
+**Подтверждённых current-Stage1 defects не найдено.**
+
+### Собственное evidence на exact head
+
+Pinned Node24.21.0/pnpm12.3.4, disposable loopback PostgreSQL17:
+1. **23/23 unit/route/UI tests**, **112/112 native PostgreSQL tests** (5 files). Проверены self-revocations/role/grant changes, next-request denial, History rollback, controlled real mutex waits и AP-10 enforcement.
+2. Build PASS; 3 migration-history/manifest/runtime-privilege script suites PASS.
+3. Самостоятельный **full0058→0059 SQL upgrade probe** для oldFlag=false и true: полная цепочка до0058, populated users/roles/overrides/measures/restrictions/pending appeal/History; фактический0059 SQL сохраняет payload9 relations, mutex row id=1, PK и CHECK. Это собственное evidence, не требование нового implementation refactor/test subsystem.
+4. **Actual Chromium→built Worker→Better Auth→PostgreSQL**, отдельная БД для каждого harness:
+   - updated Admin History: **35 case groups PASS**, canonical self-revoke200 + один event, next management GET/POST403, no extra role/event; 0 page errors/external requests;
+   - AP-10/AP-11: **34 case groups PASS**, exact implementationHead recorded, 0 layout failures/page errors/external requests; session grant/revoke, measures/appeals, closure composition, stale revalidation и EN/RU/HE сохранены.
+5. GitHub exact-head **CI #42328843126 SUCCESS** и **browser #42328843151 SUCCESS** подтверждены отдельно; author CI не замена собственным reruns.
+
+Evidence: `/workspace/work/stage1-review-evidence/` — application.log, database.log, metadata.log, build.log, history-browser/results.json, measures-browser/results.json/screenshots, independently written upgrade-probe.mjs/upgrade.json. AP-10 environment adapter вне implementation tree; History harness исполнен непосредственно из exact checkout.
+
+Review не означает production migration/deploy, owner visual acceptance или завершение всей owner/authorization redesign.
+
+**Следующий шаг — Мира:** принять independent PASS и завершить readiness/отдельный factual documentation closeout Stage1; merge выполняет владелец. Активные last-manager clauses обновить по уже утверждённому решению, historical evidence сохранить. Stage1 целиком не closed до implementation/docs acceptance/merge; следующие owner/mutex/Settings этапы отдельно.
+
+Лёва проверку завершил и останавливается. Implementation frozen; изменение head требует coordinator-first cycle.
+
+Head/main перепроверены перед публикацией; tracked checkout чист. Локальный Worker остановлен, disposable container/DBs и dummy .dev.vars удалены. History runner не пишет SHA в собственный results.json: привязка этого прогона подтверждена exact checkout/build/command log и данным отчётом; AP-10 results.json содержит implementationHead.
+
+
+---
+
+## Утверждённый технический план и предыдущий контекст
+
+Planning статусы ниже исторические: implementation review завершён PASS на exact head выше.
+
 # Лёва — owner/authorization Stage 1 technical planning
 
 Текущее назначение выполнено: [план удаления last-manager](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6700603167) на main `bcf02193f82aa0d448444c6943d6ebdcf09f7896`. Требуется coordinator review Миры. Implementation не начинался; authz_mutation_lock сохраняется.
