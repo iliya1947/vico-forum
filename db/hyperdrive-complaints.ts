@@ -4,19 +4,20 @@ import { createWebClient, bestEffortDiscardClient, isPostgresConnectionTimeout, 
 import { isPostgresAvailabilityFailure } from "../app/localization/persistent-registry";
 import { ComplaintsService } from "./complaints-service";
 import { DrizzleComplaintsRepository } from "./complaints-repository";
+import { withOwnerUserMeasureAdmission } from "./user-measure-policy";
 import type { AuthorizationCapability } from "./authorization-service";
 import type { ComplaintSubmission } from "../app/complaints/request-context";
 
 export class ComplaintStorageUnavailableError extends Error {}
 
 export function createHyperdriveComplaintSubmission(connectionString: string, authorization: AuthorizationCapability,
-  clientFactory: () => Client = () => createWebClient(connectionString)): ComplaintSubmission {
+  clientFactory: () => Client = () => createWebClient(connectionString), ownerUserId?: string): ComplaintSubmission {
   return {
     async submit(actorId, input) {
       const client = clientFactory();
       try {
         await client.connect();
-        await new ComplaintsService(new DrizzleComplaintsRepository(drizzle(client)), authorization).submit(actorId, input);
+        await new ComplaintsService(new DrizzleComplaintsRepository(drizzle(client), undefined, withOwnerUserMeasureAdmission(ownerUserId)), authorization).submit(actorId, input);
       } catch (error) {
         if (isComplaintStorageUnavailable(error)) {
           throw new ComplaintStorageUnavailableError("complaint storage unavailable", { cause: error });
