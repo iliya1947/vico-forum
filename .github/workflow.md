@@ -6,12 +6,16 @@
 - Owner/authorization redesign Stage 1: fully closed
 - Current stage: **owner/authorization redesign — Stage 2 technical plan correction**
 - Technical planner: **Лёва**
-- Stage2 plan #6702391114: **coordinator CHANGES REQUIRED**
-- Required corrections:
-  - Owner automatic authority = exact administrative capabilities only, not whole `PERMISSION_CATALOG`
-  - explicitly cover AP-10 authoritative `admin.users.blocks.manage` raw-check path for Owner while preserving non-Owner raw hierarchy
+- Stage2 plan #6702391114: coordinator correction narrowed to **one** remaining issue
+- Owner decision:
+  - bound Owner gets all code-backed permissions from `PERMISSION_CATALOG` regardless of ordinary role/grants/overrides
+  - future code-backed permissions added to the catalog also belong to Owner authority
+  - no Senior/Head Admin role or second RBAC layer
+  - Owner-only grant/revoke gate for `admin.users.blocks.managePrivileged` remains
+- Remaining plan correction:
+  - explicitly cover AP-10 authoritative raw `admin.users.blocks.manage` check for bound Owner while preserving non-Owner raw hierarchy/issuer-floor semantics
 - Implementer: not assigned
 - No implementation until corrected plan receives coordinator PASS
 - Settings/super-admin/Stage6 remain out of scope
 - Марк не назначен
-- Следующий шаг: Лёва revises the two bounded plan points in #251 and stops
+- Следующий шаг: Лёва revises only the remaining AP-10 authoritative-path point in #251 and stops
