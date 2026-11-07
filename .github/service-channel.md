@@ -4,18 +4,29 @@
 
 ## Актуальный baseline и назначение
 
-- Current main: `8301087f9322b34bdd325ed9298fdf3fddd84561`; migrations 0000–0059.
-- Ordinary Admin Panel AP-01–AP-11 closed. Owner/authorization redesign Stage1 fully closed (#294 + #295 merged).
-- Current stage: **Stage2 implementation review completed — coordinator PASS + independent Лёва PASS**.
-- PR #296 open/draft/mergeable; frozen exact head `824ab8eccb091664c2e7d37f81f2737e7fd43e87`; implementation не merged, factual docs closeout ещё не выполнен.
-- Approved plan #6702391114 + authoritative AP-10 revision #6702520494 + Owner all-catalog clarification. Исполнитель Лира.
-- Coordinator whole-PR PASS на этом же head; STAGE2-MIRA-01 закрыт verification-only correction.
-- [Independent technical PASS Лёвы #6704068605](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6704068605), zero confirmed current-scope defects. Это самостоятельная проверка, не повторение coordinator/author verdict.
-- Собственные checks: build; 56 unit/route/UI +96 native PG; дополнительный самостоятельно написанный PG probe (real mutex waits/fresh denial/Owner History rollback); actual Chromium AP-10/AP-11/Stage2 37 groups и separate History35. Stage2 implementation не менялась при review.
-- Exact-head GitHub CI #42349494000 и browser #42349494094 SUCCESS; это отдельное author/CI evidence.
-- **Мира:** принять independent PASS и завершить readiness #296. Merge выполняет владелец; после implementation merge отдельный factual docs closeout. До implementation/docs merge Stage2 целиком не closed.
-- Лёва review завершил и остановился; Марк не назначен. Изменение implementation head требует нового coordinator-first cycle.
-- Settings после завершения owner/authorization redesign; Stage6/production/owner visual acceptance вне результата этого review.
+- Current main: `df57dabf2a4cbc44d85138d8809079878490a7c8`; migrations 0000–0059.
+- Owner/authorization redesign Stage2 implementation #296 merged. Merge commit: `df57dabf2a4cbc44d85138d8809079878490a7c8`.
+- Final implementation exact head `824ab8eccb091664c2e7d37f81f2737e7fd43e87`: Mira coordinator PASS + Lev independent technical PASS, zero confirmed current-scope defects.
+- Current stage: **separate factual documentation closeout**. Stage2 repository implementation is merged; permanent source-of-truth still contains pre-Stage2 wording and must be synchronized before Stage2 is considered fully closed.
+- Settings remains deferred until this redesign documentation closeout is merged. No production/deployed/owner-visual acceptance is implied.
+- Documentation executor: **Лира**. Лёва/Марк are not assigned.
+
+## Handoff — Лира: Stage2 factual documentation closeout
+
+Create a separate docs-only PR from current main `df57dabf2a4cbc44d85138d8809079878490a7c8`.
+
+Required result: synchronize permanent documentation with the Stage2 implementation that is now in main, without changing runtime behavior or expanding scope.
+
+Bounded files:
+1. `docs/auth/AUTHORIZATION.md` — replace obsolete future-Owner wording with the implemented server-bound Owner authority: all code-backed catalog permissions, raw role/grant/override preservation, trusted binding, fresh resolution, Owner-only elevated grant/revoke boundary, measure immunity, retained mutex/no last-manager veto, and external binding/production acceptance boundary.
+2. `docs/ADMIN_PANEL.md` — update AP-10/Owner wording so Owner is no longer described as a future redesign; preserve raw non-Owner hierarchy, Owner-target prohibition, Settings deferral, privacy and measure semantics.
+3. `PROJECT_STATE.md` — record Stage2 as merged in repository/local-CI state, keep production/external acceptance explicitly unfinished, and update nearest route accordingly.
+4. `ROADMAP.md` — replace superseded future owner-authority wording with the implemented repository model; keep external owner binding/bootstrap/deployed acceptance in Stage6 and keep Settings after redesign closeout.
+5. `tests/browser/user-measures/README.md` — factually describe the Stage2 Owner/elevated-authority cases already exercised by the existing browser harness; do not claim owner visual or production acceptance.
+6. `docs/PROJECT_HISTORY/PROJECT_HISTORY.md` — add navigation entry for the Stage2 snapshot.
+7. `docs/PROJECT_HISTORY/PROJECT_HISTORY_15.md` — new dated historical snapshot for Stage2 implementation/review/correction/merge, including final exact head, merge commit and verified acceptance status; clearly historical, not source of truth.
+
+Do not modify code, schema, migrations, dependencies, Settings, super-admin UI, infrastructure or production state. Do not invent unperformed acceptance. When the docs PR and applicable checks are complete, publish PR + stable exact head in #251 and stop for Mira review.
 
 ## Зафиксированная целевая Owner модель
 
