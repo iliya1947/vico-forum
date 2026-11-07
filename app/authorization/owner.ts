@@ -11,6 +11,11 @@ export function isBoundOwner(userId: string, binding: unknown): boolean {
   return ownerId !== undefined && userId === ownerId;
 }
 
+/** Current-release authorization mutation policy; deputy delegation is future scope. */
+export function canMutateAuthorization(actorId: string, ownerBinding: unknown): boolean {
+  return isBoundOwner(actorId, ownerBinding);
+}
+
 /** Keep stored roles/grants/overrides unchanged; only effective authority differs. */
 export function ownerAwareEffectivePermissions(
   userId: string,
