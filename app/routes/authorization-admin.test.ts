@@ -29,6 +29,11 @@ function context(authenticated = true, manage: boolean | Error = true) {
   context.set(authorizationOwnerContext, "bound-owner");
   return { context, value };
 }
+function ownerContext() {
+  const actor = context();
+  actor.context.set(authorizationOwnerContext, "manager");
+  return actor;
+}
 function request(fields: Record<string, string>, origin = "https://forum.example") {
   const form = new FormData(); Object.entries(fields).forEach(([key, value]) => form.set(key, value));
   return new Request("https://forum.example/en/admin/authorization", { method: "POST", headers: { Origin: origin }, body: form });
@@ -55,6 +60,7 @@ describe("authorization management route", () => {
     const result = await loader({ params: { locale: "en" }, context: state.context });
     expect(result).toMatchObject({ locale: "en", roles: [], users: [] });
     expect(result.canManageElevated).toBe(false);
+    expect(result.canMutateAuthorization).toBe(false);
     expect(state.value.readManagementState).toHaveBeenCalledOnce();
     expect(state.value.listRoles).not.toHaveBeenCalled();
     expect(state.value.listUsers).not.toHaveBeenCalled();
@@ -63,13 +69,18 @@ describe("authorization management route", () => {
   });
   it("offers elevated operations only to the bound owner in route data",async()=>{
     const actor=context();
-    expect((await loader({params:{locale:"en"},context:actor.context})).canManageElevated).toBe(false);
+    expect((await loader({params:{locale:"en"},context:actor.context}))).toMatchObject({
+      canManageElevated: false, canMutateAuthorization: false,
+    });
     actor.context.set(authorizationOwnerContext,"manager");
-    expect((await loader({params:{locale:"en"},context:actor.context})).canManageElevated).toBe(true);
+    expect((await loader({params:{locale:"en"},context:actor.context}))).toMatchObject({
+      canManageElevated: true, canMutateAuthorization: true,
+    });
     for (const binding of [" manager", "manager ", "", "other-manager"]) {
       actor.context.set(authorizationOwnerContext,binding);
-      expect((await loader({params:{locale:"en"},context:actor.context})).canManageElevated)
-        .toBe(false);
+      expect((await loader({params:{locale:"en"},context:actor.context}))).toMatchObject({
+        canManageElevated: false, canMutateAuthorization: false,
+      });
     }
   });
   it("derives navigation from the same resolver handle as the independent management gate", async () => {
@@ -84,17 +95,40 @@ describe("authorization management route", () => {
     expect(result.access).toEqual({canEnter:true,canReadForum:false,canManageAuthorization:true});
   });
 
+  it("keeps non-Owner reads but rejects all six direct write intents even with management permission", async () => {
+    const state = context();
+    const visible = await loader({ params: { locale: "en" }, context: state.context });
+    expect(visible).toMatchObject({ canMutateAuthorization: false, roles: [], users: [] });
+    for (const fields of [
+      { intent: "createRole", slug: "test", displayName: "Test" },
+      { intent: "renameRole", roleId: "role", displayName: "Changed" },
+      { intent: "roleGrants", roleId: "role" },
+      { intent: "deleteRole", roleId: "role" },
+      { intent: "assignRole", userId: "target", roleId: "role" },
+      { intent: "override", userId: "target", permission: "forum.topic.pin", effect: "inherit" },
+    ]) {
+      const response = await action({ request: request({ ...fields, actorId: "bound-owner" }), context: state.context });
+      expect(response).toBeInstanceOf(Response);
+      expect((response as Response).status).toBe(403);
+      expect((response as Response).headers.get("Cache-Control")).toBe("private, no-store");
+      expect(await (response as Response).json()).toEqual({ error: "forbidden" });
+    }
+    for (const mutate of ["createCustomRole", "renameCustomRole", "replaceRoleGrants",
+      "deleteCustomRole", "assignUserRole", "setUserOverride"] as const) {
+      expect(state.value[mutate]).not.toHaveBeenCalled();
+    }
+  });
   it("uses the session actor and ignores forged authorization fields", async () => {
-    const state = context(); await action({ request: request({ intent: "assignRole", userId: "target", roleId: "role", actorId: "forged", permission: "access.authorization.manage" }), context: state.context });
+    const state = ownerContext(); await action({ request: request({ intent: "assignRole", userId: "target", roleId: "role", actorId: "forged", permission: "access.authorization.manage" }), context: state.context });
     expect(state.value.assignUserRole).toHaveBeenCalledWith("manager", "target", "role");
   });
   it("maps duplicate role slugs to controlled invalid input", async () => {
-    const state = context(); state.value.createCustomRole.mockRejectedValueOnce(new AuthorizationRoleSlugConflictError("database detail"));
+    const state = ownerContext(); state.value.createCustomRole.mockRejectedValueOnce(new AuthorizationRoleSlugConflictError("database detail"));
     const response = await action({ request: request({ intent: "createRole", slug: "duplicate", displayName: "Duplicate" }), context: state.context });
     expect(response).toMatchObject({ status: 400 }); expect(await (response as Response).json()).toEqual({ error: "invalid" });
   });
   it("maps assigned-role deletion to a controlled private 409", async () => {
-    const state = context(); state.value.deleteCustomRole.mockRejectedValueOnce(new AuthorizationRoleAssignedError("database detail"));
+    const state = ownerContext(); state.value.deleteCustomRole.mockRejectedValueOnce(new AuthorizationRoleAssignedError("database detail"));
     const response = await action({ request: request({ intent: "deleteRole", roleId: "assigned-custom" }), context: state.context });
     expect(response).toMatchObject({ status: 409 });
     expect((response as Response).headers.get("cache-control")).toContain("private");
@@ -111,7 +145,7 @@ describe("authorization management route", () => {
     loaderBug.value.readManagementState.mockRejectedValueOnce(unexpectedRead);
     await expect(loader({ params: { locale: "en" }, context: loaderBug.context })).rejects.toBe(unexpectedRead);
 
-    const actionState = context();
+    const actionState = ownerContext();
     actionState.value.deleteCustomRole.mockRejectedValueOnce(new AuthorizationUnavailableError());
     const unavailable = await action({
       request: request({ intent: "deleteRole", roleId: "r" }),
@@ -120,7 +154,7 @@ describe("authorization management route", () => {
     expect(unavailable).toMatchObject({ status: 503 });
     expect(await (unavailable as Response).json()).toEqual({ error: "unavailable" });
 
-    const actionBug = context();
+    const actionBug = ownerContext();
     const unexpectedMutation = new Error("unexpected management mutation bug");
     actionBug.value.deleteCustomRole.mockRejectedValueOnce(unexpectedMutation);
     await expect(action({
@@ -130,7 +164,7 @@ describe("authorization management route", () => {
   });
 
   it("reuses canonical user assignment and override writes without Users-read, with fresh management and origin guards", async () => {
-    const managerOnly = context();
+    const managerOnly = ownerContext();
     const resolver = managerOnly.value.forUser();
     vi.spyOn(managerOnly.value, "forUser").mockReturnValue(resolver);
     expect(await action({ request: request({ intent: "assignRole", userId: "target", roleId: "builtin-admin" }),
@@ -148,7 +182,7 @@ describe("authorization management route", () => {
       .rejects.toMatchObject({ status: 403 });
     expect(readerOnly.value.setUserOverride).not.toHaveBeenCalled();
 
-    const wrongOrigin = context();
+    const wrongOrigin = ownerContext();
     const rejected = await action({ request: request({ intent: "assignRole", userId: "target",
       roleId: "builtin-admin" }, "https://other.test"), context: wrongOrigin.context });
     expect(rejected).toBeInstanceOf(Response);
