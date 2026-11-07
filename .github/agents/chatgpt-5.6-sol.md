@@ -1,3 +1,17 @@
+# Мира — administrator workspace preference map
+
+Admin preferences are personal UI/workspace state only, capability-scoped rather than role-name-scoped.
+
+Recommended first slice:
+- default/last admin destination;
+- default/last accessible Attention mode/group;
+- compact/comfortable density;
+- default expansion of secondary technical detail.
+
+Recommended persistence for first slice: browser-local per account/device, no DB/schema, no saved sensitive search/target identifiers.
+
+Queue priority/order, permissions, sanctions, complaint policy, mandatory safety and audit semantics are not personal preferences.
+
 # Мира — Owner/system Settings map
 
 Owner/system Settings has five practical product groups plus one optional later emergency mode:
