@@ -24,7 +24,6 @@ export interface AuthorizationUserManagementState {
 }
 
 export class AuthorizationForbiddenError extends Error {}
-export class AuthorizationLockoutError extends Error {}
 export class AuthorizationNotFoundError extends Error {}
 export class AuthorizationRoleAssignedError extends Error {}
 export class AuthorizationRoleSlugConflictError extends Error {}
@@ -343,25 +342,16 @@ export class PostgresAuthorizationRepository {
     const client = await this.pool.connect();
     try {
       await client.query("begin");
-      const state = await client.query<{ managers_ever_existed: boolean }>(
-        "select managers_ever_existed from authz_mutation_lock where id = 1 for update",
+      const lock = await client.query<{ id: number }>(
+        "select id from authz_mutation_lock where id = 1 for update",
       );
-      if (!state.rows[0]) throw new AuthorizationNotFoundError("authorization mutation lock is missing");
-      const before = await countManagers(client);
+      if (!lock.rows[0]) throw new AuthorizationNotFoundError("authorization mutation lock is missing");
       if (!(await effectivePermission(client, actorId, AUTHORIZATION_MANAGE_PERMISSION))) {
         throw new AuthorizationForbiddenError("actor cannot manage authorization");
       }
-      // Keep the raw manager count and lockout invariants independent of
-      // temporary administrative suppression. Admission shares this transaction.
+      // Administrative suppression is checked in the same serialized transaction.
       await this.measureAdmission(client, actorId, "admin.usersAccess", this.ownerUserId);
       const change = await operation(client);
-      const after = await countManagers(client);
-      if ((state.rows[0].managers_ever_existed || before > 0) && after === 0) {
-        throw new AuthorizationLockoutError("mutation would remove the last access manager");
-      }
-      if (!state.rows[0].managers_ever_existed && (before > 0 || after > 0)) {
-        await client.query("update authz_mutation_lock set managers_ever_existed = true where id = 1");
-      }
       if (change) await appendAuthorizationHistory(client, actorId, change);
       await client.query("commit");
     } catch (error) {
@@ -389,18 +379,6 @@ async function effectivePermission(database: Queryable, userId: string, permissi
     left join authz_role_permissions rp on rp.role_id = r.id and rp.permission_key = $2
     where u.id = $1`, [userId, permission]);
   return result.rows[0]?.allowed ?? false;
-}
-
-async function countManagers(database: Queryable): Promise<number> {
-  const result = await database.query<{ count: number }>(`select count(*)::int count from "user" u
-    where coalesce(
-      (select effect = 'allow' from authz_user_permission_overrides o
-        where o.user_id = u.id and o.permission_key = $1),
-      exists(select 1 from authz_role_permissions rp
-        where rp.role_id = coalesce((select role_id from authz_user_roles ur where ur.user_id = u.id),
-          (select id from authz_roles where slug = 'user')) and rp.permission_key = $1), false)`,
-  [AUTHORIZATION_MANAGE_PERMISSION]);
-  return result.rows[0]?.count ?? 0;
 }
 
 function isDatabaseCode(error: unknown, code: string): boolean {
