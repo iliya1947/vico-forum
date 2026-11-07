@@ -112,3 +112,29 @@
 2. Mira verifies merged `main`.
 3. Mira prepares separate factual documentation closeout for Stage1.
 4. Only after docs closeout is merged does Stage1 become fully closed.
+
+
+## Stage 1 documentation closeout — PR #295
+
+- Implementation PR #294 merged 2026-11-07 at main `e20490bc2d80c696bdf78e62539a8e1440821f9e`.
+- Separate documentation PR **#295** opened from that exact main.
+- Docs exact head: `a431b5fc35b577b301f206e7f046645ce1da4c35`.
+- Exactly 8 documentation files:
+  - `PROJECT_STATE.md`
+  - `ROADMAP.md`
+  - `docs/ADMIN_PANEL.md`
+  - `docs/PROJECT_HISTORY/PROJECT_HISTORY.md`
+  - `docs/PROJECT_HISTORY/PROJECT_HISTORY_14.md`
+  - `docs/UI_UX_PASS.md`
+  - `docs/auth/AUTHORIZATION.md`
+  - `tests/browser/admin-history/README.md`
+- Active source-of-truth now reflects Stage1 runtime: old manager-count/last-manager veto removed; `authz_mutation_lock` retained as transaction mutex; fresh permission/admission checks and atomic History remain.
+- Historical Stage4/UI wording is marked superseded, not rewritten as if it never existed.
+- PROJECT_STATE records migrations through 0059 and next route: continue target owner/administrative hierarchy; Settings remains after redesign.
+- PROJECT_HISTORY_14 records #294 plan/implementation/reviews/evidence/merge.
+- No runtime code/schema/migration/permissions/grants/workflow/production changes in #295.
+- CI for #295 exact head is pending/not yet visible at the time of this coordination update.
+
+### Next
+
+Mira verifies exact-head CI for #295. If green and head unchanged, #295 is ready for owner merge. Stage1 becomes fully closed only after #295 merge.
