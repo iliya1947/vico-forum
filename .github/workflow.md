@@ -17,3 +17,7 @@
 - Лёва review завершил и остановился; Марк не назначен
 - Implementation head change requires new coordinator-first cycle
 - No Stage6/production/owner visual acceptance claimed
+
+- Docs PR: **#301**
+- Reviewed docs head: `83d7137010ba21f58a6b414c3df85f74bd9ca569`
+- Coordinator docs review: **CHANGES REQUIRED — SET01-DOC-MIRA-01**
