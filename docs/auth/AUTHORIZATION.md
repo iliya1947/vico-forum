@@ -233,8 +233,9 @@ appeal review; and `admin.users.blocks.managePrivileged` as an **additional**
 privileged-target authority prerequisite, not an action grant by itself. **Neither
 capability is initially granted to any built-in role**, including admin; ordinary
 non-Owner actors require explicit dynamic grants or per-user overrides. Bound Owner
-receives both through the catalog-wide effective authority described above. A measure manager does not automatically
-gain the Users index, complete authorization-management directory or private History.
+receives both through the catalog-wide effective authority described above.
+A measure manager does not automatically gain the Users index, complete
+authorization-management directory or private History.
 
 The measures policy supplements request-scoped effective action permissions; stored raw RBAC
 and issuer/target hierarchy remain independent of Owner projection and sanction filtering.
