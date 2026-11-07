@@ -292,7 +292,7 @@ describe("Package 7 connected route-to-PostgreSQL lifecycle", () => {
     const identityOnly=await quotaActor(),priorityOnly=await quotaActor(),outsider=await quotaActor();
     const managerId=await quotaActor();
     await client.query("insert into authz_user_roles(user_id,role_id) values ($1,'builtin-admin')",[managerId]);
-    const manager=new AuthorizationService(new PostgresAuthorizationRepository(pool));
+    const manager=new AuthorizationService(new PostgresAuthorizationRepository(pool, managerId));
     const slug="p7-review-"+randomUUID().slice(0,8);
     await manager.createCustomRole(managerId,{slug,displayName:"P7 Appeal reviewer"});
     const roleId=(await client.query<{id:string}>(
