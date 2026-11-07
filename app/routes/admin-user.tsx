@@ -9,6 +9,7 @@ import { AuthorizationNotFoundError } from "../../db/authorization-repository";
 import { AuthorizationUnavailableError } from "../../db/authorization-service";
 import { PERMISSION_CATALOG } from "../authorization/catalog";
 import { isBoundOwner } from "../authorization/owner";
+import { canMutateAuthorization } from "../authorization/management-policy";
 import { AdminUserDetail } from "../admin/users";
 import { ForumRouteError } from "../forum/ui";
 export { headers, meta } from "./admin";
@@ -36,7 +37,8 @@ export async function loader({ params, context }: {
     const managerActorId = authSessionForRequest(context)!.user.id;
     return data({ locale: params.locale ?? "en", access, user,
       management, managerActorId, permissions: PERMISSION_CATALOG,
-      canManageElevated: isBoundOwner(managerActorId, context.get(authorizationOwnerContext)) }, { headers: adminPrivateHeaders });
+      canManageElevated: isBoundOwner(managerActorId, context.get(authorizationOwnerContext)),
+      canMutateAuthorization: canMutateAuthorization(managerActorId, context.get(authorizationOwnerContext)) }, { headers: adminPrivateHeaders });
   } catch (error) {
     if (error instanceof AuthorizationNotFoundError) {
       throw new Response("Not found", { status: 404, headers: adminPrivateHeaders });
