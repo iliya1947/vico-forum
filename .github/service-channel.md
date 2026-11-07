@@ -292,3 +292,13 @@ Change only that wording in `PROJECT_STATE.md` on PR #297. Do not alter the alre
 - Coordinator verdict: **PASS**, zero confirmed current-scope documentation defects.
 - PR #297 converted from Draft to Ready for review. No independent Codex docs review assigned.
 - Next: owner merge PR #297. After merge Stage2 implementation + factual documentation closeout is fully closed; then next bounded owner/authorization work may be selected.
+
+
+## Stage 2 fully closed after docs merge
+
+- PR #297 merged into `main`; merge commit `96186cc9158dd7a91c9d2c0124ed4556f133f15c`.
+- Stage2 implementation #296 + factual documentation #297 are both merged. Coordinator implementation/docs findings are closed.
+- Current source-of-truth now records server-bound Owner authority as implemented in repository/local-CI, while recovery/bootstrap and external acceptance remain unfinished.
+- This does **not** authorize Stage6/production work or Settings.
+- Next bounded work is product-definition of the remaining recovery/bootstrap boundary. No first-manager/count-veto model is assumed; no recovery mechanism is considered approved yet.
+- Mira owns the next analysis. Lev/Lira/Mark are not assigned until the owner-facing product boundary is clear.
