@@ -12,7 +12,7 @@
 - Own evidence: build;56 unit/route/UI +96 native PG; independent mutex/History probe; actual Chromium Stage2/AP-10/AP-11 37 groups + isolated History35 PASS
 - Exact-head GitHub CI #42349494000 and browser #42349494094 SUCCESS, separately verified
 - Documentation executor: **Лира**, STAGE2-DOC-MIRA-03 text correction committed in Draft docs-only PR #297 head `a63bfb6d52052e1dd0905eb498dabb1d38c8f10a`, base `df57dabf2a4cbc44d85138d8809079878490a7c8`; one-line delta in PROJECT_STATE.md
-- Docs-only PR #297 current exact-head checks: CI #42355616281 SUCCESS (checks + PostgreSQL17); Chromium #42355616335: history_browser SUCCESS, browser pending. Previous head `9d0c7baa` had both SUCCESS, but does not establish new exact-head browser PASS
+- Docs-only PR #297 current exact-head checks: CI #42355616281 SUCCESS (checks + PostgreSQL17); Chromium #42355616335: history_browser SUCCESS, browser attempt1 failed on intermittent AP-11 `AbortError` (Owner cases passed), unchanged-head targeted attempt2 in progress. No browser PASS claimed until attempt2 completed
 - Previous coordinator docs review on `69581a0a...`: **CHANGES REQUIRED**, `STAGE2-DOC-MIRA-01/02`. Both corrected only in ROADMAP.md and PROJECT_STATE.md; author exact-head checks complete; **fresh coordinator verdict pending**
 - Fresh coordinator docs review of `9d0c7baa`: **CHANGES REQUIRED**, `STAGE2-DOC-MIRA-03` unapproved future bootstrap wording; Лира removed only the unapproved phrase on `a63bfb6d`, one docs file changed, new review pending
 - Stage2 fully closed only after implementation/docs merge; no production/owner visual acceptance claimed
