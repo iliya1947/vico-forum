@@ -122,7 +122,6 @@ try:
         mutate(manager, {'intent': 'override', 'userId': target, 'permission': 'forum.reply.create', 'effect': 'deny'})
         submit_management(page, {'intent': 'deleteRole', 'roleId': role})
         assert count() == before + 6
-        submit_management(page, {'intent': 'override', 'userId': actor, 'permission': 'access.authorization.manage', 'effect': 'deny'}, 409)
         mutate(reader, {'intent': 'createRole', 'slug': prefix + '-denied', 'displayName': 'Denied'}, 403)
         mutate(manager, {'intent': 'renameRole', 'roleId': role, 'displayName': 'Stale deleted role'}, 404)
         mutate(manager, {'intent': 'createRole', 'slug': 'invalid slug', 'displayName': 'Invalid'}, 400)
@@ -132,8 +131,8 @@ try:
         assert cross.status in [400, 403], (cross.status, cross.text()[:150])
         record('cross-origin-rejected-' + str(cross.status))
         assert count() == before + 6
-        record('controlled-stale-invalid-lockout-cross-origin-states')
-        record('six-real-management-producers-noop-retry-lockout-denial')
+        record('controlled-stale-invalid-cross-origin-states')
+        record('six-real-management-producers-noop-retry-and-denial')
         document(page, '/en/admin')
         assert page.locator('.admin-history-events').count() == 0
         assert 'Deleted role עברית ' + prefix not in page.content()
@@ -228,6 +227,39 @@ try:
         document(page, '/en/admin/history')
         assert page.locator('.admin-history-events li').count() == 25
         record('history-recovery')
+
+        # Real canonical self-revocation is permitted. Run last: the same actor
+        # cannot perform any subsequent management operations on fresh requests.
+        management(page)
+        self_override = page.locator(
+            'form.admin-override-row:has(input[name="userId"][value="' + actor +
+            '"]):has(input[name="permission"][value="access.authorization.manage"])'
+        )
+        assert self_override.count() == 1
+        before_self_revoke = count()
+        self_override.locator('select[name="effect"]').select_option("deny")
+        with page.expect_response(lambda r: r.request.method == "POST" and
+                                  "/en/admin/authorization" in r.url) as revoked:
+            self_override.locator('button[type="submit"]').click()
+        assert revoked.value.status == 200, revoked.value.status
+        assert sql("""select effect from authz_user_permission_overrides
+          where user_id=$1 and permission_key='access.authorization.manage'""", [actor]) == [
+            {'effect': 'deny'}
+        ]
+        assert count() == before_self_revoke + 1
+        self_event = sql("""select action,target_type,target_id from admin_history
+          where actor_id=$1 order by position desc limit 1""", [actor])[0]
+        assert self_event == {'action': 'user.overrideChanged', 'target_type': 'user',
+                              'target_id': actor}, self_event
+        document(page, '/en/admin/history')
+        assert page.locator('.admin-history-events li').first.inner_text().find('Manager') >= 0
+        document(page, '/en/admin/authorization', 403)
+        mutate(manager, {'intent':'createRole', 'slug':prefix+'-after-revoke',
+                         'displayName':'Must deny'}, 403)
+        assert count() == before_self_revoke + 1
+        assert sql("select count(*)::int n from authz_roles where slug=$1",
+                   [prefix + '-after-revoke']) == [{'n': 0}]
+        record('canonical-last-manager-self-revoke-commits-history-next-request-denied')
         browser.close()
     assert not errors, errors
     assert not external, external
