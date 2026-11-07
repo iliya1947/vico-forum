@@ -1,3 +1,11 @@
+# Лира — final owner/authorization docs closeout
+
+Prepare a separate docs-only PR from current main `96186cc9158dd7a91c9d2c0124ed4556f133f15c`.
+
+Change exactly: `docs/auth/AUTHORIZATION.md`, `docs/ADMIN_PANEL.md`, `PROJECT_STATE.md`, `ROADMAP.md`, `docs/PROJECT_HISTORY/PROJECT_HISTORY.md`, and new `docs/PROJECT_HISTORY/PROJECT_HISTORY_16.md`.
+
+Goal: record the confirmed single-Owner Google bootstrap model, close repository/local-CI owner/authorization redesign, retain Stage6 Google/Owner binding + deployed acceptance as unfinished, and make Settings eligible only after this docs PR merges. No runtime/code/schema/migration/infra/test changes. Publish stable head/checks in #251 and stop for Mira review.
+
 # Лира — PR #297 second docs correction
 
 Fresh coordinator review of exact head `9d0c7baa9b9f96a79ee8b7b79c7a736a872c83b6`: CHANGES REQUIRED, one wording-only current-scope finding.
