@@ -1,3 +1,9 @@
+# Мира — Settings product-definition start
+
+Owner/authorization redesign is fully closed after merged PR #298; current main `856b93cb65b01e2389eb97276b37b3a0d8eef265`.
+
+Current bounded task: Settings product definition only. First analyze current placeholder + existing configurable mechanisms + release boundaries; identify genuinely required owner decisions. Do not assign Lev/Lira/Mark or start implementation before product scope is fixed.
+
 # Мира — PR #298 final coordinator result
 
 Exact head `7cfa68a8a2c587314393d60a9bf90923604ee0c0`: PASS. OWNER-DOC-MIRA-01 closed; 6-file docs scope consistent; CI #42361836324 success; zero confirmed current-scope defects. No Codex docs review needed. Next: owner merge #298.
