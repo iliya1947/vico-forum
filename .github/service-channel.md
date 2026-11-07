@@ -461,3 +461,34 @@ Do not pull into the first Settings package by default:
    - B. Include locale activation/management in Settings now.
 
 No implementation, schema or permission changes are authorized until these decisions are fixed.
+
+
+## Settings product architecture — owner correction
+
+The previous “single admin Settings page / first setting = registration” concept is superseded.
+
+Owner direction:
+1. Settings must be split into at least three distinct surfaces.
+2. **Owner/system settings** — forum-wide configuration and role settings; this surface is available only to the sole Owner.
+3. **Administrator personal settings** — convenience/preferences for an administrator's own working experience; these settings do not change forum behavior for other users.
+4. **User personal settings** — convenience/preferences for an ordinary user's own forum experience.
+5. The list is intentionally not considered complete yet.
+
+Mira identifies one additional category that should not be mixed with convenience preferences:
+- **Account & security** — password/account credentials, linked Google account, sessions and similar identity/security controls. This is personal account management, not UI convenience.
+
+Domain-specific configuration is a separate axis:
+- complaint priority settings already belong to Complaints;
+- similar future subsystem-specific controls should stay with their subsystem unless there is a concrete product reason to centralize them.
+
+### Important authorization impact
+
+Current main permits a non-Owner with `access.authorization.manage` to create/edit roles, change role grants, assign users and manage overrides (except the existing Owner-only elevated capability boundary).
+
+The new owner statement “forum and role settings are available only to me” changes that product direction for **role settings**. This is not treated as an accidental current defect; it is a new Settings/authorization product requirement to define before implementation.
+
+Do not yet assume whether Owner-only applies to:
+- role definitions + permission sets only; or
+- also assigning existing roles to users and per-user permission overrides.
+
+That exact split remains an owner decision. No code/permission/schema change is authorized yet.
