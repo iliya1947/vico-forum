@@ -345,9 +345,11 @@ Owner — отдельная server-controlled authority поверх сущес
 
 ## Owner decision — single Owner bootstrap
 
-1. Владелец Vico Forum один — разработчик. Передача владения другому пользователю не входит в планируемую продуктовую модель.
-2. Не проектировать multiple-owner, ownership-transfer, successor или emergency-recipient UI/API без нового прямого решения владельца.
-3. Первичная идентификация Owner должна опираться на Google account владельца.
-4. Google account служит доказательством identity при bootstrap/authentication, но application Owner authority остаётся привязана server-side к внутреннему Better Auth `user.id` через `VICO_OWNER_USER_ID`; email/Google claims/role name не являются authority.
-5. После Google authentication/linking exact внутренний `user.id` владельца фиксируется в server-controlled binding. Отдельный first-manager grant/bootstrap не нужен.
-6. Recovery/transfer на другого владельца сейчас не проектируется. Если позже понадобится аварийное восстановление доступа к Owner, это будет отдельное owner decision, а не скрытая часть текущего redesign.
+1. Владелец Vico Forum один — разработчик.
+2. Передача владения, второй владелец и наследование владения не входят в текущий план.
+3. Владелец входит через свой Google-аккаунт.
+4. После входа внутренний аккаунт форума разработчика фиксируется сервером как аккаунт владельца.
+5. Почта, имя и обычная роль сами по себе не дают права владельца.
+6. Отдельный «первый администратор» или «первый менеджер» не нужен.
+7. Дополнительная функция форума для этой привязки не требуется; реальная Google-настройка и привязка владельца выполняются и проверяются позже в Stage 6.
+8. После отдельного финального documentation closeout owner/authorization redesign считается завершённым, и можно переходить к Settings.
