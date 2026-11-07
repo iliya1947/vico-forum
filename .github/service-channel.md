@@ -1265,3 +1265,32 @@ Reason:
 6. Nothing about this blocks adding notification preferences immediately if the owner considers them important enough for first release; it only makes that slice materially larger.
 
 No implementation is authorized until S2 is resolved.
+
+
+## Settings owner decision S2 — fixed; product scope frozen
+
+Owner chose **S2.1 — defer reply/mention notification preferences** from the first Settings release.
+
+All four product decisions are now fixed:
+- **S1:** current release authorization management is Owner-only across role definitions/grants, role assignment and per-user overrides. Future deputy delegation is required, but no deputy authority is implemented now.
+- **S2:** reply/mention notification preferences are deferred.
+- **S3:** online status default ON / opt-out.
+- **S4:** independent registration controls for Google and email/password.
+
+The five Settings surfaces and their first-release/deferred boundaries in this service channel are now the product baseline for technical planning. No implementation is authorized yet.
+
+### Handoff to Lev
+
+Result required: a technical plan that maps the frozen Settings product scope onto the current repository and decomposes implementation into bounded packages.
+
+Scope:
+- all five first-release Settings surfaces already fixed in this service channel;
+- include required authorization, persistence, route/UI, auth/session and privacy boundaries where applicable;
+- preserve future ability to delegate authorization management to deputy administrators without implementing deputy authority now;
+- keep deferred Settings items and subsystem-local settings out of implementation packages.
+
+Done criteria:
+- package sequence is explicit and independently implementable/reviewable;
+- dependencies and migration/schema needs are identified;
+- applicable tests/checks and any browser acceptance needs are identified per package;
+- no implementation code is changed.
