@@ -5,6 +5,10 @@ on:
     paths:
       - ".github/workflows/ap10-browser.yml"
       - "tests/browser/user-measures/**"
+      - "tests/browser/admin-history/**"
+      - "db/authorization-repository.ts"
+      - "db/schema.ts"
+      - "drizzle/0059_remove_last_manager_flag.sql"
       - "app/measures/**"
       - "app/routes/account-measure*.tsx"
       - "app/routes/admin-measure*.tsx"
@@ -96,6 +100,20 @@ jobs:
           fi
           "$RUNNER_TEMP/ap10-playwright/bin/python" tests/browser/user-measures/check.py \
             --url http://127.0.0.1:4188 --output "$RUNNER_TEMP/ap10-evidence" || {
+              tail -n 100 "$RUNNER_TEMP/ap10-preview.log"
+              exit 1
+            }
+          # The next harness signs up independent fixture accounts in the same
+          # disposable PostgreSQL database. Clear only synthetic signup rate limits.
+          node --input-type=module -e '
+            import pg from "pg";
+            const client = new pg.Client({connectionString:process.env.DATABASE_URL});
+            await client.connect();
+            try { await client.query("delete from rate_limit"); }
+            finally { await client.end(); }
+          '
+          "$RUNNER_TEMP/ap10-playwright/bin/python" tests/browser/admin-history/check.py \
+            --url http://127.0.0.1:4188 --output "$RUNNER_TEMP/ap10-evidence/admin-history" || {
               tail -n 100 "$RUNNER_TEMP/ap10-preview.log"
               exit 1
             }
