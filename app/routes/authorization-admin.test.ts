@@ -99,14 +99,15 @@ describe("authorization management route", () => {
     const state = context();
     const visible = await loader({ params: { locale: "en" }, context: state.context });
     expect(visible).toMatchObject({ canMutateAuthorization: false, roles: [], users: [] });
-    for (const fields of [
+    const attempts: Record<string, string>[] = [
       { intent: "createRole", slug: "test", displayName: "Test" },
       { intent: "renameRole", roleId: "role", displayName: "Changed" },
       { intent: "roleGrants", roleId: "role" },
       { intent: "deleteRole", roleId: "role" },
       { intent: "assignRole", userId: "target", roleId: "role" },
       { intent: "override", userId: "target", permission: "forum.topic.pin", effect: "inherit" },
-    ]) {
+    ];
+    for (const fields of attempts) {
       const response = await action({ request: request({ ...fields, actorId: "bound-owner" }), context: state.context });
       expect(response).toBeInstanceOf(Response);
       expect((response as Response).status).toBe(403);
