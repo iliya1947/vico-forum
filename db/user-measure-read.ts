@@ -1,7 +1,7 @@
 import type { Pool, PoolClient } from "pg";
 import { PostgresAuthorizationRepository } from "./authorization-repository";
 import { assertNoActiveUserMeasureRestrictionPg } from "./user-measure-policy";
-import { assertUserMeasureAuthority, requireUserMeasureOwnerId,
+import { assertUserMeasureAuthority, rawUserMeasurePermissions, requireUserMeasureOwnerId,
   UserMeasureForbiddenError, BLOCK_MANAGE_PERMISSION, type UserMeasureAuthorityLevel } from "./user-measure-authority";
 import { UserMeasureNotFoundError, UserMeasureConflictError } from "./user-measures";
 import type { UserMeasureRestrictionId } from "../app/admin/user-measure-restrictions";
@@ -161,8 +161,8 @@ export class PostgresUserMeasureReader {
       await assertNoActiveUserMeasureRestrictionPg(client, actorId, "admin.usersAccess", ownerId);
       const authorization = new PostgresAuthorizationRepository(this.pool, ownerId);
       const actor = await authorization.resolveUser(actorId, client);
-      const actorRawPermissions = new Set(actor.effectivePermissions);
-      if (!actorRawPermissions.has(BLOCK_MANAGE_PERMISSION)) throw new UserMeasureForbiddenError();
+      const actorRawPermissions = rawUserMeasurePermissions(actor);
+      if (actorId !== ownerId && !actorRawPermissions.has(BLOCK_MANAGE_PERMISSION)) throw new UserMeasureForbiddenError();
 
       const result = await client.query<{
         id: string; measure_id: string; ordinal: number; created_at: Date;
@@ -182,7 +182,7 @@ export class PostgresUserMeasureReader {
         try {
           assertUserMeasureAuthority({
             actorId, targetUserId:item.target_user_id, ownerUserId:ownerId,
-            actorRawPermissions, targetRawPermissions:new Set(target.effectivePermissions),
+            actorRawPermissions, targetRawPermissions:rawUserMeasurePermissions(target),
             issuerAuthorityFloor:item.issuer_authority_floor,
           });
         } catch(error) {
@@ -226,8 +226,8 @@ export class PostgresUserMeasureReader {
       ]);
       const actorLevel = assertUserMeasureAuthority({
         actorId, targetUserId: subject, ownerUserId: ownerId,
-        actorRawPermissions: new Set(actor.effectivePermissions),
-        targetRawPermissions: new Set(target.effectivePermissions),
+        actorRawPermissions: rawUserMeasurePermissions(actor),
+        targetRawPermissions: rawUserMeasurePermissions(target),
       });
       return task(client, actorLevel);
     }, false);
