@@ -55,6 +55,7 @@ describe("Stage 2 central Owner effective authority, PostgreSQL 17", () => {
       expect(state).toMatchObject({
         role: { slug: "owner-empty", displayName: "Owner" },
         grants: [],
+        authoritySource: "owner",
         effectivePermissions: [...PERMISSION_CATALOG].sort(),
       });
       expect(Object.keys(state?.overrides ?? {}).sort()).toEqual([...PERMISSION_CATALOG].sort());
@@ -79,6 +80,7 @@ describe("Stage 2 central Owner effective authority, PostgreSQL 17", () => {
 
   it("preserves non-Owner raw RBAC, rejects fake Owner identity and invalid/missing binding", async () => {
     expect((await service.resolveUser("ordinary")).role.displayName).toBe("Owner");
+    expect((await service.resolveUser("ordinary")).authoritySource).toBeUndefined();
     expect((await service.resolveUser("ordinary")).effectivePermissions).toEqual([]);
     expect(await repository.hasPermission("ordinary", "access.authorization.manage")).toBe(false);
     expect(await repository.hasPermission("manager", "access.authorization.manage")).toBe(false);
