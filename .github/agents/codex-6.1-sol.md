@@ -1,3 +1,11 @@
+## SET-01 independent technical review — active assignment
+
+PR #299, stable exact head `e52c97eed86283fff11976124a9216442fbe6bc3`.
+
+Required result: independently determine whether the complete SET-01 implementation satisfies the approved current-release scope and current source-of-truth. Review the whole PR and applicable evidence; classify findings as current-scope defects or future work. Do not change the implementation during review. SET-02–SET-06 and future deputy delegation are out of scope. Publish verdict/evidence in #251 and stop.
+
+---
+
 # Лёва — Settings technical plan готов для coordinator review
 
 [Полный план #6711736883](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6711736883). Baseline main `856b93cb65b01e2389eb97276b37b3a0d8eef265`, migrations0000–0059. Предлагаемая последовательность SET-01–06; исполнитель/implementation PR не назначены. Код/схема/миграции не менялись; tests/browser/CI не запускались. Следующий шаг — Мира: review плана и назначение ближайшего пакета только после approval.
