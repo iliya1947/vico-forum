@@ -106,7 +106,7 @@ describe("AP-09 read-only Users presentation", () => {
     };
     const element = <AdminUserDetail locale={locale}
       access={adminAccess(new Set(["admin.users.read", "access.authorization.manage"]))} user={user}
-      management={management} managerActorId="manager"
+      management={management} managerActorId="manager" canMutateAuthorization={true}
       permissions={["forum.reply.create", "admin.users.read"]}/>;
     const router = createMemoryRouter([{ path: "*", element }], {
       initialEntries: [`/${locale}/admin/users/${encodeURIComponent(id)}`],
@@ -124,6 +124,33 @@ describe("AP-09 read-only Users presentation", () => {
     expect(root.querySelector('input[name="inlineUserAuthorization"]')).toBeNull();
   });
 
+  it("shows targeted authorization state without any inline write forms for non-Owner", () => {
+    const management = {
+      userId: id,
+      roles: [{ id: "builtin-user", slug: "user", displayName: "User", isSystem: true }],
+      authorization: {
+        role: { id: "builtin-user", slug: "user", displayName: "User", isSystem: true },
+        explicitAssignment: false, grants: ["forum.reply.create" as const],
+        overrides: { "forum.reply.create": "deny" as const },
+        effectivePermissions: ["forum.topic.create" as const],
+      },
+    };
+    const element = <AdminUserDetail locale="en"
+      access={adminAccess(new Set(["admin.users.read", "access.authorization.manage"]))} user={user}
+      management={management} managerActorId="manager" canMutateAuthorization={false}
+      permissions={["forum.reply.create", "forum.topic.create"]}/>;
+    const router = createMemoryRouter([{ path: "*", element }], {
+      initialEntries: ["/en/admin/users/user"],
+    });
+    dispose = () => router.dispose();
+    const root = render(<I18nextProvider i18n={localized("en")}><RouterProvider router={router}/></I18nextProvider>).container;
+    expect(root.querySelector("#authorization")).toBeTruthy();
+    expect(root.querySelectorAll("#authorization form")).toHaveLength(0);
+    expect(root.querySelector("#authorization")?.textContent).toContain("User");
+    expect(root.querySelector("#authorization")?.textContent).toContain("forum.reply.create");
+    expect(root.querySelector("#authorization")?.textContent).toContain("Deny");
+    expect(root.querySelector("#authorization")?.textContent).toContain("forum.topic.create");
+  });
   it("does not list implemented Users as an unfinished feature", () => {
     expect(UNDER_DEVELOPMENT_FEATURES.map(feature => feature.id)).not.toContain("admin-users");
     expect(UNDER_DEVELOPMENT_FEATURES.some(feature => feature.id === "admin-settings")).toBe(true);
