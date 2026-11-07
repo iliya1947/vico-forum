@@ -175,3 +175,13 @@ Mira verifies exact-head CI for #295. If green and head unchanged, #295 is ready
 - Settings remains after completion of owner/authorization redesign.
 - Mutex redesign/removal is not automatically part of the next stage; only if the target model technically requires it.
 - Stage 6/production remains out of scope.
+
+
+## Owner model clarification — existing role constructor remains authoritative below Owner
+
+- Owner is not a role template and is not part of ordinary role construction.
+- Below Owner there is **no new Senior/Head Admin built-in role or second hierarchy system**.
+- Existing role constructor remains authoritative: built-in/custom role permissions, one assigned role per user, and per-user allow/deny/inherit overrides.
+- AP-10 elevated administrative authority already uses the ordinary permission `admin.users.blocks.managePrivileged`; a custom role may carry it.
+- Current code has one special Owner gate: only bound `VICO_OWNER_USER_ID` may add/remove that elevated permission through role grants, assignments involving an elevated role, or per-user override.
+- The only unresolved product question at this point is whether that grant/revoke gate itself should remain Owner-only or should behave like ordinary permission management under `access.authorization.manage`.
