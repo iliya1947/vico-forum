@@ -1,5 +1,6 @@
 import type { Pool, PoolClient } from "pg";
 import { describe, expect, it, vi } from "vitest";
+import { PERMISSION_CATALOG } from "../app/authorization/catalog";
 import {
   AuthorizationRoleSlugConflictError,
   PostgresAuthorizationRepository,
@@ -105,6 +106,29 @@ describe("PostgresAuthorizationRepository snapshot reads", () => {
       grants: ["forum.reply.create", "forum.topic.create"],
       overrides: { "forum.reply.create": "deny", "forum.solution.manageOwn": "allow" },
       effectivePermissions: ["forum.solution.manageOwn", "forum.topic.create"],
+    });
+  });
+
+  it("projects bound Owner in both bulk and targeted snapshot without rewriting raw grants and overrides", async () => {
+    const { pool: bulkPool } = snapshotPool(managementRows);
+    const bulk = await new PostgresAuthorizationRepository(bulkPool, "u1").readManagementState();
+    expect(bulk.users[0]?.authorization).toMatchObject({
+      grants: ["forum.reply.create", "forum.topic.create"],
+      overrides: { "forum.reply.create": "deny", "forum.solution.manageOwn": "allow" },
+      effectivePermissions: [...PERMISSION_CATALOG].sort(),
+    });
+
+    const { pool: targetedPool } = snapshotPool((sql) => {
+      if (sql.startsWith("select permission_key, effect from authz_user_permission_overrides")) {
+        return { rows: [{ permission_key: "forum.topic.create", effect: "deny" }] };
+      }
+      return resolvedUserRows(sql);
+    });
+    const target = await new PostgresAuthorizationRepository(targetedPool, "u1").resolveUser("u1");
+    expect(target).toMatchObject({
+      grants: ["forum.topic.create"],
+      overrides: { "forum.topic.create": "deny" },
+      effectivePermissions: [...PERMISSION_CATALOG].sort(),
     });
   });
 
