@@ -1948,3 +1948,25 @@ Fresh docs-only coordinator review completed on exact head `d9134f8f3c57814aa910
 - No independent Codex docs review is required by the assigned closeout workflow.
 
 **Next: Owner merge PR #310.** Any documentation-head change before merge requires a fresh Mira docs-only review. SET-06 remains inactive until this docs closeout is merged.
+
+
+## SET-05 fully closed; SET-06 Privacy routed to Lev technical planning
+
+- Documentation PR #310 merged on 2026-11-08 at current main **`c1109dc8c5c499b63dd6e4d2f76bce96fadb2cd5`**. Final docs head `d9134f8f3c57814aa910a272f2a9dc4c118fccb3`; Mira fresh docs-only review PASS, 0 confirmed current-scope defects; exact-head CI #42489445378 SUCCESS.
+- SET-05 Account & security is therefore **fully closed**: implementation #309 + separate factual docs #310 are both in `main`.
+- Current permanent source-of-truth consistently marks **SET-06 Privacy** as the next unimplemented Settings package.
+- Approved product boundary is unchanged: persist a per-user public online-visibility preference, default **ON**, allow authenticated opt-out, exclude opted-out users authoritatively from the public online member list and count, and prevent heartbeat from making an opted-out user publicly online again.
+- No additional owner decision is currently required for this bounded package. Route/storage/API details are not pre-decided by Mira and must follow the current repository design.
+
+### Handoff — Лёва: SET-06 technical plan
+
+Prepare the bounded technical implementation plan for **SET-06 Privacy** against current `main`.
+
+Required result:
+1. Inspect the current online-presence/heartbeat implementation and the existing Settings shell/integration points.
+2. Define the minimal implementation needed for the approved persisted `show online` behavior, including any forward migration/storage change actually required from current main.
+3. Identify the authoritative read/write/enforcement points so opt-out affects both public online list/count and heartbeat without relying on UI hiding.
+4. Define the implementation/verification scope and the files/modules likely involved, with the tests/real-runtime acceptance needed to prove the current package.
+5. Keep the plan bounded to SET-06. Do not implement code in this step and do not expand into unrelated privacy controls, notification settings, a universal settings store, new RBAC/deputy mechanics, Stage 6 or production work.
+
+When the plan is complete, record it in #251 and stop. **Лира remains unassigned until Mira reviews the plan.**
