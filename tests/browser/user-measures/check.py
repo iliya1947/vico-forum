@@ -570,6 +570,22 @@ try:
         assert first_id != second_id
         record("manager-two-independent-measures", first=first_id, second=second_id)
 
+        # SET04-MIRA-01: real authenticated detail route must retain the manager's
+        # local density, while never recording a private measure ID as last Admin index.
+        document(manager, "/en/settings/administrator")
+        manager.locator("#settings-admin-density").select_option("compact")
+        document(manager, "/en/admin/measures")
+        expect(manager.locator(".admin-panel")).to_have_attribute("data-density", "compact")
+        pref_key = "vico:administrator-workspace:v1:" + manager_id
+        before_detail = manager.evaluate("(key) => JSON.parse(localStorage.getItem(key))", pref_key)
+        assert before_detail["adminLast"] == "measures", before_detail
+        document(manager, "/en/admin/measures/" + first_id)
+        expect(manager.locator(".admin-panel")).to_have_attribute("data-density", "compact")
+        after_detail = manager.evaluate("(key) => JSON.parse(localStorage.getItem(key))", pref_key)
+        assert after_detail["adminLast"] == "measures", after_detail
+        assert first_id not in json.dumps(after_detail)
+        record("set04-actor-bound-admin-measure-detail-density-no-private-last-entry")
+
 
         # Closure was lifted, but two independent AP-10 reply restrictions are
         # now active. A stale mounted editor cannot commit or disappear.
