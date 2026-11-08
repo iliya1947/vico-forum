@@ -5,15 +5,15 @@
 ## Актуальный baseline и назначение
 
 - Current main/base: `681e8bab0eda595186acebae9ce4b2d47d06b936`; SET-01 implementation/docs closed; migrations main0000–0059.
-- Current stage: **SET-02 independent review completed — CHANGES REQUIRED**.
-- PR **#302**, frozen reviewed head `f7a862ea0a81112857e9d7510afdab183a9631a3`, open/unmerged; implementation migration0060.
-- Coordinator Мира PASS на этом head; SET02-MIRA-01/02 closed. Независимая проверка Лёвы нашла **ровно один новый current-scope P2: SET02-LEV-01**.
-- [Independent report #6715455171](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6715455171) содержит воспроизведение/causal chain и bounded correction. Implementation при review не менялся.
-- Policy SELECT timeout и missing singleton через настоящий production AuthRuntime.handle + PG возвращают403/`validation_failed`: Better Auth поглощает исходное исключение. Требуется сохранить cause и различить unavailable/invariant vs intentional policy denial. Регистрация остаётся fail-closed; existing login работает.
-- Собственные checks:93 unit/route/UI,84 PG/build,3 metadata suites, actual64-table schema parity; Chromium Settings17 + separate History38 PASS. Эти passing suites не закрывают подтверждённый failure-contract defect.
-- Exact-head GitHub CI #42431260134 и browser #42431260118 SUCCESS отдельно проверены.
-- **Мира:** принять CHANGES REQUIRED и направить Лире только SET02-LEV-01 в #302. Новый stable head → fresh coordinator whole-PR → independent same-head review. Readiness/merge сейчас не выполнять.
-- Лёва review завершил и остановился; Марк не назначен. SET-03–06/docs closeout/Stage6/production/live Google и Owner binding вне активной correction.
+- Current stage: **SET-02 repeat independent review completed — PASS, 0 confirmed current-scope defects**.
+- PR **#302**, frozen reviewed head `07d805d98ee77f9584f9609772ce2d33b9a8e63f`, open/Ready for review/unmerged; implementation migration0060.
+- Мира fresh coordinator PASS и Лёва independent technical whole-PR PASS относятся к этому же head. SET02-MIRA-01/02 и SET02-LEV-01 закрыты.
+- [Current independent report #6715843589](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6715843589); прежний CHANGES REQUIRED #6715455171 относится только к superseded f7a862ea.
+- Сохранение admission cause request-local подтверждено отдельно через production AuthRuntime/Better Auth/PG: query+server statement timeout →503; singleton invariant и SQL42P01 сохраняются unexpected; intentional closure403, existing sign-in200. Google callback timeout/invariant/closed/open проверены собственным synthetic-remote probe;0 новых user/account/session при отказах.
+- Собственные exact-head checks:111 application tests/15files,44 PG/7files,build,28 metadata tests/3files,actual64-table manifest; Chromium Settings17 + отдельный History38 PASS,0 page errors/external requests. Evidence: `/workspace/work/set02-repeat-evidence/`.
+- GitHub CI #42434044474 и browser #42434044476 independently read SUCCESS на том же SHA.
+- **Next — Мира:** readiness routing для owner merge этого exact head; после merge — отдельный factual docs closeout SET-02. Implementation при review не менялся.
+- Лёва завершил проверку и остановился; Марк не назначен. SET-03–06, deputies, Stage6/production/live Google и real Owner binding не назначены/вне scope.
 
 
 ## Handoff — Лира: Stage2 factual documentation closeout
@@ -1484,3 +1484,8 @@ Lev independent technical review of PR #302 exact head `f7a862ea0a81112857e9d751
 ## SET-02 corrected head after SET02-LEV-01 — coordinator PASS
 
 PR #302 exact head `07d805d98ee77f9584f9609772ce2d33b9a8e63f`, base `681e8bab0eda595186acebae9ce4b2d47d06b936`: Mira fresh whole-PR **PASS, 0 confirmed current-scope defects**. SET02-MIRA-01/02 and SET02-LEV-01 are closed. Correction from the Lev-reviewed head is bounded to `app/auth/auth.server.ts` and `tests/database/auth-runtime.test.ts`. Exact-head CI #42434044474 and browser #42434044476 are SUCCESS. Implementation is frozen. Lev is assigned a repeat independent technical review of this same head; Mark remains unassigned.
+
+
+## SET-02 repeat independent technical review — Лёва PASS
+
+[Full report #6715843589](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6715843589), PR #302 exact `07d805d98ee77f9584f9609772ce2d33b9a8e63f` / base `681e8bab0eda595186acebae9ce4b2d47d06b936`: **PASS, 0 confirmed current-scope defects**. Whole49-file scope пересверен; correction от предыдущего review меняет только auth.server.ts и auth-runtime.test.ts, остальные47 files byte-identical. SET02-LEV-01 закрыт собственным9-case production AuthRuntime/PG fault probe, включая OAuth callback; availability503, invariant/unexpected preservation и intentional denial различаются, при failure0 user/account/session. SET02-MIRA-01/02 остаются закрытыми. Own111 app/44PG/build/28metadata/actual64-table schema и real Chromium Settings17+History38 PASS. Runtime/container/DBs/dummy vars/symlink убраны, git clean, head/base unchanged. Лёва implementation не менял, других агентов не запускал и остановился. Next — Мира readiness routing; owner merge затем separate factual docs closeout. SET-03–06/Stage6/production вне scope.
