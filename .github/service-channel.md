@@ -32,13 +32,16 @@
 
 ## Актуальный baseline и назначение
 
-- Current main: `76fc5b16be4f2425a0ad1fdcb7b38974db355c56`; docs-only PR #308 merged. **SET-04 fully closed**.
-- Next bounded Settings package: **SET-05 Account & security**.
-- Approved SET-05 technical plan remains #6711736883. Rechecked against current main and exact Better Auth v1.7.7 source: `listUserAccounts` exists; `listSessions` is fresh-session gated; `revokeSession` / `revokeOtherSessions` exist; current Vico `AuthRuntime` still only exposes session resolution + generic handler and therefore needs the planned bounded self-service extension.
-- No repeat Lev planning is required.
-- **Lira is assigned implementation** from current main. Mira reviews the first stable exact head before any Lev review.
-- SET-05 remains bounded to current-account methods/password/session management and reuse of the existing explicit Google-link flow. No new auth schema/provider, account deletion/email change/unlink/reset/recovery/2FA/passkeys, SET-06, Stage6 or permanent docs.
-- SET-06 Privacy and production/Stage6 remain inactive.
+- Current main/base: `76fc5b16be4f2425a0ad1fdcb7b38974db355c56`.
+- SET-04 fully closed.
+- SET-05 implementation PR #309 reviewed on frozen exact head `dd6a5037aec81f4889005eb38fcfa25b573fd186`.
+- Coordinator verdict: **CHANGES REQUIRED — 2 confirmed current-scope findings**.
+- **SET05-MIRA-01:** direct `revoke-others` does not preserve the Better Auth v1.7.7 freshness boundary. UI hides session controls after `listSessions` reports `SESSION_NOT_FRESH`, but the action can still call `revokeOtherSessions`, whose library middleware is authoritative-session only, not fresh-session. Existing tests cover stale single-session revoke but not stale revoke-all.
+- **SET05-MIRA-02:** PR adds dedicated `.github/workflows/set05-account-browser.yml`; approved plan #6711736883 explicitly requires extending applicable existing CI/browser harnesses instead of creating a new GH Actions workflow/framework only for decomposition.
+- The prior “owner visual acceptance pending” block is removed: SET-05 plan requires real browser/runtime acceptance, not owner visual approval before coordinator review. Owner visual approval is not claimed.
+- Exact-head CI/browser remain green but do not close the two findings above.
+- **Next — Lira:** correct both findings as one bounded package, preserve existing SET-05 acceptance, publish new stable head/checks, then stop for fresh Mira review.
+- Lev/Mark remain unassigned. SET-06 and Stage6/production inactive.
 
 ## Handoff — Лира: Stage2 factual documentation closeout
 
@@ -1675,3 +1678,22 @@ PR #308 exact head `9131278240c682650c5a4c1048cdf43be786dd81`: **PASS, 0 confirm
 ## SET-04 fully closed; SET-05 implementation active
 
 Docs PR #308 merged into main at `76fc5b16be4f2425a0ad1fdcb7b38974db355c56`; SET-04 implementation and factual documentation are fully closed. Existing approved SET-05 plan #6711736883 was rechecked against current main and Better Auth v1.7.7 source and remains applicable, so no repeat Codex planning is needed. Lira is assigned SET-05 Account & security implementation only. Mira reviews the first stable implementation exact head; Lev stays unassigned until coordinator PASS; Mark unassigned. Permanent docs follow separately after implementation merge. SET-06/Stage6/production remain inactive.
+
+
+## SET-05 / PR #309 — Mira coordinator CHANGES REQUIRED
+
+Reviewed frozen exact head `dd6a5037aec81f4889005eb38fcfa25b573fd186` against current main `76fc5b16be4f2425a0ad1fdcb7b38974db355c56`, approved plan #6711736883, Better Auth v1.7.7 source and current Settings/auth contracts.
+
+**Verdict: CHANGES REQUIRED — 2 confirmed current-scope findings.**
+
+1. **SET05-MIRA-01 — stale/not-fresh direct revoke-all bypasses the session-management freshness gate.** The Account loader correctly treats Better Auth `listSessions` `SESSION_NOT_FRESH` as `sessionAccess=not-fresh` and hides session controls. `revokeOneOther` also uses `listSessions`, so stale direct POST is denied. But `revokeAllOthers` goes `verifyIdentity → auth.api.revokeOtherSessions`; Better Auth v1.7.7 `revokeOtherSessions` uses `sensitiveSessionMiddleware`, not `freshSessionMiddleware`. Therefore a still-valid but not-fresh session can directly submit `intent=revoke-others` and revoke all other sessions despite the approved re-sign-in boundary. Existing native/browser stale coverage exercises only single-session revoke. Correction must make direct revoke-all preserve the same intended freshness boundary without inventing a new reauthentication system.
+
+2. **SET05-MIRA-02 — dedicated new GitHub Actions workflow violates the approved acceptance boundary.** PR #309 adds `.github/workflows/set05-account-browser.yml`, duplicating the same disposable PG/build/Playwright pattern already present in the existing browser workflow. Approved plan #6711736883 explicitly says not to create a new GH Actions framework only for decomposition and to extend applicable existing CI/browser harnesses. Preserve the same SET-05 real Worker/Better Auth/PG/Chromium coverage, but bring it back inside the approved existing-harness boundary.
+
+Checked and not findings: credential-only password change; Google-only no-set-password; reuse of the explicit Google link; session-ID-to-token server-side resolution; current-session protection; foreign session/account rejection; Origin/intent/identity guards; private/no-store DTOs; profile→Account routing; EN/RU/HE/RTL/mobile presentation; no DB/schema/provider/RBAC/SET-06/Stage6 expansion. Pre-routing auth cookie propagation remains intact; no Set-Cookie defect confirmed.
+
+Exact-head CI #42470960972, SET-05 Chromium #42470961007 and existing Chromium #42470960994 are green, but green checks do not invalidate the findings.
+
+Owner visual acceptance is **not** an additional SET-05 coordinator gate and is not claimed.
+
+Lira receives both corrections as one package. Any implementation-head change requires fresh coordinator whole-PR review. Lev/Mark remain unassigned.
