@@ -12,6 +12,7 @@ import {
 } from "../../app/auth/auth.server";
 import { AuthSessionUnavailableError, authSessionForRequest } from "../../app/auth/request-context";
 import { initializeAuthContext, withAuthSessionCookies } from "../../app/auth/session-context";
+import { RegistrationSettingsInvariantError } from "../../db/registration-settings";
 import { installRegistrationPolicyFixture } from "./registration-policy-fixture";
 
 const databaseUrl = process.env.DATABASE_URL;
@@ -179,7 +180,7 @@ describe("Better Auth PostgreSQL runtime", () => {
     try {
       const before = await counts();
       await expect(runtime.handle(request("sign-up/email", "admission-missing@example.test")))
-        .rejects.toMatchObject({ name: "RegistrationSettingsInvariantError" });
+        .rejects.toBeInstanceOf(RegistrationSettingsInvariantError);
       expect(await counts()).toEqual(before);
       expect((await runtime.handle(request("sign-in/email", returningEmail))).status).toBe(200);
     } finally {
