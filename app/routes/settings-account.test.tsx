@@ -185,7 +185,7 @@ describe("SET-05 account route independent auth and private response", () => {
 
   it.each([
     ["invalid-password", 400], ["no-password", 409], ["not-fresh", 403],
-    ["session-not-found", 409], ["current-session", 409], ["unavailable", 503],
+    ["session-not-found", 409], ["current-session", 409], ["rate-limited", 429], ["unavailable", 503],
   ] as const)("maps a classified %s to private %i", async (code, status) => {
     security.changePassword.mockRejectedValueOnce(new AccountSecurityError(code));
     const result = await callAction(formRequest("change-password", {
@@ -195,6 +195,23 @@ describe("SET-05 account route independent auth and private response", () => {
     expect(result.init?.status).toBe(status);
     expect(new Headers(result.init?.headers).get("Cache-Control")).toBe("private, no-store");
   });
+});
+
+describe("SET-05 Account password change rate limiting response", () => {
+  it("propagates sanitized retry timing and 429 without leaking passwords or breaking no-store", async () => {
+    security.changePassword.mockRejectedValueOnce(new AccountSecurityError("rate-limited", 7));
+    const result = await callAction(formRequest("change-password", {
+      currentPassword: "sensitive-old-password", newPassword: "sensitive-new-password",
+    }));
+    expect(result.data).toEqual({ error: "rate-limited" });
+    expect(result.init?.status).toBe(429);
+    const responseHeaders = new Headers(result.init?.headers);
+    expect(responseHeaders.get("Cache-Control")).toBe("private, no-store");
+    expect(responseHeaders.get("Retry-After")).toBe("7");
+    expect(responseHeaders.get("X-Retry-After")).toBe("7");
+    expect(JSON.stringify(result.data)).not.toMatch(/sensitive-old-password|sensitive-new-password/);
+  });
+
 });
 
 describe("SET-05 localized Settings presentation and existing Google linking", () => {

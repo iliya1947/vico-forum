@@ -87,7 +87,8 @@ def actor(browser, name, signup=True, password=old_password):
     # Separate synthetic clients exercise account isolation without pooling unrelated
     # sign-ins into one IP rate-limit bucket. Production rate limiting stays enabled.
     ip_octets = {"alice": 41, "alice-2": 42, "alice-3": 43,
-                 "alice-4": 44, "bob": 45, "google-only": 46}
+                 "alice-4": 44, "bob": 45, "google-only": 46,
+                 "throttle": 47, "throttle-2": 48}
     client_ip = "203.0.113." + str(ip_octets[name])
     ctx = browser.new_context(
         viewport={"width": 1280, "height": 900},
@@ -95,7 +96,9 @@ def actor(browser, name, signup=True, password=old_password):
         extra_http_headers={"cf-connecting-ip": client_ip},
     )
     guarded(ctx)
-    email = prefix + "-" + ("alice" if name in ("alice-2", "alice-3", "alice-4") else name) + "@test.invalid"
+    account_name = "alice" if name in ("alice-2", "alice-3", "alice-4") else (
+        "throttle" if name == "throttle-2" else name)
+    email = prefix + "-" + account_name + "@test.invalid"
     fields = {"email": email, "password": password}
     if signup:
         fields["name"] = "SET05 " + name
@@ -312,10 +315,58 @@ try:
         expect(alice.get_by_role("heading", name="Account & security", exact=True)).to_have_count(1)
         record("fresh-signout-signin-restores-sessions-and-same-locale-return-path")
 
+        # The Settings BFF must share Better Auth's HTTP-router password-change
+        # rate-limit bucket; onRequest does not run for direct auth.api calls.
+        throttle_ctx, throttle_page, throttle_id, _ = actor(browser, "throttle")
+        throttle_sid = session_id(throttle_id, "throttle")
+        password_fields = [
+            ("intent", "change-password"), ("expectedUserId", throttle_id),
+            ("expectedSessionId", throttle_sid),
+            ("currentPassword", "incorrect-test-password"),
+            ("newPassword", new_password),
+        ]
+        canonical = throttle_ctx.request.post(
+            base + "/api/auth/change-password",
+            headers={"Origin": base, "cf-connecting-ip": "203.0.113.47"},
+            data={"currentPassword": "incorrect-test-password",
+                  "newPassword": new_password, "revokeOtherSessions": False},
+        )
+        assert canonical.status == 400, (canonical.status, canonical.text()[:120])
+        for _ in range(2):
+            invalid = post(throttle_ctx, password_fields)
+            assert invalid.status == 400, invalid.status
+        limited = post(throttle_ctx, password_fields)
+        assert limited.status == 429, (limited.status, limited.text()[:120])
+        assert "private" in limited.headers.get("cache-control", "")
+        assert "no-store" in limited.headers.get("cache-control", "")
+        retry_seconds = int(limited.headers.get("x-retry-after") or "0")
+        assert 0 < retry_seconds <= 10, retry_seconds
+        assert limited.headers.get("retry-after") == str(retry_seconds)
+        assert "incorrect-test-password" not in limited.text()
+        assert "throttle-new-password" not in limited.text()
+        rows = sql("select key, count from rate_limit where key=$1",
+                   ["203.0.113.47|/change-password"])
+        assert len(rows) == 1 and rows[0]["count"] == 3, rows
+
+        # A distinct trusted client IP can still change the same account's
+        # password, proving this is Better Auth's existing per-IP admission.
+        other_ctx, other_page, other_id, _ = actor(
+            browser, "throttle-2", signup=False, password=old_password)
+        assert other_id == throttle_id
+        other_sid = session_id(throttle_id, "throttle-2")
+        allowed = post(other_ctx, [
+            ("intent", "change-password"), ("expectedUserId", throttle_id),
+            ("expectedSessionId", other_sid),
+            ("currentPassword", old_password), ("newPassword", new_password),
+        ])
+        assert allowed.status == 200, (allowed.status, allowed.text()[:140])
+        record("shared-canonical-and-settings-password-rate-limit-retry-and-client-isolation")
+
         assert not page_errors, page_errors
         assert not external, external
         record("no-browser-errors-and-no-external-requests")
-        for ctx in (guest_context, alice_ctx, a2_ctx, a3_ctx, a4_ctx, bob_ctx, google_ctx):
+        for ctx in (guest_context, alice_ctx, a2_ctx, a3_ctx, a4_ctx,
+                    bob_ctx, google_ctx, throttle_ctx, other_ctx):
             ctx.close()
         browser.close()
 finally:

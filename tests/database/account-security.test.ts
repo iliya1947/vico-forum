@@ -148,6 +148,59 @@ describe("SET-05 request-local Better Auth security capability", () => {
     expect((await runtime.getSession(headers(a2))).session?.user.id).toBe(a1.id);
   });
 
+  it("shares Better Auth's canonical password-change 3/10s database bucket in both directions", async () => {
+    const a1 = await signUp("throttle@example.test");
+    const invalidPassword = "incorrect-current-password";
+    const newPassword = "throttle-new-password-123";
+    const ipA = "203.0.113.91";
+    const ipB = "203.0.113.92";
+    const ipC = "203.0.113.93";
+    function clientHeaders(ip: string): Headers {
+      const result = headers(a1);
+      result.set("cf-connecting-ip", ip);
+      result.set("Origin", env.BETTER_AUTH_URL);
+      return result;
+    }
+    async function canonical(ip: string, currentPassword = invalidPassword): Promise<Response> {
+      return runtime.handle(new Request(`${env.BETTER_AUTH_URL}/api/auth/change-password`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Origin: env.BETTER_AUTH_URL,
+          Cookie: a1.cookie, "cf-connecting-ip": ip },
+        body: JSON.stringify({ currentPassword, newPassword, revokeOtherSessions: false }),
+      }));
+    }
+
+    // The canonical route's first attempt must consume the same slot as Settings.
+    expect((await canonical(ipA)).status).toBe(400);
+    await errorCode(security.changePassword(clientHeaders(ipA), a1.identity,
+      invalidPassword, newPassword), "invalid-password");
+    await errorCode(security.changePassword(clientHeaders(ipA), a1.identity,
+      invalidPassword, newPassword), "invalid-password");
+    const fourth = await security.changePassword(clientHeaders(ipA), a1.identity,
+      invalidPassword, newPassword).catch((error: unknown) => error);
+    expect(fourth).toMatchObject({ name: "AccountSecurityError", code: "rate-limited",
+      retryAfterSeconds: expect.any(Number) });
+    expect((fourth as AccountSecurityError).retryAfterSeconds).toBeGreaterThan(0);
+    const countRowsA = await client.query(
+      "select count from rate_limit where key like $1", ["%/change-password%"],
+    );
+    expect(countRowsA.rows.map(row => Number(row.count))).toEqual([3]);
+
+    // Reverse ordering: Settings consumes three attempts, canonical must be rejected.
+    for (let i = 0; i < 3; i++) {
+      await errorCode(security.changePassword(clientHeaders(ipB), a1.identity,
+        invalidPassword, newPassword), "invalid-password");
+    }
+    const canonicalLimited = await canonical(ipB);
+    expect(canonicalLimited.status).toBe(429);
+    expect(Number(canonicalLimited.headers.get("X-Retry-After"))).toBeGreaterThan(0);
+
+    // Another trusted IP is not locked out, and denied attempts never changed the secret.
+    await security.changePassword(clientHeaders(ipC), a1.identity, password, newPassword);
+    expect((await signIn("throttle@example.test")).status).not.toBe(200);
+    expect((await signIn("throttle@example.test", newPassword)).status).toBe(200);
+  });
+
   it("does not expose OAuth tokens or permit set-password on a Google-only account", async () => {
     const actor = await signUp("oauth-only@example.test");
     await client.query('delete from account where user_id = $1', [actor.id]);

@@ -261,9 +261,35 @@ export function createHyperdriveAuthRuntime(
           if (!await hasCredentialPassword(database, current.user.id)) {
             throw new AccountSecurityError("no-password");
           }
-          await auth.api.changePassword({
-            headers, body: { currentPassword, newPassword, revokeOtherSessions: false },
-          });
+          // Direct auth.api calls bypass Better Auth's HTTP-router onRequest rate limit.
+          // Route through the existing handler to share the canonical /change-password
+          // database-backed bucket and trusted client-IP admission.
+          const routedHeaders = new Headers({ "Content-Type": "application/json" });
+          for (const header of ["cookie", "origin", "cf-connecting-ip", "user-agent"]) {
+            const value = headers.get(header);
+            if (value) routedHeaders.set(header, value);
+          }
+          const response = await auth.handler(new Request(
+            new URL("/api/auth/change-password", env.BETTER_AUTH_URL), {
+              method: "POST",
+              headers: routedHeaders,
+              body: JSON.stringify({ currentPassword, newPassword, revokeOtherSessions: false }),
+            },
+          ));
+          if (response.ok) return;
+          if (response.status === 429) {
+            const value = response.headers.get("X-Retry-After");
+            const retryAfterSeconds = value && /^\d{1,4}$/.test(value) ? Number(value) : undefined;
+            throw new AccountSecurityError("rate-limited", retryAfterSeconds);
+          }
+          const payload: unknown = await response.json().catch(() => null);
+          const code = payload && typeof payload === "object" && "code" in payload
+            ? payload.code : null;
+          if (code === "INVALID_PASSWORD") throw new AccountSecurityError("invalid-password");
+          if (code === "CREDENTIAL_ACCOUNT_NOT_FOUND") throw new AccountSecurityError("no-password");
+          if (code === "SESSION_NOT_FRESH") throw new AccountSecurityError("not-fresh");
+          if (response.status === 401) throw new AccountSecurityError("unauthenticated");
+          throw new Error("Unexpected Better Auth change-password response");
         }, true)),
       revokeOneOther: (headers, identity, sessionId) =>
         securityCall(() => useAuth(async (auth) => {

@@ -55,10 +55,10 @@ export interface AccountSecurityIdentity {
 
 export type AccountSecurityErrorCode =
   | "unauthenticated" | "account-changed" | "invalid-password" | "no-password"
-  | "not-fresh" | "session-not-found" | "current-session" | "unavailable";
+  | "not-fresh" | "session-not-found" | "current-session" | "rate-limited" | "unavailable";
 
 export class AccountSecurityError extends Error {
-  constructor(readonly code: AccountSecurityErrorCode) {
+  constructor(readonly code: AccountSecurityErrorCode, readonly retryAfterSeconds?: number) {
     super(code);
     this.name = "AccountSecurityError";
   }

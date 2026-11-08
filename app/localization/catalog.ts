@@ -379,6 +379,7 @@ export const canonicalEnglishCatalog = {
     settingsSecurityWrongPassword: message("settingsSecurityWrongPassword", "The current password is incorrect.", "SET-05 current account authentication and session management."),
     settingsSecuritySessionMissing: message("settingsSecuritySessionMissing", "This session is no longer active. Refresh the list.", "SET-05 current account authentication and session management."),
     settingsSecurityCurrentSession: message("settingsSecurityCurrentSession", "The current session cannot be signed out here.", "SET-05 current account authentication and session management."),
+    settingsSecurityRateLimited: message("settingsSecurityRateLimited", "Too many password change attempts. Try again shortly.", "SET-05 Better Auth password change rate limit feedback."),
     settingsSecurityUnavailable: message("settingsSecurityUnavailable", "Account security is temporarily unavailable.", "SET-05 current account authentication and session management."),
     settingsPrivacy: message("settingsPrivacy", "Privacy", "Future Settings section, not yet functional."),
     settingsIntro: message("settingsIntro", "Choose an available section. Other settings are not implemented yet.", "Settings navigation introduction."),

@@ -372,6 +372,7 @@ export const reviewedCommonFingerprints = {
   settingsSecurityWrongPassword: "e23b43be365cb696f663943f75b54f69b7170383e85bda6a1162c9e20caa4743",
   settingsSecuritySessionMissing: "92aee66242553cf5b4d81c69ff732f0c2d8b88cd282abdf76e7b6f778947646f",
   settingsSecurityCurrentSession: "a4ab6547146f54124fb684cff22060be50ac48bb058756ef76aa5c37a6fbdc0d",
+  settingsSecurityRateLimited: "96771c17a4306b0038ed749399809d29f0cc89acdb041201d8c6586d4d15266f",
   settingsSecurityUnavailable: "8808297bb8ab4ce5a2e386f797c0c5bd169173ec227caafec4213d0a1541a6f6",
   settingsPrivacy: "81811e50eb3e4273563c98359f0331fd7b7183de45bb71fed2de4abe1d03e713",
   settingsIntro: "f981c479641a4039aca1690e0ceff01e89fe7f5a0af88c3d0d07d613c634af39",

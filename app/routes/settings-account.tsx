@@ -57,8 +57,13 @@ export async function loader({ request, params, context }: Args) {
   }, { headers: settingsPrivateHeaders });
 }
 
-function failure(error: ActionError, status: number) {
-  return data<ActionOutcome>({ error }, { status, headers: settingsPrivateHeaders });
+function failure(error: ActionError, status: number, retryAfterSeconds?: number) {
+  const headers: Record<string, string> = { ...settingsPrivateHeaders };
+  if (status === 429 && retryAfterSeconds !== undefined) {
+    headers["Retry-After"] = String(retryAfterSeconds);
+    headers["X-Retry-After"] = String(retryAfterSeconds);
+  }
+  return data<ActionOutcome>({ error }, { status, headers });
 }
 
 function exactlyOneString(form: FormData, field: string): string | null {
@@ -114,9 +119,9 @@ export async function action({ request, context }: Args) {
       unauthenticated: 401, "account-changed": 409,
       "invalid-password": 400, "no-password": 409,
       "not-fresh": 403, "session-not-found": 409,
-      "current-session": 409, unavailable: 503,
+      "current-session": 409, "rate-limited": 429, unavailable: 503,
     };
-    return failure(error.code, statuses[error.code]);
+    return failure(error.code, statuses[error.code], error.retryAfterSeconds);
   }
 }
 
@@ -130,6 +135,7 @@ const errorKeys: Record<ActionError, UiKey<"common">> = {
   "not-fresh": "settingsSecurityNotFresh",
   "session-not-found": "settingsSecuritySessionMissing",
   "current-session": "settingsSecurityCurrentSession",
+  "rate-limited": "settingsSecurityRateLimited",
   unavailable: "settingsSecurityUnavailable",
 };
 
