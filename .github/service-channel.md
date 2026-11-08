@@ -1555,3 +1555,8 @@ PR #304 merged into main at `e985a43f8853c234c96bb4528a9d4dd709361018`; runtime 
 ## SET-03 docs closeout — final PASS / owner merge
 
 PR #305 exact head `892d30f954c1cd974d16b8331b7af71607db9bde`: Mira docs review **PASS, 0 confirmed current-scope documentation defects**. All six changed files were read fully and match merged SET-03 runtime plus the approved Settings sequence. Exact-head GitHub Actions #42447751106 `checks` and `database` are SUCCESS; PR is clean/mergeable and #251 still has exactly seven required files. No Codex review is needed for this docs-only closeout. **Owner merge #305 is now the next action.** SET-04 remains unassigned until that merge is observed.
+
+
+## SET-03 fully closed; SET-04 implementation assigned
+
+Docs PR #305 merged into main at `35fa64428fc551ae58b9026dad45797016dd4251`; SET-03 implementation and factual documentation are fully closed. The already approved SET-04 technical plan in #6711736883 remains aligned with current AdminShell, Attention mode/group access, Settings shell and current authorization boundaries, so no repeat Codex planning is needed. Lira is assigned SET-04 Administrator preferences implementation only: per-account/device local Admin/Attention entry preferences, density and approved secondary-detail disclosure with real consumers. No DB/migration/new permission, SET-05–06, permanent docs or Stage6/production work. Mira reviews the first stable implementation head before any Lev review.
