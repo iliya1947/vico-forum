@@ -1499,3 +1499,8 @@ PR #302 exact head `07d805d98ee77f9584f9609772ce2d33b9a8e63f`: final coordinator
 ## SET-02 implementation merged; factual docs closeout assigned
 
 PR #302 merged into main at `a86cea918a3f2665399e861d8e01ece8a1d80104`. Runtime SET-02 is closed. Lira is assigned a separate docs-only closeout touching exactly seven files: `PROJECT.md`, `PROJECT_STATE.md`, `ROADMAP.md`, `docs/ADMIN_PANEL.md`, new `docs/SETTINGS.md`, history index, and new `PROJECT_HISTORY_18.md`. SET-03–06 remain unassigned. No Codex review is assigned for the docs-only closeout; Mira reviews the stable docs head after Lira handoff.
+
+
+## SET-02 docs review — SET02-DOC-MIRA-01 confirmed
+
+PR #303 exact head `bc0b8fd248293be76f797add6dba8f804c213185`: Mira docs review found one current-scope documentation defect. New `docs/SETTINGS.md` reverses the approved package mapping: SET-03 must be **User preferences**, SET-04 must be **Administrator preferences**. The defect appears in the five-surface table and future-scope section. The other six docs files have no confirmed current-scope defects; exact-head CI #42436784166 is SUCCESS. Lira is assigned a one-file correction only; Lev/Mark remain unassigned.
