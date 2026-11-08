@@ -29,7 +29,7 @@ Vico Forum находится в pre-release разработке.
 
 - Stage 0–5 завершены в repository/local-CI path.
 - Текущий standalone product priority по `ROADMAP.md` — UI/UX product pass.
-- Ordinary Admin Panel AP-01–AP-11, owner/authorization redesign Stage 1–2 и Settings SET-01–SET-03 реализованы в repository/local-CI; SET-04–SET-06 ещё не реализованы и не назначены. Complaints ведутся отдельно.
+- Ordinary Admin Panel AP-01–AP-11, owner/authorization redesign Stage 1–2 и Settings SET-01–SET-04 реализованы в repository/local-CI; SET-05–SET-06 ещё не реализованы и не назначены. Complaints ведутся отдельно.
 - Stage 6 external integration поставлен владельцем на паузу и не продолжается без отдельного указания.
 - Публичный production release не выполнен.
 
@@ -105,7 +105,7 @@ Stage 5 завершён в repository/local-CI path.
 
 AP-01–AP-11 присутствуют в `main` и завершены в repository/local-CI path. AP-11 использует настоящий built Worker + Better Auth + PostgreSQL 17 + Chromium и не добавляет новую domain functionality, schema, permissions или grants. Это не production/deployed acceptance и не owner visual acceptance.
 
-Settings не входит в AP-01–AP-11. SET-01–SET-03 реализованы в `main` в
+Settings не входит в AP-01–AP-11. SET-01–SET-04 реализованы в `main` в
 repository/local-CI: защищённый `/:locale/settings` shell, Owner-only
 `/:locale/settings/forum` с переиспользованным Roles & permissions UI и двумя
 независимыми флагами регистрации новых Google/email-password аккаунтов.
@@ -114,8 +114,12 @@ repository/local-CI: защищённый `/:locale/settings` shell, Owner-only
 registration settings и соответствующее событие Admin History. SET-03 добавил
 доступную авторизованному пользователю страницу `/:locale/settings/user`:
 browser-wide тему, сохранение своего `user.locale` и существующие локальные
-настройки Editor/code без серверной синхронизации. SET-04–SET-06 ещё не реализованы
-и не назначены. Постоянный контракт — в `docs/SETTINGS.md`.
+настройки Editor/code без серверной синхронизации. SET-04 добавил
+`/:locale/settings/administrator` с доступом при текущих Admin/Attention
+permissions, локальными per-account/device предпочтениями переходов,
+плотности и раскрытия второстепенных технических данных — без нового DB/RBAC.
+SET-05 Account & security — следующий пакет, пока не назначен;
+SET-06 Privacy также не реализован и не назначен. Постоянный контракт — в `docs/SETTINGS.md`.
 
 Два bounded этапа owner/authorization redesign реализованы в `main`. Stage 1 удалил
 obsolete last-manager veto и manager-count state миграцией `0059`, сохранив общий
@@ -196,7 +200,7 @@ External topology является mutable state и должна перепро�
 ## Актуальные незавершённые продуктовые границы
 
 - UI/UX product pass ещё требует финального closeout и обязательной real-runtime product/visual acceptance по `docs/UI_UX_PASS.md`.
-- В `main` ordinary Admin Panel AP-01–AP-11, owner/authorization redesign Stage 1–2 и Settings SET-01–SET-03 реализованы в repository/local-CI. Следующий пакет Settings — SET-04, пока не назначен; SET-05–SET-06 также не реализованы и не назначены. Реальные Google/Owner binding и production acceptance остаются Stage 6.
+- В `main` ordinary Admin Panel AP-01–AP-11, owner/authorization redesign Stage 1–2 и Settings SET-01–SET-04 реализованы в repository/local-CI. Следующий пакет Settings — SET-05, пока не назначен; SET-06 также не реализован и не назначен. Реальные Google/Owner binding и production acceptance остаются Stage 6.
 - Complaints integration/closeout покрыт repository/local-CI проверками; external/deployed acceptance Complaints не выполнялась.
 - Email verification/password recovery остаются отложенными.
 - Editor drafts/autosave остаются отложенными.
@@ -205,7 +209,7 @@ External topology является mutable state и должна перепро�
 ## Ближайший маршрут
 
 1. Продолжать утверждённую bounded product-разработку без превращения обычных PR в external rollout.
-2. Следующий по утверждённой последовательности Settings пакет — SET-04 (Administrator preferences); он пока не назначен. SET-05–SET-06 также остаются неназначенными. Сохранить Owner-only authorization/registration mutation policy, а реальную Google/Owner binding acceptance оставить Stage 6. Complaints продолжать по его профильному контракту/служебному каналу.
+2. Следующий по утверждённой последовательности Settings пакет — SET-05 (Account & security); он пока не назначен. SET-06 (Privacy) также остаётся неназначенным. Сохранить Owner-only authorization/registration mutation policy, а реальную Google/Owner binding acceptance оставить Stage 6. Complaints продолжать по его профильному контракту/служебному каналу.
 3. Довести UI/UX product pass до финальной real-runtime acceptance.
 4. Возобновлять Stage 6 external integration только по отдельному указанию владельца и по `docs/database/*`.
 5. После завершения pre-release product и external gates перейти к финальному общепроектному refinement и Stage 7 production release по `ROADMAP.md`.
