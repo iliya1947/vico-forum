@@ -1,80 +1,61 @@
-# Лёва — SET-03 / PR #304 independent review: CHANGES REQUIRED
+# Лёва — SET-03 / PR #304 repeat independent review: PASS
 
-[Current report #6716992555](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6716992555). Exact head `cc8dfc9722287ec66ade759b0b1c8d69a8062a6c`, base `cb805a074de3bfdcd140125ebaa425a76bb6496d`. Whole-PR review complete, один P2 SET03-LEV-01. Лёва остановился; next — Мира correction routing Лире.
+[Current report #6717213664](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6717213664). Exact head `6c45bb17ea84f1df0bed8a8b8ca4c558ba42edac`, base `cb805a074de3bfdcd140125ebaa425a76bb6496d`. Whole-PR review complete; SET03-LEV-01 closed independently,0 current-scope defects. Лёва остановился. Next — Мира readiness routing.
 
-Лёва — SET-03 / PR #304 independent technical whole-PR review: **CHANGES REQUIRED**.
+Лёва — SET-03 / PR #304 repeat independent technical whole-PR review: **PASS, 0 подтверждённых current-scope дефектов**.
 
-**Exact head:** `cc8dfc9722287ec66ade759b0b1c8d69a8062a6c`.
+**Exact head:** `6c45bb17ea84f1df0bed8a8b8ca4c558ba42edac`.
 **Base/current main:** `cb805a074de3bfdcd140125ebaa425a76bb6496d`.
-Проверен весь26-file scope против [approved plan #6711736883](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6711736883), текущих Settings/Editor/auth/locale contracts. Реализацию не менял; других агентов не запускал. Авторские и coordinator conclusions не подменяли собственные проверки.
+Весь26-file scope повторно пересверен с approved plan [#6711736883](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6711736883), текущими Settings/Editor/auth/locale contracts и предыдущей собственной whole-PR проверкой. Implementation не менялся; других агентов не запускал. Авторский/coordinator PASS не подменял самостоятельное runtime evidence.
 
-**Ровно один подтверждённый current-scope P2: SET03-LEV-01.** Других current-scope дефектов по завершённой проверке не установлено.
+### SET03-LEV-01 закрыт независимо
 
-### [P2] SET03-LEV-01 — locale draft переносится в другой аккаунт после revalidation
+Полный diff от ранее проверенного `cc8dfc9722287ec66ade759b0b1c8d69a8062a6c` — **ровно3 файла**:
+- `app/routes/settings-user.tsx`: единственное runtime изменение — `<Form key={state.accountId} ...>`;
+- `app/routes/settings-user.test.tsx`: mounted account/same-account regression;
+- `tests/browser/settings-user/check.py`: настоящий same-cookie-jar account-switch regression.
 
-**Место:** [settings-user.tsx:126–134](https://github.com/iliya1947/vico-forum/blob/cc8dfc9722287ec66ade759b0b1c8d69a8062a6c/app/routes/settings-user.tsx#L126).
+Остальные **23 PR файла byte-identical**. Форму перемонтируют только при смене authoritative account ID; Theme/Editor/Settings shell не получают нового key, same-account navigation/revalidation не сбрасывает draft. Guards, writer, registry и auth не перепроектированы.
 
-Новая locale form не привязана к identity своего draft. Hidden `expectedUserId` обновляется из нового `state.accountId`, но uncontrolled `select defaultValue={savedLocale}` сохраняет прежний выбранный DOM value при смене loader/account. Поэтому после смены аккаунта форма уже адресована новому пользователю, продолжая показывать и отправлять несохранённый выбор предыдущего.
+**Собственный отдельный probe, actual Chromium → built Worker → Better Auth → PostgreSQL17, реальные sign-out/sign-in в одном browser/storage context:5 сценариев PASS.**
 
-**Самостоятельно воспроизведено на exact built Worker → Better Auth → PostgreSQL17 → Chromium, через штатные auth endpoints:**
+1. Alice.locale=en; выбрать ru без submit. Обычная header locale SPA navigation сохраняет **тот же select + unsaved ru**, DB Alice остаётся en.
+2. Выполнить настоящий Alice sign-out → Bob sign-in. Старый POST с Alice expected ID до revalidation получает **409**, обе DB preferences неизменны.
+3. Обычная SPA navigation перечитывает тот же mounted Settings route под Bob(locale he): **shell остаётся тем же DOM node, select заменён**, hidden expected ID=Bob и visible locale=he. Alice's unsaved ru не переносится. Bob DB остаётся he, Alice=en; автоматического сохранения нет.
+4. Только после нового выбора ru и явного Save меняется **Bob he→ru**; Alice=en.
+5. Bob sign-out → Alice sign-in и SPA navigation возвращают Alice=en и её прежние device-local Editor advanced/code-wrap preferences. Bob's defaults не наследуют Alice; browser-wide theme Dark сохраняется между аккаунтами.
 
-1. Создать Alice и Bob, сохранить им через настоящий Settings action соответственно `en` и `he`.
-2. В контексте Alice открыть `/en/settings/user`, выбрать `ru` без сохранения.
-3. В том же browser cookie jar выполнить настоящие `/api/auth/sign-out` и `/api/auth/sign-in/email` для Bob, оставив исходную Settings page открытой (сценарий смены входа в другой вкладке).
-4. На исходной странице обычным header language switch перейти на `/ru/settings/user`. Router перечитывает loader/session; header теперь **Bob**, hidden `expectedUserId` теперь **Bob**, PostgreSQL `Bob.locale=he`.
-5. Сам select остаётся тем же mounted DOM node (подтверждено собственным sentinel) и всё ещё содержит **ru**, выбранный Alice. Свежий loader `preferredLocale=he` не сбрасывает uncontrolled value.
-6. Нажать «Сохранить язык» без нового выбора для Bob → запрос проходит identity check, **Bob.locale меняется he→ru**; Alice.locale остаётся en.
+Это повторение исходного causal repro с проверкой corrected outcome, без mock session, cookie substitution или внедрения React state. Evidence: `/workspace/work/set03-repeat-evidence/account-switch-probe.py`, JSON/log и `account-switch-corrected.png`.
 
-Итог независимого probe:
-```json
-{
-  "before": {"visibleLocale":"ru","accountLocale":"en","expectedUser":"Alice"},
-  "after": {"visibleLocale":"ru","accountLocale":"he","expectedUser":"Bob","sameMountedSelect":true},
-  "afterSubmit": {"aliceLocale":"en","bobLocale":"ru"}
-}
-```
+Новый checked-in unit test отдельно проверяет сохранение same-account draft при revalidation, а новый browser case — форму/reset и DB state после реальной смены входа. Оба самостоятельно rerun на этом exact head. **SET03-LEV-01 закрыт; новых current-scope findings нет.**
 
-Это дефект account/draft isolation нового UI, **не** обход server authorization: writer корректно пишет текущего session actor. Проблема в том, что UI автоматически перевязывает старый выбор к новому expected identity, и stale-account guard уже не может его различить. Before revalidation обычный stale POST действительно получает409 — этот серверный guard исправен.
+### Whole-PR и scope
 
-Причина также соответствует [официальной React select documentation](https://react.dev/reference/react-dom/components/select#controlling-a-select-box-with-a-state-variable): `defaultValue` задаёт только initial selection, не текущее значение после смены props.
-
-**Bounded correction:** связать locale form/draft с текущим account ID, сбрасывая/перемонтируя его при identity change, чтобы visible locale и expected identity менялись вместе. Например, account-keyed form либо эквивалентное явное account-scoped state reset. Не переносить unsaved draft Alice в Bob и не заменять это глобальным auth/RBAC redesign. Сохранить intentional same-account editing и нынешние server-only actor/409/registry guards; автоматический POST не нужен.
-
-**Acceptance:** два настоящих аккаунта в одном browser/storage context, открытая route остаётся mounted; после sign-out/sign-in и SPA loader refresh форма показывает сохранённую preference нового аккаунта (в примере he) либо безопасно блокирует старую форму до её сброса; старый выбор ru не отправляется за Bob. До явного нового submit запись Bob неизменна; после нового выбора меняется только Bob. Отдельные browser contexts и unmount/remount fixture этого случая не проверяют — именно так устроена текущая основная account-isolation coverage.
-
-Evidence: `/workspace/work/set03-review-evidence/account-switch-probe.py`, JSON/log и `account-switch-locale.png`. Повторено штатными sign-out/sign-in, без подмены cookies, mock session или внедрения React state.
-
-### Остальные независимо проверенные цепочки
-
-- Theme остаётся browser-wide на прежнем `vico-theme`; System удаляет override. Bootstrap до hydration сохранён. Settings/header/OS/native storage events синхронизируются через общий helper; denied storage даёт transient browser-session fallback.
-- Locale writer обновляет только session actor в существующем `user.locale`; generic Better Auth locale input остаётся закрытым. Strict POST/Origin/field multiplicity/expectedUserId; canonical active choice только из healthy current Runtime Registry; unknown/alias/inactive/noncanonical и degraded bootstrap selection отклоняются. Fresh root negotiation и explicit URL precedence реально проверены, включая dynamic `fr-CA`.
-- Собственный PG/HTTP failure probe: реальный row UPDATE timeout → safe private/no-store503 без success redirect; явный retry после recovery303; реальный Registry SELECT timeout →503 даже для en, locale не записывается; unexpected schema42P01 сохраняется исходной ошибкой. Probe проверяет classification timeout, **не** обещает rollback single UPDATE при client deadline: его исход может быть неоднозначным; дополнительное требование атомарного cancellation в план не вводится.
-- Editor/code сохраняют ровно четыре прежних per-account/device keys, unset mode/spellcheck defaults и отсутствие server sync. Shared adapter фильтрует subscriptions по account; реальные mounted MarkdownEditor/ForumCodeBlock получают изменения в обе стороны. Existing mode-switch/source/selection/history/attachment/publication boundaries не заменены вторым editor store.
-- New authenticated User preferences route/private-no-store, Settings navigation, generic locale paths, EN/RU/HE keyboard/responsive/RTL и translations/fingerprints проверены.
-- Schema/migrations/manifest/runtime-privilege contract/dependencies byte-unchanged. SET-04–06, notification preferences, drafts/autosave, deputies, Stage6/production/permanent docs отсутствуют.
+- Сохранены browser-wide `vico-theme`/System bootstrap, общий Settings/header/OS/storage synchronization и transient fallback при denied storage.
+- Own locale остаётся существующим `user.locale`: session-derived actor, strict POST/Origin/form/expected identity, healthy Runtime Registry и canonical active locale, private/no-store, controlled typed failures; generic Better Auth metadata write не открыт. Fresh root negotiation и explicit URL precedence проверены в настоящем Worker, включая dynamic `fr-CA`.
+- Четыре Editor/code keys остаются per-account/device. Adapter и real mounted MarkdownEditor/ForumCodeBlock consumers согласованы; source/selection/history/attachment/publication paths не менялись correction. Account isolation дополнительно подтверждена собственным Alice→Bob→Alice probe.
+- Settings route/shell/navigation, EN/RU/HE/RTL и native keyboard controls сохраняют доступность; layout assertions320/768/1280 не ослаблены.
+- Schema/migrations/dependencies/manifest/runtime privileges byte-unchanged; нет второго auth/RBAC/store, новых permissions, SET-04–06, notification preferences, drafts/autosave, deputies или Stage6/production scope.
+- Предыдущие собственные failure probes из [#6716992555](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6716992555) относятся к идентичным writer/Registry/error modules; нового failure contract исправление не вводит.
 
 ### Собственное exact-head evidence
 
-- **333 application/unit/route/UI tests,12 файлов PASS**, включая реальные editor/Markdown suites и новую Settings integration.
-- **15 native PostgreSQL tests,4 файла PASS:** user-locale, auth-runtime, forum-email-registration, hyperdrive-registry.
-- Build PASS; полная0000–0060 схема применена на disposable PostgreSQL17.
-- **Actual Chromium → built Worker → Better Auth → PG:** SET-03 **11 case groups PASS**, separate SET-02 regression **17 case groups PASS**; оба exact SHA,0 page errors/external requests. EN/RU/HE320/768/1280 original overflow assertions сохранены, screenshots просмотрены. Положительные suites не закрывают независимо найденный mounted account-switch defect.
-- Оба external harness adapters меняют только checkout path и Chromium executable; source/assertions implementation checkout не редактировались.
-- Самостоятельно прочитаны GitHub runs: [CI #42443561989](https://github.com/iliya1947/vico-forum/actions/runs/42443561989) **SUCCESS/attempt2**, checks+database; [browser #42443561941](https://github.com/iliya1947/vico-forum/actions/runs/42443561941) **SUCCESS/attempt1**, browser+history_browser+settings_browser. Оба на том же exact SHA. Полный CI/AP-10/History локальный rerun не заявляется.
+- **334 application/unit/route/UI tests,12 файлов PASS** — Settings + locale + theme + full MarkdownEditor/Markdown suites.
+- **15 native PostgreSQL tests,4 файла PASS** — own locale writer, auth-runtime, email registration, Hyperdrive Registry.
+- Build PASS; полная0000–0060 схема применена в disposable PostgreSQL17.
+- **12 SET-03 real Chromium case groups PASS**: DB locale/root/dynamic fr-CA, invalid/stale/Origin, System/header/OS/tabs/reload, mounted Editor/code two-way synchronization, same-mounted account-switch, EN/RU/HE responsive/keyboard/RTL. Exact head в results.json;0 page errors/external requests; screenshots просмотрены.
+- **5 дополнительных собственных browser scenario groups PASS**, описаны выше.
+- External SET-03 harness adapter меняет только checkout path и Chromium executable; все assertions сохранены.
+- Самостоятельно прочитаны exact-head GitHub [CI #42445796066](https://github.com/iliya1947/vico-forum/actions/runs/42445796066) **SUCCESS**, checks+database, и [browser #42445796063](https://github.com/iliya1947/vico-forum/actions/runs/42445796063) **SUCCESS**, settings_browser+browser+history_browser; оба attempt1/этот SHA. Полный CI/AP-10/History/SET-02 browser локальный rerun на новом head не заявляется; собственный прежний SET-02 rerun17 cases сохранён в предыдущем evidence, его runtime modules не изменились.
 
-Evidence/logs/results/screenshots/source audit/manifest/hashes: `/workspace/work/set03-review-evidence/`. Checkout/diff clean, implementation unchanged, PR/head/base перед публикацией unchanged/open. Task-owned preview/container/DB/dummy vars/dependency symlink удалены.
+Evidence: `/workspace/work/set03-repeat-evidence/` — source audit, own probe, application/nativePG/build logs, browser results/screenshots, GitHub readback, manifest/hashes. Previous whole-PR evidence: `/workspace/work/set03-review-evidence/`. Checkout/diff clean, implementation unchanged; head/base перед публикацией unchanged/open/mergeable. Task-owned preview/container/DB/dummy vars/dependency symlink удалены.
 
 ### Handoff — Мира
 
-Принять **CHANGES REQUIRED**, подтвердить/направить Лире один bounded correction **SET03-LEV-01** в том же PR #304. После нового stable head и применимых checks — fresh coordinator whole-PR, затем independent technical review того же head. К merge сейчас не готовить. SET-04–06 и permanent docs не начинать.
+Принять независимый **PASS на 6c45bb17**, SET03-LEV-01 closed,0 новых confirmed current-scope defects. Выполнить readiness routing владельцу по штатному процессу. Любое implementation-head change требует нового coordinator-first cycle. После owner merge — отдельный factual SET-03 docs closeout; SET-04–06 пока не назначать.
 
-Лёва завершил whole-PR review и остановился; реализацию не исправлял, Марк не назначен.
+Лёва завершил review и остановился; PR/implementation не merge, реализацию не исправлял; Марк не назначен. Production/live Google/real Owner binding/owner visual acceptance не заявляются.
 
 ## Approved / closed context
 
-Settings plan [#6711736883](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6711736883) coordinator-approved. SET-01 closed; SET-02 implementation #302 and separate docs #303 merged. Prior SET-02 independent PASS [#6715843589](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6715843589) concerns07d805d9; its evidence remains /workspace/work/set02-repeat-evidence/. Current SET-03 evidence /workspace/work/set03-review-evidence/. SET-04–06 unassigned. No last-manager/count/recovery rule applies.
-
-
-## Active assignment — SET-03 repeat independent review / PR #304
-
-Repeat independent whole-PR review on exact head `6c45bb17ea84f1df0bed8a8b8ca4c558ba42edac` vs base `cb805a074de3bfdcd140125ebaa425a76bb6496d`. Verify SET03-LEV-01 closure in the three-file correction (account-keyed locale form + unit/browser regression), ensure same-account draft semantics remain correct, and recheck whole SET-03 scope/exact-head gates. Do not modify implementation. Publish PASS/findings in #251 and stop.
+Settings plan [#6711736883](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6711736883) approved. SET-01 closed; SET-02 implementation #302 + docs #303 merged. Previous independent SET-03 CHANGES REQUIRED [#6716992555](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6716992555) concerns cc8dfc97 and is superseded by current PASS. Prior evidence /workspace/work/set03-review-evidence/; current evidence /workspace/work/set03-repeat-evidence/. SET-04–06 unassigned. Owner merge and separate factual docs closeout remain; no last-manager/count/recovery rule applies.
