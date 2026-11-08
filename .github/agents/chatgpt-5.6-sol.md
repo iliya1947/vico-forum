@@ -1445,3 +1445,10 @@ SET05-LEV-01 is closed by routing password change through the canonical Better A
 ## SET-05 final readiness
 
 PR #309 exact head `236a15c5f3309a5466c70c7a934edf5b56ade433`: **READY FOR OWNER MERGE**. Mira fresh coordinator PASS + Lev repeat independent PASS, 0 confirmed current-scope defects. SET05-MIRA-01/02 and SET05-LEV-01 closed. Exact-head CI #42483839708 and Chromium #42483839769 SUCCESS. Any implementation-head change restarts coordinator-first review. After Owner merge: separate factual SET-05 docs closeout; SET-06 remains inactive until docs merge.
+
+
+## SET-05 docs / PR #310 review
+
+Exact head `182a185e1ed8dc734b45ebd1ba15c4bcf45b4fde`: **CHANGES REQUIRED — 1 documentation defect**.
+
+`SET05-DOC-MIRA-01`: permanent `docs/SETTINGS.md` overstates the verified secrecy boundary by promising password/session secrets are not reflected in "logs". SET-05 verified safe DTO/HTML/data/browser responses and no credential reflection in tested HTTP flows, but did not establish a general runtime/library log-sink guarantee. Remove or narrow only that word/claim. All other seven-file docs-closeout changes are accepted; CI #42487505867 SUCCESS. Fresh Mira review required after new docs head.
