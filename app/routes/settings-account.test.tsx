@@ -7,7 +7,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { HeaderAuthProvider } from "../auth/auth-controls";
 import {
   AccountSecurityError, authRuntimeContext, authSessionContext,
-  type AccountSecurityRuntime, type AuthRuntime, type AuthSession,
+  type AuthRuntime, type AuthSession,
 } from "../auth/request-context";
 import { authorizationOwnerContext } from "../authorization/request-context";
 import { canonicalEnglishCatalog } from "../localization/catalog";
