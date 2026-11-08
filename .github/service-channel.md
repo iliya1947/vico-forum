@@ -1850,3 +1850,32 @@ After Lira publishes a stable docs PR/head and applicable checks, Mira performs 
 - **Exact docs-head [CI #42487505867](https://github.com/iliya1947/vico-forum/actions/runs/42487505867) SUCCESS**, `checks` and `database`: 165/165 app test files, **2084/2084 tests**, 51/51 PG17 database files, **597/597 tests**, lint/typecheck/build. Docs-only change does not require separate Chromium; no docs-specific browser acceptance claimed.
 - **Лира stopped after author delivery**; this is **not a Mira docs PASS**. Next assigned actor: **Мира**, docs-only whole 7-file diff review on stable exact head `182a185e1ed8dc734b45ebd1ba15c4bcf45b4fde`; Owner merge only after coordinator verdict. Lev/Mark not assigned. SET-06 remains inactive.
 
+
+## SET-05 docs / PR #310 — Mira docs-only review
+
+Reviewed exact head `182a185e1ed8dc734b45ebd1ba15c4bcf45b4fde`, base `2f2969d5b3a7ca7844d674b85448838fc671eaca`.
+
+**Verdict: CHANGES REQUIRED — 1 confirmed current-scope documentation defect.**
+
+### SET05-DOC-MIRA-01
+
+`docs/SETTINGS.md` states that password/session secrets are not reflected in "responses, URLs, **logs** or browser controls".
+
+The completed SET-05 implementation/review evidence establishes secret-free DTO/HTML/data/browser presentation and no password reflection in the tested HTTP flows. It did **not** establish a general logging-sink contract or dedicated audit proving that every relevant runtime/library log path can never contain these values.
+
+Because `docs/SETTINGS.md` is the permanent product/runtime contract, the unsupported "logs" guarantee is broader than the verified implementation boundary.
+
+Required correction: remove or narrow only the "logs" part so the contract states the verified response/URL/browser/DTO secrecy without inventing a repository-wide logging guarantee.
+
+### Rest of docs scope
+
+No other confirmed current-scope documentation defects found in the seven-file PR:
+- PROJECT/PROJECT_STATE/ROADMAP correctly move SET-05 to implemented repository/local-CI state and SET-06 Privacy to next pending package;
+- ADMIN_PANEL stale Settings cross-references are correctly bounded;
+- SETTINGS route/access/password/session/freshness/rate-limit/exclusion contract otherwise matches merged implementation;
+- PROJECT_HISTORY index + new #21 snapshot accurately preserve #309, MIRA-01/02, LEV-01, final head/merge and CI/Chromium evidence;
+- older history snapshots are untouched;
+- no runtime/code/schema/migration/CI-workflow files changed;
+- exact-head CI #42487505867 is SUCCESS.
+
+Lira should make only this bounded docs correction, publish a new stable head/checks and stop for fresh Mira docs-only review. Lev/Mark remain unassigned. SET-06 remains inactive.
