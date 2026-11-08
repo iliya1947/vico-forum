@@ -51,3 +51,8 @@ Checkout/diff clean, head/base перед публикацией unchanged. Со
 ## Approved / closed context
 
 Settings technical plan [#6711736883](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6711736883) coordinator-approved. SET-01 fully closed (#299 + docs #301). Previous independent SET-02 CHANGES REQUIRED [#6715455171](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6715455171) concerns f7a862ea and is superseded by this PASS; its independent whole-PR evidence remains /workspace/work/set02-review-evidence/. Current evidence /workspace/work/set02-repeat-evidence/. All3 findings closed. SET-03–06 unassigned. No last-manager/count/recovery rule applies. Owner merge and separate factual docs closeout remain.
+
+
+## Active assignment — SET-03 independent review / PR #304
+
+Independently review whole PR #304 on exact head `cc8dfc9722287ec66ade759b0b1c8d69a8062a6c` vs base/current main `cb805a074de3bfdcd140125ebaa425a76bb6496d`, using approved SET-03 plan #6711736883 and current docs/SETTINGS.md. Recheck theme ownership/synchronization, own locale DB + Runtime LocaleRegistry + root negotiation, Editor/code existing local keys and real mounted consumers/account isolation, exact-head CI/browser and scope boundaries. Do not modify implementation. Publish findings or independent PASS in #251, then stop.
