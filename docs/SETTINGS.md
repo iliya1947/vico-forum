@@ -3,9 +3,10 @@
 ## Status and source-of-truth boundaries
 
 Settings is an independent five-surface product sequence after ordinary Admin Panel AP-01–AP-11
-and Owner/authorization redesign. SET-01 and SET-02 are implemented in `main` in the
-repository/local-CI path. The remaining SET-03–SET-06 are approved future scope, not
-implemented routes or server settings. Current factual status: [PROJECT_STATE.md](../PROJECT_STATE.md).
+and Owner/authorization redesign. SET-01–SET-03 are implemented in `main` in the
+repository/local-CI path. SET-04–SET-06 remain approved, unassigned future scope,
+not implemented routes or server settings. Current factual status:
+[PROJECT_STATE.md](../PROJECT_STATE.md).
 The ordinary panel contract is [ADMIN_PANEL.md](ADMIN_PANEL.md); application authorization
 is governed by [AUTHORIZATION.md](auth/AUTHORIZATION.md).
 
@@ -19,7 +20,7 @@ owner visual acceptance and Stage 6 external integration are not claimed.
 | --- | --- | --- |
 | Forum & roles | `/:locale/settings/forum` | **SET-02 implemented**; exact authenticated server-bound Owner only; existing authorization management plus independent new-registration flags |
 | Administrator preferences | No route yet | **SET-04 pending**; future per-admin convenience preferences, gated by current Admin or Attention access |
-| User preferences | No route yet | **SET-03 pending**; future authenticated per-user preference controls |
+| User preferences | `/:locale/settings/user` | **SET-03 implemented**; authenticated users manage browser theme, own preferred locale and existing device-local Editor/code preferences |
 | Account & security | No route yet | **SET-05 pending**; future authenticated Better Auth account/session management |
 | Privacy | No route yet | **SET-06 pending**; future authenticated online-visibility preference (default ON when implemented) |
 
@@ -27,8 +28,8 @@ owner visual acceptance and Stage 6 external integration are not claimed.
 functional Settings surface. It uses one `SettingsShell` inside the existing forum shell,
 not a second Admin shell. The forum header/account navigation and ordinary Admin Settings
 navigation lead here. The Forum & roles link is shown only to an exact bound Owner;
-unimplemented sections are explicitly marked Under development and expose no new
-settings reads or actions. Complaint priority/settings remain inside Complaints.
+remaining unimplemented sections (SET-04–SET-06) are explicitly marked Under development
+and expose no new settings reads or actions. Complaint priority/settings remain inside Complaints.
 
 The locale segment uses the existing generic locale boundary and canonical registry;
 the new UI is localized for EN/RU/HE and supports responsive/RTL layout. Direct route
@@ -135,12 +136,54 @@ never select the authorized actor. Stale UI conflict revalidation does not
 automatically replay a POST. Unexpected failures must not be converted into
 silent success or ordinary authorization denial.
 
-## Approved but not yet implemented (SET-03–SET-06)
+## User preferences (SET-03)
 
-- **SET-03 User preferences:** future controls over existing theme, locale and
-  editor-preference mechanisms, respecting their current storage ownership.
-  Reply/mention notification toggles were explicitly deferred; hiding types in
-  the UI is not a substitute for authoritative unread/producer semantics.
+`/:locale/settings/user` requires an authenticated Better Auth session, not
+Owner/Admin permissions. Its loader independently enforces the session and uses
+private/no-store responses. User preferences do not grant authorization capabilities.
+
+**Theme** uses the existing browser-wide `vico-theme` preference, not a
+per-account database field. Light/Dark persist the existing explicit override;
+System removes the override and follows the operating-system color scheme.
+Settings and the forum header share observation of the same preference, including
+same-tab updates, cross-tab storage events, system changes and reload. If browser
+storage is unavailable, the currently applied preference is best-effort and is
+not presented as durable or cross-device persistence.
+
+**Preferred language** uses the existing `user.locale` as its sole account
+persistence. A same-origin, allowlisted form with an authenticated session may
+update **only that session's own** `user.locale`, after validating the exact
+canonical active tag against the **healthy current Runtime LocaleRegistry**.
+Invalid/inactive/alias choices are rejected; a degraded/unavailable registry
+cannot persist a fallback choice. The submitted `expectedUserId` is only a
+stale-account check, never a target selector. The language form is keyed by the
+authenticated account ID: switching accounts on a still-mounted Settings route
+discards the previous account's unsaved choice and initializes from the new
+account's saved preference; same-account navigation/revalidation retains an
+unsaved choice. No change is posted automatically. After explicit save the
+application navigates to the selected locale; explicit locale URLs still take
+precedence, while fresh `user.locale` participates in unprefixed negotiation.
+Controlled failures preserve protected/private response semantics.
+
+**Editor/code** reuses the four existing device-local, per-account browser keys:
+`vico:editor:mode:<userId>`, `vico:editor:spellcheck:<userId>`,
+`vico:editor:code-wrap:<userId>` and
+`vico:editor:code-lines:<userId>`. The controls expose Simple/Advanced with
+unset editor default, spellcheck Auto/On/Off, code wrapping and line numbers.
+The shared adapter keeps actual mounted/new MarkdownEditor and ForumCodeBlock
+consumers synchronized through same-tab notifications and cross-tab storage
+events, while keeping account identities separate. Editor/code preferences do
+not acquire server persistence or cross-device sync, and do not change
+publication/source/history/attachments contracts from [EDITOR.md](EDITOR.md).
+
+Personal theme, language and Editor/code choices do **not** create Admin
+History entries. Reply/mention notification controls, time-zone preference,
+translation-versus-original reading preference, drafts/autosave and a separate
+accessibility feature package remain deferred; no placeholder silently changes
+inbox/unread producers or the existing Editor draft boundary.
+
+## Approved but not yet implemented (SET-04–SET-06)
+
 - **SET-04 Administrator preferences:** per-admin convenience presentation,
   without introducing a global settings store or new Admin permission system.
 - **SET-05 Account & security:** future supported Better Auth account/session
@@ -148,16 +191,18 @@ silent success or ordinary authorization denial.
 - **SET-06 Privacy:** future persisted per-user public online visibility
   (default ON, opt-out), applied to public online list/count and heartbeat.
 
-These are product/technical boundaries, not claims that routes, storage, APIs,
-mutations or acceptance already exist. Implement only by their separately
-approved bounded packages. Do not add a universal settings JSON store, second
-RBAC, deputy stub or unrelated Stage 6 work as part of SET-02.
+These future packages are product/technical boundaries, not claims that their
+routes, storage, APIs, mutations or acceptance already exist. Implement only
+through separately approved bounded packages; no universal settings JSON store,
+second RBAC, deputy stub or unrelated Stage 6 work.
 
 ## Verification boundary
 
-SET-02 completed repository/local-CI implementation, PostgreSQL 17 integration
-and local Chromium/built Worker/Better Auth tests before its merge. Those results
-do not establish live Google credentials, actual Owner binding, deployed/production
-acceptance or owner visual approval. Exact PR/review/check snapshots are retained
-in [PROJECT_HISTORY_18.md](PROJECT_HISTORY/PROJECT_HISTORY_18.md), not in
+SET-02 and SET-03 completed repository/local-CI implementation, PostgreSQL 17
+integration and local Chromium/built Worker/Better Auth acceptance before their
+merges. Those results do not establish live Google credentials, actual Owner
+binding, deployed/production acceptance or owner visual approval. Exact
+implementation/review/correction/check snapshots are retained in
+[PROJECT_HISTORY_18.md](PROJECT_HISTORY/PROJECT_HISTORY_18.md) and
+[PROJECT_HISTORY_19.md](PROJECT_HISTORY/PROJECT_HISTORY_19.md), not in
 `PROJECT_STATE.md`.

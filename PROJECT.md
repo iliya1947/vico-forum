@@ -53,11 +53,12 @@ application permissions разрешаются отдельно server-side.
 Постоянный контракт обычной админ-панели — [`docs/ADMIN_PANEL.md`](./docs/ADMIN_PANEL.md).
 Он задаёт структуру и permission boundaries: AP-01–AP-11 реализованы в repository/local-CI.
 Settings ведётся отдельно по [`docs/SETTINGS.md`](docs/SETTINGS.md): SET-01 закрепил
-Owner-only authorization writes, SET-02 добавил защищённый Settings shell и Owner-only
-Forum & roles с независимым управлением регистрацией новых Google и email/password
-аккаунтов (repository/local-CI). Administrator preferences, User preferences,
-Account & security и Privacy ещё не реализованы. Реальные Google OAuth и Owner binding
-остаются задачами Stage 6.
+Owner-only authorization writes, SET-02 добавил защищённый Settings shell, Owner-only
+Forum & roles и независимое управление регистрацией новых Google/email-password
+аккаунтов. SET-03 добавил защищённые User preferences: тему, язык аккаунта и существующие
+локальные настройки Editor/code (repository/local-CI). Administrator preferences (SET-04),
+Account & security (SET-05) и Privacy (SET-06) ещё не реализованы и не назначены.
+Реальные Google OAuth и Owner binding остаются задачами Stage 6.
 
 ## Техническая основа
 
