@@ -900,3 +900,8 @@ Base/current main `e985a43f8853c234c96bb4528a9d4dd709361018` after merged #304. 
 ## SET-03 docs closeout — coordinator result
 
 PR #305 exact head `892d30f954c1cd974d16b8331b7af71607db9bde`: Mira **PASS, 0 confirmed current-scope docs defects**; exact-head checks #42447751106 SUCCESS. Author remains stopped. Next action is Owner merge; SET-04 is not assigned before merge.
+
+
+## Active assignment — Settings SET-04 Administrator preferences
+
+Base/current main `35fa64428fc551ae58b9026dad45797016dd4251`. SET-03 is fully closed. Implement SET-04 in one bounded implementation PR using approved plan #6711736883: device-local per-account Admin/Attention entry preferences, comfortable/compact density and approved secondary-detail expansion on real existing consumers. Preferences must be intersected with current effective access and never become authority; explicit URLs/queries/deep links remain authoritative. No DB/migration/new permission/RBAC, SET-05–06, permanent docs or Stage6. Run applicable exact-head unit/route/runtime/browser acceptance, publish PR + stable head + evidence in #251, then stop for Mira coordinator review.
