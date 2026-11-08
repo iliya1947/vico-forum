@@ -1429,3 +1429,8 @@ Whole scope otherwise checked with no additional confirmed current-scope defects
 
 Exact head `a4af2014eb28a39d54d10c33cc515cbf3d5f258e`: **PASS, 0 confirmed current-scope defects**.
 SET05-MIRA-01 and SET05-MIRA-02 are closed. Correction delta is one commit/five paths; all other implementation files are byte-identical to prior reviewed head. Exact-head CI #42477527039 and existing Chromium #42477527033 are SUCCESS. PR open/Ready/mergeable; main unchanged. Lev assigned independent technical whole-PR review of the same exact head; Mark unassigned.
+
+
+## SET05-LEV-01 — independent confirmation
+
+Lev's finding on PR #309 exact head `a4af2014eb28a39d54d10c33cc515cbf3d5f258e` is confirmed current-scope. Better Auth 1.7.7 rate limiting is HTTP-router `onRequest` behavior; direct `auth.api.changePassword` bypasses it. The existing special rule for `/change-password` is 3 requests/10s and project storage is database-backed. One bounded correction assigned to Lira; prior SET05-MIRA-01/02 remain closed. Fresh coordinator-first cycle required after the new head.
