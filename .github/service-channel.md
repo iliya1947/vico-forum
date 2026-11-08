@@ -1452,3 +1452,8 @@ PR #301 exact head `741da8cd534998defb02691dffa53823f389cf1b`: **PASS, 0 confirm
 - Lira is assigned SET-02 implementation only: Settings shell/navigation, Forum & roles surface, and independent new-account registration controls for Google and email/password with existing sign-in/link preserved.
 - SET-03–SET-06, deputies, Stage6/production/live Google/Owner binding and factual permanent docs are outside the implementation PR.
 - Next handoff is Lira stable implementation PR/head + actual checks for Mira coordinator whole-PR review.
+
+
+## SET-02 coordinator review — CHANGES REQUIRED
+
+PR #302 exact head `6dbe6a2d912dab6288fbb2fd1e5b554edd4df9ef`: whole 49-file coordinator review found two current-scope Google-auth issues. **SET02-MIRA-01:** Better Auth still permits its default implicit same-email OAuth linking, contrary to Vico's explicit-link boundary; enforce explicit-only linking while preserving new Google registration, existing linked sign-in and protected `linkSocial`. **SET02-MIRA-02:** approved open-registration → close-before-OAuth-callback create-user acceptance is not covered; current Google registration tests use direct ID-token sign-in, while callback coverage is only link-account. Exact-head CI #42428820932 and Chromium #42428820914 are SUCCESS but do not close these gaps. Lira correction assigned; Lev remains unassigned until fresh Mira PASS.
