@@ -5,7 +5,7 @@ import { authSessionContext } from "../auth/request-context";
 import { authorizationContext } from "../authorization/request-context";
 import { AuthorizationUnavailableError } from "../../db/authorization-service";
 import { ForumStorageUnavailableError } from "../../db/hyperdrive-forum";
-import { loader as home } from "../routes/home";
+import { loader as home, headers as homeHeaders } from "../routes/home";
 import { loader as category } from "../routes/category";
 import { loader as section } from "../routes/section";
 import { loader as topic } from "../routes/topic";
@@ -34,7 +34,19 @@ describe("primary forum read failures", () => {
   it("keeps optional online presence unavailable from hiding the home page", async () => {
     const context = new RouterContextProvider();
     context.set(forumReaderContext, { readHomepage: async () => [], readOnlinePresence: async () => { throw new ForumStorageUnavailableError(); } } as never);
-    await expect(home({ params: {}, context })).resolves.toMatchObject({ categories: [], onlinePresence: null });
+    const result = await home({ params: {}, context });
+    expect(result.data).toMatchObject({ categories: [], onlinePresence: null });
+    expect(new Headers(result.init?.headers).get("Cache-Control")).toBe("private, no-store");
+    expect(homeHeaders()["Cache-Control"]).toBe("private, no-store");
+  });
+  it("keeps available online membership uncacheable in home data and document", async () => {
+    const context = new RouterContextProvider();
+    context.set(forumReaderContext, { readHomepage: async () => [], readOnlinePresence: async () => ({ count: 1,
+      members: [{ id: "member", name: "Member", image: null }] }) } as never);
+    const result = await home({ params: { locale: "en" }, context });
+    expect(result.data.onlinePresence?.count).toBe(1);
+    expect(new Headers(result.init?.headers).get("Cache-Control")).toBe("private, no-store");
+    expect(homeHeaders()["Cache-Control"]).toBe("private, no-store");
   });
   it("maps protected edit authorization unavailable and supplies its forum boundary", async () => {
     const context = new RouterContextProvider();
