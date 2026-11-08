@@ -1377,3 +1377,8 @@ Exact head `1a858825836e76801bb63025a28312b4d0bdd082`: 1 confirmed current-scope
 - CI #42458305882 SUCCESS: 164/164 app files, 2055/2055 tests; 50/50 DB files, 589/589 tests.
 - Chromium #42458305779 SUCCESS across all four jobs; real AP-10 log executed `set04-actor-bound-admin-measure-detail-density-no-private-last-entry`.
 - PASS report: #251 comment #6718837188. Lev handoff: #6718837434. Implementation frozen; no Owner merge until independent review passes.
+
+
+## SET04-LEV-01 — independent verification
+
+Lev's P2 on PR #307 exact head `5cc5c820b0445ddb57cf3663e7cfb33c059ab108` is confirmed as a current SET-04 defect, not future-only. `ADMIN_ADMISSION_PERMISSIONS` and both authoritative Admin/Administrator-settings guards include `forum.topic.close`; `locale-boundary.tsx` omits exactly that one Admin-forum permission from its projection. SET-04 newly derives Admin entry destinations and Settings visibility from this projection, so close-only actor is server-admitted but gets no new Settings entry. The pre-existing header omission is not separately reopened; bounded correction is admission/projection parity for the new consumer. Confirmation #6718950505; Lira handoff #6718953779. SET04-MIRA-01 stays closed.
