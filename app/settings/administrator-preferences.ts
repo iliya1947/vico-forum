@@ -60,19 +60,25 @@ export function parseAdministratorPreferences(raw: string | null): Administrator
       || !(v.adminLast === null || oneOf(ADMIN_ENTRY_IDS, v.adminLast))
       || !oneOf(["default", "last"], v.attentionEntry)
       || !oneOf(ATTENTION_MODES, v.attentionDefaultMode)
-      || !validGroup(v.attentionDefaultMode, v.attentionDefaultGroup)
+      || !validGroup(v.attentionDefaultMode as AttentionEntryMode, v.attentionDefaultGroup)
       || !(v.attentionLastMode === null || oneOf(ATTENTION_MODES, v.attentionLastMode))
       || !(v.attentionLastGroup === null || (v.attentionLastMode !== null
-        && validGroup(v.attentionLastMode, v.attentionLastGroup)))
+        && validGroup(v.attentionLastMode as AttentionEntryMode, v.attentionLastGroup)))
       || (v.attentionLastMode === null) !== (v.attentionLastGroup === null)
       || !oneOf(["comfortable", "compact"], v.density)
       || typeof v.technicalDetailsExpanded !== "boolean") return DEFAULT_ADMINISTRATOR_PREFERENCES;
     return {
-      version: 1, adminEntry: v.adminEntry, adminDefault: v.adminDefault,
-      adminLast: v.adminLast, attentionEntry: v.attentionEntry,
-      attentionDefaultMode: v.attentionDefaultMode, attentionDefaultGroup: v.attentionDefaultGroup,
-      attentionLastMode: v.attentionLastMode, attentionLastGroup: v.attentionLastGroup,
-      density: v.density, technicalDetailsExpanded: v.technicalDetailsExpanded,
+      version: 1,
+      adminEntry: v.adminEntry as AdministratorPreferences["adminEntry"],
+      adminDefault: v.adminDefault as AdminEntryId,
+      adminLast: v.adminLast as AdminEntryId | null,
+      attentionEntry: v.attentionEntry as AdministratorPreferences["attentionEntry"],
+      attentionDefaultMode: v.attentionDefaultMode as AttentionEntryMode,
+      attentionDefaultGroup: v.attentionDefaultGroup as AttentionEntryGroup,
+      attentionLastMode: v.attentionLastMode as AttentionEntryMode | null,
+      attentionLastGroup: v.attentionLastGroup as AttentionEntryGroup | null,
+      density: v.density as AdministratorPreferences["density"],
+      technicalDetailsExpanded: v.technicalDetailsExpanded as boolean,
     };
   } catch {
     return DEFAULT_ADMINISTRATOR_PREFERENCES;

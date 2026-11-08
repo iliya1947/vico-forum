@@ -64,7 +64,6 @@ import {
 } from "./content-generation-controls";
 import { Breadcrumbs, EmptyState, ForumShell } from "./ui";
 import { MarkdownEditor, type MarkdownEditorHandle } from "./markdown-editor";
-import { useHeaderAuthUser } from "../auth/auth-controls";
 import { attributedQuoteMarkdown } from "./quote-markdown";
 
 export function HomeView({
