@@ -174,6 +174,7 @@ describe("SET-05 request-local Better Auth security capability", () => {
     expect(snapshot.sessions).toEqual([]);
     await errorCode(security.revokeOneOther(headers(a1), a1.identity, a2.identity.sessionId),
       "not-fresh");
+    await errorCode(security.revokeAllOthers(headers(a1), a1.identity), "not-fresh");
     expect((await runtime.getSession(headers(a2))).session?.user.id).toBe(a2.id);
   });
 

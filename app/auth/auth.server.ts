@@ -279,6 +279,9 @@ export function createHyperdriveAuthRuntime(
       revokeAllOthers: (headers, identity) =>
         securityCall(() => useAuth(async (auth) => {
           await verifyIdentity(auth, headers, identity);
+          // revokeOtherSessions alone does not enforce Better Auth's fresh-session policy.
+          // Match the session list and single-revoke boundary before this write.
+          await auth.api.listSessions({ headers });
           await auth.api.revokeOtherSessions({ headers });
         }, true)),
     },

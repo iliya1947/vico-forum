@@ -244,8 +244,16 @@ try:
             ("expectedSessionId", alice_sid), ("sessionId", a4_sid),
         ])
         assert stale.status == 403, stale.status
+        stale_all = post(alice_ctx, [
+            ("intent", "revoke-others"), ("expectedUserId", alice_id),
+            ("expectedSessionId", alice_sid),
+        ])
+        assert stale_all.status == 403, stale_all.status
+        assert {row["id"] for row in sql(
+            'select id from "session" where user_id=$1', [alice_id],
+        )} == {alice_sid, a4_sid}
         still_signed_in(a4)
-        record("better-auth-not-fresh-blocks-session-list-and-single-revoke")
+        record("better-auth-not-fresh-blocks-session-list-single-and-all-revoke")
 
         # Stand-in Google-linked account: only the provider-owned record is synthetic.
         # There is no live OAuth redirection, and no password is re-created.
