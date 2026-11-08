@@ -9760,21 +9760,6 @@ a.topic-tag:focus-visible {
   text-decoration: none;
   overflow-wrap: anywhere;
 }
-.settings-panel-nav .settings-panel-pending-item {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  flex-wrap: wrap;
-  gap: 0.4rem 0.8rem;
-  min-inline-size: 0;
-  min-block-size: 2.75rem;
-  padding: 0.65rem 0.8rem;
-  border: 1px dashed var(--color-border);
-  border-radius: 0.45rem;
-  color: var(--color-text-muted);
-  background: var(--color-surface);
-  overflow-wrap: anywhere;
-}
 .settings-panel .settings-overview .admin-destination {
   display: inline-flex;
   margin-block-start: 0.75rem;
@@ -10184,3 +10169,33 @@ a.topic-tag:focus-visible {
 .settings-account-revoke-all { min-inline-size: 0; }
 .settings-account-revoke-all { margin-block-start: 0.85rem; }
 .settings-account button:disabled { opacity: 0.6; cursor: wait; }
+
+/* SET-06: one explicit, keyboard-accessible account privacy setting. */
+.settings-privacy-form {
+  display: grid;
+  gap: 0.7rem;
+  max-inline-size: 38rem;
+  margin-block-start: 1rem;
+}
+.settings-privacy-choice {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  min-block-size: 2.75rem;
+  padding: 0.7rem 0.8rem;
+  border: 1px solid var(--color-border);
+  border-radius: 0.45rem;
+  background: var(--color-surface);
+}
+.settings-privacy-choice:focus-within {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
+}
+.settings-privacy-choice input {
+  flex: none;
+  inline-size: 1.1rem;
+  block-size: 1.1rem;
+  accent-color: var(--color-accent);
+}
+.settings-privacy-form button { justify-self: start; min-block-size: 2.75rem; }
+.settings-privacy-form button:disabled { opacity: 0.65; cursor: wait; }

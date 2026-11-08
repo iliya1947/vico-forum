@@ -1,4 +1,5 @@
 import {appendForumHistory} from "./forum-history";
+import { lockPrivacySubject } from "./user-privacy";
 import type {HelpSignalHistoryEffect} from "./admin-history";
 import { validateProfileFields, type ForumProfile, type ProfileFields } from "../app/forum/profile";
 import { publishedMentionRecipients } from "../app/forum/mentions";
@@ -13,6 +14,7 @@ import {
   forumAttachments,
   forumPostAttachments,
   forumOnlinePresence,
+  userPrivacyPreferences,
   forumCategories,
   forumHelpDuplicateAppeals,
   forumHelpDuplicateRelationships,
@@ -527,7 +529,9 @@ export class DrizzleForumRepository {
     })
       .from(forumOnlinePresence)
       .innerJoin(user, eq(user.id, forumOnlinePresence.userId))
-      .where(recent)
+      .leftJoin(userPrivacyPreferences, eq(userPrivacyPreferences.userId, user.id))
+      // Filter before the window count and LIMIT: stale hidden presence cannot leak.
+      .where(and(recent, sql`coalesce(${userPrivacyPreferences.showOnline}, true) = true`))
       .orderBy(desc(forumOnlinePresence.lastSeenAt), asc(user.id))
       .limit(12);
     return {
@@ -537,14 +541,22 @@ export class DrizzleForumRepository {
   }
 
   async recordOnlinePresence(userId: string): Promise<void> {
-    await this.database.insert(forumOnlinePresence)
-      .values({ userId })
-      .onConflictDoUpdate({
-        target: forumOnlinePresence.userId,
-        set: { lastSeenAt: sql`greatest(${forumOnlinePresence.lastSeenAt}, now())` },
-        // The browser timer is not authoritative: reject excess DB writes per user.
-        setWhere: sql`${forumOnlinePresence.lastSeenAt} < now() - interval '45 seconds'`,
-      });
+    await this.database.transaction(async (tx) => {
+      // The same account-row lock protects both preference writes and heartbeats.
+      await lockPrivacySubject(tx, userId);
+      // Separate statement after lock acquisition sees the latest committed preference.
+      const [preference] = await tx.select({ showOnline: userPrivacyPreferences.showOnline })
+        .from(userPrivacyPreferences).where(eq(userPrivacyPreferences.userId, userId));
+      if (preference?.showOnline === false) return;
+      await tx.insert(forumOnlinePresence)
+        .values({ userId })
+        .onConflictDoUpdate({
+          target: forumOnlinePresence.userId,
+          set: { lastSeenAt: sql`greatest(${forumOnlinePresence.lastSeenAt}, now())` },
+          // The browser timer is not authoritative: reject excess DB writes per user.
+          setWhere: sql`${forumOnlinePresence.lastSeenAt} < now() - interval '45 seconds'`,
+        });
+    }, { isolationLevel: "read committed" });
   }
 
   async readProfile(userId: string): Promise<ForumProfile | undefined> {

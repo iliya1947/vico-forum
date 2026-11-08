@@ -9,6 +9,18 @@ on:
       - "tests/browser/settings-user/**"
       - "tests/browser/settings-administrator/**"
       - "tests/browser/settings-account/**"
+      - "tests/browser/settings-privacy/**"
+      - "app/routes/home.tsx"
+      - "app/routes/presence.ts"
+      - "app/routes.ts"
+      - "db/forum-repository.ts"
+      - "db/user-privacy.ts"
+      - "db/hyperdrive-user-privacy.ts"
+      - "workers/app.ts"
+      - "drizzle/0061_user_privacy_preferences.sql"
+      - "app/localization/catalog.ts"
+      - "app/localization/manual-values.ts"
+      - "app/localization/manual-fingerprints.ts"
       - "app/auth/auth.server.ts"
       - "app/auth/request-context.ts"
       - "app/settings/**"
@@ -280,7 +292,7 @@ jobs:
             'GOOGLE_CLIENT_SECRET=local-test-unused' \
             'VICO_OWNER_USER_ID=set02-synthetic-owner' > .dev.vars
           pnpm build
-      - name: Real SET-03 personal Settings and SET-02 registration Chromium acceptance
+      - name: Real SET-02/03/05/06 Settings Chromium acceptance
         run: |
           pnpm exec vite preview --host 127.0.0.1 --port 4189 --strictPort > "$RUNNER_TEMP/set02-preview.log" 2>&1 &
           preview_pid=$!
@@ -301,6 +313,11 @@ jobs:
             tail -n 100 "$RUNNER_TEMP/set02-preview.log"
             exit 1
           fi
+          "$RUNNER_TEMP/set02-playwright/bin/python" tests/browser/settings-privacy/check.py \
+            --url http://127.0.0.1:4189 --output "$RUNNER_TEMP/set02-evidence/set06" || {
+              tail -n 100 "$RUNNER_TEMP/set02-preview.log"
+              exit 1
+            }
           "$RUNNER_TEMP/set02-playwright/bin/python" tests/browser/settings-account/check.py \
             --url http://127.0.0.1:4189 --output "$RUNNER_TEMP/set02-evidence/set05" || {
               tail -n 100 "$RUNNER_TEMP/set02-preview.log"
@@ -316,7 +333,7 @@ jobs:
               tail -n 100 "$RUNNER_TEMP/set02-preview.log"
               exit 1
             }
-      - name: Preserve SET-02 synthetic Chromium evidence
+      - name: Preserve Settings synthetic Chromium evidence
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:

@@ -79,7 +79,7 @@ describe("PostgreSQL 17 locale migrations", () => {
     const applied = await client.query<{ count: string }>(
       'select count(*)::text as count from drizzle."__drizzle_migrations"',
     );
-    expect(applied.rows[0]?.count).toBe("61");
+    expect(applied.rows[0]?.count).toBe("62");
     // The AP-08 manifest hashes are computed from PostgreSQL 17 catalog expressions,
     // rather than assumed from SQL formatting or hand-entered normalized forms.
     const definitions = await client.query<{ key: string; definition: string }>(`
@@ -121,6 +121,42 @@ describe("PostgreSQL 17 locale migrations", () => {
       "default:forum_topics.closure_version": versionHash,
     });
 
+  });
+
+  it("SET-06 preference schema defaults to ON, saves OFF and cascades with its user", async () => {
+    const id = "set06-schema-user";
+    await client.query(
+      'insert into "user" (id, name, email) values ($1, $2, $3)',
+      [id, "SET-06 schema", "set06-schema@example.test"],
+    );
+    try {
+      const initially = await client.query(
+        "select show_online from user_privacy_preferences where user_id = $1", [id],
+      );
+      expect(initially.rows).toEqual([]);
+      await client.query(
+        "insert into user_privacy_preferences (user_id) values ($1)", [id],
+      );
+      const saved = await client.query<{ show_online: boolean; updated_at: Date }>(
+        "select show_online, updated_at from user_privacy_preferences where user_id = $1", [id],
+      );
+      expect(saved.rows[0]?.show_online).toBe(true);
+      expect(saved.rows[0]?.updated_at).toBeInstanceOf(Date);
+      await client.query(
+        "update user_privacy_preferences set show_online = false where user_id = $1", [id],
+      );
+      expect((await client.query<{ show_online: boolean }>(
+        "select show_online from user_privacy_preferences where user_id = $1", [id],
+      )).rows[0]?.show_online).toBe(false);
+      await expectDatabaseCode(client.query(
+        "insert into user_privacy_preferences (user_id) values ('set06-missing-user')",
+      ), "23503");
+    } finally {
+      await client.query('delete from "user" where id = $1', [id]);
+    }
+    expect((await client.query(
+      "select 1 from user_privacy_preferences where user_id = $1", [id],
+    )).rowCount).toBe(0);
   });
 
   it("migrates a pre-0059 mutex row for both historical flag values without dropping its PK or check", async () => {

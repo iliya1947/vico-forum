@@ -3,7 +3,8 @@ import { describe, expect, it, vi } from "vitest";
 import { authSessionContext, type AuthSession } from "../auth/request-context";
 import { forumWriterContext } from "../forum/request-context";
 import { ForumStorageUnavailableError, type ForumWriter } from "../../db/hyperdrive-forum";
-import { action, loader } from "./presence";
+import { action, loader, headers } from "./presence";
+import { UserPrivacyAccountMissingError } from "../../db/user-privacy";
 
 function setup(userId: string | null = "owner") {
   const context = new RouterContextProvider();
@@ -29,6 +30,7 @@ describe("authenticated online presence heartbeat", () => {
     const result = await action({ request: ping("https://forum.test", "intent=heartbeat&expectedUserId=visible-A"), context: env.context });
     expect(result.status).toBe(409);
     expect(env.recordOnlinePresence).not.toHaveBeenCalled();
+    expect(headers()["Cache-Control"]).toBe("no-store");
   });
   it("records only the session user regardless of user-supplied IDs", async () => {
     const env = setup("real-user");
@@ -43,7 +45,13 @@ describe("authenticated online presence heartbeat", () => {
     ["owner", null, 403],
   ] as const)("rejects guests and invalid origins without writing", async (userId, origin, code) => {
     const env = setup(userId);
-    await expect(action({ request: ping(origin), context: env.context })).rejects.toMatchObject({ status: code });
+    try {
+      await action({ request: ping(origin), context: env.context });
+      throw new Error("Expected rejection");
+    } catch (error) {
+      expect((error as Response).status).toBe(code);
+      expect((error as Response).headers.get("Cache-Control")).toBe("no-store");
+    }
     expect(env.recordOnlinePresence).not.toHaveBeenCalled();
   });
   it("rejects malformed intent and unsupported verbs", async () => {
@@ -51,12 +59,20 @@ describe("authenticated online presence heartbeat", () => {
     await expect(action({ request: ping("https://forum.test", "intent=wrong"), context: env.context })).rejects.toMatchObject({ status: 400 });
     await expect(action({ request: ping("https://forum.test", "", "PUT"), context: env.context })).rejects.toMatchObject({ status: 405 });
     expect(env.recordOnlinePresence).not.toHaveBeenCalled();
-    expect(() => loader()).toThrow();
+    try { loader(); } catch (error) {
+      expect((error as Response).headers.get("Cache-Control")).toBe("no-store");
+    }
+  });
+  it("maps a deleted session account to a stale-identity conflict", async () => {
+    const env = setup();
+    env.recordOnlinePresence.mockRejectedValueOnce(new UserPrivacyAccountMissingError("stale"));
+    await expect(action({ request: ping(), context: env.context })).rejects.toMatchObject({ status: 409 });
   });
   it("classifies storage outages but preserves unexpected defects", async () => {
     const env = setup();
     env.recordOnlinePresence.mockRejectedValueOnce(new ForumStorageUnavailableError());
-    await expect(action({ request: ping(), context: env.context })).rejects.toMatchObject({ status: 503 });
+    try { await action({ request: ping(), context: env.context }); }
+    catch (error) { expect((error as Response).headers.get("Cache-Control")).toBe("no-store"); }
     const bug = new Error("unexpected"); env.recordOnlinePresence.mockRejectedValueOnce(bug);
     await expect(action({ request: ping(), context: env.context })).rejects.toBe(bug);
   });

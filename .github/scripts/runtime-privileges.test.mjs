@@ -142,6 +142,23 @@ test("SET-02 registration settings are readable/writable by web without INSERT/D
   }
 });
 
+test("SET-06 privileges allow web preference upsert and own-presence cleanup only", () => {
+  assert.deepEqual(runtimeCapabilityContracts.web.relations.user_privacy_preferences,
+    ["INSERT", "SELECT", "UPDATE"]);
+  assert.deepEqual(runtimeCapabilityContracts.web.relations.forum_online_presence,
+    ["DELETE", "INSERT", "SELECT", "UPDATE"]);
+  for (const relation of ["user_privacy_preferences", "forum_online_presence"]) {
+    assert.equal(runtimeCapabilityContracts["localization-read"].relations[relation], undefined);
+  }
+  const unexpectedDelete = fixture();
+  unexpectedDelete.relationPrivileges.push({
+    schema: "public", name: "user_privacy_preferences", kind: "table",
+    grantee: roles.webRole, privilege: "DELETE", is_grantable: false,
+  });
+  assert.throws(() => assertRuntimeCapabilityPrivilegeContract(unexpectedDelete, roles),
+    /unexpected|relation|privilege/i);
+});
+
 test("requires distinct runtime roles", () => {
   assert.throws(
     () => assertRuntimeCapabilityPrivilegeContract(fixture(), {

@@ -1,4 +1,5 @@
 import { forumReadLoader } from "../forum/read-availability.server";
+import { data } from "react-router";
 import { useLoaderData, type RouterContextProvider } from "react-router";
 import type { HomepageCategoryOverview } from "../forum/homepage";
 import { forumReaderForRequest } from "../forum/request-context";
@@ -10,6 +11,10 @@ export function meta() {
   return [{ title: "Vico Forum" }];
 }
 
+// Public online identities change with privacy settings; do not cache the document or data.
+export const homepagePrivateHeaders = { "Cache-Control": "private, no-store" } as const;
+export function headers() { return homepagePrivateHeaders; }
+
 export const loader = forumReadLoader(async function loader({ params, context }: { params: { locale?: string }; context: RouterContextProvider }) {
   const reader = forumReaderForRequest(context);
   const [categories, onlinePresence] = await Promise.all([
@@ -20,7 +25,8 @@ export const loader = forumReadLoader(async function loader({ params, context }:
       throw error;
     }),
   ]);
-  return { locale: params.locale ?? "en", categories: categories satisfies HomepageCategoryOverview[], onlinePresence };
+  return data({ locale: params.locale ?? "en", categories: categories satisfies HomepageCategoryOverview[], onlinePresence },
+    { headers: homepagePrivateHeaders });
 });
 
 export default function Home() {
