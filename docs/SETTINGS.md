@@ -292,7 +292,7 @@ credential failures and classified unavailable storage have controlled
 private responses. Unexpected schema/configuration errors are not silently
 reclassified. Protected document/data, successful writes and controlled
 failures use `private, no-store`; password/session secrets are not reflected
-in responses, URLs, logs or browser controls. Existing Better Auth
+in responses, URLs or browser controls. Existing Better Auth
 cookie/session handling and independent sign-out behavior are preserved.
 
 Account & security does **not** implement password reset/recovery,
