@@ -860,3 +860,8 @@ PR #302 head `f7a862ea0a81112857e9d7510afdab183a9631a3` has one confirmed curren
 ## Active assignment — SET-02 factual docs closeout
 
 Base/current main `a86cea918a3f2665399e861d8e01ece8a1d80104` after merged #302. Create one docs-only PR touching exactly: PROJECT.md, PROJECT_STATE.md, ROADMAP.md, docs/ADMIN_PANEL.md, new docs/SETTINGS.md, docs/PROJECT_HISTORY/PROJECT_HISTORY.md, new docs/PROJECT_HISTORY/PROJECT_HISTORY_18.md. Synchronize only factual SET-02 post-merge state and permanent Settings contract; SET-03–06 remain unimplemented/unassigned, Stage6/production/live Google/real Owner binding unclaimed. No runtime/tests/migrations/workflows/dependencies/service-file changes. Publish PR/head/checks in #251 and stop for Mira docs review.
+
+
+## SET02-DOC-MIRA-01 — correction assigned
+
+PR #303 exact head `bc0b8fd248293be76f797add6dba8f804c213185` has one confirmed docs-only defect: `docs/SETTINGS.md` swapped SET-03 and SET-04. Approved mapping is SET-03 = User preferences (theme/locale/Editor), SET-04 = Administrator preferences (workspace convenience), SET-05 Account & security, SET-06 Privacy. Correct both occurrences (surface table + future-scope section) and nothing else. Keep SET-03–06 unimplemented/unassigned and all runtime/Stage6 boundaries unchanged. Publish new stable head + actual checks in #251, then stop for Mira docs review.
