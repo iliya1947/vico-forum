@@ -855,3 +855,8 @@ Do not expand beyond SET-02 or change migration/settings architecture. Re-run ap
 ## SET-02 correction assignment — SET02-LEV-01
 
 PR #302 head `f7a862ea0a81112857e9d7510afdab183a9631a3` has one confirmed current-scope P2 from Lev independent review. Correct only registration-admission failure classification across the real Better Auth request boundary: known PostgreSQL availability/timeouts must surface as controlled unavailable without creating user/account/session; missing/invalid singleton and other unexpected failures must not be ordinary `403 validation_failed`; intentional closed-registration 403 and existing sign-in/link/OAuth behavior stay intact. Acceptance must cover production AuthRuntime.handle + Better Auth 1.7.7 + real disposable PostgreSQL, including lock/query timeout and missing singleton. No schema/migration/SET-03–06/Stage6/docs expansion. Publish new stable head + checks in #251 and stop for fresh Mira whole-PR review.
+
+
+## Active assignment — SET-02 factual docs closeout
+
+Base/current main `a86cea918a3f2665399e861d8e01ece8a1d80104` after merged #302. Create one docs-only PR touching exactly: PROJECT.md, PROJECT_STATE.md, ROADMAP.md, docs/ADMIN_PANEL.md, new docs/SETTINGS.md, docs/PROJECT_HISTORY/PROJECT_HISTORY.md, new docs/PROJECT_HISTORY/PROJECT_HISTORY_18.md. Synchronize only factual SET-02 post-merge state and permanent Settings contract; SET-03–06 remain unimplemented/unassigned, Stage6/production/live Google/real Owner binding unclaimed. No runtime/tests/migrations/workflows/dependencies/service-file changes. Publish PR/head/checks in #251 and stop for Mira docs review.
