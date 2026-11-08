@@ -4,7 +4,7 @@ import { authorizationOwnerContext } from "../authorization/request-context";
 import { isBoundOwner } from "../authorization/owner";
 import { ForumRouteError } from "../forum/ui";
 import { SettingsShell } from "../settings/shell";
-import { settingsForumPath, settingsUserPath, settingsAdministratorPath, settingsAccountPath } from "../settings/paths";
+import { settingsForumPath, settingsUserPath, settingsAdministratorPath, settingsAccountPath, settingsPrivacyPath } from "../settings/paths";
 import { useHeaderAuthUser } from "../auth/auth-controls";
 import { Link } from "react-router";
 import { useTranslation } from "react-i18next";
@@ -35,6 +35,7 @@ export default function SettingsRoute() {
         {t("settingsAdministrator")}</Link> : null}
       <Link className="admin-destination" to={settingsUserPath(locale)}>{t("settingsUser")}</Link>
       <Link className="admin-destination" to={settingsAccountPath(locale)}>{t("settingsAccount")}</Link>
+      <Link className="admin-destination" to={settingsPrivacyPath(locale)}>{t("settingsPrivacy")}</Link>
     </section>
   </SettingsShell>;
 }

@@ -1,4 +1,4 @@
-/** Registered Settings entry points; Privacy is not a route yet. */
+/** Registered Settings entry points. */
 export function settingsPath(locale: string): string {
   return `/${encodeURIComponent(locale)}/settings`;
 }
@@ -17,6 +17,10 @@ export function settingsUserPath(locale: string): string {
 
 export function settingsAccountPath(locale: string): string {
   return `${settingsPath(locale)}/account`;
+}
+
+export function settingsPrivacyPath(locale: string): string {
+  return `${settingsPath(locale)}/privacy`;
 }
 
 export function canonicalAuthorizationPath(locale: string): string {

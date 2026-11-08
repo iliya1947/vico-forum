@@ -2,7 +2,7 @@ import type { ReactNode } from "react";
 import { Link } from "react-router";
 import { useTranslation } from "react-i18next";
 import { Breadcrumbs, ForumShell } from "../forum/ui";
-import { settingsForumPath, settingsPath, settingsUserPath, settingsAdministratorPath, settingsAccountPath } from "./paths";
+import { settingsForumPath, settingsPath, settingsUserPath, settingsAdministratorPath, settingsAccountPath, settingsPrivacyPath } from "./paths";
 import { useHeaderAuthUser } from "../auth/auth-controls";
 
 /** A shared Settings shell inside ForumShell, never another AdminShell. */
@@ -11,7 +11,7 @@ export function SettingsShell({
 }: {
   locale: string;
   canViewForum: boolean;
-  current?: "forum" | "user" | "administrator" | "account";
+  current?: "forum" | "user" | "administrator" | "account" | "privacy";
   children: ReactNode;
 }) {
   const { t } = useTranslation("common");
@@ -25,6 +25,7 @@ export function SettingsShell({
         ...(current === "administrator" ? [{ label: t("settingsAdministrator") }] : []),
         ...(current === "user" ? [{ label: t("settingsUser") }] : []),
         ...(current === "account" ? [{ label: t("settingsAccount") }] : []),
+        ...(current === "privacy" ? [{ label: t("settingsPrivacy") }] : []),
       ]} />
       <header className="admin-panel-heading">
         <h1>{t("adminSettings")}</h1>
@@ -43,10 +44,9 @@ export function SettingsShell({
         <Link to={settingsAccountPath(locale)} aria-current={current === "account" ? "page" : undefined}>
           {t("settingsAccount")}
         </Link>
-        <span className="settings-panel-pending-item">
-          <span>{t("settingsPrivacy")}</span>
-          <span className="admin-panel-pending">{t("adminInDevelopment")}</span>
-        </span>
+        <Link to={settingsPrivacyPath(locale)} aria-current={current === "privacy" ? "page" : undefined}>
+          {t("settingsPrivacy")}
+        </Link>
       </nav>
       {children}
     </div>
