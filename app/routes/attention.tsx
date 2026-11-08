@@ -199,7 +199,7 @@ export async function loader({ request, params, context, url }: {
     }
   }
 
-  return { locale: params.locale ?? "en", mode, group, queue, securityQueue, counts, complaintQueue, complaintHistory,complaintAppeals,
+  return { locale: params.locale ?? "en", accountId: session.user.id, mode, group, queue, securityQueue, counts, complaintQueue, complaintHistory,complaintAppeals,
     canViewHelpAttention, canReadSecurityAttachments, canReviewComplaints, canReviewAppeals,canManageComplaintPriorities, referenceTime: new Date().toISOString() };
 }
 

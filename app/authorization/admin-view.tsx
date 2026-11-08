@@ -10,6 +10,8 @@ import type {
 import { AdminShell } from "../admin/shell";
 import { BLOCK_MANAGE_PRIVILEGED_PERMISSION } from "../../db/user-measure-authority";
 import type { AdminAccess } from "../admin/access";
+import { useHeaderAuthUser } from "../auth/auth-controls";
+import { TechnicalDetails } from "../settings/technical-details";
 
 export type AuthorizationFailure =
   | "invalid"
@@ -42,6 +44,8 @@ export function AuthorizationManagementContent({
   permissions, roles, users, canManageElevated = false, canMutateAuthorization, result, inline,
 }: AuthorizationManagementProps) {
   const { t } = useTranslation("common");
+  const header = useHeaderAuthUser();
+  const accountId = access.actorId && header?.id === access.actorId ? access.actorId : null;
   const submit = inline ? { action: inline.action, navigate: false as const, fetcherKey: inline.fetcherKey } : {};
 
   return (
@@ -96,7 +100,10 @@ export function AuthorizationManagementContent({
                 <header className="admin-card-heading">
                   <div className="admin-card-title">
                     <h4>{role.displayName}</h4>
-                    <code>{role.slug}</code>
+                    <TechnicalDetails accountId={accountId}>
+                      <code>{t("roleSlug")}: {role.slug}</code>
+                      <code>ID: {role.id}</code>
+                    </TechnicalDetails>
                   </div>
                   <div className="admin-card-badges">
                     {role.isSystem ? <span className="admin-badge">{t("builtInRole")}</span> : null}
@@ -188,6 +195,7 @@ export function AuthorizationManagementContent({
                     <div>
                       <h4>{user.name}</h4>
                       <small>{user.email}</small>
+                      <TechnicalDetails accountId={accountId}><code>ID: {user.id}</code></TechnicalDetails>
                     </div>
                   </div>
                   <span className="admin-badge">{user.authorization.role.displayName}</span>
