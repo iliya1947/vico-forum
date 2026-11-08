@@ -2,19 +2,17 @@
 
 - Service PR: **#251**
 - Current main/base: `76fc5b16be4f2425a0ad1fdcb7b38974db355c56`
-- Current stage: **Settings SET-05 — implementation in progress**
-- SET-04 implementation #307 + factual docs #308: **fully closed**
-- Approved technical plan: **#251 comment #6711736883**, SET-05
-- Plan recheck: **current** against merged SET-04 baseline and Better Auth **v1.7.7** API/source; no repeat Lev planning required
-- SET-05 scope: **Account & security**
-- Implementer: **Лира — assigned**
-- Implementation PR/head: **Draft #309**, current head `dd6a5037aec81f4889005eb38fcfa25b573fd186` (**not frozen**, not for review)
-- Мира: **next reviewer after stable implementation PR/head**
-- Лёва: **not assigned until coordinator PASS**
-- Марк: **not assigned**
-- Permanent documentation: separate post-merge closeout
-- SET-05 bounded subtask **2/4 server self-service completed**: request-local Better Auth account/session operations + 7 native PG tests; exact-head CI #42466741533 SUCCESS (`checks` + `database`). No Account UI, public route or browser acceptance yet.
-- SET-05 subtask **3/4 Account route/UI completed**: protected /:locale/settings/account, existing Google-link component moved from Profile, password and other-session forms, Settings navigation, EN/RU/HE + responsive styles, route/UI regressions. Implementation Draft PR #309 exact non-frozen head `b5f34ee2eb06e5a30401b50b96fb5547d3acf410`; CI #42469192036 **SUCCESS** (165/165 application files, 2082/2082 tests; 51/51 native PG files, 596/596 tests; lint/typecheck/build). Automatic Chromium #42469192082: three jobs SUCCESS, AP-10 browser job still in progress at this checkpoint; no SET-05 browser acceptance claimed. Old lint/type/test-inventory failures corrected.
-- SET-05 subtask **4/4 in progress**: separate CI browser workflow `set05-account-browser.yml` and native Chromium/Worker/Better Auth/PostgreSQL17 `tests/browser/settings-account/check.py` added. Current implementation head `dd6a5037aec81f4889005eb38fcfa25b573fd186` (not frozen); CI #42470960972 and dedicated Chromium #42470961007 running. Previous acceptance progressed through guest guard, own sessions/secret-free HTML, Google control relocation, origin/identity/foreign denial, password change and selective/all-other session revocation; script fixture corrections addressed user-agent matching, public profile cache expectation, origin rejection codes and synthetic IP rate-limit partition; no SET-05 browser PASS yet.
-- Next: **Lira finish dedicated SET-05 browser acceptance, final exact-head checks and Ready implementation PR**, then coordinator Mira whole-PR review per workflow. No review/merge until acceptance is complete.
-- SET-06 and Stage6/production remain inactive.
+- Current stage: **Settings SET-05 — implementation and exact-head technical acceptance complete; owner visual acceptance pending**
+- SET-04 implementation #307 + docs #308: **fully closed**
+- Approved SET-05 technical plan: **#251 comment #6711736883**, verified for Better Auth **v1.7.7**
+- Scope: **Account & security**; SET-06 and Stage6/production remain inactive
+- Implementer: **Лира — implementation complete; no author whole-PR review**
+- Implementation: **Draft PR #309**, stable frozen head `dd6a5037aec81f4889005eb38fcfa25b573fd186`, base `76fc5b16be4f2425a0ad1fdcb7b38974db355c56`; GitHub reports mergeable
+- Exact-head [CI #42470960972](https://github.com/iliya1947/vico-forum/actions/runs/42470960972): **SUCCESS** (lint/typecheck/build, application 2082/2082, PostgreSQL17 596/596)
+- Exact-head [SET-05 Chromium #42470961007](https://github.com/iliya1947/vico-forum/actions/runs/42470961007): **SUCCESS** (12 built Worker/Better Auth/PG17 browser scenarios, synthetic [screenshots/results](https://github.com/iliya1947/vico-forum/actions/runs/42470961007/artifacts/13612629497))
+- Exact-head [existing Chromium #42470960994](https://github.com/iliya1947/vico-forum/actions/runs/42470960994): **SUCCESS** (4/4 jobs)
+- Owner visual acceptance: **pending**, not inferred from green CI/screenshots
+- Мира: **next coordinator whole-PR reviewer only after owner visual acceptance and Ready handoff**; not started
+- Лёва: **not assigned until coordinator PASS**; Марк: **not assigned**
+- Permanent documentation/state: separate post-merge closeout PR
+- Next: **developer reviews screenshots and explicitly confirms visual acceptance**; then Ready #309 for Mira coordinator whole-PR review on unchanged stable head, without involving Lev first.
