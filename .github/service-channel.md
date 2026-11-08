@@ -5,16 +5,16 @@
 ## Актуальный baseline и назначение
 
 - Current main/base: `cb805a074de3bfdcd140125ebaa425a76bb6496d`; SET-01/02 implementation + separate factual docs fully closed; migrations0000–0060.
-- Current stage: **SET-03 independent technical whole-PR review complete — CHANGES REQUIRED**.
-- PR **#304**, frozen reviewed head `cc8dfc9722287ec66ade759b0b1c8d69a8062a6c`, open/Ready/unmerged;26-file scope.
-- Coordinator Мира PASS на этом head; Лёва независимо подтвердил **один current-scope P2: SET03-LEV-01**, других defects не установлено.
-- [Independent report #6716992555](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6716992555): real Chromium/Worker/Better Auth/PG reproduction через штатные sign-out/sign-in в одном browser cookie jar. Alice выбирает unsaved ru; смена входа на Bob(locale he) + header locale SPA navigation перечитывает loader. Hidden expectedUserId становится Bob, тот же mounted uncontrolled select остаётся ru; Save меняет Bob.locale he→ru.
-- Причина в новом unkeyed locale form + defaultValue; server-only actor/обычный stale409 исправны. Correction: account-scoped form/draft reset при identity change, чтобы visible preference и expected identity менялись вместе. Не redesign auth/RBAC.
-- Собственные checks:333 application tests/12files,15 native PG/4files,build; Chromium SET-03 11 + SET-02 17 case groups PASS,0 page errors/external requests; own real HTTP/PG failure probe и mounted identity-switch repro. Passing suites не закрывают этот defect.
-- GitHub exact-head CI #42443561989 SUCCESS/attempt2, browser #42443561941 SUCCESS/attempt1 independently read; локальный full CI/AP-10/History rerun не заявляется.
-- Evidence: `/workspace/work/set03-review-evidence/`. Implementation unchanged, checkout clean; task-owned runtime/container/DB/dummy vars/dependency symlink убраны.
-- **Next — Мира:** подтвердить/направить Лире bounded correction SET03-LEV-01 в том же #304. Новый stable head/checks → fresh coordinator-first cycle. К merge сейчас не готовить.
-- Лёва review завершил и остановился; Марк не назначен. SET-04–06, permanent docs, deputies и Stage6/production вне scope.
+- Current stage: **SET-03 repeat independent technical whole-PR review complete — PASS, 0 confirmed current-scope defects**.
+- PR **#304**, frozen reviewed head `6c45bb17ea84f1df0bed8a8b8ca4c558ba42edac`, open/Ready/unmerged;26-file scope.
+- Мира fresh coordinator PASS и Лёва repeat independent PASS относятся к этому exact head. **SET03-LEV-01 closed independently**.
+- [Current report #6717213664](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6717213664); прежний CHANGES REQUIRED #6716992555 относится только к superseded cc8dfc97.
+- Correction:1 runtime line — account-keyed locale Form — и2 regression files, остальные23 PR files byte-identical. Own real Chromium/Worker/Better Auth/PG probe: same-account unsaved draft сохраняется; stale pre-refresh POST409; Alice→Bob сбрасывает только locale form/select и показывает Bob he без auto-write; explicit Bob Save меняет только Bob; Bob→Alice возвращает её locale/Editor keys, browser-wide theme сохраняется.
+- Собственные exact-head checks:334 application tests/12files,15 native PG/4files,build;12 SET-03 browser groups и5 дополнительных собственных account-switch groups PASS.0 page errors/external requests; EN/RU/HE320/768/1280 assertions сохранены.
+- GitHub exact-head CI #42445796066 и browser #42445796063 independently read SUCCESS/attempt1. Full local CI/AP-10/History/SET-02 browser rerun на новом head не заявляется.
+- Evidence: `/workspace/work/set03-repeat-evidence/`; previous own full review evidence: `/workspace/work/set03-review-evidence/`. Implementation unchanged, checkout clean; own runtime/container/DB/dummy vars/symlink удалены.
+- **Next — Мира:** readiness routing владельцу для merge этого exact head; после merge — separate factual SET-03 docs closeout. Любое implementation change требует нового coordinator-first cycle.
+- Лёва завершил review и остановился; Марк не назначен. SET-04–06, deputies и Stage6/production/live Google/real Owner binding вне scope.
 
 
 ## Handoff — Лира: Stage2 factual documentation closeout
@@ -1535,3 +1535,8 @@ PR #304 exact head `cc8dfc9722287ec66ade759b0b1c8d69a8062a6c`: Lev found one P2,
 ## SET-03 corrected head — coordinator PASS / Lev repeat review assigned
 
 PR #304 exact head `6c45bb17ea84f1df0bed8a8b8ca4c558ba42edac`, base `cb805a074de3bfdcd140125ebaa425a76bb6496d`: Mira fresh coordinator-first whole-PR **PASS, 0 confirmed current-scope defects**. SET03-LEV-01 is closed: the locale form is account-keyed, so old unsaved locale state cannot cross a same-mounted account change; same-account draft behavior is preserved. Correction changes only three files from the prior reviewed head, while the other 23 PR files are byte-identical. Exact-head CI #42445796066 and Chromium #42445796063 are SUCCESS. Implementation is frozen. Lev is assigned repeat independent technical whole-PR review of this same head; Mark remains unassigned.
+
+
+## SET-03 repeat independent technical review — Лёва PASS
+
+[Full report #6717213664](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6717213664), PR #304 exact `6c45bb17ea84f1df0bed8a8b8ca4c558ba42edac` / base `cb805a074de3bfdcd140125ebaa425a76bb6496d`: **PASS, 0 confirmed current-scope defects; SET03-LEV-01 closed independently**. Whole26-file scope пересверен; correction ровно3 files/1 runtime line, остальные23 byte-identical. Own actual Chromium/Worker/Better Auth/PG Alice→Bob→Alice probe подтвердил same-account draft preservation, stale409, reset только locale form, Bob's own saved locale/no auto-write, fresh explicit own Save, сохранённые per-account Editor keys и browser-wide theme. Own334 app/15PG/build +12 SET-03 browser groups +5 own groups PASS;0 page errors/external requests, responsive/RTL assertions сохранены. GitHub exact-head CI #42445796066/browser #42445796063 SUCCESS/attempt1. Runtime/DB/container/vars/symlink cleaned, git clean, implementation unchanged. Лёва завершил review и остановился; next — Мира readiness routing, owner merge затем separate SET-03 docs closeout. SET-04–06/Stage6/production inactive.
