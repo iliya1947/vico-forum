@@ -132,6 +132,64 @@ describe("SET-03 authenticated User preferences and browser theme", () => {
     page.unmount(); router.dispose();
   });
 
+  it("resets only the locale draft on a same-mounted authenticated account change", async () => {
+    installSystemTheme(false);
+    let actorId = "account-alice";
+    let preferred = "en";
+    const locales = [
+      { tag: "en", nativeName: "English", direction: "ltr" },
+      { tag: "ru", nativeName: "Русский", direction: "ltr" },
+      { tag: "he", nativeName: "עברית", direction: "rtl" },
+    ];
+    const router = createMemoryRouter([{
+      path: "/:locale/settings/user",
+      loader: ({ params }) => ({
+        locale: params.locale ?? "en", canViewForum: false,
+        accountId: actorId, preferredLocale: preferred,
+        localeAvailable: true, localeSaved: false, availableLocales: locales,
+      }),
+      Component: SettingsUserRoute,
+    }], { initialEntries: ["/en/settings/user"] });
+    const page = render(<I18nextProvider i18n={runtime("en")}>
+      <HeaderAuthProvider initialUser={{ id: "account-alice", name: "Alice" }}>
+        <RouterProvider router={router} />
+      </HeaderAuthProvider>
+    </I18nextProvider>);
+
+    const select = await screen.findByRole("combobox", { name: "Preferred language" });
+    await waitFor(() => expect(select).toHaveValue("en"));
+    const shell = page.container.querySelector(".settings-theme-fieldset");
+    const initialForm = select.closest("form")!;
+    await userEvent.selectOptions(select, "ru");
+    expect(new FormData(initialForm).get("locale")).toBe("ru");
+
+    // Same account/route with a new explicit URL keeps Alice's unsaved selection.
+    await router.navigate("/he/settings/user");
+    expect(page.container.querySelector("#settings-preferred-locale")).toBe(select);
+    expect(select).toHaveValue("ru");
+    expect(initialForm.querySelector('input[name="expectedUserId"]')).toHaveValue("account-alice");
+
+    // Revalidation on the same mounted route now reports Bob's own preference.
+    actorId = "account-bob";
+    preferred = "he";
+    await router.navigate("/ru/settings/user");
+    const newSelect = page.container.querySelector<HTMLSelectElement>("#settings-preferred-locale")!;
+    const newForm = newSelect.closest("form")!;
+    expect(page.container.querySelector(".settings-theme-fieldset")).toBe(shell);
+    expect(newSelect).not.toBe(select);
+    expect(newForm).not.toBe(initialForm);
+    expect(newSelect).toHaveValue("he");
+    expect(newForm.querySelector('input[name="expectedUserId"]')).toHaveValue("account-bob");
+    expect(new FormData(newForm).get("locale")).toBe("he");
+
+    await userEvent.selectOptions(newSelect, "ru");
+    await router.revalidate();
+    await waitFor(() => expect(router.state.revalidation).toBe("idle"));
+    expect(newSelect).toHaveValue("ru");
+    expect(new FormData(newForm).get("expectedUserId")).toBe("account-bob");
+    page.unmount(); router.dispose();
+  });
+
   it("synchronizes Settings, header toggle, OS changes and cross-tab storage without another key", async () => {
     const changeSystemTheme = installSystemTheme(true);
     const { page, router } = showUserSettings("en");
