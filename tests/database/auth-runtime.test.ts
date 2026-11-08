@@ -125,6 +125,81 @@ describe("Better Auth PostgreSQL runtime", () => {
     } finally { await Promise.all(cleanup); }
   });
 
+  it("classifies real registration policy read timeout as 503 and invariant as unexpected, without creating accounts", async () => {
+    const runtime = createHyperdriveAuthRuntime(databaseUrl, env, () => authClient());
+    const headers = {
+      "content-type": "application/json",
+      Origin: env.BETTER_AUTH_URL,
+      "cf-connecting-ip": "203.0.113.65",
+    };
+    const request = (path: string, email: string) => new Request(`${env.BETTER_AUTH_URL}/api/auth/${path}`, {
+      method: "POST",
+      headers,
+      body: JSON.stringify({
+        name: "Admission failure regression",
+        email,
+        password: "integration-password-123",
+      }),
+    });
+    const counts = async () => (await client.query<{ users: number; accounts: number; sessions: number }>(
+      'select (select count(*)::int from "user") as users, ' +
+        '(select count(*)::int from account) as accounts, ' +
+        '(select count(*)::int from session) as sessions',
+    )).rows[0];
+
+    const returningEmail = "admission-existing@example.test";
+    expect((await runtime.handle(request("sign-up/email", returningEmail))).status).toBe(200);
+
+    // This is a genuine PostgreSQL lock, not a mocked repository rejection.
+    const locker = authClient();
+    await locker.connect();
+    try {
+      await locker.query("begin");
+      await locker.query("lock table forum_registration_settings in access exclusive mode");
+      const timedRuntime = createHyperdriveAuthRuntime(databaseUrl, env, () => new Client({
+        connectionString: databaseUrl,
+        options: `-c search_path=${schemaName}`,
+        query_timeout: 350,
+      }));
+      const before = await counts();
+      const unavailable = await timedRuntime.handle(request("sign-up/email", "admission-locked@example.test"));
+      expect(unavailable.status).toBe(503);
+      expect(unavailable.headers.get("cache-control")).toContain("no-store");
+      expect(unavailable.headers.getSetCookie().some(value => value.includes("session_token="))).toBe(false);
+      expect(await unavailable.text()).toBe("Service unavailable. Please try again.");
+      expect(await counts()).toEqual(before);
+      expect((await timedRuntime.handle(request("sign-in/email", returningEmail))).status).toBe(200);
+    } finally {
+      await locker.query("rollback");
+      await locker.end();
+    }
+
+    // Missing singleton is an invariant violation, not a closed-registration decision.
+    await client.query("delete from forum_registration_settings where id=1");
+    try {
+      const before = await counts();
+      await expect(runtime.handle(request("sign-up/email", "admission-missing@example.test")))
+        .rejects.toMatchObject({ name: "RegistrationSettingsInvariantError" });
+      expect(await counts()).toEqual(before);
+      expect((await runtime.handle(request("sign-in/email", returningEmail))).status).toBe(200);
+    } finally {
+      await client.query("insert into forum_registration_settings(id) values(1)");
+    }
+
+    // A deliberate Owner closure remains the original method-specific 403.
+    await client.query("update forum_registration_settings set email_registration_enabled=false where id=1");
+    try {
+      const before = await counts();
+      const closed = await runtime.handle(request("sign-up/email", "admission-closed@example.test"));
+      expect(closed.status).toBe(403);
+      expect((await closed.json() as { code: string }).code).toBe("vico_email_registration_closed");
+      expect(await counts()).toEqual(before);
+      expect((await runtime.handle(request("sign-in/email", returningEmail))).status).toBe(200);
+    } finally {
+      await client.query("update forum_registration_settings set email_registration_enabled=true where id=1");
+    }
+  });
+
   it("requires local authentication before linking a same-email Google identity", async () => {
     const email = "local-google@example.test";
     let providerVerified = true;
