@@ -180,6 +180,19 @@ try:
         editor = topic.locator(".markdown-editor")
         block = topic.locator(".forum-code-block")
         expect(editor).to_have_attribute("data-authoring", "simple")
+        if settings.locator("#settings-editor-mode").count() != 1:
+            diagnostic = {
+                "settingsUrl": settings.url,
+                "topicUrl": topic.url,
+                "settingsTitle": settings.title(),
+                "settingsBody": settings.locator("body").inner_text()[:1000],
+                "settingsMainCount": settings.locator("main").count(),
+                "authUserCount": settings.locator(".auth-user").count(),
+                "modeCount": settings.locator("#settings-editor-mode").count(),
+                "topicEditorCount": topic.locator(".markdown-editor").count(),
+            }
+            print("SET03_EDITOR_MISSING " + json.dumps(diagnostic, ensure_ascii=False), flush=True)
+            settings.screenshot(path=str(args.output / "missing-settings-editor.png"), full_page=True)
         mode = settings.locator("#settings-editor-mode")
         spell = settings.locator("#settings-editor-spellcheck")
         wrap = settings.locator(".settings-editor-checkbox input").nth(0)
