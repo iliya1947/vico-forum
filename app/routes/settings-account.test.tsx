@@ -209,6 +209,11 @@ describe("SET-05 Account password change rate limiting response", () => {
     expect(responseHeaders.get("Cache-Control")).toBe("private, no-store");
     expect(responseHeaders.get("Retry-After")).toBe("7");
     expect(responseHeaders.get("X-Retry-After")).toBe("7");
+    const documentHeaders = new Headers(headers({ actionHeaders: responseHeaders }));
+    expect(documentHeaders.get("Cache-Control")).toBe("private, no-store");
+    expect(documentHeaders.get("Retry-After")).toBe("7");
+    expect(documentHeaders.get("X-Retry-After")).toBe("7");
+    expect(new Headers(headers()).get("X-Retry-After")).toBeNull();
     expect(JSON.stringify(result.data)).not.toMatch(/sensitive-old-password|sensitive-new-password/);
   });
 

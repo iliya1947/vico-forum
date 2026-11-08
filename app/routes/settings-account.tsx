@@ -23,7 +23,13 @@ type Intent = "change-password" | "revoke-one" | "revoke-others";
 type ActionError = AccountSecurityErrorCode | "invalid" | "origin";
 type ActionOutcome = { saved: Intent } | { error: ActionError };
 
-export function headers() { return settingsPrivateHeaders; }
+export function headers({ actionHeaders }: { actionHeaders?: Headers } = {}) {
+  // React Router does not forward action headers automatically. Preserve the
+  // Better Auth retry timing on SSR document responses without relaxing no-store.
+  const retryAfter = actionHeaders?.get("X-Retry-After");
+  return { ...settingsPrivateHeaders, ...(retryAfter
+    ? { "Retry-After": retryAfter, "X-Retry-After": retryAfter } : {}) };
+}
 export function meta() { return [{ title: "Account & security · Vico Forum" }]; }
 
 function identity(context: RouterContextProvider): AccountSecurityIdentity {
