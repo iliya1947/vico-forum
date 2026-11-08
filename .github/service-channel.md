@@ -32,18 +32,16 @@
 
 ## Актуальный baseline и назначение
 
-- Current main/base: `76fc5b16be4f2425a0ad1fdcb7b38974db355c56`.
-- SET-05 implementation PR #309 is **READY FOR OWNER MERGE** on final exact head `236a15c5f3309a5466c70c7a934edf5b56ade433`.
-- Mira fresh coordinator whole-PR review: **PASS, 0 confirmed current-scope defects**.
-- Lev repeat independent technical whole-PR review: **PASS, 0 confirmed current-scope defects**.
-- `SET05-MIRA-01`, `SET05-MIRA-02`, `SET05-LEV-01`: all closed.
-- Final password-change path preserves Better Auth 1.7.7 canonical database-backed 3/10s rate-limit admission, shared across canonical auth and Settings paths; retry metadata/private-no-store and trusted-IP isolation are verified.
-- Exact-head CI #42483839708 SUCCESS: 165/165 application files, 2084/2084 tests; 51/51 PostgreSQL files, 597/597 tests; lint/typecheck/build.
-- Exact-head Chromium #42483839769 SUCCESS across all four jobs with 13 SET-05 acceptance records.
-- PR remains open, Ready, mergeable; implementation frozen; main unchanged.
-- **Next — Owner merge #309.** Any implementation-head change before merge requires a new coordinator-first cycle.
-- After merge: separate factual SET-05 documentation closeout by Lira, then Mira docs review. Lev/Mark not needed for docs.
-- SET-06 and Stage6/production/live Google/real Owner binding remain inactive.
+- SET-05 implementation PR #309 is merged into `main`.
+- Final implementation head: `236a15c5f3309a5466c70c7a934edf5b56ade433`.
+- Merge commit/current main: `2f2969d5b3a7ca7844d674b85448838fc671eaca`.
+- Final gates on that implementation head: Mira coordinator PASS + Lev repeat independent PASS, 0 confirmed current-scope defects; `SET05-MIRA-01`, `SET05-MIRA-02`, `SET05-LEV-01` closed.
+- Final CI #42483839708 and Chromium #42483839769 SUCCESS.
+- Current task is now a **separate documentation-only SET-05 factual closeout**.
+- Repository search confirms the current stale SET-05 status is limited to the current source-of-truth/cross-reference set: `PROJECT.md`, `PROJECT_STATE.md`, `ROADMAP.md`, `docs/SETTINGS.md`, `docs/ADMIN_PANEL.md`, plus history index/new snapshot.
+- Historical files PROJECT_HISTORY_17–20 are immutable snapshots and must not be rewritten.
+- Lira is assigned the docs-only PR; Mira reviews it after a stable head/checks.
+- SET-06 remains inactive until this closeout is merged. Lev/Mark are not assigned to docs.
 
 ## Handoff — Лира: Stage2 factual documentation closeout
 
@@ -1809,3 +1807,35 @@ Final gates on the same exact head:
 No further implementation review is pending. Mark remains unassigned. Any implementation-head change before merge requires a new coordinator-first review cycle.
 
 Next action belongs to the Owner: **merge PR #309**. After merge is observed in `main`, create a separate factual SET-05 documentation closeout. SET-06 remains inactive until that docs closeout is merged.
+
+
+## SET-05 implementation merged — factual documentation closeout
+
+PR #309 merged on 2026-11-08.
+
+- final implementation head: `236a15c5f3309a5466c70c7a934edf5b56ade433`;
+- merge commit/current main: `2f2969d5b3a7ca7844d674b85448838fc671eaca`;
+- Mira final coordinator review: PASS, 0 current-scope defects;
+- Lev repeat independent review: PASS, 0 current-scope defects;
+- `SET05-MIRA-01`, `SET05-MIRA-02`, `SET05-LEV-01`: closed;
+- final CI #42483839708 and Chromium #42483839769: SUCCESS.
+
+The next bounded task is documentation only. Current stale references were checked against main; the required closeout is exactly:
+1. `PROJECT.md`;
+2. `PROJECT_STATE.md`;
+3. `ROADMAP.md`;
+4. `docs/SETTINGS.md`;
+5. `docs/ADMIN_PANEL.md` — only stale Settings status/cross-reference text;
+6. `docs/PROJECT_HISTORY/PROJECT_HISTORY.md`;
+7. new `docs/PROJECT_HISTORY/PROJECT_HISTORY_21.md`.
+
+Required factual result:
+- SET-01–SET-05 are implemented in repository/local-CI; SET-06 Privacy is the next remaining Settings package and stays unassigned until this closeout is merged.
+- Document the actual Account & security contract from merged code: authenticated `/:locale/settings/account`; safe linked-method presentation; password change only for an existing credential password/current password; reuse of existing explicit Google linking; own active sessions with current-session marker; revoke one other/all other sessions while preserving current; server-only session tokens; stale/not-fresh session-management boundary; private/no-store and same-origin/stale-identity guards.
+- Preserve the final correction: password change goes through Better Auth's canonical HTTP handler and therefore shares its existing database-backed canonical change-password rate-limit bucket and retry behavior; no second limiter/schema/provider.
+- Preserve explicit exclusions: no password creation for Google-only account, password recovery/reset, email change, unlink/delete, 2FA/passkeys, SET-06, Stage6, production/live Google/real Owner binding.
+- History #21 records #309 implementation/correction sequence, final exact head/merge commit, final Mira+Lev PASS and exact-head CI/Chromium evidence without turning history into current source of truth.
+- Do not claim deployed production, live Google OAuth, real Owner binding or owner visual acceptance.
+- No runtime/code/schema/migration/CI-workflow changes and no broad documentation audit.
+
+After Lira publishes a stable docs PR/head and applicable checks, Mira performs the docs-only review.
