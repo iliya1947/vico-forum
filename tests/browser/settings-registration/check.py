@@ -130,8 +130,9 @@ try:
         assert sql('update "session" set user_id=$1 where user_id=$2 returning id',
                    [owner_id, original_id]), "real Better Auth session required"
         owner = owned_page(owner_ctx)
-        member_ctx, race_ctx, guest_ctx = isolated(), isolated(), isolated()
-        member, race, guest = owned_page(member_ctx), owned_page(race_ctx), owned_page(guest_ctx)
+        member_ctx, race_ctx, guest_ctx, returning_ctx = isolated(), isolated(), isolated(), isolated()
+        member, race, guest, returning = (owned_page(member_ctx), owned_page(race_ctx),
+                                        owned_page(guest_ctx), owned_page(returning_ctx))
 
         assert policy() == {"google": True, "email": True, "version": 1}
         for locale in ("en", "ru", "he"):
@@ -210,15 +211,16 @@ try:
         assert not sql('select id from "user" where email=$1', [race_email])
         record("open-page-closed-policy-rejects-new-user-and-session")
 
-        # Browser sign-in must continue to work after both new-registration flags close.
-        member.get_by_role("button", name="Sign out").click()
-        get(member, "/en/sign-in")
-        expect(member.get_by_role("button", name="Sign in with email")).to_have_count(1)
-        expect(member.get_by_role("button", name="Continue with Google")).to_have_count(1)
-        member.get_by_role("textbox", name="Email").fill(member_email)
-        member.get_by_label("Password").fill("synthetic-browser-password-123456")
-        member.get_by_role("button", name="Sign in with email").click()
+        # Check both retained session access and separate returning-user login.
+        get(member, "/en")
         expect(member.locator(".auth-user")).to_have_count(1)
+        get(returning, "/en/sign-in")
+        expect(returning.get_by_role("button", name="Sign in with email")).to_have_count(1)
+        expect(returning.get_by_role("button", name="Continue with Google")).to_have_count(1)
+        returning.get_by_role("textbox", name="Email").fill(member_email)
+        returning.get_by_label("Password").fill("synthetic-browser-password-123456")
+        returning.get_by_role("button", name="Sign in with email").click()
+        expect(returning.locator(".auth-user")).to_have_count(1)
         assert len(sql('select id from "user" where email=$1', [member_email])) == 1
         record("existing-email-login-while-both-registrations-closed")
 
@@ -276,6 +278,7 @@ try:
         member_ctx.close()
         race_ctx.close()
         guest_ctx.close()
+        returning_ctx.close()
         browser.close()
 finally:
     (args.output / "results.json").write_text(json.dumps({
