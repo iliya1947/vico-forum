@@ -56,8 +56,10 @@ Settings ведётся отдельно по [`docs/SETTINGS.md`](docs/SETTINGS
 Owner-only authorization writes, SET-02 добавил защищённый Settings shell, Owner-only
 Forum & roles и независимое управление регистрацией новых Google/email-password
 аккаунтов. SET-03 добавил защищённые User preferences: тему, язык аккаунта и существующие
-локальные настройки Editor/code (repository/local-CI). Administrator preferences (SET-04),
-Account & security (SET-05) и Privacy (SET-06) ещё не реализованы и не назначены.
+локальные настройки Editor/code. SET-04 добавил Administrator preferences:
+локальные настройки Admin/Attention рабочих пространств на аккаунт и устройство
+(repository/local-CI). Account & security (SET-05) — следующий ещё не назначенный
+пакет; Privacy (SET-06) также не реализован и не назначен.
 Реальные Google OAuth и Owner binding остаются задачами Stage 6.
 
 ## Техническая основа
