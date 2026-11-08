@@ -1434,3 +1434,9 @@ SET05-MIRA-01 and SET05-MIRA-02 are closed. Correction delta is one commit/five 
 ## SET05-LEV-01 — independent confirmation
 
 Lev's finding on PR #309 exact head `a4af2014eb28a39d54d10c33cc515cbf3d5f258e` is confirmed current-scope. Better Auth 1.7.7 rate limiting is HTTP-router `onRequest` behavior; direct `auth.api.changePassword` bypasses it. The existing special rule for `/change-password` is 3 requests/10s and project storage is database-backed. One bounded correction assigned to Lira; prior SET05-MIRA-01/02 remain closed. Fresh coordinator-first cycle required after the new head.
+
+
+## SET-05 / PR #309 — fresh coordinator PASS after SET05-LEV-01
+
+Exact head `236a15c5f3309a5466c70c7a934edf5b56ade433`: **PASS, 0 confirmed current-scope defects**.
+SET05-LEV-01 is closed by routing password change through the canonical Better Auth HTTP handler and preserving its shared database-backed 3/10s rate-limit admission. Bidirectional native PG regression plus real Chromium prove shared bucket, 429/retry propagation, denied-password immutability and separate-IP isolation. SET05-MIRA-01/02 remain closed. CI #42483839708 and Chromium #42483839769 SUCCESS. Lev repeat review assigned on this same exact head; Mark unassigned.
