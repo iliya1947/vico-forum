@@ -12,7 +12,7 @@ export async function requireAdminAccess(context: RouterContextProvider) {
     const allowed = await Promise.all(ADMIN_ADMISSION_PERMISSIONS.map(async key => await resolver.has(key) ? key : null));
     const access = adminAccess(new Set(allowed.filter(key => key !== null)));
     if (!access.canEnter) throw new Response("Forbidden", { status: 403, headers: { "Cache-Control": "private, no-store" } });
-    return access;
+    return { ...access, actorId: session.user.id };
   } catch (error) {
     if (error instanceof AuthorizationUnavailableError) {
       throw new Response("Unavailable", { status: 503, headers: { "Cache-Control": "private, no-store" } });

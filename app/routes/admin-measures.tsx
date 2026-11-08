@@ -37,7 +37,7 @@ export async function loader({request,params,context}:{
       authorizationForRequest(context).forUser(actorId).resolve(),
     ]);
     return data({locale:params.locale??"en",target,pendingAppeals,requestedTarget:input??"",
-      createId:crypto.randomUUID(),access:adminAccess(new Set(permissions.effectivePermissions)),
+      createId:crypto.randomUUID(),access:{...adminAccess(new Set(permissions.effectivePermissions)),actorId},
       maySelectAdministrativeRestrictions:rawUserMeasureAuthorityLevel(actorId,
         rawUserMeasurePermissions(permissions),
         context.get(authorizationOwnerContext)??"")>=2},

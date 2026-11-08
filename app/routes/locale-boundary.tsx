@@ -23,6 +23,9 @@ import { OnlinePresenceHeartbeat } from "../forum/online-presence-heartbeat";
 import { LocaleNavigationProvider } from "../localization/locale-navigation";
 import { authorizationForRequest } from "../authorization/request-context";
 import { adminAccess } from "../admin/access";
+import {
+  allowedAdminEntries, allowedAttentionEntries, type AdminEntryId, type AttentionEntryAccess,
+} from "../settings/workspace-access";
 import { AuthorizationUnavailableError } from "../../db/authorization-service";
 import { forumReaderForRequest, ForumReaderConfigurationError } from "../forum/request-context";
 import { ForumStorageUnavailableError } from "../../db/hyperdrive-forum";
@@ -92,6 +95,8 @@ export async function loader(args: LocaleBoundaryArgs) {
   let canManageAuthorization = false;
   let canViewModerationAttention = false;
   let canViewAdminPanel = false;
+  let adminEntryDestinations: AdminEntryId[] = [];
+  let attentionEntryGroups: AttentionEntryAccess = { signals: [], complaints: [], security: [] };
   let unreadNotificationCount: number | undefined;
   if (session) {
     try {
@@ -113,7 +118,7 @@ export async function loader(args: LocaleBoundaryArgs) {
         resolver.has("forum.complaint.appeal.review"),
       ]);
       canManageAuthorization = authorizationManage;
-      canViewAdminPanel = adminAccess(new Set([
+      const admin = adminAccess(new Set([
         ...(authorizationManage ? ["access.authorization.manage" as const] : []),
         ...(helpModeration ? ["forum.solution.manageAny" as const] : []),
         ...(duplicateManage ? ["forum.helpDuplicate.manage" as const] : []),
@@ -123,7 +128,16 @@ export async function loader(args: LocaleBoundaryArgs) {
         ...(adminHistoryRead ? ["admin.history.read" as const] : []),
         ...(adminUsersRead ? ["admin.users.read" as const] : []),
         ...(blockManage ? ["admin.users.blocks.manage" as const] : []),
-      ])).canEnter;
+      ]));
+      canViewAdminPanel = admin.canEnter;
+      adminEntryDestinations = allowedAdminEntries(admin);
+      attentionEntryGroups = allowedAttentionEntries({
+        canViewSignals: helpModeration || duplicateManage || needsDetailsManage,
+        canReadSecurity: attachmentSecurityRead,
+        canReviewComplaints: complaintReview,
+        canReviewAppeals: complaintAppealReview,
+        canManageComplaintPriorities: complaintPriorityManage,
+      });
       canViewModerationAttention = helpModeration || duplicateManage || needsDetailsManage || attachmentSecurityRead || complaintReview || complaintPriorityManage || complaintAppealReview;
     } catch (error) {
       if (!(error instanceof AuthorizationUnavailableError)) throw error;
@@ -152,6 +166,8 @@ export async function loader(args: LocaleBoundaryArgs) {
           canManageAuthorization,
           canViewAdminPanel,
           canViewModerationAttention,
+          adminEntryDestinations,
+          attentionEntryGroups,
           ...(unreadNotificationCount === undefined ? {} : { unreadNotificationCount }),
         }
       : null,

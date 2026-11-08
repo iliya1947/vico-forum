@@ -3,6 +3,7 @@ import { Link, isRouteErrorResponse, useLocation, useNavigate, useParams, useRou
 import { useTranslation } from "react-i18next";
 import { forumAttentionPath, forumIndexPath, forumNotificationsPath, forumPopularPath, forumSearchPath, forumTagsPath, forumUnansweredPath, forumUnreadPath, underDevelopmentPath } from "./paths";
 import { AuthControls, useHeaderAuthUser } from "../auth/auth-controls";
+import { useAdministratorPreferences, selectAttentionEntry } from "../settings/administrator-preferences";
 import { useThemePreference } from "../theme-preference";
 import { useLocaleNavigation } from "../localization/locale-navigation";
 import { credentialLocaleSearch } from "../auth/credential-path";
@@ -153,6 +154,7 @@ export function ForumShell({
 }) {
   const { t } = useTranslation("common");
   const authUser = useHeaderAuthUser();
+  const administratorPreferences = useAdministratorPreferences(authUser?.id ?? null);
   const useApprovedHeader = variant === "home"
     || variant === "search"
     || variant === "popular"
@@ -286,7 +288,9 @@ export function ForumShell({
             {authUser?.canViewModerationAttention ? (
               <Link
                 className="header-attention-link"
-                to={forumAttentionPath(locale)}
+                to={authUser.attentionEntryGroups
+                  ? selectAttentionEntry(locale, authUser.attentionEntryGroups, administratorPreferences)
+                  : forumAttentionPath(locale)}
                 title={t("helpSolutionsNeedsAttentionMode")}
               >
                 {t("helpSolutionsNeedsAttentionMode")}
