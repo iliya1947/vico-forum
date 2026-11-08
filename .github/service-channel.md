@@ -4,16 +4,17 @@
 
 ## Актуальный baseline и назначение
 
-- Current main/base: `681e8bab0eda595186acebae9ce4b2d47d06b936`; SET-01 implementation/docs closed; migrations main0000–0059.
-- Current stage: **SET-02 repeat independent review completed — PASS, 0 confirmed current-scope defects**.
-- PR **#302**, frozen reviewed head `07d805d98ee77f9584f9609772ce2d33b9a8e63f`, open/Ready for review/unmerged; implementation migration0060.
-- Мира fresh coordinator PASS и Лёва independent technical whole-PR PASS относятся к этому же head. SET02-MIRA-01/02 и SET02-LEV-01 закрыты.
-- [Current independent report #6715843589](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6715843589); прежний CHANGES REQUIRED #6715455171 относится только к superseded f7a862ea.
-- Сохранение admission cause request-local подтверждено отдельно через production AuthRuntime/Better Auth/PG: query+server statement timeout →503; singleton invariant и SQL42P01 сохраняются unexpected; intentional closure403, existing sign-in200. Google callback timeout/invariant/closed/open проверены собственным synthetic-remote probe;0 новых user/account/session при отказах.
-- Собственные exact-head checks:111 application tests/15files,44 PG/7files,build,28 metadata tests/3files,actual64-table manifest; Chromium Settings17 + отдельный History38 PASS,0 page errors/external requests. Evidence: `/workspace/work/set02-repeat-evidence/`.
-- GitHub CI #42434044474 и browser #42434044476 independently read SUCCESS на том же SHA.
-- **Next — Мира:** readiness routing для owner merge этого exact head; после merge — отдельный factual docs closeout SET-02. Implementation при review не менялся.
-- Лёва завершил проверку и остановился; Марк не назначен. SET-03–06, deputies, Stage6/production/live Google и real Owner binding не назначены/вне scope.
+- Current main/base: `cb805a074de3bfdcd140125ebaa425a76bb6496d`; SET-01/02 implementation + separate factual docs fully closed; migrations0000–0060.
+- Current stage: **SET-03 independent technical whole-PR review complete — CHANGES REQUIRED**.
+- PR **#304**, frozen reviewed head `cc8dfc9722287ec66ade759b0b1c8d69a8062a6c`, open/Ready/unmerged;26-file scope.
+- Coordinator Мира PASS на этом head; Лёва независимо подтвердил **один current-scope P2: SET03-LEV-01**, других defects не установлено.
+- [Independent report #6716992555](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6716992555): real Chromium/Worker/Better Auth/PG reproduction через штатные sign-out/sign-in в одном browser cookie jar. Alice выбирает unsaved ru; смена входа на Bob(locale he) + header locale SPA navigation перечитывает loader. Hidden expectedUserId становится Bob, тот же mounted uncontrolled select остаётся ru; Save меняет Bob.locale he→ru.
+- Причина в новом unkeyed locale form + defaultValue; server-only actor/обычный stale409 исправны. Correction: account-scoped form/draft reset при identity change, чтобы visible preference и expected identity менялись вместе. Не redesign auth/RBAC.
+- Собственные checks:333 application tests/12files,15 native PG/4files,build; Chromium SET-03 11 + SET-02 17 case groups PASS,0 page errors/external requests; own real HTTP/PG failure probe и mounted identity-switch repro. Passing suites не закрывают этот defect.
+- GitHub exact-head CI #42443561989 SUCCESS/attempt2, browser #42443561941 SUCCESS/attempt1 independently read; локальный full CI/AP-10/History rerun не заявляется.
+- Evidence: `/workspace/work/set03-review-evidence/`. Implementation unchanged, checkout clean; task-owned runtime/container/DB/dummy vars/dependency symlink убраны.
+- **Next — Мира:** подтвердить/направить Лире bounded correction SET03-LEV-01 в том же #304. Новый stable head/checks → fresh coordinator-first cycle. К merge сейчас не готовить.
+- Лёва review завершил и остановился; Марк не назначен. SET-04–06, permanent docs, deputies и Stage6/production вне scope.
 
 
 ## Handoff — Лира: Stage2 factual documentation closeout
@@ -1519,3 +1520,8 @@ Docs PR #303 merged into main at `cb805a074de3bfdcd140125ebaa425a76bb6496d`; SET
 ## SET-03 coordinator PASS — Lev review assigned
 
 PR #304 exact head `cc8dfc9722287ec66ade759b0b1c8d69a8062a6c`, base `cb805a074de3bfdcd140125ebaa425a76bb6496d`: Mira fresh whole-PR **PASS, 0 confirmed current-scope defects**. Theme, own locale, Editor/code preference chains and real consumers were rechecked; no schema/migration/RBAC or SET-04–06 expansion. Exact-head CI #42443561989 and Chromium #42443561941 are SUCCESS; PR is clean/mergeable. Implementation is frozen. Lev is assigned independent technical whole-PR review of this same head; Mark remains unassigned.
+
+
+## SET-03 independent technical review — Лёва CHANGES REQUIRED
+
+[Report #6716992555](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6716992555), PR #304 exact `cc8dfc9722287ec66ade759b0b1c8d69a8062a6c` / base `cb805a074de3bfdcd140125ebaa425a76bb6496d`: **1 confirmed P2, SET03-LEV-01**. Whole26-file review complete. New locale form keeps its old uncontrolled select across account change while hidden expectedUserId updates; independently reproduced through real sign-out/sign-in + ordinary header-locale SPA revalidation, same mounted DOM, then Bob.locale he→Alice's unsaved ru on Save. Server authorization itself remains correct; bounded account-scoped form/draft reset required. Own333 app/15PG/build, actual Chromium SET-03 11 + SET-02 17 groups PASS; passing coverage misses same-mounted-account transition. HTTP/PG timeout/registry/schema classification independently checked; no new schema/deps/RBAC/future package scope. Task-owned test resources cleaned. Лёва implementation не менял, агентов не запускал и остановился. Next — Мира correction routing; new head requires fresh coordinator-first review. No merge readiness or SET-04–06/docs/Stage6 work now.
