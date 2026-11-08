@@ -1626,3 +1626,10 @@ PR #307 exact head `27a2169ab013597d63fc318c7a255cdc4149b7cc`, base/current main
 ## SET-04 final readiness for Owner merge
 
 PR #307 exact head `27a2169ab013597d63fc318c7a255cdc4149b7cc`, unchanged main `35fa64428fc551ae58b9026dad45797016dd4251`: **READY FOR OWNER MERGE**. Mira fresh coordinator whole-PR PASS and Lev repeat independent whole-PR PASS both report 0 confirmed current-scope defects. SET04-MIRA-01 and SET04-LEV-01 are both closed. Exact-head CI #42461288512 and Chromium #42461288533 are SUCCESS; implementation remains open/Ready/mergeable and frozen. Final readiness is recorded in #6719230217. No further implementation review is pending; Mark remains unassigned. Any implementation-head change before merge restarts coordinator-first review. After Owner merge, run a separate factual SET-04 documentation closeout before assigning SET-05.
+
+
+## SET-04 implementation merged; factual docs closeout active
+
+Owner merged PR #307 into `main`. Implementation exact head `27a2169ab013597d63fc318c7a255cdc4149b7cc`; merge commit/current main `365b75405fbcc2ac2f274f5a83ce8a737b60e700`. Final coordinator and repeat independent reviews both PASS with 0 confirmed current-scope defects; SET04-MIRA-01 and SET04-LEV-01 are closed.
+
+Lira is assigned the separate factual documentation closeout in #6719276113. Expected docs scope is PROJECT.md, PROJECT_STATE.md, ROADMAP.md, docs/SETTINGS.md, a bounded stale Settings-status correction in docs/ADMIN_PANEL.md, the history index and new PROJECT_HISTORY_20.md. The docs must record SET-04 as implemented in repository/local-CI, move the next Settings package to SET-05, preserve SET-06/Stage6 boundaries, and record #307/corrections/exact-head evidence historically without claiming production/owner visual acceptance. No runtime/schema changes or SET-05 implementation. Mira reviews the stable docs PR first; Lev/Mark remain unassigned.
