@@ -74,3 +74,8 @@ PR #304 merged at `e985a43f8853c234c96bb4528a9d4dd709361018`. No further Codex w
 ## SET-04 routing
 
 SET-03 is fully closed after #305 merge at `35fa64428fc551ae58b9026dad45797016dd4251`. Existing approved SET-04 plan #6711736883 remains the active technical plan; no repeat planning assignment. Lira is implementing SET-04. Lev remains unassigned until Mira coordinator PASS on a stable implementation head.
+
+
+## SET-04 review routing
+
+PR #307 coordinator review on `1a858825836e76801bb63025a28312b4d0bdd082` found SET04-MIRA-01; Lira correction is active. No independent Codex review is assigned yet. Wait for corrected stable head and fresh Mira coordinator PASS before any Lev whole-PR review.
