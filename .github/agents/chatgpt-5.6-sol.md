@@ -1330,3 +1330,8 @@ PR #303 merged at `cb805a074de3bfdcd140125ebaa425a76bb6496d`; SET-02 is fully cl
 ## SET-03 / PR #304 — coordinator PASS
 
 Exact head `cc8dfc9722287ec66ade759b0b1c8d69a8062a6c`: **PASS, 0 confirmed current-scope defects**. Whole 26-file scope reviewed against #6711736883 and docs/SETTINGS.md. Exact-head CI #42443561989 and Chromium #42443561941 SUCCESS. Implementation frozen; Lev assigned independent review of the same head.
+
+
+## SET03-LEV-01 — independently confirmed
+
+PR #304 exact head `cc8dfc9722287ec66ade759b0b1c8d69a8062a6c`: Lev CHANGES REQUIRED with one P2. Mira confirmed the locale select uses uncontrolled `defaultValue`, so same-mounted account revalidation can rebind an old unsaved locale draft to the new account even though server actor checks remain correct. One bounded correction assigned to Lira; prior coordinator PASS is superseded once corrected head appears. No other current-scope defects confirmed from Lev's completed review.
