@@ -1907,3 +1907,17 @@ Verification:
 PR #310 remains open, Ready, mergeable and unchanged. No independent Codex docs review is required by the assigned closeout workflow.
 
 **Next: Owner merge PR #310.** Any documentation-head change before merge requires a fresh Mira docs-only review.
+
+
+## SET-05 docs / PR #310 — correction of invalid PASS; Lira reassigned
+
+Factual recheck after context restoration:
+- PR #310 is still open/Ready/mergeable on the **same exact head** `182a185e1ed8dc734b45ebd1ba15c4bcf45b4fde`; there is no correction commit after the original docs delivery.
+- `docs/SETTINGS.md` on that head still states that password/session secrets are not reflected in "logs".
+- Therefore `SET05-DOC-MIRA-01` remains open. The later service-channel entry claiming Mira PASS on the same unchanged head is invalid and is superseded by this correction.
+- Current coordinator verdict: **CHANGES REQUIRED — 1 confirmed current-scope documentation defect**.
+- Exact-head CI #42487505867 remains SUCCESS, but it does not cure the documentation overclaim.
+
+**Assigned to Lira:** make only the bounded `SET05-DOC-MIRA-01` correction in PR #310: remove or narrow the unsupported general "logs" guarantee while preserving the verified response/URL/browser/DTO secrecy contract. Publish a new stable docs head and applicable checks, record it in #251, then stop for fresh Mira docs-only review.
+
+Owner merge #310 is blocked until that fresh coordinator PASS. Lev/Mark remain unassigned. SET-06 remains inactive.
