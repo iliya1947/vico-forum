@@ -123,7 +123,7 @@ export default function SettingsUserRoute() {
       <section className="settings-locale-section" aria-labelledby="settings-locale-heading">
         <h3 id="settings-locale-heading">{t("settingsPreferredLocale")}</h3>
         <p>{t("settingsPreferredLocaleIntro")}</p>
-        <Form method="post" className="settings-locale-form" aria-busy={pending || undefined}>
+        <Form key={state.accountId} method="post" className="settings-locale-form" aria-busy={pending || undefined}>
           <input type="hidden" name="intent" value="save-locale" />
           <input type="hidden" name="expectedUserId" value={state.accountId} />
           <label htmlFor="settings-preferred-locale">{t("settingsPreferredLocale")}</label>
