@@ -69,3 +69,8 @@ SET-02–06 не начинались и остаются unassigned; продо
 [Полный технический план SET-01–SET-06 #6711736883](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6711736883), coordinator PASS. SET-01 реализовала Лира; SET-02–06 остаются unassigned и не начинались. Пять Settings surfaces/S1–S4 фиксированы в master plan; новые product questions не открывались.
 
 Owner redesign уже закрыт; [предыдущий independent PR #296 PASS](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6704068605). Его evidence отдельно в `/workspace/work/owner-stage2-review-evidence/`; current SET-01 evidence — `/workspace/work/set01-review-evidence/`. Last-manager/count/recovery principle не применяется.
+
+
+## Active assignment — SET-02 / PR #302 independent technical review
+
+Independently review whole PR #302 on exact head `f7a862ea0a81112857e9d7510afdab183a9631a3` vs base/current main `681e8bab0eda595186acebae9ce4b2d47d06b936`, using approved SET-02 plan #6711736883 and current source-of-truth. Do not use author/coordinator conclusions as evidence. Verify all 49 changed files and applicable runtime/auth/DB/History/privilege/CI/browser boundaries. Do not modify implementation during review. Publish current-scope findings or independent PASS in #251, then stop. Future SET-03–06/Stage6 work is not a defect.
