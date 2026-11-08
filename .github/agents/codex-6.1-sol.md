@@ -67,3 +67,8 @@ Evidence: `/workspace/work/set02-review-evidence/` — logs, own probe/JSON, Set
 ## Approved / closed context
 
 [Settings plan #6711736883](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6711736883), coordinator PASS. SET-01 fully closed (#299 + separate docs #301). [Предыдущий independent SET-01 report](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6713064366). SET-03–06 unassigned. Owner redesign closed; last-manager/count/recovery rule не применяется. Current review evidence — `/workspace/work/set02-review-evidence/`.
+
+
+## Active assignment — SET-02 repeat review / PR #302
+
+Independently review whole PR #302 on exact head `07d805d98ee77f9584f9609772ce2d33b9a8e63f` vs base/current main `681e8bab0eda595186acebae9ce4b2d47d06b936`, using approved SET-02 plan #6711736883 and current source-of-truth. Re-check corrected registration-admission failure classification through production AuthRuntime.handle + Better Auth 1.7.7 + PostgreSQL and revalidate the whole SET-02 scope. Do not modify implementation. Publish findings or independent PASS in #251, then stop.
