@@ -33,15 +33,17 @@
 ## Актуальный baseline и назначение
 
 - Current main/base: `76fc5b16be4f2425a0ad1fdcb7b38974db355c56`.
-- SET-05 implementation PR #309 open/Ready/mergeable; reviewed stable head `236a15c5f3309a5466c70c7a934edf5b56ade433`.
-- Mira fresh coordinator PASS; **Lev repeat independent whole-PR PASS,0 confirmed current-scope defects**.
-- **SET05-LEV-01 independently closed:** existing canonical Better Auth HTTP handler/database admission shared between auth endpoint and Settings EN/RU/HE. Real own probes confirm3 attempts then429 in both directions, private/retry document/data/form responses, no denied write, separate-IP admission and expired-window reset.
-- SET05-MIRA-01 freshness and SET05-MIRA-02 existing-harness integration remain independently closed.
-- [Current independent report/evidence/handoff #6722125480](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6722125480); prior CHANGES REQUIRED #6721524340 concerns superseded a4af2014.
-- Own verification:108 app tests/17 files;32 nativePG/5 files;Worker build/full0000–0060;13 real Chromium groups;13 additional own limiter/account/cookie/storage groups PASS. Browser page errors0.
-- Exact-head CI #42483839708 and Chromium #42483839769 independently SUCCESS/attempt1, all4 browser jobs and13 SET05 log groups.
-- **Next — Mira final readiness routing to Owner for merge #309**, then separate factual SET-05 docs closeout. Lev/Lira stopped, Mark unassigned.
-- Implementation frozen; any head change restarts coordinator-first review. No additional owner visual gate or claimed visual approval; SET-06/Stage6/production inactive.
+- SET-05 implementation PR #309 is **READY FOR OWNER MERGE** on final exact head `236a15c5f3309a5466c70c7a934edf5b56ade433`.
+- Mira fresh coordinator whole-PR review: **PASS, 0 confirmed current-scope defects**.
+- Lev repeat independent technical whole-PR review: **PASS, 0 confirmed current-scope defects**.
+- `SET05-MIRA-01`, `SET05-MIRA-02`, `SET05-LEV-01`: all closed.
+- Final password-change path preserves Better Auth 1.7.7 canonical database-backed 3/10s rate-limit admission, shared across canonical auth and Settings paths; retry metadata/private-no-store and trusted-IP isolation are verified.
+- Exact-head CI #42483839708 SUCCESS: 165/165 application files, 2084/2084 tests; 51/51 PostgreSQL files, 597/597 tests; lint/typecheck/build.
+- Exact-head Chromium #42483839769 SUCCESS across all four jobs with 13 SET-05 acceptance records.
+- PR remains open, Ready, mergeable; implementation frozen; main unchanged.
+- **Next — Owner merge #309.** Any implementation-head change before merge requires a new coordinator-first cycle.
+- After merge: separate factual SET-05 documentation closeout by Lira, then Mira docs review. Lev/Mark not needed for docs.
+- SET-06 and Stage6/production/live Google/real Owner binding remain inactive.
 
 ## Handoff — Лира: Stage2 factual documentation closeout
 
@@ -1789,3 +1791,21 @@ Implementation is frozen. Lev is assigned repeat independent whole-PR technical 
 ## SET-05 / PR #309 — repeat independent Lev PASS
 
 [Full report #6722125480](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6722125480), exact head `236a15c5f3309a5466c70c7a934edf5b56ade433`, unchanged main/base `76fc5b16be4f2425a0ad1fdcb7b38974db355c56`. **PASS,0 confirmed current-scope defects**. Compared with prior independent head:2 commits/9 paths;11 other PR files byte-identical. SET05-LEV-01 independently closed through real canonical↔Settings/EN/RU/HE shared-bucket tests:3/10s,429/private/retry in document/data/real form,no password/session write on denial,separate-IP success,expired-window reset. Existing freshness/session/Google-only/Origin/identity/secret-free/Profile routing boundaries preserved. Own108 application tests/17 files,32 nativePG/5 files,build/full migrations,13 checked-in real Chromium groups plus13 own limiter/account/cookie/storage groups PASS. Real rate_limit storage timeout inside HTTP handler classified unavailable;missing schema propagates unexpected error;original password retained. Same-mounted account switch clears password draft;renewal cookie/private data preserved. GitHub exact-head CI42483839708/browser42483839769 SUCCESS/attempt1,4 jobs/13SET05 records independently read. Evidence /workspace/work/set05-repeat-evidence/, prior /workspace/work/set05-review-evidence/. Checkout clean,implementation unchanged;owned resources cleaned. **Handoff Mira:** final readiness to Owner merge #309,then separate factual docs closeout. Lev/Lira stopped,Mark unassigned;SET06/Stage6 inactive. No realOwner/liveGoogle/production/visual approval claimed and no new visual gate.
+
+
+## SET-05 / PR #309 — final readiness for Owner merge
+
+Final exact head `236a15c5f3309a5466c70c7a934edf5b56ade433`, base/current main `76fc5b16be4f2425a0ad1fdcb7b38974db355c56`: **READY FOR OWNER MERGE**.
+
+Final gates on the same exact head:
+- Mira fresh coordinator whole-PR review: **PASS, 0 confirmed current-scope defects**;
+- Lev repeat independent technical whole-PR review: **PASS, 0 confirmed current-scope defects** (#6722125480);
+- `SET05-MIRA-01`, `SET05-MIRA-02`, `SET05-LEV-01`: **closed**;
+- CI #42483839708: **SUCCESS**;
+- Chromium #42483839769: **SUCCESS**, all four jobs, 13 SET-05 acceptance groups;
+- PR open, Ready and mergeable; implementation/head unchanged;
+- current main remains `76fc5b16be4f2425a0ad1fdcb7b38974db355c56`.
+
+No further implementation review is pending. Mark remains unassigned. Any implementation-head change before merge requires a new coordinator-first review cycle.
+
+Next action belongs to the Owner: **merge PR #309**. After merge is observed in `main`, create a separate factual SET-05 documentation closeout. SET-06 remains inactive until that docs closeout is merged.
