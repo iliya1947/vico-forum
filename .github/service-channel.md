@@ -4,19 +4,15 @@
 
 ## Актуальный baseline и назначение
 
-- Current main/base: `35fa64428fc551ae58b9026dad45797016dd4251`; SET-01–03 implementation + separate factual docs closed; migrations0000–0060.
-- Current stage: **SET-04 repeat independent technical whole-PR review complete — PASS, 0 confirmed current-scope defects**.
-- PR **#307**, frozen reviewed `27a2169ab013597d63fc318c7a255cdc4149b7cc`, open/Ready/unmerged;38-file scope.
-- Мира fresh coordinator PASS и Лёва repeat independent PASS относятся к этому exact head. **SET04-LEV-01 и SET04-MIRA-01 independently closed**.
-- [Current report #6719208159](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6719208159); прежний CHANGES REQUIRED #6718927323 относится только к superseded5cc5c820.
-- Correction: существующее forum.topic.close включено в серверную Admin entry projection;3 files, остальные35 PR files byte-identical. Admission/RBAC/route guards не менялись.
-- Own real Chromium/Worker/Better Auth/PG: close-only2links/Overview+Forum, explicit Admin stays Overview; pin add/revoke preserves close access; sole close revoke0links/Admin+Administrator403 несмотря на stored Forum default; history-only fallback/choices и Attention-only group2 корректны.
-- Реальная command-created measure detail снова подтверждена: actor-bound compact, adminLast=measures, unchanged preference record/no private IDs/path, other actor403.
-- Own exact-head checks:262 app tests/21files,9 native PG/3files,build;11 SET-04 browser groups и7 additional own workspace groups PASS,0 browser errors; EN/RU/HE responsive assertions сохранены. GitHub CI #42461288512/browser #42461288533 independently read SUCCESS/attempt1,all4 browser jobs.
-- Evidence `/workspace/work/set04-repeat-evidence/`; previous full review evidence `/workspace/work/set04-review-evidence/`. Implementation unchanged, git clean; own preview/container/DB/vars/symlink removed.
-- **Next — Мира:** readiness routing владельцу для merge этого exact head; затем separate factual SET-04 docs closeout. Implementation-head change требует нового coordinator-first cycle.
-- Лёва завершил review и остановился; Марк не назначен. SET-05/06, deputies и Stage6/production вне scope.
-
+- Current main/base: `365b75405fbcc2ac2f274f5a83ce8a737b60e700`.
+- SET-04 implementation PR #307 merged; final implementation head `27a2169ab013597d63fc318c7a255cdc4149b7cc`. SET04-MIRA-01 и SET04-LEV-01 closed; coordinator + repeat independent reviews PASS.
+- Docs-only PR **#308**, exact head `9131278240c682650c5a4c1048cdf43be786dd81`, base current main; open / Ready / mergeable.
+- Mira полностью прочитала все семь изменённых документов и сверила новые SET-04 утверждения с merged runtime, correction/review history и exact-head CI.
+- Docs verdict: **PASS, 0 confirmed current-scope documentation defects**.
+- PR #308 — один commit ahead / zero behind; changed exactly seven assigned documentation files; runtime/schema/migrations/workflows не изменены.
+- Exact-head CI #42464119238: **SUCCESS** (`checks`, `database`). Docs-only PR отдельный Chromium не запускал и он не заявляется.
+- **Next — Owner merge #308.** SET-05 не назначать до наблюдаемого merge docs closeout в `main`.
+- Лира остановилась; Лёва/Марк не назначены. SET-06 и Stage6/production inactive.
 
 ## Handoff — Лира: Stage2 factual documentation closeout
 
@@ -1643,3 +1639,8 @@ SET-04 Administrator preferences recorded as implemented in repository/local-CI:
 **Docs exact-head CI:** [#42464119238](https://github.com/iliya1947/vico-forum/actions/runs/42464119238) **SUCCESS** (both `checks` and `database`; 164 application test files / **2066 PASS**, 50 PostgreSQL test files / **589 PASS**, builds/lint/typecheck). This is docs-only; no new browser job triggered/claimed. The docs head is unchanged after the green run.
 
 **Lira stops**; this is an author handoff, **not** coordinator docs PASS. Next Mira checks the seven-file #308 docs diff on the same frozen exact head; Owner merge only after that review. Lev/Mark not assigned; SET-05 implementation and production Stage6 remain inactive.
+
+
+## SET-04 docs closeout — coordinator PASS
+
+PR #308 exact head `9131278240c682650c5a4c1048cdf43be786dd81`: **PASS, 0 confirmed current-scope documentation defects**. Seven assigned docs files were read fully and checked against merged SET-04 runtime and the #307 correction/review evidence. The docs correctly record Administrator preferences as repository/local-CI implementation, preserve no-production/live-Google/real-Owner-binding boundaries, and advance the sequence to unassigned SET-05 with SET-06 pending. Exact-head CI #42464119238 is SUCCESS; no separate Chromium run is claimed for this docs-only PR. PR is one commit ahead/zero behind, Ready and mergeable. Next action: Owner merge #308; SET-05 waits for that merge.
