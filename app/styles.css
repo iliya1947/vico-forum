@@ -9984,3 +9984,28 @@ a.topic-tag:focus-visible {
   border-color: var(--color-accent);
   background: var(--color-accent-soft);
 }
+
+/* SET-03: the account locale form preserves native selection and keyboard semantics. */
+.settings-locale-section {
+  margin-block-start: 1.5rem;
+  border-block-start: 1px solid var(--color-border);
+  padding-block-start: 1.2rem;
+}
+.settings-locale-form {
+  display: grid;
+  gap: 0.65rem;
+  max-inline-size: 28rem;
+}
+.settings-locale-form select {
+  min-inline-size: 0;
+  min-block-size: 2.75rem;
+  padding: 0.5rem;
+  border: 1px solid var(--color-border);
+  border-radius: 0.45rem;
+  color: var(--color-text);
+  background: var(--color-surface);
+}
+.settings-locale-form button {
+  justify-self: start;
+  min-block-size: 2.75rem;
+}

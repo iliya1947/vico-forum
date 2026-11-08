@@ -32,6 +32,8 @@ import { authorizationContext, authorizationOwnerContext } from "../app/authoriz
 import { createHyperdriveAuthorization } from "../db/hyperdrive-authorization";
 import { registrationSettingsContext } from "../app/settings/request-context";
 import { createHyperdriveRegistrationSettings } from "../db/hyperdrive-registration-settings";
+import { userLocaleWriterContext } from "../app/settings/user-locale-context";
+import { createHyperdriveUserLocale } from "../db/hyperdrive-user-locale";
 import { validOwnerUserId } from "../app/authorization/owner";
 import { withForumAdministrativeRestrictions } from "../db/user-measure-admin-forum";
 import { withOwnerUserMeasureAdmission } from "../db/user-measure-policy";
@@ -85,6 +87,7 @@ export default {
     context.set(adminHistoryContext, createHyperdriveAdminHistory(webConnectionString));
     context.set(authorizationOwnerContext, ownerUserId);
     context.set(registrationSettingsContext, createHyperdriveRegistrationSettings(webConnectionString, ownerUserId));
+    context.set(userLocaleWriterContext, createHyperdriveUserLocale(webConnectionString));
     const authorization = createHyperdriveAuthorization(webConnectionString, undefined, ownerUserId);
     const effectiveAuthorization = withForumAdministrativeRestrictions(
       authorization, webConnectionString, undefined, ownerUserId,

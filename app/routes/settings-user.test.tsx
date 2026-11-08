@@ -10,6 +10,8 @@ import { authorizationOwnerContext } from "../authorization/request-context";
 import { canonicalEnglishCatalog } from "../localization/catalog";
 import { hebrewCommonValues, russianCommonValues } from "../localization/manual-values";
 import { createTranslationRuntime } from "../localization/runtime";
+import { registryLoaderContext } from "../localization/request-context";
+import { localeRegistry } from "../localization/registry";
 import SettingsUserRoute, { loader } from "./settings-user";
 
 function commonResources(locale: "en" | "ru" | "he"): Record<string, string> {
@@ -57,7 +59,15 @@ function installSystemTheme(initial: boolean) {
 function showUserSettings(locale: "en" | "ru" | "he") {
   const router = createMemoryRouter([{
     path: "/:locale/settings/user",
-    loader: ({ params }) => ({ locale: params.locale, canViewForum: false }),
+    loader: ({ params }) => ({
+      locale: params.locale, canViewForum: false, accountId: "current-user",
+      preferredLocale: null, localeAvailable: true, localeSaved: false,
+      availableLocales: [
+        { tag: "en", nativeName: "English", direction: "ltr" },
+        { tag: "ru", nativeName: "Русский", direction: "ltr" },
+        { tag: "he", nativeName: "עברית", direction: "rtl" },
+      ],
+    }),
     element: <SettingsUserRoute />,
   }], { initialEntries: [`/${locale}/settings/user`] });
   const page = render(<I18nextProvider i18n={runtime(locale)}>
@@ -75,21 +85,28 @@ afterEach(() => {
 });
 
 describe("SET-03 authenticated User preferences and browser theme", () => {
-  it("rejects an unauthenticated direct read and keeps private headers", () => {
+  it("rejects an unauthenticated direct read and keeps private headers", async () => {
     const context = new RouterContextProvider();
     context.set(authSessionContext, null);
-    try {
-      loader({ params: { locale: "en" }, context });
-      throw Error("missing auth rejection");
-    } catch (error) {
-      expect(error).toBeInstanceOf(Response);
-      expect((error as Response).status).toBe(401);
-      expect((error as Response).headers.get("Cache-Control")).toBe("private, no-store");
-    }
+    await expect(loader({
+      request: new Request("https://vico.test/en/settings/user"),
+      params: { locale: "en" }, context,
+    })).rejects.toMatchObject({ status: 401 });
     context.set(authSessionContext, { user: { id: "member" } } as AuthSession);
     context.set(authorizationOwnerContext, undefined);
-    const authorized = loader({ params: { locale: "en" }, context });
-    expect(authorized.data).toEqual({ locale: "en", canViewForum: false });
+    context.set(registryLoaderContext, async () => ({
+      registry: localeRegistry, semanticIdentity: "test",
+      health: { status: "healthy" },
+    }));
+    const authorized = await loader({
+      request: new Request("https://vico.test/en/settings/user"),
+      params: { locale: "en" }, context,
+    });
+    expect(authorized.data).toMatchObject({
+      locale: "en", canViewForum: false, accountId: "member",
+      preferredLocale: null, localeAvailable: true, localeSaved: false,
+    });
+    expect(authorized.data.availableLocales.map(locale => locale.tag)).toEqual(["en", "he", "ru"]);
     expect(new Headers(authorized.init?.headers).get("Cache-Control")).toBe("private, no-store");
   });
 
