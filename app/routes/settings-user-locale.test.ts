@@ -31,7 +31,7 @@ function setup(userId: string | null = "user-one", preferredLocale: string | nul
     health: health === "healthy" ? { status: "healthy" as const }
       : { status: "degraded" as const, reason: "unavailable" as const },
   }));
-  const save = vi.fn(async (_id: string, _locale: string) => {});
+  const save = vi.fn(async (...args: [string, string]) => { void args; });
   context.set(userLocaleWriterContext, { save });
   return { context, save };
 }
