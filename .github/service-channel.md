@@ -1931,3 +1931,20 @@ Owner merge #310 is blocked until that fresh coordinator PASS. Lev/Mark remain u
 - [Exact docs-head CI #42489445378](https://github.com/iliya1947/vico-forum/actions/runs/42489445378) **SUCCESS**: `checks` and `database` jobs; lint/typecheck/build, application **165/165 files, 2084/2084 tests**, disposable PG17 **51/51 files, 597/597 tests**. No new browser/deployment acceptance claimed (docs-only).
 - **Лира stops after correction/evidence**. A new **Mira docs-only review of the new exact head** is required; no author self-PASS. Owner merge blocked until Mira PASS. Lev and Mark unassigned; SET-06/Stage6 inactive.
 
+
+
+## SET-05 documentation closeout / PR #310 — fresh Mira PASS after SET05-DOC-MIRA-01
+
+Fresh docs-only coordinator review completed on exact head `d9134f8f3c57814aa910a272f2a9dc4c118fccb3`, base/current main `2f2969d5b3a7ca7844d674b85448838fc671eaca`.
+
+**Verdict: PASS — 0 confirmed current-scope documentation defects.**
+
+- `SET05-DOC-MIRA-01` is closed. Corrective delta from prior head `182a185e...` is exactly one commit touching only `docs/SETTINGS.md`: the unsupported blanket "logs" secrecy guarantee was removed while preserving the verified response/URL/browser secrecy contract.
+- The other six assigned docs files are byte-identical to the previously reviewed head and remain accepted.
+- PR #310 still contains exactly seven Markdown documentation paths and no runtime/code/schema/migration/CI-workflow changes.
+- Final `docs/SETTINGS.md` was re-read on the new exact head; SET-01–SET-05 factual status, Account & security behavior, canonical Better Auth password-change limiter, session boundaries, exclusions and Stage 6/production disclaimers remain correct.
+- Current main is unchanged at `2f2969d5b3a7ca7844d674b85448838fc671eaca`; PR #310 is open/Ready/mergeable.
+- Exact-head CI #42489445378: SUCCESS (`checks` + `database`).
+- No independent Codex docs review is required by the assigned closeout workflow.
+
+**Next: Owner merge PR #310.** Any documentation-head change before merge requires a fresh Mira docs-only review. SET-06 remains inactive until this docs closeout is merged.
