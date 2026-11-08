@@ -33,17 +33,15 @@
 ## Актуальный baseline и назначение
 
 - Current main/base: `76fc5b16be4f2425a0ad1fdcb7b38974db355c56`.
-- SET-05 implementation PR #309 remains open; reviewed exact head `a4af2014eb28a39d54d10c33cc515cbf3d5f258e`.
-- Mira fresh coordinator PASS preceded independent Lev whole-PR review.
-- **Lev: CHANGES REQUIRED — 1 confirmed current-scope defect, SET05-LEV-01/P2**. New Settings password-change action calls direct auth.api and bypasses existing Better Auth database rate-limit admission.
-- Real same-account/IP/cookie reproduction: canonical auth endpoint **400,400,400,429**; immediately followed by new BFF **5×400 in 1.231s**, no change to password rate-limit rows.
-- [Independent review / reproduction / bounded correction / handoff #6721524340](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6721524340).
-- SET05-MIRA-01 freshness and SET05-MIRA-02 existing-harness integration **independently closed**; no other confirmed current-scope defects.
-- Own verification:104 application tests/16 files;31 nativePG/5 files;build/full0000–0060 migration;12 real Chromium groups;4 own browser/runtime groups and4 storage/error groups. One own group confirms finding; other checks pass.
-- Exact-head CI #42477527039 and Chromium #42477527033 SUCCESS/attempt1; all4 browser jobs,12 SET05 log groups independently verified.
-- **Next — Mira accepts independent review and routes bounded correction to Lira.** Lira frozen until routing; Lev stopped; Mark unassigned.
-- New implementation head requires fresh coordinator-first cycle and repeat independent review; Owner merge #309 not ready. Permanent docs post-merge separately.
-- No extra owner visual acceptance gate; SET-06 and Stage6/production inactive.
+- SET-05 implementation PR #309 remains open on reviewed exact head `a4af2014eb28a39d54d10c33cc515cbf3d5f258e`.
+- Lev independent whole-PR review: **CHANGES REQUIRED — SET05-LEV-01/P2**.
+- Mira independently confirmed the finding as **current-scope** against the installed Better Auth 1.7.7 source and current Vico implementation.
+- Better Auth 1.7.7 applies the default `/change-password` special rule (**3 requests / 10 seconds**) in HTTP router `onRequestRateLimit`; direct `auth.api.*` dispatch executes endpoint/hooks but not router `onRequest`.
+- Current SET-05 `security.changePassword` uses direct `auth.api.changePassword`, so the new authenticated Settings POST loses the already-active database-backed password-change limiter. This is a regression of the current SET-05 password-change path, not future hardening.
+- SET05-MIRA-01 and SET05-MIRA-02 remain closed; Lev found no other confirmed current-scope defects.
+- **Next — Lira:** one bounded correction restoring the existing Better Auth password-change admission semantics for the Settings path, including the shared canonical rate-limit bucket and real regression coverage; do not introduce a second limiter/schema/auth redesign.
+- New implementation head requires fresh coordinator-first review, then Lev repeat independent review.
+- Owner merge #309 not ready. Mark unassigned. SET-06 and Stage6/production inactive.
 
 ## Handoff — Лира: Stage2 factual documentation closeout
 
@@ -1731,3 +1729,28 @@ Lev is assigned independent whole-PR technical review of this same exact head. M
 ## SET-05 / PR #309 — independent Lev CHANGES REQUIRED
 
 [Full independent report #6721524340](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6721524340), exact head `a4af2014eb28a39d54d10c33cc515cbf3d5f258e`, base `76fc5b16be4f2425a0ad1fdcb7b38974db355c56`. All20 files reviewed; implementation unchanged. **SET05-LEV-01/P2** confirmed by real Worker/BA1.7.7/PG17 experiment: existing canonical change-password limit is3/10s, while new Settings BFF direct auth.api bypasses it (public400×3→429, BFF400×5/1.231s, shared rate-limit rows unchanged). Preserve existing database admission/common canonical bucket/trusted IP/429 retry/private-no-store; no second independent limiter/schema/auth expansion. Coordinator findings01/02 independently closed. Own104 app/31PG/build/12browser plus independent account-switch/cookie/data/storage probes recorded;0 browser errors. Same-mounted account switch clears password draft. Real account lock timeout classified unavailable;missing schema unexpected. Exact-head CI/browser independently green. Checkout clean;task resources cleaned. Evidence /workspace/work/set05-review-evidence/. **Handoff Mira:** accept finding and route one corrective package to Lira; new stable head/checks→fresh coordinator→repeat Lev. Owner merge not ready; docs post-merge, SET06/Stage6 inactive. Lev stopped, Mark unassigned.
+
+
+## SET05-LEV-01 — Mira independent confirmation
+
+Lev finding on PR #309 exact head `a4af2014eb28a39d54d10c33cc515cbf3d5f258e` is **confirmed as a current SET-05 defect**.
+
+Independent source check against Better Auth **v1.7.7**:
+- `packages/better-auth/src/api/rate-limiter/index.ts` defines the default `/change-password` rule as **window 10s / max 3** and stores it through the configured rate-limit storage.
+- `packages/better-auth/src/api/index.ts` invokes `onRequestRateLimit` from the HTTP router `onRequest`.
+- `toAuthEndpoints.ts` / `dispatch.ts` show direct `auth.api.*` calls dispatch endpoint middleware/hooks but do **not** execute router `onRequest`.
+- Current Vico `security.changePassword` calls direct `auth.api.changePassword`.
+
+Therefore the new Settings BFF bypasses an already-active Better Auth protection for the same password-change operation. This is not speculative hardening.
+
+Lira receives one bounded correction. Required outcome:
+- Settings password change participates in the existing Better Auth database-backed canonical change-password rate limit rather than a second independent limiter;
+- canonical auth path and Settings path share the same effective bucket for the same trusted client IP;
+- exhausted admission returns the proper rate-limit response/retry information through protected private/no-store handling;
+- rejected attempts do not change the password;
+- a separate trusted client IP is not incorrectly blocked;
+- preserve current session/identity/Origin/password/Google-only/secret-free/Set-Cookie behavior;
+- no new schema, limiter subsystem, provider, SET-06 or Stage6 work;
+- add real regression coverage and publish new stable exact head + exact-head CI/browser evidence.
+
+After Lira stops on the new stable head, Mira performs a fresh whole-PR review. Lev repeats independent review only after Mira PASS.
