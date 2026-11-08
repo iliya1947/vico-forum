@@ -913,3 +913,8 @@ PR #307 exact head `1a858825836e76801bb63025a28312b4d0bdd082` from main `35fa644
 Exact-head CI #42456818922 **SUCCESS** (`checks`/`database`, 164 test files / 2054 tests, build and PG17/Worker). Exact-head Chromium #42456818927 **SUCCESS** (`browser`, `history_browser`, `settings_browser`, `settings_administrator_browser`). Earlier author correction history is in the implementation commits and CI runs; no unverified claims of production/owner acceptance.
 
 Lira stopped author work; **Mira coordinator whole-PR review is next**. No Codex reviewer launched and no merge performed.
+
+
+## SET04-MIRA-01 — bounded correction assigned
+
+PR #307 reviewed head `1a858825836e76801bb63025a28312b4d0bdd082` has one confirmed current-scope defect. The actual `/:locale/admin/measures/:measureId` loader returns `access` without the current authenticated actor ID; `AdminMeasureDetail` passes it to `AdminShell`, whose per-account SET-04 preference guard therefore falls back to defaults. Correct only this actor-bound presentation chain. Required: compact/comfortable density works for the current actor on real measure detail, stale/other account cannot inherit it, and the private measure ID/path is not recorded as `adminLast`. Preserve AP-10 auth/mutation/revalidation/domain semantics. Add targeted regression, rerun applicable exact-head CI/browser, publish new stable head/evidence in #251, then stop for fresh Mira review. No DB/migration/SET-05/06/docs/Stage6 expansion.
