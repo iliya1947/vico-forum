@@ -102,6 +102,37 @@ try:
         document(attention, "/en/admin", 403)
         record("real-owner-admin-only-attention-only-access")
 
+        # SET04-LEV-01: a close-only Admin (reusing this real Better Auth
+        # account, rather than creating an extra rate-limited sign-up) must
+        # see both the Settings nav link and landing card.
+        sql("delete from authz_user_permission_overrides "
+            "where user_id=$1 and permission_key='access.authorization.manage'", [admin_id])
+        sql("insert into authz_user_permission_overrides(user_id,permission_key,effect) "
+            "values($1,'forum.topic.close','allow')", [admin_id])
+        document(admin, "/en/admin")
+        expect(admin.get_by_role("heading", name="Overview", exact=True)).to_have_count(1)
+        document(admin, "/en/settings")
+        expect(admin.locator('a[href="/en/settings/administrator"]')).to_have_count(2)
+        document(admin, "/en/settings/administrator")
+        choices = admin.locator("#settings-admin-default option").evaluate_all(
+            "(options) => options.map(option => option.value)")
+        assert choices == ["overview", "forum"], choices
+        sql("insert into authz_user_permission_overrides(user_id,permission_key,effect) "
+            "values($1,'forum.topic.pin','allow')", [admin_id])
+        document(admin, "/en/settings")
+        expect(admin.locator('a[href="/en/settings/administrator"]')).to_have_count(2)
+        sql("delete from authz_user_permission_overrides "
+            "where user_id=$1 and permission_key='forum.topic.pin'", [admin_id])
+        document(admin, "/en/settings")
+        expect(admin.locator('a[href="/en/settings/administrator"]')).to_have_count(2)
+        sql("delete from authz_user_permission_overrides "
+            "where user_id=$1 and permission_key='forum.topic.close'", [admin_id])
+        document(admin, "/en/settings")
+        expect(admin.locator('a[href="/en/settings/administrator"]')).to_have_count(0)
+        document(admin, "/en/settings/administrator", 403)
+        document(admin, "/en/admin", 403)
+        record("close-only-admin-settings-links-valid-choices-and-fresh-revoke")
+
         document(owner, "/en/settings/administrator")
         owner.locator("#settings-admin-default").select_option("roles")
         expect(owner.locator(".auth-admin-link")).to_have_attribute("href", "/en/admin/authorization")
