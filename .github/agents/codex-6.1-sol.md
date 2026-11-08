@@ -1,81 +1,85 @@
-# Лёва — SET-03 / PR #304 repeat independent review: PASS
+# Лёва — SET-04 / PR #307 independent review: CHANGES REQUIRED
 
-[Current report #6717213664](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6717213664). Exact head `6c45bb17ea84f1df0bed8a8b8ca4c558ba42edac`, base `cb805a074de3bfdcd140125ebaa425a76bb6496d`. Whole-PR review complete; SET03-LEV-01 closed independently,0 current-scope defects. Лёва остановился. Next — Мира readiness routing.
+[Current report #6718927323](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6718927323). Exact head `5cc5c820b0445ddb57cf3663e7cfb33c059ab108`, base `35fa64428fc551ae58b9026dad45797016dd4251`. Whole38-file review complete, один P2 SET04-LEV-01. SET04-MIRA-01 independently remains closed. Лёва остановился; next — Мира bounded correction routing.
 
-Лёва — SET-03 / PR #304 repeat independent technical whole-PR review: **PASS, 0 подтверждённых current-scope дефектов**.
+Лёва — SET-04 / PR #307 independent technical whole-PR review: **CHANGES REQUIRED**.
 
-**Exact head:** `6c45bb17ea84f1df0bed8a8b8ca4c558ba42edac`.
-**Base/current main:** `cb805a074de3bfdcd140125ebaa425a76bb6496d`.
-Весь26-file scope повторно пересверен с approved plan [#6711736883](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6711736883), текущими Settings/Editor/auth/locale contracts и предыдущей собственной whole-PR проверкой. Implementation не менялся; других агентов не запускал. Авторский/coordinator PASS не подменял самостоятельное runtime evidence.
+**Exact head:** `5cc5c820b0445ddb57cf3663e7cfb33c059ab108`.
+**Base/current main:** `35fa64428fc551ae58b9026dad45797016dd4251`.
+Весь38-file scope проверен против [approved SET-04 plan #6711736883](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6711736883) и текущих Settings/Admin/auth contracts. Implementation не менялся; других агентов не запускал. Author/coordinator conclusions не подменяли собственное evidence.
 
-### SET03-LEV-01 закрыт независимо
+**Ровно1 подтверждённый current-scope P2: SET04-LEV-01.** Других current-scope defects по завершённой проверке не установлено. SET04-MIRA-01 независимо подтверждён исправленным и не переоткрывается.
 
-Полный diff от ранее проверенного `cc8dfc9722287ec66ade759b0b1c8d69a8062a6c` — **ровно3 файла**:
-- `app/routes/settings-user.tsx`: единственное runtime изменение — `<Form key={state.accountId} ...>`;
-- `app/routes/settings-user.test.tsx`: mounted account/same-account regression;
-- `tests/browser/settings-user/check.py`: настоящий same-cookie-jar account-switch regression.
+### [P2] SET04-LEV-01 — Administrator preferences скрыт от допустимого close-only администратора
 
-Остальные **23 PR файла byte-identical**. Форму перемонтируют только при смене authoritative account ID; Theme/Editor/Settings shell не получают нового key, same-account navigation/revalidation не сбрасывает draft. Guards, writer, registry и auth не перепроектированы.
+**Места:** [новый entry projection locale-boundary.tsx:121–133](https://github.com/iliya1947/vico-forum/blob/5cc5c820b0445ddb57cf3663e7cfb33c059ab108/app/routes/locale-boundary.tsx#L121), [новая Settings navigation settings/shell.tsx](https://github.com/iliya1947/vico-forum/blob/5cc5c820b0445ddb57cf3663e7cfb33c059ab108/app/settings/shell.tsx), [Settings landing](https://github.com/iliya1947/vico-forum/blob/5cc5c820b0445ddb57cf3663e7cfb33c059ab108/app/routes/settings.tsx).
 
-**Собственный отдельный probe, actual Chromium → built Worker → Better Auth → PostgreSQL17, реальные sign-out/sign-in в одном browser/storage context:5 сценариев PASS.**
+SET-04 доступен пользователям с **фактическим текущим Admin или Attention доступом**. Existing `ADMIN_FORUM_PERMISSIONS`/`ADMIN_ADMISSION_PERMISSIONS` и permanent Admin admission matrix включают `forum.topic.close`: это самостоятельная действующая capability, допускающая Forum/Overview. Однако locale-boundary собирает `admin` из неполного списка: `forum.topic.close` в его permission reads/Set отсутствует. Новый `adminEntryDestinations = allowedAdminEntries(admin)` получает пустой список, а новые Settings landing/nav проверяют `header.canViewAdminPanel || header.canViewModerationAttention` и полностью скрывают Administrator preferences.
 
-1. Alice.locale=en; выбрать ru без submit. Обычная header locale SPA navigation сохраняет **тот же select + unsaved ru**, DB Alice остаётся en.
-2. Выполнить настоящий Alice sign-out → Bob sign-in. Старый POST с Alice expected ID до revalidation получает **409**, обе DB preferences неизменны.
-3. Обычная SPA navigation перечитывает тот же mounted Settings route под Bob(locale he): **shell остаётся тем же DOM node, select заменён**, hidden expected ID=Bob и visible locale=he. Alice's unsaved ru не переносится. Bob DB остаётся he, Alice=en; автоматического сохранения нет.
-4. Только после нового выбора ru и явного Save меняется **Bob he→ru**; Alice=en.
-5. Bob sign-out → Alice sign-in и SPA navigation возвращают Alice=en и её прежние device-local Editor advanced/code-wrap preferences. Bob's defaults не наследуют Alice; browser-wide theme Dark сохраняется между аккаунтами.
+**Собственная real Chromium → built Worker → Better Auth → PostgreSQL17 проверка:**
 
-Это повторение исходного causal repro с проверкой corrected outcome, без mock session, cookie substitution или внедрения React state. Evidence: `/workspace/work/set03-repeat-evidence/account-switch-probe.py`, JSON/log и `account-switch-corrected.png`.
+1. Настоящий новый пользователь с единственным административным grant `forum.topic.close` (прочие ordinary built-in user permissions не менялись).
+2. Direct `/en/admin` → **200**; direct `/en/settings/administrator` → **200**; `/en/settings` → **200**.
+3. В последнем Settings документе **0 ссылок** на `/en/settings/administrator` — отсутствуют и nav item, и entry card. Header Admin link также отсутствует. То есть новый Settings surface допускает этого actor сервером, но пользователь не получает путь к нему через Settings.
+4. Добавить тому же actor только sibling `forum.topic.pin`, перечитать Settings → **2 ссылки** Administrator preferences появляются.
+5. Отозвать только pin, оставив close → снова **0 ссылок**, при этом direct Administrator preferences по-прежнему **200**. Это изолирует пропущенный close, а не session/Owner/Registry/storage outage.
 
-Новый checked-in unit test отдельно проверяет сохранение same-account draft при revalidation, а новый browser case — форму/reset и DB state после реальной смены входа. Оба самостоятельно rerun на этом exact head. **SET03-LEV-01 закрыт; новых current-scope findings нет.**
+```json
+{
+  "closeOnly": {
+    "/en/admin":200,
+    "/en/settings/administrator":200,
+    "/en/settings":200,
+    "administratorPreferenceLinks":0
+  },
+  "withAdditionalPin": {"administratorPreferenceLinks":2},
+  "afterPinRevoke": {"administratorPreferenceLinks":0,"directAdministratorStatusStill":200}
+}
+```
 
-### Whole-PR и scope
+**Сравнение с baseline:** пропуск close в старом header boolean уже существовал в main; не объявляю его вновь внесённым SET-04 и не требую отдельного общего header audit. Current-scope defect — новая SET-04 поверхность/её entry destinations и две новые точки Settings navigation используют эту неполную projection и не предоставляют утверждённый доступ поддерживаемому Admin actor. До этого PR Administrator preferences вообще не было. Нужна bounded согласованность новых consumers с уже действующей admission matrix, не расширение прав или исправление несвязанных старых разделов.
 
-- Сохранены browser-wide `vico-theme`/System bootstrap, общий Settings/header/OS/storage synchronization и transient fallback при denied storage.
-- Own locale остаётся существующим `user.locale`: session-derived actor, strict POST/Origin/form/expected identity, healthy Runtime Registry и canonical active locale, private/no-store, controlled typed failures; generic Better Auth metadata write не открыт. Fresh root negotiation и explicit URL precedence проверены в настоящем Worker, включая dynamic `fr-CA`.
-- Четыре Editor/code keys остаются per-account/device. Adapter и real mounted MarkdownEditor/ForumCodeBlock consumers согласованы; source/selection/history/attachment/publication paths не менялись correction. Account isolation дополнительно подтверждена собственным Alice→Bob→Alice probe.
-- Settings route/shell/navigation, EN/RU/HE/RTL и native keyboard controls сохраняют доступность; layout assertions320/768/1280 не ослаблены.
-- Schema/migrations/dependencies/manifest/runtime privileges byte-unchanged; нет второго auth/RBAC/store, новых permissions, SET-04–06, notification preferences, drafts/autosave, deputies или Stage6/production scope.
-- Предыдущие собственные failure probes из [#6716992555](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6716992555) относятся к идентичным writer/Registry/error modules; нового failure contract исправление не вводит.
+**Correction:** учесть весь действующий Admin admission, включая close, в серверной projection, от которой зависят новые entry destinations/Settings links. Сохранить независимые route guards, personal-only storage и intersection с effective permissions; не добавлять permissions, role-name exceptions или локальную authority.
+
+**Acceptance:** реальный close-only actor видит Administrator preferences в Settings и получает допустимые Overview/Forum entry choices; прямой Admin остаётся Overview. После отзыва единственного административного grant новый route403 и ссылки исчезают. Pin/history-only/Attention-only actors сохраняют их существующее поведение. Покрыть согласованность header/Settings projection с authoritative Admin admission на этом случае.
+
+Evidence: `/workspace/work/set04-review-evidence/workspace-probe.py`, JSON/log, `close-only-settings-navigation.png`. Permissions выдавались/отзывались только в disposable fixture; session/HTTP/SSR/React/navigation настоящие.
+
+### SET04-MIRA-01 закрыт отдельно
+
+Независимо от основной author suite создал настоящих Better Auth manager/target, выдал manager только `admin.users.blocks.manage`, через реальный Settings control выбрал compact и открыл measures index. Затем настоящей валидной AP-10 create command создал measure и открыл **реальный protected `/admin/measures/:id` loader**:
+- AdminShell получает текущий actor и `data-density=compact`;
+- `adminLast` остаётся `measures`, весь preference record неизменен;
+- ни private measure ID, ни target ID/path в JSON не записались;
+- другой authenticated target получает403 на том же detail URL.
+
+Проверена настоящая route chain, не только manually injected access prop. Own UI rerun также проверил matching/mismatched header actor и comfortable fallback. Coordinator correction от1a858825 — ровно3 files/1 runtime expression, без AP-10 domain/action change.
+
+### Остальные whole-PR границы
+
+- Versioned record содержит только разрешённые enums/boolean и workspace IDs; unknown version/corrupt/invalid groups/raw-URL fields → безопасный default; лишние поля не уходят из decoder. Storage denial не блокирует workspace, transient fallback изолирован по account.
+- Same-tab/storage subscriptions и controlled Settings fields остаются account-bound. Header entry preferences пересекаются с текущими доступными destinations/groups; explicit paths/query и object deep links не перенаправляются. Last recording ограничен точным index pathname и нормализованным mode/group, без private URL/query filters/IDs.
+- Admin/Attention density применяется только к presentation. TechnicalDetails скрывает secondary IDs/slugs, а reasons/decisions/errors/actions остаются снаружи; manual override работает. Новые authentication/authority/domain semantics не введены.
+- Guard нового Administrator route независим, private/no-store и использует current effective Admin/Attention capability, не роль/локальный preference. Owner-only global settings отдельно.
+- Localization/EN/RU/HE/native keyboard/tap targets/RTL/320–768–1280 assertions проверены. Нет новой DB/schema/migration/dependency/runtime privilege, SET-05/06, notification/drafts/deputy/production scope.
 
 ### Собственное exact-head evidence
 
-- **334 application/unit/route/UI tests,12 файлов PASS** — Settings + locale + theme + full MarkdownEditor/Markdown suites.
-- **15 native PostgreSQL tests,4 файла PASS** — own locale writer, auth-runtime, email registration, Hyperdrive Registry.
-- Build PASS; полная0000–0060 схема применена в disposable PostgreSQL17.
-- **12 SET-03 real Chromium case groups PASS**: DB locale/root/dynamic fr-CA, invalid/stale/Origin, System/header/OS/tabs/reload, mounted Editor/code two-way synchronization, same-mounted account-switch, EN/RU/HE responsive/keyboard/RTL. Exact head в results.json;0 page errors/external requests; screenshots просмотрены.
-- **5 дополнительных собственных browser scenario groups PASS**, описаны выше.
-- External SET-03 harness adapter меняет только checkout path и Chromium executable; все assertions сохранены.
-- Самостоятельно прочитаны exact-head GitHub [CI #42445796066](https://github.com/iliya1947/vico-forum/actions/runs/42445796066) **SUCCESS**, checks+database, и [browser #42445796063](https://github.com/iliya1947/vico-forum/actions/runs/42445796063) **SUCCESS**, settings_browser+browser+history_browser; оба attempt1/этот SHA. Полный CI/AP-10/History/SET-02 browser локальный rerun на новом head не заявляется; собственный прежний SET-02 rerun17 cases сохранён в предыдущем evidence, его runtime modules не изменились.
+- **251 application/unit/route/UI tests,21 файл PASS**: new preferences/route, Admin consumers, measure detail, authorization/locale/header, public Attention и existing Settings regression.
+- **9 native PostgreSQL tests,3 файла PASS:** admin-overview/admission, admin-users-authorization, user-measure-authority.
+- Build PASS; полная0000–0060 схема в disposable PostgreSQL17.
+- **10 real SET-04 Chromium case groups PASS**,0 page errors/external requests: Owner/Admin-only/Attention-only, defaults/last and explicit URLs, density/disclosure/manual override, same-cookie-jar account isolation, revoke и EN/RU/HE responsive/keyboard. Assertions не ослаблены; external adapter меняет только checkout path/Chromium executable; screenshots просмотрены.
+- Дополнительный собственный4-case browser probe подтверждает finding и отдельно corrected real measure-detail/independent403. Passing general suite не закрывает close-only omission.
+- GitHub [CI #42458305882](https://github.com/iliya1947/vico-forum/actions/runs/42458305882) и [Chromium #42458305779](https://github.com/iliya1947/vico-forum/actions/runs/42458305779) independently read: **SUCCESS, attempt1, тот же SHA**, checks+database и все4 browser jobs. Full CI/AP-10/History local rerun не заявляется.
 
-Evidence: `/workspace/work/set03-repeat-evidence/` — source audit, own probe, application/nativePG/build logs, browser results/screenshots, GitHub readback, manifest/hashes. Previous whole-PR evidence: `/workspace/work/set03-review-evidence/`. Checkout/diff clean, implementation unchanged; head/base перед публикацией unchanged/open/mergeable. Task-owned preview/container/DB/dummy vars/dependency symlink удалены.
+Evidence/source audit/logs/results/screenshots/manifest/hashes: `/workspace/work/set04-review-evidence/`. Implementation unchanged, checkout/diff clean; head/base before publication unchanged/open/mergeable. Task-owned preview/container/DB/dummy vars/dependency symlink удалены.
 
 ### Handoff — Мира
 
-Принять независимый **PASS на 6c45bb17**, SET03-LEV-01 closed,0 новых confirmed current-scope defects. Выполнить readiness routing владельцу по штатному процессу. Любое implementation-head change требует нового coordinator-first cycle. После owner merge — отдельный factual SET-03 docs closeout; SET-04–06 пока не назначать.
+Принять **CHANGES REQUIRED**, подтвердить/направить Лире один bounded пакет **SET04-LEV-01** в том же #307. **SET04-MIRA-01 остаётся закрытым**. После нового stable head/checks — fresh coordinator whole-PR, затем independent same-head review; текущий head к merge не готовить.
 
-Лёва завершил review и остановился; PR/implementation не merge, реализацию не исправлял; Марк не назначен. Production/live Google/real Owner binding/owner visual acceptance не заявляются.
+Лёва whole-PR review завершил и остановился, реализацию не исправлял; Марк не назначен. SET-05/06, factual docs closeout и Stage6/production/live Google/real Owner binding вне этого review.
 
 ## Approved / closed context
 
-Settings plan [#6711736883](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6711736883) approved. SET-01 closed; SET-02 implementation #302 + docs #303 merged. Previous independent SET-03 CHANGES REQUIRED [#6716992555](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6716992555) concerns cc8dfc97 and is superseded by current PASS. Prior evidence /workspace/work/set03-review-evidence/; current evidence /workspace/work/set03-repeat-evidence/. SET-04–06 unassigned. Owner merge and separate factual docs closeout remain; no last-manager/count/recovery rule applies.
-
-
-## SET-03 repeat review — final routing
-
-PR #304 exact head `6c45bb17ea84f1df0bed8a8b8ca4c558ba42edac`: Lev repeat PASS accepted for readiness. No further Codex work assigned. Next action is Owner merge; after observed merge, separate SET-03 factual docs closeout. SET-04 not assigned yet.
-
-
-## SET-03 post-merge routing
-
-PR #304 merged at `e985a43f8853c234c96bb4528a9d4dd709361018`. No further Codex work is assigned. A separate SET-03 factual docs closeout is active under Lira/Mira; SET-04 remains unassigned until that docs PR is merged.
-
-
-## SET-04 routing
-
-SET-03 is fully closed after #305 merge at `35fa64428fc551ae58b9026dad45797016dd4251`. Existing approved SET-04 plan #6711736883 remains the active technical plan; no repeat planning assignment. Lira is implementing SET-04. Lev remains unassigned until Mira coordinator PASS on a stable implementation head.
-
-
-## SET-04 review routing
-
-PR #307 coordinator review on `1a858825836e76801bb63025a28312b4d0bdd082` found SET04-MIRA-01; Lira correction is active. No independent Codex review is assigned yet. Wait for corrected stable head and fresh Mira coordinator PASS before any Lev whole-PR review.
+Settings plan [#6711736883](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6711736883) approved. SET-01–03 implementation and separate factual docs closed. SET-03 independent PASS [#6717213664](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6717213664) retained with evidence /workspace/work/set03-repeat-evidence/. Current evidence /workspace/work/set04-review-evidence/. SET-05/06 unassigned. No last-manager/count/recovery rule applies.
