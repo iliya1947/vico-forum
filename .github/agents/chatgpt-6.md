@@ -1039,3 +1039,12 @@ Make only this bounded documentation correction:
 - do not change runtime/code/schema/migrations/CI workflows or expand documentation scope.
 
 Publish a new stable docs head and applicable checks in #251, then stop. Mira performs a fresh docs-only review. Owner merge is blocked until Mira PASS; SET-06 remains inactive.
+
+
+## SET-05 docs PR #310 — bounded SET05-DOC-MIRA-01 correction (2026-11-08)
+
+- Following coordinator correction of erroneous same-head PASS, confirmed assigned current-scope wording defect in `docs/SETTINGS.md` on original head `182a185e1ed8dc734b45ebd1ba15c4bcf45b4fde`. No logging-sink audit evidence justifies an unconditional no-secret-logs guarantee.
+- Changed only `in responses, URLs, logs or browser controls.` to `in responses, URLs or browser controls.`, preserving response/URL/browser and DTO boundaries without asserting untested logger behavior.
+- Corrective commit/head **`d9134f8f3c57814aa910a272f2a9dc4c118fccb3`** on [PR #310](https://github.com/iliya1947/vico-forum/pull/310), open/Ready/mergeable, unchanged main/base `2f2969d5b3a7ca7844d674b85448838fc671eaca`; PR remains exactly seven Markdown files, correction one file. No runtime/code/schema/CI workflow/SET-06 change.
+- New [CI #42489445378](https://github.com/iliya1947/vico-forum/actions/runs/42489445378) **SUCCESS**: app 2084/2084, PG17 597/597, lint/typecheck/build. No new browser needed or claimed for wording-only docs change.
+- **Лира stops, awaits Mira fresh docs-only review**. Coordinator verdict on new head not yet issued; Owner merge not requested; Lev/Mark not assigned.

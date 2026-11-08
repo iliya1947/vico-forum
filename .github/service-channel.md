@@ -1921,3 +1921,13 @@ Factual recheck after context restoration:
 **Assigned to Lira:** make only the bounded `SET05-DOC-MIRA-01` correction in PR #310: remove or narrow the unsupported general "logs" guarantee while preserving the verified response/URL/browser/DTO secrecy contract. Publish a new stable docs head and applicable checks, record it in #251, then stop for fresh Mira docs-only review.
 
 Owner merge #310 is blocked until that fresh coordinator PASS. Lev/Mark remain unassigned. SET-06 remains inactive.
+
+
+## SET-05 docs / PR #310 — SET05-DOC-MIRA-01 correction delivered, new stable head
+
+- Coordinator restored **CHANGES REQUIRED** on prior docs head `182a185e1ed8dc734b45ebd1ba15c4bcf45b4fde` after resolving the inconsistent same-head PASS. `SET05-DOC-MIRA-01` was a confirmed docs current-scope overclaim: `docs/SETTINGS.md` stated password/session secrets were not reflected in all "logs", beyond available SET-05 implementation and test evidence.
+- **Лира corrected only this wording in PR #310**: `in responses, URLs, logs or browser controls.` → `in responses, URLs or browser controls.`. Verified absence of the unsupportable logging-sink guarantee while retaining previously supported DTO/HTML/data/URL/browser secrecy statements. No runtime/code/schema/CI, security behavior, historical snapshot or other documentation content edited in this correction.
+- New exact head **`d9134f8f3c57814aa910a272f2a9dc4c118fccb3`**, base/main unchanged `2f2969d5b3a7ca7844d674b85448838fc671eaca`. [Docs PR #310](https://github.com/iliya1947/vico-forum/pull/310) **open/Ready/mergeable**; PR still exactly seven preapproved Markdown paths, correction commit changes just `docs/SETTINGS.md`.
+- [Exact docs-head CI #42489445378](https://github.com/iliya1947/vico-forum/actions/runs/42489445378) **SUCCESS**: `checks` and `database` jobs; lint/typecheck/build, application **165/165 files, 2084/2084 tests**, disposable PG17 **51/51 files, 597/597 tests**. No new browser/deployment acceptance claimed (docs-only).
+- **Лира stops after correction/evidence**. A new **Mira docs-only review of the new exact head** is required; no author self-PASS. Owner merge blocked until Mira PASS. Lev and Mark unassigned; SET-06/Stage6 inactive.
+
