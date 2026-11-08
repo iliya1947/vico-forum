@@ -2,14 +2,16 @@
 
 - Service PR: **#251**
 - Current main/base: **`2f2969d5b3a7ca7844d674b85448838fc671eaca`**
-- Current stage: **Settings SET-05 — factual documentation-only PR ready for Mira review**
-- Implementation **PR #309 merged**, final implementation head `236a15c5f3309a5466c70c7a934edf5b56ade433`
-- Implementation final checks: [CI #42483839708](https://github.com/iliya1947/vico-forum/actions/runs/42483839708) + [Chromium #42483839769](https://github.com/iliya1947/vico-forum/actions/runs/42483839769) SUCCESS, Mira + Lev whole-PR PASS
-- SET05-MIRA-01/02 and SET05-LEV-01: **closed**
-- Documentation: **[PR #310](https://github.com/iliya1947/vico-forum/pull/310)**, **open/Ready/mergeable**, stable exact head **`182a185e1ed8dc734b45ebd1ba15c4bcf45b4fde`**, 7 assigned Markdown files only
-- Documentation exact-head [CI #42487505867](https://github.com/iliya1947/vico-forum/actions/runs/42487505867): **SUCCESS**, checks/database (2084 app, 597 PG; lint/typecheck/build)
-- **Лира**: documentation author delivery complete, stopped; no docs self-review
-- **Мира**: next — docs-only coordinator review of 7-file PR #310 on exact head `182a185e1ed8dc734b45ebd1ba15c4bcf45b4fde`
-- **Лёва**: stopped/not assigned for docs; **Марк**: unassigned
-- Owner merge: after Mira docs review; no merge by author
-- **SET-06**: pending/unassigned until docs PR merged; Stage6/production/live Google/real Owner binding unchanged.
+- Current stage: **Settings SET-05 — documentation closeout correction**
+- Documentation PR: **#310**, open / Ready / mergeable
+- Reviewed docs exact head: **`182a185e1ed8dc734b45ebd1ba15c4bcf45b4fde`**
+- Mira docs-only review: **CHANGES REQUIRED — 1 current-scope documentation defect**
+- `SET05-DOC-MIRA-01`: `docs/SETTINGS.md` claims password/session secrets are not reflected in **logs**, but SET-05 established response/HTML/DTO/browser secrecy and did not establish a general log-sink contract or dedicated log audit
+- **Лира**: assigned one bounded docs correction; remove/narrow the unsupported logs claim only
+- **Мира**: fresh docs-only review after new stable head
+- **Лёва**: stopped; not assigned to docs
+- **Марк**: unassigned
+- Exact-head docs CI #42487505867: **SUCCESS**
+- PR #310 otherwise matches the required seven-file documentation scope
+- SET-06 remains inactive until SET-05 documentation closeout is merged
+- No runtime/code/schema/migration/CI-workflow changes.
