@@ -11,6 +11,10 @@ export function settingsUserPath(locale: string): string {
   return `${settingsPath(locale)}/user`;
 }
 
+export function settingsAdministratorPath(locale: string): string {
+  return `${settingsPath(locale)}/administrator`;
+}
+
 export function canonicalAuthorizationPath(locale: string): string {
   return `/${encodeURIComponent(locale)}/admin/authorization`;
 }

@@ -58,7 +58,7 @@ const ownerState = {
 
 describe("SET-02 shared Settings shell and canonical forms", () => {
   it.each(["en", "ru", "he"] as const)(
-    "exposes User preferences and leaves future surfaces inert in %s", locale => {
+    "exposes User preferences and keeps unassigned surfaces inert in %s", locale => {
       const router = createMemoryRouter([{ path: "*", element:
         <HeaderAuthProvider initialUser={null}>
           <SettingsShell locale={locale} canViewForum={false}>
@@ -73,7 +73,7 @@ describe("SET-02 shared Settings shell and canonical forms", () => {
       expect(page.container.querySelectorAll("h1")).toHaveLength(1);
       expect(page.container.querySelector('.settings-panel-nav a[href$="/settings/forum"]')).toBeNull();
       expect(page.container.querySelector('.settings-panel-nav a[href$="/settings/user"]')).not.toBeNull();
-      expect(page.container.querySelectorAll(".settings-panel-pending-item")).toHaveLength(3);
+      expect(page.container.querySelectorAll(".settings-panel-pending-item")).toHaveLength(2);
       expect(page.container.querySelectorAll(".settings-panel-pending-item a")).toHaveLength(0);
       page.unmount();
       router.dispose();

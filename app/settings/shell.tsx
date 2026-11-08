@@ -2,15 +2,16 @@ import type { ReactNode } from "react";
 import { Link } from "react-router";
 import { useTranslation } from "react-i18next";
 import { Breadcrumbs, ForumShell } from "../forum/ui";
-import { settingsForumPath, settingsPath, settingsUserPath } from "./paths";
+import { settingsAdministratorPath, settingsForumPath, settingsPath, settingsUserPath } from "./paths";
 
 /** A shared Settings shell inside ForumShell, never another AdminShell. */
 export function SettingsShell({
-  locale, canViewForum, current, children,
+  locale, canViewForum, canViewAdministrator = false, current, children,
 }: {
   locale: string;
   canViewForum: boolean;
-  current?: "forum" | "user";
+  canViewAdministrator?: boolean;
+  current?: "forum" | "user" | "administrator";
   children: ReactNode;
 }) {
   const { t } = useTranslation("common");
@@ -20,6 +21,7 @@ export function SettingsShell({
         { label: t("adminSettings"), ...(current ? { to: settingsPath(locale) } : {}) },
         ...(current === "forum" ? [{ label: t("settingsForumRoles") }] : []),
         ...(current === "user" ? [{ label: t("settingsUser") }] : []),
+        ...(current === "administrator" ? [{ label: t("settingsAdministrator") }] : []),
       ]} />
       <header className="admin-panel-heading">
         <h1>{t("adminSettings")}</h1>
@@ -28,10 +30,10 @@ export function SettingsShell({
         {canViewForum ? <Link to={settingsForumPath(locale)} aria-current={current === "forum" ? "page" : undefined}>
           {t("settingsForumRoles")}
         </Link> : null}
-        <span className="settings-panel-pending-item">
-          <span>{t("settingsAdministrator")}</span>
-          <span className="admin-panel-pending">{t("adminInDevelopment")}</span>
-        </span>
+        {canViewAdministrator ? <Link to={settingsAdministratorPath(locale)}
+          aria-current={current === "administrator" ? "page" : undefined}>
+          {t("settingsAdministrator")}
+        </Link> : null}
         <Link to={settingsUserPath(locale)} aria-current={current === "user" ? "page" : undefined}>
           {t("settingsUser")}
         </Link>
