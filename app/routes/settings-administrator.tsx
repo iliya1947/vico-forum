@@ -149,7 +149,7 @@ export default function SettingsAdministratorRoute() {
         </select>
         <Link className="settings-workspace-entry" to={selectAttentionEntry(state.locale, state.attention, prefs)}>
           {t("settingsAdminOpenAttention")}
-        </a>
+        </Link>
       </fieldset> : null}
       <fieldset className="settings-workspace-fieldset">
         <legend>{t("settingsAdminPresentation")}</legend>
