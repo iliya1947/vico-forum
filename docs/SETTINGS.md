@@ -18,8 +18,8 @@ owner visual acceptance and Stage 6 external integration are not claimed.
 | Surface | Route | Current implementation and access |
 | --- | --- | --- |
 | Forum & roles | `/:locale/settings/forum` | **SET-02 implemented**; exact authenticated server-bound Owner only; existing authorization management plus independent new-registration flags |
-| Administrator preferences | No route yet | **SET-03 pending**; future per-admin convenience preferences, gated by current Admin or Attention access |
-| User preferences | No route yet | **SET-04 pending**; future authenticated per-user preference controls |
+| Administrator preferences | No route yet | **SET-04 pending**; future per-admin convenience preferences, gated by current Admin or Attention access |
+| User preferences | No route yet | **SET-03 pending**; future authenticated per-user preference controls |
 | Account & security | No route yet | **SET-05 pending**; future authenticated Better Auth account/session management |
 | Privacy | No route yet | **SET-06 pending**; future authenticated online-visibility preference (default ON when implemented) |
 
@@ -137,12 +137,12 @@ silent success or ordinary authorization denial.
 
 ## Approved but not yet implemented (SET-03–SET-06)
 
-- **SET-03 Administrator preferences:** per-admin convenience presentation,
-  without introducing a global settings store or new Admin permission system.
-- **SET-04 User preferences:** future controls over existing theme, locale and
+- **SET-03 User preferences:** future controls over existing theme, locale and
   editor-preference mechanisms, respecting their current storage ownership.
   Reply/mention notification toggles were explicitly deferred; hiding types in
   the UI is not a substitute for authoritative unread/producer semantics.
+- **SET-04 Administrator preferences:** per-admin convenience presentation,
+  without introducing a global settings store or new Admin permission system.
 - **SET-05 Account & security:** future supported Better Auth account/session
   operations, without replacing the authentication/session provider.
 - **SET-06 Privacy:** future persisted per-user public online visibility
