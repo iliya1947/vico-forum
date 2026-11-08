@@ -173,7 +173,7 @@ describe("SET-03 authenticated User preferences and browser theme", () => {
     actorId = "account-bob";
     preferred = "he";
     await router.navigate("/ru/settings/user");
-    const newSelect = page.container.querySelector<HTMLSelectElement>("#settings-preferred-locale")!;
+    const newSelect = page.container.querySelector("#settings-preferred-locale")!;
     const newForm = newSelect.closest("form")!;
     expect(page.container.querySelector(".settings-theme-fieldset")).toBe(shell);
     expect(newSelect).not.toBe(select);
