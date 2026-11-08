@@ -1530,3 +1530,8 @@ PR #304 exact head `cc8dfc9722287ec66ade759b0b1c8d69a8062a6c`, base `cb805a074de
 ## SET-03 independent review — SET03-LEV-01 confirmed
 
 PR #304 exact head `cc8dfc9722287ec66ade759b0b1c8d69a8062a6c`: Lev found one P2, SET03-LEV-01, and Mira independently confirmed it. The locale select is uncontrolled via `defaultValue`; on a same-mounted account change, loader identity/hidden expectedUserId can update while the previous account's unsaved locale remains in the DOM, so an explicit Save can apply that stale draft to the new session actor. Server authorization remains correct; the defect is account-scoped UI draft isolation. Lira is assigned one bounded correction only. After a new stable head/checks, coordinator-first review restarts. Mark remains unassigned.
+
+
+## SET-03 corrected head — coordinator PASS / Lev repeat review assigned
+
+PR #304 exact head `6c45bb17ea84f1df0bed8a8b8ca4c558ba42edac`, base `cb805a074de3bfdcd140125ebaa425a76bb6496d`: Mira fresh coordinator-first whole-PR **PASS, 0 confirmed current-scope defects**. SET03-LEV-01 is closed: the locale form is account-keyed, so old unsaved locale state cannot cross a same-mounted account change; same-account draft behavior is preserved. Correction changes only three files from the prior reviewed head, while the other 23 PR files are byte-identical. Exact-head CI #42445796066 and Chromium #42445796063 are SUCCESS. Implementation is frozen. Lev is assigned repeat independent technical whole-PR review of this same head; Mark remains unassigned.
