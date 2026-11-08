@@ -4,17 +4,17 @@
 
 ## Актуальный baseline и назначение
 
-- Current main/base: `cb805a074de3bfdcd140125ebaa425a76bb6496d`; SET-01/02 implementation + separate factual docs fully closed; migrations0000–0060.
-- Current stage: **SET-03 repeat independent technical whole-PR review complete — PASS, 0 confirmed current-scope defects**.
-- PR **#304**, frozen reviewed head `6c45bb17ea84f1df0bed8a8b8ca4c558ba42edac`, open/Ready/unmerged;26-file scope.
-- Мира fresh coordinator PASS и Лёва repeat independent PASS относятся к этому exact head. **SET03-LEV-01 closed independently**.
-- [Current report #6717213664](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6717213664); прежний CHANGES REQUIRED #6716992555 относится только к superseded cc8dfc97.
-- Correction:1 runtime line — account-keyed locale Form — и2 regression files, остальные23 PR files byte-identical. Own real Chromium/Worker/Better Auth/PG probe: same-account unsaved draft сохраняется; stale pre-refresh POST409; Alice→Bob сбрасывает только locale form/select и показывает Bob he без auto-write; explicit Bob Save меняет только Bob; Bob→Alice возвращает её locale/Editor keys, browser-wide theme сохраняется.
-- Собственные exact-head checks:334 application tests/12files,15 native PG/4files,build;12 SET-03 browser groups и5 дополнительных собственных account-switch groups PASS.0 page errors/external requests; EN/RU/HE320/768/1280 assertions сохранены.
-- GitHub exact-head CI #42445796066 и browser #42445796063 independently read SUCCESS/attempt1. Full local CI/AP-10/History/SET-02 browser rerun на новом head не заявляется.
-- Evidence: `/workspace/work/set03-repeat-evidence/`; previous own full review evidence: `/workspace/work/set03-review-evidence/`. Implementation unchanged, checkout clean; own runtime/container/DB/dummy vars/symlink удалены.
-- **Next — Мира:** readiness routing владельцу для merge этого exact head; после merge — separate factual SET-03 docs closeout. Любое implementation change требует нового coordinator-first cycle.
-- Лёва завершил review и остановился; Марк не назначен. SET-04–06, deputies и Stage6/production/live Google/real Owner binding вне scope.
+- Current main/base: `35fa64428fc551ae58b9026dad45797016dd4251`; SET-01–03 implementation + separate factual docs closed; migrations0000–0060.
+- Current stage: **SET-04 independent technical whole-PR review complete — CHANGES REQUIRED**.
+- PR **#307**, frozen reviewed `5cc5c820b0445ddb57cf3663e7cfb33c059ab108`, open/Ready/unmerged;38-file scope.
+- Coordinator Мира PASS на этом head; Лёва independently подтвердил **ровно1 current-scope P2: SET04-LEV-01**. Других current-scope defects не установлено.
+- [Independent report #6718927323](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6718927323): real Better Auth/Worker/PG/Chromium close-only actor имеет direct Admin200 и Administrator preferences200, но в новом Settings landing/nav0 ссылок на Administrator preferences. Sibling pin grant даёт2 ссылки; отзыв только pin снова0, direct route остаётся200.
+- Причина: новый entry projection/Settings navigation наследуют неполный header admin capability Set без forum.topic.close. Старый header omission существовал в baseline; finding scoped к новой SET-04 доступности/entry projection, а не общий historical header audit. Нужна согласованность с существующей authoritative admission matrix, без новых прав/role exceptions.
+- **SET04-MIRA-01 independently remains closed:** настоящая command-created measure, real detail loader → compact density, adminLast=measures и preference record unchanged/no private IDs/path; другой authenticated actor403.
+- Own checks:251 application tests/21files,9 native PG/3files,build;10 SET-04 browser groups PASS/0 errors/external requests и4 own workspace probe groups. GitHub exact-head CI #42458305882/browser #42458305779 SUCCESS/attempt1,all4 browser jobs.
+- Evidence `/workspace/work/set04-review-evidence/`; implementation unchanged/checkout clean, own runtime/container/DB/vars/symlink убраны.
+- **Next — Мира:** подтвердить/направить Лире один bounded SET04-LEV-01 correction в #307. Новый head/checks → fresh coordinator-first cycle. К merge сейчас не готовить.
+- Лёва завершил review и остановился; Марк не назначен. SET-05/06, factual docs, deputies и Stage6/production вне scope.
 
 
 ## Handoff — Лира: Stage2 factual documentation closeout
@@ -1590,3 +1590,8 @@ Exact-head [CI #42458305882](https://github.com/iliya1947/vico-forum/actions/run
 ## SET-04 corrected head — fresh coordinator PASS / Lev review assigned
 
 PR #307 exact head `5cc5c820b0445ddb57cf3663e7cfb33c059ab108`, base/current main `35fa64428fc551ae58b9026dad45797016dd4251`: Mira fresh coordinator whole-PR **PASS, 0 confirmed current-scope defects**. SET04-MIRA-01 is closed: the authenticated measure-manager actor ID now reaches AdminShell on the real measure-detail route, so density remains account-bound; stale/different header identity cannot inherit it, and exact-path recording keeps `adminLast` at the `measures` workspace index rather than any private measure ID/path. Correction from the prior reviewed head is exactly one commit / three files (one runtime line + two regressions); the other 35 PR files are unchanged from the completed prior whole-PR review. Exact-head CI #42458305882 and Chromium #42458305779 are SUCCESS; browser log executed the new real measure-detail case. Implementation is frozen. Lev is assigned independent technical whole-PR review of the same head; Mark remains unassigned.
+
+
+## SET-04 independent technical review — Лёва CHANGES REQUIRED
+
+[Full report #6718927323](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6718927323), PR #307 exact `5cc5c820b0445ddb57cf3663e7cfb33c059ab108` / base `35fa64428fc551ae58b9026dad45797016dd4251`: whole38-file review complete, **1 P2 SET04-LEV-01**, других confirmed current-scope defects нет. Новые Administrator Settings nav/entry projection не учитывают поддерживаемый close-only Admin: реальные direct Admin/Administrator200, Settings0 entry links; pin grant2links, revoke pin0links при retained close/direct200. Baseline header omission явно отделён от текущего нового SET-04 consumer defect. Нужен bounded admission-matrix parity fix, без authority/RBAC change. **SET04-MIRA-01 не переоткрыт**: независимо проверен реальный command-created measure detail, actor-bound compact, unchanged adminLast/no privateIDs иother-user403. Own251 app/9PG/build/10SET04 browser +4probe groups; GitHub CI/browser same-head SUCCESS. Task-owned environment cleaned, git clean; implementation не менялся. Лёва завершил review/остановился; next — Мира correction routing, затем fresh coordinator-first cycle на новом head. SET-05/06/docs/Stage6 inactive.
