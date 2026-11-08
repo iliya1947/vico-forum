@@ -225,7 +225,7 @@ describe("SET-05 localized Settings presentation and existing Google linking", (
     await waitFor(() => expect(page.container.querySelector(".settings-account-sessions li")).not.toBeNull());
     expect(page.container.querySelectorAll(".settings-account-sessions li")).toHaveLength(2);
     expect(page.container.querySelectorAll("main")).toHaveLength(1);
-    expect(page.container.querySelectorAll(".settings-panel-pending-item")).toHaveLength(1);
+    expect(page.container.querySelector('.settings-panel-nav a[href$="/settings/privacy"]')).not.toBeNull();
     expect(page.container.querySelector(".settings-panel-nav [aria-current='page']"))
       .toHaveAttribute("href", `/${locale}/settings/account`);
     const form = page.container.querySelector<HTMLFormElement>(".settings-account-form")!;
