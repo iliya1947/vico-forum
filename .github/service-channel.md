@@ -4,15 +4,13 @@
 
 ## Актуальный baseline и назначение
 
-- Current main/base: `365b75405fbcc2ac2f274f5a83ce8a737b60e700`.
-- SET-04 implementation PR #307 merged; final implementation head `27a2169ab013597d63fc318c7a255cdc4149b7cc`. SET04-MIRA-01 и SET04-LEV-01 closed; coordinator + repeat independent reviews PASS.
-- Docs-only PR **#308**, exact head `9131278240c682650c5a4c1048cdf43be786dd81`, base current main; open / Ready / mergeable.
-- Mira полностью прочитала все семь изменённых документов и сверила новые SET-04 утверждения с merged runtime, correction/review history и exact-head CI.
-- Docs verdict: **PASS, 0 confirmed current-scope documentation defects**.
-- PR #308 — один commit ahead / zero behind; changed exactly seven assigned documentation files; runtime/schema/migrations/workflows не изменены.
-- Exact-head CI #42464119238: **SUCCESS** (`checks`, `database`). Docs-only PR отдельный Chromium не запускал и он не заявляется.
-- **Next — Owner merge #308.** SET-05 не назначать до наблюдаемого merge docs closeout в `main`.
-- Лира остановилась; Лёва/Марк не назначены. SET-06 и Stage6/production inactive.
+- Current main: `76fc5b16be4f2425a0ad1fdcb7b38974db355c56`; docs-only PR #308 merged. **SET-04 fully closed**.
+- Next bounded Settings package: **SET-05 Account & security**.
+- Approved SET-05 technical plan remains #6711736883. Rechecked against current main and exact Better Auth v1.7.7 source: `listUserAccounts` exists; `listSessions` is fresh-session gated; `revokeSession` / `revokeOtherSessions` exist; current Vico `AuthRuntime` still only exposes session resolution + generic handler and therefore needs the planned bounded self-service extension.
+- No repeat Lev planning is required.
+- **Lira is assigned implementation** from current main. Mira reviews the first stable exact head before any Lev review.
+- SET-05 remains bounded to current-account methods/password/session management and reuse of the existing explicit Google-link flow. No new auth schema/provider, account deletion/email change/unlink/reset/recovery/2FA/passkeys, SET-06, Stage6 or permanent docs.
+- SET-06 Privacy and production/Stage6 remain inactive.
 
 ## Handoff — Лира: Stage2 factual documentation closeout
 
@@ -1644,3 +1642,8 @@ SET-04 Administrator preferences recorded as implemented in repository/local-CI:
 ## SET-04 docs closeout — coordinator PASS
 
 PR #308 exact head `9131278240c682650c5a4c1048cdf43be786dd81`: **PASS, 0 confirmed current-scope documentation defects**. Seven assigned docs files were read fully and checked against merged SET-04 runtime and the #307 correction/review evidence. The docs correctly record Administrator preferences as repository/local-CI implementation, preserve no-production/live-Google/real-Owner-binding boundaries, and advance the sequence to unassigned SET-05 with SET-06 pending. Exact-head CI #42464119238 is SUCCESS; no separate Chromium run is claimed for this docs-only PR. PR is one commit ahead/zero behind, Ready and mergeable. Next action: Owner merge #308; SET-05 waits for that merge.
+
+
+## SET-04 fully closed; SET-05 implementation active
+
+Docs PR #308 merged into main at `76fc5b16be4f2425a0ad1fdcb7b38974db355c56`; SET-04 implementation and factual documentation are fully closed. Existing approved SET-05 plan #6711736883 was rechecked against current main and Better Auth v1.7.7 source and remains applicable, so no repeat Codex planning is needed. Lira is assigned SET-05 Account & security implementation only. Mira reviews the first stable implementation exact head; Lev stays unassigned until coordinator PASS; Mark unassigned. Permanent docs follow separately after implementation merge. SET-06/Stage6/production remain inactive.
