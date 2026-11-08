@@ -1207,7 +1207,7 @@ describe("Help & solutions modes and authoring", () => {
     expect(security).toMatchObject({ mode: "security", group: "attachments", queue: null });
     expect(readSecurityEvents).toHaveBeenCalledWith(0);
     expect(readQueue).toHaveBeenCalledTimes(calls);
-    const securityView = renderRoute(AttentionRoute, security, "/en/attention?mode=security", "en", "ltr");
+    const securityView = renderRoute(AttentionRoute, security, "/en/attention?mode=security", "en", "ltr", { id: "manager", name: "Manager" });
     expect(await screen.findByRole("link", { name: "Attachments" })).toHaveAttribute("aria-current", "page");
     expect(screen.getByRole("link", { name: "Attachments" })).toHaveAttribute("href", "/en/attention?mode=security&group=attachments");
     expect(screen.getByRole("link", { name: "Group 2" })).toBeVisible();
@@ -1215,6 +1215,8 @@ describe("Help & solutions modes and authoring", () => {
     expect(screen.queryByRole("link", { name: "Group 1" })).not.toBeInTheDocument();
     expect(screen.getByText("masked\\u{202E}txt.exe")).toBeVisible();
     expect(screen.getByText("executable-signature")).toBeVisible();
+    expect(screen.getByText("uploader-1")).not.toBeVisible();
+    screen.getByRole("button", { name: "Show technical details" }).click();
     expect(screen.getByText("uploader-1")).toBeVisible();
     expect(screen.queryByRole("button", { name: "Accept signal" })).not.toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Next" })).toHaveAttribute(

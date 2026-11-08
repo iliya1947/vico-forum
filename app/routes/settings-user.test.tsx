@@ -125,7 +125,7 @@ describe("SET-03 authenticated User preferences and browser theme", () => {
     await waitFor(() => expect(screen.getAllByRole("radio")).toHaveLength(3));
     await waitFor(() => expect(screen.getByRole("radio", { name: commonResources(locale).settingsThemeSystem })).toBeChecked());
     expect(page.container.querySelector('.settings-panel-nav [aria-current="page"]')).toHaveAttribute("href", `/${locale}/settings/user`);
-    expect(page.container.querySelectorAll(".settings-panel-pending-item")).toHaveLength(3);
+    expect(page.container.querySelectorAll(".settings-panel-pending-item")).toHaveLength(2);
     expect(page.container.querySelectorAll("main")).toHaveLength(1);
     expect(screen.getByRole("combobox", { name: commonResources(locale).settingsEditorMode })).toBeVisible();
     expect(screen.getByRole("combobox", { name: commonResources(locale).editorSpellcheck })).toBeVisible();
