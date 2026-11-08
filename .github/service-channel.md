@@ -1474,3 +1474,8 @@ PR #302 exact head `f7a862ea0a81112857e9d7510afdab183a9631a3`, base `681e8bab0ed
 - SET02-MIRA-01/02 закрыты и независимо пересверены: explicit-only linking и signed-state OAuth open→closed rejection/open→open creation с real Better Auth/PG, synthetic remote provider.
 - Checkout/diff clean, implementation unchanged; task-owned runtime/container/DBs/dummy vars/dependency symlink removed. Evidence logs/results/screenshots/manifest/hashes/report в `/workspace/work/set02-review-evidence/`.
 - **Next — Мира:** bounded author correction SET02-LEV-01, затем fresh coordinator-first cycle. К merge не готовить; Лёва остановился, Марк не назначен.
+
+
+## SET-02 independent review — SET02-LEV-01 confirmed
+
+Lev independent technical review of PR #302 exact head `f7a862ea0a81112857e9d7510afdab183a9631a3` returned CHANGES REQUIRED with one current-scope P2, SET02-LEV-01. Mira independently confirmed it: registration-policy DB/invariant failures are swallowed by the Better Auth validation boundary and emerge as ordinary `403 validation_failed`, violating the approved failure contract although account creation remains fail-closed. Lira is assigned one bounded correction in the same PR. SET02-MIRA-01/02 remain closed. After a new stable head and checks, the coordinator cycle restarts before any further Lev review.
