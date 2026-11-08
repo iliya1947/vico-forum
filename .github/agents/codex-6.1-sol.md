@@ -64,3 +64,8 @@ Settings plan [#6711736883](https://github.com/iliya1947/vico-forum/pull/251#iss
 ## SET-03 repeat review — final routing
 
 PR #304 exact head `6c45bb17ea84f1df0bed8a8b8ca4c558ba42edac`: Lev repeat PASS accepted for readiness. No further Codex work assigned. Next action is Owner merge; after observed merge, separate SET-03 factual docs closeout. SET-04 not assigned yet.
+
+
+## SET-03 post-merge routing
+
+PR #304 merged at `e985a43f8853c234c96bb4528a9d4dd709361018`. No further Codex work is assigned. A separate SET-03 factual docs closeout is active under Lira/Mira; SET-04 remains unassigned until that docs PR is merged.
