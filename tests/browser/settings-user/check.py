@@ -243,6 +243,52 @@ try:
         settings.locator("#settings-editor-mode").focus()
         settings.keyboard.press("ArrowDown")
         expect(settings.locator("#settings-editor-mode")).to_be_focused()
+
+        # SET03-LEV-01: one browser/cookie jar, a mounted Settings route, actual
+        # Better Auth sign-out/in and SPA revalidation; no new account gets the
+        # previous actor's unsaved locale draft.
+        alice_reset = post(a_context, [
+            ("intent", "save-locale"), ("locale", "en"), ("expectedUserId", a_id)])
+        bob_initial = post(b_context, [
+            ("intent", "save-locale"), ("locale", "he"), ("expectedUserId", b_id)])
+        assert (alice_reset.status, bob_initial.status) == (303, 303)
+        document(settings, "/en/settings/user", private=True)
+        original_select = settings.locator("#settings-preferred-locale")
+        expect(original_select).to_have_value("en")
+        original_select.select_option("ru")  # Alice's unsaved draft
+        settings.locator(".language-switcher select").select_option("he")
+        settings.wait_for_url("**/he/settings/user")
+        expect(settings.locator("#settings-preferred-locale")).to_have_value("ru")
+        assert sql('select locale from "user" where id=$1', [a_id])[0]["locale"] == "en"
+        settings.evaluate("""() => {
+          window.__set03SettingsShell = document.querySelector('.settings-theme-fieldset');
+          window.__set03OldLocaleSelect = document.querySelector('#settings-preferred-locale');
+        }""")
+
+        signout = a_context.request.post(base + "/api/auth/sign-out", headers={"Origin": base})
+        assert signout.status == 200, ("sign-out", signout.status, signout.text()[:150])
+        signin = a_context.request.post(base + "/api/auth/sign-in/email", headers={"Origin": base},
+            data={"email": prefix + "-bob@test.invalid",
+                  "password": "synthetic-browser-password-123456"})
+        assert signin.status == 200, ("sign-in Bob", signin.status, signin.text()[:150])
+        settings.locator(".language-switcher select").select_option("ru")
+        settings.wait_for_url("**/ru/settings/user")
+        expect(settings.locator(".auth-user")).to_contain_text("SET03 bob")
+        expect(settings.locator('.settings-locale-form input[name="expectedUserId"]')).to_have_value(b_id)
+        expect(settings.locator("#settings-preferred-locale")).to_have_value("he")
+        assert settings.evaluate("""() => window.__set03SettingsShell ===
+            document.querySelector('.settings-theme-fieldset')"""), "Settings route must stay mounted"
+        assert not settings.evaluate("""() => window.__set03OldLocaleSelect ===
+            document.querySelector('#settings-preferred-locale')"""), "account-scoped select must reset"
+        assert sql('select locale from "user" where id=$1', [a_id])[0]["locale"] == "en"
+        assert sql('select locale from "user" where id=$1', [b_id])[0]["locale"] == "he"
+        settings.locator("#settings-preferred-locale").select_option("ru")
+        settings.locator(".settings-locale-form button[type='submit']").click()
+        settings.wait_for_url("**/ru/settings/user?localeSaved=1")
+        assert sql('select locale from "user" where id=$1', [a_id])[0]["locale"] == "en"
+        assert sql('select locale from "user" where id=$1', [b_id])[0]["locale"] == "ru"
+        record("same-mounted-account-switch-discards-old-unsaved-locale")
+
         assert not page_errors, page_errors
         assert not external, external
         record("set03-real-browser-acceptance-passed")
