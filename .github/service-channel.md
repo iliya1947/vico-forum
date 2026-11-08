@@ -1879,3 +1879,31 @@ No other confirmed current-scope documentation defects found in the seven-file P
 - exact-head CI #42487505867 is SUCCESS.
 
 Lira should make only this bounded docs correction, publish a new stable head/checks and stop for fresh Mira docs-only review. Lev/Mark remain unassigned. SET-06 remains inactive.
+
+
+## SET-05 documentation closeout / PR #310 — Mira PASS
+
+Exact head `182a185e1ed8dc734b45ebd1ba15c4bcf45b4fde`, base/current main `2f2969d5b3a7ca7844d674b85448838fc671eaca`: **PASS, 0 confirmed current-scope documentation defects**.
+
+Reviewed the complete 7-file docs-only scope:
+- `PROJECT.md`
+- `PROJECT_STATE.md`
+- `ROADMAP.md`
+- `docs/SETTINGS.md`
+- bounded Settings status text in `docs/ADMIN_PANEL.md`
+- `docs/PROJECT_HISTORY/PROJECT_HISTORY.md`
+- new `docs/PROJECT_HISTORY/PROJECT_HISTORY_21.md`
+
+Verification:
+- all seven files were read to their actual end on the exact PR head;
+- PR contains only Markdown documentation changes, no runtime/code/schema/migration/CI-workflow changes;
+- SET-01–SET-05 are consistently recorded as repository/local-CI implemented; SET-06 Privacy is the only remaining Settings package;
+- Account & security contract matches merged code: authenticated route, safe linked-method projection, credential-only current-password change, explicit Google linking reuse, own-session list/revoke boundaries, server-only session tokens, freshness, same-origin/stale-identity and private/no-store behavior;
+- Better Auth version is pinned to 1.7.7. Project config uses database rate-limit storage and trusted `cf-connecting-ip`; the installed v1.7.7 source confirms the default `/change-password` special rule is 3 requests / 10 seconds. Merged SET-05 routes password change through the canonical HTTP handler, matching the final reviewed implementation;
+- no claims of deployed production, live Google OAuth, real Owner binding or owner visual acceptance were introduced;
+- history snapshot #21 correctly records #309, the correction chain, final exact implementation head, merge commit and final review/check evidence without replacing current source-of-truth;
+- exact-head CI #42487505867 is SUCCESS with both checks and database jobs.
+
+PR #310 remains open, Ready, mergeable and unchanged. No independent Codex docs review is required by the assigned closeout workflow.
+
+**Next: Owner merge PR #310.** Any documentation-head change before merge requires a fresh Mira docs-only review.
