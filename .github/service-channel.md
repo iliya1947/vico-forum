@@ -2102,3 +2102,31 @@ Do not broaden into a shared error-classification refactor unless needed for thi
 - **Exactly two paths changed since reviewed head:** `db/hyperdrive-user-privacy.ts` adds local cycle-guarded cause walk reusing existing availability/connection-timeout/query-timeout predicates; new `db/hyperdrive-user-privacy.test.ts` adds **17 actual Drizzle-wrapped and direct failures** across own reads/saves. Wrapped SQLSTATE 08/server unavailable/transport/timeout now becomes `UserPrivacyUnavailableError` with original cause; wrapped SQLSTATE `42P01`/`28P01`/unexpected TypeError remain unexpected. Cyclic cause does not hang. Route's existing typed unavailable→private 503 behavior is unchanged. No other domain, migration, package, Settings/UI or CI-workflow changes.
 - **Corrected implementation [Ready PR #311](https://github.com/iliya1947/vico-forum/pull/311) exact head `11639e79ae67b61062d05bf3f05e32526204a056`**, open/mergeable. **[CI #42504491033](https://github.com/iliya1947/vico-forum/actions/runs/42504491033) SUCCESS**: lint/typecheck/build, 167/167 application files (2114/2114 tests incl. 17 new), 52/52 native PostgreSQL17 files (605/605 tests), migrations/schema/runtime grants/provisioning/Worker smoke. **[Chromium #42504491099](https://github.com/iliya1947/vico-forum/actions/runs/42504491099) SUCCESS**: 4/4 jobs; same 13 real Privacy connected acceptance cases in settings_browser, no browser JS errors or external requests.
 - **Lira stopped after bounded author correction and evidence.** Fresh **Mira coordinator whole-PR review** of this new exact head required; prior verdict does not automatically become PASS, and no author whole-PR self-review was performed. Lev technical review only after Mira PASS; Mark unassigned. No Owner merge, permanent docs, production/Stage6 or real Owner/OAuth work.
+
+
+## SET-06 / PR #311 — fresh Mira coordinator whole-PR PASS after SET06-MIRA-01
+
+Reviewed corrected frozen exact head `11639e79ae67b61062d05bf3f05e32526204a056`, base/current main `c1109dc8c5c499b63dd6e4d2f76bce96fadb2cd5`.
+
+**Verdict: PASS — 0 confirmed current-scope defects.**
+
+- `SET06-MIRA-01` is closed. Compare from previously reviewed `b2a2b4a2...` to current head shows exactly two changed paths: `db/hyperdrive-user-privacy.ts` and new `db/hyperdrive-user-privacy.test.ts`.
+- The adapter now walks nested `cause` with a cycle guard and reuses existing PostgreSQL availability/connection-timeout/query-timeout predicates. Drizzle ORM remains pinned at **0.45.2**.
+- Focused regressions cover wrapped read/save SQLSTATE 08 availability, server-unavailable, transport and timeout failures; direct connect failures; cycle safety; and negative wrapped schema/auth/programming cases. Missing relation `42P01`, auth `28P01` and unexpected TypeError are not converted into ordinary unavailable errors.
+- The unchanged remainder of the 37-file PR retains the previously reviewed SET-06 behavior: migration 0061/runtime grants, missing-row=ON, atomic OFF cleanup, shared per-user heartbeat serialization, public SQL filter before count/LIMIT, own-account Privacy route guards, EN/RU/HE/RTL/responsive UI, no-store boundaries, native PG race/count/rollback coverage and connected browser acceptance.
+- Exact-head CI #42504491033: **SUCCESS**.
+- Exact-head Chromium #42504491099: **SUCCESS**, 4/4 jobs.
+- PR #311 is open/Ready/mergeable on the reviewed exact head.
+- No permanent docs, production, Stage 6, live OAuth/Owner binding or unrelated scope is included.
+
+### Handoff — Лёва: independent technical whole-PR review
+
+Perform the independent technical whole-PR review of **PR #311 exact head `11639e79ae67b61062d05bf3f05e32526204a056`** against the approved SET-06 plan and current source-of-truth.
+
+Required result:
+1. Review the full SET-06 implementation independently, including the corrected PostgreSQL availability classification.
+2. Classify only confirmed current-scope defects; future-only hardening is not a blocker.
+3. Verify the stable exact-head CI/Chromium evidence and that SET06-MIRA-01 is actually closed.
+4. Record PASS or the complete current-scope finding set in #251 and stop.
+
+Do not modify implementation during review. Lira remains stopped; Mark unassigned. Owner merge remains blocked until this independent review PASS.
