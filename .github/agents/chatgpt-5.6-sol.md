@@ -1360,3 +1360,8 @@ Exact head `892d30f954c1cd974d16b8331b7af71607db9bde`: **PASS, 0 confirmed curre
 ## SET-03 closed; SET-04 active
 
 Docs #305 merged at `35fa64428fc551ae58b9026dad45797016dd4251`; SET-03 fully closed. Approved SET-04 plan #6711736883 remains current; no repeat Lev planning. Lira assigned SET-04 implementation. Mira reviews the first stable head; Lev remains unassigned until coordinator PASS.
+
+
+## SET-04 / PR #307 — coordinator CHANGES REQUIRED
+
+Exact head `1a858825836e76801bb63025a28312b4d0bdd082`: 1 confirmed current-scope defect, SET04-MIRA-01. `admin-measure.tsx` omits the authenticated actor ID from the `AdminAccess` passed to `AdminMeasureDetail` → `AdminShell`, so account-local density falls back to default on the real measure-detail route. Existing CI/browser are green but do not cover this route. No other confirmed current-scope defect found. Lira correction assigned; Lev withheld until fresh coordinator PASS.
