@@ -6,6 +6,7 @@ on:
       - ".github/workflows/ap10-browser.yml"
       - "tests/browser/user-measures/**"
       - "tests/browser/settings-registration/**"
+      - "tests/browser/settings-user/**"
       - "app/settings/**"
       - "app/routes/settings-*.tsx"
       - "app/routes/credential-sign-*.tsx"
@@ -275,7 +276,7 @@ jobs:
             'GOOGLE_CLIENT_SECRET=local-test-unused' \
             'VICO_OWNER_USER_ID=set02-synthetic-owner' > .dev.vars
           pnpm build
-      - name: Real SET-02 Chromium registration and Owner acceptance
+      - name: Real SET-03 personal Settings and SET-02 registration Chromium acceptance
         run: |
           pnpm exec vite preview --host 127.0.0.1 --port 4189 --strictPort > "$RUNNER_TEMP/set02-preview.log" 2>&1 &
           preview_pid=$!
@@ -296,6 +297,11 @@ jobs:
             tail -n 100 "$RUNNER_TEMP/set02-preview.log"
             exit 1
           fi
+          "$RUNNER_TEMP/set02-playwright/bin/python" tests/browser/settings-user/check.py \
+            --url http://127.0.0.1:4189 --output "$RUNNER_TEMP/set02-evidence/set03" || {
+              tail -n 100 "$RUNNER_TEMP/set02-preview.log"
+              exit 1
+            }
           "$RUNNER_TEMP/set02-playwright/bin/python" tests/browser/settings-registration/check.py \
             --url http://127.0.0.1:4189 --output "$RUNNER_TEMP/set02-evidence" || {
               tail -n 100 "$RUNNER_TEMP/set02-preview.log"

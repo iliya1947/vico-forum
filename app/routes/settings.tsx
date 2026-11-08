@@ -4,7 +4,7 @@ import { authorizationOwnerContext } from "../authorization/request-context";
 import { isBoundOwner } from "../authorization/owner";
 import { ForumRouteError } from "../forum/ui";
 import { SettingsShell } from "../settings/shell";
-import { settingsForumPath } from "../settings/paths";
+import { settingsForumPath, settingsUserPath } from "../settings/paths";
 import { Link } from "react-router";
 import { useTranslation } from "react-i18next";
 
@@ -27,9 +27,8 @@ export default function SettingsRoute() {
     <section className="admin-overview settings-overview">
       <h2>{t("adminSettings")}</h2>
       <p>{t("settingsIntro")}</p>
-      {canViewForum
-        ? <Link className="admin-destination" to={settingsForumPath(locale)}>{t("settingsForumRoles")}</Link>
-        : <p className="empty-state">{t("settingsNoAvailable")}</p>}
+      {canViewForum ? <Link className="admin-destination" to={settingsForumPath(locale)}>{t("settingsForumRoles")}</Link> : null}
+      <Link className="admin-destination" to={settingsUserPath(locale)}>{t("settingsUser")}</Link>
     </section>
   </SettingsShell>;
 }

@@ -46,6 +46,7 @@ import { addTableDimension, spreadsheetToMarkdown, type MarkdownTable } from "./
 import { useHeaderAuthUser } from "../auth/auth-controls";
 import { clipboardPlainToMarkdown } from "./clipboard-markdown";
 import { useEditorAttachments } from "./editor-attachments";
+import { readEditorPreferences, subscribeEditorPreferences, writeEditorPreference } from "../settings/editor-preferences";
 
 export interface MarkdownEditorHandle {
   focus: () => void;
@@ -119,6 +120,9 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
     const visualSelectionRef = useRef<EditorSelection | null>(null);
     const visualSelectionKnownRef = useRef(false);
     const [authoringMode, setAuthoringMode] = useState<"simple" | "advanced">(defaultAuthoringMode);
+    const authoringModeRef = useRef(authoringMode);
+    const switchFromPreferencesRef = useRef<(mode: "simple" | "advanced") => void>(() => {});
+    useLayoutEffect(() => { authoringModeRef.current = authoringMode; }, [authoringMode]);
     const [spellCheckPreference, setSpellCheckPreference] = useState<boolean | null>(null);
     const spellCheck = spellCheckPreference ?? authoringMode === "simple";
     const [fullScreen, setFullScreen] = useState(false);
@@ -142,34 +146,25 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
     const accountId = authUser?.id ?? null;
 
     useEffect(() => {
-      function readPreferences() {
-        if (!accountId) {
-          setAuthoringMode(defaultAuthoringMode);
-          setSpellCheckPreference(null);
-          return;
+      function readPreferences(external = false) {
+        const preferences = readEditorPreferences(accountId);
+        const nextMode = preferences.mode ?? defaultAuthoringMode;
+        if (external) {
+          if (nextMode !== authoringModeRef.current) switchFromPreferencesRef.current(nextMode);
+        } else {
+          authoringModeRef.current = nextMode;
+          setAuthoringMode(nextMode);
         }
-        try {
-          const stored = window.localStorage.getItem("vico:editor:mode:" + accountId);
-          const storedSpellCheck = window.localStorage.getItem("vico:editor:spellcheck:" + accountId);
-          setAuthoringMode(stored === "advanced" || stored === "simple" ? stored : defaultAuthoringMode);
-          setSpellCheckPreference(storedSpellCheck === "true" ? true : storedSpellCheck === "false" ? false : null);
-        } catch {
-          setAuthoringMode(defaultAuthoringMode);
-          setSpellCheckPreference(null);
-        }
+        setSpellCheckPreference(preferences.spellcheck);
       }
       readPreferences();
-      const onStorage = (event: StorageEvent) => {
-        if (event.key === null || event.key === "vico:editor:mode:" + accountId
-          || event.key === "vico:editor:spellcheck:" + accountId) readPreferences();
-      };
-      window.addEventListener("storage", onStorage);
-      return () => window.removeEventListener("storage", onStorage);
+      return subscribeEditorPreferences(accountId, () => readPreferences(true));
     }, [accountId, defaultAuthoringMode]);
 
     function switchAuthoring(
       next: "simple" | "advanced",
       targetSelection?: EditorSelection,
+      persist = true,
     ) {
       const selection = targetSelection ?? sourceSelection() ?? historyRef.current.current.selection;
       if (next === "advanced") {
@@ -179,14 +174,17 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
         pendingVisualSelectionRef.current = selection;
         pendingSelectionRef.current = null;
       }
+      authoringModeRef.current = next;
       setAuthoringMode(next);
       setMode("write");
       visualSelectionRef.current = null;
       visualSelectionKnownRef.current = false;
-      if (accountId) {
-        try { window.localStorage.setItem("vico:editor:mode:" + accountId, next); } catch { /* private mode */ }
-      }
+      if (accountId && persist) writeEditorPreference(accountId, "mode", next);
     }
+    // Always use current editor selection/history after settings or cross-tab updates.
+    useLayoutEffect(() => {
+      switchFromPreferencesRef.current = next => switchAuthoring(next, undefined, false);
+    });
 
     const editorRef = useRef<HTMLDivElement>(null);
     const pendingVisualSelectionRef = useRef<EditorSelection | null>(null);
@@ -1034,10 +1032,7 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
                     onChange={(event) => {
                       const enabled = event.target.checked;
                       setSpellCheckPreference(enabled);
-                      if (accountId) {
-                        try { window.localStorage.setItem("vico:editor:spellcheck:" + accountId, String(enabled)); }
-                        catch { /* private browsing */ }
-                      }
+                      if (accountId) writeEditorPreference(accountId, "spellcheck", enabled);
                     }} />{t("editorSpellcheck")}</label>
                   <button type="button" disabled={disabled} aria-label={t("editorPastePlain")}
                     onClick={() => void pasteFromClipboard("plain")}>{t("editorPastePlain")}</button>
