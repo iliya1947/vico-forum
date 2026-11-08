@@ -131,12 +131,15 @@ Scope, порядок реализации, GitHub Pages progress preview, об�
 acceptance matrix и definition of done зафиксированы в [`docs/UI_UX_PASS.md`](docs/UI_UX_PASS.md).
 
 Отдельная Settings-последовательность идёт после завершённых AP-01–AP-11 и
-owner/authorization redesign. **SET-01 и SET-02 реализованы в repository/local-CI**:
+owner/authorization redesign. **SET-01–SET-03 реализованы в repository/local-CI**:
 все authorization-management writes разрешены только exact server-bound Owner,
 а `access.authorization.manage` сохраняет прежние защищённые read surfaces.
 SET-02 добавил Settings shell, Owner-only Forum & roles и независимые Google /
-email-password флаги для регистрации новых аккаунтов. Текущий Settings contract —
-`docs/SETTINGS.md`. Следующие SET-03–SET-06 ещё не реализованы и не назначены.
+email-password флаги для регистрации новых аккаунтов. SET-03 добавил
+`/:locale/settings/user` с темой System/Light/Dark, своим `user.locale` и
+существующими per-account/device Editor/code preferences.
+Текущий Settings contract — `docs/SETTINGS.md`. Следующий пакет SET-04
+(Administrator preferences) пока не назначен; SET-05–SET-06 также pending.
 
 Владелец отдельно утвердил target-product подход: UI проектируется как целевой Vico Forum, а не
 только как косметика поверх текущего MVP. Небольшое self-contained frontend behavior может
@@ -470,10 +473,12 @@ Reputation, полный owner-only audit, social-network profile mechanics и �
 scope, включая временные/постоянные administrative measures и историю значимых административных действий, зафиксирован в
 [`docs/ADMIN_PANEL.md`](docs/ADMIN_PANEL.md). Bounded delivery AP-01–AP-11 завершён в
 repository/local-CI path; фактическое состояние указано в `PROJECT_STATE.md`.
-Settings по решению владельца отделён от AP-11: SET-01 Owner-only authorization writes
-и SET-02 (Settings shell, Forum & roles, независимая политика регистрации новых Google
-и email/password аккаунтов) реализованы в `main` в repository/local-CI.
-SET-03–SET-06 ещё не реализованы и не назначены; их границы — в `docs/SETTINGS.md`.
+Settings по решению владельца отделён от AP-11: SET-01 Owner-only authorization writes,
+SET-02 (Settings shell, Forum & roles, независимая политика регистрации новых Google
+и email/password аккаунтов) и SET-03 (authenticated User preferences — тема, язык,
+существующие Editor/code preferences) реализованы в `main` в repository/local-CI.
+Следующий SET-04 (Administrator preferences) не назначен; SET-05–SET-06 тоже остаются
+не реализованными и не назначенными. Границы — в `docs/SETTINGS.md`.
 
 Черновики и автосохранение перенесены владельцем 2026-10-20 в возможные будущие функции
 (`Under development: drafts`) и не являются обязательным объёмом текущего Editor 2.0.
