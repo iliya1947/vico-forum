@@ -168,7 +168,9 @@ try:
         expect(form.locator('input[name="googleRegistrationEnabled"]')).to_be_checked()
         expect(form.locator('input[name="emailRegistrationEnabled"]')).to_be_checked()
         assert form.locator('input[name="expectedVersion"]').input_value() == "1"
-        expect(owner.locator('form:has(input[name="intent"])')).to_have_count(6)
+        intents = set(owner.locator('form input[name="intent"]').evaluate_all(
+            "(nodes) => nodes.map(node => node.value)"))
+        assert intents == {"createRole", "renameRole", "roleGrants", "deleteRole", "assignRole", "override"}, intents
         owner.get_by_role("button", name="Save registration settings").click()
         expect(owner.get_by_role("status")).to_contain_text("Registration settings updated.")
         assert policy()["version"] == 1 and not history()
