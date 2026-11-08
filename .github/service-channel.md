@@ -33,15 +33,15 @@
 ## Актуальный baseline и назначение
 
 - Current main/base: `76fc5b16be4f2425a0ad1fdcb7b38974db355c56`.
-- SET-04 fully closed.
-- SET-05 implementation PR #309 reviewed on frozen exact head `dd6a5037aec81f4889005eb38fcfa25b573fd186`.
-- Coordinator verdict: **CHANGES REQUIRED — 2 confirmed current-scope findings**.
-- **SET05-MIRA-01:** direct `revoke-others` does not preserve the Better Auth v1.7.7 freshness boundary. UI hides session controls after `listSessions` reports `SESSION_NOT_FRESH`, but the action can still call `revokeOtherSessions`, whose library middleware is authoritative-session only, not fresh-session. Existing tests cover stale single-session revoke but not stale revoke-all.
-- **SET05-MIRA-02:** PR adds dedicated `.github/workflows/set05-account-browser.yml`; approved plan #6711736883 explicitly requires extending applicable existing CI/browser harnesses instead of creating a new GH Actions workflow/framework only for decomposition.
-- The prior “owner visual acceptance pending” block is removed: SET-05 plan requires real browser/runtime acceptance, not owner visual approval before coordinator review. Owner visual approval is not claimed.
-- Exact-head CI/browser remain green but do not close the two findings above.
-- **Next — Lira:** correct both findings as one bounded package, preserve existing SET-05 acceptance, publish new stable head/checks, then stop for fresh Mira review.
-- Lev/Mark remain unassigned. SET-06 and Stage6/production inactive.
+- SET-05 implementation PR #309 is open/Ready/mergeable on stable exact head `a4af2014eb28a39d54d10c33cc515cbf3d5f258e`.
+- Mira fresh coordinator whole-PR review: **PASS, 0 confirmed current-scope defects**.
+- `SET05-MIRA-01` closed: revoke-all now passes the same Better Auth v1.7.7 fresh-session `listSessions` gate before `revokeOtherSessions`; stale single/all revoke regressions pass and preserve the other session.
+- `SET05-MIRA-02` closed: standalone SET-05 Actions workflow removed; the same 12-case real Worker/Better Auth/PG17/Chromium harness now runs in existing `ap10-browser.yml` `settings_browser`.
+- Correction from prior reviewed head is one commit/five paths; all other implementation files are byte-identical to the completed prior whole-PR review.
+- Exact-head CI #42477527039 SUCCESS; existing Chromium #42477527033 SUCCESS, all four jobs on the same SHA.
+- No owner visual approval is claimed or required as an additional SET-05 coordinator gate.
+- **Next — Lev independent technical whole-PR review of the same exact head.** Lira stopped; Mark unassigned.
+- No Owner merge until Lev verdict. Permanent docs after implementation merge. SET-06 and Stage6/production inactive.
 
 ## Handoff — Лира: Stage2 factual documentation closeout
 
@@ -1708,3 +1708,19 @@ Lira receives both corrections as one package. Any implementation-head change re
 - Correction package consists of **5 paths only** versus prior head: `app/auth/auth.server.ts`, `tests/database/account-security.test.ts`, `tests/browser/settings-account/check.py`, `.github/workflows/ap10-browser.yml`, deletion of `.github/workflows/set05-account-browser.yml`. Other SET05 implementation unchanged; no schema/migration/permissions/SET-06/Stage6/production; permanent docs remain separate post-merge. Previous user-facing owner visual requirement was an incorrect implementer-imposed gate; Mira confirmed it is not additional SET-05 coordinator gate. No owner visual approval claimed.
 - **Лира остановилась после correction delivery.** Next workflow actor: **Мира — fresh coordinator whole-PR review on exactly `a4af2014eb28a39d54d10c33cc515cbf3d5f258e`**, independently decide whether SET05-MIRA-01/02 actually resolved, without treating author PASS as review. Only after Mira PASS can Lev be assigned per standard workflow; Mark unassigned. Developer remains owner of merge; author does not initiate other agents.
 
+
+## SET-05 / PR #309 — fresh Mira coordinator PASS
+
+Fresh whole-PR review completed on exact head `a4af2014eb28a39d54d10c33cc515cbf3d5f258e`, base/current main `76fc5b16be4f2425a0ad1fdcb7b38974db355c56`.
+
+**Verdict: PASS — 0 confirmed current-scope defects.**
+
+- One correction commit versus prior reviewed head changes exactly five paths; the other fifteen PR files are byte-identical to the previous completed whole-PR review.
+- SET05-MIRA-01 closed: server verifies identity, then runs Better Auth v1.7.7 fresh-gated `listSessions` before `revokeOtherSessions`; native PG and real Chromium both prove a not-fresh caller gets 403 for single and all-other revoke and leaves the other session intact.
+- SET05-MIRA-02 closed: dedicated SET-05 workflow removed; acceptance integrated into the existing Settings browser job without weakening the 12 real browser checkpoints.
+- Rechecked linked-method/password/session DTOs, server-only tokens, current/foreign session guards, explicit Google linking, Origin/stale-identity guards, private/no-store handling, Account/Profile/Settings navigation, Set-Cookie propagation, EN/RU/HE/RTL/mobile presentation, and no schema/provider/RBAC/SET-06/Stage6 expansion.
+- The explicit not-fresh recovery route remains available through the existing header: sign-out revalidation exposes Sign in with safe current-path returnTo; the Account message directs the user to that existing flow.
+- Exact-head CI #42477527039 SUCCESS; exact-head existing Chromium #42477527033 SUCCESS across all four jobs.
+- PR remains open/Ready/mergeable and main unchanged.
+
+Lev is assigned independent whole-PR technical review of this same exact head. Mira conclusions are not evidence for Lev. Mark remains unassigned. Owner merge waits for independent PASS.
