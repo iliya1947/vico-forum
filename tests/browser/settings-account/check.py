@@ -84,9 +84,15 @@ def post(context, fields, origin=base):
 
 
 def actor(browser, name, signup=True, password=old_password):
+    # Separate synthetic clients exercise account isolation without pooling unrelated
+    # sign-ins into one IP rate-limit bucket. Production rate limiting stays enabled.
+    ip_octets = {"alice": 41, "alice-2": 42, "alice-3": 43,
+                 "alice-4": 44, "bob": 45, "google-only": 46}
+    client_ip = "203.0.113." + str(ip_octets[name])
     ctx = browser.new_context(
         viewport={"width": 1280, "height": 900},
         user_agent="Mozilla/5.0 SET05-" + name,
+        extra_http_headers={"cf-connecting-ip": client_ip},
     )
     guarded(ctx)
     email = prefix + "-" + ("alice" if name in ("alice-2", "alice-3", "alice-4") else name) + "@test.invalid"
@@ -95,7 +101,7 @@ def actor(browser, name, signup=True, password=old_password):
         fields["name"] = "SET05 " + name
     result = ctx.request.post(
         base + ("/api/auth/sign-up/email" if signup else "/api/auth/sign-in/email"),
-        headers={"Origin": base},
+        headers={"Origin": base, "cf-connecting-ip": client_ip},
         data=fields,
     )
     assert result.status == 200, (name, result.status, result.text()[:250])
