@@ -73,3 +73,8 @@ Evidence/logs/results/screenshots/source audit/manifest/hashes: `/workspace/work
 ## Approved / closed context
 
 Settings plan [#6711736883](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6711736883) coordinator-approved. SET-01 closed; SET-02 implementation #302 and separate docs #303 merged. Prior SET-02 independent PASS [#6715843589](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6715843589) concerns07d805d9; its evidence remains /workspace/work/set02-repeat-evidence/. Current SET-03 evidence /workspace/work/set03-review-evidence/. SET-04–06 unassigned. No last-manager/count/recovery rule applies.
+
+
+## Active assignment — SET-03 repeat independent review / PR #304
+
+Repeat independent whole-PR review on exact head `6c45bb17ea84f1df0bed8a8b8ca4c558ba42edac` vs base `cb805a074de3bfdcd140125ebaa425a76bb6496d`. Verify SET03-LEV-01 closure in the three-file correction (account-keyed locale form + unit/browser regression), ensure same-account draft semantics remain correct, and recheck whole SET-03 scope/exact-head gates. Do not modify implementation. Publish PASS/findings in #251 and stop.
