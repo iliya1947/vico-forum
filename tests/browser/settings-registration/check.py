@@ -89,7 +89,7 @@ def no_overflow(page):
 
 def availability(page, google, email):
     expect(page.locator("form.credential-form")).to_have_count(1 if email else 0)
-    expect(page.get_by_role("button", name="Continue with Google")).to_have_count(1 if google else 0)
+    expect(page.locator("button.credential-google")).to_have_count(1 if google else 0)
     expect(page.locator('.credential-alternatives a[href*="sign-in"]')).to_have_count(1)
 
 
