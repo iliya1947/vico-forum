@@ -4,7 +4,7 @@ import { useTranslation } from "react-i18next";
 import { ForumShell, Breadcrumbs } from "../forum/ui";
 import {adminForumPath} from "./forum-paths";
 import {adminUsersPath} from "./users-paths";
-import { underDevelopmentPath } from "../forum/paths";
+import { settingsPath } from "../settings/paths";
 import type { AdminAccess } from "./access";
 
 /** Navigation to placeholders grants no future section-read or mutation authority. */
@@ -19,7 +19,7 @@ export function adminDestinations(locale: string, access: AdminAccess) {
       href: base + "/measures", pending: false }] : []),
     ...(access.canManageAuthorization ? [{ id: "roles", label: "adminRoles" as const, href: `${base}/authorization`, pending: false }] : []),
     ...(access.canReadHistory ? [{ id: "history", label: "adminHistory" as const, href: `${base}/history`, pending: false }] : []),
-    { id: "settings", label: "adminSettings" as const, href: underDevelopmentPath(locale,"admin-settings"), pending: true },
+    { id: "settings", label: "adminSettings" as const, href: settingsPath(locale), pending: false },
   ];
 }
 

@@ -42,7 +42,15 @@ export type UserMeasureHistoryChange = {
     appealId?: string; outcome?: "accepted" | "rejected"; remedy?: "change" | "lift";
   };
 };
-export type AdminHistoryChange = AuthorizationHistoryChange | ForumHistoryChange | UserMeasureHistoryChange;
+export type RegistrationSettingsHistoryChange = {
+  action: "settings.registrationChanged";
+  targetType: "forum-settings"; targetId: "registration"; targetLabel: string;
+  context: {
+    before: { googleRegistrationEnabled: boolean; emailRegistrationEnabled: boolean; version: number };
+    after: { googleRegistrationEnabled: boolean; emailRegistrationEnabled: boolean; version: number };
+  };
+};
+export type AdminHistoryChange = AuthorizationHistoryChange | ForumHistoryChange | UserMeasureHistoryChange | RegistrationSettingsHistoryChange;
 // Database-scoped transaction advisory lock shared by the actual pg/Drizzle producers.
 export const ADMIN_HISTORY_ORDER_LOCK_SQL = "select pg_advisory_xact_lock(1447641935, 1)";
 export interface AdminHistoryEvent {
@@ -76,13 +84,27 @@ export async function appendUserMeasureHistory(
   if (result.rowCount !== 1) throw new Error("History actor no longer exists");
 }
 
+/** SET-02 registration-policy mutation history; the caller owns the row lock and transaction. */
+export async function appendRegistrationSettingsHistory(
+  client: Pick<PoolClient, "query">, actorId: string, change: RegistrationSettingsHistoryChange,
+): Promise<void> {
+  await client.query(ADMIN_HISTORY_ORDER_LOCK_SQL);
+  const result = await client.query(`insert into admin_history
+    (id, actor_id, actor_label, action, target_type, target_id, target_label, context)
+    select $1, u.id, left(u.name, 200), $3, $4, $5, $6, $7::jsonb
+    from "user" u where u.id = $2`,
+    [crypto.randomUUID(), actorId, change.action, change.targetType, change.targetId,
+      historyLabel(change.targetLabel), JSON.stringify(change.context)]);
+  if (result.rowCount !== 1) throw new Error("History actor no longer exists");
+}
+
 export class PostgresAdminHistoryReader implements AdminHistoryReader {
   constructor(private readonly database: Pick<Pool, "query">) {}
   async read(cursor?: HistoryCursor, limit = 25): Promise<AdminHistoryPage> {
     if (!Number.isInteger(limit) || limit < 1 || limit > 50) throw new Error("Invalid history page size");
     const result = await this.database.query<{
       position: string; id: string; occurred_at: Date; actor_id: string; actor_label: string;
-      action: AdminHistoryChange["action"]; target_type: "role" | "user" | "topic" | "post" | "user-measure"; target_id: string; target_label: string;
+      action: AdminHistoryChange["action"]; target_type: "role" | "user" | "topic" | "post" | "user-measure" | "forum-settings"; target_id: string; target_label: string;
       context: AdminHistoryChange["context"]; reason: string | null;
     }>(`select position, id, occurred_at, actor_id, actor_label, action, target_type, target_id, target_label, context, reason
       from admin_history where ($1::bigint is null or position < $1::bigint)

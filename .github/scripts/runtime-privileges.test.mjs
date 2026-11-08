@@ -129,6 +129,19 @@ test("AP-10 measure tables grant web only SELECT/INSERT/UPDATE and localization 
   assert.throws(() => assertRuntimeCapabilityPrivilegeContract(overgrant, roles), /unexpected|relation|privilege/i);
 });
 
+test("SET-02 registration settings are readable/writable by web without INSERT/DELETE", () => {
+  assert.deepEqual(runtimeCapabilityContracts.web.relations.forum_registration_settings, ["SELECT", "UPDATE"]);
+  assert.equal(runtimeCapabilityContracts["localization-read"].relations.forum_registration_settings, undefined);
+  for (const forbidden of ["INSERT", "DELETE"]) {
+    const probe = fixture();
+    probe.relationPrivileges.push({
+      schema: "public", name: "forum_registration_settings", kind: "table",
+      grantee: roles.webRole, privilege: forbidden, is_grantable: false,
+    });
+    assert.throws(() => assertRuntimeCapabilityPrivilegeContract(probe, roles), /unexpected|relation|privilege/i);
+  }
+});
+
 test("requires distinct runtime roles", () => {
   assert.throws(
     () => assertRuntimeCapabilityPrivilegeContract(fixture(), {

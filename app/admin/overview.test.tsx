@@ -41,7 +41,7 @@ describe("admin shell and truthful Overview",()=>{
     expect(node.querySelector('a[href$="/admin/authorization"]')).toBeNull();
     const forum=node.querySelector<HTMLAnchorElement>('.admin-destination[href="/en/admin/forum"]')!;
     expect(forum).toBeTruthy();expect(forum.textContent).toBe("Forum");
-    expect(node.querySelector('.admin-destination[href*="admin-settings"]')?.textContent).toContain("Under development");
+    expect(node.querySelector('.admin-destination[href="/en/settings"]')?.textContent).toBe("Settings");
   });
   it("shows unavailable rather than fabricated zero statistics with a locale-safe retry",async()=>{
     const {node}=await mount("he",["forum.topic.pin"],null);

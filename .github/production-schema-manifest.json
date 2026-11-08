@@ -1,7 +1,7 @@
 {
   "version": 1,
   "schema": "public",
-  "targetMigration": "0059_remove_last_manager_flag",
+  "targetMigration": "0060_forum_registration_settings",
   "tables": {
     "account": {
       "columns": [
@@ -7059,7 +7059,7 @@
             "action",
             "target_type"
           ],
-          "definitionSha256": "c8d22b9f8b6c3051bfafdcd62454d0538074677c4f1232a9034838ecca1dda4b"
+          "definitionSha256": "c7a1abca6c837c455ef9ad17956a9c333f90156996253d61881752c7bb89503e"
         },
         {
           "name": "admin_history_context_check",
@@ -7727,6 +7727,67 @@
           "predicateSha256": "e30b7393d8275a22b24ae598f3a49e69195cf6e267ddb0619fed49298df6d656"
         }
       ]
+    },
+    "forum_registration_settings": {
+      "columns": [
+        {
+          "name": "id",
+          "type": "integer",
+          "nullable": false,
+          "defaultSha256": null
+        },
+        {
+          "name": "google_registration_enabled",
+          "type": "boolean",
+          "nullable": false,
+          "defaultSha256": "b5bea41b6c623f7c09f1bf24dcae58ebab3c0cdd90ad966bc43a45b44867e12b"
+        },
+        {
+          "name": "email_registration_enabled",
+          "type": "boolean",
+          "nullable": false,
+          "defaultSha256": "b5bea41b6c623f7c09f1bf24dcae58ebab3c0cdd90ad966bc43a45b44867e12b"
+        },
+        {
+          "name": "version",
+          "type": "integer",
+          "nullable": false,
+          "defaultSha256": "6b86b273ff34fce19d6b804eff5a3f5747ada4eaa22f1d49c01e52ddb7875b4b"
+        },
+        {
+          "name": "updated_at",
+          "type": "timestamp(3) with time zone",
+          "nullable": false,
+          "defaultSha256": "4b1d66350efe3913ebc4851cda50bbd44dd30a5f59bafb1c24c2edec4301816e"
+        }
+      ],
+      "primaryKeys": [
+        {
+          "name": "forum_registration_settings_pkey",
+          "columns": [
+            "id"
+          ]
+        }
+      ],
+      "uniqueConstraints": [],
+      "foreignKeys": [],
+      "checks": [
+        {
+          "name": "forum_registration_settings_singleton_check",
+          "columns": [
+            "id"
+          ],
+          "definitionSha256": "e011fee44ff333a0a1f38e404f1ed1d48857a1dbbadb763ee293518e128398f3"
+        },
+        {
+          "name": "forum_registration_settings_version_check",
+          "columns": [
+            "version"
+          ],
+          "definitionSha256": "ead4c32a9354da34bc9fcfc3256e203ca5c57f24d0a7e4cac58c9a7bf974868b"
+        }
+      ],
+      "indexes": []
     }
   },
   "triggerFunctions": [

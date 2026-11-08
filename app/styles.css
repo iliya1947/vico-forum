@@ -472,6 +472,23 @@ select {
   text-decoration: none;
 }
 
+.auth-settings-link {
+  display: inline-flex;
+  align-items: center;
+  min-height: 2.1rem;
+  padding-inline: 0.55rem;
+  border-radius: 999px;
+  color: var(--color-text);
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+}
+.auth-settings-link:hover,
+.auth-settings-link:focus-visible {
+  border-color: var(--color-accent);
+  color: var(--color-accent-hover);
+  text-decoration: none;
+}
+
 .auth-action {
   display: inline-flex;
   min-height: 2.1rem;
@@ -7003,7 +7020,8 @@ p {
 
   .home-shell .site-account-actions .auth-controls-main {
     inline-size: 100%;
-    flex-wrap: nowrap;
+    /* SET-02 adds an authenticated Settings link: keep all actions in the viewport. */
+    flex-wrap: wrap;
     gap: 0.3rem;
   }
 
@@ -9742,6 +9760,25 @@ a.topic-tag:focus-visible {
   text-decoration: none;
   overflow-wrap: anywhere;
 }
+.settings-panel-nav .settings-panel-pending-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.4rem 0.8rem;
+  min-inline-size: 0;
+  min-block-size: 2.75rem;
+  padding: 0.65rem 0.8rem;
+  border: 1px dashed var(--color-border);
+  border-radius: 0.45rem;
+  color: var(--color-text-muted);
+  background: var(--color-surface);
+  overflow-wrap: anywhere;
+}
+.settings-panel .settings-overview .admin-destination {
+  display: inline-flex;
+  margin-block-start: 0.75rem;
+}
 .admin-panel-nav a[aria-current="page"] {
   border-color: var(--color-accent);
   color: var(--color-accent);
@@ -9889,3 +9926,25 @@ a.topic-tag:focus-visible {
 .topic-reply-paused { margin: 0.5rem 0; }
 .topic-closed-notice strong { color: var(--color-text); }
 .topic-closure-form button:disabled { cursor: wait; opacity: 0.65; }
+
+/* SET-02: bounded Owner registration controls, including 320px/RTL layout. */
+.settings-registration {
+  min-inline-size: 0;
+  max-inline-size: 100%;
+  padding: 1rem;
+  margin-block: 1rem;
+  border: 1px solid var(--color-border);
+  border-radius: 0.5rem;
+  background: var(--color-surface);
+  overflow-wrap: anywhere;
+}
+.settings-registration h2 { margin-block-start: 0; }
+.settings-registration-form { display: grid; gap: 0.8rem; max-inline-size: 36rem; }
+.settings-registration-option { display: flex; align-items: center; gap: 0.75rem; min-inline-size: 0; }
+.settings-registration-option input { inline-size: 1.15rem; block-size: 1.15rem; flex: none; }
+.settings-registration-form button {
+  justify-self: start; min-block-size: 2.75rem; padding: 0.55rem 1rem;
+  border: 1px solid var(--color-border-strong); border-radius: 0.4rem;
+  font: inherit; background: var(--color-accent); color: var(--color-action-on-accent);
+}
+.settings-registration-form button:disabled { opacity: 0.6; cursor: wait; }

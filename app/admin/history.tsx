@@ -4,6 +4,7 @@ import { useTranslation } from "react-i18next";
 import type { AdminHistoryEvent, AdminHistoryPage, AdminHistoryChange, UserMeasureHistoryChange, UserMeasureHistoryState } from "../../db/admin-history";
 
 const actionLabels = {
+  "settings.registrationChanged": "historyRegistrationChanged",
   "role.created": "historyRoleCreated", "role.renamed": "historyRoleRenamed", "role.deleted": "historyRoleDeleted",
   "role.grantsChanged": "historyGrantsChanged", "user.roleAssigned": "historyRoleAssigned", "user.overrideChanged": "historyOverrideChanged",
   "help.signalReviewed": "historySignalReviewed",
@@ -72,6 +73,16 @@ function MeasureHistoryDetails({change,locale}: {change:UserMeasureHistoryChange
 function ChangeDetails({change,locale}: {change: AdminHistoryChange;locale:string}) {
   const {t} = useTranslation("common");
   switch (change.action) {
+    case "settings.registrationChanged": {
+      const { before, after } = change.context;
+      const status = (enabled: boolean) => t(enabled ? "historyRegistrationEnabled" : "historyRegistrationDisabled");
+      return <dl>
+        <dt>{t("historyRegistrationGoogle")}</dt>
+        <dd>{status(before.googleRegistrationEnabled)} → {status(after.googleRegistrationEnabled)}</dd>
+        <dt>{t("historyRegistrationEmail")}</dt>
+        <dd>{status(before.emailRegistrationEnabled)} → {status(after.emailRegistrationEnabled)}</dd>
+      </dl>;
+    }
     case "measure.created": case "measure.changed": case "measure.lifted":
     case "measure.appealResolved": return <MeasureHistoryDetails change={change} locale={locale}/>;
     case "help.signalReviewed": {

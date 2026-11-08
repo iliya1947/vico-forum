@@ -4,6 +4,7 @@ import { drizzle } from "drizzle-orm/node-postgres";
 import { Client } from "pg";
 import { afterAll, beforeAll, beforeEach, expect, it, vi } from "vitest";
 import { betterAuthOptions } from "../../app/auth/auth.server";
+import { installRegistrationPolicyFixture } from "./registration-policy-fixture";
 
 const databaseUrl = process.env.DATABASE_URL;
 if (!databaseUrl) throw new Error("DATABASE_URL is required");
@@ -23,6 +24,7 @@ beforeAll(async () => {
   await client.query(`set search_path to ${schema}`);
   await client.query((await readFile("drizzle/0003_gorgeous_donald_blake.sql", "utf8"))
     .replaceAll('"public".', `"${schema}".`).replaceAll("--> statement-breakpoint", ""));
+  await installRegistrationPolicyFixture(client);
 });
 beforeEach(async () => {
   await client.query('truncate "user", account, "session", verification, rate_limit cascade');

@@ -4,6 +4,7 @@ import { APIError, createAuthMiddleware, getAuthoritativeSessionFromCtx } from "
 import { drizzle, type NodePgDatabase } from "drizzle-orm/node-postgres";
 import type { Client } from "pg";
 import { AuthSessionUnavailableError, type AuthRuntime, type AuthSession } from "./request-context";
+import { createRegistrationAdmission } from "./registration-admission";
 import {
   account,
   betterAuthUserAdditionalFields,
@@ -74,7 +75,8 @@ export function betterAuthOptions(database: NodePgDatabase, env: BetterAuthEnvir
       provider: "pg" as const,
       schema: betterAuthSchema,
     }),
-    user: { additionalFields: betterAuthUserAdditionalFields },
+    user: { additionalFields: betterAuthUserAdditionalFields, validateUserInfo: createRegistrationAdmission(database) },
+    account: { accountLinking: { disableImplicitLinking: true } },
     emailAndPassword: betterAuthEmailPasswordOptions,
     hooks: betterAuthRequestHooks,
     socialProviders: {
@@ -88,8 +90,29 @@ export function betterAuthOptions(database: NodePgDatabase, env: BetterAuthEnvir
   };
 }
 
-function createAuth(database: NodePgDatabase, env: BetterAuthEnvironment, onDatabaseError?: (error: unknown) => void) {
+function createAuth(
+  database: NodePgDatabase,
+  env: BetterAuthEnvironment,
+  onDatabaseError?: (error: unknown) => void,
+  onAdmissionError?: (error: unknown) => void,
+) {
   const options = betterAuthOptions(database, env);
+  if (onAdmissionError && options.user?.validateUserInfo) {
+    const validateUserInfo = options.user.validateUserInfo;
+    options.user = {
+      ...options.user,
+      validateUserInfo: async (data, ctx) => {
+        try {
+          return await validateUserInfo(data, ctx);
+        } catch (error) {
+          // Better Auth 1.7.7 converts any thrown validation error to a cause-less 403.
+          // Preserve the actual registration-policy failure for this one auth request.
+          onAdmissionError(error);
+          throw error;
+        }
+      },
+    };
+  }
   if (onDatabaseError) {
     const factory = options.database as ReturnType<typeof drizzleAdapter>;
     options.database = (authOptions: BetterAuthOptions) => new Proxy(factory(authOptions), {
@@ -123,13 +146,18 @@ export function createHyperdriveAuthRuntime(
   env: BetterAuthEnvironment,
   createClient: (connectionString: string) => Client = createWebClient,
 ): AuthRuntime {
-  async function useAuth<T>(operation: (auth: ReturnType<typeof createAuth>) => Promise<T>, preserveDatabaseError = false): Promise<T> {
+  async function useAuth<T>(
+    operation: (auth: ReturnType<typeof createAuth>) => Promise<T>,
+    preserveDatabaseError = false,
+    onAdmissionError?: (error: unknown) => void,
+  ): Promise<T> {
     const client = createClient(connectionString);
     let databaseError: unknown;
     try {
       await client.connect();
       return await operation(createAuth(drizzle(client), env,
-        preserveDatabaseError ? (error) => { databaseError ??= error; } : undefined));
+        preserveDatabaseError ? (error) => { databaseError ??= error; } : undefined,
+        onAdmissionError));
     } catch (error) {
       // Better Auth 1.7.7 replaces session-query failures with a cause-less APIError.
       // Retain the adapter failure for classification; never infer availability from HTTP 500.
@@ -151,6 +179,21 @@ export function createHyperdriveAuthRuntime(
         throw error;
       }
     },
-    handle: (request) => useAuth((auth) => auth.handler(request)),
+    handle: (request) => {
+      const admission = { failure: undefined as { error: unknown } | undefined };
+      return useAuth(async (auth) => {
+        const response = await auth.handler(request);
+        if (!admission.failure) return response;
+        if (sessionStorageUnavailable(admission.failure.error)) {
+          return new Response("Service unavailable. Please try again.", {
+            status: 503,
+            headers: { "Content-Type": "text/plain; charset=utf-8", "Cache-Control": "no-store" },
+          });
+        }
+        // Missing policy singleton, unexpected schema/configuration and programming errors
+        // must follow the normal unexpected-error path, not Better Auth's validation_failed 403.
+        throw admission.failure.error;
+      }, false, (error) => { admission.failure ??= { error }; });
+    },
   };
 }

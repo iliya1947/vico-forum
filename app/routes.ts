@@ -33,6 +33,8 @@ export default [
     route("account/measures/:measureId", "routes/account-measure.tsx"),
     route("sign-in", "routes/credential-sign-in.tsx"),
     route("sign-up", "routes/credential-sign-up.tsx"),
+    route("settings", "routes/settings.tsx"),
+    route("settings/forum", "routes/settings-forum.tsx"),
     route("presence", "routes/presence.ts"),
     route("notifications", "routes/notifications.tsx"),
     route("mentions", "routes/mentions.ts"),
