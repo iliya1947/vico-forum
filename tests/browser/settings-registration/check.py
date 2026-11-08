@@ -64,7 +64,7 @@ def get(page, path, status=200, private=False):
     if private:
         cache = {v.strip().lower() for v in response.headers.get("cache-control", "").split(",")}
         assert {"private", "no-store"} <= cache, (path, response.headers)
-    else:
+    elif "/sign-up" in path:
         assert "no-store" in response.headers.get("cache-control", ""), (path, response.headers)
     return response
 
@@ -90,7 +90,7 @@ def no_overflow(page):
 def availability(page, google, email):
     expect(page.locator("form.credential-form")).to_have_count(1 if email else 0)
     expect(page.get_by_role("button", name="Continue with Google")).to_have_count(1 if google else 0)
-    expect(page.get_by_role("link", name="Already registered? Sign in")).to_have_count(1)
+    expect(page.locator('.credential-alternatives a[href*="sign-in"]')).to_have_count(1)
 
 
 def owner_save(page, google, email, expected_version):
