@@ -10129,3 +10129,58 @@ a.topic-tag:focus-visible {
 .attention-center-page[data-density="compact"] .attention-group-nav {
   gap: 0.35rem;
 }
+
+/* SET-05: current-account security controls. Buttons remain touch-friendly in RTL/mobile. */
+.settings-account { max-inline-size: 54rem; }
+.settings-account-section {
+  min-inline-size: 0;
+  margin-block-start: 1.4rem;
+  padding-block-start: 1.1rem;
+  border-block-start: 1px solid var(--color-border);
+}
+.settings-account-section h3 { margin-block: 0 0.8rem; }
+.settings-account-form {
+  display: grid;
+  gap: 0.65rem;
+  max-inline-size: 29rem;
+}
+.settings-account-form input {
+  min-inline-size: 0;
+  inline-size: 100%;
+  min-block-size: 2.75rem;
+  padding: 0.55rem 0.7rem;
+  border: 1px solid var(--color-border);
+  border-radius: 0.45rem;
+  color: var(--color-text);
+  background: var(--color-surface);
+}
+.settings-account button { min-block-size: 2.75rem; }
+.settings-account-form button { justify-self: start; }
+.settings-account-sessions {
+  display: grid;
+  gap: 0.65rem;
+  padding: 0;
+  list-style: none;
+}
+.settings-account-sessions li {
+  min-inline-size: 0;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.8rem;
+  padding: 0.85rem;
+  border: 1px solid var(--color-border);
+  border-radius: 0.5rem;
+}
+.settings-account-session-info {
+  display: grid;
+  gap: 0.25rem;
+  min-inline-size: 0;
+  overflow-wrap: anywhere;
+}
+.settings-account-session-info strong { font-weight: 650; }
+.settings-account-revoke-form,
+.settings-account-revoke-all { min-inline-size: 0; }
+.settings-account-revoke-all { margin-block-start: 0.85rem; }
+.settings-account button:disabled { opacity: 0.6; cursor: wait; }

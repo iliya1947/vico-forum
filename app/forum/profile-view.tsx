@@ -6,7 +6,7 @@ import type { ProfileActionData } from "../routes/profile";
 import { ForumAvatar } from "./avatar";
 import { forumIndexPath, forumProfilePath } from "./paths";
 import { ForumShell } from "./ui";
-import { GoogleAccountLink } from "../auth/google-account-link";
+import { settingsAccountPath } from "../settings/paths";
 import { ownMeasuresPath } from "../measures/paths";
 
 export function ProfileView({ locale, profile, isOwner = false, canEditProfile = true,
@@ -32,8 +32,10 @@ export function ProfileView({ locale, profile, isOwner = false, canEditProfile =
         <div className="profile-identity-copy"><p className="profile-eyebrow">{t("profileHeading")}</p><h1 id="profile-name"><bdi dir="auto">{profile.name}</bdi></h1><span className="profile-role" dir="auto">{role}</span></div>
         {isOwner && canEditProfile && !editing && <Link className="profile-button" to={`${path}?edit=1`}>{t("profileEdit")}</Link>}
       </header>
-      {isOwner && !editing ? <GoogleAccountLink callbackURL={path} expectedUserId={profile.id} /> : null}
-      {isOwner ? <nav><Link to={ownMeasuresPath(locale)}>{t("measuresOwn")}</Link></nav> : null}
+      {isOwner ? <nav>
+        <Link to={ownMeasuresPath(locale)}>{t("measuresOwn")}</Link>
+        <Link to={settingsAccountPath(locale)}>{t("settingsAccount")}</Link>
+      </nav> : null}
       <dl className="profile-statistics">
         <div><dt>{t("profileJoined")}</dt><dd><time dateTime={profile.joinedAt}>{new Intl.DateTimeFormat(locale, { year: "numeric", month: "short", day: "numeric", timeZone: "UTC" }).format(new Date(profile.joinedAt))}</time></dd></div>
         <div><dt>{t("profileMessages")}</dt><dd>{new Intl.NumberFormat(locale).format(profile.messageCount)}</dd></div>
