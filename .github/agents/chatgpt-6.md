@@ -870,3 +870,8 @@ PR #303 exact head `bc0b8fd248293be76f797add6dba8f804c213185` has one confirmed 
 ## SET-02 docs closeout — coordinator result
 
 PR #303 exact head `49d93b776d7a0bf480955abb3e33e9772e761273`: Mira **PASS, 0 confirmed current-scope docs defects**. SET02-DOC-MIRA-01 closed; CI #42437660217 SUCCESS. Author work remains stopped. Next action is Owner merge; SET-03 not assigned yet.
+
+
+## Active assignment — Settings SET-03 User preferences
+
+Base/current main `cb805a074de3bfdcd140125ebaa425a76bb6496d`. SET-02 is fully closed. Implement SET-03 in one separate implementation PR using approved plan #6711736883 and current docs/SETTINGS.md. Deliver the authenticated User preferences surface covering existing theme behavior, own account locale and existing Editor/code preferences while preserving their current storage ownership and real consumer behavior. No schema/migration, SET-04–06, notification preferences, drafts/autosave, Stage6 or permanent docs. Run the approved applicable exact-head acceptance/CI, publish PR + stable head + evidence in #251, then stop for Mira coordinator whole-PR review.
