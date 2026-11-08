@@ -33,15 +33,17 @@
 ## Актуальный baseline и назначение
 
 - Current main/base: `76fc5b16be4f2425a0ad1fdcb7b38974db355c56`.
-- SET-05 implementation PR #309 is open/Ready/mergeable on stable exact head `a4af2014eb28a39d54d10c33cc515cbf3d5f258e`.
-- Mira fresh coordinator whole-PR review: **PASS, 0 confirmed current-scope defects**.
-- `SET05-MIRA-01` closed: revoke-all now passes the same Better Auth v1.7.7 fresh-session `listSessions` gate before `revokeOtherSessions`; stale single/all revoke regressions pass and preserve the other session.
-- `SET05-MIRA-02` closed: standalone SET-05 Actions workflow removed; the same 12-case real Worker/Better Auth/PG17/Chromium harness now runs in existing `ap10-browser.yml` `settings_browser`.
-- Correction from prior reviewed head is one commit/five paths; all other implementation files are byte-identical to the completed prior whole-PR review.
-- Exact-head CI #42477527039 SUCCESS; existing Chromium #42477527033 SUCCESS, all four jobs on the same SHA.
-- No owner visual approval is claimed or required as an additional SET-05 coordinator gate.
-- **Next — Lev independent technical whole-PR review of the same exact head.** Lira stopped; Mark unassigned.
-- No Owner merge until Lev verdict. Permanent docs after implementation merge. SET-06 and Stage6/production inactive.
+- SET-05 implementation PR #309 remains open; reviewed exact head `a4af2014eb28a39d54d10c33cc515cbf3d5f258e`.
+- Mira fresh coordinator PASS preceded independent Lev whole-PR review.
+- **Lev: CHANGES REQUIRED — 1 confirmed current-scope defect, SET05-LEV-01/P2**. New Settings password-change action calls direct auth.api and bypasses existing Better Auth database rate-limit admission.
+- Real same-account/IP/cookie reproduction: canonical auth endpoint **400,400,400,429**; immediately followed by new BFF **5×400 in 1.231s**, no change to password rate-limit rows.
+- [Independent review / reproduction / bounded correction / handoff #6721524340](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6721524340).
+- SET05-MIRA-01 freshness and SET05-MIRA-02 existing-harness integration **independently closed**; no other confirmed current-scope defects.
+- Own verification:104 application tests/16 files;31 nativePG/5 files;build/full0000–0060 migration;12 real Chromium groups;4 own browser/runtime groups and4 storage/error groups. One own group confirms finding; other checks pass.
+- Exact-head CI #42477527039 and Chromium #42477527033 SUCCESS/attempt1; all4 browser jobs,12 SET05 log groups independently verified.
+- **Next — Mira accepts independent review and routes bounded correction to Lira.** Lira frozen until routing; Lev stopped; Mark unassigned.
+- New implementation head requires fresh coordinator-first cycle and repeat independent review; Owner merge #309 not ready. Permanent docs post-merge separately.
+- No extra owner visual acceptance gate; SET-06 and Stage6/production inactive.
 
 ## Handoff — Лира: Stage2 factual documentation closeout
 
@@ -1724,3 +1726,8 @@ Fresh whole-PR review completed on exact head `a4af2014eb28a39d54d10c33cc515cbf3
 - PR remains open/Ready/mergeable and main unchanged.
 
 Lev is assigned independent whole-PR technical review of this same exact head. Mira conclusions are not evidence for Lev. Mark remains unassigned. Owner merge waits for independent PASS.
+
+
+## SET-05 / PR #309 — independent Lev CHANGES REQUIRED
+
+[Full independent report #6721524340](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6721524340), exact head `a4af2014eb28a39d54d10c33cc515cbf3d5f258e`, base `76fc5b16be4f2425a0ad1fdcb7b38974db355c56`. All20 files reviewed; implementation unchanged. **SET05-LEV-01/P2** confirmed by real Worker/BA1.7.7/PG17 experiment: existing canonical change-password limit is3/10s, while new Settings BFF direct auth.api bypasses it (public400×3→429, BFF400×5/1.231s, shared rate-limit rows unchanged). Preserve existing database admission/common canonical bucket/trusted IP/429 retry/private-no-store; no second independent limiter/schema/auth expansion. Coordinator findings01/02 independently closed. Own104 app/31PG/build/12browser plus independent account-switch/cookie/data/storage probes recorded;0 browser errors. Same-mounted account switch clears password draft. Real account lock timeout classified unavailable;missing schema unexpected. Exact-head CI/browser independently green. Checkout clean;task resources cleaned. Evidence /workspace/work/set05-review-evidence/. **Handoff Mira:** accept finding and route one corrective package to Lira; new stable head/checks→fresh coordinator→repeat Lev. Owner merge not ready; docs post-merge, SET06/Stage6 inactive. Lev stopped, Mark unassigned.
