@@ -5,7 +5,7 @@ import {
   DEFAULT_ADMINISTRATOR_PREFERENCES as defaults, administratorPreferenceKey,
   parseAdministratorPreferences, readAdministratorPreferences, recordAdminIndex,
   recordAttentionIndex, selectAdminEntry, selectAttentionEntry,
-  updateAdministratorPreferences, useAdministratorPreferences,
+  updateAdministratorPreferences, subscribeAdministratorPreferences, useAdministratorPreferences,
 } from "./administrator-preferences";
 import { allowedAdminEntries, allowedAttentionEntries } from "./workspace-access";
 
@@ -50,10 +50,12 @@ describe("SET-04 versioned device/account-local storage", () => {
     updateAdministratorPreferences("denied-user", { density: "compact" });
     expect(readAdministratorPreferences("denied-user").density).toBe("compact");
     broken.mockRestore();
-    // This fallback does not claim disk persistence. A real storage event invalidates it.
+    // This fallback does not claim disk persistence. A subscribed real storage event invalidates it.
+    const unsubscribe = subscribeAdministratorPreferences("denied-user", () => {});
     act(() => window.dispatchEvent(new StorageEvent("storage", {
       key: administratorPreferenceKey("denied-user"),
     })));
+    unsubscribe();
     expect(readAdministratorPreferences("denied-user").density).toBe("comfortable");
   });
 
