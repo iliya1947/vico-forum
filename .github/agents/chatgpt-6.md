@@ -865,3 +865,8 @@ Base/current main `a86cea918a3f2665399e861d8e01ece8a1d80104` after merged #302. 
 ## SET02-DOC-MIRA-01 — correction assigned
 
 PR #303 exact head `bc0b8fd248293be76f797add6dba8f804c213185` has one confirmed docs-only defect: `docs/SETTINGS.md` swapped SET-03 and SET-04. Approved mapping is SET-03 = User preferences (theme/locale/Editor), SET-04 = Administrator preferences (workspace convenience), SET-05 Account & security, SET-06 Privacy. Correct both occurrences (surface table + future-scope section) and nothing else. Keep SET-03–06 unimplemented/unassigned and all runtime/Stage6 boundaries unchanged. Publish new stable head + actual checks in #251, then stop for Mira docs review.
+
+
+## SET-02 docs closeout — coordinator result
+
+PR #303 exact head `49d93b776d7a0bf480955abb3e33e9772e761273`: Mira **PASS, 0 confirmed current-scope docs defects**. SET02-DOC-MIRA-01 closed; CI #42437660217 SUCCESS. Author work remains stopped. Next action is Owner merge; SET-03 not assigned yet.
