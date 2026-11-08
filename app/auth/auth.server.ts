@@ -170,7 +170,10 @@ function translateSecurityError(error: unknown): never {
 
 function safeDeviceLabel(agent: unknown): string {
   if (typeof agent !== "string") return "Unknown device";
-  const label = agent.replace(/[\u0000-\u001f\u007f]/g, " ").trim().slice(0, 160);
+  const label = Array.from(agent, character => {
+    const code = character.charCodeAt(0);
+    return code < 32 || code === 127 ? " " : character;
+  }).join("").trim().slice(0, 160);
   return label || "Unknown device";
 }
 
