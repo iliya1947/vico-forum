@@ -2,17 +2,20 @@
 
 - Service PR: **#251**
 - Current main/base: `76fc5b16be4f2425a0ad1fdcb7b38974db355c56`
-- Current stage: **Settings SET-05 — SET05-LEV-01 correction delivered; fresh coordinator whole-PR re-review pending**
+- Current stage: **Settings SET-05 — fresh coordinator PASS after SET05-LEV-01; Lev repeat review assigned**
 - Approved technical plan: **#251 comment #6711736883**
-- Implementation: **PR #309**, open / **Ready** / mergeable, new stable exact head **`236a15c5f3309a5466c70c7a934edf5b56ade433`**
-- Previous reviewed head `a4af2014eb28a39d54d10c33cc515cbf3d5f258e`: Mira coordinator PASS, followed by Lev **CHANGES REQUIRED** on confirmed P2 SET05-LEV-01; these reviews do **not** establish new-head PASS
-- SET05-LEV-01 author correction: Settings BFF uses Better Auth 1.7.7 HTTP `/change-password` handler rather than direct `auth.api`, restoring canonical database-backed per-trusted-IP **3/10s** rate limiting and proper 429 + retry headers; native PG and actual Chromium regressions
-- Previous SET05-MIRA-01/02 corrections remain unchanged
-- Exact-head [CI #42483839708](https://github.com/iliya1947/vico-forum/actions/runs/42483839708): **SUCCESS** (app 2084/2084; PG17 597/597; lint/typecheck/build)
-- Exact-head [existing Chromium #42483839769](https://github.com/iliya1947/vico-forum/actions/runs/42483839769): **SUCCESS** (4/4 jobs; Settings SET-05 13 checkpoints + existing SET-03/02; [synthetic evidence](https://github.com/iliya1947/vico-forum/actions/runs/42483839769/artifacts/13618153570))
-- Implementer **Лира**: assigned correction completed, stopped; no author whole-PR review
-- **Мира**: next — fresh coordinator whole-PR review on exact `236a15c5f3309a5466c70c7a934edf5b56ade433`; no new coordinator verdict yet
-- **Лёва**: previous independent review completed; repeat independent review only after fresh Mira PASS
+- Implementation PR: **#309**, open / Ready / mergeable
+- Stable exact head: **`236a15c5f3309a5466c70c7a934edf5b56ade433`**
+- Mira fresh coordinator whole-PR review: **PASS — 0 confirmed current-scope defects**
+- `SET05-LEV-01`: **closed on this head**
+- `SET05-MIRA-01` / `SET05-MIRA-02`: remain closed
+- Correction from prior reviewed head `a4af2014...`: two commits / nine paths; remaining eleven PR files byte-identical
+- Exact-head CI #42483839708: **SUCCESS** (165/165 app files, 2084/2084 tests; 51/51 PG files, 597/597 tests; lint/typecheck/build)
+- Exact-head Chromium #42483839769: **SUCCESS** (4/4 jobs; 13 SET-05 acceptance groups)
+- **Лира**: stopped; implementation frozen
+- **Лёва**: assigned repeat independent technical whole-PR review of this same exact head
 - **Марк**: unassigned
-- Owner merge: **not ready until independent review cycle**
-- Permanent docs: separate post-merge closeout; SET-06/Stage6/production inactive.
+- Next: **await Lev repeat independent verdict; no Owner merge before PASS**
+- Any implementation-head change restarts coordinator-first review
+- Permanent documentation: separate post-merge closeout
+- SET-06 and Stage6/production remain inactive.
