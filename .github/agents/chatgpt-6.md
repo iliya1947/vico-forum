@@ -808,3 +808,12 @@ Base/current main: `681e8bab0eda595186acebae9ce4b2d47d06b936`. SET-01 is closed 
 Required package result: Settings shell/navigation + Forum & roles surface + independent Google/email-password **new-registration** controls, reusing existing SET-01 authorization writer and preserving existing-user sign-in/link flows. Include only SET-02-required persistence/migration, History, auth admission, UI and acceptance. Permanent docs remain a separate post-merge PR; Stage6/production/live Google/Owner binding/deputies are out of scope.
 
 Publish implementation PR number, stable exact head and actual check evidence in #251, then stop for Mira coordinator whole-PR review.
+
+
+## SET-02 correction assignment — SET02-MIRA-01/02
+
+PR #302 reviewed head `6dbe6a2d912dab6288fbb2fd1e5b554edd4df9ef` received coordinator **CHANGES REQUIRED** with two bounded Google-auth issues:
+1. Enforce Vico's explicit-only Google linking boundary using the supported Better Auth 1.7.7 account-linking configuration; add regression for verified same-email implicit sign-in rejection while explicit authenticated `linkSocial` still succeeds.
+2. Add the approved synthetic Google OAuth **sign-in state/callback** regression: start while registration is open, close Google registration before callback, then prove callback-time create-user denial with no user/account/session and safe error return.
+
+Do not expand beyond SET-02 or change migration/settings architecture. Re-run applicable exact-head checks, publish new stable head/evidence in #251, stop for Mira whole-PR review. Lev is not assigned yet.
