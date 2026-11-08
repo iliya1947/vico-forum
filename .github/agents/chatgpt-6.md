@@ -833,3 +833,8 @@ PR #302 reviewed head `6dbe6a2d912dab6288fbb2fd1e5b554edd4df9ef` received coordi
 2. Add the approved synthetic Google OAuth **sign-in state/callback** regression: start while registration is open, close Google registration before callback, then prove callback-time create-user denial with no user/account/session and safe error return.
 
 Do not expand beyond SET-02 or change migration/settings architecture. Re-run applicable exact-head checks, publish new stable head/evidence in #251, stop for Mira whole-PR review. Lev is not assigned yet.
+
+
+## SET-02 correction assignment — SET02-LEV-01
+
+PR #302 head `f7a862ea0a81112857e9d7510afdab183a9631a3` has one confirmed current-scope P2 from Lev independent review. Correct only registration-admission failure classification across the real Better Auth request boundary: known PostgreSQL availability/timeouts must surface as controlled unavailable without creating user/account/session; missing/invalid singleton and other unexpected failures must not be ordinary `403 validation_failed`; intentional closed-registration 403 and existing sign-in/link/OAuth behavior stay intact. Acceptance must cover production AuthRuntime.handle + Better Auth 1.7.7 + real disposable PostgreSQL, including lock/query timeout and missing singleton. No schema/migration/SET-03–06/Stage6/docs expansion. Publish new stable head + checks in #251 and stop for fresh Mira whole-PR review.
