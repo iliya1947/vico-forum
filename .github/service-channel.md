@@ -32,15 +32,16 @@
 
 ## Актуальный baseline и назначение
 
-- Current main: `c1109dc8c5c499b63dd6e4d2f76bce96fadb2cd5`; SET-05 implementation #309/docs #310 merged and fully closed.
-- SET-06 Privacy product boundary remains approved: persisted per-user show-online,default ON,own authenticated opt-out,authoritative public list/count exclusion and heartbeat enforcement.
-- **Lev technical plan delivered:** [#6722989280](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6722989280), source-checked against exact main above. This is planning, not implementation/acceptance.
-- Proposed narrow table `user_privacy_preferences` (missing row=true),next forward migration expected0061; web SELECT/INSERT/UPDATE on preference plus DELETE on existing presence, no localization grants.
-- Public reader filters preference in SQL before window count/LIMIT12. Save OFF + own presence cleanup atomic; existing heartbeat shares per-user user-row lock/read-after-lock and cannot write while hidden.
-- New authenticated `/:locale/settings/privacy`,existing Settings shell/nav/localization; private/no-store Settings/home document/data/heartbeat boundaries; no new auth/session/permission subsystem.
-- Native PG concurrency/count/constraints/availability/privilege and existing Settings real-browser harness acceptance are specified; no SET-06 tests or CI have run yet.
-- **Next — Mira reviews plan scope/fit,then assigns implementation separately.** Lira remains unassigned/stopped;Lev planning complete/stopped;Mark unassigned.
-- No production/liveGoogle/realOwner/Stage6 or extra visual approval gate. Permanent docs separately after implementation merge.
+- Main/base `c1109dc8c5c499b63dd6e4d2f76bce96fadb2cd5`; SET01–05 fully closed.
+- SET-06 implementation PR #311 open/Ready/mergeable on stable exact head `11639e79ae67b61062d05bf3f05e32526204a056`.
+- Mira coordinator PASS; **Lev independent whole-PR PASS,0 confirmed current-scope defects**. [Full report #6724949328](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6724949328).
+- SET06-MIRA-01 independently closed: real blocked Worker Privacy SELECT terminated in PostgreSQL yields private503 and recovers; real missing-relation read/save42P01 remains unexpected.
+- Own source/runtime verification covers all37 files, default ON, atomic OFF cleanup, shared per-user heartbeat serialization, public SQL filter before count/LIMIT12, own form/account-switch/cache/i18n boundaries.
+- Own184 app tests/10 files,11 nativePG/2 files,build/full0000–0061 migration,13 connected Chromium groups,13 extra own probe groups,36 schema contract tests plus actual65-table manifest/runtime grants/provisioning probes PASS.
+- Exact-head CI42504491033 and Chromium42504491099 independently SUCCESS/attempt1,4 browser jobs/13SET06 log groups. No full CI local rerun claimed.
+- **Next — Mira final readiness routing to Owner merge #311**, then separate factual SET-06 docs/project-state closeout. Do not declare merged/Settings complete yet.
+- Lev/Lira stopped;Mark unassigned;implementation frozen. Any head change restarts coordinator-first cycle.
+- No production/Neon/Stage6/liveGoogle/realOwner/visual acceptance claimed or added gate.
 
 ## Handoff — Лира: Stage2 factual documentation closeout
 
@@ -2130,3 +2131,8 @@ Required result:
 4. Record PASS or the complete current-scope finding set in #251 and stop.
 
 Do not modify implementation during review. Lira remains stopped; Mark unassigned. Owner merge remains blocked until this independent review PASS.
+
+
+## SET-06 / PR #311 — independent Lev technical whole-PR PASS
+
+[Full independent report #6724949328](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6724949328), exact head `11639e79ae67b61062d05bf3f05e32526204a056`, unchanged base/main `c1109dc8c5c499b63dd6e4d2f76bce96fadb2cd5`. **PASS,0 confirmed current-scope defects**. All37 files independently reviewed against plan#6722989280;MIRA01 delta2 paths,35 others byte-identical to prior coordinator head. SET06-MIRA-01 independently closed by real Worker privacy SELECT pg_terminate_backend→private503/recovery plus real missing-preference read/save42P01 negative cases. Native own probes confirm hidden before count/LIMIT(including hidden outside12),stale-row filtering/no timestamp refresh,ON without activity,both actual in-flight lock orderings,FKcascade and real provisioned web-role domain operations with forbidden preferenceDELETE. Real same-mounted account switch clears old draft/stalePOST409,explicit Bob save changes onlyBob;guest EN/HE document/data excludes hidden identity while profile remains public. Own184 app/11PG/build/full0000–0061,13 checked-in connected Chromium groups,13 extra own groups,36 schema contract tests and actual65-table manifest/grants/provisioning PASS. Existing manifest/snapshot tables semantically unchanged;only new preference relation. Exact-head CI42504491033/browser42504491099 SUCCESS/attempt1,4jobs/13SET06 records independently read. Evidence /workspace/work/set06-review-evidence/. Implementation unchanged/checkout clean;owned preview/DB/roles/vars/symlink cleaned. **Mira next:** final readiness→Owner merge#311→separate factual SET06 docs/project-state closeout. Lev/Lira stopped;Mark unassigned;Stage6/production inactive;no visualapproval claim/newgate.
