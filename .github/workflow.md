@@ -2,20 +2,20 @@
 
 - Service PR: **#251**
 - Current main/base: `76fc5b16be4f2425a0ad1fdcb7b38974db355c56`
-- Current stage: **Settings SET-05 — fresh coordinator PASS after SET05-LEV-01; Lev repeat review assigned**
+- Current stage: **Settings SET-05 — repeat independent Lev PASS; Mira final readiness routing**
 - Approved technical plan: **#251 comment #6711736883**
 - Implementation PR: **#309**, open / Ready / mergeable
-- Stable exact head: **`236a15c5f3309a5466c70c7a934edf5b56ade433`**
-- Mira fresh coordinator whole-PR review: **PASS — 0 confirmed current-scope defects**
-- `SET05-LEV-01`: **closed on this head**
-- `SET05-MIRA-01` / `SET05-MIRA-02`: remain closed
-- Correction from prior reviewed head `a4af2014...`: two commits / nine paths; remaining eleven PR files byte-identical
-- Exact-head CI #42483839708: **SUCCESS** (165/165 app files, 2084/2084 tests; 51/51 PG files, 597/597 tests; lint/typecheck/build)
-- Exact-head Chromium #42483839769: **SUCCESS** (4/4 jobs; 13 SET-05 acceptance groups)
+- Reviewed stable exact head: **`236a15c5f3309a5466c70c7a934edf5b56ade433`**
+- Mira fresh coordinator whole-PR review: **PASS**
+- Lev repeat independent whole-PR technical review: **PASS — 0 confirmed current-scope defects**
+- `SET05-LEV-01` independently closed; `SET05-MIRA-01/02` remain closed
+- Review/evidence/handoff: [#6722125480](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6722125480)
+- Exact-head CI #42483839708 and Chromium #42483839769: **SUCCESS**, same SHA
+- **Мира**: final readiness routing to Owner for merge #309
 - **Лира**: stopped; implementation frozen
-- **Лёва**: assigned repeat independent technical whole-PR review of this same exact head
+- **Лёва**: review complete; stopped, implementation unchanged
 - **Марк**: unassigned
-- Next: **await Lev repeat independent verdict; no Owner merge before PASS**
-- Any implementation-head change restarts coordinator-first review
-- Permanent documentation: separate post-merge closeout
+- Next: **Mira readiness → Owner merge → separate factual SET-05 docs closeout**
+- Any implementation-head change restarts coordinator-first review.
+- Owner visual acceptance is not an additional SET-05 gate; no visual approval claimed.
 - SET-06 and Stage6/production remain inactive.
