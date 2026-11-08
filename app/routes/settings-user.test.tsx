@@ -5,8 +5,6 @@ import { I18nextProvider } from "react-i18next";
 import { createMemoryRouter, RouterContextProvider, RouterProvider } from "react-router";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { HeaderAuthProvider } from "../auth/auth-controls";
-import { MarkdownEditor } from "../forum/markdown-editor";
-import { ForumMarkdown } from "../forum/markdown";
 import { authSessionContext, type AuthSession } from "../auth/request-context";
 import { authorizationOwnerContext } from "../authorization/request-context";
 import { canonicalEnglishCatalog } from "../localization/catalog";
@@ -58,12 +56,11 @@ function installSystemTheme(initial: boolean) {
     act(() => listeners.forEach(fn => fn({ matches: next } as MediaQueryListEvent)));
   };
 }
-function showUserSettings(locale: "en" | "ru" | "he", withEditor = false,
-  accountId = "current-user", displayedUserId = accountId) {
+function showUserSettings(locale: "en" | "ru" | "he") {
   const router = createMemoryRouter([{
     path: "/:locale/settings/user",
     loader: ({ params }) => ({
-      locale: params.locale, canViewForum: false, accountId,
+      locale: params.locale, canViewForum: false, accountId: "current-user",
       preferredLocale: null, localeAvailable: true, localeSaved: false,
       availableLocales: [
         { tag: "en", nativeName: "English", direction: "ltr" },
@@ -71,16 +68,10 @@ function showUserSettings(locale: "en" | "ru" | "he", withEditor = false,
         { tag: "he", nativeName: "עברית", direction: "rtl" },
       ],
     }),
-    element: <>
-      <SettingsUserRoute />
-      {withEditor ? <div className="set03-editor-fixture">
-        <form><MarkdownEditor id="set03-open-editor" name="body" defaultValue="Exact **source**" /></form>
-        <ForumMarkdown>{"~~~ts\nconst x = 1;\n~~~"}</ForumMarkdown>
-      </div> : null}
-    </>,
+    element: <SettingsUserRoute />,
   }], { initialEntries: [`/${locale}/settings/user`] });
   const page = render(<I18nextProvider i18n={runtime(locale)}>
-    <HeaderAuthProvider initialUser={{ id: displayedUserId, name: "Current user" }}>
+    <HeaderAuthProvider initialUser={{ id: "current-user", name: "Current user" }}>
       <RouterProvider router={router} />
     </HeaderAuthProvider>
   </I18nextProvider>);
@@ -127,8 +118,6 @@ describe("SET-03 authenticated User preferences and browser theme", () => {
     expect(page.container.querySelector('.settings-panel-nav [aria-current="page"]')).toHaveAttribute("href", `/${locale}/settings/user`);
     expect(page.container.querySelectorAll(".settings-panel-pending-item")).toHaveLength(3);
     expect(page.container.querySelectorAll("main")).toHaveLength(1);
-    expect(screen.getByRole("combobox", { name: commonResources(locale).settingsEditorMode })).toBeVisible();
-    expect(screen.getByRole("combobox", { name: commonResources(locale).editorSpellcheck })).toBeVisible();
     page.unmount(); router.dispose();
   });
 
@@ -161,112 +150,5 @@ describe("SET-03 authenticated User preferences and browser theme", () => {
     expect(document.documentElement).toHaveAttribute("data-theme", "dark");
     expect(screen.getByRole("button", { name: "Switch to light theme" })).toBeVisible();
     page.unmount(); router.dispose();
-  });
-});
-
-
-describe("SET-03 device-local Editor/code preferences connected to real consumers", () => {
-  it("synchronizes Settings, a mounted Editor and code block both directions without rewriting Markdown", async () => {
-    installSystemTheme(false);
-    const { page, router } = showUserSettings("en", true);
-    const mode = await screen.findByRole("combobox", { name: "Writing mode" });
-    const spellcheck = screen.getByRole("combobox", { name: "Check spelling" });
-    const wrap = screen.getByRole("checkbox", { name: "Wrap lines" });
-    const numbers = screen.getByRole("checkbox", { name: "Line numbers" });
-    const editor = page.container.querySelector(".set03-editor-fixture .markdown-editor")!;
-    const code = page.container.querySelector(".set03-editor-fixture .forum-code-block")!;
-    const form = page.container.querySelector<HTMLFormElement>(".set03-editor-fixture form")!;
-    const body = () => new FormData(form).get("body");
-    await waitFor(() => expect(mode).toHaveValue("default"));
-    expect(editor).toHaveAttribute("data-authoring", "simple");
-    expect(body()).toBe("Exact **source**");
-    expect(code).toHaveAttribute("data-wrap", "false");
-    expect(code.querySelector("pre")).toHaveAttribute("data-line-numbers", "false");
-
-    await userEvent.selectOptions(mode, "advanced");
-    await waitFor(() => expect(editor).toHaveAttribute("data-authoring", "advanced"));
-    expect(localStorage.getItem("vico:editor:mode:current-user")).toBe("advanced");
-    const textarea = page.container.querySelector<HTMLTextAreaElement>(".set03-editor-fixture textarea")!;
-    textarea.focus();
-    textarea.setSelectionRange(3, 3);
-    expect(body()).toBe("Exact **source**");
-
-    await userEvent.selectOptions(spellcheck, "true");
-    expect(localStorage.getItem("vico:editor:spellcheck:current-user")).toBe("true");
-    expect(textarea).toHaveAttribute("spellcheck", "true");
-    await userEvent.click(wrap);
-    await userEvent.click(numbers);
-    expect(code).toHaveAttribute("data-wrap", "true");
-    expect(code.querySelector("pre")).toHaveAttribute("data-line-numbers", "true");
-    expect(localStorage.getItem("vico:editor:code-wrap:current-user")).toBe("true");
-    expect(localStorage.getItem("vico:editor:code-lines:current-user")).toBe("true");
-
-    await userEvent.selectOptions(mode, "simple");
-    await waitFor(() => expect(editor).toHaveAttribute("data-authoring", "simple"));
-    await userEvent.selectOptions(mode, "advanced");
-    await waitFor(() => expect(editor).toHaveAttribute("data-authoring", "advanced"));
-    expect(body()).toBe("Exact **source**");
-    expect(textarea.selectionStart).toBe(3);
-
-    await userEvent.click(screen.getByRole("button", { name: "Simple" }));
-    await waitFor(() => expect(mode).toHaveValue("simple"));
-    expect(localStorage.getItem("vico:editor:mode:current-user")).toBe("simple");
-    await userEvent.click(screen.getByRole("button", { name: "No wrap" }));
-    await waitFor(() => expect(wrap).not.toBeChecked());
-    expect(localStorage.getItem("vico:editor:code-wrap:current-user")).toBe("false");
-    expect(body()).toBe("Exact **source**");
-
-    act(() => {
-      localStorage.setItem("vico:editor:mode:current-user", "advanced");
-      window.dispatchEvent(new StorageEvent("storage", { key: "vico:editor:mode:current-user" }));
-      localStorage.setItem("vico:editor:code-wrap:current-user", "true");
-      window.dispatchEvent(new StorageEvent("storage", { key: "vico:editor:code-wrap:current-user" }));
-    });
-    await waitFor(() => expect(mode).toHaveValue("advanced"));
-    expect(editor).toHaveAttribute("data-authoring", "advanced");
-    expect(wrap).toBeChecked();
-    expect(code).toHaveAttribute("data-wrap", "true");
-    expect(body()).toBe("Exact **source**");
-
-    await userEvent.selectOptions(mode, "default");
-    await userEvent.selectOptions(spellcheck, "auto");
-    expect(localStorage.getItem("vico:editor:mode:current-user")).toBeNull();
-    expect(localStorage.getItem("vico:editor:spellcheck:current-user")).toBeNull();
-    expect(editor).toHaveAttribute("data-authoring", "simple");
-    expect(page.container.querySelector("[data-visual-text='true']")).toHaveAttribute("spellcheck", "true");
-    expect(body()).toBe("Exact **source**");
-    page.unmount(); router.dispose();
-  });
-
-  it("keeps local preferences isolated after an account switch and rejects a stale Settings identity", async () => {
-    installSystemTheme(false);
-    localStorage.setItem("vico:editor:mode:set03-user-a", "advanced");
-    localStorage.setItem("vico:editor:code-wrap:set03-user-a", "true");
-    const first = showUserSettings("en", true, "set03-user-a");
-    const firstMode = await screen.findByRole("combobox", { name: "Writing mode" });
-    await waitFor(() => expect(firstMode).toHaveValue("advanced"));
-    expect(first.page.container.querySelector(".set03-editor-fixture .markdown-editor"))
-      .toHaveAttribute("data-authoring", "advanced");
-    first.page.unmount(); first.router.dispose();
-
-    const second = showUserSettings("en", true, "set03-user-b");
-    const secondMode = await screen.findByRole("combobox", { name: "Writing mode" });
-    await waitFor(() => expect(secondMode).toHaveValue("default"));
-    expect(second.page.container.querySelector(".set03-editor-fixture .markdown-editor"))
-      .toHaveAttribute("data-authoring", "simple");
-    expect(screen.getByRole("checkbox", { name: "Wrap lines" })).not.toBeChecked();
-    expect(localStorage.getItem("vico:editor:mode:set03-user-b")).toBeNull();
-    second.page.unmount(); second.router.dispose();
-
-    const stale = showUserSettings("en", true, "set03-user-a", "set03-user-b");
-    const staleMode = await screen.findByRole("combobox", { name: "Writing mode" });
-    expect(staleMode).toBeDisabled();
-    expect(staleMode).toHaveValue("default");
-    expect(screen.getByRole("checkbox", { name: "Wrap lines" })).toBeDisabled();
-    expect(stale.page.container.querySelector(".set03-editor-fixture .markdown-editor"))
-      .toHaveAttribute("data-authoring", "simple");
-    stale.page.unmount(); stale.router.dispose();
-    localStorage.removeItem("vico:editor:mode:set03-user-a");
-    localStorage.removeItem("vico:editor:code-wrap:set03-user-a");
   });
 });

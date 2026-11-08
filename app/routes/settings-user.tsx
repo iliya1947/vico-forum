@@ -1,7 +1,5 @@
 import { data, redirect, useActionData, useLoaderData, useNavigation, Form, type RouterContextProvider } from "react-router";
 import { useTranslation } from "react-i18next";
-import { useHeaderAuthUser } from "../auth/auth-controls";
-import { useEditorPreferences, writeEditorPreference } from "../settings/editor-preferences";
 import { authSessionForRequest } from "../auth/request-context";
 import { authorizationOwnerContext } from "../authorization/request-context";
 import { isBoundOwner } from "../authorization/owner";
@@ -92,10 +90,6 @@ export default function SettingsUserRoute() {
   const navigation = useNavigation();
   const { t } = useTranslation("common");
   const { preference, setPreference } = useThemePreference();
-  const displayedUserId = useHeaderAuthUser()?.id;
-  // A stale loader must never expose or change another account's browser preferences.
-  const localAccountId = displayedUserId === state.accountId ? state.accountId : null;
-  const editor = useEditorPreferences(localAccountId);
   const pending = navigation.state !== "idle";
   const savedLocale = state.availableLocales.some(option => option.tag === state.preferredLocale)
     ? state.preferredLocale! : "";
@@ -140,52 +134,6 @@ export default function SettingsUserRoute() {
         {!state.localeAvailable ? <p role="alert">{t("settingsLocaleUnavailable")}</p> : null}
         {result?.error ? <p role="alert">{t(localeErrorKeys[result.error])}</p> : null}
         {state.localeSaved ? <p role="status">{t("settingsLocaleSaved")}</p> : null}
-      </section>
-      <section className="settings-editor-section" aria-labelledby="settings-editor-heading">
-        <h3 id="settings-editor-heading">{t("settingsEditorHeading")}</h3>
-        <p>{t("settingsEditorLocalHint")}</p>
-        <div className="settings-editor-controls">
-          <label className="settings-editor-select" htmlFor="settings-editor-mode">
-            <span>{t("settingsEditorMode")}</span>
-            <select id="settings-editor-mode" disabled={!localAccountId}
-              value={editor.mode ?? "default"} onChange={event => {
-                const mode = event.currentTarget.value;
-                if (mode === "default" || mode === "simple" || mode === "advanced") {
-                  writeEditorPreference(localAccountId, "mode", mode === "default" ? null : mode);
-                }
-              }}>
-              <option value="default">{t("settingsEditorDefault")}</option>
-              <option value="simple">{t("editorSimple")}</option>
-              <option value="advanced">{t("editorAdvanced")}</option>
-            </select>
-          </label>
-          <label className="settings-editor-select" htmlFor="settings-editor-spellcheck">
-            <span>{t("editorSpellcheck")}</span>
-            <select id="settings-editor-spellcheck" disabled={!localAccountId}
-              value={editor.spellcheck === null ? "auto" : String(editor.spellcheck)}
-              onChange={event => {
-                const option = event.currentTarget.value;
-                if (option === "auto" || option === "true" || option === "false") {
-                  writeEditorPreference(localAccountId, "spellcheck",
-                    option === "auto" ? null : option === "true");
-                }
-              }}>
-              <option value="auto">{t("settingsEditorSpellcheckAuto")}</option>
-              <option value="true">{t("settingsEditorSpellcheckOn")}</option>
-              <option value="false">{t("settingsEditorSpellcheckOff")}</option>
-            </select>
-          </label>
-          <label className="settings-editor-checkbox">
-            <input type="checkbox" disabled={!localAccountId} checked={editor.codeWrap}
-              onChange={event => writeEditorPreference(localAccountId, "codeWrap", event.target.checked)} />
-            <span>{t("codeWrap")}</span>
-          </label>
-          <label className="settings-editor-checkbox">
-            <input type="checkbox" disabled={!localAccountId} checked={editor.codeLines}
-              onChange={event => writeEditorPreference(localAccountId, "codeLines", event.target.checked)} />
-            <span>{t("editorLineNumbers")}</span>
-          </label>
-        </div>
       </section>
     </section>
   </SettingsShell>;

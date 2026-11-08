@@ -1,6 +1,5 @@
 import { createContext, useContext, useEffect, useState, type CSSProperties, type ReactNode } from "react";
 import { useHeaderAuthUser } from "../auth/auth-controls";
-import { readEditorPreferences, subscribeEditorPreferences, writeEditorPreference } from "../settings/editor-preferences";
 import { useTranslation } from "react-i18next";
 import ReactMarkdown, { defaultUrlTransform, type Components } from "react-markdown";
 import { remarkForumParagraphDirection, remarkForumStrikethrough } from "../markdown-syntax";
@@ -203,19 +202,27 @@ function ForumCodeBlock({
   const [wrap, setWrap] = useState(false);
   const [lineNumbers, setLineNumbers] = useState(false);
   useEffect(() => {
-    const update = () => {
-      const preferences = readEditorPreferences(accountId);
-      setWrap(preferences.codeWrap);
-      setLineNumbers(preferences.codeLines);
+    function readPreferences() {
+      try {
+        setWrap(accountId ? localStorage.getItem("vico:editor:code-wrap:" + accountId) === "true" : false);
+        setLineNumbers(accountId ? localStorage.getItem("vico:editor:code-lines:" + accountId) === "true" : false);
+      } catch { setWrap(false); setLineNumbers(false); }
+    }
+    readPreferences();
+    window.addEventListener("vico:code-preferences", readPreferences);
+    window.addEventListener("storage", readPreferences);
+    return () => {
+      window.removeEventListener("vico:code-preferences", readPreferences);
+      window.removeEventListener("storage", readPreferences);
     };
-    const unsubscribe = subscribeEditorPreferences(accountId, update);
-    update();
-    return unsubscribe;
   }, [accountId]);
 
-  function setPreference(key: "codeWrap" | "codeLines", enabled: boolean) {
+  function setPreference(key: "code-wrap" | "code-lines", enabled: boolean) {
     if (!accountId) return;
-    writeEditorPreference(accountId, key, enabled);
+    try {
+      localStorage.setItem("vico:editor:" + key + ":" + accountId, String(enabled));
+      window.dispatchEvent(new Event("vico:code-preferences"));
+    } catch { /* Storage denied; the current block still updates locally. */ }
   }
   const displayLanguage = language?.trim() || null;
   const allowHighlight = useContext(HighlightBudgetContext);
@@ -261,7 +268,7 @@ function ForumCodeBlock({
             onClick={() => {
               const enabled = !wrap;
               setWrap(enabled);
-              setPreference("codeWrap", enabled);
+              setPreference("code-wrap", enabled);
             }}
           >
             {t(wrap ? "codeNoWrap" : "codeWrap")}
@@ -269,7 +276,7 @@ function ForumCodeBlock({
           <button type="button" aria-pressed={lineNumbers} onClick={() => {
             const enabled = !lineNumbers;
             setLineNumbers(enabled);
-            setPreference("codeLines", enabled);
+            setPreference("code-lines", enabled);
           }}>{t("editorLineNumbers")}</button>
           <button type="button" onClick={() => void copyCode()}>
             {t("codeCopy")}
