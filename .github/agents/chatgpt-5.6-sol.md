@@ -1320,3 +1320,8 @@ PR #303 exact head `bc0b8fd248293be76f797add6dba8f804c213185`: one current-scope
 ## SET-02 docs closeout — final PASS
 
 PR #303 exact head `49d93b776d7a0bf480955abb3e33e9772e761273`: **PASS, 0 confirmed current-scope docs defects**. SET02-DOC-MIRA-01 closed; exact-head CI #42437660217 SUCCESS; PR clean/mergeable. Ready for Owner merge. SET-03 remains unassigned until merge.
+
+
+## SET-02 closed; SET-03 active
+
+PR #303 merged at `cb805a074de3bfdcd140125ebaa425a76bb6496d`; SET-02 is fully closed. Existing Lev plan #6711736883 remains current for SET-03, so no repeat planning is required. Lira assigned SET-03 User preferences implementation. Mira reviews first stable exact head; Lev only after coordinator PASS. SET-04–06 remain unassigned.
