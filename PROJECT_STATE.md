@@ -29,7 +29,7 @@ Vico Forum находится в pre-release разработке.
 
 - Stage 0–5 завершены в repository/local-CI path.
 - Текущий standalone product priority по `ROADMAP.md` — UI/UX product pass.
-- Ordinary Admin Panel AP-01–AP-11, owner/authorization redesign Stage 1–2 и Settings SET-01–SET-04 реализованы в repository/local-CI; SET-05–SET-06 ещё не реализованы и не назначены. Complaints ведутся отдельно.
+- Ordinary Admin Panel AP-01–AP-11, owner/authorization redesign Stage 1–2 и Settings SET-01–SET-05 реализованы в repository/local-CI; SET-06 ещё не реализован и не назначен. Complaints ведутся отдельно.
 - Stage 6 external integration поставлен владельцем на паузу и не продолжается без отдельного указания.
 - Публичный production release не выполнен.
 
@@ -118,8 +118,11 @@ browser-wide тему, сохранение своего `user.locale` и сущ
 `/:locale/settings/administrator` с доступом при текущих Admin/Attention
 permissions, локальными per-account/device предпочтениями переходов,
 плотности и раскрытия второстепенных технических данных — без нового DB/RBAC.
-SET-05 Account & security — следующий пакет, пока не назначен;
-SET-06 Privacy также не реализован и не назначен. Постоянный контракт — в `docs/SETTINGS.md`.
+SET-05 добавил защищённый `/:locale/settings/account` для authenticated пользователей:
+сведения о связанных методах входа, смену существующего credential-пароля через
+штатный Better Auth с общим лимитом попыток и управление собственными сессиями
+без передачи session tokens клиенту. SET-05 не добавил schema/migration/RBAC.
+SET-06 Privacy ещё не реализован и не назначен. Постоянный контракт — в `docs/SETTINGS.md`.
 
 Два bounded этапа owner/authorization redesign реализованы в `main`. Stage 1 удалил
 obsolete last-manager veto и manager-count state миграцией `0059`, сохранив общий
@@ -200,7 +203,7 @@ External topology является mutable state и должна перепро�
 ## Актуальные незавершённые продуктовые границы
 
 - UI/UX product pass ещё требует финального closeout и обязательной real-runtime product/visual acceptance по `docs/UI_UX_PASS.md`.
-- В `main` ordinary Admin Panel AP-01–AP-11, owner/authorization redesign Stage 1–2 и Settings SET-01–SET-04 реализованы в repository/local-CI. Следующий пакет Settings — SET-05, пока не назначен; SET-06 также не реализован и не назначен. Реальные Google/Owner binding и production acceptance остаются Stage 6.
+- В `main` ordinary Admin Panel AP-01–AP-11, owner/authorization redesign Stage 1–2 и Settings SET-01–SET-05 реализованы в repository/local-CI. Следующий пакет Settings — SET-06 Privacy, ещё не реализован и не назначен. Реальные Google/Owner binding и production acceptance остаются Stage 6.
 - Complaints integration/closeout покрыт repository/local-CI проверками; external/deployed acceptance Complaints не выполнялась.
 - Email verification/password recovery остаются отложенными.
 - Editor drafts/autosave остаются отложенными.
@@ -209,7 +212,7 @@ External topology является mutable state и должна перепро�
 ## Ближайший маршрут
 
 1. Продолжать утверждённую bounded product-разработку без превращения обычных PR в external rollout.
-2. Следующий по утверждённой последовательности Settings пакет — SET-05 (Account & security); он пока не назначен. SET-06 (Privacy) также остаётся неназначенным. Сохранить Owner-only authorization/registration mutation policy, а реальную Google/Owner binding acceptance оставить Stage 6. Complaints продолжать по его профильному контракту/служебному каналу.
+2. После завершённого SET-05 следующий по утверждённой последовательности Settings пакет — SET-06 (Privacy); он пока не назначен. Сохранить Owner-only authorization/registration mutation policy, а реальную Google/Owner binding acceptance оставить Stage 6. Complaints продолжать по его профильному контракту/служебному каналу.
 3. Довести UI/UX product pass до финальной real-runtime acceptance.
 4. Возобновлять Stage 6 external integration только по отдельному указанию владельца и по `docs/database/*`.
 5. После завершения pre-release product и external gates перейти к финальному общепроектному refinement и Stage 7 production release по `ROADMAP.md`.

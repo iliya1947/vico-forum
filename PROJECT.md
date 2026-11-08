@@ -57,9 +57,11 @@ Owner-only authorization writes, SET-02 добавил защищённый Sett
 Forum & roles и независимое управление регистрацией новых Google/email-password
 аккаунтов. SET-03 добавил защищённые User preferences: тему, язык аккаунта и существующие
 локальные настройки Editor/code. SET-04 добавил Administrator preferences:
-локальные настройки Admin/Attention рабочих пространств на аккаунт и устройство
-(repository/local-CI). Account & security (SET-05) — следующий ещё не назначенный
-пакет; Privacy (SET-06) также не реализован и не назначен.
+локальные настройки Admin/Attention рабочих пространств на аккаунт и устройство.
+SET-05 реализовал защищённые персональные Account & security: способы входа,
+смену существующего пароля и управление собственными сессиями через Better Auth
+(repository/local-CI). Следующий пакет — Privacy (SET-06), ещё не реализован
+и не назначен.
 Реальные Google OAuth и Owner binding остаются задачами Stage 6.
 
 ## Техническая основа

@@ -3,9 +3,9 @@
 ## Status and source-of-truth boundaries
 
 Settings is an independent five-surface product sequence after ordinary Admin Panel AP-01–AP-11
-and Owner/authorization redesign. SET-01–SET-04 are implemented in `main` in the
-repository/local-CI path. SET-05–SET-06 remain approved, unassigned future scope,
-not implemented routes or server settings. Current factual status:
+and Owner/authorization redesign. SET-01–SET-05 are implemented in `main` in the
+repository/local-CI path. SET-06 Privacy remains approved, unassigned future scope,
+not an implemented route or server preference. Current factual status:
 [PROJECT_STATE.md](../PROJECT_STATE.md).
 The ordinary panel contract is [ADMIN_PANEL.md](ADMIN_PANEL.md); application authorization
 is governed by [AUTHORIZATION.md](auth/AUTHORIZATION.md).
@@ -21,15 +21,15 @@ owner visual acceptance and Stage 6 external integration are not claimed.
 | Forum & roles | `/:locale/settings/forum` | **SET-02 implemented**; exact authenticated server-bound Owner only; existing authorization management plus independent new-registration flags |
 | Administrator preferences | `/:locale/settings/administrator` | **SET-04 implemented**; authenticated actor with current Admin or Attention access; account/device-local workspace presentation preferences |
 | User preferences | `/:locale/settings/user` | **SET-03 implemented**; authenticated users manage browser theme, own preferred locale and existing device-local Editor/code preferences |
-| Account & security | No route yet | **SET-05 pending**; future authenticated Better Auth account/session management |
+| Account & security | `/:locale/settings/account` | **SET-05 implemented**; authenticated own linked-method, credential-password and session controls through existing Better Auth |
 | Privacy | No route yet | **SET-06 pending**; future authenticated online-visibility preference (default ON when implemented) |
 
 `/:locale/settings` is a protected authenticated navigation entry, **not** a sixth
 functional Settings surface. It uses one `SettingsShell` inside the existing forum shell,
 not a second Admin shell. The forum header/account navigation and ordinary Admin Settings
 navigation lead here. The Forum & roles link is shown only to an exact bound Owner;
-remaining unimplemented sections (SET-05–SET-06) are explicitly marked Under development
-and expose no new settings reads or actions. Complaint priority/settings remain inside Complaints.
+the remaining unimplemented Privacy section (SET-06) is marked Under development
+and exposes no new settings reads or actions. Complaint priority/settings remain inside Complaints.
 
 The locale segment uses the existing generic locale boundary and canonical registry;
 the new UI is localized for EN/RU/HE and supports responsive/RTL layout. Direct route
@@ -231,26 +231,93 @@ It does not change existing Admin/Attention admission or domain operations.
 Repository/local-CI acceptance covers actual built Worker/Better Auth/isolated
 PostgreSQL 17/Chromium; it is not deployed or production acceptance.
 
-## Approved but not yet implemented (SET-05–SET-06)
+## Account & security (SET-05)
 
-- **SET-05 Account & security:** future supported Better Auth account/session
-  operations, without replacing the authentication/session provider.
+`/:locale/settings/account` is an independently guarded **authenticated**
+personal Settings route. It uses the existing `SettingsShell` and the request-local
+`AuthRuntime` backed by Better Auth **1.7.7** and the existing PostgreSQL
+user/account/session tables; no new authentication provider, schema, migration,
+permission or Admin History writer was introduced. Non-authenticated loaders
+and actions fail privately; no Owner/Admin permission is needed.
+
+**Linked methods and credentials.** The loader reads the current user's linked
+Better Auth accounts and projects only safe method labels (password and Google),
+plus whether a real credential password exists. OAuth access/refresh/ID tokens,
+password hashes, provider-private payloads and session bearer tokens are never
+included in the public or private page DTO. The existing authenticated
+`GoogleAccountLink` control is reused here with its explicit current-user
+identity check; Profile now points to this Account page rather than offering a
+second linking flow. Closing **new** Google registration does not disable
+explicit linking for an already authenticated account.
+
+Password change is offered **only** when an existing credential account has a
+stored password. It requires the current password and independently rechecks
+the current Better Auth session and submitted stale-user/session expectations.
+It cannot create a password for a Google-only account. Password change uses the
+existing Better Auth HTTP handler at canonical `/api/auth/change-password`, not a
+direct `auth.api.changePassword` call that skips HTTP admission. Thus Settings
+and direct canonical requests share Better Auth's existing **database-backed,
+per-trusted-client-IP change-password limit of 3 requests per 10 seconds** in
+the installed version. On exhaustion the private `429` response propagates
+sanitized `Retry-After` and `X-Retry-After` through the Settings action and
+document headers, with localized feedback. Rejected attempts do not change
+the password. The call passes `revokeOtherSessions: false`; password change
+does not implicitly sign out other sessions.
+
+**Own sessions.** The loader lists active sessions of the authenticated user,
+with session ID, creation/expiry timestamps, a plain-text device/user-agent
+label and an explicit current-session marker. Only the server uses the session
+token. The action can revoke **one other** session by resolving the submitted
+session ID against freshly loaded own sessions and passing its token internally
+to Better Auth; foreign, expired, missing and current-session targets cannot be
+used to sign out another user's session or the caller's current session. A
+separate command revokes **all other** sessions but preserves the current
+session and leaves unrelated accounts untouched. Subsequent requests from
+revoked sessions are unauthorized.
+
+Better Auth `listSessions` enforces session freshness. If it reports
+`SESSION_NOT_FRESH`, the page shows no session controls and directs the user
+through the existing sign-out and sign-in path (safe localized return URL).
+**Both** direct single-session and all-other-session revocations require the
+same fresh-session check on the server; hiding UI controls is not sufficient.
+No custom reauthentication protocol, separate multi-session provider or device
+fingerprint management is introduced.
+
+**Request and response protections.** Each loader/action rechecks the
+authoritative session and current identity independently of the parent shell.
+State-changing forms validate same-origin, one exact allowlisted intent/fields
+and the current account/session expectations; submitted user IDs never select
+the authorized subject. Stale-account/session conflicts, missing targets,
+credential failures and classified unavailable storage have controlled
+private responses. Unexpected schema/configuration errors are not silently
+reclassified. Protected document/data, successful writes and controlled
+failures use `private, no-store`; password/session secrets are not reflected
+in responses, URLs, logs or browser controls. Existing Better Auth
+cookie/session handling and independent sign-out behavior are preserved.
+
+Account & security does **not** implement password reset/recovery,
+Google-only set-password, email change, provider unlink, account deletion,
+two-factor authentication/passkeys or production credential configuration.
+
+## Approved but not yet implemented (SET-06)
+
 - **SET-06 Privacy:** future persisted per-user public online visibility
   (default ON, opt-out), applied to public online list/count and heartbeat.
 
-These future packages are product/technical boundaries, not claims that their
-routes, storage, APIs, mutations or acceptance already exist. Implement only
+This future package is an approved product/technical boundary, not a claim that
+its route, storage, APIs, mutations or acceptance already exist. Implement only
 through separately approved bounded packages; no universal settings JSON store,
 second RBAC, deputy stub or unrelated Stage 6 work.
 
 ## Verification boundary
 
-SET-02, SET-03 and SET-04 completed repository/local-CI implementation, PostgreSQL 17
-integration and local Chromium/built Worker/Better Auth acceptance before their
-merges. Those results do not establish live Google credentials, actual Owner
+SET-02 through SET-05 completed repository/local-CI implementation, applicable
+PostgreSQL 17 integration and local Chromium/built Worker/Better Auth acceptance
+before their merges. Those results do not establish live Google credentials, actual Owner
 binding, deployed/production acceptance or owner visual approval. Exact
 implementation/review/correction/check snapshots are retained in
 [PROJECT_HISTORY_18.md](PROJECT_HISTORY/PROJECT_HISTORY_18.md) and
-[PROJECT_HISTORY_19.md](PROJECT_HISTORY/PROJECT_HISTORY_19.md) and
-[PROJECT_HISTORY_20.md](PROJECT_HISTORY/PROJECT_HISTORY_20.md), not in
+[PROJECT_HISTORY_19.md](PROJECT_HISTORY/PROJECT_HISTORY_19.md),
+[PROJECT_HISTORY_20.md](PROJECT_HISTORY/PROJECT_HISTORY_20.md) and
+[PROJECT_HISTORY_21.md](PROJECT_HISTORY/PROJECT_HISTORY_21.md), not in
 `PROJECT_STATE.md`.
