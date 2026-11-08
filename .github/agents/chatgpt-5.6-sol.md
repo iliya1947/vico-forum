@@ -1365,3 +1365,15 @@ Docs #305 merged at `35fa64428fc551ae58b9026dad45797016dd4251`; SET-03 fully clo
 ## SET-04 / PR #307 — coordinator CHANGES REQUIRED
 
 Exact head `1a858825836e76801bb63025a28312b4d0bdd082`: 1 confirmed current-scope defect, SET04-MIRA-01. `admin-measure.tsx` omits the authenticated actor ID from the `AdminAccess` passed to `AdminMeasureDetail` → `AdminShell`, so account-local density falls back to default on the real measure-detail route. Existing CI/browser are green but do not cover this route. No other confirmed current-scope defect found. Lira correction assigned; Lev withheld until fresh coordinator PASS.
+
+
+## SET-04 / PR #307 — fresh coordinator PASS after SET04-MIRA-01
+
+- Reviewed corrected exact head `5cc5c820b0445ddb57cf3663e7cfb33c059ab108` against unchanged main `35fa64428fc551ae58b9026dad45797016dd4251`.
+- Verdict: **PASS, 0 confirmed current-scope defects**.
+- SET04-MIRA-01 closed: `requireMeasureManager` returns the authenticated session actor after block-management admission; loader now carries that actor ID into `AdminAccess`; AdminShell applies local preferences only for matching mounted auth identity.
+- `adminLast` remains safe because recording requires exact equality with `adminEntryPath(locale,current)`; detail `/admin/measures/:id` never equals the `/admin/measures` index path.
+- Correction is one commit / three files: one runtime line plus unit/browser regression. Other 35 PR files unchanged from prior completed whole-PR review.
+- CI #42458305882 SUCCESS: 164/164 app files, 2055/2055 tests; 50/50 DB files, 589/589 tests.
+- Chromium #42458305779 SUCCESS across all four jobs; real AP-10 log executed `set04-actor-bound-admin-measure-detail-density-no-private-last-entry`.
+- PASS report: #251 comment #6718837188. Lev handoff: #6718837434. Implementation frozen; no Owner merge until independent review passes.
