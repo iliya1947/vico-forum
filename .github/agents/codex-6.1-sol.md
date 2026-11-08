@@ -1,74 +1,53 @@
-# Лёва — SET-02 / PR #302 independent review: CHANGES REQUIRED
+# Лёва — SET-02 / PR #302 repeat independent review: PASS
 
-[Report #6715455171](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6715455171). Exact head `f7a862ea0a81112857e9d7510afdab183a9631a3`, base `681e8bab0eda595186acebae9ce4b2d47d06b936`. Проверка завершена; один current-scope P2, **SET02-LEV-01**. Implementation не менялся. Следующий шаг — Мира: bounded correction routing Лире; SET02-MIRA-01/02 не переоткрываются.
+[Current report #6715843589](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6715843589). Exact head `07d805d98ee77f9584f9609772ce2d33b9a8e63f`, base `681e8bab0eda595186acebae9ce4b2d47d06b936`. Assignment complete; Лёва остановился. Next — Мира readiness routing. Реализацию не менял.
 
-Лёва — SET-02 / PR #302 independent technical review: **CHANGES REQUIRED**.
+Лёва — SET-02 / PR #302 repeat independent technical whole-PR review: **PASS, 0 подтверждённых current-scope дефектов**.
 
-**Exact head:** `f7a862ea0a81112857e9d7510afdab183a9631a3`.
-**Base/main:** `681e8bab0eda595186acebae9ce4b2d47d06b936`.
-Проверен весь49-file diff против approved SET-02 plan #6711736883 и frozen product scope. Coordinator/author evidence не подменяло самостоятельную проверку. Implementation не менялся; других агентов не запускал.
+**Exact head:** `07d805d98ee77f9584f9609772ce2d33b9a8e63f`.
+**Base/current main:** `681e8bab0eda595186acebae9ce4b2d47d06b936`.
+Основание: approved SET-02 plan [#6711736883](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6711736883), текущие auth/admin/database contracts и весь 49-file PR. Реализацию не менял, других агентов не запускал. Авторские/coordinator conclusions не использовались вместо собственного runtime evidence.
 
-**Один подтверждённый current-scope finding, P2: SET02-LEV-01.** Других current-scope defects по завершённой проверке не установлено.
+### SET02-LEV-01 закрыт собственной проверкой
 
-### [P2] SET02-LEV-01 — ошибка чтения registration policy превращается в ordinary validation denial
+От предыдущего independently reviewed head `f7a862ea0a81112857e9d7510afdab183a9631a3` изменены **только** `app/auth/auth.server.ts` и `tests/database/auth-runtime.test.ts`; остальные 47 файлов идентичны. Новая request-local обёртка сохраняет исходное исключение admission до перехвата Better Auth1.7.7. После `auth.handler` классифицируется исходная причина, а не HTTP403/500 или generic `validation_failed`.
 
-**Места:** [registration-admission.ts:26](https://github.com/iliya1947/vico-forum/blob/f7a862ea0a81112857e9d7510afdab183a9631a3/app/auth/registration-admission.ts#L26), [auth.server.ts:156](https://github.com/iliya1947/vico-forum/blob/f7a862ea0a81112857e9d7510afdab183a9631a3/app/auth/auth.server.ts#L156), [auth-api.ts](https://github.com/iliya1947/vico-forum/blob/f7a862ea0a81112857e9d7510afdab183a9631a3/app/routes/auth-api.ts).
+**Собственный отдельный probe, production createHyperdriveAuthRuntime.handle + Better Auth1.7.7 + PostgreSQL17, полная0000–0060 схема:**
 
-Approved plan §2/SET-02 различает controlled unavailable и ordinary policy denial: невозможность прочитать policy должна оставаться typed unavailable/fail-closed; unexpected schema/config/programming errors не должны становиться обычным denial. Сейчас первичная ошибка теряется внутри Better Auth до application failure classification.
+1. Настоящий `ACCESS EXCLUSIVE` lock policy table + client query_timeout350 → **503/no-store**, безопасный static body, без session cookie и без новых user/account/session. Existing email sign-in **200** во время policy lock.
+2. Отдельный реальный server statement_timeout150 при том же lock → **503**,0 новых user/account/session; existing sign-in200.
+3. Отсутствующий singleton → исходный **RegistrationSettingsInvariantError**, не403/503;0 новых записей, existing sign-in200.
+4. Отдельный SQL/schema отказ (relation временно переименована в disposable schema) → исходная ошибка с PG cause **42P01**, не обычный denial/controlled outage;0 новых записей, existing sign-in200.
+5. Намеренно закрытая email-регистрация → прежний **403/vico_email_registration_closed**,0 записей и без session cookie.
+6. Через настоящий signed-state **Google OAuth callback и production runtime**, при синтетическом только remote token/profile exchange: timeout →503/no-store/0 новых user/account/session; missing singleton → исходный invariant/0 записей; open→closed → безопасный302 на заданный locale signup с method-specific error и без session cookie; open→open →302 и ровно1 новый user/account/session.
 
-**Самостоятельно воспроизведено на настоящих AuthRuntime.handle + Better Auth1.7.7 + PostgreSQL17, без mock resolver:**
-1. Полная0000–0060 схема в отдельном disposable schema; flags=true/true. Через production `createHyperdriveAuthRuntime` создан обычный existing email account.
-2. Отдельная PG transaction удерживает `LOCK TABLE forum_registration_settings IN ACCESS EXCLUSIVE MODE`. AuthRuntime получает настоящий PG Client с тем же schema и `query_timeout=350`.
-3. Валидный direct `POST /api/auth/sign-up/email` нового пользователя доходит до policy SELECT и получает реальный `Query read timeout`.
-4. Наружу возвращается **HTTP403**, JSON `{"code":"validation_failed","message":"User validation failed"}`.
-5. Новый user не создан; existing email sign-in в это же время возвращает200, что изолирует отказ именно policy read.
-6. Отдельный контроль с отсутствующей singleton row приводит к тому же403/`validation_failed`, хотя module бросает `RegistrationSettingsInvariantError`, а не принимает policy decision.
+Всего **9 собственных сценариев PASS**. Ни callback exception, ни библиотечный cause-less denial больше не теряют failure classification на production boundary. Закрытие регистрации остаётся fail-closed, intentional policy decisions не превращаются в503. Raw policy read не кешируется; error state изолирован внутри одного handle request.
 
-**Причинная цепочка:** async SELECT/row validation в новом admission hook → исключение Drizzle/PG либо invariant → установленный Better Auth `dist/utils/validate-user-info.mjs:assertValidUserInfo` ловит **любое** исключение callback и заменяет его cause-less403 `validation_failed` → `auth.handler()` возвращает готовый Response → current `AuthRuntime.handle`/auth route не сохраняют первичную admission failure и отдают этот denial клиенту. Существующее error preservation для session adapter не охватывает этот прямой Drizzle SELECT и response path.
+### Whole-PR scope и сохранённые границы
 
-Создание аккаунта остаётся запрещённым. Дефект — маскировка инфраструктурного/инвариантного отказа под отказ валидации пользователя, в нарушение принятого failure contract. Intentional method closure с403/`vico_*_registration_closed` — отдельное нормальное поведение и должно сохраниться.
+- Пересверены независимые Google/email flags, both-false, fresh create-user source/method/provider admission, existing sign-in и protected explicit link. **SET02-MIRA-01/02 остаются закрытыми**: native PG/Better Auth rerun проверил verified same-email implicit-link denial, explicit linking при closed Google flag и signed OAuth state open→closed/open→open.
+- Owner-only Settings loader/action и repository, strict Origin/body/version checks, no-op/CAS409, один refresh без повторного POST, atomic final ordered History и rollback сохранены. Canonical шесть authorization writers переиспользованы; второй writer не введён, non-Owner legacy reads остаются read-only.
+- Settings entrance private, Forum & roles exact Owner; четыре будущие поверхности честно unavailable. Generic locale routes, safe OAuth error presentation, public flags-only signup DTO и no-store, EN/RU/HE/RTL проверены.
+- Migration0060/Drizzle/schema/manifest/runtime privileges не изменены correction. Повторное deep comparison0059→0060: добавлена только `public.forum_registration_settings`; в существующих tables изменён только History action-target CHECK. Accepted0000–0059 неизменны. Actual PG schema parity: **64 public tables**. Web registration relation: SELECT/UPDATE без INSERT/DELETE; localization-read не расширен.
+- Нет master switch, Owner signup exception, требования сохранить способ регистрации или last-manager/count/recovery правила. SET-03–06, deputies, Stage6/production и permanent docs не добавлены.
 
-**Нужная bounded correction:** сохранить original admission failure в request-local boundary до того, как Better Auth её поглотит; на application response boundary классифицировать только известные DB availability/timeouts как controlled unavailable (для email API503). Invariant/unexpected errors должны идти по обычному error path. Не выводить причину из одного `validation_failed`, не превращать все403/500 в503 и не менять policy на permissive fallback. Сохранить безопасную OAuth error/cookie обработку, existing sign-in/link и сам trusted create-user gate; новый auth framework или deputy/Settings redesign не требуется.
+### Собственные проверки на этом exact head
 
-**Acceptance correction:** реальный PG lock/query timeout через production AuthRuntime.handle должен дать unavailable вместо validation denial при0 новых user/account/session; missing singleton должен остаться invariant/error, не ordinary403. Existing sign-in и intentional closed-registration403 должны сохраниться. Проверить именно интеграцию с Better Auth, а не только rejected promise самого hook.
+- **111 application/unit/route/UI tests,15 файлов PASS** (106 Settings/auth/routes +5 auth config/Worker).
+- **44 native PostgreSQL tests,7 файлов PASS**: auth-runtime, registration admission/settings, link identity, Admin History, Owner authorization, email registration.
+- Build PASS; **28 metadata/privilege-contract tests,3 script files PASS**; actual64-table PG manifest PASS.
+- Реальный Chromium → built Worker → Better Auth → PG: **Settings17 case groups PASS**; отдельная **History38 case groups PASS**, включая canonical management forms, denied/read-only paths, timeout/recovery и Owner self-deny. Две отдельные DB/synthetic bindings, один и тот же built code;0 page errors/external requests. EN/RU/HE320/768/1280 и original overflow assertions сохранены; mobile/RTL screenshots просмотрены.
+- Settings harness adapter меняет только checkout path и Chromium executable; History runner из exact checkout с CHROMIUM override. Реальные Google credentials/Owner binding/production не использовались.
+- Самостоятельно прочитаны exact-head GitHub runs: [CI #42434044474](https://github.com/iliya1947/vico-forum/actions/runs/42434044474) **SUCCESS**, checks+database; [browser #42434044476](https://github.com/iliya1947/vico-forum/actions/runs/42434044476) **SUCCESS**, settings_browser+history_browser+browser; оба attempt1/тот же SHA. Полный CI/AP-10 локальный rerun не заявляется.
 
-Repro evidence: `/workspace/work/set02-review-evidence/admission-failure-probe.mts`, `admission-failure-probe.json` и log. Итог JSON:
-```json
-{"signupStatus":403,"signupBody":{"code":"validation_failed","message":"User validation failed"},"newUsers":0,"existingSignInStatus":200,"missingSingleton":{"status":403,"body":{"code":"validation_failed","message":"User validation failed"},"newUsers":0}}
-```
+Evidence: `/workspace/work/set02-repeat-evidence/` — собственный probe/JSON/log, source audit, application/nativePG/build/metadata/schema logs, Settings/History results/screenshots, GitHub status readback, manifest/hashes. Предыдущее собственное whole-PR evidence сохраняется отдельно в `/workspace/work/set02-review-evidence/` и [#6715455171](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6715455171); старый CHANGES REQUIRED относится к прежнему head и заменён текущим PASS.
 
-### Остальные проверенные цепочки
-
-- Singleton PG/CAS: два независимых defaults=true, both-closed допустим, no master switch/Owner bootstrap exception. Exact Owner/existing actor, row lock/version, stale409/no-op и final atomic ordered History согласованы; failed History rollback проверен.
-- Migration0060 добавляет только registration relation/seed и расширяет один History action-target CHECK. Accepted0000–0059 unchanged. Deep JSON comparison0059/0060: единственная новая таблица, единственное изменённое existing table поле — History checkConstraints/action-target. Actual structural manifest проверен для64 public tables. Web rights на новую relation только SELECT/UPDATE, localization-read не расширен.
-- Settings entrance/private Owner Forum & roles, shared ForumShell, четыре явных unavailable future sections; canonical шесть authorization writers переиспользованы через fetcher, non-Owner legacy reads сохраняются. Session/Owner/Origin/strict form/private-no-store guards, CAS refresh без автоповтора POST, registered generic locale paths и EN/RU/HE presentation проверены.
-- Create-user source/method/provider admission, fresh flags на callback, unknown method rejection, existing Google/email sign-in и protected explicit link проверены независимо.
-- **SET02-MIRA-01/02 остаются закрытыми:** установленный disableImplicitLinking предотвращает verified same-email implicit link; настоящие signed OAuth state/callback тесты доказывают open→open success и open→closed rejection без новых user/account/session/cookie. Реальным является Better Auth+PG/protocol state; только remote Google synthetic.
-- Header wrapping fix локален к новой Settings link; прежние browser assertions не ослаблены. Scope не расширен в SET-03–06/deputies/production/docs.
-
-### Собственное evidence на exact head
-
-- Pinned Node24.21.0/pnpm12.3.4 toolchain, disposable loopback PostgreSQL17.
-- **93 unit/route/UI tests (15 files) PASS**, **84 native PG tests (6 files) PASS**, build PASS.
-- **3 metadata script suites PASS**: migration history, structural manifest, runtime-privilege contract. Дополнительно actual PG64-table manifest parity PASS.
-- **Actual Chromium → built Worker → Better Auth → PG:** SET-02 **17 case groups PASS** (all flag combinations, Owner/no-op/History, guest/non-Owner/Origin/forgery, stale409/no replay, old signup page vs closed server, existing login, canonical six writers, EN/RU/HE320/768/1280); отдельный legacy History **38 groups PASS** (including timeout/recovery, Owner self-deny, readonly non-Owner).
-- Обе browser suites:0 page errors/external requests; responsive overflow assertions PASS. SET-02 adapter меняет только checkout path/Chromium executable; History runner из exact checkout с CHROMIUM override. Два synthetic bindings/DBs применены отдельно, built code не менялся.
-- Независимый fault probe выше выявляет current failure-contract defect несмотря на passing существующих suites. Native tests на missing row сейчас проверяют только отсутствие success/user и потому не ловят неверную классификацию403.
-- Exact-head GitHub [CI #42431260134](https://github.com/iliya1947/vico-forum/actions/runs/42431260134) и [browser #42431260118](https://github.com/iliya1947/vico-forum/actions/runs/42431260118) independently read: SUCCESS/attempt1/тот же SHA. Это отдельное CI evidence; локальный полный CI/AP-10 rerun не заявляется.
-
-Evidence: `/workspace/work/set02-review-evidence/` — logs, own probe/JSON, Settings/History results/screenshots, schema/metadata logs, manifest/hashes и report. Checkout/diff-check clean; task-owned Workers/container/DBs остановлены/удалены, dummy vars и dependency symlink удалены. PR head/base перед публикацией unchanged/open/mergeable.
+Checkout/diff clean, head/base перед публикацией unchanged. Собственные preview processes остановлены; одноразовый Docker container/DBs, dummy vars и dependency symlink удалены.
 
 ### Handoff — Мира
 
-Принять **CHANGES REQUIRED**, ровно один подтверждённый пакет исправления **SET02-LEV-01**; направить Лире bounded correction в том же PR #302. Координаторские SET02-MIRA-01/02 не переоткрывать. После нового stable head/checks — fresh coordinator whole-PR cycle, затем independent technical review того же head. К merge сейчас не готовить.
-
-Лёва проверку завершил и остановился, реализацию не исправлял. SET-03–06, permanent docs closeout и Stage6/production/real Google/Owner binding вне этого review; Марк не назначен.
+Принять независимый **PASS на 07d805d9** и выполнить readiness routing для владельца по штатному процессу. Все три findings SET02-MIRA-01/02 и SET02-LEV-01 закрыты; новых current-scope findings нет. При изменении implementation head нужен новый coordinator-first cycle. Лёва review завершил и остановился; реализацию/PR не merge. После owner merge — отдельный factual docs closeout SET-02; SET-03–06 пока не назначать.
 
 ## Approved / closed context
 
-[Settings plan #6711736883](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6711736883), coordinator PASS. SET-01 fully closed (#299 + separate docs #301). [Предыдущий independent SET-01 report](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6713064366). SET-03–06 unassigned. Owner redesign closed; last-manager/count/recovery rule не применяется. Current review evidence — `/workspace/work/set02-review-evidence/`.
-
-
-## Active assignment — SET-02 repeat review / PR #302
-
-Independently review whole PR #302 on exact head `07d805d98ee77f9584f9609772ce2d33b9a8e63f` vs base/current main `681e8bab0eda595186acebae9ce4b2d47d06b936`, using approved SET-02 plan #6711736883 and current source-of-truth. Re-check corrected registration-admission failure classification through production AuthRuntime.handle + Better Auth 1.7.7 + PostgreSQL and revalidate the whole SET-02 scope. Do not modify implementation. Publish findings or independent PASS in #251, then stop.
+Settings technical plan [#6711736883](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6711736883) coordinator-approved. SET-01 fully closed (#299 + docs #301). Previous independent SET-02 CHANGES REQUIRED [#6715455171](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6715455171) concerns f7a862ea and is superseded by this PASS; its independent whole-PR evidence remains /workspace/work/set02-review-evidence/. Current evidence /workspace/work/set02-repeat-evidence/. All3 findings closed. SET-03–06 unassigned. No last-manager/count/recovery rule applies. Owner merge and separate factual docs closeout remain.
