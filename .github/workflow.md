@@ -2,16 +2,12 @@
 
 - Service PR: **#251**
 - Main/base: **`c1109dc8c5c499b63dd6e4d2f76bce96fadb2cd5`**
-- Current stage: **Settings SET-06 Privacy — coordinator CHANGES REQUIRED; Lira correction assigned**
-- Implementation PR: **#311**
-- Reviewed exact head: **`b2a2b4a2b5505f5a1b885b5c2142370c31bd46fc`**
-- Mira coordinator verdict: **CHANGES REQUIRED — 1 confirmed current-scope defect**
-- Open finding: **SET06-MIRA-01** — new `db/hyperdrive-user-privacy.ts` does not traverse `cause` for generic PostgreSQL availability/transport errors; Drizzle ORM 0.45.2 wraps query failures in `DrizzleQueryError.cause`, so wrapped availability failures can escape as unexpected errors instead of controlled `503`
-- All other reviewed SET-06 implementation boundaries accepted; exact-head CI #42501120430 and Chromium #42501120499 were SUCCESS but do not close SET06-MIRA-01
-- **Лира**: assigned one bounded correction for SET06-MIRA-01; publish new stable implementation head + applicable exact-head checks/browser evidence, then stop
-- **Мира**: after Lira delivery, fresh coordinator whole-PR review of the new exact head
-- **Лёва**: stopped; independent technical review only after Mira PASS
-- **Марк**: unassigned
-- Owner merge blocked until coordinator PASS and subsequent independent Lev PASS
-- Permanent project/domain docs remain separate post-merge closeout
-- No production/Neon/Stage6/live Google/Owner binding work
+- Current stage: **Settings SET-06 Privacy — SET06-MIRA-01 bounded author correction delivered; awaiting fresh Mira whole-PR review**
+- Implementation: **[Ready PR #311](https://github.com/iliya1947/vico-forum/pull/311)**, frozen corrected exact head **`11639e79ae67b61062d05bf3f05e32526204a056`**, open/mergeable.
+- Previous reviewed head `b2a2b4a2b5505f5a1b885b5c2142370c31bd46fc`: Mira **CHANGES REQUIRED**, one finding **SET06-MIRA-01** ([review](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6724292614)). Former CI/Chromium PASS was superseded by correction.
+- **Лира correction delivered:** only `db/hyperdrive-user-privacy.ts` and new `db/hyperdrive-user-privacy.test.ts` changed since reviewed head. Cause-chain traversal for Drizzle-wrapped PostgreSQL availability/transport, cycles handled; wrapped schema/auth/programming defects remain unexpected. **No author whole-PR self-review**, no coordinator PASS claimed.
+- **Corrected-head [CI #42504491033](https://github.com/iliya1947/vico-forum/actions/runs/42504491033) SUCCESS:** 167 app test files / 2114 tests incl. 17 new regressions, 52 PG17 test files / 605 tests, lint/typecheck/build/migrations/runtime privileges/provisioning/Worker.
+- **Corrected-head [Chromium #42504491099](https://github.com/iliya1947/vico-forum/actions/runs/42504491099) SUCCESS:** 4/4 jobs, 13 connected Privacy scenarios in existing `settings_browser` with real unavailable/read/no-store/ON/OFF/cross-session/EN-RU-HE/RTL/mobile.
+- **Next: Мира** — fresh coordinator whole-PR review on exact `11639e79ae67b61062d05bf3f05e32526204a056` against approved SET-06 and SET06-MIRA-01. **Лира:** stopped, no active author changes until verified review findings. **Лёва:** independent technical review only after Mira PASS. **Марк:** unassigned. Agents do not invoke one another.
+- Owner merge blocked pending coordinator PASS and subsequent independent Lev PASS; permanent docs/project-state closeout remains separate post-merge.
+- No production/Neon/Stage6/live Google/Owner binding or Owner visual acceptance.
