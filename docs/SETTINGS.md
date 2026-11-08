@@ -3,9 +3,9 @@
 ## Status and source-of-truth boundaries
 
 Settings is an independent five-surface product sequence after ordinary Admin Panel AP-01–AP-11
-and Owner/authorization redesign. SET-01–SET-05 are implemented in `main` in the
-repository/local-CI path. SET-06 Privacy remains approved, unassigned future scope,
-not an implemented route or server preference. Current factual status:
+and Owner/authorization redesign. SET-01–SET-06 are implemented in `main` in the
+repository/local-CI path, including the authenticated Privacy route and persisted
+online-visibility preference. Current factual status:
 [PROJECT_STATE.md](../PROJECT_STATE.md).
 The ordinary panel contract is [ADMIN_PANEL.md](ADMIN_PANEL.md); application authorization
 is governed by [AUTHORIZATION.md](auth/AUTHORIZATION.md).
@@ -22,14 +22,14 @@ owner visual acceptance and Stage 6 external integration are not claimed.
 | Administrator preferences | `/:locale/settings/administrator` | **SET-04 implemented**; authenticated actor with current Admin or Attention access; account/device-local workspace presentation preferences |
 | User preferences | `/:locale/settings/user` | **SET-03 implemented**; authenticated users manage browser theme, own preferred locale and existing device-local Editor/code preferences |
 | Account & security | `/:locale/settings/account` | **SET-05 implemented**; authenticated own linked-method, credential-password and session controls through existing Better Auth |
-| Privacy | No route yet | **SET-06 pending**; future authenticated online-visibility preference (default ON when implemented) |
+| Privacy | `/:locale/settings/privacy` | **SET-06 implemented**; authenticated own account-wide public online-visibility toggle, persisted in PostgreSQL, default ON |
 
 `/:locale/settings` is a protected authenticated navigation entry, **not** a sixth
 functional Settings surface. It uses one `SettingsShell` inside the existing forum shell,
 not a second Admin shell. The forum header/account navigation and ordinary Admin Settings
 navigation lead here. The Forum & roles link is shown only to an exact bound Owner;
-the remaining unimplemented Privacy section (SET-06) is marked Under development
-and exposes no new settings reads or actions. Complaint priority/settings remain inside Complaints.
+Privacy links to its independently authenticated own-account setting, not to
+the public privacy-policy document. Complaint priority/settings remain inside Complaints.
 
 The locale segment uses the existing generic locale boundary and canonical registry;
 the new UI is localized for EN/RU/HE and supports responsive/RTL layout. Direct route
@@ -299,19 +299,87 @@ Account & security does **not** implement password reset/recovery,
 Google-only set-password, email change, provider unlink, account deletion,
 two-factor authentication/passkeys or production credential configuration.
 
-## Approved but not yet implemented (SET-06)
+## Privacy: public online visibility (SET-06)
 
-- **SET-06 Privacy:** future persisted per-user public online visibility
-  (default ON, opt-out), applied to public online list/count and heartbeat.
+`/:locale/settings/privacy` is an independent authenticated personal
+Settings route inside the existing `SettingsShell`. It presents one setting,
+**Show me online**, with an explicit Save. It does not grant an Admin/Owner
+capability and does not replace the public privacy-policy destination. The
+current session's Better Auth `user.id`, never an input-supplied target, is
+the authoritative subject. EN/RU/HE, keyboard input, responsive and RTL
+presentation use the existing Settings/localization architecture.
 
-This future package is an approved product/technical boundary, not a claim that
-its route, storage, APIs, mutations or acceptance already exist. Implement only
-through separately approved bounded packages; no universal settings JSON store,
-second RBAC, deputy stub or unrelated Stage 6 work.
+**Persistence and default.** Forward migration
+`0061_user_privacy_preferences.sql` adds
+`user_privacy_preferences` with one row per `user.id`, a non-null
+`show_online` boolean (default true), a timestamp and a cascading user
+foreign key. A missing preference row means **ON**; an actual failed
+read does not mean ON. The preference is account-wide and persists across
+sessions/devices. No shared settings JSON, second RBAC or new Owner exception
+is created. Personal privacy changes do not append Admin History events.
+The web runtime can SELECT/INSERT/UPDATE preferences and DELETE the owner's
+current presence; it cannot DELETE preference rows. The localization-read
+role does not gain access to these relations through SET-06.
+
+**Server-authoritative presence.** Turning OFF uses a READ COMMITTED
+transaction that locks the authenticated user's existing account row,
+upserts the preference and deletes that user's
+`forum_online_presence` row atomically. Repeated OFF also clears any
+newly stale presence row. The heartbeat acquires the **same account-row
+lock** and reads the latest committed preference in a separate statement
+*after* acquiring it: OFF heartbeats do not insert or refresh presence.
+No global serialization lock is introduced; existing 45-second
+write-throttle and five-minute online window remain unchanged. Turning
+ON does **not** manufacture activity: the user returns to the public
+list only after a permitted ordinary heartbeat.
+
+**Public list and count.** The public online reader joins current
+preferences and excludes `show_online = false` in SQL **before** the
+window count, ordering and 12-member limit. This also excludes a hidden
+user whose stale presence row was restored or retained, without
+altering the public profile or published posts. Absence of a preference
+continues to count as ON for a recently active authenticated member.
+No private preferences, emails or session data are included in the
+public member DTO.
+
+**Route and failure boundaries.** Each loader/action independently
+requires a valid current authenticated session. The POST requires
+same origin, exactly one `intent=save-online-visibility`,
+`expectedUserId` matching the current session and explicit
+`showOnline="true"` or `"false"`; duplicate, missing and extra
+fields are rejected. The checkbox's absence is never interpreted as
+ON, and a client cannot choose another account. Stale accounts/identity
+produce controlled `409`; guests `401`, invalid inputs `400`,
+route-owned cross-origin denials `403`, classified database
+unavailability `503`. A foreign-Origin request may be rejected by
+React Router *before* the action as a generic `400` with
+`Vary: Origin`; it does not mutate the preference. PostgreSQL
+availability/transport exceptions wrapped in Drizzle's `cause`
+remain classified for the unavailable response, while schema,
+authentication/configuration and programming failures retain the
+normal unexpected-error path. The UI does not claim a save when the
+server result is unavailable and never automatically retries a POST.
+Unsaved form state is isolated by account and refreshed persisted
+state; a mounted route cannot expose or submit another account's draft.
+
+Privacy Settings document/data, successful writes and controlled
+route-owned failures use `private, no-store`. Because online member
+identities depend on the current preference, the homepage document
+**and data response** also use `private, no-store`; heartbeat
+success and route-owned controlled failures use `no-store`. When
+online storage is classified unavailable, the optional homepage card
+reports unavailable rather than displaying a fabricated zero, while
+the rest of the homepage can render. No production cache rollout or
+external/deployed acceptance follows merely from these headers.
+
+SET-06 does **not** add invisible browsing, profile/post privacy,
+account deletion, data export, password/session management, new
+registration policy, permission keys, notifications or other
+unapproved privacy controls.
 
 ## Verification boundary
 
-SET-02 through SET-05 completed repository/local-CI implementation, applicable
+SET-02 through SET-06 completed repository/local-CI implementation, applicable
 PostgreSQL 17 integration and local Chromium/built Worker/Better Auth acceptance
 before their merges. Those results do not establish live Google credentials, actual Owner
 binding, deployed/production acceptance or owner visual approval. Exact
@@ -319,5 +387,6 @@ implementation/review/correction/check snapshots are retained in
 [PROJECT_HISTORY_18.md](PROJECT_HISTORY/PROJECT_HISTORY_18.md) and
 [PROJECT_HISTORY_19.md](PROJECT_HISTORY/PROJECT_HISTORY_19.md),
 [PROJECT_HISTORY_20.md](PROJECT_HISTORY/PROJECT_HISTORY_20.md) and
-[PROJECT_HISTORY_21.md](PROJECT_HISTORY/PROJECT_HISTORY_21.md), not in
+[PROJECT_HISTORY_21.md](PROJECT_HISTORY/PROJECT_HISTORY_21.md) and
+[PROJECT_HISTORY_22.md](PROJECT_HISTORY/PROJECT_HISTORY_22.md), not in
 `PROJECT_STATE.md`.
