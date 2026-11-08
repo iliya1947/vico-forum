@@ -875,3 +875,8 @@ PR #303 exact head `49d93b776d7a0bf480955abb3e33e9772e761273`: Mira **PASS, 0 co
 ## Active assignment — Settings SET-03 User preferences
 
 Base/current main `cb805a074de3bfdcd140125ebaa425a76bb6496d`. SET-02 is fully closed. Implement SET-03 in one separate implementation PR using approved plan #6711736883 and current docs/SETTINGS.md. Deliver the authenticated User preferences surface covering existing theme behavior, own account locale and existing Editor/code preferences while preserving their current storage ownership and real consumer behavior. No schema/migration, SET-04–06, notification preferences, drafts/autosave, Stage6 or permanent docs. Run the approved applicable exact-head acceptance/CI, publish PR + stable head + evidence in #251, then stop for Mira coordinator whole-PR review.
+
+
+## SET03-LEV-01 — correction assigned
+
+PR #304 reviewed head `cc8dfc9722287ec66ade759b0b1c8d69a8062a6c` has one confirmed current-scope P2. The locale form's uncontrolled `defaultValue` allows an unsaved locale choice from account A to remain in the same mounted DOM after session/loader changes to account B, while hidden expectedUserId updates to B; Save then applies A's stale draft to B. Correct only account-scoped locale draft reset/binding so visible selection and expected identity move together on account change. Preserve same-account editing and all existing server/registry/Origin/409 semantics; no auto-submit, auth redesign, schema/migration, SET-04–06, docs or Stage6. Add real same-browser sign-out/sign-in + mounted SPA revalidation acceptance, rerun applicable exact-head CI/browser, publish new stable head/evidence in #251, then stop for Mira review.
