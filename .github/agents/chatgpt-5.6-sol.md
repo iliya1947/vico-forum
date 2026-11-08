@@ -1410,3 +1410,8 @@ PR #307 merged at `365b75405fbcc2ac2f274f5a83ce8a737b60e700` from final reviewed
 ## SET-04 docs closeout — Mira coordinator review
 
 PR #308 exact head `9131278240c682650c5a4c1048cdf43be786dd81`: **PASS, 0 confirmed current-scope documentation defects**. Fully read all seven changed docs and checked SET-04 factual claims against merged implementation #307, both correction cycles, final reviews, merge commit and current sequence. Exact-head CI #42464119238 SUCCESS; one commit ahead/zero behind; docs-only seven-file diff; no Chromium claim. Next: Owner merge #308; SET-05 remains unassigned until merge.
+
+
+## SET-05 routing after SET-04 closeout
+
+PR #308 merged at `76fc5b16be4f2425a0ad1fdcb7b38974db355c56`; SET-04 fully closed. Rechecked approved SET-05 plan #6711736883 against current source and Better Auth v1.7.7 tag: required account/session APIs remain available and current AuthRuntime still needs the planned bounded self-service surface. No repeat Lev planning. Lira assigned SET-05 implementation; Mira reviews first stable head. SET-06/Stage6 inactive.
