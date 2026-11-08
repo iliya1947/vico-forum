@@ -145,6 +145,42 @@ describe("SET-02 Better Auth 1.7.7 new-account admission", () => {
     expect((await googleSignIn(email)).status).toBe(200);
   });
 
+  it("rejects implicit Google same-email linking even for a verified local email; explicit link still works", async () => {
+    // Unverified local emails are already guarded by Better Auth's separate default gate.
+    // Verify the stricter current requirement with BOTH the local and Google emails verified.
+    expect(options.account?.accountLinking?.disableImplicitLinking).toBe(true);
+    const email = "verified-local-google@example.test";
+    const signup = await emailSignUp(email);
+    expect(signup.status).toBe(200);
+    const { user: { id: userId } } = await signup.json() as { user: { id: string } };
+    const cookie = signup.headers.getSetCookie().find(value => value.includes("session_token="))!.split(";", 1)[0];
+    await client.query('update "user" set email_verified=true where id=$1', [userId]);
+    const beforeSessions = (await client.query<{ count: number }>(
+      'select count(*)::int as count from "session" where user_id=$1', [userId])).rows[0].count;
+
+    const implicit = await googleSignIn(email);
+    expect(implicit.ok).toBe(false);
+    expect(implicit.headers.getSetCookie().some(value => value.includes("session_token="))).toBe(false);
+    expect((await client.query<{ count: number }>(
+      "select count(*)::int as count from account where provider_id='google' and user_id=$1", [userId])).rows[0].count).toBe(0);
+    expect((await client.query<{ count: number }>(
+      'select count(*)::int as count from "session" where user_id=$1', [userId])).rows[0].count).toBe(beforeSessions);
+    expect(await userCount(email)).toBe(1);
+
+    // A closed Google *registration* must not prevent the real authenticated linkSocial path.
+    await flags(false, true);
+    googleEmail = email;
+    const explicit = await request("link-social", {
+      provider: "google", idToken: { token: "synthetic-provider-token" },
+    }, { Cookie: cookie, "x-vico-link-user": userId });
+    expect(explicit.status).toBe(200);
+    const linked = (await client.query<{ user_id: string }>(
+      "select user_id from account where provider_id='google'")).rows;
+    expect(linked).toEqual([{ user_id: userId }]);
+    expect((await googleSignIn(email)).status).toBe(200);
+    expect(await userCount(email)).toBe(1);
+  });
+
   it("fails closed if the authoritative policy row is absent, but preserves returning sign-in", async () => {
     const email = "existing-with-policy-failure@example.test";
     expect((await emailSignUp(email)).status).toBe(200);

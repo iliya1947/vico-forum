@@ -76,6 +76,7 @@ export function betterAuthOptions(database: NodePgDatabase, env: BetterAuthEnvir
       schema: betterAuthSchema,
     }),
     user: { additionalFields: betterAuthUserAdditionalFields, validateUserInfo: createRegistrationAdmission(database) },
+    account: { accountLinking: { disableImplicitLinking: true } },
     emailAndPassword: betterAuthEmailPasswordOptions,
     hooks: betterAuthRequestHooks,
     socialProviders: {
