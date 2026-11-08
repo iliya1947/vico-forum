@@ -1216,7 +1216,7 @@ describe("Help & solutions modes and authoring", () => {
     expect(screen.getByText("masked\\u{202E}txt.exe")).toBeVisible();
     expect(screen.getByText("executable-signature")).toBeVisible();
     expect(screen.getByText("uploader-1")).not.toBeVisible();
-    screen.getByRole("button", { name: "Show technical details" }).click();
+    fireEvent.click(screen.getByRole("button", { name: "Show technical details" }));
     expect(screen.getByText("uploader-1")).toBeVisible();
     expect(screen.queryByRole("button", { name: "Accept signal" })).not.toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Next" })).toHaveAttribute(
