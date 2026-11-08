@@ -1310,3 +1310,8 @@ PR #302 exact head `07d805d98ee77f9584f9609772ce2d33b9a8e63f`: **READY FOR OWNER
 ## SET-02 implementation merged — docs closeout active
 
 PR #302 merged at `a86cea918a3f2665399e861d8e01ece8a1d80104`. Lira assigned the separate seven-file factual documentation closeout, including new docs/SETTINGS.md and PROJECT_HISTORY_18.md. SET-03–06 stay unassigned until docs closeout merge. Mira will review the stable docs PR; Lev/Mark not assigned.
+
+
+## SET-02 docs review — CHANGES REQUIRED
+
+PR #303 exact head `bc0b8fd248293be76f797add6dba8f804c213185`: one current-scope docs defect, SET02-DOC-MIRA-01. `docs/SETTINGS.md` reverses the approved package numbering: SET-03 must be User preferences, SET-04 Administrator preferences. Other six docs files reviewed with no confirmed current-scope defects; CI #42436784166 SUCCESS. One-file correction assigned to Lira; no Codex review.
