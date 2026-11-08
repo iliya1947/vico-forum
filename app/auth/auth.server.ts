@@ -1,9 +1,17 @@
 import { drizzleAdapter } from "@better-auth/drizzle-adapter";
 import { betterAuth, type BetterAuthOptions } from "better-auth";
 import { APIError, createAuthMiddleware, getAuthoritativeSessionFromCtx } from "better-auth/api";
+import { and, eq, isNotNull, ne } from "drizzle-orm";
 import { drizzle, type NodePgDatabase } from "drizzle-orm/node-postgres";
 import type { Client } from "pg";
-import { AuthSessionUnavailableError, type AuthRuntime, type AuthSession } from "./request-context";
+import {
+  AccountSecurityError,
+  AuthSessionUnavailableError,
+  type AccountSecurityIdentity,
+  type AccountSecuritySession,
+  type AuthRuntime,
+  type AuthSession,
+} from "./request-context";
 import { createRegistrationAdmission } from "./registration-admission";
 import {
   account,
@@ -140,6 +148,43 @@ function sessionStorageUnavailable(error: unknown): boolean {
   return false;
 }
 
+function betterAuthErrorCode(error: unknown): string | null {
+  if (!error || typeof error !== "object") return null;
+  const body = (error as { body?: { code?: unknown } }).body;
+  return typeof body?.code === "string" ? body.code : null;
+}
+
+function translateSecurityError(error: unknown): never {
+  if (error instanceof AccountSecurityError) throw error;
+  if (sessionStorageUnavailable(error)) throw new AccountSecurityError("unavailable");
+  switch (betterAuthErrorCode(error)) {
+    case "SESSION_NOT_FRESH": throw new AccountSecurityError("not-fresh");
+    case "INVALID_PASSWORD": throw new AccountSecurityError("invalid-password");
+    case "CREDENTIAL_ACCOUNT_NOT_FOUND": throw new AccountSecurityError("no-password");
+  }
+  if (error instanceof APIError && error.status === "UNAUTHORIZED") {
+    throw new AccountSecurityError("unauthenticated");
+  }
+  throw error;
+}
+
+function safeDeviceLabel(agent: unknown): string {
+  if (typeof agent !== "string") return "Unknown device";
+  const label = Array.from(agent, character => {
+    const code = character.charCodeAt(0);
+    return code < 32 || code === 127 ? " " : character;
+  }).join("").trim().slice(0, 160);
+  return label || "Unknown device";
+}
+
+async function hasCredentialPassword(database: NodePgDatabase, userId: string): Promise<boolean> {
+  const rows = await database.select({ id: account.id }).from(account)
+    .where(and(eq(account.userId, userId), eq(account.providerId, "credential"),
+      isNotNull(account.password), ne(account.password, "")))
+    .limit(1);
+  return rows.length > 0;
+}
+
 /** A request capability: every operation owns and closes its Hyperdrive PostgreSQL client. */
 export function createHyperdriveAuthRuntime(
   connectionString: string,
@@ -147,7 +192,7 @@ export function createHyperdriveAuthRuntime(
   createClient: (connectionString: string) => Client = createWebClient,
 ): AuthRuntime {
   async function useAuth<T>(
-    operation: (auth: ReturnType<typeof createAuth>) => Promise<T>,
+    operation: (auth: ReturnType<typeof createAuth>, database: NodePgDatabase) => Promise<T>,
     preserveDatabaseError = false,
     onAdmissionError?: (error: unknown) => void,
   ): Promise<T> {
@@ -155,9 +200,10 @@ export function createHyperdriveAuthRuntime(
     let databaseError: unknown;
     try {
       await client.connect();
-      return await operation(createAuth(drizzle(client), env,
+      const database = drizzle(client);
+      return await operation(createAuth(database, env,
         preserveDatabaseError ? (error) => { databaseError ??= error; } : undefined,
-        onAdmissionError));
+        onAdmissionError), database);
     } catch (error) {
       // Better Auth 1.7.7 replaces session-query failures with a cause-less APIError.
       // Retain the adapter failure for classification; never infer availability from HTTP 500.
@@ -167,7 +213,104 @@ export function createHyperdriveAuthRuntime(
     }
   }
 
+  async function securityCall<T>(operation: () => Promise<T>): Promise<T> {
+    try { return await operation(); }
+    catch (error) { return translateSecurityError(error); }
+  }
+
+  async function verifyIdentity(auth: ReturnType<typeof createAuth>,
+    headers: Headers, identity: AccountSecurityIdentity) {
+    const current = await auth.api.getSession({ headers });
+    if (!current) throw new AccountSecurityError("unauthenticated");
+    if (current.user.id !== identity.userId || current.session.id !== identity.sessionId) {
+      throw new AccountSecurityError("account-changed");
+    }
+    return current;
+  }
+
   return {
+    security: {
+      read: (headers, identity) => securityCall(() => useAuth(async (auth, database) => {
+        const current = await verifyIdentity(auth, headers, identity);
+        const accounts = await auth.api.listUserAccounts({ headers });
+        const hasPassword = await hasCredentialPassword(database, current.user.id);
+        const linkedMethods = [
+          ...(hasPassword ? ["password" as const] : []),
+          ...(accounts.some(link => link.providerId === "google") ? ["google" as const] : []),
+        ];
+        let sessionAccess: "ready" | "not-fresh" = "ready";
+        let sessions: AccountSecuritySession[] = [];
+        try {
+          const owned = await auth.api.listSessions({ headers });
+          sessions = owned.map(session => ({
+            id: session.id,
+            createdAt: new Date(session.createdAt).toISOString(),
+            expiresAt: new Date(session.expiresAt).toISOString(),
+            current: session.id === current.session.id,
+            deviceLabel: safeDeviceLabel(session.userAgent),
+          }));
+        } catch (error) {
+          if (betterAuthErrorCode(error) !== "SESSION_NOT_FRESH") throw error;
+          sessionAccess = "not-fresh";
+        }
+        return { linkedMethods, hasPassword, sessionAccess, sessions };
+      }, true)),
+      changePassword: (headers, identity, currentPassword, newPassword) =>
+        securityCall(() => useAuth(async (auth, database) => {
+          const current = await verifyIdentity(auth, headers, identity);
+          if (!await hasCredentialPassword(database, current.user.id)) {
+            throw new AccountSecurityError("no-password");
+          }
+          // Direct auth.api calls bypass Better Auth's HTTP-router onRequest rate limit.
+          // Route through the existing handler to share the canonical /change-password
+          // database-backed bucket and trusted client-IP admission.
+          const routedHeaders = new Headers({ "Content-Type": "application/json" });
+          for (const header of ["cookie", "origin", "cf-connecting-ip", "user-agent"]) {
+            const value = headers.get(header);
+            if (value) routedHeaders.set(header, value);
+          }
+          const response = await auth.handler(new Request(
+            new URL("/api/auth/change-password", env.BETTER_AUTH_URL), {
+              method: "POST",
+              headers: routedHeaders,
+              body: JSON.stringify({ currentPassword, newPassword, revokeOtherSessions: false }),
+            },
+          ));
+          if (response.ok) return;
+          if (response.status === 429) {
+            const value = response.headers.get("X-Retry-After");
+            const retryAfterSeconds = value && /^\d{1,4}$/.test(value) ? Number(value) : undefined;
+            throw new AccountSecurityError("rate-limited", retryAfterSeconds);
+          }
+          const payload: unknown = await response.json().catch(() => null);
+          const code = payload && typeof payload === "object" && "code" in payload
+            ? payload.code : null;
+          if (code === "INVALID_PASSWORD") throw new AccountSecurityError("invalid-password");
+          if (code === "CREDENTIAL_ACCOUNT_NOT_FOUND") throw new AccountSecurityError("no-password");
+          if (code === "SESSION_NOT_FRESH") throw new AccountSecurityError("not-fresh");
+          if (response.status === 401) throw new AccountSecurityError("unauthenticated");
+          throw new Error("Unexpected Better Auth change-password response");
+        }, true)),
+      revokeOneOther: (headers, identity, sessionId) =>
+        securityCall(() => useAuth(async (auth) => {
+          const current = await verifyIdentity(auth, headers, identity);
+          if (sessionId === current.session.id) throw new AccountSecurityError("current-session");
+          // listSessions is fresh-session gated. Keep Better Auth's freshness policy.
+          const sessions = await auth.api.listSessions({ headers });
+          const target = sessions.find(session => session.id === sessionId);
+          if (!target) throw new AccountSecurityError("session-not-found");
+          // Only a server-resolved, same-user token is sent to Better Auth.
+          await auth.api.revokeSession({ headers, body: { token: target.token } });
+        }, true)),
+      revokeAllOthers: (headers, identity) =>
+        securityCall(() => useAuth(async (auth) => {
+          await verifyIdentity(auth, headers, identity);
+          // revokeOtherSessions alone does not enforce Better Auth's fresh-session policy.
+          // Match the session list and single-revoke boundary before this write.
+          await auth.api.listSessions({ headers });
+          await auth.api.revokeOtherSessions({ headers });
+        }, true)),
+    },
     async getSession(headers) {
       try {
         return await useAuth(async (auth) => {

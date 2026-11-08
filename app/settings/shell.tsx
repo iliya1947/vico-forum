@@ -2,7 +2,7 @@ import type { ReactNode } from "react";
 import { Link } from "react-router";
 import { useTranslation } from "react-i18next";
 import { Breadcrumbs, ForumShell } from "../forum/ui";
-import { settingsForumPath, settingsPath, settingsUserPath, settingsAdministratorPath } from "./paths";
+import { settingsForumPath, settingsPath, settingsUserPath, settingsAdministratorPath, settingsAccountPath } from "./paths";
 import { useHeaderAuthUser } from "../auth/auth-controls";
 
 /** A shared Settings shell inside ForumShell, never another AdminShell. */
@@ -11,7 +11,7 @@ export function SettingsShell({
 }: {
   locale: string;
   canViewForum: boolean;
-  current?: "forum" | "user" | "administrator";
+  current?: "forum" | "user" | "administrator" | "account";
   children: ReactNode;
 }) {
   const { t } = useTranslation("common");
@@ -24,6 +24,7 @@ export function SettingsShell({
         ...(current === "forum" ? [{ label: t("settingsForumRoles") }] : []),
         ...(current === "administrator" ? [{ label: t("settingsAdministrator") }] : []),
         ...(current === "user" ? [{ label: t("settingsUser") }] : []),
+        ...(current === "account" ? [{ label: t("settingsAccount") }] : []),
       ]} />
       <header className="admin-panel-heading">
         <h1>{t("adminSettings")}</h1>
@@ -39,11 +40,13 @@ export function SettingsShell({
         <Link to={settingsUserPath(locale)} aria-current={current === "user" ? "page" : undefined}>
           {t("settingsUser")}
         </Link>
-        {(["settingsAccount", "settingsPrivacy"] as const).map(key =>
-          <span className="settings-panel-pending-item" key={key}>
-            <span>{t(key)}</span>
-            <span className="admin-panel-pending">{t("adminInDevelopment")}</span>
-          </span>)}
+        <Link to={settingsAccountPath(locale)} aria-current={current === "account" ? "page" : undefined}>
+          {t("settingsAccount")}
+        </Link>
+        <span className="settings-panel-pending-item">
+          <span>{t("settingsPrivacy")}</span>
+          <span className="admin-panel-pending">{t("adminInDevelopment")}</span>
+        </span>
       </nav>
       {children}
     </div>

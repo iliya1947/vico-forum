@@ -50,6 +50,8 @@ describe("profile presentation", () => {
     expect(screen.getByRole("alert")).toHaveTextContent("Use up to 500 characters");
     expect(screen.queryByLabelText(/role|name|email/i)).not.toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Cancel" })).toHaveAttribute("href", "/en/users/owner");
+    expect(screen.getByRole("link", { name: "Account & security" })).toHaveAttribute("href", "/en/settings/account");
+    expect(screen.queryByRole("button", { name: "Connect Google" })).not.toBeInTheDocument();
   });
   it("provides truthful empty fields and broken-image fallback", () => {
     const { container } = show({ profile: { ...profile, bio: "", image: "https://example.com/avatar.png", githubUrl: null, websiteUrl: null } });

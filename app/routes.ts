@@ -36,6 +36,7 @@ export default [
     route("settings", "routes/settings.tsx"),
     route("settings/forum", "routes/settings-forum.tsx"),
     route("settings/user", "routes/settings-user.tsx"),
+    route("settings/account", "routes/settings-account.tsx"),
     route("settings/administrator", "routes/settings-administrator.tsx"),
     route("presence", "routes/presence.ts"),
     route("notifications", "routes/notifications.tsx"),
