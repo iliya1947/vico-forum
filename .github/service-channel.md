@@ -2136,3 +2136,23 @@ Do not modify implementation during review. Lira remains stopped; Mark unassigne
 ## SET-06 / PR #311 — independent Lev technical whole-PR PASS
 
 [Full independent report #6724949328](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6724949328), exact head `11639e79ae67b61062d05bf3f05e32526204a056`, unchanged base/main `c1109dc8c5c499b63dd6e4d2f76bce96fadb2cd5`. **PASS,0 confirmed current-scope defects**. All37 files independently reviewed against plan#6722989280;MIRA01 delta2 paths,35 others byte-identical to prior coordinator head. SET06-MIRA-01 independently closed by real Worker privacy SELECT pg_terminate_backend→private503/recovery plus real missing-preference read/save42P01 negative cases. Native own probes confirm hidden before count/LIMIT(including hidden outside12),stale-row filtering/no timestamp refresh,ON without activity,both actual in-flight lock orderings,FKcascade and real provisioned web-role domain operations with forbidden preferenceDELETE. Real same-mounted account switch clears old draft/stalePOST409,explicit Bob save changes onlyBob;guest EN/HE document/data excludes hidden identity while profile remains public. Own184 app/11PG/build/full0000–0061,13 checked-in connected Chromium groups,13 extra own groups,36 schema contract tests and actual65-table manifest/grants/provisioning PASS. Existing manifest/snapshot tables semantically unchanged;only new preference relation. Exact-head CI42504491033/browser42504491099 SUCCESS/attempt1,4jobs/13SET06 records independently read. Evidence /workspace/work/set06-review-evidence/. Implementation unchanged/checkout clean;owned preview/DB/roles/vars/symlink cleaned. **Mira next:** final readiness→Owner merge#311→separate factual SET06 docs/project-state closeout. Lev/Lira stopped;Mark unassigned;Stage6/production inactive;no visualapproval claim/newgate.
+
+
+## SET-06 / PR #311 — final readiness for Owner merge
+
+Implementation PR #311 exact head `11639e79ae67b61062d05bf3f05e32526204a056`, base/current main `c1109dc8c5c499b63dd6e4d2f76bce96fadb2cd5`: **READY FOR OWNER MERGE**.
+
+Final gates on the same frozen head:
+- Mira fresh coordinator whole-PR review: **PASS — 0 confirmed current-scope defects**;
+- Lev independent technical whole-PR review: **PASS — 0 confirmed current-scope defects**;
+- `SET06-MIRA-01`: **closed** independently;
+- CI #42504491033: **SUCCESS**;
+- Chromium #42504491099: **SUCCESS**, all four jobs including connected SET-06 Privacy acceptance;
+- PR remains open, Ready and mergeable;
+- implementation unchanged during Lev review.
+
+Accepted SET-06 result: persisted own-account online visibility, missing row/default ON, server-authoritative OFF across public online list/count and heartbeat, atomic cleanup/serialization, Privacy Settings route, EN/RU/HE/RTL/responsive UI, bounded runtime grants/migration 0061, and no-store privacy freshness boundary. Public profile/posts remain public. No unrelated privacy/RBAC/notification/Stage6/production scope was added.
+
+**Next: Owner merge PR #311.** Any implementation-head change before merge requires a new coordinator-first review cycle.
+
+After actual merge, route a **separate factual SET-06 documentation/project-state closeout**. SET-06/Settings must not be declared fully closed before that docs PR is reviewed and merged. Lev/Mark are not assigned to docs.
