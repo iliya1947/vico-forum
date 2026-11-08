@@ -1,20 +1,21 @@
 # Admin panel — current workflow
 
 - Service PR: **#251**
-- Current main/base: **`2f2969d5b3a7ca7844d674b85448838fc671eaca`**
-- Current stage: **Settings SET-05 documentation closeout — READY FOR OWNER MERGE**
-- Implementation PR #309: **merged**
-- Documentation PR: **#310**, open / Ready / mergeable
-- Documentation exact head: **`d9134f8f3c57814aa910a272f2a9dc4c118fccb3`**
-- Documentation scope: exactly **7 Markdown files**, no runtime/code/schema/workflow changes
-- `SET05-DOC-MIRA-01`: **closed**
-- Mira fresh docs-only coordinator review: **PASS — 0 confirmed current-scope documentation defects**
-- Exact-head CI #42489445378: **SUCCESS** (checks + database)
-- **Лира**: stopped; correction delivered
-- **Мира**: review complete
-- **Лёва**: stopped/not assigned for docs
+- Current main/base: **`c1109dc8c5c499b63dd6e4d2f76bce96fadb2cd5`**
+- Current stage: **Settings SET-06 Privacy — technical planning**
+- SET-05 implementation PR #309: **merged**
+- SET-05 documentation PR #310: **merged**
+- SET-05: **fully closed**
+- Approved SET-06 product boundary:
+  - persisted per-user public online visibility;
+  - default **ON**;
+  - authenticated opt-out;
+  - opted-out user excluded authoritatively from public online member list and public online count;
+  - heartbeat must not republish an opted-out user.
+- **Лёва**: assigned technical planning for SET-06 only
+- **Лира**: stopped; no SET-06 implementation assigned yet
+- **Мира**: scope routed; waits for Lev technical plan
 - **Марк**: unassigned
-- Next: **Owner merge PR #310**
-- Any docs-head change before merge requires a fresh Mira docs review.
-- After merge: SET-05 fully closed; SET-06 Privacy becomes the next Settings package, still unassigned until separately routed.
-- Stage6/production/live Google/real Owner binding remain inactive/unclaimed.
+- Next: **Lev inspects current main online-presence/heartbeat + Settings integration and publishes a bounded SET-06 implementation plan in #251.**
+- After Lev plan: Mira checks scope/fit, then implementation is routed separately.
+- No universal settings JSON store, second RBAC/deputy mechanism, unrelated privacy/notification work or Stage6/production work in SET-06.
