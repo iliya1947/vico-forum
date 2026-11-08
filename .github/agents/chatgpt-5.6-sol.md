@@ -1382,3 +1382,16 @@ Exact head `1a858825836e76801bb63025a28312b4d0bdd082`: 1 confirmed current-scope
 ## SET04-LEV-01 — independent verification
 
 Lev's P2 on PR #307 exact head `5cc5c820b0445ddb57cf3663e7cfb33c059ab108` is confirmed as a current SET-04 defect, not future-only. `ADMIN_ADMISSION_PERMISSIONS` and both authoritative Admin/Administrator-settings guards include `forum.topic.close`; `locale-boundary.tsx` omits exactly that one Admin-forum permission from its projection. SET-04 newly derives Admin entry destinations and Settings visibility from this projection, so close-only actor is server-admitted but gets no new Settings entry. The pre-existing header omission is not separately reopened; bounded correction is admission/projection parity for the new consumer. Confirmation #6718950505; Lira handoff #6718953779. SET04-MIRA-01 stays closed.
+
+
+## SET-04 / PR #307 — fresh coordinator PASS after SET04-LEV-01
+
+- Exact head `27a2169ab013597d63fc318c7a255cdc4149b7cc`, unchanged main `35fa64428fc551ae58b9026dad45797016dd4251`.
+- Verdict: **PASS, 0 confirmed current-scope defects**.
+- SET04-LEV-01 closed by one-commit/three-file correction; runtime change only restores `forum.topic.close` parity in the existing Admin projection. Admission matrix, RBAC and protected route guards unchanged.
+- Close-only actor receives Overview+Forum and Settings entry; fresh revoke clears links and protected Admin/Administrator access. New real Chromium case PASS.
+- SET04-MIRA-01 remains closed and its real measure-detail browser case PASS on this same exact head.
+- Other 35 PR files byte-identical to prior whole-PR reviewed head; approved local/account/access/explicit-URL/density/technical-detail boundaries remain unchanged.
+- CI #42461288512 SUCCESS: 164/164 app files, 2066/2066 tests; 50/50 DB files, 589/589 tests.
+- Chromium #42461288533 SUCCESS across all four jobs.
+- PASS report #6719135304; Lev repeat handoff #6719135575. No Owner merge until repeat independent PASS.
