@@ -4,17 +4,16 @@
 
 ## Актуальный baseline и назначение
 
-- Current main: `856b93cb65b01e2389eb97276b37b3a0d8eef265`; migrations0000–0059.
-- Ordinary AP-01–AP-11 и owner/authorization redesign closed.
-- Current stage: **Settings SET-01 review completed — readiness / merge handoff**.
-- PR **#299**, ready/open/mergeable, exact head `e52c97eed86283fff11976124a9216442fbe6bc3`, implementation пока не merged.
-- Approved plan #6711736883 (SET-01); исполнитель Лира. Coordinator Мира PASS и [independent Лёва PASS #6713064366](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6713064366) относятся к одному head; 0 confirmed current-scope defects.
-- Собственные checks: build;63 unit/route/UI (9 files),255 native PG (13 files), отдельный Owner-policy native probe; Chromium AP-10/AP-11/SET-01 39 groups + separate History38 PASS. Реализацию при review не менял.
-- Exact-head GitHub CI #42411014276 и browser #42411014284 SUCCESS, проверены отдельно.
-- **Мира:** принять independent PASS и завершить readiness #299. Merge — владелец; затем отдельный factual docs closeout SET-01. До implementation/docs merge пакет целиком не closed.
-- SET-02–06 unassigned; Settings shell/остальные surfaces не реализованы. Frozen S1–S4 не изменены.
-- Лёва review завершил и остановился; Марк не назначен. Новый implementation head требует coordinator-first cycle.
-- Production/Stage6/owner visual acceptance не заявляются.
+- Current main/base: `681e8bab0eda595186acebae9ce4b2d47d06b936`; SET-01 implementation/docs closed; migrations main0000–0059.
+- Current stage: **SET-02 independent review completed — CHANGES REQUIRED**.
+- PR **#302**, frozen reviewed head `f7a862ea0a81112857e9d7510afdab183a9631a3`, open/unmerged; implementation migration0060.
+- Coordinator Мира PASS на этом head; SET02-MIRA-01/02 closed. Независимая проверка Лёвы нашла **ровно один новый current-scope P2: SET02-LEV-01**.
+- [Independent report #6715455171](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6715455171) содержит воспроизведение/causal chain и bounded correction. Implementation при review не менялся.
+- Policy SELECT timeout и missing singleton через настоящий production AuthRuntime.handle + PG возвращают403/`validation_failed`: Better Auth поглощает исходное исключение. Требуется сохранить cause и различить unavailable/invariant vs intentional policy denial. Регистрация остаётся fail-closed; existing login работает.
+- Собственные checks:93 unit/route/UI,84 PG/build,3 metadata suites, actual64-table schema parity; Chromium Settings17 + separate History38 PASS. Эти passing suites не закрывают подтверждённый failure-contract defect.
+- Exact-head GitHub CI #42431260134 и browser #42431260118 SUCCESS отдельно проверены.
+- **Мира:** принять CHANGES REQUIRED и направить Лире только SET02-LEV-01 в #302. Новый stable head → fresh coordinator whole-PR → independent same-head review. Readiness/merge сейчас не выполнять.
+- Лёва review завершил и остановился; Марк не назначен. SET-03–06/docs closeout/Stage6/production/live Google и Owner binding вне активной correction.
 
 
 ## Handoff — Лира: Stage2 factual documentation closeout
@@ -1462,3 +1461,16 @@ PR #302 exact head `6dbe6a2d912dab6288fbb2fd1e5b554edd4df9ef`: whole 49-file coo
 ## SET-02 corrected head — coordinator PASS / Lev review assigned
 
 PR #302 exact head `f7a862ea0a81112857e9d7510afdab183a9631a3`, base `681e8bab0eda595186acebae9ce4b2d47d06b936`: Mira fresh whole-PR **PASS, 0 confirmed current-scope defects**. SET02-MIRA-01/02 are closed. Exact-head CI #42431260134 and browser #42431260118 are SUCCESS. Implementation is frozen. Lev is assigned an independent technical whole-PR review of the same head; Mark remains unassigned. SET-03–SET-06, docs closeout and Stage6/production remain outside the active implementation review.
+
+
+## SET-02 independent technical review — Лёва CHANGES REQUIRED
+
+- [Full report #6715455171](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6715455171), reviewed `f7a862ea0a81112857e9d7510afdab183a9631a3` / base `681e8bab0eda595186acebae9ce4b2d47d06b936`; весь49-file diff. **1 confirmed P2: SET02-LEV-01**, других current-scope defects не установлено.
+- **SET02-LEV-01:** real policy SELECT query timeout (isolated PG ACCESS EXCLUSIVE table lock, AuthRuntime real Client query_timeout350) → new admission hook throws → Better Auth1.7.7 assertValidUserInfo catches every callback exception and emits cause-less403 validation_failed → current AuthRuntime.handle/auth route return it without original failure classification. Missing singleton/RegistrationSettingsInvariantError маскируется тем же403. New user0, existing email sign-in200; reproduced through production AuthRuntime, не mock callback.
+- Approved plan требует typed unavailable/fail-closed и normal unexpected-error handling. Correction: сохранить primary admission cause request-local и обработать на application response boundary; intentional closed-method403 остаётся. Не считать любой validation_failed/403/500 признаком outage и не делать permissive fallback.
+- Exact reproduction/result JSON и code locations в отчёте; own probe `/workspace/work/set02-review-evidence/admission-failure-probe.mts` + JSON/log. Это подтверждённый defect, не hypothesized finding.
+- Проверены остальные policy/CAS/Owner/History/schema/privileges/Settings canonical-writer paths. 0060 добавляет только registration relation/seed + расширение History CHECK; accepted0000–0059 неизменны. Actual manifest64tables и3 metadata suites PASS.
+- Собственные reruns:93 unit/route/UI (15 files),84 PG (6 files),build; real Chromium Settings17 + separate History38 PASS,0 page errors/external requests, responsive assertions preserved. AP-10 local rerun не заявляется; exact-head author CI/browser отдельно SUCCESS.
+- SET02-MIRA-01/02 закрыты и независимо пересверены: explicit-only linking и signed-state OAuth open→closed rejection/open→open creation с real Better Auth/PG, synthetic remote provider.
+- Checkout/diff clean, implementation unchanged; task-owned runtime/container/DBs/dummy vars/dependency symlink removed. Evidence logs/results/screenshots/manifest/hashes/report в `/workspace/work/set02-review-evidence/`.
+- **Next — Мира:** bounded author correction SET02-LEV-01, затем fresh coordinator-first cycle. К merge не готовить; Лёва остановился, Марк не назначен.
