@@ -29,8 +29,7 @@ export function createHyperdriveUserPrivacy(
       await client.connect();
       return await work(new DrizzleUserPrivacyRepository(drizzle(client)));
     } catch (error) {
-      if (isPostgresAvailabilityFailure(error) || isPostgresConnectionTimeout(error)
-        || isPostgresQueryTimeout(error)) {
+      if (isUserPrivacyAvailabilityFailure(error)) {
         throw new UserPrivacyUnavailableError({ cause: error });
       }
       throw error;
@@ -43,4 +42,17 @@ export function createHyperdriveUserPrivacy(
     read: (actorId) => withRepository(repository => repository.read(actorId)),
     save: (actorId, showOnline) => withRepository(repository => repository.save(actorId, showOnline)),
   };
+}
+
+/** Drizzle 0.45.2 wraps underlying driver failures in DrizzleQueryError.cause. */
+function isUserPrivacyAvailabilityFailure(error: unknown): boolean {
+  const seen = new Set<unknown>();
+  let current = error;
+  while (current && (typeof current === "object" || typeof current === "function") && !seen.has(current)) {
+    seen.add(current);
+    if (isPostgresAvailabilityFailure(current) || isPostgresConnectionTimeout(current)
+      || isPostgresQueryTimeout(current)) return true;
+    current = (current as { cause?: unknown }).cause;
+  }
+  return false;
 }
