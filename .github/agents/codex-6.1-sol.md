@@ -59,3 +59,8 @@ Evidence: `/workspace/work/set03-repeat-evidence/` — source audit, own probe, 
 ## Approved / closed context
 
 Settings plan [#6711736883](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6711736883) approved. SET-01 closed; SET-02 implementation #302 + docs #303 merged. Previous independent SET-03 CHANGES REQUIRED [#6716992555](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6716992555) concerns cc8dfc97 and is superseded by current PASS. Prior evidence /workspace/work/set03-review-evidence/; current evidence /workspace/work/set03-repeat-evidence/. SET-04–06 unassigned. Owner merge and separate factual docs closeout remain; no last-manager/count/recovery rule applies.
+
+
+## SET-03 repeat review — final routing
+
+PR #304 exact head `6c45bb17ea84f1df0bed8a8b8ca4c558ba42edac`: Lev repeat PASS accepted for readiness. No further Codex work assigned. Next action is Owner merge; after observed merge, separate SET-03 factual docs closeout. SET-04 not assigned yet.
