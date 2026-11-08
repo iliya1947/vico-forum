@@ -1440,3 +1440,8 @@ Lev's finding on PR #309 exact head `a4af2014eb28a39d54d10c33cc515cbf3d5f258e` i
 
 Exact head `236a15c5f3309a5466c70c7a934edf5b56ade433`: **PASS, 0 confirmed current-scope defects**.
 SET05-LEV-01 is closed by routing password change through the canonical Better Auth HTTP handler and preserving its shared database-backed 3/10s rate-limit admission. Bidirectional native PG regression plus real Chromium prove shared bucket, 429/retry propagation, denied-password immutability and separate-IP isolation. SET05-MIRA-01/02 remain closed. CI #42483839708 and Chromium #42483839769 SUCCESS. Lev repeat review assigned on this same exact head; Mark unassigned.
+
+
+## SET-05 final readiness
+
+PR #309 exact head `236a15c5f3309a5466c70c7a934edf5b56ade433`: **READY FOR OWNER MERGE**. Mira fresh coordinator PASS + Lev repeat independent PASS, 0 confirmed current-scope defects. SET05-MIRA-01/02 and SET05-LEV-01 closed. Exact-head CI #42483839708 and Chromium #42483839769 SUCCESS. Any implementation-head change restarts coordinator-first review. After Owner merge: separate factual SET-05 docs closeout; SET-06 remains inactive until docs merge.
