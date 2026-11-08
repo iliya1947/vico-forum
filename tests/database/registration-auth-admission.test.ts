@@ -145,6 +145,71 @@ describe("SET-02 Better Auth 1.7.7 new-account admission", () => {
     expect((await googleSignIn(email)).status).toBe(200);
   });
 
+  it.each([
+    { name: "registration stays open until callback", closeBeforeCallback: false },
+    { name: "registration closes after OAuth state but before callback", closeBeforeCallback: true },
+  ])("checks fresh Google registration policy at signed OAuth callback: $name", async ({ closeBeforeCallback }) => {
+    const email = closeBeforeCallback
+      ? "google-oauth-closed-before-callback@example.test"
+      : "google-oauth-open-through-callback@example.test";
+    googleEmail = email;
+
+    // Use Better Auth's genuine OAuth initiation, signed state, callback handler,
+    // PostgreSQL persistence, and create-user validation; only remote Google is synthetic.
+    const callbackURL = "/en";
+    const errorCallbackURL = "/en/sign-up?returnTo=%2Fen";
+    const initiation = await request("sign-in/social", {
+      provider: "google", callbackURL, errorCallbackURL,
+    });
+    expect(initiation.status).toBe(200);
+    const start = await initiation.json() as { url: string };
+    const state = new URL(start.url).searchParams.get("state");
+    expect(state).toBeTruthy();
+    expect((await client.query("select count(*)::int as n from verification")).rows[0].n).toBeGreaterThan(0);
+    expect(await userCount(email)).toBe(0);
+
+    if (closeBeforeCallback) await flags(false, true);
+    const before = (await client.query<{ users: number; accounts: number; sessions: number }>(
+      'select (select count(*)::int from "user") as users, ' +
+      '(select count(*)::int from account) as accounts, ' +
+      '(select count(*)::int from session) as sessions'
+    )).rows[0];
+    expect(before).toEqual({ users: 0, accounts: 0, sessions: 0 });
+
+    const oauthCookies = initiation.headers.getSetCookie().map(value => value.split(";", 1)[0]).join("; ");
+    const callback = await auth.handler(new Request(
+      `${origin}/api/auth/callback/google?code=synthetic-code&state=${encodeURIComponent(state!)}`,
+      { headers: { Cookie: oauthCookies } },
+    ));
+    expect(callback.status).toBe(302);
+    const destination = new URL(callback.headers.get("Location")!, origin);
+
+    if (closeBeforeCallback) {
+      expect(destination.pathname).toBe("/en/sign-up");
+      expect(destination.searchParams.get("returnTo")).toBe("/en");
+      expect(destination.searchParams.get("error")).toBe("vico_google_registration_closed");
+      // Error text is static, not provider identity, SQL, or internal exception details.
+      expect(destination.href).not.toContain(email);
+      expect(destination.href).not.toContain("SELECT");
+      expect(callback.headers.getSetCookie().some(value => value.includes("session_token="))).toBe(false);
+      const after = (await client.query<{ users: number; accounts: number; sessions: number }>(
+        'select (select count(*)::int from "user") as users, ' +
+        '(select count(*)::int from account) as accounts, ' +
+        '(select count(*)::int from session) as sessions'
+      )).rows[0];
+      expect(after).toEqual(before);
+      expect(await userCount(email)).toBe(0);
+      expect((await client.query("select count(*)::int as n from account where provider_id='google'")).rows[0].n).toBe(0);
+    } else {
+      expect(destination.pathname).toBe("/en");
+      expect(destination.searchParams.has("error")).toBe(false);
+      expect(callback.headers.getSetCookie().some(value => value.includes("session_token="))).toBe(true);
+      expect(await userCount(email)).toBe(1);
+      expect((await client.query("select count(*)::int as n from account where provider_id='google'")).rows[0].n).toBe(1);
+      expect((await client.query("select count(*)::int as n from session")).rows[0].n).toBe(1);
+    }
+  });
+
   it("rejects implicit Google same-email linking even for a verified local email; explicit link still works", async () => {
     // Unverified local emails are already guarded by Better Auth's separate default gate.
     // Verify the stricter current requirement with BOTH the local and Google emails verified.
