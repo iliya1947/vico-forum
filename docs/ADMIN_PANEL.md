@@ -26,7 +26,8 @@ through their respective bounded implementation PRs. Settings is a separate sequ
 the completed AP-01–AP-11 delivery scope. SET-01–SET-02 now provide a real protected
 Settings entry and Owner-only Forum & roles page; User preferences (SET-03)
 and Administrator preferences (SET-04) are also implemented. Account & security
-(SET-05) and Privacy (SET-06) remain unimplemented. See `SETTINGS.md` for their access and registration contracts.
+(SET-05) is implemented for authenticated users; Privacy (SET-06) remains
+unimplemented. See `SETTINGS.md` for their access and registration contracts.
 Users is now a real destination for `admin.users.read`;
 an authorization-manager without that permission keeps the existing authorization-user-management
 subset rather than gaining the general Users directory.
@@ -95,10 +96,10 @@ admin projection is separately protected and does not alter that public contract
 During owner-only pre-release, approved unfinished destinations may use the shared localized
 Under development mechanism. This does not grant a private read or mutation. Settings is
 a separate approved five-surface product sequence outside AP-01–AP-11.
-SET-01–SET-04 have implemented Owner-only authorization writes, the protected Settings
+SET-01–SET-05 have implemented Owner-only authorization writes, the protected Settings
 shell and Owner-only Forum & roles (including new-registration controls), authenticated
-User preferences and Admin/Attention-gated Administrator preferences in repository/local-CI.
-Only Account & security and Privacy remain Under development without implemented settings routes.
+User preferences and Account & security, and Admin/Attention-gated Administrator preferences
+in repository/local-CI. Only Privacy remains Under development without an implemented settings route.
 Real Google/Owner binding acceptance remains Stage 6.
 
 ## Implemented category/section browsing (AP-06)
@@ -208,7 +209,7 @@ grant global admission either. Each section and action independently checks its 
 | Roles & permissions | `access.authorization.manage` for protected reads | Exact server-bound Owner only for all role/grant/user authorization mutations; existing validation, shared mutex and fresh permission/admission checks |
 | Users / measures | `admin.users.read` for general index/detail; `access.authorization.manage` for the existing authorization subset; `admin.users.blocks.manage` for exact target/measures lookup | Authorization assignment/override writes require exact bound Owner (non-Owner read-only); measure create/change/lift and appeal review retain fresh `admin.users.blocks.manage` plus target/issuer hierarchy (and `admin.users.blocks.managePrivileged` for privileged targets) |
 | History / Overview recent actions | `admin.history.read` | History-read does not authorize recorded operations; actors do not need history-read merely to perform an otherwise permitted operation |
-| Settings entry / implemented surfaces | Authenticated session for `/:locale/settings` and `/:locale/settings/user`; exact bound Owner for `/:locale/settings/forum`; current effective Admin-or-Attention access for `/:locale/settings/administrator` | Forum & roles reuses canonical Owner-only authorization writer and independent registration flags; User and Administrator preferences follow their independent contracts in `SETTINGS.md`. Account & security and Privacy are pending |
+| Settings entry / implemented surfaces | Authenticated session for `/:locale/settings`, `/:locale/settings/user` and `/:locale/settings/account`; exact bound Owner for `/:locale/settings/forum`; current effective Admin-or-Attention access for `/:locale/settings/administrator` | Forum & roles reuses canonical Owner-only authorization writer and independent registration flags; User and Administrator preferences and authenticated Account & security follow their independent contracts in `SETTINGS.md`. Privacy remains pending |
 
 Capability labels described in this document but not present in the current code-backed catalog
 are requirements, not executable permission keys. Their exact keys and explicit initial grants
@@ -277,9 +278,9 @@ propagate normally. Both document and data responses use private/no-store header
 
 Navigation keeps the approved section order and marks unfinished destinations explicitly.
 Settings links to the independently guarded `/:locale/settings` entry; its Forum & roles
-destination and registration controls remain Owner-only. User preferences are implemented
-for authenticated accounts, Administrator preferences for current Admin/Attention actors;
-Account & security and Privacy remain visibly unavailable. History is a real destination only
+destination and registration controls remain Owner-only. User preferences and Account & security are implemented for authenticated accounts,
+Administrator preferences for current Admin/Attention actors; only Privacy remains
+visibly unavailable. History is a real destination only
 with `admin.history.read`; it is omitted without that permission. Attention queues and
 fabricated events are never shown. AP-03 recent actions follow the same History-read gate.
 
@@ -778,5 +779,5 @@ AP-01 is complete when this contract is self-contained and consistent with curre
 truth, necessary links are aligned, and the change remains documentation-only. It must not
 report AP-02+ behavior, unrun CI or future runtime acceptance as completed. AP-11 closes the
 approved AP-01–AP-10 delivered scope; Settings is a separate product sequence.
-SET-01–SET-04 are now implemented in repository/local-CI, while SET-05–SET-06
-remain unimplemented and unassigned. See `SETTINGS.md` for the separate contract.
+SET-01–SET-05 are now implemented in repository/local-CI; only SET-06 Privacy
+remains unimplemented and unassigned. See `SETTINGS.md` for the separate contract.
