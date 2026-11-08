@@ -71,8 +71,13 @@ describe("SET-04 independently guarded administrator route", () => {
 });
 
 function i18n() {
-  const english = Object.fromEntries(Object.entries(canonicalEnglishCatalog.common)
-    .map(([key, descriptor]) => [key, descriptor.source]));
+  const english: Record<string, string> = {};
+  for (const [key, descriptor] of Object.entries(canonicalEnglishCatalog.common)) {
+    if (typeof descriptor.source === "string") english[key] = descriptor.source;
+    else for (const [branch, value] of Object.entries(descriptor.source)) {
+      english[`${key}_${branch}`] = value;
+    }
+  }
   return createTranslationRuntime({
     locale: {
       translationLocale: "en", fallbackLocales: [], direction: "ltr",
