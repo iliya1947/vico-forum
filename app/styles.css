@@ -10009,3 +10009,34 @@ a.topic-tag:focus-visible {
   justify-self: start;
   min-block-size: 2.75rem;
 }
+
+/* SET-03: keep account-local Editor controls usable in mobile and RTL layouts. */
+.settings-editor-section {
+  margin-block-start: 1.5rem;
+  border-block-start: 1px solid var(--color-border);
+  padding-block-start: 1.2rem;
+}
+.settings-editor-controls {
+  display: grid;
+  gap: 0.85rem;
+  max-inline-size: 34rem;
+}
+.settings-editor-select {
+  display: grid;
+  gap: 0.4rem;
+}
+.settings-editor-select select {
+  min-inline-size: 0;
+  min-block-size: 2.75rem;
+  padding: 0.5rem;
+  color: var(--color-text);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 0.45rem;
+}
+.settings-editor-checkbox {
+  display: flex;
+  gap: 0.6rem;
+  align-items: center;
+  min-block-size: 2.75rem;
+}
