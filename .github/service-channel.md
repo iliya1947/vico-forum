@@ -32,16 +32,15 @@
 
 ## Актуальный baseline и назначение
 
-- SET-05 implementation PR #309 is merged into `main`.
-- Final implementation head: `236a15c5f3309a5466c70c7a934edf5b56ade433`.
-- Merge commit/current main: `2f2969d5b3a7ca7844d674b85448838fc671eaca`.
-- Final gates on that implementation head: Mira coordinator PASS + Lev repeat independent PASS, 0 confirmed current-scope defects; `SET05-MIRA-01`, `SET05-MIRA-02`, `SET05-LEV-01` closed.
-- Final CI #42483839708 and Chromium #42483839769 SUCCESS.
-- Current task is now a **separate documentation-only SET-05 factual closeout**.
-- Repository search confirms the current stale SET-05 status is limited to the current source-of-truth/cross-reference set: `PROJECT.md`, `PROJECT_STATE.md`, `ROADMAP.md`, `docs/SETTINGS.md`, `docs/ADMIN_PANEL.md`, plus history index/new snapshot.
-- Historical files PROJECT_HISTORY_17–20 are immutable snapshots and must not be rewritten.
-- Lira is assigned the docs-only PR; Mira reviews it after a stable head/checks.
-- SET-06 remains inactive until this closeout is merged. Lev/Mark are not assigned to docs.
+- Current main: `c1109dc8c5c499b63dd6e4d2f76bce96fadb2cd5`; SET-05 implementation #309/docs #310 merged and fully closed.
+- SET-06 Privacy product boundary remains approved: persisted per-user show-online,default ON,own authenticated opt-out,authoritative public list/count exclusion and heartbeat enforcement.
+- **Lev technical plan delivered:** [#6722989280](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6722989280), source-checked against exact main above. This is planning, not implementation/acceptance.
+- Proposed narrow table `user_privacy_preferences` (missing row=true),next forward migration expected0061; web SELECT/INSERT/UPDATE on preference plus DELETE on existing presence, no localization grants.
+- Public reader filters preference in SQL before window count/LIMIT12. Save OFF + own presence cleanup atomic; existing heartbeat shares per-user user-row lock/read-after-lock and cannot write while hidden.
+- New authenticated `/:locale/settings/privacy`,existing Settings shell/nav/localization; private/no-store Settings/home document/data/heartbeat boundaries; no new auth/session/permission subsystem.
+- Native PG concurrency/count/constraints/availability/privilege and existing Settings real-browser harness acceptance are specified; no SET-06 tests or CI have run yet.
+- **Next — Mira reviews plan scope/fit,then assigns implementation separately.** Lira remains unassigned/stopped;Lev planning complete/stopped;Mark unassigned.
+- No production/liveGoogle/realOwner/Stage6 or extra visual approval gate. Permanent docs separately after implementation merge.
 
 ## Handoff — Лира: Stage2 factual documentation closeout
 
@@ -1970,3 +1969,8 @@ Required result:
 5. Keep the plan bounded to SET-06. Do not implement code in this step and do not expand into unrelated privacy controls, notification settings, a universal settings store, new RBAC/deputy mechanics, Stage 6 or production work.
 
 When the plan is complete, record it in #251 and stop. **Лира remains unassigned until Mira reviews the plan.**
+
+
+## SET-06 Privacy — Lev technical plan delivered for Mira scope/fit review
+
+[Technical plan #6722989280](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6722989280), current main `c1109dc8c5c499b63dd6e4d2f76bce96fadb2cd5`. Source inspection completed: current five-minute/45s/60s presence path, one-query count/LIMIT12, heartbeat/session/Origin path, Settings shell/capability seams, migration/manifest/runtime grants/provisioning and affected fixtures. One narrow persisted preference table with absent=true; next forward migration expected0061,actual number rechecked at implementation. OFF+presence DELETE atomic; same stable user-row lock shared with existing heartbeat,privacy read in separate READ COMMITTED statement after waiting. Independent public SQL LEFT JOIN/COALESCE filter before count/order/limit remains mandatory. New private own Privacy route,strict bool/identity guard,account-isolated form,localization and local cache boundaries. Existing heartbeat may remain client-side unchanged;server204/no-op while hidden. No second auth/RBAC/settings store. Full tests/nativePG race/count/grants/runtime browser requirements described in linked plan,existing settings_browser integration only. Official PG17 isolation/locking docs checked. **No code/migration/runtime acceptance/CI SET-06 executed or claimed.** Checkout clean,evidence /workspace/work/set06-plan-evidence/. **Mira next:** review plan scope/fit before separate Lira assignment. Lev stopped;Lira unassigned;Mark unassigned;Stage6/production inactive. Permanent docs follow separate post-merge closeout.
