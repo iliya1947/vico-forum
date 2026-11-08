@@ -1509,3 +1509,8 @@ PR #303 exact head `bc0b8fd248293be76f797add6dba8f804c213185`: Mira docs review 
 ## SET-02 docs closeout — final PASS / owner merge
 
 PR #303 exact head `49d93b776d7a0bf480955abb3e33e9772e761273`: Mira fresh docs review **PASS, 0 confirmed current-scope defects**. SET02-DOC-MIRA-01 is closed; correction changed only `docs/SETTINGS.md` and restored the approved SET-03 User preferences / SET-04 Administrator preferences mapping. Exact-head CI #42437660217 is SUCCESS, PR is clean/mergeable, and #251 still has exactly seven required working files. **Owner merge #303 is the next action.** SET-03 remains unassigned until merge is observed.
+
+
+## SET-02 fully closed; SET-03 implementation assigned
+
+Docs PR #303 merged into main at `cb805a074de3bfdcd140125ebaa425a76bb6496d`; SET-02 implementation and factual documentation are fully closed. The approved SET-03 technical plan already exists in #6711736883 and remains aligned with current `docs/SETTINGS.md`, so no repeat Codex planning is needed. Lira is assigned SET-03 User preferences implementation only: existing theme, own locale preference and existing Editor/code preferences with their current storage ownership and real consumers. No schema/migration, SET-04–06, notifications, drafts/autosave, Stage6 or permanent docs in the implementation PR. Next handoff is Lira stable PR/head + checks for Mira coordinator review.
