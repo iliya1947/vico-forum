@@ -1415,3 +1415,11 @@ PR #308 exact head `9131278240c682650c5a4c1048cdf43be786dd81`: **PASS, 0 confirm
 ## SET-05 routing after SET-04 closeout
 
 PR #308 merged at `76fc5b16be4f2425a0ad1fdcb7b38974db355c56`; SET-04 fully closed. Rechecked approved SET-05 plan #6711736883 against current source and Better Auth v1.7.7 tag: required account/session APIs remain available and current AuthRuntime still needs the planned bounded self-service surface. No repeat Lev planning. Lira assigned SET-05 implementation; Mira reviews first stable head. SET-06/Stage6 inactive.
+
+
+## SET-05 / PR #309 — coordinator review
+
+Exact head `dd6a5037aec81f4889005eb38fcfa25b573fd186`: **CHANGES REQUIRED, 2 confirmed current-scope findings**.
+- SET05-MIRA-01: stale/not-fresh direct `revoke-others` bypasses the intended Better Auth `listSessions` freshness gate because `revokeOtherSessions` itself is only sensitive/authoritative-session gated.
+- SET05-MIRA-02: new dedicated `set05-account-browser.yml` conflicts with approved plan requirement to extend existing applicable browser/CI harnesses rather than create a new workflow for decomposition.
+Whole scope otherwise checked with no additional confirmed current-scope defects. Owner visual acceptance is not a SET-05 coordinator prerequisite. Lira assigned one correction package; Lev/Mark withheld until fresh coordinator PASS.
