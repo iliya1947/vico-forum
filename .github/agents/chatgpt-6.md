@@ -905,3 +905,11 @@ PR #305 exact head `892d30f954c1cd974d16b8331b7af71607db9bde`: Mira **PASS, 0 co
 ## Active assignment — Settings SET-04 Administrator preferences
 
 Base/current main `35fa64428fc551ae58b9026dad45797016dd4251`. SET-03 is fully closed. Implement SET-04 in one bounded implementation PR using approved plan #6711736883: device-local per-account Admin/Attention entry preferences, comfortable/compact density and approved secondary-detail expansion on real existing consumers. Preferences must be intersected with current effective access and never become authority; explicit URLs/queries/deep links remain authoritative. No DB/migration/new permission/RBAC, SET-05–06, permanent docs or Stage6. Run applicable exact-head unit/route/runtime/browser acceptance, publish PR + stable head + evidence in #251, then stop for Mira coordinator review.
+
+## SET-04 — implementation author handoff
+
+PR #307 exact head `1a858825836e76801bb63025a28312b4d0bdd082` from main `35fa64428fc551ae58b9026dad45797016dd4251`; Ready, mergeable and **frozen** for Mira coordinator review. SET-04 device-local per-account Admin/Attention entry/default-last + density + secondary-detail disclosures delivered through real consumers, current effective-access filtering and independent route gates, EN/RU/HE, no schema/migration/new RBAC, SET-05/06, docs or Stage6.
+
+Exact-head CI #42456818922 **SUCCESS** (`checks`/`database`, 164 test files / 2054 tests, build and PG17/Worker). Exact-head Chromium #42456818927 **SUCCESS** (`browser`, `history_browser`, `settings_browser`, `settings_administrator_browser`). Earlier author correction history is in the implementation commits and CI runs; no unverified claims of production/owner acceptance.
+
+Lira stopped author work; **Mira coordinator whole-PR review is next**. No Codex reviewer launched and no merge performed.

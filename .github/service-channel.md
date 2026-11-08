@@ -1560,3 +1560,13 @@ PR #305 exact head `892d30f954c1cd974d16b8331b7af71607db9bde`: Mira docs review 
 ## SET-03 fully closed; SET-04 implementation assigned
 
 Docs PR #305 merged into main at `35fa64428fc551ae58b9026dad45797016dd4251`; SET-03 implementation and factual documentation are fully closed. The already approved SET-04 technical plan in #6711736883 remains aligned with current AdminShell, Attention mode/group access, Settings shell and current authorization boundaries, so no repeat Codex planning is needed. Lira is assigned SET-04 Administrator preferences implementation only: per-account/device local Admin/Attention entry preferences, density and approved secondary-detail disclosure with real consumers. No DB/migration/new permission, SET-05–06, permanent docs or Stage6/production work. Mira reviews the first stable implementation head before any Lev review.
+
+## SET-04 implementation complete — Lira handoff for Mira coordinator review
+
+Implementation [PR #307](https://github.com/iliya1947/vico-forum/pull/307), exact head `1a858825836e76801bb63025a28312b4d0bdd082`, base/current main `35fa64428fc551ae58b9026dad45797016dd4251`: **open, Ready, mergeable, implementation frozen**. This is an author delivery, **not** a self whole-PR PASS.
+
+Delivered independently guarded Administrator preferences surface with device-local per-account versioned preference record, effective-permission-scoped Admin and Attention entry links/default/last destinations, comfortable/compact density, secondary technical-detail disclosures with manual override, EN/RU/HE and real consumers. Storage corrupt/version/account switching, grant/revoke fallback, explicit URL precedence, current Admin-only/Attention-only admission and responsive/keyboard behavior are covered. No new DB/schema/migration/RBAC, SET-05–06, permanent docs or Stage 6.
+
+Exact-head [CI #42456818922](https://github.com/iliya1947/vico-forum/actions/runs/42456818922): **SUCCESS** (`checks`, `database`), 164 application files / 2054 tests, PostgreSQL17/Worker smoke and builds. Exact-head [Chromium #42456818927](https://github.com/iliya1947/vico-forum/actions/runs/42456818927): **SUCCESS** (`browser`, `history_browser`, `settings_browser`, `settings_administrator_browser`). Corrections after earlier failed heads were localized to JSX, actor rendering, translation fingerprints/types and tests reflecting the approved technical-disclosure behavior. Browser/local acceptance only; production/Stage6/live Google/real Owner binding and Owner visual acceptance not claimed.
+
+**Next assigned reviewer: Мира**, coordinator whole-PR review on frozen exact head, then normal routing under AGENTS.md. Лёва/Марк not assigned; owner merge not requested. Permanent documentation remains a separate post-merge closeout.
