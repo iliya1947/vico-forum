@@ -265,7 +265,8 @@ try:
           window.__set03OldLocaleSelect = document.querySelector('#settings-preferred-locale');
         }""")
 
-        signout = a_context.request.post(base + "/api/auth/sign-out", headers={"Origin": base})
+        signout = a_context.request.post(base + "/api/auth/sign-out",
+            headers={"Origin": base, "Content-Type": "application/json"}, data="{}")
         assert signout.status == 200, ("sign-out", signout.status, signout.text()[:150])
         signin = a_context.request.post(base + "/api/auth/sign-in/email", headers={"Origin": base},
             data={"email": prefix + "-bob@test.invalid",
