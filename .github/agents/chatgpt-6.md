@@ -1027,3 +1027,15 @@ Create a separate documentation-only PR from current main. Exact intended docs s
 - Exactly 7 Markdown paths: `PROJECT.md`, `PROJECT_STATE.md`, `ROADMAP.md`, `docs/SETTINGS.md`, bounded Settings-status changes in `docs/ADMIN_PANEL.md`, history index, new `PROJECT_HISTORY_21.md`. SET-05 marked implemented in repository/local-CI; SET-06 next/pending. Documented actual credential-only password, Google link, own session revocation/freshness, no-store/same-origin/identity, canonical Better Auth database 3/10s rate-limit and retry, and #309 correction/review/CI history. No runtime/auth/CI/schema changes or claims of production/real OAuth/real Owner/visual acceptance.
 - GitHub diff exactly 7 assigned files; [exact docs head CI #42487505867](https://github.com/iliya1947/vico-forum/actions/runs/42487505867) SUCCESS: lint/typecheck/build, app2084, native PG597. PR marked Ready; implementation #309 already merged with Mira/Lev final PASS.
 - **Лира stops.** No author review or Mira/Lev execution; Mira next performs docs-only coordinator review of this exact head, then Owner merge. SET-06/Stage6 inactive.
+
+
+## SET-05 docs / PR #310 — correction task SET05-DOC-MIRA-01
+
+PR #310 is still on exact head `182a185e1ed8dc734b45ebd1ba15c4bcf45b4fde`; no correction commit exists after Mira's finding.
+
+Make only this bounded documentation correction:
+- in `docs/SETTINGS.md`, remove or narrow the unsupported general guarantee that password/session secrets are not reflected in **logs**;
+- preserve the verified secrecy contract for responses/URLs/browser controls/DTO presentation;
+- do not change runtime/code/schema/migrations/CI workflows or expand documentation scope.
+
+Publish a new stable docs head and applicable checks in #251, then stop. Mira performs a fresh docs-only review. Owner merge is blocked until Mira PASS; SET-06 remains inactive.
