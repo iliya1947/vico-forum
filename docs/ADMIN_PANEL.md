@@ -22,10 +22,11 @@ or permission keys; AP-03 adds `admin.history.read`, AP-09 adds `admin.users.rea
 adds the two block-management capabilities plus its measure persistence.
 
 Other routes and capabilities described below as delivery targets become available only
-through their respective bounded implementation PRs. Settings remains on the shared
-Under development surface and grants no future read/action permission. By owner decision it is
-explicitly deferred until after the separate owner/authorization redesign and is not part of the
-completed AP-01–AP-11 delivery scope. Users is now a real destination for `admin.users.read`;
+through their respective bounded implementation PRs. Settings is a separate sequence outside
+the completed AP-01–AP-11 delivery scope. SET-01–SET-02 now provide a real protected
+Settings entry and Owner-only Forum & roles page; the other four Settings sections remain
+unimplemented. See `SETTINGS.md` for their access and registration contracts.
+Users is now a real destination for `admin.users.read`;
 an authorization-manager without that permission keeps the existing authorization-user-management
 subset rather than gaining the general Users directory.
 
@@ -33,6 +34,7 @@ Related sources of truth:
 
 - [PROJECT.md](../PROJECT.md) — product and architecture baseline;
 - [AUTHORIZATION.md](auth/AUTHORIZATION.md) — authoritative application authorization;
+- [SETTINGS.md](SETTINGS.md) — Settings surfaces, Owner-only Forum & roles and registration policy;
 - [UI_UX_PASS.md](UI_UX_PASS.md) — shared presentation, localization and acceptance;
 - [PROJECT_STATE.md](../PROJECT_STATE.md) — factual implementation state;
 - [ROADMAP.md](../ROADMAP.md) — development and release boundaries.
@@ -91,10 +93,11 @@ admin projection is separately protected and does not alter that public contract
 
 During owner-only pre-release, approved unfinished destinations may use the shared localized
 Under development mechanism. This does not grant a private read or mutation. Settings is
-a separate approved five-surface product sequence outside AP-01–AP-11:
-SET-01 has implemented Owner-only authorization writes in repository/local-CI,
-but the actual Settings shell, registration controls and remaining SET-02–SET-06
-surfaces are not implemented. The placeholder authorizes no settings store or API.
+a separate approved five-surface product sequence outside AP-01–AP-11.
+SET-01–SET-02 have implemented Owner-only authorization writes, the protected Settings
+shell and Owner-only Forum & roles (including new-registration controls) in repository/local-CI.
+Administrator preferences, User preferences, Account & security and Privacy are still
+marked Under development and have no corresponding implemented settings routes or mutations.
 Real Google/Owner binding acceptance remains Stage 6.
 
 ## Implemented category/section browsing (AP-06)
@@ -204,7 +207,7 @@ grant global admission either. Each section and action independently checks its 
 | Roles & permissions | `access.authorization.manage` for protected reads | Exact server-bound Owner only for all role/grant/user authorization mutations; existing validation, shared mutex and fresh permission/admission checks |
 | Users / measures | `admin.users.read` for general index/detail; `access.authorization.manage` for the existing authorization subset; `admin.users.blocks.manage` for exact target/measures lookup | Authorization assignment/override writes require exact bound Owner (non-Owner read-only); measure create/change/lift and appeal review retain fresh `admin.users.blocks.manage` plus target/issuer hierarchy (and `admin.users.blocks.managePrivileged` for privileged targets) |
 | History / Overview recent actions | `admin.history.read` | History-read does not authorize recorded operations; actors do not need history-read merely to perform an otherwise permitted operation |
-| Settings placeholder | Actor already admitted to shell | No private settings data or mutation |
+| Settings entry / Forum & roles | Authenticated session for `/:locale/settings`; exact bound Owner for `/:locale/settings/forum` | Forum & roles reuses canonical authorization writer; independent Google/email new-registration flags are Owner-only. Other Settings surfaces are not implemented |
 
 Capability labels described in this document but not present in the current code-backed catalog
 are requirements, not executable permission keys. Their exact keys and explicit initial grants
@@ -272,7 +275,9 @@ Authorization failure remains fail-closed; unexpected SQL/configuration/programm
 propagate normally. Both document and data responses use private/no-store headers.
 
 Navigation keeps the approved section order and marks unfinished destinations explicitly.
-Settings remains a placeholder exposing no private data. History is a real destination only
+Settings links to the independently guarded `/:locale/settings` entry; its Forum & roles
+destination and registration controls remain Owner-only. The other four Settings sections
+are visibly unavailable. History is a real destination only
 with `admin.history.read`; it is omitted without that permission. Attention queues and
 fabricated events are never shown. AP-03 recent actions follow the same History-read gate.
 
@@ -346,6 +351,9 @@ application policy seam `canMutateAuthorization` is extensible for separately ap
 future deputy delegation; no deputy authority or new role is implemented.
 Server enforcement inside the shared serialized/fresh writer is authoritative,
 including for no-op and direct requests; hiding forms is not the authorization boundary.
+SET-02 reuses this content and the existing `/:locale/admin/authorization` POST
+through Owner-only `/:locale/settings/forum`; it adds no second authorization writer.
+The canonical legacy read route keeps its existing non-Owner read-only admission.
 
 **Single-Owner bootstrap boundary.** Vico Forum has exactly one Owner: the developer.
 The developer signs in through Google to the intended internal forum account;
@@ -766,8 +774,7 @@ by the existing release requirements.
 
 AP-01 is complete when this contract is self-contained and consistent with current sources of
 truth, necessary links are aligned, and the change remains documentation-only. It must not
-report AP-02+ behavior, unrun CI or future runtime acceptance as completed. AP-11 now closes the
-approved AP-01–AP-10 delivered scope. The remaining Settings placeholder does not make that
-closeout false: Settings is a separate product sequence, and only SET-01
-Owner-only authorization write policy is implemented. Settings shell and
-SET-02–SET-06 must not be reported as delivered.
+report AP-02+ behavior, unrun CI or future runtime acceptance as completed. AP-11 closes the
+approved AP-01–AP-10 delivered scope; Settings is a separate product sequence.
+SET-01–SET-02 are now implemented in repository/local-CI, while SET-03–SET-06
+remain unimplemented and unassigned. See `SETTINGS.md` for the separate contract.

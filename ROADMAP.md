@@ -11,6 +11,7 @@ Source of truth:
 - текущее фактическое состояние — `PROJECT_STATE.md`;
 - application authorization — `docs/auth/AUTHORIZATION.md`;
 - обычная админ-панель и её bounded delivery contract — `docs/ADMIN_PANEL.md`;
+- Settings product/runtime contract — `docs/SETTINGS.md`;
 - мультиязычность и переводы — `TRANSLATION_ARCHITECTURE.md` и `docs/translation/*`;
 - database rollout/operations — `docs/database/*`;
 - завершённый Stage 1 scaffold plan — `SCAFFOLD_PLAN.md`.
@@ -130,11 +131,12 @@ Scope, порядок реализации, GitHub Pages progress preview, об�
 acceptance matrix и definition of done зафиксированы в [`docs/UI_UX_PASS.md`](docs/UI_UX_PASS.md).
 
 Отдельная Settings-последовательность идёт после завершённых AP-01–AP-11 и
-owner/authorization redesign. **SET-01 уже реализован в repository/local-CI**:
+owner/authorization redesign. **SET-01 и SET-02 реализованы в repository/local-CI**:
 все authorization-management writes разрешены только exact server-bound Owner,
 а `access.authorization.manage` сохраняет прежние защищённые read surfaces.
-Следующий по утверждённой последовательности — SET-02 (Settings shell и
-registration controls), но SET-02–SET-06 ещё не реализованы и не назначены.
+SET-02 добавил Settings shell, Owner-only Forum & roles и независимые Google /
+email-password флаги для регистрации новых аккаунтов. Текущий Settings contract —
+`docs/SETTINGS.md`. Следующие SET-03–SET-06 ещё не реализованы и не назначены.
 
 Владелец отдельно утвердил target-product подход: UI проектируется как целевой Vico Forum, а не
 только как косметика поверх текущего MVP. Небольшое self-contained frontend behavior может
@@ -469,8 +471,9 @@ scope, включая временные/постоянные administrative mea
 [`docs/ADMIN_PANEL.md`](docs/ADMIN_PANEL.md). Bounded delivery AP-01–AP-11 завершён в
 repository/local-CI path; фактическое состояние указано в `PROJECT_STATE.md`.
 Settings по решению владельца отделён от AP-11: SET-01 Owner-only authorization writes
-уже реализован в `main`. Следующим по утверждённой последовательности идёт SET-02,
-но SET-02–SET-06 и Settings shell ещё не реализованы и не назначены.
+и SET-02 (Settings shell, Forum & roles, независимая политика регистрации новых Google
+и email/password аккаунтов) реализованы в `main` в repository/local-CI.
+SET-03–SET-06 ещё не реализованы и не назначены; их границы — в `docs/SETTINGS.md`.
 
 Черновики и автосохранение перенесены владельцем 2026-10-20 в возможные будущие функции
 (`Under development: drafts`) и не являются обязательным объёмом текущего Editor 2.0.
