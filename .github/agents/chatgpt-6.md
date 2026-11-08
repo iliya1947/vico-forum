@@ -926,3 +926,8 @@ PR #307 corrected from reviewed head `1a858825836e76801bb63025a28312b4d0bdd082` 
 Exact-head CI #42458305882 **SUCCESS** (164 files / 2055 tests, both jobs); Chromium #42458305779 **SUCCESS** (all 4 jobs), including explicit case `set04-actor-bound-admin-measure-detail-density-no-private-last-entry`. Ready/mergeable on unchanged main. SET04-MIRA-01 author correction delivered, **not coordinator-verified yet**.
 
 Lira is stopped; next is Mira fresh coordinator whole-PR review. Lev/Mark not assigned, no merge or docs/next-SET work.
+
+
+## SET04-LEV-01 — bounded correction assigned
+
+PR #307 reviewed head `5cc5c820b0445ddb57cf3663e7cfb33c059ab108` has one independently confirmed current-scope P2 from Lev: the new SET-04 Settings entry/navigation projection omits valid close-only Admin actors because `locale-boundary.tsx` leaves `forum.topic.close` out of the server-derived Admin projection, while authoritative Admin admission and the Administrator preferences route both include it. Correct only this parity gap. Required acceptance: close-only actor sees Administrator preferences and Overview+Forum choices; after revoking the sole Admin grant, protected route denies and Settings links disappear; pin/history-only/Attention-only behavior remains intact. Keep independent guards, account-local preferences, explicit URL precedence and existing authority semantics. No new permission/RBAC/schema/migration, SET-05/06/docs/Stage6 or general legacy-header audit. Run applicable exact-head checks, publish new stable head/evidence in #251, then stop for Mira review. SET04-MIRA-01 remains closed.
