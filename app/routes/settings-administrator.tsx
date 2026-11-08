@@ -1,4 +1,4 @@
-import { data, useLoaderData, type RouterContextProvider } from "react-router";
+import { data, Link, useLoaderData, type RouterContextProvider } from "react-router";
 import { useTranslation } from "react-i18next";
 import { authSessionForRequest } from "../auth/request-context";
 import { useHeaderAuthUser } from "../auth/auth-controls";
@@ -8,8 +8,8 @@ import { AuthorizationUnavailableError } from "../../db/authorization-service";
 import { ADMIN_ADMISSION_PERMISSIONS, adminAccess } from "../admin/access";
 import type { PermissionKey } from "../authorization/catalog";
 import {
-  ATTENTION_MODES, ATTENTION_GROUPS, allowedAdminEntries, allowedAttentionEntries,
-  canEnterAdministratorPreferences, adminEntryPath, type AdminEntryId,
+  ATTENTION_MODES, allowedAdminEntries, allowedAttentionEntries,
+  canEnterAdministratorPreferences, type AdminEntryId,
   type AttentionEntryMode, type AttentionEntryGroup,
 } from "../settings/workspace-access";
 import {
@@ -118,9 +118,9 @@ export default function SettingsAdministratorRoute() {
           onChange={event => save({ adminDefault: event.currentTarget.value as AdminEntryId })}>
           {state.admin.map(id => <option key={id} value={id}>{t(adminLabels[id])}</option>)}
         </select>
-        <a className="settings-workspace-entry" href={selectAdminEntry(state.locale, state.admin, prefs)}>
+        <Link className="settings-workspace-entry" to={selectAdminEntry(state.locale, state.admin, prefs)}>
           {t("settingsAdminOpenAdmin")}
-        </a>
+        </Link>
       </fieldset> : null}
       {modes.length ? <fieldset className="settings-workspace-fieldset">
         <legend>{t("settingsAdminAttention")}</legend>
@@ -147,7 +147,7 @@ export default function SettingsAdministratorRoute() {
           }}>
           {groups.map(group => <option key={group} value={group}>{t(groupLabels[group])}</option>)}
         </select>
-        <a className="settings-workspace-entry" href={selectAttentionEntry(state.locale, state.attention, prefs)}>
+        <Link className="settings-workspace-entry" to={selectAttentionEntry(state.locale, state.attention, prefs)}>
           {t("settingsAdminOpenAttention")}
         </a>
       </fieldset> : null}
