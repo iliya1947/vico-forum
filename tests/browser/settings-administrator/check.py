@@ -152,6 +152,8 @@ try:
         owner.locator("#settings-admin-density").focus()
         owner.keyboard.press("ArrowUp")
         expect(owner.locator("#settings-admin-density")).to_be_focused()
+        expect(owner.locator("#settings-admin-density")).to_have_value("comfortable")
+        owner.locator("#settings-admin-density").select_option("compact")
 
         # Same browser/localStorage, real Better Auth sign-out/sign-in: no owner preferences
         # appear for a different account and no automatic account or domain mutation occurs.

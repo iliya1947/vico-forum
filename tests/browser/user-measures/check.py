@@ -235,6 +235,7 @@ try:
         document(manager, user_path)
         expect(manager.locator("#authorization")).to_have_count(0)
         expect(manager.locator("#admin-user-detail-heading")).to_have_count(1)
+        manager.locator(".profile-identity .admin-technical-details button").click()
         assert other_id in manager.locator("main").inner_text()
         document(manager, "/en/admin/authorization", 403)
         record("ap11-users-readonly-independent-of-authz-management")
@@ -1010,6 +1011,7 @@ try:
                         expect(page.locator("#authorization")).to_contain_text("User")
                         expect(page.locator('.admin-forum-trail a[href="/' +
                             locale + '/admin/users"]')).to_have_count(1)
+                        page.locator(".profile-identity .admin-technical-details button").click()
                         assert other_id in page.locator(".profile-identity").inner_text()
                         # Public identity is permitted, email and global authz directory are not.
                         assert prefix + "-other@test.invalid" not in page.content()
