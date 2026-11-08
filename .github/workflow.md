@@ -34,3 +34,8 @@
 - SET-02 technical plan: **approved**, #251 comment #6711736883
 - SET-02 implementer: **Лира**
 - SET-03–SET-06: **unassigned**
+
+- Implementation PR: **#302**
+- Reviewed head: `6dbe6a2d912dab6288fbb2fd1e5b554edd4df9ef`
+- Coordinator review: **CHANGES REQUIRED — SET02-MIRA-01/02**
+- Independent Lev review: **not assigned**
