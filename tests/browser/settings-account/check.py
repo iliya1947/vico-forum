@@ -108,7 +108,7 @@ def actor(browser, name, signup=True, password=old_password):
 def session_id(user_id, agent):
     rows = sql(
         'select id from "session" where user_id=$1 and user_agent like $2',
-        [user_id, "%SET05-" + agent + "%"],
+        [user_id, "%SET05-" + agent],
     )
     assert len(rows) == 1, (user_id, agent, rows)
     return rows[0]["id"]
