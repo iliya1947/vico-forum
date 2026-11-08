@@ -939,3 +939,8 @@ PR #307 new frozen head `27a2169ab013597d63fc318c7a255cdc4149b7cc` (base `35fa64
 One commit/three-file correction versus previous reviewed head `5cc5c820...`. Exact-head CI #42461288512 **SUCCESS** (both jobs, 164/164 files and 2066/2066 tests); browser #42461288533 **SUCCESS** (all four jobs), including explicit `close-only-admin-settings-links-valid-choices-and-fresh-revoke`. PR open, Ready, mergeable; `main` unchanged. SET04-MIRA-01 was already closed in earlier coordinator/independent review; current SET04-LEV-01 author correction is awaiting fresh coordinator confirmation, **not self-closed**.
 
 Lira stopped. Next is Mira fresh whole-PR review of exact head `27a2169ab013597d63fc318c7a255cdc4149b7cc`. Lev/Mark not initiated, Owner merge not requested; docs after merge in separate PR, SET-05/06 and Stage6 inactive.
+
+
+## SET-04 factual documentation closeout — assigned
+
+Implementation PR #307 is merged. Current main `365b75405fbcc2ac2f274f5a83ce8a737b60e700`; implementation exact head `27a2169ab013597d63fc318c7a255cdc4149b7cc`. Create a separate docs-only PR and factually close SET-04 per #6719276113. Expected scope: PROJECT.md, PROJECT_STATE.md, ROADMAP.md, docs/SETTINGS.md, bounded stale Settings-status correction in docs/ADMIN_PANEL.md, docs/PROJECT_HISTORY/PROJECT_HISTORY.md and new PROJECT_HISTORY_20.md. No runtime/schema/SET-05 work. Publish stable docs head/checks and stop for Mira review.
