@@ -2044,3 +2044,53 @@ Lev is stopped after planning. Mark remains unassigned. No SET-06 implementation
 - **Exact-head [CI #42501120430](https://github.com/iliya1947/vico-forum/actions/runs/42501120430) SUCCESS:** lint/typecheck/build, 166 application files/2097 tests, 52 native PG17 files/605 tests, migration/schema/privilege/provisioning and local Worker smoke. **[Chromium #42501120499](https://github.com/iliya1947/vico-forum/actions/runs/42501120499) SUCCESS:** 4/4 jobs including Privacy. The 13-case record appears in the `settings_browser` job log/artifact for this exact head.
 - **Narrow evidence nuance:** foreign Origin is sometimes rejected by React Router before the route action with a generic `400` and `Vary: Origin`, not the route-owned private headers; the actual Privacy route's controlled errors carry private no-store. Both paths fail closed, and the browser test distinguishes them. No broad header middleware was added solely for this pre-routing response.
 - **Handoff to Мира** for first independent coordinator whole-PR review of the frozen exact head. Лира stopped. Лёва independent technical review only after Mira PASS. Mark unassigned; no new authorization/provider/preferences subsystems, unrelated docs, production/Neon/Stage6/live Owner changes.
+
+
+## SET-06 / PR #311 — Mira coordinator whole-PR review: CHANGES REQUIRED
+
+Reviewed frozen exact head `b2a2b4a2b5505f5a1b885b5c2142370c31bd46fc`, base/current main `c1109dc8c5c499b63dd6e4d2f76bce96fadb2cd5`.
+
+**Verdict: CHANGES REQUIRED — 1 confirmed current-scope defect.**
+
+### SET06-MIRA-01 — privacy storage availability classification loses wrapped PostgreSQL transport failures
+
+Location: `db/hyperdrive-user-privacy.ts`.
+
+The new privacy adapter classifies availability with:
+- `isPostgresAvailabilityFailure(error)`;
+- `isPostgresConnectionTimeout(error)`;
+- `isPostgresQueryTimeout(error)`.
+
+The timeout helpers traverse nested `cause`, but `isPostgresAvailabilityFailure` intentionally checks only the object passed to it. Drizzle ORM **0.45.2** source was checked at tag commit `273c78071d4841b497f5144734b38294df7ec64b`: `PgPreparedQuery.queryWithCache()` catches driver query errors and throws `DrizzleQueryError(query, params, cause)`. Therefore a PostgreSQL availability/transport failure such as a wrapped SQLSTATE `08...`, `57P01`/related availability code or transport code can sit in `cause`; the SET-06 adapter then misses it and rethrows the `DrizzleQueryError`.
+
+Observed consequence from code path: Privacy loader/action does not convert that failure to `UserPrivacyUnavailableError`, so the protected Settings operation escapes as an unexpected error rather than the approved controlled unavailable `503`. This is a current SET-06 contract defect, not future hardening. Existing forum/registration wrappers already traverse cause chains for this class of failures.
+
+### Rest of whole-PR review
+
+No second confirmed current-scope defect found across the 36-file PR:
+- migration 0061, Drizzle snapshot/journal and production schema manifest are bounded to the new preference table;
+- runtime privileges add only preference SELECT/INSERT/UPDATE and presence DELETE required for OFF cleanup;
+- default ON/missing-row semantics are correct;
+- OFF cleanup and heartbeat share the same per-user lock; heartbeat reads preference after lock under READ COMMITTED;
+- public online SQL filters hidden users before window count/order/LIMIT;
+- Privacy route is authenticated own-account only with strict intent/identity/boolean/Origin validation;
+- Settings navigation, EN/RU/HE, RTL/responsive and account-switch boundaries match scope;
+- homepage/data and heartbeat no-store boundaries are implemented;
+- native PG concurrency/list/count/rollback coverage and connected browser flow cover the approved behavior;
+- exact-head CI #42501120430: SUCCESS;
+- exact-head Chromium #42501120499: SUCCESS;
+- PR remains open/Ready/mergeable on the reviewed exact head;
+- no permanent docs, production, Stage 6, live OAuth or Owner-binding work is included.
+
+### Handoff — Лира
+
+Make one bounded correction for **SET06-MIRA-01** in PR #311.
+
+Required result:
+1. Preserve the current privacy read/save behavior and all existing SET-06 semantics.
+2. Ensure PostgreSQL availability/transport failures remain classified even when the driver error is nested under Drizzle's `cause`, producing the existing controlled unavailable path.
+3. Keep schema/config/programming errors such as missing table/column outside ordinary availability classification.
+4. Add focused regression coverage that distinguishes wrapped availability from wrapped schema/unexpected errors.
+5. Publish a new stable exact implementation head with applicable exact-head CI/browser evidence, then stop for fresh Mira coordinator review.
+
+Do not broaden into a shared error-classification refactor unless needed for this correction. Lev/Mark remain unassigned; Owner merge is blocked.
