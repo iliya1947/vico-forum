@@ -1974,3 +1974,35 @@ When the plan is complete, record it in #251 and stop. **Лира remains unassi
 ## SET-06 Privacy — Lev technical plan delivered for Mira scope/fit review
 
 [Technical plan #6722989280](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6722989280), current main `c1109dc8c5c499b63dd6e4d2f76bce96fadb2cd5`. Source inspection completed: current five-minute/45s/60s presence path, one-query count/LIMIT12, heartbeat/session/Origin path, Settings shell/capability seams, migration/manifest/runtime grants/provisioning and affected fixtures. One narrow persisted preference table with absent=true; next forward migration expected0061,actual number rechecked at implementation. OFF+presence DELETE atomic; same stable user-row lock shared with existing heartbeat,privacy read in separate READ COMMITTED statement after waiting. Independent public SQL LEFT JOIN/COALESCE filter before count/order/limit remains mandatory. New private own Privacy route,strict bool/identity guard,account-isolated form,localization and local cache boundaries. Existing heartbeat may remain client-side unchanged;server204/no-op while hidden. No second auth/RBAC/settings store. Full tests/nativePG race/count/grants/runtime browser requirements described in linked plan,existing settings_browser integration only. Official PG17 isolation/locking docs checked. **No code/migration/runtime acceptance/CI SET-06 executed or claimed.** Checkout clean,evidence /workspace/work/set06-plan-evidence/. **Mira next:** review plan scope/fit before separate Lira assignment. Lev stopped;Lira unassigned;Mark unassigned;Stage6/production inactive. Permanent docs follow separate post-merge closeout.
+
+
+## SET-06 Privacy — Mira technical-plan review PASS; Lira implementation assigned
+
+Reviewed Lev technical plan [#6722989280](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6722989280) against current main `c1109dc8c5c499b63dd6e4d2f76bce96fadb2cd5`, current Settings source-of-truth and the actual presence/heartbeat/Settings/runtime-privilege paths.
+
+**Verdict: PASS — 0 confirmed current-scope planning defects.**
+
+Accepted boundaries:
+- one narrow persisted per-user privacy preference with default ON semantics and no universal settings store;
+- public online read filters hidden users in SQL before total count/order/LIMIT, so stale presence rows cannot leak into list/count;
+- OFF cleanup and the shared per-user serialization boundary with heartbeat close the in-flight OFF↔heartbeat race without a global mutex; PostgreSQL 17 READ COMMITTED per-statement snapshot + row-lock behavior matches the plan;
+- heartbeat remains server-authoritative; no client-side preference/session claim is trusted for enforcement;
+- the Privacy route is own-account only and uses existing Settings/auth boundaries;
+- runtime privilege/migration changes are limited to what the new preference and presence cleanup require;
+- explicit homepage/data no-store is accepted as part of the current privacy-freshness boundary and is covered by runtime verification rather than treated as a general caching redesign;
+- verification scope covers migration/privileges, public list+count, concurrency, failures, route guards, localization/RTL and real Worker+PG17+browser behavior;
+- no unrelated privacy controls, notifications, RBAC/deputy work, Stage 6 or production rollout are pulled into SET-06.
+
+### Handoff — Лира: implement SET-06 Privacy
+
+Implement SET-06 from current main using the approved Lev plan above.
+
+Required result:
+1. Deliver the persisted authenticated Privacy setting with default ON behavior.
+2. Enforce OFF authoritatively in public online list/count and heartbeat, including the planned concurrent OFF↔heartbeat boundary.
+3. Include the required forward schema/runtime-privilege changes and the plan's focused automated/native-PG/browser verification.
+4. Keep the implementation bounded to SET-06.
+
+Publish one stable implementation PR/exact head and applicable exact-head checks/browser evidence in #251, then stop for Mira coordinator whole-PR review.
+
+Lev is stopped after planning. Mark remains unassigned. No SET-06 implementation result is claimed until Lira delivers a stable head.
