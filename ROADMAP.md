@@ -131,7 +131,7 @@ Scope, порядок реализации, GitHub Pages progress preview, об�
 acceptance matrix и definition of done зафиксированы в [`docs/UI_UX_PASS.md`](docs/UI_UX_PASS.md).
 
 Отдельная Settings-последовательность идёт после завершённых AP-01–AP-11 и
-owner/authorization redesign. **SET-01–SET-05 реализованы в repository/local-CI**:
+owner/authorization redesign. **SET-01–SET-06 реализованы в repository/local-CI**:
 все authorization-management writes разрешены только exact server-bound Owner,
 а `access.authorization.manage` сохраняет прежние защищённые read surfaces.
 SET-02 добавил Settings shell, Owner-only Forum & roles и независимые Google /
@@ -143,8 +143,11 @@ Admin/Attention preference controls, плотностью и второстеп�
 SET-05 добавил authenticated Account & security с реальными Better Auth
 credential-password и own-session операциями, без новой auth schema/provider;
 смена пароля использует штатный HTTP rate-limit admission Better Auth.
-Текущий Settings contract — `docs/SETTINGS.md`. Следующий пакет SET-06
-(Privacy) пока не реализован и не назначен.
+SET-06 реализовал authenticated `/:locale/settings/privacy` с сохраняемым
+account-wide «Show me online», по умолчанию ON, и серверным исключением
+скрытого пользователя из публичного списка/счётчика и heartbeat.
+Текущий Settings contract — `docs/SETTINGS.md`. Реальная Google/Owner
+binding и external acceptance остаются Stage 6.
 
 Владелец отдельно утвердил target-product подход: UI проектируется как целевой Vico Forum, а не
 только как косметика поверх текущего MVP. Небольшое self-contained frontend behavior может
@@ -483,9 +486,10 @@ SET-02 (Settings shell, Forum & roles, независимая политика �
 и email/password аккаунтов), SET-03 (authenticated User preferences — тема, язык,
 существующие Editor/code preferences), SET-04 (локальные per-account/device
 Administrator preferences для Admin/Attention) и SET-05 (authenticated
-Account & security через существующий Better Auth) реализованы в `main`
-в repository/local-CI. Следующий SET-06 (Privacy) пока не реализован и не
-назначен. Границы — в `docs/SETTINGS.md`.
+Account & security через существующий Better Auth), а также SET-06
+(authenticated Privacy с persisted account-wide online visibility и серверным
+filter/heartbeat enforcement) реализованы в `main` в repository/local-CI.
+Границы — в `docs/SETTINGS.md`; deployed acceptance остаётся Stage 6.
 
 Черновики и автосохранение перенесены владельцем 2026-10-20 в возможные будущие функции
 (`Under development: drafts`) и не являются обязательным объёмом текущего Editor 2.0.
