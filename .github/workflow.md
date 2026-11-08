@@ -2,15 +2,17 @@
 
 - Service PR: **#251**
 - Current main: `a86cea918a3f2665399e861d8e01ece8a1d80104`
-- Current stage: **Settings SET-02 — factual documentation closeout**
+- Current stage: **Settings SET-02 — factual docs correction**
 - SET-02 implementation PR: **#302 — merged**
-- Final implementation exact head: `07d805d98ee77f9584f9609772ce2d33b9a8e63f`
-- Merge commit: `a86cea918a3f2665399e861d8e01ece8a1d80104`
-- Implementation reviews: **Mira PASS + Lev repeat PASS, 0 current-scope defects**
-- Documentation implementer: **Лира — assigned**
-- Documentation scope: **exactly 7 docs files**, including new `docs/SETTINGS.md` and `PROJECT_HISTORY_18.md`
+- Docs closeout PR: **#303**
+- Reviewed docs head: `bc0b8fd248293be76f797add6dba8f804c213185`
+- Documentation implementer: **Лира — SET02-DOC-MIRA-01 correction assigned**
+- Coordinator: **Мира — CHANGES REQUIRED, 1 docs-only defect**
+- SET02-DOC-MIRA-01: **swap corrected package mapping to SET-03 User preferences / SET-04 Administrator preferences**
+- Other 6 docs files: **no confirmed current-scope defects**
+- Exact-head CI #42436784166: **SUCCESS**
 - Лёва: **not assigned**
 - Марк: **not assigned**
-- Next: **await Lira docs-only PR stable-head handoff; then Mira docs review**
-- SET-03–SET-06 remain unassigned until SET-02 factual closeout is merged.
+- Next: **await Lira one-file correction + new stable exact head/checks; then fresh Mira docs review**
+- SET-03–SET-06 remain unassigned until #303 docs closeout is merged.
 - Production/Stage6/live Google/real Owner binding remain inactive.
