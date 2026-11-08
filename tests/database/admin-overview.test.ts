@@ -49,11 +49,11 @@ describe("admin Overview native aggregates and admission",()=>{
   const role=(await management.listRoles()).find(role=>role.slug==="ordinary-custom-reviewer")!;
   await management.replaceRoleGrants("admin-counter-manager",role.id,["forum.post.history.read"]);
   await management.assignUserRole("admin-counter-manager","admin-counter-custom",role.id);
-  expect(await requireAdminAccess(context("admin-counter-custom"))).toEqual({canEnter:true,canReadForum:true,canManageAuthorization:false});
+  expect(await requireAdminAccess(context("admin-counter-custom"))).toEqual({canEnter:true,canReadForum:true,canManageAuthorization:false,actorId:"admin-counter-custom"});
   await management.setUserOverride("admin-counter-manager","admin-counter-custom","forum.post.history.read","deny");
   await expect(requireAdminAccess(context("admin-counter-custom"))).rejects.toMatchObject({status:403});
   await management.setUserOverride("admin-counter-manager","admin-counter-custom","access.authorization.manage","allow");
-  expect(await requireAdminAccess(context("admin-counter-custom"))).toEqual({canEnter:true,canReadForum:false,canManageAuthorization:true});
+  expect(await requireAdminAccess(context("admin-counter-custom"))).toEqual({canEnter:true,canReadForum:false,canManageAuthorization:true,actorId:"admin-counter-custom"});
   await management.setUserOverride("admin-counter-manager","admin-counter-custom","access.authorization.manage",null);
   await management.setUserOverride("admin-counter-manager","admin-counter-custom","forum.post.history.read",null);
   expect((await requireAdminAccess(context("admin-counter-custom"))).canReadForum).toBe(true);

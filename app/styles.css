@@ -10040,3 +10040,92 @@ a.topic-tag:focus-visible {
   align-items: center;
   min-block-size: 2.75rem;
 }
+
+
+/* SET-04: personal workspace presentation; never changes queue/authorization semantics. */
+.settings-administrator {
+  max-inline-size: 54rem;
+}
+.settings-workspace-fieldset {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0.55rem;
+  margin-block: 1rem;
+  padding: 1rem;
+  border: 1px solid var(--color-border);
+  border-radius: 0.65rem;
+  min-inline-size: 0;
+}
+.settings-workspace-fieldset legend {
+  font-weight: 700;
+  padding-inline: 0.3rem;
+}
+.settings-workspace-fieldset select {
+  inline-size: 100%;
+  min-inline-size: 0;
+  max-inline-size: 30rem;
+  min-block-size: 2.75rem;
+  padding: 0.5rem;
+  border: 1px solid var(--color-border);
+  border-radius: 0.45rem;
+  color: var(--color-text);
+  background: var(--color-surface);
+}
+.settings-workspace-checkbox {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  min-block-size: 2.75rem;
+}
+.settings-workspace-entry {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: fit-content;
+  min-block-size: 2.75rem;
+  padding: 0.55rem 0.9rem;
+  border: 1px solid var(--color-border);
+  border-radius: 0.45rem;
+  color: var(--color-text);
+  background: var(--color-surface);
+  text-decoration: none;
+}
+.settings-workspace-entry:hover, .settings-workspace-entry:focus-visible {
+  border-color: var(--color-accent);
+}
+.admin-technical-details { min-inline-size: 0; }
+.admin-technical-details > button {
+  min-block-size: 2.75rem;
+  padding: 0.5rem 0.65rem;
+  border: 1px solid var(--color-border);
+  border-radius: 0.35rem;
+  background: var(--color-surface);
+  color: var(--color-text);
+}
+.admin-technical-content {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  min-inline-size: 0;
+  overflow-wrap: anywhere;
+  padding-block-start: 0.35rem;
+}
+.admin-technical-content[hidden] { display: none; }
+.admin-panel[data-density="compact"] .admin-workspace,
+.admin-panel[data-density="compact"] .admin-role-list,
+.admin-panel[data-density="compact"] .admin-user-list,
+.admin-panel[data-density="compact"] .admin-forum-objects,
+.attention-center-page[data-density="compact"] .attention-case-list {
+  gap: 0.45rem;
+}
+.admin-panel[data-density="compact"] .admin-card,
+.admin-panel[data-density="compact"] .admin-section,
+.admin-panel[data-density="compact"] .admin-forum-objects > li,
+.attention-center-page[data-density="compact"] .attention-case {
+  padding: 0.7rem;
+}
+.admin-panel[data-density="compact"] .admin-panel-nav,
+.attention-center-page[data-density="compact"] .attention-mode-nav,
+.attention-center-page[data-density="compact"] .attention-group-nav {
+  gap: 0.35rem;
+}

@@ -13,6 +13,9 @@ import { ForumInlineAttachmentProvider } from "./markdown";
 import { useEffect, useRef, useState } from "react";
 import { Form, Link, useFetcher, useLocation, useNavigate, useNavigation, useRevalidator } from "react-router";
 import { useTranslation } from "react-i18next";
+import { useHeaderAuthUser } from "../auth/auth-controls";
+import { useAdministratorPreferences, recordAttentionIndex } from "../settings/administrator-preferences";
+import { TechnicalDetails } from "../settings/technical-details";
 
 import type {
   ForumAttentionQueueCase,
@@ -61,7 +64,6 @@ import {
 } from "./content-generation-controls";
 import { Breadcrumbs, EmptyState, ForumShell } from "./ui";
 import { MarkdownEditor, type MarkdownEditorHandle } from "./markdown-editor";
-import { useHeaderAuthUser } from "../auth/auth-controls";
 import { attributedQuoteMarkdown } from "./quote-markdown";
 
 export function HomeView({
@@ -1481,9 +1483,10 @@ type SecurityAttachmentQueuePresentation = {
   page: number;
 };
 
-export function AttentionCenterView({ locale, mode, group, queue, securityQueue = null, counts, actionData,
+export function AttentionCenterView({ locale, accountId = null, mode, group, queue, securityQueue = null, counts, actionData,
   complaintQueue = null, complaintHistory = null,complaintAppeals=null, canManageComplaintPriorities = false, canReviewComplaints = false,canReviewAppeals=false, canViewHelpAttention = true, canReadSecurityAttachments = true, isPreview = false }: {
   locale: string;
+  accountId?: string | null;
   mode: AttentionMode;
   group: AttentionGroup;
   queue: AttentionQueuePresentation | null;
@@ -1502,6 +1505,15 @@ export function AttentionCenterView({ locale, mode, group, queue, securityQueue 
   isPreview?: boolean;
 }) {
   const { t } = useTranslation("common");
+  const authUser = useHeaderAuthUser();
+  const safeAccountId = authUser?.id === accountId ? accountId : null;
+  const preferences = useAdministratorPreferences(safeAccountId);
+  const location = useLocation();
+  useEffect(() => {
+    if (safeAccountId && !isPreview && location.pathname === forumAttentionPath(locale)) {
+      recordAttentionIndex(safeAccountId, mode, group);
+    }
+  }, [safeAccountId, isPreview, location.pathname, locale, mode, group]);
   const pathFor = (nextMode: AttentionMode, nextGroup?: string, nextPage?: number) => {
     const params = new URLSearchParams({ mode: nextMode });
     if (nextGroup) params.set("group", nextGroup);
@@ -1528,7 +1540,7 @@ export function AttentionCenterView({ locale, mode, group, queue, securityQueue 
   const cases = queue?.cases ?? [];
   return (
     <ForumShell locale={locale} variant="attention">
-      <div className="help-solutions-page attention-center-page">
+      <div className="help-solutions-page attention-center-page" data-density={preferences.density}>
         <Breadcrumbs locale={locale} items={[{ label: t("helpSolutionsNeedsAttentionMode") }]} />
         <header className="help-solutions-heading attention-center-heading">
           <h1>{t("helpSolutionsNeedsAttentionMode")}</h1>
@@ -1595,7 +1607,7 @@ export function AttentionCenterView({ locale, mode, group, queue, securityQueue 
             ) : (
               <ul className="attention-case-list">
                 {securityQueue.events.map(event => <li key={event.id}>
-                  <SecurityAttachmentEventCard event={event} locale={locale} />
+                  <SecurityAttachmentEventCard event={event} locale={locale} accountId={safeAccountId} />
                 </li>)}
               </ul>
             )
@@ -1643,9 +1655,10 @@ function safeSecurityText(value: string): string {
   }).join("");
 }
 
-function SecurityAttachmentEventCard({ event, locale }: {
+function SecurityAttachmentEventCard({ event, locale, accountId }: {
   event: SecurityAttachmentEventPresentation;
   locale: string;
+  accountId: string | null;
 }) {
   const { t } = useTranslation("common");
   const dateLabel = new Intl.DateTimeFormat(locale, {
@@ -1667,10 +1680,12 @@ function SecurityAttachmentEventCard({ event, locale }: {
         <span>{t("attentionSecurityAttachmentDeclaredType")}: <code>{event.declaredMime || "—"}</code></span>
         <span>{t("attentionSecurityAttachmentDetectedType")}: <code>{event.detectedType}</code></span>
         <span>{t("attentionSecurityAttachmentSize")}: {event.declaredByteSize} B</span>
-        <span>{t("attentionSecurityAttachmentUploadId")}: <code>{event.uploadId}</code></span>
-        <span>{t("attentionSecurityAttachmentUploaderId")}: <code>{event.uploadedByUserId}</code></span>
-        <span>{t("attentionSecurityAttachmentContext")}: <code>{safeSecurityText(event.contextKey)}</code></span>
-        <span>{t("attentionSecurityAttachmentDraft")}: <code>{event.draftId}</code></span>
+        <TechnicalDetails accountId={accountId}>
+          <span>{t("attentionSecurityAttachmentUploadId")}: <code>{event.uploadId}</code></span>
+          <span>{t("attentionSecurityAttachmentUploaderId")}: <code>{event.uploadedByUserId}</code></span>
+          <span>{t("attentionSecurityAttachmentContext")}: <code>{safeSecurityText(event.contextKey)}</code></span>
+          <span>{t("attentionSecurityAttachmentDraft")}: <code>{event.draftId}</code></span>
+        </TechnicalDetails>
       </div>
     </article>
   );

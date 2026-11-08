@@ -11,6 +11,8 @@ import type { PermissionKey } from "../authorization/catalog";
 import type { AuthorizationFailure } from "../authorization/admin-view";
 import { AuthorizationUserControls } from "../authorization/user-controls";
 import { AdminShell } from "./shell";
+import { TechnicalDetails } from "../settings/technical-details";
+import { useHeaderAuthUser } from "../auth/auth-controls";
 import { adminUserPath, adminUsersPath, adminUsersBrowsePath } from "./users-paths";
 import { adminMeasuresPath } from "../measures/paths";
 
@@ -34,6 +36,8 @@ export function AdminUsersIndex({ locale, access, query, page }: {
   locale: string; access: AdminAccess; query: AdminBrowseQuery; page: AdminBrowsePage<AdminUserSummary>;
 }) {
   const { t } = useTranslation("common");
+  const header = useHeaderAuthUser();
+  const accountId = access.actorId && header?.id === access.actorId ? access.actorId : null;
   const path = adminUsersPath(locale);
   return <AdminShell locale={locale} access={access} current="users">
     <section className="admin-forum" aria-labelledby="admin-users-heading">
@@ -48,7 +52,7 @@ export function AdminUsersIndex({ locale, access, query, page }: {
         {page.items.map(user => <li key={user.id}>
           <h3><Link to={adminUserPath(locale, user.id)}><bdi dir="auto">{user.name}</bdi></Link></h3>
           <ForumAvatar name={user.name} image={user.image} className="profile-avatar" />
-          <p><bdi dir="ltr">{user.id}</bdi></p>
+          <TechnicalDetails accountId={accountId}><bdi dir="ltr">{user.id}</bdi></TechnicalDetails>
           <p><Joined date={user.joinedAt} locale={locale}/></p>
           <nav aria-label={t("quickActions")}>
             <Link to={adminUserPath(locale, user.id)}>{t("adminUsersView")}</Link>{" · "}
@@ -77,6 +81,8 @@ export function AdminUserDetail({ locale, access, user, management, managerActor
   canMutateAuthorization?: boolean;
 }) {
   const { t } = useTranslation("common");
+  const header = useHeaderAuthUser();
+  const accountId = access.actorId && header?.id === access.actorId ? access.actorId : null;
   const github = safeHttpUrl(user.githubUrl), website = safeHttpUrl(user.websiteUrl);
   const roleKey = user.role.isSystem
     ? ({ user: "profileRoleUser", moderator: "profileRoleModerator", admin: "profileRoleAdmin" } as const)[user.role.slug as "user" | "moderator" | "admin"]
@@ -91,7 +97,8 @@ export function AdminUserDetail({ locale, access, user, management, managerActor
       <h2 id="admin-user-detail-heading">{t("adminUsersDetail")}</h2>
       <div className="profile-identity">
         <ForumAvatar name={user.name} image={user.image} className="profile-avatar" />
-        <div className="profile-identity-copy"><h3><bdi dir="auto">{user.name}</bdi></h3><bdi dir="ltr">{user.id}</bdi></div>
+        <div className="profile-identity-copy"><h3><bdi dir="auto">{user.name}</bdi></h3>
+          <TechnicalDetails accountId={accountId}><bdi dir="ltr">{user.id}</bdi></TechnicalDetails></div>
       </div>
       <dl className="profile-statistics">
         <div><dt>{t("profileJoined")}</dt><dd><time dateTime={user.joinedAt}>{new Intl.DateTimeFormat(locale, {

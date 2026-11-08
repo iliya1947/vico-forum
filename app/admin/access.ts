@@ -11,6 +11,8 @@ export const ADMIN_ADMISSION_PERMISSIONS = [
 
 export interface AdminAccess {
   canEnter: boolean;
+  /** Current authoritative route actor when supplied by a server guard. */
+  actorId?: string;
   canReadHistory?: boolean;
   canReadUsers?: boolean;
   canManageMeasures?: boolean;

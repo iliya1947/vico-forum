@@ -7,6 +7,10 @@ export function settingsForumPath(locale: string): string {
   return `${settingsPath(locale)}/forum`;
 }
 
+export function settingsAdministratorPath(locale: string): string {
+  return `${settingsPath(locale)}/administrator`;
+}
+
 export function settingsUserPath(locale: string): string {
   return `${settingsPath(locale)}/user`;
 }

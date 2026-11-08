@@ -92,7 +92,7 @@ describe("authorization management route", () => {
     expect(forUser).toHaveBeenCalledExactlyOnceWith("manager");
     expect(resolver.has).toHaveBeenCalledExactlyOnceWith("access.authorization.manage");
     expect(resolver.resolve).toHaveBeenCalledOnce();
-    expect(result.access).toEqual({canEnter:true,canReadForum:false,canManageAuthorization:true});
+    expect(result.access).toEqual({canEnter:true,canReadForum:false,canManageAuthorization:true,actorId:"manager"});
   });
 
   it("keeps non-Owner reads but rejects all six direct write intents even with management permission", async () => {

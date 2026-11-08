@@ -43,7 +43,7 @@ export async function loader({ params, context }: { params: { locale?: string };
     return { locale: params.locale ?? "en", ...state, permissions: PERMISSION_CATALOG,
       canManageElevated: isBoundOwner(actorId, context.get(authorizationOwnerContext)),
       canMutateAuthorization: canMutateAuthorization(actorId, context.get(authorizationOwnerContext)),
-      access: adminAccess(new Set(resolved.effectivePermissions)) };
+      access: { ...adminAccess(new Set(resolved.effectivePermissions)), actorId } };
   } catch (error) {
     if (error instanceof Response) throw error;
     if (error instanceof AuthorizationUnavailableError) {

@@ -8,6 +8,10 @@ import { createTranslationRuntime } from "../localization/runtime";
 import { canonicalEnglishCatalog } from "../localization/catalog";
 import { russianCommonValues, hebrewCommonValues } from "../localization/manual-values";
 import { adminAccess } from "../admin/access";
+import { HeaderAuthProvider } from "../auth/auth-controls";
+import {
+  administratorPreferenceKey, readAdministratorPreferences, updateAdministratorPreferences,
+} from "../settings/administrator-preferences";
 import type { UserMeasureDetail, UserMeasureSummary } from "../../db/user-measure-read";
 import { AdminMeasuresIndex, AdminMeasureDetail, OwnMeasuresIndex, OwnMeasureDetail,
   selectedMeasureExpiry } from "./views";
@@ -279,6 +283,46 @@ describe("AP-10 private measure views and administrative choices",()=>{
     finish();
     await waitFor(()=>expect(submit).toBeEnabled());
     expect(form).toHaveAttribute("aria-busy","false");
+  });
+});
+
+describe("SET04-MIRA-01 — measure-detail route actor-bound density",()=>{
+  it("preserves compact density only for the matching actor and never records a private ID as last entry",async()=>{
+    const actorId="set04-manager";
+    const staleId="set04-previous-account";
+    updateAdministratorPreferences(actorId,{density:"compact",adminLast:"forum"});
+    updateAdministratorPreferences(staleId,{density:"compact",adminLast:"roles"});
+    const router=createMemoryRouter([{
+      path:"/en/admin/measures/:measureId",
+      element:<AdminMeasureDetail locale="en"
+        measure={{...detail,targetUserId:"target",targetName:"Target",canMutate:true}}
+        access={{...access,actorId}}
+        changeId="change" liftId="lift" reviewIds={[]} feedback={undefined}/>,
+    }],{initialEntries:["/en/admin/measures/"+id]});
+    const localeRuntime=i18n("en");
+    const pageFor=(headerId:string)=><I18nextProvider i18n={localeRuntime}>
+      <HeaderAuthProvider initialUser={{id:headerId,name:headerId}}>
+        <RouterProvider router={router}/>
+      </HeaderAuthProvider>
+    </I18nextProvider>;
+    try {
+      const page=render(pageFor(actorId));
+      await waitFor(()=>expect(page.container.querySelector(".admin-panel"))
+        .toHaveAttribute("data-density","compact"));
+      expect(readAdministratorPreferences(actorId).adminLast).toBe("forum");
+      expect(localStorage.getItem(administratorPreferenceKey(actorId))).not.toContain(id);
+      page.rerender(pageFor(staleId));
+      await waitFor(()=>expect(page.container.querySelector(".admin-panel"))
+        .toHaveAttribute("data-density","comfortable"));
+      expect(readAdministratorPreferences(staleId).density).toBe("compact");
+      expect(readAdministratorPreferences(actorId).adminLast).toBe("forum");
+      expect(readAdministratorPreferences(staleId).adminLast).toBe("roles");
+      page.unmount();
+    } finally {
+      router.dispose();
+      localStorage.removeItem(administratorPreferenceKey(actorId));
+      localStorage.removeItem(administratorPreferenceKey(staleId));
+    }
   });
 });
 

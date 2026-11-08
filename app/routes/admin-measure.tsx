@@ -22,7 +22,7 @@ export async function loader({params,context}:{
     return data({locale:params.locale??"en",measure,
       changeId:crypto.randomUUID(),liftId:crypto.randomUUID(),
       reviewIds:measure.appeals.map(item=>({appealId:item.id,operationId:crypto.randomUUID()})),
-      access:adminAccess(new Set(permissions.effectivePermissions)),
+      access:{...adminAccess(new Set(permissions.effectivePermissions)),actorId},
       maySelectAdministrativeRestrictions:rawUserMeasureAuthorityLevel(actorId,
         rawUserMeasurePermissions(permissions),
         context.get(authorizationOwnerContext)??"")>=2},

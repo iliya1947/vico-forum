@@ -7,7 +7,11 @@ import { sourceFingerprint } from "../localization/fingerprint";
 import { canonicalEnglishCatalog } from "../localization/catalog";
 import { loader, middleware } from "./locale-boundary";
 import { authSessionContext } from "../auth/request-context";
-import { authorizationContext } from "../authorization/request-context";
+import { authorizationContext, authorizationOwnerContext } from "../authorization/request-context";
+import type { PermissionKey } from "../authorization/catalog";
+import { ADMIN_ADMISSION_PERMISSIONS } from "../admin/access";
+import { requireAdminAccess } from "../admin/access.server";
+import { loader as settingsAdministratorLoader } from "./settings-administrator";
 import { AuthorizationUnavailableError } from "../../db/authorization-service";
 import { meta as adminMeta } from "./admin";
 
@@ -166,7 +170,7 @@ describe("locale boundary loader", () => {
     const matches: Parameters<typeof adminMeta>[0]["matches"] = [
       { id: "root", loaderData: undefined, pathname: "/", params: { locale }, meta: [] },
       { id: "routes/locale-boundary", loaderData: snapshot, pathname: `/${locale}`, params: { locale }, meta: [] },
-      { id: "routes/admin", loaderData: { locale, access: { canEnter: true, canReadForum: true, canManageAuthorization: false }, counts: null },
+      { id: "routes/admin", loaderData: { locale, access: { canEnter: true, canReadForum: true, canManageAuthorization: false, actorId: "test-admin" }, counts: null },
         pathname: `/${locale}/admin`, params: { locale }, meta: [] },
     ];
     expect(adminMeta({ matches })).toEqual([{ title }]);
@@ -184,7 +188,7 @@ describe("locale boundary loader", () => {
       request: new Request("https://vico.test/en/"), params: { locale: "en" }, context,
     });
 
-    expect(snapshot.authUser).toEqual({ id: "user-1", image: null, name: "Vico", canManageAuthorization: false, canViewAdminPanel: false, canViewModerationAttention: false });
+    expect(snapshot.authUser).toEqual({ id: "user-1", image: null, name: "Vico", canManageAuthorization: false, canViewAdminPanel: false, canViewModerationAttention: false, adminEntryDestinations: [], attentionEntryGroups: { signals: [], complaints: [], security: [] } });
     expect(snapshot.locale.translationLocale).toBe("en");
     expect(snapshot.activeLocales).toEqual([
       { tag: "en", nativeName: "English", direction: "ltr" },
@@ -200,6 +204,55 @@ describe("locale boundary loader", () => {
       params: { locale: "en" },
       context: localeLoaderContext(failure),
     })).rejects.toBe(failure);
+  });
+});
+
+describe("SET04-LEV-01 Admin admission and Settings entry projection", () => {
+  it.each(ADMIN_ADMISSION_PERMISSIONS)("exposes each authoritative Admin admission grant: %s", async permission => {
+    const context = localeLoaderContext(new AuthorizationUnavailableError());
+    const grants = new Set<PermissionKey>([permission]);
+    const has = vi.fn(async (key: PermissionKey) => grants.has(key));
+    context.set(authorizationContext, { forUser: () => ({ has }) } as never);
+    const admitted = await requireAdminAccess(context);
+    expect(admitted.canEnter).toBe(true);
+    const snapshot = await loader({
+      request: new Request("https://vico.test/en/settings"), params: { locale: "en" }, context,
+    });
+    expect(snapshot.authUser?.canViewAdminPanel).toBe(true);
+    expect(snapshot.authUser?.adminEntryDestinations).toContain("overview");
+    if (permission === "forum.topic.close") {
+      expect(snapshot.authUser?.adminEntryDestinations).toEqual(["overview", "forum"]);
+    }
+    expect(has).toHaveBeenCalledWith(permission);
+  });
+
+  it("allows close-only Administrator preferences, then drops Settings entry on next-request revoke", async () => {
+    const context = localeLoaderContext(new AuthorizationUnavailableError());
+    context.set(authorizationOwnerContext, "some-other-owner");
+    const grants = new Set<PermissionKey>(["forum.topic.close"]);
+    const has = vi.fn(async (key: PermissionKey) => grants.has(key));
+    context.set(authorizationContext, { forUser: () => ({ has }) } as never);
+    const args = {
+      request: new Request("https://vico.test/en/settings"), params: { locale: "en" }, context,
+    };
+    const current = await loader(args);
+    expect(current.authUser).toMatchObject({
+      canViewAdminPanel: true,
+      canViewModerationAttention: false,
+      adminEntryDestinations: ["overview", "forum"],
+    });
+    const settings = await settingsAdministratorLoader({ params: { locale: "en" }, context });
+    expect(settings.data.admin).toEqual(["overview", "forum"]);
+    grants.clear();
+    const revoked = await loader(args);
+    expect(revoked.authUser).toMatchObject({
+      canViewAdminPanel: false,
+      canViewModerationAttention: false,
+      adminEntryDestinations: [],
+    });
+    await expect(settingsAdministratorLoader({ params: { locale: "en" }, context }))
+      .rejects.toMatchObject({ status: 403 });
+    await expect(requireAdminAccess(context)).rejects.toMatchObject({ status: 403 });
   });
 });
 

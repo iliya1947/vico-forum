@@ -7,6 +7,8 @@ import { credentialPagePath, credentialReturnPath, safeForumReturnPath } from ".
 export { safeForumReturnPath } from "./credential-path";
 import { authClientActions, type AuthClientActions } from "./auth-client";
 import { settingsPath } from "../settings/paths";
+import { useAdministratorPreferences, selectAdminEntry } from "../settings/administrator-preferences";
+import type { AdminEntryId, AttentionEntryAccess } from "../settings/workspace-access";
 
 export interface HeaderAuthUser {
   readonly id: string;
@@ -14,6 +16,8 @@ export interface HeaderAuthUser {
   readonly name: string;
   readonly canManageAuthorization?: boolean;
   readonly canViewAdminPanel?: boolean;
+  readonly adminEntryDestinations?: readonly AdminEntryId[];
+  readonly attentionEntryGroups?: AttentionEntryAccess;
   readonly canViewModerationAttention?: boolean;
   readonly unreadNotificationCount?: number;
 }
@@ -56,6 +60,7 @@ export function AuthControls({ locale, actions = authClientActions }: {
   const [pending, setPending] = useState(auth?.initialPresentationState === "pending");
   const [error, setError] = useState(auth?.initialPresentationState === "error");
   const user = auth?.user ?? null;
+  const preferences = useAdministratorPreferences(user?.id ?? null);
 
   const run = async (operation: (handlers: { onSuccess(): void; onError(): void }) => Promise<unknown>) => {
     if (pending) return;
@@ -105,7 +110,9 @@ export function AuthControls({ locale, actions = authClientActions }: {
           </Link>
         ) : null}
         {(user?.canViewAdminPanel ?? user?.canManageAuthorization) ? (
-          <Link className="auth-admin-link" to={`/${encodeURIComponent(locale)}/admin`}>
+          <Link className="auth-admin-link" to={user?.adminEntryDestinations?.length
+            ? selectAdminEntry(locale, user.adminEntryDestinations, preferences)
+            : `/${encodeURIComponent(locale)}/admin`}>
             {t("adminPanelTitle")}
           </Link>
         ) : null}
