@@ -2,20 +2,19 @@
 
 - Service PR: **#251**
 - Current main/base: `76fc5b16be4f2425a0ad1fdcb7b38974db355c56`
-- Current stage: **Settings SET-05 — repeat independent Lev PASS; Mira final readiness routing**
+- Current stage: **Settings SET-05 — READY FOR OWNER MERGE**
 - Approved technical plan: **#251 comment #6711736883**
 - Implementation PR: **#309**, open / Ready / mergeable
-- Reviewed stable exact head: **`236a15c5f3309a5466c70c7a934edf5b56ade433`**
-- Mira fresh coordinator whole-PR review: **PASS**
-- Lev repeat independent whole-PR technical review: **PASS — 0 confirmed current-scope defects**
-- `SET05-LEV-01` independently closed; `SET05-MIRA-01/02` remain closed
-- Review/evidence/handoff: [#6722125480](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6722125480)
-- Exact-head CI #42483839708 and Chromium #42483839769: **SUCCESS**, same SHA
-- **Мира**: final readiness routing to Owner for merge #309
+- Final reviewed exact head: **`236a15c5f3309a5466c70c7a934edf5b56ade433`**
+- Mira fresh coordinator whole-PR review: **PASS — 0 confirmed current-scope defects**
+- Lev repeat independent technical whole-PR review: **PASS — 0 confirmed current-scope defects**
+- `SET05-MIRA-01`, `SET05-MIRA-02`, `SET05-LEV-01`: **closed**
+- Exact-head CI #42483839708: **SUCCESS**
+- Exact-head Chromium #42483839769: **SUCCESS**
 - **Лира**: stopped; implementation frozen
-- **Лёва**: review complete; stopped, implementation unchanged
+- **Лёва**: stopped; repeat review complete
 - **Марк**: unassigned
-- Next: **Mira readiness → Owner merge → separate factual SET-05 docs closeout**
-- Any implementation-head change restarts coordinator-first review.
-- Owner visual acceptance is not an additional SET-05 gate; no visual approval claimed.
-- SET-06 and Stage6/production remain inactive.
+- Next: **Owner merge PR #309**
+- Any implementation-head change before merge restarts coordinator-first review.
+- After merge: separate factual SET-05 documentation closeout; SET-06 remains inactive until that closeout.
+- Stage6/production/live Google/real Owner binding remain inactive/unclaimed.
