@@ -918,3 +918,11 @@ Lira stopped author work; **Mira coordinator whole-PR review is next**. No Codex
 ## SET04-MIRA-01 — bounded correction assigned
 
 PR #307 reviewed head `1a858825836e76801bb63025a28312b4d0bdd082` has one confirmed current-scope defect. The actual `/:locale/admin/measures/:measureId` loader returns `access` without the current authenticated actor ID; `AdminMeasureDetail` passes it to `AdminShell`, whose per-account SET-04 preference guard therefore falls back to defaults. Correct only this actor-bound presentation chain. Required: compact/comfortable density works for the current actor on real measure detail, stale/other account cannot inherit it, and the private measure ID/path is not recorded as `adminLast`. Preserve AP-10 auth/mutation/revalidation/domain semantics. Add targeted regression, rerun applicable exact-head CI/browser, publish new stable head/evidence in #251, then stop for fresh Mira review. No DB/migration/SET-05/06/docs/Stage6 expansion.
+
+## SET04-MIRA-01 — author correction and evidence, stopped
+
+PR #307 corrected from reviewed head `1a858825836e76801bb63025a28312b4d0bdd082` to exact head `5cc5c820b0445ddb57cf3663e7cfb33c059ab108`. Actual Admin measure-detail loader now injects the authenticated actor ID into `AdminAccess` (same pattern as index), so `AdminShell` can consume device-local density for matching header account. Added mounted React regression for matching/stale actor and no private ID in `adminLast`, plus actual Worker/Better Auth/PG17/Chromium AP-10 route scenario. Three-file diff; no changes to measures mutations or revalidation.
+
+Exact-head CI #42458305882 **SUCCESS** (164 files / 2055 tests, both jobs); Chromium #42458305779 **SUCCESS** (all 4 jobs), including explicit case `set04-actor-bound-admin-measure-detail-density-no-private-last-entry`. Ready/mergeable on unchanged main. SET04-MIRA-01 author correction delivered, **not coordinator-verified yet**.
+
+Lira is stopped; next is Mira fresh coordinator whole-PR review. Lev/Mark not assigned, no merge or docs/next-SET work.
