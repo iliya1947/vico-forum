@@ -1492,3 +1492,10 @@ Exact head `11639e79ae67b61062d05bf3f05e32526204a056`: **PASS, 0 confirmed curre
 Exact head `11639e79ae67b61062d05bf3f05e32526204a056`: **READY FOR OWNER MERGE**.
 
 Mira coordinator PASS + Lev independent PASS, both 0 confirmed current-scope defects. SET06-MIRA-01 independently closed. CI #42504491033 and Chromium #42504491099 SUCCESS on the same frozen SHA. PR open/Ready/mergeable. Any implementation change restarts coordinator-first review. After Owner merge, only separate factual SET-06 docs/project-state closeout remains before Settings is fully closed.
+
+
+## SET-06 — implementation merged; docs closeout routed
+
+PR #311 merged at implementation head `11639e79ae67b61062d05bf3f05e32526204a056`; merge/current main `95272b587643efa6844303aed8522c44b136e699`. Final Mira and Lev reviews PASS, SET06-MIRA-01 closed, exact-head CI/Chromium SUCCESS.
+
+Current docs still state SET-06 is pending. Lira is assigned a separate documentation-only closeout over exactly seven files: PROJECT, PROJECT_STATE, ROADMAP, ADMIN_PANEL, SETTINGS, history index and new PROJECT_HISTORY_22. Mira performs the next docs-only review; Lev/Mark are not assigned.
