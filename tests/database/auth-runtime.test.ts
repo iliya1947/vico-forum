@@ -128,14 +128,14 @@ describe("Better Auth PostgreSQL runtime", () => {
 
   it("classifies real registration policy read timeout as 503 and invariant as unexpected, without creating accounts", async () => {
     const runtime = createHyperdriveAuthRuntime(databaseUrl, env, () => authClient());
-    const headers = {
-      "content-type": "application/json",
-      Origin: env.BETTER_AUTH_URL,
-      "cf-connecting-ip": "203.0.113.65",
-    };
+    let nextIp = 65;
     const request = (path: string, email: string) => new Request(`${env.BETTER_AUTH_URL}/api/auth/${path}`, {
       method: "POST",
-      headers,
+      headers: {
+        "content-type": "application/json",
+        Origin: env.BETTER_AUTH_URL,
+        "cf-connecting-ip": `203.0.113.${nextIp++}`,
+      },
       body: JSON.stringify({
         name: "Admission failure regression",
         email,
