@@ -170,7 +170,12 @@ try:
         assert form.locator('input[name="expectedVersion"]').input_value() == "1"
         intents = set(owner.locator('form input[name="intent"]').evaluate_all(
             "(nodes) => nodes.map(node => node.value)"))
-        assert intents == {"createRole", "renameRole", "roleGrants", "deleteRole", "assignRole", "override"}, intents
+        # Custom role rename/delete forms exist only once a custom role is created.
+        required = {"createRole", "roleGrants", "assignRole", "override"}
+        allowed = required | {"renameRole", "deleteRole"}
+        assert required <= intents <= allowed, intents
+        assert all(form.get_attribute("action") == "/en/admin/authorization"
+            for form in owner.locator('form:has(input[name="intent"])').all())
         owner.get_by_role("button", name="Save registration settings").click()
         expect(owner.get_by_role("status")).to_contain_text("Registration settings updated.")
         assert policy()["version"] == 1 and not history()
