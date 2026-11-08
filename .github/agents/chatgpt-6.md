@@ -948,3 +948,11 @@ Implementation PR #307 is merged. Current main `365b75405fbcc2ac2f274f5a83ce8a73
 ## SET-04 factual docs closeout — Draft PR created (subtask 1/2)
 
 After implementation #307 merge into main `365b75405fbcc2ac2f274f5a83ce8a737b60e700`, created separate docs-only Draft PR #308 from current main. Head `9131278240c682650c5a4c1048cdf43be786dd81`. GitHub compare confirms exactly seven assigned docs: PROJECT.md, PROJECT_STATE.md, ROADMAP.md, docs/SETTINGS.md, bounded stale Settings-status correction in docs/ADMIN_PANEL.md, history index, new history #20. Updated SET-04 current state/permanent access/local preference contract, set SET-05 next but unassigned and archived merged #307 correction/review/CI/Chromium snapshot. No runtime/tests/migration/CI workflow edits and no external/production claims. This is **not yet docs review handoff**: subtask 2/2 must verify applicable exact-head checks, mark stable Ready, update #251 and stop for Mira docs review. Lev/Mark not assigned.
+
+## SET-04 factual docs closeout — ready for Mira review
+
+Created docs-only [PR #308](https://github.com/iliya1947/vico-forum/pull/308) on main `365b75405fbcc2ac2f274f5a83ce8a737b60e700` after implementation #307 merged. Exact docs head `9131278240c682650c5a4c1048cdf43be786dd81`, one commit/seven specified docs files, open/Ready/mergeable. Permanent Settings runtime contract reconciled with merged code; project status advanced from SET-04 to next unassigned SET-05, SET-06 pending; new history #20 contains the correction/review/CI/Chromium and merge snapshot. No runtime/schema/workflow/SET-05/Stage6 changes.
+
+Exact-head [CI #42464119238](https://github.com/iliya1947/vico-forum/actions/runs/42464119238) SUCCESS: checks and database, 164/164 application files with 2066/2066 tests, 50/50 database files with 589/589 tests; lint/typecheck/build. No new browser check required/claimed for docs-only. Implementation #307 final Mira+Lev PASS and merged; docs author does not self-certify review.
+
+Lira stopped. Next: Mira docs-only review of PR #308 at `9131278240c682650c5a4c1048cdf43be786dd81`. Owner merge only after Mira approval; Lev/Mark not assigned, SET-05 unassigned.
