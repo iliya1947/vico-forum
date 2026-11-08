@@ -41,7 +41,7 @@ export function AuthorizationAdminView(props: AuthorizationManagementProps) {
 
 /** Reused by Settings; never installs a second role/permission writer. */
 export function AuthorizationManagementContent({
-  permissions, roles, users, canManageElevated = false, canMutateAuthorization, result, inline,
+  access, permissions, roles, users, canManageElevated = false, canMutateAuthorization, result, inline,
 }: AuthorizationManagementProps) {
   const { t } = useTranslation("common");
   const header = useHeaderAuthUser();
