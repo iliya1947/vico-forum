@@ -1290,3 +1290,8 @@ PR #302 exact head `6dbe6a2d912dab6288fbb2fd1e5b554edd4df9ef`: 2 current-scope d
 ## SET-02 corrected head — fresh coordinator PASS
 
 PR #302 exact head `f7a862ea0a81112857e9d7510afdab183a9631a3`: **PASS, 0 confirmed current-scope defects**. SET02-MIRA-01/02 closed. Exact-head CI #42431260134 and browser #42431260118 SUCCESS. Implementation frozen; Lev assigned independent technical review of the same head.
+
+
+## SET02-LEV-01 — independently confirmed
+
+Lev's P2 on PR #302 exact head `f7a862ea0a81112857e9d7510afdab183a9631a3` is a real current-scope defect. Current admission reads policy inside Better Auth validation; AuthRuntime.handle has no preservation/classification path for that direct read. Real PG timeout/missing singleton therefore emerge as ordinary `403 validation_failed`, contrary to approved SET-02 failure semantics. Lira receives one bounded correction; prior SET02-MIRA-01/02 stay closed. Fresh coordinator review required on the next stable head.
