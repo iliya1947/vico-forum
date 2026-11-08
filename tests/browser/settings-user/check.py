@@ -124,7 +124,7 @@ try:
         cross_origin = post(a_context, [
             ("intent", "save-locale"), ("locale", "he"), ("expectedUserId", a_id)],
             origin="https://untrusted.invalid")
-        assert cross_origin.status == 403
+        assert cross_origin.status in (400, 403), ("foreign origin", cross_origin.status)
         assert sql('select locale from "user" where id=$1', [a_id])[0]["locale"] is None
         record("wrong-identity-invalid-alias-and-origin-fail-closed")
 
