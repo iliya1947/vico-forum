@@ -78,9 +78,11 @@ try {
         if child.poll() is None:
             child.stdin.write("release\n")
             child.stdin.flush()
+            child.stdin.close()
             child.wait(timeout=12)
         assert child.returncode == 0, (table, child.returncode, child.stderr.read())
-        child.stdin.close()
+        if not child.stdin.closed:
+            child.stdin.close()
         child.stdout.close()
         child.stderr.close()
 
