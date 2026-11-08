@@ -890,3 +890,8 @@ PR #304 exact head `6c45bb17ea84f1df0bed8a8b8ca4c558ba42edac`: Mira fresh coordi
 ## SET-03 implementation — final readiness
 
 PR #304 exact head `6c45bb17ea84f1df0bed8a8b8ca4c558ba42edac`: final coordinator + repeat independent review both PASS, SET03-LEV-01 closed, exact-head CI/browser SUCCESS. Author remains stopped. Next action is Owner merge; docs closeout follows separately.
+
+
+## Active assignment — SET-03 factual docs closeout
+
+Base/current main `e985a43f8853c234c96bb4528a9d4dd709361018` after merged #304. Create one docs-only PR touching exactly six files: PROJECT.md, PROJECT_STATE.md, ROADMAP.md, docs/SETTINGS.md, docs/PROJECT_HISTORY/PROJECT_HISTORY.md, and new docs/PROJECT_HISTORY/PROJECT_HISTORY_19.md. Reconcile SET-03 as implemented and document its actual permanent Settings contract/history; SET-04–06 remain pending/unassigned. Keep post-merge wording stable. Do not touch docs/EDITOR.md, runtime/tests/migrations/workflows/dependencies or unrelated docs. Run applicable checks, publish PR + stable head/evidence in #251, then stop for Mira docs review.
