@@ -12,10 +12,16 @@ import { hebrewCommonValues, russianCommonValues } from "../localization/manual-
 import { createTranslationRuntime } from "../localization/runtime";
 import SettingsUserRoute, { loader } from "./settings-user";
 
-function commonResources(locale: "en" | "ru" | "he") {
+function commonResources(locale: "en" | "ru" | "he"): Record<string, string> {
   const english = Object.fromEntries(Object.entries(canonicalEnglishCatalog.common)
-    .map(([key, value]) => [key, value.source])) as Record<string, string>;
-  return locale === "ru" ? russianCommonValues : locale === "he" ? hebrewCommonValues : english;
+    .map(([key, value]) => [key, value.source]));
+  const values: Record<string, unknown> =
+    locale === "ru" ? russianCommonValues : locale === "he" ? hebrewCommonValues : english;
+  return Object.fromEntries(Object.entries(values).flatMap(([key, value]) =>
+    typeof value === "string"
+      ? [[key, value]]
+      : Object.entries(value as Record<string, string>)
+        .map(([branch, text]) => [`${key}_${branch}`, text])));
 }
 function runtime(locale: "en" | "ru" | "he") {
   return createTranslationRuntime({
@@ -81,7 +87,7 @@ describe("SET-03 authenticated User preferences and browser theme", () => {
       expect((error as Response).headers.get("Cache-Control")).toBe("private, no-store");
     }
     context.set(authSessionContext, { user: { id: "member" } } as AuthSession);
-    context.set(authorizationOwnerContext, null);
+    context.set(authorizationOwnerContext, undefined);
     const authorized = loader({ params: { locale: "en" }, context });
     expect(authorized.data).toEqual({ locale: "en", canViewForum: false });
     expect(new Headers(authorized.init?.headers).get("Cache-Control")).toBe("private, no-store");
