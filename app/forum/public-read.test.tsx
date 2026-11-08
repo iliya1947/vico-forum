@@ -411,7 +411,7 @@ describe.each([
 ])("public forum read flow ($locale)", ({ locale, direction }) => {
   it("loads and links category → section → topic → posts with the canonical locale", async () => {
     const requestContext = context(locale, direction);
-    const home = await homeLoader({ params: { locale }, context: requestContext });
+    const home = (await homeLoader({ params: { locale }, context: requestContext })).data;
     const categoryData = await categoryLoader({ params: { locale, categoryId: category.id }, context: requestContext });
     const sectionData = await sectionLoader({ params: { locale, sectionId: section.id }, context: requestContext });
     const topicData = await topicLoader({ params: { locale, topicId: topic.id }, context: requestContext });
@@ -510,7 +510,7 @@ describe("optional homepage presence failures", () => {
       ...reader,
       readOnlinePresence: async () => { throw new ForumStorageUnavailableError(); },
     });
-    const data = await homeLoader({ params: { locale: "en" }, context: ctx });
+    const data = (await homeLoader({ params: { locale: "en" }, context: ctx })).data;
     expect(data.categories).toHaveLength(1);
     expect(data.onlinePresence).toBeNull();
     const page = renderRoute(Home, data, "/en", "en", "ltr");
