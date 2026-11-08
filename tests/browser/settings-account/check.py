@@ -155,7 +155,7 @@ try:
         alice.screenshot(path=str(args.output / "account-english-desktop.png"), full_page=True)
         record("real-account-page-with-two-own-sessions-and-secret-free-html")
 
-        document(alice, "/en/users/" + alice_id)
+        document(alice, "/en/users/" + alice_id, private=False)
         expect(alice.get_by_role("link", name="Account & security")).to_have_attribute(
             "href", "/en/settings/account")
         expect(alice.get_by_role("button", name="Connect Google")).to_have_count(0)
