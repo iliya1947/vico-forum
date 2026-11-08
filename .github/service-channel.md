@@ -1545,3 +1545,8 @@ PR #304 exact head `6c45bb17ea84f1df0bed8a8b8ca4c558ba42edac`, base `cb805a074de
 ## SET-03 final readiness — owner merge
 
 PR #304 exact head `6c45bb17ea84f1df0bed8a8b8ca4c558ba42edac`: final coordinator PASS + Lev repeat independent PASS, both with **0 confirmed current-scope defects**. SET03-LEV-01 is closed. CI #42445796066 and browser #42445796063 are SUCCESS; PR is clean/mergeable and #251 still has exactly seven required working files. **Owner merge #304 is now the next action.** After merge, run a separate factual SET-03 docs closeout before assigning SET-04. SET-04–06/Stage6/production remain inactive.
+
+
+## SET-03 implementation merged; factual docs closeout assigned
+
+PR #304 merged into main at `e985a43f8853c234c96bb4528a9d4dd709361018`; runtime SET-03 is closed. Lira is assigned a separate docs-only closeout touching exactly six files: `PROJECT.md`, `PROJECT_STATE.md`, `ROADMAP.md`, `docs/SETTINGS.md`, history index, and new `PROJECT_HISTORY_19.md`. The docs must reflect implemented User preferences (existing browser-wide theme, own account locale, existing per-account/device Editor/code preferences) and stable post-merge status, while SET-04–06 remain pending/unassigned. `docs/EDITOR.md` is intentionally unchanged because SET-03 reused rather than altered its existing preference contract. No Codex review is assigned; Mira reviews the stable docs head. SET-04 does not start before docs merge.
