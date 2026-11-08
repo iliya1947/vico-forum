@@ -66,15 +66,15 @@ export async function loader({ params, context }: {
   }
 }
 
-const adminLabels: Record<AdminEntryId, string> = {
+const adminLabels = {
   overview: "adminOverview", forum: "adminForum", users: "adminUsers",
   measures: "measuresAdmin", roles: "adminRoles", history: "adminHistory",
-};
-const modeLabels: Record<AttentionEntryMode, string> = {
+} as const satisfies Record<AdminEntryId, string>;
+const modeLabels = {
   signals: "attentionModeSignals", complaints: "attentionModeComplaints",
   security: "attentionModeSecurity",
-};
-const groupLabels: Record<AttentionEntryGroup, string> = {
+} as const satisfies Record<AttentionEntryMode, string>;
+const groupLabels = {
   "needs-details": "helpSolutionsFilterNeedsDetails",
   "needs-review": "helpSolutionNeedsReview",
   "solution-outdated": "helpSolutionOutdated",
@@ -82,7 +82,7 @@ const groupLabels: Record<AttentionEntryGroup, string> = {
   mixed: "helpAttentionMixed", group1: "complaintQueueHeading",
   group2: "complaintAppealsHeading", group3: "complaintHistoryHeading",
   attachments: "attentionSecurityAttachments",
-};
+} as const satisfies Record<AttentionEntryGroup, string>;
 
 export default function SettingsAdministratorRoute() {
   const state = useLoaderData<typeof loader>();

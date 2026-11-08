@@ -166,7 +166,7 @@ describe("locale boundary loader", () => {
     const matches: Parameters<typeof adminMeta>[0]["matches"] = [
       { id: "root", loaderData: undefined, pathname: "/", params: { locale }, meta: [] },
       { id: "routes/locale-boundary", loaderData: snapshot, pathname: `/${locale}`, params: { locale }, meta: [] },
-      { id: "routes/admin", loaderData: { locale, access: { canEnter: true, canReadForum: true, canManageAuthorization: false }, counts: null },
+      { id: "routes/admin", loaderData: { locale, access: { canEnter: true, canReadForum: true, canManageAuthorization: false, actorId: "test-admin" }, counts: null },
         pathname: `/${locale}/admin`, params: { locale }, meta: [] },
     ];
     expect(adminMeta({ matches })).toEqual([{ title }]);
