@@ -1839,3 +1839,14 @@ Required factual result:
 - No runtime/code/schema/migration/CI-workflow changes and no broad documentation audit.
 
 After Lira publishes a stable docs PR/head and applicable checks, Mira performs the docs-only review.
+
+
+## SET-05 — Lira factual docs closeout delivered; PR #310 awaits Mira review
+
+- [Docs PR #310](https://github.com/iliya1947/vico-forum/pull/310) created from current `main` merge `2f2969d5b3a7ca7844d674b85448838fc671eaca`. **Open, Ready, mergeable**, stable exact head `182a185e1ed8dc734b45ebd1ba15c4bcf45b4fde`. No code, schema, migrations or CI workflow changed.
+- **Exactly seven assigned docs paths:** `PROJECT.md`, `PROJECT_STATE.md`, `ROADMAP.md`, `docs/SETTINGS.md`, bounded stale Settings text in `docs/ADMIN_PANEL.md`, `docs/PROJECT_HISTORY/PROJECT_HISTORY.md`, new `docs/PROJECT_HISTORY/PROJECT_HISTORY_21.md`.
+- Factual documentation updates: SET-01–SET-05 implemented in repository/local-CI; SET-06 Privacy pending and unassigned. Account & security is authenticated `/:locale/settings/account`; safe linked-provider labels, credential-only current-password change and existing explicit Google linking; own active sessions with current-session protection and server-only tokens, one-other/all-other revoke, Better Auth library freshness, Origin/identity/private/no-store guards. Password changes use installed Better Auth 1.7.7 canonical HTTP handler and share existing database-backed 3/10s change-password rate limit, including 429/retry metadata. No new provider/schema/limiter, Google-only set-password, reset/recovery, unlink/delete, 2FA, SET-06 or Stage6.
+- Historical #21 records implementation [#309](https://github.com/iliya1947/vico-forum/pull/309), SET05-MIRA-01/02 and SET05-LEV-01 corrections, final implementation exact head `236a15c5f3309a5466c70c7a934edf5b56ade433`, merge commit, final Mira and Lev PASS, implementation CI #42483839708 and Chromium #42483839769 evidence. **This is historical implementation evidence**, not a claim of deployed/production/live Google/Owner binding/owner visual acceptance.
+- **Exact docs-head [CI #42487505867](https://github.com/iliya1947/vico-forum/actions/runs/42487505867) SUCCESS**, `checks` and `database`: 165/165 app test files, **2084/2084 tests**, 51/51 PG17 database files, **597/597 tests**, lint/typecheck/build. Docs-only change does not require separate Chromium; no docs-specific browser acceptance claimed.
+- **Лира stopped after author delivery**; this is **not a Mira docs PASS**. Next assigned actor: **Мира**, docs-only whole 7-file diff review on stable exact head `182a185e1ed8dc734b45ebd1ba15c4bcf45b4fde`; Owner merge only after coordinator verdict. Lev/Mark not assigned. SET-06 remains inactive.
+
