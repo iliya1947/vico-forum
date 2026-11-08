@@ -880,3 +880,8 @@ Base/current main `cb805a074de3bfdcd140125ebaa425a76bb6496d`. SET-02 is fully cl
 ## SET03-LEV-01 — correction assigned
 
 PR #304 reviewed head `cc8dfc9722287ec66ade759b0b1c8d69a8062a6c` has one confirmed current-scope P2. The locale form's uncontrolled `defaultValue` allows an unsaved locale choice from account A to remain in the same mounted DOM after session/loader changes to account B, while hidden expectedUserId updates to B; Save then applies A's stale draft to B. Correct only account-scoped locale draft reset/binding so visible selection and expected identity move together on account change. Preserve same-account editing and all existing server/registry/Origin/409 semantics; no auto-submit, auth redesign, schema/migration, SET-04–06, docs or Stage6. Add real same-browser sign-out/sign-in + mounted SPA revalidation acceptance, rerun applicable exact-head CI/browser, publish new stable head/evidence in #251, then stop for Mira review.
+
+
+## SET-03 correction — coordinator result
+
+PR #304 exact head `6c45bb17ea84f1df0bed8a8b8ca4c558ba42edac`: Mira fresh coordinator review **PASS, 0 confirmed current-scope defects**; SET03-LEV-01 closed. Exact-head CI #42445796066 and Chromium #42445796063 SUCCESS. Author remains stopped. Lev repeat independent review is active on the same frozen head.
