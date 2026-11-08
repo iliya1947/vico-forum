@@ -1,22 +1,21 @@
 # Admin panel — current workflow
 
 - Service PR: **#251**
-- Current main/base: `35fa64428fc551ae58b9026dad45797016dd4251`
-- Current stage: **Settings SET-04 — final readiness for Owner merge**
+- Current main/base: `365b75405fbcc2ac2f274f5a83ce8a737b60e700`
+- Current stage: **Settings SET-04 — factual documentation closeout**
 - Approved plan: **#251 comment #6711736883**, SET-04
-- Implementation PR: **#307**, open / Ready / mergeable
-- Frozen exact head: **`27a2169ab013597d63fc318c7a255cdc4149b7cc`**
+- Implementation PR: **#307 merged**
+- Implementation exact head: **`27a2169ab013597d63fc318c7a255cdc4149b7cc`**
+- Merge commit: **`365b75405fbcc2ac2f274f5a83ce8a737b60e700`**
 - SET04-MIRA-01: **closed**
 - SET04-LEV-01: **closed**
-- Coordinator: **Мира — PASS, 0 confirmed current-scope defects**
-- Independent technical reviewer: **Лёва — repeat PASS, 0 confirmed current-scope defects**
-- Exact-head CI #42461288512: **SUCCESS**
-- Exact-head Chromium #42461288533: **SUCCESS**
-- Final readiness: **#251 comment #6719230217**
-- Implementer: **Лира — stopped**
-- Лёва: **stopped**
+- Coordinator implementation review: **Мира PASS**
+- Independent implementation review: **Лёва repeat PASS**
+- Docs implementer: **Лира — assigned factual closeout** (#6719276113)
+- Docs scope: PROJECT.md, PROJECT_STATE.md, ROADMAP.md, docs/SETTINGS.md, bounded stale-status correction in docs/ADMIN_PANEL.md, history index, new PROJECT_HISTORY_20.md
+- Мира: **next reviewer after stable docs PR/head**
+- Лёва: **not assigned**
 - Марк: **not assigned**
-- Next: **Owner merges PR #307**
-- Any implementation-head change before merge restarts coordinator-first review.
-- After merge: separate factual SET-04 documentation closeout before SET-05.
-- SET-05–SET-06 and production/Stage6 remain inactive.
+- Next: **await Lira docs-only PR/head/checks; then Mira reviews**
+- SET-05 is not assigned until SET-04 docs closeout merges.
+- SET-06 and production/Stage6 remain inactive.
