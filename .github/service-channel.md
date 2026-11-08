@@ -2006,3 +2006,13 @@ Required result:
 Publish one stable implementation PR/exact head and applicable exact-head checks/browser evidence in #251, then stop for Mira coordinator whole-PR review.
 
 Lev is stopped after planning. Mark remains unassigned. No SET-06 implementation result is claimed until Lira delivers a stable head.
+
+
+## SET-06 Privacy — Lira implementation slice 1/4 (schema/runtime grant foundation)
+
+- Approved Lev technical plan [#6722989280](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6722989280) and Mira plan PASS; base/current main `c1109dc8c5c499b63dd6e4d2f76bce96fadb2cd5`.
+- Created [Draft implementation PR #311](https://github.com/iliya1947/vico-forum/pull/311) on `chatgpt/settings-set06-privacy`, working head **`0b66123cb8e8dfda10e1e174bb5a550358ca02fc`**. Only the first bounded foundation slice is implemented; **not review-ready**, no new Privacy UI, active save/heartbeat enforcement, or new SET-06 browser acceptance claimed.
+- Added `user_privacy_preferences` table schema with `user_id` primary/FK to Better Auth `user` ON DELETE CASCADE, `show_online boolean NOT NULL DEFAULT true` and `updated_at timestamptz(3) NOT NULL DEFAULT clock_timestamp()`. Forward `0061_user_privacy_preferences` SQL, immutable 0000–0060 preserved; Drizzle snapshot/journal and full catalog manifest target updated.
+- Shared runtime ACL matrix now allows web SELECT/INSERT/UPDATE on preference and DELETE on existing presence for upcoming OFF cleanup, with no additional localization-read grants, functions, roles or schema provisioning path. Added privilege-negative test and clean PG17 preference default/write/FK-cascade regression; migrated ledger count now 62.
+- **Exact current head [CI #42494398945](https://github.com/iliya1947/vico-forum/actions/runs/42494398945) SUCCESS:** lint/typecheck/build, 165/165 app files (2084 tests), 51/51 PG17 database files (598 tests), migration/catalog/privilege/provisioning/smoke. **Existing [Chromium #42494398926](https://github.com/iliya1947/vico-forum/actions/runs/42494398926) SUCCESS** in all 4 browser jobs. These are slice-1 foundation results, not end-to-end Privacy acceptance.
+- **Lira stops after slice 1** per decomposition. Next developer `...` continues slice 2: self-service privacy repository/context and authoritative OFF↔heartbeat SQL concurrency behavior, SQL-filtered public list/count and native PG coverage. No Mira implementation review before all slices and stable head; Lev/Mark not assigned.

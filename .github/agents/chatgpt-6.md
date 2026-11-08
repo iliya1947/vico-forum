@@ -1048,3 +1048,11 @@ Publish a new stable docs head and applicable checks in #251, then stop. Mira pe
 - Corrective commit/head **`d9134f8f3c57814aa910a272f2a9dc4c118fccb3`** on [PR #310](https://github.com/iliya1947/vico-forum/pull/310), open/Ready/mergeable, unchanged main/base `2f2969d5b3a7ca7844d674b85448838fc671eaca`; PR remains exactly seven Markdown files, correction one file. No runtime/code/schema/CI workflow/SET-06 change.
 - New [CI #42489445378](https://github.com/iliya1947/vico-forum/actions/runs/42489445378) **SUCCESS**: app 2084/2084, PG17 597/597, lint/typecheck/build. No new browser needed or claimed for wording-only docs change.
 - **Лира stops, awaits Mira fresh docs-only review**. Coordinator verdict on new head not yet issued; Owner merge not requested; Lev/Mark not assigned.
+
+
+## SET-06 / Draft PR #311 — slice 1/4 schema foundation completed (2026-11-08)
+
+- Source-of-truth and approved Lev plan inspected on main `c1109dc8c5c499b63dd6e4d2f76bce96fadb2cd5`. Migration number 0061 confirmed free. Draft PR #311 opened for bounded SET-06 implementation.
+- Working commit `0b66123cb8e8dfda10e1e174bb5a550358ca02fc`: 8 files only. New forward Drizzle migration/sql/snapshot/journal, app user privacy schema, full-schema manifest updated using corresponding known PostgreSQL17 hashed defaults, web runtime privilege contract and tests, native PG migration/default/FK/cascade test. No runtime privacy enforcement/UI yet; no production resources touched.
+- [CI #42494398945](https://github.com/iliya1947/vico-forum/actions/runs/42494398945) **SUCCESS**: app 2084, DB 598, lint/typecheck/build, manifest/grants; [existing Chromium #42494398926](https://github.com/iliya1947/vico-forum/actions/runs/42494398926) **SUCCESS**, four prior acceptance jobs. These do not validate SET-06 final behavior.
+- **Slice 1/4 stopped.** Next: slice 2 authoritative read/save transaction and presence/heartbeat concurrency enforcement with native PG tests. PR remains Draft and head is not frozen for coordinator review. No role/review orchestration by Lira.
