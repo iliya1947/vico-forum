@@ -3,6 +3,7 @@ import { authSessionForRequest } from "../auth/request-context";
 import { requireSameOrigin } from "../forum/mutations.server";
 import { forumWriterForRequest } from "../forum/request-context";
 import { ForumStorageUnavailableError } from "../../db/hyperdrive-forum";
+import { UserPrivacyAccountMissingError } from "../../db/user-privacy";
 
 export function loader() {
   throw new Response("Not Found", { status: 404 });
@@ -23,6 +24,7 @@ export async function action({ request, context }: { request: Request; context: 
     await forumWriterForRequest(context).recordOnlinePresence(session.user.id);
     return new Response(null, { status: 204, headers: { "Cache-Control": "no-store" } });
   } catch (error) {
+    if (error instanceof UserPrivacyAccountMissingError) throw new Response("Conflict", { status: 409, headers: { "Cache-Control": "no-store" } });
     if (error instanceof ForumStorageUnavailableError) throw new Response("Unavailable", { status: 503 });
     throw error;
   }

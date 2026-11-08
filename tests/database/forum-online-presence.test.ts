@@ -3,6 +3,7 @@ import { drizzle } from "drizzle-orm/node-postgres";
 import { Client } from "pg";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { DrizzleForumRepository } from "../../db/forum-repository";
+import { UserPrivacyAccountMissingError } from "../../db/user-privacy";
 
 const databaseUrl = process.env.DATABASE_URL;
 if (!databaseUrl) throw new Error("DATABASE_URL is required");
@@ -22,6 +23,7 @@ const migrations = [
   "0027_help_solutions_foundation", "0028_help_solution_moderation",
   "0029_help_question_needs_details", "0030_help_duplicate_workflow",
   "0031_help_user_moderation_signals", "0032_forum_profiles", "0033_forum_online_presence",
+  "0061_user_privacy_preferences",
 ];
 
 beforeAll(async () => {
@@ -60,7 +62,7 @@ describe("recent authenticated presence persistence", () => {
     expect(result.members).toHaveLength(2);
     expect(result.members.map((x) => x.id).sort()).toEqual(["online-a", "online-b"]);
     expect(JSON.stringify(result)).not.toContain("private.test");
-    await expect(repo.recordOnlinePresence("nonexistent-user")).rejects.toMatchObject({ cause: { code: "23503" } });
+    await expect(repo.recordOnlinePresence("nonexistent-user")).rejects.toBeInstanceOf(UserPrivacyAccountMissingError);
   });
   it("returns the full count with only the first twelve members from one query", async () => {
     for (let i = 0; i < 12; i++) {

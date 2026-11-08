@@ -4,6 +4,7 @@ import { authSessionContext, type AuthSession } from "../auth/request-context";
 import { forumWriterContext } from "../forum/request-context";
 import { ForumStorageUnavailableError, type ForumWriter } from "../../db/hyperdrive-forum";
 import { action, loader } from "./presence";
+import { UserPrivacyAccountMissingError } from "../../db/user-privacy";
 
 function setup(userId: string | null = "owner") {
   const context = new RouterContextProvider();
@@ -52,6 +53,11 @@ describe("authenticated online presence heartbeat", () => {
     await expect(action({ request: ping("https://forum.test", "", "PUT"), context: env.context })).rejects.toMatchObject({ status: 405 });
     expect(env.recordOnlinePresence).not.toHaveBeenCalled();
     expect(() => loader()).toThrow();
+  });
+  it("maps a deleted session account to a stale-identity conflict", async () => {
+    const env = setup();
+    env.recordOnlinePresence.mockRejectedValueOnce(new UserPrivacyAccountMissingError("stale"));
+    await expect(action({ request: ping(), context: env.context })).rejects.toMatchObject({ status: 409 });
   });
   it("classifies storage outages but preserves unexpected defects", async () => {
     const env = setup();
