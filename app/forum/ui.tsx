@@ -1,65 +1,17 @@
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import type { ReactNode } from "react";
 import { Link, isRouteErrorResponse, useLocation, useNavigate, useParams, useRouteError } from "react-router";
 import { useTranslation } from "react-i18next";
 import { forumAttentionPath, forumIndexPath, forumNotificationsPath, forumPopularPath, forumSearchPath, forumTagsPath, forumUnansweredPath, forumUnreadPath, underDevelopmentPath } from "./paths";
 import { AuthControls, useHeaderAuthUser } from "../auth/auth-controls";
-import { DARK_THEME_QUERY, THEME_STORAGE_KEY, type Theme } from "../theme";
+import { useThemePreference } from "../theme-preference";
 import { useLocaleNavigation } from "../localization/locale-navigation";
 import { credentialLocaleSearch } from "../auth/credential-path";
 import vicoForumLogoLight from "../assets/vico-forum-logo-light.webp";
 import vicoForumLogoDark from "../assets/vico-forum-logo-dark.webp";
 
-function readStoredTheme(): Theme | null {
-  try {
-    const stored = window.localStorage.getItem(THEME_STORAGE_KEY);
-    return stored === "light" || stored === "dark" ? stored : null;
-  } catch {
-    return null;
-  }
-}
-
-function applyTheme(theme: Theme) {
-  document.documentElement.dataset.theme = theme;
-}
-
 export function ThemeToggle() {
   const { t } = useTranslation("common");
-  const [theme, setTheme] = useState<Theme | null>(null);
-  const manualOverride = useRef(false);
-
-  useEffect(() => {
-    const media = window.matchMedia?.(DARK_THEME_QUERY);
-    const stored = readStoredTheme();
-    manualOverride.current = stored !== null;
-
-    const initialTheme = stored ?? (media?.matches ? "dark" : "light");
-    applyTheme(initialTheme);
-    setTheme(initialTheme);
-
-    if (!media) return undefined;
-    const handleSystemTheme = (event: MediaQueryListEvent) => {
-      if (manualOverride.current) return;
-      const nextTheme = event.matches ? "dark" : "light";
-      applyTheme(nextTheme);
-      setTheme(nextTheme);
-    };
-    media.addEventListener("change", handleSystemTheme);
-    return () => media.removeEventListener("change", handleSystemTheme);
-  }, []);
-
-  const toggleTheme = () => {
-    if (!theme) return;
-    const nextTheme = theme === "dark" ? "light" : "dark";
-    manualOverride.current = true;
-    try {
-      window.localStorage.setItem(THEME_STORAGE_KEY, nextTheme);
-    } catch {
-      // The current-session choice still applies when storage is unavailable.
-    }
-    applyTheme(nextTheme);
-    setTheme(nextTheme);
-  };
-
+  const { theme, setPreference } = useThemePreference();
   const targetTheme = theme === "dark" ? "light" : "dark";
 
   return (
@@ -67,7 +19,7 @@ export function ThemeToggle() {
       className="theme-toggle"
       type="button"
       disabled={!theme}
-      onClick={toggleTheme}
+      onClick={() => { if (theme) setPreference(targetTheme); }}
       aria-label={theme
         ? t(targetTheme === "dark" ? "switchToDarkTheme" : "switchToLightTheme")
         : t("themeLabel")}
@@ -77,7 +29,6 @@ export function ThemeToggle() {
     </button>
   );
 }
-
 
 function GlobeIcon() {
   return (

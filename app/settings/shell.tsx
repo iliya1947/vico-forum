@@ -2,14 +2,7 @@ import type { ReactNode } from "react";
 import { Link } from "react-router";
 import { useTranslation } from "react-i18next";
 import { Breadcrumbs, ForumShell } from "../forum/ui";
-import { settingsForumPath, settingsPath } from "./paths";
-
-const futureSections = [
-  "settingsAdministrator",
-  "settingsUser",
-  "settingsAccount",
-  "settingsPrivacy",
-] as const;
+import { settingsForumPath, settingsPath, settingsUserPath } from "./paths";
 
 /** A shared Settings shell inside ForumShell, never another AdminShell. */
 export function SettingsShell({
@@ -17,7 +10,7 @@ export function SettingsShell({
 }: {
   locale: string;
   canViewForum: boolean;
-  current?: "forum";
+  current?: "forum" | "user";
   children: ReactNode;
 }) {
   const { t } = useTranslation("common");
@@ -26,6 +19,7 @@ export function SettingsShell({
       <Breadcrumbs locale={locale} items={[
         { label: t("adminSettings"), ...(current ? { to: settingsPath(locale) } : {}) },
         ...(current === "forum" ? [{ label: t("settingsForumRoles") }] : []),
+        ...(current === "user" ? [{ label: t("settingsUser") }] : []),
       ]} />
       <header className="admin-panel-heading">
         <h1>{t("adminSettings")}</h1>
@@ -34,10 +28,18 @@ export function SettingsShell({
         {canViewForum ? <Link to={settingsForumPath(locale)} aria-current={current === "forum" ? "page" : undefined}>
           {t("settingsForumRoles")}
         </Link> : null}
-        {futureSections.map(key => <span className="settings-panel-pending-item" key={key}>
-          <span>{t(key)}</span>
+        <span className="settings-panel-pending-item">
+          <span>{t("settingsAdministrator")}</span>
           <span className="admin-panel-pending">{t("adminInDevelopment")}</span>
-        </span>)}
+        </span>
+        <Link to={settingsUserPath(locale)} aria-current={current === "user" ? "page" : undefined}>
+          {t("settingsUser")}
+        </Link>
+        {(["settingsAccount", "settingsPrivacy"] as const).map(key =>
+          <span className="settings-panel-pending-item" key={key}>
+            <span>{t(key)}</span>
+            <span className="admin-panel-pending">{t("adminInDevelopment")}</span>
+          </span>)}
       </nav>
       {children}
     </div>
