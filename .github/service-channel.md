@@ -2,6 +2,14 @@
 
 Служебный PR: #251. Оперативное состояние: [workflow.md](./workflow.md). Общий контракт: [ADMIN_PANEL_IMPLEMENTATION_PLAN.md](../ADMIN_PANEL_IMPLEMENTATION_PLAN.md).
 
+## SET-05 — серверная подзадача 2/4 завершена; реализация продолжается
+
+- Implementation [Draft PR #309](https://github.com/iliya1947/vico-forum/pull/309) from unchanged main `76fc5b16be4f2425a0ad1fdcb7b38974db355c56`; exact current non-frozen head `75af57038a72ed8b5b46e039f653d92e52dac96f`. Изменены только `app/auth/request-context.ts`, `app/auth/auth.server.ts`, новый `tests/database/account-security.test.ts`.
+- Request-local `AuthRuntime.security`: allowlisted password/Google linked-method summary, credential password presence from current user's DB account, active sessions with session ID/current marker/time/sanitized agent only, existing-credential password change, revoke one other by scoped ID→server-only token, revoke all other sessions. Identity checked against current authenticated session before every operation; Better Auth 1.7.7 list-sessions freshness retained. No second linking provider/session writer and no schema/migration.
+- Native disposable PG17 test `account-security.test.ts`: **7/7 PASS** on same code; covers own vs foreign sessions, current protection, one/all others, wrong/correct credential password and old/new login, Google-only no-set-password, not-fresh/expired sessions and secret-free DTO. Existing synthetic OAuth linking boundary not changed.
+- Exact-head [CI #42466741533](https://github.com/iliya1947/vico-forum/actions/runs/42466741533) **SUCCESS**: `checks` (lint/typecheck/build, **164/164 application test files; 2066/2066 tests**) + `database` (**51/51 PG test files**, including new 7). Previous lint-only failure on superseded head `5d442e07` was fixed locally by replacing control-character regex; unrelated existing warning untouched.
+- Current limit: no registered `/:locale/settings/account` route or UI, no Profile link migration, no browser verification; Draft PR is **not** ready for whole-PR review. Next when developer continues: Лира subtask 3/4 route/UI; subtask 4/4 real integration/browser acceptance. Mira coordinator review after finished stable implementation; Lev/Mark unassigned. Permanent docs post-merge separately; SET-06 and Stage6 inactive.
+
 ## Актуальный baseline и назначение
 
 - Current main: `76fc5b16be4f2425a0ad1fdcb7b38974db355c56`; docs-only PR #308 merged. **SET-04 fully closed**.
