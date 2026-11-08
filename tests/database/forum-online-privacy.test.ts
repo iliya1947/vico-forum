@@ -112,7 +112,8 @@ describe("SET-06 authoritative public visibility", () => {
     await owner.query(`update forum_online_presence set last_seen_at=now() - interval '6 minutes'
       where user_id='privacy-a'`);
     expect((await ownerForum.readOnlinePresence()).count).toBe(13);
-    await owner.query("update user_privacy_preferences set show_online=false where user_id like 'privacy-member-%'");
+    for (let i = 0; i < 15; i++) await ownerPrivacy.save(`privacy-member-${i}`, false);
+    await ownerPrivacy.save("privacy-a", false);
     expect(await ownerForum.readOnlinePresence()).toEqual({ count: 0, members: [] });
   });
 
