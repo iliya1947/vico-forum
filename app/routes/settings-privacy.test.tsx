@@ -17,8 +17,8 @@ import routes from "../routes";
 import SettingsPrivacyRoute, { action, headers, loader } from "./settings-privacy";
 
 const privacy = {
-  read: vi.fn(async (_actorId: string) => true),
-  save: vi.fn(async (_actorId: string, _showOnline: boolean) => undefined),
+  read: vi.fn(async () => true),
+  save: vi.fn(async () => undefined),
 };
 function environment(actorId: string | null = "member-a") {
   const context = new RouterContextProvider();
