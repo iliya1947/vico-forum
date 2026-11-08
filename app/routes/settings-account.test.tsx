@@ -23,7 +23,7 @@ const session = {
 const snapshot = {
   linkedMethods: ["password"] as ("password" | "google")[],
   hasPassword: true,
-  sessionAccess: "ready" as const,
+  sessionAccess: "ready" as "ready" | "not-fresh",
   sessions: [
     { id: "current-session", current: true, createdAt: "2026-11-08T08:00:00.000Z",
       expiresAt: "2026-11-15T08:00:00.000Z", deviceLabel: "Current browser" },

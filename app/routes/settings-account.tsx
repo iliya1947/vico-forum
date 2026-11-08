@@ -1,5 +1,6 @@
 import { data, Form, useActionData, useLoaderData, useNavigation, type RouterContextProvider } from "react-router";
 import { useTranslation } from "react-i18next";
+import type { UiKey } from "../localization/catalog";
 import { GoogleAccountLink } from "../auth/google-account-link";
 import {
   AccountSecurityError,
@@ -119,7 +120,7 @@ export async function action({ request, context }: Args) {
   }
 }
 
-const errorKeys: Record<ActionError, string> = {
+const errorKeys: Record<ActionError, UiKey<"common">> = {
   invalid: "settingsSecurityInvalid",
   origin: "settingsLocaleForbidden",
   unauthenticated: "settingsSecurityUnauthenticated",
