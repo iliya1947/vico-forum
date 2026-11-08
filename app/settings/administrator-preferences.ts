@@ -29,7 +29,7 @@ export const DEFAULT_ADMINISTRATOR_PREFERENCES: AdministratorPreferences = Objec
   adminEntry: "overview",
   lastAdmin: null,
   attentionEntry: "default",
-  defaultAttention: { mode: "signals", group: "needs-details" },
+  defaultAttention: { mode: "signals", group: "needs-details" } as const,
   lastAttention: null,
   density: "comfortable",
   detailsExpanded: false,

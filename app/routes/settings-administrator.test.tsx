@@ -112,8 +112,8 @@ describe("SET-04 preferences controls (local-only)", () => {
     </I18nextProvider>);
     await screen.findByRole("heading", { name: locale === "ru" ? "Настройки администратора"
       : locale === "he" ? "העדפות מנהל" : "Administrator preferences", level: 2 });
-    const entry = page.container.querySelector<HTMLSelectElement>("#settings-admin-entry")!;
-    const density = page.container.querySelector<HTMLSelectElement>("#settings-admin-density")!;
+    const entry = page.container.querySelector("#settings-admin-entry")!;
+    const density = page.container.querySelector("#settings-admin-density")!;
     await waitFor(() => expect(entry).toHaveValue("overview"));
     await userEvent.selectOptions(entry, "users");
     await userEvent.selectOptions(density, "compact");
