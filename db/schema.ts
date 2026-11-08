@@ -543,6 +543,13 @@ export const forumOnlinePresence = pgTable("forum_online_presence", {
   index("forum_online_presence_seen_at_idx").on(table.lastSeenAt),
 ]);
 
+// SET-06: account-wide public online visibility is independent of recent presence.
+export const userPrivacyPreferences = pgTable("user_privacy_preferences", {
+  userId: text("user_id").primaryKey().references(() => user.id, { onDelete: "cascade" }),
+  showOnline: boolean("show_online").notNull().default(true),
+  updatedAt: timestamp("updated_at", { withTimezone: true, precision: 3 }).notNull().default(sql`clock_timestamp()`),
+});
+
 export const session = pgTable(
   "session",
   {
