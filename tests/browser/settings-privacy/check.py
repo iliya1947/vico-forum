@@ -183,7 +183,12 @@ try:
 
         foreign = privacy_post(alice_ctx, alice_id, False, origin="https://foreign.invalid")
         assert foreign.status in (400, 403), (foreign.status, foreign.text()[:200])
-        headers_no_store(foreign, True)
+        # React Router may reject a foreign Origin before invoking our action:
+        # its generic 400 has Vary: Origin but no route-owned Cache-Control.
+        if foreign.status == 403:
+            headers_no_store(foreign, True)
+        else:
+            assert foreign.headers.get("vary", "").lower() == "origin", foreign.headers
         stale = privacy_post(alice_ctx, bob_id, False)
         assert stale.status == 409, (stale.status, stale.text()[:200])
         headers_no_store(stale, True)
