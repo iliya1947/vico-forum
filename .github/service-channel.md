@@ -33,15 +33,17 @@
 ## Актуальный baseline и назначение
 
 - Current main/base: `76fc5b16be4f2425a0ad1fdcb7b38974db355c56`.
-- SET-05 implementation PR #309 remains open on reviewed exact head `a4af2014eb28a39d54d10c33cc515cbf3d5f258e`.
-- Lev independent whole-PR review: **CHANGES REQUIRED — SET05-LEV-01/P2**.
-- Mira independently confirmed the finding as **current-scope** against the installed Better Auth 1.7.7 source and current Vico implementation.
-- Better Auth 1.7.7 applies the default `/change-password` special rule (**3 requests / 10 seconds**) in HTTP router `onRequestRateLimit`; direct `auth.api.*` dispatch executes endpoint/hooks but not router `onRequest`.
-- Current SET-05 `security.changePassword` uses direct `auth.api.changePassword`, so the new authenticated Settings POST loses the already-active database-backed password-change limiter. This is a regression of the current SET-05 password-change path, not future hardening.
-- SET05-MIRA-01 and SET05-MIRA-02 remain closed; Lev found no other confirmed current-scope defects.
-- **Next — Lira:** one bounded correction restoring the existing Better Auth password-change admission semantics for the Settings path, including the shared canonical rate-limit bucket and real regression coverage; do not introduce a second limiter/schema/auth redesign.
-- New implementation head requires fresh coordinator-first review, then Lev repeat independent review.
-- Owner merge #309 not ready. Mark unassigned. SET-06 and Stage6/production inactive.
+- SET-05 implementation PR #309 is open/Ready/mergeable on stable exact head `236a15c5f3309a5466c70c7a934edf5b56ade433`.
+- Mira fresh coordinator whole-PR review: **PASS, 0 confirmed current-scope defects**.
+- `SET05-LEV-01` closed: Settings password change now routes through canonical Better Auth `/api/auth/change-password` HTTP handler, so the existing database-backed 3/10s per-IP limiter is shared with the ordinary auth endpoint.
+- Cross-path regression is bidirectional: canonical→Settings and Settings→canonical exhaust the same bucket; 429 preserves retry timing/private-no-store; a separate trusted IP remains independent; denied attempts do not change the password.
+- React Router action headers are explicitly propagated by the route `headers` export; official current framework guidance confirms action/loader headers are not sent automatically.
+- Correction delta from prior reviewed head `a4af2014...`: two commits / nine paths. The remaining eleven current PR files are byte-identical to the previous whole-PR reviewed head.
+- Previous `SET05-MIRA-01` freshness correction and `SET05-MIRA-02` existing-harness integration remain closed.
+- Exact-head CI #42483839708 SUCCESS: 165/165 application files, 2084/2084 tests; 51/51 native PostgreSQL files, 597/597 tests; lint/typecheck/build.
+- Exact-head Chromium #42483839769 SUCCESS: all four jobs; `settings_browser` logs all 13 SET-05 acceptance groups, including shared rate-limit/retry/IP isolation.
+- **Next — Lev repeat independent technical whole-PR review of this same exact head.** Lira stopped; Mark unassigned.
+- No Owner merge until Lev PASS. Permanent docs after implementation merge. SET-06 and Stage6/production inactive.
 
 ## Handoff — Лира: Stage2 factual documentation closeout
 
@@ -1765,3 +1767,22 @@ After Lira stops on the new stable head, Mira performs a fresh whole-PR review. 
 - Corrective commits: initial `871513b38b3f3a1ee9e3227f17d5eac2fd334f55` introduced canonical HTTP admission but its real browser 429 document response dropped `X-Retry-After` due existing static Account `headers()` export; final `236a15c5f3309a5466c70c7a934edf5b56ade433` adds explicit route actionHeaders forwarding and regression. First head native DB and CI GREEN but `settings_browser` failed at missing retry header; final same-head CI and Chromium both GREEN. No premature claims for failed head.
 - **Next:** Mira performs fresh coordinator whole-PR review on `236a15c5f3309a5466c70c7a934edf5b56ade433` and independently determines whether SET05-LEV-01 is closed; only after coordinator PASS does Lev repeat independent technical review on unchanged exact head. Лира stops; Mark unassigned. Owner merge not requested; permanent docs separate after merge.
 
+
+## SET-05 / PR #309 — fresh Mira coordinator PASS after SET05-LEV-01
+
+Fresh whole-PR review completed on exact head `236a15c5f3309a5466c70c7a934edf5b56ade433`, base/current main `76fc5b16be4f2425a0ad1fdcb7b38974db355c56`.
+
+**Verdict: PASS — 0 confirmed current-scope defects.**
+
+- SET05-LEV-01 closed. The BFF no longer calls direct `auth.api.changePassword`; after authoritative identity/credential checks it invokes the existing Better Auth HTTP handler on canonical `/api/auth/change-password`, forwarding only the needed trusted request headers and `revokeOtherSessions:false`.
+- Better Auth's existing database-backed password-change limiter is therefore the single admission path. Native PG regression proves canonical→Settings and Settings→canonical share the same 3/10s bucket; another trusted IP remains independent and denied attempts do not mutate the password.
+- 429 is classified as `rate-limited`; sanitized retry timing is propagated with private/no-store semantics. The route `headers` export preserves the action retry headers on document responses; current React Router guidance confirms this explicit propagation is required.
+- Real built Worker + Better Auth + PG17 + Chromium confirms 429/retry headers, no credential reflection, separate-IP success, and all prior SET-05 scenarios.
+- Correction delta from `a4af2014...` is two commits / nine files. The remaining eleven PR files are byte-identical to the previous reviewed head; all whole-scope boundaries were rechecked.
+- SET05-MIRA-01 remains closed: stale single/all-other session revoke is fresh-gated.
+- SET05-MIRA-02 remains closed: SET-05 browser acceptance remains inside the existing Settings browser workflow, with no standalone workflow.
+- Rechecked credential-only password change, Google-only no-set-password, safe linked methods/session DTO, server-only session tokens, current/foreign session isolation, Origin/stale-identity guards, Account/Profile/Settings integration, Set-Cookie path, EN/RU/HE/RTL/mobile and no schema/provider/RBAC/SET-06/Stage6 expansion.
+- Exact-head CI #42483839708 SUCCESS; exact-head Chromium #42483839769 SUCCESS across all four jobs, with 13 SET-05 acceptance records.
+- PR remains open/Ready/mergeable and main unchanged.
+
+Implementation is frozen. Lev is assigned repeat independent whole-PR technical review of this exact head. Mark remains unassigned. Owner merge waits for independent PASS.
