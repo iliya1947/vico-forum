@@ -1,21 +1,16 @@
 # Admin panel — current workflow
 
 - Service PR: **#251**
-- Current main/base: `681e8bab0eda595186acebae9ce4b2d47d06b936`
-- Current stage: **Settings SET-02 — final readiness / owner merge**
-- Approved technical plan: #251 comment **#6711736883**, SET-02
-- Implementation PR: **#302**, open / Ready for review / clean / mergeable / unmerged
-- Frozen final exact head: `07d805d98ee77f9584f9609772ce2d33b9a8e63f`
-- Implementer: **Лира — complete / stopped**
-- Coordinator: **Мира — PASS, 0 confirmed current-scope defects**
-- Independent technical reviewer: **Лёва — repeat PASS, 0 confirmed current-scope defects**
-- Independent report: **#6715843589**
-- SET02-MIRA-01/02 and SET02-LEV-01: **closed**
-- Exact-head CI #42434044474: **SUCCESS**
-- Exact-head browser #42434044476: **SUCCESS**
-- Service PR compliance: **exactly 7 required working files**
+- Current main: `a86cea918a3f2665399e861d8e01ece8a1d80104`
+- Current stage: **Settings SET-02 — factual documentation closeout**
+- SET-02 implementation PR: **#302 — merged**
+- Final implementation exact head: `07d805d98ee77f9584f9609772ce2d33b9a8e63f`
+- Merge commit: `a86cea918a3f2665399e861d8e01ece8a1d80104`
+- Implementation reviews: **Mira PASS + Lev repeat PASS, 0 current-scope defects**
+- Documentation implementer: **Лира — assigned**
+- Documentation scope: **exactly 7 docs files**, including new `docs/SETTINGS.md` and `PROJECT_HISTORY_18.md`
+- Лёва: **not assigned**
 - Марк: **not assigned**
-- Next: **Owner merges PR #302**
-- Any implementation-head change requires a new coordinator-first cycle.
-- After observed merge: **separate factual docs closeout SET-02**, then continue approved Settings sequence.
-- SET-03–SET-06, production/Stage6, live Google/Owner binding remain inactive.
+- Next: **await Lira docs-only PR stable-head handoff; then Mira docs review**
+- SET-03–SET-06 remain unassigned until SET-02 factual closeout is merged.
+- Production/Stage6/live Google/real Owner binding remain inactive.
