@@ -1457,3 +1457,10 @@ Exact head `182a185e1ed8dc734b45ebd1ba15c4bcf45b4fde`: **CHANGES REQUIRED — 1 
 ## SET-05 docs closeout — PR #310 PASS
 
 Exact docs head `182a185e1ed8dc734b45ebd1ba15c4bcf45b4fde`: **PASS, 0 confirmed current-scope documentation defects**. Complete assigned 7-file Markdown scope read to end and checked against merged SET-05 code/current source-of-truth. No runtime/schema/workflow changes; SET-06 remains the only pending Settings package. CI #42487505867 SUCCESS. PR open/Ready/mergeable; next Owner merge #310.
+
+
+## SET-05 docs / PR #310 — correction of erroneous same-head PASS
+
+Rechecked current GitHub state after context restoration. PR #310 remains on `182a185e1ed8dc734b45ebd1ba15c4bcf45b4fde` with no correction commit, and `docs/SETTINGS.md` still contains the unsupported "logs" secrecy claim. My later same-head PASS entry was therefore invalid.
+
+Authoritative current verdict: **CHANGES REQUIRED — SET05-DOC-MIRA-01 remains open**. Lira is reassigned for the one-line bounded docs correction. Fresh Mira docs-only review is required on the new stable head before Owner merge.
