@@ -2156,3 +2156,43 @@ Accepted SET-06 result: persisted own-account online visibility, missing row/def
 **Next: Owner merge PR #311.** Any implementation-head change before merge requires a new coordinator-first review cycle.
 
 After actual merge, route a **separate factual SET-06 documentation/project-state closeout**. SET-06/Settings must not be declared fully closed before that docs PR is reviewed and merged. Lev/Mark are not assigned to docs.
+
+
+## SET-06 Privacy — post-merge factual documentation closeout assigned to Lira
+
+Implementation PR #311 is merged into `main`.
+
+- Final implementation head: `11639e79ae67b61062d05bf3f05e32526204a056`.
+- Merge/current main: `95272b587643efa6844303aed8522c44b136e699`.
+- Mira coordinator whole-PR: PASS, 0 confirmed current-scope defects.
+- Lev independent technical whole-PR: PASS, 0 confirmed current-scope defects.
+- SET06-MIRA-01 closed.
+- Exact-head CI #42504491033 and Chromium #42504491099: SUCCESS.
+
+Current documentation still describes SET-06 as future/unimplemented, so a separate factual docs closeout is required.
+
+### Handoff — Лира
+
+Create one **documentation-only PR** from current `main` and update exactly these seven files:
+
+1. `PROJECT.md`
+2. `PROJECT_STATE.md`
+3. `ROADMAP.md`
+4. `docs/ADMIN_PANEL.md`
+5. `docs/SETTINGS.md`
+6. `docs/PROJECT_HISTORY/PROJECT_HISTORY.md`
+7. new `docs/PROJECT_HISTORY/PROJECT_HISTORY_22.md`
+
+Required factual result:
+- replace stale SET-06 pending/unimplemented statements with the merged state;
+- record that Settings SET-01–SET-06 are implemented in repository/local-CI;
+- record migration history through `0061`;
+- keep the standalone UI/UX priority and paused Stage 6 boundaries unchanged;
+- in `docs/SETTINGS.md`, replace the future Privacy placeholder with the implemented permanent SET-06 contract: authenticated own-account `/:locale/settings/privacy`, persisted show-online preference, missing row/default ON, OFF authoritatively excludes the user from public online list/count and heartbeat publication, ON does not synthesize presence, public profile/posts stay public, protected/no-store and failure boundaries remain factual;
+- align `docs/ADMIN_PANEL.md` Settings references and admission matrix with the implemented Privacy route without expanding Admin scope;
+- add PROJECT_HISTORY_22 as the factual SET-06 implementation/correction/review snapshot, including PR #311, SET06-MIRA-01 correction, final exact head, merge commit, Mira+Lev PASS and exact-head CI/Chromium evidence;
+- add history index entry for #22;
+- do not rewrite older history snapshots;
+- do not claim production/deployed acceptance, live Google/Owner binding or owner visual acceptance.
+
+No runtime/code/schema/migration/workflow changes. No broad documentation audit. Run applicable docs/CI checks, publish the stable docs PR/head and evidence in #251, then stop for **Mira docs-only review**. Lev/Mark are not assigned.
