@@ -1,16 +1,16 @@
 # Admin panel — current workflow
 
 - Service PR: **#251**
-- Current main: `e985a43f8853c234c96bb4528a9d4dd709361018`
-- Current stage: **Settings SET-03 — factual documentation closeout**
+- Current main/base: `e985a43f8853c234c96bb4528a9d4dd709361018`
+- Current stage: **Settings SET-03 — docs owner merge**
 - SET-03 implementation PR: **#304 — merged**
-- Runtime SET-03: **closed**
-- Docs implementer: **Лира — assigned**
-- Docs PR/head: **pending Lira handoff**
-- Docs reviewer: **Мира after stable docs head**
+- SET-03 docs PR: **#305 — Ready for owner merge**
+- Frozen docs exact head: `892d30f954c1cd974d16b8331b7af71607db9bde`
+- Docs implementer: **Лира — complete / stopped**
+- Docs reviewer: **Мира — PASS, 0 confirmed current-scope docs defects**
+- Exact-head checks #42447751106: **SUCCESS** (`checks`, `database`)
 - Лёва: **not assigned**
 - Марк: **not assigned**
-- SET-04–SET-06: **not assigned**
-- Next: **await Lira six-file docs-only PR + stable exact head/checks; then Mira docs review**
-- After docs merge: **SET-03 fully closed; only then route SET-04**
-- Production/Stage6/live Google/real Owner binding remain inactive.
+- Next: **Owner merges PR #305**
+- After observed merge: **SET-03 fully closed; then route SET-04 through the standard bounded cycle**
+- SET-04–SET-06 and production/Stage6 remain inactive until routed.
