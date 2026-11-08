@@ -1478,3 +1478,10 @@ Exact head `d9134f8f3c57814aa910a272f2a9dc4c118fccb3`, base/current main `2f2969
 Exact head `b2a2b4a2b5505f5a1b885b5c2142370c31bd46fc`: **CHANGES REQUIRED — 1 confirmed current-scope defect**.
 
 `SET06-MIRA-01`: `db/hyperdrive-user-privacy.ts` fails to traverse nested `cause` for generic PostgreSQL availability/transport classification. Drizzle ORM 0.45.2 wraps query driver failures in `DrizzleQueryError.cause`; wrapped availability codes can therefore bypass `UserPrivacyUnavailableError` and escape Privacy Settings as unexpected errors instead of controlled 503. Timeout helpers already traverse cause, but `isPostgresAvailabilityFailure` does not. Existing forum/registration adapters provide the comparison baseline. All other 36-file SET-06 boundaries were reviewed and accepted; CI #42501120430 and Chromium #42501120499 SUCCESS. Lira receives one bounded correction before any Lev review.
+
+
+## SET-06 / PR #311 — fresh coordinator PASS after correction
+
+Exact head `11639e79ae67b61062d05bf3f05e32526204a056`: **PASS, 0 confirmed current-scope defects**.
+
+`SET06-MIRA-01` closed. The correction delta from previous reviewed head is exactly two files: the privacy Hyperdrive adapter now walks nested causes with cycle protection, and focused tests verify wrapped availability versus wrapped schema/auth/programming errors. Drizzle ORM remains pinned 0.45.2. The rest of the PR is unchanged from the prior whole-PR review and remains accepted. CI #42504491033 and Chromium #42504491099 both SUCCESS on this exact head. Lev independent technical review assigned on the same head; Lira/Mark stopped/unassigned.
