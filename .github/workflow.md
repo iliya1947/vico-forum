@@ -2,19 +2,21 @@
 
 - Service PR: **#251**
 - Current main/base: `76fc5b16be4f2425a0ad1fdcb7b38974db355c56`
-- Current stage: **Settings SET-05 — coordinator PASS; independent Lev review assigned**
+- Current stage: **Settings SET-05 — independent Lev review CHANGES REQUIRED; Mira routing assigned**
 - Approved technical plan: **#251 comment #6711736883**
-- Implementation PR: **#309**, open / Ready / mergeable
-- Stable exact head: **`a4af2014eb28a39d54d10c33cc515cbf3d5f258e`**
-- Previous findings `SET05-MIRA-01` / `SET05-MIRA-02`: **closed on this head**
-- Mira fresh coordinator whole-PR review: **PASS — 0 confirmed current-scope defects**
-- Exact-head CI #42477527039: **SUCCESS** (checks + database; app 2082/2082, PG17 596/596)
-- Exact-head existing Chromium #42477527033: **SUCCESS** (4/4 jobs; SET-05 12/12 inside existing settings_browser job)
-- Owner visual acceptance: **not an additional SET-05 gate**, no approval claimed
-- Implementer **Лира**: stopped; implementation frozen
-- **Лёва**: assigned independent technical whole-PR review of this same exact head
+- Implementation PR: **#309**, open / Ready
+- Reviewed stable exact head: **`a4af2014eb28a39d54d10c33cc515cbf3d5f258e`**
+- Mira coordinator PASS on this head preceded independent review.
+- Lev independent technical whole-PR review: **CHANGES REQUIRED — SET05-LEV-01/P2, 1 confirmed current-scope defect**
+- Finding: new Settings password-change action bypasses existing Better Auth database rate-limit admission.
+- Review/reproduction/handoff: [#6721524340](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6721524340)
+- Previous findings `SET05-MIRA-01` / `SET05-MIRA-02`: **independently closed on reviewed head**
+- Exact-head CI #42477527039 and existing Chromium #42477527033: **SUCCESS**, same SHA
+- **Мира**: accept independent finding and route one bounded corrective package to Lira
+- **Лира**: stopped / frozen until coordinator routing
+- **Лёва**: review complete; stopped, implementation unchanged
 - **Марк**: unassigned
-- Permanent documentation: separate post-merge closeout
-- Next: **await Lev independent review of exact head; no Owner merge before it**
-- Any implementation-head change restarts coordinator-first review
+- Next: **Mira corrective routing → Lira correction → new stable head/checks/browser → fresh coordinator review → Lev repeat review**
+- Owner merge #309 is not ready; owner visual acceptance is not an additional SET-05 gate.
+- Permanent documentation: separate post-merge closeout.
 - SET-06 and Stage6/production remain inactive.
