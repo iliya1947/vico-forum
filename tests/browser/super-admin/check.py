@@ -9,7 +9,7 @@ from contextlib import contextmanager
 from pathlib import Path
 import shutil
 import subprocess
-from urllib.parse import urlparse
+from urllib.parse import quote, urlparse
 from uuid import uuid4
 
 from playwright.sync_api import expect, sync_playwright
@@ -208,6 +208,26 @@ try:
         ):
             request(owner_ctx, path, status)
         record("adjacent-real-history-source-identity-and-strict-cursor-scope")
+
+        # Only calendar-valid canonical cursors may reach the real PostgreSQL reader.
+        suffix = "~system-event~123e4567-e89b-42d3-a456-426614174000"
+        routes = (
+            "/en/super-admin/events",
+            "/en/super-admin/monitoring/system/system.runtime/history",
+        )
+        valid_query = "?before=" + quote("2026-02-28T00:00:00.000Z" + suffix, safe="")
+        for path in routes:
+            request(owner_ctx, path + valid_query, 200)
+            request(owner_ctx, path + ".data" + valid_query, 200)
+        for stamp in (
+            "2026-02-31T00:00:00.000Z", "2025-02-29T00:00:00.000Z",
+            "2026-12-31T24:00:00.000Z", "0000-01-01T00:00:00.000Z",
+        ):
+            query = "?before=" + quote(stamp + suffix, safe="")
+            for path in routes:
+                request(owner_ctx, path + query, 400)
+                request(owner_ctx, path + ".data" + query, 400)
+        record("invalid-calendar-cursors-private-400-on-global-scoped-document-and-data")
 
         response = owner_ctx.request.post(base + "/en/admin/authorization",
             headers={"Origin": base},
