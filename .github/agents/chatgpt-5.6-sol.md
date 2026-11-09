@@ -1545,3 +1545,8 @@ Owner corrected my “full audit” framing. Super-admin needs both current-stat
 ## User security placement correction
 
 Owner requires authentication/session/security data in each user's Owner-only Super-admin account card, not merely in a global event log. Accounts therefore includes a dedicated Access & security section with sign-in methods, sessions/devices where supported, recent relevant security/auth events, and deactivation state/actions. Ordinary Admin Users remains unchanged.
+
+
+## Unified profile correction
+
+Owner requires one canonical user profile page with privilege-dependent sections: public base, admin section for applicable admin permissions, and exact-Owner-only section with Access & security/deactivation. My previous separate super-admin user-card concept was wrong and is superseded. Current separate admin-user route is implementation state only, not the target information architecture.
