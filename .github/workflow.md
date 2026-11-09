@@ -2,19 +2,20 @@
 
 - Service PR: **#251**
 - Current main: **`787cf6deae38138de2ffe867368ae794349f471f`**
-- Current stage: **Super-admin — waiting for Owner decisions SA4–SA8**
+- Current stage: **Super-admin — Owner product decisions in progress**
 - Ordinary Admin Panel AP-01–AP-11: **complete**
 - Owner/authorization redesign Stage 1–2: **complete**
 - Settings SET-01–SET-06: **complete**
 - Overall administrative program: **not complete; super-admin remains**
-- Proposed super-admin structure: **Overview / Accounts / Full audit / Infrastructure**
+- Proposed super-admin structure: **Overview / Accounts / Monitoring & Event log / Infrastructure**
 - Resolved:
   - SA1: published content retained; public author shown as neutral Deleted user.
   - SA2: deactivation only; account retained at least one year; post-year disposition unresolved.
-  - SA3: withdrawn; sole bound Owner is not a valid deactivation target under existing single-Owner model.
+  - SA3: withdrawn; sole bound Owner is not a valid deactivation target.
+  - “Full audit” superseded: required area is **Monitoring + Event log/history**.
   - Infrastructure: visible Under development placeholder now; real functionality only in Stage 6.
-- Pending Owner decisions: **SA4 Full-audit coverage; SA5 detail level; SA6 retention; SA7 navigation entry; SA8 Overview depth.**
-- **Мира**: waits for SA4–SA8, then freezes product scope.
+- Pending Owner decisions: exact current-stage Monitoring content; Event-log coverage/detail/retention; navigation entry; Overview depth.
+- **Мира**: reformulates remaining questions around Monitoring + Event log.
 - **Лёва**: stopped; technical planning only after scope freeze.
 - **Лира**: stopped.
 - **Марк**: unassigned.
