@@ -2265,3 +2265,24 @@ Owner decision:
 - the placeholder must not create speculative infrastructure backend foundations.
 
 Current stage in #251 is therefore **Super-admin product concept**. Mira owns concept definition; Lev/Lira/Mark are not assigned yet.
+
+
+## Super-admin — concept v1 prepared
+
+Mira completed the first product-concept pass from current main and existing approved boundaries.
+
+Proposed minimal structure:
+1. Overview
+2. Accounts
+3. Full audit
+4. Infrastructure
+
+Key boundary: do not duplicate ordinary Admin, Settings or Needs attention. Existing exact server-bound Owner authority is reused; no second RBAC.
+
+Confirmed existing decisions:
+- account deletion is super-admin-only;
+- deeper/full Owner audit is super-admin scope;
+- Infrastructure tab is present now only as an Under development / Stage 6 placeholder;
+- no live Cloudflare/Neon/deployments/secrets/providers or speculative infrastructure backend before Stage 6.
+
+The concept is not frozen yet. Next step is Owner product decisions on deletion semantics, audit scope, and route/navigation placement. Lev/Lira/Mark remain unassigned.
