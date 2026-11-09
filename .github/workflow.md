@@ -2,7 +2,7 @@
 
 - Service PR: **#251**
 - Current main: **`787cf6deae38138de2ffe867368ae794349f471f`**
-- Current stage: **Super-admin — waiting for Owner decision UP-D1**
+- Current stage: **Super-admin — profile scope ready; global super-admin decisions remain**
 - Ordinary Admin Panel AP-01–AP-11: **complete**
 - Owner/authorization redesign Stage 1–2: **complete**
 - Settings SET-01–SET-06: **complete**
@@ -17,9 +17,9 @@
   - stored account data retained at least one year;
   - deactivated identity must no longer be usable as an active forum account;
   - no reactivation/forced-logout/provider-unlink/password-manipulation feature is assumed.
-- Pending profile product decision: **UP-D1 — require an internal Owner reason for deactivation or not.**
+- Deactivation reason: **not required**; the action itself may still be logged.
 - Infrastructure remains an Under development placeholder until Stage 6.
-- **Мира**: waits for UP-D1; after that profile content can be frozen.
+- **Мира**: privileged-profile product scope is now ready; remaining work is global Monitoring/Event-log and super-admin shell decisions.
 - **Лёва**: stopped; technical planning only after full product scope freeze.
 - **Лира**: stopped.
 - **Марк**: unassigned.
