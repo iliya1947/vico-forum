@@ -53,3 +53,6 @@
 - Do not enumerate a complete metric/event catalog during product design; technical observability details wait for Lev after product scope freeze.
 - SA6 retention remains indefinite until Owner changes it; no ordinary UI deletion.
 - Next product work: remaining super-admin shell/Overview decisions. No implementation PR/head; Lev/Lira/Mark remain unassigned.
+
+
+- Super-admin Overview role: **approved** — concise cross-area current-state summary with important current problems/anomalies and direct navigation to details; no duplication of full Monitoring.
