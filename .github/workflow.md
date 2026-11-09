@@ -1,21 +1,13 @@
 # Admin panel — current workflow
 
-- Service PR: **#251**; current main/base: **`787cf6deae38138de2ffe867368ae794349f471f`**.
-- Current stage: **SA-01 — Lev independent review completed; result returned to Mira for coordinator decision**.
-- Approved plan: [#6745289141](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6745289141); SA01 assignment [#6745414259](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6745414259).
-- Implementation: [PR #313](https://github.com/iliya1947/vico-forum/pull/313), open/unmerged, reviewed exact head **`6d7f50f979a8aba220b4439646304717c3d8b7c4`**; 38 changed files.
-- Coordinator: Mira PASS [#6749734093](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6749734093) on this head. Prior **SA01-MIRA-01 closed**.
-- Independent reviewer: Lev completed whole-PR review; [report to Mira #6750292313](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6750292313). **One current-scope finding: SA01-LEV-01 [P3]**, impossible calendar date in History cursor passes parser and produces PostgreSQL22008 / HTTP500 instead of400 on global and scoped History.
-- **Result recipient / next — Mira, coordinator:** consider Lev's confirmed P3 finding and determine the response, assignment and workflow. Lev's earlier independent assignment of a correction to Lira is withdrawn. **Lira remains stopped** until Mira assigns further work; no new review cycle or correction gate is imposed by Lev.
-- Current-head CI [#42684010768](https://github.com/iliya1947/vico-forum/actions/runs/42684010768), SA01 Chromium [#42684011022](https://github.com/iliya1947/vico-forum/actions/runs/42684011022), existing Chromium [#42684011268](https://github.com/iliya1947/vico-forum/actions/runs/42684011268): **SUCCESS**, reconfirmed; they do not close SA01-LEV-01.
-- Lev local evidence: focused application55/55, nativePG/migrations68/68, build, 67-table manifest/grants/provisioning, checked-in Chromium15/15 plus independent mixed-pagination/real-web-role/HTTP/locale probes. Evidence: `/workspace/work/sa01-review-evidence/`; checkout clean, disposable services stopped.
-- Lev stopped after reporting to Mira; Lira stopped; Mark unassigned. Owner alone merges; permanent docs separate after merge. Owner visual acceptance is not an SA01 gate; polish is separate UI/UX scope.
-- SA02+ inactive. Production/Stage6/live infrastructure, real Google and external Owner binding remain paused. No last-manager/count/recovery rule.
-
-
-## SA-01 Lev review defect
-
-- Lev independent review of PR #313 exact head `6d7f50f979a8aba220b4439646304717c3d8b7c4`: **CHANGES REQUIRED — 1 current-scope finding** (`#6750292313`).
-- Mira independently confirmed `SA01-LEV-01`: impossible ISO calendar dates can pass JS `Date.parse`, reach PostgreSQL and turn malformed History cursor input into 500 instead of 400.
-- Mira handoff to Lira: `#6750472578`.
-- Fix is local cursor validation + regressions only; no SA-02+ scope.
+- Service PR: **#251**. Main/base: `787cf6deae38138de2ffe867368ae794349f471f`.
+- **Stage: Super-admin SA-01**. Implementation + author correction `SA01-LEV-01` delivered; **Lira stopped** pending fresh Mira coordinator whole-PR review. SA-02+ not authorized.
+- Approved technical plan: Lev [#6745289141](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6745289141); original Mira SA-01 assignment [#6745414259](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6745414259).
+- [PR #313](https://github.com/iliya1947/vico-forum/pull/313): **Ready, open/unmerged**, current stable exact head **`d9c4268437e76eec9d01f19c7fe1b85d456128c1`**.
+- Prior Mira whole-PR PASS [#6749734093](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6749734093), Lev independent review with one P3 finding [#6750292313](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6750292313), and Mira confirmed correction assignment [#6750472578](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6750472578) concerned **superseded** `6d7f50f979a8aba220b4439646304717c3d8b7c4`. Their verdicts are not a PASS for current head.
+- `SA01-LEV-01` fixed: strict calendar/canonical timestamp round-trip in Owner timeline parser; impossible dates rejected before SQL as 400, valid cursor preserved, unexpected DB errors not reclassified. Changed **only** `db/owner-system-monitoring.ts`, `app/routes/super-admin.test.ts`, `tests/database/owner-system-history.test.ts`, `tests/browser/super-admin/check.py`. No new schema/feature/Stage6.
+- **[CI #42692723600](https://github.com/iliya1947/vico-forum/actions/runs/42692723600) SUCCESS:** 169 application files / **2145 tests**, 54 PostgreSQL17 files / **619 tests**, lint/typecheck/build and schema/grants/Worker checks.
+- **[Connected SA-01 Chromium #42692723871](https://github.com/iliya1947/vico-forum/actions/runs/42692723871) SUCCESS:** 16 real-worker/Better Auth/PG17 checkpoints including malformed-date document/data HTTP400 for global and scoped History.
+- **[Existing Chromium #42692723602](https://github.com/iliya1947/vico-forum/actions/runs/42692723602) SUCCESS:** all four regression jobs.
+- **Next responsible agent: Mira** for fresh coordinator whole-PR review of this exact head. Lira stops; Lev stops pending Mira PASS/new assignment; Mark unassigned. Owner visual acceptance is **not an SA-01 gate**; owner alone merges, permanent documentation is separate after merge.
+- Production/Stage6/Cloudflare/Neon/live Google/Owner binding paused. SA-02–SA-08 not started.
