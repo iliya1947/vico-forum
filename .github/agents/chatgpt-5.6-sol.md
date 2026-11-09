@@ -1575,3 +1575,8 @@ Reduced the model to existing admin capabilities plus the Owner-private account/
 ## Deactivation reason correction
 
 My proposal for a mandatory deactivation reason was unnecessary in the current single-Owner model. Owner challenged the actual consumer of that text; there is none beyond the same actor. UP-D1 is closed as no mandatory reason.
+
+
+## SA6/SA7 + profile history decision
+
+Owner selected indefinite retention (no ordinary UI deletion) for the full Owner event log and both navigation entry points to the same super-admin surface. Profile-local history is asymmetric: ordinary admins see only violations within their authority; Owner sees the full per-user summary. Avoid inventing a generic violations table; technical mapping belongs to Lev.
