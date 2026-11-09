@@ -32,16 +32,15 @@
 
 ## Актуальный baseline и назначение
 
-- Main/base `c1109dc8c5c499b63dd6e4d2f76bce96fadb2cd5`; SET01–05 fully closed.
-- SET-06 implementation PR #311 open/Ready/mergeable on stable exact head `11639e79ae67b61062d05bf3f05e32526204a056`.
-- Mira coordinator PASS; **Lev independent whole-PR PASS,0 confirmed current-scope defects**. [Full report #6724949328](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6724949328).
-- SET06-MIRA-01 independently closed: real blocked Worker Privacy SELECT terminated in PostgreSQL yields private503 and recovers; real missing-relation read/save42P01 remains unexpected.
-- Own source/runtime verification covers all37 files, default ON, atomic OFF cleanup, shared per-user heartbeat serialization, public SQL filter before count/LIMIT12, own form/account-switch/cache/i18n boundaries.
-- Own184 app tests/10 files,11 nativePG/2 files,build/full0000–0061 migration,13 connected Chromium groups,13 extra own probe groups,36 schema contract tests plus actual65-table manifest/runtime grants/provisioning probes PASS.
-- Exact-head CI42504491033 and Chromium42504491099 independently SUCCESS/attempt1,4 browser jobs/13SET06 log groups. No full CI local rerun claimed.
-- **Next — Mira final readiness routing to Owner merge #311**, then separate factual SET-06 docs/project-state closeout. Do not declare merged/Settings complete yet.
-- Lev/Lira stopped;Mark unassigned;implementation frozen. Any head change restarts coordinator-first cycle.
-- No production/Neon/Stage6/liveGoogle/realOwner/visual acceptance claimed or added gate.
+- Current main: `787cf6deae38138de2ffe867368ae794349f471f`. AP01–11,Owner redesign1–2,SET01–06 complete;overall administrative program remains open for Super-admin.
+- Super-admin product scope frozen: Overview / Monitoring & Event log / Infrastructure;13 Monitoring areas,each real monitor has adjacent History/applicable actions;global journal;unified public/Admin/Owner profile.
+- **Lev technical plan delivered:** [#6745289141](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6745289141), against exact current main. Source-level planning,not implementation/acceptance.
+- Plan proposes SA01–08:Owner shell/History foundation→auth/security producers→canonical profile→lifecycle enforcement/public neutral projection→deactivate action→domain monitors→remaining sources→integration/Overview/closeout.
+- Frozen decisions preserved:deactivation publicly Deleted user,published content/account records retained≥1 year,no mandatory reason,no reactivation/force-logout/provider mutation;exact Owner not target per SA3. SA6 indefinite Owner history;SA7 both entry points;UP1 ordinary admin violations without user-related History.
+- History normalizes existing authoritative sources plus new missing Owner events/observations;no duplicate domain event when action starts from Monitoring. Every real monitor has provenance/coverage;no fabricated old auth history/healthy external status.
+- Active-account gate and shared server public-identity projection precede available deactivate command. No second RBAC/settings/infra backend.
+- **Next — Mira scope/fit review,then separate assignment of SA-01 only.** Lira remains unassigned/stopped;Lev stopped;Mark unassigned.
+- No Super-admin project code/migration/CI/runtime acceptance completed. Infrastructure is Stage6 placeholder;production/Stage6 not resumed.
 
 ## Handoff — Лира: Stage2 factual documentation closeout
 
@@ -2500,3 +2499,8 @@ Approved action model:
 - exact monitor-to-operation mapping and execution UI belong to technical planning, not a hand-written product catalog for all 13 subsections.
 
 The Super-admin product model is now **frozen for technical planning**. Lev is the next assigned agent: prepare the bounded technical decomposition from current main. No implementation PR exists yet; Lira remains stopped and Mark unassigned until the technical plan is reviewed/accepted.
+
+
+## Super-admin — Lev technical plan delivered for Mira scope/fit review
+
+[Full technical plan #6745289141](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6745289141), actual main `787cf6deae38138de2ffe867368ae794349f471f`. Planning covers frozen product model,current profile/admin/measure/auth/history/translation/attachment/notification/runtime seams,13-area current/history/action source map and bounded SA01–08 sequence. Existing Owner binding reused,no new role;canonical profile composes protected projections and old Admin detail becomes guarded redirect. Deactivation schema retains original account records,atomic Owner action/event/presence cleanup,active-session/auth/writer enforcement and shared public Deleted-user projection before action activation. No required reason/reactivation/forced logout/provider manipulation;SA3 exactOwner target restriction only. Existing domain events projected once with new safe Owner event/observation sources for missing history;indefinite retention/provenance/coverage,adjacent scoped History and global log;no invented past events or continuous external health. All13 areas mapped to actual current sources and existing canonical actions;unavailable/unbound/disabled states explicit,Infrastructure placeholder only until Stage6. Official BetterAuth hooks docs and pinned1.7.7 session/create/dispatch source checked. Native/browser/migration/privacy/retention/deactivation/cross-area acceptance specified;not performed. **No project code/migration/implementation PR created.** Evidence /workspace/work/super-admin-plan-evidence/;checkout clean. **Mira next:** review plan scope/fit,then assign **SA-01 only** separately. Lev stopped;Lira unassigned;Mark unassigned. No production/Stage6/live platform/secrets actions.
