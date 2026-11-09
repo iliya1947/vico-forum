@@ -2432,3 +2432,18 @@ UP1 was a question about showing user-related history to ordinary admins. Owner 
 - exact Owner sees the full per-user summary.
 
 Do not carry the question's “history” premise into the ordinary-admin answer.
+
+
+## Super-admin — Monitoring structure and history relation approved
+
+Owner approved the Monitoring foundation.
+
+- Monitoring covers **all current observable system/forum state**, not only problems or alerts.
+- State is grouped into 13 approved subsections: System; Accounts & authentication; Security; Forum; Localization & translations; Notifications; Files & attachments; Administration; Moderation; Background processes; Data; Integrations; Infrastructure.
+- Do not spend product-design cycles enumerating every metric/state/event inside those sections; exact technical observability producers belong to later technical planning.
+- **Every monitored item has history.**
+- The History control belongs next to the corresponding monitor so current state and its history are directly connected.
+- A global Event log/journal may remain as an aggregate cross-system view, but it does not replace per-monitor history.
+- Existing SA6 retention remains unchanged: Owner history is retained indefinitely until explicitly changed; no ordinary UI deletion.
+
+Monitoring/history logical model is now resolved. No technical planner or implementation is assigned yet.
