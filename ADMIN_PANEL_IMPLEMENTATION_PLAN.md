@@ -703,3 +703,49 @@ Still requires Owner decisions before technical planning:
 - exact Full audit scope and retention/privacy model;
 - exact route/navigation placement and whether Overview needs any real summary data beyond navigation;
 - any additional super-admin-only capability, if one is actually required rather than merely convenient.
+
+
+## Super-admin — Owner product decisions pending
+
+These decisions are required before the super-admin product scope can be frozen. They are product choices, not technical implementation prescriptions.
+
+### SA1 — Public content when an account is deleted
+1. Keep published topics/posts and replace the deleted account identity with a neutral deleted-user identity. **Mira recommendation.**
+2. Delete the user's published content together with the account.
+3. Other policy.
+
+### SA2 — Account-deletion lifecycle
+1. Immediate irreversible account deletion after explicit high-risk confirmation; retained public content follows SA1. **Mira recommendation for current pre-release scope.**
+2. Soft-delete/deactivation with a recovery period.
+3. Two-stage deactivate → later permanent delete.
+
+### SA3 — Can the bound Owner delete their own account from super-admin?
+1. No. The only Owner cannot target their own account with this destructive operation. **Mira recommendation.**
+2. Yes, with a separate extreme confirmation flow.
+
+### SA4 — Full-audit coverage
+1. One Owner-only audit view covering ordinary Admin History plus Owner-only changes, authentication/security events, Settings changes, account deletion, and future Stage-6 infrastructure events when that stage is implemented. **Mira recommendation.**
+2. Only ordinary administrative + Owner-only mutation history.
+3. Other exact scope.
+
+### SA5 — Full-audit detail level
+1. Show actor, target, action, time, reason, bounded before/after details and technical identifiers; include IP/user-agent only where the underlying security/auth event legitimately has them. **Mira recommendation.**
+2. Keep the audit mostly human-readable and hide most technical metadata.
+3. Other detail policy.
+
+### SA6 — Full-audit retention
+1. Retain audit records indefinitely unless a later explicit retention policy replaces this. No ordinary UI deletion. **Mira recommendation.**
+2. Fixed retention period.
+3. Owner-configurable retention.
+
+### SA7 — Super-admin entry/navigation
+1. Add an Owner-only **Super-admin** entry from the existing administration area, opening its own separate super-admin shell/routes. **Mira recommendation.**
+2. Entry only from the Owner account/profile menu.
+3. Provide both entry points.
+
+### SA8 — Super-admin Overview
+1. Compact real overview: section shortcuts + a small amount of already-available truthful status/recent critical audit information; no new speculative metrics backend. **Mira recommendation.**
+2. Navigation/section shortcuts only.
+3. Full dashboard with additional metrics (would expand scope).
+
+After these decisions, Mira freezes the product scope. Only then does Lev prepare the technical decomposition.
