@@ -219,7 +219,7 @@ describe("SA-01 unified Owner timeline and actual current-state monitoring on Po
     const first=await system.readSystem();
     expect(first.monitors).toHaveLength(3);
     expect(first.monitors.find(row=>row.key==="system.dependencies")).toMatchObject({
-      source:"database",quality:"measured",values:{component:"postgresql",state:"available",version:expect.stringMatching(/^17\\./)},
+      source:"database",quality:"measured",values:{component:"postgresql",state:"available",version:expect.stringMatching(/^17\./)},
     });
     expect(first.monitors.find(row=>row.key==="system.requests")?.values.state).toBe("limited-coverage");
     expect(first.recording).toBe("available");
@@ -262,7 +262,9 @@ describe("SA-01 unified Owner timeline and actual current-state monitoring on Po
       ids.push(...page.entries.map(x=>x.origin+":"+x.id));
       before=page.next??undefined;
     }while(before);
-    expect(ids).toEqual((await system.readTimeline({limit:50})).entries.map(x=>x.origin+":"+x.id));
+    const first50=await system.readTimeline({limit:50});
+    expect(ids.slice(0,50)).toEqual(first50.entries.map(x=>x.origin+":"+x.id));
+    expect(ids.length).toBeGreaterThan(50);
     expect(new Set(ids).size).toBe(ids.length);
   });
 
