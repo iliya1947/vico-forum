@@ -1,22 +1,24 @@
 # Admin panel — current workflow
 
 - Service PR: **#251**
-- Current main: **`95272b587643efa6844303aed8522c44b136e699`**
-- Current stage: **Settings SET-06 Privacy — docs-only closeout PASS; READY FOR OWNER MERGE**
-- Implementation PR #311: **merged**
-- Implementation final exact head: **`11639e79ae67b61062d05bf3f05e32526204a056`**
-- Implementation merge commit: **`95272b587643efa6844303aed8522c44b136e699`**
+- Current main: **`787cf6deae38138de2ffe867368ae794349f471f`**
+- Current stage: **Ordinary Admin Panel + Settings — COMPLETE in repository/local-CI**
+- Ordinary Admin Panel AP-01–AP-11: **complete**
+- Owner/authorization redesign Stage 1–2: **complete**
+- Settings SET-01–SET-06: **complete**
+- SET-06 implementation PR #311: **merged**
+- SET-06 docs PR #312: **merged**
+- SET-06 final implementation head: **`11639e79ae67b61062d05bf3f05e32526204a056`**
+- SET-06 docs head: **`b681c8e657ab687084879b95d76c7f0281657243`**
+- SET-06 docs merge/current main: **`787cf6deae38138de2ffe867368ae794349f471f`**
 - Mira implementation coordinator review: **PASS**
-- Lev independent technical review: **PASS**
-- SET06-MIRA-01: **closed**
-- Documentation **[PR #312](https://github.com/iliya1947/vico-forum/pull/312)**, exact head **`b681c8e657ab687084879b95d76c7f0281657243`**, base/current main `95272b587643efa6844303aed8522c44b136e699`, open/Ready/mergeable
-- Docs scope: exactly seven assigned Markdown files; no runtime/code/schema/migration/workflow changes
-- Mira docs-only review: **PASS — 0 confirmed current-scope documentation defects**
-- Docs exact-head CI #42508278251: **SUCCESS**
-- **Next: Owner merge PR #312**
+- Lev independent implementation review: **PASS**
+- Mira docs-only review: **PASS**
+- No active assignment in #251
 - **Лира**: stopped
-- **Лёва**: stopped; not assigned to docs
-- **Мира**: docs review complete; waits for Owner merge
+- **Лёва**: stopped
+- **Мира**: channel closeout complete
 - **Марк**: unassigned
-- Settings SET-01–SET-06 become fully closed only after actual merge of #312
-- No production/Neon/Stage6/live Google/Owner binding or Owner visual acceptance claim
+- Current project source-of-truth says the next standalone product priority is **UI/UX product pass**; Stage 6 remains paused.
+- Do not route unrelated UI/UX work through #251 unless the Owner explicitly reuses this service channel.
+- No production/Neon/Stage6/live Google/Owner binding or Owner visual acceptance claimed by this closeout.
