@@ -1570,3 +1570,8 @@ I incorrectly separated “Deleted user” presentation from deactivation. Owner
 ## Privileged profile v2
 
 Reduced the model to existing admin capabilities plus the Owner-private account/security layer. Removed speculative profile-local History and extra security mutations. Deactivation is modeled by its required product effect (account no longer usable, public Deleted user, data retained >=1 year) without prescribing physical session deletion. Only unresolved product rule is whether deactivation requires an internal Owner reason.
+
+
+## Deactivation reason correction
+
+My proposal for a mandatory deactivation reason was unnecessary in the current single-Owner model. Owner challenged the actual consumer of that text; there is none beyond the same actor. UP-D1 is closed as no mandatory reason.
