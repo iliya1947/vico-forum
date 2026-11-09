@@ -781,3 +781,22 @@ The proposed top-level super-admin structure is therefore:
 4. Infrastructure
 
 Earlier wording “Full audit” is superseded.
+
+
+## Super-admin — Owner-only user card: access and security
+
+Owner clarified the placement of per-user authentication/security information:
+
+- Authentication/session/security information is **not merely global event-log content**.
+- Every user in Super-admin → Accounts has an **Owner-only user card/detail**.
+- That card contains a dedicated **Access & security** section for the selected user.
+- The section is visible only to the exact server-bound Owner; it is not added to the ordinary Admin Users detail and is not granted through ordinary RBAC permissions.
+- The section is the primary per-user view for applicable account-access/security information, including:
+  - linked/sign-in methods known to the application;
+  - active/current sessions or devices where the current authentication provider/data model supports them;
+  - relevant recent authentication/security events associated with that user;
+  - account deactivation state and Owner-only deactivation controls under the already approved SA1/SA2 rules.
+- A global Monitoring/Event log may still surface significant cross-system security events, but it must not be the only way to inspect a user's access/security history or current state.
+- Do not expose raw secrets, session tokens, passwords or provider credentials in the card.
+
+This decision expands the Accounts concept from only lifecycle/deactivation into an Owner-only detailed account view with an Access & security section.
