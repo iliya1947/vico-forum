@@ -629,3 +629,77 @@ Confirmed Owner decisions and existing boundaries:
 8. The placeholder is intentional product structure, not authorization for Stage 6 work and not a reason to build speculative infrastructure backend foundations now.
 
 The remaining super-admin concept, exact sections and owner decisions are still being defined. Technical decomposition by Lev starts only after this product concept is frozen.
+
+
+## Super-admin — concept v1
+
+This is a product concept, not implementation authorization. The exact technical decomposition starts only after Owner decisions are complete.
+
+### Purpose and boundary
+
+Super-admin is the **Owner-only high-risk administration surface**. It is part of the overall administrative program but remains separate from the permission-scoped ordinary Admin panel.
+
+It reuses the existing exact server-bound Owner identity and authority. Do not introduce a second RBAC, a special Owner role, or generic edit-any/delete-any powers merely because the surface exists.
+
+Super-admin must not duplicate existing product surfaces:
+- ordinary forum administration, measures and significant-action History remain in ordinary Admin;
+- Roles & permissions, registration controls and other approved forum settings remain in Settings;
+- Complaints/Signals/Security queues remain in Needs attention;
+- personal account/security/privacy remain in personal Settings.
+
+### Proposed top-level structure
+
+1. **Overview**
+   - Owner-only landing page for the super-admin surface.
+   - Shows only navigation/status for the implemented super-admin sections.
+   - Does not require speculative metrics, infrastructure probes or a second dashboard backend.
+
+2. **Accounts**
+   - Reserved for destructive account-lifecycle operations that ordinary administrators must not receive.
+   - First confirmed capability: **account deletion**.
+   - Exact deletion semantics, retained/anonymized content, identity/history retention and recovery rules remain Owner product decisions before implementation.
+   - Ordinary Users search/detail and administrative measures are not duplicated here.
+
+3. **Full audit**
+   - Owner-only deeper audit surface, distinct from ordinary Admin History.
+   - Ordinary History continues to record significant administrative actions.
+   - Full audit may cover a wider technical/security trail only after exact event scope, retention, privacy and access rules are approved.
+   - Do not build a generic event bus or speculative audit subsystem before those decisions.
+
+4. **Infrastructure**
+   - Present in the current super-admin UI as an explicit **Under development / Stage 6** tab.
+   - Before Stage 6 it contains no live Cloudflare/Neon/deployment/secret/provider data and no mutations.
+   - Actual infrastructure, deployments, secrets and provider administration are implemented only in Stage 6 after explicit Owner resumption.
+   - The placeholder must not create speculative infrastructure APIs or credentials handling.
+
+### Navigation/access concept
+
+- The entire super-admin surface is visible and accessible only to the exact authenticated server-bound Owner.
+- Ordinary administrators, moderators and holders of ordinary permissions do not gain read access merely from their role/grants.
+- Super-admin is a separate destination, not an extension of the ordinary Admin permission union.
+- A visible Owner-only entry may be exposed from the existing administration area, but the exact route/navigation placement is left for the next product-decision step.
+
+### Explicit non-goals for the current super-admin implementation
+
+- no second RBAC;
+- no duplicate ordinary Admin/Settings/Attention features;
+- no generic arbitrary edit/delete powers;
+- no live infrastructure administration before Stage 6;
+- no Owner-transfer/recovery-to-another-person model;
+- no speculative audit/event backend until audit scope is approved.
+
+### Concept status
+
+Proposed structure: **Overview / Accounts / Full audit / Infrastructure**.
+
+Confirmed parts:
+- separate Owner-only surface;
+- account deletion belongs here;
+- deeper/full Owner audit belongs here;
+- Infrastructure tab exists now as Stage-6 placeholder only.
+
+Still requires Owner decisions before technical planning:
+- account deletion semantics;
+- exact Full audit scope and retention/privacy model;
+- exact route/navigation placement and whether Overview needs any real summary data beyond navigation;
+- any additional super-admin-only capability, if one is actually required rather than merely convenient.
