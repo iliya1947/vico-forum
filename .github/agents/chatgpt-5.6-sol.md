@@ -1525,3 +1525,8 @@ New fixed decision: include a dedicated Infrastructure tab in super-admin now as
 Derived a minimal super-admin structure from current source-of-truth and existing owner decisions: Overview / Accounts / Full audit / Infrastructure. The design reuses server-bound Owner authority, avoids a second RBAC and avoids duplicating ordinary Admin/Settings/Attention.
 
 Infrastructure remains placeholder-only until Stage 6. Account deletion and full-audit existence are confirmed, but their exact product semantics are unresolved and must be decided before Lev technical planning.
+
+
+## Super-admin owner-decision pass
+
+Prepared SA1–SA8 product decisions. Deliberately excluded technical choices that Lev can make later. Recommendations favor preserved/anonymized public content, irreversible confirmed deletion, no Owner self-delete, comprehensive Owner audit with bounded technical metadata and indefinite retention, Owner-only entry from ordinary Admin into a separate shell, and a compact truthful Overview.
