@@ -2321,3 +2321,12 @@ Owner decision:
 Top-level concept becomes: **Overview / Accounts / Monitoring & Event log / Infrastructure**.
 
 Remaining product questions must be reformulated around what current-stage monitoring should show, event-log coverage/detail/retention, navigation entry and Overview depth.
+
+
+## Super-admin — Owner-only user Access & security card
+
+Owner corrected placement of authentication/security data.
+
+Super-admin → Accounts must provide an Owner-only per-user detail/card with a dedicated **Access & security** section. It is the primary user-specific surface for sign-in methods, sessions/devices where supported, relevant recent auth/security events, and deactivation state/actions. This information is not added to ordinary Admin Users and is not merely left in the global Event log.
+
+The global Monitoring/Event log may still contain significant cross-system events, but it is not the sole user-security interface. Raw secrets/session tokens/passwords/provider credentials are never exposed.
