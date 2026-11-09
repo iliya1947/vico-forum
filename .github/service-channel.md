@@ -2286,3 +2286,12 @@ Confirmed existing decisions:
 - no live Cloudflare/Neon/deployments/secrets/providers or speculative infrastructure backend before Stage 6.
 
 The concept is not frozen yet. Next step is Owner product decisions on deletion semantics, audit scope, and route/navigation placement. Lev/Lira/Mark remain unassigned.
+
+
+## Super-admin — Owner questions prepared
+
+Mira completed the product-question pass. Eight Owner decisions are now required before scope freeze: deleted-account public-content policy, deletion lifecycle, Owner self-delete, Full-audit coverage/detail/retention, super-admin navigation entry, and Overview depth.
+
+Infrastructure is already decided: visible placeholder now; live Stage-6 functionality later.
+
+No technical planner or implementer is assigned until the Owner answers SA1–SA8.
