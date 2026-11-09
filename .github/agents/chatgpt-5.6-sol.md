@@ -1518,3 +1518,10 @@ PR #312 merged; current main `787cf6deae38138de2ffe867368ae794349f471f`. SET-06 
 Owner clarified that super-admin is part of the overall admin work, so my prior broad “administrative program complete” conclusion was incorrect. Ordinary Admin/owner redesign/Settings are complete; super-admin remains.
 
 New fixed decision: include a dedicated Infrastructure tab in super-admin now as an Under development placeholder. Real Cloudflare/Neon/deployments/secrets/provider management stays deferred to Stage 6 and must not be implemented or backed by speculative infrastructure APIs before Stage 6 resumes.
+
+
+## Super-admin concept v1
+
+Derived a minimal super-admin structure from current source-of-truth and existing owner decisions: Overview / Accounts / Full audit / Infrastructure. The design reuses server-bound Owner authority, avoids a second RBAC and avoids duplicating ordinary Admin/Settings/Attention.
+
+Infrastructure remains placeholder-only until Stage 6. Account deletion and full-audit existence are confirmed, but their exact product semantics are unresolved and must be decided before Lev technical planning.
