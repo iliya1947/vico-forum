@@ -2330,3 +2330,19 @@ Owner corrected placement of authentication/security data.
 Super-admin → Accounts must provide an Owner-only per-user detail/card with a dedicated **Access & security** section. It is the primary user-specific surface for sign-in methods, sessions/devices where supported, relevant recent auth/security events, and deactivation state/actions. This information is not added to ordinary Admin Users and is not merely left in the global Event log.
 
 The global Monitoring/Event log may still contain significant cross-system events, but it is not the sole user-security interface. Raw secrets/session tokens/passwords/provider credentials are never exposed.
+
+
+## User profile — unified privileged sections
+
+Owner corrected the previous Super-admin Accounts concept.
+
+Target product model:
+- canonical `/:locale/users/:userId` is the single user-detail page;
+- public profile remains public;
+- applicable administrators see a separate **administrative section on that profile**, limited by their current permissions;
+- exact bound Owner additionally sees an **Owner-only section on that profile** with Access & security, per-user auth/security information and deactivation controls;
+- private sections are server-authorized/projected and are not merely hidden client-side.
+
+The previously proposed separate super-admin user card/detail is superseded.
+
+Current repository still has `/:locale/admin/users/:userId`; whether it redirects, remains an alias or is otherwise composed is deferred to technical planning. Do not treat the current separate route as the target product model.
