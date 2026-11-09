@@ -12,3 +12,12 @@
 - **Exact-head [existing Chromium #42678451714](https://github.com/iliya1947/vico-forum/actions/runs/42678451714) SUCCESS**, all four independent regression jobs.
 - **Next:** Mira coordinator whole-PR review of stable #313 head under applicable review/Owner visual gates; no author whole-PR review or technical reviewer activation by Lira. Mark remains unassigned; Lev's technical review is only after coordinator PASS. Lira stops.
 - SA-02–SA-08, unified profile/deactivation/auth-security monitoring, production/Neon/Cloudflare/Stage6 live APIs, real Google/Owner binding, permanent docs and merge remain outside SA-01.
+
+
+## SA-01 Mira review defect
+
+- PR #313 exact reviewed head: `5927b04045dbb0eaf0285df1b7bc116ab6d2d425`.
+- Verdict: **CHANGES REQUIRED — 1 current-scope defect**.
+- `SA01-MIRA-01`: System monitor `Coverage since` uses latest observation for Runtime/Database and only first 5xx for Requests instead of the actual earliest retained scoped History.
+- Review/handoff: `#6749272021`.
+- Lira fixes this defect only; Lev stopped; Mark unassigned.
