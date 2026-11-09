@@ -2,21 +2,22 @@
 
 - Service PR: **#251**
 - Current main: **`787cf6deae38138de2ffe867368ae794349f471f`**
-- Current stage: **Super-admin — product concept correction / Owner decisions**
+- Current stage: **Super-admin — product concept / Owner decisions**
 - Ordinary Admin Panel AP-01–AP-11: **complete**
 - Owner/authorization redesign Stage 1–2: **complete**
 - Settings SET-01–SET-06: **complete**
 - Overall administrative program: **not complete; super-admin remains**
 - Current simplest super-admin structure: **Overview / Monitoring & Event log / Infrastructure**
 - User/account target: **one canonical `/:locale/users/:userId` profile** with public + permission-scoped Admin + exact-Owner-only sections.
-- Corrected account lifecycle:
-  - current scope = **deactivation only**;
-  - account retained at least one year;
-  - deactivation does **not** automatically anonymize the public identity;
-  - “Deleted user” presentation applies only to a future actual deletion/anonymization stage if later approved.
+- Confirmed account lifecycle:
+  - current action = **deactivation**;
+  - deactivation immediately changes public identity to **Deleted user**;
+  - published content remains;
+  - stored account data is **not erased** and is retained internally for **at least one year**;
+  - post-year data handling remains unresolved.
 - Confirmed Owner-only account action: **deactivation**.
-- Not approved / removed from assumed scope: reactivation, forced logout/session termination, provider unlink, password manipulation.
-- A top-level Super-admin Accounts area is **not currently justified**; add only if a real global account-management need is identified.
+- Not approved / not assumed: reactivation, forced logout/session termination, provider unlink, password manipulation.
+- A top-level Super-admin Accounts area is not currently justified unless a separate global account-management need appears.
 - Infrastructure remains an Under development placeholder until Stage 6.
 - Pending: define actual Admin/Owner profile content; exact Monitoring/Event-log content; Overview depth/navigation.
 - **Мира**: continues product concept only.
