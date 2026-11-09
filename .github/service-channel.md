@@ -2346,3 +2346,23 @@ Target product model:
 The previously proposed separate super-admin user card/detail is superseded.
 
 Current repository still has `/:locale/admin/users/:userId`; whether it redirects, remains an alias or is otherwise composed is deferred to technical planning. Do not treat the current separate route as the target product model.
+
+
+## Unified profile — privileged-section concept v1
+
+Mira derived a bounded profile composition from current AP-09/AP-10/auth contracts.
+
+Administrative section:
+- measures only when applicable;
+- targeted role/permission data only with existing authorization-read capability;
+- Complaints/Signals/Security cases remain in Needs attention;
+- profile-local filtered Admin History is still an Owner decision.
+
+Owner-only section:
+- private account identity/sign-in methods;
+- sessions/devices where supported;
+- relevant auth/security events;
+- account state/deactivation;
+- exact Owner security actions still pending.
+
+Five Owner decisions UP1–UP5 are pending. One ambiguity must be resolved: SA1 chose public “Deleted user” presentation, but SA2 later changed the lifecycle to deactivation-only. Public identity behavior during reversible deactivation is therefore not assumed.
