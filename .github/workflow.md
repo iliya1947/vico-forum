@@ -12,10 +12,11 @@
   - SA1: published content retained; public author shown as neutral Deleted user.
   - SA2: deactivation only; account retained at least one year; post-year disposition unresolved.
   - SA3: withdrawn; sole bound Owner is not a valid deactivation target.
-  - “Full audit” superseded: required area is **Monitoring + Event log/history**.
+  - Accounts includes an **Owner-only per-user card/detail with Access & security**: sign-in methods, sessions/devices where supported, relevant recent auth/security events, and deactivation state/actions. Ordinary Admin Users does not receive this private section.
+  - “Full audit” superseded by **Monitoring + Event log/history**.
   - Infrastructure: visible Under development placeholder now; real functionality only in Stage 6.
-- Pending Owner decisions: exact current-stage Monitoring content; Event-log coverage/detail/retention; navigation entry; Overview depth.
-- **Мира**: reformulates remaining questions around Monitoring + Event log.
+- Pending Owner decisions: exact current-stage Monitoring content; global Event-log coverage/detail/retention; navigation entry; Overview depth.
+- **Мира**: continues product decisions; technical scope not frozen.
 - **Лёва**: stopped; technical planning only after scope freeze.
 - **Лира**: stopped.
 - **Марк**: unassigned.
