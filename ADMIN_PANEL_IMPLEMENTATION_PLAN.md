@@ -1144,3 +1144,13 @@ Every monitored item/state has its own history.
 - Existing SA6 retention remains: Owner monitoring/event history is retained indefinitely until the Owner explicitly changes the policy; there is no ordinary UI deletion.
 
 This closes the logical Monitoring/history relationship without predefining every metric or technical event producer.
+
+
+## Owner decision — Super-admin Overview role
+
+Owner selected the summary model for Super-admin Overview.
+
+- Overview is the **cross-super-admin current-state summary**, not a navigation-only landing page.
+- It gives a concise at-a-glance status across the approved Monitoring areas, surfaces current problems/anomalies that matter to the Owner, and provides direct navigation into the relevant detailed area.
+- Overview must **not duplicate the full Monitoring content** or become a second monitoring implementation.
+- Exact cards, counters, thresholds and visual composition are not product decisions yet; they belong to later technical/UI planning.
