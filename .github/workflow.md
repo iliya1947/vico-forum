@@ -2,23 +2,16 @@
 
 - Service PR: **#251**
 - Current main: **`787cf6deae38138de2ffe867368ae794349f471f`**
-- Current stage: **Ordinary Admin Panel + Settings — COMPLETE in repository/local-CI**
+- Current stage: **Super-admin — product concept**
 - Ordinary Admin Panel AP-01–AP-11: **complete**
 - Owner/authorization redesign Stage 1–2: **complete**
 - Settings SET-01–SET-06: **complete**
-- SET-06 implementation PR #311: **merged**
-- SET-06 docs PR #312: **merged**
-- SET-06 final implementation head: **`11639e79ae67b61062d05bf3f05e32526204a056`**
-- SET-06 docs head: **`b681c8e657ab687084879b95d76c7f0281657243`**
-- SET-06 docs merge/current main: **`787cf6deae38138de2ffe867368ae794349f471f`**
-- Mira implementation coordinator review: **PASS**
-- Lev independent implementation review: **PASS**
-- Mira docs-only review: **PASS**
-- No active assignment in #251
-- **Лира**: stopped
-- **Лёва**: stopped
-- **Мира**: channel closeout complete
-- **Марк**: unassigned
-- Current project source-of-truth says the next standalone product priority is **UI/UX product pass**; Stage 6 remains paused.
-- Do not route unrelated UI/UX work through #251 unless the Owner explicitly reuses this service channel.
-- No production/Neon/Stage6/live Google/Owner binding or Owner visual acceptance claimed by this closeout.
+- Overall administrative program: **not complete; super-admin remains**
+- Current Owner decision: super-admin includes a dedicated **Infrastructure** tab as a placeholder in the current super-admin implementation; actual Cloudflare/Neon/deployments/secrets/provider management is deferred to Stage 6.
+- Stage 6 external integration itself remains paused and must not be started by the placeholder.
+- **Мира**: defining super-admin product concept and unresolved owner decisions.
+- **Лёва**: stopped; technical planning starts only after product concept is frozen.
+- **Лира**: stopped.
+- **Марк**: unassigned.
+- No implementation PR/head for super-admin yet.
+- Next: finish super-admin concept, then owner decisions, then Lev technical decomposition.
