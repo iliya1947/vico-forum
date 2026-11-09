@@ -839,3 +839,69 @@ Protected administrative/Owner data must be authorized and projected server-side
 - Ordinary Admin Users functionality and Owner-only account/security functionality remain separately authorized even though they are presented on one profile page.
 
 This decision supersedes the prior “Owner-only user card/detail in Super-admin → Accounts” wording.
+
+
+## Unified user profile — privileged-section concept v1
+
+The canonical `/:locale/users/:userId` profile remains one page. Privileged sections are server-authorized and progressively added to the public profile.
+
+### Administrative section — proposed current scope
+
+Show this section only when the viewing actor has at least one applicable administrative capability. Inside it, show only subparts the actor is authorized to read/use:
+
+1. **Administrative measures**
+   - current measure status and existing management entry/actions only for actors with the applicable measure-management authority;
+   - no Owner-only account lifecycle data is exposed here.
+
+2. **Role & permissions**
+   - targeted role/effective-authorization information only with the existing `access.authorization.manage` read boundary;
+   - mutation controls remain subject to the existing Owner-only authorization-write policy unless a future deputy model is separately approved.
+
+3. **User-related administrative history**
+   - not automatically included yet; whether admins with `admin.history.read` should receive a profile-local filtered history is an Owner product decision.
+   - Complaints, Signals and Security case queues remain in Needs attention and are not copied into the profile.
+
+### Owner-only section — proposed current scope
+
+Visible only to the exact server-bound Owner.
+
+1. **Account identity**
+   - private account email and internal identity data needed to administer the account;
+   - linked sign-in methods.
+
+2. **Access & security**
+   - active sessions/devices where the current authentication data supports them;
+   - relevant per-user authentication/security events;
+   - no raw passwords, session tokens, secrets or provider credentials.
+
+3. **Account state**
+   - active/deactivated state;
+   - deactivation lifecycle and any reactivation behavior once approved;
+   - minimum one-year retention from the Owner's SA2 decision.
+
+4. **Owner-only actions**
+   - exact action set is still pending. Candidate actions are deactivation/reactivation and forced termination of the user's active sessions; provider unlink/password manipulation are not assumed.
+
+### Product decisions still required for the unified profile
+
+**UP1 — Admin history on profile**
+1. Add a compact user-specific administrative-history block for admins who have `admin.history.read`, with a link to the full ordinary History. **Mira recommendation.**
+2. Do not show history on the profile; keep it only in the global ordinary History.
+
+**UP2 — Owner private account identity**
+1. Show email + internal user ID + linked sign-in methods in the Owner-only section. **Mira recommendation.**
+2. Show only email + sign-in methods; keep internal ID only in technical details elsewhere.
+
+**UP3 — Owner security actions**
+1. Allow Owner to deactivate/reactivate the account and force-log-out all active sessions. **Mira recommendation.**
+2. Only deactivate/reactivate; no forced session termination.
+3. Other exact action set.
+
+**UP4 — Deactivation effect**
+Proposed default: deactivation blocks sign-in/new sessions and participation, terminates current sessions, preserves published content and account data for at least one year. The public identity behavior while the account is merely deactivated is not yet frozen.
+
+**UP5 — Deactivation reason**
+1. Require an Owner-entered reason, visible only in Owner/internal history and never publicly. **Mira recommendation.**
+2. Do not require a reason.
+
+Important ambiguity to resolve before implementation: SA1 selected a neutral “Deleted user” public identity, while SA2 later changed the lifecycle to **deactivation only**. Because deactivation is potentially reversible, the Owner must decide whether a deactivated account is anonymized publicly immediately or retains its public identity until a later permanent-deletion/anonymization decision.
