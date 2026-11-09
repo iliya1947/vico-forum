@@ -800,3 +800,42 @@ Owner clarified the placement of per-user authentication/security information:
 - Do not expose raw secrets, session tokens, passwords or provider credentials in the card.
 
 This decision expands the Accounts concept from only lifecycle/deactivation into an Owner-only detailed account view with an Access & security section.
+
+
+## Super-admin / user profile — one profile page with privileged sections
+
+Owner corrected the user-management information architecture.
+
+### Target profile model
+
+The canonical user page remains the existing public profile route `/:locale/users/:userId`. It becomes the **single user-detail page** with progressively protected sections rather than creating a separate super-admin user card.
+
+The page has three access layers:
+
+1. **Public profile**
+   - existing public forum identity/profile/statistics/content;
+   - remains readable under the existing public profile contract.
+
+2. **Administrative section**
+   - rendered on that same user profile only for an authenticated actor with applicable current administrative capabilities;
+   - shows only administrative data/actions that the actor is actually authorized to read or perform;
+   - access follows current permission-based authorization, not merely the saved role name;
+   - ordinary administrators therefore get their own privileged section directly on the user profile.
+
+3. **Owner-only section**
+   - rendered on that same user profile only for the exact server-bound Owner;
+   - contains the additional account-level information/actions reserved to Owner, including the previously approved Access & security information and account deactivation controls;
+   - sign-in methods, sessions/devices where supported, relevant per-user authentication/security events and deactivation state belong here;
+   - raw passwords, session tokens, secrets and provider credentials are never exposed.
+
+Protected administrative/Owner data must be authorized and projected server-side. It must not merely be loaded into the public profile response and hidden with client/UI conditions.
+
+### Consequences for existing/previous concept
+
+- The earlier proposed **separate super-admin user card/detail** is superseded.
+- Current repository implementation still has a separate ordinary `/:locale/admin/users/:userId` administrative detail page. How that existing route is migrated, redirected, retained as a navigation alias, or composed with the unified profile is a later technical-planning choice; the product target is the unified profile page.
+- Super-admin → Accounts, if retained as a top-level area, is **not another user-detail surface**. It may serve account discovery/listing/lifecycle overview and open the canonical profile, but exact navigation is still a product/technical decision.
+- Global Monitoring/Event log may show cross-system events, but user-specific current access/security state and relevant history are available primarily in the Owner-only section of that user's profile.
+- Ordinary Admin Users functionality and Owner-only account/security functionality remain separately authorized even though they are presented on one profile page.
+
+This decision supersedes the prior “Owner-only user card/detail in Super-admin → Accounts” wording.
