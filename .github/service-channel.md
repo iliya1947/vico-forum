@@ -2485,3 +2485,18 @@ Next product step:
 - do not manufacture actions just to make every monitor interactive.
 
 Lev technical planning remains blocked until this product layer is resolved.
+
+
+## Super-admin — Owner approved contextual action model; product scope frozen
+
+Owner confirmation closes the remaining product-design gap.
+
+Approved action model:
+- each monitor combines current state, adjacent scoped History and applicable contextual actions;
+- existing Admin/Settings/Needs attention/domain operations are reused through their authoritative boundaries rather than duplicated;
+- genuinely Owner-only operations are added only when separately required; current confirmed example is user deactivation;
+- read-only monitors are valid when no real action exists;
+- Monitoring-origin actions do not create duplicate domain/history events;
+- exact monitor-to-operation mapping and execution UI belong to technical planning, not a hand-written product catalog for all 13 subsections.
+
+The Super-admin product model is now **frozen for technical planning**. Lev is the next assigned agent: prepare the bounded technical decomposition from current main. No implementation PR exists yet; Lira remains stopped and Mark unassigned until the technical plan is reviewed/accepted.
