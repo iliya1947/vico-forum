@@ -1106,3 +1106,41 @@ Owner's answer means:
 - Do not describe this as “history split by access level”; that wording is incorrect because the ordinary-admin side is not history at all.
 
 This correction supersedes the “profile history split” wording recorded immediately after SA6/SA7.
+
+
+## Super-admin Monitoring — approved structure and per-monitor history
+
+Owner fixed the logical Monitoring model.
+
+### Coverage
+
+Monitoring covers **all current observable state of the forum/system**, not only warnings, failures or states requiring intervention. The purpose is complete structured observability rather than a single problem queue.
+
+The approved Monitoring subsections are:
+
+1. **System**
+2. **Accounts & authentication**
+3. **Security**
+4. **Forum**
+5. **Localization & translations**
+6. **Notifications**
+7. **Files & attachments**
+8. **Administration**
+9. **Moderation**
+10. **Background processes**
+11. **Data**
+12. **Integrations**
+13. **Infrastructure**
+
+These subsections are the logical grouping of monitored state. Do not expand product design into an exhaustive metric/event catalog here; exact producers, measurements and technical collection belong to later technical planning.
+
+### History is intrinsic to every monitor
+
+Every monitored item/state has its own history.
+
+- The history control is placed **next to the corresponding monitor**, so the Owner can move directly from current state to that monitor's historical state/events.
+- History is therefore not a detached afterthought or a replacement for Monitoring; it is the temporal continuation of each monitor.
+- A global Event log/journal may provide a cross-system aggregate/history view, but it must not be the only history access path and must not replace the per-monitor History control.
+- Existing SA6 retention remains: Owner monitoring/event history is retained indefinitely until the Owner explicitly changes the policy; there is no ordinary UI deletion.
+
+This closes the logical Monitoring/history relationship without predefining every metric or technical event producer.
