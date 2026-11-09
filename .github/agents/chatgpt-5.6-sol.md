@@ -1560,3 +1560,8 @@ Kept the admin section strictly within existing permission-backed mechanisms: me
 ## Logic correction after Owner challenge
 
 I incorrectly carried a deletion-only identity decision into deactivation, assumed reversibility/forced-session actions, and failed to notice that a top-level Super-admin Accounts tab became potentially redundant once the Owner required one canonical user profile with privileged sections. These assumptions are withdrawn. Current deactivation does not imply anonymization; “Deleted user” is future deletion behavior only. Only deactivation is confirmed as an Owner-only account action.
+
+
+## Deactivation semantics corrected
+
+I incorrectly separated “Deleted user” presentation from deactivation. Owner clarified the actual model: deactivation itself produces the public Deleted user identity, while all account data is retained internally for at least one year. This is public anonymization without immediate data erasure. Post-year handling remains unresolved.
