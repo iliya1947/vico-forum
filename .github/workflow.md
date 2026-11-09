@@ -29,3 +29,27 @@
   - SA6: full Owner Monitoring/Event-log retention is indefinite until explicitly changed; no ordinary UI deletion.
   - SA7: both Owner-only entry points are used — ordinary Admin area and Owner account/profile menu — opening the same super-admin surface.
   - UP1: ordinary admins with applicable rights see only violation information; they do **not** get user-related history. Exact Owner sees the full per-user summary.
+
+
+## Current super-admin product state — Monitoring
+
+- Monitoring foundation: **approved**.
+- Monitoring covers all observable current state, organized into 13 subsections:
+  1. System
+  2. Accounts & authentication
+  3. Security
+  4. Forum
+  5. Localization & translations
+  6. Notifications
+  7. Files & attachments
+  8. Administration
+  9. Moderation
+  10. Background processes
+  11. Data
+  12. Integrations
+  13. Infrastructure
+- Every monitored item has directly adjacent History access.
+- Global Event log/journal, if retained as an aggregate view, does not replace per-monitor history.
+- Do not enumerate a complete metric/event catalog during product design; technical observability details wait for Lev after product scope freeze.
+- SA6 retention remains indefinite until Owner changes it; no ordinary UI deletion.
+- Next product work: remaining super-admin shell/Overview decisions. No implementation PR/head; Lev/Lira/Mark remain unassigned.
