@@ -160,10 +160,10 @@ export class PostgresOwnerSystemHistory {
     checkedLimit(limit);
     const result = await this.pool.query(`select id,position::text,occurred_at,recorded_at,source,
          occurrence_key,kind,monitor_key,entity_type,entity_id,actor_user_id,target_user_id,
-         correlation_id,payload from owner_events
-       where ($1::bigint is null or position < $1::bigint)
-         and ($2::text is null or monitor_key=$2::text)
-       order by position desc limit $3`, [cursor, options.monitorKey ?? null, limit + 1]);
+         correlation_id,payload from owner_events e
+       where ($1::bigint is null or e.position < $1::bigint)
+         and ($2::text is null or e.monitor_key=$2::text)
+       order by e.position desc limit $3`, [cursor, options.monitorKey ?? null, limit + 1]);
     const records = result.rows.slice(0, limit).map(eventRow);
     return { records, next: result.rows.length > limit ? records.at(-1)?.position ?? null : null };
   }
@@ -206,9 +206,9 @@ export class PostgresOwnerSystemHistory {
     checkedLimit(limit);
     const result = await this.pool.query(`select id,position::text,monitor_key,resource_scope,
         observed_at,source,schema_version,quality,value,fingerprint
-      from owner_monitor_observations where monitor_key=$1 and resource_scope='global'
-      and ($2::bigint is null or position < $2::bigint)
-      order by position desc limit $3`, [options.monitorKey, cursor, limit + 1]);
+      from owner_monitor_observations o where o.monitor_key=$1 and o.resource_scope='global'
+      and ($2::bigint is null or o.position < $2::bigint)
+      order by o.position desc limit $3`, [options.monitorKey, cursor, limit + 1]);
     const records = result.rows.slice(0, limit).map(observationRow);
     return { records, next: result.rows.length > limit ? records.at(-1)?.position ?? null : null };
   }
