@@ -601,3 +601,15 @@ Technical verification notes:
 - Better Auth `user.validateUserInfo` is a valid lifecycle seam for distinguishing new-user creation from link/sign-in and for identifying Google OAuth source.
 - Better Auth session-management APIs support the planned list/revoke flow; list-sessions carries freshness requirements.
 - These findings validate the technical plan only; no Settings implementation/CI/acceptance has run yet.
+
+
+## Completion status
+
+The planning/decomposition sections above are retained as the approved design record. Their pre-implementation status wording is superseded by the completed delivery state:
+
+- Ordinary Admin Panel AP-01–AP-11 — complete in repository/local-CI.
+- Owner/authorization redesign Stage 1–2 — complete in repository/local-CI.
+- Settings SET-01–SET-06 — complete in repository/local-CI.
+- SET-06 implementation #311 and factual documentation closeout #312 are merged.
+- Current main after docs closeout: `787cf6deae38138de2ffe867368ae794349f471f`.
+- External/deployed Stage 6 acceptance remains separate and paused by Owner decision.
