@@ -2366,3 +2366,14 @@ Owner-only section:
 - exact Owner security actions still pending.
 
 Five Owner decisions UP1–UP5 are pending. One ambiguity must be resolved: SA1 chose public “Deleted user” presentation, but SA2 later changed the lifecycle to deactivation-only. Public identity behavior during reversible deactivation is therefore not assumed.
+
+
+## Mira correction — deactivation/profile logic
+
+Three unsupported assumptions from the previous pass are withdrawn:
+
+1. SA1 “Deleted user” applied to the earlier deletion scenario. After SA2 changed current scope to **deactivation only**, a deactivated account is **not automatically anonymized**. “Deleted user” is future-only if actual deletion is later approved.
+2. Reactivation, forced logout/session termination and other account-security mutations were not approved and are removed from current scope.
+3. With one canonical user profile containing Admin + Owner-only sections, a top-level Super-admin **Accounts** area is not currently justified and risks duplicating ordinary Admin Users. The simplest current structure is Overview / Monitoring & Event log / Infrastructure, with user-specific privileged controls on the profile. A global Accounts section requires a separate real use case.
+
+Current confirmed Owner-only action: deactivation. Exact additional Owner-only profile data/actions remain to be defined from actual product need.
