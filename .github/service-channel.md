@@ -2564,3 +2564,14 @@ Mira reviewed exact head `5927b04045dbb0eaf0285df1b7bc116ab6d2d425` and returned
 `SA01-MIRA-01`: the System cards' `Coverage since` value does not represent the earliest retained scoped History. Runtime/Database use the latest observation; Requests can ignore retained observation history and show no coverage until a 5xx exists.
 
 Lira is assigned the bounded correction plus regressions. No SA-02+ scope. After a new stable PR #313 head/checks, Mira performs a fresh whole-PR review. Lev remains stopped; Mark unassigned.
+
+
+## SA01-MIRA-01 — correction on PR #313 (2026-11-09)
+
+- Mira's whole-PR review on prior head `5927b04045dbb0eaf0285df1b7bc116ab6d2d425` returned CHANGES REQUIRED with one confirmed SA-01 defect: `Coverage since` did not represent oldest retained scoped monitor History. Handoff [#6749272021](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6749272021).
+- Лира reproduced source chain and corrected only `db/owner-system-monitoring.ts`: coverage start for every delivered System monitor is now the earliest actual timeline date across retained observation `observed_at` and `owner_events.occurred_at`. `lastObservedAt` remains distinct. Removed obsolete first-recorded-5xx proxy for coverage. No migration/schema/endpoint/UI/Stage6/new monitor change.
+- New `tests/database/owner-system-coverage.test.ts` uses an independent disposable schema; **2/2 native PG17 PASS**, covers multiple Runtime/Database samples, Requests samples with zero failures, later event after first observation, earlier event preceding first observation. Fixture timestamps are synthetic and do not mutate production append-only records.
+- **New stable exact head `6d7f50f979a8aba220b4439646304717c3d8b7c4`** in [Ready PR #313](https://github.com/iliya1947/vico-forum/pull/313), open/unmerged, unchanged main `787cf6deae38138de2ffe867368ae794349f471f`.
+- [CI #42684010768](https://github.com/iliya1947/vico-forum/actions/runs/42684010768) **SUCCESS**: 169/169 application files, 2144/2144 tests; 54/54 native PG17 files, 619/619 tests, lint/typecheck/build/migrations/manifest/grants/Worker.
+- [Connected SA-01 Chromium #42684011022](https://github.com/iliya1947/vico-forum/actions/runs/42684011022) **SUCCESS**, and [existing Chromium #42684011268](https://github.com/iliya1947/vico-forum/actions/runs/42684011268) **SUCCESS** on all 4 jobs. Previous accepted screenshots do not constitute Owner visual approval.
+- **Лира stopped after correction author delivery.** Next: Mira fresh coordinator whole-PR review of this new exact head under applicable Owner visual gate; no new PASS/Lev/Mark activation, merge, permanent docs or SA-02+.
