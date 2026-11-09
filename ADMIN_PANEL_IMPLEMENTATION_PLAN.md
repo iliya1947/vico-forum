@@ -603,13 +603,29 @@ Technical verification notes:
 - These findings validate the technical plan only; no Settings implementation/CI/acceptance has run yet.
 
 
-## Completion status
+## Delivery status and remaining administrative scope
 
-The planning/decomposition sections above are retained as the approved design record. Their pre-implementation status wording is superseded by the completed delivery state:
+The planning/decomposition sections above are retained as the approved design record. Their pre-implementation status wording is superseded as follows:
 
 - Ordinary Admin Panel AP-01–AP-11 — complete in repository/local-CI.
 - Owner/authorization redesign Stage 1–2 — complete in repository/local-CI.
 - Settings SET-01–SET-06 — complete in repository/local-CI.
 - SET-06 implementation #311 and factual documentation closeout #312 are merged.
 - Current main after docs closeout: `787cf6deae38138de2ffe867368ae794349f471f`.
+- **The overall administrative program is not complete:** the separately planned Owner-only super-admin surface still remains.
 - External/deployed Stage 6 acceptance remains separate and paused by Owner decision.
+
+## Super-admin — product concept decisions
+
+Confirmed Owner decisions and existing boundaries:
+
+1. Super-admin is part of the overall admin work but remains a **separate Owner-only surface** from the ordinary permission-scoped Admin panel.
+2. Existing exact server-bound Owner authority is reused; do not create a second RBAC merely for super-admin.
+3. Account deletion remains reserved for super-admin, not ordinary Admin.
+4. A deeper/full Owner audit surface belongs to super-admin; ordinary Admin History remains the significant-action history.
+5. Super-admin must include a dedicated **Infrastructure** tab already in the current super-admin UI.
+6. During the current pre-Stage-6 implementation that Infrastructure tab is a **placeholder / Under development surface only**. It must not expose live infrastructure data, secrets, credentials, deployment actions or provider controls.
+7. Actual Cloudflare, Neon, deployments, secrets and provider administration inside that tab is deferred to **Stage 6** and is implemented only when Stage 6 is explicitly resumed by the Owner.
+8. The placeholder is intentional product structure, not authorization for Stage 6 work and not a reason to build speculative infrastructure backend foundations now.
+
+The remaining super-admin concept, exact sections and owner decisions are still being defined. Technical decomposition by Lev starts only after this product concept is frozen.
