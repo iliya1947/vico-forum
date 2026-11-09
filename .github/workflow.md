@@ -2,24 +2,19 @@
 
 - Service PR: **#251**
 - Current main: **`787cf6deae38138de2ffe867368ae794349f471f`**
-- Current stage: **Super-admin — Owner product decisions in progress**
+- Current stage: **Super-admin — unified profile product decisions UP1–UP5**
 - Ordinary Admin Panel AP-01–AP-11: **complete**
 - Owner/authorization redesign Stage 1–2: **complete**
 - Settings SET-01–SET-06: **complete**
 - Overall administrative program: **not complete; super-admin remains**
-- Proposed super-admin structure: **Overview / Accounts / Monitoring & Event log / Infrastructure**
+- Super-admin structure under design: **Overview / Accounts / Monitoring & Event log / Infrastructure**
 - User-detail target: **one canonical `/:locale/users/:userId` profile** with public + permission-scoped Admin + exact-Owner-only sections.
-- Resolved:
-  - SA1: published content retained; public author shown as neutral Deleted user.
-  - SA2: deactivation only; account retained at least one year; post-year disposition unresolved.
-  - SA3: withdrawn; sole bound Owner is not a valid deactivation target.
-  - Admins get their applicable administrative section directly on the user profile.
-  - Owner gets an additional Owner-only profile section with Access & security, per-user auth/security information and deactivation controls.
-  - Earlier separate super-admin user-card/detail concept is superseded.
-  - “Full audit” superseded by **Monitoring + Event log/history**.
-  - Infrastructure: visible Under development placeholder now; real functionality only in Stage 6.
-- Pending Owner decisions: exact current-stage Monitoring content; global Event-log coverage/detail/retention; super-admin navigation/Accounts role; Overview depth.
-- **Мира**: continues product decisions; technical scope not frozen.
+- Proposed Admin section: applicable measures + targeted role/permission controls; Complaints/Signals/Security stay in Needs attention.
+- Proposed Owner section: private account identity/sign-in methods + sessions/devices where supported + per-user auth/security events + deactivation state/actions.
+- Pending Owner decisions: **UP1–UP5**, plus remaining global Monitoring/Event-log/navigation/Overview decisions.
+- Important unresolved ambiguity: SA1 “Deleted user” public presentation vs SA2 reversible deactivation-only lifecycle.
+- Infrastructure remains an Under development placeholder until Stage 6.
+- **Мира**: waits for Owner profile decisions.
 - **Лёва**: stopped; technical planning only after scope freeze.
 - **Лира**: stopped.
 - **Марк**: unassigned.
