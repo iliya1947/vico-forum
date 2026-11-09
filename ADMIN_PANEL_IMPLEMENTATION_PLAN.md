@@ -981,3 +981,67 @@ Owner clarified the intended semantics:
 Current distinction:
 - **public/product state:** deactivated → appears as Deleted user;
 - **storage/internal state:** data retained, not erased, minimum one year.
+
+
+## Unified user profile — privileged sections v2
+
+This section supersedes the earlier proposed UP1–UP5 question set and removes speculative actions.
+
+### Administrative section on the canonical user profile
+
+The existing public `/:locale/users/:userId` profile gains an **Administration** section when the viewer has at least one applicable administrative capability.
+
+The section composes existing user-targeted administration instead of inventing a second subsystem:
+
+1. **Administrative measures**
+   - current measure information and the existing applicable measure-management actions;
+   - each read/action remains gated by its existing measure permissions and hierarchy.
+
+2. **Role and permissions**
+   - current role plus targeted authorization details only for actors with the existing authorization-read boundary;
+   - non-Owner remains read-only where the current authorization contract is read-only;
+   - exact bound Owner retains the already-approved authorization write controls.
+
+3. **Other existing user-targeted admin actions**
+   - only when there is an already implemented authoritative operation and the actor has its permission;
+   - do not copy Complaints, Signals or Security queues into the profile; those remain in Needs attention.
+
+4. **No new profile-local Admin History subsystem**
+   - ordinary Admin History remains the existing global significant-action history;
+   - a new filtered per-profile History view is not added merely to fill this section.
+
+### Owner-only section on the same profile
+
+The exact server-bound Owner additionally receives an **Owner** section containing private account-level information that ordinary admins must not receive:
+
+1. **Account identity**
+   - private email;
+   - internal account/user ID as technical detail;
+   - linked sign-in methods known to the application.
+
+2. **Access and security**
+   - active sessions/devices and their safe metadata where the current auth data actually records it;
+   - relevant authentication/security events for this specific user;
+   - no passwords, raw session tokens, secrets or provider credentials.
+
+3. **Account state**
+   - active/deactivated state;
+   - deactivation timestamp/status and retained-data state when available.
+
+4. **Owner action: deactivate account**
+   - deactivation is the only currently approved Owner-only account mutation;
+   - deactivation makes the public identity appear as **Deleted user**;
+   - published content remains;
+   - underlying account data remains retained internally for at least one year;
+   - a deactivated account must not remain usable as an active forum account. Existing session records do not need to be physically deleted as a product requirement, but a deactivated account must fail active-account admission on protected use;
+   - no reactivation, provider unlink, password manipulation or separate forced-session action is assumed.
+
+### Remaining product decision for deactivation
+
+A reason rule is still required because it changes the product contract and stored history:
+
+**UP-D1 — Deactivation reason**
+1. Require a nonblank Owner reason, stored internally and never shown publicly. **Mira recommendation.**
+2. Allow deactivation without a reason.
+
+No other privileged-profile product question is currently necessary.
