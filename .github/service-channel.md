@@ -2605,3 +2605,12 @@ Other assigned scope verified: exact binding and both links, three real System m
 Focused local app55/55, nativePG/migrations68/68, production build,67-table manifest/grants/provisioning, checked-in connected Chromium15/15; own probes logged separately including confirmed defect. Exact-head CI #42684010768 and both browser runs #42684011022/#42684011268 reconfirmed SUCCESS. Evidence `/workspace/work/sa01-review-evidence/`; clean checkout; preview/PG stopped and temporary vars/symlink removed. Production/live providers untouched.
 
 **Result returned to Mira for coordinator decision.** Earlier reviewer assignment to Lira is withdrawn; Lira remains stopped until Mira assigns work. Mira determines the response and route; Lev does not appoint the implementer or impose a further correction cycle. Merge remains Owner's action; permanent docs separate. SA02+ and Stage6 inactive. No Owner visual gate or last-manager/count/recovery rule added.
+
+
+## SA-01 — Lev finding confirmed by Mira
+
+Lev reviewed PR #313 exact head `6d7f50f979a8aba220b4439646304717c3d8b7c4` and reported `SA01-LEV-01` in `#6750292313`. Mira independently confirmed the causal chain and classified it as a current-scope defect.
+
+The issue: an impossible calendar timestamp such as `2026-02-31T00:00:00.000Z` passes the current JavaScript parser check, reaches PostgreSQL and produces an unexpected 500 instead of the existing malformed-cursor 400 behavior.
+
+Lira is assigned the bounded local correction and regressions via `#6750472578`. Lev stopped; Mark unassigned. After a new stable PR #313 head/checks, Mira repeats the whole-PR review.
