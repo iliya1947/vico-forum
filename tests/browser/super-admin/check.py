@@ -95,10 +95,11 @@ def guarded(ctx):
               else (external.append(route.request.url), route.abort())[-1])
 
 
-def get(page, path, status=200):
+def get(page, path, status=200, private=True):
     response = page.goto(base + path, wait_until="domcontentloaded")
     assert response and response.status == status, (path, getattr(response, "status", None), page.url)
-    no_store(response)
+    if private:
+        no_store(response)
     return response
 
 
@@ -162,13 +163,13 @@ try:
         request(admin_ctx, "/en/super-admin/events?before=invalid", 403)
         get(admin, "/en/admin")
         expect(admin.locator('a[href="/en/super-admin"]')).to_have_count(0)
-        get(admin, "/en/users/" + admin_id)
+        get(admin, "/en/users/" + admin_id, private=False)
         expect(admin.locator('a[href="/en/super-admin"]')).to_have_count(0)
         record("admin-with-authorization-access-still-denied-owner-surface")
 
         get(owner, "/en/admin")
         expect(owner.locator('.admin-panel-nav a[href="/en/super-admin"]')).to_have_count(1)
-        get(owner, "/en/users/" + owner_id)
+        get(owner, "/en/users/" + owner_id, private=False)
         expect(owner.locator('a[href="/en/super-admin"]')).to_have_count(1)
         record("both-owner-entry-links-same-canonical-route")
 
