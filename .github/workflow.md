@@ -1,37 +1,13 @@
 # Admin panel — current workflow
 
 - Service PR: **#251**
-- Current main: **`787cf6deae38138de2ffe867368ae794349f471f`**
-- Current stage: **Super-admin — SA-01 implementation**
-- AP01–11, Owner redesign1–2 and Settings SET01–06: **complete** in repository/local-CI
-- Overall administrative program: **not complete; Super-admin remains**
-- Frozen product model: Overview / Monitoring & Event log / Infrastructure;13 Monitoring areas; adjacent History and applicable contextual actions; global journal
-- Canonical user detail: `/:locale/users/:userId` with public + permission-scoped Admin + exact-Owner sections; ordinary admin receives violations, not user History
-- Deactivation: Deleted user public identity, published content retained, account data minimum1 year, active-account use denied; no mandatory reason/reactivation/forced logout/provider manipulation
-- SA6 retention indefinite;SA7 both Owner entry points;Infrastructure stays Stage6 placeholder
-- Technical plan/decomposition: [#6745289141](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6745289141), source-checked on exact main above
-- Proposed sequence: **SA01–08**; Mira accepted the plan, nearest package is **SA-01 only**
-- **Мира**: waiting for stable SA-01 implementation PR/head for coordinator whole-PR review
-- **Лёва**: planning complete; stopped, no project code/DB changes
-- **Лира**: **assigned SA-01 implementation only**
-- **Марк**: unassigned
-- No Super-admin implementation PR/head, migration execution, CI or runtime acceptance claimed
-- Next: **Lira implements SA-01 → stable implementation PR/head → Mira coordinator whole-PR review**
-- Production/Stage6/live Google/real Owner binding remain inactive.
-
-
-## Mira technical-plan review
-
-- Lev plan `#6745289141`: **PASS — 0 confirmed product-scope/fit defects**.
-- Review record: `#6745393863`.
-- No implementation is assigned yet.
-- Next separate step: assign **SA-01 only** to Lira.
-
-
-## SA-01 active assignment
-
-- Lira assignment: `#6745414259`.
-- Scope: **SA-01 only**.
-- Lev planning complete/stopped; Mark unassigned.
-- No SA-02+ implementation is authorized.
-- Next checkpoint: stable implementation PR/head and factual checks from Lira, then Mira coordinator whole-PR review.
+- Current main/base: **`787cf6deae38138de2ffe867368ae794349f471f`**
+- Current stage: **Super-admin SA-01 — implementation in progress; slice 1/3 data foundation completed**
+- Approved scope: **SA-01 only**. Frozen Super-admin product and accepted Lev technical plan [#6745289141](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6745289141), Mira scope PASS [#6745393863](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6745393863), Lira assignment [#6745414259](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6745414259).
+- Implementation **[Draft PR #313](https://github.com/iliya1947/vico-forum/pull/313)** on `chatgpt/super-admin-sa01`, current working head **`ff7a8f1d67726998e6f1d27cd9ff9048db0abe0a`**, NOT Ready for whole-PR review.
+- **Slice 1/3 delivered:** forward migration `0062_owner_monitoring_foundation`; append-only `owner_events` and `owner_monitor_observations`; Drizzle schema/snapshot/journal, PG17 manifest and precise web SELECT/INSERT (no UPDATE/DELETE or localization grant); server-only `PostgresOwnerSystemHistory` typed event/observation writer/reader, occurrence dedup, numeric bigint keyset paging, bounded payload, canonical fingerprint and per-monitor sample time gate; 9 native PostgreSQL tests.
+- **Exact-head [CI #42659433639](https://github.com/iliya1947/vico-forum/actions/runs/42659433639) SUCCESS:** 167 app files/2114 tests; 53 PostgreSQL17 files/614 tests, lint/typecheck/build/migrations/manifest/runtime privileges/Worker smoke.
+- **Exact-head [Chromium regression #42659433682](https://github.com/iliya1947/vico-forum/actions/runs/42659433682) SUCCESS:** 4/4 existing jobs. These are previous forum/Admin/Settings scenarios; no new Super-admin route/browser acceptance is claimed yet.
+- **Лира:** assigned SA-01 implementer; stopped at completed slice 1/3. **Next only after developer `...`: slice 2/3** — exact-Owner shell + two entry points, minimal real Overview, System Monitoring with actual sampled state and adjacent History/shared Event log, Infrastructure honest Stage6 placeholder, route/locale/permission/no-store tests. **Slice 3/3** connected built Worker/PG17/Chromium SA-01 acceptance and final frozen Ready handoff.
+- **Мира:** coordinator whole-PR review only after all three implementation slices, exact-head checks and Ready handoff; not launched. **Лёва:** plan complete/stopped; later independent review only after Mira PASS. **Марк:** unassigned.
+- No SA-02–08, account deactivation/profile/auth Security monitoring, new production resources, Cloudflare/Neon/Stage6, real Google/Owner binding, or permanent docs edits. Current SA-01 not finished, not merged, no Owner visual acceptance.
