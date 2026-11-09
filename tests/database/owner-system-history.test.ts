@@ -273,6 +273,21 @@ describe("SA-01 unified Owner timeline and actual current-state monitoring on Po
     expect(parseOwnerTimelineCursor(valid)).toMatchObject({
       origin:"system-event",id:"123e4567-e89b-42d3-a456-426614174000",
     });
+    const suffix="~system-event~123e4567-e89b-42d3-a456-426614174000";
+    for(const impossible of [
+      "2026-02-31T00:00:00.000Z", "2025-02-29T00:00:00.000Z",
+      "2026-12-31T24:00:00.000Z", "0000-01-01T00:00:00.000Z",
+    ]) {
+      const cursor=impossible+suffix;
+      expect(()=>parseOwnerTimelineCursor(cursor)).toThrow("cursor");
+      await expect(system.readTimeline({before:cursor})).rejects.toThrow("cursor");
+    }
+    const nearby="2026-02-28T00:00:00.000Z"+suffix;
+    const leap="2024-02-29T00:00:00.000Z"+suffix;
+    expect(parseOwnerTimelineCursor(nearby)?.at).toBe("2026-02-28T00:00:00.000Z");
+    expect(parseOwnerTimelineCursor(leap)?.at).toBe("2024-02-29T00:00:00.000Z");
+    await expect(system.readTimeline({before:nearby})).resolves.toMatchObject({entries:expect.any(Array)});
+    await expect(system.readTimeline({before:leap})).resolves.toMatchObject({entries:expect.any(Array)});
     expect(parseOwnerTimelineQuery("https://vico.test/en/super-admin/events?before="+encodeURIComponent(valid))).toBe(valid);
     for(const input of ["", "-1", "1970-01-01~system-event~bad", valid+"~extra"]) {
       expect(()=>parseOwnerTimelineCursor(input)).toThrow("cursor");
