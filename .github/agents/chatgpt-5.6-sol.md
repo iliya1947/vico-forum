@@ -1511,3 +1511,10 @@ All seven assigned Markdown files were read to their actual ends. SET-06 merged 
 ## Admin Panel + Settings channel complete
 
 PR #312 merged; current main `787cf6deae38138de2ffe867368ae794349f471f`. SET-06 implementation and factual docs closeout are both complete. Ordinary Admin Panel AP-01–AP-11, owner/authorization redesign Stage 1–2 and Settings SET-01–SET-06 are complete in repository/local-CI. No active assignment remains in #251. Current source-of-truth points next to UI/UX product pass; Stage 6 remains paused.
+
+
+## Super-admin concept correction
+
+Owner clarified that super-admin is part of the overall admin work, so my prior broad “administrative program complete” conclusion was incorrect. Ordinary Admin/owner redesign/Settings are complete; super-admin remains.
+
+New fixed decision: include a dedicated Infrastructure tab in super-admin now as an Under development placeholder. Real Cloudflare/Neon/deployments/secrets/provider management stays deferred to Stage 6 and must not be implemented or backed by speculative infrastructure APIs before Stage 6 resumes.
