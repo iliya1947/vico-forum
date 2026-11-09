@@ -40,6 +40,7 @@ export interface OwnerObservation {
 export interface OwnerPage<T> { records: T[]; next: string | null }
 const EVENT_LOCK = "select pg_advisory_xact_lock(1447641935, 2)";
 const MAX_PAYLOAD_BYTES = 8192;
+const SYSTEM_PAYLOAD_FIELDS = new Set(["state", "component", "version", "code", "count", "latencyMs", "build"]);
 
 function checkedKey(value: string, label: string): void {
   if (typeof value !== "string" || !/^[a-zA-Z0-9.:_/-]{1,200}$/.test(value)) {
@@ -50,6 +51,8 @@ function payloadJson(value: SafePayload): string {
   if (!value || typeof value !== "object" || Array.isArray(value)) throw new Error("Invalid Owner payload");
   for (const [name, field] of Object.entries(value)) {
     checkedKey(name, "payload key");
+    if (!SYSTEM_PAYLOAD_FIELDS.has(name)) throw new Error("Unknown System payload field");
+    if (typeof field === "string" && field.length > 200) throw new Error("Owner payload exceeds safe field length");
     if (field !== null && !["string", "boolean", "number"].includes(typeof field)) {
       throw new Error("Invalid Owner payload field");
     }

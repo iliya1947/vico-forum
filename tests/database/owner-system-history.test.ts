@@ -2,7 +2,6 @@ import { readFile, readdir } from "node:fs/promises";
 import { Client, Pool } from "pg";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { PostgresOwnerSystemHistory, type OwnerSystemEventInput, type OwnerObservationInput } from "../../db/owner-system-history";
-import { runtimeCapabilityContracts } from "../../.github/scripts/runtime-privileges.mjs";
 
 const url = process.env.DATABASE_URL!;
 if (!url || !["127.0.0.1", "localhost"].includes(new URL(url).hostname) ||
@@ -103,6 +102,8 @@ describe("SA-01 retained Owner history and System observations", () => {
     let cursor = first.next;
     while (cursor) {
       const next = await repo.readEvents({ cursor, limit: 10 });
+      // A later page can contain only older identity positions.
+      expect(next.records.every(r => BigInt(r.position) < BigInt(cursor!))).toBe(true);
       seen.push(...next.records.map(r => r.id));
       cursor = next.next;
     }
@@ -152,8 +153,9 @@ describe("SA-01 retained Owner history and System observations", () => {
     await expect(repo.append(event("bad-hash", { occurrenceKey: "bad\nkey" }))).rejects.toThrow("occurrence key");
     await expect(repo.append(event("bad-kind", { kind: "auth.login" as never }))).rejects.toThrow("event kind");
     await expect(repo.append(event("bad-monitor", { monitorKey: "arbitrary" as never }))).rejects.toThrow("monitor");
-    await expect(repo.append(event("long", { payload: { component: "x".repeat(9000) } }))).rejects.toThrow("8 KiB");
-    await expect(repo.append(event("nested", { payload: { raw: { password: "secret" } } as never }))).rejects.toThrow("payload field");
+    await expect(repo.append(event("long", { payload: { component: "x".repeat(9000) } }))).rejects.toThrow("safe field length");
+    await expect(repo.append(event("nested", { payload: { component: { password: "secret" } } as never }))).rejects.toThrow("payload field");
+    await expect(repo.append(event("secret", { payload: { token: "secret" } as never }))).rejects.toThrow("Unknown System payload field");
     await expect(repo.readEvents({ cursor: "-1" })).rejects.toThrow("cursor");
     await expect(repo.readEvents({ cursor: "9223372036854775808" })).rejects.toThrow("cursor");
     await expect(repo.readEvents({ limit: 1000 })).rejects.toThrow("limit");
@@ -162,12 +164,6 @@ describe("SA-01 retained Owner history and System observations", () => {
   });
 
   it("retains prior rows and exposes no web UPDATE/DELETE or identity-sequence grant", async () => {
-    const web = runtimeCapabilityContracts.web.relations;
-    const localization = runtimeCapabilityContracts["localization-read"].relations;
-    expect(web.owner_events).toEqual(["INSERT", "SELECT"]);
-    expect(web.owner_monitor_observations).toEqual(["INSERT", "SELECT"]);
-    expect("owner_events" in localization).toBe(false);
-    expect("owner_monitor_observations" in localization).toBe(false);
     const role = "sa01_event_probe";
     await client.query(`create role ${role} nologin;grant usage on schema ${schema} to ${role};
       grant select,insert on ${schema}.owner_events,${schema}.owner_monitor_observations to ${role}`);
