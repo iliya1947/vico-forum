@@ -118,8 +118,12 @@ describe("SA-01 retained Owner history and System observations", () => {
   it("samples unchanged state at most once per interval and always records changed state", async () => {
     const first = await repo.recordObservation(observation());
     const same = await repo.recordObservation(observation());
+    const reordered = await repo.recordObservation(observation({
+      value: { version: "17", state: "available" },
+    }));
     expect(first.inserted).toBe(true);
     expect(same).toEqual({ id: first.id, inserted: false });
+    expect(reordered).toEqual({ id: first.id, inserted: false });
     const changed = await repo.recordObservation(observation({ quality: "degraded" }));
     expect(changed.inserted).toBe(true);
     const changedAgain = await repo.recordObservation(observation({ quality: "degraded" }));
@@ -147,6 +151,27 @@ describe("SA-01 retained Owner history and System observations", () => {
     const [one, two] = await Promise.all([repo.append(event("parallel")), repo.append(event("parallel"))]);
     expect(one.id).toBe(two.id);
     expect([one.inserted, two.inserted].sort()).toEqual([false, true]);
+  });
+
+  it("paginates observations by numeric identity with no duplicated samples", async () => {
+    for (let count = 0; count < 14; count += 1) {
+      await repo.recordObservation(observation({
+        monitorKey: "system.requests", source: "application",
+        value: { count },
+      }));
+    }
+    const full = await repo.readObservations({ monitorKey: "system.requests", limit: 50 });
+    expect(full.records).toHaveLength(14);
+    const seen: string[] = [];
+    let cursor: string | undefined;
+    do {
+      const page = await repo.readObservations({ monitorKey: "system.requests", cursor, limit: 5 });
+      if (cursor) expect(page.records.every(r => BigInt(r.position) < BigInt(cursor!))).toBe(true);
+      seen.push(...page.records.map(r => r.id));
+      cursor = page.next ?? undefined;
+    } while (cursor);
+    expect(seen).toEqual(full.records.map(r => r.id));
+    expect(new Set(seen).size).toBe(14);
   });
 
   it("rejects unknown monitor/kind, malformed IDs, cursor, oversized/non-safe payload and bad page size", async () => {

@@ -58,7 +58,10 @@ function payloadJson(value: SafePayload): string {
     }
     if (typeof field === "number" && !Number.isFinite(field)) throw new Error("Invalid Owner payload number");
   }
-  const json = JSON.stringify(value);
+  // Property order is not a meaningful state change; fingerprints must be stable.
+  const json = JSON.stringify(Object.fromEntries(
+    Object.entries(value).sort(([a], [b]) => a.localeCompare(b)),
+  ));
   if (new TextEncoder().encode(json).length > MAX_PAYLOAD_BYTES) throw new Error("Owner payload exceeds 8 KiB");
   return json;
 }
