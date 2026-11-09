@@ -2469,3 +2469,19 @@ Final approved model:
 - the global Event log/journal provides aggregate cross-system history.
 
 No further Owner decision is required on whether the global journal exists.
+
+
+## Super-admin — action layer still unresolved
+
+Correction: the super-admin product model is **not yet frozen**.
+
+Monitoring current state, per-monitor History and the global Event log are resolved, but Owner identified a missing required layer: **actions**.
+
+Next product step:
+- determine the contextual action model for monitored objects/states;
+- reuse existing authoritative Admin/Settings actions where appropriate;
+- identify only genuinely Owner-only actions;
+- allow some monitors to remain read-only where no real action exists;
+- do not manufacture actions just to make every monitor interactive.
+
+Lev technical planning remains blocked until this product layer is resolved.
