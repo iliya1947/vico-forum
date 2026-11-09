@@ -2377,3 +2377,16 @@ Three unsupported assumptions from the previous pass are withdrawn:
 3. With one canonical user profile containing Admin + Owner-only sections, a top-level Super-admin **Accounts** area is not currently justified and risks duplicating ordinary Admin Users. The simplest current structure is Overview / Monitoring & Event log / Infrastructure, with user-specific privileged controls on the profile. A global Accounts section requires a separate real use case.
 
 Current confirmed Owner-only action: deactivation. Exact additional Owner-only profile data/actions remain to be defined from actual product need.
+
+
+## Owner clarification — deactivation = Deleted user, data retained
+
+Correction to Mira's prior interpretation:
+
+- deactivation immediately changes the public presentation to **Deleted user**;
+- deactivation does **not** erase the account's stored data;
+- account data is retained internally for **at least one year**;
+- published content remains;
+- post-year data handling is still unresolved.
+
+Do not model “Deleted user” as requiring a later hard-delete stage.
