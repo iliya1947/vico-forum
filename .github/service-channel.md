@@ -2305,3 +2305,19 @@ Owner decisions:
 - SA3: prior question withdrawn as inconsistent with the fixed single-Owner model; the bound Owner is not a target for deactivation.
 
 This corrects the earlier shorthand “account deletion belongs here”: the current implementation scope is deactivation, not permanent deletion. SA4–SA8 remain pending.
+
+
+## Super-admin — Owner correction: Monitoring + Event log
+
+The previous “Full audit” concept was too narrow.
+
+Owner decision:
+- super-admin requires a combined **Monitoring + Event log** area;
+- Monitoring = current useful operational/security state;
+- Event log/history = important past events and changes;
+- ordinary Admin History stays narrower and separate;
+- Stage-6 infrastructure monitoring/events are added only when Stage 6 is implemented, not by speculative probes now.
+
+Top-level concept becomes: **Overview / Accounts / Monitoring & Event log / Infrastructure**.
+
+Remaining product questions must be reformulated around what current-stage monitoring should show, event-log coverage/detail/retention, navigation entry and Overview depth.
