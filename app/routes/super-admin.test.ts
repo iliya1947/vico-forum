@@ -34,7 +34,7 @@ function setup(actor: string|null="owner", bound:string|undefined="owner") {
   context.set(authSessionContext, actor ? { user: { id:actor,name:actor,email:"private@test.invalid" } } as never : null);
   context.set(authorizationOwnerContext,bound);
   const readSystem = vi.fn(async()=>systemState);
-  const readTimeline = vi.fn(async (_options?:unknown)=>timeline);
+  const readTimeline = vi.fn(async ()=>timeline);
   context.set(ownerSystemMonitoringContext, {readSystem,readTimeline,recordRequestFailure:vi.fn()} as unknown as OwnerSystemMonitoring);
   const args = {context,params:{locale:"en"},request:new Request("https://vico.test/en/super-admin")};
   return {context,args,readSystem,readTimeline};
