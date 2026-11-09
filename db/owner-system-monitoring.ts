@@ -104,10 +104,9 @@ export class PostgresOwnerSystemMonitoring implements OwnerSystemMonitoring {
   async readSystem(): Promise<SystemOverview> {
     // All measurements come from this actual request and current PostgreSQL state.
     const result = await this.pool.query<{
-      version: string; observed_at: Date; failures: string; first_failure: Date | null;
+      version: string; observed_at: Date; failures: string;
     }>(`select current_setting('server_version') as version, clock_timestamp() as observed_at,
-        (select count(*)::text from owner_events where kind='system.requestFailed') as failures,
-        (select min(recorded_at) from owner_events where kind='system.requestFailed') as first_failure`);
+        (select count(*)::text from owner_events where kind='system.requestFailed') as failures`);
     const state = result.rows[0];
     if (!state) throw new Error("System state query returned no result");
     const values: Array<{ key: SystemMonitorKey; source: "application" | "database"; values: SafePayload }> = [
@@ -129,16 +128,25 @@ export class PostgresOwnerSystemMonitoring implements OwnerSystemMonitoring {
         recording = "unavailable";
       }
       let lastObservedAt: string | null = null;
+      let coverageFrom: string | null = null;
       try {
         const last = await repository.readObservations({ monitorKey: item.key, limit: 1 });
         lastObservedAt = last.records[0]?.observedAt ?? null;
+        // The scoped History is the union of retained observations and System events.
+        // Coverage starts at their earliest actual timeline timestamp, not the latest sample.
+        const first = await this.pool.query<{ first_at: Date | null }>(`
+          select min(at) as first_at from (
+            select min(observed_at) as at from owner_monitor_observations where monitor_key=$1
+            union all
+            select min(occurred_at) as at from owner_events where monitor_key=$1
+          ) retained`, [item.key]);
+        coverageFrom = first.rows[0]?.first_at?.toISOString() ?? null;
       } catch {
         recording = "unavailable";
       }
       monitors.push({
         key: item.key, quality: "measured", source: item.source, values: item.values,
-        coverageFrom: item.key === "system.requests" ? state.first_failure?.toISOString() ?? null : lastObservedAt,
-        lastObservedAt,
+        coverageFrom, lastObservedAt,
       });
     }
     return { monitors, observedAt: state.observed_at.toISOString(), recording };
