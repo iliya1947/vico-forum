@@ -1550,3 +1550,8 @@ Owner requires authentication/session/security data in each user's Owner-only Su
 ## Unified profile correction
 
 Owner requires one canonical user profile page with privilege-dependent sections: public base, admin section for applicable admin permissions, and exact-Owner-only section with Access & security/deactivation. My previous separate super-admin user-card concept was wrong and is superseded. Current separate admin-user route is implementation state only, not the target information architecture.
+
+
+## Unified-profile section pass
+
+Kept the admin section strictly within existing permission-backed mechanisms: measures and targeted authorization; no Complaints/Signals duplication. Proposed Owner-only identity/security/state block and isolated five product decisions. Flagged the real ambiguity between SA1 “Deleted user” presentation and SA2 deactivation-only lifecycle instead of silently assuming anonymization on reversible deactivation.
