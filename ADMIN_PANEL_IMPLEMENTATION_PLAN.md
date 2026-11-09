@@ -1060,3 +1060,33 @@ Therefore:
 - no explanation text is required unless a future delegated/approval workflow creates a real consumer for it.
 
 This supersedes the prior recommendation to require a nonblank Owner reason.
+
+
+## Super-admin decisions — SA6, SA7 and profile history scope
+
+Owner decisions:
+
+### SA6 — Monitoring/Event-log retention
+- **SA6.1 selected.**
+- Retain the full Owner monitoring/event-log history **indefinitely until the Owner explicitly replaces this policy**.
+- There is **no ordinary UI deletion** for this log.
+- This is a product retention rule, not a claim about legal/compliance requirements.
+
+### SA7 — Super-admin entry points
+- **SA7.3 selected.**
+- The exact Owner gets both entry points:
+  1. an Owner-only entry from the ordinary administration area;
+  2. an Owner-only entry from the Owner account/profile menu.
+- Both open the same separate super-admin destination; they do not create two implementations or two authorization models.
+
+### Unified profile — ordinary admin vs Owner history visibility
+Owner clarified the profile-history split:
+
+- An ordinary administrator with the applicable permission sees **only the user's violations** relevant to that administrative scope.
+- Ordinary admins do **not** receive the user's complete internal activity/security/account summary merely because they can administer the user.
+- The exact Owner sees the **full per-user summary** in the Owner-only profile section.
+- The full Owner summary may combine applicable user violations with private account/access/security history and other Owner-only user context once those producers/data are actually implemented.
+- Do not invent a new generic “violation” database model from this product decision. Technical planning must map the user-facing “violations” view onto authoritative existing or deliberately implemented moderation/measure sources without duplicating case systems.
+- Complaints/Signals/Security work queues remain in Needs attention; the profile is a summary/context surface, not a second queue.
+
+This supersedes the earlier proposal that ordinary admins might receive a filtered copy of general Admin History on the user profile.
