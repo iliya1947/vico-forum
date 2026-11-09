@@ -2420,3 +2420,15 @@ Resolved:
 - **Profile history split:** an ordinary admin with suitable rights sees only the user's **violations** relevant to their administrative scope; the exact Owner sees the **full per-user summary**.
 
 Do not infer a new generic violations subsystem. Technical planning must map that product view to authoritative moderation/measure sources. Needs attention queues remain separate.
+
+
+## Correction — UP1
+
+The previous phrase “profile history split” was wrong.
+
+UP1 was a question about showing user-related history to ordinary admins. Owner answered **no**:
+- ordinary admin with suitable rights sees only the user's violation information;
+- ordinary admin does not receive user-related history;
+- exact Owner sees the full per-user summary.
+
+Do not carry the question's “history” premise into the ordinary-admin answer.
