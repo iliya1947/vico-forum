@@ -1555,3 +1555,8 @@ Owner requires one canonical user profile page with privilege-dependent sections
 ## Unified-profile section pass
 
 Kept the admin section strictly within existing permission-backed mechanisms: measures and targeted authorization; no Complaints/Signals duplication. Proposed Owner-only identity/security/state block and isolated five product decisions. Flagged the real ambiguity between SA1 “Deleted user” presentation and SA2 deactivation-only lifecycle instead of silently assuming anonymization on reversible deactivation.
+
+
+## Logic correction after Owner challenge
+
+I incorrectly carried a deletion-only identity decision into deactivation, assumed reversibility/forced-session actions, and failed to notice that a top-level Super-admin Accounts tab became potentially redundant once the Owner required one canonical user profile with privileged sections. These assumptions are withdrawn. Current deactivation does not imply anonymization; “Deleted user” is future deletion behavior only. Only deactivation is confirmed as an Owner-only account action.
