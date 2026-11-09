@@ -2443,7 +2443,7 @@ Owner approved the Monitoring foundation.
 - Do not spend product-design cycles enumerating every metric/state/event inside those sections; exact technical observability producers belong to later technical planning.
 - **Every monitored item has history.**
 - The History control belongs next to the corresponding monitor so current state and its history are directly connected.
-- A global Event log/journal may remain as an aggregate cross-system view, but it does not replace per-monitor history.
+- The global **Event log / journal remains** the aggregate cross-system history view; it exists alongside, and does not replace, per-monitor history.
 - Existing SA6 retention remains unchanged: Owner history is retained indefinitely until explicitly changed; no ordinary UI deletion.
 
 Monitoring/history logical model is now resolved. No technical planner or implementation is assigned yet.
@@ -2457,3 +2457,15 @@ Owner selected the summary model for Super-admin Overview.
 - It surfaces important current problems/anomalies and links into the detailed area.
 - It is not a navigation-only page and must not duplicate full Monitoring content.
 - Exact widgets/metrics/layout are deferred to technical/UI planning.
+
+
+## Correction — Event log was not an open choice
+
+Mira incorrectly reopened an already resolved decision by asking whether a global Event log should exist.
+
+Final approved model:
+- Monitoring shows current state;
+- every monitor has adjacent scoped History;
+- the global Event log/journal provides aggregate cross-system history.
+
+No further Owner decision is required on whether the global journal exists.
