@@ -2390,3 +2390,16 @@ Correction to Mira's prior interpretation:
 - post-year data handling is still unresolved.
 
 Do not model “Deleted user” as requiring a later hard-delete stage.
+
+
+## Unified profile — privileged sections v2
+
+Mira simplified the profile model to current product need and existing capabilities.
+
+**Admin section:** existing user-targeted administration only — measures plus role/permission information/actions under their existing permissions. Complaints/Signals/Security remain in Needs attention. No new profile-local Admin History subsystem.
+
+**Owner section:** private email/internal ID/sign-in methods, supported session/device metadata, relevant per-user auth/security events, account state, and the confirmed deactivation action.
+
+Deactivation semantics: public identity becomes Deleted user, published content remains, stored account data is retained at least one year, and the account must no longer be usable as an active forum account. Physical session-record deletion is not itself a product requirement; active-account admission must block deactivated identities.
+
+The speculative UP1–UP5 set is superseded. Only one profile product decision remains: whether Owner must provide a nonblank internal reason for deactivation (UP-D1).
