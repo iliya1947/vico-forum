@@ -1535,3 +1535,8 @@ Prepared SA1–SA8 product decisions. Deliberately excluded technical choices th
 ## Super-admin SA1–SA3 correction
 
 Owner chose content retention with neutral Deleted user presentation and deactivation-only account handling with minimum one-year retention. I withdrew SA3 because asking whether the sole bound Owner could self-delete contradicted the already-fixed single-Owner/no-transfer model. Current Accounts concept must say deactivation, not permanent deletion; post-year disposition remains unresolved.
+
+
+## Monitoring + Event log correction
+
+Owner corrected my “full audit” framing. Super-admin needs both current-state monitoring and historical event reconstruction. Ordinary Admin History remains a narrower admin-action log. Stage-6-only operational monitoring must not be faked or implemented early.
