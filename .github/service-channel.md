@@ -32,15 +32,16 @@
 
 ## Актуальный baseline и назначение
 
-- Current main: `787cf6deae38138de2ffe867368ae794349f471f`. AP01–11,Owner redesign1–2,SET01–06 complete;overall administrative program remains open for Super-admin.
-- Super-admin product scope frozen: Overview / Monitoring & Event log / Infrastructure;13 Monitoring areas,each real monitor has adjacent History/applicable actions;global journal;unified public/Admin/Owner profile.
-- **Lev technical plan delivered:** [#6745289141](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6745289141), against exact current main. Source-level planning,not implementation/acceptance.
-- Plan proposes SA01–08:Owner shell/History foundation→auth/security producers→canonical profile→lifecycle enforcement/public neutral projection→deactivate action→domain monitors→remaining sources→integration/Overview/closeout.
-- Frozen decisions preserved:deactivation publicly Deleted user,published content/account records retained≥1 year,no mandatory reason,no reactivation/force-logout/provider mutation;exact Owner not target per SA3. SA6 indefinite Owner history;SA7 both entry points;UP1 ordinary admin violations without user-related History.
-- History normalizes existing authoritative sources plus new missing Owner events/observations;no duplicate domain event when action starts from Monitoring. Every real monitor has provenance/coverage;no fabricated old auth history/healthy external status.
-- Active-account gate and shared server public-identity projection precede available deactivate command. No second RBAC/settings/infra backend.
-- **Next — Mira scope/fit review,then separate assignment of SA-01 only.** Lira remains unassigned/stopped;Lev stopped;Mark unassigned.
-- No Super-admin project code/migration/CI/runtime acceptance completed. Infrastructure is Stage6 placeholder;production/Stage6 not resumed.
+- Current main/base: `787cf6deae38138de2ffe867368ae794349f471f`. AP01–11, Owner redesign1–2, SET01–06 closed in repository/local-CI; Super-admin program open.
+- Accepted technical plan: [#6745289141](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6745289141); only SA01 authorized. Frozen product decisions remain in that plan; no last-manager/count/recovery rule.
+- SA01 [PR #313](https://github.com/iliya1947/vico-forum/pull/313), open/unmerged, reviewed exact head `6d7f50f979a8aba220b4439646304717c3d8b7c4`, 38 changed files. Mira coordinator PASS #6749734093; SA01-MIRA-01 closed.
+- **Lev independent whole-PR: CHANGES REQUIRED — one current-scope finding SA01-LEV-01 [P3].** Impossible calendar date `2026-02-31` passes cursor validation; real PG22008 becomes HTTP500 instead of400 on global/scoped History. Ordinary generated pagination works. [Review and Lira handoff #6750292313](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6750292313).
+- **Next agent: Lira — bounded date/cursor validation correction and regressions in #313.** Then stable new head → Mira fresh whole-PR → after PASS Lev independent whole-PR. Lev stopped; Mark unassigned.
+- Other reviewed SA01 scope passed: exact Owner/entries, append-only events/observations and real web grants, current System semantics, earliest retained Coverage, shared source identity/keyset history, safe 5xx telemetry/failure isolation, Infrastructure placeholder, EN/RU/HE/RTL/responsive/keyboard.
+- Exact-head CI #42684010768, SA01 Chromium #42684011022, existing Chromium #42684011268 SUCCESS; new-head checks/review not claimed.
+- Lev local verification: build, focused app55/55, nativePG/migration68/68, manifest67 public tables, grants/provisioning, checked-in browser15/15 and independent mixed-source pagination/HTTP/real-web-role probes. Evidence `/workspace/work/sa01-review-evidence/`; review checkout clean, disposable services removed.
+- Owner visual acceptance not an SA01 gate; UI/UX polish separate. Owner alone merges; permanent documentation separate after merge.
+- SA02+ inactive; production/Stage6/live infrastructure/real Google/external Owner binding not resumed.
 
 ## Handoff — Лира: Stage2 factual documentation closeout
 
@@ -2591,3 +2592,16 @@ Mira completed a fresh whole-PR review of corrected exact head `6d7f50f979a8aba2
 Correction: Owner visual acceptance is not an applicable SA-01 gate; visual polish remains separate UI/UX scope.
 
 Lev is now assigned independent technical review of the same exact head via `#6749735976`. Lira stopped; Mark unassigned.
+
+
+## SA-01 / PR #313 — Lev independent whole-PR correction handoff (2026-11-09)
+
+[Full report #6750292313](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6750292313). Exact head `6d7f50f979a8aba220b4439646304717c3d8b7c4`; unchanged main `787cf6deae38138de2ffe867368ae794349f471f`.
+
+**CHANGES REQUIRED: SA01-LEV-01 [P3] only.** `parseOwnerTimelineCursor` tests Date.parse finiteness, which accepts normalized impossible dates. Original date string reaches PostgreSQL timestamptz cast and raises22008. Independently confirmed both Owner History URLs return500 for February31, while February28 returns200 and malformed string returns400. Restricted to damaged/manually edited Owner cursor; no authorization bypass or normal pagination failure. Lira should reject unsupported/invalid calendar dates before SQL, cover parser/route/PG behavior and keep unexpected DB/schema/programming errors unmasked. Then fresh stable-head coordinator cycle; no reviewer implementation changes.
+
+Other assigned scope verified: exact binding and both links, three real System monitors, retained earliest Coverage (MIRA01 closed), append-only relations/manifest/runtime capabilities, common/scoped same source identity, three-source same-ms pagination36 records/9 pages, browser global70 facts/5 pages and scoped35/2 pages, actual web-role INSERT/dedup/read with UPDATE/DELETE42501 and no sequence USAGE, private503 availability vs unexpected500 schema fault/recovery, safe telemetry, EN/RU/HE/RTL/mobile/keyboard, honest Stage6 placeholder.
+
+Focused local app55/55, nativePG/migrations68/68, production build,67-table manifest/grants/provisioning, checked-in connected Chromium15/15; own probes logged separately including confirmed defect. Exact-head CI #42684010768 and both browser runs #42684011022/#42684011268 reconfirmed SUCCESS. Evidence `/workspace/work/sa01-review-evidence/`; clean checkout; preview/PG stopped and temporary vars/symlink removed. Production/live providers untouched.
+
+**Next: Lira bounded correction → Mira fresh coordinator review → after PASS Lev independent review.** Owner merges only after cycle closes; permanent docs separate. SA02+ and Stage6 inactive. No Owner visual gate or last-manager/count/recovery rule added.
