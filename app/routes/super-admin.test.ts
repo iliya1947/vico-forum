@@ -81,6 +81,34 @@ describe("SA-01 independent exact-Owner access to each Super-admin endpoint",()=
     })).rejects.toMatchObject({status:400});
     expect(x.readTimeline).not.toHaveBeenCalled();
   });
+  it("classifies impossible calendar History cursors as private 400 before DB on both routes",async()=>{
+    const x=setup("owner");
+    const suffix="~system-event~123e4567-e89b-42d3-a456-426614174000";
+    const scoped="/en/super-admin/monitoring/system/system.runtime/history";
+    for(const timestamp of [
+      "2026-02-31T00:00:00.000Z", "2025-02-29T00:00:00.000Z",
+      "2026-12-31T24:00:00.000Z", "0000-01-01T00:00:00.000Z",
+    ]) {
+      const query="?before="+encodeURIComponent(timestamp+suffix);
+      for(const call of [
+        ()=>events({...x.args,request:new Request("https://vico.test/en/super-admin/events"+query)}),
+        ()=>history({...x.args,params:{locale:"en",monitorKey:"system.runtime"},
+          request:new Request("https://vico.test"+scoped+query)}),
+      ]) {
+        await expect(call()).rejects.toMatchObject({
+          status:400,headers:expect.any(Headers),
+        });
+      }
+    }
+    expect(x.readTimeline).not.toHaveBeenCalled();
+    const valid="2026-02-28T00:00:00.000Z"+suffix;
+    const query="?before="+encodeURIComponent(valid);
+    await events({...x.args,request:new Request("https://vico.test/en/super-admin/events"+query)});
+    await history({...x.args,params:{locale:"en",monitorKey:"system.runtime"},
+      request:new Request("https://vico.test"+scoped+query)});
+    expect(x.readTimeline).toHaveBeenNthCalledWith(1,{before:valid});
+    expect(x.readTimeline).toHaveBeenNthCalledWith(2,{monitorKey:"system.runtime",before:valid});
+  });
   it("re-checks Owner binding on every read, independently of navigation",async()=>{
     const x=setup("owner"); await overview(x.args);expect(x.readSystem).toHaveBeenCalledOnce();
     x.context.set(authorizationOwnerContext,"different-owner");
