@@ -1540,3 +1540,8 @@ Owner chose content retention with neutral Deleted user presentation and deactiv
 ## Monitoring + Event log correction
 
 Owner corrected my “full audit” framing. Super-admin needs both current-state monitoring and historical event reconstruction. Ordinary Admin History remains a narrower admin-action log. Stage-6-only operational monitoring must not be faked or implemented early.
+
+
+## User security placement correction
+
+Owner requires authentication/session/security data in each user's Owner-only Super-admin account card, not merely in a global event log. Accounts therefore includes a dedicated Access & security section with sign-in methods, sessions/devices where supported, recent relevant security/auth events, and deactivation state/actions. Ordinary Admin Users remains unchanged.
