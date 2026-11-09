@@ -2,7 +2,7 @@
 
 - Service PR: **#251**
 - Current main: **`787cf6deae38138de2ffe867368ae794349f471f`**
-- Current stage: **Super-admin — profile scope ready; global super-admin decisions remain**
+- Current stage: **Super-admin — global product decisions remain**
 - Ordinary Admin Panel AP-01–AP-11: **complete**
 - Owner/authorization redesign Stage 1–2: **complete**
 - Settings SET-01–SET-06: **complete**
@@ -24,3 +24,8 @@
 - **Лира**: stopped.
 - **Марк**: unassigned.
 - No super-admin implementation PR/head yet.
+
+- Resolved global decisions:
+  - SA6: full Owner Monitoring/Event-log retention is indefinite until explicitly changed; no ordinary UI deletion.
+  - SA7: both Owner-only entry points are used — ordinary Admin area and Owner account/profile menu — opening the same super-admin surface.
+  - Profile history: ordinary admins with applicable rights see only violations in scope; Owner sees the full per-user summary.
