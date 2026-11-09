@@ -2,6 +2,7 @@ import { readFile, readdir } from "node:fs/promises";
 import { Client, Pool } from "pg";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { PostgresOwnerSystemHistory, type OwnerSystemEventInput, type OwnerObservationInput } from "../../db/owner-system-history";
+import { PostgresOwnerSystemMonitoring, parseOwnerTimelineCursor, parseOwnerTimelineQuery } from "../../db/owner-system-monitoring";
 
 const url = process.env.DATABASE_URL!;
 if (!url || !["127.0.0.1", "localhost"].includes(new URL(url).hostname) ||
@@ -209,5 +210,72 @@ describe("SA-01 retained Owner history and System observations", () => {
       await client.query(`drop owned by ${role};drop role ${role}`);
     }
     expect((await repo.readEvents({ limit: 50 })).records.length).toBeGreaterThan(0);
+  });
+});
+
+describe("SA-01 unified Owner timeline and actual current-state monitoring on PostgreSQL17",()=>{
+  const system=new PostgresOwnerSystemMonitoring(pool,"test");
+  it("measures real PostgreSQL version, timestamps and sampled current state without false uptime claims",async()=>{
+    const first=await system.readSystem();
+    expect(first.monitors).toHaveLength(3);
+    expect(first.monitors.find(row=>row.key==="system.dependencies")).toMatchObject({
+      source:"database",quality:"measured",values:{component:"postgresql",state:"available",version:expect.stringMatching(/^17\\./)},
+    });
+    expect(first.monitors.find(row=>row.key==="system.requests")?.values.state).toBe("limited-coverage");
+    expect(first.recording).toBe("available");
+    const counts=await client.query(`select monitor_key,count(*)::int count from owner_monitor_observations
+      group by monitor_key`);
+    const before=Object.fromEntries(counts.rows.map(row=>[row.monitor_key,row.count]));
+    const again=await system.readSystem();
+    expect(again.recording).toBe("available");
+    const after=await client.query(`select monitor_key,count(*)::int count from owner_monitor_observations group by monitor_key`);
+    for(const row of after.rows)expect(row.count).toBe(before[row.monitor_key]);
+    const response=await system.readTimeline({monitorKey:"system.dependencies",limit:50});
+    expect(response.entries.some(x=>x.origin==="system-observation")).toBe(true);
+    expect(response.entries.every(x=>x.monitorKey==="system.dependencies")).toBe(true);
+  });
+
+  it("uses one source-aware timeline for stored System events, observations and existing native Admin History",async()=>{
+    const actionId="11111111-2222-4333-8444-555555555555";
+    await client.query(`insert into admin_history(id,actor_id,actor_label,action,target_type,target_id,target_label,context)
+      values($1,'owner','Owner','role.created','role','sa01-history','SA-01 history', '{"slug":"sa01-history"}'::jsonb)
+      on conflict(id) do nothing`,[actionId]);
+    const occurrence=await repo.append(event("timeline-unavailable-1",{
+      occurredAt:new Date(),payload:{component:"postgresql",code:"08006"},
+    }));
+    await system.recordRequestFailure(503,21);
+    const all=await system.readTimeline({limit:50});
+    expect(all.entries.some(x=>x.origin==="admin-history"&&x.id===actionId)).toBe(true);
+    expect(all.entries.some(x=>x.origin==="system-event"&&x.id===occurrence.id)).toBe(true);
+    expect(all.entries.some(x=>x.origin==="system-observation")).toBe(true);
+    expect(all.entries.find(x=>x.id===actionId)?.values).toEqual({
+      actorUserId:"owner",targetType:"role",targetId:"sa01-history",
+    });
+    const scoped=await system.readTimeline({monitorKey:"system.dependencies",limit:50});
+    expect(scoped.entries.some(x=>x.id===occurrence.id)).toBe(true);
+    expect(scoped.entries.every(x=>x.monitorKey==="system.dependencies")).toBe(true);
+    expect(scoped.entries.find(x=>x.id===occurrence.id)).toEqual(all.entries.find(x=>x.id===occurrence.id));
+    const ids:string[]=[];
+    let before:string|undefined;
+    do {
+      const page=await system.readTimeline({limit:3,before});
+      ids.push(...page.entries.map(x=>x.origin+":"+x.id));
+      before=page.next??undefined;
+    }while(before);
+    expect(ids).toEqual((await system.readTimeline({limit:50})).entries.map(x=>x.origin+":"+x.id));
+    expect(new Set(ids).size).toBe(ids.length);
+  });
+
+  it("rejects forged cursors and arbitrary monitor filters without querying private sources",async()=>{
+    const valid="2026-11-09T18:00:00.000Z~system-event~123e4567-e89b-42d3-a456-426614174000";
+    expect(parseOwnerTimelineCursor(valid)).toMatchObject({
+      origin:"system-event",id:"123e4567-e89b-42d3-a456-426614174000",
+    });
+    expect(parseOwnerTimelineQuery("https://vico.test/en/super-admin/events?before="+encodeURIComponent(valid))).toBe(valid);
+    for(const input of ["", "-1", "1970-01-01~system-event~bad", valid+"~extra"]) {
+      expect(()=>parseOwnerTimelineCursor(input)).toThrow("cursor");
+    }
+    await expect(system.readTimeline({monitorKey:"untrusted.sql" as never})).rejects.toThrow("monitor");
+    await expect(system.readTimeline({before:"too-old"})).rejects.toThrow("cursor");
   });
 });
