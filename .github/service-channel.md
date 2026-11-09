@@ -2447,3 +2447,13 @@ Owner approved the Monitoring foundation.
 - Existing SA6 retention remains unchanged: Owner history is retained indefinitely until explicitly changed; no ordinary UI deletion.
 
 Monitoring/history logical model is now resolved. No technical planner or implementation is assigned yet.
+
+
+## Super-admin — Overview role approved
+
+Owner selected the summary model for Super-admin Overview.
+
+- Overview is a concise current-state summary across the approved Monitoring areas.
+- It surfaces important current problems/anomalies and links into the detailed area.
+- It is not a navigation-only page and must not duplicate full Monitoring content.
+- Exact widgets/metrics/layout are deferred to technical/UI planning.
