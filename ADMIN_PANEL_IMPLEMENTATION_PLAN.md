@@ -1045,3 +1045,18 @@ A reason rule is still required because it changes the product contract and stor
 2. Allow deactivation without a reason.
 
 No other privileged-profile product question is currently necessary.
+
+
+## Owner decision — deactivation reason not required
+
+The previous UP-D1 question is closed.
+
+Because account deactivation is an exact-Owner-only action, a mandatory reason would be entered by the same Owner who performs and later reviews the action. It does not create an independent approval or accountability boundary in the current single-Owner model.
+
+Therefore:
+- **deactivation does not require a reason**;
+- do not add a mandatory reason field merely for formality;
+- the deactivation event itself may still be recorded with actor, target and timestamp in the applicable internal event/history system;
+- no explanation text is required unless a future delegated/approval workflow creates a real consumer for it.
+
+This supersedes the prior recommendation to require a nonblank Owner reason.
