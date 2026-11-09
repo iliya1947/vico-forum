@@ -289,6 +289,10 @@ export const russianCommonValues = {
 
   adminPanelTitle: "Админ-панель",
   superAdminTitle: "Суперадмин",
+  superAdminStateServing: "Обрабатывает запросы",
+  superAdminStateAvailable: "Доступна",
+  superAdminStateLimitedCoverage: "Записываются только ответы 5xx",
+  superAdminQualityMeasured: "Измерено",
   superAdminAreaAccounts: "Аккаунты и авторизация",
   superAdminAreaSecurity: "Безопасность",
   superAdminAreaForum: "Форум",
@@ -1302,6 +1306,10 @@ export const hebrewCommonValues = {
 
   adminPanelTitle: "לוח ניהול",
   superAdminTitle: "ניהול-על",
+  superAdminStateServing: "מטפל בבקשות",
+  superAdminStateAvailable: "זמין",
+  superAdminStateLimitedCoverage: "רק תגובות 5xx מתועדות",
+  superAdminQualityMeasured: "נמדד",
   superAdminAreaAccounts: "חשבונות ואימות",
   superAdminAreaSecurity: "אבטחה",
   superAdminAreaForum: "פורום",

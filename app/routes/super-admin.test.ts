@@ -50,13 +50,13 @@ const checks = [
 
 describe("SA-01 independent exact-Owner access to each Super-admin endpoint",()=>{
   it.each(checks)("blocks Guest before any private read: %s",async (_label,call)=>{
-    const x=setup(null);await expect(call(x)).rejects.toMatchObject({status:401});
+    const x=setup(null);await expect(async()=>call(x)).rejects.toMatchObject({status:401});
     expect(x.readSystem).not.toHaveBeenCalled();expect(x.readTimeline).not.toHaveBeenCalled();
   });
   it.each(checks)("blocks non-Owner even with elevated-looking session: %s",async (_label,call)=>{
     for(const binding of ["owner"," owner",undefined]){
       const x=setup("admin",binding);
-      await expect(call(x)).rejects.toMatchObject({status:403});
+      await expect(async()=>call(x)).rejects.toMatchObject({status:403});
       expect(x.readSystem).not.toHaveBeenCalled();expect(x.readTimeline).not.toHaveBeenCalled();
     }
   });

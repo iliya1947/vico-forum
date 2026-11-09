@@ -65,7 +65,10 @@ export function SystemMonitorCards({locale,system}: {locale:string;system:System
     {system.monitors.map(state=><article className="super-admin-monitor" key={state.key}>
       <h3>{t(keys[state.key])}</h3>
       <dl>{monitorText(state,locale).map(row=><div key={row.label}>
-        <dt>{t(row.label)}</dt><dd dir="auto">{String(row.value)}</dd>
+        <dt>{t(row.label)}</dt><dd dir="auto">{row.value==="serving" ? t("superAdminStateServing")
+          : row.value==="available" ? t("superAdminStateAvailable")
+          : row.value==="limited-coverage" ? t("superAdminStateLimitedCoverage")
+          : String(row.value)}</dd>
       </div>)}</dl>
       <p className="super-admin-freshness">{t("superAdminObservedAt")}:
         <time dateTime={system.observedAt}>{formatTime(system.observedAt,locale)}</time>
@@ -96,7 +99,7 @@ export function Timeline({ page, locale, path }: {page:OwnerTimelinePage;locale:
         <p><time dateTime={entry.occurredAt}>{formatTime(entry.occurredAt,locale)}</time>
           <span> · </span><span dir="auto">{entry.source}</span>
         </p>
-        {entry.quality ? <p>{t("superAdminQuality")}: <bdi>{entry.quality}</bdi></p> : null}
+        {entry.quality ? <p>{t("superAdminQuality")}: <bdi>{entry.quality==="measured" ? t("superAdminQualityMeasured") : entry.quality}</bdi></p> : null}
         <dl>{Object.entries(entry.values).map(([name,value])=><div key={name}>
           <dt dir="auto">{name}</dt><dd dir="auto">{String(value)}</dd>
         </div>)}</dl>

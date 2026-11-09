@@ -301,6 +301,10 @@ export const canonicalEnglishCatalog = {
 
     adminPanelTitle: message("adminPanelTitle", "Admin panel", "Admin shell: adminPanelTitle."),
     superAdminTitle: message("superAdminTitle", "Super-admin", "SA-01 Owner-only Super-admin surface."),
+    superAdminStateServing: message("superAdminStateServing", "Serving requests", "SA-01 Owner-only Super-admin surface."),
+    superAdminStateAvailable: message("superAdminStateAvailable", "Available", "SA-01 Owner-only Super-admin surface."),
+    superAdminStateLimitedCoverage: message("superAdminStateLimitedCoverage", "Only 5xx responses are recorded", "SA-01 Owner-only Super-admin surface."),
+    superAdminQualityMeasured: message("superAdminQualityMeasured", "Measured", "SA-01 Owner-only Super-admin surface."),
     superAdminAreaAccounts: message("superAdminAreaAccounts","Accounts & authentication","SA-01 Owner-only Super-admin surface."),
     superAdminAreaSecurity: message("superAdminAreaSecurity","Security","SA-01 Owner-only Super-admin surface."),
     superAdminAreaForum: message("superAdminAreaForum","Forum","SA-01 Owner-only Super-admin surface."),

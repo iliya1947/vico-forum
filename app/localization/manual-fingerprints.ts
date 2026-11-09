@@ -294,6 +294,10 @@ export const reviewedCommonFingerprints = {
 
   adminPanelTitle: "7b85d9fe2bdad8f059fd4c325aa3bfee5dc8960f3eff053c0e8bd0303182b587",
   superAdminTitle: "4eee9b28722d909b80d792c6d9049be5aec1dd88dbac8d2347ac1eb774c3b41d",
+  superAdminStateServing: "013a550ee9de80f1c0e95a1fabef9e6f50c3446ede5a0053612c4f88614dbce7",
+  superAdminStateAvailable: "d2d062bc6895918251d3560d0627f19dbd5653f4aa3276a023a6bb47783a3f3b",
+  superAdminStateLimitedCoverage: "2b29b418979decfe0ebe229d181cdd6a94bdec4994f5288bf41a426834d6e591",
+  superAdminQualityMeasured: "ce49a78a97710042e01d3b9d7487c9c320e200e28aabd317ff932f0e56e3bd8b",
   superAdminAreaAccounts: "031b675c36dbf790959d33affc98593af54f5584a276cfe35723a1c339172987",
   superAdminAreaSecurity: "3ba76dd3cb2c847b9b16925392a64a1e18146874472a6f9916c22aea294deb87",
   superAdminAreaForum: "01c5d77c06d0284fac8ced28709db16fcffd07eb290bfb0df1e1907e2b13c72e",
