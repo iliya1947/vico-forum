@@ -2614,3 +2614,14 @@ Lev reviewed PR #313 exact head `6d7f50f979a8aba220b4439646304717c3d8b7c4` and r
 The issue: an impossible calendar timestamp such as `2026-02-31T00:00:00.000Z` passes the current JavaScript parser check, reaches PostgreSQL and produces an unexpected 500 instead of the existing malformed-cursor 400 behavior.
 
 Lira is assigned the bounded local correction and regressions via `#6750472578`. Lev stopped; Mark unassigned. After a new stable PR #313 head/checks, Mira repeats the whole-PR review.
+
+
+## SA01-LEV-01 — Lira corrected exact-head delivery (2026-11-09)
+
+- Lev confirmed a current-scope malformed calendar cursor vulnerability in PR #313 at prior head `6d7f50f979a8aba220b4439646304717c3d8b7c4` [#6750292313](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6750292313). Mira independently confirmed and assigned only this correction to Lira [#6750472578](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6750472578).
+- Fixed `db/owner-system-monitoring.ts`: ISO timestamp validation now checks exact canonical round-trip after Date parsing, including impossible day/leap dates, normalized 24:00 and year 0000. Malformed owner timeline cursors are rejected **before SQL**, with existing HTTP400 private/no-store handling on global Event log and per-monitor History. Valid cursor format/normal pagination and unexpected database error handling unchanged.
+- Added regression assertions in `app/routes/super-admin.test.ts`, `tests/database/owner-system-history.test.ts`, and connected `tests/browser/super-admin/check.py`. Compared with prior reviewed head exactly **four files changed**, no schema/migration/product/UI/SA02+/Stage6 changes.
+- Stable **[Ready PR #313](https://github.com/iliya1947/vico-forum/pull/313)** head **`d9c4268437e76eec9d01f19c7fe1b85d456128c1`**; unchanged main/base `787cf6deae38138de2ffe867368ae794349f471f`; PR remains open/unmerged.
+- [CI #42692723600](https://github.com/iliya1947/vico-forum/actions/runs/42692723600) **SUCCESS** — 169 application files / 2145 tests, 54 PostgreSQL17 files / 619 tests, lint/typecheck/build and migration/manifest/grants/Worker checks.
+- [SA-01 built Worker/Better Auth/disposable PG17/Chromium #42692723871](https://github.com/iliya1947/vico-forum/actions/runs/42692723871) **SUCCESS, 16 checkpoints**, including actual HTTP400 for calendar-invalid global/scoped document and .data plus valid date 200; [existing Chromium #42692723602](https://github.com/iliya1947/vico-forum/actions/runs/42692723602) **SUCCESS, all four jobs**.
+- **Lira author correction delivered; Lira stops. Next Mira fresh coordinator whole-PR review on this exact head.** Prior Mira PASS and Lev report were against superseded head; neither constitutes current-head review. Mark unassigned; Owner visual acceptance is not required for SA-01; production/external acceptance and merge not claimed.
