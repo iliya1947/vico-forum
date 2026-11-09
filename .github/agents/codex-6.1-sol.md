@@ -1,3 +1,19 @@
+# Лёва — актуальное состояние SA-01
+
+**2026-11-09.** Независимая whole-PR проверка [PR #313](https://github.com/iliya1947/vico-forum/pull/313), exact head `6d7f50f979a8aba220b4439646304717c3d8b7c4`, unchanged main `787cf6deae38138de2ffe867368ae794349f471f`: **CHANGES REQUIRED — SA01-LEV-01 [P3]**. [Полный отчёт и задание Лире #6750292313](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6750292313).
+
+Невозможная дата `2026-02-31` проходит Date.parse-finiteness validation, затем исходная строка даёт PG22008 / HTTP500 вместо400 в global/scoped History. Реальные Owner HTTP и прямой PG reader подтвердили цепочку; February28→200, malformed string→400. Только повреждённый/изменённый Owner cursor; штатная пагинация работает. Лире — bounded calendar/PG-range validation до SQL и parser/route/PG regressions, без маскировки genuine unexpected DB/schema errors. После исправления новый stable exact head → Mira fresh coordinator whole-PR → после PASS Lev independent whole-PR. Сейчас Лёва остановлен, Лира следующий агент, Марк не назначен.
+
+Остальной SA01 scope проверен: exact binding/оба entry, append-only events/observations, measured System и earliest retained Coverage (SA01-MIRA-01 closed), общая/scoped source identity и keyset pagination, безопасная best-effort telemetry, private/no-store/401/403/400/404/503, EN/RU/HE/RTL/responsive/keyboard и Infrastructure Stage6 placeholder. Три смешанных источника с одинаковым timestamp:36 записей/9 страниц; реальный браузер global70 контрольных facts/5 страниц и scoped35/2 страницы без пропусков/дубликатов. Фактическая web-role INSERT/dedup/read работает, UPDATE/DELETE обеих relations42501, sequence USAGE false.
+
+Мои проверки: build PASS; app55/55 (4 files), nativePG/migration68/68 (3 files), manifest67 public tables, runtime grants и split-authority provisioning, checked-in connected Chromium15/15 плюс независимые DB/HTTP/DOM/web-role probes. CI #42684010768 и browser #42684011022/#42684011268 повторно подтверждены SUCCESS на reviewed head. Это не закрывает найденный дефект. Evidence `/workspace/work/sa01-review-evidence/`, включая results/logs/screenshots/SHA256SUMS.json. Checkout clean; preview и disposable PostgreSQL остановлены, vars/symlink удалены. Implementation не менял.
+
+Только SA01 активен. Owner visual gate не применяется; visual polish отдельно. Owner alone merges; permanent docs после merge отдельно. SA02+, production/Stage6/live Google/external Owner binding не активировать. No last-manager/count/recovery rule.
+
+Ниже полностью сохранён прежний план и закрытый контекст; его старые статусы назначений superseded актуальным состоянием выше.
+
+---
+
 # Лёва — Super-admin technical plan delivered
 
 [Current technical plan #6745289141](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6745289141). Exact main `787cf6deae38138de2ffe867368ae794349f471f`. Source planning complete;implementation not started. Mira scope/fit review next;Lira unassigned;Lev stopped.
