@@ -2251,3 +2251,17 @@ SET-06 documentation PR #312 is merged.
 There is no remaining active Admin Panel / Settings package in #251. Lira and Lev are stopped; Mark is unassigned. No production, Stage 6, live Google/Owner binding or owner visual acceptance is implied.
 
 Current main source-of-truth names **UI/UX product pass** as the standalone product priority and keeps Stage 6 paused. That work is outside the completed Admin Panel/Settings scope and must not be silently started through this channel.
+
+
+## Super-admin — administrative program reopened after Owner clarification
+
+Correction to the prior channel closeout: ordinary Admin AP-01–AP-11, owner/authorization redesign and Settings are complete, but the **overall administrative program is not complete** because the separately planned Owner-only super-admin surface remains.
+
+Owner decision:
+- super-admin includes a dedicated **Infrastructure** tab in its current UI;
+- before Stage 6 this tab is only a visible placeholder / Under development surface;
+- it must not expose or mutate live Cloudflare/Neon/deployment/secrets/provider state now;
+- actual infrastructure, deployment, secrets and provider administration is implemented in **Stage 6** after the Owner explicitly resumes that stage;
+- the placeholder must not create speculative infrastructure backend foundations.
+
+Current stage in #251 is therefore **Super-admin product concept**. Mira owns concept definition; Lev/Lira/Mark are not assigned yet.
