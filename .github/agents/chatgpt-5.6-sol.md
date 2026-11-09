@@ -1580,3 +1580,8 @@ My proposal for a mandatory deactivation reason was unnecessary in the current s
 ## SA6/SA7 + profile history decision
 
 Owner selected indefinite retention (no ordinary UI deletion) for the full Owner event log and both navigation entry points to the same super-admin surface. Profile-local history is asymmetric: ordinary admins see only violations within their authority; Owner sees the full per-user summary. Avoid inventing a generic violations table; technical mapping belongs to Lev.
+
+
+## UP1 logic mistake
+
+I mixed the premise of the question (“show admin user-related history?”) into the answer. Owner's answer rejects that premise for ordinary admins: they see only violation information, not history. Owner alone gets the full per-user summary.
