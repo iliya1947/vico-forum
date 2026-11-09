@@ -2,26 +2,25 @@
 
 - Service PR: **#251**
 - Current main: **`787cf6deae38138de2ffe867368ae794349f471f`**
-- Current stage: **Super-admin — product concept / Owner decisions**
+- Current stage: **Super-admin — waiting for Owner decision UP-D1**
 - Ordinary Admin Panel AP-01–AP-11: **complete**
 - Owner/authorization redesign Stage 1–2: **complete**
 - Settings SET-01–SET-06: **complete**
 - Overall administrative program: **not complete; super-admin remains**
 - Current simplest super-admin structure: **Overview / Monitoring & Event log / Infrastructure**
-- User/account target: **one canonical `/:locale/users/:userId` profile** with public + permission-scoped Admin + exact-Owner-only sections.
-- Confirmed account lifecycle:
-  - current action = **deactivation**;
-  - deactivation immediately changes public identity to **Deleted user**;
+- Canonical user detail: **`/:locale/users/:userId`** with public + permission-scoped Admin + exact-Owner-only sections.
+- Admin profile section: existing applicable measures + targeted role/authorization controls; no duplicate Complaints/Signals/Security queues and no new profile-local History subsystem.
+- Owner profile section: private email/internal ID/sign-in methods + supported session/device metadata + per-user auth/security events + account state + deactivation.
+- Deactivation:
+  - public identity becomes **Deleted user**;
   - published content remains;
-  - stored account data is **not erased** and is retained internally for **at least one year**;
-  - post-year data handling remains unresolved.
-- Confirmed Owner-only account action: **deactivation**.
-- Not approved / not assumed: reactivation, forced logout/session termination, provider unlink, password manipulation.
-- A top-level Super-admin Accounts area is not currently justified unless a separate global account-management need appears.
+  - stored account data retained at least one year;
+  - deactivated identity must no longer be usable as an active forum account;
+  - no reactivation/forced-logout/provider-unlink/password-manipulation feature is assumed.
+- Pending profile product decision: **UP-D1 — require an internal Owner reason for deactivation or not.**
 - Infrastructure remains an Under development placeholder until Stage 6.
-- Pending: define actual Admin/Owner profile content; exact Monitoring/Event-log content; Overview depth/navigation.
-- **Мира**: continues product concept only.
-- **Лёва**: stopped; technical planning only after scope freeze.
+- **Мира**: waits for UP-D1; after that profile content can be frozen.
+- **Лёва**: stopped; technical planning only after full product scope freeze.
 - **Лира**: stopped.
 - **Марк**: unassigned.
 - No super-admin implementation PR/head yet.
