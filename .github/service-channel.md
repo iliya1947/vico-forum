@@ -2403,3 +2403,10 @@ Mira simplified the profile model to current product need and existing capabilit
 Deactivation semantics: public identity becomes Deleted user, published content remains, stored account data is retained at least one year, and the account must no longer be usable as an active forum account. Physical session-record deletion is not itself a product requirement; active-account admission must block deactivated identities.
 
 The speculative UP1–UP5 set is superseded. Only one profile product decision remains: whether Owner must provide a nonblank internal reason for deactivation (UP-D1).
+
+
+## Owner decision — no mandatory deactivation reason
+
+UP-D1 is resolved: **deactivation requires no reason**.
+
+In the current single-Owner model, the same Owner would both enter and later read such a reason, so it provides no real control boundary. Record the deactivation event itself as appropriate, but do not require explanatory text unless a future delegated/approval workflow creates a real need.
