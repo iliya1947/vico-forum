@@ -15,9 +15,7 @@ const keys: Record<SystemMonitorKey, "superAdminRuntime" | "superAdminDatabase" 
   "system.requests": "superAdminRequests",
 };
 const monitoringAreas = [
-  "Accounts & authentication", "Security", "Forum", "Localization & translations",
-  "Notifications", "Files & attachments", "Administration", "Moderation",
-  "Background processes", "Data", "Integrations",
+  "superAdminAreaAccounts", "superAdminAreaSecurity", "superAdminAreaForum", "superAdminAreaLocalization", "superAdminAreaNotifications", "superAdminAreaFiles", "superAdminAreaAdministration", "superAdminAreaModeration", "superAdminAreaBackground", "superAdminAreaData", "superAdminAreaIntegrations"
 ] as const;
 
 /** One Owner-only shell, reused across routes; a visible link never grants access. */
@@ -140,7 +138,7 @@ export function SuperAdminMonitoringIndex({locale}: {locale:string}) {
       <Link className="admin-destination" to={superAdminSystemPath(locale)}>{t("superAdminSystem")}</Link>
       <p>{t("superAdminAreasLater")}</p>
       <ul className="super-admin-pending-areas">
-        {monitoringAreas.map(area=><li key={area}><bdi>{area}</bdi> <span>{t("adminInDevelopment")}</span></li>)}
+        {monitoringAreas.map(area=><li key={area}><bdi>{t(area)}</bdi> <span>{t("adminInDevelopment")}</span></li>)}
         <li><bdi>{t("superAdminInfrastructure")}</bdi> <span>{t("superAdminStage6")}</span></li>
       </ul>
     </section>
