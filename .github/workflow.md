@@ -19,7 +19,7 @@
   - no reactivation/forced-logout/provider-unlink/password-manipulation feature is assumed.
 - Deactivation reason: **not required**; the action itself may still be logged.
 - Infrastructure remains an Under development placeholder until Stage 6.
-- **Мира**: privileged-profile product scope is now ready; remaining work is global Monitoring/Event-log and super-admin shell decisions.
+- **Мира**: super-admin product scope is logically resolved; next bounded stage after Owner continuation is technical decomposition by Лёва.
 - **Лёва**: stopped; technical planning only after full product scope freeze.
 - **Лира**: stopped.
 - **Марк**: unassigned.
@@ -49,10 +49,10 @@
   12. Integrations
   13. Infrastructure
 - Every monitored item has directly adjacent History access.
-- Global Event log/journal, if retained as an aggregate view, does not replace per-monitor history.
+- Global Event log/journal is the aggregate cross-system history view and does not replace per-monitor history.
 - Do not enumerate a complete metric/event catalog during product design; technical observability details wait for Lev after product scope freeze.
 - SA6 retention remains indefinite until Owner changes it; no ordinary UI deletion.
-- Next product work: remaining super-admin shell/Overview decisions. No implementation PR/head; Lev/Lira/Mark remain unassigned.
+- Super-admin product logic is now resolved at this level: unified privileged profile, deactivation semantics, Monitoring with 13 areas, per-monitor History, global Event log, Overview summary, entry points and Infrastructure placeholder. No implementation PR/head; Lev/Lira/Mark remain unassigned.
 
 
 - Super-admin Overview role: **approved** — concise cross-area current-state summary with important current problems/anomalies and direct navigation to details; no duplication of full Monitoring.
