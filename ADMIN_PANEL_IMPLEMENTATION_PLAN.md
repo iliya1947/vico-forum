@@ -749,3 +749,14 @@ These decisions are required before the super-admin product scope can be frozen.
 3. Full dashboard with additional metrics (would expand scope).
 
 After these decisions, Mira freezes the product scope. Only then does Lev prepare the technical decomposition.
+
+
+## Super-admin — Owner decisions SA1–SA3 resolved
+
+- **SA1:** Published topics/posts are retained. The public author identity is replaced by a neutral **Deleted user** presentation rather than deleting the content.
+- **SA2:** Current super-admin scope provides **deactivation only**, not immediate permanent deletion. The account record/data is retained for **at least one year**. What happens after that minimum retention period is not yet decided and must not be invented during implementation.
+- **SA3:** Removed as an unnecessary Owner question. Under the already-fixed single-Owner model (no second Owner, transfer or successor), the bound Owner is **not a valid target** for this destructive/deactivation operation. No self-deactivation control is designed.
+
+These decisions supersede the earlier concept wording that treated immediate account deletion as the first confirmed current capability. The current Accounts surface is therefore an Owner-only account **deactivation** surface with retained public content/anonymized public author presentation and minimum one-year account retention.
+
+SA4–SA8 remain pending.
