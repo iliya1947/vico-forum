@@ -2515,3 +2515,12 @@ Verdict: **PASS — 0 confirmed product-scope/fit defects**. Review comment: `#6
 The SA-01→SA-08 decomposition preserves the approved Monitoring/History/Event-log/action model, unified profile, deactivation semantics, exact-Owner authority and paused Stage 6 boundary. No implementation is approved or assigned by this review itself.
 
 Next separate step: prepare the bounded **SA-01 implementation assignment for Lira**. Lev remains stopped; Lira is not yet assigned; Mark unassigned.
+
+
+## Super-admin SA-01 — Lira assigned
+
+Lira is assigned **SA-01 only** via `#6745414259` from the accepted Lev plan `#6745289141`.
+
+Deliverable: exact-Owner Super-admin shell and both entry points, minimal real Overview, System Monitoring slice, adjacent History/global Event-log foundation, and Infrastructure Under development placeholder. SA-02+ scope is not authorized.
+
+After implementation, Lira must publish a stable implementation PR/head and factual applicable checks, then stop for Mira coordinator whole-PR review. Lev is stopped; Mark unassigned.
