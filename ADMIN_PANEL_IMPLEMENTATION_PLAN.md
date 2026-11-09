@@ -1185,3 +1185,27 @@ The logical model is therefore not complete yet. For a monitored object/state, S
 Do not invent an action merely because a monitor exists. The next product-design step is to define the action model: which actions belong contextually beside monitored objects, which existing Admin/Settings actions are reused, which actions are truly Owner-only, and which monitoring areas are intentionally read-only.
 
 Technical decomposition must not start until this action layer is resolved.
+
+
+## Super-admin Monitoring — approved contextual action model
+
+Owner approved the third layer of the Monitoring model.
+
+For each monitored object/state, the product model is:
+
+1. **Current state** — what is happening now.
+2. **History** — the history of that same monitored item, available directly next to the monitor.
+3. **Applicable actions** — actions that actually exist for that object/state.
+
+Action rules:
+
+- Actions are contextual to the relevant monitor/object/state; a monitor may remain read-only when no real action exists.
+- Existing authoritative operations from Admin, Settings, Needs attention or another current domain are reused rather than duplicated behind a super-admin-specific mutation backend.
+- New Owner-only operations are introduced only when they are genuinely unique to Owner scope and separately approved. The currently approved Owner-only example is user deactivation in the Owner-only profile section.
+- Applicable actions belong next to the relevant monitor together with its History access, keeping current state, history and action in one context.
+- Product design does not force one universal modal/page execution pattern. Technical planning may reuse the canonical existing surface when an operation needs its existing context.
+- UI visibility is not authority. Every mutation retains its authoritative server-side Owner/permission/resource/state/validation boundary.
+- Initiating an existing operation from Monitoring must not create a duplicate domain/history event. Per-monitor History and the global Event log may project the same authoritative event where applicable.
+- Product design does not enumerate a complete action catalog for all 13 Monitoring subsections. Exact monitor-to-operation mapping is a technical-planning task against the real repository and existing domain operations.
+
+With this decision, the Super-admin **product model is frozen for technical planning**: Overview, Monitoring with 13 subsections, per-monitor History, global Event log, contextual applicable actions, unified user profile with Admin/Owner sections, deactivation semantics, Owner entry points, retention policy and the Stage-6 Infrastructure placeholder are product-resolved. Technical decomposition may now start; implementation remains separate.
