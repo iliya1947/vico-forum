@@ -1090,3 +1090,19 @@ Owner clarified the profile-history split:
 - Complaints/Signals/Security work queues remain in Needs attention; the profile is a summary/context surface, not a second queue.
 
 This supersedes the earlier proposal that ordinary admins might receive a filtered copy of general Admin History on the user profile.
+
+
+## Correction — UP1 answer was misread
+
+Mira previously mixed the premise of the UP1 question into the Owner's answer.
+
+UP1 asked whether an ordinary administrator should see **history of actions related to the user**.
+
+Owner's answer means:
+
+- **No:** ordinary administrators do **not** get that history on the profile.
+- An ordinary administrator with the applicable rights sees only the user's **violation** information that they are authorized to see.
+- The exact Owner sees the **full per-user summary**.
+- Do not describe this as “history split by access level”; that wording is incorrect because the ordinary-admin side is not history at all.
+
+This correction supersedes the “profile history split” wording recorded immediately after SA6/SA7.
