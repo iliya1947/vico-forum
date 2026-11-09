@@ -2577,8 +2577,8 @@ Lira is assigned the bounded correction plus regressions. No SA-02+ scope. After
 - **Лира stopped after correction author delivery.** Next: Mira fresh coordinator whole-PR review of this new exact head under applicable Owner visual gate; no new PASS/Lev/Mark activation, merge, permanent docs or SA-02+.
 
 
-## SA-01 correction delivered — visual gate pending
+## SA-01 correction delivered — visual gate correction
 
 Lira delivered `SA01-MIRA-01` on PR #313 exact head `6d7f50f979a8aba220b4439646304717c3d8b7c4`; base main remains `787cf6deae38138de2ffe867368ae794349f471f`. CI and both Chromium suites are green. Mira prechecked the bounded correction and its new PG17 regressions; no new scope was introduced.
 
-Per current `AGENTS.md`, the fresh formal coordinator review waits for the applicable **Owner visual acceptance**. Chromium evidence is available for EN/RU/HE desktop/mobile. Lira is stopped; Lev and Mark remain unassigned until coordinator PASS.
+Correction: Mira incorrectly treated Owner visual acceptance as an SA-01 blocker. It is not applicable here because visual polish is a separate UI/UX product stage. Fresh coordinator whole-PR review proceeds on the corrected exact head. Lira is stopped; Lev and Mark remain unassigned until coordinator PASS.
