@@ -14,9 +14,9 @@
 - No SA-02–SA-08, unified user profile/deactivation/auth-security monitoring, production/Neon/Cloudflare/live Stage6, real Google/Owner external binding, permanent docs or merge.
 
 
-## SA-01 corrected head pending visual gate
+## SA-01 corrected head — visual gate correction
 
 - PR #313 stable corrected head: `6d7f50f979a8aba220b4439646304717c3d8b7c4` on unchanged main `787cf6deae38138de2ffe867368ae794349f471f`.
 - `SA01-MIRA-01` correction precheck: implementation now derives `Coverage since` from the earliest retained scoped observation/event; dedicated PG17 regressions cover the three requested cases.
 - Exact-head CI `#42684010768`, SA-01 Chromium `#42684011022`, existing Chromium `#42684011268`: SUCCESS.
-- Formal fresh coordinator whole-PR review is not recorded yet because current `AGENTS.md` requires applicable Owner visual acceptance before the review cycle starts.
+- Correction: Owner visual acceptance is **not an applicable SA-01 gate** here; visual polish is a separate UI/UX product stage. Fresh coordinator review proceeds without blocking on visual polish.
