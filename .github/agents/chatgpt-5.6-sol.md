@@ -1530,3 +1530,8 @@ Infrastructure remains placeholder-only until Stage 6. Account deletion and full
 ## Super-admin owner-decision pass
 
 Prepared SA1–SA8 product decisions. Deliberately excluded technical choices that Lev can make later. Recommendations favor preserved/anonymized public content, irreversible confirmed deletion, no Owner self-delete, comprehensive Owner audit with bounded technical metadata and indefinite retention, Owner-only entry from ordinary Admin into a separate shell, and a compact truthful Overview.
+
+
+## Super-admin SA1–SA3 correction
+
+Owner chose content retention with neutral Deleted user presentation and deactivation-only account handling with minimum one-year retention. I withdrew SA3 because asking whether the sole bound Owner could self-delete contradicted the already-fixed single-Owner/no-transfer model. Current Accounts concept must say deactivation, not permanent deletion; post-year disposition remains unresolved.
