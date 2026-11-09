@@ -2204,3 +2204,33 @@ No runtime/code/schema/migration/workflow changes. No broad documentation audit.
 - Replaced obsolete SET-06 pending claims; factual SET-01–06 repository/local-CI baseline and accepted migration `0000–0061` now recorded; preserved UI/UX priority, paused Stage6 and production boundaries. Settings profile documents actual authenticated `/:locale/settings/privacy` contract: account-wide persisted default/missing ON, atomic OFF+presence cleanup with per-user lock, heartbeat post-lock check, public filter before count/LIMIT, ON no synthetic activity, separate profile/posts, strict session/Origin/identity/boolean guards, typed failures/no-store, EN/RU/HE/RTL. Admin Panel aligned references only; history index + new #22 record implementation/correction/Mira+Lev PASS/exact-head CI+Chromium/merge without altering older snapshots.
 - **Docs exact-head [CI #42508278251](https://github.com/iliya1947/vico-forum/actions/runs/42508278251) SUCCESS:** both jobs; application **167 files / 2114 tests**, PostgreSQL17 **52 files / 605 tests**, lint/typecheck/build, migration-history/manifest/privilege/provisioning and Worker smoke. **No browser rerun** for documentation-only edits, and no claim of one.
 - This author-side delivery is **not a docs-only reviewer PASS or merge**. Lira stopped. **Next Mira docs-only review of frozen `b681c8e657ab687084879b95d76c7f0281657243`**; Lev/Mark not assigned to docs. Owner merge stays blocked until review. Settings not declared fully closed. No code/schema/migrations/CI workflow edits, production/Stage6, real Google/Owner or visual acceptance.
+
+
+## SET-06 docs / PR #312 — Mira docs-only review: PASS
+
+Reviewed documentation PR #312 exact head `b681c8e657ab687084879b95d76c7f0281657243`, base/current main `95272b587643efa6844303aed8522c44b136e699`.
+
+**Verdict: PASS — 0 confirmed current-scope documentation defects.**
+
+Review completed over all seven assigned Markdown files to their actual ends:
+- `PROJECT.md`
+- `PROJECT_STATE.md`
+- `ROADMAP.md`
+- `docs/ADMIN_PANEL.md`
+- `docs/SETTINGS.md`
+- `docs/PROJECT_HISTORY/PROJECT_HISTORY.md`
+- `docs/PROJECT_HISTORY/PROJECT_HISTORY_22.md`
+
+Confirmed:
+- SET-01–SET-06 are recorded as implemented in repository/local-CI, while deployed/production acceptance remains explicitly unclaimed.
+- repository migration history is correctly advanced to `0000–0061`; external accepted migration evidence remains `0000–0020`.
+- UI/UX product priority and paused Stage 6 remain unchanged.
+- Privacy permanent contract matches merged implementation: authenticated own-account route, persisted account-wide show-online setting, missing-row/default ON, OFF cleanup/heartbeat enforcement, SQL filtering before public count/LIMIT, ON without synthetic activity, public profile/posts unchanged, strict request boundaries and private/no-store behavior.
+- ADMIN_PANEL references are aligned without expanding ordinary-admin scope or permissions.
+- PROJECT_HISTORY_22 correctly records PR #311, SET06-MIRA-01 correction, final implementation head/merge commit, Mira+Lev PASS and exact-head CI/Chromium evidence.
+- History index adds only entry #22; older history snapshots are not rewritten.
+- No runtime/code/schema/migration/CI-workflow changes are present.
+- Docs-head CI #42508278251 is SUCCESS on the reviewed SHA.
+- Current main is still `95272b587643efa6844303aed8522c44b136e699`; PR #312 remains open/Ready/mergeable.
+
+**Next: Owner merge PR #312.** Any docs-head change before merge requires a fresh Mira docs-only review. Lev/Mark remain unassigned.
