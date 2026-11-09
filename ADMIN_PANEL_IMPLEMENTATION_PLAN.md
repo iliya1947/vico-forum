@@ -1140,7 +1140,7 @@ Every monitored item/state has its own history.
 
 - The history control is placed **next to the corresponding monitor**, so the Owner can move directly from current state to that monitor's historical state/events.
 - History is therefore not a detached afterthought or a replacement for Monitoring; it is the temporal continuation of each monitor.
-- A global Event log/journal may provide a cross-system aggregate/history view, but it must not be the only history access path and must not replace the per-monitor History control.
+- The global **Event log / journal** is the cross-system aggregate history view. It exists alongside per-monitor history: every monitor keeps its adjacent History control, and the global journal does not replace that local access path.
 - Existing SA6 retention remains: Owner monitoring/event history is retained indefinitely until the Owner explicitly changes the policy; there is no ordinary UI deletion.
 
 This closes the logical Monitoring/history relationship without predefining every metric or technical event producer.
@@ -1154,3 +1154,17 @@ Owner selected the summary model for Super-admin Overview.
 - It gives a concise at-a-glance status across the approved Monitoring areas, surfaces current problems/anomalies that matter to the Owner, and provides direct navigation into the relevant detailed area.
 - Overview must **not duplicate the full Monitoring content** or become a second monitoring implementation.
 - Exact cards, counters, thresholds and visual composition are not product decisions yet; they belong to later technical/UI planning.
+
+
+## Correction — global Event log is already approved
+
+The earlier wording incorrectly treated the global Event log/journal as optional.
+
+Owner had already established **Monitoring + Event log** as the super-admin model. The later per-monitor History decision adds contextual history access; it does not replace or reopen the global journal decision.
+
+Final relation:
+- **Monitoring** = current state;
+- **History beside each monitor** = history scoped to that monitored item;
+- **Global Event log / journal** = aggregate cross-system history across monitored areas.
+
+These are complementary views of the same observability/history model, not alternatives.
