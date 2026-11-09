@@ -10199,3 +10199,26 @@ a.topic-tag:focus-visible {
 }
 .settings-privacy-form button { justify-self: start; min-block-size: 2.75rem; }
 .settings-privacy-form button:disabled { opacity: 0.65; cursor: wait; }
+
+/* SA-01: Super-admin uses logical spacing and the existing forum/admin shell for RTL. */
+.super-admin-panel .admin-overview { padding-block: 1rem; }
+.super-admin-monitors { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 16rem), 1fr)); gap: 1rem; margin-block: 1.25rem; }
+.super-admin-monitor { border: 1px solid var(--color-border); border-radius: .65rem; padding: 1rem; background: var(--color-surface); min-width: 0; }
+.super-admin-monitor h3 { margin-block: 0 1rem; }
+.super-admin-monitor dl, .super-admin-timeline dl { display: grid; gap: .45rem; margin: 0 0 1rem; }
+.super-admin-monitor dl > div, .super-admin-timeline dl > div { display: flex; justify-content: space-between; gap: 1rem; flex-wrap: wrap; }
+.super-admin-monitor dt, .super-admin-timeline dt, .super-admin-freshness { color: var(--color-text-muted); }
+.super-admin-monitor dd, .super-admin-timeline dd { margin: 0; overflow-wrap: anywhere; }
+.super-admin-freshness time { margin-inline-start: .4rem; }
+.super-admin-timeline { list-style: none; padding: 0; display: grid; gap: 1rem; }
+.super-admin-timeline li { border-inline-start: .25rem solid var(--color-accent); background: var(--color-surface); border-radius: .4rem; padding: .9rem 1.1rem; min-width: 0; }
+.super-admin-timeline h3 { margin-block: 0 .25rem; overflow-wrap: anywhere; }
+.super-admin-timeline li p { margin-block: .35rem; }
+.super-admin-pending-areas { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 15rem), 1fr)); gap: .5rem 1rem; padding-inline-start: 1.2rem; }
+.super-admin-pending-areas li { padding: .4rem; color: var(--color-text-muted); }
+.super-admin-pending-areas li span { display: inline-block; margin-inline-start: .4rem; font-size: .85em; }
+.super-admin-placeholder { border: 1px dashed var(--color-border-strong); padding: 1rem; border-radius: .65rem; }
+@media (max-width: 480px) {
+ .super-admin-monitor { padding: .75rem; }
+ .super-admin-timeline li { padding: .7rem; }
+}
