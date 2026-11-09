@@ -760,3 +760,24 @@ After these decisions, Mira freezes the product scope. Only then does Lev prepar
 These decisions supersede the earlier concept wording that treated immediate account deletion as the first confirmed current capability. The current Accounts surface is therefore an Owner-only account **deactivation** surface with retained public content/anonymized public author presentation and minimum one-year account retention.
 
 SA4–SA8 remain pending.
+
+
+## Super-admin — Monitoring + Event log replaces “Full audit”
+
+Owner clarified the intended product model:
+
+- The third super-admin area is **not merely an audit/history page**.
+- It is a combined **Monitoring + Event log** area.
+- **Monitoring** shows the current operational/security state that is useful to the Owner.
+- **Event log / History** shows important past events and changes needed to reconstruct what happened.
+- Ordinary Admin History remains the narrower significant-administrative-action history for ordinary administrators.
+- The super-admin event log is broader and may later include Stage-6 infrastructure/deployment/provider events once those systems exist.
+- Do not create live Stage-6 probes now merely to populate Monitoring. Current monitoring scope must use only current-stage data/capabilities; Stage-6-only monitoring is added with Stage 6.
+
+The proposed top-level super-admin structure is therefore:
+1. Overview
+2. Accounts
+3. **Monitoring & Event log**
+4. Infrastructure
+
+Earlier wording “Full audit” is superseded.
