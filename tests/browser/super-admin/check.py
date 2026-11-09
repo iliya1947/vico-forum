@@ -224,7 +224,7 @@ try:
         get(owner, "/en/super-admin/infrastructure")
         assert "Stage 6" in owner.content()
         assert "Under development" in owner.content()
-        assert "Cloudflare" not in owner.content() and "Neon" not in owner.content()
+        assert "Cloudflare, Neon, providers and secrets are not connected" in owner.content()
         record("infrastructure-stage6-placeholder-without-live-probes")
 
         for locale, direction in (("en", "ltr"), ("ru", "ltr"), ("he", "rtl")):
