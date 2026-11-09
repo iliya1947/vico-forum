@@ -2295,3 +2295,13 @@ Mira completed the product-question pass. Eight Owner decisions are now required
 Infrastructure is already decided: visible placeholder now; live Stage-6 functionality later.
 
 No technical planner or implementer is assigned until the Owner answers SA1–SA8.
+
+
+## Super-admin — SA1–SA3 resolved
+
+Owner decisions:
+- SA1: keep published content; public author becomes neutral Deleted user.
+- SA2: current action is deactivation only; account is retained for at least one year. Post-year disposition is unresolved.
+- SA3: prior question withdrawn as inconsistent with the fixed single-Owner model; the bound Owner is not a target for deactivation.
+
+This corrects the earlier shorthand “account deletion belongs here”: the current implementation scope is deactivation, not permanent deletion. SA4–SA8 remain pending.
