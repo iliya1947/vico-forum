@@ -2,19 +2,24 @@
 
 - Service PR: **#251**
 - Current main: **`787cf6deae38138de2ffe867368ae794349f471f`**
-- Current stage: **Super-admin — unified profile product decisions UP1–UP5**
+- Current stage: **Super-admin — product concept correction / Owner decisions**
 - Ordinary Admin Panel AP-01–AP-11: **complete**
 - Owner/authorization redesign Stage 1–2: **complete**
 - Settings SET-01–SET-06: **complete**
 - Overall administrative program: **not complete; super-admin remains**
-- Super-admin structure under design: **Overview / Accounts / Monitoring & Event log / Infrastructure**
-- User-detail target: **one canonical `/:locale/users/:userId` profile** with public + permission-scoped Admin + exact-Owner-only sections.
-- Proposed Admin section: applicable measures + targeted role/permission controls; Complaints/Signals/Security stay in Needs attention.
-- Proposed Owner section: private account identity/sign-in methods + sessions/devices where supported + per-user auth/security events + deactivation state/actions.
-- Pending Owner decisions: **UP1–UP5**, plus remaining global Monitoring/Event-log/navigation/Overview decisions.
-- Important unresolved ambiguity: SA1 “Deleted user” public presentation vs SA2 reversible deactivation-only lifecycle.
+- Current simplest super-admin structure: **Overview / Monitoring & Event log / Infrastructure**
+- User/account target: **one canonical `/:locale/users/:userId` profile** with public + permission-scoped Admin + exact-Owner-only sections.
+- Corrected account lifecycle:
+  - current scope = **deactivation only**;
+  - account retained at least one year;
+  - deactivation does **not** automatically anonymize the public identity;
+  - “Deleted user” presentation applies only to a future actual deletion/anonymization stage if later approved.
+- Confirmed Owner-only account action: **deactivation**.
+- Not approved / removed from assumed scope: reactivation, forced logout/session termination, provider unlink, password manipulation.
+- A top-level Super-admin Accounts area is **not currently justified**; add only if a real global account-management need is identified.
 - Infrastructure remains an Under development placeholder until Stage 6.
-- **Мира**: waits for Owner profile decisions.
+- Pending: define actual Admin/Owner profile content; exact Monitoring/Event-log content; Overview depth/navigation.
+- **Мира**: continues product concept only.
 - **Лёва**: stopped; technical planning only after scope freeze.
 - **Лира**: stopped.
 - **Марк**: unassigned.
