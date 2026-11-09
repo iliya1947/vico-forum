@@ -1565,3 +1565,8 @@ I incorrectly carried a deletion-only identity decision into deactivation, assum
 ## Deactivation semantics corrected
 
 I incorrectly separated “Deleted user” presentation from deactivation. Owner clarified the actual model: deactivation itself produces the public Deleted user identity, while all account data is retained internally for at least one year. This is public anonymization without immediate data erasure. Post-year handling remains unresolved.
+
+
+## Privileged profile v2
+
+Reduced the model to existing admin capabilities plus the Owner-private account/security layer. Removed speculative profile-local History and extra security mutations. Deactivation is modeled by its required product effect (account no longer usable, public Deleted user, data retained >=1 year) without prescribing physical session deletion. Only unresolved product rule is whether deactivation requires an internal Owner reason.
