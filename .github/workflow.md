@@ -8,14 +8,17 @@
 - Settings SET-01–SET-06: **complete**
 - Overall administrative program: **not complete; super-admin remains**
 - Proposed super-admin structure: **Overview / Accounts / Monitoring & Event log / Infrastructure**
+- User-detail target: **one canonical `/:locale/users/:userId` profile** with public + permission-scoped Admin + exact-Owner-only sections.
 - Resolved:
   - SA1: published content retained; public author shown as neutral Deleted user.
   - SA2: deactivation only; account retained at least one year; post-year disposition unresolved.
   - SA3: withdrawn; sole bound Owner is not a valid deactivation target.
-  - Accounts includes an **Owner-only per-user card/detail with Access & security**: sign-in methods, sessions/devices where supported, relevant recent auth/security events, and deactivation state/actions. Ordinary Admin Users does not receive this private section.
+  - Admins get their applicable administrative section directly on the user profile.
+  - Owner gets an additional Owner-only profile section with Access & security, per-user auth/security information and deactivation controls.
+  - Earlier separate super-admin user-card/detail concept is superseded.
   - “Full audit” superseded by **Monitoring + Event log/history**.
   - Infrastructure: visible Under development placeholder now; real functionality only in Stage 6.
-- Pending Owner decisions: exact current-stage Monitoring content; global Event-log coverage/detail/retention; navigation entry; Overview depth.
+- Pending Owner decisions: exact current-stage Monitoring content; global Event-log coverage/detail/retention; super-admin navigation/Accounts role; Overview depth.
 - **Мира**: continues product decisions; technical scope not frozen.
 - **Лёва**: stopped; technical planning only after scope freeze.
 - **Лира**: stopped.
