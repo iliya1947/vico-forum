@@ -2555,3 +2555,12 @@ After implementation, Lira must publish a stable implementation PR/head and fact
 - [Exact-head existing Chromium #42678451714](https://github.com/iliya1947/vico-forum/actions/runs/42678451714) **SUCCESS**, all 4 regression jobs.
 - Initial test-only failed head incorrectly expected private cache headers on a **public** profile; isolated and corrected to apply strict no-store only to protected routes. No app/product code correction was needed in slice 3. Superseded heads are not acceptance evidence.
 - **Ready for Mira coordinator whole-PR review under applicable owner-visual gate.** Lira has not reviewed own whole PR; no Mira PASS, Lev review, Owner visual acceptance, production/deployed/real Google/real Owner acceptance, merge or permanent docs are claimed. Lev/Mark not activated; SA-02+ not begun.
+
+
+## SA-01 / PR #313 — Mira review requires correction
+
+Mira reviewed exact head `5927b04045dbb0eaf0285df1b7bc116ab6d2d425` and returned **CHANGES REQUIRED — 1 current-scope defect** in `#6749272021`.
+
+`SA01-MIRA-01`: the System cards' `Coverage since` value does not represent the earliest retained scoped History. Runtime/Database use the latest observation; Requests can ignore retained observation history and show no coverage until a 5xx exists.
+
+Lira is assigned the bounded correction plus regressions. No SA-02+ scope. After a new stable PR #313 head/checks, Mira performs a fresh whole-PR review. Lev remains stopped; Mark unassigned.
