@@ -57,7 +57,11 @@ export function parseOwnerTimelineCursor(value: string | undefined): { at: strin
   if (value === undefined) return null;
   if (value.length > 140) throw new Error("Invalid Owner timeline cursor");
   const parts = value.split("~");
-  if (parts.length !== 3 || !isoDate.test(parts[0]) || !Number.isFinite(Date.parse(parts[0]))
+  const parsedAt = Date.parse(parts[0]);
+  // Date.parse normalizes impossible calendar days; PostgreSQL timestamptz rejects them.
+  // The canonical round-trip also excludes normalized 24:00 and similar inputs.
+  if (parts.length !== 3 || !isoDate.test(parts[0]) || parts[0].startsWith("0000-")
+      || !Number.isFinite(parsedAt) || new Date(parsedAt).toISOString() !== parts[0]
       || !ORIGINS.includes(parts[1] as OwnerTimelineOrigin) || !uuid.test(parts[2])) {
     throw new Error("Invalid Owner timeline cursor");
   }
