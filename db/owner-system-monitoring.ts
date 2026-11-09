@@ -39,17 +39,17 @@ const ORIGINS = ["system-event", "system-observation", "admin-history"] as const
 const TIMELINE_COLUMNS = `
   select 'system-event'::text origin,e.id::text source_id,e.occurred_at at,
     e.recorded_at recorded_at,e.monitor_key,e.kind,e.source,
-    null::text quality,e.payload values from owner_events e
+    null::text quality,e.payload as details from owner_events e
     where ($1::text is null or e.monitor_key=$1)
   union all
   select 'system-observation'::text,o.id::text,o.observed_at,
-    o.observed_at,o.monitor_key,'monitor.observed'::text,o.source,o.quality,o.value
+    o.observed_at,o.monitor_key,'monitor.observed'::text,o.source,o.quality,o.value as details
     from owner_monitor_observations o where ($1::text is null or o.monitor_key=$1)
   union all
   select 'admin-history'::text,a.id::text,a.occurred_at,
     a.occurred_at,null::text,a.action,'admin_history'::text,null::text,
     jsonb_build_object('actorUserId',a.actor_id,'targetType',a.target_type,'targetId',a.target_id)
-    from admin_history a where $1::text is null`;
+    as details from admin_history a where $1::text is null`;
 
 const isoDate = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/;
 const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -93,7 +93,7 @@ function readEntry(row: Record<string, unknown>): OwnerTimelineEntry {
     kind: row.kind as string,
     quality: row.quality as string | null,
     source: row.source as string,
-    values: row.values as SafePayload,
+    values: row.details as SafePayload,
   };
 }
 
@@ -151,7 +151,7 @@ export class PostgresOwnerSystemMonitoring implements OwnerSystemMonitoring {
     if (!Number.isInteger(limit) || limit < 1 || limit > 50) throw new Error("Invalid Owner timeline limit");
     const result = await this.pool.query(`
       with entries as (${TIMELINE_COLUMNS})
-      select origin,source_id,at,recorded_at,monitor_key,kind,source,quality,values
+      select origin,source_id,at,recorded_at,monitor_key,kind,source,quality,details
       from entries where ($2::timestamptz is null or (at,origin,source_id)
           < ($2::timestamptz,$3::text,$4::text))
       order by at desc, origin desc, source_id desc limit $5`,

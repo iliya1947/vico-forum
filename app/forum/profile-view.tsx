@@ -8,6 +8,8 @@ import { forumIndexPath, forumProfilePath } from "./paths";
 import { ForumShell } from "./ui";
 import { settingsAccountPath } from "../settings/paths";
 import { ownMeasuresPath } from "../measures/paths";
+import { useHeaderAuthUser } from "../auth/auth-controls";
+import { superAdminPath } from "../super-admin/paths";
 
 export function ProfileView({ locale, profile, isOwner = false, canEditProfile = true,
   editing = false, saved = false, feedback }: {
@@ -16,6 +18,7 @@ export function ProfileView({ locale, profile, isOwner = false, canEditProfile =
   editing?: boolean; saved?: boolean; feedback?: ProfileActionData;
 }) {
   const { t } = useTranslation("common");
+  const currentSessionUser = useHeaderAuthUser();
   const navigation = useNavigation();
   const path = forumProfilePath(locale, profile.id);
   const pending = navigation.state === "submitting" && navigation.formData?.get("intent") === "save-profile";
@@ -35,6 +38,8 @@ export function ProfileView({ locale, profile, isOwner = false, canEditProfile =
       {isOwner ? <nav>
         <Link to={ownMeasuresPath(locale)}>{t("measuresOwn")}</Link>
         <Link to={settingsAccountPath(locale)}>{t("settingsAccount")}</Link>
+        {currentSessionUser?.id === profile.id && currentSessionUser.canViewSuperAdmin ?
+          <Link to={superAdminPath(locale)}>{t("superAdminTitle")}</Link> : null}
       </nav> : null}
       <dl className="profile-statistics">
         <div><dt>{t("profileJoined")}</dt><dd><time dateTime={profile.joinedAt}>{new Intl.DateTimeFormat(locale, { year: "numeric", month: "short", day: "numeric", timeZone: "UTC" }).format(new Date(profile.joinedAt))}</time></dd></div>

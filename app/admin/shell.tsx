@@ -5,6 +5,7 @@ import { ForumShell, Breadcrumbs } from "../forum/ui";
 import {adminForumPath} from "./forum-paths";
 import {adminUsersPath} from "./users-paths";
 import { settingsPath } from "../settings/paths";
+import { superAdminPath } from "../super-admin/paths";
 import type { AdminAccess } from "./access";
 import { useHeaderAuthUser } from "../auth/auth-controls";
 import { adminEntryPath, type AdminEntryId } from "../settings/workspace-access";
@@ -46,6 +47,7 @@ export function AdminShell({locale,access,children,current="overview"}: {locale:
           <span>{t(item.label)}</span>
           {item.pending ? <span className="admin-panel-pending">{t("adminInDevelopment")}</span> : null}
         </Link>)}
+        {authUser?.canViewSuperAdmin ? <Link to={superAdminPath(locale)}>{t("superAdminTitle")}</Link> : null}
       </nav>
       {children}
     </div>

@@ -16,6 +16,7 @@ export interface HeaderAuthUser {
   readonly name: string;
   readonly canManageAuthorization?: boolean;
   readonly canViewAdminPanel?: boolean;
+  readonly canViewSuperAdmin?: boolean;
   readonly adminEntryDestinations?: readonly AdminEntryId[];
   readonly attentionEntryGroups?: AttentionEntryAccess;
   readonly canViewModerationAttention?: boolean;

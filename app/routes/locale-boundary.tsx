@@ -21,7 +21,8 @@ import { authSessionForRequest } from "../auth/request-context";
 import { HeaderAuthProvider } from "../auth/auth-controls";
 import { OnlinePresenceHeartbeat } from "../forum/online-presence-heartbeat";
 import { LocaleNavigationProvider } from "../localization/locale-navigation";
-import { authorizationForRequest } from "../authorization/request-context";
+import { authorizationForRequest, authorizationOwnerContext } from "../authorization/request-context";
+import { isBoundOwner } from "../authorization/owner";
 import { adminAccess } from "../admin/access";
 import {
   allowedAdminEntries, allowedAttentionEntries, type AdminEntryId, type AttentionEntryAccess,
@@ -92,6 +93,7 @@ export async function loader(args: LocaleBoundaryArgs) {
   ], store, generationPolicyVersion);
   const snapshot = await resourceLoader.load(locale, ["common"]);
   const session = authSessionForRequest(args.context);
+  const canViewSuperAdmin = !!session && isBoundOwner(session.user.id,args.context.get(authorizationOwnerContext));
   let canManageAuthorization = false;
   let canViewModerationAttention = false;
   let canViewAdminPanel = false;
@@ -166,6 +168,7 @@ export async function loader(args: LocaleBoundaryArgs) {
           image: session.user.image ?? null,
           name: session.user.name,
           canManageAuthorization,
+          canViewSuperAdmin,
           canViewAdminPanel,
           canViewModerationAttention,
           adminEntryDestinations,
