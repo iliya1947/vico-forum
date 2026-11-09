@@ -1168,3 +1168,20 @@ Final relation:
 - **Global Event log / journal** = aggregate cross-system history across monitored areas.
 
 These are complementary views of the same observability/history model, not alternatives.
+
+
+## Super-admin Monitoring — actions are a separate required layer
+
+Mira prematurely treated the product model as complete after current-state Monitoring + per-monitor History + global Event log.
+
+Owner correctly pointed out the missing third layer: **actions**.
+
+The logical model is therefore not complete yet. For a monitored object/state, Super-admin must distinguish:
+
+1. **Current state** — what is happening now.
+2. **History** — what happened to this same monitored object/state over time.
+3. **Actions** — what the Owner can actually do about or with that object/state, when an applicable product action exists.
+
+Do not invent an action merely because a monitor exists. The next product-design step is to define the action model: which actions belong contextually beside monitored objects, which existing Admin/Settings actions are reused, which actions are truly Owner-only, and which monitoring areas are intentionally read-only.
+
+Technical decomposition must not start until this action layer is resolved.
