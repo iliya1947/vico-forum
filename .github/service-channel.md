@@ -2410,3 +2410,13 @@ The speculative UP1–UP5 set is superseded. Only one profile product decision r
 UP-D1 is resolved: **deactivation requires no reason**.
 
 In the current single-Owner model, the same Owner would both enter and later read such a reason, so it provides no real control boundary. Record the deactivation event itself as appropriate, but do not require explanatory text unless a future delegated/approval workflow creates a real need.
+
+
+## Owner decisions — SA6, SA7, profile history visibility
+
+Resolved:
+- **SA6 = 6.1:** Owner Monitoring/Event-log history is retained indefinitely until a later explicit Owner policy replaces it; no ordinary UI deletion.
+- **SA7 = 7.3:** Super-admin is reachable from both the Owner-only ordinary-admin entry and the Owner account/profile menu; both lead to the same separate super-admin surface.
+- **Profile history split:** an ordinary admin with suitable rights sees only the user's **violations** relevant to their administrative scope; the exact Owner sees the **full per-user summary**.
+
+Do not infer a new generic violations subsystem. Technical planning must map that product view to authoritative moderation/measure sources. Needs attention queues remain separate.
