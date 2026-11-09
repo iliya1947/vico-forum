@@ -964,3 +964,20 @@ Owner-only profile section:
 - exact action set remains undecided except for **deactivation**.
 
 Do not turn speculative possibilities into Owner questions until they are shown necessary by the product goal.
+
+
+## Super-admin account lifecycle — Owner clarification
+
+Owner clarified the intended semantics:
+
+- **Deactivation is the current product action and it immediately produces the public “Deleted user” presentation.**
+- This is **not physical deletion of the account's stored data**.
+- The account's underlying data must be retained for **at least one year** after deactivation.
+- Published topics/posts remain preserved.
+- The public identity is neutralized as “Deleted user” while the retained private/internal account data remains available only through its authorized internal/Owner boundaries.
+- What happens to retained account data after the minimum one-year period is not yet decided and must not be invented.
+- This clarification supersedes Mira's previous statement that “Deleted user” applied only to a future actual deletion stage.
+
+Current distinction:
+- **public/product state:** deactivated → appears as Deleted user;
+- **storage/internal state:** data retained, not erased, minimum one year.
