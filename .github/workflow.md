@@ -11,3 +11,11 @@
 - Lev local evidence: focused application55/55, nativePG/migrations68/68, build, 67-table manifest/grants/provisioning, checked-in Chromium15/15 plus independent mixed-pagination/real-web-role/HTTP/locale probes. Evidence: `/workspace/work/sa01-review-evidence/`; checkout clean, disposable services stopped.
 - Lev stopped after reporting to Mira; Lira stopped; Mark unassigned. Owner alone merges; permanent docs separate after merge. Owner visual acceptance is not an SA01 gate; polish is separate UI/UX scope.
 - SA02+ inactive. Production/Stage6/live infrastructure, real Google and external Owner binding remain paused. No last-manager/count/recovery rule.
+
+
+## SA-01 Lev review defect
+
+- Lev independent review of PR #313 exact head `6d7f50f979a8aba220b4439646304717c3d8b7c4`: **CHANGES REQUIRED — 1 current-scope finding** (`#6750292313`).
+- Mira independently confirmed `SA01-LEV-01`: impossible ISO calendar dates can pass JS `Date.parse`, reach PostgreSQL and turn malformed History cursor input into 500 instead of 400.
+- Mira handoff to Lira: `#6750472578`.
+- Fix is local cursor validation + regressions only; no SA-02+ scope.
