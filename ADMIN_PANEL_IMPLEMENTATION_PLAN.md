@@ -905,3 +905,62 @@ Proposed default: deactivation blocks sign-in/new sessions and participation, te
 2. Do not require a reason.
 
 Important ambiguity to resolve before implementation: SA1 selected a neutral “Deleted user” public identity, while SA2 later changed the lifecycle to **deactivation only**. Because deactivation is potentially reversible, the Owner must decide whether a deactivated account is anonymized publicly immediately or retains its public identity until a later permanent-deletion/anonymization decision.
+
+
+## Super-admin / unified profile — Mira logic correction
+
+The previous privileged-section pass contained unsupported assumptions and is corrected as follows.
+
+### Correction 1 — deletion identity does not apply to deactivation
+
+Owner's SA1 decision (“keep published content; show neutral Deleted user”) answered the earlier **deletion** scenario.
+
+Owner's later SA2 decision changed the current lifecycle scope to **deactivation only**, with the account retained for at least one year.
+
+Therefore:
+- current deactivation does **not** automatically imply public anonymization;
+- the “Deleted user” presentation is reserved for a future actual deletion/anonymization stage if and when such a stage is approved;
+- current implementation must not rename a merely deactivated account to Deleted user based on SA1.
+
+There is no SA1/SA2 ambiguity in the current scope once the decisions are applied in sequence: deletion behavior is future-only; current scope is deactivation.
+
+### Correction 2 — reactivation and forced logout were invented
+
+The Owner approved only **deactivation** and minimum one-year retention.
+
+The following are **not approved facts** and must not be carried as current scope:
+- reactivation;
+- forced termination of all sessions;
+- automatic session termination as part of deactivation;
+- provider unlink/password manipulation.
+
+Whether any of those belong to the eventual Owner-only profile section must be decided separately only if actually needed.
+
+### Correction 3 — top-level Super-admin Accounts may now be redundant
+
+After the Owner fixed the target user-information architecture as **one canonical user profile with Admin and Owner-only sections**, a second Super-admin user-detail surface is explicitly wrong.
+
+The existing ordinary Admin Users directory already provides user discovery/search. Therefore a separate top-level **Accounts** tab in Super-admin is no longer justified merely to reach user-specific Owner actions.
+
+Current simplest product structure should be treated as:
+1. Overview
+2. Monitoring & Event log
+3. Infrastructure
+
+User/account administration is contextual on the canonical user profile:
+- ordinary Admin section for applicable admin permissions;
+- additional exact-Owner-only section for private Owner data/actions.
+
+A separate global Super-admin Accounts section should be added only if the Owner identifies a real global account-management need that cannot be served by the existing Users directory + canonical profile.
+
+### Correct current profile facts
+
+Administrative profile section:
+- existing applicable admin actions/data, permission-scoped;
+- exact content still to be shaped from current Users/measures/authorization mechanisms.
+
+Owner-only profile section:
+- additional private account/security data that the Owner explicitly wants there;
+- exact action set remains undecided except for **deactivation**.
+
+Do not turn speculative possibilities into Owner questions until they are shown necessary by the product goal.
