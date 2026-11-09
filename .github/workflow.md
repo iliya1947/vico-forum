@@ -2,22 +2,13 @@
 
 - Service PR: **#251**.
 - Current main/base: **`787cf6deae38138de2ffe867368ae794349f471f`**.
-- Current stage: **Super-admin SA-01 implementation delivered — slices 1/3, 2/3, 3/3 complete**. No SA-02+ authorized.
-- Approved bounded scope: Lev [technical plan #6745289141](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6745289141), Mira [scope PASS #6745393863](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6745393863), Mira [Lira SA-01 assignment #6745414259](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6745414259).
-- Implementation **[Ready PR #313](https://github.com/iliya1947/vico-forum/pull/313)**, stable exact head **`5927b04045dbb0eaf0285df1b7bc116ab6d2d425`**, open/unmerged. **No Mira coordinator review, Lev technical review or Owner visual acceptance has been performed/claimed.**
-- **Slice 1/3 complete:** migration `0062_owner_monitoring_foundation` (append-only `owner_events` and `owner_monitor_observations`), Drizzle schema/snapshot/journal, manifest/runtime `SELECT/INSERT` only, typed deduplicating/restricted/paged Owner storage + PG17 tests.
-- **Slice 2/3 complete:** exact-Owner `/:locale/super-admin` shell and independent routes, two Owner entry links from Admin and own Profile, minimal Overview, 3 real System monitors (Worker serving/mode, PG read/version, recorded 5xx count/limited coverage), adjacent retained History and global Event log projecting original source identities of `owner_events`, observations and native `admin_history`; real best-effort 5xx capture, private/no-store, typed 400/401/403/404/503, EN/RU/HE/RTL/responsive. Remaining Monitoring areas pending; Infrastructure Stage 6 placeholder only.
-- **Slice 3/3 complete:** [dedicated connected SA-01 Chromium #42678451621](https://github.com/iliya1947/vico-forum/actions/runs/42678451621) **SUCCESS**, 15/15 checkpoints on built Worker, real Better Auth sessions, disposable PG17 and Chromium: Guest/non-Owner/exact Owner and both entry links, current System/read+History/global source IDs, actual PG query-timeout 503/5xx source capture, strict cursor/filter/private cache, revoked session denial, EN/RU/HE mobile/desktop RTL and keyboard, no JS errors or external requests. [Artifact/screenshots](https://github.com/iliya1947/vico-forum/actions/runs/42678451621/artifacts/13700169646). Slice 3 changed only browser acceptance script/workflow, not app/runtime.
-- **Exact-head [CI #42678451661](https://github.com/iliya1947/vico-forum/actions/runs/42678451661) SUCCESS:** 169 application files/**2144 tests**, 53 native PG17 files/**617 tests**, lint/typecheck/build and migration/manifest/grants/Worker checks.
-- **Exact-head [existing Chromium #42678451714](https://github.com/iliya1947/vico-forum/actions/runs/42678451714) SUCCESS**, all four independent regression jobs.
-- **Next:** Mira coordinator whole-PR review of stable #313 head under applicable review/Owner visual gates; no author whole-PR review or technical reviewer activation by Lira. Mark remains unassigned; Lev's technical review is only after coordinator PASS. Lira stops.
-- SA-02–SA-08, unified profile/deactivation/auth-security monitoring, production/Neon/Cloudflare/Stage6 live APIs, real Google/Owner binding, permanent docs and merge remain outside SA-01.
-
-
-## SA-01 Mira review defect
-
-- PR #313 exact reviewed head: `5927b04045dbb0eaf0285df1b7bc116ab6d2d425`.
-- Verdict: **CHANGES REQUIRED — 1 current-scope defect**.
-- `SA01-MIRA-01`: System monitor `Coverage since` uses latest observation for Runtime/Database and only first 5xx for Requests instead of the actual earliest retained scoped History.
-- Review/handoff: `#6749272021`.
-- Lira fixes this defect only; Lev stopped; Mark unassigned.
+- Current stage: **Super-admin SA-01 — SA01-MIRA-01 corrected, implementation Ready; awaiting Mira fresh whole-PR coordinator review on new exact head**. SA-02+ not authorized.
+- Approved scope: Lev [SA plan #6745289141](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6745289141); Mira [scope PASS #6745393863](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6745393863), [Lira assignment #6745414259](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6745414259).
+- Implementation: **[Ready PR #313](https://github.com/iliya1947/vico-forum/pull/313)**, stable exact head **`6d7f50f979a8aba220b4439646304717c3d8b7c4`**, unmerged. Previous head `5927b04045dbb0eaf0285df1b7bc116ab6d2d425` received Mira CHANGES REQUIRED [#6749272021](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6749272021) and is superseded.
+- **Delivered SA-01:** migrations `0062` + append-only Owner events/observations, typed PG retained history; exact-Owner shell with Admin/profile entry links; current Worker/PG/5xx System monitors; adjacent scoped History and one global Event log projecting source identity; limited-coverage and freshness indicators; Infrastructure Stage6 inert placeholder; EN/RU/HE/RTL/responsive/keyboard; private/no-store and independent 401/403/400/404/503 guards.
+- **SA01-MIRA-01 corrected:** `Coverage since` now uses the **earliest retained scoped History timestamp** from both `owner_monitor_observations.observed_at` and `owner_events.occurred_at`, not the most recent sample or only the earliest recorded 5xx. New native PG17 test file covers multi-observation Runtime/Database, Requests with observations/no events and both source-orderings; no other functional change.
+- **[Exact-head CI #42684010768](https://github.com/iliya1947/vico-forum/actions/runs/42684010768) SUCCESS:** 169 application files/**2144 tests**, 54 PG17 files/**619 tests**; lint/typecheck/build/migrations/manifest/runtime grants/Worker.
+- **[Exact-head SA-01 Chromium #42684011022](https://github.com/iliya1947/vico-forum/actions/runs/42684011022) SUCCESS:** connected built Worker/Better Auth/disposable PG17/Chromium, original SA-01 15 acceptance checkpoints.
+- **[Exact-head existing Chromium #42684011268](https://github.com/iliya1947/vico-forum/actions/runs/42684011268) SUCCESS:** all four regression jobs.
+- **Next agent:** Mira — fresh coordinator whole-PR review only after applicable Owner visual gate. Lira stops; Lev technical review only after Mira PASS; Mark unassigned. Neither Mira new-head PASS nor Owner visual acceptance is claimed.
+- No SA-02–SA-08, unified user profile/deactivation/auth-security monitoring, production/Neon/Cloudflare/live Stage6, real Google/Owner external binding, permanent docs or merge.
