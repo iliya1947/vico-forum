@@ -2575,3 +2575,10 @@ Lira is assigned the bounded correction plus regressions. No SA-02+ scope. After
 - [CI #42684010768](https://github.com/iliya1947/vico-forum/actions/runs/42684010768) **SUCCESS**: 169/169 application files, 2144/2144 tests; 54/54 native PG17 files, 619/619 tests, lint/typecheck/build/migrations/manifest/grants/Worker.
 - [Connected SA-01 Chromium #42684011022](https://github.com/iliya1947/vico-forum/actions/runs/42684011022) **SUCCESS**, and [existing Chromium #42684011268](https://github.com/iliya1947/vico-forum/actions/runs/42684011268) **SUCCESS** on all 4 jobs. Previous accepted screenshots do not constitute Owner visual approval.
 - **Лира stopped after correction author delivery.** Next: Mira fresh coordinator whole-PR review of this new exact head under applicable Owner visual gate; no new PASS/Lev/Mark activation, merge, permanent docs or SA-02+.
+
+
+## SA-01 correction delivered — visual gate pending
+
+Lira delivered `SA01-MIRA-01` on PR #313 exact head `6d7f50f979a8aba220b4439646304717c3d8b7c4`; base main remains `787cf6deae38138de2ffe867368ae794349f471f`. CI and both Chromium suites are green. Mira prechecked the bounded correction and its new PG17 regressions; no new scope was introduced.
+
+Per current `AGENTS.md`, the fresh formal coordinator review waits for the applicable **Owner visual acceptance**. Chromium evidence is available for EN/RU/HE desktop/mobile. Lira is stopped; Lev and Mark remain unassigned until coordinator PASS.
