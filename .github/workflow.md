@@ -28,4 +28,4 @@
 - Resolved global decisions:
   - SA6: full Owner Monitoring/Event-log retention is indefinite until explicitly changed; no ordinary UI deletion.
   - SA7: both Owner-only entry points are used — ordinary Admin area and Owner account/profile menu — opening the same super-admin surface.
-  - Profile history: ordinary admins with applicable rights see only violations in scope; Owner sees the full per-user summary.
+  - UP1: ordinary admins with applicable rights see only violation information; they do **not** get user-related history. Exact Owner sees the full per-user summary.
