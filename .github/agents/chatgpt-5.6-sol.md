@@ -1,5 +1,16 @@
 # Мира — безопасность Vico Forum
 
+## 2026-11-10 — Block B / B7 session management audit
+
+1. Target: current main `e279cb6c032a489a9044ca1191407df887c364b4`, Better Auth `1.7.7`.
+2. Vico Settings wrapper passes ownership/IDOR review: authoritative request identity selects subject; session IDs resolve only inside current user's active sessions; current session and stale form identity are rejected.
+3. **AUTH-SESSION-02 High/P1:** direct public Better Auth `/api/auth/list-sessions` returns active session bearer tokens. Core session schema does not mark token `returned:false`; the route serializes `parseSessionOutput`. This bypasses Vico's safe ID-only DTO and materially amplifies a compromised fresh session by exposing additional active credentials.
+4. Better Auth `1.7.16` retains the same list output, so planned upgrade does not remove this exposure.
+5. **AUTH-SESSION-03 Moderate/P2:** direct `/api/auth/revoke-other-sessions` requires an authoritative valid session but not a fresh session. This bypasses the SET-05 contract and wrapper, which explicitly gates session management through `listSessions` freshness.
+6. Direct single revoke has the same freshness weakness but additionally needs the target token; grouped under AUTH-SESSION-03.
+7. No cross-user revoke, forged session-ID authority, current-session wrapper revoke, or race-based ownership bypass was confirmed.
+8. Partial revoke/delete errors surface as failures; no false-success equivalent to AUTH-SESSION-01 was found in these revoke endpoints.
+
 ## 2026-11-10 — Block B / B4 session lifecycle audit
 
 1. Target: current main `e279cb6c032a489a9044ca1191407df887c364b4`, Better Auth `1.7.7`.
