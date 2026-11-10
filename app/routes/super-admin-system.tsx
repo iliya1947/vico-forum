@@ -1,3 +1,4 @@
+import { useAdministrativeRouting } from "../administrative-routing/provider";
 import { data, useLoaderData, Link, type RouterContextProvider } from "react-router";
 import { useTranslation } from "react-i18next";
 import { requireSuperAdmin, superAdminPrivateHeaders } from "../super-admin/access.server";
@@ -20,13 +21,14 @@ export async function loader({params,context}:{params:{locale?:string};context:R
 export default function SuperAdminSystemRoute() {
   const {locale,system}=useLoaderData<typeof loader>();
   const {t}=useTranslation("common");
+  const routing=useAdministrativeRouting();
   return <SuperAdminShell locale={locale} current="monitoring">
     <section className="admin-overview" aria-labelledby="super-admin-system-heading">
       <h2 id="super-admin-system-heading">{t("superAdminSystem")}</h2>
       <p>{t("superAdminSystemCoverage")}</p>
       {system.recording==="unavailable" ? <p role="status">{t("superAdminRecordingUnavailable")}</p>:null}
       <SystemMonitorCards locale={locale} system={system}/>
-      <p><Link to={superAdminMonitoringPath(locale)}>{t("superAdminMonitoring")}</Link></p>
+      <p><Link to={superAdminMonitoringPath(locale,routing)}>{t("superAdminMonitoring")}</Link></p>
     </section>
   </SuperAdminShell>;
 }
