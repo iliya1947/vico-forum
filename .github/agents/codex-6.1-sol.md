@@ -1,3 +1,23 @@
+# Лёва — актуальная задача: SA-02 bounded plan delivered
+
+**2026-11-10.** Current main `e16d75dc7e2988eb06923c2d97ab5ae389bbfbac`. SA01 implementation#313 + factual docs#314 merged/closed. Mira assignment [#6758525820](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6758525820) — planning only. **[Bounded SA02 plan #6758838112](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6758838112) published; returned to Mira for scope/fit review.** Lev stops; Lira/Mark unassigned. No implementation assignment by planner.
+
+SA02 proposes7 stable global monitors: accounts.users/methods/sessions/registration, security.auth/access/attachments. Sources: current user/account/session/registration singleton, retained sanitized auth/access facts, native registration Admin History and existing attachment-security evidence. Each has adjacent History/Refresh and only real applicable canonical links. Counts are actual SQL aggregates, no page-size totals, no fabricated account lifecycle/old audit/full-security claims.
+
+Reuse owner_events/owner_monitor_observations with bounded typed sources/kinds/payloads, sampling/dedup, shared source-aware timeline and native projection rather than event copies. Forward migration expected0063 only for needed time/id indexes + metadata/manifest; current runtime privileges suffice, no new table/sequence or broader writes. Preserve existing System and all ordinary Admin History position/lock contracts. Native attachment created_at may have microseconds/text ID: shared cursor must retain exact SQL timestamp and source identity with compatible valid legacy SA01 cursors and strict calendar validation.
+
+Source-checked Better Auth1.7.7: HTTP and direct api share dispatch hooks, but before exceptions/raw Response/redirects and HTTP-router rate-limit early429 bypass expected after coverage. Current adapter config does not enable transaction option: do not promise rollback of an entire auth request or infer no committed entity from later failure. change-password uses updateAccount on credential; OAuth token refresh is not password change. session revoke200 can be a no-op; signout may clear cookie despite deletion failure. Plan uses request-local sanitized bounded collector + entity after-hooks + narrow operation completion, isolated from existing auth client/errors and response semantics. Facts have stable source/occurrence dedup; actor/target only authoritative; no copied raw password/token/OAuth/IP/UA/email/request/evidence data.
+
+Preserve SET02 registration closures vs existing login/link, wrapped availability vs schema failures, SET05 stale identity/session freshness, shared HTTP password bucket3/10s/Retry-After in both directions, other/current session isolation, Set-Cookie ordering and existing native Security authority. Passive event writer cannot veto auth; known gaps best-effort, no guaranteed complete audit. security.access covers only actual Super-admin guard401/403, explicitly limited surface.
+
+Acceptance defined for nativePG real hooks/HTTP/direct operations, all current readers/source mappings, exact source identity/dedup/µs pagination, grants/manifest/error isolation and built Worker/Better Auth/PG17/Chromium EN/RU/HE/RTL/mobile/keyboard. Extend existing Super-admin browser workflow, not one new workflow per package. **No SA02 tests/build/runtime acceptance or implementation performed in planning.**
+
+Evidence `/workspace/work/sa02-plan-evidence/`: complete SA02_PLAN.md, official hooks/database HTML+text snapshots, source-evidence.json with exact repository/installed-module hashes. Clean source checkout `/workspace/work/sa02-plan`. Genuine current-scope blocker/conflict not found. Canonical profile/deactivation/enforcement/SA03+, Stage6/live providers/Google/real Owner binding and visual polish remain out of scope. No last-manager/count/recovery rule.
+
+Ниже сохранён прежний review/planning context полностью; оперативным является SA02 planning delivery выше. Последний SA01 independent PASS #6757929335, implementation/docs subsequently merged.
+
+---
+
 # Лёва — актуальный результат SA-01: independent whole-PR PASS
 
 **2026-11-10.** [PR #313](https://github.com/iliya1947/vico-forum/pull/313), stable exact head `d9c4268437e76eec9d01f19c7fe1b85d456128c1`, unchanged main/base `787cf6deae38138de2ffe867368ae794349f471f`: **PASS —0 confirmed current-scope defects**. [Полный отчёт Мире #6757929335](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6757929335). Назначение: Mira fresh coordinator PASS / next review #6757801001.
