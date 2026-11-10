@@ -6,6 +6,7 @@ import { drizzle, type NodePgDatabase } from "drizzle-orm/node-postgres";
 import type { Client } from "pg";
 import type { AuthTransitionFact } from "../../db/owner-auth-facts";
 import { SessionDeletionEvidence } from "./session-deletion-evidence";
+import { AuthCreationEvidence } from "./auth-creation-evidence";
 import {
   AccountSecurityError,
   AuthSessionUnavailableError,
@@ -115,6 +116,7 @@ export function createAuth(
   onAdmissionDenied?: () => void,
   onCreatedFact?: AuthCreationObserver,
   onDeleted?: SessionDeletionEvidence,
+  onCreatedProof?: AuthCreationEvidence,
 ) {
   const options = betterAuthOptions(database, env);
   if (onCreatedFact) {
@@ -122,8 +124,8 @@ export function createAuth(
     // This is instance-local to the canonical Better Auth operation.
     const createdUsers = new Set<string>();
     function emit(fact: AuthTransitionFact): void {
-      try { onCreatedFact?.capture(fact); }
-      catch { /* Recording can never change Better Auth persistence. */ }
+      try { onCreatedFact?.capture(fact); onCreatedProof?.noteHook(fact); }
+      catch { try { onCreatedFact?.recordGap?.(1); } catch { /* best effort */ } }
     }
     function trustedActor(userId: string): string | null {
       try {
@@ -186,19 +188,22 @@ export function createAuth(
       },
     };
   }
-  if (onDeleted) {
+  if (onDeleted || onCreatedProof) {
     const factory = options.database as ReturnType<typeof drizzleAdapter>;
     options.database = (authOptions: BetterAuthOptions) => new Proxy(factory(authOptions), {
       get(adapter, property, receiver) {
         const value = Reflect.get(adapter, property, receiver);
-        if (typeof value !== "function" || (property !== "delete" && property !== "deleteMany")) {
+        if (typeof value !== "function" || (
+          property !== "delete" && property !== "deleteMany" && property !== "create")) {
           return value;
         }
         return async (...args: unknown[]) => {
-          // Preserve the native Better Auth/Drizzle mutation and its result.
+          // Observe only successful native adapter results; leave all mutations untouched.
           const result = await Reflect.apply(value, adapter, args);
-          try { onDeleted.noteAdapterDelete(property, args[0], result); }
-          catch { try { onCreatedFact?.recordGap?.(1); } catch { /* best effort */ } }
+          try {
+            if (property === "create") onCreatedProof?.noteAdapterCreate(args[0], result);
+            else onDeleted?.noteAdapterDelete(property, args[0], result);
+          } catch { try { onCreatedFact?.recordGap?.(1); } catch { /* best effort */ } }
           return result;
         };
       },
@@ -306,10 +311,16 @@ export function createHyperdriveAuthRuntime(
     const client = createClient(connectionString);
     let databaseError: unknown;
     let deletions: SessionDeletionEvidence | undefined;
+    let creations: AuthCreationEvidence | undefined;
     try {
       await client.connect();
       const database = drizzle(client);
       if (onCreatedFact) {
+        creations = new AuthCreationEvidence(database,
+          fact => onCreatedFact.capture(fact),
+          userId => { try { return onCreatedFact.trustedActorFor(userId) === userId ? userId : null; }
+            catch { return null; } },
+          count => { try { onCreatedFact.recordGap?.(count); } catch { /* best effort */ } });
         deletions = new SessionDeletionEvidence(database,
           fact => { try { onCreatedFact.capture(fact); }
             catch { try { onCreatedFact.recordGap?.(1); } catch { /* best effort */ } } },
@@ -335,12 +346,14 @@ export function createHyperdriveAuthRuntime(
       }
       return await operation(createAuth(database, env,
         preserveDatabaseError ? (error) => { databaseError ??= error; } : undefined,
-        onAdmissionError, onAdmissionDenied, onCreatedFact, deletions), database);
+        onAdmissionError, onAdmissionDenied, onCreatedFact, deletions, creations), database);
     } catch (error) {
       // Better Auth 1.7.7 replaces session-query failures with a cause-less APIError.
       // Retain the adapter failure for classification; never infer availability from HTTP 500.
       throw databaseError ?? error;
     } finally {
+      try { await creations?.flush(); }
+      catch { /* Creation proof must never change an auth outcome. */ }
       try { await deletions?.flush(); }
       catch { /* Proof/telemetry must never change an auth outcome. */ }
       bestEffortDiscardClient(client);
