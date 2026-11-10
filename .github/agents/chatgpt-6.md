@@ -1,3 +1,11 @@
+# Лира — FOUNDATION-LEV-02, подзадача 1/2: локальное исправление (2026-11-10)
+
+- Mira independently confirmed Lev finding FOUNDATION-LEV-02/P3 in [#6764287078](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6764287078) on old head `34d1e4acb278fca27cd994e590dd3b9757f5b4d8`; requested only missed System route content Monitoring link + regression/default.
+- Corrected `app/routes/super-admin-system.tsx`: `useAdministrativeRouting()` passed into existing `superAdminMonitoringPath(locale,routing)`. Route loader, guards, URLs, path factory, Worker ingress/registrations unchanged.
+- New real `app/routes/super-admin-system.test.tsx`: actual SuperAdminSystemRoute and System/Shell/Cards through memory Router with fixture loader data, i18n, auth and routing provider; asserts content back-link matches shell and 3 monitor History links under default routing and injected independent `https://forum.invalid/en/office` vs `https://owner.invalid/en/control`.
+- New implementation head **`d12719bc8e6b2e6368489c16f2e0efa9ef6e3605`**, diff from prior reviewed head exactly two files. CI #42794915937, SA01 Chromium #42794915727, AP10 Chromium #42794915509 automatically started. Their final statuses not confirmed at checkpoint.
+- **Subtask 1/2 implemented. STOP at stage boundary.** Next `...`: subtask 2/2 — verify CI/browser exact head, correct only confirmed current-scope failures, publish stable exact head and service handoff, stop for fresh Mira coordinator whole-PR review. No implementer self-review, Lev/Mark coordination, merge, SA02 or Stage6.
+
 # Лира — FOUNDATION-LEV-01, подзадача 2/2: correction delivery (2026-11-10)
 
 - Assignment: Mira confirmed Lev current-scope P3 finding in #6763486651. [Ready PR #317](https://github.com/iliya1947/vico-forum/pull/317) corrected stable **exact head `34d1e4acb278fca27cd994e590dd3b9757f5b4d8`**; previous reviewer head `7f65741d5b3a65392287483d47c0ad6834075efc` is superseded.
