@@ -1,5 +1,16 @@
 # Мира — безопасность Vico Forum
 
+## 2026-11-10 — Block B / B4 session lifecycle audit
+
+1. Target: current main `e279cb6c032a489a9044ca1191407df887c364b4`, Better Auth `1.7.7`.
+2. Session fixation not confirmed: new sign-ins create fresh 32-character alphanumeric server tokens; Vico DB enforces unique `session.token`; stale pre-routing cookie cleanup is ordered before endpoint cookies.
+3. Vico does not enable Better Auth cookie session cache, so PostgreSQL remains authoritative for ordinary session liveness.
+4. Pinned cookie defaults are `__Secure-` + Secure + HttpOnly + SameSite=Lax + Path=/ when baseURL is HTTPS; Vico does not enable cross-subdomain Domain cookies. Actual Stage-6 deployed flags remain externally unverified.
+5. **AUTH-SESSION-01 confirmed current-scope Moderate/P2:** Better Auth `/sign-out` swallows `deleteSession` database failure, clears cookies and returns success. Vico passes this behavior through. A copied token can remain server-valid after the user believes logout succeeded.
+6. Total DB outage before routing is already fail-closed by Vico's pre-routing 503, so the defect is specifically the successful lookup → later delete-failure window.
+7. Better Auth `1.7.16` and current upstream retain this sign-out behavior; upgrading for AUTH-LINK-01 alone does not resolve it.
+8. Other revoke endpoints surface delete failures; no second B4 current-scope defect confirmed.
+
 ## 2026-11-10 — Block B / B3 account-linking audit
 
 1. Current main `e279cb6c032a489a9044ca1191407df887c364b4`; pinned Better Auth `1.7.7`.
