@@ -2704,3 +2704,8 @@ Source evidence and official Better Auth hooks/database snapshots: `/workspace/w
 ## SA-02 plan review — CHANGES REQUIRED
 
 Mira reviewed Lev's bounded SA-02 plan `#6758838112` and confirmed one current-scope plan defect: **SA02-PLAN-MIRA-01** (`#6758897467`). The proposed per-request persisted `access.denied` / rejected or rate-limited `auth.requestOutcome` events would let externally controlled denied requests create unbounded append-only Owner-history rows under indefinite retention. Lev must revise only the telemetry persistence semantics so attacker-triggerable 401/403/429 outcomes are bounded/coalesced/sampled while authoritative entity-transition facts remain exact. No implementation is assigned; Lira and Mark remain unassigned.
+
+
+## SA-02 telemetry correction clarified by Owner
+
+Owner rejected a count-only interpretation of Security telemetry: the system must preserve enough source attribution to investigate who/where attack attempts came from. Mira corrected the earlier review requirement in `#6759312425`: repeated external denials must not create one permanent append-only row per request, but the retained representation must still distinguish retained sources and keep first/last/count plus authoritative user identity when available. Secrets/raw request bodies/tokens remain excluded. Route naming (`/super-admin`) is a separate product concern and is not authorization; do not silently fold a rename into SA-02 without scope.
