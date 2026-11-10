@@ -300,6 +300,25 @@
 15. AP-10 `admin.usersAccess` restriction applies to both `admin.users.read` and `access.authorization.manage` through the effective authorization wrapper before these reads, so saved administrative restrictions cannot be bypassed by calling the alternate read surface.
 16. No C5 finding confirmed.
 
+## Block C / C6 — Resource-condition enforcement / service-bypass audit
+
+1. Audit target: current main `e279cb6c032a489a9044ca1191407df887c364b4`.
+2. Verdict: **PASS — 0 confirmed current-scope resource-condition/service-bypass defects**.
+3. `forum.post.editOwn` is not only a UI/route gate. The canonical edit route derives `actorId` from the authoritative session, and `DrizzleForumRepository.editPublishedPost()` re-reads the target post under the same write transaction/`FOR UPDATE` and requires persisted `post.authorId === actorId` before revision/attachment mutation.
+4. Post-edit draft/upload admission independently reads `readPostLocation(postId)` and rejects a non-author even when that actor holds `forum.post.editOwn`. Final publication repeats the transactional author check, so preflight is not the security boundary.
+5. `forum.solution.manageOwn` route admission only chooses `scope=own`; repository `markTopicSolved` and `selectBestAnswer` then lock/read the authoritative topic and require persisted `topic.authorId === actorId`. Submitted author IDs are not used.
+6. `forum.solution.manageAny` removes only that ownership condition. Repository still enforces topic existence, current state, confirmed-duplicate prohibition, best-answer post membership/original-post exclusion and AP-10 `admin.forum` admission for the administrative path.
+7. `forum.sourceLocale.correctOwn` route admission similarly selects `scope=own`; `ForumService.correctTopicTitleSourceLocale`/`correctPostBodySourceLocale` read the authoritative topic/post and require its persisted author to equal the session-derived actor before correction.
+8. `forum.sourceLocale.correctAny` removes only ownership. The service still requires target membership/current revision, canonical non-`und` locale validation and CAS; it constructs the new revision from the existing original content, so the source-locale capability does not become a general text-edit capability.
+9. The source-locale own author check occurs before the repository transaction, but topic/post authorship is immutable in the current schema/domain. Revision identity is separately CAS-checked in the transaction; a concurrent revision change rolls back rather than applying against stale content.
+10. Untrusted `operationScope` is not authority. Explicit `any` is rejected unless the matching `manageAny/correctAny` permission is currently effective; explicit `own` requires the matching Own permission even if Any is present; malformed/multiple markers are rejected before the writer.
+11. Existing connected route/DB regression proves Own revocation after an editor/action was opened takes effect before write, an Own request against a foreign resource is rejected, Any-only actors cannot forge Own, and an opened Own operation remains Own after a later Any grant.
+12. Stale account expectations are not actor selectors: `editorActorId` mismatch returns private/no-store `409`, while `runForumMutation` and `runSourceLocaleCorrection` pass only the current Better Auth session user ID to the writer.
+13. Production caller search for `markTopicSolved`, `selectBestAnswer`, `correctTopicTitleSourceLocale`, `correctPostBodySourceLocale` and `editPublishedPost` found browser/runtime calls only through the canonical gated actions. Other direct calls are repository/local-CI tests or internal smoke fixtures.
+14. The server-side Forum writer/service API accepts trusted `actorId` and `scope`; a hypothetical new server caller could misuse them. No current attacker-controlled runtime path exposes those parameters directly, so this is not a current Stage finding. Future callers must preserve the same permission gate + authoritative resource checks.
+15. Bound Owner catalog projection does not bypass `*Own` ownership conditions; Owner may use separately implemented Any capabilities, but ordinary Own paths still require authoritative ownership as specified in the authorization contract.
+16. No C6 finding confirmed.
+
 ## Координация
 
 1. #315 хранит решения, задачи, review findings и прогресс всего направления безопасности.
