@@ -1645,3 +1645,11 @@ Reviewed Lev plan `#6759936344`: CHANGES REQUIRED only for `FOUNDATION-PLAN-MIRA
 - #315 remains reference-only for future Owner Worker separation; no Stage-6 security implementation entered #317.
 - Exact-head CI and both applicable Chromium acceptance workflows are green.
 - Handoff to Lev for independent technical review recorded in #6762795987.
+
+
+## PR #317 — FOUNDATION-LEV-01 disposition
+
+- Independently checked Lev's finding on exact head `7f65741d5b3a65392287483d47c0ad6834075efc`.
+- **Confirmed current-scope P3.** AdminShell compares pathname-only current location to a resolver destination that may be absolute same-origin; this suppresses `recordAdminIndex` and leaves stale `adminLast`.
+- This is part of the approved substitution foundation contract, not future-only Stage-6 hardening.
+- Lira assigned in #6763486651 for a local correction plus relative/absolute same-origin regression coverage. New implementation head requires a fresh Mira whole-PR review before Lev re-review.
