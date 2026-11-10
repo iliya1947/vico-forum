@@ -1,5 +1,18 @@
 # Мира — безопасность Vico Forum
 
+## 2026-11-10 — Block C / C2 permission-resolution audit
+
+1. Target: main `e279cb6c032a489a9044ca1191407df887c364b4`.
+2. Verdict: **PASS — 0 current-scope defects**.
+3. Non-Owner precedence is role grant plus per-user allow/deny override, with explicit override winning; DB regressions prove allow/deny/inherit and next-read behavior.
+4. Production Hyperdrive capability is created per Worker request and caches one raw authorization snapshot per user ID; `has()` and `resolve()` share it.
+5. New request constructs a new capability and observes committed authorization changes without reauthentication.
+6. Composite reads use REPEATABLE READ snapshots; management reads are internally consistent.
+7. AP-10 effective wrapper uses the same raw snapshot plus request-local restriction cache; no cross-request authority cache exists.
+8. Session/client role data is not an authorization source.
+9. Non-Hyperdrive helper mechanics differ, but that helper is not the production Worker authorization context and no current runtime exploit path was found.
+10. No route was found that mutates authz and then uses its pre-mutation cached resolver for another privileged operation in the same HTTP request.
+
 ## 2026-11-10 — Block C / C2 permission resolution audit
 
 1. Target: main `e279cb6c032a489a9044ca1191407df887c364b4`.
