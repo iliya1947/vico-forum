@@ -32,11 +32,12 @@
 
 ## Current state
 
-1. Product plan AUTH-01–AUTH-07 утверждён владельцем в текущем обсуждении.
-2. Implementation PR отсутствует.
-3. Следующий bounded этап — AUTH-01 Mail foundation.
-4. Технический план AUTH-01 подготовлен Лёвой против main `e279cb6c032a489a9044ca1191407df887c364b4`: [личный файл Лёвы](agents/codex-6.1-sol.md).
-5. Следующий шаг — Мира проверяет соответствие bounded scope и оформляет handoff Лире; implementation ещё не начат.
-6. План предусматривает mail boundary, два provider adapters без реальной сети, fake transport и test-local Better Auth callback integration. Подключение callbacks к рабочему auth runtime относится к AUTH-02/03: само наличие sendResetPassword включает request-password-reset path.
-7. Schema/dependency/public AuthRuntime изменения для AUTH-01 не требуются. #315 отдельно планирует security hardening/Better Auth upgrade; перед реализацией и callback integration сверить актуальный main и pinned types.
-8. Implementation tests/acceptance ещё не выполнялись; план не является доказательством готовой mail delivery.
+1. Product plan AUTH-01–AUTH-07 утверждён владельцем.
+2. Технический план AUTH-01 подготовлен Лёвой против main `e279cb6c032a489a9044ca1191407df887c364b4`.
+3. Мира проверила план против bounded scope и актуального runtime: **PASS, 0 подтверждённых current-scope проблем**.
+4. `workers/app.ts` уже имеет `ExecutionContext/waitUntil`; отдельная AUTH-01 runtime-переделка для этого не требуется.
+5. AUTH-01 передан Лире на отдельный implementation PR.
+6. Production Better Auth callbacks/provider wiring остаются выключенными в AUTH-01; callbacks используются только в test-local fixture.
+7. Schema/dependency/public AuthRuntime changes не планируются.
+8. Реальные внешние сервисы и provider credentials запрещены до Stage 6.
+9. Implementation PR/head пока отсутствует.
