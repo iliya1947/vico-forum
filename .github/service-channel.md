@@ -198,6 +198,20 @@
 6. Никакие исправления/implementation planning не назначены.
 7. Следующий audit step: **C1 Owner binding / authority spoofing**.
 
+## Block C / C1 — Owner binding / authority spoofing audit
+
+1. Audit target: current main `e279cb6c032a489a9044ca1191407df887c364b4`.
+2. Verdict: **PASS — 0 confirmed current-scope Owner-binding/spoofing defects**.
+3. Production Worker derives Owner binding only from server environment `VICO_OWNER_USER_ID`, normalizes it through `validOwnerUserId`, and stores it in a new request-local `authorizationOwnerContext`. No request header, query, form, cookie field, email, role, grant or provider claim writes that context.
+4. Binding is exact and fail-closed: undefined/null/blank/leading-or-trailing-whitespace values do not bind anyone. A binding to a nonexistent user grants nothing because authority still requires a real authenticated session whose `user.id` equals the binding.
+5. Owner checks use the authoritative pre-routing Better Auth session user ID. A new RouterContext/session resolution is created for every request; stale Owner UI followed by account switching therefore cannot carry Owner authority into the next mutation.
+6. Non-Owner actors retain ordinary RBAC even if their role display name is `Owner`, they hold built-in admin, they have `access.authorization.manage`, or they receive broad catalog grants. Direct authorization writes still independently require exact `canMutateAuthorization(actorId, ownerBinding)` inside the serialized repository mutation.
+7. Bound Owner raw role/grants/explicit denies remain stored but do not suppress the catalog-wide Owner projection; this is the documented authority model. Projection grants only current `PERMISSION_CATALOG` keys and never an arbitrary unknown permission.
+8. Public email sign-up cannot choose the internal Better Auth user ID: Vico exposes only server-owned `locale` as an additional user field with `input:false`; Better Auth parses only configured input fields before user creation. Google OAuth user provisioning likewise does not accept a client-selected internal local user ID.
+9. Knowledge/disclosure of the Owner user ID is therefore not itself an authority credential in the current architecture.
+10. Real Stage-6 Google account → deployed `VICO_OWNER_USER_ID` binding remains external acceptance and is not claimed here.
+11. No C1 finding confirmed.
+
 ## Координация
 
 1. #315 хранит решения, задачи, review findings и прогресс всего направления безопасности.
