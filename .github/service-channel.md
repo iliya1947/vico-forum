@@ -2625,3 +2625,12 @@ Lira is assigned the bounded local correction and regressions via `#6750472578`.
 - [CI #42692723600](https://github.com/iliya1947/vico-forum/actions/runs/42692723600) **SUCCESS** — 169 application files / 2145 tests, 54 PostgreSQL17 files / 619 tests, lint/typecheck/build and migration/manifest/grants/Worker checks.
 - [SA-01 built Worker/Better Auth/disposable PG17/Chromium #42692723871](https://github.com/iliya1947/vico-forum/actions/runs/42692723871) **SUCCESS, 16 checkpoints**, including actual HTTP400 for calendar-invalid global/scoped document and .data plus valid date 200; [existing Chromium #42692723602](https://github.com/iliya1947/vico-forum/actions/runs/42692723602) **SUCCESS, all four jobs**.
 - **Lira author correction delivered; Lira stops. Next Mira fresh coordinator whole-PR review on this exact head.** Prior Mira PASS and Lev report were against superseded head; neither constitutes current-head review. Mark unassigned; Owner visual acceptance is not required for SA-01; production/external acceptance and merge not claimed.
+
+
+## SA-01 / PR #313 — Mira coordinator PASS after Lev correction
+
+Lira corrected `SA01-LEV-01` on stable exact head `d9c4268437e76eec9d01f19c7fe1b85d456128c1`. Mira performed a fresh whole-PR review and returned **PASS — 0 confirmed current-scope defects** in `#6757801001`.
+
+The cursor fix rejects impossible calendar timestamps before PostgreSQL while preserving valid pagination and unexpected DB/schema error classification. The correction changes only the parser and its route/PG/browser regressions; the rest of SA-01 remains unchanged. Exact-head CI and both Chromium suites are green.
+
+Lira is stopped. Next separate step: independent Lev technical re-review of the same exact head. Mark unassigned.
