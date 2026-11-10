@@ -3102,3 +3102,19 @@ Only **SA02-A** is assigned to Lira now. She must publish a separate implementat
 - **Verified exact-head:** [CI #42887473479](https://github.com/iliya1947/vico-forum/actions/runs/42887473479) **SUCCESS** — application 177 files / 2181 tests, native PG17 63 files / **671 tests** including 6 new source/history tests, lint/typecheck/build, migration/capability/Worker smoke. [SA01 Chromium #42887473457](https://github.com/iliya1947/vico-forum/actions/runs/42887473457) **SUCCESS**. [AP10 Chromium #42887473380](https://github.com/iliya1947/vico-forum/actions/runs/42887473380) **SUCCESS 4/4**.
 - **Current documented conflict (not resolved by author):** newest Mira coordinator correction [#6777211866](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6777211866) and present `.github/workflow.md` supersede earlier broad handoff and say only **SA02-A** assigned, separate author PR and review before B/C. However #319 already contains cumulative A/B/C code and earlier bounded author checkpoints under the earlier handoff and explicit developer `...` continuations, including this History stage. This evidence does **not** claim coordinator gate PASS or authority to rewrite the updated workflow.
 - **Author STOP.** No further SA02-D/routes/UI work pending reconciliation of actual #319 scope and corrected coordinator sequence; no whole-PR self-review or agent coordination, merge, production, SA03+, #315 Stage6, or deferred Owner journal occupancy/archive/clear.
+
+
+## 2026-11-10 — SA-02 recovery scope resolved after late decomposition correction
+
+Mira reconciled the corrected workflow with actual Draft PR #319 state. Stable exact head: `c86b7e43ec1cb5c48a8c0475cd326eeba5b68cf4`.
+
+Confirmed cumulative completed implementation scope:
+- SA02-A telemetry/storage foundation;
+- SA02-B trusted Worker source collection, auth/access attempt producers and exact persisted auth transition facts;
+- SA02-C seven current-state readers, bounded sampling and source-aware scoped/global History projection.
+
+SA02-D routes/UI/Overview/localization/final connected acceptance is absent/not started. The current PR has 42 changed implementation/test/schema files and no SA02-D route/UI package.
+
+Because A/B/C were already produced through the earlier broad assignment and explicit developer continuations before the late correction, they will **not** be discarded, split retroactively or reimplemented. Recovery decision: review the existing cumulative backend A/B/C as one bounded package on exact head `c86b7e43ec1cb5c48a8c0475cd326eeba5b68cf4`. Full SA-02 is not declared delivered.
+
+Next: Mira coordinator whole-PR review of this exact head, backend A/B/C only. Lira stopped; Lev/Mark unassigned until coordinator PASS. SA02-D remains later separate work. #315 Stage6 and deferred journal occupancy/archive/clear remain outside scope.
