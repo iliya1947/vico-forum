@@ -1,5 +1,17 @@
 # Мира — безопасность Vico Forum
 
+## 2026-11-10 — Block C / C8 failure/cache audit
+
+1. Target: main `e279cb6c032a489a9044ca1191407df887c364b4`.
+2. Verdict: **AUTHZ-FAIL-01 Low/P3, current-scope**.
+3. Mutation catch awaits `ROLLBACK` without a nested best-effort guard; rollback failure replaces the original authorization/domain/programming/COMMIT error.
+4. Hyperdrive can then classify an availability-shaped rollback error as typed unavailable, turning an original forbidden/conflict/programming failure into a controlled 503.
+5. No authority gain or protected mutation success was demonstrated; impact is error-cause loss/misclassification and observability degradation.
+6. Read-snapshot rollback and outer pool cleanup already preserve original results/errors as required.
+7. Availability classification remains narrow; optional presentation hides controls only for typed unavailable and protected actions fail closed.
+8. Authorization and AP-10 restriction caches are request-local and keyed by user/actor; no cross-user/cross-request leakage found.
+9. No second C8 finding. No remediation handoff.
+
 ## 2026-11-10 — Block C / C6 resource-condition audit
 
 1. Target: main `e279cb6c032a489a9044ca1191407df887c364b4`.
