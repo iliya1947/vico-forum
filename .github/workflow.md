@@ -8,6 +8,7 @@
 6. Block C — Authorization & privilege escalation completed; one current finding `AUTHZ-FAIL-01 Low/P3`.
 7. **Current audit block: D — Ordinary Admin & moderation.**
 8. D1 completed: **PASS — 0 current-scope global-Admin admission/cross-surface defects**.
-9. No technical planner, implementer or implementation PR is assigned.
-10. No Cloudflare/Neon/production mutation is authorized.
-11. Next after developer continuation: execute **D7 Attention mode/group cross-capability isolation** and stop with findings/classification.
+9. D7 completed: **PASS — 0 current-scope Attention mode/group cross-capability defects**.
+10. No technical planner, implementer or implementation PR is assigned.
+11. No Cloudflare/Neon/production mutation is authorized.
+12. Next after developer continuation: execute **D3 Shared Quick actions / moderation mutation boundaries** and stop with findings/classification.
