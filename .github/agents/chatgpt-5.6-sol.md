@@ -11,7 +11,7 @@
 7. Future Passkey activation must use a fixed supported line (>=1.7.16; align with the then-current Better Auth packages) and re-test origin/user verification.
 8. Upgrade regression focus: 1.7.12 adds DB error cause preservation overlapping Vico's 1.7.7 workaround; intervening patches alter cookie/session/password/rate-limit behaviors. Preserve current fail-closed semantics with targeted integration tests rather than carrying version-specific workarounds blindly.
 9. Live Google/deployed compatibility remains Stage-6 external acceptance: Информация не проверена.
-10. Block B audit is complete; next work is correction-scope consolidation before Лёва technical planning.
+10. Block B audit is complete. Remediation is not assigned; findings remain recorded for later. Next work, when the owner continues the audit, is the next security area: Authorization & privilege escalation.
 
 ## 2026-11-10 — Block B / B10 failure/privacy/leakage audit
 
