@@ -1,15 +1,14 @@
 # Admin panel — current workflow
 
 - Service PR: **#251**. Current main: `e279cb6c032a489a9044ca1191407df887c364b4`.
-- Current stage: **SA-02 backend A/B/C coordinator PASS; Lev independent technical review assigned.**
-- Active implementation: Draft **PR #319**, stable exact head **`c9ff7b660fc40924f6adfd649b1daa0d80acb045`**.
-- Accepted technical plan: [#6768069279](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6768069279); recovery scope A/B/C: [#6777700709](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6777700709).
-- Lira correction packet: #6779256211.
-- Mira fresh whole-PR review: [#6779377295](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6779377295) — **PASS, 0 open coordinator findings**.
-- **SA02-IMPL-MIRA-01 CLOSED:** bulk exact-fact path bounded; omitted/ambiguous transitions use recording-gap semantics.
-- **SA02-IMPL-MIRA-02 CLOSED:** trusted occurrence time persists separately from DB recording time.
-- **SA02-IMPL-MIRA-03 CLOSED:** registration coverage includes retained registration-admission History source.
-- Exact-head evidence: CI #42900496484 SUCCESS; SA-01 Chromium #42900496340 SUCCESS; AP-10 Chromium #42900496488 SUCCESS all 4 jobs.
-- **Next recipient: Lev — independent technical review of PR #319 exact head `c9ff7b660fc40924f6adfd649b1daa0d80acb045` for cumulative backend A/B/C only; publish PASS or all confirmed current-scope findings and stop.**
-- Lira/Mark unassigned during review.
-- **SA02-D is not started/assigned.** #315 Stage-6 activation and deferred History/journal occupancy/archive/clear remain outside scope.
+- Current stage: **SA02 backend A/B/C independent review completed — CHANGES REQUIRED, 3 confirmed current-scope findings.**
+- Active implementation: Draft **PR #319**, reviewed stable exact head **`c9ff7b660fc40924f6adfd649b1daa0d80acb045`**.
+- Accepted technical plan: [#6768069279](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6768069279); recovery A/B/C scope: [#6777700709](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6777700709).
+- Prior Mira coordinator PASS/assignment: #6779377295 after correction packet #6779256211.
+- **Lev independent result: [#6779818918](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6779818918).**
+- **SA02-IMPL-LEV-01 OPEN:** production Hyperdrive auth-fact factory drops trusted occurredAt; MIRA-02 behavior remains incomplete in actual Worker path.
+- **SA02-IMPL-LEV-02 OPEN:** four Accounts coverage boundaries incorrectly include current-row timestamps absent from retained History.
+- **SA02-IMPL-LEV-03 OPEN:** auth History projection drops known safe actor/target/entity refs already stored in owner_events.
+- Evidence: exact-head CI/SA01/AP10 SUCCESS; independent local build, 99 application tests, 123 PG17 tests, 69-table schema parity, runtime privileges and 16 Chromium checkpoint groups PASS. Separate native semantic probes reproduce all three findings.
+- **Next recipient: Mira — assess the combined confirmed A/B/C findings and continue the coordinator cycle. Lev completed/stopped; Lira/Mark not assigned by Lev.**
+- **SA02-D remains not started/assigned.** Full SA02 is not accepted/ready for merge. #315 Stage6 activation, production and deferred journal occupancy/archive/clear remain outside scope.
