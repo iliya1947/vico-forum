@@ -1,3 +1,4 @@
+import { useAdministrativeRouting } from "../administrative-routing/provider";
 import { data, Link, useLoaderData, type RouterContextProvider } from "react-router";
 import { useTranslation } from "react-i18next";
 import { requireAdminAccess } from "../admin/access.server";
@@ -23,12 +24,13 @@ export async function loader({request,params,context}: {request: Request; params
 export default function AdminHistoryRoute() {
   const {locale,access,page,paged} = useLoaderData<typeof loader>();
   const {t} = useTranslation("common");
+  const routing = useAdministrativeRouting();
   return <AdminShell locale={locale} access={access} current="history">
     <section aria-labelledby="admin-history-heading"><h2 id="admin-history-heading">{t("adminHistory")}</h2>
       <p>{t("historyCoverage")}</p><HistoryEvents events={page.events} locale={locale}/>
       <nav className="admin-history-paging" aria-label={t("historyPaging")}>
-        {paged ? <Link to={historyPagePath(locale)}>{t("historyNewest")}</Link> : null}
-        {page.next ? <Link to={historyPagePath(locale,page.next)}>{t("historyOlder")}</Link> : null}
+        {paged ? <Link to={historyPagePath(locale,undefined,routing)}>{t("historyNewest")}</Link> : null}
+        {page.next ? <Link to={historyPagePath(locale,page.next,routing)}>{t("historyOlder")}</Link> : null}
       </nav>
     </section>
   </AdminShell>;

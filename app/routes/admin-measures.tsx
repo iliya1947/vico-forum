@@ -1,3 +1,4 @@
+import { administrativeRoutingForRequest } from "../administrative-routing/request-context";
 import { data, redirect, useActionData, useLoaderData, type RouterContextProvider } from "react-router";
 import { userMeasuresForRequest } from "../measures/request-context";
 import {
@@ -58,7 +59,7 @@ export async function action({request,params,context}:{
       reason:measureFormText(form,"reason"),expiresAt:measureOptionalInstant(form),
       restrictions:measureFormRestrictions(form),
     });
-    return redirect("/"+encodeURIComponent(params.locale??"en")+"/admin/measures/"+encodeURIComponent(result.id),
+    return redirect(administrativeRoutingForRequest(context).admin.measure(params.locale??"en",result.id),
       {headers:measurePrivateHeaders});
   } catch(error) { return measureActionError(error); }
 }

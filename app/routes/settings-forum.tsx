@@ -1,3 +1,4 @@
+import { useAdministrativeRouting } from "../administrative-routing/provider";
 import { data, useFetcher, useLoaderData, useRevalidator, type RouterContextProvider } from "react-router";
 import { useEffect, useRef } from "react";
 import { useTranslation } from "react-i18next";
@@ -131,11 +132,12 @@ function RegistrationControls({ registration }: {
 
 export default function SettingsForumRoute() {
   const state = useLoaderData<typeof loader>();
+  const routing = useAdministrativeRouting();
   const fetcher = useFetcher<{ ok?: boolean; error?: AuthorizationFailure }>({ key: authorizationFetcherKey });
   return <SettingsShell locale={state.locale} canViewForum current="forum">
     <RegistrationControls registration={state.registration}/>
     <AuthorizationManagementContent {...state} result={fetcher.data}
-      inline={{ action: canonicalAuthorizationPath(state.locale), fetcherKey: authorizationFetcherKey }} />
+      inline={{ action: canonicalAuthorizationPath(state.locale,routing), fetcherKey: authorizationFetcherKey }} />
   </SettingsShell>;
 }
 
