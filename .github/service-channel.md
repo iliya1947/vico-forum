@@ -32,18 +32,18 @@
 
 ## Актуальный baseline и назначение
 
-- Main/base: `24dfa9f51892490fae346f6079d6aa7fcfec1aa1`. AP01–11, Owner redesign1–2, SET01–06, SA01 implementation#313 + docs#314 closed/merged.
-- **Current task: Admin/Super-admin routing foundation — independent review complete; result returned to Mira.**
-- Approved plan: [#6761206804](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6761206804) overridden by [#6761588752](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6761588752). Mira plan PASS#6761671562; FOUNDATION-PLAN-MIRA-01/-02 closed.
-- Implementation **PR#317**, stable exact head `7f65741d5b3a65392287483d47c0ad6834075efc`; 33 files. Mira coordinator PASS [#6762795987](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6762795987).
-- Lev independent whole-PR result [#6763198179](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6763198179): **one confirmed current-scope finding FOUNDATION-LEV-01/P3; PASS not issued.** Same-origin absolute Admin destination makes AdminShell pathname/full-URL equality false, leaving last-visited preference stale; current relative/default flows pass. Reproducer checks actual next-entry selection, not only a mocked callback.
-- Scope remains outgoing typed address resolver/accessors/provider and approved consumers only; independent Admin/Super-admin families. Current registrations/Worker/guards/Router8.3.1/initial/URLs/DB/dependencies unchanged.
-- Exact-head CI #42780591588, SA01 #42780591412, AP10 #42780591278 all SUCCESS. Local build +22 files/250 tests PASS; PG17 migrations0000–0062 PASS; SA01 browser16 + independent browser11 checkpoint groups PASS. Additional independent diagnostic2 PASS/1 reproduced FAIL.
-- **Next recipient: Mira — consider the finding and complete independent review, determine coordinator continuation.** Lev finished/stopped; Lira/Mark unassigned. No implementation edit or new implementer assignment during review; Owner alone merges.
-- Future architecture reference **security service PR#315**, checked head `5329ef027c7f477067154218349077d75b763c8a`, plan blob `0b4fee79a10dcf6f532f3758305d0896f88a7d88`: ordinary Admin remains Public Forum Worker; Super-admin moves to separate Owner Worker; after activation Public Worker has no Super-admin registrations. #315 files unchanged.
-- No security activation/Owner split/Access/isolated Owner auth/session/Passkey/DB/deploy/transport work added here. FOUNDATION-LEV-01 concerns the current permitted resolver substitution contract, not acceptance of future deployment.
-- SA02-PLAN-MIRA-01 / Owner clarification#6759312425 remains open: useful authoritative user/network-source attribution, first/last/count and bounded/coalesced retention; no permanent per-denial rows or anonymous global count substitute.
-- Evidence: `/workspace/work/routing-review-evidence/`; local preview stopped, disposable DB removed, synthetic vars/symlinks cleaned, tracked review checkout clean. No merge/deploy.
+- Main/base: `24dfa9f51892490fae346f6079d6aa7fcfec1aa1`. AP01–11, Owner redesign1–2, SET01–06, SA01 implementation#313 + docs#314 complete/merged.
+- **Current task: Admin/Super-admin routing foundation — Lev independent re-review complete; result returned to Mira.**
+- Approved plan [#6761206804](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6761206804) + [#6761588752](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6761588752); Mira plan PASS#6761671562, FOUNDATION-PLAN-MIRA-01/-02 closed.
+- Implementation **PR#317**, stable exact head `34d1e4acb278fca27cd994e590dd3b9757f5b4d8`;34 changed files. Mira fresh coordinator PASS#6763991905.
+- Independent repeat whole-PR result [#6764152289](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6764152289): **FOUNDATION-LEV-01 CLOSED; one confirmed current-scope finding FOUNDATION-LEV-02/P3; PASS not issued.**
+- LEV02 source app/routes/super-admin-system.tsx:29: content System→Monitoring link calls helper without provider routing, so with independent Owner fixture shell/History use owner.invalid/control while content back-link remains /en/super-admin/monitoring. Default behavior passes. This is a missed current outgoing consumer under the approved substitution contract; no actual cross-origin transport/security activation required.
+- Scope remains outgoing typed address resolver/accessors/provider and approved consumers; independent Admin/Super-admin families. Current registrations/Worker/guards/Router8.3.1/initial/URLs/DB/dependencies unchanged.
+- New exact-head CI #42789615619, SA01#42789615866 and AP10#42789616057/all4 jobs independently confirmed SUCCESS. Local build +23 files/253 tests PASS; PG17 migrations0000–0062 PASS; fresh SA01 browser16 + independent browser11 groups PASS. Former independent reproducer3 PASS; expanded diagnostic4 PASS/1 reproduced FAIL for LEV02.
+- **Next recipient: Mira — assess FOUNDATION-LEV-02 and complete independent repeat result; determine coordinator continuation.** Lev finished/stopped; Lira/Mark unassigned. No implementation edit or new implementer assignment; Owner alone merges.
+- Future architecture reference **#315**, head `5329ef027c7f477067154218349077d75b763c8a`, plan blob `0b4fee79a10dcf6f532f3758305d0896f88a7d88`, unchanged: ordinary Admin remains Public Forum Worker; Super-admin moves to separate Owner Worker, absent from Public registrations after activation. No #315 files/security implementation changed here.
+- SA02-PLAN-MIRA-01 / Owner clarification#6759312425 remains open: useful authoritative user/network-source attribution + first/last/count and bounded/coalesced retention.
+- Evidence `/workspace/work/routing-repeat-evidence/`; clean tracked checkout, local preview stopped, disposable DB removed, synthetic vars/symlinks removed. No merge/deploy.
 
 ## Handoff — Лира: Stage2 factual documentation closeout
 
@@ -2818,3 +2818,11 @@ Mira repeated the whole-PR review on PR #317 stable exact head `34d1e4acb278fca2
 FOUNDATION-LEV-01 is closed: logical last Admin section recording now treats relative and absolute same-origin trusted Admin destinations equivalently, excludes detail/subpages, preserves account-local logical IDs, and rejects a different-origin destination for a local page. Full current PR scope and #315 separation were rechecked; route registration/Worker/auth/schema/dependencies/Stage6 activation remain unchanged.
 
 Exact-head CI #42789615619, SA-01 Chromium #42789615866 and AP-10 Chromium #42789616057 are SUCCESS. Next: Lev independent technical re-review of the same exact head. Lira/Mark unassigned during review.
+
+## 2026-11-10 — Lev repeat whole-PR review PR#317 / LEV01 closed, LEV02 returned
+
+Full result: [#6764152289](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6764152289), exact head `34d1e4acb278fca27cd994e590dd3b9757f5b4d8`, main/base `24dfa9f51892490fae346f6079d6aa7fcfec1aa1`. Whole current34-file scope re-reviewed, not only correction. **FOUNDATION-LEV-01 closed** by unchanged independent reproducer3 PASS and repository regression.
+
+**One confirmed current-scope finding FOUNDATION-LEV-02/P3; PASS not issued.** System route content Monitoring back-link app/routes/super-admin-system.tsx:29 omits UI routing argument; helper falls back to defaultAdministrativeRouting. Real route render under independent Admin/Owner provider yields correct shell/three History destinations but wrong content /en/super-admin/monitoring instead of owner.invalid/en/control/monitoring. Default control passes; independent expanded diagnostic4 PASS/1 reproduced FAIL. This is an omitted migration consumer in the approved foundation, missed during first Lev review; no #315 transport/activation implementation is requested. Technical recommendation: feed this caller the existing UI Super-admin resolver and cover actual System route; disposition is Mira's, no implementer assignment by Lev.
+
+Fresh local build/253 tests/migrations0000–0062 PASS; SA01 Chromium16+independent Chromium11 checkpoint groups PASS; all three new-head CI workflows/jobs independently SUCCESS.12 protected files unchanged vs base, delta since prior review only shell+new test. Evidence routing-repeat-evidence with raw browser/probe logs, source/hash/provenance. Runtime cleanup complete; implementation unchanged. **Returned to Mira; Lev stopped, Lira/Mark unassigned.** SA02 correction stays open; no merge/deploy/Stage6 activation.
