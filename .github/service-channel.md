@@ -347,6 +347,18 @@
 9. **Block C complete.** Total confirmed Block-C findings: one — `AUTHZ-FAIL-01 Low/P3`.
 10. No remediation is assigned.
 
+
+## Block D — Ordinary Admin & moderation audit prepared
+
+1. Audit target: main `e279cb6c032a489a9044ca1191407df887c364b4`.
+2. Current source-of-truth re-read: `AGENTS.md`, `PROJECT.md`, `PROJECT_STATE.md`, `docs/ADMIN_PANEL.md`, `docs/auth/AUTHORIZATION.md`, `docs/moderation/COMPLAINTS.md`.
+3. Runtime surfaces sampled before matrix: global Admin, Forum, History, Users, Measures, Attention and Complaints reviewer helpers/routes.
+4. D1–D12 separate global admission, Forum/Quick actions, History, Users, measures, Attention mode isolation, Signals, Complaints privacy/mutations, Security attachments and stale/failure/cache boundaries.
+5. Generic authorization internals already covered by Block C are not re-audited unless a domain path contradicts those results.
+6. Super-admin/Owner-only surface stays outside Block D.
+7. No remediation/planner/implementer is assigned.
+8. Next audit subtask: **D1 Global Admin admission / cross-surface isolation**.
+
 ## Координация
 
 1. #315 хранит решения, задачи, review findings и прогресс всего направления безопасности.
