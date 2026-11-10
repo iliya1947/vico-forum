@@ -1,3 +1,149 @@
+# Лёва — актуальный checkpoint: SA02 A/B/C independent review completed (2026-11-10)
+
+**Result: CHANGES REQUIRED — 3 current-scope findings.** [Full packet #6779818918](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6779818918). Implementation PR319 exact head `c9ff7b660fc40924f6adfd649b1daa0d80acb045`, base/main `e279cb6c032a489a9044ca1191407df887c364b4` unchanged. Assignment/Mira PASS#6779377295; accepted plan#6768069279, recovered scope#6777700709.
+
+- **SA02-IMPL-LEV-01 OPEN (P2):** production createHyperdriveAuthFactWriter drops append second trusted occurredAt. Correct collector→factory→PG chain uses flush Date, reverses occurrence ordering; direct underlying-writer Date control PASS. Existing MIRA-02 test bypasses factory.
+- **SA02-IMPL-LEV-02 OPEN (P2):** current users/methods/sessions/registration coverage incorrectly merges user/account/session.created_at and current registration singleton.updated_at, which are absent from retained History. Actual PG17 all4 monitors report2020 against first actual event/sample2026-11-10. Keep current counts/updatedAt and true registration-admission/native-source coverage; no backfill.
+- **SA02-IMPL-LEV-03 OPEN (P2):** auth-event History SQL/DTO reads only payload and omits actor/target/entity refs stored separately. Known session-created event → values:{} with no known user/session identity. Reproduced both typed persisted PG fact and real Better Auth signup through built Worker. No SA03 lookup/UI required; safe IDs only, unknown actor stays null.
+- Whole cumulative42-file A/B/C source/schema/test scope checked, not merely correction10-file delta. Independent99 app tests(18files),123 native PG17 tests(11files), build,69-table schema parity, positive/negative privileges, real SA01 Chromium16checkpoint groups PASS on exact head. Native bulk81→32facts+49gap and105ambiguous→0facts+105gap covered. Full CI suite not locally rerun.
+- Remote exact-head CI42900496484,SA0142900496340,AP1042900496488 allSUCCESS independently verified. No extra confirmed defect in admission/renewal/coalescing/source/proof/dedup/rollback/count/sampling/cursor/native source/SA01 paths. Missing D intentionally outside review.
+- #315 refreshed current head `70d9efdd0e5d9910effcf95eaf610048cf471ac9`, plan blob `df2d500ccb2750d43422bf5d30f5b0c5370401ff` unchanged. Existing baseline security findings/BlockA isolation separate; no security implementation.
+- Evidence `/workspace/work/sa02-abc-review-evidence/`: SOURCE_MANIFEST.json, occurrence/history-current/worker-history probe source+logs; application/database/build/schema-manifest/privileges/browser logs; browser/results.json exacthead and16cases/no errors/no external; six EN/RU/HE desktop/mobile screenshots. Implementation checkout `/workspace/work/sa02-abc-review` clean detachedhead. Temporary dependency links/synthetic vars removed; own Worker4200 stopped; own disposable PG17 container sa02-lev-abc-review removed.
+- **Next recipient Mira** for combined finding assessment/coordinator cycle. Lev finished/stopped; does not assign Lira/Mark or start D/SA03+/Stage6/production/deferred journal operations. PR319 stillDraft, no fullSA02PASS/merge readiness. Owner alone merges; no last-admin/manager-count/recovery principle.
+
+## Independent diagnostic reproducer sources
+
+External evidence only, not proposed implementation/tests. Run with exact-head checkout at `/workspace/work/sa02-abc-review`, installed locked dependencies available to checkout/evidence, Node24/tsx, and loopback disposable PG17 DATABASE_URL ending `_test`. Occurrence probe builds/drops its isolated owner schema; current/history probe applies full0000–0063 into its isolated schema and drops it in finally. Their assertions intentionally FAIL on reviewed head. Third probe reads an independently migrated disposable Worker DB after the unchanged checked-in SA01 browser harness has performed real email signup.
+
+### Production timestamp adapter probe
+
+```typescript
+import assert from 'node:assert/strict';
+import {readFile} from 'node:fs/promises';
+import pg from 'pg';
+import {createHyperdriveAuthFactWriter} from '../sa02-abc-review/db/hyperdrive-auth-facts';
+import {PostgresAuthFactWriter} from '../sa02-abc-review/db/owner-auth-facts';
+import {RequestAuthFactCollector} from '../sa02-abc-review/app/observability/auth-fact-collector.server';
+
+const url=process.env.DATABASE_URL!;
+assert.ok(new URL(url).pathname.endsWith('_test'));
+assert.equal(new URL(url).hostname,'127.0.0.1');
+const schema='lev_occurrence_'+crypto.randomUUID().replaceAll('-','');
+const admin=new pg.Client({connectionString:url});await admin.connect();
+try{
+ await admin.query('create schema '+schema);
+ await admin.query('set search_path to '+schema);
+ await admin.query((await readFile('/workspace/work/sa02-abc-review/drizzle/0062_owner_monitoring_foundation.sql','utf8')).replaceAll('--> statement-breakpoint',''));
+ const scoped=new URL(url);scoped.searchParams.set('options','-c search_path='+schema);
+ const directPool=new pg.Pool({connectionString:scoped.toString()});
+ const direct=new PostgresAuthFactWriter(directPool);
+ const early=new Date('2026-01-01T00:00:01.000Z'),late=new Date('2026-01-01T00:00:02.000Z');
+ try{await direct.append({kind:'auth.sessionCreated',userId:'review-user',sessionId:'control'},early);}finally{await directPool.end();}
+ const control=await admin.query("select occurred_at from owner_events where entity_id='control'");
+ assert.equal(control.rows[0].occurred_at.toISOString(),early.toISOString());
+ let gaps=0;
+ const collector=new RequestAuthFactCollector(()=>createHyperdriveAuthFactWriter(scoped.toString()),n=>{gaps+=n;});
+ collector.capture({kind:'auth.sessionCreated',userId:'review-user',sessionId:'late'},late);
+ collector.capture({kind:'auth.sessionCreated',userId:'review-user',sessionId:'early'},early);
+ await collector.flush();assert.equal(gaps,0);
+ const result=await admin.query("select entity_id,occurred_at,recorded_at from owner_events where entity_id<>'control' order by occurred_at,id");
+ const rows=result.rows.map(r=>({id:r.entity_id,occurredAt:r.occurred_at.toISOString(),recordedAt:r.recorded_at.toISOString()}));
+ console.log(JSON.stringify({directControl:'PASS',gaps,rows},null,2));
+ assert.deepEqual(rows.map(r=>[r.id,r.occurredAt]),[['early',early.toISOString()],['late',late.toISOString()]],'production collector/factory must preserve captured occurrence times');
+}finally{
+ await admin.query('drop schema if exists '+schema+' cascade');await admin.end();
+}
+```
+
+### Current coverage and known references probe
+
+```typescript
+import assert from 'node:assert/strict';
+import {readdir,readFile} from 'node:fs/promises';
+import pg from 'pg';
+import {PostgresOwnerSa02Current} from '../sa02-abc-review/db/owner-sa02-current';
+import {PostgresOwnerSa02History} from '../sa02-abc-review/db/owner-sa02-history';
+import {PostgresAuthFactWriter} from '../sa02-abc-review/db/owner-auth-facts';
+
+const url=process.env.DATABASE_URL!;assert.equal(new URL(url).hostname,'127.0.0.1');assert.ok(new URL(url).pathname.endsWith('_test'));
+const schema='lev_history_'+crypto.randomUUID().replaceAll('-','');
+const client=new pg.Client({connectionString:url,options:'-c search_path='+schema});
+const pool=new pg.Pool({connectionString:url,options:'-c search_path='+schema});
+await client.connect();const checks:{name:string;pass:boolean;actual:unknown;expected:unknown}[]=[];
+try{
+ await client.query('create schema '+schema);
+ for(const name of (await readdir('/workspace/work/sa02-abc-review/drizzle')).filter(n=>/^\d{4}_.+\.sql$/.test(n)).sort()){
+   await client.query((await readFile('/workspace/work/sa02-abc-review/drizzle/'+name,'utf8')).replaceAll('"public".','"'+schema+'".'));
+ }
+ const oldAt='2020-01-01T00:00:00.000Z';
+ await client.query('insert into "user"(id,name,email,created_at) values ($1,$2,$3,$4),($5,$6,$7,clock_timestamp())',
+  ['lev-old-user','Old synthetic user','old-review@test.invalid',oldAt,'lev-known-user','Known synthetic user','known-review@test.invalid']);
+ await client.query('insert into account(id,user_id,account_id,provider_id,password,created_at,updated_at) values ($1,$2,$1,$3,$4,$5,$5)',
+  ['lev-old-credential','lev-old-user','credential','synthetic-only-hash',oldAt]);
+ await client.query('insert into session(id,user_id,token,created_at,updated_at,expires_at) values ($1,$2,$3,$4,$4,$5),($6,$7,$8,clock_timestamp(),clock_timestamp(),$5)',
+  ['lev-old-session','lev-old-user','synthetic-old-token',oldAt,'2030-01-01T00:00:00Z','lev-known-session','lev-known-user','synthetic-known-token']);
+ await client.query('update forum_registration_settings set updated_at=$1 where id=1',[oldAt]);
+ const occurred=new Date();
+ const writer=new PostgresAuthFactWriter(pool);
+ const created=await writer.append({kind:'account.created',userId:'lev-known-user'},occurred);
+ const session=await writer.append({kind:'auth.sessionCreated',userId:'lev-known-user',sessionId:'lev-known-session',actorUserId:'lev-known-user'},occurred);
+ const current=await new PostgresOwnerSa02Current(pool).readCurrent();
+ const history=new PostgresOwnerSa02History(pool);
+ const userHistory=await history.readTimeline({area:'accounts',monitorKey:'accounts.users',limit:50});
+ const currentUser=current.monitors.find(m=>m.key==='accounts.users')!;
+ const earliest=userHistory.entries.map(e=>e.occurredAt).sort()[0];
+ checks.push({name:'coverageFrom matches earliest actually retained adjacent History source',pass:currentUser.coverageFrom===earliest,actual:{coverageFrom:currentUser.coverageFrom,history:userHistory.entries.map(e=>({origin:e.origin,id:e.id,at:e.occurredAt}))},expected:earliest});
+ for(const key of ['accounts.methods','accounts.sessions','accounts.registration'] as const){
+  const rows=await history.readTimeline({area:'accounts',monitorKey:key,limit:50});
+  const first=rows.entries.map(e=>e.occurredAt).sort()[0];
+  const monitor=current.monitors.find(m=>m.key===key)!;
+  checks.push({name:key+' coverage is a retained History source',pass:monitor.coverageFrom===first,actual:{coverageFrom:monitor.coverageFrom,historyFirst:first},expected:first});
+ }
+ assert.ok(userHistory.entries.some(e=>e.id===created.id));
+ const sessions=await history.readTimeline({area:'accounts',monitorKey:'accounts.sessions',limit:50});
+ const fact=sessions.entries.find(e=>e.origin==='auth-event'&&e.id===session.id)!;
+ assert.ok(fact);
+ const raw=(await client.query('select actor_user_id,target_user_id,entity_type,entity_id from owner_events where id=$1',[session.id])).rows[0];
+ checks.push({name:'auth History preserves known safe actor/target/entity references',pass:JSON.stringify(fact).includes('lev-known-user')&&JSON.stringify(fact).includes('lev-known-session'),actual:{stored:raw,projected:fact},expected:'known user/session identity retained in safe projection'});
+ console.log(JSON.stringify(checks,null,2));
+ assert.equal(checks.filter(x=>!x.pass).length,0,'independent current/history semantic checks');
+}finally{await pool.end();await client.query('drop schema if exists '+schema+' cascade');await client.end();}
+```
+
+### Real Worker/Better Auth event projection probe
+
+```typescript
+import assert from 'node:assert/strict';
+import pg from 'pg';
+import {PostgresOwnerSa02History} from '../sa02-abc-review/db/owner-sa02-history';
+const url=process.env.DATABASE_URL!;
+assert.equal(new URL(url).hostname,'127.0.0.1');
+assert.ok(new URL(url).pathname.endsWith('_test'));
+const pool=new pg.Pool({connectionString:url});
+try{
+ const raw=(await pool.query("select id,actor_user_id,target_user_id,entity_type,entity_id from owner_events where source='auth' and kind='auth.sessionCreated' order by position desc limit 1")).rows[0];
+ assert.ok(raw,'real Worker signup created an exact auth fact');
+ const history=await new PostgresOwnerSa02History(pool).readTimeline({area:'accounts',monitorKey:'accounts.sessions',limit:50});
+ const dto=history.entries.find(e=>e.id===raw.id);
+ assert.ok(dto);
+ console.log(JSON.stringify({producer:'real Worker / Better Auth email signup',stored:raw,projected:dto},null,2));
+ assert.ok(JSON.stringify(dto).includes(raw.target_user_id)&&JSON.stringify(dto).includes(raw.entity_id),'History must retain safe known identity');
+}finally{await pool.end();}
+```
+
+## Local verification commands
+
+```text
+node node_modules/vitest/vitest.mjs run app/auth app/observability app/super-admin db/owner-sa02-catalog.test.ts workers/app.test.ts workers/database-bindings.test.ts
+DATABASE_URL=<local_disposable_test> node node_modules/vitest/vitest.mjs run --config vitest.database.config.ts tests/database/owner-attempt-telemetry.test.ts tests/database/owner-auth-facts.test.ts tests/database/sa02-auth-creations.test.ts tests/database/sa02-auth-oauth-rollback.test.ts tests/database/sa02-auth-observer.test.ts tests/database/sa02-auth-password-change.test.ts tests/database/sa02-auth-session-deletion.test.ts tests/database/sa02-current-state.test.ts tests/database/sa02-owner-history.test.ts tests/database/owner-system-history.test.ts tests/database/migrations.test.ts
+```
+
+Browser harness unchanged from checked-in tests/browser/super-admin/check.py except external-copy checkout path and existing system Chromium executable selection; real Worker preview4200, synthetic Owner binding, separate migrated disposable DB, IMPLEMENTATION_SHA exactc9ff. This is regression coverage, not SA02-D final acceptance.
+
+Earlier checkpoints/history retained verbatim below; their superseded assignments/proposals are historical.
+
+---
+
 # Лёва — актуальный checkpoint: SA02 renewal correction delivered (2026-11-10)
 
 **Full corrected plan [#6768069279](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6768069279)**, main `e279cb6c032a489a9044ca1191407df887c364b4`. Responds to Mira#6767512074, supersedes6767391552. **Await Mira re-review. Lev finished/stopped; Lira/Mark unassigned.**
