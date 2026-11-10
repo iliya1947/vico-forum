@@ -1,5 +1,22 @@
 # Мира — безопасность Vico Forum
 
+## 2026-11-10 — Block D / D6 Administrative-measures enforcement audit
+
+1. Target: main `e279cb6c032a489a9044ca1191407df887c364b4`.
+2. Verdict: **PASS — 0 current-scope defects**.
+3. Admin/own routes bind actor/subject to the authoritative session; admin writes additionally require current effective basic measure-management admission and same-origin validated forms.
+4. Repository create/change/lift/review rechecks fresh raw authority after the shared authz mutex, rejects self/Owner targets, applies strict hierarchy and preserves issuer floor.
+5. Administrative-family creation requires elevated rank; basic manage alone cannot create those sanctions. Raw RBAC is never rewritten by a measure.
+6. Family suppression matches the documented Forum/Complaints/Security/Users permission sets and is conditional on current raw target rank versus issuer floor.
+7. Exact bound Owner is immune to stored measure suppression in common PG/Drizzle admission and administrative projection, while stored measure/history remains intact.
+8. Authoritative paths independently enforce all ordinary restriction keys: topics, replies, attachments, post/profile edits, Complaint/Help-signal submissions and translation generation.
+9. Production Worker injects Owner-aware measure admission into forum, attachments, Complaints and translation capabilities; no weaker runtime writer was found.
+10. Appeals are exact-measure/session-subject bound, three sequential max and one pending; schema independently enforces ordinal and pending uniqueness.
+11. Version CAS, operation fingerprints, target/measure locks and transactional History preserve replay/concurrency semantics. Existing committed publication/Complaint results remain replayable by explicit contract, while new/changed operations face fresh admission.
+12. Overlap/expiry/lift/appeal-moot semantics match the source-of-truth and existing DB regressions.
+13. Examined low-signal existence/pagination effects did not expose protected payload or establish an authority/privacy exploit and were not promoted to findings.
+14. No remediation handoff. Next D9.
+
 ## 2026-11-10 — Block D / D3 Quick-action mutation audit
 
 1. Target: main `e279cb6c032a489a9044ca1191407df887c364b4`.
