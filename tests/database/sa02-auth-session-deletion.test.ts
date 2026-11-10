@@ -4,7 +4,8 @@ import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
 import {
   createHyperdriveAuthRuntime, type AuthCreationObserver, type BetterAuthEnvironment,
 } from "../../app/auth/auth.server";
-import { PostgresAuthFactWriter, type AuthTransitionFact } from "../../db/owner-auth-facts";
+import { MAX_AUTH_FACTS_PER_REQUEST, PostgresAuthFactWriter, type AuthTransitionFact } from "../../db/owner-auth-facts";
+import { RequestAuthFactCollector } from "../../app/observability/auth-fact-collector.server";
 
 const url = process.env.DATABASE_URL!;
 if (!url || !["127.0.0.1","localhost"].includes(new URL(url).hostname) ||
@@ -159,6 +160,56 @@ describe("SA02 native Better Auth 1.7.7 committed session deletion receipts",()=
     expect(await exists(other.sessionId)).toBe(false);
     expect(deletions().map(x=>x.sessionId).sort()).toEqual([first.sessionId,other.sessionId].sort());
     expect(deletions().every(x=>x.reason==="revoke-all" && x.actorUserId===first.userId)).toBe(true);
+  });
+
+  it("bounds real Better Auth revoke-all evidence, query chunks and persisted exact facts",async()=>{
+    const actor=await register("sa02-large-bulk@example.test","203.0.113.71");
+    const total=101;
+    await admin.query("insert into session(id,user_id,token,expires_at,updated_at) "+
+      "select 'bulk-'||n::text,$1,'bulk-private-'||n::text,"+
+      "clock_timestamp()+interval '1 day',clock_timestamp() "+
+      "from generate_series(1,$2) n",[actor.userId,total-1]);
+    const gapsLarge:number[]=[];
+    const proofWidths:number[]=[];
+    const observedClient=(cs:string)=>{
+      const next=connected(cs);
+      const native=next.query;
+      next.query=((...args:unknown[])=>{
+        const sql=typeof args[0]==="string" ? args[0] :
+          args[0] && typeof args[0]==="object" && "text" in args[0]
+            ? String((args[0] as {text:unknown}).text) : "";
+        if(sql.includes('from "session"') && sql.includes(" in (")){
+          const values=Array.isArray(args[1])?args[1]:
+            args[0] && typeof args[0]==="object" && "values" in args[0]
+              ? (args[0] as {values?:unknown}).values : null;
+          if(Array.isArray(values)) proofWidths.push(values.length);
+        }
+        return Reflect.apply(native,next,args);
+      }) as typeof next.query;
+      return next;
+    };
+    const collector=new RequestAuthFactCollector(()=>({
+      append:(fact,at)=>writer.append(fact,at),
+      close:async()=>undefined,
+    }),count=>gapsLarge.push(count));
+    const bounded=createHyperdriveAuthRuntime(url,env,observedClient,undefined,collector);
+    const outcome=await bounded.handle(request("revoke-sessions",{},actor.cookie,"203.0.113.72"));
+    expect(outcome.status).toBe(200);
+    await collector.flush();
+    const retained=await admin.query<{id:string;kind:string;entity_id:string;
+      payload:{reason:string};occurred_at:Date;recorded_at:Date}>(
+      "select id,kind,entity_id,payload,occurred_at,recorded_at "+
+      "from owner_events where source='auth' and target_user_id=$1 "+
+      "order by position",[actor.userId]);
+    expect(retained.rows).toHaveLength(MAX_AUTH_FACTS_PER_REQUEST);
+    expect(retained.rows.every(r=>r.kind==="auth.sessionDeleted" &&
+      r.payload.reason==="revoke-all" && r.occurred_at<=r.recorded_at)).toBe(true);
+    expect(new Set(retained.rows.map(r=>r.entity_id)).size).toBe(MAX_AUTH_FACTS_PER_REQUEST);
+    expect(gapsLarge.reduce((a,b)=>a+b,0)).toBe(total-MAX_AUTH_FACTS_PER_REQUEST);
+    expect(proofWidths.length).toBeGreaterThan(1);
+    expect(proofWidths.every(length=>length<=8)).toBe(true);
+    expect((await admin.query<{count:string}>("select count(*)::text count "+
+      "from session where user_id=$1",[actor.userId])).rows[0].count).toBe("0");
   });
 
   it("observes signed-cookie signout, never its repeated successful no-op",async()=>{
