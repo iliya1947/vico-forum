@@ -71,7 +71,10 @@ export default {
     context.set(requestAttemptCollectorContext, collector);
     try {
     const auth = withAttemptObservation(
-      createHyperdriveAuthRuntime(webConnectionString, env as Env & BetterAuthEnvironment), collector);
+      createHyperdriveAuthRuntime(
+        webConnectionString, env as Env & BetterAuthEnvironment, undefined,
+        () => collector.recordRegistrationDenied(),
+      ), collector);
     let authHeaders: Headers;
     try {
       authHeaders = await initializeAuthContext(context, request, auth);
