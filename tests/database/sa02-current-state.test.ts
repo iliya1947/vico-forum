@@ -27,10 +27,10 @@ async function method(id:string,owner:string,provider:string,secret:string|null)
     "values ($1,$2,$3,$4,$5,clock_timestamp())",[id,owner,provider,id,secret]);
 }
 async function activeSessions(){
-  await client.query("insert into session(id,user_id,token,expires_at) values "+
-    "('active-1','sa02-a','private-active-token',clock_timestamp()+interval '2 days'),"+
-    "('old-1','sa02-b','private-expired-token',clock_timestamp()-interval '2 hours'),"+
-    "('old-2','sa02-c','private-expired-token-2',clock_timestamp()-interval '2 days')");
+  await client.query("insert into session(id,user_id,token,expires_at,updated_at) values "+
+    "('active-1','sa02-a','private-active-token',clock_timestamp()+interval '2 days',clock_timestamp()),"+
+    "('old-1','sa02-b','private-expired-token',clock_timestamp()-interval '2 hours',clock_timestamp()),"+
+    "('old-2','sa02-c','private-expired-token-2',clock_timestamp()-interval '2 days',clock_timestamp())");
 }
 async function evidence(id:string,old=false){
   await client.query("insert into forum_attachment_security_events "+
