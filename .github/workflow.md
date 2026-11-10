@@ -11,6 +11,7 @@
 9. C2 completed: **PASS — 0 current-scope permission-resolution/precedence/freshness defects**.
 10. C7 completed: **PASS — 0 current-scope concurrency/serialization defects**; rollback-error preservation remains deferred to C8.
 11. C4 completed: **PASS — 0 current-scope elevated-authority propagation defects**.
-12. No technical planner, implementer or implementation PR is assigned.
-13. No Cloudflare/Neon/production mutation is authorized.
-14. Next after developer continuation: execute **C5 Authorization-state read privacy / IDOR** and stop with findings/classification.
+12. C5 completed: **PASS — 0 current-scope authorization-state read privacy/IDOR defects**.
+13. No technical planner, implementer or implementation PR is assigned.
+14. No Cloudflare/Neon/production mutation is authorized.
+15. Next after developer continuation: execute **C6 Resource-condition enforcement / service bypass** and stop with findings/classification.
