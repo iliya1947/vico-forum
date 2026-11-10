@@ -1,5 +1,18 @@
 # Мира — безопасность Vico Forum
 
+## 2026-11-10 — Block B / B11 dependency-security-version audit
+
+1. Target: main `e279cb6c032a489a9044ca1191407df887c364b4`; direct deps `better-auth@1.7.7` and `@better-auth/drizzle-adapter@1.7.7`.
+2. Official Nov-3 security release fixes 12 advisories in `1.7.16`; Better Auth instructs coordinated same-version package upgrades. Current official stable 1.7 line is `1.7.19` on 2026-11-10 and the security policy supports only latest.
+3. No duplicate dependency vulnerability ID: upgrade is mandatory remediation for AUTH-LINK-01 and should target both direct Better Auth packages at 1.7.19 unless planning proves a concrete blocker.
+4. Current configuration is not affected by the Nov-3 email-change advisory (feature disabled), revoked-session secondary/cookie-cache advisory (neither configured), or published OAuth unverified-email affected conditions (generic OAuth/string-claim providers/Zoom; Vico uses built-in Google).
+5. Expo/Electron/phone/email-OTP/admin-plugin/organization/Stripe/passkey surfaces are absent. The MySQL serial-ID adapter issue is not Vico's PostgreSQL configuration.
+6. Installed 1.7.7 already exactly fixes GHSA-44jh-23m7-hpcf PostgreSQL DB rate-limit concurrency.
+7. Future Passkey activation must use a fixed supported line (>=1.7.16; align with the then-current Better Auth packages) and re-test origin/user verification.
+8. Upgrade regression focus: 1.7.12 adds DB error cause preservation overlapping Vico's 1.7.7 workaround; intervening patches alter cookie/session/password/rate-limit behaviors. Preserve current fail-closed semantics with targeted integration tests rather than carrying version-specific workarounds blindly.
+9. Live Google/deployed compatibility remains Stage-6 external acceptance: Информация не проверена.
+10. Block B audit is complete; next work is correction-scope consolidation before Лёва technical planning.
+
 ## 2026-11-10 — Block B / B10 failure/privacy/leakage audit
 
 1. Target: current main `e279cb6c032a489a9044ca1191407df887c364b4`, Better Auth `1.7.7`.
