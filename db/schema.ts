@@ -6,6 +6,7 @@ import {
   check,
   foreignKey,
   index,
+  inet,
   jsonb,
   integer,
   pgTable,
@@ -1850,6 +1851,97 @@ export const ownerMonitorObservations = pgTable("owner_monitor_observations", {
 }, t => [
   uniqueIndex("owner_monitor_observations_position_idx").on(t.position.desc()),
   index("owner_monitor_observations_scope_idx").on(t.monitorKey, t.resourceScope, t.position.desc()),
+]);
+
+/** SA-02: attributed attempts coalesce within a DB-chosen UTC recording hour.
+ * Mutable counts never alter the immutable admittedAt pagination key.
+ * Epoch admission and per-pool quota are enforced by the transactional writer.
+ */
+export const ownerAttemptPatterns = pgTable("owner_attempt_patterns", {
+  id: uuid("id").primaryKey(),
+  recordingEpochStart: timestamp("recording_epoch_start", { withTimezone: true, precision: 3 }).notNull(),
+  admittedAt: timestamp("admitted_at", { withTimezone: true, precision: 3 }).notNull()
+    .default(sql`clock_timestamp()`),
+  pool: text("pool").notNull(),
+  actorUserId: text("actor_user_id"),
+  networkIp: inet("network_ip"),
+  networkQuality: text("network_quality").notNull(),
+  surface: text("surface").notNull(),
+  operation: text("operation").notNull(),
+  outcome: text("outcome").notNull(),
+  httpStatus: integer("http_status"),
+  directCode: text("direct_code"),
+  firstOccurredAt: timestamp("first_occurred_at", { withTimezone: true, precision: 3 }).notNull(),
+  lastOccurredAt: timestamp("last_occurred_at", { withTimezone: true, precision: 3 }).notNull(),
+  count: bigint("count", { mode: "bigint" }).notNull().default(1n),
+  saturatedCount: boolean("saturated_count").notNull().default(false),
+}, t => [
+  unique("owner_attempt_patterns_epoch_identity_unique").on(
+    t.recordingEpochStart, t.pool, t.actorUserId, t.networkIp, t.networkQuality,
+    t.surface, t.operation, t.outcome, t.httpStatus, t.directCode,
+  ).nullsNotDistinct(),
+  index("owner_attempt_patterns_timeline_idx").on(t.admittedAt.desc(), t.id.desc()),
+  index("owner_attempt_patterns_epoch_idx").on(t.recordingEpochStart, t.pool),
+  check("owner_attempt_patterns_epoch_check",
+    sql`${t.recordingEpochStart} = date_trunc('hour', ${t.recordingEpochStart}, 'UTC')`),
+  check("owner_attempt_patterns_source_check",
+    sql`(${t.pool} = 'authenticated' and ${t.actorUserId} is not null)
+      or (${t.pool} = 'anonymous' and ${t.actorUserId} is null and ${t.networkIp} is not null)`),
+  check("owner_attempt_patterns_network_check",
+    sql`${t.networkQuality} in ('trusted', 'qualified', 'unknown')
+      and (${t.networkIp} is not null or ${t.networkQuality} = 'unknown')
+      and (${t.networkIp} is null or masklen(${t.networkIp}) =
+        case family(${t.networkIp}) when 4 then 32 else 128 end)`),
+  check("owner_attempt_patterns_kind_check",
+    sql`${t.surface} in ('auth', 'access')
+      and ${t.operation} in (
+        'sign-up', 'sign-in', 'method-link', 'password-change',
+        'session-revoke', 'session-revoke-all', 'sign-out',
+        'registration-admission', 'owner-guard'
+      )
+      and ${t.outcome} in ('denied', 'failed', 'rate-limited', 'unavailable')
+      and ((${t.httpStatus} between 400 and 599 and ${t.directCode} is null)
+        or (${t.httpStatus} is null and ${t.directCode} in (
+          'unauthorized', 'forbidden', 'invalid', 'rate-limited', 'unavailable'
+        )))`),
+  check("owner_attempt_patterns_counter_check",
+    sql`${t.count} > 0 and ${t.firstOccurredAt} <= ${t.lastOccurredAt}`),
+]);
+
+/** Bounded fixed slots per recording hour, including quotas and missing-coverage states. */
+export const ownerAttemptTelemetryState = pgTable("owner_attempt_telemetry_state", {
+  recordingEpochStart: timestamp("recording_epoch_start", { withTimezone: true, precision: 3 }).notNull(),
+  slot: text("slot").notNull(),
+  admittedAt: timestamp("admitted_at", { withTimezone: true, precision: 3 }).notNull()
+    .default(sql`clock_timestamp()`),
+  used: integer("used").notNull().default(0),
+  capacity: integer("capacity"),
+  firstOccurredAt: timestamp("first_occurred_at", { withTimezone: true, precision: 3 }),
+  lastOccurredAt: timestamp("last_occurred_at", { withTimezone: true, precision: 3 }),
+  count: bigint("count", { mode: "bigint" }).notNull().default(0n),
+  saturatedCount: boolean("saturated_count").notNull().default(false),
+}, t => [
+  primaryKey({ name: "owner_attempt_telemetry_state_pk", columns: [t.recordingEpochStart, t.slot] }),
+  index("owner_attempt_telemetry_state_timeline_idx").on(t.admittedAt.desc(), t.slot),
+  check("owner_attempt_telemetry_state_epoch_check",
+    sql`${t.recordingEpochStart} = date_trunc('hour', ${t.recordingEpochStart}, 'UTC')`),
+  check("owner_attempt_telemetry_state_slot_check", sql`${t.slot} in (
+    'quota.authenticated', 'quota.anonymous',
+    'unknown.auth', 'unknown.access',
+    'overflow.authenticated.auth', 'overflow.authenticated.access',
+    'overflow.anonymous.auth', 'overflow.anonymous.access',
+    'gap.auth', 'gap.access'
+  )`),
+  check("owner_attempt_telemetry_state_quota_check",
+    sql`(${t.slot} in ('quota.authenticated', 'quota.anonymous')
+      and ${t.capacity} = 256 and ${t.used} between 0 and ${t.capacity})
+      or (${t.slot} not in ('quota.authenticated', 'quota.anonymous')
+        and ${t.capacity} is null and ${t.used} = 0)`),
+  check("owner_attempt_telemetry_state_counter_check",
+    sql`${t.count} >= 0 and
+      ((${t.firstOccurredAt} is null and ${t.lastOccurredAt} is null and ${t.count} = 0)
+        or (${t.firstOccurredAt} is not null and ${t.lastOccurredAt} is not null
+          and ${t.firstOccurredAt} <= ${t.lastOccurredAt} and ${t.count} > 0))`),
 ]);
 
 export const forumComplaintActivity = pgTable("forum_complaint_activity", {
