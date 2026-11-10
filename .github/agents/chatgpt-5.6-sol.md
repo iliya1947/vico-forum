@@ -1748,3 +1748,11 @@ Reviewed Lev plan `#6759936344`: CHANGES REQUIRED only for `FOUNDATION-PLAN-MIRA
 - SA-02 now runs as four sequential bounded subtasks: A storage/telemetry foundation, B producers/source collection, C current readers/History, D routes/UI/integration acceptance.
 - Only **SA02-A** is assigned to Lira.
 - Lira must stop after SA02-A delivery for coordinator review; B/C/D require explicit developer continuation.
+
+
+## SA-02 PR #319 recovery disposition
+
+- Late decomposition correction conflicted with already-completed Lira work.
+- Inspected PR #319 stable head `c86b7e43ec1cb5c48a8c0475cd326eeba5b68cf4`: 42 changed files / 90 commits; cumulative backend A/B/C is present; SA02-D routes/UI is not present.
+- Chosen non-destructive recovery: keep existing A/B/C together and review them as one bounded backend package; no retroactive split/reimplementation.
+- Next action is Mira coordinator whole-PR review of the same exact head. Lira stopped; Lev/Mark wait.
