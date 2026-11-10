@@ -2809,3 +2809,12 @@ Mira confirmed Lev P3 current-scope finding #6763198179 and assigned bounded aut
 - No modifications to route registrations, Worker ingress, authorization, default Admin/Owner URLs, schema/dependencies, #315 Stage-6 architecture or SA-02. Mark unassigned.
 
 **Handoff:** Mira — restart coordinator whole-PR review of PR #317 on new stable exact head `34d1e4acb278fca27cd994e590dd3b9757f5b4d8`. Lira completed implementation and stops; neither coordinator nor independent whole-PR review was done by author.
+
+
+## Routing foundation — corrected-head coordinator PASS
+
+Mira repeated the whole-PR review on PR #317 stable exact head `34d1e4acb278fca27cd994e590dd3b9757f5b4d8` after Lira's FOUNDATION-LEV-01 correction. Result: **PASS — 0 confirmed current-scope defects**; record #6763991905.
+
+FOUNDATION-LEV-01 is closed: logical last Admin section recording now treats relative and absolute same-origin trusted Admin destinations equivalently, excludes detail/subpages, preserves account-local logical IDs, and rejects a different-origin destination for a local page. Full current PR scope and #315 separation were rechecked; route registration/Worker/auth/schema/dependencies/Stage6 activation remain unchanged.
+
+Exact-head CI #42789615619, SA-01 Chromium #42789615866 and AP-10 Chromium #42789616057 are SUCCESS. Next: Lev independent technical re-review of the same exact head. Lira/Mark unassigned during review.
