@@ -3141,3 +3141,18 @@ Other reviewed A/B/C boundaries passed this coordinator review. Exact-head CI #4
 - **MIRA-03:** `db/owner-sa02-current.ts` registration coverage query takes earliest persisted `owner_attempt_patterns.admitted_at` where `surface='auth' and operation='registration-admission'` alongside existing native `settings.registrationChanged` Admin History and observation/singleton sources. PG17 historical retained-group test proves `coverageFrom` equals the earlier persisted admission while adjacent scoped History contains the same original ID.
 - **Applicable exact-head checks:** [CI #42900496484](https://github.com/iliya1947/vico-forum/actions/runs/42900496484) **SUCCESS** application **177 files/2181 tests**, PG17 **63 files/676 tests** (+5 focused regressions vs prior head), lint, typecheck, build, migration/manifest/runtime privileges/Worker smoke. [SA01 Chromium #42900496340](https://github.com/iliya1947/vico-forum/actions/runs/42900496340) **SUCCESS**; [AP10 Chromium #42900496488](https://github.com/iliya1947/vico-forum/actions/runs/42900496488) **SUCCESS 4/4 jobs**. Prior intermediate failed runs superseded and diagnosed: mismatched 101-row preimage false exact test expectation; app Worker mock assumed one arg for append. Neither remains on final head.
 - **STOP / coordinator gate:** these are implementer fixes offered for **fresh Mira whole-PR coordinator review** of cumulative SA02 backend A/B/C on exactly `c9ff7b660fc40924f6adfd649b1daa0d80acb045`; Lira does **not** assert Mira PASS/self-review. SA02-D not started, no independent Lev/Mark initiation, production/Stage6 #315, SA03+, merge or Owner journal archive/clear.
+
+
+## 2026-11-10 — PR #319 backend A/B/C fresh coordinator review: PASS
+
+Mira re-reviewed stable exact head `c9ff7b660fc40924f6adfd649b1daa0d80acb045` after Lira correction packet #6779256211. Main remains `e279cb6c032a489a9044ca1191407df887c364b4`.
+
+Result: [#6779377295](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6779377295) — **PASS, 0 open coordinator findings**.
+
+- SA02-IMPL-MIRA-01 CLOSED: exact bulk-session fact path is bounded across retained evidence, proof chunks and request fact queue; overflow/ambiguity becomes recording gap rather than invented facts.
+- SA02-IMPL-MIRA-02 CLOSED: trusted transition occurrence time is retained as `occurred_at`; DB persistence remains `recorded_at`.
+- SA02-IMPL-MIRA-03 CLOSED: Accounts registration coverage includes the retained registration-admission attempt source projected by adjacent History.
+- No new current-scope defect found in cumulative backend A/B/C.
+- Exact-head CI #42900496484, SA-01 Chromium #42900496340 and AP-10 Chromium #42900496488 are SUCCESS; AP-10 has four successful jobs.
+
+**Handoff:** Lev independently reviews the same PR #319 exact head `c9ff7b660fc40924f6adfd649b1daa0d80acb045` for backend A/B/C only, without implementation. Lira/Mark unassigned. SA02-D remains later separate work.
