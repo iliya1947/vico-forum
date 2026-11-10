@@ -201,7 +201,15 @@ describe("SA02 native Better Auth 1.7.7 committed session deletion receipts",()=
       "select id,kind,entity_id,payload,occurred_at,recorded_at "+
       "from owner_events where source='auth' and target_user_id=$1 "+
       "order by position",[actor.userId]);
-    expect(retained.rows).toHaveLength(MAX_AUTH_FACTS_PER_REQUEST);
+    const recordedGaps=gapsLarge.reduce((a,b)=>a+b,0);
+    const remaining=(await admin.query<{count:string}>("select count(*)::text count "+
+      "from session where user_id=$1",[actor.userId])).rows[0].count;
+    expect({
+      saved:retained.rows.length,gap:recordedGaps,proofQueries:proofWidths.length,remaining,
+    }).toMatchObject({
+      saved:MAX_AUTH_FACTS_PER_REQUEST,gap:total-MAX_AUTH_FACTS_PER_REQUEST,
+      proofQueries:4,remaining:"0",
+    });
     expect(retained.rows.every(r=>r.kind==="auth.sessionDeleted" &&
       r.payload.reason==="revoke-all" && r.occurred_at<=r.recorded_at)).toBe(true);
     expect(new Set(retained.rows.map(r=>r.entity_id)).size).toBe(MAX_AUTH_FACTS_PER_REQUEST);
