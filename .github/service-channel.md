@@ -46,6 +46,20 @@
 7. No second current-scope B3 defect is confirmed. The account table has no provider/account composite unique constraint, so a parallel duplicate-row race was examined, but no practical cross-user attack path was established under Vico's email-binding rules; it is not promoted to a finding.
 8. Live Google-provider reproduction was not run because Stage 6 external credentials are paused. The missing callback session check and the exact upstream regression/fix are nevertheless established directly from pinned source; production-provider acceptance remains Stage 6.
 
+## Block B / B4 — Session fixation / rotation / cookie lifecycle audit
+
+1. Audit target: current main `e279cb6c032a489a9044ca1191407df887c364b4`, Better Auth `1.7.7`.
+2. Session fixation was not confirmed. Email/password and OAuth sign-in create a new server-side session token; Better Auth's internal adapter generates a fresh 32-character alphanumeric token for each new session and Vico's `session.token` column is unique. Existing pre-routing expired-cookie cleanup is ordered before endpoint Set-Cookie, so a fresh login/logout response wins.
+3. Vico does not enable Better Auth cookie session cache. Normal session resolution therefore re-reads PostgreSQL, and expired/deleted server sessions do not remain authorized through a long-lived cached session.
+4. Default cookie contract from pinned Better Auth source: when `BETTER_AUTH_URL` is HTTPS, auth cookies use the `__Secure-` prefix, `Secure`, `HttpOnly`, `SameSite=Lax`, `Path=/` and no Domain unless cross-subdomain cookies are explicitly enabled. Vico does not enable cross-subdomain cookies. Stage-6 configuration must keep an HTTPS base URL; this is a deployment gate, not a current repository defect.
+5. **AUTH-SESSION-01 — CONFIRMED current-scope, Moderate / P2.** Better Auth `1.7.7` `POST /sign-out` catches and logs a database error from `deleteSession(sessionCookieToken)`, still clears browser auth cookies and still returns `{ success: true }`. Vico passes this endpoint through `auth.handler` and does not override that success.
+6. Causal impact: if the pre-routing session read succeeds but the later delete fails (transient/selective DB failure), the user loses the local cookie and is told logout succeeded while the persisted session row can remain live. A previously copied/stolen session token can therefore continue authenticating until the row expires or is revoked by another mechanism. Because the browser cookie has already been deleted, a normal repeated logout cannot identify that token again.
+7. This finding does not require a persistent DB outage: a failure between the successful pre-routing lookup and the later delete is sufficient. Full auth-storage outage before routing already fails closed with Vico's 503 boundary, so that case is not the defect.
+8. Better Auth `1.7.16` and current upstream still retain the same sign-out swallow-and-success behavior; this is not fixed by the upgrade that resolves AUTH-LINK-01.
+9. Revocation endpoints differ: `revoke-session` and `revoke-sessions` surface delete failures as 500; Vico Account & security uses server-resolved same-user tokens for single-session revoke and a fresh-session gate. No equivalent fail-open was confirmed there in B4.
+10. Duplicate-cookie/path shadowing, stale-cookie cleanup and sliding refresh were inspected. No additional practical current-scope takeover path was established.
+11. No live production cookie inspection was performed because Stage 6 external deployment is paused. Actual deployed cookie attributes remain a Stage-6 acceptance item.
+
 ## Координация
 
 1. #315 хранит решения, задачи, review findings и прогресс всего направления безопасности.
