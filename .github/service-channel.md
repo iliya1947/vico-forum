@@ -128,6 +128,20 @@
 10. No password values are reflected by Vico in action responses/URLs/browser state, and repository search found no application logging of `currentPassword`/`newPassword`.
 11. No second B6 defect confirmed.
 
+## Block B / B8 — Session freshness / reauthentication audit
+
+1. Audit target: current main `e279cb6c032a489a9044ca1191407df887c364b4`, Better Auth `1.7.7`.
+2. Verdict: **PASS — 0 new current-scope freshness defects**.
+3. Vico does not override Better Auth session freshness; pinned default `freshAge` is 24 hours. Freshness is calculated server-side from durable `session.createdAt`, not from a client timestamp.
+4. Ordinary session refresh does not refresh freshness: Better Auth's sliding refresh updates only `expiresAt` and `updatedAt`; `createdAt` remains unchanged. Reload/revalidation/activity therefore cannot make a stale session fresh.
+5. Vico does not enable cookie session cache. Freshness-sensitive `listSessions` therefore resolves against the server-side session store rather than a long-lived browser session cache.
+6. Settings Account re-checks freshness inside the server operation, not only in the loader/UI. Freshness can expire between page load and POST and the subsequent session-management action is then rejected as not fresh.
+7. Storage failure on Vico's Account-security path does not permit a freshness-sensitive write. The request-local database proxy preserves the underlying PostgreSQL failure through Better Auth's session error wrapping and Vico classifies it as unavailable/failure.
+8. New email/password or successful Google authentication creates a new session with a new `createdAt`; freshness is not inherited from another browser session or account.
+9. **AUTH-SESSION-03 from B7 remains the confirmed cross-cutting exception:** direct public Better Auth revoke endpoints use `sensitiveSessionMiddleware`, not `freshSessionMiddleware`, and can bypass Vico's intended fresh-session requirement. That issue is already recorded and is not duplicated as a B8 finding.
+10. Better Auth `1.7.16` retains the audited 24-hour default and createdAt-based freshness semantics; upgrade does not alter this B8 verdict.
+11. No separate current-scope B8 defect confirmed.
+
 ## Координация
 
 1. #315 хранит решения, задачи, review findings и прогресс всего направления безопасности.
