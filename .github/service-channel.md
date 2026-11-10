@@ -32,17 +32,18 @@
 
 ## Актуальный baseline и назначение
 
-- Current main: `e279cb6c032a489a9044ca1191407df887c364b4`. AP01–11/Owner redesign1–2/SET01–06/SA01 and routing foundation implementation#317 + factual docs#318 merged/closed; FOUNDATION-LEV-01/-02 closed.
-- **Current task: SA02 replacement technical plan delivered; Mira scope/fit review pending.**
-- Assignment [#6766904312](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6766904312) completed by Lev. Whole replacement [#6767391552](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6767391552) supersedes old#6758838112; not merely patch notes. Frozen overall product/SA decomposition remains.
-- Proposed SA02:7 monitors across Accounts & authentication/Security, adjacent History/global projection, exact account/method/password/session facts, canonical native registration/attachment sources and brief Overview; no SA03+.
-- Owner#6759312425 is mandatory: authoritative known user ID, useful trusted-boundary safe network source, operation/outcome/status/first/last/count; bounded repeated attempts and attacker-controlled cardinality; exact transitions and failure isolation.
-- **Proposed concrete policy, not accepted yet:** two new mutable telemetry relations; lifetime65,536 attributed source-pattern rows split32,768 authenticated/anonymous, finite unknown/overflow/gap state; no TTL/reset/eviction. At saturation retained patterns update, new identities may be omitted with explicit overflow/coverage. No invisible claim of infinite attribution in finite storage. Mira must assess this tradeoff; SA02-PLAN-MIRA-01 remains pending.
-- Attempt rows are coalesced with atomic counters and serialized admission; no per-request Owner/gap rows or ever-growing time buckets. Existing owner_events/observations remain append-only; new mutable relations need scoped SELECT/INSERT/UPDATE, no DELETE, unchanged localization capability.
-- Current merged AdministrativeRouting reused for new typed Super-admin destinations; no foundation reopening or route rename. Better Auth1.7.7/hooks/adapter and Cloudflare IP caveats source-checked with official docs; no dependency/security activation performed.
-- Architecture input **#315 head `e394f1586b4f857f2160e291a9b8fb3915067ead`**, plan blob `0b4fee79a10dcf6f532f3758305d0896f88a7d88`: ordinary Admin Public plane, future Super-admin separate Owner Worker. #315 files unchanged; Access/isolated auth/session/Passkey/DB/deploy/external activation remain separate Stage6 work.
-- **Next recipient Mira — review entire replacement plan and decide coordinator continuation.** Lev finished/stopped; Lira/Mark unassigned. No SA02 implementation PR/head or implementation/tests/build/migration/runtime acceptance.
-- Evidence `/workspace/work/sa02-replan-evidence/`, clean source checkout `/workspace/work/sa02-replan` at current main. No merge/deploy/production action; Owner alone merges.
+- Current main `e279cb6c032a489a9044ca1191407df887c364b4`; AP01–11/Owner redesign1–2/SET01–06/SA01 and routing implementation#317/docs#318 merged/closed; FOUNDATION-LEV-01/-02 closed.
+- **Current task: SA02 retention/admission correction delivered; Mira re-review pending.**
+- Full corrected plan [#6768069279](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6768069279) supersedes#6767391552 after Mira review#6767512074; correction only attempt model and dependent counts/History/schema/acceptance. Other accepted SA02 scope preserved.
+- **SA02-PLAN-MIRA-01 CLOSED by Mira**, remains closed. **SA02-PLAN-MIRA-02 corrected in proposed model; Mira acceptance pending**, not declared closed.
+- Lifetime no-eviction admission cap removed. Proposed DB-assigned **UTC recording-hour**,512 new attributed groups/hour(256 authenticated/256 anonymous), finite per-window unknown/overflow/gap slots; lazy fresh quota on first producer write each hour. Source/request timestamps cannot choose epochs; exhaustion does not create extra epochs.
+- Old groups/state remain indefinitely with actor/IP/operation/status/first/last/count; no TTL/delete/eviction or counter reset. New window never tests lifetime archive size/old saturation as admission gate. Total archive grows with participating hours at bounded rate H×(512+P+C), not a fixed lifetime size.
+- Once flood stops, attribution can resume in the next hour without manual cleanup/restart/Owner visit. Ongoing flood may saturate new windows; UI shows current and historical overflow/gaps, without pretending complete attribution.
+- Same two planned telemetry relations, epoch included in UNIQUE/quota keys and indexes. Exact account/session/method/password facts, trusted source capture, failure isolation, canonical native sources, routes/current AdministrativeRouting and scoped capabilities unchanged. No SA03+ or dependency/security activation added.
+- **Next recipient Mira — re-review SA02-PLAN-MIRA-02 correction/dependencies and determine coordinator continuation.** Lev finished/stopped; Lira/Mark unassigned; no implementation PR/head or code/migration/tests/build/runtime acceptance.
+- Security input **#315 head `e394f1586b4f857f2160e291a9b8fb3915067ead`**, plan blob `0b4fee79a10dcf6f532f3758305d0896f88a7d88`, unchanged. Separate Stage6 Owner Worker/Access/isolated auth/session/DB/deploy/route concealment remain outside SA02.
+- Deferred Owner decision [#6767828181](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6767828181): separate exact-Owner journal occupancy/per-source archive download/clear phase after the current Super-admin plan; not SA02/current remaining implementation plan. Current retention unchanged; renewal does not depend on future clear controls.
+- Evidence `/workspace/work/sa02-renewal-plan-evidence/`; source checkout `/workspace/work/sa02-replan` clean,20 source hashes match previous current-main snapshot. No merge/deploy/production action; Owner alone merges.
 
 ## Handoff — Лира: Stage2 factual documentation closeout
 
@@ -2952,3 +2953,13 @@ Future separate phase:
 5. archive/clear mechanics and destructive-operation protection are deferred to that phase's technical planning.
 
 This requirement **must not be folded into SA-02 or the remaining current SA packages**. Current SA retention/admission planning continues unchanged except for SA02-PLAN-MIRA-02 already assigned to Lev. The future History-storage phase supersedes the no-deletion target only when it is separately started and implemented.
+
+## 2026-11-10 — Lev SA02-PLAN-MIRA-02 correction delivered
+
+Full corrected plan [#6768069279](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6768069279), current main e279cb6c032a489a9044ca1191407df887c364b4. Responds to Mira#6767512074, supersedes#6767391552. **SA02-PLAN-MIRA-01 remains closed by Mira; MIRA02 correction proposed, re-review pending.**
+
+Removed permanently exhaustible lifetime cap. New DB-recording UTC-hour admission:512 attributed source-pattern groups/hour,256/pool; finite per-window unknown/overflow/gap state. Lazy quota renewal on first real producer write, without cron/Owner request/manual cleanup, based on DB time rather than request timestamps. Old windows/source attributes/first/last/count remain indefinitely. No new epochs on saturation; no TTL/reset/delete/eviction. One exhausted past hour cannot gate a future hour; sustained active flood may saturate each current window, visibly. Bound is growth rate H×(512+P+C), not finite archive lifetime size.
+
+Dependent History uses stable source IDs/cursors per epoch, retains old overflow/gaps and cumulative current totals, with distinct recording vs occurrence times. Schema includes epoch in keys/indexes of the same two planned relations; acceptance now requires native-PG exhausted-old-window→new-source recovery, concurrency/clock/late-flush/idle-jump and bounded multi-window flood checks. Existing exact facts/attribution/privacy/failure isolation/7-monitor catalog/#315/current routing and Stage boundaries preserved; no implementation assigned.
+
+New Owner#6767828181 deferred journal occupancy/download/clear phase explicitly excluded from SA02; retention remains unchanged until that later phase, and current renewal does not depend on future destructive controls.20 prior source hashes unchanged, main315 head unchanged; PG17 date_trunc/transaction time/locking/UPSERT docs checked. Evidence sa02-renewal-plan-evidence holds corrected complete plan, narrow scope diff/check, official snapshots. Planning only: no code/migration/runtime tests/build/acceptance. **Returned to Mira; Lev stopped; Lira/Mark unassigned.**
