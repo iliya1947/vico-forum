@@ -122,6 +122,12 @@ function createAuth(
       try { onCreatedFact?.capture(fact); }
       catch { /* Recording can never change Better Auth persistence. */ }
     }
+    function trustedActor(userId: string): string | null {
+      try {
+        // An observer cannot elevate the actor to a different account.
+        return onCreatedFact?.trustedActorFor(userId) === userId ? userId : null;
+      } catch { return null; }
+    }
     options.databaseHooks = {
       user: { create: { after: async created => {
         if (typeof created.id !== "string") return;
@@ -133,7 +139,7 @@ function createAuth(
         const method = created.providerId === "credential" ? "password"
           : created.providerId === "google" ? "google" : null;
         if (!method || typeof userId !== "string" || typeof accountId !== "string") return;
-        const actor = onCreatedFact.trustedActorFor(userId);
+        const actor = trustedActor(userId);
         emit({
           kind: "auth.methodLinked", userId, accountId, method,
           linkContext: createdUsers.has(userId) ? "registration"
@@ -145,7 +151,7 @@ function createAuth(
         if (typeof created.id !== "string" || typeof created.userId !== "string") return;
         emit({
           kind: "auth.sessionCreated", userId: created.userId, sessionId: created.id,
-          actorUserId: onCreatedFact.trustedActorFor(created.userId),
+          actorUserId: trustedActor(created.userId),
         });
       } } },
     };
