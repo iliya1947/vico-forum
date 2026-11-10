@@ -1,6 +1,6 @@
 # Authentication lifecycle — communication
 
-Служебный PR этой задачи: создаётся из ветки `service/authentication-lifecycle`.
+Служебный PR этой задачи: **#320**, ветка `service/authentication-lifecycle`.
 
 ## Назначение
 
@@ -35,4 +35,8 @@
 1. Product plan AUTH-01–AUTH-07 утверждён владельцем в текущем обсуждении.
 2. Implementation PR отсутствует.
 3. Следующий bounded этап — AUTH-01 Mail foundation.
-4. Перед реализацией AUTH-01 технический план готовит Лёва.
+4. Технический план AUTH-01 подготовлен Лёвой против main `e279cb6c032a489a9044ca1191407df887c364b4`: [личный файл Лёвы](agents/codex-6.1-sol.md).
+5. Следующий шаг — Мира проверяет соответствие bounded scope и оформляет handoff Лире; implementation ещё не начат.
+6. План предусматривает mail boundary, два provider adapters без реальной сети, fake transport и test-local Better Auth callback integration. Подключение callbacks к рабочему auth runtime относится к AUTH-02/03: само наличие sendResetPassword включает request-password-reset path.
+7. Schema/dependency/public AuthRuntime изменения для AUTH-01 не требуются. #315 отдельно планирует security hardening/Better Auth upgrade; перед реализацией и callback integration сверить актуальный main и pinned types.
+8. Implementation tests/acceptance ещё не выполнялись; план не является доказательством готовой mail delivery.
