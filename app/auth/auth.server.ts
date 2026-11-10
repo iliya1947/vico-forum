@@ -5,6 +5,7 @@ import { and, eq, isNotNull, ne } from "drizzle-orm";
 import { drizzle, type NodePgDatabase } from "drizzle-orm/node-postgres";
 import type { Client } from "pg";
 import type { AuthTransitionFact } from "../../db/owner-auth-facts";
+import { SessionDeletionEvidence } from "./session-deletion-evidence";
 import {
   AccountSecurityError,
   AuthSessionUnavailableError,
@@ -38,6 +39,7 @@ export const betterAuthSchema = { user, session, account, verification, rateLimi
 export interface AuthCreationObserver {
   capture(fact: AuthTransitionFact): void;
   trustedActorFor(userId: string): string | null;
+  recordGap?(count: number): void;
 }
 export const betterAuthEmailPasswordOptions = {
   enabled: true,
@@ -112,6 +114,7 @@ function createAuth(
   onAdmissionError?: (error: unknown) => void,
   onAdmissionDenied?: () => void,
   onCreatedFact?: AuthCreationObserver,
+  onDeleted?: SessionDeletionEvidence,
 ) {
   const options = betterAuthOptions(database, env);
   if (onCreatedFact) {
@@ -168,14 +171,38 @@ function createAuth(
           });
         } },
       },
-      session: { create: { after: async created => {
-        if (typeof created.id !== "string" || typeof created.userId !== "string") return;
-        emit({
-          kind: "auth.sessionCreated", userId: created.userId, sessionId: created.id,
-          actorUserId: trustedActor(created.userId),
-        });
-      } } },
+      session: {
+        create: { after: async created => {
+          if (typeof created.id !== "string" || typeof created.userId !== "string") return;
+          emit({
+            kind: "auth.sessionCreated", userId: created.userId, sessionId: created.id,
+            actorUserId: trustedActor(created.userId),
+          });
+        } },
+        delete: { after: async (deleted, context) => {
+          try { onDeleted?.noteAfter(deleted, context); }
+          catch { onCreatedFact.recordGap?.(1); }
+        } },
+      },
     };
+  }
+  if (onDeleted) {
+    const factory = options.database as ReturnType<typeof drizzleAdapter>;
+    options.database = (authOptions: BetterAuthOptions) => new Proxy(factory(authOptions), {
+      get(adapter, property, receiver) {
+        const value = Reflect.get(adapter, property, receiver);
+        if (typeof value !== "function" || (property !== "delete" && property !== "deleteMany")) {
+          return value;
+        }
+        return async (...args: unknown[]) => {
+          // Preserve the native Better Auth/Drizzle mutation and its result.
+          const result = await Reflect.apply(value, adapter, args);
+          try { onDeleted.noteAdapterDelete(property, args[0], result); }
+          catch { onCreatedFact.recordGap?.(1); }
+          return result;
+        };
+      },
+    });
   }
   if ((onAdmissionError || onAdmissionDenied) && options.user?.validateUserInfo) {
     const validateUserInfo = options.user.validateUserInfo;
@@ -278,17 +305,26 @@ export function createHyperdriveAuthRuntime(
   ): Promise<T> {
     const client = createClient(connectionString);
     let databaseError: unknown;
+    let deletions: SessionDeletionEvidence | undefined;
     try {
       await client.connect();
       const database = drizzle(client);
+      if (onCreatedFact) {
+        deletions = new SessionDeletionEvidence(database,
+          fact => { try { onCreatedFact.capture(fact); }
+            catch { try { onCreatedFact.recordGap?.(1); } catch { /* best effort */ } } },
+          count => { try { onCreatedFact.recordGap?.(count); } catch { /* best effort */ } });
+      }
       return await operation(createAuth(database, env,
         preserveDatabaseError ? (error) => { databaseError ??= error; } : undefined,
-        onAdmissionError, onAdmissionDenied, onCreatedFact), database);
+        onAdmissionError, onAdmissionDenied, onCreatedFact, deletions), database);
     } catch (error) {
       // Better Auth 1.7.7 replaces session-query failures with a cause-less APIError.
       // Retain the adapter failure for classification; never infer availability from HTTP 500.
       throw databaseError ?? error;
     } finally {
+      try { await deletions?.flush(); }
+      catch { /* Proof/telemetry must never change an auth outcome. */ }
       bestEffortDiscardClient(client);
     }
   }
