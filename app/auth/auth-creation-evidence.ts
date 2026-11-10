@@ -50,6 +50,30 @@ export class AuthCreationEvidence {
     this.receipts.set(identifier,receipt);
   }
 
+  /** PostgreSQL INSERT ... RETURNING from the canonical Better Auth schema. */
+  noteNativeInsert(statement:unknown,result:unknown):void {
+    const sql=typeof statement==="string" ? statement :
+      statement && typeof statement==="object" && "text" in statement
+        ? (statement as {text:unknown}).text : null;
+    if(typeof sql!=="string" || !/\breturning\b/i.test(sql)) return;
+    const matched=/^insert into "(user|account|session)"\s*\(/i.exec(sql);
+    if(!matched) return;
+    const native=result as {rowCount?:unknown;rows?:unknown}|null;
+    if(native?.rowCount!==1 || !Array.isArray(native.rows) || native.rows.length!==1){
+      this.missed(1);return;
+    }
+    const row=native.rows[0] as {id?:unknown;user_id?:unknown;provider_id?:unknown}|null;
+    if(!row || !safeId(row.id)){this.missed(1);return;}
+    if(matched[1]==="user") this.noteAdapterCreate({model:"user"},row);
+    else if(matched[1]==="account")
+      this.noteAdapterCreate({model:"account"},{
+        id:row.id,userId:row.user_id,providerId:row.provider_id,
+      });
+    else this.noteAdapterCreate({model:"session"},{
+      id:row.id,userId:row.user_id,
+    });
+  }
+
   noteHook(fact:AuthTransitionFact):void {
     if(fact.kind==="account.created") this.observed.add(key(fact.kind,fact.userId));
     if(fact.kind==="auth.methodLinked") this.observed.add(key(fact.kind,fact.accountId));
