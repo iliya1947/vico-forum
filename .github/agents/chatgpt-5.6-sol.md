@@ -1,5 +1,13 @@
 # Мира — безопасность Vico Forum
 
+## 2026-11-10 — Block C authorization audit matrix
+
+1. Current main remains `e279cb6c032a489a9044ca1191407df887c364b4`.
+2. Fully re-read current AGENTS/PROJECT/PROJECT_STATE and authorization source-of-truth before defining the next audit area.
+3. C1–C9 cover Owner binding, permission resolution, management direct writes, elevated authority, authorization-read privacy, generic ownership/resource guards, concurrency/freshness, failure/cache semantics and catalog/persistence integrity.
+4. Ordinary Admin/moderation domain behavior stays outside Block C except where needed to prove the generic authorization seam.
+5. No remediation handoff exists. Next audit-only subtask is C1.
+
 ## 2026-11-10 — Block B / B11 dependency-security-version audit
 
 1. Target: main `e279cb6c032a489a9044ca1191407df887c364b4`; direct deps `better-auth@1.7.7` and `@better-auth/drizzle-adapter@1.7.7`.
