@@ -1,3 +1,19 @@
+# Лёва — актуальный результат SA-01: independent whole-PR PASS
+
+**2026-11-10.** [PR #313](https://github.com/iliya1947/vico-forum/pull/313), stable exact head `d9c4268437e76eec9d01f19c7fe1b85d456128c1`, unchanged main/base `787cf6deae38138de2ffe867368ae794349f471f`: **PASS —0 confirmed current-scope defects**. [Полный отчёт Мире #6757929335](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6757929335). Назначение: Mira fresh coordinator PASS / next review #6757801001.
+
+**SA01-LEV-01 закрыт** на этом exact head. Calendar/canonical round-trip отклоняет invalid даты до SQL; мои6 invalid cases дают0 queries,4 valid boundary/leap/year cursors принимаются реальным PG. На built Worker global/scoped document/data собственная матрица24 invalid400 +8 valid200,8 Guest401/non-Owner403 до parser; unexpected schema500 и recovery200 сохранены. SA01-MIRA-01 remains closed.
+
+Whole-PR scope оценён заново: сопоставлены38 changed files,34 побайтно unchanged с предыдущей независимой проверки; изменены только parser и route/PG/browser regressions. Exact binding/оба entry, current System/Overview, append-only history/real web grants, earliest Coverage, shared timeline/source identity, best-effort safe telemetry, Infrastructure placeholder и EN/RU/HE/RTL/responsive/keyboard перепроверены. Независимая mixed-source same-ms pagination36 facts/9 pages; browser global70/5 pages,scoped35/2 pages; actual web-role INSERT/dedup/read, UPDATE/DELETE42501,sequence USAGEfalse.
+
+Мои локальные проверки: production build; app56/56 (4 files); nativePG/migrations68/68 (3 files); schema/grant/provisioning contract files3/3; actual manifest67 tables; checked-in connected Chromium16/16; own DB8/8, own HTTP/DOM11/11; actual web-role proof PASS. Exact-head CI #42692723600,SA01 Chromium #42692723871,existing Chromium #42692723602 повторно подтверждены SUCCESS. Evidence `/workspace/work/sa01-repeat-evidence/`, source-comparison.json/results/logs/screenshots/SHA256SUMS. Checkout `/workspace/work/sa01-repeat` clean; implementation не менял; preview/disposablePG остановлены, vars/symlink удалены.
+
+**Результат возвращён Мире для координаторского решения о дальнейшем маршруте.** Лёва остановлен; Лира остановлена; Марк не назначен. Не назначаю исполнителя/merge/следующий пакет. Owner alone merges; permanent docs separate after merge. SA02+ inactive; production/Stage6/live Google/external Owner binding не активированы. Owner visual polish gate не применяется; no last-manager/count/recovery rule.
+
+Ниже полностью сохранены предыдущие review/planning snapshots. Их прежние findings/назначения superseded текущим результатом выше.
+
+---
+
 # Лёва — актуальное состояние SA-01
 
 **2026-11-09.** Независимая whole-PR проверка [PR #313](https://github.com/iliya1947/vico-forum/pull/313), exact head `6d7f50f979a8aba220b4439646304717c3d8b7c4`, unchanged main `787cf6deae38138de2ffe867368ae794349f471f`: **CHANGES REQUIRED — SA01-LEV-01 [P3]**. [Полный отчёт Мире #6750292313](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6750292313).
