@@ -1,5 +1,18 @@
 # Мира — безопасность Vico Forum
 
+## 2026-11-10 — Block B / B5 CSRF-Origin audit
+
+1. Target: current main `e279cb6c032a489a9044ca1191407df887c364b4`, Better Auth `1.7.7`.
+2. **PASS — 0 confirmed current-scope CSRF/Origin defects.**
+3. Better Auth applies global origin middleware to all auth routes; authenticated state-changing requests require trusted origin evidence. Vico does not disable those checks.
+4. Email sign-in/sign-up additionally use Better Auth form-CSRF protection for browser first-login flows.
+5. Settings Account writes independently enforce exact same-origin before credential/session changes.
+6. Explicit Google linking retains global origin validation plus Vico authoritative-session/stale-user admission.
+7. Static BETTER_AUTH_URL is the only repository-configured trust root; no widened trusted-origins or disabled-CSRF configuration found.
+8. Cross-origin social sign-in was reviewed as JSON-only auth transport; no simple browser CSRF path established.
+9. 1.7.7 vs 1.7.16 origin middleware comparison does not change this verdict.
+10. Stage-6 multi-origin routing remains future-only: any trusted-origin expansion must be explicit/minimal and separately accepted.
+
 ## 2026-11-10 — Block B / B7 session management audit
 
 1. Target: current main `e279cb6c032a489a9044ca1191407df887c364b4`, Better Auth `1.7.7`.
