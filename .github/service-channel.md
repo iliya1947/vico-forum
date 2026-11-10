@@ -187,17 +187,6 @@
 11. Current public Google credentials/provider behavior remains externally unverified because Stage 6 is paused. **Информация не проверена** for live-provider/deployed compatibility; repository and upstream source establish the dependency exposure and correction target.
 12. B11 adds no second current takeover finding beyond the already-recorded Block-B defects.
 
-## Block B — correction scope consolidation
-
-1. B1–B11 завершены; подтверждено восемь current-scope findings.
-2. Correction sequence разделена на **B-C1** и **B-C2**. Причина разделения одна: `AUTH-REG-01` относится к сериализации DB policy-close × create-user и технически независим от остальных auth HTTP/runtime corrections.
-3. **B-C1** объединяет `AUTH-LINK-01`, `AUTH-SESSION-01`, `AUTH-SESSION-02`, `AUTH-SESSION-03`, `AUTH-ENUM-01`, `AUTH-OAUTH-01`, `AUTH-CACHE-01` и согласованный upgrade `better-auth` + `@better-auth/drizzle-adapter` с `1.7.7` на target `1.7.19`, если технический план не докажет конкретный blocker.
-4. **B-C2** содержит только `AUTH-REG-01` и планируется после B-C1 на новом auth baseline, чтобы registration transaction/locking не проектировать против версии, которая сразу будет заменена.
-5. B-C1 не меняет product contract: Google/email-password login, explicit linking, registration flags, current password-change semantics, session freshness contract и Stage-6 pause сохраняются.
-6. B-C2 не меняет смысл registration flags: успешное закрытие должно стать надёжным cutoff для new-account creation, не затрагивая существующий sign-in/linking.
-7. Следующий шаг стандартного bounded-цикла: **Лёва готовит технический план B-C1**. Implementation ещё не назначена; после согласования план выполняет Лира.
-8. B-C2 Лёве сейчас не назначается; его technical plan будет отдельным следующим bounded шагом после завершения B-C1.
-
 ## Координация
 
 1. #315 хранит решения, задачи, review findings и прогресс всего направления безопасности.
