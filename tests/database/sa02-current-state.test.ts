@@ -24,7 +24,7 @@ async function person(id:string,old=false){
 }
 async function method(id:string,owner:string,provider:string,secret:string|null){
   await client.query("insert into account(id,user_id,account_id,provider_id,password,updated_at) "+
-    "values ($1,$2,$3,$4,$5,clock_timestamp())",[id,owner,provider,id,secret]);
+    "values ($1,$2,$3,$4,$5,clock_timestamp())",[id,owner,id,provider,secret]);
 }
 async function activeSessions(){
   await client.query("insert into session(id,user_id,token,expires_at,updated_at) values "+
