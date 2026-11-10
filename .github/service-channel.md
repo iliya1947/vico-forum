@@ -73,6 +73,20 @@
 9. Better Auth 1.7.16 retains these endpoint semantics; fixing AUTH-SESSION-03 requires an application admission/endpoint policy, not only the planned dependency upgrade.
 10. Race review: Vico resolves session ID to same-user token immediately before revoke; deleting/replacing the target concurrently does not create a cross-user authority path. Partial revoke failure reports failure rather than false success. No additional B7 current-scope defect confirmed.
 
+## Block B / B5 — CSRF / Origin audit
+
+1. Audit target: current main `e279cb6c032a489a9044ca1191407df887c364b4`, Better Auth `1.7.7`.
+2. Verdict: **PASS — 0 confirmed current-scope CSRF/Origin defects**.
+3. Better Auth installs `originCheckMiddleware` globally on `/api/auth/**`. For state-changing requests carrying cookies it requires a non-null trusted Origin/Referer; foreign origins are rejected. Vico does not enable `disableOriginCheck` or `disableCSRFCheck`.
+4. Email/password sign-in and sign-up additionally use Better Auth `formCsrfMiddleware`, which blocks browser cross-site navigation login/signup attempts and validates Origin/Referer/Fetch Metadata when browser evidence is present.
+5. Vico Account & security mutations add an independent strict `requireSameOrigin(request)` gate before password/session writes, so their protection does not rely only on cookie SameSite behavior.
+6. Explicit Google linking is protected by both the global Better Auth origin middleware and Vico's authenticated stale-user check. Callback/error destinations remain restricted to trusted origins.
+7. Vico uses a static `BETTER_AUTH_URL`; pinned Better Auth derives the default trusted origin from that base URL. Repository search found no `BETTER_AUTH_TRUSTED_ORIGINS`, `trustedOrigins`, `disableOriginCheck` or `disableCSRFCheck` configuration that widens or disables this boundary.
+8. Social sign-in does not carry the form-CSRF middleware, but its endpoint accepts JSON through the auth router rather than a simple cross-site form encoding; no browser cross-site state-changing path was established from the current configuration.
+9. Same-site/different-origin requests remain rejected when authenticated because trusted-origin validation is exact against the configured origin; Vico does not enable cross-subdomain auth cookies.
+10. Pinned `1.7.7` and `1.7.16` origin-check middleware were compared for the audited behaviors and are materially identical here; the planned dependency upgrade does not change the B5 verdict.
+11. Future Stage-6 note, not a current defect: if Admin/Owner surfaces move to separate origins, trusted-origin expansion must be explicit and minimal. Adding broad wildcard origins would change this security boundary and requires separate acceptance.
+
 ## Координация
 
 1. #315 хранит решения, задачи, review findings и прогресс всего направления безопасности.
