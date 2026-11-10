@@ -1729,3 +1729,14 @@ Reviewed Lev plan `#6759936344`: CHANGES REQUIRED only for `FOUNDATION-PLAN-MIRA
 - Each real journal gets its own truthful occupancy indicator plus per-journal **Download archive** and **Clear history** actions.
 - Do not fabricate percentage capacity for unbounded stores.
 - This is explicitly deferred and must not expand SA-02/current SA implementation scope. Technical details of export, clear consistency and destructive-action protection are left to the later technical plan.
+
+
+## SA-02 corrected plan re-review — PASS
+
+- Reviewed Lev corrected plan #6768069279 on unchanged main.
+- **SA02-PLAN-MIRA-02 CLOSED:** hourly DB-assigned admission renewal prevents one-time lifetime poisoning while keeping request-driven durable growth bounded by time.
+- PostgreSQL transaction-time/timezone truncation semantics support the proposed UTC recording-hour boundary.
+- No new plan defects found; SA02-PLAN-MIRA-01 remains closed.
+- Full plan accepted in #6768166517.
+- Lira assigned to implementation in a separate PR; Lev/Mark unassigned until coordinator review stage.
+- Deferred History occupancy/archive/clear remains post-current-plan work and is excluded from SA-02.
