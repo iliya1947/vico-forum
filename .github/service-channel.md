@@ -114,6 +114,20 @@
 10. Live Google behavior remains Stage-6 acceptance; repository/synthetic-provider evidence establishes Vico/Better Auth callback mechanics but does not claim what text Google will emit in production errors.
 11. No second current-scope B2 defect confirmed.
 
+## Block B / B6 — Password change boundary audit
+
+1. Audit target: current main `e279cb6c032a489a9044ca1191407df887c364b4`, Better Auth `1.7.7`.
+2. Verdict: **PASS — 0 confirmed current-scope password-change defects**.
+3. Vico Settings action derives the subject from the authoritative request session, validates same-origin and exact allowlisted fields, and treats submitted user/session IDs only as stale-form expectations. No caller-selected account target exists.
+4. Vico checks that the current user already has a credential account with a real password before invoking Better Auth. Google-only accounts therefore cannot gain a password through the Settings flow.
+5. Better Auth's public `/change-password` endpoint independently requires a valid authoritative session, an existing credential password and successful verification of `currentPassword`. Its separate `setPassword` capability is server-only and is not exposed as an HTTP endpoint by Vico.
+6. Password bounds match across Vico and Better Auth: 8–128 characters for the new password. Vico routes through the canonical HTTP handler, so Settings and direct canonical password change share the same database-backed 3 requests / 10 seconds rate-limit boundary established in B1.
+7. `sensitiveSessionMiddleware` requires a live authoritative session but not Better Auth's freshness age. This is not a current defect for password change because the current password itself is required as reauthentication; Vico's SET-05 contract does not require a separate fresh-session gate for this operation.
+8. Vico intentionally sends `revokeOtherSessions:false`; existing sessions remain valid after a successful password change by product contract. The existing PostgreSQL integration verifies this behavior. It must not be reclassified as a defect during security hardening without a separate product decision.
+9. Better Auth 1.7.7's optional direct `revokeOtherSessions:true` branch is not transactional, while 1.7.16 makes revoke+password update+new-session creation transactional. Vico does not use that mode and does not promise it as its password-change product path, so this difference is recorded as dependency hardening evidence, **not a current Vico finding**.
+10. No password values are reflected by Vico in action responses/URLs/browser state, and repository search found no application logging of `currentPassword`/`newPassword`.
+11. No second B6 defect confirmed.
+
 ## Координация
 
 1. #315 хранит решения, задачи, review findings и прогресс всего направления безопасности.
