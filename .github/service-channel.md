@@ -246,6 +246,22 @@
 14. Generic concurrent mutation serialization is deferred to C7.
 15. No C2 finding confirmed.
 
+## Block C / C7 — Freshness / concurrency / mutation serialization audit
+
+1. Audit target: current main `e279cb6c032a489a9044ca1191407df887c364b4`.
+2. Verdict: **PASS — 0 confirmed current-scope authorization concurrency/serialization defects**.
+3. Every authorization management mutation opens a PostgreSQL transaction and acquires singleton row `authz_mutation_lock(id=1) FOR UPDATE` before fresh actor admission. Effective `access.authorization.manage`, exact Owner policy and AP-10 administrative suppression are evaluated only after the lock is held.
+4. All six authorization write families therefore share one serialization point, including no-op requests. Concurrent role/grant/assignment/override changes cannot both proceed from independent stale pre-lock authority snapshots.
+5. AP-10 authoritative create/change/lift/appeal-review operations use the same singleton `authz_mutation_lock` in their surrounding transaction before resolving actor/target authority and issuer-floor decisions.
+6. Existing PostgreSQL concurrency regression explicitly holds the singleton lock, queues one authorization writer and one AP-10 measure writer, proves both are real row-lock waiters via `pg_stat_activity`, changes the actor's management authorities while the lock is held, commits that change, and then verifies both queued operations re-evaluate authority and reject. No authorization state, measure or History row is written.
+7. PostgreSQL READ COMMITTED statement semantics are sufficient here because the fresh permission/authority SELECT statements run only after the waiting transaction acquires the row lock; they therefore see the committed authority state that released the lock rather than a pre-lock application snapshot.
+8. Authorization mutations append History in the same transaction after the domain change. Existing DB regression with a deliberately failing History trigger proves the authorization mutation rolls back with the failed append and the previously authoritative permission remains unchanged.
+9. Rejected and no-op authorization mutations do not append History. Successful writes commit domain state and History atomically.
+10. Role grant/revoke, role assignment, override and custom-role deletion races are serialized through the same mutex before operation-specific FK/system-role checks. Assigned-role deletion remains protected by FK/conflict handling; elevated-role propagation has additional Owner guards and is reviewed separately in C4.
+11. A failed/rolled-back authorization transaction cannot become effective through the request-local permission cache: cache is built from committed PostgreSQL reads and new Worker requests construct a new capability. C2 established next-request freshness.
+12. The authorization repository's rollback call itself does not preserve the original error if PostgreSQL rollback also fails. That is an error-classification/cleanup concern, not a proven authority or state-serialization bypass; it is deferred to C8 failure semantics rather than counted as a C7 finding.
+13. No C7 finding confirmed.
+
 ## Координация
 
 1. #315 хранит решения, задачи, review findings и прогресс всего направления безопасности.
