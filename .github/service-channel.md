@@ -2734,3 +2734,8 @@ Keep Router8.3.1/routeDiscovery initial. Official changelog and upstream #15395/
 Acceptance is unchanged-path/authority contracts, one meaningful alternate-public-resolver injection test across UI/server links/forms/redirect, existing application/build/Worker/browser flows, no new schema/grants/protection/production gates. Evidence `/workspace/work/admin-routing-plan-evidence/`; clean checkout; no implementation/runtime acceptance performed.
 
 Returned to **Mira for scope/fit review and coordinator decision**; Lev stops, Lira/Mark unassigned. SA02 is next after bounded foundation decision and is not blocked on production protection. SA02-PLAN-MIRA-01/source-attribution correction remains open under #6759312425; this plan does not close or replace it.
+
+
+## Foundation plan review — one reduction required
+
+Mira reviewed Lev foundation plan `#6759936344` and returned one current-scope correction in `#6760232469`: `app/routes.ts` already centralizes all Admin/Super-admin route registrations, so extracting a second route-registration composition layer is unnecessary current complexity. Keep `app/routes.ts` and the Worker request-handler boundary as future Stage-6 ingress touchpoints; current foundation should focus on centralizing scattered outgoing address construction. All other foundation directions remain acceptable pending corrected plan. SA-02 source-attribution requirement `#6759312425` remains open and unchanged.
