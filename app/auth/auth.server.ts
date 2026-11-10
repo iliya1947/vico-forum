@@ -295,6 +295,39 @@ async function hasCredentialPassword(database: NodePgDatabase, userId: string): 
   return rows.length > 0;
 }
 
+/**
+ * Observe the original node-postgres results only for Better Auth's three
+ * canonical INSERT ... RETURNING tables and session-token DELETE.
+ * No SQL or driver return value is replaced. Also usable by native PG tests.
+ */
+export function observeAuthNativeMutations(
+  client: Client,
+  creations?: AuthCreationEvidence,
+  deletions?: SessionDeletionEvidence,
+  onGap?: (count:number)=>void,
+): () => void {
+  const original=client.query;
+  client.query=((...args:unknown[])=>{
+    const statement=args[0];
+    const sql=typeof statement==="string" ? statement :
+      statement && typeof statement==="object" && "text" in statement
+        ? (statement as {text:unknown}).text : null;
+    const oneDelete=!!deletions && sql==='delete from "session" where "session"."token" = $1';
+    const oneInsert=!!creations && typeof sql==="string" &&
+      /^insert into "(user|account|session)"\s*\(/i.test(sql) && /\breturning\b/i.test(sql);
+    const native=Reflect.apply(original,client,args) as unknown;
+    if(!oneDelete && !oneInsert) return native;
+    return Promise.resolve(native).then(result=>{
+      try {
+        if(oneDelete) deletions?.noteNativeDelete(statement,args[1],result);
+        if(oneInsert) creations?.noteNativeInsert(statement,result);
+      }catch { try{onGap?.(1);}catch{ /* best effort */ } }
+      return result;
+    });
+  }) as typeof client.query;
+  return ()=>{client.query=original;};
+}
+
 /** A request capability: every operation owns and closes its Hyperdrive PostgreSQL client. */
 export function createHyperdriveAuthRuntime(
   connectionString: string,
@@ -325,24 +358,9 @@ export function createHyperdriveAuthRuntime(
           fact => { try { onCreatedFact.capture(fact); }
             catch { try { onCreatedFact.recordGap?.(1); } catch { /* best effort */ } } },
           count => { try { onCreatedFact.recordGap?.(count); } catch { /* best effort */ } });
-        // Better Auth's single-row Drizzle delete discards the native PG result.
-        // Observe only its canonical DELETE before the unmodified result is
-        // returned to Drizzle; do not change SQL, auth outcome or cookies.
-        const originalQuery = client.query.bind(client);
-        const proof = deletions;
-        client.query = ((...args: unknown[]) => {
-          const statement = args[0];
-          const sql = typeof statement === "string" ? statement :
-            statement && typeof statement === "object" && "text" in statement
-              ? (statement as {text:unknown}).text : null;
-          const native = Reflect.apply(originalQuery, client, args) as unknown;
-          if (sql !== 'delete from "session" where "session"."token" = $1') return native;
-          return Promise.resolve(native).then(result => {
-            try { proof.noteNativeDelete(statement, args[1], result); }
-            catch { try { onCreatedFact.recordGap?.(1); } catch { /* best effort */ } }
-            return result;
-          });
-        }) as typeof client.query;
+        // Same exact native driver proof for successful inserts and deletions.
+        observeAuthNativeMutations(client, creations, deletions,
+          count => { try { onCreatedFact.recordGap?.(count); } catch { /* best effort */ } });
       }
       return await operation(createAuth(database, env,
         preserveDatabaseError ? (error) => { databaseError ??= error; } : undefined,
