@@ -10,8 +10,8 @@
 8. B7 completed: **AUTH-SESSION-02 High/P1** — direct list-sessions exposes active session bearer tokens; **AUTH-SESSION-03 Moderate/P2** — direct revoke-other-sessions bypasses Vico's intended fresh-session gate.
 9. B5 completed: **PASS — 0 current-scope CSRF/Origin defects**.
 10. B1 completed: **AUTH-ENUM-01 Moderate/P2** — direct email sign-up exposes whether an email already exists; no credential rate-limit bypass confirmed.
-11. Distributed credential-abuse protection beyond per-IP limiting remains Stage-6/release hardening, not a current repository defect.
+11. B2 completed: OAuth state/PKCE/replay/open-redirect/registration-race boundaries PASS; **AUTH-OAUTH-01 Low/P3** — raw provider `error_description` remains in callback-error browser URL despite generic UI presentation.
 12. No fix PR is opened yet. Confirmed Block-B defects remain queued for bounded correction planning after the planned audit slice.
 13. Technical planner/implementer/reviewer remain unassigned during audit.
 14. No Cloudflare/Neon/production mutation is authorized.
-15. Next after developer continuation: execute **B2 OAuth login/callback integrity** and stop with findings/classification.
+15. Next after developer continuation: execute **B6 Password change boundary** and stop with findings/classification.
