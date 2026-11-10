@@ -1,33 +1,10 @@
 # Admin panel — current workflow
 
-- Service PR: **#251**. Current main/base: `be813b86e9a585b266145f655389df1ac4c2d64b`.
-- **Stage: Super-admin SA-01 — coordinator and independent reviews PASS; result returned to Mira for coordinator decision.**
-- Approved plan: [#6745289141](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6745289141); original SA01 scope [#6745414259](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6745414259). SA02+ not authorized.
-- Implementation [PR #313](https://github.com/iliya1947/vico-forum/pull/313): Ready, open/unmerged; stable reviewed exact head **`d9c4268437e76eec9d01f19c7fe1b85d456128c1`**,38 changed files.
-- Technical planner / independent reviewer: Lev. Implementer: Lira, stopped. Coordinator: Mira. Mark unassigned.
-- Mira fresh whole-PR review: **PASS,0 current-scope findings** [#6757801001](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6757801001).
-- Lev independent whole-PR re-review: **PASS,0 confirmed current-scope findings** [#6757929335](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6757929335). **SA01-LEV-01 closed** on this head; SA01-MIRA-01 remains closed.
-- Exact-head [CI #42692723600](https://github.com/iliya1947/vico-forum/actions/runs/42692723600), [SA01 Chromium #42692723871](https://github.com/iliya1947/vico-forum/actions/runs/42692723871), [existing Chromium #42692723602](https://github.com/iliya1947/vico-forum/actions/runs/42692723602): **SUCCESS**, independently reconfirmed.
-- Lev repeat evidence: build; application56/56, nativePG/migrations68/68, schema/grant/provisioning contracts3/3, checked-in Chromium16/16, own DB8/8 + HTTP/DOM11/11 and actual web-role operations. `/workspace/work/sa01-repeat-evidence/`; checkout clean, disposable resources removed.
-- **Result recipient / further workflow: Mira.** Lev reports the result and stops; does not appoint an implementer, authorize merge or activate another package. Lira stopped; Mark unassigned.
-- Owner alone merges. Permanent documentation remains a separate coordinator process after implementation merge. No merge or permanent-doc closeout claimed here. Owner visual acceptance is not an SA01 gate; visual polish is separate UI/UX scope.
-- Production/Stage6/live Cloudflare/Neon/Google/external Owner binding remain paused. SA02–SA08 inactive; no last-manager/count/recovery rule.
-
-
-## SA-01 final accepted state
-
-- PR #313 exact head: `d9c4268437e76eec9d01f19c7fe1b85d456128c1`.
-- Mira coordinator review: PASS (`#6757801001`).
-- Lev independent re-review: PASS (`#6757929335`).
-- `SA01-MIRA-01` and `SA01-LEV-01` closed.
-- Exact-head CI/browser checks green.
-- Coordinator final state: **READY FOR OWNER MERGE** (`#6758066942`).
-- After merge: separate factual SA-01 documentation closeout; SA-02 remains inactive until that closeout route is complete.
-
-
-## SA-01 merge and docs closeout
-
-- PR #313 merged into main as `be813b86e9a585b266145f655389df1ac4c2d64b`.
-- SA-01 implementation/review cycle is complete.
-- Lira assigned separate factual docs-only closeout via `#6758113204`.
-- No SA-02 implementation is authorized until this closeout is reviewed.
+- Service PR: **#251**. Current main/base **`be813b86e9a585b266145f655389df1ac4c2d64b`**.
+- **Current bounded stage: SA-01 factual documentation closeout — author complete; pending Mira coordinator docs review.**
+- Implementation [PR #313](https://github.com/iliya1947/vico-forum/pull/313) **merged**. Final implementation exact head `d9c4268437e76eec9d01f19c7fe1b85d456128c1`, merge commit `be813b86e9a585b266145f655389df1ac4c2d64b`. Mira final coordinator PASS [#6757801001](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6757801001); Lev independent PASS [#6757929335](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6757929335); defects SA01-MIRA-01 and SA01-LEV-01 closed.
+- Documentation assignment: Mira [#6758113204](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6758113204). Author: Lira; coordinator/reviewer: Mira. Lev stopped, Mark unassigned.
+- [**Ready docs-only PR #314**](https://github.com/iliya1947/vico-forum/pull/314), **stable exact head `a0a171a0795600995b82fe9b3dc0c6b6070ccd3d`**, base current main `be813b86e9a585b266145f655389df1ac4c2d64b`. Exactly eight Markdown files (new permanent `docs/SUPER_ADMIN.md`, SA-01 history snapshot; six current-state/source-of-truth/history-index updates); no runtime/code/schema/migration/config/test changes.
+- [CI #42751155827](https://github.com/iliya1947/vico-forum/actions/runs/42751155827) **SUCCESS on this exact head**: 169 application files / 2145 tests; 54 native PG17 files / 619 tests; lint, typecheck, build, migration/manifest/grants and Worker checks. No new browser acceptance required/claimed for docs-only change.
+- **Next: Mira** reviews whole docs-only PR #314 against accepted SA-01 factual scope and source-of-truth. **Lira stops**; no self-review, Owner merge, independent Lev review or SA-02 assignment claimed. Subsequent route decided by Mira/Owner under regular process.
+- Stage 6/external Cloudflare/Neon/Google/real Owner binding remains paused; Owner visual polish is separate UI/UX scope. SA-02+ inactive.
