@@ -1,3 +1,4 @@
+import { useAdministrativeRouting } from "../administrative-routing/provider";
 import type { AdminHistoryPage } from "../../db/admin-history";
 import { RecentHistory } from "./history";
 import { Link } from "react-router";
@@ -9,12 +10,13 @@ import type { AdminAccess } from "./access";
 export function AdminOverview({locale,access,counts,recent}: {locale: string; access: AdminAccess; counts: ForumAdminOverviewCounts | null; recent?: AdminHistoryPage | null}) {
   const {t}=useTranslation("common");
   const number=new Intl.NumberFormat(locale);
+  const routing = useAdministrativeRouting();
   return <AdminShell locale={locale} access={access}>
     <section className="admin-overview" aria-labelledby="admin-overview-heading">
       <h2 id="admin-overview-heading">{t("adminOverview")}</h2>
       <p>{t("adminOverviewIntro")}</p>
       <div className="admin-destinations">
-        {adminDestinations(locale,access).filter(item=>item.id !== "overview").map(item=><Link
+        {adminDestinations(locale,access,routing).filter(item=>item.id !== "overview").map(item=><Link
           key={item.id} to={item.href} className="admin-destination">
           <span>{t(item.label)}</span>
           {item.pending ? <span className="admin-panel-pending">{t("adminInDevelopment")}</span> : null}
@@ -28,7 +30,7 @@ export function AdminOverview({locale,access,counts,recent}: {locale: string; ac
             ["adminTopicCount",counts.topics], ["adminPostCount",counts.posts],
           ] as const).map(([label,value])=><div key={label}><dt>{t(label)}</dt><dd>{number.format(value)}</dd></div>)}
         </dl> : <div className="admin-stats-unavailable" role="status">
-          <p>{t("adminStatsUnavailable")}</p><Link reloadDocument to={`/${encodeURIComponent(locale)}/admin`}>{t("adminRetry")}</Link>
+          <p>{t("adminStatsUnavailable")}</p><Link reloadDocument to={routing.admin.overview(locale)}>{t("adminRetry")}</Link>
         </div>}
       </section>
       {access.canReadHistory ? <RecentHistory locale={locale} recent={recent ?? null}/> : null}
