@@ -2879,3 +2879,11 @@ Exact-head CI #42794915937, SA-01 Chromium #42794915727 and AP-10 Chromium #4279
 PR #317 merged into `main` as `56358c517cd4456e4421d56e022fce70431b00c1` from reviewed exact head `d12719bc8e6b2e6368489c16f2e0efa9ef6e3605`. Final Mira/Lev whole-PR reviews both PASS with 0 current-scope defects; FOUNDATION-LEV-01/-02 closed.
 
 Lira is assigned by #6765810801 to create a separate factual docs-only closeout. Record only the merged outgoing-address foundation and its current limitations: independent typed Admin/Super-admin destination families and replaceable resolver seam exist; current URLs/routes/Worker/auth remain unchanged; no Stage-6 concealment/Owner Worker/Access/isolated auth/DB/deploy/production acceptance is implemented. Update factual state and project history plus only necessary permanent profile docs. SA02 stays paused until docs closeout merge; #6759312425 remains open.
+
+## Admin/Super-admin routing foundation — docs closeout, subtask 1/2
+
+After [implementation #317 merge](https://github.com/iliya1947/vico-forum/pull/317) at `56358c517cd4456e4421d56e022fce70431b00c1`, Mira assigned a separate docs-only factual closeout [#6765810801](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6765810801).
+
+Lira opened **Draft [docs PR #318](https://github.com/iliya1947/vico-forum/pull/318)** from that exact main commit, current head `2cb5b9fa9c426513c9d9207d21d89b48b30c8d6e`. Diff compared to main contains exactly five Markdown files: `PROJECT_STATE.md`, `docs/ADMIN_PANEL.md`, `docs/SUPER_ADMIN.md`, new `docs/PROJECT_HISTORY/PROJECT_HISTORY_24.md` and history index. They describe the merged outgoing typed Admin/Owner address seam, unchanged defaults/Worker/authorization, and correction chain FOUNDATION-LEV-01/02 with exact-head review/CI/merge. No code, schema, dependency, ROADMAP, PROJECT, SA02 or security-plan changes.
+
+**Subtask 1/2 complete. Next: exact-head docs/CI checks and final Mira handoff (subtask 2/2).** Not claiming CI or coordinator review for docs PR yet; Lev/Mark unassigned. SA02 remains paused until docs closeout merge.
