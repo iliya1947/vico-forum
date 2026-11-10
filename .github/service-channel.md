@@ -212,6 +212,22 @@
 10. Real Stage-6 Google account → deployed `VICO_OWNER_USER_ID` binding remains external acceptance and is not claimed here.
 11. No C1 finding confirmed.
 
+## Block C / C3 — Authorization-management direct-write escalation audit
+
+1. Audit target: current main `e279cb6c032a489a9044ca1191407df887c364b4`.
+2. Verdict: **PASS — 0 confirmed current-scope direct-write privilege-escalation defects**.
+3. All six production authorization write families — create/rename/delete role, replace grants, assign role and set/remove override — are reached through the canonical authorization action. That route derives `actorId` only from the authoritative Better Auth request session; submitted `actorId`, role/permission claims or other extra fields do not select the actor.
+4. Guest action is independently rejected 401; authenticated actor without fresh effective `access.authorization.manage` is rejected 403 before any mutation call. Classified authorization storage failure fails closed; unexpected resolver errors are not silently converted to permission denial/success.
+5. A non-Owner who does have `access.authorization.manage` retains read access but every write intent is rejected by exact `canMutateAuthorization(session.user.id, ownerBinding)` before dispatch. Existing route regression covers all six intents and verifies no capability mutation is invoked.
+6. The repository is an independent second boundary: every mutation starts a transaction, locks `authz_mutation_lock`, freshly checks effective `access.authorization.manage`, then rechecks current-release exact Owner policy before running operation-specific code, including no-op paths.
+7. Existing PostgreSQL and repository regression proves all six direct mutations from a non-Owner manager stop before authz state/History writes. Missing/invalid Owner binding likewise fails closed.
+8. Forged target IDs can select only the intended mutation target after actor admission; they cannot replace the actor. Unknown/missing role/user targets become controlled not-found/conflict/validation outcomes rather than authority.
+9. Same-origin is checked before form mutation dispatch. A foreign-origin request never reaches the capability writer.
+10. Production search found no second HTTP/service write caller that sources authorization mutation `actorId` from request-controlled target/form data. Test fixtures that construct a repository with a synthetic matching Owner binding are test-only and are not runtime entrypoints.
+11. The capability method signature itself accepts an `actorId`; a hypothetical trusted server caller could lie and pass the Owner ID. No current attacker-controlled runtime path does so, therefore this is not a current Stage finding. The current invariant remains that production callers must supply session-derived actor identity.
+12. Elevated `admin.users.blocks.managePrivileged` propagation is deferred to C4; generic concurrency races beyond the fresh mutation gate are deferred to C7.
+13. No C3 finding confirmed.
+
 ## Координация
 
 1. #315 хранит решения, задачи, review findings и прогресс всего направления безопасности.
