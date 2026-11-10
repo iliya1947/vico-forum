@@ -1,3 +1,4 @@
+import { useAdministrativeRouting } from "../administrative-routing/provider";
 import { Link } from "react-router";
 import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
@@ -132,9 +133,10 @@ export function HistoryEvents({events,locale}: {events: AdminHistoryEvent[]; loc
 }
 export function RecentHistory({recent,locale}: {recent: AdminHistoryPage | null; locale: string}) {
   const {t} = useTranslation("common");
+  const routing = useAdministrativeRouting();
   return <section aria-labelledby="admin-recent-heading">
     <h2 id="admin-recent-heading">{t("historyRecent")}</h2>
     {recent ? <HistoryEvents events={recent.events} locale={locale}/> : <p role="status">{t("historyUnavailable")}</p>}
-    <Link to={`/${encodeURIComponent(locale)}/admin/history`}>{t("historyViewAll")}</Link>
+    <Link to={routing.admin.history(locale)}>{t("historyViewAll")}</Link>
   </section>;
 }

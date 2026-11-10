@@ -1,3 +1,5 @@
+import { defaultAdministrativeRouting, type AdministrativeRouting } from "../administrative-routing/addresses";
+
 /** Registered Settings entry points. */
 export function settingsPath(locale: string): string {
   return `/${encodeURIComponent(locale)}/settings`;
@@ -23,6 +25,8 @@ export function settingsPrivacyPath(locale: string): string {
   return `${settingsPath(locale)}/privacy`;
 }
 
-export function canonicalAuthorizationPath(locale: string): string {
-  return `/${encodeURIComponent(locale)}/admin/authorization`;
+export function canonicalAuthorizationPath(
+  locale: string, routing: AdministrativeRouting = defaultAdministrativeRouting,
+): string {
+  return routing.admin.authorization(locale);
 }

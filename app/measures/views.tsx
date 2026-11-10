@@ -1,3 +1,4 @@
+import { useAdministrativeRouting } from "../administrative-routing/provider";
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import { Form, Link, useNavigation, useRevalidator } from "react-router";
 import { useTranslation } from "react-i18next";
@@ -197,7 +198,8 @@ function MeasureSummary({measure,locale,admin=false}:{
   measure:UserMeasureSummary;locale:string;admin?:boolean;
 }) {
   const {t}=useTranslation("common");
-  const link=admin?adminMeasurePath(locale,measure.id):ownMeasurePath(locale,measure.id);
+  const routing = useAdministrativeRouting();
+  const link=admin?adminMeasurePath(locale,measure.id,routing):ownMeasurePath(locale,measure.id);
   return <li>
     <h3><Link to={link}><DateText date={measure.createdAt} locale={locale}/></Link></h3>
     <p>{t("measuresStatus")}: {t(statusKeys[measure.status])}</p>
@@ -314,6 +316,7 @@ export function AdminMeasuresIndex({locale,target,pendingAppeals,requestedTarget
   access:AdminAccess;maySelectAdministrativeRestrictions?:boolean;feedback:Feedback;
 }) {
   const {t}=useTranslation("common");
+  const routing = useAdministrativeRouting();
   const {pending,refresh}=useMeasurePageState();
   return <AdminShell locale={locale} access={access} current="measures">
     <section className="admin-forum">
@@ -331,13 +334,13 @@ export function AdminMeasuresIndex({locale,target,pendingAppeals,requestedTarget
           {pendingAppeals.appeals.map(appeal=><li key={appeal.id}>
             <p><bdi dir="auto">{appeal.targetName}</bdi> <code dir="ltr">{appeal.targetUserId}</code></p>
             <p>{t("measuresCreated")}: <DateText date={appeal.submittedAt} locale={locale}/></p>
-            <p><Link to={adminMeasurePath(locale,appeal.measureId)+"#measure-review-"+appeal.id}>
+            <p><Link to={adminMeasurePath(locale,appeal.measureId,routing)+"#measure-review-"+appeal.id}>
               {t("measuresPendingOpen")} #{appeal.ordinal}
             </Link></p>
           </li>)}
         </ol>:<p>{t("measuresPendingNone")}</p>}
         {pendingAppeals.nextPage!==null&&<Link
-          to={adminMeasuresPath(locale)+"?page="+(pendingAppeals.nextPage+1)}>
+          to={adminMeasuresPath(locale,routing)+"?page="+(pendingAppeals.nextPage+1)}>
           {t("measuresPendingMore")}</Link>}
       </section>}
       {target&&<>
@@ -413,11 +416,12 @@ export function AdminMeasureDetail({locale,measure,access,changeId,liftId,review
   maySelectAdministrativeRestrictions?:boolean;feedback:Feedback;
 }) {
   const {t}=useTranslation("common");
+  const routing = useAdministrativeRouting();
   const {pending,refresh}=useMeasurePageState();
   const isActive=measure.status==="active";
   return <AdminShell locale={locale} access={access} current="measures">
     <section className="admin-forum">
-      <nav><Link to={adminMeasuresPath(locale)+"?target="+encodeURIComponent(measure.targetUserId)}>
+      <nav><Link to={adminMeasuresPath(locale,routing)+"?target="+encodeURIComponent(measure.targetUserId)}>
         {t("measuresAdmin")}</Link></nav>
       <h2><bdi dir="auto">{measure.targetName}</bdi></h2>
       <button type="button" disabled={pending} onClick={refresh}>{t("measuresRefresh")}</button>

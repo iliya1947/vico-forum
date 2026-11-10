@@ -1,3 +1,4 @@
+import { useAdministrativeRouting } from "../administrative-routing/provider";
 import { Link } from "react-router";
 import { useTranslation } from "react-i18next";
 import type { AdminAccess } from "./access";
@@ -36,6 +37,7 @@ export function AdminTopicView({
   canModerateHelpSolution, pendingDuplicateAppeal,
 }: AdminTopicViewProps) {
   const { t } = useTranslation("common");
+  const routing = useAdministrativeRouting();
   const numbers = new Map(topic.posts.map((post, index) => [post.id, index + 1]));
   const byId = new Map(postPresentations.map((presentation) => [presentation.contentId, presentation]));
   const original = topic.posts[0];
@@ -52,9 +54,9 @@ export function AdminTopicView({
   return <AdminShell locale={locale} access={access} current="forum">
     <section className="admin-forum admin-topic" aria-labelledby="admin-topic-heading">
       <nav className="admin-forum-trail" aria-label={t("adminForumLocation")}>
-        <Link to={adminForumPath(locale)}>{t("adminForum")}</Link>
-        <Link to={adminCategoryPath(locale, topic.section.category.id)}><bdi>{topic.section.category.name}</bdi></Link>
-        <Link to={adminSectionPath(locale, topic.section.id)}><bdi>{topic.section.name}</bdi></Link>
+        <Link to={adminForumPath(locale,routing)}>{t("adminForum")}</Link>
+        <Link to={adminCategoryPath(locale, topic.section.category.id,routing)}><bdi>{topic.section.category.name}</bdi></Link>
+        <Link to={adminSectionPath(locale, topic.section.id,routing)}><bdi>{topic.section.name}</bdi></Link>
         <span aria-current="page"><bdi dir="auto">{titlePresentation.content}</bdi></span>
       </nav>
       <div id="admin-topic-heading"><TopicTitlePresentation presentation={titlePresentation} as="h2"/></div>

@@ -19,6 +19,7 @@ import {
 import { CanonicalEnglishSource, LocalTranslationSource } from "../localization/sources";
 import { authSessionForRequest } from "../auth/request-context";
 import { HeaderAuthProvider } from "../auth/auth-controls";
+import { AdministrativeRoutingProvider } from "../administrative-routing/provider";
 import { OnlinePresenceHeartbeat } from "../forum/online-presence-heartbeat";
 import { LocaleNavigationProvider } from "../localization/locale-navigation";
 import { authorizationForRequest, authorizationOwnerContext } from "../authorization/request-context";
@@ -190,12 +191,14 @@ export default function LocaleBoundary() {
   const i18n = useMemo(() => createTranslationRuntime(snapshot), [snapshot]);
   return (
     <I18nextProvider i18n={i18n} defaultNS="common">
+      <AdministrativeRoutingProvider>
       <LocaleNavigationProvider locales={snapshot.activeLocales}>
         <HeaderAuthProvider initialUser={snapshot.authUser}>
           <OnlinePresenceHeartbeat />
           <Outlet />
         </HeaderAuthProvider>
       </LocaleNavigationProvider>
+      </AdministrativeRoutingProvider>
     </I18nextProvider>
   );
 }

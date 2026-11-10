@@ -1,4 +1,5 @@
 import type { AdminAccess } from "../admin/access";
+import { defaultAdministrativeRouting, type AdministrativeRouting } from "../administrative-routing/addresses";
 
 /** Display/admission candidates only; every destination retains its independent server guard. */
 export const ADMIN_ENTRY_IDS = ["overview", "forum", "users", "measures", "roles", "history"] as const;
@@ -53,13 +54,16 @@ export function canEnterAdministratorPreferences(
   return admin.length > 0 || ATTENTION_MODES.some(mode => attention[mode].length > 0);
 }
 
-export function adminEntryPath(locale: string, id: AdminEntryId): string {
-  const base = `/${encodeURIComponent(locale)}/admin`;
-  const suffix: Record<AdminEntryId, string> = {
-    overview: "", forum: "/forum", users: "/users", measures: "/measures",
-    roles: "/authorization", history: "/history",
+export function adminEntryPath(
+  locale: string, id: AdminEntryId, routing: AdministrativeRouting = defaultAdministrativeRouting,
+): string {
+  const admin = routing.admin;
+  const destinations: Record<AdminEntryId, () => string> = {
+    overview: () => admin.overview(locale), forum: () => admin.forum(locale),
+    users: () => admin.users(locale), measures: () => admin.measures(locale),
+    roles: () => admin.authorization(locale), history: () => admin.history(locale),
   };
-  return base + suffix[id];
+  return destinations[id]();
 }
 export function attentionEntryPath(locale: string, mode: AttentionEntryMode, group: AttentionEntryGroup): string {
   const params = new URLSearchParams({ mode, group });

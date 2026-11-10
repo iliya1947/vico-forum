@@ -1,3 +1,4 @@
+import { useAdministrativeRouting } from "../administrative-routing/provider";
 import {Form,Link} from "react-router";
 import {useTranslation} from "react-i18next";
 import type {AdminBrowseQuery,AdminBrowsePage,AdminForumCategory,AdminForumSection,AdminForumTopic} from "../../db/admin-forum";
@@ -34,19 +35,20 @@ function Paging({path,query,next}:{path:string;query:AdminBrowseQuery;next:strin
 }
 function SectionRows({locale,items}:{locale:string;items:AdminForumSection[]}) {
   const {t}=useTranslation("common");
+  const routing = useAdministrativeRouting();
   return <ul className="admin-forum-objects">{items.map(section=><li key={section.id}>
-    <h4><Link to={adminSectionPath(locale,section.id)}><bdi>{section.name}</bdi></Link></h4>
+    <h4><Link to={adminSectionPath(locale,section.id,routing)}><bdi>{section.name}</bdi></Link></h4>
     {section.service?<span className="admin-forum-reserved">{t("adminForumServiceSection")}</span>:null}
     <Counts locale={locale} section={section}/>
   </li>)}</ul>;
 }
 export function AdminForumView({locale,access,page,query}:{locale:string;access:AdminAccess;page:AdminBrowsePage<AdminForumCategory>;query:AdminBrowseQuery}) {
-  const {t}=useTranslation("common");const path=adminForumPath(locale);
+  const {t}=useTranslation("common");const routing = useAdministrativeRouting();const path=adminForumPath(locale,routing);
   return <AdminShell locale={locale} access={access} current="forum">
     <section className="admin-forum" aria-labelledby="admin-forum-heading"><h2 id="admin-forum-heading">{t("adminForum")}</h2>
       <h3>{t("adminForumCategories")}</h3><BrowseControls path={path} query={query} page={page} locale={locale}/>
       {page.items.length?<ul className="admin-forum-objects">{page.items.map(category=><li key={category.id}>
-        <h4><Link to={adminCategoryPath(locale,category.id)}><bdi>{category.name}</bdi></Link></h4>
+        <h4><Link to={adminCategoryPath(locale,category.id,routing)}><bdi>{category.name}</bdi></Link></h4>
         {category.reserved?<span className="admin-forum-reserved">{t("adminForumReservedCategory")}</span>:null}
         <Counts locale={locale} category={category}/>
       </li>)}</ul>:<p>{t("adminForumEmpty")}</p>}
@@ -55,10 +57,10 @@ export function AdminForumView({locale,access,page,query}:{locale:string;access:
   </AdminShell>;
 }
 export function AdminCategoryView({locale,access,category,sections,query}:{locale:string;access:AdminAccess;category:AdminForumCategory;sections:AdminBrowsePage<AdminForumSection>;query:AdminBrowseQuery}) {
-  const {t}=useTranslation("common");const path=adminCategoryPath(locale,category.id);
+  const {t}=useTranslation("common");const routing = useAdministrativeRouting();const path=adminCategoryPath(locale,category.id,routing);
   return <AdminShell locale={locale} access={access} current="forum">
     <section className="admin-forum" aria-labelledby="admin-category-heading">
-      <nav className="admin-forum-trail" aria-label={t("adminForumLocation")}><Link to={adminForumPath(locale)}>{t("adminForum")}</Link><span aria-current="page"><bdi>{category.name}</bdi></span></nav>
+      <nav className="admin-forum-trail" aria-label={t("adminForumLocation")}><Link to={adminForumPath(locale,routing)}>{t("adminForum")}</Link><span aria-current="page"><bdi>{category.name}</bdi></span></nav>
       <h2 id="admin-category-heading"><bdi>{category.name}</bdi></h2>
       {category.reserved?<p className="admin-forum-reserved">{t("adminForumReservedCategory")}</p>:null}
       <Counts locale={locale} category={category}/>
@@ -70,12 +72,12 @@ export function AdminCategoryView({locale,access,category,sections,query}:{local
   </AdminShell>;
 }
 export function AdminSectionView({locale,access,section,topics,query}:{locale:string;access:AdminAccess;section:AdminForumSection;topics:AdminBrowsePage<AdminForumTopic>;query:AdminBrowseQuery}) {
-  const {t}=useTranslation("common");const path=adminSectionPath(locale,section.id);
+  const {t}=useTranslation("common");const routing = useAdministrativeRouting();const path=adminSectionPath(locale,section.id,routing);
   return <AdminShell locale={locale} access={access} current="forum">
     <section className="admin-forum" aria-labelledby="admin-section-heading">
       <nav className="admin-forum-trail" aria-label={t("adminForumLocation")}>
-        <Link to={adminForumPath(locale)}>{t("adminForum")}</Link>
-        <Link to={adminCategoryPath(locale,section.category.id)}><bdi>{section.category.name}</bdi></Link>
+        <Link to={adminForumPath(locale,routing)}>{t("adminForum")}</Link>
+        <Link to={adminCategoryPath(locale,section.category.id,routing)}><bdi>{section.category.name}</bdi></Link>
         <span aria-current="page"><bdi>{section.name}</bdi></span>
       </nav>
       <h2 id="admin-section-heading"><bdi>{section.name}</bdi></h2>
@@ -87,7 +89,7 @@ export function AdminSectionView({locale,access,section,topics,query}:{locale:st
       <h3>{t("topicsHeading")}</h3>
       <BrowseControls path={path} query={query} page={topics} locale={locale}/>
       {topics.items.length?<ul className="admin-forum-objects">{topics.items.map(topic=><li key={topic.id}>
-        <h4><Link to={adminTopicPath(locale,topic.id)}><bdi lang={topic.sourceLocale==="und"?undefined:topic.sourceLocale} dir="auto">{topic.title}</bdi></Link></h4>
+        <h4><Link to={adminTopicPath(locale,topic.id,routing)}><bdi lang={topic.sourceLocale==="und"?undefined:topic.sourceLocale} dir="auto">{topic.title}</bdi></Link></h4>
         <dl className="admin-forum-counts"><div><dt>{t("adminPostCount")}</dt><dd>{new Intl.NumberFormat(locale).format(topic.postCount)}</dd></div></dl>
       </li>)}</ul>:<p>{t("adminForumEmpty")}</p>}
       <Paging path={path} query={query} next={topics.next}/>

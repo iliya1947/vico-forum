@@ -1,3 +1,4 @@
+import { useAdministrativeRouting } from "../administrative-routing/provider";
 import { Form, Link, useFetcher, useRevalidator } from "react-router";
 import { useTranslation } from "react-i18next";
 import type { AdminBrowsePage, AdminBrowseQuery } from "../../db/admin-forum";
@@ -15,6 +16,7 @@ import { TechnicalDetails } from "../settings/technical-details";
 import { useHeaderAuthUser } from "../auth/auth-controls";
 import { adminUserPath, adminUsersPath, adminUsersBrowsePath } from "./users-paths";
 import { adminMeasuresPath } from "../measures/paths";
+import { canonicalAuthorizationPath } from "../settings/paths";
 
 export interface AdminUserDetailData extends AdminUserSummary {
   bio: string;
@@ -38,7 +40,8 @@ export function AdminUsersIndex({ locale, access, query, page }: {
   const { t } = useTranslation("common");
   const header = useHeaderAuthUser();
   const accountId = access.actorId && header?.id === access.actorId ? access.actorId : null;
-  const path = adminUsersPath(locale);
+  const routing = useAdministrativeRouting();
+  const path = adminUsersPath(locale,routing);
   return <AdminShell locale={locale} access={access} current="users">
     <section className="admin-forum" aria-labelledby="admin-users-heading">
       <h2 id="admin-users-heading">{t("adminUsers")}</h2>
@@ -50,22 +53,22 @@ export function AdminUsersIndex({ locale, access, query, page }: {
       <p>{t("adminUsersMatches")}: {new Intl.NumberFormat(locale).format(page.total)}</p>
       {page.items.length ? <ul className="admin-forum-objects">
         {page.items.map(user => <li key={user.id}>
-          <h3><Link to={adminUserPath(locale, user.id)}><bdi dir="auto">{user.name}</bdi></Link></h3>
+          <h3><Link to={adminUserPath(locale, user.id, routing)}><bdi dir="auto">{user.name}</bdi></Link></h3>
           <ForumAvatar name={user.name} image={user.image} className="profile-avatar" />
           <TechnicalDetails accountId={accountId}><bdi dir="ltr">{user.id}</bdi></TechnicalDetails>
           <p><Joined date={user.joinedAt} locale={locale}/></p>
           <nav aria-label={t("quickActions")}>
-            <Link to={adminUserPath(locale, user.id)}>{t("adminUsersView")}</Link>{" · "}
+            <Link to={adminUserPath(locale, user.id, routing)}>{t("adminUsersView")}</Link>{" · "}
             <Link to={forumProfilePath(locale, user.id)}>{t("adminUsersPublicProfile")}</Link>
             {access.canManageAuthorization ? <>{" · "}
-              <Link to={adminUserPath(locale, user.id) + "#authorization"}>{t("authorizationNav")}</Link>
+              <Link to={adminUserPath(locale, user.id, routing) + "#authorization"}>{t("authorizationNav")}</Link>
             </> : null}
           </nav>
         </li>)}
       </ul> : <p>{t("adminUsersEmpty")}</p>}
       <nav className="admin-forum-paging" aria-label={t("adminUsersPaging")}>
-        {query.after ? <Link to={adminUsersBrowsePath(locale, { search: query.search })}>{t("adminUsersFirst")}</Link> : null}
-        {page.next ? <Link to={adminUsersBrowsePath(locale, { search: query.search, after: page.next })}>{t("adminUsersNext")}</Link> : null}
+        {query.after ? <Link to={adminUsersBrowsePath(locale, { search: query.search }, routing)}>{t("adminUsersFirst")}</Link> : null}
+        {page.next ? <Link to={adminUsersBrowsePath(locale, { search: query.search, after: page.next }, routing)}>{t("adminUsersNext")}</Link> : null}
       </nav>
     </section>
   </AdminShell>;
@@ -83,6 +86,7 @@ export function AdminUserDetail({ locale, access, user, management, managerActor
   const { t } = useTranslation("common");
   const header = useHeaderAuthUser();
   const accountId = access.actorId && header?.id === access.actorId ? access.actorId : null;
+  const routing = useAdministrativeRouting();
   const github = safeHttpUrl(user.githubUrl), website = safeHttpUrl(user.websiteUrl);
   const roleKey = user.role.isSystem
     ? ({ user: "profileRoleUser", moderator: "profileRoleModerator", admin: "profileRoleAdmin" } as const)[user.role.slug as "user" | "moderator" | "admin"]
@@ -91,7 +95,7 @@ export function AdminUserDetail({ locale, access, user, management, managerActor
   return <AdminShell locale={locale} access={access} current="users">
     <section className="admin-forum" aria-labelledby="admin-user-detail-heading">
       <nav className="admin-forum-trail" aria-label={t("adminNavigation")}>
-        <Link to={adminUsersPath(locale)}>{t("adminUsers")}</Link>
+        <Link to={adminUsersPath(locale,routing)}>{t("adminUsers")}</Link>
         <span aria-current="page"><bdi dir="auto">{user.name}</bdi></span>
       </nav>
       <h2 id="admin-user-detail-heading">{t("adminUsersDetail")}</h2>
@@ -116,7 +120,7 @@ export function AdminUserDetail({ locale, access, user, management, managerActor
         </nav> : null}
       </section>
       <Link to={forumProfilePath(locale, user.id)}>{t("adminUsersPublicProfile")}</Link>
-      {access.canManageMeasures ? <p><Link to={adminMeasuresPath(locale)+"?target="+encodeURIComponent(user.id)}>
+      {access.canManageMeasures ? <p><Link to={adminMeasuresPath(locale,routing)+"?target="+encodeURIComponent(user.id)}>
         {t("measuresAdmin")}</Link></p> : null}
       {access.canManageAuthorization && management && managerActorId && permissions
         ? <InlineUserAuthorization key={managerActorId + ":" + user.id}
@@ -136,6 +140,7 @@ function InlineUserAuthorization({ locale, actorId, userId, management,
   canMutateAuthorization: boolean;
 }) {
   const { t } = useTranslation("common");
+  const routing = useAdministrativeRouting();
   const fetcherKey = `ap09-user-authz:${actorId}:${userId}`;
   const fetcher = useFetcher<{ ok?: true; error?: AuthorizationFailure }>({ key: fetcherKey });
   const revalidator = useRevalidator();
@@ -155,7 +160,7 @@ function InlineUserAuthorization({ locale, actorId, userId, management,
       roles={management.roles} permissions={permissions}
       canManageElevated={canManageElevated} canMutateAuthorization={canMutateAuthorization}
       elevatedRoleIds={management.elevatedRoleIds}
-      inline={{ action: `/${encodeURIComponent(locale)}/admin/authorization`, fetcherKey }}
+      inline={{ action: canonicalAuthorizationPath(locale,routing), fetcherKey }}
       pending={pending}/>
   </section>;
 }

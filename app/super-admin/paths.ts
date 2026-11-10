@@ -1,15 +1,20 @@
 import { SYSTEM_MONITORS, type SystemMonitorKey } from "../../db/owner-system-history";
+import { defaultAdministrativeRouting, type AdministrativeRouting } from "../administrative-routing/addresses";
 
-const base = (locale: string) => `/${encodeURIComponent(locale)}/super-admin`;
-export const superAdminPath = (locale: string) => base(locale);
-export const superAdminMonitoringPath = (locale: string) => `${base(locale)}/monitoring`;
-export const superAdminSystemPath = (locale: string) => `${base(locale)}/monitoring/system`;
-export function superAdminMonitorHistoryPath(locale: string, monitorKey: SystemMonitorKey, before?: string) {
+export const superAdminPath = (locale: string, routing: AdministrativeRouting = defaultAdministrativeRouting) =>
+  routing.superAdmin.overview(locale);
+export const superAdminMonitoringPath = (locale: string, routing: AdministrativeRouting = defaultAdministrativeRouting) =>
+  routing.superAdmin.monitoring(locale);
+export const superAdminSystemPath = (locale: string, routing: AdministrativeRouting = defaultAdministrativeRouting) =>
+  routing.superAdmin.system(locale);
+export function superAdminMonitorHistoryPath(locale: string, monitorKey: SystemMonitorKey, before?: string,
+  routing: AdministrativeRouting = defaultAdministrativeRouting) {
   if (!SYSTEM_MONITORS.includes(monitorKey)) throw new Error("Unknown System monitor");
-  return `${superAdminSystemPath(locale)}/${encodeURIComponent(monitorKey)}/history` +
-    (before === undefined ? "" : `?before=${encodeURIComponent(before)}`);
+  return routing.superAdmin.monitorHistory(locale, monitorKey, before);
 }
-export function superAdminEventLogPath(locale: string, before?: string) {
-  return `${base(locale)}/events` + (before === undefined ? "" : `?before=${encodeURIComponent(before)}`);
+export function superAdminEventLogPath(locale: string, before?: string,
+  routing: AdministrativeRouting = defaultAdministrativeRouting) {
+  return routing.superAdmin.events(locale, before);
 }
-export const superAdminInfrastructurePath = (locale: string) => `${base(locale)}/infrastructure`;
+export const superAdminInfrastructurePath = (locale: string, routing: AdministrativeRouting = defaultAdministrativeRouting) =>
+  routing.superAdmin.infrastructure(locale);

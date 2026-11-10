@@ -8,6 +8,8 @@ import { HeaderAuthProvider } from "../auth/auth-controls";
 import { canonicalEnglishCatalog } from "../localization/catalog";
 import { russianCommonValues, hebrewCommonValues } from "../localization/manual-values";
 import { SuperAdminOverview, SuperAdminMonitoringIndex } from "./view";
+import { AdministrativeRoutingProvider } from "../administrative-routing/provider";
+import { createAdministrativeRouting } from "../administrative-routing/addresses";
 import { AdminShell } from "../admin/shell";
 import { adminAccess } from "../admin/access";
 import { ProfileView } from "../forum/profile-view";
@@ -102,4 +104,35 @@ describe("SA-01 Owner-only UI/locale navigation", () => {
     try { expect(unbound.container.querySelector('a[href="/en/super-admin"]')).toBeNull(); }
     finally { unbound.router.dispose(); }
   });
+  it("routes both Owner entries and monitored History to an independent Owner origin", () => {
+    const routing = createAdministrativeRouting(
+      locale => `https://forum.invalid/${locale}/office`,
+      locale => `https://owner.invalid/${locale}/control`,
+    );
+    const access = adminAccess(new Set(["admin.history.read"]));
+    const admin = mount("en", <AdministrativeRoutingProvider routing={routing}>
+      <AdminShell locale="en" access={access}><p>Admin body</p></AdminShell>
+    </AdministrativeRoutingProvider>);
+    expect(admin.container.querySelector('a[href="https://owner.invalid/en/control"]')).not.toBeNull();
+    expect(admin.container.querySelector('a[href="https://forum.invalid/en/office/history"]')).not.toBeNull();
+    admin.unmount(); admin.router.dispose();
+
+    const own = mount("en", <AdministrativeRoutingProvider routing={routing}>
+      <ProfileView locale="en" profile={profile} isOwner canEditProfile={false}/>
+    </AdministrativeRoutingProvider>);
+    expect(own.container.querySelector('a[href="https://owner.invalid/en/control"]')).not.toBeNull();
+    own.unmount(); own.router.dispose();
+
+    const monitoring = mount("en", <AdministrativeRoutingProvider routing={routing}>
+      <SuperAdminOverview locale="en" system={data} recent={recent}/>
+    </AdministrativeRoutingProvider>);
+    expect(monitoring.container.querySelector('nav.admin-panel-nav a[aria-current="page"]')?.getAttribute("href"))
+      .toBe("https://owner.invalid/en/control");
+    expect(monitoring.container.querySelectorAll('a[href^="https://owner.invalid/en/control/monitoring/system/"][href$="/history"]'))
+      .toHaveLength(3);
+    expect(monitoring.container.querySelector('a[href="https://owner.invalid/en/control/events"]')).not.toBeNull();
+    expect(monitoring.container.querySelector('a[href="https://owner.invalid/en/control/infrastructure"]')).not.toBeNull();
+    monitoring.unmount(); monitoring.router.dispose();
+  });
+
 });

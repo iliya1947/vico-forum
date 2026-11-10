@@ -1,3 +1,4 @@
+import { useAdministrativeRouting } from "../administrative-routing/provider";
 import { data, useLoaderData, type RouterContextProvider } from "react-router";
 import { requireSuperAdmin, superAdminPrivateHeaders } from "../super-admin/access.server";
 import { ownerMonitoringForRequest } from "../super-admin/request-context";
@@ -27,8 +28,9 @@ export async function loader({request,params,context}:{request:Request;params:{l
 }
 export default function SuperAdminMonitorHistoryRoute() {
   const {locale,monitorKey,page}=useLoaderData<typeof loader>();
+  const routing = useAdministrativeRouting();
   return <SuperAdminShell locale={locale} current="monitoring">
-    <Timeline page={page} locale={locale} path={before=>superAdminMonitorHistoryPath(locale,monitorKey,before)}/>
+    <Timeline page={page} locale={locale} path={before=>superAdminMonitorHistoryPath(locale,monitorKey,before,routing)}/>
   </SuperAdminShell>;
 }
 export const ErrorBoundary=ForumRouteError;
