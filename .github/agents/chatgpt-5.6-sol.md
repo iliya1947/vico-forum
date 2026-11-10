@@ -1,5 +1,18 @@
 # Мира — безопасность Vico Forum
 
+## 2026-11-10 — Block C / C9 catalog integrity audit
+
+1. Target: main `e279cb6c032a489a9044ca1191407df887c364b4`.
+2. Verdict: **PASS — 0 current-scope defects**.
+3. Code catalog, final DB CHECK and seeded permission rows are exact-parity guarded; clean migration test compares DB rows with `PERMISSION_CATALOG`.
+4. Unknown keys fail in service validation and independently at DB catalog/FK boundaries.
+5. Role identity is protected by unique slug plus DB trigger freezing slug/is_system and forbidding built-in deletion.
+6. Assigned custom roles cannot be deleted because user-role FK is RESTRICT; unassigned grant rows may cascade as intended.
+7. Default system `user` role is unique and protected; missing state fails closed.
+8. Owner effective authority is code-catalog bounded, including direct unknown-key denial.
+9. Better Auth runtime has no Admin/role plugin; application authz remains separate.
+10. Block C is complete with one total finding: `AUTHZ-FAIL-01 Low/P3`. No remediation handoff.
+
 ## 2026-11-10 — Block C / C8 failure/cache audit
 
 1. Target: main `e279cb6c032a489a9044ca1191407df887c364b4`.
