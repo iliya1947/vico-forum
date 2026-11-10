@@ -49,6 +49,15 @@ export class SessionDeletionEvidence {
     const operation = arg as AdapterDelete | null;
     if (operation?.model !== "session") return;
     const count = affected(method, result);
+    if (method === "delete") {
+      // Temporary diagnostic: fields and numeric result only, no IDs/tokens.
+      console.info("SA02-delete-proof-shape", JSON.stringify({
+        where: Array.isArray(operation.where) ? operation.where.map((x: NativeWhere) =>
+          ({field: x.field, operator: x.operator, valueType: typeof x.value})) : null,
+        count, resultType: typeof result,
+        resultKeys: result && typeof result === "object" ? Object.keys(result).slice(0,12) : null,
+      }));
+    }
     if (count === null) {
       this.missed(1);
       return;
@@ -68,6 +77,10 @@ export class SessionDeletionEvidence {
   noteAfter(value: unknown, context: unknown): void {
     const row = value as Partial<SessionRow> | null;
     const ctx = context as HookContext | null;
+    console.info("SA02-delete-hook-shape", JSON.stringify({
+      path: ctx?.path, hasRow: !!row,
+      date: row?.expiresAt instanceof Date, idType: typeof row?.id,
+    }));
     if (!row || typeof row.id !== "string" || typeof row.userId !== "string" ||
       typeof row.token !== "string" || !(row.expiresAt instanceof Date)) return;
     let reason: Reason, actorUserId: string;
@@ -98,6 +111,11 @@ export class SessionDeletionEvidence {
   async flush(): Promise<void> {
     if (!this.candidates.length) return;
     const candidates = this.candidates.splice(0);
+    console.info("SA02-delete-flush-shape", JSON.stringify({
+      candidateCount: candidates.length,
+      singleCount: this.singleReceipts.size,
+      bulkCount: this.bulkReceipts.length,
+    }));
     const bulk = candidates.filter(c => c.reason === "revoke-all");
     const approvedBulk = new Set<string>();
     for (const receipt of this.bulkReceipts) {
