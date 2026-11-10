@@ -1793,6 +1793,7 @@ export const adminHistory = pgTable("admin_history", {
   reason: text("reason"),
 }, table => [
   uniqueIndex("admin_history_order_idx").on(table.position.desc()),
+  index("admin_history_timeline_idx").on(table.occurredAt.desc(), table.id.desc()),
   check("admin_history_action_target_check", sql`(
     ${table.action} in ('role.created', 'role.renamed', 'role.deleted', 'role.grantsChanged') and ${table.targetType} = 'role'
   ) or (${table.action} in ('user.roleAssigned', 'user.overrideChanged') and ${table.targetType} = 'user')
@@ -1834,6 +1835,7 @@ export const ownerEvents = pgTable("owner_events", {
   index("owner_events_entity_idx").on(t.entityType, t.entityId, t.position.desc()),
   index("owner_events_actor_idx").on(t.actorUserId, t.position.desc()),
   index("owner_events_target_idx").on(t.targetUserId, t.position.desc()),
+  index("owner_events_timeline_idx").on(t.occurredAt.desc(), t.id.desc()),
 ]);
 
 /** Retained measured states are samples, never reconstructed domain events. */
@@ -1851,6 +1853,7 @@ export const ownerMonitorObservations = pgTable("owner_monitor_observations", {
 }, t => [
   uniqueIndex("owner_monitor_observations_position_idx").on(t.position.desc()),
   index("owner_monitor_observations_scope_idx").on(t.monitorKey, t.resourceScope, t.position.desc()),
+  index("owner_monitor_observations_timeline_idx").on(t.observedAt.desc(), t.id.desc()),
 ]);
 
 /** SA-02: attributed attempts coalesce within a DB-chosen UTC recording hour.
