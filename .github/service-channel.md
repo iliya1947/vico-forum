@@ -333,6 +333,20 @@
 9. Raw authorization resolution cache and administrative-restriction cache are request-local and user/actor-keyed; no cross-user or cross-request authority reuse was found.
 10. No second C8 finding confirmed. Remediation remains unassigned.
 
+
+## Block C / C9 — Permission catalog / persistence integrity audit
+
+1. Audit target: current main `e279cb6c032a489a9044ca1191407df887c364b4`.
+2. Verdict: **PASS — 0 confirmed current-scope defects**.
+3. Code `PERMISSION_CATALOG`, DB catalog CHECK and seeded permission rows are exact-parity guarded; clean-migration regression compares DB rows to the code catalog exactly.
+4. Unknown permissions are rejected both by application input validation and PostgreSQL CHECK/FKs.
+5. Role slug/is_system identity is immutable at DB trigger level; built-in roles cannot be deleted, while assigned custom roles are protected by RESTRICT FK.
+6. Default `user` role is unique/protected and missing state fails closed.
+7. Owner projection is catalog-bounded; unknown persisted/executable authority is not created.
+8. Better Auth has no Admin/role plugin in current runtime and remains identity/session only.
+9. **Block C complete.** Total confirmed Block-C findings: one — `AUTHZ-FAIL-01 Low/P3`.
+10. No remediation is assigned.
+
 ## Координация
 
 1. #315 хранит решения, задачи, review findings и прогресс всего направления безопасности.
