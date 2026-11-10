@@ -79,7 +79,7 @@ describe("PostgreSQL 17 locale migrations", () => {
     const applied = await client.query<{ count: string }>(
       'select count(*)::text as count from drizzle."__drizzle_migrations"',
     );
-    expect(applied.rows[0]?.count).toBe("63");
+    expect(applied.rows[0]?.count).toBe("64");
     // The AP-08 manifest hashes are computed from PostgreSQL 17 catalog expressions,
     // rather than assumed from SQL formatting or hand-entered normalized forms.
     const definitions = await client.query<{ key: string; definition: string }>(`
@@ -121,6 +121,72 @@ describe("PostgreSQL 17 locale migrations", () => {
       "default:forum_topics.closure_version": versionHash,
     });
 
+  });
+
+  it("SA-02 hourly attempt tables retain source identity and separate per-epoch quota", async () => {
+    const epoch = (await client.query<{ epoch: Date }>(
+      "select date_trunc('hour', transaction_timestamp(), 'UTC') as epoch",
+    )).rows[0]?.epoch;
+    expect(epoch).toBeInstanceOf(Date);
+    const current = epoch as Date;
+    const previous = new Date(current.getTime() - 3600000);
+    const firstId = "00000000-0000-4000-8000-000000000063";
+    const secondId = "00000000-0000-4000-8000-000000000064";
+    const original = [firstId, current, "authenticated", "sa02-account", "2001:db8::1", "trusted",
+      "auth", "sign-in", "denied", 401, current, current];
+    const sql = `insert into owner_attempt_patterns
+      (id,recording_epoch_start,pool,actor_user_id,network_ip,network_quality,
+       surface,operation,outcome,http_status,first_occurred_at,last_occurred_at)
+      values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12)`;
+    const epochSlotSql = `insert into owner_attempt_telemetry_state
+      (recording_epoch_start,slot,capacity) values ($1,'quota.authenticated',256)`;
+    try {
+      await client.query(sql, original);
+      await expectDatabaseCode(client.query(sql, [secondId, ...original.slice(1)]), "23505");
+      await client.query(sql, [secondId, previous, ...original.slice(2)]);
+      const distinctEpochs = await client.query<{ count: string }>(
+        "select count(*)::text from owner_attempt_patterns where id=any($1::uuid[])",
+        [[firstId, secondId]],
+      );
+      expect(distinctEpochs.rows[0]?.count).toBe("2");
+
+      await client.query(epochSlotSql, [current]);
+      await client.query(epochSlotSql, [previous]);
+      await expectDatabaseCode(client.query(epochSlotSql, [current]), "23505");
+      await expectDatabaseCode(client.query(`update owner_attempt_telemetry_state
+        set used=257 where recording_epoch_start=$1 and slot='quota.authenticated'`,
+        [current]), "23514");
+      const slots = await client.query<{ recording_epoch_start: Date; used: number; capacity: number }>(
+        `select recording_epoch_start,used,capacity from owner_attempt_telemetry_state
+        where slot='quota.authenticated' and recording_epoch_start=any($1::timestamptz[])
+        order by recording_epoch_start`, [[previous, current]],
+      );
+      expect(slots.rows).toHaveLength(2);
+      expect(slots.rows.every(row => row.used === 0 && row.capacity === 256)).toBe(true);
+
+      await expectDatabaseCode(client.query(sql, [
+        "00000000-0000-4000-8000-000000000065",
+        new Date(current.getTime() + 60000), ...original.slice(2),
+      ]), "23514");
+      await expectDatabaseCode(client.query(sql, [
+        "00000000-0000-4000-8000-000000000066",
+        current, "anonymous", null, null, "unknown",
+        "auth", "sign-in", "denied", 401, current, current,
+      ]), "23514");
+      await expectDatabaseCode(client.query(sql, [
+        "00000000-0000-4000-8000-000000000067",
+        current, "anonymous", null, "203.0.113.0/24", "trusted",
+        "auth", "sign-in", "denied", 401, current, current,
+      ]), "23514");
+      await expectDatabaseCode(client.query(`insert into owner_attempt_telemetry_state
+        (recording_epoch_start,slot,capacity) values ($1,'new-unbounded-slot',null)`,
+        [current]), "23514");
+    } finally {
+      await client.query("delete from owner_attempt_patterns where id=any($1::uuid[])", [[firstId, secondId]]);
+      await client.query(`delete from owner_attempt_telemetry_state
+        where recording_epoch_start=any($1::timestamptz[]) and slot='quota.authenticated'`,
+        [[previous, current]]);
+    }
   });
 
   it("SET-06 preference schema defaults to ON, saves OFF and cascades with its user", async () => {
