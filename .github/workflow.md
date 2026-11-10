@@ -1,6 +1,6 @@
 # Super-admin security — current workflow
 
-1. Service PR: pending.
+1. Service PR: **#315**.
 2. Base/current main at channel creation: `e16d75dc7e2988eb06923c2d97ab5ae389bbfbac`.
 3. Current stage: security architecture/service-plan creation only.
 4. Product/security scope: target architecture recorded in `SUPER_ADMIN_SECURITY_PLAN.md`; split between repository foundation now and real Stage-6 activation is mandatory.
