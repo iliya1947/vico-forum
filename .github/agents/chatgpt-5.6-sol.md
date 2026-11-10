@@ -1740,3 +1740,11 @@ Reviewed Lev plan `#6759936344`: CHANGES REQUIRED only for `FOUNDATION-PLAN-MIRA
 - Full plan accepted in #6768166517.
 - Lira assigned to implementation in a separate PR; Lev/Mark unassigned until coordinator review stage.
 - Deferred History occupancy/archive/clear remains post-current-plan work and is excluded from SA-02.
+
+
+## Correction — SA-02 implementation handoff decomposed
+
+- My #6768166517 whole-SA02 implementation assignment was too broad and is superseded by #6777211866.
+- SA-02 now runs as four sequential bounded subtasks: A storage/telemetry foundation, B producers/source collection, C current readers/History, D routes/UI/integration acceptance.
+- Only **SA02-A** is assigned to Lira.
+- Lira must stop after SA02-A delivery for coordinator review; B/C/D require explicit developer continuation.
