@@ -170,6 +170,22 @@ Admin/Owner разделами, деактивация, новые contextual ac
 Реальная Google/Owner binding, production rollout и deployed acceptance
 не выполнялись; visual polish остаётся отдельным UI/UX этапом.
 
+### Admin/Super-admin outgoing routing foundation
+
+В `main` реализован foundation построения **исходящих административных адресов**:
+типизированный `AdministrativeRouting` с независимыми семействами обычного Admin и
+exact-Owner-only Super-admin, заменяемым resolver в UI и request-scoped серверным
+контекстом. Существующие ссылки, формы и переходы используют соответствующее
+семейство; по умолчанию адреса остаются `/:locale/admin/*` и
+`/:locale/super-admin/*`.
+
+Это **не** изменение регистрации маршрутов, Worker ingress или проверок
+полномочий. Текущая среда использует прежние same-origin адреса и одну
+существующую runtime-топологию; раздельный Owner Worker, Access, изоляция
+Owner auth/session, database/deploy capabilities и route concealment
+**не реализованы**. Foundation проверен в repository/local-CI, но не
+означает cross-origin transport, production deployment или Stage-6 acceptance.
+
 ### Complaints
 
 По `docs/moderation/COMPLAINTS.md` реализована функциональность Complaints Packages 1–6 в repository/local-CI path:

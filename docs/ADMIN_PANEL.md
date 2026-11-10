@@ -50,6 +50,19 @@ Implementation uses separate bounded PRs from current `main`; each dependent pac
 after its prerequisite is reviewed and merged. This document contains lasting requirements,
 not agent reports or a claim that those packages have shipped.
 
+## Outgoing administration address boundary
+
+The merged routing foundation constructs outgoing ordinary-Admin destinations through
+the typed `AdministrativeRouting.admin` family. Existing links, canonical
+authorization forms and applicable redirects use the active UI or request-scoped
+resolver. The default URLs remain `/:locale/admin/*`; route registrations,
+the current Worker ingress, server authorization and mutation contracts are unchanged.
+
+The separate `AdministrativeRouting.superAdmin` family addresses the exact-Owner-only
+surface without requiring a shared base or origin. This separation is an address
+construction boundary, **not** a deployed Owner Worker, a second session authority or
+Stage-6 security isolation. See [SUPER_ADMIN.md](SUPER_ADMIN.md) for the Owner surface.
+
 ## Product model and boundaries
 
 The global admin panel is a protected service area for managing the forum itself. Its

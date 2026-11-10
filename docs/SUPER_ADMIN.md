@@ -16,6 +16,23 @@ Current factual implementation status is in [PROJECT_STATE.md](../PROJECT_STATE.
 - Ordinary **Admin** remains the authoritative location for forum object management, user administration and measures, Roles authorization views, and ordinary significant-action History. **Settings** retains role/permission/registration configuration and personal account settings. **Needs attention** retains Signals, Complaints, and Security work queues. Super-admin does not replace or duplicate their operations or authorization checks.
 - Every SA-01 protected route independently checks Owner authority before cursor/input parsing or private reads. Private document/data responses and controlled errors use `private, no-store`; no session returns 401, a non-Owner returns 403, malformed cursor/query returns 400, and classified monitoring-storage unavailability returns 503. Unexpected database/schema/programming failures are not misreported as malformed input.
 
+## Outgoing address routing boundary
+
+The merged `AdministrativeRouting` foundation has distinct typed destination families:
+`superAdmin` for Owner-surface links and `admin` for ordinary administration.
+Current Super-admin shell, Monitoring/System/History/Event log links and the approved
+Owner entries use the active UI or request-scoped resolver. A trusted replacement
+resolver can produce a different Owner base/origin without rewriting those outgoing
+addresses; the current default remains `/:locale/super-admin/*`.
+
+This is **outgoing address construction only**. In the current implementation
+Super-admin retains its existing route registrations and Worker ingress, with
+the same exact server-bound Owner guards and same-origin defaults.
+No separate Owner Worker, Access, isolated Owner authentication/session,
+database/deployment capability separation, hidden route or cross-origin transport
+is delivered by this foundation. Those are separate future Stage-6 security work;
+a link or destination never confers Owner authority.
+
 ## Approved information architecture
 
 The Super-admin product consists of **Overview**, **Monitoring & Event log**, and **Infrastructure**. User-specific administrative/Owner information belongs in the approved **unified user profile** model, not a second Super-admin user-detail implementation.
