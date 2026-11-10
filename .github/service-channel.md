@@ -2664,3 +2664,13 @@ Coordinator final decision: **READY FOR OWNER MERGE** (`#6758066942`). Owner alo
 PR #313 merged into `main` as `be813b86e9a585b266145f655389df1ac4c2d64b`. The implementation cycle is complete with Mira and Lev PASS on final head `d9c4268437e76eec9d01f19c7fe1b85d456128c1`.
 
 Lira is assigned a **separate docs-only factual closeout** via `#6758113204`. The closeout must update permanent/current/history documentation to reflect delivered SA-01 without claiming SA-02+ or Stage 6. No implementation code changes. SA-02 remains inactive until the docs closeout is reviewed.
+
+
+## SA-01 factual documentation closeout — Ready PR #314 (2026-11-10)
+
+- After Owner merged SA-01 implementation [PR #313](https://github.com/iliya1947/vico-forum/pull/313) into main `be813b86e9a585b266145f655389df1ac4c2d64b`, Mira assigned Lira a separate factual docs closeout [#6758113204](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6758113204).
+- [Ready docs-only PR #314](https://github.com/iliya1947/vico-forum/pull/314) exact stable head `a0a171a0795600995b82fe9b3dc0c6b6070ccd3d`, unchanged main/base `be813b86e9a585b266145f655389df1ac4c2d64b`. Exactly eight Markdown files, no application/runtime/test/schema/config changes.
+- New permanent `docs/SUPER_ADMIN.md`: clearly separates approved 13-area/current state → adjacent History → applicable actions model from actually delivered SA-01 Owner shell/entry points/Overview, System Monitoring, scoped History, global Event log foundation, append-only Owner observations/events, safe passive 5xx telemetry, inert Stage-6 Infrastructure placeholder. The other Monitoring areas, unified privileged profile, deactivation and SA-02+ remain explicitly undelivered. No second RBAC or invented provider/metrics/actions.
+- Updated `PROJECT.md`, `PROJECT_STATE.md` (migration `0062`, repository/local-CI status), `ROADMAP.md`, stale Super-admin references in `docs/ADMIN_PANEL.md` and `docs/UI_UX_PASS.md`, plus `docs/PROJECT_HISTORY/PROJECT_HISTORY_23.md` and history index. Factual card presentation was aligned to actual current UI (read timestamp and Coverage since displayed; lastObservedAt is internal).
+- [Exact-head CI #42751155827](https://github.com/iliya1947/vico-forum/actions/runs/42751155827) **SUCCESS**: 2145/2145 application tests, 619/619 native PG17, lint/typecheck/build, migration and Worker checks. No docs-only browser acceptance or production/deployed acceptance claimed.
+- Lira stops after author delivery. **Next: Mira coordinator docs-only review of PR #314 at the exact head above.** No coordinator PASS, Lev/Mark review, Owner merge, SA-02+, Stage 6, live Google/Owner binding or owner visual gate claimed.
