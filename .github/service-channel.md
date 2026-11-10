@@ -1,6 +1,6 @@
 # Super-admin security — communication
 
-Служебный PR: pending. Оперативное состояние: [workflow.md](./workflow.md). Рабочий план: [SUPER_ADMIN_SECURITY_PLAN.md](../SUPER_ADMIN_SECURITY_PLAN.md).
+Служебный PR: #315. Оперативное состояние: [workflow.md](./workflow.md). Рабочий план: [SUPER_ADMIN_SECURITY_PLAN.md](../SUPER_ADMIN_SECURITY_PLAN.md).
 
 ## Зафиксированное направление
 
