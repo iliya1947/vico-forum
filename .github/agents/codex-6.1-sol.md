@@ -1,3 +1,22 @@
+# Лёва — актуальный checkpoint: routing foundation independent PASS (2026-11-10)
+
+**PR317 exact head `d12719bc8e6b2e6368489c16f2e0efa9ef6e3605`, base/main `24dfa9f51892490fae346f6079d6aa7fcfec1aa1`: independent whole-PR PASS,0 confirmed current-scope defects. FOUNDATION-LEV-01/-02 CLOSED.** [Result/handoff#6765085755](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6765085755).
+
+- Assignment/Mira coordinator PASS#6764695060; approved plan#6761206804+#6761588752. Full36-file scope/callers checked; delta from34d1e4ac only super-admin-system.tsx+new actual-route regression.
+- Both independent reproducers copied unchanged: AdminShell same-origin absolute/relative logical last entry and isolated SSR; actual System route Owner-family content/shell/three History/default links.2 files/5 tests PASS; expectations not weakened.
+- Consumer audit:53 production helper calls with required routing arguments, plus text/manual actual caller review; no further confirmed omitted seam consumer. This is external diagnostic only, no repo linter added.
+- Fresh local build PASS;24 files/255 relevant app tests PASS; PG17 migrations0000–0062 PASS; built-head SA01 Chromium16 checkpoint groups PASS with exact implementationHead metadata, no pageerrors/external requests.
+- GitHub API individually verified all new-head jobs: CI#42794915937 checks/database; SA01#42794915727; AP10#42794915509/all4 SUCCESS. Full CI test counts not represented as locally rerun.
+-12 protected config/source/docs files match base; DB/migrations/Worker/authz/deps unchanged. #315 head5329ef0... unchanged; Admin Public Worker/future Owner separate Worker contract respected without activation.
+- Evidence `/workspace/work/routing-final-review-evidence/`: REVIEW.md, probes/logs, AST script/results, diff, scope/hash manifest, application/build/migrations and browser exact-head results. Local preview stopped, disposable DB removed, synthetic vars/symlinks removed; tracked checkout clean; implementation not edited during review.
+- **Next recipient Mira** for coordinator continuation/closeout after PASS. Lev finished/stopped; Lira/Mark unassigned. Do not independently assign implementation/docs, merge or advance SA02. PR317 remains unmerged, Owner alone merges, PASS only exact head.
+- SA02-PLAN-MIRA-01 / Owner#6759312425 remains open; #315 security integration/Stage6/production/visual acceptance outside current PASS. No last-manager/admin retention principle.
+- User “...” continues active assignment, else checks251. Service publication already authorized; handoff context in servicePR, developer only connects next agent.
+
+Previous personal context retained verbatim below; older assignments and findings are historical.
+
+---
+
 # Лёва — актуальный checkpoint: PR317 повторная независимая проверка (2026-11-10)
 
 **Whole-PR result:** FOUNDATION-LEV-01 CLOSED; один подтверждённый current-scope FOUNDATION-LEV-02/P3; PASS не выдан. [Полный результат и передача Мире #6764152289](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6764152289).
