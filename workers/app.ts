@@ -25,6 +25,8 @@ import {
   RequestAttemptCollector, requestAttemptCollectorContext, withAttemptObservation,
 } from "../app/observability/attempt-collector.server";
 import { createHyperdriveAttemptTelemetry } from "../db/hyperdrive-attempt-telemetry";
+import { RequestAuthFactCollector } from "../app/observability/auth-fact-collector.server";
+import { createHyperdriveAuthFactWriter } from "../db/hyperdrive-auth-facts";
 import {adminForumContext} from "../app/admin/forum.server";
 import {createHyperdriveAdminForum} from "../db/hyperdrive-admin-forum";
 import { adminUsersContext } from "../app/admin/users.server";
@@ -69,16 +71,21 @@ export default {
     const collector = new RequestAttemptCollector(captureAttemptIngressSource(request),
       () => createHyperdriveAttemptTelemetry(webConnectionString));
     context.set(requestAttemptCollectorContext, collector);
+    const facts = new RequestAuthFactCollector(
+      () => createHyperdriveAuthFactWriter(webConnectionString),
+      count => collector.recordGap("auth", count),
+    );
     try {
     const auth = withAttemptObservation(
       createHyperdriveAuthRuntime(
         webConnectionString, env as Env & BetterAuthEnvironment, undefined,
-        () => collector.recordRegistrationDenied(),
+        () => collector.recordRegistrationDenied(), facts,
       ), collector);
     let authHeaders: Headers;
     try {
       authHeaders = await initializeAuthContext(context, request, auth);
       collector.setResolvedActor(authSessionForRequest(context)?.user.id);
+      facts.setResolvedActor(authSessionForRequest(context)?.user.id);
     } catch (error) {
       if (!(error instanceof AuthSessionUnavailableError)) throw error;
       return new Response("Service unavailable. Please try again.", {
@@ -133,7 +140,9 @@ export default {
     } finally {
       // A failure or early 503 still finalizes the bounded collector. Never
       // replace the original HTTP response/exception with telemetry failure.
-      const task = collector.flush().catch(() => undefined);
+      const task = facts.flush()
+        .catch(() => collector.recordGap("auth"))
+        .then(() => collector.flush().catch(() => undefined));
       if (executionContext?.waitUntil) executionContext.waitUntil(task);
       else await task;
     }
