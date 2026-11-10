@@ -281,6 +281,25 @@
 15. Direct database writes by a compromised database principal are outside this application-authorization seam and remain for the database/runtime security blocks; no attacker-controlled application path to them was found here.
 16. No C4 finding confirmed.
 
+## Block C / C5 — Authorization-state read privacy / IDOR audit
+
+1. Audit target: current main `e279cb6c032a489a9044ca1191407df887c364b4`.
+2. Verdict: **PASS — 0 confirmed current-scope authorization-state read/privacy/IDOR defects**.
+3. Canonical Roles/authorization loader independently requires an authenticated session and effective `access.authorization.manage` before reading `readManagementState()`. Guest, ordinary-user and unrelated-permission paths stop before the protected read.
+4. The direct Roles/authorization read surface intentionally exposes its existing authorization-user subset, including user identity/email plus raw role/grants/overrides/effective permissions, to holders of `access.authorization.manage`. This is the current source-of-truth contract; it is not implicitly granted by `admin.users.read`, `admin.users.blocks.manage` or general Admin admission.
+5. `admin.users.read` independently protects `/admin/users` index/detail before query/target validation and protected reads. A management-only actor does not gain the general Users directory through this permission boundary.
+6. The Users index DB query selects only user ID, display name, image and joined timestamp; search uses only name/ID. Email is neither selected nor searchable.
+7. Users detail explicitly re-projects only public profile/identity/statistics fields. Existing route regression injects synthetic email/grant/override secrets into the profile fixture and verifies they are not serialized.
+8. `admin.users.read` alone never calls `readUserManagementState` and therefore does not serialize role grants, personal overrides, effective permissions or management actor metadata.
+9. When the same actor also holds `access.authorization.manage`, Users detail performs exactly one targeted `readUserManagementState(targetId)`. That snapshot contains role choices and only the selected target's authorization state; it contains no other users, no email and no role grant lists for unrelated roles.
+10. The target ID comes from the validated route object ID and may identify any user only after the actor has both required read capabilities. This is intended administrative targeting, not an IDOR: the authorization decision is actor-based and independent of target identity.
+11. `readUserManagementState` itself has no internal actor parameter and is therefore a trusted server capability, not an HTTP authorization boundary. Production caller search found only already-gated routes for browser exposure; no attacker-controlled path directly invokes the capability.
+12. `admin.history.read` remains independent. Neither authorization management state nor Users detail serializes Admin History/events merely because authorization/user-read permission is present.
+13. Owner-only mutation flags/forms are presentation data only. Non-Owner holders may see authorized read state, but all writes remain independently denied by C3's route/repository boundaries.
+14. All protected Admin/authorization document/data responses use `private, no-store`; legacy Users redirect also rechecks current permissions before choosing Users versus authorization subset.
+15. AP-10 `admin.usersAccess` restriction applies to both `admin.users.read` and `access.authorization.manage` through the effective authorization wrapper before these reads, so saved administrative restrictions cannot be bypassed by calling the alternate read surface.
+16. No C5 finding confirmed.
+
 ## Координация
 
 1. #315 хранит решения, задачи, review findings и прогресс всего направления безопасности.
