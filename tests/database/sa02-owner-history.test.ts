@@ -163,6 +163,24 @@ describe("SA02 native source-aware Owner History projection",()=>{
     expect(seen.filter(s=>s==="attachment-evidence:attachment:~first")).toHaveLength(1);
   });
 
+  it("distinguishes equal native IDs and identical timestamps by original source on separate pages",async()=>{
+    await addOwner(U,"account.created","accounts.users");
+    await client.query("insert into admin_history "+
+      "(id,occurred_at,actor_id,actor_label,action,target_type,target_id,target_label,context) "+
+      "values ($1,$2,'author','Private','settings.registrationChanged',"+
+      "'forum-settings','registration','Private','{}'::jsonb)",[U,BASE]);
+    const first=await reader.readTimeline({limit:1});
+    const second=await reader.readTimeline({limit:1,before:first.next!});
+    expect(first.entries).toHaveLength(1);
+    expect(second.entries).toHaveLength(1);
+    expect(first.entries[0].id).toBe(U);
+    expect(second.entries[0].id).toBe(U);
+    expect(new Set([first.entries[0].origin,second.entries[0].origin])).toEqual(
+      new Set(["auth-event","admin-history"]));
+    expect(first.entries[0].occurredAt).toBe(second.entries[0].occurredAt);
+    expect(second.next).toBeNull();
+  });
+
   it("preserves valid legacy SA01 three-part cursor and never grants it to other areas",async()=>{
     await seedBasic();
     const legacy=BASE+"~system-event~"+S;
@@ -200,6 +218,10 @@ describe("SA02 native source-aware Owner History projection",()=>{
       expect(()=>parseOwnerHistoryCursor(altered({at:value}))).toThrow("cursor");
     }
     expect(()=>parseOwnerHistoryCursor(altered({origin:"injected-table"}))).toThrow("cursor");
+    expect(()=>parseOwnerHistoryCursor(altered({
+      area:"accounts",monitor:null,origin:"attachment-evidence",
+    }),{area:"accounts"})).toThrow("cursor");
+
     expect(()=>parseOwnerHistoryCursor(altered({id:"bad\nid"}))).toThrow("cursor");
     expect(()=>parseOwnerHistoryCursor(altered({id:"x".repeat(201)}))).toThrow("cursor");
     await expect(reader.readTimeline({area:"future" as never})).rejects.toThrow("area");
