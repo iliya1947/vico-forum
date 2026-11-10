@@ -14,10 +14,15 @@ import { adminAccess } from "./access";
 import { AdminShell } from "./shell";
 
 const allowed = ["overview", "users", "history"] as const;
-const common = Object.fromEntries(Object.entries(canonicalEnglishCatalog.common).flatMap(([key, entry]) =>
-  typeof entry.source === "string"
-    ? [[key, entry.source]]
-    : Object.entries(entry.source).map(([part, value]) => [`${key}_${part}`, value]),
+const flatten = (values: Record<string, unknown>): Record<string, string> => Object.fromEntries(
+  Object.entries(values).flatMap(([key, value]) =>
+    typeof value === "string"
+      ? [[key, value]]
+      : Object.entries(value as Record<string, string>).map(([part, text]) => [`${key}_${part}`, text]),
+  ),
+);
+const common = flatten(Object.fromEntries(
+  Object.entries(canonicalEnglishCatalog.common).map(([key, entry]) => [key, entry.source]),
 ));
 const i18n = () => createTranslationRuntime({
   locale: { translationLocale: "en", direction: "ltr", formatting: { locale: "en", timeZone: "UTC" },
