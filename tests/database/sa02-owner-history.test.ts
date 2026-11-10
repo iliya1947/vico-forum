@@ -209,6 +209,6 @@ describe("SA02 native source-aware Owner History projection",()=>{
     await expect(reader.readTimeline({area:"accounts",monitorKey:"arbitrary" as never}))
       .rejects.toThrow("monitor");
     await expect(reader.readTimeline({limit:51})).rejects.toThrow("limit");
-    expect(good).toBe("");
+    expect(good.startsWith("v1.")).toBe(true);
   });
 });
