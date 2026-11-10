@@ -1,5 +1,16 @@
 # Мира — безопасность Vico Forum
 
+## 2026-11-10 — Block C / C7 concurrency audit
+
+1. Target: main `e279cb6c032a489a9044ca1191407df887c364b4`.
+2. Verdict: **PASS — 0 current-scope serialization defects**.
+3. Authorization writes and AP-10 authoritative decisions share `authz_mutation_lock FOR UPDATE`; fresh permission/authority checks occur after acquiring it.
+4. Existing DB concurrency regression proves queued authz + AP-10 writers re-evaluate authority after a concurrent rights change commits and both reject without state/History writes.
+5. Authorization History is appended in the same transaction; failing History append rolls back the permission mutation.
+6. All six authz write families, including no-op, use the same serialization boundary.
+7. Next-request permission cache reads only committed state; rolled-back state cannot become authority.
+8. Rollback failure potentially replacing the original repository error is deferred to C8 because no authority/state bypass follows from it.
+
 ## 2026-11-10 — Block C / C2 permission-resolution audit
 
 1. Target: main `e279cb6c032a489a9044ca1191407df887c364b4`.
