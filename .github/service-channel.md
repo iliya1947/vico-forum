@@ -359,6 +359,31 @@
 7. No remediation/planner/implementer is assigned.
 8. Next audit subtask: **D1 Global Admin admission / cross-surface isolation**.
 
+
+## Block D / D1 — Global Admin admission / cross-surface isolation audit
+
+1. Audit target: current main `e279cb6c032a489a9044ca1191407df887c364b4`.
+2. Verdict: **PASS — 0 confirmed current-scope global-Admin admission/cross-surface defects**.
+3. Global `/:locale/admin` admission is capability-based through `ADMIN_ADMISSION_PERMISSIONS`; no role-name check or generic signed-in fallback is used.
+4. Current admission union contains implemented ordinary-Admin capabilities only: authorization read, History read, Users read, basic measure management and the approved Forum-admission set. `forum.solution.manageOwn`, `forum.sourceLocale.correctOwn`, publication permissions, Help-needs-details-only, attachment-security-only and complaint/appeal/priority Attention permissions do not admit global Admin.
+5. `admin.users.blocks.managePrivileged` alone is intentionally not an admission key because it is hierarchy-only and does not grant a management action. Basic `admin.users.blocks.manage` independently admits Measures.
+6. Global Overview checks session/effective permissions before forum aggregate reads. A Measures-only actor gets no Forum counts; other admitted actors may receive only the approved public aggregate category/section/topic/post counts.
+7. Child surfaces independently recheck their own boundary rather than trusting shell admission:
+   - Forum routes call `requireAdminForumAccess`;
+   - Users routes call `requireAdminUsersAccess`;
+   - History requires `canReadHistory`;
+   - Roles/authorization uses its own `access.authorization.manage` manager gate;
+   - Measures routes use `requireMeasureManager`.
+8. Those child gates execute before protected query/object parsing and private DB/service reads. Cross-capability tests prove authorization-only/history-only/own-only/Attention-only actors cannot read Forum; management-only and History/Forum actors cannot read Users; analogous direct child paths retain their independent 403 boundaries.
+9. Navigation visibility is presentation-only. `AdminShell` derives destinations from the same resolved access object but direct URL requests remain independently protected.
+10. Locale/header presentation independently computes Admin and Attention destinations. Attention-only actors may receive Administrator-preferences/Attention presentation while `/admin` remains forbidden; existing tests explicitly cover this separation.
+11. Dynamic DB-backed grant/deny/inherit changes apply on the next protected call/request. Native PostgreSQL and real-browser coverage prove revocation removes global entry/History as applicable without logout.
+12. AP-10 administrative restrictions feed the effective authorization wrapper before these route guards; current DB regression verifies suppressed Forum/admin-family permissions cause direct Admin guards to fail closed.
+13. Legacy `under-development?feature=admin-users` performs a fresh capability check before redirecting to Users or authorization subset. Legacy `feature=admin-forum` is an unconditional same-site redirect only; it performs no private read and lands on the independently protected canonical Forum loader, so it does not expand authority.
+14. Protected Admin success/controlled-error responses use `private, no-store`. The legacy Forum redirect carries no user/private data and has no authorization semantics.
+15. The Settings link visible in Admin shell is not an Admin-privilege expansion: general Settings entry is independently authenticated by its own contract, while Administrator/Owner-only settings retain separate guards.
+16. No D1 finding confirmed.
+
 ## Координация
 
 1. #315 хранит решения, задачи, review findings и прогресс всего направления безопасности.
