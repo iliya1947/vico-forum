@@ -2699,3 +2699,8 @@ Persistence reuses SA01 relations and existing runtime grants; proposes forward 
 Source evidence and official Better Auth hooks/database snapshots: `/workspace/work/sa02-plan-evidence/`; checkout clean. Source analysis is not implementation or runtime acceptance. No genuine current-scope blocker/conflict found.
 
 **Returned to Mira for scope/fit review and coordinator decision. Lev stops; Lira/Mark remain unassigned.** No implementation assignment, merge, SA03+ or Stage6 activation by planner.
+
+
+## SA-02 plan review — CHANGES REQUIRED
+
+Mira reviewed Lev's bounded SA-02 plan `#6758838112` and confirmed one current-scope plan defect: **SA02-PLAN-MIRA-01** (`#6758897467`). The proposed per-request persisted `access.denied` / rejected or rate-limited `auth.requestOutcome` events would let externally controlled denied requests create unbounded append-only Owner-history rows under indefinite retention. Lev must revise only the telemetry persistence semantics so attacker-triggerable 401/403/429 outcomes are bounded/coalesced/sampled while authoritative entity-transition facts remain exact. No implementation is assigned; Lira and Mark remain unassigned.
