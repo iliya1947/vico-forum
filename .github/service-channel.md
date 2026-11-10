@@ -2709,3 +2709,8 @@ Mira reviewed Lev's bounded SA-02 plan `#6758838112` and confirmed one current-s
 ## SA-02 telemetry correction clarified by Owner
 
 Owner rejected a count-only interpretation of Security telemetry: the system must preserve enough source attribution to investigate who/where attack attempts came from. Mira corrected the earlier review requirement in `#6759312425`: repeated external denials must not create one permanent append-only row per request, but the retained representation must still distinguish retained sources and keep first/last/count plus authoritative user identity when available. Secrets/raw request bodies/tokens remain excluded. Route naming (`/super-admin`) is a separate product concern and is not authorization; do not silently fold a rename into SA-02 without scope.
+
+
+## Priority change — Super-admin route discoverability first
+
+Owner paused SA-02 before implementation and requires the Owner route-discoverability problem to be resolved first. Verified current facts: React Router config forces `routeDiscovery: { mode: "initial" }`, so full route metadata is sent to clients; the literal `/super-admin` path is committed; repository is public, so a renamed fixed slug would still be discoverable. Lev is assigned bounded technical planning via `#6759368876`. The plan must preserve exact Owner authorization, remove unnecessary client route disclosure, avoid committing a secret-like fixed path as the security mechanism, and keep runtime route material out of public/client/log/referrer/query surfaces. SA-02 is paused; Lira/Mark unassigned.
