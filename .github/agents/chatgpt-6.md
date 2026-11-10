@@ -1,3 +1,10 @@
+# Лира — routing foundation docs-only closeout, подзадача 1/2 (2026-11-10)
+
+- New docs-only assignment from Mira [#6765810801](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6765810801) after implementation #317 merged. Main at documentation branch creation `56358c517cd4456e4421d56e022fce70431b00c1`.
+- Fully read main AGENTS, PROJECT, PROJECT_STATE, ROADMAP, ADMIN_PANEL, SUPER_ADMIN, current history index and previous HISTORY_23; inspected actual routing code in main. Current factual result: independent typed outgoing Admin/Owner families and replaceable UI/request-scoped resolver; unchanged current default origins/URLs/ingress/guards. No Stage6 security activation.
+- Created Draft [PR #318](https://github.com/iliya1947/vico-forum/pull/318), head `2cb5b9fa9c426513c9d9207d21d89b48b30c8d6e`, base current main `56358c517cd4456e4421d56e022fce70431b00c1`. Exactly five documentation files changed: PROJECT_STATE, ADMIN_PANEL, SUPER_ADMIN, HISTORY_24 and index. Historical record covers foundation scope, Lev01/Lev02 correction chain, final Mira/Lev PASS, exact-head CI/Chromium and #317 merge.
+- **Subtask 1/2 complete; STOP.** Next user `...`: subtask 2/2 — applicable docs/CI checks, correct only confirmed doc failure, mark docs PR Ready, record exact-head evidence and hand off Mira for docs-only review. No self whole-PR review, code/Stage6/SA02 changes, merge or Lev/Mark coordination.
+
 # Лира — FOUNDATION-LEV-02, подзадача 2/2 завершена (2026-11-10)
 
 - Assignment: Mira confirmed Lev finding FOUNDATION-LEV-02 in #6764287078; local correction in Ready PR #317 complete on new exact head **`d12719bc8e6b2e6368489c16f2e0efa9ef6e3605`**.
