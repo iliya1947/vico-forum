@@ -1,3 +1,21 @@
+# Лёва — актуальная задача: Admin/Super-admin foundation plan delivered
+
+**2026-11-10.** Main `e16d75dc7e2988eb06923c2d97ab5ae389bbfbac`; latest assignment / Owner scope [#6759703177](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6759703177). **[Minimal foundation plan #6759936344](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6759936344) published to Mira; Lev stops for review.** Lira/Mark unassigned, no implementation assigned by planner.
+
+Owner deferred real concealment/security activation to Stage6, superseding prior immediate hardening request#6759368876. Proposed current package only centralizes semantic administrative addressing for both Admin and Super-admin: pure public catalog/default resolver, thin replaceable UI/server accessors, existing path helpers/links/forms/redirects, build-only composition of same17 route mappings. Current literal URLs, routeIDs, guards, .data, local/CI, canonical mutations and preferences logical IDs remain unchanged. No secrets/tokens/dynamic hidden routing/anti-enumeration/gateway/bindings/logging/IP-telemetry policy or second Router.
+
+Verified11Admin+6Super-admin registrations; existing scattered constructions in admin path helpers/shell/Overview/History/Users authorization form, header fallback, Settings paths/workspace/preferences, measures paths and server redirects. Current Worker dispatch, language switcher and auth return-path helper already centralized: future adapter touchpoints, not current broad rewrite. New resolver injection substitutes producer later without passing module-global mutable state or rebuilding every form/link. Public test fixture proves UI/server consumers honor seam, not real hidden routing.
+
+Router config pins8.3.1/initial. Official discovery docs + changelog + upstream#15395/#15489 checked: fixes in8.4.0; latest checked release8.5.1. Foundation keeps dependency/mode unchanged; actual compatible upgrade and discovery/metadata/ingress/hydration/transport protection acceptance belong to separate Stage6 package. Does not claim concealment from centralizing paths or enabling lazy.
+
+Full plan defines minimal files/boundaries, unchanged-path/authority checks, meaningful resolver-substitution test, existing local Worker/PG/Chromium flows; no new schema/migration/grants or production gate. Source planning only; no implementation/build/runtime acceptance performed. Evidence `/workspace/work/admin-routing-plan-evidence/`: FOUNDATION_PLAN.md, official docs HTML/text, upstream PR snapshots, source-evidence.json (31 source hashes,17-route inventory); checkout `/workspace/work/admin-routing-plan` clean. No current-scope foundation blocker/conflict established.
+
+**SA02 is next product package after foundation decision, not blocked by production protection. Its earlier plan is NOT Ready.** SA02-PLAN-MIRA-01 remains open; Owner/Mira correction#6759312425 requires bounded/coalesced retained attempts with useful authoritative user and trusted network-source attribution/first/last/count, no per-request permanent row and no single count-only anonymous bucket. Earlier SA02 blanket IP/UA exclusion is superseded where it conflicts with that decision. Current foundation does not design/implement this separate correction. SA03+/lifecycle/visual polish remain outside scope; Stage6 external activation paused; no last-manager/count/recovery rule.
+
+Ниже полностью сохранён прежний planning/review context; его оперативные назначения superseded последней foundation task выше.
+
+---
+
 # Лёва — актуальная задача: SA-02 bounded plan delivered
 
 **2026-11-10.** Current main `e16d75dc7e2988eb06923c2d97ab5ae389bbfbac`. SA01 implementation#313 + factual docs#314 merged/closed. Mira assignment [#6758525820](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6758525820) — planning only. **[Bounded SA02 plan #6758838112](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6758838112) published; returned to Mira for scope/fit review.** Lev stops; Lira/Mark unassigned. No implementation assignment by planner.
