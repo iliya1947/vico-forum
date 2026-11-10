@@ -5,7 +5,7 @@ import {
   createHyperdriveAuthRuntime, type BetterAuthEnvironment, type AuthCreationObserver,
 } from "../../app/auth/auth.server";
 import { RequestAuthFactCollector } from "../../app/observability/auth-fact-collector.server";
-import { PostgresAuthFactWriter, type AuthTransitionFact } from "../../db/owner-auth-facts";
+import { MAX_AUTH_FACTS_PER_REQUEST, PostgresAuthFactWriter, type AuthTransitionFact } from "../../db/owner-auth-facts";
 import { PostgresOwnerSystemMonitoring } from "../../db/owner-system-monitoring";
 
 const url = process.env.DATABASE_URL!;
@@ -136,6 +136,60 @@ describe("SA02 actual Better Auth v1.7.7 committed-create facts", () => {
       ["sa02-hook-failure@example.test"]);
     expect(result.rows).toHaveLength(1);
     expect((await allFacts()).filter(e=>e.target_user_id===result.rows[0].id)).toHaveLength(0);
+  });
+
+  it("preserves trusted occurrence time when later async commits happen in reverse order",async()=>{
+    const firstTime=new Date(Date.now()-120000);
+    const secondTime=new Date(Date.now()-60000);
+    const gaps:number[]=[];
+    const makeCollector=()=>new RequestAuthFactCollector(()=>({
+      append:(fact,at)=>factWriter.append(fact,at),
+      close:async()=>undefined,
+    }),count=>gaps.push(count));
+    const first=makeCollector();
+    const second=makeCollector();
+    first.capture({kind:"account.created",userId:"time-first"},firstTime);
+    second.capture({kind:"account.created",userId:"time-second"},secondTime);
+    await second.flush();
+    await first.flush();
+    const stored=(await client.query<{target_user_id:string;occurred_at:Date;recorded_at:Date}>(
+      "select target_user_id,occurred_at,recorded_at from owner_events "+
+      "where source='auth' and target_user_id in ('time-first','time-second') "+
+      "order by occurred_at desc")).rows;
+    expect(stored.map(row=>row.target_user_id)).toEqual(["time-second","time-first"]);
+    expect(stored[0].occurred_at.toISOString()).toBe(secondTime.toISOString());
+    expect(stored[1].occurred_at.toISOString()).toBe(firstTime.toISOString());
+    expect(stored[0].recorded_at.getTime()).toBeLessThanOrEqual(
+      stored[1].recorded_at.getTime());
+    expect(stored.every(row=>row.recorded_at>row.occurred_at)).toBe(true);
+    expect(gaps).toEqual([]);
+    await expect(factWriter.append({kind:"account.created",userId:"invalid-time"},
+      new Date(Number.NaN))).rejects.toThrow("occurrence time");
+  });
+
+  it("caps the request-local auth queue and reports overflow rather than unbounded appends",async()=>{
+    const gaps:number[]=[];
+    const saved:Array<{fact:AuthTransitionFact;at:Date|undefined}>=[];
+    let closed=0;
+    const collector=new RequestAuthFactCollector(()=>({
+      append:async (fact,at)=>{
+        saved.push({fact,at});
+        return {id:"test-sink-id",inserted:true};
+      },
+      close:async()=>{closed++;},
+    }),count=>gaps.push(count));
+    for(let n=0;n<100;n++) collector.capture({
+      kind:"auth.sessionCreated",userId:"bounded-user",sessionId:"bounded-session-"+n,
+    });
+    await collector.flush();
+    await collector.flush();
+    expect(saved).toHaveLength(MAX_AUTH_FACTS_PER_REQUEST);
+    expect(saved.every(row=>row.at instanceof Date &&
+      Number.isFinite(row.at.getTime()))).toBe(true);
+    expect(new Set(saved.map(row=>row.fact.kind==="auth.sessionCreated"
+      ? row.fact.sessionId : "")).size).toBe(MAX_AUTH_FACTS_PER_REQUEST);
+    expect(gaps.reduce((a,b)=>a+b,0)).toBe(100-MAX_AUTH_FACTS_PER_REQUEST);
+    expect(closed).toBe(1);
   });
 
   it("does not mislabel auth records as SA01 System events before source-aware SA02 History", async () => {
