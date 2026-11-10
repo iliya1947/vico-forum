@@ -38,6 +38,7 @@ Related sources of truth:
 - [PROJECT.md](../PROJECT.md) — product and architecture baseline;
 - [AUTHORIZATION.md](auth/AUTHORIZATION.md) — authoritative application authorization;
 - [SETTINGS.md](SETTINGS.md) — Settings surfaces, Owner-only Forum & roles and registration policy;
+- [SUPER_ADMIN.md](SUPER_ADMIN.md) — separate exact-Owner-only Super-admin and delivered SA-01 boundaries;
 - [UI_UX_PASS.md](UI_UX_PASS.md) — shared presentation, localization and acceptance;
 - [PROJECT_STATE.md](../PROJECT_STATE.md) — factual implementation state;
 - [ROADMAP.md](../ROADMAP.md) — development and release boundaries.
@@ -84,9 +85,12 @@ Three boundaries remain distinct:
   private explanations into the global panel.
 - **Contextual administration** exposes applicable Quick actions near an object. It shares
   authoritative operations with the global panel, not a second administration backend.
-- **Future super-admin UI** is a separately designed owner-only surface. Account deletion,
-  deeper/full audit, infrastructure, deployments, secrets and provider administration are
-  outside the ordinary panel. Do not implement foundations solely for that future UI.
+- **Super-admin** is a separate exact server-bound Owner-only surface. SA-01 is already
+  implemented in the repository: System Monitoring, adjacent per-monitor History, a
+  source-aware global Event log foundation, and an inert Stage-6 Infrastructure placeholder.
+  The unified privileged profile and account deactivation are **not delivered** in SA-01;
+  live infrastructure, deployments, secrets and providers remain Stage-6 work. Ordinary
+  Admin permissions never grant access to this separate Owner surface.
 
 Reserved Help & solutions category/service-section identities retain their existing rules.
 Administrative browsing must not turn the internal service section into an ordinary public
@@ -417,7 +421,9 @@ nor the topic view offers them an own solved-confirmation.
 
 Ordinary History answers who acted, what changed, which object was affected, when, the
 applicable reason and minimal useful change context. It is distinct from post revisions,
-security-upload events, notification inboxes and the future full owner audit surface.
+security-upload events, notification inboxes and the separate Owner-only
+Monitoring/Event log: SA-01 provides its System and native-Admin-History projection
+foundation, not a complete cross-domain full audit.
 
 The following matrix defines coverage to connect with the relevant implementation packages.
 AP-03 records the authorization-management rows. AP-05 connects the existing topic/Help

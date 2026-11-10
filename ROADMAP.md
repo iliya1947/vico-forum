@@ -11,6 +11,7 @@ Source of truth:
 - текущее фактическое состояние — `PROJECT_STATE.md`;
 - application authorization — `docs/auth/AUTHORIZATION.md`;
 - обычная админ-панель и её bounded delivery contract — `docs/ADMIN_PANEL.md`;
+- отдельный exact-Owner-only Super-admin и границы SA-01 — `docs/SUPER_ADMIN.md`;
 - Settings product/runtime contract — `docs/SETTINGS.md`;
 - мультиязычность и переводы — `TRANSLATION_ARCHITECTURE.md` и `docs/translation/*`;
 - database rollout/operations — `docs/database/*`;
@@ -148,6 +149,18 @@ account-wide «Show me online», по умолчанию ON, и серверны
 скрытого пользователя из публичного списка/счётчика и heartbeat.
 Текущий Settings contract — `docs/SETTINGS.md`. Реальная Google/Owner
 binding и external acceptance остаются Stage 6.
+
+**Super-admin SA-01 реализован и merged в repository/local-CI** после Settings:
+отдельный exact-Owner-only shell с двумя входами, минимальный реальный Overview,
+System Monitoring с adjacent History, общий Event log foundation, retained
+Owner events/observations (migration `0062`), безопасная best-effort 5xx
+telemetry и честный Infrastructure / Stage-6 placeholder.
+Утверждённая структура всех 13 Monitoring областей и contextual
+state → History → applicable actions закреплена в `docs/SUPER_ADMIN.md`.
+Остальные области, унифицированный профиль, деактивация и SA-02+
+ещё не доставлены и требуют отдельных bounded реализаций.
+Visual polish и real Google/Owner binding, infrastructure/production
+acceptance не подтверждены этим merge; Stage 6 остаётся paused.
 
 Владелец отдельно утвердил target-product подход: UI проектируется как целевой Vico Forum, а не
 только как косметика поверх текущего MVP. Небольшое self-contained frontend behavior может
@@ -475,7 +488,8 @@ infrastructure diagnostics в production прекращаются; рисков�
   reply/quote relationships без tree layout и полноценный editor/code presentation;
 - целевой Light/Dark UX с first-use system preference и persisted manual choice.
 
-Reputation, полный owner-only audit, social-network profile mechanics и другие
+Reputation, полный owner-only audit **за пределами доставленной SA-01
+Monitoring/Event-log foundation**, social-network profile mechanics и другие
 возможности, которые владелец отдельно не утвердил, не входят в обязательный объём без нового
 продуктового решения. Система жалоб утверждена отдельно и ведётся по собственному плану; ordinary-admin
 scope, включая временные/постоянные administrative measures и историю значимых административных действий, зафиксирован в

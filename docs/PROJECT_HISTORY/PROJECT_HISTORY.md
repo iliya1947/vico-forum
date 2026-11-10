@@ -34,6 +34,7 @@ Git history и PR остаются первичными историческим
 20. [`PROJECT_HISTORY_20.md`](./PROJECT_HISTORY_20.md) — 2026-11-08: Settings SET-04 Administrator preferences, correction cycles SET04-MIRA-01/SET04-LEV-01, final reviews, CI/Chromium и merge #307.
 21. [`PROJECT_HISTORY_21.md`](./PROJECT_HISTORY_21.md) — 2026-11-08: Settings SET-05 Account & security, SET05-MIRA-01/02 и SET05-LEV-01 corrections, final coordinator/technical PASS, CI/Chromium и merge #309.
 22. [`PROJECT_HISTORY_22.md`](./PROJECT_HISTORY_22.md) — 2026-11-08: Settings SET-06 Privacy, migration 0061, SET06-MIRA-01 correction, final coordinator/independent PASS, CI/Chromium и merge #311.
+23. [`PROJECT_HISTORY_23.md`](./PROJECT_HISTORY_23.md) — 2026-11-10: Super-admin SA-01, migration 0062, Owner Monitoring/History/Event log foundation, SA01-MIRA-01/SA01-LEV-01 corrections, final PASS, CI/Chromium и merge #313.
 
 ## Архивные снимки
 

@@ -1,6 +1,6 @@
 # PROJECT_STATE.md
 
-Последнее обновление: 2026-11-08
+Последнее обновление: 2026-11-10
 
 ## Назначение
 
@@ -14,6 +14,7 @@
 - [`ROADMAP.md`](ROADMAP.md) — последовательность этапов до production;
 - [`docs/EDITOR.md`](docs/EDITOR.md) — Editor 2.0;
 - [`docs/ADMIN_PANEL.md`](docs/ADMIN_PANEL.md) — обычная админ-панель;
+- [`docs/SUPER_ADMIN.md`](docs/SUPER_ADMIN.md) — отдельный exact-Owner-only Super-admin;
 - [`docs/SETTINGS.md`](docs/SETTINGS.md) — Settings и управление регистрацией;
 - [`docs/moderation/COMPLAINTS.md`](docs/moderation/COMPLAINTS.md) — система жалоб;
 - [`docs/auth/AUTHORIZATION.md`](docs/auth/AUTHORIZATION.md) — dynamic authorization;
@@ -29,7 +30,7 @@ Vico Forum находится в pre-release разработке.
 
 - Stage 0–5 завершены в repository/local-CI path.
 - Текущий standalone product priority по `ROADMAP.md` — UI/UX product pass.
-- Ordinary Admin Panel AP-01–AP-11, owner/authorization redesign Stage 1–2 и Settings SET-01–SET-06 реализованы в repository/local-CI. Complaints ведутся отдельно.
+- Ordinary Admin Panel AP-01–AP-11, owner/authorization redesign Stage 1–2, Settings SET-01–SET-06 и Super-admin SA-01 реализованы в repository/local-CI. Следующие SA-пакеты не реализованы. Complaints ведутся отдельно.
 - Stage 6 external integration поставлен владельцем на паузу и не продолжается без отдельного указания.
 - Публичный production release не выполнен.
 
@@ -44,7 +45,7 @@ Vico Forum находится в pre-release разработке.
 - PostgreSQL 17 + Drizzle ORM `0.45.2`;
 - Better Auth `1.7.7` + PostgreSQL Drizzle adapter;
 - generic `/:locale/*`, runtime `LocaleRegistry`, BCP-47, LTR/RTL и request-scoped i18next;
-- repository migration history: `0000`–`0061`;
+- repository migration history: `0000`–`0062`;
 - externally accepted migration evidence: `0000`–`0020`.
 
 ## Реализованный продукт
@@ -148,6 +149,27 @@ application-реализация для bootstrap identity не требуетс
 и `docs/ADMIN_PANEL.md`. Реальная Google-настройка, binding и deployed acceptance
 остаются Stage 6.
 
+### Super-admin SA-01
+
+В `main` реализован bounded **SA-01** по `docs/SUPER_ADMIN.md`: отдельный
+`/:locale/super-admin` только для exact server-bound Owner, входы из обычной
+административной области и Owner profile/account navigation, минимальный
+Overview на реальных данных, **System Monitoring** (Worker runtime, PostgreSQL
+dependency/version и только записанные 5xx), смежная History каждого System
+monitor и общий source-aware Event log из retained System событий/наблюдений
+и существующего Admin History без дублирования исходных записей.
+
+Миграция `0062` добавила append-only таблицы Owner events и monitor
+observations; web-runtime имеет ограниченные SELECT/INSERT grants. Безопасная
+best-effort 5xx telemetry, bounded observations, авторизация и History
+проверены в repository/local-CI на PostgreSQL 17 и built Worker/Chromium.
+Инфраструктурный раздел пока только **Under development / Stage 6**.
+Остальные Monitoring области из утверждённой структуры, единый профиль с
+Admin/Owner разделами, деактивация, новые contextual actions и SA-02+
+**не реализованы**. Отдельный Owner role/permission/RBAC не добавлен.
+Реальная Google/Owner binding, production rollout и deployed acceptance
+не выполнялись; visual polish остаётся отдельным UI/UX этапом.
+
 ### Complaints
 
 По `docs/moderation/COMPLAINTS.md` реализована функциональность Complaints Packages 1–6 в repository/local-CI path:
@@ -209,7 +231,7 @@ External topology является mutable state и должна перепро�
 ## Актуальные незавершённые продуктовые границы
 
 - UI/UX product pass ещё требует финального closeout и обязательной real-runtime product/visual acceptance по `docs/UI_UX_PASS.md`.
-- В `main` ordinary Admin Panel AP-01–AP-11, owner/authorization redesign Stage 1–2 и Settings SET-01–SET-06 реализованы в repository/local-CI. Реальные Google/Owner binding и production acceptance остаются Stage 6.
+- В `main` ordinary Admin Panel AP-01–AP-11, owner/authorization redesign Stage 1–2, Settings SET-01–SET-06 и Super-admin SA-01 реализованы в repository/local-CI. Остальные SA-пакеты и Monitoring области ещё не доставлены. Реальные Google/Owner binding и production acceptance остаются Stage 6.
 - Complaints integration/closeout покрыт repository/local-CI проверками; external/deployed acceptance Complaints не выполнялась.
 - Email verification/password recovery остаются отложенными.
 - Editor drafts/autosave остаются отложенными.
@@ -217,7 +239,7 @@ External topology является mutable state и должна перепро�
 
 ## Ближайший маршрут
 
-1. Продолжать утверждённую bounded product-разработку без превращения обычных PR в external rollout.
+1. Продолжать утверждённую bounded product-разработку, включая дальнейшие SA-пакеты только по отдельному назначению после factual SA-01 closeout, без превращения обычных PR в external rollout.
 2. Сохранить реализованные Settings SET-01–SET-06 и Owner-only authorization/registration mutation policy; завершение repository/local-CI не считать deployed acceptance. Реальную Google/Owner binding acceptance оставить Stage 6. Complaints продолжать по его профильному контракту/служебному каналу.
 3. Довести UI/UX product pass до финальной real-runtime acceptance.
 4. Возобновлять Stage 6 external integration только по отдельному указанию владельца и по `docs/database/*`.
