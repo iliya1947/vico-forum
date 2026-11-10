@@ -6266,13 +6266,13 @@
           "name": "count",
           "type": "bigint",
           "nullable": false,
-          "defaultSha256": "PENDING"
+          "defaultSha256": "6b86b273ff34fce19d6b804eff5a3f5747ada4eaa22f1d49c01e52ddb7875b4b"
         },
         {
           "name": "saturated_count",
           "type": "boolean",
           "nullable": false,
-          "defaultSha256": "PENDING"
+          "defaultSha256": "fcbcf165908dd18a9e49f7ff27810176db8e9f63b4352213741664245224f8aa"
         }
       ],
       "primaryKeys": [
@@ -6310,14 +6310,14 @@
             "first_occurred_at",
             "last_occurred_at"
           ],
-          "definitionSha256": "PENDING"
+          "definitionSha256": "7b7036eb972f9078b11b4e84984ae08c0a614a16a5078559a9eff62ef71d1ef7"
         },
         {
           "name": "owner_attempt_patterns_epoch_check",
           "columns": [
             "recording_epoch_start"
           ],
-          "definitionSha256": "PENDING"
+          "definitionSha256": "5364eb5506eae157ed3cbbf85bef1413a282eabc333a1b71a8c79430bbaaf233"
         },
         {
           "name": "owner_attempt_patterns_kind_check",
@@ -6328,7 +6328,7 @@
             "outcome",
             "surface"
           ],
-          "definitionSha256": "PENDING"
+          "definitionSha256": "a46dfc8a9e8e55b153718d5e5a800b8c73050f43559d3c046d9ccca45f880077"
         },
         {
           "name": "owner_attempt_patterns_network_check",
@@ -6336,7 +6336,7 @@
             "network_ip",
             "network_quality"
           ],
-          "definitionSha256": "PENDING"
+          "definitionSha256": "c0d15cdba7bc7b9c5bf36f23d6b291126562be371424d1c0493839f050d7e12f"
         },
         {
           "name": "owner_attempt_patterns_source_check",
@@ -6345,7 +6345,7 @@
             "network_ip",
             "pool"
           ],
-          "definitionSha256": "PENDING"
+          "definitionSha256": "2e8eae2a9a07231c5568f0e18c8cb7801ba3bd7981244ea6d08eff3553a89882"
         }
       ],
       "indexes": [
@@ -6411,7 +6411,7 @@
           "name": "used",
           "type": "integer",
           "nullable": false,
-          "defaultSha256": "PENDING"
+          "defaultSha256": "5feceb66ffc86f38d952786c6d696c79c2dbc239dd4e91b46729d73a27fb57e9"
         },
         {
           "name": "capacity",
@@ -6435,13 +6435,13 @@
           "name": "count",
           "type": "bigint",
           "nullable": false,
-          "defaultSha256": "PENDING"
+          "defaultSha256": "5feceb66ffc86f38d952786c6d696c79c2dbc239dd4e91b46729d73a27fb57e9"
         },
         {
           "name": "saturated_count",
           "type": "boolean",
           "nullable": false,
-          "defaultSha256": "PENDING"
+          "defaultSha256": "fcbcf165908dd18a9e49f7ff27810176db8e9f63b4352213741664245224f8aa"
         }
       ],
       "primaryKeys": [
@@ -6463,14 +6463,14 @@
             "first_occurred_at",
             "last_occurred_at"
           ],
-          "definitionSha256": "PENDING"
+          "definitionSha256": "968f74a5dc797be4394080895fee27a896cc2fc2bfd1fc7a52413e5a5e1d69fa"
         },
         {
           "name": "owner_attempt_telemetry_state_epoch_check",
           "columns": [
             "recording_epoch_start"
           ],
-          "definitionSha256": "PENDING"
+          "definitionSha256": "5364eb5506eae157ed3cbbf85bef1413a282eabc333a1b71a8c79430bbaaf233"
         },
         {
           "name": "owner_attempt_telemetry_state_quota_check",
@@ -6479,14 +6479,14 @@
             "slot",
             "used"
           ],
-          "definitionSha256": "PENDING"
+          "definitionSha256": "02ecc91ed8391f8b6085d2b739dea730189949287f432a9d696c754a0118b5d0"
         },
         {
           "name": "owner_attempt_telemetry_state_slot_check",
           "columns": [
             "slot"
           ],
-          "definitionSha256": "PENDING"
+          "definitionSha256": "7439e95936dd2aa2f868a3ff3678048f50debde48b2b869c36732535dc3f1348"
         }
       ],
       "indexes": [
