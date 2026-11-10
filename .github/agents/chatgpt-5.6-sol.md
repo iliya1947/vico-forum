@@ -1,5 +1,21 @@
 # Мира — безопасность Vico Forum
 
+## 2026-11-10 — Block D / D10 Complaints mutations/replay/concurrency audit
+
+1. Target: main `e279cb6c032a489a9044ca1191407df887c364b4`.
+2. Verdict: **PASS — 0 current-scope defects**.
+3. Session actor/path target authority, same-origin and bounded URL-encoded mutation boundaries hold. Extra ignored fields on priority/activity cannot select actor or Case.
+4. Actor+operation unique event key plus payload fingerprint protects exact replay; lifetime reporter+target uniqueness independently prevents duplicate reports.
+5. Submission lock order is content→actor→Case; reviewer commands actor→Case. Native regressions prove stale-edit rejection, retained-evidence ordering, one-open-Case convergence and rate-limit last-slot serialization.
+6. Decision is immutable one-per-Case and resolved through version CAS. Appeal resolution never rewrites it; effective outcome is derived.
+7. Appeal ordinal 1–3 + one-pending unique index and Case locking prevent competing pending Appeals; concurrent submit/resolve regressions preserve one lifecycle result.
+8. Priority settings are complete-map version CAS; priority override is Case-version/replay protected. Activity lease is separately serialized and does not alter Case version.
+9. Decision/Appeal notifications share the mutation transaction and have recipient/entity uniqueness. Decision replay preserves read state; Appeal fanout failure explicitly rolls back resolution/event/fanout.
+10. Participant result/Appeal is membership + current-side eligibility bound and intentionally independent of reviewer permission/AP-10 administrative suppression.
+11. AP-10 blocks new reviewer writes both in effective authorization and repository transaction admission; committed repository replay remains idempotent.
+12. Complaint lifecycle does not write Admin History/measures/Help state. Connected regression proves shared Quick actions retain their own permission and History.
+13. No alternate production Complaint mutation backend found. No remediation handoff. Next D8.
+
 ## 2026-11-10 — Block D / D9 Complaints reviewer privacy/capability audit
 
 1. Target: main `e279cb6c032a489a9044ca1191407df887c364b4`.
