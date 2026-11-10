@@ -1,3 +1,24 @@
+# Лёва — актуальный checkpoint: SA02 replacement plan delivered (2026-11-10)
+
+**Active result:** whole replacement bounded SA02 plan [#6767391552](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6767391552), current main `e279cb6c032a489a9044ca1191407df887c364b4`, assignment#6766904312. **Await Mira scope/fit review. Lev finished/stopped; Lira/Mark unassigned.**
+
+- Routing implementation#317/docs#318 merged/closed; old foundation independent review results are historical. SA02-PLAN-MIRA-01 pending review; no implementation PR/head.
+- New plan supersedes6758838112 entirely, incorporates Owner#6759312425.7 Accounts/Security monitors, actual current readers, adjacent/global History/Overview; no SA03 profile/deactivation or generic security framework.
+- Source attribution: authoritative known actor internal ID + trusted normalized network IP/provenance/quality when available, operation/outcome/status/first/last/count. No guessed email identity or secrets/raw requests. CF subrequests/PseudoIPv4 caveats explicit; local fixtures not live platform acceptance.
+- **Proposed cap/no-eviction policy, not accepted:**65,536 lifetime attributed source-pattern rows, two32,768 pools(authenticated/anonymous), finite unknown/overflow/gap state. Repeats update same row; no TTL/reset/eviction/ever-growing time buckets/per-request gap rows. At saturation retained sources still update; new source patterns may be omitted, visibly counted as overflow with incomplete attribution. Do not pretend this preserves infinitely many sources; Mira must review this specific tradeoff.
+- Exact account/method/password/session facts stay separate owner_events, never aggregated into attempt counters. Real-delete proof vs pre-read hook/no-op caveat, safe dedup, raw redirects not auto-success/failure, telemetry/proof errors never alter auth decision/cookies/status.
+- Two new mutable relations owner_attempt_patterns + owner_attempt_telemetry_state; atomic increments/serialized quota, no ambiguous-commit blind retries. New auth/access counters lifetime recorded, not precise24h from first/last. Existing Owner tables append-only; native attachment/registration events projected without copies; source-aware precision-safe cursors and stable aggregate pagination.
+- Current runtime grants scoped SELECT/INSERT/UPDATE only new telemetry tables/no DELETE, localization unchanged; future writer/reader role isolation under315. Forward0063 if main still0062, normal schema/metadata/manifest/provisioning tests; no production provisioning.
+- Latest315 security input head `e394f1586b4f857f2160e291a9b8fb3915067ead`, plan blob0b4fee79a10dcf6f532f3758305d0896f88a7d88 unchanged; full315 plan/workflow/communication read. Future Owner Worker/Access/isolated Owner auth/Passkey/DB/deploy and external activation separate; no315 write.
+- Actual installed better-auth/drizzle-adapter1.7.7 source verified with official hooks/database docs; Cloudflare IP reference checked. No dependency upgrade/Passkey implementation. Existing merged AdministrativeRouting reused for typed new destinations only.
+- Evidence /workspace/work/sa02-replan-evidence/SA02_REPLACEMENT_PLAN.md, official snapshots, SOURCE_MANIFEST.json, SECURITY_REFERENCE_315.json. Clean checkout /workspace/work/sa02-replan on main e279cb6...; code/migrations/tests/build/runtime SA02 acceptance NOT performed.
+- **Next recipient Mira** for entire replacement-plan review, especially useful attribution+cap/saturation vs indefinite retention. Do not assign Lira, implement SA02, modify master approved plan as accepted, merge or deploy before coordinator continuation.
+- “...” continues current task else checks251; service publication authorized, Owner alone merges; no last-admin/manager-count/recovery rule.
+
+Earlier context retained verbatim below; superseded assignments/plans/findings are history.
+
+---
+
 # Лёва — актуальный checkpoint: routing foundation independent PASS (2026-11-10)
 
 **PR317 exact head `d12719bc8e6b2e6368489c16f2e0efa9ef6e3605`, base/main `24dfa9f51892490fae346f6079d6aa7fcfec1aa1`: independent whole-PR PASS,0 confirmed current-scope defects. FOUNDATION-LEV-01/-02 CLOSED.** [Result/handoff#6765085755](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6765085755).
