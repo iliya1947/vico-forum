@@ -9,6 +9,7 @@ import {
   type BetterAuthEnvironment,
 } from "../../app/auth/auth.server";
 import { PostgresAuthFactWriter, type AuthTransitionFact } from "../../db/owner-auth-facts";
+import { AuthCreationEvidence } from "../../app/auth/auth-creation-evidence";
 
 const url = process.env.DATABASE_URL!;
 if (!url || !["127.0.0.1", "localhost"].includes(new URL(url).hostname) ||
@@ -56,7 +57,10 @@ async function accounts(){
   )).rows;
 }
 async function authFactory(actor:string|null=null,transaction=false) {
-  const base=createAuth(database,env,undefined,undefined,undefined,observer(actor));
+  const sink=observer(actor);
+  const proof=new AuthCreationEvidence(database,
+    fact=>sink.capture(fact),id=>sink.trustedActorFor(id),()=>undefined);
+  const base=createAuth(database,env,undefined,undefined,undefined,sink,undefined,proof);
   const auth=transaction ? betterAuth({
     ...betterAuthOptions(database,env),
     database:drizzleAdapter(database,{provider:"pg",schema:betterAuthSchema,transaction:true}),
@@ -75,7 +79,17 @@ async function authFactory(actor:string|null=null,transaction=false) {
         exp:2000000000,iat:1900000000,jti:"synthetic-jti"},
     }),
   });
-  return auth;
+  // Mirror the production request's after-operation proof flush, with the
+  // genuine Better Auth handler and PostgreSQL adapter unchanged.
+  return new Proxy(auth,{
+    get(target,property,receiver){
+      if(property!=="handler") return Reflect.get(target,property,receiver);
+      return async (request:Request)=>{
+        try{return await auth.handler(request);}
+        finally{await proof.flush();}
+      };
+    },
+  });
 }
 async function initiate(auth:Awaited<ReturnType<typeof authFactory>>,
   path:"sign-in/social"|"link-social",headers:Record<string,string>={}) {
