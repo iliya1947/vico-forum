@@ -384,6 +384,39 @@
 15. The Settings link visible in Admin shell is not an Admin-privilege expansion: general Settings entry is independently authenticated by its own contract, while Administrator/Owner-only settings retain separate guards.
 16. No D1 finding confirmed.
 
+
+## Block D / D7 — Attention mode/group cross-capability isolation audit
+
+1. Audit target: current main `e279cb6c032a489a9044ca1191407df887c364b4`.
+2. Verdict: **PASS — 0 confirmed current-scope Attention cross-capability defects**.
+3. `/:locale/attention` requires an authenticated session, resolves the seven current Attention capability flags server-side and never derives authority from requested `mode` or `group`.
+4. Mode isolation is explicit:
+   - Signals needs at least one Help-review capability;
+   - Security requires `forum.attachmentSecurity.read`;
+   - Complaints group1/group3 require `forum.complaint.review`;
+   - Complaints group2 requires `forum.complaint.appeal.review`;
+   - priority-only actors are redirected to the independently protected priority-settings route.
+5. Direct requests for a different mode fail 403 before that mode's private storage is read. Existing route regressions prove review-only actors cannot read Signals/Security, Security-only actors read no Complaint queue, and unrelated/identity-only permissions do not imply Complaint review.
+6. Signals uses a shared workspace admission, but the requested group is not trusted as data authority. The loader computes `visibility.signalKinds` and `visibility.appeals` only from current permissions; `readHelpAttentionCases()` filters SQL by those kinds, returns empty for a group not present in the visibility set, and returns duplicate appeals only when `visibility.appeals` is true. Counts use the same visibility.
+7. Therefore a needs-details-only actor requesting Duplicate/Appeals, or a solution-moderator requesting a different Help group, cannot pivot into data protected by another Help-review permission.
+8. Complaint priority management is independent. `/:locale/attention/complaints/settings` loader/action both require current `forum.complaint.priority.manage`; Case review alone does not grant it, while priority-only authority does not grant Case/Appeal/Signals/Security reads.
+9. Complaint direct child routes do not trust a prior Attention page:
+   - triage/review/history/context/evidence independently call `complaintReviewer(..., forum.complaint.review)`;
+   - Appeal review/context/evidence independently require `forum.complaint.appeal.review`;
+   - priority settings independently require `forum.complaint.priority.manage`.
+10. Existing child-route regression proves guessed Case/Appeal context/evidence URLs are denied before private repository/R2 access when effective permission is absent.
+11. `forum.complaint.reporterIdentity.read` is never an admission permission by itself; it remains additive to an already authorized Case/Appeal projection.
+12. Header/Administrator-preference destinations are presentation only. `allowedAttentionEntries()` does not replace route checks; direct child URLs re-resolve current authority.
+13. AP-10 family isolation is preserved by the request-local effective-authorization wrapper:
+   - `admin.forum` filters only Forum moderation family;
+   - `admin.complaints` filters review, appeal-review, priority-manage and reporter-identity;
+   - `admin.security` filters only attachment-security read.
+14. Native PostgreSQL regressions prove `admin.complaints` blocks all Complaint reviewer/settings commands while preserving unrelated Forum/participant rights, and `admin.security` blocks Security access while leaving Forum/Complaint families independent. Lift/expiry and next-request refresh restore only otherwise granted authority.
+15. Complaint participant appeal/result operations remain outside `admin.complaints` administrative suppression as documented; reviewer resolution remains blocked. This separation does not grant reviewer authority to participants.
+16. Query manipulation cannot select the actor; all child actions derive actor from the current session. Same-origin and command-specific input checks remain on mutation routes.
+17. `security&group=group2/group3` is an inert accepted presentation state in the current route: it performs no Complaint/Signal/Security-event read beyond the Security permission gate and therefore creates no cross-capability exposure. The advertised Security destination remains only `attachments`; this is not a current security finding.
+18. No D7 finding confirmed.
+
 ## Координация
 
 1. #315 хранит решения, задачи, review findings и прогресс всего направления безопасности.
