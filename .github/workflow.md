@@ -10,4 +10,5 @@
 - Required correction property: bound attacker-controlled cardinality without permanent admission poisoning; future source attribution must recover through a bounded renewal mechanism while historical retained data can remain under the approved indefinite-retention policy. No one-row-per-request persistence and no silent loss.
 - Source input #315 head `e394f1586b4f857f2160e291a9b8fb3915067ead`; Owner Worker/Access/isolated Owner auth/DB-deploy/route-concealment activation remain separate Stage 6 work.
 - **Next recipient: Lev — revise only the bounded-attempt retention/admission part and dependent History/acceptance wording, publish corrected plan in #251, then stop.**
-- Deferred after current Super-admin plan: separate Owner-only History/journal occupancy + per-journal archive download/clear management phase; **not current SA-02 scope**.\n- Lira/Mark unassigned. No SA02 implementation PR/head, code/migration/runtime acceptance or implementer assignment.
+- Deferred after current Super-admin plan: separate Owner-only History/journal occupancy + per-journal archive download/clear management phase; **not current SA-02 scope**.
+- Lira/Mark unassigned. No SA02 implementation PR/head, code/migration/runtime acceptance or implementer assignment.
