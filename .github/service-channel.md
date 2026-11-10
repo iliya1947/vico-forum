@@ -2938,3 +2938,17 @@ Mira reviewed Lev replacement plan #6767391552 against current main `e279cb6c032
 5. Remaining plan boundaries passed Mira scope/fit review: #315 stays Stage-6 architecture input; current AdministrativeRouting is reused; no SA03+, privileged profile/deactivation, production provisioning or dependency upgrade is pulled into SA-02.
 
 **Handoff:** Lev revises only the attempt retention/admission model and directly dependent History/acceptance wording, republishes corrected plan in #251 and stops. Lira/Mark remain unassigned; no implementation PR exists.
+
+
+## 2026-11-10 — Owner decision: History storage management is post-current-plan work
+
+Owner fixed an additional Super-admin requirement, explicitly **after the currently approved Super-admin implementation plan is complete**.
+
+Future separate phase:
+1. exact-Owner-only Monitoring subsection for occupancy of every real History/journal storage source;
+2. one truthful occupancy indicator per journal/source;
+3. next to each indicator: **Download archive** for that journal and **Clear history** for that journal;
+4. no invented percentage when a storage source has no meaningful fixed capacity;
+5. archive/clear mechanics and destructive-operation protection are deferred to that phase's technical planning.
+
+This requirement **must not be folded into SA-02 or the remaining current SA packages**. Current SA retention/admission planning continues unchanged except for SA02-PLAN-MIRA-02 already assigned to Lev. The future History-storage phase supersedes the no-deletion target only when it is separately started and implemented.
