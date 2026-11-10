@@ -70,9 +70,9 @@ describe("SA02 actual Better Auth v1.7.7 committed-create facts", () => {
       'select id from "user" where email=$1',[email])).rows[0];
     expect(user?.id).toBeTruthy();
     const account = (await client.query<{id:string}>(
-      'select id from account where "userId"=$1 and "providerId"=$2',[user.id,"credential"])).rows[0];
+      'select id from account where user_id=$1 and provider_id=$2',[user.id,"credential"])).rows[0];
     const session = (await client.query<{id:string}>(
-      'select id from session where "userId"=$1',[user.id])).rows[0];
+      'select id from session where user_id=$1',[user.id])).rows[0];
     const persisted = await allFacts();
     expect(persisted).toHaveLength(3);
     expect(persisted.map(e=>e.kind)).toEqual([
