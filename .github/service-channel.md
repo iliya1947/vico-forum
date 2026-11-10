@@ -187,6 +187,17 @@
 11. Current public Google credentials/provider behavior remains externally unverified because Stage 6 is paused. **Информация не проверена** for live-provider/deployed compatibility; repository and upstream source establish the dependency exposure and correction target.
 12. B11 adds no second current takeover finding beyond the already-recorded Block-B defects.
 
+
+## Block C — Authorization & privilege escalation audit prepared
+
+1. Audit target: current main `e279cb6c032a489a9044ca1191407df887c364b4`.
+2. Source-of-truth `docs/auth/AUTHORIZATION.md` и current authorization runtime/repository surfaces сверены перед матрицей.
+3. Block C ограничен общим authorization engine: Owner binding, effective resolution, management writes, elevated authority propagation, authz-read privacy, generic resource ownership, freshness/concurrency, failure/cache и catalog/persistence integrity.
+4. Ordinary Admin/Complaints/Signals/Measures domain workflows не переаудируются целиком; они будут отдельным security area. Здесь они используются только для проверки общей privilege boundary.
+5. Матрица C1–C9 и порядок выполнения записаны в `SECURITY_IMPLEMENTATION_PLAN.md`.
+6. Никакие исправления/implementation planning не назначены.
+7. Следующий audit step: **C1 Owner binding / authority spoofing**.
+
 ## Координация
 
 1. #315 хранит решения, задачи, review findings и прогресс всего направления безопасности.
