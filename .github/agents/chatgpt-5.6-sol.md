@@ -1620,3 +1620,8 @@ Initial Lev plan `#6758838112`: **CHANGES REQUIRED**. Confirmed `SA02-PLAN-MIRA-
 ## SA-02 telemetry correction clarified
 
 Owner clarified that Security must preserve source attribution, not merely counts. Mira superseded the no-source-attribution part of the earlier finding with `#6759312425`: bounded/coalesced persistence must still distinguish attack sources and retain useful first/last/count/identity data. Lev must revise the plan before implementation.
+
+
+## Super-admin route discoverability priority
+
+Owner requires route discoverability hardening before SA-02 continues. Verified: current React Router config sends the full route manifest (`mode: initial`), and the public repository contains the literal `/super-admin` path. Lev assigned bounded planning via `#6759368876`; SA-02 paused.
