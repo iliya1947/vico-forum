@@ -1,21 +1,15 @@
 # Безопасность Vico Forum — current workflow
 
 1. Service PR: **#315**.
-2. Current main audited for Block B: `e279cb6c032a489a9044ca1191407df887c364b4`.
+2. Block B audit target: current main `e279cb6c032a489a9044ca1191407df887c364b4`.
 3. Scope: общая безопасность Vico Forum.
 4. Block A — Super-admin security/pentesting architecture recorded; PR #317 security review PASS on its reviewed exact head remains recorded in communication.
-5. **Current worked block: B — Authentication & sessions security audit.**
-6. B3 completed: **AUTH-LINK-01 Moderate/P2** — OAuth linking can finish after the initiating session was revoked.
-7. B4 completed: **AUTH-SESSION-01 Moderate/P2** — sign-out can clear browser cookie and report success after a session-delete DB failure, leaving the server session live.
-8. B7 completed: no cross-user IDOR; **AUTH-SESSION-02 corrected to Low/P3** — direct list-sessions exposes a raw internal session token, but it is not an authentication bearer credential in current Vico because signed cookies are authoritative and Bearer plugin is absent; **AUTH-SESSION-03 Moderate/P2** — direct revoke-other-sessions bypasses Vico's intended fresh-session gate.
-9. B5 completed: **PASS — 0 current-scope CSRF/Origin defects**.
-10. B1 completed: **AUTH-ENUM-01 Moderate/P2** — direct email sign-up exposes whether an email already exists; no credential rate-limit bypass confirmed.
-11. B2 completed: OAuth integrity boundaries PASS; **AUTH-OAUTH-01 Low/P3** — raw provider error description remains in callback-error browser URL.
-12. B6 completed: **PASS — 0 current-scope password-change defects**.
-13. B8 completed: **PASS — 0 new current-scope freshness defects**; existing direct-endpoint bypass remains AUTH-SESSION-03.
-14. B9 completed: **AUTH-REG-01 Moderate/P2** — concurrent Owner closure and already-admitted create-user are not serialized, so an in-flight registration can commit after closure succeeds.
-15. B10 completed: **AUTH-CACHE-01 Low/P3** — authenticated list-sessions/list-accounts responses lack explicit no-store; errors/telemetry/Retry-After/User-Agent/cleanup checks otherwise PASS.
-16. No fix PR is opened yet. Confirmed Block-B defects remain queued for bounded correction planning after the planned audit slice.
-17. Technical planner/implementer/reviewer remain unassigned during audit.
-18. No Cloudflare/Neon/production mutation is authorized.
-19. Next after developer continuation: execute **B11 Dependency/security-version exposure** and stop with findings/classification.
+5. **Block B — Authentication & sessions security audit: B1–B11 completed.**
+6. Confirmed current findings: **AUTH-LINK-01 Moderate/P2**, **AUTH-SESSION-01 Moderate/P2**, **AUTH-SESSION-02 Low/P3 (corrected; internal token exposure, not bearer takeover)**, **AUTH-SESSION-03 Moderate/P2**, **AUTH-ENUM-01 Moderate/P2**, **AUTH-OAUTH-01 Low/P3**, **AUTH-REG-01 Moderate/P2**, **AUTH-CACHE-01 Low/P3**.
+7. PASS/no-new-finding blocks: B5 CSRF/Origin, B6 password change, B8 freshness; B10 otherwise passes errors/telemetry/Retry-After/User-Agent/cleanup after AUTH-CACHE-01.
+8. B11 dependency verdict: no duplicate vulnerability finding; current `better-auth@1.7.7` / `@better-auth/drizzle-adapter@1.7.7` must be upgraded together as part of corrections. Minimum security-fixed line for Nov-3 advisories is `1.7.16`; current supported stable `1.7.x` on 2026-11-10 is **`1.7.19`**, so technical planning should target `1.7.19` unless a concrete compatibility blocker is proven.
+9. Nov-3 advisories for email change, secondary/cookie-cache sessions and unused plugins are not current Vico exploit surfaces under repository configuration. Passkey advisory remains a mandatory future Block-A activation gate.
+10. No implementation PR is open for Block B corrections yet.
+11. Technical planner/implementer/reviewer remain unassigned until correction scope consolidation.
+12. No Cloudflare/Neon/production mutation is authorized.
+13. Next after developer continuation: **Mira consolidates the eight current Block-B findings into one bounded correction scope, separates any item that genuinely requires its own package, and records the concise technical-planning task for Лёва.**
