@@ -1,5 +1,17 @@
 # Мира — безопасность Vico Forum
 
+## 2026-11-10 — Block C / C1 Owner-binding audit
+
+1. Target: main `e279cb6c032a489a9044ca1191407df887c364b4`.
+2. Verdict: **PASS — 0 current-scope defects**.
+3. Owner binding has one production producer: server env → `validOwnerUserId` → request-local context. Request-controlled identity metadata cannot set it.
+4. Exact authenticated Better Auth `user.id` is the only principal compared with the binding; malformed/missing/nonexistent binding grants nothing.
+5. Every request receives a fresh RouterContext and authoritative session resolution, so account switch cannot inherit Owner projection from a stale page/request.
+6. Non-Owner broad RBAC/manager access cannot satisfy Owner-only mutation policy.
+7. Owner projection is catalog-bounded; unknown keys are not granted.
+8. Public signup/provider inputs cannot select the internal Better Auth user ID. Vico's only additional user field is server-owned locale with input disabled.
+9. Stage-6 real Owner binding remains external acceptance, not a repository defect.
+
 ## 2026-11-10 — Block C authorization audit matrix
 
 1. Current main remains `e279cb6c032a489a9044ca1191407df887c364b4`.
