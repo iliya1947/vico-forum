@@ -376,47 +376,11 @@
 
 Первые четыре имеют приоритет, потому что успешный bypass непосредственно даёт takeover или protected state change.
 
-## Correction sequence после B1–B11
-
-Аудит подтвердил восемь current-scope findings. Они исправляются двумя bounded implementation packages, потому что `AUTH-REG-01` затрагивает отдельную транзакционную границу registration-policy serialization.
-
-### B-C1 — Authentication runtime/API hardening
-
-Scope:
-
-1. `AUTH-LINK-01` — linking не должен завершаться после прекращения initiating session.
-2. `AUTH-SESSION-01` — sign-out не должен сообщать success, если server-side session не удалена.
-3. `AUTH-SESSION-02` — browser-facing auth API не должен раскрывать raw internal session token без необходимости.
-4. `AUTH-SESSION-03` — direct session-revocation HTTP paths должны соблюдать тот же freshness contract, что Settings.
-5. `AUTH-ENUM-01` — email sign-up не должен раскрывать account existence через observable response differences.
-6. `AUTH-OAUTH-01` — raw provider diagnostic не должен сохраняться в browser callback-error URL.
-7. `AUTH-CACHE-01` — authenticated account/session list responses должны иметь explicit private/no-store semantics.
-8. Better Auth и `@better-auth/drizzle-adapter` обновляются согласованно с `1.7.7` на актуальную проверенную stable security-fixed line; на момент планирования target — `1.7.19`, если технический анализ не установит конкретный blocker.
-
-Критерии готовности B-C1:
-
-1. Все семь findings закрыты на direct HTTP/runtime paths, а не только через Settings UI.
-2. Существующие Google/email-password sign-in, explicit linking, registration admission, session freshness, change-password rate limit, same-origin/CSRF и fail-closed DB behavior не регрессируют.
-3. Upgrade-specific workarounds для `1.7.7` пересмотрены против новой версии и сохраняются только если всё ещё нужны.
-4. Regression coverage доказывает исправления и соседние security invariants на repository/local-CI baseline.
-5. Stage-6 external Google/deployed acceptance не выполняется и не считается частью B-C1.
-
-### B-C2 — Registration cutoff serialization
-
-Scope: только `AUTH-REG-01`.
-
-1. После успешного закрытия соответствующего registration method не должен позже commit-иться new account, уже допущенный stale pre-close policy read.
-2. Existing-user sign-in и explicit linking остаются разрешёнными согласно текущему Settings contract.
-3. Missing/invalid policy state и DB failures продолжают fail closed.
-4. Решение должно сериализовать policy-close и create-user cutoff без глобальной тяжёлой блокировки и без расширения Stage 6.
-
-B-C2 планируется **после B-C1**, на обновлённом Better Auth baseline, потому что dependency upgrade меняет auth transaction/error semantics и не должен заставлять переделывать registration serialization дважды.
-
 ## Критерий завершения блока B
 
 1. Все перечисленные direct HTTP/runtime paths проверены на current main/stable audit target, а не только unit/UI tests.
 2. Каждый finding воспроизводим, имеет доказанную causal path и классифицирован по текущему Stage.
-3. Current-scope defects передаются минимальной bounded correction sequence; отдельный package допускается только для подтверждённо самостоятельной технической границы. Для текущего аудита это B-C1 + отдельный B-C2 для registration serialization; future hardening остаётся в #315 без немедленной реализации.
+3. Current-scope defects передаются одним bounded correction package; future hardening остаётся в #315 без немедленной реализации.
 4. После corrections соответствующие attack cases повторяются.
 5. Production Google/OAuth-specific acceptance, которое невозможно доказать без real provider, остаётся Stage 6 и маркируется как непроверенное external boundary.
 
