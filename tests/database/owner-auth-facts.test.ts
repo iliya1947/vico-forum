@@ -48,7 +48,7 @@ async function rows() {
     position: string; occurred_at: Date; recorded_at: Date;
   }>(`select source,kind,monitor_key,entity_type,entity_id,actor_user_id,target_user_id,
       correlation_id,payload,occurrence_key,position::text,occurred_at,recorded_at
-      from owner_events order by position`);
+      from owner_events order by owner_events.position`);
   return result.rows;
 }
 
