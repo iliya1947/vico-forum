@@ -2904,3 +2904,12 @@ Ready PR #318 stable exact head `2cb5b9fa9c426513c9d9207d21d89b48b30c8d6e` revie
 Five-file docs-only diff accurately records the merged outgoing-address foundation, permanent Admin/Super-admin routing boundary and PROJECT_HISTORY_24. It explicitly preserves the unimplemented Stage-6 security boundary. Implementation CI counts in history were independently verified from job logs: 172/172 test files, 2157/2157 tests. Docs CI #42806279774 is SUCCESS on the exact docs head.
 
 **PR #318 is READY FOR OWNER MERGE.** After merge, routing foundation closeout is complete; SA02 planning may resume from open correction #6759312425. Lira/Lev/Mark unassigned until next bounded assignment.
+
+
+## Routing foundation closeout complete — SA-02 resumed
+
+Docs PR #318 merged; current main `e279cb6c032a489a9044ca1191407df887c364b4`. Routing foundation implementation/docs are closed and no longer block SA-02.
+
+SA-02 technical planning is resumed. The old plan #6758838112 must be replaced against current main because Owner correction #6759312425 requires both useful source attribution and bounded/coalesced durable telemetry, including an explicit strategy for attacker-controlled source cardinality; exact account/session/method/password transitions remain non-aggregated events and telemetry failure must not change auth/access decisions.
+
+Current Security service PR #315 head `e394f1586b4f857f2160e291a9b8fb3915067ead` is architecture/security input only: Owner Worker, Access, isolated Owner auth/session, DB/deploy separation, route concealment and external activation remain Stage-6 work. Lev assigned by #6766904312 to publish a replacement bounded SA-02 plan, then stop for Mira review. Lira/Mark unassigned; no implementation PR exists.
