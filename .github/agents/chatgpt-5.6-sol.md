@@ -1712,3 +1712,12 @@ Reviewed Lev plan `#6759936344`: CHANGES REQUIRED only for `FOUNDATION-PLAN-MIRA
 - SA-02 is active again. Old plan #6758838112 requires replacement because Owner correction #6759312425 mandates useful authenticated/network source attribution together with bounded/coalesced durable telemetry and explicit cardinality control; exact account/session/method/password transitions stay exact events; telemetry failure cannot alter auth/access result.
 - Current #315 head `e394f1586b4f857f2160e291a9b8fb3915067ead` is security architecture input; Stage-6 Owner-plane activation remains out of SA-02.
 - Lev assigned in #6766904312 for replacement technical plan only; Lira/Mark unassigned.
+
+
+## SA-02 replacement plan review — retention admission defect
+
+- Reviewed Lev replacement plan #6767391552 against current main/source-of-truth and Security input #315.
+- **SA02-PLAN-MIRA-01 CLOSED:** coalescing/source-attribution/exact-transition/failure-isolation requirements are now satisfied in the plan.
+- **SA02-PLAN-MIRA-02 OPEN:** lifetime no-renewal cap can be attacker-exhausted once and permanently disable attribution of all new sources; explicit overflow disclosure is honest but functionally insufficient for Security.
+- Required property: attacker-driven cardinality stays bounded, but admission capability must recover on a bounded basis without deleting retained history or returning to per-request durable rows.
+- Review/handoff recorded in #6767512074. Lev owns the narrow plan correction; implementation remains unassigned.
