@@ -172,6 +172,21 @@
 12. Previously recorded AUTH-ENUM-01 and AUTH-OAUTH-01 remain the relevant enumeration/URL-diagnostic findings; B10 does not duplicate them.
 13. No additional B10 current-scope defect confirmed.
 
+## Block B / B11 — Dependency / security-version exposure
+
+1. Audit target: current main `e279cb6c032a489a9044ca1191407df887c364b4`; repository pins `better-auth@1.7.7` and `@better-auth/drizzle-adapter@1.7.7`.
+2. Official Better Auth security release of 2026-11-03 states that `1.7.16` is the fixed `1.7.x` line for 12 disclosed security issues and requires Better Auth packages to be upgraded together. Better Auth's current security policy supports only the latest release.
+3. As of 2026-11-10 the official stable `1.7.x` changelog reports **`1.7.19` as latest**. Therefore the bounded correction package should target `better-auth@1.7.19` and `@better-auth/drizzle-adapter@1.7.19` together, not stop at the minimum `1.7.16`, unless technical planning establishes a concrete compatibility blocker.
+4. **No new vulnerability ID is created solely for being behind latest.** The dependency upgrade is a required remediation component of already-confirmed **AUTH-LINK-01**: `1.7.16+` revalidates the initiating stored session before completing social account linking.
+5. The 2026-11-03 core advisories were mapped to Vico's actual configuration. Email-change takeover is not currently reachable because Vico does not enable `user.changeEmail` or email-change verification flow. The OAuth unverified-email advisory's published affected conditions are generic OAuth/string-claim providers/Zoom; Vico currently uses the built-in Google provider only. The revoked-session advisory requires `secondaryStorage` or `session.cookieCache`; Vico configures neither.
+6. Plugin-specific advisories in that release (Expo, Electron, phone number, email OTP, Better Auth admin plugin, organization, Stripe, passkey) are not current Vico surfaces: repository search found no corresponding Better Auth plugin/configuration. Vico's own Admin/Super-admin implementation is not the Better Auth admin plugin.
+7. The MySQL serial-ID advisory affecting Kysely/Drizzle adapters is not applicable to Vico's PostgreSQL runtime and Vico does not configure `generateId: "serial"`.
+8. The earlier PostgreSQL database-rate-limit concurrency advisory **is already fixed by the installed `1.7.7` pair**; that advisory's patched version is exactly `1.7.7`. B1 independently confirmed the guarded atomic rate-limit semantics in the pinned source.
+9. Future Block-A Passkey activation has a mandatory dependency gate: the Nov-3 passkey advisory is fixed in `@better-auth/passkey@1.7.16+`; no passkey package is currently installed, so this is Stage-6/future activation, not a current defect. If Block B first upgrades the Better Auth line to `1.7.19`, any later passkey package must be added at the same supported line and its origin/user-verification acceptance must still be tested.
+10. Upgrade regression surface that technical planning must preserve: `1.7.12+` keeps the original DB session lookup failure as `error.cause`, overlapping Vico's current 1.7.7-specific database-error preservation workaround; `1.7.8+` changes cookie/security and password/session failure behavior; `1.7.11+` changes DB rate-limit retry header behavior. These are reasons for focused regression tests, not reasons to remain on 1.7.7.
+11. Current public Google credentials/provider behavior remains externally unverified because Stage 6 is paused. **Информация не проверена** for live-provider/deployed compatibility; repository and upstream source establish the dependency exposure and correction target.
+12. B11 adds no second current takeover finding beyond the already-recorded Block-B defects.
+
 ## Координация
 
 1. #315 хранит решения, задачи, review findings и прогресс всего направления безопасности.
