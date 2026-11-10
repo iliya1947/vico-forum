@@ -19,7 +19,12 @@ import { createHyperdriveContentTranslationBatchReader } from "../db/hyperdrive-
 import { createHyperdriveContentGenerationAdmission } from "../db/hyperdrive-content-generation-admission";
 import { createHyperdriveAuthRuntime, type BetterAuthEnvironment } from "../app/auth/auth.server";
 import { initializeAuthContext, withAuthSessionCookies } from "../app/auth/session-context";
-import { AuthSessionUnavailableError } from "../app/auth/request-context";
+import { AuthSessionUnavailableError, authSessionForRequest } from "../app/auth/request-context";
+import { captureAttemptIngressSource } from "../app/observability/attempt-source";
+import {
+  RequestAttemptCollector, requestAttemptCollectorContext, withAttemptObservation,
+} from "../app/observability/attempt-collector.server";
+import { createHyperdriveAttemptTelemetry } from "../db/hyperdrive-attempt-telemetry";
 import {adminForumContext} from "../app/admin/forum.server";
 import {createHyperdriveAdminForum} from "../db/hyperdrive-admin-forum";
 import { adminUsersContext } from "../app/admin/users.server";
@@ -61,10 +66,16 @@ export default {
     const requestStarted = performance.now();
     const context = new RouterContextProvider();
     const { localizationConnectionString, webConnectionString } = resolveRuntimeDatabaseConnectionStrings(env);
-    const auth = createHyperdriveAuthRuntime(webConnectionString, env as Env & BetterAuthEnvironment);
+    const collector = new RequestAttemptCollector(captureAttemptIngressSource(request),
+      () => createHyperdriveAttemptTelemetry(webConnectionString));
+    context.set(requestAttemptCollectorContext, collector);
+    try {
+    const auth = withAttemptObservation(
+      createHyperdriveAuthRuntime(webConnectionString, env as Env & BetterAuthEnvironment), collector);
     let authHeaders: Headers;
     try {
       authHeaders = await initializeAuthContext(context, request, auth);
+      collector.setResolvedActor(authSessionForRequest(context)?.user.id);
     } catch (error) {
       if (!(error instanceof AuthSessionUnavailableError)) throw error;
       return new Response("Service unavailable. Please try again.", {
@@ -116,5 +127,12 @@ export default {
         .catch(() => undefined));
     }
     return withAuthSessionCookies(response, authHeaders);
+    } finally {
+      // A failure or early 503 still finalizes the bounded collector. Never
+      // replace the original HTTP response/exception with telemetry failure.
+      const task = collector.flush().catch(() => undefined);
+      if (executionContext?.waitUntil) executionContext.waitUntil(task);
+      else await task;
+    }
   },
 } satisfies ExportedHandler<Env>;
