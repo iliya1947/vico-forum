@@ -52,6 +52,12 @@ application permissions разрешаются отдельно server-side.
 
 Постоянный контракт обычной админ-панели — [`docs/ADMIN_PANEL.md`](./docs/ADMIN_PANEL.md).
 Он задаёт структуру и permission boundaries: AP-01–AP-11 реализованы в repository/local-CI.
+Отдельный exact-Owner-only Super-admin описан в [`docs/SUPER_ADMIN.md`](./docs/SUPER_ADMIN.md):
+SA-01 (Owner shell/два входа, System Monitoring, смежная History, общий Event log
+и Stage-6 Infrastructure placeholder) реализован в repository/local-CI;
+остальные области Monitoring, единый профиль с privileged sections, деактивация
+и последующие SA-пакеты ещё не реализованы. Обычная панель, Needs attention и
+Super-admin не объединяют permission boundaries или mutation backends.
 Settings ведётся отдельно по [`docs/SETTINGS.md`](docs/SETTINGS.md): SET-01 закрепил
 Owner-only authorization writes, SET-02 добавил защищённый Settings shell, Owner-only
 Forum & roles и независимое управление регистрацией новых Google/email-password
