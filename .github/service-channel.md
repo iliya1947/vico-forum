@@ -35,6 +35,17 @@
 4. Block B audit matrix is recorded in `SECURITY_IMPLEMENTATION_PLAN.md`; highest-priority execution starts with account linking/takeover, then session fixation/cookies, session IDOR/revoke and CSRF/Origin.
 5. No vulnerability or correction task is asserted yet.
 
+## Block B / B3 — Account linking / takeover audit
+
+1. Audit target: current main `e279cb6c032a489a9044ca1191407df887c364b4`, Better Auth `1.7.7`.
+2. **AUTH-LINK-01 — CONFIRMED current-scope, Moderate / P2.** Explicit Google linking can complete after the session that initiated the OAuth redirect has been revoked/ended.
+3. Causal path is source-proven: Vico authorizes `/link-social` with the current authoritative session and stale-user header; Better Auth 1.7.7 then stores only that user's id/email in OAuth state. On `/callback/google`, 1.7.7 consumes the valid one-time state and calls `linkOAuthAccount` without re-checking whether the initiating session still exists. A provider account can therefore be persisted after that session was revoked.
+4. This is not an arbitrary-account takeover claim. Vico does not enable `allowDifferentEmails`; Better Auth requires the provider email to match the initiating account email and rejects a provider identity already owned by another user. Exploitation therefore has substantial additional preconditions.
+5. Upstream confirmation is exact: Better Auth security hardening commit `f25081ac0476a9a4295f7a9736ae7239974c7b1e` added a regression named “does not link a provider when the initiating session was revoked during the redirect”. Patched `1.7.16` encrypts the source session token into link state and verifies that session in durable storage on callback before linking.
+6. Other B3 boundaries checked PASS: guest link initiation is denied; forged `x-vico-link-user` for another user is denied before state creation; implicit same-email linking remains disabled; provider identity already linked to a different user is rejected; database-backed OAuth state is one-time; external `callbackURL`/`errorCallbackURL` are rejected by Better Auth origin/trusted-origin middleware.
+7. No second current-scope B3 defect is confirmed. The account table has no provider/account composite unique constraint, so a parallel duplicate-row race was examined, but no practical cross-user attack path was established under Vico's email-binding rules; it is not promoted to a finding.
+8. Live Google-provider reproduction was not run because Stage 6 external credentials are paused. The missing callback session check and the exact upstream regression/fix are nevertheless established directly from pinned source; production-provider acceptance remains Stage 6.
+
 ## Координация
 
 1. #315 хранит решения, задачи, review findings и прогресс всего направления безопасности.
