@@ -1630,3 +1630,8 @@ Owner requires route discoverability hardening before SA-02 continues. Verified:
 ## Owner routing-security decision
 
 Do not implement real Admin/Super-admin concealment now. Prepare only the minimal current-code foundation needed for easy Stage-6 integration, per `#6759703177`. Keep current development simple and preserve authorization/local-CI behavior. Production secrets/dynamic hidden routes/external bindings stay deferred to Stage 6.
+
+
+## Foundation plan review
+
+Reviewed Lev plan `#6759936344`: CHANGES REQUIRED only for `FOUNDATION-PLAN-MIRA-01` in `#6760232469`. Do not refactor route registration now because `app/routes.ts` is already centralized; keep foundation limited to the replaceable address-resolution seam. SA-02 Security attribution requirement `#6759312425` remains mandatory.
