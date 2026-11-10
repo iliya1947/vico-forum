@@ -38,7 +38,11 @@ export function AdminShell({locale,access,children,current="overview"}: {locale:
   const routing = useAdministrativeRouting();
   useEffect(() => {
     const index = current as AdminEntryId;
-    if (accountId && location.pathname === adminEntryPath(locale, index, routing)) recordAdminIndex(accountId, index);
+    if (!accountId) return;
+    const destination = new URL(adminEntryPath(locale, index, routing), window.location.origin);
+    if (destination.origin === window.location.origin && location.pathname === destination.pathname) {
+      recordAdminIndex(accountId, index);
+    }
   }, [accountId, location.pathname, locale, current, routing]);
   return <ForumShell locale={locale} variant="admin">
     <div className="admin-panel" data-density={preferences.density}>
