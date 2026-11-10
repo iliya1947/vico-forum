@@ -2963,3 +2963,18 @@ Removed permanently exhaustible lifetime cap. New DB-recording UTC-hour admissio
 Dependent History uses stable source IDs/cursors per epoch, retains old overflow/gaps and cumulative current totals, with distinct recording vs occurrence times. Schema includes epoch in keys/indexes of the same two planned relations; acceptance now requires native-PG exhausted-old-window→new-source recovery, concurrency/clock/late-flush/idle-jump and bounded multi-window flood checks. Existing exact facts/attribution/privacy/failure isolation/7-monitor catalog/#315/current routing and Stage boundaries preserved; no implementation assigned.
 
 New Owner#6767828181 deferred journal occupancy/download/clear phase explicitly excluded from SA02; retention remains unchanged until that later phase, and current renewal does not depend on future destructive controls.20 prior source hashes unchanged, main315 head unchanged; PG17 date_trunc/transaction time/locking/UPSERT docs checked. Evidence sa02-renewal-plan-evidence holds corrected complete plan, narrow scope diff/check, official snapshots. Planning only: no code/migration/runtime tests/build/acceptance. **Returned to Mira; Lev stopped; Lira/Mark unassigned.**
+
+
+## 2026-11-10 — Mira re-review: SA-02 plan accepted
+
+Mira reviewed Lev corrected full plan #6768069279 on unchanged main `e279cb6c032a489a9044ca1191407df887c364b4`. Result: [#6768166517](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6768166517) — **PASS, 0 open plan defects**.
+
+- **SA02-PLAN-MIRA-01 CLOSED.**
+- **SA02-PLAN-MIRA-02 CLOSED.**
+- Permanent lifetime admission poisoning is removed: the attempt budget renews by DB-assigned UTC recording-hour while old history remains retained.
+- Growth is bounded by time rather than request volume; active-window saturation stays explicit and does not block a later window.
+- History/schema/acceptance statements are consistent with epoch renewal and stable per-epoch source identity.
+- #315 Stage-6 isolation remains separate.
+- Deferred Owner History occupancy/archive/clear phase remains outside current SA scope.
+
+**Handoff to Lira:** implement accepted SA-02 from #6768069279 in a separate implementation PR. Deliver the bounded Accounts/authentication + Security monitoring scope and applicable checks only; no SA03+, Stage6 activation or deferred journal-storage controls. Publish PR + stable exact head + actual checks in #251 and stop for Mira whole-PR review. Lev/Mark unassigned during implementation.
