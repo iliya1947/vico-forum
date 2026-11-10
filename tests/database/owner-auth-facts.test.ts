@@ -109,8 +109,8 @@ describe("SA02 PostgreSQL17 native append-only auth fact writer", () => {
   });
 
   it("allows distinct password operations for one account without coalescing into attempts", async () => {
-    const second = { ...facts[4], operationId:"231563d8-a5ee-44f3-826b-74d426a0d67f" }
-      as AuthTransitionFact;
+    const second = { ...facts[4],
+      operationId: "231563d8-a5ee-44f3-826b-74d426a0d67f" } as AuthTransitionFact;
     expect((await writer.append(second)).inserted).toBe(true);
     expect((await writer.append(second)).inserted).toBe(false);
     const found=(await rows()).filter(row=>row.kind==="auth.passwordChanged");
