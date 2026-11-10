@@ -6,6 +6,8 @@ import { canonicalEnglishCatalog } from "../localization/catalog";
 import { createTranslationRuntime } from "../localization/runtime";
 import { adminAccess } from "./access";
 import { AdminUserDetail } from "./users";
+import { AdministrativeRoutingProvider } from "../administrative-routing/provider";
+import { createAdministrativeRouting, type AdministrativeRouting } from "../administrative-routing/addresses";
 import { ErrorBoundary as AdminUserErrorBoundary } from "../routes/admin-user";
 import type { AuthorizationRole, UserAuthorization } from "../../db/authorization-repository";
 import type { PermissionKey } from "../authorization/catalog";
@@ -42,7 +44,7 @@ const profile = {
 let router: ReturnType<typeof createMemoryRouter> | undefined;
 afterEach(() => { cleanup(); router?.dispose(); router = undefined; });
 
-function mount(options: { revokeManagementOnSubmit?: boolean; denyManagementOnSubmit?: boolean; revokeUsersReadOnDenied?: boolean } = {}) {
+function mount(options: { revokeManagementOnSubmit?: boolean; denyManagementOnSubmit?: boolean; revokeUsersReadOnDenied?: boolean } = {}, routing?: AdministrativeRouting) {
   let currentRole: AuthorizationRole = roles[0]!;
   let override: "allow" | "deny" | undefined;
   let canManage = true;
@@ -89,7 +91,7 @@ function mount(options: { revokeManagementOnSubmit?: boolean; denyManagementOnSu
     { path: "/en/admin/users/:userId", loader, element: <Detail />, ErrorBoundary: AdminUserErrorBoundary },
     { path: "/en/admin/authorization", action, element: <p>Authorization destination</p> },
   ], { initialEntries: [`/en/admin/users/${encodeURIComponent(userId)}`] });
-  const result = render(<I18nextProvider i18n={i18n()}><RouterProvider router={router} /></I18nextProvider>);
+  const result = render(<I18nextProvider i18n={i18n()}><AdministrativeRoutingProvider routing={routing}><RouterProvider router={router} /></AdministrativeRoutingProvider></I18nextProvider>);
   return { ...result, action, loader, router, grantManagement: () => { canManage = true; } };
 }
 function formFor(container: HTMLElement, intent: string, permission?: string) {
@@ -212,6 +214,22 @@ describe("AP-09 canonical fetcher composition", () => {
     expect(mounted.container.querySelector("#authorization")).toBeNull();
     expect(mounted.container.textContent).not.toContain("Public details");
     expect(mounted.action).toHaveBeenCalledOnce();
+  });
+
+  it("substitutes the real inline authorization form action and Admin links from the Admin family", async () => {
+    const routing = createAdministrativeRouting(
+      locale => `https://forum.invalid/${locale}/office`,
+      locale => `https://owner.invalid/${locale}/control`,
+    );
+    const mounted = mount({}, routing);
+    await screen.findByRole("heading", { name: "Authorization management", level: 3 });
+    expect(formFor(mounted.container, "assignRole")?.getAttribute("action"))
+      .toBe("https://forum.invalid/en/office/authorization");
+    expect(formFor(mounted.container, "override", "forum.topic.pin")?.getAttribute("action"))
+      .toBe("https://forum.invalid/en/office/authorization");
+    expect(mounted.container.querySelector('a[href="https://forum.invalid/en/office/users"]')).not.toBeNull();
+    expect(mounted.container.querySelector('a[href="https://forum.invalid/en/office/measures?target=target%2F%D7%A2%D7%91%D7%A8%D7%99%D7%AA"]')).toBeNull();
+    // The user target is not a measure manager in this fixture; no unrelated link is introduced.
   });
 
 });
