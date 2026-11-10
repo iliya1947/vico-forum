@@ -1,5 +1,18 @@
 # Мира — безопасность Vico Forum
 
+## 2026-11-10 — Block D / D7 Attention isolation audit
+
+1. Target: main `e279cb6c032a489a9044ca1191407df887c364b4`.
+2. Verdict: **PASS — 0 current-scope defects**.
+3. Attention mode/group input never grants authority; effective permissions choose each protected mode/group.
+4. Complaint review, appeal review, priority management and reporter identity remain independent; priority-only redirects to its own protected settings.
+5. Direct Complaint child routes independently recheck their required permission before private reads/R2.
+6. Signals repository filters by server-computed visible kinds/appeals, so a forged group cannot expose another Help-review queue.
+7. Security mode independently requires attachment-security permission and does not query Complaint/Signal storage.
+8. AP-10 admin.forum/admin.complaints/admin.security restrictions remain family-isolated and fresh on the next request.
+9. Inert Security placeholder groups perform no protected cross-family read and are not a current finding.
+10. No remediation handoff. Next D3.
+
 ## 2026-11-10 — Block D / D1 global Admin admission audit
 
 1. Target: main `e279cb6c032a489a9044ca1191407df887c364b4`.
