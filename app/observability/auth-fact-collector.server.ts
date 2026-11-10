@@ -22,6 +22,11 @@ export class RequestAuthFactCollector {
       ? value : null;
   }
 
+  /** Unproven native transition: count a recording gap, never invent success. */
+  recordGap(count: number): void {
+    if (Number.isSafeInteger(count) && count > 0) this.missed(count);
+  }
+
   /** Existing valid session of exactly this user, never supplied expectedUserId. */
   trustedActorFor(userId: string): string | null {
     return userId === this.actorId ? userId : null;
