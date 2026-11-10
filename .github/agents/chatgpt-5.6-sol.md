@@ -1625,3 +1625,8 @@ Owner clarified that Security must preserve source attribution, not merely count
 ## Super-admin route discoverability priority
 
 Owner requires route discoverability hardening before SA-02 continues. Verified: current React Router config sends the full route manifest (`mode: initial`), and the public repository contains the literal `/super-admin` path. Lev assigned bounded planning via `#6759368876`; SA-02 paused.
+
+
+## Owner routing-security decision
+
+Do not implement real Admin/Super-admin concealment now. Prepare only the minimal current-code foundation needed for easy Stage-6 integration, per `#6759703177`. Keep current development simple and preserve authorization/local-CI behavior. Production secrets/dynamic hidden routes/external bindings stay deferred to Stage 6.
