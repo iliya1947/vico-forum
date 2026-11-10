@@ -51,6 +51,19 @@ describe("SA02 request-local collector and canonical endpoint instrumentation", 
     expect(f.close).toHaveBeenCalledOnce();
   });
 
+  it("records canonical registration denial once, including OAuth redirect or translated signup 403", async () => {
+    const f = fixture();
+    f.collector.recordRegistrationDenied();
+    f.collector.recordHttpFailure("sign-up", 403);
+    f.collector.recordRegistrationDenied();
+    await f.collector.flush();
+    expect(f.records).toHaveLength(1);
+    expect(f.records[0]).toMatchObject({
+      surface: "auth", operation: "registration-admission",
+      outcome: "denied", directCode: "forbidden", httpStatus: undefined,
+    });
+  });
+
   it("trusts only resolved actor, not expected identity passed into direct security mutation", async () => {
     const f = fixture();
     f.collector.setResolvedActor("resolved-user");
