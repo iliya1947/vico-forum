@@ -319,6 +319,20 @@
 15. Bound Owner catalog projection does not bypass `*Own` ownership conditions; Owner may use separately implemented Any capabilities, but ordinary Own paths still require authoritative ownership as specified in the authorization contract.
 16. No C6 finding confirmed.
 
+
+## Block C / C8 — Failure semantics / request-local cache audit
+
+1. Audit target: current main `e279cb6c032a489a9044ca1191407df887c364b4`.
+2. Verdict: **1 confirmed current-scope finding: AUTHZ-FAIL-01 Low/P3**.
+3. `PostgresAuthorizationRepository.mutate()` does `await client.query("rollback")` directly in its catch. A rollback failure therefore replaces the original mutation/authorization/COMMIT error.
+4. In the production Hyperdrive wrapper, an availability-shaped rollback error is reclassified as `AuthorizationUnavailableError`, so an original forbidden/conflict/programming failure can be surfaced as `503 unavailable`.
+5. No privilege escalation, protected write success or private-data disclosure follows from the demonstrated path. Impact is failure-cause loss/misclassification and weakened observability/incident diagnosis.
+6. Read snapshots already implement the required best-effort rollback behavior and have regressions preserving operation/COMMIT error over rollback failure.
+7. Hyperdrive pool cleanup is best-effort; classified availability failures fail closed, while schema/programming errors remain unexpected and propagate.
+8. Optional public presentation suppresses only typed availability; protected actions independently check permission and return fail-closed outcomes.
+9. Raw authorization resolution cache and administrative-restriction cache are request-local and user/actor-keyed; no cross-user or cross-request authority reuse was found.
+10. No second C8 finding confirmed. Remediation remains unassigned.
+
 ## Координация
 
 1. #315 хранит решения, задачи, review findings и прогресс всего направления безопасности.
