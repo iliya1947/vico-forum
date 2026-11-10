@@ -1,5 +1,17 @@
 # Мира — безопасность Vico Forum
 
+## 2026-11-10 — Block B / B2 OAuth callback integrity audit
+
+1. Target: current main `e279cb6c032a489a9044ca1191407df887c364b4`, Better Auth `1.7.7`.
+2. State integrity PASS: stateful configuration selects DB-backed verification plus signed state cookie; parse checks cookie/state, deletes verification before token exchange and rejects expired/missing/replayed state.
+3. Google redirect flow uses PKCE; callback destinations are trusted-origin validated before being embedded into protected state. Vico supplies locale-local return paths.
+4. Registration-race PASS: existing integration checks policy again at actual callback/create-user seam and leaves no user/account/session rows when registration closes during redirect.
+5. Vico renders only generic/allowlisted callback errors and ignores provider diagnostics in loader data.
+6. **AUTH-OAUTH-01 Low/P3:** Better Auth still appends provider `error_description` to the error callback URL. Vico does not remove it from the browser URL and no global Referrer-Policy/url canonicalization was found. This is URL privacy/log hygiene, not an auth bypass; no actual token leakage was proven.
+7. Better Auth `1.7.16` retains this behavior.
+8. No open redirect, successful state replay, callback-policy bypass or second current-scope B2 defect confirmed.
+9. Real Google error payload behavior remains Stage-6 external acceptance.
+
 ## 2026-11-10 — Block B / B1 enumeration and rate-limit audit
 
 1. Target: current main `e279cb6c032a489a9044ca1191407df887c364b4`, Better Auth `1.7.7`.
