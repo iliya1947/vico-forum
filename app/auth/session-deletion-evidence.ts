@@ -1,63 +1,76 @@
 import { inArray } from "drizzle-orm";
 import type { NodePgDatabase } from "drizzle-orm/node-postgres";
 import { session } from "../../db/schema";
-import type { AuthTransitionFact } from "../../db/owner-auth-facts";
+import { MAX_AUTH_FACTS_PER_REQUEST, type AuthTransitionFact } from "../../db/owner-auth-facts";
 
 type SessionRow = { id: string; userId: string; token: string; expiresAt: Date };
 type Reason = Extract<AuthTransitionFact, {kind: "auth.sessionDeleted"}>["reason"];
 type Candidate = SessionRow & { reason: Reason; actorUserId: string };
-type BulkReceipt = { userId: string; count: number };
+type BulkReceipt = { count: number; occurredAt: Date; ambiguous: boolean };
 type AdapterDelete = { model?: unknown; where?: unknown };
 type NativeWhere = { field?: unknown; value?: unknown; operator?: unknown };
 type HookContext = { path?: unknown; context?: { session?: {
   user?: { id?: unknown }; session?: { token?: unknown };
 } } };
 
+const MAX_BULK_IDENTITIES = 4;
+const PROOF_CHUNK_SIZE = 8;
 function exactWhere(value: unknown, field: string): string | null {
   if (!Array.isArray(value) || value.length !== 1) return null;
   const item = value[0] as NativeWhere | null;
   return item && item.field === field && item.operator == null &&
     typeof item.value === "string" ? item.value : null;
 }
-
 function countOf(value: unknown): number | null {
   return typeof value === "number" && Number.isSafeInteger(value) && value >= 0
     ? value : null;
 }
 
 /**
- * Better Auth 1.7.7 delete.after receives a pre-delete row even when a racing
- * DELETE affects zero rows. Use the unmodified node-postgres affected-row
- * result for single deletes (the installed Drizzle adapter returns undefined)
- * or the adapter's numeric bulk count, then verify absence before recording.
- * This observes the original adapter; it never replaces its mutations.
+ * A request-local, bounded proof collector. Better Auth's native delete.after
+ * may see a preimage even if the DELETE affects zero rows; retain exact row
+ * identities only after matching actual affected counts and absent-row proof.
+ * Large bulk operations keep up to MAX_AUTH_FACTS_PER_REQUEST distinct facts,
+ * with any omitted or ambiguous transitions counted as recording gaps.
  */
 export class SessionDeletionEvidence {
-  private readonly singleReceipts = new Map<string, number>();
-  private readonly bulkReceipts: BulkReceipt[] = [];
+  private readonly singleReceipts = new Map<string, Date>();
+  private readonly bulkReceipts = new Map<string, BulkReceipt>();
+  private readonly observedBulk = new Map<string, number>();
   private readonly candidates: Candidate[] = [];
+  private untrackedSingleReceipts = 0;
+  private untrackedSingleHooks = 0;
 
   constructor(
     private readonly database: NodePgDatabase,
-    private readonly emit: (fact: AuthTransitionFact) => void,
+    private readonly emit: (fact: AuthTransitionFact, occurredAt: Date) => void,
     private readonly missed: (count: number) => void,
   ) {}
 
-  /**
-   * Better Auth 1.7.7 Drizzle adapter exposes a numeric deleteMany count,
-   * but its single-row delete returns undefined even for a successful DELETE.
-   */
   noteAdapterDelete(method: "delete" | "deleteMany", arg: unknown, result: unknown): void {
     const operation = arg as AdapterDelete | null;
     if (method !== "deleteMany" || operation?.model !== "session") return;
     const count = countOf(result);
     if (count === null) { this.missed(1); return; }
     const userId = exactWhere(operation.where, "userId");
-    if (userId) this.bulkReceipts.push({userId, count});
-    else if (count > 0) this.missed(count);
+    if (!userId) {
+      if (count) this.missed(count);
+      return;
+    }
+    const previous = this.bulkReceipts.get(userId);
+    if (previous) {
+      // Distinct bulk executions have no row-to-receipt correlation:
+      // never manufacture timestamps or individually attributed successes.
+      previous.ambiguous = true;
+      previous.count = Math.min(Number.MAX_SAFE_INTEGER, previous.count + count);
+    } else if (this.bulkReceipts.size < MAX_BULK_IDENTITIES) {
+      this.bulkReceipts.set(userId, { count, occurredAt: new Date(), ambiguous: false });
+    } else if (count) {
+      this.missed(count);
+    }
   }
 
-  /** Original node-postgres result of exactly the installed canonical single-session DELETE. */
+  /** Native affected rowCount from the canonical session-token DELETE. */
   noteNativeDelete(sql: unknown, parameters: unknown, result: unknown): void {
     const query = typeof sql === "string" ? sql :
       sql && typeof sql === "object" && "text" in sql ? (sql as {text:unknown}).text : null;
@@ -70,11 +83,14 @@ export class SessionDeletionEvidence {
     const count = countOf(rawCount);
     if (count === 1) {
       const token = parameters[0];
-      this.singleReceipts.set(token, (this.singleReceipts.get(token) ?? 0) + 1);
+      if (this.singleReceipts.has(token)) return;
+      if (this.singleReceipts.size < MAX_AUTH_FACTS_PER_REQUEST)
+        this.singleReceipts.set(token, new Date());
+      else this.untrackedSingleReceipts++;
     } else if (count === null || count > 1) {
       this.missed(1);
     }
-    // Zero rows: concurrency/no-op, never a successful revocation fact.
+    // Zero affected rows prove a racing/no-op DELETE, not a revocation.
   }
 
   noteAfter(value: unknown, context: unknown): void {
@@ -85,7 +101,6 @@ export class SessionDeletionEvidence {
     let reason: Reason, actorUserId: string;
     switch (ctx?.path) {
       case "/sign-out":
-        // The signed session cookie selected this persisted row, not a user form field.
         reason = "sign-out"; actorUserId = row.userId; break;
       case "/revoke-session":
       case "/revoke-other-sessions":
@@ -100,58 +115,80 @@ export class SessionDeletionEvidence {
         break;
       }
       default:
-        // In particular, getSession expiry cleanup is not user revocation.
+        // Expired-session cleanup is not a user-initiated revocation.
         return;
     }
-    this.candidates.push({...row, reason, actorUserId} as Candidate);
+    if (reason === "revoke-all") {
+      const seen = this.observedBulk.get(row.userId);
+      if (seen === undefined && this.observedBulk.size >= MAX_BULK_IDENTITIES) {
+        this.missed(1);
+        return;
+      }
+      this.observedBulk.set(row.userId, Math.min(Number.MAX_SAFE_INTEGER, (seen ?? 0) + 1));
+    }
+    if (this.candidates.length >= MAX_AUTH_FACTS_PER_REQUEST) {
+      if (reason !== "revoke-all") this.untrackedSingleHooks++;
+      return;
+    }
+    this.candidates.push({ id: row.id, userId: row.userId, token: row.token,
+      expiresAt: row.expiresAt, reason, actorUserId });
   }
 
-  /** Always called after the original native operation settles; never vetoes it. */
+  /** Postcondition reads and emission are chunked; no unbounded IN or queue. */
   async flush(): Promise<void> {
-    if (!this.candidates.length) return;
     const candidates = this.candidates.splice(0);
-    const bulk = candidates.filter(c => c.reason === "revoke-all");
-    const approvedBulk = new Set<string>();
-    for (const receipt of this.bulkReceipts) {
-      const selected = bulk.filter(c => c.userId === receipt.userId);
-      // A stale preimage or racing deletion makes the entire batch ambiguous.
-      // Do not attribute particular rows from an aggregate count in that case.
-      if (receipt.count > 0 && receipt.count === selected.length) {
-        for (const candidate of selected) approvedBulk.add(candidate.id);
-      } else if (selected.length || receipt.count) {
-        this.missed(Math.max(selected.length, receipt.count));
+    const eligible: Array<{candidate: Candidate; occurredAt: Date}> = [];
+    let unmatchedSingles = 0;
+    for (const candidate of candidates) {
+      if (candidate.reason === "revoke-all") continue;
+      const occurredAt = this.singleReceipts.get(candidate.token);
+      if (occurredAt) eligible.push({candidate, occurredAt});
+      else unmatchedSingles++;
+    }
+    const singleGaps = Math.max(this.untrackedSingleReceipts, this.untrackedSingleHooks) +
+      unmatchedSingles;
+    if (singleGaps) this.missed(singleGaps);
+    for (const [userId, observed] of this.observedBulk) {
+      const receipt = this.bulkReceipts.get(userId);
+      const selected = candidates.filter(c => c.reason === "revoke-all" && c.userId === userId);
+      if (!receipt || receipt.ambiguous || receipt.count !== observed) {
+        this.missed(Math.max(receipt?.count ?? 0, observed));
+        continue;
       }
+      for (const candidate of selected)
+        eligible.push({candidate, occurredAt: receipt.occurredAt});
+      if (observed > selected.length) this.missed(observed - selected.length);
     }
-    const eligible = candidates.filter(candidate =>
-      candidate.reason === "revoke-all" ? approvedBulk.has(candidate.id)
-        : (this.singleReceipts.get(candidate.token) ?? 0) > 0);
-    if (eligible.length < candidates.length - bulk.length) {
-      this.missed(candidates.length - bulk.length - eligible.filter(c =>
-        c.reason !== "revoke-all").length);
+    for (const [userId, receipt] of this.bulkReceipts) {
+      if (!this.observedBulk.has(userId) && receipt.count) this.missed(receipt.count);
     }
-    if (!eligible.length) return;
-    try {
-      // Postcondition is checked after Better Auth has completed its mutation.
-      const rows = await this.database.select({id: session.id}).from(session)
-        .where(inArray(session.id, eligible.map(c => c.id)));
-      const remaining = new Set(rows.map(row => row.id));
-      for (const candidate of eligible) {
-        if (remaining.has(candidate.id)) {
-          this.missed(1);
-          continue;
+    this.singleReceipts.clear();
+    this.bulkReceipts.clear();
+    this.observedBulk.clear();
+    for (let start = 0; start < eligible.length; start += PROOF_CHUNK_SIZE) {
+      const chunk = eligible.slice(start, start + PROOF_CHUNK_SIZE);
+      try {
+        const rows = await this.database.select({id: session.id}).from(session)
+          .where(inArray(session.id, chunk.map(item => item.candidate.id)));
+        const remaining = new Set(rows.map(row => row.id));
+        for (const {candidate, occurredAt} of chunk) {
+          if (remaining.has(candidate.id)) {
+            this.missed(1);
+            continue;
+          }
+          // Expired rows are not active-session revocation transitions.
+          if (candidate.expiresAt.getTime() <= occurredAt.getTime()) continue;
+          try {
+            this.emit({
+              kind: "auth.sessionDeleted", userId: candidate.userId,
+              sessionId: candidate.id, reason: candidate.reason,
+              actorUserId: candidate.actorUserId,
+            }, occurredAt);
+          } catch { this.missed(1); }
         }
-        // Deleted expired rows have no user-initiated active-session transition.
-        if (candidate.expiresAt.getTime() <= Date.now()) continue;
-        try {
-          this.emit({
-            kind: "auth.sessionDeleted", userId: candidate.userId,
-            sessionId: candidate.id, reason: candidate.reason,
-            actorUserId: candidate.actorUserId,
-          });
-        } catch { this.missed(1); }
+      } catch {
+        this.missed(chunk.length);
       }
-    } catch {
-      this.missed(eligible.length);
     }
   }
 }
