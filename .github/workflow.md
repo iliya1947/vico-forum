@@ -7,6 +7,7 @@
 5. Block B — Authentication & sessions audit B1–B11 completed; eight current findings remain recorded for later remediation only on explicit owner decision.
 6. **Current audit block: C — Authorization & privilege escalation.**
 7. C1 completed: **PASS — 0 current-scope Owner-binding/authority-spoofing defects**.
-8. No technical planner, implementer or implementation PR is assigned.
-9. No Cloudflare/Neon/production mutation is authorized.
-10. Next after developer continuation: execute **C3 Authorization-management direct-write escalation** and stop with findings/classification.
+8. C3 completed: **PASS — 0 current-scope authorization-management direct-write escalation defects**.
+9. No technical planner, implementer or implementation PR is assigned.
+10. No Cloudflare/Neon/production mutation is authorized.
+11. Next after developer continuation: execute **C2 Effective permission resolution / precedence / freshness** and stop with findings/classification.
