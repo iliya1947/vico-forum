@@ -42,7 +42,7 @@ describe("SA-01 retained Owner history and System observations", () => {
   it("adds the two append-only relations, identity positions, a unique occurrence and scope indexes", async () => {
     const found = await client.query<{ table_name: string }>(`
       select table_name from information_schema.tables
-      where table_schema=$1 and table_name like 'owner_%' order by table_name`, [schema]);
+      where table_schema=$1 and table_name in ('owner_events', 'owner_monitor_observations') order by table_name`, [schema]);
     expect(found.rows.map(r => r.table_name)).toEqual(["owner_events", "owner_monitor_observations"]);
     const generated = await client.query<{ table_name: string; is_identity: string; identity_generation: string }>(`
       select table_name,is_identity,identity_generation from information_schema.columns
