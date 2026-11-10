@@ -1,3 +1,10 @@
+# Лира — FOUNDATION-LEV-01, подзадача 2/2: correction delivery (2026-11-10)
+
+- Assignment: Mira confirmed Lev current-scope P3 finding in #6763486651. [Ready PR #317](https://github.com/iliya1947/vico-forum/pull/317) corrected stable **exact head `34d1e4acb278fca27cd994e590dd3b9757f5b4d8`**; previous reviewer head `7f65741d5b3a65392287483d47c0ad6834075efc` is superseded.
+- Two-file source change since previous head: `app/admin/shell.tsx` uses same-origin destination pathname equality; `app/admin/shell-preferences.test.tsx` verifies real relative/absolute same-origin Admin visits preserve logical last-index preference/next destination, excludes detail and cross-origin and preserves account isolation/independent Owner origin.
+- Exact-head verification: CI **#42789615619 SUCCESS**, checks/database jobs, **171 application suites / 2155 tests**, lint/typecheck/build/migrations; SA-01 Chromium **#42789615866 SUCCESS**; AP-10 Chromium **#42789616057 SUCCESS**, four browser jobs.
+- PR body updated; service workflow and communication record final head/checks. **Subtask 2/2 complete. Author task finished. STOP** for Mira coordinator whole-PR review on current exact head. No self-review, Lev/Mark coordination, merge, SA02, security Stage6 or docs implementation.
+
 # Лира — FOUNDATION-LEV-01, подзадача 1/2: локальное исправление (2026-11-10)
 
 - Mira confirmed Lev P3 finding and assigned bounded author correction [#6763486651](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6763486651). PR #317 previous reviewed head `7f65741d5b3a65392287483d47c0ad6834075efc`.
