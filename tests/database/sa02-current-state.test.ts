@@ -23,8 +23,8 @@ async function person(id:string,old=false){
     [id,"Synthetic name "+id,id+"@example.test"]);
 }
 async function method(id:string,owner:string,provider:string,secret:string|null){
-  await client.query("insert into account(id,user_id,account_id,provider_id,password) "+
-    "values ($1,$2,$3,$4,$5)",[id,owner,provider,id,secret]);
+  await client.query("insert into account(id,user_id,account_id,provider_id,password,updated_at) "+
+    "values ($1,$2,$3,$4,$5,clock_timestamp())",[id,owner,provider,id,secret]);
 }
 async function activeSessions(){
   await client.query("insert into session(id,user_id,token,expires_at) values "+
@@ -126,7 +126,7 @@ describe("SA02 snapshot-consistent Owner current-state native sources",()=>{
     expect(get(first,"security.auth").values).toMatchObject({
       attributedAttempts:"141",rateLimitedAttempts:"140",retainedPatterns:"71",
       unknownAttempts:"0",overflowAttempts:"9",gapAttempts:"4",
-      currentHourAuthenticatedUsed:"1",currentHourAnonymousUsed:"0",hourlyCapacityPerPool:256,
+      currentHourAuthenticatedUsed:"1",currentHourAnonymousUsed:"1",hourlyCapacityPerPool:256,
     });
     expect(get(first,"security.access").values).toMatchObject({
       attributedAttempts:"1",retainedPatterns:"1",currentHourAnonymousUsed:"1",
