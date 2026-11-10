@@ -262,6 +262,25 @@
 12. The authorization repository's rollback call itself does not preserve the original error if PostgreSQL rollback also fails. That is an error-classification/cleanup concern, not a proven authority or state-serialization bypass; it is deferred to C8 failure semantics rather than counted as a C7 finding.
 13. No C7 finding confirmed.
 
+## Block C / C4 — Elevated authority propagation audit
+
+1. Audit target: current main `e279cb6c032a489a9044ca1191407df887c364b4`.
+2. Verdict: **PASS — 0 confirmed current-scope elevated-authority propagation defects**.
+3. `admin.users.blocks.managePrivileged` is a hierarchy capability, not an action grant. AP-10 mutation authority still separately requires bound Owner or raw `admin.users.blocks.manage`; possession of the elevated key alone cannot create/change/lift/review a measure.
+4. Neither `admin.users.blocks.manage` nor `admin.users.blocks.managePrivileged` has an initial grant in any built-in role, including admin. Non-Owner possession therefore requires an explicit Owner-controlled dynamic role grant or user override.
+5. Role-grant propagation is guarded both ways. `replaceRoleGrants` detects the elevated key in either added or removed sets and requires the exact bound Owner before changing persisted grants.
+6. Role assignment is guarded both ways. Switching a user into an elevated role or away from the user's current elevated role requires the bound Owner; implicit built-in `user` role is included when deciding whether the transition grants or strips elevated authority.
+7. Per-user override propagation is guarded for `allow`, `deny` and `inherit`/removal. Any actual change of the elevated key requires the bound Owner. An unchanged no-op does not alter authority and creates no History.
+8. Deleting an unassigned custom role carrying the elevated key is treated as an elevated revoke and requires the bound Owner. Assigned-role deletion remains blocked by the role-assignment FK/conflict path, so cascade cannot silently strip an assigned user's elevated authority.
+9. Existing PostgreSQL regression covers non-Owner attempts to grant/revoke the elevated role permission, assign/unassign an elevated role, and add/remove a personal elevated override; state and History remain unchanged on rejection.
+10. AP-10 hierarchy is reconstructed from **raw persisted RBAC** before administrative-sanction filtering. A saved administrative restriction therefore cannot lower a target's hierarchy and make a previously protected target attackable.
+11. Authority levels are strict: bound Owner = 3; raw `managePrivileged` = 2; other private administrative capability = 1; ordinary = 0. A measure actor must additionally possess the basic action grant and satisfy `actorLevel > targetLevel`; ordinary `admin.users.blocks.manage` alone cannot act on an equal/higher administrative target.
+12. Stored `issuer_authority_floor` prevents a later lower-ranked actor from taking over an existing measure created at a higher authority level.
+13. Bound Owner projection is independent of raw denies/grants: Owner remains rank 3 even when stored RBAC denies both block-management keys. This does not elevate other users or modify their persisted elevated state.
+14. C7 already proved authorization changes and AP-10 authority decisions share the same `authz_mutation_lock`, so grant/revoke races cannot create a stale elevated-authority window.
+15. Direct database writes by a compromised database principal are outside this application-authorization seam and remain for the database/runtime security blocks; no attacker-controlled application path to them was found here.
+16. No C4 finding confirmed.
+
 ## Координация
 
 1. #315 хранит решения, задачи, review findings и прогресс всего направления безопасности.
