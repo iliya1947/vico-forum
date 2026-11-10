@@ -9,7 +9,7 @@
 7. PASS/no-new-finding blocks: B5 CSRF/Origin, B6 password change, B8 freshness; B10 otherwise passes errors/telemetry/Retry-After/User-Agent/cleanup after AUTH-CACHE-01.
 8. B11 dependency verdict: no duplicate vulnerability finding; current `better-auth@1.7.7` / `@better-auth/drizzle-adapter@1.7.7` must be upgraded together as part of corrections. Minimum security-fixed line for Nov-3 advisories is `1.7.16`; current supported stable `1.7.x` on 2026-11-10 is **`1.7.19`**, so technical planning should target `1.7.19` unless a concrete compatibility blocker is proven.
 9. Nov-3 advisories for email change, secondary/cookie-cache sessions and unused plugins are not current Vico exploit surfaces under repository configuration. Passkey advisory remains a mandatory future Block-A activation gate.
-10. No implementation PR is open for Block B corrections yet.
-11. Technical planner/implementer/reviewer remain unassigned until correction scope consolidation.
+10. No Block-B correction implementation is assigned; confirmed findings remain recorded for later remediation only when the owner explicitly moves the security task to fixes.
+11. Technical planner/implementer/reviewer for remediation are unassigned.
 12. No Cloudflare/Neon/production mutation is authorized.
-13. Next after developer continuation: **Mira consolidates the eight current Block-B findings into one bounded correction scope, separates any item that genuinely requires its own package, and records the concise technical-planning task for Лёва.**
+13. Next after developer continuation: continue the security audit with the next map area, **Authorization & privilege escalation**; first define its bounded audit matrix against current main/source-of-truth, without implementation or remediation work.
