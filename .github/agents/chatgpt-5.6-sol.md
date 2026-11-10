@@ -1721,3 +1721,11 @@ Reviewed Lev plan `#6759936344`: CHANGES REQUIRED only for `FOUNDATION-PLAN-MIRA
 - **SA02-PLAN-MIRA-02 OPEN:** lifetime no-renewal cap can be attacker-exhausted once and permanently disable attribution of all new sources; explicit overflow disclosure is honest but functionally insufficient for Security.
 - Required property: attacker-driven cardinality stays bounded, but admission capability must recover on a bounded basis without deleting retained history or returning to per-request durable rows.
 - Review/handoff recorded in #6767512074. Lev owns the narrow plan correction; implementation remains unassigned.
+
+
+## Deferred Owner decision — History storage management
+
+- After the full current Super-admin plan is implemented, add a separate exact-Owner-only History/journal storage management phase.
+- Each real journal gets its own truthful occupancy indicator plus per-journal **Download archive** and **Clear history** actions.
+- Do not fabricate percentage capacity for unbounded stores.
+- This is explicitly deferred and must not expand SA-02/current SA implementation scope. Technical details of export, clear consistency and destructive-action protection are left to the later technical plan.
