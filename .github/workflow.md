@@ -1,9 +1,9 @@
 # Admin panel — current workflow
 
 - Service PR: **#251**. Current main/base: `e16d75dc7e2988eb06923c2d97ab5ae389bbfbac`.
-- Current bounded stage: **Super-admin SA-02 — technical plan delivered; awaiting Mira scope/fit review**.
+- Current bounded stage: **Super-admin route-discoverability hardening — technical planning by Lev; SA-02 paused**.
 - SA01 implementation PR #313 and factual docs PR #314 are merged; SA01 complete.
-- Technical planner: **Lev**. Planning assignment [#6758525820](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6758525820) completed by [bounded SA02 plan #6758838112](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6758838112).
+- Technical planner: **Lev** — route-hardening plan assigned via `#6759368876`.
 - Plan: Accounts & authentication + Security on existing SA01 event/observation foundation;7 code-backed monitors, real auth/access producers, native registration/attachment-security History reuse, precision-safe shared pagination and existing canonical links. No second auth/RBAC/mutation/history backend.
 - **Result recipient / next: Mira** — review SA02 bounded scope/technical fit, then decide on implementation assignment. Lev stops after publishing plan.
 - Implementer: **Lira — unassigned**. Mark unassigned. No SA02 implementation PR/head, code/migration or runtime acceptance delivered; no implementation PASS claimed.
