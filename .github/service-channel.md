@@ -32,16 +32,17 @@
 
 ## Актуальный baseline и назначение
 
-- Current main/base: `787cf6deae38138de2ffe867368ae794349f471f`. AP01–11, Owner redesign1–2, SET01–06 closed in repository/local-CI; Super-admin program open.
-- Accepted technical plan: [#6745289141](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6745289141); only SA01 authorized. Frozen product decisions remain in that plan; no last-manager/count/recovery rule.
-- SA01 [PR #313](https://github.com/iliya1947/vico-forum/pull/313), open/unmerged, reviewed exact head `6d7f50f979a8aba220b4439646304717c3d8b7c4`, 38 changed files. Mira coordinator PASS #6749734093; SA01-MIRA-01 closed.
-- **Lev independent whole-PR: CHANGES REQUIRED — one current-scope finding SA01-LEV-01 [P3].** Impossible calendar date `2026-02-31` passes cursor validation; real PG22008 becomes HTTP500 instead of400 on global/scoped History. Ordinary generated pagination works. [Review returned to Mira #6750292313](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6750292313).
-- **Result recipient / next: Mira, coordinator.** Lev returns the confirmed P3 finding and evidence for Mira's decision about response, assignment and route. Lev's earlier direct assignment to Lira is withdrawn. Lira remains stopped until Mira assigns work; Lev stopped; Mark unassigned.
-- Other reviewed SA01 scope passed: exact Owner/entries, append-only events/observations and real web grants, current System semantics, earliest retained Coverage, shared source identity/keyset history, safe 5xx telemetry/failure isolation, Infrastructure placeholder, EN/RU/HE/RTL/responsive/keyboard.
-- Exact-head CI #42684010768, SA01 Chromium #42684011022, existing Chromium #42684011268 SUCCESS; new-head checks/review not claimed.
-- Lev local verification: build, focused app55/55, nativePG/migration68/68, manifest67 public tables, grants/provisioning, checked-in browser15/15 and independent mixed-source pagination/HTTP/real-web-role probes. Evidence `/workspace/work/sa01-review-evidence/`; review checkout clean, disposable services removed.
-- Owner visual acceptance not an SA01 gate; UI/UX polish separate. Owner alone merges; permanent documentation separate after merge.
-- SA02+ inactive; production/Stage6/live infrastructure/real Google/external Owner binding not resumed.
+- Current main/base: `787cf6deae38138de2ffe867368ae794349f471f`. AP01–11, Owner redesign1–2, SET01–06 closed in repository/local-CI; Super-admin program remains open.
+- Accepted technical plan [#6745289141](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6745289141); only SA01 authorized. Frozen product decisions unchanged; no last-manager/count/recovery rule.
+- SA01 [PR #313](https://github.com/iliya1947/vico-forum/pull/313), Ready/open/unmerged: reviewed stable exact head **`d9c4268437e76eec9d01f19c7fe1b85d456128c1`**,38 changed files.
+- **Mira fresh coordinator PASS,0 current-scope findings** [#6757801001](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6757801001); **Lev independent whole-PR re-review PASS,0 confirmed current-scope findings** [#6757929335](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6757929335).
+- **SA01-LEV-01 closed:** impossible/noncanonical calendar cursors rejected before SQL, Owner document/data private400, valid calendar/leap/year-boundary cursors accepted. Guest401/non-Owner403 still before parser; genuine DB/schema faults remain unexpected500. **SA01-MIRA-01 remains closed.**
+- Entire SA01 scope reconfirmed: exact binding/both entries, System/Overview, append-only facts and runtime grants, earliest retained Coverage, shared scoped/global source identity/keyset, safe passive telemetry, honest Infrastructure placeholder and EN/RU/HE/RTL/responsive/keyboard.34 of38 implementation files unchanged since prior review; four-file correction reviewed.
+- Exact-head CI #42692723600, SA01 Chromium #42692723871, existing Chromium #42692723602 independently reconfirmed SUCCESS. New head review is complete.
+- Lev local repeat: build, focused app56/56, nativePG/migrations68/68, contract files3/3, manifest67 tables/grants/provisioning, connected browser16/16, own DB8/8 + HTTP/DOM11/11 and actual web-role operations. Evidence `/workspace/work/sa01-repeat-evidence/`; implementation unchanged by reviewer, checkout clean, disposable resources removed.
+- **Result returned to Mira for coordinator decision on further workflow.** Lev stopped after report; Lira stopped; Mark unassigned. Reviewer does not assign implementation, merge or SA02+.
+- Owner alone merges; merge not claimed. Permanent documentation remains separate after merge. Owner visual acceptance not an SA01 gate; UI/UX polish separate.
+- SA02–SA08 inactive; production/Stage6/live infrastructure/real Google/external Owner binding not resumed.
 
 ## Handoff — Лира: Stage2 factual documentation closeout
 
@@ -2634,3 +2635,18 @@ Lira corrected `SA01-LEV-01` on stable exact head `d9c4268437e76eec9d01f19c7fe1b
 The cursor fix rejects impossible calendar timestamps before PostgreSQL while preserving valid pagination and unexpected DB/schema error classification. The correction changes only the parser and its route/PG/browser regressions; the rest of SA-01 remains unchanged. Exact-head CI and both Chromium suites are green.
 
 Lira is stopped. Next separate step: independent Lev technical re-review of the same exact head. Mark unassigned.
+
+
+## SA-01 / PR #313 — Lev independent whole-PR re-review PASS (2026-11-10)
+
+[Full report #6757929335](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6757929335). Stable exact head `d9c4268437e76eec9d01f19c7fe1b85d456128c1`; unchanged main/base `787cf6deae38138de2ffe867368ae794349f471f`. **PASS —0 confirmed current-scope defects.** Review follows Mira fresh coordinator PASS #6757801001.
+
+**SA01-LEV-01 closed**: calendar/canonical round-trip rejects malformed dates before PostgreSQL, preserves valid cursors and unexpected DB errors. Own DB probes:6 invalid timestamps with0 SQL queries; four valid timestamps across year0001/leap2000/year9999 accepted by real PG. Real built Worker own matrix:24 invalid400 +8 valid200 for Owner global/scoped document/data;8 Guest401/non-Owner403 checks before parser. Missing source relation remains500, restore returns200; true availability timeout remains503.
+
+Whole SA01 scope reconfirmed with all38 changed files compared;34 unchanged and four-file correction. Fresh independent runtime verification covers exact binding and both links, three measured monitors/Overview, retained earliest Coverage, source-aware shared History, no duplicate domain event storage, safe telemetry/failure isolation, append-only authority, localized/responsive UI and inert Stage6 placeholder. Source comparison/hashes recorded. SA01-MIRA-01 remains closed.
+
+Own mixed-source pagination36 records/9 pages, per-monitor/global identity equality, later arrival between pages, browser global70 facts/5 pages and scoped35/2 pages; native samples dedup/heartbeat/changed-state, safe payload rejection; manifest67 public tables, grant/provisioning probes, actual vico_forum_web INSERT/dedup/read and UPDATE/DELETE42501/no sequence USAGE. App56/56, nativePG/migrations68/68, contract files3/3, build, checked-in Chromium16/16, own DB8/8 and HTTP/DOM11/11 all pass. Exact-head CI #42692723600 and both Chromium #42692723871/#42692723602 reconfirmed SUCCESS.
+
+Evidence `/workspace/work/sa01-repeat-evidence/`; checkout clean, reviewer did not change implementation; disposable preview/PG and temporary vars/symlink removed. Production/live acceptance not claimed.
+
+**Result returned to Mira for coordinator decision; Lev stops.** No implementer or further package assigned by reviewer. Lira stopped, Mark unassigned; Owner alone merges. Permanent docs remain separate after merge; SA02+/Stage6 not activated.
