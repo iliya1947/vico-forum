@@ -1,12 +1,14 @@
 # Admin panel — current workflow
 
 - Service PR: **#251**. Main/base: `24dfa9f51892490fae346f6079d6aa7fcfec1aa1`.
-- Current stage: **Admin/Super-admin routing foundation — Lev independent re-review complete; result returned to Mira for coordinator disposition.**
-- Implementation: **PR #317**, stable exact head `34d1e4acb278fca27cd994e590dd3b9757f5b4d8`.
-- Planner/reviewer: **Lev**, finished/stopped. Lira stopped/unassigned; Mark unassigned. No new implementation assignment.
-- Approved plan #6761206804 + correction #6761588752; Mira plan PASS #6761671562. Mira corrected-head coordinator PASS #6763991905.
-- Lev repeat whole-PR result [#6764152289](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6764152289): **FOUNDATION-LEV-01 CLOSED; FOUNDATION-LEV-02/P3 confirmed, PASS not issued.** System page content Monitoring link omits UI routing context and falls back to default Owner address under substitution. Current default URLs work.
-- Scope: outgoing AdministrativeRouting only; independent Admin/Super-admin families. Routes/Worker/auth/Router8.3.1/initial/schema/dependencies unchanged. #315 security integration remains separate.
-- Exact-head evidence: CI #42789615619, SA01 #42789615866 and AP10 #42789616057/all4 jobs SUCCESS; local build/253 tests/migrations0000–0062 PASS; browser16+11 groups PASS. Former independent reproducer3 PASS; expanded diagnostic4 PASS/1 reproduced failure for LEV02.
-- **Next recipient: Mira — consider FOUNDATION-LEV-02 and full independent result in #251; determine coordinator continuation.** Owner alone merges; PR317 not merged.
-- SA01 implementation#313/docs#314 complete/merged. SA02 remains next product package after foundation completion; SA02-PLAN-MIRA-01 / Owner correction#6759312425 remains open.
+- Current stage: **Admin/Super-admin routing foundation — FOUNDATION-LEV-02 confirmed by Mira; local correction assigned to Lira in PR #317.**
+- SA-01 implementation #313 and docs #314 complete/merged.
+- Planner: **Lev**. Approved plan #6761206804 + correction #6761588752; Mira plan PASS #6761671562.
+- Implementation PR: **#317**. Current reviewed head `34d1e4acb278fca27cd994e590dd3b9757f5b4d8`.
+- FOUNDATION-LEV-01 is closed on this head. Mira fresh whole-PR PASS #6763991905.
+- Lev repeat review #6764152289 found **FOUNDATION-LEV-02/P3**: the System page content-level Monitoring link calls `superAdminMonitoringPath(locale)` without the active UI routing resolver and therefore falls back to default Super-admin path under substitution.
+- Mira independently confirmed the finding in [#6764287078](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6764287078). Other current Super-admin route-level consumers were checked; no second analogous confirmed omission found.
+- Implementer: **Lira assigned** for a local correction only. Required behavior: System → Monitoring uses the same active Super-admin destination family as shell/cards; default URL unchanged; real System-route substitution regression + default control.
+- No loader/auth/route registration/Worker/outgoing destination/schema/dependency/#315 Stage-6 changes are authorized.
+- **Next: Lira updates PR #317, publishes a new stable exact head + applicable checks in #251, then stops. Mira coordinator whole-PR review restarts on that new head before further Lev review.**
+- Lev/Mark unassigned during correction. SA02 remains next product package after foundation completion; correction #6759312425 remains open.
