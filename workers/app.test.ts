@@ -104,7 +104,8 @@ it("records real native creation facts via waitUntil without mutating response",
   await Promise.all(pending);
   expect(factSink.append).toHaveBeenCalledExactlyOnceWith({
     kind: "account.created", userId: "persisted-user",
-  });
+  }, expect.any(Date));
+  expect(Number.isFinite((factSink.append.mock.calls[0][1] as Date).getTime())).toBe(true);
   expect(factSink.close).toHaveBeenCalledOnce();
   expect(telemetry.recordGap).not.toHaveBeenCalled();
 });
