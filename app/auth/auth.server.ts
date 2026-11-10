@@ -38,7 +38,7 @@ export const betterAuthSchema = { user, session, account, verification, rateLimi
 
 /** Server-owned request collector; no arbitrary client-selected facts. */
 export interface AuthCreationObserver {
-  capture(fact: AuthTransitionFact): void;
+  capture(fact: AuthTransitionFact, occurredAt?: Date): void;
   trustedActorFor(userId: string): string | null;
   recordGap?(count: number): void;
 }
@@ -124,7 +124,7 @@ export function createAuth(
     // This is instance-local to the canonical Better Auth operation.
     const createdUsers = new Set<string>();
     function emit(fact: AuthTransitionFact): void {
-      try { onCreatedFact?.capture(fact); onCreatedProof?.noteHook(fact); }
+      try { onCreatedFact?.capture(fact, new Date()); onCreatedProof?.noteHook(fact); }
       catch { try { onCreatedFact?.recordGap?.(1); } catch { /* best effort */ } }
     }
     function trustedActor(userId: string): string | null {
@@ -350,12 +350,12 @@ export function createHyperdriveAuthRuntime(
       const database = drizzle(client);
       if (onCreatedFact) {
         creations = new AuthCreationEvidence(database,
-          fact => onCreatedFact.capture(fact),
+          (fact, occurredAt) => onCreatedFact.capture(fact, occurredAt),
           userId => { try { return onCreatedFact.trustedActorFor(userId) === userId ? userId : null; }
             catch { return null; } },
           count => { try { onCreatedFact.recordGap?.(count); } catch { /* best effort */ } });
         deletions = new SessionDeletionEvidence(database,
-          fact => { try { onCreatedFact.capture(fact); }
+          (fact, occurredAt) => { try { onCreatedFact.capture(fact, occurredAt); }
             catch { try { onCreatedFact.recordGap?.(1); } catch { /* best effort */ } } },
           count => { try { onCreatedFact.recordGap?.(count); } catch { /* best effort */ } });
         // Same exact native driver proof for successful inserts and deletions.
