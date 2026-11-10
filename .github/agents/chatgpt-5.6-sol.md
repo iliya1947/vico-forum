@@ -1,13 +1,5 @@
 # Мира — безопасность Vico Forum
 
-## 2026-11-10 — Block B correction-scope consolidation
-
-1. Eight current findings split into two packages only because AUTH-REG-01 crosses a distinct DB transaction/locking boundary.
-2. B-C1: seven auth/runtime/API findings plus coordinated Better Auth package upgrade. This keeps interacting HTTP/session/OAuth behaviors in one regression-tested correction.
-3. B-C2: AUTH-REG-01 only, after B-C1. Planning it before the dependency upgrade risks designing serialization around 1.7.7 transaction/error behavior that immediately changes.
-4. No other finding justifies its own package: session token exposure/cache headers/OAuth URL cleanup are small boundary corrections; linking/sign-out/freshness/enumeration all share the same auth runtime upgrade/regression surface.
-5. Next standard-cycle action is Leva technical planning for B-C1 only.
-
 ## 2026-11-10 — Block B / B11 dependency-security-version audit
 
 1. Target: main `e279cb6c032a489a9044ca1191407df887c364b4`; direct deps `better-auth@1.7.7` and `@better-auth/drizzle-adapter@1.7.7`.
