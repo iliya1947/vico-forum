@@ -181,7 +181,7 @@ function createAuth(
         } },
         delete: { after: async (deleted, context) => {
           try { onDeleted?.noteAfter(deleted, context); }
-          catch { onCreatedFact.recordGap?.(1); }
+          catch { try { onCreatedFact?.recordGap?.(1); } catch { /* best effort */ } }
         } },
       },
     };
@@ -198,7 +198,7 @@ function createAuth(
           // Preserve the native Better Auth/Drizzle mutation and its result.
           const result = await Reflect.apply(value, adapter, args);
           try { onDeleted.noteAdapterDelete(property, args[0], result); }
-          catch { onCreatedFact.recordGap?.(1); }
+          catch { try { onCreatedFact?.recordGap?.(1); } catch { /* best effort */ } }
           return result;
         };
       },
