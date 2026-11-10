@@ -1,3 +1,21 @@
+# Лёва — актуальное состояние после independent review PR#317 (2026-11-10)
+
+**Роль:** технический планировщик/reviewer; реализацию не менял. **Результат whole-PR:** 1 confirmed current-scope finding FOUNDATION-LEV-01/P3; PASS не выдан. Полный отчёт и handoff Мире: [#6763198179](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6763198179).
+
+- PR317 exact head `7f65741d5b3a65392287483d47c0ad6834075efc`, main/base `24dfa9f51892490fae346f6079d6aa7fcfec1aa1`; all33 files reviewed. Approved plan#6761206804 +#6761588752; Mira coordinator PASS/assignment#6762795987.
+- Finding source app/admin/shell.tsx:41: pathname is compared directly with adminEntryPath(...,routing), whose new contract permits full URLs. At actual current /en/admin/users, an absolute same-origin Admin base suppresses recordAdminIndex. With adminEntry=last/adminLast=history, subsequent selectAdminEntry still chooses History. Relative base with same route selects Users.
+- Independent unmocked AdminShell/provider/header-account/preferences/Router reproducer: SSR A/B/default isolation PASS; relative preference+entry selection PASS; absolute same-origin counterpart FAIL. This is current foundation substitution correctness; production/default relative path works. No future cross-origin deployment/transport/security gate implied.
+- Local build PASS;22 files/250 app tests PASS; PG17 migrations0000–0062 PASS; checked-in SA01 real Chromium16 groups PASS; independent Chromium11 groups PASS including actual role mutation, measure redirect/DB/History, defaults/.data/non-Owner guards and EN/RU/HE mobile. No other confirmed current-scope defect.
+- CI #42780591588, #42780591412, #42780591278 independently API-confirmed SUCCESS at exact head; nine protected key files identical to base; no routes/Worker/authz/DB/schema/deps change.
+- #315 checked unchanged head5329ef0.../plan blob0b4fee7...: ordinary Admin Public Worker; future separate Owner Worker for Super-admin. No security implementation merged into foundation.
+- Evidence `/workspace/work/routing-review-evidence/`, including REVIEW.md, independent-routing.test.tsx/log, browser results/logs, scope-manifest.json. Preview stopped, disposable DB removed, synthetic vars/symlinks removed; tracked checkout clean.
+- **Next recipient Mira** for coordinator disposition; Lev finished/stopped; Lira/Mark unassigned. Do not assign Lira directly, merge, continue SA02 or edit implementation while reviewing. SA02-PLAN-MIRA-01/Owner#6759312425 still open.
+- User “...” = continue active assignment, else check251. Routine service publication authorized; owner alone merges. No last-admin/manager retention principle. Agent handoff through servicePR; developer only connects next agent.
+
+Previous personal context retained verbatim below; superseded assignments/results are history.
+
+---
+
 # Лёва — актуально: #315 cross-plan foundation correction delivered
 
 **2026-11-10.** Main `e16d75dc7e2988eb06923c2d97ab5ae389bbfbac`. **[Delta #6761588752](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6761588752)** overrides future-contract/acceptance parts of base plan#6761206804 after Mira#6761433938. Awaiting Mira re-review; Lev stopped; Lira/Mark unassigned.
