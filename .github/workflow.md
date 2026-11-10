@@ -1,6 +1,6 @@
 # Admin panel — current workflow
 
-- Service PR: **#251**. Current main/base: `787cf6deae38138de2ffe867368ae794349f471f`.
+- Service PR: **#251**. Current main/base: `be813b86e9a585b266145f655389df1ac4c2d64b`.
 - **Stage: Super-admin SA-01 — coordinator and independent reviews PASS; result returned to Mira for coordinator decision.**
 - Approved plan: [#6745289141](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6745289141); original SA01 scope [#6745414259](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6745414259). SA02+ not authorized.
 - Implementation [PR #313](https://github.com/iliya1947/vico-forum/pull/313): Ready, open/unmerged; stable reviewed exact head **`d9c4268437e76eec9d01f19c7fe1b85d456128c1`**,38 changed files.
@@ -23,3 +23,11 @@
 - Exact-head CI/browser checks green.
 - Coordinator final state: **READY FOR OWNER MERGE** (`#6758066942`).
 - After merge: separate factual SA-01 documentation closeout; SA-02 remains inactive until that closeout route is complete.
+
+
+## SA-01 merge and docs closeout
+
+- PR #313 merged into main as `be813b86e9a585b266145f655389df1ac4c2d64b`.
+- SA-01 implementation/review cycle is complete.
+- Lira assigned separate factual docs-only closeout via `#6758113204`.
+- No SA-02 implementation is authorized until this closeout is reviewed.
