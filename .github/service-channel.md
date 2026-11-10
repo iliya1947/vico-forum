@@ -3118,3 +3118,17 @@ SA02-D routes/UI/Overview/localization/final connected acceptance is absent/not 
 Because A/B/C were already produced through the earlier broad assignment and explicit developer continuations before the late correction, they will **not** be discarded, split retroactively or reimplemented. Recovery decision: review the existing cumulative backend A/B/C as one bounded package on exact head `c86b7e43ec1cb5c48a8c0475cd326eeba5b68cf4`. Full SA-02 is not declared delivered.
 
 Next: Mira coordinator whole-PR review of this exact head, backend A/B/C only. Lira stopped; Lev/Mark unassigned until coordinator PASS. SA02-D remains later separate work. #315 Stage6 and deferred journal occupancy/archive/clear remain outside scope.
+
+
+## 2026-11-10 — PR #319 backend A/B/C coordinator review: CHANGES REQUIRED
+
+Mira reviewed stable exact head `c86b7e43ec1cb5c48a8c0475cd326eeba5b68cf4` for the recovered cumulative SA02 backend A/B/C package. Full review: [#6777896661](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6777896661).
+
+**3 confirmed current-scope findings:**
+1. **SA02-IMPL-MIRA-01:** large bulk session deletion facts are not bounded across evidence arrays/proof query/auth-fact queue/persistence, contrary to the accepted bounded-chunk + recording-gap contract.
+2. **SA02-IMPL-MIRA-02:** auth exact facts assign `owner_events.occurred_at` at asynchronous persistence time instead of trusted transition occurrence time, so History can misorder real transitions and collapses occurred vs recorded semantics.
+3. **SA02-IMPL-MIRA-03:** `accounts.registration.coverageFrom` omits retained `registration-admission` attempt patterns even though those rows are projected into the monitor's adjacent History.
+
+Other reviewed A/B/C boundaries passed this coordinator review. Exact-head CI #42887473479, SA-01 Chromium #42887473457 and AP-10 Chromium #42887473380 are SUCCESS; AP-10 has four successful jobs.
+
+**Handoff:** Lira fixes all three findings together in existing Draft PR #319, adds focused regressions and publishes a new stable exact head + actual checks, then stops for fresh Mira whole-PR review. SA02-D remains unassigned. Lev/Mark remain unassigned until coordinator PASS.
