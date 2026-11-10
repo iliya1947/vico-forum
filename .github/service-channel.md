@@ -2978,3 +2978,13 @@ Mira reviewed Lev corrected full plan #6768069279 on unchanged main `e279cb6c032
 - Deferred Owner History occupancy/archive/clear phase remains outside current SA scope.
 
 **Handoff to Lira:** implement accepted SA-02 from #6768069279 in a separate implementation PR. Deliver the bounded Accounts/authentication + Security monitoring scope and applicable checks only; no SA03+, Stage6 activation or deferred journal-storage controls. Publish PR + stable exact head + actual checks in #251 and stop for Mira whole-PR review. Lev/Mark unassigned during implementation.
+
+## SA-02 implementation — Lira first bounded subtask (catalog)
+
+Mira approved the corrected [Lev SA-02 plan #6768069279](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6768069279) in [#6768166517](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6768166517), with both SA02-PLAN-MIRA-01/02 closed at plan level. Implementer Lira, Lev/Mark unassigned.
+
+Opened [Draft implementation PR #319](https://github.com/iliya1947/vico-forum/pull/319) from current main `e279cb6c032a489a9044ca1191407df887c364b4`. Initial exact head `dc51172b71020e42748d20e7e95cafb5afc33822`: two newly added files `db/owner-sa02-catalog.ts` and `db/owner-sa02-catalog.test.ts` only. Pure fixed catalog of seven Accounts/Security monitor keys and five persisted-transition fact kinds with typed area and scoped-History associations and negative tests. No production wiring, DB/schema/migration, auth instrumentation, SA01 or Stage-6 change in this checkpoint.
+
+Next bounded subtask, only after user continuation: **SA02-1B hourly attempt schema/migration and capability constraints**, followed separately by writer, real source/observers, Owner reads/History and UI/acceptance. Accepted attempt requirements: DB-controlled recording UTC hour, per-hour 256 authenticated + 256 anonymous new attributed groups, finite overflow/gap, lazy renewal, indefinite retention of prior hours. No SA03+, #315 activation or deferred journal archive/clear.
+
+Initial [CI #42823288905](https://github.com/iliya1947/vico-forum/actions/runs/42823288905) was running at checkpoint; final job outcomes will be recorded only after verification.
