@@ -2835,3 +2835,17 @@ Mira independently verified Lev repeat-review finding #6764152289 on PR #317 exa
 Cause: `app/routes/super-admin-system.tsx` builds its content-level Monitoring link with the helper default instead of the active AdministrativeRouting provider, so an injected Owner destination family is respected by the surrounding shell/cards but not by this one link. This is a missed current outgoing consumer from the approved foundation, not Stage-6 topology work.
 
 Mira checked the other current Super-admin route-level consumers; no second analogous confirmed omission found. Correction scope is local: wire this System link to the active Super-admin routing family and add real-route substitution/default regression coverage. No auth/loader/route registration/Worker/schema/dependency/#315 activation changes. New implementation head requires a fresh coordinator whole-PR cycle before any further Lev review.
+
+## Routing foundation — FOUNDATION-LEV-02 correction delivery (2026-11-10)
+
+Mira confirmed Lev's FOUNDATION-LEV-02/P3 and assigned bounded correction [#6764287078](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6764287078). New [Ready implementation PR #317](https://github.com/iliya1947/vico-forum/pull/317) stable exact head **`d12719bc8e6b2e6368489c16f2e0efa9ef6e3605`**. Prior coordinator PASS only applied to old head `34d1e4acb278fca27cd994e590dd3b9757f5b4d8`; FOUNDATION-LEV-01 remains closed on that prior head.
+
+- Fixed the real `app/routes/super-admin-system.tsx` System → Monitoring content-level Link to use the active `useAdministrativeRouting()` Super-admin family, matching the surrounding shell/cards. Default URL unchanged.
+- New `app/routes/super-admin-system.test.tsx` exercises real System route/page with fixture loader data (not mocked helper/provider), both default route and separate Admin `forum.invalid` / Owner `owner.invalid` bases; compares the content link, shell Monitoring link and all 3 monitor History targets.
+- Difference from last reviewed head: **2 commits, exactly 2 files**, no other implementation changes. No Worker ingress/route registration, authorization/loader, outgoing address definitions, schema/dependency, #315 Stage-6 or SA02 changes.
+- **Exact-head [CI #42794915937](https://github.com/iliya1947/vico-forum/actions/runs/42794915937) SUCCESS** (checks + native PostgreSQL17 database; **172/172 application suites, 2157/2157 tests**; lint/typecheck/build/migrations/schema).
+- **Exact-head [SA-01 Chromium #42794915727](https://github.com/iliya1947/vico-forum/actions/runs/42794915727) SUCCESS**.
+- **Exact-head [AP-10 Chromium #42794915509](https://github.com/iliya1947/vico-forum/actions/runs/42794915509) SUCCESS**: browser, history_browser, settings_browser and settings_administrator_browser.
+- PR #317 body and service workflow updated. No coordinator or independent whole-PR review performed by author; Mark unassigned.
+
+**Handoff: Mira — new coordinator whole-PR review of PR #317 on exact stable head `d12719bc8e6b2e6368489c16f2e0efa9ef6e3605`.** Lira author task finished and stops. Lev review follows only after new coordinator PASS. SA02 correction #6759312425 remains separate and open.
