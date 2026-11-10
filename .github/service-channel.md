@@ -100,6 +100,20 @@
 9. Future Stage-6/release hardening, not a current defect: the current limiter is fundamentally per-IP. Distributed credential attacks require an edge/account-risk strategy appropriate to deployed traffic; do not add a pre-release account lockout mechanism without a product/security design because it can itself become a denial-of-service vector.
 10. No second current-scope B1 defect confirmed.
 
+## Block B / B2 — OAuth login / callback integrity audit
+
+1. Audit target: current main `e279cb6c032a489a9044ca1191407df887c364b4`, Better Auth `1.7.7`.
+2. Core OAuth integrity properties PASS: Vico's stateful Better Auth configuration uses database-backed OAuth state plus a signed state cookie; state is random, expires, is bound to the cookie, and its verification record is deleted on successful parse before code exchange, preventing successful replay.
+3. Google authorization-code flow uses a generated PKCE verifier carried in protected state and supplied to Google's token exchange. Better Auth validates the configured provider/redirect URI; current Google provider verifies issuer/audience/signature/expiry for ID-token material.
+4. Callback and error destinations are captured into protected state only after Better Auth's trusted-origin validation at initiation. Vico's client additionally supplies only locale-local `returnTo` destinations. No external open redirect was confirmed.
+5. Vico's existing PostgreSQL integration proves fresh registration admission at callback: closing Google registration after OAuth initiation but before callback prevents new user/account/session creation while existing Google sign-in remains allowed.
+6. Existing callback presentation does not deserialize arbitrary provider diagnostics into the rendered page/loader data: sign-in maps any error to generic feedback; sign-up only recognizes the two Vico registration codes. External `returnTo` is normalized to the locale root.
+7. **AUTH-OAUTH-01 — CONFIRMED current-scope, Low / P3.** Better Auth callback error handling appends the provider-supplied `error_description` to the configured error callback URL. Vico's loaders intentionally ignore that value but do not canonicalize/replace the browser URL, and no repository-wide Referrer-Policy or URL sanitization was found. Provider diagnostic text therefore remains in address bar/history and may participate in ordinary same-origin referrer propagation even though it is not rendered.
+8. No token/credential disclosure through this path was proven; severity remains Low/P3. The finding is privacy/log-hygiene hardening against carrying raw provider diagnostics in URLs, not an OAuth authentication bypass.
+9. Better Auth `1.7.16` retains the same callback behavior, so upgrading for AUTH-LINK-01 does not remove AUTH-OAUTH-01.
+10. Live Google behavior remains Stage-6 acceptance; repository/synthetic-provider evidence establishes Vico/Better Auth callback mechanics but does not claim what text Google will emit in production errors.
+11. No second current-scope B2 defect confirmed.
+
 ## Координация
 
 1. #315 хранит решения, задачи, review findings и прогресс всего направления безопасности.
