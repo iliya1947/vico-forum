@@ -228,6 +228,24 @@
 12. Elevated `admin.users.blocks.managePrivileged` propagation is deferred to C4; generic concurrency races beyond the fresh mutation gate are deferred to C7.
 13. No C3 finding confirmed.
 
+## Block C / C2 — Effective permission resolution / precedence / freshness audit
+
+1. Audit target: current main `e279cb6c032a489a9044ca1191407df887c364b4`.
+2. Verdict: **PASS — 0 confirmed current-scope permission-resolution/freshness defects**.
+3. Non-Owner resolution applies the documented precedence from one DB snapshot: role grants seed the effective set, per-user `allow` adds a key and per-user `deny` removes it. Existing repository regression proves role grant + allow + deny composition and management-state projection.
+4. A user without explicit assignment resolves through the built-in `user` role via the DB join; missing user and missing built-in-user state fail as not-found/invariant failure rather than silently granting authority.
+5. Full `resolveUser()`, targeted management reads and bulk management reads use `REPEATABLE READ READ ONLY` snapshots, so role/grant/override components are not mixed across committed states inside one composite resolution.
+6. Production Hyperdrive authorization is request-local. Its cache is keyed by `userId` and stores one resolution promise per user for the lifetime of the Worker request only. Multiple resolver handles for the same user therefore share one internally consistent snapshot; different user IDs have distinct cache entries.
+7. Production `has()` does not perform an independent later permission read: it checks the cached `resolve().effectivePermissions`. Thus `has()` and `resolve()` cannot observe different committed authorization states inside one request.
+8. The administrative-restriction wrapper preserves that invariant: it derives restricted `has()` and `resolve()` from the same raw resolver snapshot and uses a separate request-local restriction cache keyed by family + actor + raw authority level.
+9. Every Worker request constructs a new RouterContext, new Hyperdrive authorization capability and new restriction wrapper. No long-lived/cross-request permission cache was found.
+10. Existing PostgreSQL regressions prove committed role/override changes are visible on subsequent reads/service calls, including allow → deny → inherit transitions and role assignment changes without logout/login.
+11. Authorization is never sourced from client/session role claims. The authenticated session supplies only the authoritative `user.id`; role/grant/override state is re-derived from PostgreSQL authorization tables.
+12. Bound Owner remains the intentional exception: raw denies/role changes do not suppress code-backed Owner projection. C1 already established this projection is exact-ID and catalog-bounded.
+13. A mutation performed during a request does not retroactively rewrite an already-created request-local snapshot. That is consistent with the documented request-snapshot model; next protected request is fresh. No current path relies on a post-mutation permission escalation inside the same request.
+14. Generic concurrent mutation serialization is deferred to C7.
+15. No C2 finding confirmed.
+
 ## Координация
 
 1. #315 хранит решения, задачи, review findings и прогресс всего направления безопасности.
