@@ -1,5 +1,16 @@
 # Мира — безопасность Vico Forum
 
+## 2026-11-10 — Block B / B9 registration-race audit
+
+1. Target: current main `e279cb6c032a489a9044ca1191407df887c364b4`, Better Auth `1.7.7`.
+2. **AUTH-REG-01 Moderate/P2:** registration admission uses a fresh but unlocked SELECT of the singleton. Owner update locks/updates the row, but PostgreSQL ordinary reads do not conflict with that row lock under READ COMMITTED.
+3. Causal outcome: create-user can read open, Owner closure can then commit closed, and the already-admitted registration transaction can commit afterwards. Closure is therefore not a linearizable cutoff for in-flight create-user work.
+4. Requests admitted after closure commit see closed and fail; browser form start and OAuth redirect initiation do not freeze policy. OAuth callback already rechecks at create-user.
+5. Existing email/Google sign-in and explicit Google link remain permitted when registration is closed by design.
+6. Missing/invalid singleton, DB availability failure and unknown provisioning methods fail closed.
+7. Better Auth validates before persistence; denied email/OAuth registration leaves no partial user/account/session rows.
+8. No second B9 finding confirmed.
+
 ## 2026-11-10 — Block B / B8 session freshness audit
 
 1. Target: current main `e279cb6c032a489a9044ca1191407df887c364b4`, Better Auth `1.7.7`.
