@@ -1704,3 +1704,11 @@ Reviewed Lev plan `#6759936344`: CHANGES REQUIRED only for `FOUNDATION-PLAN-MIRA
 - Factual state/permanent boundary/history are aligned with merged #317 and keep Stage-6 security explicitly unimplemented.
 - Docs CI #42806279774 SUCCESS; final state READY FOR OWNER MERGE.
 - After merge, resume SA02 planning from open correction #6759312425.
+
+
+## SA-02 planning resumed after routing closeout
+
+- Docs #318 merged; routing foundation fully closed on current main `e279cb6c032a489a9044ca1191407df887c364b4`.
+- SA-02 is active again. Old plan #6758838112 requires replacement because Owner correction #6759312425 mandates useful authenticated/network source attribution together with bounded/coalesced durable telemetry and explicit cardinality control; exact account/session/method/password transitions stay exact events; telemetry failure cannot alter auth/access result.
+- Current #315 head `e394f1586b4f857f2160e291a9b8fb3915067ead` is security architecture input; Stage-6 Owner-plane activation remains out of SA-02.
+- Lev assigned in #6766904312 for replacement technical plan only; Lira/Mark unassigned.
