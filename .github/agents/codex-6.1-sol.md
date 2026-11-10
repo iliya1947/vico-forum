@@ -1,8 +1,9 @@
-# Лёва — Super-admin security
+# Лёва — безопасность Vico Forum
 
-## Pending next task
+## Current assignment
 
-1. No active assignment yet.
-2. When the developer explicitly continues this security channel, prepare the bounded technical plan for the first repository-only foundation package from `SUPER_ADMIN_SECURITY_PLAN.md`.
-3. Preserve current Stage-6 pause: do not provision Access/hostname/Hyperdrive/secrets/production credentials or deploy.
-4. Do not assume implementation method beyond the fixed security invariants; inspect current repository/source-of-truth and choose the smallest reversible foundation that materially reduces later integration cost.
+1. Активного задания нет.
+2. #315 — общий security service channel; Super-admin security является блоком A.
+3. При следующем назначении сначала определить конкретный security-блок и его current-stage boundary, затем подготовить минимальный технический план.
+4. Не превращать общую security-карту в единый гигантский implementation package.
+5. Stage 6 provisioning/deploy остаётся paused без отдельного разрешения владельца.

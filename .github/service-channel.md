@@ -1,18 +1,25 @@
-# Super-admin security — communication
+# Безопасность Vico Forum — communication
 
-Служебный PR: #315. Оперативное состояние: [workflow.md](./workflow.md). Рабочий план: [SUPER_ADMIN_SECURITY_PLAN.md](../SUPER_ADMIN_SECURITY_PLAN.md).
+Служебный PR: #315. Оперативное состояние: [workflow.md](./workflow.md). Рабочий план: [SECURITY_IMPLEMENTATION_PLAN.md](../SECURITY_IMPLEMENTATION_PLAN.md).
 
-## Зафиксированное направление
+## Назначение канала
 
-1. Цель — максимально изолировать Super-admin как отдельный Owner control plane, не усложняя текущую pre-release разработку преждевременной production-защитой.
-2. Target: отдельный Owner Worker за Cloudflare Access, isolated Owner auth/session, exact `VICO_OWNER_USER_ID`, Passkey + step-up, отдельная минимальная DB capability/Hyperdrive и отдельный protected rollout.
-3. Ordinary forum session, Admin/RBAC, email/provider claims и public Worker не являются Owner authentication boundary.
-4. Existing SA-01 остаётся фактическим current baseline до отдельного activation package; Stage 6 paused.
-5. Сейчас создаётся только служебный план. Implementation PR отсутствует; external provisioning/deploy не разрешены.
+1. Этот PR — общий служебный канал безопасности Vico Forum.
+2. Он охватывает pentesting и hardening всего форума: application/auth/authz, Admin/Super-admin, данные/БД, файлы, abuse, runtime/Cloudflare, secrets, integrations, monitoring и release security.
+3. Super-admin security/pentesting — только первый подробно проработанный блок внутри этого канала.
+4. Новая security-область не становится implementation scope автоматически: сначала проверяется её актуальность для текущего Stage и формируется bounded задача.
+5. Stage 6 external activation остаётся paused без отдельного решения владельца.
+
+## Текущее состояние
+
+1. Общая security-карта и рабочий процесс зафиксированы в SECURITY_IMPLEMENTATION_PLAN.md.
+2. Блок A — Super-admin security — содержит текущий детальный target: отдельный Owner control plane, Access, isolated Owner auth/session, Passkey + step-up, minimal Owner DB capability и deploy isolation.
+3. Implementation PR по этому каналу сейчас отсутствует.
+4. External provisioning/deploy не разрешены.
 
 ## Координация
 
-1. Этот PR является рабочим каналом именно задачи Super-admin security/pentesting protection.
-2. Связанный Admin service PR #251 остаётся отдельным каналом Admin/Super-admin product delivery; security-hardening decisions этого направления не нужно дублировать туда как вторую source of truth.
-3. Следующий bounded шаг после явной команды владельца — технический план первого repository-only foundation package у Лёвы; Лира не начинает реализацию до принятого плана.
-4. Марк не назначен.
+1. #315 хранит решения, задачи, review findings и прогресс всего направления безопасности.
+2. Профильные feature/service PR могут ссылаться на #315, но их product source-of-truth не переносится сюда.
+3. Следующий исполнитель/планировщик назначается только под конкретный security-блок.
+4. Лира, Лёва и Марк сейчас не имеют активной реализации по #315.
