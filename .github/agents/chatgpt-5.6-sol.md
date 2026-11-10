@@ -1,5 +1,18 @@
 # Мира — безопасность Vico Forum
 
+## 2026-11-10 — Block B / B6 password-change audit
+
+1. Target: current main `e279cb6c032a489a9044ca1191407df887c364b4`, Better Auth `1.7.7`.
+2. Verdict: **PASS — 0 confirmed current-scope defects**.
+3. Settings binds the mutation to authoritative current session identity; submitted identity fields are stale expectations only.
+4. Existing credential password is checked before the canonical Better Auth change-password call; Google-only accounts cannot set a password through this product path.
+5. Better Auth requires live authoritative session + existing credential + correct current password. Server-only `setPassword` is not a Vico HTTP endpoint.
+6. New-password limits match at 8–128; Settings shares the canonical DB-backed rate-limit bucket.
+7. Change-password uses sensitive rather than fresh-session middleware. Current password is the intended reauthentication factor here, and SET-05 does not require separate session freshness for password change.
+8. Other sessions intentionally remain valid because Vico sends `revokeOtherSessions:false`; this is product contract, not a security finding.
+9. 1.7.7 optional `revokeOtherSessions:true` is non-transactional and 1.7.16 hardens it transactionally, but Vico does not use or promise that mode; recorded as dependency hardening only.
+10. No application logging/reflection of submitted password values found.
+
 ## 2026-11-10 — Block B / B2 OAuth callback integrity audit
 
 1. Target: current main `e279cb6c032a489a9044ca1191407df887c364b4`, Better Auth `1.7.7`.
