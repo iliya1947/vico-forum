@@ -107,7 +107,7 @@ export function betterAuthOptions(database: NodePgDatabase, env: BetterAuthEnvir
   };
 }
 
-function createAuth(
+export function createAuth(
   database: NodePgDatabase,
   env: BetterAuthEnvironment,
   onDatabaseError?: (error: unknown) => void,
