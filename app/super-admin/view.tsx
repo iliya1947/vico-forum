@@ -1,3 +1,4 @@
+import { useAdministrativeRouting } from "../administrative-routing/provider";
 import type { ReactNode } from "react";
 import { Link } from "react-router";
 import { useTranslation } from "react-i18next";
@@ -25,11 +26,12 @@ export function SuperAdminShell({ locale, current, children }: {
   children: ReactNode;
 }) {
   const { t } = useTranslation("common");
+  const routing = useAdministrativeRouting();
   const entries = [
-    { id: "overview", href: superAdminPath(locale), label: t("superAdminOverview") },
-    { id: "monitoring", href: superAdminMonitoringPath(locale), label: t("superAdminMonitoring") },
-    { id: "events", href: superAdminEventLogPath(locale), label: t("superAdminEvents") },
-    { id: "infrastructure", href: superAdminInfrastructurePath(locale), label: t("superAdminInfrastructure") },
+    { id: "overview", href: superAdminPath(locale,routing), label: t("superAdminOverview") },
+    { id: "monitoring", href: superAdminMonitoringPath(locale,routing), label: t("superAdminMonitoring") },
+    { id: "events", href: superAdminEventLogPath(locale,routing), label: t("superAdminEvents") },
+    { id: "infrastructure", href: superAdminInfrastructurePath(locale,routing), label: t("superAdminInfrastructure") },
   ];
   return <ForumShell locale={locale} variant="admin">
     <div className="admin-panel super-admin-panel">
@@ -61,6 +63,7 @@ function monitorText(state: SystemMonitorState, locale: string) {
 }
 export function SystemMonitorCards({locale,system}: {locale:string;system:SystemOverview}) {
   const {t} = useTranslation("common");
+  const routing = useAdministrativeRouting();
   return <div className="super-admin-monitors" data-monitor-count={system.monitors.length}>
     {system.monitors.map(state=><article className="super-admin-monitor" key={state.key}>
       <h3>{t(keys[state.key])}</h3>
@@ -78,9 +81,9 @@ export function SystemMonitorCards({locale,system}: {locale:string;system:System
           : t("superAdminNotRecorded")}
       </p>
       <nav aria-label={t("superAdminMonitorActions")}>
-        <Link to={superAdminMonitorHistoryPath(locale,state.key)}>{t("superAdminHistory")}</Link>
+        <Link to={superAdminMonitorHistoryPath(locale,state.key,routing)}>{t("superAdminHistory")}</Link>
         <span aria-hidden="true"> · </span>
-        <Link to={superAdminSystemPath(locale)}>{t("superAdminRefresh")}</Link>
+        <Link to={superAdminSystemPath(locale,routing)}>{t("superAdminRefresh")}</Link>
       </nav>
     </article>)}
   </div>;
@@ -117,28 +120,30 @@ function eventLabel(entry:OwnerTimelineEntry,t:(key:string)=>string) {
 }
 export function SuperAdminOverview({locale,system,recent}: {locale:string;system:SystemOverview;recent:OwnerTimelinePage}) {
   const {t}=useTranslation("common");
+  const routing = useAdministrativeRouting();
   return <SuperAdminShell locale={locale} current="overview">
     <section aria-labelledby="super-admin-overview-heading" className="admin-overview">
       <h2 id="super-admin-overview-heading">{t("superAdminOverview")}</h2>
       <p>{t("superAdminIntro")}</p>
       {system.recording==="unavailable" ? <p role="status">{t("superAdminRecordingUnavailable")}</p> : null}
       <SystemMonitorCards locale={locale} system={system}/>
-      <p><Link to={superAdminSystemPath(locale)}>{t("superAdminAllMonitors")}</Link></p>
+      <p><Link to={superAdminSystemPath(locale,routing)}>{t("superAdminAllMonitors")}</Link></p>
       <h2>{t("superAdminEvents")}</h2>
       <ul className="super-admin-recent">{recent.entries.map(event=><li key={event.origin+event.id}>
         <bdi>{event.kind}</bdi> — <time dateTime={event.occurredAt}>{formatTime(event.occurredAt,locale)}</time>
       </li>)}</ul>
       {recent.entries.length===0 ? <p>{t("superAdminNoHistory")}</p>:null}
-      <Link to={superAdminEventLogPath(locale)}>{t("superAdminAllEvents")}</Link>
+      <Link to={superAdminEventLogPath(locale,routing)}>{t("superAdminAllEvents")}</Link>
     </section>
   </SuperAdminShell>;
 }
 export function SuperAdminMonitoringIndex({locale}: {locale:string}) {
   const {t}=useTranslation("common");
+  const routing = useAdministrativeRouting();
   return <SuperAdminShell locale={locale} current="monitoring">
     <section aria-labelledby="super-admin-monitoring-heading" className="admin-overview">
       <h2 id="super-admin-monitoring-heading">{t("superAdminMonitoring")}</h2>
-      <Link className="admin-destination" to={superAdminSystemPath(locale)}>{t("superAdminSystem")}</Link>
+      <Link className="admin-destination" to={superAdminSystemPath(locale,routing)}>{t("superAdminSystem")}</Link>
       <p>{t("superAdminAreasLater")}</p>
       <ul className="super-admin-pending-areas">
         {monitoringAreas.map(area=><li key={area}><bdi>{t(area)}</bdi> <span>{t("adminInDevelopment")}</span></li>)}

@@ -4,6 +4,7 @@ import {
   attentionEntryPath, type AdminEntryId, type AttentionEntryMode,
   type AttentionEntryGroup, type AttentionEntryAccess,
 } from "./workspace-access";
+import { defaultAdministrativeRouting, type AdministrativeRouting } from "../administrative-routing/addresses";
 
 export interface AdministratorPreferences {
   readonly version: 1;
@@ -143,12 +144,13 @@ export function useAdministratorPreferences(accountId: string | null): Administr
   return snapshot.id === accountId ? snapshot.values : DEFAULT_ADMINISTRATOR_PREFERENCES;
 }
 
-export function selectAdminEntry(locale: string, allowed: readonly AdminEntryId[], prefs: AdministratorPreferences): string {
+export function selectAdminEntry(locale: string, allowed: readonly AdminEntryId[], prefs: AdministratorPreferences,
+  routing: AdministrativeRouting = defaultAdministrativeRouting): string {
   const preferred = prefs.adminEntry === "last" ? prefs.adminLast : prefs.adminDefault;
   const fallback = prefs.adminDefault;
   const chosen = preferred && allowed.includes(preferred) ? preferred
     : allowed.includes(fallback) ? fallback : allowed[0];
-  return chosen ? adminEntryPath(locale, chosen) : `/${encodeURIComponent(locale)}/admin`;
+  return chosen ? adminEntryPath(locale, chosen, routing) : routing.admin.overview(locale);
 }
 
 export function selectAttentionEntry(

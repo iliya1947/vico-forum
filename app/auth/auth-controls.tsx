@@ -1,3 +1,4 @@
+import { useAdministrativeRouting } from "../administrative-routing/provider";
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
 import { Link, useLocation, useRevalidator } from "react-router";
 import { useTranslation } from "react-i18next";
@@ -58,6 +59,7 @@ export function AuthControls({ locale, actions = authClientActions }: {
   const location = useLocation();
   const revalidator = useRevalidator();
   const { t } = useTranslation("common");
+  const routing = useAdministrativeRouting();
   const [pending, setPending] = useState(auth?.initialPresentationState === "pending");
   const [error, setError] = useState(auth?.initialPresentationState === "error");
   const user = auth?.user ?? null;
@@ -112,8 +114,8 @@ export function AuthControls({ locale, actions = authClientActions }: {
         ) : null}
         {(user?.canViewAdminPanel ?? user?.canManageAuthorization) ? (
           <Link className="auth-admin-link" to={user?.adminEntryDestinations?.length
-            ? selectAdminEntry(locale, user.adminEntryDestinations, preferences)
-            : `/${encodeURIComponent(locale)}/admin`}>
+            ? selectAdminEntry(locale, user.adminEntryDestinations, preferences, routing)
+            : routing.admin.overview(locale)}>
             {t("adminPanelTitle")}
           </Link>
         ) : null}

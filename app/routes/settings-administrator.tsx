@@ -1,3 +1,4 @@
+import { useAdministrativeRouting } from "../administrative-routing/provider";
 import { data, Link, useLoaderData, type RouterContextProvider } from "react-router";
 import { useTranslation } from "react-i18next";
 import { authSessionForRequest } from "../auth/request-context";
@@ -87,6 +88,7 @@ const groupLabels = {
 export default function SettingsAdministratorRoute() {
   const state = useLoaderData<typeof loader>();
   const { t } = useTranslation("common");
+  const routing = useAdministrativeRouting();
   const headerAccountId = useHeaderAuthUser()?.id;
   // A still-mounted route must never read/write account A's browser preferences for B.
   const accountId = headerAccountId === state.accountId ? state.accountId : null;
@@ -118,7 +120,7 @@ export default function SettingsAdministratorRoute() {
           onChange={event => save({ adminDefault: event.currentTarget.value as AdminEntryId })}>
           {state.admin.map(id => <option key={id} value={id}>{t(adminLabels[id])}</option>)}
         </select>
-        <Link className="settings-workspace-entry" to={selectAdminEntry(state.locale, state.admin, prefs)}>
+        <Link className="settings-workspace-entry" to={selectAdminEntry(state.locale, state.admin, prefs, routing)}>
           {t("settingsAdminOpenAdmin")}
         </Link>
       </fieldset> : null}

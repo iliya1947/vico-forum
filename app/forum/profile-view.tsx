@@ -1,3 +1,4 @@
+import { useAdministrativeRouting } from "../administrative-routing/provider";
 import { Form, Link, useNavigation } from "react-router";
 import { useTranslation } from "react-i18next";
 import type { ForumProfile } from "./profile";
@@ -18,6 +19,7 @@ export function ProfileView({ locale, profile, isOwner = false, canEditProfile =
   editing?: boolean; saved?: boolean; feedback?: ProfileActionData;
 }) {
   const { t } = useTranslation("common");
+  const routing = useAdministrativeRouting();
   const currentSessionUser = useHeaderAuthUser();
   const navigation = useNavigation();
   const path = forumProfilePath(locale, profile.id);
@@ -39,7 +41,7 @@ export function ProfileView({ locale, profile, isOwner = false, canEditProfile =
         <Link to={ownMeasuresPath(locale)}>{t("measuresOwn")}</Link>
         <Link to={settingsAccountPath(locale)}>{t("settingsAccount")}</Link>
         {currentSessionUser?.id === profile.id && currentSessionUser.canViewSuperAdmin ?
-          <Link to={superAdminPath(locale)}>{t("superAdminTitle")}</Link> : null}
+          <Link to={superAdminPath(locale,routing)}>{t("superAdminTitle")}</Link> : null}
       </nav> : null}
       <dl className="profile-statistics">
         <div><dt>{t("profileJoined")}</dt><dd><time dateTime={profile.joinedAt}>{new Intl.DateTimeFormat(locale, { year: "numeric", month: "short", day: "numeric", timeZone: "UTC" }).format(new Date(profile.joinedAt))}</time></dd></div>
