@@ -1,5 +1,16 @@
 # Мира — безопасность Vico Forum
 
+## 2026-11-10 — Block B / B1 enumeration and rate-limit audit
+
+1. Target: current main `e279cb6c032a489a9044ca1191407df887c364b4`, Better Auth `1.7.7`.
+2. **AUTH-ENUM-01 Moderate/P2:** Vico email sign-up exposes account existence because `requireEmailVerification=false` and default auto-sign-in keep Better Auth's generic duplicate-signup response disabled.
+3. Open registration: existing email follows explicit duplicate response while new email succeeds. Closed email registration: existing email still hits duplicate detection before Vico's create-user policy, while a new email reaches the registration-closed denial. The distinction is therefore source-proven in both policy states.
+4. Better Auth `1.7.16` keeps the same condition; upgrade alone does not fix the enumeration.
+5. Email sign-in does not expose the same distinction: unknown/no-credential/wrong-password paths use the same invalid-email-or-password error and dummy hashing for missing credentials.
+6. No rate-limit bypass confirmed. Sign-in/sign-up/change-password use the database-backed 3/10s per trusted client IP/path rule; missing trusted IP falls back to a shared limited bucket instead of disabling throttling.
+7. Rate-limit DB concurrency is guarded by unique key + atomic conditional increments; storage failure does not fail open.
+8. Distributed multi-IP abuse is a Stage-6/release hardening concern, not promoted to a current defect without deployed traffic/risk design.
+
 ## 2026-11-10 — Block B / B5 CSRF-Origin audit
 
 1. Target: current main `e279cb6c032a489a9044ca1191407df887c364b4`, Better Auth `1.7.7`.
