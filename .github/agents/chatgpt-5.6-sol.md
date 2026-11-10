@@ -1,5 +1,14 @@
 # Мира — безопасность Vico Forum
 
+## 2026-11-10 — Block D Ordinary Admin/moderation matrix
+
+1. Current main: `e279cb6c032a489a9044ca1191407df887c364b4`.
+2. Fully re-read current project/admin/authorization/complaints source-of-truth before defining the block.
+3. D1–D12 cover global Admin admission, Forum browsing, shared Quick actions, History, Users, measures, Attention cross-mode isolation, Help Signals, Complaints privacy/mutations, Security attachments and stale/failure/cache boundaries.
+4. Block D audits domain-specific permission use; it does not repeat generic Block-C authorization internals without contradictory domain evidence.
+5. Super-admin remains out of scope here.
+6. No remediation handoff. Next audit-only subtask: D1.
+
 ## 2026-11-10 — Block C / C9 catalog integrity audit
 
 1. Target: main `e279cb6c032a489a9044ca1191407df887c364b4`.
