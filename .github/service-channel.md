@@ -3082,3 +3082,16 @@ One existing SA01 test erroneously asserted all owner_% tables = its own origina
 - Two initial test-only defects: manual Better Auth account/session inserts lacked mandatory `updated_at` columns and a fixture supplied `provider_id` in `account_id`; corrected **test-only**. Initial expected anonymous pool occupancy 0 overlooked the shared cross-surface hourly pool, corrected test to 1. No current-scope runtime defect or corrective architecture change required.
 - **Exact-head [CI #42878923297](https://github.com/iliya1947/vico-forum/actions/runs/42878923297) SUCCESS**: app **177/177 files, 2181/2181 tests**, native PG17 **62/62 files, 665/665 tests**, lint/typecheck/build, migrations/grants/Worker smoke. [SA01 Chromium #42878923225](https://github.com/iliya1947/vico-forum/actions/runs/42878923225) SUCCESS; [AP10 Chromium #42878923061](https://github.com/iliya1947/vico-forum/actions/runs/42878923061) SUCCESS **4/4 jobs**.
 - **STOP after bounded reader stage.** Next only developer `...`: scoped/global source-aware Owner History projection and versioned cursor; afterward routes/cards/Overview/locale and final connected acceptance. No author whole-PR review, coordinator/Lev activation, Stage6 #315, SA03+, production, merge, or deferred journal occupancy/archive/clear.
+
+
+## 2026-11-10 — Mira correction: whole-SA02 handoff was too broad
+
+Mira corrected the implementation assignment in [#6777211866](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6777211866). The earlier whole-SA02 handoff in #6768166517 is superseded.
+
+SA-02 is now decomposed into sequential bounded implementation subtasks:
+1. **SA02-A — telemetry/storage foundation**: accepted bounded attempt catalog, forward schema/migration/capability changes, concurrency-safe DB-assigned hourly admission repository, retained-epoch semantics, source-aware reader/cursor foundation and focused tests. No Worker/auth producers or live UI/routes.
+2. **SA02-B — producers and trusted source collection**.
+3. **SA02-C — current readers and History projection**.
+4. **SA02-D — routes/UI/integration acceptance**.
+
+Only **SA02-A** is assigned to Lira now. She must publish a separate implementation PR + stable exact head + actual checks and stop for Mira review. SA02-B/C/D require explicit developer continuation and are not assigned. Lev/Mark remain unassigned.
