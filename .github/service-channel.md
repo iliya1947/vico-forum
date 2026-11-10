@@ -33,17 +33,12 @@
 ## Актуальный baseline и назначение
 
 - Current main `e279cb6c032a489a9044ca1191407df887c364b4`; AP01–11/Owner redesign1–2/SET01–06/SA01 and routing implementation#317/docs#318 merged/closed; FOUNDATION-LEV-01/-02 closed.
-- **Current task: SA02 retention/admission correction delivered; Mira re-review pending.**
-- Full corrected plan [#6768069279](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6768069279) supersedes#6767391552 after Mira review#6767512074; correction only attempt model and dependent counts/History/schema/acceptance. Other accepted SA02 scope preserved.
-- **SA02-PLAN-MIRA-01 CLOSED by Mira**, remains closed. **SA02-PLAN-MIRA-02 corrected in proposed model; Mira acceptance pending**, not declared closed.
-- Lifetime no-eviction admission cap removed. Proposed DB-assigned **UTC recording-hour**,512 new attributed groups/hour(256 authenticated/256 anonymous), finite per-window unknown/overflow/gap slots; lazy fresh quota on first producer write each hour. Source/request timestamps cannot choose epochs; exhaustion does not create extra epochs.
-- Old groups/state remain indefinitely with actor/IP/operation/status/first/last/count; no TTL/delete/eviction or counter reset. New window never tests lifetime archive size/old saturation as admission gate. Total archive grows with participating hours at bounded rate H×(512+P+C), not a fixed lifetime size.
-- Once flood stops, attribution can resume in the next hour without manual cleanup/restart/Owner visit. Ongoing flood may saturate new windows; UI shows current and historical overflow/gaps, without pretending complete attribution.
-- Same two planned telemetry relations, epoch included in UNIQUE/quota keys and indexes. Exact account/session/method/password facts, trusted source capture, failure isolation, canonical native sources, routes/current AdministrativeRouting and scoped capabilities unchanged. No SA03+ or dependency/security activation added.
-- **Next recipient Mira — re-review SA02-PLAN-MIRA-02 correction/dependencies and determine coordinator continuation.** Lev finished/stopped; Lira/Mark unassigned; no implementation PR/head or code/migration/tests/build/runtime acceptance.
-- Security input **#315 head `e394f1586b4f857f2160e291a9b8fb3915067ead`**, plan blob `0b4fee79a10dcf6f532f3758305d0896f88a7d88`, unchanged. Separate Stage6 Owner Worker/Access/isolated auth/session/DB/deploy/route concealment remain outside SA02.
-- Deferred Owner decision [#6767828181](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6767828181): separate exact-Owner journal occupancy/per-source archive download/clear phase after the current Super-admin plan; not SA02/current remaining implementation plan. Current retention unchanged; renewal does not depend on future clear controls.
-- Evidence `/workspace/work/sa02-renewal-plan-evidence/`; source checkout `/workspace/work/sa02-replan` clean,20 source hashes match previous current-main snapshot. No merge/deploy/production action; Owner alone merges.
+- **Current task: SA02 backend A/B/C independent whole-scope review completed — CHANGES REQUIRED, 3 confirmed findings.** Draft implementation PR#319 reviewed head `c9ff7b660fc40924f6adfd649b1daa0d80acb045`.
+- Accepted plan#6768069279, recovery A/B/C boundary#6777700709; Mira coordinator PASS/assignment#6779377295; independent result [#6779818918](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6779818918).
+- **SA02-IMPL-LEV-01 OPEN:** actual production factory discards trusted occurredAt (MIRA-02 correction incomplete at adapter). **LEV-02 OPEN:** current-row dates falsely predate retained Accounts History coverage. **LEV-03 OPEN:** auth History drops persisted known safe actor/target/entity IDs.
+- Verified exact-head CI/SA01/AP10 SUCCESS; independent build, 99 app/123 native PG17 tests, 69-table schema parity, runtime privileges and 16 real Chromium checkpoint groups PASS. Independent factory/current/History probes reproduce the three semantic defects.
+- **Next recipient Mira** for combined finding assessment/coordinator continuation. Lev finished/stopped; no Lira/Mark assignment by Lev; implementation unchanged.
+- SA02-D unstarted/unassigned; no full SA02 acceptance/merge. #315 security input refreshed at head `70d9efdd0e5d9910effcf95eaf610048cf471ac9`, plan blob `df2d500ccb2750d43422bf5d30f5b0c5370401ff` unchanged; separate security remediation/Stage6 activation, production and deferred journal occupancy/archive/clear outside scope.
 
 ## Handoff — Лира: Stage2 factual documentation closeout
 
@@ -3156,3 +3151,13 @@ Result: [#6779377295](https://github.com/iliya1947/vico-forum/pull/251#issuecomm
 - Exact-head CI #42900496484, SA-01 Chromium #42900496340 and AP-10 Chromium #42900496488 are SUCCESS; AP-10 has four successful jobs.
 
 **Handoff:** Lev independently reviews the same PR #319 exact head `c9ff7b660fc40924f6adfd649b1daa0d80acb045` for backend A/B/C only, without implementation. Lira/Mark unassigned. SA02-D remains later separate work.
+
+## SA02 backend A/B/C — Lev independent whole-scope review completed (2026-11-10)
+
+- Full confirmed packet and source links: [#6779818918](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6779818918). Exact head `c9ff7b660fc40924f6adfd649b1daa0d80acb045`, base/main `e279cb6c032a489a9044ca1191407df887c364b4` unchanged. Reviewed cumulative42-file A/B/C scope independently; no implementation edits.
+- **CHANGES REQUIRED, 3 current-scope P2 findings:** LEV-01 Hyperdrive factory drops second trusted Date, replacing occurrence/order with flush time; LEV-02 accounts.users/methods/sessions/registration coverage includes current row timestamps absent from retained History; LEV-03 auth-event DTO omits known safe authoritative actor/target/entity refs even though owner_events stores them.
+- Real disposable PG17 reproducers isolate factory vs direct-writer control, compare all4 current coverage boundaries to adjacent retained History, and compare stored known refs to projected DTO. Third finding also reproduced on actual Better Auth signup through built Worker. Existing MIRA-01 boundedness/recording-gap correction and MIRA-03 retained registration-admission inclusion remain; LEV-01 identifies an uncovered production seam of the MIRA-02 correction.
+- Independent verification: 18 app files/99 tests,11 native PG files/123 tests, build,69-table manifest parity, positive/negative runtime privileges,16 connected SA01 Chromium checkpoint groups all PASS. Exact-head CI42900496484,SA0142900496340,AP1042900496488 allSUCCESS verified; not claimed as local full-suite rerun or SA02-D acceptance.
+- No extra current-scope defect confirmed in reviewed admission/renewal/coalescing/quota/state/source/proof/dedup/rollback/counts/sampling/cursor/native projection/SA01 isolation paths. #315 current security input checked; existing baseline security issues and future isolation remain separate.
+- Diagnostic probe sources preserved in Lev personal file; local logs/JSON/screenshots/source manifest at `/workspace/work/sa02-abc-review-evidence/`. Owned Worker/PostgreSQL stopped/removed; synthetic vars/dependency symlinks removed; implementation checkout clean.
+- **Handoff: Mira assesses the combined packet and continues coordinator cycle. Lev stops, does not appoint Lira/Mark or start D.** Full SA02/D/merge/production/deferred journal operations remain unclaimed.
