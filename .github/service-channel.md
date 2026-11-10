@@ -32,15 +32,15 @@
 
 ## Актуальный baseline и назначение
 
-- Current main/base: `e16d75dc7e2988eb06923c2d97ab5ae389bbfbac`. AP01–11, Owner redesign1–2, SET01–06 и **SA01 implementation#313 + factual docs#314 closed/merged**.
-- Current assignment: **SA02 bounded technical planning only**, Mira [#6758525820](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6758525820). Accepted parent decomposition [#6745289141](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6745289141).
-- **Lev plan delivered:** [SA02 technical plan #6758838112](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6758838112).7 current monitors in Accounts & authentication/Security; source-backed auth/access event producers; existing native registration/attachment evidence projected into the same SA01 source-aware History, no copied mutation records.
-- Existing Owner event/observation relations reused with typed catalog/payloads/dedup/coverage; proposed forward time/id indexes + manifest. Precise native microsecond timestamps and text source IDs must survive cursor boundary; legacy valid SA01 cursors remain supported.
-- Preserve Better Auth1.7.7, registration flags/admission, Account & security identity/freshness, shared3/10s password-change HTTP bucket, cookies/errors and ordinary Security evidence authority. DB entity facts differ from endpoint outcomes: hooks alone miss early failures/429/Response and200 does not prove session deletion.
-- **Next / recipient: Mira — scope/fit review of bounded SA02 plan.** Lev stops. Lira and Mark unassigned; planner does not assign implementation. No SA02 implementation PR/code/migration/runtime acceptance or PASS claimed.
-- Planning evidence `/workspace/work/sa02-plan-evidence/`; clean checkout `/workspace/work/sa02-plan` on exact main. Official hooks/database docs + installed library source checked; no current-scope blocker/conflict established.
-- Canonical privileged profile/deactivation/enforcement/SA03+, Stage6/live infrastructure and visual polish are out of scope. External Google/Owner binding remains paused. Owner alone merges; permanent docs follow actual implementation separately.
-- Frozen product decisions unchanged; no last-manager/count/recovery rule.
+- Current main/base: `e16d75dc7e2988eb06923c2d97ab5ae389bbfbac`. AP01–11, Owner redesign1–2, SET01–06, SA01 implementation#313 + docs#314 closed/merged.
+- **Active task: minimal Admin/Super-admin Stage6-aware foundation planning only**, latest Owner decision / Mira assignment [#6759703177](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6759703177). It supersedes current live concealment-hardening scope.
+- **Lev plan delivered:** [#6759936344](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6759936344). Central semantic address resolver for both administrative areas, thin UI/server accessors with public static defaults, existing helpers/forms/redirects and same17 route registrations; no business or authorization rewrite.
+- Preserve current URLs/route module IDs, exact Owner/ordinary permission guards and local/CI flows. Keep Router8.3.1/initial discovery now. Official docs/changelog/PRs confirm8.4.0 discovery fixes; latest checked release8.5.1. Actual upgrade/discovery/security integration deferred to separately scoped Stage6 work.
+- **Next / recipient: Mira — review foundation plan for scope/fit and decide further assignment.** Lev stops; Lira/Mark unassigned. No foundation or SA02 implementation PR/code/migration/runtime acceptance claimed.
+- No production secrets/random tokens/hidden aliases/anti-enumeration/gateway/external binding/logging or IP security policy now. Current source/manifest discoverability is not fixed or claimed fixed by foundation. Real protection remains Stage6.
+- **SA02 remains next product package after bounded foundation decision; original plan not Ready.** SA02-PLAN-MIRA-01 still open: Owner clarification [#6759312425](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6759312425) requires bounded/coalesced retained denials with useful authenticated-user/trusted network-source attribution, first/last/count; neither per-request permanent rows nor count-only anonymous collapse. This correction is not implemented/designed by current foundation delivery.
+- Evidence `/workspace/work/admin-routing-plan-evidence/`: current source inventory17 registrations (11Admin/6Super-admin),31 source hashes, official Router docs/PR snapshots and complete plan. Checkout `/workspace/work/admin-routing-plan` clean.
+- SA03+/privileged profile/lifecycle/visual polish out of scope; real external Cloudflare/Neon/Google/Owner binding remains paused. Owner alone merges; no last-manager/count/recovery rule.
 
 ## Handoff — Лира: Stage2 factual documentation closeout
 
@@ -2719,3 +2719,18 @@ Owner paused SA-02 before implementation and requires the Owner route-discoverab
 ## Owner decision — protection deferred, foundation now
 
 Owner clarified the routing-security priority: current pre-release work must **not** build the real Admin/Super-admin concealment protection. Stage 6 remains the point where production secrets, opaque runtime entry routes, route-hiding behavior and external acceptance are activated. Current work is limited to a minimal replaceable foundation that prevents expensive future rewrites while preserving simple local/CI development. Lev is assigned this bounded foundation plan via `#6759703177`. SA-02 remains the next product package after the foundation decision; it is not blocked by production protection itself.
+
+
+## Admin / Super-admin Stage6-aware foundation — Lev plan delivered (2026-11-10)
+
+[Full plan #6759936344](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6759936344), exact main `e16d75dc7e2988eb06923c2d97ab5ae389bbfbac`, follows latest Owner/Mira scope #6759703177. **Planning only.**
+
+Minimal proposed foundation: one pure public destination catalog/default address resolver for both administrative surfaces; thin typed UI/server accessors accepting a replaceable resolver; migrate existing path wrappers and active href/form/redirect consumers; compose current17 registrations in one build-only boundary. Defaults preserve literal current URLs/route IDs/guards/local-CI behavior. No runtime route minting, second router, secrets, hidden URLs, anti-enumeration, deployment or telemetry policy introduced.
+
+Verified scattered constructions include Admin helpers/shell/Overview/History/inline authorization, header fallback, Settings workspace/authorization helpers and server measure/legacy redirects. Existing domain writers remain canonical. Preferences retain logical IDs/account isolation. Existing Worker ingress, locale switcher and credential return-path helper are future integration points, not broad current rewrites.
+
+Keep Router8.3.1/routeDiscovery initial. Official changelog and upstream #15395/#15489 confirm fixes in8.4.0; latest checked8.5.1, with experimental discovery APIs not imposed as security solution. Future Stage6 package owns compatible upgrade, actual entry/discovery/data/hydration/ingress integration and leak/operations acceptance; current foundation does not claim reduced discovery or protection.
+
+Acceptance is unchanged-path/authority contracts, one meaningful alternate-public-resolver injection test across UI/server links/forms/redirect, existing application/build/Worker/browser flows, no new schema/grants/protection/production gates. Evidence `/workspace/work/admin-routing-plan-evidence/`; clean checkout; no implementation/runtime acceptance performed.
+
+Returned to **Mira for scope/fit review and coordinator decision**; Lev stops, Lira/Mark unassigned. SA02 is next after bounded foundation decision and is not blocked on production protection. SA02-PLAN-MIRA-01/source-attribution correction remains open under #6759312425; this plan does not close or replace it.
