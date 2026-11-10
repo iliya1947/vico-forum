@@ -19,8 +19,11 @@ export type AuthTransitionFact =
   | ({ readonly kind: "auth.passwordChanged"; readonly userId: string;
       readonly accountId: string; readonly operationId: string } & Actor);
 
+/** Upper bound per trusted Worker request, including bulk session revocation. */
+export const MAX_AUTH_FACTS_PER_REQUEST = 32;
+
 export interface AuthFactWriter {
-  append(fact: AuthTransitionFact): Promise<{ id: string; inserted: boolean }>;
+  append(fact: AuthTransitionFact, occurredAt?: Date): Promise<{ id: string; inserted: boolean }>;
 }
 export class AuthFactCommitUncertainError extends Error {
   constructor(options?: ErrorOptions) {
@@ -106,7 +109,9 @@ async function occurrenceKey(parts: readonly string[]): Promise<string> {
 /** One short transaction; ambiguous COMMIT is never blindly retried. */
 export class PostgresAuthFactWriter implements AuthFactWriter {
   constructor(private readonly pool: Pick<Pool,"connect">) {}
-  async append(fact: AuthTransitionFact): Promise<{id:string;inserted:boolean}> {
+  async append(fact: AuthTransitionFact, occurredAt: Date = new Date()): Promise<{id:string;inserted:boolean}> {
+    if (!(occurredAt instanceof Date) || !Number.isFinite(occurredAt.getTime()))
+      throw new Error("Invalid trusted auth fact occurrence time");
     const f = encode(fact);
     const key = await occurrenceKey(f.identity);
     const client = await this.pool.connect();
@@ -120,10 +125,10 @@ export class PostgresAuthFactWriter implements AuthFactWriter {
         insert into owner_events
           (id,occurred_at,source,occurrence_key,kind,monitor_key,
            entity_type,entity_id,actor_user_id,target_user_id,correlation_id,payload)
-        values ($1,clock_timestamp(),'auth',$2,$3,$4,$5,$6,$7,$8,$9,$10::jsonb)
+        values ($1,$11::timestamptz,'auth',$2,$3,$4,$5,$6,$7,$8,$9,$10::jsonb)
         on conflict (source,occurrence_key) do nothing returning id`,
         [crypto.randomUUID(),key,f.kind,f.monitor,f.entityType,f.entityId,
-         f.actor,f.target,f.correlation,f.payload]);
+         f.actor,f.target,f.correlation,f.payload,occurredAt]);
       let result: {id:string;inserted:boolean};
       if (saved.rows[0]) result={id:saved.rows[0].id,inserted:true};
       else {
