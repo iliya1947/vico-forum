@@ -4,10 +4,11 @@ import { account, session, user } from "../../db/schema";
 import type { AuthTransitionFact } from "../../db/owner-auth-facts";
 
 type Created = Extract<AuthTransitionFact, {kind:"account.created"|"auth.methodLinked"|"auth.sessionCreated"}>;
-type Receipt =
+type Receipt = (
   | {model:"user";id:string}
   | {model:"account";id:string;userId:string;providerId:"google"|"credential"}
-  | {model:"session";id:string;userId:string};
+  | {model:"session";id:string;userId:string}
+) & {occurredAt:Date};
 const ID = /^[A-Za-z0-9._:-]{1,200}$/;
 const LIMIT = 64;
 const safeId = (value:unknown):value is string => typeof value==="string" && ID.test(value);
@@ -27,7 +28,7 @@ export class AuthCreationEvidence {
 
   constructor(
     private readonly database:NodePgDatabase,
-    private readonly capture:(fact:AuthTransitionFact)=>void,
+    private readonly capture:(fact:AuthTransitionFact, occurredAt:Date)=>void,
     private readonly trustedActorFor:(userId:string)=>string|null,
     private readonly missed:(count:number)=>void,
   ) {}
@@ -37,12 +38,12 @@ export class AuthCreationEvidence {
     const row=value as {id?:unknown;userId?:unknown;providerId?:unknown}|null;
     if(!spec || !row || !safeId(row.id)) return;
     let receipt:Receipt;
-    if(spec.model==="user") receipt={model:"user",id:row.id};
+    if(spec.model==="user") receipt={model:"user",id:row.id,occurredAt:new Date()};
     else if(spec.model==="session" && safeId(row.userId))
-      receipt={model:"session",id:row.id,userId:row.userId};
+      receipt={model:"session",id:row.id,userId:row.userId,occurredAt:new Date()};
     else if(spec.model==="account" && safeId(row.userId) &&
       (row.providerId==="google" || row.providerId==="credential"))
-      receipt={model:"account",id:row.id,userId:row.userId,providerId:row.providerId};
+      receipt={model:"account",id:row.id,userId:row.userId,providerId:row.providerId,occurredAt:new Date()};
     else return;
     const identifier=receipt.model+":"+receipt.id;
     if(this.receipts.has(identifier)) return;
@@ -134,7 +135,7 @@ export class AuthCreationEvidence {
         }
         if(fact){
           this.observed.add(key(fact.kind,receipt.id));
-          this.capture(fact);
+          this.capture(fact,receipt.occurredAt);
         }
       }catch{
         // Query failure or telemetry callback failure: not a verified transition.
