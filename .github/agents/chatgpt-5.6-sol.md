@@ -1,5 +1,18 @@
 # Мира — безопасность Vico Forum
 
+## 2026-11-10 — Block D / D3 Quick-action mutation audit
+
+1. Target: main `e279cb6c032a489a9044ca1191407df887c364b4`.
+2. Verdict: **PASS — 0 current-scope defects**.
+3. Canonical topic action authenticates and requires same origin before parsing; writer actor always comes from current Better Auth session.
+4. Pin/closure/solution/Help duplicate/source-locale/history paths independently require their exact effective permission or scoped Own/Any permission.
+5. Repository state locks/CAS enforce topic/post membership, best-answer, duplicate relationship/appeal, source revision and closure-version expectations without silent retargeting.
+6. Administrative state changes reapply AP-10 in the repository and append History atomically only for real administrative changes; no-op/rejected/stale/rollback paths do not fabricate events.
+7. Message revision history checks permission before private read and binds post to route topic; response is private/no-store.
+8. General stale UI never supplies actor authority; closure/message operations additionally carry explicit actor expectations. No cross-account privilege or attribution bypass was found.
+9. Runtime caller search found no weaker alternate writer; duplicate-Appeal Attention path independently applies the same permission/identity boundary.
+10. No remediation handoff. Next D6.
+
 ## 2026-11-10 — Block D / D7 Attention isolation audit
 
 1. Target: main `e279cb6c032a489a9044ca1191407df887c364b4`.
