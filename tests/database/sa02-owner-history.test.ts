@@ -14,7 +14,6 @@ const reader=new PostgresOwnerSa02History(pool);
 const U="aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa";
 const S="bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb";
 const M="cccccccc-cccc-4ccc-8ccc-cccccccccccc";
-const R="dddddddd-dddd-4ddd-8ddd-dddddddddddd";
 const REG="eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee";
 const BASE="2026-11-10T18:00:00.001Z";
 async function addOwner(id:string,kind:string,monitor:string,source:"auth"|"system"="auth",
