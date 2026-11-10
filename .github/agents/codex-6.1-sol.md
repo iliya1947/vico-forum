@@ -1,3 +1,21 @@
+# Лёва — актуально: #315 cross-plan foundation correction delivered
+
+**2026-11-10.** Main `e16d75dc7e2988eb06923c2d97ab5ae389bbfbac`. **[Delta #6761588752](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6761588752)** overrides future-contract/acceptance parts of base plan#6761206804 after Mira#6761433938. Awaiting Mira re-review; Lev stopped; Lira/Mark unassigned.
+
+**Missed context acknowledged:** cross-plan notice#6761087988 (06:53UTC) already existed before my corrected plan#6761206804 (07:01UTC); I checked earlier review/files but failed to refresh discussion and read#315. Initial plan#6759936344 was before#315 creation, but the later correction should have included it. Before this publication refreshed #251 comments and read #315 full master plan/workflow/communication. Do not rely on workflow files alone when a fresh assigned cross-plan comment changes the target.
+
+Reference only: **security PR#315**, checked head `5329ef027c7f477067154218349077d75b763c8a`, plan blob `0b4fee79a10dcf6f532f3758305d0896f88a7d88`. It is the general security channel; relevant BlockA target: ordinary Admin stays in **Public Forum Worker**, Super-admin moves to separate **Owner Worker/control plane**; after activation Public Worker no longer registers Super-admin. Do not describe current shared app/routes.ts + Worker as final combined Stage6 ingress.
+
+Current foundation remains address-only. AdministrativeRouting may have one interface but two distinct typed families (e.g.routing.admin/routing.superAdmin); no permanent shared base/origin/Worker assumption. Future trusted resolver can supply different Owner origin/base; callers must preserve selected destination instead of forcing current origin. Current defaults remain literal same-origin public local URLs. Minimal acceptance adds controlled independent public fixture origins for Admin/Owner destinations across UI/server outputs, no live external transport/topology.
+
+Current app/routes.ts/Worker remain unchanged; no registration helper/extraction/recomposition. FOUNDATION-PLAN-MIRA-01 closed by Mira. MIRA02 addressed in proposed delta, coordinator acceptance not claimed. Real Worker separation, Access, isolated Owner auth/session/Passkey, DB capability/Hyperdrive and deploy isolation/secrets are #315 work, not imported into#251. #315 service files not changed and no security implementation assigned.
+
+Evidence /workspace/work/admin-routing-plan-evidence/FOUNDATION_CROSS_PLAN_DELTA.md + SECURITY_REFERENCE_315.md. No implementation/code/tests/build/runtime acceptance for this plan-only correction. SA02-PLAN-MIRA-01/source-attribution requirement#6759312425 remains open and separate; preserve useful authoritative user/network-source identity/first/last/count with bounded/coalesced persistence. Stage6 activation paused.
+
+Ниже полный прежний контекст; неверная предпосылка о final shared ingress/origin superseded указанной delta.
+
+---
+
 # Лёва — актуально: corrected foundation plan delivered, Mira re-review pending
 
 **2026-11-10.** Same main `e16d75dc7e2988eb06923c2d97ab5ae389bbfbac`. [Corrected complete plan #6761206804](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6761206804), following Mira [#6760232469](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6760232469), replaces initial foundation plan#6759936344.
