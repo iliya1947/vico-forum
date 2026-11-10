@@ -1,5 +1,18 @@
 # Мира — безопасность Vico Forum
 
+## 2026-11-10 — Block C / C2 permission resolution audit
+
+1. Target: main `e279cb6c032a489a9044ca1191407df887c364b4`.
+2. Verdict: **PASS — 0 current-scope defects**.
+3. Non-Owner precedence is role grants + personal allow - personal deny, resolved from one REPEATABLE READ snapshot.
+4. Missing explicit assignment falls back only to built-in user role; missing/inconsistent role state fails closed as not-found/invariant failure.
+5. Production Hyperdrive cache is request-local and keyed by user ID. `has()` uses the same cached resolved snapshot as `resolve()`, so one request cannot combine separate committed authz states.
+6. Administrative restriction wrapper derives both methods from that same raw snapshot and keeps only request-local family restriction cache.
+7. New Worker request creates a new authorization capability; committed changes therefore apply on the next request without login refresh.
+8. Existing DB regressions prove allow/deny/inherit and role assignment changes become visible on later reads.
+9. Session/client role claims are not an authority source.
+10. Same-request snapshot stability is intentional; generic mutation concurrency remains C7.
+
 ## 2026-11-10 — Block C / C3 direct-write escalation audit
 
 1. Target: main `e279cb6c032a489a9044ca1191407df887c364b4`.
