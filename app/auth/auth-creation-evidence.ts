@@ -58,19 +58,34 @@ export class AuthCreationEvidence {
     if(typeof sql!=="string" || !/\breturning\b/i.test(sql)) return;
     const matched=/^insert into "(user|account|session)"\s*\(/i.exec(sql);
     if(!matched) return;
-    const native=result as {rowCount?:unknown;rows?:unknown}|null;
+    const native=result as {rowCount?:unknown;rows?:unknown;fields?:unknown}|null;
     if(native?.rowCount!==1 || !Array.isArray(native.rows) || native.rows.length!==1){
       this.missed(1);return;
     }
-    const row=native.rows[0] as {id?:unknown;user_id?:unknown;provider_id?:unknown}|null;
-    if(!row || !safeId(row.id)){this.missed(1);return;}
-    if(matched[1]==="user") this.noteAdapterCreate({model:"user"},row);
+    // Drizzle ORM 0.45.2 executes returning queries in node-postgres
+    // rowMode:'array'; the column order comes from PG result.fields, not
+    // a presumed static SELECT/RETURNING layout.
+    const raw=native.rows[0];
+    let fieldValue:(name:string)=>unknown;
+    if(Array.isArray(raw) && Array.isArray(native.fields) &&
+      raw.length===native.fields.length) {
+      const fieldNames=native.fields.map((field:unknown)=>
+        field && typeof field==="object" && "name" in field
+          ? (field as {name:unknown}).name : null);
+      fieldValue=(name)=>{const index=fieldNames.indexOf(name);return index<0?undefined:raw[index];};
+    } else if(raw && typeof raw==="object" && !Array.isArray(raw)){
+      const row=raw as Record<string,unknown>;
+      fieldValue=(name)=>row[name];
+    } else {this.missed(1);return;}
+    const id=fieldValue("id");
+    if(!safeId(id)){this.missed(1);return;}
+    if(matched[1]==="user") this.noteAdapterCreate({model:"user"},{id});
     else if(matched[1]==="account")
       this.noteAdapterCreate({model:"account"},{
-        id:row.id,userId:row.user_id,providerId:row.provider_id,
+        id,userId:fieldValue("user_id"),providerId:fieldValue("provider_id"),
       });
     else this.noteAdapterCreate({model:"session"},{
-      id:row.id,userId:row.user_id,
+      id,userId:fieldValue("user_id"),
     });
   }
 
