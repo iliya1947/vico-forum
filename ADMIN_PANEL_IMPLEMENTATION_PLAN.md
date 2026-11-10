@@ -1141,7 +1141,7 @@ Every monitored item/state has its own history.
 - The history control is placed **next to the corresponding monitor**, so the Owner can move directly from current state to that monitor's historical state/events.
 - History is therefore not a detached afterthought or a replacement for Monitoring; it is the temporal continuation of each monitor.
 - The global **Event log / journal** is the cross-system aggregate history view. It exists alongside per-monitor history: every monitor keeps its adjacent History control, and the global journal does not replace that local access path.
-- Existing SA6 retention remains: Owner monitoring/event history is retained indefinitely until the Owner explicitly changes the policy; there is no ordinary UI deletion.
+- For the **current Super-admin implementation plan**, SA6 retention remains: Owner monitoring/event history is retained indefinitely and there is no history-deletion UI inside the current SA packages. A separately approved post-current-plan Owner storage-management phase below supersedes this as the later target.
 
 This closes the logical Monitoring/history relationship without predefining every metric or technical event producer.
 
@@ -1209,3 +1209,25 @@ Action rules:
 - Product design does not enumerate a complete action catalog for all 13 Monitoring subsections. Exact monitor-to-operation mapping is a technical-planning task against the real repository and existing domain operations.
 
 With this decision, the Super-admin **product model is frozen for technical planning**: Overview, Monitoring with 13 subsections, per-monitor History, global Event log, contextual applicable actions, unified user profile with Admin/Owner sections, deactivation semantics, Owner entry points, retention policy and the Stage-6 Infrastructure placeholder are product-resolved. Technical decomposition may now start; implementation remains separate.
+
+
+## Owner decision — post-current Super-admin History storage management
+
+This is a **separate future phase after the currently approved Super-admin plan is fully implemented**. It must not be pulled into SA-02 or the remaining current SA packages.
+
+After the current Super-admin plan is complete, add an exact-Owner-only Monitoring section for **History / journal storage occupancy and management**.
+
+Product requirements:
+
+1. Show every real retained History / journal storage source separately.
+2. For each journal, show a truthful storage-occupancy indicator:
+   - current retained volume / usage;
+   - configured or technically meaningful capacity/limit when one exists;
+   - status such as normal / approaching limit / full where that can be derived honestly.
+3. Do not invent a percentage for an unbounded journal or a storage source without a meaningful capacity. Technical planning must choose a truthful metric for each source.
+4. Next to each journal's occupancy indicator provide two exact-Owner-only actions:
+   - **Download archive** — export/download an archive of that journal's retained history;
+   - **Clear history** — explicitly clear that journal's retained history.
+5. Actions are per journal/source, not one global “download everything” or “clear everything” control.
+6. Archive format, snapshot/consistency rules, clear semantics, confirmation/step-up requirements, transaction boundaries and interaction with active writers are technical-planning decisions for that later phase.
+7. Until this post-current-plan phase is implemented, the current SA retention behavior remains unchanged. This future requirement does not expand SA-02 or authorize implementation now.
