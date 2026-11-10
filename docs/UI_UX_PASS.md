@@ -57,9 +57,11 @@ bundle, чтобы GitHub Pages не мог после deploy отдать ifram
 
 The ordinary admin-panel contract is [ADMIN_PANEL.md](ADMIN_PANEL.md): its global structure,
 admission/action boundaries, shared Quick actions and separation from Needs attention and
-future super-admin UI. AP-01 establishes that contract only; the global shell and later
-capabilities remain separate implementation packages. Earlier topic-level Admin panel wording
-in this document describes existing contextual controls, not an implemented global workspace.
+the distinct exact-Owner-only [Super-admin](SUPER_ADMIN.md). Ordinary Admin AP-01–AP-11
+and Super-admin SA-01 are now implemented in repository/local-CI; subsequent Super-admin
+Monitoring/profile/deactivation functionality remains separate bounded work. Earlier
+topic-level Admin panel wording in this document refers to contextual controls, not a
+substitute for the implemented ordinary Admin or Super-admin workspaces.
 
 The pass must preserve these existing constraints:
 
