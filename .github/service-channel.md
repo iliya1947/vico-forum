@@ -2872,3 +2872,10 @@ Evidence routing-final-review-evidence retains source/scope/hash manifest, consu
 PR #317 stable exact head `d12719bc8e6b2e6368489c16f2e0efa9ef6e3605`: Mira coordinator PASS #6764695060 and Lev independent whole-PR PASS #6765085755, both with 0 confirmed current-scope defects. FOUNDATION-LEV-01 and FOUNDATION-LEV-02 are CLOSED. Final coordinator record: [#6765453316](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6765453316). **READY FOR OWNER MERGE.**
 
 Exact-head CI #42794915937, SA-01 Chromium #42794915727 and AP-10 Chromium #42794915509 are SUCCESS. Accepted package remains only the current outgoing-address foundation and does not activate #315 Stage-6 security. After Owner merge, the required next step is a separate factual docs closeout; SA02 resumes only after that closeout is reviewed. SA02 telemetry/source-attribution correction #6759312425 remains open.
+
+
+## Routing foundation merged — docs closeout
+
+PR #317 merged into `main` as `56358c517cd4456e4421d56e022fce70431b00c1` from reviewed exact head `d12719bc8e6b2e6368489c16f2e0efa9ef6e3605`. Final Mira/Lev whole-PR reviews both PASS with 0 current-scope defects; FOUNDATION-LEV-01/-02 closed.
+
+Lira is assigned by #6765810801 to create a separate factual docs-only closeout. Record only the merged outgoing-address foundation and its current limitations: independent typed Admin/Super-admin destination families and replaceable resolver seam exist; current URLs/routes/Worker/auth remain unchanged; no Stage-6 concealment/Owner Worker/Access/isolated auth/DB/deploy/production acceptance is implemented. Update factual state and project history plus only necessary permanent profile docs. SA02 stays paused until docs closeout merge; #6759312425 remains open.
