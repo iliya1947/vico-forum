@@ -1,5 +1,18 @@
 # Мира — безопасность Vico Forum
 
+## 2026-11-10 — Block B / B8 session freshness audit
+
+1. Target: current main `e279cb6c032a489a9044ca1191407df887c364b4`, Better Auth `1.7.7`.
+2. Verdict: **PASS — 0 new current-scope defects**.
+3. Better Auth default freshAge is 24h; freshness uses server session `createdAt`.
+4. Sliding session refresh updates expiry/updatedAt, not createdAt, so ordinary traffic cannot refresh the freshness clock.
+5. Vico has no cookie session cache; freshness-sensitive list-sessions is DB-backed.
+6. Settings action re-runs the server freshness boundary, so loader-time freshness cannot authorize a later stale mutation.
+7. Storage failures on Vico Account-security path remain failures/unavailable rather than successful freshness-sensitive writes.
+8. Reauthentication creates a distinct new session and therefore a new freshness clock; freshness is not transferred between sessions/accounts.
+9. AUTH-SESSION-03 remains the already-recorded direct Better Auth endpoint bypass and is not duplicated here.
+10. Better Auth 1.7.16 preserves the same freshness basis/default.
+
 ## 2026-11-10 — Block B / B6 password-change audit
 
 1. Target: current main `e279cb6c032a489a9044ca1191407df887c364b4`, Better Auth `1.7.7`.
