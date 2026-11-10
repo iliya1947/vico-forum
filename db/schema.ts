@@ -1808,6 +1808,50 @@ export const adminHistory = pgTable("admin_history", {
   check("admin_history_reason_check", sql`${table.reason} is null or (char_length(${table.reason}) <= 2000 and btrim(${table.reason}) <> '')`),
 ]);
 
+
+/** Owner history is append-only, independent from ordinary Admin History. */
+export const ownerEvents = pgTable("owner_events", {
+  id: uuid("id").primaryKey(),
+  position: bigint("position", { mode: "bigint" }).generatedAlwaysAsIdentity(),
+  occurredAt: timestamp("occurred_at", { withTimezone: true, precision: 3 }).notNull(),
+  recordedAt: timestamp("recorded_at", { withTimezone: true, precision: 3 }).notNull().default(sql`clock_timestamp()`),
+  source: text("source").notNull(),
+  occurrenceKey: text("occurrence_key").notNull(),
+  kind: text("kind").notNull(),
+  monitorKey: text("monitor_key").notNull(),
+  entityType: text("entity_type"),
+  entityId: text("entity_id"),
+  actorUserId: text("actor_user_id"),
+  targetUserId: text("target_user_id"),
+  correlationId: text("correlation_id"),
+  payload: jsonb("payload").notNull(),
+}, t => [
+  uniqueIndex("owner_events_position_idx").on(t.position.desc()),
+  uniqueIndex("owner_events_occurrence_idx").on(t.source, t.occurrenceKey),
+  index("owner_events_monitor_idx").on(t.monitorKey, t.position.desc()),
+  index("owner_events_kind_idx").on(t.kind, t.position.desc()),
+  index("owner_events_entity_idx").on(t.entityType, t.entityId, t.position.desc()),
+  index("owner_events_actor_idx").on(t.actorUserId, t.position.desc()),
+  index("owner_events_target_idx").on(t.targetUserId, t.position.desc()),
+]);
+
+/** Retained measured states are samples, never reconstructed domain events. */
+export const ownerMonitorObservations = pgTable("owner_monitor_observations", {
+  id: uuid("id").primaryKey(),
+  position: bigint("position", { mode: "bigint" }).generatedAlwaysAsIdentity(),
+  monitorKey: text("monitor_key").notNull(),
+  resourceScope: text("resource_scope").notNull(),
+  observedAt: timestamp("observed_at", { withTimezone: true, precision: 3 }).notNull().default(sql`clock_timestamp()`),
+  source: text("source").notNull(),
+  schemaVersion: integer("schema_version").notNull(),
+  quality: text("quality").notNull(),
+  value: jsonb("value").notNull(),
+  fingerprint: text("fingerprint").notNull(),
+}, t => [
+  uniqueIndex("owner_monitor_observations_position_idx").on(t.position.desc()),
+  index("owner_monitor_observations_scope_idx").on(t.monitorKey, t.resourceScope, t.position.desc()),
+]);
+
 export const forumComplaintActivity = pgTable("forum_complaint_activity", {
   caseId: text("case_id").notNull().references(() => forumComplaintCases.id, { onDelete: "restrict" }),
   reviewerUserId: text("reviewer_user_id").notNull().references(() => user.id, { onDelete: "restrict" }),

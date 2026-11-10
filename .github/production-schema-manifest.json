@@ -1,7 +1,7 @@
 {
   "version": 1,
   "schema": "public",
-  "targetMigration": "0061_user_privacy_preferences",
+  "targetMigration": "0062_owner_monitoring_foundation",
   "tables": {
     "account": {
       "columns": [
@@ -6157,6 +6157,346 @@
         }
       ],
       "indexes": []
+    },
+    "owner_events": {
+      "columns": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "nullable": false,
+          "defaultSha256": null
+        },
+        {
+          "name": "position",
+          "type": "bigint",
+          "nullable": false,
+          "defaultSha256": null
+        },
+        {
+          "name": "occurred_at",
+          "type": "timestamp(3) with time zone",
+          "nullable": false,
+          "defaultSha256": null
+        },
+        {
+          "name": "recorded_at",
+          "type": "timestamp(3) with time zone",
+          "nullable": false,
+          "defaultSha256": "4b1d66350efe3913ebc4851cda50bbd44dd30a5f59bafb1c24c2edec4301816e"
+        },
+        {
+          "name": "source",
+          "type": "text",
+          "nullable": false,
+          "defaultSha256": null
+        },
+        {
+          "name": "occurrence_key",
+          "type": "text",
+          "nullable": false,
+          "defaultSha256": null
+        },
+        {
+          "name": "kind",
+          "type": "text",
+          "nullable": false,
+          "defaultSha256": null
+        },
+        {
+          "name": "monitor_key",
+          "type": "text",
+          "nullable": false,
+          "defaultSha256": null
+        },
+        {
+          "name": "entity_type",
+          "type": "text",
+          "nullable": true,
+          "defaultSha256": null
+        },
+        {
+          "name": "entity_id",
+          "type": "text",
+          "nullable": true,
+          "defaultSha256": null
+        },
+        {
+          "name": "actor_user_id",
+          "type": "text",
+          "nullable": true,
+          "defaultSha256": null
+        },
+        {
+          "name": "target_user_id",
+          "type": "text",
+          "nullable": true,
+          "defaultSha256": null
+        },
+        {
+          "name": "correlation_id",
+          "type": "text",
+          "nullable": true,
+          "defaultSha256": null
+        },
+        {
+          "name": "payload",
+          "type": "jsonb",
+          "nullable": false,
+          "defaultSha256": null
+        }
+      ],
+      "primaryKeys": [
+        {
+          "name": "owner_events_pkey",
+          "columns": [
+            "id"
+          ]
+        }
+      ],
+      "uniqueConstraints": [],
+      "foreignKeys": [],
+      "checks": [],
+      "indexes": [
+        {
+          "name": "owner_events_actor_idx",
+          "unique": false,
+          "method": "btree",
+          "columns": [
+            {
+              "name": "actor_user_id",
+              "order": "asc",
+              "nulls": "last"
+            },
+            {
+              "name": "position",
+              "order": "desc",
+              "nulls": "last"
+            }
+          ],
+          "predicateSha256": null
+        },
+        {
+          "name": "owner_events_entity_idx",
+          "unique": false,
+          "method": "btree",
+          "columns": [
+            {
+              "name": "entity_type",
+              "order": "asc",
+              "nulls": "last"
+            },
+            {
+              "name": "entity_id",
+              "order": "asc",
+              "nulls": "last"
+            },
+            {
+              "name": "position",
+              "order": "desc",
+              "nulls": "last"
+            }
+          ],
+          "predicateSha256": null
+        },
+        {
+          "name": "owner_events_kind_idx",
+          "unique": false,
+          "method": "btree",
+          "columns": [
+            {
+              "name": "kind",
+              "order": "asc",
+              "nulls": "last"
+            },
+            {
+              "name": "position",
+              "order": "desc",
+              "nulls": "last"
+            }
+          ],
+          "predicateSha256": null
+        },
+        {
+          "name": "owner_events_monitor_idx",
+          "unique": false,
+          "method": "btree",
+          "columns": [
+            {
+              "name": "monitor_key",
+              "order": "asc",
+              "nulls": "last"
+            },
+            {
+              "name": "position",
+              "order": "desc",
+              "nulls": "last"
+            }
+          ],
+          "predicateSha256": null
+        },
+        {
+          "name": "owner_events_occurrence_idx",
+          "unique": true,
+          "method": "btree",
+          "columns": [
+            {
+              "name": "source",
+              "order": "asc",
+              "nulls": "last"
+            },
+            {
+              "name": "occurrence_key",
+              "order": "asc",
+              "nulls": "last"
+            }
+          ],
+          "predicateSha256": null
+        },
+        {
+          "name": "owner_events_position_idx",
+          "unique": true,
+          "method": "btree",
+          "columns": [
+            {
+              "name": "position",
+              "order": "desc",
+              "nulls": "last"
+            }
+          ],
+          "predicateSha256": null
+        },
+        {
+          "name": "owner_events_target_idx",
+          "unique": false,
+          "method": "btree",
+          "columns": [
+            {
+              "name": "target_user_id",
+              "order": "asc",
+              "nulls": "last"
+            },
+            {
+              "name": "position",
+              "order": "desc",
+              "nulls": "last"
+            }
+          ],
+          "predicateSha256": null
+        }
+      ]
+    },
+    "owner_monitor_observations": {
+      "columns": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "nullable": false,
+          "defaultSha256": null
+        },
+        {
+          "name": "position",
+          "type": "bigint",
+          "nullable": false,
+          "defaultSha256": null
+        },
+        {
+          "name": "monitor_key",
+          "type": "text",
+          "nullable": false,
+          "defaultSha256": null
+        },
+        {
+          "name": "resource_scope",
+          "type": "text",
+          "nullable": false,
+          "defaultSha256": null
+        },
+        {
+          "name": "observed_at",
+          "type": "timestamp(3) with time zone",
+          "nullable": false,
+          "defaultSha256": "4b1d66350efe3913ebc4851cda50bbd44dd30a5f59bafb1c24c2edec4301816e"
+        },
+        {
+          "name": "source",
+          "type": "text",
+          "nullable": false,
+          "defaultSha256": null
+        },
+        {
+          "name": "schema_version",
+          "type": "integer",
+          "nullable": false,
+          "defaultSha256": null
+        },
+        {
+          "name": "quality",
+          "type": "text",
+          "nullable": false,
+          "defaultSha256": null
+        },
+        {
+          "name": "value",
+          "type": "jsonb",
+          "nullable": false,
+          "defaultSha256": null
+        },
+        {
+          "name": "fingerprint",
+          "type": "text",
+          "nullable": false,
+          "defaultSha256": null
+        }
+      ],
+      "primaryKeys": [
+        {
+          "name": "owner_monitor_observations_pkey",
+          "columns": [
+            "id"
+          ]
+        }
+      ],
+      "uniqueConstraints": [],
+      "foreignKeys": [],
+      "checks": [],
+      "indexes": [
+        {
+          "name": "owner_monitor_observations_position_idx",
+          "unique": true,
+          "method": "btree",
+          "columns": [
+            {
+              "name": "position",
+              "order": "desc",
+              "nulls": "last"
+            }
+          ],
+          "predicateSha256": null
+        },
+        {
+          "name": "owner_monitor_observations_scope_idx",
+          "unique": false,
+          "method": "btree",
+          "columns": [
+            {
+              "name": "monitor_key",
+              "order": "asc",
+              "nulls": "last"
+            },
+            {
+              "name": "resource_scope",
+              "order": "asc",
+              "nulls": "last"
+            },
+            {
+              "name": "position",
+              "order": "desc",
+              "nulls": "last"
+            }
+          ],
+          "predicateSha256": null
+        }
+      ]
     },
     "rate_limit": {
       "columns": [

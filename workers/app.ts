@@ -48,6 +48,8 @@ import { createHyperdriveComplaintReview } from "../db/hyperdrive-complaint-revi
 import {complaintAppealContext} from "../app/complaints/appeal-context";
 import {createHyperdriveComplaintAppeal} from "../db/hyperdrive-complaint-appeal";
 import { resolveRuntimeDatabaseConnectionStrings } from "./database-bindings";
+import { ownerSystemMonitoringContext } from "../app/super-admin/request-context";
+import { createHyperdriveOwnerSystem } from "../db/hyperdrive-owner-system";
 
 const requestHandler = createRequestHandler(
   () => import("virtual:react-router/server-build"),
@@ -55,7 +57,8 @@ const requestHandler = createRequestHandler(
 );
 
 export default {
-  async fetch(request, env) {
+  async fetch(request, env, executionContext?: ExecutionContext) {
+    const requestStarted = performance.now();
     const context = new RouterContextProvider();
     const { localizationConnectionString, webConnectionString } = resolveRuntimeDatabaseConnectionStrings(env);
     const auth = createHyperdriveAuthRuntime(webConnectionString, env as Env & BetterAuthEnvironment);
@@ -91,6 +94,8 @@ export default {
     context.set(registrationSettingsContext, createHyperdriveRegistrationSettings(webConnectionString, ownerUserId));
     context.set(userLocaleWriterContext, createHyperdriveUserLocale(webConnectionString));
     context.set(userPrivacyContext, createHyperdriveUserPrivacy(webConnectionString));
+    const ownerMonitoring = createHyperdriveOwnerSystem(webConnectionString, import.meta.env.MODE);
+    context.set(ownerSystemMonitoringContext, ownerMonitoring);
     const authorization = createHyperdriveAuthorization(webConnectionString, undefined, ownerUserId);
     const effectiveAuthorization = withForumAdministrativeRestrictions(
       authorization, webConnectionString, undefined, ownerUserId,
@@ -104,6 +109,12 @@ export default {
     context.set(contentGenerationAdmissionContext, createHyperdriveContentGenerationAdmission(webConnectionString, undefined, ownerUserId));
     context.set(contentGenerationActionContext, DISABLED_CONTENT_GENERATION_ACTION_RUNTIME);
     const response = await requestHandler(request, context);
+    // Record actual 5xx response outcomes only; never request URLs, bodies or credentials.
+    // Passive telemetry is best-effort, not a veto for the regular response.
+    if (response.status >= 500 && response.status <= 599 && executionContext?.waitUntil) {
+      executionContext.waitUntil(ownerMonitoring.recordRequestFailure(response.status, performance.now() - requestStarted)
+        .catch(() => undefined));
+    }
     return withAuthSessionCookies(response, authHeaders);
   },
 } satisfies ExportedHandler<Env>;
