@@ -1,5 +1,17 @@
 # Мира — безопасность Vico Forum
 
+## 2026-11-10 — Block D / D1 global Admin admission audit
+
+1. Target: main `e279cb6c032a489a9044ca1191407df887c364b4`.
+2. Verdict: **PASS — 0 current-scope defects**.
+3. Global Admin entry uses only implemented ordinary-Admin capabilities; Own-only and Attention-only permissions do not admit it.
+4. `managePrivileged` alone is hierarchy-only and does not admit global Admin; basic measure-manage does.
+5. Forum/Users/History/Roles/Measures direct routes independently recheck their own permission before private reads/target parsing.
+6. Shell/header destinations are presentation-only and do not weaken direct route gates.
+7. Native DB/browser coverage confirms next-request grant revoke and AP-10 administrative suppression fail closed.
+8. Legacy Users redirect checks capability; legacy Forum redirect only points to the independently protected canonical route and reads no private data.
+9. No remediation handoff. Next D7.
+
 ## 2026-11-10 — Block D Ordinary Admin/moderation matrix
 
 1. Current main: `e279cb6c032a489a9044ca1191407df887c364b4`.
