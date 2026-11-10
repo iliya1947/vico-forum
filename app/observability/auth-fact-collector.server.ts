@@ -1,6 +1,7 @@
-import type { AuthTransitionFact, AuthFactWriter } from "../../db/owner-auth-facts";
+import { MAX_AUTH_FACTS_PER_REQUEST, type AuthTransitionFact, type AuthFactWriter } from "../../db/owner-auth-facts";
 
 type Sink = AuthFactWriter & { close(): Promise<void> };
+type TimedFact = { fact: AuthTransitionFact; occurredAt: Date };
 
 /**
  * One per trusted Worker request. Native after-commit callbacks only enqueue
@@ -8,7 +9,7 @@ type Sink = AuthFactWriter & { close(): Promise<void> };
  * Unlike lossy hourly attempts, exact facts are never coalesced or sampled.
  */
 export class RequestAuthFactCollector {
-  private pending: AuthTransitionFact[] = [];
+  private pending: TimedFact[] = [];
   private finalized = false;
   private actorId: string | null = null;
 
@@ -32,12 +33,14 @@ export class RequestAuthFactCollector {
     return userId === this.actorId ? userId : null;
   }
 
-  capture(fact: AuthTransitionFact): void {
-    if (this.finalized) {
-      this.missed(1);
+  capture(fact: AuthTransitionFact, occurredAt: Date = new Date()): void {
+    if (this.finalized || this.pending.length >= MAX_AUTH_FACTS_PER_REQUEST ||
+        !(occurredAt instanceof Date) || !Number.isFinite(occurredAt.getTime())) {
+      this.recordGap(1);
       return;
     }
-    this.pending.push(fact);
+    // Timestamp is captured at the proven transition, not when waitUntil writes.
+    this.pending.push({fact, occurredAt: new Date(occurredAt.getTime())});
   }
 
   async flush(): Promise<void> {
@@ -54,9 +57,9 @@ export class RequestAuthFactCollector {
       return;
     }
     try {
-      for (const fact of facts) {
+      for (const {fact, occurredAt} of facts) {
         try {
-          await sink.append(fact);
+          await sink.append(fact, occurredAt);
         } catch {
           // No retries: especially not after an ambiguous applied COMMIT.
           this.missed(1);
