@@ -8,7 +8,7 @@
 6. **Current audit block: C — Authorization & privilege escalation.**
 7. C1 completed: **PASS — 0 current-scope Owner-binding/authority-spoofing defects**.
 8. C3 completed: **PASS — 0 current-scope authorization-management direct-write escalation defects**.
-9. C2 completed: **PASS — 0 current-scope permission-resolution/precedence/freshness defects**.
+9. C2 completed: **PASS — 0 current-scope effective-permission/precedence/freshness defects**.
 10. No technical planner, implementer or implementation PR is assigned.
 11. No Cloudflare/Neon/production mutation is authorized.
 12. Next after developer continuation: execute **C7 Freshness / concurrency / mutation serialization** and stop with findings/classification.
