@@ -1,6 +1,6 @@
 import { readdir, readFile } from "node:fs/promises";
 import { Client, Pool } from "pg";
-import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
 import {
   createHyperdriveAuthRuntime, type AuthCreationObserver, type BetterAuthEnvironment,
 } from "../../app/auth/auth.server";
@@ -71,6 +71,9 @@ beforeAll(async () => {
     await client.query((await readFile("drizzle/" + file, "utf8"))
       .replaceAll('"public".','"' + schema + '".'));
   }
+});
+beforeEach(async () => {
+  // Preserve real per-request Better Auth admission while preventing one test\'s\n  // synthetic IP attempts from exhausting another independent scenario.\n  await client.query("truncate rate_limit");
 });
 afterAll(async () => {
   await pool.end();
