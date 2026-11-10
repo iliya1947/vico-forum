@@ -32,17 +32,15 @@
 
 ## Актуальный baseline и назначение
 
-- Current main/base: `787cf6deae38138de2ffe867368ae794349f471f`. AP01–11, Owner redesign1–2, SET01–06 closed in repository/local-CI; Super-admin program remains open.
-- Accepted technical plan [#6745289141](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6745289141); only SA01 authorized. Frozen product decisions unchanged; no last-manager/count/recovery rule.
-- SA01 [PR #313](https://github.com/iliya1947/vico-forum/pull/313), Ready/open/unmerged: reviewed stable exact head **`d9c4268437e76eec9d01f19c7fe1b85d456128c1`**,38 changed files.
-- **Mira fresh coordinator PASS,0 current-scope findings** [#6757801001](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6757801001); **Lev independent whole-PR re-review PASS,0 confirmed current-scope findings** [#6757929335](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6757929335).
-- **SA01-LEV-01 closed:** impossible/noncanonical calendar cursors rejected before SQL, Owner document/data private400, valid calendar/leap/year-boundary cursors accepted. Guest401/non-Owner403 still before parser; genuine DB/schema faults remain unexpected500. **SA01-MIRA-01 remains closed.**
-- Entire SA01 scope reconfirmed: exact binding/both entries, System/Overview, append-only facts and runtime grants, earliest retained Coverage, shared scoped/global source identity/keyset, safe passive telemetry, honest Infrastructure placeholder and EN/RU/HE/RTL/responsive/keyboard.34 of38 implementation files unchanged since prior review; four-file correction reviewed.
-- Exact-head CI #42692723600, SA01 Chromium #42692723871, existing Chromium #42692723602 independently reconfirmed SUCCESS. New head review is complete.
-- Lev local repeat: build, focused app56/56, nativePG/migrations68/68, contract files3/3, manifest67 tables/grants/provisioning, connected browser16/16, own DB8/8 + HTTP/DOM11/11 and actual web-role operations. Evidence `/workspace/work/sa01-repeat-evidence/`; implementation unchanged by reviewer, checkout clean, disposable resources removed.
-- **Result returned to Mira for coordinator decision on further workflow.** Lev stopped after report; Lira stopped; Mark unassigned. Reviewer does not assign implementation, merge or SA02+.
-- Owner alone merges; merge not claimed. Permanent documentation remains separate after merge. Owner visual acceptance not an SA01 gate; UI/UX polish separate.
-- SA02–SA08 inactive; production/Stage6/live infrastructure/real Google/external Owner binding not resumed.
+- Current main/base: `e16d75dc7e2988eb06923c2d97ab5ae389bbfbac`. AP01–11, Owner redesign1–2, SET01–06 и **SA01 implementation#313 + factual docs#314 closed/merged**.
+- Current assignment: **SA02 bounded technical planning only**, Mira [#6758525820](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6758525820). Accepted parent decomposition [#6745289141](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6745289141).
+- **Lev plan delivered:** [SA02 technical plan #6758838112](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6758838112).7 current monitors in Accounts & authentication/Security; source-backed auth/access event producers; existing native registration/attachment evidence projected into the same SA01 source-aware History, no copied mutation records.
+- Existing Owner event/observation relations reused with typed catalog/payloads/dedup/coverage; proposed forward time/id indexes + manifest. Precise native microsecond timestamps and text source IDs must survive cursor boundary; legacy valid SA01 cursors remain supported.
+- Preserve Better Auth1.7.7, registration flags/admission, Account & security identity/freshness, shared3/10s password-change HTTP bucket, cookies/errors and ordinary Security evidence authority. DB entity facts differ from endpoint outcomes: hooks alone miss early failures/429/Response and200 does not prove session deletion.
+- **Next / recipient: Mira — scope/fit review of bounded SA02 plan.** Lev stops. Lira and Mark unassigned; planner does not assign implementation. No SA02 implementation PR/code/migration/runtime acceptance or PASS claimed.
+- Planning evidence `/workspace/work/sa02-plan-evidence/`; clean checkout `/workspace/work/sa02-plan` on exact main. Official hooks/database docs + installed library source checked; no current-scope blocker/conflict established.
+- Canonical privileged profile/deactivation/enforcement/SA03+, Stage6/live infrastructure and visual polish are out of scope. External Google/Owner binding remains paused. Owner alone merges; permanent docs follow actual implementation separately.
+- Frozen product decisions unchanged; no last-manager/count/recovery rule.
 
 ## Handoff — Лира: Stage2 factual documentation closeout
 
@@ -2686,3 +2684,18 @@ Docs-only PR #314 on exact head `a0a171a0795600995b82fe9b3dc0c6b6070ccd3d` was r
 Docs PR #314 merged into current `main` as `e16d75dc7e2988eb06923c2d97ab5ae389bbfbac`; SA-01 implementation + factual closeout are complete.
 
 Lev is assigned **SA-02 bounded technical planning only** via `#6758525820`, against current main and the accepted Super-admin decomposition. Scope: Accounts & authentication + Security monitoring/event producers using the existing SA-01 History/Event-log foundation. Canonical profile/deactivation/SA-03+, Stage 6 and visual polish are out of scope. Lira and Mark remain unassigned until Mira reviews Lev's plan.
+
+
+## SA-02 — Lev bounded technical plan delivered (2026-11-10)
+
+[Full plan #6758838112](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6758838112) against current main `e16d75dc7e2988eb06923c2d97ab5ae389bbfbac`, following Mira assignment #6758525820 and completed SA01 implementation/docs closeout.
+
+Deliverable:7 global monitors — accounts.users/methods/sessions/registration and security.auth/access/attachments — with current measured state, adjacent History and applicable existing canonical links. Add safe authoritative auth/access facts through current Better Auth HTTP/direct runtime seams; project existing registration Admin History and attachment-security evidence without duplicate storage. No privileged profile/account lifecycle/new auth actions/second RBAC/infrastructure package.
+
+Plan explicitly distinguishes entity persistence from operation outcome, preserves registration/admission/identity/freshness/shared password rate-limit/cookie/error semantics, forbids inference of revocation from200 or link completion from OAuth initiation, and bounds passive collector/gap handling without making it an auth veto. Actor/target only from authoritative identity; safe per-kind DTOs exclude raw credentials/provider/request/evidence data. Recording counts are best-effort retained observations/outcomes, not complete historical security/uptime claims.
+
+Persistence reuses SA01 relations and existing runtime grants; proposes forward time/id indexes/manifest. Native attachment timestamps have microseconds whereas current JS cursor serialization has milliseconds: exact SQL boundary and source ID preservation with valid legacy cursor support is required. Application/nativePG/Worker/Chromium acceptance covers all current sources, dedup/microsecond pagination, HTTP/direct behavior and unchanged Settings/Security boundaries. Existing Super-admin workflow is extended rather than cloned per SA package.
+
+Source evidence and official Better Auth hooks/database snapshots: `/workspace/work/sa02-plan-evidence/`; checkout clean. Source analysis is not implementation or runtime acceptance. No genuine current-scope blocker/conflict found.
+
+**Returned to Mira for scope/fit review and coordinator decision. Lev stops; Lira/Mark remain unassigned.** No implementation assignment, merge, SA03+ or Stage6 activation by planner.
