@@ -1,5 +1,17 @@
 # Мира — безопасность Vico Forum
 
+## 2026-11-10 — Block C / C6 resource-condition audit
+
+1. Target: main `e279cb6c032a489a9044ca1191407df887c364b4`.
+2. Verdict: **PASS — 0 current-scope defects**.
+3. Post edit has a transactional repository author check; editor upload/draft preflight separately checks author and is not trusted as the final boundary.
+4. Solution Own checks authoritative locked topic author in repository. Any removes only ownership and keeps state/duplicate/post-membership/restriction rules.
+5. Source-locale Own checks authoritative topic/post author; Any removes only ownership and preserves target/current-revision/locale/CAS rules without granting content editing.
+6. `operationScope` is untrusted: explicit Any needs Any permission, explicit Own needs Own permission, malformed markers fail before writer.
+7. Stale editor/account identity is only an expectation; writer actor always comes from current session.
+8. Current runtime callers for these scoped writers are canonical gated actions; direct service/test calls are not attacker-controlled runtime entrypoints.
+9. Server capability still trusts its caller to supply actor/scope, so any future caller must preserve this boundary; no current Stage finding.
+
 ## 2026-11-10 — Block C / C5 authorization-read privacy audit
 
 1. Target: main `e279cb6c032a489a9044ca1191407df887c364b4`.
