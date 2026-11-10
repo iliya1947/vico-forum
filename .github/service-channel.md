@@ -87,6 +87,19 @@
 10. Pinned `1.7.7` and `1.7.16` origin-check middleware were compared for the audited behaviors and are materially identical here; the planned dependency upgrade does not change the B5 verdict.
 11. Future Stage-6 note, not a current defect: if Admin/Owner surfaces move to separate origins, trusted-origin expansion must be explicit and minimal. Adding broad wildcard origins would change this security boundary and requires separate acceptance.
 
+## Block B / B1 — Login/registration enumeration and brute-force audit
+
+1. Audit target: current main `e279cb6c032a489a9044ca1191407df887c364b4`, Better Auth `1.7.7`.
+2. **AUTH-ENUM-01 — CONFIRMED current-scope, Moderate / P2.** Direct email sign-up reveals whether an email already exists.
+3. Causal path: Vico config has `requireEmailVerification: false` and leaves Better Auth `autoSignIn` at its default. In 1.7.7, generic duplicate-signup responses are enabled only when email verification is required or `autoSignIn === false`. With Vico's current configuration an existing email returns the explicit duplicate-account error while a new allowed email creates an account; when email registration is closed, an existing email still follows the duplicate branch while a new email reaches Vico's registration-policy denial. The observable result therefore remains account-existence dependent.
+4. Better Auth `1.7.16` retains the same generic-duplicate activation rule, so the planned dependency upgrade does not fix AUTH-ENUM-01 by itself.
+5. Email sign-in enumeration was not confirmed: unknown email, Google-only/no-credential email and wrong password converge on the same invalid-email-or-password error, and the missing-credential paths deliberately hash the supplied password to reduce timing distinction.
+6. Credential rate-limit bypass was not confirmed. Pinned Better Auth uses a database-backed per-trusted-client-IP/per-path bucket; sign-in, sign-up and change-password have the special 3 requests / 10 seconds rule. Vico restricts IP extraction to `cf-connecting-ip`; malformed/missing trusted IP does not disable the limiter and falls into Better Auth's shared fallback bucket.
+7. The database rate-limit implementation uses a unique key plus guarded atomic increments, including concurrent first-use/window-reset handling. A rate-limit storage failure propagates as an error rather than allowing the auth request.
+8. Vico's existing SET-05 integration proves the canonical change-password route and Settings wrapper share the same DB bucket. No separate repository evidence contradicted the upstream sign-in/sign-up limiter semantics.
+9. Future Stage-6/release hardening, not a current defect: the current limiter is fundamentally per-IP. Distributed credential attacks require an edge/account-risk strategy appropriate to deployed traffic; do not add a pre-release account lockout mechanism without a product/security design because it can itself become a denial-of-service vector.
+10. No second current-scope B1 defect confirmed.
+
 ## Координация
 
 1. #315 хранит решения, задачи, review findings и прогресс всего направления безопасности.
