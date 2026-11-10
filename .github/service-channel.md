@@ -64,13 +64,13 @@
 
 1. Audit target: current main `e279cb6c032a489a9044ca1191407df887c364b4`, Better Auth `1.7.7`.
 2. Vico Settings wrapper itself passes the ownership/IDOR checks: action subject is derived from the authoritative request session; stale user/session expectations do not select authority; submitted `sessionId` is resolved only against freshly listed active sessions belonging to the current user; current-session revoke is rejected; unexpected/duplicate fields are rejected.
-3. Better Auth direct `/revoke-session` also checks that the token belongs to the authenticated user before deleting it. No cross-user session revoke IDOR was confirmed.
-4. **AUTH-SESSION-02 — CONFIRMED current-scope, High / P1.** The public canonical route `/api/auth/list-sessions` returns Better Auth session objects containing their bearer `token` field. Vico intentionally projects only opaque session IDs in Settings and documents that only the server uses the token, but `api/auth/*` exposes Better Auth directly. A fresh authenticated session can therefore obtain bearer tokens for all active sessions of that same account.
-5. Impact of AUTH-SESSION-02: one compromised fresh session can collect additional active bearer credentials and preserve access even if the originally compromised session is later revoked. It also defeats Vico's deliberate browser-facing token minimization/HttpOnly defense-in-depth. No cross-user token disclosure is claimed; Better Auth lists only the authenticated user's sessions and requires a fresh session.
-6. The cause is source-proven in Better Auth 1.7.7: `listSessions` maps active rows through `parseSessionOutput`; the core session schema marks `token` as required/unique but does not set `returned:false`. Better Auth 1.7.16 retains the same output behavior, so dependency upgrade alone does not close this boundary.
+3. Better Auth direct `/revoke-session` also checks that the supplied token belongs to the authenticated user before deleting it. No cross-user session revoke IDOR was confirmed.
+4. **AUTH-SESSION-02 — CORRECTED current-scope classification: Low / P3, not High / P1.** Direct `/api/auth/list-sessions` returns the raw server-side `session.token` field, bypassing Vico's ID-only Settings projection. However B10 follow-up proved that this raw DB token is **not** an authentication credential in current Vico: Better Auth authenticates with a signed session cookie, Vico does not install the Bearer plugin, and the raw token cannot be converted into a valid signed cookie without `BETTER_AUTH_SECRET`.
+5. Therefore the earlier claim that one compromised session could use these values as additional bearer credentials was incorrect and is withdrawn. Current impact is limited to unnecessary exposure of an internal session handle / contract-hardening concern; it does not establish persistence after revocation or session takeover.
+6. Better Auth `1.7.16` retains the same list output. If Vico ever enables Better Auth's Bearer plugin, this field would become materially more sensitive and must be re-reviewed before activation.
 7. **AUTH-SESSION-03 — CONFIRMED current-scope, Moderate / P2.** Vico's Settings contract requires both single-session and all-other-session revocation to pass the fresh-session boundary, but the public direct Better Auth `/revoke-other-sessions` endpoint uses only `sensitiveSessionMiddleware`, not `freshSessionMiddleware`. A still-valid but no-longer-fresh session can therefore invoke the canonical endpoint directly and revoke the account's other active sessions, bypassing the stricter Settings route.
-8. Direct `/revoke-session` has the same weaker freshness middleware, but practical targeting requires a bearer token. The no-target `/revoke-other-sessions` path is sufficient to prove the freshness bypass, so both are covered by AUTH-SESSION-03 rather than split findings.
-9. Better Auth 1.7.16 retains these endpoint semantics; fixing AUTH-SESSION-03 requires an application admission/endpoint policy, not only the planned dependency upgrade.
+8. Direct `/revoke-session` has the same weaker freshness middleware; targeting another own session requires its raw token. The no-target `/revoke-other-sessions` path is sufficient to prove the freshness bypass, so both remain grouped under AUTH-SESSION-03.
+9. Better Auth `1.7.16` retains these endpoint semantics; fixing AUTH-SESSION-03 requires an application admission/endpoint policy, not only the planned dependency upgrade.
 10. Race review: Vico resolves session ID to same-user token immediately before revoke; deleting/replacing the target concurrently does not create a cross-user authority path. Partial revoke failure reports failure rather than false success. No additional B7 current-scope defect confirmed.
 
 ## Block B / B5 — CSRF / Origin audit
@@ -155,6 +155,22 @@
 9. Denial at validateUserInfo occurs before user persistence. Email sign-up is inside Better Auth's transaction; OAuth new-user validation occurs inside the user/account creation transaction. Existing tests confirm denied registration leaves no user/account/session rows.
 10. Severity is Moderate/P2: impact is a bounded business-policy bypass for an already in-flight new registration around the closure boundary, not authentication/privilege escalation.
 11. No second B9 current-scope defect confirmed.
+
+## Block B / B10 — Failure / privacy / leakage semantics audit
+
+1. Audit target: current main `e279cb6c032a489a9044ca1191407df887c364b4`, Better Auth `1.7.7`.
+2. **AUTH-CACHE-01 — CONFIRMED current-scope, Low / P3.** Public authenticated GET endpoints `/api/auth/list-sessions` and `/api/auth/list-accounts` do not set `Cache-Control: private, no-store` (or equivalent). Vico's `auth-api.ts` passes Better Auth responses through unchanged. By contrast, Better Auth's `/get-session` explicitly sends `cache-control: no-store`, and Vico Settings routes explicitly send `private, no-store`.
+3. The list endpoints expose private account/session metadata; `list-sessions` also exposes the raw internal session token discussed in corrected AUTH-SESSION-02. No cross-user cache replay was demonstrated, so severity remains Low/P3 privacy/cache hardening rather than an auth bypass.
+4. Better Auth `1.7.16` retains the same list endpoint response headers, so dependency upgrade alone does not close AUTH-CACHE-01.
+5. Account projection PASS: Better Auth `parseAccountOutput` removes OAuth access token, refresh token, ID token, token expiry fields and password before `list-accounts` is serialized. No provider credential disclosure was confirmed there.
+6. Settings response hygiene PASS: protected Settings responses use `private, no-store`; controlled 401/403/409/429/503 paths do not reflect submitted password/session secrets.
+7. `Retry-After` PASS: Vico accepts only a 1–4 digit Better Auth value before propagating it, bounding the value to a numeric 0–9999 representation and avoiding header injection.
+8. Device label PASS: Vico replaces C0/DEL control characters, trims and bounds User-Agent-derived labels to 160 characters; React rendering supplies HTML escaping.
+9. Worker 5xx telemetry PASS: only response status and elapsed time are recorded. Request URL, body, cookies, password and token are not passed to monitoring.
+10. Cleanup semantics PASS: PostgreSQL client discard is best-effort and explicitly cannot replace the original classified auth/database result.
+11. Better Auth default logger level is `warn`; its info-level existing-email sign-up diagnostic is therefore not emitted by Vico's current default configuration. No Vico application logging of submitted passwords or session-cookie values was found.
+12. Previously recorded AUTH-ENUM-01 and AUTH-OAUTH-01 remain the relevant enumeration/URL-diagnostic findings; B10 does not duplicate them.
+13. No additional B10 current-scope defect confirmed.
 
 ## Координация
 
