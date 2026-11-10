@@ -73,7 +73,9 @@ beforeAll(async () => {
   }
 });
 beforeEach(async () => {
-  // Preserve real per-request Better Auth admission while preventing one test\'s\n  // synthetic IP attempts from exhausting another independent scenario.\n  await client.query("truncate rate_limit");
+  // Preserve actual Better Auth rate limiting within each independent test.
+  // Avoid sharing a synthetic IP rate-limit budget across separate cases.
+  await client.query("truncate rate_limit");
 });
 afterAll(async () => {
   await pool.end();
