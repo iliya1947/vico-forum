@@ -31,7 +31,21 @@ export interface OwnerHistoryOptions {
   before?:string;
   limit?:number;
 }
+const ORIGIN_SCOPES: Record<OwnerHistoryOrigin,readonly OwnerHistoryMonitor[]> = {
+  "system-event": SYSTEM_MONITORS,
+  "auth-event": ["accounts.users","accounts.methods","accounts.sessions","security.auth"],
+  "system-observation": [...SYSTEM_MONITORS,...SA02_MONITORS.accounts,...SA02_MONITORS.security],
+  "admin-history": ["accounts.registration"],
+  "attachment-evidence": ["security.attachments"],
+  "attempt-pattern": ["accounts.registration","security.auth","security.access"],
+  "attempt-state": ["security.auth","security.access"],
+};
 type Scope = {area:OwnerHistoryArea|null;monitor:OwnerHistoryMonitor|null};
+function compatibleOrigin(origin:OwnerHistoryOrigin,scope:Scope):boolean {
+  const allowed=ORIGIN_SCOPES[origin];
+  if(scope.monitor!==null) return allowed.includes(scope.monitor);
+  return scope.area===null || allowed.some(key=>MONITORS[scope.area!].includes(key));
+}
 type Cursor = {v:1;at:string;origin:OwnerHistoryOrigin;id:string;
   area:OwnerHistoryArea|null;monitor:OwnerHistoryMonitor|null};
 const EXACT = /^([1-9][0-9]{3})-(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01])T([01][0-9]|2[0-3]):([0-5][0-9]):([0-5][0-9])\.([0-9]{6})Z$/;
@@ -77,7 +91,8 @@ function checkedCursorShape(value:unknown,scope:Scope):Cursor {
      cursor.v!==1 || !checkExactAt(cursor.at) ||
      typeof cursor.origin!=="string" || !ORIGINS.includes(cursor.origin) ||
      typeof cursor.id!=="string" || !safeId(cursor.id) ||
-     cursor.area!==scope.area || cursor.monitor!==scope.monitor)
+     cursor.area!==scope.area || cursor.monitor!==scope.monitor ||
+     !compatibleOrigin(cursor.origin as OwnerHistoryOrigin,scope))
     throw new Error("Invalid Owner History cursor");
   return cursor as unknown as Cursor;
 }
@@ -91,7 +106,7 @@ export function parseOwnerHistoryCursor(value:string|undefined,options:OwnerHist
     if(scope.area!==null && scope.area!=="system")
       throw new Error("Invalid Owner History cursor");
     const legacy=parseOwnerTimelineCursor(value);
-    if(!legacy) throw new Error("Invalid Owner History cursor");
+    if(!legacy || !compatibleOrigin(legacy.origin,scope)) throw new Error("Invalid Owner History cursor");
     return {v:1,at:legacy.at.slice(0,-1)+"000Z",
       origin:legacy.origin,id:legacy.id,area:scope.area,monitor:scope.monitor};
   }
