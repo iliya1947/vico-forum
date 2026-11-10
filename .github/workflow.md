@@ -1,15 +1,16 @@
 # Admin panel — current workflow
 
 - Service PR: **#251**. Main/base: `24dfa9f51892490fae346f6079d6aa7fcfec1aa1`.
-- Current stage: **Admin/Super-admin routing foundation — Mira coordinator PASS; awaiting Lev independent technical review on the same stable exact head.**
+- Current stage: **Admin/Super-admin routing foundation — Lev independent whole-PR review complete; one confirmed P3 finding returned to Mira for coordinator disposition.**
 - SA01 implementation#313 + docs#314 complete/merged.
 - Planner: **Lev**. Approved plan = [#6761206804](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6761206804) as corrected by [#6761588752](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6761588752).
 - Mira plan re-review #6761671562: PASS; FOUNDATION-PLAN-MIRA-01/-02 closed.
-- Implementer: **Lira**. Ready implementation **PR #317**, stable exact head `7f65741d5b3a65392287483d47c0ad6834075efc`.
-- Implementation scope: outgoing AdministrativeRouting/address centralization only; Admin and Super-admin are distinct typed destination families. Current `app/routes.ts`, Worker ingress, route registrations/IDs, URLs, authorization, React Router 8.3.1/`initial`, schema/dependencies and current local/CI behavior remain unchanged.
-- Future source **#315**: ordinary Admin stays in Public Forum Worker; Super-admin moves to separate Owner Worker. #315 is architecture reference only; its security implementation is not absorbed into #251.
-- Mira coordinator whole-PR review [#6762795987](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6762795987): **PASS — 0 confirmed current-scope defects** on exact head `7f65741d...`.
-- Exact-head evidence rechecked: CI #42780591588 SUCCESS; SA-01 Chromium #42780591412 SUCCESS; AP-10 Chromium #42780591278 SUCCESS in all four jobs.
-- Reviewer: **Lev** assigned for independent technical review of the same exact head. Lira stopped/unassigned during review; Mark unassigned.
-- **Next: Lev publishes PASS or all confirmed current-scope findings for PR #317 exact head `7f65741d5b3a65392287483d47c0ad6834075efc`, then stops.**
-- SA02 remains next product package after foundation completion; source-attribution/bounded-retention correction #6759312425 remains open and unchanged.
+- Implementation: **PR #317**, stable exact head `7f65741d5b3a65392287483d47c0ad6834075efc`. Lira stopped/unassigned; Mark unassigned.
+- Scope: outgoing typed AdministrativeRouting/address centralization only; independent Admin/Super-admin destination families. Current routes/Worker/auth/Router8.3.1/initial/schema/dependencies remain unchanged.
+- Architecture reference **#315** remains separate: Admin stays Public Forum Worker; future Super-admin has separate Owner Worker. Security activation is outside this package.
+- Mira coordinator whole-PR review [#6762795987](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6762795987): PASS on this exact head.
+- Lev independent whole-PR review [#6763198179](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6763198179): **1 current-scope finding, FOUNDATION-LEV-01/P3; PASS not issued.** AdminShell compares pathname with a full resolver URL, so absolute same-origin substitution stops recording the last Admin index. Relative/default behavior passes.
+- Exact-head evidence: CI #42780591588, SA01 #42780591412 and all four AP10 #42780591278 jobs SUCCESS; local build and 250 tests PASS; migrations0000–0062 PASS; SA01 browser16 + independent browser11 checkpoint groups PASS; independent diagnostic2 PASS/1 reproduced FAIL.
+- Reviewer: **Lev finished/stopped**; implementation was not edited during review. No new implementation assignment.
+- **Next recipient: Mira — assess FOUNDATION-LEV-01 and the complete independent result in #251, then determine coordinator continuation.** Owner alone merges; PR317 not merged.
+- SA02 remains next product package after foundation completion; attribution/bounded-retention correction #6759312425 / SA02-PLAN-MIRA-01 remains open.
