@@ -2895,3 +2895,12 @@ Lira opened **Draft [docs PR #318](https://github.com/iliya1947/vico-forum/pull/
 - Changes describe the actually merged two independent outgoing Admin/Super-admin destination families and UI/request-scoped substitution seam, preserving current default paths, same runtime/Worker ingress, route registration and authority. History records FOUNDATION-LEV-01/02 corrections, final Mira+Lev PASS, CI/Chromium and merge. No false claim of deployed security isolation/Owner Worker/Access/cross-origin transport.
 - No code/tests, schema/migrations/dependencies, `PROJECT.md`, `ROADMAP.md`, SA02 or #315 changes. Exact-head [CI #42806279774](https://github.com/iliya1947/vico-forum/actions/runs/42806279774) **SUCCESS**: `checks` and PostgreSQL17 `database` jobs; lint, typecheck, tests, builds, migration/manifest validations and Workers smoke completed.
 - **Author finished both subtasks and stopped.** No coordinator docs-only review or merge performed by Lira. Next: **Mira docs-only review** of Ready #318 on exact stable head above; Lev/Mark unassigned, SA02 paused until docs closeout merged. Correction #6759312425 remains separately open.
+
+
+## Routing foundation docs-only closeout — coordinator PASS
+
+Ready PR #318 stable exact head `2cb5b9fa9c426513c9d9207d21d89b48b30c8d6e` reviewed by Mira against merged implementation #317, current source-of-truth and GitHub evidence. **PASS — 0 confirmed docs defects**; record [#6766817589](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6766817589).
+
+Five-file docs-only diff accurately records the merged outgoing-address foundation, permanent Admin/Super-admin routing boundary and PROJECT_HISTORY_24. It explicitly preserves the unimplemented Stage-6 security boundary. Implementation CI counts in history were independently verified from job logs: 172/172 test files, 2157/2157 tests. Docs CI #42806279774 is SUCCESS on the exact docs head.
+
+**PR #318 is READY FOR OWNER MERGE.** After merge, routing foundation closeout is complete; SA02 planning may resume from open correction #6759312425. Lira/Lev/Mark unassigned until next bounded assignment.
