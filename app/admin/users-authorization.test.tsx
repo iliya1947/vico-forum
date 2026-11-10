@@ -216,18 +216,21 @@ describe("AP-09 canonical fetcher composition", () => {
     expect(mounted.action).toHaveBeenCalledOnce();
   });
 
-  it("substitutes the real inline authorization form action and Admin links from the Admin family", async () => {
+  it("substitutes same-origin Admin form actions and links without coupling the Owner origin", async () => {
+    // React Router forms submit to registered same-origin route actions in this stage.
+    // The independent absolute-origin resolver contract is covered in addresses.test.ts.
     const routing = createAdministrativeRouting(
-      locale => `https://forum.invalid/${locale}/office`,
+      locale => `/${locale}/office`,
       locale => `https://owner.invalid/${locale}/control`,
     );
     const mounted = mount({}, routing);
     await screen.findByRole("heading", { name: "Authorization management", level: 3 });
+    expect(routing.superAdmin.overview("en")).toBe("https://owner.invalid/en/control");
     expect(formFor(mounted.container, "assignRole")?.getAttribute("action"))
-      .toBe("https://forum.invalid/en/office/authorization");
+      .toBe("/en/office/authorization");
     expect(formFor(mounted.container, "override", "forum.topic.pin")?.getAttribute("action"))
-      .toBe("https://forum.invalid/en/office/authorization");
-    expect(mounted.container.querySelector('a[href="https://forum.invalid/en/office/users"]')).not.toBeNull();
+      .toBe("/en/office/authorization");
+    expect(mounted.container.querySelector('a[href="/en/office/users"]')).not.toBeNull();
     expect(mounted.container.querySelector('a[href="https://forum.invalid/en/office/measures?target=target%2F%D7%A2%D7%91%D7%A8%D7%99%D7%AA"]')).toBeNull();
     // The user target is not a measure manager in this fixture; no unrelated link is introduced.
   });
