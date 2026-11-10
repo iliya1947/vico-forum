@@ -1,5 +1,16 @@
 # Мира — безопасность Vico Forum
 
+## 2026-11-10 — Block B / B10 failure/privacy/leakage audit
+
+1. Target: current main `e279cb6c032a489a9044ca1191407df887c364b4`, Better Auth `1.7.7`.
+2. **AUTH-CACHE-01 Low/P3:** authenticated `list-sessions` and `list-accounts` GET responses do not set explicit no-store/private cache headers; Vico auth-api passes them through. Better Auth get-session and Vico protected Settings do set no-store.
+3. No cross-user cached replay was demonstrated; classify as current privacy/cache hardening, not auth bypass. Better Auth 1.7.16 retains the same list headers.
+4. `list-accounts` strips OAuth access/refresh/ID tokens, expiry fields and password before response.
+5. Settings errors do not reflect submitted secrets; Retry-After is strictly bounded numeric; User-Agent label removes control chars and is length-bounded.
+6. Worker failure telemetry records only status+latency. PostgreSQL cleanup is best-effort and cannot replace the original result.
+7. Better Auth default logger threshold is warn, so its existing-email info diagnostic is not emitted under Vico's current default logger. No Vico password/session-cookie logging found.
+8. B10 also corrected AUTH-SESSION-02 from High/P1 to Low/P3 because raw session token is not a bearer credential without the absent Bearer plugin.
+
 ## 2026-11-10 — Block B / B9 registration-race audit
 
 1. Target: current main `e279cb6c032a489a9044ca1191407df887c364b4`, Better Auth `1.7.7`.
@@ -73,16 +84,14 @@
 9. 1.7.7 vs 1.7.16 origin middleware comparison does not change this verdict.
 10. Stage-6 multi-origin routing remains future-only: any trusted-origin expansion must be explicit/minimal and separately accepted.
 
-## 2026-11-10 — Block B / B7 session management audit
+## 2026-11-10 — Block B / B7 session management audit — corrected after B10
 
 1. Target: current main `e279cb6c032a489a9044ca1191407df887c364b4`, Better Auth `1.7.7`.
-2. Vico Settings wrapper passes ownership/IDOR review: authoritative request identity selects subject; session IDs resolve only inside current user's active sessions; current session and stale form identity are rejected.
-3. **AUTH-SESSION-02 High/P1:** direct public Better Auth `/api/auth/list-sessions` returns active session bearer tokens. Core session schema does not mark token `returned:false`; the route serializes `parseSessionOutput`. This bypasses Vico's safe ID-only DTO and materially amplifies a compromised fresh session by exposing additional active credentials.
-4. Better Auth `1.7.16` retains the same list output, so planned upgrade does not remove this exposure.
-5. **AUTH-SESSION-03 Moderate/P2:** direct `/api/auth/revoke-other-sessions` requires an authoritative valid session but not a fresh session. This bypasses the SET-05 contract and wrapper, which explicitly gates session management through `listSessions` freshness.
-6. Direct single revoke has the same freshness weakness but additionally needs the target token; grouped under AUTH-SESSION-03.
-7. No cross-user revoke, forged session-ID authority, current-session wrapper revoke, or race-based ownership bypass was confirmed.
-8. Partial revoke/delete errors surface as failures; no false-success equivalent to AUTH-SESSION-01 was found in these revoke endpoints.
+2. Wrapper ownership/IDOR checks PASS; no cross-user revoke path confirmed.
+3. **AUTH-SESSION-02 reclassified Low/P3.** `list-sessions` returns raw DB `session.token`, but B10 established that current Vico does not accept that raw value as an authentication credential: session auth requires Better Auth's signed cookie and Vico has no Bearer plugin. Previous High/P1 takeover statement was wrong and is withdrawn.
+4. The raw token remains unnecessary browser exposure/internal-handle leakage relative to Vico's ID-only Settings DTO; 1.7.16 retains it. Re-review if Bearer plugin is ever introduced.
+5. **AUTH-SESSION-03 Moderate/P2** remains valid: direct `revoke-other-sessions` lacks the fresh-session gate required by Vico's SET-05 contract.
+6. No cross-user revoke, forged target authority, current-session wrapper revoke or race-based ownership bypass confirmed.
 
 ## 2026-11-10 — Block B / B4 session lifecycle audit
 
