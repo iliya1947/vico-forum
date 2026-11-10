@@ -5,7 +5,8 @@ import { drizzle } from "drizzle-orm/node-postgres";
 import { Client, Pool } from "pg";
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
 import {
-  betterAuthOptions, betterAuthSchema, createAuth, type AuthCreationObserver,
+  betterAuthOptions, betterAuthSchema, createAuth, observeAuthNativeMutations,
+  type AuthCreationObserver,
   type BetterAuthEnvironment,
 } from "../../app/auth/auth.server";
 import { PostgresAuthFactWriter, type AuthTransitionFact } from "../../db/owner-auth-facts";
@@ -85,8 +86,9 @@ async function authFactory(actor:string|null=null,transaction=false) {
     get(target,property,receiver){
       if(property!=="handler") return Reflect.get(target,property,receiver);
       return async (request:Request)=>{
+        const restore=observeAuthNativeMutations(client,proof);
         try{return await auth.handler(request);}
-        finally{await proof.flush();}
+        finally{restore();await proof.flush();}
       };
     },
   });
