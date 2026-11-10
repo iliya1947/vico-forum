@@ -2714,3 +2714,8 @@ Owner rejected a count-only interpretation of Security telemetry: the system mus
 ## Priority change — Super-admin route discoverability first
 
 Owner paused SA-02 before implementation and requires the Owner route-discoverability problem to be resolved first. Verified current facts: React Router config forces `routeDiscovery: { mode: "initial" }`, so full route metadata is sent to clients; the literal `/super-admin` path is committed; repository is public, so a renamed fixed slug would still be discoverable. Lev is assigned bounded technical planning via `#6759368876`. The plan must preserve exact Owner authorization, remove unnecessary client route disclosure, avoid committing a secret-like fixed path as the security mechanism, and keep runtime route material out of public/client/log/referrer/query surfaces. SA-02 is paused; Lira/Mark unassigned.
+
+
+## Owner decision — protection deferred, foundation now
+
+Owner clarified the routing-security priority: current pre-release work must **not** build the real Admin/Super-admin concealment protection. Stage 6 remains the point where production secrets, opaque runtime entry routes, route-hiding behavior and external acceptance are activated. Current work is limited to a minimal replaceable foundation that prevents expensive future rewrites while preserving simple local/CI development. Lev is assigned this bounded foundation plan via `#6759703177`. SA-02 remains the next product package after the foundation decision; it is not blocked by production protection itself.
