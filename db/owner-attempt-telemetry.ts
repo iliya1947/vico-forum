@@ -6,7 +6,6 @@ import type { Pool, PoolClient } from "pg";
  * No epoch, quota, slot or arbitrary SQL/event kind is caller-selectable.
  */
 export const ATTEMPT_GROUPS_PER_HOUR_PER_POOL = 256;
-const BIGINT_MAX = "9223372036854775807";
 
 export type AttemptSurface = "auth" | "access";
 export type AttemptOperation =
@@ -231,6 +230,7 @@ export class PostgresAttemptTelemetryWriter implements AttemptTelemetryWriter {
           and http_status is not distinct from $9::integer
           and direct_code is not distinct from $10::text`, key);
       if (previous.rows[0]) {
+        if (current.used === 0) throw new Error("Attempt quota invariant failed");
         const updated = await client.query<SavedPattern>(INCREMENT_PATTERN,
           [previous.rows[0].id, value.occurredAt]);
         const row = updated.rows[0];
@@ -238,6 +238,12 @@ export class PostgresAttemptTelemetryWriter implements AttemptTelemetryWriter {
         return { kind: "attributed", id: row.id, epoch: epoch.toISOString(), count: row.count,
           saturated: row.saturated_count, inserted: false };
       }
+      // Admission is rare (at most 256 keys/pool/hour), so verify that a
+      // pre-existing mutable quota has not diverged from retained group rows.
+      const actual = await client.query<{ total: number }>(
+        "select count(*)::integer total from owner_attempt_patterns where recording_epoch_start=$1 and pool=$2",
+        [epoch, pool]);
+      if (actual.rows[0]?.total !== current.used) throw new Error("Attempt quota invariant failed");
       if (current.used === current.capacity) {
         return this.updateState(client, epoch, "overflow",
           "overflow." + pool + "." + value.surface, value.occurredAt);
@@ -251,10 +257,11 @@ export class PostgresAttemptTelemetryWriter implements AttemptTelemetryWriter {
       [...key, crypto.randomUUID(), value.occurredAt]);
       const row = saved.rows[0];
       if (!row) throw new Error("Attempt pattern insertion invariant failed");
-      await client.query(`
+      const increment = await client.query(`
         update owner_attempt_telemetry_state set used=used+1
         where recording_epoch_start=$1 and slot=$2 and used<$3`,
       [epoch, slot, ATTEMPT_GROUPS_PER_HOUR_PER_POOL]);
+      if (increment.rowCount !== 1) throw new Error("Attempt quota increment invariant failed");
       return { kind: "attributed", id: row.id, epoch: epoch.toISOString(), count: row.count,
         saturated: row.saturated_count, inserted: true };
     });
