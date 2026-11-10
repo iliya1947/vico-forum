@@ -459,6 +459,25 @@
 16. Existing repository/local-CI regressions cover the major authority, Owner-immunity, family-isolation, lifecycle, replay, concurrency and enforcement cases. No production/deployed acceptance is implied.
 17. No D6 finding confirmed. Remediation remains unassigned.
 
+## Block D / D9 — Complaints reviewer privacy / capability separation audit
+
+1. Audit target: current main `e279cb6c032a489a9044ca1191407df887c364b4`.
+2. Verdict: **1 confirmed current-scope finding: COMPLAINT-PRIV-01 Low/P3**.
+3. `forum.complaint.review`, `forum.complaint.appeal.review`, `forum.complaint.priority.manage` and `forum.complaint.reporterIdentity.read` remain independent. Identity permission is additive only; without Case/Appeal review authority it reaches no private Case/Appeal projection.
+4. Case-review and Appeal-review identity decisions come from one internally consistent effective-permission snapshot. Ordinary reviewer SQL does not join reporter/appellant accounts; the elevated branch adds only user ID/display name. Email/session fields are not selected.
+5. **COMPLAINT-PRIV-01 — CONFIRMED current-scope, Low/P3.** Full Complaint Case review serializes `topic.duplicateRelationshipId` for a Help duplicate topic even when the reviewer lacks `forum.helpDuplicate.manage`. Appeal review reuses the same Case projection and leaks the same field to an appeal-review-only actor.
+6. Causal path: `readComplaintReviewInTx()` always selects the active Help duplicate relationship and always returns `duplicateRelationshipId:b.duplicateRelationshipId`; the service correctly sets `permissions.duplicate=false`, but the route returns the DTO without redacting this field.
+7. This identifier is private in the current product contract: ordinary/public topic presentation explicitly nulls it without `forum.helpDuplicate.manage`, and the Admin-topic projection likewise includes it only with that capability. The Complaint projection is therefore a real cross-capability privacy inconsistency, not future-only hardening.
+8. Impact is limited to disclosure of the internal relationship identifier. Duplicate existence/original target is already visible through normal topic state, and Help mutations still independently require `forum.helpDuplicate.manage` plus authoritative relationship/state checks. No unauthorized Help mutation, reporter identity disclosure or broader Case access was demonstrated; severity remains Low/P3.
+9. Pending Help duplicate Appeal ID is separately gated and is not exposed without `forum.helpDuplicate.manage`.
+10. Queue/triage projections contain reason counts/times and bounded content context but do not join reporter accounts or expose explanations/identities. Resolved History similarly exposes only the approved aggregate projection.
+11. Full Case and Appeal reviewer DTOs omit structured reporter/appellant identity unless the additional identity capability is effective. Existing dynamic-grant regressions prove allow/deny/inherit freshness and that review-only + identity-only committed states are never combined.
+12. Direct context/evidence routes are membership-bound: Case context requires a post from that Case's topic; evidence requires the retained asset under that Case target. Appeal context/evidence first verify exact `caseId + appealId` membership. Cross-Case/post/asset/appeal combinations return 404 before bucket access.
+13. Retained evidence object keys stay server-internal. Browser responses contain only attachment bytes and safe metadata with `application/octet-stream`, attachment disposition, `nosniff`, CSP sandbox and private/no-store caching.
+14. Lifecycle boundaries hold: triage/Queue are open-only; resolved History/timeline are resolved-only; Appeals Queue is pending-only. Full Case review is intentionally open-or-resolved. Direct Appeal review may display a resolved Appeal but exposes no resolve form for terminal status; mutation lifecycle enforcement is audited separately in D10.
+15. Production Worker wires Queue/Review/Appeal capabilities to the AP-10-filtered effective authorization capability. No weaker attacker-controlled runtime reader was found.
+16. No second D9 current-scope defect confirmed. Remediation remains unassigned.
+
 ## Координация
 
 1. #315 хранит решения, задачи, review findings и прогресс всего направления безопасности.
