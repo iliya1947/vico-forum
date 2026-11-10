@@ -12,8 +12,9 @@
 10. B1 completed: **AUTH-ENUM-01 Moderate/P2** — direct email sign-up exposes whether an email already exists; no credential rate-limit bypass confirmed.
 11. B2 completed: OAuth integrity boundaries PASS; **AUTH-OAUTH-01 Low/P3** — raw provider error description remains in callback-error browser URL.
 12. B6 completed: **PASS — 0 current-scope password-change defects**.
-13. B8 completed: **PASS — 0 new current-scope freshness defects**. Freshness is 24h by default, server-side createdAt-based, and ordinary session refresh cannot reset it; existing direct-endpoint bypass remains AUTH-SESSION-03.
-14. No fix PR is opened yet. Confirmed Block-B defects remain queued for bounded correction planning after the planned audit slice.
-15. Technical planner/implementer/reviewer remain unassigned during audit.
-16. No Cloudflare/Neon/production mutation is authorized.
-17. Next after developer continuation: execute **B9 Registration policy races** and stop with findings/classification.
+13. B8 completed: **PASS — 0 new current-scope freshness defects**; existing direct-endpoint bypass remains AUTH-SESSION-03.
+14. B9 completed: **AUTH-REG-01 Moderate/P2** — concurrent Owner closure and already-admitted create-user are not serialized, so an in-flight registration can commit after closure succeeds.
+15. No fix PR is opened yet. Confirmed Block-B defects remain queued for bounded correction planning after the planned audit slice.
+16. Technical planner/implementer/reviewer remain unassigned during audit.
+17. No Cloudflare/Neon/production mutation is authorized.
+18. Next after developer continuation: execute **B10 Failure / privacy / leakage semantics** and stop with findings/classification.
