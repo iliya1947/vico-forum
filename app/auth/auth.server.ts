@@ -122,7 +122,7 @@ function createAuth(
         } catch (error) {
           // Better Auth 1.7.7 converts any thrown validation error to a cause-less 403.
           // Preserve the actual registration-policy failure for this one auth request.
-          onAdmissionError(error);
+          onAdmissionError?.(error);
           throw error;
         }
       },
