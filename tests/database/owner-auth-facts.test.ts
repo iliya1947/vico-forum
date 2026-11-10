@@ -180,13 +180,13 @@ describe("SA02 PostgreSQL17 native append-only auth fact writer", () => {
       connect: async () => {
         const pg = await pool.connect();
         return {
-          query: async (...args: Parameters<typeof pg.query>) => {
-            if(args[0]==="commit") {
+          query: async (sql: string, parameters?: unknown[]) => {
+            if(sql==="commit") {
               commits+=1;
               await pg.query("commit");
               throw new Error("ambiguous connection loss");
             }
-            return pg.query(...args);
+            return pg.query(sql, parameters);
           },
           release: (discard?: boolean) => pg.release(discard),
         };
