@@ -103,15 +103,22 @@ function createAuth(
   env: BetterAuthEnvironment,
   onDatabaseError?: (error: unknown) => void,
   onAdmissionError?: (error: unknown) => void,
+  onAdmissionDenied?: () => void,
 ) {
   const options = betterAuthOptions(database, env);
-  if (onAdmissionError && options.user?.validateUserInfo) {
+  if ((onAdmissionError || onAdmissionDenied) && options.user?.validateUserInfo) {
     const validateUserInfo = options.user.validateUserInfo;
     options.user = {
       ...options.user,
       validateUserInfo: async (data, ctx) => {
         try {
-          return await validateUserInfo(data, ctx);
+          const result = await validateUserInfo(data, ctx);
+          if (result && typeof result === "object" && "error" in result &&
+              typeof result.error === "string") {
+            try { onAdmissionDenied?.(); }
+            catch { /* Telemetry must never alter registration admission. */ }
+          }
+          return result;
         } catch (error) {
           // Better Auth 1.7.7 converts any thrown validation error to a cause-less 403.
           // Preserve the actual registration-policy failure for this one auth request.
@@ -190,6 +197,7 @@ export function createHyperdriveAuthRuntime(
   connectionString: string,
   env: BetterAuthEnvironment,
   createClient: (connectionString: string) => Client = createWebClient,
+  onAdmissionDenied?: () => void,
 ): AuthRuntime {
   async function useAuth<T>(
     operation: (auth: ReturnType<typeof createAuth>, database: NodePgDatabase) => Promise<T>,
@@ -203,7 +211,7 @@ export function createHyperdriveAuthRuntime(
       const database = drizzle(client);
       return await operation(createAuth(database, env,
         preserveDatabaseError ? (error) => { databaseError ??= error; } : undefined,
-        onAdmissionError), database);
+        onAdmissionError, onAdmissionDenied), database);
     } catch (error) {
       // Better Auth 1.7.7 replaces session-query failures with a cause-less APIError.
       // Retain the adapter failure for classification; never infer availability from HTTP 500.
