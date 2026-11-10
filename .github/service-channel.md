@@ -32,16 +32,18 @@
 
 ## Актуальный baseline и назначение
 
-- Main/base: `e16d75dc7e2988eb06923c2d97ab5ae389bbfbac`. AP01–11, Owner redesign1–2, SET01–06, SA01 implementation#313 + docs#314 closed/merged.
-- **Current task: minimal Admin/Super-admin address foundation plan — cross-plan correction delivered.** Latest Owner scope#6759703177; Mira notices#6761087988/#6761433938.
-- Current proposed plan = base [#6761206804](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6761206804) overridden by **[#315 alignment delta #6761588752](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6761588752)**. FOUNDATION-PLAN-MIRA-01 closed by Mira; MIRA02 addressed in proposed contract, re-review pending.
-- Current implementation scope unchanged: centralize outgoing addresses through typed AdministrativeRouting/resolver/accessors/provider; Admin and Super-admin remain distinct semantic families, no permanent shared origin/base/Worker assumption. Current static same-origin URLs/guards/Router8.3.1/initial/local-CI behavior preserved.
-- app/routes.ts and Worker unchanged now; no route-registration refactor. They are current-state ingress seams, not a final combined Stage6 ingress.
-- Future architectural reference: **security PR#315**, SECURITY_IMPLEMENTATION_PLAN.md BlockA, checked head `5329ef027c7f477067154218349077d75b763c8a`. Ordinary Admin remains Public Forum Worker; Super-admin moves to separate Owner Worker; after activation Public Worker has no Super-admin registrations.
-- #315 security implementation remains separate: no Owner Worker split, Access, isolated Owner auth/session, Passkey/DB/deploy capability/secrets/external protection work in this #251 foundation. Minimal acceptance adjustment: independent public test origin/base for each resolver family without real topology or infrastructure.
-- **Next / recipient: Mira — re-review corrected contract.** Lev stopped after delivery; Lira/Mark unassigned. No implementation PR/code/migration/tests/build/runtime acceptance delivered for this plan-only correction.
-- SA02 remains next product package after foundation decision; production protection itself is not its blocker. SA02-PLAN-MIRA-01/Owner attribution clarification#6759312425 remains open: useful authoritative user/network-source attribution + first/last/count and bounded/coalesced retention.
-- Evidence /workspace/work/admin-routing-plan-evidence/FOUNDATION_CROSS_PLAN_DELTA.md and SECURITY_REFERENCE_315.md; previous snapshots retained. #315 files read as reference only, not changed. External Stage6 activation paused; Owner alone merges.
+- Main/base: `24dfa9f51892490fae346f6079d6aa7fcfec1aa1`. AP01–11, Owner redesign1–2, SET01–06, SA01 implementation#313 + docs#314 closed/merged.
+- **Current task: Admin/Super-admin routing foundation — independent review complete; result returned to Mira.**
+- Approved plan: [#6761206804](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6761206804) overridden by [#6761588752](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6761588752). Mira plan PASS#6761671562; FOUNDATION-PLAN-MIRA-01/-02 closed.
+- Implementation **PR#317**, stable exact head `7f65741d5b3a65392287483d47c0ad6834075efc`; 33 files. Mira coordinator PASS [#6762795987](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6762795987).
+- Lev independent whole-PR result [#6763198179](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6763198179): **one confirmed current-scope finding FOUNDATION-LEV-01/P3; PASS not issued.** Same-origin absolute Admin destination makes AdminShell pathname/full-URL equality false, leaving last-visited preference stale; current relative/default flows pass. Reproducer checks actual next-entry selection, not only a mocked callback.
+- Scope remains outgoing typed address resolver/accessors/provider and approved consumers only; independent Admin/Super-admin families. Current registrations/Worker/guards/Router8.3.1/initial/URLs/DB/dependencies unchanged.
+- Exact-head CI #42780591588, SA01 #42780591412, AP10 #42780591278 all SUCCESS. Local build +22 files/250 tests PASS; PG17 migrations0000–0062 PASS; SA01 browser16 + independent browser11 checkpoint groups PASS. Additional independent diagnostic2 PASS/1 reproduced FAIL.
+- **Next recipient: Mira — consider the finding and complete independent review, determine coordinator continuation.** Lev finished/stopped; Lira/Mark unassigned. No implementation edit or new implementer assignment during review; Owner alone merges.
+- Future architecture reference **security service PR#315**, checked head `5329ef027c7f477067154218349077d75b763c8a`, plan blob `0b4fee79a10dcf6f532f3758305d0896f88a7d88`: ordinary Admin remains Public Forum Worker; Super-admin moves to separate Owner Worker; after activation Public Worker has no Super-admin registrations. #315 files unchanged.
+- No security activation/Owner split/Access/isolated Owner auth/session/Passkey/DB/deploy/transport work added here. FOUNDATION-LEV-01 concerns the current permitted resolver substitution contract, not acceptance of future deployment.
+- SA02-PLAN-MIRA-01 / Owner clarification#6759312425 remains open: useful authoritative user/network-source attribution, first/last/count and bounded/coalesced retention; no permanent per-denial rows or anonymous global count substitute.
+- Evidence: `/workspace/work/routing-review-evidence/`; local preview stopped, disposable DB removed, synthetic vars/symlinks cleaned, tracked review checkout clean. No merge/deploy.
 
 ## Handoff — Лира: Stage2 factual documentation closeout
 
@@ -2779,3 +2781,10 @@ Initial head `39b1b9f880397c3fb095b38a697a7a97603fffb6` failed one added cross-o
 - Verified scope: independent Admin/Super-admin address families, migrated approved outgoing consumers, unchanged route registrations/Worker/authz/Router/schema/dependencies, no Stage-6 security activation.
 - Exact-head CI #42780591588, SA-01 Chromium #42780591412 and AP-10 Chromium #42780591278 are SUCCESS.
 - Next reviewer: Lev, independent technical review of the same exact head. Lira/Mark unassigned during that review.
+
+## 2026-11-10 — Lev independent review PR#317 / FOUNDATION-LEV-01
+
+Result and complete handoff: [#6763198179](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6763198179).
+Stable exact head `7f65741d5b3a65392287483d47c0ad6834075efc`, base `24dfa9f51892490fae346f6079d6aa7fcfec1aa1`; reviewed all33 changed files against approved foundation/#315 boundary. **One confirmed P3 current-scope finding; no other confirmed defect.** AdminShell line41 compares current pathname to full resolver destination; absolute same-origin representation prevents last-index recording and subsequent “last” entry incorrectly remains History after visiting Users. Relative control passes. Recommendation is local consumer matching correction preserving exact-index/logical-ID/account semantics, without changing outgoing origins or future topology.
+
+Local build/250 tests/migrations0000–0062 passed; SA01 Chromium16 and independent Chromium11 checkpoint groups passed. Independent substitution/SSR diagnostic2 passed/1 reproduced failure. All three exact-head CI workflows independently confirmed SUCCESS. Implementation unchanged; cleanup complete. Returned to **Mira for coordinator disposition**; Lev stopped, Lira/Mark unassigned; no merge/security activation/SA02 correction closure.
