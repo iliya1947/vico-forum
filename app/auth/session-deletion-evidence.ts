@@ -20,18 +20,16 @@ function exactWhere(value: unknown, field: string): string | null {
     typeof item.value === "string" ? item.value : null;
 }
 
-function affected(method: "delete" | "deleteMany", value: unknown): number | null {
-  const count = method === "deleteMany" ? value
-    : value && typeof value === "object" && "rowCount" in value
-      ? (value as {rowCount: unknown}).rowCount : null;
-  return typeof count === "number" && Number.isSafeInteger(count) && count >= 0
-    ? count : null;
+function countOf(value: unknown): number | null {
+  return typeof value === "number" && Number.isSafeInteger(value) && value >= 0
+    ? value : null;
 }
 
 /**
  * Better Auth 1.7.7 delete.after receives a pre-delete row even when a racing
- * DELETE affects zero rows. Correlate that hook with the actual native Drizzle
- * adapter affected-row result, then verify absence before recording anything.
+ * DELETE affects zero rows. Use the unmodified node-postgres affected-row
+ * result for single deletes (the installed Drizzle adapter returns undefined)
+ * or the adapter's numeric bulk count, then verify absence before recording.
  * This observes the original adapter; it never replaces its mutations.
  */
 export class SessionDeletionEvidence {
@@ -45,42 +43,43 @@ export class SessionDeletionEvidence {
     private readonly missed: (count: number) => void,
   ) {}
 
+  /**
+   * Better Auth 1.7.7 Drizzle adapter exposes a numeric deleteMany count,
+   * but its single-row delete returns undefined even for a successful DELETE.
+   */
   noteAdapterDelete(method: "delete" | "deleteMany", arg: unknown, result: unknown): void {
     const operation = arg as AdapterDelete | null;
-    if (operation?.model !== "session") return;
-    const count = affected(method, result);
-    if (method === "delete") {
-      // Temporary diagnostic: fields and numeric result only, no IDs/tokens.
-      console.info("SA02-delete-proof-shape", JSON.stringify({
-        where: Array.isArray(operation.where) ? operation.where.map((x: NativeWhere) =>
-          ({field: x.field, operator: x.operator, valueType: typeof x.value})) : null,
-        count, resultType: typeof result,
-        resultKeys: result && typeof result === "object" ? Object.keys(result).slice(0,12) : null,
-      }));
-    }
-    if (count === null) {
+    if (method !== "deleteMany" || operation?.model !== "session") return;
+    const count = countOf(result);
+    if (count === null) { this.missed(1); return; }
+    const userId = exactWhere(operation.where, "userId");
+    if (userId) this.bulkReceipts.push({userId, count});
+    else if (count > 0) this.missed(count);
+  }
+
+  /** Original node-postgres result of exactly the installed canonical single-session DELETE. */
+  noteNativeDelete(sql: unknown, parameters: unknown, result: unknown): void {
+    const query = typeof sql === "string" ? sql :
+      sql && typeof sql === "object" && "text" in sql ? (sql as {text:unknown}).text : null;
+    if (typeof query !== "string" ||
+      !/^delete from "session" where "session"\."token" = \$1$/i.test(query)) return;
+    if (!Array.isArray(parameters) || parameters.length !== 1 ||
+      typeof parameters[0] !== "string") { this.missed(1); return; }
+    const rawCount = result && typeof result === "object" && "rowCount" in result
+      ? (result as {rowCount:unknown}).rowCount : null;
+    const count = countOf(rawCount);
+    if (count === 1) {
+      const token = parameters[0];
+      this.singleReceipts.set(token, (this.singleReceipts.get(token) ?? 0) + 1);
+    } else if (count === null || count > 1) {
       this.missed(1);
-      return;
     }
-    if (method === "delete") {
-      const token = exactWhere(operation.where, "token");
-      if (token && count === 1) {
-        this.singleReceipts.set(token, (this.singleReceipts.get(token) ?? 0) + 1);
-      } else if (count > 0) this.missed(count);
-    } else {
-      const userId = exactWhere(operation.where, "userId");
-      if (userId) this.bulkReceipts.push({userId, count});
-      else if (count > 0) this.missed(count);
-    }
+    // Zero rows: concurrency/no-op, never a successful revocation fact.
   }
 
   noteAfter(value: unknown, context: unknown): void {
     const row = value as Partial<SessionRow> | null;
     const ctx = context as HookContext | null;
-    console.info("SA02-delete-hook-shape", JSON.stringify({
-      path: ctx?.path, hasRow: !!row,
-      date: row?.expiresAt instanceof Date, idType: typeof row?.id,
-    }));
     if (!row || typeof row.id !== "string" || typeof row.userId !== "string" ||
       typeof row.token !== "string" || !(row.expiresAt instanceof Date)) return;
     let reason: Reason, actorUserId: string;
@@ -111,11 +110,6 @@ export class SessionDeletionEvidence {
   async flush(): Promise<void> {
     if (!this.candidates.length) return;
     const candidates = this.candidates.splice(0);
-    console.info("SA02-delete-flush-shape", JSON.stringify({
-      candidateCount: candidates.length,
-      singleCount: this.singleReceipts.size,
-      bulkCount: this.bulkReceipts.length,
-    }));
     const bulk = candidates.filter(c => c.reason === "revoke-all");
     const approvedBulk = new Set<string>();
     for (const receipt of this.bulkReceipts) {
