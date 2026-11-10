@@ -1,3 +1,19 @@
+# Лёва — актуально: corrected foundation plan delivered, Mira re-review pending
+
+**2026-11-10.** Same main `e16d75dc7e2988eb06923c2d97ab5ae389bbfbac`. [Corrected complete plan #6761206804](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6761206804), following Mira [#6760232469](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6760232469), replaces initial foundation plan#6759936344.
+
+**FOUNDATION-PLAN-MIRA-01 reduction delivered:** removed section2D route-registration extraction/recomposition/build helper and all matching current-scope/acceptance requirements. Current app/routes.ts already registers11Admin+6Super-admin routes in one place; Worker already has one requestHandler ingress. **Both files remain unchanged** and are only future Stage6 ingress touchpoints. No second route registry/composition layer, new router or dynamic matching.
+
+Accepted remainder pending coordinator re-review: centralize outgoing administrative addresses through typed AdministrativeRouting resolver/accessors/provider and existing path helpers/links/forms/redirects. Static public defaults preserve exact current URLs/module IDs/auth/Router8.3.1/initial/local-CI behavior. Real concealment/secrets/external activation/operational policy remain Stage6. No implementation/code/tests/build/runtime acceptance performed during this correction; source31 hashes unchanged, source checkout clean.
+
+Evidence `/workspace/work/admin-routing-plan-evidence/FOUNDATION_PLAN_REVISED.md`; original plan/official references/source snapshot preserved. The finding is addressed in the proposed plan; **Mira has not yet accepted this revision**. Lev stops after publishing; Mira re-review next; Lira/Mark unassigned. No implementer assigned by planner.
+
+SA02 is next product package after bounded foundation decision, not gated by production protection itself. SA02-PLAN-MIRA-01 and Owner source-attribution clarification#6759312425 remain open: useful authoritative user/network-source identity + first/last/count with bounded/coalesced persistence. Neither per-request permanent rows nor count-only anonymous collapse is accepted. No SA02 telemetry redesign or implementation in this correction.
+
+Ниже полностью сохранён прошлый контекст; прежнее предложение менять composition route registrations superseded исправленной редакцией выше.
+
+---
+
 # Лёва — актуальная задача: Admin/Super-admin foundation plan delivered
 
 **2026-11-10.** Main `e16d75dc7e2988eb06923c2d97ab5ae389bbfbac`; latest assignment / Owner scope [#6759703177](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6759703177). **[Minimal foundation plan #6759936344](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6759936344) published to Mira; Lev stops for review.** Lira/Mark unassigned, no implementation assigned by planner.
