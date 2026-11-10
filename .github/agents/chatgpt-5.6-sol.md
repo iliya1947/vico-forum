@@ -1,5 +1,18 @@
 # Мира — безопасность Vico Forum
 
+## 2026-11-10 — Block C / C4 elevated authority audit
+
+1. Target: main `e279cb6c032a489a9044ca1191407df887c364b4`.
+2. Verdict: **PASS — 0 current-scope defects**.
+3. `managePrivileged` is hierarchy-only; AP-10 action still requires basic `admin.users.blocks.manage` or Owner.
+4. Both block-management permissions have zero initial built-in role grants.
+5. Elevated grant/revoke is Owner-only through role grants, role switch in either direction, personal allow/deny/inherit and elevated-role deletion.
+6. Assigned elevated roles cannot be cascade-deleted; unassigned elevated-role deletion is separately Owner-gated.
+7. AP-10 computes hierarchy from raw persisted RBAC before sanction filtering, preventing a restriction from lowering target rank.
+8. Strict rank comparison plus issuer floor prevents ordinary-manage or later lower-ranked actors from acting against protected targets/measures.
+9. Owner remains rank 3 independent of stored raw denies, without projecting rank to anyone else.
+10. Shared mutex freshness was already proven in C7; no stale elevated-authority race remains.
+
 ## 2026-11-10 — Block C / C7 concurrency audit
 
 1. Target: main `e279cb6c032a489a9044ca1191407df887c364b4`.
