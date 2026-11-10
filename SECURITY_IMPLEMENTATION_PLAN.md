@@ -500,6 +500,19 @@ Domain-specific measure behavior здесь не переаудируется; �
 5. Request-local cache не кеширует failure/authority между requests или users.
 6. Parallel `has()`/resolve calls не создают inconsistent cross-user cache keys.
 
+### Результат C8 — 2026-11-10
+
+1. **AUTHZ-FAIL-01 — Low/P3, current-scope.** Mutation path в `PostgresAuthorizationRepository.mutate()` выполняет `ROLLBACK` в `catch` без best-effort guard. Если исходная authorization/domain/programming/COMMIT error уже возникла, а сам `ROLLBACK` затем падает, наружу выходит rollback error вместо исходной причины.
+2. Через production Hyperdrive wrapper availability-shaped rollback error классифицируется как `AuthorizationUnavailableError`; поэтому исходный forbidden/conflict/programming failure может стать controlled `503`. Privilege escalation, protected mutation success или private-data read из этого не доказаны; impact — loss/misclassification of authoritative failure cause и ухудшение observability/incident diagnosis.
+3. Read-snapshot path этой проблеме не подвержен: `withReadSnapshot()` уже best-effort подавляет rollback cleanup failure и сохраняет исходную operation/COMMIT error; regression это проверяет.
+4. Hyperdrive cleanup через `bestEffortDiscardClient(pool)` сохраняет успешный result и исходный error при sync/async pool cleanup failures.
+5. Availability classifier ограничен известными PostgreSQL connection/availability SQLSTATE, transport codes и точными timeout shapes; schema/programming/configuration errors не переводятся в typed unavailable.
+6. Optional public presentation catches только `AuthorizationUnavailableError`; unexpected authorization errors продолжают обычный error path. Protected routes/actions fail closed и independently recheck permission.
+7. Production authorization cache остаётся request-local: один resolution promise на exact `userId`; разные users имеют разные keys, новый Worker request создаёт новый cache. Rejected promise не переживает request и не превращается в permission allow.
+8. Administrative-restriction cache также создаётся заново на Worker request и key'ится family + actor + raw authority level; current code path не показал cross-user authority reuse.
+9. Unguarded `PoolClient.release()` теоретически может заменить результат, если сам локальный release бросит исключение, но реалистичный infrastructure trigger в текущем path не доказан; отдельно current finding не фиксируется.
+10. Remediation не назначена; finding только зафиксирован для будущего correction stage по отдельной команде владельца.
+
 ## C9 — Permission catalog / persistence integrity
 
 Проверить:
