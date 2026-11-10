@@ -1653,3 +1653,12 @@ Reviewed Lev plan `#6759936344`: CHANGES REQUIRED only for `FOUNDATION-PLAN-MIRA
 - **Confirmed current-scope P3.** AdminShell compares pathname-only current location to a resolver destination that may be absolute same-origin; this suppresses `recordAdminIndex` and leaves stale `adminLast`.
 - This is part of the approved substitution foundation contract, not future-only Stage-6 hardening.
 - Lira assigned in #6763486651 for a local correction plus relative/absolute same-origin regression coverage. New implementation head requires a fresh Mira whole-PR review before Lev re-review.
+
+
+## PR #317 corrected head — fresh coordinator review
+
+- Stable exact head `34d1e4acb278fca27cd994e590dd3b9757f5b4d8` reviewed as a whole after FOUNDATION-LEV-01 correction.
+- **PASS — 0 confirmed current-scope defects**; review #6763991905.
+- FOUNDATION-LEV-01 closed with same-origin URL normalization and focused regression coverage; no wider routing/security change required.
+- Exact-head CI + SA-01/AP-10 Chromium workflows all SUCCESS.
+- Same head handed to Lev for independent technical re-review.
