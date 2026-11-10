@@ -1,5 +1,16 @@
 # Мира — безопасность Vico Forum
 
+## 2026-11-10 — Block C / C3 direct-write escalation audit
+
+1. Target: main `e279cb6c032a489a9044ca1191407df887c364b4`.
+2. Verdict: **PASS — 0 current-scope defects**.
+3. Canonical production route is the only runtime caller for all six authz writes and binds actor to authoritative session ID; request-controlled actor fields are ignored.
+4. Route admission rejects guest/no-manage/non-Owner before dispatch; same-origin is enforced before form write.
+5. Repository independently serializes mutation, freshly checks management capability and exact Owner before operation code, including no-op.
+6. Direct non-Owner repository mutations are regression-tested for all six families and produce no authz/History write.
+7. Capability API accepts actorId as trusted server input, but no current runtime caller lets an attacker choose it; no current finding.
+8. C4/C7 retain elevated propagation and concurrency-specific review.
+
 ## 2026-11-10 — Block C / C1 Owner-binding audit
 
 1. Target: main `e279cb6c032a489a9044ca1191407df887c364b4`.
