@@ -1,5 +1,21 @@
 # Мира — безопасность Vico Forum
 
+## 2026-11-10 — Block D / D9 Complaints reviewer privacy/capability audit
+
+1. Target: main `e279cb6c032a489a9044ca1191407df887c364b4`.
+2. Verdict: **1 current-scope finding — COMPLAINT-PRIV-01 Low/P3**.
+3. Review, Appeal-review, priority-management and reporter-identity permissions remain independent; identity alone grants no Case/Appeal access.
+4. Ordinary reviewer SQL omits reporter/appellant account joins; identity projection adds only ID/name from one consistent effective-permission snapshot. Email/session data is not selected.
+5. COMPLAINT-PRIV-01: full Case review always returns the private Help `duplicateRelationshipId` even when `permissions.duplicate=false`; Appeal review reuses that Case projection.
+6. Public topic and Admin-topic paths explicitly redact that relationship ID without `forum.helpDuplicate.manage`, confirming a current cross-capability privacy inconsistency.
+7. Impact is internal-ID disclosure only; Help mutations still recheck their own permission and authoritative relationship/state. No mutation or broader read bypass follows.
+8. Pending Help duplicate Appeal ID is correctly gated by Help-duplicate authority.
+9. Queue/triage/History projections do not leak structured reporter identities; full Case/Appeal identity is separately capability-gated and dynamically fresh.
+10. Case/Appeal context and retained evidence enforce exact Case/topic/asset/appeal membership. Cross-resource combinations return 404 before storage access.
+11. Evidence object keys remain server-internal; byte responses are attachment/octet-stream, nosniff, sandbox and private/no-store.
+12. Open/resolved/pending queue lifecycle boundaries hold; full Case open+resolved access is intentional. Resolved Appeal direct viewing is read-only and not promoted to a finding.
+13. No second D9 finding. No remediation handoff. Next D10.
+
 ## 2026-11-10 — Block D / D6 Administrative-measures enforcement audit
 
 1. Target: main `e279cb6c032a489a9044ca1191407df887c364b4`.
