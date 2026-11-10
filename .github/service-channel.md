@@ -439,6 +439,26 @@
 17. Existing route/PostgreSQL regressions cover guest/permission/origin denial, forged actor fields, Own/Any separation, stale relationship/appeal/best-answer/revision/closure identities, AP-10 suppression, actual/no-op History emission and History-insert rollback.
 18. No D3 finding confirmed.
 
+## Block D / D6 — Administrative measures / AP-10 enforcement audit
+
+1. Audit target: current main `e279cb6c032a489a9044ca1191407df887c364b4`.
+2. Verdict: **PASS — 0 confirmed current-scope AP-10 enforcement defects**.
+3. Measure admin routes derive actor only from the current Better Auth session, require fresh effective `admin.users.blocks.manage`, same-origin mutation input and exact validated target/measure IDs. Own measure/appeal routes likewise derive subject only from the current session.
+4. Repository writers are an independent authority boundary: create/change/lift/appeal-review acquire the shared `authz_mutation_lock`, resolve fresh raw actor/target authority, reject self/Owner targets, enforce strict actor-rank > target-rank and preserve the stored issuer floor for later mutations.
+5. `admin.users.blocks.managePrivileged` remains hierarchy-only. Administrative-family restrictions require rank 2/3; ordinary basic-manage cannot manufacture them. Stored sanctions do not lower raw hierarchy and therefore cannot make an otherwise protected target attackable.
+6. Administrative restriction families match the documented permission sets exactly and filter only effective authorization. Raw role grants/overrides remain unchanged. A target that later reaches the stored issuer floor stops being suppressed by that administrative measure without rewriting or lifting the measure.
+7. Bound Owner immunity is applied in the shared native-PG/Drizzle admission path and in effective administrative filtering: stored measures remain persisted, but the exact bound Owner is not suppressed. Owner immunity does not bypass session, Origin, ownership, CAS/lifecycle or the prohibition on self/Owner targeting.
+8. Fresh ordinary-operation enforcement is present on the authoritative write/preflight paths for topic creation, replies, attachments, published-post edits, profile edits, Complaint submission, Help-signal submission and translation generation. Administrative Forum/Complaints/Security/Users actions are independently filtered by their family restriction and relevant direct writers reapply the measure admission where applicable.
+9. Production Worker wiring injects the Owner-aware measure admission into forum writers, attachment storage, Complaints capabilities and translation-generation admission. Runtime caller search found no weaker attacker-controlled alternative writer for the audited AP-10 operations.
+10. Lifecycle semantics are preserved: independent/overlapping active measures remain separate; lifted/expired measures do not reactivate; explicit lift makes pending appeals moot transactionally, while natural expiry needs no synthetic mutation.
+11. Appeal submission is exact-measure/session-subject bound, limited to three sequential appeals with one pending at a time. PostgreSQL also enforces ordinal bounds/uniqueness and a partial unique index for one pending appeal.
+12. Change/lift/review use expected-version CAS under the locked measure. Operation IDs/fingerprints preserve exact committed replay and reject changed payloads; concurrent CAS transitions serialize on the target/measure locks.
+13. Measure state changes and their Admin History append share one transaction. Rejected/stale/no-op/replayed/rolled-back operations do not fabricate a new event; an append failure rolls the transition back.
+14. Matching already-committed publication/Complaint results are intentionally replayable before a fresh restriction blocks new side effects, matching the AP-10 contract. Cleanup/cancel paths are not promoted into blocked writes.
+15. Minor existence/pagination side effects examined during the audit did not expose protected measure/appeal payload or create an authority bypass and were not promoted to current-scope security findings.
+16. Existing repository/local-CI regressions cover the major authority, Owner-immunity, family-isolation, lifecycle, replay, concurrency and enforcement cases. No production/deployed acceptance is implied.
+17. No D6 finding confirmed. Remediation remains unassigned.
+
 ## Координация
 
 1. #315 хранит решения, задачи, review findings и прогресс всего направления безопасности.
