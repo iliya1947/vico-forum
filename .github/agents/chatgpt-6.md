@@ -1,3 +1,11 @@
+# Лира — FOUNDATION-LEV-01, подзадача 1/2: локальное исправление (2026-11-10)
+
+- Mira confirmed Lev P3 finding and assigned bounded author correction [#6763486651](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6763486651). PR #317 previous reviewed head `7f65741d5b3a65392287483d47c0ad6834075efc`.
+- Corrected `app/admin/shell.tsx`: resolve trusted Admin index destination through URL against browser origin; compare origin and pathname before recording logical last index. No outgoing path or Owner changes. Detail/subpages remain excluded; do not record another-origin destination.
+- New real `app/admin/shell-preferences.test.tsx` uses AdminShell, routing provider, HeaderAuthProvider, memory router and real account-local preferences. Covers relative and absolute same-origin Admin index, detail exclusion, subsequent `selectAdminEntry` choosing visited Users, distinct Owner origin, cross-origin negative and account separation.
+- First correction head `6968ae6327b9d3beb1641f54b9df9fa0727f3407` failed TypeScript fixture-only translation flatMap inference; changed new test fixture to existing typed flattening pattern from `app/admin/overview.test.tsx` without altering runtime code. Corrected head `34d1e4acb278fca27cd994e590dd3b9757f5b4d8`; rerun CI #42789615619 progressed past lint/typecheck to application tests, database/Chromium runs pending. **No final exact-head PASS claimed.**
+- **Subtask 1/2 complete. STOP.** Next user continuation: subtask 2/2 — verify exact-head CI/Chromium, fix only current-scope failures, publish final author handoff in #251, then stop for Mira coordinator whole-PR review. No author self-review, Lev coordination, merge, Stage6 or SA-02 work.
+
 ## Routing foundation — Lira subtask 3/3 final delivery (2026-11-10)
 
 - Scope: assigned by Mira [#6761671562](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6761671562); Lev plan [#6761206804](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6761206804) + #6761588752. Current main remains `24dfa9f51892490fae346f6079d6aa7fcfec1aa1`; no unrelated changes authorized.
