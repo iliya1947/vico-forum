@@ -60,7 +60,7 @@ The live System area currently has exactly three monitors:
 
 A successful System read produces or reuses bounded persisted observations. Unchanged measurements are deduplicated during a short sampling window, while meaningful changes and periodic snapshots remain available. Observation write failure is reported as degraded recording, not silently presented as reliable persistence, and does not veto an otherwise successful current-state read.
 
-Each card distinguishes the time of the current read, the last recorded observation, and **Coverage since**. The coverage start is the **earliest actually retained timestamp** across observations and matching System events for that monitor, not the last sample and not an invented pre-history interval.
+Each card displays the time of the current read and **Coverage since**. The coverage start is the **earliest actually retained timestamp** across observations and matching System events for that monitor, not the last sample and not an invented pre-history interval. The last recorded observation timestamp is tracked internally but is not separately displayed on the current cards.
 
 The Overview uses these real System sources and the most recent retained global timeline entries. It does not promise measurements for the other twelve logical areas.
 
