@@ -1,14 +1,11 @@
 # Admin panel — current workflow
 
-- Service PR: **#251**. Current main: `e279cb6c032a489a9044ca1191407df887c364b4`.
-- Current stage: **SA-02 backend A/B/C coordinator review completed; CHANGES REQUIRED — 3 current-scope defects.**
-- Active implementation: Draft **PR #319**, reviewed exact head **`c86b7e43ec1cb5c48a8c0475cd326eeba5b68cf4`**.
-- Accepted technical plan: [#6768069279](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6768069279); recovery scope A/B/C: [#6777700709](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6777700709).
-- Mira whole-PR review: [#6777896661](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6777896661) — **CHANGES REQUIRED**.
-- **SA02-IMPL-MIRA-01 OPEN:** bulk session exact-fact collection/proof/persistence is unbounded; accepted plan requires bounded chunks + recording gap.
-- **SA02-IMPL-MIRA-02 OPEN:** auth exact `occurred_at` is assigned at later persistence time, so async flush can misorder real transitions; occurrence and recording time must remain distinct.
-- **SA02-IMPL-MIRA-03 OPEN:** `accounts.registration.coverageFrom` omits retained `registration-admission` attempt History.
-- Exact-head evidence on reviewed head: CI #42887473479 SUCCESS; SA-01 Chromium #42887473457 SUCCESS; AP-10 Chromium #42887473380 SUCCESS all 4 jobs.
-- **Implementer: Lira — fix all three findings together in PR #319, add focused regressions, run applicable checks, publish new stable exact head, then stop.**
-- **SA02-D is not started/assigned.** #315 Stage-6 activation and deferred History/journal occupancy/archive/clear remain outside scope.
-- Lev/Mark unassigned until fresh Mira coordinator PASS on the corrected exact head.
+- Service PR **#251**; accepted SA02 plan [#6768069279](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6768069279), cumulative backend A/B/C recovery [#6777700709](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6777700709). Baseline main fork `e279cb6c032a489a9044ca1191407df887c364b4`.
+- Active package: **SA-02 backend A/B/C**, recovered cumulative implementation in [Draft PR #319](https://github.com/iliya1947/vico-forum/pull/319), branch `chatgpt/sa02-accounts-security`; whole SA02 and SA02-D not delivered.
+- Prior Mira coordinator review on exact head `c86b7e43ec1cb5c48a8c0475cd326eeba5b68cf4`: [CHANGES REQUIRED — #6777896661](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6777896661), three scoped findings.
+- **Lira's combined correction packet completed; STOP.** New stable exact implementation head: **`c9ff7b660fc40924f6adfd649b1daa0d80acb045`**. Author asserts corrections and native regressions; **fresh Mira coordinator whole-PR re-review is pending**, no PASS declared.
+- **SA02-IMPL-MIRA-01 corrected for review:** session proof collector bounded to 32 individually identified facts/request; max 8 IDs per postcondition SQL, at most 4 bulk actor groups; auth fact queue and sequential writer bounded to 32; overflow/ambiguous preimages register gaps. Actual Better Auth 1.7.7 `findMany` default 100 preimages: 81-session native revoke proves 32 exact + 49 gap; 105-session revoke has 100 preimages vs 105 affected, correctly produces 0 unprovable facts + 105 gap (no invented successes).
+- **SA02-IMPL-MIRA-02 corrected for review:** trusted native/hook event occurrence time captured at transition/receipt; `RequestAuthFactCollector` carries immutable capture-time date through async `waitUntil`; `PostgresAuthFactWriter` persists it as `occurred_at`, while DB-assigned `recorded_at` remains write time. Reverse-order delayed commits tested.
+- **SA02-IMPL-MIRA-03 corrected for review:** `accounts.registration.coverageFrom` includes earliest actual retained `owner_attempt_patterns` `registration-admission` source (same admitted_at used by adjacent History), alongside native settings changes/observations. Native historical test.
+- **Exact-head checks ALL SUCCESS:** [CI #42900496484](https://github.com/iliya1947/vico-forum/actions/runs/42900496484) — app **177 files / 2181 tests**, native PostgreSQL17 **63 files / 676 tests**, lint/typecheck/build, migrations/privileges/Worker smoke. [SA01 Chromium #42900496340](https://github.com/iliya1947/vico-forum/actions/runs/42900496340) SUCCESS; [AP10 Chromium #42900496488](https://github.com/iliya1947/vico-forum/actions/runs/42900496488) SUCCESS all four jobs.
+- **Next: Mira fresh coordinator whole-PR review of cumulative backend A/B/C on this exact stable head.** Do not start SA02-D or independent Lev/Mark review before Mira PASS. No merge, production, Stage6 #315 activation, SA03+, or deferred Owner journal archive/clear.
