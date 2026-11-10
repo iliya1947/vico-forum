@@ -1756,3 +1756,15 @@ Reviewed Lev plan `#6759936344`: CHANGES REQUIRED only for `FOUNDATION-PLAN-MIRA
 - Inspected PR #319 stable head `c86b7e43ec1cb5c48a8c0475cd326eeba5b68cf4`: 42 changed files / 90 commits; cumulative backend A/B/C is present; SA02-D routes/UI is not present.
 - Chosen non-destructive recovery: keep existing A/B/C together and review them as one bounded backend package; no retroactive split/reimplementation.
 - Next action is Mira coordinator whole-PR review of the same exact head. Lira stopped; Lev/Mark wait.
+
+
+## PR #319 backend A/B/C coordinator review — CHANGES REQUIRED
+
+Reviewed exact head `c86b7e43ec1cb5c48a8c0475cd326eeba5b68cf4` across schema/grants, hourly telemetry, Worker source/collector, Better Auth exact producers/proofs, current readers/samples, History/cursors and exact-head CI/browser evidence.
+
+Findings:
+- SA02-IMPL-MIRA-01: unbounded bulk session exact-fact path; must use bounded chunks/gap semantics.
+- SA02-IMPL-MIRA-02: auth event occurred_at currently equals async persistence time; preserve trusted transition occurrence separately from recorded_at.
+- SA02-IMPL-MIRA-03: accounts.registration coverageFrom misses retained registration-admission attempt source projected by History.
+
+No other confirmed current-scope defect found in backend A/B/C. Lira receives one combined correction package; no SA02-D and no independent review until fresh coordinator PASS.
