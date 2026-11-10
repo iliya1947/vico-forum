@@ -1687,3 +1687,11 @@ Reviewed Lev plan `#6759936344`: CHANGES REQUIRED only for `FOUNDATION-PLAN-MIRA
 - FOUNDATION-LEV-01/-02 CLOSED; no implementation change after coordinator PASS.
 - Final state: **READY FOR OWNER MERGE**, recorded in #6765453316.
 - After merge: separate factual docs closeout before SA02 resumes; SA02 source-attribution correction #6759312425 remains open.
+
+
+## Routing foundation merged / docs closeout
+
+- PR #317 merged into main as `56358c517cd4456e4421d56e022fce70431b00c1` from exact head `d12719bc8e6b2e6368489c16f2e0efa9ef6e3605`.
+- Final Mira and Lev reviews PASS; FOUNDATION-LEV-01/-02 closed.
+- Lira assigned in #6765810801 for a separate factual docs-only closeout. No code changes; record only merged routing foundation facts/limits and history.
+- SA02 remains paused until docs closeout merge; telemetry/source-attribution correction #6759312425 remains open.
