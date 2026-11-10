@@ -76,7 +76,7 @@ const deletions=()=>events.filter((x):x is Extract<AuthTransitionFact,{kind:"aut
 beforeAll(async()=>{
   await admin.connect();
   await admin.query("drop schema if exists "+schema+" cascade; create schema "+schema);
-  for(const file of (await readdir("drizzle")).filter(n=>/^\\d{4}_.+\\.sql$/.test(n)).sort()){
+  for(const file of (await readdir("drizzle")).filter(n=>/^\d{4}_.+\.sql$/.test(n)).sort()){
     await admin.query((await readFile("drizzle/"+file,"utf8"))
       .replaceAll('"public".','"'+schema+'".'));
   }
@@ -217,7 +217,7 @@ describe("SA02 native Better Auth 1.7.7 committed session deletion receipts",()=
             const text=typeof args[0]==="string" ? args[0] :
               args[0] && typeof args[0]==="object" && "text" in args[0]
                 ? String((args[0] as {text:unknown}).text):"";
-            if (/delete\\s+from\\s+["']?session["']?/i.test(text)) {
+            if (/delete\s+from\s+["']?session["']?/i.test(text)) {
               throw new Error("simulated native session deletion failure");
             }
             return Reflect.apply(query,connection,args);
