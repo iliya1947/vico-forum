@@ -5,10 +5,11 @@ import { ATTEMPT_GROUPS_PER_HOUR_PER_POOL } from "./owner-attempt-telemetry";
 type SafeValue = string | number | boolean | null;
 type Values = Record<string, SafeValue>;
 type Measured = { key: Sa02MonitorKey; values: Values; first: Date | null };
-export type Sa02CurrentMonitor = Measured & {
+export interface Sa02CurrentMonitor {
+  key: Sa02MonitorKey; values: Values;
   source: "database"; quality: "measured";
   coverageFrom: string | null; lastObservedAt: string | null;
-};
+}
 export interface Sa02CurrentState {
   observedAt: string; recording: "available" | "unavailable";
   monitors: Sa02CurrentMonitor[];
@@ -213,7 +214,7 @@ export class PostgresOwnerSa02Current {
         coverageFrom=iso(first);
       }catch{recording="unavailable";}
       monitors.push({key:item.key,source:"database",quality:"measured",
-        values:item.values,first:item.first,coverageFrom,lastObservedAt});
+        values:item.values,coverageFrom,lastObservedAt});
     }
     return {observedAt:now.toISOString(),recording,monitors};
   }
