@@ -1,5 +1,18 @@
 # Мира — безопасность Vico Forum
 
+## 2026-11-10 — Block C / C5 authorization-read privacy audit
+
+1. Target: main `e279cb6c032a489a9044ca1191407df887c364b4`.
+2. Verdict: **PASS — 0 current-scope defects**.
+3. Roles/authorization full read is gated only by its intended `access.authorization.manage`; guest/unrelated permission paths do not reach management state.
+4. That existing management surface intentionally includes its authorization-user identity/email subset and raw authorization details. Separate `admin.users.read` does not imply this capability.
+5. Users index/detail requires `admin.users.read`, selects/projects public identity/profile/statistics only and never selects/searches email.
+6. Users detail adds exactly one selected-user authorization snapshot only when `access.authorization.manage` is also effective; no other users/email/full role grants are included.
+7. Target ID is validated after actor admission and selects only the authorized read target; no actor authority derives from it.
+8. Management service reads are trusted server methods, but production browser callers are independently gated; no direct attacker path found.
+9. History and mutation authority remain independent; protected responses are private/no-store.
+10. AP-10 admin.usersAccess filtering applies before either read surface.
+
 ## 2026-11-10 — Block C / C4 elevated authority audit
 
 1. Target: main `e279cb6c032a489a9044ca1191407df887c364b4`.
