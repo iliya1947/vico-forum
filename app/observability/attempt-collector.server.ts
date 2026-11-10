@@ -16,6 +16,7 @@ export class RequestAttemptCollector {
   private readonly missed: Record<AttemptSurface, number> = { auth: 0, access: 0 };
   private actorId: string | null = null;
   private ownerGuardSeen = false;
+  private registrationDenied = false;
   private finalized = false;
   constructor(readonly source: AttemptIngressSource, private readonly sinkFactory: WriterFactory) {}
 
@@ -37,7 +38,19 @@ export class RequestAttemptCollector {
     });
   }
 
+  recordRegistrationDenied(): void {
+    if (this.registrationDenied) return;
+    this.registrationDenied = true;
+    this.add({
+      surface: "auth", operation: "registration-admission",
+      outcome: "denied", directCode: "forbidden",
+    });
+  }
+
   recordHttpFailure(operation: AttemptOperation, status: number): void {
+    // Better Auth may turn the same registration-policy denial into HTTP 403.
+    // Keep one canonical denial record, including OAuth redirect paths.
+    if (operation === "sign-up" && this.registrationDenied) return;
     if (!Number.isInteger(status) || status < 400 || status > 599) return;
     const outcome: AttemptOutcome = status === 429 ? "rate-limited"
       : status === 503 ? "unavailable"
