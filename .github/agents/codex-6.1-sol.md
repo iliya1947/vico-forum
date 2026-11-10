@@ -1,3 +1,24 @@
+# Лёва — актуальный checkpoint: SA02 renewal correction delivered (2026-11-10)
+
+**Full corrected plan [#6768069279](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6768069279)**, main `e279cb6c032a489a9044ca1191407df887c364b4`. Responds to Mira#6767512074, supersedes6767391552. **Await Mira re-review. Lev finished/stopped; Lira/Mark unassigned.**
+
+- **SA02-PLAN-MIRA-01 CLOSED by Mira**, remains closed; **MIRA02 corrected in proposal, not accepted/closed yet**. No implementation PR/head.
+- Old lifetime65,536 cap was permanently poisonable. Replaced by **DB-assigned UTC recording-hour admission,512 new attributed groups/hour,256 authenticated+256 anonymous**; finite per-window unknown/overflow/gap slots.
+- New hour lazily gets fresh quota on first producer write, no cron/Owner visit/manual cleanup. Old saturation/archive size never lifetime gate; request/occurredAt/client TZ cannot choose budget. No extra epochs on saturation.
+- Old groups and state retain source/actor/IP/operation/status/first/last/count indefinitely; no TTL/delete/eviction/reset. Same source across hours has distinct retained IDs. Current/lifetime summaries and stable cursor/global/scoped history reflect epochs; no fake exact event-time24h.
+- Storage is bounded **growth rate H×(512+P+C)**, not constant lifetime bytes/rows. Up to12,288 attributed groups/day or4,485,120/365d plus finite state overhead; original65k was not carried over as high per-hour rate. Active flood may saturate next hour too; no promise of all-source completeness under infinite flood. If flood stops, future attribution resumes next hour.
+- Same two proposed mutable relations, epoch in unique/quota/index keys. Transaction-local DB time, quota lock scoped(epoch,pool), rollback-safe count; no ambiguous retry/gap append bypass. Tests specified for exhausted past window→native writer recovery, last-slot/rollover races, late/future timestamps and idle jumps. No application test/code implemented.
+- Accepted unchanged sections1/2/4/6/7/9/11 verified byte-identical; section3 only dependent count explanation,7-monitor table unchanged. Other changes only model5/History8/schema10/acceptance12/context13 and intro Owner/status.
+- New Owner#6767828181: deferred separate occupancy/archive download/clear phase after entire current Super-admin plan, outside SA02/current remaining scope. Current retention unchanged; renewal never depends on future manual clearing.
+- Main and315 e394f1586b4f857f2160e291a9b8fb3915067ead unchanged,20 current-main source hashes unchanged. PG17 official date/time/locking/UPSERT sources checked. Previous Better Auth1.7.7/CF source work preserved; no upgrade/Stage6 work.
+- Evidence /workspace/work/sa02-renewal-plan-evidence/: SA02_CORRECTED_PLAN.md, PLAN_SCOPE_DIFF.patch, SCOPE_CHECK.json, PG17 snapshots; previous sa02-replan-evidence source/auth/315 refs retained. Clean checkout /workspace/work/sa02-replan.
+- **Next recipient Mira** for correction review/coordinator continuation. Do not assign Lira/Mark, modify implementation/master accepted plan as approved, merge/deploy or implement deferred journal management.
+- “...” continues current task else checks251; service publication authorized, Owner alone merges; no last-manager/admin-count/recovery principle.
+
+Previous context retained verbatim below; superseded lifetime-cap policy is historical, not current proposal.
+
+---
+
 # Лёва — актуальный checkpoint: SA02 replacement plan delivered (2026-11-10)
 
 **Active result:** whole replacement bounded SA02 plan [#6767391552](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6767391552), current main `e279cb6c032a489a9044ca1191407df887c364b4`, assignment#6766904312. **Await Mira scope/fit review. Lev finished/stopped; Lira/Mark unassigned.**
