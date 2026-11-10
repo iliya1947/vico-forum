@@ -2925,3 +2925,16 @@ Plan defines concurrency-safe quota admission, atomic counters, no ambiguous-com
 Checked latest#315 head e394f1586b4f857f2160e291a9b8fb3915067ead, unchanged plan blob0b4fee79a10dcf6f532f3758305d0896f88a7d88, full plan/workflow/communication. Exact installed Better Auth/drizzle-adapter1.7.7 dispatch/hooks/deletion/password/rate-limit behavior checked against current official docs, Cloudflare IP/subrequest/PseudoIPv4 caveats checked. No library upgrade or Stage6 provisioning.
 
 Evidence sa02-replan-evidence includes full proposed plan, official snapshots, source manifest and315 reference. Planning only; clean current-main checkout, no implementation/code/migration/tests/build/runtime acceptance. **Returned to Mira for scope/fit review and disposition of the explicit cap/saturation tradeoff.** Lev stopped; Lira/Mark unassigned; SA02-PLAN-MIRA-01 remains pending, not closed.
+
+
+## 2026-11-10 — Mira review of SA-02 replacement plan
+
+Mira reviewed Lev replacement plan #6767391552 against current main `e279cb6c032a489a9044ca1191407df887c364b4`, `docs/SUPER_ADMIN.md`, current project state and Security service input #315 head `e394f1586b4f857f2160e291a9b8fb3915067ead`. Full disposition: [#6767512074](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6767512074).
+
+1. **SA02-PLAN-MIRA-01 CLOSED.** The replacement removes unbounded per-request append-only telemetry, keeps useful authoritative/network attribution for admitted patterns, exact transition facts and auth/access failure isolation.
+2. **SA02-PLAN-MIRA-02 OPEN / CHANGES REQUIRED.** A lifetime 32,768 authenticated + 32,768 anonymous pattern cap with no reset/TTL/eviction/epoch can be intentionally exhausted once. After saturation, new sources are permanently un-attributable and collapse to overflow counters. Honest saturation UI does not repair the loss of future investigative source attribution.
+3. This is current SA-02 scope because the package itself defines Security telemetry semantics; it is not Stage-6 Owner-plane hardening.
+4. Correction must keep attacker-driven growth bounded but allow future admissions to recover through a bounded renewal mechanism, while preserving approved indefinite historical retention and visible overflow/gap semantics. Exact mechanism remains Lev's technical choice.
+5. Remaining plan boundaries passed Mira scope/fit review: #315 stays Stage-6 architecture input; current AdministrativeRouting is reused; no SA03+, privileged profile/deactivation, production provisioning or dependency upgrade is pulled into SA-02.
+
+**Handoff:** Lev revises only the attempt retention/admission model and directly dependent History/acceptance wording, republishes corrected plan in #251 and stops. Lira/Mark remain unassigned; no implementation PR exists.
