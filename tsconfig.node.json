@@ -14,6 +14,7 @@
     "app/auth/session-context.ts",
     "app/observability/attempt-source.ts",
     "app/observability/attempt-collector.server.ts",
+    "app/observability/auth-fact-collector.server.ts",
     "app/authorization/catalog.ts",
     "app/authorization/owner.ts",
     "app/administrative-routing/addresses.ts",
