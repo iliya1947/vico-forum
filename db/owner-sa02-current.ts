@@ -210,15 +210,20 @@ export class PostgresOwnerSa02Current {
           "(source='auth' and $1='security.auth' and kind in "+
           "('auth.methodLinked','auth.passwordChanged','auth.sessionCreated','auth.sessionDeleted'))",
           [item.key])).rows[0]?.first??null;
-        // Registration changes belong to the native Admin History source.
-        // This reader uses them only for coverage, not for History projection.
-        const firstRegistrationChange=item.key==="accounts.registration"
+        // Adjacent registration History also projects native policy changes and
+        // admitted registration-denial attempt groups (immutable admitted_at).
+        // Include both sources in its truthful earliest-retained coverage.
+        const firstRegistrationSource=item.key==="accounts.registration"
           ? (await this.pool.query<{first:Date|null}>(
-              "select min(occurred_at) first from admin_history "+
-              "where action='settings.registrationChanged'")).rows[0]?.first??null
+              "select min(at) first from ("+
+              "select min(occurred_at) at from admin_history "+
+              "where action='settings.registrationChanged' union all "+
+              "select min(admitted_at) at from owner_attempt_patterns "+
+              "where surface='auth' and operation='registration-admission') retained"
+            )).rows[0]?.first??null
           : null;
         const first=earlier(earlier(earlier(item.first,samples.first),firstFact),
-          firstRegistrationChange);
+          firstRegistrationSource);
         coverageFrom=iso(first);
       }catch{recording="unavailable";}
       monitors.push({key:item.key,source:"database",quality:"measured",
