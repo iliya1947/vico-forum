@@ -12,6 +12,7 @@
 10. D3 completed: **PASS — 0 current-scope shared Quick-action/moderation mutation defects**.
 11. D6 completed: **PASS — 0 current-scope Administrative-measures/AP-10 enforcement defects**.
 12. D9 completed: **1 current-scope finding — COMPLAINT-PRIV-01 Low/P3**.
-13. No technical planner, implementer or implementation PR is assigned.
-14. No Cloudflare/Neon/production mutation is authorized.
-15. Next after developer continuation: execute **D10 Complaints mutations / replay / concurrency** and stop with findings/classification.
+13. D10 completed: **PASS — 0 current-scope Complaints mutation/replay/concurrency/notification defects**.
+14. No technical planner, implementer or implementation PR is assigned.
+15. No Cloudflare/Neon/production mutation is authorized.
+16. Next after developer continuation: execute **D8 Help Signals moderation workflow** and stop with findings/classification.
