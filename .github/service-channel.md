@@ -2679,3 +2679,10 @@ Lira is assigned a **separate docs-only factual closeout** via `#6758113204`. Th
 ## SA-01 docs closeout — Mira PASS
 
 Docs-only PR #314 on exact head `a0a171a0795600995b82fe9b3dc0c6b6070ccd3d` was reviewed by Mira across all 8 changed Markdown files to EOF: **PASS — 0 confirmed docs defects** (`#6758485135`). CI #42751155827 is SUCCESS. The permanent Super-admin contract, project/current state, roadmap/UI-UX boundaries and project history are consistent with merged SA-01 and do not claim SA-02+ delivery. PR #314 is ready for Owner merge. SA-02 remains inactive until that merge.
+
+
+## SA-01 closed / SA-02 planning assigned
+
+Docs PR #314 merged into current `main` as `e16d75dc7e2988eb06923c2d97ab5ae389bbfbac`; SA-01 implementation + factual closeout are complete.
+
+Lev is assigned **SA-02 bounded technical planning only** via `#6758525820`, against current main and the accepted Super-admin decomposition. Scope: Accounts & authentication + Security monitoring/event producers using the existing SA-01 History/Event-log foundation. Canonical profile/deactivation/SA-03+, Stage 6 and visual polish are out of scope. Lira and Mark remain unassigned until Mira reviews Lev's plan.
