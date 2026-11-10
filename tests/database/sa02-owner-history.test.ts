@@ -38,7 +38,9 @@ async function seedBasic(){
     "(id,actor_id,actor_label,action,target_type,target_id,target_label,context) "+
     "values ($1,'real-member','Private Admin Label','settings.registrationChanged',"+
     "'forum-settings','registration','Private Registration Title',$2::jsonb)",
-    [REG,JSON.stringify({privateToken:"must-not-leak",oldGoogleEnabled:true,newGoogleEnabled:false})]);
+    [REG,JSON.stringify({privateToken:"must-not-leak",
+      before:{googleRegistrationEnabled:true,emailRegistrationEnabled:true,version:1},
+      after:{googleRegistrationEnabled:false,emailRegistrationEnabled:true,version:2}})]);
   await client.query("insert into forum_attachment_security_events "+
     "(id,upload_id,uploaded_by_user_id,context_key,draft_id,file_name,declared_mime,"+
     "detected_type,reason,declared_byte_size,created_at) values "+
@@ -107,6 +109,10 @@ describe("SA02 native source-aware Owner History projection",()=>{
       REG,"11111111-1111-4111-8111-111111111111",
     ]));
     expect(registration.entries.find(e=>e.id===REG)?.origin).toBe("admin-history");
+    expect(registration.entries.find(e=>e.id===REG)?.values).toMatchObject({
+      beforeGoogleEnabled:true,afterGoogleEnabled:false,
+      beforeEmailEnabled:true,afterEmailEnabled:true,beforeVersion:"1",afterVersion:"2",
+    });
     const system=await reader.readTimeline({area:"system",monitorKey:"system.requests"});
     expect(system.entries.every(e=>e.monitorKeys.includes("system.requests"))).toBe(true);
     expect(system.entries.some(e=>e.id===S)).toBe(true);
