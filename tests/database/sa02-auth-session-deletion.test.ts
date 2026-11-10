@@ -164,7 +164,7 @@ describe("SA02 native Better Auth 1.7.7 committed session deletion receipts",()=
 
   it("bounds real Better Auth revoke-all evidence, query chunks and persisted exact facts",async()=>{
     const actor=await register("sa02-large-bulk@example.test","203.0.113.71");
-    const total=101;
+    const total=81;
     await admin.query("insert into session(id,user_id,token,expires_at,updated_at) "+
       "select 'bulk-'||n::text,$1,'bulk-private-'||n::text,"+
       "clock_timestamp()+interval '1 day',clock_timestamp() "+
@@ -216,6 +216,30 @@ describe("SA02 native Better Auth 1.7.7 committed session deletion receipts",()=
     expect(gapsLarge.reduce((a,b)=>a+b,0)).toBe(total-MAX_AUTH_FACTS_PER_REQUEST);
     expect(proofWidths.length).toBeGreaterThan(1);
     expect(proofWidths.every(length=>length<=8)).toBe(true);
+    expect((await admin.query<{count:string}>("select count(*)::text count "+
+      "from session where user_id=$1",[actor.userId])).rows[0].count).toBe("0");
+  });
+
+  it("records an honest gap without invented exact IDs beyond Better Auth's 100-row preimage cap",async()=>{
+    const actor=await register("sa02-bulk-preimage-limit@example.test","203.0.113.75");
+    const total=105;
+    await admin.query("insert into session(id,user_id,token,expires_at,updated_at) "+
+      "select 'preimage-'||n::text,$1,'private-preimage-'||n::text,"+
+      "clock_timestamp()+interval '1 day',clock_timestamp() "+
+      "from generate_series(1,$2) n",[actor.userId,total-1]);
+    const gapsLarge:number[]=[];
+    const collector=new RequestAuthFactCollector(()=>({
+      append:(fact,at)=>writer.append(fact,at),
+      close:async()=>undefined,
+    }),count=>gapsLarge.push(count));
+    const bounded=createHyperdriveAuthRuntime(url,env,connected,undefined,collector);
+    const result=await bounded.handle(request("revoke-sessions",{},actor.cookie,"203.0.113.76"));
+    expect(result.status).toBe(200);
+    await collector.flush();
+    const recorded=await admin.query("select id from owner_events "+
+      "where source='auth' and target_user_id=$1",[actor.userId]);
+    expect(recorded.rows).toHaveLength(0);
+    expect(gapsLarge.reduce((a,b)=>a+b,0)).toBe(total);
     expect((await admin.query<{count:string}>("select count(*)::text count "+
       "from session where user_id=$1",[actor.userId])).rows[0].count).toBe("0");
   });
