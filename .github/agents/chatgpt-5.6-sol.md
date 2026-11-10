@@ -1595,3 +1595,8 @@ PR #313 exact head `d9c4268437e76eec9d01f19c7fe1b85d456128c1`: fresh Mira whole-
 ## SA-01 final coordinator state
 
 PR #313 exact head `d9c4268437e76eec9d01f19c7fe1b85d456128c1`: Mira PASS `#6757801001`; Lev independent re-review PASS `#6757929335`; 0 current-scope defects. Final coordinator state: **READY FOR OWNER MERGE** (`#6758066942`). After merge, next step is a separate factual SA-01 docs closeout; SA-02 remains inactive until then.
+
+
+## SA-01 merged / docs closeout
+
+PR #313 merged into main as `be813b86e9a585b266145f655389df1ac4c2d64b`. Lira is assigned the separate factual docs-only closeout via `#6758113204`; SA-02 remains inactive until that closeout is reviewed.
