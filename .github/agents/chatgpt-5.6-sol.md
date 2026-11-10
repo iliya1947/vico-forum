@@ -1662,3 +1662,11 @@ Reviewed Lev plan `#6759936344`: CHANGES REQUIRED only for `FOUNDATION-PLAN-MIRA
 - FOUNDATION-LEV-01 closed with same-origin URL normalization and focused regression coverage; no wider routing/security change required.
 - Exact-head CI + SA-01/AP-10 Chromium workflows all SUCCESS.
 - Same head handed to Lev for independent technical re-review.
+
+
+## PR #317 — FOUNDATION-LEV-02 disposition
+
+- Independently checked Lev repeat-review finding on exact head `34d1e4acb278fca27cd994e590dd3b9757f5b4d8`.
+- **Confirmed current-scope P3.** The real System page's content Monitoring link omits the active UI routing resolver and falls back to default Super-admin path under substitution.
+- Other current Super-admin route-level consumers were checked; no second analogous confirmed omission found.
+- Lira assigned in #6764287078 for a local consumer fix + real System-route substitution/default regression. New head requires fresh Mira whole-PR review before Lev re-review.
