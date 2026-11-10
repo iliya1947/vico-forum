@@ -4,6 +4,7 @@ import { APIError, createAuthMiddleware, getAuthoritativeSessionFromCtx } from "
 import { and, eq, isNotNull, ne } from "drizzle-orm";
 import { drizzle, type NodePgDatabase } from "drizzle-orm/node-postgres";
 import type { Client } from "pg";
+import type { AuthTransitionFact } from "../../db/owner-auth-facts";
 import {
   AccountSecurityError,
   AuthSessionUnavailableError,
@@ -32,6 +33,12 @@ export interface BetterAuthEnvironment {
 }
 
 export const betterAuthSchema = { user, session, account, verification, rateLimit };
+
+/** Server-owned request collector; no arbitrary client-selected facts. */
+export interface AuthCreationObserver {
+  capture(fact: AuthTransitionFact): void;
+  trustedActorFor(userId: string): string | null;
+}
 export const betterAuthEmailPasswordOptions = {
   enabled: true,
   requireEmailVerification: false,
@@ -104,8 +111,45 @@ function createAuth(
   onDatabaseError?: (error: unknown) => void,
   onAdmissionError?: (error: unknown) => void,
   onAdmissionDenied?: () => void,
+  onCreatedFact?: AuthCreationObserver,
 ) {
   const options = betterAuthOptions(database, env);
+  if (onCreatedFact) {
+    // A new user's hook is queued before its credential/Google account hook.
+    // This is instance-local to the canonical Better Auth operation.
+    const createdUsers = new Set<string>();
+    function emit(fact: AuthTransitionFact): void {
+      try { onCreatedFact?.capture(fact); }
+      catch { /* Recording can never change Better Auth persistence. */ }
+    }
+    options.databaseHooks = {
+      user: { create: { after: async created => {
+        if (typeof created.id !== "string") return;
+        createdUsers.add(created.id);
+        emit({ kind: "account.created", userId: created.id });
+      } } },
+      account: { create: { after: async created => {
+        const userId = created.userId, accountId = created.id;
+        const method = created.providerId === "credential" ? "password"
+          : created.providerId === "google" ? "google" : null;
+        if (!method || typeof userId !== "string" || typeof accountId !== "string") return;
+        const actor = onCreatedFact.trustedActorFor(userId);
+        emit({
+          kind: "auth.methodLinked", userId, accountId, method,
+          linkContext: createdUsers.has(userId) ? "registration"
+            : actor && method === "google" ? "explicit-link" : "unknown",
+          actorUserId: actor,
+        });
+      } } },
+      session: { create: { after: async created => {
+        if (typeof created.id !== "string" || typeof created.userId !== "string") return;
+        emit({
+          kind: "auth.sessionCreated", userId: created.userId, sessionId: created.id,
+          actorUserId: onCreatedFact.trustedActorFor(created.userId),
+        });
+      } } },
+    };
+  }
   if ((onAdmissionError || onAdmissionDenied) && options.user?.validateUserInfo) {
     const validateUserInfo = options.user.validateUserInfo;
     options.user = {
@@ -198,6 +242,7 @@ export function createHyperdriveAuthRuntime(
   env: BetterAuthEnvironment,
   createClient: (connectionString: string) => Client = createWebClient,
   onAdmissionDenied?: () => void,
+  onCreatedFact?: AuthCreationObserver,
 ): AuthRuntime {
   async function useAuth<T>(
     operation: (auth: ReturnType<typeof createAuth>, database: NodePgDatabase) => Promise<T>,
@@ -211,7 +256,7 @@ export function createHyperdriveAuthRuntime(
       const database = drizzle(client);
       return await operation(createAuth(database, env,
         preserveDatabaseError ? (error) => { databaseError ??= error; } : undefined,
-        onAdmissionError, onAdmissionDenied), database);
+        onAdmissionError, onAdmissionDenied, onCreatedFact), database);
     } catch (error) {
       // Better Auth 1.7.7 replaces session-query failures with a cause-less APIError.
       // Retain the adapter failure for classification; never infer availability from HTTP 500.
