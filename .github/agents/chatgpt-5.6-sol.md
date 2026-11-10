@@ -1610,3 +1610,8 @@ PR #314 exact head `a0a171a0795600995b82fe9b3dc0c6b6070ccd3d`: Mira docs-only re
 ## SA-01 closed / SA-02 planning
 
 SA-01 docs PR #314 merged; current main `e16d75dc7e2988eb06923c2d97ab5ae389bbfbac`. Lev assigned bounded SA-02 technical planning via `#6758525820`. Lira/Mark unassigned until plan review.
+
+
+## SA-02 plan review
+
+Initial Lev plan `#6758838112`: **CHANGES REQUIRED**. Confirmed `SA02-PLAN-MIRA-01`: externally triggerable denied/rate-limited requests must not create unbounded per-request append-only Owner-history rows under indefinite retention. Correction assigned to Lev via `#6758897467`; implementation remains unassigned.
