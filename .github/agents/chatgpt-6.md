@@ -1,3 +1,13 @@
+# Лира — SA-02 / подзадача 1C завершена (2026-11-10)
+
+- [Draft PR #319](https://github.com/iliya1947/vico-forum/pull/319), exact head `7282b6568fff9624a895a90d7ea6c22f1ac854b5`; main fork `e279cb6c032a489a9044ca1191407df887c364b4`. Accepted plan #6768069279, Mira PASS/assignment #6768166517.
+- New `db/owner-attempt-telemetry.ts` implements server-only fixed catalog writer: PG17 DB transaction UTC recording-hour; finite transaction/statement/lock deadlines; epoch/pool 256/256 quota row lock; null-aware pattern dedup/coalescing; first/last/count and bigint saturation; fixed unknown/overflow/gap state; automatic lazy fresh-hour admission without archive deletion; no blind commit retry.
+- New native PG17 tests `tests/database/owner-attempt-telemetry.test.ts`: concurrent same-key repeats, last slot race, distinct actor/IP + anonymous, 48h-old exhausted epoch renewal, adversarial occurrence timestamps, timeout rollback, ambiguous COMMIT, no reopened missing quota, bounded slots, bigint saturation and negative input coverage.
+- Exact-head [CI #42830811251](https://github.com/iliya1947/vico-forum/actions/runs/42830811251) SUCCESS (checks and PG17 database). [SA01 Chromium #42830811247](https://github.com/iliya1947/vico-forum/actions/runs/42830811247) SUCCESS. AP10 #42830811293 first attempt failed a `socket hang up` on unchanged authorization POST, failed-job rerun started. Earlier 1C interim head AP10 #42830646144 SUCCESS. No causal AP10 defect established.
+- No production Worker/auth observer wiring, Owner telemetry reader/UI or whole-SA02 acceptance. Current bounded 1C authoring completed; **STOP until developer continuation**; next 1D canonical trusted ingress source + best-effort collector/observers in a separately bounded step. No author whole-PR review, merge, deploy, Stage6 or deferred History storage controls.
+
+---
+
 # Лира — SA-02 / подзадача 1B завершена (2026-11-10)
 
 - [Draft PR #319](https://github.com/iliya1947/vico-forum/pull/319), new checkpoint exact head `777e3e2385a658988ed840995b020314ce79caa4`; fork main `e279cb6c032a489a9044ca1191407df887c364b4`.
