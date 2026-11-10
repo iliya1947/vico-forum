@@ -134,19 +134,40 @@ function createAuth(
         createdUsers.add(created.id);
         emit({ kind: "account.created", userId: created.id });
       } } },
-      account: { create: { after: async created => {
-        const userId = created.userId, accountId = created.id;
-        const method = created.providerId === "credential" ? "password"
-          : created.providerId === "google" ? "google" : null;
-        if (!method || typeof userId !== "string" || typeof accountId !== "string") return;
-        const actor = trustedActor(userId);
-        emit({
-          kind: "auth.methodLinked", userId, accountId, method,
-          linkContext: createdUsers.has(userId) ? "registration"
-            : actor && method === "google" ? "explicit-link" : "unknown",
-          actorUserId: actor,
-        });
-      } } },
+      account: {
+        create: { after: async created => {
+          const userId = created.userId, accountId = created.id;
+          const method = created.providerId === "credential" ? "password"
+            : created.providerId === "google" ? "google" : null;
+          if (!method || typeof userId !== "string" || typeof accountId !== "string") return;
+          const actor = trustedActor(userId);
+          emit({
+            kind: "auth.methodLinked", userId, accountId, method,
+            linkContext: createdUsers.has(userId) ? "registration"
+              : actor && method === "google" ? "explicit-link" : "unknown",
+            actorUserId: actor,
+          });
+        } },
+        update: { after: async (updated, context) => {
+          // Better Auth 1.7.7 /change-password uses updateAccount(account.id),
+          // unlike /reset-password's updatePassword/updateMany path.
+          // Only a returned, persisted credential row from this exact route
+          // proves a password mutation. Do not copy the hash to telemetry.
+          if (context?.path !== "/change-password" || !updated ||
+            updated.providerId !== "credential" ||
+            typeof updated.id !== "string" ||
+            typeof updated.userId !== "string" ||
+            typeof updated.password !== "string" ||
+            !updated.password) return;
+          const userId = updated.userId;
+          const actorId = context.context.session?.user?.id;
+          if (actorId !== userId) return;
+          emit({
+            kind: "auth.passwordChanged", userId, accountId: updated.id,
+            operationId: crypto.randomUUID(), actorUserId: userId,
+          });
+        } },
+      },
       session: { create: { after: async created => {
         if (typeof created.id !== "string" || typeof created.userId !== "string") return;
         emit({
