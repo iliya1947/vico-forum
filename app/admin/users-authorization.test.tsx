@@ -231,7 +231,7 @@ describe("AP-09 canonical fetcher composition", () => {
     expect(formFor(mounted.container, "override", "forum.topic.pin")?.getAttribute("action"))
       .toBe("/en/office/authorization");
     expect(mounted.container.querySelector('a[href="/en/office/users"]')).not.toBeNull();
-    expect(mounted.container.querySelector('a[href="https://forum.invalid/en/office/measures?target=target%2F%D7%A2%D7%91%D7%A8%D7%99%D7%AA"]')).toBeNull();
+    expect(mounted.container.querySelector('a[href="/en/office/measures?target=target%2F%D7%A2%D7%91%D7%A8%D7%99%D7%AA"]')).toBeNull();
     // The user target is not a measure manager in this fixture; no unrelated link is introduced.
   });
 
