@@ -210,7 +210,15 @@ export class PostgresOwnerSa02Current {
           "(source='auth' and $1='security.auth' and kind in "+
           "('auth.methodLinked','auth.passwordChanged','auth.sessionCreated','auth.sessionDeleted'))",
           [item.key])).rows[0]?.first??null;
-        const first=earlier(earlier(item.first,samples.first),firstFact);
+        // Registration changes belong to the native Admin History source.
+        // This reader uses them only for coverage, not for History projection.
+        const firstRegistrationChange=item.key==="accounts.registration"
+          ? (await this.pool.query<{first:Date|null}>(
+              "select min(occurred_at) first from admin_history "+
+              "where action='settings.registrationChanged'")).rows[0]?.first??null
+          : null;
+        const first=earlier(earlier(earlier(item.first,samples.first),firstFact),
+          firstRegistrationChange);
         coverageFrom=iso(first);
       }catch{recording="unavailable";}
       monitors.push({key:item.key,source:"database",quality:"measured",
