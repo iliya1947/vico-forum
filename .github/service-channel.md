@@ -33,14 +33,14 @@
 ## Актуальный baseline и назначение
 
 - Current main/base: `e16d75dc7e2988eb06923c2d97ab5ae389bbfbac`. AP01–11, Owner redesign1–2, SET01–06, SA01 implementation#313 + docs#314 closed/merged.
-- **Active task: minimal Admin/Super-admin Stage6-aware foundation planning only**, latest Owner decision / Mira assignment [#6759703177](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6759703177). It supersedes current live concealment-hardening scope.
-- **Lev plan delivered:** [#6759936344](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6759936344). Central semantic address resolver for both administrative areas, thin UI/server accessors with public static defaults, existing helpers/forms/redirects and same17 route registrations; no business or authorization rewrite.
-- Preserve current URLs/route module IDs, exact Owner/ordinary permission guards and local/CI flows. Keep Router8.3.1/initial discovery now. Official docs/changelog/PRs confirm8.4.0 discovery fixes; latest checked release8.5.1. Actual upgrade/discovery/security integration deferred to separately scoped Stage6 work.
-- **Next / recipient: Mira — review foundation plan for scope/fit and decide further assignment.** Lev stops; Lira/Mark unassigned. No foundation or SA02 implementation PR/code/migration/runtime acceptance claimed.
-- No production secrets/random tokens/hidden aliases/anti-enumeration/gateway/external binding/logging or IP security policy now. Current source/manifest discoverability is not fixed or claimed fixed by foundation. Real protection remains Stage6.
-- **SA02 remains next product package after bounded foundation decision; original plan not Ready.** SA02-PLAN-MIRA-01 still open: Owner clarification [#6759312425](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6759312425) requires bounded/coalesced retained denials with useful authenticated-user/trusted network-source attribution, first/last/count; neither per-request permanent rows nor count-only anonymous collapse. This correction is not implemented/designed by current foundation delivery.
-- Evidence `/workspace/work/admin-routing-plan-evidence/`: current source inventory17 registrations (11Admin/6Super-admin),31 source hashes, official Router docs/PR snapshots and complete plan. Checkout `/workspace/work/admin-routing-plan` clean.
-- SA03+/privileged profile/lifecycle/visual polish out of scope; real external Cloudflare/Neon/Google/Owner binding remains paused. Owner alone merges; no last-manager/count/recovery rule.
+- **Active task: corrected minimal Admin/Super-admin foundation plan**, latest Owner scope#6759703177 and Mira reduction#6760232469. Real concealment/protection deferred to Stage6.
+- **Lev corrected plan delivered [#6761206804](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6761206804)**, supersedes initial#6759936344. FOUNDATION-PLAN-MIRA-01 addressed in the proposed plan; Mira re-review/acceptance pending.
+- Only outgoing/address work: typed AdministrativeRouting resolver/accessors/provider, existing helpers and links/forms/redirects, static public defaults. **app/routes.ts and Worker ingress remain unchanged**; no registration extraction/recomposition/helper/catalog. They already centralize17 route registrations/one dispatch and remain future Stage6 touchpoints.
+- Preserve all current URLs/route IDs/Owner and permission checks/Router8.3.1/initial/local-CI behavior. No actual hiding, secrets/tokens/dynamic aliases, anti-enumeration, external bindings/logging/IP telemetry policy now.
+- **Next / recipient: Mira — re-review corrected plan and decide further assignment.** Lev stopped; Lira/Mark unassigned. No implementation PR/code/migration/runtime acceptance or current-plan PASS claimed.
+- SA02 remains the next product package after bounded foundation decision; real production protection does not block it. **SA02-PLAN-MIRA-01 remains open** under Owner clarification#6759312425: useful authoritative user/trusted network-source attribution + first/last/count and bounded/coalesced persistence, not per-request permanent records or a count-only anonymous collapse.
+- Evidence `/workspace/work/admin-routing-plan-evidence/FOUNDATION_PLAN_REVISED.md`;31 source hashes unchanged on exact main,11Admin+6Super-admin registrations and one Worker dispatch reconfirmed; checkout clean. Original plan/evidence retained as superseded snapshot.
+- SA03+/profile/lifecycle/visual polish out of scope; external Stage6/Google/real Owner binding paused. Owner alone merges; no last-manager/count/recovery rule.
 
 ## Handoff — Лира: Stage2 factual documentation closeout
 
@@ -2739,3 +2739,14 @@ Returned to **Mira for scope/fit review and coordinator decision**; Lev stops, L
 ## Foundation plan review — one reduction required
 
 Mira reviewed Lev foundation plan `#6759936344` and returned one current-scope correction in `#6760232469`: `app/routes.ts` already centralizes all Admin/Super-admin route registrations, so extracting a second route-registration composition layer is unnecessary current complexity. Keep `app/routes.ts` and the Worker request-handler boundary as future Stage-6 ingress touchpoints; current foundation should focus on centralizing scattered outgoing address construction. All other foundation directions remain acceptable pending corrected plan. SA-02 source-attribution requirement `#6759312425` remains open and unchanged.
+
+
+## FOUNDATION-PLAN-MIRA-01 — corrected plan delivered (2026-11-10)
+
+[Revised complete plan #6761206804](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6761206804) supersedes initial#6759936344 after Mira review#6760232469. Same main `e16d75dc7e2988eb06923c2d97ab5ae389bbfbac`.
+
+Removed only unnecessary current route-registration extraction/recomposition/build helper. app/routes.ts already registers all17 administrative routes and Worker already has one ingress; neither is changed by current foundation. They are documented future Stage6 touchpoints. Current work remains outgoing typed address resolution and actual helper/link/form/redirect consumers, with current URL/auth/Router/local-CI behavior preserved. Scope and acceptance no longer introduce any route-registration composition layer.
+
+Source31 hashes and existing11Admin/6Super-admin registrations/one dispatch reconfirmed unchanged. No implementation/tests/build/new acceptance performed for plan correction. Evidence FOUNDATION_PLAN_REVISED.md in /workspace/work/admin-routing-plan-evidence/; previous snapshot retained.
+
+**Returned to Mira for re-review; coordinator acceptance pending.** Lev stops, Lira/Mark unassigned. SA02 Owner source-attribution/bounded-persistence correction#6759312425 remains open; no protection activation, SA02 implementation or new assignment claimed.
