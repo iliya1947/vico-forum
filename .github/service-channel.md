@@ -142,6 +142,20 @@
 10. Better Auth `1.7.16` retains the audited 24-hour default and createdAt-based freshness semantics; upgrade does not alter this B8 verdict.
 11. No separate current-scope B8 defect confirmed.
 
+## Block B / B9 — Registration policy race audit
+
+1. Audit target: current main `e279cb6c032a489a9044ca1191407df887c364b4`, Better Auth `1.7.7`, PostgreSQL 17 semantics.
+2. **AUTH-REG-01 — CONFIRMED current-scope, Moderate / P2.** The registration admission policy has a TOCTOU window between reading the singleton policy and committing the new user transaction.
+3. Vico's `createRegistrationAdmission` performs a fresh ordinary `SELECT` of `forum_registration_settings` immediately before Better Auth persists a new user, but it does not lock the policy row. The Owner update path uses `SELECT ... FOR UPDATE` and then updates/commits the singleton.
+4. PostgreSQL READ COMMITTED semantics do not make an ordinary SELECT conflict with a concurrent row update/row lock. Therefore an already-running create-user transaction can read `open`, then a concurrent Owner-close transaction can update and commit `closed`, and the admitted create-user transaction can still persist/commit afterwards. After the Owner receives successful closure, that in-flight registration can consequently appear.
+5. This is not a general bypass of a registration state that was already closed before admission: a request whose admission SELECT starts after closure commits observes `closed` and is rejected.
+6. Email sign-up started only in the browser before closure but submitted afterwards is rejected because no server-side admission decision exists until create-user. Google OAuth initiation does not freeze the policy either; existing integration proves policy is re-read at callback/create-user and rejects when closure happened before that admission read.
+7. Closed registration correctly preserves existing email login, existing Google login and explicit authenticated Google linking; these paths do not call create-user admission.
+8. Missing/invalid policy singleton and classified PostgreSQL admission failures fail closed. Unknown future provisioning methods return `vico_registration_method_unsupported` rather than default-open.
+9. Denial at validateUserInfo occurs before user persistence. Email sign-up is inside Better Auth's transaction; OAuth new-user validation occurs inside the user/account creation transaction. Existing tests confirm denied registration leaves no user/account/session rows.
+10. Severity is Moderate/P2: impact is a bounded business-policy bypass for an already in-flight new registration around the closure boundary, not authentication/privilege escalation.
+11. No second B9 current-scope defect confirmed.
+
 ## Координация
 
 1. #315 хранит решения, задачи, review findings и прогресс всего направления безопасности.
