@@ -1,3 +1,9 @@
+# Лира — SA-02 / подзадача 1A: pure monitor/event catalog (2026-11-10)
+
+- Mira assigned SA02 implementation #6768166517 after PASS for Lev full replacement plan #6768069279. Main `e279cb6c032a489a9044ca1191407df887c364b4`, routing foundation #317/docs #318 merged. Accepted correction: bounded recording-hour attempt admission (512/hour split into 256/256, no lifetime poisoning), no Stage-6 activation or future archive/clear.
+- Started [Draft PR #319](https://github.com/iliya1947/vico-forum/pull/319), branch `chatgpt/sa02-accounts-security`, initial head `dc51172b71020e42748d20e7e95cafb5afc33822`, exactly two new files: `db/owner-sa02-catalog.ts` and tests. Enumerates 7 monitoring keys in 2 areas and 5 exact persisted-fact kinds, with typed mappings and unknown-key rejection. Runtime/DB unchanged; this is only pure catalog foundation.
+- CI #42823288905 started on exact head; at checkpoint lint and typecheck passed, tests and PG17 still running. No PASS claimed before final verification.
+- **Stop after bounded 1A.** On `...`: 1B reviewed schema/migration/capability design and implementation in same Draft PR. Later independent subtasks for writer, auth/security sources, history, Owner routes and final integrated acceptance. No implementer whole-PR review, merge, production, SA03+ or #315 security activation.
 # Лира — routing foundation docs-only closeout, подзадача 2/2 завершена (2026-11-10)
 
 - Assigned by Mira #6765810801. Ready [docs PR #318](https://github.com/iliya1947/vico-forum/pull/318), exact head `2cb5b9fa9c426513c9d9207d21d89b48b30c8d6e` based on merged #317 main `56358c517cd4456e4421d56e022fce70431b00c1`. Five Markdown-only files: PROJECT_STATE, ADMIN_PANEL, SUPER_ADMIN, HISTORY_24 and history index.
