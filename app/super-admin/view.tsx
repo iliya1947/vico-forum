@@ -30,7 +30,7 @@ export function SuperAdminShell({ locale, current, children }: {
   const entries = [
     { id: "overview", href: superAdminPath(locale,routing), label: t("superAdminOverview") },
     { id: "monitoring", href: superAdminMonitoringPath(locale,routing), label: t("superAdminMonitoring") },
-    { id: "events", href: superAdminEventLogPath(locale,routing), label: t("superAdminEvents") },
+    { id: "events", href: superAdminEventLogPath(locale,undefined,routing), label: t("superAdminEvents") },
     { id: "infrastructure", href: superAdminInfrastructurePath(locale,routing), label: t("superAdminInfrastructure") },
   ];
   return <ForumShell locale={locale} variant="admin">
@@ -81,7 +81,7 @@ export function SystemMonitorCards({locale,system}: {locale:string;system:System
           : t("superAdminNotRecorded")}
       </p>
       <nav aria-label={t("superAdminMonitorActions")}>
-        <Link to={superAdminMonitorHistoryPath(locale,state.key,routing)}>{t("superAdminHistory")}</Link>
+        <Link to={superAdminMonitorHistoryPath(locale,state.key,undefined,routing)}>{t("superAdminHistory")}</Link>
         <span aria-hidden="true"> · </span>
         <Link to={superAdminSystemPath(locale,routing)}>{t("superAdminRefresh")}</Link>
       </nav>
@@ -133,7 +133,7 @@ export function SuperAdminOverview({locale,system,recent}: {locale:string;system
         <bdi>{event.kind}</bdi> — <time dateTime={event.occurredAt}>{formatTime(event.occurredAt,locale)}</time>
       </li>)}</ul>
       {recent.entries.length===0 ? <p>{t("superAdminNoHistory")}</p>:null}
-      <Link to={superAdminEventLogPath(locale,routing)}>{t("superAdminAllEvents")}</Link>
+      <Link to={superAdminEventLogPath(locale,undefined,routing)}>{t("superAdminAllEvents")}</Link>
     </section>
   </SuperAdminShell>;
 }
