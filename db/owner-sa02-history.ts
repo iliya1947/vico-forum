@@ -35,7 +35,13 @@ type Scope = {area:OwnerHistoryArea|null;monitor:OwnerHistoryMonitor|null};
 type Cursor = {v:1;at:string;origin:OwnerHistoryOrigin;id:string;
   area:OwnerHistoryArea|null;monitor:OwnerHistoryMonitor|null};
 const EXACT = /^([1-9][0-9]{3})-(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01])T([01][0-9]|2[0-3]):([0-5][0-9]):([0-5][0-9])\.([0-9]{6})Z$/;
-const ID = /^[^\u0000-\u001f\u007f]{1,200}$/u;
+function safeId(value: unknown): value is string {
+  if(typeof value!=="string" || value.length<1 || value.length>200) return false;
+  return ![...value].some(char=>{
+    const code=char.codePointAt(0)??0;
+    return code<32 || code===127;
+  });
+}
 function checkedScope(options:OwnerHistoryOptions):Scope {
   const area=options.area??null, monitor=options.monitorKey??null;
   if(area!==null && !AREAS.includes(area)) throw new Error("Unknown Owner History area");
@@ -70,7 +76,7 @@ function checkedCursorShape(value:unknown,scope:Scope):Cursor {
   if(Object.keys(cursor).sort().join(",")!=="area,at,id,monitor,origin,v" ||
      cursor.v!==1 || !checkExactAt(cursor.at) ||
      typeof cursor.origin!=="string" || !ORIGINS.includes(cursor.origin) ||
-     typeof cursor.id!=="string" || !ID.test(cursor.id) ||
+     typeof cursor.id!=="string" || !safeId(cursor.id) ||
      cursor.area!==scope.area || cursor.monitor!==scope.monitor)
     throw new Error("Invalid Owner History cursor");
   return cursor as unknown as Cursor;
@@ -112,7 +118,7 @@ type HistoryRow = {
 };
 function readRow(row:HistoryRow):OwnerHistoryEntry {
   if(!checkExactAt(row.exact_at) || !ORIGINS.includes(row.origin) ||
-     typeof row.source_id!=="string" || !ID.test(row.source_id))
+     typeof row.source_id!=="string" || !safeId(row.source_id))
     throw new Error("Owner History source identity invariant failed");
   if(!Array.isArray(row.scopes) ||
     row.scopes.some(m=>!Object.values(MONITORS).some(items=>items.includes(m))))
