@@ -525,6 +525,26 @@ Domain-specific measure behavior здесь не переаудируется; �
 6. Owner projection даёт только catalog keys, а не DB-injected unknown permissions.
 7. Authorization tables остаются application-domain boundary; Better Auth Admin/plugin role model не становится альтернативным source of authority.
 
+### Результат C9 — 2026-11-10
+
+1. Verdict: **PASS — 0 confirmed current-scope permission-catalog/persistence-integrity defects**.
+2. Current `PERMISSION_CATALOG`, final PostgreSQL `authz_permissions_catalog_check` and seeded `authz_permissions` set are aligned. Existing clean-migration regression compares DB permission rows to `PERMISSION_CATALOG` exactly.
+3. Application mutations accept permission inputs only through `isPermissionKey()`; unknown role grants/overrides are rejected before repository writes. PostgreSQL independently blocks unknown permission rows through the catalog CHECK and FK-backed grant/override tables.
+4. `authz_roles.slug` is unique and validated. Database trigger `authz_protect_role_identity` prevents changing any role slug or `is_system`, and prevents deleting built-in roles. Application rename/delete paths additionally operate only on non-system roles.
+5. Custom-role grants may cascade when an unassigned custom role is deleted, but `authz_user_roles.role_id` uses `ON DELETE RESTRICT`; an assigned role therefore cannot disappear or orphan effective authority. Repository maps FK conflict to `AuthorizationRoleAssignedError`.
+6. Default role lookup uses unique slug `user`. The built-in row is seeded as system and protected by the identity trigger; if it is nevertheless missing/corrupted outside the application boundary, resolution fails closed rather than silently choosing another role.
+7. Owner projection uses only code-backed `PERMISSION_CATALOG`; `hasPermission()` rejects an unknown permission even for Owner. Persisted unknown permission keys are also DB-forbidden.
+8. Better Auth provides identity/session only. Current Better Auth configuration has no Admin plugin or role-based authorization plugin, and Vico does not consume Better Auth role claims as application authority.
+9. Direct privileged database modification is a separate database/runtime trust boundary and remains for the Database & migrations security area; no application-level bypass was promoted from that hypothetical path.
+10. No C9 finding confirmed.
+
+### Итог Block C — Authorization & privilege escalation
+
+1. Block C C1–C9 completed against main `e279cb6c032a489a9044ca1191407df887c364b4`.
+2. **1 current-scope finding total:** `AUTHZ-FAIL-01` Low/P3 — authorization mutation rollback failure can replace/misclassify the original error.
+3. No Owner spoofing, direct authorization-write escalation, stale permission-resolution bypass, concurrency authority race, elevated-authority propagation bypass, authorization-state IDOR, resource-condition bypass or catalog/persistence escalation was confirmed.
+4. Remediation remains unassigned. Block-C finding is retained for later correction only after explicit owner decision.
+
 ## Порядок фактической проверки Block C
 
 1. C1 Owner binding / authority spoofing.
