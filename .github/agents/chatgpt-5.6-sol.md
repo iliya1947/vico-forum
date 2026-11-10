@@ -1615,3 +1615,8 @@ SA-01 docs PR #314 merged; current main `e16d75dc7e2988eb06923c2d97ab5ae389bbfba
 ## SA-02 plan review
 
 Initial Lev plan `#6758838112`: **CHANGES REQUIRED**. Confirmed `SA02-PLAN-MIRA-01`: externally triggerable denied/rate-limited requests must not create unbounded per-request append-only Owner-history rows under indefinite retention. Correction assigned to Lev via `#6758897467`; implementation remains unassigned.
+
+
+## SA-02 telemetry correction clarified
+
+Owner clarified that Security must preserve source attribution, not merely counts. Mira superseded the no-source-attribution part of the earlier finding with `#6759312425`: bounded/coalesced persistence must still distinguish attack sources and retain useful first/last/count/identity data. Lev must revise the plan before implementation.
