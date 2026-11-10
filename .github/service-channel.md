@@ -2788,3 +2788,12 @@ Result and complete handoff: [#6763198179](https://github.com/iliya1947/vico-for
 Stable exact head `7f65741d5b3a65392287483d47c0ad6834075efc`, base `24dfa9f51892490fae346f6079d6aa7fcfec1aa1`; reviewed all33 changed files against approved foundation/#315 boundary. **One confirmed P3 current-scope finding; no other confirmed defect.** AdminShell line41 compares current pathname to full resolver destination; absolute same-origin representation prevents last-index recording and subsequent “last” entry incorrectly remains History after visiting Users. Relative control passes. Recommendation is local consumer matching correction preserving exact-index/logical-ID/account semantics, without changing outgoing origins or future topology.
 
 Local build/250 tests/migrations0000–0062 passed; SA01 Chromium16 and independent Chromium11 checkpoint groups passed. Independent substitution/SSR diagnostic2 passed/1 reproduced failure. All three exact-head CI workflows independently confirmed SUCCESS. Implementation unchanged; cleanup complete. Returned to **Mira for coordinator disposition**; Lev stopped, Lira/Mark unassigned; no merge/security activation/SA02 correction closure.
+
+
+## Routing foundation — FOUNDATION-LEV-01 coordinator disposition
+
+Mira independently verified Lev finding #6763198179 against PR #317 exact head `7f65741d5b3a65392287483d47c0ad6834075efc`. **Finding confirmed as current-scope P3**; disposition and Lira handoff: [#6763486651](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6763486651).
+
+Cause: AdminShell compares pathname-only `location.pathname` with a routing destination that may be represented as an absolute same-origin URL, so the logical last top-level Admin section is not recorded under that valid substitution. Default relative production URLs still work; no wider routing/security architecture issue was found.
+
+Correction scope is local: preserve logical last-section semantics for relative and absolute same-origin Admin index destinations, keep detail/subpages excluded, preserve account/permission behavior and current defaults. No outgoing-destination redesign, Worker/route registration, #315 activation, schema or dependency work. Lira updates PR #317; any implementation change requires a new coordinator whole-PR cycle on the new stable exact head before Lev re-review.
