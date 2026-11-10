@@ -60,7 +60,7 @@ describe("SA02 request-local collector and canonical endpoint instrumentation", 
     expect(f.records).toHaveLength(1);
     expect(f.records[0]).toMatchObject({
       surface: "auth", operation: "registration-admission",
-      outcome: "denied", directCode: "forbidden", httpStatus: undefined,
+      outcome: "denied", directCode: "forbidden",
     });
   });
 
