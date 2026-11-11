@@ -1,3 +1,67 @@
+# Лёва — актуальный checkpoint: SA02-D technical handoff delivered (2026-11-11)
+
+**Active result:** executable SA02-D plan/PR strategy [#6789135043](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6789135043) for Mira coordination. Assignment #6789052062; accepted full plan #6768069279 §§9/11/12 unchanged. **Lev completed/stopped; D implementer/reviewers not assigned.**
+
+- Main `e279cb6c032a489a9044ca1191407df887c364b4`, Draft implementation #319 `25ac41573847f9fbce79897b2e019fd246b400cc`, branch chatgpt/sa02-accounts-security verified current. A/B/C review cycle CLOSED (#6788764135), Mira PASS #6788548049 + independent Lev PASS #6788696141, all findings CLOSED.
+- Proposed D delivery in same unfinished SA02 PR #319 as normal descendants of accepted backend head; no intermediate backend merge/extra stacked chain. Preserve old exact-head review/ancestry; new D head needs fresh cumulative A/B/C/D coordinator then independent whole-PR review. Same-PR strategy remains a proposal to Mira, not a unilateral implementation assignment.
+- Sequence: existing facade/Worker/request-context reader wiring + exact-Owner routes/cursors; typed Accounts/Security/history destinations +4/3 cards/context links; shared source-aware History +two Overview summaries +locale/RTL; expanded existing SA01 connected harness/path filters +stable-head final handoff.
+- Reuse PostgresOwnerSa02Current/History and native sources, not copied SQL/events; retain System reads/5xx writer. Strict area/monitor/query/v1/legacy scope validation AFTER exactOwner; classified503, no unexpected error misclassification. Canonical links use actual Admin/Settings/Attention helpers/guards.
+- Existing System URL and outgoing routing seam preserved; actual new route components must pass independent Admin/Owner-origin substitution. Cumulative recorded attempts, shared recording-hour budgets, overflow/unknown/gaps; no fabricated24h/continuous coverage or all-forum audit. Safe source/actor/target/entity/IP display, no secret/raw payloads/external lookups.
+- #315 head `dcd65ec1666c1b0f881737825f55c27c27e7db13`, plan blob `df2d500ccb2750d43422bf5d30f5b0c5370401ff` unchanged. No Stage6 activation, SA03+, production or deferred journal management. No last-admin/manager-count/recovery rule.
+- Planning only. Read actual current factory/context/Worker, route inventory/loaders/views, AdministrativeRouting/helpers/substitution regression, localization and existing SA01 browser workflow; docs/SUPER_ADMIN.md read fully. No implementation edits/new tests/build/browser/provisioning. Clean source checkout /workspace/work/sa02-abc-rereview retained from prior review.
+- **Next recipient Mira:** scope/plan review of D proposal and implementation handoff coordination. Do not start implementation or assign Lira/Mark before coordinator continuation.
+
+## Full D handoff text
+
+## Лёва — SA02-D: исполнимый технический handoff для проверки Мирой
+
+Назначение [#6789052062](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6789052062). Это детализация принятого [плана#6768069279, §§9/11/12](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6768069279), **не перепланирование A/B/C и не implementation PASS**. Сверены main `e279cb6c032a489a9044ca1191407df887c364b4`, Draft#319 head `25ac41573847f9fbce79897b2e019fd246b400cc`, actual routes/readers/routing/locale/browser seams и docs/SUPER_ADMIN.md.
+
+### 1. PR/base и review boundary
+
+**Предлагаю продолжить D в существующем Draft implementation PR#319**, branch `chatgpt/sa02-accounts-security`, base `main`. Начать обычными последующими commits от проверенного `25ac415...`, сохранив его ancestry и ссылки на A/B/C review#6788548049/#6788696141 и closeout#6788764135. Это тот же незавершённый SA02 implementation из принятого плана; отдельного merge A/B/C ради базы для D или дополнительной stacked-PR цепочки не требуется.
+
+A/B/C-контракты и закрытые findings не пересматриваются; D меняет только необходимое подключение/read facade, routes/views/routing/localization/acceptance. Если обнаружится дефект самого принятого backend, отдельная доказанная эскалация в#251, без скрытой переделки. **После первого D commit прежний PASS остаётся доказательством только `25ac415...`, а не нового head.** После завершения D: freeze новый head → весь cumulative A/B/C/D PR против актуального main проверяет Мира → после coordinator PASS независимая whole-PR проверка Лёвы того же head. Ready/merge readiness — только после применимых финальных gates; merge выполняет владелец. Permanent docs/state — отдельный последующий docs PR.
+
+### 2. Исполнение D — четыре последовательных checkpoint в этом PR
+
+**D1 · Подключить accepted readers и маршруты.**
+- В [existing Hyperdrive facade](https://github.com/iliya1947/vico-forum/blob/25ac41573847f9fbce79897b2e019fd246b400cc/db/hyperdrive-owner-system.ts), request context и Worker composition подключить `PostgresOwnerSa02Current`/`PostgresOwnerSa02History`. Сохранить System reads и 5xx recorder; новые current/scoped/global reads делегировать A/B/C классам, не копировать SQL/журнал и не создавать второй producer.
+- Добавить explicit current pages `/:locale/super-admin/monitoring/accounts` и `.../security`. Existing System URL сохранить. Одну existing monitor-History registration/loader расширить до `.../monitoring/:area/:monitorKey/history` с fixed membership system/accounts/security; System spelling останется прежним. Existing `.../events` и Overview recent events переключить на общую source-aware projection.
+- **Каждый loader/resource сначала requireSuperAdmin**, затем allowlisted area/key/query/cursor: guest401/non-Owner403; unknown/mismatch404; malformed/duplicate/unknown query400. Использовать scope-aware `parseOwnerHistoryCursor`, сохранив допустимые legacy System/global cursors; старый parser не должен отклонять новые v1 cursors. Private/no-store для documents/.data/errors. Только classified availability→503; schema/programming error не превращать в400/503. Best-effort observation failure остаётся degraded recording по принятому контракту.
+
+**D2 · Typed navigation и current UI.**
+- Дополнить [SuperAdminAddressFamily](https://github.com/iliya1947/vico-forum/blob/25ac41573847f9fbce79897b2e019fd246b400cc/app/administrative-routing/addresses.ts) destinations accounts/security и typed area+monitor History; сохранить existing System wrapper. Новые cards, back/paging/refresh/Overview links используют active UI provider/request accessor и existing path wrappers; без ручных Owner bases, новых origins/route hiding.
+- Две current pages используют один accepted SA02 current read и area projection: **4 Accounts +3 Security monitors**, их реальные read-time/coverage/recording states; соседние History и Refresh. Monitoring index делает две области live, остальные placeholders сохраняет.
+- Показывать recorded cumulative attempts, текущий recording-hour/shared256+256 pools, overflow/unknown/gaps и неполноту; не выдавать их за точные event-time24h/полный security audit. Bigint totals без потери через Number. Нулевые записи не означают «атак нет».
+- Только существующие contextual links: users→Admin Users; methods/sessions→собственный Settings Account & security; registration→Owner Forum & roles; attachments→Attention/security/attachments. Переиспользовать их canonical helpers/authority. Никакого target-user управления credentials/sessions или нового POST proxy.
+
+**D3 · History/Overview/localization.**
+- Адаптировать existing Timeline к `OwnerHistoryPage`: различать exact/native facts, measured samples, recording-hour coalesced groups и state gaps/overflow. Показывать safe source identity, occurred/recorded semantics, actor/target/entity refs, source-quality/IP, first/last/count и epoch; неизвестного actor не угадывать. Native registration/evidence не копировать; original (origin,id) глобально один раз, scoped показывает тот же source.
+- Overview получает **две краткие Accounts/Security summaries из того же reader** + ссылки в детали; семь cards второй раз не рендерить. Existing System summary сохраняется, recent events идут через общую History.
+- Catalog + EN/RU/HE manual values/fingerprints, labels kinds/fields/states, generic locale/RTL/responsive/keyboard. IP/opaque IDs — escaped plain text/bdi, без внешнего lookup URL; никаких tokens/raw auth/evidence context.
+
+**D4 · Финальная connected acceptance и stable-head handoff.**
+- Расширить **existing** `tests/browser/super-admin/check.py` и `sa01-browser.yml`, не клонировать workflow. Добавить path filters для routing, новых reader/factory/auth/observability модулей и0063, чтобы проверка срабатывала и при backend-only regression. Сохранить прежние SA01 checkpoints и Settings/Admin/AP10 regression jobs.
+- На disposable PG17 + built Worker + real Better Auth/Chromium выполнить signup/signin/password-change/revoke/signout, denied auth и Owner guard401/403; проверить DB→current→adjacent History→global с тем же source ID и ростом coalesced count вместо дублей. Native registration/evidence получать canonical producer/service path; real signed synthetic Google transport/R2 fixture допустимы, live external accounts не нужны.
+- Проверить direct document/.data guest/non-Owner/Owner, invalid scope/cursor и private errors, revoked session/account switch, no secret serialization, recording degradation/outage503/schema unexpected/recovery, mixed pagination и сохранение precision/source identity.
+- **Actual new route components** с independently substituted Admin/Owner origins: current/detail/History paging/back/refresh/Overview и canonical Admin destination используют нужную family. EN/RU/HE, RTL320/768/1280, keyboard, no JS errors/external lookup; screenshots + exact-head JSON.
+
+### 3. Проверки и stop
+
+До author handoff: lint/typecheck/app tests, focused new route/presentation/routing tests, native existing A/B/C regressions + integration, clean migrations/schema/privileges, build/Worker smoke, expanded connected suite и применимые regression CI на одном stable head. Backend quotas/retention/fact proof/cursors не переписывать; новые тесты проверяют подключённый путь и границы.
+
+Checkpoint после D1/D2/D3 фиксирует **частичную готовность**, не самостоятельный whole-PR PASS/разрешение merge; дефекты и смену scope обсуждать в#251. После D4 автор публикует final exact head и фактические результаты, затем STOP для свежей Миры. Марк и исполнитель этим сообщением не назначаются.
+
+**Исключено:** SA03+, deactivation/привилегированный user profile, новые producers/schema/dependencies/security rules, отдельный Owner Worker/Access/auth/session/DB/deploy из#315, production и deferred journal occupancy/archive/clear. #315 пересверен на head `dcd65ec1666c1b0f881737825f55c27c27e7db13`, security plan blob `df2d500ccb2750d43422bf5d30f5b0c5370401ff` unchanged.
+
+**Следующий получатель — Мира:** проверить этот короткий D delivery/PR strategy, затем координировать implementation handoff. Лёва планирование завершил и останавливается. Код/PR319 не изменял; D implementation/tests/build/acceptance не выполнялись.
+
+
+Earlier independent A/B/C PASS and previous checkpoints retained verbatim below; their former “next step” records are historical.
+
+---
+
 # Лёва — актуальный checkpoint: SA02 A/B/C repeat independent PASS (2026-11-11)
 
 **Result: PASS — 0 confirmed open current-scope defects. All SA02-IMPL-LEV-01/-02/-03 CLOSED.** [Full result #6788696141](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6788696141). Reviewed PR #319 exact head `25ac41573847f9fbce79897b2e019fd246b400cc`, base/main `e279cb6c032a489a9044ca1191407df887c364b4` unchanged. Mira coordinator PASS/assignment #6788548049 after Lira correction #6788446097.
