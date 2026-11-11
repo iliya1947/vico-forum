@@ -262,4 +262,30 @@
 5. Live Google/provider/deployed compatibility не проверялась из-за paused Stage 6. **Информация не проверена** для live-provider acceptance.
 6. Remediation/implementation по Block B не назначены.
 
+## Delta-recheck после SA-02 #319 — 2026-11-11
+
+1. Delta target: current `main` `4248fed23925e4a23e48485d419ceaf0ce337def` / installed Better Auth `1.7.7`.
+2. Scope: изменения `app/auth/auth.server.ts`, persisted creation/deletion evidence, auth fact collector, auth attempt observer и Worker wiring из SA-02 #319. Неизменённые auth endpoint semantics повторно не выводились из UI.
+3. Verdict: **PASS — 0 новых current-scope Block B findings; все 8 ранее подтверждённых Block B findings остаются открытыми и не считаются исправленными SA-02**.
+4. SA-02 auth instrumentation observational: existing Better Auth handler/security operations остаются authoritative. Observer wrappers возвращают исходный response/result и повторно бросают исходную ошибку; telemetry callback/storage failure изолирован и учитывается как gap.
+5. Success facts опираются на persisted/native evidence: user/account/session create events сверяются с фактически committed rows; partial non-transactional creation сохраняет только реально persisted transitions; transaction rollback не производит success fact.
+6. Session-deletion facts не выводятся из HTTP 200: exact delete uses affected-row proof; bulk operations сверяют preimage/postcondition bounded chunks; expired/no-op/losing concurrent delete не создают fabricated deletion fact. При неполной доказуемости сохраняется bounded gap.
+7. Password-change fact создаётся только для canonical `/change-password` credential update с persisted returned row и authoritative current-session user; password/hash не попадают в fact. Ошибка observer не отменяет credential mutation.
+8. Request-local fact queue bounded; durable event writer использует allowlisted fact kinds/IDs, deterministic occurrence key и no blind retry после ambiguous COMMIT. Raw Request/FormData, cookie/session token, OAuth state/code/token и provider payload не сериализуются в Owner facts.
+9. Registration-denial/failed-auth attempt observation не меняет admission outcome и не использует заявленный email как actor. Actor attribution появляется только после authoritative session resolution.
+10. Existing findings после #319:
+   - `AUTH-LINK-01` — unchanged: monitoring explicit-link result не добавляет durable callback recheck исходной session;
+   - `AUTH-SESSION-01` — unchanged: наблюдение фактического DELETE не исправляет Better Auth 1.7.7 sign-out success при failed delete;
+   - `AUTH-SESSION-02` — unchanged: direct `list-sessions` projection/headers не менялись;
+   - `AUTH-SESSION-03` — unchanged: direct revoke endpoint freshness semantics не менялись;
+   - `AUTH-ENUM-01` — unchanged: sign-up response semantics не менялись;
+   - `AUTH-OAUTH-01` — unchanged: provider `error_description` callback behavior не менялось;
+   - `AUTH-REG-01` — unchanged: registration-policy locking/admission transaction boundary не менялась;
+   - `AUTH-CACHE-01` — unchanged: direct private auth GET cache headers не менялись.
+11. Official Better Auth changelog rechecked on 2026-11-11: latest listed release is **1.7.20**. Relevant upstream `1.7.10` fix makes after-hooks run for persisted writes retained after later request failure on non-transactional adapters; #319 compensates the installed 1.7.7 behavior by native/adapter evidence plus committed-row recheck. Later 1.7.16/1.7.18 session-revocation fixes are specifically tied to secondary storage/cookie-cache configurations; current Vico `betterAuthOptions` configures neither, so они не дают нового separate finding в этом delta.
+12. Старый remediation target `1.7.19` теперь исторический. При назначении remediation package актуальная compatible/security-fixed версия должна быть выбрана заново по official release notes; этот audit сам dependency upgrade не выполняет.
+13. Live Google/provider/deployed compatibility по-прежнему не проверялась из-за paused Stage 6. **Информация не проверена** для live-provider acceptance.
+14. Tests в delta-audit не запускались; targeted SA-02 regressions были просмотрены, включая real PG partial OAuth creation/rollback, credential update, session deletion races/bulk bounds и telemetry failure isolation.
+
+
 ---
