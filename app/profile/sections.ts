@@ -18,6 +18,7 @@ export interface ProfileOwnerData {
   history: ProfileSection<OwnerUserHistoryPage>;
 }
 export interface ProfilePrivilegedSections {
+  viewerId?: string;
   measures?: ProfileSection<readonly UserMeasureSummary[]>;
   authorization?: ProfileSection<ProfileAuthorizationData>;
   owner?: ProfileOwnerData;

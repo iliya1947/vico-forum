@@ -613,12 +613,46 @@ try:
         owner.wait_for_url("**historyBefore=**")
         record("keyboard-history-native-paging")
 
-        signed_out = owner_ctx.request.post(base + "/api/auth/sign-out", headers={"Origin": base}, data={})
-        assert signed_out.status == 200
+        # The UI sign-out updates HeaderAuth before profile .data revalidation.
+        # Holding only that request proves old privileged DOM disappears immediately.
         document(owner, target_path)
-        expect(owner.locator("#owner-account,#owner-history")).to_have_count(0)
+        expect(owner.locator("#owner-account")).to_contain_text(target_email)
+        expect(owner.locator("#authorization form")).not_to_have_count(0)
+        held_profile_reads = []
+        def hold_profile_read(route):
+            held_profile_reads.append(route)
+        owner.route("**/users/*.data*", hold_profile_read)
+        with owner.expect_response(lambda response:
+                "/api/auth/sign-out" in response.url and response.request.method == "POST") as sign_out:
+            owner.locator(".auth-sign-out").click()
+        assert sign_out.value.status == 200
+        expect(owner.locator('.auth-controls[data-state="guest"]')).to_have_count(1)
+        for _ in range(40):
+            if held_profile_reads:
+                break
+            owner.wait_for_timeout(100)
+        assert held_profile_reads, "profile .data revalidation was not intercepted"
+        expect(owner.locator("#measures,#authorization,#owner-account,#owner-history")).to_have_count(0)
+        expect(owner.locator("#profile-name")).to_have_count(1)
+        assert target_email not in owner.content()
         assert target_email not in req(owner_ctx, data_path(target_path)).text()
-        record("real-owner-signout-drops-private-projection")
+        record("real-ui-signout-drops-private-before-held-profile-get")
+        for held in held_profile_reads:
+            held.continue_()
+        owner.unroute("**/users/*.data*")
+        expect(owner.locator("#owner-account,#owner-history,#authorization")).to_have_count(0)
+
+        # Only a fresh authenticated Owner response can restore private sections.
+        relogin = owner_ctx.request.post(base + "/api/auth/sign-in/email",
+            headers={"Origin": base}, data={"email": owner_email, "password": owner_password})
+        assert relogin.status == 200, (relogin.status, relogin.text()[:200])
+        rebound = sql('update "session" set user_id=$1 where user_id=$2 returning id',
+                      [owner_id, owner_original])
+        assert len(rebound) == 1
+        document(owner, target_path)
+        expect(owner.locator("#owner-account")).to_contain_text(target_email)
+        expect(owner.locator("#authorization form")).not_to_have_count(0)
+        record("fresh-authorized-loader-restores-owner-profile")
         assert not page_errors, page_errors
         assert not external, external
         record("no-browser-page-errors-or-external-requests")

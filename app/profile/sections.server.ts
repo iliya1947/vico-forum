@@ -116,5 +116,8 @@ export async function readProfilePrivilegedSections(
   const [admin, owner] = await Promise.all([
     adminSections(context, targetId), ownerSection(request, context, targetId),
   ]);
-  return { ...admin, ...(owner ? { owner } : {}) };
+  const sections = { ...admin, ...(owner ? { owner } : {}) };
+  const viewerId = authSessionForRequest(context)?.user.id;
+  // Bind all privileged sections, including measures-only, to the authenticated viewer.
+  return viewerId && Object.keys(sections).length ? { viewerId, ...sections } : {};
 }

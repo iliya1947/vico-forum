@@ -1,19 +1,26 @@
 import "@testing-library/jest-dom/vitest";
-import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { I18nextProvider } from "react-i18next";
 import { RouterProvider, createMemoryRouter } from "react-router";
 import { createInstance } from "i18next";
 import { afterEach, describe, expect, it } from "vitest";
 import { canonicalEnglishCatalog } from "../localization/catalog";
 import { ProfileView } from "./profile-view";
+import { AuthControls, HeaderAuthProvider } from "../auth/auth-controls";
+import type { AuthClientActions } from "../auth/auth-client";
 
 afterEach(cleanup);
 
 const profile = { id: "owner", name: "Owner", image: "javascript:alert(1)", joinedAt: "2026-09-01T00:00:00.000Z", bio: "<script>alert(1)</script>", githubUrl: "https://github.com/octocat", websiteUrl: "javascript:alert(1)", role: { slug: "user", displayName: "User", isSystem: true }, messageCount: 12, bestAnswerCount: 3 };
-function show(props: Partial<Parameters<typeof ProfileView>[0]> = {}) {
+function show(props: Partial<Parameters<typeof ProfileView>[0]> = {}, viewerId: string | null = "owner", actions?: AuthClientActions) {
   const i18n = createInstance();
   void i18n.init({ lng: "en", initAsync: false, resources: { en: { common: Object.fromEntries(Object.entries(canonicalEnglishCatalog.common).map(([key, value]) => [key, value.source])) } }, defaultNS: "common" });
-  const router = createMemoryRouter([{ path: "*", element: <ProfileView locale="en" profile={profile} {...props} /> }], { initialEntries: ["/en/users/owner"] });
+  const router = createMemoryRouter([{ path: "*", element:
+    <HeaderAuthProvider initialUser={viewerId ? { id: viewerId, name: viewerId } : null}>
+      {actions ? <AuthControls locale="en" actions={actions} /> : null}
+      <ProfileView locale="en" profile={profile} {...props} />
+    </HeaderAuthProvider>,
+  }], { initialEntries: ["/en/users/owner"] });
   return render(<I18nextProvider i18n={i18n}><RouterProvider router={router} /></I18nextProvider>);
 }
 describe("profile presentation", () => {
@@ -93,10 +100,10 @@ describe("SA03 canonical profile protected sections", () => {
     permissions:["forum.reply.create"],canManageElevated:true,canMutateAuthorization:true,
   };
   it("retains one ForumShell and renders Owner safe session/History with preserved opaque pagination", () => {
-    const root=show({privileged:{owner:{
+    const root=show({privileged:{viewerId:"exact-owner",owner:{
       viewerId:"exact-owner",account:{status:"ready",value:account},
       history:{status:"ready",value:history},
-    }} as never});
+    }} as never}, "exact-owner");
     expect(root.container.querySelectorAll("main")).toHaveLength(1);
     expect(root.container.querySelectorAll("#owner-account")).toHaveLength(1);
     expect(root.container.querySelectorAll("#owner-history")).toHaveLength(1);
@@ -111,6 +118,37 @@ describe("SA03 canonical profile protected sections", () => {
     expect(root.container.textContent).not.toContain("private-bearer-token");
     root.unmount();
   });
+  it("drops loaded private Owner and authorization DOM on actual sign-out before router revalidation", async () => {
+    const actions: AuthClientActions = {
+      signInWithGoogle: async () => null,
+      signOut: async ({ onSuccess }) => { onSuccess(); },
+    };
+    const root=show({privileged:{
+      viewerId:"exact-owner",
+      authorization:{status:"ready",value:auth},
+      owner:{viewerId:"exact-owner",account:{status:"ready",value:account},
+        history:{status:"ready",value:history}},
+    } as never}, "exact-owner", actions);
+    expect(root.container.querySelector("#owner-account")).toHaveTextContent("owner-private@example.test");
+    expect(root.container.querySelectorAll("#authorization form").length).toBeGreaterThan(0);
+    fireEvent.click(screen.getByRole("button", { name: "Sign out" }));
+    await waitFor(() => expect(root.container.querySelector('.auth-controls[data-state="guest"]')).toBeTruthy());
+    expect(root.container.querySelector("#authorization,#owner-account,#owner-history,#measures")).toBeNull();
+    expect(root.container).toHaveTextContent("Owner");
+    expect(root.container.textContent).not.toContain("owner-private@example.test");
+    root.unmount();
+  });
+  it("does not keep the old private edit draft or feedback on viewer mismatch", () => {
+    const root=show({
+      isSelf:true,editing:true,saved:true,
+      feedback:{error:"invalid",draft:{bio:"private unsaved draft",githubUrl:"",websiteUrl:""}},
+    }, "different-viewer");
+    expect(root.container.querySelector("form.profile-form")).toBeNull();
+    expect(root.container).toHaveTextContent("<script>alert(1)</script>");
+    expect(root.container.textContent).not.toContain("private unsaved draft");
+    expect(root.container.querySelector(".profile-feedback")).toBeNull();
+    root.unmount();
+  });
   it("keeps unadmitted privileged sections entirely absent, not merely CSS-hidden", () => {
     const root=show();
     expect(root.container.querySelector("#measures,#authorization,#owner-account,#owner-history")).toBeNull();
@@ -118,10 +156,10 @@ describe("SA03 canonical profile protected sections", () => {
     root.unmount();
   });
   it("renders AP10 measure links and original role/override writer within canonical shell", () => {
-    const root=show({privileged:{
+    const root=show({privileged:{viewerId:"exact-owner",
       measures:{status:"ready",value:[]},
       authorization:{status:"ready",value:auth},
-    } as never});
+    } as never}, "exact-owner");
     expect(root.container.querySelector("#measures")).toBeTruthy();
     expect(root.container.querySelector("#authorization")).toBeTruthy();
     expect(root.container.querySelectorAll("main")).toHaveLength(1);
@@ -135,10 +173,10 @@ describe("SA03 canonical profile protected sections", () => {
     root.unmount();
   });
   it("renders typed private reader outages as distinct recovery sections", () => {
-    const root=show({privileged:{
+    const root=show({privileged:{viewerId:"exact-owner",
       measures:{status:"unavailable"},authorization:{status:"unavailable"},
       owner:{viewerId:"exact-owner",account:{status:"unavailable"},history:{status:"unavailable"}},
-    }});
+    }}, "exact-owner");
     expect(root.container.querySelector("#measures")).toBeTruthy();
     expect(root.container.querySelector("#authorization")).toBeTruthy();
     expect(root.container.querySelector("#owner-account")).toBeTruthy();
