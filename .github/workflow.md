@@ -1,14 +1,13 @@
 # Admin panel — current workflow
 
-- Service PR: **#251**. Current main: `f6fd4b2c031b2132b04eace18704a59aed1dfec8`; PR #319 base `e279cb6c032a489a9044ca1191407df887c364b4` (AGENTS.md-only divergence).
-- Current stage: **SA02 implementation READY FOR OWNER MERGE.**
-- Implementation: **PR #319 Ready for review**, stable exact head **`3f217c98dd9dcbd51518eda82b51506fbede936c`**, open/unmerged/mergeable.
-- Accepted plans: #6768069279 and D handoff #6789135043.
-- Mira fresh cumulative coordinator review #6794574095: **PASS, 0 confirmed current-scope defects**.
-- Lev repeat independent review #6794797870: **PASS, 0 confirmed open current-scope defects**. LEV-01/-02/-03/-04/-05 CLOSED.
-- Exact-head gates: CI #43009722614 SUCCESS; SA01 connected Chromium #43009722439 SUCCESS; AP10 Chromium #43009722575 SUCCESS (4/4 jobs).
-- Owner visual-polish is not a separate SA02 merge gate; final product-wide visual/runtime acceptance remains in the separate UI/UX/release path.
-- Implementer Lira completed/stopped. Coordinator Mira closeout complete. Reviewer Lev completed/stopped. Mark unassigned.
-- **Next action: developer merges PR #319.**
-- After merge: Mira opens/coordinates a separate docs/PROJECT_STATE factual closeout PR for SA02. Only after docs closeout determine/assign the next SA package.
-- No production/Stage6 #315 activation/deferred journal occupancy/archive/clear work is authorized.
+- Service PR: **#251**. Current main: `4248fed23925e4a23e48485d419ceaf0ce337def`.
+- Current stage: **SA02 factual documentation / PROJECT_STATE closeout.**
+- Implementation PR **#319 merged 2026-11-11**. Final implementation head `3f217c98dd9dcbd51518eda82b51506fbede936c`; merge commit `4248fed23925e4a23e48485d419ceaf0ce337def`.
+- Implementation reviews/gates remain final: Mira cumulative PASS #6794574095; Lev independent PASS #6794797870; LEV-01–05 CLOSED; exact-head CI/connected Chromium/AP10 SUCCESS.
+- Docs-only **PR #323** is open/Ready from main `4248fed...`; stable docs head `ec2fae22d90597120c5630466e4e4179f2b11f18`.
+- Docs diff is exactly 5 documentation files: `PROJECT.md`, `PROJECT_STATE.md`, `docs/SUPER_ADMIN.md`, history index, new `PROJECT_HISTORY_25.md`. No runtime/schema/dependency/config/test changes.
+- Docs record SA-01–SA-02 as merged repository/local-CI state, migration history through `0063`, live System/Accounts/Security Monitoring, bounded source-attributed attempt telemetry, source-aware History and remaining future/Stage6 boundaries.
+- Docs PR CI #43015464996 is currently running on the exact docs head.
+- Docs author: **Mira**. Mira does not claim an independent PASS on her own docs changes.
+- **Next gate after green docs CI: independent docs-only factual review.** No SA03+ package is assigned yet.
+- Lira/Lev/Mark currently unassigned for implementation. No production/Stage6 #315 activation/deferred journal occupancy/archive/clear work is authorized.
