@@ -1,5 +1,16 @@
 # Мира — безопасность Vico Forum
 
+## 2026-11-11 — Block D / D4 Admin History confidentiality / integrity audit
+
+1. Target: current main `e279cb6c032a489a9044ca1191407df887c364b4`, rechecked identical to `main`.
+2. Verdict: **1 current-scope finding — HISTORY-PRIV-01 Low/P3**.
+3. Independent `admin.history.read` admission, Overview gating, AP-10 effective suppression, private/no-store and typed outage behavior hold.
+4. **HISTORY-PRIV-01:** AP-10 change/lift/appeal-resolution History stores internal replay `operationId` + SHA-256 `fingerprint`. Reader returns raw context and History/Overview loaders serialize the complete page. UI hides those values and explicitly calls fingerprints internal, but Framework loader data is browser-visible. No privilege escalation: History permission remains required and replay/mutation authority is independently rechecked.
+5. Authz/forum/Help/registration History projections otherwise exclude email/password/session/token/message-body/private Signal/appeal text. Measure reason is intentionally authorized History content.
+6. Bigint position cursor/keyset remains exact; shared advisory lock preserves commit ordering; append failure rolls domain changes back; denied/no-op/replay/rollback paths do not invent events.
+7. Runtime ACL is SELECT/INSERT only on `admin_history`, no UPDATE/DELETE or sequence privilege. Context/label/reason DB bounds remain enforced.
+8. No remediation handoff. Next D5.
+
 ## 2026-11-11 — Block D / D11 Security attachment moderation audit
 
 1. Target: current main `e279cb6c032a489a9044ca1191407df887c364b4`, rechecked identical to `main`.
