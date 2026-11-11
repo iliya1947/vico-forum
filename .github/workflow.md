@@ -3,16 +3,16 @@
 - Service PR: **#251**.
 - Developer explicitly authorized publication of review reports and service-state updates for the entire SA-04 ("Разрешаю на протяжение всего SA-04"). This authorization persists across SA-04 handoffs.
 - SA-03 is fully closed.
-- **Current stage: SA04-A1 merged into `main`. PR #327 is closed/merged; no active implementation or review assignment.**
-- Base/current `main`: `ce62e783e71433a00c2fe4874ee26dfc54614628`.
-- Draft implementation PR: **#327**, exact head `3d6c7c06ac1442a5a4b3ff7f8fbe77454ca8479c`; open/Draft, not merged.
+- **Current stage: SA04-A2 assigned to Lira as the next bounded author checkpoint; A1 is merged in `main`.**
+- Base/current `main`: `593a03964b8407b249f7c9f5eb117ddb8b07736d`.
+- Previous bounded implementation PR **#327** is merged/closed. New SA04-A foundation implementation PR is not created yet.
 - **SA04-A1-MIRA-01 CLOSED**, independently verified: actual PostgreSQL 17.11 CHECK hash matches manifest. Three existing isolated auth fixtures now apply 0065 without changing runtime scope.
 - Lev independently inspected all 10 changed files and verified schema/SQL/snapshot/journal/manifest/Better Auth boundary; no implementation edits. Independent checks: 84/84 native tests; populated upgrade preserves existing data; 75 CHECK cases across five time zones; real Better Auth client state-write/output probes; 69-table manifest parity and Drizzle metadata check PASS.
 - Evidence limitation: optional local Drizzle generation fails with BigInt serialization and exit 0 on both reviewed head and unchanged base with the same dependencies. Generation is not claimed PASS; A1 snapshot/journal and actual SQL/manifest parity were checked independently. No A1 regression established by this observation.
 - Existing exact-head CI, SA01, SA03 and AP10 workflow runs are SUCCESS.
 - Independent review report: [#6808027706](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6808027706).
-- **Next recipient: Mira**, coordinator closeout of already-reviewed bounded PR #327 at this exact head under current workflow. Do not extend a ready PR merely to repeat independent review. Owner alone merges. Lev completed/STOP; Lira/Mark unassigned.
-- **A1 foundation only:** no SA04-A2+, runtime account-state helper/enforcement, writer guards, identity masking, deactivate/control, SA05+, Stage6/production or #315 remediation acceptance.
+- **Active recipient: Lira — SA04-A2 only.** Create a new Draft implementation PR from current main for the remaining SA04-A foundation; implement only the shared read/predicate foundation, publish exact head/evidence and author inspection, then STOP. Do not start A3.
+- **A2 boundary:** shared server-only account-state read/predicate foundation only. No transaction row-lock/mutation guard yet; no auth/session integration, writer admission, neutral/public identity projection, deactivate/control, SA05+, Stage6/production or #315 remediation.
 
 ## Mandatory author verification
 
@@ -52,4 +52,15 @@ Before any project-changing action or agent handoff, Mira must check in this ord
 - #327 is closed and must not be extended/reused for later SA-04 work.
 - No docs closeout is started here because SA-04 as a package is not complete; factual package documentation remains an end-of-task concern.
 - No active agent assignment. The next continuation begins the next bounded SA-04 implementation result in a new implementation PR, with Lira kept granular and Lev reserved for a larger meaningful review scope.
+
+## 2026-11-12 — SA04-A2 assigned
+
+- Granularity gate applied to the remainder of Lev's compound checkpoint A.
+- Operational split for the remaining A foundation:
+  - **A2:** shared server-only account-state read/predicate foundation;
+  - **A3:** transaction/row-lock mutation guard primitives;
+  - **A4:** neutral public-identity contract/helpers.
+- Only **A2** is assigned now. A3/A4 are planning labels, not active assignments, and may be split further before handoff if needed.
+- A2 starts a **new cumulative Draft implementation PR** from current main `593a03964b8407b249f7c9f5eb117ddb8b07736d`. Later A checkpoints may be added to that PR only after separate assignments; this avoids spending Lev review on every tiny author checkpoint.
+- After A2 author STOP, Mira performs the checkpoint/scope review and decides the next bounded handoff. **No Lev independent review is scheduled at A2 alone.**
 
