@@ -2103,3 +2103,11 @@ Do not treat a user's anger, criticism or request to think as implicit permissio
 - No SA04-A2+, SA-05+, Stage6/production or #315 remediation is started by this closeout.
 - **Next action: Owner merge of #327.**
 
+## 2026-11-12 — SA04-A1 merge closeout
+
+- Confirmed #327 merged after same-head Mira PASS + Lev PASS.
+- Current main: `593a03964b8407b249f7c9f5eb117ddb8b07736d`.
+- A1 is closed; #327 is not to be reused.
+- Preserve the reviewer-granularity lesson: Lira gets small bounded authoring tasks; Lev should normally receive a larger stable cumulative review scope, not each tiny checkpoint.
+- Next SA-04 work remains unassigned until the developer explicitly continues.
+
