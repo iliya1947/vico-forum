@@ -30,7 +30,8 @@ describe("SA03 server-only profile admissions", () => {
   it("binds the actual Owner actor/session and never forwards credentials or input actor IDs", async () => {
     const context = requestContext("bound-owner", "bound-owner");
     const readTarget = vi.fn().mockResolvedValue(null);
-    context.set(ownerProfileContext, { readTarget });
+    const readHistory = vi.fn().mockResolvedValue({ entries: [], next: null });
+    context.set(ownerProfileContext, { readTarget, readHistory });
     const access = ownerProfileForRequest(context);
     expect(access).not.toBeNull();
     await access!.readTarget("another-user", "opaque-session-cursor");
@@ -39,6 +40,9 @@ describe("SA03 server-only profile admissions", () => {
       currentSessionId: "actual-session", before: "opaque-session-cursor",
     });
     expect(JSON.stringify(readTarget.mock.calls)).not.toContain("never pass token");
+    await access!.readHistory("another-user", "opaque-history-cursor");
+    expect(readHistory).toHaveBeenCalledExactlyOnceWith("another-user", "opaque-history-cursor");
+    expect(JSON.stringify(readHistory.mock.calls)).not.toContain("never pass token");
   });
 
   it("admits independent permission-scoped sections without directory grant", async () => {
