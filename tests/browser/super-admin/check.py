@@ -345,8 +345,11 @@ try:
         source_identity_in("/en/super-admin/events",
                            before["id"], "attempt-pattern", owner, owner_ctx)
         get(owner, "/en/super-admin/monitoring/security")
-        expect(owner.locator('[data-monitor-key="security.access"]')).to_contain_text(
-            str(after[0]["count"]))
+        access_card = owner.locator('[data-monitor-key="security.access"]')
+        total = access_card.locator("dl > div").filter(
+            has=owner.locator("dt", has_text="Saved attributed attempts, cumulative")
+        ).locator("dd").inner_text().replace(",", "")
+        assert int(total) >= int(after[0]["count"]), (total, after)
         record("sa02-real-owner-denial-coalesces-and-shares-one-history-source",
                first=before["count"], final=after[0]["count"])
 
