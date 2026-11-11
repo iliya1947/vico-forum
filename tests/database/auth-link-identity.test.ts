@@ -24,6 +24,9 @@ beforeAll(async () => {
   await client.query(`set search_path to ${schema}`);
   await client.query((await readFile("drizzle/0003_gorgeous_donald_blake.sql", "utf8"))
     .replaceAll('"public".', `"${schema}".`).replaceAll("--> statement-breakpoint", ""));
+  const stateMigration = (await readFile("drizzle/0065_sa04_account_state_foundation.sql", "utf8"))
+    .replaceAll("--> statement-breakpoint", "");
+  await client.query(stateMigration);
   await installRegistrationPolicyFixture(client);
 });
 beforeEach(async () => {
