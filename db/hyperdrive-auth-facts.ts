@@ -7,7 +7,7 @@ export function createHyperdriveAuthFactWriter(connectionString: string):
   const pool = createWebPool(connectionString);
   const writer = new PostgresAuthFactWriter(pool);
   return {
-    append: fact => writer.append(fact),
+    append: (fact, occurredAt) => writer.append(fact, occurredAt),
     close: () => pool.end(),
   };
 }
