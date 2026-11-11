@@ -4,7 +4,7 @@
 
 1. Служебный PR: **#315**.
 2. Моя текущая работа: audit/coordination only; remediation и implementation не назначены.
-3. Текущий этап: **Block G G1 PASS; G2 completed with `DB-SEARCHPATH-01 Low/P3`; следующий bounded slice — G3 Runtime least privilege**.
+3. Текущий этап: **Block G G1 PASS; G2 `DB-SEARCHPATH-01 Low/P3`; G3 `DB-ACL-USER-DELETE-01 Low/P3`; следующий bounded slice — G4 Migration / privilege workflow gates**.
 4. Technical audit target B–D: `e279cb6c032a489a9044ca1191407df887c364b4`.
 5. Current `main` — `538084fd472c65459ad55ab30a0f96fbfdd68e56`. SA-02 docs closeout merged; compare с `4248fed…` показывает только 8 Markdown changes, attachment runtime/schema unchanged.
 6. Лира, Марк и Лёва по #315 сейчас не назначены.
@@ -59,7 +59,10 @@
 32. Block G G2: подтверждён **`DB-SEARCHPATH-01 Low/P3`**. Final Complaint predecessor INSERT guard в `0050` — SECURITY INVOKER без fixed search path и читает `forum_complaint_cases`/`forum_complaint_targets` unqualified. Current web capability принимает database TEMP; PostgreSQL `pg_temp` relation lookup может shadow-нуть эти reads, тогда как public self-FK проверит только существование predecessor ID. Результат — возможный persistent unrelated predecessor Case через direct web-capability SQL.
 33. G2 остальные проверенные schema boundaries не дали отдельного finding: revision/complaint evidence immutability, attachment SECURITY DEFINER fixed-search-path gate, Owner/Admin retention, measure RESTRICT and current cascade semantics. Translation task trigger search-path hardening относится к future background Stage-6 capability, не current defect.
 34. G2 tests/probes прочитаны, но не запускались. Live production exploitability `DB-SEARCHPATH-01`: **Информация не проверена**; Worker web binding rollout paused Stage 6.
-35. Подтверждённые findings не исправлять автоматически: сначала отдельная bounded remediation-задача по решению владельца и текущему Stage.
+35. Block G G3: подтверждён **`DB-ACL-USER-DELETE-01 Low/P3`**. Current `web` relation contract даёт `public.user` full CRUD, включая DELETE, хотя current Vico не реализует account deletion, Better Auth `1.7.7` `/delete-user` выключен без `user.deleteUser.enabled=true`, а ordinary/OAuth creation rollback transactional и не требует hard user DELETE.
+36. Остальной G3 least-privilege sweep дополнительных findings не дал: role attributes/membership/ownership, database CREATE, schema ACL, exact relation grants, column/sequence/function/default grants и negative probes fail closed по repository contract. `PUBLIC TEMPORARY` — уже часть `DB-SEARCHPATH-01`, не duplicate. Legacy editor-draft grants после external accepted `0020` — future Stage-6 cleanup, не current finding сами по себе.
+37. G3 tests/probes прочитаны, но не запускались. Exact mutable live production ACL: **Информация не проверена**.
+38. Подтверждённые findings не исправлять автоматически: сначала отдельная bounded remediation-задача по решению владельца и текущему Stage.
 
 ## Ограничения
 
@@ -71,5 +74,5 @@
 
 ## Следующий шаг
 
-1. После продолжения владельца выполнить **G3 — Runtime least privilege** на current main и остановиться после результата.
+1. После продолжения владельца выполнить **G4 — Migration / privilege workflow gates** на current main и остановиться после результата.
 2. Findings только фиксировать; remediation не начинать.
