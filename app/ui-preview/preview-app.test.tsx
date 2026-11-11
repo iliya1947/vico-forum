@@ -238,7 +238,9 @@ describe("interactive Pages preview", () => {
     expect(screen.getByText("Pinned")).toBeInTheDocument();
     expect(screen.queryByText("Closed")).not.toBeInTheDocument();
 
-    await user.click(screen.getByText("Quick actions"));
+    const topicActions = document.querySelector(".topic-admin-tools > summary");
+    expect(topicActions).not.toBeNull();
+    await user.click(topicActions!);
 
     await user.click(screen.getByRole("button", { name: "Unpin topic" }));
     await waitFor(() => expect(screen.queryByText("Pinned")).not.toBeInTheDocument());
