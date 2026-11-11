@@ -3161,3 +3161,17 @@ Result: [#6779377295](https://github.com/iliya1947/vico-forum/pull/251#issuecomm
 - No extra current-scope defect confirmed in reviewed admission/renewal/coalescing/quota/state/source/proof/dedup/rollback/counts/sampling/cursor/native projection/SA01 isolation paths. #315 current security input checked; existing baseline security issues and future isolation remain separate.
 - Diagnostic probe sources preserved in Lev personal file; local logs/JSON/screenshots/source manifest at `/workspace/work/sa02-abc-review-evidence/`. Owned Worker/PostgreSQL stopped/removed; synthetic vars/dependency symlinks removed; implementation checkout clean.
 - **Handoff: Mira assesses the combined packet and continues coordinator cycle. Lev stops, does not appoint Lira/Mark or start D.** Full SA02/D/merge/production/deferred journal operations remain unclaimed.
+
+
+## 2026-11-11 — Lev independent review reconciled: 3 findings confirmed
+
+Lev independent review #6779818918 returned CHANGES REQUIRED on PR #319 exact head `c9ff7b660fc40924f6adfd649b1daa0d80acb045`. Mira independently checked the three findings against code, accepted plan and current Super-admin contract; confirmation: [#6788204269](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6788204269).
+
+Confirmed current-scope defects:
+1. **SA02-IMPL-LEV-01:** production Hyperdrive auth-fact adapter drops trusted occurrence timestamp before PostgreSQL persistence.
+2. **SA02-IMPL-LEV-02:** Accounts `coverageFrom` incorporates current-domain row timestamps that are not retained adjacent-History sources.
+3. **SA02-IMPL-LEV-03:** auth History projection drops already persisted safe actor/target/entity attribution.
+
+All three are local A/B/C corrections; no technical-plan revision, SA02-D, SA03+, Stage6 #315 activation or deferred journal management work is needed.
+
+**Handoff:** Lira fixes the three findings together in existing Draft PR #319, adds focused regressions, runs applicable checks and publishes a new stable exact head, then stops for fresh Mira whole-PR review. Lev/Mark unassigned during author correction.
