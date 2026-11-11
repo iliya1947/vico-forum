@@ -1744,26 +1744,22 @@ function previewAttentionSamples() {
   ];
 }
 
-function previewAttentionState(samples: ReturnType<typeof previewAttentionSamples>) {
-  const signalTopicCounts = new Map<string, number>();
-  for (const item of samples) {
-    if (item.type !== "signal") continue;
-    signalTopicCounts.set(item.topicId, (signalTopicCounts.get(item.topicId) ?? 0) + 1);
-  }
-  const mixedTopicIds = new Set(
-    [...signalTopicCounts.entries()]
-      .filter(([, count]) => count >= 2)
-      .map(([id]) => id),
+function previewAttentionState(interactions: PreviewInteractionState) {
+  const unresolved = previewAttentionSamples().filter(
+    (item) => !interactions.resolvedAttentionCases.has(item.id),
   );
+  const pending = (id: string) => !interactions.resolvedAttentionCases.has(id);
+  const mixedPending = pending("signal-142") && pending("signal-143");
   return {
-    mixedTopicIds,
+    unresolved,
+    mixedPending,
     counts: {
-      "needs-details": samples.filter((item) => item.kind === "needs-details").length,
-      "needs-review": samples.filter((item) => item.kind === "needs-review" || item.type === "review-status").length,
-      "solution-outdated": samples.filter((item) => item.kind === "solution-outdated").length,
-      duplicate: samples.filter((item) => item.kind === "duplicate").length,
-      appeals: samples.filter((item) => item.type === "appeal").length,
-      mixed: mixedTopicIds.size,
+      "needs-details": pending("signal-142") ? 1 : 0,
+      "needs-review": (pending("signal-144") ? 1 : 0) + 1,
+      "solution-outdated": pending("signal-145") ? 1 : 0,
+      duplicate: pending("signal-143") ? 1 : 0,
+      appeals: pending("appeal-146") ? 1 : 0,
+      mixed: mixedPending ? 1 : 0,
     },
   };
 }
@@ -1810,12 +1806,10 @@ function PreviewAttentionRoute({ scenario, interactions }: {
       ? selected === "group2" || selected === "group3" ? selected : "attachments"
       : selected === "group2" || selected === "group3" ? selected : "group1";
 
-  const samples = scenario.variant === "attention-empty"
-    ? []
-    : previewAttentionSamples().filter((item) => !interactions.resolvedAttentionCases.has(item.id));
-  const { mixedTopicIds, counts } = previewAttentionState(samples);
+  const { unresolved, mixedPending, counts } = previewAttentionState(interactions);
+  const samples = scenario.variant === "attention-empty" ? [] : unresolved;
   const selectedCases = group === "mixed"
-    ? samples.filter((item) => item.type === "signal" && mixedTopicIds.has(item.topicId))
+    ? (mixedPending ? samples.filter((item) => item.id === "signal-142" || item.id === "signal-143") : [])
     : samples.filter((item) => item.kind === group ||
       (group === "appeals" && item.type === "appeal") ||
       (group === "needs-review" && item.type === "review-status"));
