@@ -32,13 +32,14 @@
 
 ## Актуальный baseline и назначение
 
-- Current main `538084fd472c65459ad55ab30a0f96fbfdd68e56`; SA-02 implementation #319 and factual docs #323 merged/fully closed.
-- **Current package: SA-03. Technical planning COMPLETE; next is Mira scope/fit review.** Plan [#6796912006](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6796912006) maps accepted package #6745289141 onto exact current main.
-- Single canonical public/Admin/Owner profile; independent server admission per section; reuse AP-10/targeted authorization and existing mutation backends; narrow exact-Owner target identity/method/session reader; fixed target-scoped source summary; guarded legacy redirect. No Deactivate control.
-- Proposed implementation has no new dependencies/tables/permissions/writers. One forward index-only migration supports the newly required actor/subject chronological reads; existing source records/identities and authorities remain canonical.
-- Acceptance includes actual HTML/.data redaction and cache headers, target/account/permission switch, classified outage, cursor/source/dedup and native PG17 plus connected Worker/Better Auth/Chromium paths. This is a plan, not a test PASS claim.
-- #315 refreshed at `eb1bd8dbd3038f409766f0f5b884b8a3cc883df8`; cache/privacy boundaries accounted for, separate security activation/remediation not imported.
-- **Mira reviews the plan before any implementation assignment.** Lev completed/stopped; Lira/Mark unassigned; no SA-03 implementation PR/head. SA-04+, production/Stage6 and deferred journal controls remain out of scope.
+- Main remains `538084fd472c65459ad55ab30a0f96fbfdd68e56`. SA-02 implementation #319 and docs #323 merged/closed.
+- **SA-03 #324 independent technical whole-PR review: CHANGES REQUIRED — 1 confirmed current-scope defect**, exact `4bfdfdd14a70534bd95c308de9d1c8c2df672c76`. Full result [#6802006091](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6802006091).
+- **SA03-IMPL-LEV-01 · P2 OPEN:** after actual UI sign-out200, HeaderAuth=guest but prior Owner email/sessions/history and authorization controls remain in visible DOM while the normal revalidation GET waits. Original connected probe reproduces; fresh guest server .data is redacted. Bound correction is current-viewer/target invalidation of stale privileged presentation and feedback, plus no-reload delayed-refresh regression.
+- Mira coordinator PASS on the same head preceded review; MIRA-01 is verified CLOSED. Other current-scope defects were not confirmed after cumulative43-file review.
+- Independent local evidence: application93/native9 PASS; build, clean migrations0000–0064, schema69/six-index-only snapshot parity PASS; checked-in Chromium24/24 PASS. The additional original identity-boundary probe exposes a gap in the reload-based sign-out scenario. No implementation edits.
+- Exact-head CI #43059203099, SA03 #43059202894, SA01 #43059202975, AP10 #43059203239 confirmed SUCCESS. Green suites do not close LEV-01.
+- #315 refreshed at `a27dd964139c445086911ac4a245475ab53fe6f5`; separate security activation/remediation not imported.
+- **Next Mira:** determine the bounded correction assignment via #251. Lev completed/stopped; Lira/Mark not assigned by Lev. New implementation head needs coordinator then independent review. No merge/docs closeout/SA04+ authorization from this result.
 
 ## Handoff — Лира: Stage2 factual documentation closeout
 
@@ -3618,3 +3619,16 @@ SA03-MIRA-01 verification:
 **Coordinator verdict: PASS — 0 confirmed current-scope defects on exact head `4bfdfdd14a70534bd95c308de9d1c8c2df672c76`.**
 
 Next independent gate: **Lev** reviews the whole PR #324 on this same exact head. No implementation work is assigned. Mark/Lira remain unassigned. SA-04+, Stage6/#315 activation, production and deferred journal-storage work remain excluded.
+
+
+## 2026-11-11 — Lev independent whole-PR review SA-03 #324: CHANGES REQUIRED
+
+Reviewed complete43-file cumulative PR #324 at unchanged `4bfdfdd14a70534bd95c308de9d1c8c2df672c76`, after Mira repeat coordinator PASS. Full report, source lines, exact reproducer observations and bounded correction packet: [#6802006091](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6802006091).
+
+**One confirmed finding: SA03-IMPL-LEV-01 · P2 OPEN.** Real header Sign out completes200 and switches HeaderAuth to guest; ProfileView still renders the prior privileged loader snapshot while `.data` revalidation is pending. Independent original Chromium→built Worker→real Better Auth→disposable PG17 test observed2 Owner sections, visible private target email and26 authorization forms under guest header. Fresh guest .data200 contains no private email; sections disappear only once delayed GET completes. Existing checked-in sign-out scenario reloads the document and misses this state. Correct boundedly by invalidating prior-viewer/target privileged presentation/controls/feedback at known identity change; keep public profile and all server guards, no reload-dependent workaround or auth redesign.
+
+MIRA-01 closed independently: canonical Owner-self own measure destinations GET200, Admin Owner-target stays403, legitimate non-self Admin paths retained. Server projection/target/source/privacy, legacy routing, AP10/authz/Settings boundaries and remaining cumulative scope checked; no other current-scope defects confirmed.
+
+Independent fresh runs:11 app files/93 tests PASS;2 native files/9 tests PASS; build and clean0000–0064 migration PASS; actual69-table schema manifest parity PASS; Drizzle snapshot delta exactly six new indexes. Independently rerun checked-in connected Chromium24/24 PASS with original assertions; source identity/current/permission/cache/outage/cursor/EN-RU-HE responsive checks and MIRA-01 passed. Additional original identity-boundary probe confirms the finding. Four exact-head CI/SA03/SA01/AP10 run conclusions verified SUCCESS via API. #315 head a27dd964 reviewed; Stage6/broad remediation remain separate.
+
+No source/schema/permanent-doc implementation edits. Review checkout clean; own Worker/DB stopped, temporary vars/dependency link removed; retained evidence under /workspace/work/sa03-review-evidence. **Next Mira:** review packet and determine one bounded correction assignment; Lev stopped. No Lira/Mark appointment, merge readiness, docs closeout or future package launch by this result.
