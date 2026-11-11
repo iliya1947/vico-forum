@@ -4,7 +4,7 @@
 
 1. Служебный PR: **#315**.
 2. Моя текущая работа: audit/coordination only; remediation и implementation не назначены.
-3. Текущий этап: **Block E / E2 completed; awaiting E5**.
+3. Текущий этап: **Block E / E5 completed; awaiting E6**.
 4. Technical audit target B–D: `e279cb6c032a489a9044ca1191407df887c364b4`.
 5. Current `main` `f6fd4b2c031b2132b04eace18704a59aed1dfec8` отличается от audit target только `AGENTS.md`; audited application code не менялся.
 6. Лира, Марк и Лёва по #315 сейчас не назначены.
@@ -29,7 +29,7 @@
 4. Block D: D1–D12 завершены; подтверждены **3 Low/P3 findings** — `COMPLAINT-PRIV-01`, `HELP-SIGNAL-PRIV-01`, `HISTORY-PRIV-01`; дополнительных D12 findings нет.
 5. D12 external claim исправлен и проверен: official React Router Framework/SSR docs и exact `react-router@8.3.1` source подтверждают default skip loader revalidation после failed 4xx/5xx submissions.
 6. Vico recovery paths используют explicit loader revalidation и не выполняют automatic mutation replay.
-7. Block E / E2 завершён против `main` `f6fd4b2c031b2132b04eace18704a59aed1dfec8`: **PASS — 0 current-scope findings**. Safe-render boundary проверена для public/Preview/translated Markdown; подробности находятся в Block E.
+7. Block E / E2 завершён PASS. E5 завершён против `main` `f6fd4b2c031b2132b04eace18704a59aed1dfec8`: **1 finding — `FORUM-PUB-01 Moderate/P2`** (нет application-level upper bound для topic title / post body publication). Остальные E5 lifecycle/replay/race/atomicity boundaries — PASS; подробности находятся в Block E.
 8. Подтверждённые findings не исправлять автоматически: сначала отдельная bounded remediation-задача по решению владельца и текущему Stage.
 
 ## Ограничения
@@ -42,5 +42,5 @@
 
 ## Следующий шаг
 
-1. После продолжения владельца выполнить **Block E / E5 — Topic/reply publication lifecycle audit**.
+1. После продолжения владельца выполнить **Block E / E6 — Published edit / Own solution business logic audit**.
 2. Findings только фиксировать; remediation не начинать.
