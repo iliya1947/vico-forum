@@ -10,10 +10,11 @@
 6. **H4 — Preview, Version URL and public entrypoint isolation завершён: 0 current-scope findings + 1 deferred Stage-6 blocker `WORKER-VERSION-URL-01 Moderate/P2`.**
 7. **H5 — Worker deployment/version/rollback repository gates завершён: 0 current-scope findings + 1 deferred Stage-6 blocker `WORKER-ROLLBACK-FINALIZER-01 Moderate/P2`.**
 8. **H6 — Runtime failure, cache and observability boundaries завершён: PASS, 0 current-scope findings, 0 новых deferred blockers.**
-9. **H7–H8 ещё не выполнялись.**
-10. Следующий bounded slice после продолжения владельца — **H7: Runtime topology Stage boundary**.
-11. Мира — auditor/coordinator. Remediation, technical planner и implementer не назначены.
-12. Cloudflare/production mutation, deployment, binding changes и live topology checks не выполнялись.
+9. **H7 — Runtime topology Stage boundary завершён: PASS, 0 current-scope findings, 0 новых deferred technical blockers.**
+10. **H8 ещё не выполнялся.**
+11. Следующий bounded slice после продолжения владельца — **H8: Cross-chain closeout**.
+12. Мира — auditor/coordinator. Remediation, technical planner и implementer не назначены.
+13. Cloudflare/production mutation, deployment, binding changes и live topology checks не выполнялись.
 
 ## H1 — результат
 
@@ -177,6 +178,35 @@
 - Cloudflare observability config/API — `redact_query_string` removes query strings from logged/traced request URLs; sampling `1` means 100%;
 - Cloudflare Workers best practices/limits — `ctx.waitUntil()` is for non-response-critical logging/analytics and extends post-response work for up to 30 seconds;
 - exact tagged `wrangler@4.130.0` source — `versions deploy` patches observability/logpush/tail consumers as non-versioned settings after creating deployment.
+
+## H7 — результат
+
+1. Verdict на current `main` `593a03964b8407b249f7c9f5eb117ddb8b07736d`: **PASS, 0 current-scope findings, 0 новых deferred technical Stage-6 blockers**.
+2. Delta `ce62e783… → 593a0396…` — SA-04 A1 #327: migration `0065_sa04_account_state_foundation`, schema + DB tests/manifest. Worker entrypoint, Wrangler/runtime topology config, rollout workflow, ingress/routing and H1–H6 seams не менялись; H conclusions сохраняются.
+3. Ordinary PR CI не имеет Cloudflare deployment path: Worker acceptance uses local `vite preview` with disposable PostgreSQL Hyperdrive overrides. Repository search не нашёл `wrangler deploy`, `wrangler preview`, `cf previews deploy`, Deploy Hooks, Builds-connect commands или direct Cloudflare API deployment path вне protected manual Worker rollout.
+4. Единственный repository production Worker mutation path остаётся `.github/workflows/production-worker-rollout.yml`: manual `workflow_dispatch`, protected `production-worker` Environment, `wrangler versions upload` and optional exact-version deployment. Therefore ordinary merge/local-CI does not itself activate production runtime.
+5. Current `wrangler.jsonc` top-level topology declares Worker name/entrypoint/observability and two production Hyperdrive IDs only. It contains **no** `env`, `previews`, `routes/route`, `r2_buckets`, Queues, runtime `vars`, `workers_dev` or `preview_urls` declarations.
+6. Current Cloudflare Wrangler contract: with no `route/routes`, omitted `workers_dev` defaults to true; omitted `preview_urls` does **not** force a value and leaves an existing setting unchanged. Therefore Git alone cannot prove current production/Preview URL state. This matches project source-of-truth: external topology is mutable and must be re-read immediately before Stage-6 action.
+7. Current Cloudflare routing docs confirm `workers.dev`, Custom Domains and Routes are independent inbound endpoint classes. Historical project evidence says production/preview `workers.dev` enabled and custom domains/routes absent; exact live state now: **Информация не проверена**.
+8. Current Cloudflare Builds docs confirm that if a Git repository is connected and its production branch build is enabled, pushes to that branch execute build + deploy; preview builds can independently create Preview deployments. Historical project evidence says native Git Builds was disabled, but repository cannot enforce/dashboard-prove that state. Exact live Builds/branch-control state now: **Информация не проверена**.
+9. New Cloudflare Worker Previews use a separate `previews` configuration/resources and do not use production settings; existing Workers connected before the Preview migration can remain on the previous preview model until a one-time switch. Repository currently has no `previews` block and pinned Wrangler `4.130.0`; it does not invoke the new Preview command. This is not a current defect and does not prescribe the H4 remediation design.
+10. H4 already owns the proven technical defect that current manual rollout uses a public-capable production-resource Version URL. H7 does **not** duplicate it as a generic preview-topology finding.
+11. Source-of-truth requires final preview/private-data isolation recheck before any auth/forum write-capability rollout. Because Stage 6 is paused and this is explicitly an external acceptance step, absence of a live recheck **today** is not a current defect and does not create a new blocker ID. Before Stage 6 resumes, that recheck remains mandatory.
+12. That Stage-6 topology recheck must establish at least: native Builds/auto-deploy state; active production deployment/version; production binding/var/secret set; Preview model and Preview/Version URL exposure; Previews Base/Preview resources; custom domains/routes; `workers.dev` production/preview settings; unexpected alternate deployment entrypoints. H7 does not perform these external reads.
+13. `WEB_HYPERDRIVE` is present in repository production config but source-of-truth still records the real production Hyperdrive as unbound/inactive. Repository config presence is preparation, not evidence of deployed binding. Actual binding/deadline/runtime calibration remains Stage-6 acceptance; no current H7 finding.
+14. `ATTACHMENT_R2`, real Google OAuth values, `VICO_OWNER_USER_ID`, Queues/providers and separate Owner infrastructure are not declared as completed deployed topology. Their absence is already an explicit Stage-6 boundary, not a current H defect.
+15. Current React Router registers public/forum/Admin/Super-admin routes in the same Worker. `AdministrativeRouting` only separates **outgoing address families**; default Super-admin URLs remain same-origin and exact Owner admission remains application-side. Separate Owner Worker/Access/auth-session/DB/deploy capability isolation is explicitly future Block-A/Stage-6 work and is not duplicated as H7 defect.
+16. Production `workers.dev` being public is not itself a H7 security finding: Vico is a public forum, and current contract does not require a custom domain before pre-release. Cloudflare recommends routes/custom domains for business-critical production, but that recommendation alone is not a current project security requirement.
+17. Existing deferred correction gates remain unchanged: `DB-RUNTIME-EVIDENCE-01` before schema-dependent Worker rollout; `WORKER-VERSION-URL-01` before write/private-capable Worker upload; `WORKER-ROLLBACK-FINALIZER-01` before production traffic promotion.
+18. Current main exposes a separate non-H contradiction: code/migration history now contains `0065_sa04_account_state_foundation`, while `PROJECT_STATE.md`, `ROADMAP.md` and `docs/SUPER_ADMIN.md` still describe repository migration history through `0064` / SA-04+ as not implemented. H7 does not choose or repair that product-documentation state; the shared Stage-6-paused/topology boundary is consistent across those documents and sufficient for this H verdict.
+19. H7 source/config/workflows were read; current official Cloudflare Wrangler/routing/Builds/Worker-Previews documentation was rechecked. No live Cloudflare read, upload, deployment, binding, route, Build setting or secret mutation was performed.
+20. Следующий bounded slice — H8 Cross-chain closeout.
+
+Проверенная current official external evidence:
+- Wrangler configuration — `workers_dev` default and `preview_urls` omission semantics;
+- Routes and domains — independent `workers.dev`, Routes and Custom Domains endpoints;
+- Workers Builds branch control — production branch pushes can build/deploy when connected/enabled;
+- Worker Previews configuration — Preview-specific settings/resources are separate from production and existing Workers may require an explicit one-time switch.
 
 ## Цель
 
