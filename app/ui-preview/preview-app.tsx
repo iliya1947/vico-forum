@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { I18nextProvider } from "react-i18next";
 import { RouterProvider, createMemoryRouter, redirect, useActionData, useLoaderData, useParams, useSearchParams } from "react-router";
 
@@ -24,6 +24,8 @@ import { ProfileView } from "../forum/profile-view";
 import { InvalidProfileError, validateProfileFields, type ProfileFields } from "../forum/profile";
 import { forumProfilePath, forumTopicPath } from "../forum/paths";
 import { ForumRouteError } from "../forum/ui";
+import SettingsRoute from "../routes/settings";
+import SettingsUserRoute from "../routes/settings-user";
 import {
   AttentionCenterView,
   CategoryView,
@@ -243,6 +245,8 @@ type PreviewInteractionState = {
   profileOverrides: Map<string, ProfileFields>;
   readNotifications: Set<string>;
   resolvedAttentionCases: Set<string>;
+  preferredLocale: PreviewLocale | null;
+  localeSaved: boolean;
   authorization: PreviewAuthorizationState;
 };
 
@@ -257,6 +261,8 @@ function createPreviewInteractionState(): PreviewInteractionState {
     profileOverrides: new Map(),
     readNotifications: new Set(),
     resolvedAttentionCases: new Set(),
+    preferredLocale: null,
+    localeSaved: false,
     authorization: createPreviewAuthorizationState(),
   };
 }
@@ -1121,9 +1127,17 @@ export function EmbeddedPreview({ scenarioId, identity }: { scenarioId: string; 
     () => createPreviewInteractionState(),
     [scenario.id, activeIdentity],
   );
+  const changePreviewLocale = useCallback((locale: PreviewLocale) => {
+    setPreviewLocale(locale);
+    try {
+      window.sessionStorage.setItem(PREVIEW_LOCALE_STORAGE_KEY, locale);
+    } catch {
+      // Preview storage is optional; the active iframe still switches immediately.
+    }
+  }, []);
   const router = useMemo(
-    () => previewRouter(activeScenario, interactions),
-    [activeScenario, interactions],
+    () => previewRouter(activeScenario, interactions, changePreviewLocale),
+    [activeScenario, interactions, changePreviewLocale],
   );
 
   useEffect(() => {
@@ -1160,6 +1174,7 @@ export function EmbeddedPreview({ scenarioId, identity }: { scenarioId: string; 
           && form.id === "help-question-create-form")
         || (intent === "save-profile" && form.classList.contains("profile-form"))
         || (intent === "open" && form.classList.contains("notification-form"))
+        || (intent === "save-locale" && form.classList.contains("settings-locale-form"))
         || ((intent === "pinTopic"
           || intent === "unpinTopic"
           || intent === "closeTopic"
@@ -1197,12 +1212,7 @@ export function EmbeddedPreview({ scenarioId, identity }: { scenarioId: string; 
       locales={previewLocaleOptions}
       onLocaleChange={(locale) => {
         if (!isPreviewLocale(locale)) return;
-        setPreviewLocale(locale);
-        try {
-          window.sessionStorage.setItem(PREVIEW_LOCALE_STORAGE_KEY, locale);
-        } catch {
-          // Preview storage is optional; the active iframe still switches immediately.
-        }
+        changePreviewLocale(locale);
       }}
     >
       <HeaderAuthProvider
@@ -1231,7 +1241,11 @@ function previewCredential(locale: PreviewLocale, mode: "sign-in" | "sign-up") {
     emailActions={previewEmailActions} googleActions={previewGoogleActions} />;
 }
 
-function previewRouter(scenario: Scenario, interactions: PreviewInteractionState) {
+function previewRouter(
+  scenario: Scenario,
+  interactions: PreviewInteractionState,
+  onLocaleChange: (locale: PreviewLocale) => void,
+) {
   if (scenario.view === "not-found") {
     return createMemoryRouter([{
       path: "*",
@@ -1341,6 +1355,19 @@ function previewRouter(scenario: Scenario, interactions: PreviewInteractionState
       ),
     },
     {
+      path: "/:locale/settings",
+      element: <SettingsRoute />,
+      loader: () => previewSettingsOverviewData(scenario),
+    },
+    {
+      path: "/:locale/settings/user",
+      element: <SettingsUserRoute />,
+      loader: () => previewSettingsUserData(scenario, interactions),
+      action: ({ request }) => previewSettingsUserAction(
+        scenario, interactions, request, onLocaleChange,
+      ),
+    },
+    {
       path: "/:locale/tags",
       element: <TagsView locale={scenario.locale} tags={previewTags()} />,
     },
@@ -1353,6 +1380,49 @@ function previewRouter(scenario: Scenario, interactions: PreviewInteractionState
       element: previewElement(scenario),
     },
   ], { initialEntries: [scenario.path] });
+}
+
+function previewSettingsOverviewData(scenario: Scenario) {
+  return {
+    locale: scenario.locale,
+    canViewForum: scenario.identity === "owner",
+  };
+}
+
+function previewSettingsUserData(
+  scenario: Scenario,
+  interactions: PreviewInteractionState,
+) {
+  const actor = previewUser(scenario);
+  return {
+    locale: scenario.locale,
+    canViewForum: scenario.identity === "owner",
+    accountId: actor?.id ?? "",
+    preferredLocale: interactions.preferredLocale,
+    availableLocales: previewLocaleOptions,
+    localeAvailable: true,
+    localeSaved: interactions.localeSaved,
+  };
+}
+
+async function previewSettingsUserAction(
+  scenario: Scenario,
+  interactions: PreviewInteractionState,
+  request: Request,
+  onLocaleChange: (locale: PreviewLocale) => void,
+) {
+  const actor = previewUser(scenario);
+  if (!actor) return { error: "conflict" as const };
+  const form = await request.formData();
+  if (String(form.get("intent") ?? "") !== "save-locale") return { error: "invalid" as const };
+  if (String(form.get("expectedUserId") ?? "") !== actor.id) return { error: "conflict" as const };
+  const locale = String(form.get("locale") ?? "");
+  if (!isPreviewLocale(locale)) return { error: "invalid" as const };
+
+  interactions.preferredLocale = locale;
+  interactions.localeSaved = true;
+  onLocaleChange(locale);
+  return null;
 }
 
 function previewSectionPresentation(locale: PreviewLocale, sectionIdValue: string) {
