@@ -61,8 +61,6 @@ const fields:Record<string,Label> = {
   afterVersion:"superAdminHistoryAfterVersion",
   state:"superAdminRuntimeState",
   build:"superAdminRuntimeMode",
-  version:"superAdminDatabaseVersion",
-  total:"superAdminSa02TotalUsers",
   created24h:"superAdminSa02Created24h",
   passwordUsers:"superAdminSa02PasswordUsers",
   googleUsers:"superAdminSa02GoogleUsers",
@@ -87,6 +85,29 @@ const fields:Record<string,Label> = {
 };
 const timestampFields=new Set(["recordingEpochStart","firstOccurredAt","lastOccurredAt",
   "updatedAt","lastEventAt","lastSeenAt"]);
+const numericFields=new Set([
+  "total","created24h","passwordUsers","googleUsers","bothUsers","active",
+  "expiredRetained","attributedAttempts","rateLimitedAttempts","retainedPatterns",
+  "unknownAttempts","overflowAttempts","gapAttempts","currentHourAuthenticatedUsed",
+  "currentHourAnonymousUsed","hourlyCapacityPerPool","evidence24h","declaredByteSize","count",
+]);
+
+/** Observation labels depend on the authoritative monitor, not just the field name. */
+function fieldLabel(entry:HistoryItem,name:string):Label|undefined {
+  if(entry.origin==="system-observation"){
+    const monitors="monitorKeys" in entry?entry.monitorKeys:
+      entry.monitorKey?[entry.monitorKey]:[];
+    if(name==="total"){
+      if(monitors.includes("security.attachments")) return "superAdminSa02TotalEvidence";
+      if(monitors.includes("accounts.users")) return "superAdminSa02TotalUsers";
+    }
+    if(name==="version"){
+      if(monitors.includes("accounts.registration")) return "superAdminSa02PolicyVersion";
+      if(monitors.includes("system.dependencies")) return "superAdminDatabaseVersion";
+    }
+  }
+  return fields[name];
+}
 function readableTime(value:string,locale:string):string {
   const date=new Date(value);
   if(!Number.isFinite(date.getTime())) return value;
@@ -100,7 +121,7 @@ function Value({name,value,locale}: {name:string;value:OwnerHistoryValue;locale:
   if(typeof value==="string" && timestampFields.has(name) && Number.isFinite(new Date(value).getTime()))
     return <><time dateTime={value}>{readableTime(value,locale)}</time>
       <span> · </span><bdi>{value}</bdi></>;
-  if(typeof value==="string" && /^[0-9]+$/.test(value))
+  if(typeof value==="string" && numericFields.has(name) && /^[0-9]+$/.test(value))
     return <bdi>{new Intl.NumberFormat(locale).format(BigInt(value))}</bdi>;
   return <bdi>{String(value)}</bdi>;
 }
@@ -135,9 +156,12 @@ export function HistoryEntry({entry,locale}: {entry:HistoryItem;locale:string}){
     {grouped ? <p className="super-admin-history-note">{t("superAdminHistoryGroupNote")}</p> : null}
     {entry.origin==="attachment-evidence" ? <p className="super-admin-history-note">
       {t("superAdminHistoryEvidenceNote")}</p> : null}
-    <dl>{Object.entries(entry.values).map(([name,value])=><div key={name}>
-      <dt>{fields[name] ? t(fields[name]) : <bdi>{name}</bdi>}</dt>
-      <dd><Value name={name} value={value} locale={locale}/></dd>
-    </div>)}</dl>
+    <dl>{Object.entries(entry.values).map(([name,value])=>{
+      const label=fieldLabel(entry,name);
+      return <div key={name}>
+        <dt>{label ? t(label) : <bdi>{name}</bdi>}</dt>
+        <dd><Value name={name} value={value} locale={locale}/></dd>
+      </div>;
+    })}</dl>
   </li>;
 }
