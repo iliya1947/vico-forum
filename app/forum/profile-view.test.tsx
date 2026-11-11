@@ -62,3 +62,89 @@ describe("profile presentation", () => {
     expect(container.querySelector(".profile-avatar")).toHaveTextContent("O");
   });
 });
+
+
+describe("SA03 canonical profile protected sections", () => {
+  const account = {
+    targetUserId:"owner",email:"owner-private@example.test",emailVerified:true,
+    createdAt:"2026-09-01T00:00:00.000Z",updatedAt:"2026-10-01T00:00:00.000Z",
+    linkedMethods:["password","google"],hasPassword:true,observedAt:"2026-11-10T12:00:00.000Z",
+    sessionCounts:{active:"1",expiredRetained:"1"},
+    sessions:[{
+      id:"session-001",createdAt:"2026-11-01T00:00:00.000000Z",
+      expiresAt:"2026-11-30T00:00:00.000000Z",
+      status:"active",current:false,deviceLabel:"Mobile browser",recordedIp:"2001:db8::5",
+    }],nextSessionsCursor:"v1.opaque",
+  };
+  const history = {entries:[{
+    origin:"auth-event",id:"11111111-1111-4111-8111-111111111111",
+    occurredAt:"2026-11-10T00:00:00.000000Z",
+    recordedAt:"2026-11-10T00:00:00.000000Z",
+    monitorKeys:["accounts.users"],kind:"account.created",source:"auth",
+    quality:null,values:{targetUserId:"owner"},
+  }],next:"v1.history"};
+  const auth = {
+    actorId:"exact-owner",
+    management:{
+      userId:"owner",roles:[{id:"builtin",slug:"user",displayName:"User",isSystem:true}],
+      authorization:{role:{id:"builtin",slug:"user",displayName:"User",isSystem:true},
+        explicitAssignment:false,grants:[],overrides:{},effectivePermissions:[]},
+    },
+    permissions:["forum.reply.create"],canManageElevated:true,canMutateAuthorization:true,
+  };
+  it("retains one ForumShell and renders Owner safe session/History with preserved opaque pagination", () => {
+    const root=show({privileged:{owner:{
+      viewerId:"exact-owner",account:{status:"ready",value:account},
+      history:{status:"ready",value:history},
+    }} as never});
+    expect(root.container.querySelectorAll("main")).toHaveLength(1);
+    expect(root.container.querySelectorAll("#owner-account")).toHaveLength(1);
+    expect(root.container.querySelectorAll("#owner-history")).toHaveLength(1);
+    expect(screen.getByText("owner-private@example.test")).toBeInTheDocument();
+    expect(screen.getByText("2001:db8::5")).toBeInTheDocument();
+    expect(screen.getByText("Mobile browser")).toBeInTheDocument();
+    expect(root.container.querySelectorAll('[data-history-origin="auth-event"]')).toHaveLength(1);
+    expect(root.container.querySelector("#owner-sessions a")?.getAttribute("href"))
+      .toBe("/en/users/owner?sessionsBefore=v1.opaque#owner-sessions");
+    expect(root.container.querySelector("#owner-history a")?.getAttribute("href"))
+      .toBe("/en/users/owner?historyBefore=v1.history#owner-history");
+    expect(root.container.textContent).not.toContain("private-bearer-token");
+    root.unmount();
+  });
+  it("keeps unadmitted privileged sections entirely absent, not merely CSS-hidden", () => {
+    const root=show();
+    expect(root.container.querySelector("#measures,#authorization,#owner-account,#owner-history")).toBeNull();
+    expect(root.container.textContent).not.toContain("owner-private@example.test");
+    root.unmount();
+  });
+  it("renders AP10 measure links and original role/override writer within canonical shell", () => {
+    const root=show({privileged:{
+      measures:{status:"ready",value:[]},
+      authorization:{status:"ready",value:auth},
+    } as never});
+    expect(root.container.querySelector("#measures")).toBeTruthy();
+    expect(root.container.querySelector("#authorization")).toBeTruthy();
+    expect(root.container.querySelectorAll("main")).toHaveLength(1);
+    expect(root.container.querySelector("#measures a")?.getAttribute("href"))
+      .toBe("/en/admin/measures?target=owner");
+    const forms=[...root.container.querySelectorAll<HTMLFormElement>("#authorization form")];
+    expect(forms.length).toBeGreaterThan(0);
+    expect(forms.every(form=>form.getAttribute("action")==="/en/admin/authorization")).toBe(true);
+    expect(forms.every(form=>form.querySelector<HTMLInputElement>('input[name="userId"]')?.value==="owner"))
+      .toBe(true);
+    root.unmount();
+  });
+  it("renders typed private reader outages as distinct recovery sections", () => {
+    const root=show({privileged:{
+      measures:{status:"unavailable"},authorization:{status:"unavailable"},
+      owner:{viewerId:"exact-owner",account:{status:"unavailable"},history:{status:"unavailable"}},
+    }});
+    expect(root.container.querySelector("#measures")).toBeTruthy();
+    expect(root.container.querySelector("#authorization")).toBeTruthy();
+    expect(root.container.querySelector("#owner-account")).toBeTruthy();
+    expect(root.container.querySelector("#owner-history")).toBeTruthy();
+    expect(root.container.querySelectorAll("[role=status]").length).toBeGreaterThanOrEqual(4);
+    expect(root.container.textContent).not.toContain("owner-private@example.test");
+    root.unmount();
+  });
+});
