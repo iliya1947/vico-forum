@@ -1,5 +1,19 @@
 # Мира — безопасность Vico Forum
 
+## 2026-11-11 — Block D / D11 Security attachment moderation audit
+
+1. Target: current main `e279cb6c032a489a9044ca1191407df887c364b4`, rechecked identical to `main`.
+2. Verdict: **PASS — 0 current-scope defects**.
+3. `forum.attachmentSecurity.read` gates Security/Attachments before event-store access; Help/Complaint/Admin rights do not imply it, and Security-read does not imply other moderation authority.
+4. Worker request composition uses AP-10-filtered effective authorization. Active `admin.security` removes only Security-read, preserves raw RBAC, honors next-request lift/overlap/expiry, and fails closed on missing measure state.
+5. Event DTO is the approved diagnostic projection only: event/upload ID, uploader, operation context, file name/types/reason/size/time. No R2 object key, file bytes, message/editor text, session/email or unrelated auth data.
+6. `contextKey`/historical `draftId` are intended upload-operation context under the current Editor contract; text draft persistence is absent. Their presence is not promoted to a privacy finding.
+7. Suspicious event identity is a server-derived SHA-256 key, not an R2 key. Exact retries/concurrency dedupe to one row; durable events survive even without an attachment row.
+8. Security cards are read-only and never auto-open suspicious bytes. No second runtime `readSecurityAttachmentEvents` consumer was found.
+9. Private download derives draft owner from session and requires exact owner/context/operation/attachment ref before bucket access; published download requires exact post membership. Revoked refs fail before R2.
+10. Storage/event-write failures fail closed; controlled byte responses use no-store/nosniff/CSP sandbox with restricted inline modes.
+11. No remediation handoff. Next D4.
+
 ## 2026-11-11 — Block D / D8 Help Signals moderation workflow audit
 
 1. Target: current main `e279cb6c032a489a9044ca1191407df887c364b4`, rechecked identical to `main`.
