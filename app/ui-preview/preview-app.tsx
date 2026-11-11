@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { I18nextProvider } from "react-i18next";
-import { RouterProvider, createMemoryRouter, redirect, useActionData, useParams, useSearchParams } from "react-router";
+import { RouterProvider, createMemoryRouter, redirect, useActionData, useLoaderData, useParams, useSearchParams } from "react-router";
 
 import {
   HeaderAuthProvider,
@@ -1294,7 +1294,8 @@ function previewRouter(scenario: Scenario, interactions: PreviewInteractionState
     },
     {
       path: "/:locale/admin/authorization",
-      element: <PreviewAuthorizationRoute scenario={scenario} interactions={interactions} />,
+      element: <PreviewAuthorizationRoute scenario={scenario} />,
+      loader: () => previewAuthorizationData(scenario.locale, interactions.authorization),
       action: ({ request }) => previewAuthorizationAction(scenario, interactions, request),
     },
     {
@@ -2220,12 +2221,11 @@ function PreviewSectionRoute({ scenario, interactions }: {
   );
 }
 
-function PreviewAuthorizationRoute({ scenario, interactions }: {
+function PreviewAuthorizationRoute({ scenario }: {
   scenario: Scenario;
-  interactions: PreviewInteractionState;
 }) {
   const actionData = useActionData() as { ok?: boolean; error?: "invalid" | "forbidden" | "notFound" | "conflict" | "unavailable" } | undefined;
-  const data = previewAuthorizationData(scenario.locale, interactions.authorization);
+  const data = useLoaderData() as ReturnType<typeof previewAuthorizationData>;
   const fixtureResult = scenario.variant === "admin-success"
     ? { ok: true as const }
     : scenario.variant === "admin-conflict"
