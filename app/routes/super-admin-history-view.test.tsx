@@ -117,6 +117,8 @@ describe("SA02-D3.1 source-aware original History route presentation",()=>{
     ]);
     expect(container.querySelector('nav.admin-panel-nav a[aria-current="page"]')).toHaveAttribute("href",
       "https://owner.invalid/en/control/monitoring");
+    expect(container.querySelector('a[href="https://owner.invalid/en/control/monitoring/security"]'))
+      .toHaveTextContent("Security");
     expect(container.textContent).not.toContain("forum.invalid");
   });
 
