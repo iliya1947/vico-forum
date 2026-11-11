@@ -1,3 +1,19 @@
+# Лёва — актуальный checkpoint: SA-03 independent CHANGES REQUIRED (2026-11-11)
+
+**Active result:1 confirmed current-scope finding, SA03-IMPL-LEV-01 · P2 OPEN.** [Full result #6802006091](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6802006091). PR324 exact `4bfdfdd14a70534bd95c308de9d1c8c2df672c76`, main/base `538084fd472c65459ad55ab30a0f96fbfdd68e56`; Mira repeat coordinator PASS preceded review. Reviewed all43 cumulative files against accepted plan #6796912006; no review-time implementation edits.
+
+LEV-01: actual header Sign out200→HeaderAuth guest, but ProfileView renders old privileged loader DTO until revalidation returns. Current actor is never compared with DTO viewer for display; viewer/target React key stays old. Original real Chromium/built Worker/Better Auth/disposable PG17 probe held only next.data GET, observed2 Owner sections/private target email/26 authz forms under guest header. Independent fresh guest.data200 correctly redacted, released refresh removes sections. Bounded expected fix: invalidate stale privileged sections/controls/feedback on known current viewer/target change while preserving public profile/server authority; regression uses UI signout without reload and delayed refresh. Existing24-checkpoint browser signout reloads and misses it. Not server admission bypass.
+
+MIRA-01 verified CLOSED; other current-scope defects not confirmed. Target-scoped allowlists/SQL source predicates/typed measure join/cursors/private cache/authority/legacy/source identities reviewed. No Deactivate, generic audit/new writers; own Settings unchanged.
+
+Local independent app11files/93tests PASS; native2files/9tests PASS; build PASS; cleanPG17 migrations0000–0064 PASS;69-table actual manifest parity PASS; snapshot comparison exactly six new indexes. Checked-in Chromium harness rerun24/24 PASS on own build/DB, exact head, no page errors/external requests; adaptation only local repo/Chromium paths, original assertions intact. Original identity-boundary probe separately confirmed LEV-01. Remote exacthead CI43059203099/SA0343059202894/SA0143059202975/AP1043059203239 all SUCCESS verified API. #315 refreshed a27dd964139c445086911ac4a245475ab53fe6f5; no future security activation/remediation imported.
+
+Evidence /workspace/work/sa03-review-evidence: SOURCE_MANIFEST.json; application.log/database.log/build.log/schema-manifest.log; checked-in-browser.py and browser/results.json/screenshots; original identity-boundary.py/.json/.log and known-guest-stale-owner.png. /workspace/work/sa03-review clean exacthead. Own vite4204 and Docker vico-sa03-lev-review removed; .dev.vars/node_modules link removed. First sandbox native DB attempt failed due blocked loopback, escalated same tests PASS. No unresolved environment blocker.
+
+**Next recipient Mira:** bounded correction packet published in #251; determine assignment. Lev completed/stopped; Lira/Mark not appointed by Lev. New corrected head requires coordinator then independent review; current head not merge-ready. Master plan unchanged.
+
+---
+
 # Лёва — актуальный checkpoint: SA-03 technical planning complete (2026-11-11)
 
 **Next: Mira scope/fit review.** Full plan [#6796912006](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6796912006); main `538084fd472c65459ad55ab30a0f96fbfdd68e56`. SA-02 implementation #319 and docs #323 merged/closed. SA-03 implementation is not started/assigned.
