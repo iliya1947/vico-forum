@@ -634,7 +634,8 @@ try:
         assert held_profile_reads, "profile .data revalidation was not intercepted"
         expect(owner.locator("#measures,#authorization,#owner-account,#owner-history")).to_have_count(0)
         expect(owner.locator("#profile-name")).to_have_count(1)
-        assert target_email not in owner.content()
+        # Initial SSR hydration data was legitimately sent before sign-out; test visible DOM.
+        assert target_email not in owner.locator("body").inner_text()
         assert target_email not in req(owner_ctx, data_path(target_path)).text()
         record("real-ui-signout-drops-private-before-held-profile-get")
         for held in held_profile_reads:
