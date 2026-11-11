@@ -27,7 +27,7 @@
 5. Block D: аудит D1–D12 завершён; подтверждены **3 findings — `COMPLAINT-PRIV-01`, `HELP-SIGNAL-PRIV-01`, `HISTORY-PRIV-01` (все Low/P3)**.
 6. D12 corrected closeout: official React Router Framework/SSR docs и exact `react-router@8.3.1` source подтвердили default skip loader revalidation после 4xx/5xx; Vico explicit recovery refreshes loaders and does not automatically replay mutations.
 7. Block E audit завершён: E2 PASS; E5 — **`FORUM-PUB-01 Moderate/P2`**; E6 — 0 additional; E7 — **`READSTATE-CACHE-01 Low/P3`**; E3 — **`PUBLIC-PROJECTION-01 Low/P3`**; E4 — **`DISCOVERY-BOUNDS-01 Low/P3`, `SEARCH-CONTROL-01 Low/P3`**; E8 PASS; E1 — **`LOCALE-DEGRADED-WRITE-01 Low/P3`** + расширение `READSTATE-CACHE-01`; E9 PASS; E10 — **`FORUM-READ-BOUNDS-01 Moderate/P2`, `FORM-BODY-BOUNDS-01 Moderate/P2`**. Block E total: **8 findings**. E10 проверен на current `main` `4248fed23925e4a23e48485d419ceaf0ce337def`; compare с предыдущим target подтвердил отсутствие изменений core Forum/translation E2–E9.
-8. Block F на current `main` `538084fd472c65459ad55ab30a0f96fbfdd68e56`: **F1 PASS; F2 PASS; F3 — `ATTACH-TEXT-TAIL-01 Low/P3`; F4 PASS; F5 Cleanup and physical deletion safety — PASS, 0 additional findings**. F5 подтверждает 24-hour stale-operation retirement, reference-aware physical cleanup, durable delete claims/retry, complaint-evidence retention и fenced journal/reservation sweep. Следующий срез — **F6 Attachment security evidence / Attention privacy**.
+8. Block F на current `main` `538084fd472c65459ad55ab30a0f96fbfdd68e56`: **F1 PASS; F2 PASS; F3 — `ATTACH-TEXT-TAIL-01 Low/P3`; F4 PASS; F5 PASS; F6 Attachment security evidence / Attention privacy — PASS, 0 additional findings**. F6 подтверждает durable exact-evidence dedupe, independent `forum.attachmentSecurity.read`, private/no-store Attention read, safe metadata rendering и reduced exact-Owner SA-02 projection. Следующий срез — **F7 Storage/runtime failure boundary**.
 9. Implementation PR, technical planner и implementer для remediation сейчас не назначены.
 10. Cloudflare/Neon/production mutation по #315 не разрешена и не выполнялась.
 
@@ -65,10 +65,11 @@
 
 ## Открыто
 
-1. **Block F F1–F5 completed: F1 PASS, F2 PASS, F3 — `ATTACH-TEXT-TAIL-01 Low/P3`, F4 PASS, F5 PASS with 0 additional findings.** Детальная causal chain зафиксирована в `SECURITY_BLOCK_F_FILES_ATTACHMENTS.md`.
-2. Следующий bounded audit slice — **F6 Attachment security evidence / Attention privacy** на current `main` `538084fd472c65459ad55ab30a0f96fbfdd68e56`.
-3. F5 live scheduler/external R2 acceptance не заявляется как проверенная: **Информация не проверена** для deployed cleanup execution; это Stage 6 boundary, не current F5 defect.
-4. `ATTACH-TEXT-TAIL-01` остаётся единственным Block F finding на текущем этапе; cleanup не дублирует его.
-5. `FORUM-READ-BOUNDS-01` остаётся прежним Block E finding и не дублируется из Block F.
-6. SA-02 factual docs closeout уже merged в current main; descendant `4248fed… → 538084f…` меняет только 8 Markdown docs, attachment runtime/schema не менялся.
-7. Лира, Лёва и Марк сейчас не имеют активного назначения по #315.
+1. **Block F F1–F6 completed: F1 PASS, F2 PASS, F3 — `ATTACH-TEXT-TAIL-01 Low/P3`, F4/F5/F6 PASS with 0 additional findings.** Детальная causal chain зафиксирована в `SECURITY_BLOCK_F_FILES_ATTACHMENTS.md`.
+2. Следующий bounded audit slice — **F7 Storage/runtime failure boundary** на current `main` `538084fd472c65459ad55ab30a0f96fbfdd68e56`.
+3. F6 hard evidence-store outage fail-closed даёт `503` и не создаёт attachment/publication; второй durable sink при полном DB outage не является текущим требованием и finding не подтверждён.
+4. `ATTACH-TEXT-TAIL-01` остаётся единственным Block F finding: F6 не дублирует evidence gap, возникающий из F3 misclassification.
+5. F5 live scheduler/external R2 acceptance не заявляется как проверенная: **Информация не проверена** для deployed cleanup execution; это Stage 6 boundary.
+6. `FORUM-READ-BOUNDS-01` остаётся прежним Block E finding и не дублируется из Block F.
+7. SA-02 factual docs closeout уже merged в current main; descendant `4248fed… → 538084f…` меняет только 8 Markdown docs, attachment runtime/schema не менялся.
+8. Лира, Лёва и Марк сейчас не имеют активного назначения по #315.
