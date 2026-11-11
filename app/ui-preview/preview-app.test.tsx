@@ -145,6 +145,23 @@ describe("interactive Pages preview", () => {
     expect(screen.getByText("Best answer")).toBeInTheDocument();
   });
 
+  it("saves the preferred language from Settings and switches the preview locale", async () => {
+    const user = userEvent.setup();
+    render(<EmbeddedPreview scenarioId="section-user" identity="user" />);
+
+    await user.click(screen.getByRole("link", { name: "Settings" }));
+    expect(await screen.findByRole("heading", { level: 1, name: "Settings" })).toBeInTheDocument();
+
+    await user.click(screen.getByRole("link", { name: "User preferences" }));
+    const locale = await screen.findByRole("combobox", { name: "Preferred language" });
+    await user.selectOptions(locale, "ru");
+    await user.click(screen.getByRole("button", { name: "Save language" }));
+
+    await waitFor(() => expect(document.documentElement.lang).toBe("ru"));
+    expect(document.querySelector<HTMLSelectElement>("#settings-preferred-locale")?.value).toBe("ru");
+    expect(await screen.findByRole("status")).toBeInTheDocument();
+  });
+
   it("edits the signed-in user's profile and keeps the saved preview data", async () => {
     const user = userEvent.setup();
     render(<EmbeddedPreview scenarioId="profile-edit" identity="user" />);
