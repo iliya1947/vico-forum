@@ -196,7 +196,8 @@ describe("interactive Pages preview", () => {
 
     await user.click(within(form).getByRole("button", { name: "Check similar questions" }));
     expect(await screen.findByRole("heading", { level: 3, name: "Similar questions" })).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: /Why does my Worker lose the session after redirect\?/ })).toBeInTheDocument();
+    const similar = screen.getByRole("region", { name: "Similar questions" });
+    expect(within(similar).getByRole("link", { name: /Why does my Worker lose the session after redirect\?/ })).toBeInTheDocument();
 
     const activeForm = document.getElementById("help-question-create-form") as HTMLFormElement;
     const publish = within(activeForm).getByRole("button", { name: "Ask question" });
