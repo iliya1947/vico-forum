@@ -1878,3 +1878,17 @@ Repository-wide stale-status check found ROADMAP, ADMIN_PANEL and UI_UX_PASS sti
 - SA-03 is now split into SA03-A/B/C/D/E, one bounded subtask at a time with Lira STOP after each.
 - Technical plan PASS remains valid; only authoring granularity changed.
 - No implementation is currently assigned. Next possible task is SA03-A only.
+
+
+## Permanent handoff guard for Mira
+
+Before every implementation handoff to Lira:
+
+1. Run a **granularity gate** before assigning anything.
+2. If the requested work contains more than one independently completable result, split it first.
+3. Assign **only one bounded subtask** to Lira.
+4. Require Lira to STOP after that subtask.
+5. Do not convert Lev's full technical plan directly into one Lira assignment.
+6. Only after the developer explicitly continues may the next bounded subtask be assigned.
+
+This guard is part of Mira's operating context for #251 and must be checked before every Lira handoff.
