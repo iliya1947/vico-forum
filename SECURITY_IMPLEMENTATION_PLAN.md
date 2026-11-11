@@ -52,6 +52,7 @@
 3. [Block C — Authorization & privilege escalation audit](./SECURITY_BLOCK_C_AUTHORIZATION.md)
 4. [Block D — Ordinary Admin & moderation audit](./SECURITY_BLOCK_D_ADMIN_MODERATION.md)
 5. [Block E — Public forum / application security audit](./SECURITY_BLOCK_E_PUBLIC_APPLICATION.md)
+6. [Block F — Files & attachments security audit](./SECURITY_BLOCK_F_FILES_ATTACHMENTS.md)
 
 Каждый следующий bounded security-блок оформляется отдельным файлом; этот файл остаётся общей картой направления и маршрутом между блоками.
 
