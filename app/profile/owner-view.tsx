@@ -43,12 +43,12 @@ export function OwnerProfileSections({ locale, targetId, owner }: {
         key={owner.viewerId + ":" + targetId}>
         <h2 id="owner-account-heading">{t("profileOwnerPrivate")}</h2>
         <dl>
-          <div><dt>{t("profileOwnerEmail")}</dt><dd><bdi dir="auto">{account.email}</bdi></dd></div>
-          <div><dt>{t("profileOwnerEmailVerified")}</dt><dd>{t(account.emailVerified ? "superAdminHistoryYes" : "superAdminHistoryNo")}</dd></div>
-          <div><dt>{t("profileJoined")}</dt><dd><time dateTime={account.createdAt}>{utc(account.createdAt, locale)}</time></dd></div>
+          <div><dt>{t("profileOwnerEmail")}</dt><dd><bdi dir="auto">{account!.email}</bdi></dd></div>
+          <div><dt>{t("profileOwnerEmailVerified")}</dt><dd>{t(account!.emailVerified ? "superAdminHistoryYes" : "superAdminHistoryNo")}</dd></div>
+          <div><dt>{t("profileJoined")}</dt><dd><time dateTime={account!.createdAt}>{utc(account!.createdAt, locale)}</time></dd></div>
           <div><dt>{t("profileOwnerMethods")}</dt><dd>{
-            account.linkedMethods.length
-              ? account.linkedMethods.map(method => <span key={method}>{t(method === "password" ?
+            account!.linkedMethods.length
+              ? account!.linkedMethods.map(method => <span key={method}>{t(method === "password" ?
                 "profileOwnerAuthPassword" : "profileOwnerAuthGoogle")}{" "}</span>)
               : t("profileOwnerNone")
           }</dd></div>
@@ -56,9 +56,9 @@ export function OwnerProfileSections({ locale, targetId, owner }: {
         <section id="owner-sessions" aria-labelledby="owner-sessions-heading">
           <h3 id="owner-sessions-heading">{t("settingsSecuritySessions")}</h3>
           <p>{t("profileOwnerSessionsNote")}</p>
-          <p>{t("superAdminSa02ActiveSessions")}: {new Intl.NumberFormat(locale).format(BigInt(account.sessionCounts.active))}
-            {" · "}{t("superAdminSa02ExpiredSessions")}: {new Intl.NumberFormat(locale).format(BigInt(account.sessionCounts.expiredRetained))}</p>
-          {account.sessions.length ? <ol className="admin-forum-objects">{account.sessions.map(session =>
+          <p>{t("superAdminSa02ActiveSessions")}: {new Intl.NumberFormat(locale).format(BigInt(account!.sessionCounts.active))}
+            {" · "}{t("superAdminSa02ExpiredSessions")}: {new Intl.NumberFormat(locale).format(BigInt(account!.sessionCounts.expiredRetained))}</p>
+          {account!.sessions.length ? <ol className="admin-forum-objects">{account!.sessions.map(session =>
             <li key={session.id}>
               <p><bdi>{session.id}</bdi> {session.current ? t("profileOwnerSessionCurrent") : null}
                 {" · "}{t(session.status === "active" ? "superAdminSa02ActiveSessions" : "superAdminSa02ExpiredSessions")}</p>
@@ -69,8 +69,8 @@ export function OwnerProfileSections({ locale, targetId, owner }: {
                 <div><dt>{t("profileOwnerSessionIp")}</dt><dd><bdi>{session.recordedIp ?? t("superAdminHistoryUnknown")}</bdi></dd></div>
               </dl>
             </li>)}</ol> : <p>{t("profileOwnerNone")}</p>}
-          {account.nextSessionsCursor ?
-            <Link to={page("sessionsBefore", account.nextSessionsCursor)}>{t("profileOwnerOlderSessions")}</Link> : null}
+          {account!.nextSessionsCursor ?
+            <Link to={page("sessionsBefore", account!.nextSessionsCursor)}>{t("profileOwnerOlderSessions")}</Link> : null}
         </section>
       </section>}
     {owner.history.status === "unavailable" ?
