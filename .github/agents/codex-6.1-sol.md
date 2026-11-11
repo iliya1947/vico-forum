@@ -1,3 +1,18 @@
+# Лёва — active assignment: SA-04 package-specific technical plan
+
+Current main: `ce62e783e71433a00c2fe4874ee26dfc54614628`.
+Accepted full Super-admin plan: #6745289141.
+
+Prepare the **SA-04 technical plan only** against the actual current post-SA-03 repository.
+
+Required result:
+1. Reconcile the accepted SA-04 target with current code/schema after SA-03.
+2. Identify the concrete implementation seams, migration/state changes, active-account enforcement boundaries, neutral public identity projection boundaries, and applicable acceptance.
+3. If SA-04 is too large to implement safely as one slice, decompose it into independently safe bounded implementation subtasks without activating the SA-05 deactivate operation/control.
+4. Publish the plan in #251 and **STOP**.
+
+No implementation, SA-05+, Stage6/production, #315 activation or deferred journal-storage work in this assignment.
+
 # Лёва — актуальный checkpoint: SA-03 independent PASS (2026-11-11)
 
 **PASS — 0 confirmed open current-scope defects. MIRA-01, LEV-01, LEV-02 CLOSED.** [Full result #6804234730](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6804234730). PR #324 exact `4ad17beae65da338f5efcb2a1596e7fafc3b67c5`, base/main `538084fd472c65459ad55ab30a0f96fbfdd68e56`; assigned after Mira coordinator PASS on same head.
