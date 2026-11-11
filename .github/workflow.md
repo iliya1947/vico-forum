@@ -3,7 +3,7 @@
 - Service PR: **#251**.
 - Developer explicitly authorized publication of review reports and service-state updates for the entire SA-04 ("Разрешаю на протяжение всего SA-04"). This authorization persists across SA-04 handoffs.
 - SA-03 is fully closed.
-- **Current stage: SA04-A1 coordinator PASS and independent technical PASS, 0 confirmed current-scope A1 defects on the same stable exact head.**
+- **Current stage: SA04-A1 implementation gate closed. PR #327 exact head `3d6c7c06ac1442a5a4b3ff7f8fbe77454ca8479c` has Mira PASS + Lev PASS and is Ready for Owner merge.**
 - Base/current `main`: `ce62e783e71433a00c2fe4874ee26dfc54614628`.
 - Draft implementation PR: **#327**, exact head `3d6c7c06ac1442a5a4b3ff7f8fbe77454ca8479c`; open/Draft, not merged.
 - **SA04-A1-MIRA-01 CLOSED**, independently verified: actual PostgreSQL 17.11 CHECK hash matches manifest. Three existing isolated auth fixtures now apply 0065 without changing runtime scope.
@@ -34,4 +34,13 @@ Before any project-changing action or agent handoff, Mira must check in this ord
 - Keep Lira handoffs small and bounded.
 - Prefer Lev independent review on a meaningful cumulative stable slice/package, not on every tiny author checkpoint, when the workflow allows waiting without losing a required gate.
 - Do not waste an independent review already in progress: if Lev PASSes the current stable bounded PR and it is otherwise ready, close that PR rather than extending it and later making Lev repeat substantially the same review.
+
+## 2026-11-11 — SA04-A1 implementation gate closed
+
+- Lev independent technical review PASS published on exact head `3d6c7c06ac1442a5a4b3ff7f8fbe77454ca8479c`: 0 confirmed current-scope A1 defects.
+- Mira coordinator PASS and Lev independent PASS cover the same stable head; `SA04-A1-MIRA-01` is CLOSED.
+- PR #327 was converted from Draft to **Ready for review** without changing the implementation head, and its body was corrected to the final factual state.
+- Because Lev has already spent a full independent review on this bounded slice, #327 must not be extended with later SA-04 work. Merge this reviewed A1 foundation first; later SA-04 implementation proceeds in a new bounded PR so Lev is not forced to re-review the same A1 work.
+- No SA04-A2+, SA-05+, Stage6/production or #315 remediation is started by this closeout.
+- **Next action: Owner merge of #327.**
 
