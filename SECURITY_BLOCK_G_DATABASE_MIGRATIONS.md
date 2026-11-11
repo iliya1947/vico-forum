@@ -4,11 +4,12 @@
 
 1. Bounded audit scope подготовлен 2026-11-11 против current `main` `538084fd472c65459ad55ab30a0f96fbfdd68e56`.
 2. **G1 — Migration history integrity завершён: PASS, 0 current-scope findings.**
-3. Repository migration history: `0000–0063`; externally accepted migration evidence: `0000–0020`.
-4. Отставание external target от repository history само по себе **не finding**: Stage 6 external integration paused, а current source-of-truth разрешает repository/local-CI schema evolution без немедленного Neon rollout.
-5. Следующий bounded slice — **G2 Schema-level security invariants**.
-6. Мира — auditor/coordinator. Remediation, technical planner и implementer не назначены.
-7. Production/Neon/Cloudflare mutation в Block G не разрешена и не выполняется.
+3. **G2 — Schema-level security invariants завершён: 1 current-scope finding — `DB-SEARCHPATH-01 Low/P3`.**
+4. Repository migration history: `0000–0063`; externally accepted migration evidence: `0000–0020`.
+5. Отставание external target от repository history само по себе **не finding**: Stage 6 external integration paused, а current source-of-truth разрешает repository/local-CI schema evolution без немедленного Neon rollout.
+6. Следующий bounded slice — **G3 Runtime least privilege**.
+7. Мира — auditor/coordinator. Remediation, technical planner и implementer не назначены.
+8. Production/Neon/Cloudflare mutation в Block G не разрешена и не выполняется.
 
 ## G1 — результат
 
@@ -23,6 +24,33 @@
 9. Manual SQL additions (включая SQL functions/triggers, которые Drizzle schema snapshot не моделирует полностью) всё равно находятся внутри accepted root migration SQL, поэтому входят в immutability и clean replay boundary. Их semantic security correctness относится к G2, а не G1.
 10. Добавленный snapshot без matching journal/SQL напрямую не является runtime authority; current repository такого состояния не содержит. Semantic snapshot/schema consistency дополнительно является предметом `db:check`/schema-parity и последующих G2/G7 проверок.
 11. External production ledger `0000–0020` не сравнивался live в G1. **Информация не проверена** для mutable production DB state; при paused Stage 6 это не current G1 defect.
+
+## G2 — результат
+
+1. Verdict: **1 current-scope finding — `DB-SEARCHPATH-01 Low/P3`** на current `main` `538084fd472c65459ad55ab30a0f96fbfdd68e56`.
+2. Forum revision identity — PASS: current title/post pointers are composite owner-bound FKs; revision rows reject UPDATE; author/content relations use RESTRICT where retained identity is required.
+3. Complaint retained evidence — PASS кроме finding ниже: targets/reports/decisions/notes/events/evidence refs reject UPDATE/DELETE; appeal identity is immutable after creation and only pending→resolved transition is accepted; evidence attachment refs use RESTRICT plus the active-asset gate.
+4. Complaint Case identity/update branch — PASS: id/target/predecessor/created-at are immutable after insertion; initial decision is tied back to the owning Case by deferred composite FK; lifecycle/priority checks prevent impossible persisted states.
+5. Attachment active-ref function — PASS: `forum_attachment_require_active_ref()` is the only current SECURITY DEFINER trigger function found. It pins `search_path = pg_catalog`, schema-qualifies the target relation through quoted `TG_TABLE_SCHEMA`, parameter-binds attachment ID and therefore does not inherit the caller's relation lookup path.
+6. Authorization role identity trigger and immutable forum/complaint triggers do not query attacker-shadowable relations; they only validate OLD/NEW row state. No independent search-path issue was confirmed there.
+7. Translation content-task trigger functions use unqualified internal relations, but current `web` runtime capability intentionally has no task/generation write capability and background translation execution remains a later Stage-6 boundary. Absence of hardening there alone is future work, not a G2 current finding.
+8. Retention/cascade review did not produce an additional current finding: Owner events/monitor observations and Admin History do not cascade with user deletion; complaint/security evidence and user measures retain RESTRICT identity links; current web capability lacks DELETE on forum topics/posts/sections/categories and retained complaint tables. Ordinary session/profile/presence/read-state cascades match their lifecycle semantics.
+9. Tests and DB probes were read as evidence, but **not run** in this G2 audit slice.
+
+### DB-SEARCHPATH-01 — Low/P3
+
+1. Current Complaints contract requires `previous_case_id` to be bound to the same content unit: a same-revision predecessor must be resolved, and a newer revision may point only to the previous Case of the same post or topic title.
+2. Migration `0050_complaint_submission.sql` replaced the earlier same-target composite predecessor FK with a simple self-FK on `previous_case_id`. The remaining same-content enforcement is `guard_complaint_case_identity()` on Case INSERT.
+3. That trigger function is SECURITY INVOKER, has no function-local `SET search_path`, and queries `forum_complaint_cases` plus two aliases of `forum_complaint_targets` by **unqualified relation names**.
+4. PostgreSQL 17 resolves a session temporary schema before identically named permanent relations when unqualified relation names are used. The current runtime privilege contract also accepts the database's PUBLIC `TEMPORARY` capability, and PostgreSQL grants `TEMPORARY` to PUBLIC by default unless revoked.
+5. Current repository evidence demonstrates the same primitive intentionally in `tests/database/migrations.test.ts`: a temporary `authz_mutation_lock` shadows the public table for that session. No application runtime search-path pinning was found for the web DB connection.
+6. Reachable direct-SQL path under the existing `web` capability: create temporary `forum_complaint_cases` and `forum_complaint_targets` tables with the columns read by the trigger; insert synthetic rows that make an unrelated real predecessor ID appear to belong to NEW.target_id's content; then INSERT into **qualified** `public.forum_complaint_cases` using that real unrelated `previous_case_id`.
+7. The real public self-FK still succeeds because it validates only that the predecessor Case ID exists. The trigger's same-content/resolved lookup is satisfied by temporary rows, so the persistent public Case can acquire a predecessor from unrelated content.
+8. This violates a current database integrity boundary and can corrupt moderation predecessor/history linkage. Reviewer Case reads expose/use the stored `previousCaseId`; the incorrect relation becomes durable application state.
+9. No current public HTTP route, SQL injection, authentication bypass, private-data disclosure or arbitrary code execution path was established. Exploitation requires direct SQL execution with the current `web` DB capability, so severity is **Low/P3**.
+10. The defect is current repository/local-CI scope because both the trigger and named web capability are current code-backed contracts. Whether the same path is presently exploitable in deployed production is **Информация не проверена**: production Worker/web binding rollout remains paused Stage 6.
+11. This is not a duplicate of Block D Complaints privacy findings: the root cause is PostgreSQL relation-name resolution inside a schema security trigger, and the impact is persisted Case-link integrity.
+12. Remediation is **not assigned** in audit. G3 must account for this finding when checking runtime least privilege, without duplicating the same root cause.
 
 ## Цель
 
