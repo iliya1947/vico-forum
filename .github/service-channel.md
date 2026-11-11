@@ -3841,3 +3841,13 @@ The previous docs-closeout route was incorrect.
 - #326 has been reopened. Exact head remains `dc9f846bf1fd4224b600fccfa3528f9a518fb8bd`.
 - Neutral state restored: #326 exists and remains open; no acceptance/rejection/merge/close/reassignment decision is inferred.
 - The process error remains factual: Mira authored the docs instead of routing the bounded work first.
+
+
+## 2026-11-11 — SA-03 docs recovery route selected
+
+- The developer is not required to decide the fate of Mira's erroneous #326 before work can continue; the workflow itself determines the recovery.
+- #326 stays open and untouched for now as a non-authoritative draft. It is neither merged nor used as the active implementation.
+- Clean replacement work starts through the normal executor so Mira can later perform coordinator review without reviewing her own authoring.
+- Granularity gate applied: only **SA03-DOC-A** is assigned now.
+- **SA03-DOC-A:** Lira starts a fresh docs-only PR from current `main`, updates only `PROJECT_STATE.md` to reflect merged SA-03 facts/current boundaries, publishes the PR/head and **STOP**.
+- Later documentation files are not assigned yet. Lev/Mark remain unassigned.
