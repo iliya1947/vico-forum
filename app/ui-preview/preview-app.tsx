@@ -25,6 +25,7 @@ import { InvalidProfileError, validateProfileFields, type ProfileFields } from "
 import { forumProfilePath, forumTopicPath } from "../forum/paths";
 import { ForumRouteError } from "../forum/ui";
 import SettingsRoute from "../routes/settings";
+import SettingsPrivacyRoute from "../routes/settings-privacy";
 import SettingsUserRoute from "../routes/settings-user";
 import {
   AttentionCenterView,
@@ -247,6 +248,7 @@ type PreviewInteractionState = {
   resolvedAttentionCases: Set<string>;
   preferredLocale: PreviewLocale | null;
   localeSaved: boolean;
+  showOnline: boolean;
   authorization: PreviewAuthorizationState;
 };
 
@@ -263,6 +265,7 @@ function createPreviewInteractionState(): PreviewInteractionState {
     resolvedAttentionCases: new Set(),
     preferredLocale: null,
     localeSaved: false,
+    showOnline: true,
     authorization: createPreviewAuthorizationState(),
   };
 }
@@ -1175,6 +1178,7 @@ export function EmbeddedPreview({ scenarioId, identity }: { scenarioId: string; 
         || (intent === "save-profile" && form.classList.contains("profile-form"))
         || (intent === "open" && form.classList.contains("notification-form"))
         || (intent === "save-locale" && form.classList.contains("settings-locale-form"))
+        || (intent === "save-online-visibility" && form.classList.contains("settings-privacy-form"))
         || ((intent === "pinTopic"
           || intent === "unpinTopic"
           || intent === "closeTopic"
@@ -1368,6 +1372,12 @@ function previewRouter(
       ),
     },
     {
+      path: "/:locale/settings/privacy",
+      element: <SettingsPrivacyRoute />,
+      loader: () => previewSettingsPrivacyData(scenario, interactions),
+      action: ({ request }) => previewSettingsPrivacyAction(scenario, interactions, request),
+    },
+    {
       path: "/:locale/tags",
       element: <TagsView locale={scenario.locale} tags={previewTags()} />,
     },
@@ -1380,6 +1390,52 @@ function previewRouter(
       element: previewElement(scenario),
     },
   ], { initialEntries: [scenario.path] });
+}
+
+function previewOnlinePresence(
+  scenario: Scenario,
+  interactions: PreviewInteractionState,
+) {
+  const actor = previewUser(scenario);
+  const members = [
+    { id: "alex", name: "Alex", image: null },
+    { id: "maya", name: "Maya Cohen", image: null },
+  ].filter((member) => interactions.showOnline || member.id !== actor?.id);
+  return { count: members.length, members };
+}
+
+function previewSettingsPrivacyData(
+  scenario: Scenario,
+  interactions: PreviewInteractionState,
+) {
+  const actor = previewUser(scenario);
+  return {
+    locale: scenario.locale,
+    accountId: actor?.id ?? "",
+    showOnline: interactions.showOnline,
+    canViewForum: scenario.identity === "owner",
+  };
+}
+
+async function previewSettingsPrivacyAction(
+  scenario: Scenario,
+  interactions: PreviewInteractionState,
+  request: Request,
+) {
+  const actor = previewUser(scenario);
+  if (!actor) return { error: "conflict" as const };
+  const form = await request.formData();
+  if (String(form.get("intent") ?? "") !== "save-online-visibility") {
+    return { error: "invalid" as const };
+  }
+  if (String(form.get("expectedUserId") ?? "") !== actor.id) {
+    return { error: "conflict" as const };
+  }
+  const value = String(form.get("showOnline") ?? "");
+  if (value !== "true" && value !== "false") return { error: "invalid" as const };
+
+  interactions.showOnline = value === "true";
+  return { saved: true as const };
 }
 
 function previewSettingsOverviewData(scenario: Scenario) {
@@ -2728,10 +2784,7 @@ function previewElement(scenario: Scenario) {
         <HomeView
           locale={scenario.locale}
           categories={homepageCategories(scenario.locale)}
-          onlinePresence={{ count: 2, members: [
-            { id: "alex", name: "Alex", image: null },
-            { id: "maya", name: "Maya Cohen", image: null },
-          ] }}
+          onlinePresence={previewOnlinePresence(scenario, interactions)}
         />
       );
     case "search":
