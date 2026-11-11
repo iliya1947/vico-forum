@@ -1,12 +1,20 @@
 # Admin panel — current workflow
 
 - Service PR: **#251**. Current main: `538084fd472c65459ad55ab30a0f96fbfdd68e56`.
-- Current stage: **SA-03 SA03-IMPL-LEV-01 bounded author correction complete; Lira STOP. Awaiting Mira repeat coordinator whole-PR review.**
-- Implementation [Draft PR **#324**](https://github.com/iliya1947/vico-forum/pull/324), exact stable head **`d7a526ac00ef56ebd8c8bd4035cc84fb9731ad49`**. Accepted technical plan [#6796912006](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6796912006) remains authoritative. Earlier SA03-MIRA-01 remains CLOSED.
-- Lev independent whole-PR review on superseded `4bfdfdd...` found **one** current-scope presentation invalidation defect SA03-IMPL-LEV-01; Mira accepted one bounded correction. No other current-scope findings were confirmed.
-- Corrected: private `ProfilePrivilegedSections` DTO now carries the authenticated server viewer ID for measures/authorization/Owner alike; `ProfileView` hides old sections, controls and feedback immediately at HeaderAuth sign-out or viewer mismatch and preserves invalidation until a new loader DTO. Public profile stays visible; fresh authorized data restores private sections. Server admission remains authoritative and unchanged.
-- Connected acceptance uses real UI sign-out with **held post-signout profile GET**: guest header and no stale private/authorization rendered DOM before release, separate redacted guest data GET, then genuine fresh Owner sign-in/read recovery.
-- All checks on exact head **SUCCESS**: [CI](https://github.com/iliya1947/vico-forum/actions/runs/43068315572) **2236/2236 app + 688/688 native PostgreSQL 17** tests including lint/typecheck/build; [SA03 Chromium](https://github.com/iliya1947/vico-forum/actions/runs/43068315602) **25/25** scenario records; [SA01 Chromium](https://github.com/iliya1947/vico-forum/actions/runs/43068315460) SUCCESS; [AP10 Chromium](https://github.com/iliya1947/vico-forum/actions/runs/43068315564) SUCCESS, all four jobs.
-- **Next recipient: Mira.** Restart coordinator whole-PR review of new exact `d7a526a...` independently. **Only after Mira PASS** does Lev run a fresh independent technical review. Mark and Lev remain unassigned now; Lira does not continue without a new developer assignment.
-- #324 remains Draft/open, not merged. SA-04+, Owner deactivation, new authz/schema/writers, broad security remediation, production/Stage6/#315 activation, journal retention/storage and permanent docs closeout remain outside this bounded task.
-- **Handoff granularity gate:** before every Lira implementation assignment, Mira must check if multiple independently completable results are combined. Split those before assignment; one bounded subtask at a time, with author STOP before developer continuation.
+- Current stage: **SA-03 coordinator whole-PR review PASS on corrected implementation PR #324 exact stable head `d7a526ac00ef56ebd8c8bd4035cc84fb9731ad49`.**
+- Implementation Draft PR **#324** remains open/unmerged. Accepted technical plan #6796912006 remains authoritative.
+- Earlier findings **SA03-MIRA-01** and **SA03-IMPL-LEV-01** are CLOSED on the current head.
+- Mira restarted the coordinator whole-PR cycle after the LEV-01 implementation change and reviewed the cumulative 43-file SA-03 scope. The implementation delta from prior reviewed head `4bfdfdd...` is limited to six files for viewer-bound private presentation and focused regressions; all other SA-03 files are unchanged.
+- **Coordinator verdict: PASS — 0 confirmed current-scope defects on exact head `d7a526ac00ef56ebd8c8bd4035cc84fb9731ad49`.**
+- LEV-01 closure confirmed:
+  - all privileged profile DTO is server-bound to the authenticated viewer;
+  - successful UI sign-out/current-viewer mismatch immediately hides stale measures/authorization/Owner sections and related self/private feedback before revalidation completes;
+  - invalidated stale DTO cannot reappear merely because the same viewer identity returns; fresh authorized loader data is required;
+  - public profile remains visible;
+  - server admission, AP-10/authorization authority, Owner immunity, schema and writers remain unchanged.
+- Exact-head checks all SUCCESS: CI #43068315572 (2236/2236 app + 688/688 native PG17), SA03 Chromium #43068315602 (25/25), SA01 Chromium #43068315460, AP10 Chromium #43068315564 (4/4 jobs).
+- **Next recipient: Lev** for a fresh independent technical whole-PR review of PR #324 on the **same exact head `d7a526ac00ef56ebd8c8bd4035cc84fb9731ad49` only**.
+- Lira and Mark are unassigned. No implementation changes are requested.
+- If Lev PASSes this same head, implementation is ready for developer merge before separate factual docs closeout. If Lev finds a confirmed current-scope defect, return it through #251 and restart the bounded correction cycle.
+- SA-04+, deactivation, production/Stage6/#315 activation, broad security remediation and deferred journal-storage work remain outside scope.
+- **Handoff granularity gate:** before every Lira implementation assignment, Mira must check whether multiple independently completable results are combined; split before assignment and assign only one bounded subtask at a time with Lira STOP.
