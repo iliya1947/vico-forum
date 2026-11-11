@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { I18nextProvider } from "react-i18next";
-import { RouterProvider, createMemoryRouter, redirect, useParams, useSearchParams } from "react-router";
+import { RouterProvider, createMemoryRouter, redirect, useActionData, useParams, useSearchParams } from "react-router";
 
 import {
   HeaderAuthProvider,
@@ -21,7 +21,8 @@ import {
 import type { HomepageCategoryOverview } from "../forum/homepage";
 import { UnderDevelopmentView } from "../forum/under-development-view";
 import { ProfileView } from "../forum/profile-view";
-import { forumTopicPath } from "../forum/paths";
+import { InvalidProfileError, validateProfileFields, type ProfileFields } from "../forum/profile";
+import { forumProfilePath, forumTopicPath } from "../forum/paths";
 import { ForumRouteError } from "../forum/ui";
 import {
   AttentionCenterView,
@@ -210,6 +211,8 @@ type PreviewInteractionState = {
   createdTopics: Map<string, PreviewCreatedTopic>;
   replies: Map<string, PreviewReply[]>;
   topicOverrides: Map<string, PreviewTopicOverride>;
+  profileOverrides: Map<string, ProfileFields>;
+  readNotifications: Set<string>;
 };
 
 function createPreviewInteractionState(): PreviewInteractionState {
@@ -218,6 +221,8 @@ function createPreviewInteractionState(): PreviewInteractionState {
     createdTopics: new Map(),
     replies: new Map(),
     topicOverrides: new Map(),
+    profileOverrides: new Map(),
+    readNotifications: new Set(),
   };
 }
 
@@ -1088,7 +1093,11 @@ export function EmbeddedPreview({ scenarioId, identity }: { scenarioId: string; 
         (intent === "createTopic" && form.classList.contains("section-create-form"))
         || (intent === "reply" && form.classList.contains("topic-reply-form"))
         || (intent === "selectBestAnswer" && form.classList.contains("topic-best-answer-form"))
-        || (intent === "markSolved" && Boolean(form.closest(".topic-shell")));
+        || (intent === "markSolved" && Boolean(form.closest(".topic-shell")))
+        || ((intent === "createHelpQuestion" || intent === "checkSimilarHelpQuestions")
+          && form.id === "help-question-create-form")
+        || (intent === "save-profile" && form.classList.contains("profile-form"))
+        || (intent === "open" && form.classList.contains("notification-form"));
       if (allowed) return;
       event.preventDefault();
       event.stopPropagation();
@@ -1191,7 +1200,10 @@ function previewRouter(scenario: Scenario, interactions: PreviewInteractionState
     },
     {
       path: "/:locale/categories/:categoryId",
-      element: <PreviewCategoryRoute scenario={scenario} />,
+      element: <PreviewCategoryRoute scenario={scenario} interactions={interactions} />,
+      action: ({ request, params }) => previewCategoryAction(
+        scenario, interactions, request, params.locale, params.categoryId,
+      ),
     },
     {
       path: "/:locale/sections/:sectionId",
@@ -1229,15 +1241,16 @@ function previewRouter(scenario: Scenario, interactions: PreviewInteractionState
     },
     {
       path: "/:locale/users/:userId",
-      element: <PreviewProfileRoute scenario={scenario} />,
+      element: <PreviewProfileRoute scenario={scenario} interactions={interactions} />,
+      action: ({ request, params }) => previewProfileAction(
+        scenario, interactions, request, params.locale, params.userId,
+      ),
     },
     {
       path: "/:locale/notifications",
-      element: (
-        <NotificationsView
-          locale={scenario.locale}
-          notifications={scenario.variant === "notifications-empty" ? [] : previewNotifications(scenario.locale)}
-        />
+      element: <PreviewNotificationsRoute scenario={scenario} interactions={interactions} />,
+      action: ({ request, params }) => previewNotificationsAction(
+        scenario, interactions, request, params.locale,
       ),
     },
     {
@@ -1579,9 +1592,13 @@ function PreviewAttentionRoute({ scenario }: { scenario: Scenario }) {
   />;
 }
 
-function PreviewCategoryRoute({ scenario }: { scenario: Scenario }) {
+function PreviewCategoryRoute({ scenario, interactions }: {
+  scenario: Scenario;
+  interactions: PreviewInteractionState;
+}) {
   const { categoryId: routeCategoryId } = useParams();
   const [searchParams] = useSearchParams();
+  const routeActionData = useActionData() as Parameters<typeof HelpSolutionsView>[0]["actionData"];
   if (routeCategoryId === HELP_SOLUTIONS_CATEGORY_ID) {
     const requestedMode = searchParams.get("mode");
     const mode = requestedMode === "open"
@@ -1614,7 +1631,31 @@ function PreviewCategoryRoute({ scenario }: { scenario: Scenario }) {
         ? { relation: searchParams.get("relation") as NonNullable<ForumHelpSolutionsFilters["relation"]> }
         : {}),
     };
-    const page = previewHelpSolutions(scenario.locale);
+    const basePage = previewHelpSolutions(scenario.locale);
+    const createdQuestions = [...interactions.createdTopics.values()]
+      .filter((topic) => topic.sectionId === HELP_SOLUTIONS_SERVICE_SECTION_ID)
+      .map((topic) => {
+        const replies = interactions.replies.get(topic.id) ?? [];
+        const override = interactions.topicOverrides.get(topic.id);
+        return {
+          id: topic.id,
+          title: topic.title,
+          authorName: topic.authorName,
+          replyCount: replies.length,
+          isSolved: override?.isSolved ?? false,
+          hasBestAnswer: Boolean(override?.bestAnswerPostId),
+          solutionModerationStatus: null,
+          solutionOutdatedReason: null,
+          solutionOutdatedReasonKind: null,
+          needsDetails: false,
+          duplicateOf: null,
+          duplicateDisputed: false,
+          createdAt: topic.createdAt.toISOString(),
+          activityAt: (replies.at(-1)?.createdAt ?? topic.createdAt).toISOString(),
+          tags: topic.tags,
+        };
+      });
+    const page = { ...basePage, questions: [...createdQuestions, ...basePage.questions] };
     const previewIdentity = previewUser(scenario);
     const filteredPage = scenario.variant === "help-solutions-open-empty" && mode === "open"
       ? { ...page, questions: [] }
@@ -1678,7 +1719,7 @@ function PreviewCategoryRoute({ scenario }: { scenario: Scenario }) {
           : "The session disappears after redirect. Checking whether this issue already exists.\n\n```ts\nconst session = await getSession(request);\n```",
       tags: "Cloudflare, Auth",
     };
-    const actionData = similarVariant
+    const fixtureActionData = similarVariant
       ? {
           operation: "helpSimilarQuestions" as const,
           outcome: similarVariant === "help-solutions-similar-results"
@@ -1712,7 +1753,7 @@ function PreviewCategoryRoute({ scenario }: { scenario: Scenario }) {
         canAskQuestion={scenario.identity !== "guest"}
         canViewSolutionModeration={scenario.identity === "manager"}
         canViewDuplicateDispute={scenario.identity === "manager"}
-        actionData={actionData}
+        actionData={routeActionData ?? fixtureActionData}
       />
     );
   }
@@ -2072,9 +2113,13 @@ function PreviewTopicRoute({ scenario, interactions }: {
   );
 }
 
-function PreviewProfileRoute({ scenario }: { scenario: Scenario }) {
+function PreviewProfileRoute({ scenario, interactions }: {
+  scenario: Scenario;
+  interactions: PreviewInteractionState;
+}) {
   const { userId = "alex" } = useParams();
   const [query] = useSearchParams();
+  const actionData = useActionData() as { error: "invalid"; draft: { bio: string; githubUrl: string; websiteUrl: string } } | undefined;
   const identity = previewUser(scenario);
   // The own-profile fixture follows the separately selected preview identity.
   const id = scenario.id.startsWith("profile-") && scenario.allowedIdentities && userId === "alex"
@@ -2082,12 +2127,18 @@ function PreviewProfileRoute({ scenario }: { scenario: Scenario }) {
   const empty = scenario.variant === "profile-empty" || id === "sam";
   const name = scenario.variant === "profile-long" ? "Maya Cohen · מפתחת קהילה · DeveloperWithALongUnbrokenDisplayNameForReflowVerification" : id === "maya" ? "Maya Cohen" : id === "alex" ? "Alex Rivera" : id === "sam" ? "Sam Chen" : "Forum member";
   const bio = scenario.locale === "ru" ? "Создаю веб-приложения с AI-инструментами. Помогаю разбирать TypeScript и API.\nУчусь вместе с форумом." : scenario.locale === "he" ? "בונה יישומי אינטרנט בעזרת כלי AI. משתף ידע על TypeScript ו־API.\nלומד יחד עם חברי הפורום." : "Building web apps with AI tools. Sharing practical TypeScript and API answers.\nLearning with the forum.";
-  return <ProfileView locale={scenario.locale} isOwner={identity?.id === id} editing={query.get("edit") === "1"}
-    profile={{ id, name, image: null, joinedAt: "2026-09-01T00:00:00.000Z", bio: empty ? "" : scenario.variant === "profile-long" ? `${bio}\n${"TypeScript_שלום_".repeat(16)}` : bio,
-      githubUrl: empty ? null : "https://github.com/octocat", websiteUrl: empty ? null : "https://example.com/",
+  const stored = interactions.profileOverrides.get(id);
+  const fields = stored ?? {
+    bio: empty ? "" : scenario.variant === "profile-long" ? `${bio}\n${"TypeScript_שלום_".repeat(16)}` : bio,
+    githubUrl: empty ? null : "https://github.com/octocat",
+    websiteUrl: empty ? null : "https://example.com/",
+  };
+  return <ProfileView locale={scenario.locale} isOwner={identity?.id === id}
+    editing={query.get("edit") === "1"} saved={query.get("saved") === "1"}
+    profile={{ id, name, image: null, joinedAt: "2026-09-01T00:00:00.000Z", ...fields,
       role: { slug: id === "maya" ? "admin" : "user", displayName: id === "maya" ? "Administrator" : "User", isSystem: true },
       messageCount: empty ? 0 : 128, bestAnswerCount: empty ? 0 : 17 }}
-    feedback={scenario.variant === "profile-error" ? { error: "invalid", draft: { bio, githubUrl: "https://github.com/octocat/repo", websiteUrl: "https://example.com/" } } : undefined} />;
+    feedback={actionData ?? (scenario.variant === "profile-error" ? { error: "invalid", draft: { bio, githubUrl: "https://github.com/octocat/repo", websiteUrl: "https://example.com/" } } : undefined)} />;
 }
 
 function PreviewUnderDevelopment({ locale }: { locale: PreviewLocale }) {
@@ -2105,7 +2156,7 @@ function previewElement(scenario: Scenario) {
     case "credentials":
       return previewCredential(scenario.locale, scenario.path.includes("sign-up") ? "sign-up" : "sign-in");
     case "profile":
-      return <PreviewProfileRoute scenario={scenario} />;
+      return <PreviewProfileRoute scenario={scenario} interactions={createPreviewInteractionState()} />;
     case "home":
       return (
         <HomeView
@@ -2132,12 +2183,8 @@ function previewElement(scenario: Scenario) {
     case "unread":
       return <UnreadView locale={scenario.locale} topics={unreadTopics(scenario.locale)} />;
     case "notifications":
-      return (
-        <NotificationsView
-          locale={scenario.locale}
-          notifications={scenario.variant === "notifications-empty" ? [] : previewNotifications(scenario.locale)}
-        />
-      );
+      return <NotificationsView locale={scenario.locale}
+        notifications={scenario.variant === "notifications-empty" ? [] : previewNotifications(scenario.locale)} />;
     case "tags":
       return <TagsView locale={scenario.locale} tags={previewTags()} />;
     case "tag":
