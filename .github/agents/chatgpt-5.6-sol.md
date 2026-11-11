@@ -1,5 +1,19 @@
 # Мира — безопасность Vico Forum
 
+## 2026-11-11 — Block D / D8 Help Signals moderation workflow audit
+
+1. Target: current main `e279cb6c032a489a9044ca1191407df887c364b4`, rechecked identical to `main`.
+2. Verdict: **1 current-scope finding — HELP-SIGNAL-PRIV-01 Low/P3**.
+3. Persisted Signal kind correctly selects the exact review permission; Attention additionally gates arbitrary private Signal lookup before the read.
+4. Canonical public topic action is weaker: authenticated same-origin `acceptHelpSignal` / `rejectHelpSignal` calls `readHelpSignal(signalId)` before any Help-review permission check.
+5. This creates a low-impact existence/topic-membership oracle (valid Signal + correct topic reaches 403; missing/wrong-topic returns 404). Full Signal row is read server-side but not serialized; exact permission still prevents mutation.
+6. Signal IDs are random UUIDs and no public pending-ID disclosure to arbitrary users was found, so severity remains Low/P3.
+7. Submission/withdrawal boundaries pass: session actor, Help/current-target rules, AP-10 submission restriction, exact author/topic/pending withdrawal, no Admin History for participant actions.
+8. Accepted review revalidates current applicability under locks; stale solution/duplicate cases supersede safely. Concurrent same-Signal review has one winner.
+9. Review emits exactly one atomic `help.signalReviewed` event with bounded effect metadata; no nested domain event/private explanation duplication.
+10. AP-10 `admin.forum` blocks reviewer effects in the repository transaction; `helpSignals.submit` intentionally does not block withdrawal.
+11. No remediation handoff. Next D11.
+
 ## 2026-11-10 — Block D / D10 Complaints mutations/replay/concurrency audit
 
 1. Target: main `e279cb6c032a489a9044ca1191407df887c364b4`.
