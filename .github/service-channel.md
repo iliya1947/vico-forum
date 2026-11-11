@@ -17,6 +17,7 @@
 4. [D — Ordinary Admin & moderation](../SECURITY_BLOCK_D_ADMIN_MODERATION.md)
 5. [E — Public forum / application](../SECURITY_BLOCK_E_PUBLIC_APPLICATION.md)
 6. [F — Files & attachments](../SECURITY_BLOCK_F_FILES_ATTACHMENTS.md)
+7. [G — Database & migrations](../SECURITY_BLOCK_G_DATABASE_MIGRATIONS.md)
 
 ## Текущее подтверждённое состояние
 
@@ -28,8 +29,9 @@
 6. D12 corrected closeout: official React Router Framework/SSR docs и exact `react-router@8.3.1` source подтвердили default skip loader revalidation после 4xx/5xx; Vico explicit recovery refreshes loaders and does not automatically replay mutations.
 7. Block E audit завершён: E2 PASS; E5 — **`FORUM-PUB-01 Moderate/P2`**; E6 — 0 additional; E7 — **`READSTATE-CACHE-01 Low/P3`**; E3 — **`PUBLIC-PROJECTION-01 Low/P3`**; E4 — **`DISCOVERY-BOUNDS-01 Low/P3`, `SEARCH-CONTROL-01 Low/P3`**; E8 PASS; E1 — **`LOCALE-DEGRADED-WRITE-01 Low/P3`** + расширение `READSTATE-CACHE-01`; E9 PASS; E10 — **`FORUM-READ-BOUNDS-01 Moderate/P2`, `FORM-BODY-BOUNDS-01 Moderate/P2`**. Block E total: **8 findings**. E10 проверен на current `main` `4248fed23925e4a23e48485d419ceaf0ce337def`; compare с предыдущим target подтвердил отсутствие изменений core Forum/translation E2–E9.
 8. Block F на current `main` `538084fd472c65459ad55ab30a0f96fbfdd68e56`: **ЗАВЕРШЁН. Итог — 1 current-scope finding: `ATTACH-TEXT-TAIL-01 Low/P3`; F1/F2/F4/F5/F6/F7/F8 дополнительных findings не дали.** F8 перепроверил upload → publication → read → edit/remove → cleanup → evidence, включая lost ACK, measures, complaint evidence и runtime failures.
-9. Implementation PR, technical planner и implementer для remediation сейчас не назначены.
-10. Cloudflare/Neon/production mutation по #315 не разрешена и не выполнялась.
+9. **Block G — Database & migrations: bounded scope подготовлен, аудит ещё не начат.** Target — current `main` `538084fd472c65459ad55ab30a0f96fbfdd68e56`; repository history `0000–0063`, external accepted evidence `0000–0020`. Само external отставание не finding при paused Stage 6.
+10. Implementation PR, technical planner и implementer для remediation сейчас не назначены.
+11. Cloudflare/Neon/production mutation по #315 не разрешена и не выполнялась.
 
 ## Индекс подтверждённых findings
 
@@ -65,10 +67,10 @@
 
 ## Открыто
 
-1. **Block F закрыт: 1 finding — `ATTACH-TEXT-TAIL-01 Low/P3`.** Детальная causal chain и F8 closeout находятся в `SECURITY_BLOCK_F_FILES_ATTACHMENTS.md`.
-2. Remediation Block F **не назначена** и автоматически не начинается.
-3. Следующая область общей security-карты при продолжении аудита — **Database & migrations**. Для неё сначала нужен отдельный `SECURITY_BLOCK_G_*.md` с bounded scope; сам аудит G в этот F8-срез не входит.
-4. Live AV, external/live `ATTACHMENT_R2`, bucket policy, production route/isolation и cleanup scheduling: **Информация не проверена**; это paused Stage 6 boundary.
-5. `FORUM-READ-BOUNDS-01` и `FORM-BODY-BOUNDS-01` остаются Block E findings и не дублируются из Block F.
-6. SA-02 factual docs closeout уже merged в current main; descendant `4248fed… → 538084f…` меняет только 8 Markdown docs, attachment runtime/schema не менялся.
+1. **Block F закрыт: 1 finding — `ATTACH-TEXT-TAIL-01 Low/P3`.** Remediation не назначена.
+2. **Block G scope готов:** `SECURITY_BLOCK_G_DATABASE_MIGRATIONS.md`; G1–G8 определены, сам аудит G ещё не начат.
+3. Следующий bounded audit slice — **G1 Migration history integrity** на current `main` `538084fd472c65459ad55ab30a0f96fbfdd68e56`.
+4. Repository `0000–0063` vs external evidence `0000–0020` — ожидаемая paused-Stage-6 граница, не finding сама по себе.
+5. Live production DB drift, pending migration rollout и backup/restore: **Информация не проверена** без отдельного Stage-6 действия; G current scope остаётся repository/local-CI.
+6. Existing Blocks B–F findings не дублировать: G требует отдельный database/migration root cause.
 7. Лира, Лёва и Марк сейчас не имеют активного назначения по #315.
