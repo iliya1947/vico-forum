@@ -3280,3 +3280,17 @@ Result: **PASS, 0 confirmed current-scope defects.**
 - #315 rechecked after its split: plan/index blob `0d79a0a7d1876ac0999396328f4814bd929e899d`, relevant BlockA blob `4d5ef9b8db30e351a4e626924c7aab228d2c80b4`. Existing security findings/future isolation not counted as new SA02 defects.
 - Evidence `/workspace/work/sa02-full-review-evidence/`; source/protected manifests, probes/logs and screenshots retained. New full probe sources in Lev personal file. Own Worker4202/disposable PostgreSQL/synthetic vars/dependency links removed; checkout clean.
 - **Handoff Mira:** assess the combined LEV-04/-05 packet and continue coordinator cycle. Lev stops, does not assign Lira/Mark or approve merge. PR319 staysDraft; independent full-SA02 PASS and docs/production/future-package work unclaimed.
+
+
+## 2026-11-11 — Lev cumulative findings LEV-04/-05 confirmed; correction assigned
+
+Lev independent whole-PR review #6793653705 returned CHANGES REQUIRED on PR #319 exact `0a45909bfb3a403af63a4693455d519f8a0e9ea6`.
+
+Mira independently verified both findings against the current implementation and current Stage:
+
+1. **SA02-IMPL-LEV-04 CONFIRMED.** History presentation maps field labels only by raw field name. Because `total` and `version` have different meanings across authoritative monitor sources, attachment evidence totals and registration policy version are mislabeled in scoped/global History. Source data and reader projection remain correct.
+2. **SA02-IMPL-LEV-05 CONFIRMED.** History value rendering treats every digit-only string as a numeric counter. Auth fact IDs explicitly accept digit-only text, so opaque actor/target/entity references can lose leading zeroes and gain number-grouping separators. Persisted/source DTO values remain correct.
+
+These are current-scope SA02-D presentation defects. They require only local semantic rendering/label corrections and regressions; no backend/schema/producer/plan revision is justified.
+
+**Handoff:** Lira fixes LEV-04 and LEV-05 together in existing Draft PR #319, runs applicable checks, publishes a new stable exact head and stops for fresh Mira cumulative whole-PR review. Lev/Mark remain unassigned during author correction.
