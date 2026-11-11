@@ -7,9 +7,10 @@
 3. **F1 — Private object / download access / IDOR завершён: PASS, 0 confirmed current-scope findings.**
 4. **F2 — Upload admission and request bounds завершён: PASS, 0 additional current-scope findings.**
 5. **F3 — Type, content and malicious payload handling завершён: 1 current-scope finding — `ATTACH-TEXT-TAIL-01 Low/P3`.**
-6. Следующий bounded slice — **F4 Publication/edit binding, replay and races**.
-7. Мира — auditor/coordinator. Remediation, technical planner и implementer не назначены.
-8. Stage 6 external activation остаётся paused.
+6. **F4 — Publication/edit binding, replay and races завершён: PASS, 0 additional current-scope findings.**
+7. Следующий bounded slice — **F5 Cleanup and physical deletion safety**.
+8. Мира — auditor/coordinator. Remediation, technical planner и implementer не назначены.
+9. Stage 6 external activation остаётся paused.
 
 ## F1 — результат
 
@@ -58,6 +59,21 @@
 7. Mitigation уже есть на выдаче: text preview всегда `text/plain; charset=utf-8` + sandbox + `nosniff`, default file response — `application/octet-stream` attachment. Same-origin script execution/XSS через этот finding не подтверждён.
 8. Severity — **Low/P3**: security classification/evidence bypass реальный и текущий, но доказанного active-content execution, privilege bypass или AV bypass нет; AV provider не входит в current Stage.
 9. Remediation в рамках audit stage не назначена.
+
+## F4 — результат
+
+1. **PASS: 0 additional current-scope findings** на `main` `538084fd472c65459ad55ab30a0f96fbfdd68e56`.
+2. HTTP/member actions принимают от клиента operation ID и selected attachment IDs, но publication context не принимают как authority: writer сам выводит `section:<id>:new`, `help:new`, `topic:<id>:reply` или `post:<id>:edit` из server route target.
+3. `finishPublishedDraft()` работает под owner+context advisory transaction lock, разрешает только unique UUID selected IDs и выбирает refs по exact `ownerId + contextKey + draftId`; attachment owner дополнительно должен совпадать. Foreign/other-operation refs не подходят.
+4. Final binding допускает только selected refs с `verificationStatus=type-checked` и `cleanupStatus=active`. Unselected refs не публикуются; после успешной publication generation terminally retire и весь temporary pool этой operation удаляется из draft refs.
+5. `ATTACH-TEXT-TAIL-01` не является новым F4 finding: F4 корректно применяет существующий `type-checked` gate, а defect находится раньше — в F3 content classification, которая может ошибочно присвоить этот статус text payload.
+6. Topic/reply publication и edit записывают post/revision, attachment refs, generation retirement и publication receipt в одной PostgreSQL transaction. Ошибка selected ref, stale operation, FK/trigger или edit CAS откатывает весь набор без частичной публикации.
+7. Publication replay identity server-side fingerprint включает semantic request и sorted attachment selection; edit также включает `expectedRevisionId` и explicit retained selection. Exact lost-ACK replay возвращает уже committed result; changed request на той же completed operation отклоняется.
+8. Published edit сначала `FOR UPDATE` проверяет exact post/topic/author/current revision. `retainedAttachmentIds` может содержать только refs уже bound к этому post; Remove вычисляется как existing-minus-retained. New refs добавляются через ту же operation gate. Blank body разрешён только если после edit остаётся хотя бы одно retained/new attachment.
+9. Stale edit не меняет revision/refs. После explicit rebase текущий baseline может сохранить concurrent attachment, применить только явный local Remove и добавить current-operation uploads; повторный lost Save ACK остаётся idempotent.
+10. Publish/cancel/late-upload race сериализуется тем же owner+context advisory lock: whichever terminal action commits first записывает completed generation, а поздний upload/publish получает gone/conflict и не возрождает operation.
+11. Stale-ref cleanup использует тот же scope lock перед retirement. Physical asset cleanup сериализуется с созданием post/draft refs через `forum_attachment_require_active_ref`: reference insert берёт attachment row `FOR SHARE`, cleanup claim — `FOR UPDATE` и повторно проверяет refs. Cleanup-first блокирует новый ref через `cleanup_status=deleting`; publish-first защищает asset существующим post ref.
+12. Existing tests/read paths покрывают subset publication, foreign-operation rejection, attachment-only edit, explicit retained/removal, rebase combinations, exact replay/conflicting replay и upload-first/publish-first orderings. Tests были прочитаны как evidence; в этом audit-срезе они не запускались.
 
 ## Цель
 
