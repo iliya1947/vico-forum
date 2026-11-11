@@ -4092,3 +4092,12 @@ Lira must perform author inspection, publish the stable A2 head/evidence and STO
 - **PASS — 0 confirmed current-scope SA04-A2 defects.**
 - #328 remains Draft/cumulative; no Lev review or merge is triggered by A2 alone. Lira STOP; A3/A4 unassigned.
 
+## 2026-11-12 — SA04-A3 bounded handoff
+
+- A2 checkpoint PASS is preserved in cumulative Draft #328 exact head `f9da2033455487f25510c2ccbbb748ed5f4bf7f4`.
+- Lira is assigned one next result only: **transaction/row-lock mutation guard primitive** for the shared account-state foundation.
+- The primitive must close the read→mutation race for future caller-owned transactions by holding the target user row through transaction completion and preserving reuse when the caller already owns that lock boundary.
+- Focused PG17 concurrency evidence is required; the guard itself must not mutate account state.
+- No Better Auth/session/domain-writer integration, public identity projection or deactivation operation is assigned.
+- Lira STOP after stable A3 head/evidence and author inspection. A4+ unassigned; Lev remains reserved for a larger cumulative review scope.
+
