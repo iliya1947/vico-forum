@@ -3993,3 +3993,15 @@ Granularity gate applied to Lev's checkpoint A. It was compound, so only the fir
 - Lira publishes the Draft implementation PR/exact head and evidence, then **STOP**.
 
 Next after STOP: Mira reviews A1 only. Later SA-04 work remains unassigned.
+
+
+## 2026-11-11 — SA04-A1 coordinator review: CHANGES REQUIRED
+
+Mira reviewed complete Draft PR #327 A1 scope on exact head `cebb91504f770fa6cd42c4990bb3116aef9b7874`.
+
+- **SA04-A1-MIRA-01 — confirmed current-scope completion defect:** production schema manifest still has `user_deactivation_state_check.definitionSha256: "PENDING"`.
+- Repository `.github/scripts/production-schema-manifest.mjs` explicitly rejects pending definition hashes before deep schema equality, so this is not cosmetic and prevents A1 schema-manifest parity from being accepted.
+- Remaining A1 diff is scope-fit: only existing `user` row state columns/CHECK, forward `0065`, Drizzle snapshot/journal, manifest and focused native/auth boundary tests; no runtime enforcement/public masking/deactivate operation or later SA scope.
+- Snapshot changes only `public.user`; journal preserves all 65 prior entries and appends `0065`; manifest changes only target migration + `user`.
+- Exact-head Actions are still queued. Queue state is not a code defect, but final PASS evidence is absent.
+- Return only SA04-A1-MIRA-01 to Lira: obtain observed PG17 normalized CHECK hash, replace `PENDING`, run final applicable exact-head checks, perform author inspection, publish stable head/evidence, STOP.
