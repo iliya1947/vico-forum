@@ -449,6 +449,13 @@
       "when": 1794326400000,
       "tag": "0063_owner_attempt_telemetry",
       "breakpoints": true
+    },
+    {
+      "idx": 64,
+      "version": "7",
+      "when": 1794403200000,
+      "tag": "0064_sa03_profile_history_indexes",
+      "breakpoints": true
     }
   ]
 }
