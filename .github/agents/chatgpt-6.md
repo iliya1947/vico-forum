@@ -1367,3 +1367,11 @@ Publish a new stable docs head and applicable checks in #251, then stop. Mira pe
 - Draft implementation PR #317 latest head 39b1b9f880397c3fb095b38a697a7a97603fffb6. Pure Admin/Super-admin typed routing, UI provider, request-scoped accessor, wrappers, real consumers, encoding/independent-origin/request-context/UI-form tests. Exactly 33 changed files; no app/routes.ts, Worker ingress, schema, migrations, dependencies or Stage-6 security changes.
 - Earlier superseded-head CI typecheck identified tsconfig.node composite input and optional history cursor argument errors. Both corrected before this head. Final exact-head CI/Chromium not yet certified.
 - Author completes subtask 2, stops before subtask 3 (exact-head CI/Chromium and Ready delivery). Mira whole-PR review not started; SA-02 remains inactive.
+
+## SA02-D1.1 — Owner current/history reader wiring (2026-11-11)
+
+- Assignment: Mira SA02-D handoff PASS #6789496982, Lev D plan #6789135043; continue existing Draft implementation PR #319 from accepted A/B/C head `25ac41573847f9fbce79897b2e019fd246b400cc`. No backend redesign, Stage6 activation or SA03+.
+- Published descendant commit `e6bd846fba28f6ba633415094e54c6991b324479` in #319. Exactly four files: `db/hyperdrive-owner-system.ts`, `app/super-admin/request-context.ts`, `workers/app.ts`, new `app/super-admin/request-context.test.ts`.
+- Existing Hyperdrive Owner facade now provides `readSa02Current()` via accepted `PostgresOwnerSa02Current` and `readSa02History(options)` via accepted `PostgresOwnerSa02History`, with the existing pool lifecycle and classified storage-unavailable handling. SA01 interface remains intact. A separate typed SA02 request capability shares the **same factory instance** per Worker request, not a new DB backend or domain writer.
+- Verified GitHub branch head and exact four-file commit. Fresh CI #42978563020, SA01 Chromium #42978563244, AP10 Chromium #42978562968 were in progress when recorded; no successful checks, completed D1 routes or SA02-D acceptance claimed.
+- Next bounded D1 step: connect Owner-only Accounts/Security routes, scoped/global History and private query/cursor safeguards to the new request capability. D2/D3/D4 and final stable-head handoff remain open. Lira is still the active implementer; no review role changes.
