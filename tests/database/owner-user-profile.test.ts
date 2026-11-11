@@ -20,8 +20,8 @@ async function person(id: string, email: string, verified = false) {
 }
 async function method(id: string, userId: string, provider: string, password: string | null) {
   await client.query(
-    "insert into account(id,user_id,account_id,provider_id,password,access_token,refresh_token,id_token)" +
-    " values($1,$2,$3,$4,$5,'private-access','private-refresh','private-id-token')",
+    "insert into account(id,user_id,account_id,provider_id,password,access_token,refresh_token,id_token,updated_at)" +
+    " values($1,$2,$3,$4,$5,'private-access','private-refresh','private-id-token',now())",
     [id,userId,"private-provider-account-"+id,provider,password],
   );
 }
