@@ -18,7 +18,7 @@ describe("UI preview state catalog", () => {
       expect(scenario.locale).toBe("en");
       expect(scenario.direction).toBe("ltr");
       expect(scenario.label).not.toMatch(/(?:^| · )(?:EN|RU|HE|RTL)(?: · |$)/);
-      expect(scenario.label).not.toMatch(/(?:^| · )(?:guest|user|manager)(?: · |$)/i);
+      expect(scenario.label).not.toMatch(/(?:^| · )(?:guest|user|manager|owner)(?: · |$)/i);
     }
   });
 
@@ -47,6 +47,7 @@ describe("UI preview state catalog", () => {
     const guest = screen.getByRole("button", { name: "Guest" });
     const user = screen.getByRole("button", { name: "User" });
     const manager = screen.getByRole("button", { name: "Manager" });
+    const owner = screen.getByRole("button", { name: "Owner" });
 
     expect(guest).toHaveAttribute("aria-pressed", "true");
     expect(screen.getByRole("option", { name: "Home" })).toBeInTheDocument();
@@ -58,6 +59,10 @@ describe("UI preview state catalog", () => {
 
     await userEvent.click(manager);
     expect(manager).toHaveAttribute("aria-pressed", "true");
+    expect(screen.getByRole("option", { name: "Authorization" })).toBeInTheDocument();
+
+    await userEvent.click(owner);
+    expect(owner).toHaveAttribute("aria-pressed", "true");
     expect(screen.getByRole("option", { name: "Authorization" })).toBeInTheDocument();
   });
 });
@@ -287,6 +292,65 @@ describe("interactive Pages preview", () => {
     await user.click(within(question as HTMLElement).getByRole("button", { name: "Correct language" }));
 
     expect(await within(question as HTMLElement).findByText("Source language: he")).toBeInTheDocument();
+  });
+
+  it("keeps manager authorization read-only and runs Owner authorization mutations", async () => {
+    const user = userEvent.setup();
+    const view = render(<EmbeddedPreview scenarioId="admin" identity="manager" />);
+
+    expect(await screen.findByRole("heading", { name: "Authorization management" })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Create custom role" })).not.toBeInTheDocument();
+
+    view.rerender(<EmbeddedPreview scenarioId="admin" identity="owner" />);
+    expect(await screen.findByRole("button", { name: "Create custom role" })).toBeInTheDocument();
+
+    await user.type(screen.getByLabelText("Role slug"), "support-lead");
+    await user.type(screen.getByLabelText("Display name"), "Support lead");
+    await user.click(screen.getByRole("button", { name: "Create custom role" }));
+
+    const createdHeading = await screen.findByRole("heading", { name: "Support lead" });
+    const roleCard = createdHeading.closest(".admin-role-card") as HTMLElement;
+    expect(roleCard).not.toBeNull();
+
+    const renameForm = roleCard.querySelector(".admin-rename-role") as HTMLElement;
+    const renameInput = within(renameForm).getByLabelText("Display name");
+    await user.clear(renameInput);
+    await user.type(renameInput, "Support lead renamed");
+    await user.click(within(renameForm).getByRole("button", { name: "Save" }));
+    expect(await screen.findByRole("heading", { name: "Support lead renamed" })).toBeInTheDocument();
+
+    const renamedCard = screen.getByRole("heading", { name: "Support lead renamed" })
+      .closest(".admin-role-card") as HTMLElement;
+    const grantsForm = renamedCard.querySelector(".admin-permissions-form") as HTMLElement;
+    await user.click(within(grantsForm).getByLabelText("forum.topic.pin"));
+    await user.click(within(grantsForm).getByRole("button", { name: "Save" }));
+
+    const alexCard = screen.getByRole("heading", { name: "Alex Rivera" })
+      .closest(".admin-user-card") as HTMLElement;
+    const assignment = alexCard.querySelector(".admin-role-assignment") as HTMLElement;
+    await user.selectOptions(within(assignment).getByLabelText("Assigned role"), "Support lead renamed");
+    await user.click(within(assignment).getByRole("button", { name: "Save" }));
+
+    const refreshedAlex = screen.getByRole("heading", { name: "Alex Rivera" })
+      .closest(".admin-user-card") as HTMLElement;
+    expect(within(refreshedAlex).getByText("Support lead renamed")).toBeInTheDocument();
+
+    const override = within(refreshedAlex).getByLabelText("forum.reply.create: Permissions");
+    await user.selectOptions(override, "deny");
+    await user.click(within(override.closest("form") as HTMLElement).getByRole("button", { name: "Save" }));
+
+    const effective = refreshedAlex.querySelector(".admin-effective-permissions") as HTMLElement;
+    expect(within(effective).getByText("forum.topic.pin")).toBeInTheDocument();
+    expect(within(effective).queryByText("forum.reply.create")).not.toBeInTheDocument();
+
+    const latestAssignment = refreshedAlex.querySelector(".admin-role-assignment") as HTMLElement;
+    await user.selectOptions(within(latestAssignment).getByLabelText("Assigned role"), "User");
+    await user.click(within(latestAssignment).getByRole("button", { name: "Save" }));
+
+    const deletableCard = screen.getByRole("heading", { name: "Support lead renamed" })
+      .closest(".admin-role-card") as HTMLElement;
+    await user.click(within(deletableCard).getByRole("button", { name: "Delete role" }));
+    await waitFor(() => expect(screen.queryByRole("heading", { name: "Support lead renamed" })).not.toBeInTheDocument());
   });
 });
 
