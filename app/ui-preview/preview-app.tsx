@@ -1275,13 +1275,7 @@ function previewRouter(
   return createMemoryRouter([
     {
       path: "/:locale",
-      element: (
-        <HomeView
-          locale={scenario.locale}
-          categories={homepageCategories(scenario.locale)}
-          onlinePresence={previewOnlinePresence(scenario, interactions)}
-        />
-      ),
+      element: <PreviewHomeRoute scenario={scenario} interactions={interactions} />,
     },
     { path: "/:locale/sign-in", element: previewCredential(scenario.locale, "sign-in") },
     { path: "/:locale/sign-up", element: previewCredential(scenario.locale, "sign-up") },
@@ -1387,6 +1381,19 @@ function previewRouter(
       element: previewElement(scenario),
     },
   ], { initialEntries: [scenario.path] });
+}
+
+function PreviewHomeRoute({ scenario, interactions }: {
+  scenario: Scenario;
+  interactions: PreviewInteractionState;
+}) {
+  return (
+    <HomeView
+      locale={scenario.locale}
+      categories={homepageCategories(scenario.locale)}
+      onlinePresence={previewOnlinePresence(scenario, interactions)}
+    />
+  );
 }
 
 function previewOnlinePresence(
