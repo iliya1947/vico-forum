@@ -62,8 +62,8 @@
 35. Block G G3: подтверждён **`DB-ACL-USER-DELETE-01 Low/P3`**. Current `web` relation contract даёт `public.user` full CRUD, включая DELETE, хотя current Vico не реализует account deletion, Better Auth `1.7.7` `/delete-user` выключен без `user.deleteUser.enabled=true`, а ordinary/OAuth creation rollback transactional и не требует hard user DELETE.
 36. Остальной G3 least-privilege sweep дополнительных findings не дал: role attributes/membership/ownership, database CREATE, schema ACL, exact relation grants, column/sequence/function/default grants и negative probes fail closed по repository contract. `PUBLIC TEMPORARY` — уже часть `DB-SEARCHPATH-01`, не duplicate. Legacy editor-draft grants после external accepted `0020` — future Stage-6 cleanup, не current finding сами по себе.
 37. G3 tests/probes прочитаны, но не запускались. Exact mutable live production ACL: **Информация не проверена**.
-38. Block G G4: подтверждён **`DB-RUNTIME-EVIDENCE-01 Low/P3`**. Current runtime evidence фиксирует только `0020_translation_generation_permission`, а current Worker core create-topic/reply уже обращается к measure tables из `0058_user_measures`; current schema manifest targets `0063_owner_attempt_telemetry`. Worker rollout verifier проверяет evidence только до вручную зафиксированного required tag и не выводит minimum required schema из exact runtime revision.
-39. G4 impact: current-main Worker может пройти migration-evidence gate и local full-schema checks при target schema лишь через `0020`; production/version smoke не выполняет authenticated topic/reply writes, поэтому missing `0058` relations могут проявиться уже после promotion. Это availability/incompatibility, не authz bypass; Stage 6 paused, поэтому Low/P3.
+38. Block G G4 technical defect **`DB-RUNTIME-EVIDENCE-01 Low/P3`** подтверждён: current runtime evidence фиксирует только `0020_translation_generation_permission`, а current Worker core create-topic/reply уже обращается к measure tables из `0058_user_measures`; current schema manifest targets `0063_owner_attempt_telemetry`. Worker rollout verifier проверяет evidence только до repository-authored required tag и не выводит minimum required schema из exact runtime revision.
+39. G8 исправил Stage-классификацию G4: единственный consumer verifier — manual `production-worker-rollout.yml` Stage-6 path; Stage 6 paused, local/CI product development этот gate не использует. Поэтому `DB-RUNTIME-EVIDENCE-01` — **deferred Stage-6 blocker, not current-scope**, с сохранённой Low/P3 severity.
 40. Остальные G4 gates дополнительных findings не дали: migration pre/post ledger+manifest fail closed, dedicated migrator identity отделена, relation grants derived from shared contract and verified before commit. Provisioning наследует G3 `user.DELETE` — duplicate не создаётся. Old workflow rerun сохраняет original SHA/ref и не доказал downgrade path.
 41. G4 workflow/tests/probes прочитаны, но не запускались; external dispatch/prod mutation не выполнялись. Exact live GitHub Environment protection и current production schema/ACL: **Информация не проверена**.
 42. Block G G5: **PASS, 0 additional current-scope findings**. Exact `pg@8.23.0` source подтверждает client `query_timeout` ambiguity для уже отправленного query/COMMIT; exact `drizzle-orm 0.45.2` NodePg transaction wrapper на COMMIT error пытается ROLLBACK. Этот outcome-class реален, но current writers не делают blind auto-retry.
@@ -78,10 +78,16 @@
 51. Block G G7: **PASS, 0 additional findings**. Structural manifest deep-compares 69 tables + 9 trigger functions + 18 triggers for current repository schema; current accepted external `0000–0020` range has no additional view/type/RLS/policy/rule/explicit-sequence object outside that captured model.
 52. Runtime privilege verifier compares complete end state for localization/web roles and PUBLIC, including unexpected grants, memberships, ownership, columns/functions/default ACLs and sequences.
 53. Live GitHub evidence run `36270353184` rechecked: manual production-db migration on main, exact SHA `b172264…`, attempt 1, success. Its journal ends at `0020`, prefix equals current `0000–0020`, and the SHA is ancestor of current main by 163 commits.
-54. G7 повторно подтверждает `DB-RUNTIME-EVIDENCE-01`: current evidence verifier proves only the repository-authored required tag, not exact runtime minimum schema/current manifest target. Duplicate finding не создаётся.
+54. G7 повторно подтверждает technical evidence-gap `DB-RUNTIME-EVIDENCE-01`; duplicate не создаётся. Final Stage classification выполнена в G8.
 55. Current source-of-truth не заявляет, что production соответствует `0063`; mutable production schema/ACL: **Информация не проверена**. Identity/sequence properties, появившиеся после `0020`, вернуть в acceptance scope перед их external rollout; сейчас это future Stage-6 boundary, не finding.
 56. G7 repository tests не запускались; production/Cloudflare/Neon mutation не выполнялась.
-57. Подтверждённые findings не исправлять автоматически: сначала отдельная bounded remediation-задача по решению владельца и текущему Stage.
+57. Block G G8: **closeout завершён, 0 additional findings, 1 reclassification**. Final current-scope Block G = `DB-SEARCHPATH-01 Low/P3`, `DB-ACL-USER-DELETE-01 Low/P3`, `DB-TEST-TARGET-01 Low/P3`.
+58. G8 повторно прошёл migration → final schema → runtime grants → representative direct SQL → application adapter chains. Три retained findings имеют distinct DB root causes и не дублируют Blocks B–F.
+59. `DB-RUNTIME-EVIDENCE-01 Low/P3` сохранён отдельно как **Stage-6 blocker**: technical gap доказан, но текущего pre-release execution path вне paused Stage 6 нет.
+60. Ordinary CI всё ещё вызывает `pnpm db:test`, поэтому `DB-TEST-TARGET-01` остаётся current tooling defect; стандартный fixed loopback CI URL сам bypass не активирует.
+61. PostgreSQL 17 official docs повторно подтверждают `pg_temp` priority для unqualified relation lookup; `DB-SEARCHPATH-01` causal chain остаётся действующей.
+62. G8 tests не запускались; production/Cloudflare/Neon mutation и workflow dispatch не выполнялись. Mutable live external state: **Информация не проверена**.
+63. Block G закрыт. Подтверждённые current findings не исправлять автоматически: сначала отдельная bounded remediation-задача по решению владельца и текущему Stage.
 
 ## Ограничения
 
@@ -93,5 +99,5 @@
 
 ## Следующий шаг
 
-1. После продолжения владельца выполнить **G8 — Cross-chain closeout** на current main и остановиться после результата.
+1. После продолжения владельца подготовить отдельный **Block H — Cloudflare / Workers / runtime**: создать block-файл, определить current-vs-Stage-6 boundary и первый bounded H slice, затем остановиться.
 2. Findings только фиксировать; remediation не начинать.
