@@ -4,7 +4,7 @@
 
 1. Служебный PR: **#315**.
 2. Моя текущая работа: audit/coordination only; remediation и implementation не назначены.
-3. Текущий этап: **Block H H1 PASS + H2 PASS, 0 current-scope findings; следующий bounded slice — H3 Runtime configuration and optional binding failure**. Block G закрыт с 3 current-scope findings + deferred Stage-6 blocker `DB-RUNTIME-EVIDENCE-01`.
+3. Текущий этап: **Block H H1 PASS + H2 PASS + H3 PASS, 0 current-scope findings; следующий bounded slice — H4 Preview, Version URL and public entrypoint isolation**. Block G закрыт с 3 current-scope findings + deferred Stage-6 blocker `DB-RUNTIME-EVIDENCE-01`.
 4. Technical audit target B–D: `e279cb6c032a489a9044ca1191407df887c364b4`.
 5. Current `main` после G8 delta-recheck — `5992885e78b1642e41c9805116fcc256002b649c`. Delta от `538084fd…` — SA-03 #324: index-only migration `0064` + readonly Owner profile/history; Block G conclusions unchanged.
 6. Лира, Марк и Лёва по #315 сейчас не назначены.
@@ -110,6 +110,15 @@
 83. Better Auth `cf-connecting-ip` rate-limit semantics remain Block B; H2 only checked ingress trust assumptions and found no separate runtime root cause.
 84. Direct client-supplied `CF-Worker` is not positive trust evidence. If visible, current behavior can only force telemetry to `unknown`; current contract permits unknown source, so no current finding.
 85. H2 tests read, not run. Mutable production Pseudo IPv4/Transform Rules/routes/subrequest topology: **Информация не проверена**; Stage 6 paused.
+86. H3: **PASS, 0 current-scope findings** на `ce62e783e71433a00c2fe4874ee26dfc54614628`.
+87. Required `HYPERDRIVE`/`WEB_HYPERDRIVE` remain fail closed before Router; missing/blank values throw config error and never fallback across capabilities.
+88. Optional `ATTACHMENT_R2` maps to null context; upload/download/Complaint evidence physical-byte paths return bounded 503 with no fallback. Upload missing-bucket test confirms no draft asset creation.
+89. Missing/invalid `VICO_OWNER_USER_ID` normalizes to undefined; Owner authority disappears and authorization writes do not fallback to ordinary manager.
+90. Production Worker rollout explicitly validates auth secret/baseURL/Google inputs before upload and passes secret values via temporary secrets file; repository does not rely on Better Auth missing-config defaults for production rollout.
+91. Current official Cloudflare Vite/Hyperdrive docs rechecked: local vars come from ignored .dev.vars/.env, preview can use build-copied local vars without deployment, local Hyperdrive needs explicit local connection override. Vico connected auth/Owner CI supplies synthetic values and both DB overrides.
+92. No `secrets.required` declaration exists, but current rollout has own pre-upload validation and local auth acceptance explicit vars; no current exploit path established.
+93. Current rollout still does not perform real Owner binding or R2 deployment acceptance; source-of-truth places those in paused Stage 6. Missing Owner fails closed, missing R2 is unavailable. No H3 finding/duplicate.
+94. H3 tests read, not run. Mutable deployed Worker env/secrets/bindings, live R2 and real Owner binding: **Информация не проверена**.
 
 ## Ограничения
 
@@ -121,5 +130,5 @@
 
 ## Следующий шаг
 
-1. После продолжения владельца выполнить **H3 — Runtime configuration and optional binding failure** на current main и остановиться после результата.
+1. После продолжения владельца выполнить **H4 — Preview, Version URL and public entrypoint isolation** на current main и остановиться после результата.
 2. Findings только фиксировать; remediation не начинать.
