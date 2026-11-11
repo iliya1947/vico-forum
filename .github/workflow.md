@@ -3,7 +3,7 @@
 - Service PR: **#251**.
 - Developer explicitly authorized publication of review reports and service-state updates for the entire SA-04 ("Разрешаю на протяжение всего SA-04"). This authorization persists across SA-04 handoffs.
 - SA-03 is fully closed.
-- **Current stage: SA04-A1 implementation gate closed. PR #327 exact head `3d6c7c06ac1442a5a4b3ff7f8fbe77454ca8479c` has Mira PASS + Lev PASS and is Ready for Owner merge.**
+- **Current stage: SA04-A1 merged into `main`. PR #327 is closed/merged; no active implementation or review assignment.**
 - Base/current `main`: `ce62e783e71433a00c2fe4874ee26dfc54614628`.
 - Draft implementation PR: **#327**, exact head `3d6c7c06ac1442a5a4b3ff7f8fbe77454ca8479c`; open/Draft, not merged.
 - **SA04-A1-MIRA-01 CLOSED**, independently verified: actual PostgreSQL 17.11 CHECK hash matches manifest. Three existing isolated auth fixtures now apply 0065 without changing runtime scope.
@@ -43,4 +43,13 @@ Before any project-changing action or agent handoff, Mira must check in this ord
 - Because Lev has already spent a full independent review on this bounded slice, #327 must not be extended with later SA-04 work. Merge this reviewed A1 foundation first; later SA-04 implementation proceeds in a new bounded PR so Lev is not forced to re-review the same A1 work.
 - No SA04-A2+, SA-05+, Stage6/production or #315 remediation is started by this closeout.
 - **Next action: Owner merge of #327.**
+
+## 2026-11-12 — SA04-A1 post-merge synchronization
+
+- Verified PR #327 merged from the exact reviewed implementation head `3d6c7c06ac1442a5a4b3ff7f8fbe77454ca8479c`.
+- Merge commit and current `main`: `593a03964b8407b249f7c9f5eb117ddb8b07736d`.
+- SA04-A1 account-state schema foundation is now delivered in main.
+- #327 is closed and must not be extended/reused for later SA-04 work.
+- No docs closeout is started here because SA-04 as a package is not complete; factual package documentation remains an end-of-task concern.
+- No active agent assignment. The next continuation begins the next bounded SA-04 implementation result in a new implementation PR, with Lira kept granular and Lev reserved for a larger meaningful review scope.
 
