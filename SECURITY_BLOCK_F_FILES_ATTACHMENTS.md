@@ -8,9 +8,10 @@
 4. **F2 — Upload admission and request bounds завершён: PASS, 0 additional current-scope findings.**
 5. **F3 — Type, content and malicious payload handling завершён: 1 current-scope finding — `ATTACH-TEXT-TAIL-01 Low/P3`.**
 6. **F4 — Publication/edit binding, replay and races завершён: PASS, 0 additional current-scope findings.**
-7. Следующий bounded slice — **F5 Cleanup and physical deletion safety**.
-8. Мира — auditor/coordinator. Remediation, technical planner и implementer не назначены.
-9. Stage 6 external activation остаётся paused.
+7. **F5 — Cleanup and physical deletion safety завершён: PASS, 0 additional current-scope findings.**
+8. Следующий bounded slice — **F6 Attachment security evidence / Attention privacy**.
+9. Мира — auditor/coordinator. Remediation, technical planner и implementer не назначены.
+10. Stage 6 external activation остаётся paused.
 
 ## F1 — результат
 
@@ -74,6 +75,23 @@
 10. Publish/cancel/late-upload race сериализуется тем же owner+context advisory lock: whichever terminal action commits first записывает completed generation, а поздний upload/publish получает gone/conflict и не возрождает operation.
 11. Stale-ref cleanup использует тот же scope lock перед retirement. Physical asset cleanup сериализуется с созданием post/draft refs через `forum_attachment_require_active_ref`: reference insert берёт attachment row `FOR SHARE`, cleanup claim — `FOR UPDATE` и повторно проверяет refs. Cleanup-first блокирует новый ref через `cleanup_status=deleting`; publish-first защищает asset существующим post ref.
 12. Existing tests/read paths покрывают subset publication, foreign-operation rejection, attachment-only edit, explicit retained/removal, rebase combinations, exact replay/conflicting replay и upload-first/publish-first orderings. Tests были прочитаны как evidence; в этом audit-срезе они не запускались.
+
+## F5 — результат
+
+1. **PASS: 0 additional current-scope findings** на `main` `538084fd472c65459ad55ab30a0f96fbfdd68e56`.
+2. Temporary operation cleanup использует утверждённый 24-hour idle cutoff по последнему successful upload в generation. Candidate scope повторно берётся под owner+context advisory lock; fresh ref сохраняет всю operation, stale generation terminally retire до удаления refs, поэтому late upload/retry не возрождает её.
+3. Physical asset cleanup имеет отдельный 1-hour grace и удаляет только asset без draft refs, published post refs и retained complaint-evidence refs. После row `FOR UPDATE` condition повторно проверяется перед durable transition `active → deleting`.
+4. Все три current ref-класса защищены от cleanup race. Draft/post insert gates и complaint-evidence insert gate вызывают `forum_attachment_require_active_ref()`, который берёт attachment row `FOR SHARE` и разрешает только `cleanup_status=active`; cleanup claim берёт тот же row `FOR UPDATE`.
+5. Поэтому ref-first ordering удерживает asset живым, а cleanup-first ordering переводит его в `deleting` и последующий ref insert fail-closed с SQLSTATE `23514`. Shared published asset сохраняется до удаления последней live post relation; retained complaint evidence продолжает защищать object после edit/remove original post ref.
+6. Object delete failure и lost/ambiguous delete ACK не удаляют DB authority преждевременно: `deleting` + claim token остаются durable, повторный processor не double-claim до 5-minute lease, после lease delete повторяется idempotently и metadata удаляется только под matching claim при отсутствии refs.
+7. Post-delete DB failure также остаётся recoverable: object может уже отсутствовать, но durable `deleting` row сохраняется; следующий pass повторяет delete и только затем удаляет metadata. Cleanup не помечает object gone на основании network/error path.
+8. Upload-object journal cleanup отделён от authoritative asset cleanup. Зарегистрированный `forum_attachments.object_key` удаляет только stale journal marker и передаёт ownership ordinary reference-aware cleanup; unregistered READY/PREPARING rows получают durable claim до object delete.
+9. Journal claim необратимо блокирует payload activation даже после lease expiry. Delayed READY payload, PREPARING lost-ACK reservation и overlapping cleanup processors не могут восстановить metadata/ref после cleanup claim.
+10. Reservation sweep ограничен prefix + fenced-key format, имеет durable cursor/lease и перед delete проверяет DB ownership одновременно в upload journal и authoritative attachments. DB ownership-read failure считается failure, а не доказательством orphan; объект сохраняется для retry.
+11. Expired reservation-sweep processor обновляет checkpoint только по своему claim token, поэтому не может затереть более новый cursor. Pagination bounded; invalid cursor/page сбрасывается для следующего полного прохода вместо permanent strand.
+12. Cleanup object key не приходит из client state: ordinary asset key читается из authoritative DB row, upload cleanup — из fenced journal, reservation sweep принимает только `private/fenced-v1/<uuid>` keys. Mounted Remove сам по себе не является delete authority.
+13. Existing PostgreSQL tests/read paths покрывают stale/fresh operation cutoff, terminal generation, shared refs, complaint evidence retention, claim-vs-new-ref ordering, lost delete ACK, overlapping/expired claims, delayed payload, ownership-read failure и stale sweep lease. Tests были прочитаны как evidence; в этом audit-срезе они не запускались.
+14. Реальное background scheduling и live external R2 delete/list semantics остаются paused Stage 6. **Информация не проверена** для deployed cleanup execution/acceptance; отсутствие live scheduler само по себе не current F5 defect по утверждённой границе.
 
 ## Цель
 
