@@ -22,8 +22,8 @@
 2. Block A: target architecture/foundation boundaries зафиксированы; Stage-6 activation не выполнялась.
 3. Block B: аудит завершён; **8 current-scope findings**. Remediation не назначена.
 4. Block C: аудит завершён; **1 current-scope finding — `AUTHZ-FAIL-01 Low/P3`**. Remediation не назначена.
-5. Block D: D1–D11 завершены; подтверждены **3 findings — `COMPLAINT-PRIV-01`, `HELP-SIGNAL-PRIV-01`, `HISTORY-PRIV-01` (все Low/P3)**.
-6. D12 internal review выполнен, но его прежний final closeout содержал неподтверждённое внешнее утверждение о React Router. До фактической проверки официальной документации **Block D не закрыт окончательно**.
+5. Block D: аудит D1–D12 завершён; подтверждены **3 findings — `COMPLAINT-PRIV-01`, `HELP-SIGNAL-PRIV-01`, `HISTORY-PRIV-01` (все Low/P3)**.
+6. D12 corrected closeout: official React Router Framework/SSR docs и exact `react-router@8.3.1` source подтвердили default skip loader revalidation после 4xx/5xx; Vico explicit recovery refreshes loaders and does not automatically replay mutations.
 7. Implementation PR, technical planner и implementer для remediation сейчас не назначены.
 8. Cloudflare/Neon/production mutation по #315 не разрешена и не выполнялась.
 
@@ -52,6 +52,5 @@
 
 ## Открыто
 
-1. Повторно проверить D12 external React Router behavior по актуальной официальной документации и только после этого определить final D12/Block-D verdict.
-2. После factual закрытия D перейти к отдельному файлу/плану следующей security-области — Public forum/application.
-3. Лира, Лёва и Марк сейчас не имеют активного назначения по #315.
+1. Следующий security-блок — Public forum/application — сначала оформить отдельным файлом и bounded audit plan.
+2. Лира, Лёва и Марк сейчас не имеют активного назначения по #315.

@@ -171,7 +171,7 @@
 4. Domain mutations сохраняют permission, lifecycle, replay/CAS/concurrency и atomic-History contracts.
 5. Findings имеют current-stage impact/classification; remediation остаётся вне audit stage без отдельного решения владельца.
 
-## Текущий итог аудита Block D — Ordinary Admin & moderation
+## Итог аудита Block D — Ordinary Admin & moderation
 
 1. D1 Global Admin admission / cross-surface isolation — PASS.
 2. D7 Attention mode/group isolation — PASS.
@@ -184,8 +184,9 @@
 9. D4 Admin History — **`HISTORY-PRIV-01 Low/P3`**: AP-10 replay `operationId` и SHA-256 `fingerprint` попадают в browser-visible History/Overview loader data, хотя UI считает их internal-only; authority не расширяется.
 10. D5 Users read / targeted authorization composition — PASS.
 11. D2 Admin Forum browsing / privacy / IDOR — PASS.
-12. D12 internal code-path review не выявил дополнительного current-scope defect, **но финальный D12 closeout не считается подтверждённым**: предыдущая запись опиралась на внешнее утверждение о React Router, которое фактически не было проверено по официальной документации.
-13. До повторной внешней проверки **Block D не считается окончательно закрытым**. Три подтверждённых findings D9/D8/D4 сохраняются независимо от D12.
-14. Remediation/implementation по Block D не назначены.
+12. D12 stale UI / failure / cache — **PASS, 0 additional current-scope defects**.
+13. React Router official Framework/SSR contract подтверждён: failed submissions с 4xx/5xx не revalidate loaders by default. Exact `react-router@8.3.1` source (release commit `da2a0f0948af60ba45d9590b427d5e58fe4b0109`) устанавливает `defaultShouldRevalidate=false` при `actionStatus >= 400`, если call site явно не переопределил default.
+14. Vico explicit recovery не replay'ит mutation: measure routes opt-in на loader refresh для POST 403/404/409; Complaint routes opt-in только на соответствующий 409; closure/message recovery вызывает `revalidator.revalidate()` после typed failure. Проверенные recovery paths не вызывают повторный `submit` автоматически.
+15. **Block D завершён.** Итог: три current-scope findings — `COMPLAINT-PRIV-01`, `HELP-SIGNAL-PRIV-01`, `HISTORY-PRIV-01` (все Low/P3). Remediation/implementation не назначены.
 
 ---
