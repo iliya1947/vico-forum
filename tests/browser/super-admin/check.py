@@ -9,6 +9,7 @@ from contextlib import contextmanager
 from pathlib import Path
 import shutil
 import subprocess
+import time
 from urllib.parse import quote, urlparse
 from uuid import uuid4
 
@@ -83,6 +84,27 @@ def record(name, **facts):
     records.append(item)
     print("SA01_ACCEPTANCE " + json.dumps(item, ensure_ascii=False), flush=True)
 
+
+def rows_until(statement, params=None, check=lambda rows: bool(rows), seconds=12):
+    """Poll only local disposable database for eventual Worker waitUntil telemetry."""
+    deadline = time.monotonic() + seconds
+    rows = []
+    while time.monotonic() < deadline:
+        rows = sql(statement, params)
+        if check(rows):
+            return rows
+        time.sleep(0.2)
+    raise AssertionError(("expected persisted SA02 evidence", statement, rows))
+
+
+def source_identity_in(path, source_id, origin, page, context):
+    """The same source identity is a single row in original scoped/global History."""
+    get(page, path)
+    rows = page.locator('li[data-history-origin="' + origin + '"]')
+    matches = rows.filter(has=page.locator("bdi", has_text=source_id))
+    expect(matches).to_have_count(1)
+    data = request(context, path + ".data")
+    assert source_id in data.text(), (path, source_id)
 
 def no_store(response):
     cache = {value.strip().lower() for value in response.headers.get("cache-control", "").split(",")}
@@ -166,6 +188,136 @@ try:
         get(admin, "/en/users/" + admin_id, private=False)
         expect(admin.locator('a[href="/en/super-admin"]')).to_have_count(0)
         record("admin-with-authorization-access-still-denied-owner-surface")
+
+        # D4.1: prove canonical Better Auth facts with original IDs across
+        # stored PostgreSQL facts, current Monitoring, adjacent History and global log.
+        admin_facts = rows_until(
+            "select id,kind,entity_id,target_user_id from owner_events "
+            "where source='auth' and target_user_id=$1 "
+            "and kind in ('account.created','auth.methodLinked','auth.sessionCreated')",
+            [admin_id], lambda rows: {
+                "account.created", "auth.methodLinked", "auth.sessionCreated"
+            } <= {row["kind"] for row in rows})
+        for kind, table, key in (
+            ("account.created", "user", "accounts.users"),
+            ("auth.methodLinked", "account", "accounts.methods"),
+            ("auth.sessionCreated", "session", "accounts.sessions"),
+        ):
+            matching = [row for row in admin_facts if row["kind"] == kind]
+            assert len(matching) == 1, (kind, matching)
+            fact = matching[0]
+            persisted = sql('select id from "' + table + '" where id=$1', [fact["entity_id"]])
+            assert len(persisted) == 1, (kind, fact)
+            path = "/en/super-admin/monitoring/accounts/" + key + "/history"
+            source_identity_in(path, fact["id"], "auth-event", owner, owner_ctx)
+            source_identity_in("/en/super-admin/events", fact["id"], "auth-event", owner, owner_ctx)
+        get(owner, "/en/super-admin/monitoring/accounts")
+        assert admin_id not in owner.content(), "Accounts current must expose counts, not private account IDs"
+        expect(owner.locator('[data-monitor-key="accounts.users"]')).to_have_count(1)
+        expected_users = sql('select count(*)::text as total from "user"')[0]["total"]
+        assert expected_users in owner.locator('[data-monitor-key="accounts.users"]').inner_text().replace(",", "")
+        record("sa02-real-signup-and-method-session-facts-same-source-across-history")
+
+        # One new canonical signed-in session and one real credential change;
+        # do not synthesize either source event or create a second action backend.
+        admin_email = prefix + "-admin@test.invalid"
+        old_password = "synthetic-browser-password-123456"
+        new_password = "sa02-real-new-password-123456"
+        change = admin_ctx.request.post(base + "/api/auth/change-password",
+            headers={"Origin": base}, data={
+                "currentPassword": old_password, "newPassword": new_password,
+                "revokeOtherSessions": False,
+            })
+        assert change.status == 200, (change.status, change.text()[:240])
+        changed = rows_until(
+            "select id,entity_id from owner_events where source='auth' "
+            "and kind='auth.passwordChanged' and target_user_id=$1",
+            [admin_id], lambda rows: len(rows) == 1)
+        account_id = sql("select id from account where user_id=$1 and provider_id='credential'",
+                         [admin_id])
+        assert len(account_id) == 1 and changed[0]["entity_id"] == account_id[0]["id"]
+        source_identity_in(
+            "/en/super-admin/monitoring/accounts/accounts.methods/history",
+            changed[0]["id"], "auth-event", owner, owner_ctx)
+        source_identity_in(
+            "/en/super-admin/events", changed[0]["id"], "auth-event", owner, owner_ctx)
+
+        session_ctx = browser.new_context(
+            user_agent="Mozilla/5.0 SA02-D4-second-session",
+            extra_http_headers={"cf-connecting-ip": "203.0.113.74"},
+            service_workers="block",
+        )
+        guarded(session_ctx)
+        sign_in = session_ctx.request.post(base + "/api/auth/sign-in/email",
+            headers={"Origin": base},
+            data={"email":admin_email,"password":new_password})
+        assert sign_in.status == 200, (sign_in.status, sign_in.text()[:240])
+        second_sessions = sql('select id from "session" where user_id=$1 and user_agent like $2',
+                              [admin_id, "%SA02-D4-second-session%"])
+        assert len(second_sessions) == 1, second_sessions
+        second_sid = second_sessions[0]["id"]
+        signed = rows_until(
+            "select id from owner_events where source='auth' "
+            "and kind='auth.sessionCreated' and entity_id=$1",
+            [second_sid], lambda rows: len(rows) == 1)
+        source_identity_in("/en/super-admin/monitoring/accounts/accounts.sessions/history",
+                           signed[0]["id"], "auth-event", owner, owner_ctx)
+
+        # Existing Account & security revokes the other user's session by
+        # server-owned ID resolution; tokens are never fed into the form or journal.
+        get(admin, "/en/settings/account")
+        forms = admin.locator('.settings-account-revoke-form').filter(
+            has=admin.locator('input[name="sessionId"][value="' + second_sid + '"]'))
+        expect(forms).to_have_count(1)
+        forms.get_by_role("button", name="Sign out this other session").click()
+        expect(forms).to_have_count(0)
+        assert not sql('select id from "session" where id=$1', [second_sid])
+        revoked = rows_until(
+            "select id from owner_events where source='auth' "
+            "and kind='auth.sessionDeleted' and entity_id=$1",
+            [second_sid], lambda rows: len(rows) == 1)
+        source_identity_in("/en/super-admin/monitoring/accounts/accounts.sessions/history",
+                           revoked[0]["id"], "auth-event", owner, owner_ctx)
+        source_identity_in("/en/super-admin/events",
+                           revoked[0]["id"], "auth-event", owner, owner_ctx)
+        assert session_ctx.request.get(base + "/en/settings/account").status == 401
+        record("sa02-real-password-change-login-revoke-provenance")
+
+        # Existing non-Owner access denials are coalesced by immutable original
+        # ID: two more calls increase one group's count instead of making copies.
+        access_query = (
+            "select id,count::text as count from owner_attempt_patterns "
+            "where surface='access' and operation='owner-guard' "
+            "and actor_user_id=$1 and network_ip=$2::inet and http_status=403 "
+            "order by admitted_at desc"
+        )
+        before_rows = rows_until(access_query,[admin_id,"203.0.113.72"])
+        assert len(before_rows) == 1, before_rows
+        before = before_rows[0]
+        for _ in range(2):
+            request(admin_ctx, "/en/super-admin/monitoring/security", 403)
+        after = rows_until(access_query,[admin_id,"203.0.113.72"],
+                           lambda rows: len(rows)==1 and
+                           int(rows[0]["count"])>=int(before["count"])+2)
+        assert after[0]["id"] == before["id"], (before,after)
+        assert int(after[0]["count"]) == int(before["count"])+2, (before,after)
+        source_identity_in("/en/super-admin/monitoring/security/security.access/history",
+                           before["id"], "attempt-pattern", owner, owner_ctx)
+        source_identity_in("/en/super-admin/events",
+                           before["id"], "attempt-pattern", owner, owner_ctx)
+        get(owner, "/en/super-admin/monitoring/security")
+        expect(owner.locator('[data-monitor-key="security.access"]')).to_contain_text(
+            str(after[0]["count"]))
+        record("sa02-real-owner-denial-coalesces-and-shares-one-history-source",
+               first=before["count"], final=after[0]["count"])
+
+        sign_out_admin = admin_ctx.request.post(base + "/api/auth/sign-out",
+                                                headers={"Origin": base}, data={})
+        assert sign_out_admin.status == 200, sign_out_admin.status
+        assert admin_ctx.request.get(base + "/en/settings/account").status == 401
+        assert not sql('select id from "session" where user_id=$1', [admin_id])
+        record("sa02-real-admin-signout-revokes-session")
+        session_ctx.close()
 
         get(owner, "/en/admin")
         expect(owner.locator('.admin-panel-nav a[href="/en/super-admin"]')).to_have_count(1)
