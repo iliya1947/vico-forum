@@ -4,7 +4,7 @@
 
 1. Это bounded audit plan для области 5 общей security-карты.
 2. Audit target на момент подготовки: current `main` `f6fd4b2c031b2132b04eace18704a59aed1dfec8`.
-3. Фактический аудит начат. **E2 завершён: PASS — 0 current-scope findings.** Remediation по Block E не назначена.
+3. Фактический аудит начат. **E2 завершён: PASS — 0 findings. E5 завершён: 1 current-scope finding — `FORUM-PUB-01 Moderate/P2`.** Remediation по Block E не назначена.
 4. Проверка ведётся по реальным public/member route → service/repository paths, а не по одному UI.
 
 ## Граница блока
@@ -120,6 +120,29 @@ Block E проверяет обычный форум и member-facing applicatio
 8. failed notification/mention/publication side effect не оставляет half-committed logical publish.
 
 Attachment ownership/storage internals здесь не проверяются — только forum publication transaction вокруг opaque validated refs.
+
+### E5 — результат аудита
+
+1. Audit target: current `main` `f6fd4b2c031b2132b04eace18704a59aed1dfec8`.
+2. Verdict: **1 current-scope finding — `FORUM-PUB-01 Moderate/P2`**.
+3. Actor/authority — PASS: public create-topic/reply actions require authenticated same-origin request and fresh `forum.topic.create` / `forum.reply.create`; writer получает actor только из session. `editorActorId` — stale expectation, не authority.
+4. Target/source identity — PASS: section/topic берутся из route target; Help creation hardcodes internal service section; repository rechecks section/topic/parent membership. Publication source locale создаётся server-side как `und`; client role/locale/author input не выбирает authority.
+5. Empty/attachment-only semantics — PASS кроме finding ниже: whitespace-only text без опубликованного attachment selection отклоняется; attachment-only publish требует operation + selected IDs, а repository под operation scope проверяет current verified refs.
+6. Topic state — PASS: reply transaction читает target topic `FOR UPDATE`, затем проверяет closure и active confirmed-duplicate до cooldown и side effects. Close/duplicate transitions используют тот же topic-row lock; существующие DB race regressions подтверждают commit-before-close / deny-after-close semantics. Matching committed receipt replay выполняется до этих fresh-state checks по утверждённому контракту.
+7. Cooldown — PASS: topic/reply publication сериализует одного автора через Better Auth user-row `FOR NO KEY UPDATE`, после чего читает latest post и применяет 5-second cooldown в той же transaction. Parallel requests одного actor не проходят admission одновременно.
+8. Retry/concurrency — PASS: operation scope сериализуется PostgreSQL advisory xact lock по `ownerId + contextKey`; receipt key = owner/context/draft, fingerprint включает publication target/content/attachments. Exact lost-response retry возвращает committed post, changed replay конфликтует. Receipt, post/revision, notifications/mentions и attachment publication находятся в одной transaction; failure откатывает logical publish.
+9. Omitted `editorOperationId` на legacy text-only direct calls сам по себе не классифицирован finding: current first-party editors всегда отправляют operation ID; отсутствие ID создаёт обычную новую publication operation, а не authority bypass. Attachment publication без operation запрещена.
+10. Broad edge/traffic DoS controls остаются Block K/E10. Однако `FORUM-PUB-01` ниже относится к current application write admission и не откладывается как Stage-6 infrastructure hardening.
+
+### FORUM-PUB-01 — Moderate/P2
+
+1. Обычные initial grants дают authenticated user `forum.topic.create` и `forum.reply.create`.
+2. Create-topic/Help/reply actions materialize `request.formData()` and validate nonblank/attachment semantics, но не задают upper bound для topic title или Markdown body. First-party title fields также не имеют `maxLength`; `MarkdownEditor` не задаёт publication-body limit.
+3. `ForumService.normalizeRevision()` проверяет только nonblank/source-locale semantics (body может быть blank для attachment-only). В schema `forum_topic_title_revisions.original_content` и `forum_post_revisions.original_content` — unbounded application-level `text` fields без `char_length` constraint.
+4. Поэтому обычный участник может провести через штатный authorized publication path и долговечно сохранить arbitrarily large application payload до внешнего/runtime/DB предела. 5-second cooldown ограничивает частоту, но не размер одного persisted write.
+5. Impact current-scope: persistent shared storage/resource consumption плюс повторная стоимость public read/SSR/Markdown processing для сохранённого контента. Это application-level amplification доступное базовому member, а не только гипотетический unauthenticated edge flood.
+6. Finding не утверждает отсутствие внешних Cloudflare/body limits и не требует сейчас production traffic engineering. E10 может отдельно проверить общий HTTP request envelope, но этот exact publication-field bound повторно finding не дублируется.
+7. Remediation не назначена в рамках audit stage.
 
 ## E6 — Published edit / Own solution business logic
 
