@@ -5,9 +5,10 @@
 1. Audit scope подготовлен 2026-11-11 против current `main` `538084fd472c65459ad55ab30a0f96fbfdd68e56`.
 2. Этот `main` отличается от предыдущего security target `4248fed23925e4a23e48485d419ceaf0ce337def` только merged factual SA-02 documentation; attachment runtime/schema между этими targets не менялись.
 3. **F1 — Private object / download access / IDOR завершён: PASS, 0 confirmed current-scope findings.**
-4. Следующий bounded slice — **F2 Upload admission and request bounds**.
-5. Мира — auditor/coordinator. Remediation, technical planner и implementer не назначены.
-6. Stage 6 external activation остаётся paused.
+4. **F2 — Upload admission and request bounds завершён: PASS, 0 additional current-scope findings.**
+5. Следующий bounded slice — **F3 Type, content and malicious payload handling**.
+6. Мира — auditor/coordinator. Remediation, technical planner и implementer не назначены.
+7. Stage 6 external activation остаётся paused.
 
 ## F1 — результат
 
@@ -19,6 +20,19 @@
 6. Success responses используют `private, no-store`, `nosniff` и sandbox; inline разрешён только server-verified raster, text preview — только server-verified bounded text, остальные типы выдаются download как `application/octet-stream` с безопасным disposition.
 7. Retained Complaint evidence имеет отдельную current-permission + Case/asset membership boundary; private object key остаётся server-side. Это не расширяет public attachment access.
 8. Live external R2 delivery, реальное cleanup scheduling и AV/provider acceptance относятся к paused Stage 6 и не считаются F1 current-scope defect без отдельной доказанной цепочки.
+
+## F2 — результат
+
+1. **PASS: 0 additional current-scope findings** на `main` `538084fd472c65459ad55ab30a0f96fbfdd68e56`.
+2. POST/DELETE upload mutations используют только actor из текущей Better Auth session, требуют exact same-origin и до storage проверяют server-side editor context + текущую effective permission; post-edit дополнительно требует authoritative post ownership. Client actor/role не принимается.
+3. Operation identity — server-validated UUID внутри owner/context scope. `admitUpload()` проверяет terminal generation до storage; `createDraftAttachment()` повторяет generation check после storage под тем же scope lock, поэтому Cancel/Publish во время upload не может создать поздний live ref.
+4. New upload admission проверяет active `attachments.upload` measure до R2 и повторно в metadata transaction после R2. Exact already-committed stable-ID replay возвращается без нового object write; foreign/other-scope stable ID authority не получает.
+5. Declared size — bounded safe integer. `0`/invalid и >50,000,000 bytes отклоняются без R2 payload write; фактический stream дополнительно считает bytes и fail-closed при short/long body или read error. Partial/aborted input не может стать verified attachment metadata.
+6. Upload path читает только bounded 4096-byte sniff prefix, затем передаёт rest как stream. Worker adapter использует `FixedLengthStream(byteLength)` и не требует whole-object buffering. Unknown/chunked request length не отменяет application hard bound по declared + actually received bytes.
+7. До payload write создаётся durable upload-object journal, затем одноразовая reservation и READY activation. Metadata/ref создаются только после успешного private write и обязательной structural finalization; journal/cleanup fencing не позволяет failed storage/DB path превратиться в `type-checked` live ref.
+8. Lost/ambiguous outcomes разделены: ambiguous physical write revokes same-key authority через reservation/delete/journal cleanup; ambiguous metadata COMMIT сохраняет object до stable-ID retry, который сходится на одном logical asset. Concurrent same-ID uploads сходятся на одной authoritative metadata/ref, losing physical object удаляется.
+9. Уже подтверждённый `FORUM-READ-BOUNDS-01` затрагивает `authorizeEditorWrite()` для topic context через unbounded `readTopicPage`; это прежний Block E root cause и отдельным F2 finding не дублируется.
+10. Отсутствие per-user attachment quota не считается finding по утверждённой Block F current-scope границе. Live external R2 acceptance/scheduling остаются Stage 6 и здесь не заявляются как проверенные.
 
 ## Цель
 
