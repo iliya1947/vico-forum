@@ -152,8 +152,8 @@ describe("SA03 canonical profile protected sections", () => {
     const loaded: ProfilePrivilegedSections = { viewerId: "exact-owner",
       measures: { status: "ready", value: [] },
       authorization: { status: "ready", value: auth as never },
-      owner: { viewerId: "exact-owner", account: { status: "ready", value: account },
-        history: { status: "ready", value: history } },
+      owner: { viewerId: "exact-owner", account: { status: "ready", value: account as never },
+        history: { status: "ready", value: history as never } },
     };
     const tree = (actorId: string | null, sections: ProfilePrivilegedSections) =>
       <I18nextProvider i18n={i18n}>
