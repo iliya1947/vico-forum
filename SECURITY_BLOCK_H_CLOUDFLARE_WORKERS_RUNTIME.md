@@ -2,13 +2,14 @@
 
 ## Статус
 
-1. Bounded audit scope подготовлен 2026-11-11 против current `main` `5992885e78b1642e41c9805116fcc256002b649c`.
+1. Bounded audit scope подготовлен 2026-11-11 против `main` `5992885e78b1642e41c9805116fcc256002b649c`; перед H2 current `main` продвинулся до `ce62e783e71433a00c2fe4874ee26dfc54614628` только документационным SA-03 closeout #326, без изменений H runtime/ingress source.
 2. Block G закрыт: 3 current-scope findings; `DB-RUNTIME-EVIDENCE-01 Low/P3` сохранён отдельно как Stage-6 blocker и в H не дублируется.
 3. **H1 — Worker composition & binding isolation завершён: PASS, 0 current-scope findings.**
-4. **H2–H8 ещё не выполнялись.**
-5. Следующий bounded slice после продолжения владельца — **H2: Ingress trust & source attribution**.
-6. Мира — auditor/coordinator. Remediation, technical planner и implementer не назначены.
-7. Cloudflare/production mutation, deployment, binding changes и live topology checks не выполнялись.
+4. **H2 — Ingress trust & source attribution завершён: PASS, 0 current-scope findings.**
+5. **H3–H8 ещё не выполнялись.**
+6. Следующий bounded slice после продолжения владельца — **H3: Runtime configuration and optional binding failure**.
+7. Мира — auditor/coordinator. Remediation, technical planner и implementer не назначены.
+8. Cloudflare/production mutation, deployment, binding changes и live topology checks не выполнялись.
 
 ## H1 — результат
 
@@ -23,6 +24,31 @@
 9. Local CI intentionally points both binding names at one disposable PostgreSQL superuser URL, поэтому сам integration smoke не доказывает production privilege separation; static resolver/composition tests и source mapping закрывают current wiring regression. Это test-environment limitation, а не current security finding при отсутствии misrouting.
 10. Mutable deployed Worker/Hyperdrive bindings and actual production roles were not re-read live because Stage 6 is paused: **Информация не проверена**. Это не меняет H1 repository verdict.
 11. H1 remediation не требуется. Следующий slice — H2 ingress trust; H1 выводы в H2 не переоткрывать без нового evidence.
+
+## H2 — результат
+
+1. Verdict на current `main` `ce62e783e71433a00c2fe4874ee26dfc54614628`: **PASS, 0 current-scope findings**.
+2. Delta `5992885… → ce62e783…` — только docs SA-03 closeout #326; `workers/app.ts`, `app/observability/attempt-source.ts`, collector/auth runtime и ingress tests не менялись. H1 выводы сохраняются.
+3. Worker создаёт request-local attempt collector только из `captureAttemptIngressSource(request)`; browser-provided XFF/True-Client-IP не используются для source identity.
+4. Qualified network source допускается только при наличии Worker-only `request.cf.colo` metadata с валидной 3-letter colo shape и после строгой canonical IP validation. Cloudflare current Workers docs определяют incoming `request.cf` как read-only metadata, предоставляемую global network.
+5. Для обычного visitor ingress Cloudflare current header contract говорит: `CF-Connecting-IP` отражает client IP, а `x-real-ip` при отсутствии Worker subrequest удалён. Поэтому normal direct ingress проходит source qualification без доверия к XFF/True-Client-IP.
+6. Same-zone Worker subrequest по текущему Cloudflare contract получает `CF-Connecting-IP` из `x-real-ip`, который upstream Worker может изменить, но Cloudflare добавляет `CF-Worker` ко всем Worker `fetch()` subrequests. Current Vico при наличии `x-real-ip` **или** `CF-Worker` деградирует source в `unknown`, поэтому manipulated same-zone source не становится qualified IP.
+7. Cross-zone Worker subrequest получает fixed Cloudflare Worker client IP `2a06:98c0:3600::103` и `CF-Worker`; Vico отдельно reject'ит и fixed address, и Worker marker. Arbitrary cross-zone Worker source therefore cannot become qualified visitor source.
+8. Pseudo IPv4 `Overwrite Headers` заменяет `CF-Connecting-IP` Class-E pseudo IPv4 и сохраняет original IPv6 отдельно в `CF-Connecting-IPv6`. Vico reject'ит Class-E value и не повышает alternate header до identity: outcome `unknown`, а не false attribution. Это безопасная деградация.
+9. Missing/invalid `cf.colo`, invalid/missing IP, CIDR/list/port/zone-id input, cross-zone fixed IP и subrequest markers также fail to `unknown`; source quality никогда не повышается до `trusted` из HTTP request. `trusted` создаётся только explicit synthetic helper для tests.
+10. Request collector сохраняет network source только как telemetry dimension. Authenticated actor берётся отдельно только из resolved server session; network IP не превращается в user identity/Owner authority.
+11. Repository search подтвердил: `captureAttemptIngressSource` вызывается production path только из `workers/app.ts`; его `networkIp/networkQuality` используются в Owner attempt telemetry/history, а не как application authorization decision.
+12. Better Auth отдельно использует `cf-connecting-ip` для своего database-backed HTTP rate limit; этот auth-rate-limit semantic уже относится к Block B. H2 проверил только Cloudflare ingress assumption: direct edge value server-supplied, Worker-subrequest edge cases не дают Vico telemetry false qualified source.
+13. Возможность client-supplied `CF-Worker` намеренно не используется как positive trust evidence. Даже если такой header когда-либо будет виден direct request, current branch лишь деградирует telemetry в `unknown`; privilege/authz/source impersonation не возникает. Current contract допускает unknown source and does not require exhaustive attribution, поэтому отдельный finding не создаётся.
+14. Unit/DB ingress/collector tests были прочитаны, но в H2 не запускались. Они покрывают forged CF/XFF without `request.cf`, invalid colo, qualified direct shape, x-real-ip/CF-Worker/cross-zone/Class-E rejection, resolved-actor separation и bounded unknown/gap handling.
+15. Mutable production Pseudo IPv4/Transform Rules/Worker routes and exact live subrequest topology: **Информация не проверена**; Stage 6 paused. Это external acceptance boundary, не current H2 defect.
+16. H2 remediation не требуется. Следующий slice — H3 runtime configuration / optional binding failure.
+
+Проверенная current official Cloudflare evidence:
+- Cloudflare HTTP headers — direct `CF-Connecting-IP`, stripped direct `x-real-ip`, same/cross-zone Worker subrequest behavior and `CF-Worker`;
+- Workers Request API — incoming `request.cf` global-network metadata/read-only contract;
+- Pseudo IPv4 — Class-E overwrite and `CF-Connecting-IPv6` preservation;
+- `cf.worker.upstream_zone` docs/changelog — platform distinction between direct visitor and Worker subrequests.
 
 ## Цель
 
