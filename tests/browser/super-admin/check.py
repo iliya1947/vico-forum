@@ -177,14 +177,18 @@ try:
         expect(owner.locator(".super-admin-monitor")).to_have_count(3)
         assert owner.locator(".super-admin-monitors").get_attribute("data-monitor-count") == "3"
         assert "PostgreSQL" in owner.content() or "postgresql" in owner.content()
+        expect(owner.locator(".super-admin-summary")).to_have_count(2)
+        expect(owner.locator('[data-sa02-summary="accounts"] a[href="/en/super-admin/monitoring/accounts"]')).to_have_count(1)
+        expect(owner.locator('[data-sa02-summary="security"] a[href="/en/super-admin/monitoring/security"]')).to_have_count(1)
         expected_version = sql("select current_setting('server_version') as version")[0]["version"]
         assert expected_version in owner.content(), "System monitor must display real PG17 version"
-        observed = sql("select id,monitor_key,source,quality from owner_monitor_observations order by position")
+        observed = sql("select id,monitor_key,source,quality from owner_monitor_observations "
+            "where monitor_key like 'system.%' order by position")
         assert {x["monitor_key"] for x in observed} == {
             "system.runtime", "system.dependencies", "system.requests"}, observed
         assert len(observed) == 3, observed
         get(owner, "/en/super-admin/monitoring/system")
-        assert len(sql("select id from owner_monitor_observations")) == 3, "refresh must deduplicate same state"
+        assert len(sql("select id from owner_monitor_observations where monitor_key like 'system.%'")) == 3, "System refresh must deduplicate same state"
         assert owner.locator(".super-admin-monitor nav a").count() == 6
         record("real-system-read-and-three-deduplicated-history-samples",
                postgresVersion=expected_version)
@@ -258,11 +262,26 @@ try:
                 assert owner.locator("html").get_attribute("lang") == locale
                 current, total = owner.evaluate("[innerWidth, document.documentElement.scrollWidth]")
                 assert total <= current + 1, (locale, width, total)
+                expect(owner.locator(".super-admin-summary")).to_have_count(2)
                 if width in (320, 1280):
                     owner.screenshot(path=str(args.output / (locale + "-" + str(width) + ".png")),
                                      full_page=True)
-            record("localized-responsive-overview", locale=locale, direction=direction)
+                    for area, monitor_count in (("accounts", 4), ("security", 3)):
+                        get(owner, "/" + locale + "/super-admin/monitoring/" + area)
+                        expect(owner.locator(".super-admin-monitor")).to_have_count(monitor_count)
+                        assert owner.locator("html").get_attribute("dir") == direction
+                        current, total = owner.evaluate(
+                            "[innerWidth, document.documentElement.scrollWidth]")
+                        assert total <= current + 1, (locale, width, area, total)
+            record("localized-responsive-overview-and-sa02-current", locale=locale, direction=direction)
         owner.set_viewport_size({"width": 1280, "height": 900})
+        get(owner, "/en/super-admin")
+        account_summary = owner.locator('[data-sa02-summary="accounts"] a')
+        account_summary.focus()
+        owner.keyboard.press("Enter")
+        expect(owner).to_have_url(base + "/en/super-admin/monitoring/accounts")
+        expect(owner.locator(".super-admin-monitor")).to_have_count(4)
+        record("keyboard-owner-overview-accounts-summary-navigation")
         get(owner, "/en/super-admin")
         nav = owner.locator('.admin-panel-nav a[href="/en/super-admin/monitoring"]')
         nav.focus()
