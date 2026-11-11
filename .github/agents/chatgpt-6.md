@@ -1,3 +1,14 @@
+# Лира — SA04-A1-MIRA-01 author correction completed; STOP
+
+PR #327 stable head `3d6c7c06ac1442a5a4b3ff7f8fbe77454ca8479c`, base `ce62e783e71433a00c2fe4874ee26dfc54614628`.
+
+- Corrected manifest CHECK `PENDING` to observed PG17.11 normalized SHA-256 `a4f4c052ca3f6bcbeab2d64069c0cf611c0de75aeea74a8d27ec45cd097ce891`; transaction-local temporary table auto-dropped; no permanent database migration.
+- First exact-head native test run found 19 failures from three isolated auth fixtures not applying 0065. Added only migration setup in account-security, auth-link-identity, forum-email-registration tests. No A1 runtime/DB contract change.
+- Personally reviewed final A1 code/diff and logic: three nullable `user` columns, UTC retention/CHECK/whitespace, Drizzle parity, 66 journal entries, 69-table snapshot/manifest, no writable/serialized Better Auth additional state, real signup/session regression, fixture changes. No other confirmed A1 current-stage implementation issue.
+- **Final exact-head PASS:** CI #43102435249 (2237 app / 690 PostgreSQL17; manifest parity), SA-01 #43102435251, SA-03 #43102435370, AP-10 #43102435384 (all 4 jobs). All SUCCESS; author STOP.
+- Next Mira A1-only coordinator whole-PR review on immutable exact head; no own coordinator PASS, Lev/Mark unassigned, no merge or activation of SA04-A2+/SA-05+/Stage6.
+
+
 # Лира — active correction: SA04-A1-MIRA-01 only
 
 PR #327 reviewed head: `cebb91504f770fa6cd42c4990bb3116aef9b7874`.
