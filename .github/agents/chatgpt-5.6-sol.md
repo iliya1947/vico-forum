@@ -1818,3 +1818,8 @@ Reviewed Lev handoff #6789135043 against accepted SA-02 §§9/11/12: PASS, 0 cur
 ## 2026-11-11 — SA-02 cumulative coordinator review
 
 Whole-PR review of Draft #319 exact `0a45909bfb3a403af63a4693455d519f8a0e9ea6`: **PASS, 0 confirmed current-scope defects**. Rechecked D implementation/wiring, unchanged accepted A/B/C ancestry, exact-head CI/connected browser/AP10 gates and current #315 boundary. Next gate is Lev independent cumulative review of the same exact head; no implementation or merge authorization.
+
+
+## 2026-11-11 — Lev findings assessment
+
+Independent review findings LEV-04/-05 are **confirmed current-scope SA02-D presentation defects**. Code independently verifies both causes: field-name-only labels across ambiguous monitor fields, and numeric formatting of arbitrary digit-only string values including allowed opaque IDs. Assigned one local correction package to Lira; no backend/schema/plan expansion.
