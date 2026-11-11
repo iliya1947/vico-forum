@@ -92,6 +92,55 @@ describe("embedded preview routing", () => {
 });
 
 
+describe("interactive Pages preview", () => {
+  it("runs the global search form instead of blocking GET submissions", async () => {
+    const user = userEvent.setup();
+    render(<EmbeddedPreview scenarioId="home-guest" />);
+
+    const search = screen.getByRole("searchbox", { name: "Search query" });
+    await user.clear(search);
+    await user.type(search, "TypeScript");
+    await user.click(within(screen.getByRole("search")).getByRole("button"));
+
+    expect(await screen.findByRole("heading", { level: 1, name: "Search" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /How should I structure a typed API client\?/ })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /Mixed RTL content with code blocks/ })).toBeInTheDocument();
+  });
+
+  it("creates a topic, posts a reply, selects it as best answer, and marks the topic solved", async () => {
+    const user = userEvent.setup();
+    render(<EmbeddedPreview scenarioId="section-user" identity="user" />);
+
+    await user.type(screen.getByRole("textbox", { name: "Topic title" }), "Interactive preview topic");
+    await user.type(screen.getByLabelText("First message"), "This topic was created inside the Pages preview.");
+
+    const create = screen.getByRole("button", { name: "Create topic" });
+    await waitFor(() => expect(create).toBeEnabled());
+    await user.click(create);
+
+    expect(await screen.findByRole("heading", { level: 1, name: "Interactive preview topic" })).toBeInTheDocument();
+    expect(screen.getByText("This topic was created inside the Pages preview.")).toBeInTheDocument();
+
+    await user.type(screen.getByLabelText("Reply"), "This reply was added without a backend.");
+    const postReply = screen.getByRole("button", { name: "Post reply" });
+    await waitFor(() => expect(postReply).toBeEnabled());
+    await user.click(postReply);
+
+    expect(await screen.findByText("This reply was added without a backend.")).toBeInTheDocument();
+
+    await user.click(screen.getByText("Select as best answer"));
+    await user.click(screen.getByRole("button", { name: "Message #2" }));
+
+    const prompt = await screen.findByRole("region", { name: "Problem solved?" });
+    expect(screen.getByText("Best answer")).toBeInTheDocument();
+    await user.click(within(prompt).getByRole("button", { name: "Yes, mark as solved" }));
+
+    await waitFor(() => expect(document.querySelector(".solved-badge")).not.toBeNull());
+    expect(screen.getByText("Best answer")).toBeInTheDocument();
+  });
+});
+
+
 describe("Preview confirmation and attention fixtures", () => {
   it("opens confirmation on the matched topic route and dismisses without solving", async () => {
     render(<EmbeddedPreview scenarioId="topic-best-answer-unsolved" identity="user" />);
