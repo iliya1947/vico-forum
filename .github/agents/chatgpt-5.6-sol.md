@@ -4,7 +4,7 @@
 
 1. Служебный PR: **#315**.
 2. Моя текущая работа: audit/coordination only; remediation и implementation не назначены.
-3. Текущий этап: **Block G G1 PASS; G2 `DB-SEARCHPATH-01 Low/P3`; G3 `DB-ACL-USER-DELETE-01 Low/P3`; G4 `DB-RUNTIME-EVIDENCE-01 Low/P3`; G5 PASS; следующий bounded slice — G6 Destructive tooling and target isolation**.
+3. Текущий этап: **Block G G1 PASS; G2 `DB-SEARCHPATH-01 Low/P3`; G3 `DB-ACL-USER-DELETE-01 Low/P3`; G4 `DB-RUNTIME-EVIDENCE-01 Low/P3`; G5 PASS; G6 `DB-TEST-TARGET-01 Low/P3`; следующий bounded slice — G7 Manifest, evidence and drift detection**.
 4. Technical audit target B–D: `e279cb6c032a489a9044ca1191407df887c364b4`.
 5. Current `main` — `538084fd472c65459ad55ab30a0f96fbfdd68e56`. SA-02 docs closeout merged; compare с `4248fed…` показывает только 8 Markdown changes, attachment runtime/schema unchanged.
 6. Лира, Марк и Лёва по #315 сейчас не назначены.
@@ -71,7 +71,11 @@
 44. Lock-order sweep не подтвердил current cycle до authority/evidence corruption: authz/AP-10 берут authz mutex first; Complaints actor mutex precedes Case lock; forum history order lock appended after domain locks, inverse history→domain chain не найден.
 45. `AuthorizationRepository.mutate()` rollback failure может заменить original error — robustness inconsistency, но fail-open/security impact не доказан, finding не создаётся. Future real WEB_HYPERDRIVE advisory-lock acceptance остаётся Stage 6, не current G5 defect.
 46. G5 source/tests прочитаны, не запускались; external DB/Hyperdrive mutation не выполнялась.
-47. Подтверждённые findings не исправлять автоматически: сначала отдельная bounded remediation-задача по решению владельца и текущему Stage.
+47. Block G G6: подтверждён **`DB-TEST-TARGET-01 Low/P3`**. Destructive DB tests проверяют WHATWG URL как `localhost/127.0.0.1 + *_test`, но затем передают исходный connection string в pinned `pg@8.23.0`; exact `pg-connection-string@2.14.0` принимает query `host` раньше URL hostname и тем самым позволяет фактическому target быть внешним.
+48. Наиболее тяжёлый подтверждённый impact: `tests/database/migrations.test.ts` после такого bypass выполняет `DROP SCHEMA drizzle CASCADE` и `DROP SCHEMA public CASCADE`. Нужен внешний DB target с именем `*_test` и контроль process `DATABASE_URL`; public/production auto-path не установлен, поэтому Low/P3.
+49. PR CI и Worker pre-rollout verification задают фиксированный loopback `vico_forum_test`; production migration workflow destructive test helpers не вызывает. `db:migrate` отдельным finding не считается: external target появляется только из явно переданного URL, а production path обёрнут dedicated pre/post gates.
+50. G6 tests не запускались и external DB mutation не выполнялась. Live external applicability: **Информация не проверена**.
+51. Подтверждённые findings не исправлять автоматически: сначала отдельная bounded remediation-задача по решению владельца и текущему Stage.
 
 ## Ограничения
 
@@ -83,5 +87,5 @@
 
 ## Следующий шаг
 
-1. После продолжения владельца выполнить **G6 — Destructive tooling and target isolation** на current main и остановиться после результата.
+1. После продолжения владельца выполнить **G7 — Manifest, evidence and drift detection** на current main и остановиться после результата.
 2. Findings только фиксировать; remediation не начинать.
