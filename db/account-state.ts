@@ -73,12 +73,10 @@ function unavailable(error: unknown): boolean {
   return false;
 }
 
-/**
- * Read only, on the supplied PostgreSQL connection (including a caller-owned transaction).
- * Does not lock the user row or grant active-account admission to a mutation.
- * No private Better Auth account/session fields are selected.
- */
-export async function readAccountState(connection: Pick<Client, "query">, userId: string): Promise<AccountState> {
+/** Classified state read with no row lock; safe for readonly callers. */
+async function loadAccountState(
+  connection: Pick<Client, "query">, userId: string, lockForMutation: boolean,
+): Promise<AccountState> {
   if (typeof userId !== "string" || userId.length === 0) {
     throw new AccountStateUnexpectedError();
   }
@@ -89,6 +87,7 @@ export async function readAccountState(connection: Pick<Client, "query">, userId
         ${user.retainAtLeastUntil} as retain_at_least_until
       from ${user}
       where ${eq(user.id, userId)}
+      ${lockForMutation ? sql`for no key update` : sql``}
     `);
     const rows = (await connection.query<AccountStateRow>(statement.sql, statement.params)).rows;
     if (rows.length === 0) return { status: "missing", userId };
@@ -118,9 +117,34 @@ export async function readAccountState(connection: Pick<Client, "query">, userId
   }
 }
 
-/** Read-only admission helper. Mutation/row-lock protection is a separate SA04-A3 step. */
-export async function assertActiveAccount(connection: Pick<Client, "query">, userId: string): Promise<void> {
-  const state = await readAccountState(connection, userId);
+/** Unlocked, readonly state read; does not authorize subsequent mutation. */
+export function readAccountState(connection: Pick<Client, "query">, userId: string): Promise<AccountState> {
+  return loadAccountState(connection, userId, false);
+}
+
+function assertActiveState(state: AccountState): void {
   if (state.status === "missing") throw new AccountMissingError();
   if (state.status === "deactivated") throw new AccountInactiveError();
+}
+
+/** Readonly admission; never use this instead of the mutation guard for writes. */
+export async function assertActiveAccount(connection: Pick<Client, "query">, userId: string): Promise<void> {
+  assertActiveState(await readAccountState(connection, userId));
+}
+
+/**
+ * Mutation admission for an already-open, caller-owned PostgreSQL transaction.
+ * Caller MUST use the same connection for the protected writes and must keep
+ * the transaction open until they finish (commit or rollback). In autocommit
+ * mode the row lock is immediately released and provides NO write protection.
+ *
+ * FOR NO KEY UPDATE serializes state changes without conflicting with FK KEY SHARE.
+ * If the caller already locked this user row, pass the SAME transaction connection;
+ * PostgreSQL reuses its own row lock instead of taking a lock on another connection.
+ * No state update or transaction control is performed by this guard.
+ */
+export async function assertActiveAccountForMutation(
+  transaction: Pick<Client, "query">, userId: string,
+): Promise<void> {
+  assertActiveState(await loadAccountState(transaction, userId, true));
 }
