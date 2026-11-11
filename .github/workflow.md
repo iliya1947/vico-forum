@@ -1,15 +1,11 @@
 # Admin panel — current workflow
 
-- Service PR: **#251**. **Current stage: SA-03 implementation merged; docs-only PR #326 corrected after independent factual review; fresh independent re-review pending.**
-- Implementation PR **#324** merged from reviewed exact head `4ad17beae65da338f5efcb2a1596e7fafc3b67c5` into main merge `5992885e78b1642e41c9805116fcc256002b649c`.
-- Docs-only PR **#326** remains open, exact current head `9714e06c2d6030b26a54d6c1287255226c4c186a`.
-- Lira's prior independent review on `dc9f846bf1fd4224b600fccfa3528f9a518fb8bd` found two current-scope documentation defects, both in `docs/ADMIN_PANEL.md`.
-- Mira applied only the two requested documentation corrections in `docs/ADMIN_PANEL.md`; no other file in #326 was changed by the correction.
-- **SA03-DOC-LIRA-01 / -02 are corrected by author but remain pending independent verification.**
-- **Assigned next: Lira — fresh independent factual whole-PR re-review of #326 on exact head `9714e06c2d6030b26a54d6c1287255226c4c186a`.**
-- Review only: verify both prior findings and sweep the full 9-file docs diff for any remaining current-scope factual/documentation defect; report all findings or PASS, then STOP. Do not edit #326 during review.
-- No ordinary code/test CI is used as proof of documentation correctness.
-- No SA-04+, deactivation, Stage6/production, #315 activation, broad security remediation or future journal-storage work. Lev and Mark unassigned.
+- Service PR: **#251**. Current stage: **SA-03 implementation #324 merged; docs-only PR #326 independently factually reviewed PASS; Owner-merge coordination pending.**
+- Implementation PR **#324** merged from exact reviewed head `4ad17beae65da338f5efcb2a1596e7fafc3b67c5` into main merge `5992885e78b1642e41c9805116fcc256002b649c`.
+- Docs-only PR **#326** remains **open/unmerged** at exact stable reviewed head `9714e06c2d6030b26a54d6c1287255226c4c186a` (9 Markdown files).
+- **Lira independent factual whole-PR repeat review: PASS — 0 open confirmed current-scope docs defects.** Previous `SA03-DOC-LIRA-01` (current permission/recovery boundaries) and `SA03-DOC-LIRA-02` (AP-11 historical scope) both independently verified **CLOSED**. Only `docs/ADMIN_PANEL.md` changed after first review; other eight docs blobs identical.
+- **Lira STOP. Assigned next: Mira**, coordinator closeout of independent PASS and handoff of exact stable docs PR #326 for **developer/Owner merge**, without claiming self-review. Mira authored #326; developer alone merges. Any docs-head change invalidates this exact-head review.
+- Docs CI is not the factual correctness gate. No SA-04+, deactivation, Stage6/production, #315 activation, broad security remediation or future journal-storage work. Lev/Mark unassigned.
 
 ## Mira mandatory pre-action gate
 
