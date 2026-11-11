@@ -9177,6 +9177,8 @@ a.topic-tag:focus-visible {
 .profile-breadcrumb { margin-block: 1.25rem; color: var(--color-text-muted); }
 .profile-breadcrumb a { color: var(--color-accent-hover); }
 .profile-card { padding: clamp(1rem, 3vw, 2rem); background: var(--color-surface); border: 1px solid var(--color-border); border-inline-start: .3rem solid var(--color-accent); border-radius: .7rem; box-shadow: var(--shadow-panel); }
+/* SA-03: literal internal IDs and retained History values must wrap, not widen mobile layouts. */
+#owner-account, #owner-history { min-inline-size: 0; overflow-wrap: anywhere; }
 .profile-identity { display: flex; gap: 1.25rem; align-items: center; flex-wrap: wrap; }
 .profile-avatar { display: grid; place-items: center; flex: 0 0 5rem; inline-size: 5rem; block-size: 5rem; border-radius: 50%; background: var(--color-accent-soft); color: var(--color-accent-hover); font-size: 2rem; font-weight: 700; overflow: hidden; }
 .profile-identity-copy { flex: 1; min-inline-size: min(12rem, 100%); overflow-wrap: anywhere; }
