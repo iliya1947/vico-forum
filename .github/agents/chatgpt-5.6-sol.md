@@ -2085,3 +2085,12 @@ Do not treat a user's anger, criticism or request to think as implicit permissio
 - **Coordinator verdict: PASS — 0 confirmed current-scope SA04-A1 defects.**
 - Next gate: Lev independent A1-only whole-PR technical review of the same exact head. No implementation changes, merge, SA04-A2+, SA-05+, Stage6/production or #315 remediation are authorized by this PASS.
 
+## 2026-11-11 — reviewer granularity rule after SA04-A1
+
+1. Do **not** treat every small Lira author checkpoint as a reason to spend an independent Lev review.
+2. Lira needs small bounded implementation handoffs because large authoring packages overload her; this granularity rule is **specific to Lira implementation work**.
+3. Lev is the opposite case: he handles large technical review scope well. Prefer giving Lev a meaningful cumulative implementation slice or completed package rather than repeatedly feeding him tiny checkpoints that substantially overlap prior review work.
+4. Before assigning Lev, check whether more implementation is expected in the same cumulative PR/package and whether waiting would let him review the larger stable whole once without losing a required gate.
+5. Exception: if Lev has already started an independent review, do not discard that work. If his current review PASS covers a stable mergeable bounded PR, use it and close/merge that PR as appropriate rather than forcing him to repeat essentially the same review later.
+6. SA04-A1 is the concrete incident: Lev was assigned too early, but he is already working. If his A1 review returns PASS with no current-scope findings, #327 should be closed out as its own bounded implementation PR instead of extending it and later asking Lev to re-review the same A1 work inside a larger cumulative diff.
+
