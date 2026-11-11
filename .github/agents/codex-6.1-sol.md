@@ -1,3 +1,24 @@
+# Лёва — актуальный checkpoint: SA-04 technical plan published (2026-11-11)
+
+**Planning COMPLETE; next Mira scope/fit review.** Full plan [#6806249892](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6806249892), actual main `ce62e783e71433a00c2fe4874ee26dfc54614628`. Accepted full plan #6745289141. SA-03 implementation #324 and docs #326 merged/closed.
+
+Inspected actual schema, AuthRuntime/session-context/Worker/auth-api, pinned Better Auth1.7.7 dispatch/db-hooks/adapter/session/schema source, public readers/projections, direct repository mutations/finalization/replay/locks and generation pseudonymized admission. Official tag source links are in published plan.
+
+Plan defines:
+- existing-user three-field state + UTC calendar-year CHECK; next forward migration currently0065, schema/meta/manifest parity, no new tables/deps/grants;
+- shared typed active predicate and per-actor transaction admission; unconditional session-create and HTTP/direct auth guard, narrow canonical adapter target-write boundary where hooks lack target context; preserve facts/cause/cookie/freshness/limiter/link semantics;
+- whole domain coverage including receipt/replay early returns, uploads/final publication, authz/AP10/Complaints, user settings/inbox/read-state/presence and new user generation plans without modifying task identity or cancelling accepted background jobs;
+- one neutral public identity contract with SQL/data masking, directory name-filter/count safety, inactive mentions/online exclusion; published text/IDs/attachments retained and private evidence not globally masked;
+- sequential bounded checkpoints A–S with STOP, only one result assigned by Mira at a time; one Draft cumulative package and no partial deactivate activation; native/HTTP/direct/concurrency/browser acceptance.
+
+No product contradiction/blocker requiring Owner choice found. Planning only: no project source/schema/migration/permanent-doc edits, no runtime/test setup and no implementation test PASS claimed. #315 checked at dac4b314836e5797f0bd0558f3ea1e37fba14795; security upgrades/remediation/Stage6 separate. Deactivate command/control, lifecycle event and retention UI remain SA-05.
+
+Publication initially blocked by automatic review; developer then explicitly approved the exact ready local plan ("Разрешаю"). Approved file published unchanged in #251 as comment6806249892. Local plan /workspace/work/sa04-plan-evidence/SA04_TECHNICAL_PLAN.md SHA25658009b942924764adaed086bd0158be5403d30a88b43e797035a1f7393426566; publication block resolved. Checkout /workspace/work/sa04-plan clean at main.
+
+**Next Mira:** review published package plan scope/fit/granularity before implementation handoff. Lev completed/stopped; Lira/Mark remain unassigned. Do not implement or launch SA-05+, production/security activation or storage controls. Approved master plan unchanged; common/workflow synchronized.
+
+---
+
 # Лёва — active assignment: SA-04 package-specific technical plan
 
 Current main: `ce62e783e71433a00c2fe4874ee26dfc54614628`.
