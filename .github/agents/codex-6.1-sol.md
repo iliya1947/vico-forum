@@ -1,3 +1,22 @@
+# Лёва — актуальный checkpoint: SA-03 independent PASS (2026-11-11)
+
+**PASS — 0 confirmed open current-scope defects. MIRA-01, LEV-01, LEV-02 CLOSED.** [Full result #6804234730](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6804234730). PR #324 exact `4ad17beae65da338f5efcb2a1596e7fafc3b67c5`, base/main `538084fd472c65459ad55ab30a0f96fbfdd68e56`; assigned after Mira coordinator PASS on same head.
+
+Complete cumulative 43-file scope re-evaluated. Three correction files fully read (ProfileView / its tests / connected harness); 40 source hashes unchanged from previous independent review; authority/project source docs unchanged. State now tracks unmatched fresh versus previously matched snapshot; parent HeaderAuth effect lag no longer poisons fresh authorized DTO, while known signout invalidates previously shown snapshot until a new authorized read. Target/self feedback uses same lifecycle.
+
+Original probes unchanged except paths/ports, reverse-equality asserted:
+- LEV-01 identity-boundary.py: real signout200/HeaderAuth guest/held profile GET, zero Owner sections, zero authz forms, private email absent, fresh guest.data redacted.
+- LEV-02 account-switch.py: actual synthetic session actor switch + existing header SPA Link; correct target/locale/profile viewer, router idle; four sections visible with first fresh authorized DTO, no additional refresh needed. No page errors.
+- MIRA-01 retained own/Admin connected destinations remain correct.
+
+Fresh app 10 files /82 tests PASS; native 2 files /9 tests PASS; build, clean PG17 migrations0000–0064 and actual schema manifest69 PASS. Own built Worker/Better Auth/PG17/Chromium checked-in acceptance26/26 PASS, exact head, no page errors/external requests. Copy changes only local paths and Chromium executable; assertions verified identical. Remote exact-head CI #43075154722 / SA03 #43075154724 / SA01 #43075154613 / AP10 #43075154611 SUCCESS verified API. #315 head e9f6433c971eefc652bca408455deb70339795c1, relevant plan/A/E blobs unchanged; security activation/remediation separate.
+
+Evidence /workspace/work/sa03-final-review-evidence: SOURCE_MANIFEST.json; closure-verification.json; unchanged original probes + JSON/logs/screenshots; checked-in browser copy + browser/results.json26/screenshots; app/native/build/schema logs. /workspace/work/sa03-final-review clean exact head. Own vite4206 / vico-sa03-lev-final stopped/removed; vars/dependency link removed. No source/schema/permanent docs implementation edits or production actions.
+
+**Next Mira:** coordinator closeout / Owner merge route for current exact head. PR324 remains open/Draft/unmerged; merge Owner-only, docs closeout later separate assignment/PR. Lev completed/stopped; Lira/Mark unassigned by Lev. No SA04+/Deactivate/future security/storage work. Master approved plan unchanged.
+
+---
+
 # Лёва — актуальный checkpoint: SA-03 repeat independent CHANGES REQUIRED (2026-11-11)
 
 **Active: SA03-IMPL-LEV-02 · P2 OPEN; LEV-01 and MIRA-01 CLOSED.** [Full result #6803187864](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6803187864). PR324 exact `d7a526ac00ef56ebd8c8bd4035cc84fb9731ad49`, main/base `538084fd472c65459ad55ab30a0f96fbfdd68e56`. Assigned after Mira coordinator PASS on same head. Complete43-file scope re-evaluated; six correction files fully read,37 source hashes unchanged.
