@@ -2111,3 +2111,12 @@ Do not treat a user's anger, criticism or request to think as implicit permissio
 - Preserve the reviewer-granularity lesson: Lira gets small bounded authoring tasks; Lev should normally receive a larger stable cumulative review scope, not each tiny checkpoint.
 - Next SA-04 work remains unassigned until the developer explicitly continues.
 
+## 2026-11-12 — SA04-A2 review result
+
+- Full A2 checkpoint diff on #328 exact head `f9da2033455487f25510c2ccbbb748ed5f4bf7f4` inspected: 2 files.
+- Verified shared active predicate/read/assert semantics and error-classification boundaries against accepted SA-04 plan and A2 assignment.
+- Verified no A3+ behavior leaked into this checkpoint.
+- CI #43109939829 SUCCESS on exact head.
+- Verdict: **PASS, 0 confirmed current-scope defects**.
+- Preserve review granularity: no Lev review for A2 alone; PR #328 stays cumulative Draft.
+
