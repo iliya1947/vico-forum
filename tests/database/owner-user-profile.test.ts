@@ -78,7 +78,7 @@ describe("SA03 exact-Owner readonly target profile native projection", () => {
     expect(result!.sessions).toHaveLength(2);
     expect(result!.sessions.find(x => x.id === "active-A")).toMatchObject({
       status: "active", current: false, recordedIp: "2001:db8::42",
-      deviceLabel: "Browserunsafe device",
+      deviceLabel: "Browser unsafe  device",
     });
     expect(result!.sessions.find(x => x.id === "expired-A")).toMatchObject({
       status: "expired-retained", current: false, recordedIp: null, deviceLabel: "Unknown device",
