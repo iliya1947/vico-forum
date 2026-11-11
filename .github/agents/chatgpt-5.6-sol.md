@@ -4,7 +4,7 @@
 
 1. Служебный PR: **#315**.
 2. Моя текущая работа: audit/coordination only; remediation и implementation не назначены.
-3. Текущий этап: **Block E / E1 completed; awaiting E9**.
+3. Текущий этап: **Block E / E9 completed; awaiting E10**.
 4. Technical audit target B–D: `e279cb6c032a489a9044ca1191407df887c364b4`.
 5. Current `main` `f6fd4b2c031b2132b04eace18704a59aed1dfec8` отличается от audit target только `AGENTS.md`; audited application code не менялся.
 6. Лира, Марк и Лёва по #315 сейчас не назначены.
@@ -29,7 +29,7 @@
 4. Block D: D1–D12 завершены; подтверждены **3 Low/P3 findings** — `COMPLAINT-PRIV-01`, `HELP-SIGNAL-PRIV-01`, `HISTORY-PRIV-01`; дополнительных D12 findings нет.
 5. D12 external claim исправлен и проверен: official React Router Framework/SSR docs и exact `react-router@8.3.1` source подтверждают default skip loader revalidation после failed 4xx/5xx submissions.
 6. Vico recovery paths используют explicit loader revalidation и не выполняют automatic mutation replay.
-7. Block E / E2 PASS. E5 — **`FORUM-PUB-01 Moderate/P2`**; E6 — 0 additional. E7 — **`READSTATE-CACHE-01 Low/P3`**. E3 — **`PUBLIC-PROJECTION-01 Low/P3`**. E4 — **`DISCOVERY-BOUNDS-01 Low/P3`**, **`SEARCH-CONTROL-01 Low/P3`**. E8 PASS. E1 завершён с **`LOCALE-DEGRADED-WRITE-01 Low/P3`**: canonical `/en/*` mutations проходят locale middleware при degraded registry, хотя contract требует fail-closed. Existing `READSTATE-CACHE-01` expanded: parent `/:locale` loader itself serializes account identity/capability/unread state without universal `private, no-store`; exact React Router 8.3.1 source confirms document and `.data` final-header behavior. Explicit locale canonicalization, root no-store negotiation, noncanonical non-GET fail-close, request-scoped degraded read fallback and locale client-navigation revalidation — PASS.
+7. Block E / E2 PASS. E5 — **`FORUM-PUB-01 Moderate/P2`**; E6 — 0 additional. E7 — **`READSTATE-CACHE-01 Low/P3`**. E3 — **`PUBLIC-PROJECTION-01 Low/P3`**. E4 — **`DISCOVERY-BOUNDS-01 Low/P3`**, **`SEARCH-CONTROL-01 Low/P3`**. E8 PASS. E1 — **`LOCALE-DEGRADED-WRITE-01 Low/P3`**, existing `READSTATE-CACHE-01` expanded to shared `/:locale` member/session cache boundary. E9 завершён **PASS — 0 additional findings**: exact revision/target presentation + original fallback, protected Markdown restore, source/UI/target locale separation, server-owned generation target/revision/actor, active-registry eligibility, measure admission, atomic request budget/dedup и current disabled provider runtime соответствуют contract. Real provider/Queue activation остаётся Stage 6.
 8. Подтверждённые findings не исправлять автоматически: сначала отдельная bounded remediation-задача по решению владельца и текущему Stage.
 
 ## Ограничения
@@ -42,5 +42,5 @@
 
 ## Следующий шаг
 
-1. После продолжения владельца выполнить **Block E / E9 — User-content translation application boundary audit**.
+1. После продолжения владельца выполнить **Block E / E10 — Cross-cutting failure / cache / replay / application abuse closeout**.
 2. Findings только фиксировать; remediation не начинать.
