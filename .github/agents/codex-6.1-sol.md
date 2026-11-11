@@ -1,3 +1,17 @@
+# Лёва — актуальный checkpoint: SA-03 technical planning complete (2026-11-11)
+
+**Next: Mira scope/fit review.** Full plan [#6796912006](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6796912006); main `538084fd472c65459ad55ab30a0f96fbfdd68e56`. SA-02 implementation #319 and docs #323 merged/closed. SA-03 implementation is not started/assigned.
+
+Inspected current profile/public repository, legacy Admin detail/directory, AP-09 targeted authz component/action, AP-10 readers/authority, self-only Settings account runtime, session/account schema, SA-02 current/history source projections and Worker/Hyperdrive wiring. Owner source records remain authoritative; no copied journal/new event producers. Exact Owner target read cannot reuse/loosen self-only AccountSecurityRuntime. Current profile `isOwner` means self; proposed rename `isSelf`.
+
+Plan defines independent section gates, target-only safe identity/method/session DTO, fixed per-user SQL source predicates/typed measure join, bounded source-aware pagination/cursors, private/no-store on all profile responses, canonical links/guarded legacy redirect, extraction/reuse of inline authorization with bounded recovery and actor/target feedback isolation. One forward index-only migration (six actor/subject timeline indexes), no tables/dependencies/grants/new mutation. Deactivate/account lifecycle/SA04+ excluded.
+
+#315 checked at `eb1bd8dbd3038f409766f0f5b884b8a3cc883df8`: isolation remains separate, profile cache/privacy obligations included. Source-backed plan finds no new product contradiction/blocker. Native/browser/privacy/permission/target-switch acceptance enumerated; no implementation tests were run or claimed. Local planning checkout `/workspace/work/sa03-plan` remains clean at main, no server/container started.
+
+Planning assignment complete; no project implementation/permanent docs/master-plan edits. Mira reviews next; Lira/Mark unassigned. Service workflow/common synchronized below published plan. Owner merge policy unchanged.
+
+---
+
 # Лёва — актуальный checkpoint: full SA02 repeat independent PASS (2026-11-11)
 
 **Active result: PASS — 0 confirmed open current-scope defects for cumulative SA02 A/B/C/D. All LEV-01/-02/-03/-04/-05 CLOSED.** [Full result #6794797870](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6794797870). PR319 reviewed exact head `3f217c98dd9dcbd51518eda82b51506fbede936c`, base `e279cb6c032a489a9044ca1191407df887c364b4`, current main `f6fd4b2c031b2132b04eace18704a59aed1dfec8` (only AGENTS.md service rule). Mira coordinator PASS/assignment #6794574095 after Lira correction #6794365343.
