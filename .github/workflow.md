@@ -61,3 +61,12 @@ Before any project-changing action or agent handoff, Mira must check in this ord
 - A2 starts a **new cumulative Draft implementation PR** from current main `593a03964b8407b249f7c9f5eb117ddb8b07736d`. Later A checkpoints may be added to that PR only after separate assignments; this avoids spending Lev review on every tiny author checkpoint.
 - After A2 author STOP, Mira performs the checkpoint/scope review and decides the next bounded handoff. **No Lev independent review is scheduled at A2 alone.**
 
+## 2026-11-12 — SA04-A2 checkpoint review PASS
+
+- Reviewed cumulative Draft #328 exact head `f9da2033455487f25510c2ccbbb748ed5f4bf7f4`, base/current main `593a03964b8407b249f7c9f5eb117ddb8b07736d`.
+- Scope is exactly two files: shared account-state read/predicate foundation + focused PG17 tests.
+- PASS — 0 confirmed current-scope A2 defects.
+- CI #43109939829 independently confirmed SUCCESS on the same head.
+- A2 stays inside cumulative Draft #328. Do not merge and do not spend Lev review on A2 alone.
+- Lira STOP. A3/A4 remain unassigned until the next explicit continuation.
+
