@@ -1268,6 +1268,21 @@ function previewRouter(scenario: Scenario, interactions: PreviewInteractionState
   ], { initialEntries: [scenario.path] });
 }
 
+function previewSectionPresentation(locale: PreviewLocale, sectionIdValue: string) {
+  if (sectionIdValue === HELP_SOLUTIONS_SERVICE_SECTION_ID) {
+    return {
+      id: HELP_SOLUTIONS_SERVICE_SECTION_ID,
+      name: "Questions",
+      category: {
+        id: HELP_SOLUTIONS_CATEGORY_ID,
+        name: previewHelpSolutions(locale).name,
+      },
+      topics: [],
+    };
+  }
+  return previewSection(locale, sectionIdValue);
+}
+
 function PreviewSearchRoute({ scenario, interactions }: {
   scenario: Scenario;
   interactions: PreviewInteractionState;
@@ -1276,7 +1291,7 @@ function PreviewSearchRoute({ scenario, interactions }: {
   const query = (params.get("q") ?? "").trim();
   const normalized = query.toLocaleLowerCase(scenario.locale);
   const createdResults = [...interactions.createdTopics.values()].map((created) => {
-    const localizedSection = previewSection(scenario.locale, created.sectionId);
+    const localizedSection = previewSectionPresentation(scenario.locale, created.sectionId);
     return {
       id: created.id,
       sourceLocale: created.sourceLocale,
@@ -1298,6 +1313,157 @@ function PreviewSearchRoute({ scenario, interactions }: {
       ].some((value) => value.toLocaleLowerCase(scenario.locale).includes(normalized)))
     : [];
   return <SearchView locale={scenario.locale} query={query} results={results} />;
+}
+
+async function previewCategoryAction(
+  scenario: Scenario,
+  interactions: PreviewInteractionState,
+  request: Request,
+  routeLocale?: string,
+  routeCategoryId?: string,
+) {
+  const actor = previewUser(scenario);
+  if (!actor || routeCategoryId !== HELP_SOLUTIONS_CATEGORY_ID) return null;
+  const locale = previewMutationLocale(routeLocale, scenario.locale);
+  const form = await request.formData();
+  const intent = String(form.get("intent") ?? "");
+  const draft = {
+    title: String(form.get("title") ?? ""),
+    body: String(form.get("body") ?? ""),
+    tags: String(form.get("tags") ?? ""),
+  };
+
+  if (intent === "checkSimilarHelpQuestions") {
+    const normalizedTitle = draft.title.normalize("NFKC").trim().replace(/\s+/gu, " ");
+    if (!normalizedTitle || normalizedTitle.length > 200) {
+      return { operation: "helpSimilarQuestions" as const, outcome: "invalid" as const, draft, results: [] };
+    }
+
+    const terms = normalizedTitle.toLocaleLowerCase(locale)
+      .split(/[^\p{L}\p{N}]+/u)
+      .filter((term) => term.length >= 4);
+    const tagKeys = new Set(previewTagsFromInput(draft.tags).map((tag) => tag.key));
+    const base = previewHelpSolutions(locale).questions;
+    const created = [...interactions.createdTopics.values()]
+      .filter((topic) => topic.sectionId === HELP_SOLUTIONS_SERVICE_SECTION_ID)
+      .map((topic) => ({
+        id: topic.id,
+        title: topic.title,
+        replyCount: interactions.replies.get(topic.id)?.length ?? 0,
+        isSolved: interactions.topicOverrides.get(topic.id)?.isSolved ?? false,
+        tags: topic.tags,
+      }));
+
+    const results = [...created, ...base].flatMap((question) => {
+      const title = question.title.toLocaleLowerCase(locale);
+      const titleMatch = terms.some((term) => title.includes(term));
+      const tagMatch = question.tags.some((tag) => tagKeys.has(tag.key));
+      if (!titleMatch && !tagMatch) return [];
+      return [{
+        id: question.id,
+        title: question.title,
+        replyCount: question.replyCount,
+        isSolved: question.isSolved,
+        tags: question.tags,
+        matchSource: titleMatch ? "title" as const : "tags" as const,
+      }];
+    }).slice(0, 5);
+
+    return {
+      operation: "helpSimilarQuestions" as const,
+      outcome: results.length > 0 ? "results" as const : "empty" as const,
+      draft,
+      results,
+    };
+  }
+
+  if (intent !== "createHelpQuestion") return null;
+  const title = draft.title.trim();
+  const body = draft.body.trim();
+  if (!title || !body) return { error: "invalid" as const };
+
+  const sequence = ++interactions.sequence;
+  const id = `preview-help-${sequence}`;
+  interactions.createdTopics.set(id, {
+    id,
+    sectionId: HELP_SOLUTIONS_SERVICE_SECTION_ID,
+    authorId: actor.id,
+    authorName: actor.name,
+    title,
+    body,
+    tags: previewTagsFromInput(draft.tags),
+    sourceLocale: locale,
+    createdAt: new Date(Date.UTC(2026, 10, 11, 8, 0, sequence)),
+  });
+  return redirect(forumTopicPath(locale, id));
+}
+
+async function previewProfileAction(
+  scenario: Scenario,
+  interactions: PreviewInteractionState,
+  request: Request,
+  routeLocale?: string,
+  routeUserId?: string,
+) {
+  const actor = previewUser(scenario);
+  if (!actor || !routeUserId) return null;
+  const effectiveUserId = scenario.id.startsWith("profile-") && scenario.allowedIdentities && routeUserId === "alex"
+    ? actor.id
+    : routeUserId;
+  if (effectiveUserId !== actor.id) return null;
+
+  const form = await request.formData();
+  if (String(form.get("intent") ?? "") !== "save-profile") return null;
+  const bio = String(form.get("bio") ?? "");
+  const githubUrl = String(form.get("githubUrl") ?? "");
+  const websiteUrl = String(form.get("websiteUrl") ?? "");
+  const draft = { bio, githubUrl, websiteUrl };
+
+  try {
+    const fields = validateProfileFields({ bio, githubUrl, websiteUrl });
+    interactions.profileOverrides.set(effectiveUserId, fields);
+    const locale = previewMutationLocale(routeLocale, scenario.locale);
+    return redirect(`${forumProfilePath(locale, routeUserId)}?saved=1`);
+  } catch (error) {
+    if (error instanceof InvalidProfileError) {
+      return { error: "invalid" as const, draft };
+    }
+    throw error;
+  }
+}
+
+function PreviewNotificationsRoute({ scenario, interactions }: {
+  scenario: Scenario;
+  interactions: PreviewInteractionState;
+}) {
+  const notifications = scenario.variant === "notifications-empty"
+    ? []
+    : previewNotifications(scenario.locale).map((notification) =>
+        interactions.readNotifications.has(notification.id) && notification.readAt === null
+          ? { ...notification, readAt: "2026-11-11T08:30:00.000Z" }
+          : notification
+      );
+  return <NotificationsView locale={scenario.locale} notifications={notifications} />;
+}
+
+async function previewNotificationsAction(
+  scenario: Scenario,
+  interactions: PreviewInteractionState,
+  request: Request,
+  routeLocale?: string,
+) {
+  if (!previewUser(scenario)) return null;
+  const form = await request.formData();
+  if (String(form.get("intent") ?? "") !== "open") return null;
+  const notificationId = String(form.get("notificationId") ?? "");
+  const notification = previewNotifications(scenario.locale).find((item) => item.id === notificationId);
+  if (!notification) return null;
+
+  interactions.readNotifications.add(notificationId);
+  const locale = previewMutationLocale(routeLocale, scenario.locale);
+  return redirect(
+    `${forumTopicPath(locale, notification.topicId)}#post-${encodeURIComponent(notification.postId)}`,
+  );
 }
 
 async function previewSectionAction(
@@ -1412,7 +1578,7 @@ function previewCreatedTopicData(
   created: PreviewCreatedTopic,
   interactions: PreviewInteractionState,
 ): Parameters<typeof TopicView>[0] {
-  const sectionPage = previewSection(scenario.locale, created.sectionId);
+  const sectionPage = previewSectionPresentation(scenario.locale, created.sectionId);
   const baseTopic: PreviewTopicPage = {
     id: created.id,
     sectionId: created.sectionId,
