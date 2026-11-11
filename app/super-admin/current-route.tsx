@@ -77,9 +77,9 @@ function monitorScope(key:Sa02MonitorKey):SuperAdminMonitorScope {
 }
 
 /** Counts are decimal bigint strings from PostgreSQL. Never round them through Number. */
-function displayCount(value:string|number|boolean):string {
-  if (typeof value === "string" && /^\\d+$/.test(value))
-    return new Intl.NumberFormat("en", {useGrouping:true}).format(BigInt(value));
+function displayCount(value:string|number|boolean,locale:string):string {
+  if (typeof value === "string" && /^[0-9]+$/.test(value))
+    return new Intl.NumberFormat(locale).format(BigInt(value));
   return String(value);
 }
 
@@ -123,7 +123,7 @@ export function SuperAdminSa02Current({locale,area,state}:{
                   {value===null || value===undefined ? t("superAdminNotRecorded")
                     : kind==="time" ? <time dateTime={String(value)}>{formatTime(String(value),locale)}</time>
                     : kind==="flag" ? t(value ? "superAdminSa02FlagEnabled" : "superAdminSa02FlagDisabled")
-                    : <bdi>{displayCount(value)}</bdi>}
+                    : <bdi>{displayCount(value,locale)}</bdi>}
                 </dd>
               </div>;
             })}</dl>
