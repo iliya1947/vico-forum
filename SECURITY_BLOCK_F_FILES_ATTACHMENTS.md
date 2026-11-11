@@ -6,9 +6,10 @@
 2. Этот `main` отличается от предыдущего security target `4248fed23925e4a23e48485d419ceaf0ce337def` только merged factual SA-02 documentation; attachment runtime/schema между этими targets не менялись.
 3. **F1 — Private object / download access / IDOR завершён: PASS, 0 confirmed current-scope findings.**
 4. **F2 — Upload admission and request bounds завершён: PASS, 0 additional current-scope findings.**
-5. Следующий bounded slice — **F3 Type, content and malicious payload handling**.
-6. Мира — auditor/coordinator. Remediation, technical planner и implementer не назначены.
-7. Stage 6 external activation остаётся paused.
+5. **F3 — Type, content and malicious payload handling завершён: 1 current-scope finding — `ATTACH-TEXT-TAIL-01 Low/P3`.**
+6. Следующий bounded slice — **F4 Publication/edit binding, replay and races**.
+7. Мира — auditor/coordinator. Remediation, technical planner и implementer не назначены.
+8. Stage 6 external activation остаётся paused.
 
 ## F1 — результат
 
@@ -17,7 +18,7 @@
 3. Private repository lookup связывает ref с `ownerId`; foreign authenticated user с известными `attachmentId/context/operation` не получает metadata. Cancel/Publish terminally retire operation; completed generation отклоняется как gone.
 4. Temporary/private и published refs разделены. Удалённая связь конкретного post больше не разрешает выдачу через этот post; shared asset остаётся доступен только через другую действующую published связь. Abandoned temporary refs становятся terminal через bounded 24-hour cleanup; реальное расписание cleanup остаётся Stage 6 по текущему контракту.
 5. Object key извлекается только после server-side membership lookup и не возвращается клиенту. Bucket read не начинается при guest/foreign/revoked/not-found path.
-6. Success responses используют `private, no-store`, `nosniff` и sandbox; inline разрешён только server-verified raster, text preview — только server-verified bounded text, остальные типы выдаются download как `application/octet-stream` с безопасным disposition.
+6. Success responses используют `private, no-store`, `nosniff` и sandbox; inline разрешён только для server-detected raster, text preview — только для `detectedType=text` до 1 МБ, остальные типы выдаются download как `application/octet-stream` с безопасным disposition. Полнота text-content verification относится к F3.
 7. Retained Complaint evidence имеет отдельную current-permission + Case/asset membership boundary; private object key остаётся server-side. Это не расширяет public attachment access.
 8. Live external R2 delivery, реальное cleanup scheduling и AV/provider acceptance относятся к paused Stage 6 и не считаются F1 current-scope defect без отдельной доказанной цепочки.
 
@@ -29,10 +30,34 @@
 4. New upload admission проверяет active `attachments.upload` measure до R2 и повторно в metadata transaction после R2. Exact already-committed stable-ID replay возвращается без нового object write; foreign/other-scope stable ID authority не получает.
 5. Declared size — bounded safe integer. `0`/invalid и >50,000,000 bytes отклоняются без R2 payload write; фактический stream дополнительно считает bytes и fail-closed при short/long body или read error. Partial/aborted input не может стать verified attachment metadata.
 6. Upload path читает только bounded 4096-byte sniff prefix, затем передаёт rest как stream. Worker adapter использует `FixedLengthStream(byteLength)` и не требует whole-object buffering. Unknown/chunked request length не отменяет application hard bound по declared + actually received bytes.
-7. До payload write создаётся durable upload-object journal, затем одноразовая reservation и READY activation. Metadata/ref создаются только после успешного private write и обязательной structural finalization; journal/cleanup fencing не позволяет failed storage/DB path превратиться в `type-checked` live ref.
+7. До payload write создаётся durable upload-object journal, затем одноразовая reservation и READY activation. Metadata/ref создаются только после успешного private write и применимой post-write validation; journal/cleanup fencing не позволяет failed storage/DB path превратиться в live ref. Полнота type/content validation отдельно проверяется в F3.
 8. Lost/ambiguous outcomes разделены: ambiguous physical write revokes same-key authority через reservation/delete/journal cleanup; ambiguous metadata COMMIT сохраняет object до stable-ID retry, который сходится на одном logical asset. Concurrent same-ID uploads сходятся на одной authoritative metadata/ref, losing physical object удаляется.
 9. Уже подтверждённый `FORUM-READ-BOUNDS-01` затрагивает `authorizeEditorWrite()` для topic context через unbounded `readTopicPage`; это прежний Block E root cause и отдельным F2 finding не дублируется.
 10. Отсутствие per-user attachment quota не считается finding по утверждённой Block F current-scope границе. Live external R2 acceptance/scheduling остаются Stage 6 и здесь не заявляются как проверенные.
+
+## F3 — результат
+
+1. Audit target: current `main` `538084fd472c65459ad55ab30a0f96fbfdd68e56`.
+2. Verdict: **1 current-scope finding — `ATTACH-TEXT-TAIL-01 Low/P3`**.
+3. Extension / declared MIME / initial signature consistency — PASS для проверенных families: запрещённые executable extensions/MIME и executable magic отклоняются; binary formats требуют matching extension/signature semantics, а MIME contradiction даёт rejection.
+4. Binary structural finalization — PASS в F3 scope: PNG/JPEG/GIF/WebP/PDF получают streaming structural validator; ZIP/OOXML/ODF и 7z/gzip/tar/OLE проходят отдельные bounded post-write structural readers. Storage/read failure не превращается в accepted content.
+5. HTML/SVG/script-like source — PASS по active-content boundary: они классифицируются как text и сохраняют `text/plain; charset=utf-8`; `view=text` отдаёт inert plain text с `Content-Security-Policy: sandbox`, `nosniff`, `private, no-store`. PDF/archives/other files не получают inline execution path.
+6. Raster inline — PASS: `view=inline` допускает только persisted `detectedType` из `png/jpeg/gif/webp`; response MIME задаётся сервером, `nosniff` и sandbox сохраняются. Активный SVG/HTML не попадает в raster path.
+7. Archive semantics — PASS для current contract: ZIP/containers проверяются на структурную согласованность, но gzip payload/архивное содержимое намеренно не объявляется безопасным и не исполняется/распаковывается форумом. Live AV не имитируется и остаётся Stage 6.
+8. Secret-file UX — PASS: `.env` / `.env.*` перед upload показывают явное предупреждение. Это client warning, а не server authority.
+9. Security evidence — PASS кроме finding ниже: rejected suspicious upload хранит только bounded metadata (`uploadId`, actor/context/operation, filename, declared MIME/size, detected type, factual reason), без raw file bytes и object key. Owner SA-02 history дополнительно проецирует сокращённый набор metadata.
+
+### ATTACH-TEXT-TAIL-01 — Low/P3
+
+1. `ATTACHMENT_SNIFF_BYTES` равен 4096. Для text-family `detectAttachmentContent()` проверяет UTF-8/control bytes только внутри этого prefix; для файла длиннее 4096 байт prefix рассматривается как начало потока.
+2. После prefix admission `createAttachmentStructuralValidator("text", ...)` возвращает `null`, а `validateStoredStructure()` для `inspection.detected === "text"` без дополнительного чтения/проверки возвращает `true`.
+3. Достижимый path: authenticated permitted uploader отправляет exact-length файл с первыми 4096 байтами допустимого UTF-8 текста, а после них — NUL/произвольный binary payload либо executable-like bytes. Filename/MIME можно оставить benign text/source; size/stream bounds при этом корректны.
+4. Такой объект проходит как `detectedType="text"`, получает `verificationStatus="type-checked"` и draft ref. Publication boundary принимает selected ref по `verificationStatus="type-checked"` + active cleanup state, поэтому этот объект можно опубликовать.
+5. Поскольку initial inspection успешен и `suspicious=false`, `recordSecurityEvent()` не вызывается: binary/text mismatch после sniff window не попадает в `Требуют внимания → Безопасность → Вложения`.
+6. Impact current-scope: существующая type/content boundary допускает binary payload, лежащий после sniff prefix, как проверенный text и пропускает его в publication/evidence path. Это нарушает текущую границу binary/text confusion и утверждение, что тип проверяется на streaming boundary.
+7. Mitigation уже есть на выдаче: text preview всегда `text/plain; charset=utf-8` + sandbox + `nosniff`, default file response — `application/octet-stream` attachment. Same-origin script execution/XSS через этот finding не подтверждён.
+8. Severity — **Low/P3**: security classification/evidence bypass реальный и текущий, но доказанного active-content execution, privilege bypass или AV bypass нет; AV provider не входит в current Stage.
+9. Remediation в рамках audit stage не назначена.
 
 ## Цель
 
