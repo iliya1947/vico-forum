@@ -153,14 +153,14 @@ def post_form(ctx, path, values, status=200, redirect=False):
     return response
 
 
-def page_ids(page, selector):
-    entries = page.locator(selector)
+def history_ids(page):
     return [item.locator("dl dd").first.inner_text().rsplit("/", 1)[-1].strip()
-            for item in entries.all()]
+            for item in page.locator("#owner-history li[data-history-origin]").all()]
 
 
-def cross_owner_cursors(cursor, target):
-    return target + "?historyBefore=" + quote(cursor, safe="")
+def session_ids(page):
+    return [item.locator("p bdi").first.inner_text()
+            for item in page.locator("#owner-sessions li").all()]
 
 
 def bad_cursor(resource, target, origin=None):
@@ -417,9 +417,9 @@ try:
         assert "not-a-real-address" not in owner.content()
         session_href = owner.locator("#owner-sessions a").get_attribute("href")
         assert session_href and "sessionsBefore=" in session_href
-        first_session_ids = set(page_ids(owner, "#owner-sessions li"))
+        first_session_ids = set(session_ids(owner))
         document(owner, session_href)
-        later_session_ids = set(page_ids(owner, "#owner-sessions li"))
+        later_session_ids = set(session_ids(owner))
         assert first_session_ids.isdisjoint(later_session_ids)
         assert set(row["id"] for row in session_samples) <= first_session_ids | later_session_ids
         req(owner_ctx, other_path + "?sessionsBefore=" + quote(
@@ -429,11 +429,11 @@ try:
         # History: page 1 and page 2 do not duplicate native source IDs.
         document(owner, target_path)
         expect(owner.locator("#owner-history li[data-history-origin]")).to_have_count(25)
-        first_history_ids = set(page_ids(owner, "#owner-history li[data-history-origin]"))
+        first_history_ids = set(history_ids(owner))
         history_href = owner.locator("#owner-history a").get_attribute("href")
         assert history_href and "historyBefore=" in history_href
         document(owner, history_href)
-        second_history_ids = set(page_ids(owner, "#owner-history li[data-history-origin]"))
+        second_history_ids = set(history_ids(owner))
         assert first_history_ids.isdisjoint(second_history_ids)
         assert len(first_history_ids) == 25 and len(second_history_ids) > 0
         for fact in c_noise:
@@ -558,10 +558,11 @@ try:
         expect(link).to_have_count(1)
         link.focus()
         owner.keyboard.press("Enter")
-        expect(owner).to_have_url(lambda url: "historyBefore=" in url)
+        owner.wait_for_url("**historyBefore=**")
         record("keyboard-history-native-paging")
 
-        signed_out = post_form(owner_ctx, "/api/auth/sign-out", {}, status=200)
+        signed_out = owner_ctx.request.post(base + "/api/auth/sign-out", headers={"Origin": base}, data={})
+        assert signed_out.status == 200
         document(owner, target_path)
         expect(owner.locator("#owner-account,#owner-history")).to_have_count(0)
         assert target_email not in req(owner_ctx, data_path(target_path)).text()
