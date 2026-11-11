@@ -2,19 +2,17 @@
 
 - Service PR: **#251**.
 - SA-03 is fully closed.
-- **Current stage: SA-04 implementation — first bounded authoring result assigned.**
-- Current `main`: `ce62e783e71433a00c2fe4874ee26dfc54614628`.
-- Accepted SA-04 technical plan: #6806249892; Mira scope/fit review PASS.
-- **Assigned to Lira: SA04-A1 — account-state schema foundation only; authoring in progress (not yet complete).**
-- Draft implementation [#327](https://github.com/iliya1947/vico-forum/pull/327), branch `chatgpt/sa04-account-state-foundation`, provisional head `cebb91504f770fa6cd42c4990bb3116aef9b7874` from current main.
-- Seven A1-only files authored; author structural verification and an HTTP input/output test-scope correction recorded in #251 comment #6806780991. The new manifest CHECK hash remains deliberately `PENDING` until PostgreSQL 17 catalog hash evidence is available. All initial exact-head Actions #43096188913 / #43096188962 / #43096188931 / #43096188983 are **queued**, no test/CI PASS or A1 completion claimed. Evidence: #251 comment #6806574366.
-- Next step stays with Lira: complete schema manifest exact hash, resolve any real CI findings, rerun final exact-head applicable checks, publish stable head/evidence and then STOP. **No Mira review until author completion.**
-- Result: add the inactive-account state storage contract to the existing `user` row with the next forward migration, Drizzle/schema metadata and focused schema/migration evidence. Existing rows remain active.
-- **Explicitly not in A1:** account-state runtime reader/predicate module, auth/session enforcement, writer guards, public identity masking/projectors, deactivate action/control, lifecycle event/UI.
-- Lira creates/uses one Draft SA-04 implementation PR from current main, publishes exact head/evidence, then **STOP**.
-- After Lira STOP, Mira reviews only SA04-A1 before any next bounded continuation.
-- Lev and Mark unassigned.
-- No SA-05+, Stage6/production, #315 activation, broad security remediation or deferred journal-storage work.
+- **Current stage: SA04-A1 coordinator review — CHANGES REQUIRED.**
+- Base/current `main`: `ce62e783e71433a00c2fe4874ee26dfc54614628`.
+- Draft implementation PR: **#327**, exact reviewed head `cebb91504f770fa6cd42c4990bb3116aef9b7874`.
+- Mira reviewed the complete 7-file A1 diff against the bounded assignment and current Super-admin contract.
+- **Finding SA04-A1-MIRA-01:** `.github/production-schema-manifest.json` still contains `user_deactivation_state_check.definitionSha256 = "PENDING"`. Repository manifest verification explicitly rejects any pending definition hash, so A1 does not yet satisfy its schema-manifest parity criterion.
+- No other confirmed current-scope A1 implementation defects were found in the reviewed diff: migration, Drizzle schema/snapshot, append-only journal, state tuple/UTC retention constraint, Better Auth additionalFields boundary and focused tests are scope-aligned.
+- Exact-head GitHub Actions for `cebb91504f770fa6cd42c4990bb3116aef9b7874` are still **queued**; this is not a product defect, but no final exact-head test PASS can be claimed until they conclude.
+- **Assigned to Lira: one bounded correction only — SA04-A1-MIRA-01.** Obtain the real PostgreSQL 17 normalized CHECK hash, replace `PENDING`, run applicable final exact-head checks, personally inspect the corrected A1 result, publish stable head/evidence, then **STOP**.
+- No SA04-A2+, runtime account-state helper, auth/session enforcement, writer guards, public identity masking, deactivate action/control, SA-05+, Stage6/production or #315 remediation.
+- Lev and Mark remain unassigned.
+- After Lira STOP: Mira repeats A1-only coordinator review on the new stable exact head.
 
 ## Mandatory author verification
 
