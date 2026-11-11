@@ -14,6 +14,40 @@ import SuperAdminEventsRoute from "./super-admin-events";
 import SuperAdminMonitorHistoryRoute from "./super-admin-monitor-history";
 
 const at="2026-11-11T08:00:00.000Z";
+const semanticPage:OwnerHistoryPage={entries:[
+  {origin:"system-observation",id:"security-evidence-sample",occurredAt:"2026-11-11T08:00:00.000Z",
+    recordedAt:"2026-11-11T08:00:00.000Z",kind:"monitor.observed",source:"database",
+    quality:"measured",monitorKeys:["security.attachments"],values:{total:"1",evidence24h:"1"}},
+  {origin:"system-observation",id:"registration-sample",occurredAt:"2026-11-11T08:00:00.000Z",
+    recordedAt:"2026-11-11T08:00:00.000Z",kind:"monitor.observed",source:"database",
+    quality:"measured",monitorKeys:["accounts.registration"],values:{version:7}},
+  {origin:"system-observation",id:"users-sample",occurredAt:"2026-11-11T08:00:00.000Z",
+    recordedAt:"2026-11-11T08:00:00.000Z",kind:"monitor.observed",source:"database",
+    quality:"measured",monitorKeys:["accounts.users"],values:{total:"9007199254740993"}},
+  {origin:"system-observation",id:"system-dependencies-sample",occurredAt:"2026-11-11T08:00:00.000Z",
+    recordedAt:"2026-11-11T08:00:00.000Z",kind:"monitor.observed",source:"database",
+    quality:"measured",monitorKeys:["system.dependencies"],values:{version:"17.11"}},
+  {origin:"auth-event",id:"real-auth-fact-id",occurredAt:"2026-11-11T08:00:00.000Z",
+    recordedAt:"2026-11-11T08:00:01.000Z",kind:"account.created",source:"auth",
+    quality:null,monitorKeys:["accounts.users"],values:{
+      actorUserId:"00012345678901234567890",targetUserId:"00012345678901234567890",
+      entityType:"user",entityId:"00012345678901234567890"}},
+  {origin:"admin-history",id:"real-admin-history-id",occurredAt:"2026-11-11T08:00:00.000Z",
+    recordedAt:"2026-11-11T08:00:01.000Z",kind:"settings.registrationChanged",source:"admin_history",
+    quality:null,monitorKeys:["accounts.registration"],values:{
+      actorUserId:"0000000033",targetType:"user",targetId:"0000000044"}},
+  {origin:"attachment-evidence",id:"real-attachment-evidence-id",
+    occurredAt:"2026-11-11T08:00:00.000Z",recordedAt:"2026-11-11T08:00:00.000Z",
+    kind:"attachment.securityEvidence",source:"forum_attachment_security_events",
+    quality:null,monitorKeys:["security.attachments"],
+    values:{uploadId:"000001234567890",uploadedByUserId:"0000000033",declaredByteSize:42}},
+  {origin:"attempt-pattern",id:"real-attempt-pattern-id",
+    occurredAt:"2026-11-11T08:00:00.000Z",recordedAt:"2026-11-11T08:00:00.000Z",
+    kind:"attempt.coalesced",source:"auth",quality:"coalesced",
+    monitorKeys:["security.auth"],values:{count:"9007199254740993",actorUserId:"0000000033"}},
+],next:null};
+
+
 const page:OwnerHistoryPage={entries:[
   {origin:"auth-event",id:"fact/1",occurredAt:at,recordedAt:"2026-11-11T08:01:00.000Z",
     kind:"auth.sessionCreated",monitorKeys:["accounts.sessions","security.auth"],
@@ -45,16 +79,17 @@ const page:OwnerHistoryPage={entries:[
 let router:ReturnType<typeof createMemoryRouter>|undefined;
 afterEach(()=>{cleanup();router?.dispose();router=undefined;});
 
-function mount(locale:"en"|"ru"|"he",area:"events"|"history",routing?:AdministrativeRouting){
+function mount(locale:"en"|"ru"|"he",area:"events"|"history",routing?:AdministrativeRouting,
+  sourcePage:OwnerHistoryPage=page,scope={area:"security",monitorKey:"security.auth"}){
   const en=Object.fromEntries(Object.entries(canonicalEnglishCatalog.common)
     .map(([key,descriptor])=>[key,descriptor.source]));
   const i18n=createInstance();
   void i18n.init({lng:locale,fallbackLng:"en",initAsync:false,defaultNS:"common",
     resources:{en:{common:en},ru:{common:russianCommonValues},he:{common:hebrewCommonValues}}});
   const path=area==="events"?`/${locale}/super-admin/events`
-    :`/${locale}/super-admin/monitoring/security/security.auth/history`;
+    :`/${locale}/super-admin/monitoring/${scope.area}/${scope.monitorKey}/history`;
   router=createMemoryRouter([{path,loader:()=>({
-    locale,area:"security",monitorKey:"security.auth",page,
+    locale,area:scope.area,monitorKey:scope.monitorKey,page:sourcePage,
   }),element:area==="events"?<SuperAdminEventsRoute/>:<SuperAdminMonitorHistoryRoute/>}],
   {initialEntries:[path]});
   return render(<I18nextProvider i18n={i18n}>
@@ -132,4 +167,59 @@ describe("SA02-D3.1 source-aware original History route presentation",()=>{
     expect(container.textContent).toContain(expected.superAdminHistoryUnknown);
     expect(container.textContent).not.toContain("Coalesced attempt group");
   });
+  it.each(["en","ru","he"] as const)("uses observation monitor semantics in global History (%s)",async locale=>{
+    const {container}=mount(locale,"events",undefined,semanticPage);
+    await waitFor(()=>expect(container.querySelectorAll(".super-admin-timeline li")).toHaveLength(8));
+    const tr=locale==="ru"?russianCommonValues:locale==="he"?hebrewCommonValues:
+      Object.fromEntries(Object.entries(canonicalEnglishCatalog.common).map(([key,d])=>[key,d.source]));
+    function displayed(sourceId:string,label:string){
+      const entry=[...container.querySelectorAll(".super-admin-timeline li")].find(li=>
+        li.textContent?.includes(sourceId));
+      expect(entry).toBeDefined();
+      return [...entry!.querySelectorAll("dl > div")].find(row=>
+        row.querySelector("dt")?.textContent===label)?.querySelector("dd")?.textContent;
+    }
+    expect(displayed("security-evidence-sample",tr.superAdminSa02TotalEvidence)).toBe(
+      new Intl.NumberFormat(locale).format(1n));
+    expect(displayed("registration-sample",tr.superAdminSa02PolicyVersion)).toBe("7");
+    expect(displayed("users-sample",tr.superAdminSa02TotalUsers)).toBe(
+      new Intl.NumberFormat(locale).format(9007199254740993n));
+    expect(displayed("system-dependencies-sample",tr.superAdminDatabaseVersion)).toBe("17.11");
+    expect(displayed("security-evidence-sample",tr.superAdminSa02TotalUsers)).toBeUndefined();
+    expect(displayed("registration-sample",tr.superAdminDatabaseVersion)).toBeUndefined();
+  });
+
+  it("renders digit-only opaque refs literally while retaining bigint-safe counts",async()=>{
+    const {container}=mount("en","events",undefined,semanticPage);
+    await waitFor(()=>expect(container.querySelectorAll(".super-admin-timeline li")).toHaveLength(8));
+    const auth=container.querySelector('li[data-history-kind="account.created"]')!;
+    const ids=[...auth.querySelectorAll("dl dd bdi")].map(el=>el.textContent);
+    expect(ids.filter(v=>v==="00012345678901234567890")).toHaveLength(3);
+    expect(ids.join(" ")).not.toContain("12,345,678,901,234,567,890");
+    const admin=container.querySelector('li[data-history-origin="admin-history"]')!;
+    expect(admin.textContent).toContain("0000000033");
+    expect(admin.textContent).toContain("0000000044");
+    const attachment=container.querySelector('li[data-history-origin="attachment-evidence"]')!;
+    expect(attachment.textContent).toContain("000001234567890");
+    expect(attachment.textContent).toContain("0000000033");
+    const group=container.querySelector('li[data-history-origin="attempt-pattern"]')!;
+    expect(group.textContent).toContain("9,007,199,254,740,993");
+    expect(group.textContent).toContain("0000000033");
+    expect(container.querySelector(".super-admin-timeline a")).toBeNull();
+  });
+
+  it.each([
+    ["security","security.attachments","security-evidence-sample","Retained evidence events"],
+    ["accounts","accounts.registration","registration-sample","Policy version"],
+    ["system","system.dependencies","system-dependencies-sample","Database version"],
+    ["accounts","accounts.users","users-sample","Persisted users"],
+  ] as const)("keeps source-aware labels in scoped %s/%s History",async(area,key,id,label)=>{
+    const sourcePage:OwnerHistoryPage={entries:semanticPage.entries.filter(e=>e.id===id),next:null};
+    const {container}=mount("en","history",undefined,sourcePage,{area,monitorKey:key});
+    await waitFor(()=>expect(container.querySelectorAll(".super-admin-timeline li")).toHaveLength(1));
+    const item=container.querySelector(".super-admin-timeline li")!;
+    expect(item.textContent).toContain(id);
+    expect([...item.querySelectorAll("dt")].map(el=>el.textContent)).toContain(label);
+  });
+
 });
