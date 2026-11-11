@@ -1,7 +1,7 @@
 {
   "version": 1,
   "schema": "public",
-  "targetMigration": "0063_owner_attempt_telemetry",
+  "targetMigration": "0064_sa03_profile_history_indexes",
   "tables": {
     "account": {
       "columns": [
@@ -238,6 +238,29 @@
       ],
       "indexes": [
         {
+          "name": "admin_history_actor_occurred_idx",
+          "unique": false,
+          "method": "btree",
+          "columns": [
+            {
+              "name": "actor_id",
+              "order": "asc",
+              "nulls": "last"
+            },
+            {
+              "name": "occurred_at",
+              "order": "desc",
+              "nulls": "last"
+            },
+            {
+              "name": "id",
+              "order": "desc",
+              "nulls": "last"
+            }
+          ],
+          "predicateSha256": null
+        },
+        {
           "name": "admin_history_order_idx",
           "unique": true,
           "method": "btree",
@@ -246,6 +269,34 @@
               "name": "position",
               "nulls": "last",
               "order": "desc"
+            }
+          ],
+          "predicateSha256": null
+        },
+        {
+          "name": "admin_history_target_occurred_idx",
+          "unique": false,
+          "method": "btree",
+          "columns": [
+            {
+              "name": "target_type",
+              "order": "asc",
+              "nulls": "last"
+            },
+            {
+              "name": "target_id",
+              "order": "asc",
+              "nulls": "last"
+            },
+            {
+              "name": "occurred_at",
+              "order": "desc",
+              "nulls": "last"
+            },
+            {
+              "name": "id",
+              "order": "desc",
+              "nulls": "last"
             }
           ],
           "predicateSha256": null
@@ -1562,6 +1613,29 @@
               "nulls": "last"
             }
           ]
+        },
+        {
+          "name": "forum_attachment_security_events_uploader_created_idx",
+          "unique": false,
+          "method": "btree",
+          "columns": [
+            {
+              "name": "uploaded_by_user_id",
+              "order": "asc",
+              "nulls": "last"
+            },
+            {
+              "name": "created_at",
+              "order": "desc",
+              "nulls": "last"
+            },
+            {
+              "name": "id",
+              "order": "desc",
+              "nulls": "last"
+            }
+          ],
+          "predicateSha256": null
         }
       ]
     },
@@ -6350,6 +6424,29 @@
       ],
       "indexes": [
         {
+          "name": "owner_attempt_patterns_actor_admitted_idx",
+          "unique": false,
+          "method": "btree",
+          "columns": [
+            {
+              "name": "actor_user_id",
+              "order": "asc",
+              "nulls": "last"
+            },
+            {
+              "name": "admitted_at",
+              "order": "desc",
+              "nulls": "last"
+            },
+            {
+              "name": "id",
+              "order": "desc",
+              "nulls": "last"
+            }
+          ],
+          "predicateSha256": null
+        },
+        {
           "name": "owner_attempt_patterns_epoch_idx",
           "unique": false,
           "method": "btree",
@@ -6628,6 +6725,29 @@
           "predicateSha256": null
         },
         {
+          "name": "owner_events_actor_occurred_idx",
+          "unique": false,
+          "method": "btree",
+          "columns": [
+            {
+              "name": "actor_user_id",
+              "order": "asc",
+              "nulls": "last"
+            },
+            {
+              "name": "occurred_at",
+              "order": "desc",
+              "nulls": "last"
+            },
+            {
+              "name": "id",
+              "order": "desc",
+              "nulls": "last"
+            }
+          ],
+          "predicateSha256": null
+        },
+        {
           "name": "owner_events_entity_idx",
           "unique": false,
           "method": "btree",
@@ -6729,6 +6849,29 @@
             },
             {
               "name": "position",
+              "order": "desc",
+              "nulls": "last"
+            }
+          ],
+          "predicateSha256": null
+        },
+        {
+          "name": "owner_events_target_occurred_idx",
+          "unique": false,
+          "method": "btree",
+          "columns": [
+            {
+              "name": "target_user_id",
+              "order": "asc",
+              "nulls": "last"
+            },
+            {
+              "name": "occurred_at",
+              "order": "desc",
+              "nulls": "last"
+            },
+            {
+              "name": "id",
               "order": "desc",
               "nulls": "last"
             }
