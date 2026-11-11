@@ -179,14 +179,14 @@ describe("SA02-D3.1 source-aware original History route presentation",()=>{
       return [...entry!.querySelectorAll("dl > div")].find(row=>
         row.querySelector("dt")?.textContent===label)?.querySelector("dd")?.textContent;
     }
-    expect(displayed("security-evidence-sample",tr.superAdminSa02TotalEvidence)).toBe(
+    expect(displayed("security-evidence-sample",String(tr.superAdminSa02TotalEvidence))).toBe(
       new Intl.NumberFormat(locale).format(1n));
-    expect(displayed("registration-sample",tr.superAdminSa02PolicyVersion)).toBe("7");
-    expect(displayed("users-sample",tr.superAdminSa02TotalUsers)).toBe(
+    expect(displayed("registration-sample",String(tr.superAdminSa02PolicyVersion))).toBe("7");
+    expect(displayed("users-sample",String(tr.superAdminSa02TotalUsers))).toBe(
       new Intl.NumberFormat(locale).format(9007199254740993n));
-    expect(displayed("system-dependencies-sample",tr.superAdminDatabaseVersion)).toBe("17.11");
-    expect(displayed("security-evidence-sample",tr.superAdminSa02TotalUsers)).toBeUndefined();
-    expect(displayed("registration-sample",tr.superAdminDatabaseVersion)).toBeUndefined();
+    expect(displayed("system-dependencies-sample",String(tr.superAdminDatabaseVersion))).toBe("17.11");
+    expect(displayed("security-evidence-sample",String(tr.superAdminSa02TotalUsers))).toBeUndefined();
+    expect(displayed("registration-sample",String(tr.superAdminDatabaseVersion))).toBeUndefined();
   });
 
   it("renders digit-only opaque refs literally while retaining bigint-safe counts",async()=>{
