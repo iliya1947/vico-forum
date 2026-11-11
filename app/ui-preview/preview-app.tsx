@@ -1250,6 +1250,221 @@ function previewRouter(scenario: Scenario, interactions: PreviewInteractionState
   ], { initialEntries: [scenario.path] });
 }
 
+function PreviewSearchRoute({ scenario, interactions }: {
+  scenario: Scenario;
+  interactions: PreviewInteractionState;
+}) {
+  const [params] = useSearchParams();
+  const query = (params.get("q") ?? "").trim();
+  const normalized = query.toLocaleLowerCase(scenario.locale);
+  const createdResults = [...interactions.createdTopics.values()].map((created) => {
+    const localizedSection = previewSection(scenario.locale, created.sectionId);
+    return {
+      id: created.id,
+      sourceLocale: created.sourceLocale,
+      titleDirection: previewDirectionForLocale(created.sourceLocale),
+      title: created.title,
+      authorName: created.authorName,
+      postCount: 1 + (interactions.replies.get(created.id)?.length ?? 0),
+      activityAt: created.createdAt,
+      category: localizedSection.category,
+      section: { id: localizedSection.id, name: localizedSection.name },
+      tags: created.tags,
+    };
+  });
+  const results = query
+    ? [...createdResults, ...previewSearchResults(scenario.locale)].filter((item) => [
+        item.title,
+        item.authorName,
+        ...item.tags.map((tag) => tag.name),
+      ].some((value) => value.toLocaleLowerCase(scenario.locale).includes(normalized)))
+    : [];
+  return <SearchView locale={scenario.locale} query={query} results={results} />;
+}
+
+async function previewSectionAction(
+  scenario: Scenario,
+  interactions: PreviewInteractionState,
+  request: Request,
+  routeLocale?: string,
+  routeSectionId?: string,
+) {
+  const actor = previewUser(scenario);
+  if (!actor) return null;
+  const form = await request.formData();
+  if (String(form.get("intent") ?? "") !== "createTopic") return null;
+  const title = String(form.get("title") ?? "").trim();
+  const body = String(form.get("body") ?? "").trim();
+  if (!title || !body) return null;
+
+  const sequence = ++interactions.sequence;
+  const id = `preview-topic-${sequence}`;
+  const locale = previewMutationLocale(routeLocale, scenario.locale);
+  interactions.createdTopics.set(id, {
+    id,
+    sectionId: routeSectionId || sectionId,
+    authorId: actor.id,
+    authorName: actor.name,
+    title,
+    body,
+    tags: previewTagsFromInput(String(form.get("tags") ?? "")),
+    sourceLocale: locale,
+    createdAt: new Date(Date.UTC(2026, 10, 11, 7, 0, sequence)),
+  });
+  return redirect(forumTopicPath(locale, id));
+}
+
+async function previewTopicAction(
+  scenario: Scenario,
+  interactions: PreviewInteractionState,
+  request: Request,
+  routeLocale?: string,
+  routeTopicId?: string,
+) {
+  const actor = previewUser(scenario);
+  if (!actor || !routeTopicId) return null;
+  const locale = previewMutationLocale(routeLocale, scenario.locale);
+  const form = await request.formData();
+  const intent = String(form.get("intent") ?? "");
+
+  if (intent === "reply") {
+    const body = String(form.get("body") ?? "").trim();
+    if (!body) return null;
+    const sequence = ++interactions.sequence;
+    const reply: PreviewReply = {
+      id: `preview-post-${sequence}`,
+      topicId: routeTopicId,
+      authorId: actor.id,
+      authorName: actor.name,
+      body,
+      parentPostId: String(form.get("parentPostId") ?? "").trim() || null,
+      sourceLocale: locale,
+      createdAt: new Date(Date.UTC(2026, 10, 11, 7, 5, sequence)),
+    };
+    const current = interactions.replies.get(routeTopicId) ?? [];
+    interactions.replies.set(routeTopicId, [...current, reply]);
+    return redirect(`${forumTopicPath(locale, routeTopicId)}#post-${encodeURIComponent(reply.id)}`);
+  }
+
+  if (intent === "selectBestAnswer") {
+    const postId = String(form.get("postId") ?? "").trim();
+    if (!postId) return null;
+    const current = interactions.topicOverrides.get(routeTopicId) ?? {};
+    interactions.topicOverrides.set(routeTopicId, { ...current, bestAnswerPostId: postId });
+    return redirect(
+      `${forumTopicPath(locale, routeTopicId)}?solutionPrompt=${encodeURIComponent(postId)}#solution-confirmation`,
+    );
+  }
+
+  if (intent === "markSolved") {
+    const current = interactions.topicOverrides.get(routeTopicId) ?? {};
+    interactions.topicOverrides.set(routeTopicId, { ...current, isSolved: true });
+    return redirect(forumTopicPath(locale, routeTopicId));
+  }
+
+  return null;
+}
+
+function previewSectionWithInteractions(
+  locale: PreviewLocale,
+  routeSectionId: string | undefined,
+  interactions: PreviewInteractionState,
+) {
+  const base = previewSection(locale, routeSectionId);
+  const created = [...interactions.createdTopics.values()]
+    .filter((topic) => topic.sectionId === base.id)
+    .map((topic) => ({
+      id: topic.id,
+      authorName: topic.authorName,
+      postCount: 1 + (interactions.replies.get(topic.id)?.length ?? 0),
+      createdAt: topic.createdAt,
+      isPinned: false,
+      tags: topic.tags,
+      title: {
+        id: `${topic.id}-title-r1`,
+        originalContent: topic.title,
+        sourceLocale: topic.sourceLocale,
+      },
+    }));
+  return { ...base, topics: [...created, ...base.topics] };
+}
+
+function previewCreatedTopicData(
+  scenario: Scenario,
+  created: PreviewCreatedTopic,
+  interactions: PreviewInteractionState,
+): Parameters<typeof TopicView>[0] {
+  const sectionPage = previewSection(scenario.locale, created.sectionId);
+  const baseTopic: PreviewTopicPage = {
+    id: created.id,
+    sectionId: created.sectionId,
+    authorId: created.authorId,
+    authorName: created.authorName,
+    createdAt: created.createdAt,
+    isPinned: false,
+    isSolved: false,
+    isClosed: false,
+    closureVersion: 0,
+    bestAnswerPostId: null,
+    needsDetails: false,
+    duplicateOf: null,
+    duplicateDisputed: false,
+    title: {
+      id: `${created.id}-title-r1`,
+      originalContent: created.title,
+      sourceLocale: created.sourceLocale,
+    },
+    section: {
+      id: sectionPage.id,
+      name: sectionPage.name,
+      category: sectionPage.category,
+    },
+    tags: created.tags,
+    posts: [{
+      id: `${created.id}-post-1`,
+      topicId: created.id,
+      authorId: created.authorId,
+      authorName: created.authorName,
+      parentPostId: null,
+      solutionModerationStatus: null,
+      solutionOutdatedReason: null,
+      solutionOutdatedReasonKind: null,
+      createdAt: created.createdAt,
+      body: {
+        id: `${created.id}-post-body-r1`,
+        originalContent: created.body,
+        sourceLocale: created.sourceLocale,
+      },
+    }],
+  };
+  const topic = previewApplyTopicState(baseTopic, interactions);
+  return {
+    locale: scenario.locale,
+    topic,
+    titlePresentation: originalPresentation(
+      "topic-title",
+      topic.id,
+      topic.title.id,
+      topic.title.originalContent,
+      topic.title.sourceLocale,
+      previewDirectionForLocale(topic.title.sourceLocale as PreviewLocale),
+    ),
+    postPresentations: previewPresentationsForTopic([], topic),
+    generationUnits: [],
+    canReply: scenario.identity !== "guest",
+    canManageSolution: scenario.identity !== "guest",
+    canConfirmOwnSolution: scenario.identity !== "guest",
+    canManageAnySolution: false,
+    canModerateHelpSolution: false,
+    isTopicAuthor: scenario.identity !== "guest",
+    canCorrectTitleSourceLocale: false,
+    canCorrectAnySourceLocale: false,
+    canManagePin: false,
+    canUseAdminPanel: false,
+    topicReadState: null,
+  };
+}
+
 function previewCategory(locale: PreviewLocale, routeCategoryId: string | undefined) {
   const localizedCategory = locale === "ru"
     ? categoryRu
@@ -1576,15 +1791,19 @@ function previewSection(locale: PreviewLocale, routeSectionId: string | undefine
   };
 }
 
-function PreviewSectionRoute({ scenario }: { scenario: Scenario }) {
+function PreviewSectionRoute({ scenario, interactions }: {
+  scenario: Scenario;
+  interactions: PreviewInteractionState;
+}) {
   const { sectionId: routeSectionId } = useParams();
+  const page = previewSectionWithInteractions(scenario.locale, routeSectionId, interactions);
   return (
     <SectionView
       locale={scenario.locale}
-      section={previewSection(scenario.locale, routeSectionId)}
+      section={page}
       canCreateTopic={scenario.identity !== "guest"}
       topicReadStates={scenario.identity === "guest" ? null : Object.fromEntries(
-        previewSection(scenario.locale, routeSectionId).topics.map((topic, index) => [
+        page.topics.map((topic, index) => [
           topic.id,
           (["new", "unread", "read"] as const)[index % 3],
         ]),
@@ -1596,9 +1815,16 @@ function PreviewSectionRoute({ scenario }: { scenario: Scenario }) {
   );
 }
 
-function PreviewTopicRoute({ scenario }: { scenario: Scenario }) {
+function PreviewTopicRoute({ scenario, interactions }: {
+  scenario: Scenario;
+  interactions: PreviewInteractionState;
+}) {
   const { topicId: routeTopicId } = useParams();
 
+  const createdTopic = routeTopicId ? interactions.createdTopics.get(routeTopicId) : undefined;
+  if (createdTopic) {
+    return <TopicView {...previewCreatedTopicData(scenario, createdTopic, interactions)} />;
+  }
 
   const helpQuestion = previewHelpSolutions(scenario.locale).questions
     .find((question) => question.id === routeTopicId);
@@ -1664,17 +1890,21 @@ function PreviewTopicRoute({ scenario }: { scenario: Scenario }) {
       tags: helpQuestion.tags,
       posts,
     };
+    const interactiveHelpTopic = previewApplyTopicState(helpTopic, interactions);
     return (
       <TopicView
         locale={scenario.locale}
-        topic={helpTopic}
+        topic={interactiveHelpTopic}
         titlePresentation={originalPresentation(
-          "topic-title", helpTopic.id, helpTopic.title.id, helpTopic.title.originalContent,
+          "topic-title", interactiveHelpTopic.id, interactiveHelpTopic.title.id, interactiveHelpTopic.title.originalContent,
           scenario.locale, scenario.direction,
         )}
-        postPresentations={posts.map((post) => originalPresentation(
-          "post-body", post.id, post.body.id, post.body.originalContent, scenario.locale, scenario.direction,
-        ))}
+        postPresentations={previewPresentationsForTopic(
+          posts.map((post) => originalPresentation(
+            "post-body", post.id, post.body.id, post.body.originalContent, scenario.locale, scenario.direction,
+          )),
+          interactiveHelpTopic,
+        )}
         generationUnits={[]}
         canReply={scenario.identity !== "guest"}
         canManageSolution={scenario.identity !== "guest"}
@@ -1704,7 +1934,13 @@ function PreviewTopicRoute({ scenario }: { scenario: Scenario }) {
     );
   }
   if (!routeTopicId || routeTopicId === topicId) {
-    return <TopicView {...primaryTopicScenarioData(scenario)} />;
+    const data = primaryTopicScenarioData(scenario);
+    const interactiveTopic = previewApplyTopicState(data.topic, interactions);
+    return <TopicView
+      {...data}
+      topic={interactiveTopic}
+      postPresentations={previewPresentationsForTopic(data.postPresentations, interactiveTopic)}
+    />;
   }
 
   const candidateSections = homepageCategories(scenario.locale)
@@ -1791,27 +2027,31 @@ function PreviewTopicRoute({ scenario }: { scenario: Scenario }) {
     posts,
   };
 
+  const interactiveTopic = previewApplyTopicState(previewTopic, interactions);
   return (
     <TopicView
       locale={scenario.locale}
-      topic={previewTopic}
+      topic={interactiveTopic}
       titlePresentation={originalPresentation(
         "topic-title",
-        previewTopic.id,
-        previewTopic.title.id,
-        previewTopic.title.originalContent,
+        interactiveTopic.id,
+        interactiveTopic.title.id,
+        interactiveTopic.title.originalContent,
         scenario.locale,
         scenario.direction,
       )}
-      postPresentations={posts.map((post) =>
-        originalPresentation(
-          "post-body",
-          post.id,
-          post.body.id,
-          post.body.originalContent,
-          scenario.locale,
-          scenario.direction,
-        )
+      postPresentations={previewPresentationsForTopic(
+        posts.map((post) =>
+          originalPresentation(
+            "post-body",
+            post.id,
+            post.body.id,
+            post.body.originalContent,
+            scenario.locale,
+            scenario.direction,
+          )
+        ),
+        interactiveTopic,
       )}
       generationUnits={[]}
       canReply={scenario.identity !== "guest"}
