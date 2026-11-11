@@ -7,6 +7,8 @@ import {
 import { RequestAuthFactCollector } from "../../app/observability/auth-fact-collector.server";
 import { MAX_AUTH_FACTS_PER_REQUEST, PostgresAuthFactWriter, type AuthTransitionFact } from "../../db/owner-auth-facts";
 import { PostgresOwnerSystemMonitoring } from "../../db/owner-system-monitoring";
+import { createHyperdriveAuthFactWriter } from "../../db/hyperdrive-auth-facts";
+import { PostgresOwnerSa02History } from "../../db/owner-sa02-history";
 
 const url = process.env.DATABASE_URL!;
 if (!url || !["127.0.0.1","localhost"].includes(new URL(url).hostname) ||
@@ -190,6 +192,44 @@ describe("SA02 actual Better Auth v1.7.7 committed-create facts", () => {
       ? row.fact.sessionId : "")).size).toBe(MAX_AUTH_FACTS_PER_REQUEST);
     expect(gaps.reduce((a,b)=>a+b,0)).toBe(100-MAX_AUTH_FACTS_PER_REQUEST);
     expect(closed).toBe(1);
+  });
+
+  it("preserves exact event-time through real production Hyperdrive factory and History",async()=>{
+    const firstTime=new Date("2026-01-01T00:00:01.000Z");
+    const secondTime=new Date("2026-01-01T00:00:02.000Z");
+    // Connect to the same disposable schema without mocking the production
+    // factory, pool, append implementation or PostgreSQL.
+    const scopedUrl=new URL(url);
+    scopedUrl.searchParams.set("options","-c search_path="+schema);
+    const gaps:number[]=[];
+    const makeCollector=()=>new RequestAuthFactCollector(
+      ()=>createHyperdriveAuthFactWriter(scopedUrl.toString()),
+      count=>gaps.push(count));
+    const early=makeCollector();
+    const late=makeCollector();
+    early.capture({kind:"account.created",userId:"factory-early"},firstTime);
+    late.capture({kind:"account.created",userId:"factory-late"},secondTime);
+    // Deliberately persist the later transition first.
+    await late.flush();
+    await early.flush();
+    expect(gaps).toEqual([]);
+    const saved=(await client.query<{
+      target_user_id:string; occurred_at:Date; recorded_at:Date;
+    }>("select target_user_id,occurred_at,recorded_at "+
+      "from owner_events where source='auth' and target_user_id like 'factory-%' "+
+      "order by recorded_at")).rows;
+    expect(saved.map(row=>row.target_user_id)).toEqual(["factory-late","factory-early"]);
+    expect(saved[0].occurred_at.toISOString()).toBe(secondTime.toISOString());
+    expect(saved[1].occurred_at.toISOString()).toBe(firstTime.toISOString());
+    expect(saved[0].recorded_at>saved[0].occurred_at).toBe(true);
+    expect(saved[1].recorded_at>saved[1].occurred_at).toBe(true);
+    const timeline=await new PostgresOwnerSa02History(pool).readTimeline({
+      area:"accounts",monitorKey:"accounts.users",limit:50,
+    });
+    expect(timeline.entries.filter(e=>e.origin==="auth-event" &&
+      (e.values.targetUserId==="factory-early" ||
+        e.values.targetUserId==="factory-late")).map(e=>e.values.targetUserId))
+      .toEqual(["factory-late","factory-early"]);
   });
 
   it("does not mislabel auth records as SA01 System events before source-aware SA02 History", async () => {
