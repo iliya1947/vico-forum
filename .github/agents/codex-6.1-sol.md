@@ -1,3 +1,158 @@
+# Лёва — актуальный checkpoint: full SA02 independent review completed, 2 findings (2026-11-11)
+
+**Result: CHANGES REQUIRED — SA02-IMPL-LEV-04/P2 and LEV-05/P3 OPEN.** [Full packet #6793653705](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6793653705). PR319 reviewed exact head `0a45909bfb3a403af63a4693455d519f8a0e9ea6`, PR base `e279cb6c032a489a9044ca1191407df887c364b4`, current main `f6fd4b2c031b2132b04eace18704a59aed1dfec8` (AGENTS-only rule change to minimum7 service files). Mira whole-PR PASS preceded assignment in workflow; author final#6793188515; accepted plans#6768069279/#6789135043.
+
+- **LEV-04/P2:** app/super-admin/history-entry.tsx fields dictionary64–65 keyed solely by name. Real security.attachments observation total is labelled Persisted users; real accounts.registration observation version labelled Database version. Actual reader output/DB correct. Real PG/React probe shows evidence1→users1 and policy7→DBversion7; actual built Worker/Chromium ordinary samples show evidence0→users0 and policy1→DBversion1. Scope-aware labels required, preserving actual Users/System labels; no backend/schema changes.
+- **LEV-05/P3:** Value103–104 BigInt/Intl formats every digit-only string regardless field. Valid text user ID `00012345678901234567890` stored/serialized unchanged, shown as `12,345,678,901,234,567,890` in Target user ID/Entity ID. Confirmed actual PostgresAuthFactWriter/History and protected Worker .data vs Chromium DOM. Format only real numeric fields; opaque refs verbatim including leading zeros. No auth bypass/storage loss claimed.
+- Whole71-file cumulative scope reviewed. D adds/modifies30 files since accepted25ac415;41 of42 accepted A/B/C files byte-identical (only Worker capability wiring changed), prior snapshot still ancestor. Old LEV-01/-02/-03 probes PASS, remain CLOSED. No additional confirmed current-scope defect.
+- Fresh local checks:26 app files/168 tests,11 native PG17 files/126 tests PASS. Build,0000–0063 migrations,69-table manifest, positive/negative runtime privileges PASS. Expanded existing Chromium harness27 checkpoint groups PASS, no JS errors/external requests, exact-head metadata; separate presentation semantic probes intentionally FAIL on reviewed head.
+- Remote exact-head jobs CI#42999991624 SUCCESS checks/database; SA01#42999991412 SUCCESS; AP10#42999992082 SUCCESS all4jobs independently verified. Local full-CI suite not rerun.
+- #315 refreshed current head `4e4477755490c31e87377ab527e853d54da3af65`: source plan was split. General map blob `0d79a0a7d1876ac0999396328f4814bd929e899d`, BlockA `4d5ef9b8db30e351a4e626924c7aab228d2c80b4` read fully. BlockA foundation vs later activation remains a separate package. Current auth/privacy/public-cache audit findings not reclassified as introduced SA02 defects.
+- Evidence `/workspace/work/sa02-full-review-evidence/`: SOURCE_MANIFEST/PROTECTED_SCOPE, app/database/build/schema/privilege logs, original A/B/C probe PASS logs, history-display-probe.mts/log, history-display-browser.py/log/json, history-browser-seed.mts/json, three wrong-label/ID screenshots, expanded browser/results.json27cases and6 EN/RU/HE screenshots. Visual inspection included attachment History wrong label and HE320 Overview.
+- Own disposable PG container sa02-lev-full-review (55512, native+Worker DBs) removed; preview4202 stopped; .dev.vars/build copy/node_modules links removed; detached implementation checkout `/workspace/work/sa02-full-review` clean. No implementation or docs edits, no agent launch/appointments/merge/production.
+- **Next recipient Mira:** assess the combined packet and continue coordinator cycle. Lev completed/stopped; Lira/Mark not appointed by Lev. PR319 remains Draft, no independent fullSA02PASS/merge readiness. SA03+/Stage6/production/deferred journal occupancy/archive/clear excluded; no last-manager/admin-count/recovery rule.
+
+## Independent diagnostic sources for LEV-04/-05
+
+External evidence only. First script requires exact-head checkout/dependencies, Node24/tsx with **--tsconfig /workspace/work/sa02-full-review/tsconfig.cloudflare.json** (automatic JSX runtime), and disposable loopback PG17 DATABASE_URL ending _test. It migrates/drop-cleans a unique isolated schema and compares real reader/sample output to real React SSR. Its three assertions fail on this head for two root causes. A preliminary harness launch without project JSX config produced React-not-defined; corrected harness uses actual config, and that setup error is not a product finding.
+
+Browser reproducer runs after unchanged checked-in expanded SA01 harness has created its own synthetic email Owner + bound Owner fixture in an independently migrated disposable Worker DB; built head served only on4202 with synthetic Owner binding. Seed script creates one legal synthetic numeric text user and a real allowlisted auth fact. Browser script signs in through actual Better Auth and temporarily maps that disposable session to bound Owner, as existing harness does, restores/signs out in finally; no real account/production involved. Source values/.data stay correct while screenshots/DOM expose the errors.
+
+### Real PG → current/sample → History → React probe
+
+```typescript
+import assert from 'node:assert/strict';
+import {readFile,readdir} from 'node:fs/promises';
+import pg from 'pg';
+import React from 'react';
+import {renderToStaticMarkup} from 'react-dom/server';
+import {createInstance} from 'i18next';
+import {I18nextProvider} from 'react-i18next';
+import {HistoryEntry} from '../sa02-full-review/app/super-admin/history-entry';
+import {canonicalEnglishCatalog} from '../sa02-full-review/app/localization/catalog';
+import {PostgresOwnerSa02Current} from '../sa02-full-review/db/owner-sa02-current';
+import {PostgresOwnerSa02History} from '../sa02-full-review/db/owner-sa02-history';
+import {PostgresAuthFactWriter} from '../sa02-full-review/db/owner-auth-facts';
+
+const url=process.env.DATABASE_URL!;assert.equal(new URL(url).hostname,'127.0.0.1');assert.ok(new URL(url).pathname.endsWith('_test'));
+const schema='lev_display_'+crypto.randomUUID().replaceAll('-','');
+const client=new pg.Client({connectionString:url,options:'-c search_path='+schema});
+const pool=new pg.Pool({connectionString:url,options:'-c search_path='+schema});
+const numericId='12345678901234567890';
+const i18n=createInstance();
+await i18n.init({lng:'en',initAsync:false,defaultNS:'common',resources:{en:{common:Object.fromEntries(Object.entries(canonicalEnglishCatalog.common).map(([k,v])=>[k,v.source]))}}});
+const render=(entry:any)=>renderToStaticMarkup(React.createElement(I18nextProvider,{i18n},React.createElement(HistoryEntry,{entry,locale:'en'})));
+const pairs=(html:string)=>Array.from(html.matchAll(/<dt>(.*?)<\/dt>\s*<dd>(.*?)<\/dd>/gs),m=>[m[1].replace(/<[^>]*>/g,''),m[2].replace(/<[^>]*>/g,'')]);
+await client.connect();
+try{
+ await client.query('create schema '+schema);
+ for(const name of (await readdir('/workspace/work/sa02-full-review/drizzle')).filter(x=>/^\d{4}_.+\.sql$/.test(x)).sort())
+  await client.query((await readFile('/workspace/work/sa02-full-review/drizzle/'+name,'utf8')).replaceAll('"public".','"'+schema+'".'));
+ await client.query('insert into "user"(id,name,email) values($1,$2,$3)',[numericId,'Synthetic numeric ID','numeric@test.invalid']);
+ await client.query("insert into forum_attachment_security_events(id,upload_id,uploaded_by_user_id,context_key,draft_id,file_name,declared_mime,detected_type,reason,declared_byte_size) values ('display-evidence','display-upload',$1,'synthetic','synthetic','synthetic.txt','text/plain','unknown','invalid',10)",[numericId]);
+ await client.query('update forum_registration_settings set version=7 where id=1');
+ const fact=await new PostgresAuthFactWriter(pool).append({kind:'account.created',userId:numericId});
+ await new PostgresOwnerSa02Current(pool).readCurrent();
+ const reader=new PostgresOwnerSa02History(pool);
+ const attachments=await reader.readTimeline({area:'security',monitorKey:'security.attachments'});
+ const registration=await reader.readTimeline({area:'accounts',monitorKey:'accounts.registration'});
+ const users=await reader.readTimeline({area:'accounts',monitorKey:'accounts.users'});
+ const evidenceSample=attachments.entries.find(e=>e.origin==='system-observation')!;
+ const registrationSample=registration.entries.find(e=>e.origin==='system-observation')!;
+ const userFact=users.entries.find(e=>e.id===fact.id)!;
+ const checks=[
+  {case:'attachment sample total labelled as evidence',pass:pairs(render(evidenceSample)).some(([label,value])=>label===i18n.t('superAdminSa02TotalEvidence')&&value==='1'),source:evidenceSample,rendered:pairs(render(evidenceSample))},
+  {case:'registration policy version labelled as policy',pass:pairs(render(registrationSample)).some(([label,value])=>label===i18n.t('superAdminSa02PolicyVersion')&&value==='7'),source:registrationSample,rendered:pairs(render(registrationSample))},
+  {case:'opaque numeric user ID preserved byte-for-byte',pass:[i18n.t('superAdminHistoryTargetUser'),i18n.t('superAdminHistoryEntityId')].every(label=>pairs(render(userFact)).some(([key,value])=>key===label&&value===numericId)),source:userFact,rendered:pairs(render(userFact))},
+ ];
+ console.log(JSON.stringify(checks,null,2));
+ assert.equal(checks.filter(x=>!x.pass).length,0,'independent real-PG History presentation semantics');
+}finally{await pool.end();await client.query('drop schema if exists '+schema+' cascade');await client.end();}
+```
+
+### Browser synthetic source seed
+
+```typescript
+import assert from 'node:assert/strict';
+import pg from 'pg';
+import {PostgresAuthFactWriter} from '../sa02-full-review/db/owner-auth-facts';
+const url=process.env.DATABASE_URL!;assert.equal(new URL(url).hostname,'127.0.0.1');assert.ok(new URL(url).pathname.endsWith('_test'));
+const numericId='00012345678901234567890';
+const pool=new pg.Pool({connectionString:url});
+try{
+ await pool.query('insert into "user"(id,name,email) values($1,$2,$3)',[numericId,'Numeric reference fixture','numeric-browser@test.invalid']);
+ const saved=await new PostgresAuthFactWriter(pool).append({kind:'account.created',userId:numericId});
+ console.log(JSON.stringify({numericId,eventId:saved.id}));
+}finally{await pool.end();}
+```
+
+### Real Worker/Chromium History probe
+
+```python
+import json,os,shutil,subprocess
+from pathlib import Path
+from playwright.sync_api import sync_playwright
+
+repo=Path('/workspace/work/sa02-full-review')
+out=Path('/workspace/work/sa02-full-review-evidence')
+base='http://127.0.0.1:4202'
+assert os.environ['DATABASE_URL'].endswith('_test')
+def sql(statement,params=None):
+    js="""import pg from 'pg';const v=JSON.parse(await new Promise(r=>{let s='';process.stdin.on('data',x=>s+=x);process.stdin.on('end',()=>r(s))}));const c=new pg.Client({connectionString:process.env.DATABASE_URL});await c.connect();try{console.log(JSON.stringify((await c.query(v.sql,v.params)).rows))}finally{await c.end()}"""
+    r=subprocess.run([shutil.which('node'),'--input-type=module','-e',js],cwd=repo,input=json.dumps({'sql':statement,'params':params or []}),text=True,capture_output=True,check=True)
+    return json.loads(r.stdout)
+
+seed=json.loads((out/'history-browser-seed.json').read_text())
+email=sql("select email from \"user\" where email like 'sa01-%-owner@test.invalid'")
+assert len(email)==1
+results=[]
+with sync_playwright() as p:
+    browser=p.chromium.launch(executable_path='/usr/bin/chromium',headless=True,args=['--no-sandbox'])
+    ctx=browser.new_context(extra_http_headers={'cf-connecting-ip':'203.0.113.77'},viewport={'width':1280,'height':900},service_workers='block')
+    response=ctx.request.post(base+'/api/auth/sign-in/email',headers={'Origin':base},data={'email':email[0]['email'],'password':'synthetic-browser-password-123456'})
+    assert response.status==200,response.status
+    original_id=response.json()['user']['id']
+    moved=sql('update "session" set user_id=$1 where user_id=$2 returning id',['sa01-synthetic-owner',original_id]);assert len(moved)==1
+    page=ctx.new_page()
+    try:
+        for monitor,area in [('security.attachments','security'),('accounts.registration','accounts')]:
+            path=f'/en/super-admin/monitoring/{area}/{monitor}/history'
+            response=page.goto(base+path,wait_until='networkidle');assert response.status==200
+            item=page.locator('li[data-history-origin="system-observation"]').first
+            pairs=item.locator('dl > div').evaluate_all('(rows)=>rows.map(row=>[row.querySelector("dt").textContent,row.querySelector("dd").textContent])')
+            data=ctx.request.get(base+path+'.data');assert data.status==200
+            results.append({'monitor':monitor,'rendered':pairs,'status':response.status,'private':response.headers.get('cache-control')})
+            page.screenshot(path=str(out/(monitor+'-wrong-label.png')),full_page=True)
+        path='/en/super-admin/monitoring/accounts/accounts.users/history'
+        response=page.goto(base+path,wait_until='networkidle');assert response.status==200
+        item=page.locator('li[data-history-origin="auth-event"]').filter(has=page.locator('bdi',has_text=seed['eventId']))
+        assert item.count()==1
+        pairs=item.locator('dl > div').evaluate_all('(rows)=>rows.map(row=>[row.querySelector("dt").textContent,row.querySelector("dd").textContent])')
+        data=ctx.request.get(base+path+'.data').text();assert seed['numericId'] in data
+        results.append({'case':'numeric opaque ID','storedAndSerialized':seed['numericId'],'rendered':pairs})
+        page.screenshot(path=str(out/'numeric-id-formatted.png'),full_page=True)
+    finally:
+        sql('update "session" set user_id=$1 where id=$2',[original_id,moved[0]['id']])
+        ctx.request.post(base+'/api/auth/sign-out',headers={'Origin':base},data={})
+        ctx.close();browser.close()
+(out/'history-display-browser.json').write_text(json.dumps(results,indent=2))
+print(json.dumps(results,indent=2))
+attachment=next(r for r in results if r.get('monitor')=='security.attachments')
+registration=next(r for r in results if r.get('monitor')=='accounts.registration')
+numeric=results[-1]
+checks={
+ 'attachments_not_users':not any(label=='Persisted users' for label,value in attachment['rendered']),
+ 'policy_not_database':not any(label=='Database version' for label,value in registration['rendered']),
+ 'opaque_id_unchanged':all(any(label==key and value==seed['numericId'] for label,value in numeric['rendered']) for key in ['Entity ID','Target user ID']),
+}
+print(json.dumps(checks))
+assert all(checks.values()),checks
+```
+
+Previous plans/review checkpoints retained verbatim below; their former active states are historical.
+
+---
+
 # Лёва — актуальный checkpoint: SA02-D technical handoff delivered (2026-11-11)
 
 **Active result:** executable SA02-D plan/PR strategy [#6789135043](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6789135043) for Mira coordination. Assignment #6789052062; accepted full plan #6768069279 §§9/11/12 unchanged. **Lev completed/stopped; D implementer/reviewers not assigned.**
