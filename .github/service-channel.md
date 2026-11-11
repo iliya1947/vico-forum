@@ -27,7 +27,7 @@
 5. Block D: аудит D1–D12 завершён; подтверждены **3 findings — `COMPLAINT-PRIV-01`, `HELP-SIGNAL-PRIV-01`, `HISTORY-PRIV-01` (все Low/P3)**.
 6. D12 corrected closeout: official React Router Framework/SSR docs и exact `react-router@8.3.1` source подтвердили default skip loader revalidation после 4xx/5xx; Vico explicit recovery refreshes loaders and does not automatically replay mutations.
 7. Block E audit завершён: E2 PASS; E5 — **`FORUM-PUB-01 Moderate/P2`**; E6 — 0 additional; E7 — **`READSTATE-CACHE-01 Low/P3`**; E3 — **`PUBLIC-PROJECTION-01 Low/P3`**; E4 — **`DISCOVERY-BOUNDS-01 Low/P3`, `SEARCH-CONTROL-01 Low/P3`**; E8 PASS; E1 — **`LOCALE-DEGRADED-WRITE-01 Low/P3`** + расширение `READSTATE-CACHE-01`; E9 PASS; E10 — **`FORUM-READ-BOUNDS-01 Moderate/P2`, `FORM-BODY-BOUNDS-01 Moderate/P2`**. Block E total: **8 findings**. E10 проверен на current `main` `4248fed23925e4a23e48485d419ceaf0ce337def`; compare с предыдущим target подтвердил отсутствие изменений core Forum/translation E2–E9.
-8. Block F на current `main` `538084fd472c65459ad55ab30a0f96fbfdd68e56`: **F1 PASS; F2 PASS; F3 завершён с 1 finding — `ATTACH-TEXT-TAIL-01 Low/P3`**. Prefix detector проверяет text только в первых 4096 байтах, а full-stream text validator отсутствует; binary tail после sniff window может получить `detectedType=text` + `type-checked`, быть опубликован и не создать security evidence. Same-origin active execution не подтверждён: text preview остаётся plain text + sandbox/nosniff. Следующий срез — **F4 Publication/edit binding, replay and races**.
+8. Block F на current `main` `538084fd472c65459ad55ab30a0f96fbfdd68e56`: **F1 PASS; F2 PASS; F3 — `ATTACH-TEXT-TAIL-01 Low/P3`; F4 Publication/edit binding, replay and races — PASS, 0 additional findings**. F4 подтверждает exact selected-ID/owner/context/operation binding, atomic edit/remove/new-ref transaction, stable replay fingerprint и DB fencing с cleanup. Следующий срез — **F5 Cleanup and physical deletion safety**.
 9. Implementation PR, technical planner и implementer для remediation сейчас не назначены.
 10. Cloudflare/Neon/production mutation по #315 не разрешена и не выполнялась.
 
@@ -65,9 +65,10 @@
 
 ## Открыто
 
-1. **Block F F1–F3 completed: F1 PASS, F2 PASS, F3 — 1 finding `ATTACH-TEXT-TAIL-01 Low/P3`.** Детальная causal chain зафиксирована в `SECURITY_BLOCK_F_FILES_ATTACHMENTS.md`.
-2. Следующий bounded audit slice — **F4 Publication/edit binding, replay and races** на current `main` `538084fd472c65459ad55ab30a0f96fbfdd68e56`.
-3. `FORUM-READ-BOUNDS-01` остаётся прежним Block E finding и не дублируется из F2/F3.
-4. Live AV/external R2 остаются Stage 6; `ATTACH-TEXT-TAIL-01` классифицирован как current defect независимо от них, потому что нарушает уже существующую repository type/content boundary.
-5. SA-02 factual docs closeout уже merged в current main; descendant `4248fed… → 538084f…` меняет только 8 Markdown docs, attachment runtime/schema не менялся.
-6. Лира, Лёва и Марк сейчас не имеют активного назначения по #315.
+1. **Block F F1–F4 completed: F1 PASS, F2 PASS, F3 — `ATTACH-TEXT-TAIL-01 Low/P3`, F4 PASS with 0 additional findings.** Детальная causal chain зафиксирована в `SECURITY_BLOCK_F_FILES_ATTACHMENTS.md`.
+2. Следующий bounded audit slice — **F5 Cleanup and physical deletion safety** на current `main` `538084fd472c65459ad55ab30a0f96fbfdd68e56`.
+3. `ATTACH-TEXT-TAIL-01` не дублируется в F4: publication gate корректно требует `type-checked`; root cause — F3 ошибочная text classification.
+4. `FORUM-READ-BOUNDS-01` остаётся прежним Block E finding и не дублируется из Block F.
+5. Live AV/external R2 остаются Stage 6; current Block F findings отделяются от external acceptance.
+6. SA-02 factual docs closeout уже merged в current main; descendant `4248fed… → 538084f…` меняет только 8 Markdown docs, attachment runtime/schema не менялся.
+7. Лира, Лёва и Марк сейчас не имеют активного назначения по #315.
