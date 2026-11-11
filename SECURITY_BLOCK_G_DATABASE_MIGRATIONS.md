@@ -6,11 +6,12 @@
 2. **G1 — Migration history integrity завершён: PASS, 0 current-scope findings.**
 3. **G2 — Schema-level security invariants завершён: 1 current-scope finding — `DB-SEARCHPATH-01 Low/P3`.**
 4. **G3 — Runtime least privilege завершён: 1 additional current-scope finding — `DB-ACL-USER-DELETE-01 Low/P3`.**
-5. Repository migration history: `0000–0063`; externally accepted migration evidence: `0000–0020`.
-6. Отставание external target от repository history само по себе **не finding**: Stage 6 external integration paused, а current source-of-truth разрешает repository/local-CI schema evolution без немедленного Neon rollout.
-7. Следующий bounded slice — **G4 Migration / privilege workflow gates**.
-8. Мира — auditor/coordinator. Remediation, technical planner и implementer не назначены.
-9. Production/Neon/Cloudflare mutation в Block G не разрешена и не выполняется.
+5. **G4 — Migration / privilege workflow gates завершён: 1 additional current-scope finding — `DB-RUNTIME-EVIDENCE-01 Low/P3`.**
+6. Repository migration history: `0000–0063`; externally accepted migration evidence: `0000–0020`.
+7. Само отставание external target от repository history не finding; G4 finding относится к current repository rollout gate, который допускает это отставание как достаточное evidence для current runtime.
+8. Следующий bounded slice — **G5 Transaction, locking and ambiguous outcomes**.
+9. Мира — auditor/coordinator. Remediation, technical planner и implementer не назначены.
+10. Production/Neon/Cloudflare mutation в Block G не разрешена и не выполняется.
 
 ## G1 — результат
 
@@ -81,6 +82,35 @@
 10. Repository capability contract definitely contains the overgrant. Historical Stage-6 evidence/docs say the `0000–0020` production web ACL was provisioned with the reviewed full CRUD user grant, but mutable live ACL state was not reread in G3: **Информация не проверена** for the exact current production grant.
 11. This is not a duplicate of Block B auth findings: root cause is the database relation privilege matrix, not authentication/session semantics.
 12. Remediation is **not assigned** in audit. G4/G7 should treat the repository ACL contract as the authoritative input and must not silently assume this grant is necessary.
+
+## G4 — результат
+
+1. Verdict: **1 additional current-scope finding — `DB-RUNTIME-EVIDENCE-01 Low/P3`** на current `main` `538084fd472c65459ad55ab30a0f96fbfdd68e56`.
+2. Production DB mutation/provisioning workflows are manual `workflow_dispatch`, main-only at job admission, use exact `github.sha` checkout and share `production-db-migrations` serialization. DB migration/runtime-privilege/relation-provision jobs name protected Environment `production-db`; Worker rollout isolates its no-secret guard/verify jobs before `production-worker` Environment access.
+3. Exact live GitHub Environment protection/approval configuration is mutable external state and was not reread in this audit slice: **Информация не проверена**.
+4. Migration identity boundary is fail-closed in repository code: production migration verifier requires the connection to equal the unique application-object owner and rejects database-owner/runtime-owner collapse; the separate identity probe requires exact `vico_forum_migrator` plus effective database CREATE. Relation provisioning independently requires exact `vico_forum_migrator` before grants.
+5. Migration preflight requires the target Drizzle ledger to be an exact timestamp+hash prefix of checked-in history and rejects divergent/reordered/extra history. Postflight requires exact complete ledger and current repository structural manifest; current manifest target is `0063_owner_attempt_telemetry`.
+6. Relation provisioning derives every GRANT from `runtimeCapabilityContracts.web`, executes one transaction, then runs the shared full end-state runtime ACL assertion before COMMIT. Caller-provided arbitrary SQL is not accepted.
+7. Provisioning therefore propagates current `DB-ACL-USER-DELETE-01` because that overgrant is inside the shared contract; this is the same G3 root cause and is **not duplicated** as a G4 finding.
+8. GitHub official rerun semantics were checked: a rerun keeps the original `GITHUB_SHA` and `GITHUB_REF`. Production migration rerun therefore stays on the originally reviewed revision; its preflight also rejects a target ledger longer than that old revision's journal, so no DB downgrade/stale-revision overwrite path was established. No separate rerun finding.
+9. Tests/contract probes were read as evidence, but **not run** in this G4 audit slice. No external workflow dispatch or production mutation was performed.
+
+### DB-RUNTIME-EVIDENCE-01 — Low/P3
+
+1. Current `.github/runtime-migration-evidence.json` requires only `0020_translation_generation_permission`, backed by successful production migration run `36270353184` at SHA `b172264e4b0db1fe68dead7d7f25b49a573eb0cd`.
+2. That evidence SHA is an ancestor of current main by 163 commits. Current repository migration history and `.github/production-schema-manifest.json` now target `0063_owner_attempt_telemetry`.
+3. `verify-runtime-migration-evidence.mjs` checks that the evidence SHA is an ancestor, the recorded journal hash matches, the referenced workflow run succeeded on main, and the evidence journal matches current history **only through `requiredMigrationTag`**.
+4. The verifier does **not** require `requiredMigrationTag` to equal the current manifest target, newest checked-in migration, or another repository-derived minimum schema requirement for the Worker being rolled out.
+5. `production-worker-rollout.yml` therefore accepts the current `0020` evidence while building/testing the current Worker against a disposable database migrated through current history. It does not query the target production schema before Cloudflare upload/promotion.
+6. Its production/version smoke covers public locale reads plus unauthenticated `GET /api/auth/get-session`; it does not execute authenticated topic/reply writes.
+7. Current core forum writes already depend on post-`0020` schema. `createTopic` and reply paths call `assertNoActiveUserMeasureRestriction`, which queries `user_measures` and `user_measure_restrictions` introduced by migration `0058_user_measures`.
+8. Consequently an otherwise authorized current-main Worker rollout can satisfy the repository migration-evidence gate using only historical `0020` evidence and promote code whose ordinary authenticated write path requires `0058`. On a target still at that accepted prefix, topic/reply writes fail on missing relations instead of being prevented before rollout.
+9. This violates the stated schema-first migration → evidence → schema-dependent runtime ordering. The local full-schema test does not repair the gap because it proves current code against a fresh current schema, not the external target schema.
+10. No authorization bypass or fail-open measure bypass was established; the missing-table path aborts the operation. Primary impact is preventable deployed availability/incompatibility after an explicitly authorized rollout.
+11. Stage 6 is currently paused and no rollout was executed. Exact mutable live production schema at this moment is **Информация не проверена**; the finding is in the current repository gate because it can accept evidence below a proven current runtime dependency.
+12. Explicit owner authorization/production rollout is required to trigger external impact, and the project is pre-release, so severity remains **Low/P3**.
+13. G7 must re-check this same evidence root cause when closing manifest/evidence/drift detection; it must not create a duplicate finding.
+14. Remediation is **not assigned** in audit.
 
 ## Цель
 
