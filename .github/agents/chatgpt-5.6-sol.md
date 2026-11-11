@@ -4,7 +4,7 @@
 
 1. Служебный PR: **#315**.
 2. Моя текущая работа: audit/coordination only; remediation и implementation не назначены.
-3. Текущий этап: **Block F F1–F7 completed; F1/F2/F4/F5/F6/F7 PASS, F3 confirmed `ATTACH-TEXT-TAIL-01 Low/P3`; awaiting F8 Cross-chain closeout**.
+3. Текущий этап: **Block F completed; final result — 1 current-scope finding `ATTACH-TEXT-TAIL-01 Low/P3`; remediation не назначена**.
 4. Technical audit target B–D: `e279cb6c032a489a9044ca1191407df887c364b4`.
 5. Current `main` — `538084fd472c65459ad55ab30a0f96fbfdd68e56`. SA-02 docs closeout merged; compare с `4248fed…` показывает только 8 Markdown changes, attachment runtime/schema unchanged.
 6. Лира, Марк и Лёва по #315 сейчас не назначены.
@@ -49,7 +49,10 @@
 23. Актуальные Cloudflare R2/Workers docs 2026-11-11 подтверждают используемые assumptions: known-length R2 stream, FixedLengthStream exact-byte contract, conditional writes/strong consistency и 1 write/sec same-key limit.
 24. External/live `ATTACHMENT_R2`, real bucket policy, production route fail mode и deployed isolation — **Информация не проверена**; это Stage 6, не current F7 finding.
 25. `ATTACH-TEXT-TAIL-01` не дублировать в F7: root cause остаётся F3 content classification.
-26. Подтверждённые findings не исправлять автоматически: сначала отдельная bounded remediation-задача по решению владельца и текущему Stage.
+26. Block F F8: **PASS, 0 additional current-scope findings**. Cross-chain upload → publication → read → edit/remove → cleanup → evidence перепроверена; measures/lost ACK/complaint evidence/runtime failures не добавили отдельного root cause.
+27. Final Block F result: **1 finding — `ATTACH-TEXT-TAIL-01 Low/P3`**. Его end-to-end chain подтверждена повторно; downstream sandbox/download/ref/cleanup boundaries не устраняют F3 classification gap и не повышают severity.
+28. Block F remediation не назначена. Следующая security-карта при продолжении — Database & migrations; перед аудитом нужен отдельный Block G file/scope.
+29. Подтверждённые findings не исправлять автоматически: сначала отдельная bounded remediation-задача по решению владельца и текущему Stage.
 
 ## Ограничения
 
@@ -61,5 +64,5 @@
 
 ## Следующий шаг
 
-1. После продолжения владельца выполнить **F8 — Cross-chain closeout** на current main и остановиться после результата.
+1. После продолжения владельца подготовить отдельный **Block G — Database & migrations** audit scope/file и остановиться после подготовки bounded scope.
 2. Findings только фиксировать; remediation не начинать.
