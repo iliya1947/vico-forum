@@ -42,7 +42,7 @@ export function AdminUsersIndex({ locale, access, query, page }: {
           <TechnicalDetails accountId={accountId}><bdi dir="ltr">{user.id}</bdi></TechnicalDetails>
           <p><Joined date={user.joinedAt} locale={locale}/></p>
           <nav aria-label={t("quickActions")}>
-            <Link to={forumProfilePath(locale, user.id)}>{t("adminUsersView")}</Link>{" · "}
+            <Link to={forumProfilePath(locale, user.id)}>{t("adminUsersView")}</Link>
             {access.canManageAuthorization ? <>{" · "}
               <Link to={forumProfilePath(locale, user.id) + "#authorization"}>{t("authorizationNav")}</Link>
             </> : null}
