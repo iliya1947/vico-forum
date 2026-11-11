@@ -1503,3 +1503,6 @@ Review PR #323 exact `60a024304e6d595ea127bf19c948f15ca5ec39d2` after CI #430160
 - Exact head CI #43035916317 SUCCESS: app 2229/2229; native PG17 688/688, schema manifest 69, runtime privilege and Worker smoke; SA01 Chromium #43035916259 SUCCESS. AP10 Chromium #43035916310 pending at logged checkpoint; only claim PASS after verified completion.
 - **D2 STOP.** Next developer continuation -> D3 in existing Draft PR #324. D3/D4, production, SA04, independent whole-PR review and merge not performed.
 
+### SA03-D2 late browser evidence
+
+Exact head `e23d33cd6571e08c231b989c1dd8952a505a9345`: AP10 browser #43035916310 completed SUCCESS with all four jobs. Other exact-head results unchanged; D2 author STOP and D3 next.
