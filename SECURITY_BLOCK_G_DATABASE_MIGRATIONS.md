@@ -7,11 +7,12 @@
 3. **G2 — Schema-level security invariants завершён: 1 current-scope finding — `DB-SEARCHPATH-01 Low/P3`.**
 4. **G3 — Runtime least privilege завершён: 1 additional current-scope finding — `DB-ACL-USER-DELETE-01 Low/P3`.**
 5. **G4 — Migration / privilege workflow gates завершён: 1 additional current-scope finding — `DB-RUNTIME-EVIDENCE-01 Low/P3`.**
-6. Repository migration history: `0000–0063`; externally accepted migration evidence: `0000–0020`.
-7. Само отставание external target от repository history не finding; G4 finding относится к current repository rollout gate, который допускает это отставание как достаточное evidence для current runtime.
-8. Следующий bounded slice — **G5 Transaction, locking and ambiguous outcomes**.
-9. Мира — auditor/coordinator. Remediation, technical planner и implementer не назначены.
-10. Production/Neon/Cloudflare mutation в Block G не разрешена и не выполняется.
+6. **G5 — Transaction, locking and ambiguous outcomes завершён: PASS, 0 additional current-scope findings.**
+7. Repository migration history: `0000–0063`; externally accepted migration evidence: `0000–0020`.
+8. Само отставание external target от repository history не finding; G4 finding относится к current repository rollout gate, который допускает это отставание как достаточное evidence для current runtime.
+9. Следующий bounded slice — **G6 Destructive tooling and target isolation**.
+10. Мира — auditor/coordinator. Remediation, technical planner и implementer не назначены.
+11. Production/Neon/Cloudflare mutation в Block G не разрешена и не выполняется.
 
 ## G1 — результат
 
@@ -111,6 +112,24 @@
 12. Explicit owner authorization/production rollout is required to trigger external impact, and the project is pre-release, so severity remains **Low/P3**.
 13. G7 must re-check this same evidence root cause when closing manifest/evidence/drift detection; it must not create a duplicate finding.
 14. Remediation is **not assigned** in audit.
+
+## G5 — результат
+
+1. Verdict: **PASS, 0 additional current-scope findings** на current `main` `538084fd472c65459ad55ab30a0f96fbfdd68e56`.
+2. Exact installed transaction stack was checked against source: `pg@8.23.0` client-side `query_timeout` can return `Query read timeout` while an already-sent non-pipelined query remains in flight; exact `drizzle-orm 0.45.2` NodePg transaction wrapper executes `BEGIN → work → COMMIT` and on COMMIT error attempts `ROLLBACK`. Therefore a lost/late COMMIT acknowledgement is a real ambiguous-outcome class and was not dismissed as impossible.
+3. This ambiguity did **not** produce a confirmed current security finding by itself. Current application writers do not automatically retry an unavailable mutation response, and no path was found that converts the ambiguous result into a second uncontrolled authority/evidence mutation.
+4. Authorization management is one atomic PostgreSQL transaction under `authz_mutation_lock`: fresh Owner/permission/AP-10 admission, role/grant/assignment/override mutation and Admin History commit together. Repeated desired-state writes are no-op/idempotent where applicable; repeated create/delete after a committed-but-unacknowledged operation fail by existing identity/existence constraints rather than creating a second authority object. No automatic POST replay exists.
+5. Registration policy uses a singleton row lock plus positive `expectedVersion` CAS and atomic Admin History. A stale retry after an already committed update conflicts instead of applying a second transition; Settings explicitly revalidates conflict and does not automatically replay unavailable POSTs.
+6. SET-06 privacy uses a single READ COMMITTED transaction, locks the same user row as heartbeat admission, upserts one boolean preference and conditionally removes presence. Saving the same boolean is idempotent; the route does not automatically retry a failed POST.
+7. AP-10 user measures have stable measure IDs plus operation IDs/fingerprints and committed-operation lookup. Create/change/lift/appeal retry semantics return the already committed result for an identical replay and reject a mismatched replay; the shared authorization mutex is acquired before measure/authority state.
+8. Complaints mutation commands use actor serialization, Case row locks and `operationId + fingerprint` event replay for security-sensitive note/decision/appeal/priority transitions. Existing committed result notifications survive exact replay without duplicate side effects.
+9. Forum closure uses topic-row `FOR UPDATE` plus closure-version CAS; publication/edit attachment paths retain the previously verified committed receipt/generation replay semantics from Block F. G5 found no new DB root cause there.
+10. Controlled locale mutation is the explicit strong-reconciliation path: SERIALIZABLE + table lock, retries only `40001`/`40P01`, and ambiguous COMMIT is reconciled against semantic pre/post state rather than blindly replayed.
+11. SA-02 auth facts/attempt telemetry use stable occurrence identities or bounded slots and explicitly surface uncertain COMMIT instead of blind retry. Owner/System monitoring writes are evidence/telemetry rather than authority-changing application mutations; no current escalation path was found.
+12. Lock-order sweep found no current cycle that changes authority/evidence state: authorization/AP-10 paths acquire the shared authz mutex before their target locks; forum history appends only after domain locks; Complaints consistently acquires actor mutex before Case lock; Admin History ordering lock is appended after domain state and no inverse history→domain lock path was found.
+13. `AuthorizationRepository.mutate()` can let a failing `ROLLBACK` replace the original transaction error, unlike several newer helpers that preserve the original failure. This is a robustness inconsistency, but no current security impact or fail-open authority path was established; it is **not** a G5 finding.
+14. Current source-of-truth states PostgreSQL advisory locks are not accepted for real Hyperdrive runtime coordination. Current `WEB_HYPERDRIVE` production path remains unbound/inactive and Stage 6 is paused, so any future incompatibility of remaining advisory-lock users is Stage-6 acceptance work rather than a current G5 finding by itself.
+15. Tests/probes were read as evidence, but **not run** in this G5 audit slice. No external database/Hyperdrive mutation was performed.
 
 ## Цель
 
