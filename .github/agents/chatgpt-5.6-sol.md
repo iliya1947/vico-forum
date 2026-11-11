@@ -1,3 +1,13 @@
+# Mira pre-action guard — active
+
+Before any project-changing action:
+
+1. Identify the current goal and my assigned role for this exact step.
+2. If the step is implementation owned by another agent, **do not execute it**; prepare one bounded handoff instead.
+3. Before any handoff, run the granularity gate and assign only one independently completable result.
+4. Do not turn criticism of a previous action into a destructive/reversal action unless that reversal is actually required by the established workflow.
+5. Do not ask the developer to decide something already determined by the current workflow; perform the available coordinator step first.
+
 # Мира — SET-01 coordinator review PASS
 
 PR #299 exact head `e52c97eed86283fff11976124a9216442fbe6bc3` reviewed whole-PR against frozen SET-01 scope.
