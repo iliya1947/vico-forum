@@ -4,7 +4,7 @@
 
 1. Это bounded audit plan для области 5 общей security-карты.
 2. Audit target на момент подготовки: current `main` `f6fd4b2c031b2132b04eace18704a59aed1dfec8`.
-3. Фактический аудит начат. **E2 PASS. E5: `FORUM-PUB-01 Moderate/P2`. E6: 0 additional findings; `FORUM-PUB-01` подтверждён для edit body. E7: `READSTATE-CACHE-01 Low/P3`. E3: `PUBLIC-PROJECTION-01 Low/P3`. E4: `DISCOVERY-BOUNDS-01 Low/P3`, `SEARCH-CONTROL-01 Low/P3`. E8: PASS — 0 additional findings.** Remediation по Block E не назначена.
+3. Фактический аудит начат. **E2 PASS. E5: `FORUM-PUB-01 Moderate/P2`. E6: 0 additional findings; `FORUM-PUB-01` подтверждён для edit body. E7: `READSTATE-CACHE-01 Low/P3`. E3: `PUBLIC-PROJECTION-01 Low/P3`. E4: `DISCOVERY-BOUNDS-01 Low/P3`, `SEARCH-CONTROL-01 Low/P3`. E8: PASS — 0 additional findings. E1: `LOCALE-DEGRADED-WRITE-01 Low/P3`; `READSTATE-CACHE-01` scope expanded to shared `/:locale` member/session cache boundary.** Remediation по Block E не назначена.
 4. Проверка ведётся по реальным public/member route → service/repository paths, а не по одному UI.
 
 ## Граница блока
@@ -58,6 +58,31 @@ Block E проверяет обычный форум и member-facing applicatio
 4. Client navigation через `/:locale` проходит server locale boundary, а не доверяет stale client state.
 5. Root negotiation и locale-dependent responses имеют корректный no-store/Vary/cache contract.
 6. Locale/registry degraded mode не раскрывает stale non-English data и не позволяет write.
+
+### E1 — результат аудита
+
+1. Audit target: current `main` `f6fd4b2c031b2132b04eace18704a59aed1dfec8`.
+2. Verdict: **1 new current-scope finding — `LOCALE-DEGRADED-WRITE-01 Low/P3`; existing `READSTATE-CACHE-01 Low/P3` expanded to the shared `/:locale` member/session cache boundary.**
+3. Explicit locale resolution — PASS: active canonical locale resolves directly; active case/alias/formatting-extension inputs canonicalize through internal `308`; malformed/unknown/inactive/disabled GET/HEAD use internal temporary `/en/...` `307`. Query string is preserved, destination is constructed from the current path and registry locale only; cookie/user/`Accept-Language` are not consulted for explicit locale fallback.
+4. Non-GET redirect prevention — PASS outside the degraded-English finding below: `resolveExplicitLocale()` returns not-found for any non-GET/HEAD candidate that would require canonical/fallback redirect, and locale server middleware runs `guardLocale()` before `next()`. Existing regression confirms redirect-required POST does not reach downstream action.
+5. Root negotiation — PASS: unprefixed `/` is GET/HEAD-only, priority = authenticated `user.locale` → locale cookie → `Accept-Language` → bootstrap English; invalid/inactive candidates are skipped, q=0 is ignored, wildcard does not choose an arbitrary locale. Redirect is same-origin/internal and explicitly `Cache-Control: no-store`.
+6. Registry identity/reserved routes — PASS: canonical BCP-47 parsing uses `Intl`; registry rejects bootstrap/reserved exact identities and canonicalized aliases/matchTags for `api` / `assets`; technical `/api/*` routes are registered outside `/:locale`. No path from locale input to external redirect or dynamic locale creation was found.
+7. Client navigation boundary — PASS: `/:locale` exports a server loader. Exact upstream `react-router@8.3.1` tag commit `da2a0f0948af60ba45d9590b427d5e58fe4b0109` shows SSR navigations use Single Fetch server-loader strategy, and router core marks a reused route for revalidation when its matched pathname/param instance changes. Therefore `/en/... → /he/...` cannot switch locale solely from stale client state.
+8. Request-scoped registry — PASS: Worker creates a fresh registry loader per request; `createRequestRegistryLoader()` memoizes only one Promise inside that request. Classified unavailable/schema/integrity failures return bootstrap-English registry instead of any prior cross-request non-English snapshot.
+9. Degraded reads — PASS: non-English GET/HEAD in degraded registry redirects temporarily to `/en/...` with `no-store`; active locale list becomes bootstrap English only. UI translation store does not read persistent DB state for `en`, and persistent non-English translation read failures degrade to local/canonical fallback rather than stale process state.
+10. Canonical English formatting-extension/case redirects in degraded mode remain bounded to code-owned bootstrap `en`; no stale non-English publication identity is reconstructed.
+11. Tests were read, not executed in this audit. No production/deployed cache behavior is claimed.
+
+### LOCALE-DEGRADED-WRITE-01 — Low/P3
+
+1. Source-of-truth requires: **writes in degraded LocaleRegistry state fail closed**.
+2. Current `guardLocale()` special degraded branch runs only when `candidateIdentity !== loaded.registry.bootstrap.tag`.
+3. Therefore a request such as authenticated same-origin `POST /en/sections/:sectionId` while registry health is `degraded` first resolves canonical bootstrap English normally, skips the degraded-write rejection, sets `localeContext`, and reaches the matched action.
+4. Ordinary forum write actions do not independently check registry health. Their mutation guard checks session/origin and then can write through the separate forum/web database. Localization registry storage and forum storage are separate runtime dependencies, so localization DB degradation does not imply the forum writer is unavailable.
+5. The same locale middleware is shared by localized application actions beyond one forum route; the finding is on the locale fail-closed boundary itself, not on one specific mutation implementation.
+6. Impact: during a classified registry unavailable/schema/integrity state, authorized canonical-English mutations may still commit despite the explicit degraded-mode contract. No authentication/authorization bypass or cross-user write was found.
+7. Severity — **Low/P3**: this is a real current fail-open integrity/availability boundary, but exploitation requires the registry already being degraded and normal mutation permissions still apply.
+8. Remediation is not assigned during audit.
 
 ## E2 — Markdown / rendering / XSS / unsafe navigation
 
@@ -254,13 +279,13 @@ Generic Own-vs-Any permission semantics уже покрыты Block C/D и зд�
 
 ### READSTATE-CACHE-01 — Low/P3
 
-1. `/:locale/unread` возвращает account-specific unread/new topics, counts и first/latest unread identities по current session, но route не экспортирует `headers()` и loader возвращает plain data без cache headers.
-2. Public `/:locale/sections/:sectionId` также сериализует per-user `topicReadStates`, а `/:locale/topics/:topicId` — per-user `topicReadState`; эти successful GET paths не задают explicit `private, no-store` для member-specific read-state data.
-3. Parent `locale-boundary` не задаёт Cache-Control. Exact official `react-router@8.3.1` source (`da2a0f0948af60ba45d9590b427d5e58fe4b0109`) подтверждает: route без `headers` наследует только parent headers, а loader/action headers не попадают в document response автоматически кроме Set-Cookie; topic `headers()` также получает пустой successful loader cache policy здесь.
-4. Для сравнения current notification inbox и homepage с dynamic/member-sensitive presentation явно используют `private, no-store`.
-5. Impact ограничен privacy/cache boundary: read/unread activity и account-specific presentation могут быть сохранены/переиспользованы кэшем, если конкретный browser/intermediary применит caching policy. Cross-user shared-cache replay в текущем undeployed environment **не доказан**.
-6. Поэтому severity — **Low/P3**, но это current product defect: authenticated unread/new state входит в обязательный pre-release product scope, и отсутствие явного private cache contract находится в действующем E7 boundary, а не является только Stage-6 hardening.
-7. Более широкий root/locale public-vs-member cache contract будет отдельно проверен в E1/E10; этот finding там не дублировать, а при необходимости только расширить affected surface одного root cause.
+1. E7 first confirmed missing private cache policy on `/:locale/unread`, section `topicReadStates` and topic `topicReadState`. E1 expanded the same root cause: parent `/:locale` loader itself serializes session-specific `authUser` (`id/name/image`), Admin/Attention/Super-admin presentation capabilities and unread notification count.
+2. `locale-boundary.tsx` exports no `headers()` and returns that account-specific parent data without cache headers. Public children such as Category/Search/Popular/Unanswered/Tags/Profile and normal Topic/Section GET paths do not universally replace the final response with an explicit `private, no-store` policy.
+3. Exact official `react-router@8.3.1` source (`da2a0f0948af60ba45d9590b427d5e58fe4b0109`) confirms both document responses and Single Fetch `.data` loader responses derive final headers through `getDocumentHeaders()`: a route without a `headers` export inherits parent headers; loader headers are not promoted except Set-Cookie unless a route headers policy returns them. Topic's custom `headers()` also preserves an empty parent policy on a normal successful GET.
+4. Worker auth-session prelookup does not close this gap: `withAuthSessionCookies()` deliberately propagates only Better Auth `Set-Cookie` values and does not copy auth endpoint cache headers. A Set-Cookie is not guaranteed on every session read. For comparison, notification inbox, Settings/Admin surfaces and homepage online-presence response explicitly use `private, no-store`.
+5. Impact is the same privacy/cache root cause but broader than read-state: account identity, unread count, permission-derived navigation flags and per-user read state can be stored/reused if a browser/intermediary applies caching without an explicit private policy. Protected destination routes still perform their own server authorization; cached presentation flags do not grant authority. Cross-user shared-cache replay in the undeployed environment is **not proven**.
+6. Severity remains **Low/P3**: the current app serializes member-specific state on public forum responses without its explicit cache-isolation contract, but actual cross-user cache reuse is not demonstrated and no authorization bypass results.
+7. E1 completed the broader root/locale check and expanded this finding instead of creating a duplicate. E10 may only add new evidence/affected work if it finds a distinct cache/replay cause.
 8. Remediation в рамках audit stage не назначена.
 
 ## E8 — Profiles / presence / public privacy
