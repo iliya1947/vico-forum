@@ -1011,8 +1011,8 @@ export function PreviewController() {
       <header className="preview-toolbar">
         <div>
           <p className="preview-eyebrow">Vico Forum</p>
-          <h1>UI progress preview</h1>
-          <p>Static representative data only. Runtime behavior is verified separately.</p>
+          <h1>Forum preview</h1>
+          <p>Supported actions work locally with representative data. Preview data resets when the state or page is restarted.</p>
         </div>
         <div className="preview-controls">
           <div className="preview-state-controls">
