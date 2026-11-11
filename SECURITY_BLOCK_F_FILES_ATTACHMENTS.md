@@ -11,9 +11,10 @@
 7. **F5 — Cleanup and physical deletion safety завершён: PASS, 0 additional current-scope findings.**
 8. **F6 — Attachment security evidence / Attention privacy завершён: PASS, 0 additional current-scope findings.**
 9. **F7 — Storage adapter, runtime privileges and failure isolation завершён: PASS, 0 additional current-scope findings.**
-10. Следующий bounded slice — **F8 Cross-chain closeout**.
-11. Мира — auditor/coordinator. Remediation, technical planner и implementer не назначены.
-12. Stage 6 external activation остаётся paused.
+10. **F8 — Cross-chain closeout завершён: PASS, 0 additional current-scope findings.**
+11. **Block F завершён. Итог: 1 current-scope finding — `ATTACH-TEXT-TAIL-01 Low/P3`.**
+12. Мира — auditor/coordinator. Remediation, technical planner и implementer не назначены.
+13. Stage 6 external activation остаётся paused.
 
 ## F1 — результат
 
@@ -128,6 +129,24 @@
 13. Cross-cutting Worker/database topology, deployment fail mode и credential isolation не расширялись в F7: их проверка относится к соответствующим последующим security blocks/Stage 6, если потребуется.
 14. External/live `ATTACHMENT_R2` provisioning, real bucket policy, production route fail mode и deployed network/isolation acceptance не выполнены. **Информация не проверена** для live production R2 isolation; это paused Stage 6 boundary, не current F7 defect.
 15. Targeted tests были прочитаны как evidence: known-length Workers adapter, conditional reservation, upstream cancellation, unknown full-body ACK, SQL activation/metadata timeout, cleanup fencing, missing R2 and controlled download failure. В этом audit-срезе тесты не запускались.
+
+## F8 — cross-chain closeout
+
+1. **PASS: 0 additional current-scope findings** на неизменившемся `main` `538084fd472c65459ad55ab30a0f96fbfdd68e56`.
+2. **Block F итог: 1 confirmed current-scope finding — `ATTACH-TEXT-TAIL-01 Low/P3`.** F1/F2/F4/F5/F6/F7/F8 дополнительных findings не дали.
+3. Upload → private ref: actor берётся из session, mutation требует same-origin, editor context/permission проверяются server-side, size/body bounded, physical key генерируется сервером, metadata/ref появляется только после successful write + applicable validation и повторной measure/generation проверки.
+4. Private ref → publication: final context выводится server-side; selected IDs — exact allowlist. Owner/context/operation, `type-checked`, active cleanup state и current post revision проверяются под locks; post/revision/ref/generation retirement/receipt меняются атомарно.
+5. Publication → read: public attachment bytes доступны только по exact live `post ↔ attachment` relation; temporary bytes — только authenticated owner + current context/operation/ref. Storage key остаётся после DB authority и не является request authority.
+6. Edit/remove → cleanup: Remove без Save не меняет public relation; Save atomically применяет retained/new/remove set. Shared post refs и retained complaint evidence защищают object; cleanup claim сериализуется с новым ref и удаляет bytes только после отсутствия всех current reference classes.
+7. Failure/replay chain: upload lost ACK, metadata timeout, publication replay, stale edit, delete lost ACK, cleanup lease и delayed payload не создают partial live attachment state. Committed exact replay сохраняется idempotently; changed replay/stale operation отклоняются.
+8. Moderation restriction chain: `attachments.upload` проверяется до R2 и повторно при metadata persistence. Mid-flight restriction после physical write не создаёт asset/ref; object остаётся только в durable cleanup journal и позже reclaim. Existing committed exact retry не создаёт второй asset.
+9. Evidence chain: suspicious rejection создаёт independent durable metadata event до обычного rejection response; Attention read требует `forum.attachmentSecurity.read`. Cleanup/removed object не удаляет security event. Complaint retained evidence — отдельная immutable ref/download boundary и не расширяет public attachment access.
+10. `ATTACH-TEXT-TAIL-01` повторно подтверждён end-to-end: первые 4096 bytes могут пройти как text; full-stream text structural validator отсутствует; binary tail получает `type-checked`, может быть selected/published и не создаёт suspicious evidence. Downstream publication/cleanup/read boundaries работают по persisted classification и поэтому не устраняют root cause.
+11. Impact finding остаётся **Low/P3**: default download — `application/octet-stream` attachment; explicit text preview — `text/plain; charset=utf-8` + CSP sandbox + `nosniff`. Same-origin active execution, privilege bypass или private-object IDOR через finding не подтверждены.
+12. `FORUM-READ-BOUNDS-01` и `FORM-BODY-BOUNDS-01` не дублируются в Block F: первый лишь пересекает topic-context authorization path, второй относится к ordinary form parsing, тогда как attachment upload имеет отдельный streaming byte boundary.
+13. Future-only boundaries не повышались до findings: live AV, external R2 provisioning/bucket policy, deployed route/isolation, production cleanup scheduling и production acceptance остаются Stage 6. **Информация не проверена** для live deployed attachment isolation/cleanup.
+14. Targeted application/PostgreSQL/Worker tests и current source были прочитаны как evidence; в F8 тесты не запускались. GitHub commit status для текущего docs-only main не предоставил отдельного exact-head run, поэтому F8 не заявляет новый CI execution.
+15. **Block F закрыт как audit-block. Remediation автоматически не начинается.** Если владелец решит исправлять `ATTACH-TEXT-TAIL-01`, это должна быть отдельная bounded implementation-задача; следующий security-audit area по общей карте — Database & migrations (future Block G).
 
 ## Цель
 
