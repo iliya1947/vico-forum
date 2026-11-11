@@ -280,9 +280,11 @@ describe("interactive Pages preview", () => {
     await user.click(actions!);
 
     await user.click(within(question as HTMLElement).getByRole("button", { name: "Edit history" }));
-    expect(await within(question as HTMLElement).findByRole("heading", { name: "Published revisions" }))
-      .toBeInTheDocument();
-    expect(within(question as HTMLElement).getByText(
+    const historyHeading = await within(question as HTMLElement)
+      .findByRole("heading", { name: "Published revisions" });
+    expect(historyHeading).toBeInTheDocument();
+    const historySection = historyHeading.closest(".topic-post-history") as HTMLElement;
+    expect(within(historySection).getByText(
       "I want strong typing without coupling the whole app to one HTTP library.",
     )).toBeInTheDocument();
 
@@ -304,9 +306,11 @@ describe("interactive Pages preview", () => {
     view.rerender(<EmbeddedPreview scenarioId="admin" identity="owner" />);
     expect(await screen.findByRole("button", { name: "Create custom role" })).toBeInTheDocument();
 
-    await user.type(screen.getByLabelText("Role slug"), "support-lead");
-    await user.type(screen.getByLabelText("Display name"), "Support lead");
-    await user.click(screen.getByRole("button", { name: "Create custom role" }));
+    const createRoleForm = document.querySelector(".admin-create-role") as HTMLElement;
+    expect(createRoleForm).not.toBeNull();
+    await user.type(within(createRoleForm).getByLabelText("Role slug"), "support-lead");
+    await user.type(within(createRoleForm).getByLabelText("Display name"), "Support lead");
+    await user.click(within(createRoleForm).getByRole("button", { name: "Create custom role" }));
 
     const createdHeading = await screen.findByRole("heading", { name: "Support lead" });
     const roleCard = createdHeading.closest(".admin-role-card") as HTMLElement;
