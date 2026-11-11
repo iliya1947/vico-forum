@@ -1,3 +1,20 @@
+# Лира — active assignment: SA04-A1 only
+
+Base: current `main` `ce62e783e71433a00c2fe4874ee26dfc54614628`.
+Accepted SA-04 package plan: #6806249892.
+
+Implement **one bounded result only: account-state schema foundation**.
+
+Done when:
+1. Existing `user` row has the approved nullable deactivation-state fields through the next forward migration (currently `0065`).
+2. The state tuple has the approved consistency/retention constraint and existing rows remain active.
+3. Drizzle schema, migration metadata/snapshot/journal and full-schema manifest stay consistent.
+4. Focused native/migration tests prove valid active/inactive tuples and reject invalid partial/too-early-retention states.
+5. New state fields are not exposed as Better Auth client-writable/serialized additional fields.
+6. Create/use the Draft SA-04 implementation PR, publish exact head and actual evidence, then **STOP**.
+
+Do **not** implement the runtime account-state reader/predicate, auth/session enforcement, writer guards, neutral/public identity projection, deactivate action/control, lifecycle event/UI, SA-05+, Stage6 or production work.
+
 # Лира — docs #326 repeated independent factual review PASS; STOP
 
 - **Exact docs-only reviewed head:** `9714e06c2d6030b26a54d6c1287255226c4c186a`; base/current `main` implementation merge `5992885e78b1642e41c9805116fcc256002b649c`. PR #326 remains open/unmerged. Original 9-file cumulative documentation diff reviewed against current merged SA-03 #324, AP-11 history and relevant current project/authorization sources. All eight other docs files have byte-identical Git blob SHAs to first full review; correction commit modifies only `docs/ADMIN_PANEL.md`.
