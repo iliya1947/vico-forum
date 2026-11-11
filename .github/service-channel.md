@@ -27,7 +27,7 @@
 5. Block D: аудит D1–D12 завершён; подтверждены **3 findings — `COMPLAINT-PRIV-01`, `HELP-SIGNAL-PRIV-01`, `HISTORY-PRIV-01` (все Low/P3)**.
 6. D12 corrected closeout: official React Router Framework/SSR docs и exact `react-router@8.3.1` source подтвердили default skip loader revalidation после 4xx/5xx; Vico explicit recovery refreshes loaders and does not automatically replay mutations.
 7. Block E audit завершён: E2 PASS; E5 — **`FORUM-PUB-01 Moderate/P2`**; E6 — 0 additional; E7 — **`READSTATE-CACHE-01 Low/P3`**; E3 — **`PUBLIC-PROJECTION-01 Low/P3`**; E4 — **`DISCOVERY-BOUNDS-01 Low/P3`, `SEARCH-CONTROL-01 Low/P3`**; E8 PASS; E1 — **`LOCALE-DEGRADED-WRITE-01 Low/P3`** + расширение `READSTATE-CACHE-01`; E9 PASS; E10 — **`FORUM-READ-BOUNDS-01 Moderate/P2`, `FORM-BODY-BOUNDS-01 Moderate/P2`**. Block E total: **8 findings**. E10 проверен на current `main` `4248fed23925e4a23e48485d419ceaf0ce337def`; compare с предыдущим target подтвердил отсутствие изменений core Forum/translation E2–E9.
-8. Block F на current `main` `538084fd472c65459ad55ab30a0f96fbfdd68e56`: **F1 PASS; F2 PASS; F3 — `ATTACH-TEXT-TAIL-01 Low/P3`; F4/F5/F6/F7 PASS, 0 additional findings**. F7 подтверждает server-only physical object keys, bounded R2 adapter, fail-closed DB/R2 dependency handling, narrow attachment runtime DB capabilities и safe error/output isolation. Следующий срез — **F8 Cross-chain closeout**.
+8. Block F на current `main` `538084fd472c65459ad55ab30a0f96fbfdd68e56`: **ЗАВЕРШЁН. Итог — 1 current-scope finding: `ATTACH-TEXT-TAIL-01 Low/P3`; F1/F2/F4/F5/F6/F7/F8 дополнительных findings не дали.** F8 перепроверил upload → publication → read → edit/remove → cleanup → evidence, включая lost ACK, measures, complaint evidence и runtime failures.
 9. Implementation PR, technical planner и implementer для remediation сейчас не назначены.
 10. Cloudflare/Neon/production mutation по #315 не разрешена и не выполнялась.
 
@@ -65,12 +65,10 @@
 
 ## Открыто
 
-1. **Block F F1–F7 completed: F1 PASS, F2 PASS, F3 — `ATTACH-TEXT-TAIL-01 Low/P3`, F4/F5/F6/F7 PASS with 0 additional findings.** Детальная causal chain зафиксирована в `SECURITY_BLOCK_F_FILES_ATTACHMENTS.md`.
-2. Следующий bounded audit slice — **F8 Cross-chain closeout** на current `main` `538084fd472c65459ad55ab30a0f96fbfdd68e56`.
-3. F7 external/live `ATTACHMENT_R2` provisioning, bucket policy, production route fail mode и deployed isolation: **Информация не проверена**; это paused Stage 6 boundary, не current F7 defect.
-4. `ATTACH-TEXT-TAIL-01` остаётся единственным Block F finding; F7 не дублирует F3 content-classification root cause.
-5. F6 hard evidence-store outage fail-closed даёт `503` и не создаёт attachment/publication; второй durable sink при полном DB outage не является текущим требованием.
-6. F5 live scheduler/external R2 cleanup execution также остаётся Stage 6 и не заявляется как проверенная.
-7. `FORUM-READ-BOUNDS-01` остаётся прежним Block E finding и не дублируется из Block F.
-8. SA-02 factual docs closeout уже merged в current main; descendant `4248fed… → 538084f…` меняет только 8 Markdown docs, attachment runtime/schema не менялся.
-9. Лира, Лёва и Марк сейчас не имеют активного назначения по #315.
+1. **Block F закрыт: 1 finding — `ATTACH-TEXT-TAIL-01 Low/P3`.** Детальная causal chain и F8 closeout находятся в `SECURITY_BLOCK_F_FILES_ATTACHMENTS.md`.
+2. Remediation Block F **не назначена** и автоматически не начинается.
+3. Следующая область общей security-карты при продолжении аудита — **Database & migrations**. Для неё сначала нужен отдельный `SECURITY_BLOCK_G_*.md` с bounded scope; сам аудит G в этот F8-срез не входит.
+4. Live AV, external/live `ATTACHMENT_R2`, bucket policy, production route/isolation и cleanup scheduling: **Информация не проверена**; это paused Stage 6 boundary.
+5. `FORUM-READ-BOUNDS-01` и `FORM-BODY-BOUNDS-01` остаются Block E findings и не дублируются из Block F.
+6. SA-02 factual docs closeout уже merged в current main; descendant `4248fed… → 538084f…` меняет только 8 Markdown docs, attachment runtime/schema не менялся.
+7. Лира, Лёва и Марк сейчас не имеют активного назначения по #315.
