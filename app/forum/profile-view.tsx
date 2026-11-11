@@ -34,6 +34,8 @@ export function ProfileView({ locale, profile, isSelf = false, canEditProfile = 
   const github = safeHttpUrl(profile.githubUrl);
   const website = safeHttpUrl(profile.websiteUrl);
   const fields = feedback?.draft ?? profile;
+  // The exact bound Owner self-view reads AP-10 through ownList, never adminTarget.
+  const ownerSelfMeasures = privileged.owner?.viewerId === profile.id;
   return <ForumShell locale={locale} variant="profile">
     <nav className="profile-breadcrumb" aria-label={t("breadcrumbsLabel")}><Link to={forumIndexPath(locale)}>{t("forumHomeNav")}</Link><span aria-hidden="true"> / </span><span>{t("profileHeading")}</span></nav>
     <section className="profile-card" aria-labelledby="profile-name">
@@ -70,14 +72,16 @@ export function ProfileView({ locale, profile, isSelf = false, canEditProfile = 
     </section>
     {privileged.measures ? (
       privileged.measures.status === "unavailable" ?
-        <SectionUnavailable id="measures" label={t("measuresAdmin")} /> :
-        <section id="measures" className="profile-card" aria-labelledby="profile-admin-measures-heading">
-          <h2 id="profile-admin-measures-heading">{t("measuresAdmin")}</h2>
+        <SectionUnavailable id="measures" label={t(ownerSelfMeasures ? "measuresOwn" : "measuresAdmin")} /> :
+        <section id="measures" className="profile-card" aria-labelledby="profile-measures-heading">
+          <h2 id="profile-measures-heading">{t(ownerSelfMeasures ? "measuresOwn" : "measuresAdmin")}</h2>
           {privileged.measures.value.length ?
-            <GroupedMeasures measures={privileged.measures.value} locale={locale} admin/> :
+            <GroupedMeasures measures={privileged.measures.value} locale={locale} admin
+              detailRoute={ownerSelfMeasures ? "own" : "admin"}/> :
             <p>{t("measuresNone")}</p>}
-          <p><Link to={adminMeasuresPath(locale,routing)+"?target="+encodeURIComponent(profile.id)}>
-            {t("measuresAdmin")}</Link></p>
+          <p><Link to={ownerSelfMeasures ? ownMeasuresPath(locale)
+            : adminMeasuresPath(locale,routing)+"?target="+encodeURIComponent(profile.id)}>
+            {t(ownerSelfMeasures ? "measuresOwn" : "measuresAdmin")}</Link></p>
         </section>
     ) : null}
     {privileged.authorization ? (
