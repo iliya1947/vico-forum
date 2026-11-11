@@ -4,7 +4,7 @@
 
 1. Это bounded audit plan для области 5 общей security-карты.
 2. Audit target на момент подготовки: current `main` `f6fd4b2c031b2132b04eace18704a59aed1dfec8`.
-3. Фактический аудит ещё не начат; findings и remediation не назначены.
+3. Фактический аудит начат. **E2 завершён: PASS — 0 current-scope findings.** Remediation по Block E не назначена.
 4. Проверка ведётся по реальным public/member route → service/repository paths, а не по одному UI.
 
 ## Граница блока
@@ -70,6 +70,19 @@ Block E проверяет обычный форум и member-facing applicatio
 5. malformed Markdown/HTML и deeply nested structures не обходят safe renderer;
 6. translated Markdown проходит тот же safe renderer и не получает privileged HTML path;
 7. renderer/semantic parser disagreement не превращает mention/link/technical fragment в executable content.
+
+### E2 — результат аудита
+
+1. Audit target: current `main` `f6fd4b2c031b2132b04eace18704a59aed1dfec8`.
+2. Verdict: **PASS — 0 current-scope security findings**.
+3. Public/Preview renderer использует `react-markdown@10.1.0` без `rehype-raw`, `allowDangerousHtml` или другого raw-HTML activation path. Exact upstream source превращает raw HTML nodes в text и применяет `urlTransform` до React rendering. В Vico единственный production `dangerouslySetInnerHTML` относится к compile-time `THEME_BOOTSTRAP_SCRIPT` и не получает пользовательский контент.
+4. Обычные Markdown URL проходят через upstream `defaultUrlTransform`; протоколы вне его allowlist дают пустой URL. Единственное Vico-исключение — exact image source `vico-attachment:<UUID>`; он не используется как DOM URL напрямую, а разрешается только через текущий attachment context и только для raster-типа. Произвольные remote Markdown images не отображаются. Пользовательские ссылки открываются с `target="_blank"` и `rel="nofollow noopener noreferrer ugc"`.
+5. Custom syntax не создаёт generic user-controlled DOM properties: spoiler title — React text, spoiler body — тот же renderer, table cells — тот же renderer, direction принимает только exact `ltr|rtl`, table alignment — только фиксированный enum. Code/Diff/language/filename и quote metadata выводятся через React text/props, не raw HTML.
+6. Editor Preview использует тот же `ForumMarkdown`. Simple visual editor не превращает authored link target в активный `<a>`; HTML paste проходит bounded allowlist conversion DOM → Markdown, а небезопасная/неподдерживаемая структура не вставляется как raw DOM.
+7. Translated Markdown не имеет privileged render path: provider values возвращаются в Markdown AST как text nodes, protected tokens и structure signature проверяются, после чего результат отображается через `ForumMarkdown`. Имеющийся regression test подтверждает, что provider input вида Markdown-link с `javascript:` плюс `<script>` остаётся literal text, а попытка изменить block structure отклоняется.
+8. Semantic consumers не создают executable sink: mention extraction принимает только exact internal profile path и исключает quote/code/html/image nodes. Даже если semantic tree сохраняет небезопасную authored URL как данные, публичный renderer отдельно применяет URL safety boundary.
+9. Malformed/deep Markdown не обнаружил альтернативного пути к executable DOM. Availability, body-size и complexity/resource-exhaustion bounds здесь не закрывались: они относятся к E10 / Abuse & availability и не классифицируются как E2 finding без renderer-bypass evidence.
+10. Remediation для E2 не требуется.
 
 ## E3 — Public object reads / projection / IDOR
 
