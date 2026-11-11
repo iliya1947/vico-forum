@@ -214,6 +214,8 @@ type PreviewInteractionState = {
   createdTopics: Map<string, PreviewCreatedTopic>;
   replies: Map<string, PreviewReply[]>;
   topicOverrides: Map<string, PreviewTopicOverride>;
+  topicTitleSourceLocales: Map<string, string>;
+  postSourceLocales: Map<string, string>;
   profileOverrides: Map<string, ProfileFields>;
   readNotifications: Set<string>;
   resolvedAttentionCases: Set<string>;
@@ -225,6 +227,8 @@ function createPreviewInteractionState(): PreviewInteractionState {
     createdTopics: new Map(),
     replies: new Map(),
     topicOverrides: new Map(),
+    topicTitleSourceLocales: new Map(),
+    postSourceLocales: new Map(),
     profileOverrides: new Map(),
     readNotifications: new Set(),
     resolvedAttentionCases: new Set(),
@@ -271,8 +275,14 @@ function previewApplyTopicState(topic: PreviewTopicPage, interactions: PreviewIn
     },
   }));
   const override = interactions.topicOverrides.get(topic.id);
+  const posts = [...topic.posts, ...replies].map((post) => {
+    const sourceLocale = interactions.postSourceLocales.get(post.id);
+    return sourceLocale ? { ...post, body: { ...post.body, sourceLocale } } : post;
+  });
+  const titleSourceLocale = interactions.topicTitleSourceLocales.get(topic.id);
   return {
     ...topic,
+    title: titleSourceLocale ? { ...topic.title, sourceLocale: titleSourceLocale } : topic.title,
     isSolved: override?.isSolved ?? topic.isSolved,
     bestAnswerPostId: override?.bestAnswerPostId === undefined
       ? topic.bestAnswerPostId
@@ -280,7 +290,7 @@ function previewApplyTopicState(topic: PreviewTopicPage, interactions: PreviewIn
     isPinned: override?.isPinned ?? topic.isPinned,
     isClosed: override?.isClosed ?? topic.isClosed,
     closureVersion: override?.closureVersion ?? topic.closureVersion,
-    posts: [...topic.posts, ...replies],
+    posts,
   };
 }
 
@@ -1113,6 +1123,8 @@ export function EmbeddedPreview({ scenarioId, identity }: { scenarioId: string; 
           || intent === "closeTopic"
           || intent === "reopenTopic")
           && form.classList.contains("topic-admin-form"))
+        || ((intent === "correctTitleSourceLocale" || intent === "correctPostSourceLocale")
+          && form.classList.contains("source-locale-form"))
         || ((intent === "createHelpQuestion" || intent === "checkSimilarHelpQuestions")
           && form.id === "help-question-create-form")
         || (intent === "save-profile" && form.classList.contains("profile-form"))
@@ -1560,6 +1572,42 @@ async function previewTopicAction(
   }
 
   const inline = form.get("inlineQuickAction") === "1";
+
+  if (intent === "correctTitleSourceLocale") {
+    if (scenario.identity !== "manager") return null;
+    const sourceLocale = String(form.get("sourceLocale") ?? "").trim();
+    if (!sourceLocale) return { error: "invalid" };
+    interactions.topicTitleSourceLocales.set(routeTopicId, sourceLocale);
+    return inline ? { ok: true } : redirect(forumTopicPath(locale, routeTopicId));
+  }
+
+  if (intent === "correctPostSourceLocale") {
+    if (scenario.identity !== "manager") return null;
+    const postId = String(form.get("postId") ?? "").trim();
+    const sourceLocale = String(form.get("sourceLocale") ?? "").trim();
+    if (!postId || !sourceLocale) return { error: "invalid" };
+    interactions.postSourceLocales.set(postId, sourceLocale);
+    return { ok: true };
+  }
+
+  if (intent === "readPostHistory") {
+    if (scenario.identity !== "manager") return { error: "forbidden" };
+    const postId = String(form.get("postId") ?? "").trim();
+    const page = primaryTopicScenarioData(scenario).topic;
+    const post = page.id === routeTopicId ? page.posts.find((candidate) => candidate.id === postId) : undefined;
+    if (!post) return { error: "notFound" };
+    return {
+      operation: "postHistory" as const,
+      postId,
+      revisions: [{
+        id: post.body.id,
+        authorName: post.authorName,
+        originalContent: post.body.originalContent,
+        sourceLocale: interactions.postSourceLocales.get(post.id) ?? post.body.sourceLocale,
+        createdAt: post.createdAt.toISOString(),
+      }],
+    };
+  }
 
   if (intent === "selectBestAnswer") {
     const postId = String(form.get("postId") ?? "").trim();
