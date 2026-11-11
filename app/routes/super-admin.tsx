@@ -10,17 +10,18 @@ export async function loader({params,context}:{params:{locale?:string};context:R
   requireSuperAdmin(context);
   try {
     const reader = ownerMonitoringForRequest(context);
-    const [system,recent] = await Promise.all([
-      reader.readSystem(),ownerSa02MonitoringForRequest(context).readSa02History({limit:5}),
+    const sa02Reader = ownerSa02MonitoringForRequest(context);
+    const [system,recent,sa02] = await Promise.all([
+      reader.readSystem(),sa02Reader.readSa02History({limit:5}),sa02Reader.readSa02Current(),
     ]);
-    return data({locale:params.locale??"en",system,recent},{headers:superAdminPrivateHeaders});
+    return data({locale:params.locale??"en",system,recent,sa02},{headers:superAdminPrivateHeaders});
   } catch(error) {
     if(error instanceof OwnerSystemUnavailableError) throw new Response("Unavailable",{status:503,headers:superAdminPrivateHeaders});
     throw error;
   }
 }
 export default function SuperAdminRoute() {
-  const {locale,system,recent}=useLoaderData<typeof loader>();
-  return <SuperAdminOverview locale={locale} system={system} recent={recent}/>;
+  const {locale,system,recent,sa02}=useLoaderData<typeof loader>();
+  return <SuperAdminOverview locale={locale} system={system} recent={recent} sa02={sa02}/>;
 }
 export const ErrorBoundary=ForumRouteError;

@@ -11,6 +11,7 @@ import {
 import type { SystemOverview, SystemMonitorState, OwnerTimelinePage } from "../../db/owner-system-monitoring";
 import type { SystemMonitorKey } from "../../db/owner-system-history";
 import type { OwnerHistoryPage } from "../../db/owner-sa02-history";
+import type { Sa02CurrentState } from "../../db/owner-sa02-current";
 import { HistoryEntry } from "./history-entry";
 
 const keys: Record<SystemMonitorKey, "superAdminRuntime" | "superAdminDatabase" | "superAdminRequests"> = {
@@ -108,7 +109,62 @@ export function Timeline({ page, locale, path }: {page:OwnerTimelinePage|OwnerHi
     </nav>
   </section>;
 }
-export function SuperAdminOverview({locale,system,recent}: {locale:string;system:SystemOverview;recent:OwnerTimelinePage|OwnerHistoryPage}) {
+const sa02OverviewAreas = [
+  {
+    area: "accounts", title: "superAdminAreaAccounts",
+    note: "superAdminOverviewAccountsNote",
+    fields: [
+      ["accounts.users", "total", "superAdminSa02TotalUsers"],
+      ["accounts.users", "created24h", "superAdminSa02Created24h"],
+      ["accounts.sessions", "active", "superAdminSa02ActiveSessions"],
+    ],
+  },
+  {
+    area: "security", title: "superAdminAreaSecurity",
+    note: "superAdminOverviewSecurityNote",
+    fields: [
+      ["security.auth", "attributedAttempts", "superAdminOverviewAuthAttempts"],
+      ["security.access", "attributedAttempts", "superAdminOverviewAccessAttempts"],
+      ["security.auth", "gapAttempts", "superAdminOverviewAuthGaps"],
+      ["security.access", "gapAttempts", "superAdminOverviewAccessGaps"],
+    ],
+  },
+] as const;
+
+/** Compact current-state summary only; source and history remain the same SA02 readers. */
+function Sa02OverviewSummaries({locale,state}: {locale:string;state:Sa02CurrentState}) {
+  const {t}=useTranslation("common");
+  const routing=useAdministrativeRouting();
+  return <>
+    {state.recording==="unavailable"
+      ? <p role="status">{t("superAdminRecordingUnavailable")}</p> : null}
+    <div className="super-admin-summaries">
+      {sa02OverviewAreas.map(area=><article className="super-admin-summary" key={area.area}
+        data-sa02-summary={area.area}>
+        <h3>{t(area.title)}</h3>
+        <dl>{area.fields.map(([monitor,field,label])=>{
+          const value=state.monitors.find(item=>item.key===monitor)?.values[field];
+          const text=value===null || value===undefined
+            ? t("superAdminNotRecorded")
+            : typeof value==="string" && /^[0-9]+$/.test(value)
+              ? new Intl.NumberFormat(locale).format(BigInt(value)) : String(value);
+          return <div key={monitor+"."+field}>
+            <dt>{t(label)}</dt><dd><bdi>{text}</bdi></dd>
+          </div>;
+        })}</dl>
+        <p className="super-admin-freshness">{t("superAdminObservedAt")}:
+          <time dateTime={state.observedAt}>{formatTime(state.observedAt,locale)}</time>
+        </p>
+        <p>{t(area.note)}</p>
+        <Link to={area.area==="accounts" ? superAdminAccountsPath(locale,routing)
+          : superAdminSecurityPath(locale,routing)}>{t("superAdminOverviewDetails")}</Link>
+      </article>)}
+    </div>
+  </>;
+}
+export function SuperAdminOverview({locale,system,recent,sa02}: {
+  locale:string;system:SystemOverview;recent:OwnerTimelinePage|OwnerHistoryPage;sa02:Sa02CurrentState;
+}) {
   const {t}=useTranslation("common");
   const routing = useAdministrativeRouting();
   return <SuperAdminShell locale={locale} current="overview">
@@ -118,6 +174,7 @@ export function SuperAdminOverview({locale,system,recent}: {locale:string;system
       {system.recording==="unavailable" ? <p role="status">{t("superAdminRecordingUnavailable")}</p> : null}
       <SystemMonitorCards locale={locale} system={system}/>
       <p><Link to={superAdminSystemPath(locale,routing)}>{t("superAdminAllMonitors")}</Link></p>
+      <Sa02OverviewSummaries locale={locale} state={sa02}/>
       <h2>{t("superAdminEvents")}</h2>
       <ul className="super-admin-recent">{recent.entries.map(event=><li key={event.origin+event.id}>
         <bdi>{event.kind}</bdi> — <time dateTime={event.occurredAt}>{formatTime(event.occurredAt,locale)}</time>
