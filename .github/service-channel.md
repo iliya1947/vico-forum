@@ -32,12 +32,13 @@
 
 ## Актуальный baseline и назначение
 
-- Main `e279cb6c032a489a9044ca1191407df887c364b4`; preceding Admin/Settings/SA01/routing packages merged. SA02 A/B/C backend accepted at Draft PR #319 head `25ac41573847f9fbce79897b2e019fd246b400cc`: Mira #6788548049 + independent Lev #6788696141 PASS, closeout #6788764135, all findings CLOSED.
-- **Current task: SA02-D executable delivery/PR strategy proposed, Mira review pending.** Developer continuation and Mira assignment #6789052062; accepted full SA02 plan #6768069279 remains authoritative.
-- **Proposal [#6789135043](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6789135043):** continue D as ordinary descendant commits in existing implementation #319 against main, preserving the reviewed A/B/C snapshot. No premature backend merge or extra stacked-PR chain. Fresh final cumulative A/B/C/D exact-head whole-PR review remains required.
-- D scope: existing accepted reader/facade/Worker wiring; Owner-only Accounts/Security routes and adjacent/global History; typed routing; 4+3 monitor UI and two concise Overview summaries; EN/RU/HE/RTL; expanded existing connected/browser acceptance. No backend model redesign.
-- **Next recipient Mira** to review this D plan/PR boundary and coordinate implementation handoff. Lev completed/stopped; D implementer/reviewers unassigned. No D implementation/checks/PASS or full-SA02 merge readiness claimed.
-- #315 checked at head `dcd65ec1666c1b0f881737825f55c27c27e7db13`, security plan blob `df2d500ccb2750d43422bf5d30f5b0c5370401ff` unchanged. SA03+, Stage6 Owner-plane activation, production and deferred journal occupancy/archive/clear remain outside scope.
+- Current main `f6fd4b2c031b2132b04eace18704a59aed1dfec8`; implementation PR base `e279cb6c032a489a9044ca1191407df887c364b4`. Independent diff confirms only AGENTS.md service-file-rule divergence; no runtime overlap.
+- **Current result: SA02 cumulative A/B/C/D independent whole-PR review CHANGES REQUIRED — 2 confirmed presentation findings.** Draft PR #319 exact head `0a45909bfb3a403af63a4693455d519f8a0e9ea6`; accepted A/B/C snapshot25ac415 remains ancestor; previous LEV-01/-02/-03 CLOSED.
+- Full independent packet [#6793653705](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6793653705), after Mira coordinator PASS of the same head and author #6793188515; accepted full plan #6768069279 + D handoff #6789135043.
+- **LEV-04 OPEN (P2):** shared History labels conflate attachment evidence total with users and registration policy version with database version. **LEV-05 OPEN (P3):** generic digit-string formatting changes opaque IDs, including removal of leading zeros.
+- Independently reproduced via real PG17→actual readers→React and protected built Worker/Chromium routes. Full 71-file scope checked; 41 accepted A/B/C files unchanged, Worker wiring inspected. Local 168 app/126 PG tests, build/schema69/runtime privileges and expanded27 Chromium checkpoints PASS; generic green tests do not cover these semantic failures.
+- **Next recipient Mira** for combined finding assessment/coordinator continuation. Lev completed/stopped; no Lira/Mark appointment by Lev. PR319 remains Draft; no independent full-SA02 PASS/merge readiness.
+- #315 current split/index plan and BlockA rechecked at head `4e4477755490c31e87377ab527e853d54da3af65`. Separate security foundation/activation, docs closeout, SA03+, production and deferred journal occupancy/archive/clear not performed.
 
 ## Handoff — Лира: Stage2 factual documentation closeout
 
@@ -3268,3 +3269,14 @@ Result: **PASS, 0 confirmed current-scope defects.**
 - Current #315 security plan was rechecked. Separate Owner Worker/Access/passkey/isolated Owner session/DB capability work is future security/foundation scope, not a confirmed SA02 defect and is not pulled into this review.
 
 **Handoff:** Lev performs an independent cumulative A/B/C/D whole-PR review of the same exact head `0a45909bfb3a403af63a4693455d519f8a0e9ea6`, without implementation. Lira/Mark remain unassigned. Full SA-02 closeout/merge readiness is not asserted until that independent gate passes.
+
+## 2026-11-11 — Lev independent cumulative A/B/C/D whole-PR review: CHANGES REQUIRED
+
+- Full packet [#6793653705](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6793653705), PR319 exact `0a45909bfb3a403af63a4693455d519f8a0e9ea6`, base `e279cb6c032a489a9044ca1191407df887c364b4`, main `f6fd4b2c031b2132b04eace18704a59aed1dfec8` (only AGENTS divergence). Entire 71-file cumulative A/B/C/D against accepted full/D plans reviewed, no implementation edits.
+- **2 confirmed current-scope defects:** SA02-IMPL-LEV-04/P2 context-free field labels misrepresent attachment.total as persisted users and registration.version as database version; SA02-IMPL-LEV-05/P3 formats opaque digit-only IDs through BigInt/Intl and loses literal text/leading zeros.
+- Causal proof: real migrated PG17, actual current/sample/History readers and React renderer; additional actual built Worker/protected History Chromium + .data/DOM comparison/screenshots. Stored/serialized values remain correct; only presentation boundary corrupts meaning/text. Local label-map/field-type corrections requested; no schema/auth/security-model expansion.
+- Accepted A/B/C snapshot remains ancestor; 41 of its42 files identical, Worker request capability addition inspected. Old independent occurrence/coverage/refs probes PASS; LEV-01/-02/-03 remain CLOSED.
+- Fresh local evidence:26 app files/168 tests,11 native PG17 files/126 tests, build,69-table manifest, runtime privilege probes, expanded27 Worker/Better Auth/PG17/Chromium checkpoint groups PASS. Remote CI42999991624/SA0142999991412/AP1042999992082 SUCCESS, AP10 all4jobs verified. Full-CI suite not claimed as local rerun.
+- #315 rechecked after its split: plan/index blob `0d79a0a7d1876ac0999396328f4814bd929e899d`, relevant BlockA blob `4d5ef9b8db30e351a4e626924c7aab228d2c80b4`. Existing security findings/future isolation not counted as new SA02 defects.
+- Evidence `/workspace/work/sa02-full-review-evidence/`; source/protected manifests, probes/logs and screenshots retained. New full probe sources in Lev personal file. Own Worker4202/disposable PostgreSQL/synthetic vars/dependency links removed; checkout clean.
+- **Handoff Mira:** assess the combined LEV-04/-05 packet and continue coordinator cycle. Lev stops, does not assign Lira/Mark or approve merge. PR319 staysDraft; independent full-SA02 PASS and docs/production/future-package work unclaimed.
