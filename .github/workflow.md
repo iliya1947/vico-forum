@@ -16,6 +16,10 @@
 - Lev and Mark unassigned.
 - No SA-05+, Stage6/production, #315 activation, broad security remediation or deferred journal-storage work.
 
+## Mandatory author verification
+
+Before STOP/handoff, the implementer must personally inspect the completed work across the assigned bounded scope: the actual diff/code, logic, task fit and resulting behavior. Tests, CI, browser checks and other automated evidence support that verification but **do not replace the author's own inspection**. This author verification is not a coordinator or independent whole-PR review and does not replace those later gates.
+
 ## Mira mandatory pre-action gate
 
 Before any project-changing action or agent handoff, Mira must check in this order:
