@@ -3559,3 +3559,34 @@ This constraint applies to every future implementation handoff in #251:
 6. If an assignment violates this constraint, Lira should not continue into additional independent results beyond the bounded task actually assigned.
 
 This is a workflow constraint for #251. It does not alter product scope or AGENTS.md.
+
+## 2026-11-11 — Mira coordinator whole-PR review #324: CHANGES REQUIRED
+
+Reviewed implementation PR #324 exact stable head `09bb644d751a0812671cc226366a336797bb8812` against current main `538084fd472c65459ad55ab30a0f96fbfdd68e56`, Lev SA-03 plan #6796912006, current Super-admin/user-profile contracts and the complete 42-file change surface.
+
+Verified author evidence on the same head:
+- CI #43054008996 — SUCCESS;
+- SA03 connected Chromium #43054008946 — SUCCESS;
+- SA01 connected Chromium #43054008929 — SUCCESS;
+- AP10 isolated browser #43054009241 — SUCCESS.
+
+**Verdict: CHANGES REQUIRED — 1 confirmed current-scope defect. No other current-scope defects confirmed.**
+
+### SA03-MIRA-01 · P3 — Owner-self measures section renders destinations that AP-10 forbids
+
+Confirmed chain:
+1. In `app/profile/sections.server.ts`, exact Owner viewing their own canonical profile intentionally uses `userMeasuresForRequest(context).ownList(actorId)` because AP-10 `adminTarget(Owner,self)` is forbidden.
+2. In `app/forum/profile-view.tsx`, every ready privileged measures section is rendered as `<GroupedMeasures ... admin/>` and always includes `adminMeasuresPath(...)?target=<profile.id>`.
+3. `GroupedMeasures(..., admin=true)` renders each measure title through `adminMeasurePath`.
+4. The existing AP-10 Admin routes call `adminTarget` / `adminDetail`; `assertUserMeasureAuthority` rejects both `actorId === targetUserId` and any Owner target.
+5. Therefore on the exact Owner's own canonical profile the measures section can be read successfully, but its Admin list/detail links are guaranteed to lead to forbidden paths. The general self navigation already has a valid own-measures path, but the newly composed measures section itself contains broken destinations.
+
+This is **current SA-03 scope** because the accepted plan explicitly special-cases Owner-self through `ownList` and requires canonical-profile sections to reuse applicable existing destinations without bypassing AP-10 authority. It is not a request to weaken Owner immunity or AP-10.
+
+**Bounded correction for Lira only:**
+- make Owner-self measures presentation use the existing own-measures destinations; keep Admin destinations for permitted non-self administrative target views;
+- do not change AP-10 authority, readers/writers, Owner immunity or SA-04+ behavior;
+- add focused regression coverage for Owner-self canonical-profile measure list/detail destinations and the zero-measure section link;
+- run applicable checks, publish the new stable #324 head, record evidence, and STOP.
+
+No implementation changes were made during this review. Lev/Mark remain unassigned. After Lira's bounded fix, Mira restarts coordinator whole-PR review on the new stable exact head.
