@@ -203,6 +203,58 @@ describe("SA02 snapshot-consistent Owner current-state native sources",()=>{
     expect(registration.lastObservedAt).toBeTruthy();
   });
 
+  it("Accounts coverage never predates retained History despite legacy domain timestamps",async()=>{
+    const old="2020-01-01T00:00:00.000Z";
+    await person("sa02-legacy");
+    await client.query('update "user" set created_at=$1 where id=$2',[old,"sa02-legacy"]);
+    await method("legacy-method","sa02-legacy","credential","legacy-hash");
+    await client.query("update account set created_at=$1 where id=$2",[old,"legacy-method"]);
+    await client.query("insert into session(id,user_id,token,created_at,updated_at,expires_at) "+
+      "values ('legacy-session','sa02-legacy','secret-legacy-token',$1,$1,now()+interval '1 day')",[old]);
+    await client.query("update forum_registration_settings set updated_at=$1 where id=1",[old]);
+    const before=await reader.readCurrent();
+    const accounts=["accounts.users","accounts.methods","accounts.sessions","accounts.registration"];
+    expect(get(before,"accounts.users").values.total).toBe("1");
+    expect(get(before,"accounts.methods").values.passwordUsers).toBe("1");
+    expect(get(before,"accounts.sessions").values.active).toBe("1");
+    expect(get(before,"accounts.registration").values.updatedAt).toBe(old);
+    for(const key of accounts) {
+      expect(get(before,key).lastObservedAt).toBeTruthy();
+      expect(get(before,key).coverageFrom).toBe(get(before,key).lastObservedAt);
+      expect(get(before,key).coverageFrom).not.toBe(old);
+    }
+    // Each older actual History source, unlike current domain rows, is a valid
+    // coverage boundary. Keep the MIRA-03 admission source separately covered.
+    const retainedTime=new Date(Date.now()-60_000).toISOString();
+    const events=[
+      ["account.created","accounts.users"],
+      ["auth.methodLinked","accounts.methods"],
+      ["auth.sessionCreated","accounts.sessions"],
+    ];
+    for(const [kind,monitor] of events) {
+      const id=crypto.randomUUID();
+      await client.query("insert into owner_events "+
+        "(id,occurred_at,source,occurrence_key,kind,monitor_key,payload) "+
+        "values($1,$2,'auth',$3,$4,$5,'{}'::jsonb)",
+        [id,retainedTime,"legacy-coverage:"+id,kind,monitor]);
+    }
+    const adminId=crypto.randomUUID();
+    await client.query("insert into admin_history "+
+      "(id,occurred_at,actor_id,actor_label,action,target_type,target_id,target_label,context) "+
+      "values($1,$2,'sa02-legacy','Synthetic actor','settings.registrationChanged',"+
+      "'forum-settings','registration','Synthetic target','{}'::jsonb)",
+      [adminId,retainedTime]);
+    const after=await reader.readCurrent();
+    for(const key of accounts){
+      expect(get(after,key).coverageFrom).toBe(retainedTime);
+    }
+    const history=await import("../../db/owner-sa02-history");
+    const scoped=await new history.PostgresOwnerSa02History(pool).readTimeline({
+      area:"accounts",monitorKey:"accounts.registration",
+    });
+    expect(scoped.entries.some(e=>e.id===adminId)).toBe(true);
+  });
+
   it("fails closed on missing registration singleton without inventing closed/open values or samples",async()=>{
     await client.query("delete from forum_registration_settings where id=1");
     try{
