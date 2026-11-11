@@ -29,7 +29,7 @@
 6. D12 corrected closeout: official React Router Framework/SSR docs и exact `react-router@8.3.1` source подтвердили default skip loader revalidation после 4xx/5xx; Vico explicit recovery refreshes loaders and does not automatically replay mutations.
 7. Block E audit завершён: E2 PASS; E5 — **`FORUM-PUB-01 Moderate/P2`**; E6 — 0 additional; E7 — **`READSTATE-CACHE-01 Low/P3`**; E3 — **`PUBLIC-PROJECTION-01 Low/P3`**; E4 — **`DISCOVERY-BOUNDS-01 Low/P3`, `SEARCH-CONTROL-01 Low/P3`**; E8 PASS; E1 — **`LOCALE-DEGRADED-WRITE-01 Low/P3`** + расширение `READSTATE-CACHE-01`; E9 PASS; E10 — **`FORUM-READ-BOUNDS-01 Moderate/P2`, `FORM-BODY-BOUNDS-01 Moderate/P2`**. Block E total: **8 findings**. E10 проверен на current `main` `4248fed23925e4a23e48485d419ceaf0ce337def`; compare с предыдущим target подтвердил отсутствие изменений core Forum/translation E2–E9.
 8. Block F на current `main` `538084fd472c65459ad55ab30a0f96fbfdd68e56`: **ЗАВЕРШЁН. Итог — 1 current-scope finding: `ATTACH-TEXT-TAIL-01 Low/P3`; F1/F2/F4/F5/F6/F7/F8 дополнительных findings не дали.** F8 перепроверил upload → publication → read → edit/remove → cleanup → evidence, включая lost ACK, measures, complaint evidence и runtime failures.
-9. **Block G — Database & migrations: G1 PASS; G2 — `DB-SEARCHPATH-01 Low/P3`; G3 — `DB-ACL-USER-DELETE-01 Low/P3`; G4 — `DB-RUNTIME-EVIDENCE-01 Low/P3`; G5 PASS; G6 — `DB-TEST-TARGET-01 Low/P3`.** G6 подтвердил parser-mismatch в destructive test guards: WHATWG URL проверяет `localhost/*_test`, но pinned `pg-connection-string@2.14.0` разрешает query `host` переопределить фактический target. Следующий slice — G7 Manifest, evidence and drift detection.
+9. **Block G — Database & migrations: G1 PASS; G2 — `DB-SEARCHPATH-01 Low/P3`; G3 — `DB-ACL-USER-DELETE-01 Low/P3`; G4 — `DB-RUNTIME-EVIDENCE-01 Low/P3`; G5 PASS; G6 — `DB-TEST-TARGET-01 Low/P3`; G7 PASS, 0 additional.** G7 подтвердил complete structural/ACL end-state checks для current captured scope и повторно подтвердил G4 evidence-gap без duplicate. Следующий slice — G8 Cross-chain closeout.
 10. Implementation PR, technical planner и implementer для remediation сейчас не назначены.
 11. Cloudflare/Neon/production mutation по #315 не разрешена и не выполнялась.
 
@@ -72,9 +72,9 @@
 ## Открыто
 
 1. **Block F закрыт: 1 finding — `ATTACH-TEXT-TAIL-01 Low/P3`.** Remediation не назначена.
-2. **Block G G1 PASS; G2 — `DB-SEARCHPATH-01 Low/P3`; G3 — `DB-ACL-USER-DELETE-01 Low/P3`; G4 — `DB-RUNTIME-EVIDENCE-01 Low/P3`; G5 PASS; G6 — `DB-TEST-TARGET-01 Low/P3`.** Детальные causal chain находятся в `SECURITY_BLOCK_G_DATABASE_MIGRATIONS.md`.
-3. Следующий bounded audit slice — **G7 Manifest, evidence and drift detection** на current `main` `538084fd472c65459ad55ab30a0f96fbfdd68e56`.
-4. G6 source/workflows и exact pinned node-postgres connection parser были прочитаны; tests не запускались, external DB mutation не выполнялась.
+2. **Block G G1 PASS; G2 — `DB-SEARCHPATH-01 Low/P3`; G3 — `DB-ACL-USER-DELETE-01 Low/P3`; G4 — `DB-RUNTIME-EVIDENCE-01 Low/P3`; G5 PASS; G6 — `DB-TEST-TARGET-01 Low/P3`; G7 PASS, 0 additional.** Детальные causal chain находятся в `SECURITY_BLOCK_G_DATABASE_MIGRATIONS.md`.
+3. Следующий bounded audit slice — **G8 Cross-chain closeout** на current `main` `538084fd472c65459ad55ab30a0f96fbfdd68e56`.
+4. G7 manifest/evidence/runtime-ACL source и current GitHub migration-run metadata были проверены; repository tests не запускались, external DB mutation не выполнялась.
 5. Exact `pg@8.23.0` query-timeout semantics и exact `drizzle-orm 0.45.2` transaction wrapper подтверждают, что lost/late COMMIT ACK возможен; current writers не auto-retry его. Locale отдельно reconciles; measures/Complaints/publication используют replay/CAS/idempotency.
 6. `AuthorizationRepository.mutate()` rollback-error preservation слабее новых helpers, но current fail-open/security impact не доказан — finding не создаётся.
 7. Advisory-lock compatibility с будущим real web Hyperdrive остаётся Stage-6 acceptance boundary; production web binding сейчас inactive/paused, поэтому это не current G5 finding.
