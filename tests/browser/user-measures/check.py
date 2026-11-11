@@ -229,14 +229,14 @@ try:
 
         # AP-11 connected Users detail -> Owner canonical inline mutations -> History.
         # The manager's permitted targeted management snapshot remains read-only.
-        user_path = "/en/admin/users/" + quote(other_id, safe="")
-        document(other, user_path, 403)
+        legacy_user_path = "/en/admin/users/" + quote(other_id, safe="")
+        user_path = "/en/users/" + quote(other_id, safe="")
+        document(other, legacy_user_path, 403)
         set_manager_authz("deny")
-        document(manager, user_path)
+        document(manager, legacy_user_path)
+        assert manager.url.endswith(user_path), ("legacy canonical redirect", manager.url)
         expect(manager.locator("#authorization")).to_have_count(0)
-        expect(manager.locator("#admin-user-detail-heading")).to_have_count(1)
-        manager.locator(".profile-identity .admin-technical-details button").click()
-        assert other_id in manager.locator("main").inner_text()
+        expect(manager.locator("#profile-name")).to_have_count(1)
         document(manager, "/en/admin/authorization", 403)
         record("ap11-users-readonly-independent-of-authz-management")
 
