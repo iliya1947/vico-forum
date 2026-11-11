@@ -47,13 +47,13 @@ async function evidence(id: string, who: string, at = "2026-11-10T18:00:00.12345
     [id,"upload-"+id,who,at]);
 }
 async function pattern(id: string, actor: string | null, count = 2,
-  at = "2026-11-10T18:00:00.123Z") {
+  at = "2026-11-10T18:00:00.123Z", networkIp = "2001:db8::5") {
   await client.query("insert into owner_attempt_patterns " +
     "(id,recording_epoch_start,admitted_at,pool,actor_user_id,network_ip,network_quality," +
     "surface,operation,outcome,http_status,first_occurred_at,last_occurred_at,count) " +
-    "values($1,'2026-11-10T18:00:00Z',$2,$3,$4,'2001:db8::5','trusted'," +
+    "values($1,'2026-11-10T18:00:00Z',$2,$3,$4,$6,'trusted'," +
     "'auth','sign-in','denied',401,'2026-11-10T17:59:00Z','2026-11-10T18:01:00Z',$5)",
-    [id,at,actor ? "authenticated" : "anonymous",actor,count]);
+    [id,at,actor ? "authenticated" : "anonymous",actor,count,networkIp]);
 }
 beforeAll(async () => {
   await client.connect();
@@ -172,7 +172,8 @@ describe("SA03 exact-target Owner History, authoritative sources only", () => {
 
   it("does not reorder a coalesced attempt after mutable count/last update", async () => {
     for (let i=0;i<30;i++) await pattern(uuid(100+i),target,2,
-      new Date(Date.parse("2026-11-10T18:00:00Z")+i*1000).toISOString());
+      new Date(Date.parse("2026-11-10T18:00:00Z")+i*1000).toISOString(),
+      "198.51.100."+String(i+1));
     const first=await reader.readHistory(target);
     expect(first.entries).toHaveLength(25);
     expect(first.next).toBeTruthy();
