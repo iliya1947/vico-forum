@@ -97,12 +97,13 @@ describe("interactive Pages preview", () => {
     const user = userEvent.setup();
     render(<EmbeddedPreview scenarioId="home-guest" />);
 
+    await user.click(screen.getByRole("link", { name: "Search the forum" }));
+    expect(await screen.findByRole("heading", { level: 1, name: "Search" })).toBeInTheDocument();
+
     const search = screen.getByRole("searchbox", { name: "Search query" });
     await user.clear(search);
     await user.type(search, "TypeScript");
     await user.click(within(screen.getByRole("search")).getByRole("button"));
-
-    expect(await screen.findByRole("heading", { level: 1, name: "Search" })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: /How should I structure a typed API client\?/ })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: /Mixed RTL content with code blocks/ })).toBeInTheDocument();
   });
