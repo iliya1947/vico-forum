@@ -157,7 +157,9 @@ function Sa02OverviewSummaries({locale,state}: {locale:string;state:Sa02CurrentS
         </p>
         <p>{t(area.note)}</p>
         <Link to={area.area==="accounts" ? superAdminAccountsPath(locale,routing)
-          : superAdminSecurityPath(locale,routing)}>{t("superAdminOverviewDetails")}</Link>
+          : superAdminSecurityPath(locale,routing)}
+          aria-label={`${t(area.title)}: ${t("superAdminOverviewDetails")}`}>
+          {t("superAdminOverviewDetails")}</Link>
       </article>)}
     </div>
   </>;
