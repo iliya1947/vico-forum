@@ -54,6 +54,7 @@
 5. [Block E — Public forum / application security audit](./SECURITY_BLOCK_E_PUBLIC_APPLICATION.md)
 6. [Block F — Files & attachments security audit](./SECURITY_BLOCK_F_FILES_ATTACHMENTS.md)
 7. [Block G — Database & migrations security audit](./SECURITY_BLOCK_G_DATABASE_MIGRATIONS.md)
+8. [Block H — Cloudflare / Workers / runtime security audit](./SECURITY_BLOCK_H_CLOUDFLARE_WORKERS_RUNTIME.md)
 
 Каждый следующий bounded security-блок оформляется отдельным файлом; этот файл остаётся общей картой направления и маршрутом между блоками.
 
