@@ -7,6 +7,7 @@ import type { ForumReader } from "../../db/forum-repository";
 import { ForumStorageUnavailableError, type ForumWriter } from "../../db/hyperdrive-forum";
 import { UserMeasureRestrictedError } from "../../db/user-measure-policy";
 import { userMeasureContext } from "../measures/request-context";
+import { authorizationContext, authorizationOwnerContext } from "../authorization/request-context";
 import { action, loader } from "./profile";
 
 const profile = { id: "owner", name: "Owner", image: null, joinedAt: new Date("2026-09-01"), bio: "", githubUrl: null, websiteUrl: null,
@@ -19,6 +20,8 @@ function setup(userId: string | null = "owner") {
   context.set(forumReaderContext, { readProfile } as unknown as ForumReader);
   context.set(forumWriterContext, { updateProfile } as unknown as ForumWriter);
   context.set(userMeasureContext, {activeRestrictions:async()=>[]} as never);
+  context.set(authorizationOwnerContext, undefined);
+  context.set(authorizationContext, {forUser: () => ({has: async () => false})} as never);
   return { context, readProfile, updateProfile };
 }
 function request(fields: Record<string, string> = {}, origin: string | null = "https://forum.test") {
@@ -35,9 +38,11 @@ describe("profile route", () => {
       const env = setup(userId);
       env.readProfile.mockResolvedValue({ ...profile, email: "private@example.test", permissions: ["private"] } as typeof profile);
       const result = await loader({ params, request: new Request("https://forum.test/en/users/owner?edit=1"), context: env.context });
-      expect(result.editing).toBe(userId === "owner");
-      expect(result.profile.joinedAt).toBe("2026-09-01T00:00:00.000Z");
-      expect(JSON.stringify(result)).not.toContain("private");
+      expect(result.data.editing).toBe(userId === "owner");
+      expect(result.data.profile.joinedAt).toBe("2026-09-01T00:00:00.000Z");
+      expect(JSON.stringify(result.data)).not.toContain("private");
+      expect(result.data.privileged).toEqual({});
+      expect(result.init?.headers).toMatchObject({"Cache-Control":"private, no-store"});
     }
   });
   it("suppresses public profile editing on an active measure but retains private own status access",async()=>{
@@ -46,8 +51,8 @@ describe("profile route", () => {
     const result=await loader({
       params,request:new Request("https://forum.test/en/users/owner?edit=1"),context:env.context,
     });
-    expect(result).toMatchObject({isOwner:true,canEditProfile:false,editing:false});
-    expect(JSON.stringify(result)).not.toContain("profile.edit");
+    expect(result.data).toMatchObject({isSelf:true,canEditProfile:false,editing:false});
+    expect(JSON.stringify(result.data)).not.toContain("profile.edit");
   });
   it("returns 404 for missing users, 503 for availability, and preserves unexpected errors", async () => {
     const env = setup();
@@ -86,7 +91,7 @@ describe("profile route", () => {
       request: new Request("https://forum.test/en/users/owner"),
       params, context: setup(null).context,
     });
-    expect(publicPage.profile.bio).toBe("");
+    expect(publicPage.data.profile.bio).toBe("");
   });
   it("preserves draft on invalid input and transient storage failures; rethrows bugs", async () => {
     const env = setup();
