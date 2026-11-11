@@ -2,6 +2,15 @@
 
 Служебный PR: #251. Оперативное состояние: [workflow.md](./workflow.md). Общий контракт: [ADMIN_PANEL_IMPLEMENTATION_PLAN.md](../ADMIN_PANEL_IMPLEMENTATION_PLAN.md).
 
+## 2026-11-11 — Лира: SA04-A1-MIRA-01 author-corrected, final exact-head PASS; STOP
+
+- Draft [#327](https://github.com/iliya1947/vico-forum/pull/327), base `ce62e783e71433a00c2fe4874ee26dfc54614628`, **stable final head `3d6c7c06ac1442a5a4b3ff7f8fbe77454ca8479c`**, unchanged A1 product/schema scope, open/Draft and not coordinator-reviewed.
+- Observed real PostgreSQL **17.11** `pg_get_expr(conbin,conrelid,false)` on exact CHECK using transaction-scoped `TEMP ... ON COMMIT DROP`, computed `sha256` `a4f4c052ca3f6bcbeab2d64069c0cf611c0de75aeea74a8d27ec45cd097ce891`. Replaced manifest `PENDING` without altering A1 SQL/Drizzle semantics or permanent production state.
+- The first corrected-head [CI #43101986978](https://github.com/iliya1947/vico-forum/actions/runs/43101986978) exposed 19 native failures in three isolated auth test suites, due to fixtures using only migration 0003 and thus lacking new `user` columns. Fixed only fixture setup in `account-security.test.ts`, `auth-link-identity.test.ts`, `forum-email-registration.test.ts` to apply 0065. No runtime behavior changed.
+- Author personally inspected final 10-file PR diff and A1 logic, 0065/Drizzle schema/snapshot/journal and 69-table manifest, CHECK nullable tuple/whitespace/UTC one-calendar-year semantics, Better Auth field admission/serialization and actual native tests. **No confirmed remaining current-scope A1 defect; author's verification is not Mira/Lev independent whole-PR review.**
+- Final exact-head [CI #43102435249](https://github.com/iliya1947/vico-forum/actions/runs/43102435249) **SUCCESS** (2237/2237 application, 690/690 PostgreSQL 17, manifest parity all 69 tables, lint/typecheck/build); [SA-01 #43102435251](https://github.com/iliya1947/vico-forum/actions/runs/43102435251) **SUCCESS**; [SA-03 #43102435370](https://github.com/iliya1947/vico-forum/actions/runs/43102435370) **SUCCESS**; [AP-10 #43102435384](https://github.com/iliya194/vico-forum/actions/runs/43102435384) **SUCCESS** all 4 jobs.
+- **Lira AUTHOR STOP**. Next **Mira** repeats A1-only coordinator review of stable exact head, Lev only following Mira PASS/assignment. No merge, SA04-A2+, deactivation/action/enforcement, SA-05+, Stage6/production, #315 or permanent project documentation.
+
 ## 2026-11-11 — Лира: SA04-A1 personal author verification, correction at `cebb91504f770fa6cd42c4990bb3116aef9b7874`; NOT COMPLETE
 
 - Per mandatory author gate, inspected authored A1 source, SQL CHECK, Drizzle, migration, snapshot/journal, schema manifest and Better Auth boundary for logic/task-fit and consequences, not only automated test status.
