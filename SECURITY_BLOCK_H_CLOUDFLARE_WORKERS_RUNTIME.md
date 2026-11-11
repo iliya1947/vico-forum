@@ -11,10 +11,11 @@
 7. **H5 — Worker deployment/version/rollback repository gates завершён: 0 current-scope findings + 1 deferred Stage-6 blocker `WORKER-ROLLBACK-FINALIZER-01 Moderate/P2`.**
 8. **H6 — Runtime failure, cache and observability boundaries завершён: PASS, 0 current-scope findings, 0 новых deferred blockers.**
 9. **H7 — Runtime topology Stage boundary завершён: PASS, 0 current-scope findings, 0 новых deferred technical blockers.**
-10. **H8 ещё не выполнялся.**
-11. Следующий bounded slice после продолжения владельца — **H8: Cross-chain closeout**.
-12. Мира — auditor/coordinator. Remediation, technical planner и implementer не назначены.
+10. **H8 — Cross-chain closeout завершён: PASS, 0 additional findings. Block H закрыт.**
+11. Final Block H: **0 current-scope findings; 2 deferred Stage-6 blockers — `WORKER-VERSION-URL-01 Moderate/P2`, `WORKER-ROLLBACK-FINALIZER-01 Moderate/P2`.**
+12. Remediation, technical planner и implementer не назначены.
 13. Cloudflare/production mutation, deployment, binding changes и live topology checks не выполнялись.
+14. Следующее security-направление после отдельного продолжения владельца — **Block I: Secrets & supply chain scope preparation**.
 
 ## H1 — результат
 
@@ -207,6 +208,35 @@
 - Routes and domains — independent `workers.dev`, Routes and Custom Domains endpoints;
 - Workers Builds branch control — production branch pushes can build/deploy when connected/enabled;
 - Worker Previews configuration — Preview-specific settings/resources are separate from production and existing Workers may require an explicit one-time switch.
+
+## H8 — Cross-chain closeout
+
+1. Closeout target: current `main` `593a03964b8407b249f7c9f5eb117ddb8b07736d`. После H7 main не менялся.
+2. End-to-end ingress chain повторно сошёлся: Cloudflare request metadata может дать только bounded network attribution; browser/XFF/Worker-subrequest/Pseudo-IPv4 ambiguity деградирует в `unknown`. Network source остаётся telemetry dimension и не становится authentication/Owner authority.
+3. Runtime capability chain повторно сошёлся: `HYPERDRIVE` и `WEB_HYPERDRIVE` resolve'ятся независимо и fail closed; localization adapters получают только localization connection, auth/forum/admin/Owner/Complaints/telemetry — web connection; migration/admin DB credential в Worker composition отсутствует.
+4. Request-context chain повторно сошёлся: authoritative session resolve выполняется до Router; classified auth storage outage даёт generic `503/no-store`; missing/invalid Owner binding выключает Owner authority; missing optional R2 не создаёт fallback storage и приводит к bounded unavailable path.
+5. Response/telemetry chain повторно сошёлся: auth cookies merge'ятся отдельно от endpoint cache headers; attempt/auth-fact/5xx telemetry best-effort и не может заменить исходный HTTP/auth/authz outcome; custom server diagnostics не сериализуют raw exception/request secrets. Existing route-specific cache findings из Blocks B/E этим не исправляются и не дублируются.
+6. Repository rollout chain повторно сошёлся: ordinary CI/local preview не мутирует Cloudflare; manual rollout требует exact main SHA, protected Environment, exact uploaded Version ID and explicit promotion. Pre-upload schema proof, pre-traffic Version URL isolation and post-promotion rollback/finalization remain distinct gates.
+7. **Dedup Block A:** отдельный Owner Worker/Access/auth-session/DB plane и отсутствие Owner preview/version bypass — утверждённая future Stage-6 Block-A isolation. H7 не превращает её отсутствие в H finding. `WORKER-VERSION-URL-01` относится к текущему **public Worker rollout** с production web/auth capability, а не к ещё не активированному Owner Worker, поэтому это не duplicate A.
+8. **Dedup Block B:** `AUTH-CACHE-01` — private Better Auth GET cache headers; остальные B findings — auth/link/session/registration/OAuth semantics. H2/H3/H6 не нашли отдельного Worker ingress/runtime root cause, который исправляет или дублирует эти auth findings.
+9. **Dedup Block C:** `AUTHZ-FAIL-01` — application authorization rollback error can replace/misclassify original mutation error. `WORKER-ROLLBACK-FINALIZER-01` — внешний Cloudflare deployment остаётся active при потере GitHub runner после promotion. Разные state machines, capabilities и impacts; duplicate нет.
+10. **Dedup Block D:** Complaint/Help/Admin-History privacy findings относятся к application projections/read ordering. Worker composition, ingress and rollout не являются их root cause; H не добавляет duplicate.
+11. **Dedup Block E:** `READSTATE-CACHE-01` и public validation/bounds findings остаются route/application roots. H6 не нашёл Worker-wide cache authority, который объединял бы их в H defect; route-specific findings остаются E.
+12. **Dedup Block F:** `ATTACH-TEXT-TAIL-01` — content-classification tail gap. H3 missing-R2 fail-closed behavior не относится к content validation и не дублирует F.
+13. **Dedup Block G:** `DB-RUNTIME-EVIDENCE-01` — rollout допускает schema evidence ниже runtime dependency; это **pre-upload schema ordering**. `WORKER-VERSION-URL-01` — uploaded version получает public-capable production-resource pre-traffic ingress; `WORKER-ROLLBACK-FINALIZER-01` — loss of external deployment reconciliation **after promotion**. Три разные causal boundaries, все Stage-6-only while paused.
+14. G current findings (`DB-SEARCHPATH-01`, `DB-ACL-USER-DELETE-01`, `DB-TEST-TARGET-01`) likewise remain DB relation resolution / least privilege / destructive tooling roots and do not overlap H.
+15. H5 observed current GitHub `main` unprotected + disabled `Protect main` ruleset, but H did not establish the repository actor/provenance chain required to classify it. Это **Block I Secrets & supply chain scope candidate**, не H finding и не часть H final count.
+16. Stage classification final: H has **0 current-scope findings**. Both H defects require the paused manual Stage-6 external rollout path to become active, so they remain deferred blockers rather than current implementation defects.
+17. Final Stage-6 Worker correction order is explicit:
+   - before schema-dependent Worker upload: activate/fix `DB-RUNTIME-EVIDENCE-01`;
+   - before any upload that carries production private/write capability: fix/isolate `WORKER-VERSION-URL-01`;
+   - before production traffic promotion: fix independent reconciliation for `WORKER-ROLLBACK-FINALIZER-01`;
+   - immediately before those external actions, perform the already-required read-only live topology recheck (Builds, deployments, bindings, vars/secrets, Preview model/resources, workers.dev, routes/domains, alternate ingress/deploy paths).
+18. Exact mutable Cloudflare deployed topology, live Environment protection/actors and current production DB state were not read in H8: **Информация не проверена**. Their absence from this audit is intentional because Stage 6 is paused.
+19. Current #315 aggregate after H8 remains **24 current-scope findings + 3 deferred Stage-6 blockers**: one G blocker and the two H blockers. H8 adds no ID and changes no earlier severity.
+20. Non-H documentation contradiction remains visible on current main: migration `0065_sa04_account_state_foundation` exists, while current project/Super-admin docs still state repository history through `0064` / SA-04+ not implemented. H8 does not resolve it or treat it as H security finding.
+21. H8 re-read current source-of-truth, Worker composition/ingress/telemetry seams and rollout scripts. Tests/workflows were **not executed**; no production/Cloudflare/Neon mutation or live topology read occurred.
+22. **Block H complete.** Remediation remains unassigned and must be separate from audit. Next security direction after explicit continuation: prepare **Block I — Secrets & supply chain** as its own file/scope; do not merge I into H.
 
 ## Цель
 
