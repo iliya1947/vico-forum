@@ -1,24 +1,12 @@
 # Admin panel — current workflow
 
 - Service PR: **#251**. Current main: `538084fd472c65459ad55ab30a0f96fbfdd68e56`.
-- Current stage: **SA-03 independent repeat review CHANGES REQUIRED; one new current-scope defect SA03-IMPL-LEV-02 accepted by Mira.**
-- Implementation Draft PR **#324**, current exact stable head `d7a526ac00ef56ebd8c8bd4035cc84fb9731ad49`; not merged.
-- Accepted technical plan #6796912006 remains authoritative.
-- Earlier findings **SA03-MIRA-01** and **SA03-IMPL-LEV-01** remain CLOSED.
-- Lev repeat independent whole-PR review on `d7a526ac00ef56ebd8c8bd4035cc84fb9731ad49`: **CHANGES REQUIRED — one new current-scope defect SA03-IMPL-LEV-02; no other current-scope defects confirmed.**
-- Mira independently verified the chain:
-  - `HeaderAuthProvider` keeps current `user` in local state and applies new loader `initialUser` in `useEffect`;
-  - during SPA actor change, a fresh profile `privileged` DTO may arrive before HeaderAuth local state catches up;
-  - `ProfileView` resets its invalidation latch for the new DTO, then immediately re-invalidates that same fresh DTO because HeaderAuth still exposes the previous actor in that render;
-  - after HeaderAuth effect updates to the new actor, the DTO reference has not changed, so the latch remains invalidated and authorized sections stay hidden until another loader result;
-  - this violates the accepted SA-03 requirement that stale old private state disappear while fresh authorized data restores without a second GET/reload.
-- **Granularity gate: PASS. This is one independently completable correction result.**
-- **Next recipient: Lira — one bounded correction only: SA03-IMPL-LEV-02.**
-- Required result: distinguish stale prior-viewer snapshots from fresh loader snapshots during HeaderAuth synchronization so old private UI still disappears immediately, but a fresh authorized DTO becomes visible once HeaderAuth catches up, without requiring another request.
-- Regression must exercise actual SPA actor/loader synchronization without full document reload and prove both sides: old private state is not resurrected, fresh authorized state appears after current viewer synchronization, no stale feedback.
-- Do not redesign HeaderAuth globally unless strictly required by this local correction; do not change server guards, AP-10/authorization authority, Owner immunity, schema/migrations, canonical writers, Settings self-only boundaries or SA-04+.
-- Lira publishes a new stable #324 head, runs applicable exact-head checks, records evidence and **STOP**.
-- After correction: Mira restarts coordinator whole-PR review on the new exact head; only after Mira PASS does independent technical review run again.
-- Lev and Mark are unassigned during implementation.
-- SA-04+, deactivation, production/Stage6/#315 activation, broad security remediation and deferred journal-storage work remain outside scope.
-- **Handoff granularity gate:** before every Lira implementation assignment, Mira must check whether multiple independently completable results are combined; split before assignment and assign only one bounded subtask at a time with Lira STOP.
+- **Current stage:** SA-03 one bounded author correction SA03-IMPL-LEV-02 complete; Lira **STOP**. **Next: Mira repeat coordinator whole-PR review**.
+- Implementation [Draft PR #324](https://github.com/iliya1947/vico-forum/pull/324), exact stable head **`4ad17beae65da338f5efcb2a1596e7fafc3b67c5`**, unchanged main base; no merge.
+- Accepted Lev technical plan #6796912006 and full SA-03 scope remain authoritative. Earlier findings **SA03-MIRA-01**, **SA03-IMPL-LEV-01** closed. Repeat Lev review of prior `d7a526a...` found one new **SA03-IMPL-LEV-02** current-scope defect, Mira independently accepted and bounded it.
+- **Author correction:** `ProfileView` no longer latches an as-yet-unmatched *fresh* protected loader DTO invalid when HeaderAuth local user momentarily lags parent `initialUser` during SPA actor switch. It waits for the matching HeaderAuth viewer and then displays that fresh DTO on first authorized GET, while invalidating any *previously accepted* snapshot across known identity mismatch/sign-out. No stale private controls/feedback return without a genuinely fresh read; public section remains.
+- **Verified browser regression:** real SPA `.auth-user` links, synthetic PG17 session actor switch with actual Better Auth/Worker/Chromium, no document reload; member removes old Owner sections, new exact Owner restores all allowed sections with first `.data` request after header sync. Old delayed post-signout regression and fresh Owner recovery both remain green.
+- **All exact-head gates SUCCESS:** [CI #43075154722](https://github.com/iliya1947/vico-forum/actions/runs/43075154722) **2237/2237 app + 688/688 PostgreSQL17**, lint/typecheck/build/migrations/Worker; [SA03 Chromium #43075154724](https://github.com/iliya194/vico-forum/actions/runs/43075154724) **26/26 scenarios**; [SA01 Chromium #43075154613](https://github.com/iliya194/vico-forum/actions/runs/43075154613) SUCCESS; [AP10 Chromium #43075154611](https://github.com/iliya194/vico-forum/actions/runs/43075154611) SUCCESS, **4/4 jobs**.
+- **Next recipient Mira:** independently check cumulative whole SA-03 #324 against exact head `4ad17be...`, including the new correction and full current scope. Only after Mira PASS, Lev independent whole-PR review of the **same head**. Lira, Mark and Lev have no implementation/review assignment at this step.
+- PR #324 remains Draft, no implementation merge or production. No global HeaderAuth redesign, changed server authority/AP10/Owner, RBAC/schema/writers, SA-04+, deactivation, Stage6/#315, broad remediation, storage policy or permanent docs/PROJECT_STATE closeout.
+- **Granularity gate:** before every Lira implementation assignment, Mira checks whether the requested work has independently completable results; split before assignment and hand off one bounded subtask at a time, Lira STOP until explicit developer continuation.
