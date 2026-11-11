@@ -31,7 +31,7 @@
 7. Block E audit завершён: E2 PASS; E5 — **`FORUM-PUB-01 Moderate/P2`**; E6 — 0 additional; E7 — **`READSTATE-CACHE-01 Low/P3`**; E3 — **`PUBLIC-PROJECTION-01 Low/P3`**; E4 — **`DISCOVERY-BOUNDS-01 Low/P3`, `SEARCH-CONTROL-01 Low/P3`**; E8 PASS; E1 — **`LOCALE-DEGRADED-WRITE-01 Low/P3`** + расширение `READSTATE-CACHE-01`; E9 PASS; E10 — **`FORUM-READ-BOUNDS-01 Moderate/P2`, `FORM-BODY-BOUNDS-01 Moderate/P2`**. Block E total: **8 findings**. E10 проверен на current `main` `4248fed23925e4a23e48485d419ceaf0ce337def`; compare с предыдущим target подтвердил отсутствие изменений core Forum/translation E2–E9.
 8. Block F на current `main` `538084fd472c65459ad55ab30a0f96fbfdd68e56`: **ЗАВЕРШЁН. Итог — 1 current-scope finding: `ATTACH-TEXT-TAIL-01 Low/P3`; F1/F2/F4/F5/F6/F7/F8 дополнительных findings не дали.** F8 перепроверил upload → publication → read → edit/remove → cleanup → evidence, включая lost ACK, measures, complaint evidence и runtime failures.
 9. **Block G — Database & migrations ЗАВЕРШЁН. Final current-scope: 3 findings — `DB-SEARCHPATH-01 Low/P3`, `DB-ACL-USER-DELETE-01 Low/P3`, `DB-TEST-TARGET-01 Low/P3`.** G8 дал 0 новых findings и исправил Stage-классификацию `DB-RUNTIME-EVIDENCE-01 Low/P3`: технический defect подтверждён, но это **Stage-6 blocker, не current-scope**, пока external integration paused. Descendant delta до current `main` `5992885e78b1642e41c9805116fcc256002b649c` (SA-03 #324, index-only migration `0064`) перепроверен и итог не изменил.
-10. **Block H — Cloudflare / Workers / runtime: H1 PASS + H2 PASS + H3 PASS, 0 current-scope findings** на current `main` `ce62e783e71433a00c2fe4874ee26dfc54614628`. H3 подтвердил fail-closed required DB bindings, controlled `503` при отсутствующем optional R2, отсутствие Owner fallback при missing/invalid `VICO_OWNER_USER_ID` и explicit auth config validation в protected Stage-6 rollout. Следующий slice — H4 Preview, Version URL and public entrypoint isolation.
+10. **Block H — Cloudflare / Workers / runtime: H1–H3 PASS; H4 = 0 current-scope findings + deferred Stage-6 blocker `WORKER-VERSION-URL-01 Moderate/P2`** на current `main` `ce62e783e71433a00c2fe4874ee26dfc54614628`. Protected rollout uploads a Version URL carrying production `WEB_HYPERDRIVE`/auth configuration; current Cloudflare contract makes enabled Version URLs public and production-resource-backed. Current Stage unaffected because rollout is paused. Следующий slice — H5 Worker deployment/version/rollback repository gates.
 11. Implementation PR, technical planner и implementer для remediation сейчас не назначены.
 12. Cloudflare/Neon/production mutation по #315 не разрешена и не выполнялась.
 
@@ -64,9 +64,10 @@
 
 Ключевая causal path, impact и границы каждого finding находятся в соответствующем Block-файле.
 
-## Подтверждённый deferred Stage-6 blocker
+## Подтверждённые deferred Stage-6 blockers
 
 1. `DB-RUNTIME-EVIDENCE-01` — Low/P3; technical defect подтверждён: manual Worker rollout принимает historical `0020` evidence при current runtime dependency как минимум на `0058`. G8 установил, что verifier используется только paused Stage-6 rollout path, поэтому это не current-scope finding. Исправление обязательно до возобновления schema-dependent Worker rollout.
+2. `WORKER-VERSION-URL-01` — Moderate/P2; manual Worker rollout создаёт Version URL для version с production `WEB_HYPERDRIVE`/auth configuration и использует его как unauthenticated pre-traffic smoke surface. Enabled Version URLs public and use production resources; `promote=false` оставляет uploaded version без cleanup. Current Stage не затронут, пока rollout paused. Correction gate — до следующего Stage-6 Worker upload с private/write production capability.
 
 ## Отдельный подтверждённый review
 
@@ -79,8 +80,8 @@
 1. **Block F закрыт: 1 finding — `ATTACH-TEXT-TAIL-01 Low/P3`.** Remediation не назначена.
 2. **Block G закрыт: 3 current-scope findings — `DB-SEARCHPATH-01 Low/P3`, `DB-ACL-USER-DELETE-01 Low/P3`, `DB-TEST-TARGET-01 Low/P3`; `DB-RUNTIME-EVIDENCE-01 Low/P3` сохранён отдельно как Stage-6 blocker.** Детальные causal chain и G8 reclassification находятся в `SECURITY_BLOCK_G_DATABASE_MIGRATIONS.md`.
 3. Current audit target: **`ce62e783e71433a00c2fe4874ee26dfc54614628`**. Delta `5992885… → ce62e783…` — documentation-only SA-03 closeout #326; H1/H2 runtime/ingress source unchanged.
-4. **Block H H1 PASS + H2 PASS + H3 PASS, 0 findings.** Следующий bounded security step после продолжения владельца — **H4: Preview, Version URL and public entrypoint isolation** на current main; после H4 остановиться.
-5. H3 проверил required/optional runtime config, R2/Owner/auth env/local preview boundaries; live Cloudflare/production state не читался и не менялся, tests были прочитаны, но не запускались.
+4. **Block H H1–H3 PASS; H4 = 0 current-scope findings + `WORKER-VERSION-URL-01 Moderate/P2` deferred Stage-6 blocker.** Следующий bounded security step после продолжения владельца — **H5: Worker deployment/version/rollback repository gates** на current main; после H5 остановиться.
+5. H4 проверил current official Cloudflare Version URL/Previews/access contracts; live Cloudflare/production state не читался и не менялся, external upload/deploy не запускался.
 5. Exact `pg@8.23.0` query-timeout semantics и exact `drizzle-orm 0.45.2` transaction wrapper подтверждают, что lost/late COMMIT ACK возможен; current writers не auto-retry его. Locale отдельно reconciles; measures/Complaints/publication используют replay/CAS/idempotency.
 6. `AuthorizationRepository.mutate()` rollback-error preservation слабее новых helpers, но current fail-open/security impact не доказан — finding не создаётся.
 7. Advisory-lock compatibility с будущим real web Hyperdrive остаётся Stage-6 acceptance boundary; production web binding сейчас inactive/paused, поэтому это не current G5 finding.
