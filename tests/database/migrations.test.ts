@@ -3391,6 +3391,7 @@ describe("PostgreSQL 17 locale migrations", () => {
       await rejected(leapStart, "bound-owner", null);
       await rejected(leapStart, "", leapBoundary);
       await rejected(leapStart, "   ", leapBoundary);
+      await rejected(leapStart, "\t\n", leapBoundary);
       await rejected(leapStart, "bound-owner", "2025-02-28T12:34:55+00");
       await update(leapStart, "bound-owner", leapBoundary);
       expect((await read()).rows[0]).toMatchObject({ deactivated_by_user_id: "bound-owner" });
