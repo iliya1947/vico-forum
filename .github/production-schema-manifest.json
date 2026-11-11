@@ -8129,7 +8129,7 @@
             "deactivated_by_user_id",
             "retain_at_least_until"
           ],
-          "definitionSha256": "PENDING"
+          "definitionSha256": "a4f4c052ca3f6bcbeab2d64069c0cf611c0de75aeea74a8d27ec45cd097ce891"
         }
       ],
       "indexes": []
