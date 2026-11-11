@@ -1388,3 +1388,10 @@ Publish a new stable docs head and applicable checks in #251, then stop. Mira pe
 
 - Exact-head CI `8974d7a8` had Lint/Typecheck PASS, database job SUCCESS, SA01 Chromium SUCCESS, but app tests: **2203/2204 passed, 1 failed**. The only failure was `app/routes/not-found.test.ts` maintaining an exhaustive route list with old System-only History shape. No behavior failure was shown by this assertion.
 - Corrected its expected route entries to include Accounts/Security and generic area-scoped History without weakening the exact route table assertion. New implementation head **`bb8cfafd4ea2959441efbfcd0df73c6f27234a1e`**; CI #42980394231, SA01 Chromium #42980394234, AP10 Chromium #42980394264 were running at last check, **not yet verified PASS**. D2 not started.
+
+### SA02-D1.2 exact-head closeout (2026-11-11)
+
+- Current Draft PR #319 head `bb8cfafd4ea2959441efbfcd0df73c6f27234a1e` verified unchanged from published D1.2 correction.
+- Exact-head [CI #42980394231](https://github.com/iliya1947/vico-forum/actions/runs/42980394231) completed **SUCCESS** with **checks** and **database** both SUCCESS. [SA01 Chromium #42980394234](https://github.com/iliya1947/vico-forum/actions/runs/42980394234) **SUCCESS**. [AP10 Chromium #42980394264](https://github.com/iliya1947/vico-forum/actions/runs/42980394264) **SUCCESS, all four jobs**: `settings_browser`, `settings_administrator_browser`, `browser`, `history_browser`.
+- Prior D1.2 corrections (unused import, accidental client import of server loader, exhaustive route-registry expectation) closed by exact-head checks. No further implementation edits.
+- **D1.2 complete; Lira stops at checkpoint.** Next developer continuation is D2 typed outgoing navigation, semantic Accounts/Security cards/contextual links per Lev handoff #6789135043. This is not final D4 connected/browser acceptance, cumulative whole-PR PASS, Owner visual acceptance, merge or production.
