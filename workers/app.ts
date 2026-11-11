@@ -55,7 +55,7 @@ import { createHyperdriveComplaintReview } from "../db/hyperdrive-complaint-revi
 import {complaintAppealContext} from "../app/complaints/appeal-context";
 import {createHyperdriveComplaintAppeal} from "../db/hyperdrive-complaint-appeal";
 import { resolveRuntimeDatabaseConnectionStrings } from "./database-bindings";
-import { ownerSystemMonitoringContext } from "../app/super-admin/request-context";
+import { ownerSystemMonitoringContext, ownerSa02MonitoringContext } from "../app/super-admin/request-context";
 import { createHyperdriveOwnerSystem } from "../db/hyperdrive-owner-system";
 
 const requestHandler = createRequestHandler(
@@ -117,6 +117,7 @@ export default {
     context.set(userPrivacyContext, createHyperdriveUserPrivacy(webConnectionString));
     const ownerMonitoring = createHyperdriveOwnerSystem(webConnectionString, import.meta.env.MODE);
     context.set(ownerSystemMonitoringContext, ownerMonitoring);
+    context.set(ownerSa02MonitoringContext, ownerMonitoring);
     const authorization = createHyperdriveAuthorization(webConnectionString, undefined, ownerUserId);
     const effectiveAuthorization = withForumAdministrativeRestrictions(
       authorization, webConnectionString, undefined, ownerUserId,
