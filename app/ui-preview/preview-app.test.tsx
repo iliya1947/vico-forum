@@ -230,6 +230,37 @@ describe("interactive Pages preview", () => {
     await waitFor(() => expect(screen.queryByText("#appeal-146")).not.toBeInTheDocument());
     expect(screen.getByRole("link", { name: "Appeals (0)" })).toBeInTheDocument();
   });
+
+  it("runs admin topic quick actions and keeps their local state", async () => {
+    const user = userEvent.setup();
+    render(<EmbeddedPreview scenarioId="admin-topic" identity="manager" />);
+
+    expect(screen.getByText("Pinned")).toBeInTheDocument();
+    expect(screen.queryByText("Closed")).not.toBeInTheDocument();
+
+    await user.click(screen.getByText("Quick actions"));
+
+    await user.click(screen.getByRole("button", { name: "Unpin topic" }));
+    await waitFor(() => expect(screen.queryByText("Pinned")).not.toBeInTheDocument());
+    expect(screen.getByRole("button", { name: "Pin topic" })).toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: "Close topic" }));
+    expect(await screen.findByText("Closed")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Reopen topic" })).toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: "Message #2" }));
+    await waitFor(() => {
+      const followup = document.querySelector("#post-followup");
+      expect(followup).not.toBeNull();
+      expect(followup?.classList.contains("best-answer")).toBe(true);
+    });
+
+    await user.click(screen.getByRole("button", { name: "Reopen topic" }));
+    await waitFor(() => expect(screen.queryByText("Closed")).not.toBeInTheDocument());
+
+    await user.click(screen.getByRole("button", { name: "Pin topic" }));
+    expect(await screen.findByText("Pinned")).toBeInTheDocument();
+  });
 });
 
 
