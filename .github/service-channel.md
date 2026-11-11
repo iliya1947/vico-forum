@@ -3465,3 +3465,7 @@ No implementation was performed during this review.
 - Initial CI failures were diagnosed and corrected locally to D1 scope: Node composite TypeScript include for extracted utility, missing schema separator in the disposable fixture, missing required account.updated_at in native test fixture. No production-code schema workaround.
 - Verified exact-head CI #43032728345 SUCCESS: all checks, app 2,229/2,229, native PG17 683/683, migration/privilege/Worker smoke. SA-01 connected Chromium #43032728304 SUCCESS. AP-10 browser #43032728384 still in progress when checkpoint was recorded; do not assume PASS.
 - Next step after developer continuation: Lira executes SA03-D2 (fixed target-scoped per-user Owner History + index-only migration) in existing Draft PR #324. D3/D4, whole-PR Mira coordinator review, later Lev technical review and owner merge are not started. Lira stops here under bounded-task rule; Lev/Mark unassigned.
+
+### SA03-D1 exact-head browser completion
+
+AP-10 isolated browser #43032728384 subsequently finished SUCCESS on the same implementation head 57d5d0491ce217abc0deb679748d0a20e923d17c; all four jobs succeeded. D1 checkpoint therefore has CI, SA-01 and AP-10 regression gates green. This does not imply SA03-D3/D4 connected acceptance or a whole-PR review.
