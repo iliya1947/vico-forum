@@ -9,6 +9,7 @@ import {
 } from "./paths";
 import type { SystemOverview, SystemMonitorState, OwnerTimelinePage, OwnerTimelineEntry } from "../../db/owner-system-monitoring";
 import type { SystemMonitorKey } from "../../db/owner-system-history";
+import type { OwnerHistoryPage } from "../../db/owner-sa02-history";
 
 const keys: Record<SystemMonitorKey, "superAdminRuntime" | "superAdminDatabase" | "superAdminRequests"> = {
   "system.runtime": "superAdminRuntime",
@@ -91,7 +92,7 @@ export function SystemMonitorCards({locale,system}: {locale:string;system:System
 export function formatTime(value: string,locale:string) {
   return new Intl.DateTimeFormat(locale,{dateStyle:"medium",timeStyle:"medium",timeZone:"UTC"}).format(new Date(value));
 }
-export function Timeline({ page, locale, path }: {page:OwnerTimelinePage;locale:string;path:(before?:string)=>string}) {
+export function Timeline({ page, locale, path }: {page:OwnerTimelinePage|OwnerHistoryPage;locale:string;path:(before?:string)=>string}) {
   const {t} = useTranslation("common");
   return <section aria-labelledby="super-admin-timeline-heading">
     <h2 id="super-admin-timeline-heading">{t("superAdminHistory")}</h2>
@@ -113,12 +114,12 @@ export function Timeline({ page, locale, path }: {page:OwnerTimelinePage;locale:
     </nav>
   </section>;
 }
-function eventLabel(entry:OwnerTimelineEntry,t:(key:string)=>string) {
+function eventLabel(entry:{origin:string;kind:string},t:(key:string)=>string) {
   if(entry.origin==="system-observation") return t("superAdminObservedEvent");
   if(entry.origin==="admin-history") return t("superAdminAdminEvent") + ": " + entry.kind;
   return entry.kind;
 }
-export function SuperAdminOverview({locale,system,recent}: {locale:string;system:SystemOverview;recent:OwnerTimelinePage}) {
+export function SuperAdminOverview({locale,system,recent}: {locale:string;system:SystemOverview;recent:OwnerTimelinePage|OwnerHistoryPage}) {
   const {t}=useTranslation("common");
   const routing = useAdministrativeRouting();
   return <SuperAdminShell locale={locale} current="overview">

@@ -17,6 +17,8 @@ export interface SuperAdminAddressFamily {
   monitoring(locale: string): string;
   system(locale: string): string;
   monitorHistory(locale: string, key: string, before?: string): string;
+  monitorAreaHistory(locale: string, area: "system" | "accounts" | "security",
+    key: string, before?: string): string;
   events(locale: string, before?: string): string;
   infrastructure(locale: string): string;
 }
@@ -59,6 +61,9 @@ export function createAdministrativeRouting(
     system: locale => `${superAdminBase(locale)}/monitoring/system`,
     monitorHistory: (locale, key, before) =>
       `${superAdminBase(locale)}/monitoring/system/${encoded(key)}/history` +
+      (before === undefined ? "" : `?before=${encoded(before)}`),
+    monitorAreaHistory: (locale, area, key, before) =>
+      `${superAdminBase(locale)}/monitoring/${area}/${encoded(key)}/history` +
       (before === undefined ? "" : `?before=${encoded(before)}`),
     events: (locale, before) => `${superAdminBase(locale)}/events` +
       (before === undefined ? "" : `?before=${encoded(before)}`),
