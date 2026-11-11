@@ -1,15 +1,13 @@
 # Admin panel — current workflow
 
-- Service PR: **#251**. Current main: `f6fd4b2c031b2132b04eace18704a59aed1dfec8` (one AGENTS.md-only commit after implementation PR base `e279cb6c...`).
-- Current stage: **SA-02 cumulative A/B/C/D coordinator review PASS; awaiting Lev independent whole-PR review.**
-- Accepted SA02 plan: #6768069279 (§§9/11/12). Lev D proposal: #6789135043. Mira D handoff review: PASS.
-- Implementation: Draft **PR #319**, stable exact head **`0a45909bfb3a403af63a4693455d519f8a0e9ea6`**.
-- Accepted A/B/C snapshot `25ac41573847f9fbce79897b2e019fd246b400cc` remains in ancestry; D added 26 descendant commits.
-- **Mira coordinator whole-PR review: PASS, 0 confirmed current-scope defects** on exact `0a45909b...`.
-- Exact-head verification independently confirmed: CI #42999991624 SUCCESS (checks + database), SA01 connected Chromium #42999991412 SUCCESS, AP10 Chromium #42999992082 SUCCESS (4/4 jobs).
-- Current main divergence is AGENTS.md-only; PR #319 remains mergeable/clean and no runtime/source overlap was found.
-- Current #315 security plan was rechecked. Separate Owner Worker/Access/isolated Owner auth+DB capability activation/foundation remains a distinct security task; it does not expand SA02 current scope.
-- Implementer: **Lira — completed/stopped**.
-- Coordinator: **Mira — PASS/completed**.
-- **Next reviewer: Lev — independent cumulative A/B/C/D whole-PR review of the same stable exact head `0a45909b...`, no implementation.**
-- Mark unassigned. No merge/production/docs closeout/SA03+/Stage6 activation/deferred journal occupancy/archive/clear is authorized by this handoff.
+- Service PR: **#251**. Current main: `f6fd4b2c031b2132b04eace18704a59aed1dfec8`; PR base `e279cb6c032a489a9044ca1191407df887c364b4` (AGENTS.md-only divergence).
+- Current stage: **SA02 cumulative A/B/C/D independent whole-PR review completed — CHANGES REQUIRED, 2 confirmed current-scope findings.**
+- Implementation: Draft **PR #319**, reviewed stable exact head **`0a45909bfb3a403af63a4693455d519f8a0e9ea6`**.
+- Accepted plans: #6768069279 and D handoff #6789135043. Prior coordinator whole-PR PASS on the reviewed head remains the preceding gate.
+- **Lev independent result: [#6793653705](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6793653705).**
+- **SA02-IMPL-LEV-04 OPEN (P2):** History field labels ignore monitor context; attachment total shown as users and registration policy version as database version.
+- **SA02-IMPL-LEV-05 OPEN (P3):** numeric opaque refs are number-formatted, losing leading zeros and literal ID text.
+- Previous A/B/C LEV-01/-02/-03 remain CLOSED. Exact-head CI/SA01/AP10 green; separate independent real-PG/React and Worker/Chromium probes reproduce the new defects.
+- Implementer: **Lira stopped**. Independent reviewer: **Lev completed/stopped**. Mark unassigned.
+- **Next recipient Mira:** assess the combined confirmed LEV-04/-05 packet and continue coordinator cycle. Lev does not assign Lira/Mark.
+- No independent full-SA02 PASS/merge readiness. Docs closeout, SA03+, #315 separate security foundation/Stage6 activation, production and deferred journal occupancy/archive/clear remain outside this review.
