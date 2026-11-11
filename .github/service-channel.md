@@ -32,14 +32,13 @@
 
 ## Актуальный baseline и назначение
 
-- Current main `f6fd4b2c031b2132b04eace18704a59aed1dfec8`; implementation base `e279cb6c032a489a9044ca1191407df887c364b4` differs only in AGENTS.md service-file rule.
-- **SA02 cumulative A/B/C/D repeat independent whole-PR review PASS — 0 confirmed open current-scope defects.** Draft PR #319 accepted technical review exact head `3f217c98dd9dcbd51518eda82b51506fbede936c`.
-- Mira coordinator PASS #6794574095 + independent Lev PASS [#6794797870](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6794797870); author correction #6794365343; accepted full plan #6768069279 and D handoff #6789135043.
-- **All SA02-IMPL-LEV-01/-02/-03/-04/-05 CLOSED.** Original real-PG/React and real Worker/Chromium presentation reproducers now PASS without changed expectations; attachment/users and policy/database labels separate, opaque leading-zero refs literal, true counters BigInt-safe.
-- Whole 71-file scope re-evaluated; correction changes only 3 files and other68 source hashes identical. Fresh local 176 app tests, original PG probes, build, clean migrations/schema69 and expanded27 Chromium checkpoints PASS; exact-head CI/SA01/AP10 all green.
-- **Next recipient Mira:** coordinator closeout of full SA02 after independent PASS and determination of remaining applicable gates/further route. Lev completed/stopped; no new Lira/Mark appointment by Lev.
-- PR319 remains Draft; technical PASS does not claim merge, Owner visual approval, permanent-docs completion or production. SA03+, separate #315 security foundation/Stage6 activation and deferred journal controls remain outside performed work.
-- #315 refreshed at head `3199f07a17c16ae7f987cdd1a5e0424470085a1e`; general map/BlockA source unchanged; existing security audit findings handled separately.
+- Current main `538084fd472c65459ad55ab30a0f96fbfdd68e56`; SA-02 implementation #319 and factual docs #323 merged/fully closed.
+- **Current package: SA-03. Technical planning COMPLETE; next is Mira scope/fit review.** Plan [#6796912006](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6796912006) maps accepted package #6745289141 onto exact current main.
+- Single canonical public/Admin/Owner profile; independent server admission per section; reuse AP-10/targeted authorization and existing mutation backends; narrow exact-Owner target identity/method/session reader; fixed target-scoped source summary; guarded legacy redirect. No Deactivate control.
+- Proposed implementation has no new dependencies/tables/permissions/writers. One forward index-only migration supports the newly required actor/subject chronological reads; existing source records/identities and authorities remain canonical.
+- Acceptance includes actual HTML/.data redaction and cache headers, target/account/permission switch, classified outage, cursor/source/dedup and native PG17 plus connected Worker/Better Auth/Chromium paths. This is a plan, not a test PASS claim.
+- #315 refreshed at `eb1bd8dbd3038f409766f0f5b884b8a3cc883df8`; cache/privacy boundaries accounted for, separate security activation/remediation not imported.
+- **Mira reviews the plan before any implementation assignment.** Lev completed/stopped; Lira/Mark unassigned; no SA-03 implementation PR/head. SA-04+, production/Stage6 and deferred journal controls remain out of scope.
 
 ## Handoff — Лира: Stage2 factual documentation closeout
 
@@ -3420,3 +3419,16 @@ Done criteria:
 - publish the technical plan through #251 and stop for Mira review. **Do not implement SA-03.**
 
 Lira and Mark remain unassigned.
+
+
+## 2026-11-11 — SA-03 technical plan complete; Mira review next
+
+Lev completed source-backed planning against unchanged main `538084fd472c65459ad55ab30a0f96fbfdd68e56` and published the full executable plan [#6796912006](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6796912006).
+
+- Current profile self-only edit/public allowlist preserved; misleading self `isOwner` renamed in proposed implementation. Admin sections resolve measures/authz independently of directory permission. No ordinary-admin generic per-user activity/security journal.
+- Dedicated exact-Owner readonly target identity/method/session capability; no loosening of self-only AccountSecurityRuntime, no token/hash/provider-secret serialization, no new other-user mutations or Deactivate.
+- Per-user summary uses authoritative actor/subject references in existing auth facts, native Admin History (typed measure subject join), attributed attempt patterns, attachment evidence and AP-10 summaries. Global unattributed observations/gap slots are not attributed to a person. Filtering before LIMIT, source identity/dedup/precise timestamps and bounded target-bound cursors.
+- Plan proposes only one new index migration for six target/actor chronological access paths; no new tables/dependencies/privileges/event producers. Native migration/query-plan and privacy/account-switch browser acceptance specified for later implementation.
+- #315 current head checked: `eb1bd8dbd3038f409766f0f5b884b8a3cc883df8`. SA-03 cache/privacy checks cover its own sensitive responses; separate foundation/activation and broad public remediation remain separate.
+- No confirmed current-scope product contradiction/blocker found. No source, schema, migration or permanent-doc changes performed; no implementation tests/PASS claimed for planning.
+- **Handoff to Mira:** review SA-03 plan scope/fit, then determine implementation assignment. Lev stopped; Lira/Mark remain unassigned. Approved master plan unchanged.
