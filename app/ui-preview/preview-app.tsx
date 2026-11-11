@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { I18nextProvider } from "react-i18next";
-import { RouterProvider, createMemoryRouter, useParams, useSearchParams } from "react-router";
+import { RouterProvider, createMemoryRouter, redirect, useParams, useSearchParams } from "react-router";
 
 import {
   HeaderAuthProvider,
@@ -172,6 +172,118 @@ function supportsPreviewIdentity(scenario: Scenario, identity: PreviewIdentity):
 const categoryId = "development";
 const sectionId = "typescript";
 const topicId = "typed-api";
+
+type PreviewTopicPage = Parameters<typeof TopicView>[0]["topic"];
+type PreviewTopicPost = PreviewTopicPage["posts"][number];
+
+type PreviewCreatedTopic = {
+  id: string;
+  sectionId: string;
+  authorId: string;
+  authorName: string;
+  title: string;
+  body: string;
+  tags: { key: string; name: string }[];
+  sourceLocale: PreviewLocale;
+  createdAt: Date;
+};
+
+type PreviewReply = {
+  id: string;
+  topicId: string;
+  authorId: string;
+  authorName: string;
+  body: string;
+  parentPostId: string | null;
+  sourceLocale: PreviewLocale;
+  createdAt: Date;
+};
+
+type PreviewTopicOverride = {
+  isSolved?: boolean;
+  bestAnswerPostId?: string | null;
+};
+
+type PreviewInteractionState = {
+  sequence: number;
+  createdTopics: Map<string, PreviewCreatedTopic>;
+  replies: Map<string, PreviewReply[]>;
+  topicOverrides: Map<string, PreviewTopicOverride>;
+};
+
+function createPreviewInteractionState(): PreviewInteractionState {
+  return {
+    sequence: 0,
+    createdTopics: new Map(),
+    replies: new Map(),
+    topicOverrides: new Map(),
+  };
+}
+
+function previewDirectionForLocale(locale: PreviewLocale): Direction {
+  return localeRegistry.find(locale)?.locale.direction ?? "ltr";
+}
+
+function previewTagsFromInput(value: string): { key: string; name: string }[] {
+  const names = value.split(",").map((item) => item.trim()).filter(Boolean).slice(0, 8);
+  const seen = new Set<string>();
+  return names.flatMap((name) => {
+    const key = name.toLocaleLowerCase("en")
+      .normalize("NFKD")
+      .replace(/[^\p{L}\p{N}]+/gu, "-")
+      .replace(/^-+|-+$/g, "") || "tag";
+    if (seen.has(key)) return [];
+    seen.add(key);
+    return [{ key, name }];
+  });
+}
+
+function previewMutationLocale(value: string | undefined, fallback: PreviewLocale): PreviewLocale {
+  return value && isPreviewLocale(value) ? value : fallback;
+}
+
+function previewApplyTopicState(topic: PreviewTopicPage, interactions: PreviewInteractionState): PreviewTopicPage {
+  const replies = (interactions.replies.get(topic.id) ?? []).map<PreviewTopicPost>((reply) => ({
+    id: reply.id,
+    topicId: reply.topicId,
+    authorId: reply.authorId,
+    authorName: reply.authorName,
+    parentPostId: reply.parentPostId,
+    solutionModerationStatus: null,
+    solutionOutdatedReason: null,
+    solutionOutdatedReasonKind: null,
+    createdAt: reply.createdAt,
+    body: {
+      id: `${reply.id}-body-r1`,
+      originalContent: reply.body,
+      sourceLocale: reply.sourceLocale,
+    },
+  }));
+  const override = interactions.topicOverrides.get(topic.id);
+  return {
+    ...topic,
+    isSolved: override?.isSolved ?? topic.isSolved,
+    bestAnswerPostId: override?.bestAnswerPostId === undefined
+      ? topic.bestAnswerPostId
+      : override.bestAnswerPostId,
+    posts: [...topic.posts, ...replies],
+  };
+}
+
+function previewPresentationsForTopic(
+  existing: readonly ContentTranslationPresentation[],
+  topic: PreviewTopicPage,
+): ContentTranslationPresentation[] {
+  const byPost = new Map(existing.map((presentation) => [presentation.contentId, presentation]));
+  return topic.posts.map((post) => byPost.get(post.id) ?? originalPresentation(
+    "post-body",
+    post.id,
+    post.body.id,
+    post.body.originalContent,
+    post.body.sourceLocale,
+    previewDirectionForLocale(post.body.sourceLocale as PreviewLocale),
+  ));
+}
 
 const previewBuildKey =
   document.querySelector<HTMLScriptElement>('script[type="module"][src]')?.src ?? "dev";
@@ -952,13 +1064,27 @@ export function EmbeddedPreview({ scenarioId, identity }: { scenarioId: string; 
     () => previewTranslationRuntime(activeScenario.locale, activeScenario.direction),
     [activeScenario.locale, activeScenario.direction],
   );
-  const router = useMemo(() => previewRouter(activeScenario), [activeScenario]);
+  const interactions = useMemo(
+    () => createPreviewInteractionState(),
+    [scenario.id, activeIdentity],
+  );
+  const router = useMemo(
+    () => previewRouter(activeScenario, interactions),
+    [activeScenario, interactions],
+  );
 
   useEffect(() => {
     document.documentElement.lang = activeScenario.locale;
     document.documentElement.dir = activeScenario.direction;
 
     const stopMutation = (event: Event) => {
+      const form = event.target;
+      if (!(form instanceof HTMLFormElement)) return;
+      const method = (form.getAttribute("method") ?? "get").toLowerCase();
+      if (method === "get") return;
+      const intent = String(new FormData(form).get("intent") ?? "");
+      if (intent === "createTopic" || intent === "reply"
+        || intent === "selectBestAnswer" || intent === "markSolved") return;
       event.preventDefault();
       event.stopPropagation();
     };
@@ -1015,7 +1141,7 @@ function previewCredential(locale: PreviewLocale, mode: "sign-in" | "sign-up") {
     emailActions={previewEmailActions} googleActions={previewGoogleActions} />;
 }
 
-function previewRouter(scenario: Scenario) {
+function previewRouter(scenario: Scenario, interactions: PreviewInteractionState) {
   if (scenario.view === "not-found") {
     return createMemoryRouter([{
       path: "*",
@@ -1039,6 +1165,19 @@ function previewRouter(scenario: Scenario) {
   }
 
   return createMemoryRouter([
+    {
+      path: "/:locale",
+      element: (
+        <HomeView
+          locale={scenario.locale}
+          categories={homepageCategories(scenario.locale)}
+          onlinePresence={{ count: 2, members: [
+            { id: "alex", name: "Alex", image: null },
+            { id: "maya", name: "Maya Cohen", image: null },
+          ] }}
+        />
+      ),
+    },
     { path: "/:locale/sign-in", element: previewCredential(scenario.locale, "sign-in") },
     { path: "/:locale/sign-up", element: previewCredential(scenario.locale, "sign-up") },
     {
@@ -1051,11 +1190,17 @@ function previewRouter(scenario: Scenario) {
     },
     {
       path: "/:locale/sections/:sectionId",
-      element: <PreviewSectionRoute scenario={scenario} />,
+      element: <PreviewSectionRoute scenario={scenario} interactions={interactions} />,
+      action: ({ request, params }) => previewSectionAction(
+        scenario, interactions, request, params.locale, params.sectionId,
+      ),
     },
     {
       path: "/:locale/topics/:topicId",
-      element: <PreviewTopicRoute scenario={scenario} />,
+      element: <PreviewTopicRoute scenario={scenario} interactions={interactions} />,
+      action: ({ request, params }) => previewTopicAction(
+        scenario, interactions, request, params.locale, params.topicId,
+      ),
     },
     {
       path: "/:locale/under-development",
@@ -1063,13 +1208,7 @@ function previewRouter(scenario: Scenario) {
     },
     {
       path: "/:locale/search",
-      element: (
-        <SearchView
-          locale={scenario.locale}
-          query={scenario.variant === "search-no-results" ? "WebAssembly" : "TypeScript"}
-          results={scenario.variant === "search-no-results" ? [] : previewSearchResults(scenario.locale)}
-        />
-      ),
+      element: <PreviewSearchRoute scenario={scenario} interactions={interactions} />,
     },
     {
       path: "/:locale/popular",
