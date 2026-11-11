@@ -4052,3 +4052,12 @@ Mira reviewed complete Draft PR #327 A1 scope on exact head `cebb91504f770fa6cd4
 - No SA04-A2+, SA-05+, Stage6/production or #315 remediation is started by this closeout.
 - **Next action: Owner merge of #327.**
 
+## 2026-11-12 — SA04-A1 merged
+
+- Verified bounded implementation PR #327 is merged.
+- Reviewed implementation head: `3d6c7c06ac1442a5a4b3ff7f8fbe77454ca8479c`; merge commit/current main: `593a03964b8407b249f7c9f5eb117ddb8b07736d`.
+- Mira coordinator PASS + Lev independent PASS covered the same exact head; 0 open A1 current-scope defects.
+- SA04-A1 is therefore closed and present in main.
+- Do not reopen or extend #327 for later SA-04 checkpoints; later implementation uses a new bounded PR.
+- No SA04-A2+, SA-05+, Stage6/production or #315 work is started by this synchronization.
+
