@@ -100,7 +100,7 @@ describe("SA02-D3.1 source-aware original History route presentation",()=>{
     expect(container.innerHTML).not.toContain("&lt;unsafe</a>");
     expect(container.textContent).not.toContain("undefined");
     expect(container.textContent).not.toContain("null");
-    expect(container.querySelectorAll('a[href^="/en/super-admin/events"]')).toHaveLength(2);
+    expect(container.querySelectorAll('.admin-history-paging a[href^="/en/super-admin/events"]')).toHaveLength(2);
   });
 
   it("uses substituted Owner origin for real scoped History paging, preserving v1 cursor",async()=>{
