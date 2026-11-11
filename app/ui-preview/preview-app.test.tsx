@@ -18,7 +18,7 @@ describe("UI preview state catalog", () => {
       expect(scenario.locale).toBe("en");
       expect(scenario.direction).toBe("ltr");
       expect(scenario.label).not.toMatch(/(?:^| · )(?:EN|RU|HE|RTL)(?: · |$)/);
-      expect(scenario.label).not.toMatch(/(?:^| · )(?:guest|user|manager)(?: · |$)/i);
+      expect(scenario.label).not.toMatch(/(?:^| · )(?:guest|user|manager|owner)(?: · |$)/i);
     }
   });
 
@@ -47,6 +47,7 @@ describe("UI preview state catalog", () => {
     const guest = screen.getByRole("button", { name: "Guest" });
     const user = screen.getByRole("button", { name: "User" });
     const manager = screen.getByRole("button", { name: "Manager" });
+    const owner = screen.getByRole("button", { name: "Owner" });
 
     expect(guest).toHaveAttribute("aria-pressed", "true");
     expect(screen.getByRole("option", { name: "Home" })).toBeInTheDocument();
@@ -58,6 +59,10 @@ describe("UI preview state catalog", () => {
 
     await userEvent.click(manager);
     expect(manager).toHaveAttribute("aria-pressed", "true");
+    expect(screen.getByRole("option", { name: "Authorization" })).toBeInTheDocument();
+
+    await userEvent.click(owner);
+    expect(owner).toHaveAttribute("aria-pressed", "true");
     expect(screen.getByRole("option", { name: "Authorization" })).toBeInTheDocument();
   });
 });
@@ -88,6 +93,328 @@ describe("embedded preview routing", () => {
 
     expect(await screen.findByRole("heading", { level: 1, name: "How should I structure a typed API client?" })).toBeInTheDocument();
     expect(screen.getByText("I want strong typing without coupling the whole app to one HTTP library.")).toBeInTheDocument();
+  });
+});
+
+
+describe("interactive Pages preview", () => {
+  it("runs the global search form instead of blocking GET submissions", async () => {
+    const user = userEvent.setup();
+    render(<EmbeddedPreview scenarioId="home-guest" />);
+
+    await user.click(screen.getByRole("link", { name: "Search the forum" }));
+    expect(await screen.findByRole("heading", { level: 1, name: "Search" })).toBeInTheDocument();
+
+    const search = screen.getByRole("searchbox", { name: "Search query" });
+    await user.clear(search);
+    await user.type(search, "TypeScript");
+    await user.click(within(screen.getByRole("search")).getByRole("button"));
+    expect(screen.getByRole("link", { name: /How should I structure a typed API client\?/ })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /Mixed RTL content with code blocks/ })).toBeInTheDocument();
+  });
+
+  it("creates a topic, posts a reply, selects it as best answer, and marks the topic solved", async () => {
+    const user = userEvent.setup();
+    render(<EmbeddedPreview scenarioId="section-user" identity="user" />);
+
+    await user.type(screen.getByRole("textbox", { name: "Topic title" }), "Interactive preview topic");
+    await user.type(screen.getByLabelText("First message"), "This topic was created inside the Pages preview.");
+
+    const create = screen.getByRole("button", { name: "Create topic" });
+    await waitFor(() => expect(create).toBeEnabled());
+    await user.click(create);
+
+    expect(await screen.findByRole("heading", { level: 1, name: "Interactive preview topic" })).toBeInTheDocument();
+    expect(screen.getByText("This topic was created inside the Pages preview.")).toBeInTheDocument();
+
+    await user.type(screen.getByLabelText("Reply"), "This reply was added without a backend.");
+    const postReply = screen.getByRole("button", { name: "Post reply" });
+    await waitFor(() => expect(postReply).toBeEnabled());
+    await user.click(postReply);
+
+    expect(await screen.findByText("This reply was added without a backend.")).toBeInTheDocument();
+
+    await user.click(screen.getByText("Select as best answer"));
+    await user.click(screen.getByRole("button", { name: "Message #2" }));
+
+    const prompt = await screen.findByRole("region", { name: "Problem solved?" });
+    expect(screen.getByText("Best answer")).toBeInTheDocument();
+    await user.click(within(prompt).getByRole("button", { name: "Yes, mark as solved" }));
+
+    await waitFor(() => expect(document.querySelector(".solved-badge")).not.toBeNull());
+    expect(screen.getByText("Best answer")).toBeInTheDocument();
+  });
+
+  it("saves the preferred language from Settings and switches the preview locale", async () => {
+    const user = userEvent.setup();
+    render(<EmbeddedPreview scenarioId="section-user" identity="user" />);
+
+    await user.click(screen.getByRole("link", { name: "Settings" }));
+    expect(await screen.findByRole("heading", { level: 1, name: "Settings" })).toBeInTheDocument();
+
+    const settingsOverview = document.querySelector(".settings-overview") as HTMLElement;
+    await user.click(within(settingsOverview).getByRole("link", { name: "User preferences" }));
+    const locale = await screen.findByRole("combobox", { name: "Preferred language" });
+    await user.selectOptions(locale, "ru");
+    await user.click(screen.getByRole("button", { name: "Save language" }));
+
+    await waitFor(() => expect(document.documentElement.lang).toBe("ru"));
+    const savedLocale = document.querySelector("#settings-preferred-locale") as HTMLSelectElement | null;
+    expect(savedLocale?.value).toBe("ru");
+    expect(await screen.findByRole("status")).toBeInTheDocument();
+  });
+
+  it("shows linked sign-in methods in Account & security without enabling account mutations", async () => {
+    const user = userEvent.setup();
+    render(<EmbeddedPreview scenarioId="section-user" identity="user" />);
+
+    await user.click(screen.getByRole("link", { name: "Settings" }));
+    const settingsOverview = document.querySelector(".settings-overview") as HTMLElement;
+    await user.click(within(settingsOverview).getByRole("link", { name: "Account & security" }));
+
+    expect(await screen.findByRole("heading", { level: 3, name: "Linked sign-in methods" })).toBeInTheDocument();
+    const methods = document.querySelector("#settings-account-methods")?.parentElement as HTMLElement;
+    expect(within(methods).getByText("Email and password")).toBeInTheDocument();
+    expect(within(methods).getByText("Google")).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Connect Google" })).not.toBeInTheDocument();
+  });
+
+  it("saves online visibility in Privacy settings and updates the local home presence", async () => {
+    const user = userEvent.setup();
+    render(<EmbeddedPreview scenarioId="section-user" identity="user" />);
+
+    await user.click(screen.getByRole("link", { name: "Settings" }));
+    const settingsOverview = document.querySelector(".settings-overview") as HTMLElement;
+    await user.click(within(settingsOverview).getByRole("link", { name: "Privacy" }));
+
+    const showOnline = await screen.findByRole("checkbox", { name: "Show me online" });
+    expect(showOnline).toBeChecked();
+    await user.click(showOnline);
+    expect(screen.getByText("Off: do not appear in the public online member list or count.")).toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: "Save privacy setting" }));
+    expect(await screen.findByRole("status")).toHaveTextContent("Online visibility saved.");
+    expect(screen.getByRole("checkbox", { name: "Show me online" })).not.toBeChecked();
+
+    const breadcrumbs = document.querySelector(".breadcrumbs") as HTMLElement;
+    await user.click(within(breadcrumbs).getByRole("link", { name: "Home" }));
+
+    const online = await screen.findByRole("heading", { level: 2, name: "Who's online" });
+    const card = online.closest(".home-online-card") as HTMLElement;
+    expect(within(card).queryByRole("link", { name: "Alex" })).not.toBeInTheDocument();
+    expect(within(card).getByRole("link", { name: "Maya Cohen" })).toBeInTheDocument();
+  });
+
+  it("edits the signed-in user's profile and keeps the saved preview data", async () => {
+    const user = userEvent.setup();
+    render(<EmbeddedPreview scenarioId="profile-edit" identity="user" />);
+
+    const bio = screen.getByLabelText("About");
+    await user.clear(bio);
+    await user.type(bio, "Updated locally in the functional Pages preview.");
+
+    const website = screen.getByLabelText("Website");
+    await user.clear(website);
+    await user.type(website, "https://vico.example/");
+
+    await user.click(screen.getByRole("button", { name: "Save profile" }));
+
+    expect(await screen.findByRole("status")).toHaveTextContent("Profile saved.");
+    expect(screen.getByText("Updated locally in the functional Pages preview.")).toBeInTheDocument();
+
+    await user.click(screen.getByRole("link", { name: "Edit profile" }));
+    expect(screen.getByLabelText("About")).toHaveValue("Updated locally in the functional Pages preview.");
+    expect(screen.getByLabelText("Website")).toHaveValue("https://vico.example/");
+  });
+
+  it("opens a notification, marks it read, and follows the referenced message", async () => {
+    const user = userEvent.setup();
+    render(<EmbeddedPreview scenarioId="notifications-user" identity="user" />);
+
+    const notification = screen.getByRole("button", {
+      name: /Open reply: How should I structure a typed API client\?/,
+    });
+    expect(notification).toHaveClass("is-unread");
+    await user.click(notification);
+
+    expect(await screen.findByRole("heading", { level: 1, name: "How should I structure a typed API client?" })).toBeInTheDocument();
+
+    await user.click(screen.getByRole("link", { name: "Notifications, 3 unread" }));
+    const reopened = await screen.findByRole("button", {
+      name: /Open reply: How should I structure a typed API client\?/,
+    });
+    expect(reopened).not.toHaveClass("is-unread");
+    expect(within(reopened).getByText("Read")).toBeInTheDocument();
+  });
+
+  it("checks similar Help questions and publishes a new Help question", async () => {
+    const user = userEvent.setup();
+    render(<EmbeddedPreview scenarioId="help-solutions-ask" identity="user" />);
+
+    await user.click(screen.getByRole("button", { name: "Ask a question" }));
+    const form = document.getElementById("help-question-create-form") as HTMLFormElement;
+    expect(form).not.toBeNull();
+
+    await user.type(within(form).getByRole("textbox", { name: "Question title" }), "Worker session redirect problem");
+    await user.type(within(form).getByLabelText("Question details"), "My Worker loses its session after redirect.");
+    await user.type(within(form).getByRole("textbox", { name: "Tags" }), "Cloudflare, Auth");
+
+    await user.click(within(form).getByRole("button", { name: "Check similar questions" }));
+    expect(await screen.findByRole("heading", { level: 3, name: "Similar questions" })).toBeInTheDocument();
+    const similar = screen.getByRole("region", { name: "Similar questions" });
+    expect(within(similar).getByRole("link", { name: /Why does my Worker lose the session after redirect\?/ })).toBeInTheDocument();
+
+    const activeForm = document.getElementById("help-question-create-form") as HTMLFormElement;
+    const publish = within(activeForm).getByRole("button", { name: "Ask question" });
+    await waitFor(() => expect(publish).toBeEnabled());
+    await user.click(publish);
+
+    expect(await screen.findByRole("heading", { level: 1, name: "Worker session redirect problem" })).toBeInTheDocument();
+    expect(screen.getByText("My Worker loses its session after redirect.")).toBeInTheDocument();
+  });
+
+  it("resolves moderation signals and duplicate appeals inside the preview queue", async () => {
+    const user = userEvent.setup();
+    render(<EmbeddedPreview scenarioId="attention-signals" identity="manager" />);
+
+    expect(screen.getByRole("link", { name: "Needs details (1)" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Mixed (1)" })).toBeInTheDocument();
+    expect(screen.getByText("#signal-142")).toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: "Accept signal" }));
+
+    await waitFor(() => expect(screen.queryByText("#signal-142")).not.toBeInTheDocument());
+    expect(screen.getByRole("link", { name: "Needs details (0)" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Mixed (0)" })).toBeInTheDocument();
+
+    await user.click(screen.getByRole("link", { name: "Appeals (1)" }));
+    expect(await screen.findByText("#appeal-146")).toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: "Reject dispute" }));
+
+    await waitFor(() => expect(screen.queryByText("#appeal-146")).not.toBeInTheDocument());
+    expect(screen.getByRole("link", { name: "Appeals (0)" })).toBeInTheDocument();
+  });
+
+  it("runs admin topic quick actions and keeps their local state", async () => {
+    const user = userEvent.setup();
+    render(<EmbeddedPreview scenarioId="admin-topic" identity="manager" />);
+
+    expect(screen.getByText("Pinned")).toBeInTheDocument();
+    expect(screen.queryByText("Closed")).not.toBeInTheDocument();
+
+    const topicActions = document.querySelector(".topic-admin-tools > summary");
+    expect(topicActions).not.toBeNull();
+    await user.click(topicActions!);
+
+    await user.click(screen.getByRole("button", { name: "Unpin topic" }));
+    await waitFor(() => expect(screen.queryByText("Pinned")).not.toBeInTheDocument());
+    expect(screen.getByRole("button", { name: "Pin topic" })).toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: "Close topic" }));
+    expect(await screen.findByText("Closed")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Reopen topic" })).toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: "Message #2" }));
+    await waitFor(() => {
+      const followup = document.querySelector("#post-followup");
+      expect(followup).not.toBeNull();
+      expect(followup?.classList.contains("best-answer")).toBe(true);
+    });
+
+    await user.click(screen.getByRole("button", { name: "Reopen topic" }));
+    await waitFor(() => expect(screen.queryByText("Closed")).not.toBeInTheDocument());
+
+    await user.click(screen.getByRole("button", { name: "Pin topic" }));
+    expect(await screen.findByText("Pinned")).toBeInTheDocument();
+  });
+
+  it("opens message history and corrects source language in the admin preview", async () => {
+    const user = userEvent.setup();
+    render(<EmbeddedPreview scenarioId="admin-topic" identity="manager" />);
+
+    const question = document.querySelector("#post-question");
+    expect(question).not.toBeNull();
+    const actions = question!.querySelector(".message-admin-tools > summary");
+    expect(actions).not.toBeNull();
+    await user.click(actions!);
+
+    await user.click(within(question as HTMLElement).getByRole("button", { name: "Edit history" }));
+    const historyHeading = await within(question as HTMLElement)
+      .findByRole("heading", { name: "Published revisions" });
+    expect(historyHeading).toBeInTheDocument();
+    const historySection = historyHeading.closest(".topic-post-history") as HTMLElement;
+    expect(await within(historySection).findByText(
+      "I want strong typing without coupling the whole app to one HTTP library.",
+    )).toBeInTheDocument();
+
+    const sourceLocale = within(question as HTMLElement).getByLabelText("Correct source language");
+    await user.clear(sourceLocale);
+    await user.type(sourceLocale, "he");
+    await user.click(within(question as HTMLElement).getByRole("button", { name: "Correct language" }));
+
+    expect(await within(question as HTMLElement).findByText("Source language: he")).toBeInTheDocument();
+  });
+
+  it("keeps manager authorization read-only and runs Owner authorization mutations", async () => {
+    const user = userEvent.setup();
+    const view = render(<EmbeddedPreview scenarioId="admin" identity="manager" />);
+
+    expect(await screen.findByRole("heading", { name: "Authorization management" })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Create custom role" })).not.toBeInTheDocument();
+
+    view.rerender(<EmbeddedPreview scenarioId="admin" identity="owner" />);
+    expect(await screen.findByRole("button", { name: "Create custom role" })).toBeInTheDocument();
+
+    const createRoleForm = document.querySelector(".admin-create-role") as HTMLElement;
+    expect(createRoleForm).not.toBeNull();
+    await user.type(within(createRoleForm).getByLabelText("Role slug"), "support-lead");
+    await user.type(within(createRoleForm).getByLabelText("Display name"), "Support lead");
+    await user.click(within(createRoleForm).getByRole("button", { name: "Create custom role" }));
+
+    const createdHeading = await screen.findByRole("heading", { name: "Support lead" });
+    const roleCard = createdHeading.closest(".admin-role-card") as HTMLElement;
+    expect(roleCard).not.toBeNull();
+
+    const renameForm = roleCard.querySelector(".admin-rename-role") as HTMLElement;
+    const renameInput = within(renameForm).getByLabelText("Display name");
+    await user.clear(renameInput);
+    await user.type(renameInput, "Support lead renamed");
+    await user.click(within(renameForm).getByRole("button", { name: "Save" }));
+    expect(await screen.findByRole("heading", { name: "Support lead renamed" })).toBeInTheDocument();
+
+    const renamedCard = screen.getByRole("heading", { name: "Support lead renamed" })
+      .closest(".admin-role-card") as HTMLElement;
+    const grantsForm = renamedCard.querySelector(".admin-permissions-form") as HTMLElement;
+    await user.click(within(grantsForm).getByLabelText("forum.topic.pin"));
+    await user.click(within(grantsForm).getByRole("button", { name: "Save" }));
+
+    const alexCard = screen.getByRole("heading", { name: "Alex Rivera" })
+      .closest(".admin-user-card") as HTMLElement;
+    const assignment = alexCard.querySelector(".admin-role-assignment") as HTMLElement;
+    await user.selectOptions(within(assignment).getByLabelText("Assigned role"), "Support lead renamed");
+    await user.click(within(assignment).getByRole("button", { name: "Save" }));
+
+    const refreshedAlex = screen.getByRole("heading", { name: "Alex Rivera" })
+      .closest(".admin-user-card") as HTMLElement;
+    expect(within(refreshedAlex).getByText("Support lead renamed")).toBeInTheDocument();
+
+    const override = within(refreshedAlex).getByLabelText("forum.reply.create: Permissions");
+    await user.selectOptions(override, "deny");
+    await user.click(within(override.closest("form") as HTMLElement).getByRole("button", { name: "Save" }));
+
+    const effective = refreshedAlex.querySelector(".admin-effective-permissions") as HTMLElement;
+    expect(within(effective).getByText("forum.topic.pin")).toBeInTheDocument();
+    expect(within(effective).queryByText("forum.reply.create")).not.toBeInTheDocument();
+
+    const latestAssignment = refreshedAlex.querySelector(".admin-role-assignment") as HTMLElement;
+    await user.selectOptions(within(latestAssignment).getByLabelText("Assigned role"), "User");
+    await user.click(within(latestAssignment).getByRole("button", { name: "Save" }));
+
+    const deletableCard = screen.getByRole("heading", { name: "Support lead renamed" })
+      .closest(".admin-role-card") as HTMLElement;
+    await user.click(within(deletableCard).getByRole("button", { name: "Delete role" }));
+    await waitFor(() => expect(screen.queryByRole("heading", { name: "Support lead renamed" })).not.toBeInTheDocument());
   });
 });
 
