@@ -4,7 +4,7 @@
 
 1. Это bounded audit plan для области 5 общей security-карты.
 2. Audit target на момент подготовки: current `main` `f6fd4b2c031b2132b04eace18704a59aed1dfec8`.
-3. Фактический аудит начат. **E2 PASS. E5: `FORUM-PUB-01 Moderate/P2`. E6: 0 additional findings; `FORUM-PUB-01` подтверждён для edit body. E7: `READSTATE-CACHE-01 Low/P3`. E3: `PUBLIC-PROJECTION-01 Low/P3`. E4: `DISCOVERY-BOUNDS-01 Low/P3`, `SEARCH-CONTROL-01 Low/P3`. E8: PASS — 0 additional findings. E1: `LOCALE-DEGRADED-WRITE-01 Low/P3`; `READSTATE-CACHE-01` scope expanded to shared `/:locale` member/session cache boundary. E9: PASS — 0 additional findings.** Remediation по Block E не назначена.
+3. Фактический аудит начат. **E2 PASS. E5: `FORUM-PUB-01 Moderate/P2`. E6: 0 additional findings; `FORUM-PUB-01` подтверждён для edit body. E7: `READSTATE-CACHE-01 Low/P3`. E3: `PUBLIC-PROJECTION-01 Low/P3`. E4: `DISCOVERY-BOUNDS-01 Low/P3`, `SEARCH-CONTROL-01 Low/P3`. E8: PASS — 0 additional findings. E1: `LOCALE-DEGRADED-WRITE-01 Low/P3`; `READSTATE-CACHE-01` scope expanded to shared `/:locale` member/session cache boundary. E9: PASS — 0 additional findings. E10: `FORUM-READ-BOUNDS-01 Moderate/P2`, `FORM-BODY-BOUNDS-01 Moderate/P2`. Block E audit completed.** Remediation по Block E не назначена.
 4. Проверка ведётся по реальным public/member route → service/repository paths, а не по одному UI.
 
 ## Граница блока
@@ -361,6 +361,47 @@ Durable Queue claim/retry/provider credentials/cost/reconciliation остают�
 5. request bodies, query strings, counts и expensive presentation work имеют bounded input/response limits;
 6. application-level spam/replay protections не обходятся простой concurrency;
 7. отсутствие production traffic/edge controls не объявляется current defect без доказанного current application impact — системный DoS остаётся Block K.
+
+### E10 — результат аудита
+
+1. E10 audit target: current `main` `4248fed23925e4a23e48485d419ceaf0ce337def`.
+2. Между предыдущим Block E target `f6fd4b2c031b2132b04eace18704a59aed1dfec8` и current `main` появился один merge — SA-02 #319. GitHub compare подтверждает: core public Forum / translation implementations, проверенные E2–E9, не менялись; затронуты Super-admin/Auth observability, shared `workers/app.ts` и route registry. E10 отдельно проверил этот новый shared Worker seam.
+3. Verdict: **2 new current-scope findings — `FORUM-READ-BOUNDS-01 Moderate/P2` и `FORM-BODY-BOUNDS-01 Moderate/P2`**.
+4. Typed failure classification — PASS: primary forum readers map only typed `ForumStorageUnavailableError` to controlled 503; programming/schema errors propagate to the generic 500 boundary instead of masquerading as normal denial/success. Optional homepage presence may degrade independently without replacing protected write checks.
+5. Request isolation — PASS: Worker creates a fresh `RouterContextProvider` and request-scoped auth/registry/forum/translation capabilities per request. New SA-02 attempt/auth-fact collectors are also request-scoped, bounded and fail-isolated; telemetry sink/flush failures do not replace the original HTTP response or exception.
+6. Mutation replay — PASS: existing React Router 8.3.1 failed-submission behavior and Vico recovery paths do not automatically replay 4xx/5xx mutations. Publication receipts fence editor operation replays by stable operation/fingerprint; closure/reply regressions preserve committed replay and reject conflicting replay.
+7. Concurrency — PASS outside findings below: forum write cooldown serializes per-author publication admission under the user-row mutex; closure/source-locale/read-state/presence paths use their current CAS/locking/monotonic boundaries. No simple parallel-request bypass of these protections was found.
+8. Bounded examples — PASS: Notifications manually streams URL-encoded mutation bodies with a 4096-byte ceiling; Complaints use bounded stream parsers; attachment upload is streamed with a hard length bound; notification pages and presence member lists are bounded.
+9. Current Cloudflare Workers primary documentation was rechecked for the target runtime: isolate memory is 128 MB, while incoming request-body limits are plan-dependent and can be materially larger than a safe application parsing envelope. Cloudflare explicitly recommends enforcing a maximum before fully consuming request bodies. Therefore `request.formData()` without an application bound is not treated as protected merely because the platform has an outer request limit.
+10. Broad volumetric/edge traffic engineering remains outside E10 and belongs to Abuse & availability. The findings below are application-level paths with concrete per-request or persistent amplification.
+11. Tests were read, not executed during this audit. Production/deployed load behavior was not measured.
+12. Current `PROJECT_STATE.md` / `ROADMAP.md` lag current code: they still describe SA-02+ as not implemented and repository migration history through `0062`, while current `main` contains merged SA-02 and migration `0063`. This documentation contradiction is outside Block E and is not counted as an E finding.
+13. Remediation is not assigned during audit.
+
+### FORUM-READ-BOUNDS-01 — Moderate/P2
+
+1. Current public section/topic read paths have no page/cursor/row ceiling.
+2. `readSection(id)` loads every topic in the section and then loads tags for the complete topic-ID set.
+3. `readTopicPage(id)` loads every current post in the topic and then loads attachments for the complete post-ID set. The public topic loader builds translation presentation units for every non-empty post and the UI renders the complete topic snapshot.
+4. Authenticated topic read-state additionally reads the complete ordered post-ID set for the topic to derive latest/first-unread state.
+5. No total posts-per-topic limit or section topic limit was found. Ordinary permitted users can therefore grow the persistent dataset through normal topic/reply writes; the existing cooldown limits write frequency, not eventual topic/section size.
+6. Impact is persistent amplification of an unauthenticated public GET: DB result size, ID-list/query construction, translation lookup, Markdown SSR and response size grow with forum content. This is different from generic external traffic flooding and from `FORUM-PUB-01`, which concerns the size of one authored content field.
+7. `DISCOVERY-BOUNDS-01` remains separate: it covers Unanswered/Tags/Tag/Unread discovery result sets, not canonical section/topic reads.
+8. Severity — **Moderate/P2**: the expensive state can be accumulated through ordinary current product behavior and then triggered by public reads; no special Admin/Stage-6 capability is required.
+9. Remediation not assigned.
+
+### FORM-BODY-BOUNDS-01 — Moderate/P2
+
+1. Several ordinary member-facing POST entrypoints call `request.formData()` without an application byte ceiling before parsing.
+2. Confirmed Block E surfaces include normal section/topic/Help actions, profile save and presence heartbeat. Session/same-origin/permission checks still apply where appropriate, but they occur before a parser that can consume the complete submitted body.
+3. Forum actions do not require a bounded URL-encoded content type before `formData()`; therefore oversized or unused multipart fields can be parsed even when later semantic fields are rejected or ignored.
+4. Help “similar questions” additionally preserves the full submitted `body` / `tags` draft in the action response. Its repository search itself is bounded to a small term set and slices search input, so the finding is the HTTP parse/response envelope rather than unbounded SQL term construction.
+5. Profile validation and persisted forum-content validation occur only after parsing; they do not bound the bytes the Worker must first consume.
+6. Counterexamples prove a bounded pattern already exists in the codebase: Notifications reads at most 4096 bytes before URL decoding, Complaints use explicit bounded stream readers, and attachment upload streams with a hard byte limit.
+7. Current Cloudflare Workers outer request limits do not replace an application parsing bound: current primary docs specify 128 MB isolate memory and plan-dependent request-body ceilings. A single accepted large form can therefore create substantial Worker memory/CPU pressure before domain validation.
+8. Impact requires an authenticated/same-origin member for the protected forum/profile/presence examples; no authorization bypass was found. The defect is resource exhaustion at a current application boundary.
+9. Severity — **Moderate/P2**: one permitted request can force large whole-form parsing on the target Worker runtime, and the path is independent of persisted content limits.
+10. Remediation not assigned.
 
 ## Порядок фактической проверки
 
