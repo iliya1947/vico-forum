@@ -284,7 +284,7 @@ describe("interactive Pages preview", () => {
       .findByRole("heading", { name: "Published revisions" });
     expect(historyHeading).toBeInTheDocument();
     const historySection = historyHeading.closest(".topic-post-history") as HTMLElement;
-    expect(within(historySection).getByText(
+    expect(await within(historySection).findByText(
       "I want strong typing without coupling the whole app to one HTTP library.",
     )).toBeInTheDocument();
 
