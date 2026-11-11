@@ -5,7 +5,8 @@ import { useTranslation } from "react-i18next";
 import { ForumShell, Breadcrumbs } from "../forum/ui";
 import {
   superAdminPath, superAdminMonitoringPath, superAdminSystemPath, superAdminEventLogPath,
-  superAdminInfrastructurePath, superAdminMonitorHistoryPath,
+  superAdminInfrastructurePath, superAdminMonitorHistoryPath, superAdminAccountsPath,
+  superAdminSecurityPath,
 } from "./paths";
 import type { SystemOverview, SystemMonitorState, OwnerTimelinePage } from "../../db/owner-system-monitoring";
 import type { SystemMonitorKey } from "../../db/owner-system-history";
@@ -17,7 +18,7 @@ const keys: Record<SystemMonitorKey, "superAdminRuntime" | "superAdminDatabase" 
   "system.requests": "superAdminRequests",
 };
 const monitoringAreas = [
-  "superAdminAreaAccounts", "superAdminAreaSecurity", "superAdminAreaForum", "superAdminAreaLocalization", "superAdminAreaNotifications", "superAdminAreaFiles", "superAdminAreaAdministration", "superAdminAreaModeration", "superAdminAreaBackground", "superAdminAreaData", "superAdminAreaIntegrations"
+  "superAdminAreaForum", "superAdminAreaLocalization", "superAdminAreaNotifications", "superAdminAreaFiles", "superAdminAreaAdministration", "superAdminAreaModeration", "superAdminAreaBackground", "superAdminAreaData", "superAdminAreaIntegrations"
 ] as const;
 
 /** One Owner-only shell, reused across routes; a visible link never grants access. */
@@ -145,6 +146,8 @@ export function SuperAdminMonitoringIndex({locale}: {locale:string}) {
     <section aria-labelledby="super-admin-monitoring-heading" className="admin-overview">
       <h2 id="super-admin-monitoring-heading">{t("superAdminMonitoring")}</h2>
       <Link className="admin-destination" to={superAdminSystemPath(locale,routing)}>{t("superAdminSystem")}</Link>
+      <Link className="admin-destination" to={superAdminAccountsPath(locale,routing)}>{t("superAdminAreaAccounts")}</Link>
+      <Link className="admin-destination" to={superAdminSecurityPath(locale,routing)}>{t("superAdminAreaSecurity")}</Link>
       <p>{t("superAdminAreasLater")}</p>
       <ul className="super-admin-pending-areas">
         {monitoringAreas.map(area=><li key={area}><bdi>{t(area)}</bdi> <span>{t("adminInDevelopment")}</span></li>)}

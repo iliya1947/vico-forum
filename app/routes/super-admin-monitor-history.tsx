@@ -8,6 +8,8 @@ import { SYSTEM_MONITORS } from "../../db/owner-system-history";
 import { SA02_MONITORS } from "../../db/owner-sa02-catalog";
 import type { OwnerHistoryArea, OwnerHistoryMonitor, OwnerHistoryOptions } from "../../db/owner-sa02-history";
 import { SuperAdminShell, Timeline } from "../super-admin/view";
+import { superAdminAreaMonitorHistoryPath } from "../super-admin/paths";
+import type { SuperAdminMonitorScope } from "../administrative-routing/addresses";
 import { ForumRouteError } from "../forum/ui";
 export {headers,meta} from "./super-admin";
 const MONITORS:Record<OwnerHistoryArea,readonly string[]>={
@@ -42,7 +44,8 @@ export default function SuperAdminMonitorHistoryRoute(){
   const routing=useAdministrativeRouting();
   return <SuperAdminShell locale={locale} current="monitoring">
     <Timeline page={page} locale={locale}
-      path={before=>routing.superAdmin.monitorAreaHistory(locale,area,monitorKey,before)}/>
+      path={before=>superAdminAreaMonitorHistoryPath(locale,
+        {area,monitorKey} as SuperAdminMonitorScope,before,routing)}/>
   </SuperAdminShell>;
 }
 export const ErrorBoundary=ForumRouteError;
