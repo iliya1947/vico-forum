@@ -1160,6 +1160,15 @@ export function EmbeddedPreview({ scenarioId, identity }: { scenarioId: string; 
           && form.id === "help-question-create-form")
         || (intent === "save-profile" && form.classList.contains("profile-form"))
         || (intent === "open" && form.classList.contains("notification-form"))
+        || ((intent === "pinTopic"
+          || intent === "unpinTopic"
+          || intent === "closeTopic"
+          || intent === "reopenTopic"
+          || intent === "selectBestAnswer"
+          || intent === "markSolved"
+          || intent === "correctTitleSourceLocale")
+          && form.classList.contains("topic-admin-form"))
+        || (intent === "correctPostSourceLocale" && form.classList.contains("source-locale-form"))
         || ((intent === "acceptHelpSignal"
           || intent === "rejectHelpSignal"
           || intent === "acceptHelpDuplicateAppeal"
