@@ -9,10 +9,11 @@
 5. **H3 — Runtime configuration and optional binding failure завершён: PASS, 0 current-scope findings.**
 6. **H4 — Preview, Version URL and public entrypoint isolation завершён: 0 current-scope findings + 1 deferred Stage-6 blocker `WORKER-VERSION-URL-01 Moderate/P2`.**
 7. **H5 — Worker deployment/version/rollback repository gates завершён: 0 current-scope findings + 1 deferred Stage-6 blocker `WORKER-ROLLBACK-FINALIZER-01 Moderate/P2`.**
-8. **H6–H8 ещё не выполнялись.**
-9. Следующий bounded slice после продолжения владельца — **H6: Runtime failure, cache and observability boundaries**.
-10. Мира — auditor/coordinator. Remediation, technical planner и implementer не назначены.
-11. Cloudflare/production mutation, deployment, binding changes и live topology checks не выполнялись.
+8. **H6 — Runtime failure, cache and observability boundaries завершён: PASS, 0 current-scope findings, 0 новых deferred blockers.**
+9. **H7–H8 ещё не выполнялись.**
+10. Следующий bounded slice после продолжения владельца — **H7: Runtime topology Stage boundary**.
+11. Мира — auditor/coordinator. Remediation, technical planner и implementer не назначены.
+12. Cloudflare/production mutation, deployment, binding changes и live topology checks не выполнялись.
 
 ## H1 — результат
 
@@ -149,6 +150,33 @@
 - Cloudflare Versions & Deployments: deployment determines active traffic and persists independently after creation;
 - Cloudflare Rollbacks: rollback creates a new active deployment and itself is an explicit external operation;
 - exact tagged `wrangler@4.130.0` source: `versions deploy` calls Cloudflare deployment API, while `deployments status --json` returns latest deployment state.
+
+## H6 — результат
+
+1. Verdict на current `main` `ce62e783e71433a00c2fe4874ee26dfc54614628`: **PASS, 0 current-scope findings, 0 новых deferred Stage-6 blockers**.
+2. Worker auth-session outage boundary fail closed: classified PostgreSQL availability/connection/query-timeout failure becomes `AuthSessionUnavailableError`, а Worker отвечает generic `503 Service unavailable` с `Cache-Control: no-store` до Router. Cause/SQL/driver message клиенту не сериализуются.
+3. Better Auth registration-policy storage outage также переводится в generic `503` + `no-store`; unexpected schema/config/programming error deliberately rethrows вместо ложного 403/empty-success. Account-security adapters аналогично переводят только classified storage outage в `AccountSecurityError("unavailable")`.
+4. Forum/authorization controlled availability paths сохраняют тот же принцип: known dependency outage становится bounded `503`; unexpected errors не маскируются. Exact-Owner Super-admin routes отдельно используют `private, no-store` для document/data и controlled 400/401/403/404/503 responses.
+5. React Router server diagnostics не логируют raw exception message/cause/request URL/body: `reportRouteError()` оставляет только error kind, allowlisted PostgreSQL code и максимум 8 source frame locations после удаления message prefix; SSR stream logging оставляет только fixed event/phase/error kind. Unit tests прямо проверяют OAuth/session/cookie/query-like synthetic secrets и multiline fake stack injection.
+6. Worker 5xx telemetry пишет только status + bounded latency into `system.requestFailed`; URL, query, body, headers, cookies, actor data и exception text туда не попадают. Write выполняется через `executionContext.waitUntil(...catch(() => undefined))` и не меняет исходный response.
+7. Auth-transition facts и auth/access attempt telemetry также request-local/bounded: fact writer failure превращается только в attempt gap, individual attempt writer failure — в bounded gap; sink creation/record/close failures поглощаются. Original authentication/authorization response or exception сохраняется.
+8. Current official Cloudflare guidance подтверждает `ctx.waitUntil()` как правильную boundary для logging/analytics after response; work after response имеет bounded 30-second extension and is not durable. Current Vico contract explicitly describes these telemetry streams as best-effort/limited coverage rather than lossless audit, поэтому сам `waitUntil` limit finding не создаёт.
+9. Ранний auth-session `503` возвращается до Router и therefore не проходит `recordRequestFailure()`. Это не объявляется H6 defect: `system.requests` contract прямо описан как **recorded 5xx only / limited coverage**, не total error-rate/audit monitor, а этот outage использует тот же web PostgreSQL sink, который сам может быть unavailable. Durable second-sink/full incident coverage belongs later monitoring/incident-response scope.
+10. Cloudflare Workers Logs включены repository config через `observability.enabled=true`, `head_sampling_rate=1`, `redact_query_string=true`. Current official docs подтверждают: invocation logs по умолчанию содержат request/response metadata and fetch method/URL; `redact_query_string` removes query strings from logged/traced request URLs. Repository production code does not issue generic raw `console.log/error` outside sanitized server logging.
+11. Workers Logs также могут retain uncaught exceptions platform-side. H6 не подтвердил concrete current secret-bearing uncaught path: classified DB/auth outages are converted to generic responses; route/SSR errors are handled/logged through sanitized React Router hooks; missing binding errors expose only binding configuration identity. Therefore no speculative exception-leak finding is created.
+12. Exact live Workers Logs retention/access/destinations, current dashboard invocation-log setting and any account-level observability overrides are mutable external state: **Информация не проверена**. Stage 6 paused; no live read/mutation was performed.
+13. Exact tagged `wrangler@4.130.0` source confirms `versions deploy` calls `maybePatchSettings()` after deployment and syncs `observability` as a **non-versioned script setting**. Therefore version/traffic rollback by itself does not restore an older observability configuration.
+14. На current exact repository config это не образует отдельного security blocker: desired setting being applied is observability enabled, full sampling and query-string redaction; no tail/log destinations are configured, and no demonstrated weaker baseline state/security impact exists. Stage-6 acceptance must nevertheless verify final observability state after rollout/rollback.
+15. Failure/cancel ambiguity while applying deployment/non-versioned settings does not create a second H6 finding: lost/unknown post-promotion reconciliation is already the root cause of `WORKER-ROLLBACK-FINALIZER-01`; H6 only extends its evidence with non-versioned observability semantics.
+16. Route-specific personalized/public cache defects already confirmed as `AUTH-CACHE-01` / `READSTATE-CACHE-01` remain in Blocks B/E. H6 found no additional Worker-wide cache authority/fallback root cause and does not duplicate them.
+17. H6 source/tests and exact Wrangler source were read; tests were **not run**. No Cloudflare logs, dashboard settings, deployment or Hyperdrive state was mutated or live-read.
+18. Следующий bounded slice — H7 Runtime topology Stage boundary.
+
+Проверенная current official external evidence:
+- Cloudflare Workers Logs — invocation logs are emitted by default when Workers Logs is enabled, include request/response metadata, and can be disabled explicitly;
+- Cloudflare observability config/API — `redact_query_string` removes query strings from logged/traced request URLs; sampling `1` means 100%;
+- Cloudflare Workers best practices/limits — `ctx.waitUntil()` is for non-response-critical logging/analytics and extends post-response work for up to 30 seconds;
+- exact tagged `wrangler@4.130.0` source — `versions deploy` patches observability/logpush/tail consumers as non-versioned settings after creating deployment.
 
 ## Цель
 
