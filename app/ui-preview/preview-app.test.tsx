@@ -206,6 +206,29 @@ describe("interactive Pages preview", () => {
 
     expect(await screen.findByRole("heading", { level: 1, name: "Worker session redirect problem" })).toBeInTheDocument();
     expect(screen.getByText("My Worker loses its session after redirect.")).toBeInTheDocument();
+
+  it("resolves moderation signals and duplicate appeals inside the preview queue", async () => {
+    const user = userEvent.setup();
+    render(<EmbeddedPreview scenarioId="attention-signals" identity="manager" />);
+
+    expect(screen.getByRole("link", { name: "Needs details (1)" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Mixed (1)" })).toBeInTheDocument();
+    expect(screen.getByText("#signal-142")).toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: "Accept signal" }));
+
+    await waitFor(() => expect(screen.queryByText("#signal-142")).not.toBeInTheDocument());
+    expect(screen.getByRole("link", { name: "Needs details (0)" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Mixed (0)" })).toBeInTheDocument();
+
+    await user.click(screen.getByRole("link", { name: "Appeals (1)" }));
+    expect(await screen.findByText("#appeal-146")).toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: "Reject dispute" }));
+
+    await waitFor(() => expect(screen.queryByText("#appeal-146")).not.toBeInTheDocument());
+    expect(screen.getByRole("link", { name: "Appeals (0)" })).toBeInTheDocument();
+  });
   });
 });
 
