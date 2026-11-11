@@ -1,18 +1,15 @@
 # Admin panel — current workflow
 
-- Service PR: **#251**.
-- Developer explicitly authorized publication of review reports and service-state updates for the entire SA-04 ("Разрешаю на протяжение всего SA-04"). This authorization persists across SA-04 handoffs.
-- SA-03 is fully closed.
-- **Current stage: SA04-A2 assigned to Lira as the next bounded author checkpoint; A1 is merged in `main`.**
+- Service PR: **#251**. Developer explicitly authorized publication of review reports and service-state updates for the whole SA-04.
+- SA-03 is closed; **SA04-A1 merged in main**, PR #327 closed/merged at `593a03964b8407b249f7c9f5eb117ddb8b07736d`.
+- **Current stage: SA04-A2 author checkpoint COMPLETE — Lira STOP.** Next **Mira checkpoint/scope review**, then she determines the next single bounded assignment. No Lev independent whole-PR review scheduled for A2 alone.
 - Base/current `main`: `593a03964b8407b249f7c9f5eb117ddb8b07736d`.
-- Previous bounded implementation PR **#327** is merged/closed. New SA04-A foundation implementation PR is not created yet.
-- **SA04-A1-MIRA-01 CLOSED**, independently verified: actual PostgreSQL 17.11 CHECK hash matches manifest. Three existing isolated auth fixtures now apply 0065 without changing runtime scope.
-- Lev independently inspected all 10 changed files and verified schema/SQL/snapshot/journal/manifest/Better Auth boundary; no implementation edits. Independent checks: 84/84 native tests; populated upgrade preserves existing data; 75 CHECK cases across five time zones; real Better Auth client state-write/output probes; 69-table manifest parity and Drizzle metadata check PASS.
-- Evidence limitation: optional local Drizzle generation fails with BigInt serialization and exit 0 on both reviewed head and unchanged base with the same dependencies. Generation is not claimed PASS; A1 snapshot/journal and actual SQL/manifest parity were checked independently. No A1 regression established by this observation.
-- Existing exact-head CI, SA01, SA03 and AP10 workflow runs are SUCCESS.
-- Independent review report: [#6808027706](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6808027706).
-- **Active recipient: Lira — SA04-A2 only.** Create a new Draft implementation PR from current main for the remaining SA04-A foundation; implement only the shared read/predicate foundation, publish exact head/evidence and author inspection, then STOP. Do not start A3.
-- **A2 boundary:** shared server-only account-state read/predicate foundation only. No transaction row-lock/mutation guard yet; no auth/session integration, writer admission, neutral/public identity projection, deactivate/control, SA05+, Stage6/production or #315 remediation.
+- Current cumulative Draft implementation **PR #328**, stable exact head `f9da2033455487f25510c2ccbbb748ed5f4bf7f4`, still open/Draft, not merged.
+- A2 delivered only `db/account-state.ts` (server-only Drizzle/native active SQL predicate, typed readonly active/deactivated/missing lookup on caller-owned PG connection, readonly assert and distinct unavailable/unexpected classifications) and `tests/database/account-state.test.ts` (six native PG17 read/predicate/error/transaction tests).
+- Personal author inspection of both complete files and final exact diff performed, covering correct nullable state semantics, fail-closed error handling, parameterized SQL, no row lock or write, no auth/writer integration and no accidental extra scope. This is not coordinator/independent review.
+- **Exact-head [CI #43109939829](https://github.com/iliya1947/vico-forum/actions/runs/43109939829) SUCCESS:** 2237/2237 application tests, 696/696 native PostgreSQL17 tests (6 new A2), 69-table schema manifest parity, lint/typecheck/build/migration metadata/Worker smoke.
+- **Next Mira:** review A2 bounded checkpoint on stable head, then determine one next handoff. A3 transaction row-lock/mutation-guard primitives and A4 neutral public-identity contract/helpers are *future planning labels*, not active assignments. Later checkpoints may extend cumulative #328 only after new explicit assignment.
+- No A3, runtime auth/session gate, writer admission, neutral/public identity projection, deactivate operation/control, SA05+, Stage6/production, #315 remediation, owner visual/deployed acceptance or package merge is asserted.
 
 ## Mandatory author verification
 
