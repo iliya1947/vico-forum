@@ -3546,3 +3546,16 @@ No implementation is assigned by this correction itself. The next possible assig
 - Additional **exact-head all SUCCESS**: [CI #43054008996](https://github.com/iliya1947/vico-forum/actions/runs/43054008996) (2231/2231 app, 688/688 native PG17, 69-table schema parity, lint/typecheck/build/migration/Worker smoke), [SA01 Chromium #43054008929](https://github.com/iliya1947/vico-forum/actions/runs/43054008929), [AP10 browser #43054009241](https://github.com/iliya1947/vico-forum/actions/runs/43054009241) 4/4 jobs.
 - **Coordinator mapping discrepancy, not silently resolved by Lira:** the latest workflow file on service branch `5ef53ca...` explicitly supersedes initial whole-SA03 route with five bounded `SA03-A…E` stages and says next assignment A/no implementation assigned, while factual D1/D2/D3 PR #324 commits and prior #251 author handoffs exist. D4 here corresponds to the connected acceptance/author closeout listed as SA03-E; D1–D3 code collectively covers A–D. Developer explicitly authorized this continuation, but Mira must decide how to reconcile retroactive assignment granularity and perform coordinator whole-PR review. No claim of Mira PASS, Lev independent review, approval or merge.
 - **Lira author STOP** at full D1–D4 evidence handoff. Next action is Mira coordinator review/reconciliation in #251 against exact stable #324 head, then Lev independently only after Mira PASS. Permanent docs/PROJECT_STATE separate after implementation merge; no production, Stage6/#315, SA04+, Deactivate, new Owner operations or extra architecture.
+
+## Permanent coordination constraint — Lira handoff granularity
+
+This constraint applies to every future implementation handoff in #251:
+
+1. Mira must run a granularity check **before** assigning Lira.
+2. A technical plan containing multiple independently completable implementation results is not itself a valid single Lira task.
+3. Such work must be decomposed first; only one bounded subtask is assigned at a time.
+4. Lira stops after the assigned subtask. A later subtask requires a separate developer continuation and a new explicit assignment.
+5. Lev's complete technical plan must never be copied directly into one Lira implementation assignment.
+6. If an assignment violates this constraint, Lira should not continue into additional independent results beyond the bounded task actually assigned.
+
+This is a workflow constraint for #251. It does not alter product scope or AGENTS.md.
