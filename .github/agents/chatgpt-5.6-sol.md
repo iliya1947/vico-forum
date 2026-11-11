@@ -4,7 +4,7 @@
 
 1. Служебный PR: **#315**.
 2. Моя текущая работа: audit/coordination only; remediation и implementation не назначены.
-3. Текущий этап: **Block H H1–H3 PASS; H4/H5 завершены: 0 current-scope findings + deferred Stage-6 blockers `WORKER-VERSION-URL-01 Moderate/P2`, `WORKER-ROLLBACK-FINALIZER-01 Moderate/P2`; H6 PASS; H7 PASS, 0 additional; следующий bounded slice — H8 Cross-chain closeout**. Block G закрыт с 3 current-scope findings + deferred Stage-6 blocker `DB-RUNTIME-EVIDENCE-01`.
+3. Текущий этап: **Block H ЗАКРЫТ: 0 current-scope findings; deferred Stage-6 blockers `WORKER-VERSION-URL-01 Moderate/P2`, `WORKER-ROLLBACK-FINALIZER-01 Moderate/P2`; H8 PASS, 0 additional. Следующее security-направление после продолжения — Block I scope preparation.** Block G закрыт с 3 current-scope findings + deferred Stage-6 blocker `DB-RUNTIME-EVIDENCE-01`.
 4. Technical audit target B–D: `e279cb6c032a489a9044ca1191407df887c364b4`.
 5. Current `main` — `593a03964b8407b249f7c9f5eb117ddb8b07736d`. Delta `ce62e783… → 593a0396…` — SA-04 A1 #327 migration/schema/tests only; H runtime/topology code unchanged.
 6. Лира, Марк и Лёва по #315 сейчас не назначены.
@@ -163,6 +163,18 @@
 135. app/routes.ts still cohosts Admin/Super-admin/public app in one Worker; AdministrativeRouting changes outgoing addresses only. Separate Owner runtime isolation remains Block A/Stage-6 and is not duplicated.
 136. Non-H source-of-truth drift observed: current main includes migration 0065 SA-04 account-state foundation, while PROJECT_STATE/ROADMAP/SUPER_ADMIN still describe 0064/SA-04+ not implemented. H7 does not resolve that documentation state; shared Stage-6-paused topology boundary is consistent.
 137. Existing correction gates unchanged: DB-RUNTIME-EVIDENCE-01 before schema-dependent rollout, WORKER-VERSION-URL-01 before write/private-capable upload, WORKER-ROLLBACK-FINALIZER-01 before production traffic promotion.
+138. H8 cross-chain: **PASS, 0 additional findings; Block H complete** на current main `593a03964b8407b249f7c9f5eb117ddb8b07736d`.
+139. Re-run chain ingress → binding resolution/composition → auth/request context → response/telemetry → repository rollout did not reveal a new root cause. H1–H7 conclusions remain internally consistent.
+140. Dedup A: separate Owner Worker/Access/auth/session/DB isolation is future Block-A/Stage-6 scope; H4 blocker concerns public Worker Version URL carrying production web/auth resources, so no duplicate.
+141. Dedup B/E: AUTH-CACHE-01 and READSTATE-CACHE-01 are route/private projection cache roots; H6 found no Worker-wide cache root cause. Other auth/public findings likewise remain application-level.
+142. Dedup C: AUTHZ-FAIL-01 is DB/app authorization transaction rollback misclassification; WORKER-ROLLBACK-FINALIZER-01 is loss of external Cloudflare deployment reconciliation after promotion. Distinct state machines.
+143. Dedup D/F: Complaint/Help/History privacy and attachment text-tail validation do not share H root cause.
+144. Dedup G: DB-RUNTIME-EVIDENCE-01 is pre-upload schema-proof insufficiency; WORKER-VERSION-URL-01 is pre-traffic public ingress with production resources; WORKER-ROLLBACK-FINALIZER-01 is post-promotion runner-loss reconciliation. Distinct correction gates.
+145. #315 aggregate unchanged: 24 current-scope findings + 3 deferred Stage-6 blockers total (G1 + H2). Block H contributes 0 current findings and exactly 2 deferred blockers.
+146. Stage-6 gate order recorded: DB runtime evidence before schema-dependent upload; Version URL isolation before write/private-capable upload; independent rollback/reconciliation before traffic promotion; live topology recheck immediately before external action.
+147. main unprotected / disabled Protect-main ruleset remains only a confirmed factual lead for future Block I Secrets & supply chain; H did not classify it as finding without full actor/provenance chain.
+148. Exact mutable Cloudflare topology, Environment protection/actors and production DB state in H8: **Информация не проверена**. Tests/workflows not run; no external mutation/read.
+149. Non-H docs drift remains: main contains migration 0065 SA-04 account-state foundation while PROJECT_STATE/ROADMAP/SUPER_ADMIN still say 0064/SA-04+ not implemented. Do not fix inside #315 H audit.
 
 ## Ограничения
 
@@ -174,5 +186,5 @@
 
 ## Следующий шаг
 
-1. После продолжения владельца выполнить **H8 — Cross-chain closeout** на current main и остановиться после результата.
-2. Deduplicate H findings against Blocks A–G and deferred Stage-6 blockers; remediation не начинать.
+1. После продолжения владельца подготовить **Block I — Secrets & supply chain** как отдельный scope/file, зарегистрировать его в #315 и остановиться до I1.
+2. При scope preparation перенести confirmed factual lead про main/ruleset как candidate для проверки, но не объявлять finding заранее.
