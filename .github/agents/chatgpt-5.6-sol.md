@@ -4,9 +4,9 @@
 
 1. Служебный PR: **#315**.
 2. Моя текущая работа: audit/coordination only; remediation и implementation не назначены.
-3. Текущий этап: **Block H H1–H3 PASS; H4 завершён: 0 current-scope findings + deferred Stage-6 blocker `WORKER-VERSION-URL-01 Moderate/P2`; следующий bounded slice — H5 Worker deployment/version/rollback repository gates**. Block G закрыт с 3 current-scope findings + deferred Stage-6 blocker `DB-RUNTIME-EVIDENCE-01`.
+3. Текущий этап: **Block H H1–H3 PASS; H4/H5 завершены: 0 current-scope findings + deferred Stage-6 blockers `WORKER-VERSION-URL-01 Moderate/P2`, `WORKER-ROLLBACK-FINALIZER-01 Moderate/P2`; следующий bounded slice — H6 Runtime failure, cache and observability boundaries**. Block G закрыт с 3 current-scope findings + deferred Stage-6 blocker `DB-RUNTIME-EVIDENCE-01`.
 4. Technical audit target B–D: `e279cb6c032a489a9044ca1191407df887c364b4`.
-5. Current `main` после G8 delta-recheck — `5992885e78b1642e41c9805116fcc256002b649c`. Delta от `538084fd…` — SA-03 #324: index-only migration `0064` + readonly Owner profile/history; Block G conclusions unchanged.
+5. Current `main` — `ce62e783e71433a00c2fe4874ee26dfc54614628`. Delta `5992885… → ce62e783…` — documentation-only SA-03 closeout #326; H runtime/rollout code unchanged.
 6. Лира, Марк и Лёва по #315 сейчас не назначены.
 
 ## Где читать состояние
@@ -22,6 +22,7 @@
    - [Block E — Public forum / application](../../SECURITY_BLOCK_E_PUBLIC_APPLICATION.md)
    - [Block F — Files & attachments](../../SECURITY_BLOCK_F_FILES_ATTACHMENTS.md)
    - [Block G — Database & migrations](../../SECURITY_BLOCK_G_DATABASE_MIGRATIONS.md)
+   - [Block H — Cloudflare / Workers / runtime](../../SECURITY_BLOCK_H_CLOUDFLARE_WORKERS_RUNTIME.md)
 
 ## Актуальные выводы Миры
 
@@ -129,6 +130,17 @@
 102. This is not current-scope because activation requires paused manual Stage-6 rollout. Correction gate: before next Worker upload with private/write production capability.
 103. New isolated Worker Previews are distinct from Version URLs and require Wrangler >=4.135.0; repo pinned 4.130.0. This is solution space, not a separate finding.
 104. Mutable live Version URL/Access/Previews Base state: **Информация не проверена**; no external upload/deploy/smoke performed.
+105. H5: **0 current-scope findings + `WORKER-ROLLBACK-FINALIZER-01 Moderate/P2` deferred Stage-6 blocker** на `ce62e783e71433a00c2fe4874ee26dfc54614628`.
+106. Exact dispatch/SHA gate PASS: workflow_dispatch `GITHUB_SHA` + exact main ref + expected SHA + attempt 1; verify/rollout re-check exact checkout. Upload ID comes from one structured pinned-Wrangler record and exact ID is promoted.
+107. Baseline/status gate PASS: exact one baseline UUID, current 100% baseline required before upload; post-promotion and rollback status both require one expected version at 100%.
+108. Exact tagged Wrangler 4.130.0 source read: `versions deploy` creates Cloudflare deployment for explicit Version ID; `deployments status --json` returns latest deployment object. Current parser matches its version_id/percentage shape.
+109. Deferred blocker root cause: promotion + smoke + status + rollback are one 20-minute job/step lifetime. After Cloudflare accepted 100% deployment, GitHub timeout/cancel/runner loss can kill execution before rollback/reconciliation.
+110. Production smoke curl calls lack overall max-time, so a stalled post-promotion request can consume the job timeout. GitHub docs confirm job timeout auto-cancels and cancellation signals/kills running process tree.
+111. Result: unaccepted new version can remain on 100% production traffic while workflow ends timed-out/cancelled/unknown. Correction gate before next production traffic promotion.
+112. Ordinary command/smoke/status failures that return control are handled and rollback to exact baseline; blocker is specifically loss of execution control after external promotion.
+113. Current migration rollback contract requires backward application compatibility with applied forward schema; no later ALTER of baseline localization relations after 0020 found. No duplicate DB blocker.
+114. Wrangler 4.130.0 `versions deploy` also patches non-versioned configured settings (current observability) from current config; H6 must assess this, not H5.
+115. GitHub API: current main `protected=false`, repository `Protect main` ruleset enforcement disabled. This is Block I supply-chain scope, not H5; exact collaborators/Actions actor policy/production-worker Environment protection: **Информация не проверена**.
 
 ## Ограничения
 
@@ -140,5 +152,5 @@
 
 ## Следующий шаг
 
-1. После продолжения владельца выполнить **H5 — Worker deployment/version/rollback repository gates** на current main и остановиться после результата.
+1. После продолжения владельца выполнить **H6 — Runtime failure, cache and observability boundaries** на current main и остановиться после результата.
 2. Existing deferred blockers only reference; duplicates не создавать. Findings только фиксировать; remediation не начинать.
