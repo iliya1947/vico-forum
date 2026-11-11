@@ -5,6 +5,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { canonicalEnglishCatalog } from "../localization/catalog";
 import { createTranslationRuntime } from "../localization/runtime";
 import { ProfileView } from "../forum/profile-view";
+import { HeaderAuthProvider } from "../auth/auth-controls";
 import { AdministrativeRoutingProvider } from "../administrative-routing/provider";
 import { createAdministrativeRouting, type AdministrativeRouting } from "../administrative-routing/addresses";
 import { ErrorBoundary as ProfileErrorBoundary } from "../routes/profile";
@@ -74,7 +75,7 @@ function mount(options: { denyManagementOnSubmit?: boolean; revokeManagementOnSu
     };
     return {
       locale: "en", profile: { ...profile, role: currentRole },
-      privileged: canManage ? { authorization: { status: "ready" as const, value: {
+      privileged: canManage ? { viewerId: actorId, authorization: { status: "ready" as const, value: {
         actorId, management: { userId, roles, authorization }, permissions,
         canManageElevated: true, canMutateAuthorization: true,
       } } } : {},
@@ -88,7 +89,11 @@ function mount(options: { denyManagementOnSubmit?: boolean; revokeManagementOnSu
     { path:"/en/office/authorization",action,element:<p>Alternate authorization</p> },
   ],{initialEntries:[path]});
   const view=render(<I18nextProvider i18n={i18n()}>
-    <AdministrativeRoutingProvider routing={routing}><RouterProvider router={router}/></AdministrativeRoutingProvider>
+    <AdministrativeRoutingProvider routing={routing}>
+      <HeaderAuthProvider initialUser={{id:actorId,name:"Bound owner"}}>
+        <RouterProvider router={router}/>
+      </HeaderAuthProvider>
+    </AdministrativeRoutingProvider>
   </I18nextProvider>);
   return {...view,action,loader,router,grantManagement:()=>{canManage=true;},path};
 }

@@ -3,21 +3,20 @@ import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/re
 import { I18nextProvider } from "react-i18next";
 import { RouterProvider, createMemoryRouter } from "react-router";
 import { createInstance } from "i18next";
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { canonicalEnglishCatalog } from "../localization/catalog";
 import { ProfileView } from "./profile-view";
-import { AuthControls, HeaderAuthProvider } from "../auth/auth-controls";
-import type { AuthClientActions } from "../auth/auth-client";
+import { HeaderAuthProvider } from "../auth/auth-controls";
+import { authClientActions } from "../auth/auth-client";
 
 afterEach(cleanup);
 
 const profile = { id: "owner", name: "Owner", image: "javascript:alert(1)", joinedAt: "2026-09-01T00:00:00.000Z", bio: "<script>alert(1)</script>", githubUrl: "https://github.com/octocat", websiteUrl: "javascript:alert(1)", role: { slug: "user", displayName: "User", isSystem: true }, messageCount: 12, bestAnswerCount: 3 };
-function show(props: Partial<Parameters<typeof ProfileView>[0]> = {}, viewerId: string | null = "owner", actions?: AuthClientActions) {
+function show(props: Partial<Parameters<typeof ProfileView>[0]> = {}, viewerId: string | null = "owner") {
   const i18n = createInstance();
   void i18n.init({ lng: "en", initAsync: false, resources: { en: { common: Object.fromEntries(Object.entries(canonicalEnglishCatalog.common).map(([key, value]) => [key, value.source])) } }, defaultNS: "common" });
   const router = createMemoryRouter([{ path: "*", element:
     <HeaderAuthProvider initialUser={viewerId ? { id: viewerId, name: viewerId } : null}>
-      {actions ? <AuthControls locale="en" actions={actions} /> : null}
       <ProfileView locale="en" profile={profile} {...props} />
     </HeaderAuthProvider>,
   }], { initialEntries: ["/en/users/owner"] });
@@ -119,16 +118,13 @@ describe("SA03 canonical profile protected sections", () => {
     root.unmount();
   });
   it("drops loaded private Owner and authorization DOM on actual sign-out before router revalidation", async () => {
-    const actions: AuthClientActions = {
-      signInWithGoogle: async () => null,
-      signOut: async ({ onSuccess }) => { onSuccess(); },
-    };
+    const signOut=vi.spyOn(authClientActions,"signOut").mockImplementation(async ({onSuccess})=>{onSuccess();});
     const root=show({privileged:{
       viewerId:"exact-owner",
       authorization:{status:"ready",value:auth},
       owner:{viewerId:"exact-owner",account:{status:"ready",value:account},
         history:{status:"ready",value:history}},
-    } as never}, "exact-owner", actions);
+    } as never}, "exact-owner");
     expect(root.container.querySelector("#owner-account")).toHaveTextContent("owner-private@example.test");
     expect(root.container.querySelectorAll("#authorization form").length).toBeGreaterThan(0);
     fireEvent.click(screen.getByRole("button", { name: "Sign out" }));
@@ -137,6 +133,7 @@ describe("SA03 canonical profile protected sections", () => {
     expect(root.container).toHaveTextContent("Owner");
     expect(root.container.textContent).not.toContain("owner-private@example.test");
     root.unmount();
+    signOut.mockRestore();
   });
   it("does not keep the old private edit draft or feedback on viewer mismatch", () => {
     const root=show({
