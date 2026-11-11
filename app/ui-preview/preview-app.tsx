@@ -213,6 +213,7 @@ type PreviewInteractionState = {
   topicOverrides: Map<string, PreviewTopicOverride>;
   profileOverrides: Map<string, ProfileFields>;
   readNotifications: Set<string>;
+  resolvedAttentionCases: Set<string>;
 };
 
 function createPreviewInteractionState(): PreviewInteractionState {
@@ -223,6 +224,7 @@ function createPreviewInteractionState(): PreviewInteractionState {
     topicOverrides: new Map(),
     profileOverrides: new Map(),
     readNotifications: new Set(),
+    resolvedAttentionCases: new Set(),
   };
 }
 
@@ -1101,7 +1103,12 @@ export function EmbeddedPreview({ scenarioId, identity }: { scenarioId: string; 
         || ((intent === "createHelpQuestion" || intent === "checkSimilarHelpQuestions")
           && form.id === "help-question-create-form")
         || (intent === "save-profile" && form.classList.contains("profile-form"))
-        || (intent === "open" && form.classList.contains("notification-form"));
+        || (intent === "open" && form.classList.contains("notification-form"))
+        || ((intent === "acceptHelpSignal"
+          || intent === "rejectHelpSignal"
+          || intent === "acceptHelpDuplicateAppeal"
+          || intent === "rejectHelpDuplicateAppeal")
+          && form.classList.contains("attention-case-actions"));
       if (allowed) return;
       event.preventDefault();
       event.stopPropagation();
@@ -1200,7 +1207,8 @@ function previewRouter(scenario: Scenario, interactions: PreviewInteractionState
     { path: "/:locale/sign-up", element: previewCredential(scenario.locale, "sign-up") },
     {
       path: "/:locale/attention",
-      element: <PreviewAttentionRoute scenario={scenario} />,
+      element: <PreviewAttentionRoute scenario={scenario} interactions={interactions} />,
+      action: ({ request }) => previewAttentionAction(scenario, interactions, request),
     },
     {
       path: "/:locale/categories/:categoryId",
@@ -1687,18 +1695,8 @@ function previewCategory(locale: PreviewLocale, routeCategoryId: string | undefi
 }
 
 
-function PreviewAttentionRoute({ scenario }: { scenario: Scenario }) {
-  const [params] = useSearchParams();
-  const requestedMode = params.get("mode");
-  const mode = requestedMode === "complaints" || requestedMode === "security" ? requestedMode : "signals";
-  const selected = params.get("group");
-  const group = mode === "signals"
-    ? selected === "needs-review" || selected === "solution-outdated" || selected === "duplicate" || selected === "appeals" || selected === "mixed"
-      ? selected : "needs-details"
-    : mode === "security"
-      ? selected === "group2" || selected === "group3" ? selected : "attachments"
-      : selected === "group2" || selected === "group3" ? selected : "group1";
-  const samples = [
+function previewAttentionSamples() {
+  return [
     {
       type: "signal" as const, id: "signal-142", kind: "needs-details" as const,
       topicId: "help-question", topicTitle: "Why does my Worker lose the session after redirect?",
@@ -1744,21 +1742,90 @@ function PreviewAttentionRoute({ scenario }: { scenario: Scenario }) {
       targetPostId: "best-answer", original: null,
     },
   ];
+}
+
+function previewAttentionState(samples: ReturnType<typeof previewAttentionSamples>) {
+  const signalTopicCounts = new Map<string, number>();
+  for (const item of samples) {
+    if (item.type !== "signal") continue;
+    signalTopicCounts.set(item.topicId, (signalTopicCounts.get(item.topicId) ?? 0) + 1);
+  }
+  const mixedTopicIds = new Set(
+    [...signalTopicCounts.entries()]
+      .filter(([, count]) => count >= 2)
+      .map(([id]) => id),
+  );
+  return {
+    mixedTopicIds,
+    counts: {
+      "needs-details": samples.filter((item) => item.kind === "needs-details").length,
+      "needs-review": samples.filter((item) => item.kind === "needs-review" || item.type === "review-status").length,
+      "solution-outdated": samples.filter((item) => item.kind === "solution-outdated").length,
+      duplicate: samples.filter((item) => item.kind === "duplicate").length,
+      appeals: samples.filter((item) => item.type === "appeal").length,
+      mixed: mixedTopicIds.size,
+    },
+  };
+}
+
+async function previewAttentionAction(
+  scenario: Scenario,
+  interactions: PreviewInteractionState,
+  request: Request,
+) {
+  if (scenario.identity !== "manager") return null;
+  const form = await request.formData();
+  const intent = String(form.get("intent") ?? "");
+  const caseId = String(form.get("caseId") ?? "");
+  const topicId = String(form.get("topicId") ?? "");
+  const item = previewAttentionSamples().find((candidate) =>
+    candidate.id === caseId && candidate.topicId === topicId
+  );
+  if (!item || interactions.resolvedAttentionCases.has(caseId)) return null;
+
+  const validIntent = item.type === "appeal"
+    ? intent === "acceptHelpDuplicateAppeal" || intent === "rejectHelpDuplicateAppeal"
+    : item.type === "signal"
+      ? intent === "acceptHelpSignal" || intent === "rejectHelpSignal"
+      : false;
+  if (!validIntent) return null;
+
+  interactions.resolvedAttentionCases.add(caseId);
+  const url = new URL(request.url);
+  return redirect(url.pathname + url.search);
+}
+
+function PreviewAttentionRoute({ scenario, interactions }: {
+  scenario: Scenario;
+  interactions: PreviewInteractionState;
+}) {
+  const [params] = useSearchParams();
+  const requestedMode = params.get("mode");
+  const mode = requestedMode === "complaints" || requestedMode === "security" ? requestedMode : "signals";
+  const selected = params.get("group");
+  const group = mode === "signals"
+    ? selected === "needs-review" || selected === "solution-outdated" || selected === "duplicate" || selected === "appeals" || selected === "mixed"
+      ? selected : "needs-details"
+    : mode === "security"
+      ? selected === "group2" || selected === "group3" ? selected : "attachments"
+      : selected === "group2" || selected === "group3" ? selected : "group1";
+
+  const samples = scenario.variant === "attention-empty"
+    ? []
+    : previewAttentionSamples().filter((item) => !interactions.resolvedAttentionCases.has(item.id));
+  const { mixedTopicIds, counts } = previewAttentionState(samples);
   const selectedCases = group === "mixed"
-    ? samples.filter((item) => item.topicId === "help-question" && item.type === "signal")
+    ? samples.filter((item) => item.type === "signal" && mixedTopicIds.has(item.topicId))
     : samples.filter((item) => item.kind === group ||
       (group === "appeals" && item.type === "appeal") ||
       (group === "needs-review" && item.type === "review-status"));
   return <AttentionCenterView
     locale={scenario.locale} mode={mode} group={group}
     queue={mode === "signals"
-      ? { cases: scenario.variant === "attention-empty" ? [] : selectedCases, hasMore: false, page: 0 }
+      ? { cases: selectedCases, hasMore: false, page: 0 }
       : null}
-    counts={mode === "signals" ? {
-      "needs-details": 1, "needs-review": 2, "solution-outdated": 1,
-      duplicate: 1, appeals: 1, mixed: 1,
-    } : null}
-    isPreview referenceTime={previewReferenceTime}
+    counts={mode === "signals" ? counts : null}
+    referenceTime={previewReferenceTime}
   />;
 }
 
