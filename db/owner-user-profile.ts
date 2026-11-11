@@ -46,7 +46,7 @@ type IdentityRow = {
 type CountRow = { active: string; expired: string };
 type SessionRow = {
   id: string; created_at: string; expires_at: string;
-  user_agent: string | null; ip_address: string | null;
+  user_agent: string | null; ip_address: string | null; active: boolean;
 };
 const PAGE_SIZE = 25;
 const EXACT_TIME = /^([1-9][0-9]{3})-(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01])T([01][0-9]|2[0-3]):([0-5][0-9]):([0-5][0-9])\.([0-9]{6})Z$/;
@@ -144,16 +144,17 @@ export class PostgresOwnerUserProfile implements OwnerUserProfileReader {
       if (!counts || !/^\d+$/.test(counts.active) || !/^\d+$/.test(counts.expired)) {
         throw new Error("Owner profile session counters invariant failed");
       }
-      const argumentsList: string[] = [query.targetId];
+      const argumentsList: (string | Date)[] = [query.targetId, now];
       const beforePredicate = cursor
-        ? " and (s.created_at,s.id)<(($2::timestamptz at time zone 'UTC'),$3::text)"
+        ? " and (s.created_at,s.id)<(($3::timestamptz at time zone 'UTC'),$4::text)"
         : "";
       if (cursor) argumentsList.push(cursor.at, cursor.id);
       const rows = (await client.query<SessionRow>(
         "select s.id," +
         " to_char(s.created_at,'YYYY-MM-DD\"T\"HH24:MI:SS.US\"Z\"') created_at," +
         " to_char(s.expires_at,'YYYY-MM-DD\"T\"HH24:MI:SS.US\"Z\"') expires_at," +
-        " s.user_agent,s.ip_address from session s where s.user_id=$1" + beforePredicate +
+        " s.user_agent,s.ip_address,(s.expires_at > ($2::timestamptz at time zone 'UTC')) active" +
+        " from session s where s.user_id=$1" + beforePredicate +
         " order by s.created_at desc,s.id desc limit 26",
         argumentsList,
       )).rows;
@@ -165,7 +166,7 @@ export class PostgresOwnerUserProfile implements OwnerUserProfileReader {
         }
         return {
           id: row.id, createdAt: row.created_at, expiresAt: row.expires_at,
-          status: row.expires_at > observedAt ? "active" as const : "expired-retained" as const,
+          status: row.active ? "active" as const : "expired-retained" as const,
           current: query.viewerUserId === identity.id && row.id === query.currentSessionId,
           deviceLabel: safeDeviceLabel(row.user_agent), recordedIp: normalizeAttemptIp(row.ip_address),
         };
