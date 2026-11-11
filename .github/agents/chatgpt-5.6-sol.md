@@ -1869,3 +1869,12 @@ Repository-wide stale-status check found ROADMAP, ADMIN_PANEL and UI_UX_PASS sti
 - The proposed index-only migration is justified by SA-03 target-scoped chronological reads on current sources; it is not future-only foundation. Current next number is 0064, subject to recheck from main at implementation start.
 - No implementation assigned or performed in this review.
 - Next bounded step is Lira implementation assignment in a separate PR; Lev/Mark unassigned.
+
+
+## 2026-11-11 — SA-03 implementation-granularity correction
+
+- My prior route toward assigning Lira the whole accepted SA-03 implementation was too broad.
+- Superseded that handoff before implementation assignment.
+- SA-03 is now split into SA03-A/B/C/D/E, one bounded subtask at a time with Lira STOP after each.
+- Technical plan PASS remains valid; only authoring granularity changed.
+- No implementation is currently assigned. Next possible task is SA03-A only.
