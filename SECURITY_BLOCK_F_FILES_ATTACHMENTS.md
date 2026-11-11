@@ -9,9 +9,10 @@
 5. **F3 — Type, content and malicious payload handling завершён: 1 current-scope finding — `ATTACH-TEXT-TAIL-01 Low/P3`.**
 6. **F4 — Publication/edit binding, replay and races завершён: PASS, 0 additional current-scope findings.**
 7. **F5 — Cleanup and physical deletion safety завершён: PASS, 0 additional current-scope findings.**
-8. Следующий bounded slice — **F6 Attachment security evidence / Attention privacy**.
-9. Мира — auditor/coordinator. Remediation, technical planner и implementer не назначены.
-10. Stage 6 external activation остаётся paused.
+8. **F6 — Attachment security evidence / Attention privacy завершён: PASS, 0 additional current-scope findings.**
+9. Следующий bounded slice — **F7 Storage/runtime failure boundary**.
+10. Мира — auditor/coordinator. Remediation, technical planner и implementer не назначены.
+11. Stage 6 external activation остаётся paused.
 
 ## F1 — результат
 
@@ -92,6 +93,22 @@
 12. Cleanup object key не приходит из client state: ordinary asset key читается из authoritative DB row, upload cleanup — из fenced journal, reservation sweep принимает только `private/fenced-v1/<uuid>` keys. Mounted Remove сам по себе не является delete authority.
 13. Existing PostgreSQL tests/read paths покрывают stale/fresh operation cutoff, terminal generation, shared refs, complaint evidence retention, claim-vs-new-ref ordering, lost delete ACK, overlapping/expired claims, delayed payload, ownership-read failure и stale sweep lease. Tests были прочитаны как evidence; в этом audit-срезе они не запускались.
 14. Реальное background scheduling и live external R2 delete/list semantics остаются paused Stage 6. **Информация не проверена** для deployed cleanup execution/acceptance; отсутствие live scheduler само по себе не current F5 defect по утверждённой границе.
+
+## F6 — результат
+
+1. **PASS: 0 additional current-scope findings** на `main` `538084fd472c65459ad55ab30a0f96fbfdd68e56`.
+2. Подозрительные rejection-paths (`invalid-name`, forbidden extension/MIME, executable signature, signature/MIME mismatch, binary content, invalid structure) создают durable security event; ordinary empty/too-large/insufficient-evidence rejection не маскируется под security signal.
+3. Evidence identity выводится server-side как domain-separated SHA-256 от actor + logical upload ID + authoritative context/operation + filename/MIME/size + detected type/reason. Exact retry и concurrent identical request сходятся в один `upload_id`; изменившийся owner/context/operation/evidence создаёт отдельное событие.
+4. Event хранится независимо от `forum_attachments`, поэтому rejected/cleaned object не нужен для сохранения evidence. В таблице нет raw bytes, object key, response MIME, cookie/session/token или request body; сохраняются только uploader ID, bounded context/operation, filename, declared MIME/size, detected type, factual reason и timestamps.
+5. Attention → Security → Attachments требует authenticated session и fresh effective `forum.attachmentSecurity.read` **до** `readSecurityAttachmentEvents()`. Help/Complaint permissions это право не заменяют. Denial — private/no-store 403; storage unavailable — controlled 503.
+6. Security queue bounded: 50 rows/page, page 0..10000, newest-first. Web runtime relation capability для `forum_attachment_security_events` — только `INSERT`/`SELECT`; штатной update/delete moderation action нет, поэтому очередь read-only.
+7. UI не открывает подозрительный object и не строит file/storage link. Filename/context проходят control/Cf escaping; остальные metadata выводятся React text nodes/`code`, а не raw HTML. Rejected content и private object key в loader/UI отсутствуют.
+8. `uploadId` в security event — стабильная server-derived evidence identity, а не storage authority. Raw client attachment UUID не сохраняется как trusted identifier; uploader/context/operation/filename/reason остаются для корреляции. Это соответствует текущей durable-event модели и не создаёт подтверждённого security impact.
+9. SA-02 `security.attachments` current monitor читает только fixed aggregates `total/evidence24h/lastEventAt`. Exact-Owner History/global Event log проецирует сокращённый набор `uploadId`, uploader ID, detected type, reason и declared size; filename, declared MIME, context, operation, raw bytes и object key в Owner projection не входят.
+10. Super-admin current/history/event routes требуют exact server-bound Owner до приватного чтения/разбора scoped query и используют private/no-store. Обычный `forum.attachmentSecurity.read` не открывает Owner SA-02 history.
+11. При полном отказе evidence storage до COMMIT suspicious upload fail-closed возвращает `503` и не создаёт attachment/publication. Это availability failure, а не доказанный current confidentiality/integrity bypass; второй независимый durable sink на случай полного DB outage текущим контрактом не требуется. Lost ACK после фактического COMMIT сходится на том же derived ID при retry.
+12. `ATTACH-TEXT-TAIL-01` не дублируется в F6: его root cause — F3 ошибочно accepted `text`, поэтому suspicious-event path вообще не активируется. Исправление classification должно закрывать и соответствующий evidence gap.
+13. Targeted application/PostgreSQL/SA-02 tests были прочитаны как evidence: permission-before-read, private cache headers, event persistence without asset row, concurrent dedupe, lost-ACK convergence и reduced Owner projection. В этом audit-срезе тесты не запускались.
 
 ## Цель
 
