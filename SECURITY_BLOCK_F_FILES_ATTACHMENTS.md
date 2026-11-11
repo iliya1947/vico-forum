@@ -4,9 +4,21 @@
 
 1. Audit scope подготовлен 2026-11-11 против current `main` `538084fd472c65459ad55ab30a0f96fbfdd68e56`.
 2. Этот `main` отличается от предыдущего security target `4248fed23925e4a23e48485d419ceaf0ce337def` только merged factual SA-02 documentation; attachment runtime/schema между этими targets не менялись.
-3. Фактический Block F audit ещё не начат. Findings в этом файле пока отсутствуют.
-4. Мира — auditor/coordinator. Remediation, technical planner и implementer не назначены.
-5. Stage 6 external activation остаётся paused.
+3. **F1 — Private object / download access / IDOR завершён: PASS, 0 confirmed current-scope findings.**
+4. Следующий bounded slice — **F2 Upload admission and request bounds**.
+5. Мира — auditor/coordinator. Remediation, technical planner и implementer не назначены.
+6. Stage 6 external activation остаётся paused.
+
+## F1 — результат
+
+1. **PASS: 0 confirmed current-scope findings** на `main` `538084fd472c65459ad55ab30a0f96fbfdd68e56`.
+2. Основной `/api/attachments/file/:attachmentId` не принимает storage key как authority: public read требует точную persisted связь `post ↔ attachment`, private read — authenticated session user + точные `context + operation + attachment`.
+3. Private repository lookup связывает ref с `ownerId`; foreign authenticated user с известными `attachmentId/context/operation` не получает metadata. Cancel/Publish terminally retire operation; completed generation отклоняется как gone.
+4. Temporary/private и published refs разделены. Удалённая связь конкретного post больше не разрешает выдачу через этот post; shared asset остаётся доступен только через другую действующую published связь. Abandoned temporary refs становятся terminal через bounded 24-hour cleanup; реальное расписание cleanup остаётся Stage 6 по текущему контракту.
+5. Object key извлекается только после server-side membership lookup и не возвращается клиенту. Bucket read не начинается при guest/foreign/revoked/not-found path.
+6. Success responses используют `private, no-store`, `nosniff` и sandbox; inline разрешён только server-verified raster, text preview — только server-verified bounded text, остальные типы выдаются download как `application/octet-stream` с безопасным disposition.
+7. Retained Complaint evidence имеет отдельную current-permission + Case/asset membership boundary; private object key остаётся server-side. Это не расширяет public attachment access.
+8. Live external R2 delivery, реальное cleanup scheduling и AV/provider acceptance относятся к paused Stage 6 и не считаются F1 current-scope defect без отдельной доказанной цепочки.
 
 ## Цель
 
