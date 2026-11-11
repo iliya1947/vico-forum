@@ -11,6 +11,7 @@ import {
   AccountStateUnexpectedError,
   activeAccountPredicate,
   assertActiveAccount,
+  assertActiveAccountForMutation,
   readAccountState,
 } from "../../db/account-state";
 import { user } from "../../db/schema";
@@ -161,5 +162,131 @@ describe("SA04-A2 server-only account-state read foundation", () => {
       }] }),
     } as unknown as Pick<Client, "query">;
     await expect(readAccountState(fake, "actor")).rejects.toBeInstanceOf(AccountStateUnexpectedError);
+  });
+}
+  it("holds the same user row through caller COMMIT, without mutating account state", async () => {
+    await addUser("guarded-actor");
+    const competing = new Client({ connectionString: databaseUrl, options: `-c search_path=${schema}` });
+    await competing.connect();
+    let transactionOpen = false;
+    try {
+      await client.query("begin");
+      transactionOpen = true;
+      await assertActiveAccountForMutation(client, "guarded-actor");
+      expect(await readAccountState(client, "guarded-actor"))
+        .toEqual({ status: "active", userId: "guarded-actor" });
+      await competing.query("begin");
+      await competing.query("set local lock_timeout = '180ms'");
+      await expect(competing.query(`update "user"
+        set deactivated_at='2024-02-29T12:34:56Z',
+            deactivated_by_user_id='bound-owner',
+            retain_at_least_until='2025-02-28T12:34:56Z'
+        where id=$1`, ["guarded-actor"])).rejects.toMatchObject({ code: "55P03" });
+      await competing.query("rollback");
+      expect(await readAccountState(client, "guarded-actor"))
+        .toEqual({ status: "active", userId: "guarded-actor" });
+      await client.query("commit");
+      transactionOpen = false;
+      await competing.query(`update "user"
+        set deactivated_at='2024-02-29T12:34:56Z',
+            deactivated_by_user_id='bound-owner',
+            retain_at_least_until='2025-02-28T12:34:56Z'
+        where id=$1`, ["guarded-actor"]);
+      expect((await readAccountState(client, "guarded-actor")).status).toBe("deactivated");
+    } finally {
+      if (transactionOpen) await client.query("rollback");
+      await competing.end();
+    }
+  });
+
+  it("does not admit a stale active account when competing deactivation obtained the row first", async () => {
+    await addUser("guarded-actor");
+    const writer = new Client({ connectionString: databaseUrl, options: `-c search_path=${schema}` });
+    await writer.connect();
+    let writerOpen = false;
+    let guardOpen = false;
+    try {
+      await writer.query("begin");
+      writerOpen = true;
+      await writer.query(`update "user"
+        set deactivated_at='2024-02-29T12:34:56Z',
+            deactivated_by_user_id='bound-owner',
+            retain_at_least_until='2025-02-28T12:34:56Z'
+        where id=$1`, ["guarded-actor"]);
+      await client.query("begin");
+      guardOpen = true;
+      await client.query("set local lock_timeout = '180ms'");
+      await expect(assertActiveAccountForMutation(client, "guarded-actor"))
+        .rejects.toBeInstanceOf(AccountStateUnavailableError);
+      await client.query("rollback");
+      guardOpen = false;
+      await writer.query("commit");
+      writerOpen = false;
+      await client.query("begin");
+      guardOpen = true;
+      await expect(assertActiveAccountForMutation(client, "guarded-actor"))
+        .rejects.toBeInstanceOf(AccountInactiveError);
+      await client.query("rollback");
+      guardOpen = false;
+    } finally {
+      if (guardOpen) await client.query("rollback");
+      if (writerOpen) await writer.query("rollback");
+      await writer.end();
+    }
+  });
+
+  it("reuses existing caller-owned user locks and distinguishes missing/inactive state", async () => {
+    await addUser("guarded-actor");
+    await addUser("other-actor");
+    await client.query("begin");
+    try {
+      await client.query('select id from "user" where id=$1 for update', ["guarded-actor"]);
+      await expect(assertActiveAccountForMutation(client, "guarded-actor")).resolves.toBeUndefined();
+      await expect(assertActiveAccountForMutation(client, "guarded-actor")).resolves.toBeUndefined();
+      await expect(assertActiveAccountForMutation(client, "other-actor")).resolves.toBeUndefined();
+      await expect(assertActiveAccountForMutation(client, "absent")).rejects.toBeInstanceOf(AccountMissingError);
+    } finally {
+      await client.query("rollback");
+    }
+    await markDeactivated("guarded-actor");
+    await client.query("begin");
+    try {
+      await expect(assertActiveAccountForMutation(client, "guarded-actor"))
+        .rejects.toBeInstanceOf(AccountInactiveError);
+    } finally {
+      await client.query("rollback");
+    }
+  });
+
+  it("allows a concurrent foreign-key KEY SHARE while guarding the actor", async () => {
+    await addUser("guarded-actor");
+    const dependent = new Client({ connectionString: databaseUrl, options: `-c search_path=${schema}` });
+    await dependent.connect();
+    let transactionOpen = false;
+    try {
+      await client.query("begin");
+      transactionOpen = true;
+      await assertActiveAccountForMutation(client, "guarded-actor");
+      await dependent.query("begin");
+      try {
+        await dependent.query("set local lock_timeout = '180ms'");
+        await dependent.query(
+          "insert into account (id,account_id,provider_id,user_id,updated_at)" +
+          " values ('fk-check','fk-check','credential',$1,now())",
+          ["guarded-actor"],
+        );
+        await dependent.query("commit");
+      } catch (error) {
+        await dependent.query("rollback");
+        throw error;
+      }
+      expect((await client.query('select count(*)::int as count from account where user_id=$1',
+        ["guarded-actor"])).rows[0].count).toBe(1);
+      expect(await readAccountState(client, "guarded-actor"))
+        .toEqual({ status: "active", userId: "guarded-actor" });
+    } finally {
+      if (transactionOpen) await client.query("rollback");
+      await dependent.end();
+    }
   });
 });
