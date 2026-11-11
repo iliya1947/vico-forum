@@ -4061,3 +4061,15 @@ Mira reviewed complete Draft PR #327 A1 scope on exact head `cebb91504f770fa6cd4
 - Do not reopen or extend #327 for later SA-04 checkpoints; later implementation uses a new bounded PR.
 - No SA04-A2+, SA-05+, Stage6/production or #315 work is started by this synchronization.
 
+## 2026-11-12 — SA04 checkpoint A remainder decomposed; A2 assigned
+
+A1 is merged in main at `593a03964b8407b249f7c9f5eb117ddb8b07736d`. To keep Lira's authoring small without wasting Lev on crumbs, the remaining compound checkpoint A is operationally decomposed:
+
+1. **SA04-A2 — shared account-state read/predicate foundation.**
+2. **SA04-A3 — transaction/row-lock mutation guard primitives.**
+3. **SA04-A4 — neutral public-identity contract/helpers.**
+
+Only A2 is active now. Lira starts a new cumulative Draft implementation PR from current main and implements one independently completable result: a shared server-only typed account-state read/predicate layer over the merged A1 fields, with focused evidence for active/deactivated/missing and the accepted classified storage-failure boundary. A2 does not add the mutation lock guard, auth/session enforcement, domain writer gates, public identity projection, deactivation action/control, SA05+, Stage6/production or #315 remediation.
+
+Lira must perform author inspection, publish the stable A2 head/evidence and STOP. A3/A4 are not assigned. Lev remains unassigned until there is a meaningful cumulative stable package to review.
+
