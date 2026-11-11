@@ -176,4 +176,17 @@ Domain-specific measure behavior здесь не переаудируется; �
 3. Domain-specific Admin/moderation finding не дублируется здесь, если общая authz boundary сама корректна.
 4. Findings только фиксируются в #315; remediation/implementation не начинается без отдельной команды владельца.
 
+## Итог аудита Block C — Authorization & privilege escalation
+
+1. C1 Owner binding — PASS.
+2. C3 authorization-management direct writes — PASS.
+3. C2 permission resolution / precedence / freshness — PASS.
+4. C7 concurrency / serialization — PASS.
+5. C4 elevated authority propagation — PASS.
+6. C5 authorization-state read privacy / IDOR — PASS.
+7. C6 resource-condition / service bypass — PASS.
+8. C8 failure semantics — **1 finding: `AUTHZ-FAIL-01 Low/P3`**: rollback failure может заменить и затем misclassify исходную authorization/mutation/programming error как availability/503; privilege escalation или protected write success не доказаны.
+9. C9 permission catalog / persistence integrity — PASS.
+10. Block C содержит **1 current-scope finding total**. Remediation не назначена.
+
 ---

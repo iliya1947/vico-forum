@@ -171,4 +171,21 @@
 4. Domain mutations сохраняют permission, lifecycle, replay/CAS/concurrency и atomic-History contracts.
 5. Findings имеют current-stage impact/classification; remediation остаётся вне audit stage без отдельного решения владельца.
 
+## Текущий итог аудита Block D — Ordinary Admin & moderation
+
+1. D1 Global Admin admission / cross-surface isolation — PASS.
+2. D7 Attention mode/group isolation — PASS.
+3. D3 shared Quick actions / moderation mutations — PASS.
+4. D6 administrative measures / AP-10 — PASS.
+5. D9 Complaints privacy — **`COMPLAINT-PRIV-01 Low/P3`**: Complaint Case/Appeal review сериализует private Help `duplicateRelationshipId` без `forum.helpDuplicate.manage`; mutation authority не расширяется.
+6. D10 Complaints mutation/replay/concurrency/notifications — PASS.
+7. D8 Help Signals — **`HELP-SIGNAL-PRIV-01 Low/P3`**: public topic Signal-review action читает private Signal по arbitrary ID до Help-review permission, создавая existence/topic-membership oracle; private body и mutation authority не раскрываются.
+8. D11 Security attachment moderation — PASS.
+9. D4 Admin History — **`HISTORY-PRIV-01 Low/P3`**: AP-10 replay `operationId` и SHA-256 `fingerprint` попадают в browser-visible History/Overview loader data, хотя UI считает их internal-only; authority не расширяется.
+10. D5 Users read / targeted authorization composition — PASS.
+11. D2 Admin Forum browsing / privacy / IDOR — PASS.
+12. D12 internal code-path review не выявил дополнительного current-scope defect, **но финальный D12 closeout не считается подтверждённым**: предыдущая запись опиралась на внешнее утверждение о React Router, которое фактически не было проверено по официальной документации.
+13. До повторной внешней проверки **Block D не считается окончательно закрытым**. Три подтверждённых findings D9/D8/D4 сохраняются независимо от D12.
+14. Remediation/implementation по Block D не назначены.
+
 ---

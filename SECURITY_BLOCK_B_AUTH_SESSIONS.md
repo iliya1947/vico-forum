@@ -203,4 +203,63 @@
 4. После corrections соответствующие attack cases повторяются.
 5. Production Google/OAuth-specific acceptance, которое невозможно доказать без real provider, остаётся Stage 6 и маркируется как непроверенное external boundary.
 
+## Итог аудита Block B — Authentication & sessions
+
+1. Аудит B1–B11 завершён против technical target `e279cb6c032a489a9044ca1191407df887c364b4` / Better Auth `1.7.7`.
+2. Подтверждены **8 current-scope findings**:
+
+### AUTH-LINK-01 — Moderate/P2
+
+1. Explicit Google linking начинается из текущей authenticated session, но Better Auth 1.7.7 сохраняет в OAuth link-state user identity без durable recheck инициировавшей session на callback.
+2. Поэтому callback может завершить link после revoke/end исходной session.
+3. Arbitrary-account takeover не доказан: provider email должен совпадать, а provider identity другого пользователя отвергается.
+4. Upstream regression/fix начинается с 1.7.16.
+
+### AUTH-SESSION-01 — Moderate/P2
+
+1. Better Auth 1.7.7 sign-out ловит ошибку `deleteSession`, но всё равно очищает cookie и возвращает success.
+2. При selective/transient delete failure persisted session может остаться валидной после сообщённого logout.
+3. Полный auth-storage outage до routing уже fail-closed и не является этим defect.
+
+### AUTH-SESSION-02 — Low/P3
+
+1. Direct `/api/auth/list-sessions` возвращает raw server-side `session.token`, обходя ID-only projection Vico Settings.
+2. В текущем Vico этот raw token не является самостоятельным auth credential: используется подписанная cookie, Bearer plugin не установлен.
+3. Impact ограничен раскрытием internal session handle; takeover/persistence не доказаны.
+
+### AUTH-SESSION-03 — Moderate/P2
+
+1. Vico Settings требует fresh session для session-management операций.
+2. Direct Better Auth revoke endpoints используют weaker sensitive-session middleware; `revoke-other-sessions` не требует Vico fresh-session boundary.
+3. Поэтому still-valid, но stale session может напрямую отозвать другие собственные sessions.
+
+### AUTH-ENUM-01 — Moderate/P2
+
+1. При `requireEmailVerification:false` и default auto-sign-in Better Auth не включает generic duplicate-signup response.
+2. Existing email и new email дают различимый direct sign-up outcome, включая при закрытой новой регистрации.
+3. Email sign-in enumeration отдельно не подтверждён.
+
+### AUTH-OAUTH-01 — Low/P3
+
+1. OAuth callback error path добавляет provider-supplied `error_description` в error callback URL.
+2. Vico не рендерит значение, но оно остаётся в address bar/history и может участвовать в same-origin referrer propagation.
+3. Token/credential disclosure через этот path не доказан.
+
+### AUTH-REG-01 — Moderate/P2
+
+1. Registration admission читает singleton policy обычным `SELECT` перед create-user transaction и не блокирует policy row.
+2. Owner close path использует `SELECT ... FOR UPDATE`; under READ COMMITTED уже допущенная in-flight registration может commit после успешного close.
+3. Request, начавший admission только после committed close, корректно отклоняется.
+
+### AUTH-CACHE-01 — Low/P3
+
+1. Authenticated GET `/api/auth/list-sessions` и `/api/auth/list-accounts` не задают явный `private, no-store`; Vico passthrough сохраняет эти headers.
+2. Endpoints возвращают private account/session metadata.
+3. Cross-user cache replay не доказан; finding остаётся privacy/cache hardening.
+
+3. B5 CSRF/Origin, B6 password change и B8 freshness не дали дополнительных current-scope findings.
+4. На 2026-11-10 correction target для пары `better-auth` + `@better-auth/drizzle-adapter` был зафиксирован как `1.7.19`; перед implementation package версия и official security guidance проверяются заново.
+5. Live Google/provider/deployed compatibility не проверялась из-за paused Stage 6. **Информация не проверена** для live-provider acceptance.
+6. Remediation/implementation по Block B не назначены.
+
 ---
