@@ -1524,3 +1524,14 @@ Exact head `e23d33cd6571e08c231b989c1dd8952a505a9345`: AP10 browser #43035916310
 - **All exact-head GitHub Actions green:** [SA03 Chromium #43054008946](https://github.com/iliya1947/vico-forum/actions/runs/43054008946) SUCCESS **22/22 emitted acceptance scenarios** (including all 3 locales and no external requests/page errors/overflow); [CI #43054008996](https://github.com/iliya1947/vico-forum/actions/runs/43054008996) SUCCESS checks/database, **2231/2231 app**, **688/688 native PG17**, typecheck/lint/build, schema manifest 69 tables; [SA01 Chromium #43054008929](https://github.com/iliya1947/vico-forum/actions/runs/43054008929) SUCCESS; [AP10 Chromium #43054009241](https://github.com/iliya1947/vico-forum/actions/runs/43054009241) SUCCESS all four jobs.
 - **Coordination discrepancy detected when preparing handoff:** service workflow at service branch head `5ef53ca6879274fb49460c0af895384389f95668` now describes superseding SA03-A/B/C/D/E decomposition, says no implementation assignment and next A only. This correction was committed after the earlier D1–D3 author evidence and conflicts with the factually completed PR #324 (previously executed under explicit developer continuations). I do not silently override Mira's workflow or assert a coordinator review/PASS. Author checkpoint and exact-head evidence go to service PR #251 for Mira to reconcile execution mapping/authorization, then to decide whole-PR review. No PR merge, independent technical review, permanent docs/PROJECT_STATE or production attempted.
 - Lira author work for D1–D4, including SA03-specific connected D4 (functionally SA03-E), **complete on stable head; STOP**. Lev and Mark remain unassigned; further role/assignment decisions belong to coordinator/developer.
+
+## Permanent execution guard — oversized handoffs
+
+Before starting any new implementation assignment from #251:
+
+- verify that the assignment is one bounded subtask, not a full multi-step technical plan;
+- if the assignment contains multiple independently completable results, do not silently execute them all as one task;
+- complete only the explicitly assigned bounded subtask and STOP;
+- require a new developer continuation/assignment before proceeding to the next independent subtask.
+
+This guard complements Mira's handoff-granularity gate and is intended to catch an oversized assignment even if the coordinator misses it.
