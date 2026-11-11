@@ -54,6 +54,10 @@ beforeAll(async () => {
     .replaceAll('"public".', `"${schemaName}".`)
     .replaceAll("--> statement-breakpoint", "");
   await client.query(authMigration);
+  // Verify the SA-04 columns with the real pinned Better Auth/Drizzle runtime.
+  const stateMigration = (await readFile("drizzle/0065_sa04_account_state_foundation.sql", "utf8"))
+    .replaceAll("--> statement-breakpoint", "");
+  await client.query(stateMigration);
   await installRegistrationPolicyFixture(client);
 });
 
@@ -64,6 +68,75 @@ afterAll(async () => {
 });
 
 describe("Better Auth PostgreSQL runtime", () => {
+
+  it("SA-04 A1 keeps server-owned state out of real auth signup input and serialized outputs", async () => {
+    const runtime = createHyperdriveAuthRuntime(databaseUrl, env, () => authClient());
+    const url = `${env.BETTER_AUTH_URL}/api/auth/sign-up/email`;
+    const headers = { "content-type": "application/json", Origin: env.BETTER_AUTH_URL };
+    const signup = await runtime.handle(new Request(url, {
+      method: "POST", headers,
+      body: JSON.stringify({
+        name: "SA04 public auth", email: "sa04-auth-public@example.test",
+        password: "integration-password-123",
+      }),
+    }));
+    expect(signup.status).toBe(200);
+    const account = await signup.json() as { user: { id: string } };
+    const assertPublic = (payload: unknown) => {
+      const serialized = JSON.stringify(payload);
+      for (const name of [
+        "deactivatedAt", "deactivatedByUserId", "retainAtLeastUntil",
+        "deactivated_at", "deactivated_by_user_id", "retain_at_least_until",
+      ]) expect(serialized).not.toContain(name);
+    };
+    assertPublic(account);
+    const cookie = signup.headers.getSetCookie()
+      .find((entry) => entry.includes("session_token="))?.split(";", 1)[0];
+    if (!cookie) throw new Error("No Better Auth session cookie in SA04 test");
+
+    const session = await runtime.handle(new Request(`${env.BETTER_AUTH_URL}/api/auth/get-session`, {
+      headers: { Cookie: cookie },
+    }));
+    expect(session.status).toBe(200);
+    assertPublic(await session.json());
+
+    const state = await client.query<{
+      deactivated_at: Date | null;
+      deactivated_by_user_id: string | null;
+      retain_at_least_until: Date | null;
+    }>('select deactivated_at, deactivated_by_user_id, retain_at_least_until from "user" where id = $1', [account.user.id]);
+    expect(state.rows[0]).toEqual({
+      deactivated_at: null, deactivated_by_user_id: null, retain_at_least_until: null,
+    });
+
+    const forged = await runtime.handle(new Request(url, {
+      method: "POST", headers,
+      body: JSON.stringify({
+        name: "SA04 forged state", email: "sa04-auth-forged@example.test",
+        password: "integration-password-123",
+        deactivatedAt: "2024-01-01T00:00:00Z",
+        deactivatedByUserId: "spoofed-owner",
+        retainAtLeastUntil: "2025-01-01T00:00:00Z",
+        deactivated_at: "2024-01-01T00:00:00Z",
+        deactivated_by_user_id: "spoofed-owner",
+        retain_at_least_until: "2025-01-01T00:00:00Z",
+      }),
+    }));
+    // Unknown fields may be stripped or rejected by the installed Better Auth validator.
+    expect([200, 400]).toContain(forged.status);
+    if (forged.status === 200) assertPublic(await forged.json());
+    const forgedRows = await client.query<{
+      deactivated_at: Date | null;
+      deactivated_by_user_id: string | null;
+      retain_at_least_until: Date | null;
+    }>('select deactivated_at, deactivated_by_user_id, retain_at_least_until from "user" where email = $1',
+      ["sa04-auth-forged@example.test"]);
+    if (forged.status !== 200) expect(forgedRows.rows).toEqual([]);
+    else expect(forgedRows.rows[0]).toEqual({
+      deactivated_at: null, deactivated_by_user_id: null, retain_at_least_until: null,
+    });
+  });
+
   it("keeps a new login after pre-routing cleanup of an expired session cookie", async () => {
     const runtime = createHyperdriveAuthRuntime(databaseUrl, env, () => authClient());
     const headers = { "content-type": "application/json", Origin: env.BETTER_AUTH_URL, "cf-connecting-ip": "203.0.113.40" };

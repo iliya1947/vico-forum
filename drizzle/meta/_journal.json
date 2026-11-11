@@ -456,6 +456,13 @@
       "when": 1794403200000,
       "tag": "0064_sa03_profile_history_indexes",
       "breakpoints": true
+    },
+    {
+      "idx": 65,
+      "version": "7",
+      "when": 1794429000000,
+      "tag": "0065_sa04_account_state_foundation",
+      "breakpoints": true
     }
   ]
 }

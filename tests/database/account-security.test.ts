@@ -73,6 +73,9 @@ beforeAll(async () => {
     .replaceAll('"public".', `"${schema}".`)
     .replaceAll("--> statement-breakpoint", "");
   await client.query(migration);
+  const stateMigration = (await readFile("drizzle/0065_sa04_account_state_foundation.sql", "utf8"))
+    .replaceAll("--> statement-breakpoint", "");
+  await client.query(stateMigration);
   await installRegistrationPolicyFixture(client);
 });
 beforeEach(async () => {

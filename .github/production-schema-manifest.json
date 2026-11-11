@@ -1,7 +1,7 @@
 {
   "version": 1,
   "schema": "public",
-  "targetMigration": "0064_sa03_profile_history_indexes",
+  "targetMigration": "0065_sa04_account_state_foundation",
   "tables": {
     "account": {
       "columns": [
@@ -8083,6 +8083,24 @@
           "type": "text",
           "nullable": true,
           "defaultSha256": null
+        },
+        {
+          "name": "deactivated_at",
+          "type": "timestamp with time zone",
+          "nullable": true,
+          "defaultSha256": null
+        },
+        {
+          "name": "deactivated_by_user_id",
+          "type": "text",
+          "nullable": true,
+          "defaultSha256": null
+        },
+        {
+          "name": "retain_at_least_until",
+          "type": "timestamp with time zone",
+          "nullable": true,
+          "defaultSha256": null
         }
       ],
       "primaryKeys": [
@@ -8103,7 +8121,17 @@
         }
       ],
       "foreignKeys": [],
-      "checks": [],
+      "checks": [
+        {
+          "name": "user_deactivation_state_check",
+          "columns": [
+            "deactivated_at",
+            "deactivated_by_user_id",
+            "retain_at_least_until"
+          ],
+          "definitionSha256": "a4f4c052ca3f6bcbeab2d64069c0cf611c0de75aeea74a8d27ec45cd097ce891"
+        }
+      ],
       "indexes": []
     },
     "user_measure_appeals": {
