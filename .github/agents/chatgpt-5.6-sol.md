@@ -4,7 +4,7 @@
 
 1. Служебный PR: **#315**.
 2. Моя текущая работа: audit/coordination only; remediation и implementation не назначены.
-3. Текущий этап: **Block F F1–F4 completed; F1/F2/F4 PASS, F3 confirmed `ATTACH-TEXT-TAIL-01 Low/P3`; awaiting F5 Cleanup and physical deletion safety**.
+3. Текущий этап: **Block F F1–F5 completed; F1/F2/F4/F5 PASS, F3 confirmed `ATTACH-TEXT-TAIL-01 Low/P3`; awaiting F6 Attachment security evidence / Attention privacy**.
 4. Technical audit target B–D: `e279cb6c032a489a9044ca1191407df887c364b4`.
 5. Current `main` — `538084fd472c65459ad55ab30a0f96fbfdd68e56`. SA-02 docs closeout merged; compare с `4248fed…` показывает только 8 Markdown changes, attachment runtime/schema unchanged.
 6. Лира, Марк и Лёва по #315 сейчас не назначены.
@@ -40,7 +40,9 @@
 14. Block F F4: **PASS, 0 additional current-scope findings**. Publication context выводится server-side; selected refs проверяются по owner/context/operation + `type-checked` + active cleanup state. Topic/reply/edit refs, revision, generation retirement и receipt атомарны; exact replay idempotent, conflicting replay отклоняется.
 15. F4 races PASS: publish/cancel/late-upload сериализуются owner+context advisory lock; stale-ref cleanup использует тот же lock; physical cleanup claim сериализуется с ref insertion через active-ref trigger `FOR SHARE` vs cleanup `FOR UPDATE` и повторную ref-проверку.
 16. `ATTACH-TEXT-TAIL-01` не дублировать как F4 defect: F4 корректно доверяет `type-checked`, ошибочное присвоение этого статуса — root cause F3.
-17. Подтверждённые findings не исправлять автоматически: сначала отдельная bounded remediation-задача по решению владельца и текущему Stage.
+17. Block F F5: **PASS, 0 additional current-scope findings**. 24-hour stale-operation retirement, shared/published/complaint-evidence ref protection, durable delete claims/lease retry и fenced journal/reservation sweep не дали current defect.
+18. Live background scheduling и external R2 cleanup acceptance остаются Stage 6; **Информация не проверена** для deployed cleanup execution. Это не current F5 finding по утверждённой границе.
+19. Подтверждённые findings не исправлять автоматически: сначала отдельная bounded remediation-задача по решению владельца и текущему Stage.
 
 ## Ограничения
 
@@ -52,5 +54,5 @@
 
 ## Следующий шаг
 
-1. После продолжения владельца выполнить **F5 — Cleanup and physical deletion safety** на current main и остановиться после результата.
+1. После продолжения владельца выполнить **F6 — Attachment security evidence / Attention privacy** на current main и остановиться после результата.
 2. Findings только фиксировать; remediation не начинать.
