@@ -1084,8 +1084,12 @@ export function EmbeddedPreview({ scenarioId, identity }: { scenarioId: string; 
       const method = (form.getAttribute("method") ?? "get").toLowerCase();
       if (method === "get") return;
       const intent = String(new FormData(form).get("intent") ?? "");
-      if (intent === "createTopic" || intent === "reply"
-        || intent === "selectBestAnswer" || intent === "markSolved") return;
+      const allowed =
+        (intent === "createTopic" && form.classList.contains("section-create-form"))
+        || (intent === "reply" && form.classList.contains("topic-reply-form"))
+        || (intent === "selectBestAnswer" && form.classList.contains("topic-best-answer-form"))
+        || (intent === "markSolved" && Boolean(form.closest(".topic-shell")));
+      if (allowed) return;
       event.preventDefault();
       event.stopPropagation();
     };
