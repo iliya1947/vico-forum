@@ -3494,3 +3494,46 @@ AP-10 isolated Chromium [#43035916310](https://github.com/iliya1947/vico-forum/a
 - Intermediate failures were actually diagnosed and fixed at source: fingerprint map for added messages, old `isOwner` shorthand in tests, missing removed detail test references, premature recovery assertion, and obsolete AP10 browser selectors. No broad remediation.
 - Exact-head [CI #43043169812](https://github.com/iliya1947/vico-forum/actions/runs/43043169812) SUCCESS: **2231/2231 application tests**, **688/688 native PG17 tests**, schema manifest parity 69 tables, lint/typecheck/build/migrations and Worker smoke. [SA01 Chromium #43043169774](https://github.com/iliya1947/vico-forum/actions/runs/43043169774) SUCCESS. [AP10 browser #43043169691](https://github.com/iliya1947/vico-forum/actions/runs/43043169691) SUCCESS (four jobs). These are existing-suite regressions; do NOT claim SA03-specific connected D4 acceptance.
 - **Lira STOP** at D3 boundary. D4 next **only after developer continuation**: full real built Worker + Better Auth + disposable migrated PG17 + Chromium for SA03 account/private state and permissions, precise HTML/.data cache/sensitive/no-tokens, later exact-head handoff to Mira coordinator. Lev/Mark unassigned, no merge/production/docs closeout.
+
+
+## 2026-11-11 — correction: SA-03 implementation was too broad; decomposed
+
+The prior coordinator route that described the next step as assigning Lira the accepted SA-03 implementation as one whole package was too broad for the current workflow and is superseded.
+
+The accepted Lev technical plan remains valid. The correction changes only **implementation granularity**, not product scope or technical conclusions.
+
+SA-03 is now split into five sequential bounded author subtasks:
+
+1. **SA03-A — server contracts/admission foundation only**
+   - establish the canonical profile composition contracts and viewer/target/exact-Owner admission seams;
+   - define independent optional/discriminated section DTO states and request-context boundaries;
+   - preserve current public profile/self-edit behavior;
+   - add focused unit/route tests;
+   - **do not** add the Owner target account reader, per-user History reader, UI composition, legacy redirect or migration.
+
+2. **SA03-B — Owner target account reader**
+   - readonly exact-Owner target private identity, supported sign-in methods and bounded safe session metadata;
+   - secret-free DTO, target isolation, active/expired semantics and native tests;
+   - no per-user History/UI/redirect.
+
+3. **SA03-C — per-user Owner summary + required indexes**
+   - fixed source-attributed target-scoped summary reader;
+   - dedicated cursor/pagination and dedup semantics;
+   - only the index-only forward migration actually required by these reads;
+   - native PG tests/query-plan evidence;
+   - no canonical UI integration.
+
+4. **SA03-D — canonical profile integration**
+   - compose public/Admin/Owner sections;
+   - reuse existing AP-10 and authorization controls/writers;
+   - update Admin Users links and replace legacy detail with guarded canonical redirect;
+   - route/component/privacy/recovery tests.
+
+5. **SA03-E — connected acceptance and author closeout**
+   - built Worker + real Better Auth + migrated disposable PG17 + Chromium;
+   - exact-head CI/regressions/privacy/cache/authorization matrix;
+   - stable head and handoff to Mira whole-PR review.
+
+**One subtask at a time.** Lira must stop after each subtask. The next subtask requires a separate developer continuation and coordinator assignment.
+
+No implementation is assigned by this correction itself. The next possible assignment is **SA03-A only**. SA-04+, Stage6/#315 activation, production and deferred History storage management remain excluded.
