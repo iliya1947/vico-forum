@@ -152,7 +152,8 @@ describe("interactive Pages preview", () => {
     await user.click(screen.getByRole("link", { name: "Settings" }));
     expect(await screen.findByRole("heading", { level: 1, name: "Settings" })).toBeInTheDocument();
 
-    await user.click(screen.getByRole("link", { name: "User preferences" }));
+    const settingsOverview = document.querySelector(".settings-overview") as HTMLElement;
+    await user.click(within(settingsOverview).getByRole("link", { name: "User preferences" }));
     const locale = await screen.findByRole("combobox", { name: "Preferred language" });
     await user.selectOptions(locale, "ru");
     await user.click(screen.getByRole("button", { name: "Save language" }));
