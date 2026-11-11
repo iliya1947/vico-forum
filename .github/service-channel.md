@@ -4082,3 +4082,13 @@ Only A2 is active now. Lira starts a new cumulative Draft implementation PR from
 
 Lira must perform author inspection, publish the stable A2 head/evidence and STOP. A3/A4 are not assigned. Lev remains unassigned until there is a meaningful cumulative stable package to review.
 
+## 2026-11-12 — SA04-A2 Mira checkpoint PASS
+
+- Mira reviewed Draft #328 exact stable head `f9da2033455487f25510c2ccbbb748ed5f4bf7f4`.
+- Confirmed A2 contains only shared server-only account-state read/predicate/assert foundation and focused PostgreSQL17 evidence.
+- Confirmed no mutation row-lock guard, auth/session integration, domain writer admission, public neutral identity projection or deactivation operation.
+- Reused PostgreSQL availability/timeout classification seams inspected; no current-scope defect confirmed.
+- Exact-head CI #43109939829 SUCCESS.
+- **PASS — 0 confirmed current-scope SA04-A2 defects.**
+- #328 remains Draft/cumulative; no Lev review or merge is triggered by A2 alone. Lira STOP; A3/A4 unassigned.
+
