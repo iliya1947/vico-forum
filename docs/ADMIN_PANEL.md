@@ -228,7 +228,7 @@ grant global admission either. Each section and action independently checks its 
 | Overview / shell | Authenticated actor with at least one applicable implemented section capability | Navigation is not mutation authority; only public aggregate statistics and permitted destinations are exposed |
 | Forum / category, section, topic pages | At least one of `forum.topic.pin`, `forum.solution.manageAny`, `forum.helpDuplicate.manage`, `forum.sourceLocale.correctAny`, `forum.post.history.read`, `forum.topic.close` | Exact operation permission and authoritative object/resource conditions, as below |
 | Roles & permissions | `access.authorization.manage` for protected reads | Exact server-bound Owner only for all role/grant/user authorization mutations; existing validation, shared mutex and fresh permission/admission checks |
-| Users / measures | `admin.users.read` for general index/detail; `access.authorization.manage` for the existing authorization subset; `admin.users.blocks.manage` for exact target/measures lookup | Authorization assignment/override writes require exact bound Owner (non-Owner read-only); measure create/change/lift and appeal review retain fresh `admin.users.blocks.manage` plus target/issuer hierarchy (and `admin.users.blocks.managePrivileged` for privileged targets) |
+| Users / canonical profile / measures | Public canonical profile baseline; `admin.users.read` only for the Users index and guarded legacy detail redirect; `access.authorization.manage` for the targeted authorization section; `admin.users.blocks.manage` for exact target/measures lookup under AP-10; exact bound Owner for the private account/session/history section | Authorization assignment/override writes require exact bound Owner (non-Owner read-only); measure create/change/lift and appeal review retain fresh `admin.users.blocks.manage` plus target/issuer hierarchy (and `admin.users.blocks.managePrivileged` for privileged targets) |
 | History / Overview recent actions | `admin.history.read` | History-read does not authorize recorded operations; actors do not need history-read merely to perform an otherwise permitted operation |
 | Settings entry / implemented surfaces | Authenticated session for `/:locale/settings`, `/:locale/settings/user`, `/:locale/settings/account` and `/:locale/settings/privacy`; exact bound Owner for `/:locale/settings/forum`; current effective Admin-or-Attention access for `/:locale/settings/administrator` | Forum & roles reuses canonical Owner-only authorization writer and independent registration flags; personal preferences, Account & security and Privacy follow their independent contracts in `SETTINGS.md` |
 
@@ -604,11 +604,12 @@ and per-permission override Forms. Those Owner forms reuse the existing canonica
 AP-09 adds no second writer, mutation protocol, actor authority field,
 authorization-serialization model or History event kind. The session remains actor
 authority; the canonical action rechecks fresh `access.authorization.manage` and the
-Owner-only write policy. On success, the canonical profile revalidates; on fresh
-403 with `admin.users.read` still effective, it performs at most one same-URL
-GET recovery without replay. Without Users-read, denial remains fail-closed.
-A later independent permission change can recover the protected read view,
-but never confers write authority on a non-Owner.
+Owner-only write policy. On success, the canonical profile revalidates. Fresh
+401/403 recovery is bounded to one same-URL GET/revalidation and never replays
+the rejected write; it is not conditioned on `admin.users.read`. Each protected
+canonical-profile section reappears only when its own admission remains effective.
+A later independent permission change can recover the corresponding protected read
+view, but never confers write authority on a non-Owner.
 
 The old `under-development?feature=admin-users` URL remains only as a compatibility redirect:
 Users-read actors go to the real Users index, management-only actors go to the existing
@@ -760,9 +761,11 @@ in the repository. Repository merge does not imply production/deployed rollout;
 
 AP-11 adds no new domain capability, schema, permission or grant. It closes the delivered
 AP-01–AP-10 scope by exercising existing boundaries together in a real local runtime:
-canonical user profile + canonical authorization mutation + History + same-session revoke/recovery,
+Admin Users detail + canonical authorization mutation + History + same-session revoke/recovery,
 Forum hierarchy/topic close/reopen + mounted reply editor + AP-10 reply restrictions, and
 protected response/privacy plus EN/RU/HE responsive behavior on the connected admin surfaces.
+SA-03 later replaced the standalone Admin Users detail with the canonical profile composition
+and guarded legacy redirect; that later migration is not part of AP-11 acceptance evidence.
 
 The connected admission constraints remain independent: topic closure does not replace or lift
 an active reply restriction, and lifting the measure does not reopen a closed topic. A stale
