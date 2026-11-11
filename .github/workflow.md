@@ -1,21 +1,12 @@
 # Admin panel — current workflow
 
 - Service PR: **#251**. Current main: `538084fd472c65459ad55ab30a0f96fbfdd68e56`.
-- Current stage: **SA-03 independent review finding accepted by Mira; one bounded correction assigned next.**
-- Implementation Draft PR **#324**, current exact stable head `4bfdfdd14a70534bd95c308de9d1c8c2df672c76`.
-- Accepted technical plan #6796912006 remains authoritative. SA03-MIRA-01 remains CLOSED.
-- Lev independent whole-PR review on `4bfdfdd...`: **CHANGES REQUIRED — one current-scope defect SA03-IMPL-LEV-01; no other current-scope defects confirmed.**
-- Mira independently verified the finding chain against the current implementation and accepted SA-03 plan:
-  - successful UI sign-out sets HeaderAuth viewer to guest immediately;
-  - previously loaded profile `privileged` DTO remains mounted until the async profile revalidation returns;
-  - `ProfileView` currently does not bind privileged presentation to the current HeaderAuth viewer;
-  - therefore stale Owner/private sections and authorization controls can remain visible under a known guest/current-viewer mismatch;
-  - fresh server reads are correctly redacted, so this is a presentation invalidation defect, not a server-admission bypass.
-- **Next recipient: Lira — one bounded correction only: SA03-IMPL-LEV-01.**
-- Required result: privileged profile sections/controls/related feedback must stop rendering immediately when the current authenticated viewer no longer matches the viewer for whom that privileged DTO was loaded; public profile remains. The state may reappear only from a fresh authorized loader result.
-- Acceptance: cover the real UI sign-out path with delayed post-signout profile revalidation so stale private/authorization DOM is already absent before the GET completes; preserve fresh authorized recovery. Do not broaden auth architecture, AP-10/authorization authority, schema, writers, Owner immunity or SA-04+.
-- Lira must publish a new stable #324 head with applicable checks and **STOP**.
-- After correction: Mira coordinator whole-PR review restarts on the new exact head; only after Mira PASS does independent technical review run again.
-- Mark and Lev are unassigned during implementation.
-- SA-04+, production/Stage6/#315 activation, broad security remediation and deferred journal storage work remain outside scope.
-- **Handoff granularity gate:** before every Lira implementation assignment, Mira must first check whether the requested work contains multiple independently completable results. If yes, split it before assignment; only one bounded subtask is assigned at a time, with Lira STOP after that subtask and a new developer continuation before the next assignment.
+- Current stage: **SA-03 SA03-IMPL-LEV-01 bounded author correction complete; Lira STOP. Awaiting Mira repeat coordinator whole-PR review.**
+- Implementation [Draft PR **#324**](https://github.com/iliya1947/vico-forum/pull/324), exact stable head **`d7a526ac00ef56ebd8c8bd4035cc84fb9731ad49`**. Accepted technical plan [#6796912006](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6796912006) remains authoritative. Earlier SA03-MIRA-01 remains CLOSED.
+- Lev independent whole-PR review on superseded `4bfdfdd...` found **one** current-scope presentation invalidation defect SA03-IMPL-LEV-01; Mira accepted one bounded correction. No other current-scope findings were confirmed.
+- Corrected: private `ProfilePrivilegedSections` DTO now carries the authenticated server viewer ID for measures/authorization/Owner alike; `ProfileView` hides old sections, controls and feedback immediately at HeaderAuth sign-out or viewer mismatch and preserves invalidation until a new loader DTO. Public profile stays visible; fresh authorized data restores private sections. Server admission remains authoritative and unchanged.
+- Connected acceptance uses real UI sign-out with **held post-signout profile GET**: guest header and no stale private/authorization rendered DOM before release, separate redacted guest data GET, then genuine fresh Owner sign-in/read recovery.
+- All checks on exact head **SUCCESS**: [CI](https://github.com/iliya1947/vico-forum/actions/runs/43068315572) **2236/2236 app + 688/688 native PostgreSQL 17** tests including lint/typecheck/build; [SA03 Chromium](https://github.com/iliya1947/vico-forum/actions/runs/43068315602) **25/25** scenario records; [SA01 Chromium](https://github.com/iliya1947/vico-forum/actions/runs/43068315460) SUCCESS; [AP10 Chromium](https://github.com/iliya1947/vico-forum/actions/runs/43068315564) SUCCESS, all four jobs.
+- **Next recipient: Mira.** Restart coordinator whole-PR review of new exact `d7a526a...` independently. **Only after Mira PASS** does Lev run a fresh independent technical review. Mark and Lev remain unassigned now; Lira does not continue without a new developer assignment.
+- #324 remains Draft/open, not merged. SA-04+, Owner deactivation, new authz/schema/writers, broad security remediation, production/Stage6/#315 activation, journal retention/storage and permanent docs closeout remain outside this bounded task.
+- **Handoff granularity gate:** before every Lira implementation assignment, Mira must check if multiple independently completable results are combined. Split those before assignment; one bounded subtask at a time, with author STOP before developer continuation.

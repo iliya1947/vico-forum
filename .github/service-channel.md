@@ -2,6 +2,14 @@
 
 Служебный PR: #251. Оперативное состояние: [workflow.md](./workflow.md). Общий контракт: [ADMIN_PANEL_IMPLEMENTATION_PLAN.md](../ADMIN_PANEL_IMPLEMENTATION_PLAN.md).
 
+## 2026-11-11 — SA03-IMPL-LEV-01 corrected on exact stable #324 head; Lira STOP
+
+- [Draft PR #324](https://github.com/iliya1947/vico-forum/pull/324), main baseline `538084fd472c65459ad55ab30a0f96fbfdd68e56`, stable exact head **`d7a526ac00ef56ebd8c8bd4035cc84fb9731ad49`**. Single bounded correction assigned by Mira following independent Lev finding SA03-IMPL-LEV-01 on superseded `4bfdfdd...`.
+- Bound each privileged profile section, including measures-only, to the request's authenticated `viewerId`. `ProfileView` compares it against current HeaderAuth viewer and latches old snapshot invalidation across sign-out/re-sign-in until a fresh loader result; hides stale Owner identity/sessions/history, Admin measures and authorization forms/feedback while public profile remains. Self-edit/feedback also require current matching viewer. No alternate authorization source or server-admission change.
+- Module regressions cover real header sign-out UI and previous authorization fixture viewers; connected Chromium uses **the real sign-out button**, explicitly delays the post-signout profile `.data` GET, confirms guest HeaderAuth and private/authorization **rendered DOM absent before GET completes**, then verifies fresh Owner reauthentication recovers sections. Separate post-signout guest `.data` has no Owner email. Existing initial SSR hydration payload is not mistaken for rendered DOM.
+- New head exact checks **SUCCESS**: [CI #43068315572](https://github.com/iliya1947/vico-forum/actions/runs/43068315572) **2236/2236** app and **688/688** native PostgreSQL 17 tests, lint/typecheck/build/Worker/migrations; [SA03 Chromium #43068315602](https://github.com/iliya1947/vico-forum/actions/runs/43068315602) **25/25** scenario records; [SA01 Chromium #43068315460](https://github.com/iliya1947/vico-forum/actions/runs/43068315460) SUCCESS; [AP10 Chromium #43068315564](https://github.com/iliya194/vico-forum/actions/runs/43068315564) SUCCESS all four jobs. Earlier interim run test-fixture/HTML-assertion failures corrected before final exact-head validation.
+- **Lira AUTHOR STOP**. Next: **Mira repeat whole-PR coordinator review** on exactly `d7a526a...`; only after Mira PASS, Lev independent technical review. PR remains Draft/open, no merge, SA04+, new permissions/schema/writers, deactivation, production/Stage6, external systems or documentation closeout.
+
 ## SET-05 — серверная подзадача 2/4 завершена; реализация продолжается
 
 - Implementation [Draft PR #309](https://github.com/iliya1947/vico-forum/pull/309) from unchanged main `76fc5b16be4f2425a0ad1fdcb7b38974db355c56`; exact current non-frozen head `75af57038a72ed8b5b46e039f653d92e52dac96f`. Изменены только `app/auth/request-context.ts`, `app/auth/auth.server.ts`, новый `tests/database/account-security.test.ts`.
