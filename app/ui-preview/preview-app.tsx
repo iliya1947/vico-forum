@@ -1154,8 +1154,7 @@ export function EmbeddedPreview({ scenarioId, identity }: { scenarioId: string; 
           && form.classList.contains("topic-admin-form"))
         || ((intent === "correctTitleSourceLocale" || intent === "correctPostSourceLocale")
           && form.classList.contains("source-locale-form"))
-        || (activeScenario.identity === "owner"
-          && ["createRole", "renameRole", "roleGrants", "deleteRole", "assignRole", "override"].includes(intent)
+        || (["createRole", "renameRole", "roleGrants", "deleteRole", "assignRole", "override"].includes(intent)
           && Boolean(form.closest(".admin-workspace")))
         || ((intent === "createHelpQuestion" || intent === "checkSimilarHelpQuestions")
           && form.id === "help-question-create-form")
