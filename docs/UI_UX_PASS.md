@@ -58,10 +58,12 @@ bundle, чтобы GitHub Pages не мог после deploy отдать ifram
 The ordinary admin-panel contract is [ADMIN_PANEL.md](ADMIN_PANEL.md): its global structure,
 admission/action boundaries, shared Quick actions and separation from Needs attention and
 the distinct exact-Owner-only [Super-admin](SUPER_ADMIN.md). Ordinary Admin AP-01–AP-11
-and Super-admin SA-01–SA-02 are now implemented in repository/local-CI; the remaining
-Monitoring/profile/deactivation functionality remains separate bounded work. Earlier
-topic-level Admin panel wording in this document refers to contextual controls, not a
-substitute for the implemented ordinary Admin or Super-admin workspaces.
+and Super-admin SA-01–SA-03 are now implemented in repository/local-CI. SA-03 delivers the
+functional canonical unified user profile with server-authorized Admin/Owner sections; the
+remaining Monitoring areas and deactivation remain separate bounded work, and final profile
+visual polish stays in the later refinement boundary. Earlier topic-level Admin panel wording
+in this document refers to contextual controls, not a substitute for the implemented ordinary
+Admin or Super-admin workspaces.
 
 The pass must preserve these existing constraints:
 
@@ -249,12 +251,16 @@ composition:
   ordinary and Help topics. Best-answer totals count current selected-post references even on
   unsolved topics; replacing a selected answer changes both authors' next-request totals.
   Only the owner may save a plain-text bio (up to 500 Unicode code points), a GitHub profile URL
-  and an optional HTTP(S) website URL through authenticated same-origin POST. Public loaders
-  explicitly project presentation fields; email, sessions, grants and moderation data are absent.
+  and an optional HTTP(S) website URL through authenticated same-origin POST. The public baseline
+  explicitly projects presentation fields; email, sessions, grants and moderation data are absent
+  for Guest/unauthorized viewers. SA-03 later kept this same canonical route and added independently
+  server-authorized Admin measures/authorization sections plus an exact-Owner private
+  account/session/target-History projection; protected fields are never merely client-hidden.
   Header identity and message-author links use the real route. EN/RU/HE and public/own/edit/error/
-  empty shared-presentation preview states are included. Migration `0032_forum_profiles` is
-  repository/local-CI only. Owner visual acceptance and native runtime acceptance remain separate;
-  Pages submissions are blocked like the other static fixtures.
+  empty shared-presentation preview states are included. Migration `0032_forum_profiles` remains
+  the public-profile storage foundation; SA-03 migration `0064` adds only target-history indexes.
+  Functional repository/browser acceptance exists for SA-03, while final owner visual-polish
+  acceptance remains separate; Pages submissions are blocked like the other static fixtures.
 
 ### Unfinished-function pre-release behavior
 
