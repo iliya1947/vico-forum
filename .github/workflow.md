@@ -1,16 +1,12 @@
 # Admin panel — current workflow
 
 - Service PR: **#251**. Current main: `f6fd4b2c031b2132b04eace18704a59aed1dfec8`; PR #319 base `e279cb6c032a489a9044ca1191407df887c364b4` (AGENTS.md-only divergence).
-- Current stage: **SA02 cumulative A/B/C/D coordinator review PASS on corrected stable head; awaiting Lev independent whole-PR review.**
-- Implementation: Draft **PR #319**, stable exact head **`3f217c98dd9dcbd51518eda82b51506fbede936c`**.
-- Previous reviewed head `0a45909b...`: Mira PASS → Lev CHANGES REQUIRED LEV-04/-05. Both findings are now **CLOSED** on the corrected head.
-- Correction delta from old reviewed head: 4 commits / 3 files only — History renderer, History route presentation tests, and a bounded wait for asynchronous Worker 503 telemetry in the existing browser harness.
-- **Mira fresh cumulative whole-PR review: PASS, 0 confirmed current-scope defects** on `3f217c98dd9dcbd51518eda82b51506fbede936c`.
-- LEV-04 closed: monitor-aware labels preserve correct attachment/users and registration/database semantics in scoped/global History.
-- LEV-05 closed: numeric formatting applies only to known counters; digit-only opaque refs preserve literal text/leading zeroes; large counters remain BigInt-safe.
-- Exact-head verification: CI #43009722614 SUCCESS; SA01 connected Chromium #43009722439 SUCCESS; AP10 Chromium #43009722575 SUCCESS (4/4 jobs).
-- Current #315 was rechecked at head `3199f07a17c16ae7f987cdd1a5e0424470085a1e`; its Owner-plane isolation/Stage6 work remains separate and does not expand SA02 current scope.
-- Implementer: **Lira — completed/stopped**.
-- Coordinator: **Mira — PASS/completed**.
-- **Next reviewer: Lev — independent cumulative A/B/C/D whole-PR review of the same stable exact head `3f217c98dd9dcbd51518eda82b51506fbede936c`, no implementation.**
-- Mark unassigned. No merge/docs closeout/SA03+/Stage6 #315 activation/production/deferred journal occupancy/archive/clear work is authorized.
+- Current stage: **SA02 cumulative A/B/C/D independent whole-PR review PASS — 0 confirmed open current-scope defects.**
+- Implementation: Draft **PR #319**, reviewed stable exact head **`3f217c98dd9dcbd51518eda82b51506fbede936c`**.
+- Accepted plans: #6768069279 and D handoff #6789135043.
+- Mira fresh coordinator PASS/assignment: #6794574095 after author correction #6794365343.
+- **Lev repeat independent PASS: [#6794797870](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6794797870). LEV-01/-02/-03/-04/-05 CLOSED.**
+- Exact-head CI #43009722614, SA01 #43009722439, AP10 #43009722575 all SUCCESS (AP10 4/4 jobs); independent local tests/original semantic probes/expanded browser acceptance PASS.
+- Implementer: **Lira completed/stopped**. Coordinator: **Mira prior PASS**. Independent reviewer: **Lev completed/stopped**. Mark unassigned.
+- **Next recipient Mira:** coordinator closeout after independent full-SA02 PASS and determination of remaining applicable gates/next route. No new implementer/reviewer appointed by Lev.
+- PR319 remains Draft. No merge, Owner visual approval, permanent-docs closeout, SA03+, separate #315 security foundation/Stage6 activation, production or deferred journal occupancy/archive/clear action performed/assigned by this review.
