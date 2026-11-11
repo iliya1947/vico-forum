@@ -2,6 +2,7 @@ import { readdir, readFile } from "node:fs/promises";
 import { Client, Pool } from "pg";
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
 import { PostgresOwnerSa02History, parseOwnerHistoryCursor } from "../../db/owner-sa02-history";
+import { PostgresAuthFactWriter } from "../../db/owner-auth-facts";
 
 const url=process.env.DATABASE_URL!;
 if(!url || !["127.0.0.1","localhost"].includes(new URL(url).hostname) ||
@@ -121,6 +122,50 @@ describe("SA02 native source-aware Owner History projection",()=>{
     expect(JSON.stringify(global)).not.toContain("private-filename");
     expect(JSON.stringify(global)).not.toContain("private-context");
     expect(JSON.stringify(global)).toContain("2001:db8::1234");
+  });
+
+  it("projects native stored auth actor, target and entity refs globally and in both scoped Histories",async()=>{
+    const writer=new PostgresAuthFactWriter(pool);
+    const first=await writer.append({
+      kind:"auth.sessionDeleted",userId:"target-user",sessionId:"deleted-session",
+      reason:"revoke-one",actorUserId:"trusted-actor",
+    });
+    const second=await writer.append({
+      kind:"auth.sessionCreated",userId:"unknown-actor-target",sessionId:"created-session",
+      actorUserId:null,
+    });
+    const stored=(await client.query<{
+      id:string;actor_user_id:string|null;target_user_id:string;
+      entity_type:string;entity_id:string;
+    }>("select id,actor_user_id,target_user_id,entity_type,entity_id "+
+      "from owner_events where source='auth' order by position")).rows;
+    expect(stored.map(row=>row.id)).toEqual([first.id,second.id]);
+    const global=await reader.readTimeline({limit:10});
+    const accounts=await reader.readTimeline({area:"accounts",monitorKey:"accounts.sessions"});
+    const security=await reader.readTimeline({area:"security",monitorKey:"security.auth"});
+    for(const page of [global,accounts,security]) {
+      const deletion=page.entries.find(entry=>entry.id===first.id);
+      const creation=page.entries.find(entry=>entry.id===second.id);
+      expect(deletion?.origin).toBe("auth-event");
+      expect(creation?.origin).toBe("auth-event");
+      expect(deletion?.values).toMatchObject({
+        actorUserId:"trusted-actor",targetUserId:"target-user",
+        entityType:"session",entityId:"deleted-session",reason:"revoke-one",
+      });
+      expect(creation?.values).toMatchObject({
+        actorUserId:null,targetUserId:"unknown-actor-target",
+        entityType:"session",entityId:"created-session",
+      });
+      expect(deletion?.values.actorUserId).not.toBe(deletion?.values.targetUserId);
+      expect(JSON.stringify(page)).not.toContain("session_token");
+      expect(JSON.stringify(page)).not.toContain("password");
+    }
+    expect(global.entries.map(entry=>entry.id).sort()).toEqual([first.id,second.id].sort());
+    expect(stored[0]).toMatchObject({
+      actor_user_id:"trusted-actor",target_user_id:"target-user",
+      entity_type:"session",entity_id:"deleted-session",
+    });
+    expect(stored[1].actor_user_id).toBeNull();
   });
 
   it("retains exact microsecond ordering and arbitrary bounded native text IDs across page cursor",async()=>{
