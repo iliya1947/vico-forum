@@ -4,7 +4,7 @@
 
 1. Служебный PR: **#315**.
 2. Моя текущая работа: audit/coordination only; remediation и implementation не назначены.
-3. Текущий этап: **Block H H1 PASS + H2 PASS + H3 PASS, 0 current-scope findings; следующий bounded slice — H4 Preview, Version URL and public entrypoint isolation**. Block G закрыт с 3 current-scope findings + deferred Stage-6 blocker `DB-RUNTIME-EVIDENCE-01`.
+3. Текущий этап: **Block H H1–H3 PASS; H4 завершён: 0 current-scope findings + deferred Stage-6 blocker `WORKER-VERSION-URL-01 Moderate/P2`; следующий bounded slice — H5 Worker deployment/version/rollback repository gates**. Block G закрыт с 3 current-scope findings + deferred Stage-6 blocker `DB-RUNTIME-EVIDENCE-01`.
 4. Technical audit target B–D: `e279cb6c032a489a9044ca1191407df887c364b4`.
 5. Current `main` после G8 delta-recheck — `5992885e78b1642e41c9805116fcc256002b649c`. Delta от `538084fd…` — SA-03 #324: index-only migration `0064` + readonly Owner profile/history; Block G conclusions unchanged.
 6. Лира, Марк и Лёва по #315 сейчас не назначены.
@@ -119,6 +119,16 @@
 92. No `secrets.required` declaration exists, but current rollout has own pre-upload validation and local auth acceptance explicit vars; no current exploit path established.
 93. Current rollout still does not perform real Owner binding or R2 deployment acceptance; source-of-truth places those in paused Stage 6. Missing Owner fails closed, missing R2 is unavailable. No H3 finding/duplicate.
 94. H3 tests read, not run. Mutable deployed Worker env/secrets/bindings, live R2 and real Owner binding: **Информация не проверена**.
+95. H4: **0 current-scope findings + `WORKER-VERSION-URL-01 Moderate/P2` deferred Stage-6 blocker** на `ce62e783e71433a00c2fe4874ee26dfc54614628`.
+96. Current rollout uses `wrangler versions upload` with top-level production `HYPERDRIVE` + `WEB_HYPERDRIVE` and production auth vars/secrets; returned Version URL is then used for pre-traffic smoke.
+97. Current official Cloudflare docs: Worker version captures bindings/configuration; Version URL uses the version's existing/production resources; when enabled Version URLs are publicly available unless separately protected by Access.
+98. Current Vico contract requires preview/non-production path isolation before any auth/forum write/private production capability. Public-capable Version URL with `WEB_HYPERDRIVE` therefore violates that Stage-6 boundary.
+99. Smoke script is GET-only but does not constrain external visitors. It has no Access token/session; workflow therefore does not verify a protected Version URL boundary.
+100. `promote=false` leaves the uploaded version and Version URL without cleanup; exposure can outlive the workflow run.
+101. Entire Worker route table is addressable on Version URL, not only smoke endpoints. Separate authz bypass/Owner compromise was not proven; severity remains Moderate/P2.
+102. This is not current-scope because activation requires paused manual Stage-6 rollout. Correction gate: before next Worker upload with private/write production capability.
+103. New isolated Worker Previews are distinct from Version URLs and require Wrangler >=4.135.0; repo pinned 4.130.0. This is solution space, not a separate finding.
+104. Mutable live Version URL/Access/Previews Base state: **Информация не проверена**; no external upload/deploy/smoke performed.
 
 ## Ограничения
 
@@ -130,5 +140,5 @@
 
 ## Следующий шаг
 
-1. После продолжения владельца выполнить **H4 — Preview, Version URL and public entrypoint isolation** на current main и остановиться после результата.
-2. Findings только фиксировать; remediation не начинать.
+1. После продолжения владельца выполнить **H5 — Worker deployment/version/rollback repository gates** на current main и остановиться после результата.
+2. Existing deferred blockers only reference; duplicates не создавать. Findings только фиксировать; remediation не начинать.
