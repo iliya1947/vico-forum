@@ -4,9 +4,9 @@
 
 1. Служебный PR: **#315**.
 2. Моя текущая работа: audit/coordination only; remediation и implementation не назначены.
-3. Текущий этап: **Block E completed; awaiting SA-02 delta-recheck of affected Blocks A/B**.
+3. Текущий этап: **SA-02 Blocks A/B delta-recheck completed PASS; awaiting Block F scope/setup**.
 4. Technical audit target B–D: `e279cb6c032a489a9044ca1191407df887c364b4`.
-5. Current `main` — `4248fed23925e4a23e48485d419ceaf0ce337def`. SA-02 #319 изменил Super-admin/Owner monitoring, `app/auth/auth.server.ts`, shared Worker observability и migration `0063`; поэтому ранее завершённые Blocks A/B требуют bounded delta-recheck перед продолжением новой области.
+5. Current `main` — `4248fed23925e4a23e48485d419ceaf0ce337def`. SA-02 #319 delta-recheck Blocks A/B завершён: **0 новых current-scope findings**; existing 8 Block B findings остаются открытыми. Permanent SA-02 docs ещё pending в PR #323.
 6. Лира, Марк и Лёва по #315 сейчас не назначены.
 
 ## Где читать состояние
@@ -30,7 +30,8 @@
 5. D12 external claim исправлен и проверен: official React Router Framework/SSR docs и exact `react-router@8.3.1` source подтверждают default skip loader revalidation после failed 4xx/5xx submissions.
 6. Vico recovery paths используют explicit loader revalidation и не выполняют automatic mutation replay.
 7. Block E завершён с **8 current-scope findings**. E10 добавил **`FORUM-READ-BOUNDS-01 Moderate/P2`**: canonical public section/topic snapshots не имеют paging/row ceiling и усиливают DB/translation/SSR work по мере роста форума; и **`FORM-BODY-BOUNDS-01 Moderate/P2`**: обычные forum/profile/presence POST paths используют whole-form parsing без application byte ceiling. Typed failure handling, request isolation, replay/concurrency и новый SA-02 Worker telemetry seam в E10 дополнительных findings не дали.
-8. Подтверждённые findings не исправлять автоматически: сначала отдельная bounded remediation-задача по решению владельца и текущему Stage.
+8. SA-02 delta: exact Owner guards/private routes, bounded source-attributed attempt telemetry, committed auth-fact proof и telemetry failure isolation — PASS. Future isolated Owner Worker/Access/passkey/Owner DB plane остаётся Block A Stage-6 scope, не current SA-02 defect.
+9. Подтверждённые findings не исправлять автоматически: сначала отдельная bounded remediation-задача по решению владельца и текущему Stage.
 
 ## Ограничения
 
@@ -42,5 +43,5 @@
 
 ## Следующий шаг
 
-1. После продолжения владельца выполнить bounded **SA-02 delta-recheck Blocks A/B** на current `main`; после него перейти к отдельному **Block F — Files & attachments**.
+1. После продолжения владельца подготовить отдельный **Block F — Files & attachments** audit file/scope и начать его первый bounded subtask.
 2. Findings только фиксировать; remediation не начинать.
