@@ -4,7 +4,7 @@
 
 1. Служебный PR: **#315**.
 2. Моя текущая работа: audit/coordination only; remediation и implementation не назначены.
-3. Текущий этап: **Block G G1 PASS; G2 `DB-SEARCHPATH-01 Low/P3`; G3 `DB-ACL-USER-DELETE-01 Low/P3`; следующий bounded slice — G4 Migration / privilege workflow gates**.
+3. Текущий этап: **Block G G1 PASS; G2 `DB-SEARCHPATH-01 Low/P3`; G3 `DB-ACL-USER-DELETE-01 Low/P3`; G4 `DB-RUNTIME-EVIDENCE-01 Low/P3`; следующий bounded slice — G5 Transaction, locking and ambiguous outcomes**.
 4. Technical audit target B–D: `e279cb6c032a489a9044ca1191407df887c364b4`.
 5. Current `main` — `538084fd472c65459ad55ab30a0f96fbfdd68e56`. SA-02 docs closeout merged; compare с `4248fed…` показывает только 8 Markdown changes, attachment runtime/schema unchanged.
 6. Лира, Марк и Лёва по #315 сейчас не назначены.
@@ -62,7 +62,11 @@
 35. Block G G3: подтверждён **`DB-ACL-USER-DELETE-01 Low/P3`**. Current `web` relation contract даёт `public.user` full CRUD, включая DELETE, хотя current Vico не реализует account deletion, Better Auth `1.7.7` `/delete-user` выключен без `user.deleteUser.enabled=true`, а ordinary/OAuth creation rollback transactional и не требует hard user DELETE.
 36. Остальной G3 least-privilege sweep дополнительных findings не дал: role attributes/membership/ownership, database CREATE, schema ACL, exact relation grants, column/sequence/function/default grants и negative probes fail closed по repository contract. `PUBLIC TEMPORARY` — уже часть `DB-SEARCHPATH-01`, не duplicate. Legacy editor-draft grants после external accepted `0020` — future Stage-6 cleanup, не current finding сами по себе.
 37. G3 tests/probes прочитаны, но не запускались. Exact mutable live production ACL: **Информация не проверена**.
-38. Подтверждённые findings не исправлять автоматически: сначала отдельная bounded remediation-задача по решению владельца и текущему Stage.
+38. Block G G4: подтверждён **`DB-RUNTIME-EVIDENCE-01 Low/P3`**. Current runtime evidence фиксирует только `0020_translation_generation_permission`, а current Worker core create-topic/reply уже обращается к measure tables из `0058_user_measures`; current schema manifest targets `0063_owner_attempt_telemetry`. Worker rollout verifier проверяет evidence только до вручную зафиксированного required tag и не выводит minimum required schema из exact runtime revision.
+39. G4 impact: current-main Worker может пройти migration-evidence gate и local full-schema checks при target schema лишь через `0020`; production/version smoke не выполняет authenticated topic/reply writes, поэтому missing `0058` relations могут проявиться уже после promotion. Это availability/incompatibility, не authz bypass; Stage 6 paused, поэтому Low/P3.
+40. Остальные G4 gates дополнительных findings не дали: migration pre/post ledger+manifest fail closed, dedicated migrator identity отделена, relation grants derived from shared contract and verified before commit. Provisioning наследует G3 `user.DELETE` — duplicate не создаётся. Old workflow rerun сохраняет original SHA/ref и не доказал downgrade path.
+41. G4 workflow/tests/probes прочитаны, но не запускались; external dispatch/prod mutation не выполнялись. Exact live GitHub Environment protection и current production schema/ACL: **Информация не проверена**.
+42. Подтверждённые findings не исправлять автоматически: сначала отдельная bounded remediation-задача по решению владельца и текущему Stage.
 
 ## Ограничения
 
@@ -74,5 +78,5 @@
 
 ## Следующий шаг
 
-1. После продолжения владельца выполнить **G4 — Migration / privilege workflow gates** на current main и остановиться после результата.
+1. После продолжения владельца выполнить **G5 — Transaction, locking and ambiguous outcomes** на current main и остановиться после результата.
 2. Findings только фиксировать; remediation не начинать.
