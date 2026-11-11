@@ -174,7 +174,7 @@ describe("interactive Pages preview", () => {
 
     expect(await screen.findByRole("heading", { level: 1, name: "How should I structure a typed API client?" })).toBeInTheDocument();
 
-    await user.click(screen.getByRole("link", { name: "Notifications" }));
+    await user.click(screen.getByRole("link", { name: "Notifications, 3 unread" }));
     const reopened = await screen.findByRole("button", {
       name: /Open reply: How should I structure a typed API client\?/,
     });
