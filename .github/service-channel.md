@@ -25,7 +25,7 @@
 4. Block C: аудит завершён; **1 current-scope finding — `AUTHZ-FAIL-01 Low/P3`**. Remediation не назначена.
 5. Block D: аудит D1–D12 завершён; подтверждены **3 findings — `COMPLAINT-PRIV-01`, `HELP-SIGNAL-PRIV-01`, `HISTORY-PRIV-01` (все Low/P3)**.
 6. D12 corrected closeout: official React Router Framework/SSR docs и exact `react-router@8.3.1` source подтвердили default skip loader revalidation после 4xx/5xx; Vico explicit recovery refreshes loaders and does not automatically replay mutations.
-7. Block E: E2 завершён PASS; **E5 Topic/reply publication lifecycle завершён с 1 current-scope finding — `FORUM-PUB-01 Moderate/P2`** против current `main` `f6fd4b2c031b2132b04eace18704a59aed1dfec8`. Следующий subtask — E6.
+7. Block E: E2 завершён PASS; E5 подтвердил **`FORUM-PUB-01 Moderate/P2`**; **E6 Published edit / Own solution завершён с 0 additional findings**, при этом `FORUM-PUB-01` подтверждён также для published-post edit body. Audit target — current `main` `f6fd4b2c031b2132b04eace18704a59aed1dfec8`. Следующий subtask — E7.
 8. Implementation PR, technical planner и implementer для remediation сейчас не назначены.
 9. Cloudflare/Neon/production mutation по #315 не разрешена и не выполнялась.
 
@@ -43,7 +43,7 @@
 10. `COMPLAINT-PRIV-01` — Low/P3.
 11. `HELP-SIGNAL-PRIV-01` — Low/P3.
 12. `HISTORY-PRIV-01` — Low/P3.
-13. `FORUM-PUB-01` — Moderate/P2.
+13. `FORUM-PUB-01` — Moderate/P2; missing application-level upper bound для topic title / post body в create/reply/edit.
 
 Ключевая causal path, impact и границы каждого finding находятся в соответствующем Block-файле.
 
@@ -55,5 +55,5 @@
 
 ## Открыто
 
-1. Следующий audit subtask: **Block E / E6 — Published edit / Own solution business logic**.
+1. Следующий audit subtask: **Block E / E7 — Notifications / mentions / unread / read-state**.
 2. Лира, Лёва и Марк сейчас не имеют активного назначения по #315.
