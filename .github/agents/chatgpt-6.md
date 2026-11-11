@@ -1,3 +1,16 @@
+# Лира — active correction: SA04-A1-MIRA-01 only
+
+PR #327 reviewed head: `cebb91504f770fa6cd42c4990bb3116aef9b7874`.
+
+Correct exactly one confirmed A1 issue:
+- replace `user_deactivation_state_check.definitionSha256: "PENDING"` with the **observed PostgreSQL 17 normalized CHECK hash** produced by the repository's real schema-manifest path;
+- keep the existing A1 migration/schema/snapshot/journal semantics unchanged unless the real PG17 evidence exposes a directly related defect;
+- run applicable final exact-head checks;
+- personally inspect the corrected A1 diff/result under the mandatory author-verification rule;
+- publish new stable exact head/evidence and **STOP**.
+
+Do not start SA04-A2+, runtime account-state helpers/enforcement, public identity projection, deactivate operation/control, SA-05+, Stage6/production or unrelated security work.
+
 # Лира — active assignment: SA04-A1 only
 
 ## 2026-11-11 — Лира: SA04-A1 personal author verification, correction at `cebb91504f770fa6cd42c4990bb3116aef9b7874`; NOT COMPLETE
