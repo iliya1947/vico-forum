@@ -49,14 +49,15 @@
 
 ## Актуальный baseline и назначение
 
-- Current main unchanged `538084fd472c65459ad55ab30a0f96fbfdd68e56`. SA-02 implementation/docs fully closed.
-- **Current SA-03 #324 repeat independent result: CHANGES REQUIRED — one new confirmed defect**, reviewed exact `d7a526ac00ef56ebd8c8bd4035cc84fb9731ad49`, after Mira coordinator PASS. Full report [#6803187864](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6803187864).
-- **SA03-MIRA-01 CLOSED; SA03-IMPL-LEV-01 CLOSED** by original independent signout probe: real signout200/guest header, held refresh, zero stale private sections/forms.
-- **SA03-IMPL-LEV-02 · P2 OPEN:** fresh authorized DTO is incorrectly invalidated during parent HeaderAuth effect synchronization. Real SPA profile navigation finishes; actual profile viewer and locale viewer both exact Owner, private data loaded, router idle, but all four sections absent. A second unchanged GET restores them. Need preserve immediate stale-data clearing while restoring fresh authorized data without that second GET.
-- Cumulative43-file scope refreshed; six files changed,37 identical to prior full independent review. No other current-scope defects confirmed; no implementation edits.
-- Fresh build/native9/migrations0000–0064/schema69 PASS; checked-in Chromium25/25 PASS. Related app10files/81 PASS; unchanged Editor initial async wait timeout followed by isolated14/14 PASS, not represented as a clean combined run. Remote exact-head CI/SA03/SA01/AP10 all SUCCESS.
-- #315 refreshed `1771190c5e0afee82b065a5f309917a7aa50799d`; relevant A/E source blobs unchanged; separate security remediation/activation not imported.
-- **Next Mira:** verify/route this one bounded correction result via #251. Lev completed/stopped; Lira/Mark not appointed by Lev. New corrected head needs coordinator then independent review. No merge readiness/docs closeout/SA04+ work from this result.
+- Current main unchanged `538084fd472c65459ad55ab30a0f96fbfdd68e56`; SA-02 implementation/docs fully closed.
+- **SA-03 #324 independent technical whole-PR review PASS — 0 confirmed open current-scope defects**, exact stable `4ad17beae65da338f5efcb2a1596e7fafc3b67c5`, following Mira coordinator PASS on the same head. Full result [#6804234730](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6804234730).
+- **MIRA-01, LEV-01 and LEV-02 CLOSED.** Original signout probe confirms immediate stale-section/form removal before held refresh; original SPA actor-switch probe confirms all four sections visible with first fresh authorized DTO, without another GET/reload.
+- Cumulative 43-file scope refreshed; three latest correction files fully read, other 40 source hashes unchanged. No new confirmed defects. Server/private/target/source/AP10/authz/Settings boundaries preserved.
+- Independent fresh checks: 10 app files /82 tests PASS, 2 native files /9 tests PASS, build/clean migrations0000–0064/actual69-table manifest PASS; checked-in connected Chromium26/26 PASS with original assertions, no page errors/external requests.
+- CI #43075154722, SA03 #43075154724, SA01 #43075154613, AP10 #43075154611 verified SUCCESS on reviewed head.
+- #315 refreshed at `e9f6433c971eefc652bca408455deb70339795c1`; relevant plan/A/E blobs unchanged; separate security remediation/activation remains separate.
+- **Next Mira:** finalize coordinator closeout/route toward Owner merge. PR #324 remains open/Draft/unmerged; no merge or docs closeout performed. Factual docs after implementation merge remain a separate assignment/PR.
+- Lev completed/stopped; Lira/Mark not appointed. SA04+, deactivation, production/Stage6 and deferred journal storage controls remain excluded.
 
 ## Handoff — Лира: Stage2 factual documentation closeout
 
@@ -3758,3 +3759,18 @@ No new current-scope defect was confirmed in the cumulative sweep.
 **Coordinator verdict: PASS — 0 confirmed current-scope defects on exact head `4ad17beae65da338f5efcb2a1596e7fafc3b67c5`.**
 
 Next gate: **Lev performs a fresh independent technical whole-PR review of #324 on this exact head only.** Lira/Mark remain unassigned; no implementation change is requested before that review.
+
+
+## 2026-11-11 — Lev final repeat independent SA-03 #324: PASS
+
+Full result [#6804234730](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6804234730), reviewed exact head `4ad17beae65da338f5efcb2a1596e7fafc3b67c5`, unchanged base/main `538084fd472c65459ad55ab30a0f96fbfdd68e56`. **PASS — 0 confirmed open current-scope defects. MIRA-01 / LEV-01 / LEV-02 CLOSED.**
+
+Cumulative 43-file SA-03 scope re-evaluated against approved plan/current contracts. Three correction files fully read; other 40 hashes identical to previous full independent review. Fresh profile snapshot waits for HeaderAuth synchronization without permanent invalidation; previously matched stale snapshot remains invalid after known viewer mismatch. Public/self profile, protected DTOs, AP10/authorization writer, Owner immunity, self-only Settings, source-aware per-user summary, legacy routing and cache boundaries preserved.
+
+Original independent probes retained with only local paths/ports changed and reverse-equality checked. LEV-01: real UI signout200, guest header, held profile GET; zero stale Owner sections/authz forms/private email before response. LEV-02: real actual-session actor switch, existing SPA profile link, router idle; correct target/Owner loader context and all four sections already visible on first fresh response. No second GET/reload needed. MIRA-01 own/Admin route distinction remains independently covered.
+
+Fresh independent runs: 10 app files /82 tests, 2 native files /9 tests, build, clean PG17 migrations0000–0064 and actual69-table manifest parity PASS. Checked-in Chromium26/26 PASS on own built Worker/Better Auth/disposablePG17, exact head, pageErrors=[] / externalRequests=[]; original browser assertions unchanged. GitHub exact-head CI #43075154722 / SA03 #43075154724 / SA01 #43075154613 / AP10 #43075154611 all SUCCESS. #315 checked at e9f6433c; current relevant source blobs unchanged and separate future security work excluded.
+
+Review source/schema/permanent docs unchanged. Checkout clean; own Worker4206 and disposable DB stopped, vars/dependency link removed. Evidence retained /workspace/work/sa03-final-review-evidence.
+
+**Next Mira:** coordinator closeout and implementation merge route on this reviewed head; Owner performs merge. PR #324 currently open/Draft/unmerged. Factual docs closeout after merge is separate. Lev stopped; no Lira/Mark assignment, SA04+, deactivation, production or deferred journal work launched.
