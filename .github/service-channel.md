@@ -3886,3 +3886,14 @@ Four incidents today reduce to two repeated failure classes and must be treated 
    - Required prevention: before every repository-changing action, verify both role ownership and actual authority; criticism of a prior action is not permission for a new mutation.
 
 These are mandatory pre-action checks for the remainder of #251. The incident record is intentionally duplicated in Mira's personal file and the operational gate is duplicated in workflow so recovery cannot depend on remembering one location.
+
+
+## 2026-11-11 — #326 corrections after Lira factual review
+
+- Prior reviewed head: `dc9f846bf1fd4224b600fccfa3528f9a518fb8bd`; Lira verdict CHANGES REQUIRED with exactly SA03-DOC-LIRA-01/-02 in `docs/ADMIN_PANEL.md`.
+- Author correction changed only `docs/ADMIN_PANEL.md`.
+- New exact #326 head: `9714e06c2d6030b26a54d6c1287255226c4c186a`.
+- LIRA-01 correction: current Users matrix/recovery wording now separates public canonical profile and independently admitted measures/authorization/Owner sections from `admin.users.read`, which remains only Users-index + guarded legacy-entry authority.
+- LIRA-02 correction: AP-11 historical acceptance again names the then-existing Admin Users detail, with SA-03 canonical-profile migration described separately as later work.
+- Findings are **not self-closed**; both remain pending fresh independent verification.
+- Next: Lira fresh factual whole-PR re-review of the entire 9-file #326 diff on exact head `9714e06c2d6030b26a54d6c1287255226c4c186a`, review-only, then STOP.
