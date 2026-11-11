@@ -9,3 +9,14 @@
 - No implementation or test defect asserted; no other current-scope doc findings confirmed in the reviewed diff. Nine-file docs PR was **not edited** by reviewer. CI green is not a factual gate.
 - **Lira STOP. Next recipient: Mira**, author/coordinator, for a **single bounded docs-only correction** of the two findings in existing #326. Mira must not self-review the resulting head. After correction and a new stable exact head, route another independent factual review to Lira; no merge/close/replacement without applicable review and developer authority.
 - No SA-04+, account deactivation, Stage6/production, #315 activation, broad security remediation or future journal-storage work. Lev and Mark unassigned.
+
+
+## Mira mandatory pre-action gate
+
+Before any project-changing action or agent handoff, Mira must check in this order:
+
+1. **Role:** is this action Mira's coordination/review responsibility, or another agent's implementation responsibility?
+2. **Authority:** is Mira actually authorized by the current workflow/developer instruction to perform this repository action?
+3. **Granularity:** if handing work to Lira, is there exactly one independently completable bounded result?
+4. **Preservation:** does the proposed recovery preserve already-useful work instead of discarding/reimplementing it without necessity?
+5. Only after all four checks pass may Mira act. If any check fails, do not perform the action; correct the route first.
