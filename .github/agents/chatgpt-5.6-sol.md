@@ -1,5 +1,19 @@
 # Мира — безопасность Vico Forum
 
+## 2026-11-11 — Block D / D12 stale UI / failure / cache closeout
+
+1. Target: current main `e279cb6c032a489a9044ca1191407df887c364b4`, rechecked identical to `main`.
+2. Verdict: **PASS — 0 current-scope security defects**.
+3. Current React Router v8 Framework behavior was rechecked: failed 4xx/5xx submissions do not automatically revalidate loaders. Vico's stale-sensitive paths explicitly revalidate where the current contract requires it and never automatically replay a POST.
+4. Closure/message private fetchers are actor/target/grant/revision/version scoped. Measures revalidate POST 403/404/409. Existing browser evidence proves stale cross-tab 409 removes invalid controls with no second write/History event.
+5. Complaints conflicts refresh loader state while retaining draft/operation identity for explicit user retry. Revoked reviewer/settings rights deny the next protected read/write. A previously delivered page remaining mounted after 403 is not a new read/bypass and no cross-context reuse was demonstrated.
+6. Typed dependency outages alone map to controlled 503/degradation; unexpected programming/schema/configuration failures propagate.
+7. Protected Admin/Attention/Complaints/measure/action responses are private/no-store; public topic action headers explicitly propagate private mutation cache policy.
+8. Worker authorization/AP-10/Complaint capabilities and their caches are request-local. No process-level private moderation/permission cache found.
+9. Administrator preferences are account-keyed allowlisted presentation state intersected with fresh server-allowed destinations; actor mismatch disables writes and preferences grant no authority.
+10. Block D complete with exactly three current findings: COMPLAINT-PRIV-01, HELP-SIGNAL-PRIV-01, HISTORY-PRIV-01 — all Low/P3. No remediation handoff.
+11. Next security area is map item 5 Public forum/application; its bounded audit plan is not yet defined.
+
 ## 2026-11-11 — Block D / D2 Admin Forum browsing / object privacy / IDOR audit
 
 1. Target: current main `e279cb6c032a489a9044ca1191407df887c364b4`, rechecked identical to `main`.
