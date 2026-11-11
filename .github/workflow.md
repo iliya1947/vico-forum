@@ -18,6 +18,8 @@
 16. D4 completed: **1 current-scope finding — HISTORY-PRIV-01 Low/P3**.
 17. D5 completed: **PASS — 0 current-scope Users read / targeted authorization composition defects**.
 18. D2 completed: **PASS — 0 current-scope Admin Forum browsing / object privacy / IDOR defects**.
-19. No technical planner, implementer or implementation PR is assigned.
-20. No Cloudflare/Neon/production mutation is authorized.
-21. Next after developer continuation: execute **D12 stale UI / failure / cache boundaries across Admin & moderation** and stop with findings/classification.
+19. D12 completed: **PASS — 0 current-scope stale UI / failure / cache defects**.
+20. **Block D completed. Current findings: COMPLAINT-PRIV-01 Low/P3; HELP-SIGNAL-PRIV-01 Low/P3; HISTORY-PRIV-01 Low/P3.**
+21. No technical planner, implementer or implementation PR is assigned.
+22. No Cloudflare/Neon/production mutation is authorized.
+23. Next after developer continuation: prepare the bounded audit plan for **area 5 — Public forum/application** before starting that audit.
