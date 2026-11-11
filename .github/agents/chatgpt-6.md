@@ -1506,3 +1506,12 @@ Review PR #323 exact `60a024304e6d595ea127bf19c948f15ca5ec39d2` after CI #430160
 ### SA03-D2 late browser evidence
 
 Exact head `e23d33cd6571e08c231b989c1dd8952a505a9345`: AP10 browser #43035916310 completed SUCCESS with all four jobs. Other exact-head results unchanged; D2 author STOP and D3 next.
+
+## 2026-11-11 — SA03-D3 bounded author checkpoint
+
+- Implementation Draft PR #324 head `9bf2541a646de47d1a18dc24b57ccbdb7e1c494d` from unchanged `main` `538084fd472c65459ad55ab30a0f96fbfdd68e56`; D1+D2 unchanged, D3 complete.
+- New `app/profile/sections.ts`, `sections.server.ts`, `owner-view.tsx`, `authorization-view.tsx`: server-admitted ready/unavailable measures/authz/exact-Owner subsections, original AP10 target hierarchy/ownList and original authorization target snapshot/writer, safe Owner session/History projection with source-coverage note. One `ProfileView`+ForumShell and `isSelf` self-edit semantics.
+- `app/routes/profile.tsx` now returns private/no-store actor-specific composed loader data and original self-only mutation with protected failures/redirect; 401/403 ErrorBoundary bounded same-URL GET refresh, no POST replay. `app/routes/admin-user.tsx` only guards `admin.users.read`, validates public target, 302 canonical redirect. `app/admin/users.tsx` directory links canonical `#authorization` and no second detail.
+- EN/RU/HE strings, fingerprint literals, tests, UI preview and AP10 connected browser regression updated to reflect canonical page rather than old detail. Existing supported source/project and authorization/Settings backend unchanged. No new DB schema/Producer beyond preexisting D2 indexes.
+- Intermediate test failures corrected: new i18n fingerprint map, obsolete `isOwner` test props, removed AdminUserDetail test, waiting for completed GET on 403 recovery, obsolete AP10 document/RTL selectors. Confirmed final exact-head CI #43043169812 SUCCESS (2231 app, 688 native PG, schema manifest and Worker smoke); SA01 Chromium #43043169774 SUCCESS; AP10 Chromium #43043169691 SUCCESS all four jobs.
+- D3 STOP, D4 SA03-specific connected acceptance not run; next developer continuation D4 in same Draft PR, then stable head to Mira. No merge/production/deactivation/Stage6.
