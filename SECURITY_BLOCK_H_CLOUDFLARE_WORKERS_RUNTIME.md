@@ -7,10 +7,11 @@
 3. **H1 — Worker composition & binding isolation завершён: PASS, 0 current-scope findings.**
 4. **H2 — Ingress trust & source attribution завершён: PASS, 0 current-scope findings.**
 5. **H3 — Runtime configuration and optional binding failure завершён: PASS, 0 current-scope findings.**
-6. **H4–H8 ещё не выполнялись.**
-7. Следующий bounded slice после продолжения владельца — **H4: Preview, Version URL and public entrypoint isolation**.
-8. Мира — auditor/coordinator. Remediation, technical planner и implementer не назначены.
-9. Cloudflare/production mutation, deployment, binding changes и live topology checks не выполнялись.
+6. **H4 — Preview, Version URL and public entrypoint isolation завершён: 0 current-scope findings + 1 deferred Stage-6 blocker `WORKER-VERSION-URL-01 Moderate/P2`.**
+7. **H5–H8 ещё не выполнялись.**
+8. Следующий bounded slice после продолжения владельца — **H5: Worker deployment/version/rollback repository gates**.
+9. Мира — auditor/coordinator. Remediation, technical planner и implementer не назначены.
+10. Cloudflare/production mutation, deployment, binding changes и live topology checks не выполнялись.
 
 ## H1 — результат
 
@@ -74,6 +75,39 @@
 - Cloudflare Vite plugin — local `.dev.vars`/`.env`, preview/build secret loading and non-deployment semantics;
 - Cloudflare Hyperdrive — explicit local connection string / binding-specific env override and separate remote mode;
 - Better Auth — current secret/baseURL configuration requirements and recommendation to set base URL explicitly.
+
+## H4 — результат
+
+1. Verdict на current `main` `ce62e783e71433a00c2fe4874ee26dfc54614628`: **0 current-scope findings; 1 deferred Stage-6 blocker — `WORKER-VERSION-URL-01 Moderate/P2`.**
+2. `production-worker-rollout.yml` в rollout job выполняет `wrangler versions upload` exact main version с top-level `wrangler.jsonc` production bindings: `HYPERDRIVE` и `WEB_HYPERDRIVE`. Upload также передаёт production `BETTER_AUTH_SECRET`, `GOOGLE_CLIENT_SECRET`, `BETTER_AUTH_URL` и `GOOGLE_CLIENT_ID`.
+3. Current Cloudflare Version URL contract: Worker version captures code/configuration/bindings; Version URL использует **existing configuration and production resources** этой version, а не отдельную isolated environment.
+4. Current Cloudflare access contract: при включённых Version URLs они **publicly available**; Access требуется отдельно, если нужно ограничить посетителей. `workers.dev` также публичен при включении.
+5. Vico source-of-truth уже требует: preview/non-production path не должен иметь production auth/forum write/private capability без отдельной isolation либо отключения. Version URL из rollout этому требованию не соответствует: uploaded version получает `WEB_HYPERDRIVE` production write/private capability до production traffic promotion.
+6. Workflow сам использует returned `preview_url` для `scripts/smoke-production-worker.sh`; parser требует HTTPS `*.workers.dev`. Smoke отправляет обычные unauthenticated GET requests и **не имеет Cloudflare Access service token/session**. Поэтому current successful workflow не доказывает и не требует защиту Version URL Access; наоборот, его scripted smoke рассчитан на напрямую доступный Version URL.
+7. `wrangler.jsonc` не фиксирует `preview_urls=false` и не объявляет isolated Preview resources. Current Cloudflare config semantics: omitted `preview_urls` does not force a safe state; existing account/Worker setting remains authoritative. Source-of-truth historically records production/preview `workers.dev` URLs enabled, but exact mutable live Access/Version-URL state сейчас: **Информация не проверена**.
+8. `promote=false` является штатным workflow input. В этом path после Version URL smoke workflow только записывает version/url в step summary; uploaded version не удаляется. Значит Stage-6 execution может оставить отдельно routable pre-production version, использующую production resources, после завершения run.
+9. Entire uploaded Worker route table доступен через Version URL, а не только smoke endpoints: current app содержит `/api/auth/*`, attachment APIs и locale/forum/admin routes. GET-only smoke ограничивает только действия CI-клиента и **не ограничивает методы/маршруты внешнего посетителя**.
+10. Application auth/authz/origin controls продолжают действовать и отдельный authz bypass H4 не доказан. Поэтому blocker не классифицируется как direct Owner/admin compromise. Security impact — появление публичного pre-production ingress с production web DB/auth capability вопреки утверждённой isolation boundary, включая окно до promotion и потенциально долгоживущий upload-only version.
+11. Current Cloudflare Worker Previews (новый отдельный mechanism) предоставляют separate settings/resources and are recommended for isolated branch testing, но требуют Wrangler `4.135.0+`; repository сейчас pinned `4.130.0`. Это возможный future solution space, **не отдельный finding и не требование H4 remediation способа**.
+12. `WORKER-VERSION-URL-01` **не current-scope**, потому что единственный подтверждённый activation path — manual `production-worker-rollout.yml`, а Stage 6 external integration paused. До dispatch/upload current local/CI product path не создаёт такой external ingress.
+13. Blocker становится correction gate **до следующего Stage-6 Worker version upload с `WEB_HYPERDRIVE`/private production capability**. H4 не выбирает implementation fix; remediation остаётся отдельной задачей.
+14. Current `Previews Base` historical zero-bindings state относится к new/branch preview configuration and does not neutralize Version URL semantics: Cloudflare отдельно указывает, что Version URLs use the resources configured for the Worker version. Exact mutable Previews Base/Access state — **Информация не проверена**.
+15. H4 source/workflow/scripts были прочитаны; external upload/deploy/smoke не запускались.
+16. Следующий slice — H5 deployment/version/rollback repository gates. `WORKER-VERSION-URL-01` в H5 не дублировать; H5 проверяет остальные rollout gates.
+
+### `WORKER-VERSION-URL-01` — Moderate/P2 — deferred Stage-6 blocker
+
+**Root cause:** protected rollout использует public-capable Version URL как pre-traffic smoke surface для version, которая уже содержит production `WEB_HYPERDRIVE`/auth configuration; workflow не устанавливает и не проверяет isolation/Access boundary для этого URL.
+
+**Stage:** deferred Stage 6; не current-scope пока rollout paused.
+
+**Correction gate:** до следующего schema/auth/forum-capable external Worker upload.
+
+Проверенная current official Cloudflare evidence:
+- Versions & Deployments: version captures code/configuration/bindings;
+- Version URLs / Compare workflows: Version URL uses that version's production resources and is public when enabled; Access is separate;
+- Worker Previews: isolated Preview settings/resources are separate from Version URLs; Preview URLs also public by default unless protected;
+- Wrangler configuration: `preview_urls` is an explicit mutable setting; omission does not force isolation.
 
 ## Цель
 
