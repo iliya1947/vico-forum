@@ -1,5 +1,14 @@
 # Лира — active assignment: SA04-A1 only
 
+## 2026-11-11 — Лира: SA04-A1 personal author verification, correction at `cebb91504f770fa6cd42c4990bb3116aef9b7874`; NOT COMPLETE
+
+- Per mandatory author gate, inspected authored A1 source, SQL CHECK, Drizzle, migration, snapshot/journal, schema manifest and Better Auth boundary for logic/task-fit and consequences, not only automated test status.
+- Found evidence gap: prior test merely inspected `additionalFields` keys and did not exercise actual Better Auth signup input / signup+session JSON. Added real runtime test in disposable schema applying 0065; test asserts non-writable and non-serialized camel/snake state keys.
+- Hardened actor-only-whitespace rejection in CHECK for tabs/newlines, matching new negative native regression. Drizzle SQL, 0065 SQL and metadata agree.
+- Static structural assertions PASS for the authored scope: 69 existing tables; 65 accepted journal entries preserved; target migration 0065; 3 nullable fields consistent in migration, schema, snapshot and manifest; unchanged other 68 tables; state fields not registered as additionalFields. Real HTTP/PG checks have **not yet executed**.
+- Draft [#327](https://github.com/iliya1947/vico-forum/pull/327) provisional head `cebb91504f770fa6cd42c4990bb3116aef9b7874`. `user_deactivation_state_check` manifest hash still `PENDING` and GitHub Actions queued: **no A1 completion or PASS claimed**. Detailed author findings [#6806780991](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6806780991).
+- Next Lira A1: obtain PG17 normalized CHECK hash, finalize manifest, run/correct applicable exact-head tests and CI, then STOP for Mira A1-only review. No other SA04 work.
+
 ## 2026-11-11 — SA04-A1 provisional Draft #327; CI queued; NOT AUTHOR STOP
 
 - Draft [#327](https://github.com/iliya1947/vico-forum/pull/327) from main `ce62e783e71433a00c2fe4874ee26dfc54614628`, provisional branch head `04024cb8d438bf3b365373f48bdba5c4c4aad31d`. Six A1 files: nullable deactivation state tuple in `user`, UTC calendar-year CHECK, forward `0065`, Drizzle snapshot/journal, schema manifest, and focused PostgreSQL native tests. `betterAuthUserAdditionalFields` unchanged (`locale` only).

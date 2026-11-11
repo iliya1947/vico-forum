@@ -6,8 +6,8 @@
 - Current `main`: `ce62e783e71433a00c2fe4874ee26dfc54614628`.
 - Accepted SA-04 technical plan: #6806249892; Mira scope/fit review PASS.
 - **Assigned to Lira: SA04-A1 — account-state schema foundation only; authoring in progress (not yet complete).**
-- Draft implementation [#327](https://github.com/iliya1947/vico-forum/pull/327), branch `chatgpt/sa04-account-state-foundation`, provisional head `04024cb8d438bf3b365373f48bdba5c4c4aad31d` from current main.
-- Six A1-only files authored. The new manifest CHECK hash remains deliberately `PENDING` until PostgreSQL 17 catalog hash evidence is available. All initial exact-head Actions #43096188913 / #43096188962 / #43096188931 / #43096188983 are **queued**, no test/CI PASS or A1 completion claimed. Evidence: #251 comment #6806574366.
+- Draft implementation [#327](https://github.com/iliya1947/vico-forum/pull/327), branch `chatgpt/sa04-account-state-foundation`, provisional head `cebb91504f770fa6cd42c4990bb3116aef9b7874` from current main.
+- Seven A1-only files authored; author structural verification and an HTTP input/output test-scope correction recorded in #251 comment #6806780991. The new manifest CHECK hash remains deliberately `PENDING` until PostgreSQL 17 catalog hash evidence is available. All initial exact-head Actions #43096188913 / #43096188962 / #43096188931 / #43096188983 are **queued**, no test/CI PASS or A1 completion claimed. Evidence: #251 comment #6806574366.
 - Next step stays with Lira: complete schema manifest exact hash, resolve any real CI findings, rerun final exact-head applicable checks, publish stable head/evidence and then STOP. **No Mira review until author completion.**
 - Result: add the inactive-account state storage contract to the existing `user` row with the next forward migration, Drizzle/schema metadata and focused schema/migration evidence. Existing rows remain active.
 - **Explicitly not in A1:** account-state runtime reader/predicate module, auth/session enforcement, writer guards, public identity masking/projectors, deactivate action/control, lifecycle event/UI.
