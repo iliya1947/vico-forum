@@ -4,7 +4,7 @@
 
 1. Служебный PR: **#315**.
 2. Моя текущая работа: audit/coordination only; remediation и implementation не назначены.
-3. Текущий этап: **Block I — Secrets & supply chain scope подготовлен; I1 Repository authority & main provenance ожидает выполнения.** Block H закрыт с 0 current findings + 2 deferred Stage-6 blockers; Block G закрыт с 3 current findings + deferred `DB-RUNTIME-EVIDENCE-01`.
+3. Текущий этап: **Block I I1 завершён: 1 current-scope finding — `REPO-MAIN-GATE-01 Moderate/P2`; следующий bounded slice — I2 Workflow events, tokens & write authority.** Block H закрыт с 0 current findings + 2 deferred Stage-6 blockers; Block G закрыт с 3 current findings + deferred `DB-RUNTIME-EVIDENCE-01`.
 4. Technical audit target B–D: `e279cb6c032a489a9044ca1191407df887c364b4`.
 5. Current `main` — `593a03964b8407b249f7c9f5eb117ddb8b07736d`. Delta `ce62e783… → 593a0396…` — SA-04 A1 #327 migration/schema/tests only; H runtime/topology code unchanged.
 6. Лира, Марк и Лёва по #315 сейчас не назначены.
@@ -23,6 +23,7 @@
    - [Block F — Files & attachments](../../SECURITY_BLOCK_F_FILES_ATTACHMENTS.md)
    - [Block G — Database & migrations](../../SECURITY_BLOCK_G_DATABASE_MIGRATIONS.md)
    - [Block H — Cloudflare / Workers / runtime](../../SECURITY_BLOCK_H_CLOUDFLARE_WORKERS_RUNTIME.md)
+   - [Block I — Secrets & supply chain](../../SECURITY_BLOCK_I_SECRETS_SUPPLY_CHAIN.md)
 
 ## Актуальные выводы Миры
 
@@ -184,6 +185,16 @@
 156. Production workflows use named Environments; exact reviewers/ref policy/admin bypass/actor access and secret inventory: **Информация не проверена**.
 157. I plan: I1 repository authority; I2 workflow token/event authority; I3 Environments; I4 secret custody; I5 dependency provenance; I6 Actions/tools/containers; I7 release supply-chain; I8 closeout.
 158. main/ruleset lead must not become finding until I1 proves a less-trusted write path and security impact.
+159. I1: **`REPO-MAIN-GATE-01 Moderate/P2` current-scope** confirmed on `593a03964b8407b249f7c9f5eb117ddb8b07736d`.
+160. main branch metadata: protected=false. Ruleset Protect main targets default branch but enforcement=disabled; configured rules include PR requirement, block deletion/non-fast-forward and strict required checks checks+database.
+161. Repository merge mode only allows squash PR merges, but no active branch gate prevents direct default-branch update.
+162. CI is pull_request-only; direct main update does not run those PR CI jobs as an enforced precondition.
+163. Connected GitHub repository integration has actual repository write ability (service-branch writes succeeded); installation repo metadata reports push=true/admin=true. Official Contents API requires Contents(write) and defaults omitted branch to default branch, so same delegated writer can technically target main when unprotected.
+164. Last 100 main commits: all verified=true, 96 PR-like subjects, 4 direct owner GitHub web edits of AGENTS.md. This proves direct-main path exists; verified signature alone does not prove PR/CI provenance.
+165. Current main push also triggers ui-preview-pages workflow, so unreviewed main content has current external Pages-deploy path. No automatic Worker/DB production rollout from push; Stage 6 paused; severity Moderate/P2.
+166. Exact human collaborator roster could not be enumerated with available connector surface. Owner permission admin; chatgpt-codex-connector[bot] user permission none. **Информация не проверена** for other human collaborators; finding does not depend on them because delegated write path is independently confirmed.
+167. No separate findings for CODEOWNERS, review count, signed-commit policy or verified-commit absence; one root cause only.
+168. I1 remediation not started. I2 must test workflow-event/token write paths and reference REPO-MAIN-GATE-01 instead of duplicating generic main protection.
 
 ## Ограничения
 
@@ -195,5 +206,5 @@
 
 ## Следующий шаг
 
-1. После продолжения владельца выполнить **I1 — Repository authority & main provenance** на current main и остановиться после результата.
-2. Findings только после полной causal chain; remediation не начинать.
+1. После продолжения владельца выполнить **I2 — Workflow events, tokens & write authority** на current main и остановиться после результата.
+2. `REPO-MAIN-GATE-01` не дублировать; новые findings только по independent workflow/token root cause. Remediation не начинать.
