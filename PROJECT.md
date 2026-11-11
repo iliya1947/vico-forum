@@ -53,12 +53,17 @@ application permissions разрешаются отдельно server-side.
 Постоянный контракт обычной админ-панели — [`docs/ADMIN_PANEL.md`](./docs/ADMIN_PANEL.md).
 Он задаёт структуру и permission boundaries: AP-01–AP-11 реализованы в repository/local-CI.
 Отдельный exact-Owner-only Super-admin описан в [`docs/SUPER_ADMIN.md`](./docs/SUPER_ADMIN.md):
-SA-01 и SA-02 реализованы в repository/local-CI. SA-01 доставил Owner shell/два входа,
+SA-01–SA-03 реализованы в repository/local-CI. SA-01 доставил Owner shell/два входа,
 System Monitoring, смежную History, общий Event log foundation и Stage-6 Infrastructure
 placeholder; SA-02 добавил live Accounts & authentication и Security Monitoring
 (4 + 3 монитора), source-aware adjacent/global History, точные auth-transition facts
-и bounded source-attributed attempt telemetry. Остальные Monitoring-области, единый
-профиль с privileged sections, деактивация и последующие SA-пакеты ещё не реализованы.
+и bounded source-attributed attempt telemetry. SA-03 сделал canonical
+`/:locale/users/:userId` единым user-detail: public profile дополняется независимо
+авторизованными Admin sections для существующих measures/authorization controls и exact-Owner
+private sections с account identity, linked methods, safe sessions/device data и target-scoped
+retained History. Legacy Admin user-detail остаётся только guarded compatibility redirect;
+migration `0064` добавляет шесть target-chronological indexes без новых tables/grants/writers.
+Деактивация, остальные Monitoring-области и SA-04+ ещё не реализованы.
 Обычная панель, Needs attention и Super-admin не объединяют permission boundaries или
 mutation backends.
 Settings ведётся отдельно по [`docs/SETTINGS.md`](docs/SETTINGS.md): SET-01 закрепил

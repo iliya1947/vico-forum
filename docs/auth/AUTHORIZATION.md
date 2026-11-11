@@ -240,15 +240,20 @@ overrides stay explicit. It grants no management authority. Significant authoriz
 append a minimal event in the same transaction after fresh authorization/admission checks; no-op
 and rejected changes do not create events. See `../ADMIN_PANEL.md` for coverage and read semantics.
 
-`admin.users.read` independently admits the ordinary admin Users index and detail. AP-09
-initially grants it only to built-in admin; custom roles, moderator grants and per-user
-allow/deny/inherit remain explicit and dynamic. It grants no authorization-management
-authority and does not expose email or a full authorization snapshot. An actor with
-`access.authorization.manage` but without `admin.users.read` retains the existing
-authorization-management user subset rather than gaining the general Users directory.
-When both permissions are effective, the Users detail may read the selected user's targeted
-authorization state; only the exact bound Owner receives mutation forms using the same
-canonical management action. See `../ADMIN_PANEL.md` for AP-09 read and mutation composition.
+`admin.users.read` independently admits the ordinary Admin Users directory and its guarded
+legacy detail entry. AP-09 initially grants it only to built-in admin; custom roles, moderator
+grants and per-user allow/deny/inherit remain explicit and dynamic. After SA-03 the legacy
+`/:locale/admin/users/:userId` route uses that permission only to validate the protected
+entry/target and redirect to canonical `/:locale/users/:userId`; it does not authorize a
+private profile section. The canonical profile's measures section independently requires
+`admin.users.blocks.manage` and current AP-10 hierarchy, while its targeted authorization
+section independently requires `access.authorization.manage`. An actor with
+`access.authorization.manage` but without `admin.users.read` therefore retains the existing
+authorization-management user subset and may receive the targeted canonical-profile
+authorization section when reaching a known public profile, but does not gain the general
+Users directory. Only the exact bound Owner receives mutation forms using the same canonical
+management action. Exact-Owner account/session/history projection has its separate Owner guard.
+See `../ADMIN_PANEL.md` and `../SUPER_ADMIN.md` for the composed profile boundaries.
 
 AP-10 adds two code-backed capabilities: `admin.users.blocks.manage` for exact-target
 user-measure create/change/lift, narrowly scoped private administrative reads and measure
