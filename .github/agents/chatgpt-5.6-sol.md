@@ -1984,3 +1984,12 @@ This guard is part of Mira's operating context for #251 and must be checked befo
 
 - Verified CI #43082138794: **SUCCESS** on exact head `dc9f846bf1fd4224b600fccfa3528f9a518fb8bd`.
 - #251 now routes directly to Lev independent factual whole-PR review of #326.
+
+
+## 2026-11-11 — self-correction: unauthorized docs implementation reverted
+
+- I incorrectly implemented the SA-03 documentation closeout myself instead of coordinating it.
+- I also incorrectly treated ordinary code/test CI as a docs acceptance gate.
+- Closed my PR #326 unmerged and removed it from the active workflow.
+- Restored #251 to: implementation #324 merged; factual docs closeout pending and unassigned.
+- Future docs-closeout work must be handed to the proper executor in a bounded assignment; I remain coordinator.
