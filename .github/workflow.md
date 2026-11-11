@@ -2,7 +2,7 @@
 
 1. Service PR: **#315**.
 2. Current stage: **Block G ЗАВЕРШЁН — 3 current-scope findings (`DB-SEARCHPATH-01`, `DB-ACL-USER-DELETE-01`, `DB-TEST-TARGET-01`) + deferred Stage-6 blocker `DB-RUNTIME-EVIDENCE-01`; awaiting Block H scope preparation**.
-3. Current audit target: `main` `538084fd472c65459ad55ab30a0f96fbfdd68e56`; compared with prior `4248fed23925e4a23e48485d419ceaf0ce337def`, only factual SA-02 Markdown docs changed.
+3. Current audit target after G8 descendant delta: `main` `5992885e78b1642e41c9805116fcc256002b649c`. Delta from `538084fd472c65459ad55ab30a0f96fbfdd68e56` is SA-03 #324: index-only migration `0064` + readonly profile/history changes; Block G result unchanged.
 4. Block E findings: **8 — `FORUM-PUB-01 Moderate/P2`, `READSTATE-CACHE-01 Low/P3`, `PUBLIC-PROJECTION-01 Low/P3`, `DISCOVERY-BOUNDS-01 Low/P3`, `SEARCH-CONTROL-01 Low/P3`, `LOCALE-DEGRADED-WRITE-01 Low/P3`, `FORUM-READ-BOUNDS-01 Moderate/P2`, `FORM-BODY-BOUNDS-01 Moderate/P2`; E2 PASS, E8 PASS, E9 PASS, E6 0 additional**.
 5. Technical planner: **none**.
 6. Implementer: **none**.
