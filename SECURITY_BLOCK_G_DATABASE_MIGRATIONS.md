@@ -8,11 +8,12 @@
 4. **G3 — Runtime least privilege завершён: 1 additional current-scope finding — `DB-ACL-USER-DELETE-01 Low/P3`.**
 5. **G4 — Migration / privilege workflow gates завершён: 1 additional current-scope finding — `DB-RUNTIME-EVIDENCE-01 Low/P3`.**
 6. **G5 — Transaction, locking and ambiguous outcomes завершён: PASS, 0 additional current-scope findings.**
-7. Repository migration history: `0000–0063`; externally accepted migration evidence: `0000–0020`.
-8. Само отставание external target от repository history не finding; G4 finding относится к current repository rollout gate, который допускает это отставание как достаточное evidence для current runtime.
-9. Следующий bounded slice — **G6 Destructive tooling and target isolation**.
-10. Мира — auditor/coordinator. Remediation, technical planner и implementer не назначены.
-11. Production/Neon/Cloudflare mutation в Block G не разрешена и не выполняется.
+7. **G6 — Destructive tooling and target isolation завершён: 1 additional current-scope finding — `DB-TEST-TARGET-01 Low/P3`.**
+8. Repository migration history: `0000–0063`; externally accepted migration evidence: `0000–0020`.
+9. Само отставание external target от repository history не finding; G4 finding относится к current repository rollout gate, который допускает это отставание как достаточное evidence для current runtime.
+10. Следующий bounded slice — **G7 Manifest, evidence and drift detection**.
+11. Мира — auditor/coordinator. Remediation, technical planner и implementer не назначены.
+12. Production/Neon/Cloudflare mutation в Block G не разрешена и не выполняется.
 
 ## G1 — результат
 
