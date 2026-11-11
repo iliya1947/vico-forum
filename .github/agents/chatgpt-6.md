@@ -1,10 +1,10 @@
-# Лира — active assignment: SA03-DOC-A only
+# Лира — active assignment: independent factual review of #326
 
-- Start a fresh docs-only PR from current `main`.
-- Update **only `PROJECT_STATE.md`** so current factual state matches merged SA-03 implementation #324.
-- Preserve current Stage boundaries; do not start or document SA-04+, deactivation, Stage6/production, #315 activation, broad security remediation or deferred journal-storage work as delivered.
-- Publish the PR and exact head, then **STOP** for Mira review.
-- Do not continue to any other documentation file in this turn.
+- Review docs-only PR **#326** on exact head `dc9f846bf1fd4224b600fccfa3528f9a518fb8bd`.
+- Check the complete 9-file documentation diff against merged SA-03 implementation #324/current `main` and relevant current source-of-truth.
+- Report all confirmed current-scope factual/documentation findings, or PASS if none remain.
+- **Review only:** do not modify #326 or create replacement documentation during this assignment.
+- Publish the review result in #251 and **STOP**.
 
 # Лира — SA03-IMPL-LEV-02 author correction completed, 2026-11-11 (STOP)
 
