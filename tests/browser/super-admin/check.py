@@ -488,8 +488,9 @@ try:
         with exclusive_lock("admin_history"):
             unavailable = request(owner_ctx, "/en/super-admin/events", 503)
             assert "no-store" in unavailable.headers.get("cache-control", "")
-        failure_events = sql(
-            "select id,monitor_key,payload from owner_events where kind='system.requestFailed'")
+        failure_events = rows_until(
+            "select id,monitor_key,payload from owner_events where kind='system.requestFailed'",
+            check=lambda rows: any(event["payload"].get("code") == "503" for event in rows))
         assert failure_events, "built Worker must record an actual 5xx result"
         assert all(event["monitor_key"] == "system.requests" for event in failure_events)
         assert all(set(event["payload"]) <= {"component", "code", "latencyMs"}
