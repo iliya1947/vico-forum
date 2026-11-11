@@ -2,6 +2,7 @@ import { drizzle } from "drizzle-orm/node-postgres";
 import { migrate } from "drizzle-orm/node-postgres/migrator";
 import { Client, Pool, type ClientBase, type DatabaseError } from "pg";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { betterAuthUserAdditionalFields } from "../../db/schema";
 import { loadPersistentRegistry } from "../../app/localization/persistent-registry";
 import { parseLocaleCandidate } from "../../app/localization/locale";
 import { AmbiguousCommitOutcomeError, ControlledLocaleWriter, DrizzleLocaleRepository } from "../../db/locale-repository";
@@ -79,7 +80,7 @@ describe("PostgreSQL 17 locale migrations", () => {
     const applied = await client.query<{ count: string }>(
       'select count(*)::text as count from drizzle."__drizzle_migrations"',
     );
-    expect(applied.rows[0]?.count).toBe("65");
+    expect(applied.rows[0]?.count).toBe("66");
     // The AP-08 manifest hashes are computed from PostgreSQL 17 catalog expressions,
     // rather than assumed from SQL formatting or hand-entered normalized forms.
     const definitions = await client.query<{ key: string; definition: string }>(`
@@ -3349,6 +3350,67 @@ describe("PostgreSQL 17 locale migrations", () => {
     }
   });
 
+
+  it("SA-04 A1 keeps active users unchanged and enforces UTC one-calendar-year account state", async () => {
+    expect(Object.keys(betterAuthUserAdditionalFields)).toEqual(["locale"]);
+    await client.query("begin");
+    try {
+      await client.query("set local time zone 'America/New_York'");
+      const id = "sa04-a1-account";
+      await client.query(
+        'insert into "user" (id, name, email) values ($1, $2, $3)',
+        [id, "Active account", "sa04-a1@example.invalid"],
+      );
+      const read = () => client.query<{
+        deactivated_at: Date | null; deactivated_by_user_id: string | null;
+        retain_at_least_until: Date | null;
+      }>('select deactivated_at, deactivated_by_user_id, retain_at_least_until from "user" where id = $1', [id]);
+      expect((await read()).rows[0]).toEqual({
+        deactivated_at: null, deactivated_by_user_id: null, retain_at_least_until: null,
+      });
+
+      const update = (at: string | null, by: string | null, until: string | null) =>
+        client.query(
+          'update "user" set deactivated_at = $2::timestamptz, deactivated_by_user_id = $3, retain_at_least_until = $4::timestamptz where id = $1',
+          [id, at, by, until],
+        );
+      const rejected = async (at: string | null, by: string | null, until: string | null) => {
+        await client.query("savepoint sa04_bad_state");
+        try {
+          await expectDatabaseCheck(update(at, by, until));
+        } finally {
+          await client.query("rollback to savepoint sa04_bad_state");
+          await client.query("release savepoint sa04_bad_state");
+        }
+      };
+
+      const leapStart = "2024-02-29T12:34:56+00";
+      const leapBoundary = "2025-02-28T12:34:56+00";
+      await rejected(leapStart, null, leapBoundary);
+      await rejected(null, "bound-owner", leapBoundary);
+      await rejected(leapStart, "bound-owner", null);
+      await rejected(leapStart, "", leapBoundary);
+      await rejected(leapStart, "   ", leapBoundary);
+      await rejected(leapStart, "bound-owner", "2025-02-28T12:34:55+00");
+      await update(leapStart, "bound-owner", leapBoundary);
+      expect((await read()).rows[0]).toMatchObject({ deactivated_by_user_id: "bound-owner" });
+
+      // On the DST crossover, local-calendar arithmetic would allow this one-hour-short
+      // retention; the UTC-calendar check must reject it regardless of session TimeZone.
+      await rejected("2025-03-09T06:30:00+00", "bound-owner", "2026-03-09T06:29:59+00");
+      await update("2025-03-09T06:30:00+00", "bound-owner", "2026-03-09T06:30:00+00");
+      expect((await read()).rows[0]?.retain_at_least_until?.toISOString())
+        .toBe("2026-03-09T06:30:00.000Z");
+
+      await update(null, null, null);
+      expect((await read()).rows[0]).toEqual({
+        deactivated_at: null, deactivated_by_user_id: null, retain_at_least_until: null,
+      });
+    } finally {
+      await client.query("rollback");
+    }
+  });
+
   it("creates the exact Better Auth 1.7.4 PostgreSQL foundation", async () => {
     const columns = await client.query<{
       column_name: string;
@@ -3379,7 +3441,10 @@ describe("PostgreSQL 17 locale migrations", () => {
       ...authColumns("user", [["id", "text", "NO"], ["name", "text", "NO"], ["email", "text", "NO"],
         ["email_verified", "boolean", "NO"], ["image", "text", "YES"],
         ["created_at", "timestamp without time zone", "NO"], ["updated_at", "timestamp without time zone", "NO"],
-        ["locale", "text", "YES"]]),
+        ["locale", "text", "YES"],
+        ["deactivated_at", "timestamp with time zone", "YES"],
+        ["deactivated_by_user_id", "text", "YES"],
+        ["retain_at_least_until", "timestamp with time zone", "YES"]]),
       ...authColumns("verification", [["id", "text", "NO"], ["identifier", "text", "NO"],
         ["value", "text", "NO"], ["expires_at", "timestamp without time zone", "NO"],
         ["created_at", "timestamp without time zone", "NO"], ["updated_at", "timestamp without time zone", "NO"]]),

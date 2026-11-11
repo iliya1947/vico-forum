@@ -482,7 +482,23 @@ export const user = pgTable("user", {
     .$onUpdate(() => new Date())
     .notNull(),
   locale: text("locale"),
-});
+  // SA-04: server-owned account state; not registered in Better Auth additionalFields.
+  deactivatedAt: timestamp("deactivated_at", { withTimezone: true }),
+  deactivatedByUserId: text("deactivated_by_user_id"),
+  retainAtLeastUntil: timestamp("retain_at_least_until", { withTimezone: true }),
+}, (table) => [
+  check("user_deactivation_state_check", sql`(
+    (${table.deactivatedAt} is null and ${table.deactivatedByUserId} is null
+      and ${table.retainAtLeastUntil} is null)
+    or (
+      ${table.deactivatedAt} is not null and ${table.deactivatedByUserId} is not null
+      and btrim(${table.deactivatedByUserId}) <> ''
+      and ${table.retainAtLeastUntil} is not null
+      and (${table.retainAtLeastUntil} at time zone 'UTC') >=
+        ((${table.deactivatedAt} at time zone 'UTC') + interval '1 year')
+    )
+  )`),
+]);
 
 export const forumProfiles = pgTable("forum_profiles", {
   userId: text("user_id").primaryKey().references(() => user.id, { onDelete: "cascade" }),
