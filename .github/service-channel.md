@@ -3822,3 +3822,14 @@ After the implementation is merged, SA-03 receives a separate bounded factual do
 - CI #43082138794 completed **SUCCESS** on exact docs head `dc9f846bf1fd4224b600fccfa3528f9a518fb8bd`.
 - The docs closeout remains authored by Mira and therefore still has no self-review PASS.
 - Next gate is Lev independent factual whole-PR review of #326 on this exact head.
+
+
+## 2026-11-11 — correction: Mira must not implement SA-03 docs closeout
+
+The previous docs-closeout route was incorrect.
+
+- Mira authored PR #326 herself, which violated the active #251 role/workflow separation.
+- PR #326 is now **closed unmerged**. Its contents are not accepted as project documentation.
+- The earlier CI/reviewer route for #326 is cancelled. Ordinary code/test CI is not the factual correctness gate for docs-only authoring.
+- #251 is restored to the actual state: SA-03 implementation #324 is merged; the required factual documentation closeout is still pending.
+- Mira's next responsibility is coordination only: define a bounded docs-closeout task, apply the handoff granularity gate, and route one appropriately sized assignment to the executor. No SA-04+ work is started.
