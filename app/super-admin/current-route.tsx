@@ -1,30 +1,9 @@
-import { data, Link, type RouterContextProvider } from "react-router";
+import { Link } from "react-router";
 import { useTranslation } from "react-i18next";
 import { useAdministrativeRouting } from "../administrative-routing/provider";
-import { SA02_MONITORS, type Sa02Area } from "../../db/owner-sa02-catalog";
+import type { Sa02Area } from "../../db/owner-sa02-catalog";
 import type { Sa02CurrentState } from "../../db/owner-sa02-current";
-import { OwnerSystemUnavailableError } from "../../db/hyperdrive-owner-system";
-import { requireSuperAdmin, superAdminPrivateHeaders } from "./access.server";
-import { ownerSa02MonitoringForRequest } from "./request-context";
 import { SuperAdminShell, formatTime } from "./view";
-export async function loadSa02CurrentArea({request,params,context}:{
-  request:Request;params:{locale?:string};context:RouterContextProvider;
-},area:Sa02Area){
-  requireSuperAdmin(context);
-  if(new URL(request.url).searchParams.size!==0)
-    throw new Response("Invalid monitoring query",{status:400,headers:superAdminPrivateHeaders});
-  try{
-    const snapshot=await ownerSa02MonitoringForRequest(context).readSa02Current();
-    return data({locale:params.locale??"en",area,
-      state:{...snapshot,monitors:snapshot.monitors.filter(m=>
-        (SA02_MONITORS[area] as readonly string[]).includes(m.key))}},
-      {headers:superAdminPrivateHeaders});
-  }catch(error){
-    if(error instanceof OwnerSystemUnavailableError)
-      throw new Response("Unavailable",{status:503,headers:superAdminPrivateHeaders});
-    throw error;
-  }
-}
 /** Bounded D1 current-page presentation; semantic labels and actions land in D2. */
 export function SuperAdminSa02Current({locale,area,state}:{
   locale:string;area:Sa02Area;state:Sa02CurrentState
