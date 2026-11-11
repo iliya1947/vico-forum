@@ -3833,3 +3833,11 @@ The previous docs-closeout route was incorrect.
 - The earlier CI/reviewer route for #326 is cancelled. Ordinary code/test CI is not the factual correctness gate for docs-only authoring.
 - #251 is restored to the actual state: SA-03 implementation #324 is merged; the required factual documentation closeout is still pending.
 - Mira's next responsibility is coordination only: define a bounded docs-closeout task, apply the handoff granularity gate, and route one appropriately sized assignment to the executor. No SA-04+ work is started.
+
+
+## 2026-11-11 — correction to #326 disposition
+
+- Closing #326 was an unauthorized follow-up action. The developer had questioned why Mira authored the docs; that did not authorize closing the PR.
+- #326 has been reopened. Exact head remains `dc9f846bf1fd4224b600fccfa3528f9a518fb8bd`.
+- Neutral state restored: #326 exists and remains open; no acceptance/rejection/merge/close/reassignment decision is inferred.
+- The process error remains factual: Mira authored the docs instead of routing the bounded work first.
