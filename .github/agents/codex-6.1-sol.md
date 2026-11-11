@@ -1,3 +1,19 @@
+# Лёва — актуальный checkpoint: SA-03 repeat independent CHANGES REQUIRED (2026-11-11)
+
+**Active: SA03-IMPL-LEV-02 · P2 OPEN; LEV-01 and MIRA-01 CLOSED.** [Full result #6803187864](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6803187864). PR324 exact `d7a526ac00ef56ebd8c8bd4035cc84fb9731ad49`, main/base `538084fd472c65459ad55ab30a0f96fbfdd68e56`. Assigned after Mira coordinator PASS on same head. Complete43-file scope re-evaluated; six correction files fully read,37 source hashes unchanged.
+
+Original identity-boundary.py unchanged except paths/port independently confirms LEV-01 closure: UI signout200, HeaderAuth guest, held revalidation GET, zero old private sections/forms/email before response. MIRA-01 own/Admin routes remain correct.
+
+LEV-02: in ProfileView lines39–50 new privileged reference resets latchfalse, but old currentSessionUser immediately sets ittrue while HeaderAuthProvider effect has not yet copied new initialUser. Header effect catches up next render, same fresh privileged reference leaves latchtrue. Actual original Chromium→built Worker→real Better Auth→disposablePG17 reproducer account-switch.py: member tab on profile; move actual synthetic session to boundOwner (same local seam as accepted harness); click existing .auth-user SPA Link; correct target, HeaderAuth Owner, router idle, actual profile.privileged.viewerId and locale.authUser.id both Owner, loaded measures/authz/Owner sections, but0 private DOM. Fresh .data200 contains target email; extra unchanged router.revalidate restores4 sections. No browser error. Need bounded restore-fresh-versus-clear-stale correction and no-reload SPA regression. Current checked-in recovery reloads document, misses synchronization phase.
+
+Independent local fresh build/native9/migrations0000–0064/schema69 PASS. App related10files81PASS; initial unchanged Editor combined waitFor timeout, isolated14/14PASS (logs preserved, no clean combined PASS claimed). Checked-in connected Chromium25/25PASS, original assertions verified identical after local path/Chromium adaptation. Original signout closure JSON and new account-switch loaded-state proof retained. Remote exacthead CI #43068315572 / SA03 #43068315602 / SA01 #43068315460 / AP10 #43068315564 allSUCCESS verified API.
+
+#315 refreshed head1771190c5e0afee82b065a5f309917a7aa50799d, A/E blobs unchanged; separate security audit/remediation/Stage6 excluded. No source/schema/permanent docs edits, no active own resources. /workspace/work/sa03-repeat clean exacthead, evidence /workspace/work/sa03-repeat-evidence: SOURCE_MANIFEST, identity-boundary.py/json/log, account-switch.py/json/log/fresh-owner-hidden.png, original checked-in browser copy + browser/results25, app/editor repeat/native/build/schema logs. Own vite4205 + vico-sa03-lev-repeat removed; vars/node_modules link removed.
+
+**Next Mira:** verify the single new correction packet and determine assignment. Lev completed/stopped; Lira/Mark unassigned by Lev. Corrected head needs coordinator then independent cycle; current head not merge-ready; master plan unchanged.
+
+---
+
 # Лёва — актуальный checkpoint: SA-03 independent CHANGES REQUIRED (2026-11-11)
 
 **Active result:1 confirmed current-scope finding, SA03-IMPL-LEV-01 · P2 OPEN.** [Full result #6802006091](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6802006091). PR324 exact `4bfdfdd14a70534bd95c308de9d1c8c2df672c76`, main/base `538084fd472c65459ad55ab30a0f96fbfdd68e56`; Mira repeat coordinator PASS preceded review. Reviewed all43 cumulative files against accepted plan #6796912006; no review-time implementation edits.
