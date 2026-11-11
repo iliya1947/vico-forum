@@ -3961,3 +3961,20 @@ Mira reviewed Lev's published SA-04 package plan #6806249892 against current mai
 - No future-only #315/Stage6/security item was promoted into SA-04.
 - **Granularity correction for handoff, not a technical-plan rejection:** A–S are planning checkpoints only. Row A already contains multiple independently completable results, so it must be split before any Lira assignment. The same gate applies again to each later row at its handoff time.
 - No implementation assignment is made by this review. Next continuation handles only the first bounded authoring result.
+
+
+## 2026-11-11 — SA04-A1 assigned
+
+Granularity gate applied to Lev's checkpoint A. It was compound, so only the first independently completable result is assigned.
+
+**SA04-A1 — account-state schema foundation only**
+- Base: current main `ce62e783e71433a00c2fe4874ee26dfc54614628`.
+- Add nullable account-state storage to the existing Better Auth `user` row: deactivation timestamp, deactivating actor ID and minimum-retention timestamp.
+- Add one consistency constraint so active rows keep the full state tuple null and inactive rows have a complete valid tuple with retention not earlier than one calendar year after deactivation.
+- Use the next forward migration (currently `0065`) and keep Drizzle schema/snapshot/journal/full-schema manifest and focused migration/native constraint evidence consistent.
+- Existing users remain active; no data backfill to inactive state.
+- Do not expose the new state as Better Auth client-writable/serialized additional fields.
+- **No runtime account-state helper/predicate, auth/session enforcement, writer admission, public identity masking, neutral projector, deactivate command/control or SA-05 behavior in this subtask.**
+- Lira publishes the Draft implementation PR/exact head and evidence, then **STOP**.
+
+Next after STOP: Mira reviews A1 only. Later SA-04 work remains unassigned.
