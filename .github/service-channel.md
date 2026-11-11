@@ -3184,3 +3184,18 @@ All three are local A/B/C corrections; no technical-plan revision, SA02-D, SA03+
 - **LEV-03 author fix:** `db/owner-sa02-history.ts` projects the already persisted safe `actor_user_id,target_user_id,entity_type,entity_id` on auth-event entries as allowlisted `values.actorUserId/targetUserId/entityType/entityId`; source writer payload remains intact. Canonical source columns override any JSON key collision; absent actor remains JSON null, target and entity remain separate. Native PG17 regression writes exact auth events with actor≠target and null actor through real `PostgresAuthFactWriter` then checks original source and global + accounts.sessions + security.auth History. No credential, token, email, raw user profile, or new privileged endpoint is added.
 - **All exact-head runs verified SUCCESS:** [CI #42968881718](https://github.com/iliya1947/vico-forum/actions/runs/42968881718) — application **177 files / 2181 tests**, native PostgreSQL17 **63 files / 679 tests**, lint/TS/build/clean migrations/schema/runtime privileges/Worker smoke. [SA-01 Chromium #42968881704](https://github.com/iliya1947/vico-forum/actions/runs/42968881704) SUCCESS. [AP-10 Chromium #42968881701](https://github.com/iliya1947/vico-forum/actions/runs/42968881701) SUCCESS **4/4 jobs**.
 - **Lira STOP** after this atomic author correction packet. It is **not** an independent whole-PR review or declaration of coordinator PASS. Next: **Mira fresh coordinator whole-PR review of cumulative SA02 backend A/B/C on exact `25ac41573847f9fbce79897b2e019fd246b400cc`**. PR #319 remains Draft. No SA02-D, SA03+, Stage6 #315, merge, production, Lev/Mark activation or deferred Owner journal occupancy/archive/clear.
+
+
+## 2026-11-11 — PR #319 backend A/B/C fresh coordinator review after Lev corrections: PASS
+
+Mira reviewed stable exact head `25ac41573847f9fbce79897b2e019fd246b400cc` after Lira packet #6788446097. Main remains `e279cb6c032a489a9044ca1191407df887c364b4`.
+
+Result: [#6788548049](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6788548049) — **PASS, 0 open coordinator findings**.
+
+- SA02-IMPL-LEV-01 CLOSED: real production auth-fact factory preserves trusted occurrence time through PostgreSQL/History.
+- SA02-IMPL-LEV-02 CLOSED: Accounts coverage is based on actual retained matching History sources rather than old domain-row timestamps.
+- SA02-IMPL-LEV-03 CLOSED: source-aware auth History preserves safe stored actor/target/entity refs without credential/raw-record expansion.
+- No new confirmed current-scope defect found in cumulative backend A/B/C.
+- Exact-head CI #42968881718, SA-01 Chromium #42968881704 and AP-10 Chromium #42968881701 are SUCCESS; AP-10 has four successful jobs.
+
+**Handoff:** Lev performs a fresh independent whole-scope review of the same PR #319 exact head `25ac41573847f9fbce79897b2e019fd246b400cc` for backend A/B/C only. Lira/Mark unassigned. SA02-D remains separate later work.
