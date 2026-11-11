@@ -3390,3 +3390,33 @@ Developer merged factual docs-only PR #323. Final docs head `60a024304e6d595ea12
 - Service PR #251 is now synchronized to the merged main state. No runtime/schema/config/dependency/test change is made by this service-channel update.
 - Per the accepted full Super-admin plan #6745289141, the next bounded package is **SA-03**: canonical profile public/Admin/Owner composition, safe target account/session/method/private-identity projection, available per-user Owner summary, and guarded legacy admin-detail redirect. The deactivate control remains outside SA-03 and is not activated.
 - No agent is currently assigned. On developer continuation, Mira starts the bounded SA-03 cycle and hands package-specific technical planning to Lev before Lira implementation. SA-04+, Stage6/#315 activation, production and deferred post-current-plan History storage occupancy/archive/clear remain outside scope.
+
+
+## 2026-11-11 — SA-03 started; Lev assigned technical planning
+
+Developer continuation starts the next accepted bounded Super-admin package from current main `538084fd472c65459ad55ab30a0f96fbfdd68e56`.
+
+**Current package: SA-03 only.**
+
+Required result for **Lev (Codex-6.1 Sol)**: prepare a package-specific technical plan that maps the already accepted SA-03 scope onto the current repository and is ready for Mira scope/fit review.
+
+Scope:
+- canonical `/:locale/users/:userId` profile as the single user-detail surface with separately server-authorized public, ordinary-Admin and exact-Owner projections;
+- existing applicable Admin measure/authorization information without broadening ordinary-admin access;
+- exact-Owner private identity, linked/sign-in method information, supported target session/device information and available per-user Owner summary from authoritative current sources;
+- guarded compatibility redirect from the existing Admin user-detail route to the canonical profile;
+- preserve current public-profile behavior and existing authoritative mutation/read boundaries.
+
+Boundary:
+- **do not enable account deactivation in SA-03**; deactivation state/enforcement/action belongs to later packages;
+- no new generic user-history/audit subsystem, second user-detail surface, second RBAC or duplicate mutation backend;
+- no SA-04+, Stage6/#315 activation, production work, infrastructure integration or deferred History storage archive/clear work.
+
+Done criteria:
+- inspect actual current main and identify the existing routes/readers/components/auth boundaries that SA-03 composes or replaces;
+- define a bounded implementation sequence/change surface and any required migrations/dependencies (if none, state that);
+- define applicable unit/native/browser/privacy/authorization checks, including HTML/data redaction and account/permission switch cases;
+- identify any real current-scope blocker or unresolved product contradiction instead of inventing behavior;
+- publish the technical plan through #251 and stop for Mira review. **Do not implement SA-03.**
+
+Lira and Mark remain unassigned.
