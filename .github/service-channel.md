@@ -29,7 +29,7 @@
 6. D12 corrected closeout: official React Router Framework/SSR docs и exact `react-router@8.3.1` source подтвердили default skip loader revalidation после 4xx/5xx; Vico explicit recovery refreshes loaders and does not automatically replay mutations.
 7. Block E audit завершён: E2 PASS; E5 — **`FORUM-PUB-01 Moderate/P2`**; E6 — 0 additional; E7 — **`READSTATE-CACHE-01 Low/P3`**; E3 — **`PUBLIC-PROJECTION-01 Low/P3`**; E4 — **`DISCOVERY-BOUNDS-01 Low/P3`, `SEARCH-CONTROL-01 Low/P3`**; E8 PASS; E1 — **`LOCALE-DEGRADED-WRITE-01 Low/P3`** + расширение `READSTATE-CACHE-01`; E9 PASS; E10 — **`FORUM-READ-BOUNDS-01 Moderate/P2`, `FORM-BODY-BOUNDS-01 Moderate/P2`**. Block E total: **8 findings**. E10 проверен на current `main` `4248fed23925e4a23e48485d419ceaf0ce337def`; compare с предыдущим target подтвердил отсутствие изменений core Forum/translation E2–E9.
 8. Block F на current `main` `538084fd472c65459ad55ab30a0f96fbfdd68e56`: **ЗАВЕРШЁН. Итог — 1 current-scope finding: `ATTACH-TEXT-TAIL-01 Low/P3`; F1/F2/F4/F5/F6/F7/F8 дополнительных findings не дали.** F8 перепроверил upload → publication → read → edit/remove → cleanup → evidence, включая lost ACK, measures, complaint evidence и runtime failures.
-9. **Block G — Database & migrations: G1 Migration history integrity — PASS, 0 current-scope findings.** Target — current `main` `538084fd472c65459ad55ab30a0f96fbfdd68e56`; journal/SQL/snapshots `0000–0063` сходятся, accepted-history guard и clean-replay CI boundary подтверждены по source. Следующий slice — G2 Schema-level security invariants.
+9. **Block G — Database & migrations: G1 PASS; G2 подтвердил 1 finding — `DB-SEARCHPATH-01 Low/P3`.** Complaint predecessor INSERT guard использует unqualified relation names без fixed search path; current web DB capability допускает TEMP, поэтому direct SQL может shadow-нуть guard relations через `pg_temp` и сохранить unrelated predecessor Case. Следующий slice — G3 Runtime least privilege.
 10. Implementation PR, technical planner и implementer для remediation сейчас не назначены.
 11. Cloudflare/Neon/production mutation по #315 не разрешена и не выполнялась.
 
@@ -56,6 +56,7 @@
 19. `FORUM-READ-BOUNDS-01` — Moderate/P2; canonical public section/topic reads grow without page/row bounds and amplify DB/translation/SSR work with persistent forum growth.
 20. `FORM-BODY-BOUNDS-01` — Moderate/P2; ordinary member forum/profile/presence POST paths fully parse form bodies without an application byte ceiling before semantic validation.
 21. `ATTACH-TEXT-TAIL-01` — Low/P3; text classification checks only the first 4096 bytes, so a later binary tail can still become `type-checked`/publishable without attachment security evidence.
+22. `DB-SEARCHPATH-01` — Low/P3; Complaint predecessor trigger uses unqualified relation names under caller search path, so a current web-capability session with TEMP can shadow its validation tables and persist an unrelated predecessor Case.
 
 Ключевая causal path, impact и границы каждого finding находятся в соответствующем Block-файле.
 
@@ -68,10 +69,10 @@
 ## Открыто
 
 1. **Block F закрыт: 1 finding — `ATTACH-TEXT-TAIL-01 Low/P3`.** Remediation не назначена.
-2. **Block G G1 завершён: PASS, 0 findings.** Journal, 64 SQL migrations и 64 snapshots `0000–0063` совпадают; snapshot chain непрерывна.
-3. Следующий bounded audit slice — **G2 Schema-level security invariants** на current `main` `538084fd472c65459ad55ab30a0f96fbfdd68e56`.
-4. G1 tests были прочитаны, но в audit-срезе не запускались.
-5. Repository `0000–0063` vs external evidence `0000–0020` — ожидаемая paused-Stage-6 граница, не finding сама по себе.
-6. Live production DB drift, pending migration rollout и backup/restore: **Информация не проверена** без отдельного Stage-6 действия.
-7. Existing Blocks B–F findings не дублировать: G требует отдельный database/migration root cause.
+2. **Block G G1 PASS; G2 завершён с 1 finding — `DB-SEARCHPATH-01 Low/P3`.** Детальная causal chain находится в `SECURITY_BLOCK_G_DATABASE_MIGRATIONS.md`.
+3. Следующий bounded audit slice — **G3 Runtime least privilege** на current `main` `538084fd472c65459ad55ab30a0f96fbfdd68e56`.
+4. G2 tests/probes были прочитаны, но в audit-срезе не запускались.
+5. G3 должен проверить TEMP/database/schema/relation/function capability целиком и определить, есть ли independent least-privilege finding; `DB-SEARCHPATH-01` не дублировать.
+6. Repository `0000–0063` vs external evidence `0000–0020` — ожидаемая paused-Stage-6 граница, не finding сама по себе.
+7. Live production DB drift, pending migration rollout и backup/restore: **Информация не проверена** без отдельного Stage-6 действия.
 8. Лира, Лёва и Марк сейчас не имеют активного назначения по #315.
