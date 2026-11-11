@@ -158,7 +158,8 @@ describe("interactive Pages preview", () => {
     await user.click(screen.getByRole("button", { name: "Save language" }));
 
     await waitFor(() => expect(document.documentElement.lang).toBe("ru"));
-    expect(document.querySelector<HTMLSelectElement>("#settings-preferred-locale")?.value).toBe("ru");
+    const savedLocale = document.querySelector("#settings-preferred-locale") as HTMLSelectElement | null;
+    expect(savedLocale?.value).toBe("ru");
     expect(await screen.findByRole("status")).toBeInTheDocument();
   });
 
