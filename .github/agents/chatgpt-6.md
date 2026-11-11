@@ -1,3 +1,11 @@
+# Лира — SA04-A2 author checkpoint complete; STOP
+
+- Draft implementation [#328](https://github.com/iliya1947/vico-forum/pull/328), main baseline `593a03964b8407b249f7c9f5eb117ddb8b07736d`, **stable exact head `f9da2033455487f25510c2ccbbb748ed5f4bf7f4`**.
+- Added only `db/account-state.ts` (read-only typed state classification, safe compiled native/Drizzle active predicate, classification errors and no lock) and `tests/database/account-state.test.ts` (six native disposable tests). No functional runtime wiring.
+- **Personal inspection complete** of code, full diff, type/read semantics and A2 limits; verified id parameterization, separated missing vs deactivated vs storage unavailable/unexpected, identical state semantics in native and Drizzle and no caller transaction lock.
+- [Exact-head CI #43109939829](https://github.com/iliya1947/vico-forum/actions/runs/43109939829) SUCCESS: 2237 app tests; 696 PostgreSQL17 tests, all 6 A2; 69-table manifest parity, lint/typecheck/build/Worker.
+- **STOP.** Next Mira bounded checkpoint review, not independent Lev reviewer yet. A3 transaction locks, A4 public-neutral helpers, auth/writer enforcement, SA05+/Stage6 and merge not started.
+
 # Лира — SA04-A1-MIRA-01 author correction completed; STOP
 
 PR #327 stable head `3d6c7c06ac1442a5a4b3ff7f8fbe77454ca8479c`, base `ce62e783e71433a00c2fe4874ee26dfc54614628`.
