@@ -1,14 +1,13 @@
 # Admin panel — current workflow
 
-- Service PR: **#251**. Current stage: **SA-03 implementation #324 merged; docs-only PR #326 independently reviewed PASS and ready for developer merge.**
+- Service PR: **#251**.
+- **SA-03 is fully closed in repository state.**
 - Implementation PR **#324** merged from exact reviewed head `4ad17beae65da338f5efcb2a1596e7fafc3b67c5` into main merge `5992885e78b1642e41c9805116fcc256002b649c`.
-- Docs-only PR **#326** remains open/unmerged at exact stable reviewed head `9714e06c2d6030b26a54d6c1287255226c4c186a`.
-- Lira independent factual repeat review: **PASS — 0 open confirmed current-scope documentation defects.**
-- `SA03-DOC-LIRA-01` and `SA03-DOC-LIRA-02` are independently verified **CLOSED**.
-- Mira authored #326 and does not claim independent review; independent factual acceptance is Lira's PASS on this exact head.
-- **Next action: developer merges #326 without changing its head.**
-- Any docs-head change invalidates this exact-head factual PASS and requires fresh independent review.
-- No SA-04+, deactivation, Stage6/production, #315 activation, broad security remediation or future journal-storage work starts before docs merge closeout. Lev and Mark unassigned.
+- Docs-only PR **#326** merged from independently reviewed exact head `9714e06c2d6030b26a54d6c1287255226c4c186a`; merge commit `ce62e783e71433a00c2fe4874ee26dfc54614628`.
+- Lira independent factual repeat review on that docs head: **PASS — 0 open confirmed current-scope documentation defects**; `SA03-DOC-LIRA-01` and `SA03-DOC-LIRA-02` CLOSED.
+- Current `main` PROJECT_STATE contains the post-SA-03 state.
+- No agent is currently assigned. No SA-04+ work has been started by this closeout.
+- **Next package begins only on explicit developer continuation.**
 
 ## Mira mandatory pre-action gate
 
