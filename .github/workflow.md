@@ -9,3 +9,4 @@
 - **Only remaining author task for SA-03:** D4 connected acceptance/closeout — built Worker + Better Auth + migrated disposable PG17 + Chromium, applicable exact-head checks, then stable author handoff to Mira.
 - No additional SA-03 feature implementation is authorized before that acceptance step; no SA-04+, Stage6/#315 activation, production or deferred journal-storage work.
 - After D4 author completion, Mira performs coordinator whole-PR review of the stable #324 head; only after Mira PASS does Lev review the same head.
+- **Handoff granularity gate:** before every Lira implementation assignment, Mira must first check whether the requested work contains multiple independently completable results. If yes, it must be split before assignment; only one bounded subtask is assigned at a time, with Lira STOP after that subtask and a new developer continuation before the next assignment.
