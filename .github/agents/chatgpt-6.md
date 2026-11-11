@@ -1,3 +1,11 @@
+# Лира — active assignment: fresh independent factual re-review of #326
+
+- Review docs-only PR **#326** on exact head `9714e06c2d6030b26a54d6c1287255226c4c186a`.
+- Re-verify prior findings **SA03-DOC-LIRA-01** and **SA03-DOC-LIRA-02** after the author correction.
+- Sweep the complete 9-file documentation diff against merged SA-03 #324/current `main` and relevant current source-of-truth for any remaining current-scope factual/documentation defect.
+- **Review only:** do not modify #326.
+- Report all confirmed findings or PASS in #251 and **STOP**.
+
 # Лира — SA-03 docs PR #326 independent review: CHANGES REQUIRED; STOP
 
 - **Reviewed exact docs-only head:** `dc9f846bf1fd4224b600fccfa3528f9a518fb8bd`, base/merged SA-03 main `5992885e78b1642e41c9805116fcc256002b649c`. Complete nine-file docs diff reviewed against merged #324, main code and relevant authority/project source of truth. #326 remains open and unmodified. **Two confirmed current-scope factual documentation defects, both within `docs/ADMIN_PANEL.md`; no other confirmed current-scope findings.**
