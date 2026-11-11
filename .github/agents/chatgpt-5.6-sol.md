@@ -4,7 +4,7 @@
 
 1. Служебный PR: **#315**.
 2. Моя текущая работа: audit/coordination only; remediation и implementation не назначены.
-3. Текущий этап: **Block G scope prepared; аудит ещё не начат; следующий bounded slice — G1 Migration history integrity**.
+3. Текущий этап: **Block G G1 completed: PASS, 0 current-scope findings; следующий bounded slice — G2 Schema-level security invariants**.
 4. Technical audit target B–D: `e279cb6c032a489a9044ca1191407df887c364b4`.
 5. Current `main` — `538084fd472c65459ad55ab30a0f96fbfdd68e56`. SA-02 docs closeout merged; compare с `4248fed…` показывает только 8 Markdown changes, attachment runtime/schema unchanged.
 6. Лира, Марк и Лёва по #315 сейчас не назначены.
@@ -54,8 +54,9 @@
 27. Final Block F result: **1 finding — `ATTACH-TEXT-TAIL-01 Low/P3`**. Его end-to-end chain подтверждена повторно; downstream sandbox/download/ref/cleanup boundaries не устраняют F3 classification gap и не повышают severity.
 28. Block F remediation не назначена.
 29. Block G scope подготовлен против current `main` `538084fd472c65459ad55ab30a0f96fbfdd68e56`: G1–G8, current/Stage-6 boundary, anti-duplication и code seams зафиксированы. Repository `0000–0063` vs external evidence `0000–0020` само по себе не finding.
-30. Аудит Block G ещё не начат; production/Neon mutation не разрешена.
-31. Подтверждённые findings не исправлять автоматически: сначала отдельная bounded remediation-задача по решению владельца и текущему Stage.
+30. Block G G1: **PASS, 0 current-scope findings**. Journal имеет 64 contiguous entries; 64 root SQL files exact-match journal tags; 64 snapshots `0000–0063` существуют без gaps/extra и образуют непрерывную unique `id → prevId` chain. Accepted SQL/snapshot rewrite и journal delete/rewrite/reorder/duplicate/new-SQL mismatch закрываются repository guard; CI дополнительно содержит db:check/schema-parity/clean PostgreSQL 17 replay. Tests в этом audit-срезе прочитаны, но не запускались.
+31. Mutable production DB state: **Информация не проверена**; paused Stage 6, не G1 finding.
+32. Подтверждённые findings не исправлять автоматически: сначала отдельная bounded remediation-задача по решению владельца и текущему Stage.
 
 ## Ограничения
 
@@ -67,5 +68,5 @@
 
 ## Следующий шаг
 
-1. После продолжения владельца выполнить **G1 — Migration history integrity** на current main и остановиться после результата.
+1. После продолжения владельца выполнить **G2 — Schema-level security invariants** на current main и остановиться после результата.
 2. Findings только фиксировать; remediation не начинать.
