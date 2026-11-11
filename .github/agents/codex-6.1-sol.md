@@ -841,3 +841,8 @@ AP01–11,Owner redesign1–2 and SET01–06 complete in repository/local-CI. La
 ## 2026-11-11 — assigned: SA02 docs-only factual review
 
 Review PR #323 exact `60a024304e6d595ea127bf19c948f15ca5ec39d2` after CI #43016059514 SUCCESS. Eight Markdown files only. Verify merged-SA02 factual status/contracts/history and future boundaries; do not reopen implementation #319. Report full docs finding packet or PASS, then stop.
+
+
+## 2026-11-11 — assignment correction
+
+The prior SA02 docs-only review assignment was rescinded as unnecessary Codex involvement. Lev is **unassigned** for PR #323; implementation #319 remains closed.
