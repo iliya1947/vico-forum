@@ -46,7 +46,7 @@ import { LocaleNavigationProvider } from "../localization/locale-navigation";
 import { localeRegistry } from "../localization/registry";
 
 type Direction = "ltr" | "rtl";
-export const previewIdentities = ["guest", "user", "manager"] as const;
+export const previewIdentities = ["guest", "user", "manager", "owner"] as const;
 export type PreviewIdentity = typeof previewIdentities[number];
 type PreviewView = "attention" | "credentials" | "profile" | "home" | "search" | "popular" | "unanswered" | "unread" | "notifications" | "tags" | "tag" | "category" | "section" | "topic" | "admin" | "admin-topic" | "empty" | "under-development" | "not-found";
 
@@ -155,10 +155,10 @@ export const scenarios: readonly Scenario[] = [
   { id: "topic-best-answer-unsolved", label: "Best answer · confirmation", locale: "en", direction: "ltr", identity: "user", path: "/en/topics/typed-api?solutionPrompt=answer#solution-confirmation", view: "topic", variant: "topic-best-answer-unsolved", allowedIdentities: ["user"] },
   { id: "topic-reply-error", label: "Reply error", locale: "en", direction: "ltr", identity: "user", path: "/en/topics/typed-api", view: "topic", variant: "topic-reply-error", allowedIdentities: ["user", "manager"] },
   { id: "topic-unsolved", label: "Unsolved topic", locale: "en", direction: "ltr", identity: "guest", path: "/en/topics/typed-api", view: "topic", variant: "topic-unsolved" },
-  { id: "admin", label: "Authorization", locale: "en", direction: "ltr", identity: "manager", path: "/en/admin/authorization", view: "admin", allowedIdentities: ["manager"] },
+  { id: "admin", label: "Authorization", locale: "en", direction: "ltr", identity: "owner", path: "/en/admin/authorization", view: "admin", allowedIdentities: ["manager", "owner"] },
   { id: "admin-topic", label: "Admin topic & messages", locale: "en", direction: "ltr", identity: "manager", path: "/en/admin/forum/topics/typed-api", view: "admin-topic", allowedIdentities: ["manager"] },
-  { id: "admin-success", label: "Authorization · saved", locale: "en", direction: "ltr", identity: "manager", path: "/en/admin/authorization", view: "admin", variant: "admin-success", allowedIdentities: ["manager"] },
-  { id: "admin-conflict", label: "Authorization · conflict", locale: "en", direction: "ltr", identity: "manager", path: "/en/admin/authorization", view: "admin", variant: "admin-conflict", allowedIdentities: ["manager"] },
+  { id: "admin-success", label: "Authorization · saved", locale: "en", direction: "ltr", identity: "owner", path: "/en/admin/authorization", view: "admin", variant: "admin-success", allowedIdentities: ["owner"] },
+  { id: "admin-conflict", label: "Authorization · conflict", locale: "en", direction: "ltr", identity: "owner", path: "/en/admin/authorization", view: "admin", variant: "admin-conflict", allowedIdentities: ["owner"] },
   { id: "empty-section", label: "Empty section", locale: "en", direction: "ltr", identity: "guest", path: "/en/sections/empty", view: "empty" },
   { id: "route-401", label: "System · 401", locale: "en", direction: "ltr", identity: "guest", path: "/en/admin/authorization", view: "not-found", variant: "route-401", allowedIdentities: ["guest"] },
   { id: "route-403", label: "System · 403", locale: "en", direction: "ltr", identity: "user", path: "/en/admin/authorization", view: "not-found", variant: "route-403", allowedIdentities: ["user"] },
@@ -209,6 +209,30 @@ type PreviewTopicOverride = {
   closureVersion?: number;
 };
 
+type PreviewAuthorizationRoleState = {
+  id: string;
+  slug: string;
+  displayName: string;
+  isSystem: boolean;
+  grants: PermissionKey[];
+};
+
+type PreviewAuthorizationUserState = {
+  id: string;
+  name: string;
+  email: string;
+  roleId: string;
+  explicitAssignment: boolean;
+  overrides: Partial<Record<PermissionKey, "allow" | "deny">>;
+  owner?: boolean;
+};
+
+type PreviewAuthorizationState = {
+  sequence: number;
+  roles: PreviewAuthorizationRoleState[];
+  users: PreviewAuthorizationUserState[];
+};
+
 type PreviewInteractionState = {
   sequence: number;
   createdTopics: Map<string, PreviewCreatedTopic>;
@@ -219,6 +243,7 @@ type PreviewInteractionState = {
   profileOverrides: Map<string, ProfileFields>;
   readNotifications: Set<string>;
   resolvedAttentionCases: Set<string>;
+  authorization: PreviewAuthorizationState;
 };
 
 function createPreviewInteractionState(): PreviewInteractionState {
@@ -232,6 +257,7 @@ function createPreviewInteractionState(): PreviewInteractionState {
     profileOverrides: new Map(),
     readNotifications: new Set(),
     resolvedAttentionCases: new Set(),
+    authorization: createPreviewAuthorizationState(),
   };
 }
 
@@ -952,6 +978,9 @@ function previewTagPage(locale: PreviewLocale) {
 function previewUser(scenario: Scenario): HeaderAuthUser | null {
   if (scenario.identity === "guest") return null;
   const unreadNotificationCount = scenario.variant === "notifications-empty" ? 0 : 3;
+  if (scenario.identity === "owner") {
+    return { id: "owner", name: "Forum Owner", canManageAuthorization: true, canViewAdminPanel: true, unreadNotificationCount };
+  }
   if (scenario.identity === "manager") {
     return { id: "maya", name: "Maya Cohen", canManageAuthorization: true, canViewModerationAttention: true, unreadNotificationCount };
   }
@@ -1043,7 +1072,7 @@ export function PreviewController() {
                   aria-pressed={identity === candidate}
                   onClick={() => selectIdentity(candidate)}
                 >
-                  {candidate === "guest" ? "Guest" : candidate === "user" ? "User" : "Manager"}
+                  {candidate === "guest" ? "Guest" : candidate === "user" ? "User" : candidate === "manager" ? "Manager" : "Owner"}
                 </button>
               ))}
             </fieldset>
@@ -1125,6 +1154,9 @@ export function EmbeddedPreview({ scenarioId, identity }: { scenarioId: string; 
           && form.classList.contains("topic-admin-form"))
         || ((intent === "correctTitleSourceLocale" || intent === "correctPostSourceLocale")
           && form.classList.contains("source-locale-form"))
+        || (activeScenario.identity === "owner"
+          && ["createRole", "renameRole", "roleGrants", "deleteRole", "assignRole", "override"].includes(intent)
+          && Boolean(form.closest(".admin-workspace")))
         || ((intent === "createHelpQuestion" || intent === "checkSimilarHelpQuestions")
           && form.id === "help-question-create-form")
         || (intent === "save-profile" && form.classList.contains("profile-form"))
@@ -1259,6 +1291,11 @@ function previewRouter(scenario: Scenario, interactions: PreviewInteractionState
     {
       path: "/:locale/admin/forum/topics/:topicId",
       element: <PreviewAdminTopicRoute scenario={scenario} interactions={interactions} />,
+    },
+    {
+      path: "/:locale/admin/authorization",
+      element: <PreviewAuthorizationRoute scenario={scenario} interactions={interactions} />,
+      action: ({ request }) => previewAuthorizationAction(scenario, interactions, request),
     },
     {
       path: "/:locale/under-development",
@@ -2183,6 +2220,109 @@ function PreviewSectionRoute({ scenario, interactions }: {
   );
 }
 
+function PreviewAuthorizationRoute({ scenario, interactions }: {
+  scenario: Scenario;
+  interactions: PreviewInteractionState;
+}) {
+  const actionData = useActionData() as { ok?: boolean; error?: "invalid" | "forbidden" | "notFound" | "conflict" | "unavailable" } | undefined;
+  const data = previewAuthorizationData(scenario.locale, interactions.authorization);
+  const fixtureResult = scenario.variant === "admin-success"
+    ? { ok: true as const }
+    : scenario.variant === "admin-conflict"
+      ? { error: "conflict" as const }
+      : undefined;
+  const canMutate = scenario.identity === "owner";
+  return <AuthorizationAdminView
+    {...data}
+    access={{
+      actorId: scenario.identity === "owner" ? "owner" : "maya",
+      canEnter: true,
+      canManageAuthorization: true,
+      canReadForum: true,
+      canReadHistory: true,
+    }}
+    canManageElevated={canMutate}
+    canMutateAuthorization={canMutate}
+    result={actionData ?? fixtureResult}
+  />;
+}
+
+async function previewAuthorizationAction(
+  scenario: Scenario,
+  interactions: PreviewInteractionState,
+  request: Request,
+) {
+  if (scenario.identity !== "owner") return { error: "forbidden" as const };
+  const form = await request.formData();
+  const intent = String(form.get("intent") ?? "");
+  const state = interactions.authorization;
+  const roleById = (id: string) => state.roles.find((role) => role.id === id);
+  const userById = (id: string) => state.users.find((user) => user.id === id);
+
+  if (intent === "createRole") {
+    const slug = String(form.get("slug") ?? "").trim();
+    const displayName = String(form.get("displayName") ?? "").trim();
+    if (!/^[a-z][a-z0-9-]{0,62}$/u.test(slug) || !displayName) return { error: "invalid" as const };
+    if (state.roles.some((role) => role.slug === slug)) return { error: "conflict" as const };
+    state.roles.push({
+      id: `preview-role-${++state.sequence}`,
+      slug,
+      displayName,
+      isSystem: false,
+      grants: [],
+    });
+    return { ok: true as const };
+  }
+
+  if (intent === "renameRole") {
+    const role = roleById(String(form.get("roleId") ?? ""));
+    const displayName = String(form.get("displayName") ?? "").trim();
+    if (!role || role.isSystem) return { error: "notFound" as const };
+    if (!displayName) return { error: "invalid" as const };
+    role.displayName = displayName;
+    return { ok: true as const };
+  }
+
+  if (intent === "roleGrants") {
+    const role = roleById(String(form.get("roleId") ?? ""));
+    if (!role) return { error: "notFound" as const };
+    const requested = form.getAll("permission").map(String);
+    role.grants = PERMISSION_CATALOG.filter((permission) => requested.includes(permission));
+    return { ok: true as const };
+  }
+
+  if (intent === "deleteRole") {
+    const roleId = String(form.get("roleId") ?? "");
+    const role = roleById(roleId);
+    if (!role || role.isSystem) return { error: "notFound" as const };
+    if (state.users.some((user) => user.roleId === roleId)) return { error: "conflict" as const };
+    state.roles = state.roles.filter((candidate) => candidate.id !== roleId);
+    return { ok: true as const };
+  }
+
+  if (intent === "assignRole") {
+    const user = userById(String(form.get("userId") ?? ""));
+    const role = roleById(String(form.get("roleId") ?? ""));
+    if (!user || !role) return { error: "notFound" as const };
+    user.roleId = role.id;
+    user.explicitAssignment = true;
+    return { ok: true as const };
+  }
+
+  if (intent === "override") {
+    const user = userById(String(form.get("userId") ?? ""));
+    const permission = String(form.get("permission") ?? "") as PermissionKey;
+    const effect = String(form.get("effect") ?? "");
+    if (!user || !PERMISSION_CATALOG.includes(permission)) return { error: "notFound" as const };
+    if (effect === "inherit") delete user.overrides[permission];
+    else if (effect === "allow" || effect === "deny") user.overrides[permission] = effect;
+    else return { error: "invalid" as const };
+    return { ok: true as const };
+  }
+
+  return { error: "invalid" as const };
+}
+
 function PreviewAdminTopicRoute({ scenario, interactions }: {
   scenario: Scenario;
   interactions: PreviewInteractionState;
@@ -2730,31 +2870,7 @@ function topicToolsGenerationUnits(
   ];
 }
 
-function authorizationData(locale: string) {
-  const roleUser = {
-    id: "role-user",
-    slug: "user",
-    displayName: "User",
-    isSystem: true,
-  };
-  const roleModerator = {
-    id: "role-moderator",
-    slug: "moderator",
-    displayName: "Moderator",
-    isSystem: true,
-  };
-  const roleAdmin = {
-    id: "role-admin",
-    slug: "admin",
-    displayName: "Admin",
-    isSystem: true,
-  };
-  const roleReviewer = {
-    id: "role-reviewer",
-    slug: "reviewer",
-    displayName: "Reviewer",
-    isSystem: false,
-  };
+function createPreviewAuthorizationState(): PreviewAuthorizationState {
   const userGrants: PermissionKey[] = ["forum.topic.create", "forum.reply.create"];
   const moderatorGrants: PermissionKey[] = [
     ...userGrants,
@@ -2767,65 +2883,60 @@ function authorizationData(locale: string) {
     "forum.reply.create",
     "forum.translation.generate",
   ];
-  const userEffectivePermissions: PermissionKey[] = [
-    ...userGrants,
-    "forum.translation.generate",
-  ];
-
   return {
-    locale,
-    permissions: PERMISSION_CATALOG,
+    sequence: 0,
     roles: [
-      { ...roleUser, grants: userGrants },
-      { ...roleModerator, grants: moderatorGrants },
-      { ...roleAdmin, grants: adminGrants },
-      { ...roleReviewer, grants: reviewerGrants },
+      { id: "role-user", slug: "user", displayName: "User", isSystem: true, grants: userGrants },
+      { id: "role-moderator", slug: "moderator", displayName: "Moderator", isSystem: true, grants: moderatorGrants },
+      { id: "role-admin", slug: "admin", displayName: "Admin", isSystem: true, grants: adminGrants },
+      { id: "role-reviewer", slug: "reviewer", displayName: "Reviewer", isSystem: false, grants: reviewerGrants },
     ],
     users: [
-      {
-        id: "maya",
-        name: "Maya Cohen",
-        email: "maya@example.test",
-        role: roleAdmin,
-        explicitAssignment: true,
-        authorization: {
-          role: roleAdmin,
-          explicitAssignment: true,
-          grants: adminGrants,
-          overrides: {},
-          effectivePermissions: adminGrants,
-        },
-      },
-      {
-        id: "alex",
-        name: "Alex Rivera",
-        email: "alex@example.test",
-        role: roleUser,
-        explicitAssignment: false,
-        authorization: {
-          role: roleUser,
-          explicitAssignment: false,
-          grants: userGrants,
-          overrides: { "forum.translation.generate": "allow" as const },
-          effectivePermissions: userEffectivePermissions,
-        },
-      },
-      {
-        id: "noa",
-        name: "Noa Levi",
-        email: "noa@example.test",
-        role: roleReviewer,
-        explicitAssignment: true,
-        authorization: {
-          role: roleReviewer,
-          explicitAssignment: true,
-          grants: reviewerGrants,
-          overrides: { "forum.reply.create": "deny" as const },
-          effectivePermissions: ["forum.translation.generate"] as PermissionKey[],
-        },
-      },
+      { id: "owner", name: "Forum Owner", email: "owner@example.test", roleId: "role-admin", explicitAssignment: true, overrides: {}, owner: true },
+      { id: "maya", name: "Maya Cohen", email: "maya@example.test", roleId: "role-admin", explicitAssignment: true, overrides: {} },
+      { id: "alex", name: "Alex Rivera", email: "alex@example.test", roleId: "role-user", explicitAssignment: false,
+        overrides: { "forum.translation.generate": "allow" } },
+      { id: "noa", name: "Noa Levi", email: "noa@example.test", roleId: "role-reviewer", explicitAssignment: true,
+        overrides: { "forum.reply.create": "deny" } },
     ],
   };
+}
+
+function previewAuthorizationData(locale: string, state: PreviewAuthorizationState) {
+  const roles = state.roles.map((role) => ({ ...role, grants: [...role.grants] }));
+  const rolesById = new Map(roles.map((role) => [role.id, role]));
+  const users = state.users.flatMap((user) => {
+    const role = rolesById.get(user.roleId);
+    if (!role) return [];
+    const effectivePermissions = user.owner
+      ? [...PERMISSION_CATALOG]
+      : PERMISSION_CATALOG.filter((permission) => {
+          const override = user.overrides[permission];
+          if (override === "deny") return false;
+          if (override === "allow") return true;
+          return role.grants.includes(permission);
+        });
+    return [{
+      id: user.id,
+      name: user.name,
+      email: user.email,
+      role,
+      explicitAssignment: user.explicitAssignment,
+      authorization: {
+        role,
+        explicitAssignment: user.explicitAssignment,
+        grants: [...role.grants],
+        overrides: { ...user.overrides },
+        effectivePermissions,
+        ...(user.owner ? { authoritySource: "owner" as const } : {}),
+      },
+    }];
+  });
+  return { locale, permissions: PERMISSION_CATALOG, roles, users };
+}
+
+function authorizationData(locale: string) {
+  return previewAuthorizationData(locale, createPreviewAuthorizationState());
 }
 
 function topicTitlePresentation(rtl: boolean): ContentTranslationPresentation {
