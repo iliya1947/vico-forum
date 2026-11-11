@@ -161,7 +161,7 @@ describe("SA-01 Owner-only UI/locale navigation", () => {
     expect(own.container.querySelector('a[href="/en/super-admin"]')).not.toBeNull();
     own.unmount(); own.router.dispose();
     const other = mount("en", <ProfileView locale="en" profile={{ ...profile, id: "someone-else" }}
-      isOwner={false} canEditProfile={false}/>);
+      isSelf={false} canEditProfile={false}/>);
     expect(other.container.querySelector('a[href="/en/super-admin"]')).toBeNull();
     other.unmount(); other.router.dispose();
     const unbound = mount("en", <ProfileView locale="en" profile={profile} isOwner canEditProfile={false}/>, false);
