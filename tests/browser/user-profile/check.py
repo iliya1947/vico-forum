@@ -547,6 +547,21 @@ try:
                 assert owner.locator("html").get_attribute("dir") == direction
                 assert owner.locator("html").get_attribute("lang") == locale
                 current, scroll = owner.evaluate("[innerWidth,document.documentElement.scrollWidth]")
+                if scroll > current + 1:
+                    offenders = owner.evaluate("""() => [...document.querySelectorAll("*")].map(el => {
+                      const rect=el.getBoundingClientRect();
+                      return {tag:el.tagName.toLowerCase(), id:el.id,
+                        className:typeof el.className==="string"?el.className.slice(0,90):"",
+                        text:(el.textContent||"").slice(0,90),
+                        left:Math.round(rect.left),right:Math.round(rect.right),
+                        width:Math.round(rect.width),scrollWidth:el.scrollWidth};
+                    }).filter(x=>x.right>innerWidth+1 && x.width>0)
+                      .sort((a,b)=>b.right-a.right).slice(0,25)""")
+                    print("SA03_LAYOUT_OFFENDERS "+json.dumps({
+                        "locale":locale,"width":width,"scroll":scroll,
+                        "elements":offenders},ensure_ascii=False),flush=True)
+                    owner.screenshot(path=str(args.output / (
+                        "overflow-" + locale + "-" + str(width) + ".png")),full_page=True)
                 assert scroll <= current + 1, ("profile overflow", locale, width, scroll)
                 if width in (320, 1280):
                     owner.screenshot(path=str(args.output / (
