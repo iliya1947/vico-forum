@@ -12,9 +12,9 @@ import { attentionEntryPath } from "../settings/workspace-access";
 import { SuperAdminShell, formatTime } from "./view";
 
 type FieldKind = "count" | "flag" | "time";
-type Field = readonly [name:string, label:UiKey, kind:FieldKind];
+type Field = readonly [name:string, label:UiKey<"common">, kind:FieldKind];
 type MonitorPresentation = {
-  title:UiKey; fields:readonly Field[]; note:UiKey;
+  title:UiKey<"common">; fields:readonly Field[]; note:UiKey<"common">;
   context?: "users" | "account" | "registration" | "attachments";
 };
 const presentations:Record<Sa02MonitorKey,MonitorPresentation> = {
