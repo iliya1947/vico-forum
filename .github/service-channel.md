@@ -15,6 +15,7 @@
 2. [B — Authentication & sessions](../SECURITY_BLOCK_B_AUTH_SESSIONS.md)
 3. [C — Authorization & privilege escalation](../SECURITY_BLOCK_C_AUTHORIZATION.md)
 4. [D — Ordinary Admin & moderation](../SECURITY_BLOCK_D_ADMIN_MODERATION.md)
+5. [E — Public forum / application](../SECURITY_BLOCK_E_PUBLIC_APPLICATION.md)
 
 ## Текущее подтверждённое состояние
 
@@ -24,8 +25,9 @@
 4. Block C: аудит завершён; **1 current-scope finding — `AUTHZ-FAIL-01 Low/P3`**. Remediation не назначена.
 5. Block D: аудит D1–D12 завершён; подтверждены **3 findings — `COMPLAINT-PRIV-01`, `HELP-SIGNAL-PRIV-01`, `HISTORY-PRIV-01` (все Low/P3)**.
 6. D12 corrected closeout: official React Router Framework/SSR docs и exact `react-router@8.3.1` source подтвердили default skip loader revalidation после 4xx/5xx; Vico explicit recovery refreshes loaders and does not automatically replay mutations.
-7. Implementation PR, technical planner и implementer для remediation сейчас не назначены.
-8. Cloudflare/Neon/production mutation по #315 не разрешена и не выполнялась.
+7. Block E: bounded audit plan подготовлен против current `main` `f6fd4b2c031b2132b04eace18704a59aed1dfec8`; фактический аудит ещё не начат, findings отсутствуют.
+8. Implementation PR, technical planner и implementer для remediation сейчас не назначены.
+9. Cloudflare/Neon/production mutation по #315 не разрешена и не выполнялась.
 
 ## Индекс подтверждённых findings
 
@@ -52,5 +54,5 @@
 
 ## Открыто
 
-1. Следующий security-блок — Public forum/application — сначала оформить отдельным файлом и bounded audit plan.
+1. Следующий audit subtask: **Block E / E2 — Markdown/rendering/XSS**.
 2. Лира, Лёва и Марк сейчас не имеют активного назначения по #315.
