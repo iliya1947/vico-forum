@@ -4,7 +4,7 @@
 
 1. Это bounded audit plan для области 5 общей security-карты.
 2. Audit target на момент подготовки: current `main` `f6fd4b2c031b2132b04eace18704a59aed1dfec8`.
-3. Фактический аудит начат. **E2 PASS. E5: `FORUM-PUB-01 Moderate/P2`. E6: 0 additional findings; `FORUM-PUB-01` подтверждён для edit body. E7: `READSTATE-CACHE-01 Low/P3`.** Remediation по Block E не назначена.
+3. Фактический аудит начат. **E2 PASS. E5: `FORUM-PUB-01 Moderate/P2`. E6: 0 additional findings; `FORUM-PUB-01` подтверждён для edit body. E7: `READSTATE-CACHE-01 Low/P3`. E3: `PUBLIC-PROJECTION-01 Low/P3`.** Remediation по Block E не назначена.
 4. Проверка ведётся по реальным public/member route → service/repository paths, а не по одному UI.
 
 ## Граница блока
@@ -94,6 +94,28 @@ Block E проверяет обычный форум и member-facing applicatio
 4. reserved Help service section не становится public hierarchy route;
 5. missing/deleted/stale objects не возвращают данные предыдущего target/request;
 6. translation lookup строго связан с exact content/revision/locale и не подставляет чужой объект.
+
+### E3 — результат аудита
+
+1. Audit target: current `main` `f6fd4b2c031b2132b04eace18704a59aed1dfec8`.
+2. Verdict: **1 current-scope finding — `PUBLIC-PROJECTION-01 Low/P3`**.
+3. Generic hierarchy — PASS: homepage/category readers исключают reserved Help service section; `readSection(HELP_SOLUTIONS_SERVICE_SECTION_ID)` возвращает `undefined`, поэтому прямой обычный section route не открывает внутренний service section. Help topic breadcrumb отдельно ведёт обратно в public Help category.
+4. Cross-object/current revision — PASS: section topics связывают exact topic with its current title revision; topic page связывает exact topic/post IDs with their current revisions и выбирает posts только по текущему topic. Missing category/section/topic/profile превращается в not-found вместо reuse данных предыдущего target.
+5. Public profile projection — PASS: repository выбирает только public identity/profile/role/statistics fields, а route повторно проектирует конкретный allowlist. Existing route regression подмешивает fake `email` и `permissions` в reader result и подтверждает, что они не попадают в loader result.
+6. Translation lookup — PASS: topic loader формирует identity из current topic/post revision IDs; batch reader фильтрует exact `contentType + contentId + revisionId + targetLocale`. Existing DB regression подтверждает, что translation старой revision не выдаётся для новой current revision и fallback остаётся current original.
+7. Published attachment projection не переаудируется как Files/security storage block: E3 проверил только, что topic DTO получает attachments через persisted post-membership; bytes/object storage admission остаются отдельным block.
+8. Единственный найденный дефект — moderator-only Help state пересекает public loader boundary, хотя presentation затем скрывает его условным рендерингом.
+
+### PUBLIC-PROJECTION-01 — Low/P3
+
+1. Source-of-truth требует: `Needs review` виден только relevant moderation actors; pending duplicate `Disputed` badge также moderator-only, при этом автор duplicate может видеть собственную pending appeal state/reason.
+2. `readHelpSolutionsPage()` и related Help list readers возвращают `solutionModerationStatus` и `duplicateDisputed` для каждой question независимо от viewer authority. Public category loader копирует question objects в returned loader data без удаления этих полей; только React presentation проверяет `canViewSolutionModeration` / `canViewDuplicateDispute`.
+3. `readTopicPage()` аналогично возвращает `duplicateDisputed` и per-post `solutionModerationStatus` для общего public topic DTO. Topic loader скрывает `duplicateRelationshipId` от non-manager, но не удаляет `duplicateDisputed` и не sanitizes `needs-review` status для guest/non-moderator.
+4. Existing regressions проверяют визуальное скрытие: guest не видит `Needs review` / `Disputed` в DOM и private appeal explanation не читается. Но fixture/raw guest loader data всё ещё содержит эти moderation-only flags — UI hiding не является projection boundary.
+5. Impact: публичный reader может определить, что конкретное Help solution находится в internal `needs-review` moderation state и что duplicate relationship имеет pending private dispute. Appeal explanation, appellant identity и relationship ID гостю не раскрываются по проверенному path.
+6. Severity — **Low/P3**: это ограниченная утечка moderation workflow metadata без authority bypass или private appeal text, но она прямо противоречит current public-projection/privacy contract и поэтому не откладывается как Stage-6 hardening.
+7. Public `outdated` solution status/reason не включён в finding: current source-of-truth явно делает `Solution outdated` public. `Needs review` и pending `Disputed` имеют другую visibility policy.
+8. Remediation в рамках audit stage не назначена.
 
 ## E4 — Discovery / Search / Tags / pagination
 
