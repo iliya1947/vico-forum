@@ -3456,3 +3456,12 @@ The proposed target-scoped index-only forward migration is **current SA-03 work*
 No implementation was performed during this review.
 
 **Next bounded step:** assign Lira implementation of accepted SA-03 in one separate implementation PR from current main. Lev stops; Mark remains unassigned. SA-04+, Stage6/#315 activation, production and deferred History storage management remain excluded.
+
+## 2026-11-11 — Lira SA03-D1 completed; bounded author STOP
+
+- Draft implementation PR [#324](https://github.com/iliya1947/vico-forum/pull/324) was opened from unchanged main 538084fd472c65459ad55ab30a0f96fbfdd68e56. Stable D1 checkpoint head: 57d5d0491ce217abc0deb679748d0a20e923d17c.
+- Delivered D1 only: independent request-local exact-Owner admission before private reader/cursor; independent current-actor measures/authorization permission predicates; readonly target identity/email/emailVerified/timestamps, password/Google method presence, target-scoped session totals + 25-row keyset pagination, recorded UA/IP sanitization, active/expired status at one DB read-time, actual-current marker only on self, no selected password/hash/token/OAuth secret. Classified availability errors do not suppress unexpected failures. Existing self-only Settings capability remains unchanged.
+- New code and tests are confined to PR #324; no implementation migration, tables, dependency, grants, permanent documentation, second mutation backend or SA-04 behavior. One shared device-label utility was extracted without changing its semantics.
+- Initial CI failures were diagnosed and corrected locally to D1 scope: Node composite TypeScript include for extracted utility, missing schema separator in the disposable fixture, missing required account.updated_at in native test fixture. No production-code schema workaround.
+- Verified exact-head CI #43032728345 SUCCESS: all checks, app 2,229/2,229, native PG17 683/683, migration/privilege/Worker smoke. SA-01 connected Chromium #43032728304 SUCCESS. AP-10 browser #43032728384 still in progress when checkpoint was recorded; do not assume PASS.
+- Next step after developer continuation: Lira executes SA03-D2 (fixed target-scoped per-user Owner History + index-only migration) in existing Draft PR #324. D3/D4, whole-PR Mira coordinator review, later Lev technical review and owner merge are not started. Lira stops here under bounded-task rule; Lev/Mark unassigned.
