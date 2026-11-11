@@ -4,7 +4,7 @@
 
 1. Служебный PR: **#315**.
 2. Моя текущая работа: audit/coordination only; remediation и implementation не назначены.
-3. Текущий этап: **Block F completed; final result — 1 current-scope finding `ATTACH-TEXT-TAIL-01 Low/P3`; remediation не назначена**.
+3. Текущий этап: **Block G scope prepared; аудит ещё не начат; следующий bounded slice — G1 Migration history integrity**.
 4. Technical audit target B–D: `e279cb6c032a489a9044ca1191407df887c364b4`.
 5. Current `main` — `538084fd472c65459ad55ab30a0f96fbfdd68e56`. SA-02 docs closeout merged; compare с `4248fed…` показывает только 8 Markdown changes, attachment runtime/schema unchanged.
 6. Лира, Марк и Лёва по #315 сейчас не назначены.
@@ -21,6 +21,7 @@
    - [Block D — Ordinary Admin & moderation](../../SECURITY_BLOCK_D_ADMIN_MODERATION.md)
    - [Block E — Public forum / application](../../SECURITY_BLOCK_E_PUBLIC_APPLICATION.md)
    - [Block F — Files & attachments](../../SECURITY_BLOCK_F_FILES_ATTACHMENTS.md)
+   - [Block G — Database & migrations](../../SECURITY_BLOCK_G_DATABASE_MIGRATIONS.md)
 
 ## Актуальные выводы Миры
 
@@ -51,8 +52,10 @@
 25. `ATTACH-TEXT-TAIL-01` не дублировать в F7: root cause остаётся F3 content classification.
 26. Block F F8: **PASS, 0 additional current-scope findings**. Cross-chain upload → publication → read → edit/remove → cleanup → evidence перепроверена; measures/lost ACK/complaint evidence/runtime failures не добавили отдельного root cause.
 27. Final Block F result: **1 finding — `ATTACH-TEXT-TAIL-01 Low/P3`**. Его end-to-end chain подтверждена повторно; downstream sandbox/download/ref/cleanup boundaries не устраняют F3 classification gap и не повышают severity.
-28. Block F remediation не назначена. Следующая security-карта при продолжении — Database & migrations; перед аудитом нужен отдельный Block G file/scope.
-29. Подтверждённые findings не исправлять автоматически: сначала отдельная bounded remediation-задача по решению владельца и текущему Stage.
+28. Block F remediation не назначена.
+29. Block G scope подготовлен против current `main` `538084fd472c65459ad55ab30a0f96fbfdd68e56`: G1–G8, current/Stage-6 boundary, anti-duplication и code seams зафиксированы. Repository `0000–0063` vs external evidence `0000–0020` само по себе не finding.
+30. Аудит Block G ещё не начат; production/Neon mutation не разрешена.
+31. Подтверждённые findings не исправлять автоматически: сначала отдельная bounded remediation-задача по решению владельца и текущему Stage.
 
 ## Ограничения
 
@@ -64,5 +67,5 @@
 
 ## Следующий шаг
 
-1. После продолжения владельца подготовить отдельный **Block G — Database & migrations** audit scope/file и остановиться после подготовки bounded scope.
+1. После продолжения владельца выполнить **G1 — Migration history integrity** на current main и остановиться после результата.
 2. Findings только фиксировать; remediation не начинать.
