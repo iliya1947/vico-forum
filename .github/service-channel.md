@@ -20,8 +20,8 @@
 ## Текущее подтверждённое состояние
 
 1. Technical audit target B–D: `e279cb6c032a489a9044ca1191407df887c364b4`. Последующее изменение `main` `f6fd4b2c031b2132b04eace18704a59aed1dfec8` меняло только `AGENTS.md`, не audited application code.
-2. Block A: target architecture/foundation boundaries зафиксированы; Stage-6 activation не выполнялась.
-3. Block B: аудит завершён; **8 current-scope findings**. Remediation не назначена.
+2. Block A: target architecture/foundation boundaries зафиксированы; Stage-6 activation не выполнялась. **SA-02 #319 delta-recheck на current main PASS — 0 новых current-scope A findings**.
+3. Block B: аудит завершён; **8 current-scope findings**. **SA-02 #319 delta-recheck PASS — 0 новых B findings; все 8 прежних findings остаются открытыми/неисправленными.** Remediation не назначена.
 4. Block C: аудит завершён; **1 current-scope finding — `AUTHZ-FAIL-01 Low/P3`**. Remediation не назначена.
 5. Block D: аудит D1–D12 завершён; подтверждены **3 findings — `COMPLAINT-PRIV-01`, `HELP-SIGNAL-PRIV-01`, `HISTORY-PRIV-01` (все Low/P3)**.
 6. D12 corrected closeout: official React Router Framework/SSR docs и exact `react-router@8.3.1` source подтвердили default skip loader revalidation после 4xx/5xx; Vico explicit recovery refreshes loaders and does not automatically replay mutations.
@@ -62,7 +62,6 @@
 
 ## Открыто
 
-1. **Block E completed.** До перехода к Block F нужен bounded **delta-recheck Blocks A/B**: current `main` SA-02 #319 изменил Super-admin/Owner monitoring и authentication runtime (`app/auth/auth.server.ts`, Worker observability hooks), то есть код областей, проверенных до этого merge.
-2. После delta-recheck следующая новая область общей security-карты — **Block F / Files & attachments**; отдельный Block F файл ещё не создан.
-3. Current `main` contains merged SA-02 / migration `0063`, while current `PROJECT_STATE.md` and `ROADMAP.md` still describe SA-02+ as not implemented / migrations through `0062`. Это отдельное docs-state противоречие вне Block E.
-4. Лира, Лёва и Марк сейчас не имеют активного назначения по #315.
+1. **SA-02 delta-recheck Blocks A/B completed: PASS, 0 новых current-scope findings.** Следующая новая область общей security-карты — **Block F / Files & attachments**; отдельный Block F файл ещё не создан.
+2. Current `main` contains merged SA-02 / migration `0063`, while permanent docs in `main` still describe SA-02+ as not implemented / migrations through `0062`; factual docs closeout PR #323 is open/Ready and independently reviewed, но ещё не merged. Это docs-state lag, не security finding #315.
+3. Лира, Лёва и Марк сейчас не имеют активного назначения по #315.
