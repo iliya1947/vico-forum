@@ -1892,3 +1892,13 @@ Before every implementation handoff to Lira:
 6. Only after the developer explicitly continues may the next bounded subtask be assigned.
 
 This guard is part of Mira's operating context for #251 and must be checked before every Lira handoff.
+
+## 2026-11-11 — #324 coordinator whole-PR review
+
+- Reviewed exact stable implementation head `09bb644d751a0812671cc226366a336797bb8812` across the complete SA-03 42-file change surface.
+- Verified same-head CI/browser evidence: CI #43054008996, SA03 Chromium #43054008946, SA01 Chromium #43054008929, AP10 browser #43054009241 — all SUCCESS.
+- **Verdict: CHANGES REQUIRED.**
+- Confirmed one current-scope defect: **SA03-MIRA-01** — exact Owner self-profile reads measures through `ownList`, but the composed section renders Admin measure index/detail destinations that AP-10 deliberately forbids for self/Owner targets.
+- No other current-scope defects confirmed after full sweep.
+- Correction is one bounded Lira task only: use existing own-measure destinations for exact Owner self while preserving Admin destinations for valid administrative target views; no authority/backend broadening. Add focused regression, run applicable checks, publish stable head and STOP.
+- Lev/Mark remain unassigned until repeat Mira whole-PR PASS.
