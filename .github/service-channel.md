@@ -3354,3 +3354,13 @@ Mira prepared separate docs-only PR **#323**, head `ec2fae22d90597120c5630466e4e
 The closeout records only factual merged SA02 state: SA-01–SA-02 repository/local-CI status, migrations through 0063, three live Monitoring areas, seven SA02 monitors, exact persisted auth facts, bounded hourly source-attributed attempt telemetry, source-aware adjacent/global History, and explicit undelivered/Stage6 boundaries.
 
 No runtime/schema/config/dependency/test changes and no SA03+ authorization. Docs CI #43015464996 is running. Because Mira authored this docs diff, she does not count a self-review as the independent factual review gate.
+
+
+### SA02 docs closeout scope correction
+
+A repository-wide stale-status check found three additional current-contract documents that still described only SA-01 as delivered: `ROADMAP.md`, `docs/ADMIN_PANEL.md`, and `docs/UI_UX_PASS.md`. They were added to the same docs-only PR #323 rather than leaving known contradictions for review.
+
+Final docs exact head: `60a024304e6d595ea127bf19c948f15ca5ec39d2`.
+Final diff: exactly 8 Markdown files, no runtime/schema/config/dependency/test changes.
+PR body updated to the final factual scope. The earlier 5-file docs head and CI are superseded.
+Exact-head CI #43016059514 is running.
