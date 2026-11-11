@@ -499,6 +499,27 @@
 17. Production caller search found the Complaint repository only behind the four server Hyperdrive capabilities (submission, queue, review, Appeal); no second attacker-controlled mutation backend was found.
 18. No D10 current-scope security finding confirmed. Remediation remains unassigned.
 
+## Block D / D8 — Help Signals moderation workflow audit
+
+1. Audit target: current main `e279cb6c032a489a9044ca1191407df887c364b4`; current `main` was rechecked and is identical to this target.
+2. Verdict: **1 confirmed current-scope finding: HELP-SIGNAL-PRIV-01 Low/P3**.
+3. Signal review authority is generally derived from the persisted Signal kind, not from client input: `needs-details → forum.helpNeedsDetails.manage`, `duplicate → forum.helpDuplicate.manage`, and solution kinds → `forum.solution.manageAny`.
+4. The private Attention action correctly checks that the current actor has at least one active Help-review capability **before** reading an arbitrary Signal ID, then checks the exact permission selected by the persisted kind. Existing regression verifies that a no-capability actor receives a private 403 without invoking `readHelpSignal`.
+5. **HELP-SIGNAL-PRIV-01 — CONFIRMED current-scope, Low/P3.** The canonical public topic action `/:locale/topics/:topicId` handles `acceptHelpSignal` / `rejectHelpSignal` differently: after session/same-origin admission it calls `readHelpSignal(signalId)` before checking any Help-review capability.
+6. The lookup returns the full private Signal row inside the server boundary (kind, topic binding, submitter, explanation, lifecycle metadata). The body is not serialized to the unauthorized caller, but the action exposes an existence/topic-membership oracle: an existing Signal bound to the supplied public topic proceeds to the permission check and yields 403, while a missing Signal or one bound to another topic yields 404.
+7. This is reachable on the normal public topic route because `app/routes/topic.tsx` exports `topicAction` as its action. It therefore violates the current D8/privacy boundary that an actor without any relevant Help-review capability must not use an arbitrary private Signal ID to cause a private Signal read.
+8. Impact is limited. Signal IDs are generated with `crypto.randomUUID()`; no public current-repository surface exposing pending Signal IDs to arbitrary users was found. No Signal explanation, submitter identity or lifecycle body was returned by this oracle, and the subsequent exact persisted-kind permission check still prevents unauthorized review mutation. Severity is therefore **Low/P3**, not an authorization bypass.
+9. This is a current product defect rather than future hardening: the equivalent Attention mutation path already implements the stricter pre-read admission explicitly, and the permanent authorization/Admin contract treats Signal review data as permission-scoped current functionality.
+10. Submission remains separate participant behavior: `forum.helpSignal.create` is checked at the route, actor comes from session, repository rechecks Help-only/current-target applicability, AP-10 `helpSignals.submit` before cooldown/write, and DB shape/lifecycle/partial-unique constraints provide additional integrity.
+11. Withdrawal remains intentionally permission-independent and AP-10-independent after submission. The repository locks the exact Signal, verifies route-topic membership, submitter ownership and pending status before the terminal `withdrawn` transition.
+12. Accepted review revalidates current applicability under topic/Signal locks. Needs-details changes only the current Help topic label; solution signals remain bound to the selected answer; stale/replaced answer Signals are superseded; duplicate acceptance rechecks both Help topics, solved/best-answer state and canonical-root/active-relationship rules.
+13. Kind-specific effects are not weaker second mutations: the Signal transaction applies the same current domain invariants and AP-10 `admin.forum` admission as the direct Help moderation paths while intentionally keeping one outer Signal-review History producer.
+14. Concurrent resolution of one pending Signal is serialized; existing native PostgreSQL regression proves exactly one concurrent accept succeeds. Domain changes such as best-answer replacement/solve/duplicate state supersede stale pending Signals before they can affect newer state.
+15. Review History is atomic with the Signal/effect transaction: accepted/rejected/superseded review emits one `help.signalReviewed` event carrying only bounded effect metadata. It does not emit a nested `help.solutionModerationChanged` / `help.duplicateConfirmed` event for the same Signal effect, and private Signal explanations are excluded. A repeated already-terminal review conflicts and creates no second event.
+16. Signal submission and self-withdrawal contain no Admin History producer, so participant actions are not promoted to administrative history merely because the actor also has an administrative role.
+17. AP-10 `admin.forum` blocks new reviewer Signal effects inside the repository transaction for both accept and reject, while `helpSignals.submit` only blocks new submissions and deliberately leaves withdrawal available.
+18. No second D8 current-scope security defect confirmed. Remediation remains unassigned.
+
 ## Координация
 
 1. #315 хранит решения, задачи, review findings и прогресс всего направления безопасности.
