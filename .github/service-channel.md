@@ -3338,3 +3338,19 @@ Mira coordinator closeout:
 - Permanent documentation and PROJECT_STATE factual update are intentionally deferred to the required separate docs PR after implementation merge.
 
 **Next:** developer merges #319. After merge, Mira coordinates the separate SA02 docs/PROJECT_STATE closeout. SA03+ is not started before that closeout.
+
+
+## 2026-11-11 — SA02 merged; factual docs closeout opened
+
+Developer merged implementation PR #319. Current main is `4248fed23925e4a23e48485d419ceaf0ce337def`.
+
+Mira prepared separate docs-only PR **#323**, head `ec2fae22d90597120c5630466e4e4179f2b11f18`, from that exact main. The diff contains only five documentation files:
+- `PROJECT.md`;
+- `PROJECT_STATE.md`;
+- `docs/SUPER_ADMIN.md`;
+- `docs/PROJECT_HISTORY/PROJECT_HISTORY.md`;
+- new `docs/PROJECT_HISTORY/PROJECT_HISTORY_25.md`.
+
+The closeout records only factual merged SA02 state: SA-01–SA-02 repository/local-CI status, migrations through 0063, three live Monitoring areas, seven SA02 monitors, exact persisted auth facts, bounded hourly source-attributed attempt telemetry, source-aware adjacent/global History, and explicit undelivered/Stage6 boundaries.
+
+No runtime/schema/config/dependency/test changes and no SA03+ authorization. Docs CI #43015464996 is running. Because Mira authored this docs diff, she does not count a self-review as the independent factual review gate.
