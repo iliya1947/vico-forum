@@ -138,6 +138,73 @@ describe("interactive Pages preview", () => {
 
     await waitFor(() => expect(document.querySelector(".solved-badge")).not.toBeNull());
     expect(screen.getByText("Best answer")).toBeInTheDocument();
+
+  it("edits the signed-in user's profile and keeps the saved preview data", async () => {
+    const user = userEvent.setup();
+    render(<EmbeddedPreview scenarioId="profile-edit" identity="user" />);
+
+    const bio = screen.getByLabelText("Bio");
+    await user.clear(bio);
+    await user.type(bio, "Updated locally in the functional Pages preview.");
+
+    const website = screen.getByLabelText("Website");
+    await user.clear(website);
+    await user.type(website, "https://vico.example/");
+
+    await user.click(screen.getByRole("button", { name: "Save profile" }));
+
+    expect(await screen.findByRole("status")).toHaveTextContent("Profile saved.");
+    expect(screen.getByText("Updated locally in the functional Pages preview.")).toBeInTheDocument();
+
+    await user.click(screen.getByRole("link", { name: "Edit profile" }));
+    expect(screen.getByLabelText("Bio")).toHaveValue("Updated locally in the functional Pages preview.");
+    expect(screen.getByLabelText("Website")).toHaveValue("https://vico.example/");
+  });
+
+  it("opens a notification, marks it read, and follows the referenced message", async () => {
+    const user = userEvent.setup();
+    render(<EmbeddedPreview scenarioId="notifications-user" identity="user" />);
+
+    const notification = screen.getByRole("button", {
+      name: /Open reply: How should I structure a typed API client\?/,
+    });
+    expect(notification).toHaveClass("is-unread");
+    await user.click(notification);
+
+    expect(await screen.findByRole("heading", { level: 1, name: "How should I structure a typed API client?" })).toBeInTheDocument();
+
+    await user.click(screen.getByRole("link", { name: "Notifications" }));
+    const reopened = await screen.findByRole("button", {
+      name: /Open reply: How should I structure a typed API client\?/,
+    });
+    expect(reopened).not.toHaveClass("is-unread");
+    expect(within(reopened).getByText("Read")).toBeInTheDocument();
+  });
+
+  it("checks similar Help questions and publishes a new Help question", async () => {
+    const user = userEvent.setup();
+    render(<EmbeddedPreview scenarioId="help-solutions-ask" identity="user" />);
+
+    await user.click(screen.getByRole("button", { name: "Ask question" }));
+    const form = document.getElementById("help-question-create-form") as HTMLFormElement;
+    expect(form).not.toBeNull();
+
+    await user.type(within(form).getByRole("textbox", { name: "Question title" }), "Worker session redirect problem");
+    await user.type(within(form).getByLabelText("Question details"), "My Worker loses its session after redirect.");
+    await user.type(within(form).getByRole("textbox", { name: "Tags" }), "Cloudflare, Auth");
+
+    await user.click(within(form).getByRole("button", { name: "Check similar questions" }));
+    expect(await screen.findByRole("heading", { level: 3, name: "Similar questions" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /Why does my Worker lose the session after redirect\?/ })).toBeInTheDocument();
+
+    const activeForm = document.getElementById("help-question-create-form") as HTMLFormElement;
+    const publish = within(activeForm).getByRole("button", { name: "Ask question" });
+    await waitFor(() => expect(publish).toBeEnabled());
+    await user.click(publish);
+
+    expect(await screen.findByRole("heading", { level: 1, name: "Worker session redirect problem" })).toBeInTheDocument();
+    expect(screen.getByText("My Worker loses its session after redirect.")).toBeInTheDocument();
+  });
   });
 });
 
