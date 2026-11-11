@@ -1,5 +1,5 @@
 import { useAdministrativeRouting } from "../administrative-routing/provider";
-import { data, useLoaderData, type RouterContextProvider } from "react-router";
+import { data, Link, useLoaderData, type RouterContextProvider } from "react-router";
 import { requireSuperAdmin, superAdminPrivateHeaders } from "../super-admin/access.server";
 import { ownerSa02MonitoringForRequest } from "../super-admin/request-context";
 import { OwnerSystemUnavailableError } from "../../db/hyperdrive-owner-system";
@@ -8,6 +8,7 @@ import { SYSTEM_MONITORS } from "../../db/owner-system-history";
 import { SA02_MONITORS } from "../../db/owner-sa02-catalog";
 import type { OwnerHistoryArea, OwnerHistoryMonitor, OwnerHistoryOptions } from "../../db/owner-sa02-history";
 import { SuperAdminShell, Timeline } from "../super-admin/view";
+import { useTranslation } from "react-i18next";
 import { superAdminAreaMonitorHistoryPath } from "../super-admin/paths";
 import type { SuperAdminMonitorScope } from "../administrative-routing/addresses";
 import { ForumRouteError } from "../forum/ui";
@@ -42,7 +43,13 @@ export async function loader({request,params,context}:{
 export default function SuperAdminMonitorHistoryRoute(){
   const {locale,area,monitorKey,page}=useLoaderData<typeof loader>();
   const routing=useAdministrativeRouting();
+  const {t}=useTranslation("common");
+  const currentArea=area==="system" ? routing.superAdmin.system(locale)
+    : area==="accounts" ? routing.superAdmin.accounts(locale) : routing.superAdmin.security(locale);
+  const currentAreaLabel=area==="system" ? t("superAdminSystem")
+    : area==="accounts" ? t("superAdminAreaAccounts") : t("superAdminAreaSecurity");
   return <SuperAdminShell locale={locale} current="monitoring">
+    <p><Link to={currentArea}>{currentAreaLabel}</Link></p>
     <Timeline page={page} locale={locale}
       path={before=>superAdminAreaMonitorHistoryPath(locale,
         {area,monitorKey} as SuperAdminMonitorScope,before,routing)}/>
