@@ -1,3 +1,22 @@
+# Лёва — актуальный checkpoint: SA04-A1 independent review PASS (2026-11-11)
+
+Published report: [#6808027706](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6808027706). Developer explicitly authorized publication of review reports and service-state updates for the entire SA-04 ("Разрешаю на протяжение всего SA-04"). This authorization persists across SA-04 handoffs.
+
+Лёва — независимая техническая проверка SA04-A1: **PASS, 0 подтверждённых current-scope дефектов**.
+
+Результат назначения [#6807714452](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6807714452). Проверен весь cumulative diff Draft #327, 10 файлов, exact head `3d6c7c06ac1442a5a4b3ff7f8fbe77454ca8479c`, base/main `ce62e783e71433a00c2fe4874ee26dfc54614628`. В реализации не участвовал; код при review не менял.
+
+- Schema/0065/snapshot/journal/manifest согласованы: только три nullable-поля и CHECK существующей user; история миграций сохранена. Три auth fixtures только применяют 0065, runtime scope не расширен.
+- Независимо: **84/84 native-теста PASS**, обновление заполненной БД сохраняет прежние данные; **75 CHECK-вариантов в пяти часовых поясах** дали ожидаемый результат. Реальный Better Auth не принимает клиентские state-изменения и не раскрывает поля через signup/session, включая non-NULL состояние.
+- PostgreSQL 17.11: **69-table manifest parity PASS**, фактический CHECK hash совпадает с manifest; **SA04-A1-MIRA-01 CLOSED**. `drizzle-kit check` PASS. Четыре опубликованных exact-head CI/browser runs повторно проверены — SUCCESS.
+- Ограничение: дополнительный локальный `drizzle-kit generate` падает на сериализации BigInt и ошибочно возвращает exit 0; **тот же сбой воспроизведён на базовом main** с теми же зависимостями. Генерация не засчитана как PASS; это не подтверждённая A1-регрессия. Snapshot/journal и фактическая SQL/manifest parity проверены отдельно.
+
+PASS относится только к A1 foundation. Runtime enforcement, projections, A2+, SA05+, production и remediation #315 не проверяются как завершённая реализация этим результатом.
+
+**Следующий получатель — Мира:** coordinator closeout уже проверенного bounded #327 на том же head; готовый PR не расширять ради повторного review. Merge — владелец. Лёва STOP; новых назначений Лире/Марку нет.
+
+---
+
 # Лёва — актуальный checkpoint: SA-04 technical plan published (2026-11-11)
 
 **Planning COMPLETE; next Mira scope/fit review.** Full plan [#6806249892](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6806249892), actual main `ce62e783e71433a00c2fe4874ee26dfc54614628`. Accepted full plan #6745289141. SA-03 implementation #324 and docs #326 merged/closed.
