@@ -4,7 +4,7 @@
 
 1. Это bounded audit plan для области 5 общей security-карты.
 2. Audit target на момент подготовки: current `main` `f6fd4b2c031b2132b04eace18704a59aed1dfec8`.
-3. Фактический аудит начат. **E2 завершён: PASS — 0 findings. E5 завершён: 1 current-scope finding — `FORUM-PUB-01 Moderate/P2`. E6 завершён: 0 additional findings; `FORUM-PUB-01` подтверждён также для published-post edit body.** Remediation по Block E не назначена.
+3. Фактический аудит начат. **E2 PASS. E5: `FORUM-PUB-01 Moderate/P2`. E6: 0 additional findings; `FORUM-PUB-01` подтверждён для edit body. E7: `READSTATE-CACHE-01 Low/P3`.** Remediation по Block E не назначена.
 4. Проверка ведётся по реальным public/member route → service/repository paths, а не по одному UI.
 
 ## Граница блока
@@ -181,6 +181,30 @@ Generic Own-vs-Any permission semantics уже покрыты Block C/D и зд�
 5. notification target/permanent link строится из authoritative stored target и не становится open redirect;
 6. unread/topic-read marker принадлежит current user, движется только по допустимому topic/post state и не может быть forged за другого пользователя;
 7. inbox/unread private responses используют private/no-store и не переиспользуются между accounts.
+
+### E7 — результат аудита
+
+1. Audit target: current `main` `f6fd4b2c031b2132b04eace18704a59aed1dfec8`.
+2. Verdict: **1 current-scope finding — `READSTATE-CACHE-01 Low/P3`**.
+3. Mention extraction — PASS: recipients берутся только из rendered internal profile links; blockquote/code/inline-code/html/image/spoiler-title и malformed/external URLs не создают recipient. Actor self-mention исключается.
+4. Reply/mention dedup — PASS: topic author и direct parent dedup'ятся через in-memory set; mention insertion использует тот же unique `recipient_user_id + post_id`, поэтому reply+mention одного recipient не создаёт две строки. DB regression также подтверждает отсутствие self-notifications.
+5. Atomicity — PASS: reply notification rows и mention rows создаются внутри publication/edit transaction. Notification insert failure откатывает post; stale/failed edit не создаёт mention notification.
+6. Inbox/read/open scoping — PASS: unified inbox читает только `recipient_user_id = session.user.id`; open action получает userId только из session, exact notification row блокируется `FOR UPDATE` и scoped по recipient. Arbitrary чужой notification ID даёт not-found и не меняет `read_at`.
+7. Target integrity — PASS: reply/mention notification schema требует exact composite post/topic FK; redirect строится только из stored topic/post IDs с URL encoding. Complaint notifications дополнительно recheck'ят participant membership перед read mutation. Open redirect path не найден.
+8. Read-state authority — PASS: `markTopicRead` использует session userId, exact route topic и post membership; DB composite FK не допускает чужой topic/post marker. Upsert двигает marker только вперёд; concurrent advances сходятся на более новом post. Forged user identity не принимается.
+9. Notification page — PASS: authenticated-only, bounded strict page, explicit `private, no-store`; POST body bounded 4096 bytes, same-origin required, controlled responses/redirects также private/no-store.
+10. Mention autocomplete — PASS: authenticated-only, query bounded 64 chars, literal escaped ILIKE, result projection только `id + name`, limit 8, response `private, no-store` + `nosniff`.
+
+### READSTATE-CACHE-01 — Low/P3
+
+1. `/:locale/unread` возвращает account-specific unread/new topics, counts и first/latest unread identities по current session, но route не экспортирует `headers()` и loader возвращает plain data без cache headers.
+2. Public `/:locale/sections/:sectionId` также сериализует per-user `topicReadStates`, а `/:locale/topics/:topicId` — per-user `topicReadState`; эти successful GET paths не задают explicit `private, no-store` для member-specific read-state data.
+3. Parent `locale-boundary` не задаёт Cache-Control. Exact official `react-router@8.3.1` source (`da2a0f0948af60ba45d9590b427d5e58fe4b0109`) подтверждает: route без `headers` наследует только parent headers, а loader/action headers не попадают в document response автоматически кроме Set-Cookie; topic `headers()` также получает пустой successful loader cache policy здесь.
+4. Для сравнения current notification inbox и homepage с dynamic/member-sensitive presentation явно используют `private, no-store`.
+5. Impact ограничен privacy/cache boundary: read/unread activity и account-specific presentation могут быть сохранены/переиспользованы кэшем, если конкретный browser/intermediary применит caching policy. Cross-user shared-cache replay в текущем undeployed environment **не доказан**.
+6. Поэтому severity — **Low/P3**, но это current product defect: authenticated unread/new state входит в обязательный pre-release product scope, и отсутствие явного private cache contract находится в действующем E7 boundary, а не является только Stage-6 hardening.
+7. Более широкий root/locale public-vs-member cache contract будет отдельно проверен в E1/E10; этот finding там не дублировать, а при необходимости только расширить affected surface одного root cause.
+8. Remediation в рамках audit stage не назначена.
 
 ## E8 — Profiles / presence / public privacy
 
