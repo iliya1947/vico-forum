@@ -2,7 +2,7 @@
 
 ## Статус
 
-1. Bounded audit scope подготовлен 2026-11-11 против current `main` `538084fd472c65459ad55ab30a0f96fbfdd68e56`.
+1. G1–G7 были выполнены против `main` `538084fd472c65459ad55ab30a0f96fbfdd68e56`; G8 closeout дополнительно delta-проверен против descendant current `main` `5992885e78b1642e41c9805116fcc256002b649c`.
 2. **G1 — Migration history integrity завершён: PASS, 0 current-scope findings.**
 3. **G2 — Schema-level security invariants завершён: 1 current-scope finding — `DB-SEARCHPATH-01 Low/P3`.**
 4. **G3 — Runtime least privilege завершён: 1 additional current-scope finding — `DB-ACL-USER-DELETE-01 Low/P3`.**
@@ -11,7 +11,7 @@
 7. **G6 — Destructive tooling and target isolation завершён: 1 additional current-scope finding — `DB-TEST-TARGET-01 Low/P3`.**
 8. **G7 — Manifest, evidence and drift detection завершён: PASS, 0 additional current-scope findings; evidence-gap повторно подтверждён без duplicate.**
 9. **G8 — Cross-chain closeout завершён: 0 additional findings; final Block G = 3 current-scope findings + 1 deferred Stage-6 blocker.**
-10. Repository migration history: `0000–0063`; externally accepted migration evidence: `0000–0020`.
+10. Current repository migration history: `0000–0064`; externally accepted migration evidence: `0000–0020`.
 11. Само отставание external target от repository history не finding. Evidence-gap остаётся реальным, но относится к paused Stage-6 Worker rollout и должен быть закрыт до его возобновления.
 12. Block G закрыт. Следующий security-блок после продолжения владельца — **Block H: Cloudflare / Workers / runtime**.
 13. Мира — auditor/coordinator. Remediation, technical planner и implementer не назначены.
@@ -89,11 +89,11 @@
 
 ## G4 — результат
 
-1. Corrected G8 verdict: **0 current-scope findings; 1 confirmed Stage-6 blocker — `DB-RUNTIME-EVIDENCE-01 Low/P3`** на current `main` `538084fd472c65459ad55ab30a0f96fbfdd68e56`.
+1. Corrected G8 verdict: **0 current-scope findings; 1 confirmed Stage-6 blocker — `DB-RUNTIME-EVIDENCE-01 Low/P3`**. G4 был проверен на `538084fd472c65459ad55ab30a0f96fbfdd68e56`; G8 delta на descendant `5992885e78b1642e41c9805116fcc256002b649c` вывод не изменил.
 2. Production DB mutation/provisioning workflows are manual `workflow_dispatch`, main-only at job admission, use exact `github.sha` checkout and share `production-db-migrations` serialization. DB migration/runtime-privilege/relation-provision jobs name protected Environment `production-db`; Worker rollout isolates its no-secret guard/verify jobs before `production-worker` Environment access.
 3. Exact live GitHub Environment protection/approval configuration is mutable external state and was not reread in this audit slice: **Информация не проверена**.
 4. Migration identity boundary is fail-closed in repository code: production migration verifier requires the connection to equal the unique application-object owner and rejects database-owner/runtime-owner collapse; the separate identity probe requires exact `vico_forum_migrator` plus effective database CREATE. Relation provisioning independently requires exact `vico_forum_migrator` before grants.
-5. Migration preflight requires the target Drizzle ledger to be an exact timestamp+hash prefix of checked-in history and rejects divergent/reordered/extra history. Postflight requires exact complete ledger and current repository structural manifest; current manifest target is `0063_owner_attempt_telemetry`.
+5. Migration preflight requires the target Drizzle ledger to be an exact timestamp+hash prefix of checked-in history and rejects divergent/reordered/extra history. Postflight requires exact complete ledger and repository structural manifest; на G4 target manifest был `0063_owner_attempt_telemetry`, а G8 descendant `5992885…` продвинул его до index-only `0064_sa03_profile_history_indexes`.
 6. Relation provisioning derives every GRANT from `runtimeCapabilityContracts.web`, executes one transaction, then runs the shared full end-state runtime ACL assertion before COMMIT. Caller-provided arbitrary SQL is not accepted.
 7. Provisioning therefore propagates current `DB-ACL-USER-DELETE-01` because that overgrant is inside the shared contract; this is the same G3 root cause and is **not duplicated** as a G4 finding.
 8. GitHub official rerun semantics were checked: a rerun keeps the original `GITHUB_SHA` and `GITHUB_REF`. Production migration rerun therefore stays on the originally reviewed revision; its preflight also rejects a target ledger longer than that old revision's journal, so no DB downgrade/stale-revision overwrite path was established. No separate rerun finding.
@@ -102,7 +102,7 @@
 ### DB-RUNTIME-EVIDENCE-01 — Low/P3 — Stage-6 blocker, not current-scope
 
 1. Current `.github/runtime-migration-evidence.json` requires only `0020_translation_generation_permission`, backed by successful production migration run `36270353184` at SHA `b172264e4b0db1fe68dead7d7f25b49a573eb0cd`.
-2. That evidence SHA is an ancestor of current main by 163 commits. Current repository migration history and `.github/production-schema-manifest.json` now target `0063_owner_attempt_telemetry`.
+2. На G7 evidence SHA был ancestor audit target на 163 commits. G8 descendant добавил ещё один commit и current repository migration history / `.github/production-schema-manifest.json` теперь target `0064_sa03_profile_history_indexes`; evidence по-прежнему заканчивается на `0020_translation_generation_permission`.
 3. `verify-runtime-migration-evidence.mjs` checks that the evidence SHA is an ancestor, the recorded journal hash matches, the referenced workflow run succeeded on main, and the evidence journal matches current history **only through `requiredMigrationTag`**.
 4. The verifier does **not** require `requiredMigrationTag` to equal the current manifest target, newest checked-in migration, or another repository-derived minimum schema requirement for the Worker being rolled out.
 5. `production-worker-rollout.yml` therefore accepts the current `0020` evidence while building/testing the current Worker against a disposable database migrated through current history. It does not query the target production schema before Cloudflare upload/promotion.
@@ -162,7 +162,7 @@
 ## G7 — результат
 
 1. Verdict: **PASS, 0 additional current-scope findings** на current `main` `538084fd472c65459ad55ab30a0f96fbfdd68e56`.
-2. Current repository structural manifest targets the newest checked-in migration `0063_owner_attempt_telemetry` and contains **69 public tables**, **9 trigger functions** and **18 non-internal triggers**. The verifier reads the live/clean schema and deep-compares the complete captured set, so missing or extra tables, columns, PK/unique/FK/check constraints, ordinary/partial indexes, trigger functions or triggers are rejected rather than checked only for expected presence.
+2. На G7 target repository structural manifest целился в `0063_owner_attempt_telemetry` и содержал **69 public tables**, **9 trigger functions** и **18 non-internal triggers**. G8 descendant обновил manifest до index-only `0064_sa03_profile_history_indexes`; counts tables/functions/triggers не изменились. The verifier reads the live/clean schema and deep-compares the complete captured set, so missing or extra tables, columns, PK/unique/FK/check constraints, ordinary/partial indexes, trigger functions or triggers are rejected rather than checked only for expected presence.
 3. For the externally accepted `0000–0020` range, repository search found no current view/materialized-view/custom-type/RLS/policy/rule/explicit-sequence object outside that captured structural model. All custom functions in that range are trigger-returning functions and are included in the manifest snapshot.
 4. Later identity-backed columns introduced by `0049` and `0062` are not currently part of the externally accepted `0000–0020` target. The manifest does not model identity/sequence properties separately, but under the explicit G7 current/Stage-6 boundary this is future rollout acceptance work, not a current finding by itself. It must be reconsidered before those migrations are externally accepted.
 5. Runtime privilege verification is complete end-state comparison for the named localization/web capabilities, not a positive-grant checklist: it rejects dangerous role attributes, database ownership/CREATE, outbound memberships, unsafe inbound memberships, runtime-owned objects, unexpected schema/relation/sequence grants, grant options, column privileges, explicit function privileges and runtime default privileges. PUBLIC database/schema/relation/column/function/default boundaries are also checked.
@@ -170,14 +170,14 @@
 7. The evidence SHA is an ancestor of current main by 163 commits. Its Drizzle journal contains exactly 21 entries through `0020_translation_generation_permission`; that prefix is byte-structure-equivalent at the parsed-entry level to current journal entries `0000–0020`.
 8. Evidence verification additionally requires: evidence SHA ancestor of the rollout revision; SHA-256 of the journal at that evidence SHA; exact required-prefix equality; GitHub workflow path/event/main/head-SHA/success identity. These checks reject unrelated or rewritten evidence.
 9. G7 re-confirms the technical defect **`DB-RUNTIME-EVIDENCE-01 Low/P3` from G4**: `requiredMigrationTag` is repository-authored evidence input and is not derived from the exact Worker revision's minimum schema requirement or current manifest target. Therefore valid `0020` evidence can still satisfy the Stage-6 rollout verifier for code that requires later schema. This is the same root cause and is **not duplicated**; G8 performs the final Stage classification below.
-10. Current source-of-truth distinguishes repository history `0000–0063` from externally accepted evidence `0000–0020`; no claim was found that production already matches current repository head. Pending `0021–0063` alone therefore remains future Stage-6 rollout work.
+10. Current source-of-truth distinguishes repository history `0000–0064` from externally accepted evidence `0000–0020`; no claim was found that production already matches current repository head. Pending `0021–0064` alone therefore remains future Stage-6 rollout work.
 11. Mutable production schema/ACL drift was not queried live in G7. **Информация не проверена** for exact current production DB state. This is explicitly outside the paused Stage-6 boundary and is not a current G7 finding.
 12. Repository tests/probes were read as evidence but were not executed in this G7 slice. No production/Cloudflare/Neon mutation was performed.
 13. Remediation remains unassigned. G8 cross-chain closeout is next.
 
 ## G8 — результат
 
-1. Closeout verdict on current `main` `538084fd472c65459ad55ab30a0f96fbfdd68e56`: **0 additional findings; 1 Stage reclassification**.
+1. Closeout verdict after descendant delta-recheck on current `main` `5992885e78b1642e41c9805116fcc256002b649c`: **0 additional findings; 1 Stage reclassification**.
 2. Final Block G current-scope set contains exactly **3 findings**: `DB-SEARCHPATH-01 Low/P3`, `DB-ACL-USER-DELETE-01 Low/P3`, `DB-TEST-TARGET-01 Low/P3`.
 3. `DB-SEARCHPATH-01` end-to-end chain remains intact: migration `0050` leaves the Complaint predecessor INSERT guard with unqualified `forum_complaint_cases` / `forum_complaint_targets` reads; PostgreSQL 17 resolves a session temporary relation before the permanent relation when unqualified; the shared runtime contract tolerates PUBLIC `TEMPORARY`; web capability can INSERT the real Case; and reviewer/application reads persist and expose `previous_case_id`. The durable impact is unrelated predecessor linkage. No ordinary HTTP exploit path was established.
 4. `DB-SEARCHPATH-01` remains current-scope because the vulnerable schema invariant and named web capability are current repository contracts. Historical source-of-truth records a provisioned usable web credential/Hyperdrive, although deployed Worker binding is still inactive; exact mutable external state now is **Информация не проверена**.
@@ -190,8 +190,11 @@
 11. Cross-block deduplication against Blocks B–F found no matching root cause for the three retained current findings. `DB-SEARCHPATH-01` is schema relation-resolution integrity, not Complaint privacy; `DB-ACL-USER-DELETE-01` is DB capability overgrant, not auth/session semantics; `DB-TEST-TARGET-01` is destructive-tool target isolation.
 12. G1 migration-history integrity, G5 transaction/locking/replay and G7 manifest/end-state ACL checks remain PASS; their downstream controls do not remove the three retained root causes.
 13. Repository/source/docs and official PostgreSQL 17 search-path behavior were rechecked. Tests were not executed in G8; no production/Cloudflare/Neon mutation or workflow dispatch was performed.
-14. Block G is complete. Remediation remains unassigned and must be a separate bounded task. Before Stage 6 resumes, `DB-RUNTIME-EVIDENCE-01` must be promoted back into the active correction gate.
-15. Next security direction after developer continuation: prepare separate **Block H — Cloudflare / Workers / runtime** scope/file; do not merge it into Block G.
+14. During G8, `main` advanced by exactly one commit to SA-03 #324 (`5992885…`). Delta review confirmed: migration `0064` adds only six target/history indexes; journal entry `idx=64` and snapshot `0063 → 0064` chain are continuous; clean replay expectation advanced from 64 to 65; structural manifest targets `0064` with the same 69 tables / 9 trigger functions / 18 triggers.
+15. SA-03 adds readonly Owner profile/history queries over already-granted relations (`user/account/session/owner_events/owner_attempt_patterns/forum_attachment_security_events/admin_history/user_measures`) and does not modify `runtime-privileges.mjs`. Better Auth config still has no `deleteUser`; migration `0050` Complaint guard remains unqualified; destructive DB test local-host/`*_test` guard and schema-drop path remain unchanged.
+16. Therefore descendant `5992885…` neither fixes nor adds a Block G current root cause. The three retained findings and the Stage-6 blocker classification remain unchanged.
+17. Block G is complete. Remediation remains unassigned and must be a separate bounded task. Before Stage 6 resumes, `DB-RUNTIME-EVIDENCE-01` must be promoted back into the active correction gate.
+18. Next security direction after developer continuation: prepare separate **Block H — Cloudflare / Workers / runtime** scope/file; do not merge it into Block G.
 
 ## Цель
 
@@ -210,7 +213,7 @@ Block G проверяет **database/migration security**, а не заново
 
 ### В current scope
 
-1. Полная checked-in migration history `drizzle/0000–0063`, Drizzle journal/snapshots и current resulting schema.
+1. Полная checked-in migration history `drizzle/0000–0064`, Drizzle journal/snapshots и current resulting schema.
 2. Repository guards против rewrite/delete/reorder accepted migrations.
 3. Clean PostgreSQL 17 migration path, schema/manifest parity и DB integration checks.
 4. Current schema-level constraints, FKs, triggers/functions и ownership assumptions, которые являются security/correctness boundaries.
@@ -222,7 +225,7 @@ Block G проверяет **database/migration security**, а не заново
 ### Не считать current finding само по себе
 
 1. Production schema остаётся на externally accepted `0000–0020`, пока Stage 6 paused.
-2. Pending `0021–0063` не применены в Neon.
+2. Pending `0021–0064` не применены в Neon.
 3. Live production runtime role/grant drift, pooled-session state, backup/restore и new migration rollout не перепроверены без Stage 6.
 4. Existing external state из `docs/database/*` — historical/current operational evidence, но mutable topology перед новым external action должна проверяться заново.
 5. Отсутствие production backup/restore acceptance до возобновления Stage 6 не является current pre-release defect.
@@ -299,7 +302,7 @@ Block G проверяет **database/migration security**, а не заново
 1. Repository structural manifest покрывает заявленные correctness/security-critical objects для своего accepted external range.
 2. Runtime privilege verifier сравнивает complete end state, а не только наличие ожидаемых grants.
 3. Migration→runtime evidence identity: workflow/run/SHA/journal/tag ancestry и coverage.
-4. Repository current `0021–0063` не требуется добавлять в external `0000–0020` manifest до реального Stage-6 rollout; проверить только отсутствие ложного заявления, что production уже соответствует repository head.
+4. Repository current `0021–0064` не требуется считать externally accepted до реального Stage-6 rollout; проверить только отсутствие ложного заявления, что production уже соответствует repository head.
 5. Mutable production drift остаётся **Информация не проверена** без live read-only Stage-6 check.
 
 ### G8 — Cross-chain closeout
