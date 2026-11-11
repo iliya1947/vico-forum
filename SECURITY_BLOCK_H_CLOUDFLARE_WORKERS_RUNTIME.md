@@ -8,10 +8,11 @@
 4. **H2 — Ingress trust & source attribution завершён: PASS, 0 current-scope findings.**
 5. **H3 — Runtime configuration and optional binding failure завершён: PASS, 0 current-scope findings.**
 6. **H4 — Preview, Version URL and public entrypoint isolation завершён: 0 current-scope findings + 1 deferred Stage-6 blocker `WORKER-VERSION-URL-01 Moderate/P2`.**
-7. **H5–H8 ещё не выполнялись.**
-8. Следующий bounded slice после продолжения владельца — **H5: Worker deployment/version/rollback repository gates**.
-9. Мира — auditor/coordinator. Remediation, technical planner и implementer не назначены.
-10. Cloudflare/production mutation, deployment, binding changes и live topology checks не выполнялись.
+7. **H5 — Worker deployment/version/rollback repository gates завершён: 0 current-scope findings + 1 deferred Stage-6 blocker `WORKER-ROLLBACK-FINALIZER-01 Moderate/P2`.**
+8. **H6–H8 ещё не выполнялись.**
+9. Следующий bounded slice после продолжения владельца — **H6: Runtime failure, cache and observability boundaries**.
+10. Мира — auditor/coordinator. Remediation, technical planner и implementer не назначены.
+11. Cloudflare/production mutation, deployment, binding changes и live topology checks не выполнялись.
 
 ## H1 — результат
 
@@ -108,6 +109,46 @@
 - Version URLs / Compare workflows: Version URL uses that version's production resources and is public when enabled; Access is separate;
 - Worker Previews: isolated Preview settings/resources are separate from Version URLs; Preview URLs also public by default unless protected;
 - Wrangler configuration: `preview_urls` is an explicit mutable setting; omission does not force isolation.
+
+## H5 — результат
+
+1. Verdict на current `main` `ce62e783e71433a00c2fe4874ee26dfc54614628`: **0 current-scope findings; 1 deferred Stage-6 blocker — `WORKER-ROLLBACK-FINALIZER-01 Moderate/P2`.**
+2. Exact-revision admission itself PASS: GitHub `workflow_dispatch` fixes `GITHUB_SHA` to the selected ref; workflow additionally requires `GITHUB_REF=refs/heads/main`, `GITHUB_RUN_ATTEMPT=1`, exact `expected_sha == GITHUB_SHA`, 40 lowercase hex chars and explicit upload/promotion confirmations before Cloudflare Environment access.
+3. Verify/rollout jobs independently checkout exact `expected_sha` and compare `git rev-parse HEAD`; rollout also verifies pinned `wrangler@4.130.0`. Main moving after dispatch does not silently change the artifact being built.
+4. Upload identity PASS: exact pinned Wrangler structured output must contain exactly one `version-upload` record with UUID version ID; that ID is carried through job output, checked with `wrangler versions view`, then the same ID is the only candidate supplied to promotion.
+5. Current Cloudflare model supports this proof: a Worker Version is immutable identity for bundled code/config/bindings, and a Deployment selects which exact version(s) receive traffic. Therefore matching active deployment to the run-created Version ID is meaningful evidence.
+6. Baseline precondition PASS/fail-closed: before upload, workflow resolves exactly one full UUID matching accepted `78f87645` prefix and requires current production deployment to contain exactly one positive-traffic version — that baseline at 100%. Missing/ambiguous baseline or split/unexpected traffic stops before upload.
+7. Exact `wrangler@4.130.0` source confirms `deployments status --json` returns the latest deployment object directly and `versions deploy <id>@100% -y` creates a deployment for that explicit version. Current `assertSingleVersionDeployment()` rejects wrong ID, split traffic and non-100% traffic.
+8. Ordinary promotion failure paths are covered: command failure, production smoke failure, status command failure or status assertion failure set `rollout_failed=true`; workflow then deploys exact stored baseline ID at 100%, re-reads deployment status and requires exact baseline/100% before exiting failed.
+9. **Confirmed gap:** promotion + verification + rollback live inside one shell step/job with `timeout-minutes: 20`. Once `wrangler versions deploy "$VERSION_ID@100%"` succeeds, Cloudflare production state persists independently of the GitHub runner.
+10. Both `scripts/smoke-workers.sh` and `scripts/smoke-production-worker.sh` use curl requests without an overall `--max-time`; post-promotion smoke can therefore remain blocked until the GitHub job timeout. GitHub documents that a job reaching `timeout-minutes` is automatically cancelled/killed. In that path shell control never reaches the `rollout_failed` rollback branch.
+11. The same causal gap exists for manual cancellation, runner loss or process termination after Cloudflare accepted promotion but before rollback/status reconciliation. GitHub cancellation kills the running process tree; no separate `always()` reconciliation job or out-of-band deployment-state finalizer exists.
+12. Observable outcome: the new version may remain at **100% production traffic without successful smoke/status acceptance**, with production web/auth capability, while the workflow itself ends timed-out/cancelled/unknown. This violates H5 rollback/verification contract. It is distinct from H4 Version-URL exposure and G4 migration-evidence gap.
+13. `WORKER-ROLLBACK-FINALIZER-01` is **deferred Stage 6**, not current-scope: no Cloudflare deployment occurs in current repository/local-CI development and Stage 6 rollout is paused. Correction gate is before any next production traffic promotion.
+14. Cloudflare rollback/deploy is itself another external mutation and can fail; H5 does not require impossible atomicity, but an accepted rollout must have an independent bounded reconciliation path that can determine/restore production state after the runner that initiated promotion disappears. Remediation design is not selected during audit.
+15. Current migration contract requires application rollback code to remain compatible with already-applied forward schema. Current post-`0020` repository search found no later ALTER of baseline localization tables `locales`, `ui_translations`, `ui_translation_bundles`; no separate current rollback-schema defect was established. `DB-RUNTIME-EVIDENCE-01` remains the existing Stage-6 schema gate and is not duplicated.
+16. Exact `wrangler@4.130.0` source also shows `versions deploy` patches configured **non-versioned** settings after deployment (currently observability). Traffic/version rollback therefore does not by itself prove restoration of previous non-versioned observability state. This is handed to **H6**, not classified as a separate H5 finding yet.
+17. GitHub API recheck found current `main` branch `protected=false` and repository ruleset `Protect main` with `enforcement=disabled`. That affects source/supply-chain provenance rather than Worker deployment mechanics and belongs to **Block I**; H5 does not duplicate/classify it. Exact collaborators/Actions actor policy and `production-worker` Environment protection rules: **Информация не проверена**.
+18. Current GitHub docs confirm any repository user with write access can normally trigger `workflow_dispatch`, while Environment protection can independently gate jobs/secrets. Because exact actor/environment policy is not verified and root cause belongs Block I, no H5 actor finding is created.
+19. H5 source/tests/workflows and exact tagged Wrangler `4.130.0` deployment/status source were read. Tests, workflow dispatch, Worker upload, promotion and rollback were **not** executed.
+20. Следующий slice — H6 runtime failure/cache/observability. Existing H4/H5/G blockers не дублировать.
+
+### `WORKER-ROLLBACK-FINALIZER-01` — Moderate/P2 — deferred Stage-6 blocker
+
+**Root cause:** production promotion and rollback/reconciliation are coupled to the lifetime of the same GitHub runner/job. After Cloudflare accepts 100% promotion, timeout/cancellation/runner loss can terminate the job before rollback or final deployment-state verification.
+
+**Impact:** an unaccepted Worker version can remain serving 100% production traffic with private/write runtime capability while the rollout run ends without proving either success or restoration.
+
+**Stage:** deferred Stage 6; current local/CI path does not activate it.
+
+**Correction gate:** before the next production traffic promotion.
+
+Проверенная current official evidence:
+- GitHub Actions workflow syntax: job `timeout-minutes` automatically cancels the job;
+- GitHub workflow cancellation: running step process tree is signalled and then killed;
+- Cloudflare Versions & Deployments: deployment determines active traffic and persists independently after creation;
+- Cloudflare Rollbacks: rollback creates a new active deployment and itself is an explicit external operation;
+- exact tagged `wrangler@4.130.0` source: `versions deploy` calls Cloudflare deployment API, while `deployments status --json` returns latest deployment state.
 
 ## Цель
 
