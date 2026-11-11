@@ -163,7 +163,7 @@ describe("SA04-A2 server-only account-state read foundation", () => {
     } as unknown as Pick<Client, "query">;
     await expect(readAccountState(fake, "actor")).rejects.toBeInstanceOf(AccountStateUnexpectedError);
   });
-}
+
   it("holds the same user row through caller COMMIT, without mutating account state", async () => {
     await addUser("guarded-actor");
     const competing = new Client({ connectionString: databaseUrl, options: `-c search_path=${schema}` });
