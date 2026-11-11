@@ -3949,3 +3949,15 @@ Lev completed source-backed SA-04 planning against unchanged post-SA-03 main `ce
 - Sequential bounded author checkpoints A–S and native/HTTP/direct/browser acceptance specified. No partial enforcement activation; accessible deactivate operation/control and lifecycle event/retention UI remain SA-05.
 - No confirmed product contradiction or required Owner product question found. No source/schema/permanent-doc implementation change or implementation PASS claim made.
 - **Handoff to Mira:** scope/fit and granularity review of the published plan before any implementation assignment. Lev STOP; Lira/Mark unassigned. Preserve current useful work; no SA-05+, Stage6/production, #315 activation/broad remediation or deferred journal-storage work.
+
+
+## 2026-11-11 — SA-04 technical-plan scope/fit review PASS
+
+Mira reviewed Lev's published SA-04 package plan #6806249892 against current main `ce62e783e71433a00c2fe4874ee26dfc54614628`, current project/Super-admin contracts, accepted master plan and the actual high-risk auth/writer/public-identity seams.
+
+- **PASS — 0 confirmed current-scope technical or product-scope defects.**
+- The plan correctly keeps SA-04 to account-state storage, active-account enforcement and neutral public identity; the accessible Owner deactivate command/control remains SA-05.
+- Current code confirms the important plan premises: account state is absent from `user`; auth database hooks are currently partly conditional on telemetry; Worker pre-routing session resolution does not replace direct auth API/writer admission; Admin Users, mentions, online and profile readers currently expose/filter raw identity and need server-side lifecycle-aware projection.
+- No future-only #315/Stage6/security item was promoted into SA-04.
+- **Granularity correction for handoff, not a technical-plan rejection:** A–S are planning checkpoints only. Row A already contains multiple independently completable results, so it must be split before any Lira assignment. The same gate applies again to each later row at its handoff time.
+- No implementation assignment is made by this review. Next continuation handles only the first bounded authoring result.
