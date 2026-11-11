@@ -1,5 +1,18 @@
 # Мира — безопасность Vico Forum
 
+## 2026-11-11 — Block D / D2 Admin Forum browsing / object privacy / IDOR audit
+
+1. Target: current main `e279cb6c032a489a9044ca1191407df887c364b4`, rechecked identical to `main`.
+2. Verdict: **PASS — 0 current-scope security defects**.
+3. Forum index/category/section/topic authorize before input validation/private reads and accept only the documented Forum admission union; AP-10 effective suppression applies on the Worker path.
+4. Category→section and section→topic readers bind exact authoritative membership. Topic has one exact topic target and derives its section/category from joined storage, so no parent-ID pivot exists.
+5. Discovery is 25+lookahead ID-keyset paging with bounded literal search/cursor. DTOs exclude email, Complaints/History and prior revision bodies.
+6. Admin topic projects current revisions only. Help duplicate relationship ID and pending Appeal ID require current Help-duplicate management; Appeal explanation is not serialized.
+7. Internal Help service section remains protected storage context and has no public section route; its public link resolves to the canonical Help category.
+8. Revision-bound translation presentation rejects wrong identities and cannot substitute cross-object content; classified translation outage falls back to the exact original revision.
+9. Existing repository/local-CI/browser evidence was inspected; D2 itself did not rerun CI or production acceptance.
+10. No remediation handoff. Next D12.
+
 ## 2026-11-11 — Block D / D5 Users read surface / targeted authorization composition audit
 
 1. Target: current main `e279cb6c032a489a9044ca1191407df887c364b4`, rechecked identical to `main`.
