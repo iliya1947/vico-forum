@@ -1,10 +1,19 @@
 import { Link } from "react-router";
 import { useTranslation } from "react-i18next";
 import { useAdministrativeRouting } from "../administrative-routing/provider";
-import type { Sa02Area } from "../../db/owner-sa02-catalog";
+import { SA02_MONITORS, type Sa02Area, type Sa02MonitorKey } from "../../db/owner-sa02-catalog";
+import type { SuperAdminMonitorScope } from "../administrative-routing/addresses";
+import { superAdminAreaMonitorHistoryPath } from "./paths";
 import type { Sa02CurrentState } from "../../db/owner-sa02-current";
 import { SuperAdminShell, formatTime } from "./view";
-/** Bounded D1 current-page presentation; semantic labels and actions land in D2. */
+/** The accepted catalog alone decides the area of a monitor History link. */
+function monitorScope(key:Sa02MonitorKey):SuperAdminMonitorScope {
+  if ((SA02_MONITORS.accounts as readonly string[]).includes(key)) {
+    return {area:"accounts",monitorKey:key as (typeof SA02_MONITORS.accounts)[number]};
+  }
+  return {area:"security",monitorKey:key as (typeof SA02_MONITORS.security)[number]};
+}
+/** Current-page presentation; semantic labels and contextual actions follow in D2.2. */
 export function SuperAdminSa02Current({locale,area,state}:{
   locale:string;area:Sa02Area;state:Sa02CurrentState
 }){
@@ -30,7 +39,7 @@ export function SuperAdminSa02Current({locale,area,state}:{
               : t("superAdminNotRecorded")}
           </p>
           <nav aria-label={t("superAdminMonitorActions")}>
-            <Link to={routing.superAdmin.monitorAreaHistory(locale,area,m.key)}>{t("superAdminHistory")}</Link>
+            <Link to={superAdminAreaMonitorHistoryPath(locale,monitorScope(m.key),undefined,routing)}>{t("superAdminHistory")}</Link>
             <span aria-hidden="true"> · </span>
             <Link to={routing.superAdmin.monitoring(locale)}>{t("superAdminMonitoring")}</Link>
           </nav>
