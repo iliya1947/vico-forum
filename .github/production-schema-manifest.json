@@ -1,7 +1,7 @@
 {
   "version": 1,
   "schema": "public",
-  "targetMigration": "0062_owner_monitoring_foundation",
+  "targetMigration": "0063_owner_attempt_telemetry",
   "tables": {
     "account": {
       "columns": [
@@ -246,6 +246,24 @@
               "name": "position",
               "nulls": "last",
               "order": "desc"
+            }
+          ],
+          "predicateSha256": null
+        },
+        {
+          "name": "admin_history_timeline_idx",
+          "unique": false,
+          "method": "btree",
+          "columns": [
+            {
+              "name": "occurred_at",
+              "order": "desc",
+              "nulls": "last"
+            },
+            {
+              "name": "id",
+              "order": "desc",
+              "nulls": "last"
             }
           ],
           "predicateSha256": null
@@ -6158,6 +6176,340 @@
       ],
       "indexes": []
     },
+    "owner_attempt_patterns": {
+      "columns": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "nullable": false,
+          "defaultSha256": null
+        },
+        {
+          "name": "recording_epoch_start",
+          "type": "timestamp(3) with time zone",
+          "nullable": false,
+          "defaultSha256": null
+        },
+        {
+          "name": "admitted_at",
+          "type": "timestamp(3) with time zone",
+          "nullable": false,
+          "defaultSha256": "4b1d66350efe3913ebc4851cda50bbd44dd30a5f59bafb1c24c2edec4301816e"
+        },
+        {
+          "name": "pool",
+          "type": "text",
+          "nullable": false,
+          "defaultSha256": null
+        },
+        {
+          "name": "actor_user_id",
+          "type": "text",
+          "nullable": true,
+          "defaultSha256": null
+        },
+        {
+          "name": "network_ip",
+          "type": "inet",
+          "nullable": true,
+          "defaultSha256": null
+        },
+        {
+          "name": "network_quality",
+          "type": "text",
+          "nullable": false,
+          "defaultSha256": null
+        },
+        {
+          "name": "surface",
+          "type": "text",
+          "nullable": false,
+          "defaultSha256": null
+        },
+        {
+          "name": "operation",
+          "type": "text",
+          "nullable": false,
+          "defaultSha256": null
+        },
+        {
+          "name": "outcome",
+          "type": "text",
+          "nullable": false,
+          "defaultSha256": null
+        },
+        {
+          "name": "http_status",
+          "type": "integer",
+          "nullable": true,
+          "defaultSha256": null
+        },
+        {
+          "name": "direct_code",
+          "type": "text",
+          "nullable": true,
+          "defaultSha256": null
+        },
+        {
+          "name": "first_occurred_at",
+          "type": "timestamp(3) with time zone",
+          "nullable": false,
+          "defaultSha256": null
+        },
+        {
+          "name": "last_occurred_at",
+          "type": "timestamp(3) with time zone",
+          "nullable": false,
+          "defaultSha256": null
+        },
+        {
+          "name": "count",
+          "type": "bigint",
+          "nullable": false,
+          "defaultSha256": "6b86b273ff34fce19d6b804eff5a3f5747ada4eaa22f1d49c01e52ddb7875b4b"
+        },
+        {
+          "name": "saturated_count",
+          "type": "boolean",
+          "nullable": false,
+          "defaultSha256": "fcbcf165908dd18a9e49f7ff27810176db8e9f63b4352213741664245224f8aa"
+        }
+      ],
+      "primaryKeys": [
+        {
+          "name": "owner_attempt_patterns_pkey",
+          "columns": [
+            "id"
+          ]
+        }
+      ],
+      "uniqueConstraints": [
+        {
+          "name": "owner_attempt_patterns_epoch_identity_unique",
+          "columns": [
+            "recording_epoch_start",
+            "pool",
+            "actor_user_id",
+            "network_ip",
+            "network_quality",
+            "surface",
+            "operation",
+            "outcome",
+            "http_status",
+            "direct_code"
+          ],
+          "nullsNotDistinct": true
+        }
+      ],
+      "foreignKeys": [],
+      "checks": [
+        {
+          "name": "owner_attempt_patterns_counter_check",
+          "columns": [
+            "count",
+            "first_occurred_at",
+            "last_occurred_at"
+          ],
+          "definitionSha256": "7b7036eb972f9078b11b4e84984ae08c0a614a16a5078559a9eff62ef71d1ef7"
+        },
+        {
+          "name": "owner_attempt_patterns_epoch_check",
+          "columns": [
+            "recording_epoch_start"
+          ],
+          "definitionSha256": "5364eb5506eae157ed3cbbf85bef1413a282eabc333a1b71a8c79430bbaaf233"
+        },
+        {
+          "name": "owner_attempt_patterns_kind_check",
+          "columns": [
+            "direct_code",
+            "http_status",
+            "operation",
+            "outcome",
+            "surface"
+          ],
+          "definitionSha256": "a46dfc8a9e8e55b153718d5e5a800b8c73050f43559d3c046d9ccca45f880077"
+        },
+        {
+          "name": "owner_attempt_patterns_network_check",
+          "columns": [
+            "network_ip",
+            "network_quality"
+          ],
+          "definitionSha256": "c0d15cdba7bc7b9c5bf36f23d6b291126562be371424d1c0493839f050d7e12f"
+        },
+        {
+          "name": "owner_attempt_patterns_source_check",
+          "columns": [
+            "actor_user_id",
+            "network_ip",
+            "pool"
+          ],
+          "definitionSha256": "2e8eae2a9a07231c5568f0e18c8cb7801ba3bd7981244ea6d08eff3553a89882"
+        }
+      ],
+      "indexes": [
+        {
+          "name": "owner_attempt_patterns_epoch_idx",
+          "unique": false,
+          "method": "btree",
+          "columns": [
+            {
+              "name": "recording_epoch_start",
+              "order": "asc",
+              "nulls": "last"
+            },
+            {
+              "name": "pool",
+              "order": "asc",
+              "nulls": "last"
+            }
+          ],
+          "predicateSha256": null
+        },
+        {
+          "name": "owner_attempt_patterns_timeline_idx",
+          "unique": false,
+          "method": "btree",
+          "columns": [
+            {
+              "name": "admitted_at",
+              "order": "desc",
+              "nulls": "last"
+            },
+            {
+              "name": "id",
+              "order": "desc",
+              "nulls": "last"
+            }
+          ],
+          "predicateSha256": null
+        }
+      ]
+    },
+    "owner_attempt_telemetry_state": {
+      "columns": [
+        {
+          "name": "recording_epoch_start",
+          "type": "timestamp(3) with time zone",
+          "nullable": false,
+          "defaultSha256": null
+        },
+        {
+          "name": "slot",
+          "type": "text",
+          "nullable": false,
+          "defaultSha256": null
+        },
+        {
+          "name": "admitted_at",
+          "type": "timestamp(3) with time zone",
+          "nullable": false,
+          "defaultSha256": "4b1d66350efe3913ebc4851cda50bbd44dd30a5f59bafb1c24c2edec4301816e"
+        },
+        {
+          "name": "used",
+          "type": "integer",
+          "nullable": false,
+          "defaultSha256": "5feceb66ffc86f38d952786c6d696c79c2dbc239dd4e91b46729d73a27fb57e9"
+        },
+        {
+          "name": "capacity",
+          "type": "integer",
+          "nullable": true,
+          "defaultSha256": null
+        },
+        {
+          "name": "first_occurred_at",
+          "type": "timestamp(3) with time zone",
+          "nullable": true,
+          "defaultSha256": null
+        },
+        {
+          "name": "last_occurred_at",
+          "type": "timestamp(3) with time zone",
+          "nullable": true,
+          "defaultSha256": null
+        },
+        {
+          "name": "count",
+          "type": "bigint",
+          "nullable": false,
+          "defaultSha256": "5feceb66ffc86f38d952786c6d696c79c2dbc239dd4e91b46729d73a27fb57e9"
+        },
+        {
+          "name": "saturated_count",
+          "type": "boolean",
+          "nullable": false,
+          "defaultSha256": "fcbcf165908dd18a9e49f7ff27810176db8e9f63b4352213741664245224f8aa"
+        }
+      ],
+      "primaryKeys": [
+        {
+          "name": "owner_attempt_telemetry_state_pk",
+          "columns": [
+            "recording_epoch_start",
+            "slot"
+          ]
+        }
+      ],
+      "uniqueConstraints": [],
+      "foreignKeys": [],
+      "checks": [
+        {
+          "name": "owner_attempt_telemetry_state_counter_check",
+          "columns": [
+            "count",
+            "first_occurred_at",
+            "last_occurred_at"
+          ],
+          "definitionSha256": "968f74a5dc797be4394080895fee27a896cc2fc2bfd1fc7a52413e5a5e1d69fa"
+        },
+        {
+          "name": "owner_attempt_telemetry_state_epoch_check",
+          "columns": [
+            "recording_epoch_start"
+          ],
+          "definitionSha256": "5364eb5506eae157ed3cbbf85bef1413a282eabc333a1b71a8c79430bbaaf233"
+        },
+        {
+          "name": "owner_attempt_telemetry_state_quota_check",
+          "columns": [
+            "capacity",
+            "slot",
+            "used"
+          ],
+          "definitionSha256": "02ecc91ed8391f8b6085d2b739dea730189949287f432a9d696c754a0118b5d0"
+        },
+        {
+          "name": "owner_attempt_telemetry_state_slot_check",
+          "columns": [
+            "slot"
+          ],
+          "definitionSha256": "7439e95936dd2aa2f868a3ff3678048f50debde48b2b869c36732535dc3f1348"
+        }
+      ],
+      "indexes": [
+        {
+          "name": "owner_attempt_telemetry_state_timeline_idx",
+          "unique": false,
+          "method": "btree",
+          "columns": [
+            {
+              "name": "admitted_at",
+              "order": "desc",
+              "nulls": "last"
+            },
+            {
+              "name": "slot",
+              "order": "asc",
+              "nulls": "last"
+            }
+          ],
+          "predicateSha256": null
+        }
+      ]
+    },
     "owner_events": {
       "columns": [
         {
@@ -6382,6 +6734,24 @@
             }
           ],
           "predicateSha256": null
+        },
+        {
+          "name": "owner_events_timeline_idx",
+          "unique": false,
+          "method": "btree",
+          "columns": [
+            {
+              "name": "occurred_at",
+              "order": "desc",
+              "nulls": "last"
+            },
+            {
+              "name": "id",
+              "order": "desc",
+              "nulls": "last"
+            }
+          ],
+          "predicateSha256": null
         }
       ]
     },
@@ -6490,6 +6860,24 @@
             },
             {
               "name": "position",
+              "order": "desc",
+              "nulls": "last"
+            }
+          ],
+          "predicateSha256": null
+        },
+        {
+          "name": "owner_monitor_observations_timeline_idx",
+          "unique": false,
+          "method": "btree",
+          "columns": [
+            {
+              "name": "observed_at",
+              "order": "desc",
+              "nulls": "last"
+            },
+            {
+              "name": "id",
               "order": "desc",
               "nulls": "last"
             }

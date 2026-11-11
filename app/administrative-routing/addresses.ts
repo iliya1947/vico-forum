@@ -1,3 +1,12 @@
+import type { SystemMonitorKey } from "../../db/owner-system-history";
+import type { SA02_MONITORS } from "../../db/owner-sa02-catalog";
+
+/** One code-backed area/key pair; the type prevents cross-area History links. */
+export type SuperAdminMonitorScope =
+  | { area:"system"; monitorKey:SystemMonitorKey }
+  | { area:"accounts"; monitorKey:(typeof SA02_MONITORS.accounts)[number] }
+  | { area:"security"; monitorKey:(typeof SA02_MONITORS.security)[number] };
+
 /** Pure outgoing addresses only: not a React Router registration table or an authority mechanism. */
 export interface AdminAddressFamily {
   overview(locale: string): string;
@@ -16,7 +25,10 @@ export interface SuperAdminAddressFamily {
   overview(locale: string): string;
   monitoring(locale: string): string;
   system(locale: string): string;
-  monitorHistory(locale: string, key: string, before?: string): string;
+  accounts(locale: string): string;
+  security(locale: string): string;
+  monitorHistory(locale: string, key: SystemMonitorKey, before?: string): string;
+  monitorAreaHistory(locale: string, scope: SuperAdminMonitorScope, before?: string): string;
   events(locale: string, before?: string): string;
   infrastructure(locale: string): string;
 }
@@ -57,8 +69,13 @@ export function createAdministrativeRouting(
     overview: locale => superAdminBase(locale),
     monitoring: locale => `${superAdminBase(locale)}/monitoring`,
     system: locale => `${superAdminBase(locale)}/monitoring/system`,
+    accounts: locale => `${superAdminBase(locale)}/monitoring/accounts`,
+    security: locale => `${superAdminBase(locale)}/monitoring/security`,
     monitorHistory: (locale, key, before) =>
       `${superAdminBase(locale)}/monitoring/system/${encoded(key)}/history` +
+      (before === undefined ? "" : `?before=${encoded(before)}`),
+    monitorAreaHistory: (locale, scope, before) =>
+      `${superAdminBase(locale)}/monitoring/${scope.area}/${encoded(scope.monitorKey)}/history` +
       (before === undefined ? "" : `?before=${encoded(before)}`),
     events: (locale, before) => `${superAdminBase(locale)}/events` +
       (before === undefined ? "" : `?before=${encoded(before)}`),

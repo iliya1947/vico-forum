@@ -40,7 +40,7 @@ const TIMELINE_COLUMNS = `
   select 'system-event'::text origin,e.id::text source_id,e.occurred_at at,
     e.recorded_at recorded_at,e.monitor_key,e.kind,e.source,
     null::text quality,e.payload as details from owner_events e
-    where ($1::text is null or e.monitor_key=$1)
+    where e.source='system' and ($1::text is null or e.monitor_key=$1)
   union all
   select 'system-observation'::text,o.id::text,o.observed_at,
     o.observed_at,o.monitor_key,'monitor.observed'::text,o.source,o.quality,o.value as details

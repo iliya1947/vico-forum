@@ -14,6 +14,7 @@ import { AdminShell } from "../admin/shell";
 import { adminAccess } from "../admin/access";
 import { ProfileView } from "../forum/profile-view";
 import type { SystemOverview, OwnerTimelinePage } from "../../db/owner-system-monitoring";
+import type { Sa02CurrentState } from "../../db/owner-sa02-current";
 
 afterEach(cleanup);
 
@@ -30,6 +31,25 @@ const data: SystemOverview = {
   ],
 };
 const recent: OwnerTimelinePage = { entries: [], next: null };
+const sa02:Sa02CurrentState = {
+  observedAt:"2026-11-11T09:00:00.000Z",recording:"available",
+  monitors:[
+    {key:"accounts.users",source:"database",quality:"measured",coverageFrom:null,lastObservedAt:null,
+      values:{total:"9007199254740993",created24h:"2"}},
+    {key:"accounts.methods",source:"database",quality:"measured",coverageFrom:null,lastObservedAt:null,
+      values:{passwordUsers:"3"}},
+    {key:"accounts.sessions",source:"database",quality:"measured",coverageFrom:null,lastObservedAt:null,
+      values:{active:"4"}},
+    {key:"accounts.registration",source:"database",quality:"measured",coverageFrom:null,lastObservedAt:null,
+      values:{googleEnabled:true,emailEnabled:false}},
+    {key:"security.auth",source:"database",quality:"measured",coverageFrom:null,lastObservedAt:null,
+      values:{attributedAttempts:"12",gapAttempts:"1"}},
+    {key:"security.access",source:"database",quality:"measured",coverageFrom:null,lastObservedAt:null,
+      values:{attributedAttempts:"8",gapAttempts:"0"}},
+    {key:"security.attachments",source:"database",quality:"measured",coverageFrom:null,lastObservedAt:null,
+      values:{total:"2"}},
+  ],
+};
 const profile = { id: "owner", name: "Owner", image: null, joinedAt: "2026-09-01T00:00:00.000Z",
   bio: "", githubUrl: null, websiteUrl: null,
   role: { slug: "user", displayName: "User", isSystem: true }, messageCount: 0, bestAnswerCount: 0 };
@@ -57,7 +77,7 @@ const titles = {
 
 describe("SA-01 Owner-only UI/locale navigation", () => {
   it.each(["en", "ru", "he"] as const)("renders one localized shell, actual System and 3 adjacent History links in %s", locale => {
-    const { container, router } = mount(locale, <SuperAdminOverview locale={locale} system={data} recent={recent}/>);
+    const { container, router } = mount(locale, <SuperAdminOverview locale={locale} system={data} recent={recent} sa02={sa02}/>);
     try {
       expect(screen.getByRole("heading", { level: 1, name: titles[locale].title })).toBeInTheDocument();
       expect(container.querySelectorAll("main")).toHaveLength(1);
@@ -71,13 +91,57 @@ describe("SA-01 Owner-only UI/locale navigation", () => {
     } finally { router.dispose(); }
   });
 
+  it.each(["en","ru","he"] as const)("renders compact Accounts/Security summaries in %s without duplicating seven monitors", locale=>{
+    const {container,router}=mount(locale,
+      <SuperAdminOverview locale={locale} system={data} recent={recent} sa02={sa02}/>);
+    try {
+      const cards=[...container.querySelectorAll(".super-admin-summary")];
+      expect(cards).toHaveLength(2);
+      expect(container.querySelectorAll(".super-admin-monitor")).toHaveLength(3);
+      const values=locale==="ru"?russianCommonValues:locale==="he"?hebrewCommonValues:
+        Object.fromEntries(Object.entries(canonicalEnglishCatalog.common).map(([key,d])=>[key,d.source]));
+      expect(cards[0]).toHaveAttribute("data-sa02-summary","accounts");
+      expect(cards[1]).toHaveAttribute("data-sa02-summary","security");
+      expect(cards[0].textContent).toContain(values.superAdminAreaAccounts);
+      expect(cards[1].textContent).toContain(values.superAdminAreaSecurity);
+      expect(cards[0].textContent).toContain(new Intl.NumberFormat(locale).format(9007199254740993n));
+      expect(cards[0].textContent).toContain(values.superAdminOverviewAccountsNote);
+      expect(cards[1].textContent).toContain(values.superAdminOverviewSecurityNote);
+      expect(cards[1].textContent).toContain(values.superAdminOverviewAuthGaps);
+      expect(cards[1].textContent).toContain(values.superAdminOverviewAccessGaps);
+      expect(cards[0].querySelector("a")).toHaveAttribute("href",`/${locale}/super-admin/monitoring/accounts`);
+      expect(cards[1].querySelector("a")).toHaveAttribute("href",`/${locale}/super-admin/monitoring/security`);
+      expect(cards[0].querySelector("a")).toHaveAttribute("aria-label",
+        `${values.superAdminAreaAccounts}: ${values.superAdminOverviewDetails}`);
+      expect(cards[1].querySelector("a")).toHaveAttribute("aria-label",
+        `${values.superAdminAreaSecurity}: ${values.superAdminOverviewDetails}`);
+      expect(container.querySelectorAll('a[href$="/super-admin/events"]')).toHaveLength(2);
+      expect(container.querySelectorAll(".super-admin-timeline li")).toHaveLength(0);
+    }finally{router.dispose();}
+  });
+  it("discloses unavailable observation recording without hiding current values",()=>{
+    const {container,router}=mount("en",
+      <SuperAdminOverview locale="en" system={data} recent={recent}
+        sa02={{...sa02,recording:"unavailable"}}/>);
+    try{
+      expect(screen.getByRole("status")).toHaveTextContent("observation recording is unavailable");
+      expect(container.querySelectorAll(".super-admin-summary")).toHaveLength(2);
+      expect(container.querySelector('[data-sa02-summary="security"]')).toHaveTextContent("zero does not prove");
+    }finally{router.dispose();}
+  });
+
   it.each(["ru", "he"] as const)("shows pending areas as localized, not functional monitors in %s", locale => {
     const { container, router } = mount(locale, <SuperAdminMonitoringIndex locale={locale}/>);
     try {
-      expect(container.querySelectorAll(".super-admin-pending-areas li")).toHaveLength(12);
+      expect(container.querySelectorAll(".super-admin-pending-areas li")).toHaveLength(10);
       expect(container.querySelector(".super-admin-monitor")).toBeNull();
       const labels = locale === "ru" ? russianCommonValues : hebrewCommonValues;
-      expect(container.querySelector(".super-admin-pending-areas")?.textContent).toContain(labels.superAdminAreaSecurity);
+      expect(container.querySelector(".super-admin-pending-areas")?.textContent).toContain(labels.superAdminAreaForum);
+      expect(container.querySelectorAll('.admin-overview > a.admin-destination')).toHaveLength(3);
+      expect(container.querySelector('a[href$="/super-admin/monitoring/security"]'))
+        .toHaveTextContent(labels.superAdminAreaSecurity);
+      expect(container.querySelector('a[href$="/super-admin/monitoring/accounts"]'))
+        .toHaveTextContent(labels.superAdminAreaAccounts);
       expect(container.querySelector('a[href$="/super-admin/monitoring/system"]')).not.toBeNull();
     } finally { router.dispose(); }
   });
@@ -124,13 +188,17 @@ describe("SA-01 Owner-only UI/locale navigation", () => {
     own.unmount(); own.router.dispose();
 
     const monitoring = mount("en", <AdministrativeRoutingProvider routing={routing}>
-      <SuperAdminOverview locale="en" system={data} recent={recent}/>
+      <SuperAdminOverview locale="en" system={data} recent={recent} sa02={sa02}/>
     </AdministrativeRoutingProvider>);
     expect(monitoring.container.querySelector('nav.admin-panel-nav a[aria-current="page"]')?.getAttribute("href"))
       .toBe("https://owner.invalid/en/control");
     expect(monitoring.container.querySelectorAll('a[href^="https://owner.invalid/en/control/monitoring/system/"][href$="/history"]'))
       .toHaveLength(3);
     expect(monitoring.container.querySelector('a[href="https://owner.invalid/en/control/events"]')).not.toBeNull();
+    expect(monitoring.container.querySelector('[data-sa02-summary="accounts"] a')).toHaveAttribute("href",
+      "https://owner.invalid/en/control/monitoring/accounts");
+    expect(monitoring.container.querySelector('[data-sa02-summary="security"] a')).toHaveAttribute("href",
+      "https://owner.invalid/en/control/monitoring/security");
     expect(monitoring.container.querySelector('a[href="https://owner.invalid/en/control/infrastructure"]')).not.toBeNull();
     monitoring.unmount(); monitoring.router.dispose();
   });

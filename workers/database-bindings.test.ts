@@ -57,7 +57,7 @@ describe("Worker capability composition", () => {
   });
 
   it("routes web adapters through webConnectionString", () => {
-    expect(source).toContain("createHyperdriveAuthRuntime(webConnectionString");
+    expect(source).toMatch(/createHyperdriveAuthRuntime\(\s*webConnectionString/);
     expect(source).toContain("createHyperdriveForumReader(webConnectionString)");
     expect(source).toContain("createHyperdriveForumWriter(webConnectionString, undefined, undefined, measureAdmission)");
     expect(source).toContain("createHyperdriveForumAttachmentStore(webConnectionString, undefined, measureAdmission)");

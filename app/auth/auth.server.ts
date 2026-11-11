@@ -4,6 +4,9 @@ import { APIError, createAuthMiddleware, getAuthoritativeSessionFromCtx } from "
 import { and, eq, isNotNull, ne } from "drizzle-orm";
 import { drizzle, type NodePgDatabase } from "drizzle-orm/node-postgres";
 import type { Client } from "pg";
+import type { AuthTransitionFact } from "../../db/owner-auth-facts";
+import { SessionDeletionEvidence } from "./session-deletion-evidence";
+import { AuthCreationEvidence } from "./auth-creation-evidence";
 import {
   AccountSecurityError,
   AuthSessionUnavailableError,
@@ -32,6 +35,13 @@ export interface BetterAuthEnvironment {
 }
 
 export const betterAuthSchema = { user, session, account, verification, rateLimit };
+
+/** Server-owned request collector; no arbitrary client-selected facts. */
+export interface AuthCreationObserver {
+  capture(fact: AuthTransitionFact, occurredAt?: Date): void;
+  trustedActorFor(userId: string): string | null;
+  recordGap?(count: number): void;
+}
 export const betterAuthEmailPasswordOptions = {
   enabled: true,
   requireEmailVerification: false,
@@ -98,24 +108,124 @@ export function betterAuthOptions(database: NodePgDatabase, env: BetterAuthEnvir
   };
 }
 
-function createAuth(
+export function createAuth(
   database: NodePgDatabase,
   env: BetterAuthEnvironment,
   onDatabaseError?: (error: unknown) => void,
   onAdmissionError?: (error: unknown) => void,
+  onAdmissionDenied?: () => void,
+  onCreatedFact?: AuthCreationObserver,
+  onDeleted?: SessionDeletionEvidence,
+  onCreatedProof?: AuthCreationEvidence,
 ) {
   const options = betterAuthOptions(database, env);
-  if (onAdmissionError && options.user?.validateUserInfo) {
+  if (onCreatedFact) {
+    // A new user's hook is queued before its credential/Google account hook.
+    // This is instance-local to the canonical Better Auth operation.
+    const createdUsers = new Set<string>();
+    function emit(fact: AuthTransitionFact): void {
+      try { onCreatedFact?.capture(fact, new Date()); onCreatedProof?.noteHook(fact); }
+      catch { try { onCreatedFact?.recordGap?.(1); } catch { /* best effort */ } }
+    }
+    function trustedActor(userId: string): string | null {
+      try {
+        // An observer cannot elevate the actor to a different account.
+        return onCreatedFact?.trustedActorFor(userId) === userId ? userId : null;
+      } catch { return null; }
+    }
+    options.databaseHooks = {
+      user: { create: { after: async created => {
+        if (typeof created.id !== "string") return;
+        createdUsers.add(created.id);
+        emit({ kind: "account.created", userId: created.id });
+      } } },
+      account: {
+        create: { after: async created => {
+          const userId = created.userId, accountId = created.id;
+          const method = created.providerId === "credential" ? "password"
+            : created.providerId === "google" ? "google" : null;
+          if (!method || typeof userId !== "string" || typeof accountId !== "string") return;
+          const actor = trustedActor(userId);
+          emit({
+            kind: "auth.methodLinked", userId, accountId, method,
+            linkContext: createdUsers.has(userId) ? "registration"
+              : actor && method === "google" ? "explicit-link" : "unknown",
+            actorUserId: actor,
+          });
+        } },
+        update: { after: async (updated, context) => {
+          // Better Auth 1.7.7 /change-password uses updateAccount(account.id),
+          // unlike /reset-password's updatePassword/updateMany path.
+          // Only a returned, persisted credential row from this exact route
+          // proves a password mutation. Do not copy the hash to telemetry.
+          if (context?.path !== "/change-password" || !updated ||
+            updated.providerId !== "credential" ||
+            typeof updated.id !== "string" ||
+            typeof updated.userId !== "string" ||
+            typeof updated.password !== "string" ||
+            !updated.password) return;
+          const userId = updated.userId;
+          const actorId = context.context.session?.user?.id;
+          if (actorId !== userId) return;
+          emit({
+            kind: "auth.passwordChanged", userId, accountId: updated.id,
+            operationId: crypto.randomUUID(), actorUserId: userId,
+          });
+        } },
+      },
+      session: {
+        create: { after: async created => {
+          if (typeof created.id !== "string" || typeof created.userId !== "string") return;
+          emit({
+            kind: "auth.sessionCreated", userId: created.userId, sessionId: created.id,
+            actorUserId: trustedActor(created.userId),
+          });
+        } },
+        delete: { after: async (deleted, context) => {
+          try { onDeleted?.noteAfter(deleted, context); }
+          catch { try { onCreatedFact?.recordGap?.(1); } catch { /* best effort */ } }
+        } },
+      },
+    };
+  }
+  if (onDeleted || onCreatedProof) {
+    const factory = options.database as ReturnType<typeof drizzleAdapter>;
+    options.database = (authOptions: BetterAuthOptions) => new Proxy(factory(authOptions), {
+      get(adapter, property, receiver) {
+        const value = Reflect.get(adapter, property, receiver);
+        if (typeof value !== "function" || (
+          property !== "delete" && property !== "deleteMany" && property !== "create")) {
+          return value;
+        }
+        return async (...args: unknown[]) => {
+          // Observe only successful native adapter results; leave all mutations untouched.
+          const result = await Reflect.apply(value, adapter, args);
+          try {
+            if (property === "create") onCreatedProof?.noteAdapterCreate(args[0], result);
+            else onDeleted?.noteAdapterDelete(property, args[0], result);
+          } catch { try { onCreatedFact?.recordGap?.(1); } catch { /* best effort */ } }
+          return result;
+        };
+      },
+    });
+  }
+  if ((onAdmissionError || onAdmissionDenied) && options.user?.validateUserInfo) {
     const validateUserInfo = options.user.validateUserInfo;
     options.user = {
       ...options.user,
       validateUserInfo: async (data, ctx) => {
         try {
-          return await validateUserInfo(data, ctx);
+          const result = await validateUserInfo(data, ctx);
+          if (result && typeof result === "object" && "error" in result &&
+              typeof result.error === "string") {
+            try { onAdmissionDenied?.(); }
+            catch { /* Telemetry must never alter registration admission. */ }
+          }
+          return result;
         } catch (error) {
           // Better Auth 1.7.7 converts any thrown validation error to a cause-less 403.
           // Preserve the actual registration-policy failure for this one auth request.
-          onAdmissionError(error);
+          onAdmissionError?.(error);
           throw error;
         }
       },
@@ -185,11 +295,46 @@ async function hasCredentialPassword(database: NodePgDatabase, userId: string): 
   return rows.length > 0;
 }
 
+/**
+ * Observe the original node-postgres results only for Better Auth's three
+ * canonical INSERT ... RETURNING tables and session-token DELETE.
+ * No SQL or driver return value is replaced. Also usable by native PG tests.
+ */
+export function observeAuthNativeMutations(
+  client: Client,
+  creations?: AuthCreationEvidence,
+  deletions?: SessionDeletionEvidence,
+  onGap?: (count:number)=>void,
+): () => void {
+  const original=client.query;
+  client.query=((...args:unknown[])=>{
+    const statement=args[0];
+    const sql=typeof statement==="string" ? statement :
+      statement && typeof statement==="object" && "text" in statement
+        ? (statement as {text:unknown}).text : null;
+    const oneDelete=!!deletions && sql==='delete from "session" where "session"."token" = $1';
+    const oneInsert=!!creations && typeof sql==="string" &&
+      /^insert into "(user|account|session)"\s*\(/i.test(sql) && /\breturning\b/i.test(sql);
+    const native=Reflect.apply(original,client,args) as unknown;
+    if(!oneDelete && !oneInsert) return native;
+    return Promise.resolve(native).then(result=>{
+      try {
+        if(oneDelete) deletions?.noteNativeDelete(statement,args[1],result);
+        if(oneInsert) creations?.noteNativeInsert(statement,result);
+      }catch { try{onGap?.(1);}catch{ /* best effort */ } }
+      return result;
+    });
+  }) as typeof client.query;
+  return ()=>{client.query=original;};
+}
+
 /** A request capability: every operation owns and closes its Hyperdrive PostgreSQL client. */
 export function createHyperdriveAuthRuntime(
   connectionString: string,
   env: BetterAuthEnvironment,
   createClient: (connectionString: string) => Client = createWebClient,
+  onAdmissionDenied?: () => void,
+  onCreatedFact?: AuthCreationObserver,
 ): AuthRuntime {
   async function useAuth<T>(
     operation: (auth: ReturnType<typeof createAuth>, database: NodePgDatabase) => Promise<T>,
@@ -198,17 +343,37 @@ export function createHyperdriveAuthRuntime(
   ): Promise<T> {
     const client = createClient(connectionString);
     let databaseError: unknown;
+    let deletions: SessionDeletionEvidence | undefined;
+    let creations: AuthCreationEvidence | undefined;
     try {
       await client.connect();
       const database = drizzle(client);
+      if (onCreatedFact) {
+        creations = new AuthCreationEvidence(database,
+          (fact, occurredAt) => onCreatedFact.capture(fact, occurredAt),
+          userId => { try { return onCreatedFact.trustedActorFor(userId) === userId ? userId : null; }
+            catch { return null; } },
+          count => { try { onCreatedFact.recordGap?.(count); } catch { /* best effort */ } });
+        deletions = new SessionDeletionEvidence(database,
+          (fact, occurredAt) => { try { onCreatedFact.capture(fact, occurredAt); }
+            catch { try { onCreatedFact.recordGap?.(1); } catch { /* best effort */ } } },
+          count => { try { onCreatedFact.recordGap?.(count); } catch { /* best effort */ } });
+        // Same exact native driver proof for successful inserts and deletions.
+        observeAuthNativeMutations(client, creations, deletions,
+          count => { try { onCreatedFact.recordGap?.(count); } catch { /* best effort */ } });
+      }
       return await operation(createAuth(database, env,
         preserveDatabaseError ? (error) => { databaseError ??= error; } : undefined,
-        onAdmissionError), database);
+        onAdmissionError, onAdmissionDenied, onCreatedFact, deletions, creations), database);
     } catch (error) {
       // Better Auth 1.7.7 replaces session-query failures with a cause-less APIError.
       // Retain the adapter failure for classification; never infer availability from HTTP 500.
       throw databaseError ?? error;
     } finally {
+      try { await creations?.flush(); }
+      catch { /* Creation proof must never change an auth outcome. */ }
+      try { await deletions?.flush(); }
+      catch { /* Proof/telemetry must never change an auth outcome. */ }
       bestEffortDiscardClient(client);
     }
   }

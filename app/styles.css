@@ -10202,6 +10202,13 @@ a.topic-tag:focus-visible {
 
 /* SA-01: Super-admin uses logical spacing and the existing forum/admin shell for RTL. */
 .super-admin-panel .admin-overview { padding-block: 1rem; }
+.super-admin-summaries { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 20rem), 1fr)); gap: 1rem; margin-block: 1rem 1.5rem; }
+.super-admin-summary { min-width: 0; overflow-wrap: anywhere; border: 1px solid var(--color-border); border-radius: .65rem; padding: 1rem; background: var(--color-surface); }
+.super-admin-summary h3 { margin-block: 0 .75rem; }
+.super-admin-summary dl { display: grid; gap: .5rem; margin-block: 0 .75rem; }
+.super-admin-summary dl > div { display: flex; flex-wrap: wrap; justify-content: space-between; gap: .25rem 1rem; }
+.super-admin-summary dt { color: var(--color-text-muted); }
+.super-admin-summary dd { margin: 0; }
 .super-admin-monitors { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 16rem), 1fr)); gap: 1rem; margin-block: 1.25rem; }
 .super-admin-monitor { border: 1px solid var(--color-border); border-radius: .65rem; padding: 1rem; background: var(--color-surface); min-width: 0; }
 .super-admin-monitor h3 { margin-block: 0 1rem; }

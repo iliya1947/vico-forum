@@ -1,0 +1,242 @@
+import { readdir, readFile } from "node:fs/promises";
+import { Client, Pool } from "pg";
+import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import {
+  createHyperdriveAuthRuntime, type BetterAuthEnvironment, type AuthCreationObserver,
+} from "../../app/auth/auth.server";
+import { RequestAuthFactCollector } from "../../app/observability/auth-fact-collector.server";
+import { MAX_AUTH_FACTS_PER_REQUEST, PostgresAuthFactWriter, type AuthTransitionFact } from "../../db/owner-auth-facts";
+import { PostgresOwnerSystemMonitoring } from "../../db/owner-system-monitoring";
+import { createHyperdriveAuthFactWriter } from "../../db/hyperdrive-auth-facts";
+import { PostgresOwnerSa02History } from "../../db/owner-sa02-history";
+
+const url = process.env.DATABASE_URL!;
+if (!url || !["127.0.0.1","localhost"].includes(new URL(url).hostname) ||
+    !new URL(url).pathname.endsWith("_test")) {
+  throw new Error("SA02 native creations test requires disposable loopback *_test DB");
+}
+const schema = "sa02_auth_creations_test";
+const origin = "http://localhost:3000";
+const env: BetterAuthEnvironment = {
+  BETTER_AUTH_URL: origin,
+  BETTER_AUTH_SECRET: "sa02-native-creations-local-secret-minimum-32-characters",
+  GOOGLE_CLIENT_ID: "synthetic-local-google",
+  GOOGLE_CLIENT_SECRET: "synthetic-local-google-secret",
+};
+const client = new Client({ connectionString: url, options: "-c search_path=" + schema });
+const pool = new Pool({ connectionString: url, options: "-c search_path=" + schema });
+const connected = (value: string) => new Client({ connectionString: value,
+  options: "-c search_path=" + schema });
+const factWriter = new PostgresAuthFactWriter(pool);
+const allFacts = async () => (await client.query<{
+  kind: string; target_user_id: string; entity_id: string; payload: Record<string,string>;
+  actor_user_id: string | null; source: string;
+}>("select kind,target_user_id,entity_id,payload,actor_user_id,source from owner_events where source='auth' order by owner_events.position")).rows;
+const submit = (path: string, data: unknown) => new Request(origin + "/api/auth/" + path, {
+  method: "POST",
+  headers: { "Content-Type":"application/json", Origin:origin },
+  body: JSON.stringify(data),
+});
+const email = "sa02-created@example.test", password = "synthetic-secret-123";
+
+beforeAll(async () => {
+  await client.connect();
+  await client.query("drop schema if exists " + schema + " cascade; create schema " + schema);
+  for(const file of (await readdir("drizzle")).filter(n=>/^\d{4}_.+\.sql$/.test(n)).sort()) {
+    const sql=(await readFile("drizzle/" + file,"utf8"))
+      .replaceAll('"public".','"' + schema + '".');
+    await client.query(sql);
+  }
+});
+afterAll(async () => {
+  await pool.end();
+  await client.query("drop schema if exists " + schema + " cascade");
+  await client.end();
+});
+
+describe("SA02 actual Better Auth v1.7.7 committed-create facts", () => {
+  it("records persisted user, credential account and session IDs, not HTTP guesses or credentials", async () => {
+    const lost: number[] = [];
+    const facts = new RequestAuthFactCollector(() => ({
+      append: input => factWriter.append(input),
+      close: async () => undefined,
+    }), count => lost.push(count));
+    const auth = createHyperdriveAuthRuntime(url, env, connected, undefined, facts);
+    const response = await auth.handle(submit("sign-up/email",
+      { email, name:"Native created", password }));
+    expect(response.status).toBe(200);
+    expect(await allFacts()).toHaveLength(0); // Worker-style flush is separate.
+    await facts.flush();
+    expect(lost).toEqual([]);
+    const user = (await client.query<{ id:string }>(
+      'select id from "user" where email=$1',[email])).rows[0];
+    expect(user?.id).toBeTruthy();
+    const account = (await client.query<{id:string}>(
+      'select id from account where user_id=$1 and provider_id=$2',[user.id,"credential"])).rows[0];
+    const session = (await client.query<{id:string}>(
+      'select id from session where user_id=$1',[user.id])).rows[0];
+    const persisted = await allFacts();
+    expect(persisted).toHaveLength(3);
+    expect(persisted.map(e=>e.kind)).toEqual([
+      "account.created","auth.methodLinked","auth.sessionCreated",
+    ]);
+    expect(persisted.map(e=>e.entity_id)).toEqual([user.id,account.id,session.id]);
+    expect(persisted.map(e=>e.target_user_id)).toEqual([user.id,user.id,user.id]);
+    expect(persisted[1].payload).toEqual({method:"password",linkContext:"registration"});
+    expect(persisted.every(e=>e.actor_user_id===null)).toBe(true);
+    expect(JSON.stringify(persisted)).not.toContain(email);
+    expect(JSON.stringify(persisted)).not.toContain(password);
+    expect(JSON.stringify(persisted)).not.toContain("token");
+  });
+
+  it("records a real returning sign-in session creation, never another user or linked method", async () => {
+    const queued: AuthTransitionFact[] = [];
+    const collector: AuthCreationObserver = {
+      capture: fact => queued.push(fact),
+      trustedActorFor: () => null,
+    };
+    const auth = createHyperdriveAuthRuntime(url, env, connected, undefined, collector);
+    const response=await auth.handle(submit("sign-in/email",{email,password}));
+    expect(response.status).toBe(200);
+    expect(queued).toHaveLength(1);
+    expect(queued[0].kind).toBe("auth.sessionCreated");
+    await factWriter.append(queued[0]);
+    expect((await allFacts()).filter(e=>e.kind==="account.created")).toHaveLength(1);
+    expect((await allFacts()).filter(e=>e.kind==="auth.methodLinked")).toHaveLength(1);
+    expect((await allFacts()).filter(e=>e.kind==="auth.sessionCreated")).toHaveLength(2);
+  });
+
+  it("has no phantom creation events on rejected policy admission", async () => {
+    await client.query("update forum_registration_settings set email_registration_enabled=false where id=1");
+    const queued: AuthTransitionFact[]=[];
+    try {
+      const auth=createHyperdriveAuthRuntime(url,env,connected,undefined,{
+        capture: fact=>queued.push(fact), trustedActorFor:()=>null,
+      });
+      const response=await auth.handle(submit("sign-up/email",{
+        email:"sa02-rejected@example.test",name:"Rejected",password,
+      }));
+      expect(response.status).toBe(403);
+      expect(queued).toHaveLength(0);
+      expect((await client.query(
+        'select id from "user" where email=$1',["sa02-rejected@example.test"])).rows).toHaveLength(0);
+    } finally {
+      await client.query("update forum_registration_settings set email_registration_enabled=true where id=1");
+    }
+  });
+
+  it("does not veto a real committed creation if telemetry callback throws", async () => {
+    const auth=createHyperdriveAuthRuntime(url,env,connected,undefined,{
+      capture: () => { throw new Error("collector unavailable"); },
+      trustedActorFor: () => null,
+    });
+    const response=await auth.handle(submit("sign-up/email",{
+      email:"sa02-hook-failure@example.test",name:"Should persist",password,
+    }));
+    expect(response.status).toBe(200);
+    const result=await client.query('select id from "user" where email=$1',
+      ["sa02-hook-failure@example.test"]);
+    expect(result.rows).toHaveLength(1);
+    expect((await allFacts()).filter(e=>e.target_user_id===result.rows[0].id)).toHaveLength(0);
+  });
+
+  it("preserves trusted occurrence time when later async commits happen in reverse order",async()=>{
+    const firstTime=new Date(Date.now()-120000);
+    const secondTime=new Date(Date.now()-60000);
+    const gaps:number[]=[];
+    const makeCollector=()=>new RequestAuthFactCollector(()=>({
+      append:(fact,at)=>factWriter.append(fact,at),
+      close:async()=>undefined,
+    }),count=>gaps.push(count));
+    const first=makeCollector();
+    const second=makeCollector();
+    first.capture({kind:"account.created",userId:"time-first"},firstTime);
+    second.capture({kind:"account.created",userId:"time-second"},secondTime);
+    await second.flush();
+    await first.flush();
+    const stored=(await client.query<{target_user_id:string;occurred_at:Date;recorded_at:Date}>(
+      "select target_user_id,occurred_at,recorded_at from owner_events "+
+      "where source='auth' and target_user_id in ('time-first','time-second') "+
+      "order by occurred_at desc")).rows;
+    expect(stored.map(row=>row.target_user_id)).toEqual(["time-second","time-first"]);
+    expect(stored[0].occurred_at.toISOString()).toBe(secondTime.toISOString());
+    expect(stored[1].occurred_at.toISOString()).toBe(firstTime.toISOString());
+    expect(stored[0].recorded_at.getTime()).toBeLessThanOrEqual(
+      stored[1].recorded_at.getTime());
+    expect(stored.every(row=>row.recorded_at>row.occurred_at)).toBe(true);
+    expect(gaps).toEqual([]);
+    await expect(factWriter.append({kind:"account.created",userId:"invalid-time"},
+      new Date(Number.NaN))).rejects.toThrow("occurrence time");
+  });
+
+  it("caps the request-local auth queue and reports overflow rather than unbounded appends",async()=>{
+    const gaps:number[]=[];
+    const saved:Array<{fact:AuthTransitionFact;at:Date|undefined}>=[];
+    let closed=0;
+    const collector=new RequestAuthFactCollector(()=>({
+      append:async (fact,at)=>{
+        saved.push({fact,at});
+        return {id:"test-sink-id",inserted:true};
+      },
+      close:async()=>{closed++;},
+    }),count=>gaps.push(count));
+    for(let n=0;n<100;n++) collector.capture({
+      kind:"auth.sessionCreated",userId:"bounded-user",sessionId:"bounded-session-"+n,
+    });
+    await collector.flush();
+    await collector.flush();
+    expect(saved).toHaveLength(MAX_AUTH_FACTS_PER_REQUEST);
+    expect(saved.every(row=>row.at instanceof Date &&
+      Number.isFinite(row.at.getTime()))).toBe(true);
+    expect(new Set(saved.map(row=>row.fact.kind==="auth.sessionCreated"
+      ? row.fact.sessionId : "")).size).toBe(MAX_AUTH_FACTS_PER_REQUEST);
+    expect(gaps.reduce((a,b)=>a+b,0)).toBe(100-MAX_AUTH_FACTS_PER_REQUEST);
+    expect(closed).toBe(1);
+  });
+
+  it("preserves exact event-time through real production Hyperdrive factory and History",async()=>{
+    const firstTime=new Date("2026-01-01T00:00:01.000Z");
+    const secondTime=new Date("2026-01-01T00:00:02.000Z");
+    // Connect to the same disposable schema without mocking the production
+    // factory, pool, append implementation or PostgreSQL.
+    const scopedUrl=new URL(url);
+    scopedUrl.searchParams.set("options","-c search_path="+schema);
+    const gaps:number[]=[];
+    const makeCollector=()=>new RequestAuthFactCollector(
+      ()=>createHyperdriveAuthFactWriter(scopedUrl.toString()),
+      count=>gaps.push(count));
+    const early=makeCollector();
+    const late=makeCollector();
+    early.capture({kind:"account.created",userId:"factory-early"},firstTime);
+    late.capture({kind:"account.created",userId:"factory-late"},secondTime);
+    // Deliberately persist the later transition first.
+    await late.flush();
+    await early.flush();
+    expect(gaps).toEqual([]);
+    const saved=(await client.query<{
+      target_user_id:string; occurred_at:Date; recorded_at:Date;
+    }>("select target_user_id,occurred_at,recorded_at "+
+      "from owner_events where source='auth' and target_user_id like 'factory-%' "+
+      "order by recorded_at")).rows;
+    expect(saved.map(row=>row.target_user_id)).toEqual(["factory-late","factory-early"]);
+    expect(saved[0].occurred_at.toISOString()).toBe(secondTime.toISOString());
+    expect(saved[1].occurred_at.toISOString()).toBe(firstTime.toISOString());
+    expect(saved[0].recorded_at>saved[0].occurred_at).toBe(true);
+    expect(saved[1].recorded_at>saved[1].occurred_at).toBe(true);
+    const timeline=await new PostgresOwnerSa02History(pool).readTimeline({
+      area:"accounts",monitorKey:"accounts.users",limit:50,
+    });
+    expect(timeline.entries.filter(e=>e.origin==="auth-event" &&
+      (e.values.targetUserId==="factory-early" ||
+        e.values.targetUserId==="factory-late")).map(e=>e.values.targetUserId))
+      .toEqual(["factory-late","factory-early"]);
+  });
+
+  it("does not mislabel auth records as SA01 System events before source-aware SA02 History", async () => {
+    const monitoring = new PostgresOwnerSystemMonitoring(pool,"test");
+    const timeline=await monitoring.readTimeline();
+    expect(timeline.entries.filter(e=>e.origin==="system-event"&&e.source==="auth")).toHaveLength(0);
+    const keys=timeline.entries.filter(e=>e.origin==="system-event").map(e=>e.monitorKey);
+    expect(keys.every(key=>key?.startsWith("system."))).toBe(true);
+  });
+});

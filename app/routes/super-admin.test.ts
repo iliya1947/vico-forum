@@ -2,9 +2,10 @@ import { RouterContextProvider } from "react-router";
 import { describe, expect, it, vi } from "vitest";
 import { authSessionContext } from "../auth/request-context";
 import { authorizationOwnerContext } from "../authorization/request-context";
-import { ownerSystemMonitoringContext } from "../super-admin/request-context";
+import { ownerSystemMonitoringContext, ownerSa02MonitoringContext } from "../super-admin/request-context";
 import { OwnerSystemUnavailableError } from "../../db/hyperdrive-owner-system";
 import type { OwnerSystemMonitoring } from "../../db/owner-system-monitoring";
+import type { OwnerSa02Monitoring } from "../../db/hyperdrive-owner-system";
 import { loader as overview } from "./super-admin";
 import { loader as monitoring } from "./super-admin-monitoring";
 import { loader as system } from "./super-admin-system";
@@ -29,21 +30,37 @@ const systemState = {
   ],
 } as const;
 const timeline = { entries: [], next: null } as const;
+const sa02 = {
+  observedAt:"2026-11-11T08:00:00.000Z",recording:"available",
+  monitors:[
+    {key:"accounts.users",source:"database",quality:"measured",
+      values:{total:"9007199254740993",created24h:"2"},coverageFrom:null,lastObservedAt:null},
+    {key:"accounts.sessions",source:"database",quality:"measured",
+      values:{active:"3"},coverageFrom:null,lastObservedAt:null},
+    {key:"security.auth",source:"database",quality:"measured",
+      values:{attributedAttempts:"7",gapAttempts:"1"},coverageFrom:null,lastObservedAt:null},
+    {key:"security.access",source:"database",quality:"measured",
+      values:{attributedAttempts:"8",gapAttempts:"0"},coverageFrom:null,lastObservedAt:null},
+  ],
+} as const;
 function setup(actor: string|null="owner", bound:string|undefined="owner") {
   const context = new RouterContextProvider();
   context.set(authSessionContext, actor ? { user: { id:actor,name:actor,email:"private@test.invalid" } } as never : null);
   context.set(authorizationOwnerContext,bound);
   const readSystem = vi.fn(async()=>systemState);
   const readTimeline = vi.fn(async ()=>timeline);
+  const readSa02History = vi.fn(async()=>timeline);
+  const readSa02Current = vi.fn(async()=>sa02);
   context.set(ownerSystemMonitoringContext, {readSystem,readTimeline,recordRequestFailure:vi.fn()} as unknown as OwnerSystemMonitoring);
+  context.set(ownerSa02MonitoringContext, {readSa02History,readSa02Current} as unknown as OwnerSa02Monitoring);
   const args = {context,params:{locale:"en"},request:new Request("https://vico.test/en/super-admin")};
-  return {context,args,readSystem,readTimeline};
+  return {context,args,readSystem,readTimeline,readSa02History,readSa02Current};
 }
 const checks = [
   ["Overview", (x:ReturnType<typeof setup>)=>overview(x.args)],
   ["Monitoring index", (x:ReturnType<typeof setup>)=>monitoring(x.args)],
   ["System state", (x:ReturnType<typeof setup>)=>system(x.args)],
-  ["System History", (x:ReturnType<typeof setup>)=>history({...x.args,params:{locale:"en",monitorKey:"system.dependencies"}})],
+  ["System History", (x:ReturnType<typeof setup>)=>history({...x.args,params:{locale:"en",area:"system",monitorKey:"system.dependencies"}})],
   ["global Event log", (x:ReturnType<typeof setup>)=>events(x.args)],
   ["Infrastructure", (x:ReturnType<typeof setup>)=>infrastructure(x.args)],
 ] as const;
@@ -51,13 +68,17 @@ const checks = [
 describe("SA-01 independent exact-Owner access to each Super-admin endpoint",()=>{
   it.each(checks)("blocks Guest before any private read: %s",async (_label,call)=>{
     const x=setup(null);await expect(async()=>call(x)).rejects.toMatchObject({status:401});
-    expect(x.readSystem).not.toHaveBeenCalled();expect(x.readTimeline).not.toHaveBeenCalled();
+    expect(x.readSystem).not.toHaveBeenCalled();
+      expect(x.readSa02History).not.toHaveBeenCalled();
+      expect(x.readSa02Current).not.toHaveBeenCalled();
   });
   it.each(checks)("blocks non-Owner even with elevated-looking session: %s",async (_label,call)=>{
     for(const binding of ["owner"," owner",undefined]){
       const x=setup("admin",binding);
       await expect(async()=>call(x)).rejects.toMatchObject({status:403});
-      expect(x.readSystem).not.toHaveBeenCalled();expect(x.readTimeline).not.toHaveBeenCalled();
+      expect(x.readSystem).not.toHaveBeenCalled();
+      expect(x.readSa02History).not.toHaveBeenCalled();
+      expect(x.readSa02Current).not.toHaveBeenCalled();
     }
   });
   it.each(checks)("admits exact Owner with a private no-store document/data response: %s",async (_label,call)=>{
@@ -66,20 +87,38 @@ describe("SA-01 independent exact-Owner access to each Super-admin endpoint",()=
     expect(result.init?.headers).toEqual({"Cache-Control":"private, no-store"});
     expect(JSON.stringify(result.data)).not.toContain("private@test.invalid");
   });
+  it("reads one SA02 current snapshot plus existing System/recent History for Overview",async()=>{
+    const x=setup();
+    const result=await overview(x.args);
+    expect(x.readSystem).toHaveBeenCalledOnce();
+    expect(x.readSa02History).toHaveBeenCalledOnce();
+    expect(x.readSa02History).toHaveBeenCalledWith({limit:5});
+    expect(x.readSa02Current).toHaveBeenCalledOnce();
+    expect(result.data.sa02).toEqual(sa02);
+    expect(result.init?.headers).toEqual({"Cache-Control":"private, no-store"});
+  });
+  it("maps only SA02 storage outages to private 503 and propagates other errors",async()=>{
+    const x=setup();
+    x.readSa02Current.mockRejectedValueOnce(new OwnerSystemUnavailableError());
+    await expect(overview(x.args)).rejects.toMatchObject({status:503,headers:expect.any(Headers)});
+    const error=new TypeError("Unexpected SA02 current data");
+    x.readSa02Current.mockRejectedValueOnce(error);
+    await expect(overview(x.args)).rejects.toBe(error);
+  });
   it("does not let invalid History filters or cursors reach owner timeline query",async()=>{
     const x=setup("owner");
     await expect(history({...x.args,
-      params:{locale:"en",monitorKey:"some-unknown-monitor"},request:new Request("https://vico.test/en/super-admin/monitoring/system/untrusted/history?before=bad")
+      params:{locale:"en",area:"system",monitorKey:"some-unknown-monitor"},request:new Request("https://vico.test/en/super-admin/monitoring/system/untrusted/history?before=bad")
     })).rejects.toMatchObject({status:404});
-    expect(x.readTimeline).not.toHaveBeenCalled();
+    expect(x.readSa02History).not.toHaveBeenCalled();
     await expect(history({...x.args,
-      params:{locale:"en",monitorKey:"system.runtime"},request:new Request("https://vico.test/en/super-admin/monitoring/system/system.runtime/history?before=not-a-cursor")
+      params:{locale:"en",area:"system",monitorKey:"system.runtime"},request:new Request("https://vico.test/en/super-admin/monitoring/system/system.runtime/history?before=not-a-cursor")
     })).rejects.toMatchObject({status:400});
     await expect(events({...x.args,request:new Request("https://vico.test/en/super-admin/events?before=a&before=b")
     })).rejects.toMatchObject({status:400});
     await expect(events({...x.args,request:new Request("https://vico.test/en/super-admin/events?raw=1")
     })).rejects.toMatchObject({status:400});
-    expect(x.readTimeline).not.toHaveBeenCalled();
+    expect(x.readSa02History).not.toHaveBeenCalled();
   });
   it("classifies impossible calendar History cursors as private 400 before DB on both routes",async()=>{
     const x=setup("owner");
@@ -92,7 +131,7 @@ describe("SA-01 independent exact-Owner access to each Super-admin endpoint",()=
       const query="?before="+encodeURIComponent(timestamp+suffix);
       for(const call of [
         ()=>events({...x.args,request:new Request("https://vico.test/en/super-admin/events"+query)}),
-        ()=>history({...x.args,params:{locale:"en",monitorKey:"system.runtime"},
+        ()=>history({...x.args,params:{locale:"en",area:"system",monitorKey:"system.runtime"},
           request:new Request("https://vico.test"+scoped+query)}),
       ]) {
         await expect(call()).rejects.toMatchObject({
@@ -100,34 +139,34 @@ describe("SA-01 independent exact-Owner access to each Super-admin endpoint",()=
         });
       }
     }
-    expect(x.readTimeline).not.toHaveBeenCalled();
+    expect(x.readSa02History).not.toHaveBeenCalled();
     const valid="2026-02-28T00:00:00.000Z"+suffix;
     const query="?before="+encodeURIComponent(valid);
     await events({...x.args,request:new Request("https://vico.test/en/super-admin/events"+query)});
-    await history({...x.args,params:{locale:"en",monitorKey:"system.runtime"},
+    await history({...x.args,params:{locale:"en",area:"system",monitorKey:"system.runtime"},
       request:new Request("https://vico.test"+scoped+query)});
-    expect(x.readTimeline).toHaveBeenNthCalledWith(1,{before:valid});
-    expect(x.readTimeline).toHaveBeenNthCalledWith(2,{monitorKey:"system.runtime",before:valid});
+    expect(x.readSa02History).toHaveBeenNthCalledWith(1,{before:valid});
+    expect(x.readSa02History).toHaveBeenNthCalledWith(2,{area:"system",monitorKey:"system.runtime",before:valid});
   });
   it("re-checks Owner binding on every read, independently of navigation",async()=>{
     const x=setup("owner"); await overview(x.args);expect(x.readSystem).toHaveBeenCalledOnce();
     x.context.set(authorizationOwnerContext,"different-owner");
     await expect(events(x.args)).rejects.toMatchObject({status:403});
-    expect(x.readTimeline).toHaveBeenCalledOnce();
+    expect(x.readSa02History).toHaveBeenCalledOnce();
   });
   it("passes validated monitor scope into the shared owner timeline, without a second history writer",async()=>{
     const x=setup("owner");const before="2026-11-09T18:00:00.000Z~system-event~123e4567-e89b-42d3-a456-426614174000";
-    await history({...x.args,params:{locale:"en",monitorKey:"system.requests"},
+    await history({...x.args,params:{locale:"en",area:"system",monitorKey:"system.requests"},
       request:new Request("https://vico.test/en/super-admin/monitoring/system/system.requests/history?before="+encodeURIComponent(before))});
-    expect(x.readTimeline).toHaveBeenCalledWith({monitorKey:"system.requests",before});
-    await events(x.args);expect(x.readTimeline).toHaveBeenLastCalledWith({before:undefined});
+    expect(x.readSa02History).toHaveBeenCalledWith({area:"system",monitorKey:"system.requests",before});
+    await events(x.args);expect(x.readSa02History).toHaveBeenLastCalledWith({before:undefined});
   });
   it("maps only classified storage outages to controlled 503; unexpected errors propagate",async()=>{
     const x=setup("owner");
     x.readSystem.mockRejectedValueOnce(new OwnerSystemUnavailableError());
     await expect(overview(x.args)).rejects.toMatchObject({status:503,headers:expect.any(Headers)});
     const fault=new TypeError("unexpected mapper bug");
-    x.readTimeline.mockRejectedValueOnce(fault);
+    x.readSa02History.mockRejectedValueOnce(fault);
     await expect(events(x.args)).rejects.toBe(fault);
   });
   it("keeps both Owner navigation entries on one canonical destination",()=>{

@@ -108,6 +108,23 @@ test("accepts exact localization-read and web runtime capability contracts", () 
   );
 });
 
+test("SA-02 grants mutable attempt telemetry only to web, without DELETE or sequence access", () => {
+  for (const relation of ["owner_attempt_patterns", "owner_attempt_telemetry_state"]) {
+    assert.deepEqual(runtimeCapabilityContracts.web.relations[relation], ["INSERT", "SELECT", "UPDATE"]);
+    assert.equal(runtimeCapabilityContracts["localization-read"].relations[relation], undefined);
+  }
+  for (const relation of ["owner_events", "owner_monitor_observations"]) {
+    assert.deepEqual(runtimeCapabilityContracts.web.relations[relation], ["INSERT", "SELECT"]);
+  }
+  const injectedDelete = fixture();
+  injectedDelete.relationPrivileges.push({
+    schema: "public", name: "owner_attempt_patterns", kind: "table",
+    grantee: roles.webRole, privilege: "DELETE", is_grantable: false,
+  });
+  assert.throws(() => assertRuntimeCapabilityPrivilegeContract(injectedDelete, roles),
+    /Unexpected relation privileges/);
+});
+
 test("web capability includes the authenticated topic read-state relation", () => {
   assert.deepEqual(
     runtimeCapabilityContracts.web.relations.forum_topic_read_states,
