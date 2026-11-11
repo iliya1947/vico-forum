@@ -119,7 +119,7 @@ describe("SA03 canonical targeted authorization fetcher",()=>{
     await waitFor(()=>expect((formFor(view.container,"override","forum.topic.pin")
       ?.querySelector('select[name="effect"]') as HTMLSelectElement|null)?.value).toBe("allow"));
     expect(view.router.state.location.pathname).toBe(view.path);
-    expect(view.container.textContent).toContain("Public details");
+    await waitFor(()=>expect(view.container.textContent).toContain("Public details"));
   });
   it("does not show any targeted controls without authorization admission",async()=>{
     const view=mount({readOnly:true});
@@ -135,7 +135,7 @@ describe("SA03 canonical targeted authorization fetcher",()=>{
     await waitFor(()=>expect(view.action).toHaveBeenCalledOnce());
     await waitFor(()=>expect(view.container.querySelector("#authorization")).toBeNull());
     expect(view.container.textContent).not.toContain("Authorization was updated.");
-    expect(view.container.textContent).toContain("Public details");
+    await waitFor(()=>expect(view.container.textContent).toContain("Public details"));
     expect(view.router.state.location.pathname).toBe(view.path);
   });
   it("recovers thrown 403 by one fresh GET without replaying POST, including a second independent revocation",async()=>{
@@ -144,7 +144,7 @@ describe("SA03 canonical targeted authorization fetcher",()=>{
     fireEvent.submit(formFor(view.container,"assignRole")!);
     await waitFor(()=>expect(view.action).toHaveBeenCalledOnce());
     await waitFor(()=>expect(view.container.querySelector("#authorization")).toBeNull());
-    expect(view.container.textContent).toContain("Public details");
+    await waitFor(()=>expect(view.container.textContent).toContain("Public details"));
     expect(view.router.state.location.pathname).toBe(view.path);
     expect(view.router.state.location.state).toBeNull();
 
@@ -154,7 +154,7 @@ describe("SA03 canonical targeted authorization fetcher",()=>{
     fireEvent.submit(formFor(view.container,"assignRole")!);
     await waitFor(()=>expect(view.action).toHaveBeenCalledTimes(2));
     await waitFor(()=>expect(view.container.querySelector("#authorization")).toBeNull());
-    expect(view.container.textContent).toContain("Public details");
+    await waitFor(()=>expect(view.container.textContent).toContain("Public details"));
     expect(view.router.state.location.pathname).toBe(view.path);
   });
   it("honors alternate Admin outgoing action resolver without coupling Owner destinations",async()=>{
