@@ -11,11 +11,16 @@ import { settingsAccountPath } from "../settings/paths";
 import { ownMeasuresPath } from "../measures/paths";
 import { useHeaderAuthUser } from "../auth/auth-controls";
 import { superAdminPath } from "../super-admin/paths";
+import type { ProfilePrivilegedSections } from "../profile/sections";
+import { SectionUnavailable, OwnerProfileSections } from "../profile/owner-view";
+import { InlineUserAuthorization } from "../profile/authorization-view";
+import { GroupedMeasures } from "../measures/views";
+import { adminMeasuresPath } from "../measures/paths";
 
-export function ProfileView({ locale, profile, isOwner = false, canEditProfile = true,
-  editing = false, saved = false, feedback }: {
+export function ProfileView({ locale, profile, isSelf = false, canEditProfile = true,
+  editing = false, saved = false, privileged = {}, feedback }: {
   locale: string; profile: Omit<ForumProfile, "joinedAt"> & { joinedAt: string };
-  isOwner?: boolean; canEditProfile?: boolean;
+  isSelf?: boolean; canEditProfile?: boolean; privileged?: ProfilePrivilegedSections;
   editing?: boolean; saved?: boolean; feedback?: ProfileActionData;
 }) {
   const { t } = useTranslation("common");
@@ -35,9 +40,9 @@ export function ProfileView({ locale, profile, isOwner = false, canEditProfile =
       <header className="profile-identity">
         <ForumAvatar name={profile.name} image={profile.image} className="profile-avatar" />
         <div className="profile-identity-copy"><p className="profile-eyebrow">{t("profileHeading")}</p><h1 id="profile-name"><bdi dir="auto">{profile.name}</bdi></h1><span className="profile-role" dir="auto">{role}</span></div>
-        {isOwner && canEditProfile && !editing && <Link className="profile-button" to={`${path}?edit=1`}>{t("profileEdit")}</Link>}
+        {isSelf && canEditProfile && !editing && <Link className="profile-button" to={`${path}?edit=1`}>{t("profileEdit")}</Link>}
       </header>
-      {isOwner ? <nav>
+      {isSelf ? <nav>
         <Link to={ownMeasuresPath(locale)}>{t("measuresOwn")}</Link>
         <Link to={settingsAccountPath(locale)}>{t("settingsAccount")}</Link>
         {currentSessionUser?.id === profile.id && currentSessionUser.canViewSuperAdmin ?
@@ -49,7 +54,7 @@ export function ProfileView({ locale, profile, isOwner = false, canEditProfile =
         <div><dt>{t("profileBestAnswers")}</dt><dd>{new Intl.NumberFormat(locale).format(profile.bestAnswerCount)}</dd></div>
       </dl>
       {saved && !editing && <p className="profile-feedback" role="status">{t("profileSaved")}</p>}
-      {editing && isOwner && canEditProfile ? <Form className="profile-form" method="post" action={`${path}?edit=1`} aria-label={t("profileEdit")} aria-busy={pending}>
+      {editing && isSelf && canEditProfile ? <Form className="profile-form" method="post" action={`${path}?edit=1`} aria-label={t("profileEdit")} aria-busy={pending}>
         <input type="hidden" name="intent" value="save-profile" />
         {feedback && <p className="profile-feedback is-error" role="alert">{t(feedback.error === "invalid" ? "profileInvalid" : `profileError_${feedback.error}`)}</p>}
         <label htmlFor="profile-bio">{t("profileBio")}</label><p id="profile-bio-hint">{t("profileBioHint")}</p>
@@ -63,5 +68,32 @@ export function ProfileView({ locale, profile, isOwner = false, canEditProfile =
         {(github || website) && <nav className="profile-links" aria-label={t("profileLinks")}>{github && <a href={github} rel="nofollow ugc noreferrer">GitHub ↗</a>}{website && <a href={website} rel="nofollow ugc noreferrer">{t("profileWebsite")} ↗</a>}</nav>}
       </div>}
     </section>
+    {privileged.measures ? (
+      privileged.measures.status === "unavailable" ?
+        <SectionUnavailable id="measures" label={t("measuresAdmin")} /> :
+        <section id="measures" className="profile-card" aria-labelledby="profile-admin-measures-heading">
+          <h2 id="profile-admin-measures-heading">{t("measuresAdmin")}</h2>
+          {privileged.measures.value.length ?
+            <GroupedMeasures measures={privileged.measures.value} locale={locale} admin/> :
+            <p>{t("measuresNone")}</p>}
+          <p><Link to={adminMeasuresPath(locale,routing)+"?target="+encodeURIComponent(profile.id)}>
+            {t("measuresAdmin")}</Link></p>
+        </section>
+    ) : null}
+    {privileged.authorization ? (
+      privileged.authorization.status === "unavailable" ?
+        <SectionUnavailable id="authorization" label={t("authorizationHeading")} /> :
+        <div className="profile-card">
+          <InlineUserAuthorization key={privileged.authorization.value.actorId + ":" + profile.id}
+            locale={locale} actorId={privileged.authorization.value.actorId} userId={profile.id}
+            management={privileged.authorization.value.management}
+            permissions={privileged.authorization.value.permissions}
+            canManageElevated={privileged.authorization.value.canManageElevated}
+            canMutateAuthorization={privileged.authorization.value.canMutateAuthorization}/>
+        </div>
+    ) : null}
+    {privileged.owner ?
+      <OwnerProfileSections key={privileged.owner.viewerId + ":" + profile.id}
+        locale={locale} targetId={profile.id} owner={privileged.owner}/> : null}
   </ForumShell>;
 }
