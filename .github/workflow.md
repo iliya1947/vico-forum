@@ -1,13 +1,16 @@
 # Admin panel — current workflow
 
 - Service PR: **#251**. Current main: `f6fd4b2c031b2132b04eace18704a59aed1dfec8`; PR #319 base `e279cb6c032a489a9044ca1191407df887c364b4` (AGENTS.md-only divergence).
-- Current stage: **SA02 LEV-04/-05 author corrections COMPLETE — Lira STOP on Draft PR #319 stable exact head `3f217c98dd9dcbd51518eda82b51506fbede936c`; fresh Mira cumulative review pending.**
-- Implementation: Draft **PR #319** new correction head `3f217c98dd9dcbd51518eda82b51506fbede936c` (old reviewed head `0a45909bfb3a403af63a4693455d519f8a0e9ea6` superseded). New whole-PR review not yet begun.
-- Mira coordinator review on `0a45909b...`: prior PASS. Lev independent review #6793653705: CHANGES REQUIRED.
-- **SA02-IMPL-LEV-04 CONFIRMED:** source-agnostic History field labels misname attachment `total` and registration `version`.
-- **SA02-IMPL-LEV-05 CONFIRMED:** generic digit-string numeric formatting mutates opaque IDs, including leading-zero refs.
-- Both defects are local D3 presentation issues; backend/schema/producers/technical plan remain unchanged.
-- Implementer: **Lira — correction LEV-04/-05 complete; STOP.** Local History renderer now picks ambiguous `total`/`version` labels from authoritative observation monitor and preserves exact digit-only opaque actor/target/entity/upload IDs; only known numeric count fields use BigInt-safe locale formatting. Regression suite exercises real DTO-shaped security.attachments/accounts.registration/accounts.users/system.dependencies observations in shared global and scoped History EN/RU/HE; ID leading zeros and large counts. Existing connected browser 503 waitUntil assertion changed to poll eventual event persistence instead of racing the Worker. **Stable exact head `3f217c98dd9dcbd51518eda82b51506fbede936c`**: [CI #43009722614](https://github.com/iliya1947/vico-forum/actions/runs/43009722614) **SUCCESS** (181 app test files; checks + native database); [SA01 Chromium #43009722439](https://github.com/iliya1947/vico-forum/actions/runs/43009722439) **SUCCESS** (built Worker/PG17/Better Auth); [AP10 Chromium #43009722575](https://github.com/iliya1947/vico-forum/actions/runs/43009722575) **SUCCESS (4/4 jobs)**. Old reviewed head and its coordinator PASS/Lev findings are historical only; **new head has no cumulative whole-PR PASS yet**.
-- Lev independent reviewer: completed/stopped until a new coordinator PASS. Mark unassigned.
-- **Next recipient: Mira** — fresh cumulative A/B/C/D coordinator whole-PR review of new stable exact head `3f217c98dd9dcbd51518eda82b51506fbede936c`; only after coordinator PASS, Lev independent same-head review. Lira correction complete, no reviewer invocation by Lira.
-- No merge/docs closeout/SA03+/Stage6 #315 activation/production/deferred journal occupancy/archive/clear work is authorized.
+- Current stage: **SA02 cumulative A/B/C/D coordinator review PASS on corrected stable head; awaiting Lev independent whole-PR review.**
+- Implementation: Draft **PR #319**, stable exact head **`3f217c98dd9dcbd51518eda82b51506fbede936c`**.
+- Previous reviewed head `0a45909b...`: Mira PASS → Lev CHANGES REQUIRED LEV-04/-05. Both findings are now **CLOSED** on the corrected head.
+- Correction delta from old reviewed head: 4 commits / 3 files only — History renderer, History route presentation tests, and a bounded wait for asynchronous Worker 503 telemetry in the existing browser harness.
+- **Mira fresh cumulative whole-PR review: PASS, 0 confirmed current-scope defects** on `3f217c98dd9dcbd51518eda82b51506fbede936c`.
+- LEV-04 closed: monitor-aware labels preserve correct attachment/users and registration/database semantics in scoped/global History.
+- LEV-05 closed: numeric formatting applies only to known counters; digit-only opaque refs preserve literal text/leading zeroes; large counters remain BigInt-safe.
+- Exact-head verification: CI #43009722614 SUCCESS; SA01 connected Chromium #43009722439 SUCCESS; AP10 Chromium #43009722575 SUCCESS (4/4 jobs).
+- Current #315 was rechecked at head `3199f07a17c16ae7f987cdd1a5e0424470085a1e`; its Owner-plane isolation/Stage6 work remains separate and does not expand SA02 current scope.
+- Implementer: **Lira — completed/stopped**.
+- Coordinator: **Mira — PASS/completed**.
+- **Next reviewer: Lev — independent cumulative A/B/C/D whole-PR review of the same stable exact head `3f217c98dd9dcbd51518eda82b51506fbede936c`, no implementation.**
+- Mark unassigned. No merge/docs closeout/SA03+/Stage6 #315 activation/production/deferred journal occupancy/archive/clear work is authorized.
