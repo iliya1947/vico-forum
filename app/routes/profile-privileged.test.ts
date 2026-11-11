@@ -62,7 +62,7 @@ function env(actorId: string | null, permissions: string[] = [], ownerId = "exac
   context.set(userMeasureContext,{activeRestrictions:async()=>[],adminTarget,ownList} as never);
   const readTarget = vi.fn(async()=>account);
   const readHistory = vi.fn(async()=>historyPage);
-  context.set(ownerProfileContext,{readTarget,readHistory});
+  context.set(ownerProfileContext,{readTarget,readHistory} as never);
   return {context,has,readProfile,readUserManagementState,adminTarget,ownList,readTarget,readHistory};
 }
 function args(context:RouterContextProvider, qs="") {
