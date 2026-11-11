@@ -1968,3 +1968,13 @@ This guard is part of Mira's operating context for #251 and must be checked befo
 - Updated #251 workflow/common state from “Ready for Owner merge” to “implementation merged; factual docs closeout pending”.
 - No SA-04+ or implementation assignment started.
 - Next bounded task is the separate SA-03 factual documentation closeout.
+
+
+## 2026-11-11 — SA-03 factual docs closeout authored
+
+- Created docs-only PR #326 from merged SA-03 main `5992885e78b1642e41c9805116fcc256002b649c`.
+- Exact docs head: `dc9f846bf1fd4224b600fccfa3528f9a518fb8bd`.
+- Scope is 9 Markdown files only, including current project/source-of-truth alignment, authorization/Admin/Super-admin boundary corrections and new history snapshot #26.
+- Verified authoring inputs against merged source, including canonical public/Admin/Owner profile composition and index-only migration `0064`.
+- CI #43082138794 is in progress; no green result and no self-review PASS claimed.
+- Handoff prepared for Lev independent factual docs review after applicable CI succeeds.
