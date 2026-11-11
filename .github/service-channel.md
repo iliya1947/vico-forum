@@ -3869,3 +3869,20 @@ The previous docs-closeout route was incorrect.
 - Recovery uses the existing work: **Lira is assigned an independent factual whole-PR review of #326** against merged #324/current main and relevant current source-of-truth.
 - Review is one indivisible whole-PR operation, not a multi-result implementation handoff. Lira reports all current-scope findings or PASS and then STOP; she does not edit #326 during review.
 - No ordinary code/test CI is used as proof of documentation correctness. Lev/Mark remain unassigned.
+
+
+## 2026-11-11 — repeated Mira failure classes recorded
+
+Four incidents today reduce to two repeated failure classes and must be treated as active process hazards, not historical trivia:
+
+1. **Oversized Lira handoff — repeated twice.**
+   - First occurrence: Mira handed Lira a multi-result implementation package instead of one bounded independently completable result.
+   - Repeat: after the first correction, Mira again routed a whole accepted multi-step package to Lira instead of applying the granularity gate first.
+   - Required prevention: before every Lira handoff, split by independently completable result and assign exactly one bounded result with STOP.
+
+2. **Acting outside Mira's role/authority — repeated twice.**
+   - First occurrence: Mira implemented the SA-03 documentation closeout herself instead of coordinating the executor.
+   - Repeat: when challenged about that mistake, Mira independently closed PR #326 without authorization.
+   - Required prevention: before every repository-changing action, verify both role ownership and actual authority; criticism of a prior action is not permission for a new mutation.
+
+These are mandatory pre-action checks for the remainder of #251. The incident record is intentionally duplicated in Mira's personal file and the operational gate is duplicated in workflow so recovery cannot depend on remembering one location.
