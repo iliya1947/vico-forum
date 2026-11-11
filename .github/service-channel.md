@@ -82,7 +82,7 @@
 3. Current audit target: **`ce62e783e71433a00c2fe4874ee26dfc54614628`**. Delta `5992885… → ce62e783…` — documentation-only SA-03 closeout #326; H1/H2 runtime/ingress source unchanged.
 4. **Block H H1–H3 PASS; H4 = 0 current-scope findings + `WORKER-VERSION-URL-01 Moderate/P2` deferred Stage-6 blocker.** Следующий bounded security step после продолжения владельца — **H5: Worker deployment/version/rollback repository gates** на current main; после H5 остановиться.
 5. H4 проверил current official Cloudflare Version URL/Previews/access contracts; live Cloudflare/production state не читался и не менялся, external upload/deploy не запускался.
-5. Exact `pg@8.23.0` query-timeout semantics и exact `drizzle-orm 0.45.2` transaction wrapper подтверждают, что lost/late COMMIT ACK возможен; current writers не auto-retry его. Locale отдельно reconciles; measures/Complaints/publication используют replay/CAS/idempotency.
-6. `AuthorizationRepository.mutate()` rollback-error preservation слабее новых helpers, но current fail-open/security impact не доказан — finding не создаётся.
-7. Advisory-lock compatibility с будущим real web Hyperdrive остаётся Stage-6 acceptance boundary; production web binding сейчас inactive/paused, поэтому это не current G5 finding.
-8. Лира, Лёва и Марк сейчас не имеют активного назначения по #315.
+6. Exact `pg@8.23.0` query-timeout semantics и exact `drizzle-orm 0.45.2` transaction wrapper подтверждают, что lost/late COMMIT ACK возможен; current writers не auto-retry его. Locale отдельно reconciles; measures/Complaints/publication используют replay/CAS/idempotency.
+7. `AuthorizationRepository.mutate()` rollback-error preservation слабее новых helpers, но current fail-open/security impact не доказан — finding не создаётся.
+8. Advisory-lock compatibility с будущим real web Hyperdrive остаётся Stage-6 acceptance boundary; production web binding сейчас inactive/paused, поэтому это не current G5 finding.
+9. Лира, Лёва и Марк сейчас не имеют активного назначения по #315.
