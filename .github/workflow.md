@@ -15,6 +15,7 @@
 13. D10 completed: **PASS — 0 current-scope Complaints mutation/replay/concurrency/notification defects**.
 14. D8 completed: **1 current-scope finding — HELP-SIGNAL-PRIV-01 Low/P3**.
 15. D11 completed: **PASS — 0 current-scope Security attachment moderation defects**.
-16. No technical planner, implementer or implementation PR is assigned.
-17. No Cloudflare/Neon/production mutation is authorized.
-18. Next after developer continuation: execute **D4 Admin History confidentiality / integrity** and stop with findings/classification.
+16. D4 completed: **1 current-scope finding — HISTORY-PRIV-01 Low/P3**.
+17. No technical planner, implementer or implementation PR is assigned.
+18. No Cloudflare/Neon/production mutation is authorized.
+19. Next after developer continuation: execute **D5 Users read surface / targeted authorization composition** and stop with findings/classification.
