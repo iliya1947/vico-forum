@@ -4,7 +4,7 @@
 
 1. Служебный PR: **#315**.
 2. Моя текущая работа: audit/coordination only; remediation и implementation не назначены.
-3. Текущий этап: **Block G ЗАВЕРШЁН — 3 current-scope findings (`DB-SEARCHPATH-01`, `DB-ACL-USER-DELETE-01`, `DB-TEST-TARGET-01`) + deferred Stage-6 blocker `DB-RUNTIME-EVIDENCE-01`; следующий bounded step — Block H scope preparation**.
+3. Текущий этап: **Block H scope подготовлен; следующий bounded slice — H1 Worker composition & binding isolation**. Block G закрыт с 3 current-scope findings + deferred Stage-6 blocker `DB-RUNTIME-EVIDENCE-01`.
 4. Technical audit target B–D: `e279cb6c032a489a9044ca1191407df887c364b4`.
 5. Current `main` после G8 delta-recheck — `5992885e78b1642e41c9805116fcc256002b649c`. Delta от `538084fd…` — SA-03 #324: index-only migration `0064` + readonly Owner profile/history; Block G conclusions unchanged.
 6. Лира, Марк и Лёва по #315 сейчас не назначены.
@@ -90,6 +90,10 @@
 63. G8 descendant delta `538084fd… → 5992885…` перепроверен: SA-03 добавил только migration `0064` с шестью indexes; journal `idx=64`, snapshot `0063→0064`, manifest target и clean-replay count=65 согласованы. Runtime ACL contract не изменён; new Owner readers используют уже granted relations.
 64. На descendant `5992885…` Better Auth всё ещё не включает `deleteUser`; Complaint `0050` guard остаётся unqualified; destructive `db:test` guard/schema-drop path не изменены. Новых Block G root causes нет.
 65. Block G закрыт. Подтверждённые current findings не исправлять автоматически: сначала отдельная bounded remediation-задача по решению владельца и текущему Stage.
+66. Block H scope подготовлен против current main `5992885e78b1642e41c9805116fcc256002b649c`: H1–H8, current-vs-Stage-6 boundary, anti-duplication, code seams и finding criteria зафиксированы в отдельном `SECURITY_BLOCK_H_CLOUDFLARE_WORKERS_RUNTIME.md`.
+67. H current scope: Worker composition, `HYPERDRIVE`/`WEB_HYPERDRIVE` isolation, ingress trust, runtime binding failures, preview/version repository boundary, rollout/version/rollback gates и Worker-wide failure/observability behavior.
+68. Future-only boundaries не считать current findings сами по себе: deployed `WEB_HYPERDRIVE`, mutable Cloudflare topology, separate Owner Worker/Access/Owner plane, real routes/domains/preview isolation acceptance, real providers/Queues.
+69. First slice H1 проверяет только Worker composition & binding isolation. Live Cloudflare/production mutation/check не выполнялся.
 
 ## Ограничения
 
@@ -101,5 +105,5 @@
 
 ## Следующий шаг
 
-1. После продолжения владельца подготовить отдельный **Block H — Cloudflare / Workers / runtime**: создать block-файл, определить current-vs-Stage-6 boundary и первый bounded H slice, затем остановиться.
+1. После продолжения владельца выполнить **H1 — Worker composition & binding isolation** на current main и остановиться после результата.
 2. Findings только фиксировать; remediation не начинать.
