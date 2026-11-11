@@ -263,6 +263,31 @@ describe("interactive Pages preview", () => {
     await user.click(screen.getByRole("button", { name: "Pin topic" }));
     expect(await screen.findByText("Pinned")).toBeInTheDocument();
   });
+
+  it("opens message history and corrects source language in the admin preview", async () => {
+    const user = userEvent.setup();
+    render(<EmbeddedPreview scenarioId="admin-topic" identity="manager" />);
+
+    const question = document.querySelector("#post-question");
+    expect(question).not.toBeNull();
+    const actions = question!.querySelector(".message-admin-tools > summary");
+    expect(actions).not.toBeNull();
+    await user.click(actions!);
+
+    await user.click(within(question as HTMLElement).getByRole("button", { name: "Edit history" }));
+    expect(await within(question as HTMLElement).findByRole("heading", { name: "Published revisions" }))
+      .toBeInTheDocument();
+    expect(within(question as HTMLElement).getByText(
+      "I want strong typing without coupling the whole app to one HTTP library.",
+    )).toBeInTheDocument();
+
+    const sourceLocale = within(question as HTMLElement).getByLabelText("Correct source language");
+    await user.clear(sourceLocale);
+    await user.type(sourceLocale, "he");
+    await user.click(within(question as HTMLElement).getByRole("button", { name: "Correct language" }));
+
+    expect(await within(question as HTMLElement).findByText("Source language: he")).toBeInTheDocument();
+  });
 });
 
 
