@@ -3,6 +3,15 @@
 Служебный PR: #251. Оперативное состояние: [workflow.md](./workflow.md). Общий контракт: [ADMIN_PANEL_IMPLEMENTATION_PLAN.md](../ADMIN_PANEL_IMPLEMENTATION_PLAN.md).
 
 
+## 2026-11-12 — Лира: SA04-A2 bounded author checkpoint complete, stable exact head; STOP
+
+- New cumulative Draft [PR #328](https://github.com/iliya1947/vico-forum/pull/328), branch `chatgpt/sa04-a2-account-state-read`, unchanged post-A1 main/base `593a03964b8407b249f7c9f5eb117ddb8b07736d`, **stable implementation head `f9da2033455487f25510c2ccbbb748ed5f4bf7f4`**.
+- Exactly **two source/test files**. `db/account-state.ts` exposes shared Drizzle/native SQL active predicate, typed readonly `active/deactivated/missing` lookup on caller-owned PostgreSQL connection, readonly assert, separate inactive/missing and unavailable/unexpected failure classes with cause preservation. `tests/database/account-state.test.ts` adds six isolated PG17 tests for real migration0065 state, native/Drizzle predicate equivalence, parameterized ID, caller-owned transaction, no read row lock, classified failures/integrity handling.
+- Author personally inspected both complete files and final diff; verified semantics against merged A1 CHECK and A2 scope, absence of state mutation/admission integration, precision/UTC timestamp preservation, distinct failure categories and no latent bypass claim. Tests are supporting evidence, not a replacement for inspection.
+- **Exact-head CI [#43109939829](https://github.com/iliya1947/vico-forum/actions/runs/43109939829) SUCCESS:** 183/183 app files, **2237/2237 tests**; 66/66 PostgreSQL17 files, **696/696 tests** (including all six A2); 69-table manifest parity; lint, typecheck, builds, migration metadata, Worker smoke.
+- No schema/migration change in A2, runtime auth/session/writer integration, transaction row-lock guard, public projection, deactivate command/control, SA05+ or Stage6. Existing users remain active; inactive fixture tests do not imply enabled deactivation. PR remains open/Draft, no merge and no independent review verdict.
+- **Lira AUTHOR STOP; next Mira checkpoint/scope review** at stable head; only Mira can assign next bounded A3/A4 or other work. Lev independent whole-PR review not scheduled for A2 alone.
+
 ## 2026-11-11 — Лёва: independent SA04-A1 review PASS; STOP
 
 Published report: [#6808027706](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6808027706). Developer explicitly authorized publication of review reports and service-state updates for the entire SA-04 ("Разрешаю на протяжение всего SA-04"). This authorization persists across SA-04 handoffs.
