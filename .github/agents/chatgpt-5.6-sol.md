@@ -4,9 +4,9 @@
 
 1. Служебный PR: **#315**.
 2. Моя текущая работа: audit/coordination only; remediation и implementation не назначены.
-3. Текущий этап: **Block G G1 PASS; G2 `DB-SEARCHPATH-01 Low/P3`; G3 `DB-ACL-USER-DELETE-01 Low/P3`; G4 `DB-RUNTIME-EVIDENCE-01 Low/P3`; G5 PASS; G6 `DB-TEST-TARGET-01 Low/P3`; G7 PASS; следующий bounded slice — G8 Cross-chain closeout**.
+3. Текущий этап: **Block G ЗАВЕРШЁН — 3 current-scope findings (`DB-SEARCHPATH-01`, `DB-ACL-USER-DELETE-01`, `DB-TEST-TARGET-01`) + deferred Stage-6 blocker `DB-RUNTIME-EVIDENCE-01`; следующий bounded step — Block H scope preparation**.
 4. Technical audit target B–D: `e279cb6c032a489a9044ca1191407df887c364b4`.
-5. Current `main` — `538084fd472c65459ad55ab30a0f96fbfdd68e56`. SA-02 docs closeout merged; compare с `4248fed…` показывает только 8 Markdown changes, attachment runtime/schema unchanged.
+5. Current `main` после G8 delta-recheck — `5992885e78b1642e41c9805116fcc256002b649c`. Delta от `538084fd…` — SA-03 #324: index-only migration `0064` + readonly Owner profile/history; Block G conclusions unchanged.
 6. Лира, Марк и Лёва по #315 сейчас не назначены.
 
 ## Где читать состояние
@@ -62,7 +62,7 @@
 35. Block G G3: подтверждён **`DB-ACL-USER-DELETE-01 Low/P3`**. Current `web` relation contract даёт `public.user` full CRUD, включая DELETE, хотя current Vico не реализует account deletion, Better Auth `1.7.7` `/delete-user` выключен без `user.deleteUser.enabled=true`, а ordinary/OAuth creation rollback transactional и не требует hard user DELETE.
 36. Остальной G3 least-privilege sweep дополнительных findings не дал: role attributes/membership/ownership, database CREATE, schema ACL, exact relation grants, column/sequence/function/default grants и negative probes fail closed по repository contract. `PUBLIC TEMPORARY` — уже часть `DB-SEARCHPATH-01`, не duplicate. Legacy editor-draft grants после external accepted `0020` — future Stage-6 cleanup, не current finding сами по себе.
 37. G3 tests/probes прочитаны, но не запускались. Exact mutable live production ACL: **Информация не проверена**.
-38. Block G G4 technical defect **`DB-RUNTIME-EVIDENCE-01 Low/P3`** подтверждён: current runtime evidence фиксирует только `0020_translation_generation_permission`, а current Worker core create-topic/reply уже обращается к measure tables из `0058_user_measures`; current schema manifest targets `0063_owner_attempt_telemetry`. Worker rollout verifier проверяет evidence только до repository-authored required tag и не выводит minimum required schema из exact runtime revision.
+38. Block G G4 technical defect **`DB-RUNTIME-EVIDENCE-01 Low/P3`** подтверждён: current runtime evidence фиксирует только `0020_translation_generation_permission`, а current Worker core create-topic/reply уже обращается к measure tables из `0058_user_measures`; после SA-03 current schema manifest targets `0064_sa03_profile_history_indexes`. Worker rollout verifier проверяет evidence только до repository-authored required tag и не выводит minimum required schema из exact runtime revision.
 39. G8 исправил Stage-классификацию G4: единственный consumer verifier — manual `production-worker-rollout.yml` Stage-6 path; Stage 6 paused, local/CI product development этот gate не использует. Поэтому `DB-RUNTIME-EVIDENCE-01` — **deferred Stage-6 blocker, not current-scope**, с сохранённой Low/P3 severity.
 40. Остальные G4 gates дополнительных findings не дали: migration pre/post ledger+manifest fail closed, dedicated migrator identity отделена, relation grants derived from shared contract and verified before commit. Provisioning наследует G3 `user.DELETE` — duplicate не создаётся. Old workflow rerun сохраняет original SHA/ref и не доказал downgrade path.
 41. G4 workflow/tests/probes прочитаны, но не запускались; external dispatch/prod mutation не выполнялись. Exact live GitHub Environment protection и current production schema/ACL: **Информация не проверена**.
@@ -79,7 +79,7 @@
 52. Runtime privilege verifier compares complete end state for localization/web roles and PUBLIC, including unexpected grants, memberships, ownership, columns/functions/default ACLs and sequences.
 53. Live GitHub evidence run `36270353184` rechecked: manual production-db migration on main, exact SHA `b172264…`, attempt 1, success. Its journal ends at `0020`, prefix equals current `0000–0020`, and the SHA is ancestor of current main by 163 commits.
 54. G7 повторно подтверждает technical evidence-gap `DB-RUNTIME-EVIDENCE-01`; duplicate не создаётся. Final Stage classification выполнена в G8.
-55. Current source-of-truth не заявляет, что production соответствует `0063`; mutable production schema/ACL: **Информация не проверена**. Identity/sequence properties, появившиеся после `0020`, вернуть в acceptance scope перед их external rollout; сейчас это future Stage-6 boundary, не finding.
+55. Current source-of-truth не заявляет, что production соответствует repository `0064`; mutable production schema/ACL: **Информация не проверена**. Post-`0020` schema acceptance вернуть в scope перед external rollout; сейчас это future Stage-6 boundary, не finding.
 56. G7 repository tests не запускались; production/Cloudflare/Neon mutation не выполнялась.
 57. Block G G8: **closeout завершён, 0 additional findings, 1 reclassification**. Final current-scope Block G = `DB-SEARCHPATH-01 Low/P3`, `DB-ACL-USER-DELETE-01 Low/P3`, `DB-TEST-TARGET-01 Low/P3`.
 58. G8 повторно прошёл migration → final schema → runtime grants → representative direct SQL → application adapter chains. Три retained findings имеют distinct DB root causes и не дублируют Blocks B–F.
@@ -87,7 +87,9 @@
 60. Ordinary CI всё ещё вызывает `pnpm db:test`, поэтому `DB-TEST-TARGET-01` остаётся current tooling defect; стандартный fixed loopback CI URL сам bypass не активирует.
 61. PostgreSQL 17 official docs повторно подтверждают `pg_temp` priority для unqualified relation lookup; `DB-SEARCHPATH-01` causal chain остаётся действующей.
 62. G8 tests не запускались; production/Cloudflare/Neon mutation и workflow dispatch не выполнялись. Mutable live external state: **Информация не проверена**.
-63. Block G закрыт. Подтверждённые current findings не исправлять автоматически: сначала отдельная bounded remediation-задача по решению владельца и текущему Stage.
+63. G8 descendant delta `538084fd… → 5992885…` перепроверен: SA-03 добавил только migration `0064` с шестью indexes; journal `idx=64`, snapshot `0063→0064`, manifest target и clean-replay count=65 согласованы. Runtime ACL contract не изменён; new Owner readers используют уже granted relations.
+64. На descendant `5992885…` Better Auth всё ещё не включает `deleteUser`; Complaint `0050` guard остаётся unqualified; destructive `db:test` guard/schema-drop path не изменены. Новых Block G root causes нет.
+65. Block G закрыт. Подтверждённые current findings не исправлять автоматически: сначала отдельная bounded remediation-задача по решению владельца и текущему Stage.
 
 ## Ограничения
 
