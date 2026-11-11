@@ -520,6 +520,26 @@
 17. AP-10 `admin.forum` blocks new reviewer Signal effects inside the repository transaction for both accept and reject, while `helpSignals.submit` only blocks new submissions and deliberately leaves withdrawal available.
 18. No second D8 current-scope security defect confirmed. Remediation remains unassigned.
 
+## Block D / D11 — Security attachment moderation surface audit
+
+1. Audit target: current main `e279cb6c032a489a9044ca1191407df887c364b4`; current `main` was rechecked and is identical to this target.
+2. Verdict: **PASS — 0 confirmed current-scope defects**.
+3. `forum.attachmentSecurity.read` independently gates the real `/:locale/attention?mode=security&group=attachments` queue. The route checks current effective authorization before the attachment-event store is read; denial is private/no-store and performs no event lookup.
+4. Signals, Complaints, ordinary Forum/Admin and Security permissions remain independent. Help/Complaint capabilities do not imply Security access, and `forum.attachmentSecurity.read` alone does not admit the global Admin panel or grant Help/Complaint mutations.
+5. Production Worker composition supplies the Attention route with `withForumAdministrativeRestrictions(...)` effective authorization, so AP-10 `admin.security` suppression is part of the actual request path rather than presentation-only behavior.
+6. Existing AP-10 regressions preserve the raw Security grant while hiding it from effective `has/resolve` under an active applicable measure, keep Forum/Complaints families independent, honor overlap/expiry/disabled/lift semantics, restore access on the next request after lift, and fail closed if measure state is unavailable.
+7. The durable Security event projection contains only the approved review metadata: event/upload identity, uploader user ID, upload context/operation ID, file name, declared/detected type, reason, declared size and timestamp. It contains no R2 object key and no file bytes, message body, editor text, session, email or unrelated authorization data.
+8. `contextKey` and the historical `draftId` field are current upload-operation context, not persisted text drafts. Their presentation is explicitly required by the Editor security-event contract so moderators can understand the upload/message context; current Editor 2.0 has no server text-draft storage or recovery surface.
+9. Suspicious-upload `uploadId` is server-derived and domain-separated (`attachment-v1:<SHA-256>`) for the observed upload tuple. It is not the private R2 object key. Exact concurrent/retry observations converge on one durable event through the database unique key; changed upload evidence produces a distinct event.
+10. Suspicious preflight rejection happens before R2 write. A later structural rejection deletes the private object before returning rejection. A suspicious event can remain durably reviewable even when no `forum_attachments` row exists, as required by the product contract.
+11. Security/Attachments remains read-only. Its event cards have no accept/reject/open-file mutation. The only runtime consumer of `readSecurityAttachmentEvents` is the protected Attention loader; no weaker public/admin event-reader route was found.
+12. Event paging is bounded to 50 rows and page indexes 0..10000. Invalid repository page values are rejected; the route normalizes invalid public page input rather than allowing arbitrary offset/resource targeting.
+13. The exposed upload-operation identifiers cannot be reused to read another user's private temporary file: the controlled download route derives draft owner from the authenticated session and the repository requires exact owner + context + operation + attachment reference membership before any bucket read. Published download similarly requires exact post→attachment membership.
+14. Attachment bytes are fetched from the private bucket only after authoritative reference lookup. Revoked/missing refs return 404 before bucket access; storage absence/failure returns controlled 503. Responses use private/no-store, `nosniff` and CSP sandbox; inline rendering is limited to signature-verified raster or inert bounded text preview.
+15. Security event presentation escapes control/format characters in attacker-controlled filename/context display. Detected type/reason are server-derived. No object-storage identity is rendered in the card or download headers.
+16. Durable Security-event write failure fails closed as 503 for a suspicious rejection; the upload is not converted into an accepted attachment. No administrative History event is invented because Security upload events are a distinct durable event source by contract.
+17. No D11 current-scope defect confirmed. Remediation remains unassigned.
+
 ## Координация
 
 1. #315 хранит решения, задачи, review findings и прогресс всего направления безопасности.
