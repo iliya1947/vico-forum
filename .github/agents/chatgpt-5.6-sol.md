@@ -4,9 +4,9 @@
 
 1. Служебный PR: **#315**.
 2. Моя текущая работа: audit/coordination only; remediation и implementation не назначены.
-3. Текущий этап: **Block H H1–H3 PASS; H4/H5 завершены: 0 current-scope findings + deferred Stage-6 blockers `WORKER-VERSION-URL-01 Moderate/P2`, `WORKER-ROLLBACK-FINALIZER-01 Moderate/P2`; H6 PASS, 0 additional; следующий bounded slice — H7 Runtime topology Stage boundary**. Block G закрыт с 3 current-scope findings + deferred Stage-6 blocker `DB-RUNTIME-EVIDENCE-01`.
+3. Текущий этап: **Block H H1–H3 PASS; H4/H5 завершены: 0 current-scope findings + deferred Stage-6 blockers `WORKER-VERSION-URL-01 Moderate/P2`, `WORKER-ROLLBACK-FINALIZER-01 Moderate/P2`; H6 PASS; H7 PASS, 0 additional; следующий bounded slice — H8 Cross-chain closeout**. Block G закрыт с 3 current-scope findings + deferred Stage-6 blocker `DB-RUNTIME-EVIDENCE-01`.
 4. Technical audit target B–D: `e279cb6c032a489a9044ca1191407df887c364b4`.
-5. Current `main` — `ce62e783e71433a00c2fe4874ee26dfc54614628`. Delta `5992885… → ce62e783…` — documentation-only SA-03 closeout #326; H runtime/rollout code unchanged.
+5. Current `main` — `593a03964b8407b249f7c9f5eb117ddb8b07736d`. Delta `ce62e783… → 593a0396…` — SA-04 A1 #327 migration/schema/tests only; H runtime/topology code unchanged.
 6. Лира, Марк и Лёва по #315 сейчас не назначены.
 
 ## Где читать состояние
@@ -152,6 +152,17 @@
 124. Exact tagged Wrangler 4.130.0 confirms versions deploy patches observability as non-versioned setting after deployment. Current exact observability config is not shown to weaken security; rollback/reconciliation ambiguity remains covered by existing WORKER-ROLLBACK-FINALIZER-01, no duplicate.
 125. Existing AUTH-CACHE-01 / READSTATE-CACHE-01 remain Blocks B/E; H6 found no additional Worker-wide cache root cause.
 126. Live Workers Logs access/retention/destinations/dashboard overrides: **Информация не проверена**; no external state read/mutation. Tests read, not run.
+127. H7: **PASS, 0 current-scope findings, 0 new deferred technical blockers** на `593a03964b8407b249f7c9f5eb117ddb8b07736d`.
+128. Ordinary CI has no Cloudflare deploy path; repository search found no wrangler deploy/preview, cf previews deploy, Deploy Hook, Builds-connect or direct Cloudflare API mutation outside manual production-worker-rollout.
+129. Current wrangler config has no env/previews/routes/r2/queues/vars/workers_dev/preview_urls. Official Cloudflare semantics: workers_dev defaults true with no routes; omitted preview_urls preserves existing setting. Repo therefore cannot prove mutable live endpoint state.
+130. Historical source-of-truth says native Builds disabled, production/preview workers.dev enabled, no custom routes/domains, Previews Base zero bindings/vars/secrets. Exact live state now: **Информация не проверена** and must be re-read before Stage 6.
+131. Official Builds docs: connected production branch can auto build/deploy; Preview builds are separate mutable configuration. New Worker Previews use separate preview settings/resources; existing Workers may remain on previous preview model until explicit switch.
+132. H4 owns public production-resource Version URL defect; H7 does not duplicate it. Missing live topology recheck today is not current defect because Stage 6 paused and source-of-truth already requires the recheck before activation.
+133. Stage-6 topology acceptance must establish Builds/auto-deploy, active deployment, bindings/vars/secrets, Preview model/resources/URLs, custom routes/domains, workers.dev settings and alternate deployment entrypoints before external rollout.
+134. WEB_HYPERDRIVE repository config remains preparation, not proof of deployed binding. Real R2/OAuth/Owner binding/Queues/providers and separate Owner Worker/Access remain explicit Stage-6 boundaries, not current H findings.
+135. app/routes.ts still cohosts Admin/Super-admin/public app in one Worker; AdministrativeRouting changes outgoing addresses only. Separate Owner runtime isolation remains Block A/Stage-6 and is not duplicated.
+136. Non-H source-of-truth drift observed: current main includes migration 0065 SA-04 account-state foundation, while PROJECT_STATE/ROADMAP/SUPER_ADMIN still describe 0064/SA-04+ not implemented. H7 does not resolve that documentation state; shared Stage-6-paused topology boundary is consistent.
+137. Existing correction gates unchanged: DB-RUNTIME-EVIDENCE-01 before schema-dependent rollout, WORKER-VERSION-URL-01 before write/private-capable upload, WORKER-ROLLBACK-FINALIZER-01 before production traffic promotion.
 
 ## Ограничения
 
@@ -163,5 +174,5 @@
 
 ## Следующий шаг
 
-1. После продолжения владельца выполнить **H7 — Runtime topology Stage boundary** на current main и остановиться после результата.
-2. Reconcile repository assumptions vs paused external topology; live mutation не выполнять. Existing blockers only reference; duplicates не создавать.
+1. После продолжения владельца выполнить **H8 — Cross-chain closeout** на current main и остановиться после результата.
+2. Deduplicate H findings against Blocks A–G and deferred Stage-6 blockers; remediation не начинать.
