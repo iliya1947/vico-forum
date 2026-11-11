@@ -3632,3 +3632,26 @@ MIRA-01 closed independently: canonical Owner-self own measure destinations GET2
 Independent fresh runs:11 app files/93 tests PASS;2 native files/9 tests PASS; build and clean0000–0064 migration PASS; actual69-table schema manifest parity PASS; Drizzle snapshot delta exactly six new indexes. Independently rerun checked-in connected Chromium24/24 PASS with original assertions; source identity/current/permission/cache/outage/cursor/EN-RU-HE responsive checks and MIRA-01 passed. Additional original identity-boundary probe confirms the finding. Four exact-head CI/SA03/SA01/AP10 run conclusions verified SUCCESS via API. #315 head a27dd964 reviewed; Stage6/broad remediation remain separate.
 
 No source/schema/permanent-doc implementation edits. Review checkout clean; own Worker/DB stopped, temporary vars/dependency link removed; retained evidence under /workspace/work/sa03-review-evidence. **Next Mira:** review packet and determine one bounded correction assignment; Lev stopped. No Lira/Mark appointment, merge readiness, docs closeout or future package launch by this result.
+
+## 2026-11-11 — Mira verification of SA03-IMPL-LEV-01; bounded correction accepted
+
+Lev's independent review finding SA03-IMPL-LEV-01 on PR #324 exact head `4bfdfdd14a70534bd95c308de9d1c8c2df672c76` was independently checked by Mira before routing.
+
+**Confirmed current-scope chain:**
+1. `AuthControls.signOut` waits for a successful Better Auth sign-out, then calls `HeaderAuthProvider.setUser(null)` before awaiting `revalidator.revalidate()`.
+2. The canonical profile's `privileged` data remains the previously loaded route snapshot while that revalidation is pending.
+3. `ProfileView` reads current HeaderAuth identity only for presentation links; measures/authorization/Owner sections themselves render from `privileged` without rejecting a viewer mismatch.
+4. Therefore after a known successful sign-out, the page can truthfully show guest header state while stale Owner/private sections and authorization controls from the previous actor remain mounted until the async GET completes.
+5. Fresh guest server reads remain correctly redacted; this is not a server authorization bypass.
+6. The accepted SA-03 plan explicitly requires private DTO/feedback to be viewer+target-bound and forbids stale private sections across account switch/sign-out/revalidation. The defect is therefore **current SA-03 scope**, not future hardening.
+
+**Granularity gate:** this is one independently completable result, so no further split is required.
+
+**Single bounded Lira assignment — SA03-IMPL-LEV-01:**
+- make privileged profile presentation identity-bound so stale privileged sections/controls and their related feedback disappear immediately on a known current-viewer mismatch, while the public profile remains;
+- fresh authorized loader data may restore the sections normally;
+- add focused regression proving the real UI Sign out path with delayed post-signout profile revalidation has no stale Owner/private/authz DOM before the delayed GET finishes, and preserve fresh authorized recovery;
+- do not alter server admission, AP-10/authorization authority, Owner immunity, self-only Settings, schema/migrations, canonical writers or future SA packages;
+- run applicable exact-head checks, publish the new stable #324 head, record evidence, and **STOP**.
+
+No implementation change is made by Mira in this routing step. After Lira's correction, Mira restarts coordinator whole-PR review on the new stable exact head.
