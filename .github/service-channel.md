@@ -3,6 +3,15 @@
 Служебный PR: #251. Оперативное состояние: [workflow.md](./workflow.md). Общий контракт: [ADMIN_PANEL_IMPLEMENTATION_PLAN.md](../ADMIN_PANEL_IMPLEMENTATION_PLAN.md).
 
 
+## 2026-11-12 — Лира: SA04-A3 transaction guard author checkpoint complete; STOP
+
+- Cumulative Draft [PR #328](https://github.com/iliya1947/vico-forum/pull/328), exact final head `0725b49dc9d9e36152670dac8368d0f83e714c82`; base/current main `593a03964b8407b249f7c9f5eb117ddb8b07736d`; A2 previous checkpoint Mira PASS retained. No merge.
+- `db/account-state.ts` extends the A2 typed read path with `assertActiveAccountForMutation` that uses a parameterized `SELECT ... FOR NO KEY UPDATE` on the same supplied transaction connection, then requires active state. No state mutation or transaction control; caller owns transaction, same-connection protected writes and commit/rollback. Already locked user rows rechecked on same connection, without another connection/acquisition path. Readonly API stays unlocked.
+- Four additional real PG17 tests in `tests/database/account-state.test.ts`: guard's row lock blocks competing state UPDATE to COMMIT; earlier fixture state writer prevents admission (lock timeout is classified unavailable, after COMMIT account is inactive); same-transaction stronger existing user lock/repeated admission and missing/inactive; concurrent child-account FK KEY SHARE passes without conflict. Ten account-state tests cumulative.
+- **Personal source inspection completed**: full two-file diff, SQL lock modes vs PostgreSQL17 docs, state read/error class reuse and genuine transaction lifetime, both race orders, FK compatibility, no runtime coupling or other SA04 work. Earlier initial A3 CI runs failed because of a misplaced test-suite brace; fixed before stable head. No later changes after successful CI.
+- **Exact-head [CI #43112202261](https://github.com/iliya1947/vico-forum/actions/runs/43112202261) SUCCESS**: 2237/2237 application, 700/700 native PG17 (10/10 account-state), 69-table manifest parity, lint/typecheck/build/preview/migration/Worker smoke.
+- **Lira author STOP. Next Mira** bounded A3 checkpoint review on exact head; A4 is not authorized, Lev not scheduled. No schema change, auth/session or writer integrations, public neutral projection, deactivation control, SA05+, #315 remediation, Stage6/production, docs closeout or merge.
+
 ## 2026-11-12 — Лира: SA04-A2 bounded author checkpoint complete, stable exact head; STOP
 
 - New cumulative Draft [PR #328](https://github.com/iliya1947/vico-forum/pull/328), branch `chatgpt/sa04-a2-account-state-read`, unchanged post-A1 main/base `593a03964b8407b249f7c9f5eb117ddb8b07736d`, **stable implementation head `f9da2033455487f25510c2ccbbb748ed5f4bf7f4`**.
