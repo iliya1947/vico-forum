@@ -1,3 +1,23 @@
+# Лёва — актуальный checkpoint: SA02 A/B/C repeat independent PASS (2026-11-11)
+
+**Result: PASS — 0 confirmed open current-scope defects. All SA02-IMPL-LEV-01/-02/-03 CLOSED.** [Full result #6788696141](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6788696141). Reviewed PR #319 exact head `25ac41573847f9fbce79897b2e019fd246b400cc`, base/main `e279cb6c032a489a9044ca1191407df887c364b4` unchanged. Mira coordinator PASS/assignment #6788548049 after Lira correction #6788446097.
+
+- Whole cumulative A/B/C scope: same 42 files against accepted plan #6768069279 and recovery decision #6777700709. Six correction files fully reviewed; other 36 SHA256 hashes match prior complete review on c9ff7b660fc40924f6adfd649b1daa0d80acb045, contracts/callers re-evaluated. No implementation authored/edited by Lev.
+- LEV-01: actual Hyperdrive factory forwards trusted second Date. Old independent collector→factory→writer→PG reproducer copied with only checkout path changed, assertions/fixtures unchanged. PASS: capture late then early, flush late→early, stored occurred_at early2026-01-01T00:00:01Z / late02Z; recorded_at order opposite; gap0; direct writer control PASS.
+- LEV-02: old external PG fixture with user/credential/session/initial settings2020 passes all four Accounts coverage checks; actual retained first event/sample2026 determines boundary. Current counts/settings timestamp retained; real registration-admission/Admin History and attachment native sources still included.
+- LEV-03: old PG known-user/session probe PASS; actual fresh built Worker/Better Auth signup event projected with stored targetUserId/entityId and actorUserId=null, separate from entity type. Native global/accounts.sessions/security.auth tests cover actor≠target and null actor. Canonical SQL columns override payload collision; no secret/raw auth fields added.
+- Fresh independent relevant tests: 18 application files / 99 tests; 11 native PG17 files / 126 tests PASS. Build, 69-table schema manifest parity, runtime positive/negative privilege probes PASS.
+- Fresh real Chromium→built Worker→Better Auth→separate disposable PG17: 16 SA01 regression checkpoint groups PASS; results implementationHead exact25ac415..., pageErrors=[], externalRequests=[]. EN/RU/HE/RTL/mobile/keyboard, protected document/.data/history/strict cursors, timeout503/redaction, DB outage, revoked session checked. This is not absent SA02-D final acceptance.
+- Independently verified remote exact-head jobs: CI #42968881718 SUCCESS checks+database; SA01 #42968881704 SUCCESS; AP10 #42968881701 SUCCESS all four jobs. Full2181app/679PG suite not locally rerun; numbers above are actual local checks.
+- #315 refreshed head `7096dedd1ae6caae6a9f1f869ac9b0cd1c571a88`; security plan blob `df2d500ccb2750d43422bf5d30f5b0c5370401ff` unchanged. New audit D8/D11/D4 context reviewed; baseline findings and future BlockA/Stage6 isolation remain separate and unimplemented here.
+- Evidence `/workspace/work/sa02-abc-rereview-evidence/`: SOURCE_MANIFEST.json (36 unchanged/6 corrected, all42 hashes), PROTECTED_SCOPE.json, occurrence/history-current/worker-history probes+logs, application/database/build/schema-manifest/privileges logs, browser/results.json+6 screenshots and browser/worker logs. Original prior failing sources/logs remain in sa02-abc-review-evidence and personal-file history below.
+- Clean detached checkout `/workspace/work/sa02-abc-rereview`; owned Worker4201 stopped; Docker sa02-lev-abc-rereview and disposable DBs removed; .dev.vars/build copy/node_modules links removed. Build-generated .dev.vars serializes values in quotes, so cleanup ownership checked via synthetic secret marker/URL rather than exact first-line equality.
+- **Next recipient Mira**: coordinator closeout of backend A/B/C and determination of next bounded step in #251. Lev finished/stopped; no Lira/Mark appointment. PR319 stillDraft; SA02-D unstarted/unassigned, no fullSA02 acceptance or merge readiness. No SA03+/Stage6/production/deferred journal work. Owner alone merges; no last-admin/manager-count/recovery principle.
+
+Earlier checkpoints and full original probe sources retained verbatim below. Their previous open findings/assignments describe historical heads, not the current verdict.
+
+---
+
 # Лёва — актуальный checkpoint: SA02 A/B/C independent review completed (2026-11-10)
 
 **Result: CHANGES REQUIRED — 3 current-scope findings.** [Full packet #6779818918](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6779818918). Implementation PR319 exact head `c9ff7b660fc40924f6adfd649b1daa0d80acb045`, base/main `e279cb6c032a489a9044ca1191407df887c364b4` unchanged. Assignment/Mira PASS#6779377295; accepted plan#6768069279, recovered scope#6777700709.
