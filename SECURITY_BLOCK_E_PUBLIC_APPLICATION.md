@@ -4,7 +4,7 @@
 
 1. Это bounded audit plan для области 5 общей security-карты.
 2. Audit target на момент подготовки: current `main` `f6fd4b2c031b2132b04eace18704a59aed1dfec8`.
-3. Фактический аудит начат. **E2 PASS. E5: `FORUM-PUB-01 Moderate/P2`. E6: 0 additional findings; `FORUM-PUB-01` подтверждён для edit body. E7: `READSTATE-CACHE-01 Low/P3`. E3: `PUBLIC-PROJECTION-01 Low/P3`. E4: `DISCOVERY-BOUNDS-01 Low/P3`, `SEARCH-CONTROL-01 Low/P3`. E8: PASS — 0 additional findings. E1: `LOCALE-DEGRADED-WRITE-01 Low/P3`; `READSTATE-CACHE-01` scope expanded to shared `/:locale` member/session cache boundary.** Remediation по Block E не назначена.
+3. Фактический аудит начат. **E2 PASS. E5: `FORUM-PUB-01 Moderate/P2`. E6: 0 additional findings; `FORUM-PUB-01` подтверждён для edit body. E7: `READSTATE-CACHE-01 Low/P3`. E3: `PUBLIC-PROJECTION-01 Low/P3`. E4: `DISCOVERY-BOUNDS-01 Low/P3`, `SEARCH-CONTROL-01 Low/P3`. E8: PASS — 0 additional findings. E1: `LOCALE-DEGRADED-WRITE-01 Low/P3`; `READSTATE-CACHE-01` scope expanded to shared `/:locale` member/session cache boundary. E9: PASS — 0 additional findings.** Remediation по Block E не назначена.
 4. Проверка ведётся по реальным public/member route → service/repository paths, а не по одному UI.
 
 ## Граница блока
@@ -331,6 +331,24 @@ Generic Own-vs-Any permission semantics уже покрыты Block C/D и зд�
 7. ordinary public GET/SSR не вызывает provider синхронно и не становится translation proxy.
 
 Durable Queue claim/retry/provider credentials/cost/reconciliation остаются вне E.
+
+### E9 — результат аудита
+
+1. Audit target: current `main` `f6fd4b2c031b2132b04eace18704a59aed1dfec8`.
+2. Verdict: **PASS — 0 additional current-scope findings**.
+3. Presentation identity/fallback — PASS: current translation выбирается только по exact `contentType + contentId + revisionId + targetLocale`. Wrong/unrequested/duplicate/invalid batch rows не подменяют requested unit; stale revision, invalid provenance/source metadata, missing row и classified storage outage возвращают current original.
+4. Current revision binding — PASS: topic loader строит translation units из текущей title revision и current post revisions. Attachment-only/blank body не образует text translation unit. DB batch reader повторно фильтрует exact entity/revision/target identity.
+5. Structured Markdown boundary — PASS: post body переводится через semantic AST protection; code/URL/technical tokens и quote attribution защищены, segment set/value bounded, restore требует точного token order и structure signature. Machine publication выполняет restore/validation до persistence. Публичная presentation затем идёт через тот же safe Markdown renderer, уже проверенный E2.
+6. Source/UI/target locale separation — PASS: known source берётся из immutable revision metadata; `und` использует отдельный detector/policy path, а UI locale не становится source language. Manual source-locale correction создаёт новую revision и оставляет старые translations historical. Target generation locale берётся из server `localeContext`, а planner требует strict canonical active registry locale.
+7. Generation authority — PASS: generation intent проходит authenticated same-origin mutation guard, effective `forum.translation.generate`, current user-measure admission и server-side current topic read. Actor берётся из session; title/post revision — из authoritative current topic state; post обязан принадлежать текущему topic. Client fields `actorId/targetLocale/sourceLocale/revisionId/provider/cost` authority не имеют.
+8. Eligibility/no-work — PASS: unknown/inactive/noncanonical target, stale caller revision, same source/target, unresolved source, no semantic post text, unsupported provider capability и already-current exact translation не создают durable generation work.
+9. Budget/dedup — PASS: requester identity pseudonymized server-side; global + requester fixed-window budget consumption выполняется внутри planning transaction после current revision/current translation checks. Generation-head/stable-task locks сериализуют concurrent planning; duplicate active task не создаёт вторую logical task, а request budget всё равно применяется.
+10. Failure semantics — PASS: classified translation storage outage деградирует presentation к current original; classified generation planning/forum-read dependency failures дают controlled unavailable path. Unexpected programming/integrity errors не маскируются как normal fallback/success.
+11. Public SSR/provider boundary — PASS: current Worker wiring использует только persisted translation batch reader для presentation и явно устанавливает `DISABLED_CONTENT_GENERATION_ACTION_RUNTIME`. Обычный public GET/SSR не вызывает provider и не является translation proxy; generation controls отсутствуют, пока runtime disabled.
+12. Existing E1 `LOCALE-DEGRADED-WRITE-01` не дублируется: если generation runtime позже включить, degraded canonical-English mutation также должен быть закрыт общим locale fail-closed fix.
+13. Реальные provider credentials/calls, Queue consumer/retry/claim/cost и deployed allowance policy остаются Stage 6 / provider-job / Abuse scope. Их отсутствие в текущем disabled runtime не является E9 current defect.
+14. Tests в этом audit не запускались. Прочитаны relevant presentation, generation action/planning и source-locale correction regressions; production/deployed provider smoke не выполнялся.
+15. Remediation по E9 не назначена.
 
 ## E10 — Cross-cutting failure / cache / replay / application abuse
 
