@@ -1912,3 +1912,12 @@ This guard is part of Mira's operating context for #251 and must be checked befo
 - Exact-head CI, SA03 Chromium, SA01 Chromium and AP10 browser are all SUCCESS.
 - **PASS — 0 confirmed current-scope defects.**
 - Next reviewer: Lev, independent technical whole-PR review on the same exact head only.
+
+## 2026-11-11 — accepted Lev finding SA03-IMPL-LEV-01
+
+- Independently verified Lev's sign-out stale-private-DOM finding against exact head `4bfdfdd14a70534bd95c308de9d1c8c2df672c76`.
+- Confirmed current-scope presentation invalidation defect: HeaderAuth becomes guest after successful sign-out before profile revalidation completes, but old `privileged` loader DTO can continue rendering Owner/private/authz controls.
+- Fresh guest server data is redacted; no server-admission bypass.
+- Accepted plan §7/acceptance matrix requires viewer/target-bound private state and no stale private data after signout/account switch.
+- Granularity gate passed: one bounded result only.
+- Next: Lira fixes SA03-IMPL-LEV-01 on #324, adds focused delayed-revalidation sign-out regression, runs applicable checks, publishes stable head and STOP. No auth redesign or authority/schema broadening.
