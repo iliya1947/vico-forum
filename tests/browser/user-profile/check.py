@@ -288,7 +288,7 @@ try:
           (measure_id,restriction_key,enabled) values($1,'replies.create',true)""",
           [owner_measure_id])
         document(owner, owner_path)
-        expect(owner.locator("#measures .admin-forum-objects li")).to_have_count(1)
+        expect(owner.locator("#measures .admin-forum-objects > li")).to_have_count(1)
         expect(owner.locator(
             '#measures a[href="/en/account/measures/' + owner_measure_id + '"]'
         )).to_have_count(1)
@@ -341,6 +341,8 @@ try:
         expect(manager.locator("#authorization,#owner-account")).to_have_count(0)
         expect(manager.locator("#measures")).to_have_count(1)
         expect(manager.locator("#measures")).to_contain_text("SA03 actual target measure")
+        expect(manager.locator('#measures a[href="/en/admin/measures/' + measure_id + '"]')).to_have_count(1)
+        expect(manager.locator('#measures a[href="/en/admin/measures?target=' + target_id + '"]')).to_have_count(1)
         document(manager, owner_path)
         expect(manager.locator("#measures")).to_have_count(0)
         record("measures-only-actual-ap10-authority-and-prohibited-owner-target")
