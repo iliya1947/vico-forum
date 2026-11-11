@@ -4,7 +4,7 @@
 
 1. Служебный PR: **#315**.
 2. Моя текущая работа: audit/coordination only; remediation и implementation не назначены.
-3. Текущий этап: **Block H ЗАКРЫТ: 0 current-scope findings; deferred Stage-6 blockers `WORKER-VERSION-URL-01 Moderate/P2`, `WORKER-ROLLBACK-FINALIZER-01 Moderate/P2`; H8 PASS, 0 additional. Следующее security-направление после продолжения — Block I scope preparation.** Block G закрыт с 3 current-scope findings + deferred Stage-6 blocker `DB-RUNTIME-EVIDENCE-01`.
+3. Текущий этап: **Block I — Secrets & supply chain scope подготовлен; I1 Repository authority & main provenance ожидает выполнения.** Block H закрыт с 0 current findings + 2 deferred Stage-6 blockers; Block G закрыт с 3 current findings + deferred `DB-RUNTIME-EVIDENCE-01`.
 4. Technical audit target B–D: `e279cb6c032a489a9044ca1191407df887c364b4`.
 5. Current `main` — `593a03964b8407b249f7c9f5eb117ddb8b07736d`. Delta `ce62e783… → 593a0396…` — SA-04 A1 #327 migration/schema/tests only; H runtime/topology code unchanged.
 6. Лира, Марк и Лёва по #315 сейчас не назначены.
@@ -175,6 +175,15 @@
 147. main unprotected / disabled Protect-main ruleset remains only a confirmed factual lead for future Block I Secrets & supply chain; H did not classify it as finding without full actor/provenance chain.
 148. Exact mutable Cloudflare topology, Environment protection/actors and production DB state in H8: **Информация не проверена**. Tests/workflows not run; no external mutation/read.
 149. Non-H docs drift remains: main contains migration 0065 SA-04 account-state foundation while PROJECT_STATE/ROADMAP/SUPER_ADMIN still say 0064/SA-04+ not implemented. Do not fix inside #315 H audit.
+150. Block I scope prepared against `593a03964b8407b249f7c9f5eb117ddb8b07736d` in separate `SECURITY_BLOCK_I_SECRETS_SUPPLY_CHAIN.md`; I1–I8 not executed.
+151. Prep facts only, not findings: repository public; main protected=false; Protect main ruleset enforcement disabled; current main commit verified=true.
+152. Workflow scan: no pull_request_target/workflow_run/repository_dispatch; all current GitHub Action uses refs full-SHA pinned; PostgreSQL services use mutable `postgres:17`.
+153. package.json direct versions and pnpm are exact; CI uses frozen lockfile. Current tree has pnpm-lock but no .npmrc, Dependabot/Renovate config or CODEOWNERS.
+154. .gitignore excludes .env* and .dev.vars* except empty .env.example. Secret values were not read.
+155. Codex service bridge has issue_comment + contents:write and exact bot/PR filter; Pages workflow has pages:write/id-token:write. Both are I2 audit surfaces, not findings at prep.
+156. Production workflows use named Environments; exact reviewers/ref policy/admin bypass/actor access and secret inventory: **Информация не проверена**.
+157. I plan: I1 repository authority; I2 workflow token/event authority; I3 Environments; I4 secret custody; I5 dependency provenance; I6 Actions/tools/containers; I7 release supply-chain; I8 closeout.
+158. main/ruleset lead must not become finding until I1 proves a less-trusted write path and security impact.
 
 ## Ограничения
 
@@ -186,5 +195,5 @@
 
 ## Следующий шаг
 
-1. После продолжения владельца подготовить **Block I — Secrets & supply chain** как отдельный scope/file, зарегистрировать его в #315 и остановиться до I1.
-2. При scope preparation перенести confirmed factual lead про main/ruleset как candidate для проверки, но не объявлять finding заранее.
+1. После продолжения владельца выполнить **I1 — Repository authority & main provenance** на current main и остановиться после результата.
+2. Findings только после полной causal chain; remediation не начинать.
