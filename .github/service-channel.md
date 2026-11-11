@@ -3373,3 +3373,8 @@ Final docs PR #323 exact head `60a024304e6d595ea127bf19c948f15ca5ec39d2` passed 
 Mira authored the docs diff and therefore does not self-certify it. Lev is assigned the independent factual docs-only review through #251. Review scope is all eight changed Markdown files to EOF against merged SA02/main; no implementation re-review and no SA03+ work.
 
 After Lev PASS the docs PR is ready for Owner merge. Confirmed docs defects return to Mira as one correction packet.
+
+
+## 2026-11-11 — correction: SA02 docs reviewer is Lira, not Lev
+
+The prior Lev docs-review handoff was a workflow mistake. A separate factual docs-only closeout does not need another Codex technical review. Because Mira authored PR #323, she does not self-review it; **Lira** is the independent reviewer for the eight Markdown files on exact `60a024304e6d595ea127bf19c948f15ca5ec39d2`. Lev is unassigned. Implementation #319 remains closed and is not reopened.
