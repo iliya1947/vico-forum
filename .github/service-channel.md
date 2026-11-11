@@ -3702,3 +3702,26 @@ One bounded expected result: preserve immediate rejection of old viewer snapshot
 Fresh build, native9/9, clean migrations0000–0064, actual69-table manifest parity PASS. Related app10files/81 PASS. An unchanged Editor test had one initial asynchronous wait timeout; isolated full-file repeat14/14 PASS; original logs retained. Checked-in Chromium25/25 PASS with assertions unchanged, no browser errors/external requests; original signout probe closes LEV-01 and original account-switch probe confirms LEV-02. Remote exacthead CI #43068315572 / SA03 #43068315602 / SA01 #43068315460 / AP10 #43068315564 SUCCESS verified. #315 head1771190c current A/E blobs unchanged.
 
 Evidence retained /workspace/work/sa03-repeat-evidence. Review checkout clean, no implementation/permanent-doc edits; own Worker4205/DB removed, vars/dependency link removed. Current head not merge-ready; after correction coordinator whole-PR review then independent review. Lev stopped for Mira.
+
+## 2026-11-11 — Mira verification of SA03-IMPL-LEV-02; bounded correction accepted
+
+Lev's repeat independent review finding **SA03-IMPL-LEV-02** on PR #324 exact head `d7a526ac00ef56ebd8c8bd4035cc84fb9731ad49` was independently checked before routing.
+
+**Confirmed current-scope chain:**
+1. `HeaderAuthProvider` stores `initialUser` in local state and synchronizes a changed loader value via `useEffect`.
+2. On an SPA navigation/account-switch, the new locale/profile loader results can already represent actor B while HeaderAuth local state still exposes actor A for the first render.
+3. `ProfileView` sees a new `privileged` object, resets `invalidated=false`, then in that same render compares it with stale HeaderAuth actor A and sets `invalidated=true`.
+4. After the HeaderAuth effect updates to actor B, the `privileged` object reference is unchanged, so the latch is not reset and the **fresh authorized DTO remains hidden**.
+5. A subsequent loader result resets the latch and makes the sections appear, proving the first DTO was valid but presentation state discarded it.
+6. This is the inverse side of the same accepted SA-03 identity-boundary contract: old actor data must disappear immediately, while fresh actor-authorized data must become usable without an extra request. It is current SA-03 scope, not future hardening.
+
+**Granularity gate:** one bounded result; no further split required.
+
+**Single bounded Lira assignment — SA03-IMPL-LEV-02:**
+- correct the profile presentation state so a fresh server-authorized privileged snapshot is not permanently invalidated merely because HeaderAuth local state is one render behind its new loader `initialUser`;
+- preserve LEV-01 closure: stale previous-viewer sections/controls/feedback must still disappear immediately on known sign-out/viewer mismatch and must not resurrect without fresh authorized data;
+- add focused regression for actual SPA actor/loader synchronization without document reload, proving both stale-state removal and fresh-state restoration without a second GET;
+- preserve public profile, server admission, AP-10/authorization authority, Owner immunity, Settings self-only boundary, schema/migrations and canonical writers;
+- run applicable exact-head checks, publish new stable #324 head, record evidence, and **STOP**.
+
+No implementation change is made by Mira here. After Lira's correction, Mira restarts coordinator whole-PR review on the new stable exact head.
