@@ -1,3 +1,11 @@
+# Лира — SA04-A3 bounded author checkpoint complete; STOP
+
+- [Draft #328](https://github.com/iliya1947/vico-forum/pull/328), base main `593a03964b8407b249f7c9f5eb117ddb8b07736d`, stable cumulative exact head `0725b49dc9d9e36152670dac8368d0f83e714c82`. Previous A2 Mira checkpoint PASS remains accepted.
+- Added `assertActiveAccountForMutation` to shared `db/account-state.ts`: same client/transaction active-state select `FOR NO KEY UPDATE`, missing/inactive refusal; reuse of preexisting same-connection lock, FK KEY SHARE compatibility; requires caller-owned live transaction. No autocommit guarantee and no mutation/commit/rollback performed by helper. Existing A2 read semantics unchanged.
+- Extended `tests/database/account-state.test.ts` with four native real concurrency cases; 10/10 tests pass. Personally inspected complete cumulative A2+A3 code and two-file diff, semantics, failure classification, row lock order and scope. Initial syntax-only misplaced brace detected by CI and fixed; final stable source checked.
+- [CI #43112202261](https://github.com/iliya1947/vico-forum/actions/runs/43112202261) on exact head **SUCCESS**: 2237 app, 700 PG17 native incl. 10 account-state, 69-table parity, lint/typecheck/build/Worker.
+- **AUTHOR STOP; next Mira A3 checkpoint review**. A4 and Lev remain unassigned; #328 stays Draft; no auth/writer integrations, deactivation command, SA05+/Stage6/production or docs merge.
+
 # Лира — SA04-A2 author checkpoint complete; STOP
 
 - Draft implementation [#328](https://github.com/iliya1947/vico-forum/pull/328), main baseline `593a03964b8407b249f7c9f5eb117ddb8b07736d`, **stable exact head `f9da2033455487f25510c2ccbbb748ed5f4bf7f4`**.
