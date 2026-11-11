@@ -164,6 +164,21 @@ describe("interactive Pages preview", () => {
     expect(await screen.findByRole("status")).toBeInTheDocument();
   });
 
+  it("shows linked sign-in methods in Account & security without enabling account mutations", async () => {
+    const user = userEvent.setup();
+    render(<EmbeddedPreview scenarioId="section-user" identity="user" />);
+
+    await user.click(screen.getByRole("link", { name: "Settings" }));
+    const settingsOverview = document.querySelector(".settings-overview") as HTMLElement;
+    await user.click(within(settingsOverview).getByRole("link", { name: "Account & security" }));
+
+    expect(await screen.findByRole("heading", { level: 3, name: "Linked sign-in methods" })).toBeInTheDocument();
+    const methods = document.querySelector("#settings-account-methods")?.parentElement as HTMLElement;
+    expect(within(methods).getByText("Email and password")).toBeInTheDocument();
+    expect(within(methods).getByText("Google")).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Connect Google" })).not.toBeInTheDocument();
+  });
+
   it("saves online visibility in Privacy settings and updates the local home presence", async () => {
     const user = userEvent.setup();
     render(<EmbeddedPreview scenarioId="section-user" identity="user" />);
