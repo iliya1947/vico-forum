@@ -1,15 +1,16 @@
 # Admin panel — current workflow
 
 - Service PR: **#251**.
-- SA-03 is fully closed in repository state.
-- **Current stage: SA-04 package-specific technical planning.**
+- SA-03 implementation #324 and factual docs #326 are merged/fully closed.
 - Current `main`: `ce62e783e71433a00c2fe4874ee26dfc54614628`.
-- Accepted full Super-admin technical plan remains #6745289141.
-- **Assigned: Lev — SA-04 technical planning only** against current post-SA-03 `main`.
-- SA-04 target from the accepted plan: account-state schema, active-account enforcement, and one neutral public identity projection. The Owner deactivate operation/control remains SA-05 and is not part of SA-04.
-- Lev must reconcile the accepted SA-04 package with the actual current repository, identify the concrete implementation seams/migration/acceptance, and split implementation into independently safe bounded sub-slices if the package cannot safely land as one slice.
-- **No implementation is assigned.** Lira and Mark are unassigned.
-- Next recipient after Lev STOP: Mira reviews the SA-04 package plan for scope/fit before any implementation handoff.
+- **Current stage: SA-04 package-specific technical plan COMPLETE; Mira scope/fit review next.**
+- Accepted full Super-admin plan remains #6745289141.
+- Lev's full SA-04 package plan is published: [#6806249892](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6806249892), against current post-SA-03 main.
+- Plan covers account-state schema, active-account admission across auth/direct API/authoritative writes, one neutral public identity projection, retention/race boundaries and applicable acceptance.
+- Plan decomposes authoring into sequential bounded checkpoints A–S. This is a plan for review, **not an implementation assignment**; Mira must assign only one independently completable result at a time with STOP.
+- **No implementation is assigned.** Lev completed/stopped; Lira and Mark remain unassigned.
+- **Next recipient: Mira** — review scope/fit and granularity before any implementation handoff. Deactivate operation/control remains SA-05; no partial activation.
+- No source/schema/migration/permanent-doc changes or implementation test PASS claimed by planning.
 - No SA-05+, Stage6/production, #315 activation, broad security remediation or deferred journal-storage work.
 
 ## Mira mandatory pre-action gate
