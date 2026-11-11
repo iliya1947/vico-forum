@@ -7,7 +7,7 @@ import {
   superAdminPath, superAdminMonitoringPath, superAdminSystemPath, superAdminEventLogPath,
   superAdminInfrastructurePath, superAdminMonitorHistoryPath,
 } from "./paths";
-import type { SystemOverview, SystemMonitorState, OwnerTimelinePage, OwnerTimelineEntry } from "../../db/owner-system-monitoring";
+import type { SystemOverview, SystemMonitorState, OwnerTimelinePage } from "../../db/owner-system-monitoring";
 import type { SystemMonitorKey } from "../../db/owner-system-history";
 import type { OwnerHistoryPage } from "../../db/owner-sa02-history";
 
