@@ -25,7 +25,7 @@
 4. Block C: аудит завершён; **1 current-scope finding — `AUTHZ-FAIL-01 Low/P3`**. Remediation не назначена.
 5. Block D: аудит D1–D12 завершён; подтверждены **3 findings — `COMPLAINT-PRIV-01`, `HELP-SIGNAL-PRIV-01`, `HISTORY-PRIV-01` (все Low/P3)**.
 6. D12 corrected closeout: official React Router Framework/SSR docs и exact `react-router@8.3.1` source подтвердили default skip loader revalidation после 4xx/5xx; Vico explicit recovery refreshes loaders and does not automatically replay mutations.
-7. Block E: E2 PASS; E5 — **`FORUM-PUB-01 Moderate/P2`**; E6 — 0 additional; E7 — **`READSTATE-CACHE-01 Low/P3`**; E3 — **`PUBLIC-PROJECTION-01 Low/P3`**; E4 — **`DISCOVERY-BOUNDS-01 Low/P3`, `SEARCH-CONTROL-01 Low/P3`**; E8 PASS; **E1 Locale/routing/cache завершён с 1 new finding — `LOCALE-DEGRADED-WRITE-01 Low/P3`; `READSTATE-CACHE-01` expanded to shared `/:locale` session/member cache boundary**; **E9 User-content translation application boundary завершён PASS — 0 additional findings**. Audit target — current `main` `f6fd4b2c031b2132b04eace18704a59aed1dfec8`. Следующий subtask — E10.
+7. Block E audit завершён: E2 PASS; E5 — **`FORUM-PUB-01 Moderate/P2`**; E6 — 0 additional; E7 — **`READSTATE-CACHE-01 Low/P3`**; E3 — **`PUBLIC-PROJECTION-01 Low/P3`**; E4 — **`DISCOVERY-BOUNDS-01 Low/P3`, `SEARCH-CONTROL-01 Low/P3`**; E8 PASS; E1 — **`LOCALE-DEGRADED-WRITE-01 Low/P3`** + расширение `READSTATE-CACHE-01`; E9 PASS; E10 — **`FORUM-READ-BOUNDS-01 Moderate/P2`, `FORM-BODY-BOUNDS-01 Moderate/P2`**. Block E total: **8 findings**. E10 проверен на current `main` `4248fed23925e4a23e48485d419ceaf0ce337def`; compare с предыдущим target подтвердил отсутствие изменений core Forum/translation E2–E9.
 8. Implementation PR, technical planner и implementer для remediation сейчас не назначены.
 9. Cloudflare/Neon/production mutation по #315 не разрешена и не выполнялась.
 
@@ -49,6 +49,8 @@
 16. `DISCOVERY-BOUNDS-01` — Low/P3; Unanswered/Tags/Tag/Unread result sets не имеют page/cursor/limit.
 17. `SEARCH-CONTROL-01` — Low/P3; NUL в public search query достигает PostgreSQL text parameter и уходит в generic 500 path.
 18. `LOCALE-DEGRADED-WRITE-01` — Low/P3; canonical `/en/*` localized actions can execute while LocaleRegistry health is degraded instead of fail-closed.
+19. `FORUM-READ-BOUNDS-01` — Moderate/P2; canonical public section/topic reads grow without page/row bounds and amplify DB/translation/SSR work with persistent forum growth.
+20. `FORM-BODY-BOUNDS-01` — Moderate/P2; ordinary member forum/profile/presence POST paths fully parse form bodies without an application byte ceiling before semantic validation.
 
 Ключевая causal path, impact и границы каждого finding находятся в соответствующем Block-файле.
 
@@ -60,5 +62,6 @@
 
 ## Открыто
 
-1. Следующий audit subtask: **Block E / E10 — Cross-cutting failure / cache / replay / application abuse closeout**.
-2. Лира, Лёва и Марк сейчас не имеют активного назначения по #315.
+1. **Block E completed.** Следующая область общей security-карты — **Block F / Files & attachments**; отдельный Block F файл ещё не создан.
+2. Current `main` contains merged SA-02 / migration `0063`, while current `PROJECT_STATE.md` and `ROADMAP.md` still describe SA-02+ as not implemented / migrations through `0062`. Это отдельное docs-state противоречие вне Block E.
+3. Лира, Лёва и Марк сейчас не имеют активного назначения по #315.
