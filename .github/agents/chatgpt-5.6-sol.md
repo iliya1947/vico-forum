@@ -4,7 +4,7 @@
 
 1. Служебный PR: **#315**.
 2. Моя текущая работа: audit/coordination only; remediation и implementation не назначены.
-3. Текущий этап: **Block E / E6 completed; awaiting E7**.
+3. Текущий этап: **Block E / E7 completed; awaiting E3**.
 4. Technical audit target B–D: `e279cb6c032a489a9044ca1191407df887c364b4`.
 5. Current `main` `f6fd4b2c031b2132b04eace18704a59aed1dfec8` отличается от audit target только `AGENTS.md`; audited application code не менялся.
 6. Лира, Марк и Лёва по #315 сейчас не назначены.
@@ -29,7 +29,7 @@
 4. Block D: D1–D12 завершены; подтверждены **3 Low/P3 findings** — `COMPLAINT-PRIV-01`, `HELP-SIGNAL-PRIV-01`, `HISTORY-PRIV-01`; дополнительных D12 findings нет.
 5. D12 external claim исправлен и проверен: official React Router Framework/SSR docs и exact `react-router@8.3.1` source подтверждают default skip loader revalidation после failed 4xx/5xx submissions.
 6. Vico recovery paths используют explicit loader revalidation и не выполняют automatic mutation replay.
-7. Block E / E2 завершён PASS. E5 подтвердил **`FORUM-PUB-01 Moderate/P2`**. E6 завершён против того же `main`: **0 additional findings**; edit ownership/CAS/replay/atomicity и Own solution state/races — PASS. `FORUM-PUB-01` расширен на published-post edit body, где тот же application-level upper bound отсутствует.
+7. Block E / E2 PASS. E5 подтвердил **`FORUM-PUB-01 Moderate/P2`**; E6 — 0 additional findings и расширение того же finding на edit body. E7 завершён: **`READSTATE-CACHE-01 Low/P3`** — notification inbox boundary PASS, но member-specific unread/section/topic read-state GET responses не имеют explicit `private, no-store`. Остальные E7 recipient/IDOR/dedup/atomicity/read-marker boundaries — PASS.
 8. Подтверждённые findings не исправлять автоматически: сначала отдельная bounded remediation-задача по решению владельца и текущему Stage.
 
 ## Ограничения
@@ -42,5 +42,5 @@
 
 ## Следующий шаг
 
-1. После продолжения владельца выполнить **Block E / E7 — Notifications / mentions / unread / read-state audit**.
+1. После продолжения владельца выполнить **Block E / E3 — Public object reads / projection / IDOR audit**.
 2. Findings только фиксировать; remediation не начинать.
