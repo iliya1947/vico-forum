@@ -1,13 +1,16 @@
 # Admin panel — current workflow
 
 - Service PR: **#251**.
-- **SA-03 is fully closed in repository state.**
-- Implementation PR **#324** merged from exact reviewed head `4ad17beae65da338f5efcb2a1596e7fafc3b67c5` into main merge `5992885e78b1642e41c9805116fcc256002b649c`.
-- Docs-only PR **#326** merged from independently reviewed exact head `9714e06c2d6030b26a54d6c1287255226c4c186a`; merge commit `ce62e783e71433a00c2fe4874ee26dfc54614628`.
-- Lira independent factual repeat review on that docs head: **PASS — 0 open confirmed current-scope documentation defects**; `SA03-DOC-LIRA-01` and `SA03-DOC-LIRA-02` CLOSED.
-- Current `main` PROJECT_STATE contains the post-SA-03 state.
-- No agent is currently assigned. No SA-04+ work has been started by this closeout.
-- **Next package begins only on explicit developer continuation.**
+- SA-03 is fully closed in repository state.
+- **Current stage: SA-04 package-specific technical planning.**
+- Current `main`: `ce62e783e71433a00c2fe4874ee26dfc54614628`.
+- Accepted full Super-admin technical plan remains #6745289141.
+- **Assigned: Lev — SA-04 technical planning only** against current post-SA-03 `main`.
+- SA-04 target from the accepted plan: account-state schema, active-account enforcement, and one neutral public identity projection. The Owner deactivate operation/control remains SA-05 and is not part of SA-04.
+- Lev must reconcile the accepted SA-04 package with the actual current repository, identify the concrete implementation seams/migration/acceptance, and split implementation into independently safe bounded sub-slices if the package cannot safely land as one slice.
+- **No implementation is assigned.** Lira and Mark are unassigned.
+- Next recipient after Lev STOP: Mira reviews the SA-04 package plan for scope/fit before any implementation handoff.
+- No SA-05+, Stage6/production, #315 activation, broad security remediation or deferred journal-storage work.
 
 ## Mira mandatory pre-action gate
 
