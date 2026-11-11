@@ -3,11 +3,26 @@
 ## Статус
 
 1. Bounded audit scope подготовлен 2026-11-11 против current `main` `538084fd472c65459ad55ab30a0f96fbfdd68e56`.
-2. **Аудит G ещё не начат.** Этот файл фиксирует только границы, порядок проверки и критерии finding.
+2. **G1 — Migration history integrity завершён: PASS, 0 current-scope findings.**
 3. Repository migration history: `0000–0063`; externally accepted migration evidence: `0000–0020`.
 4. Отставание external target от repository history само по себе **не finding**: Stage 6 external integration paused, а current source-of-truth разрешает repository/local-CI schema evolution без немедленного Neon rollout.
-5. Мира — auditor/coordinator. Remediation, technical planner и implementer не назначены.
-6. Production/Neon/Cloudflare mutation в Block G не разрешена и не выполняется.
+5. Следующий bounded slice — **G2 Schema-level security invariants**.
+6. Мира — auditor/coordinator. Remediation, technical planner и implementer не назначены.
+7. Production/Neon/Cloudflare mutation в Block G не разрешена и не выполняется.
+
+## G1 — результат
+
+1. **PASS: 0 current-scope findings** на `main` `538084fd472c65459ad55ab30a0f96fbfdd68e56`.
+2. Current Drizzle journal содержит ровно 64 entries `idx=0..63`, dialect `postgresql`, unique non-empty tags и strictly increasing safe-integer `when`; duplicate/reordered index/timestamp/tag состояния в current file не обнаружены.
+3. Journal ↔ SQL: current root `drizzle/*.sql` даёт ровно 64 migration files, и набор путей точно совпадает с 64 journal tags `0000_tan_johnny_storm` → `0063_owner_attempt_telemetry`; missing/extra migration SQL в проверенном наборе нет.
+4. Journal ↔ snapshots: `drizzle/meta/0000_snapshot.json` → `0063_snapshot.json` присутствуют без gaps/extra snapshot paths. Все 64 snapshot IDs unique, `0000.prevId` равен zero UUID, каждый следующий `prevId` точно равен ID предыдущего snapshot; snapshot chain непрерывна до `0063`.
+5. PR history guard сравнивает HEAD с merge-base текущего base branch, запрещает modification/deletion/rename accepted root SQL и `*_snapshot.json`, сохраняет accepted journal entries deep-equal, запрещает delete/rewrite, non-contiguous idx, non-increasing timestamps и duplicate tags.
+6. Для каждого нового journal entry guard требует exact newly-added root SQL tag и наоборот. Stale/branch-divergent state с extra SQL без journal либо rewritten accepted snapshot/journal не проходит этот boundary после попадания соответствующей history в base.
+7. CI дополнительно вызывает unit tests history guard, `verify-migration-history.mjs`, pinned `drizzle-kit check`, schema-parity `drizzle-kit generate` + clean git diff и отдельный disposable PostgreSQL 17 database job.
+8. Database integration test source уничтожает только local `localhost/127.0.0.1` DB с pathname `_test`, затем с нуля применяет `./drizzle`; test contract ожидает ровно 64 ledger rows после повторного `migrate()`. В G1 этот test source прочитан, но тесты **не запускались**.
+9. Manual SQL additions (включая SQL functions/triggers, которые Drizzle schema snapshot не моделирует полностью) всё равно находятся внутри accepted root migration SQL, поэтому входят в immutability и clean replay boundary. Их semantic security correctness относится к G2, а не G1.
+10. Добавленный snapshot без matching journal/SQL напрямую не является runtime authority; current repository такого состояния не содержит. Semantic snapshot/schema consistency дополнительно является предметом `db:check`/schema-parity и последующих G2/G7 проверок.
+11. External production ledger `0000–0020` не сравнивался live в G1. **Информация не проверена** для mutable production DB state; при paused Stage 6 это не current G1 defect.
 
 ## Цель
 
