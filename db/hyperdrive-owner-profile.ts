@@ -2,6 +2,7 @@ import { createWebPool, bestEffortDiscardClient,
   isPostgresConnectionTimeout, isPostgresQueryTimeout } from "./postgres-deadlines";
 import { isPostgresAvailabilityFailure } from "../app/localization/persistent-registry";
 import { PostgresOwnerUserProfile, type OwnerUserProfileReader } from "./owner-user-profile";
+import { PostgresOwnerUserHistory, type OwnerUserHistoryReader } from "./owner-user-history";
 
 export class OwnerProfileUnavailableError extends Error {}
 
@@ -18,20 +19,24 @@ function isUnavailable(error: unknown): boolean {
 }
 
 /** A one-operation bounded pool; no private state is cached between requests. */
-export function createHyperdriveOwnerProfile(connectionString: string): OwnerUserProfileReader {
-  return {
-    async readTarget(query) {
-      const pool = createWebPool(connectionString);
-      try {
-        return await new PostgresOwnerUserProfile(pool).readTarget(query);
-      } catch (error) {
-        if (isUnavailable(error)) {
-          throw new OwnerProfileUnavailableError("Owner profile unavailable", { cause: error });
-        }
-        throw error;
-      } finally {
-        bestEffortDiscardClient(pool);
+/** Classified operation-scoped pool; no cached target or cross-account state. */
+export function createHyperdriveOwnerProfile(connectionString: string): OwnerUserProfileReader & OwnerUserHistoryReader {
+  async function run<T>(operation: (pool: ReturnType<typeof createWebPool>) => Promise<T>): Promise<T> {
+    const pool = createWebPool(connectionString);
+    try {
+      return await operation(pool);
+    } catch (error) {
+      if (isUnavailable(error)) {
+        throw new OwnerProfileUnavailableError("Owner profile unavailable", { cause: error });
       }
-    },
+      throw error;
+    } finally {
+      bestEffortDiscardClient(pool);
+    }
+  }
+  return {
+    readTarget: query => run(pool => new PostgresOwnerUserProfile(pool).readTarget(query)),
+    readHistory: (targetId, before) =>
+      run(pool => new PostgresOwnerUserHistory(pool).readHistory(targetId, before)),
   };
 }
