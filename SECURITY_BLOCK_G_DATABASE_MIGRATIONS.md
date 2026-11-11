@@ -132,6 +132,31 @@
 14. Current source-of-truth states PostgreSQL advisory locks are not accepted for real Hyperdrive runtime coordination. Current `WEB_HYPERDRIVE` production path remains unbound/inactive and Stage 6 is paused, so any future incompatibility of remaining advisory-lock users is Stage-6 acceptance work rather than a current G5 finding by itself.
 15. Tests/probes were read as evidence, but **not run** in this G5 audit slice. No external database/Hyperdrive mutation was performed.
 
+## G6 — результат
+
+1. Verdict: **1 additional current-scope finding — `DB-TEST-TARGET-01 Low/P3`** на current `main` `538084fd472c65459ad55ab30a0f96fbfdd68e56`.
+2. Current destructive DB tests consistently try to fail closed on a disposable target: repository search for current `drop schema` paths found no such path without an `_test` marker, and representative suites require URL hostname exactly `localhost` / `127.0.0.1` plus a pathname ending in `_test`.
+3. Exact pinned dependency chain is `pg@8.23.0` → `pg-connection-string@2.14.0`. Its exact source parses query parameters into connection config **before** applying the URL hostname and explicitly lets a query parameter `host` override the URL hostname; `port` is likewise taken from query config when present.
+4. The test guards inspect only WHATWG `new URL(connectionString).hostname` and `.pathname`, then pass the original unmodified connection string to `pg.Client` / `pg.Pool`. Therefore a value such as `postgresql://user:pass@localhost:5432/vico_forum_test?host=external.example` passes the local-host + `_test` guard while node-postgres resolves the actual connection host from the query parameter.
+5. `tests/database/migrations.test.ts` then executes `drop schema if exists drizzle cascade; drop schema public cascade; create schema public` in `beforeAll`. An external PostgreSQL target whose database name ends in `_test` can therefore be destructively reset despite the helper's stated local-only boundary.
+6. Other isolated-schema DB tests using the same URL-guard pattern inherit the same parser mismatch. This is one root cause and is not duplicated per test file.
+7. Standard PR CI and the pre-rollout Worker verification job use repository-fixed loopback `vico_forum_test` URLs and do not inject production DB secrets into the destructive test job. No current untrusted PR input was found that rewrites those `DATABASE_URL` values.
+8. `.github/workflows/production-db-migrate.yml` does not invoke `db:test` or another destructive development helper against the live target; it uses protected migration credentials with preflight → `db:migrate` → postflight verification.
+9. The generic `pnpm db:migrate` command is not a separate G6 finding: it only operates on the explicitly supplied `DATABASE_URL` and does not independently discover or import the protected production target. The current production path wraps it with the dedicated workflow gates.
+10. `DB-TEST-TARGET-01` is current repository scope rather than future Stage-6 hardening because the existing helper explicitly claims to reject non-local targets and that safety check is bypassable today by an accepted connection-string form.
+11. Severity is **Low/P3**: exploitation/misuse requires control of the test process environment and an external database named with the accepted `_test` suffix; no public HTTP path, production secret exposure or automatic production targeting was established. The impact, when those preconditions hold, is destructive schema loss.
+12. Live production applicability is not required for the finding and was not tested. Exact mutable external targets are **Информация не проверена**.
+13. Tests were not executed and no external database mutation was performed in this audit slice.
+14. Remediation is **not assigned**. G7 is next.
+
+### DB-TEST-TARGET-01 — Low/P3
+
+1. Root cause: safety validation and connection execution use different parsers/semantics. The guard trusts WHATWG URL host/path, while node-postgres accepts query-level connection overrides.
+2. Confirmed bypass: URL host remains `localhost` for the guard, but query `host` changes the host used by `pg`; the database pathname still ends in `_test`, so both guard predicates pass.
+3. Confirmed impact: the full migration integration test drops `drizzle` and `public` schemas with `CASCADE` before replaying migrations.
+4. Current CI configuration is safe by construction, so this is not evidence of an existing production incident. It is a broken target-isolation guard on a destructive current tool.
+5. Fixing it belongs to a separate bounded remediation task; audit does not change implementation.
+
 ## Цель
 
 Проверить, что текущая PostgreSQL/Drizzle foundation не позволяет:
