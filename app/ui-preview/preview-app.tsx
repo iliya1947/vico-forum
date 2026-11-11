@@ -204,6 +204,9 @@ type PreviewReply = {
 type PreviewTopicOverride = {
   isSolved?: boolean;
   bestAnswerPostId?: string | null;
+  isPinned?: boolean;
+  isClosed?: boolean;
+  closureVersion?: number;
 };
 
 type PreviewInteractionState = {
@@ -274,6 +277,9 @@ function previewApplyTopicState(topic: PreviewTopicPage, interactions: PreviewIn
     bestAnswerPostId: override?.bestAnswerPostId === undefined
       ? topic.bestAnswerPostId
       : override.bestAnswerPostId,
+    isPinned: override?.isPinned ?? topic.isPinned,
+    isClosed: override?.isClosed ?? topic.isClosed,
+    closureVersion: override?.closureVersion ?? topic.closureVersion,
     posts: [...topic.posts, ...replies],
   };
 }
@@ -1098,8 +1104,15 @@ export function EmbeddedPreview({ scenarioId, identity }: { scenarioId: string; 
       const allowed =
         (intent === "createTopic" && form.classList.contains("section-create-form"))
         || (intent === "reply" && form.classList.contains("topic-reply-form"))
-        || (intent === "selectBestAnswer" && form.classList.contains("topic-best-answer-form"))
-        || (intent === "markSolved" && Boolean(form.closest(".topic-shell")))
+        || (intent === "selectBestAnswer"
+          && (form.classList.contains("topic-best-answer-form") || form.classList.contains("topic-admin-form")))
+        || (intent === "markSolved"
+          && (Boolean(form.closest(".topic-shell")) || form.classList.contains("topic-admin-form")))
+        || ((intent === "pinTopic"
+          || intent === "unpinTopic"
+          || intent === "closeTopic"
+          || intent === "reopenTopic")
+          && form.classList.contains("topic-admin-form"))
         || ((intent === "createHelpQuestion" || intent === "checkSimilarHelpQuestions")
           && form.id === "help-question-create-form")
         || (intent === "save-profile" && form.classList.contains("profile-form"))
@@ -1230,6 +1243,10 @@ function previewRouter(scenario: Scenario, interactions: PreviewInteractionState
       action: ({ request, params }) => previewTopicAction(
         scenario, interactions, request, params.locale, params.topicId,
       ),
+    },
+    {
+      path: "/:locale/admin/forum/topics/:topicId",
+      element: <PreviewAdminTopicRoute scenario={scenario} interactions={interactions} />,
     },
     {
       path: "/:locale/under-development",
@@ -1542,20 +1559,46 @@ async function previewTopicAction(
     return redirect(`${forumTopicPath(locale, routeTopicId)}#post-${encodeURIComponent(reply.id)}`);
   }
 
+  const inline = form.get("inlineQuickAction") === "1";
+
   if (intent === "selectBestAnswer") {
     const postId = String(form.get("postId") ?? "").trim();
     if (!postId) return null;
     const current = interactions.topicOverrides.get(routeTopicId) ?? {};
     interactions.topicOverrides.set(routeTopicId, { ...current, bestAnswerPostId: postId });
-    return redirect(
-      `${forumTopicPath(locale, routeTopicId)}?solutionPrompt=${encodeURIComponent(postId)}#solution-confirmation`,
-    );
+    return inline
+      ? { ok: true }
+      : redirect(
+          `${forumTopicPath(locale, routeTopicId)}?solutionPrompt=${encodeURIComponent(postId)}#solution-confirmation`,
+        );
   }
 
   if (intent === "markSolved") {
     const current = interactions.topicOverrides.get(routeTopicId) ?? {};
     interactions.topicOverrides.set(routeTopicId, { ...current, isSolved: true });
-    return redirect(forumTopicPath(locale, routeTopicId));
+    return inline ? { ok: true } : redirect(forumTopicPath(locale, routeTopicId));
+  }
+
+  if (intent === "pinTopic" || intent === "unpinTopic") {
+    if (scenario.identity !== "manager") return null;
+    const current = interactions.topicOverrides.get(routeTopicId) ?? {};
+    interactions.topicOverrides.set(routeTopicId, {
+      ...current,
+      isPinned: intent === "pinTopic",
+    });
+    return inline ? { ok: true } : redirect(forumTopicPath(locale, routeTopicId));
+  }
+
+  if (intent === "closeTopic" || intent === "reopenTopic") {
+    if (scenario.identity !== "manager") return null;
+    const current = interactions.topicOverrides.get(routeTopicId) ?? {};
+    const baseVersion = current.closureVersion ?? (routeTopicId === topicId ? topic.closureVersion : 0);
+    interactions.topicOverrides.set(routeTopicId, {
+      ...current,
+      isClosed: intent === "closeTopic",
+      closureVersion: baseVersion + 1,
+    });
+    return inline ? { ok: true } : redirect(forumTopicPath(locale, routeTopicId));
   }
 
   return null;
@@ -2090,6 +2133,32 @@ function PreviewSectionRoute({ scenario, interactions }: {
         : undefined}
     />
   );
+}
+
+function PreviewAdminTopicRoute({ scenario, interactions }: {
+  scenario: Scenario;
+  interactions: PreviewInteractionState;
+}) {
+  const { topicId: routeTopicId } = useParams();
+  const data = primaryTopicScenarioData(scenario);
+  const baseTopic = routeTopicId === data.topic.id ? data.topic : data.topic;
+  const interactiveTopic = previewApplyTopicState(baseTopic, interactions);
+  return <AdminTopicView
+    locale={scenario.locale}
+    access={{canEnter:true,canReadForum:true,canManageAuthorization:true,canReadHistory:true}}
+    topic={projectAdminTopic(interactiveTopic, false)}
+    titlePresentation={data.titlePresentation}
+    postPresentations={previewPresentationsForTopic(data.postPresentations, interactiveTopic)}
+    actorId="maya"
+    canManagePin
+    canManageClosure
+    canManageAnySolution
+    canCorrectAnySourceLocale
+    canReadPostHistory
+    canManageHelpDuplicate={false}
+    canModerateHelpSolution={false}
+    pendingDuplicateAppeal={null}
+  />;
 }
 
 function PreviewTopicRoute({ scenario, interactions }: {
