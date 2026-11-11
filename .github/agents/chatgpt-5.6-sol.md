@@ -4,7 +4,7 @@
 
 1. Служебный PR: **#315**.
 2. Моя текущая работа: audit/coordination only; remediation и implementation не назначены.
-3. Текущий этап: **Block H H1 PASS, 0 current-scope findings; следующий bounded slice — H2 Ingress trust & source attribution**. Block G закрыт с 3 current-scope findings + deferred Stage-6 blocker `DB-RUNTIME-EVIDENCE-01`.
+3. Текущий этап: **Block H H1 PASS + H2 PASS, 0 current-scope findings; следующий bounded slice — H3 Runtime configuration and optional binding failure**. Block G закрыт с 3 current-scope findings + deferred Stage-6 blocker `DB-RUNTIME-EVIDENCE-01`.
 4. Technical audit target B–D: `e279cb6c032a489a9044ca1191407df887c364b4`.
 5. Current `main` после G8 delta-recheck — `5992885e78b1642e41c9805116fcc256002b649c`. Delta от `538084fd…` — SA-03 #324: index-only migration `0064` + readonly Owner profile/history; Block G conclusions unchanged.
 6. Лира, Марк и Лёва по #315 сейчас не назначены.
@@ -100,6 +100,16 @@
 73. Content generation action runtime explicitly disabled; generation status reader не bind'ится; action/loader не доходят до generation capability/status path при disabled runtime.
 74. Existing binding/runtime tests и CI smoke были прочитаны, но в H1 не запускались. Local CI uses one disposable superuser URL for both binding names, поэтому integration smoke сам по себе не доказывает prod privilege isolation; static/source wiring подтверждает current composition. Finding не создаётся.
 75. Mutable deployed Worker/Hyperdrive bindings/roles: **Информация не проверена**; Stage 6 paused. Live mutation/check не выполнялся.
+76. Перед H2 current main продвинулся `5992885… → ce62e783…` только documentation-only SA-03 closeout #326; H ingress/runtime source не менялся.
+77. H2: **PASS, 0 current-scope findings** на `ce62e783e71433a00c2fe4874ee26dfc54614628`.
+78. Current official Cloudflare docs подтверждают: incoming `request.cf` — platform global-network metadata; direct visitor `CF-Connecting-IP` — client IP, direct `x-real-ip` stripped; same-zone Worker subrequest derives `CF-Connecting-IP` from mutable `x-real-ip` but gets `CF-Worker`; cross-zone gets fixed `2a06:98c0:3600::103` + Worker marker.
+79. Vico qualifies source only with valid `request.cf.colo`; any `x-real-ip` or `CF-Worker`, cross-zone fixed IP, invalid IP, missing metadata and Class-E Pseudo IPv4 degrade to `unknown`. Browser XFF/True-Client-IP are not used for source identity.
+80. Pseudo IPv4 Overwrite current Cloudflare contract maps IPv6 to Class-E `CF-Connecting-IP` and preserves IPv6 in `CF-Connecting-IPv6`; Vico intentionally rejects Class-E instead of guessing from alternate header. Safe degradation, no false attribution.
+81. Collector actor attribution is independent and comes only from resolved session; network source is telemetry-only and never grants application/Owner authority.
+82. `captureAttemptIngressSource` production caller is only `workers/app.ts`; repository search found network source use in retained attempt telemetry/history, not authorization.
+83. Better Auth `cf-connecting-ip` rate-limit semantics remain Block B; H2 only checked ingress trust assumptions and found no separate runtime root cause.
+84. Direct client-supplied `CF-Worker` is not positive trust evidence. If visible, current behavior can only force telemetry to `unknown`; current contract permits unknown source, so no current finding.
+85. H2 tests read, not run. Mutable production Pseudo IPv4/Transform Rules/routes/subrequest topology: **Информация не проверена**; Stage 6 paused.
 
 ## Ограничения
 
@@ -111,5 +121,5 @@
 
 ## Следующий шаг
 
-1. После продолжения владельца выполнить **H2 — Ingress trust & source attribution** на current main и остановиться после результата.
+1. После продолжения владельца выполнить **H3 — Runtime configuration and optional binding failure** на current main и остановиться после результата.
 2. Findings только фиксировать; remediation не начинать.
