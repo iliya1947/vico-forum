@@ -73,7 +73,7 @@ function unavailable(error: unknown): boolean {
   return false;
 }
 
-/** Classified state read with no row lock; safe for readonly callers. */
+/** Shared state query: the mutation variant acquires a transaction-local row lock. */
 async function loadAccountState(
   connection: Pick<Client, "query">, userId: string, lockForMutation: boolean,
 ): Promise<AccountState> {
