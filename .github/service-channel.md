@@ -3927,3 +3927,13 @@ These are mandatory pre-action checks for the remainder of #251. The incident re
 - Current `main` PROJECT_STATE reflects post-SA-03 state.
 - SA-03 is therefore fully closed in repository/project-record state.
 - No later SA package is started or assigned by this synchronization.
+
+
+## 2026-11-11 — SA-04 coordination started
+
+- Verified current main `ce62e783e71433a00c2fe4874ee26dfc54614628` after merged SA-03 docs closeout.
+- Current project/source-of-truth state still has SA-01–SA-03 delivered and SA-04+ undelivered.
+- Per accepted full Super-admin plan #6745289141, the next package is **SA-04**: account-state schema + active-account enforcement + neutral public identity projection. Deactivate action/control remains **SA-05**.
+- Assigned Lev **package-specific technical planning only** against current post-SA-03 main.
+- Required result: concrete current-repo seams, migration/state model, enforcement/public-projection boundaries, acceptance, and independently safe bounded implementation slices if needed.
+- No implementation assignment. Lira/Mark unassigned; SA-05+, Stage6/production and deferred journal-storage work excluded.
