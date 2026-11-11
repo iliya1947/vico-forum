@@ -9,6 +9,7 @@ from contextlib import contextmanager
 from pathlib import Path
 import shutil
 import subprocess
+import threading
 import time
 from urllib.parse import quote, urlparse
 from uuid import uuid4
@@ -51,8 +52,11 @@ finally{await client.end();}"""
 
 
 @contextmanager
-def exclusive_lock(table):
-    assert table in ("admin_history", "owner_events")
+def exclusive_lock(table, release_after=None):
+    assert table in (
+        "admin_history", "owner_events", "owner_attempt_patterns",
+        "owner_monitor_observations",
+    )
     js = """import pg from 'pg';
 const client=new pg.Client({connectionString:process.env.DATABASE_URL});
 await client.connect();await client.query('begin');
@@ -64,16 +68,29 @@ process.stdin.once('data',async()=>{await client.query('rollback');await client.
         stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
         text=True, bufsize=1,
     )
+    timer = None
     try:
         line = child.stdout.readline().strip()
         assert line == "LOCKED", (table, line, child.stderr.read())
+        if release_after is not None:
+            # Short-lived observation lock tests degraded recording, not a
+            # long-running unavailable database. Release while HTTP is inflight.
+            def release():
+                if child.poll() is None:
+                    child.stdin.write("release\n")
+                    child.stdin.flush()
+            timer = threading.Timer(release_after, release)
+            timer.start()
         yield
     finally:
+        if timer is not None:
+            timer.join(timeout=15)
+            assert not timer.is_alive(), "timed PostgreSQL lock was not released"
         if child.poll() is None:
             child.stdin.write("release\n")
             child.stdin.flush()
-            child.stdin.close()
-            child.wait(timeout=15)
+        child.stdin.close()
+        child.wait(timeout=15)
         assert child.returncode == 0, (table, child.returncode, child.stderr.read())
         child.stdout.close()
         child.stderr.close()
@@ -132,6 +149,10 @@ def request(ctx, path, status=200):
     return response
 
 
+def data_path(path):
+    return path.replace("?", ".data?", 1) if "?" in path else path + ".data"
+
+
 def account(browser, name, ip):
     ctx = browser.new_context(
         viewport={"width": 1280, "height": 900},
@@ -188,6 +209,24 @@ try:
         get(admin, "/en/users/" + admin_id, private=False)
         expect(admin.locator('a[href="/en/super-admin"]')).to_have_count(0)
         record("admin-with-authorization-access-still-denied-owner-surface")
+
+        # D4.2: even malformed routes/cursors must reject before any private
+        # source read on BOTH document and React Router .data requests.
+        protected = (
+            "/en/super-admin/monitoring/accounts",
+            "/en/super-admin/monitoring/security",
+            "/en/super-admin/monitoring/accounts/accounts.users/history",
+            "/en/super-admin/monitoring/security/security.auth/history",
+            "/en/super-admin/monitoring/accounts/security.auth/history",
+            "/en/super-admin/events?before=malformed",
+            "/en/super-admin/monitoring/security/security.auth/history?before=bad",
+        )
+        for path in protected:
+            request(guest_ctx, path, 401)
+            request(guest_ctx, data_path(path), 401)
+            request(admin_ctx, path, 403)
+            request(admin_ctx, data_path(path), 403)
+        record("sa02-guest-and-non-owner-guard-before-cursor-and-scope-for-document-data")
 
         # D4.1: prove canonical Better Auth facts with original IDs across
         # stored PostgreSQL facts, current Monitoring, adjacent History and global log.
@@ -462,6 +501,100 @@ try:
         with exclusive_lock("owner_events"):
             request(owner_ctx, "/en/super-admin/monitoring/system", 503)
         record("postgres-unavailable-returns-private-503-not-false-health")
+
+
+        # Exact Owner: only fixed area/monitor combinations and syntactically
+        # valid queries reach the readers, for both response representations.
+        for path in (
+            "/en/super-admin/monitoring/accounts",
+            "/en/super-admin/monitoring/security",
+            "/en/super-admin/monitoring/accounts/accounts.users/history",
+            "/en/super-admin/monitoring/security/security.auth/history",
+            "/en/super-admin/monitoring/security/security.access/history",
+            "/en/super-admin/events",
+        ):
+            request(owner_ctx, path)
+            request(owner_ctx, data_path(path))
+        for path, status in (
+            ("/en/super-admin/monitoring/accounts?before=invalid", 400),
+            ("/en/super-admin/monitoring/security?unexpected=1", 400),
+            ("/en/super-admin/monitoring/accounts/accounts.users/history?before=invalid", 400),
+            ("/en/super-admin/monitoring/security/security.auth/history?before=v1.invalid", 400),
+            ("/en/super-admin/monitoring/security/security.access/history?unexpected=1", 400),
+            ("/en/super-admin/monitoring/security/security.access/history?before=a&before=b", 400),
+            ("/en/super-admin/events?before=a&before=b", 400),
+            ("/en/super-admin/monitoring/accounts/security.auth/history", 404),
+            ("/en/super-admin/monitoring/security/accounts.users/history", 404),
+            ("/en/super-admin/monitoring/unknown/unknown.key/history", 404),
+        ):
+            request(owner_ctx, path, status)
+            request(owner_ctx, data_path(path), status)
+        record("sa02-owner-current-scoped-global-strict-document-data-400-404")
+
+        # An Owner can read safe user/attempt identities but must never receive
+        # canonical session tokens, password hashes or submitted passwords.
+        session_secrets = [r["token"] for r in sql(
+            'select token from "session" where user_id=$1', [owner_id])]
+        password_secrets = [r["password"] for r in sql(
+            "select password from account where user_id=$1 and provider_id='credential'",
+            [admin_id])]
+        assert session_secrets and password_secrets
+        secrets = session_secrets + password_secrets + [
+            "synthetic-browser-password-123456", "sa02-real-new-password-123456",
+        ]
+        for path in (
+            "/en/super-admin", "/en/super-admin/monitoring/accounts",
+            "/en/super-admin/monitoring/security",
+            "/en/super-admin/monitoring/accounts/accounts.methods/history",
+            "/en/super-admin/monitoring/security/security.access/history",
+            "/en/super-admin/events",
+        ):
+            for suffix in (path, data_path(path)):
+                body = request(owner_ctx, suffix).text()
+                for secret in secrets:
+                    assert secret not in body, ("private secret serialized", suffix)
+        record("sa02-secret-free-current-overview-history-global-document-data")
+
+        # Actual snapshot read under an exclusive source-table lock is an
+        # unavailable database outcome (private 503), not fabricated zeroes.
+        with exclusive_lock("owner_attempt_patterns"):
+            for path in (
+                "/en/super-admin/monitoring/accounts",
+                "/en/super-admin/monitoring/security/security.access/history.data",
+            ):
+                failure = request(owner_ctx, path, 503)
+                assert "unavailable" in failure.text().lower()
+        # The same endpoints must recover after the original lock is released.
+        for path in (
+            "/en/super-admin/monitoring/accounts",
+            "/en/super-admin/monitoring/security/security.access/history.data",
+        ):
+            request(owner_ctx, path, 200)
+        record("sa02-read-outage-private-503-and-same-source-recovery")
+
+        # Recorded samples are best-effort. A short lock on the *sample* table
+        # must not convert measured current DB state into a hard 503.
+        with exclusive_lock("owner_monitor_observations", release_after=3.0):
+            degraded = request(owner_ctx, "/en/super-admin/monitoring/security.data")
+            assert "recording" in degraded.text()
+            assert "unavailable" in degraded.text(), degraded.text()[:250]
+        recovered = request(owner_ctx, "/en/super-admin/monitoring/security.data")
+        assert "recording" in recovered.text() and "available" in recovered.text()
+        record("sa02-observation-storage-degraded-read-200-then-recovered")
+
+        # Simulate request identity change using only disposable session rows:
+        # exact Owner authority must be rechecked on every request, not cached.
+        own = sql('select id from "session" where user_id=$1', [owner_id])
+        assert len(own) == 1, own
+        own_session = own[0]["id"]
+        try:
+            sql('update "session" set user_id=$1 where id=$2', [admin_id,own_session])
+            request(owner_ctx, "/en/super-admin/monitoring/accounts", 403)
+            request(owner_ctx, "/en/super-admin/monitoring/accounts.data", 403)
+        finally:
+            sql('update "session" set user_id=$1 where id=$2', [owner_id,own_session])
+        request(owner_ctx, "/en/super-admin/monitoring/accounts", 200)
+        record("sa02-owner-session-identity-switch-denied-and-restored")
 
         sign_out = owner_ctx.request.post(base + "/api/auth/sign-out",
                                          headers={"Origin": base}, data={})
