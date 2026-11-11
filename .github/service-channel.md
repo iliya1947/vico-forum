@@ -16,6 +16,7 @@
 3. [C — Authorization & privilege escalation](../SECURITY_BLOCK_C_AUTHORIZATION.md)
 4. [D — Ordinary Admin & moderation](../SECURITY_BLOCK_D_ADMIN_MODERATION.md)
 5. [E — Public forum / application](../SECURITY_BLOCK_E_PUBLIC_APPLICATION.md)
+6. [F — Files & attachments](../SECURITY_BLOCK_F_FILES_ATTACHMENTS.md)
 
 ## Текущее подтверждённое состояние
 
@@ -26,8 +27,9 @@
 5. Block D: аудит D1–D12 завершён; подтверждены **3 findings — `COMPLAINT-PRIV-01`, `HELP-SIGNAL-PRIV-01`, `HISTORY-PRIV-01` (все Low/P3)**.
 6. D12 corrected closeout: official React Router Framework/SSR docs и exact `react-router@8.3.1` source подтвердили default skip loader revalidation после 4xx/5xx; Vico explicit recovery refreshes loaders and does not automatically replay mutations.
 7. Block E audit завершён: E2 PASS; E5 — **`FORUM-PUB-01 Moderate/P2`**; E6 — 0 additional; E7 — **`READSTATE-CACHE-01 Low/P3`**; E3 — **`PUBLIC-PROJECTION-01 Low/P3`**; E4 — **`DISCOVERY-BOUNDS-01 Low/P3`, `SEARCH-CONTROL-01 Low/P3`**; E8 PASS; E1 — **`LOCALE-DEGRADED-WRITE-01 Low/P3`** + расширение `READSTATE-CACHE-01`; E9 PASS; E10 — **`FORUM-READ-BOUNDS-01 Moderate/P2`, `FORM-BODY-BOUNDS-01 Moderate/P2`**. Block E total: **8 findings**. E10 проверен на current `main` `4248fed23925e4a23e48485d419ceaf0ce337def`; compare с предыдущим target подтвердил отсутствие изменений core Forum/translation E2–E9.
-8. Implementation PR, technical planner и implementer для remediation сейчас не назначены.
-9. Cloudflare/Neon/production mutation по #315 не разрешена и не выполнялась.
+8. Block F scope/setup завершён на current `main` `538084fd472c65459ad55ab30a0f96fbfdd68e56`; фактический аудит ещё не начат. Первый срез — **F1 Private object / download access / IDOR**.
+9. Implementation PR, technical planner и implementer для remediation сейчас не назначены.
+10. Cloudflare/Neon/production mutation по #315 не разрешена и не выполнялась.
 
 ## Индекс подтверждённых findings
 
@@ -62,6 +64,7 @@
 
 ## Открыто
 
-1. **SA-02 delta-recheck Blocks A/B completed: PASS, 0 новых current-scope findings.** Следующая новая область общей security-карты — **Block F / Files & attachments**; отдельный Block F файл ещё не создан.
-2. Current `main` contains merged SA-02 / migration `0063`, while permanent docs in `main` still describe SA-02+ as not implemented / migrations through `0062`; factual docs closeout PR #323 is open/Ready and independently reviewed, но ещё не merged. Это docs-state lag, не security finding #315.
-3. Лира, Лёва и Марк сейчас не имеют активного назначения по #315.
+1. **Block F scope/setup completed.** Отдельный `SECURITY_BLOCK_F_FILES_ATTACHMENTS.md` фиксирует current contract, attacker model, F1–F8 и Stage-6 exclusions.
+2. Следующий bounded audit slice — **F1 Private object / download access / IDOR** на current `main` `538084fd472c65459ad55ab30a0f96fbfdd68e56`.
+3. SA-02 factual docs closeout уже merged в current main; descendant `4248fed… → 538084f…` меняет только 8 Markdown docs, attachment runtime/schema не менялся.
+4. Лира, Лёва и Марк сейчас не имеют активного назначения по #315.
