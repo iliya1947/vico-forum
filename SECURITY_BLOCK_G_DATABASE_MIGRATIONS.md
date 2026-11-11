@@ -9,11 +9,12 @@
 5. **G4 — Migration / privilege workflow gates завершён: 1 additional current-scope finding — `DB-RUNTIME-EVIDENCE-01 Low/P3`.**
 6. **G5 — Transaction, locking and ambiguous outcomes завершён: PASS, 0 additional current-scope findings.**
 7. **G6 — Destructive tooling and target isolation завершён: 1 additional current-scope finding — `DB-TEST-TARGET-01 Low/P3`.**
-8. Repository migration history: `0000–0063`; externally accepted migration evidence: `0000–0020`.
-9. Само отставание external target от repository history не finding; G4 finding относится к current repository rollout gate, который допускает это отставание как достаточное evidence для current runtime.
-10. Следующий bounded slice — **G7 Manifest, evidence and drift detection**.
-11. Мира — auditor/coordinator. Remediation, technical planner и implementer не назначены.
-12. Production/Neon/Cloudflare mutation в Block G не разрешена и не выполняется.
+8. **G7 — Manifest, evidence and drift detection завершён: PASS, 0 additional current-scope findings; `DB-RUNTIME-EVIDENCE-01` повторно подтверждён без duplicate.**
+9. Repository migration history: `0000–0063`; externally accepted migration evidence: `0000–0020`.
+10. Само отставание external target от repository history не finding; G4 finding относится к current repository rollout gate, который допускает это отставание как достаточное evidence для current runtime.
+11. Следующий bounded slice — **G8 Cross-chain closeout**.
+12. Мира — auditor/coordinator. Remediation, technical planner и implementer не назначены.
+13. Production/Neon/Cloudflare mutation в Block G не разрешена и не выполняется.
 
 ## G1 — результат
 
@@ -156,6 +157,22 @@
 3. Confirmed impact: the full migration integration test drops `drizzle` and `public` schemas with `CASCADE` before replaying migrations.
 4. Current CI configuration is safe by construction, so this is not evidence of an existing production incident. It is a broken target-isolation guard on a destructive current tool.
 5. Fixing it belongs to a separate bounded remediation task; audit does not change implementation.
+
+## G7 — результат
+
+1. Verdict: **PASS, 0 additional current-scope findings** на current `main` `538084fd472c65459ad55ab30a0f96fbfdd68e56`.
+2. Current repository structural manifest targets the newest checked-in migration `0063_owner_attempt_telemetry` and contains **69 public tables**, **9 trigger functions** and **18 non-internal triggers**. The verifier reads the live/clean schema and deep-compares the complete captured set, so missing or extra tables, columns, PK/unique/FK/check constraints, ordinary/partial indexes, trigger functions or triggers are rejected rather than checked only for expected presence.
+3. For the externally accepted `0000–0020` range, repository search found no current view/materialized-view/custom-type/RLS/policy/rule/explicit-sequence object outside that captured structural model. All custom functions in that range are trigger-returning functions and are included in the manifest snapshot.
+4. Later identity-backed columns introduced by `0049` and `0062` are not currently part of the externally accepted `0000–0020` target. The manifest does not model identity/sequence properties separately, but under the explicit G7 current/Stage-6 boundary this is future rollout acceptance work, not a current finding by itself. It must be reconsidered before those migrations are externally accepted.
+5. Runtime privilege verification is complete end-state comparison for the named localization/web capabilities, not a positive-grant checklist: it rejects dangerous role attributes, database ownership/CREATE, outbound memberships, unsafe inbound memberships, runtime-owned objects, unexpected schema/relation/sequence grants, grant options, column privileges, explicit function privileges and runtime default privileges. PUBLIC database/schema/relation/column/function/default boundaries are also checked.
+6. The current evidence file still records successful production migration run `36270353184`, migration SHA `b172264e4b0db1fe68dead7d7f25b49a573eb0cd` and required tag `0020_translation_generation_permission`. Live GitHub read during G7 confirms that run is `Production database migration`, manual `workflow_dispatch`, branch `main`, exact matching SHA, attempt 1, completed successfully.
+7. The evidence SHA is an ancestor of current main by 163 commits. Its Drizzle journal contains exactly 21 entries through `0020_translation_generation_permission`; that prefix is byte-structure-equivalent at the parsed-entry level to current journal entries `0000–0020`.
+8. Evidence verification additionally requires: evidence SHA ancestor of the rollout revision; SHA-256 of the journal at that evidence SHA; exact required-prefix equality; GitHub workflow path/event/main/head-SHA/success identity. These checks reject unrelated or rewritten evidence.
+9. G7 re-confirms **`DB-RUNTIME-EVIDENCE-01 Low/P3` from G4**: `requiredMigrationTag` is repository-authored evidence input and is not derived from the exact Worker revision's minimum schema requirement or current manifest target. Therefore the valid `0020` evidence can still satisfy the rollout verifier for current code that requires later schema. This is the same root cause and is **not duplicated**.
+10. Current source-of-truth distinguishes repository history `0000–0063` from externally accepted evidence `0000–0020`; no claim was found that production already matches current repository head. Pending `0021–0063` alone therefore remains future Stage-6 rollout work.
+11. Mutable production schema/ACL drift was not queried live in G7. **Информация не проверена** for exact current production DB state. This is explicitly outside the paused Stage-6 boundary and is not a current G7 finding.
+12. Repository tests/probes were read as evidence but were not executed in this G7 slice. No production/Cloudflare/Neon mutation was performed.
+13. Remediation remains unassigned. G8 cross-chain closeout is next.
 
 ## Цель
 
