@@ -45,7 +45,7 @@ describe("profile presentation", () => {
     expect(container.querySelector("script, .profile-avatar img")).toBeNull();
   });
   it("shows the owner edit link and only owner editable fields", () => {
-    show({ isOwner: true, editing: true, feedback: { error: "invalid", draft: { bio: "My unsaved draft", githubUrl: "", websiteUrl: "" } } });
+    show({ isSelf: true, editing: true, feedback: { error: "invalid", draft: { bio: "My unsaved draft", githubUrl: "", websiteUrl: "" } } });
     expect(screen.getByLabelText("About")).toHaveValue("My unsaved draft");
     expect(screen.getByRole("alert")).toHaveTextContent("Use up to 500 characters");
     expect(screen.queryByLabelText(/role|name|email/i)).not.toBeInTheDocument();
