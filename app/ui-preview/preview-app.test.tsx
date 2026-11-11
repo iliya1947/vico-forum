@@ -206,6 +206,7 @@ describe("interactive Pages preview", () => {
 
     expect(await screen.findByRole("heading", { level: 1, name: "Worker session redirect problem" })).toBeInTheDocument();
     expect(screen.getByText("My Worker loses its session after redirect.")).toBeInTheDocument();
+  });
 
   it("resolves moderation signals and duplicate appeals inside the preview queue", async () => {
     const user = userEvent.setup();
@@ -228,7 +229,6 @@ describe("interactive Pages preview", () => {
 
     await waitFor(() => expect(screen.queryByText("#appeal-146")).not.toBeInTheDocument());
     expect(screen.getByRole("link", { name: "Appeals (0)" })).toBeInTheDocument();
-  });
   });
 });
 
