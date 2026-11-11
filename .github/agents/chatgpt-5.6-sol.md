@@ -4,7 +4,7 @@
 
 1. Служебный PR: **#315**.
 2. Моя текущая работа: audit/coordination only; remediation и implementation не назначены.
-3. Текущий этап: **Block H scope подготовлен; следующий bounded slice — H1 Worker composition & binding isolation**. Block G закрыт с 3 current-scope findings + deferred Stage-6 blocker `DB-RUNTIME-EVIDENCE-01`.
+3. Текущий этап: **Block H H1 PASS, 0 current-scope findings; следующий bounded slice — H2 Ingress trust & source attribution**. Block G закрыт с 3 current-scope findings + deferred Stage-6 blocker `DB-RUNTIME-EVIDENCE-01`.
 4. Technical audit target B–D: `e279cb6c032a489a9044ca1191407df887c364b4`.
 5. Current `main` после G8 delta-recheck — `5992885e78b1642e41c9805116fcc256002b649c`. Delta от `538084fd…` — SA-03 #324: index-only migration `0064` + readonly Owner profile/history; Block G conclusions unchanged.
 6. Лира, Марк и Лёва по #315 сейчас не назначены.
@@ -93,7 +93,13 @@
 66. Block H scope подготовлен против current main `5992885e78b1642e41c9805116fcc256002b649c`: H1–H8, current-vs-Stage-6 boundary, anti-duplication, code seams и finding criteria зафиксированы в отдельном `SECURITY_BLOCK_H_CLOUDFLARE_WORKERS_RUNTIME.md`.
 67. H current scope: Worker composition, `HYPERDRIVE`/`WEB_HYPERDRIVE` isolation, ingress trust, runtime binding failures, preview/version repository boundary, rollout/version/rollback gates и Worker-wide failure/observability behavior.
 68. Future-only boundaries не считать current findings сами по себе: deployed `WEB_HYPERDRIVE`, mutable Cloudflare topology, separate Owner Worker/Access/Owner plane, real routes/domains/preview isolation acceptance, real providers/Queues.
-69. First slice H1 проверяет только Worker composition & binding isolation. Live Cloudflare/production mutation/check не выполнялся.
+69. Block H H1: **PASS, 0 current-scope findings** на `5992885e78b1642e41c9805116fcc256002b649c`.
+70. `HYPERDRIVE` и `WEB_HYPERDRIVE` resolve'ятся отдельно и fail closed при missing/blank; fallback отсутствует.
+71. Worker mapping проверен полностью: registry/UI translations → localization connection; auth/forum/admin/settings/measures/Complaints/Owner/profile/telemetry/auth facts/content presentation+admission → web connection.
+72. Web adapters используют passed connection string через `createWebClient/createWebPool`; runtime не читает `DATABASE_URL`, `NEON_OWNER_DATABASE_URL` или migration credential. Migrator/admin DB capability в Worker composition не входит.
+73. Content generation action runtime explicitly disabled; generation status reader не bind'ится; action/loader не доходят до generation capability/status path при disabled runtime.
+74. Existing binding/runtime tests и CI smoke были прочитаны, но в H1 не запускались. Local CI uses one disposable superuser URL for both binding names, поэтому integration smoke сам по себе не доказывает prod privilege isolation; static/source wiring подтверждает current composition. Finding не создаётся.
+75. Mutable deployed Worker/Hyperdrive bindings/roles: **Информация не проверена**; Stage 6 paused. Live mutation/check не выполнялся.
 
 ## Ограничения
 
@@ -105,5 +111,5 @@
 
 ## Следующий шаг
 
-1. После продолжения владельца выполнить **H1 — Worker composition & binding isolation** на current main и остановиться после результата.
+1. После продолжения владельца выполнить **H2 — Ingress trust & source attribution** на current main и остановиться после результата.
 2. Findings только фиксировать; remediation не начинать.
