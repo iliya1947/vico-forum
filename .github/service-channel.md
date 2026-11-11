@@ -3663,3 +3663,27 @@ Lev's independent review finding SA03-IMPL-LEV-01 on PR #324 exact head `4bfdfdd
 - run applicable exact-head checks, publish the new stable #324 head, record evidence, and **STOP**.
 
 No implementation change is made by Mira in this routing step. After Lira's correction, Mira restarts coordinator whole-PR review on the new stable exact head.
+
+## 2026-11-11 — Mira repeat coordinator whole-PR review after LEV-01: PASS
+
+Reviewed PR #324 exact stable head `d7a526ac00ef56ebd8c8bd4035cc84fb9731ad49` after the bounded SA03-IMPL-LEV-01 correction.
+
+Scope/evidence:
+- current main unchanged: `538084fd472c65459ad55ab30a0f96fbfdd68e56`;
+- cumulative SA-03 change surface: 43 files;
+- delta from previously reviewed `4bfdfdd...`: six files only — `app/profile/sections.ts`, `app/profile/sections.server.ts`, `app/forum/profile-view.tsx`, `app/forum/profile-view.test.tsx`, `app/admin/users-authorization.test.tsx`, `tests/browser/user-profile/check.py`;
+- exact-head checks all SUCCESS: CI #43068315572, SA03 Chromium #43068315602, SA01 Chromium #43068315460, AP10 Chromium #43068315564.
+
+LEV-01 verification:
+1. Server privileged composition now carries the authenticated viewer ID for any admitted measures/authorization/Owner projection.
+2. Profile presentation compares that viewer binding with the current HeaderAuth viewer before rendering any privileged section.
+3. A known sign-out or viewer mismatch invalidates the old snapshot immediately; stale sections/controls/self-private feedback stay hidden even if the same viewer identity returns before fresh loader data.
+4. A new authorized loader result resets the snapshot and restores permitted private sections.
+5. Connected Chromium holds the post-signout profile `.data` request and confirms guest header + zero stale privileged DOM **before** the delayed GET is released, then confirms fresh authorized recovery.
+6. Public profile stays available. Server admission, AP-10/authorization authority, Owner immunity, schema/migrations and canonical writers are unchanged.
+
+No new current-scope defects were confirmed in the cumulative sweep.
+
+**Coordinator verdict: PASS — 0 confirmed current-scope defects on exact head `d7a526ac00ef56ebd8c8bd4035cc84fb9731ad49`.**
+
+Next gate: **Lev performs a fresh independent technical whole-PR review of #324 on this exact head only.** Lira/Mark remain unassigned; no implementation change is requested before that review.
