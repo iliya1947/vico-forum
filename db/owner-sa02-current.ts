@@ -222,7 +222,10 @@ export class PostgresOwnerSa02Current {
               "where surface='auth' and operation='registration-admission') retained"
             )).rows[0]?.first??null
           : null;
-        const first=earlier(earlier(earlier(item.first,samples.first),firstFact),
+        // Counts and settings are current state, not retained History entries.
+        // A pre-existing domain row cannot establish History coverage.
+        const retainedNativeFirst=item.key.startsWith("accounts.") ? null : item.first;
+        const first=earlier(earlier(earlier(retainedNativeFirst,samples.first),firstFact),
           firstRegistrationSource);
         coverageFrom=iso(first);
       }catch{recording="unavailable";}
