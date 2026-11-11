@@ -5,11 +5,12 @@
 1. Bounded audit scope подготовлен 2026-11-11 против current `main` `538084fd472c65459ad55ab30a0f96fbfdd68e56`.
 2. **G1 — Migration history integrity завершён: PASS, 0 current-scope findings.**
 3. **G2 — Schema-level security invariants завершён: 1 current-scope finding — `DB-SEARCHPATH-01 Low/P3`.**
-4. Repository migration history: `0000–0063`; externally accepted migration evidence: `0000–0020`.
-5. Отставание external target от repository history само по себе **не finding**: Stage 6 external integration paused, а current source-of-truth разрешает repository/local-CI schema evolution без немедленного Neon rollout.
-6. Следующий bounded slice — **G3 Runtime least privilege**.
-7. Мира — auditor/coordinator. Remediation, technical planner и implementer не назначены.
-8. Production/Neon/Cloudflare mutation в Block G не разрешена и не выполняется.
+4. **G3 — Runtime least privilege завершён: 1 additional current-scope finding — `DB-ACL-USER-DELETE-01 Low/P3`.**
+5. Repository migration history: `0000–0063`; externally accepted migration evidence: `0000–0020`.
+6. Отставание external target от repository history само по себе **не finding**: Stage 6 external integration paused, а current source-of-truth разрешает repository/local-CI schema evolution без немедленного Neon rollout.
+7. Следующий bounded slice — **G4 Migration / privilege workflow gates**.
+8. Мира — auditor/coordinator. Remediation, technical planner и implementer не назначены.
+9. Production/Neon/Cloudflare mutation в Block G не разрешена и не выполняется.
 
 ## G1 — результат
 
@@ -51,6 +52,35 @@
 10. The defect is current repository/local-CI scope because both the trigger and named web capability are current code-backed contracts. Whether the same path is presently exploitable in deployed production is **Информация не проверена**: production Worker/web binding rollout remains paused Stage 6.
 11. This is not a duplicate of Block D Complaints privacy findings: the root cause is PostgreSQL relation-name resolution inside a schema security trigger, and the impact is persisted Case-link integrity.
 12. Remediation is **not assigned** in audit. G3 must account for this finding when checking runtime least privilege, without duplicating the same root cause.
+
+## G3 — результат
+
+1. Verdict: **1 additional current-scope finding — `DB-ACL-USER-DELETE-01 Low/P3`** на current `main` `538084fd472c65459ad55ab30a0f96fbfdd68e56`.
+2. Named runtime roles are distinct LOGIN capabilities. Shared verifier rejects SUPERUSER/CREATEDB/CREATEROLE/REPLICATION/BYPASSRLS, database ownership, effective database CREATE, outbound inherited memberships and unsafe inbound role membership.
+3. Runtime role schema boundary is exact `public.USAGE` without `CREATE`; relation ACL comparison is full end-state equality to the named capability, including grant-option state. Column ACL, sequence grants, direct function grants, runtime default grants and runtime-owned objects are rejected.
+4. PUBLIC boundary is also read as end state: no relation/column explicit function privileges; no custom relation/sequence/schema default grants. Database PUBLIC `CONNECT`/`TEMPORARY` hard-wired-equivalent ACL is intentionally tolerated. `TEMPORARY` is already part of G2 `DB-SEARCHPATH-01` causal chain and is **not duplicated** as a second finding here.
+5. Disposable PostgreSQL 17 probe source covers positive capability operations/row locks plus cross-domain negatives: localization cannot read web identity or write locales/DDL; web cannot read localization/task/catalog tables, delete forum topics, update immutable title revisions or create public tables.
+6. Current destructive relation grants were cross-checked against production code. Attachment draft refs/post refs, pins, online presence and authorization role/grant/override DELETE operations have current code-backed mutation paths. Better Auth current session/verification cleanup requires their DELETE capabilities. No separate destructive-ACL finding was confirmed for those relations.
+7. `authz_mutation_lock` UPDATE is not stale: current authorization/user-measure writers use `SELECT ... FOR UPDATE` on the singleton as a serialization mutex; current web role therefore needs the row-lock-capable relation privilege.
+8. Current web capability intentionally has broad table-level UPDATE where real Better Auth/forum/authz operations require writes. Column-level least-privilege redesign would add complexity and is not a current defect without an independent reachable abuse path.
+9. Legacy editor-draft-era relations (`forum_editor_drafts`, `forum_attachment_edit_snapshots`, `forum_attachment_draft_boundaries`, `forum_attachment_draft_contexts`) are no longer used by current application source, but they begin after externally accepted `0020` and have not been accepted into the paused production web role. Tightening/removing those future grants before a later Stage-6 provisioning is future cleanup, not a current G3 finding by itself.
+10. Exact installed dependency is Better Auth `1.7.7`; its exact tagged source was checked for user creation/deletion behavior. OAuth user+account creation uses a database transaction; rollback does not require an explicit user DELETE capability.
+11. Tests/probes were read as evidence, but **not run** in this G3 audit slice.
+
+### DB-ACL-USER-DELETE-01 — Low/P3
+
+1. Current repository `web` capability grants `DELETE` on `public.user` together with SELECT/INSERT/UPDATE.
+2. Current Vico product has **no physical account deletion feature**. `docs/SETTINGS.md` explicitly excludes account deletion from Account & security/Privacy, and current Super-admin work has only future deactivation semantics; physical deletion is not a current approved operation.
+3. Vico `betterAuthOptions()` does not enable `user.deleteUser`. In exact Better Auth `v1.7.7`, `/delete-user` fails at the initial `options.user?.deleteUser?.enabled` gate when that option is absent; only the enabled path invokes `internalAdapter.deleteUser()`.
+4. Exact Better Auth `v1.7.7` internal adapter was checked: ordinary user/OAuth creation uses INSERT/transaction rollback; hard `user` DELETE is its explicit `deleteUser()` operation, not a hidden signup rollback requirement. Vico does not configure the optional anonymous/admin/test plugins that invoke that operation.
+5. Vico production source search found no application `DELETE FROM user`, Drizzle `.delete(user)` or `deleteUser()` path. Existing tests do delete synthetic users for cleanup, but those tests use disposable/admin test connections rather than the runtime web capability.
+6. Therefore `public.user.DELETE` is a real relation-level overgrant beyond the current runtime responsibility.
+7. A holder of the web DB credential/capability can physically delete an otherwise deletable user row. PostgreSQL FK cascades can then remove account/session/profile/authorization/presence state; RESTRICT links protect users already referenced by retained forum/moderation data but do not make the capability necessary or harmless for accounts without such references.
+8. This conflicts with the current product lifecycle, where account deletion is not implemented and future deactivation is intended to preserve underlying data. It also expands destructive impact of a web DB credential compromise without supporting a current operation.
+9. No HTTP route, SQL injection, session bypass or way for an ordinary forum user to directly exercise this database privilege was established. The precondition is direct use/compromise of the web DB capability, which already has substantial read/write authority; incremental impact is therefore **Low/P3**.
+10. Repository capability contract definitely contains the overgrant. Historical Stage-6 evidence/docs say the `0000–0020` production web ACL was provisioned with the reviewed full CRUD user grant, but mutable live ACL state was not reread in G3: **Информация не проверена** for the exact current production grant.
+11. This is not a duplicate of Block B auth findings: root cause is the database relation privilege matrix, not authentication/session semantics.
+12. Remediation is **not assigned** in audit. G4/G7 should treat the repository ACL contract as the authoritative input and must not silently assume this grant is necessary.
 
 ## Цель
 
