@@ -10,9 +10,10 @@
 6. **F4 — Publication/edit binding, replay and races завершён: PASS, 0 additional current-scope findings.**
 7. **F5 — Cleanup and physical deletion safety завершён: PASS, 0 additional current-scope findings.**
 8. **F6 — Attachment security evidence / Attention privacy завершён: PASS, 0 additional current-scope findings.**
-9. Следующий bounded slice — **F7 Storage/runtime failure boundary**.
-10. Мира — auditor/coordinator. Remediation, technical planner и implementer не назначены.
-11. Stage 6 external activation остаётся paused.
+9. **F7 — Storage adapter, runtime privileges and failure isolation завершён: PASS, 0 additional current-scope findings.**
+10. Следующий bounded slice — **F8 Cross-chain closeout**.
+11. Мира — auditor/coordinator. Remediation, technical planner и implementer не назначены.
+12. Stage 6 external activation остаётся paused.
 
 ## F1 — результат
 
@@ -109,6 +110,24 @@
 11. При полном отказе evidence storage до COMMIT suspicious upload fail-closed возвращает `503` и не создаёт attachment/publication. Это availability failure, а не доказанный current confidentiality/integrity bypass; второй независимый durable sink на случай полного DB outage текущим контрактом не требуется. Lost ACK после фактического COMMIT сходится на том же derived ID при retry.
 12. `ATTACH-TEXT-TAIL-01` не дублируется в F6: его root cause — F3 ошибочно accepted `text`, поэтому suspicious-event path вообще не активируется. Исправление classification должно закрывать и соответствующий evidence gap.
 13. Targeted application/PostgreSQL/SA-02 tests были прочитаны как evidence: permission-before-read, private cache headers, event persistence without asset row, concurrent dedupe, lost-ACK convergence и reduced Owner projection. В этом audit-срезе тесты не запускались.
+
+## F7 — результат
+
+1. **PASS: 0 additional current-scope findings** на `main` `538084fd472c65459ad55ab30a0f96fbfdd68e56`.
+2. R2 capability остаётся server-side: browser/API передаёт только logical attachment/operation/context IDs. Physical object key генерируется сервером под fenced prefix, хранится в metadata и используется только после authoritative DB lookup; upload/download responses и security evidence его не сериализуют.
+3. Worker adapter предоставляет только bounded code-backed `reserve/listReservations/put/get/delete`. Reservation создаётся conditional create-once, payload заменяет её только по matching ETag; upload path не принимает произвольный physical key от клиента.
+4. Current Cloudflare Workers/R2 semantics перепроверены по официальной документации 2026-11-11: stream для R2 `put()` должен иметь known length; `FixedLengthStream` фиксирует точную byte length и ошибается при too few/too many bytes; conditional writes и R2 read-after-write/delete остаются strongly consistent; same-key write limit остаётся 1 write/second. Эти факты согласуются с текущим adapter contract.
+5. Upload dependency failures fail-closed: DB journal failure не создаёт reservation/payload; reservation/activation failure не создаёт live metadata; body read/length mismatch не становится verified asset; R2 failure даёт controlled 503; post-R2 metadata failure не создаёт live ref без authoritative commit.
+6. Full-body ambiguous R2 PUT отдельно не считается успешным: route возвращает 503, best-effort delete отзывает physical attempt, а durable upload-object journal/cleanup fencing не позволяет позднему payload стать metadata/ref. Lost metadata COMMIT acknowledgement сохраняет object до stable-ID retry вместо blind delete.
+7. Download сначала проходит authoritative published/private ref lookup. Missing binding, missing object, storage exception или object-size mismatch дают private/no-store 503 и не возвращают storage key/успешную metadata shape. Public/private authorization не деградирует при R2 failure.
+8. Publication/edit attachment binding выполняется внутри общего forum PostgreSQL transaction. Forum writer преобразует только classified PostgreSQL availability/connection/query-timeout failures в controlled `ForumStorageUnavailableError`/503; SQL/schema/programming faults не маскируются как availability.
+9. Attachment Hyperdrive adapter аналогично классифицирует только PostgreSQL availability/connection/query-timeout causal chain. Cleanup/discard ошибки не заменяют исходный result/error. Это не создаёт fail-open permission/ref path.
+10. Runtime `web` DB capability для attachment relations соответствует текущим application writes: temporary boundaries/refs — только нужные INSERT/SELECT/DELETE; upload journal — INSERT/SELECT/UPDATE; asset metadata — INSERT/SELECT; post refs — INSERT/SELECT/DELETE; security evidence — INSERT/SELECT. Web capability не получает generic UPDATE/DELETE asset metadata или произвольную cleanup authority.
+11. Error/output isolation — PASS: upload controlled failures возвращают bounded enum/status JSON без DB/R2 details; download failures имеют пустое тело; shared route error UI показывает generic localized copy; Worker passive 5xx telemetry пишет только status/duration и не сохраняет URL/body/credentials.
+12. `ATTACH-TEXT-TAIL-01` не дублируется: F7 корректно изолирует dependency/runtime failure, а existing finding вызван content classification в F3.
+13. Cross-cutting Worker/database topology, deployment fail mode и credential isolation не расширялись в F7: их проверка относится к соответствующим последующим security blocks/Stage 6, если потребуется.
+14. External/live `ATTACHMENT_R2` provisioning, real bucket policy, production route fail mode и deployed network/isolation acceptance не выполнены. **Информация не проверена** для live production R2 isolation; это paused Stage 6 boundary, не current F7 defect.
+15. Targeted tests были прочитаны как evidence: known-length Workers adapter, conditional reservation, upstream cancellation, unknown full-body ACK, SQL activation/metadata timeout, cleanup fencing, missing R2 and controlled download failure. В этом audit-срезе тесты не запускались.
 
 ## Цель
 
