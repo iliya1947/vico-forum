@@ -4,10 +4,25 @@
 
 1. Bounded audit scope подготовлен 2026-11-11 против current `main` `5992885e78b1642e41c9805116fcc256002b649c`.
 2. Block G закрыт: 3 current-scope findings; `DB-RUNTIME-EVIDENCE-01 Low/P3` сохранён отдельно как Stage-6 blocker и в H не дублируется.
-3. **H1–H8 ещё не выполнялись.**
-4. Первый bounded slice после продолжения владельца — **H1: Worker composition & binding isolation**.
-5. Мира — auditor/coordinator. Remediation, technical planner и implementer не назначены.
-6. Cloudflare/production mutation, deployment, binding changes и live topology checks в scope preparation не выполнялись.
+3. **H1 — Worker composition & binding isolation завершён: PASS, 0 current-scope findings.**
+4. **H2–H8 ещё не выполнялись.**
+5. Следующий bounded slice после продолжения владельца — **H2: Ingress trust & source attribution**.
+6. Мира — auditor/coordinator. Remediation, technical planner и implementer не назначены.
+7. Cloudflare/production mutation, deployment, binding changes и live topology checks не выполнялись.
+
+## H1 — результат
+
+1. Verdict на current `main` `5992885e78b1642e41c9805116fcc256002b649c`: **PASS, 0 current-scope findings**.
+2. `wrangler.jsonc` объявляет две отдельные Hyperdrive bindings с разными repository IDs: `HYPERDRIVE` и `WEB_HYPERDRIVE`; runtime resolver принимает только эти две named capabilities.
+3. `resolveRuntimeDatabaseConnectionStrings()` требует непустую `connectionString` для каждой binding независимо и при missing/blank значении бросает `RuntimeDatabaseBindingConfigurationError`; fallback между localization и web capability отсутствует.
+4. Worker composition разводит capabilities по назначению: `createHyperdriveRegistryLoader` и `createHyperdriveUiTranslationStore` получают только `localizationConnectionString`; Better Auth, forum read/write, attachments DB metadata, authorization, Admin, Settings writers, measures, Complaints, Owner monitoring/profile, attempt telemetry, auth facts и content-presentation/admission получают `webConnectionString`.
+5. Current web adapters используют explicit passed connection string через `createWebClient` / `createWebPool`; localization adapters используют `createLocalizationClient`. Runtime `workers/*`/DB adapter path не читает `DATABASE_URL`, `NEON_OWNER_DATABASE_URL` или migration credential как fallback.
+6. Production migrator/owner database credentials существуют только в protected workflow/script paths; current Worker runtime composition не получает migration/admin database capability.
+7. Content generation action runtime в Worker явно установлен в `DISABLED_CONTENT_GENERATION_ACTION_RUNTIME`; generation status reader не bind'ится. Forum action проверяет `runtime.enabled` до admission/capability use, а topic loader обращается к generation status только если generation уже enabled. Наличие web-backed admission adapter само по себе generation не включает.
+8. Existing tests explicitly cover distinct binding resolution, missing/blank fail-closed behavior, representative adapter routing, shared web PostgreSQL factory and absence of generation-status binding. Ordinary CI additionally builds/smokes Worker with both local override names. Эти tests в H1 были прочитаны, но не запускались.
+9. Local CI intentionally points both binding names at one disposable PostgreSQL superuser URL, поэтому сам integration smoke не доказывает production privilege separation; static resolver/composition tests и source mapping закрывают current wiring regression. Это test-environment limitation, а не current security finding при отсутствии misrouting.
+10. Mutable deployed Worker/Hyperdrive bindings and actual production roles were not re-read live because Stage 6 is paused: **Информация не проверена**. Это не меняет H1 repository verdict.
+11. H1 remediation не требуется. Следующий slice — H2 ingress trust; H1 выводы в H2 не переоткрывать без нового evidence.
 
 ## Цель
 
