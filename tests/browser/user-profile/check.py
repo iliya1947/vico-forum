@@ -264,6 +264,41 @@ try:
         assert len(measure_history) == 1
         record("real-ap10-source-action-and-native-user-measure-history")
 
+        # SA03-MIRA-01: exact Owner self is read through ownList, so both empty-list
+        # and populated measure destinations must use the canonical own routes.
+        document(owner, owner_path)
+        expect(owner.locator("#measures")).to_have_count(1)
+        expect(owner.locator("#measures .admin-forum-objects li")).to_have_count(0)
+        expect(owner.locator('#measures a[href="/en/account/measures"]')).to_have_count(1)
+        expect(owner.locator('#measures a[href^="/en/admin/measures"]')).to_have_count(0)
+        req(owner_ctx, "/en/account/measures")
+        record("mira01-owner-self-zero-measure-route-not-forbidden-admin")
+
+        # Historical measure fixture deliberately injected into disposable DB:
+        # the current AP10 writer correctly forbids targeting exact Owner.
+        # Such a retained row can exist if its target later becomes bound Owner.
+        owner_measure_id = str(uuid4())
+        sql("""insert into user_measures
+          (id,target_user_id,issuer_user_id,issuer_authority_floor,
+           create_fingerprint,initial_reason)
+          values($1,$2,$3,1,$4,$5)""",
+          [owner_measure_id, owner_id, manager_id,
+           "d"*64, "SA03 synthetic retained Owner-self measure"])
+        sql("""insert into user_measure_restrictions
+          (measure_id,restriction_key,enabled) values($1,'replies.create',true)""",
+          [owner_measure_id])
+        document(owner, owner_path)
+        expect(owner.locator("#measures .admin-forum-objects li")).to_have_count(1)
+        expect(owner.locator(
+            '#measures a[href="/en/account/measures/' + owner_measure_id + '"]'
+        )).to_have_count(1)
+        expect(owner.locator('#measures a[href="/en/account/measures"]')).to_have_count(1)
+        expect(owner.locator('#measures a[href^="/en/admin/measures"]')).to_have_count(0)
+        req(owner_ctx, "/en/account/measures/" + owner_measure_id)
+        req(owner_ctx, "/en/admin/measures/" + owner_measure_id, 403)
+        req(owner_ctx, "/en/admin/measures?target=" + owner_id, 403)
+        record("mira01-owner-self-measure-detail-and-index-live-own-authority")
+
         # One canonical authorization writer; grant/revoke live permissions between reads.
         grants = set()
         known = ("admin.users.read", "access.authorization.manage", "admin.users.blocks.manage")
