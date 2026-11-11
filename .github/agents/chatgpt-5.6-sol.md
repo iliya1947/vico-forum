@@ -2064,3 +2064,13 @@ Do not treat a user's anger, criticism or request to think as implicit permissio
 - Master SA-04 boundary is preserved; SA-05 deactivate action remains excluded.
 - Granularity gate: Lev's A–S table is not an assignment list. Row A itself is too compound for one Lira handoff and must be split before assignment.
 - No implementation assigned in this review.
+
+
+## 2026-11-11 — SA04-A1 coordinator review
+
+- Reviewed all 7 files of PR #327 exact head `cebb91504f770fa6cd42c4990bb3116aef9b7874`.
+- Verdict: **CHANGES REQUIRED — 1 confirmed current-scope A1 finding**.
+- **SA04-A1-MIRA-01:** production schema manifest still contains `definitionSha256: "PENDING"` for `user_deactivation_state_check`; the repository manifest checker explicitly rejects pending hashes.
+- No other confirmed current-scope A1 defect found in migration/schema/snapshot/journal/Better Auth boundary/tests.
+- Exact-head Actions remain queued; no test PASS claimed.
+- Returned only this bounded correction to Lira.
