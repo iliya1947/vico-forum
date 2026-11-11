@@ -164,6 +164,32 @@ describe("interactive Pages preview", () => {
     expect(await screen.findByRole("status")).toBeInTheDocument();
   });
 
+  it("saves online visibility in Privacy settings and updates the local home presence", async () => {
+    const user = userEvent.setup();
+    render(<EmbeddedPreview scenarioId="section-user" identity="user" />);
+
+    await user.click(screen.getByRole("link", { name: "Settings" }));
+    const settingsOverview = document.querySelector(".settings-overview") as HTMLElement;
+    await user.click(within(settingsOverview).getByRole("link", { name: "Privacy" }));
+
+    const showOnline = await screen.findByRole("checkbox", { name: "Show me online" });
+    expect(showOnline).toBeChecked();
+    await user.click(showOnline);
+    expect(screen.getByText("Off: do not appear in the public online member list or count.")).toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: "Save privacy setting" }));
+    expect(await screen.findByRole("status")).toHaveTextContent("Online visibility saved.");
+    expect(screen.getByRole("checkbox", { name: "Show me online" })).not.toBeChecked();
+
+    const breadcrumbs = document.querySelector(".breadcrumbs") as HTMLElement;
+    await user.click(within(breadcrumbs).getByRole("link", { name: "Home" }));
+
+    const online = await screen.findByRole("heading", { level: 2, name: "Who's online" });
+    const card = online.closest(".home-online-card") as HTMLElement;
+    expect(within(card).queryByRole("link", { name: "Alex" })).not.toBeInTheDocument();
+    expect(within(card).getByRole("link", { name: "Maya Cohen" })).toBeInTheDocument();
+  });
+
   it("edits the signed-in user's profile and keeps the saved preview data", async () => {
     const user = userEvent.setup();
     render(<EmbeddedPreview scenarioId="profile-edit" identity="user" />);
