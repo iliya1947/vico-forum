@@ -66,15 +66,14 @@
 
 ## Актуальный baseline и назначение
 
-- Current main unchanged `538084fd472c65459ad55ab30a0f96fbfdd68e56`; SA-02 implementation/docs fully closed.
-- **SA-03 #324 independent technical whole-PR review PASS — 0 confirmed open current-scope defects**, exact stable `4ad17beae65da338f5efcb2a1596e7fafc3b67c5`, following Mira coordinator PASS on the same head. Full result [#6804234730](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6804234730).
-- **MIRA-01, LEV-01 and LEV-02 CLOSED.** Original signout probe confirms immediate stale-section/form removal before held refresh; original SPA actor-switch probe confirms all four sections visible with first fresh authorized DTO, without another GET/reload.
-- Cumulative 43-file scope refreshed; three latest correction files fully read, other 40 source hashes unchanged. No new confirmed defects. Server/private/target/source/AP10/authz/Settings boundaries preserved.
-- Independent fresh checks: 10 app files /82 tests PASS, 2 native files /9 tests PASS, build/clean migrations0000–0064/actual69-table manifest PASS; checked-in connected Chromium26/26 PASS with original assertions, no page errors/external requests.
-- CI #43075154722, SA03 #43075154724, SA01 #43075154613, AP10 #43075154611 verified SUCCESS on reviewed head.
-- #315 refreshed at `e9f6433c971eefc652bca408455deb70339795c1`; relevant plan/A/E blobs unchanged; separate security remediation/activation remains separate.
-- **Next Mira:** finalize coordinator closeout/route toward Owner merge. PR #324 remains open/Draft/unmerged; no merge or docs closeout performed. Factual docs after implementation merge remain a separate assignment/PR.
-- Lev completed/stopped; Lira/Mark not appointed. SA04+, deactivation, production/Stage6 and deferred journal storage controls remain excluded.
+- Current main `ce62e783e71433a00c2fe4874ee26dfc54614628`; SA-03 implementation #324 and factual docs #326 merged/fully closed.
+- **Current package: SA-04. Technical planning COMPLETE; Mira scope/fit review next.** Full plan [#6806249892](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6806249892) maps accepted full plan #6745289141 onto actual post-SA-03 main.
+- SA-04 scope: server-owned account state, closed active-account enforcement and neutral public identity before serialization. No accessible deactivate command/control; that remains SA-05.
+- Plan specifies one forward user-column/CHECK migration (next available, currently0065), shared typed state/transaction admission and public projection helpers, Better Auth HTTP/direct/session/target-write gates, domain writer coverage, race/retention/privacy and connected acceptance.
+- Bounded author checkpoints A–S are proposed sequentially with STOP. The plan is not a single implementation assignment or authorization to activate incomplete enforcement. Mira reviews scope/fit/granularity before assigning one result.
+- No implementation, schema/migration, dependencies or permanent-doc changes were performed; no implementation tests/PASS claimed.
+- #315 consulted at `dac4b314836e5797f0bd0558f3ea1e37fba14795`; separate security remediation/upgrade/activation remains outside the package.
+- **Next recipient Mira.** Lev completed/stopped; Lira/Mark unassigned. SA-05+, production/Stage6 and deferred journal controls excluded.
 
 ## Handoff — Лира: Stage2 factual documentation closeout
 
@@ -3937,3 +3936,16 @@ These are mandatory pre-action checks for the remainder of #251. The incident re
 - Assigned Lev **package-specific technical planning only** against current post-SA-03 main.
 - Required result: concrete current-repo seams, migration/state model, enforcement/public-projection boundaries, acceptance, and independently safe bounded implementation slices if needed.
 - No implementation assignment. Lira/Mark unassigned; SA-05+, Stage6/production and deferred journal-storage work excluded.
+
+
+## 2026-11-11 — SA-04 package-specific technical plan published; Mira review next
+
+Lev completed source-backed SA-04 planning against unchanged post-SA-03 main `ce62e783e71433a00c2fe4874ee26dfc54614628`. Full plan [#6806249892](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6806249892) published after the developer's explicit publication approval.
+
+- Actual auth/Worker/direct API, account/session schema, public SQL/presenters, repository mutation/finalization, transaction locks and generation-planning seams inspected. Pinned Better Auth1.7.7 installed and official tag sources consulted.
+- Proposed state: three nullable fields in existing user row with consistent active/deactivated triple and UTC minimum-year retention CHECK; no new tables, dependencies, permissions or runtime state writer.
+- Shared active predicate/read/transaction guard must cover old sessions, new session issuance, HTTP/direct auth calls and actual target writes, not just Worker presentation. Preserve existing Better Auth writers/hooks/facts/limiter/linking/cookie semantics. Existing per-actor locks and atomic predicates close authoritative write races without a global lock.
+- Neutral public identity is projected before HTML/.data serialization across canonical profile, content/discovery authors, directory name filtering, mentions/online, notifications and revision authors. Preserve stable IDs/published content; retained private/evidence data remains under its guards. No broad text rewriting/anonymization.
+- Sequential bounded author checkpoints A–S and native/HTTP/direct/browser acceptance specified. No partial enforcement activation; accessible deactivate operation/control and lifecycle event/retention UI remain SA-05.
+- No confirmed product contradiction or required Owner product question found. No source/schema/permanent-doc implementation change or implementation PASS claim made.
+- **Handoff to Mira:** scope/fit and granularity review of the published plan before any implementation assignment. Lev STOP; Lira/Mark unassigned. Preserve current useful work; no SA-05+, Stage6/production, #315 activation/broad remediation or deferred journal-storage work.
