@@ -4,9 +4,9 @@
 
 1. Служебный PR: **#315**.
 2. Моя текущая работа: audit/coordination only; remediation и implementation не назначены.
-3. Текущий этап: **Block E completed; awaiting Block F scope/setup**.
+3. Текущий этап: **Block E completed; awaiting SA-02 delta-recheck of affected Blocks A/B**.
 4. Technical audit target B–D: `e279cb6c032a489a9044ca1191407df887c364b4`.
-5. Current `main` `f6fd4b2c031b2132b04eace18704a59aed1dfec8` отличается от audit target только `AGENTS.md`; audited application code не менялся.
+5. Current `main` — `4248fed23925e4a23e48485d419ceaf0ce337def`. SA-02 #319 изменил Super-admin/Owner monitoring, `app/auth/auth.server.ts`, shared Worker observability и migration `0063`; поэтому ранее завершённые Blocks A/B требуют bounded delta-recheck перед продолжением новой области.
 6. Лира, Марк и Лёва по #315 сейчас не назначены.
 
 ## Где читать состояние
@@ -42,5 +42,5 @@
 
 ## Следующий шаг
 
-1. После продолжения владельца подготовить отдельный **Block F — Files & attachments** audit file/scope и начать его первый bounded subtask.
+1. После продолжения владельца выполнить bounded **SA-02 delta-recheck Blocks A/B** на current `main`; после него перейти к отдельному **Block F — Files & attachments**.
 2. Findings только фиксировать; remediation не начинать.
