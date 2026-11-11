@@ -1,15 +1,14 @@
 # Admin panel — current workflow
 
-- Service PR: **#251**. Developer explicitly authorized publication of review reports and service-state updates for the whole SA-04.
-- SA-03 is closed; **SA04-A1 merged in main**, PR #327 closed/merged at `593a03964b8407b249f7c9f5eb117ddb8b07736d`.
-- **Current stage: SA04-A3 assigned to Lira in cumulative Draft #328; A2 checkpoint PASS remains accepted.**
-- Base/current `main`: `593a03964b8407b249f7c9f5eb117ddb8b07736d`.
-- Current cumulative Draft implementation **PR #328**, stable exact head `f9da2033455487f25510c2ccbbb748ed5f4bf7f4`, still open/Draft, not merged.
-- A2 delivered only `db/account-state.ts` (server-only Drizzle/native active SQL predicate, typed readonly active/deactivated/missing lookup on caller-owned PG connection, readonly assert and distinct unavailable/unexpected classifications) and `tests/database/account-state.test.ts` (six native PG17 read/predicate/error/transaction tests).
-- Personal author inspection of both complete files and final exact diff performed, covering correct nullable state semantics, fail-closed error handling, parameterized SQL, no row lock or write, no auth/writer integration and no accidental extra scope. This is not coordinator/independent review.
-- **Exact-head [CI #43109939829](https://github.com/iliya1947/vico-forum/actions/runs/43109939829) SUCCESS:** 2237/2237 application tests, 696/696 native PostgreSQL17 tests (6 new A2), 69-table schema manifest parity, lint/typecheck/build/migration metadata/Worker smoke.
-- **Active recipient: Lira — SA04-A3 only.** Extend #328 with the transaction/row-lock mutation guard primitive, publish stable exact head/evidence and author inspection, then STOP. A4 is not assigned.
-- No runtime auth/session gate, domain writer integration, neutral/public identity projection, deactivate operation/control, SA05+, Stage6/production, #315 remediation, owner visual/deployed acceptance or package merge is asserted.
+- Service PR **#251**; owner authorization to publish SA-04 reports/service-state persists.
+- SA-03 closed; **SA04-A1 merged** at main `593a03964b8407b249f7c9f5eb117ddb8b07736d`. Prior SA04-A2 checkpoint **Mira PASS** on `f9da2033455487f25510c2ccbbb748ed5f4bf7f4`.
+- **Current checkpoint: SA04-A3 author COMPLETE; Lira STOP. Next recipient: Mira for A3 bounded checkpoint/scope review**, then one separately assigned next result.
+- Cumulative implementation [Draft #328](https://github.com/iliya1947/vico-forum/pull/328), base `593a03964b8407b249f7c9f5eb117ddb8b07736d`, stable exact **head `0725b49dc9d9e36152670dac8368d0f83e714c82`**; open, unmerged.
+- Exactly two files cumulatively: `db/account-state.ts`, `tests/database/account-state.test.ts`. A2 retains typed read, Drizzle/native predicate, readonly assertion and classified failures. A3 adds **`assertActiveAccountForMutation` with `FOR NO KEY UPDATE`** on the same caller-owned PostgreSQL transaction; the row lock remains through that transaction's commit/rollback. Existing same-transaction user lock is reused. No state mutation or transaction management by the helper.
+- **Author reviewed entire cumulative A2+A3 code/diff and boundary**, including SQL and lock lifetime, 4 added native PG17 concurrency cases (competing UPDATE order, existing lock, FK KEY SHARE compatibility), and preserved A2 behavior. This is not Mira/Lev independent review.
+- **Exact-head [CI #43112202261](https://github.com/iliya1947/vico-forum/actions/runs/43112202261) SUCCESS**: 2237/2237 app tests, 700/700 native PG17 tests (10/10 account-state), 69-table manifest parity, lint/typecheck/build/preview/migration/Worker smoke.
+- **Mira next:** verify A3 only against its bounded contract, then determine a separate next handoff. A4 neutral public-identity contract/helpers remains an unassigned future checkpoint; **Lev independent technical whole-PR review not yet scheduled**. Do not merge cumulative Draft as closed SA-04.
+- No auth/session, writer, authorization/Settings/attachments integration; no neutral/public projection, deactivation control, A4+, SA05+, Stage6/production, #315 remediation or docs closeout.
 
 ## Mandatory author verification
 
@@ -78,3 +77,10 @@ Before any project-changing action or agent handoff, Mira must check in this ord
 - Continue cumulative Draft #328. Lira author-inspects A2+A3, publishes stable head/evidence and STOP.
 - A4 and all later SA04 checkpoints remain unassigned. Lev remains unassigned.
 
+
+## 2026-11-12 — SA04-A3 author checkpoint complete; Lira STOP
+
+- Merged main A1 unchanged; Mira A2 checkpoint PASS preserved.
+- Cumulative Draft #328 exact head `0725b49dc9d9e36152670dac8368d0f83e714c82`: `FOR NO KEY UPDATE` mutation guard and four PG17 concurrency cases in same two files, no runtime integration.
+- Personally inspected complete cumulative two-file code/diff. Exact-head CI #43112202261 PASS (2237 app + 700 native PG17, 69-table parity, build/typecheck/lint).
+- Next Mira A3 checkpoint/scope review only. Lira STOP. A4/Lev unassigned, Draft/unmerged.
