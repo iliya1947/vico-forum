@@ -3,6 +3,8 @@ import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/re
 import { I18nextProvider } from "react-i18next";
 import { RouterProvider, createMemoryRouter } from "react-router";
 import { createInstance } from "i18next";
+import { createContext, useContext } from "react";
+import type { ProfilePrivilegedSections } from "../profile/sections";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { canonicalEnglishCatalog } from "../localization/catalog";
 import { ProfileView } from "./profile-view";
@@ -134,6 +136,60 @@ describe("SA03 canonical profile protected sections", () => {
     expect(root.container.textContent).not.toContain("owner-private@example.test");
     root.unmount();
     signOut.mockRestore();
+  });
+  it("restores a fresh Owner snapshot after HeaderAuth catches up, never resurrecting an old one", async () => {
+    const i18n = createInstance();
+    void i18n.init({ lng: "en", initAsync: false, resources: {
+      en: { common: Object.fromEntries(Object.entries(canonicalEnglishCatalog.common)
+        .map(([key, value]) => [key, value.source])) },
+    }, defaultNS: "common" });
+    const Sections = createContext<ProfilePrivilegedSections>({});
+    function Detail() {
+      return <ProfileView locale="en" profile={profile} privileged={useContext(Sections)} />;
+    }
+    const router = createMemoryRouter([{ path: "*", element: <Detail /> }],
+      { initialEntries: ["/en/users/owner"] });
+    const loaded: ProfilePrivilegedSections = { viewerId: "exact-owner",
+      measures: { status: "ready", value: [] },
+      authorization: { status: "ready", value: auth as never },
+      owner: { viewerId: "exact-owner", account: { status: "ready", value: account },
+        history: { status: "ready", value: history } },
+    };
+    const tree = (actorId: string | null, sections: ProfilePrivilegedSections) =>
+      <I18nextProvider i18n={i18n}>
+        <HeaderAuthProvider initialUser={actorId ? { id: actorId, name: actorId } : null}>
+          <Sections.Provider value={sections}><RouterProvider router={router} /></Sections.Provider>
+        </HeaderAuthProvider>
+      </I18nextProvider>;
+    const root = render(tree("ordinary-member", {}));
+    expect(root.container.querySelector("#owner-account,#authorization")).toBeNull();
+
+    // A new loader snapshot arrives before the HeaderAuthProvider useEffect updates user.
+    root.rerender(tree("exact-owner", loaded));
+    await waitFor(() => expect(root.container.querySelector("#owner-account"))
+      .toHaveTextContent("owner-private@example.test"));
+    expect(root.container.querySelector("#measures,#authorization,#owner-history")).not.toBeNull();
+    expect(root.container.querySelectorAll("#authorization form").length).toBeGreaterThan(0);
+
+    // Known sign-out must invalidate the already-presented snapshot immediately.
+    root.rerender(tree(null, loaded));
+    await waitFor(() => expect(root.container.querySelector('.auth-controls[data-state="guest"]'))
+      .toBeTruthy());
+    expect(root.container.querySelector("#measures,#authorization,#owner-account,#owner-history"))
+      .toBeNull();
+    root.rerender(tree("exact-owner", loaded));
+    await waitFor(() => expect(root.container.querySelector('.auth-controls[data-state="signed-in"]'))
+      .toBeTruthy());
+    expect(root.container.querySelector("#measures,#authorization,#owner-account,#owner-history"))
+      .toBeNull();
+
+    // The next independently loaded authorized DTO restores current sections.
+    root.rerender(tree("exact-owner", { ...loaded }));
+    await waitFor(() => expect(root.container.querySelector("#owner-account"))
+      .toHaveTextContent("owner-private@example.test"));
+    expect(root.container.querySelector("#authorization")).toBeTruthy();
+    root.unmount();
+    router.dispose();
   });
   it("does not keep the old private edit draft or feedback on viewer mismatch", () => {
     const root=show({

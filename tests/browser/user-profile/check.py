@@ -654,6 +654,50 @@ try:
         expect(owner.locator("#owner-account")).to_contain_text(target_email)
         expect(owner.locator("#authorization form")).not_to_have_count(0)
         record("fresh-authorized-loader-restores-owner-profile")
+
+        # LEV-02: the same mounted ProfileView must recover fresh Owner data during
+        # SPA account switch, even though HeaderAuth synchronizes one effect later.
+        # This uses real Better Auth session rows, the built Worker and page links.
+        rebound_session = rebound[0]["id"]
+        document_requests = []
+        def track_document(request):
+            if request.resource_type == "document" and request.url.startswith(base + "/"):
+                document_requests.append(request.url)
+        owner.on("request", track_document)
+        try:
+            # Owner -> member: no previous Owner sections may survive the fresh read.
+            sql('update "session" set user_id=$1 where id=$2',
+                [unrelated_id, rebound_session])
+            with owner.expect_response(lambda response: ".data" in response.url
+                    and response.url.startswith(base + "/en/users/")) as member_read:
+                owner.locator(".auth-user").click()
+            assert member_read.value.status == 200
+            owner.wait_for_url(base + owner_path)
+            expect(owner.locator(".auth-user")).to_contain_text("SA03 unrelated")
+            expect(owner.locator("#owner-account,#owner-history,#authorization,#measures")).to_have_count(0)
+            assert unrelated_email not in owner.locator("body").inner_text()
+
+            # Member -> Owner: the first fresh authorized .data must restore all
+            # sections after HeaderAuth catches up, without a second GET or reload.
+            sql('update "session" set user_id=$1 where id=$2',
+                [owner_id, rebound_session])
+            with owner.expect_response(lambda response: ".data" in response.url
+                    and response.url.startswith(base + "/en/users/")) as owner_read:
+                owner.locator(".auth-user").click()
+            assert owner_read.value.status == 200
+            owner.wait_for_url(base + other_path)
+            expect(owner.locator(".auth-user")).to_contain_text("SA03 Bound Owner")
+            expect(owner.locator("#owner-account")).to_contain_text(unrelated_email)
+            expect(owner.locator("#owner-history")).to_have_count(1)
+            expect(owner.locator("#authorization form")).not_to_have_count(0)
+            expect(owner.locator("#measures")).to_have_count(1)
+            expect(owner.locator(".admin-result-success")).to_have_count(0)
+            assert not document_requests, ("unexpected document reload", document_requests)
+            record("real-spa-actor-switch-recovers-first-fresh-owner-dto")
+        finally:
+            owner.remove_listener("request", track_document)
+            sql('update "session" set user_id=$1 where id=$2',
+                [owner_id, rebound_session])
         assert not page_errors, page_errors
         assert not external, external
         record("no-browser-page-errors-or-external-requests")

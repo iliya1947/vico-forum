@@ -34,21 +34,24 @@ export function ProfileView({ locale, profile, isSelf = false, canEditProfile = 
   const role = roleKey ? t(roleKey) : profile.role.displayName;
   const github = safeHttpUrl(profile.githubUrl);
   const website = safeHttpUrl(profile.websiteUrl);
-  // An acknowledged sign-out updates HeaderAuth before the profile loader returns.
-  // Once invalidated, a snapshot cannot reappear even if the same viewer signs in again.
-  const snapshot = useRef(privileged);
-  const invalidated = useRef(false);
-  if (snapshot.current !== privileged) {
-    snapshot.current = privileged;
-    invalidated.current = false;
+  // The parent HeaderAuth local state may lag behind a newly loaded actor during SPA
+  // navigation. Hide a new snapshot until viewers match; invalidate permanently only
+  // after that same snapshot has been presented to its authenticated viewer.
+  const snapshot = useRef({
+    privileged, targetId: profile.id, isSelf, matched: false, invalidated: false,
+  });
+  if (snapshot.current.privileged !== privileged ||
+      snapshot.current.targetId !== profile.id || snapshot.current.isSelf !== isSelf) {
+    snapshot.current = { privileged, targetId: profile.id, isSelf, matched: false, invalidated: false };
   }
-  if (!currentSessionUser || (privileged.viewerId && privileged.viewerId !== currentSessionUser.id)) {
-    invalidated.current = true;
-  }
-  const currentIsSelf = isSelf && currentSessionUser?.id === profile.id;
+  const expectedViewer = privileged.viewerId ?? (isSelf ? profile.id : null);
+  const matchesViewer = !!expectedViewer && currentSessionUser?.id === expectedViewer;
+  if (snapshot.current.matched && !matchesViewer) snapshot.current.invalidated = true;
+  if (matchesViewer && !snapshot.current.invalidated) snapshot.current.matched = true;
+  const currentSnapshot = matchesViewer && !snapshot.current.invalidated;
+  const currentIsSelf = isSelf && currentSnapshot && currentSessionUser?.id === profile.id;
   const visiblePrivileged: ProfilePrivilegedSections =
-    currentSessionUser && !invalidated.current && privileged.viewerId === currentSessionUser.id
-      ? privileged : {};
+    currentSnapshot && privileged.viewerId === currentSessionUser?.id ? privileged : {};
   const visibleFeedback = currentIsSelf ? feedback : undefined;
   const fields = visibleFeedback?.draft ?? profile;
   // The exact bound Owner self-view reads AP-10 through ownList, never adminTarget.
