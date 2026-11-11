@@ -25,3 +25,11 @@ Before any project-changing action or agent handoff, Mira must check in this ord
 3. **Granularity:** if handing work to Lira, is there exactly one independently completable bounded result?
 4. **Preservation:** does the proposed recovery preserve already-useful work instead of discarding/reimplementing it without necessity?
 5. Only after all four checks pass may Mira act. If any check fails, do not perform the action; correct the route first.
+
+## Lev review granularity
+
+- Lira implementation granularity and Lev review granularity are different constraints.
+- Keep Lira handoffs small and bounded.
+- Prefer Lev independent review on a meaningful cumulative stable slice/package, not on every tiny author checkpoint, when the workflow allows waiting without losing a required gate.
+- Do not waste an independent review already in progress: if Lev PASSes the current stable bounded PR and it is otherwise ready, close that PR rather than extending it and later making Lev repeat substantially the same review.
+
