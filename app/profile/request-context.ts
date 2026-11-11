@@ -3,11 +3,13 @@ import { authSessionForRequest } from "../auth/request-context";
 import { authorizationOwnerContext } from "../authorization/request-context";
 import { isBoundOwner } from "../authorization/owner";
 import type { OwnerUserProfileReader, OwnerUserProfileSnapshot } from "../../db/owner-user-profile";
+import type { OwnerUserHistoryReader, OwnerUserHistoryPage } from "../../db/owner-user-history";
 
-export const ownerProfileContext = createContext<OwnerUserProfileReader>();
+export const ownerProfileContext = createContext<OwnerUserProfileReader & OwnerUserHistoryReader>();
 
 export interface AuthorizedOwnerProfileReader {
   readTarget(targetId: string, before?: string): Promise<OwnerUserProfileSnapshot | null>;
+  readHistory(targetId: string, before?: string): Promise<OwnerUserHistoryPage>;
 }
 
 /**
@@ -23,5 +25,6 @@ export function ownerProfileForRequest(context: RouterContextProvider): Authoriz
     readTarget: (targetId, before) => reader.readTarget({
       targetId, viewerUserId: session.user.id, currentSessionId: session.session.id, before,
     }),
+    readHistory: (targetId, before) => reader.readHistory(targetId, before),
   };
 }
