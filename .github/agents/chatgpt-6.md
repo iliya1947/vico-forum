@@ -1,3 +1,11 @@
+# Лира — active assignment: SA03-DOC-A only
+
+- Start a fresh docs-only PR from current `main`.
+- Update **only `PROJECT_STATE.md`** so current factual state matches merged SA-03 implementation #324.
+- Preserve current Stage boundaries; do not start or document SA-04+, deactivation, Stage6/production, #315 activation, broad security remediation or deferred journal-storage work as delivered.
+- Publish the PR and exact head, then **STOP** for Mira review.
+- Do not continue to any other documentation file in this turn.
+
 # Лира — SA03-IMPL-LEV-02 author correction completed, 2026-11-11 (STOP)
 
 - Implementation [Draft #324](https://github.com/iliya1947/vico-forum/pull/324), unchanged `main` base `538084fd472c65459ad55ab30a0f96fbfdd68e56`, new exact **stable head `4ad17beae65da338f5efcb2a1596e7fafc3b67c5`**. Mira's accepted LEV-02 finding on previous head `d7a526a...` corrected only in three SA03 files.
