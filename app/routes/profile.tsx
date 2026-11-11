@@ -1,4 +1,5 @@
-import { data, redirect, useActionData, useLoaderData, type RouterContextProvider } from "react-router";
+import { data, redirect, useActionData, useLoaderData, useLocation, useNavigate, useRouteError, isRouteErrorResponse, type RouterContextProvider } from "react-router";
+import { useEffect, useRef } from "react";
 import { authSessionForRequest } from "../auth/request-context";
 import { measureRestrictionsForPresentation } from "../measures/presentation.server";
 import { forumReaderForRequest, forumWriterForRequest } from "../forum/request-context";
@@ -82,4 +83,17 @@ export async function action({ request, params, context }: ProfileArgs) {
 export default function ProfileRoute() {
   return <ProfileView {...useLoaderData<typeof loader>()} feedback={useActionData<typeof action>()} />;
 }
-export const ErrorBoundary = ForumRouteError;
+export function ErrorBoundary() {
+  const error = useRouteError();
+  const location = useLocation();
+  const navigate = useNavigate();
+  const recoveryAttempted = useRef(false);
+  const revoked = isRouteErrorResponse(error) && (error.status === 401 || error.status === 403);
+  useEffect(() => {
+    if (!revoked || recoveryAttempted.current) return;
+    recoveryAttempted.current = true;
+    // A new GET refreshes actor and permissions. Never replay the rejected POST.
+    void navigate(location.pathname + location.search + location.hash, { replace: true });
+  }, [revoked, location.pathname, location.search, location.hash, navigate]);
+  return <ForumRouteError />;
+}
