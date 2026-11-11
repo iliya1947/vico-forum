@@ -62,6 +62,7 @@
 
 ## Открыто
 
-1. **Block E completed.** Следующая область общей security-карты — **Block F / Files & attachments**; отдельный Block F файл ещё не создан.
-2. Current `main` contains merged SA-02 / migration `0063`, while current `PROJECT_STATE.md` and `ROADMAP.md` still describe SA-02+ as not implemented / migrations through `0062`. Это отдельное docs-state противоречие вне Block E.
-3. Лира, Лёва и Марк сейчас не имеют активного назначения по #315.
+1. **Block E completed.** До перехода к Block F нужен bounded **delta-recheck Blocks A/B**: current `main` SA-02 #319 изменил Super-admin/Owner monitoring и authentication runtime (`app/auth/auth.server.ts`, Worker observability hooks), то есть код областей, проверенных до этого merge.
+2. После delta-recheck следующая новая область общей security-карты — **Block F / Files & attachments**; отдельный Block F файл ещё не создан.
+3. Current `main` contains merged SA-02 / migration `0063`, while current `PROJECT_STATE.md` and `ROADMAP.md` still describe SA-02+ as not implemented / migrations through `0062`. Это отдельное docs-state противоречие вне Block E.
+4. Лира, Лёва и Марк сейчас не имеют активного назначения по #315.
