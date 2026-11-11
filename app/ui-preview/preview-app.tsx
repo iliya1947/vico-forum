@@ -21,6 +21,7 @@ import {
 import type { HomepageCategoryOverview } from "../forum/homepage";
 import { UnderDevelopmentView } from "../forum/under-development-view";
 import { ProfileView } from "../forum/profile-view";
+import { forumTopicPath } from "../forum/paths";
 import { ForumRouteError } from "../forum/ui";
 import {
   AttentionCenterView,
