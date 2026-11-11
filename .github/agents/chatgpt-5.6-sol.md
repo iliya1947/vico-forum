@@ -4,7 +4,7 @@
 
 1. Служебный PR: **#315**.
 2. Моя текущая работа: audit/coordination only; remediation и implementation не назначены.
-3. Текущий этап: **Block G G1 PASS; G2 `DB-SEARCHPATH-01 Low/P3`; G3 `DB-ACL-USER-DELETE-01 Low/P3`; G4 `DB-RUNTIME-EVIDENCE-01 Low/P3`; G5 PASS; G6 `DB-TEST-TARGET-01 Low/P3`; следующий bounded slice — G7 Manifest, evidence and drift detection**.
+3. Текущий этап: **Block G G1 PASS; G2 `DB-SEARCHPATH-01 Low/P3`; G3 `DB-ACL-USER-DELETE-01 Low/P3`; G4 `DB-RUNTIME-EVIDENCE-01 Low/P3`; G5 PASS; G6 `DB-TEST-TARGET-01 Low/P3`; G7 PASS; следующий bounded slice — G8 Cross-chain closeout**.
 4. Technical audit target B–D: `e279cb6c032a489a9044ca1191407df887c364b4`.
 5. Current `main` — `538084fd472c65459ad55ab30a0f96fbfdd68e56`. SA-02 docs closeout merged; compare с `4248fed…` показывает только 8 Markdown changes, attachment runtime/schema unchanged.
 6. Лира, Марк и Лёва по #315 сейчас не назначены.
@@ -75,7 +75,13 @@
 48. Наиболее тяжёлый подтверждённый impact: `tests/database/migrations.test.ts` после такого bypass выполняет `DROP SCHEMA drizzle CASCADE` и `DROP SCHEMA public CASCADE`. Нужен внешний DB target с именем `*_test` и контроль process `DATABASE_URL`; public/production auto-path не установлен, поэтому Low/P3.
 49. PR CI и Worker pre-rollout verification задают фиксированный loopback `vico_forum_test`; production migration workflow destructive test helpers не вызывает. `db:migrate` отдельным finding не считается: external target появляется только из явно переданного URL, а production path обёрнут dedicated pre/post gates.
 50. G6 tests не запускались и external DB mutation не выполнялась. Live external applicability: **Информация не проверена**.
-51. Подтверждённые findings не исправлять автоматически: сначала отдельная bounded remediation-задача по решению владельца и текущему Stage.
+51. Block G G7: **PASS, 0 additional findings**. Structural manifest deep-compares 69 tables + 9 trigger functions + 18 triggers for current repository schema; current accepted external `0000–0020` range has no additional view/type/RLS/policy/rule/explicit-sequence object outside that captured model.
+52. Runtime privilege verifier compares complete end state for localization/web roles and PUBLIC, including unexpected grants, memberships, ownership, columns/functions/default ACLs and sequences.
+53. Live GitHub evidence run `36270353184` rechecked: manual production-db migration on main, exact SHA `b172264…`, attempt 1, success. Its journal ends at `0020`, prefix equals current `0000–0020`, and the SHA is ancestor of current main by 163 commits.
+54. G7 повторно подтверждает `DB-RUNTIME-EVIDENCE-01`: current evidence verifier proves only the repository-authored required tag, not exact runtime minimum schema/current manifest target. Duplicate finding не создаётся.
+55. Current source-of-truth не заявляет, что production соответствует `0063`; mutable production schema/ACL: **Информация не проверена**. Identity/sequence properties, появившиеся после `0020`, вернуть в acceptance scope перед их external rollout; сейчас это future Stage-6 boundary, не finding.
+56. G7 repository tests не запускались; production/Cloudflare/Neon mutation не выполнялась.
+57. Подтверждённые findings не исправлять автоматически: сначала отдельная bounded remediation-задача по решению владельца и текущему Stage.
 
 ## Ограничения
 
@@ -87,5 +93,5 @@
 
 ## Следующий шаг
 
-1. После продолжения владельца выполнить **G7 — Manifest, evidence and drift detection** на current main и остановиться после результата.
+1. После продолжения владельца выполнить **G8 — Cross-chain closeout** на current main и остановиться после результата.
 2. Findings только фиксировать; remediation не начинать.
