@@ -157,14 +157,14 @@ describe("SA-01 Owner-only UI/locale navigation", () => {
   });
 
   it("offers the Owner account/profile entry only on the signed-in Owner's own profile", () => {
-    const own = mount("en", <ProfileView locale="en" profile={profile} isOwner canEditProfile={false}/>);
+    const own = mount("en", <ProfileView locale="en" profile={profile} isSelf canEditProfile={false}/>);
     expect(own.container.querySelector('a[href="/en/super-admin"]')).not.toBeNull();
     own.unmount(); own.router.dispose();
     const other = mount("en", <ProfileView locale="en" profile={{ ...profile, id: "someone-else" }}
-      isOwner={false} canEditProfile={false}/>);
+      isSelf={false} canEditProfile={false}/>);
     expect(other.container.querySelector('a[href="/en/super-admin"]')).toBeNull();
     other.unmount(); other.router.dispose();
-    const unbound = mount("en", <ProfileView locale="en" profile={profile} isOwner canEditProfile={false}/>, false);
+    const unbound = mount("en", <ProfileView locale="en" profile={profile} isSelf canEditProfile={false}/>, false);
     try { expect(unbound.container.querySelector('a[href="/en/super-admin"]')).toBeNull(); }
     finally { unbound.router.dispose(); }
   });
@@ -182,7 +182,7 @@ describe("SA-01 Owner-only UI/locale navigation", () => {
     admin.unmount(); admin.router.dispose();
 
     const own = mount("en", <AdministrativeRoutingProvider routing={routing}>
-      <ProfileView locale="en" profile={profile} isOwner canEditProfile={false}/>
+      <ProfileView locale="en" profile={profile} isSelf canEditProfile={false}/>
     </AdministrativeRoutingProvider>);
     expect(own.container.querySelector('a[href="https://owner.invalid/en/control"]')).not.toBeNull();
     own.unmount(); own.router.dispose();

@@ -1143,6 +1143,8 @@ export const forumAttachmentSecurityEvents = pgTable(
   (table) => [
     unique("forum_attachment_security_events_upload_id_unique").on(table.uploadId),
     index("forum_attachment_security_events_created_idx").on(table.createdAt, table.id),
+    index("forum_attachment_security_events_uploader_created_idx")
+      .on(table.uploadedByUserId, table.createdAt.desc(), table.id.desc()),
   ],
 );
 
@@ -1794,6 +1796,9 @@ export const adminHistory = pgTable("admin_history", {
 }, table => [
   uniqueIndex("admin_history_order_idx").on(table.position.desc()),
   index("admin_history_timeline_idx").on(table.occurredAt.desc(), table.id.desc()),
+   index("admin_history_actor_occurred_idx").on(table.actorId, table.occurredAt.desc(), table.id.desc()),
+   index("admin_history_target_occurred_idx").on(table.targetType, table.targetId,
+     table.occurredAt.desc(), table.id.desc()),
   check("admin_history_action_target_check", sql`(
     ${table.action} in ('role.created', 'role.renamed', 'role.deleted', 'role.grantsChanged') and ${table.targetType} = 'role'
   ) or (${table.action} in ('user.roleAssigned', 'user.overrideChanged') and ${table.targetType} = 'user')
@@ -1836,6 +1841,8 @@ export const ownerEvents = pgTable("owner_events", {
   index("owner_events_actor_idx").on(t.actorUserId, t.position.desc()),
   index("owner_events_target_idx").on(t.targetUserId, t.position.desc()),
   index("owner_events_timeline_idx").on(t.occurredAt.desc(), t.id.desc()),
+   index("owner_events_actor_occurred_idx").on(t.actorUserId, t.occurredAt.desc(), t.id.desc()),
+   index("owner_events_target_occurred_idx").on(t.targetUserId, t.occurredAt.desc(), t.id.desc()),
 ]);
 
 /** Retained measured states are samples, never reconstructed domain events. */
@@ -1884,6 +1891,7 @@ export const ownerAttemptPatterns = pgTable("owner_attempt_patterns", {
     t.surface, t.operation, t.outcome, t.httpStatus, t.directCode,
   ).nullsNotDistinct(),
   index("owner_attempt_patterns_timeline_idx").on(t.admittedAt.desc(), t.id.desc()),
+   index("owner_attempt_patterns_actor_admitted_idx").on(t.actorUserId, t.admittedAt.desc(), t.id.desc()),
   index("owner_attempt_patterns_epoch_idx").on(t.recordingEpochStart, t.pool),
   check("owner_attempt_patterns_epoch_check",
     sql`${t.recordingEpochStart} = date_trunc('hour', ${t.recordingEpochStart}, 'UTC')`),

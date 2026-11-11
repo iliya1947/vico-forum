@@ -16,6 +16,7 @@ import {
   type AuthSession,
 } from "./request-context";
 import { createRegistrationAdmission } from "./registration-admission";
+import { safeDeviceLabel } from "./session-label";
 import {
   account,
   betterAuthUserAdditionalFields,
@@ -276,15 +277,6 @@ function translateSecurityError(error: unknown): never {
     throw new AccountSecurityError("unauthenticated");
   }
   throw error;
-}
-
-function safeDeviceLabel(agent: unknown): string {
-  if (typeof agent !== "string") return "Unknown device";
-  const label = Array.from(agent, character => {
-    const code = character.charCodeAt(0);
-    return code < 32 || code === 127 ? " " : character;
-  }).join("").trim().slice(0, 160);
-  return label || "Unknown device";
 }
 
 async function hasCredentialPassword(database: NodePgDatabase, userId: string): Promise<boolean> {

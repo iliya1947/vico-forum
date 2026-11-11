@@ -1,31 +1,15 @@
 import { useAdministrativeRouting } from "../administrative-routing/provider";
-import { Form, Link, useFetcher, useRevalidator } from "react-router";
+import { Form, Link } from "react-router";
 import { useTranslation } from "react-i18next";
 import type { AdminBrowsePage, AdminBrowseQuery } from "../../db/admin-forum";
 import type { AdminUserSummary } from "../../db/admin-users";
 import { ForumAvatar } from "../forum/avatar";
 import { forumProfilePath } from "../forum/paths";
-import { safeHttpUrl } from "../forum/profile";
 import type { AdminAccess } from "./access";
-import type { AuthorizationUserManagementState } from "../../db/authorization-repository";
-import type { PermissionKey } from "../authorization/catalog";
-import type { AuthorizationFailure } from "../authorization/admin-view";
-import { AuthorizationUserControls } from "../authorization/user-controls";
 import { AdminShell } from "./shell";
 import { TechnicalDetails } from "../settings/technical-details";
 import { useHeaderAuthUser } from "../auth/auth-controls";
-import { adminUserPath, adminUsersPath, adminUsersBrowsePath } from "./users-paths";
-import { adminMeasuresPath } from "../measures/paths";
-import { canonicalAuthorizationPath } from "../settings/paths";
-
-export interface AdminUserDetailData extends AdminUserSummary {
-  bio: string;
-  githubUrl: string | null;
-  websiteUrl: string | null;
-  role: { slug: string; displayName: string; isSystem: boolean };
-  messageCount: number;
-  bestAnswerCount: number;
-}
+import { adminUsersPath, adminUsersBrowsePath } from "./users-paths";
 
 function Joined({ date, locale }: { date: string; locale: string }) {
   const { t } = useTranslation("common");
@@ -53,15 +37,14 @@ export function AdminUsersIndex({ locale, access, query, page }: {
       <p>{t("adminUsersMatches")}: {new Intl.NumberFormat(locale).format(page.total)}</p>
       {page.items.length ? <ul className="admin-forum-objects">
         {page.items.map(user => <li key={user.id}>
-          <h3><Link to={adminUserPath(locale, user.id, routing)}><bdi dir="auto">{user.name}</bdi></Link></h3>
+          <h3><Link to={forumProfilePath(locale, user.id)}><bdi dir="auto">{user.name}</bdi></Link></h3>
           <ForumAvatar name={user.name} image={user.image} className="profile-avatar" />
           <TechnicalDetails accountId={accountId}><bdi dir="ltr">{user.id}</bdi></TechnicalDetails>
           <p><Joined date={user.joinedAt} locale={locale}/></p>
           <nav aria-label={t("quickActions")}>
-            <Link to={adminUserPath(locale, user.id, routing)}>{t("adminUsersView")}</Link>{" · "}
-            <Link to={forumProfilePath(locale, user.id)}>{t("adminUsersPublicProfile")}</Link>
+            <Link to={forumProfilePath(locale, user.id)}>{t("adminUsersView")}</Link>
             {access.canManageAuthorization ? <>{" · "}
-              <Link to={adminUserPath(locale, user.id, routing) + "#authorization"}>{t("authorizationNav")}</Link>
+              <Link to={forumProfilePath(locale, user.id) + "#authorization"}>{t("authorizationNav")}</Link>
             </> : null}
           </nav>
         </li>)}
@@ -74,93 +57,3 @@ export function AdminUsersIndex({ locale, access, query, page }: {
   </AdminShell>;
 }
 
-export function AdminUserDetail({ locale, access, user, management, managerActorId,
-  permissions, canManageElevated = false, canMutateAuthorization = false }: {
-  locale: string; access: AdminAccess; user: AdminUserDetailData;
-  management?: AuthorizationUserManagementState;
-  managerActorId?: string;
-  permissions?: readonly PermissionKey[];
-  canManageElevated?: boolean;
-  canMutateAuthorization?: boolean;
-}) {
-  const { t } = useTranslation("common");
-  const header = useHeaderAuthUser();
-  const accountId = access.actorId && header?.id === access.actorId ? access.actorId : null;
-  const routing = useAdministrativeRouting();
-  const github = safeHttpUrl(user.githubUrl), website = safeHttpUrl(user.websiteUrl);
-  const roleKey = user.role.isSystem
-    ? ({ user: "profileRoleUser", moderator: "profileRoleModerator", admin: "profileRoleAdmin" } as const)[user.role.slug as "user" | "moderator" | "admin"]
-    : undefined;
-  const role = roleKey ? t(roleKey) : user.role.displayName;
-  return <AdminShell locale={locale} access={access} current="users">
-    <section className="admin-forum" aria-labelledby="admin-user-detail-heading">
-      <nav className="admin-forum-trail" aria-label={t("adminNavigation")}>
-        <Link to={adminUsersPath(locale,routing)}>{t("adminUsers")}</Link>
-        <span aria-current="page"><bdi dir="auto">{user.name}</bdi></span>
-      </nav>
-      <h2 id="admin-user-detail-heading">{t("adminUsersDetail")}</h2>
-      <div className="profile-identity">
-        <ForumAvatar name={user.name} image={user.image} className="profile-avatar" />
-        <div className="profile-identity-copy"><h3><bdi dir="auto">{user.name}</bdi></h3>
-          <TechnicalDetails accountId={accountId}><bdi dir="ltr">{user.id}</bdi></TechnicalDetails></div>
-      </div>
-      <dl className="profile-statistics">
-        <div><dt>{t("profileJoined")}</dt><dd><time dateTime={user.joinedAt}>{new Intl.DateTimeFormat(locale, {
-          year: "numeric", month: "short", day: "numeric", timeZone: "UTC",
-        }).format(new Date(user.joinedAt))}</time></dd></div>
-        <div><dt>{t("assignedRole")}</dt><dd><bdi dir="auto">{role}</bdi></dd></div>
-        <div><dt>{t("profileMessages")}</dt><dd>{new Intl.NumberFormat(locale).format(user.messageCount)}</dd></div>
-        <div><dt>{t("profileBestAnswers")}</dt><dd>{new Intl.NumberFormat(locale).format(user.bestAnswerCount)}</dd></div>
-      </dl>
-      <section className="profile-about">
-        <h3>{t("profileBio")}</h3><p dir="auto">{user.bio || t("profileNoBio")}</p>
-        {(github || website) ? <nav className="profile-links" aria-label={t("profileLinks")}>
-          {github ? <a href={github} rel="nofollow ugc noreferrer">GitHub</a> : null}
-          {website ? <a href={website} rel="nofollow ugc noreferrer">{t("profileWebsite")}</a> : null}
-        </nav> : null}
-      </section>
-      <Link to={forumProfilePath(locale, user.id)}>{t("adminUsersPublicProfile")}</Link>
-      {access.canManageMeasures ? <p><Link to={adminMeasuresPath(locale,routing)+"?target="+encodeURIComponent(user.id)}>
-        {t("measuresAdmin")}</Link></p> : null}
-      {access.canManageAuthorization && management && managerActorId && permissions
-        ? <InlineUserAuthorization key={managerActorId + ":" + user.id}
-          locale={locale} userId={user.id} actorId={managerActorId}
-          management={management} permissions={permissions}
-          canManageElevated={canManageElevated} canMutateAuthorization={canMutateAuthorization}/>
-        : null}
-    </section>
-  </AdminShell>;
-}
-
-function InlineUserAuthorization({ locale, actorId, userId, management,
-  permissions, canManageElevated, canMutateAuthorization }: {
-  locale: string; actorId: string; userId: string;
-  management: AuthorizationUserManagementState; permissions: readonly PermissionKey[];
-  canManageElevated: boolean;
-  canMutateAuthorization: boolean;
-}) {
-  const { t } = useTranslation("common");
-  const routing = useAdministrativeRouting();
-  const fetcherKey = `ap09-user-authz:${actorId}:${userId}`;
-  const fetcher = useFetcher<{ ok?: true; error?: AuthorizationFailure }>({ key: fetcherKey });
-  const revalidator = useRevalidator();
-  const pending = fetcher.state !== "idle";
-  return <section id="authorization" className="admin-section" aria-labelledby="admin-user-authorization-heading">
-    <h3 id="admin-user-authorization-heading">{t("authorizationHeading")}</h3>
-    {fetcher.data?.ok && !pending
-      ? <p className="admin-result admin-result-success" role="status">{t("authorizationSaved")}</p>
-      : null}
-    {fetcher.data?.error && !pending
-      ? <div className="admin-result admin-result-error" role="alert">
-          <p>{t(`authorizationError_${fetcher.data.error}`)}</p>
-          <button type="button" onClick={() => revalidator.revalidate()}>{t("adminRetry")}</button>
-        </div>
-      : null}
-    <AuthorizationUserControls userId={userId} authorization={management.authorization}
-      roles={management.roles} permissions={permissions}
-      canManageElevated={canManageElevated} canMutateAuthorization={canMutateAuthorization}
-      elevatedRoleIds={management.elevatedRoleIds}
-      inline={{ action: canonicalAuthorizationPath(locale,routing), fetcherKey }}
-      pending={pending}/>
-  </section>;
-}

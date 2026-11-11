@@ -9,6 +9,7 @@
     "vitest.config.ts",
     "vitest.database.config.ts",
     "app/auth/auth.server.ts",
+    "app/auth/session-label.ts",
     "app/auth/session-deletion-evidence.ts",
     "app/auth/auth-creation-evidence.ts",
     "app/auth/registration-admission.ts",

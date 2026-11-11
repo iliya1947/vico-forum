@@ -194,12 +194,13 @@ function MeasureExpiryField({initial=null}: {initial?:string|null}) {
   </fieldset>;
 }
 
-function MeasureSummary({measure,locale,admin=false}:{
-  measure:UserMeasureSummary;locale:string;admin?:boolean;
+function MeasureSummary({measure,locale,admin=false,detailRoute}:{
+  measure:UserMeasureSummary;locale:string;admin?:boolean;detailRoute?:"own"|"admin";
 }) {
   const {t}=useTranslation("common");
   const routing = useAdministrativeRouting();
-  const link=admin?adminMeasurePath(locale,measure.id,routing):ownMeasurePath(locale,measure.id);
+  const link=(detailRoute??(admin?"admin":"own"))==="admin"
+    ?adminMeasurePath(locale,measure.id,routing):ownMeasurePath(locale,measure.id);
   return <li>
     <h3><Link to={link}><DateText date={measure.createdAt} locale={locale}/></Link></h3>
     <p>{t("measuresStatus")}: {t(statusKeys[measure.status])}</p>
@@ -210,8 +211,8 @@ function MeasureSummary({measure,locale,admin=false}:{
 }
 const measureStatusOrder = ["active","expired","lifted"] as const;
 
-function GroupedMeasures({measures,locale,admin=false}:{
-  measures:readonly UserMeasureSummary[];locale:string;admin?:boolean;
+export function GroupedMeasures({measures,locale,admin=false,detailRoute}:{
+  measures:readonly UserMeasureSummary[];locale:string;admin?:boolean;detailRoute?:"own"|"admin";
 }) {
   const {t}=useTranslation("common");
   return <>{measureStatusOrder.map(status=>{
@@ -221,7 +222,8 @@ function GroupedMeasures({measures,locale,admin=false}:{
     return <section key={status} aria-label={heading}>
       {admin?<h4>{heading}</h4>:<h2>{heading}</h2>}
       <ol className="admin-forum-objects">{group.map(measure=>
-        <MeasureSummary key={measure.id} measure={measure} locale={locale} admin={admin}/>)}</ol>
+        <MeasureSummary key={measure.id} measure={measure} locale={locale} admin={admin}
+          detailRoute={detailRoute}/>)}</ol>
     </section>;
   })}</>;
 }
