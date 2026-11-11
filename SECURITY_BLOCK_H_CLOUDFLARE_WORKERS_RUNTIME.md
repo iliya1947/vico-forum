@@ -6,10 +6,11 @@
 2. Block G закрыт: 3 current-scope findings; `DB-RUNTIME-EVIDENCE-01 Low/P3` сохранён отдельно как Stage-6 blocker и в H не дублируется.
 3. **H1 — Worker composition & binding isolation завершён: PASS, 0 current-scope findings.**
 4. **H2 — Ingress trust & source attribution завершён: PASS, 0 current-scope findings.**
-5. **H3–H8 ещё не выполнялись.**
-6. Следующий bounded slice после продолжения владельца — **H3: Runtime configuration and optional binding failure**.
-7. Мира — auditor/coordinator. Remediation, technical planner и implementer не назначены.
-8. Cloudflare/production mutation, deployment, binding changes и live topology checks не выполнялись.
+5. **H3 — Runtime configuration and optional binding failure завершён: PASS, 0 current-scope findings.**
+6. **H4–H8 ещё не выполнялись.**
+7. Следующий bounded slice после продолжения владельца — **H4: Preview, Version URL and public entrypoint isolation**.
+8. Мира — auditor/coordinator. Remediation, technical planner и implementer не назначены.
+9. Cloudflare/production mutation, deployment, binding changes и live topology checks не выполнялись.
 
 ## H1 — результат
 
@@ -49,6 +50,30 @@
 - Workers Request API — incoming `request.cf` global-network metadata/read-only contract;
 - Pseudo IPv4 — Class-E overwrite and `CF-Connecting-IPv6` preservation;
 - `cf.worker.upstream_zone` docs/changelog — platform distinction between direct visitor and Worker subrequests.
+
+## H3 — результат
+
+1. Verdict на current `main` `ce62e783e71433a00c2fe4874ee26dfc54614628`: **PASS, 0 current-scope findings**.
+2. Required DB bindings остаются fail closed: `resolveRuntimeDatabaseConnectionStrings()` требует непустые `HYPERDRIVE` и `WEB_HYPERDRIVE` до Router/request capability composition. Missing/blank binding не fallback'ится к другой DB capability и не превращается в guest/permission=false.
+3. Такой required-binding configuration failure проходит как configuration error, а не classified availability. Это соответствует current authorization contract: configuration/schema/programming errors не маскируются как controlled permission denial/503. Security bypass не подтверждён.
+4. Optional `ATTACHMENT_R2` в Worker явно превращается в `privateAttachmentBucketContext=null`. Physical upload, authorized download и Complaint evidence read затем получают `AttachmentBucketUnavailableError` и возвращают bounded `503`/no-store вместо fallback storage, public bytes или success-shaped response.
+5. Attachment upload при missing R2 не вызывает `createDraftAttachment`; existing route tests прямо покрывают fail-closed `503`. Download tests покрывают missing binding/object как unavailable. Complaint evidence routes также переводят missing/failed bucket read в private `503`. Это H3 runtime-config evidence; attachment content/storage root causes остаются Block F и здесь не дублируются.
+6. `VICO_OWNER_USER_ID` является optional server-only binding до Stage 6. `validOwnerUserId()` принимает только exact nonblank trimmed string; missing/invalid value становится `undefined`. Authorization context получает no Owner, а current Owner mutation policy не fallback'ится к ordinary manager. Поэтому configuration omission выключает Owner authority, а не передаёт её другому пользователю.
+7. Better Auth runtime получает Worker env values `BETTER_AUTH_SECRET`, `BETTER_AUTH_URL`, `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`; собственного Vico fallback на request header, hard-coded production credential или client input нет.
+8. Current protected production rollout перед version upload проверяет nonempty Cloudflare credentials, `BETTER_AUTH_SECRET` длиной минимум 32, nonempty Google secret/client ID и exact `BETTER_AUTH_URL == https://vico-forum.iliya1947a.workers.dev`; upload передаёт auth secret/Google secret через temporary `--secrets-file`, URL/client ID как explicit vars. Поэтому repository Stage-6 rollout не рассчитывает на library default при missing production auth config.
+9. Current official Better Auth documentation требует high-entropy secret минимум 32 chars; current docs также предупреждают, что base URL inference использовать не рекомендуется. Vico production rollout explicit pins secret and base URL before upload. Exact missing-config behavior pinned `better-auth@1.7.7` не нужен как security assumption для этого verdict.
+10. Current Cloudflare Vite-plugin docs подтверждают: local secrets/vars загружаются из ignored `.dev.vars` или `.env`; `vite build` может сохранить local dev vars только для subsequent `vite preview`, они не deploy'ятся с Worker. Vico connected auth/Owner browser acceptance создаёт synthetic `.dev.vars` внутри disposable loopback CI и удаляет его после run.
+11. Local Hyperdrive path по current Cloudflare docs требует explicit `localConnectionString` или `CLOUDFLARE_HYPERDRIVE_LOCAL_CONNECTION_STRING_<BINDING>`; ordinary CI задаёт оба split override на disposable loopback PostgreSQL. Production Hyperdrive IDs из `wrangler.jsonc` поэтому не являются silent local fallback в утверждённом CI path.
+12. `.env.example` содержит blank placeholders и сам по себе не загружается runtime. Auth-enabled connected smokes не используют его как credential; они создают synthetic local values. Наличие blank example не создаёт current security finding.
+13. Current production rollout preparation ещё не выполняет real `VICO_OWNER_USER_ID` binding и не подключает `ATTACHMENT_R2`; source-of-truth уже относит real Owner binding, external R2/deployed attachment acceptance и full deployed product acceptance к Stage 6. Missing Owner fails closed; missing R2 gives 503. Это не current-scope defect и не дублируется как H finding.
+14. `secrets.required` в `wrangler.jsonc` не объявлен. Current Cloudflare platform может использовать такой declaration для local secret loading/warnings, но Vico production rollout уже имеет own pre-upload validation, а current local auth acceptance supplies explicit synthetic vars. Отсутствие дополнительного platform declaration само по себе не создаёт current exploit path; finding не создаётся.
+15. H3 tests/source/workflows были прочитаны, но tests не запускались. Mutable deployed Worker variables/secrets/bindings, live R2 and real Owner binding: **Информация не проверена**; Stage 6 paused.
+16. H3 remediation не требуется. Следующий slice — H4 preview/version/public-entrypoint isolation.
+
+Проверенная current official external evidence:
+- Cloudflare Vite plugin — local `.dev.vars`/`.env`, preview/build secret loading and non-deployment semantics;
+- Cloudflare Hyperdrive — explicit local connection string / binding-specific env override and separate remote mode;
+- Better Auth — current secret/baseURL configuration requirements and recommendation to set base URL explicitly.
 
 ## Цель
 
