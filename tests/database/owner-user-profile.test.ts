@@ -43,7 +43,7 @@ beforeAll(async () => {
   await client.connect();
   await client.query("drop schema if exists " + schema + " cascade; create schema " + schema);
   const migration = (await readFile("drizzle/0003_gorgeous_donald_blake.sql", "utf8"))
-    .replaceAll('"public".', '"' + schema + '"')
+    .replaceAll('"public".', '"' + schema + '".')
     .replaceAll("--> statement-breakpoint", "");
   await client.query(migration);
 });
