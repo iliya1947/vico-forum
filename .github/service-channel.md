@@ -2,6 +2,12 @@
 
 Служебный PR: #251. Оперативное состояние: [workflow.md](./workflow.md). Общий контракт: [ADMIN_PANEL_IMPLEMENTATION_PLAN.md](../ADMIN_PANEL_IMPLEMENTATION_PLAN.md).
 
+## 2026-11-11 — SA04-A1 provisional Draft #327; CI queued; NOT AUTHOR STOP
+
+- Draft [#327](https://github.com/iliya1947/vico-forum/pull/327) from main `ce62e783e71433a00c2fe4874ee26dfc54614628`, provisional branch head `04024cb8d438bf3b365373f48bdba5c4c4aad31d`. Six A1 files: nullable deactivation state tuple in `user`, UTC calendar-year CHECK, forward `0065`, Drizzle snapshot/journal, schema manifest, and focused PostgreSQL native tests. `betterAuthUserAdditionalFields` unchanged (`locale` only).
+- New manifest CHECK hash intentionally `PENDING` pending real `pg_get_expr` evidence; no fabricated checksum. Initial CI #43096188913 and SA03/SA01/AP10 runs all queued on inspected head; no test result claims. Tests are committed but not yet executed by a runner. Local runtime lacks PostgreSQL server/network packages. Detailed status [#6806574366](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6806574366).
+- A1 is **NOT complete**, no coordinator/reviewer assignment or merge; next Lira work remains to finalize exact PostgreSQL hash and CI evidence. No runtime state/auth/writer/presentation/deactivate operations or SA-05+ introduced.
+
 ## 2026-11-11 — Lira repeated independent factual whole-PR review #326: PASS, STOP
 
 - **Exact docs-only reviewed head:** `9714e06c2d6030b26a54d6c1287255226c4c186a`; base/current `main` implementation merge `5992885e78b1642e41c9805116fcc256002b649c`. PR #326 remains open/unmerged. Original 9-file cumulative documentation diff reviewed against current merged SA-03 #324, AP-11 history and relevant current project/authorization sources. All eight other docs files have byte-identical Git blob SHAs to first full review; correction commit modifies only `docs/ADMIN_PANEL.md`.

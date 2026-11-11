@@ -1,5 +1,11 @@
 # Лира — active assignment: SA04-A1 only
 
+## 2026-11-11 — SA04-A1 provisional Draft #327; CI queued; NOT AUTHOR STOP
+
+- Draft [#327](https://github.com/iliya1947/vico-forum/pull/327) from main `ce62e783e71433a00c2fe4874ee26dfc54614628`, provisional branch head `04024cb8d438bf3b365373f48bdba5c4c4aad31d`. Six A1 files: nullable deactivation state tuple in `user`, UTC calendar-year CHECK, forward `0065`, Drizzle snapshot/journal, schema manifest, and focused PostgreSQL native tests. `betterAuthUserAdditionalFields` unchanged (`locale` only).
+- New manifest CHECK hash intentionally `PENDING` pending real `pg_get_expr` evidence; no fabricated checksum. Initial CI #43096188913 and SA03/SA01/AP10 runs all queued on inspected head; no test result claims. Tests are committed but not yet executed by a runner. Local runtime lacks PostgreSQL server/network packages. Detailed status [#6806574366](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6806574366).
+- A1 is **NOT complete**, no coordinator/reviewer assignment or merge; next Lira work remains to finalize exact PostgreSQL hash and CI evidence. No runtime state/auth/writer/presentation/deactivate operations or SA-05+ introduced.
+
 Base: current `main` `ce62e783e71433a00c2fe4874ee26dfc54614628`.
 Accepted SA-04 package plan: #6806249892.
 
