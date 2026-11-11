@@ -4,7 +4,7 @@
 
 1. Это bounded audit plan для области 5 общей security-карты.
 2. Audit target на момент подготовки: current `main` `f6fd4b2c031b2132b04eace18704a59aed1dfec8`.
-3. Фактический аудит начат. **E2 PASS. E5: `FORUM-PUB-01 Moderate/P2`. E6: 0 additional findings; `FORUM-PUB-01` подтверждён для edit body. E7: `READSTATE-CACHE-01 Low/P3`. E3: `PUBLIC-PROJECTION-01 Low/P3`.** Remediation по Block E не назначена.
+3. Фактический аудит начат. **E2 PASS. E5: `FORUM-PUB-01 Moderate/P2`. E6: 0 additional findings; `FORUM-PUB-01` подтверждён для edit body. E7: `READSTATE-CACHE-01 Low/P3`. E3: `PUBLIC-PROJECTION-01 Low/P3`. E4: `DISCOVERY-BOUNDS-01 Low/P3`, `SEARCH-CONTROL-01 Low/P3`.** Remediation по Block E не назначена.
 4. Проверка ведётся по реальным public/member route → service/repository paths, а не по одному UI.
 
 ## Граница блока
@@ -127,6 +127,41 @@ Block E проверяет обычный форум и member-facing applicatio
 4. pagination/keyset не пропускает membership/projection boundary и не даёт unbounded response;
 5. malformed/oversized queries fail controlled до дорогой работы;
 6. public discovery responses не получают private member cache state.
+
+### E4 — результат аудита
+
+1. Audit target: current `main` `f6fd4b2c031b2132b04eace18704a59aed1dfec8`.
+2. Verdict: **2 current-scope findings — `DISCOVERY-BOUNDS-01 Low/P3` и `SEARCH-CONTROL-01 Low/P3`**.
+3. Search ordinary bounds — PASS кроме control-input finding ниже: route normalizes NFKC/whitespace, не выполняет DB search при normalized query >200 chars, repository повторно ограничивает query до 200 и limit до 1..100 (default 50).
+4. Search pattern/injection boundary — PASS: `escapeSearchPattern()` удваивает `!` и экранирует `%` / `_` под explicit PostgreSQL `ESCAPE '!'`; existing DB regression подтверждает literal `%` и `_`. Exact `drizzle-orm@0.45.2` source at tag commit `273c78071d4841b497f5144734b38294df7ec64b` передаёт primitive template values как bound parameters, а не как raw SQL text.
+5. Popular — PASS для E4 response bound: repository принимает только limit 1..20 (default 10) и route возвращает максимум этот limit в каждой из трёх period columns. То, что SQL агрегирует dataset за 30 дней до in-memory ranking, относится к E10/Abuse workload review и не дублируется здесь без отдельного impact finding.
+6. Reserved Help location — PASS: Search, Unanswered, Tag detail и Unread используют `publicDiscoveryLocation()`; Help topic остаётся discoverable как public topic, но internal service-section ID/name заменяются category-only public location. Existing connected DB regression проверяет эти четыре readers и direct service-section lookup.
+7. Discovery projection — PASS: Search/Popular/Unanswered/Tag не сериализуют private moderation/session/auth fields. Search и browse readers используют current title/post revisions; moderator-only finding E3 не переносится на эти DTO.
+8. Public cache/member isolation — PASS кроме уже существующего E7 finding: Search/Popular/Unanswered/Tags не зависят от session/member state. Authenticated Unread остаётся covered by `READSTATE-CACHE-01`; E4 не создаёт duplicate cache finding.
+9. Stored topic tags bounded at write boundary: NFKC normalized tag name <=64 chars, no `/`, max 10 unique tags per topic. Это не ограничивает общее число unique tags/topics в forum dataset, что и образует `DISCOVERY-BOUNDS-01`.
+10. Broad request/traffic limits и expensive-query abuse остаются E10/Block K; E4 findings ниже фиксируют только доказанные application-level input/result-set gaps.
+
+### DISCOVERY-BOUNDS-01 — Low/P3
+
+1. `readUnanswered()` не имеет `limit`, cursor или pagination и возвращает все unsolved topics с ровно одним persisted post.
+2. `readTags()` возвращает весь global tag index; `readTag(key)` возвращает все topics с данным tag. Unique tag count может расти вместе с forum topics, несмотря на per-topic max 10.
+3. `readUnreadForUser(userId)` аналогично возвращает все new/unread topics current account без page/cursor/limit.
+4. Routes `/:locale/unanswered`, `/:locale/tags`, `/:locale/tags/:tagKey` и authenticated `/:locale/unread` сериализуют эти arrays напрямую; bounded response layer выше repository отсутствует.
+5. Impact current-scope: размер DB result, SSR/serialization и response body растёт пропорционально forum/account dataset; три первых routes доступны без authentication и могут повторно вызывать полный result path. Это не требует нарушения authorization и не раскрывает private fields.
+6. Severity — **Low/P3**: дефект уже находится в обязательных pre-release discovery/unread surfaces, но substantial resource impact зависит от накопления большого dataset; production traffic amplification отдельно проверяется в Abuse/availability.
+7. Search и Popular в finding не входят: Search result ограничен (default 50, max 100), Popular response — default 10/max 20 per period.
+8. Remediation в рамках audit stage не назначена.
+
+### SEARCH-CONTROL-01 — Low/P3
+
+1. Public `/:locale/search?q=...` принимает query без запрета NUL. Standard URL parsing превращает `q=%00` в строку `U+0000`; current NFKC/trim/whitespace normalization её не удаляет.
+2. `escapeSearchPattern()` экранирует только SQL LIKE escape/wildcards `!`, `%`, `_`, поэтому NUL остаётся внутри bound search pattern.
+3. Exact `drizzle-orm@0.45.2` source подтверждает parameter binding primitive interpolation. PostgreSQL 17 official character/protocol docs фиксируют, что text values/text protocol не допускают embedded code-zero/NUL.
+4. Hyperdrive forum wrapper классифицирует как availability только transport/connection/server-unavailable/query-timeout cases; invalid text value не попадает в этот набор. `forumReadLoader` поэтому не преобразует такой input в controlled 4xx/503 и rethrows его в generic route-error path.
+5. Result: unauthenticated malformed search input может детерминированно вызвать server error/500 path вместо controlled validation/no-results response. Generic ErrorBoundary не показывает internal error detail, поэтому confidentiality leak не подтверждён.
+6. Severity — **Low/P3**: это public malformed-input availability/error-path defect, но один request не доказывает Worker/process crash или broader traffic DoS. Broad flood protection остаётся Block K.
+7. Exact deployed HTTP request не выполнялся; causal path проверен по current route/repository/wrapper code, Node URL behavior, exact Drizzle source и PostgreSQL 17 primary documentation.
+8. Remediation в рамках audit stage не назначена.
 
 ## E5 — Topic / reply publication lifecycle
 
