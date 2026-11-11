@@ -33,12 +33,12 @@
 ## Актуальный baseline и назначение
 
 - Current main `e279cb6c032a489a9044ca1191407df887c364b4`; AP01–11/Owner redesign1–2/SET01–06/SA01 and routing implementation#317/docs#318 merged/closed; FOUNDATION-LEV-01/-02 closed.
-- **Current task: SA02 backend A/B/C independent whole-scope review completed — CHANGES REQUIRED, 3 confirmed findings.** Draft implementation PR#319 reviewed head `c9ff7b660fc40924f6adfd649b1daa0d80acb045`.
-- Accepted plan#6768069279, recovery A/B/C boundary#6777700709; Mira coordinator PASS/assignment#6779377295; independent result [#6779818918](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6779818918).
-- **SA02-IMPL-LEV-01 OPEN:** actual production factory discards trusted occurredAt (MIRA-02 correction incomplete at adapter). **LEV-02 OPEN:** current-row dates falsely predate retained Accounts History coverage. **LEV-03 OPEN:** auth History drops persisted known safe actor/target/entity IDs.
-- Verified exact-head CI/SA01/AP10 SUCCESS; independent build, 99 app/123 native PG17 tests, 69-table schema parity, runtime privileges and 16 real Chromium checkpoint groups PASS. Independent factory/current/History probes reproduce the three semantic defects.
-- **Next recipient Mira** for combined finding assessment/coordinator continuation. Lev finished/stopped; no Lira/Mark assignment by Lev; implementation unchanged.
-- SA02-D unstarted/unassigned; no full SA02 acceptance/merge. #315 security input refreshed at head `70d9efdd0e5d9910effcf95eaf610048cf471ac9`, plan blob `df2d500ccb2750d43422bf5d30f5b0c5370401ff` unchanged; separate security remediation/Stage6 activation, production and deferred journal occupancy/archive/clear outside scope.
+- **SA02 backend A/B/C independent whole-scope review PASS — 0 confirmed open current-scope defects.** Draft implementation PR#319 accepted technical review head `25ac41573847f9fbce79897b2e019fd246b400cc`.
+- Accepted plan#6768069279, recovery boundary#6777700709; Lira correction#6788446097; Mira coordinator PASS#6788548049; Lev repeat independent result [#6788696141](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6788696141).
+- **SA02-IMPL-LEV-01/-02/-03 CLOSED:** trusted occurrence forwarded through real production factory; Accounts coverage uses actual retained History; auth History preserves safe canonical actor/target/entity refs.
+- Old independent diagnostic assertions rerun unchanged on new head PASS; independent99 app/126PG17 tests, build,69-table schema parity, runtime privilege probes and16 real Chromium checkpoint groups PASS.36 implementation files byte-identical to prior checked head,6 correction files fully checked, full42-file scope re-evaluated.
+- **Next recipient Mira — coordinator closeout of A/B/C backend and determination of next bounded step. Lev finished/stopped; no Lira/Mark assignment by Lev.**
+- **PR319 remains Draft; SA02-D unstarted/unassigned.** No fullSA02 acceptance/merge readiness. #315 security input refreshed at head `7096dedd1ae6caae6a9f1f869ac9b0cd1c571a88`, plan blob `df2d500ccb2750d43422bf5d30f5b0c5370401ff` unchanged. Security remediation/Stage6 activation, production and deferred journal occupancy/archive/clear outside scope.
 
 ## Handoff — Лира: Stage2 factual documentation closeout
 
@@ -3199,3 +3199,13 @@ Result: [#6788548049](https://github.com/iliya1947/vico-forum/pull/251#issuecomm
 - Exact-head CI #42968881718, SA-01 Chromium #42968881704 and AP-10 Chromium #42968881701 are SUCCESS; AP-10 has four successful jobs.
 
 **Handoff:** Lev performs a fresh independent whole-scope review of the same PR #319 exact head `25ac41573847f9fbce79897b2e019fd246b400cc` for backend A/B/C only. Lira/Mark unassigned. SA02-D remains separate later work.
+
+## 2026-11-11 — SA02 A/B/C repeat independent whole-scope review: PASS
+
+- Full result [#6788696141](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6788696141), exact PR319 head `25ac41573847f9fbce79897b2e019fd246b400cc`, unchanged base/main `e279cb6c032a489a9044ca1191407df887c364b4`. Assignment#6788548049, author correction#6788446097.
+- **PASS,0 confirmed current-scope open defects. SA02-IMPL-LEV-01/-02/-03 CLOSED.** Real collector→production factory→PG preserves trusted occurrence despite reversed flush; old current/History fixture passes all4 Accounts coverage assertions; known safe refs survive both real PG facts and actual Better Auth signup through fresh built Worker, unknown actor stays null.
+- Entire42-file cumulative A/B/C considered against accepted plan/recovery boundary:6 changed files reviewed in full and36 source hashes identical to prior full review, contracts/callers re-evaluated. No implementation edits.
+- Fresh independent evidence:18 app files/99 tests,11 native PG17 files/126 tests; unchanged external reproducers PASS; build;69-table manifest; positive/negative runtime grants;16 Chromium→Worker→Better Auth→disposablePG checkpoint groups, exact-head metadata/no browser exceptions/no external requests. Remote exact-head CI42968881718,SA0142968881704,AP1042968881701 allSUCCESS, AP10 all4jobs. Local full2181/679 suite not claimed.
+- #315 current head7096dedd/security plan blobdf2d500c unchanged; new audit context checked, baseline findings/future security activation remain separate. D routes/UI/Overview/localization/final acceptance not in this PASS.
+- Evidence `/workspace/work/sa02-abc-rereview-evidence/`, source/protected manifests and unchanged original probes retained. Own Worker4201/container/DB removed, synthetic vars/dependency symlinks removed, checkout clean.
+- **Next recipient Mira** for coordinator closeout/next bounded step. Lev stops; no appointment of Lira/Mark, no D/SA03+/Stage6/production/journal management work. PR319 remainsDraft; fullSA02 acceptance/merge readiness not asserted.
