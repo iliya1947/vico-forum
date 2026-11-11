@@ -33,7 +33,7 @@
 9. **Block G — Database & migrations ЗАВЕРШЁН. Final current-scope: 3 findings — `DB-SEARCHPATH-01 Low/P3`, `DB-ACL-USER-DELETE-01 Low/P3`, `DB-TEST-TARGET-01 Low/P3`.** G8 дал 0 новых findings и исправил Stage-классификацию `DB-RUNTIME-EVIDENCE-01 Low/P3`: технический defect подтверждён, но это **Stage-6 blocker, не current-scope**, пока external integration paused. Descendant delta до current `main` `5992885e78b1642e41c9805116fcc256002b649c` (SA-03 #324, index-only migration `0064`) перепроверен и итог не изменил.
 10. **Block H — Cloudflare / Workers / runtime: scope подготовлен** на current `main` `5992885e78b1642e41c9805116fcc256002b649c`; H1–H8 ещё не выполнялись. Первый slice — H1 Worker composition & binding isolation.
 11. Implementation PR, technical planner и implementer для remediation сейчас не назначены.
-11. Cloudflare/Neon/production mutation по #315 не разрешена и не выполнялась.
+12. Cloudflare/Neon/production mutation по #315 не разрешена и не выполнялась.
 
 ## Индекс подтверждённых current-scope findings
 
