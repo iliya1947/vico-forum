@@ -1778,3 +1778,13 @@ No other confirmed current-scope defect found in backend A/B/C. Lira receives on
 - Rechecked exact-head CI/browser evidence; no new current-scope defect found.
 - Coordinator PASS published in #6779377295.
 - Lev assigned independent technical review of the same exact head; no SA02-D implementation authorized yet.
+
+
+## Lev review reconciliation — PR #319 A/B/C
+
+Independent review #6779818918 returned three findings on `c9ff7b660fc40924f6adfd649b1daa0d80acb045`. I independently verified all three as current-scope:
+- LEV-01: production `createHyperdriveAuthFactWriter` discards collector `occurredAt`.
+- LEV-02: Accounts coverage mixes old current-domain row timestamps into a retained-History boundary.
+- LEV-03: auth History projects only payload and loses stored safe actor/target/entity refs.
+
+No plan revision is required. Previous coordinator PASS is superseded for this exact head. Lira receives one combined local correction package; SA02-D remains unassigned.
