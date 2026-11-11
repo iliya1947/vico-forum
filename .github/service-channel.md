@@ -3851,3 +3851,13 @@ The previous docs-closeout route was incorrect.
 - Granularity gate applied: only **SA03-DOC-A** is assigned now.
 - **SA03-DOC-A:** Lira starts a fresh docs-only PR from current `main`, updates only `PROJECT_STATE.md` to reflect merged SA-03 facts/current boundaries, publishes the PR/head and **STOP**.
 - Later documentation files are not assigned yet. Lev/Mark remain unassigned.
+
+
+## 2026-11-11 — SA-03 docs recovery finalized
+
+- Previous replacement-authoring route (SA03-DOC-A) was wrong and is superseded; duplicating already-authored docs would waste work and would not repair the actual process defect.
+- #326 remains open and unchanged on exact head `dc9f846bf1fd4224b600fccfa3528f9a518fb8bd`.
+- Because Mira authored #326, Mira cannot independently review her own documentation.
+- Recovery uses the existing work: **Lira is assigned an independent factual whole-PR review of #326** against merged #324/current main and relevant current source-of-truth.
+- Review is one indivisible whole-PR operation, not a multi-result implementation handoff. Lira reports all current-scope findings or PASS and then STOP; she does not edit #326 during review.
+- No ordinary code/test CI is used as proof of documentation correctness. Lev/Mark remain unassigned.
