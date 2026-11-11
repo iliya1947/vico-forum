@@ -25,6 +25,7 @@ import { InvalidProfileError, validateProfileFields, type ProfileFields } from "
 import { forumProfilePath, forumTopicPath } from "../forum/paths";
 import { ForumRouteError } from "../forum/ui";
 import SettingsRoute from "../routes/settings";
+import SettingsAccountRoute from "../routes/settings-account";
 import SettingsPrivacyRoute from "../routes/settings-privacy";
 import SettingsUserRoute from "../routes/settings-user";
 import {
@@ -1369,6 +1370,11 @@ function previewRouter(
       action: ({ request }) => previewSettingsPrivacyAction(scenario, interactions, request),
     },
     {
+      path: "/:locale/settings/account",
+      element: <SettingsAccountRoute />,
+      loader: () => previewSettingsAccountData(scenario),
+    },
+    {
       path: "/:locale/tags",
       element: <TagsView locale={scenario.locale} tags={previewTags()} />,
     },
@@ -1406,6 +1412,20 @@ function previewOnlinePresence(
     { id: "maya", name: "Maya Cohen", image: null },
   ].filter((member) => interactions.showOnline || member.id !== actor?.id);
   return { count: members.length, members };
+}
+
+function previewSettingsAccountData(scenario: Scenario) {
+  const actor = previewUser(scenario);
+  return {
+    locale: scenario.locale,
+    accountId: actor?.id ?? "",
+    sessionId: "preview-current-session",
+    canViewForum: scenario.identity === "owner",
+    linkedMethods: ["password", "google"] as ("password" | "google")[],
+    hasPassword: true,
+    sessionAccess: "not-fresh" as const,
+    sessions: [],
+  };
 }
 
 function previewSettingsPrivacyData(
