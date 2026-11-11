@@ -8,7 +8,7 @@ ALTER TABLE "user" ADD CONSTRAINT "user_deactivation_state_check" CHECK (
       and "user"."retain_at_least_until" is null)
     or (
       "user"."deactivated_at" is not null and "user"."deactivated_by_user_id" is not null
-      and btrim("user"."deactivated_by_user_id") <> ''
+      and btrim("user"."deactivated_by_user_id", chr(32) || chr(9) || chr(10) || chr(13) || chr(12) || chr(11)) <> ''
       and "user"."retain_at_least_until" is not null
       and ("user"."retain_at_least_until" at time zone 'UTC') >=
         (("user"."deactivated_at" at time zone 'UTC') + interval '1 year')

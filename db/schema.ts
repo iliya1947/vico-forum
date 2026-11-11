@@ -492,7 +492,7 @@ export const user = pgTable("user", {
       and ${table.retainAtLeastUntil} is null)
     or (
       ${table.deactivatedAt} is not null and ${table.deactivatedByUserId} is not null
-      and btrim(${table.deactivatedByUserId}) <> ''
+      and btrim(${table.deactivatedByUserId}, chr(32) || chr(9) || chr(10) || chr(13) || chr(12) || chr(11)) <> ''
       and ${table.retainAtLeastUntil} is not null
       and (${table.retainAtLeastUntil} at time zone 'UTC') >=
         ((${table.deactivatedAt} at time zone 'UTC') + interval '1 year')

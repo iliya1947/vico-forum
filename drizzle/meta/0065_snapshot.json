@@ -7751,7 +7751,7 @@
       "checkConstraints": {
         "user_deactivation_state_check": {
           "name": "user_deactivation_state_check",
-          "value": "(\n    (\"user\".\"deactivated_at\" is null and \"user\".\"deactivated_by_user_id\" is null\n      and \"user\".\"retain_at_least_until\" is null)\n    or (\n      \"user\".\"deactivated_at\" is not null and \"user\".\"deactivated_by_user_id\" is not null\n      and btrim(\"user\".\"deactivated_by_user_id\") <> ''\n      and \"user\".\"retain_at_least_until\" is not null\n      and (\"user\".\"retain_at_least_until\" at time zone 'UTC') >=\n        ((\"user\".\"deactivated_at\" at time zone 'UTC') + interval '1 year')\n    )\n  )"
+          "value": "(\n    (\"user\".\"deactivated_at\" is null and \"user\".\"deactivated_by_user_id\" is null\n      and \"user\".\"retain_at_least_until\" is null)\n    or (\n      \"user\".\"deactivated_at\" is not null and \"user\".\"deactivated_by_user_id\" is not null\n      and btrim(\"user\".\"deactivated_by_user_id\", chr(32) || chr(9) || chr(10) || chr(13) || chr(12) || chr(11)) <> ''\n      and \"user\".\"retain_at_least_until\" is not null\n      and (\"user\".\"retain_at_least_until\" at time zone 'UTC') >=\n        ((\"user\".\"deactivated_at\" at time zone 'UTC') + interval '1 year')\n    )\n  )"
         }
       },
       "isRLSEnabled": false
