@@ -4,10 +4,46 @@
 
 1. Scope подготовлен 2026-11-12 против current `main` `593a03964b8407b249f7c9f5eb117ddb8b07736d`.
 2. Block H закрыт; его deferred blockers в I не дублируются.
-3. **I1–I8 ещё не выполнялись.**
-4. Следующий bounded slice после продолжения владельца — **I1: Repository authority & main provenance**.
-5. Мира — auditor/coordinator. Remediation, technical planner и implementer не назначены.
-6. Production/Cloudflare/Neon/GitHub settings mutation, secret rotation и workflow dispatch не разрешены и не выполнялись.
+3. **I1 — Repository authority & main provenance завершён: 1 current-scope finding — `REPO-MAIN-GATE-01 Moderate/P2`.**
+4. **I2–I8 ещё не выполнялись.**
+5. Следующий bounded slice после продолжения владельца — **I2: Workflow events, tokens & write authority**.
+6. Мира — auditor/coordinator. Remediation, technical planner и implementer не назначены.
+7. Production/Cloudflare/Neon/GitHub settings mutation, secret rotation и workflow dispatch не разрешены и не выполнялись.
+
+## I1 — результат
+
+1. Verdict на current `main` `593a03964b8407b249f7c9f5eb117ddb8b07736d`: **1 current-scope finding — `REPO-MAIN-GATE-01 Moderate/P2`.**
+2. GitHub branch metadata сообщает `main.protected=false`. Repository ruleset `Protect main` существует, targets default branch, но `enforcement=disabled`.
+3. Disabled ruleset содержит именно intended integrity gates: pull-request requirement, block deletion/non-fast-forward and strict required status checks `checks` + `database`. Поскольку ruleset disabled, эти правила не enforce'ятся.
+4. Repository merge settings разрешают squash merge and disable merge/rebase/auto-merge, но это только PR merge mode; direct branch update при отсутствии branch/ruleset protection ими не запрещён.
+5. Current CI workflow запускается только на `pull_request`. Следовательно direct update `main` не проходит обязательные `checks` / `database` CI jobs через этот workflow.
+6. Concrete delegated writer path подтверждён без mutation main: connected GitHub integration фактически создаёт/обновляет файлы в repository service branch; connector installation repository metadata reports `push:true` (and `admin:true`). Current GitHub REST contract требует Contents(write) для Create/Update Contents и при omitted `branch` target defaults to repository default branch.
+7. Поэтому same delegated repository-write capability технически может update ordinary code/config file directly on unprotected default `main` without PR and without PR-only CI. Дополнительный Workflows(write) permission для этого не нужен, пока изменяется не workflow file.
+8. Это не только теоретическая branch setting: последние 100 `main` commits содержат 4 owner-authored direct GitHub web updates `AGENTS.md` без PR-number commit subject; 96/100 имеют PR-like `(#N)` subject. То есть direct-main path уже фактически использовался, хотя observed direct commits были owner-authorized.
+9. Все последние 100 commits `verified=true`, включая direct web edits. Поэтому GitHub verified signature текущего history не является review/CI provenance proof: GitHub-signing подтверждает commit source/signature, но не то, что change прошёл PR/check gates.
+10. Current latest main commit likewise verified and is PR-like; finding не утверждает, что current main уже malicious/incorrect. Root cause — отсутствие enforcement, позволяющее delegated write identity bypass'ить current review/CI boundary.
+11. Current `ui-preview-pages.yml` запускается на push в `main`, builds repository content and deploys GitHub Pages with `pages:write` / `id-token:write`. Поэтому direct unreviewed main update имеет current external effect path: изменённый UI-preview source может автоматически стать public Pages artifact без PR CI gate.
+12. Production Worker/DB deploy автоматически не запускается от main push; Stage 6 paused. Поэтому I1 не заявляет current production compromise и severity остаётся Moderate/P2, а не P1/P0.
+13. Exact human collaborator roster endpoint недоступен текущему connector read surface; owner permission отдельно подтверждена как `admin`, `chatgpt-codex-connector[bot]` user permission returns `none`. **Информация не проверена** для возможных иных human collaborators/roles.
+14. Branch-protection detail endpoint вернул 403 для integration, но branch object `protected=false` plus repository ruleset detail `enforcement=disabled` дают достаточный repository-state evidence. Finding не зависит от неизвестного human collaborator roster, потому что delegated repository-write integration path already exists.
+15. No separate finding for lack of required approvals, CODEOWNERS or signed-commit policy: их отсутствие не нужно для causal chain и не размножается как hardening findings.
+16. Remediation не начиналась. I1 only records defect; technical solution must be selected in separate remediation task.
+17. I1 tests/workflows/settings changes не выполнялись; main/ruleset/Environment state не mutated.
+18. Следующий bounded slice — I2 workflow events/tokens/write authority. I2 должен проверить, создаёт ли какой-либо current workflow второй independent write-escalation path; `REPO-MAIN-GATE-01` не дублировать.
+
+### `REPO-MAIN-GATE-01` — Moderate/P2
+
+**Root cause:** release-authoritative default branch `main` has no active branch/ruleset enforcement, while a delegated repository integration has Contents-write capability and repository CI is PR-only.
+
+**Current impact:** a delegated write-capable identity can alter trusted `main` code/config without PR/status-check enforcement; a main push also feeds the current public GitHub Pages deployment path.
+
+**Boundary:** no automatic production Worker/DB rollout from push was established; Stage 6 remains paused.
+
+Проверенная current official GitHub evidence:
+- protected branches/rulesets are the controls that enforce pull-request/status-check requirements on branch updates;
+- disabled rulesets do not enforce their configured rules;
+- REST Create/Update Contents accepts GitHub App installation/user tokens with Contents(write), and omitted `branch` defaults to the repository default branch;
+- rulesets apply to REST content/Git reference updates when enforced.
 
 ## Цель
 
