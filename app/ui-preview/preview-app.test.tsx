@@ -144,7 +144,7 @@ describe("interactive Pages preview", () => {
     const user = userEvent.setup();
     render(<EmbeddedPreview scenarioId="profile-edit" identity="user" />);
 
-    const bio = screen.getByLabelText("Bio");
+    const bio = screen.getByLabelText("About");
     await user.clear(bio);
     await user.type(bio, "Updated locally in the functional Pages preview.");
 
@@ -158,7 +158,7 @@ describe("interactive Pages preview", () => {
     expect(screen.getByText("Updated locally in the functional Pages preview.")).toBeInTheDocument();
 
     await user.click(screen.getByRole("link", { name: "Edit profile" }));
-    expect(screen.getByLabelText("Bio")).toHaveValue("Updated locally in the functional Pages preview.");
+    expect(screen.getByLabelText("About")).toHaveValue("Updated locally in the functional Pages preview.");
     expect(screen.getByLabelText("Website")).toHaveValue("https://vico.example/");
   });
 
@@ -186,7 +186,7 @@ describe("interactive Pages preview", () => {
     const user = userEvent.setup();
     render(<EmbeddedPreview scenarioId="help-solutions-ask" identity="user" />);
 
-    await user.click(screen.getByRole("button", { name: "Ask question" }));
+    await user.click(screen.getByRole("button", { name: "Ask a question" }));
     const form = document.getElementById("help-question-create-form") as HTMLFormElement;
     expect(form).not.toBeNull();
 
