@@ -1,5 +1,17 @@
 # Мира — безопасность Vico Forum
 
+## 2026-11-11 — Block D / D5 Users read surface / targeted authorization composition audit
+
+1. Target: current main `e279cb6c032a489a9044ca1191407df887c364b4`, rechecked identical to `main`.
+2. Verdict: **PASS — 0 current-scope security defects**.
+3. Index/detail independently require effective `admin.users.read` before parsing/reads; production uses AP-10-filtered authorization.
+4. Index SQL projects only ID/name/image/joined time and searches literal name/ID, never email. Detail explicitly allowlists public profile/statistics fields.
+5. Users-read alone receives no RBAC snapshot; management-only does not get Users. Both capabilities yield only one target's snapshot under repeatable-read, without other users/email/bulk overrides.
+6. Target ID cannot select actor authority: canonical authorization action derives actor from current Better Auth session and remains exact-Owner-only for writes; non-Owner management readers have no forms and direct POST stays forbidden.
+7. Mounted recovery/fetcher state is actor+target scoped; revocation revalidates, never replays mutation, and removal of Users-read remains fail-closed.
+8. Existing repository/local-CI/browser evidence supports these boundaries; no production/deployed acceptance is implied.
+9. No remediation handoff. Next D2.
+
 ## 2026-11-11 — Block D / D4 Admin History confidentiality / integrity audit
 
 1. Target: current main `e279cb6c032a489a9044ca1191407df887c364b4`, rechecked identical to `main`.
