@@ -1931,3 +1931,12 @@ This guard is part of Mira's operating context for #251 and must be checked befo
 - Exact-head CI/SA03/SA01/AP10 checks all SUCCESS.
 - **PASS — 0 confirmed current-scope defects.**
 - Next: Lev fresh independent whole-PR review on the same exact head only.
+
+## 2026-11-11 — accepted Lev finding SA03-IMPL-LEV-02
+
+- Independently verified the repeat-review finding on exact head `d7a526ac00ef56ebd8c8bd4035cc84fb9731ad49`.
+- Confirmed: fresh authorized profile DTO can be latched invalid during one-render HeaderAuth synchronization lag after actor switch and remain hidden until another loader result.
+- This is current SA-03 scope because accepted identity-boundary behavior requires both immediate stale-data removal and restoration from the first fresh authorized loader result.
+- Earlier MIRA-01 and LEV-01 remain closed.
+- Granularity gate passed: one bounded correction result.
+- Next: Lira fixes LEV-02 only, adds SPA actor/loader synchronization regression, runs applicable checks, publishes stable head and STOP.
