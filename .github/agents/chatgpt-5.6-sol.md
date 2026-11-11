@@ -4,7 +4,7 @@
 
 1. Служебный PR: **#315**.
 2. Моя текущая работа: audit/coordination only; remediation и implementation не назначены.
-3. Текущий этап: **Block H H1–H3 PASS; H4/H5 завершены: 0 current-scope findings + deferred Stage-6 blockers `WORKER-VERSION-URL-01 Moderate/P2`, `WORKER-ROLLBACK-FINALIZER-01 Moderate/P2`; следующий bounded slice — H6 Runtime failure, cache and observability boundaries**. Block G закрыт с 3 current-scope findings + deferred Stage-6 blocker `DB-RUNTIME-EVIDENCE-01`.
+3. Текущий этап: **Block H H1–H3 PASS; H4/H5 завершены: 0 current-scope findings + deferred Stage-6 blockers `WORKER-VERSION-URL-01 Moderate/P2`, `WORKER-ROLLBACK-FINALIZER-01 Moderate/P2`; H6 PASS, 0 additional; следующий bounded slice — H7 Runtime topology Stage boundary**. Block G закрыт с 3 current-scope findings + deferred Stage-6 blocker `DB-RUNTIME-EVIDENCE-01`.
 4. Technical audit target B–D: `e279cb6c032a489a9044ca1191407df887c364b4`.
 5. Current `main` — `ce62e783e71433a00c2fe4874ee26dfc54614628`. Delta `5992885… → ce62e783…` — documentation-only SA-03 closeout #326; H runtime/rollout code unchanged.
 6. Лира, Марк и Лёва по #315 сейчас не назначены.
@@ -141,6 +141,17 @@
 113. Current migration rollback contract requires backward application compatibility with applied forward schema; no later ALTER of baseline localization relations after 0020 found. No duplicate DB blocker.
 114. Wrangler 4.130.0 `versions deploy` also patches non-versioned configured settings (current observability) from current config; H6 must assess this, not H5.
 115. GitHub API: current main `protected=false`, repository `Protect main` ruleset enforcement disabled. This is Block I supply-chain scope, not H5; exact collaborators/Actions actor policy/production-worker Environment protection: **Информация не проверена**.
+116. H6: **PASS, 0 current-scope findings, 0 new deferred blockers** на `ce62e783e71433a00c2fe4874ee26dfc54614628`.
+117. Auth-session/storage classified outages → generic 503/no-store before Router; registration-policy storage outages and account-security unavailable paths similarly fail closed. Unexpected schema/config/programming failures are not downgraded to false success/denial.
+118. Super-admin controlled responses stay private,no-store. Route/SSR application diagnostics strip exception messages/causes/query/body and emit only allowlisted error kind/database code/source frames.
+119. 5xx telemetry stores only status + bounded latency; auth facts/attempt telemetry are bounded request-local writers. Sink/create/append/close failures never replace original HTTP/auth/authz outcome.
+120. Cloudflare current docs rechecked: waitUntil is intended for non-response-critical logging/analytics and has up-to-30s post-response lifetime. Current monitoring contract is best-effort/limited coverage, not lossless audit; no waitUntil durability finding.
+121. Early auth-session 503 does not traverse recordRequestFailure, but system.requests is explicitly recorded-5xx/limited-coverage and the same web DB sink may be unavailable; no H6 finding. Full durable incident coverage remains later monitoring scope.
+122. Workers Logs config: enabled, 100% head sampling, redact_query_string=true. Cloudflare current docs confirm default invocation logs contain request/response metadata and query redaction strips query strings. Production custom console logging is sanitized only.
+123. Platform Workers Logs can retain uncaught exceptions, but no concrete current secret-bearing uncaught path was established; classified DB/auth outages are sanitized and React Router route/SSR errors use safe hooks. No speculative leak finding.
+124. Exact tagged Wrangler 4.130.0 confirms versions deploy patches observability as non-versioned setting after deployment. Current exact observability config is not shown to weaken security; rollback/reconciliation ambiguity remains covered by existing WORKER-ROLLBACK-FINALIZER-01, no duplicate.
+125. Existing AUTH-CACHE-01 / READSTATE-CACHE-01 remain Blocks B/E; H6 found no additional Worker-wide cache root cause.
+126. Live Workers Logs access/retention/destinations/dashboard overrides: **Информация не проверена**; no external state read/mutation. Tests read, not run.
 
 ## Ограничения
 
@@ -152,5 +163,5 @@
 
 ## Следующий шаг
 
-1. После продолжения владельца выполнить **H6 — Runtime failure, cache and observability boundaries** на current main и остановиться после результата.
-2. Existing deferred blockers only reference; duplicates не создавать. Findings только фиксировать; remediation не начинать.
+1. После продолжения владельца выполнить **H7 — Runtime topology Stage boundary** на current main и остановиться после результата.
+2. Reconcile repository assumptions vs paused external topology; live mutation не выполнять. Existing blockers only reference; duplicates не создавать.
