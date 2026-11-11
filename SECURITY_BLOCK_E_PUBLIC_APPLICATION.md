@@ -4,7 +4,7 @@
 
 1. Это bounded audit plan для области 5 общей security-карты.
 2. Audit target на момент подготовки: current `main` `f6fd4b2c031b2132b04eace18704a59aed1dfec8`.
-3. Фактический аудит начат. **E2 завершён: PASS — 0 findings. E5 завершён: 1 current-scope finding — `FORUM-PUB-01 Moderate/P2`.** Remediation по Block E не назначена.
+3. Фактический аудит начат. **E2 завершён: PASS — 0 findings. E5 завершён: 1 current-scope finding — `FORUM-PUB-01 Moderate/P2`. E6 завершён: 0 additional findings; `FORUM-PUB-01` подтверждён также для published-post edit body.** Remediation по Block E не назначена.
 4. Проверка ведётся по реальным public/member route → service/repository paths, а не по одному UI.
 
 ## Граница блока
@@ -137,9 +137,9 @@ Attachment ownership/storage internals здесь не проверяются �
 ### FORUM-PUB-01 — Moderate/P2
 
 1. Обычные initial grants дают authenticated user `forum.topic.create` и `forum.reply.create`.
-2. Create-topic/Help/reply actions materialize `request.formData()` and validate nonblank/attachment semantics, но не задают upper bound для topic title или Markdown body. First-party title fields также не имеют `maxLength`; `MarkdownEditor` не задаёт publication-body limit.
-3. `ForumService.normalizeRevision()` проверяет только nonblank/source-locale semantics (body может быть blank для attachment-only). В schema `forum_topic_title_revisions.original_content` и `forum_post_revisions.original_content` — unbounded application-level `text` fields без `char_length` constraint.
-4. Поэтому обычный участник может провести через штатный authorized publication path и долговечно сохранить arbitrarily large application payload до внешнего/runtime/DB предела. 5-second cooldown ограничивает частоту, но не размер одного persisted write.
+2. Create-topic/Help/reply и `editPost` actions materialize `request.formData()` and validate nonblank/attachment semantics, но не задают upper bound для topic title или Markdown body. First-party title fields также не имеют `maxLength`; `MarkdownEditor` не задаёт publication/edit body limit.
+3. `ForumService.normalizeRevision()` проверяет только nonblank/source-locale semantics (body может быть blank для attachment-only), а `editPublishedPost()` проверяет ownership/CAS/attachment semantics, но не размер body. В schema `forum_topic_title_revisions.original_content` и `forum_post_revisions.original_content` — unbounded application-level `text` fields без `char_length` constraint.
+4. Поэтому обычный участник может через штатный authorized create/reply/edit path долговечно сохранить arbitrarily large application payload до внешнего/runtime/DB предела. 5-second cooldown ограничивает частоту topic/reply creation, но не размер одного persisted write и не устраняет oversized edit.
 5. Impact current-scope: persistent shared storage/resource consumption плюс повторная стоимость public read/SSR/Markdown processing для сохранённого контента. Это application-level amplification доступное базовому member, а не только гипотетический unauthenticated edge flood.
 6. Finding не утверждает отсутствие внешних Cloudflare/body limits и не требует сейчас production traffic engineering. E10 может отдельно проверить общий HTTP request envelope, но этот exact publication-field bound повторно finding не дублируется.
 7. Remediation не назначена в рамках audit stage.
@@ -156,6 +156,19 @@ Attachment ownership/storage internals здесь не проверяются �
 6. no-op/retry/concurrency не создаёт duplicate revision/notification/domain effect.
 
 Generic Own-vs-Any permission semantics уже покрыты Block C/D и здесь повторно не считаются отдельным finding без domain contradiction.
+
+### E6 — результат аудита
+
+1. Audit target: current `main` `f6fd4b2c031b2132b04eace18704a59aed1dfec8`.
+2. Verdict: **0 additional current-scope findings**. Existing `FORUM-PUB-01 Moderate/P2` расширен на published-post edit body: это тот же missing application-level content bound, а не новый defect.
+3. Edit authority/membership — PASS: route требует current session, same-origin и `forum.post.editOwn`; repository под row lock проверяет exact `postId + topicId`, authoritative author и `expectedRevisionId`. Forged actor/other-topic/other-user target не становится write authority.
+4. Edit CAS/replay — PASS: operation scope lock = current actor + exact post edit context. Receipt fingerprint включает post/topic, expected revision, body и attachment selections. Matching committed lost-response retry no-op replay'ится; changed retry конфликтует. Stale revision не создаёт новую current revision до explicit rebase/new operation.
+5. Edit side effects — PASS: revision insert, current-revision CAS, mention notification inserts, attachment membership changes и publication receipt находятся в одной transaction. Failed CAS/attachment publication откатывает revision/mentions; per-post notification uniqueness сохраняет already-notified set across later edits.
+6. Closure/edit — PASS: source-of-truth явно сохраняет existing own-published-post edits при закрытии темы; implementation не использует closure как edit ban. Fresh measure restriction `posts.edit` проверяется внутри edit transaction; committed matching receipt остаётся replayable по общему contract.
+7. Own solution authority — PASS: `operationScope=own` требует effective `forum.solution.manageOwn`, после чего repository под topic-row `FOR UPDATE` повторно проверяет authoritative topic author. Best-answer target обязан существовать в том же topic и не может быть original post.
+8. Solution state/races — PASS: active confirmed duplicate блокирует own solved/best-answer; duplicate-confirm и solution mutations сериализуются через тот же topic-row lock. Solved и best-answer по утверждённому contract независимы: answer можно выбрать до solved и заменить после solved. Repeated same best-answer selection не создаёт dependent side effects; concurrent explicit selections сериализуются и остаются exact-target last-write semantics, а не silent retarget.
+9. Closed topic не классифицирован как запрет Own solution mutations: действующий closure contract запрещает новые replies и не задаёт closure как solution-state restriction; противоречия code/source-of-truth не обнаружено.
+10. Remediation по E6 не назначена; единственный Block E finding остаётся `FORUM-PUB-01`.
 
 ## E7 — Notifications / mentions / unread / read-state
 
