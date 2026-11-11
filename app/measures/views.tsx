@@ -210,7 +210,7 @@ function MeasureSummary({measure,locale,admin=false}:{
 }
 const measureStatusOrder = ["active","expired","lifted"] as const;
 
-function GroupedMeasures({measures,locale,admin=false}:{
+export function GroupedMeasures({measures,locale,admin=false}:{
   measures:readonly UserMeasureSummary[];locale:string;admin?:boolean;
 }) {
   const {t}=useTranslation("common");
