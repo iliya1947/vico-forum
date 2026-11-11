@@ -32,10 +32,11 @@
 7. Block E audit завершён: E2 PASS; E5 — **`FORUM-PUB-01 Moderate/P2`**; E6 — 0 additional; E7 — **`READSTATE-CACHE-01 Low/P3`**; E3 — **`PUBLIC-PROJECTION-01 Low/P3`**; E4 — **`DISCOVERY-BOUNDS-01 Low/P3`, `SEARCH-CONTROL-01 Low/P3`**; E8 PASS; E1 — **`LOCALE-DEGRADED-WRITE-01 Low/P3`** + расширение `READSTATE-CACHE-01`; E9 PASS; E10 — **`FORUM-READ-BOUNDS-01 Moderate/P2`, `FORM-BODY-BOUNDS-01 Moderate/P2`**. Block E total: **8 findings**. E10 проверен на current `main` `4248fed23925e4a23e48485d419ceaf0ce337def`; compare с предыдущим target подтвердил отсутствие изменений core Forum/translation E2–E9.
 8. Block F на current `main` `538084fd472c65459ad55ab30a0f96fbfdd68e56`: **ЗАВЕРШЁН. Итог — 1 current-scope finding: `ATTACH-TEXT-TAIL-01 Low/P3`; F1/F2/F4/F5/F6/F7/F8 дополнительных findings не дали.** F8 перепроверил upload → publication → read → edit/remove → cleanup → evidence, включая lost ACK, measures, complaint evidence и runtime failures.
 9. **Block G — Database & migrations ЗАВЕРШЁН. Final current-scope: 3 findings — `DB-SEARCHPATH-01 Low/P3`, `DB-ACL-USER-DELETE-01 Low/P3`, `DB-TEST-TARGET-01 Low/P3`.** G8 дал 0 новых findings и исправил Stage-классификацию `DB-RUNTIME-EVIDENCE-01 Low/P3`: технический defect подтверждён, но это **Stage-6 blocker, не current-scope**, пока external integration paused. Descendant delta до current `main` `5992885e78b1642e41c9805116fcc256002b649c` (SA-03 #324, index-only migration `0064`) перепроверен и итог не изменил.
-10. **Block H — Cloudflare / Workers / runtime ЗАВЕРШЁН** на current `main` `593a03964b8407b249f7c9f5eb117ddb8b07736d`. Final: **0 current-scope findings; 2 deferred Stage-6 blockers — `WORKER-VERSION-URL-01 Moderate/P2`, `WORKER-ROLLBACK-FINALIZER-01 Moderate/P2`**. H8 cross-chain дал 0 additional findings и подтвердил отсутствие дублей с A–G; aggregate #315 остаётся 24 current findings + 3 deferred blockers.
-11. **Block I — Secrets & supply chain: scope подготовлен** против current `main` `593a03964b8407b249f7c9f5eb117ddb8b07736d`; I1–I8 ещё не выполнялись. Confirmed prep facts (public repo, unprotected main/disabled ruleset, SHA-pinned Actions, mutable `postgres:17`, write-capable Codex bridge/Pages permissions) сохранены только как audit candidates, не findings.
-12. Implementation PR, technical planner и implementer для remediation сейчас не назначены.
-13. Cloudflare/Neon/production/GitHub-settings mutation по #315 не разрешена и не выполнялась.
+10. **Block H — Cloudflare / Workers / runtime ЗАВЕРШЁН** на current `main` `593a03964b8407b249f7c9f5eb117ddb8b07736d`. Final: **0 current-scope findings; 2 deferred Stage-6 blockers — `WORKER-VERSION-URL-01 Moderate/P2`, `WORKER-ROLLBACK-FINALIZER-01 Moderate/P2`**. H8 cross-chain дал 0 additional findings и подтвердил отсутствие дублей с A–G.
+11. **Block I — Secrets & supply chain: I1 завершён с 1 current-scope finding — `REPO-MAIN-GATE-01 Moderate/P2`.** Disabled `Protect main` ruleset / unprotected default branch leaves PR + required `checks`/`database` gates unenforced; delegated repository Contents-write integration can update trusted main directly, while current CI is pull_request-only and main push feeds Pages deployment. I2–I8 ещё не выполнялись.
+12. Aggregate #315: **25 current-scope findings + 3 deferred Stage-6 blockers**.
+13. Implementation PR, technical planner и implementer для remediation сейчас не назначены.
+14. Cloudflare/Neon/production/GitHub-settings mutation по #315 не разрешена и не выполнялась.
 
 ## Индекс подтверждённых current-scope findings
 
@@ -63,6 +64,7 @@
 22. `DB-SEARCHPATH-01` — Low/P3; Complaint predecessor trigger uses unqualified relation names under caller search path, so a current web-capability session with TEMP can shadow its validation tables and persist an unrelated predecessor Case.
 23. `DB-ACL-USER-DELETE-01` — Low/P3; current web DB capability grants `DELETE` on `public.user`, but current Vico/Better Auth configuration has no enabled physical user-deletion operation, so the credential has unnecessary destructive authority.
 24. `DB-TEST-TARGET-01` — Low/P3; destructive DB test guards validate WHATWG URL `hostname`/pathname but pass the original connection string to node-postgres, whose pinned parser accepts query-level `host` override, so an external `*_test` database can pass the claimed local-only guard and be destructively reset.
+25. `REPO-MAIN-GATE-01` — Moderate/P2; default `main` has no active branch/ruleset enforcement while a delegated repository integration has Contents-write authority; PR-only CI therefore can be bypassed by a direct trusted-branch update, and main push also feeds the public Pages deployment path.
 
 Ключевая causal path, impact и границы каждого finding находятся в соответствующем Block-файле.
 
@@ -84,8 +86,8 @@
 2. **Block G закрыт: 3 current-scope findings — `DB-SEARCHPATH-01 Low/P3`, `DB-ACL-USER-DELETE-01 Low/P3`, `DB-TEST-TARGET-01 Low/P3`; `DB-RUNTIME-EVIDENCE-01 Low/P3` сохранён отдельно как Stage-6 blocker.** Детальные causal chain и G8 reclassification находятся в `SECURITY_BLOCK_G_DATABASE_MIGRATIONS.md`.
 3. Current H closeout target: **`593a03964b8407b249f7c9f5eb117ddb8b07736d`**. Delta `ce62e783… → 593a0396…` — SA-04 A1 #327 migration/schema/tests only; H runtime/topology code unchanged. Source-of-truth docs пока всё ещё фиксируют `0064`/SA-04+ not implemented; это отдельный documentation drift вне H.
 4. **Block H закрыт:** 0 current-scope findings; 2 deferred Stage-6 blockers; H8 0 additional and no A–G duplicates.
-5. **Block I scope готов.** Следующий bounded security step после продолжения владельца — **I1: Repository authority & main provenance**; после I1 остановиться.
-6. I-prep не выполнял audit verdict: `main protected=false` и disabled ruleset, write-capable workflows, action/container/dependency facts остаются candidates до доказанной causal chain.
+5. **Block I I1 завершён:** `REPO-MAIN-GATE-01 Moderate/P2`. Следующий bounded security step после продолжения владельца — **I2: Workflow events, tokens & write authority**; после I2 остановиться.
+6. I1 causal chain подтверждён без mutation main: disabled branch rules + delegated Contents-write path + PR-only CI + automatic Pages-on-main push. Exact human collaborator roster: **Информация не проверена**; finding от него не зависит.
 7. Exact `pg@8.23.0` query-timeout semantics и exact `drizzle-orm 0.45.2` transaction wrapper подтверждают, что lost/late COMMIT ACK возможен; current writers не auto-retry его. Locale отдельно reconciles; measures/Complaints/publication используют replay/CAS/idempotency.
 8. `AuthorizationRepository.mutate()` rollback-error preservation слабее новых helpers, но current fail-open/security impact не доказан — finding не создаётся.
 9. Advisory-lock compatibility с будущим real web Hyperdrive остаётся Stage-6 acceptance boundary; production web binding сейчас inactive/paused, поэтому это не current G5 finding.
