@@ -132,6 +132,21 @@
 
 ---
 
+## Delta-recheck после SA-02 #319 — 2026-11-11
+
+1. Delta target: current `main` `4248fed23925e4a23e48485d419ceaf0ce337def`; SA-02 implementation PR #319 final head `3f217c98dd9dcbd51518eda82b51506fbede936c`.
+2. Scope delta: новые Accounts & authentication / Security monitoring routes, exact-Owner guard instrumentation, shared Owner History/current readers, attempt telemetry, auth-fact producers и shared Worker wiring. Неизменённые SA-01/Stage-6 target boundaries повторно не переаудировались.
+3. Verdict: **PASS — 0 новых current-scope Block A findings**.
+4. Exact Owner admission сохранён: новые current/history routes и переподключённый global Event log вызывают `requireSuperAdmin` до query/cursor parsing и private reads; missing session остаётся 401, non-Owner 403, успешные/ошибочные protected responses — private/no-store.
+5. Telemetry не создаёт authority: actor берётся только из resolved request session; Owner-guard observation записывает фактический 401/403 и не меняет результат guard. Никакой submitted actor/role/email/provider claim не становится Owner evidence.
+6. Attempt source attribution bounded и fail-safe: direct Cloudflare ingress может дать только `qualified` normalized IP; отсутствие platform ingress evidence, same/cross-zone Worker subrequest signals, cross-zone sentinel и ambiguous/pseudo source деградируют в `unknown`, а не в доверенную identity. Текущая Cloudflare primary documentation подтверждает различие direct request / same-zone / cross-zone `CF-Connecting-IP`.
+7. Storage boundary SA-02 остаётся текущей pre-Stage-6 моделью: web runtime получил только code-backed SELECT/INSERT/UPDATE для bounded attempt-state tables и SELECT/INSERT для Owner event/observation journals; generic arbitrary Owner event API, UPDATE/DELETE journal и privileged DB ownership не добавлены.
+8. Attempt cardinality ограничена фиксированными 256 attributed groups на pool/hour; overflow/gap сохраняются отдельными fixed slots. Collector держит максимум 4 attempt records на request. Это intentional bounded observability contract SA-02, а не бесконечный per-request journal.
+9. Telemetry/fact persistence fail-isolated: отдельные short-lived pools, bounded DB timeouts, no blind retry after uncertain commit; sink/flush/close failure не заменяет исходный auth/access response или exception.
+10. **Целевая Block A изоляция не активирована и не считается дефектом SA-02:** отдельный Owner Worker/Access, isolated Owner auth/session/passkey, отдельный Owner DB role/Hyperdrive и отделение public telemetry producer от Owner reader остаются Stage-6 activation/foundation work по этому Block A.
+11. Current main permanent docs ещё описывают только SA-01, потому что factual SA-02 docs closeout находится в отдельном PR #323 и пока не merged. Это docs-state lag, не новый Block A security finding.
+12. Tests в этом delta-audit не запускались. Проверены changed runtime paths и targeted regressions; existing #319 implementation/review gates не заменяют этот security delta verdict.
+
 ## Проверенные внешние ориентиры на 2026-11-10 для блока A
 
 1. Better Auth security release: https://better-auth.com/blog/security-release-2026-11-03
