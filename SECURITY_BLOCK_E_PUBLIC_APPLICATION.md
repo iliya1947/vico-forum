@@ -4,7 +4,7 @@
 
 1. Это bounded audit plan для области 5 общей security-карты.
 2. Audit target на момент подготовки: current `main` `f6fd4b2c031b2132b04eace18704a59aed1dfec8`.
-3. Фактический аудит начат. **E2 PASS. E5: `FORUM-PUB-01 Moderate/P2`. E6: 0 additional findings; `FORUM-PUB-01` подтверждён для edit body. E7: `READSTATE-CACHE-01 Low/P3`. E3: `PUBLIC-PROJECTION-01 Low/P3`. E4: `DISCOVERY-BOUNDS-01 Low/P3`, `SEARCH-CONTROL-01 Low/P3`.** Remediation по Block E не назначена.
+3. Фактический аудит начат. **E2 PASS. E5: `FORUM-PUB-01 Moderate/P2`. E6: 0 additional findings; `FORUM-PUB-01` подтверждён для edit body. E7: `READSTATE-CACHE-01 Low/P3`. E3: `PUBLIC-PROJECTION-01 Low/P3`. E4: `DISCOVERY-BOUNDS-01 Low/P3`, `SEARCH-CONTROL-01 Low/P3`. E8: PASS — 0 additional findings.** Remediation по Block E не назначена.
 4. Проверка ведётся по реальным public/member route → service/repository paths, а не по одному UI.
 
 ## Граница блока
@@ -273,6 +273,25 @@ Generic Own-vs-Any permission semantics уже покрыты Block C/D и зд�
 4. `showOnline=false` исключает пользователя из public online list/count и прекращает дальнейшую heartbeat registration;
 5. stale presence/expiry/concurrency не показывает скрытого пользователя или другого account;
 6. account switch не переносит local/member state между users.
+
+### E8 — результат аудита
+
+1. Audit target: current `main` `f6fd4b2c031b2132b04eace18704a59aed1dfec8`.
+2. Verdict: **PASS — 0 additional current-scope findings**.
+3. Public profile projection — PASS: repository reader выбирает только `id/name/image/joinedAt/bio/githubUrl/websiteUrl/role/messageCount/bestAnswerCount`; route повторно строит explicit public projection. Existing route regression подмешивает private `email` / `permissions` и подтверждает, что они не сериализуются.
+4. Profile ownership/edit boundary — PASS: public read остаётся guest-accessible; edit action требует authenticated session, same-origin и exact `session.user.id === params.userId`. Repository получает только server actor, locks exact user row и применяет `profile.edit` measure admission перед upsert.
+5. Public profile URL safety — PASS: biography ограничена 500 Unicode code points и rejects forbidden controls; website принимает только absolute HTTP(S) без credentials/control/whitespace. GitHub additionally требует exact `github.com`, default port, no query/hash и single profile-name path. Presentation повторно проходит links/avatar через `safeHttpUrl`; avatar использует `referrerPolicy="no-referrer"`.
+6. Profile identity path — PASS: locale/user ID кодируются `encodeURIComponent` как отдельные path segments; submitted profile fields не выбирают target account/role/name.
+7. Heartbeat identity/origin — PASS: `/:locale/presence` принимает только authenticated same-origin POST; writer получает только current session user ID. Stale `expectedUserId` другого account даёт 409 до write; произвольный submitted `userId` не используется как subject.
+8. Server-authoritative OFF enforcement — PASS: privacy save и heartbeat оба lock'ят ту же Better Auth user row `FOR UPDATE` under READ COMMITTED. Heartbeat после lock отдельным SELECT читает latest committed preference и при `show_online=false` не insert/refresh presence. OFF upsert + presence delete находятся в одной transaction; repeated OFF также чистит stale row.
+9. Public list/count — PASS: `readOnlinePresence()` ограничивает active window пятью минутами и filters `show_online=false` **до** window count/order/`LIMIT 12`. Missing preference row считается ON по утверждённому contract; email/private setting/session data в public member DTO отсутствуют.
+10. Stale-row/concurrency — PASS: connected PostgreSQL regression покрывает forced stale hidden presence row, filter-before-count/limit, rollback cleanup failure и обе очередности `heartbeat-first` / `off-first`; итог после гонки = OFF + no presence. Unrelated users не сериализуются глобально.
+11. ON behavior — PASS: включение visibility само presence не создаёт; пользователь появляется только после следующего permitted heartbeat.
+12. Browser/account switch — PASS: heartbeat effect зависит от current `user.id` и cleanup'ит старый timer/listener; in-flight stale heartbeat защищён `expectedUserId` server check. Privacy form keyed by `accountId:showOnline`, stale header identity скрывает form, а existing UI regression подтверждает reset при account switch и сохранение draft только для same account.
+13. Homepage privacy/cache — PASS в узком E8 scope: online identities идут через homepage response с explicit `private, no-store`; optional storage outage отображается как unavailable, а не fabricated zero.
+14. Отдельный cache-кандидат public profile **не классифицирован как E8 finding**: `profile.tsx` содержит member-specific `isOwner/canEditProfile/editing/saved`, но более широкий parent `/:locale` loader уже сериализует `authUser`, permissions и unread count без собственного document cache policy. Exact React Router `8.3.1` headers source уже подтверждает наследование parent headers при отсутствии child `headers`. Этот root public-vs-member cache contract запланирован в **E1**; не создавать здесь profile-specific duplicate до whole-root проверки.
+15. Tests в этом audit не запускались; существующие route/UI/PostgreSQL regressions были прочитаны как evidence. Production/deployed presence acceptance не выполнялась и для E8 не требуется.
+16. Remediation по E8 не назначена.
 
 ## E9 — User-content translation application boundary
 
