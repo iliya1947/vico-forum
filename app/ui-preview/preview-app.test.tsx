@@ -138,6 +138,7 @@ describe("interactive Pages preview", () => {
 
     await waitFor(() => expect(document.querySelector(".solved-badge")).not.toBeNull());
     expect(screen.getByText("Best answer")).toBeInTheDocument();
+  });
 
   it("edits the signed-in user's profile and keeps the saved preview data", async () => {
     const user = userEvent.setup();
@@ -204,7 +205,6 @@ describe("interactive Pages preview", () => {
 
     expect(await screen.findByRole("heading", { level: 1, name: "Worker session redirect problem" })).toBeInTheDocument();
     expect(screen.getByText("My Worker loses its session after redirect.")).toBeInTheDocument();
-  });
   });
 });
 
