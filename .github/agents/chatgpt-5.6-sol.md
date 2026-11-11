@@ -2074,3 +2074,14 @@ Do not treat a user's anger, criticism or request to think as implicit permissio
 - No other confirmed current-scope A1 defect found in migration/schema/snapshot/journal/Better Auth boundary/tests.
 - Exact-head Actions remain queued; no test PASS claimed.
 - Returned only this bounded correction to Lira.
+
+## 2026-11-11 — SA04-A1 repeat coordinator review PASS
+
+- Re-reviewed complete Draft PR #327 on exact stable head `3d6c7c06ac1442a5a4b3ff7f8fbe77454ca8479c` against the bounded SA04-A1 assignment, accepted SA-04 technical plan, current post-SA-03 main and Super-admin boundary.
+- Cumulative PR now has 10 changed files: the original schema/migration/snapshot/journal/manifest/tests plus three existing isolated Better Auth test fixture setups that now apply migration 0065. Those three additions are test-environment alignment only and do not add runtime/account-state behavior.
+- **SA04-A1-MIRA-01 CLOSED:** production manifest now contains the observed PostgreSQL 17.11 normalized CHECK hash `a4f4c052ca3f6bcbeab2d64069c0cf611c0de75aeea74a8d27ec45cd097ce891`; exact-head database CI independently reports production schema manifest parity for 69 public tables.
+- Rechecked the complete A1 surface: only `public.user` changes in snapshot; three nullable server-owned state columns; active all-NULL / deactivated complete tuple; nonblank actor; UTC calendar-year minimum retention; accepted migrations 0000–0064 untouched; Better Auth additionalFields remains `locale`; real auth signup/session regression confirms state is neither client-writable nor serialized.
+- Exact-head CI #43102435249 is SUCCESS: 2237/2237 app tests and 690/690 PostgreSQL 17 tests; SA-01 Chromium #43102435251, SA-03 Chromium #43102435370 and AP-10 Chromium #43102435384 are also SUCCESS.
+- **Coordinator verdict: PASS — 0 confirmed current-scope SA04-A1 defects.**
+- Next gate: Lev independent A1-only whole-PR technical review of the same exact head. No implementation changes, merge, SA04-A2+, SA-05+, Stage6/production or #315 remediation are authorized by this PASS.
+
