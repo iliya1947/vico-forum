@@ -1,17 +1,13 @@
 # Admin panel — current workflow
 
-- Service PR **#251**; merged SA04-A1 main/base `593a03964b8407b249f7c9f5eb117ddb8b07736d`. SA04-A2/A3/A4/B/C1/C2 remain **Mira checkpoint PASS**, A4-MIRA-01 CLOSED.
-- **Current checkpoint: SA04-C3a author-complete. Next Mira bounded C3a checkpoint/scope review. Lira STOP.**
-- [Cumulative Draft implementation PR #328](https://github.com/iliya1947/vico-forum/pull/328): **stable exact head `04fb2510afb0c32494509424b6b0af280c5743bc`**, base unchanged, **25 changed files**, open/Draft/unmerged.
-- **C3a bounded result:** canonical `readPopular` and `readUnanswered` joined topic-author lifecycle → accepted A4 `Deleted user` projector before public DTO. Active authors remain unchanged; raw deactivated identity/lifecycle does not cross reader/route/DOM. Popular three period windows/counts/ranks/order/limits and Unanswered eligibility/title/source-locale/location/newest-first order retained.
-- Canonical Popular/Unanswered routes mask deleted names before serialization; existing UI translates deleted label with `t("deletedUser")`, including raw malicious fixture defense; no new UI catalog/migrations.
-- Native PG17/EN+HE route/DOM regression tests cover distinct raw name/avatar/deactivation actor/date markers, mixed active/deleted authors, Popular period membership and activity, Unanswered replied exclusion and source-direction/location continuity.
-- **Author inspection:** personally inspected cumulative 25-file changed inventory, relevant actual C3a patches/source, SQL projection/retained fields, route/DOM and focused regression; no confirmed current C3a defect. This is not Mira coordinator or Lev independent review.
-- **Exact-head [CI #43208714882](https://github.com/iliya1947/vico-forum/actions/runs/43208714882) SUCCESS:** 2252/2252 app; 704/704 PG17; 69-table schema manifest parity; lint/typecheck/build/Worker smoke. [SA03 Chromium #43208714867](https://github.com/iliya1947/vico-forum/actions/runs/43208714867), [SA01 Chromium #43208714997](https://github.com/iliya1947/vico-forum/actions/runs/43208714997), [AP10 Chromium #43208714917](https://github.com/iliya1947/vico-forum/actions/runs/43208714917) all SUCCESS (AP10 four jobs).
-- **C3a diagnostics corrected:** first run ESLint unused destructuring in new tests; a new native test incorrectly expected oldest-before-newest on Unanswered and was corrected to the existing newest-first order; next typecheck found test-only literal-union `Set` typing and was corrected to `Set<string>`. Final exact head green; no SQL behavior rewrite.
-- **CI caveat:** historical DrizzleKit 0.31.10 `generate` BigInt message is not independent schema evidence; native 69-table parity passed, no migration/schema change.
-- **Excluded:** C3b Tag/Search, C3c Unread, C3d Help, history, notifications, Admin Users, mentions, presence, auth/session, writers/deactivation controls, SA05+, Stage6/production, #315, documentation closeout, merge.
-- **Active recipient: Mira — SA04-C3a checkpoint/scope review of stable exact `04fb2510afb0c32494509424b6b0af280c5743bc`.** Lev/Mark and C3b+ unassigned.
+- Service PR **#251**; merged SA04-A1 main/base `593a03964b8407b249f7c9f5eb117ddb8b07736d`. SA04-A2/A3/A4/B/C1/C2/C3a **Mira checkpoint PASS**; A4-MIRA-01 CLOSED.
+- **Current checkpoint: SA04-C3a Mira checkpoint PASS on cumulative Draft #328 exact head `04fb2510afb0c32494509424b6b0af280c5743bc`; 0 confirmed current-scope C3a defects. Lira STOP.**
+- [Cumulative Draft implementation PR #328](https://github.com/iliya1947/vico-forum/pull/328): stable exact implementation head **`04fb2510afb0c32494509424b6b0af280c5743bc`**, base/current main **`593a03964b8407b249f7c9f5eb117ddb8b07736d`**, **25 changed files**, open/Draft/unmerged.
+- **C3a confirmed:** canonical Popular and Unanswered readers project inactive topic authors through accepted A4 Deleted-user identity before public DTO; loader/presentation keep the deleted marker and refuse raw names. Active authors remain unchanged.
+- **Semantics confirmed unchanged:** Popular 24h/7d/30d cutoffs, activity counts, latest-activity ranking/tie-break/order and limits; Unanswered unsolved + exactly-one-post eligibility, newest-first order, title/source-locale and public discovery location.
+- **Review evidence:** C3a delta is six files from accepted C2 head. Direct PG17 tests exercise mixed active/deactivated authors, period membership/rank/count and Unanswered eligibility/order; EN/HE route/DOM tests cover serialization, localized Deleted-user rendering and raw-fixture defense. Exact-head CI #43208714882, SA03 #43208714867, SA01 #43208714997 and AP10 #43208714917 independently rechecked: all SUCCESS on `04fb2510...`.
+- **PASS — 0 confirmed current-scope C3a defects.** #328 remains cumulative Draft; no Lev review/merge at this checkpoint.
+- **No active agent assignment.** Next bounded continuation is **C3b: Tag + Search topic-author summaries**. C3c Unread, C3d Help and later SA04 work remain unassigned.
 
 ## Mandatory author verification
 
