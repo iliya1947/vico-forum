@@ -3,6 +3,19 @@
 Служебный PR: #251. Оперативное состояние: [workflow.md](./workflow.md). Общий контракт: [ADMIN_PANEL_IMPLEMENTATION_PLAN.md](../ADMIN_PANEL_IMPLEMENTATION_PLAN.md).
 
 
+## 2026-11-12 — Mira: SA04-E mention discovery assigned to Lira
+
+- D remains Mira checkpoint-PASS on cumulative Draft #328 exact head `85a95a0a46dc77ea80ab21eea5504a681ac586de`; current main/base remains `593a03964b8407b249f7c9f5eb117ddb8b07736d`.
+- Pre-action gate passed: Role = Mira scope/handoff; Authority = developer continuation + accepted SA04 plan; Granularity = one mention-candidate reader with its existing endpoint contract; Preservation = continue #328 and preserve Editor/mention publishing logic.
+- Current path is one authoritative query: `DrizzleForumRepository.searchMentionableUsers` → authenticated `/:locale/mentions`. Existing query trims input, rejects empty/>64, literal-escapes LIKE metacharacters, orders by name then ID and limits to 8.
+- Required E result: inactive accounts are **not mentionable candidates at all**. Filter by accepted A1 active-state semantics before ordering/limit so inactive matches cannot consume bounded result slots. Do not convert them to `Deleted user` suggestions.
+- Preserve active matching/order/limit and stable-ID/name DTO. The route keeps guest 401 before reader access, private/no-store/nosniff, empty/oversized behavior, typed 503 and unexpected-error propagation.
+- Native PG evidence must prove filter-before-limit with enough inactive matching rows to crowd the old top-8, while active candidates retain existing order and wildcard-literal semantics; ensure email/lifecycle/private fields never enter returned DTO.
+- Editor suggestion UI and stable-ID insertion require no change unless the backend contract actually demands it. Mention notification production/dedup/edit semantics are separate and excluded.
+- Excluded: F presence, G notification readers, H history, I auth/session, J–R writers, SA05+, Stage6/production, #315, docs and merge.
+- Finish on stable exact head with applicable checks and mandatory author inspection, publish evidence, then **Lira STOP for Mira E checkpoint review**. Lev/Mark remain unassigned.
+
+
 ## 2026-11-12 — Mira: SA04-D checkpoint review PASS
 
 - Reviewed cumulative Draft #328 exact stable head `85a95a0a46dc77ea80ab21eea5504a681ac586de` against bounded checkpoint D; base/current main remains `593a03964b8407b249f7c9f5eb117ddb8b07736d`.
