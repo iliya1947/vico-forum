@@ -1,5 +1,5 @@
 import { projectPublicAccountIdentity, PublicIdentityInvariantError } from "./public-identity";
-import type { AccountState } from "./account-state";
+import { activeAccountPredicate, type AccountState } from "./account-state";
 import {appendForumHistory} from "./forum-history";
 import { lockPrivacySubject } from "./user-privacy";
 import type {HelpSignalHistoryEffect} from "./admin-history";
@@ -560,7 +560,7 @@ export class DrizzleForumRepository {
     // The user's term is literal, not a SQL LIKE pattern.
     const escaped = term.replace(/[!%_]/gu, (char) => "!" + char);
     return this.database.select({ id: user.id, name: user.name }).from(user)
-      .where(sql`${user.name} ilike ${"%" + escaped + "%"} escape '!'`)
+      .where(and(activeAccountPredicate(user.deactivatedAt), sql`${user.name} ilike ${"%" + escaped + "%"} escape '!'`))
       .orderBy(asc(user.name), asc(user.id))
       .limit(8);
   }
