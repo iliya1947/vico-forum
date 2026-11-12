@@ -4732,3 +4732,13 @@ Lira must perform author inspection, publish the stable A2 head/evidence and STO
 - Acceptance boundary: inactive persisted user never reaches `authSessionContext` as authenticated identity; active session semantics/cookies stay intact; account-state availability outage remains controlled unavailable/503 and unexpected failures remain unexpected.
 - No Better Auth endpoint hook/direct API enforcement, session-create gate, adapter target-write closure, application writer enforcement or deactivate command in I1.
 - Author verifies the actual bounded diff and stops on a stable exact head for Mira checkpoint review.
+
+
+## 2026-11-12 — SA04-I1 coordinator checkpoint accepted
+
+- Mira independently checked PR #329 exact `649dada0e2dfc5333c7c072170c0fd8c71a4501a` against the bounded I1 handoff and accepted SA04 auth plan.
+- **PASS — 0 confirmed I1 current-scope defects.**
+- Request identity is fail-closed against inactive account state without deleting the retained session/account; active and cookie semantics are preserved.
+- Remaining direct auth/session-create/target-write gaps belong to I2–I4 by the accepted decomposition and are not promoted to I1 defects.
+- PR #329 stays cumulative Draft. No independent Lev review is spent on this tiny intermediate checkpoint.
+- I2–I5/J+ remain unassigned pending separate continuation.
