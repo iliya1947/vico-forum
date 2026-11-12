@@ -158,3 +158,78 @@ describe("persisted forum profiles", () => {
     expect((await repository.readProfile("profile-helper"))?.role.displayName).toBe("Community expert");
   });
 });
+
+describe("SA04-C1 canonical topic-page public author projection", () => {
+  it("keeps published content and active authors while removing inactive names, images and lifecycle secrets", async () => {
+    await topic("profile-c1-topic");
+    await reply("profile-c1-helper", "profile-c1-topic", "profile-helper");
+    await reply("profile-c1-active", "profile-c1-topic", "profile-newcomer");
+    await client.query("begin");
+    try {
+      await client.query('update "user" set name=$2, image=$3 where id=$1', [
+        "profile-owner", "SECRET_C1_TOPIC_AUTHOR", "https://images.example.test/SECRET_C1_TOPIC_AVATAR.png",
+      ]);
+      await client.query('update "user" set name=$2, image=$3 where id=$1', [
+        "profile-helper", "SECRET_C1_REPLY_AUTHOR", "https://images.example.test/SECRET_C1_REPLY_AVATAR.png",
+      ]);
+      const active = (await repository.readTopicPage("profile-c1-topic"))!;
+      expect(active).toMatchObject({
+        id: "profile-c1-topic", authorId: "profile-owner", authorName: "SECRET_C1_TOPIC_AUTHOR",
+        posts: [
+          { authorId: "profile-owner", authorName: "SECRET_C1_TOPIC_AUTHOR", authorImage: "https://images.example.test/SECRET_C1_TOPIC_AVATAR.png" },
+          { authorId: "profile-helper", authorName: "SECRET_C1_REPLY_AUTHOR", authorImage: "https://images.example.test/SECRET_C1_REPLY_AVATAR.png" },
+          { authorId: "profile-newcomer", authorName: "profile-newcomer" },
+        ],
+      });
+      expect(active).not.toHaveProperty("authorIdentityKind");
+      expect(active.posts[0]).not.toHaveProperty("authorIdentityKind");
+
+      await client.query(
+        'update "user" set deactivated_at=$2::timestamptz, deactivated_by_user_id=$3,' +
+          ' retain_at_least_until=$4::timestamptz where id=$1',
+        ["profile-owner", "2024-02-29T12:34:56Z", "SECRET_C1_OWNER_DEACTIVATOR", "2025-02-28T12:34:56Z"],
+      );
+      const mixed = (await repository.readTopicPage("profile-c1-topic"))!;
+      expect(mixed).toMatchObject({
+        authorId: "profile-owner", authorName: "Deleted user", authorIdentityKind: "deleted",
+        posts: [
+          { authorId: "profile-owner", authorName: "Deleted user", authorImage: null, authorIdentityKind: "deleted" },
+          { authorId: "profile-helper", authorName: "SECRET_C1_REPLY_AUTHOR", authorImage: "https://images.example.test/SECRET_C1_REPLY_AVATAR.png" },
+          { authorId: "profile-newcomer", authorName: "profile-newcomer" },
+        ],
+      });
+      await client.query(
+        'update "user" set deactivated_at=$2::timestamptz, deactivated_by_user_id=$3,' +
+          ' retain_at_least_until=$4::timestamptz where id=$1',
+        ["profile-helper", "2024-02-29T12:34:56Z", "SECRET_C1_REPLY_DEACTIVATOR", "2025-02-28T12:34:56Z"],
+      );
+      const result = (await repository.readTopicPage("profile-c1-topic"))!;
+      expect(result).toMatchObject({
+        authorId: "profile-owner", authorName: "Deleted user", authorIdentityKind: "deleted",
+        title: active.title, section: active.section, tags: active.tags,
+        posts: [
+          { id: "profile-c1-topic-initial", authorId: "profile-owner", authorName: "Deleted user", authorImage: null, authorIdentityKind: "deleted", body: { originalContent: "Question body" } },
+          { id: "profile-c1-helper", authorId: "profile-helper", authorName: "Deleted user", authorImage: null, authorIdentityKind: "deleted", body: { originalContent: "Answer" } },
+          { id: "profile-c1-active", authorId: "profile-newcomer", authorName: "profile-newcomer", authorImage: "https://example.com/avatar.png", body: { originalContent: "Answer" } },
+        ],
+      });
+      expect(result.posts[2]).not.toHaveProperty("authorIdentityKind");
+      expect(result.posts.map(({ id, topicId, parentPostId, createdAt, attachments }) =>
+        ({ id, topicId, parentPostId, createdAt, attachments }))).toEqual(active.posts.map(
+          ({ id, topicId, parentPostId, createdAt, attachments }) =>
+            ({ id, topicId, parentPostId, createdAt, attachments }),
+        ));
+      const serialized = JSON.stringify(result);
+      for (const secret of [
+        "SECRET_C1_TOPIC_AUTHOR", "SECRET_C1_TOPIC_AVATAR",
+        "SECRET_C1_REPLY_AUTHOR", "SECRET_C1_REPLY_AVATAR",
+        "SECRET_C1_OWNER_DEACTIVATOR", "SECRET_C1_REPLY_DEACTIVATOR",
+        "2024-02-29", "2025-02-28",
+      ]) expect(serialized).not.toContain(secret);
+      expect(Object.keys(result.posts[0]!)).not.toContain("authorDeactivatedAt");
+      expect(Object.keys(result)).not.toContain("authorRetainAtLeastUntil");
+    } finally {
+      await client.query("rollback");
+    }
+  });
+});
