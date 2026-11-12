@@ -492,8 +492,8 @@ export interface ForumReader {
   readTopicPage(id: string): Promise<ForumTopicPage | undefined>;
   readPostLocation(postId: string): Promise<{ topicId: string; authorId: string } | undefined>;
   readPostHistory(postId: string, topicId: string): Promise<Array<{
-    id: string; authorId: string; authorName: string; originalContent: string;
-    sourceLocale: string; createdAt: Date;
+    id: string; authorId: string; authorName: string; authorIdentityKind?: "deleted";
+    originalContent: string; sourceLocale: string; createdAt: Date;
   }>>;
 }
 
@@ -3051,10 +3051,13 @@ export class DrizzleForumRepository {
   }
 
   async readPostHistory(postId: string, topicId: string) {
-    return this.database.select({
+    const rows = await this.database.select({
       id: forumPostRevisions.id,
       authorId: forumPostRevisions.authorId,
       authorName: user.name,
+      authorDeactivatedAt: user.deactivatedAt,
+      authorDeactivatedByUserId: user.deactivatedByUserId,
+      authorRetainAtLeastUntil: user.retainAtLeastUntil,
       originalContent: forumPostRevisions.originalContent,
       sourceLocale: forumPostRevisions.sourceLocale,
       createdAt: forumPostRevisions.createdAt,
@@ -3063,6 +3066,14 @@ export class DrizzleForumRepository {
       .innerJoin(user, eq(user.id, forumPostRevisions.authorId))
       .where(and(eq(forumPostRevisions.postId, postId), eq(forumPosts.topicId, topicId)))
       .orderBy(desc(forumPostRevisions.createdAt), desc(forumPostRevisions.id));
+    return rows.map(row => {
+      const author = projectForumPublicAuthor(row);
+      return {
+        id: row.id, authorId: row.authorId, authorName: author.name,
+        ...(author.kind === "deleted" ? { authorIdentityKind: "deleted" as const } : {}),
+        originalContent: row.originalContent, sourceLocale: row.sourceLocale, createdAt: row.createdAt,
+      };
+    });
   }
 
   private async readTagsForTopics(topicIds: readonly string[]): Promise<Map<string, ForumTag[]>> {
