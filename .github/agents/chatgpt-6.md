@@ -1,3 +1,11 @@
+# Лира — SA04-A4 author checkpoint complete; STOP
+
+- Cumulative [Draft PR #328](https://github.com/iliya1947/vico-forum/pull/328), post-A1 main/base `593a03964b8407b249f7c9f5eb117ddb8b07736d`, stable exact head `11652f64df234e10bb3783fe93c8e8b3073be262`, open Draft/unmerged. A2/A3 Mira checkpoint PASS already recorded; A4 pending Mira.
+- Added only `db/public-identity.ts` and `db/public-identity.test.ts`: pure allowlisted active/deleted public identity contract, same stable user ID, approved `Deleted user` neutral fallback and generic `deletedUser` key, null avatar/external links, empty bio, no raw source/lifecycle leakage, malformed/missing/ID mismatch rejected. No readers or runtime connected, catalog not yet wired.
+- **Personally inspected** complete cumulative four-file source/tests and PR diff, public data/marker selection, type/lifecycle invariants, A2 read and A3 transaction guards unchanged, relevant current source-of-truth and assignment scope. Five new focused unit cases prove active fidelity, neutral secret-free serialization, malformed state rejection, generic label token.
+- **Exact-head [CI #43157355266](https://github.com/iliya1947/vico-forum/actions/runs/43157355266) SUCCESS**: 2242 app tests (5 A4), 700 native PostgreSQL17 (10 A2/A3), schema manifest 69 tables, lint/typecheck/build/Drizzle/migration/Workers.
+- **Lira STOP; next Mira bounded SA04-A4 checkpoint review**. A5/B+ reader integration, Lev review, merge, deactivation command and external/Stage6 not assigned.
+
 # Лира — SA04-A3 bounded author checkpoint complete; STOP
 
 - [Draft #328](https://github.com/iliya1947/vico-forum/pull/328), base main `593a03964b8407b249f7c9f5eb117ddb8b07736d`, stable cumulative exact head `0725b49dc9d9e36152670dac8368d0f83e714c82`. Previous A2 Mira checkpoint PASS remains accepted.
