@@ -4228,3 +4228,12 @@ Lira must perform author inspection, publish the stable A2 head/evidence and STO
 - **PASS — 0 confirmed current-scope SA04-C1 defects.**
 - #328 remains Draft/cumulative; Lira STOP; C2+ and Lev unassigned.
 
+## 2026-11-12 — SA04-C2 bounded handoff
+
+- C1 is accepted at Mira checkpoint level in cumulative Draft #328 exact head `306319bb506bb95ddda776dbc1a0b04a9c3e8fe3`.
+- Only C2 is assigned: public category/section topic-list author projection.
+- Scope is `readCategory` latest+pinned topic authors, `readSection` topic authors, and the canonical serialization/presentation of those same lists.
+- Inactive author raw name/lifecycle data must not cross direct DTO or public route/presentation; stable topic/content/list semantics and active entries remain unchanged.
+- C3 discovery/Help, post-history, notifications, directory, mentions, presence, auth/session/writers and later SA work remain outside this handoff.
+- Lira performs author inspection, publishes stable exact head/evidence and STOP. C3+ and Lev unassigned.
+
