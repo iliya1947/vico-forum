@@ -351,3 +351,124 @@ describe("SA04-C2 canonical category and section topic-list authors", () => {
     }
   });
 });
+
+describe("SA04-C3a Popular and Unanswered topic-author projections", () => {
+  it("neutralizes inactive topic authors in each discovery reader without changing windows, ranks or eligibility", async () => {
+    const entries = [
+      { id: "profile-c3a-recent", authorId: "profile-owner", at: "2026-11-12T11:00:00Z" },
+      { id: "profile-c3a-week", authorId: "profile-helper", at: "2026-11-10T11:00:00Z" },
+      { id: "profile-c3a-active", authorId: "profile-newcomer", at: "2026-10-30T11:00:00Z" },
+      { id: "profile-c3a-old", authorId: "profile-owner", at: "2026-09-01T11:00:00Z" },
+    ] as const;
+    for (const entry of entries) {
+      await repository.createTopicWithInitialPost({
+        id: entry.id, sectionId: "profile-section", authorId: entry.authorId,
+        titleRevision: {
+          id: `${entry.id}-title`,
+          originalContent: `Public topic ${entry.id}`, sourceLocale: "en",
+        },
+        initialPost: {
+          id: `${entry.id}-initial`, topicId: entry.id, authorId: entry.authorId,
+          bodyRevision: {
+            id: `${entry.id}-body`, originalContent: `Published body ${entry.id}`, sourceLocale: "en",
+          },
+        },
+      });
+      await client.query("update forum_topics set created_at=$2::timestamptz where id=$1", [entry.id, entry.at]);
+      await client.query("update forum_posts set created_at=$2::timestamptz where topic_id=$1", [entry.id, entry.at]);
+    }
+    await reply("profile-c3a-recent-reply", "profile-c3a-recent", "profile-helper");
+    await client.query("update forum_posts set created_at=$2::timestamptz where id=$1", [
+      "profile-c3a-recent-reply", "2026-11-12T11:10:00Z",
+    ]);
+    const referenceTime = new Date("2026-11-12T12:00:00Z");
+    const ownIds = new Set(entries.map((entry) => entry.id));
+    const onlyOwn = <T extends { id: string }>(items: T[]) => items.filter((item) => ownIds.has(item.id));
+    const periods = ["24h", "7d", "30d"] as const;
+
+    await client.query("begin");
+    try {
+      await client.query('update "user" set name=$2, image=$3 where id=$1', [
+        "profile-owner", "SECRET_C3A_POPULAR_OWNER", "https://images.example.test/SECRET_C3A_OWNER_AVATAR.png",
+      ]);
+      await client.query('update "user" set name=$2, image=$3 where id=$1', [
+        "profile-helper", "SECRET_C3A_UNANSWERED_HELPER", "https://images.example.test/SECRET_C3A_HELPER_AVATAR.png",
+      ]);
+      const activePopular = await repository.readPopular(referenceTime, 20);
+      const activeUnanswered = await repository.readUnanswered();
+      expect(onlyOwn(activePopular["24h"]).map((row) => row.id)).toEqual(["profile-c3a-recent"]);
+      expect(onlyOwn(activePopular["7d"]).map((row) => row.id)).toEqual([
+        "profile-c3a-recent", "profile-c3a-week",
+      ]);
+      expect(onlyOwn(activePopular["30d"]).map((row) => row.id)).toEqual([
+        "profile-c3a-recent", "profile-c3a-week", "profile-c3a-active",
+      ]);
+      expect(onlyOwn(activePopular["24h"])[0]).toMatchObject({
+        authorName: "SECRET_C3A_POPULAR_OWNER", activityCount: 2,
+        latestActivityAt: new Date("2026-11-12T11:10:00Z"),
+      });
+      expect(onlyOwn(activeUnanswered).map((row) => row.id)).toEqual([
+        "profile-c3a-active", "profile-c3a-week", "profile-c3a-old",
+      ]);
+      expect(onlyOwn(activeUnanswered)[1]).toMatchObject({
+        authorName: "SECRET_C3A_UNANSWERED_HELPER", section: { id: "profile-section" },
+        category: { id: "profile-category" },
+      });
+
+      for (const [id, actor] of [
+        ["profile-owner", "SECRET_C3A_OWNER_DEACTIVATOR"],
+        ["profile-helper", "SECRET_C3A_HELPER_DEACTIVATOR"],
+      ] as const) {
+        await client.query(
+          'update "user" set deactivated_at=$2::timestamptz,' +
+            ' deactivated_by_user_id=$3, retain_at_least_until=$4::timestamptz where id=$1',
+          [id, "2024-02-29T12:34:56Z", actor, "2025-02-28T12:34:56Z"],
+        );
+      }
+
+      const popular = await repository.readPopular(referenceTime, 20);
+      const unanswered = await repository.readUnanswered();
+      for (const period of periods) {
+        const previous = activePopular[period];
+        const current = popular[period];
+        expect(current.map((row) => row.id)).toEqual(previous.map((row) => row.id));
+        expect(current.map(({ authorName, authorIdentityKind, ...retained }) => retained))
+          .toEqual(previous.map(({ authorName, authorIdentityKind, ...retained }) => retained));
+      }
+      const recent = onlyOwn(popular["24h"])[0]!;
+      const week = onlyOwn(popular["7d"]).find((row) => row.id === "profile-c3a-week")!;
+      const independent = onlyOwn(popular["30d"]).find((row) => row.id === "profile-c3a-active")!;
+      expect(recent).toMatchObject({
+        id: "profile-c3a-recent", authorName: "Deleted user", authorIdentityKind: "deleted",
+        activityCount: 2, latestActivityAt: new Date("2026-11-12T11:10:00Z"),
+      });
+      expect(week).toMatchObject({
+        id: "profile-c3a-week", authorName: "Deleted user", authorIdentityKind: "deleted",
+      });
+      expect(independent).toMatchObject({
+        id: "profile-c3a-active", authorName: "profile-newcomer", activityCount: 1,
+      });
+      expect(independent).not.toHaveProperty("authorIdentityKind");
+      expect(unanswered.map((row) => row.id)).toEqual(activeUnanswered.map((row) => row.id));
+      expect(unanswered.map(({ authorName, authorIdentityKind, ...retained }) => retained))
+        .toEqual(activeUnanswered.map(({ authorName, authorIdentityKind, ...retained }) => retained));
+      expect(onlyOwn(unanswered)).toMatchObject([
+        { id: "profile-c3a-active", authorName: "profile-newcomer" },
+        { id: "profile-c3a-week", authorName: "Deleted user", authorIdentityKind: "deleted" },
+        { id: "profile-c3a-old", authorName: "Deleted user", authorIdentityKind: "deleted" },
+      ]);
+      expect(onlyOwn(unanswered)[0]).not.toHaveProperty("authorIdentityKind");
+      const serialized = JSON.stringify({ popular, unanswered });
+      for (const secret of [
+        "SECRET_C3A_POPULAR_OWNER", "SECRET_C3A_UNANSWERED_HELPER",
+        "SECRET_C3A_OWNER_AVATAR", "SECRET_C3A_HELPER_AVATAR",
+        "SECRET_C3A_OWNER_DEACTIVATOR", "SECRET_C3A_HELPER_DEACTIVATOR",
+        "2024-02-29", "2025-02-28",
+      ]) expect(serialized).not.toContain(secret);
+      expect(Object.keys(recent)).not.toContain("authorDeactivatedAt");
+      expect(Object.keys(onlyOwn(unanswered)[1]!)).not.toContain("authorRetainAtLeastUntil");
+    } finally {
+      await client.query("rollback");
+    }
+  });
+});
