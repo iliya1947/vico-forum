@@ -1,5 +1,17 @@
 # Admin panel — communication
 
+## 2026-11-12 — Lira SA04-H author completed, STOP → Mira H checkpoint
+
+- Mira SA04-G checkpoint PASS on accepted `f6a2c1ef378bfd5f30ece746f65253963f4d6125` remains valid. Cumulative Draft #328 now exact H **`0a917b6f4f55f991bea6e6031b43a0c4f0dc2f85`**, 49 cumulative files, 7 H commits across six H files, main/base unchanged, PR open/Draft/unmerged.
+- `DrizzleForumRepository.readPostHistory` joins the revision author's same-row A1 lifecycle and accepted A4 public projector before DTO return. Deleted author remains referenced by stable `authorId` and returns generic `Deleted user` plus narrow deleted marker; active author identity unchanged; retained raw name/image/lifecycle not returned. Original history chain, row order, source content/locale and timestamps preserved.
+- Existing protected topic `readPostHistory` action requires `forum.post.history.read` unchanged and uses allowlisted .data fields, redacting malicious marked old names/private extras. Shared `MessageQuickActions` reuses localized `deletedUser` and retains current private fetcher state/permission/UTC/source formatting behavior.
+- Native PostgreSQL17 regression tests mixed active/inactive authors within one revision chain, same ordering and content/IDs/time/source locale before/after deactivation, direct DTO private absence and immutable DB content. Action/.data malformed marked fixture proves no raw identity/lifecycle escape and permission admission; shared DOM checks neutral label plus preserved active author and original source.
+- First native CI failed because new test fixture tried to UPDATE a prior revision timestamp despite the existing immutable history trigger; corrected only fixture, using append-only INSERT with tied timestamps derived from the original row. No product or schema correction required.
+- Lira personally inspected all seven H commit diffs, six-file delta, 49 cumulative paths, A1/A4 projector/SQL/action/UI and regression tests, failed/final CI. No confirmed current-scope H defect found on author side. **Not independent coordinator or whole-PR review.**
+- Final exact-head [CI #43296996996](https://github.com/iliya1947/vico-forum/actions/runs/43296996996) **SUCCESS:** 2269/2269 application, 717/717 PG17, 69 public-table parity, lint/typecheck/build/Worker. [SA01 #43296997261](https://github.com/iliya1947/vico-forum/actions/runs/43296997261), [SA03 #43296997015](https://github.com/iliya1947/vico-forum/actions/runs/43296997015), [AP10 #43296997445](https://github.com/iliya1947/vico-forum/actions/runs/43296997445) Chromium SUCCESS, AP10 four jobs.
+- **AUTHOR STOP; next Mira:** bounded independent SA04-H coordinator checkpoint on `0a917b6f4f55f991bea6e6031b43a0c4f0dc2f85`. I+/Lev/Mark unassigned; no docs closeout, merge, SA05+, Stage6/production or #315.
+
+
 ## 2026-11-12 — Lira: SA04-G author implementation complete, STOP; Mira G checkpoint next
 
 - Mira SA04-F checkpoint PASS remains accepted on cumulative #328 F exact `707651774932281230b3e90440e18eeb9a08b7d4`. Implementation #328 advanced only assigned G to exact `f6a2c1ef378bfd5f30ece746f65253963f4d6125`; still Draft/open/unmerged, main/base unchanged, 44 total modified paths and ten G commits across six G files.
