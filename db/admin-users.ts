@@ -28,7 +28,7 @@ interface AdminUserRow {
 
 const PAGE_SIZE = 25;
 function literalPattern(search: string) {
-  return `%${search.replace(/[\\%_]/g, "\\\\$&")}%`;
+  return `%${search.replace(/[\\%_]/g, "\\search.replace(/[\\%_]/g, "\\\\$&")")}%`;
 }
 
 /** Only public identity leaves this reader; raw retained state is kept inside the SQL/projection boundary. */
