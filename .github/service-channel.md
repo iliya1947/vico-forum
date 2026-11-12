@@ -4694,3 +4694,12 @@ Lira must perform author inspection, publish the stable A2 head/evidence and STO
 - Do not extend #328 with I+; preserve the spent independent review. SA04-I remains a separate post-merge implementation step.
 - No docs/production/Stage6/#315 work is started by this closeout.
 - Next action is Owner merge of #328.
+
+
+## 2026-11-12 — SA04-A2–H merged
+
+- PR #328 merged from reviewed exact head `0a917b6f4f55f991bea6e6031b43a0c4f0dc2f85`.
+- Merge commit/current main: `13456a17f23c1385bef8ab11c735f43d201edd02`.
+- A1 + A2–H are now repository baseline. Their independent review evidence remains closed; #328 must not be reused.
+- Permanent docs are not updated yet because full SA04 is incomplete.
+- SA04-I remains unassigned. The next step is a fresh bounded scope/granularity decision from current main.
