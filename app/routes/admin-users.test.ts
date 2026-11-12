@@ -61,6 +61,47 @@ describe("SA03 legacy Admin user detail redirects only after original directory 
     expect(result.init?.headers).toEqual({ "Cache-Control": "private, no-store" });
     expect(env.listUsers).toHaveBeenCalledExactlyOnceWith({ search: "Name", after: "opaque" });
   });
+  it("SA04-D loader defensive field allowlist hides malformed marked names, image and lifecycle", async () => {
+    const env = setup(["admin.users.read"]);
+    env.listUsers.mockResolvedValueOnce({
+      items: [
+        {
+          id: "inactive/u-060", name: "SECRET_SA04_D_RETAINED_NAME",
+          image: "https://example.test/SECRET_SA04_D_ORIGINAL_IMAGE.png",
+          joinedAt: "2026-10-01T10:00:00.000Z",
+          identityKind: "deleted",
+          deactivatedAt: "SECRET_SA04_D_DEACTIVATION",
+          deactivatedByUserId: "SECRET_SA04_D_ACTOR",
+          retainAtLeastUntil: "SECRET_SA04_D_RETENTION",
+          email: "SECRET_SA04_D_PRIVATE_EMAIL",
+        },
+        {
+          id: "active/user", name: "Active User", image: "https://example.test/active.png",
+          joinedAt: "2026-10-02T10:00:00.000Z",
+          ignoredPrivateMarker: "SECRET_SA04_D_EXTRA",
+        },
+      ],
+      total: 2, next: "active/user", untrustedExtra: "SECRET_SA04_D_PAGE",
+    } as never);
+    const result = await index(indexArgs(env.context, "?q=inactive"));
+    expect(result.init?.headers).toEqual({ "Cache-Control": "private, no-store" });
+    expect(env.listUsers).toHaveBeenCalledWith({ search: "inactive" });
+    expect(result.data.page).toEqual({
+      items: [
+        {
+          id: "inactive/u-060", name: "Deleted user", image: null,
+          joinedAt: "2026-10-01T10:00:00.000Z", identityKind: "deleted",
+        },
+        {
+          id: "active/user", name: "Active User", image: "https://example.test/active.png",
+          joinedAt: "2026-10-02T10:00:00.000Z",
+        },
+      ], total: 2, next: "active/user",
+    });
+    expect(JSON.stringify(result.data)).not.toContain("SECRET_SA04_D_");
+    expect(env.readProfile).not.toHaveBeenCalled();
+    expect(env.readUserManagementState).not.toHaveBeenCalled();
+  });
   it("redirects fixed encoded canonical destination, never query/returnTo, without private snapshot", async () => {
     for(const permissions of [["admin.users.read"],
       ["admin.users.read","access.authorization.manage"]]) {
