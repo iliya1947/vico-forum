@@ -3,6 +3,21 @@
 Служебный PR: #251. Оперативное состояние: [workflow.md](./workflow.md). Общий контракт: [ADMIN_PANEL_IMPLEMENTATION_PLAN.md](../ADMIN_PANEL_IMPLEMENTATION_PLAN.md).
 
 
+## 2026-11-12 — Mira: SA04-F online presence lifecycle assigned to Lira
+
+- E remains Mira checkpoint-PASS on cumulative Draft #328 exact head `69c58d02003c1e00def3916ed2d7a4bafabdaf4f`; current main/base remains `593a03964b8407b249f7c9f5eb117ddb8b07736d`.
+- Pre-action gate passed: Mira owns bounded scope/handoff; developer explicitly continued; F is one independently completable presence result; cumulative Draft and existing SET-06 behavior are preserved.
+- Current F seams are one presence model: `DrizzleForumRepository.readOnlinePresence`, `recordOnlinePresence`, existing SET-06 subject-row lock/privacy preference, Hyperdrive wrapper and `/:locale/presence` action.
+- Required read result: deactivated accounts are excluded in SQL before `count(*) over()`, activity ordering and `LIMIT 12`, independently of stale physical presence and independently of `showOnline`. No Deleted-user presence entry.
+- Required heartbeat result: a deactivated actor cannot insert or refresh `forum_online_presence`; admission is authoritative inside the same transaction/subject row-lock boundary that currently serializes heartbeat with SET-06 OFF. Missing-account and unavailable/unexpected classifications remain distinct.
+- Preserve default-ON privacy, OFF filtering/cleanup, five-minute window, 45-second throttle, count/list semantics and no private fields. Do not clear or mutate the saved privacy preference merely because the account is inactive.
+- Concurrency proof must cover both lock orderings against fixture deactivation: deactivation-first blocks then denies heartbeat with no write; heartbeat-first may commit before deactivation but any leftover row is immediately invisible to reader. Unrelated users must not serialize globally.
+- Route keeps authoritative session/stale identity/same-origin/form/no-store behavior. Inactive heartbeat returns controlled non-success with no lifecycle/private leakage; no Editor/client heartbeat redesign is required unless actual correctness needs a bounded change.
+- **Checkpoint P remains separate:** do not make Privacy Save itself reject inactive accounts in F by broadening a shared helper unintentionally.
+- Excluded: G/H/I, J–O/P/Q/R writer enforcement, SA05+, Stage6/production, #315, docs and merge.
+- Finish stable exact head + applicable checks + mandatory author inspection, publish evidence, then **Lira STOP for Mira F checkpoint review**. Lev/Mark remain unassigned.
+
+
 ## 2026-11-12 — Mira: SA04-E checkpoint review PASS
 
 - Reviewed cumulative Draft #328 exact stable head `69c58d02003c1e00def3916ed2d7a4bafabdaf4f` against bounded mention-discovery checkpoint E; base/current main remains `593a03964b8407b249f7c9f5eb117ddb8b07736d`.
