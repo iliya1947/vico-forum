@@ -1,7 +1,7 @@
 # Admin panel — current workflow
 
 - Service PR **#251**; current merged main/base **`13456a17f23c1385bef8ab11c735f43d201edd02`**. A1 + cumulative A2–H are merged; reviewed former implementation #328 closed.
-- **Current checkpoint: SA04-I1 author complete, Лира STOP — next Мира independent I1 coordinator checkpoint review.**
+- **Current checkpoint: SA04-I1 Mira checkpoint PASS on exact `649dada0e2dfc5333c7c072170c0fd8c71a4501a`; 0 confirmed current-scope defects.** PR #329 remains cumulative Draft. I2–I5/J+ unassigned.
 - New cumulative [Draft implementation PR #329](https://github.com/iliya1947/vico-forum/pull/329), branch `chatgpt/sa04-i1-pre-routing-session-admission`, exact I1 head **`649dada0e2dfc5333c7c072170c0fd8c71a4501a`**, base/main unchanged; 3 I1 commits across 2 files, open/Draft/unmerged.
 - **Only I1 implementation:** `AuthRuntime.getSession` checks persisted account status with accepted A2 `readAccountState` on same Better Auth PostgreSQL connection after resolving original session and before `initializeAuthContext`/Worker identity. Inactive/missing account -> request guest; active session stays unchanged. Raw state/retained identity not returned.
 - **Preserved:** Better Auth 1.7.7 session cleanup/sliding/Set-Cookie behavior, same original response headers and endpoint precedence; no session/account deletion, new cookies or `handle`/HTTP endpoint integration. A2 unavailable maps to `AuthSessionUnavailableError`/Worker generic no-store 503; unexpected lifecycle/query failures propagate.
@@ -331,3 +331,16 @@ Before any project-changing action or agent handoff, Mira must check in this ord
 - Start a **new cumulative Draft implementation PR** from `13456a17f23c1385bef8ab11c735f43d201edd02`; it remains Draft through I1–I4. No merge/readiness claim at I1.
 - Ready for checkpoint when focused unit/native auth-runtime/session-context coverage and applicable existing regressions are green, Lira personally inspects the completed I1 diff/behavior, publishes stable exact head/evidence, and **STOPs**.
 - Lev/Mark remain unassigned.
+
+
+## 2026-11-12 — SA04-I1 Mira checkpoint PASS
+
+- Mira reviewed the complete main→I1 two-file delta in Draft PR #329 on exact stable head `649dada0e2dfc5333c7c072170c0fd8c71a4501a`.
+- The pre-routing chain remains canonical Better Auth `getSession` first, then A2 `readAccountState` on the same request-owned PostgreSQL client, before identity can enter `authSessionContext`.
+- Active session identity and original Better Auth cleanup/sliding headers remain unchanged. Deactivated/non-active state returns no request identity and does not delete retained user/session data.
+- A2 classified availability failures become the existing `AuthSessionUnavailableError` path consumed by Worker safe no-store 503; unexpected state/schema/programming failures remain unexpected.
+- The added third callback argument to internal `useAuth` exposes only the already-owned client; existing callbacks remain behaviorally unchanged.
+- I2 direct/HTTP auth admission, I3 session-create gate and I4 authoritative target-write/session-update closure are intentionally future checkpoints and are **not** I1 defects.
+- Exact-head CI #43309142541, SA01 #43309142501, SA03 #43309142598 and AP10 #43309142441 are SUCCESS.
+- **PASS — 0 confirmed current-scope I1 defects.**
+- #329 remains Draft/cumulative. Lira/Lev/Mark STOP; I2 is not assigned until a separate continuation.
