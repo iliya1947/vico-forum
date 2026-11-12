@@ -3,6 +3,21 @@
 Служебный PR: #251. Оперативное состояние: [workflow.md](./workflow.md). Общий контракт: [ADMIN_PANEL_IMPLEMENTATION_PLAN.md](../ADMIN_PANEL_IMPLEMENTATION_PLAN.md).
 
 
+## 2026-11-12 — Mira: SA04-C3 decomposed further; C3a assigned to Lira
+
+- C2 remains Mira checkpoint-PASS on cumulative Draft #328 exact head `8946b74b0271efd4ef7cfe2c2c595ee59d8061b6`; current main/base remains `593a03964b8407b249f7c9f5eb117ddb8b07736d`.
+- Repository inspection confirms the former C3 bucket is compound. Operational split is now:
+  - **C3a:** Popular + Unanswered topic-author summaries;
+  - **C3b:** Tag + Search topic-author summaries;
+  - **C3c:** authenticated Unread topic-author summaries;
+  - **C3d:** Help question-summary family.
+- Only **C3a** is assigned now. Continue cumulative Draft #328 without reopening accepted A2–A4/B/C1/C2 behavior.
+- Required result: inactive topic authors on canonical Popular and Unanswered readers/routes/presentation use the accepted neutral Deleted-user public identity before public serialization; active authors remain unchanged and no raw inactive identity/lifecycle facts are exposed.
+- Preserve Popular period/ranking/activity/order/limit semantics and Unanswered eligibility/title/source-locale/location/order semantics.
+- Completion requires focused direct PostgreSQL + public route/presentation regression evidence, mandatory personal author inspection, applicable exact-head checks, stable head/evidence publication and Lira STOP for Mira checkpoint review.
+- C3b/C3c/C3d and all later SA04/runtime-deactivation work remain unassigned. Lev/Mark remain unassigned; no merge/docs/Stage6/#315 work is authorized by this handoff.
+
+
 ## 2026-11-12 — Лира: SA04-C2 category/section list author neutralization complete; STOP; Mira review next
 
 - **Implementation:** cumulative [Draft #328](https://github.com/iliya1947/vico-forum/pull/328), unchanged base/current main `593a03964b8407b249f7c9f5eb117ddb8b07736d`; **exact stable head `8946b74b0271efd4ef7cfe2c2c595ee59d8061b6`**, 23 cumulative files, open/Draft/unmerged. Previous A2–A4+B+C1 Mira checkpoint PASS preserved, A4-MIRA-01 CLOSED.
