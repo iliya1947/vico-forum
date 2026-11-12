@@ -4137,3 +4137,11 @@ Lira must perform author inspection, publish the stable A2 head/evidence and STO
 - No existing reader, directory/search, presence, notification, history, auth/session or writer call site is integrated in A4.
 - Lira STOP after stable cumulative head/evidence and author inspection. Later reader integration remains unassigned; Lev remains reserved for a meaningful cumulative review.
 
+## 2026-11-12 — SA04-A4 Mira finding
+
+- Mira reviewed cumulative #328 exact head `11652f64df234e10bb3783fe93c8e8b3073be262`.
+- Confirmed one current-scope A4 defect: neutral public projection validates deactivated retention only as `retainAtLeastUntil >= deactivatedAt`, while the accepted lifecycle contract from A1 requires at least **one UTC calendar year**.
+- Because A4 explicitly promises fail-closed handling of inconsistent lifecycle state, this is a current A4 completion defect, not future integration work.
+- Required correction is limited to canonical lifecycle-invariant validation/reuse plus focused regression for the sub-year boundary, preserving the allowlist and no-reader-integration scope.
+- No other confirmed current-scope A4 finding. Lira receives this one correction and STOP; later checkpoints remain unassigned.
+
