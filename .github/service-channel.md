@@ -4625,3 +4625,13 @@ Lira must perform author inspection, publish the stable A2 head/evidence and STO
 - Keep raw retained author identity and lifecycle fields out of the returned history DTO/.data/UI. Reuse the existing generic `deletedUser` localization; no new schema/migration/permission/RBAC or writer/auth/session behavior belongs to H.
 - Focused direct-reader + action/.data + shared presentation regressions should prove mixed active/inactive authors and preservation of revision semantics. Lira performs author inspection, publishes stable exact head/evidence and **STOP**.
 - I+ and Lev/Mark remain unassigned; no merge/docs/SA05+/Stage6/production/#315 work.
+
+
+## 2026-11-12 — SA04-H Mira checkpoint PASS
+
+- Mira reviewed #328 exact `0a917b6f4f55f991bea6e6031b43a0c4f0dc2f85` against accepted H and the complete G→H delta.
+- Inactive post-revision authors are neutralized before direct DTO/.data/UI; active identity remains unchanged and retained raw lifecycle/identity is not serialized.
+- Revision IDs/membership, author IDs, original revision text, source locale, timestamps/order and the existing history-read authorization semantics are preserved.
+- No H implementation change extends into Better Auth, writers, RBAC, schema/migrations or I+.
+- CI #43296996996, SA03 #43296997015, SA01 #43296997261 and AP10 #43296997445 are exact-head SUCCESS.
+- **PASS — 0 confirmed current-scope H defects.** #328 stays Draft; next reviewer/SA04-I transition remains unassigned until explicit continuation.
