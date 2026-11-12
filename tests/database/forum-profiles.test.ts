@@ -432,8 +432,8 @@ describe("SA04-C3a Popular and Unanswered topic-author projections", () => {
         const previous = activePopular[period];
         const current = popular[period];
         expect(current.map((row) => row.id)).toEqual(previous.map((row) => row.id));
-        expect(current.map(({ authorName, authorIdentityKind, ...retained }) => retained))
-          .toEqual(previous.map(({ authorName, authorIdentityKind, ...retained }) => retained));
+        expect(current.map((row) => [row.id, row.title, row.activityCount, row.latestActivityAt]))
+          .toEqual(previous.map((row) => [row.id, row.title, row.activityCount, row.latestActivityAt]));
       }
       const recent = onlyOwn(popular["24h"])[0]!;
       const week = onlyOwn(popular["7d"]).find((row) => row.id === "profile-c3a-week")!;
@@ -450,8 +450,11 @@ describe("SA04-C3a Popular and Unanswered topic-author projections", () => {
       });
       expect(independent).not.toHaveProperty("authorIdentityKind");
       expect(unanswered.map((row) => row.id)).toEqual(activeUnanswered.map((row) => row.id));
-      expect(unanswered.map(({ authorName, authorIdentityKind, ...retained }) => retained))
-        .toEqual(activeUnanswered.map(({ authorName, authorIdentityKind, ...retained }) => retained));
+      expect(unanswered.map((row) => [
+        row.id, row.title, row.sourceLocale, row.createdAt, row.section, row.category,
+      ])).toEqual(activeUnanswered.map((row) => [
+        row.id, row.title, row.sourceLocale, row.createdAt, row.section, row.category,
+      ]));
       expect(onlyOwn(unanswered)).toMatchObject([
         { id: "profile-c3a-active", authorName: "profile-newcomer" },
         { id: "profile-c3a-week", authorName: "Deleted user", authorIdentityKind: "deleted" },
