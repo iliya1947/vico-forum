@@ -304,6 +304,11 @@ describe("Better Auth PostgreSQL runtime", () => {
     });
     await expect(auth.api.updateUser({ headers: directHeaders, body: { name: "ILLEGAL_DIRECT_RENAME" } }))
       .rejects.toMatchObject({ status: "UNAUTHORIZED" });
+    // The pinned server-only method has no HTTP path; its own mutation must
+    // still be denied before the existing-credential business condition.
+    await expect(auth.api.setPassword({
+      headers: directHeaders, body: { newPassword: "NEVER_WRITTEN_I2" },
+    })).rejects.toMatchObject({ status: "UNAUTHORIZED" });
     expect((await client.query<{ name: string }>(
       'select name from "user" where id=$1', [inactive.userId],
     )).rows[0]?.name).toBe("SECRET_INACTIVE_USER");
