@@ -2257,3 +2257,12 @@ Do not treat a user's anger, criticism or request to think as implicit permissio
 - Exact-head CI #43291399256 plus SA01 #43291399192, SA03 #43291399357 and AP10 #43291399295 are SUCCESS.
 - Verdict: **PASS, 0 confirmed current-scope G defects**.
 - Preserve review granularity: no Lev review solely for G; H+ remain unassigned.
+
+
+## 2026-11-12 — SA04-H scope/granularity decision
+
+- Developer continuation after G PASS authorized the next bounded step.
+- Checked current `readPostHistory` chain: one repository reader, one existing forum action response and one shared history renderer used from both public/Admin topic contexts. H is independently completable and does not need another decomposition.
+- Assigned only H to Lira from #328 exact G head `f6a2c1ef378bfd5f30ece746f65253963f4d6125`: neutralize inactive revision-author identity through accepted A4 before DTO/.data/UI while preserving revision content/order/source locale/timestamps, stable author ID and existing history permission.
+- Explicitly excluded I+ auth/writer enforcement, schema/migration, permission changes, history-text rewriting and unrelated refactoring.
+- Lira STOP after stable exact head, applicable checks and author inspection. Lev/Mark remain reserved.
