@@ -1,5 +1,14 @@
 # ChatGPT-5.6 Sol — working notes
 
+## 2026-11-12 — SA04-D coordinator checkpoint PASS
+
+- Exact implementation head reviewed: `85a95a0a46dc77ea80ab21eea5504a681ac586de`; prior accepted C3d2 head `f7fa1e41c9c89afce0631e3f14c661d22f626839`.
+- Compared complete six-file/nine-commit D delta and traced PostgreSQL matching/count → A1/A4 projection → protected loader allowlist → localized Admin Users cards/avatar.
+- Retained inactive names cannot affect name search or total; stable IDs intentionally remain searchable. Active identity, paging/count/admission/private-response semantics are preserved.
+- Exact-head CI and connected Chromium runs independently matched and are green.
+- Verdict: **PASS, 0 confirmed current-scope D defects**. No implementation change made during review.
+- Next accepted-plan checkpoint: E mention discovery; not assigned by this review.
+
 ## 2026-11-12 — SA04-C3d2 coordinator checkpoint PASS
 
 - Exact implementation head reviewed: `f7fa1e41c9c89afce0631e3f14c661d22f626839`; prior accepted C3d1 head `f503fbc8796d4751ff95e4a54534da5fa4ee03bb`.
