@@ -3,6 +3,15 @@
 Служебный PR: #251. Оперативное состояние: [workflow.md](./workflow.md). Общий контракт: [ADMIN_PANEL_IMPLEMENTATION_PLAN.md](../ADMIN_PANEL_IMPLEMENTATION_PLAN.md).
 
 
+## 2026-11-12 — Лира: SA04-A4-MIRA-01 corrected on exact head, author STOP; repeat Mira review pending
+
+- **Confirmed current A4 scope defect** recorded by Mira in #251 [#6815129533](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6815129533): the original `projectPublicAccountIdentity` allowed `retainAtLeastUntil >= deactivatedAt`, unlike canonical A1 PostgreSQL constraint `(retain_at_least_until at time zone 'UTC') >= ((deactivated_at at time zone 'UTC') + interval '1 year')`. Checked both `drizzle/0065_sa04_account_state_foundation.sql` and `tests/database/migrations.test.ts` native leap-day test.
+- Minimal two-file correction in cumulative [Draft #328](https://github.com/iliya1947/vico-forum/pull/328), **new stable exact head `9053b19425c48d38a5384a3b8620ca2a0c4b35dc`**, same post-A1 base/main `593a03964b8407b249f7c9f5eb117ddb8b07736d`: `db/public-identity.ts` computes the minimum **UTC calendar year** after deactivation with 29-Feb→28-Feb clamp when target year is not leap, rejects earlier or invalid minimum. No active DTO/neutral allowlist change, A2/A3 code untouched.
+- `db/public-identity.test.ts` adds one unit case with four sets of UTC boundaries (leap day, ordinary February, end of April, end of December), asserting rejection of 1ms-early values and acceptance at/after exact one-calendar-year boundary; also rejects 2024-03-01 retention after 2024-02-29 deactivation. **6 A4 unit tests total.** All old A4 tests still pass.
+- **Personal author inspection:** full corrected public identity source/test and cumulative four-file PR diff inspected; manually evaluated UTC date computation for leap/non-leap/month-end/year-end and compared with native A1 SQL/migration tests. No other confirmed current-scope defect in correction; this is not Mira independent review.
+- **Exact-head [CI #43159121332](https://github.com/iliya1947/vico-forum/actions/runs/43159121332) SUCCESS:** 184/184 application test files, **2243/2243 tests** (six A4); 66/66 native PG17 files, **700/700 tests**, 69-table schema manifest parity; lint/typecheck/build/preview/Drizzle/migration/Worker smoke.
+- **Lira AUTHOR STOP. Next Mira** repeat A4 checkpoint review on new exact head and decide whether SA04-A4-MIRA-01 is CLOSED. No A5/B+, Lev review, merge, reader/auth/writer integrations, deactivation operation, SA05+ or Stage6/production work.
+
 ## 2026-11-12 — Лира: SA04-A4 neutral public identity contract, author checkpoint complete; STOP
 
 - Continued cumulative [Draft PR #328](https://github.com/iliya1947/vico-forum/pull/328) from accepted A2/A3 head `0725b49dc9d9e36152670dac8368d0f83e714c82` on unchanged post-A1 `main` `593a03964b8407b249f7c9f5eb117ddb8b07736d`. **Final exact head `11652f64df234e10bb3783fe93c8e8b3073be262`**, open Draft/unmerged. Four cumulative changed files; A4 introduces only `db/public-identity.ts` and `db/public-identity.test.ts`.
