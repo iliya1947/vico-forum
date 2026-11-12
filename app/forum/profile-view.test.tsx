@@ -52,6 +52,27 @@ describe("profile presentation", () => {
     expect(screen.queryByRole("button", { name: "Connect Google" })).not.toBeInTheDocument();
     expect(container.querySelector("script, .profile-avatar img")).toBeNull();
   });
+  it("renders deleted public profile using the generic locale label without any original identity markers", () => {
+    const deleted = {
+      ...profile, identityKind: "deleted" as const,
+      name: "PRIVATE_ORIGINAL_NAME", image: "https://avatar.example.test/PRIVATE_ORIGINAL_AVATAR",
+      bio: "PRIVATE_ORIGINAL_BIO",
+      githubUrl: "https://github.com/privateuser", websiteUrl: "https://example.test/PRIVATE_ORIGINAL_LINK",
+    };
+    const root = show({ profile: deleted, isSelf: true, editing: true }, "owner");
+    expect(screen.getByRole("heading", { level: 1, name: "Deleted user" })).toBeInTheDocument();
+    expect(root.container.querySelector(".profile-avatar img")).toBeNull();
+    expect(root.container.querySelector(".profile-links")).toBeNull();
+    expect(root.container.querySelector("form.profile-form")).toBeNull();
+    expect(screen.queryByRole("link", { name: "Edit profile" })).not.toBeInTheDocument();
+    expect(screen.getByText("12")).toBeInTheDocument();
+    expect(screen.getByText("3")).toBeInTheDocument();
+    for (const marker of [
+      deleted.name, "PRIVATE_ORIGINAL_AVATAR", deleted.bio,
+      "privateuser", "PRIVATE_ORIGINAL_LINK",
+    ]) expect(root.container.innerHTML).not.toContain(marker);
+    root.unmount();
+  });
   it("shows the owner edit link and only owner editable fields", () => {
     show({ isSelf: true, editing: true, feedback: { error: "invalid", draft: { bio: "My unsaved draft", githubUrl: "", websiteUrl: "" } } });
     expect(screen.getByLabelText("About")).toHaveValue("My unsaved draft");
