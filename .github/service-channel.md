@@ -1,5 +1,45 @@
 # Admin panel — communication
 
+## 2026-11-12 — Лёва: cumulative SA04-A2–H independent whole-PR PASS; STOP
+
+## Лёва — независимая whole-PR проверка SA04-A2–H: PASS
+
+Проверен **весь cumulative diff Draft [#328](https://github.com/iliya1947/vico-forum/pull/328), 49 файлов**, exact head `0a917b6f4f55f991bea6e6031b43a0c4f0dc2f85`, против merged A1 main/base `593a03964b8407b249f7c9f5eb117ddb8b07736d`, принятого SA04 technical plan и bounded назначений A2–H. В реализации/исправлениях этого PR не участвовал; код при проверке не менял.
+
+**Вердикт: PASS — 0 подтверждённых current-scope A2–H дефектов.** Coordinator whole-PR PASS и независимая проверка относятся к одному stable head. A1 уже проверен и merged; повторным отдельным A1 gate этот отчёт не является.
+
+### Подтверждённый scope
+
+- A2/A3: параметризованный active predicate, различимые active/deactivated/missing и unavailable/unexpected результаты, сохранение cause; mutation primitive использует caller-owned transaction и `FOR NO KEY UPDATE`. Ограничение autocommit явно обозначено; runtime auth/writer integrations здесь не объявлены.
+- A4: строгий allowlist публичной identity, соответствие user ID/state, нейтральные поля inactive и canonical UTC calendar-year retention, включая leap-day clamp. **SA04-A4-MIRA-01 CLOSED**; sub-year/точная граница перепроверены в выполненном suite.
+- B–H: canonical profile; topic/current posts; category latest/pinned и section; Popular/Unanswered/Tag/Search/Unread; Help shared modes и For-me; Users directory; mentions; online/heartbeat; оба notification readers и post revision history. Identity и lifecycle читаются из одной joined user row; private state не переносится в публичный DTO.
+- Public identity скрывается до возврата reader/сериализации; UI использует generic localized Deleted user. Stable IDs/profile relationships, опубликованный текст/revisions, counts/ranking/order, inbox membership/read lifecycle и существующие permissions сохранены. Owner/private evidence остаётся под собственным admission. Directory name matching/count использует neutral name; mention/online filtering выполняется до count/order/LIMIT.
+- Schema/migrations/manifest/dependencies не менялись; только необходимые historical test fixtures дополнены существующей 0065. Никаких новых last-manager/count/recovery правил.
+
+### Независимо выполненная проверка
+
+- **184/184 application files, 2269/2269 tests PASS.**
+- **11/11 затронутых native files, 106/106 tests PASS** на собственной disposable PostgreSQL 17: включая row-lock/KEY SHARE, обе очередности deactivation/heartbeat, directory paging/count, все public reader families, mixed inbox и append-only revision history.
+- Свежий build Worker **PASS**; clean disposable migrations 0000–0065 **PASS**; фактическая **69-table manifest parity PASS**, `drizzle-kit check` **PASS**. Генератор повторно не запускался: новых schema изменений нет; ранее установленное ограничение BigInt generation не объявляется исправленным.
+- **Оригинальный probe**, отдельно от авторских tests: сняты direct DTO до fixture-deactivation, затем сравнены 11 reader families. ID/content/statistics/order и прочие проверенные non-identity данные сохранились; retained identity отсутствует. Old-name directory count стал 0, stable-ID lookup остался; mention candidate исчез; inactive heartbeat отказал; исходные name/image физически сохранены в БД.
+- **Оригинальный Chromium → built Worker → настоящий Better Auth → disposable PG17:** 36 records основного probe + 5 дополнительных focused records. Проверены fresh HTML и .data публичных surfaces в EN/RU/HE, нейтральный avatar и mixed active/deleted authors, mounted profile после реального GET revalidation, member Unread/inbox, permission-protected history HTTP + общий Quick actions DOM и guest401. Дополнительный probe использует настоящий **`q`** Users search: old-name total0, neutral-name/ID total1. Owner видит допустимую private account section рядом с neutral public profile; Guest не получает email/private sections.
+- В основном Chromium probe **pageErrors=[]**. Внешние browser requests блокировались; единственный перехваченный avatar request относится к намеренно открытому **active baseline до деактивации**, не к neutralized identity. Production/provider/OAuth/R2 обращения не выполнялись.
+- Через GitHub API повторно подтверждены **SUCCESS на этом exact head**: [CI #43296996996](https://github.com/iliya1947/vico-forum/actions/runs/43296996996), [SA01 #43296997261](https://github.com/iliya1947/vico-forum/actions/runs/43296997261), [SA03 #43296997015](https://github.com/iliya1947/vico-forum/actions/runs/43296997015), [AP10 #43296997445](https://github.com/iliya1947/vico-forum/actions/runs/43296997445). Полные 717 native из CI локально повторно не заявляются: собственный native run — 106.
+
+### Граница результата и передача
+
+#315 учтён на head `fc32f0ba36120b89a27831993519a00f2a40b953`: current security workflow и Block E, включая известный PUBLIC-PROJECTION-01 о moderation metadata. Его remediation/cache/availability/Stage6 задачи не превращены в findings этого identity slice и не объявлены закрытыми.
+
+**Это PASS только A2–H, не завершение всего SA04.** I+ auth/session closure, J–R writer gates, S connected enforcement closure, SA05/deactivate control, docs closeout, merge и production не выполнялись и не назначаются этим отчётом. Fixture deactivation не является продуктовой командой.
+
+Source hashes всех 49 файлов совпадают с reviewed head; worktree чист. Собственный Worker остановлен, synthetic vars/dependency symlink удалены, disposable PostgreSQL-контейнер удалён.
+
+**Следующий получатель — Мира:** принять независимый PASS и выполнить следующий coordinator шаг для уже проверенного stable slice по текущему workflow; последующее enforcement назначать отдельно. Лёва завершил назначение и STOP. Лира/Марк и I+ этим отчётом не назначаются.
+
+**Действие разработчика: подключить Миру.**
+
+Published report: [#6835789162](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6835789162). Publication of review reports and service updates is explicitly authorized by the developer throughout SA04.
+
 ## 2026-11-12 — Lira SA04-H author completed, STOP → Mira H checkpoint
 
 - Mira SA04-G checkpoint PASS on accepted `f6a2c1ef378bfd5f30ece746f65253963f4d6125` remains valid. Cumulative Draft #328 now exact H **`0a917b6f4f55f991bea6e6031b43a0c4f0dc2f85`**, 49 cumulative files, 7 H commits across six H files, main/base unchanged, PR open/Draft/unmerged.
@@ -524,13 +564,13 @@ PASS относится только к A1 foundation. Runtime enforcement, proj
 
 ## Актуальный baseline и назначение
 
-- Main `ce62e783e71433a00c2fe4874ee26dfc54614628`; SA03 implementation #324 and docs #326 fully closed.
-- **SA04-A1 foundation: coordinator PASS + independent technical PASS**, 0 confirmed current-scope defects on Draft #327 exact head `3d6c7c06ac1442a5a4b3ff7f8fbe77454ca8479c`; still open/Draft, unmerged.
-- Bounded delivered slice: existing user three nullable state fields + UTC calendar-year consistency CHECK, forward0065, schema/meta/manifest and native/auth fixtures. Earlier migration history preserved. MIRA-01 CLOSED by actual PostgreSQL hash verification.
-- Independent evidence: 84 native tests, populated migration preservation, 75 CHECK cases in five time zones, real Better Auth client write/output boundary, 69-table manifest parity and Drizzle metadata check PASS. Optional generation is not claimed PASS: same BigInt serialization failure on reviewed head and unchanged base. Remote exact-head CI/SA01/SA03/AP10 SUCCESS.
-- This is not full SA04 acceptance. Runtime helper/enforcement, projections, guards, deactivate/control and A2+ remain unimplemented by this slice.
-- **Next recipient Mira:** coordinator closeout of this already-reviewed bounded PR without gratuitous scope extension/repeated independent review. Owner alone merges. Lev completed/STOP; Lira/Mark unassigned.
-- #315 consulted at `4931164722f078e3032e39718e0c9c88ee833f1d`; separate remediation/production/Stage6, SA05+ and deferred controls excluded.
+- Main/base `593a03964b8407b249f7c9f5eb117ddb8b07736d`; SA04-A1 #327 merged from reviewed head. SA03 and its factual docs fully closed.
+- **Current slice SA04-A2–H: coordinator whole-PR PASS + independent technical whole-PR PASS**, 0 confirmed current-scope defects at Draft #328 exact head `0a917b6f4f55f991bea6e6031b43a0c4f0dc2f85`, 49 cumulative files; open/Draft/unmerged.
+- Independent result [#6835789162](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6835789162): common AccountState/neutral identity foundation plus all assigned B–H public/read-side consumers, including directory matching/count, mentions and online/heartbeat. A4-MIRA-01 CLOSED. No schema/migration/dependency change.
+- Independently executed: 2269 app tests, 106 touched native tests, fresh Worker build, clean disposable migrations, 69-table manifest parity, Drizzle metadata; original 11-family before/after comparison and Chromium real-runtime probes (36+5 records) PASS. Four exact-head remote workflows SUCCESS; local native result is not misrepresented as the full remote717.
+- Public retained identity suppressed; existing content/IDs/order/counts and authorized private composition preserved. No current-scope findings; existing #315 PUBLIC-PROJECTION-01/cache/availability remediation remains separate.
+- **Next Mira:** coordinator next step for reviewed stable slice; Lev completed/STOP, Lira/Mark STOP. I+ enforcement remains unassigned. No whole-SA04/SA05 acceptance, deactivate control, docs closeout, merge or production authorization supplied by this review.
+- #315 consulted at `fc32f0ba36120b89a27831993519a00f2a40b953`. Developer permission for report/service publication persists for all SA04.
 
 ## Handoff — Лира: Stage2 factual documentation closeout
 
