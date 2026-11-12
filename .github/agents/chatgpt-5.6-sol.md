@@ -1,5 +1,14 @@
 # ChatGPT-5.6 Sol — working notes
 
+## 2026-11-12 — SA04-E coordinator checkpoint PASS
+
+- Exact implementation head reviewed: `69c58d02003c1e00def3916ed2d7a4bafabdaf4f`; prior accepted D head `85a95a0a46dc77ea80ab21eea5504a681ac586de`.
+- Compared complete two-file/two-commit E delta and traced SQL selection → authenticated mentions endpoint contract.
+- Inactive accounts are excluded before ordering/limit; active literal name matching, stable ordering/limit and narrow ID/name DTO remain unchanged. No neutral inactive suggestion is exposed.
+- Exact-head CI and connected Chromium runs independently matched and are green.
+- Verdict: **PASS, 0 confirmed current-scope E defects**. No implementation change made during review.
+- Next accepted-plan checkpoint: F online presence/heartbeat; not assigned by this review.
+
 ## 2026-11-12 — SA04-D coordinator checkpoint PASS
 
 - Exact implementation head reviewed: `85a95a0a46dc77ea80ab21eea5504a681ac586de`; prior accepted C3d2 head `f7fa1e41c9c89afce0631e3f14c661d22f626839`.
