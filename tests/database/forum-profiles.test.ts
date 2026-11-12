@@ -54,6 +54,67 @@ describe("mention candidate lookup", () => {
   });
 });
 
+
+describe("SA04-E mentions exclude inactive candidates before ordering and LIMIT", () => {
+  it("preserves eight active candidates, stable name/ID ordering and literal search after many inactive matches", async () => {
+    await client.query("begin");
+    try {
+      const inactiveIds = Array.from({ length: 12 }, (_, i) => `mention-e-inactive-${String(i).padStart(2, "0")}`);
+      const activeIds = Array.from({ length: 9 }, (_, i) => `mention-e-active-${String(i).padStart(2, "0")}`);
+      const insert = async (id: string, name: string) => {
+        await client.query('insert into "user" (id,name,email,image) values ($1,$2,$3,$4)', [
+          id, name, `${id}@SECRET_SA04_E_PRIVATE_EMAIL.invalid`,
+          "https://example.test/SECRET_SA04_E_PRIVATE_AVATAR.png",
+        ]);
+      };
+      for (const [i, id] of inactiveIds.entries()) {
+        await insert(id, `A SA04_E_MENTION ${String(i).padStart(2, "0")}`);
+      }
+      for (const id of activeIds) await insert(id, "Z SA04_E_MENTION tied");
+      await insert("mention-e-active-first", "Y SA04_E_MENTION first");
+      // LIKE wildcard bytes in the term must remain literal, never a pattern.
+      await insert("mention-e-active-bait", "Z SA04XE_MENTION bait");
+      await insert("mention-e-active-literal", "W SA04_E_LITERAL %_slash\\");
+      await insert("mention-e-active-literal-bait", "W SA04_E_LITERAL XXLslash\\");
+      await insert("mention-e-email-only", "Not a matching name");
+
+      const before = await repository.searchMentionableUsers("SA04_E_MENTION");
+      expect(before.map(({ id }) => id)).toEqual(inactiveIds.slice(0, 8));
+      expect(before).toHaveLength(8);
+
+      for (const id of inactiveIds) {
+        await client.query(
+          'update "user" set deactivated_at=$2::timestamptz,' +
+            ' deactivated_by_user_id=$3, retain_at_least_until=$4::timestamptz where id=$1',
+          [id, "2024-02-29T10:00:00Z", "SECRET_SA04_E_ACTOR", "2025-02-28T10:00:00Z"],
+        );
+      }
+      const after = await repository.searchMentionableUsers("  sa04_e_mention  ");
+      expect(after).toEqual([
+        { id: "mention-e-active-first", name: "Y SA04_E_MENTION first" },
+        ...activeIds.slice(0, 7).map((id) => ({ id, name: "Z SA04_E_MENTION tied" })),
+      ]);
+      expect(after).toHaveLength(8);
+      expect((await repository.searchMentionableUsers("SA04_E_MENTION")).map(({ id }) => id))
+        .toEqual(after.map(({ id }) => id));
+      expect(await repository.searchMentionableUsers("A SA04_E_MENTION")).toEqual([]);
+      expect(await repository.searchMentionableUsers("SA04XE_MENTION")).toEqual([
+        { id: "mention-e-active-bait", name: "Z SA04XE_MENTION bait" },
+      ]);
+      expect(await repository.searchMentionableUsers("%_slash\\")).toEqual([
+        { id: "mention-e-active-literal", name: "W SA04_E_LITERAL %_slash\\" },
+      ]);
+      expect(await repository.searchMentionableUsers("SECRET_SA04_E_PRIVATE_EMAIL")).toEqual([]);
+      expect(await repository.searchMentionableUsers("")).toEqual([]);
+      expect(await repository.searchMentionableUsers("x".repeat(65))).toEqual([]);
+      expect(JSON.stringify(after)).not.toContain("SECRET_SA04_E_");
+      expect(Object.keys(after[0]!).sort()).toEqual(["id", "name"]);
+    } finally {
+      await client.query("rollback");
+    }
+  });
+});
+
 describe("persisted forum profiles", () => {
   it("reads existing users without a profile row and exposes no private identity fields", async () => {
     const profile = await repository.readProfile("profile-newcomer");
