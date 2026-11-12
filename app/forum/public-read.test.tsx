@@ -4572,9 +4572,12 @@ describe.each([
     const rawPopular = renderRoute(PopularRoute, {
       ...popularData,
       periods: {
-        "24h": mixedPopular["24h"].map(({ latestActivityAt, ...entry }) => entry),
-        "7d": mixedPopular["7d"].map(({ latestActivityAt, ...entry }) => entry),
-        "30d": mixedPopular["30d"].map(({ latestActivityAt, ...entry }) => entry),
+        "24h": popularData.periods["24h"].map((entry) => entry.authorIdentityKind === "deleted"
+          ? { ...entry, authorName: "SECRET_C3A_POPULAR_24H" } : entry),
+        "7d": popularData.periods["7d"].map((entry) => entry.authorIdentityKind === "deleted"
+          ? { ...entry, authorName: "SECRET_C3A_POPULAR_7D" } : entry),
+        "30d": popularData.periods["30d"].map((entry) => entry.authorIdentityKind === "deleted"
+          ? { ...entry, authorName: "SECRET_C3A_POPULAR_30D" } : entry),
       },
     }, forumPopularPath(locale), locale, direction);
     expect(await screen.findByRole("link", { name: /C3a 30d deleted/ })).toBeVisible();
