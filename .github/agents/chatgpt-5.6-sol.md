@@ -2152,3 +2152,12 @@ Do not treat a user's anger, criticism or request to think as implicit permissio
 - Verdict: **PASS, 0 confirmed current-scope B defects**.
 - Preserve review granularity: no Lev review solely for B; C+ remain unassigned.
 
+## 2026-11-12 — SA04-C1 review result
+
+- Reviewed cumulative #328 exact head `306319bb506bb95ddda776dbc1a0b04a9c3e8fe3` and the full C1 delta from B.
+- Confirmed direct DTO, route serialization, topic presentation and edit recovery do not expose inactive topic/post author identity while preserving stable IDs/content and active/mixed behavior.
+- Future real deactivation read/write timing is not a current C1 defect and does not justify adding a public-read lock/snapshot layer in this checkpoint.
+- Exact-head CI + SA03/SA01/AP10 browser workflows SUCCESS.
+- Verdict: **PASS, 0 confirmed current-scope C1 defects**.
+- No Lev review solely for C1; C2+ remain unassigned.
+
