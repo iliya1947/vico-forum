@@ -4,7 +4,7 @@ import { act, cleanup, fireEvent, render, screen, waitFor, within } from "@testi
 import { I18nextProvider } from "react-i18next";
 import { RouterContextProvider, RouterProvider, createMemoryRouter, data, matchRoutes } from "react-router";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import type { ForumCategoryPage, ForumPopularPage, ForumReader, ForumSectionPage, ForumTopicPage, ForumUnansweredTopicSummary } from "../../db/forum-repository";
+import type { ForumCategoryPage, ForumPopularPage, ForumReader, ForumSearchResult, ForumSectionPage, ForumTagPage, ForumTopicPage, ForumUnansweredTopicSummary } from "../../db/forum-repository";
 import { ForumStorageUnavailableError } from "../../db/hyperdrive-forum";
 import {
   HELP_SOLUTIONS_CATEGORY_ID,
@@ -4592,5 +4592,132 @@ describe.each([
     expect(await screen.findByRole("link", { name: /C3a unanswered deleted/ })).toBeVisible();
     expect(rawUnanswered.container.innerHTML).not.toContain("SECRET_C3A_");
     rawUnanswered.unmount();
+  });
+});
+
+describe.each([
+  { locale: "en", direction: "ltr" as const },
+  { locale: "he", direction: "rtl" as const },
+])("SA04-C3b Tag and Search author privacy ($locale)", ({ locale, direction }) => {
+  const mixedTag: ForumTagPage = {
+    tag: { key: "c3b-shared", name: "C3b shared" },
+    topics: [
+      { id: "c3b/tag-deleted", title: "C3b Tagged deleted title",
+        authorName: "SECRET_C3B_TAG_DELETED", authorIdentityKind: "deleted",
+        postCount: 2, createdAt: new Date("2026-11-11T12:00:00Z"),
+        section: { id: "c3b/section", name: "C3b section" },
+        category: { id: "c3b/category", name: "C3b category" },
+        tags: [{ key: "c3b-shared", name: "C3b shared" }] },
+      { id: "c3b/tag-active", title: "C3b Tagged active title",
+        authorName: "Active C3b member", postCount: 1,
+        createdAt: new Date("2026-11-10T12:00:00Z"),
+        section: null, category: { id: "c3b/category", name: "C3b category" },
+        tags: [{ key: "c3b-shared", name: "C3b shared" }] },
+    ],
+  };
+  const mixedSearch: ForumSearchResult[] = [
+    { id: "c3b/search-deleted", title: "C3b QuartzNeedle result", sourceLocale: "he",
+      authorName: "SECRET_C3B_SEARCH_DELETED", authorIdentityKind: "deleted",
+      postCount: 3, activityAt: new Date("2026-11-12T11:00:00Z"),
+      section: { id: "c3b/section", name: "C3b section" },
+      category: { id: "c3b/category", name: "C3b category" },
+      tags: [{ key: "c3b-shared", name: "C3b shared" }] },
+    { id: "c3b/search-active", title: "C3b active result", sourceLocale: "en",
+      authorName: "Active search author", postCount: 1,
+      activityAt: new Date("2026-11-10T11:00:00Z"),
+      section: null, category: { id: "c3b/category", name: "C3b category" },
+      tags: [] },
+  ];
+
+  it("masks raw deleted identity and lifecycle in public loaders and DOM while retaining links, counts and metadata", async () => {
+    const ctx = context(locale, direction);
+    const unexpectedActor = "SECRET_C3B_PRIVATE_DEACTIVATOR";
+    ctx.set(forumReaderContext, {
+      ...reader,
+      readTag: async () => ({
+        ...mixedTag,
+        topics: mixedTag.topics.map((topic) => ({
+          ...topic, authorDeactivatedByUserId: unexpectedActor,
+        })),
+      }),
+      search: async () => mixedSearch.map((topic) => ({
+        ...topic, authorDeactivatedByUserId: unexpectedActor,
+      })),
+    });
+
+    const tagData = await tagLoader({ params: { locale, tagKey: "c3b-shared" }, context: ctx });
+    expect(tagData.locale).toBe(locale);
+    expect(tagData.page.tag).toEqual(mixedTag.tag);
+    expect(tagData.page.topics).toMatchObject([
+      { id: "c3b/tag-deleted", title: "C3b Tagged deleted title",
+        authorName: "Deleted user", authorIdentityKind: "deleted", postCount: 2,
+        section: { id: "c3b/section" }, category: { id: "c3b/category" } },
+      { id: "c3b/tag-active", authorName: "Active C3b member", postCount: 1, section: null },
+    ]);
+    expect(tagData.page.topics[0]!.createdAt).toEqual(mixedTag.topics[0]!.createdAt);
+    expect(tagData.page.topics.map((row) => [row.id, row.title, row.postCount, row.createdAt,
+      row.section, row.category, row.tags]))
+      .toEqual(mixedTag.topics.map((row) => [row.id, row.title, row.postCount, row.createdAt,
+        row.section, row.category, row.tags]));
+    expect(tagData.page.topics[1]).not.toHaveProperty("authorIdentityKind");
+    expect(JSON.stringify(tagData)).not.toContain("SECRET_C3B_");
+
+    const searchData = await searchLoader({
+      request: new Request(`https://forum.example/${locale}/search?q=QuartzNeedle`),
+      params: { locale }, context: ctx,
+    });
+    expect(searchData.query).toBe("QuartzNeedle");
+    expect(searchData.queryTooLong).toBe(false);
+    expect(searchData.results).toMatchObject([
+      { id: "c3b/search-deleted", title: "C3b QuartzNeedle result", authorName: "Deleted user",
+        authorIdentityKind: "deleted", sourceLocale: "he", titleDirection: "rtl",
+        postCount: 3, section: { id: "c3b/section" }, category: { id: "c3b/category" } },
+      { id: "c3b/search-active", authorName: "Active search author",
+        sourceLocale: "en", titleDirection: "ltr", postCount: 1, section: null },
+    ]);
+    expect(searchData.results.map((row) => [row.id, row.title, row.sourceLocale, row.postCount,
+      row.activityAt, row.section, row.category, row.tags]))
+      .toEqual(mixedSearch.map((row) => [row.id, row.title, row.sourceLocale, row.postCount,
+        row.activityAt, row.section, row.category, row.tags]));
+    expect(searchData.results[1]).not.toHaveProperty("authorIdentityKind");
+    expect(JSON.stringify(searchData)).not.toContain("SECRET_C3B_");
+
+    const tagDOM = renderRoute(TagRoute, tagData, forumTagPath(locale, "c3b-shared"), locale, direction);
+    expect(await screen.findByRole("link", { name: /C3b Tagged deleted title/ }))
+      .toHaveAttribute("href", forumTopicPath(locale, "c3b/tag-deleted"));
+    expect(tagDOM.container).toHaveTextContent("Deleted user");
+    expect(tagDOM.container).toHaveTextContent("Active C3b member");
+    expect(tagDOM.container).toHaveTextContent("C3b section");
+    expect(tagDOM.container).toHaveTextContent("C3b shared");
+    expect(tagDOM.container).toHaveTextContent("2");
+    expect(tagDOM.container.innerHTML).not.toContain("SECRET_C3B_");
+    tagDOM.unmount();
+
+    const searchDOM = renderRoute(SearchRoute, searchData, forumSearchPath(locale) + "?q=QuartzNeedle", locale, direction);
+    expect(await screen.findByRole("link", { name: /C3b QuartzNeedle result/ }))
+      .toHaveAttribute("href", forumTopicPath(locale, "c3b/search-deleted"));
+    expect(await screen.findByText("C3b QuartzNeedle result"))
+      .toHaveAttribute("lang", "he");
+    expect(screen.getByText("C3b QuartzNeedle result")).toHaveAttribute("dir", "rtl");
+    expect(searchDOM.container).toHaveTextContent("Deleted user");
+    expect(searchDOM.container).toHaveTextContent("Active search author");
+    expect(searchDOM.container).toHaveTextContent("3");
+    expect(searchDOM.container.innerHTML).not.toContain("SECRET_C3B_");
+    searchDOM.unmount();
+
+    // Even a malformed deleted-author display object cannot reinsert an original name in the DOM.
+    const rawTag = renderRoute(TagRoute, { ...tagData, page: mixedTag }, forumTagPath(locale, "c3b-shared"), locale, direction);
+    expect(await screen.findByRole("link", { name: /C3b Tagged deleted title/ })).toBeVisible();
+    expect(rawTag.container.innerHTML).not.toContain("SECRET_C3B_");
+    rawTag.unmount();
+
+    const rawSearch = renderRoute(SearchRoute, {
+      ...searchData,
+      results: searchData.results.map((entry, index) => index === 0
+        ? { ...entry, authorName: "SECRET_C3B_SEARCH_DELETED" } : entry),
+    }, forumSearchPath(locale) + "?q=QuartzNeedle", locale, direction);
+    expect(await screen.findByRole("link", { name: /C3b QuartzNeedle result/ })).toBeVisible();
+    expect(rawSearch.container.innerHTML).not.toContain("SECRET_C3B_");
+    rawSearch.unmount();
   });
 });
