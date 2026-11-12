@@ -1,15 +1,17 @@
 # Admin panel — current workflow
 
-- Service PR **#251**; merged SA04-A1 main/base `593a03964b8407b249f7c9f5eb117ddb8b07736d`. A2/A3/A4/B are **Mira checkpoint PASS**; SA04-A4-MIRA-01 CLOSED.
-- **Current checkpoint: SA04-C2 assigned to Lira in cumulative Draft #328. C1 remains Mira checkpoint-PASS.**
-- [Cumulative Draft implementation PR #328](https://github.com/iliya1947/vico-forum/pull/328): **stable exact head `306319bb506bb95ddda776dbc1a0b04a9c3e8fe3`**, base unchanged, **21 changed files**, open/Draft/unmerged.
-- **C1 only:** `DrizzleForumRepository.readTopicPage` neutralizes both topic author and every current post author using accepted A4 lifecycle projector on each joined-user SQL row. Deactivated: stable IDs/profile URLs and published content/state/attachments preserved, public name `Deleted user`, avatar null, private raw identity/lifecycle excluded from DTO. Active and mixed-author topics unchanged. Canonical route serializes safe identity; topic UI localizes the generic label and keeps fresh identity across post-edit recovery.
-- **Regression evidence:** native PG17 secret-marker snapshots and EN/HE route/DOM/serialization tests. Added existing A1 `0065` migration to exactly three historical PostgreSQL fixtures with current topic-reader calls; restored unchanged active-topic object identity after initial application test failure.
-- **Mandatory personal author inspection:** read C1 source/patches, cumulative 21-file inventory/diff, retained public fields and the focused regression coverage; no confirmed current-scope C1 defect. Author inspection does **not** replace Mira's coordinator review.
-- **Exact-head [CI #43198894729](https://github.com/iliya1947/vico-forum/actions/runs/43198894729) SUCCESS**: 2248/2248 application, 702/702 native PG17, 69-table manifest parity, lint/typecheck/build/Worker smoke. Connected Chromium: [SA03 #43198894476](https://github.com/iliya1947/vico-forum/actions/runs/43198894476), [SA01 #43198894492](https://github.com/iliya1947/vico-forum/actions/runs/43198894492), [AP10 #43198894423](https://github.com/iliya1947/vico-forum/actions/runs/43198894423) all SUCCESS.
-- **CI caveat:** pinned DrizzleKit 0.31.10 `generate` still prints its previously seen BigInt error while returning success; independent native PostgreSQL/69-table schema manifest parity PASS, no schema or migration change in C1.
-- **Boundaries:** C2 category/section/latest/pinned lists; C3 discovery/Help summaries; post-history, notifications, Admin Users, mentions, presence; auth/session or writer enforcement, deactivation action, SA05+, Stage6/production, #315, docs closeout all untouched.
-- **Active recipient: Lira — SA04-C2 only.** Neutralize category latest/pinned and section topic-list author identities; publish stable exact head/evidence + author inspection, then STOP. C3+ unassigned.
+- Service PR **#251**; merged SA04-A1 baseline/main/base `593a03964b8407b249f7c9f5eb117ddb8b07736d`. SA04-A2/A3/A4/B/C1 **Mira checkpoint PASS**; SA04-A4-MIRA-01 CLOSED.
+- **Current checkpoint: SA04-C2 author-complete. Next: Mira C2 bounded checkpoint/scope review of stable exact head.** Lira STOP; C3+, Lev/Mark, merge remain unassigned.
+- [Cumulative Draft implementation PR #328](https://github.com/iliya1947/vico-forum/pull/328): stable exact implementation head **`8946b74b0271efd4ef7cfe2c2c595ee59d8061b6`**, base unchanged, **23 changed files**, open/Draft/unmerged.
+- **C2 only:** `DrizzleForumRepository.readCategory` both latest/pinned and `readSection` topic summaries now apply accepted A4 projector to joined topic-author identity/lifecycle. Inactive public author name → `Deleted user`, private original name/lifecycle excluded from direct DTO; active/mixed unchanged. Topic/rank/pin/section order, IDs, timestamps, titles, tags and counters preserved.
+- **Canonical category/section routes and UI:** deleted-author defensive serialization mask and existing localized `deletedUser` presentation, retaining unchanged active section object shape and read-state logic.
+- **Evidence:** native PostgreSQL 17 with mixed authors, distinct original secret markers, latest/pin selection, section order and preserved stats/content; EN/HE category/section route serialization and raw-fixture DOM secret-marker exclusion.
+- **Corrected current-scope SQL regression:** initially duplicate `id` columns from nested `user.id` and topic IDs caused PostgreSQL `42702`. Changed author-id projection to `forumTopics.authorId` (distinct `author_id`) while preserving ranking. No migrations/schemas.
+- **Mandatory author inspection:** read cumulative changed-file inventory/actual C2 patches, query/projection/route/UI logic, native PG and EN/HE regression evidence. No confirmed open C2 scope defect after correction; author inspection does not replace Mira.
+- **Exact-head [CI #43203180652](https://github.com/iliya1947/vico-forum/actions/runs/43203180652) SUCCESS**: 2250/2250 app; 703/703 native PG17; 69-table manifest; lint/typecheck/build/Worker smoke. Connected Chromium [SA03 #43203180576](https://github.com/iliya194/vico-forum/actions/runs/43203180576), [SA01 #43203180622](https://github.com/iliya194/vico-forum/actions/runs/43203180622), [AP10 #43203180835](https://github.com/iliya194/vico-forum/actions/runs/43203180835) all SUCCESS.
+- **CI caveat:** previously noted pinned DrizzleKit `generate` BigInt diagnostic is not schema parity evidence; independent native PG 69-table parity PASS, no schema change in C2.
+- **Boundary:** C3 discovery/Help, post history, notifications, Admin Users, mentions, online presence, auth/session/writers/deactivation actions, SA05+, Stage6/production, #315, package docs/merge all untouched.
+- **Active recipient: Mira — bounded SA04-C2 checkpoint review only** on `8946b74b0271efd4ef7cfe2c2c595ee59d8061b6`.
 
 ## Mandatory author verification
 
@@ -208,3 +210,11 @@ Before any project-changing action or agent handoff, Mira must check in this ord
 - Continue cumulative Draft #328. Lira author-inspects, publishes stable C2 head/evidence and STOP.
 - C3+ and Lev remain unassigned.
 
+## 2026-11-12 — SA04-C2 author complete; Mira checkpoint next
+
+- Previous C1 Mira PASS `306319bb506bb95ddda776dbc1a0b04a9c3e8fe3`. Continued cumulative Draft #328 only for assigned C2; main unchanged. Exact stable new head `8946b74b0271efd4ef7cfe2c2c595ee59d8061b6`, 23 cumulative changed files.
+- Canonical category latest/pinned and section summaries now neutralize inactive topic authors using A4 identity projector; direct DTO, serialized routes and view render original names only for active authors. Published hierarchy, rank/selection/order and counts preserved.
+- First interim PG reported PostgreSQL `42702` due nested duplicate `id` from `user.id` + topic ID; corrected author id projection to existing `forumTopics.authorId`. One secondary pin cleanup failure was a consequence of test read failure. App test remained green on interim head; final native PG fully green.
+- Exact-head [CI #43203180652](https://github.com/iliya1947/vico-forum/actions/runs/43203180652) SUCCESS (2250 app/703 PG17; 69-table schema), SA03 #43203180576, SA01 #43203180622, AP10 #43203180835 Chromium SUCCESS all jobs.
+- Lira personally inspected C2 source/complete cumulative changed-file inventory and affected code/tests; no confirmed current C2 defect, author STOP.
+- **Next Mira bounded C2 checkpoint/scope review** on exact stable head. C3+, Lev, docs/merge/production unassigned.
