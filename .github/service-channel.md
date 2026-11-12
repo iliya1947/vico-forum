@@ -4163,3 +4163,12 @@ Lira must perform author inspection, publish the stable A2 head/evidence and STO
 - **PASS — 0 confirmed open current-scope A4 defects.**
 - #328 remains Draft/cumulative; Lira STOP; Lev remains unassigned.
 
+## 2026-11-12 — SA04-B bounded handoff
+
+- A2–A4 foundation remains accepted at Mira checkpoint level in cumulative Draft #328 exact head `9053b19425c48d38a5384a3b8620ca2a0c4b35dc`; SA04-A4-MIRA-01 is closed.
+- The next accepted plan row **B** is sufficiently bounded as one result: canonical profile public projection for an inactive target.
+- Lira must make only the canonical profile lifecycle-aware: stable ID/profile route and structural/statistical fields remain; raw public name/avatar/bio/external links do not cross the public reader/loader/presentation boundary for inactive targets.
+- Active target behavior and SA-03 independently authorized Admin/Owner sections must remain intact.
+- Topic/content/discovery/directory/mentions/presence/notifications/history and all auth/write enforcement remain outside B.
+- Lira author-inspects, publishes stable cumulative head/evidence and STOP. C+ unassigned; Lev remains reserved for a larger cumulative review.
+
