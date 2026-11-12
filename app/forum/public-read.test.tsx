@@ -4,7 +4,7 @@ import { act, cleanup, fireEvent, render, screen, waitFor, within } from "@testi
 import { I18nextProvider } from "react-i18next";
 import { RouterContextProvider, RouterProvider, createMemoryRouter, data, matchRoutes } from "react-router";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import type { ForumCategoryPage, ForumReader, ForumSectionPage, ForumTopicPage } from "../../db/forum-repository";
+import type { ForumCategoryPage, ForumPopularPage, ForumReader, ForumSectionPage, ForumTopicPage, ForumUnansweredTopicSummary } from "../../db/forum-repository";
 import { ForumStorageUnavailableError } from "../../db/hyperdrive-forum";
 import {
   HELP_SOLUTIONS_CATEGORY_ID,
@@ -4459,5 +4459,135 @@ describe.each([
     expect(await screen.findByRole("link", { name: /Active section topic/ })).toBeVisible();
     expect(rawSection.container.innerHTML).not.toContain("SECRET_C2_");
     rawSection.unmount();
+  });
+});
+
+describe.each([
+  { locale: "en", direction: "ltr" as const },
+  { locale: "he", direction: "rtl" as const },
+])("SA04-C3a Popular and Unanswered public author boundaries ($locale)", ({ locale, direction }) => {
+  const mixedPopular: ForumPopularPage = {
+    "24h": [
+      { id: "c3a/popular-24h-deleted", title: "C3a 24h deleted",
+        authorName: "SECRET_C3A_POPULAR_24H", authorIdentityKind: "deleted",
+        activityCount: 4, latestActivityAt: new Date("2026-11-12T11:00:00Z") },
+      { id: "c3a/popular-24h-active", title: "C3a 24h active",
+        authorName: "Active C3a member", activityCount: 2,
+        latestActivityAt: new Date("2026-11-12T10:00:00Z") },
+    ],
+    "7d": [
+      { id: "c3a/popular-7d-deleted", title: "C3a 7d deleted",
+        authorName: "SECRET_C3A_POPULAR_7D", authorIdentityKind: "deleted",
+        activityCount: 6, latestActivityAt: new Date("2026-11-10T11:00:00Z") },
+    ],
+    "30d": [
+      { id: "c3a/popular-30d-deleted", title: "C3a 30d deleted",
+        authorName: "SECRET_C3A_POPULAR_30D", authorIdentityKind: "deleted",
+        activityCount: 12, latestActivityAt: new Date("2026-10-30T11:00:00Z") },
+    ],
+  };
+  const mixedUnanswered: ForumUnansweredTopicSummary[] = [
+    {
+      id: "c3a/unanswered-deleted", title: "C3a unanswered deleted", sourceLocale: "he",
+      authorName: "SECRET_C3A_UNANSWERED", authorIdentityKind: "deleted",
+      createdAt: new Date("2026-11-12T09:00:00Z"),
+      section: { id: "c3a/section", name: "C3a section" },
+      category: { id: "c3a/category", name: "C3a category" },
+    },
+    {
+      id: "c3a/unanswered-active", title: "C3a unanswered active", sourceLocale: "en",
+      authorName: "Active unanswered member", createdAt: new Date("2026-11-11T09:00:00Z"),
+      section: null, category: { id: "c3a/category", name: "C3a category" },
+    },
+  ];
+
+  it("masks inactive authors in both public loaders and DOM while preserving activity and original title metadata", async () => {
+    const ctx = context(locale, direction);
+    ctx.set(forumReaderContext, {
+      ...reader,
+      readPopular: async () => mixedPopular,
+      readUnanswered: async () => mixedUnanswered,
+    });
+
+    const popularData = await popularLoader({ params: { locale }, context: ctx });
+    expect(popularData.periods).toMatchObject({
+      "24h": [
+        { id: "c3a/popular-24h-deleted", title: "C3a 24h deleted", authorName: "Deleted user",
+          authorIdentityKind: "deleted", activityCount: 4 },
+        { id: "c3a/popular-24h-active", authorName: "Active C3a member", activityCount: 2 },
+      ],
+      "7d": [{ id: "c3a/popular-7d-deleted", authorName: "Deleted user",
+        authorIdentityKind: "deleted", activityCount: 6 }],
+      "30d": [{ id: "c3a/popular-30d-deleted", authorName: "Deleted user",
+        authorIdentityKind: "deleted", activityCount: 12 }],
+    });
+    expect(popularData.periods["24h"][1]).not.toHaveProperty("authorIdentityKind");
+    for (const period of ["24h", "7d", "30d"] as const) {
+      expect(popularData.periods[period].map(({ id, title, activityCount }) =>
+        ({ id, title, activityCount }))).toEqual(mixedPopular[period].map(({ id, title, activityCount }) =>
+        ({ id, title, activityCount })));
+      expect(popularData.periods[period][0]).not.toHaveProperty("latestActivityAt");
+    }
+    expect(JSON.stringify(popularData)).not.toContain("SECRET_C3A_");
+
+    const unansweredData = await unansweredLoader({ params: { locale }, context: ctx });
+    expect(unansweredData.topics).toMatchObject([
+      { id: "c3a/unanswered-deleted", authorName: "Deleted user",
+        authorIdentityKind: "deleted", sourceLocale: "he", titleDirection: "rtl",
+        section: { id: "c3a/section" }, category: { id: "c3a/category" } },
+      { id: "c3a/unanswered-active", authorName: "Active unanswered member",
+        sourceLocale: "en", titleDirection: "ltr", section: null },
+    ]);
+    expect(unansweredData.topics[1]).not.toHaveProperty("authorIdentityKind");
+    expect(unansweredData.topics.map(({ id, title, sourceLocale, section, category }) =>
+      ({ id, title, sourceLocale, section, category })))
+      .toEqual(mixedUnanswered.map(({ id, title, sourceLocale, section, category }) =>
+        ({ id, title, sourceLocale, section, category })));
+    expect(JSON.stringify(unansweredData)).not.toContain("SECRET_C3A_");
+
+    const popularView = renderRoute(PopularRoute, popularData, forumPopularPath(locale), locale, direction);
+    expect(await screen.findByRole("link", { name: /C3a 24h deleted/ }))
+      .toHaveAttribute("href", forumTopicPath(locale, "c3a/popular-24h-deleted"));
+    expect(popularView.container).toHaveTextContent("Deleted user");
+    expect(popularView.container).toHaveTextContent("Active C3a member");
+    expect(popularView.container).toHaveTextContent("4");
+    expect(popularView.container).toHaveTextContent("6");
+    expect(popularView.container).toHaveTextContent("12");
+    expect(popularView.container.innerHTML).not.toContain("SECRET_C3A_");
+    popularView.unmount();
+
+    const unansweredView = renderRoute(UnansweredRoute, unansweredData, forumUnansweredPath(locale), locale, direction);
+    expect(await screen.findByRole("link", { name: /C3a unanswered deleted/ }))
+      .toHaveAttribute("href", forumTopicPath(locale, "c3a/unanswered-deleted"));
+    const originalTitle = await screen.findByText("C3a unanswered deleted");
+    expect(originalTitle).toHaveAttribute("lang", "he");
+    expect(originalTitle).toHaveAttribute("dir", "rtl");
+    expect(unansweredView.container).toHaveTextContent("Deleted user");
+    expect(unansweredView.container).toHaveTextContent("Active unanswered member");
+    expect(unansweredView.container).toHaveTextContent("C3a section");
+    expect(unansweredView.container.innerHTML).not.toContain("SECRET_C3A_");
+    unansweredView.unmount();
+
+    // Presentation must also refuse raw original identities supplied with a deleted marker.
+    const rawPopular = renderRoute(PopularRoute, {
+      ...popularData,
+      periods: {
+        "24h": mixedPopular["24h"].map(({ latestActivityAt, ...entry }) => entry),
+        "7d": mixedPopular["7d"].map(({ latestActivityAt, ...entry }) => entry),
+        "30d": mixedPopular["30d"].map(({ latestActivityAt, ...entry }) => entry),
+      },
+    }, forumPopularPath(locale), locale, direction);
+    expect(await screen.findByRole("link", { name: /C3a 30d deleted/ })).toBeVisible();
+    expect(rawPopular.container.innerHTML).not.toContain("SECRET_C3A_");
+    rawPopular.unmount();
+
+    const rawUnanswered = renderRoute(UnansweredRoute, {
+      ...unansweredData,
+      topics: unansweredData.topics.map((entry, i) => i === 0
+        ? { ...entry, authorName: "SECRET_C3A_UNANSWERED" } : entry),
+    }, forumUnansweredPath(locale), locale, direction);
+    expect(await screen.findByRole("link", { name: /C3a unanswered deleted/ })).toBeVisible();
+    expect(rawUnanswered.container.innerHTML).not.toContain("SECRET_C3A_");
+    rawUnanswered.unmount();
   });
 });
