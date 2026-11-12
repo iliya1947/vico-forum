@@ -2313,3 +2313,12 @@ Do not treat a user's anger, criticism or request to think as implicit permissio
 - Fixed author sequence: **I1 / I2 / I3 / I4 / I5** as recorded in workflow/service-channel.
 - Intermediate checkpoints stay Draft and do not constitute completed active-account enforcement. J+ stays separate.
 - No executor assignment in this step.
+
+
+## 2026-11-12 — SA04-I1 checkpoint review
+
+- Reviewed Draft #329 exact `649dada0e2dfc5333c7c072170c0fd8c71a4501a`, full two-file I1 delta plus A2 reader and Worker/session-context chain.
+- Verified same-client account-state read after canonical BA session resolution and before request-context identity, preservation of BA headers/cookies, retained rows, and typed unavailable vs unexpected failure classification.
+- Confirmed no I2–I4 enforcement was smuggled into I1 and no missing later checkpoint was treated as an I1 defect.
+- Exact-head workflow evidence rechecked SUCCESS.
+- Verdict: **PASS, 0 current-scope defects.** Stop before I2 assignment.
