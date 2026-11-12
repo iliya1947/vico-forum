@@ -1566,7 +1566,7 @@ export class DrizzleForumRepository {
       const rows=await tx.execute<ForumNotificationSummary & {
         actorId: string | null; actorDeactivatedAt: Date | string | null;
         actorDeactivatedByUserId: string | null; actorRetainAtLeastUntil: Date | string | null;
-      }>(sql`
+      } & Record<string, unknown>>(sql`
         select n.id,n.kind,n.created_at as "createdAt",n.read_at as "readAt",
           actor.id as "actorId",actor.name as "actorName",
           actor.deactivated_at as "actorDeactivatedAt",
