@@ -4154,3 +4154,12 @@ Lira must perform author inspection, publish the stable A2 head/evidence and STO
 - Required correction is limited to canonical lifecycle-invariant validation/reuse plus focused regression for the sub-year boundary, preserving the allowlist and no-reader-integration scope.
 - No other confirmed current-scope A4 finding. Lira receives this one correction and STOP; later checkpoints remain unassigned.
 
+## 2026-11-12 — SA04-A4 Mira repeat review PASS
+
+- Mira re-reviewed cumulative #328 exact head `9053b19425c48d38a5384a3b8620ca2a0c4b35dc`.
+- SA04-A4-MIRA-01 independently verified **CLOSED**: projection fail-closed validation now matches the canonical A1 PostgreSQL UTC calendar-year retention invariant.
+- Leap-day and exact/sub-boundary regression coverage is present; exact-head CI #43159121332 SUCCESS.
+- No reader/runtime integration or later SA scope leaked into the correction.
+- **PASS — 0 confirmed open current-scope A4 defects.**
+- #328 remains Draft/cumulative; Lira STOP; Lev remains unassigned.
+
