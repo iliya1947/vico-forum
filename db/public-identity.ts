@@ -66,6 +66,9 @@ export function projectPublicAccountIdentity(
   }
 
   if (state.status === "active") {
+    if ("deactivatedAt" in state || "deactivatedByUserId" in state || "retainAtLeastUntil" in state) {
+      throw new PublicIdentityInvariantError();
+    }
     return {
       kind: "active",
       id: source.id,
@@ -80,6 +83,7 @@ export function projectPublicAccountIdentity(
 
   if (state.status === "deactivated") {
     if (!validDate(state.deactivatedAt) || !validDate(state.retainAtLeastUntil)
+        || state.retainAtLeastUntil.getTime() < state.deactivatedAt.getTime()
         || typeof state.deactivatedByUserId !== "string" || !state.deactivatedByUserId.trim()) {
       throw new PublicIdentityInvariantError();
     }
