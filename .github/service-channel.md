@@ -4193,3 +4193,15 @@ Lira must perform author inspection, publish the stable A2 head/evidence and STO
 - **PASS — 0 confirmed current-scope SA04-B defects.**
 - #328 remains Draft/cumulative; Lira STOP; C+ and Lev unassigned.
 
+## 2026-11-12 — SA04-C granularity gate; C1 handoff
+
+- After B PASS, the accepted C row was checked against actual forum reader seams and is too broad for one Lira assignment.
+- Operational decomposition:
+  1. **C1** — canonical topic-page topic/post author projection.
+  2. **C2** — category/section list author projection, including latest/pinned topics.
+  3. **C3** — remaining public discovery/Help summary projections; re-evaluate before handoff.
+- Only C1 is authorized now in cumulative Draft #328 exact starting head `22c05bfa824a0d5284c818f92b691056fd0749f7`.
+- Inactive topic/post authors keep stable IDs/profile relationships and published content but expose neutral public identity; raw name/avatar does not cross direct topic DTO or public presentation. Active/mixed authors remain unchanged.
+- No post-history/notifications/directory/mentions/presence/auth/writer or later checkpoint work is included.
+- Lira author-inspects, publishes stable exact head/evidence and STOP. C2+ and Lev unassigned.
+
