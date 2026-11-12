@@ -1,3 +1,17 @@
+# Лира — active assignment: SA04-F online presence / heartbeat lifecycle
+
+- Continue cumulative Draft **#328** from accepted exact head `69c58d02003c1e00def3916ed2d7a4bafabdaf4f`; main/base `593a03964b8407b249f7c9f5eb117ddb8b07736d`.
+- Required result: `readOnlinePresence` excludes inactive accounts before public count/order/`LIMIT 12`; `recordOnlinePresence` refuses inactive actor before presence insert/refresh at the authoritative transaction/row-lock boundary. Inactive accounts are absent, not Deleted-user members.
+- Preserve SET-06 exactly: missing preference row means ON; `showOnline=false` filter/cleanup, per-user lock serialization, 45s write throttle, 5m activity window, full count + 12-member list, active public `id/name/image` and no private fields.
+- Prove both deactivation/heartbeat race orders with real PG locks: deactivation-first → waiting heartbeat observes inactive and writes nothing; heartbeat-first → an earlier heartbeat may commit, but after deactivation any physical stale row is excluded immediately. No global serialization.
+- Preserve `/:locale/presence` session authority, stale expected-user check, same-origin/form/method handling, no-store, storage 503 and unexpected-error behavior. Inactive heartbeat must be controlled non-success and leak no lifecycle/private data.
+- **Do not pull P forward:** Privacy Settings save lifecycle admission is not F. Do not accidentally make `DrizzleUserPrivacyRepository.save` reject inactive users or erase/change their existing `showOnline` preference.
+- Add focused native PG17 + route regressions for inactive stale row, filter-before-count/limit, active/hidden behavior, heartbeat refusal and lock races. Keep implementation local; no schema/dependency/public-UI redesign.
+- Excluded: P Privacy-save enforcement, G notifications, H history, I auth/session, J–O/Q/R writers, SA05+, Stage6/production, #315, docs and merge.
+- Publish stable exact head/evidence, perform mandatory personal author inspection, then **STOP for Mira SA04-F checkpoint review**. Lev/Mark and G+ remain unassigned.
+
+---
+
 # Лира — SA04-E author complete; STOP for Mira checkpoint
 
 - Cumulative [Draft implementation PR #328](https://github.com/iliya194/vico-forum/pull/328) open/Draft/unmerged, unchanged main/base `593a03964b8407b249f7c9f5eb117ddb8b07736d`; exact head **`69c58d02003c1e00def3916ed2d7a4bafabdaf4f`**, 35 cumulative changed files. D Mira checkpoint PASS accepted on `85a95a0a46dc77ea80ab21eea5504a681ac586de`.
