@@ -4806,3 +4806,105 @@ describe.each([
     rawView.unmount();
   });
 });
+
+describe.each([
+  { locale: "en", direction: "ltr" as const },
+  { locale: "he", direction: "rtl" as const },
+])("SA04-C3d1 canonical Help question-summary author privacy ($locale)", ({ locale, direction }) => {
+  it("defends loader and rendered shared Help modes against raw deactivated identity without losing question state", async () => {
+    const rawQuestions = [
+      {
+        ...helpPage.questions[0]!,
+        id: "c3d1/deleted", title: "C3d1 private-author question",
+        authorName: "SECRET_C3D1_DELETED_NAME", authorIdentityKind: "deleted" as const,
+        isSolved: true, hasBestAnswer: true, replyCount: 4,
+        solutionModerationStatus: "needs-review" as const,
+        needsDetails: true, duplicateDisputed: true,
+        attention: { signals: { "needs-review": 1 }, totalSignals: 1, appeal: false, reviewRequired: true },
+        authorImage: "SECRET_C3D1_AVATAR", authorDeactivatedByUserId: "SECRET_C3D1_DEACTIVATOR",
+        authorRetainAtLeastUntil: "SECRET_C3D1_RETAIN",
+        tags: [{ key: "c3d1", name: "C3d1 tag" }],
+      },
+      {
+        ...helpPage.questions[0]!,
+        id: "c3d1/active", title: "C3d1 active-author question",
+        authorName: "Active C3d1 author",
+        isSolved: false, hasBestAnswer: false, replyCount: 1,
+      },
+    ];
+    const page = { ...helpPage, questions: rawQuestions };
+    const ctx = context(locale, direction);
+    const readHelpSolutionsAll = vi.fn(async () => page);
+    const readHelpSolutionsSolved = vi.fn(async () => ({
+      ...page, questions: [rawQuestions[0]!],
+    }));
+    ctx.set(forumReaderContext, {
+      ...reader, readHelpSolutionsAll, readHelpSolutionsSolved,
+    } as ForumReader);
+
+    for (const mode of ["all", "solutions"] as const) {
+      const href = forumCategoryPath(locale, HELP_SOLUTIONS_CATEGORY_ID) +
+        (mode === "solutions" ? "?mode=solutions" : "");
+      const data = await categoryLoader({
+        request: new Request("https://forum.example" + href),
+        params: { locale, categoryId: HELP_SOLUTIONS_CATEGORY_ID }, context: ctx,
+      });
+      expect(data.kind).toBe("help-solutions");
+      if (data.kind !== "help-solutions") throw new Error("Expected Help category");
+      expect(data.mode).toBe(mode);
+      expect(data.page.questions[0]).toMatchObject({
+        id: "c3d1/deleted", title: "C3d1 private-author question",
+        authorName: "Deleted user", authorIdentityKind: "deleted",
+        isSolved: true, hasBestAnswer: true, replyCount: 4,
+        solutionModerationStatus: "needs-review",
+        needsDetails: true, duplicateDisputed: true,
+        attention: { totalSignals: 1, reviewRequired: true },
+        tags: [{ key: "c3d1", name: "C3d1 tag" }],
+      });
+      expect(data.page.questions[0]!.createdAt).toBe(rawQuestions[0]!.createdAt.toISOString());
+      expect(data.page.questions[0]!.activityAt).toBe(rawQuestions[0]!.activityAt.toISOString());
+      if (mode === "all") {
+        expect(data.page.questions[1]).toMatchObject({
+          id: "c3d1/active", authorName: "Active C3d1 author", replyCount: 1,
+        });
+        expect(data.page.questions[1]).not.toHaveProperty("authorIdentityKind");
+      }
+      expect(JSON.stringify(data)).not.toContain("SECRET_C3D1_");
+      const view = renderRoute(CategoryRoute, data, href, locale, direction);
+      expect(await screen.findByRole("link", { name: /C3d1 private-author question/u }))
+        .toHaveAttribute("href", forumTopicPath(locale, "c3d1/deleted"));
+      expect(view.container).toHaveTextContent("Deleted user");
+      expect(view.container).toHaveTextContent("C3d1 tag");
+      expect(view.container.innerHTML).not.toContain("SECRET_C3D1_");
+      if (mode === "all") {
+        expect(screen.getByRole("link", { name: /C3d1 active-author question/u }))
+          .toHaveAttribute("href", forumTopicPath(locale, "c3d1/active"));
+        expect(view.container).toHaveTextContent("Active C3d1 author");
+      }
+      view.unmount();
+    }
+    expect(readHelpSolutionsAll).toHaveBeenCalledTimes(1);
+    expect(readHelpSolutionsSolved).toHaveBeenCalledTimes(1);
+
+    // Even an unmasked authorName in malformed marked route data cannot appear in the UI.
+    const rawData = await categoryLoader({
+      request: new Request("https://forum.example" + forumCategoryPath(locale, HELP_SOLUTIONS_CATEGORY_ID)),
+      params: { locale, categoryId: HELP_SOLUTIONS_CATEGORY_ID }, context: ctx,
+    });
+    if (rawData.kind !== "help-solutions") throw new Error("Expected Help category");
+    const malformed = {
+      ...rawData,
+      page: {
+        ...rawData.page,
+        questions: rawData.page.questions.map((question, index) => index === 0
+          ? { ...question, authorName: "SECRET_C3D1_RAW_PRESENTATION_NAME" } : question),
+      },
+    };
+    const rawView = renderRoute(
+      CategoryRoute, malformed, forumCategoryPath(locale, HELP_SOLUTIONS_CATEGORY_ID), locale, direction,
+    );
+    expect(await screen.findByRole("link", { name: /C3d1 private-author question/u })).toBeVisible();
+    expect(rawView.container.innerHTML).not.toContain("SECRET_C3D1_");
+    rawView.unmount();
+  });
+});
