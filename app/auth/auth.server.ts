@@ -1,6 +1,6 @@
 import { drizzleAdapter } from "@better-auth/drizzle-adapter";
 import { betterAuth, type BetterAuthOptions } from "better-auth";
-import { APIError, createAuthMiddleware, getAuthoritativeSessionFromCtx } from "better-auth/api";
+import { APIError, createAuthMiddleware, getAuthoritativeSessionFromCtx, getSessionFromCtx } from "better-auth/api";
 import { and, eq, isNotNull, ne } from "drizzle-orm";
 import { drizzle, type NodePgDatabase } from "drizzle-orm/node-postgres";
 import type { Client } from "pg";
@@ -74,7 +74,14 @@ export function createBetterAuthRequestHooks(
         && !(preRoutingSessionLookup && ctx.path === "/get-session")) {
         // Also runs for auth.api.* calls; direct endpoint dispatch shares this
         // pinned Better Auth hook with the canonical HTTP handler.
-        current = await getAuthoritativeSessionFromCtx(ctx);
+        if (ctx.path === "/get-session") {
+          // Preflight must not slide a session before the actual get-session
+          // endpoint: it owns its refresh and resulting Set-Cookie response.
+          ctx.context.session = null;
+          current = await getSessionFromCtx(ctx, { disableCookieCache: true, disableRefresh: true });
+        } else {
+          current = await getAuthoritativeSessionFromCtx(ctx);
+        }
         if (current) {
           try {
             const connection = (database as NodePgDatabase & { $client: Client }).$client;
