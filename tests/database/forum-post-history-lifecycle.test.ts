@@ -42,12 +42,15 @@ beforeAll(async () => {
       bodyRevision: { id: "h-rev-1", originalContent: "First **source**\nשלום", sourceLocale: "he" },
     },
   });
-  await client.query(`update forum_post_revisions set created_at='2026-10-01 10:00:00+00' where id='h-rev-1'`);
+  // Revisions are append-only. Assign tied timestamps on INSERT relative to the
+  // immutable original row, not by updating history.
   await client.query(`insert into forum_post_revisions
     (id,post_id,author_id,original_content,source_locale,created_at)
     values
-    ('h-rev-2','h-post','h-active','Second source','en','2026-10-02 10:00:00+00'),
-    ('h-rev-3','h-post','h-inactive','Third source','und','2026-10-02 10:00:00+00')`);
+    ('h-rev-2','h-post','h-active','Second source','en',
+      (select created_at + interval '1 minute' from forum_post_revisions where id='h-rev-1')),
+    ('h-rev-3','h-post','h-inactive','Third source','und',
+      (select created_at + interval '1 minute' from forum_post_revisions where id='h-rev-1'))`);
 });
 afterAll(async () => {
   try { await client.query(`drop schema if exists ${schema} cascade`); } finally { await client.end(); }
