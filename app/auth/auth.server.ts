@@ -70,7 +70,9 @@ export function createBetterAuthRequestHooks(
   return {
     before: createAuthMiddleware(async (ctx) => {
       let current: Awaited<ReturnType<typeof getAuthoritativeSessionFromCtx>> = null;
-      if (ctx.path && actorProtectedAuthPaths.has(ctx.path) && ctx.headers
+      // Better Auth also dispatches server-only auth.api methods without a
+      // route path (e.g. setPassword). They must not bypass the actor gate.
+      if ((!ctx.path || actorProtectedAuthPaths.has(ctx.path)) && ctx.headers
         && !(preRoutingSessionLookup && ctx.path === "/get-session")) {
         // Also runs for auth.api.* calls; direct endpoint dispatch shares this
         // pinned Better Auth hook with the canonical HTTP handler.
