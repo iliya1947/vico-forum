@@ -2,6 +2,20 @@
 
 Служебный PR: #251. Оперативное состояние: [workflow.md](./workflow.md). Общий контракт: [ADMIN_PANEL_IMPLEMENTATION_PLAN.md](../ADMIN_PANEL_IMPLEMENTATION_PLAN.md).
 
+
+## 2026-11-12 — Mira: SA04-F checkpoint review PASS
+
+- Reviewed cumulative Draft #328 exact stable head `707651774932281230b3e90440e18eeb9a08b7d4` against bounded presence checkpoint F; base/current main remains `593a03964b8407b249f7c9f5eb117ddb8b07736d`.
+- Complete F delta from accepted E is six files/six commits. No schema/dependency/permission/public-UI redesign.
+- Reader trace confirmed: recent presence joins the same user row and current privacy preference, then filters recency + A1 active state + `showOnline != false` before window count, ordering and limit. Deactivated stale rows neither leak retained identity nor alter count/list selection.
+- Heartbeat trace confirmed: the existing SET-06 account-row `FOR UPDATE` is retained. The locked row now exposes only `deactivatedAt`; inactive throws `AccountInactiveError` before preference read or presence write. Active/missing-preference/OFF and 45-second throttle semantics remain unchanged.
+- Privacy `save` still takes the same lock but intentionally ignores lifecycle in F. Its preference upsert/OFF cleanup remains operational for fixture-inactive accounts, proving checkpoint P is not accidentally implemented and saved privacy state is not erased by F.
+- Native PG17 tests prove stale inactive/hidden filtering before count/limit, inactive insert/refresh denial, private-marker omission and real two-order row-lock races. Deactivation-first causes waiting heartbeat rejection/no write; heartbeat-first leaves a physical prior row but reader hides it immediately and later heartbeats reject. Existing unrelated-user lock independence remains.
+- Route review confirms inactive and missing both expose only generic no-store 409, while guest/origin/method/stale-ID, classified 503 and unexpected failure behavior remains unchanged. Hyperdrive does not reclassify the domain inactive error as storage failure.
+- Independently rechecked GitHub Actions: CI #43284564579, SA03 #43284564530, SA01 #43284564635 and AP10 #43284564627 all completed SUCCESS on exact head `707651774932281230b3e90440e18eeb9a08b7d4`.
+- **PASS — 0 confirmed current-scope F defects.**
+- G notifications, H post history, I auth/session and J–R writer enforcement remain future checkpoints rather than F defects. #328 remains Draft; Lira STOP; Lev/Mark remain unassigned.
+
 ## 2026-11-12 — Lira: SA04-F presence lifecycle implementation complete, author STOP
 
 - Continued cumulative Draft [#328](https://github.com/iliya1947/vico-forum/pull/328) from Mira E PASS `69c58d02003c1e00def3916ed2d7a4bafabdaf4f`; unchanged main/base `593a03964b8407b249f7c9f5eb117ddb8b07736d`; final F stable exact head **`707651774932281230b3e90440e18eeb9a08b7d4`**, six F files/six commits, 40 cumulative changed paths, open/Draft/unmerged.
