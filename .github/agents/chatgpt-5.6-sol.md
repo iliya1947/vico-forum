@@ -1,5 +1,15 @@
 # ChatGPT-5.6 Sol — working notes
 
+## 2026-11-12 — SA04-C3b coordinator checkpoint PASS
+
+- Exact implementation head reviewed: `6c30b6f5a51e17f3a4722e677e60d8c5150e6baf`; prior accepted C3a head `04fb2510afb0c32494509424b6b0af280c5743bc`.
+- Compared complete six-file C3b delta and traced Tag/Search grouped SQL row → accepted public-author projector → DTO → canonical loader allowlist → UI.
+- Confirmed Tag membership/order/count/location/tags and Search normalization/matching/rank/activity/order/limit fields remain unchanged across active→deactivated author state.
+- Raw inactive identity/lifecycle does not escape direct DTO, loader serialization or DOM; active names remain unchanged.
+- Exact-head CI and connected Chromium runs independently matched and are green.
+- Verdict: **PASS, 0 confirmed current-scope C3b defects**. No implementation change made during review.
+- Next possible bounded scope is C3c authenticated Unread, not assigned by this checkpoint.
+
 ## 2026-11-12 — SA04-C3a coordinator checkpoint PASS
 
 - Exact implementation head reviewed: `04fb2510afb0c32494509424b6b0af280c5743bc`; previous accepted C2 head `8946b74b0271efd4ef7cfe2c2c595ee59d8061b6`.
