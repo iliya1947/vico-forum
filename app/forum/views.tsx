@@ -1819,7 +1819,9 @@ function HelpQuestionCards({
                           {t("helpAttentionPendingSignals", { count: question.attention.totalSignals })}
                         </span>
                       ) : null}
-                      <small>{t("startedBy", { author: question.authorName })}</small>
+                      <small>{t("startedBy", {
+                        author: question.authorIdentityKind === "deleted" ? t("deletedUser") : question.authorName,
+                      })}</small>
                       {question.tags.length > 0 ? (
                         <span className="topic-tag-list" aria-label={t("topicTagsLabel")}>
                           {question.tags.map((tag) => (
