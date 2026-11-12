@@ -1,3 +1,47 @@
+# Лёва — актуальный checkpoint: SA04-A2–H independent whole-PR PASS (2026-11-12)
+
+Published report [#6835789162](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6835789162). User authorization for review-report/service publication persists throughout SA04.
+
+## Лёва — независимая whole-PR проверка SA04-A2–H: PASS
+
+Проверен **весь cumulative diff Draft [#328](https://github.com/iliya1947/vico-forum/pull/328), 49 файлов**, exact head `0a917b6f4f55f991bea6e6031b43a0c4f0dc2f85`, против merged A1 main/base `593a03964b8407b249f7c9f5eb117ddb8b07736d`, принятого SA04 technical plan и bounded назначений A2–H. В реализации/исправлениях этого PR не участвовал; код при проверке не менял.
+
+**Вердикт: PASS — 0 подтверждённых current-scope A2–H дефектов.** Coordinator whole-PR PASS и независимая проверка относятся к одному stable head. A1 уже проверен и merged; повторным отдельным A1 gate этот отчёт не является.
+
+### Подтверждённый scope
+
+- A2/A3: параметризованный active predicate, различимые active/deactivated/missing и unavailable/unexpected результаты, сохранение cause; mutation primitive использует caller-owned transaction и `FOR NO KEY UPDATE`. Ограничение autocommit явно обозначено; runtime auth/writer integrations здесь не объявлены.
+- A4: строгий allowlist публичной identity, соответствие user ID/state, нейтральные поля inactive и canonical UTC calendar-year retention, включая leap-day clamp. **SA04-A4-MIRA-01 CLOSED**; sub-year/точная граница перепроверены в выполненном suite.
+- B–H: canonical profile; topic/current posts; category latest/pinned и section; Popular/Unanswered/Tag/Search/Unread; Help shared modes и For-me; Users directory; mentions; online/heartbeat; оба notification readers и post revision history. Identity и lifecycle читаются из одной joined user row; private state не переносится в публичный DTO.
+- Public identity скрывается до возврата reader/сериализации; UI использует generic localized Deleted user. Stable IDs/profile relationships, опубликованный текст/revisions, counts/ranking/order, inbox membership/read lifecycle и существующие permissions сохранены. Owner/private evidence остаётся под собственным admission. Directory name matching/count использует neutral name; mention/online filtering выполняется до count/order/LIMIT.
+- Schema/migrations/manifest/dependencies не менялись; только необходимые historical test fixtures дополнены существующей 0065. Никаких новых last-manager/count/recovery правил.
+
+### Независимо выполненная проверка
+
+- **184/184 application files, 2269/2269 tests PASS.**
+- **11/11 затронутых native files, 106/106 tests PASS** на собственной disposable PostgreSQL 17: включая row-lock/KEY SHARE, обе очередности deactivation/heartbeat, directory paging/count, все public reader families, mixed inbox и append-only revision history.
+- Свежий build Worker **PASS**; clean disposable migrations 0000–0065 **PASS**; фактическая **69-table manifest parity PASS**, `drizzle-kit check` **PASS**. Генератор повторно не запускался: новых schema изменений нет; ранее установленное ограничение BigInt generation не объявляется исправленным.
+- **Оригинальный probe**, отдельно от авторских tests: сняты direct DTO до fixture-deactivation, затем сравнены 11 reader families. ID/content/statistics/order и прочие проверенные non-identity данные сохранились; retained identity отсутствует. Old-name directory count стал 0, stable-ID lookup остался; mention candidate исчез; inactive heartbeat отказал; исходные name/image физически сохранены в БД.
+- **Оригинальный Chromium → built Worker → настоящий Better Auth → disposable PG17:** 36 records основного probe + 5 дополнительных focused records. Проверены fresh HTML и .data публичных surfaces в EN/RU/HE, нейтральный avatar и mixed active/deleted authors, mounted profile после реального GET revalidation, member Unread/inbox, permission-protected history HTTP + общий Quick actions DOM и guest401. Дополнительный probe использует настоящий **`q`** Users search: old-name total0, neutral-name/ID total1. Owner видит допустимую private account section рядом с neutral public profile; Guest не получает email/private sections.
+- В основном Chromium probe **pageErrors=[]**. Внешние browser requests блокировались; единственный перехваченный avatar request относится к намеренно открытому **active baseline до деактивации**, не к neutralized identity. Production/provider/OAuth/R2 обращения не выполнялись.
+- Через GitHub API повторно подтверждены **SUCCESS на этом exact head**: [CI #43296996996](https://github.com/iliya1947/vico-forum/actions/runs/43296996996), [SA01 #43296997261](https://github.com/iliya1947/vico-forum/actions/runs/43296997261), [SA03 #43296997015](https://github.com/iliya1947/vico-forum/actions/runs/43296997015), [AP10 #43296997445](https://github.com/iliya1947/vico-forum/actions/runs/43296997445). Полные 717 native из CI локально повторно не заявляются: собственный native run — 106.
+
+### Граница результата и передача
+
+#315 учтён на head `fc32f0ba36120b89a27831993519a00f2a40b953`: current security workflow и Block E, включая известный PUBLIC-PROJECTION-01 о moderation metadata. Его remediation/cache/availability/Stage6 задачи не превращены в findings этого identity slice и не объявлены закрытыми.
+
+**Это PASS только A2–H, не завершение всего SA04.** I+ auth/session closure, J–R writer gates, S connected enforcement closure, SA05/deactivate control, docs closeout, merge и production не выполнялись и не назначаются этим отчётом. Fixture deactivation не является продуктовой командой.
+
+Source hashes всех 49 файлов совпадают с reviewed head; worktree чист. Собственный Worker остановлен, synthetic vars/dependency symlink удалены, disposable PostgreSQL-контейнер удалён.
+
+**Следующий получатель — Мира:** принять независимый PASS и выполнить следующий coordinator шаг для уже проверенного stable slice по текущему workflow; последующее enforcement назначать отдельно. Лёва завершил назначение и STOP. Лира/Марк и I+ этим отчётом не назначаются.
+
+**Действие разработчика: подключить Миру.**
+
+Reproducible local evidence: /workspace/work/sa04-a2-h-review-evidence/ — SOURCE_MANIFEST.json (49 exact-head hashes), application.log, native.log, build.log, schema-manifest.log, db-check.log, seed.mts/native-baseline.json, native-after.mts/native-after.json, browser.py/browser.json and EN/RU/HE topic screenshots, directory-owner.py/directory-owner.json. Initial probe GitHub URL fixture violated existing profile validation; corrected fixture only before successful run. The three main probe URLs with unused “search” parameter prove safe unfiltered responses only; actual directory q matching/count proved separately by directory-owner.py. Only pre-deactivation active-baseline avatar URL was intercepted; no outgoing browser request allowed. Clean worktree; owned vars/link/Worker/container removed.
+
+---
+
 # Лёва — актуальный checkpoint: SA04-A1 independent review PASS (2026-11-11)
 
 Published report: [#6808027706](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6808027706). Developer explicitly authorized publication of review reports and service-state updates for the entire SA-04 ("Разрешаю на протяжение всего SA-04"). This authorization persists across SA-04 handoffs.
