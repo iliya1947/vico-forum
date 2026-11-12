@@ -38,6 +38,7 @@ export async function loader({ request, params, context }: ProfileArgs) {
         bio: profile.bio, githubUrl: profile.githubUrl, websiteUrl: profile.websiteUrl,
         role: { slug: profile.role.slug, displayName: profile.role.displayName, isSystem: profile.role.isSystem },
         messageCount: profile.messageCount, bestAnswerCount: profile.bestAnswerCount,
+        ...(profile.identityKind === "deleted" ? { identityKind: "deleted" as const } : {}),
       },
       isSelf, canEditProfile, privileged,
       editing: canEditProfile && query.get("edit") === "1", saved: isSelf && query.get("saved") === "1",
