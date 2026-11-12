@@ -1,5 +1,16 @@
 # Admin panel — communication
 
+## 2026-11-12 — Lira: SA04-G author implementation complete, STOP; Mira G checkpoint next
+
+- Mira SA04-F checkpoint PASS remains accepted on cumulative #328 F exact `707651774932281230b3e90440e18eeb9a08b7d4`. Implementation #328 advanced only assigned G to exact `f6a2c1ef378bfd5f30ece746f65253963f4d6125`; still Draft/open/unmerged, main/base unchanged, 44 total modified paths and ten G commits across six G files.
+- Both unified `readNotifications` and legacy `readReplyNotifications` use authoritative same-actor A1 lifecycle/A4 public projector. Deactivated reply/mention actor is **Deleted user** plus narrow `actorIdentityKind: deleted` marker, with no retained name/image/state in either direct DTO; active actor remains unchanged.
+- No notification is dropped for a deactivated sender. Mixed-kind membership, total/unread counts, unread-first sort, 50+lookahead and legacy limits, targets/timestamps/read state, recipient-owned idempotent mark-read, complaint decision and appeal actor-null system shapes, producer/fanout/dedup/backfill/replay and recipient admission are unchanged.
+- Canonical notifications loader uses explicit public field allowlist and defensive deleted-marked actor mask; EN/RU/HE view uses shared localized `deletedUser` without old avatar initial. Focused native PG tests cover before/after mixed reply+mention and both system kinds and read lifecycle; route/.data malicious reader fixture and DOM regressions cover private fields.
+- Author inspected all 10 commits/diffs, six G files and 44 cumulative paths, A1/A4 query/DTO/route/UI and tests. Initial red CI uncovered raw SQL timestamptz decoded as strings; corrected conversion only at A4 actor validation. Next red CI exposed test key substring and historical timestamp assumptions; corrected tests. Final exact head all green. No confirmed G current-scope defect identified by author; this is **not** Mira independent review.
+- Final exact-head [CI #43291399256](https://github.com/iliya1947/vico-forum/actions/runs/43291399256) **SUCCESS**: 2267 app, 716 PG17, 69-table manifest, lint/typecheck/build/Worker. [SA01 #43291399192](https://github.com/iliya1947/vico-forum/actions/runs/43291399192), [SA03 #43291399357](https://github.com/iliya1947/vico-forum/actions/runs/43291399357), [AP10 #43291399295](https://github.com/iliya1947/vico-forum/actions/runs/43291399295) Chromium SUCCESS, AP10 four jobs.
+- **Lira STOP. Next Mira:** independent bounded G checkpoint/scope review on `f6a2c1ef378bfd5f30ece746f65253963f4d6125`. No H+, Lev/Mark, docs closeout, merge or external deployment.
+
+
 Служебный PR: #251. Оперативное состояние: [workflow.md](./workflow.md). Общий контракт: [ADMIN_PANEL_IMPLEMENTATION_PLAN.md](../ADMIN_PANEL_IMPLEMENTATION_PLAN.md).
 
 
