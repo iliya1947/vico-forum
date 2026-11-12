@@ -1,13 +1,17 @@
 # Admin panel — current workflow
 
-- Service PR **#251**; merged SA04-A1 baseline/main/base `593a03964b8407b249f7c9f5eb117ddb8b07736d`. SA04-A2/A3/A4/B/C1/C2 **Mira checkpoint PASS**; SA04-A4-MIRA-01 CLOSED.
-- **Current checkpoint: SA04-C3a assigned to Lira.**
-- [Cumulative Draft implementation PR #328](https://github.com/iliya1947/vico-forum/pull/328): continue from stable exact head **`8946b74b0271efd4ef7cfe2c2c595ee59d8061b6`**, base/current main **`593a03964b8407b249f7c9f5eb117ddb8b07736d`**, open/Draft/unmerged.
-- **C3a bounded result:** neutralize inactive topic-author identity only on the canonical **Popular** and **Unanswered** discovery summaries and their existing public route/presentation boundaries, reusing the accepted A4 Deleted-user contract. Active authors remain unchanged; raw inactive identity/lifecycle data must not cross the public DTO/serialization boundary.
-- Preserve Popular period windows, activity counts, ranking/order/limits and timestamps. Preserve Unanswered eligibility, title/source-locale/location fields and ordering.
-- Add focused regression evidence for inactive + active authors at the direct PostgreSQL reader boundary and public route/presentation boundary; perform mandatory personal author inspection, run applicable exact-head checks, publish the stable head/evidence and **STOP for Mira checkpoint review**.
-- **Explicitly outside C3a:** Tag/Search, Unread, Help summaries, post history, notifications, Admin Users, mentions, online presence, auth/session/writers/deactivation action, SA05+, Stage6/production, #315, docs closeout and merge.
-- **Lira is the only active implementer for C3a.** Lev/Mark remain unassigned; #328 remains cumulative Draft and is not sent to independent review or merge at this checkpoint.
+- Service PR **#251**; merged SA04-A1 main/base `593a03964b8407b249f7c9f5eb117ddb8b07736d`. SA04-A2/A3/A4/B/C1/C2 remain **Mira checkpoint PASS**, A4-MIRA-01 CLOSED.
+- **Current checkpoint: SA04-C3a author-complete. Next Mira bounded C3a checkpoint/scope review. Lira STOP.**
+- [Cumulative Draft implementation PR #328](https://github.com/iliya1947/vico-forum/pull/328): **stable exact head `04fb2510afb0c32494509424b6b0af280c5743bc`**, base unchanged, **25 changed files**, open/Draft/unmerged.
+- **C3a bounded result:** canonical `readPopular` and `readUnanswered` joined topic-author lifecycle → accepted A4 `Deleted user` projector before public DTO. Active authors remain unchanged; raw deactivated identity/lifecycle does not cross reader/route/DOM. Popular three period windows/counts/ranks/order/limits and Unanswered eligibility/title/source-locale/location/newest-first order retained.
+- Canonical Popular/Unanswered routes mask deleted names before serialization; existing UI translates deleted label with `t("deletedUser")`, including raw malicious fixture defense; no new UI catalog/migrations.
+- Native PG17/EN+HE route/DOM regression tests cover distinct raw name/avatar/deactivation actor/date markers, mixed active/deleted authors, Popular period membership and activity, Unanswered replied exclusion and source-direction/location continuity.
+- **Author inspection:** personally inspected cumulative 25-file changed inventory, relevant actual C3a patches/source, SQL projection/retained fields, route/DOM and focused regression; no confirmed current C3a defect. This is not Mira coordinator or Lev independent review.
+- **Exact-head [CI #43208714882](https://github.com/iliya1947/vico-forum/actions/runs/43208714882) SUCCESS:** 2252/2252 app; 704/704 PG17; 69-table schema manifest parity; lint/typecheck/build/Worker smoke. [SA03 Chromium #43208714867](https://github.com/iliya1947/vico-forum/actions/runs/43208714867), [SA01 Chromium #43208714997](https://github.com/iliya1947/vico-forum/actions/runs/43208714997), [AP10 Chromium #43208714917](https://github.com/iliya1947/vico-forum/actions/runs/43208714917) all SUCCESS (AP10 four jobs).
+- **C3a diagnostics corrected:** first run ESLint unused destructuring in new tests; a new native test incorrectly expected oldest-before-newest on Unanswered and was corrected to the existing newest-first order; next typecheck found test-only literal-union `Set` typing and was corrected to `Set<string>`. Final exact head green; no SQL behavior rewrite.
+- **CI caveat:** historical DrizzleKit 0.31.10 `generate` BigInt message is not independent schema evidence; native 69-table parity passed, no migration/schema change.
+- **Excluded:** C3b Tag/Search, C3c Unread, C3d Help, history, notifications, Admin Users, mentions, presence, auth/session, writers/deactivation controls, SA05+, Stage6/production, #315, documentation closeout, merge.
+- **Active recipient: Mira — SA04-C3a checkpoint/scope review of stable exact `04fb2510afb0c32494509424b6b0af280c5743bc`.** Lev/Mark and C3b+ unassigned.
 
 ## Mandatory author verification
 
@@ -225,3 +229,11 @@ Before any project-changing action or agent handoff, Mira must check in this ord
 - **PASS — 0 confirmed current-scope C2 defects.**
 - #328 remains cumulative Draft. Lira STOP; C3+ and Lev remain unassigned.
 
+## 2026-11-12 — SA04-C3a author complete; Mira checkpoint next
+
+- Accepted C2 Mira PASS exact `8946b74b0271efd4ef7cfe2c2c595ee59d8061b6`; continued cumulative Draft #328 only for assigned Popular/Unanswered C3a. New exact head `04fb2510afb0c32494509424b6b0af280c5743bc`, 25 files.
+- `readPopular` three windows and `readUnanswered` eligible summaries project A4 neutral account identity from joined lifecycle before direct DTO. Correct original rank/count/order/title/locale/category semantics and active identities preserved, no C3b+ change.
+- Defensive Popular/Unanswered loaders and localized UI also neutralize marked deleted authors, with native PG17 and EN/HE route/DOM secret-marker tests, raw UI fixture defense.
+- Initial lint unused destructuring, incorrect new test newest-first expectation and Set literal-union typing found/fixed locally; no related product or schema alterations.
+- Final exact-head CI #43208714882 SUCCESS: 2252 app/704 PG17, 69-table parity; SA03 #43208714867, SA01 #43208714997 and AP10 #43208714917 Chromium SUCCESS.
+- Mandatory Lira author inspection of cumulative diff and C3a code/tests performed; no confirmed current C3a defect. **Lira STOP; Mira bounded C3a review next.** C3b+, Lev/Mark, docs/merge/production unassigned.
