@@ -95,3 +95,12 @@ Before any project-changing action or agent handoff, Mira must check in this ord
 - **PASS — 0 confirmed current-scope A3 defects.**
 - #328 stays cumulative Draft. No Lev review/merge at this checkpoint. Lira STOP; A4 unassigned.
 
+## 2026-11-12 — SA04-A4 assigned
+
+- A2+A3 remain checkpoint-PASS on `0725b49dc9d9e36152670dac8368d0f83e714c82`; current main/base remains `593a03964b8407b249f7c9f5eb117ddb8b07736d`.
+- Only **A4** is active: shared neutral public-identity contract/helper for inactive accounts.
+- Foundation requirement: stable user ID remains; inactive public name becomes the approved Deleted-user representation; raw name/avatar/bio/profile links are not carried through; active identity remains unchanged.
+- This checkpoint does **not** connect the helper to any current public reader/search/presence/notification/history surface.
+- Continue cumulative Draft #328. Lira author-inspects the cumulative foundation, publishes stable head/evidence and STOP.
+- Reader integrations and all later SA04 checkpoints remain unassigned. Lev remains unassigned pending a larger stable review scope.
+
