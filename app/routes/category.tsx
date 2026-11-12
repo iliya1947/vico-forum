@@ -1,4 +1,5 @@
 import { forumReadLoader } from "../forum/read-availability.server";
+import { DELETED_USER_NAME } from "../../db/public-identity";
 import { redirect, useActionData, useLoaderData, type RouterContextProvider } from "react-router";
 import { authSessionForRequest } from "../auth/request-context";
 import { measureRestrictionsForPresentation } from "../measures/presentation.server";
@@ -132,10 +133,21 @@ export const loader = forumReadLoader(async function loader({ request, params, c
       referenceTime,
       page: {
         ...helpSolutions,
-        questions: helpSolutions.questions.map((question) => ({
-          ...question,
-          createdAt: question.createdAt.toISOString(),
-          activityAt: question.activityAt.toISOString(),
+        questions: helpSolutions.questions.map(({
+          id, title, authorName, authorIdentityKind, replyCount, isSolved, hasBestAnswer,
+          solutionModerationStatus, solutionOutdatedReason, solutionOutdatedReasonKind,
+          needsDetails, duplicateOf, duplicateDisputed, attention, createdAt, activityAt, tags,
+        }) => ({
+          id, title,
+          authorName: authorIdentityKind === "deleted" ? DELETED_USER_NAME : authorName,
+          ...(authorIdentityKind === "deleted" ? { authorIdentityKind } : {}),
+          replyCount, isSolved, hasBestAnswer,
+          solutionModerationStatus, solutionOutdatedReason, solutionOutdatedReasonKind,
+          needsDetails, duplicateOf, duplicateDisputed,
+          ...(attention ? { attention } : {}),
+          createdAt: createdAt.toISOString(),
+          activityAt: activityAt.toISOString(),
+          tags,
         })),
       },
     };
@@ -154,10 +166,12 @@ export const loader = forumReadLoader(async function loader({ request, params, c
         ...section,
         pinnedTopics: section.pinnedTopics.map((topic) => ({
           ...topic,
+          ...(topic.authorIdentityKind === "deleted" ? { authorName: DELETED_USER_NAME } : {}),
           activityAt: topic.activityAt.toISOString(),
         })),
         latestTopics: section.latestTopics.map((topic) => ({
           ...topic,
+          ...(topic.authorIdentityKind === "deleted" ? { authorName: DELETED_USER_NAME } : {}),
           activityAt: topic.activityAt.toISOString(),
         })),
       })),

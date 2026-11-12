@@ -1,3 +1,5 @@
+import { projectPublicAccountIdentity, PublicIdentityInvariantError } from "./public-identity";
+import { activeAccountPredicate, AccountInactiveError, type AccountState } from "./account-state";
 import {appendForumHistory} from "./forum-history";
 import { lockPrivacySubject } from "./user-privacy";
 import type {HelpSignalHistoryEffect} from "./admin-history";
@@ -67,6 +69,7 @@ export interface ForumHomepageCategorySummary {
 export type ForumPopularPeriod = "24h" | "7d" | "30d";
 
 export interface ForumPopularTopicSummary {
+  authorIdentityKind?: "deleted";
   id: string;
   title: string;
   authorName: string;
@@ -77,6 +80,7 @@ export interface ForumPopularTopicSummary {
 export type ForumPopularPage = Record<ForumPopularPeriod, ForumPopularTopicSummary[]>;
 
 export interface ForumUnansweredTopicSummary {
+  authorIdentityKind?: "deleted";
   id: string;
   title: string;
   sourceLocale: string;
@@ -96,6 +100,7 @@ export interface ForumTagSummary extends ForumTag {
 }
 
 export interface ForumTaggedTopicSummary {
+  authorIdentityKind?: "deleted";
   id: string;
   title: string;
   authorName: string;
@@ -112,6 +117,7 @@ export interface ForumTagPage {
 }
 
 export interface ForumSearchResult {
+  authorIdentityKind?: "deleted";
   id: string;
   title: string;
   sourceLocale: string;
@@ -134,6 +140,7 @@ export interface ForumTopicReadState {
 }
 
 export interface ForumUnreadTopicSummary {
+  authorIdentityKind?: "deleted";
   id: string;
   title: string;
   authorName: string;
@@ -163,6 +170,7 @@ function publicDiscoveryLocation(row: {
 
 export interface ForumNotificationSummary {
   id:string;kind:"reply"|"mention"|"complaint-decision"|"complaint-appeal-result";actorName:string|null;
+  actorIdentityKind?: "deleted";
   topicId:string|null;topicTitle:string|null;postId:string|null;caseId?:string|null;appealId?:string|null;
   createdAt:Date;readAt:Date|null;
 }
@@ -178,6 +186,7 @@ export interface ForumReplyNotificationSummary {
   id: string;
   kind: "reply" | "mention";
   actorName: string;
+  actorIdentityKind?: "deleted";
   topicId: string;
   topicTitle: string;
   postId: string;
@@ -186,6 +195,7 @@ export interface ForumReplyNotificationSummary {
 }
 
 export interface ForumSectionTopicSummary {
+  authorIdentityKind?: "deleted";
   id: string;
   title: string;
   authorName: string;
@@ -279,6 +289,7 @@ export interface ForumHelpAttentionState {
 }
 
 export interface ForumHelpQuestionSummary {
+  authorIdentityKind?: "deleted";
   id: string;
   title: string;
   authorName: string;
@@ -340,6 +351,7 @@ const HELP_SOLUTIONS_FOR_ME_LIMIT = 100;
 const HELP_SOLUTIONS_FOR_ME_INTEREST_TAG_LIMIT = 100;
 
 export interface ForumTopicSummary {
+  authorIdentityKind?: "deleted";
   id: string;
   title: ForumRevisionContent;
   authorName: string;
@@ -357,6 +369,7 @@ export interface ForumSectionPage {
 }
 
 export interface ForumThreadPost extends ForumPost {
+  authorIdentityKind?: "deleted";
   attachments?: Array<{ id: string; fileName: string; byteSize: number; detectedType: string }>;
   authorImage?: string | null;
   authorName: string;
@@ -365,6 +378,7 @@ export interface ForumThreadPost extends ForumPost {
 }
 
 export interface ForumTopicPage extends ForumTopic {
+  authorIdentityKind?: "deleted";
   createdAt: Date;
   needsDetails: boolean;
   duplicateOf: ForumHelpDuplicateReference | null;
@@ -375,6 +389,61 @@ export interface ForumTopicPage extends ForumTopic {
   section: { id: string; name: string; category: { id: string; name: string } };
   tags: ForumTag[];
   posts: ForumThreadPost[];
+}
+
+/** Project a public forum author from identity and lifecycle fields of one joined user row. */
+function projectForumPublicAuthor(row: {
+  authorId: string;
+  authorName: string;
+  authorImage?: string | null;
+  authorDeactivatedAt: Date | null;
+  authorDeactivatedByUserId: string | null;
+  authorRetainAtLeastUntil: Date | null;
+}) {
+  let state: AccountState;
+  if (row.authorDeactivatedAt === null) {
+    if (row.authorDeactivatedByUserId !== null || row.authorRetainAtLeastUntil !== null) {
+      throw new PublicIdentityInvariantError();
+    }
+    state = { status: "active", userId: row.authorId };
+  } else {
+    if (row.authorDeactivatedByUserId === null || row.authorRetainAtLeastUntil === null) {
+      throw new PublicIdentityInvariantError();
+    }
+    state = {
+      status: "deactivated", userId: row.authorId,
+      deactivatedAt: row.authorDeactivatedAt,
+      deactivatedByUserId: row.authorDeactivatedByUserId,
+      retainAtLeastUntil: row.authorRetainAtLeastUntil,
+    };
+  }
+  // Unused profile fields are neutral placeholders, not additional private reads.
+  return projectPublicAccountIdentity({
+    id: row.authorId, name: row.authorName, image: row.authorImage ?? null,
+    bio: "", githubUrl: null, websiteUrl: null,
+  }, state);
+}
+
+/** One-row A1/A4 actor projection; no retained identity or lifecycle in the DTO. */
+function projectNotificationActor(row: {
+  actorId: string | null;
+  actorName: string | null;
+  actorDeactivatedAt: Date | string | null;
+  actorDeactivatedByUserId: string | null;
+  actorRetainAtLeastUntil: Date | string | null;
+}): { actorName: string; actorIdentityKind?: "deleted" } {
+  // Raw execute() timestamps may be decoded as strings; A4 validates Date values.
+  const asDate = (value: Date | string | null) => value === null ? null : new Date(value);
+  const projected = projectForumPublicAuthor({
+    authorId: row.actorId!,
+    authorName: row.actorName!,
+    authorDeactivatedAt: asDate(row.actorDeactivatedAt),
+    authorDeactivatedByUserId: row.actorDeactivatedByUserId,
+    authorRetainAtLeastUntil: asDate(row.actorRetainAtLeastUntil),
+  });
+  return projected.kind === "deleted"
+    ? { actorName: projected.name, actorIdentityKind: "deleted" }
+    : { actorName: projected.name };
 }
 
 export interface ForumOnlinePresence {
@@ -423,8 +492,8 @@ export interface ForumReader {
   readTopicPage(id: string): Promise<ForumTopicPage | undefined>;
   readPostLocation(postId: string): Promise<{ topicId: string; authorId: string } | undefined>;
   readPostHistory(postId: string, topicId: string): Promise<Array<{
-    id: string; authorId: string; authorName: string; originalContent: string;
-    sourceLocale: string; createdAt: Date;
+    id: string; authorId: string; authorName: string; authorIdentityKind?: "deleted";
+    originalContent: string; sourceLocale: string; createdAt: Date;
   }>>;
 }
 
@@ -515,7 +584,7 @@ export class DrizzleForumRepository {
     // The user's term is literal, not a SQL LIKE pattern.
     const escaped = term.replace(/[!%_]/gu, (char) => "!" + char);
     return this.database.select({ id: user.id, name: user.name }).from(user)
-      .where(sql`${user.name} ilike ${"%" + escaped + "%"} escape '!'`)
+      .where(and(activeAccountPredicate(user.deactivatedAt), sql`${user.name} ilike ${"%" + escaped + "%"} escape '!'`))
       .orderBy(asc(user.name), asc(user.id))
       .limit(8);
   }
@@ -531,7 +600,7 @@ export class DrizzleForumRepository {
       .innerJoin(user, eq(user.id, forumOnlinePresence.userId))
       .leftJoin(userPrivacyPreferences, eq(userPrivacyPreferences.userId, user.id))
       // Filter before the window count and LIMIT: stale hidden presence cannot leak.
-      .where(and(recent, sql`coalesce(${userPrivacyPreferences.showOnline}, true) = true`))
+      .where(and(recent, activeAccountPredicate(user.deactivatedAt), sql`coalesce(${userPrivacyPreferences.showOnline}, true) = true`))
       .orderBy(desc(forumOnlinePresence.lastSeenAt), asc(user.id))
       .limit(12);
     return {
@@ -543,7 +612,9 @@ export class DrizzleForumRepository {
   async recordOnlinePresence(userId: string): Promise<void> {
     await this.database.transaction(async (tx) => {
       // The same account-row lock protects both preference writes and heartbeats.
-      await lockPrivacySubject(tx, userId);
+      const deactivatedAt = await lockPrivacySubject(tx, userId);
+      // The locked row reflects any preceding committed deactivation.
+      if (deactivatedAt !== null) throw new AccountInactiveError();
       // Separate statement after lock acquisition sees the latest committed preference.
       const [preference] = await tx.select({ showOnline: userPrivacyPreferences.showOnline })
         .from(userPrivacyPreferences).where(eq(userPrivacyPreferences.userId, userId));
@@ -560,8 +631,12 @@ export class DrizzleForumRepository {
   }
 
   async readProfile(userId: string): Promise<ForumProfile | undefined> {
+    // Read the lifecycle tuple alongside the public fields in one DB snapshot.
+    // Never return the original identity/lifecycle columns to a public caller.
     const [profile] = await this.database.select({
       id: user.id, name: user.name, image: user.image, joinedAt: user.createdAt,
+      deactivatedAt: user.deactivatedAt, deactivatedByUserId: user.deactivatedByUserId,
+      retainAtLeastUntil: user.retainAtLeastUntil,
       bio: sql<string>`coalesce(${forumProfiles.bio}, '')`,
       githubUrl: forumProfiles.githubUrl, websiteUrl: forumProfiles.websiteUrl,
       role: { slug: authzRoles.slug, displayName: authzRoles.displayName, isSystem: authzRoles.isSystem },
@@ -572,7 +647,30 @@ export class DrizzleForumRepository {
       .leftJoin(authzUserRoles, eq(authzUserRoles.userId, user.id))
       .innerJoin(authzRoles, sql`${authzRoles.id} = coalesce(${authzUserRoles.roleId}, (select id from authz_roles where slug = 'user'))`)
       .where(eq(user.id, userId));
-    return profile;
+    if (!profile) return undefined;
+    let state: AccountState;
+    if (profile.deactivatedAt === null) {
+      if (profile.deactivatedByUserId !== null || profile.retainAtLeastUntil !== null) {
+        throw new PublicIdentityInvariantError();
+      }
+      state = { status: "active", userId: profile.id };
+    } else {
+      if (profile.deactivatedByUserId === null || profile.retainAtLeastUntil === null) {
+        throw new PublicIdentityInvariantError();
+      }
+      state = {
+        status: "deactivated", userId: profile.id,
+        deactivatedAt: profile.deactivatedAt, deactivatedByUserId: profile.deactivatedByUserId,
+        retainAtLeastUntil: profile.retainAtLeastUntil,
+      };
+    }
+    const identity = projectPublicAccountIdentity(profile, state);
+    return {
+      id: identity.id, name: identity.name, image: identity.image, joinedAt: profile.joinedAt,
+      bio: identity.bio, githubUrl: identity.githubUrl, websiteUrl: identity.websiteUrl,
+      role: profile.role, messageCount: profile.messageCount, bestAnswerCount: profile.bestAnswerCount,
+      ...(identity.kind === "deleted" ? { identityKind: "deleted" as const } : {}),
+    };
   }
 
   async updateProfile(actorId: string, input: ProfileFields): Promise<void> {
@@ -1027,7 +1125,9 @@ export class DrizzleForumRepository {
       .select({
         id: forumTopics.id,
         title: forumTopicTitleRevisions.originalContent,
-        authorName: user.name,
+        authorId: forumTopics.authorId, authorName: user.name,
+        authorDeactivatedAt: user.deactivatedAt, authorDeactivatedByUserId: user.deactivatedByUserId,
+        authorRetainAtLeastUntil: user.retainAtLeastUntil,
         activity24h: sql<number>`count(${forumPosts.id}) filter (where ${forumPosts.createdAt} >= ${cutoff24h})::int`,
         activity7d: sql<number>`count(${forumPosts.id}) filter (where ${forumPosts.createdAt} >= ${cutoff7d})::int`,
         activity30d: sql<number>`count(${forumPosts.id})::int`,
@@ -1043,7 +1143,8 @@ export class DrizzleForumRepository {
       .innerJoin(user, eq(user.id, forumTopics.authorId))
       .innerJoin(forumPosts, eq(forumPosts.topicId, forumTopics.id))
       .where(gte(forumPosts.createdAt, cutoff30d))
-      .groupBy(forumTopics.id, forumTopicTitleRevisions.id, user.name);
+      .groupBy(forumTopics.id, forumTopicTitleRevisions.id, forumTopics.authorId, user.name,
+        user.deactivatedAt, user.deactivatedByUserId, user.retainAtLeastUntil);
 
     const rank = (
       countKey: "activity24h" | "activity7d" | "activity30d",
@@ -1052,15 +1153,16 @@ export class DrizzleForumRepository {
       .flatMap((row) => {
         const activityCount = row[countKey];
         const latestActivityAt = row[latestKey];
-        return activityCount > 0 && latestActivityAt
-          ? [{
-              id: row.id,
-              title: row.title,
-              authorName: row.authorName,
-              activityCount,
-              latestActivityAt,
-            }]
-          : [];
+        if (activityCount <= 0 || !latestActivityAt) return [];
+        const author = projectForumPublicAuthor(row);
+        return [{
+          id: row.id,
+          title: row.title,
+          authorName: author.name,
+          ...(author.kind === "deleted" ? { authorIdentityKind: "deleted" as const } : {}),
+          activityCount,
+          latestActivityAt,
+        }];
       })
       .sort((left, right) =>
         right.activityCount - left.activityCount
@@ -1082,7 +1184,9 @@ export class DrizzleForumRepository {
         id: forumTopics.id,
         title: forumTopicTitleRevisions.originalContent,
         sourceLocale: forumTopicTitleRevisions.sourceLocale,
-        authorName: user.name,
+        authorId: forumTopics.authorId, authorName: user.name,
+        authorDeactivatedAt: user.deactivatedAt, authorDeactivatedByUserId: user.deactivatedByUserId,
+        authorRetainAtLeastUntil: user.retainAtLeastUntil,
         createdAt: forumTopics.createdAt,
         sectionId: forumSections.id,
         sectionName: forumSections.name,
@@ -1102,7 +1206,7 @@ export class DrizzleForumRepository {
       .groupBy(
         forumTopics.id,
         forumTopicTitleRevisions.id,
-        user.name,
+        forumTopics.authorId, user.name, user.deactivatedAt, user.deactivatedByUserId, user.retainAtLeastUntil,
         forumSections.id,
         forumSections.name,
         forumCategories.id,
@@ -1111,14 +1215,18 @@ export class DrizzleForumRepository {
       .having(sql`count(${forumPosts.id}) = 1`)
       .orderBy(desc(forumTopics.createdAt), desc(forumTopics.id));
 
-    return rows.map((row) => ({
-      id: row.id,
-      title: row.title,
-      sourceLocale: row.sourceLocale,
-      authorName: row.authorName,
-      createdAt: row.createdAt,
-      ...publicDiscoveryLocation(row),
-    }));
+    return rows.map((row) => {
+      const author = projectForumPublicAuthor(row);
+      return {
+        id: row.id,
+        title: row.title,
+        sourceLocale: row.sourceLocale,
+        authorName: author.name,
+        ...(author.kind === "deleted" ? { authorIdentityKind: "deleted" as const } : {}),
+        createdAt: row.createdAt,
+        ...publicDiscoveryLocation(row),
+      };
+    });
   }
 
   async readTags(): Promise<ForumTagSummary[]> {
@@ -1145,7 +1253,9 @@ export class DrizzleForumRepository {
       .select({
         id: forumTopics.id,
         title: forumTopicTitleRevisions.originalContent,
-        authorName: user.name,
+        authorId: forumTopics.authorId, authorName: user.name,
+        authorDeactivatedAt: user.deactivatedAt, authorDeactivatedByUserId: user.deactivatedByUserId,
+        authorRetainAtLeastUntil: user.retainAtLeastUntil,
         postCount: sql<number>`count(distinct ${forumPosts.id})::int`,
         createdAt: forumTopics.createdAt,
         sectionId: forumSections.id,
@@ -1167,7 +1277,8 @@ export class DrizzleForumRepository {
       .groupBy(
         forumTopics.id,
         forumTopicTitleRevisions.id,
-        user.name,
+        forumTopics.authorId, user.name,
+        user.deactivatedAt, user.deactivatedByUserId, user.retainAtLeastUntil,
         forumSections.id,
         forumSections.name,
         forumCategories.id,
@@ -1178,15 +1289,19 @@ export class DrizzleForumRepository {
     const tagsByTopic = await this.readTagsForTopics(topics.map((topic) => topic.id));
     return {
       tag,
-      topics: topics.map((topic) => ({
-        id: topic.id,
-        title: topic.title,
-        authorName: topic.authorName,
-        postCount: topic.postCount,
-        createdAt: topic.createdAt,
-        ...publicDiscoveryLocation(topic),
-        tags: tagsByTopic.get(topic.id) ?? [],
-      })),
+      topics: topics.map((topic) => {
+        const author = projectForumPublicAuthor(topic);
+        return {
+          id: topic.id,
+          title: topic.title,
+          authorName: author.name,
+          ...(author.kind === "deleted" ? { authorIdentityKind: "deleted" as const } : {}),
+          postCount: topic.postCount,
+          createdAt: topic.createdAt,
+          ...publicDiscoveryLocation(topic),
+          tags: tagsByTopic.get(topic.id) ?? [],
+        };
+      }),
     };
   }
 
@@ -1220,7 +1335,9 @@ export class DrizzleForumRepository {
         id: forumTopics.id,
         title: forumTopicTitleRevisions.originalContent,
         sourceLocale: forumTopicTitleRevisions.sourceLocale,
-        authorName: user.name,
+        authorId: forumTopics.authorId, authorName: user.name,
+        authorDeactivatedAt: user.deactivatedAt, authorDeactivatedByUserId: user.deactivatedByUserId,
+        authorRetainAtLeastUntil: user.retainAtLeastUntil,
         postCount: sql<number>`count(distinct ${forumPosts.id})::int`,
         activityAt,
         sectionId: forumSections.id,
@@ -1247,7 +1364,8 @@ export class DrizzleForumRepository {
       .groupBy(
         forumTopics.id,
         forumTopicTitleRevisions.id,
-        user.name,
+        forumTopics.authorId, user.name,
+        user.deactivatedAt, user.deactivatedByUserId, user.retainAtLeastUntil,
         forumSections.id,
         forumSections.name,
         forumCategories.id,
@@ -1258,16 +1376,20 @@ export class DrizzleForumRepository {
       .limit(limit);
 
     const tagsByTopic = await this.readTagsForTopics(rows.map((row) => row.id));
-    return rows.map((row) => ({
-      id: row.id,
-      title: row.title,
-      sourceLocale: row.sourceLocale,
-      authorName: row.authorName,
-      postCount: row.postCount,
-      activityAt: row.activityAt,
-      ...publicDiscoveryLocation(row),
-      tags: tagsByTopic.get(row.id) ?? [],
-    }));
+    return rows.map((row) => {
+      const author = projectForumPublicAuthor(row);
+      return {
+        id: row.id,
+        title: row.title,
+        sourceLocale: row.sourceLocale,
+        authorName: author.name,
+        ...(author.kind === "deleted" ? { authorIdentityKind: "deleted" as const } : {}),
+        postCount: row.postCount,
+        activityAt: row.activityAt,
+        ...publicDiscoveryLocation(row),
+        tags: tagsByTopic.get(row.id) ?? [],
+      };
+    });
   }
 
   async readUnreadForUser(userId: string): Promise<ForumUnreadTopicSummary[]> {
@@ -1280,7 +1402,9 @@ export class DrizzleForumRepository {
       .select({
         id: forumTopics.id,
         title: forumTopicTitleRevisions.originalContent,
-        authorName: user.name,
+        authorId: forumTopics.authorId, authorName: user.name,
+        authorDeactivatedAt: user.deactivatedAt, authorDeactivatedByUserId: user.deactivatedByUserId,
+        authorRetainAtLeastUntil: user.retainAtLeastUntil,
         state: sql<"new" | "unread">`case when ${forumTopicReadStates.userId} is null then 'new' else 'unread' end`,
         firstUnreadPostId,
         latestPostId,
@@ -1316,7 +1440,8 @@ export class DrizzleForumRepository {
       .groupBy(
         forumTopics.id,
         forumTopicTitleRevisions.id,
-        user.name,
+        forumTopics.authorId, user.name,
+        user.deactivatedAt, user.deactivatedByUserId, user.retainAtLeastUntil,
         forumSections.id,
         forumSections.name,
         forumCategories.id,
@@ -1325,17 +1450,21 @@ export class DrizzleForumRepository {
       )
       .orderBy(desc(activityAt), desc(forumTopics.id));
 
-    return rows.map((row) => ({
-      id: row.id,
-      title: row.title,
-      authorName: row.authorName,
-      state: row.state,
-      firstUnreadPostId: row.firstUnreadPostId,
-      latestPostId: row.latestPostId,
-      unreadCount: row.unreadCount,
-      activityAt: row.activityAt,
-      ...publicDiscoveryLocation(row),
-    }));
+    return rows.map((row) => {
+      const author = projectForumPublicAuthor(row);
+      return {
+        id: row.id,
+        title: row.title,
+        authorName: author.name,
+        ...(author.kind === "deleted" ? { authorIdentityKind: "deleted" as const } : {}),
+        state: row.state,
+        firstUnreadPostId: row.firstUnreadPostId,
+        latestPostId: row.latestPostId,
+        unreadCount: row.unreadCount,
+        activityAt: row.activityAt,
+        ...publicDiscoveryLocation(row),
+      };
+    });
   }
 
   async readTopicReadState(userId: string, topicId: string): Promise<ForumTopicReadState | undefined> {
@@ -1434,9 +1563,16 @@ export class DrizzleForumRepository {
     if(!Number.isSafeInteger(page)||page<0||page>10000)throw new RangeError("invalid page");
     return this.database.transaction(async tx=>{
       const total=await tx.execute<{total:number}>(sql`select count(*)::int as total from forum_reply_notifications where recipient_user_id=${userId}`);
-      const rows=await tx.execute<ForumNotificationSummary & Record<string,unknown>>(sql`
+      const rows=await tx.execute<ForumNotificationSummary & {
+        actorId: string | null; actorDeactivatedAt: Date | string | null;
+        actorDeactivatedByUserId: string | null; actorRetainAtLeastUntil: Date | string | null;
+      } & Record<string, unknown>>(sql`
         select n.id,n.kind,n.created_at as "createdAt",n.read_at as "readAt",
-          actor.name as "actorName",n.topic_id as "topicId",title.original_content as "topicTitle",
+          actor.id as "actorId",actor.name as "actorName",
+          actor.deactivated_at as "actorDeactivatedAt",
+          actor.deactivated_by_user_id as "actorDeactivatedByUserId",
+          actor.retain_at_least_until as "actorRetainAtLeastUntil",
+          n.topic_id as "topicId",title.original_content as "topicTitle",
           n.post_id as "postId",coalesce(d.case_id,a.case_id) as "caseId",a.id as "appealId"
         from forum_reply_notifications n
         left join "user" actor on actor.id=n.actor_user_id and n.kind in ('reply','mention')
@@ -1447,7 +1583,17 @@ export class DrizzleForumRepository {
         where n.recipient_user_id=${userId}
         order by case when n.read_at is null then 0 else 1 end,n.created_at desc,n.id desc
         limit 51 offset ${page*50}`);
-      return {items:rows.rows.slice(0,50),page,total:total.rows[0]?.total??0,hasMore:rows.rows.length>50};
+      return {
+        items: rows.rows.slice(0,50).map(row => ({
+          id: row.id, kind: row.kind,
+          ...(row.kind === "reply" || row.kind === "mention"
+            ? projectNotificationActor(row) : { actorName: null }),
+          topicId: row.topicId, topicTitle: row.topicTitle, postId: row.postId,
+          caseId: row.caseId, appealId: row.appealId,
+          createdAt: row.createdAt, readAt: row.readAt,
+        })),
+        page, total: total.rows[0]?.total??0, hasMore: rows.rows.length>50,
+      };
     },{isolationLevel:"repeatable read",accessMode:"read only"});
   }
 
@@ -1493,7 +1639,11 @@ export class DrizzleForumRepository {
     const rows = await this.database
       .select({
         id: forumReplyNotifications.id,
+        actorId: actor.id,
         actorName: actor.name,
+        actorDeactivatedAt: actor.deactivatedAt,
+        actorDeactivatedByUserId: actor.deactivatedByUserId,
+        actorRetainAtLeastUntil: actor.retainAtLeastUntil,
         topicId: forumReplyNotifications.topicId,
         topicTitle: forumTopicTitleRevisions.originalContent,
         postId: forumReplyNotifications.postId,
@@ -1517,7 +1667,12 @@ export class DrizzleForumRepository {
         desc(forumReplyNotifications.id),
       )
       .limit(limit);
-    return rows.map(row=>({...row,topicId:row.topicId!,postId:row.postId!,kind:row.kind as "reply"|"mention"}));
+    return rows.map(row => ({
+      id: row.id, kind: row.kind as "reply" | "mention",
+      ...projectNotificationActor(row),
+      topicId: row.topicId!, topicTitle: row.topicTitle, postId: row.postId!,
+      createdAt: row.createdAt, readAt: row.readAt,
+    }));
   }
 
   async countUnreadReplyNotifications(userId: string): Promise<number> {
@@ -2137,7 +2292,9 @@ export class DrizzleForumRepository {
       .select({
         id: forumTopics.id,
         title: forumTopicTitleRevisions.originalContent,
-        authorName: user.name,
+        authorId: forumTopics.authorId, authorName: user.name,
+        authorDeactivatedAt: user.deactivatedAt, authorDeactivatedByUserId: user.deactivatedByUserId,
+        authorRetainAtLeastUntil: user.retainAtLeastUntil,
         postCount: sql<number>`count(distinct ${forumPosts.id})::int`,
         isSolved: forumTopics.isSolved,
         bestAnswerPostId: forumTopics.bestAnswerPostId,
@@ -2182,7 +2339,8 @@ export class DrizzleForumRepository {
       .groupBy(
         forumTopics.id,
         forumTopicTitleRevisions.id,
-        user.name,
+        forumTopics.authorId, user.name,
+        user.deactivatedAt, user.deactivatedByUserId, user.retainAtLeastUntil,
         currentBestAnswer.solutionModerationStatus,
         currentBestAnswer.solutionOutdatedReason,
         currentBestAnswer.solutionOutdatedReasonKind,
@@ -2196,10 +2354,13 @@ export class DrizzleForumRepository {
     const duplicatesByTopic = await this.readHelpDuplicatePresentations(topicIds);
     return {
       ...category,
-      questions: rows.map((row) => ({
+      questions: rows.map((row) => {
+        const author = projectForumPublicAuthor(row);
+        return {
         id: row.id,
         title: row.title,
-        authorName: row.authorName,
+        authorName: author.name,
+        ...(author.kind === "deleted" ? { authorIdentityKind: "deleted" as const } : {}),
         replyCount: Math.max(0, row.postCount - 1),
         isSolved: row.isSolved,
         hasBestAnswer: row.bestAnswerPostId !== null,
@@ -2212,7 +2373,8 @@ export class DrizzleForumRepository {
         createdAt: row.createdAt,
         activityAt: row.activityAt,
         tags: tagsByTopic.get(row.id) ?? [],
-      })),
+        };
+      }),
     };
   }
 
@@ -2293,7 +2455,9 @@ export class DrizzleForumRepository {
       .select({
         id: forumTopics.id,
         title: forumTopicTitleRevisions.originalContent,
-        authorName: user.name,
+        authorId: forumTopics.authorId, authorName: user.name,
+        authorDeactivatedAt: user.deactivatedAt, authorDeactivatedByUserId: user.deactivatedByUserId,
+        authorRetainAtLeastUntil: user.retainAtLeastUntil,
         postCount: sql<number>`count(distinct ${forumPosts.id})::int`,
         isSolved: forumTopics.isSolved,
         bestAnswerPostId: forumTopics.bestAnswerPostId,
@@ -2354,7 +2518,8 @@ export class DrizzleForumRepository {
       .groupBy(
         forumTopics.id,
         forumTopicTitleRevisions.id,
-        user.name,
+        forumTopics.authorId, user.name,
+        user.deactivatedAt, user.deactivatedByUserId, user.retainAtLeastUntil,
         currentBestAnswer.solutionModerationStatus,
         currentBestAnswer.solutionOutdatedReason,
         currentBestAnswer.solutionOutdatedReasonKind,
@@ -2431,10 +2596,13 @@ export class DrizzleForumRepository {
     }
     return {
       ...category,
-      questions: rows.filter((row) => filter.mode !== "attention" || attentionByTopic.has(row.id)).map((row) => ({
+      questions: rows.filter((row) => filter.mode !== "attention" || attentionByTopic.has(row.id)).map((row) => {
+        const author = projectForumPublicAuthor(row);
+        return {
         id: row.id,
         title: row.title,
-        authorName: row.authorName,
+        authorName: author.name,
+        ...(author.kind === "deleted" ? { authorIdentityKind: "deleted" as const } : {}),
         replyCount: Math.max(0, row.postCount - 1),
         isSolved: row.isSolved,
         hasBestAnswer: row.bestAnswerPostId !== null,
@@ -2448,7 +2616,8 @@ export class DrizzleForumRepository {
         createdAt: row.createdAt,
         activityAt: row.activityAt,
         tags: tagsByTopic.get(row.id) ?? [],
-      })),
+        };
+      }),
     };
   }
 
@@ -2554,7 +2723,9 @@ export class DrizzleForumRepository {
         sectionId: forumTopics.sectionId,
         id: forumTopics.id,
         title: forumTopicTitleRevisions.originalContent,
-        authorName: user.name,
+        authorId: forumTopics.authorId, authorName: user.name,
+        authorDeactivatedAt: user.deactivatedAt, authorDeactivatedByUserId: user.deactivatedByUserId,
+        authorRetainAtLeastUntil: user.retainAtLeastUntil,
         activityAt: sql`greatest(
           ${forumTopics.createdAt},
           coalesce(max(${forumPosts.createdAt}), ${forumTopics.createdAt})
@@ -2572,7 +2743,8 @@ export class DrizzleForumRepository {
         eq(forumSections.categoryId, id),
         ne(forumSections.id, HELP_SOLUTIONS_SERVICE_SECTION_ID),
       ))
-      .groupBy(forumTopics.id, forumTopicTitleRevisions.id, user.name)
+      .groupBy(forumTopics.id, forumTopicTitleRevisions.id, user.id, user.name,
+        user.deactivatedAt, user.deactivatedByUserId, user.retainAtLeastUntil)
       .as("category_section_topic_activity");
 
     const rankedTopics = this.database
@@ -2580,7 +2752,10 @@ export class DrizzleForumRepository {
         sectionId: topicActivity.sectionId,
         id: topicActivity.id,
         title: topicActivity.title,
-        authorName: topicActivity.authorName,
+        authorId: topicActivity.authorId, authorName: topicActivity.authorName,
+        authorDeactivatedAt: topicActivity.authorDeactivatedAt,
+        authorDeactivatedByUserId: topicActivity.authorDeactivatedByUserId,
+        authorRetainAtLeastUntil: topicActivity.authorRetainAtLeastUntil,
         activityAt: topicActivity.activityAt,
         activityRank: sql<number>`row_number() over (
           partition by ${topicActivity.sectionId}
@@ -2595,7 +2770,10 @@ export class DrizzleForumRepository {
         sectionId: rankedTopics.sectionId,
         id: rankedTopics.id,
         title: rankedTopics.title,
-        authorName: rankedTopics.authorName,
+        authorId: rankedTopics.authorId, authorName: rankedTopics.authorName,
+        authorDeactivatedAt: rankedTopics.authorDeactivatedAt,
+        authorDeactivatedByUserId: rankedTopics.authorDeactivatedByUserId,
+        authorRetainAtLeastUntil: rankedTopics.authorRetainAtLeastUntil,
         activityAt: rankedTopics.activityAt,
       })
       .from(rankedTopics)
@@ -2604,11 +2782,13 @@ export class DrizzleForumRepository {
 
     const latestBySection = new Map<string, ForumSectionTopicSummary[]>();
     for (const topic of latestTopics) {
+      const author = projectForumPublicAuthor(topic);
       const list = latestBySection.get(topic.sectionId) ?? [];
       list.push({
         id: topic.id,
         title: topic.title,
-        authorName: topic.authorName,
+        authorName: author.name,
+        ...(author.kind === "deleted" ? { authorIdentityKind: "deleted" as const } : {}),
         activityAt: topic.activityAt,
       });
       latestBySection.set(topic.sectionId, list);
@@ -2619,7 +2799,9 @@ export class DrizzleForumRepository {
         sectionId: forumTopics.sectionId,
         id: forumTopics.id,
         title: forumTopicTitleRevisions.originalContent,
-        authorName: user.name,
+        authorId: forumTopics.authorId, authorName: user.name,
+        authorDeactivatedAt: user.deactivatedAt, authorDeactivatedByUserId: user.deactivatedByUserId,
+        authorRetainAtLeastUntil: user.retainAtLeastUntil,
         pinnedAt: forumTopicPins.pinnedAt,
         activityAt: sql`greatest(
           ${forumTopics.createdAt},
@@ -2643,7 +2825,7 @@ export class DrizzleForumRepository {
         forumTopics.id,
         forumSections.id,
         forumTopicTitleRevisions.id,
-        user.name,
+        user.id, user.name, user.deactivatedAt, user.deactivatedByUserId, user.retainAtLeastUntil,
         forumTopicPins.pinnedAt,
       )
       .as("category_section_pin_activity");
@@ -2653,7 +2835,10 @@ export class DrizzleForumRepository {
         sectionId: pinnedActivity.sectionId,
         id: pinnedActivity.id,
         title: pinnedActivity.title,
-        authorName: pinnedActivity.authorName,
+        authorId: pinnedActivity.authorId, authorName: pinnedActivity.authorName,
+        authorDeactivatedAt: pinnedActivity.authorDeactivatedAt,
+        authorDeactivatedByUserId: pinnedActivity.authorDeactivatedByUserId,
+        authorRetainAtLeastUntil: pinnedActivity.authorRetainAtLeastUntil,
         activityAt: pinnedActivity.activityAt,
         pinRank: sql<number>`row_number() over (
           partition by ${pinnedActivity.sectionId}
@@ -2668,7 +2853,10 @@ export class DrizzleForumRepository {
         sectionId: rankedPinned.sectionId,
         id: rankedPinned.id,
         title: rankedPinned.title,
-        authorName: rankedPinned.authorName,
+        authorId: rankedPinned.authorId, authorName: rankedPinned.authorName,
+        authorDeactivatedAt: rankedPinned.authorDeactivatedAt,
+        authorDeactivatedByUserId: rankedPinned.authorDeactivatedByUserId,
+        authorRetainAtLeastUntil: rankedPinned.authorRetainAtLeastUntil,
         activityAt: rankedPinned.activityAt,
       })
       .from(rankedPinned)
@@ -2677,11 +2865,13 @@ export class DrizzleForumRepository {
 
     const pinnedBySection = new Map<string, ForumSectionTopicSummary[]>();
     for (const topic of pinnedTopics) {
+      const author = projectForumPublicAuthor(topic);
       const list = pinnedBySection.get(topic.sectionId) ?? [];
       list.push({
         id: topic.id,
         title: topic.title,
-        authorName: topic.authorName,
+        authorName: author.name,
+        ...(author.kind === "deleted" ? { authorIdentityKind: "deleted" as const } : {}),
         activityAt: topic.activityAt,
       });
       pinnedBySection.set(topic.sectionId, list);
@@ -2717,7 +2907,9 @@ export class DrizzleForumRepository {
         revisionId: forumTopicTitleRevisions.id,
         originalContent: forumTopicTitleRevisions.originalContent,
         sourceLocale: forumTopicTitleRevisions.sourceLocale,
-        authorName: user.name,
+        authorId: forumTopics.authorId, authorName: user.name,
+        authorDeactivatedAt: user.deactivatedAt, authorDeactivatedByUserId: user.deactivatedByUserId,
+        authorRetainAtLeastUntil: user.retainAtLeastUntil,
         postCount: sql<number>`count(distinct ${forumPosts.id})::int`,
         createdAt: forumTopics.createdAt,
         isPinned: sql<boolean>`${forumTopicPins.topicId} is not null`,
@@ -2731,22 +2923,27 @@ export class DrizzleForumRepository {
       .leftJoin(forumPosts, eq(forumPosts.topicId, forumTopics.id))
       .leftJoin(forumTopicPins, eq(forumTopicPins.topicId, forumTopics.id))
       .where(eq(forumTopics.sectionId, id))
-      .groupBy(forumTopics.id, forumTopicTitleRevisions.id, user.name, forumTopicPins.topicId)
+      .groupBy(forumTopics.id, forumTopicTitleRevisions.id, user.id, user.name,
+        user.deactivatedAt, user.deactivatedByUserId, user.retainAtLeastUntil, forumTopicPins.topicId)
       .orderBy(asc(forumTopics.createdAt), asc(forumTopics.id));
     const tagsByTopic = await this.readTagsForTopics(topics.map((topic) => topic.id));
     return {
       id: section.id,
       name: section.name,
       category: { id: section.categoryId, name: section.categoryName },
-      topics: topics.map((topic) => ({
+      topics: topics.map((topic) => {
+        const author = projectForumPublicAuthor(topic);
+        return {
         id: topic.id,
         title: { id: topic.revisionId, originalContent: topic.originalContent, sourceLocale: topic.sourceLocale },
-        authorName: topic.authorName,
+        authorName: author.name,
+        ...(author.kind === "deleted" ? { authorIdentityKind: "deleted" as const } : {}),
         postCount: topic.postCount,
         createdAt: topic.createdAt,
         isPinned: topic.isPinned,
         tags: tagsByTopic.get(topic.id) ?? [],
-      })),
+        };
+      }),
     };
   }
 
@@ -2755,7 +2952,10 @@ export class DrizzleForumRepository {
       .select({
         id: forumTopics.id, sectionId: forumSections.id, sectionName: forumSections.name,
         categoryId: forumCategories.id, categoryName: forumCategories.name, authorId: forumTopics.authorId,
-        authorName: user.name, createdAt: forumTopics.createdAt, revisionId: forumTopicTitleRevisions.id,
+        authorName: user.name,
+        authorDeactivatedAt: user.deactivatedAt, authorDeactivatedByUserId: user.deactivatedByUserId,
+        authorRetainAtLeastUntil: user.retainAtLeastUntil,
+        createdAt: forumTopics.createdAt, revisionId: forumTopicTitleRevisions.id,
         originalContent: forumTopicTitleRevisions.originalContent, sourceLocale: forumTopicTitleRevisions.sourceLocale,
         isSolved: forumTopics.isSolved, bestAnswerPostId: forumTopics.bestAnswerPostId,
         isClosed: forumTopics.isClosed, closureVersion: forumTopics.closureVersion,
@@ -2773,13 +2973,17 @@ export class DrizzleForumRepository {
       .leftJoin(forumTopicPins, eq(forumTopicPins.topicId, forumTopics.id))
       .where(eq(forumTopics.id, id));
     if (!topic) return undefined;
+    const topicAuthor = projectForumPublicAuthor(topic);
     const tags = await this.readTagsForTopics([id]);
     const duplicatePresentation = (await this.readHelpDuplicatePresentations([id])).get(id);
     const posts = await this.database
       .select({
         id: forumPosts.id, topicId: forumPosts.topicId, authorId: forumPosts.authorId,
         parentPostId: forumPosts.parentPostId,
-        authorName: user.name, authorImage: user.image, createdAt: forumPosts.createdAt, editedAt: forumPosts.editedAt, revisionId: forumPostRevisions.id,
+        authorName: user.name, authorImage: user.image,
+        authorDeactivatedAt: user.deactivatedAt, authorDeactivatedByUserId: user.deactivatedByUserId,
+        authorRetainAtLeastUntil: user.retainAtLeastUntil,
+        createdAt: forumPosts.createdAt, editedAt: forumPosts.editedAt, revisionId: forumPostRevisions.id,
         originalContent: forumPostRevisions.originalContent, sourceLocale: forumPostRevisions.sourceLocale,
         solutionModerationStatus: forumPosts.solutionModerationStatus,
         solutionOutdatedReason: forumPosts.solutionOutdatedReason,
@@ -2810,7 +3014,8 @@ export class DrizzleForumRepository {
       attachmentsByPost.set(attachment.postId, list);
     }
     return {
-      id: topic.id, sectionId: topic.sectionId, authorId: topic.authorId, authorName: topic.authorName,
+      id: topic.id, sectionId: topic.sectionId, authorId: topic.authorId, authorName: topicAuthor.name,
+      ...(topicAuthor.kind === "deleted" ? { authorIdentityKind: "deleted" as const } : {}),
       isSolved: topic.isSolved, bestAnswerPostId: topic.bestAnswerPostId,
       isClosed: topic.isClosed, closureVersion: topic.closureVersion,
       needsDetails: topic.needsDetails,
@@ -2822,15 +3027,20 @@ export class DrizzleForumRepository {
       title: { id: topic.revisionId, originalContent: topic.originalContent, sourceLocale: topic.sourceLocale },
       section: { id: topic.sectionId, name: topic.sectionName, category: { id: topic.categoryId, name: topic.categoryName } },
       tags: tags.get(id) ?? [],
-      posts: posts.map((post) => ({
+      posts: posts.map((post) => {
+        const postAuthor = projectForumPublicAuthor(post);
+        return {
         id: post.id, topicId: post.topicId, authorId: post.authorId, parentPostId: post.parentPostId,
-        authorName: post.authorName, authorImage: post.authorImage, createdAt: post.createdAt, editedAt: post.editedAt,
+        authorName: postAuthor.name, authorImage: postAuthor.image,
+        ...(postAuthor.kind === "deleted" ? { authorIdentityKind: "deleted" as const } : {}),
+        createdAt: post.createdAt, editedAt: post.editedAt,
         attachments: attachmentsByPost.get(post.id) ?? [],
         solutionModerationStatus: post.solutionModerationStatus as HelpSolutionModerationStatus | null,
         solutionOutdatedReason: post.solutionOutdatedReason,
         solutionOutdatedReasonKind: post.solutionOutdatedReasonKind as HelpSolutionOutdatedReasonKind | null,
         body: { id: post.revisionId, originalContent: post.originalContent, sourceLocale: post.sourceLocale },
-      })),
+      };
+      }),
     };
   }
 
@@ -2841,10 +3051,13 @@ export class DrizzleForumRepository {
   }
 
   async readPostHistory(postId: string, topicId: string) {
-    return this.database.select({
+    const rows = await this.database.select({
       id: forumPostRevisions.id,
       authorId: forumPostRevisions.authorId,
       authorName: user.name,
+      authorDeactivatedAt: user.deactivatedAt,
+      authorDeactivatedByUserId: user.deactivatedByUserId,
+      authorRetainAtLeastUntil: user.retainAtLeastUntil,
       originalContent: forumPostRevisions.originalContent,
       sourceLocale: forumPostRevisions.sourceLocale,
       createdAt: forumPostRevisions.createdAt,
@@ -2853,6 +3066,14 @@ export class DrizzleForumRepository {
       .innerJoin(user, eq(user.id, forumPostRevisions.authorId))
       .where(and(eq(forumPostRevisions.postId, postId), eq(forumPosts.topicId, topicId)))
       .orderBy(desc(forumPostRevisions.createdAt), desc(forumPostRevisions.id));
+    return rows.map(row => {
+      const author = projectForumPublicAuthor(row);
+      return {
+        id: row.id, authorId: row.authorId, authorName: author.name,
+        ...(author.kind === "deleted" ? { authorIdentityKind: "deleted" as const } : {}),
+        originalContent: row.originalContent, sourceLocale: row.sourceLocale, createdAt: row.createdAt,
+      };
+    });
   }
 
   private async readTagsForTopics(topicIds: readonly string[]): Promise<Map<string, ForumTag[]>> {

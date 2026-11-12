@@ -93,6 +93,45 @@ describe("notifications route", () => {
     });
   });
 
+  it("allowlists notifications and masks a malformed deleted actor before .data serialization",async()=>{
+    const value=context();
+    const secret="SECRET_RETAINED_NOTIFICATION_ACTOR";
+    const readNotifications=vi.fn(async()=>({
+      page:0,total:3,hasMore:false,items:[
+        {id:"n-deleted",kind:"mention" as const,actorName:secret,actorIdentityKind:"deleted" as const,
+          topicId:"topic-a",topicTitle:"Safe title",postId:"post-a",caseId:null,appealId:null,
+          createdAt:new Date("2026-10-03T10:00:00Z"),readAt:null,
+          deactivatedAt:"SECRET_LIFECYCLE",deactivatedByUserId:"SECRET_ACTOR",
+          image:"SECRET_IMAGE",email:"SECRET_EMAIL",unexpected:"SECRET_EXTRA"},
+        {id:"n-active",kind:"reply" as const,actorName:"Visible actor",
+          topicId:"topic-b",topicTitle:"Active title",postId:"post-b",caseId:null,
+          createdAt:new Date("2026-10-03T11:00:00Z"),readAt:new Date("2026-10-04T10:00:00Z")},
+        {id:"n-system",kind:"complaint-decision" as const,actorName:secret,
+          topicId:null,topicTitle:null,postId:null,caseId:"case-c",appealId:null,
+          createdAt:new Date("2026-10-03T12:00:00Z"),readAt:null,
+          deactivatedAt:"SECRET_LIFECYCLE"},
+      ],
+    }));
+    value.set(forumReaderContext,{readNotifications} as never);
+    const result=await loader({params:{locale:"he"},context:value});
+    expect(result).toEqual({locale:"he",page:0,total:3,hasMore:false,notifications:[
+      {id:"n-deleted",kind:"mention",actorName:"Deleted user",actorIdentityKind:"deleted",
+        topicId:"topic-a",topicTitle:"Safe title",postId:"post-a",caseId:null,appealId:null,
+        createdAt:"2026-10-03T10:00:00.000Z",readAt:null},
+      {id:"n-active",kind:"reply",actorName:"Visible actor",
+        topicId:"topic-b",topicTitle:"Active title",postId:"post-b",caseId:null,
+        createdAt:"2026-10-03T11:00:00.000Z",readAt:"2026-10-04T10:00:00.000Z"},
+      {id:"n-system",kind:"complaint-decision",actorName:null,
+        topicId:null,topicTitle:null,postId:null,caseId:"case-c",appealId:null,
+        createdAt:"2026-10-03T12:00:00.000Z",readAt:null},
+    ]});
+    const serialized=JSON.stringify(result);
+    for(const marker of [secret,"SECRET_LIFECYCLE","SECRET_ACTOR","SECRET_IMAGE","SECRET_EMAIL","SECRET_EXTRA"]){
+      expect(serialized).not.toContain(marker);
+    }
+    expect(readNotifications).toHaveBeenCalledExactlyOnceWith("user-1",0);
+  });
+
   it("rejects duplicate, unknown, oversized and invalid notification POST before mutation",async()=>{
     const contextValue=context();
     const markNotificationRead=vi.fn();

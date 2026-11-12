@@ -90,6 +90,36 @@ describe("AP-07 shared message Quick actions",()=>{
     expect(container.querySelector(".message-history-source")).toBeNull();
   });
 
+  it("SA04-H displays generic deleted revision identity but preserves source, locale and active editor",async()=>{
+    const secret="SECRET_OLD_REVISION_AUTHOR";
+    const {container,action}=mount({
+      source:false,history:true,
+      onAction:()=>data({operation:"postHistory",postId:post.postId,revisions:[
+        {id:"revision-2",authorId:"deleted-id",authorName:secret,authorIdentityKind:"deleted",
+          createdAt:"2026-10-03T03:04:05.000Z",sourceLocale:"he",
+          originalContent:"Raw **original** שלום"},
+        {id:"revision-1",authorId:"active-id",authorName:"Active editor",
+          createdAt:"2026-10-02T03:04:05.000Z",sourceLocale:"en",
+          originalContent:"Earlier source"},
+      ]},{headers:{"Cache-Control":"private, no-store"}}),
+    });
+    await waitFor(()=>expect(container.querySelector(".message-history-action button")).not.toBeNull());
+    fireEvent.click(container.querySelector("summary")!);
+    fireEvent.click(container.querySelector(".message-history-action button")!);
+    await waitFor(()=>expect(container.querySelectorAll(".message-history-source")).toHaveLength(2));
+    const entries=[...container.querySelectorAll(".topic-post-history li")];
+    expect(entries).toHaveLength(2);
+    expect(entries[0]?.textContent).toContain("Deleted user");
+    expect(entries[0]?.textContent).toContain("UTC");
+    expect(entries[0]?.textContent).not.toContain(secret);
+    expect(entries[1]?.textContent).toContain("Active editor");
+    const originals=[...container.querySelectorAll(".message-history-source")];
+    expect(originals.map(x=>x.textContent)).toEqual(["Raw **original** שלום","Earlier source"]);
+    expect(originals.map(x=>x.getAttribute("lang"))).toEqual(["he","en"]);
+    expect(container.textContent).not.toContain(secret);
+    expect(action).toHaveBeenCalledTimes(1);
+  });
+
   it("explicitly revalidates after 409 without retrying the command or leaving admin context",async()=>{
     const loader=vi.fn(async()=>({ok:true}));
     const action=vi.fn(async (body:FormData)=> {

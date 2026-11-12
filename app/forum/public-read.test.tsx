@@ -4,7 +4,7 @@ import { act, cleanup, fireEvent, render, screen, waitFor, within } from "@testi
 import { I18nextProvider } from "react-i18next";
 import { RouterContextProvider, RouterProvider, createMemoryRouter, data, matchRoutes } from "react-router";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import type { ForumReader, ForumTopicPage } from "../../db/forum-repository";
+import type { ForumCategoryPage, ForumPopularPage, ForumReader, ForumSearchResult, ForumSectionPage, ForumTagPage, ForumUnreadTopicSummary, ForumTopicPage, ForumUnansweredTopicSummary } from "../../db/forum-repository";
 import { ForumStorageUnavailableError } from "../../db/hyperdrive-forum";
 import {
   HELP_SOLUTIONS_CATEGORY_ID,
@@ -36,7 +36,7 @@ import SearchRoute, { loader as searchLoader } from "../routes/search";
 import TagsRoute, { loader as tagsLoader } from "../routes/tags";
 import TagRoute, { loader as tagLoader } from "../routes/tag";
 import UnansweredRoute, { loader as unansweredLoader } from "../routes/unanswered";
-import UnreadRoute from "../routes/unread";
+import UnreadRoute, { loader as unreadLoader } from "../routes/unread";
 import { ErrorBoundary as NotFoundErrorBoundary, loader as notFoundLoader } from "../routes/not-found";
 import SectionRoute, { loader as sectionLoader } from "../routes/section";
 import TopicRoute, { loader as topicLoader } from "../routes/topic";
@@ -4280,5 +4280,737 @@ describe("AP-08 closed topic participation and mounted reply recovery", () => {
       expect(screen.getByRole("form", { name: "Add a reply" })).toBe(form);
       expect(action).toHaveBeenCalledTimes(1);
     } finally { router.dispose(); }
+  });
+});
+
+describe.each([
+  { locale: "en", direction: "ltr" as const },
+  { locale: "he", direction: "rtl" as const },
+])("SA04-C1 canonical topic route and presentation ($locale)", ({ locale, direction }) => {
+  it("masks deleted identity before route serialization and display, retaining active post links/content", async () => {
+    const mixed: ForumTopicPage = {
+      ...topic,
+      authorName: "SECRET_C1_TOPIC_AUTHOR", authorIdentityKind: "deleted",
+      posts: [
+        {
+          ...topic.posts[0]!, authorId: "deleted-post",
+          authorName: "SECRET_C1_POST_AUTHOR", authorImage: "https://images.example.test/SECRET_C1_POST_AVATAR.png",
+          authorIdentityKind: "deleted",
+        },
+        {
+          ...topic.posts[0]!, id: "active-post", authorId: "active-post-author",
+          authorName: "Active member", authorImage: "https://images.example.test/active.png",
+          body: { id: "active-post-body", originalContent: "Visible active answer", sourceLocale: "en" },
+        },
+      ],
+    };
+    const ctx = context(locale, direction);
+    ctx.set(forumReaderContext, { ...reader, readTopicPage: async () => mixed });
+    const loaded = await topicLoader({ params: { locale, topicId: mixed.id }, context: ctx });
+    expect(loaded.topic).toMatchObject({
+      authorId: mixed.authorId, authorName: "Deleted user", authorIdentityKind: "deleted",
+      posts: [
+        { authorId: "deleted-post", authorName: "Deleted user", authorImage: null, authorIdentityKind: "deleted" },
+        { authorId: "active-post-author", authorName: "Active member", authorImage: "https://images.example.test/active.png" },
+      ],
+    });
+    const serialized = JSON.stringify(loaded);
+    for (const secret of ["SECRET_C1_TOPIC_AUTHOR", "SECRET_C1_POST_AUTHOR", "SECRET_C1_POST_AVATAR"]) {
+      expect(serialized).not.toContain(secret);
+    }
+    const mounted = renderRoute(TopicRoute, loaded, forumTopicPath(locale, mixed.id), locale, direction);
+    await waitFor(() => expect(mounted.container.querySelectorAll(".topic-message-profile-link")).toHaveLength(2));
+    const links = Array.from(mounted.container.querySelectorAll<HTMLAnchorElement>(".topic-message-profile-link"));
+    expect(links[0]).toHaveAttribute("href", `/${locale}/users/deleted-post`);
+    expect(links[0]).toHaveTextContent("Deleted user");
+    expect(links[0]!.querySelector("img")).toBeNull();
+    expect(links[1]).toHaveAttribute("href", `/${locale}/users/active-post-author`);
+    expect(links[1]).toHaveTextContent("Active member");
+    expect(links[1]!.querySelector("img")).toHaveAttribute("src", "https://images.example.test/active.png");
+    expect(mounted.container).toHaveTextContent("Visible active answer");
+    for (const secret of ["SECRET_C1_TOPIC_AUTHOR", "SECRET_C1_POST_AUTHOR", "SECRET_C1_POST_AVATAR"]) {
+      expect(mounted.container.textContent).not.toContain(secret);
+      expect(mounted.container.innerHTML).not.toContain(secret);
+    }
+    mounted.unmount();
+
+    // A malformed presentation fixture must still not render raw deleted identity.
+    const defensive = renderRoute(TopicRoute, topicRenderData(mixed), forumTopicPath(locale, mixed.id), locale, direction);
+    await waitFor(() => expect(defensive.container.querySelectorAll(".topic-message-profile-link")).toHaveLength(2));
+    expect(defensive.container).not.toHaveTextContent("SECRET_C1_POST_AUTHOR");
+    expect(defensive.container.innerHTML).not.toContain("SECRET_C1_POST_AVATAR");
+    defensive.unmount();
+  });
+});
+
+describe.each([
+  { locale: "en", direction: "ltr" as const },
+  { locale: "he", direction: "rtl" as const },
+])("SA04-C2 canonical category and section lists ($locale)", ({ locale, direction }) => {
+  const mixedCategory: ForumCategoryPage = {
+    ...category,
+    sections: [{
+      ...category.sections[0]!,
+      topicCount: 3, postCount: 4,
+      pinnedTopics: [
+        { id: "c2/pinned-deleted", title: "Pinned deleted", authorName: "SECRET_C2_PINNED_NAME",
+          authorIdentityKind: "deleted", activityAt: new Date("2026-10-05T12:00:00Z") },
+        { id: "c2/pinned-active", title: "Pinned active", authorName: "Active pinned",
+          activityAt: new Date("2026-10-04T12:00:00Z") },
+      ],
+      latestTopics: [
+        { id: "c2/latest-deleted", title: "Latest deleted", authorName: "SECRET_C2_LATEST_NAME",
+          authorIdentityKind: "deleted", activityAt: new Date("2026-10-06T12:00:00Z") },
+        { id: "c2/latest-active", title: "Latest active", authorName: "Active latest",
+          activityAt: new Date("2026-10-05T12:00:00Z") },
+      ],
+    }],
+  };
+  const mixedSection: ForumSectionPage = {
+    ...section,
+    topics: [
+      { ...section.topics[0]!, id: "c2/section-deleted", authorName: "SECRET_C2_SECTION_NAME",
+        authorIdentityKind: "deleted", isPinned: true },
+      { ...section.topics[0]!, id: "c2/section-active", authorName: "Active section",
+        isPinned: false, title: { id: "c2-active-title", originalContent: "Active section topic", sourceLocale: "en" } },
+    ],
+  };
+
+  it("removes deleted raw identity before public route serialization, keeps selected IDs, timestamps and counts", async () => {
+    const ctx = context(locale, direction);
+    ctx.set(forumReaderContext, {
+      ...reader,
+      readCategory: async () => mixedCategory,
+      readSection: async () => mixedSection,
+    });
+    const categoryData = await categoryLoader({
+      params: { locale, categoryId: mixedCategory.id }, context: ctx,
+    });
+    if (categoryData.kind !== "category") throw new Error("expected category");
+    expect(categoryData.category.sections[0]).toMatchObject({
+      topicCount: 3, postCount: 4,
+      pinnedTopics: [
+        { id: "c2/pinned-deleted", title: "Pinned deleted", authorName: "Deleted user", authorIdentityKind: "deleted" },
+        { id: "c2/pinned-active", title: "Pinned active", authorName: "Active pinned" },
+      ],
+      latestTopics: [
+        { id: "c2/latest-deleted", title: "Latest deleted", authorName: "Deleted user", authorIdentityKind: "deleted" },
+        { id: "c2/latest-active", title: "Latest active", authorName: "Active latest" },
+      ],
+    });
+    expect(categoryData.category.sections[0]!.pinnedTopics.map((topic) => topic.activityAt))
+      .toEqual(mixedCategory.sections[0]!.pinnedTopics.map((topic) => topic.activityAt.toISOString()));
+    expect(categoryData.category.sections[0]!.latestTopics.map((topic) => topic.activityAt))
+      .toEqual(mixedCategory.sections[0]!.latestTopics.map((topic) => topic.activityAt.toISOString()));
+    expect(categoryData.category.sections[0]!.pinnedTopics[1]).not.toHaveProperty("authorIdentityKind");
+
+    const sectionData = await sectionLoader({ params: { locale, sectionId: mixedSection.id }, context: ctx });
+    expect(sectionData.section.topics).toMatchObject([
+      { id: "c2/section-deleted", authorName: "Deleted user", authorIdentityKind: "deleted", isPinned: true },
+      { id: "c2/section-active", authorName: "Active section", isPinned: false },
+    ]);
+    expect(sectionData.section.topics[1]).not.toHaveProperty("authorIdentityKind");
+    expect(sectionData.section.topics.map(({ id, title, postCount, createdAt, isPinned, tags }) => ({
+      id, title, postCount, createdAt, isPinned, tags,
+    }))).toEqual(mixedSection.topics.map(({ id, title, postCount, createdAt, isPinned, tags }) => ({
+      id, title, postCount, createdAt, isPinned, tags,
+    })));
+    expect(sectionData.topicReadStates).toBeNull();
+    for (const marker of ["SECRET_C2_PINNED_NAME", "SECRET_C2_LATEST_NAME", "SECRET_C2_SECTION_NAME"]) {
+      expect(JSON.stringify(categoryData)).not.toContain(marker);
+      expect(JSON.stringify(sectionData)).not.toContain(marker);
+    }
+
+    const mountedCategory = renderRoute(CategoryRoute, categoryData, forumCategoryPath(locale, mixedCategory.id), locale, direction);
+    expect(await screen.findByRole("link", { name: "Pinned deleted" }))
+      .toHaveAttribute("href", forumTopicPath(locale, "c2/pinned-deleted"));
+    expect(screen.getByRole("link", { name: "Latest deleted" }))
+      .toHaveAttribute("href", forumTopicPath(locale, "c2/latest-deleted"));
+    expect(mountedCategory.container).toHaveTextContent("Deleted user");
+    expect(mountedCategory.container).toHaveTextContent("Active latest");
+    expect(mountedCategory.container).toHaveTextContent("3");
+    expect(mountedCategory.container).toHaveTextContent("4");
+    expect(mountedCategory.container.innerHTML).not.toContain("SECRET_C2_");
+    mountedCategory.unmount();
+
+    const mountedSection = renderRoute(SectionRoute, sectionData, forumSectionPath(locale, mixedSection.id), locale, direction);
+    expect(await screen.findByRole("link", { name: /Active section topic/ }))
+      .toHaveAttribute("href", forumTopicPath(locale, "c2/section-active"));
+    expect(mountedSection.container).toHaveTextContent("Deleted user");
+    expect(mountedSection.container).toHaveTextContent("Active section");
+    expect(mountedSection.container.innerHTML).not.toContain("SECRET_C2_");
+    mountedSection.unmount();
+
+    // UI receives an intentionally raw fixture: the deleted marker must still control presentation.
+    const rawCategory = renderRoute(CategoryRoute, {
+      ...categoryData, category: {
+        ...categoryData.category, sections: mixedCategory.sections.map((value) => ({
+          ...value, pinnedTopics: value.pinnedTopics.map((topic) => ({ ...topic, activityAt: topic.activityAt.toISOString() })),
+          latestTopics: value.latestTopics.map((topic) => ({ ...topic, activityAt: topic.activityAt.toISOString() })),
+        })),
+      },
+    }, forumCategoryPath(locale, mixedCategory.id), locale, direction);
+    expect(await screen.findByRole("link", { name: "Latest deleted" })).toBeVisible();
+    expect(rawCategory.container.innerHTML).not.toContain("SECRET_C2_");
+    rawCategory.unmount();
+
+    const rawSection = renderRoute(SectionRoute, { ...sectionData, section: mixedSection },
+      forumSectionPath(locale, mixedSection.id), locale, direction);
+    expect(await screen.findByRole("link", { name: /Active section topic/ })).toBeVisible();
+    expect(rawSection.container.innerHTML).not.toContain("SECRET_C2_");
+    rawSection.unmount();
+  });
+});
+
+describe.each([
+  { locale: "en", direction: "ltr" as const },
+  { locale: "he", direction: "rtl" as const },
+])("SA04-C3a Popular and Unanswered public author boundaries ($locale)", ({ locale, direction }) => {
+  const mixedPopular: ForumPopularPage = {
+    "24h": [
+      { id: "c3a/popular-24h-deleted", title: "C3a 24h deleted",
+        authorName: "SECRET_C3A_POPULAR_24H", authorIdentityKind: "deleted",
+        activityCount: 4, latestActivityAt: new Date("2026-11-12T11:00:00Z") },
+      { id: "c3a/popular-24h-active", title: "C3a 24h active",
+        authorName: "Active C3a member", activityCount: 2,
+        latestActivityAt: new Date("2026-11-12T10:00:00Z") },
+    ],
+    "7d": [
+      { id: "c3a/popular-7d-deleted", title: "C3a 7d deleted",
+        authorName: "SECRET_C3A_POPULAR_7D", authorIdentityKind: "deleted",
+        activityCount: 6, latestActivityAt: new Date("2026-11-10T11:00:00Z") },
+    ],
+    "30d": [
+      { id: "c3a/popular-30d-deleted", title: "C3a 30d deleted",
+        authorName: "SECRET_C3A_POPULAR_30D", authorIdentityKind: "deleted",
+        activityCount: 12, latestActivityAt: new Date("2026-10-30T11:00:00Z") },
+    ],
+  };
+  const mixedUnanswered: ForumUnansweredTopicSummary[] = [
+    {
+      id: "c3a/unanswered-deleted", title: "C3a unanswered deleted", sourceLocale: "he",
+      authorName: "SECRET_C3A_UNANSWERED", authorIdentityKind: "deleted",
+      createdAt: new Date("2026-11-12T09:00:00Z"),
+      section: { id: "c3a/section", name: "C3a section" },
+      category: { id: "c3a/category", name: "C3a category" },
+    },
+    {
+      id: "c3a/unanswered-active", title: "C3a unanswered active", sourceLocale: "en",
+      authorName: "Active unanswered member", createdAt: new Date("2026-11-11T09:00:00Z"),
+      section: null, category: { id: "c3a/category", name: "C3a category" },
+    },
+  ];
+
+  it("masks inactive authors in both public loaders and DOM while preserving activity and original title metadata", async () => {
+    const ctx = context(locale, direction);
+    ctx.set(forumReaderContext, {
+      ...reader,
+      readPopular: async () => mixedPopular,
+      readUnanswered: async () => mixedUnanswered,
+    });
+
+    const popularData = await popularLoader({ params: { locale }, context: ctx });
+    expect(popularData.periods).toMatchObject({
+      "24h": [
+        { id: "c3a/popular-24h-deleted", title: "C3a 24h deleted", authorName: "Deleted user",
+          authorIdentityKind: "deleted", activityCount: 4 },
+        { id: "c3a/popular-24h-active", authorName: "Active C3a member", activityCount: 2 },
+      ],
+      "7d": [{ id: "c3a/popular-7d-deleted", authorName: "Deleted user",
+        authorIdentityKind: "deleted", activityCount: 6 }],
+      "30d": [{ id: "c3a/popular-30d-deleted", authorName: "Deleted user",
+        authorIdentityKind: "deleted", activityCount: 12 }],
+    });
+    expect(popularData.periods["24h"][1]).not.toHaveProperty("authorIdentityKind");
+    for (const period of ["24h", "7d", "30d"] as const) {
+      expect(popularData.periods[period].map(({ id, title, activityCount }) =>
+        ({ id, title, activityCount }))).toEqual(mixedPopular[period].map(({ id, title, activityCount }) =>
+        ({ id, title, activityCount })));
+      expect(popularData.periods[period][0]).not.toHaveProperty("latestActivityAt");
+    }
+    expect(JSON.stringify(popularData)).not.toContain("SECRET_C3A_");
+
+    const unansweredData = await unansweredLoader({ params: { locale }, context: ctx });
+    expect(unansweredData.topics).toMatchObject([
+      { id: "c3a/unanswered-deleted", authorName: "Deleted user",
+        authorIdentityKind: "deleted", sourceLocale: "he", titleDirection: "rtl",
+        section: { id: "c3a/section" }, category: { id: "c3a/category" } },
+      { id: "c3a/unanswered-active", authorName: "Active unanswered member",
+        sourceLocale: "en", titleDirection: "ltr", section: null },
+    ]);
+    expect(unansweredData.topics[1]).not.toHaveProperty("authorIdentityKind");
+    expect(unansweredData.topics.map(({ id, title, sourceLocale, section, category }) =>
+      ({ id, title, sourceLocale, section, category })))
+      .toEqual(mixedUnanswered.map(({ id, title, sourceLocale, section, category }) =>
+        ({ id, title, sourceLocale, section, category })));
+    expect(JSON.stringify(unansweredData)).not.toContain("SECRET_C3A_");
+
+    const popularView = renderRoute(PopularRoute, popularData, forumPopularPath(locale), locale, direction);
+    expect(await screen.findByRole("link", { name: /C3a 24h deleted/ }))
+      .toHaveAttribute("href", forumTopicPath(locale, "c3a/popular-24h-deleted"));
+    expect(popularView.container).toHaveTextContent("Deleted user");
+    expect(popularView.container).toHaveTextContent("Active C3a member");
+    expect(popularView.container).toHaveTextContent("4");
+    expect(popularView.container).toHaveTextContent("6");
+    expect(popularView.container).toHaveTextContent("12");
+    expect(popularView.container.innerHTML).not.toContain("SECRET_C3A_");
+    popularView.unmount();
+
+    const unansweredView = renderRoute(UnansweredRoute, unansweredData, forumUnansweredPath(locale), locale, direction);
+    expect(await screen.findByRole("link", { name: /C3a unanswered deleted/ }))
+      .toHaveAttribute("href", forumTopicPath(locale, "c3a/unanswered-deleted"));
+    const originalTitle = await screen.findByText("C3a unanswered deleted");
+    expect(originalTitle).toHaveAttribute("lang", "he");
+    expect(originalTitle).toHaveAttribute("dir", "rtl");
+    expect(unansweredView.container).toHaveTextContent("Deleted user");
+    expect(unansweredView.container).toHaveTextContent("Active unanswered member");
+    expect(unansweredView.container).toHaveTextContent("C3a section");
+    expect(unansweredView.container.innerHTML).not.toContain("SECRET_C3A_");
+    unansweredView.unmount();
+
+    // Presentation must also refuse raw original identities supplied with a deleted marker.
+    const rawPopular = renderRoute(PopularRoute, {
+      ...popularData,
+      periods: {
+        "24h": popularData.periods["24h"].map((entry) => entry.authorIdentityKind === "deleted"
+          ? { ...entry, authorName: "SECRET_C3A_POPULAR_24H" } : entry),
+        "7d": popularData.periods["7d"].map((entry) => entry.authorIdentityKind === "deleted"
+          ? { ...entry, authorName: "SECRET_C3A_POPULAR_7D" } : entry),
+        "30d": popularData.periods["30d"].map((entry) => entry.authorIdentityKind === "deleted"
+          ? { ...entry, authorName: "SECRET_C3A_POPULAR_30D" } : entry),
+      },
+    }, forumPopularPath(locale), locale, direction);
+    expect(await screen.findByRole("link", { name: /C3a 30d deleted/ })).toBeVisible();
+    expect(rawPopular.container.innerHTML).not.toContain("SECRET_C3A_");
+    rawPopular.unmount();
+
+    const rawUnanswered = renderRoute(UnansweredRoute, {
+      ...unansweredData,
+      topics: unansweredData.topics.map((entry, i) => i === 0
+        ? { ...entry, authorName: "SECRET_C3A_UNANSWERED" } : entry),
+    }, forumUnansweredPath(locale), locale, direction);
+    expect(await screen.findByRole("link", { name: /C3a unanswered deleted/ })).toBeVisible();
+    expect(rawUnanswered.container.innerHTML).not.toContain("SECRET_C3A_");
+    rawUnanswered.unmount();
+  });
+});
+
+describe.each([
+  { locale: "en", direction: "ltr" as const },
+  { locale: "he", direction: "rtl" as const },
+])("SA04-C3b Tag and Search author privacy ($locale)", ({ locale, direction }) => {
+  const mixedTag: ForumTagPage = {
+    tag: { key: "c3b-shared", name: "C3b shared" },
+    topics: [
+      { id: "c3b/tag-deleted", title: "C3b Tagged deleted title",
+        authorName: "SECRET_C3B_TAG_DELETED", authorIdentityKind: "deleted",
+        postCount: 2, createdAt: new Date("2026-11-11T12:00:00Z"),
+        section: { id: "c3b/section", name: "C3b section" },
+        category: { id: "c3b/category", name: "C3b category" },
+        tags: [{ key: "c3b-shared", name: "C3b shared" }] },
+      { id: "c3b/tag-active", title: "C3b Tagged active title",
+        authorName: "Active C3b member", postCount: 1,
+        createdAt: new Date("2026-11-10T12:00:00Z"),
+        section: null, category: { id: "c3b/category", name: "C3b category" },
+        tags: [{ key: "c3b-shared", name: "C3b shared" }] },
+    ],
+  };
+  const mixedSearch: ForumSearchResult[] = [
+    { id: "c3b/search-deleted", title: "C3b QuartzNeedle result", sourceLocale: "he",
+      authorName: "SECRET_C3B_SEARCH_DELETED", authorIdentityKind: "deleted",
+      postCount: 3, activityAt: new Date("2026-11-12T11:00:00Z"),
+      section: { id: "c3b/section", name: "C3b section" },
+      category: { id: "c3b/category", name: "C3b category" },
+      tags: [{ key: "c3b-shared", name: "C3b shared" }] },
+    { id: "c3b/search-active", title: "C3b active result", sourceLocale: "en",
+      authorName: "Active search author", postCount: 1,
+      activityAt: new Date("2026-11-10T11:00:00Z"),
+      section: null, category: { id: "c3b/category", name: "C3b category" },
+      tags: [] },
+  ];
+
+  it("masks raw deleted identity and lifecycle in public loaders and DOM while retaining links, counts and metadata", async () => {
+    const ctx = context(locale, direction);
+    const unexpectedActor = "SECRET_C3B_PRIVATE_DEACTIVATOR";
+    ctx.set(forumReaderContext, {
+      ...reader,
+      readTag: async () => ({
+        ...mixedTag,
+        topics: mixedTag.topics.map((topic) => ({
+          ...topic, authorDeactivatedByUserId: unexpectedActor,
+        })),
+      }),
+      search: async () => mixedSearch.map((topic) => ({
+        ...topic, authorDeactivatedByUserId: unexpectedActor,
+      })),
+    });
+
+    const tagData = await tagLoader({ params: { locale, tagKey: "c3b-shared" }, context: ctx });
+    expect(tagData.locale).toBe(locale);
+    expect(tagData.page.tag).toEqual(mixedTag.tag);
+    expect(tagData.page.topics).toMatchObject([
+      { id: "c3b/tag-deleted", title: "C3b Tagged deleted title",
+        authorName: "Deleted user", authorIdentityKind: "deleted", postCount: 2,
+        section: { id: "c3b/section" }, category: { id: "c3b/category" } },
+      { id: "c3b/tag-active", authorName: "Active C3b member", postCount: 1, section: null },
+    ]);
+    expect(tagData.page.topics[0]!.createdAt).toEqual(mixedTag.topics[0]!.createdAt);
+    expect(tagData.page.topics.map((row) => [row.id, row.title, row.postCount, row.createdAt,
+      row.section, row.category, row.tags]))
+      .toEqual(mixedTag.topics.map((row) => [row.id, row.title, row.postCount, row.createdAt,
+        row.section, row.category, row.tags]));
+    expect(tagData.page.topics[1]).not.toHaveProperty("authorIdentityKind");
+    expect(JSON.stringify(tagData)).not.toContain("SECRET_C3B_");
+
+    const searchData = await searchLoader({
+      request: new Request(`https://forum.example/${locale}/search?q=QuartzNeedle`),
+      params: { locale }, context: ctx,
+    });
+    expect(searchData.query).toBe("QuartzNeedle");
+    expect(searchData.queryTooLong).toBe(false);
+    expect(searchData.results).toMatchObject([
+      { id: "c3b/search-deleted", title: "C3b QuartzNeedle result", authorName: "Deleted user",
+        authorIdentityKind: "deleted", sourceLocale: "he", titleDirection: "rtl",
+        postCount: 3, section: { id: "c3b/section" }, category: { id: "c3b/category" } },
+      { id: "c3b/search-active", authorName: "Active search author",
+        sourceLocale: "en", titleDirection: "ltr", postCount: 1, section: null },
+    ]);
+    expect(searchData.results.map((row) => [row.id, row.title, row.sourceLocale, row.postCount,
+      row.activityAt, row.section, row.category, row.tags]))
+      .toEqual(mixedSearch.map((row) => [row.id, row.title, row.sourceLocale, row.postCount,
+        row.activityAt, row.section, row.category, row.tags]));
+    expect(searchData.results[1]).not.toHaveProperty("authorIdentityKind");
+    expect(JSON.stringify(searchData)).not.toContain("SECRET_C3B_");
+
+    const tagDOM = renderRoute(TagRoute, tagData, forumTagPath(locale, "c3b-shared"), locale, direction);
+    expect(await screen.findByRole("link", { name: /C3b Tagged deleted title/ }))
+      .toHaveAttribute("href", forumTopicPath(locale, "c3b/tag-deleted"));
+    expect(tagDOM.container).toHaveTextContent("Deleted user");
+    expect(tagDOM.container).toHaveTextContent("Active C3b member");
+    expect(tagDOM.container).toHaveTextContent("C3b section");
+    expect(tagDOM.container).toHaveTextContent("C3b shared");
+    expect(tagDOM.container).toHaveTextContent("2");
+    expect(tagDOM.container.innerHTML).not.toContain("SECRET_C3B_");
+    tagDOM.unmount();
+
+    const searchDOM = renderRoute(SearchRoute, searchData, forumSearchPath(locale) + "?q=QuartzNeedle", locale, direction);
+    expect(await screen.findByRole("link", { name: /C3b QuartzNeedle result/ }))
+      .toHaveAttribute("href", forumTopicPath(locale, "c3b/search-deleted"));
+    expect(await screen.findByText("C3b QuartzNeedle result"))
+      .toHaveAttribute("lang", "he");
+    expect(screen.getByText("C3b QuartzNeedle result")).toHaveAttribute("dir", "rtl");
+    expect(searchDOM.container).toHaveTextContent("Deleted user");
+    expect(searchDOM.container).toHaveTextContent("Active search author");
+    expect(searchDOM.container).toHaveTextContent("3");
+    expect(searchDOM.container.innerHTML).not.toContain("SECRET_C3B_");
+    searchDOM.unmount();
+
+    // Even a malformed deleted-author display object cannot reinsert an original name in the DOM.
+    const rawTag = renderRoute(TagRoute, { ...tagData, page: mixedTag }, forumTagPath(locale, "c3b-shared"), locale, direction);
+    expect(await screen.findByRole("link", { name: /C3b Tagged deleted title/ })).toBeVisible();
+    expect(rawTag.container.innerHTML).not.toContain("SECRET_C3B_");
+    rawTag.unmount();
+
+    const rawSearch = renderRoute(SearchRoute, {
+      ...searchData,
+      results: searchData.results.map((entry, index) => index === 0
+        ? { ...entry, authorName: "SECRET_C3B_SEARCH_DELETED" } : entry),
+    }, forumSearchPath(locale) + "?q=QuartzNeedle", locale, direction);
+    expect(await screen.findByRole("link", { name: /C3b QuartzNeedle result/ })).toBeVisible();
+    expect(rawSearch.container.innerHTML).not.toContain("SECRET_C3B_");
+    rawSearch.unmount();
+  });
+});
+
+describe.each([
+  { locale: "en", direction: "ltr" as const },
+  { locale: "he", direction: "rtl" as const },
+])("SA04-C3c authenticated Unread author privacy ($locale)", ({ locale, direction }) => {
+  const mixed: ForumUnreadTopicSummary[] = [
+    {
+      id: "c3c/unread-deleted", title: "C3c unread deleted", authorName: "SECRET_C3C_UNREAD_NAME",
+      authorIdentityKind: "deleted", state: "unread",
+      firstUnreadPostId: "c3c-reply", latestPostId: "c3c-reply", unreadCount: 2,
+      activityAt: new Date("2026-11-12T12:00:00Z"),
+      section: { id: "c3c/section", name: "C3c section" },
+      category: { id: "c3c/category", name: "C3c category" },
+    },
+    {
+      id: "c3c/new-deleted", title: "C3c new deleted", authorName: "SECRET_C3C_NEW_NAME",
+      authorIdentityKind: "deleted", state: "new",
+      firstUnreadPostId: "c3c-start", latestPostId: "c3c-latest", unreadCount: 3,
+      activityAt: new Date("2026-11-12T11:00:00Z"),
+      section: null, category: { id: "c3c/category", name: "C3c category" },
+    },
+    {
+      id: "c3c/active", title: "C3c active topic", authorName: "Active C3c member",
+      state: "new", firstUnreadPostId: "c3c-active-start", latestPostId: "c3c-active-start",
+      unreadCount: 1, activityAt: new Date("2026-11-12T10:00:00Z"),
+      section: { id: "c3c/section", name: "C3c section" },
+      category: { id: "c3c/category", name: "C3c category" },
+    },
+  ];
+
+  it("keeps session-only access, read state and destinations while suppressing raw inactive identity in route and DOM", async () => {
+    const guest = context(locale, direction);
+    await expect(unreadLoader({ params: { locale }, context: guest }))
+      .rejects.toMatchObject({ status: 401 });
+
+    const ctx = context(locale, direction);
+    ctx.set(authSessionContext, { user: { id: "c3c-reader" } } as never);
+    const readUnreadForUser = vi.fn(async () => mixed.map((entry) => ({
+      ...entry, authorDeactivatedByUserId: "SECRET_C3C_PRIVATE_ACTOR",
+      authorRetainAtLeastUntil: "SECRET_C3C_PRIVATE_RETENTION",
+    })));
+    ctx.set(forumReaderContext, { ...reader, readUnreadForUser });
+    const loaded = await unreadLoader({ params: { locale }, context: ctx });
+    expect(readUnreadForUser).toHaveBeenCalledWith("c3c-reader");
+    expect(loaded.locale).toBe(locale);
+    expect(loaded.topics).toMatchObject([
+      { id: "c3c/unread-deleted", authorName: "Deleted user", authorIdentityKind: "deleted",
+        state: "unread", firstUnreadPostId: "c3c-reply", latestPostId: "c3c-reply", unreadCount: 2 },
+      { id: "c3c/new-deleted", authorName: "Deleted user", authorIdentityKind: "deleted",
+        state: "new", firstUnreadPostId: "c3c-start", latestPostId: "c3c-latest", unreadCount: 3 },
+      { id: "c3c/active", authorName: "Active C3c member", state: "new", unreadCount: 1 },
+    ]);
+    expect(loaded.topics[2]).not.toHaveProperty("authorIdentityKind");
+    expect(loaded.topics.map((row) => [
+      row.id, row.title, row.state, row.firstUnreadPostId, row.latestPostId,
+      row.unreadCount, row.activityAt, row.section, row.category,
+    ])).toEqual(mixed.map((row) => [
+      row.id, row.title, row.state, row.firstUnreadPostId, row.latestPostId,
+      row.unreadCount, row.activityAt, row.section, row.category,
+    ]));
+    expect(JSON.stringify(loaded)).not.toContain("SECRET_C3C_");
+
+    const view = renderRoute(UnreadRoute, loaded, `/${locale}/unread`, locale, direction);
+    const unreadCard = await screen.findByRole("link", { name: /C3c unread deleted/u });
+    const newCard = screen.getByRole("link", { name: /C3c new deleted/u });
+    const activeCard = screen.getByRole("link", { name: /C3c active topic/u });
+    expect(unreadCard).toHaveAttribute("href", forumTopicPath(locale, "c3c/unread-deleted") + "#post-c3c-reply");
+    expect(newCard).toHaveAttribute("href", forumTopicPath(locale, "c3c/new-deleted") + "#post-c3c-start");
+    expect(activeCard).toHaveAttribute("href", forumTopicPath(locale, "c3c/active") + "#post-c3c-active-start");
+    expect(within(unreadCard).getByText("2")).toBeInTheDocument();
+    expect(within(newCard).getByText("3")).toBeInTheDocument();
+    expect(within(unreadCard).getByText("C3c section")).toBeInTheDocument();
+    expect(within(newCard).queryByText("C3c section")).not.toBeInTheDocument();
+    expect(view.container).toHaveTextContent("Deleted user");
+    expect(view.container).toHaveTextContent("Active C3c member");
+    expect(view.container.innerHTML).not.toContain("SECRET_C3C_");
+    view.unmount();
+
+    // A malformed deleted presentation fixture must not reintroduce the original name.
+    const rawView = renderRoute(UnreadRoute, { ...loaded, topics: mixed }, `/${locale}/unread`, locale, direction);
+    expect(await screen.findByRole("link", { name: /C3c unread deleted/u })).toBeVisible();
+    expect(rawView.container.innerHTML).not.toContain("SECRET_C3C_");
+    rawView.unmount();
+  });
+});
+
+describe.each([
+  { locale: "en", direction: "ltr" as const },
+  { locale: "he", direction: "rtl" as const },
+])("SA04-C3d1 canonical Help question-summary author privacy ($locale)", ({ locale, direction }) => {
+  it("defends loader and rendered shared Help modes against raw deactivated identity without losing question state", async () => {
+    const rawQuestions = [
+      {
+        ...helpPage.questions[0]!,
+        id: "c3d1/deleted", title: "C3d1 private-author question",
+        authorName: "SECRET_C3D1_DELETED_NAME", authorIdentityKind: "deleted" as const,
+        isSolved: true, hasBestAnswer: true, replyCount: 4,
+        solutionModerationStatus: "needs-review" as const,
+        needsDetails: true, duplicateDisputed: true,
+        attention: { signals: { "needs-review": 1 }, totalSignals: 1, appeal: false, reviewRequired: true },
+        authorImage: "SECRET_C3D1_AVATAR", authorDeactivatedByUserId: "SECRET_C3D1_DEACTIVATOR",
+        authorRetainAtLeastUntil: "SECRET_C3D1_RETAIN",
+        tags: [{ key: "c3d1", name: "C3d1 tag" }],
+      },
+      {
+        ...helpPage.questions[0]!,
+        id: "c3d1/active", title: "C3d1 active-author question",
+        authorName: "Active C3d1 author",
+        isSolved: false, hasBestAnswer: false, replyCount: 1,
+      },
+    ];
+    const page = { ...helpPage, questions: rawQuestions };
+    const ctx = context(locale, direction);
+    const readHelpSolutionsAll = vi.fn(async () => page);
+    const readHelpSolutionsSolved = vi.fn(async () => ({
+      ...page, questions: [rawQuestions[0]!],
+    }));
+    ctx.set(forumReaderContext, {
+      ...reader, readHelpSolutionsAll, readHelpSolutionsSolved,
+    } as ForumReader);
+
+    for (const mode of ["all", "solutions"] as const) {
+      const href = forumCategoryPath(locale, HELP_SOLUTIONS_CATEGORY_ID) +
+        (mode === "solutions" ? "?mode=solutions" : "");
+      const data = await categoryLoader({
+        request: new Request("https://forum.example" + href),
+        params: { locale, categoryId: HELP_SOLUTIONS_CATEGORY_ID }, context: ctx,
+      });
+      expect(data.kind).toBe("help-solutions");
+      if (data.kind !== "help-solutions") throw new Error("Expected Help category");
+      expect(data.mode).toBe(mode);
+      expect(data.page.questions[0]).toMatchObject({
+        id: "c3d1/deleted", title: "C3d1 private-author question",
+        authorName: "Deleted user", authorIdentityKind: "deleted",
+        isSolved: true, hasBestAnswer: true, replyCount: 4,
+        solutionModerationStatus: "needs-review",
+        needsDetails: true, duplicateDisputed: true,
+        attention: { totalSignals: 1, reviewRequired: true },
+        tags: [{ key: "c3d1", name: "C3d1 tag" }],
+      });
+      expect(data.page.questions[0]!.createdAt).toBe(rawQuestions[0]!.createdAt.toISOString());
+      expect(data.page.questions[0]!.activityAt).toBe(rawQuestions[0]!.activityAt.toISOString());
+      if (mode === "all") {
+        expect(data.page.questions[1]).toMatchObject({
+          id: "c3d1/active", authorName: "Active C3d1 author", replyCount: 1,
+        });
+        expect(data.page.questions[1]).not.toHaveProperty("authorIdentityKind");
+      }
+      expect(JSON.stringify(data)).not.toContain("SECRET_C3D1_");
+      const view = renderRoute(CategoryRoute, data, href, locale, direction);
+      expect(await screen.findByRole("link", { name: /C3d1 private-author question/u }))
+        .toHaveAttribute("href", forumTopicPath(locale, "c3d1/deleted"));
+      expect(view.container).toHaveTextContent("Deleted user");
+      expect(view.container).toHaveTextContent("C3d1 tag");
+      expect(view.container.innerHTML).not.toContain("SECRET_C3D1_");
+      if (mode === "all") {
+        expect(screen.getByRole("link", { name: /C3d1 active-author question/u }))
+          .toHaveAttribute("href", forumTopicPath(locale, "c3d1/active"));
+        expect(view.container).toHaveTextContent("Active C3d1 author");
+      }
+      view.unmount();
+    }
+    expect(readHelpSolutionsAll).toHaveBeenCalledTimes(1);
+    expect(readHelpSolutionsSolved).toHaveBeenCalledTimes(1);
+
+    // Even an unmasked authorName in malformed marked route data cannot appear in the UI.
+    const rawData = await categoryLoader({
+      request: new Request("https://forum.example" + forumCategoryPath(locale, HELP_SOLUTIONS_CATEGORY_ID)),
+      params: { locale, categoryId: HELP_SOLUTIONS_CATEGORY_ID }, context: ctx,
+    });
+    if (rawData.kind !== "help-solutions") throw new Error("Expected Help category");
+    const malformed = {
+      ...rawData,
+      page: {
+        ...rawData.page,
+        questions: rawData.page.questions.map((question, index) => index === 0
+          ? { ...question, authorName: "SECRET_C3D1_RAW_PRESENTATION_NAME" } : question),
+      },
+    };
+    const rawView = renderRoute(
+      CategoryRoute, malformed, forumCategoryPath(locale, HELP_SOLUTIONS_CATEGORY_ID), locale, direction,
+    );
+    expect(await screen.findByRole("link", { name: /C3d1 private-author question/u })).toBeVisible();
+    expect(rawView.container.innerHTML).not.toContain("SECRET_C3D1_");
+    rawView.unmount();
+  });
+});
+
+describe.each([
+  { locale: "en", direction: "ltr" as const },
+  { locale: "he", direction: "rtl" as const },
+])("SA04-C3d2 authenticated For-me author projection ($locale)", ({ locale, direction }) => {
+  it("uses only the session user and safe existing Help serialization/view for active and deleted candidate authors", async () => {
+    const rawQuestions = [
+      {
+        ...helpPage.questions[0]!,
+        id: "c3d2/deleted",
+        title: "C3d2 inactive author question",
+        authorName: "SECRET_C3D2_RAW_AUTHOR", authorIdentityKind: "deleted" as const,
+        authorImage: "SECRET_C3D2_IMAGE", authorDeactivatedAt: "SECRET_C3D2_DEACTIVATION",
+        authorDeactivatedByUserId: "SECRET_C3D2_ACTOR",
+        authorRetainAtLeastUntil: "SECRET_C3D2_RETENTION",
+        replyCount: 2, needsDetails: true,
+        tags: [{ key: "c3d2-tag", name: "C3d2 tag" }],
+      },
+      {
+        ...helpPage.questions[0]!,
+        id: "c3d2/active",
+        title: "C3d2 active author question",
+        authorName: "Active C3d2 Author",
+        replyCount: 1, needsDetails: false,
+      },
+    ];
+    const readForMe = vi.fn(async () => ({ ...helpPage, questions: rawQuestions }));
+    const href = forumCategoryPath(locale, HELP_SOLUTIONS_CATEGORY_ID) +
+      "?mode=for-me&userId=spoofed&tags=spoofed&answers=has&quality=needs-details";
+    const guest = context(locale, direction);
+    guest.set(forumReaderContext, { ...reader, readHelpSolutionsForMe: readForMe } as ForumReader);
+    await expect(categoryLoader({
+      request: new Request("https://forum.example" + href),
+      params: { locale, categoryId: HELP_SOLUTIONS_CATEGORY_ID },
+      context: guest,
+    })).rejects.toMatchObject({ status: 401 });
+    expect(readForMe).not.toHaveBeenCalled();
+
+    const user = context(locale, direction);
+    user.set(authSessionContext, {
+      user: {
+        id: "session-c3d2-author", name: "Session C3d2", email: "session-c3d2@example.test",
+        emailVerified: true, createdAt: new Date(), updatedAt: new Date(),
+      },
+      session: {
+        id: "session-c3d2", token: "token-c3d2", userId: "session-c3d2-author",
+        expiresAt: new Date(Date.now() + 60_000), createdAt: new Date(), updatedAt: new Date(),
+      },
+    });
+    user.set(forumReaderContext, { ...reader, readHelpSolutionsForMe: readForMe } as ForumReader);
+    user.set(authorizationContext, {
+      forUser: () => ({ resolve: vi.fn(), has: vi.fn(async () => false) }),
+    } as never);
+
+    const data = await categoryLoader({
+      request: new Request("https://forum.example" + href),
+      params: { locale, categoryId: HELP_SOLUTIONS_CATEGORY_ID },
+      context: user,
+    });
+    expect(readForMe).toHaveBeenCalledTimes(1);
+    expect(readForMe).toHaveBeenCalledWith("session-c3d2-author", {
+      answers: "has", quality: "needs-details",
+    });
+    expect(data.kind).toBe("help-solutions");
+    if (data.kind !== "help-solutions") throw new Error("Expected Help route");
+    expect(data.mode).toBe("for-me");
+    expect(data.filters).toEqual({ answers: "has", quality: "needs-details" });
+    expect(data.page.questions).toHaveLength(2);
+    expect(data.page.questions[0]).toMatchObject({
+      id: "c3d2/deleted", title: "C3d2 inactive author question",
+      authorName: "Deleted user", authorIdentityKind: "deleted",
+      replyCount: 2, needsDetails: true, tags: [{ key: "c3d2-tag", name: "C3d2 tag" }],
+    });
+    expect(data.page.questions[0]!.createdAt).toBe(rawQuestions[0]!.createdAt.toISOString());
+    expect(data.page.questions[0]!.activityAt).toBe(rawQuestions[0]!.activityAt.toISOString());
+    expect(data.page.questions[1]).toMatchObject({
+      id: "c3d2/active", authorName: "Active C3d2 Author", replyCount: 1,
+    });
+    expect(data.page.questions[1]).not.toHaveProperty("authorIdentityKind");
+    expect(JSON.stringify(data)).not.toContain("SECRET_C3D2_");
+    const rendered = renderRoute(CategoryRoute, data, href, locale, direction);
+    expect(await screen.findByRole("link", { name: /C3d2 inactive author question/u }))
+      .toHaveAttribute("href", forumTopicPath(locale, "c3d2/deleted"));
+    expect(screen.getByRole("link", { name: /C3d2 active author question/u }))
+      .toHaveAttribute("href", forumTopicPath(locale, "c3d2/active"));
+    expect(rendered.container).toHaveTextContent("Deleted user");
+    expect(rendered.container).toHaveTextContent("Active C3d2 Author");
+    expect(rendered.container).toHaveTextContent("C3d2 tag");
+    expect(rendered.container.innerHTML).not.toContain("SECRET_C3D2_");
+    rendered.unmount();
+
+    // Reusing C3d1 Help cards also neutralizes an intentionally raw marked display fixture.
+    const malformed = {
+      ...data,
+      page: {
+        ...data.page,
+        questions: data.page.questions.map((question, index) => index === 0
+          ? { ...question, authorName: "SECRET_C3D2_MALFORMED_PRESENTATION" } : question),
+      },
+    };
+    const malformedView = renderRoute(CategoryRoute, malformed, href, locale, direction);
+    expect(await screen.findByRole("link", { name: /C3d2 inactive author question/u })).toBeVisible();
+    expect(malformedView.container.innerHTML).not.toContain("SECRET_C3D2_");
+    malformedView.unmount();
   });
 });

@@ -563,6 +563,7 @@ export const reviewedCommonFingerprints = {
   editorAttachmentOpenOriginal: "c2f4b39b9a0b732d2007d5f1f3e4aaec5ddd4610944ffae000d583a71a43a649",
   editorAttachmentDownload: "e454aae20eab6a4aabf22c81b5553c746fd8b3d37528a6346ad0e633d3156c9b",
   profileHeading: "f53656a8f685306b9c72a14eda1f39026ae8588653ebd4cf0e12bbb56811f386",
+  deletedUser: "7142f555e1a94af366545fcfaf9992ecb5eaee00d2b1e797e9dcfb11748a7e0f",
   profileSectionUnavailable: "3857b659f5722b2a3b2c4a8ea52a6868bb0a6be3810ecd4077044fbceeef45b5",
   profileSectionRefresh: "36b19971491a2212dd264f85cc0496240c24c3ff8c782d48528024f56c3b74be",
   profileOwnerPrivate: "64618fb8585ca57e6fbfce09d08085b4ff13dd4a72aef425b2f7a87925254f4e",

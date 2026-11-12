@@ -12,10 +12,13 @@ export class UserPrivacyAccountMissingError extends Error {
 type PrivacyTransaction = Parameters<Parameters<NodePgDatabase["transaction"]>[0]>[0];
 
 /** Serialize a subject's preference mutation and heartbeat without a global lock. */
-export async function lockPrivacySubject(tx: PrivacyTransaction, actorId: string): Promise<void> {
-  const [account] = await tx.select({ id: user.id }).from(user)
+export async function lockPrivacySubject(tx: PrivacyTransaction, actorId: string): Promise<Date | null> {
+  const [account] = await tx.select({ id: user.id, deactivatedAt: user.deactivatedAt }).from(user)
     .where(eq(user.id, actorId)).for("update");
   if (!account) throw new UserPrivacyAccountMissingError();
+  // Return the authoritative lifecycle value under the same row lock.
+  // Privacy saves intentionally do not enforce account activity in SA04-F.
+  return account.deactivatedAt;
 }
 
 export class DrizzleUserPrivacyRepository {

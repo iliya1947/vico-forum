@@ -566,6 +566,7 @@ export const canonicalEnglishCatalog = {
     authLinkGoogle: message("authLinkGoogle", "Connect Google", "Explicitly link Google to the current signed-in account from Account & security Settings."),
     authLinkGoogleHint: message("authLinkGoogleHint", "Already registered with a password? Sign in with it first, then connect Google from Account & security Settings.", "Safe explicit linking guidance for an existing unverified local-email account."),
     profileHeading: message("profileHeading", "Forum profile", "Forum profile: profileHeading."),
+    deletedUser: message("deletedUser", "Deleted user", "Neutral public identity for a deactivated account; never expose the original name."),
     profileSectionUnavailable: message("profileSectionUnavailable", "This section is temporarily unavailable.", "SA-03 unified user profile."),
     profileSectionRefresh: message("profileSectionRefresh", "Refresh this profile", "SA-03 unified user profile."),
     profileOwnerPrivate: message("profileOwnerPrivate", "Private account information", "SA-03 unified user profile."),

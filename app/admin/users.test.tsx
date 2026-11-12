@@ -10,6 +10,7 @@ import { UNDER_DEVELOPMENT_FEATURES } from "../forum/under-development";
 import { adminDestinations } from "./shell";
 import { adminUsersPath } from "./users-paths";
 import { AdminUsersIndex } from "./users";
+import type { AdminUserSummary } from "../../db/admin-users";
 
 const id = "user/עברית😀";
 const access = adminAccess(new Set(["admin.users.read", "access.authorization.manage"]));
@@ -31,12 +32,12 @@ function localized(locale: string) {
     bundleVersions: { en: { common: "test" }, [locale]: { common: "test" } }, staleKeys: {},
   });
 }
-function mount(locale: string, empty = false) {
+function mount(locale: string, empty = false, users?: AdminUserSummary[]) {
   const view = <AdminUsersIndex locale={locale} access={access}
     query={{ search: "%_ עברית", after: "before" }}
-    page={{ items: empty ? [] : [{ id, name: "Name עברית", image: null,
+    page={{ items: empty ? [] : users ?? [{ id, name: "Name עברית", image: null,
       joinedAt: "2026-10-01T10:00:00.000Z" }],
-      total: empty ? 0 : 26, next: empty ? null : id }}/>;
+      total: empty ? 0 : users?.length ?? 26, next: empty || users ? null : id }}/>;
   const router = createMemoryRouter([{ path: "*", element: view }], { initialEntries: ["/" + locale + "/admin/users"] });
   dispose = () => router.dispose();
   return render(<I18nextProvider i18n={localized(locale)}><RouterProvider router={router}/></I18nextProvider>).container;
@@ -70,5 +71,41 @@ describe("SA03 Admin directory remains independent and links to single canonical
     expect(adminDestinations("en", adminAccess(new Set(["access.authorization.manage"])))
       .find(x => x.id === "users")?.href).toBe("/en/admin/authorization#authorization-users-heading");
     expect(UNDER_DEVELOPMENT_FEATURES.map(x=>x.id)).not.toContain("admin-users");
+  });
+});
+
+describe("SA04-D directory neutral rendering", () => {
+  it.each(["en", "ru", "he"])("does not render a raw marked name/image or old-name avatar initials in %s", locale => {
+    const inactiveId = "inactive/עברית😀";
+    const activeId = "active/עברית😀";
+    const root = mount(locale, false, [
+      {
+        id: activeId, name: "Active Admin User", image: "https://images.example.test/active-avatar.png",
+        joinedAt: "2026-10-01T10:00:00.000Z",
+      },
+      {
+        id: inactiveId, name: "SECRET_SA04_D_RETAINED_NAME",
+        image: "https://images.example.test/SECRET_SA04_D_ORIGINAL_AVATAR.png",
+        joinedAt: "2026-10-02T10:00:00.000Z", identityKind: "deleted",
+      },
+    ]);
+    const deletedLabel = localized(locale).t("deletedUser");
+    const cards = root.querySelectorAll(".admin-forum-objects > li");
+    expect(cards).toHaveLength(2);
+    expect(cards[0]!.textContent).toContain("Active Admin User");
+    expect(cards[0]!.querySelector("img.profile-avatar, .profile-avatar img")?.getAttribute("src"))
+      .toBe("https://images.example.test/active-avatar.png");
+    expect(cards[1]!.textContent).toContain(deletedLabel);
+    expect(cards[1]!.querySelector(".profile-avatar img")).toBeNull();
+    expect(cards[1]!.querySelector(".profile-avatar")?.textContent?.trim())
+      .toBe(Array.from(deletedLabel.trim())[0]?.toUpperCase());
+    expect(root.innerHTML).not.toContain("SECRET_SA04_D_");
+    const profile = "/" + locale + "/users/" + encodeURIComponent(inactiveId);
+    const hrefs = [...cards[1]!.querySelectorAll<HTMLAnchorElement>("a")]
+      .map(link => link.getAttribute("href"));
+    expect(hrefs).toContain(profile);
+    expect(hrefs).toContain(profile + "#authorization");
+    expect(root.textContent).toContain("2");
+    expect((root.querySelector('input[name="q"]') as HTMLInputElement).value).toBe("%_ עברית");
   });
 });

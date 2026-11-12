@@ -1,4 +1,5 @@
 import { useLoaderData, type RouterContextProvider } from "react-router";
+import { DELETED_USER_NAME } from "../../db/public-identity";
 
 import { authSessionForRequest } from "../auth/request-context";
 import { forumReaderForRequest } from "../forum/request-context";
@@ -21,7 +22,15 @@ export async function loader({ params, context }: {
     const topics = await forumReaderForRequest(context).readUnreadForUser(session.user.id);
     return {
       locale: params.locale ?? "en",
-      topics,
+      topics: topics.map(({
+        id, title, authorName, authorIdentityKind, state, firstUnreadPostId, latestPostId,
+        unreadCount, activityAt, section, category,
+      }) => ({
+        id, title,
+        authorName: authorIdentityKind === "deleted" ? DELETED_USER_NAME : authorName,
+        ...(authorIdentityKind === "deleted" ? { authorIdentityKind } : {}),
+        state, firstUnreadPostId, latestPostId, unreadCount, activityAt, section, category,
+      })),
     };
   } catch (error) {
     if (error instanceof ForumStorageUnavailableError) {

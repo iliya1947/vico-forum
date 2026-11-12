@@ -134,6 +134,33 @@ describe("SA03 canonical profile server-side independent section composition",()
     expect(section(await loader(args(wrong.context)),"owner")).toBeUndefined();
     expect(wrong.readTarget).not.toHaveBeenCalled();
   });
+  it("keeps SA03 Owner/Admin private sections independently admitted beside neutral deleted public profile", async () => {
+    const neutral = {
+      ...publicProfile, identityKind: "deleted" as const,
+      name: "Deleted user", image: null, bio: "", githubUrl: null, websiteUrl: null,
+    };
+    const guest = env(null);
+    guest.readProfile.mockResolvedValueOnce(neutral);
+    const guestPage = await loader(args(guest.context));
+    expect(guestPage.data.profile).toMatchObject({
+      id: targetId, identityKind: "deleted", name: "Deleted user",
+      bio: "", image: null, messageCount: 4, bestAnswerCount: 2,
+    });
+    expect(guestPage.data.privileged).toEqual({});
+    expect(guest.readTarget).not.toHaveBeenCalled();
+
+    const owner = env("exact-owner", ["access.authorization.manage", "admin.users.blocks.manage"]);
+    owner.readProfile.mockResolvedValueOnce(neutral);
+    const ownerPage = await loader(args(owner.context));
+    expect(ownerPage.data.profile).toEqual(guestPage.data.profile);
+    expect(section(ownerPage,"owner")).toMatchObject({
+      viewerId: "exact-owner", account: { status: "ready", value: account },
+      history: { status: "ready", value: historyPage },
+    });
+    expect(section(ownerPage,"authorization")).toMatchObject({ status: "ready" });
+    expect(section(ownerPage,"measures")).toMatchObject({ status: "ready" });
+    expect(ownerPage.init?.headers).toMatchObject({"Cache-Control":"private, no-store"});
+  });
   it("exact Owner self uses ownList instead of AP10 forbidden adminTarget",async()=>{
     const e=env("exact-owner",["admin.users.blocks.manage"]);
     const profile={...publicProfile,id:"exact-owner"};

@@ -140,7 +140,7 @@ export function HomeView({
 
 type PopularPeriodPresentation = Record<
   ForumPopularPeriod,
-  readonly Pick<ForumPopularTopicSummary, "id" | "title" | "authorName" | "activityCount">[]
+  readonly Pick<ForumPopularTopicSummary, "id" | "title" | "authorName" | "authorIdentityKind" | "activityCount">[]
 >;
 
 export function PopularView({
@@ -182,7 +182,7 @@ export function PopularView({
                       <span className="popular-topic-rank" aria-hidden="true">{index + 1}</span>
                       <span className="popular-topic-copy">
                         <strong>{topic.title}</strong>
-                        <small>{t("startedBy", { author: topic.authorName })}</small>
+                        <small>{t("startedBy", { author: topic.authorIdentityKind === "deleted" ? t("deletedUser") : topic.authorName })}</small>
                       </span>
                       <span className="popular-topic-activity">
                         {t("messageCount", { count: topic.activityCount })}
@@ -201,7 +201,7 @@ export function PopularView({
 
 type UnansweredTopicPresentation = Pick<
   ForumUnansweredTopicSummary,
-  "id" | "title" | "sourceLocale" | "authorName" | "section" | "category"
+  "id" | "title" | "sourceLocale" | "authorName" | "authorIdentityKind" | "section" | "category"
 > & { titleDirection: "ltr" | "rtl" | "auto" };
 
 export function UnansweredView({
@@ -243,7 +243,7 @@ export function UnansweredView({
                     </span>
                     <span className="unanswered-topic-copy">
                       <strong lang={topic.sourceLocale === "und" ? undefined : topic.sourceLocale} dir={topic.titleDirection}>{topic.title}</strong>
-                      <small>{t("startedBy", { author: topic.authorName })}</small>
+                      <small>{t("startedBy", { author: topic.authorIdentityKind === "deleted" ? t("deletedUser") : topic.authorName })}</small>
                     </span>
                   </span>
 
@@ -275,7 +275,7 @@ export function UnansweredView({
 
 type UnreadTopicPresentation = Pick<
   ForumUnreadTopicSummary,
-  "id" | "title" | "authorName" | "state" | "firstUnreadPostId" | "unreadCount" | "section" | "category"
+  "id" | "title" | "authorName" | "authorIdentityKind" | "state" | "firstUnreadPostId" | "unreadCount" | "section" | "category"
 >;
 
 export function UnreadView({
@@ -306,7 +306,9 @@ export function UnreadView({
               </span>
               <span className="unanswered-topic-copy">
                 <strong dir="auto">{topic.title}</strong>
-                <small>{t("startedBy", { author: topic.authorName })}</small>
+                <small>{t("startedBy", {
+                  author: topic.authorIdentityKind === "deleted" ? t("deletedUser") : topic.authorName,
+                })}</small>
               </span>
             </span>
 
@@ -407,6 +409,8 @@ export function NotificationsView({
           <ul className="notifications-list">
             {notifications.map((notification) => {
               const unread = notification.readAt === null;
+              const deletedActor = notification.actorIdentityKind === "deleted";
+              const actorLabel = deletedActor ? t("deletedUser") : notification.actorName ?? "";
               return (
                 <li key={notification.id}>
                   <Form method="post" className="notification-form">
@@ -418,13 +422,13 @@ export function NotificationsView({
                       aria-label={`${t("notificationOpen")}: ${notification.kind==="complaint-decision"?t("notificationDecisionResult"):notification.kind==="complaint-appeal-result"?t("complaintAppealNotification"):notification.topicTitle??""}`}
                     >
                       {notification.kind!=="complaint-decision"&&notification.kind!=="complaint-appeal-result"?<span className="notification-avatar" aria-hidden="true">
-                        {(notification.actorName??"").trim().slice(0, 1).toUpperCase()}
+                        {deletedActor ? "" : actorLabel.trim().slice(0, 1).toUpperCase()}
                       </span>:null}
                       <span className="notification-copy">
                         <span className="notification-summary">
                           {notification.kind==="complaint-decision"||notification.kind==="complaint-appeal-result"?
                             <strong>{t(notification.kind==="complaint-decision"?"notificationDecisionResult":"complaintAppealNotification")}</strong>:
-                            <><span>{t(notification.kind==="mention"?"notificationMentionBy":"notificationReplyBy",{actor:notification.actorName??""})}</span>
+                            <><span>{t(notification.kind==="mention"?"notificationMentionBy":"notificationReplyBy",{actor:actorLabel})}</span>
                             <strong dir="auto">{notification.topicTitle}</strong></>}
                         </span>
                         <time dateTime={notification.createdAt}>
@@ -519,7 +523,7 @@ export function SearchView({
                     </span>
                     <span className="section-topic-copy">
                       <strong lang={topic.sourceLocale === "und" ? undefined : topic.sourceLocale} dir={topic.titleDirection}>{topic.title}</strong>
-                      <small>{t("startedBy", { author: topic.authorName })}</small>
+                      <small>{t("startedBy", { author: topic.authorIdentityKind === "deleted" ? t("deletedUser") : topic.authorName })}</small>
                       {topic.tags.length > 0 ? (
                         <span className="topic-tag-list" aria-label={t("topicTagsLabel")}>
                           {topic.tags.map((tag) => <span className="topic-tag" key={tag.key}>#{tag.name}</span>)}
@@ -619,7 +623,7 @@ export function TagView({
                     </span>
                     <span className="section-topic-copy">
                       <strong>{topic.title}</strong>
-                      <small>{t("startedBy", { author: topic.authorName })}</small>
+                      <small>{t("startedBy", { author: topic.authorIdentityKind === "deleted" ? t("deletedUser") : topic.authorName })}</small>
                       <span className="topic-tag-list" aria-label={t("topicTagsLabel")}>
                         {topic.tags.map((tag) => <span className="topic-tag" key={tag.key}>#{tag.name}</span>)}
                       </span>
@@ -789,6 +793,7 @@ type CategoryTopicPresentation = {
   id: string;
   title: string;
   authorName: string;
+  authorIdentityKind?: "deleted";
   activityAt: string;
 };
 
@@ -962,6 +967,7 @@ function CategorySectionTopicList({
   showActivity: boolean;
   pinned?: boolean;
 }) {
+  const { t } = useTranslation("common");
   if (topics.length === 0) {
     return (
       <p className="home-topic-empty">
@@ -976,7 +982,7 @@ function CategorySectionTopicList({
         <li key={topic.id} className={showActivity ? "home-latest-topic" : undefined}>
           {showActivity ? (
             <span className="home-topic-avatar" aria-hidden="true">
-              {topic.authorName.trim().slice(0, 1).toUpperCase()}
+              {(topic.authorIdentityKind === "deleted" ? t("deletedUser") : topic.authorName).trim().slice(0, 1).toUpperCase()}
             </span>
           ) : null}
           <span className="home-topic-copy">
@@ -986,7 +992,7 @@ function CategorySectionTopicList({
             </span>
             {showActivity ? (
               <span className="home-topic-meta">
-                <span>{topic.authorName}</span>
+                <span>{topic.authorIdentityKind === "deleted" ? t("deletedUser") : topic.authorName}</span>
                 <span aria-hidden="true">·</span>
                 <time dateTime={topic.activityAt}>
                   {formatCategorySectionActivity(topic.activityAt, referenceTime, locale)}
@@ -1815,7 +1821,9 @@ function HelpQuestionCards({
                           {t("helpAttentionPendingSignals", { count: question.attention.totalSignals })}
                         </span>
                       ) : null}
-                      <small>{t("startedBy", { author: question.authorName })}</small>
+                      <small>{t("startedBy", {
+                        author: question.authorIdentityKind === "deleted" ? t("deletedUser") : question.authorName,
+                      })}</small>
                       {question.tags.length > 0 ? (
                         <span className="topic-tag-list" aria-label={t("topicTagsLabel")}>
                           {question.tags.map((tag) => (
@@ -1987,7 +1995,7 @@ export function SectionView({
                         <strong>{topic.title.originalContent}</strong>
                         {topic.isPinned ? <span className="pinned-topic-badge">{t("pinnedHeading")}</span> : null}
                       </span>
-                      <small>{t("startedBy", { author: topic.authorName })}</small>
+                      <small>{t("startedBy", { author: topic.authorIdentityKind === "deleted" ? t("deletedUser") : topic.authorName })}</small>
                       {topicReadStates?.[topic.id] ? (
                         <small className={`section-topic-read-state is-${topicReadStates[topic.id]}`}>
                           {topicReadStates[topic.id] === "new"
@@ -2224,9 +2232,17 @@ export function TopicView({
     if (baseline) setEditRecovery({ topicId: loadedTopic.id, loaderRevisionId: baseline.body.id, post: actionData.post, completedOperationId: actionData.completedOperationId });
   }, [actionData, loadedTopic]);
   // A new loader snapshot supersedes recovery data; later failed submissions do not.
-  const recoveredPost = editRecovery?.topicId === loadedTopic.id
-    && loadedTopic.posts.some((post) => post.id === editRecovery.post.id && post.body.id === editRecovery.loaderRevisionId)
-    ? editRecovery.post : null;
+  const recoveryBaseline = editRecovery?.topicId === loadedTopic.id
+    ? loadedTopic.posts.find((post) => post.id === editRecovery.post.id && post.body.id === editRecovery.loaderRevisionId)
+    : null;
+  const recoveredPost = recoveryBaseline && editRecovery
+    ? {
+        ...editRecovery.post,
+        authorId: recoveryBaseline.authorId,
+        authorName: recoveryBaseline.authorName,
+        authorImage: recoveryBaseline.authorImage,
+        authorIdentityKind: recoveryBaseline.authorIdentityKind,
+      } : null;
   const topic = recoveredPost ? {
     ...loadedTopic, posts: loadedTopic.posts.map((post) => post.id === recoveredPost.id ? recoveredPost : post),
   } : loadedTopic;
@@ -2654,7 +2670,7 @@ export function TopicView({
             {canManageHelpDuplicate && pendingDuplicateAppeal ? (
               <div className="help-duplicate-appeal-pending help-duplicate-appeal-moderator-message">
                 <strong>{t("helpDuplicateAppealReviewHeading")}</strong>
-                <span>{t("startedBy", { author: topic.authorName })}</span>
+                <span>{t("startedBy", { author: topic.authorIdentityKind === "deleted" ? t("deletedUser") : topic.authorName })}</span>
                 <p>{pendingDuplicateAppeal.explanation}</p>
               </div>
             ) : null}
@@ -2735,8 +2751,8 @@ export function TopicView({
                 >
                   <header className="topic-message-author">
                     <Link className="topic-message-profile-link" to={forumProfilePath(locale, post.authorId)}>
-                      <ForumAvatar name={post.authorName} image={post.authorImage} className="topic-message-avatar" />
-                      <span className="topic-message-author-copy"><strong dir="auto">{post.authorName}</strong></span>
+                      <ForumAvatar name={post.authorIdentityKind === "deleted" ? t("deletedUser") : post.authorName} image={post.authorIdentityKind === "deleted" ? null : post.authorImage} className="topic-message-avatar" />
+                      <span className="topic-message-author-copy"><strong dir="auto">{post.authorIdentityKind === "deleted" ? t("deletedUser") : post.authorName}</strong></span>
                     </Link>
                     <span className="topic-message-author-statuses">
                       {isOriginalQuestion && (

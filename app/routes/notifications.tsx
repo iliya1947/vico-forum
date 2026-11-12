@@ -8,6 +8,7 @@ import { forumMutationGuard, mutationFailure, runForumMutation } from "../forum/
 import { ForumRouteError } from "../forum/ui";
 import { NotificationsView } from "../forum/views";
 import { ForumStorageUnavailableError } from "../../db/hyperdrive-forum";
+import { DELETED_USER_NAME } from "../../db/public-identity";
 
 export function headers(){return {"Cache-Control":"private, no-store"};}
 
@@ -30,7 +31,17 @@ export async function loader({ params, context, url }: {
     return {
       locale:params.locale??"en",page:result.page,total:result.total,hasMore:result.hasMore,
       notifications:result.items.map(notification=>({
-        ...notification,createdAt:new Date(notification.createdAt).toISOString(),
+        id: notification.id, kind: notification.kind,
+        actorName: notification.kind==="reply"||notification.kind==="mention"
+          ? notification.actorIdentityKind==="deleted" ? DELETED_USER_NAME : notification.actorName
+          : null,
+        ...(notification.actorIdentityKind==="deleted" &&
+            (notification.kind==="reply"||notification.kind==="mention")
+          ? {actorIdentityKind:"deleted" as const} : {}),
+        topicId: notification.topicId, topicTitle: notification.topicTitle, postId: notification.postId,
+        ...("caseId" in notification ? {caseId:notification.caseId} : {}),
+        ...("appealId" in notification ? {appealId:notification.appealId} : {}),
+        createdAt:new Date(notification.createdAt).toISOString(),
         readAt:notification.readAt===null?null:new Date(notification.readAt).toISOString(),
       })),
     };

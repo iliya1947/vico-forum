@@ -23,7 +23,7 @@ const migrations = [
   "0027_help_solutions_foundation", "0028_help_solution_moderation",
   "0029_help_question_needs_details", "0030_help_duplicate_workflow",
   "0031_help_user_moderation_signals", "0032_forum_profiles", "0033_forum_online_presence",
-  "0061_user_privacy_preferences",
+  "0061_user_privacy_preferences", "0065_sa04_account_state_foundation",
 ];
 
 beforeAll(async () => {
