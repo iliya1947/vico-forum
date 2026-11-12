@@ -45,6 +45,29 @@ describe("profile route", () => {
       expect(result.init?.headers).toMatchObject({"Cache-Control":"private, no-store"});
     }
   });
+  it("serializes only neutralized inactive public profile fields, preserving canonical ID and statistics", async () => {
+    const env = setup(null);
+    env.readProfile.mockResolvedValue({
+      ...profile, identityKind: "deleted", name: "Deleted user",
+      image: null, bio: "", githubUrl: null, websiteUrl: null,
+      messageCount: 9, bestAnswerCount: 3,
+      deactivatedByUserId: "PRIVATE_DEACTIVATION_ACTOR",
+      email: "PRIVATE_USER_EMAIL",
+    } as typeof profile);
+    const result = await loader({
+      params, request: new Request("https://forum.test/en/users/owner"), context: env.context,
+    });
+    expect(env.readProfile).toHaveBeenCalledExactlyOnceWith("owner");
+    expect(result.data.profile).toEqual({
+      id: "owner", identityKind: "deleted", name: "Deleted user",
+      image: null, bio: "", githubUrl: null, websiteUrl: null,
+      joinedAt: "2026-09-01T00:00:00.000Z",
+      role: profile.role, messageCount: 9, bestAnswerCount: 3,
+    });
+    expect(result.data.privileged).toEqual({});
+    expect(result.init?.headers).toMatchObject({ "Cache-Control": "private, no-store" });
+    expect(JSON.stringify(result.data)).not.toMatch(/PRIVATE_DEACTIVATION_ACTOR|PRIVATE_USER_EMAIL/);
+  });
   it("suppresses public profile editing on an active measure but retains private own status access",async()=>{
     const env=setup("owner");
     env.context.set(userMeasureContext,{activeRestrictions:async()=>["profile.edit"]} as never);
