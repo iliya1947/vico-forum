@@ -111,3 +111,12 @@ Before any project-changing action or agent handoff, Mira must check in this ord
 - Pure neutral projection, strict allowlist and ID/state invariants, 5 A4 unit regressions; no private original name/avatar/bio/external links for inactive.
 - Personal cumulative author inspection complete. Exact-head CI #43157355266 **SUCCESS** (2242 app; 700 native PG17; 69-table parity).
 - Next Mira A4 checkpoint/scope review; no Lev review, no A5/B+ assignment, no merge.
+
+## 2026-11-12 — SA04-A4 checkpoint review: CHANGES REQUIRED
+
+- Reviewed cumulative Draft #328 exact head `11652f64df234e10bb3783fe93c8e8b3073be262`.
+- **SA04-A4-MIRA-01:** `projectPublicAccountIdentity` accepts deactivated lifecycle state when retention is merely later than deactivation; canonical A1 contract requires retention >= deactivation + one UTC calendar year.
+- This violates A4's explicit fail-closed requirement for inconsistent lifecycle state.
+- Exact-head CI #43157355266 is SUCCESS but does not prove this invariant.
+- Return only this bounded correction to Lira. No A5/B+, Lev review or merge before a new stable head and repeat Mira checkpoint review.
+
