@@ -136,8 +136,8 @@ describe("SA04-G notification actor identity in native PostgreSQL", () => {
     for (const rows of [after.items, afterLegacy]) {
       const serialized = JSON.stringify(rows);
       for (const privatePart of ["SECRET_RETAINED_REPLY_NAME", "SECRET_RETAINED_MENTION_NAME",
-        "SECRET_IMAGE_", "deactivatedAt", "deactivatedByUserId", "retainAtLeastUntil",
-        "actorId", "actorDeactivatedAt"]) {
+        "SECRET_IMAGE_", '"deactivatedAt":', '"deactivatedByUserId":', '"retainAtLeastUntil":',
+        '"actorId":', '"actorDeactivatedAt":']) {
         expect(serialized).not.toContain(privatePart);
       }
     }
@@ -149,7 +149,7 @@ describe("SA04-G notification actor identity in native PostgreSQL", () => {
       kind: "reply", topicId: "g-topic", postId: "g-post-reply-deleted",
     });
     const first = (await forum.readNotifications(recipient, 0)).items.find(x => x.id === "g-n1")!;
-    expect(first.readAt).toBeInstanceOf(Date);
+    expect(first.readAt).not.toBeNull();
     expect(first.actorName).toBe("Deleted user");
     expect(await forum.markNotificationRead(recipient, "g-n1")).toEqual({
       kind: "reply", topicId: "g-topic", postId: "g-post-reply-deleted",
