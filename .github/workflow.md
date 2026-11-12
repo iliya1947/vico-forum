@@ -1,14 +1,14 @@
 # Admin panel — current workflow
 
 - Service PR **#251**; merged SA04-A1 main/base `593a03964b8407b249f7c9f5eb117ddb8b07736d`. SA04-A2/A3/A4/B/C1/C2/C3a/C3b **Mira checkpoint PASS**; A4-MIRA-01 CLOSED.
-- **Current checkpoint: SA04-C3b Mira checkpoint PASS on cumulative Draft #328 exact head `6c30b6f5a51e17f3a4722e677e60d8c5150e6baf`; 0 confirmed current-scope C3b defects. Lira STOP.**
-- [Cumulative Draft implementation PR #328](https://github.com/iliya1947/vico-forum/pull/328): stable exact implementation head **`6c30b6f5a51e17f3a4722e677e60d8c5150e6baf`**, base/current main **`593a03964b8407b249f7c9f5eb117ddb8b07736d`**, **27 changed files**, open/Draft/unmerged.
-- **C3b confirmed:** canonical Tag topic summaries and Search results use the accepted same-row A4 Deleted-user projection before public DTO construction; active authors remain unchanged. Canonical loaders explicitly allowlist current public fields and presentation refuses raw deleted names.
-- **Semantics confirmed unchanged:** Tag identity/membership/newest-first order/title/post count/created time/public location/attached tags; Search NFKC+whitespace normalization, empty/max-length boundary, title/tag/post matching, match-rank/activity/topic-id ordering, limit, source locale/post count/public location/attached tags.
-- **Review evidence:** C3b delta from accepted C3a head is exactly six files. Direct PG17 regressions cover title/tag/body matches, normalization, limit, order/count/tags/location and active/deactivated identity changes; EN/HE route/DOM tests cover serialized allowlists, title direction, links/counts and raw-fixture defense.
-- Independently rechecked exact-head runs: CI #43220966986, SA03 #43220967370, SA01 #43220967022 and AP10 #43220967091 are all completed **SUCCESS** on exact `6c30b6f5...`.
-- **PASS — 0 confirmed current-scope C3b defects.** #328 remains cumulative Draft; no Lev review/merge at this checkpoint.
-- **No active agent assignment.** Next bounded continuation is **C3c: authenticated Unread topic-author summaries**. C3d Help and later SA04 work remain unassigned.
+- **Current checkpoint: SA04-C3c assigned to Lira.**
+- Continue cumulative [Draft implementation PR #328](https://github.com/iliya1947/vico-forum/pull/328) from accepted stable exact head **`6c30b6f5a51e17f3a4722e677e60d8c5150e6baf`**; base/current main **`593a03964b8407b249f7c9f5eb117ddb8b07736d`**. Keep PR open/Draft/unmerged.
+- **C3c bounded result:** neutralize inactive **topic-author identity only** in canonical authenticated **Unread topic summaries**, including the existing `/unread` loader/presentation boundary, reusing accepted A4 Deleted-user identity. Active authors stay unchanged; raw inactive identity/lifecycle must not cross the Unread DTO/serialization/DOM.
+- Current seams: `DrizzleForumRepository.readUnreadForUser`, `app/routes/unread.tsx`, `UnreadView`. The existing section-page consumer uses only topic `id/state`; preserve it without widening C3c.
+- **Preserve Unread semantics:** authenticated 401 boundary, new-vs-unread classification, first-unread/latest-post IDs, unread count, activity timestamp/order, title and public category/section projection.
+- Completion: focused direct PostgreSQL + authenticated route/presentation regressions for mixed active/deactivated authors while preserving read-state fields/order; mandatory personal author inspection; applicable exact-head checks; publish stable head/evidence; **Lira STOP for Mira checkpoint review**.
+- **Explicit outside C3c:** C3d Help summaries, notifications, post history, Admin Users, mentions, online presence, auth/session enforcement, writers/deactivation action, SA05+, Stage6/production, #315 remediation, docs closeout and merge.
+- Lira is the only active implementer. Lev/Mark remain unassigned; no independent review or merge at this checkpoint.
 
 ## Mandatory author verification
 
