@@ -1,15 +1,15 @@
 # Admin panel — current workflow
 
-- Service PR **#251**; accepted SA04-A1 main/base `593a03964b8407b249f7c9f5eb117ddb8b07736d`. SA04-A2/A3/A4/B/C1/C2/C3a/C3b/C3c **Mira checkpoint PASS**; A4-MIRA-01 CLOSED.
-- **Current checkpoint: SA04-C3d1 implementation author-complete; Лира STOP. Next: Mira bounded C3d1 checkpoint/scope review.**
-- Cumulative [Draft implementation PR #328](https://github.com/iliya1947/vico-forum/pull/328), **stable exact head `f503fbc8796d4751ff95e4a54534da5fa4ee03bb`**, same main/base, 29 changed files, open/Draft/unmerged.
-- **Only C3d1 delivered:** `readHelpSolutionsPage` common Help question-summary family (All/Open/Active/Solved/Mine/Want-to-help and Needs-attention reader mode) now projects same-row A1 author lifecycle through accepted A4 Deleted-user public identity; active authors unchanged. `app/routes/category.tsx` canonical Help question serialization allowlists safe fields and defensively masks deleted name, while `HelpQuestionCards` localizes `deletedUser`.
-- Preserved Help mode/filter/attention eligibility, auth/permission boundaries, reply counts, solution/best-answer/moderation/quality/duplicate state, ordering, bounds, tags, dates and links. No new query/schema/writer. `readHelpSolutionsForMe` query **not changed** and remains C3d2; Similar questions and attention-case submitter identities excluded.
-- Focused direct PostgreSQL cross-mode tests and EN/HE category Help route/DOM tests passed, including raw-name/lifecycle injection. Historical Help-attention PG fixture adds already-existing A1 migration `0065` needed for joined lifecycle columns; no product migration.
-- Author reviewed C3d1 six-commit/six-file delta, current 29-file cumulative inventory and actual SQL/route/UI/tests. No confirmed current-scope C3d1 defect; this is not Mira/Lev independent review.
-- **Exact-head checks all SUCCESS:** [CI #43230069989](https://github.com/iliya194/vico-forum/actions/runs/43230069989) 2258 app/707 native PG17, 69-table schema manifest, lint/typecheck/build/Worker local smoke; [SA03 #43230069918](https://github.com/iliya194/vico-forum/actions/runs/43230069918), [SA01 #43230069974](https://github.com/iliya194/vico-forum/actions/runs/43230069974), [AP10 #43230070017](https://github.com/iliya194/vico-forum/actions/runs/43230070017) Chromium SUCCESS (AP10 all four jobs).
-- **Next action for Mira only:** independently review this bounded C3d1 on exact head, record PASS or concrete confirmed current-scope defects, then decide a separate future assignment. Лира, Лёва and Марк have no new active task; no merge.
-- **Outside C3d1:** C3d2 For-me, later readers/writers/controls, SA05+, Stage6/production, #315, documentation closeout and merge.
+- Service PR **#251**; accepted SA04-A1 main/base `593a03964b8407b249f7c9f5eb117ddb8b07736d`. SA04-A2/A3/A4/B/C1/C2/C3a/C3b/C3c/C3d1 **Mira checkpoint PASS**; A4-MIRA-01 CLOSED.
+- **Current checkpoint: SA04-C3d1 Mira checkpoint PASS on cumulative Draft #328 exact head `f503fbc8796d4751ff95e4a54534da5fa4ee03bb`; 0 confirmed current-scope C3d1 defects. Lira STOP.**
+- Cumulative [Draft implementation PR #328](https://github.com/iliya1947/vico-forum/pull/328): stable exact implementation head **`f503fbc8796d4751ff95e4a54534da5fa4ee03bb`**, base/current main **`593a03964b8407b249f7c9f5eb117ddb8b07736d`**, **29 changed files**, open/Draft/unmerged.
+- **C3d1 confirmed:** shared `readHelpSolutionsPage` family (All/Open/Active/Solved/Mine/Want-to-help/Needs-attention) carries the joined topic author's A1 lifecycle tuple and applies accepted A4 projection before Help question-summary DTO construction. Active authors remain unchanged.
+- Canonical category Help loader explicitly allowlists existing question fields, masks marked deleted names and preserves optional attention state/timestamps; `HelpQuestionCards` localizes `deletedUser` even for adversarial raw marked names.
+- **Semantics confirmed unchanged:** mode eligibility, route auth/permission boundaries, solution/answers/quality/relation filters, attention visibility, reply count, best-answer/moderation/needs-details/duplicate state, activity ordering, mode limits and tags.
+- C3d1 delta from accepted C3c head is exactly six files. Native PG regression covers mixed active/deactivated authors across representative shared modes and filters while preserving selected rows/order/state; EN/HE route/DOM regression covers safe serialization, state/tags/links/RTL and raw-fixture defense. Historical Help-attention fixture only adds already-existing A1 migration `0065`.
+- Independently rechecked exact-head runs: CI #43230069989, SA03 #43230069918, SA01 #43230069974 and AP10 #43230070017 are all completed **SUCCESS** on exact `f503fbc...`.
+- **PASS — 0 confirmed current-scope C3d1 defects.** #328 remains cumulative Draft; no Lev review/merge at this checkpoint.
+- **C3d2 remains future work, not a C3d1 defect:** separate `readHelpSolutionsForMe` author projection is untouched and still unassigned. No active agent assignment.
 
 ## Mandatory author verification
 
