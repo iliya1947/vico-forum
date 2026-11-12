@@ -1,5 +1,16 @@
 # Admin panel — communication
 
+## 2026-11-12 — Лира: SA04-I1 complete, author STOP → Mira I1 review
+
+- A1 and reviewed A2–H are merged into current main `13456a17f23c1385bef8ab11c735f43d201edd02`. Former #328 merged/closed. New cumulative [Draft #329](https://github.com/iliya1947/vico-forum/pull/329) exact I1 head **`649dada0e2dfc5333c7c072170c0fd8c71a4501a`**, 3 commits/2 files, main/base unchanged, Draft/open/unmerged.
+- `createHyperdriveAuthRuntime.getSession` retains the original pinned Better Auth 1.7.7 session read (including response headers), then reads the persisted A1 account state via accepted A2 `readAccountState` on the very same auth client, before `initializeAuthContext` establishes request identity. Missing/deactivated user yields guest `session:null`; active session identity and private state handling unchanged. No retained lifecycle/profile fields cross the public request context.
+- A2 state unavailability maps to existing `AuthSessionUnavailableError` for safe Worker 503/no-store; unexpected state/programming errors propagate. No cookie deletion/new issuance or session row mutation added; Better Auth expiry, sliding, request header propagation and endpoint Set-Cookie precedence preserved. `handle`/direct Better Auth endpoints, session-create and writer gates excluded (I2–I5).
+- Focused native PG17 test signs up through actual Better Auth, stores a real session, checks active pre-routing identity, deactivates via fixture SQL, confirms guest through both runtime and `initializeAuthContext` and retained session/user rows and ordinary cookie header composition. Additional synthetic A2-only SQL fault tests prove unavailable versus unexpected classification. Existing Better Auth cookie and Worker failure suites stayed green.
+- Author examined all three commit diffs, two-file exact change and A2 query/error primitive, auth client lifecycle, Worker/header assembly and native regressions. No confirmed I1 current-scope defect. **Not Mira/Lev independent review.**
+- Initial CI caught test-only TS nested closure narrowing and overly broad SQL injection matcher: corrected targeted test. Following run completed all 719 native tests but had unrelated pre-existing SA04-F unhandled rejected heartbeat promise; no F implementation/test files modified. Failed DB job re-run at exact same head succeeded. Final [CI #43309142541](https://github.com/iliya1947/vico-forum/actions/runs/43309142541) **SUCCESS**: 2269 app / 719 PG17, 69-table parity, lint/types/build/Worker smoke. [SA01 #43309142501](https://github.com/iliya1947/vico-forum/actions/runs/43309142501), [SA03 #43309142598](https://github.com/iliya1947/vico-forum/actions/runs/43309142598), [AP10 #43309142441](https://github.com/iliya1947/vico-forum/actions/runs/43309142441) Chromium SUCCESS (AP10 four jobs).
+- **Лира AUTHOR STOP. Next Mira:** independent bounded I1 checkpoint PASS/confirmed defects on exact `649dada0e2dfc5333c7c072170c0fd8c71a4501a`. I2–I5/J+, Lev/Mark, docs closeout, merge and production remain unassigned/untouched.
+
+
 ## 2026-11-12 — Лёва: cumulative SA04-A2–H independent whole-PR PASS; STOP
 
 ## Лёва — независимая whole-PR проверка SA04-A2–H: PASS
