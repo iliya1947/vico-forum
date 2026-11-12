@@ -32,9 +32,12 @@ export function ProfileView({ locale, profile, isSelf = false, canEditProfile = 
   const pending = navigation.state === "submitting" && navigation.formData?.get("intent") === "save-profile";
   const roleKey = profile.role.isSystem ? ({ user: "profileRoleUser", moderator: "profileRoleModerator", admin: "profileRoleAdmin" } as const)[profile.role.slug as "user" | "moderator" | "admin"] : undefined;
   const role = roleKey ? t(roleKey) : profile.role.displayName;
-  const publicName = profile.identityKind === "deleted" ? t("deletedUser") : profile.name;
-  const github = safeHttpUrl(profile.githubUrl);
-  const website = safeHttpUrl(profile.websiteUrl);
+  const isDeleted = profile.identityKind === "deleted";
+  const publicName = isDeleted ? t("deletedUser") : profile.name;
+  const avatarImage = isDeleted ? null : profile.image;
+  const publicBio = isDeleted ? "" : profile.bio;
+  const github = safeHttpUrl(isDeleted ? null : profile.githubUrl);
+  const website = safeHttpUrl(isDeleted ? null : profile.websiteUrl);
   // The parent HeaderAuth local state may lag behind a newly loaded actor during SPA
   // navigation. Hide a new snapshot until viewers match; invalidate permanently only
   // after that same snapshot has been presented to its authenticated viewer.
@@ -61,9 +64,9 @@ export function ProfileView({ locale, profile, isSelf = false, canEditProfile = 
     <nav className="profile-breadcrumb" aria-label={t("breadcrumbsLabel")}><Link to={forumIndexPath(locale)}>{t("forumHomeNav")}</Link><span aria-hidden="true"> / </span><span>{t("profileHeading")}</span></nav>
     <section className="profile-card" aria-labelledby="profile-name">
       <header className="profile-identity">
-        <ForumAvatar name={publicName} image={profile.image} className="profile-avatar" />
+        <ForumAvatar name={publicName} image={avatarImage} className="profile-avatar" />
         <div className="profile-identity-copy"><p className="profile-eyebrow">{t("profileHeading")}</p><h1 id="profile-name"><bdi dir="auto">{publicName}</bdi></h1><span className="profile-role" dir="auto">{role}</span></div>
-        {currentIsSelf && canEditProfile && !editing && <Link className="profile-button" to={`${path}?edit=1`}>{t("profileEdit")}</Link>}
+        {currentIsSelf && canEditProfile && !isDeleted && !editing && <Link className="profile-button" to={`${path}?edit=1`}>{t("profileEdit")}</Link>}
       </header>
       {currentIsSelf ? <nav>
         <Link to={ownMeasuresPath(locale)}>{t("measuresOwn")}</Link>
@@ -77,7 +80,7 @@ export function ProfileView({ locale, profile, isSelf = false, canEditProfile = 
         <div><dt>{t("profileBestAnswers")}</dt><dd>{new Intl.NumberFormat(locale).format(profile.bestAnswerCount)}</dd></div>
       </dl>
       {currentIsSelf && saved && !editing && <p className="profile-feedback" role="status">{t("profileSaved")}</p>}
-      {editing && currentIsSelf && canEditProfile ? <Form className="profile-form" method="post" action={`${path}?edit=1`} aria-label={t("profileEdit")} aria-busy={pending}>
+      {editing && currentIsSelf && canEditProfile && !isDeleted ? <Form className="profile-form" method="post" action={`${path}?edit=1`} aria-label={t("profileEdit")} aria-busy={pending}>
         <input type="hidden" name="intent" value="save-profile" />
         {visibleFeedback && <p className="profile-feedback is-error" role="alert">{t(visibleFeedback.error === "invalid" ? "profileInvalid" : `profileError_${visibleFeedback.error}`)}</p>}
         <label htmlFor="profile-bio">{t("profileBio")}</label><p id="profile-bio-hint">{t("profileBioHint")}</p>
@@ -87,7 +90,7 @@ export function ProfileView({ locale, profile, isSelf = false, canEditProfile = 
         <label htmlFor="profile-website">{t("profileWebsite")}</label><p id="profile-website-hint">{t("profileWebsiteHint")}</p>
         <input id="profile-website" name="websiteUrl" type="url" defaultValue={fields.websiteUrl ?? ""} placeholder="https://example.com" maxLength={PROFILE_URL_LIMIT} aria-describedby="profile-website-hint" dir="ltr" />
         <div className="profile-form-actions"><button className="profile-button" type="submit" disabled={pending}>{t(pending ? "profileSaving" : "profileSave")}</button><Link to={path}>{t("profileCancel")}</Link></div>
-      </Form> : <div className="profile-about"><h2>{t("profileBio")}</h2><p className={profile.bio ? "profile-bio" : "profile-empty"} dir="auto">{profile.bio || t("profileNoBio")}</p>
+      </Form> : <div className="profile-about"><h2>{t("profileBio")}</h2><p className={publicBio ? "profile-bio" : "profile-empty"} dir="auto">{publicBio || t("profileNoBio")}</p>
         {(github || website) && <nav className="profile-links" aria-label={t("profileLinks")}>{github && <a href={github} rel="nofollow ugc noreferrer">GitHub ↗</a>}{website && <a href={website} rel="nofollow ugc noreferrer">{t("profileWebsite")} ↗</a>}</nav>}
       </div>}
     </section>
