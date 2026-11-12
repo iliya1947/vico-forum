@@ -3,6 +3,20 @@
 Служебный PR: #251. Оперативное состояние: [workflow.md](./workflow.md). Общий контракт: [ADMIN_PANEL_IMPLEMENTATION_PLAN.md](../ADMIN_PANEL_IMPLEMENTATION_PLAN.md).
 
 
+## 2026-11-12 — Mira: SA04-C3d split; C3d1 shared Help summaries assigned to Lira
+
+- C3c remains Mira checkpoint-PASS on cumulative Draft #328 exact head `35bbf78a91d75818318f83ddc7413a69ddc001aa`; current main/base remains `593a03964b8407b249f7c9f5eb117ddb8b07736d`.
+- Granularity check found original C3d too broad for one Lira handoff: most Help question-summary modes share `readHelpSolutionsPage`, while `readHelpSolutionsForMe` has a separate ranking/query path. Operational split:
+  - **C3d1:** shared `readHelpSolutionsPage` family — All/Open/Active/Solved/Mine/Want-to-help plus Needs-attention reader behavior and canonical category Help serialization/presentation.
+  - **C3d2:** separate `readHelpSolutionsForMe` personalized query; unassigned.
+- **Only C3d1 is assigned.** Inactive topic-author identity must use accepted A4 Deleted-user projection before Help question-summary DTO return; active author names remain unchanged and raw lifecycle/private identity must not escape.
+- Preserve mode/filter/attention eligibility, answer/reply counts, solved/best-answer/moderation/quality/duplicate state, created/activity ordering, per-mode limits and tags. Route authentication/authorization/filter semantics are not to be redesigned.
+- Category Help loader/view is the existing shared presentation boundary: deleted marker must be masked/localized without changing current public question fields. Similar-question results do not contain author identity and are excluded.
+- Attention-case submitter names are a different identity surface and are excluded from C3d1. C3d2 For-me is explicitly excluded despite sharing the category UI.
+- Completion requires focused direct PG coverage across representative shared modes plus preservation of mode/filter/order/state invariants, category Help route/DOM defense, mandatory author inspection, applicable exact-head checks, stable head/evidence and **Lira STOP for Mira C3d1 review**.
+- Lev/Mark remain unassigned; no merge/docs/Stage6/#315 work.
+
+
 ## 2026-11-12 — Mira: SA04-C3c checkpoint review PASS
 
 - Reviewed cumulative Draft #328 exact stable head `35bbf78a91d75818318f83ddc7413a69ddc001aa` against the bounded authenticated-Unread assignment; base/current main remains `593a03964b8407b249f7c9f5eb117ddb8b07736d`.
