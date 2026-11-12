@@ -711,3 +711,141 @@ describe("SA04-C3c canonical authenticated Unread topic authors", () => {
     }
   });
 });
+
+describe("SA04-C3d1 shared Help question-summary author identities", () => {
+  it("preserves shared mode eligibility, filtering, state, order and tags while removing deactivated author identity", async () => {
+    const entries = [
+      { id: "profile-c3d1-open", authorId: "profile-owner", at: "2026-11-12T10:00:00Z" },
+      { id: "profile-c3d1-solved", authorId: "profile-owner", at: "2026-11-11T10:00:00Z" },
+      { id: "profile-c3d1-helper", authorId: "profile-helper", at: "2026-11-10T10:00:00Z" },
+      { id: "profile-c3d1-active", authorId: "profile-newcomer", at: "2026-11-09T10:00:00Z" },
+    ] as const;
+    for (const entry of entries) {
+      await repository.createTopicWithInitialPost({
+        id: entry.id, sectionId: HELP_SOLUTIONS_SERVICE_SECTION_ID, authorId: entry.authorId,
+        titleRevision: {
+          id: `${entry.id}-title`, originalContent: `Published Help title ${entry.id}`, sourceLocale: "he",
+        },
+        initialPost: {
+          id: `${entry.id}-initial`, topicId: entry.id, authorId: entry.authorId,
+          bodyRevision: { id: `${entry.id}-body`, originalContent: "Published Help question body", sourceLocale: "en" },
+        },
+        tags: [{ key: "c3d1-shared", name: "C3d1 shared" }],
+      });
+      await client.query("update forum_topics set created_at=$2::timestamptz where id=$1", [entry.id, entry.at]);
+      await client.query("update forum_posts set created_at=$2::timestamptz where topic_id=$1", [entry.id, entry.at]);
+    }
+    await reply("profile-c3d1-open-reply", "profile-c3d1-open", "profile-helper");
+    await reply("profile-c3d1-solved-reply", "profile-c3d1-solved", "profile-helper");
+    await client.query("update forum_posts set created_at=$2::timestamptz where id=$1", [
+      "profile-c3d1-open-reply", "2026-11-12T11:00:00Z",
+    ]);
+    await client.query("update forum_posts set created_at=$2::timestamptz where id=$1", [
+      "profile-c3d1-solved-reply", "2026-11-11T11:00:00Z",
+    ]);
+    await repository.selectBestAnswer("profile-c3d1-solved", "profile-c3d1-solved-reply", "profile-owner", "own");
+    await repository.markTopicSolved("profile-c3d1-solved", "profile-owner", "own");
+    await client.query("update forum_posts set solution_moderation_status='needs-review' where id=$1", [
+      "profile-c3d1-solved-reply",
+    ]);
+    await client.query("update forum_topics set needs_details=true where id=$1", ["profile-c3d1-helper"]);
+
+    const ownIds = new Set<string>(entries.map((entry) => entry.id));
+    const own = (page: Awaited<ReturnType<typeof repository.readHelpSolutionsAll>>) =>
+      page!.questions.filter((question) => ownIds.has(question.id));
+    const modes = [
+      { name: "all", read: () => repository.readHelpSolutionsAll(), ids: entries.map((entry) => entry.id) },
+      { name: "open", read: () => repository.readHelpSolutionsOpen(),
+        ids: ["profile-c3d1-open", "profile-c3d1-helper", "profile-c3d1-active"] },
+      { name: "active", read: () => repository.readHelpSolutionsActive(),
+        ids: ["profile-c3d1-open", "profile-c3d1-solved"] },
+      { name: "solved", read: () => repository.readHelpSolutionsSolved(),
+        ids: ["profile-c3d1-solved"] },
+      { name: "mine", read: () => repository.readHelpSolutionsMine("profile-owner"),
+        ids: ["profile-c3d1-open", "profile-c3d1-solved"] },
+      { name: "want-to-help", read: () => repository.readHelpSolutionsWantToHelp("profile-owner"),
+        ids: ["profile-c3d1-helper", "profile-c3d1-active"] },
+      { name: "attention", read: () => repository.readHelpSolutionsNeedsAttention({}, {
+        signalKinds: ["needs-review"], appeals: false,
+      }), ids: ["profile-c3d1-solved"] },
+      { name: "no-answers", read: () => repository.readHelpSolutionsAll({ answers: "none" }),
+        ids: ["profile-c3d1-helper", "profile-c3d1-active"] },
+      { name: "has-answers", read: () => repository.readHelpSolutionsAll({ answers: "has" }),
+        ids: ["profile-c3d1-open", "profile-c3d1-solved"] },
+      { name: "needs-details", read: () => repository.readHelpSolutionsAll({ quality: "needs-details" }),
+        ids: ["profile-c3d1-helper"] },
+    ];
+    await client.query("begin");
+    try {
+      await client.query('update "user" set name=$2, image=$3 where id=$1', [
+        "profile-owner", "SECRET_C3D1_OWNER_NAME", "https://images.example.test/SECRET_C3D1_OWNER_AVATAR.png",
+      ]);
+      await client.query('update "user" set name=$2, image=$3 where id=$1', [
+        "profile-helper", "SECRET_C3D1_HELPER_NAME", "https://images.example.test/SECRET_C3D1_HELPER_AVATAR.png",
+      ]);
+      const before = await Promise.all(modes.map(async (mode) => ({
+        name: mode.name, rows: own(await mode.read()),
+      })));
+      for (const [index, mode] of modes.entries()) {
+        expect(before[index]!.rows.map((row) => row.id), mode.name).toEqual(mode.ids);
+      }
+      expect(before[0]!.rows).toMatchObject([
+        { authorName: "SECRET_C3D1_OWNER_NAME", replyCount: 1, isSolved: false },
+        { authorName: "SECRET_C3D1_OWNER_NAME", replyCount: 1, isSolved: true,
+          hasBestAnswer: true, solutionModerationStatus: "needs-review" },
+        { authorName: "SECRET_C3D1_HELPER_NAME", replyCount: 0, needsDetails: true },
+        { authorName: "profile-newcomer", replyCount: 0 },
+      ]);
+      for (const [id, actor] of [
+        ["profile-owner", "SECRET_C3D1_OWNER_DEACTIVATOR"],
+        ["profile-helper", "SECRET_C3D1_HELPER_DEACTIVATOR"],
+      ] as const) {
+        await client.query(
+          'update "user" set deactivated_at=$2::timestamptz,' +
+            ' deactivated_by_user_id=$3, retain_at_least_until=$4::timestamptz where id=$1',
+          [id, "2024-02-29T12:34:56Z", actor, "2025-02-28T12:34:56Z"],
+        );
+      }
+      const after = await Promise.all(modes.map(async (mode) => ({
+        name: mode.name, rows: own(await mode.read()),
+      })));
+      const withoutIdentity = (row: (typeof after)[number]["rows"][number]) => {
+        const { authorName, authorIdentityKind, ...published } = row;
+        void authorName;
+        void authorIdentityKind;
+        return published;
+      };
+      for (const [index, mode] of modes.entries()) {
+        const previous = before[index]!.rows;
+        const current = after[index]!.rows;
+        expect(current.map((row) => row.id), mode.name).toEqual(mode.ids);
+        expect(current.map(withoutIdentity), mode.name).toEqual(previous.map(withoutIdentity));
+        for (const row of current) {
+          if (row.id === "profile-c3d1-active") {
+            expect(row.authorName).toBe("profile-newcomer");
+            expect(row).not.toHaveProperty("authorIdentityKind");
+          } else {
+            expect(row).toMatchObject({ authorName: "Deleted user", authorIdentityKind: "deleted" });
+          }
+        }
+      }
+      expect(after[0]!.rows[0]).toMatchObject({
+        title: "Published Help title profile-c3d1-open",
+        tags: [{ key: "c3d1-shared", name: "C3d1 shared" }],
+        replyCount: 1, isSolved: false,
+      });
+      expect(after[6]!.rows[0]!.attention).toMatchObject({ reviewRequired: true });
+      const serialized = JSON.stringify(after);
+      for (const secret of [
+        "SECRET_C3D1_OWNER_NAME", "SECRET_C3D1_HELPER_NAME",
+        "SECRET_C3D1_OWNER_AVATAR", "SECRET_C3D1_HELPER_AVATAR",
+        "SECRET_C3D1_OWNER_DEACTIVATOR", "SECRET_C3D1_HELPER_DEACTIVATOR",
+        "2024-02-29", "2025-02-28",
+      ]) expect(serialized).not.toContain(secret);
+      expect(Object.keys(after[0]!.rows[0]!)).not.toContain("authorDeactivatedAt");
+      expect(Object.keys(after[6]!.rows[0]!)).not.toContain("authorRetainAtLeastUntil");
+    } finally {
+      await client.query("rollback");
+    }
+  });
+});
