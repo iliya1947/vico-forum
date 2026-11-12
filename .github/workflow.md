@@ -1,13 +1,13 @@
 # Admin panel — current workflow
 
-- Service PR **#251**; merged A1 main/base `593a03964b8407b249f7c9f5eb117ddb8b07736d`.
-- **Current checkpoint: SA04-A2–H implementation gate CLOSED — PR #328 Ready for Owner merge on exact reviewed head `0a917b6f4f55f991bea6e6031b43a0c4f0dc2f85`.**
-- [Implementation PR #328](https://github.com/iliya1947/vico-forum/pull/328), exact reviewed head **`0a917b6f4f55f991bea6e6031b43a0c4f0dc2f85`**, 49 changed files; open/**Ready**/unmerged. A1 is the accepted merged baseline.
+- Service PR **#251**; current main/base `13456a17f23c1385bef8ab11c735f43d201edd02`; SA04-A1 and reviewed A2–H are merged.
+- **Current checkpoint: SA04-A2–H merged and synchronized to main `13456a17f23c1385bef8ab11c735f43d201edd02`.** No active implementation assignment; next continuation scopes SA04-I separately.
+- [Implementation PR #328](https://github.com/iliya1947/vico-forum/pull/328) **merged** from reviewed head `0a917b6f4f55f991bea6e6031b43a0c4f0dc2f85`; merge commit/current main `13456a17f23c1385bef8ab11c735f43d201edd02`. A1 remains the accepted merged baseline.
 - Independent report: [#6835789162](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6835789162). A4-MIRA-01 CLOSED; no open A2–H findings.
 - Delivered slice: AccountState read/predicate/transaction-lock primitives and neutral public identity foundation; profile/topic/current-post/category/section/discovery/Help/For-me/Users/mentions/online/notification/history consumers. Schema/dependencies unchanged. Stable IDs, content/history, membership/order/counts and independent private admissions preserved.
 - Lev independent local checks: **2269/2269 application tests (184 files), 106/106 native tests (11 touched files), fresh build, clean disposable migrations, 69-table manifest parity and Drizzle metadata PASS**. Original before/after direct-reader comparison and Chromium/real Better Auth/local Worker/PG17 probes PASS: 36 main records + 5 focused directory/private-composition records.
 - Exact-head remote CI #43296996996, SA01 #43296997261, SA03 #43296997015 and AP10 #43296997445 independently rechecked SUCCESS. Remote full native 717 is distinct from Lev local 106.
-- **Next action: Owner merge of #328.** Lev/Lira/Mark STOP. SA04-I remains unassigned and must not be added to #328.
+- **Next continuation:** scope/granularity gate for SA04-I from the new main. Lev/Lira/Mark remain STOP until a new bounded assignment is recorded.
 - PASS is **A2–H only**, not whole SA04: no I+ auth/session closure, J–R writer integration, S full enforcement closure, SA05/deactivate command, docs closeout, merge, Stage6/production or #315 remediation accepted/started here.
 - User permission to publish review reports and service updates persists throughout SA04: “Разрешаю на протяжение всего SA-04”.
 
@@ -296,3 +296,13 @@ Before any project-changing action or agent handoff, Mira must check in this ord
 - Under the Lev-review granularity rule, #328 is frozen: do not append SA04-I+ and force repeat review of A2–H.
 - No docs closeout is started because the overall SA04 package is not complete. No production/Stage6 action.
 - **Next action: Owner merge #328.** After merge, synchronize main and only then scope the next SA04-I enforcement implementation separately.
+
+
+## 2026-11-12 — SA04-A2–H post-merge synchronization
+
+- Verified #328 merged from the exact reviewed implementation head `0a917b6f4f55f991bea6e6031b43a0c4f0dc2f85`.
+- Merge commit and current `main`: `13456a17f23c1385bef8ab11c735f43d201edd02`.
+- Reviewed SA04-A2–H lifecycle/public-projection slice is now delivered in repository main together with previously merged A1.
+- Permanent docs remain intentionally deferred until full SA04 closeout; current source-of-truth still describes SA04 as future and must not be silently treated as already updated.
+- No SA04-I implementation, SA05+, Stage6/production or #315 remediation is started by this synchronization.
+- Next continuation performs the SA04-I granularity/scope gate from current main before any Lira handoff.
