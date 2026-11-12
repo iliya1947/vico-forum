@@ -383,7 +383,7 @@ export interface ForumTopicPage extends ForumTopic {
   posts: ForumThreadPost[];
 }
 
-/** Project only the public topic-page author fields from a single joined user row. */
+/** Project a public forum author from identity and lifecycle fields of one joined user row. */
 function projectForumPublicAuthor(row: {
   authorId: string;
   authorName: string;
@@ -2620,7 +2620,7 @@ export class DrizzleForumRepository {
         sectionId: forumTopics.sectionId,
         id: forumTopics.id,
         title: forumTopicTitleRevisions.originalContent,
-        authorId: user.id, authorName: user.name,
+        authorId: forumTopics.authorId, authorName: user.name,
         authorDeactivatedAt: user.deactivatedAt, authorDeactivatedByUserId: user.deactivatedByUserId,
         authorRetainAtLeastUntil: user.retainAtLeastUntil,
         activityAt: sql`greatest(
@@ -2696,7 +2696,7 @@ export class DrizzleForumRepository {
         sectionId: forumTopics.sectionId,
         id: forumTopics.id,
         title: forumTopicTitleRevisions.originalContent,
-        authorId: user.id, authorName: user.name,
+        authorId: forumTopics.authorId, authorName: user.name,
         authorDeactivatedAt: user.deactivatedAt, authorDeactivatedByUserId: user.deactivatedByUserId,
         authorRetainAtLeastUntil: user.retainAtLeastUntil,
         pinnedAt: forumTopicPins.pinnedAt,
@@ -2804,7 +2804,7 @@ export class DrizzleForumRepository {
         revisionId: forumTopicTitleRevisions.id,
         originalContent: forumTopicTitleRevisions.originalContent,
         sourceLocale: forumTopicTitleRevisions.sourceLocale,
-        authorId: user.id, authorName: user.name,
+        authorId: forumTopics.authorId, authorName: user.name,
         authorDeactivatedAt: user.deactivatedAt, authorDeactivatedByUserId: user.deactivatedByUserId,
         authorRetainAtLeastUntil: user.retainAtLeastUntil,
         postCount: sql<number>`count(distinct ${forumPosts.id})::int`,
