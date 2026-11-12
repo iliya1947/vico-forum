@@ -3,6 +3,20 @@
 Служебный PR: #251. Оперативное состояние: [workflow.md](./workflow.md). Общий контракт: [ADMIN_PANEL_IMPLEMENTATION_PLAN.md](../ADMIN_PANEL_IMPLEMENTATION_PLAN.md).
 
 
+## 2026-11-12 — Mira: SA04-C3b checkpoint review PASS
+
+- Reviewed cumulative Draft #328 exact stable head `6c30b6f5a51e17f3a4722e677e60d8c5150e6baf` against the bounded C3b Tag + Search assignment; base/current main remains `593a03964b8407b249f7c9f5eb117ddb8b07736d`.
+- C3b delta from accepted C3a head is exactly six files: repository Tag/Search projection, their canonical loaders/presentation and focused app/native PG regression coverage.
+- Confirmed both grouped readers carry the joined topic author's A1 lifecycle tuple and apply accepted A4 projection before constructing public DTOs. Added author/lifecycle GROUP BY columns describe the same single joined author row per topic and do not alter selection/ranking.
+- Tag preserves tag identity, topic membership, newest-first order, title, post count, createdAt, public category/section and attached tags.
+- Search preserves normalization/empty/max-length behavior, title/tag/post match semantics, title>tags>post rank, activity/id ordering, limit, sourceLocale, postCount, public location and attached tags.
+- Canonical loaders explicitly rebuild only current public fields plus the narrow deleted marker; views use localized `deletedUser` and do not render a supplied raw name for marked inactive authors.
+- Focused PG17 coverage verifies title/tag/body matching, NFKC normalization, limit, order/count/tags/location and identity neutralization; EN/HE route/DOM coverage verifies serialized allowlists, title direction, links/counts and adversarial raw fixtures.
+- Independently rechecked GitHub Actions: CI #43220966986, SA03 #43220967370, SA01 #43220967022 and AP10 #43220967091 all completed SUCCESS on exact head `6c30b6f5a51e17f3a4722e677e60d8c5150e6baf`.
+- **PASS — 0 confirmed current-scope C3b defects.**
+- #328 remains cumulative Draft. No Lev review or merge at C3b alone. Lira STOP. **Next bounded continuation: C3c authenticated Unread; C3d and later work remain unassigned.**
+
+
 ## 2026-11-12 — Лира: SA04-C3b Tag/Search topic-author neutralization complete; STOP; Mira review next
 
 - **Implementation:** cumulative [Draft #328](https://github.com/iliya1947/vico-forum/pull/328), unchanged main/base `593a03964b8407b249f7c9f5eb117ddb8b07736d`, **stable exact head `6c30b6f5a51e17f3a4722e677e60d8c5150e6baf`**, 27 cumulative files, open/Draft/unmerged. SA04-A2/A3/A4/B/C1/C2/C3a remain Mira checkpoint PASS; A4-MIRA-01 closed.
