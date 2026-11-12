@@ -382,7 +382,7 @@ describe("SA04-C3a Popular and Unanswered topic-author projections", () => {
       "profile-c3a-recent-reply", "2026-11-12T11:10:00Z",
     ]);
     const referenceTime = new Date("2026-11-12T12:00:00Z");
-    const ownIds = new Set(entries.map((entry) => entry.id));
+    const ownIds = new Set<string>(entries.map((entry) => entry.id));
     const onlyOwn = <T extends { id: string }>(items: T[]) => items.filter((item) => ownIds.has(item.id));
     const periods = ["24h", "7d", "30d"] as const;
 
