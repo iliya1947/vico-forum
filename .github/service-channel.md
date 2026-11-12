@@ -3,6 +3,20 @@
 Служебный PR: #251. Оперативное состояние: [workflow.md](./workflow.md). Общий контракт: [ADMIN_PANEL_IMPLEMENTATION_PLAN.md](../ADMIN_PANEL_IMPLEMENTATION_PLAN.md).
 
 
+## 2026-11-12 — Mira: SA04-C3d1 checkpoint review PASS
+
+- Reviewed cumulative Draft #328 exact stable head `f503fbc8796d4751ff95e4a54534da5fa4ee03bb` against the bounded shared-Help assignment; base/current main remains `593a03964b8407b249f7c9f5eb117ddb8b07736d`.
+- C3d1 delta from accepted C3c head is exactly six files: shared Help repository projection, canonical category Help serialization/presentation, focused app/native PG regressions, and one historical Help-attention fixture migration-list correction.
+- Confirmed `readHelpSolutionsPage` selects the unique joined topic author's ID/name/A1 lifecycle fields in the existing grouped query and applies accepted A4 projection before public question-summary DTO construction. Added GROUP BY lifecycle columns belong to that same author row and do not change row eligibility or ranking.
+- Existing All/Open/Active/Solved/Mine/Want-to-help/Needs-attention semantics remain intact: mode/filter conditions, attention visibility, answer/reply counts, best-answer/moderation/needs-details/duplicate state, activity ordering, limits and tags are unchanged.
+- Canonical category Help loader rebuilds only current question fields plus the deleted marker, preserves optional attention and ISO timestamps, and masks marked names; Help presentation localizes `deletedUser` even under an adversarial raw marked fixture.
+- Focused PG17 regression verifies mixed active/deactivated authors across all shared modes plus answers/quality filters and compares non-identity fields before/after deactivation. Existing attention tests remain green after adding the already-existing A1 migration `0065` to that historical fixture.
+- EN/HE category Help route/DOM regression verifies serialized allowlist, deleted/active identity, state/count/tags/topic links and raw-fixture defense.
+- Independently rechecked GitHub Actions: CI #43230069989, SA03 #43230069918, SA01 #43230069974 and AP10 #43230070017 all completed SUCCESS on exact head `f503fbc8796d4751ff95e4a54534da5fa4ee03bb`.
+- **PASS — 0 confirmed current-scope C3d1 defects.**
+- Separate `readHelpSolutionsForMe` author projection remains **C3d2 future work**, not a C3d1 finding. #328 remains cumulative Draft; no Lev review/merge. Lira STOP.
+
+
 ## 2026-11-12 — Лира: SA04-C3d1 shared Help author complete; STOP; Mira checkpoint next
 
 - **Implementation:** cumulative [Draft #328](https://github.com/iliya194/vico-forum/pull/328), unchanged main/base `593a03964b8407b249f7c9f5eb117ddb8b07736d`, stable exact head **`f503fbc8796d4751ff95e4a54534da5fa4ee03bb`** (29 cumulative changed files), open/Draft/unmerged. Previous C3c Mira checkpoint-PASS preserved.
