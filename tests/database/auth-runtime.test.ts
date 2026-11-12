@@ -227,6 +227,129 @@ describe("Better Auth PostgreSQL runtime", () => {
       .rejects.toBeInstanceOf(AccountStateUnexpectedError);
   });
 
+  it("SA04-I2 rejects inactive actor HTTP and direct Better Auth operations, but allows own sign-out", async () => {
+    const runtime = createHyperdriveAuthRuntime(databaseUrl, env, () => authClient());
+    const signUp = async (email: string, name: string, ip: string) => {
+      const response = await runtime.handle(new Request(`${env.BETTER_AUTH_URL}/api/auth/sign-up/email`, {
+        method: "POST", headers: { "content-type": "application/json",
+          Origin: env.BETTER_AUTH_URL, "cf-connecting-ip": ip },
+        body: JSON.stringify({ email, name, password: "integration-password-123" }),
+      }));
+      expect(response.status).toBe(200);
+      const user = await response.json() as { user: { id: string } };
+      const cookie = response.headers.getSetCookie()
+        .find(value => value.includes("session_token="))?.split(";", 1)[0];
+      if (!cookie) throw new Error("Missing signup cookie");
+      return { userId: user.user.id, cookie };
+    };
+    const active = await signUp("i2-active@example.test", "Active owner", "203.0.113.95");
+    const inactive = await signUp("i2-inactive@example.test", "SECRET_INACTIVE_USER", "203.0.113.96");
+
+    const path = (name: string) => `${env.BETTER_AUTH_URL}/api/auth/${name}`;
+    const call = (name: string, cookie: string, body?: object, method = body ? "POST" : "GET") =>
+      runtime.handle(new Request(path(name), {
+        method, headers: { Cookie: cookie, Origin: env.BETTER_AUTH_URL,
+          "cf-connecting-ip": "203.0.113.97", ...(body ? { "content-type": "application/json" } : {}) },
+        ...(body ? { body: JSON.stringify(body) } : {}),
+      }));
+    expect((await call("get-session", active.cookie)).status).toBe(200);
+    expect((await call("list-sessions", active.cookie)).status).toBe(200);
+
+    const before = (await client.query<{ id: string; token: string }>(
+      'select id,token from "session" where user_id=$1', [inactive.userId],
+    )).rows;
+    expect(before).toHaveLength(1);
+    await client.query(`update "user" set deactivated_at='2026-11-12T00:00:00Z',
+      deactivated_by_user_id=$1, retain_at_least_until='2027-11-13T00:00:00Z'
+      where id=$1`, [inactive.userId]);
+
+    for (const [endpoint, body] of [
+      ["get-session", undefined],
+      ["list-sessions", undefined],
+      ["update-user", { name: "ILLEGAL_RENAME" }],
+      ["change-password", { currentPassword: "integration-password-123",
+        newPassword: "new-integration-password-123", revokeOtherSessions: false }],
+      ["link-social", { provider: "google" }],
+    ] as const) {
+      const response = await call(endpoint, inactive.cookie, body);
+      expect(response.status, endpoint).toBe(401);
+      const serialized = await response.text();
+      expect(serialized).not.toContain("SECRET_INACTIVE_USER");
+      expect(serialized).not.toContain("integration-password-123");
+      expect(serialized).not.toContain("ILLEGAL_RENAME");
+    }
+    const auth = betterAuth(betterAuthOptions(drizzle(client), env));
+    const directHeaders = new Headers({ Cookie: inactive.cookie });
+    await expect(auth.api.getSession({ headers: directHeaders })).rejects.toMatchObject({
+      status: "UNAUTHORIZED",
+    });
+    await expect(auth.api.listSessions({ headers: directHeaders })).rejects.toMatchObject({
+      status: "UNAUTHORIZED",
+    });
+    await expect(auth.api.updateUser({ headers: directHeaders, body: { name: "ILLEGAL_DIRECT_RENAME" } }))
+      .rejects.toMatchObject({ status: "UNAUTHORIZED" });
+    expect((await client.query<{ name: string }>(
+      'select name from "user" where id=$1', [inactive.userId],
+    )).rows[0]?.name).toBe("SECRET_INACTIVE_USER");
+    expect((await client.query<{ id: string; token: string }>(
+      'select id,token from "session" where user_id=$1', [inactive.userId],
+    )).rows).toEqual(before);
+
+    // Self sign-out is intentionally still available with this retained old cookie.
+    const signout = await call("sign-out", inactive.cookie, {}, "POST");
+    expect(signout.status).toBe(200);
+    expect(signout.headers.getSetCookie().some(value =>
+      value.includes("session_token") && value.includes("Max-Age=0"))).toBe(true);
+    expect((await client.query<{ id: string }>(
+      'select id from "session" where user_id=$1', [inactive.userId],
+    )).rows).toEqual([]);
+    expect((await client.query<{ name: string }>(
+      'select name from "user" where id=$1', [inactive.userId],
+    )).rows[0]?.name).toBe("SECRET_INACTIVE_USER");
+    expect((await call("get-session", active.cookie)).status).toBe(200);
+  });
+
+  it("SA04-I2 maps authenticated auth HTTP state outages to 503 and keeps unexpected failures", async () => {
+    const baseRuntime = createHyperdriveAuthRuntime(databaseUrl, env, () => authClient());
+    const signup = await baseRuntime.handle(new Request(`${env.BETTER_AUTH_URL}/api/auth/sign-up/email`, {
+      method: "POST", headers: { "content-type": "application/json",
+        Origin: env.BETTER_AUTH_URL, "cf-connecting-ip": "203.0.113.98" },
+      body: JSON.stringify({
+        name: "I2 storage test", email: "i2-outage@example.test",
+        password: "integration-password-123",
+      }),
+    }));
+    expect(signup.status).toBe(200);
+    const cookie = signup.headers.getSetCookie()
+      .find(value => value.includes("session_token="))?.split(";", 1)[0];
+    if (!cookie) throw new Error("Expected I2 session token");
+    const url = `${env.BETTER_AUTH_URL}/api/auth/list-sessions`;
+    const verifiedDatabaseUrl = databaseUrl;
+    const withFault = (error: Error) => createHyperdriveAuthRuntime(verifiedDatabaseUrl, env, () => {
+      const connection = authClient();
+      const original = connection.query.bind(connection);
+      vi.spyOn(connection, "query").mockImplementation(((...args: unknown[]) => {
+        const statement = args[0];
+        const query = typeof statement === "string" ? statement
+          : statement && typeof statement === "object" && "text" in statement
+            ? (statement as { text: unknown }).text : null;
+        if (typeof query === "string" && query.includes(" as deactivated_at")) {
+          return Promise.reject(error);
+        }
+        return Reflect.apply(original, connection, args);
+      }) as never);
+      return connection;
+    });
+    const request = () => new Request(url, { headers: { Cookie: cookie } });
+    const unavailable = Object.assign(new Error("SECRET_I2_STORAGE_FAILURE"), { code: "ECONNRESET" });
+    const response = await withFault(unavailable).handle(request());
+    expect(response.status).toBe(503);
+    expect(response.headers.get("Cache-Control")).toBe("no-store");
+    expect(await response.text()).not.toContain("SECRET_I2_STORAGE_FAILURE");
+    await expect(withFault(new TypeError("I2 unexpected state failure")).handle(request()))
+      .rejects.toBeInstanceOf(AccountStateUnexpectedError);
+  });
+
   it("keeps a new login after pre-routing cleanup of an expired session cookie", async () => {
     const runtime = createHyperdriveAuthRuntime(databaseUrl, env, () => authClient());
     const headers = { "content-type": "application/json", Origin: env.BETTER_AUTH_URL, "cf-connecting-ip": "203.0.113.40" };
