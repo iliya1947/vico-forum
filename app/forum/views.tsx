@@ -519,7 +519,7 @@ export function SearchView({
                     </span>
                     <span className="section-topic-copy">
                       <strong lang={topic.sourceLocale === "und" ? undefined : topic.sourceLocale} dir={topic.titleDirection}>{topic.title}</strong>
-                      <small>{t("startedBy", { author: topic.authorName })}</small>
+                      <small>{t("startedBy", { author: topic.authorIdentityKind === "deleted" ? t("deletedUser") : topic.authorName })}</small>
                       {topic.tags.length > 0 ? (
                         <span className="topic-tag-list" aria-label={t("topicTagsLabel")}>
                           {topic.tags.map((tag) => <span className="topic-tag" key={tag.key}>#{tag.name}</span>)}
@@ -619,7 +619,7 @@ export function TagView({
                     </span>
                     <span className="section-topic-copy">
                       <strong>{topic.title}</strong>
-                      <small>{t("startedBy", { author: topic.authorName })}</small>
+                      <small>{t("startedBy", { author: topic.authorIdentityKind === "deleted" ? t("deletedUser") : topic.authorName })}</small>
                       <span className="topic-tag-list" aria-label={t("topicTagsLabel")}>
                         {topic.tags.map((tag) => <span className="topic-tag" key={tag.key}>#{tag.name}</span>)}
                       </span>
