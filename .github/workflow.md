@@ -1,15 +1,15 @@
 # Admin panel — current workflow
 
 - Service PR **#251**; accepted SA04-A1 main/base `593a03964b8407b249f7c9f5eb117ddb8b07736d`. SA04-A2/A3/A4/B/C1/C2/C3a/C3b/C3c/C3d1 **Mira checkpoint PASS**; A4-MIRA-01 CLOSED.
-- **Current checkpoint: SA04-C3d1 Mira checkpoint PASS on cumulative Draft #328 exact head `f503fbc8796d4751ff95e4a54534da5fa4ee03bb`; 0 confirmed current-scope C3d1 defects. Lira STOP.**
-- Cumulative [Draft implementation PR #328](https://github.com/iliya1947/vico-forum/pull/328): stable exact implementation head **`f503fbc8796d4751ff95e4a54534da5fa4ee03bb`**, base/current main **`593a03964b8407b249f7c9f5eb117ddb8b07736d`**, **29 changed files**, open/Draft/unmerged.
-- **C3d1 confirmed:** shared `readHelpSolutionsPage` family (All/Open/Active/Solved/Mine/Want-to-help/Needs-attention) carries the joined topic author's A1 lifecycle tuple and applies accepted A4 projection before Help question-summary DTO construction. Active authors remain unchanged.
-- Canonical category Help loader explicitly allowlists existing question fields, masks marked deleted names and preserves optional attention state/timestamps; `HelpQuestionCards` localizes `deletedUser` even for adversarial raw marked names.
-- **Semantics confirmed unchanged:** mode eligibility, route auth/permission boundaries, solution/answers/quality/relation filters, attention visibility, reply count, best-answer/moderation/needs-details/duplicate state, activity ordering, mode limits and tags.
-- C3d1 delta from accepted C3c head is exactly six files. Native PG regression covers mixed active/deactivated authors across representative shared modes and filters while preserving selected rows/order/state; EN/HE route/DOM regression covers safe serialization, state/tags/links/RTL and raw-fixture defense. Historical Help-attention fixture only adds already-existing A1 migration `0065`.
-- Independently rechecked exact-head runs: CI #43230069989, SA03 #43230069918, SA01 #43230069974 and AP10 #43230070017 are all completed **SUCCESS** on exact `f503fbc...`.
-- **PASS — 0 confirmed current-scope C3d1 defects.** #328 remains cumulative Draft; no Lev review/merge at this checkpoint.
-- **C3d2 remains future work, not a C3d1 defect:** separate `readHelpSolutionsForMe` author projection is untouched and still unassigned. No active agent assignment.
+- **Current checkpoint: SA04-C3d2 assigned to Lira.**
+- Continue cumulative [Draft implementation PR #328](https://github.com/iliya1947/vico-forum/pull/328) from accepted stable exact head **`f503fbc8796d4751ff95e4a54534da5fa4ee03bb`**; base/current main **`593a03964b8407b249f7c9f5eb117ddb8b07736d`**. Keep PR open/Draft/unmerged.
+- **C3d2 bounded result:** neutralize inactive candidate **topic-author identity only** in the separate authenticated `readHelpSolutionsForMe` question-summary query, using the accepted A4 Deleted-user projection before DTO return. Active candidate authors remain unchanged.
+- Preserve the approved For-me product contract: authoritative current user comes only from server session; interest tags come only from persisted Help questions the user authored or participated in; candidates remain unsolved questions by other authors sharing at least one interest tag; ranking stays matched-tag count desc → latest activity desc → stable topic-id desc; interest-tag and result bounds stay 100; no-signal/no-match remains truthful empty output.
+- Preserve current combined Help filters and question fields: answers/quality/relation/solution behavior, reply count, best-answer/moderation/needs-details/duplicate state, created/activity timestamps and tags. No schema, permission, ranking or recommendation-model change.
+- Existing category Help loader/view from C3d1 is already the shared serialization/presentation boundary. C3d2 should reuse it; change presentation code only if actual C3d2 correctness requires it. Direct guest `for-me` remains 401 and URL-supplied user/tag hints must not override session-derived identity/interests.
+- Completion: focused native PostgreSQL regression proving candidate/ranking/filter/empty semantics are identical before/after author deactivation except neutral public identity; authenticated For-me loader/DOM regression for session binding, safe serialization and active/deleted rendering; mandatory personal author inspection; applicable exact-head checks; stable head/evidence; **Lira STOP for Mira C3d2 checkpoint review**.
+- **Outside C3d2:** shared Help C3d1 rework, Similar-question results, attention-case submitter identity, post history, notifications, Admin Users, mentions, online presence, auth/session enforcement, writers/deactivation action, SA05+, Stage6/production, #315, docs closeout and merge.
+- Lira is the only active implementer. Lev/Mark and later SA04 work remain unassigned.
 
 ## Mandatory author verification
 
