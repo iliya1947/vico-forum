@@ -14,7 +14,7 @@ if (!["127.0.0.1", "localhost"].includes(url.hostname) || !url.pathname.endsWith
 const schema = "forum_profiles_test";
 const client = new Client({ connectionString: databaseUrl, options: `-c search_path=${schema}` });
 const repository = new DrizzleForumRepository(drizzle(client), { cooldownMs: 0, now: () => new Date() }, historicalForumMeasureAdmission);
-const migrations = ["0000_tan_johnny_storm", "0001_seed-locales", "0002_ui_translation_storage", "0003_gorgeous_donald_blake", "0004_forum_domain_foundation", "0005_calm_proemial_gods", "0006_loving_sentinels", "0021_forum_tags", "0022_forum_reply_relationships", "0024_forum_reply_notifications", "0025_forum_topic_pins", "0026_best_answer_independent_from_solved", "0027_help_solutions_foundation", "0028_help_solution_moderation", "0029_help_question_needs_details", "0030_help_duplicate_workflow", "0031_help_user_moderation_signals", "0032_forum_profiles", "0033_forum_online_presence", "0034_forum_editor_drafts", "0035_forum_attachments_foundation", "0036_forum_attachment_security_events", "0037_forum_attachment_draft_generations", "0038_forum_attachment_cleanup_claims", "0040_post_edit_history_permissions", "0041_published_mentions", "0042_attachment_edit_snapshots"];
+const migrations = ["0000_tan_johnny_storm", "0001_seed-locales", "0002_ui_translation_storage", "0003_gorgeous_donald_blake", "0004_forum_domain_foundation", "0005_calm_proemial_gods", "0006_loving_sentinels", "0021_forum_tags", "0022_forum_reply_relationships", "0024_forum_reply_notifications", "0025_forum_topic_pins", "0026_best_answer_independent_from_solved", "0027_help_solutions_foundation", "0028_help_solution_moderation", "0029_help_question_needs_details", "0030_help_duplicate_workflow", "0031_help_user_moderation_signals", "0032_forum_profiles", "0033_forum_online_presence", "0034_forum_editor_drafts", "0035_forum_attachments_foundation", "0036_forum_attachment_security_events", "0037_forum_attachment_draft_generations", "0038_forum_attachment_cleanup_claims", "0040_post_edit_history_permissions", "0041_published_mentions", "0042_attachment_edit_snapshots", "0065_sa04_account_state_foundation"];
 beforeAll(async () => {
   await client.connect();
   await client.query(`drop schema if exists ${schema} cascade; create schema ${schema}`);
@@ -62,6 +62,57 @@ describe("persisted forum profiles", () => {
     expect(profile).not.toHaveProperty("email");
     expect(await repository.readProfile("missing")).toBeUndefined();
   });
+  it("reads active profile unchanged then removes raw identity at the canonical repository boundary", async () => {
+    await client.query("begin");
+    try {
+      const id = "profile-newcomer";
+      const before = await repository.readProfile(id);
+      expect(before).toBeDefined();
+      await client.query('update "user" set name=$2, image=$3 where id=$1', [
+        id, "SECRET_PROFILE_REAL_NAME", "https://images.example.test/SECRET_PROFILE_AVATAR.png",
+      ]);
+      await client.query(
+        "insert into forum_profiles (user_id,bio,github_url,website_url)" +
+          " values ($1,$2,$3,$4) on conflict (user_id) do update" +
+          " set bio=excluded.bio, github_url=excluded.github_url, website_url=excluded.website_url",
+        [id, "SECRET_PROFILE_BIO", "https://github.com/private-user",
+          "https://website.example.test/SECRET_PROFILE_LINK"],
+      );
+      const active = await repository.readProfile(id);
+      expect(active).toMatchObject({
+        id, name: "SECRET_PROFILE_REAL_NAME",
+        image: "https://images.example.test/SECRET_PROFILE_AVATAR.png",
+        bio: "SECRET_PROFILE_BIO", githubUrl: "https://github.com/private-user",
+        websiteUrl: "https://website.example.test/SECRET_PROFILE_LINK",
+      });
+      expect(active).not.toHaveProperty("identityKind");
+      await client.query(
+        'update "user" set deactivated_at=$2::timestamptz,' +
+          ' deactivated_by_user_id=$3, retain_at_least_until=$4::timestamptz where id=$1',
+        [id, "2024-02-29T12:34:56Z", "SECRET_DEACTIVATION_ACTOR", "2025-02-28T12:34:56Z"],
+      );
+      const deleted = await repository.readProfile(id);
+      expect(deleted).toMatchObject({
+        id, name: "Deleted user", image: null, bio: "", githubUrl: null, websiteUrl: null,
+        identityKind: "deleted", role: active!.role, joinedAt: active!.joinedAt,
+        messageCount: active!.messageCount, bestAnswerCount: active!.bestAnswerCount,
+      });
+      const serialized = JSON.stringify(deleted);
+      for (const secret of [
+        "SECRET_PROFILE_REAL_NAME", "SECRET_PROFILE_AVATAR", "SECRET_PROFILE_BIO",
+        "private-user", "SECRET_PROFILE_LINK", "SECRET_DEACTIVATION_ACTOR",
+        "profile-newcomer@private.test", "2024-02-29", "2025-02-28",
+      ]) expect(serialized).not.toContain(secret);
+      expect(Object.keys(deleted!).sort()).toEqual([
+        "id", "name", "image", "bio", "githubUrl", "websiteUrl",
+        "joinedAt", "role", "messageCount", "bestAnswerCount", "identityKind",
+      ].sort());
+    } finally {
+      await client.query("rollback");
+    }
+    expect(await repository.readProfile("missing")).toBeUndefined();
+  });
+
   it("upserts owner fields, clears optional values and rejects invalid data", async () => {
     await repository.updateProfile("profile-helper", { bio: "שלום 🙂", githubUrl: "https://github.com/octocat", websiteUrl: "https://example.com" });
     expect(await repository.readProfile("profile-helper")).toMatchObject({ bio: "שלום 🙂", githubUrl: "https://github.com/octocat", websiteUrl: "https://example.com/" });
