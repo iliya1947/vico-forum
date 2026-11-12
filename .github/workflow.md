@@ -1,7 +1,7 @@
 # Admin panel — current workflow
 
 - Service PR **#251**; merged SA04-A1 main/base `593a03964b8407b249f7c9f5eb117ddb8b07736d`. A2/A3/A4/B are **Mira checkpoint PASS**; SA04-A4-MIRA-01 CLOSED.
-- **Current checkpoint: SA04-C1 Mira checkpoint PASS on cumulative Draft #328 exact head `306319bb506bb95ddda776dbc1a0b04a9c3e8fe3`; 0 confirmed current-scope C1 defects. Lira STOP.**
+- **Current checkpoint: SA04-C2 assigned to Lira in cumulative Draft #328. C1 remains Mira checkpoint-PASS.**
 - [Cumulative Draft implementation PR #328](https://github.com/iliya1947/vico-forum/pull/328): **stable exact head `306319bb506bb95ddda776dbc1a0b04a9c3e8fe3`**, base unchanged, **21 changed files**, open/Draft/unmerged.
 - **C1 only:** `DrizzleForumRepository.readTopicPage` neutralizes both topic author and every current post author using accepted A4 lifecycle projector on each joined-user SQL row. Deactivated: stable IDs/profile URLs and published content/state/attachments preserved, public name `Deleted user`, avatar null, private raw identity/lifecycle excluded from DTO. Active and mixed-author topics unchanged. Canonical route serializes safe identity; topic UI localizes the generic label and keeps fresh identity across post-edit recovery.
 - **Regression evidence:** native PG17 secret-marker snapshots and EN/HE route/DOM/serialization tests. Added existing A1 `0065` migration to exactly three historical PostgreSQL fixtures with current topic-reader calls; restored unchanged active-topic object identity after initial application test failure.
@@ -9,7 +9,7 @@
 - **Exact-head [CI #43198894729](https://github.com/iliya1947/vico-forum/actions/runs/43198894729) SUCCESS**: 2248/2248 application, 702/702 native PG17, 69-table manifest parity, lint/typecheck/build/Worker smoke. Connected Chromium: [SA03 #43198894476](https://github.com/iliya1947/vico-forum/actions/runs/43198894476), [SA01 #43198894492](https://github.com/iliya1947/vico-forum/actions/runs/43198894492), [AP10 #43198894423](https://github.com/iliya1947/vico-forum/actions/runs/43198894423) all SUCCESS.
 - **CI caveat:** pinned DrizzleKit 0.31.10 `generate` still prints its previously seen BigInt error while returning success; independent native PostgreSQL/69-table schema manifest parity PASS, no schema or migration change in C1.
 - **Boundaries:** C2 category/section/latest/pinned lists; C3 discovery/Help summaries; post-history, notifications, Admin Users, mentions, presence; auth/session or writer enforcement, deactivation action, SA05+, Stage6/production, #315, docs closeout all untouched.
-- **Active recipient: Mira — bounded SA04-C1 checkpoint review; next step solely her review/verdict on this stable head.**
+- **Active recipient: Lira — SA04-C2 only.** Neutralize category latest/pinned and section topic-list author identities; publish stable exact head/evidence + author inspection, then STOP. C3+ unassigned.
 
 ## Mandatory author verification
 
@@ -197,4 +197,14 @@ Before any project-changing action or agent handoff, Mira must check in this ord
 - Exact-head CI #43198894729 and SA03/SA01/AP10 Chromium workflows are SUCCESS.
 - **PASS — 0 confirmed current-scope C1 defects.**
 - #328 remains cumulative Draft. Lira STOP; C2+ and Lev remain unassigned.
+
+## 2026-11-12 — SA04-C2 assigned
+
+- C1 remains Mira checkpoint-PASS on `306319bb506bb95ddda776dbc1a0b04a9c3e8fe3`; current main/base remains `593a03964b8407b249f7c9f5eb117ddb8b07736d`.
+- C2 is one bounded reader family in the current code: `readCategory` latest+pinned topics plus `readSection` topic summaries and their existing route/presentation boundary.
+- Inactive topic authors must expose only the neutral Deleted-user public name before direct DTO/serialization; raw identity/lifecycle markers stay private.
+- Topic IDs/titles/activity/pin/count/tags/read-state, selection/ranking/order and active entries remain unchanged.
+- Popular/Unanswered/Tags/Search/Unread/Help and all later readers/runtime enforcement are outside C2.
+- Continue cumulative Draft #328. Lira author-inspects, publishes stable C2 head/evidence and STOP.
+- C3+ and Lev remain unassigned.
 
