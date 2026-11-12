@@ -1,16 +1,14 @@
 # Admin panel — current workflow
 
 - Service PR **#251**; accepted SA04-A1 main/base `593a03964b8407b249f7c9f5eb117ddb8b07736d`. SA04-A2/A3/A4/B/C1/C2/C3a/C3b/C3c/C3d1/C3d2/D **Mira checkpoint PASS**; Checkpoint C complete; A4-MIRA-01 CLOSED.
-- **Current checkpoint: SA04-D Mira checkpoint PASS on cumulative Draft #328 exact head `85a95a0a46dc77ea80ab21eea5504a681ac586de`; 0 confirmed current-scope D defects. Lira STOP.**
-- Cumulative [Draft implementation PR #328](https://github.com/iliya1947/vico-forum/pull/328): stable exact implementation head **`85a95a0a46dc77ea80ab21eea5504a681ac586de`**, base/current main **`593a03964b8407b249f7c9f5eb117ddb8b07736d`**, **35 changed files**, open/Draft/unmerged.
-- **D confirmed:** `PostgresAdminUsersReader.listUsers` uses the same-row A1 lifecycle tuple and accepted A4 public projection before returning directory DTOs. Active name/image remain unchanged; deactivated entries expose stable ID, neutral `Deleted user`, null image, joined timestamp and narrow deleted marker only.
-- **Search/count confirmed safe:** PostgreSQL matches the public neutral name for inactive rows instead of retained raw `user.name`; retained old names do not return rows or affect `total`. Stable ID search, empty-search membership, literal escaped `%/_/\\`, case-insensitive matching, email exclusion, `id COLLATE "C"` keyset order, 25+lookahead paging and exact total remain unchanged.
-- Canonical `/:locale/admin/users` still gates `admin.users.read` before query parsing/private read, retains private/no-store and typed 503 behavior, and explicitly allowlists id/name/image/joinedAt/deleted marker. A malformed marked reader record cannot reintroduce raw inactive name/image/private fields.
-- `AdminUsersIndex` localizes the existing generic `deletedUser` label and supplies neutral name/null image to `ForumAvatar`; active cards, profile/authorization destinations, search/paging UI and EN/RU/HE behavior remain.
-- D delta from accepted C3d2 is exactly six files / nine commits. Focused PG17 evidence covers mixed lifecycle rows, old-name nonmatch/noncount, neutral-name and ID lookup, wildcard escaping, paging/count, active fidelity, joined timestamp and no private-field serialization. Route/DOM evidence covers defensive allowlist and localized neutral avatar/name.
-- Independently rechecked exact-head runs: CI #43267484493, SA03 #43267484249, SA01 #43267484427 and AP10 #43267484425 are all completed **SUCCESS** on exact `85a95a0a...`.
-- **PASS — 0 confirmed current-scope D defects.** #328 remains cumulative Draft; no Lev review/merge at this checkpoint.
-- No active agent assignment. Per accepted SA04 plan, next checkpoint is **E — mention discovery excludes inactive accounts before LIMIT**; it remains unassigned until the next explicit continuation.
+- **Current checkpoint: SA04-E assigned to Lira — mention discovery excludes inactive accounts before ordering/limit.**
+- Continue cumulative [Draft implementation PR #328](https://github.com/iliya1947/vico-forum/pull/328) from accepted stable exact head **`85a95a0a46dc77ea80ab21eea5504a681ac586de`**; base/current main **`593a03964b8407b249f7c9f5eb117ddb8b07736d`**. Keep PR open/Draft/unmerged.
+- **E bounded result:** existing `DrizzleForumRepository.searchMentionableUsers` must never offer a deactivated account as a mention candidate. Apply the accepted A1 active-account semantics at the authoritative database-selection boundary **before ORDER BY/LIMIT 8**.
+- Preserve current mention search contract: trimmed nonempty query, max 64, literal case-insensitive name matching with escaped `!/%/_`, ordering by name then stable user ID, limit 8, and DTO limited to stable `id` + active display `name`. Do not return a neutral Deleted-user suggestion; inactive accounts are absent from discovery.
+- Preserve `/:locale/mentions` behavior: authenticated-only 401 boundary before reader access, query validation/empty behavior, private/no-store + nosniff responses, classified storage 503 and unexpected-error propagation. Stable-ID mention insertion/published-mention semantics are unchanged.
+- Completion: focused native PostgreSQL regression with active/inactive matching users proving inactive rows are excluded before LIMIT (including inactive rows that would otherwise occupy the first eight), active order/limit/literal wildcard behavior unchanged and private fields absent. Route tests only as needed to preserve the existing endpoint contract; no Editor redesign.
+- **Outside E:** mention notification creation/dedup/edit history, F online presence/heartbeat, G notifications, H post history, I auth/session admission, J–R writers, deactivation control SA05, Stage6/production, #315, docs closeout and merge.
+- Lira is the only active implementer. Lev/Mark and F+ remain unassigned.
 
 ## Mandatory author verification
 
