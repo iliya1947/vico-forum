@@ -4742,3 +4742,12 @@ Lira must perform author inspection, publish the stable A2 head/evidence and STO
 - Remaining direct auth/session-create/target-write gaps belong to I2–I4 by the accepted decomposition and are not promoted to I1 defects.
 - PR #329 stays cumulative Draft. No independent Lev review is spent on this tiny intermediate checkpoint.
 - I2–I5/J+ remain unassigned pending separate continuation.
+
+
+## 2026-11-12 — SA04-I2 active assignment
+
+- I1 remains Mira checkpoint-PASS on `649dada0e2dfc5333c7c072170c0fd8c71a4501a`.
+- Lira now owns **I2 only** in existing Draft #329: inactive current authenticated actors cannot use canonical Better Auth HTTP/direct authenticated operations or receive their private auth payloads.
+- Preserve all active semantics and the existing explicit link/password/session policies. Inactive **own sign-out remains allowed** solely to delete its own current session/clear cookie.
+- I3 new-session target admission and I4 atomic target-write closure remain separate future checkpoints; guest sign-in/callback behavior is not falsely claimed closed by I2.
+- Author handoff requires focused real Better Auth HTTP/direct evidence, stable exact head, personal inspection and STOP for Mira checkpoint review.
