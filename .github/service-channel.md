@@ -4592,3 +4592,13 @@ Lira must perform author inspection, publish the stable A2 head/evidence and STO
 - **PASS — 0 confirmed current-scope SA04-C2 defects.**
 - #328 remains Draft/cumulative; Lira STOP; C3+ and Lev unassigned.
 
+
+
+## 2026-11-12 — SA04-G Mira checkpoint PASS
+
+- Mira independently reviewed cumulative Draft #328 exact head `f6a2c1ef378bfd5f30ece746f65253963f4d6125` against accepted row G, current main/source-of-truth and the F→G six-file delta.
+- Inactive reply/mention notification actors are neutralized before public DTO/.data/UI; active actors remain unchanged. Raw retained identity/lifecycle does not cross the notification reader/loader boundary.
+- Notification membership/lifecycle semantics are preserved: system complaint notifications, counts, unread-first ordering, paging, targets, timestamps/read state and mark-read behavior remain unchanged; no future auth/write/deactivation behavior was promoted into G.
+- Exact-head CI #43291399256, SA01 #43291399192, SA03 #43291399357 and AP10 #43291399295 independently rechecked SUCCESS.
+- **PASS — 0 confirmed current-scope SA04-G defects.**
+- #328 stays cumulative Draft. Lira STOP; H+/Lev/Mark remain unassigned. Next work requires a separate continuation.
