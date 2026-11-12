@@ -2136,3 +2136,11 @@ Do not treat a user's anger, criticism or request to think as implicit permissio
 - A4 must enforce/reuse the canonical UTC +1 calendar-year minimum before projection.
 - No other confirmed current-scope A4 defects.
 
+## 2026-11-12 — SA04-A4 repeat review result
+
+- Re-reviewed #328 exact head `9053b19425c48d38a5384a3b8620ca2a0c4b35dc`.
+- SA04-A4-MIRA-01 CLOSED: JS projection validation now matches A1's PostgreSQL UTC +1 calendar-year boundary, including leap-day clamping.
+- Exact-head CI #43159121332 SUCCESS.
+- Verdict: **PASS, 0 open confirmed current-scope A4 defects**.
+- Preserve review granularity: no Lev review solely for A4.
+
