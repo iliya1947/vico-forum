@@ -1,3 +1,14 @@
+# ChatGPT-5.6 Sol — working notes
+
+## 2026-11-12 — SA04-C3a coordinator checkpoint PASS
+
+- Exact implementation head reviewed: `04fb2510afb0c32494509424b6b0af280c5743bc`; previous accepted C2 head `8946b74b0271efd4ef7cfe2c2c595ee59d8061b6`.
+- Compared the complete six-file C3a delta and traced repository SQL row → A4 public-author projector → public DTO → Popular/Unanswered loaders → UI.
+- No current-scope defect confirmed. Popular ranking/window semantics and Unanswered eligibility/order are unchanged; inactive raw identity/lifecycle is neutralized before DTO and not restored by loaders/presentation.
+- Exact-head CI/browser runs independently matched and are green.
+- Verdict: **PASS**. No implementation change made during review.
+- Next possible bounded scope is C3b Tag + Search, but it is not assigned by this review checkpoint.
+
 # Mira pre-action guard — active
 
 Before any project-changing action:
