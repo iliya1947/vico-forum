@@ -20,6 +20,7 @@ import { isForumAttachmentUuid } from "../../db/forum-attachments";
 import { authSessionForRequest } from "../auth/request-context";
 import { forumReaderForRequest } from "./request-context";
 import { ForumStorageUnavailableError } from "../../db/hyperdrive-forum";
+import { DELETED_USER_NAME } from "../../db/public-identity";
 import { UserMeasureRestrictedError } from "../../db/user-measure-policy";
 import {
   ContentGenerationPlanningUnavailableError,
@@ -539,7 +540,11 @@ export async function topicAction({ request, params, context }: {
         operation: "postHistory" as const,
         postId,
         revisions: revisions.map((revision) => ({
-          ...revision, createdAt: revision.createdAt.toISOString(),
+          id: revision.id, authorId: revision.authorId,
+          authorName: revision.authorIdentityKind === "deleted" ? DELETED_USER_NAME : revision.authorName,
+          ...(revision.authorIdentityKind === "deleted" ? { authorIdentityKind: "deleted" as const } : {}),
+          originalContent: revision.originalContent, sourceLocale: revision.sourceLocale,
+          createdAt: revision.createdAt.toISOString(),
         })),
       }, { status: 200, headers: { "Cache-Control": "private, no-store" } });
     } catch (error) {
