@@ -4967,7 +4967,8 @@ describe.each([
       params: { locale, categoryId: HELP_SOLUTIONS_CATEGORY_ID },
       context: user,
     });
-    expect(readForMe).toHaveBeenCalledExactlyOnceWith("session-c3d2-author", {
+    expect(readForMe).toHaveBeenCalledTimes(1);
+    expect(readForMe).toHaveBeenCalledWith("session-c3d2-author", {
       answers: "has", quality: "needs-details",
     });
     expect(data.kind).toBe("help-solutions");
