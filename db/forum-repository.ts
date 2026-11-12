@@ -428,16 +428,18 @@ function projectForumPublicAuthor(row: {
 function projectNotificationActor(row: {
   actorId: string | null;
   actorName: string | null;
-  actorDeactivatedAt: Date | null;
+  actorDeactivatedAt: Date | string | null;
   actorDeactivatedByUserId: string | null;
-  actorRetainAtLeastUntil: Date | null;
+  actorRetainAtLeastUntil: Date | string | null;
 }): { actorName: string; actorIdentityKind?: "deleted" } {
+  // Raw execute() timestamps may be decoded as strings; A4 validates Date values.
+  const asDate = (value: Date | string | null) => value === null ? null : new Date(value);
   const projected = projectForumPublicAuthor({
     authorId: row.actorId!,
     authorName: row.actorName!,
-    authorDeactivatedAt: row.actorDeactivatedAt,
+    authorDeactivatedAt: asDate(row.actorDeactivatedAt),
     authorDeactivatedByUserId: row.actorDeactivatedByUserId,
-    authorRetainAtLeastUntil: row.actorRetainAtLeastUntil,
+    authorRetainAtLeastUntil: asDate(row.actorRetainAtLeastUntil),
   });
   return projected.kind === "deleted"
     ? { actorName: projected.name, actorIdentityKind: "deleted" }
@@ -1562,8 +1564,8 @@ export class DrizzleForumRepository {
     return this.database.transaction(async tx=>{
       const total=await tx.execute<{total:number}>(sql`select count(*)::int as total from forum_reply_notifications where recipient_user_id=${userId}`);
       const rows=await tx.execute<ForumNotificationSummary & {
-        actorId: string | null; actorDeactivatedAt: Date | null;
-        actorDeactivatedByUserId: string | null; actorRetainAtLeastUntil: Date | null;
+        actorId: string | null; actorDeactivatedAt: Date | string | null;
+        actorDeactivatedByUserId: string | null; actorRetainAtLeastUntil: Date | string | null;
       }>(sql`
         select n.id,n.kind,n.created_at as "createdAt",n.read_at as "readAt",
           actor.id as "actorId",actor.name as "actorName",
