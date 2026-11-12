@@ -73,7 +73,7 @@ export function createBetterAuthRequestHooks(
       // Pathless server-only methods are keyed by operationId in Better Auth's
       // common direct-API dispatcher (e.g. setPassword), not a routed URL.
       const protectedActorOperation = (ctx.path !== undefined && actorProtectedAuthPaths.has(ctx.path))
-        || ctx.operationId === "setPassword";
+        || (ctx as typeof ctx & { operationId?: string }).operationId === "setPassword";
       if (protectedActorOperation && ctx.headers
         && !(preRoutingSessionLookup && ctx.path === "/get-session")) {
         // Also runs for auth.api.* calls; direct endpoint dispatch shares this
