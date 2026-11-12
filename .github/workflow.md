@@ -1,13 +1,13 @@
 # Admin panel — current workflow
 
 - Service PR **#251**; merged A1 main/base `593a03964b8407b249f7c9f5eb117ddb8b07736d`.
-- **Current checkpoint: cumulative SA04-A2–H coordinator whole-PR PASS + independent Lev whole-PR PASS, 0 confirmed current-scope defects on the same stable exact head.**
-- Cumulative [Draft implementation PR #328](https://github.com/iliya1947/vico-forum/pull/328), exact reviewed head **`0a917b6f4f55f991bea6e6031b43a0c4f0dc2f85`**, 49 changed files; open/Draft/unmerged. A1 is the accepted merged baseline and is not being reviewed again.
+- **Current checkpoint: SA04-A2–H implementation gate CLOSED — PR #328 Ready for Owner merge on exact reviewed head `0a917b6f4f55f991bea6e6031b43a0c4f0dc2f85`.**
+- [Implementation PR #328](https://github.com/iliya1947/vico-forum/pull/328), exact reviewed head **`0a917b6f4f55f991bea6e6031b43a0c4f0dc2f85`**, 49 changed files; open/**Ready**/unmerged. A1 is the accepted merged baseline.
 - Independent report: [#6835789162](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6835789162). A4-MIRA-01 CLOSED; no open A2–H findings.
 - Delivered slice: AccountState read/predicate/transaction-lock primitives and neutral public identity foundation; profile/topic/current-post/category/section/discovery/Help/For-me/Users/mentions/online/notification/history consumers. Schema/dependencies unchanged. Stable IDs, content/history, membership/order/counts and independent private admissions preserved.
 - Lev independent local checks: **2269/2269 application tests (184 files), 106/106 native tests (11 touched files), fresh build, clean disposable migrations, 69-table manifest parity and Drizzle metadata PASS**. Original before/after direct-reader comparison and Chromium/real Better Auth/local Worker/PG17 probes PASS: 36 main records + 5 focused directory/private-composition records.
 - Exact-head remote CI #43296996996, SA01 #43296997261, SA03 #43296997015 and AP10 #43296997445 independently rechecked SUCCESS. Remote full native 717 is distinct from Lev local 106.
-- **Next recipient: Mira**, coordinator follow-up/closeout decision for this already-reviewed stable slice under current granularity policy. Lev completed/STOP; Lira/Mark STOP. SA04-I remains unassigned.
+- **Next action: Owner merge of #328.** Lev/Lira/Mark STOP. SA04-I remains unassigned and must not be added to #328.
 - PASS is **A2–H only**, not whole SA04: no I+ auth/session closure, J–R writer integration, S full enforcement closure, SA05/deactivate command, docs closeout, merge, Stage6/production or #315 remediation accepted/started here.
 - User permission to publish review reports and service updates persists throughout SA04: “Разрешаю на протяжение всего SA-04”.
 
@@ -287,3 +287,12 @@ Before any project-changing action or agent handoff, Mira must check in this ord
 - A1 is already merged and had its own Lev independent PASS before merge; it is the baseline contract, not a review target to spend again.
 - **Lev is now assigned one meaningful independent review:** cumulative A2–H in #328 exact `0a917b6f4f55f991bea6e6031b43a0c4f0dc2f85`. Review the whole current slice independently against the accepted SA04 plan/current Stage; classify only confirmed current-scope defects, and report the complete findings packet or PASS. Do not implement fixes during review.
 - SA04-I and later enforcement, SA05+, docs closeout, merge, Stage6/production and #315 remediation remain unassigned.
+
+
+## 2026-11-12 — SA04-A2–H implementation gate closed
+
+- Lev independent whole-PR PASS accepted on exact `0a917b6f4f55f991bea6e6031b43a0c4f0dc2f85`; Mira cumulative PASS and Lev PASS cover the same 49-file implementation head.
+- #328 metadata was corrected to final reviewed scope and converted from Draft to **Ready for review** without changing implementation head.
+- Under the Lev-review granularity rule, #328 is frozen: do not append SA04-I+ and force repeat review of A2–H.
+- No docs closeout is started because the overall SA04 package is not complete. No production/Stage6 action.
+- **Next action: Owner merge #328.** After merge, synchronize main and only then scope the next SA04-I enforcement implementation separately.
