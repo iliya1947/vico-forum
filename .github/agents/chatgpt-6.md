@@ -1,3 +1,16 @@
+# Лира — active assignment: SA04-G neutral notification actor identity
+
+- Continue cumulative Draft **#328** from accepted exact head `707651774932281230b3e90440e18eeb9a08b7d4`; main/base `593a03964b8407b249f7c9f5eb117ddb8b07736d`.
+- Required result: both `DrizzleForumRepository.readNotifications` and legacy `readReplyNotifications` project **reply/mention actor** identity through accepted A1/A4 before returning DTOs. Active actor unchanged; inactive actor stays on the existing notification but public actor identity is neutral Deleted user with no retained raw name/lifecycle/private fields.
+- Preserve notification semantics exactly: do **not** remove an item because its actor is inactive; keep recipient membership, generic total/unread counts, unread-first order, 50-item paging/lookahead, legacy order/limit, targets, timestamps/readAt and mark-read behavior. Complaint-decision / complaint-appeal-result remain system notifications with no fictional actor.
+- Canonical `/:locale/notifications` loader/.data must use a safe explicit projection for notification fields and refuse raw inactive identity/private extras from a malformed marked reader record. `NotificationsView` reuses existing localized `deletedUser`; deleted actor avatar presentation must not derive the old-name initial. Active cards/system layout remain unchanged.
+- Do not modify notification producers, fanout, dedup/backfill/replay or read mutations. Do not add recipient active-account admission; checkpoint I owns request identity. Do not change complaint private/history identity semantics.
+- Add focused native PG17 evidence across both notification readers with mixed active/deactivated reply/mention actors plus system notification, proving membership/order/total/unread/read state/targets are unchanged except actor identity. Add bounded route/DOM serialization/presentation regression with raw secret markers and locale coverage sufficient for the shared deleted-label path.
+- Excluded: H post history, I auth/session, J–R writers, Help attention submitters, SA05+, Stage6/production, #315, docs and merge.
+- Publish stable exact head/evidence, perform mandatory personal author inspection, then **STOP for Mira SA04-G checkpoint review**. Lev/Mark and H+ remain unassigned.
+
+---
+
 # Лира — SA04-F online presence lifecycle, author complete; STOP
 
 - Current cumulative implementation [Draft #328](https://github.com/iliya1947/vico-forum/pull/328), unchanged main/base `593a03964b8407b249f7c9f5eb117ddb8b07736d`. F final exact implementation head **`707651774932281230b3e90440e18eeb9a08b7d4`**, 40 cumulative changed paths. Prior E Mira PASS `69c58d02003c1e00def3916ed2d7a4bafabdaf4f`.
