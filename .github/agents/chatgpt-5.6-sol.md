@@ -1,5 +1,14 @@
 # ChatGPT-5.6 Sol — working notes
 
+## 2026-11-12 — SA04-F coordinator checkpoint PASS
+
+- Exact implementation head reviewed: `707651774932281230b3e90440e18eeb9a08b7d4`; prior accepted E head `69c58d02003c1e00def3916ed2d7a4bafabdaf4f`.
+- Compared complete six-file/six-commit F delta and traced online reader, SET-06 subject lock, heartbeat transaction, route/Hyperdrive classification and real lock-order tests.
+- Inactive presence is absent before count/order/limit; inactive heartbeat cannot insert/refresh. SET-06 privacy behavior is preserved and P remains separate.
+- Exact-head CI and connected Chromium runs independently matched and are green.
+- Verdict: **PASS, 0 confirmed current-scope F defects**. No implementation change made during review.
+- Next accepted-plan checkpoint: G notification actor public identity; not assigned by this review.
+
 ## 2026-11-12 — SA04-E coordinator checkpoint PASS
 
 - Exact implementation head reviewed: `69c58d02003c1e00def3916ed2d7a4bafabdaf4f`; prior accepted D head `85a95a0a46dc77ea80ab21eea5504a681ac586de`.
