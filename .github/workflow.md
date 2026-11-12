@@ -1,14 +1,14 @@
 # Admin panel — current workflow
 
-- Service PR **#251**, SA-04 report/service updates authorized by Owner; SA-03 fully closed.
-- SA04-A1 **merged** in `main` `593a03964b8407b249f7c9f5eb117ddb8b07736d`. Previous SA04-A2 and SA04-A3 foundation checkpoints **Mira PASS** on their own earlier exact heads.
-- **Current checkpoint: SA04-A4 author COMPLETE; Лира STOP. Next recipient: Мира for bounded SA04-A4 checkpoint/scope review**, then one separately authorized next task.
-- Cumulative [Draft implementation PR #328](https://github.com/iliya1947/vico-forum/pull/328), unchanged base `593a03964b8407b249f7c9f5eb117ddb8b07736d`, **stable exact head `11652f64df234e10bb3783fe93c8e8b3073be262`**, open/unmerged; four files.
-- A2 remains typed server-only state read/SQL predicate and classified errors. A3 remains transaction-local `FOR NO KEY UPDATE` guard under caller-owned PG transaction, with concurrency evidence. **A4 adds `db/public-identity.ts` and `db/public-identity.test.ts`**: pure strict allowlisted server-only projection. Active identity public fields pass through; deactivated keeps stable id and only neutral `Deleted user` public name/i18n key, null image/profile links, empty bio; missing/malformed lifecycle and mismatched id fail closed. The i18n key is contract-only; translation catalog/UI wiring not delivered.
-- **Personal author inspection performed** on full cumulative four-file implementation/diff and A4 unit coverage, including raw-field marker exclusion, existing A2/A3 logic preservation, invariant enforcement and no reader/runtime integration. This does not replace Mira checkpoint or future independent whole-PR review.
-- **Exact-head [CI #43157355266](https://github.com/iliya1947/vico-forum/actions/runs/43157355266) SUCCESS**: 2242/2242 app tests (5 A4), 700/700 native PG17 (10 account-state), 69 public tables manifest parity, lint/typecheck/build/preview/Drizzle/migration/Worker smoke.
-- **Mira next:** bounded A4 checkpoint/scope review on fixed head; only Mira may assign the next bounded reader integration. Lev independent technical whole-PR review not scheduled at A4 checkpoint alone. **Do not merge Draft as completed SA-04.**
-- No canonical public profile/forum/discovery/directory/online/mention/notification/revision/history integrations; no auth/session or writer active admission, schema changes, deactivation control, A5/B+, SA05+, Stage6/production, #315 remediation or package docs closeout.
+- Service PR **#251**; owner authorized SA-04 service/report updates.
+- SA04-A1 merged in `main` `593a03964b8407b249f7c9f5eb117ddb8b07736d`. SA04-A2 and SA04-A3 **Mira checkpoint PASS** on their previous exact heads.
+- **Active checkpoint: SA04-A4-MIRA-01 correction author COMPLETE; Лира STOP. Next recipient: Мира for repeat SA04-A4 checkpoint review on corrected exact head.** Prior CHANGES REQUIRED finding remains **pending Mira verification**, not yet closed.
+- Cumulative [Draft implementation PR #328](https://github.com/iliya1947/vico-forum/pull/328), unchanged main/base `593a03964b8407b249f7c9f5eb117ddb8b07736d`, **stable head `9053b19425c48d38a5384a3b8620ca2a0c4b35dc`**, open, Draft, unmerged; four files.
+- Correction only in `db/public-identity.ts` and `db/public-identity.test.ts`. Deactivated-state retention check now matches the existing A1 PostgreSQL CHECK: one **UTC calendar year** after deactivation, with PostgreSQL leap-day clamp (2024-02-29 12:34:56 UTC → 2025-02-28 12:34:56 UTC). Shorter retention fails closed. Added one focused test with invalid one-year-short states and exact/later UTC boundaries across leap day/month/year ends. Neutral identity allowlist, active identity, A2 account read and A3 row guard unchanged.
+- **Personal author verification complete**: inspected the full corrected A4 source and tests, cumulative four-file PR diff, A1 migration and PG17 migration constraint test; current scope preserved. This does not substitute repeat Mira review.
+- **Exact-head [CI #43159121332](https://github.com/iliya1947/vico-forum/actions/runs/43159121332) SUCCESS:** 2243/2243 app tests (6 A4), 700/700 native PG17 tests, 69-table manifest parity, lint/typecheck/build/preview/Drizzle/migration/Worker smoke.
+- **Mira next:** re-review A4 on stable exact head and explicitly resolve SA04-A4-MIRA-01. No A5/B+ authorization, no Lev whole-PR review, no merge or completed SA-04 claim.
+- No public reader/route/search/mention/online/notification/history wiring, runtime auth/session/writer integration, deactivation operation/control, SA05+, Stage6/production, #315 remediation or package docs closeout.
 
 ## Mandatory author verification
 
@@ -120,3 +120,10 @@ Before any project-changing action or agent handoff, Mira must check in this ord
 - Exact-head CI #43157355266 is SUCCESS but does not prove this invariant.
 - Return only this bounded correction to Lira. No A5/B+, Lev review or merge before a new stable head and repeat Mira checkpoint review.
 
+
+## 2026-11-12 — SA04-A4-MIRA-01 correction author complete; Lira STOP
+
+- Confirmed the Mira defect against `drizzle/0065_sa04_account_state_foundation.sql` and existing native PG17 migration leap-day coverage. The old A4 projector allowed retention before one UTC calendar year.
+- Corrected only `db/public-identity.ts` (one UTC calendar year with PostgreSQL 29-Feb clamp) and `db/public-identity.test.ts` (one focused boundary test, six A4 tests total). Cumulative Draft #328 new exact head `9053b19425c48d38a5384a3b8620ca2a0c4b35dc`.
+- Personally inspected the cumulative four-file implementation/diff and corrected code/test behavior. [Exact-head CI #43159121332](https://github.com/iliya1947/vico-forum/actions/runs/43159121332) SUCCESS: 2243 app, 700 native PG17, 69-table parity and build/lint/typecheck.
+- **Next Mira repeat A4 checkpoint** and SA04-A4-MIRA-01 closure decision. **Lira STOP**, A5/B+ and Lev unassigned.
