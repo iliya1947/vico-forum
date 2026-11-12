@@ -3,6 +3,17 @@
 Служебный PR: #251. Оперативное состояние: [workflow.md](./workflow.md). Общий контракт: [ADMIN_PANEL_IMPLEMENTATION_PLAN.md](../ADMIN_PANEL_IMPLEMENTATION_PLAN.md).
 
 
+## 2026-11-12 — Лира: SA04-C3c author complete; STOP; Mira review next
+
+- **Implementation:** cumulative [Draft #328](https://github.com/iliya1947/vico-forum/pull/328), base/main `593a03964b8407b249f7c9f5eb117ddb8b07736d`, stable exact head **`35bbf78a91d75818318f83ddc7413a69ddc001aa`** (28 cumulative changed files), still open/Draft/unmerged. C3b Mira checkpoint PASS preserved.
+- **Bounded C3c only:** `DrizzleForumRepository.readUnreadForUser` returns A4-projected topic authors using joined authoritative A1 lifecycle from the same SQL grouping. Inactive author becomes neutral `Deleted user` with narrow deleted marker; active name unchanged. No original name/image/deactivation actor/timestamps/retention crosses reader DTO. No extra query, product schema or migration.
+- **Unread semantics unchanged:** 401 guest boundary, `new/unread`, first unread/latest post pointers, unread counts, timestamps/order, title/category/section, and `section.tsx` state-only consumer. `app/routes/unread.tsx` explicitly allowlists existing fields and defensively masks marked inactive identity; `UnreadView` uses localized generic `deletedUser` even under raw original-name fixtures, preserving links/anchors/groups.
+- **Regressions:** native PG17 `tests/database/forum-profiles.test.ts` verifies mixed active/inactive topic authors and before/after equality of state, pointer, count/order/location; EN/HE `app/forum/public-read.test.tsx` verifies authenticated loader, guest 401, DTO serialization, raw lifecycle extras exclusion, links/counts/RTL/groups and raw view fixture. The first native PG run exposed **test-only** omission of already-existing migration `0023_forum_topic_read_states` in historical fixture; added it and rechecked exact final head. No product migration.
+- **Mandatory personal author inspection:** checked C3c six-commit/5-file delta and 28-file cumulative PR inventory, actual SQL/projection/auth/read-state logic, loader allowlist, view i18n, tests and final CI logs; no confirmed current-scope C3c defect. This is **author review only**, not Mira or Lev independent checkpoint.
+- **Final exact-head checks:** [CI #43226057368](https://github.com/iliya1947/vico-forum/actions/runs/43226057368) **SUCCESS**: 2256/2256 application, 706/706 native PG17, 69-table manifest parity, lint/typecheck/build/Worker local smoke. [SA03 Chromium #43226057417](https://github.com/iliya1947/vico-forum/actions/runs/43226057417), [SA01 Chromium #43226057393](https://github.com/iliya1947/vico-forum/actions/runs/43226057393), [AP10 Chromium #43226057468](https://github.com/iliya1947/vico-forum/actions/runs/43226057468) **all SUCCESS**, AP10 four jobs.
+- **Outside scope:** C3d Help, history, notifications, Admin Users, mentions, presence, auth/session/writers/deactivation, SA05+, Stage6, #315, docs closeout, merge.
+- **Handoff:** Лира **STOP**. Next **Mira SA04-C3c coordinator checkpoint/scope review** on exact head `35bbf78a91d75818318f83ddc7413a69ddc001aa`. C3d+/Lev/Mark unassigned.
+
 ## 2026-11-12 — Mira: SA04-C3c authenticated Unread assigned to Lira
 
 - C3b remains Mira checkpoint-PASS on cumulative Draft #328 exact head `6c30b6f5a51e17f3a4722e677e60d8c5150e6baf`; current main/base remains `593a03964b8407b249f7c9f5eb117ddb8b07736d`.
