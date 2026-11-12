@@ -849,3 +849,123 @@ describe("SA04-C3d1 shared Help question-summary author identities", () => {
     }
   });
 });
+
+describe("SA04-C3d2 For-me candidate topic-author identities", () => {
+  it("preserves persisted interest signals, candidate rank/filters/state and truthful empty results while neutralizing inactive candidate authors", async () => {
+    const createQuestion = async (id: string, authorId: string, tags: string[]) => {
+      await repository.createTopicWithInitialPost({
+        id, sectionId: HELP_SOLUTIONS_SERVICE_SECTION_ID, authorId,
+        titleRevision: { id: `${id}-title`, originalContent: `Published For-me ${id}`, sourceLocale: "he" },
+        tags: tags.map((key) => ({ key, name: key })),
+        initialPost: {
+          id: `${id}-post`, topicId: id, authorId,
+          bodyRevision: { id: `${id}-body`, originalContent: "Published For-me question body", sourceLocale: "en" },
+        },
+      });
+    };
+    const setActivity = async (id: string, timestamp: string) => {
+      await client.query("update forum_topics set created_at=$2::timestamptz where id=$1", [id, timestamp]);
+      await client.query("update forum_posts set created_at=$2::timestamptz where topic_id=$1", [id, timestamp]);
+    };
+    await client.query('insert into "user" (id,name,email) values ($1,$2,$3),($4,$5,$6)', [
+      "profile-c3d2-no-signal", "No signal", "no-signal-c3d2@example.test",
+      "profile-c3d2-no-match", "No match", "no-match-c3d2@example.test",
+    ]);
+    await createQuestion("profile-c3d2-signal-owned", "profile-owner", ["c3d2-owned"]);
+    await createQuestion("profile-c3d2-signal-replied", "profile-helper", ["c3d2-replied"]);
+    await reply("profile-c3d2-signal-answer", "profile-c3d2-signal-replied", "profile-owner");
+    await repository.markTopicSolved("profile-c3d2-signal-replied", "profile-helper", "own");
+    await createQuestion("profile-c3d2-two-match", "profile-helper", ["c3d2-owned", "c3d2-replied"]);
+    await createQuestion("profile-c3d2-one-new", "profile-newcomer", ["c3d2-owned"]);
+    await createQuestion("profile-c3d2-one-a", "profile-helper", ["c3d2-replied"]);
+    await createQuestion("profile-c3d2-one-z", "profile-newcomer", ["c3d2-replied"]);
+    await createQuestion("profile-c3d2-own", "profile-owner", ["c3d2-owned", "c3d2-replied"]);
+    await createQuestion("profile-c3d2-solved", "profile-helper", ["c3d2-owned", "c3d2-replied"]);
+    await repository.markTopicSolved("profile-c3d2-solved", "profile-helper", "own");
+    await createQuestion("profile-c3d2-unrelated", "profile-helper", ["c3d2-unrelated"]);
+    await createQuestion("profile-c3d2-no-match-signal", "profile-c3d2-no-match", ["c3d2-isolated"]);
+    await reply("profile-c3d2-two-answer", "profile-c3d2-two-match", "profile-newcomer");
+    await client.query("update forum_topics set needs_details=true where id=$1", ["profile-c3d2-one-a"]);
+    await setActivity("profile-c3d2-two-match", "2026-01-01T00:00:00Z");
+    await setActivity("profile-c3d2-one-new", "2026-03-10T00:00:00Z");
+    await setActivity("profile-c3d2-one-a", "2026-03-01T00:00:00Z");
+    await setActivity("profile-c3d2-one-z", "2026-03-01T00:00:00Z");
+
+    const expected = [
+      "profile-c3d2-two-match", "profile-c3d2-one-new", "profile-c3d2-one-z", "profile-c3d2-one-a",
+    ];
+    const modes = [
+      { name: "unfiltered", filters: {}, ids: expected },
+      { name: "open", filters: { solution: "open" as const }, ids: expected },
+      { name: "solved", filters: { solution: "solved" as const }, ids: [] },
+      { name: "has replies", filters: { answers: "has" as const }, ids: ["profile-c3d2-two-match"] },
+      { name: "no replies", filters: { answers: "none" as const },
+        ids: ["profile-c3d2-one-new", "profile-c3d2-one-z", "profile-c3d2-one-a"] },
+      { name: "needs details", filters: { quality: "needs-details" as const }, ids: ["profile-c3d2-one-a"] },
+      { name: "standalone", filters: { relation: "standalone" as const }, ids: expected },
+      { name: "combined", filters: { solution: "open" as const, answers: "none" as const,
+        quality: "needs-details" as const, relation: "standalone" as const }, ids: ["profile-c3d2-one-a"] },
+    ];
+    await client.query("begin");
+    try {
+      await client.query('update "user" set name=$2,image=$3 where id=$1', [
+        "profile-helper", "SECRET_C3D2_DELETED_AUTHOR", "https://example.test/SECRET_C3D2_AVATAR.png",
+      ]);
+      const read = async () => Promise.all(modes.map(async (mode) => ({
+        name: mode.name, rows: (await repository.readHelpSolutionsForMe("profile-owner", mode.filters))!.questions,
+      })));
+      const before = await read();
+      for (const [i, mode] of modes.entries()) {
+        expect(before[i]!.rows.map((row) => row.id), mode.name).toEqual(mode.ids);
+      }
+      expect(before[0]!.rows).toMatchObject([
+        { authorName: "SECRET_C3D2_DELETED_AUTHOR", replyCount: 1, isSolved: false },
+        { authorName: "profile-newcomer", replyCount: 0, isSolved: false },
+        { authorName: "profile-newcomer", replyCount: 0, isSolved: false },
+        { authorName: "SECRET_C3D2_DELETED_AUTHOR", replyCount: 0, needsDetails: true },
+      ]);
+      expect((await repository.readHelpSolutionsForMe("profile-c3d2-no-signal"))?.questions).toEqual([]);
+      expect((await repository.readHelpSolutionsForMe("profile-c3d2-no-match"))?.questions).toEqual([]);
+      await client.query(
+        'update "user" set deactivated_at=$2::timestamptz, ' +
+          'deactivated_by_user_id=$3, retain_at_least_until=$4::timestamptz where id=$1',
+        ["profile-helper", "2024-03-01T02:03:04Z", "SECRET_C3D2_ACTOR", "2025-03-01T02:03:04Z"],
+      );
+      const after = await read();
+      const publicData = (row: (typeof after)[number]["rows"][number]) => {
+        const { authorName, authorIdentityKind, ...rest } = row;
+        void authorName;
+        void authorIdentityKind;
+        return rest;
+      };
+      for (const [i, mode] of modes.entries()) {
+        expect(after[i]!.rows.map((row) => row.id), mode.name).toEqual(mode.ids);
+        expect(after[i]!.rows.map(publicData), mode.name).toEqual(before[i]!.rows.map(publicData));
+        for (const row of after[i]!.rows) {
+          if (row.id === "profile-c3d2-two-match" || row.id === "profile-c3d2-one-a") {
+            expect(row).toMatchObject({ authorName: "Deleted user", authorIdentityKind: "deleted" });
+          } else {
+            expect(row.authorName).toBe("profile-newcomer");
+            expect(row).not.toHaveProperty("authorIdentityKind");
+          }
+        }
+      }
+      expect(after[0]!.rows[0]).toMatchObject({
+        title: "Published For-me profile-c3d2-two-match", replyCount: 1,
+        hasBestAnswer: false, solutionModerationStatus: null, needsDetails: false,
+        tags: [{ key: "c3d2-owned", name: "c3d2-owned" }, { key: "c3d2-replied", name: "c3d2-replied" }],
+      });
+      expect((await repository.readHelpSolutionsForMe("profile-c3d2-no-signal"))?.questions).toEqual([]);
+      expect((await repository.readHelpSolutionsForMe("profile-c3d2-no-match"))?.questions).toEqual([]);
+      const serialized = JSON.stringify(after);
+      for (const secret of ["SECRET_C3D2_DELETED_AUTHOR", "SECRET_C3D2_AVATAR",
+        "SECRET_C3D2_ACTOR", "2024-03-01", "2025-03-01"]) {
+        expect(serialized).not.toContain(secret);
+      }
+      expect(after[0]!.rows[0]).not.toHaveProperty("authorDeactivatedAt");
+      expect(after[0]!.rows[0]).not.toHaveProperty("authorRetainAtLeastUntil");
+    } finally {
+      await client.query("rollback");
+    }
+  });
+});
