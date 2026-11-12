@@ -1,7 +1,7 @@
 # Admin panel — current workflow
 
 - Service PR **#251**; current main/base `13456a17f23c1385bef8ab11c735f43d201edd02`; SA04-A1 and reviewed A2–H are merged.
-- **Current checkpoint: SA04-A2–H merged and synchronized to main `13456a17f23c1385bef8ab11c735f43d201edd02`.** No active implementation assignment; next continuation scopes SA04-I separately.
+- **Current checkpoint: SA04-I scope/granularity gate complete on main `13456a17f23c1385bef8ab11c735f43d201edd02`; I split into five bounded author checkpoints. No implementation assigned yet.**
 - [Implementation PR #328](https://github.com/iliya1947/vico-forum/pull/328) **merged** from reviewed head `0a917b6f4f55f991bea6e6031b43a0c4f0dc2f85`; merge commit/current main `13456a17f23c1385bef8ab11c735f43d201edd02`. A1 remains the accepted merged baseline.
 - Independent report: [#6835789162](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6835789162). A4-MIRA-01 CLOSED; no open A2–H findings.
 - Delivered slice: AccountState read/predicate/transaction-lock primitives and neutral public identity foundation; profile/topic/current-post/category/section/discovery/Help/For-me/Users/mentions/online/notification/history consumers. Schema/dependencies unchanged. Stable IDs, content/history, membership/order/counts and independent private admissions preserved.
@@ -306,3 +306,18 @@ Before any project-changing action or agent handoff, Mira must check in this ord
 - Permanent docs remain intentionally deferred until full SA04 closeout; current source-of-truth still describes SA04 as future and must not be silently treated as already updated.
 - No SA04-I implementation, SA05+, Stage6/production or #315 remediation is started by this synchronization.
 - Next continuation performs the SA04-I granularity/scope gate from current main before any Lira handoff.
+
+
+## 2026-11-12 — SA04-I scope/granularity gate
+
+- Current main remains `13456a17f23c1385bef8ab11c735f43d201edd02`; merged A1–H are baseline.
+- Rechecked accepted SA04 §4 against current `app/auth/auth.server.ts`, request/session context, `/api/auth/*` route, Worker pre-routing session initialization and existing native auth acceptance inventory. Better Auth remains pinned to 1.7.7.
+- Row I is **too broad for one Lira handoff**. It combines distinct session-resolution, endpoint-admission, session-creation, adapter-target-write and connected acceptance boundaries.
+- Operational split for one new cumulative Draft implementation PR:
+  1. **I1 — pre-routing session resolution admission.** Inactive/missing persisted account cannot become request identity through `AuthRuntime.getSession`; classified account-state storage outage remains unavailable/503 path, unexpected faults are not guest fallback. Existing Set-Cookie ordering/session semantics preserved.
+  2. **I2 — authenticated Better Auth endpoint/direct-API admission.** Canonical request hook rejects inactive authenticated actors across HTTP/direct calls while preserving existing link-social/signup behavior and the explicit own-sign-out exception.
+  3. **I3 — new-session target admission.** Session creation admission is unconditional and independent of telemetry; inactive target cannot receive a new email/Google/directly-created session. Existing auth facts remain observers, not enforcement.
+  4. **I4 — atomic target-write closure.** Existing-user/account/session target mutations resolve the authoritative target server-side and close check/write races on the canonical adapter/writer boundary without introducing a second auth backend or holding locks across external OAuth exchange.
+  5. **I5 — connected I closure.** Whole Better Auth HTTP/direct/native acceptance for old sessions, new sign-in, link/password/session paths, own sign-out, outage/error/cookie semantics and preservation of existing registration/linking/rate-limit/telemetry contracts.
+- I1–I4 are intermediate Draft checkpoints only. **None is mergeable or may be described as completed SA04-I.** I5 closes row I, after which Mira performs cumulative I whole-PR review before any independent Codex review.
+- J+ remains outside this split. No implementation PR or agent assignment is created by this gate.
