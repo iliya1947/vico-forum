@@ -789,6 +789,7 @@ type CategoryTopicPresentation = {
   id: string;
   title: string;
   authorName: string;
+  authorIdentityKind?: "deleted";
   activityAt: string;
 };
 
@@ -962,6 +963,7 @@ function CategorySectionTopicList({
   showActivity: boolean;
   pinned?: boolean;
 }) {
+  const { t } = useTranslation("common");
   if (topics.length === 0) {
     return (
       <p className="home-topic-empty">
@@ -976,7 +978,7 @@ function CategorySectionTopicList({
         <li key={topic.id} className={showActivity ? "home-latest-topic" : undefined}>
           {showActivity ? (
             <span className="home-topic-avatar" aria-hidden="true">
-              {topic.authorName.trim().slice(0, 1).toUpperCase()}
+              {(topic.authorIdentityKind === "deleted" ? t("deletedUser") : topic.authorName).trim().slice(0, 1).toUpperCase()}
             </span>
           ) : null}
           <span className="home-topic-copy">
@@ -986,7 +988,7 @@ function CategorySectionTopicList({
             </span>
             {showActivity ? (
               <span className="home-topic-meta">
-                <span>{topic.authorName}</span>
+                <span>{topic.authorIdentityKind === "deleted" ? t("deletedUser") : topic.authorName}</span>
                 <span aria-hidden="true">·</span>
                 <time dateTime={topic.activityAt}>
                   {formatCategorySectionActivity(topic.activityAt, referenceTime, locale)}
@@ -1987,7 +1989,7 @@ export function SectionView({
                         <strong>{topic.title.originalContent}</strong>
                         {topic.isPinned ? <span className="pinned-topic-badge">{t("pinnedHeading")}</span> : null}
                       </span>
-                      <small>{t("startedBy", { author: topic.authorName })}</small>
+                      <small>{t("startedBy", { author: topic.authorIdentityKind === "deleted" ? t("deletedUser") : topic.authorName })}</small>
                       {topicReadStates?.[topic.id] ? (
                         <small className={`section-topic-read-state is-${topicReadStates[topic.id]}`}>
                           {topicReadStates[topic.id] === "new"
