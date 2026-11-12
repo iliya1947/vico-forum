@@ -1,3 +1,15 @@
+# Лира — active assignment: SA04-C3b Tag + Search author neutralization
+
+- Continue cumulative Draft implementation **#328** from accepted exact head `04fb2510afb0c32494509424b6b0af280c5743bc`; main/base `593a03964b8407b249f7c9f5eb117ddb8b07736d`.
+- Required result: canonical **Tag topic summaries + Search results** neutralize inactive topic-author identity using the already accepted A4 Deleted-user public contract before public DTO/serialization/DOM; active authors remain unchanged.
+- Current seams: `DrizzleForumRepository.readTag`, `search`, `app/routes/tag.tsx`, `app/routes/search.tsx`, `TagView`, `SearchView`.
+- Preserve existing Tag membership/order/count/location/tags and Search normalization/matching/ranking/activity/order/limit/source-locale/count/location/tags semantics.
+- Add focused direct PostgreSQL and public route/presentation regression evidence for mixed active/deactivated authors without broadening the slice.
+- Excluded: C3c Unread, C3d Help, other readers, auth/session/writers/deactivation, SA05+, Stage6/production, #315, docs and merge.
+- Finish on a stable exact head with applicable checks and mandatory personal author inspection, publish evidence in #251, then **STOP for Mira C3b checkpoint review**. Lev/Mark remain unassigned.
+
+---
+
 # Лира — SA04-C3a Popular/Unanswered author-complete; STOP
 
 - Cumulative [Draft implementation #328](https://github.com/iliya1947/vico-forum/pull/328), main/base unchanged `593a03964b8407b249f7c9f5eb117ddb8b07736d`, **stable head `04fb2510afb0c32494509424b6b0af280c5743bc`**, 25 cumulative files. A2–A4/B/C1/C2 Mira checkpoints PASS remain untouched. Open Draft, no merge.
