@@ -140,7 +140,7 @@ export function HomeView({
 
 type PopularPeriodPresentation = Record<
   ForumPopularPeriod,
-  readonly Pick<ForumPopularTopicSummary, "id" | "title" | "authorName" | "activityCount">[]
+  readonly Pick<ForumPopularTopicSummary, "id" | "title" | "authorName" | "authorIdentityKind" | "activityCount">[]
 >;
 
 export function PopularView({
@@ -182,7 +182,7 @@ export function PopularView({
                       <span className="popular-topic-rank" aria-hidden="true">{index + 1}</span>
                       <span className="popular-topic-copy">
                         <strong>{topic.title}</strong>
-                        <small>{t("startedBy", { author: topic.authorName })}</small>
+                        <small>{t("startedBy", { author: topic.authorIdentityKind === "deleted" ? t("deletedUser") : topic.authorName })}</small>
                       </span>
                       <span className="popular-topic-activity">
                         {t("messageCount", { count: topic.activityCount })}
@@ -201,7 +201,7 @@ export function PopularView({
 
 type UnansweredTopicPresentation = Pick<
   ForumUnansweredTopicSummary,
-  "id" | "title" | "sourceLocale" | "authorName" | "section" | "category"
+  "id" | "title" | "sourceLocale" | "authorName" | "authorIdentityKind" | "section" | "category"
 > & { titleDirection: "ltr" | "rtl" | "auto" };
 
 export function UnansweredView({
@@ -243,7 +243,7 @@ export function UnansweredView({
                     </span>
                     <span className="unanswered-topic-copy">
                       <strong lang={topic.sourceLocale === "und" ? undefined : topic.sourceLocale} dir={topic.titleDirection}>{topic.title}</strong>
-                      <small>{t("startedBy", { author: topic.authorName })}</small>
+                      <small>{t("startedBy", { author: topic.authorIdentityKind === "deleted" ? t("deletedUser") : topic.authorName })}</small>
                     </span>
                   </span>
 
