@@ -4908,3 +4908,108 @@ describe.each([
     rawView.unmount();
   });
 });
+
+describe.each([
+  { locale: "en", direction: "ltr" as const },
+  { locale: "he", direction: "rtl" as const },
+])("SA04-C3d2 authenticated For-me author projection ($locale)", ({ locale, direction }) => {
+  it("uses only the session user and safe existing Help serialization/view for active and deleted candidate authors", async () => {
+    const rawQuestions = [
+      {
+        ...helpPage.questions[0]!,
+        id: "c3d2/deleted",
+        title: "C3d2 inactive author question",
+        authorName: "SECRET_C3D2_RAW_AUTHOR", authorIdentityKind: "deleted" as const,
+        authorImage: "SECRET_C3D2_IMAGE", authorDeactivatedAt: "SECRET_C3D2_DEACTIVATION",
+        authorDeactivatedByUserId: "SECRET_C3D2_ACTOR",
+        authorRetainAtLeastUntil: "SECRET_C3D2_RETENTION",
+        replyCount: 2, needsDetails: true,
+        tags: [{ key: "c3d2-tag", name: "C3d2 tag" }],
+      },
+      {
+        ...helpPage.questions[0]!,
+        id: "c3d2/active",
+        title: "C3d2 active author question",
+        authorName: "Active C3d2 Author",
+        replyCount: 1, needsDetails: false,
+      },
+    ];
+    const readForMe = vi.fn(async () => ({ ...helpPage, questions: rawQuestions }));
+    const href = forumCategoryPath(locale, HELP_SOLUTIONS_CATEGORY_ID) +
+      "?mode=for-me&userId=spoofed&tags=spoofed&answers=has&quality=needs-details";
+    const guest = context(locale, direction);
+    guest.set(forumReaderContext, { ...reader, readHelpSolutionsForMe: readForMe } as ForumReader);
+    await expect(categoryLoader({
+      request: new Request("https://forum.example" + href),
+      params: { locale, categoryId: HELP_SOLUTIONS_CATEGORY_ID },
+      context: guest,
+    })).rejects.toMatchObject({ status: 401 });
+    expect(readForMe).not.toHaveBeenCalled();
+
+    const user = context(locale, direction);
+    user.set(authSessionContext, {
+      user: {
+        id: "session-c3d2-author", name: "Session C3d2", email: "session-c3d2@example.test",
+        emailVerified: true, createdAt: new Date(), updatedAt: new Date(),
+      },
+      session: {
+        id: "session-c3d2", token: "token-c3d2", userId: "session-c3d2-author",
+        expiresAt: new Date(Date.now() + 60_000), createdAt: new Date(), updatedAt: new Date(),
+      },
+    });
+    user.set(forumReaderContext, { ...reader, readHelpSolutionsForMe: readForMe } as ForumReader);
+    user.set(authorizationContext, {
+      forUser: () => ({ resolve: vi.fn(), has: vi.fn(async () => false) }),
+    } as never);
+
+    const data = await categoryLoader({
+      request: new Request("https://forum.example" + href),
+      params: { locale, categoryId: HELP_SOLUTIONS_CATEGORY_ID },
+      context: user,
+    });
+    expect(readForMe).toHaveBeenCalledExactlyOnceWith("session-c3d2-author", {
+      answers: "has", quality: "needs-details",
+    });
+    expect(data.kind).toBe("help-solutions");
+    if (data.kind !== "help-solutions") throw new Error("Expected Help route");
+    expect(data.mode).toBe("for-me");
+    expect(data.filters).toEqual({ answers: "has", quality: "needs-details" });
+    expect(data.page.questions).toHaveLength(2);
+    expect(data.page.questions[0]).toMatchObject({
+      id: "c3d2/deleted", title: "C3d2 inactive author question",
+      authorName: "Deleted user", authorIdentityKind: "deleted",
+      replyCount: 2, needsDetails: true, tags: [{ key: "c3d2-tag", name: "C3d2 tag" }],
+    });
+    expect(data.page.questions[0]!.createdAt).toBe(rawQuestions[0]!.createdAt.toISOString());
+    expect(data.page.questions[0]!.activityAt).toBe(rawQuestions[0]!.activityAt.toISOString());
+    expect(data.page.questions[1]).toMatchObject({
+      id: "c3d2/active", authorName: "Active C3d2 Author", replyCount: 1,
+    });
+    expect(data.page.questions[1]).not.toHaveProperty("authorIdentityKind");
+    expect(JSON.stringify(data)).not.toContain("SECRET_C3D2_");
+    const rendered = renderRoute(CategoryRoute, data, href, locale, direction);
+    expect(await screen.findByRole("link", { name: /C3d2 inactive author question/u }))
+      .toHaveAttribute("href", forumTopicPath(locale, "c3d2/deleted"));
+    expect(screen.getByRole("link", { name: /C3d2 active author question/u }))
+      .toHaveAttribute("href", forumTopicPath(locale, "c3d2/active"));
+    expect(rendered.container).toHaveTextContent("Deleted user");
+    expect(rendered.container).toHaveTextContent("Active C3d2 Author");
+    expect(rendered.container).toHaveTextContent("C3d2 tag");
+    expect(rendered.container.innerHTML).not.toContain("SECRET_C3D2_");
+    rendered.unmount();
+
+    // Reusing C3d1 Help cards also neutralizes an intentionally raw marked display fixture.
+    const malformed = {
+      ...data,
+      page: {
+        ...data.page,
+        questions: data.page.questions.map((question, index) => index === 0
+          ? { ...question, authorName: "SECRET_C3D2_MALFORMED_PRESENTATION" } : question),
+      },
+    };
+    const malformedView = renderRoute(CategoryRoute, malformed, href, locale, direction);
+    expect(await screen.findByRole("link", { name: /C3d2 inactive author question/u })).toBeVisible();
+    expect(malformedView.container.innerHTML).not.toContain("SECRET_C3D2_");
+    malformedView.unmount();
+  });
+});
