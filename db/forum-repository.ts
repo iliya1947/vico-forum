@@ -170,6 +170,7 @@ function publicDiscoveryLocation(row: {
 
 export interface ForumNotificationSummary {
   id:string;kind:"reply"|"mention"|"complaint-decision"|"complaint-appeal-result";actorName:string|null;
+  actorIdentityKind?: "deleted";
   topicId:string|null;topicTitle:string|null;postId:string|null;caseId?:string|null;appealId?:string|null;
   createdAt:Date;readAt:Date|null;
 }
@@ -185,6 +186,7 @@ export interface ForumReplyNotificationSummary {
   id: string;
   kind: "reply" | "mention";
   actorName: string;
+  actorIdentityKind?: "deleted";
   topicId: string;
   topicTitle: string;
   postId: string;
@@ -420,6 +422,26 @@ function projectForumPublicAuthor(row: {
     id: row.authorId, name: row.authorName, image: row.authorImage ?? null,
     bio: "", githubUrl: null, websiteUrl: null,
   }, state);
+}
+
+/** One-row A1/A4 actor projection; no retained identity or lifecycle in the DTO. */
+function projectNotificationActor(row: {
+  actorId: string | null;
+  actorName: string | null;
+  actorDeactivatedAt: Date | null;
+  actorDeactivatedByUserId: string | null;
+  actorRetainAtLeastUntil: Date | null;
+}): { actorName: string; actorIdentityKind?: "deleted" } {
+  const projected = projectForumPublicAuthor({
+    authorId: row.actorId!,
+    authorName: row.actorName!,
+    authorDeactivatedAt: row.actorDeactivatedAt,
+    authorDeactivatedByUserId: row.actorDeactivatedByUserId,
+    authorRetainAtLeastUntil: row.actorRetainAtLeastUntil,
+  });
+  return projected.kind === "deleted"
+    ? { actorName: projected.name, actorIdentityKind: "deleted" }
+    : { actorName: projected.name };
 }
 
 export interface ForumOnlinePresence {
@@ -1539,9 +1561,16 @@ export class DrizzleForumRepository {
     if(!Number.isSafeInteger(page)||page<0||page>10000)throw new RangeError("invalid page");
     return this.database.transaction(async tx=>{
       const total=await tx.execute<{total:number}>(sql`select count(*)::int as total from forum_reply_notifications where recipient_user_id=${userId}`);
-      const rows=await tx.execute<ForumNotificationSummary & Record<string,unknown>>(sql`
+      const rows=await tx.execute<ForumNotificationSummary & {
+        actorId: string | null; actorDeactivatedAt: Date | null;
+        actorDeactivatedByUserId: string | null; actorRetainAtLeastUntil: Date | null;
+      }>(sql`
         select n.id,n.kind,n.created_at as "createdAt",n.read_at as "readAt",
-          actor.name as "actorName",n.topic_id as "topicId",title.original_content as "topicTitle",
+          actor.id as "actorId",actor.name as "actorName",
+          actor.deactivated_at as "actorDeactivatedAt",
+          actor.deactivated_by_user_id as "actorDeactivatedByUserId",
+          actor.retain_at_least_until as "actorRetainAtLeastUntil",
+          n.topic_id as "topicId",title.original_content as "topicTitle",
           n.post_id as "postId",coalesce(d.case_id,a.case_id) as "caseId",a.id as "appealId"
         from forum_reply_notifications n
         left join "user" actor on actor.id=n.actor_user_id and n.kind in ('reply','mention')
@@ -1552,7 +1581,17 @@ export class DrizzleForumRepository {
         where n.recipient_user_id=${userId}
         order by case when n.read_at is null then 0 else 1 end,n.created_at desc,n.id desc
         limit 51 offset ${page*50}`);
-      return {items:rows.rows.slice(0,50),page,total:total.rows[0]?.total??0,hasMore:rows.rows.length>50};
+      return {
+        items: rows.rows.slice(0,50).map(row => ({
+          id: row.id, kind: row.kind,
+          ...(row.kind === "reply" || row.kind === "mention"
+            ? projectNotificationActor(row) : { actorName: null }),
+          topicId: row.topicId, topicTitle: row.topicTitle, postId: row.postId,
+          caseId: row.caseId, appealId: row.appealId,
+          createdAt: row.createdAt, readAt: row.readAt,
+        })),
+        page, total: total.rows[0]?.total??0, hasMore: rows.rows.length>50,
+      };
     },{isolationLevel:"repeatable read",accessMode:"read only"});
   }
 
@@ -1598,7 +1637,11 @@ export class DrizzleForumRepository {
     const rows = await this.database
       .select({
         id: forumReplyNotifications.id,
+        actorId: actor.id,
         actorName: actor.name,
+        actorDeactivatedAt: actor.deactivatedAt,
+        actorDeactivatedByUserId: actor.deactivatedByUserId,
+        actorRetainAtLeastUntil: actor.retainAtLeastUntil,
         topicId: forumReplyNotifications.topicId,
         topicTitle: forumTopicTitleRevisions.originalContent,
         postId: forumReplyNotifications.postId,
@@ -1622,7 +1665,12 @@ export class DrizzleForumRepository {
         desc(forumReplyNotifications.id),
       )
       .limit(limit);
-    return rows.map(row=>({...row,topicId:row.topicId!,postId:row.postId!,kind:row.kind as "reply"|"mention"}));
+    return rows.map(row => ({
+      id: row.id, kind: row.kind as "reply" | "mention",
+      ...projectNotificationActor(row),
+      topicId: row.topicId!, topicTitle: row.topicTitle, postId: row.postId!,
+      createdAt: row.createdAt, readAt: row.readAt,
+    }));
   }
 
   async countUnreadReplyNotifications(userId: string): Promise<number> {
