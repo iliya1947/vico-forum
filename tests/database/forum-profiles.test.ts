@@ -607,3 +607,107 @@ describe("SA04-C3b canonical Tag and Search author identities", () => {
     }
   });
 });
+
+describe("SA04-C3c canonical authenticated Unread topic authors", () => {
+  it("neutralizes inactive topic authors without changing unread classification, post pointers, count, location or order", async () => {
+    const entries = [
+      { id: "profile-c3c-unread", authorId: "profile-helper", at: "2026-11-12T09:00:00Z" },
+      { id: "profile-c3c-new", authorId: "profile-owner", at: "2026-11-12T11:00:00Z" },
+      { id: "profile-c3c-active", authorId: "profile-newcomer", at: "2026-11-12T10:00:00Z" },
+    ] as const;
+    for (const entry of entries) {
+      await repository.createTopicWithInitialPost({
+        id: entry.id, sectionId: "profile-section", authorId: entry.authorId,
+        titleRevision: {
+          id: `${entry.id}-title`, originalContent: `Public unread title ${entry.id}`, sourceLocale: "en",
+        },
+        initialPost: {
+          id: `${entry.id}-initial`, topicId: entry.id, authorId: entry.authorId,
+          bodyRevision: {
+            id: `${entry.id}-body`, originalContent: "Published unread body", sourceLocale: "en",
+          },
+        },
+      });
+      await client.query("update forum_topics set created_at=$2::timestamptz where id=$1", [entry.id, entry.at]);
+      await client.query("update forum_posts set created_at=$2::timestamptz where topic_id=$1", [entry.id, entry.at]);
+    }
+    await reply("profile-c3c-latest", "profile-c3c-unread", "profile-owner");
+    await client.query("update forum_posts set created_at=$2::timestamptz where id=$1", [
+      "profile-c3c-latest", "2026-11-12T12:00:00Z",
+    ]);
+    await repository.advanceTopicReadState(
+      "profile-newcomer", "profile-c3c-unread", "profile-c3c-unread-initial",
+    );
+    const selected = new Set<string>(entries.map((entry) => entry.id));
+    const own = (rows: Awaited<ReturnType<typeof repository.readUnreadForUser>>) =>
+      rows.filter((row) => selected.has(row.id));
+
+    await client.query("begin");
+    try {
+      await client.query('update "user" set name=$2, image=$3 where id=$1', [
+        "profile-owner", "SECRET_C3C_NEW_AUTHOR", "https://images.example.test/SECRET_C3C_OWNER_AVATAR.png",
+      ]);
+      await client.query('update "user" set name=$2, image=$3 where id=$1', [
+        "profile-helper", "SECRET_C3C_UNREAD_AUTHOR", "https://images.example.test/SECRET_C3C_HELPER_AVATAR.png",
+      ]);
+      const before = own(await repository.readUnreadForUser("profile-newcomer"));
+      expect(before.map((row) => row.id)).toEqual([
+        "profile-c3c-unread", "profile-c3c-new", "profile-c3c-active",
+      ]);
+      expect(before).toMatchObject([
+        {
+          authorName: "SECRET_C3C_UNREAD_AUTHOR", state: "unread",
+          firstUnreadPostId: "profile-c3c-latest", latestPostId: "profile-c3c-latest",
+          unreadCount: 1, activityAt: new Date("2026-11-12T12:00:00Z"),
+        },
+        {
+          authorName: "SECRET_C3C_NEW_AUTHOR", state: "new",
+          firstUnreadPostId: "profile-c3c-new-initial", latestPostId: "profile-c3c-new-initial",
+          unreadCount: 1, activityAt: new Date("2026-11-12T11:00:00Z"),
+        },
+        { authorName: "profile-newcomer", state: "new", unreadCount: 1 },
+      ]);
+
+      for (const [id, actor] of [
+        ["profile-owner", "SECRET_C3C_OWNER_DEACTIVATOR"],
+        ["profile-helper", "SECRET_C3C_HELPER_DEACTIVATOR"],
+      ] as const) {
+        await client.query(
+          'update "user" set deactivated_at=$2::timestamptz,' +
+            ' deactivated_by_user_id=$3, retain_at_least_until=$4::timestamptz where id=$1',
+          [id, "2024-02-29T12:34:56Z", actor, "2025-02-28T12:34:56Z"],
+        );
+      }
+      const after = own(await repository.readUnreadForUser("profile-newcomer"));
+      expect(after.map((row) => row.id)).toEqual(before.map((row) => row.id));
+      expect(after.map((row) => [
+        row.id, row.title, row.state, row.firstUnreadPostId, row.latestPostId,
+        row.unreadCount, row.activityAt, row.section, row.category,
+      ])).toEqual(before.map((row) => [
+        row.id, row.title, row.state, row.firstUnreadPostId, row.latestPostId,
+        row.unreadCount, row.activityAt, row.section, row.category,
+      ]));
+      expect(after).toMatchObject([
+        { id: "profile-c3c-unread", authorName: "Deleted user", authorIdentityKind: "deleted" },
+        { id: "profile-c3c-new", authorName: "Deleted user", authorIdentityKind: "deleted" },
+        { id: "profile-c3c-active", authorName: "profile-newcomer" },
+      ]);
+      expect(after[2]).not.toHaveProperty("authorIdentityKind");
+      expect(after[0]).toMatchObject({
+        section: { id: "profile-section", name: "General" },
+        category: { id: "profile-category", name: "Profiles" },
+      });
+      const serialized = JSON.stringify(after);
+      for (const secret of [
+        "SECRET_C3C_NEW_AUTHOR", "SECRET_C3C_UNREAD_AUTHOR",
+        "SECRET_C3C_OWNER_AVATAR", "SECRET_C3C_HELPER_AVATAR",
+        "SECRET_C3C_OWNER_DEACTIVATOR", "SECRET_C3C_HELPER_DEACTIVATOR",
+        "2024-02-29", "2025-02-28",
+      ]) expect(serialized).not.toContain(secret);
+      expect(Object.keys(after[0]!)).not.toContain("authorDeactivatedAt");
+      expect(Object.keys(after[1]!)).not.toContain("authorRetainAtLeastUntil");
+    } finally {
+      await client.query("rollback");
+    }
+  });
+});
