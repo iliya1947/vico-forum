@@ -4182,3 +4182,14 @@ Lira must perform author inspection, publish the stable A2 head/evidence and STO
 - Topic/content/discovery/directory/mentions/presence/notifications/history and all auth/write enforcement remain outside B.
 - Lira author-inspects, publishes stable cumulative head/evidence and STOP. C+ unassigned; Lev remains reserved for a larger cumulative review.
 
+## 2026-11-12 — SA04-B Mira checkpoint PASS
+
+- Mira reviewed cumulative #328 exact stable head `22c05bfa824a0d5284c818f92b691056fd0749f7`.
+- Confirmed canonical profile neutralization occurs at the direct repository public DTO boundary and remains explicit through loader/presentation; inactive original identity/profile markers are not returned publicly.
+- Active profile and stable ID/role/joined/statistics behavior are preserved.
+- Confirmed SA-03 privileged Admin/Owner composition remains independently authorized and is not replaced by the neutral public projection.
+- No other public-reader family or runtime writer/auth enforcement leaked into B.
+- Exact-head CI and SA03/SA01/AP10 browser regressions SUCCESS.
+- **PASS — 0 confirmed current-scope SA04-B defects.**
+- #328 remains Draft/cumulative; Lira STOP; C+ and Lev unassigned.
+
