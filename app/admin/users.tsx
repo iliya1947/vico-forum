@@ -36,9 +36,12 @@ export function AdminUsersIndex({ locale, access, query, page }: {
       </Form>
       <p>{t("adminUsersMatches")}: {new Intl.NumberFormat(locale).format(page.total)}</p>
       {page.items.length ? <ul className="admin-forum-objects">
-        {page.items.map(user => <li key={user.id}>
-          <h3><Link to={forumProfilePath(locale, user.id)}><bdi dir="auto">{user.name}</bdi></Link></h3>
-          <ForumAvatar name={user.name} image={user.image} className="profile-avatar" />
+        {page.items.map(user => {
+          const deleted = user.identityKind === "deleted";
+          const publicName = deleted ? t("deletedUser") : user.name;
+          return <li key={user.id}>
+          <h3><Link to={forumProfilePath(locale, user.id)}><bdi dir="auto">{publicName}</bdi></Link></h3>
+          <ForumAvatar name={publicName} image={deleted ? null : user.image} className="profile-avatar" />
           <TechnicalDetails accountId={accountId}><bdi dir="ltr">{user.id}</bdi></TechnicalDetails>
           <p><Joined date={user.joinedAt} locale={locale}/></p>
           <nav aria-label={t("quickActions")}>
@@ -47,7 +50,7 @@ export function AdminUsersIndex({ locale, access, query, page }: {
               <Link to={forumProfilePath(locale, user.id) + "#authorization"}>{t("authorizationNav")}</Link>
             </> : null}
           </nav>
-        </li>)}
+        </li>})}
       </ul> : <p>{t("adminUsersEmpty")}</p>}
       <nav className="admin-forum-paging" aria-label={t("adminUsersPaging")}>
         {query.after ? <Link to={adminUsersBrowsePath(locale, { search: query.search }, routing)}>{t("adminUsersFirst")}</Link> : null}
