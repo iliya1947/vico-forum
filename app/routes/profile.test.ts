@@ -53,6 +53,11 @@ describe("profile route", () => {
       messageCount: 9, bestAnswerCount: 3,
       deactivatedByUserId: "PRIVATE_DEACTIVATION_ACTOR",
       email: "PRIVATE_USER_EMAIL",
+      originalName: "PRIVATE_ORIGINAL_NAME",
+      originalImage: "PRIVATE_ORIGINAL_AVATAR",
+      originalBio: "PRIVATE_ORIGINAL_BIO",
+      originalGithubUrl: "PRIVATE_ORIGINAL_GITHUB",
+      originalWebsiteUrl: "PRIVATE_ORIGINAL_WEBSITE",
     } as typeof profile);
     const result = await loader({
       params, request: new Request("https://forum.test/en/users/owner"), context: env.context,
@@ -66,7 +71,7 @@ describe("profile route", () => {
     });
     expect(result.data.privileged).toEqual({});
     expect(result.init?.headers).toMatchObject({ "Cache-Control": "private, no-store" });
-    expect(JSON.stringify(result.data)).not.toMatch(/PRIVATE_DEACTIVATION_ACTOR|PRIVATE_USER_EMAIL/);
+    expect(JSON.stringify(result.data)).not.toMatch(/PRIVATE_DEACTIVATION_ACTOR|PRIVATE_USER_EMAIL|PRIVATE_ORIGINAL_/);
   });
   it("suppresses public profile editing on an active measure but retains private own status access",async()=>{
     const env=setup("owner");
