@@ -1,14 +1,14 @@
 # Admin panel — current workflow
 
 - Service PR **#251**; accepted A1 main/base `593a03964b8407b249f7c9f5eb117ddb8b07736d`; SA04-A2/A3/A4/B/C1/C2/C3a/C3b/C3c/C3d1/C3d2/D/E/F **Mira checkpoint PASS**, C complete, A4-MIRA-01 CLOSED.
-- **Current checkpoint: SA04-G author complete — Lira STOP; next Mira independent bounded G coordinator checkpoint/scope review.**
+- **Current checkpoint: SA04-G Mira checkpoint PASS — Lira STOP; next bounded checkpoint H remains unassigned pending explicit continuation.**
 - Cumulative [Draft implementation PR #328](https://github.com/iliya1947/vico-forum/pull/328), exact G head **`f6a2c1ef378bfd5f30ece746f65253963f4d6125`**, accepted F parent `707651774932281230b3e90440e18eeb9a08b7d4`; base/main unchanged. Open/Draft/unmerged, 44 cumulative changed paths, 10 G commits in six G files.
 - **G implementation:** both `readNotifications` and `readReplyNotifications` project A1 joined lifecycle through A4, inactive reply/mention actors become neutral Deleted user with narrow marker. Active identity unchanged; no retained private identity or lifecycle in DTO.
 - **Semantics preserved:** do not filter inactive actor notifications; original recipient membership, all kinds (including no-actor complaint decision/appeal result), counts, unread-first order/limits/pagination, targets, timestamps/readAt, mark-read and producer/fanout/replay unchanged. No recipient lifecycle admission.
 - **Public boundary:** explicit notification loader allowlist/malformed marked-name mask, localized EN/RU/HE Deleted-user card, no retained-name avatar initial. System cards unchanged.
 - **Evidence:** native PG17 mixed-actor + system notification tests prove membership/order/counts/read state/targets, direct DTO privacy and idempotent mark-read; route/.data malicious fixture and EN/RU/HE DOM regression. Author personally inspected exact diffs and relevant logic; **not** an independent review.
 - **Final exact-head checks all SUCCESS:** [CI #43291399256](https://github.com/iliya1947/vico-forum/actions/runs/43291399256) **2267 app / 716 PG17**, 69-table parity, lint/typecheck/build/Worker; [SA01 #43291399192](https://github.com/iliya1947/vico-forum/actions/runs/43291399192), [SA03 #43291399357](https://github.com/iliya1947/vico-forum/actions/runs/43291399357), [AP10 #43291399295](https://github.com/iliya1947/vico-forum/actions/runs/43291399295) Chromium **SUCCESS**, AP10 four jobs.
-- **Next:** Mira records independent bounded **SA04-G checkpoint PASS or confirmed current-scope defects** on exact `f6a2c1ef378bfd5f30ece746f65253963f4d6125`. H+/Lev/Mark remain unassigned. No docs closeout, merge, SA05+, Stage6/production or #315.
+- **G coordinator review:** PASS on exact `f6a2c1ef378bfd5f30ece746f65253963f4d6125`; 0 confirmed current-scope G defects. H+/Lev/Mark remain unassigned. No docs closeout, merge, SA05+, Stage6/production or #315.
 
 ## Mandatory author verification
 
@@ -252,3 +252,14 @@ Before any project-changing action or agent handoff, Mira must check in this ord
 - New native PG and EN/HE route/DOM tests verify mixed author lifecycle, unchanged read-state and link/group behavior, and no original name/avatar/deactivation actor/time leaks. First PG run failed only fixture missing table; corrected and fully green thereafter.
 - Final exact-head CI [#43226057368](https://github.com/iliya1947/vico-forum/actions/runs/43226057368) SUCCESS: 2256 app/706 PG17, 69-table parity and Worker smoke; SA01 [#43226057393](https://github.com/iliya1947/vico-forum/actions/runs/43226057393), SA03 [#43226057417](https://github.com/iliya1947/vico-forum/actions/runs/43226057417), AP10 [#43226057468](https://github.com/iliya1947/vico-forum/actions/runs/43226057468) all Chromium SUCCESS.
 - Lira inspected current exact six-commit five-file C3c diff, entire 28-file cumulative inventory and relevant logic/tests; no confirmed current-scope C3c defect. **Lira STOP; Mira bounded checkpoint C3c next.** C3d+/Lev/Mark/docs/merge/production not assigned.
+
+
+## 2026-11-12 — SA04-G Mira checkpoint review PASS
+
+- Reviewed cumulative Draft #328 exact head `f6a2c1ef378bfd5f30ece746f65253963f4d6125` against accepted SA-04 row G and current source-of-truth.
+- Both notification readers neutralize inactive reply/mention actor identity through the accepted A4 lifecycle projection before public DTO serialization; active actors remain unchanged.
+- Recipient membership, reply/mention and complaint-system notification kinds, unread-first ordering, pagination/counts, targets, timestamps/read state and mark-read semantics remain intact. No recipient lifecycle admission, producer/fanout/replay, auth/session or later writer scope leaked into G.
+- The notifications loader uses an explicit allowlist and defensive deleted-actor mask; presentation localizes Deleted user and emits no retained-name avatar initial. Malformed/private lifecycle or identity fields are not serialized.
+- Native PostgreSQL 17, route/.data and EN/RU/HE DOM regressions cover mixed active/inactive actors and system notifications. Exact-head CI #43291399256, SA01 #43291399192, SA03 #43291399357 and AP10 #43291399295 were independently rechecked as SUCCESS.
+- **PASS — 0 confirmed current-scope SA04-G defects.**
+- #328 remains Draft/cumulative. Lira STOP; H+ and Lev/Mark remain unassigned until the next explicit continuation.
