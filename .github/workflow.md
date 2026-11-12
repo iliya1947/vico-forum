@@ -1,14 +1,14 @@
 # Admin panel — current workflow
 
 - Service PR **#251**; merged SA04-A1 main/base `593a03964b8407b249f7c9f5eb117ddb8b07736d`. SA04-A2/A3/A4/B/C1/C2/C3a/C3b **Mira checkpoint PASS**; A4-MIRA-01 CLOSED.
-- **Current checkpoint: SA04-C3c assigned to Lira.**
-- Continue cumulative [Draft implementation PR #328](https://github.com/iliya1947/vico-forum/pull/328) from accepted stable exact head **`6c30b6f5a51e17f3a4722e677e60d8c5150e6baf`**; base/current main **`593a03964b8407b249f7c9f5eb117ddb8b07736d`**. Keep PR open/Draft/unmerged.
-- **C3c bounded result:** neutralize inactive **topic-author identity only** in canonical authenticated **Unread topic summaries**, including the existing `/unread` loader/presentation boundary, reusing accepted A4 Deleted-user identity. Active authors stay unchanged; raw inactive identity/lifecycle must not cross the Unread DTO/serialization/DOM.
-- Current seams: `DrizzleForumRepository.readUnreadForUser`, `app/routes/unread.tsx`, `UnreadView`. The existing section-page consumer uses only topic `id/state`; preserve it without widening C3c.
-- **Preserve Unread semantics:** authenticated 401 boundary, new-vs-unread classification, first-unread/latest-post IDs, unread count, activity timestamp/order, title and public category/section projection.
-- Completion: focused direct PostgreSQL + authenticated route/presentation regressions for mixed active/deactivated authors while preserving read-state fields/order; mandatory personal author inspection; applicable exact-head checks; publish stable head/evidence; **Lira STOP for Mira checkpoint review**.
-- **Explicit outside C3c:** C3d Help summaries, notifications, post history, Admin Users, mentions, online presence, auth/session enforcement, writers/deactivation action, SA05+, Stage6/production, #315 remediation, docs closeout and merge.
-- Lira is the only active implementer. Lev/Mark remain unassigned; no independent review or merge at this checkpoint.
+- **Current checkpoint: SA04-C3c Lira author-complete; STOP. Next: Mira bounded C3c checkpoint review.**
+- Cumulative [Draft implementation PR #328](https://github.com/iliya1947/vico-forum/pull/328) **stable exact head `35bbf78a91d75818318f83ddc7413a69ddc001aa`**, same main/base, **28 files**, open/Draft/unmerged.
+- **Only C3c delivered:** canonical authenticated Unread topic-author lifecycle projection via accepted A4 helper, direct public DTO, `/unread` loader allowlist/mask and translated view. Inactive name becomes Deleted user without original identity/lifecycle disclosure; active identity and authentication preserved.
+- Existing Unread `new/unread` classification, firstUnread/latest post IDs, unread counts, activity/order, titles, category/section, anchors and section-page state-only consumer unchanged. No new schema/migration/writer or extra lookup. Historical PostgreSQL test fixture includes pre-existing migration `0023` for its read-state coverage.
+- Focused direct PostgreSQL and authenticated EN/HE route/DOM regressions passed; personal author diff/SQL/DTO/route/UI/test inspection performed, no current-scope defect confirmed. This is **not** a coordinator/independent review verdict.
+- **Final exact-head SUCCESS:** CI [#43226057368](https://github.com/iliya1947/vico-forum/actions/runs/43226057368) 2256 app/706 native PG17, 69-table manifest, lint/typecheck/build/Worker smoke; SA03 [#43226057417](https://github.com/iliya1947/vico-forum/actions/runs/43226057417), SA01 [#43226057393](https://github.com/iliya1947/vico-forum/actions/runs/43226057393), AP10 [#43226057468](https://github.com/iliya1947/vico-forum/actions/runs/43226057468) Chromium all SUCCESS (AP10 all four jobs).
+- **Next action only for Mira:** independently inspect bounded C3c author result on the exact head, publish checkpoint verdict and only then decide any new bounded assignment. Lira, Lev, Mark have **no active new task**; no review/merge claim by author.
+- **Explicit outside C3c:** C3d Help, notifications, post-history, Admin Users, mentions, presence, auth/session enforcement, writers/deactivation, SA05+, Stage6/production, #315, documentation closeout and merge.
 
 ## Mandatory author verification
 
@@ -242,3 +242,13 @@ Before any project-changing action or agent handoff, Mira must check in this ord
 - Public Tag/Search loaders allowlist/mask before serialization; UI renders translated Deleted user under malformed raw author fixture. New PostgreSQL and EN/HE route/DOM tests confirm mixed identities, rank/content/counts/links and absence of private markers.
 - CI #43220966986 SUCCESS (2254 application /705 native PG17 tests; 69-table parity); SA01 #43220967022, SA03 #43220967370, AP10 #43220967091 Chromium SUCCESS including four AP10 jobs. Lira author inspection done, no confirmed current-scope C3b defect.
 - **Lira STOP; Mira C3b checkpoint next** on exact stable head. C3c+/Lev/Mark and merge/docs/production remain unassigned.
+
+
+## 2026-11-12 — SA04-C3c author complete; Mira checkpoint next
+
+- C3b coordinator PASS exact `6c30b6f5a51e17f3a4722e677e60d8c5150e6baf`; bounded C3c implemented in cumulative Draft #328 exact `35bbf78a91d75818318f83ddc7413a69ddc001aa` (28 changed files), main/base unchanged.
+- `readUnreadForUser` projects same-row joined author A1 lifecycle via existing accepted A4 `projectForumPublicAuthor` before the public DTO. `/unread` loader selects safe fields and masks marked deleted identity; `UnreadView` uses generic translated `deletedUser`, protecting even malformed original-name fixtures.
+- All existing 401, `new/unread`, first-unread/latest IDs, counters, activity/order, title, category/section and section state-only usage preserved. No new product schema/migration or writer. Native PG fixture adds existing migration 0023 only to support new test.
+- New native PG and EN/HE route/DOM tests verify mixed author lifecycle, unchanged read-state and link/group behavior, and no original name/avatar/deactivation actor/time leaks. First PG run failed only fixture missing table; corrected and fully green thereafter.
+- Final exact-head CI [#43226057368](https://github.com/iliya1947/vico-forum/actions/runs/43226057368) SUCCESS: 2256 app/706 PG17, 69-table parity and Worker smoke; SA01 [#43226057393](https://github.com/iliya1947/vico-forum/actions/runs/43226057393), SA03 [#43226057417](https://github.com/iliya1947/vico-forum/actions/runs/43226057417), AP10 [#43226057468](https://github.com/iliya1947/vico-forum/actions/runs/43226057468) all Chromium SUCCESS.
+- Lira inspected current exact six-commit five-file C3c diff, entire 28-file cumulative inventory and relevant logic/tests; no confirmed current-scope C3c defect. **Lira STOP; Mira bounded checkpoint C3c next.** C3d+/Lev/Mark/docs/merge/production not assigned.
