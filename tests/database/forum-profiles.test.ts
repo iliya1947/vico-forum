@@ -475,3 +475,135 @@ describe("SA04-C3a Popular and Unanswered topic-author projections", () => {
     }
   });
 });
+
+describe("SA04-C3b canonical Tag and Search author identities", () => {
+  it("removes raw deleted identities while retaining tag membership and search match ranking", async () => {
+    const entries = [
+      { suffix: "title", authorId: "profile-owner", at: "2026-11-01T10:00:00Z",
+        title: "QuartzNeedle public title", body: "Published title post", sourceLocale: "he" },
+      { suffix: "tag", authorId: "profile-helper", at: "2026-11-02T10:00:00Z",
+        title: "C3b tag discovery", body: "Published tag post", sourceLocale: "en" },
+      { suffix: "body", authorId: "profile-newcomer", at: "2026-11-03T10:00:00Z",
+        title: "C3b body discovery", body: "QuartzNeedle in the published body", sourceLocale: "en" },
+      { suffix: "other", authorId: "profile-newcomer", at: "2026-11-04T10:00:00Z",
+        title: "C3b other discovery", body: "Ordinary published content", sourceLocale: "en" },
+    ] as const;
+    for (const entry of entries) {
+      const id = `profile-c3b-${entry.suffix}`;
+      await repository.createTopicWithInitialPost({
+        id, sectionId: "profile-section", authorId: entry.authorId,
+        titleRevision: {
+          id: `${id}-title`, originalContent: entry.title, sourceLocale: entry.sourceLocale,
+        },
+        initialPost: {
+          id: `${id}-initial`, topicId: id, authorId: entry.authorId,
+          bodyRevision: { id: `${id}-body`, originalContent: entry.body, sourceLocale: "en" },
+        },
+        tags: [
+          { key: "c3b-shared", name: "C3b shared" },
+          ...(entry.suffix === "tag" ? [{ key: "c3b-needle", name: "QuartzNeedle tag" }] : []),
+        ],
+      });
+      await client.query("update forum_topics set created_at=$2::timestamptz where id=$1", [id, entry.at]);
+      await client.query("update forum_posts set created_at=$2::timestamptz where topic_id=$1", [id, entry.at]);
+    }
+    await reply("profile-c3b-title-reply", "profile-c3b-title", "profile-helper");
+    await client.query("update forum_posts set created_at=$2::timestamptz where id=$1", [
+      "profile-c3b-title-reply", "2026-11-12T10:00:00Z",
+    ]);
+    const selected = ["profile-c3b-other", "profile-c3b-body", "profile-c3b-tag", "profile-c3b-title"];
+    const found = ["profile-c3b-title", "profile-c3b-tag", "profile-c3b-body"];
+
+    await client.query("begin");
+    try {
+      await client.query('update "user" set name=$2, image=$3 where id=$1', [
+        "profile-owner", "SECRET_C3B_TITLE_AUTHOR", "https://images.example.test/SECRET_C3B_TITLE_AVATAR.png",
+      ]);
+      await client.query('update "user" set name=$2, image=$3 where id=$1', [
+        "profile-helper", "SECRET_C3B_TAG_AUTHOR", "https://images.example.test/SECRET_C3B_TAG_AVATAR.png",
+      ]);
+      const activeTag = (await repository.readTag("c3b-shared"))!;
+      const activeSearch = await repository.search("  ＱｕａｒｔｚＮｅｅｄｌｅ  ");
+      expect(activeTag.tag).toEqual({ key: "c3b-shared", name: "C3b shared" });
+      expect(activeTag.topics.map((row) => row.id)).toEqual(selected);
+      expect(activeTag.topics.find((row) => row.id === "profile-c3b-title")).toMatchObject({
+        authorName: "SECRET_C3B_TITLE_AUTHOR", postCount: 2,
+        section: { id: "profile-section" }, category: { id: "profile-category" },
+        tags: [{ key: "c3b-shared", name: "C3b shared" }],
+      });
+      expect(activeTag.topics.find((row) => row.id === "profile-c3b-tag")).toMatchObject({
+        authorName: "SECRET_C3B_TAG_AUTHOR", postCount: 1,
+        tags: expect.arrayContaining([{ key: "c3b-needle", name: "QuartzNeedle tag" }]),
+      });
+      expect(activeSearch.map((row) => row.id)).toEqual(found);
+      expect(activeSearch[0]).toMatchObject({
+        id: "profile-c3b-title", title: "QuartzNeedle public title", sourceLocale: "he",
+        authorName: "SECRET_C3B_TITLE_AUTHOR", postCount: 2,
+        activityAt: new Date("2026-11-12T10:00:00Z"),
+      });
+      expect(activeSearch[1]).toMatchObject({
+        id: "profile-c3b-tag", authorName: "SECRET_C3B_TAG_AUTHOR",
+      });
+      expect(activeSearch[2]).toMatchObject({
+        id: "profile-c3b-body", authorName: "profile-newcomer",
+      });
+      expect((await repository.search("QuartzNeedle", 2)).map((row) => row.id)).toEqual(found.slice(0, 2));
+      expect(await repository.search("     ")).toEqual([]);
+
+      for (const [id, actor] of [
+        ["profile-owner", "SECRET_C3B_OWNER_DEACTIVATOR"],
+        ["profile-helper", "SECRET_C3B_HELPER_DEACTIVATOR"],
+      ] as const) {
+        await client.query(
+          'update "user" set deactivated_at=$2::timestamptz,' +
+            ' deactivated_by_user_id=$3, retain_at_least_until=$4::timestamptz where id=$1',
+          [id, "2024-02-29T12:34:56Z", actor, "2025-02-28T12:34:56Z"],
+        );
+      }
+      const tagPage = (await repository.readTag("c3b-shared"))!;
+      const search = await repository.search("  ＱｕａｒｔｚＮｅｅｄｌｅ  ");
+      expect(tagPage.tag).toEqual(activeTag.tag);
+      expect(tagPage.topics.map((row) => row.id)).toEqual(selected);
+      expect(tagPage.topics.map((row) => [
+        row.id, row.title, row.postCount, row.createdAt, row.section, row.category, row.tags,
+      ])).toEqual(activeTag.topics.map((row) => [
+        row.id, row.title, row.postCount, row.createdAt, row.section, row.category, row.tags,
+      ]));
+      expect(tagPage.topics).toMatchObject([
+        { id: "profile-c3b-other", authorName: "profile-newcomer" },
+        { id: "profile-c3b-body", authorName: "profile-newcomer" },
+        { id: "profile-c3b-tag", authorName: "Deleted user", authorIdentityKind: "deleted" },
+        { id: "profile-c3b-title", authorName: "Deleted user", authorIdentityKind: "deleted" },
+      ]);
+      expect(tagPage.topics[0]).not.toHaveProperty("authorIdentityKind");
+      expect(search.map((row) => row.id)).toEqual(found);
+      expect(search.map((row) => [
+        row.id, row.title, row.sourceLocale, row.postCount, row.activityAt,
+        row.section, row.category, row.tags,
+      ])).toEqual(activeSearch.map((row) => [
+        row.id, row.title, row.sourceLocale, row.postCount, row.activityAt,
+        row.section, row.category, row.tags,
+      ]));
+      expect(search).toMatchObject([
+        { id: "profile-c3b-title", authorName: "Deleted user", authorIdentityKind: "deleted" },
+        { id: "profile-c3b-tag", authorName: "Deleted user", authorIdentityKind: "deleted" },
+        { id: "profile-c3b-body", authorName: "profile-newcomer" },
+      ]);
+      expect(search[2]).not.toHaveProperty("authorIdentityKind");
+      expect((await repository.search("QuartzNeedle", 2)).map((row) => row.id)).toEqual(found.slice(0, 2));
+      expect(await repository.readTag("missing-c3b")).toBeUndefined();
+
+      const serialized = JSON.stringify({ tagPage, search });
+      for (const secret of [
+        "SECRET_C3B_TITLE_AUTHOR", "SECRET_C3B_TAG_AUTHOR",
+        "SECRET_C3B_TITLE_AVATAR", "SECRET_C3B_TAG_AVATAR",
+        "SECRET_C3B_OWNER_DEACTIVATOR", "SECRET_C3B_HELPER_DEACTIVATOR",
+        "2024-02-29", "2025-02-28",
+      ]) expect(serialized).not.toContain(secret);
+      expect(Object.keys(tagPage.topics[3]!)).not.toContain("authorDeactivatedAt");
+      expect(Object.keys(search[0]!)).not.toContain("authorRetainAtLeastUntil");
+    } finally {
+      await client.query("rollback");
+    }
+  });
+});
