@@ -2,12 +2,12 @@
 
 - Service PR **#251**; owner authorized SA-04 service/report updates.
 - SA04-A1 merged in `main` `593a03964b8407b249f7c9f5eb117ddb8b07736d`. SA04-A2 and SA04-A3 **Mira checkpoint PASS** on their previous exact heads.
-- **Active checkpoint: SA04-A4-MIRA-01 correction author COMPLETE; Лира STOP. Next recipient: Мира for repeat SA04-A4 checkpoint review on corrected exact head.** Prior CHANGES REQUIRED finding remains **pending Mira verification**, not yet closed.
+- **Active checkpoint: SA04-B assigned to Lira in cumulative Draft #328. A2–A4 checkpoint PASS remains accepted; SA04-A4-MIRA-01 is CLOSED.**
 - Cumulative [Draft implementation PR #328](https://github.com/iliya1947/vico-forum/pull/328), unchanged main/base `593a03964b8407b249f7c9f5eb117ddb8b07736d`, **stable head `9053b19425c48d38a5384a3b8620ca2a0c4b35dc`**, open, Draft, unmerged; four files.
 - Correction only in `db/public-identity.ts` and `db/public-identity.test.ts`. Deactivated-state retention check now matches the existing A1 PostgreSQL CHECK: one **UTC calendar year** after deactivation, with PostgreSQL leap-day clamp (2024-02-29 12:34:56 UTC → 2025-02-28 12:34:56 UTC). Shorter retention fails closed. Added one focused test with invalid one-year-short states and exact/later UTC boundaries across leap day/month/year ends. Neutral identity allowlist, active identity, A2 account read and A3 row guard unchanged.
 - **Personal author verification complete**: inspected the full corrected A4 source and tests, cumulative four-file PR diff, A1 migration and PG17 migration constraint test; current scope preserved. This does not substitute repeat Mira review.
 - **Exact-head [CI #43159121332](https://github.com/iliya1947/vico-forum/actions/runs/43159121332) SUCCESS:** 2243/2243 app tests (6 A4), 700/700 native PG17 tests, 69-table manifest parity, lint/typecheck/build/preview/Drizzle/migration/Worker smoke.
-- **Mira next:** re-review A4 on stable exact head and explicitly resolve SA04-A4-MIRA-01. No A5/B+ authorization, no Lev whole-PR review, no merge or completed SA-04 claim.
+- **Active recipient: Lira — SA04-B only.** Canonical profile neutral public identity/bio/links for inactive target; publish stable exact head/evidence + author inspection, then STOP. SA04-C is not assigned.
 - No public reader/route/search/mention/online/notification/history wiring, runtime auth/session/writer integration, deactivation operation/control, SA05+, Stage6/production, #315 remediation or package docs closeout.
 
 ## Mandatory author verification
@@ -137,4 +137,13 @@ Before any project-changing action or agent handoff, Mira must check in this ord
 - Exact-head CI #43159121332 SUCCESS.
 - **PASS — 0 confirmed open current-scope A4 defects.**
 - #328 stays Draft/cumulative. Lira STOP; no Lev review/merge at this checkpoint.
+
+## 2026-11-12 — SA04-B assigned
+
+- Original accepted Lev checkpoint B is one independently completable result in the current repository and is not split further.
+- Continue cumulative Draft #328 from `9053b19425c48d38a5384a3b8620ca2a0c4b35dc`.
+- Scope: canonical profile only. Inactive target public profile must preserve stable ID/URL and public structural/statistical fields while neutralizing raw name/image/bio/profile links before server serialization/presentation.
+- Active profile behavior and SA-03 independent privileged composition remain unchanged.
+- No other public-reader surface and no auth/session/writer enforcement is assigned.
+- Lira publishes stable B head/evidence, performs author inspection and STOP. C+ unassigned; Lev remains unassigned pending a larger stable cumulative slice.
 
