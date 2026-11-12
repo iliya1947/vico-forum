@@ -867,19 +867,20 @@ describe("SA04-C3d2 For-me candidate topic-author identities", () => {
       await client.query("update forum_topics set created_at=$2::timestamptz where id=$1", [id, timestamp]);
       await client.query("update forum_posts set created_at=$2::timestamptz where topic_id=$1", [id, timestamp]);
     };
-    await client.query('insert into "user" (id,name,email) values ($1,$2,$3),($4,$5,$6)', [
+    await client.query('insert into "user" (id,name,email) values ($1,$2,$3),($4,$5,$6),($7,$8,$9)', [
       "profile-c3d2-no-signal", "No signal", "no-signal-c3d2@example.test",
       "profile-c3d2-no-match", "No match", "no-match-c3d2@example.test",
+      "profile-c3d2-interest", "Interested C3d2", "interested-c3d2@example.test",
     ]);
-    await createQuestion("profile-c3d2-signal-owned", "profile-owner", ["c3d2-owned"]);
+    await createQuestion("profile-c3d2-signal-owned", "profile-c3d2-interest", ["c3d2-owned"]);
     await createQuestion("profile-c3d2-signal-replied", "profile-helper", ["c3d2-replied"]);
-    await reply("profile-c3d2-signal-answer", "profile-c3d2-signal-replied", "profile-owner");
+    await reply("profile-c3d2-signal-answer", "profile-c3d2-signal-replied", "profile-c3d2-interest");
     await repository.markTopicSolved("profile-c3d2-signal-replied", "profile-helper", "own");
     await createQuestion("profile-c3d2-two-match", "profile-helper", ["c3d2-owned", "c3d2-replied"]);
     await createQuestion("profile-c3d2-one-new", "profile-newcomer", ["c3d2-owned"]);
     await createQuestion("profile-c3d2-one-a", "profile-helper", ["c3d2-replied"]);
     await createQuestion("profile-c3d2-one-z", "profile-newcomer", ["c3d2-replied"]);
-    await createQuestion("profile-c3d2-own", "profile-owner", ["c3d2-owned", "c3d2-replied"]);
+    await createQuestion("profile-c3d2-own", "profile-c3d2-interest", ["c3d2-owned", "c3d2-replied"]);
     await createQuestion("profile-c3d2-solved", "profile-helper", ["c3d2-owned", "c3d2-replied"]);
     await repository.markTopicSolved("profile-c3d2-solved", "profile-helper", "own");
     await createQuestion("profile-c3d2-unrelated", "profile-helper", ["c3d2-unrelated"]);
@@ -912,7 +913,7 @@ describe("SA04-C3d2 For-me candidate topic-author identities", () => {
         "profile-helper", "SECRET_C3D2_DELETED_AUTHOR", "https://example.test/SECRET_C3D2_AVATAR.png",
       ]);
       const read = async () => Promise.all(modes.map(async (mode) => ({
-        name: mode.name, rows: (await repository.readHelpSolutionsForMe("profile-owner", mode.filters))!.questions,
+        name: mode.name, rows: (await repository.readHelpSolutionsForMe("profile-c3d2-interest", mode.filters))!.questions,
       })));
       const before = await read();
       for (const [i, mode] of modes.entries()) {
