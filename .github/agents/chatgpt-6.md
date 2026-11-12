@@ -1,3 +1,15 @@
+# Лира — active assignment: SA04-E mention discovery excludes inactive accounts
+
+- Continue cumulative Draft **#328** from accepted exact head `85a95a0a46dc77ea80ab21eea5504a681ac586de`; main/base `593a03964b8407b249f7c9f5eb117ddb8b07736d`.
+- Required result: `DrizzleForumRepository.searchMentionableUsers` never returns a deactivated account. Inactive rows must be excluded by accepted A1 active-account semantics **before existing ORDER BY/LIMIT 8**; do not surface them as neutral Deleted-user suggestions.
+- Preserve existing active search semantics: trim/nonempty/max64, literal case-insensitive name matching with current escaping, order by name then stable ID, limit 8, and output only stable `id` + display `name`.
+- Preserve authenticated `/:locale/mentions` contract: guest 401 before lookup, empty/oversized behavior, private/no-store/nosniff, typed storage 503, unexpected errors propagate. Stable-ID insertion and published mention/notification semantics are not being redesigned.
+- Add focused native PG regression that proves filter-before-limit using enough matching inactive rows to displace active candidates under the old query; also preserve ordering, limit, literal wildcard behavior and private-field exclusion. Touch route/Editor tests only if needed by the actual change.
+- Excluded: notification creation/dedup/edit semantics, F online presence, G notifications, H post history, I auth/session, J–R writers, SA05+, Stage6/production, #315, docs and merge.
+- Publish stable exact head/evidence, perform mandatory personal author inspection, then **STOP for Mira SA04-E checkpoint review**. Lev/Mark and F+ remain unassigned.
+
+---
+
 # Лира — SA04-D author complete; STOP for Mira checkpoint
 
 - Cumulative [Draft implementation PR #328](https://github.com/iliya1947/vico-forum/pull/328) stays open/Draft/unmerged, unchanged main/base `593a03964b8407b249f7c9f5eb117ddb8b07736d`, **stable exact head `85a95a0a46dc77ea80ab21eea5504a681ac586de`**, 35 cumulative changed files. Checkpoint C (through C3d2) Mira PASS.
