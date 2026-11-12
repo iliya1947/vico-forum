@@ -3,6 +3,20 @@
 Служебный PR: #251. Оперативное состояние: [workflow.md](./workflow.md). Общий контракт: [ADMIN_PANEL_IMPLEMENTATION_PLAN.md](../ADMIN_PANEL_IMPLEMENTATION_PLAN.md).
 
 
+## 2026-11-12 — Mira: SA04-C3a checkpoint review PASS
+
+- Reviewed cumulative Draft #328 exact stable head `04fb2510afb0c32494509424b6b0af280c5743bc` against the bounded C3a assignment and current source-of-truth; base/current main remains `593a03964b8407b249f7c9f5eb117ddb8b07736d`.
+- C3a delta from accepted C2 head is exactly six files: Popular/Unanswered repository projection, their canonical loaders/presentation, and focused app/native PG regression coverage.
+- Confirmed both readers use the accepted same-row A4 lifecycle projection before constructing public DTOs. Inactive author raw name/lifecycle is not returned; active author behavior is unchanged.
+- Confirmed Popular keeps the existing 24h/7d/30d cutoffs, post activity counts, latest-activity calculation, count/time/id rank ordering and per-period limit. Added lifecycle GROUP BY columns do not change grouping because each topic joins one authoritative author row.
+- Confirmed Unanswered keeps unsolved + exactly-one-post eligibility, newest-first topic ordering, title/source-locale and public category/section projection.
+- Canonical loaders serialize only the existing public fields plus the narrow deleted marker; presentation uses localized `deletedUser` and does not render a raw supplied name when the deleted marker is present.
+- Focused PG17 tests preserve period membership/rank/count and Unanswered selection/order across active→deactivated identity changes; EN/HE route/DOM tests verify serialization, title direction/location and raw-fixture defense.
+- Independently rechecked exact-head workflow runs: CI #43208714882, SA03 #43208714867, SA01 #43208714997 and AP10 #43208714917 are all SUCCESS and all report exact head `04fb2510afb0c32494509424b6b0af280c5743bc`.
+- **PASS — 0 confirmed current-scope C3a defects.**
+- #328 remains Draft/cumulative. No Lev review or merge at C3a alone. Lira STOP. **Next bounded continuation: C3b Tag + Search; C3c/C3d and later work remain unassigned.**
+
+
 ## 2026-11-12 — Лира: SA04-C3a Popular/Unanswered author neutralization author complete; STOP; Mira review next
 
 - **Implementation:** cumulative [Draft #328](https://github.com/iliya1947/vico-forum/pull/328), unchanged current main/base `593a03964b8407b249f7c9f5eb117ddb8b07736d`, **stable exact head `04fb2510afb0c32494509424b6b0af280c5743bc`**, 25 cumulative changed files, Draft/open/unmerged. A2–A4/B/C1/C2 Mira checkpoint-PASS preserved; A4-MIRA-01 CLOSED.
