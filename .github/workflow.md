@@ -1,7 +1,7 @@
 # Admin panel — current workflow
 
 - Service PR **#251**; accepted A1 main/base `593a03964b8407b249f7c9f5eb117ddb8b07736d`; SA04-A2/A3/A4/B/C1/C2/C3a/C3b/C3c/C3d1/C3d2/D/E/F/G **Mira checkpoint PASS**. C complete, A4-MIRA-01 CLOSED.
-- **Current checkpoint: SA04-H Mira checkpoint PASS — cumulative A–H preparation/projection slice is stable on exact head `0a917b6f4f55f991bea6e6031b43a0c4f0dc2f85`; Lira STOP. Next reviewer/SA04-I transition remains unassigned pending explicit continuation.**
+- **Current checkpoint: cumulative SA04-A2–H coordinator whole-PR PASS; Lev assigned independent technical review of Draft #328 exact head `0a917b6f4f55f991bea6e6031b43a0c4f0dc2f85`.** Lira/Mark STOP; SA04-I remains unassigned.
 - Cumulative [Draft implementation PR #328](https://github.com/iliya1947/vico-forum/pull/328), exact H head **`0a917b6f4f55f991bea6e6031b43a0c4f0dc2f85`**, accepted G `f6a2c1ef378bfd5f30ece746f65253963f4d6125`; main/base unchanged. Open/Draft/unmerged; 49 cumulative changed files, 7 H commits across six H files.
 - **H implementation:** `readPostHistory` queries the revision author's same-row A1 account lifecycle and uses accepted A4 projector before direct DTO return; inactive author → neutral Deleted user plus narrow `authorIdentityKind: deleted`; active name unchanged. Explicit returned fields prevent private original identity/lifecycle leakage.
 - **Preserved:** stable `authorId`, topic/post/revision IDs and membership, original revision source text/locale, createdAt and descending order, existing `forum.post.history.read` server permission gate. No history revision rewrite or writer/schema/RBAC/auth/session change.
@@ -275,3 +275,14 @@ Before any project-changing action or agent handoff, Mira must check in this ord
 - Exact-head workflows independently rechecked: CI #43296996996, SA03 #43296997015, SA01 #43296997261 and AP10 #43296997445 — all completed **SUCCESS**.
 - **PASS — 0 confirmed current-scope SA04-H defects.**
 - #328 remains cumulative Draft/open/unmerged. I+ is not started. Lira STOP. Reviewer/next enforcement transition is deliberately not assigned in this checkpoint.
+
+
+## 2026-11-12 — SA04-A2–H cumulative coordinator gate PASS; Lev review assigned
+
+- Final Draft #328 exact head for this review gate: `0a917b6f4f55f991bea6e6031b43a0c4f0dc2f85`, 49 changed files from merged A1 main baseline `593a03964b8407b249f7c9f5eb117ddb8b07736d`.
+- Mira completed the required cumulative whole-PR review on this exact head after the bounded A2–H checkpoint cycle. Final source/inventory review confirmed the shared AccountState/A4 invariants, all assigned public/read-side consumers B–H, preservation boundaries, and absence of I+ Better Auth/authoritative-writer scope.
+- Exact-head CI #43296996996, SA03 #43296997015, SA01 #43296997261 and AP10 #43296997445 remain SUCCESS.
+- **Coordinator verdict: PASS — 0 confirmed current-scope A2–H defects.**
+- A1 is already merged and had its own Lev independent PASS before merge; it is the baseline contract, not a review target to spend again.
+- **Lev is now assigned one meaningful independent review:** cumulative A2–H in #328 exact `0a917b6f4f55f991bea6e6031b43a0c4f0dc2f85`. Review the whole current slice independently against the accepted SA04 plan/current Stage; classify only confirmed current-scope defects, and report the complete findings packet or PASS. Do not implement fixes during review.
+- SA04-I and later enforcement, SA05+, docs closeout, merge, Stage6/production and #315 remediation remain unassigned.
