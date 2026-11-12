@@ -1,4 +1,18 @@
-# Лира — active assignment: SA04-F online presence / heartbeat lifecycle
+# Лира — SA04-F online presence lifecycle, author complete; STOP
+
+- Current cumulative implementation [Draft #328](https://github.com/iliya1947/vico-forum/pull/328), unchanged main/base `593a03964b8407b249f7c9f5eb117ddb8b07736d`. F final exact implementation head **`707651774932281230b3e90440e18eeb9a08b7d4`**, 40 cumulative changed paths. Prior E Mira PASS `69c58d02003c1e00def3916ed2d7a4bafabdaf4f`.
+- Six F files / six commits: `db/user-privacy.ts`, `db/forum-repository.ts`, `app/routes/presence.ts`, `app/routes/presence.test.ts`, `tests/database/forum-online-presence.test.ts`, `tests/database/forum-online-privacy.test.ts`. No schema or new dependency.
+- On public read, A1 `activeAccountPredicate(user.deactivatedAt)` now filters out inactive rows before existing window count / activity ORDER BY / LIMIT 12, alongside SET-06 `show_online` visibility and five-minute recency. This keeps inactive names/images and identities absent, with no Deleted-user card and no count distortion. Returned `id/name/image` allowlist unchanged.
+- For heartbeat, existing `lockPrivacySubject` obtains the user row `FOR UPDATE` and returns `deactivatedAt` from that same row; `recordOnlinePresence` rejects non-null inactive state via accepted `AccountInactiveError` before preference and presence writes. Active path retains later committed Privacy state observation, OFF skip, ON 45s throttle, per-subject serialization. Privacy save intentionally ignores the returned value and still accepts inactive actors pending P; no auto-clear/rewrite.
+- Canonical presence action handles `AccountInactiveError` alongside missing-user as private generic 409. Same origin/session/user-ID/verb/form, errors and no-store semantics unchanged; Hyperdrive forwards domain errors without reclassification.
+- PG17 suite: F filter test uses 17 physical rows (inactive ON + hidden stale excluded) and verifies exact 14 count/12 members, active identity, no secret fields; no inactive insert or refresh; preference preserved; two actual PostgreSQL `pg_blocking_pids` row-lock orderings. Deactivation-first yields no row/denied waiting heartbeat; heartbeat-first may leave stale row but public read hides it immediately. Existing SET-06 OFF↔heartbeat tests and one new route private 409 test pass.
+- Personally inspected every F commit/diff against E and current main, source state/locking/route/wrapper/test contracts, all 40 cumulative changed filenames, and actual CI output. No confirmed current-scope defect. Not an independent whole-PR review.
+- [CI #43284564579](https://github.com/iliya194/vico-forum/actions/runs/43284564579) SUCCESS 2265 app + 714 PG17, 69-table parity, lint/typecheck/build/local Worker smoke. [SA03 #43284564530](https://github.com/iliya194/vico-forum/actions/runs/43284564530), [SA01 #43284564635](https://github.com/iliya194/vico-forum/actions/runs/43284564635), [AP10 #43284564627](https://github.com/iliya194/vico-forum/actions/runs/43284564627) Chromium all SUCCESS. Pre-existing unrelated ESLint unused-disable warning in `app/forum/ui.test.tsx` and DrizzleKit BigInt diagnostic did not fail CI; native schema parity independently passed.
+- **AUTHOR STOP.** Next Mira SA04-F bounded checkpoint/scope review on stable exact `707651774932281230b3e90440e18eeb9a08b7d4`. G+/Lev/Mark not assigned. Draft/open/unmerged; no docs closeout or production.
+
+---
+
+# Лира — original SA04-F assignment (completed)
 
 - Continue cumulative Draft **#328** from accepted exact head `69c58d02003c1e00def3916ed2d7a4bafabdaf4f`; main/base `593a03964b8407b249f7c9f5eb117ddb8b07736d`.
 - Required result: `readOnlinePresence` excludes inactive accounts before public count/order/`LIMIT 12`; `recordOnlinePresence` refuses inactive actor before presence insert/refresh at the authoritative transaction/row-lock boundary. Inactive accounts are absent, not Deleted-user members.
