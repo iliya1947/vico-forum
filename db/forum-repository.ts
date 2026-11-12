@@ -287,6 +287,7 @@ export interface ForumHelpAttentionState {
 }
 
 export interface ForumHelpQuestionSummary {
+  authorIdentityKind?: "deleted";
   id: string;
   title: string;
   authorName: string;
@@ -2395,7 +2396,9 @@ export class DrizzleForumRepository {
       .select({
         id: forumTopics.id,
         title: forumTopicTitleRevisions.originalContent,
-        authorName: user.name,
+        authorId: forumTopics.authorId, authorName: user.name,
+        authorDeactivatedAt: user.deactivatedAt, authorDeactivatedByUserId: user.deactivatedByUserId,
+        authorRetainAtLeastUntil: user.retainAtLeastUntil,
         postCount: sql<number>`count(distinct ${forumPosts.id})::int`,
         isSolved: forumTopics.isSolved,
         bestAnswerPostId: forumTopics.bestAnswerPostId,
@@ -2456,7 +2459,8 @@ export class DrizzleForumRepository {
       .groupBy(
         forumTopics.id,
         forumTopicTitleRevisions.id,
-        user.name,
+        forumTopics.authorId, user.name,
+        user.deactivatedAt, user.deactivatedByUserId, user.retainAtLeastUntil,
         currentBestAnswer.solutionModerationStatus,
         currentBestAnswer.solutionOutdatedReason,
         currentBestAnswer.solutionOutdatedReasonKind,
@@ -2533,10 +2537,13 @@ export class DrizzleForumRepository {
     }
     return {
       ...category,
-      questions: rows.filter((row) => filter.mode !== "attention" || attentionByTopic.has(row.id)).map((row) => ({
+      questions: rows.filter((row) => filter.mode !== "attention" || attentionByTopic.has(row.id)).map((row) => {
+        const author = projectForumPublicAuthor(row);
+        return {
         id: row.id,
         title: row.title,
-        authorName: row.authorName,
+        authorName: author.name,
+        ...(author.kind === "deleted" ? { authorIdentityKind: "deleted" as const } : {}),
         replyCount: Math.max(0, row.postCount - 1),
         isSolved: row.isSolved,
         hasBestAnswer: row.bestAnswerPostId !== null,
@@ -2550,7 +2557,8 @@ export class DrizzleForumRepository {
         createdAt: row.createdAt,
         activityAt: row.activityAt,
         tags: tagsByTopic.get(row.id) ?? [],
-      })),
+        };
+      }),
     };
   }
 
