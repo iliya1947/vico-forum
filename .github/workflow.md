@@ -1,14 +1,15 @@
 # Admin panel — current workflow
 
-- Service PR **#251**; owner authorized SA-04 service/report updates.
-- SA04-A1 merged in `main` `593a03964b8407b249f7c9f5eb117ddb8b07736d`. SA04-A2 and SA04-A3 **Mira checkpoint PASS** on their previous exact heads.
-- **Active checkpoint: SA04-B assigned to Lira in cumulative Draft #328. A2–A4 checkpoint PASS remains accepted; SA04-A4-MIRA-01 is CLOSED.**
-- Cumulative [Draft implementation PR #328](https://github.com/iliya1947/vico-forum/pull/328), unchanged main/base `593a03964b8407b249f7c9f5eb117ddb8b07736d`, **stable head `9053b19425c48d38a5384a3b8620ca2a0c4b35dc`**, open, Draft, unmerged; four files.
-- Correction only in `db/public-identity.ts` and `db/public-identity.test.ts`. Deactivated-state retention check now matches the existing A1 PostgreSQL CHECK: one **UTC calendar year** after deactivation, with PostgreSQL leap-day clamp (2024-02-29 12:34:56 UTC → 2025-02-28 12:34:56 UTC). Shorter retention fails closed. Added one focused test with invalid one-year-short states and exact/later UTC boundaries across leap day/month/year ends. Neutral identity allowlist, active identity, A2 account read and A3 row guard unchanged.
-- **Personal author verification complete**: inspected the full corrected A4 source and tests, cumulative four-file PR diff, A1 migration and PG17 migration constraint test; current scope preserved. This does not substitute repeat Mira review.
-- **Exact-head [CI #43159121332](https://github.com/iliya1947/vico-forum/actions/runs/43159121332) SUCCESS:** 2243/2243 app tests (6 A4), 700/700 native PG17 tests, 69-table manifest parity, lint/typecheck/build/preview/Drizzle/migration/Worker smoke.
-- **Active recipient: Lira — SA04-B only.** Canonical profile neutral public identity/bio/links for inactive target; publish stable exact head/evidence + author inspection, then STOP. SA04-C is not assigned.
-- No public reader/route/search/mention/online/notification/history wiring, runtime auth/session/writer integration, deactivation operation/control, SA05+, Stage6/production, #315 remediation or package docs closeout.
+- Service PR **#251**; owner authorized SA-04 service reporting/state.
+- SA04-A1 merged in main `593a03964b8407b249f7c9f5eb117ddb8b07736d`; A2, A3 and A4 **Mira checkpoint PASS** on their accepted previous exact heads; A4-MIRA-01 CLOSED.
+- **Current SA04-B: Lira AUTHOR COMPLETE; Lira STOP. Next recipient Mira for bounded B checkpoint/scope review on exact stable head.** SA04-C+ unassigned; Lev whole-PR review not scheduled.
+- [Cumulative Draft implementation PR #328](https://github.com/iliya1947/vico-forum/pull/328), unchanged post-A1 main/base `593a03964b8407b249f7c9f5eb117ddb8b07736d`, **stable head `22c05bfa824a0d5284c818f92b691056fd0749f7`**, 15 changed files, open Draft/unmerged.
+- **B only:** canonical `/:locale/users/:userId` profile. Single-row snapshot of public identity/profile plus A1 deactivation tuple in `DrizzleForumRepository.readProfile`; apply accepted A4 projector before returning. Inactive user keeps stable ID/profile URL, joinedAt, role, message/best-answer counts while name → neutral Deleted user, image/profile links null, bio empty, original and lifecycle private markers never returned. Active unchanged. Canonical route preserves private/no-store 404/503 and exact SA03 privileged admission/composition. UI uses generic translated label (reviewed EN/RU/HE packs) and has no raw identity rendered.
+- **Author inspection complete:** inspected full cumulative 15-file diff/source, B query/read/route/UI/localization + direct PG17 and route/presentation/privileged tests; no B current-scope defects after local i18n pack correction. This is not Mira/Lev independent review.
+- **Exact-head [CI #43164075663](https://github.com/iliya1947/vico-forum/actions/runs/43164075663) SUCCESS**: 2246/2246 app, 701/701 native PG17, 69-table manifest parity, lint/typecheck/build/Worker smoke. Browser runs all **SUCCESS**: [SA03 #43164076028](https://github.com/iliya1947/vico-forum/actions/runs/43164076028), [SA01 #43164075715](https://github.com/iliya1947/vico-forum/actions/runs/43164075715), [AP10 #43164075869](https://github.com/iliya1947/vico-forum/actions/runs/43164075869).
+- **CI evidence caveat:** pinned DrizzleKit 0.31.10 `generate` prints a BigInt error but returns success (same phenomenon on prior A4 green head #43159121332). No B schema or migration change; native PG17 schema manifest parity independently passed. Do not claim the `generate` exit alone proves parity.
+- **Mira next:** review bounded B on stable exact head and determine separately assigned next bounded work. No Lev/merge at B checkpoint.
+- **Excluded:** other public reader/discovery/topics/categories/Admin Users/mentions/presence/notifications/history; auth/session admission, profile/deactivation writers, SA04-C+, SA05+, Stage6/production, #315 remediation and package docs closeout.
 
 ## Mandatory author verification
 
@@ -147,3 +148,11 @@ Before any project-changing action or agent handoff, Mira must check in this ord
 - No other public-reader surface and no auth/session/writer enforcement is assigned.
 - Lira publishes stable B head/evidence, performs author inspection and STOP. C+ unassigned; Lev remains unassigned pending a larger stable cumulative slice.
 
+
+## 2026-11-12 — SA04-B author checkpoint complete; Lira STOP
+
+- Mira A2–A4 checkpoint-PASS preserved; cumulative Draft #328 exact head `22c05bfa824a0d5284c818f92b691056fd0749f7` (base unchanged), 15 files.
+- Canonical public profile reads one authoritative lifecycle+identity snapshot and projects via A4 before returning, removing original name/image/bio/external links and deactivation facts, keeping ID/URL/role/joinedAt/post statistics. Active profile and SA03 Owner/Admin private composition unchanged.
+- One native PG17 direct reader test (all 701 native pass), 3 app route/view/privilege cases (all 2246 app pass); RU/HE key and matching source fingerprint added after initial typecheck found missing manual-pack entries.
+- Personal author source/diff inspection complete. Exact-head CI #43164075663 SUCCESS; SA03 #43164076028, SA01 #43164075715, AP10 #43164075869 Chromium workflows SUCCESS. DrizzleKit generate BigInt message also present on previous green A4 head; no schema change in B, PG manifest 69 tables.
+- **Lira STOP. Next Mira bounded B checkpoint/scope review**, C+ and Lev unassigned; no merge.
