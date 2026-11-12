@@ -3,6 +3,20 @@
 Служебный PR: #251. Оперативное состояние: [workflow.md](./workflow.md). Общий контракт: [ADMIN_PANEL_IMPLEMENTATION_PLAN.md](../ADMIN_PANEL_IMPLEMENTATION_PLAN.md).
 
 
+## 2026-11-12 — Mira: SA04-D checkpoint review PASS
+
+- Reviewed cumulative Draft #328 exact stable head `85a95a0a46dc77ea80ab21eea5504a681ac586de` against bounded checkpoint D; base/current main remains `593a03964b8407b249f7c9f5eb117ddb8b07736d`.
+- Complete D delta from accepted C3d2 is six files / nine commits: Admin Users PostgreSQL reader, canonical protected loader, directory presentation and their focused native/route/DOM regressions.
+- Verified data path end-to-end: same `user` row supplies ID/name/image/A1 lifecycle; A4 projection occurs before the public directory DTO. Deactivated rows keep stable ID/joined timestamp but return neutral name/null image/deleted marker only; active rows preserve current identity.
+- Verified SQL identity-search boundary directly against the previous reader: inactive matching replaces retained raw name with canonical neutral public name before `ILIKE`. Therefore old retained names neither return a row nor alter independent `total`; ID matching remains intentional. Existing escape function, email exclusion, filter-before-limit, C-collated ID ordering/cursor, page size/lookahead and totals are preserved.
+- Schema A1 CHECK prevents partial lifecycle tuples. Reader fail-closes malformed lifecycle through the accepted projector; Hyperdrive wrapper still maps only classified PostgreSQL availability/timeout failures to `AdminUsersUnavailableError`, so invariant/programming faults are not mislabeled as 503.
+- Loader preserves `admin.users.read` admission and private/no-store, rebuilds a strict allowlist and neutralizes any adversarial marked raw name/image. View localizes `deletedUser` and never uses retained old-name initials/image for the avatar; active and navigation behavior remain.
+- Native PG17 regression covers active/deactivated identities, retained old-name nonmatch/noncount, public neutral-name + stable-ID lookup, case/literal wildcard semantics, exact count, full keyset traversal, active image fidelity, stable joined time and private-marker absence. Route/DOM tests cover malicious marked DTO extras and EN/RU/HE neutral presentation.
+- Independently rechecked GitHub Actions: CI #43267484493, SA03 #43267484249, SA01 #43267484427 and AP10 #43267484425 all completed SUCCESS on exact head `85a95a0a46dc77ea80ab21eea5504a681ac586de`.
+- **PASS — 0 confirmed current-scope D defects.**
+- E mentions, F presence, G notifications, H post history and I–R enforcement remain future checkpoints, not D defects. #328 remains Draft; Lira STOP; Lev/Mark remain unassigned.
+
+
 ## 2026-11-12 — Лира: SA04-D Admin Users directory author complete; STOP for Mira checkpoint
 
 - **Implementation:** cumulative [Draft #328](https://github.com/iliya1947/vico-forum/pull/328), unchanged main/base `593a03964b8407b249f7c9f5eb117ddb8b07736d`, **exact head `85a95a0a46dc77ea80ab21eea5504a681ac586de`** (35 cumulative files), open/Draft/unmerged. Checkpoint C through C3d2 Mira PASS preserved.
