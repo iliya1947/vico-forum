@@ -1,3 +1,16 @@
+# Лира — active assignment: SA04-C3d2 For-me topic-author neutralization
+
+- Continue cumulative Draft **#328** from accepted exact head `f503fbc8796d4751ff95e4a54534da5fa4ee03bb`; main/base `593a03964b8407b249f7c9f5eb117ddb8b07736d`.
+- Required result: separate authenticated `DrizzleForumRepository.readHelpSolutionsForMe` neutralizes inactive **candidate topic-author** identity via accepted A4 before returning `ForumHelpQuestionSummary`; active authors unchanged.
+- Preserve the existing For-me contract exactly: session-bound user; interest tags only from persisted Help questions authored/replied-to by that user; unsolved candidates from other authors with >=1 matching tag; order by matched-tag count desc, activity desc, topic-id desc; both bounds 100; no-signal/no-match empty.
+- Preserve current Help filters and summary state/fields. Do not change recommendation logic, schema, permissions, auth/session behavior, or the already-accepted C3d1 shared query.
+- Reuse the C3d1 category Help loader/view safe allowlist/localized deleted presentation. Add/adjust presentation only if needed for this C3d2 path; guest For-me remains 401 and URL user/tag hints remain non-authoritative.
+- Add focused native PG + authenticated route/DOM regressions for mixed active/deactivated candidate authors while proving membership/order/filter/empty/session semantics remain unchanged.
+- Excluded: C3d1 rework, Similar results, attention-case submitter identity, post history, notifications, Admin Users, mentions, presence, runtime active-account enforcement, deactivation writer/control, SA05+, Stage6/production, #315, docs and merge.
+- Publish stable exact head/evidence, perform mandatory personal author inspection, then **STOP for Mira C3d2 checkpoint review**. Lev/Mark remain unassigned.
+
+---
+
 # Лира — SA04-C3d1 author complete; STOP for Mira review
 
 - Cumulative [Draft implementation PR #328](https://github.com/iliya1947/vico-forum/pull/328) remains open/Draft/unmerged, unchanged main/base `593a03964b8407b249f7c9f5eb117ddb8b07736d`, **stable exact head `f503fbc8796d4751ff95e4a54534da5fa4ee03bb`** (29 changed files). Previous C3c Mira checkpoint PASS preserved.
