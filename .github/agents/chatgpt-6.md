@@ -1,3 +1,15 @@
+# Лира — active assignment: SA04-C3d1 shared Help question-summary author neutralization
+
+- Continue cumulative Draft implementation **#328** from accepted exact head `35bbf78a91d75818318f83ddc7413a69ddc001aa`; main/base `593a03964b8407b249f7c9f5eb117ddb8b07736d`.
+- Required result: the shared `DrizzleForumRepository.readHelpSolutionsPage` question-summary family neutralizes inactive **topic-author** identity via the accepted A4 Deleted-user contract before DTO/serialization/DOM; active authors remain unchanged.
+- This shared query serves All/Open/Active/Solved/Mine/Want-to-help and Needs-attention reader mode. Preserve their existing filters, selection, attention visibility, reply/solution/quality/duplicate state, ordering, limits and tags.
+- Canonical category Help loader/view is in scope as the shared serialization/presentation boundary for these modes; marked deleted names must be masked/localized without widening public fields.
+- **Excluded:** separate `readHelpSolutionsForMe` query (C3d2), Similar-question results, attention-case submitter identity, post history, notifications, Admin Users, mentions, presence, auth/session enforcement, writers/deactivation, SA05+, Stage6/production, #315, docs and merge.
+- Add focused native PostgreSQL and category Help route/DOM regressions sufficient to prove mixed active/deactivated topic authors plus preserved shared-mode semantics. Do not duplicate broad Help acceptance unnecessarily.
+- Finish on a stable exact head with applicable checks and mandatory personal author inspection, publish evidence in #251, then **STOP for Mira C3d1 checkpoint review**. C3d2/Lev/Mark remain unassigned.
+
+---
+
 # Лира — SA04-C3c author complete; STOP; Mira review next
 
 - Cumulative [Draft #328](https://github.com/iliya1947/vico-forum/pull/328), unchanged base `593a03964b8407b249f7c9f5eb117ddb8b07736d`, exact stable head **`35bbf78a91d75818318f83ddc7413a69ddc001aa`**; 28 changed files, open/Draft/unmerged. C3b Mira checkpoint PASS previously accepted.
