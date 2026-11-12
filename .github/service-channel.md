@@ -3,6 +3,18 @@
 Служебный PR: #251. Оперативное состояние: [workflow.md](./workflow.md). Общий контракт: [ADMIN_PANEL_IMPLEMENTATION_PLAN.md](../ADMIN_PANEL_IMPLEMENTATION_PLAN.md).
 
 
+## 2026-11-12 — Mira: SA04-C3d2 For-me author projection assigned to Lira
+
+- C3d1 remains Mira checkpoint-PASS on cumulative Draft #328 exact head `f503fbc8796d4751ff95e4a54534da5fa4ee03bb`; current main/base remains `593a03964b8407b249f7c9f5eb117ddb8b07736d`.
+- Granularity gate passed: C3d2 is one separate repository query (`readHelpSolutionsForMe`) with the already-shared C3d1 category Help serialization/presentation boundary.
+- Approved For-me contract from `docs/UI_UX_PASS.md` must remain unchanged: session-only current-user identity; persisted Help authored/replied participation derives interest tags; only unsolved other-author questions sharing those tags are candidates; rank by matched-tag count, then latest activity, then stable topic ID; interest and result bounds are 100; no-signal/no-match stays empty rather than falling back.
+- **Only C3d2 is assigned:** project each candidate topic author's same-row A1 lifecycle through accepted A4 before the Help question-summary DTO. Active author unchanged; inactive raw identity/lifecycle must not escape.
+- Existing combined Help filters, summary fields, route 401/session binding and C3d1 allowlist/localized deleted presentation must be preserved. URL `userId`/tag-like hints remain non-authoritative.
+- Completion requires focused direct PG coverage comparing For-me candidate membership/order/filter/state before/after deactivation plus active/deleted identity, and authenticated route/DOM coverage for session-bound reader call and safe serialized/rendered identity. Avoid unrelated Help rewrites.
+- Excluded: C3d1 rework, Similar results, attention-case submitter names, history/notifications/Admin Users/mentions/presence, runtime active-account enforcement, deactivation writer/control, SA05+, Stage6/production, #315, docs and merge.
+- Finish on stable exact head, publish evidence, mandatory author inspection, then **Lira STOP for Mira C3d2 review**. Lev/Mark remain unassigned.
+
+
 ## 2026-11-12 — Mira: SA04-C3d1 checkpoint review PASS
 
 - Reviewed cumulative Draft #328 exact stable head `f503fbc8796d4751ff95e4a54534da5fa4ee03bb` against the bounded shared-Help assignment; base/current main remains `593a03964b8407b249f7c9f5eb117ddb8b07736d`.
