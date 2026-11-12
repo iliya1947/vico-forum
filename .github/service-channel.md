@@ -4217,3 +4217,14 @@ Lira must perform author inspection, publish the stable A2 head/evidence and STO
 - No post-history/notifications/directory/mentions/presence/auth/writer or later checkpoint work is included.
 - Lira author-inspects, publishes stable exact head/evidence and STOP. C2+ and Lev unassigned.
 
+## 2026-11-12 — SA04-C1 Mira checkpoint PASS
+
+- Mira reviewed cumulative #328 exact stable head `306319bb506bb95ddda776dbc1a0b04a9c3e8fe3`.
+- Confirmed canonical topic-page topic/post author identity is neutralized at the direct repository DTO and preserved through route/presentation without leaking raw inactive name/avatar/lifecycle markers.
+- Stable author IDs/profile links and published content/state remain; active and mixed authors behave unchanged.
+- Defensive loader/UI masking and edit-recovery identity reuse are consistent with the direct projection.
+- C2 category/section lists, C3 discovery/Help and later readers remain untouched.
+- Exact-head CI and SA03/SA01/AP10 browser regressions are SUCCESS.
+- **PASS — 0 confirmed current-scope SA04-C1 defects.**
+- #328 remains Draft/cumulative; Lira STOP; C2+ and Lev unassigned.
+
