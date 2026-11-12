@@ -1,3 +1,15 @@
+# Лира — active assignment: SA04-C3c authenticated Unread author neutralization
+
+- Continue cumulative Draft implementation **#328** from accepted exact head `6c30b6f5a51e17f3a4722e677e60d8c5150e6baf`; main/base `593a03964b8407b249f7c9f5eb117ddb8b07736d`.
+- Required result: canonical authenticated **Unread topic summaries** neutralize inactive topic-author identity using the accepted A4 Deleted-user public contract before DTO/serialization/DOM; active authors remain unchanged.
+- Current seams: `DrizzleForumRepository.readUnreadForUser`, `app/routes/unread.tsx`, `UnreadView`. Preserve the existing section-page state-only consumer.
+- Preserve authentication and read-state semantics: 401 for guest, new/unread classification, firstUnreadPostId/latestPostId, unreadCount, activityAt/order, title and public category/section projection.
+- Add focused direct PostgreSQL and authenticated route/presentation regression evidence for mixed active/deactivated authors without broadening the slice.
+- Excluded: C3d Help, notifications/history/Admin Users/mentions/presence, auth/session enforcement, writers/deactivation, SA05+, Stage6/production, #315, docs and merge.
+- Finish on a stable exact head with applicable checks and mandatory personal author inspection, publish evidence in #251, then **STOP for Mira C3c checkpoint review**. Lev/Mark remain unassigned.
+
+---
+
 # Лира — SA04-C3b Tag/Search author complete; STOP
 
 - Cumulative [Draft #328](https://github.com/iliya1947/vico-forum/pull/328) stays open/Draft/unmerged. Main/base `593a03964b8407b249f7c9f5eb117ddb8b07736d` unchanged. **Stable exact head `6c30b6f5a51e17f3a4722e677e60d8c5150e6baf`**, 27 cumulative changed files. A2–A4/B/C1/C2/C3a Mira checkpoint PASS preserved.
