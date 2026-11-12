@@ -1,3 +1,13 @@
+# Лира — SA04-B author checkpoint complete; STOP
+
+- Mira accepted A2+A3+A4 (A4-MIRA-01 CLOSED). Continued cumulative [Draft #328](https://github.com/iliya1947/vico-forum/pull/328) from `9053b19425c48d38a5384a3b8620ca2a0c4b35dc`; final **exact head `22c05bfa824a0d5284c818f92b691056fd0749f7`**, unchanged post-A1 main/base `593a03964b8407b249f7c9f5eb117ddb8b07736d`. Draft, open/unmerged, 15 cumulative files.
+- B only connects accepted A4 neutral public projector to one-snapshot `DrizzleForumRepository.readProfile` state+identity select; explicit safe public return while preserving immutable ID/URL/role/date/stats and active identity. Canonical route serializes safe DTO, independently composes SA03 Admin/Owner sections with same authorization and private/no-store/errors. UI generic `deletedUser` with EN/RU/HE resources suppresses raw avatar/name/bio/links; inactive edit affordance hidden but no mutation guard/write change.
+- New evidence: one PG17 test actual active/inactive row with five original secret markers + deactivation secrets absent, structural stats retained; route DTO test original marker omissions; view DOM test even with raw fixture; SA03 privileged Guest/Owner composition test. Existing tests remain green.
+- **Personal author inspection** of full cumulative 15-file PR diff, B source and tests, existing SA03/public-private/error/locale contracts completed. No confirmed B current-scope defect. Initial CI on interim head detected missing required reviewed manual RU/HE values and fixed descriptor fingerprint; corrected with only B localization files.
+- **Exact-head CI #43164075663 SUCCESS**: 2246 app tests, 701 native PG17, 69-table manifest parity, lint/typecheck/build/Workers. Connected Chromium SA03 #43164076028, SA01 #43164075715 and AP10 #43164075869 **SUCCESS**.
+- **Caveat:** old/current pinned DrizzleKit generate logs BigInt serialization issue but exits 0; present on prior A4 green run; no schema changed here and independent schema manifest passed. Do not treat tool exit alone as parity proof.
+- **Lira STOP. Next Mira** B checkpoint/scope review on final exact head; C+/Lev/merge/docs/Stage6 unassigned.
+
 # Лира — SA04-A4-MIRA-01 corrected; author STOP, Mira repeat checkpoint pending
 
 - Previous Mira A4 checkpoint CHANGES REQUIRED on `11652f64df234e10bb3783fe93c8e8b3073be262`: insufficient retention check against A1 contract. Verified in main migration `0065` and PG17 native `migrations.test.ts`: minimum one **UTC calendar year** from deactivation, Feb29 2024 → Feb28 2025.
