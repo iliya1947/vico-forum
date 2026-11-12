@@ -70,9 +70,11 @@ export function createBetterAuthRequestHooks(
   return {
     before: createAuthMiddleware(async (ctx) => {
       let current: Awaited<ReturnType<typeof getAuthoritativeSessionFromCtx>> = null;
-      // Better Auth also dispatches server-only auth.api methods without a
-      // route path (e.g. setPassword). They must not bypass the actor gate.
-      if ((!ctx.path || actorProtectedAuthPaths.has(ctx.path)) && ctx.headers
+      // Pathless server-only methods are keyed by operationId in Better Auth's
+      // common direct-API dispatcher (e.g. setPassword), not a routed URL.
+      const protectedActorOperation = (ctx.path !== undefined && actorProtectedAuthPaths.has(ctx.path))
+        || ctx.operationId === "setPassword";
+      if (protectedActorOperation && ctx.headers
         && !(preRoutingSessionLookup && ctx.path === "/get-session")) {
         // Also runs for auth.api.* calls; direct endpoint dispatch shares this
         // pinned Better Auth hook with the canonical HTTP handler.
