@@ -1,7 +1,7 @@
 # Admin panel — current workflow
 
 - Service PR **#251**; current main/base `13456a17f23c1385bef8ab11c735f43d201edd02`; SA04-A1 and reviewed A2–H are merged.
-- **Current checkpoint: SA04-I scope/granularity gate complete on main `13456a17f23c1385bef8ab11c735f43d201edd02`; I split into five bounded author checkpoints. No implementation assigned yet.**
+- **Current checkpoint: SA04-I1 assigned to Lira from main `13456a17f23c1385bef8ab11c735f43d201edd02`; new cumulative I Draft implementation PR to be created.** I2–I5/J+ remain unassigned.
 - [Implementation PR #328](https://github.com/iliya1947/vico-forum/pull/328) **merged** from reviewed head `0a917b6f4f55f991bea6e6031b43a0c4f0dc2f85`; merge commit/current main `13456a17f23c1385bef8ab11c735f43d201edd02`. A1 remains the accepted merged baseline.
 - Independent report: [#6835789162](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6835789162). A4-MIRA-01 CLOSED; no open A2–H findings.
 - Delivered slice: AccountState read/predicate/transaction-lock primitives and neutral public identity foundation; profile/topic/current-post/category/section/discovery/Help/For-me/Users/mentions/online/notification/history consumers. Schema/dependencies unchanged. Stable IDs, content/history, membership/order/counts and independent private admissions preserved.
@@ -321,3 +321,15 @@ Before any project-changing action or agent handoff, Mira must check in this ord
   5. **I5 — connected I closure.** Whole Better Auth HTTP/direct/native acceptance for old sessions, new sign-in, link/password/session paths, own sign-out, outage/error/cookie semantics and preservation of existing registration/linking/rate-limit/telemetry contracts.
 - I1–I4 are intermediate Draft checkpoints only. **None is mergeable or may be described as completed SA04-I.** I5 closes row I, after which Mira performs cumulative I whole-PR review before any independent Codex review.
 - J+ remains outside this split. No implementation PR or agent assignment is created by this gate.
+
+
+## 2026-11-12 — SA04-I1 bounded author handoff
+
+- Baseline: current main `13456a17f23c1385bef8ab11c735f43d201edd02`; merged A1–H are accepted baseline.
+- **Only I1 is assigned to Lira:** pre-routing session-resolution admission on the existing `AuthRuntime.getSession → initializeAuthContext → Worker` chain.
+- Required result: a persisted inactive account must not become request identity from an old Better Auth session. Active-account session behavior remains unchanged.
+- Preserve current session-storage failure semantics: classified availability/connection/query-timeout remains the existing unavailable/503 path; unexpected schema/programming/configuration failures must not degrade to guest. Preserve existing Better Auth session cleanup/sliding `Set-Cookie` behavior and endpoint-last cookie ordering.
+- Scope is limited to the session-resolution/request-context boundary and focused tests/evidence. Do **not** implement I2 request/direct endpoint hooks, I3 session-create admission, I4 adapter target-write enforcement, or any J+ application writers.
+- Start a **new cumulative Draft implementation PR** from `13456a17f23c1385bef8ab11c735f43d201edd02`; it remains Draft through I1–I4. No merge/readiness claim at I1.
+- Ready for checkpoint when focused unit/native auth-runtime/session-context coverage and applicable existing regressions are green, Lira personally inspects the completed I1 diff/behavior, publishes stable exact head/evidence, and **STOPs**.
+- Lev/Mark remain unassigned.
