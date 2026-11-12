@@ -93,9 +93,8 @@ describe("SA04-D directory neutral rendering", () => {
     const cards = root.querySelectorAll(".admin-forum-objects > li");
     expect(cards).toHaveLength(2);
     expect(cards[0]!.textContent).toContain("Active Admin User");
-    expect(cards[0]!.querySelector(".profile-avatar img")).toHaveAttribute(
-      "src", "https://images.example.test/active-avatar.png",
-    );
+    expect(cards[0]!.querySelector("img.profile-avatar, .profile-avatar img")?.getAttribute("src"))
+      .toBe("https://images.example.test/active-avatar.png");
     expect(cards[1]!.textContent).toContain(deletedLabel);
     expect(cards[1]!.querySelector(".profile-avatar img")).toBeNull();
     expect(cards[1]!.querySelector(".profile-avatar")?.textContent?.trim())
@@ -107,6 +106,6 @@ describe("SA04-D directory neutral rendering", () => {
     expect(hrefs).toContain(profile);
     expect(hrefs).toContain(profile + "#authorization");
     expect(root.textContent).toContain("2");
-    expect(root.querySelector('input[name="q"]')).toHaveValue("%_ עברית");
+    expect((root.querySelector('input[name="q"]') as HTMLInputElement).value).toBe("%_ עברית");
   });
 });
