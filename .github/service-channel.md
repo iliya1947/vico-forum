@@ -4712,3 +4712,12 @@ Lira must perform author inspection, publish the stable A2 head/evidence and STO
 - All five checkpoints belong to one new cumulative Draft implementation PR. I1–I4 are not independent completion/merge points; only I5 can close I.
 - This split preserves the already merged A1–H baseline and does not pull J–R writer enforcement into auth work.
 - No active Lira/Lev/Mark assignment yet.
+
+
+## 2026-11-12 — SA04-I1 active assignment
+
+- Lira owns **I1 only**: close stale-session request identity at pre-routing session resolution.
+- Baseline main: `13456a17f23c1385bef8ab11c735f43d201edd02`. Create a fresh cumulative Draft implementation PR; later I checkpoints may enter it only after separate assignments.
+- Acceptance boundary: inactive persisted user never reaches `authSessionContext` as authenticated identity; active session semantics/cookies stay intact; account-state availability outage remains controlled unavailable/503 and unexpected failures remain unexpected.
+- No Better Auth endpoint hook/direct API enforcement, session-create gate, adapter target-write closure, application writer enforcement or deactivate command in I1.
+- Author verifies the actual bounded diff and stops on a stable exact head for Mira checkpoint review.
