@@ -1,17 +1,13 @@
 # Admin panel — current workflow
 
-- Service PR **#251**; merged SA04-A1 baseline/main/base `593a03964b8407b249f7c9f5eb117ddb8b07736d`. SA04-A2/A3/A4/B/C1 **Mira checkpoint PASS**; SA04-A4-MIRA-01 CLOSED.
-- **Current checkpoint: SA04-C2 Mira checkpoint PASS on cumulative Draft #328 exact head `8946b74b0271efd4ef7cfe2c2c595ee59d8061b6`; 0 confirmed current-scope C2 defects. Lira STOP.**
-- [Cumulative Draft implementation PR #328](https://github.com/iliya1947/vico-forum/pull/328): stable exact implementation head **`8946b74b0271efd4ef7cfe2c2c595ee59d8061b6`**, base unchanged, **23 changed files**, open/Draft/unmerged.
-- **C2 only:** `DrizzleForumRepository.readCategory` both latest/pinned and `readSection` topic summaries now apply accepted A4 projector to joined topic-author identity/lifecycle. Inactive public author name → `Deleted user`, private original name/lifecycle excluded from direct DTO; active/mixed unchanged. Topic/rank/pin/section order, IDs, timestamps, titles, tags and counters preserved.
-- **Canonical category/section routes and UI:** deleted-author defensive serialization mask and existing localized `deletedUser` presentation, retaining unchanged active section object shape and read-state logic.
-- **Evidence:** native PostgreSQL 17 with mixed authors, distinct original secret markers, latest/pin selection, section order and preserved stats/content; EN/HE category/section route serialization and raw-fixture DOM secret-marker exclusion.
-- **Corrected current-scope SQL regression:** initially duplicate `id` columns from nested `user.id` and topic IDs caused PostgreSQL `42702`. Changed author-id projection to `forumTopics.authorId` (distinct `author_id`) while preserving ranking. No migrations/schemas.
-- **Mandatory author inspection:** read cumulative changed-file inventory/actual C2 patches, query/projection/route/UI logic, native PG and EN/HE regression evidence. No confirmed open C2 scope defect after correction; author inspection does not replace Mira.
-- **Exact-head [CI #43203180652](https://github.com/iliya1947/vico-forum/actions/runs/43203180652) SUCCESS**: 2250/2250 app; 703/703 native PG17; 69-table manifest; lint/typecheck/build/Worker smoke. Connected Chromium [SA03 #43203180576](https://github.com/iliya194/vico-forum/actions/runs/43203180576), [SA01 #43203180622](https://github.com/iliya194/vico-forum/actions/runs/43203180622), [AP10 #43203180835](https://github.com/iliya194/vico-forum/actions/runs/43203180835) all SUCCESS.
-- **CI caveat:** previously noted pinned DrizzleKit `generate` BigInt diagnostic is not schema parity evidence; independent native PG 69-table parity PASS, no schema change in C2.
-- **Boundary:** C3 discovery/Help, post history, notifications, Admin Users, mentions, online presence, auth/session/writers/deactivation actions, SA05+, Stage6/production, #315, package docs/merge all untouched.
-- **No active agent assignment.** C2 is checkpoint-PASS. C3+ remain unassigned; #328 stays Draft/cumulative and is not sent to Lev or merged at C2 alone.
+- Service PR **#251**; merged SA04-A1 baseline/main/base `593a03964b8407b249f7c9f5eb117ddb8b07736d`. SA04-A2/A3/A4/B/C1/C2 **Mira checkpoint PASS**; SA04-A4-MIRA-01 CLOSED.
+- **Current checkpoint: SA04-C3a assigned to Lira.**
+- [Cumulative Draft implementation PR #328](https://github.com/iliya1947/vico-forum/pull/328): continue from stable exact head **`8946b74b0271efd4ef7cfe2c2c595ee59d8061b6`**, base/current main **`593a03964b8407b249f7c9f5eb117ddb8b07736d`**, open/Draft/unmerged.
+- **C3a bounded result:** neutralize inactive topic-author identity only on the canonical **Popular** and **Unanswered** discovery summaries and their existing public route/presentation boundaries, reusing the accepted A4 Deleted-user contract. Active authors remain unchanged; raw inactive identity/lifecycle data must not cross the public DTO/serialization boundary.
+- Preserve Popular period windows, activity counts, ranking/order/limits and timestamps. Preserve Unanswered eligibility, title/source-locale/location fields and ordering.
+- Add focused regression evidence for inactive + active authors at the direct PostgreSQL reader boundary and public route/presentation boundary; perform mandatory personal author inspection, run applicable exact-head checks, publish the stable head/evidence and **STOP for Mira checkpoint review**.
+- **Explicitly outside C3a:** Tag/Search, Unread, Help summaries, post history, notifications, Admin Users, mentions, online presence, auth/session/writers/deactivation action, SA05+, Stage6/production, #315, docs closeout and merge.
+- **Lira is the only active implementer for C3a.** Lev/Mark remain unassigned; #328 remains cumulative Draft and is not sent to independent review or merge at this checkpoint.
 
 ## Mandatory author verification
 
