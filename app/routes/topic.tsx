@@ -53,12 +53,15 @@ export const loader = forumReadLoader(async function loader({ params, context }:
   const loaded = await forumReaderForRequest(context).readTopicPage(params.topicId ?? "");
   if (!loaded) throw new Response("Not Found", { status: 404 });
   // The repository already projects deleted authors; mask again at the public route boundary.
-  const topic = {
-    ...loaded,
-    authorName: loaded.authorIdentityKind === "deleted" ? DELETED_USER_NAME : loaded.authorName,
-    posts: loaded.posts.map((post) => post.authorIdentityKind === "deleted"
-      ? { ...post, authorName: DELETED_USER_NAME, authorImage: null } : post),
-  };
+  const topic = loaded.authorIdentityKind === "deleted"
+    || loaded.posts.some((post) => post.authorIdentityKind === "deleted")
+    ? {
+        ...loaded,
+        authorName: loaded.authorIdentityKind === "deleted" ? DELETED_USER_NAME : loaded.authorName,
+        posts: loaded.posts.map((post) => post.authorIdentityKind === "deleted"
+          ? { ...post, authorName: DELETED_USER_NAME, authorImage: null } : post),
+      }
+    : loaded;
 
   const resolvedLocale = context.get(localeContext);
   const loadedRegistry = await registryForRequest(context);
