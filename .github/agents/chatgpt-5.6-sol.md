@@ -2120,3 +2120,12 @@ Do not treat a user's anger, criticism or request to think as implicit permissio
 - Verdict: **PASS, 0 confirmed current-scope defects**.
 - Preserve review granularity: no Lev review for A2 alone; PR #328 stays cumulative Draft.
 
+## 2026-11-12 — SA04-A3 review result
+
+- Reviewed cumulative #328 exact head `0725b49dc9d9e36152670dac8368d0f83e714c82`.
+- Confirmed `FOR NO KEY UPDATE` mutation guard closes the intended account-state read→write race inside an already-open caller-owned transaction and does not mutate state itself.
+- Confirmed tests cover competing UPDATE lock, writer-first ordering, reused lock, missing/inactive and FK KEY SHARE compatibility.
+- Exact-head CI #43112202261 SUCCESS.
+- Verdict: **PASS, 0 confirmed current-scope A3 defects**.
+- Do not spend Lev review on A3 alone; A4 is still unassigned.
+
