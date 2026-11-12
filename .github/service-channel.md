@@ -3,6 +3,17 @@
 Служебный PR: #251. Оперативное состояние: [workflow.md](./workflow.md). Общий контракт: [ADMIN_PANEL_IMPLEMENTATION_PLAN.md](../ADMIN_PANEL_IMPLEMENTATION_PLAN.md).
 
 
+## 2026-11-12 — Mira: SA04-C3b Tag + Search assigned to Lira
+
+- C3a remains Mira checkpoint-PASS on cumulative Draft #328 exact head `04fb2510afb0c32494509424b6b0af280c5743bc`; current main/base remains `593a03964b8407b249f7c9f5eb117ddb8b07736d`.
+- Pre-action gate: coordination role/authority confirmed; this is one independently completable bounded result; accepted A2–A4/B/C1/C2/C3a work is preserved in the same cumulative Draft. Existing Lev SA-04 technical plan already covers public neutral identity, so no new technical-planning pass is required for this decomposition.
+- **Only C3b is assigned:** canonical Tag topic summaries and Search results must neutralize inactive topic-author identity with the accepted A4 Deleted-user projection before public DTO/serialization; active authors remain unchanged and raw inactive identity/lifecycle must not be exposed.
+- Current seams inspected before handoff: `DrizzleForumRepository.readTag` and `search`; canonical `tag.tsx` / `search.tsx`; `TagView` / `SearchView`.
+- Preserve Tag membership/newest-first order/title/postCount/createdAt/category-section/tags. Preserve Search normalization and max-length behavior, title/tag/post matching, match-rank/activity ordering, limit, sourceLocale/postCount/category-section/tags.
+- Completion requires focused direct PG + public route/presentation regressions with mixed active/deactivated authors and preserved query/list semantics, mandatory author inspection, applicable exact-head checks, stable head/evidence, then **Lira STOP for Mira C3b checkpoint review**.
+- C3c Unread, C3d Help and later SA04/deactivation work remain unassigned. Lev/Mark remain unassigned; no merge/docs/Stage6/#315 work.
+
+
 ## 2026-11-12 — Mira: SA04-C3a checkpoint review PASS
 
 - Reviewed cumulative Draft #328 exact stable head `04fb2510afb0c32494509424b6b0af280c5743bc` against the bounded C3a assignment and current source-of-truth; base/current main remains `593a03964b8407b249f7c9f5eb117ddb8b07736d`.
