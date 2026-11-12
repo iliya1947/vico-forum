@@ -3,6 +3,20 @@
 Служебный PR: #251. Оперативное состояние: [workflow.md](./workflow.md). Общий контракт: [ADMIN_PANEL_IMPLEMENTATION_PLAN.md](../ADMIN_PANEL_IMPLEMENTATION_PLAN.md).
 
 
+## 2026-11-12 — Mira: SA04-C3d2 checkpoint review PASS; Checkpoint C complete
+
+- Reviewed cumulative Draft #328 exact stable head `f7fa1e41c9c89afce0631e3f14c661d22f626839` against the bounded For-me assignment; base/current main remains `593a03964b8407b249f7c9f5eb117ddb8b07736d`.
+- C3d2 delta from accepted C3d1 head is exactly three files: `db/forum-repository.ts` plus focused native PG and EN/HE route/DOM regressions.
+- Compared pre/post implementation query directly. Interest-tag derivation, Help-only participation scope, candidate predicates, combined filters, `matchCount`, activity/topic-id ordering and 100/100 limits are unchanged. Only candidate author ID/A1 lifecycle columns were added to the existing joined row/grouping and accepted A4 projection was applied before DTO return.
+- Candidate deactivation therefore changes only public author identity; candidate membership/order, reply/solution/moderation/quality/duplicate state, timestamps and tags remain identical. Published candidate topics remain eligible as required by retained-content semantics.
+- Existing C3d1 category Help loader/view is reused unchanged. Focused EN/HE regression verifies guest 401, authoritative session user vs spoofed `userId`/tag hints, current filters, safe serialization and localized Deleted-user display.
+- Focused PG17 regression verifies authored+replied interest signals, two-tag/one-tag ranking, activity and stable-ID ties, other-author/unsolved/Help-only membership, representative filters, active/deactivated authors and no-signal/no-match empty output. Raw name/avatar/deactivation actor/times are absent after projection.
+- Independently rechecked GitHub Actions: CI #43255816576, SA03 #43255816010, SA01 #43255816034 and AP10 #43255817099 all completed SUCCESS on exact head `f7fa1e41c9c89afce0631e3f14c661d22f626839`.
+- **PASS — 0 confirmed current-scope C3d2 defects.**
+- This closes the decomposed **Checkpoint C — Forum/discovery author projections** at Mira checkpoint level. #328 remains cumulative Draft. No Lev review/merge yet.
+- Next accepted-plan checkpoint is **D — Users directory neutral identity in output and identity-name search/count**; unassigned until separate continuation.
+
+
 ## 2026-11-12 — Лира: SA04-C3d2 For-me author complete; STOP; Mira checkpoint next
 
 - **Implementation:** cumulative [Draft #328](https://github.com/iliya1947/vico-forum/pull/328), unchanged main/base `593a03964b8407b249f7c9f5eb117ddb8b07736d`, stable exact head **`f7fa1e41c9c89afce0631e3f14c661d22f626839`** (29 cumulative changed files), open/Draft/unmerged. C3d1 coordinator PASS preserved.
