@@ -2129,3 +2129,10 @@ Do not treat a user's anger, criticism or request to think as implicit permissio
 - Verdict: **PASS, 0 confirmed current-scope A3 defects**.
 - Do not spend Lev review on A3 alone; A4 is still unassigned.
 
+## 2026-11-12 — SA04-A4 review finding
+
+- Reviewed #328 exact head `11652f64df234e10bb3783fe93c8e8b3073be262`.
+- Finding `SA04-A4-MIRA-01`: public identity projection's fail-closed lifecycle validation is weaker than canonical A1 state contract; it accepts sub-year retention as long as it is after deactivation.
+- A4 must enforce/reuse the canonical UTC +1 calendar-year minimum before projection.
+- No other confirmed current-scope A4 defects.
+
