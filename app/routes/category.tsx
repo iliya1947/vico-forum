@@ -1,4 +1,5 @@
 import { forumReadLoader } from "../forum/read-availability.server";
+import { DELETED_USER_NAME } from "../../db/public-identity";
 import { redirect, useActionData, useLoaderData, type RouterContextProvider } from "react-router";
 import { authSessionForRequest } from "../auth/request-context";
 import { measureRestrictionsForPresentation } from "../measures/presentation.server";
@@ -154,10 +155,12 @@ export const loader = forumReadLoader(async function loader({ request, params, c
         ...section,
         pinnedTopics: section.pinnedTopics.map((topic) => ({
           ...topic,
+          ...(topic.authorIdentityKind === "deleted" ? { authorName: DELETED_USER_NAME } : {}),
           activityAt: topic.activityAt.toISOString(),
         })),
         latestTopics: section.latestTopics.map((topic) => ({
           ...topic,
+          ...(topic.authorIdentityKind === "deleted" ? { authorName: DELETED_USER_NAME } : {}),
           activityAt: topic.activityAt.toISOString(),
         })),
       })),
