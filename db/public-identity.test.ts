@@ -106,6 +106,47 @@ describe("SA04-A4 neutral public account identity contract", () => {
     }
   });
 
+  it("matches the A1 UTC calendar-year retention CHECK, including leap-day clamping", () => {
+    const boundaries = [
+      {
+        start: "2024-02-29T12:34:56.000Z",
+        tooEarly: "2025-02-28T12:34:55.999Z",
+        exact: "2025-02-28T12:34:56.000Z",
+      },
+      {
+        start: "2023-02-28T12:34:56.000Z",
+        tooEarly: "2024-02-28T12:34:55.999Z",
+        exact: "2024-02-28T12:34:56.000Z",
+      },
+      {
+        start: "2024-04-30T00:00:00.000Z",
+        tooEarly: "2025-04-29T23:59:59.999Z",
+        exact: "2025-04-30T00:00:00.000Z",
+      },
+      {
+        start: "2023-12-31T23:59:59.999Z",
+        tooEarly: "2024-12-31T23:59:59.998Z",
+        exact: "2024-12-31T23:59:59.999Z",
+      },
+    ];
+    for (const { start, tooEarly, exact } of boundaries) {
+      const withRetention = (retainAtLeastUntil: Date): AccountState => ({
+        ...deactivated, deactivatedAt: new Date(start), retainAtLeastUntil,
+      });
+      expect(() => projectPublicAccountIdentity(identity, withRetention(new Date(tooEarly))))
+        .toThrow(PublicIdentityInvariantError);
+      expect(projectPublicAccountIdentity(identity, withRetention(new Date(exact)))).toMatchObject({
+        kind: "deleted", id: identity.id, name: DELETED_USER_NAME,
+      });
+      expect(projectPublicAccountIdentity(identity,
+        withRetention(new Date(new Date(exact).getTime() + 1)))).toMatchObject({ kind: "deleted" });
+    }
+    // A retention date later than deactivation is still invalid without a full year.
+    expect(() => projectPublicAccountIdentity(identity, {
+      ...deactivated, retainAtLeastUntil: new Date("2024-03-01T12:34:56.000Z"),
+    })).toThrow(PublicIdentityInvariantError);
+  });
+
   it("exposes one generic i18n key and English fallback without selecting a locale", () => {
     const result = projectPublicAccountIdentity(identity, deactivated);
     expect(DELETED_USER_NAME).toBe("Deleted user");
