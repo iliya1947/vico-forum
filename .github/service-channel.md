@@ -4635,3 +4635,13 @@ Lira must perform author inspection, publish the stable A2 head/evidence and STO
 - No H implementation change extends into Better Auth, writers, RBAC, schema/migrations or I+.
 - CI #43296996996, SA03 #43296997015, SA01 #43296997261 and AP10 #43296997445 are exact-head SUCCESS.
 - **PASS — 0 confirmed current-scope H defects.** #328 stays Draft; next reviewer/SA04-I transition remains unassigned until explicit continuation.
+
+
+## 2026-11-12 — SA04-A2–H cumulative independent review handoff
+
+- #328 is open/Draft on stable exact `0a917b6f4f55f991bea6e6031b43a0c4f0dc2f85`, 49 changed files, based on merged/independently reviewed A1 main.
+- Coordinator cumulative A2–H gate is complete on this same head. The next active role is **Lev independent technical reviewer**.
+- Review target is the whole current A2–H implementation slice as one package, including interactions between foundation and all B–H read/projection consumers. A1 is baseline compatibility, not a repeated review target.
+- Lev determines findings independently from repository/source-of-truth and the accepted SA04 technical plan. Future I+ enforcement or SA05 behavior is not a defect merely because it is not delivered in A2–H.
+- No implementation during review. Publish the full current-scope findings packet or PASS and STOP.
+- Lira/Mark remain unassigned. SA04-I is not started.
