@@ -127,3 +127,14 @@ Before any project-changing action or agent handoff, Mira must check in this ord
 - Corrected only `db/public-identity.ts` (one UTC calendar year with PostgreSQL 29-Feb clamp) and `db/public-identity.test.ts` (one focused boundary test, six A4 tests total). Cumulative Draft #328 new exact head `9053b19425c48d38a5384a3b8620ca2a0c4b35dc`.
 - Personally inspected the cumulative four-file implementation/diff and corrected code/test behavior. [Exact-head CI #43159121332](https://github.com/iliya1947/vico-forum/actions/runs/43159121332) SUCCESS: 2243 app, 700 native PG17, 69-table parity and build/lint/typecheck.
 - **Next Mira repeat A4 checkpoint** and SA04-A4-MIRA-01 closure decision. **Lira STOP**, A5/B+ and Lev unassigned.
+
+## 2026-11-12 — SA04-A4 repeat checkpoint review PASS
+
+- Re-reviewed cumulative Draft #328 exact head `9053b19425c48d38a5384a3b8620ca2a0c4b35dc`.
+- **SA04-A4-MIRA-01 CLOSED:** neutral public projection now enforces the canonical A1 UTC +1 calendar-year minimum retention boundary, including leap-day clamping.
+- Focused tests cover sub-year rejection, 1 ms-before rejection, exact boundary and later acceptance across leap/non-leap/month/year edges.
+- Active/deleted allowlists and no-reader-integration boundary remain intact.
+- Exact-head CI #43159121332 SUCCESS.
+- **PASS — 0 confirmed open current-scope A4 defects.**
+- #328 stays Draft/cumulative. Lira STOP; no Lev review/merge at this checkpoint.
+
