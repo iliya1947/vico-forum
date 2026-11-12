@@ -65,11 +65,13 @@ const actorProtectedAuthPaths = new Set([
 export function createBetterAuthRequestHooks(
   database: NodePgDatabase,
   onActorStateError?: (error: unknown) => void,
+  preRoutingSessionLookup = false,
 ): NonNullable<BetterAuthOptions["hooks"]> {
   return {
     before: createAuthMiddleware(async (ctx) => {
       let current: Awaited<ReturnType<typeof getAuthoritativeSessionFromCtx>> = null;
-      if (ctx.path && actorProtectedAuthPaths.has(ctx.path) && ctx.headers) {
+      if (ctx.path && actorProtectedAuthPaths.has(ctx.path) && ctx.headers
+        && !(preRoutingSessionLookup && ctx.path === "/get-session")) {
         // Also runs for auth.api.* calls; direct endpoint dispatch shares this
         // pinned Better Auth hook with the canonical HTTP handler.
         current = await getAuthoritativeSessionFromCtx(ctx);
@@ -125,6 +127,7 @@ export const betterAuthAdvancedOptions = { ipAddress: betterAuthIpAddressOptions
 export function betterAuthOptions(
   database: NodePgDatabase, env: BetterAuthEnvironment,
   onActorStateError?: (error: unknown) => void,
+  preRoutingSessionLookup = false,
 ): BetterAuthOptions {
   return {
     secret: env.BETTER_AUTH_SECRET,
@@ -136,7 +139,7 @@ export function betterAuthOptions(
     user: { additionalFields: betterAuthUserAdditionalFields, validateUserInfo: createRegistrationAdmission(database) },
     account: { accountLinking: { disableImplicitLinking: true } },
     emailAndPassword: betterAuthEmailPasswordOptions,
-    hooks: createBetterAuthRequestHooks(database, onActorStateError),
+    hooks: createBetterAuthRequestHooks(database, onActorStateError, preRoutingSessionLookup),
     socialProviders: {
       google: {
         clientId: env.GOOGLE_CLIENT_ID,
@@ -158,8 +161,9 @@ export function createAuth(
   onDeleted?: SessionDeletionEvidence,
   onCreatedProof?: AuthCreationEvidence,
   onActorStateError?: (error: unknown) => void,
+  preRoutingSessionLookup = false,
 ) {
-  const options = betterAuthOptions(database, env, onActorStateError);
+  const options = betterAuthOptions(database, env, onActorStateError, preRoutingSessionLookup);
   if (onCreatedFact) {
     // A new user's hook is queued before its credential/Google account hook.
     // This is instance-local to the canonical Better Auth operation.
@@ -372,6 +376,7 @@ export function createHyperdriveAuthRuntime(
     operation: (auth: ReturnType<typeof createAuth>, database: NodePgDatabase, client: Client) => Promise<T>,
     preserveDatabaseError = false,
     onAdmissionError?: (error: unknown) => void,
+    preRoutingSessionLookup = false,
   ): Promise<T> {
     const client = createClient(connectionString);
     let databaseError: unknown;
@@ -398,7 +403,7 @@ export function createHyperdriveAuthRuntime(
       const result = await operation(createAuth(database, env,
         preserveDatabaseError ? (error) => { databaseError ??= error; } : undefined,
         onAdmissionError, onAdmissionDenied, onCreatedFact, deletions, creations,
-        (error) => { actorStateError ??= error; }), database, client);
+        (error) => { actorStateError ??= error; }, preRoutingSessionLookup), database, client);
       // The HTTP adapter may convert a thrown hook error to a generic response.
       // Restore the classified A2 error before responding to this request.
       if (actorStateError) throw actorStateError;
@@ -528,7 +533,7 @@ export function createHyperdriveAuthRuntime(
             // to later endpoint login/logout Set-Cookie headers.
             headers: result.headers ?? new Headers(),
           };
-        }, true);
+        }, true, undefined, true);
       } catch (error) {
         if (error instanceof AccountStateUnavailableError || sessionStorageUnavailable(error)) {
           throw new AuthSessionUnavailableError({ cause: error });
