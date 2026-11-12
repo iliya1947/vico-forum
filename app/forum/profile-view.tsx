@@ -32,6 +32,7 @@ export function ProfileView({ locale, profile, isSelf = false, canEditProfile = 
   const pending = navigation.state === "submitting" && navigation.formData?.get("intent") === "save-profile";
   const roleKey = profile.role.isSystem ? ({ user: "profileRoleUser", moderator: "profileRoleModerator", admin: "profileRoleAdmin" } as const)[profile.role.slug as "user" | "moderator" | "admin"] : undefined;
   const role = roleKey ? t(roleKey) : profile.role.displayName;
+  const publicName = profile.identityKind === "deleted" ? t("deletedUser") : profile.name;
   const github = safeHttpUrl(profile.githubUrl);
   const website = safeHttpUrl(profile.websiteUrl);
   // The parent HeaderAuth local state may lag behind a newly loaded actor during SPA
@@ -60,8 +61,8 @@ export function ProfileView({ locale, profile, isSelf = false, canEditProfile = 
     <nav className="profile-breadcrumb" aria-label={t("breadcrumbsLabel")}><Link to={forumIndexPath(locale)}>{t("forumHomeNav")}</Link><span aria-hidden="true"> / </span><span>{t("profileHeading")}</span></nav>
     <section className="profile-card" aria-labelledby="profile-name">
       <header className="profile-identity">
-        <ForumAvatar name={profile.name} image={profile.image} className="profile-avatar" />
-        <div className="profile-identity-copy"><p className="profile-eyebrow">{t("profileHeading")}</p><h1 id="profile-name"><bdi dir="auto">{profile.name}</bdi></h1><span className="profile-role" dir="auto">{role}</span></div>
+        <ForumAvatar name={publicName} image={profile.image} className="profile-avatar" />
+        <div className="profile-identity-copy"><p className="profile-eyebrow">{t("profileHeading")}</p><h1 id="profile-name"><bdi dir="auto">{publicName}</bdi></h1><span className="profile-role" dir="auto">{role}</span></div>
         {currentIsSelf && canEditProfile && !editing && <Link className="profile-button" to={`${path}?edit=1`}>{t("profileEdit")}</Link>}
       </header>
       {currentIsSelf ? <nav>
