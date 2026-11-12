@@ -2304,3 +2304,12 @@ Do not treat a user's anger, criticism or request to think as implicit permissio
 - A1 and A2–H are now the accepted repository baseline; no repeat review or extension of #328.
 - Permanent docs remain deferred until full SA04 closeout.
 - Next work is only the coordinator scope/granularity gate for SA04-I; no agent is assigned yet.
+
+
+## 2026-11-12 — SA04-I granularity result
+
+- Rechecked current Better Auth composition on main `13456a17f23c1385bef8ab11c735f43d201edd02` against accepted row I.
+- One-shot I handoff rejected as oversized: session identity resolution, request/direct endpoint admission, session creation, atomic target mutation and connected acceptance are distinct authoritative seams.
+- Fixed author sequence: **I1 / I2 / I3 / I4 / I5** as recorded in workflow/service-channel.
+- Intermediate checkpoints stay Draft and do not constitute completed active-account enforcement. J+ stays separate.
+- No executor assignment in this step.
