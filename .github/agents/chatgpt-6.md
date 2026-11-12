@@ -1,3 +1,16 @@
+# Лира — active assignment: SA04-D Admin Users directory neutral identity
+
+- Continue cumulative Draft **#328** from accepted exact head `f7fa1e41c9c89afce0631e3f14c661d22f626839`; main/base `593a03964b8407b249f7c9f5eb117ddb8b07736d`.
+- Required result: the existing Admin Users directory (`PostgresAdminUsersReader.listUsers` → protected `admin-users` loader → `AdminUsersIndex`) uses the accepted A1/A4 public identity for deactivated accounts before response/DOM. Stable ID/profile link and joined timestamp remain; inactive original name/image/lifecycle do not escape; active identity remains unchanged.
+- Search/count must be safe at SQL/data boundary, not merely masked after selection: querying a deactivated user's retained original name must neither return that row nor increase the matching total. Preserve current literal case-insensitive public-name/ID search, escaped `%/_/\\`, email non-searchability, `id COLLATE "C"` keyset order/cursor, 25-item page + lookahead and exact total. Stable-ID search remains allowed to find the retained account.
+- Preserve `admin.users.read` admission before query parsing/read, private/no-store, typed 503 classification, profile/authorization link behavior and independence from canonical profile Admin/Owner sections.
+- Reuse existing generic `deletedUser` localization; marked inactive cards must render localized neutral text and neutral avatar without old-name initials/image. Route serialization must also refuse raw inactive identity from an adversarial marked reader fixture.
+- Add focused native PostgreSQL and route/view regressions for mixed active/deactivated identities, old-name search/count secrecy, ID lookup, paging/literal escaping/email secrecy, safe marked serialization and EN/RU/HE presentation. Keep tests bounded; do not redesign AP-09.
+- Excluded: profile/private sections, measure target labels, authorization-user subset, E mentions, F presence, G notifications, H history, I auth, J–R writers, SA05+, Stage6/production, #315, docs and merge.
+- Publish stable exact head/evidence, perform mandatory personal author inspection, then **STOP for Mira SA04-D checkpoint review**. Lev/Mark and E+ remain unassigned.
+
+---
+
 # Лира — SA04-C3d2 For-me author complete; STOP for Mira review
 
 - Cumulative [Draft implementation #328](https://github.com/iliya1947/vico-forum/pull/328) remains open/Draft/unmerged, unchanged main/base `593a03964b8407b249f7c9f5eb117ddb8b07736d`; stable exact head **`f7fa1e41c9c89afce0631e3f14c661d22f626839`** (29 cumulative changed files). C3d1 Mira checkpoint PASS preserved.
