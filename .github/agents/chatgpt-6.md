@@ -1,3 +1,16 @@
+# Лира — SA04-C3b Tag/Search author complete; STOP
+
+- Cumulative [Draft #328](https://github.com/iliya1947/vico-forum/pull/328) stays open/Draft/unmerged. Main/base `593a03964b8407b249f7c9f5eb117ddb8b07736d` unchanged. **Stable exact head `6c30b6f5a51e17f3a4722e677e60d8c5150e6baf`**, 27 cumulative changed files. A2–A4/B/C1/C2/C3a Mira checkpoint PASS preserved.
+- **Only C3b:** `DrizzleForumRepository.readTag` + `search` use original joined author row's name and A1 lifecycle fields in same SQL query and project via accepted A4 helper. Deactivated returns public neutral name/marker, no original name/image/lifecycle in DTO. Active unchanged. No C3c Unread, C3d Help or future writers/auth/notifications/mentions/presence.
+- **SQL review:** Tag membership and newest-first order unchanged, tag title/postCount/createdAt/category-section/attached tags preserved. Search NFKC and max-length checks, title/tag/post matching, match-rank and activity/ID ordering plus result limit unchanged. Lifecycle grouping columns are functionally dependent on one joined user per topic; no query-count increase, no migrations.
+- **Routes/UI:** Tag and Search canonical loaders explicit public allowlist and deleted-name mask, retain selected fields and source-locale title direction; Tag/Search views use existing `t("deletedUser")` for marked identities even with raw injected name. EN/HE raw fixture also injects lifecycle actor to verify route field exclusion.
+- **Tests:** native PostgreSQL 17 fixture owner/helper secret original name+avatar+actor/time and active topic, shared-tag membership in newest-first order, title/tag/body Search match rank, NFKC whitespace normalization, limit and published content/metadata after deactivation; no raw identity or lifecycle in direct DTO. EN/HE route data/DOM verifies deleted names neutral, links/counts/language/RTL, active names, raw fixture defense.
+- **Personal author inspection:** inspected 27-file cumulative diff inventory and actual C3b source/patches/test code, rank and query semantics, route serialization boundary, A4 helper and prior C3a accepted scope, no current-scope C3b defect confirmed. This is not Mira/Lev independent review.
+- **Exact-head evidence:** [CI #43220966986](https://github.com/iliya1947/vico-forum/actions/runs/43220966986) SUCCESS, 2254/2254 app, 705/705 native PG17, 69-table parity, lint/typecheck/build/Worker smoke. [SA01 Chromium #43220967022](https://github.com/iliya1947/vico-forum/actions/runs/43220967022), [SA03 Chromium #43220967370](https://github.com/iliya1947/vico-forum/actions/runs/43220967370), [AP10 Chromium #43220967091](https://github.com/iliya1947/vico-forum/actions/runs/43220967091) SUCCESS, AP10 4 jobs.
+- **Lira STOP.** Next Mira bounded SA04-C3b checkpoint on exact stable head `6c30b6f5a51e17f3a4722e677e60d8c5150e6baf`. C3c+/Lev/Mark/docs/merge/production unassigned.
+
+---
+
 # Лира — active assignment: SA04-C3b Tag + Search author neutralization
 
 - Continue cumulative Draft implementation **#328** from accepted exact head `04fb2510afb0c32494509424b6b0af280c5743bc`; main/base `593a03964b8407b249f7c9f5eb117ddb8b07736d`.
