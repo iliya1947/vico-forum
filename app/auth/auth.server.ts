@@ -51,30 +51,65 @@ export const betterAuthEmailPasswordOptions = {
   maxPasswordLength: 128,
 } as const;
 
-export const betterAuthRequestHooks: NonNullable<BetterAuthOptions["hooks"]> = {
-  before: createAuthMiddleware(async (ctx) => {
-    if (ctx.path === "/link-social") {
-      // The endpoint reuses this request-local session when it creates OAuth state.
-      const current = await getAuthoritativeSessionFromCtx(ctx);
-      if (!current) throw new APIError("UNAUTHORIZED", { message: "Unauthorized" });
-      const expectedUserId = ctx.headers?.get("x-vico-link-user");
-      if (!expectedUserId || expectedUserId !== current.user.id) {
-        throw new APIError("CONFLICT", { code: "VICO_LINK_IDENTITY_CHANGED", message: "Account changed. Refresh before connecting Google." });
+// The authenticated core endpoints shipped by Better Auth 1.7.7.
+// Guest sign-in/callback flows remain I3, while /sign-out must remain usable
+// by an inactive account so its own retained session can be removed.
+const actorProtectedAuthPaths = new Set([
+  "/get-session", "/list-sessions", "/revoke-session", "/revoke-sessions",
+  "/revoke-other-sessions", "/list-accounts", "/link-social", "/unlink-account",
+  "/get-access-token", "/refresh-token", "/account-info", "/verify-password",
+  "/update-session", "/update-user", "/change-password", "/delete-user",
+  "/delete-user/callback", "/change-email",
+]);
+
+export function createBetterAuthRequestHooks(
+  database: NodePgDatabase,
+  onActorStateError?: (error: unknown) => void,
+): NonNullable<BetterAuthOptions["hooks"]> {
+  return {
+    before: createAuthMiddleware(async (ctx) => {
+      let current: Awaited<ReturnType<typeof getAuthoritativeSessionFromCtx>> = null;
+      if (ctx.path && actorProtectedAuthPaths.has(ctx.path) && ctx.headers) {
+        // Also runs for auth.api.* calls; direct endpoint dispatch shares this
+        // pinned Better Auth hook with the canonical HTTP handler.
+        current = await getAuthoritativeSessionFromCtx(ctx);
+        if (current) {
+          try {
+            const connection = (database as NodePgDatabase & { $client: Client }).$client;
+            const state = await readAccountState(connection, current.user.id);
+            if (state.status !== "active") {
+              throw new APIError("UNAUTHORIZED", { message: "Unauthorized" });
+            }
+          } catch (error) {
+            if (!(error instanceof APIError)) onActorStateError?.(error);
+            throw error;
+          }
+        }
       }
-      return;
-    }
-    if (ctx.path !== "/sign-up/email") return;
-    const suppliedName = ctx.body?.name;
-    if (typeof suppliedName !== "string") {
-      throw new APIError("BAD_REQUEST", { message: "Invalid display name" });
-    }
-    const name = suppliedName.trim();
-    if (!name || name.length > 100) {
-      throw new APIError("BAD_REQUEST", { message: "Invalid display name" });
-    }
-    return { context: { ...ctx, body: { ...ctx.body, name } } };
-  }),
-};
+      if (ctx.path === "/link-social") {
+        // Retain the existing current-session/stale-identity check before OAuth state.
+        if (!current) throw new APIError("UNAUTHORIZED", { message: "Unauthorized" });
+        const expectedUserId = ctx.headers?.get("x-vico-link-user");
+        if (!expectedUserId || expectedUserId !== current.user.id) {
+          throw new APIError("CONFLICT", {
+            code: "VICO_LINK_IDENTITY_CHANGED", message: "Account changed. Refresh before connecting Google.",
+          });
+        }
+        return;
+      }
+      if (ctx.path !== "/sign-up/email") return;
+      const suppliedName = ctx.body?.name;
+      if (typeof suppliedName !== "string") {
+        throw new APIError("BAD_REQUEST", { message: "Invalid display name" });
+      }
+      const name = suppliedName.trim();
+      if (!name || name.length > 100) {
+        throw new APIError("BAD_REQUEST", { message: "Invalid display name" });
+      }
+      return { context: { ...ctx, body: { ...ctx.body, name } } };
+    }),
+  };
+}
 
 export const betterAuthRateLimitOptions = {
   enabled: true,
@@ -87,7 +122,10 @@ export const betterAuthIpAddressOptions = {
 };
 export const betterAuthAdvancedOptions = { ipAddress: betterAuthIpAddressOptions };
 
-export function betterAuthOptions(database: NodePgDatabase, env: BetterAuthEnvironment): BetterAuthOptions {
+export function betterAuthOptions(
+  database: NodePgDatabase, env: BetterAuthEnvironment,
+  onActorStateError?: (error: unknown) => void,
+): BetterAuthOptions {
   return {
     secret: env.BETTER_AUTH_SECRET,
     baseURL: env.BETTER_AUTH_URL,
@@ -98,7 +136,7 @@ export function betterAuthOptions(database: NodePgDatabase, env: BetterAuthEnvir
     user: { additionalFields: betterAuthUserAdditionalFields, validateUserInfo: createRegistrationAdmission(database) },
     account: { accountLinking: { disableImplicitLinking: true } },
     emailAndPassword: betterAuthEmailPasswordOptions,
-    hooks: betterAuthRequestHooks,
+    hooks: createBetterAuthRequestHooks(database, onActorStateError),
     socialProviders: {
       google: {
         clientId: env.GOOGLE_CLIENT_ID,
@@ -119,8 +157,9 @@ export function createAuth(
   onCreatedFact?: AuthCreationObserver,
   onDeleted?: SessionDeletionEvidence,
   onCreatedProof?: AuthCreationEvidence,
+  onActorStateError?: (error: unknown) => void,
 ) {
-  const options = betterAuthOptions(database, env);
+  const options = betterAuthOptions(database, env, onActorStateError);
   if (onCreatedFact) {
     // A new user's hook is queued before its credential/Google account hook.
     // This is instance-local to the canonical Better Auth operation.
@@ -336,6 +375,7 @@ export function createHyperdriveAuthRuntime(
   ): Promise<T> {
     const client = createClient(connectionString);
     let databaseError: unknown;
+    let actorStateError: unknown;
     let deletions: SessionDeletionEvidence | undefined;
     let creations: AuthCreationEvidence | undefined;
     try {
@@ -355,13 +395,18 @@ export function createHyperdriveAuthRuntime(
         observeAuthNativeMutations(client, creations, deletions,
           count => { try { onCreatedFact.recordGap?.(count); } catch { /* best effort */ } });
       }
-      return await operation(createAuth(database, env,
+      const result = await operation(createAuth(database, env,
         preserveDatabaseError ? (error) => { databaseError ??= error; } : undefined,
-        onAdmissionError, onAdmissionDenied, onCreatedFact, deletions, creations), database, client);
+        onAdmissionError, onAdmissionDenied, onCreatedFact, deletions, creations,
+        (error) => { actorStateError ??= error; }), database, client);
+      // The HTTP adapter may convert a thrown hook error to a generic response.
+      // Restore the classified A2 error before responding to this request.
+      if (actorStateError) throw actorStateError;
+      return result;
     } catch (error) {
       // Better Auth 1.7.7 replaces session-query failures with a cause-less APIError.
       // Retain the adapter failure for classification; never infer availability from HTTP 500.
-      throw databaseError ?? error;
+      throw actorStateError ?? databaseError ?? error;
     } finally {
       try { await creations?.flush(); }
       catch { /* Creation proof must never change an auth outcome. */ }
@@ -491,21 +536,31 @@ export function createHyperdriveAuthRuntime(
         throw error;
       }
     },
-    handle: (request) => {
+    handle: async (request) => {
       const admission = { failure: undefined as { error: unknown } | undefined };
-      return useAuth(async (auth) => {
-        const response = await auth.handler(request);
-        if (!admission.failure) return response;
-        if (sessionStorageUnavailable(admission.failure.error)) {
+      try {
+        return await useAuth(async (auth) => {
+          const response = await auth.handler(request);
+          if (!admission.failure) return response;
+          if (sessionStorageUnavailable(admission.failure.error)) {
+            return new Response("Service unavailable. Please try again.", {
+              status: 503,
+              headers: { "Content-Type": "text/plain; charset=utf-8", "Cache-Control": "no-store" },
+            });
+          }
+          // Missing policy singleton, unexpected schema/configuration and programming errors
+          // must follow the normal unexpected-error path, not Better Auth's validation_failed 403.
+          throw admission.failure.error;
+        }, false, (error) => { admission.failure ??= { error }; });
+      } catch (error) {
+        if (error instanceof AccountStateUnavailableError) {
           return new Response("Service unavailable. Please try again.", {
             status: 503,
             headers: { "Content-Type": "text/plain; charset=utf-8", "Cache-Control": "no-store" },
           });
         }
-        // Missing policy singleton, unexpected schema/configuration and programming errors
-        // must follow the normal unexpected-error path, not Better Auth's validation_failed 403.
-        throw admission.failure.error;
-      }, false, (error) => { admission.failure ??= { error }; });
+        throw error;
+      }
     },
   };
 }
