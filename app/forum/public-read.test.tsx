@@ -4282,3 +4282,63 @@ describe("AP-08 closed topic participation and mounted reply recovery", () => {
     } finally { router.dispose(); }
   });
 });
+
+describe.each([
+  { locale: "en", direction: "ltr" as const },
+  { locale: "he", direction: "rtl" as const },
+])("SA04-C1 canonical topic route and presentation ($locale)", ({ locale, direction }) => {
+  it("masks deleted identity before route serialization and display, retaining active post links/content", async () => {
+    const mixed: ForumTopicPage = {
+      ...topic,
+      authorName: "SECRET_C1_TOPIC_AUTHOR", authorIdentityKind: "deleted",
+      posts: [
+        {
+          ...topic.posts[0]!, authorId: "deleted-post",
+          authorName: "SECRET_C1_POST_AUTHOR", authorImage: "https://images.example.test/SECRET_C1_POST_AVATAR.png",
+          authorIdentityKind: "deleted",
+        },
+        {
+          ...topic.posts[0]!, id: "active-post", authorId: "active-post-author",
+          authorName: "Active member", authorImage: "https://images.example.test/active.png",
+          body: { id: "active-post-body", originalContent: "Visible active answer", sourceLocale: "en" },
+        },
+      ],
+    };
+    const ctx = context(locale, direction);
+    ctx.set(forumReaderContext, { ...reader, readTopicPage: async () => mixed });
+    const loaded = await topicLoader({ params: { locale, topicId: mixed.id }, context: ctx });
+    expect(loaded.topic).toMatchObject({
+      authorId: mixed.authorId, authorName: "Deleted user", authorIdentityKind: "deleted",
+      posts: [
+        { authorId: "deleted-post", authorName: "Deleted user", authorImage: null, authorIdentityKind: "deleted" },
+        { authorId: "active-post-author", authorName: "Active member", authorImage: "https://images.example.test/active.png" },
+      ],
+    });
+    const serialized = JSON.stringify(loaded);
+    for (const secret of ["SECRET_C1_TOPIC_AUTHOR", "SECRET_C1_POST_AUTHOR", "SECRET_C1_POST_AVATAR"]) {
+      expect(serialized).not.toContain(secret);
+    }
+    const mounted = renderRoute(TopicRoute, loaded, forumTopicPath(locale, mixed.id), locale, direction);
+    await waitFor(() => expect(mounted.container.querySelectorAll(".topic-message-profile-link")).toHaveLength(2));
+    const links = Array.from(mounted.container.querySelectorAll<HTMLAnchorElement>(".topic-message-profile-link"));
+    expect(links[0]).toHaveAttribute("href", `/${locale}/users/deleted-post`);
+    expect(links[0]).toHaveTextContent("Deleted user");
+    expect(links[0]!.querySelector("img")).toBeNull();
+    expect(links[1]).toHaveAttribute("href", `/${locale}/users/active-post-author`);
+    expect(links[1]).toHaveTextContent("Active member");
+    expect(links[1]!.querySelector("img")).toHaveAttribute("src", "https://images.example.test/active.png");
+    expect(mounted.container).toHaveTextContent("Visible active answer");
+    for (const secret of ["SECRET_C1_TOPIC_AUTHOR", "SECRET_C1_POST_AUTHOR", "SECRET_C1_POST_AVATAR"]) {
+      expect(mounted.container.textContent).not.toContain(secret);
+      expect(mounted.container.innerHTML).not.toContain(secret);
+    }
+    mounted.unmount();
+
+    // A malformed presentation fixture must still not render raw deleted identity.
+    const defensive = renderRoute(TopicRoute, topicRenderData(mixed), forumTopicPath(locale, mixed.id), locale, direction);
+    await waitFor(() => expect(defensive.container.querySelectorAll(".topic-message-profile-link")).toHaveLength(2));
+    expect(defensive.container).not.toHaveTextContent("SECRET_C1_POST_AUTHOR");
+    expect(defensive.container.innerHTML).not.toContain("SECRET_C1_POST_AVATAR");
+    defensive.unmount();
+  });
+});
