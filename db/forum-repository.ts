@@ -1,5 +1,5 @@
 import { projectPublicAccountIdentity, PublicIdentityInvariantError } from "./public-identity";
-import { activeAccountPredicate, type AccountState } from "./account-state";
+import { activeAccountPredicate, AccountInactiveError, type AccountState } from "./account-state";
 import {appendForumHistory} from "./forum-history";
 import { lockPrivacySubject } from "./user-privacy";
 import type {HelpSignalHistoryEffect} from "./admin-history";
@@ -576,7 +576,7 @@ export class DrizzleForumRepository {
       .innerJoin(user, eq(user.id, forumOnlinePresence.userId))
       .leftJoin(userPrivacyPreferences, eq(userPrivacyPreferences.userId, user.id))
       // Filter before the window count and LIMIT: stale hidden presence cannot leak.
-      .where(and(recent, sql`coalesce(${userPrivacyPreferences.showOnline}, true) = true`))
+      .where(and(recent, activeAccountPredicate(user.deactivatedAt), sql`coalesce(${userPrivacyPreferences.showOnline}, true) = true`))
       .orderBy(desc(forumOnlinePresence.lastSeenAt), asc(user.id))
       .limit(12);
     return {
@@ -588,7 +588,9 @@ export class DrizzleForumRepository {
   async recordOnlinePresence(userId: string): Promise<void> {
     await this.database.transaction(async (tx) => {
       // The same account-row lock protects both preference writes and heartbeats.
-      await lockPrivacySubject(tx, userId);
+      const deactivatedAt = await lockPrivacySubject(tx, userId);
+      // The locked row reflects any preceding committed deactivation.
+      if (deactivatedAt !== null) throw new AccountInactiveError();
       // Separate statement after lock acquisition sees the latest committed preference.
       const [preference] = await tx.select({ showOnline: userPrivacyPreferences.showOnline })
         .from(userPrivacyPreferences).where(eq(userPrivacyPreferences.userId, userId));
