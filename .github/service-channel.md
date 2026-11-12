@@ -4703,3 +4703,12 @@ Lira must perform author inspection, publish the stable A2 head/evidence and STO
 - A1 + A2–H are now repository baseline. Their independent review evidence remains closed; #328 must not be reused.
 - Permanent docs are not updated yet because full SA04 is incomplete.
 - SA04-I remains unassigned. The next step is a fresh bounded scope/granularity decision from current main.
+
+
+## 2026-11-12 — SA04-I decomposition fixed
+
+- Accepted SA04-I is retained unchanged in substance but is too large for one author handoff on current main `13456a17f23c1385bef8ab11c735f43d201edd02`.
+- Coordinator split: **I1 request-session resolution → I2 authenticated HTTP/direct endpoint gate → I3 new-session target admission → I4 atomic existing-target mutation closure → I5 connected Better Auth closure**.
+- All five checkpoints belong to one new cumulative Draft implementation PR. I1–I4 are not independent completion/merge points; only I5 can close I.
+- This split preserves the already merged A1–H baseline and does not pull J–R writer enforcement into auth work.
+- No active Lira/Lev/Mark assignment yet.
