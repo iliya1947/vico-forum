@@ -966,3 +966,12 @@ Review PR #323 exact `60a024304e6d595ea127bf19c948f15ca5ec39d2` after CI #430160
 ## 2026-11-11 — assignment correction
 
 The prior SA02 docs-only review assignment was rescinded as unnecessary Codex involvement. Lev is **unassigned** for PR #323; implementation #319 remains closed.
+
+
+## 2026-11-12 — assigned: SA04-A2–H cumulative independent technical review
+
+Review cumulative Draft PR #328 exact head `0a917b6f4f55f991bea6e6031b43a0c4f0dc2f85` as one stable A2–H package. A1 is already merged main baseline and previously received your independent PASS; verify compatibility with its contract without repeating #327 as a separate review.
+
+Independently check the whole A2–H scope against the accepted SA04 plan, current Stage and repository behavior, including cross-checkpoint interactions. Classify only confirmed defects of the delivered A2–H scope; missing I+ enforcement/SA05 behavior is future work, not a defect by itself. Do not implement changes during review.
+
+Publish one complete findings packet or PASS in #251, record your result in your service file/workflow as appropriate, then STOP. SA04-I remains unassigned.
