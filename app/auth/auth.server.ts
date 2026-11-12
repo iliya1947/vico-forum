@@ -27,6 +27,7 @@ import {
 } from "../../db/schema";
 import { bestEffortDiscardClient, createWebClient, isPostgresConnectionTimeout, isPostgresQueryTimeout } from "../../db/postgres-deadlines";
 import { isPostgresAvailabilityFailure } from "../localization/persistent-registry";
+import { AccountStateUnavailableError, readAccountState } from "../../db/account-state";
 
 export interface BetterAuthEnvironment {
   readonly BETTER_AUTH_SECRET: string;
@@ -329,7 +330,7 @@ export function createHyperdriveAuthRuntime(
   onCreatedFact?: AuthCreationObserver,
 ): AuthRuntime {
   async function useAuth<T>(
-    operation: (auth: ReturnType<typeof createAuth>, database: NodePgDatabase) => Promise<T>,
+    operation: (auth: ReturnType<typeof createAuth>, database: NodePgDatabase, client: Client) => Promise<T>,
     preserveDatabaseError = false,
     onAdmissionError?: (error: unknown) => void,
   ): Promise<T> {
@@ -356,7 +357,7 @@ export function createHyperdriveAuthRuntime(
       }
       return await operation(createAuth(database, env,
         preserveDatabaseError ? (error) => { databaseError ??= error; } : undefined,
-        onAdmissionError, onAdmissionDenied, onCreatedFact, deletions, creations), database);
+        onAdmissionError, onAdmissionDenied, onCreatedFact, deletions, creations), database, client);
     } catch (error) {
       // Better Auth 1.7.7 replaces session-query failures with a cause-less APIError.
       // Retain the adapter failure for classification; never infer availability from HTTP 500.
@@ -470,12 +471,23 @@ export function createHyperdriveAuthRuntime(
     },
     async getSession(headers) {
       try {
-        return await useAuth(async (auth) => {
+        return await useAuth(async (auth, _database, client) => {
           const result = await auth.api.getSession({ headers, returnHeaders: true });
-          return { session: result.response as AuthSession | null, headers: result.headers ?? new Headers() };
+          const session = result.response as AuthSession | null;
+          // The Better Auth session is not active forum identity until its
+          // authoritative account row passes the existing A2 state reader.
+          const state = session ? await readAccountState(client, session.user.id) : null;
+          return {
+            session: state?.status === "active" ? session : null,
+            // Preserve BA cleanup/sliding cookies, including their order relative
+            // to later endpoint login/logout Set-Cookie headers.
+            headers: result.headers ?? new Headers(),
+          };
         }, true);
       } catch (error) {
-        if (sessionStorageUnavailable(error)) throw new AuthSessionUnavailableError({ cause: error });
+        if (error instanceof AccountStateUnavailableError || sessionStorageUnavailable(error)) {
+          throw new AuthSessionUnavailableError({ cause: error });
+        }
         throw error;
       }
     },
