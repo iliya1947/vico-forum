@@ -4110,3 +4110,13 @@ Lira must perform author inspection, publish the stable A2 head/evidence and STO
 - No Better Auth/session/domain-writer integration, public identity projection or deactivation operation is assigned.
 - Lira STOP after stable A3 head/evidence and author inspection. A4+ unassigned; Lev remains reserved for a larger cumulative review scope.
 
+## 2026-11-12 — SA04-A3 Mira checkpoint PASS
+
+- Mira reviewed cumulative #328 exact head `0725b49dc9d9e36152670dac8368d0f83e714c82`.
+- Confirmed transaction-local `FOR NO KEY UPDATE` admission primitive matches A3: active/missing/inactive resolution under caller-owned user-row lock; lock retained to caller commit/rollback; no state mutation/transaction ownership hidden inside helper.
+- Confirmed PG17 concurrency evidence for both lock orderings, existing-lock reuse and FK KEY SHARE compatibility.
+- No auth/session/domain writer integration or later SA scope leaked in.
+- CI #43112202261 SUCCESS.
+- **PASS — 0 confirmed current-scope defects.**
+- #328 remains Draft/cumulative; Lira STOP; A4 unassigned; Lev remains unassigned.
+
