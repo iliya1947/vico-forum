@@ -1,14 +1,14 @@
 # Admin panel — current workflow
 
-- Service PR **#251**; merged SA04-A1 main/base `593a03964b8407b249f7c9f5eb117ddb8b07736d`. SA04-A2/A3/A4/B/C1/C2/C3a/C3b **Mira checkpoint PASS**; A4-MIRA-01 CLOSED.
-- **Current checkpoint: SA04-C3c Lira author-complete; STOP. Next: Mira bounded C3c checkpoint review.**
-- Cumulative [Draft implementation PR #328](https://github.com/iliya1947/vico-forum/pull/328) **stable exact head `35bbf78a91d75818318f83ddc7413a69ddc001aa`**, same main/base, **28 files**, open/Draft/unmerged.
-- **Only C3c delivered:** canonical authenticated Unread topic-author lifecycle projection via accepted A4 helper, direct public DTO, `/unread` loader allowlist/mask and translated view. Inactive name becomes Deleted user without original identity/lifecycle disclosure; active identity and authentication preserved.
-- Existing Unread `new/unread` classification, firstUnread/latest post IDs, unread counts, activity/order, titles, category/section, anchors and section-page state-only consumer unchanged. No new schema/migration/writer or extra lookup. Historical PostgreSQL test fixture includes pre-existing migration `0023` for its read-state coverage.
-- Focused direct PostgreSQL and authenticated EN/HE route/DOM regressions passed; personal author diff/SQL/DTO/route/UI/test inspection performed, no current-scope defect confirmed. This is **not** a coordinator/independent review verdict.
-- **Final exact-head SUCCESS:** CI [#43226057368](https://github.com/iliya1947/vico-forum/actions/runs/43226057368) 2256 app/706 native PG17, 69-table manifest, lint/typecheck/build/Worker smoke; SA03 [#43226057417](https://github.com/iliya1947/vico-forum/actions/runs/43226057417), SA01 [#43226057393](https://github.com/iliya1947/vico-forum/actions/runs/43226057393), AP10 [#43226057468](https://github.com/iliya1947/vico-forum/actions/runs/43226057468) Chromium all SUCCESS (AP10 all four jobs).
-- **Next action only for Mira:** independently inspect bounded C3c author result on the exact head, publish checkpoint verdict and only then decide any new bounded assignment. Lira, Lev, Mark have **no active new task**; no review/merge claim by author.
-- **Explicit outside C3c:** C3d Help, notifications, post-history, Admin Users, mentions, presence, auth/session enforcement, writers/deactivation, SA05+, Stage6/production, #315, documentation closeout and merge.
+- Service PR **#251**; merged SA04-A1 main/base `593a03964b8407b249f7c9f5eb117ddb8b07736d`. SA04-A2/A3/A4/B/C1/C2/C3a/C3b/C3c **Mira checkpoint PASS**; A4-MIRA-01 CLOSED.
+- **Current checkpoint: SA04-C3c Mira checkpoint PASS on cumulative Draft #328 exact head `35bbf78a91d75818318f83ddc7413a69ddc001aa`; 0 confirmed current-scope C3c defects. Lira STOP.**
+- [Cumulative Draft implementation PR #328](https://github.com/iliya1947/vico-forum/pull/328): stable exact implementation head **`35bbf78a91d75818318f83ddc7413a69ddc001aa`**, base/current main **`593a03964b8407b249f7c9f5eb117ddb8b07736d`**, **28 changed files**, open/Draft/unmerged.
+- **C3c confirmed:** canonical authenticated Unread summaries use the accepted same-row A4 Deleted-user projection before public DTO construction; loader explicitly allowlists current public/read-state fields and presentation refuses raw deleted names. Active author names remain unchanged.
+- **Semantics confirmed unchanged:** guest 401/session reader identity, `new` vs `unread`, firstUnreadPostId/latestPostId, unreadCount, activityAt ordering, title and public category/section projection. Existing section-page consumer still uses only topic `id/state`.
+- **Review evidence:** C3c delta from accepted C3b head is exactly five files. Direct PG17 regression covers mixed active/deactivated authors across New/Unread states, pointers/count/order/location and raw identity/lifecycle omission. EN/HE route/DOM regression covers 401, reader user ID, loader allowlist, links/anchors/counts and adversarial raw fixture.
+- Independently rechecked exact-head runs: CI #43226057368, SA03 #43226057417, SA01 #43226057393 and AP10 #43226057468 are all completed **SUCCESS** on exact `35bbf78a...`.
+- **PASS — 0 confirmed current-scope C3c defects.** #328 remains cumulative Draft; no Lev review/merge at this checkpoint.
+- **No active agent assignment.** Next bounded continuation is **C3d: Help question-summary family**. Later SA04 work remains unassigned.
 
 ## Mandatory author verification
 
