@@ -409,6 +409,8 @@ export function NotificationsView({
           <ul className="notifications-list">
             {notifications.map((notification) => {
               const unread = notification.readAt === null;
+              const deletedActor = notification.actorIdentityKind === "deleted";
+              const actorLabel = deletedActor ? t("deletedUser") : notification.actorName ?? "";
               return (
                 <li key={notification.id}>
                   <Form method="post" className="notification-form">
@@ -420,13 +422,13 @@ export function NotificationsView({
                       aria-label={`${t("notificationOpen")}: ${notification.kind==="complaint-decision"?t("notificationDecisionResult"):notification.kind==="complaint-appeal-result"?t("complaintAppealNotification"):notification.topicTitle??""}`}
                     >
                       {notification.kind!=="complaint-decision"&&notification.kind!=="complaint-appeal-result"?<span className="notification-avatar" aria-hidden="true">
-                        {(notification.actorName??"").trim().slice(0, 1).toUpperCase()}
+                        {deletedActor ? "" : actorLabel.trim().slice(0, 1).toUpperCase()}
                       </span>:null}
                       <span className="notification-copy">
                         <span className="notification-summary">
                           {notification.kind==="complaint-decision"||notification.kind==="complaint-appeal-result"?
                             <strong>{t(notification.kind==="complaint-decision"?"notificationDecisionResult":"complaintAppealNotification")}</strong>:
-                            <><span>{t(notification.kind==="mention"?"notificationMentionBy":"notificationReplyBy",{actor:notification.actorName??""})}</span>
+                            <><span>{t(notification.kind==="mention"?"notificationMentionBy":"notificationReplyBy",{actor:actorLabel})}</span>
                             <strong dir="auto">{notification.topicTitle}</strong></>}
                         </span>
                         <time dateTime={notification.createdAt}>
