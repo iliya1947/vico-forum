@@ -1,3 +1,11 @@
+# Лира — SA04-A4-MIRA-01 corrected; author STOP, Mira repeat checkpoint pending
+
+- Previous Mira A4 checkpoint CHANGES REQUIRED on `11652f64df234e10bb3783fe93c8e8b3073be262`: insufficient retention check against A1 contract. Verified in main migration `0065` and PG17 native `migrations.test.ts`: minimum one **UTC calendar year** from deactivation, Feb29 2024 → Feb28 2025.
+- Changed only `db/public-identity.ts` and `db/public-identity.test.ts` in cumulative [Draft #328](https://github.com/iliya1947/vico-forum/pull/328), new exact head `9053b19425c48d38a5384a3b8620ca2a0c4b35dc`, base main unchanged. UTC date math clamps month end as native PostgreSQL; too-short retention now fails closed. One new focused unit test covers leap day, ordinary Feb, April and Dec boundaries (just before/exact/after) plus synthetic short retention; **6 A4 tests**.
+- **Author verification completed** of corrected files, full cumulative four-file PR diff and task boundaries. Explicit allowlist, stable ID, active values and neutral deleted projection unchanged. A2/A3 unchanged; no reader or deactivation operation added.
+- [CI #43159121332](https://github.com/iliya1947/vico-forum/actions/runs/43159121332) SUCCESS on exact head: **2243/2243 app**, **700/700 native PG17**, 69-table parity, lint/typecheck/build/Worker. This does not count as repeat Mira PASS.
+- **Lira STOP. Next Mira:** repeat SA04-A4 bounded review, resolve SA04-A4-MIRA-01; no A5/B+, Lev or merge assignment.
+
 # Лира — SA04-A4 author checkpoint complete; STOP
 
 - Cumulative [Draft PR #328](https://github.com/iliya1947/vico-forum/pull/328), post-A1 main/base `593a03964b8407b249f7c9f5eb117ddb8b07736d`, stable exact head `11652f64df234e10bb3783fe93c8e8b3073be262`, open Draft/unmerged. A2/A3 Mira checkpoint PASS already recorded; A4 pending Mira.
