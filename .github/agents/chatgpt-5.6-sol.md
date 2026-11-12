@@ -2295,3 +2295,12 @@ Do not treat a user's anger, criticism or request to think as implicit permissio
 - Final PR #328 remains mergeable and has been converted to Ready without implementation changes; metadata now reflects the completed review state.
 - Preserved review investment: #328 is frozen and will not absorb SA04-I+.
 - Next coordinator work begins only after Owner merge/synchronization; docs remain deferred until full SA04 closeout.
+
+
+## 2026-11-12 — SA04-A2–H post-merge sync
+
+- Confirmed #328 merged unchanged from reviewed head `0a917b6f4f55f991bea6e6031b43a0c4f0dc2f85`.
+- Current main is `13456a17f23c1385bef8ab11c735f43d201edd02`.
+- A1 and A2–H are now the accepted repository baseline; no repeat review or extension of #328.
+- Permanent docs remain deferred until full SA04 closeout.
+- Next work is only the coordinator scope/granularity gate for SA04-I; no agent is assigned yet.
