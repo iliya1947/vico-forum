@@ -201,8 +201,9 @@ describe("Better Auth PostgreSQL runtime", () => {
       .find(entry => entry.includes("session_token="))?.split(";", 1)[0];
     if (!cookie) throw new Error("Expected an authenticated cookie for lifecycle error probes");
 
+    const verifiedDatabaseUrl = databaseUrl;
     function failingRuntime(error: Error) {
-      return createHyperdriveAuthRuntime(databaseUrl, env, () => {
+      return createHyperdriveAuthRuntime(verifiedDatabaseUrl, env, () => {
         const connection = authClient();
         const original = connection.query.bind(connection);
         vi.spyOn(connection, "query").mockImplementation(((...args: unknown[]) => {
@@ -210,7 +211,7 @@ describe("Better Auth PostgreSQL runtime", () => {
           const text = typeof statement === "string" ? statement
             : statement && typeof statement === "object" && "text" in statement
               ? (statement as { text: unknown }).text : null;
-          if (typeof text === "string" && text.includes("deactivated_at")) {
+          if (typeof text === "string" && text.includes(" as deactivated_at")) {
             return Promise.reject(error);
           }
           return Reflect.apply(original, connection, args);
