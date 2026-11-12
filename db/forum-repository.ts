@@ -1,3 +1,5 @@
+import { projectPublicAccountIdentity, PublicIdentityInvariantError } from "./public-identity";
+import type { AccountState } from "./account-state";
 import {appendForumHistory} from "./forum-history";
 import { lockPrivacySubject } from "./user-privacy";
 import type {HelpSignalHistoryEffect} from "./admin-history";
@@ -560,8 +562,12 @@ export class DrizzleForumRepository {
   }
 
   async readProfile(userId: string): Promise<ForumProfile | undefined> {
+    // Read the lifecycle tuple alongside the public fields in one DB snapshot.
+    // Never return the original identity/lifecycle columns to a public caller.
     const [profile] = await this.database.select({
       id: user.id, name: user.name, image: user.image, joinedAt: user.createdAt,
+      deactivatedAt: user.deactivatedAt, deactivatedByUserId: user.deactivatedByUserId,
+      retainAtLeastUntil: user.retainAtLeastUntil,
       bio: sql<string>`coalesce(${forumProfiles.bio}, '')`,
       githubUrl: forumProfiles.githubUrl, websiteUrl: forumProfiles.websiteUrl,
       role: { slug: authzRoles.slug, displayName: authzRoles.displayName, isSystem: authzRoles.isSystem },
@@ -572,7 +578,30 @@ export class DrizzleForumRepository {
       .leftJoin(authzUserRoles, eq(authzUserRoles.userId, user.id))
       .innerJoin(authzRoles, sql`${authzRoles.id} = coalesce(${authzUserRoles.roleId}, (select id from authz_roles where slug = 'user'))`)
       .where(eq(user.id, userId));
-    return profile;
+    if (!profile) return undefined;
+    let state: AccountState;
+    if (profile.deactivatedAt === null) {
+      if (profile.deactivatedByUserId !== null || profile.retainAtLeastUntil !== null) {
+        throw new PublicIdentityInvariantError();
+      }
+      state = { status: "active", userId: profile.id };
+    } else {
+      if (profile.deactivatedByUserId === null || profile.retainAtLeastUntil === null) {
+        throw new PublicIdentityInvariantError();
+      }
+      state = {
+        status: "deactivated", userId: profile.id,
+        deactivatedAt: profile.deactivatedAt, deactivatedByUserId: profile.deactivatedByUserId,
+        retainAtLeastUntil: profile.retainAtLeastUntil,
+      };
+    }
+    const identity = projectPublicAccountIdentity(profile, state);
+    return {
+      id: identity.id, name: identity.name, image: identity.image, joinedAt: profile.joinedAt,
+      bio: identity.bio, githubUrl: identity.githubUrl, websiteUrl: identity.websiteUrl,
+      role: profile.role, messageCount: profile.messageCount, bestAnswerCount: profile.bestAnswerCount,
+      ...(identity.kind === "deleted" ? { identityKind: "deleted" as const } : {}),
+    };
   }
 
   async updateProfile(actorId: string, input: ProfileFields): Promise<void> {
