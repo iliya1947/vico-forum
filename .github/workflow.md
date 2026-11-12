@@ -1,7 +1,7 @@
 # Admin panel — current workflow
 
 - Service PR **#251**; merged SA04-A1 main/base `593a03964b8407b249f7c9f5eb117ddb8b07736d`. A2/A3/A4/B are **Mira checkpoint PASS**; SA04-A4-MIRA-01 CLOSED.
-- **Current checkpoint: SA04-C1 author-complete. Next Mira C1 bounded checkpoint/scope review of exact stable head.** Lira STOP; C2/C3, Lev/Mark independent review and merge remain unassigned.
+- **Current checkpoint: SA04-C1 Mira checkpoint PASS on cumulative Draft #328 exact head `306319bb506bb95ddda776dbc1a0b04a9c3e8fe3`; 0 confirmed current-scope C1 defects. Lira STOP.**
 - [Cumulative Draft implementation PR #328](https://github.com/iliya1947/vico-forum/pull/328): **stable exact head `306319bb506bb95ddda776dbc1a0b04a9c3e8fe3`**, base unchanged, **21 changed files**, open/Draft/unmerged.
 - **C1 only:** `DrizzleForumRepository.readTopicPage` neutralizes both topic author and every current post author using accepted A4 lifecycle projector on each joined-user SQL row. Deactivated: stable IDs/profile URLs and published content/state/attachments preserved, public name `Deleted user`, avatar null, private raw identity/lifecycle excluded from DTO. Active and mixed-author topics unchanged. Canonical route serializes safe identity; topic UI localizes the generic label and keeps fresh identity across post-edit recovery.
 - **Regression evidence:** native PG17 secret-marker snapshots and EN/HE route/DOM/serialization tests. Added existing A1 `0065` migration to exactly three historical PostgreSQL fixtures with current topic-reader calls; restored unchanged active-topic object identity after initial application test failure.
@@ -187,3 +187,14 @@ Before any project-changing action or agent handoff, Mira must check in this ord
 - First exact-head CI diagnosed three historical test migrations missing accepted A1 column `deactivated_at` and an active topic object reference regression; only those 3 test fixtures and route guard corrected. A first AP10 browser run had a connection hang-up on an unrelated admin authorization operation; subsequent exact head AP10 is fully green, no AP10 product change.
 - **Final exact-head CI #43198894729 SUCCESS**: 2248 app, 702 native PG17, 69-table manifest parity; SA03 #43198894476, SA01 #43198894492 and AP10 #43198894423 all SUCCESS.
 - Personal C1 author inspection + cumulative changed-file inventory/diff performed. **Lira STOP; next Mira C1 bounded checkpoint/scope review**, no C2+, Lev, merge, docs or production.
+
+## 2026-11-12 — SA04-C1 checkpoint review PASS
+
+- Reviewed cumulative Draft #328 exact head `306319bb506bb95ddda776dbc1a0b04a9c3e8fe3`; current main remains `593a03964b8407b249f7c9f5eb117ddb8b07736d`.
+- C1 direct topic-page DTO projects inactive topic/current-post authors through the accepted A4 contract; stable IDs/content/state remain and raw identity/lifecycle fields do not cross the public DTO.
+- Loader/presentation add a defensive neutral mask and localized Deleted-user rendering; edit recovery reuses the current loader identity.
+- Active/mixed authors remain correct. C2/C3 and later reader families are untouched.
+- Exact-head CI #43198894729 and SA03/SA01/AP10 Chromium workflows are SUCCESS.
+- **PASS — 0 confirmed current-scope C1 defects.**
+- #328 remains cumulative Draft. Lira STOP; C2+ and Lev remain unassigned.
+
