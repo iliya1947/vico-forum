@@ -2266,3 +2266,14 @@ Do not treat a user's anger, criticism or request to think as implicit permissio
 - Assigned only H to Lira from #328 exact G head `f6a2c1ef378bfd5f30ece746f65253963f4d6125`: neutralize inactive revision-author identity through accepted A4 before DTO/.data/UI while preserving revision content/order/source locale/timestamps, stable author ID and existing history permission.
 - Explicitly excluded I+ auth/writer enforcement, schema/migration, permission changes, history-text rewriting and unrelated refactoring.
 - Lira STOP after stable exact head, applicable checks and author inspection. Lev/Mark remain reserved.
+
+
+## 2026-11-12 — SA04-H review result
+
+- Reviewed cumulative Draft #328 exact head `0a917b6f4f55f991bea6e6031b43a0c4f0dc2f85` and all seven H commits/six changed files from accepted G.
+- Verified repository projection, action allowlist/mask, shared Quick actions presentation and native/action/DOM regressions.
+- Confirmed current H preserves revision content/order/source locale/timestamps, stable author ID and existing history permission while removing inactive author's retained public identity from DTO/.data/UI.
+- No current-scope defect found; future physical deletion/reactivation/auth/writer concerns are outside H.
+- Exact-head CI/SA03/SA01/AP10 workflows are SUCCESS.
+- Verdict: **PASS, 0 confirmed current-scope H defects.**
+- A–H cumulative preparation/projection slice is now checkpoint-stable; do not start I or assign the next reviewer from this review step without a separate continuation.
