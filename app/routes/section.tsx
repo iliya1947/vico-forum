@@ -1,4 +1,5 @@
 import { forumReadLoader } from "../forum/read-availability.server";
+import { DELETED_USER_NAME } from "../../db/public-identity";
 import { useActionData, useLoaderData, type RouterContextProvider } from "react-router";
 import { authSessionForRequest } from "../auth/request-context";
 import { measureRestrictionsForPresentation } from "../measures/presentation.server";
@@ -17,8 +18,15 @@ export const loader = forumReadLoader(async function loader({ params, context }:
   params: { locale?: string; sectionId?: string };
   context: RouterContextProvider;
 }) {
-  const section = await forumReaderForRequest(context).readSection(params.sectionId ?? "");
-  if (!section) throw new Response("Not Found", { status: 404 });
+  const loadedSection = await forumReaderForRequest(context).readSection(params.sectionId ?? "");
+  if (!loadedSection) throw new Response("Not Found", { status: 404 });
+  const section = loadedSection.topics.some((topic) => topic.authorIdentityKind === "deleted")
+    ? {
+        ...loadedSection,
+        topics: loadedSection.topics.map((topic) => topic.authorIdentityKind === "deleted"
+          ? { ...topic, authorName: DELETED_USER_NAME } : topic),
+      }
+    : loadedSection;
   const session = authSessionForRequest(context);
   let canCreateTopic = false;
   let canUploadAttachments = false;
