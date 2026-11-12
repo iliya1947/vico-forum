@@ -2246,3 +2246,14 @@ Do not treat a user's anger, criticism or request to think as implicit permissio
 - Verdict: **PASS, 0 confirmed current-scope C2 defects**.
 - No Lev review solely for C2; C3+ remain unassigned.
 
+
+
+## 2026-11-12 — SA04-G review result
+
+- Reviewed cumulative Draft #328 exact head `f6a2c1ef378bfd5f30ece746f65253963f4d6125`, accepted F parent and complete six-file G delta.
+- Verified both notification readers, route serialization, UI neutral presentation, native PostgreSQL lifecycle regression and exact-head workflow results.
+- Confirmed G preserves recipient membership, kinds, ordering/paging/counts, targets/read state and mark-read while removing inactive actor raw identity from public DTO/.data/UI.
+- Future recipient lifecycle admission, producers, auth/session/writer enforcement and SA-05 behavior are outside G and are not current G defects.
+- Exact-head CI #43291399256 plus SA01 #43291399192, SA03 #43291399357 and AP10 #43291399295 are SUCCESS.
+- Verdict: **PASS, 0 confirmed current-scope G defects**.
+- Preserve review granularity: no Lev review solely for G; H+ remain unassigned.
