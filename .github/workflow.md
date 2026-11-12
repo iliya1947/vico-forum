@@ -1,16 +1,17 @@
 # Admin panel — current workflow
 
-- Service PR **#251**; main/base SA04-A1 accepted `593a03964b8407b249f7c9f5eb117ddb8b07736d`.
-- **Current checkpoint: SA04-F author implementation complete — Lira STOP. Next: Mira bounded F checkpoint/scope review on stable exact head `707651774932281230b3e90440e18eeb9a08b7d4`.**
-- Cumulative [Draft implementation #328](https://github.com/iliya1947/vico-forum/pull/328) remains **open/Draft/unmerged**. There are **40 cumulative changed files**; the F delta is exactly six files since Mira-accepted E head `69c58d02003c1e00def3916ed2d7a4bafabdaf4f`.
-- Prior SA04-A2/A3/A4/B/C1/C2/C3a/C3b/C3c/C3d1/C3d2/D/E checkpoints remain **Mira PASS** (A4-MIRA-01 closed).
-- F reader uses the accepted active-account predicate in SQL before window count, ordering and 12-item limit, alongside SET-06 visibility/5-minute window. Inactive users are absent, never rendered as Deleted-user members.
-- F heartbeat checks the authoritative deactivation timestamp under the existing subject `FOR UPDATE` lock before presence insert/refresh. A deactivated actor is rejected with `AccountInactiveError` and the route's private generic 409. Current-session, stale expected-ID, same-origin, 45-second throttle, default-ON privacy and classified 503/unexpected boundaries remain.
-- Privacy Settings save still uses the existing lock but does **not** gain an active-account restriction in F; checkpoint P remains separate. Neither existing preference values nor presence records are rewritten as a consequence of state projection. No global lock.
-- Native PG17 F tests cover SQL filter-before-count/limit and secret exclusion, fresh insert/refresh denial, privacy preservation and real two-client row-lock orderings (deactivation-first refuses waiting heartbeat; heartbeat-first commits then stale physical presence is immediately invisible).
-- **Mandatory personal author inspection completed** for six F commits/files, cumulative inventory, SQL, request/Hyperdrive boundaries, lock ordering and tests. This is not Mira/Lev independent review.
-- **Exact-head CI [#43284564579](https://github.com/iliya1947/vico-forum/actions/runs/43284564579) SUCCESS**: 2265 app + 714 native PG17 tests, 69-table schema manifest parity, lint/typecheck/build/Worker smoke. Exact-head [SA03 Chromium #43284564530](https://github.com/iliya1947/vico-forum/actions/runs/43284564530), [SA01 Chromium #43284564635](https://github.com/iliya1947/vico-forum/actions/runs/43284564635) and [AP10 Chromium #43284564627](https://github.com/iliya1947/vico-forum/actions/runs/43284564627) **SUCCESS** (AP10 four jobs).
-- No new schema/dependencies/permissions, docs closeout, production, merge, SA05 or #315 work. **Lira STOP; G+ and Lev/Mark remain unassigned.**
+- Service PR **#251**; accepted SA04-A1 main/base `593a03964b8407b249f7c9f5eb117ddb8b07736d`. SA04-A2/A3/A4/B/C1/C2/C3a/C3b/C3c/C3d1/C3d2/D/E/F **Mira checkpoint PASS**; Checkpoint C complete; A4-MIRA-01 CLOSED.
+- **Current checkpoint: SA04-F Mira checkpoint PASS on cumulative Draft #328 exact head `707651774932281230b3e90440e18eeb9a08b7d4`; 0 confirmed current-scope F defects. Lira STOP.**
+- Cumulative [Draft implementation PR #328](https://github.com/iliya1947/vico-forum/pull/328): stable exact implementation head **`707651774932281230b3e90440e18eeb9a08b7d4`**, base/current main **`593a03964b8407b249f7c9f5eb117ddb8b07736d`**, **40 changed files**, open/Draft/unmerged.
+- **F reader confirmed:** `readOnlinePresence` applies accepted A1 active-account predicate in SQL together with five-minute recency and SET-06 visibility before `count(*) over()`, activity ordering and `LIMIT 12`. Inactive physical presence therefore cannot affect public count/list or consume bounded slots and is not rendered as Deleted user.
+- **F heartbeat confirmed:** existing SET-06 `lockPrivacySubject` still uses the per-subject `FOR UPDATE` row lock and now returns the authoritative `deactivatedAt`. `recordOnlinePresence` rejects inactive under that lock before reading preference or insert/refresh. Missing account remains distinct; active default-ON/OFF, 45-second throttle and no-global-lock behavior are unchanged.
+- Privacy `save` deliberately ignores the returned lifecycle value in F, so checkpoint P has **not** been pulled forward and persisted `showOnline` is preserved for inactive fixtures.
+- Real PG lock evidence covers both orders: deactivation-first commits before the waiting heartbeat, which then rejects without presence; heartbeat-first may commit a physical row before later deactivation, after which the reader immediately hides it and subsequent heartbeat rejects. Existing heartbeat/OFF serialization and unrelated-user independence remain covered.
+- `/:locale/presence` preserves session authority, stale expected-user check, same-origin/method/form handling, no-store, storage 503 and unexpected-error propagation; inactive maps to the same generic private 409 as a missing/stale account.
+- F delta from accepted E is exactly **6 files / 6 commits**; two historical online-presence test fixtures only add already-merged A1 migration `0065`.
+- Independently rechecked exact-head runs: CI #43284564579, SA03 #43284564530, SA01 #43284564635 and AP10 #43284564627 are all completed **SUCCESS** on exact `7076517749...`.
+- **PASS — 0 confirmed current-scope F defects.** #328 remains cumulative Draft; no Lev review/merge at this checkpoint.
+- No active agent assignment. Per accepted SA04 plan, next checkpoint is **G — notification actor public identity neutralization while preserving recipient/lifecycle semantics**; it remains unassigned until the next explicit continuation.
 
 ## Mandatory author verification
 
