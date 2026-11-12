@@ -1,16 +1,14 @@
 # Admin panel — current workflow
 
-- Service PR **#251**; merged SA04-A1 main/base `593a03964b8407b249f7c9f5eb117ddb8b07736d`. SA04-A2/A3/A4/B/C1/C2/C3a remain **Mira checkpoint PASS**; SA04-A4-MIRA-01 CLOSED.
-- **Current checkpoint: SA04-C3b author complete; Mira bounded coordinator checkpoint/scope review next. Lira STOP.**
-- [Cumulative Draft implementation PR #328](https://github.com/iliya1947/vico-forum/pull/328): **stable exact head `6c30b6f5a51e17f3a4722e677e60d8c5150e6baf`**, base/current main unchanged, 27 cumulative changed files, open/Draft/unmerged.
-- **C3b result:** public `DrizzleForumRepository.readTag` and `search` use the accepted A4 identity projector with the original joined topic author's A1 lifecycle, neutralizing deactivated authors to `Deleted user` with the narrow deleted marker before public DTO. Active authors, selected topics, title/postCount/sourceLocale/tags/location and timestamps preserved.
-- **Tag:** same membership/newest-first order/attached tags. **Search:** NFKC/whitespace normalization, empty/long handling, title/tag/post match rank, activity/ID order and result limit unchanged.
-- Canonical `tag.tsx`/`search.tsx` loaders allowlist fields and defensively replace raw deleted names before serialization. `TagView`/`SearchView` use existing translated `deletedUser` even with injected raw presentation name.
-- Direct PG17 tests and EN/HE loader/DOM tests verify mixed active/deactivated authors, stable rank/order/fields/counts/links, original title direction, and distinct raw identity/lifecycle markers absent from DTO/route/DOM.
-- **Mandatory author inspection:** personally inspected the 27-file cumulative changed-file inventory, current C3b source/patches, query matching/rank/filters/grouping, projected DTOs, route allowlists and tests; no confirmed current C3b defect. This is not independent Mira review.
-- **All final exact-head checks SUCCESS:** [CI #43220966986](https://github.com/iliya1947/vico-forum/actions/runs/43220966986) 2254 app /705 native PG17, 69-table parity, lint/typecheck/build/Worker smoke. [SA01 #43220967022](https://github.com/iliya1947/vico-forum/actions/runs/43220967022), [SA03 #43220967370](https://github.com/iliya1947/vico-forum/actions/runs/43220967370) and [AP10 #43220967091](https://github.com/iliya1947/vico-forum/actions/runs/43220967091) Chromium SUCCESS (AP10 4 jobs).
-- **Out of scope:** C3c authenticated Unread, C3d Help, post history, notifications, Admin Users, mentions, presence, auth/session, writers/deactivation controls, SA05+, Stage6/production, #315, documentation closeout, merge. No schema/migration change.
-- **Active recipient: Mira — SA04-C3b coordinator checkpoint/scope review** exact `6c30b6f5a51e17f3a4722e677e60d8c5150e6baf`. C3c+/Lev/Mark unassigned.
+- Service PR **#251**; merged SA04-A1 main/base `593a03964b8407b249f7c9f5eb117ddb8b07736d`. SA04-A2/A3/A4/B/C1/C2/C3a/C3b **Mira checkpoint PASS**; A4-MIRA-01 CLOSED.
+- **Current checkpoint: SA04-C3b Mira checkpoint PASS on cumulative Draft #328 exact head `6c30b6f5a51e17f3a4722e677e60d8c5150e6baf`; 0 confirmed current-scope C3b defects. Lira STOP.**
+- [Cumulative Draft implementation PR #328](https://github.com/iliya1947/vico-forum/pull/328): stable exact implementation head **`6c30b6f5a51e17f3a4722e677e60d8c5150e6baf`**, base/current main **`593a03964b8407b249f7c9f5eb117ddb8b07736d`**, **27 changed files**, open/Draft/unmerged.
+- **C3b confirmed:** canonical Tag topic summaries and Search results use the accepted same-row A4 Deleted-user projection before public DTO construction; active authors remain unchanged. Canonical loaders explicitly allowlist current public fields and presentation refuses raw deleted names.
+- **Semantics confirmed unchanged:** Tag identity/membership/newest-first order/title/post count/created time/public location/attached tags; Search NFKC+whitespace normalization, empty/max-length boundary, title/tag/post matching, match-rank/activity/topic-id ordering, limit, source locale/post count/public location/attached tags.
+- **Review evidence:** C3b delta from accepted C3a head is exactly six files. Direct PG17 regressions cover title/tag/body matches, normalization, limit, order/count/tags/location and active/deactivated identity changes; EN/HE route/DOM tests cover serialized allowlists, title direction, links/counts and raw-fixture defense.
+- Independently rechecked exact-head runs: CI #43220966986, SA03 #43220967370, SA01 #43220967022 and AP10 #43220967091 are all completed **SUCCESS** on exact `6c30b6f5...`.
+- **PASS — 0 confirmed current-scope C3b defects.** #328 remains cumulative Draft; no Lev review/merge at this checkpoint.
+- **No active agent assignment.** Next bounded continuation is **C3c: authenticated Unread topic-author summaries**. C3d Help and later SA04 work remain unassigned.
 
 ## Mandatory author verification
 
