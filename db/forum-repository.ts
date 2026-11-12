@@ -359,6 +359,7 @@ export interface ForumSectionPage {
 }
 
 export interface ForumThreadPost extends ForumPost {
+  authorIdentityKind?: "deleted";
   attachments?: Array<{ id: string; fileName: string; byteSize: number; detectedType: string }>;
   authorImage?: string | null;
   authorName: string;
@@ -367,6 +368,7 @@ export interface ForumThreadPost extends ForumPost {
 }
 
 export interface ForumTopicPage extends ForumTopic {
+  authorIdentityKind?: "deleted";
   createdAt: Date;
   needsDetails: boolean;
   duplicateOf: ForumHelpDuplicateReference | null;
@@ -377,6 +379,39 @@ export interface ForumTopicPage extends ForumTopic {
   section: { id: string; name: string; category: { id: string; name: string } };
   tags: ForumTag[];
   posts: ForumThreadPost[];
+}
+
+/** Project only the public topic-page author fields from a single joined user row. */
+function projectTopicPageAuthor(row: {
+  authorId: string;
+  authorName: string;
+  authorImage?: string | null;
+  authorDeactivatedAt: Date | null;
+  authorDeactivatedByUserId: string | null;
+  authorRetainAtLeastUntil: Date | null;
+}) {
+  let state: AccountState;
+  if (row.authorDeactivatedAt === null) {
+    if (row.authorDeactivatedByUserId !== null || row.authorRetainAtLeastUntil !== null) {
+      throw new PublicIdentityInvariantError();
+    }
+    state = { status: "active", userId: row.authorId };
+  } else {
+    if (row.authorDeactivatedByUserId === null || row.authorRetainAtLeastUntil === null) {
+      throw new PublicIdentityInvariantError();
+    }
+    state = {
+      status: "deactivated", userId: row.authorId,
+      deactivatedAt: row.authorDeactivatedAt,
+      deactivatedByUserId: row.authorDeactivatedByUserId,
+      retainAtLeastUntil: row.authorRetainAtLeastUntil,
+    };
+  }
+  // Unused profile fields are neutral placeholders, not additional private reads.
+  return projectPublicAccountIdentity({
+    id: row.authorId, name: row.authorName, image: row.authorImage ?? null,
+    bio: "", githubUrl: null, websiteUrl: null,
+  }, state);
 }
 
 export interface ForumOnlinePresence {
@@ -2784,7 +2819,10 @@ export class DrizzleForumRepository {
       .select({
         id: forumTopics.id, sectionId: forumSections.id, sectionName: forumSections.name,
         categoryId: forumCategories.id, categoryName: forumCategories.name, authorId: forumTopics.authorId,
-        authorName: user.name, createdAt: forumTopics.createdAt, revisionId: forumTopicTitleRevisions.id,
+        authorName: user.name,
+        authorDeactivatedAt: user.deactivatedAt, authorDeactivatedByUserId: user.deactivatedByUserId,
+        authorRetainAtLeastUntil: user.retainAtLeastUntil,
+        createdAt: forumTopics.createdAt, revisionId: forumTopicTitleRevisions.id,
         originalContent: forumTopicTitleRevisions.originalContent, sourceLocale: forumTopicTitleRevisions.sourceLocale,
         isSolved: forumTopics.isSolved, bestAnswerPostId: forumTopics.bestAnswerPostId,
         isClosed: forumTopics.isClosed, closureVersion: forumTopics.closureVersion,
@@ -2802,13 +2840,17 @@ export class DrizzleForumRepository {
       .leftJoin(forumTopicPins, eq(forumTopicPins.topicId, forumTopics.id))
       .where(eq(forumTopics.id, id));
     if (!topic) return undefined;
+    const topicAuthor = projectTopicPageAuthor(topic);
     const tags = await this.readTagsForTopics([id]);
     const duplicatePresentation = (await this.readHelpDuplicatePresentations([id])).get(id);
     const posts = await this.database
       .select({
         id: forumPosts.id, topicId: forumPosts.topicId, authorId: forumPosts.authorId,
         parentPostId: forumPosts.parentPostId,
-        authorName: user.name, authorImage: user.image, createdAt: forumPosts.createdAt, editedAt: forumPosts.editedAt, revisionId: forumPostRevisions.id,
+        authorName: user.name, authorImage: user.image,
+        authorDeactivatedAt: user.deactivatedAt, authorDeactivatedByUserId: user.deactivatedByUserId,
+        authorRetainAtLeastUntil: user.retainAtLeastUntil,
+        createdAt: forumPosts.createdAt, editedAt: forumPosts.editedAt, revisionId: forumPostRevisions.id,
         originalContent: forumPostRevisions.originalContent, sourceLocale: forumPostRevisions.sourceLocale,
         solutionModerationStatus: forumPosts.solutionModerationStatus,
         solutionOutdatedReason: forumPosts.solutionOutdatedReason,
@@ -2839,7 +2881,8 @@ export class DrizzleForumRepository {
       attachmentsByPost.set(attachment.postId, list);
     }
     return {
-      id: topic.id, sectionId: topic.sectionId, authorId: topic.authorId, authorName: topic.authorName,
+      id: topic.id, sectionId: topic.sectionId, authorId: topic.authorId, authorName: topicAuthor.name,
+      ...(topicAuthor.kind === "deleted" ? { authorIdentityKind: "deleted" as const } : {}),
       isSolved: topic.isSolved, bestAnswerPostId: topic.bestAnswerPostId,
       isClosed: topic.isClosed, closureVersion: topic.closureVersion,
       needsDetails: topic.needsDetails,
@@ -2851,15 +2894,20 @@ export class DrizzleForumRepository {
       title: { id: topic.revisionId, originalContent: topic.originalContent, sourceLocale: topic.sourceLocale },
       section: { id: topic.sectionId, name: topic.sectionName, category: { id: topic.categoryId, name: topic.categoryName } },
       tags: tags.get(id) ?? [],
-      posts: posts.map((post) => ({
+      posts: posts.map((post) => {
+        const postAuthor = projectTopicPageAuthor(post);
+        return {
         id: post.id, topicId: post.topicId, authorId: post.authorId, parentPostId: post.parentPostId,
-        authorName: post.authorName, authorImage: post.authorImage, createdAt: post.createdAt, editedAt: post.editedAt,
+        authorName: postAuthor.name, authorImage: postAuthor.image,
+        ...(postAuthor.kind === "deleted" ? { authorIdentityKind: "deleted" as const } : {}),
+        createdAt: post.createdAt, editedAt: post.editedAt,
         attachments: attachmentsByPost.get(post.id) ?? [],
         solutionModerationStatus: post.solutionModerationStatus as HelpSolutionModerationStatus | null,
         solutionOutdatedReason: post.solutionOutdatedReason,
         solutionOutdatedReasonKind: post.solutionOutdatedReasonKind as HelpSolutionOutdatedReasonKind | null,
         body: { id: post.revisionId, originalContent: post.originalContent, sourceLocale: post.sourceLocale },
-      })),
+      };
+      }),
     };
   }
 
