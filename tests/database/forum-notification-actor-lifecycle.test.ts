@@ -112,7 +112,8 @@ describe("SA04-G notification actor identity in native PostgreSQL", () => {
     const after = await forum.readNotifications(recipient, 0);
     const afterLegacy = await forum.readReplyNotifications(recipient);
     const withoutIdentity = <T extends { actorName: string | null; actorIdentityKind?: "deleted" }>(rows: T[]) =>
-      rows.map(({ actorName: _name, actorIdentityKind: _kind, ...rest }) => rest);
+      rows.map(item => Object.fromEntries(Object.entries(item)
+        .filter(([key]) => key !== "actorName" && key !== "actorIdentityKind")));
     expect(withoutIdentity(after.items)).toEqual(withoutIdentity(initial.items));
     expect(withoutIdentity(afterLegacy)).toEqual(withoutIdentity(legacy));
     expect(await forum.countUnreadNotifications(recipient)).toBe(counts[0]);
