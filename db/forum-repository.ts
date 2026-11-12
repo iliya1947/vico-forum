@@ -188,6 +188,7 @@ export interface ForumReplyNotificationSummary {
 }
 
 export interface ForumSectionTopicSummary {
+  authorIdentityKind?: "deleted";
   id: string;
   title: string;
   authorName: string;
@@ -342,6 +343,7 @@ const HELP_SOLUTIONS_FOR_ME_LIMIT = 100;
 const HELP_SOLUTIONS_FOR_ME_INTEREST_TAG_LIMIT = 100;
 
 export interface ForumTopicSummary {
+  authorIdentityKind?: "deleted";
   id: string;
   title: ForumRevisionContent;
   authorName: string;
@@ -382,7 +384,7 @@ export interface ForumTopicPage extends ForumTopic {
 }
 
 /** Project only the public topic-page author fields from a single joined user row. */
-function projectTopicPageAuthor(row: {
+function projectForumPublicAuthor(row: {
   authorId: string;
   authorName: string;
   authorImage?: string | null;
@@ -2618,7 +2620,9 @@ export class DrizzleForumRepository {
         sectionId: forumTopics.sectionId,
         id: forumTopics.id,
         title: forumTopicTitleRevisions.originalContent,
-        authorName: user.name,
+        authorId: user.id, authorName: user.name,
+        authorDeactivatedAt: user.deactivatedAt, authorDeactivatedByUserId: user.deactivatedByUserId,
+        authorRetainAtLeastUntil: user.retainAtLeastUntil,
         activityAt: sql`greatest(
           ${forumTopics.createdAt},
           coalesce(max(${forumPosts.createdAt}), ${forumTopics.createdAt})
@@ -2636,7 +2640,8 @@ export class DrizzleForumRepository {
         eq(forumSections.categoryId, id),
         ne(forumSections.id, HELP_SOLUTIONS_SERVICE_SECTION_ID),
       ))
-      .groupBy(forumTopics.id, forumTopicTitleRevisions.id, user.name)
+      .groupBy(forumTopics.id, forumTopicTitleRevisions.id, user.id, user.name,
+        user.deactivatedAt, user.deactivatedByUserId, user.retainAtLeastUntil)
       .as("category_section_topic_activity");
 
     const rankedTopics = this.database
@@ -2644,7 +2649,10 @@ export class DrizzleForumRepository {
         sectionId: topicActivity.sectionId,
         id: topicActivity.id,
         title: topicActivity.title,
-        authorName: topicActivity.authorName,
+        authorId: topicActivity.authorId, authorName: topicActivity.authorName,
+        authorDeactivatedAt: topicActivity.authorDeactivatedAt,
+        authorDeactivatedByUserId: topicActivity.authorDeactivatedByUserId,
+        authorRetainAtLeastUntil: topicActivity.authorRetainAtLeastUntil,
         activityAt: topicActivity.activityAt,
         activityRank: sql<number>`row_number() over (
           partition by ${topicActivity.sectionId}
@@ -2659,7 +2667,10 @@ export class DrizzleForumRepository {
         sectionId: rankedTopics.sectionId,
         id: rankedTopics.id,
         title: rankedTopics.title,
-        authorName: rankedTopics.authorName,
+        authorId: rankedTopics.authorId, authorName: rankedTopics.authorName,
+        authorDeactivatedAt: rankedTopics.authorDeactivatedAt,
+        authorDeactivatedByUserId: rankedTopics.authorDeactivatedByUserId,
+        authorRetainAtLeastUntil: rankedTopics.authorRetainAtLeastUntil,
         activityAt: rankedTopics.activityAt,
       })
       .from(rankedTopics)
@@ -2668,11 +2679,13 @@ export class DrizzleForumRepository {
 
     const latestBySection = new Map<string, ForumSectionTopicSummary[]>();
     for (const topic of latestTopics) {
+      const author = projectForumPublicAuthor(topic);
       const list = latestBySection.get(topic.sectionId) ?? [];
       list.push({
         id: topic.id,
         title: topic.title,
-        authorName: topic.authorName,
+        authorName: author.name,
+        ...(author.kind === "deleted" ? { authorIdentityKind: "deleted" as const } : {}),
         activityAt: topic.activityAt,
       });
       latestBySection.set(topic.sectionId, list);
@@ -2683,7 +2696,9 @@ export class DrizzleForumRepository {
         sectionId: forumTopics.sectionId,
         id: forumTopics.id,
         title: forumTopicTitleRevisions.originalContent,
-        authorName: user.name,
+        authorId: user.id, authorName: user.name,
+        authorDeactivatedAt: user.deactivatedAt, authorDeactivatedByUserId: user.deactivatedByUserId,
+        authorRetainAtLeastUntil: user.retainAtLeastUntil,
         pinnedAt: forumTopicPins.pinnedAt,
         activityAt: sql`greatest(
           ${forumTopics.createdAt},
@@ -2707,7 +2722,7 @@ export class DrizzleForumRepository {
         forumTopics.id,
         forumSections.id,
         forumTopicTitleRevisions.id,
-        user.name,
+        user.id, user.name, user.deactivatedAt, user.deactivatedByUserId, user.retainAtLeastUntil,
         forumTopicPins.pinnedAt,
       )
       .as("category_section_pin_activity");
@@ -2717,7 +2732,10 @@ export class DrizzleForumRepository {
         sectionId: pinnedActivity.sectionId,
         id: pinnedActivity.id,
         title: pinnedActivity.title,
-        authorName: pinnedActivity.authorName,
+        authorId: pinnedActivity.authorId, authorName: pinnedActivity.authorName,
+        authorDeactivatedAt: pinnedActivity.authorDeactivatedAt,
+        authorDeactivatedByUserId: pinnedActivity.authorDeactivatedByUserId,
+        authorRetainAtLeastUntil: pinnedActivity.authorRetainAtLeastUntil,
         activityAt: pinnedActivity.activityAt,
         pinRank: sql<number>`row_number() over (
           partition by ${pinnedActivity.sectionId}
@@ -2732,7 +2750,10 @@ export class DrizzleForumRepository {
         sectionId: rankedPinned.sectionId,
         id: rankedPinned.id,
         title: rankedPinned.title,
-        authorName: rankedPinned.authorName,
+        authorId: rankedPinned.authorId, authorName: rankedPinned.authorName,
+        authorDeactivatedAt: rankedPinned.authorDeactivatedAt,
+        authorDeactivatedByUserId: rankedPinned.authorDeactivatedByUserId,
+        authorRetainAtLeastUntil: rankedPinned.authorRetainAtLeastUntil,
         activityAt: rankedPinned.activityAt,
       })
       .from(rankedPinned)
@@ -2741,11 +2762,13 @@ export class DrizzleForumRepository {
 
     const pinnedBySection = new Map<string, ForumSectionTopicSummary[]>();
     for (const topic of pinnedTopics) {
+      const author = projectForumPublicAuthor(topic);
       const list = pinnedBySection.get(topic.sectionId) ?? [];
       list.push({
         id: topic.id,
         title: topic.title,
-        authorName: topic.authorName,
+        authorName: author.name,
+        ...(author.kind === "deleted" ? { authorIdentityKind: "deleted" as const } : {}),
         activityAt: topic.activityAt,
       });
       pinnedBySection.set(topic.sectionId, list);
@@ -2781,7 +2804,9 @@ export class DrizzleForumRepository {
         revisionId: forumTopicTitleRevisions.id,
         originalContent: forumTopicTitleRevisions.originalContent,
         sourceLocale: forumTopicTitleRevisions.sourceLocale,
-        authorName: user.name,
+        authorId: user.id, authorName: user.name,
+        authorDeactivatedAt: user.deactivatedAt, authorDeactivatedByUserId: user.deactivatedByUserId,
+        authorRetainAtLeastUntil: user.retainAtLeastUntil,
         postCount: sql<number>`count(distinct ${forumPosts.id})::int`,
         createdAt: forumTopics.createdAt,
         isPinned: sql<boolean>`${forumTopicPins.topicId} is not null`,
@@ -2795,22 +2820,27 @@ export class DrizzleForumRepository {
       .leftJoin(forumPosts, eq(forumPosts.topicId, forumTopics.id))
       .leftJoin(forumTopicPins, eq(forumTopicPins.topicId, forumTopics.id))
       .where(eq(forumTopics.sectionId, id))
-      .groupBy(forumTopics.id, forumTopicTitleRevisions.id, user.name, forumTopicPins.topicId)
+      .groupBy(forumTopics.id, forumTopicTitleRevisions.id, user.id, user.name,
+        user.deactivatedAt, user.deactivatedByUserId, user.retainAtLeastUntil, forumTopicPins.topicId)
       .orderBy(asc(forumTopics.createdAt), asc(forumTopics.id));
     const tagsByTopic = await this.readTagsForTopics(topics.map((topic) => topic.id));
     return {
       id: section.id,
       name: section.name,
       category: { id: section.categoryId, name: section.categoryName },
-      topics: topics.map((topic) => ({
+      topics: topics.map((topic) => {
+        const author = projectForumPublicAuthor(topic);
+        return {
         id: topic.id,
         title: { id: topic.revisionId, originalContent: topic.originalContent, sourceLocale: topic.sourceLocale },
-        authorName: topic.authorName,
+        authorName: author.name,
+        ...(author.kind === "deleted" ? { authorIdentityKind: "deleted" as const } : {}),
         postCount: topic.postCount,
         createdAt: topic.createdAt,
         isPinned: topic.isPinned,
         tags: tagsByTopic.get(topic.id) ?? [],
-      })),
+        };
+      }),
     };
   }
 
@@ -2840,7 +2870,7 @@ export class DrizzleForumRepository {
       .leftJoin(forumTopicPins, eq(forumTopicPins.topicId, forumTopics.id))
       .where(eq(forumTopics.id, id));
     if (!topic) return undefined;
-    const topicAuthor = projectTopicPageAuthor(topic);
+    const topicAuthor = projectForumPublicAuthor(topic);
     const tags = await this.readTagsForTopics([id]);
     const duplicatePresentation = (await this.readHelpDuplicatePresentations([id])).get(id);
     const posts = await this.database
@@ -2895,7 +2925,7 @@ export class DrizzleForumRepository {
       section: { id: topic.sectionId, name: topic.sectionName, category: { id: topic.categoryId, name: topic.categoryName } },
       tags: tags.get(id) ?? [],
       posts: posts.map((post) => {
-        const postAuthor = projectTopicPageAuthor(post);
+        const postAuthor = projectForumPublicAuthor(post);
         return {
         id: post.id, topicId: post.topicId, authorId: post.authorId, parentPostId: post.parentPostId,
         authorName: postAuthor.name, authorImage: postAuthor.image,
