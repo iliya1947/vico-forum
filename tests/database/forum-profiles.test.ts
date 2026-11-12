@@ -233,3 +233,121 @@ describe("SA04-C1 canonical topic-page public author projection", () => {
     }
   });
 });
+
+describe("SA04-C2 canonical category and section topic-list authors", () => {
+  it("neutralizes mixed authors in both ranked category lists and the section without changing selection or counts", async () => {
+    const categoryId = "profile-c2-category";
+    const sectionId = "profile-c2-section";
+    await repository.createCategory({ id: categoryId, name: "C2 category" });
+    await repository.createSection({ id: sectionId, categoryId, name: "C2 section" });
+    for (const [suffix, authorId] of [
+      ["owner", "profile-owner"], ["helper", "profile-helper"], ["active", "profile-newcomer"],
+    ] as const) {
+      const id = `profile-c2-${suffix}`;
+      await repository.createTopicWithInitialPost({
+        id, sectionId, authorId,
+        titleRevision: { id: `${id}-title`, originalContent: `Published ${suffix}`, sourceLocale: "en" },
+        initialPost: { id: `${id}-post`, topicId: id, authorId,
+          bodyRevision: { id: `${id}-body`, originalContent: `Body ${suffix}`, sourceLocale: "en" } },
+        tags: suffix === "owner" ? [{ key: "c2-tag", name: "C2 tag" }] : [],
+      });
+    }
+    await client.query(`
+      update forum_topics set created_at = case id
+        when 'profile-c2-owner' then '2026-10-01T00:00:00Z'::timestamptz
+        when 'profile-c2-helper' then '2026-10-02T00:00:00Z'::timestamptz
+        else '2026-10-03T00:00:00Z'::timestamptz end
+      where section_id = 'profile-c2-section'
+    `);
+    await client.query(`
+      update forum_posts set created_at = (select created_at from forum_topics where forum_topics.id = forum_posts.topic_id)
+      where topic_id in ('profile-c2-owner', 'profile-c2-helper', 'profile-c2-active')
+    `);
+    await client.query(`
+      insert into forum_topic_pins (topic_id,pinned_by_user_id,pinned_at) values
+        ('profile-c2-owner','profile-newcomer','2026-10-05T00:00:00Z'),
+        ('profile-c2-helper','profile-newcomer','2026-10-06T00:00:00Z')
+    `);
+    await client.query("begin");
+    try {
+      await client.query('update "user" set name=$2, image=$3 where id=$1', [
+        "profile-owner", "SECRET_C2_OWNER_NAME", "https://images.example.test/SECRET_C2_OWNER_IMAGE.png",
+      ]);
+      await client.query('update "user" set name=$2, image=$3 where id=$1', [
+        "profile-helper", "SECRET_C2_HELPER_NAME", "https://images.example.test/SECRET_C2_HELPER_IMAGE.png",
+      ]);
+      const originalCategory = (await repository.readCategory(categoryId, 2))!;
+      const originalSection = (await repository.readSection(sectionId))!;
+      expect(originalCategory.sections).toHaveLength(1);
+      const originalLists = originalCategory.sections[0]!;
+      expect(originalLists.topicCount).toBe(3);
+      expect(originalLists.postCount).toBe(3);
+      expect(originalLists.latestTopics.map((topic) => topic.id)).toEqual([
+        "profile-c2-active", "profile-c2-helper", "profile-c2-owner",
+      ]);
+      expect(originalLists.pinnedTopics.map((topic) => topic.id)).toEqual(["profile-c2-helper", "profile-c2-owner"]);
+      expect(originalSection.topics.map((topic) => topic.id)).toEqual([
+        "profile-c2-owner", "profile-c2-helper", "profile-c2-active",
+      ]);
+      expect(originalLists.latestTopics.map((topic) => topic.authorName)).toEqual([
+        "profile-newcomer", "SECRET_C2_HELPER_NAME", "SECRET_C2_OWNER_NAME",
+      ]);
+      expect(originalLists.pinnedTopics.map((topic) => topic.authorName)).toEqual([
+        "SECRET_C2_HELPER_NAME", "SECRET_C2_OWNER_NAME",
+      ]);
+      expect(originalSection.topics[0]!.tags).toEqual([{ key: "c2-tag", name: "C2 tag" }]);
+      await client.query(
+        'update "user" set deactivated_at=$2::timestamptz, deactivated_by_user_id=$3,' +
+          ' retain_at_least_until=$4::timestamptz where id=$1',
+        ["profile-owner", "2024-02-29T12:34:56Z", "SECRET_C2_OWNER_DEACTIVATOR", "2025-02-28T12:34:56Z"],
+      );
+      await client.query(
+        'update "user" set deactivated_at=$2::timestamptz, deactivated_by_user_id=$3,' +
+          ' retain_at_least_until=$4::timestamptz where id=$1',
+        ["profile-helper", "2024-02-29T12:34:56Z", "SECRET_C2_HELPER_DEACTIVATOR", "2025-02-28T12:34:56Z"],
+      );
+      const category = (await repository.readCategory(categoryId, 2))!;
+      const section = (await repository.readSection(sectionId))!;
+      const lists = category.sections[0]!;
+      expect(lists.latestTopics).toMatchObject([
+        { id: "profile-c2-active", authorName: "profile-newcomer" },
+        { id: "profile-c2-helper", authorName: "Deleted user", authorIdentityKind: "deleted" },
+        { id: "profile-c2-owner", authorName: "Deleted user", authorIdentityKind: "deleted" },
+      ]);
+      expect(lists.pinnedTopics).toMatchObject([
+        { id: "profile-c2-helper", authorName: "Deleted user", authorIdentityKind: "deleted" },
+        { id: "profile-c2-owner", authorName: "Deleted user", authorIdentityKind: "deleted" },
+      ]);
+      expect(section.topics).toMatchObject([
+        { id: "profile-c2-owner", authorName: "Deleted user", authorIdentityKind: "deleted", isPinned: true },
+        { id: "profile-c2-helper", authorName: "Deleted user", authorIdentityKind: "deleted", isPinned: true },
+        { id: "profile-c2-active", authorName: "profile-newcomer", isPinned: false },
+      ]);
+      expect(section.topics[2]).not.toHaveProperty("authorIdentityKind");
+      expect(lists.latestTopics[0]).not.toHaveProperty("authorIdentityKind");
+      const categoryFields = (items: typeof lists.latestTopics) =>
+        items.map(({ id, title, activityAt }) => ({ id, title, activityAt }));
+      expect(categoryFields(lists.latestTopics)).toEqual(categoryFields(originalLists.latestTopics));
+      expect(categoryFields(lists.pinnedTopics)).toEqual(categoryFields(originalLists.pinnedTopics));
+      expect(lists.topicCount).toBe(originalLists.topicCount);
+      expect(lists.postCount).toBe(originalLists.postCount);
+      expect(section).toMatchObject({ id: originalSection.id, name: originalSection.name, category: originalSection.category });
+      expect(section.topics.map(({ id, title, postCount, createdAt, isPinned, tags }) => ({
+        id, title, postCount, createdAt, isPinned, tags,
+      }))).toEqual(originalSection.topics.map(({ id, title, postCount, createdAt, isPinned, tags }) => ({
+        id, title, postCount, createdAt, isPinned, tags,
+      })));
+      const serialized = JSON.stringify({ category, section });
+      for (const marker of [
+        "SECRET_C2_OWNER_NAME", "SECRET_C2_HELPER_NAME",
+        "SECRET_C2_OWNER_IMAGE", "SECRET_C2_HELPER_IMAGE",
+        "SECRET_C2_OWNER_DEACTIVATOR", "SECRET_C2_HELPER_DEACTIVATOR",
+        "2024-02-29", "2025-02-28",
+      ]) expect(serialized).not.toContain(marker);
+      expect(Object.keys(lists.latestTopics[1]!)).toEqual(["id", "title", "authorName", "authorIdentityKind", "activityAt"]);
+      expect(Object.keys(section.topics[0]!)).not.toContain("authorDeactivatedAt");
+    } finally {
+      await client.query("rollback");
+    }
+  });
+});
