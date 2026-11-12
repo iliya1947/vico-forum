@@ -87,10 +87,14 @@ describe("SA04-A4 neutral public account identity contract", () => {
       { ...deactivated, retainAtLeastUntil: null },
       { ...deactivated, deactivatedAt: new Date("invalid") },
       { ...deactivated, deactivatedByUserId: "  " },
+      { ...deactivated, retainAtLeastUntil: new Date("2024-01-01T00:00:00Z") },
     ]) {
       expect(() => projectPublicAccountIdentity(identity, invalid as AccountState))
         .toThrow(PublicIdentityInvariantError);
     }
+    expect(() => projectPublicAccountIdentity(identity,
+      { ...active, deactivatedAt: new Date("2024-01-01T00:00:00Z") } as unknown as AccountState))
+      .toThrow(PublicIdentityInvariantError);
     for (const invalid of [
       { ...identity, id: "" },
       { ...identity, name: null },
