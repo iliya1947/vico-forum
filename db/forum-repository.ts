@@ -140,6 +140,7 @@ export interface ForumTopicReadState {
 }
 
 export interface ForumUnreadTopicSummary {
+  authorIdentityKind?: "deleted";
   id: string;
   title: string;
   authorName: string;
@@ -1374,7 +1375,9 @@ export class DrizzleForumRepository {
       .select({
         id: forumTopics.id,
         title: forumTopicTitleRevisions.originalContent,
-        authorName: user.name,
+        authorId: forumTopics.authorId, authorName: user.name,
+        authorDeactivatedAt: user.deactivatedAt, authorDeactivatedByUserId: user.deactivatedByUserId,
+        authorRetainAtLeastUntil: user.retainAtLeastUntil,
         state: sql<"new" | "unread">`case when ${forumTopicReadStates.userId} is null then 'new' else 'unread' end`,
         firstUnreadPostId,
         latestPostId,
@@ -1410,7 +1413,8 @@ export class DrizzleForumRepository {
       .groupBy(
         forumTopics.id,
         forumTopicTitleRevisions.id,
-        user.name,
+        forumTopics.authorId, user.name,
+        user.deactivatedAt, user.deactivatedByUserId, user.retainAtLeastUntil,
         forumSections.id,
         forumSections.name,
         forumCategories.id,
@@ -1419,17 +1423,21 @@ export class DrizzleForumRepository {
       )
       .orderBy(desc(activityAt), desc(forumTopics.id));
 
-    return rows.map((row) => ({
-      id: row.id,
-      title: row.title,
-      authorName: row.authorName,
-      state: row.state,
-      firstUnreadPostId: row.firstUnreadPostId,
-      latestPostId: row.latestPostId,
-      unreadCount: row.unreadCount,
-      activityAt: row.activityAt,
-      ...publicDiscoveryLocation(row),
-    }));
+    return rows.map((row) => {
+      const author = projectForumPublicAuthor(row);
+      return {
+        id: row.id,
+        title: row.title,
+        authorName: author.name,
+        ...(author.kind === "deleted" ? { authorIdentityKind: "deleted" as const } : {}),
+        state: row.state,
+        firstUnreadPostId: row.firstUnreadPostId,
+        latestPostId: row.latestPostId,
+        unreadCount: row.unreadCount,
+        activityAt: row.activityAt,
+        ...publicDiscoveryLocation(row),
+      };
+    });
   }
 
   async readTopicReadState(userId: string, topicId: string): Promise<ForumTopicReadState | undefined> {
