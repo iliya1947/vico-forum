@@ -4,7 +4,7 @@ import { act, cleanup, fireEvent, render, screen, waitFor, within } from "@testi
 import { I18nextProvider } from "react-i18next";
 import { RouterContextProvider, RouterProvider, createMemoryRouter, data, matchRoutes } from "react-router";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import type { ForumReader, ForumTopicPage } from "../../db/forum-repository";
+import type { ForumCategoryPage, ForumReader, ForumSectionPage, ForumTopicPage } from "../../db/forum-repository";
 import { ForumStorageUnavailableError } from "../../db/hyperdrive-forum";
 import {
   HELP_SOLUTIONS_CATEGORY_ID,
@@ -4340,5 +4340,124 @@ describe.each([
     expect(defensive.container).not.toHaveTextContent("SECRET_C1_POST_AUTHOR");
     expect(defensive.container.innerHTML).not.toContain("SECRET_C1_POST_AVATAR");
     defensive.unmount();
+  });
+});
+
+describe.each([
+  { locale: "en", direction: "ltr" as const },
+  { locale: "he", direction: "rtl" as const },
+])("SA04-C2 canonical category and section lists ($locale)", ({ locale, direction }) => {
+  const mixedCategory: ForumCategoryPage = {
+    ...category,
+    sections: [{
+      ...category.sections[0]!,
+      topicCount: 3, postCount: 4,
+      pinnedTopics: [
+        { id: "c2/pinned-deleted", title: "Pinned deleted", authorName: "SECRET_C2_PINNED_NAME",
+          authorIdentityKind: "deleted", activityAt: new Date("2026-10-05T12:00:00Z") },
+        { id: "c2/pinned-active", title: "Pinned active", authorName: "Active pinned",
+          activityAt: new Date("2026-10-04T12:00:00Z") },
+      ],
+      latestTopics: [
+        { id: "c2/latest-deleted", title: "Latest deleted", authorName: "SECRET_C2_LATEST_NAME",
+          authorIdentityKind: "deleted", activityAt: new Date("2026-10-06T12:00:00Z") },
+        { id: "c2/latest-active", title: "Latest active", authorName: "Active latest",
+          activityAt: new Date("2026-10-05T12:00:00Z") },
+      ],
+    }],
+  };
+  const mixedSection: ForumSectionPage = {
+    ...section,
+    topics: [
+      { ...section.topics[0]!, id: "c2/section-deleted", authorName: "SECRET_C2_SECTION_NAME",
+        authorIdentityKind: "deleted", isPinned: true },
+      { ...section.topics[0]!, id: "c2/section-active", authorName: "Active section",
+        isPinned: false, title: { id: "c2-active-title", originalContent: "Active section topic", sourceLocale: "en" } },
+    ],
+  };
+
+  it("removes deleted raw identity before public route serialization, keeps selected IDs, timestamps and counts", async () => {
+    const ctx = context(locale, direction);
+    ctx.set(forumReaderContext, {
+      ...reader,
+      readCategory: async () => mixedCategory,
+      readSection: async () => mixedSection,
+    });
+    const categoryData = await categoryLoader({
+      params: { locale, categoryId: mixedCategory.id }, context: ctx,
+    });
+    if (categoryData.kind !== "category") throw new Error("expected category");
+    expect(categoryData.category.sections[0]).toMatchObject({
+      topicCount: 3, postCount: 4,
+      pinnedTopics: [
+        { id: "c2/pinned-deleted", title: "Pinned deleted", authorName: "Deleted user", authorIdentityKind: "deleted" },
+        { id: "c2/pinned-active", title: "Pinned active", authorName: "Active pinned" },
+      ],
+      latestTopics: [
+        { id: "c2/latest-deleted", title: "Latest deleted", authorName: "Deleted user", authorIdentityKind: "deleted" },
+        { id: "c2/latest-active", title: "Latest active", authorName: "Active latest" },
+      ],
+    });
+    expect(categoryData.category.sections[0]!.pinnedTopics.map((topic) => topic.activityAt))
+      .toEqual(mixedCategory.sections[0]!.pinnedTopics.map((topic) => topic.activityAt.toISOString()));
+    expect(categoryData.category.sections[0]!.latestTopics.map((topic) => topic.activityAt))
+      .toEqual(mixedCategory.sections[0]!.latestTopics.map((topic) => topic.activityAt.toISOString()));
+    expect(categoryData.category.sections[0]!.pinnedTopics[1]).not.toHaveProperty("authorIdentityKind");
+
+    const sectionData = await sectionLoader({ params: { locale, sectionId: mixedSection.id }, context: ctx });
+    expect(sectionData.section.topics).toMatchObject([
+      { id: "c2/section-deleted", authorName: "Deleted user", authorIdentityKind: "deleted", isPinned: true },
+      { id: "c2/section-active", authorName: "Active section", isPinned: false },
+    ]);
+    expect(sectionData.section.topics[1]).not.toHaveProperty("authorIdentityKind");
+    expect(sectionData.section.topics.map(({ id, title, postCount, createdAt, isPinned, tags }) => ({
+      id, title, postCount, createdAt, isPinned, tags,
+    }))).toEqual(mixedSection.topics.map(({ id, title, postCount, createdAt, isPinned, tags }) => ({
+      id, title, postCount, createdAt, isPinned, tags,
+    })));
+    expect(sectionData.topicReadStates).toBeNull();
+    for (const marker of ["SECRET_C2_PINNED_NAME", "SECRET_C2_LATEST_NAME", "SECRET_C2_SECTION_NAME"]) {
+      expect(JSON.stringify(categoryData)).not.toContain(marker);
+      expect(JSON.stringify(sectionData)).not.toContain(marker);
+    }
+
+    const mountedCategory = renderRoute(CategoryRoute, categoryData, forumCategoryPath(locale, mixedCategory.id), locale, direction);
+    expect(await screen.findByRole("link", { name: "Pinned deleted" }))
+      .toHaveAttribute("href", forumTopicPath(locale, "c2/pinned-deleted"));
+    expect(screen.getByRole("link", { name: "Latest deleted" }))
+      .toHaveAttribute("href", forumTopicPath(locale, "c2/latest-deleted"));
+    expect(mountedCategory.container).toHaveTextContent("Deleted user");
+    expect(mountedCategory.container).toHaveTextContent("Active latest");
+    expect(mountedCategory.container).toHaveTextContent("3");
+    expect(mountedCategory.container).toHaveTextContent("4");
+    expect(mountedCategory.container.innerHTML).not.toContain("SECRET_C2_");
+    mountedCategory.unmount();
+
+    const mountedSection = renderRoute(SectionRoute, sectionData, forumSectionPath(locale, mixedSection.id), locale, direction);
+    expect(await screen.findByRole("link", { name: /Active section topic/ }))
+      .toHaveAttribute("href", forumTopicPath(locale, "c2/section-active"));
+    expect(mountedSection.container).toHaveTextContent("Deleted user");
+    expect(mountedSection.container).toHaveTextContent("Active section");
+    expect(mountedSection.container.innerHTML).not.toContain("SECRET_C2_");
+    mountedSection.unmount();
+
+    // UI receives an intentionally raw fixture: the deleted marker must still control presentation.
+    const rawCategory = renderRoute(CategoryRoute, {
+      ...categoryData, category: {
+        ...categoryData.category, sections: mixedCategory.sections.map((value) => ({
+          ...value, pinnedTopics: value.pinnedTopics.map((topic) => ({ ...topic, activityAt: topic.activityAt.toISOString() })),
+          latestTopics: value.latestTopics.map((topic) => ({ ...topic, activityAt: topic.activityAt.toISOString() })),
+        })),
+      },
+    }, forumCategoryPath(locale, mixedCategory.id), locale, direction);
+    expect(await screen.findByRole("link", { name: "Latest deleted" })).toBeVisible();
+    expect(rawCategory.container.innerHTML).not.toContain("SECRET_C2_");
+    rawCategory.unmount();
+
+    const rawSection = renderRoute(SectionRoute, { ...sectionData, section: mixedSection },
+      forumSectionPath(locale, mixedSection.id), locale, direction);
+    expect(await screen.findByRole("link", { name: /Active section topic/ })).toBeVisible();
+    expect(rawSection.container.innerHTML).not.toContain("SECRET_C2_");
+    rawSection.unmount();
   });
 });
