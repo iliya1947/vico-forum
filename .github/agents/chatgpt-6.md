@@ -1908,3 +1908,16 @@ Result: old Better Auth sessions for a persisted inactive account must not estab
 Keep the change inside this request-session resolution boundary with focused tests. Do not start I2–I5 or J+.
 
 Before handoff, inspect the completed I1 diff/logic yourself, publish the Draft PR stable exact head and actual checks/evidence in #251/service files, then **STOP** for Mira checkpoint review.
+
+
+## 2026-11-12 — assigned: SA04-I2
+
+Continue cumulative Draft PR #329 from accepted I1 head `649dada0e2dfc5333c7c072170c0fd8c71a4501a`. Implement **I2 only**.
+
+Result: authenticated Better Auth HTTP and direct `auth.api.*` operations must fail closed when their authoritative current actor account is inactive/missing, before private auth response or authenticated mutation. Active behavior remains unchanged.
+
+Preserve the existing special case that an inactive user may sign out **their own current session** and clear its cookie. Preserve current Google-link identity checks, password/session freshness and rate-limit behavior, failure classification and Set-Cookie ordering.
+
+Do not implement I3 session-create admission, I4 server-resolved target-write atomic closure, I5 or J+.
+
+Add focused real HTTP/direct tests, inspect the completed bounded diff yourself, publish stable exact head/evidence, then **STOP** for Mira checkpoint review.
