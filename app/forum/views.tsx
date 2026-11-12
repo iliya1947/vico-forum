@@ -275,7 +275,7 @@ export function UnansweredView({
 
 type UnreadTopicPresentation = Pick<
   ForumUnreadTopicSummary,
-  "id" | "title" | "authorName" | "state" | "firstUnreadPostId" | "unreadCount" | "section" | "category"
+  "id" | "title" | "authorName" | "authorIdentityKind" | "state" | "firstUnreadPostId" | "unreadCount" | "section" | "category"
 >;
 
 export function UnreadView({
@@ -306,7 +306,9 @@ export function UnreadView({
               </span>
               <span className="unanswered-topic-copy">
                 <strong dir="auto">{topic.title}</strong>
-                <small>{t("startedBy", { author: topic.authorName })}</small>
+                <small>{t("startedBy", {
+                  author: topic.authorIdentityKind === "deleted" ? t("deletedUser") : topic.authorName,
+                })}</small>
               </span>
             </span>
 
