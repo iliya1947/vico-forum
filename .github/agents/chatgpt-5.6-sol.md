@@ -2161,3 +2161,12 @@ Do not treat a user's anger, criticism or request to think as implicit permissio
 - Verdict: **PASS, 0 confirmed current-scope C1 defects**.
 - No Lev review solely for C1; C2+ remain unassigned.
 
+## 2026-11-12 — SA04-C2 review result
+
+- Reviewed cumulative #328 exact head `8946b74b0271efd4ef7cfe2c2c595ee59d8061b6` and full C2 delta from accepted C1.
+- Confirmed category latest+pinned and section topic-list identity projection, route serialization and presentation satisfy C2 while preserving existing ranking/count/content semantics.
+- Interim PostgreSQL 42702 ambiguity is absent on the final stable head and required no broad redesign.
+- Exact-head CI + SA03/SA01/AP10 browser workflows SUCCESS.
+- Verdict: **PASS, 0 confirmed current-scope C2 defects**.
+- No Lev review solely for C2; C3+ remain unassigned.
+
