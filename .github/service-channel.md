@@ -3,6 +3,20 @@
 Служебный PR: #251. Оперативное состояние: [workflow.md](./workflow.md). Общий контракт: [ADMIN_PANEL_IMPLEMENTATION_PLAN.md](../ADMIN_PANEL_IMPLEMENTATION_PLAN.md).
 
 
+## 2026-11-12 — Mira: SA04-D Users directory assigned to Lira
+
+- Checkpoint C remains Mira checkpoint-PASS on cumulative Draft #328 exact head `f7fa1e41c9c89afce0631e3f14c661d22f626839`; current main/base remains `593a03964b8407b249f7c9f5eb117ddb8b07736d`.
+- Pre-action gate: Role = Mira scope/handoff; Authority = developer continuation plus accepted SA04 plan; Granularity = one existing directory reader + its canonical route/view boundary; Preservation = continue cumulative Draft and reuse A1/A4 public identity rather than replace AP-09.
+- Repository/source-of-truth inspection confirms D does **not** need splitting. AP-09 directory is one PostgreSQL reader, `PostgresAdminUsersReader.listUsers`, with one protected index route and shared `AdminUsersIndex` view.
+- Required D result: deactivated directory entries retain stable ID/profile destination and joined timestamp but expose only neutral public identity; active users retain current name/image. Raw inactive name/image/lifecycle must not leave the reader/route.
+- Search/count correctness is authoritative SQL scope: a retained inactive original name must not make the row match or increase `total`. Existing literal case-insensitive public-name/ID search, wildcard escaping, email exclusion, stable ID keyset order/cursor, 25+lookahead paging and exact total are preserved. ID search still identifies the retained account.
+- Preserve independent `admin.users.read` admission before query parsing/private reads, private/no-store and typed unavailable behavior. Do not couple D to authorization management, AP-10 measures or Owner profile admissions.
+- Existing generic `deletedUser` catalog is reused in presentation; no new locale-specific database semantics are introduced. Marked deleted identity must render neutral/localized and must not derive avatar initials/image from the old name.
+- Focused native PG evidence must include mixed active/deactivated users, secret old name/image/lifecycle markers, old-name non-match/non-count, ID lookup of the deactivated row, wildcard/literal behavior, paging/total and no email/private-field exposure. Route/view regression must defend serialization/DOM against malformed raw marked identity while preserving active/link/paging behavior.
+- Excluded: E mentions, F presence, G notifications, H post history, I auth, J–R writers, canonical profile/private sections, measure/authorization directory variants, SA05+, Stage6/production, #315, docs and merge.
+- Finish on stable exact head with applicable checks and mandatory author inspection, publish evidence, then **Lira STOP for Mira D checkpoint review**. Lev/Mark remain unassigned.
+
+
 ## 2026-11-12 — Mira: SA04-C3d2 checkpoint review PASS; Checkpoint C complete
 
 - Reviewed cumulative Draft #328 exact stable head `f7fa1e41c9c89afce0631e3f14c661d22f626839` against the bounded For-me assignment; base/current main remains `593a03964b8407b249f7c9f5eb117ddb8b07736d`.
