@@ -4120,3 +4120,11 @@ Lira must perform author inspection, publish the stable A2 head/evidence and STO
 - **PASS — 0 confirmed current-scope defects.**
 - #328 remains Draft/cumulative; Lira STOP; A4 unassigned; Lev remains unassigned.
 
+## 2026-11-12 — SA04-A4 bounded handoff
+
+- A2+A3 foundation remains accepted at Mira checkpoint level in cumulative Draft #328 head `0725b49dc9d9e36152670dac8368d0f83e714c82`.
+- Lira is assigned one next result only: a shared **neutral public-identity contract/helper** for future lifecycle-aware readers.
+- Required semantic boundary: active public identity remains unchanged; deactivated public projection preserves stable user ID while replacing raw public identity with the approved Deleted-user representation and removing raw avatar/bio/profile links.
+- No existing reader, directory/search, presence, notification, history, auth/session or writer call site is integrated in A4.
+- Lira STOP after stable cumulative head/evidence and author inspection. Later reader integration remains unassigned; Lev remains reserved for a meaningful cumulative review.
+
