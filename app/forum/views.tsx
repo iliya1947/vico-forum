@@ -2224,9 +2224,17 @@ export function TopicView({
     if (baseline) setEditRecovery({ topicId: loadedTopic.id, loaderRevisionId: baseline.body.id, post: actionData.post, completedOperationId: actionData.completedOperationId });
   }, [actionData, loadedTopic]);
   // A new loader snapshot supersedes recovery data; later failed submissions do not.
-  const recoveredPost = editRecovery?.topicId === loadedTopic.id
-    && loadedTopic.posts.some((post) => post.id === editRecovery.post.id && post.body.id === editRecovery.loaderRevisionId)
-    ? editRecovery.post : null;
+  const recoveryBaseline = editRecovery?.topicId === loadedTopic.id
+    ? loadedTopic.posts.find((post) => post.id === editRecovery.post.id && post.body.id === editRecovery.loaderRevisionId)
+    : null;
+  const recoveredPost = recoveryBaseline && editRecovery
+    ? {
+        ...editRecovery.post,
+        authorId: recoveryBaseline.authorId,
+        authorName: recoveryBaseline.authorName,
+        authorImage: recoveryBaseline.authorImage,
+        authorIdentityKind: recoveryBaseline.authorIdentityKind,
+      } : null;
   const topic = recoveredPost ? {
     ...loadedTopic, posts: loadedTopic.posts.map((post) => post.id === recoveredPost.id ? recoveredPost : post),
   } : loadedTopic;
@@ -2654,7 +2662,7 @@ export function TopicView({
             {canManageHelpDuplicate && pendingDuplicateAppeal ? (
               <div className="help-duplicate-appeal-pending help-duplicate-appeal-moderator-message">
                 <strong>{t("helpDuplicateAppealReviewHeading")}</strong>
-                <span>{t("startedBy", { author: topic.authorName })}</span>
+                <span>{t("startedBy", { author: topic.authorIdentityKind === "deleted" ? t("deletedUser") : topic.authorName })}</span>
                 <p>{pendingDuplicateAppeal.explanation}</p>
               </div>
             ) : null}
@@ -2735,8 +2743,8 @@ export function TopicView({
                 >
                   <header className="topic-message-author">
                     <Link className="topic-message-profile-link" to={forumProfilePath(locale, post.authorId)}>
-                      <ForumAvatar name={post.authorName} image={post.authorImage} className="topic-message-avatar" />
-                      <span className="topic-message-author-copy"><strong dir="auto">{post.authorName}</strong></span>
+                      <ForumAvatar name={post.authorIdentityKind === "deleted" ? t("deletedUser") : post.authorName} image={post.authorIdentityKind === "deleted" ? null : post.authorImage} className="topic-message-avatar" />
+                      <span className="topic-message-author-copy"><strong dir="auto">{post.authorIdentityKind === "deleted" ? t("deletedUser") : post.authorName}</strong></span>
                     </Link>
                     <span className="topic-message-author-statuses">
                       {isOriginalQuestion && (
