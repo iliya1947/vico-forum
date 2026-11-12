@@ -1,7 +1,7 @@
 # Admin panel — current workflow
 
 - Service PR **#251**; current merged main/base **`13456a17f23c1385bef8ab11c735f43d201edd02`**. A1 + cumulative A2–H are merged; reviewed former implementation #328 closed.
-- **Current checkpoint: SA04-I1 Mira checkpoint PASS on exact `649dada0e2dfc5333c7c072170c0fd8c71a4501a`; 0 confirmed current-scope defects.** PR #329 remains cumulative Draft. I2–I5/J+ unassigned.
+- **Current checkpoint: SA04-I2 assigned to Lira in cumulative Draft PR #329 from accepted I1 head `649dada0e2dfc5333c7c072170c0fd8c71a4501a`.** I3–I5/J+ unassigned.
 - New cumulative [Draft implementation PR #329](https://github.com/iliya1947/vico-forum/pull/329), branch `chatgpt/sa04-i1-pre-routing-session-admission`, exact I1 head **`649dada0e2dfc5333c7c072170c0fd8c71a4501a`**, base/main unchanged; 3 I1 commits across 2 files, open/Draft/unmerged.
 - **Only I1 implementation:** `AuthRuntime.getSession` checks persisted account status with accepted A2 `readAccountState` on same Better Auth PostgreSQL connection after resolving original session and before `initializeAuthContext`/Worker identity. Inactive/missing account -> request guest; active session stays unchanged. Raw state/retained identity not returned.
 - **Preserved:** Better Auth 1.7.7 session cleanup/sliding/Set-Cookie behavior, same original response headers and endpoint precedence; no session/account deletion, new cookies or `handle`/HTTP endpoint integration. A2 unavailable maps to `AuthSessionUnavailableError`/Worker generic no-store 503; unexpected lifecycle/query failures propagate.
@@ -344,3 +344,17 @@ Before any project-changing action or agent handoff, Mira must check in this ord
 - Exact-head CI #43309142541, SA01 #43309142501, SA03 #43309142598 and AP10 #43309142441 are SUCCESS.
 - **PASS — 0 confirmed current-scope I1 defects.**
 - #329 remains Draft/cumulative. Lira/Lev/Mark STOP; I2 is not assigned until a separate continuation.
+
+
+## 2026-11-12 — SA04-I2 bounded author handoff
+
+- Baseline: current main `13456a17f23c1385bef8ab11c735f43d201edd02`; cumulative Draft #329 accepted I1 head `649dada0e2dfc5333c7c072170c0fd8c71a4501a`.
+- **Only I2 is assigned to Lira:** authenticated Better Auth HTTP/direct-API actor admission.
+- Required result: once Better Auth resolves a current authenticated actor for an auth endpoint/direct `auth.api.*` operation, an inactive/missing account must be denied before private auth data or authenticated mutation is served/performed.
+- Preserve active-user behavior, existing signup/sign-in guest paths, registration policy, explicit Google-link identity/mismatch checks, password rate limit/freshness, and current error classification.
+- **Own sign-out exception is required:** an inactive account may still sign out its own current session and clear its cookie. This does not authorize list/revoke/change/link/update operations.
+- Keep controlled inactive denial free of retained/private account data. Preserve private/no-store and existing Set-Cookie ordering semantics.
+- **Outside I2:** I1 pre-routing resolution is already accepted; I3 session-create target admission, I4 atomic server-resolved target writes, I5 connected closure and J+ remain unassigned. Do not solve guest existing-user sign-in/callback target races in I2.
+- Continue in existing cumulative Draft #329; do not create another implementation PR and do not mark it Ready.
+- Ready for checkpoint when focused HTTP + direct-API tests prove inactive denial/active preservation/sign-out exception and applicable existing auth regressions are green; Lira performs author inspection, publishes stable exact head/evidence, then **STOP**.
+- Lev/Mark remain unassigned.
