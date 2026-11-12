@@ -408,9 +408,9 @@ describe("SA04-C3a Popular and Unanswered topic-author projections", () => {
         latestActivityAt: new Date("2026-11-12T11:10:00Z"),
       });
       expect(onlyOwn(activeUnanswered).map((row) => row.id)).toEqual([
-        "profile-c3a-active", "profile-c3a-week", "profile-c3a-old",
+        "profile-c3a-week", "profile-c3a-active", "profile-c3a-old",
       ]);
-      expect(onlyOwn(activeUnanswered)[1]).toMatchObject({
+      expect(onlyOwn(activeUnanswered)[0]).toMatchObject({
         authorName: "SECRET_C3A_UNANSWERED_HELPER", section: { id: "profile-section" },
         category: { id: "profile-category" },
       });
@@ -456,11 +456,11 @@ describe("SA04-C3a Popular and Unanswered topic-author projections", () => {
         row.id, row.title, row.sourceLocale, row.createdAt, row.section, row.category,
       ]));
       expect(onlyOwn(unanswered)).toMatchObject([
-        { id: "profile-c3a-active", authorName: "profile-newcomer" },
         { id: "profile-c3a-week", authorName: "Deleted user", authorIdentityKind: "deleted" },
+        { id: "profile-c3a-active", authorName: "profile-newcomer" },
         { id: "profile-c3a-old", authorName: "Deleted user", authorIdentityKind: "deleted" },
       ]);
-      expect(onlyOwn(unanswered)[0]).not.toHaveProperty("authorIdentityKind");
+      expect(onlyOwn(unanswered)[1]).not.toHaveProperty("authorIdentityKind");
       const serialized = JSON.stringify({ popular, unanswered });
       for (const secret of [
         "SECRET_C3A_POPULAR_OWNER", "SECRET_C3A_UNANSWERED_HELPER",
