@@ -1,12 +1,12 @@
-# Лира — active assignment: SA04-C3c authenticated Unread author neutralization
+# Лира — SA04-C3c author complete; STOP; Mira review next
 
-- Continue cumulative Draft implementation **#328** from accepted exact head `6c30b6f5a51e17f3a4722e677e60d8c5150e6baf`; main/base `593a03964b8407b249f7c9f5eb117ddb8b07736d`.
-- Required result: canonical authenticated **Unread topic summaries** neutralize inactive topic-author identity using the accepted A4 Deleted-user public contract before DTO/serialization/DOM; active authors remain unchanged.
-- Current seams: `DrizzleForumRepository.readUnreadForUser`, `app/routes/unread.tsx`, `UnreadView`. Preserve the existing section-page state-only consumer.
-- Preserve authentication and read-state semantics: 401 for guest, new/unread classification, firstUnreadPostId/latestPostId, unreadCount, activityAt/order, title and public category/section projection.
-- Add focused direct PostgreSQL and authenticated route/presentation regression evidence for mixed active/deactivated authors without broadening the slice.
-- Excluded: C3d Help, notifications/history/Admin Users/mentions/presence, auth/session enforcement, writers/deactivation, SA05+, Stage6/production, #315, docs and merge.
-- Finish on a stable exact head with applicable checks and mandatory personal author inspection, publish evidence in #251, then **STOP for Mira C3c checkpoint review**. Lev/Mark remain unassigned.
+- Cumulative [Draft #328](https://github.com/iliya1947/vico-forum/pull/328), unchanged base `593a03964b8407b249f7c9f5eb117ddb8b07736d`, exact stable head **`35bbf78a91d75818318f83ddc7413a69ddc001aa`**; 28 changed files, open/Draft/unmerged. C3b Mira checkpoint PASS previously accepted.
+- **C3c only:** `readUnreadForUser` reads joined lifecycle for each topic author, projects using accepted A4 helper before strictly public DTO. Deleted name/marker safe, active name original, raw original name/image and lifecycle not exposed. Grouping includes same-row lifecycle; no count, rank, order, filter or query-shape redesign.
+- `app/routes/unread.tsx` keeps guest 401, explicitly allowlists all existing public fields and masks deleted authors. `UnreadView` uses translated `deletedUser` and protects against intentionally raw deleted-name fixture; unread/new grouping, post anchors/counts/category/section unchanged. Existing section-page read-state-only consumer preserved.
+- **Native tests:** mixed active/deactivated topic authors with before/after `new/unread` state, first/latest pointers, count, activity/order and public location equality; secrets absent. Historical `tests/database/forum-profiles.test.ts` fixture was missing already-existing migration `0023_forum_topic_read_states`; added test fixture migration, not application migration. EN/HE authenticated route/DOM checks guest 401, secret-free allowlist, mixed author label, link/count/RTL and raw fixture defense.
+- **Personal inspection:** individually reviewed six C3c commits over five files, all 28 current cumulative changed-file names and actual relevant query/DTO/route/view/tests, A4 projector and read-state semantics. No confirmed current-scope C3c defect following fixture correction; no independent coordinator/Lev review claimed.
+- **Exact-head GitHub Actions all SUCCESS:** [CI #43226057368](https://github.com/iliya1947/vico-forum/actions/runs/43226057368) 2256 app, 706 native PG17, 69-table manifest parity, lint/typecheck/build/Worker smoke; [SA01 Chromium #43226057393](https://github.com/iliya1947/vico-forum/actions/runs/43226057393), [SA03 Chromium #43226057417](https://github.com/iliya1947/vico-forum/actions/runs/43226057417), [AP10 Chromium #43226057468](https://github.com/iliya1947/vico-forum/actions/runs/43226057468) SUCCESS; AP10 four jobs.
+- **Lira STOP.** Next Mira bounded C3c coordinator review on exact `35bbf78a91d75818318f83ddc7413a69ddc001aa`. C3d Help, later surfaces, Lev/Mark, docs/merge/production unassigned.
 
 ---
 
