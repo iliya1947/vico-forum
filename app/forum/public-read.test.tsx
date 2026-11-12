@@ -4,7 +4,7 @@ import { act, cleanup, fireEvent, render, screen, waitFor, within } from "@testi
 import { I18nextProvider } from "react-i18next";
 import { RouterContextProvider, RouterProvider, createMemoryRouter, data, matchRoutes } from "react-router";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import type { ForumCategoryPage, ForumPopularPage, ForumReader, ForumSearchResult, ForumSectionPage, ForumTagPage, ForumTopicPage, ForumUnansweredTopicSummary } from "../../db/forum-repository";
+import type { ForumCategoryPage, ForumPopularPage, ForumReader, ForumSearchResult, ForumSectionPage, ForumTagPage, ForumUnreadTopicSummary, ForumTopicPage, ForumUnansweredTopicSummary } from "../../db/forum-repository";
 import { ForumStorageUnavailableError } from "../../db/hyperdrive-forum";
 import {
   HELP_SOLUTIONS_CATEGORY_ID,
@@ -36,7 +36,7 @@ import SearchRoute, { loader as searchLoader } from "../routes/search";
 import TagsRoute, { loader as tagsLoader } from "../routes/tags";
 import TagRoute, { loader as tagLoader } from "../routes/tag";
 import UnansweredRoute, { loader as unansweredLoader } from "../routes/unanswered";
-import UnreadRoute from "../routes/unread";
+import UnreadRoute, { loader as unreadLoader } from "../routes/unread";
 import { ErrorBoundary as NotFoundErrorBoundary, loader as notFoundLoader } from "../routes/not-found";
 import SectionRoute, { loader as sectionLoader } from "../routes/section";
 import TopicRoute, { loader as topicLoader } from "../routes/topic";
@@ -4719,5 +4719,90 @@ describe.each([
     expect(await screen.findByRole("link", { name: /C3b QuartzNeedle result/ })).toBeVisible();
     expect(rawSearch.container.innerHTML).not.toContain("SECRET_C3B_");
     rawSearch.unmount();
+  });
+});
+
+describe.each([
+  { locale: "en", direction: "ltr" as const },
+  { locale: "he", direction: "rtl" as const },
+])("SA04-C3c authenticated Unread author privacy ($locale)", ({ locale, direction }) => {
+  const mixed: ForumUnreadTopicSummary[] = [
+    {
+      id: "c3c/unread-deleted", title: "C3c unread deleted", authorName: "SECRET_C3C_UNREAD_NAME",
+      authorIdentityKind: "deleted", state: "unread",
+      firstUnreadPostId: "c3c-reply", latestPostId: "c3c-reply", unreadCount: 2,
+      activityAt: new Date("2026-11-12T12:00:00Z"),
+      section: { id: "c3c/section", name: "C3c section" },
+      category: { id: "c3c/category", name: "C3c category" },
+    },
+    {
+      id: "c3c/new-deleted", title: "C3c new deleted", authorName: "SECRET_C3C_NEW_NAME",
+      authorIdentityKind: "deleted", state: "new",
+      firstUnreadPostId: "c3c-start", latestPostId: "c3c-latest", unreadCount: 3,
+      activityAt: new Date("2026-11-12T11:00:00Z"),
+      section: null, category: { id: "c3c/category", name: "C3c category" },
+    },
+    {
+      id: "c3c/active", title: "C3c active topic", authorName: "Active C3c member",
+      state: "new", firstUnreadPostId: "c3c-active-start", latestPostId: "c3c-active-start",
+      unreadCount: 1, activityAt: new Date("2026-11-12T10:00:00Z"),
+      section: { id: "c3c/section", name: "C3c section" },
+      category: { id: "c3c/category", name: "C3c category" },
+    },
+  ];
+
+  it("keeps session-only access, read state and destinations while suppressing raw inactive identity in route and DOM", async () => {
+    const guest = context(locale, direction);
+    await expect(unreadLoader({ params: { locale }, context: guest }))
+      .rejects.toMatchObject({ status: 401 });
+
+    const ctx = context(locale, direction);
+    ctx.set(authSessionContext, { user: { id: "c3c-reader" } } as never);
+    const readUnreadForUser = vi.fn(async () => mixed.map((entry) => ({
+      ...entry, authorDeactivatedByUserId: "SECRET_C3C_PRIVATE_ACTOR",
+      authorRetainAtLeastUntil: "SECRET_C3C_PRIVATE_RETENTION",
+    })));
+    ctx.set(forumReaderContext, { ...reader, readUnreadForUser });
+    const loaded = await unreadLoader({ params: { locale }, context: ctx });
+    expect(readUnreadForUser).toHaveBeenCalledWith("c3c-reader");
+    expect(loaded.locale).toBe(locale);
+    expect(loaded.topics).toMatchObject([
+      { id: "c3c/unread-deleted", authorName: "Deleted user", authorIdentityKind: "deleted",
+        state: "unread", firstUnreadPostId: "c3c-reply", latestPostId: "c3c-reply", unreadCount: 2 },
+      { id: "c3c/new-deleted", authorName: "Deleted user", authorIdentityKind: "deleted",
+        state: "new", firstUnreadPostId: "c3c-start", latestPostId: "c3c-latest", unreadCount: 3 },
+      { id: "c3c/active", authorName: "Active C3c member", state: "new", unreadCount: 1 },
+    ]);
+    expect(loaded.topics[2]).not.toHaveProperty("authorIdentityKind");
+    expect(loaded.topics.map((row) => [
+      row.id, row.title, row.state, row.firstUnreadPostId, row.latestPostId,
+      row.unreadCount, row.activityAt, row.section, row.category,
+    ])).toEqual(mixed.map((row) => [
+      row.id, row.title, row.state, row.firstUnreadPostId, row.latestPostId,
+      row.unreadCount, row.activityAt, row.section, row.category,
+    ]));
+    expect(JSON.stringify(loaded)).not.toContain("SECRET_C3C_");
+
+    const view = renderRoute(UnreadRoute, loaded, `/${locale}/unread`, locale, direction);
+    const unreadCard = await screen.findByRole("link", { name: /C3c unread deleted/u });
+    const newCard = screen.getByRole("link", { name: /C3c new deleted/u });
+    const activeCard = screen.getByRole("link", { name: /C3c active topic/u });
+    expect(unreadCard).toHaveAttribute("href", forumTopicPath(locale, "c3c/unread-deleted") + "#post-c3c-reply");
+    expect(newCard).toHaveAttribute("href", forumTopicPath(locale, "c3c/new-deleted") + "#post-c3c-start");
+    expect(activeCard).toHaveAttribute("href", forumTopicPath(locale, "c3c/active") + "#post-c3c-active-start");
+    expect(within(unreadCard).getByText("2")).toBeInTheDocument();
+    expect(within(newCard).getByText("3")).toBeInTheDocument();
+    expect(within(unreadCard).getByText("C3c section")).toBeInTheDocument();
+    expect(within(newCard).queryByText("C3c section")).not.toBeInTheDocument();
+    expect(view.container).toHaveTextContent("Deleted user");
+    expect(view.container).toHaveTextContent("Active C3c member");
+    expect(view.container.innerHTML).not.toContain("SECRET_C3C_");
+    view.unmount();
+
+    // A malformed deleted presentation fixture must not reintroduce the original name.
+    const rawView = renderRoute(UnreadRoute, { ...loaded, topics: mixed }, `/${locale}/unread`, locale, direction);
+    expect(await screen.findByRole("link", { name: /C3c unread deleted/u })).toBeVisible();
+    expect(rawView.container.innerHTML).not.toContain("SECRET_C3C_");
+    rawView.unmount();
   });
 });
