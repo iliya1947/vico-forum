@@ -3,6 +3,19 @@
 Служебный PR: #251. Оперативное состояние: [workflow.md](./workflow.md). Общий контракт: [ADMIN_PANEL_IMPLEMENTATION_PLAN.md](../ADMIN_PANEL_IMPLEMENTATION_PLAN.md).
 
 
+## 2026-11-12 — Mira: SA04-E checkpoint review PASS
+
+- Reviewed cumulative Draft #328 exact stable head `69c58d02003c1e00def3916ed2d7a4bafabdaf4f` against bounded mention-discovery checkpoint E; base/current main remains `593a03964b8407b249f7c9f5eb117ddb8b07736d`.
+- Complete E delta from accepted D is exactly two files/two commits: one authoritative query predicate change plus one focused native PostgreSQL regression.
+- Verified the actual query path: accepted A1 active-account predicate is composed in the existing SQL `WHERE` before existing `ORDER BY user.name, user.id` and `LIMIT 8`. Deactivated matching rows therefore cannot consume suggestion slots and are not returned under their retained name or as Deleted-user candidates.
+- Existing query normalization, 64-character bound, literal `ILIKE ... ESCAPE '!'` semantics, stable ordering/limit and narrow `{id,name}` output remain unchanged. A1 schema CHECK keeps lifecycle tuple consistency; E needs no A4 projection because inactive identities are intentionally absent from discovery.
+- Existing authenticated `/:locale/mentions` route was not modified and still checks session before lookup, returns private/no-store/nosniff, validates empty/oversized input and preserves classified 503 vs unexpected failures. Editor stable-ID insertion and published notification lifecycle are outside E and remain untouched.
+- Focused PG17 regression demonstrates the old top eight being occupied by 12 soon-inactive matching names, then exactly eight active candidates after deactivation with name/ID tie ordering; also verifies literal wildcard/metacharacter handling, trim/case behavior, email non-searchability and absence of private/lifecycle data.
+- Independently rechecked GitHub Actions: CI #43278389879, SA03 #43278390421, SA01 #43278390079 and AP10 #43278390612 all completed SUCCESS on exact head `69c58d02003c1e00def3916ed2d7a4bafabdaf4f`.
+- **PASS — 0 confirmed current-scope E defects.**
+- F presence, G notifications, H post history, I auth/session and J–R writers remain future checkpoints rather than E defects. #328 remains Draft; Lira STOP; Lev/Mark remain unassigned.
+
+
 ## 2026-11-12 — Лира: SA04-E mention discovery author complete; STOP for Mira checkpoint
 
 - **Cumulative [Draft #328](https://github.com/iliya1947/vico-forum/pull/328)** remains open/Draft/unmerged, accepted main/base `593a03964b8407b249f7c9f5eb117ddb8b07736d`; stable implementation exact head **`69c58d02003c1e00def3916ed2d7a4bafabdaf4f`**, 35 cumulative changed files. Mira D checkpoint PASS preserved on `85a95a0a46dc77ea80ab21eea5504a681ac586de`.
