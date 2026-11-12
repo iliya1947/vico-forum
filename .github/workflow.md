@@ -1,7 +1,7 @@
 # Admin panel — current workflow
 
 - Service PR **#251**; accepted A1 main/base `593a03964b8407b249f7c9f5eb117ddb8b07736d`; SA04-A2/A3/A4/B/C1/C2/C3a/C3b/C3c/C3d1/C3d2/D/E/F/G **Mira checkpoint PASS**. C complete, A4-MIRA-01 CLOSED.
-- **Current checkpoint: SA04-H author complete — Lira STOP; next Mira independent bounded H coordinator checkpoint/scope review.**
+- **Current checkpoint: SA04-H Mira checkpoint PASS — cumulative A–H preparation/projection slice is stable on exact head `0a917b6f4f55f991bea6e6031b43a0c4f0dc2f85`; Lira STOP. Next reviewer/SA04-I transition remains unassigned pending explicit continuation.**
 - Cumulative [Draft implementation PR #328](https://github.com/iliya1947/vico-forum/pull/328), exact H head **`0a917b6f4f55f991bea6e6031b43a0c4f0dc2f85`**, accepted G `f6a2c1ef378bfd5f30ece746f65253963f4d6125`; main/base unchanged. Open/Draft/unmerged; 49 cumulative changed files, 7 H commits across six H files.
 - **H implementation:** `readPostHistory` queries the revision author's same-row A1 account lifecycle and uses accepted A4 projector before direct DTO return; inactive author → neutral Deleted user plus narrow `authorIdentityKind: deleted`; active name unchanged. Explicit returned fields prevent private original identity/lifecycle leakage.
 - **Preserved:** stable `authorId`, topic/post/revision IDs and membership, original revision source text/locale, createdAt and descending order, existing `forum.post.history.read` server permission gate. No history revision rewrite or writer/schema/RBAC/auth/session change.
@@ -263,3 +263,15 @@ Before any project-changing action or agent handoff, Mira must check in this ord
 - Native PostgreSQL 17, route/.data and EN/RU/HE DOM regressions cover mixed active/inactive actors and system notifications. Exact-head CI #43291399256, SA01 #43291399192, SA03 #43291399357 and AP10 #43291399295 were independently rechecked as SUCCESS.
 - **PASS — 0 confirmed current-scope SA04-G defects.**
 - #328 remains Draft/cumulative. Lira STOP; H+ and Lev/Mark remain unassigned until the next explicit continuation.
+
+
+## 2026-11-12 — SA04-H Mira checkpoint review PASS
+
+- Independently reviewed cumulative Draft #328 exact H head `0a917b6f4f55f991bea6e6031b43a0c4f0dc2f85` against accepted row H and the G→H seven-commit/six-file delta.
+- `readPostHistory` now projects same-row revision-author lifecycle through accepted A4 before returning the direct DTO; inactive authors expose only stable `authorId`, neutral Deleted user name and the narrow deleted marker. Active authors remain unchanged.
+- Existing revision membership, original content/source locale, timestamps and newest-first ordering are preserved. The existing `forum.post.history.read` gate remains before the reader; no RBAC/auth/session/writer/schema behavior changed.
+- Action/.data uses an explicit field allowlist and masks a deleted-marked stale name; shared Quick actions presentation localizes `deletedUser` without changing retained revision text.
+- Native PostgreSQL, protected action/.data and shared DOM regressions cover mixed active/inactive authors and preservation/privacy boundaries.
+- Exact-head workflows independently rechecked: CI #43296996996, SA03 #43296997015, SA01 #43296997261 and AP10 #43296997445 — all completed **SUCCESS**.
+- **PASS — 0 confirmed current-scope SA04-H defects.**
+- #328 remains cumulative Draft/open/unmerged. I+ is not started. Lira STOP. Reviewer/next enforcement transition is deliberately not assigned in this checkpoint.
