@@ -1885,3 +1885,14 @@ This guard complements Mira's handoff-granularity gate and is intended to catch 
 - Tests: `app/measures/views.test.tsx` EN/RU/HE exact path with admin-level group heading; `tests/browser/user-profile/check.py` adds exact Owner self empty link and disposable *historical retained* self measure fixture (not actual forbidden writer), real `/account/measures/:id` 200, admin Owner/self index/detail 403, valid Admin target links. The artificial retained row is explicitly only for isolated testing.
 - Stable correction head **`4bfdfdd14a70534bd95c308de9d1c8c2df672c76`** from main `538084fd472c65459ad55ab30a0f96fbfdd68e56`. All GitHub Actions **SUCCESS exact head**: [CI #43059203099](https://github.com/iliya1947/vico-forum/actions/runs/43059203099) 2234/2234 app and 688/688 PG17, lint, typecheck, build, clean migration and 69-table schema/Worker smoke; [SA03 browser #43059202894](https://github.com/iliya194/vico-forum/actions/runs/43059202894) 24/24 acceptance records, including 2 MIRA-01 and previous privacy/RTL/outage; [SA01 Chromium #43059202975](https://github.com/iliya194/vico-forum/actions/runs/43059202975) SUCCESS; [AP10 Chromium #43059203239](https://github.com/iliya194/vico-forum/actions/runs/43059203239) SUCCESS all four jobs. No implementation edits after checks.
 - PR #324 remains Draft/open, body updated factual head/evidence, no review verdict claimed by author. **Lira STOP** after single bounded correction. Return to **Mira repeat coordinator whole-PR review on exact corrected head**; Lev only after Mira PASS. No independent Codex or production, deactivation, SA04+, Stage6, docs closeout or merge.
+
+
+## 2026-11-12 — assigned: SA04-I1
+
+Implement **I1 only** from current main `13456a17f23c1385bef8ab11c735f43d201edd02` in a new cumulative Draft PR.
+
+Result: old Better Auth sessions for a persisted inactive account must not establish pre-routing request identity through `AuthRuntime.getSession / initializeAuthContext`; active sessions remain behaviorally unchanged. Preserve existing classified session-storage unavailable handling and session-cookie cleanup/sliding/ordering semantics.
+
+Keep the change inside this request-session resolution boundary with focused tests. Do not start I2–I5 or J+.
+
+Before handoff, inspect the completed I1 diff/logic yourself, publish the Draft PR stable exact head and actual checks/evidence in #251/service files, then **STOP** for Mira checkpoint review.
