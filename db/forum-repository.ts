@@ -100,6 +100,7 @@ export interface ForumTagSummary extends ForumTag {
 }
 
 export interface ForumTaggedTopicSummary {
+  authorIdentityKind?: "deleted";
   id: string;
   title: string;
   authorName: string;
@@ -116,6 +117,7 @@ export interface ForumTagPage {
 }
 
 export interface ForumSearchResult {
+  authorIdentityKind?: "deleted";
   id: string;
   title: string;
   sourceLocale: string;
@@ -1223,7 +1225,9 @@ export class DrizzleForumRepository {
       .select({
         id: forumTopics.id,
         title: forumTopicTitleRevisions.originalContent,
-        authorName: user.name,
+        authorId: forumTopics.authorId, authorName: user.name,
+        authorDeactivatedAt: user.deactivatedAt, authorDeactivatedByUserId: user.deactivatedByUserId,
+        authorRetainAtLeastUntil: user.retainAtLeastUntil,
         postCount: sql<number>`count(distinct ${forumPosts.id})::int`,
         createdAt: forumTopics.createdAt,
         sectionId: forumSections.id,
@@ -1245,7 +1249,8 @@ export class DrizzleForumRepository {
       .groupBy(
         forumTopics.id,
         forumTopicTitleRevisions.id,
-        user.name,
+        forumTopics.authorId, user.name,
+        user.deactivatedAt, user.deactivatedByUserId, user.retainAtLeastUntil,
         forumSections.id,
         forumSections.name,
         forumCategories.id,
@@ -1256,15 +1261,19 @@ export class DrizzleForumRepository {
     const tagsByTopic = await this.readTagsForTopics(topics.map((topic) => topic.id));
     return {
       tag,
-      topics: topics.map((topic) => ({
-        id: topic.id,
-        title: topic.title,
-        authorName: topic.authorName,
-        postCount: topic.postCount,
-        createdAt: topic.createdAt,
-        ...publicDiscoveryLocation(topic),
-        tags: tagsByTopic.get(topic.id) ?? [],
-      })),
+      topics: topics.map((topic) => {
+        const author = projectForumPublicAuthor(topic);
+        return {
+          id: topic.id,
+          title: topic.title,
+          authorName: author.name,
+          ...(author.kind === "deleted" ? { authorIdentityKind: "deleted" as const } : {}),
+          postCount: topic.postCount,
+          createdAt: topic.createdAt,
+          ...publicDiscoveryLocation(topic),
+          tags: tagsByTopic.get(topic.id) ?? [],
+        };
+      }),
     };
   }
 
@@ -1298,7 +1307,9 @@ export class DrizzleForumRepository {
         id: forumTopics.id,
         title: forumTopicTitleRevisions.originalContent,
         sourceLocale: forumTopicTitleRevisions.sourceLocale,
-        authorName: user.name,
+        authorId: forumTopics.authorId, authorName: user.name,
+        authorDeactivatedAt: user.deactivatedAt, authorDeactivatedByUserId: user.deactivatedByUserId,
+        authorRetainAtLeastUntil: user.retainAtLeastUntil,
         postCount: sql<number>`count(distinct ${forumPosts.id})::int`,
         activityAt,
         sectionId: forumSections.id,
@@ -1325,7 +1336,8 @@ export class DrizzleForumRepository {
       .groupBy(
         forumTopics.id,
         forumTopicTitleRevisions.id,
-        user.name,
+        forumTopics.authorId, user.name,
+        user.deactivatedAt, user.deactivatedByUserId, user.retainAtLeastUntil,
         forumSections.id,
         forumSections.name,
         forumCategories.id,
@@ -1336,16 +1348,20 @@ export class DrizzleForumRepository {
       .limit(limit);
 
     const tagsByTopic = await this.readTagsForTopics(rows.map((row) => row.id));
-    return rows.map((row) => ({
-      id: row.id,
-      title: row.title,
-      sourceLocale: row.sourceLocale,
-      authorName: row.authorName,
-      postCount: row.postCount,
-      activityAt: row.activityAt,
-      ...publicDiscoveryLocation(row),
-      tags: tagsByTopic.get(row.id) ?? [],
-    }));
+    return rows.map((row) => {
+      const author = projectForumPublicAuthor(row);
+      return {
+        id: row.id,
+        title: row.title,
+        sourceLocale: row.sourceLocale,
+        authorName: author.name,
+        ...(author.kind === "deleted" ? { authorIdentityKind: "deleted" as const } : {}),
+        postCount: row.postCount,
+        activityAt: row.activityAt,
+        ...publicDiscoveryLocation(row),
+        tags: tagsByTopic.get(row.id) ?? [],
+      };
+    });
   }
 
   async readUnreadForUser(userId: string): Promise<ForumUnreadTopicSummary[]> {
