@@ -3,6 +3,20 @@
 Служебный PR: #251. Оперативное состояние: [workflow.md](./workflow.md). Общий контракт: [ADMIN_PANEL_IMPLEMENTATION_PLAN.md](../ADMIN_PANEL_IMPLEMENTATION_PLAN.md).
 
 
+## 2026-11-12 — Mira: SA04-C3c checkpoint review PASS
+
+- Reviewed cumulative Draft #328 exact stable head `35bbf78a91d75818318f83ddc7413a69ddc001aa` against the bounded authenticated-Unread assignment; base/current main remains `593a03964b8407b249f7c9f5eb117ddb8b07736d`.
+- C3c delta from accepted C3b head is exactly five files: Unread repository projection, canonical loader/presentation and focused app/native PG regression coverage.
+- Confirmed `readUnreadForUser` carries the joined topic author's authoritative A1 lifecycle tuple with original name and applies accepted A4 projection before DTO construction. Added GROUP BY lifecycle columns belong to the same one-to-one joined author row and do not change read-state grouping.
+- Existing guest/session boundary and read-state semantics remain: 401 for guest; reader called with session user ID; New/Unread classification, first-unread/latest-post IDs, unreadCount, activityAt ordering and public location are unchanged.
+- Existing section page still consumes Unread only as `id/state`; C3c does not introduce another identity presentation path there.
+- Canonical loader rebuilds only current public/read-state fields plus deleted marker and masks marked names; `UnreadView` localizes `deletedUser` even for an adversarial raw name.
+- Focused PG17 regression verifies mixed active/deactivated authors across New/Unread states with identical pointers/count/order/location before/after deactivation and no raw name/avatar/lifecycle leakage. EN/HE route/DOM regression verifies 401, actor routing, serialized allowlist, anchors/counts/location and raw-fixture defense.
+- Independently rechecked GitHub Actions: CI #43226057368, SA03 #43226057417, SA01 #43226057393 and AP10 #43226057468 all completed SUCCESS on exact head `35bbf78a91d75818318f83ddc7413a69ddc001aa`.
+- **PASS — 0 confirmed current-scope C3c defects.**
+- #328 remains cumulative Draft. No Lev review or merge at C3c alone. Lira STOP. **Next bounded continuation: C3d Help question-summary family; later work remains unassigned.**
+
+
 ## 2026-11-12 — Лира: SA04-C3c author complete; STOP; Mira review next
 
 - **Implementation:** cumulative [Draft #328](https://github.com/iliya1947/vico-forum/pull/328), base/main `593a03964b8407b249f7c9f5eb117ddb8b07736d`, stable exact head **`35bbf78a91d75818318f83ddc7413a69ddc001aa`** (28 cumulative changed files), still open/Draft/unmerged. C3b Mira checkpoint PASS preserved.
