@@ -1,3 +1,14 @@
+# Лира — SA04-G author complete, STOP; Mira G checkpoint next
+
+- **Assignment completed:** only SA04-G, cumulative [Draft #328](https://github.com/iliya1947/vico-forum/pull/328) from accepted F `707651774932281230b3e90440e18eeb9a08b7d4` to exact `f6a2c1ef378bfd5f30ece746f65253963f4d6125`, 10 commits, six G files and 44 cumulative changed paths. Main/base unchanged. No H+/Lev/Mark/docs/merge.
+- Implemented two notification-reader A1/A4 neutral projections: both unified and legacy reader read same-row actor lifecycle, active identity intact, inactive reply/mention actor returned as `Deleted user` plus narrow deleted marker. Explicit DTO fields prevent raw name/image/retained lifecycle escape. System complaints remain actor-null, notifications not filtered; counts, recipient, order, page/limit, targets/readAt and mutations untouched.
+- Canonical loader explicit allowlist and defensive marked actor redaction, shared EN/RU/HE localized deleted label and empty no-old-name initial. Native PG17 mixed actor/system reader+count/order/mark-read regressions, malformed loader/.data and locale DOM tests added.
+- **Author inspection performed personally**: all ten commit unified diffs (including last test-only correction), original A4 public projector, current SQL joins and paging/sorting/DTO, route/auth/presentation, full six-file delta and entire 44-path cumulative PR inventory, native and app test logic, failed and final passing Actions. Temporary red CI was caused by PG raw timestamp strings passed to strict A4, by missing Drizzle `Record` generic, and by erroneous test assertions for `actorId` substring and `readAt` Date expectation; all corrected without broadening G. No confirmed remaining G current-scope defect. This **is not** independent whole-PR review.
+- **Exact-head evidence SUCCESS:** CI [#43291399256](https://github.com/iliya1947/vico-forum/actions/runs/43291399256): 2267/2267 app, 716/716 native PG17, schema parity 69, lint/typecheck/build/Worker; [SA01 #43291399192](https://github.com/iliya1947/vico-forum/actions/runs/43291399192), [SA03 #43291399357](https://github.com/iliya1947/vico-forum/actions/runs/43291399357), [AP10 #43291399295](https://github.com/iliya1947/vico-forum/actions/runs/43291399295) Chromium all SUCCESS (AP10 four jobs).
+- **AUTHOR STOP. Next:** Mira bounded G coordinator checkpoint PASS or verified current-scope defect report on exact `f6a2c1ef378bfd5f30ece746f65253963f4d6125`. H post-history, I auth/recipient enforcement, notification writers, docs closeout, Lev/Mark and merge unassigned.
+
+---
+
 # Лира — active assignment: SA04-G neutral notification actor identity
 
 - Continue cumulative Draft **#328** from accepted exact head `707651774932281230b3e90440e18eeb9a08b7d4`; main/base `593a03964b8407b249f7c9f5eb117ddb8b07736d`.
