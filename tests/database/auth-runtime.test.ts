@@ -255,6 +255,22 @@ describe("Better Auth PostgreSQL runtime", () => {
     expect((await call("get-session", active.cookie)).status).toBe(200);
     expect((await call("list-sessions", active.cookie)).status).toBe(200);
 
+    // The extra active-actor admission must preserve Better Auth's own
+    // HTTP get-session refresh headers and persisted sliding expiration.
+    await client.query(`update "session" set expires_at=now()+interval '5 days',
+      updated_at=now()-interval '2 days' where user_id=$1`, [active.userId]);
+    const staged = (await client.query<{ expires_at: Date }>(
+      'select expires_at from "session" where user_id=$1', [active.userId],
+    )).rows[0]?.expires_at;
+    if (!staged) throw new Error("Missing active sliding-session fixture");
+    const refreshed = await call("get-session", active.cookie);
+    expect(refreshed.status).toBe(200);
+    expect(refreshed.headers.getSetCookie().some(value => value.includes("session_token="))).toBe(true);
+    const newExpiry = (await client.query<{ expires_at: Date }>(
+      'select expires_at from "session" where user_id=$1', [active.userId],
+    )).rows[0]?.expires_at;
+    expect(newExpiry?.getTime()).toBeGreaterThan(staged.getTime());
+
     const before = (await client.query<{ id: string; token: string }>(
       'select id,token from "session" where user_id=$1', [inactive.userId],
     )).rows;
