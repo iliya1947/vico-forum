@@ -1,7 +1,7 @@
 # Admin panel — current workflow
 
 - Service PR **#251**; accepted A1 main/base `593a03964b8407b249f7c9f5eb117ddb8b07736d`; SA04-A2/A3/A4/B/C1/C2/C3a/C3b/C3c/C3d1/C3d2/D/E/F **Mira checkpoint PASS**, C complete, A4-MIRA-01 CLOSED.
-- **Current checkpoint: SA04-G Mira checkpoint PASS — Lira STOP; next bounded checkpoint H remains unassigned pending explicit continuation.**
+- **Current checkpoint: SA04-H assigned to Lira** in cumulative Draft #328 from accepted G head `f6a2c1ef378bfd5f30ece746f65253963f4d6125`; implementation not yet complete.
 - Cumulative [Draft implementation PR #328](https://github.com/iliya1947/vico-forum/pull/328), exact G head **`f6a2c1ef378bfd5f30ece746f65253963f4d6125`**, accepted F parent `707651774932281230b3e90440e18eeb9a08b7d4`; base/main unchanged. Open/Draft/unmerged, 44 cumulative changed paths, 10 G commits in six G files.
 - **G implementation:** both `readNotifications` and `readReplyNotifications` project A1 joined lifecycle through A4, inactive reply/mention actors become neutral Deleted user with narrow marker. Active identity unchanged; no retained private identity or lifecycle in DTO.
 - **Semantics preserved:** do not filter inactive actor notifications; original recipient membership, all kinds (including no-actor complaint decision/appeal result), counts, unread-first order/limits/pagination, targets, timestamps/readAt, mark-read and producer/fanout/replay unchanged. No recipient lifecycle admission.
@@ -9,6 +9,9 @@
 - **Evidence:** native PG17 mixed-actor + system notification tests prove membership/order/counts/read state/targets, direct DTO privacy and idempotent mark-read; route/.data malicious fixture and EN/RU/HE DOM regression. Author personally inspected exact diffs and relevant logic; **not** an independent review.
 - **Final exact-head checks all SUCCESS:** [CI #43291399256](https://github.com/iliya1947/vico-forum/actions/runs/43291399256) **2267 app / 716 PG17**, 69-table parity, lint/typecheck/build/Worker; [SA01 #43291399192](https://github.com/iliya1947/vico-forum/actions/runs/43291399192), [SA03 #43291399357](https://github.com/iliya1947/vico-forum/actions/runs/43291399357), [AP10 #43291399295](https://github.com/iliya1947/vico-forum/actions/runs/43291399295) Chromium **SUCCESS**, AP10 four jobs.
 - **G coordinator review:** PASS on exact `f6a2c1ef378bfd5f30ece746f65253963f4d6125`; 0 confirmed current-scope G defects. H+/Lev/Mark remain unassigned. No docs closeout, merge, SA05+, Stage6/production or #315.
+- **H scope:** post-revision history author identity only: `readPostHistory` direct DTO, its existing `readPostHistory` action/.data response and shared `MessageQuickActions` history presentation. Inactive revision authors use accepted A4 neutral identity; active authors unchanged. Preserve stable author ID, revision content/source locale/timestamps/order and existing `forum.post.history.read` admission.
+- **H boundary:** no schema/migration, no permission/RBAC change, no history-content rewriting, no post/revision writer change, no auth/session enforcement and no I+ work. Existing `deletedUser` localization is reused; raw retained identity/lifecycle must not cross the history DTO/.data/UI boundary.
+- **Next:** Lira implements only H, performs mandatory author inspection, publishes stable exact head + applicable evidence and STOP. I+/Lev/Mark remain unassigned.
 
 ## Mandatory author verification
 
