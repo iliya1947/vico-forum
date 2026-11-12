@@ -1,5 +1,14 @@
 # ChatGPT-5.6 Sol — working notes
 
+## 2026-11-12 — SA04-C3d1 coordinator checkpoint PASS
+
+- Exact implementation head reviewed: `f503fbc8796d4751ff95e4a54534da5fa4ee03bb`; prior accepted C3c head `35bbf78a91d75818318f83ddc7413a69ddc001aa`.
+- Compared complete six-file C3d1 delta and traced shared Help SQL author row → accepted public-author projector → question DTO → category Help allowlist → localized card presentation.
+- Confirmed shared modes and filters preserve eligibility, attention visibility, counts/state/order/limits/tags; no raw inactive identity/lifecycle escapes DTO, serialization or DOM.
+- Exact-head CI and connected Chromium runs independently matched and are green.
+- Separate For-me SQL remains C3d2 and was not treated as a C3d1 defect.
+- Verdict: **PASS, 0 confirmed current-scope C3d1 defects**. No implementation change made during review.
+
 ## 2026-11-12 — SA04-C3c coordinator checkpoint PASS
 
 - Exact implementation head reviewed: `35bbf78a91d75818318f83ddc7413a69ddc001aa`; prior accepted C3b head `6c30b6f5a51e17f3a4722e677e60d8c5150e6baf`.
