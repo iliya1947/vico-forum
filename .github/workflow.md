@@ -1,14 +1,15 @@
 # Admin panel — current workflow
 
 - Service PR **#251**; merged SA04-A1 main/base `593a03964b8407b249f7c9f5eb117ddb8b07736d`. SA04-A2/A3/A4/B/C1/C2/C3a/C3b/C3c **Mira checkpoint PASS**; A4-MIRA-01 CLOSED.
-- **Current checkpoint: SA04-C3c Mira checkpoint PASS on cumulative Draft #328 exact head `35bbf78a91d75818318f83ddc7413a69ddc001aa`; 0 confirmed current-scope C3c defects. Lira STOP.**
-- [Cumulative Draft implementation PR #328](https://github.com/iliya1947/vico-forum/pull/328): stable exact implementation head **`35bbf78a91d75818318f83ddc7413a69ddc001aa`**, base/current main **`593a03964b8407b249f7c9f5eb117ddb8b07736d`**, **28 changed files**, open/Draft/unmerged.
-- **C3c confirmed:** canonical authenticated Unread summaries use the accepted same-row A4 Deleted-user projection before public DTO construction; loader explicitly allowlists current public/read-state fields and presentation refuses raw deleted names. Active author names remain unchanged.
-- **Semantics confirmed unchanged:** guest 401/session reader identity, `new` vs `unread`, firstUnreadPostId/latestPostId, unreadCount, activityAt ordering, title and public category/section projection. Existing section-page consumer still uses only topic `id/state`.
-- **Review evidence:** C3c delta from accepted C3b head is exactly five files. Direct PG17 regression covers mixed active/deactivated authors across New/Unread states, pointers/count/order/location and raw identity/lifecycle omission. EN/HE route/DOM regression covers 401, reader user ID, loader allowlist, links/anchors/counts and adversarial raw fixture.
-- Independently rechecked exact-head runs: CI #43226057368, SA03 #43226057417, SA01 #43226057393 and AP10 #43226057468 are all completed **SUCCESS** on exact `35bbf78a...`.
-- **PASS — 0 confirmed current-scope C3c defects.** #328 remains cumulative Draft; no Lev review/merge at this checkpoint.
-- **No active agent assignment.** Next bounded continuation is **C3d: Help question-summary family**. Later SA04 work remains unassigned.
+- **C3d decomposed before handoff:** **C3d1 = shared Help question-summary query family**; **C3d2 = separate personalized For-me query**. Only C3d1 is active.
+- **Current checkpoint: SA04-C3d1 assigned to Lira.**
+- Continue cumulative [Draft implementation PR #328](https://github.com/iliya1947/vico-forum/pull/328) from accepted stable exact head **`35bbf78a91d75818318f83ddc7413a69ddc001aa`**; base/current main **`593a03964b8407b249f7c9f5eb117ddb8b07736d`**. Keep PR open/Draft/unmerged.
+- **C3d1 bounded result:** neutralize inactive topic-author identity in the shared `readHelpSolutionsPage` question-summary path used by All/Open/Active/Solutions/Mine/Want-to-help and its existing Needs-attention reader mode, reusing accepted A4 Deleted-user projection. Active authors unchanged; raw inactive identity/lifecycle must not cross Help question-summary DTOs.
+- Existing canonical category Help loader/presentation is in scope only as the shared public serialization/UI boundary for these modes: marked deleted names must be masked/localized and existing fields preserved.
+- **Preserve Help semantics:** mode eligibility/filtering, auth requirements owned by the route, filters (solution/answers/quality/relation), attention visibility/filter behavior, reply count, solved/best-answer/moderation/needs-details/duplicate state, created/activity ordering, limits and tags.
+- **Explicitly outside C3d1:** `readHelpSolutionsForMe` author projection (C3d2), Similar-question results (no author identity), attention-case submitter identity, post history, notifications, Admin Users, mentions, presence, auth/session enforcement, writers/deactivation action, SA05+, Stage6/production, #315, docs closeout and merge.
+- Completion: focused native PostgreSQL regression proving shared Help modes preserve selection/filter/order/state while active/deactivated topic authors project correctly; canonical category Help route/DOM regression for shared modes and adversarial raw marked identity; mandatory personal author inspection; applicable exact-head checks; publish stable head/evidence; **Lira STOP for Mira C3d1 checkpoint review**.
+- Lira is the only active implementer. C3d2 and later work remain unassigned; Lev/Mark remain unassigned.
 
 ## Mandatory author verification
 
