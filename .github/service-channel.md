@@ -4602,3 +4602,14 @@ Lira must perform author inspection, publish the stable A2 head/evidence and STO
 - Exact-head CI #43291399256, SA01 #43291399192, SA03 #43291399357 and AP10 #43291399295 independently rechecked SUCCESS.
 - **PASS — 0 confirmed current-scope SA04-G defects.**
 - #328 stays cumulative Draft. Lira STOP; H+/Lev/Mark remain unassigned. Next work requires a separate continuation.
+
+
+## 2026-11-12 — SA04-H bounded handoff
+
+- G remains Mira checkpoint-PASS on cumulative Draft #328 exact `f6a2c1ef378bfd5f30ece746f65253963f4d6125`; current main/base remains `593a03964b8407b249f7c9f5eb117ddb8b07736d`.
+- Granularity checked against the current code: H is one bounded chain — `readPostHistory` repository DTO → existing forum action/.data → shared `MessageQuickActions` presentation used by public/Admin topic surfaces. No further split is required before authoring.
+- **Only H is assigned to Lira.** Inactive revision authors must be neutralized through the accepted A4 public-identity contract before direct DTO/public serialization; active revision authors remain unchanged.
+- Preserve stable author ID, revision membership/content, source locale, created timestamp, newest-first ordering and the existing `forum.post.history.read` authorization boundary. Do not rewrite retained revision text merely because it may contain historical names.
+- Keep raw retained author identity and lifecycle fields out of the returned history DTO/.data/UI. Reuse the existing generic `deletedUser` localization; no new schema/migration/permission/RBAC or writer/auth/session behavior belongs to H.
+- Focused direct-reader + action/.data + shared presentation regressions should prove mixed active/inactive authors and preservation of revision semantics. Lira performs author inspection, publishes stable exact head/evidence and **STOP**.
+- I+ and Lev/Mark remain unassigned; no merge/docs/SA05+/Stage6/production/#315 work.
