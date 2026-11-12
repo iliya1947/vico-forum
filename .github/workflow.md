@@ -1,15 +1,16 @@
 # Admin panel — current workflow
 
-- Service PR **#251**; merged SA04-A1 main/base `593a03964b8407b249f7c9f5eb117ddb8b07736d`. SA04-A2/A3/A4/B/C1/C2/C3a **Mira checkpoint PASS**; A4-MIRA-01 CLOSED.
-- **Current checkpoint: SA04-C3b assigned to Lira.**
-- Continue cumulative [Draft implementation PR #328](https://github.com/iliya1947/vico-forum/pull/328) from accepted stable exact head **`04fb2510afb0c32494509424b6b0af280c5743bc`**; base/current main **`593a03964b8407b249f7c9f5eb117ddb8b07736d`**. Keep PR open/Draft/unmerged.
-- **C3b bounded result:** neutralize inactive **topic-author identity only** in canonical **Tag topic summaries + Search results**, including their existing public route/presentation boundaries, reusing the accepted A4 Deleted-user contract. Active authors stay unchanged; raw inactive identity/lifecycle must not cross public DTO/serialization/DOM.
-- Relevant current seams: `DrizzleForumRepository.readTag`, `search`, `app/routes/tag.tsx`, `app/routes/search.tsx`, `TagView`, `SearchView`.
-- **Preserve Tag semantics:** tag identity, topic membership, newest-first topic ordering, title, post count, created time, public category/section projection and attached topic tags.
-- **Preserve Search semantics:** query normalization/empty/max-length behavior, title/tag/post matching, match rank, activity ordering/tie-breaks, result limit, source locale, post count, public category/section projection and attached topic tags.
-- Completion: focused direct PostgreSQL reader + canonical public route/presentation regressions for mixed active/deactivated authors and the preserved selection/order/ranking fields; mandatory personal author inspection; applicable exact-head checks; publish stable head/evidence; **Lira STOP for Mira checkpoint review**.
-- **Explicit outside C3b:** C3c authenticated Unread, C3d Help summaries, post history, notifications, Admin Users, mentions, online presence, auth/session/writers/deactivation action, SA05+, Stage6/production, #315 remediation, docs closeout and merge.
-- Lira is the only active implementer. Lev/Mark remain unassigned; no independent review or merge at this checkpoint.
+- Service PR **#251**; merged SA04-A1 main/base `593a03964b8407b249f7c9f5eb117ddb8b07736d`. SA04-A2/A3/A4/B/C1/C2/C3a remain **Mira checkpoint PASS**; SA04-A4-MIRA-01 CLOSED.
+- **Current checkpoint: SA04-C3b author complete; Mira bounded coordinator checkpoint/scope review next. Lira STOP.**
+- [Cumulative Draft implementation PR #328](https://github.com/iliya1947/vico-forum/pull/328): **stable exact head `6c30b6f5a51e17f3a4722e677e60d8c5150e6baf`**, base/current main unchanged, 27 cumulative changed files, open/Draft/unmerged.
+- **C3b result:** public `DrizzleForumRepository.readTag` and `search` use the accepted A4 identity projector with the original joined topic author's A1 lifecycle, neutralizing deactivated authors to `Deleted user` with the narrow deleted marker before public DTO. Active authors, selected topics, title/postCount/sourceLocale/tags/location and timestamps preserved.
+- **Tag:** same membership/newest-first order/attached tags. **Search:** NFKC/whitespace normalization, empty/long handling, title/tag/post match rank, activity/ID order and result limit unchanged.
+- Canonical `tag.tsx`/`search.tsx` loaders allowlist fields and defensively replace raw deleted names before serialization. `TagView`/`SearchView` use existing translated `deletedUser` even with injected raw presentation name.
+- Direct PG17 tests and EN/HE loader/DOM tests verify mixed active/deactivated authors, stable rank/order/fields/counts/links, original title direction, and distinct raw identity/lifecycle markers absent from DTO/route/DOM.
+- **Mandatory author inspection:** personally inspected the 27-file cumulative changed-file inventory, current C3b source/patches, query matching/rank/filters/grouping, projected DTOs, route allowlists and tests; no confirmed current C3b defect. This is not independent Mira review.
+- **All final exact-head checks SUCCESS:** [CI #43220966986](https://github.com/iliya1947/vico-forum/actions/runs/43220966986) 2254 app /705 native PG17, 69-table parity, lint/typecheck/build/Worker smoke. [SA01 #43220967022](https://github.com/iliya1947/vico-forum/actions/runs/43220967022), [SA03 #43220967370](https://github.com/iliya1947/vico-forum/actions/runs/43220967370) and [AP10 #43220967091](https://github.com/iliya1947/vico-forum/actions/runs/43220967091) Chromium SUCCESS (AP10 4 jobs).
+- **Out of scope:** C3c authenticated Unread, C3d Help, post history, notifications, Admin Users, mentions, presence, auth/session, writers/deactivation controls, SA05+, Stage6/production, #315, documentation closeout, merge. No schema/migration change.
+- **Active recipient: Mira — SA04-C3b coordinator checkpoint/scope review** exact `6c30b6f5a51e17f3a4722e677e60d8c5150e6baf`. C3c+/Lev/Mark unassigned.
 
 ## Mandatory author verification
 
@@ -235,3 +236,11 @@ Before any project-changing action or agent handoff, Mira must check in this ord
 - Initial lint unused destructuring, incorrect new test newest-first expectation and Set literal-union typing found/fixed locally; no related product or schema alterations.
 - Final exact-head CI #43208714882 SUCCESS: 2252 app/704 PG17, 69-table parity; SA03 #43208714867, SA01 #43208714997 and AP10 #43208714917 Chromium SUCCESS.
 - Mandatory Lira author inspection of cumulative diff and C3a code/tests performed; no confirmed current C3a defect. **Lira STOP; Mira bounded C3a review next.** C3b+, Lev/Mark, docs/merge/production unassigned.
+
+## 2026-11-12 — SA04-C3b author complete; Mira review next
+
+- Previously accepted SA04-C3a Mira PASS exact `04fb2510afb0c32494509424b6b0af280c5743bc`; cumulative Draft #328 C3b Tag/Search complete on exact `6c30b6f5a51e17f3a4722e677e60d8c5150e6baf` (27 files), base unchanged.
+- Direct `readTag`/`search` project joined author lifecycle using accepted A4; deleted name neutral, private lifecycle not exposed; tag order/membership/tags and Search query normalization, title/tag/post match rank/activity/limit preserved.
+- Public Tag/Search loaders allowlist/mask before serialization; UI renders translated Deleted user under malformed raw author fixture. New PostgreSQL and EN/HE route/DOM tests confirm mixed identities, rank/content/counts/links and absence of private markers.
+- CI #43220966986 SUCCESS (2254 application /705 native PG17 tests; 69-table parity); SA01 #43220967022, SA03 #43220967370, AP10 #43220967091 Chromium SUCCESS including four AP10 jobs. Lira author inspection done, no confirmed current-scope C3b defect.
+- **Lira STOP; Mira C3b checkpoint next** on exact stable head. C3c+/Lev/Mark and merge/docs/production remain unassigned.
