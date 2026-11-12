@@ -42,6 +42,18 @@ function validDate(value: unknown): value is Date {
   return value instanceof Date && Number.isFinite(value.getTime());
 }
 
+/** Match PostgreSQL (timestamp AT TIME ZONE 'UTC') + interval '1 year'. */
+function minimumRetentionUtc(deactivatedAt: Date): Date {
+  const boundary = new Date(deactivatedAt.getTime());
+  const originalDay = boundary.getUTCDate();
+  boundary.setUTCDate(1);
+  boundary.setUTCFullYear(boundary.getUTCFullYear() + 1);
+  // PostgreSQL clamps February 29 to February 28 in a non-leap target year.
+  boundary.setUTCMonth(boundary.getUTCMonth() + 1, 0);
+  boundary.setUTCDate(Math.min(originalDay, boundary.getUTCDate()));
+  return boundary;
+}
+
 /**
  * Strictly allowlisted server-side projection, before public DTO serialization.
  * Source and state MUST refer to the same authoritative user/snapshot.
@@ -83,8 +95,11 @@ export function projectPublicAccountIdentity(
 
   if (state.status === "deactivated") {
     if (!validDate(state.deactivatedAt) || !validDate(state.retainAtLeastUntil)
-        || state.retainAtLeastUntil.getTime() < state.deactivatedAt.getTime()
         || typeof state.deactivatedByUserId !== "string" || !state.deactivatedByUserId.trim()) {
+      throw new PublicIdentityInvariantError();
+    }
+    const minimumRetention = minimumRetentionUtc(state.deactivatedAt);
+    if (!validDate(minimumRetention) || state.retainAtLeastUntil.getTime() < minimumRetention.getTime()) {
       throw new PublicIdentityInvariantError();
     }
     return {
