@@ -1,15 +1,15 @@
 # Admin panel — current workflow
 
-- Service PR **#251**; merged SA04-A1 main/base `593a03964b8407b249f7c9f5eb117ddb8b07736d`. SA04-A2/A3/A4/B/C1/C2/C3a/C3b/C3c **Mira checkpoint PASS**; A4-MIRA-01 CLOSED.
-- **C3d decomposed before handoff:** **C3d1 = shared Help question-summary query family**; **C3d2 = separate personalized For-me query**. Only C3d1 is active.
-- **Current checkpoint: SA04-C3d1 assigned to Lira.**
-- Continue cumulative [Draft implementation PR #328](https://github.com/iliya1947/vico-forum/pull/328) from accepted stable exact head **`35bbf78a91d75818318f83ddc7413a69ddc001aa`**; base/current main **`593a03964b8407b249f7c9f5eb117ddb8b07736d`**. Keep PR open/Draft/unmerged.
-- **C3d1 bounded result:** neutralize inactive topic-author identity in the shared `readHelpSolutionsPage` question-summary path used by All/Open/Active/Solutions/Mine/Want-to-help and its existing Needs-attention reader mode, reusing accepted A4 Deleted-user projection. Active authors unchanged; raw inactive identity/lifecycle must not cross Help question-summary DTOs.
-- Existing canonical category Help loader/presentation is in scope only as the shared public serialization/UI boundary for these modes: marked deleted names must be masked/localized and existing fields preserved.
-- **Preserve Help semantics:** mode eligibility/filtering, auth requirements owned by the route, filters (solution/answers/quality/relation), attention visibility/filter behavior, reply count, solved/best-answer/moderation/needs-details/duplicate state, created/activity ordering, limits and tags.
-- **Explicitly outside C3d1:** `readHelpSolutionsForMe` author projection (C3d2), Similar-question results (no author identity), attention-case submitter identity, post history, notifications, Admin Users, mentions, presence, auth/session enforcement, writers/deactivation action, SA05+, Stage6/production, #315, docs closeout and merge.
-- Completion: focused native PostgreSQL regression proving shared Help modes preserve selection/filter/order/state while active/deactivated topic authors project correctly; canonical category Help route/DOM regression for shared modes and adversarial raw marked identity; mandatory personal author inspection; applicable exact-head checks; publish stable head/evidence; **Lira STOP for Mira C3d1 checkpoint review**.
-- Lira is the only active implementer. C3d2 and later work remain unassigned; Lev/Mark remain unassigned.
+- Service PR **#251**; accepted SA04-A1 main/base `593a03964b8407b249f7c9f5eb117ddb8b07736d`. SA04-A2/A3/A4/B/C1/C2/C3a/C3b/C3c **Mira checkpoint PASS**; A4-MIRA-01 CLOSED.
+- **Current checkpoint: SA04-C3d1 implementation author-complete; Лира STOP. Next: Mira bounded C3d1 checkpoint/scope review.**
+- Cumulative [Draft implementation PR #328](https://github.com/iliya1947/vico-forum/pull/328), **stable exact head `f503fbc8796d4751ff95e4a54534da5fa4ee03bb`**, same main/base, 29 changed files, open/Draft/unmerged.
+- **Only C3d1 delivered:** `readHelpSolutionsPage` common Help question-summary family (All/Open/Active/Solved/Mine/Want-to-help and Needs-attention reader mode) now projects same-row A1 author lifecycle through accepted A4 Deleted-user public identity; active authors unchanged. `app/routes/category.tsx` canonical Help question serialization allowlists safe fields and defensively masks deleted name, while `HelpQuestionCards` localizes `deletedUser`.
+- Preserved Help mode/filter/attention eligibility, auth/permission boundaries, reply counts, solution/best-answer/moderation/quality/duplicate state, ordering, bounds, tags, dates and links. No new query/schema/writer. `readHelpSolutionsForMe` query **not changed** and remains C3d2; Similar questions and attention-case submitter identities excluded.
+- Focused direct PostgreSQL cross-mode tests and EN/HE category Help route/DOM tests passed, including raw-name/lifecycle injection. Historical Help-attention PG fixture adds already-existing A1 migration `0065` needed for joined lifecycle columns; no product migration.
+- Author reviewed C3d1 six-commit/six-file delta, current 29-file cumulative inventory and actual SQL/route/UI/tests. No confirmed current-scope C3d1 defect; this is not Mira/Lev independent review.
+- **Exact-head checks all SUCCESS:** [CI #43230069989](https://github.com/iliya194/vico-forum/actions/runs/43230069989) 2258 app/707 native PG17, 69-table schema manifest, lint/typecheck/build/Worker local smoke; [SA03 #43230069918](https://github.com/iliya194/vico-forum/actions/runs/43230069918), [SA01 #43230069974](https://github.com/iliya194/vico-forum/actions/runs/43230069974), [AP10 #43230070017](https://github.com/iliya194/vico-forum/actions/runs/43230070017) Chromium SUCCESS (AP10 all four jobs).
+- **Next action for Mira only:** independently review this bounded C3d1 on exact head, record PASS or concrete confirmed current-scope defects, then decide a separate future assignment. Лира, Лёва and Марк have no new active task; no merge.
+- **Outside C3d1:** C3d2 For-me, later readers/writers/controls, SA05+, Stage6/production, #315, documentation closeout and merge.
 
 ## Mandatory author verification
 
