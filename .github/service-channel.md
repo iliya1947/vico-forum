@@ -3,6 +3,20 @@
 Служебный PR: #251. Оперативное состояние: [workflow.md](./workflow.md). Общий контракт: [ADMIN_PANEL_IMPLEMENTATION_PLAN.md](../ADMIN_PANEL_IMPLEMENTATION_PLAN.md).
 
 
+## 2026-11-12 — Mira: SA04-G notification actor projection assigned to Lira
+
+- F remains Mira checkpoint-PASS on cumulative Draft #328 exact head `707651774932281230b3e90440e18eeb9a08b7d4`; current main/base remains `593a03964b8407b249f7c9f5eb117ddb8b07736d`.
+- Pre-action gate passed: Mira owns scope/handoff; developer explicitly continued; G is one independently completable identity-projection family across the two existing notification readers and shared inbox presentation; useful unified-inbox/Complaints behavior is preserved.
+- Current raw seam: `readNotifications` left-joins reply/mention actor and exposes `actor.name`; legacy `readReplyNotifications` inner-joins the same actor identity. Both therefore need the same A1/A4 projection. `countUnread*` and mark-read paths contain no actor identity and are not part of G.
+- Required result: a deactivated reply/mention actor's persisted notification remains in the recipient inbox with the same IDs/targets/kind/timestamps/read state/order, but its public actor name becomes neutral and no retained raw name/lifecycle/private data leaves either reader.
+- Preserve the unified inbox contract from Complaints: mixed kinds, unread-first 50-item page, independent total/unread count, recipient-owned idempotent open/read, complaint Decision/Appeal system notifications with null actor, and existing fanout/dedupe/backfill/replay semantics.
+- Canonical notifications loader should expose an explicit safe notification projection rather than forwarding arbitrary internal reader fields. Presentation reuses generic localized `deletedUser`; a deleted actor must not produce initials from the old name. No new actor image field or UI redesign.
+- Do not filter by actor activity: deactivation changes only the public actor projection. Do not filter recipient activity either; active request/session closure is checkpoint I. Do not rewrite stored notification rows or old Markdown/mentions.
+- Focused PG17 evidence must cover both reader APIs, active+inactive reply/mention actors, at least one system notification, unchanged membership/order/count/read state and raw-secret absence. Route/DOM evidence must defend .data/serialization and localized rendering against a marked raw-name fixture.
+- Excluded: producers/fanout/dedup/backfill/replay/mark-read mutation, recipient lifecycle gate, complaint private identities, H post-history, I auth, J–R writers, SA05+, Stage6/production, #315, docs and merge.
+- Finish on stable exact head with applicable checks and mandatory author inspection, publish evidence, then **Lira STOP for Mira G checkpoint review**. Lev/Mark remain unassigned.
+
+
 ## 2026-11-12 — Mira: SA04-F checkpoint review PASS
 
 - Reviewed cumulative Draft #328 exact stable head `707651774932281230b3e90440e18eeb9a08b7d4` against bounded presence checkpoint F; base/current main remains `593a03964b8407b249f7c9f5eb117ddb8b07736d`.
