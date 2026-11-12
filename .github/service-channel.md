@@ -3,6 +3,17 @@
 Служебный PR: #251. Оперативное состояние: [workflow.md](./workflow.md). Общий контракт: [ADMIN_PANEL_IMPLEMENTATION_PLAN.md](../ADMIN_PANEL_IMPLEMENTATION_PLAN.md).
 
 
+## 2026-11-12 — Mira: SA04-C3c authenticated Unread assigned to Lira
+
+- C3b remains Mira checkpoint-PASS on cumulative Draft #328 exact head `6c30b6f5a51e17f3a4722e677e60d8c5150e6baf`; current main/base remains `593a03964b8407b249f7c9f5eb117ddb8b07736d`.
+- Pre-action gate passed: this is coordination work, explicitly continued by the developer, one independently completable bounded result, preserving accepted A2–A4/B/C1/C2/C3a/C3b work. Existing Lev SA-04 plan already covers neutral public identity.
+- **Only C3c is assigned:** canonical authenticated `readUnreadForUser` summaries and `/unread` presentation must neutralize inactive topic-author identity with accepted A4 Deleted-user projection before DTO/serialization/DOM; active authors unchanged.
+- Preserve existing authentication requirement and all read-state behavior: `new` vs `unread`, first unread/latest post IDs, unread count, activity timestamp/order, title and public category/section location.
+- `section.tsx` currently consumes `readUnreadForUser` only for topic `id/state`; C3c must preserve that behavior but does not require a separate section UI identity change.
+- Completion requires focused direct PG + authenticated route/DOM regression with mixed active/deactivated authors, preserved state/order fields, mandatory author inspection, applicable exact-head checks, stable head/evidence and **Lira STOP for Mira C3c checkpoint review**.
+- C3d Help and all later SA04/deactivation work remain unassigned. Lev/Mark remain unassigned; no merge/docs/Stage6/#315 work.
+
+
 ## 2026-11-12 — Mira: SA04-C3b checkpoint review PASS
 
 - Reviewed cumulative Draft #328 exact stable head `6c30b6f5a51e17f3a4722e677e60d8c5150e6baf` against the bounded C3b Tag + Search assignment; base/current main remains `593a03964b8407b249f7c9f5eb117ddb8b07736d`.
