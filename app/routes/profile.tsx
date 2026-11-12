@@ -27,7 +27,7 @@ export async function loader({ request, params, context }: ProfileArgs) {
     const profile = await forumReaderForRequest(context).readProfile(params.userId);
     if (!profile) throw new Response("Not Found", { status: 404, headers: { "Cache-Control": "private, no-store" } });
     const isSelf = authSessionForRequest(context)?.user.id === profile.id;
-    const canEditProfile = isSelf &&
+    const canEditProfile = isSelf && profile.identityKind !== "deleted" &&
       !(await measureRestrictionsForPresentation(context,profile.id)).has("profile.edit");
     const query = new URL(request.url).searchParams;
     const privileged = await readProfilePrivilegedSections(request, context, profile.id);
