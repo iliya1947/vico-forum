@@ -1750,8 +1750,9 @@ export class DrizzleForumRepository {
     return this.database.transaction(async (tx) => {
       const [topic] = await tx.select({
         isClosed: forumTopics.isClosed, closureVersion: forumTopics.closureVersion,
-      }).from(forumTopics).where(eq(forumTopics.id, input.topicId)).for("update");
+      }).from(forumTopics).where(eq(forumTopics.id, input.topicId)).for("no key update");
       if (!topic) throw new ForumEntityNotFoundError("topic does not exist");
+      await assertActiveAccountForDrizzleMutation(tx, input.actorId);
       if (topic.closureVersion !== input.expectedClosureVersion)
         throw new ForumStateConflictError("topic closure state changed");
       if (topic.isClosed === input.isClosed)
@@ -1781,8 +1782,9 @@ export class DrizzleForumRepository {
       const [topic] = await tx.select({ id: forumTopics.id })
         .from(forumTopics)
         .where(eq(forumTopics.id, topicId))
-        .for("update");
+        .for("no key update");
       if (!topic) throw new ForumEntityNotFoundError("topic does not exist");
+      await assertActiveAccountForDrizzleMutation(tx, pinnedByUserId);
       await this.measureAdmission(tx, pinnedByUserId, "admin.forum");
       const changed = await tx.insert(forumTopicPins)
         .values({ topicId, pinnedByUserId })
@@ -1796,8 +1798,9 @@ export class DrizzleForumRepository {
       const [topic] = await tx.select({ id: forumTopics.id })
         .from(forumTopics)
         .where(eq(forumTopics.id, topicId))
-        .for("update");
+        .for("no key update");
       if (!topic) throw new ForumEntityNotFoundError("topic does not exist");
+      await assertActiveAccountForDrizzleMutation(tx, actorId);
       await this.measureAdmission(tx, actorId, "admin.forum");
       const changed=await tx.delete(forumTopicPins).where(eq(forumTopicPins.topicId, topicId)).returning({topicId:forumTopicPins.topicId});
       if(changed.length)await appendForumHistory(tx,actorId,{action:"topic.unpinned",targetType:"topic",targetId:topicId,context:{before:true,after:false}});
