@@ -1,3 +1,20 @@
+# Лира — актуальное назначение: SA04-J1 (2026-11-13)
+
+Current main: `44d6b69a8d235cc8b1ee30953839be71e6ab836a`.
+Accepted full J technical plan: #6858869802.
+
+Implement **J1 only: the shared Drizzle AccountState mutation-admission seam needed by Forum transactions**.
+
+Required result: a Drizzle caller-owned transaction can perform the existing authoritative AccountState mutation admission and keep the lifecycle row lock through its own commit/rollback, with the existing native API and active/inactive/missing + unavailable/unexpected semantics preserved.
+
+Done when focused evidence covers those state/error outcomes and transaction-local lock behavior. Do **not** wire any ForumRepository mutation yet. No J2+, K+, schema/migration/dependency/public-contract expansion.
+
+Start a new cumulative Draft SA04-J implementation PR from current main. After implementation, inspect your bounded delta yourself, publish one stable exact head with applicable evidence, and **STOP for Mira J1 checkpoint review**.
+
+Lev/Mark remain unassigned.
+
+---
+
 # Лира — SA04-I5e final whole-I source/evidence sweep; AUTHOR STOP → Mira coordinator
 
 - **Assigned scope:** I5e only, final cumulative author inspection/evidence mapping; no implementation change. Reviewed cumulative [Draft #329](https://github.com/iliya1947/vico-forum/pull/329) exact `74c6f43ae2d67526e2ad17aa50392aebf41abbca` versus unchanged `main`/`base` `13456a17f23c1385bef8ab11c735f43d201edd02`. Exact GitHub compare: 52 cumulative commits, 8 paths, 2 runtime files + 5 test files + `tsconfig.node.json`; no schema/migration/dependency additions. The implementation SHA remains unchanged during I5e.
