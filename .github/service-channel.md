@@ -4920,3 +4920,16 @@ After author inspection and applicable checks, publish one stable exact #329 hea
 - **Final exact-head all SUCCESS:** [CI #43400246709](https://github.com/iliya1947/vico-forum/actions/runs/43400246709) **2269/2269 application tests (184 files), 739/739 native PostgreSQL17 tests (69 files)**, migration history guard/schema manifest/lint/typecheck/build/Workers smoke. [SA01 #43400246683](https://github.com/iliya1947/vico-forum/actions/runs/43400246683), [SA03 #43400246745](https://github.com/iliya1947/vico-forum/actions/runs/43400246745), [AP10 #43400246722](https://github.com/iliya1947/vico-forum/actions/runs/43400246722) Chromium SUCCESS, AP10 all four jobs.
 - **Lira AUTHOR STOP; next Mira independent bounded I4b checkpoint** on `bd717165685095efac74ddd12a9a3339c6008df2`: PASS or verified current-scope defect packet. I4c–I4d/I5/J+, Lev/Mark unassigned; no docs closeout, merge, Stage6/production, #315 or SA05+.
 
+
+
+## 2026-11-13 — SA04-I4b Mira checkpoint PASS
+
+Mira reviewed cumulative Draft #329 exact `bd717165685095efac74ddd12a9a3339c6008df2` against the assigned I4b boundary, current project/Stage contracts and pinned Better Auth v1.7.7 sources.
+
+- Confirmed the current BA existing-user writes are canonical single-target `user.update` paths selected by user `id` or normalized `email`; the underlying hooks reach the guarded adapter persistence seam.
+- Confirmed I4b resolves the persisted target, holds its PostgreSQL `FOR NO KEY UPDATE` lock, rechecks active AccountState and executes the original adapter write on the same native connection through COMMIT.
+- Confirmed writer-first and deactivation-first race ordering, canonical HTTP late denial, missing-target semantics, active controls/new-user preservation and unavailable-vs-unexpected storage failure handling.
+- No physical user deletion, account/password/provider write closure or destructive session work was pulled into I4b; those remain I4c/I4d.
+- Exact-head CI #43400246709: 2269 app + 739 PostgreSQL17, focused I4a+I4b 14/14 (I4b 5/5); SA01/SA03/AP10 Chromium workflows SUCCESS.
+
+**Verdict: PASS — 0 confirmed current-scope I4b defects.** STOP before I4c assignment. Lev/Mark remain unassigned.
