@@ -95,6 +95,67 @@ afterAll(async () => {
 });
 
 describe("SA04-I4a Better Auth 1.7.7 native session write atomicity", () => {
+  it("locks real signup transaction-context session INSERT before concurrent deactivation", async () => {
+    const email = "i4a-transaction-signup@example.test";
+    const paused = pauseNativeQuery(writer, sql => /^insert into "session"\\s/i.test(sql));
+    try {
+      const signing = auth.handler(new Request(`${origin}/api/auth/sign-up/email`, {
+        method: "POST",
+        headers: { Origin: origin, "content-type": "application/json",
+          "cf-connecting-ip": `203.0.113.${ip++}` },
+        body: JSON.stringify({ name: "I4a transaction", email, password }),
+      }));
+      await paused.entered; // BA runWithTransaction supplied a guarded callback adapter.
+      const found = (await deactivator.query<{ id: string }>(
+        'select id from "user" where email=$1', [email],
+      )).rows[0];
+      expect(found?.id).toBeTruthy();
+      await deactivator.query("set lock_timeout='120ms'");
+      await expect(deactivator.query(deactivateSql, [found.id]))
+        .rejects.toMatchObject({ code: "55P03" });
+      paused.resume();
+      const created = await signing;
+      expect(created.status).toBe(200);
+      expect(created.headers.getSetCookie().some(x => x.includes("session_token="))).toBe(true);
+      expect((await deactivator.query<{ n: number }>(
+        'select count(*)::int n from "session" where user_id=$1', [found.id],
+      )).rows[0]?.n).toBe(1);
+    } finally {
+      paused.resume();
+      paused.restore();
+      await deactivator.query("set lock_timeout='0'");
+    }
+  }, 30_000);
+
+  it("denies signup session after a deactivation wins before the fallback transaction write", async () => {
+    const email = "i4a-transaction-loser@example.test";
+    const paused = pauseNativeQuery(writer, sql => sql === "BEGIN");
+    try {
+      const signing = auth.handler(new Request(`${origin}/api/auth/sign-up/email`, {
+        method: "POST",
+        headers: { Origin: origin, "content-type": "application/json",
+          "cf-connecting-ip": `203.0.113.${ip++}` },
+        body: JSON.stringify({ name: "I4a transaction loser", email, password }),
+      }));
+      await paused.entered; // I3 create.before passed; I4a final admission has not started.
+      const found = (await deactivator.query<{ id: string }>(
+        'select id from "user" where email=$1', [email],
+      )).rows[0];
+      expect(found?.id).toBeTruthy();
+      await deactivator.query(deactivateSql, [found.id]);
+      paused.resume();
+      const denied = await signing;
+      expect(denied.status).toBe(401);
+      expect(denied.headers.getSetCookie().some(x => x.includes("session_token="))).toBe(false);
+      expect((await deactivator.query<{ n: number }>(
+        'select count(*)::int n from "session" where user_id=$1', [found.id],
+      )).rows[0]?.n).toBe(0);
+    } finally {
+      paused.resume();
+      paused.restore();
+    }
+  }, 30_000);
+
   it("holds the active user-row lock through actual session INSERT and commits before deactivation", async () => {
     const { userId } = await signUp("create-first");
     const direct = (await auth.$context).internalAdapter;
@@ -209,6 +270,34 @@ describe("SA04-I4a Better Auth 1.7.7 native session write atomicity", () => {
       'select id,token from "session" where user_id=$1 order by id', [userId],
     )).rows).toEqual(before);
   });
+
+  it("resolves a losing pre-routing due refresh to guest without a new cookie or session mutation", async () => {
+    const { userId, cookie, session } = await signUp("preroute-refresh-race");
+    await writer.query(`update "session" set expires_at=now()+interval '5 days',
+      updated_at=now()-interval '2 days' where token=$1`, [session.token]);
+    const snapshot = (await writer.query<{
+      id: string; token: string; expires_at: Date; updated_at: Date;
+    }>('select id,token,expires_at,updated_at from "session" where token=$1', [session.token])).rows[0];
+    const client = new Client({ connectionString: url, options: `-c search_path=${schema}` });
+    const paused = pauseNativeQuery(client, sql => /for no key update/i.test(sql));
+    const runtime = createHyperdriveAuthRuntime(url, env, () => client);
+    try {
+      const resolving = runtime.getSession(new Headers({ Cookie: cookie }));
+      await paused.entered;
+      await deactivator.query(deactivateSql, [userId]);
+      paused.resume();
+      const result = await resolving;
+      expect(result.session).toBeNull();
+      expect(result.headers.getSetCookie().some(x => x.includes("session_token="))).toBe(false);
+    } finally {
+      paused.resume();
+      paused.restore();
+    }
+    expect((await writer.query<{
+      id: string; token: string; expires_at: Date; updated_at: Date;
+    }>('select id,token,expires_at,updated_at from "session" where token=$1', [session.token])).rows[0])
+      .toEqual(snapshot);
+  }, 30_000);
 
   it("denies canonical due-session HTTP refresh if deactivation commits between preflight and locked UPDATE", async () => {
     const { userId, cookie, session } = await signUp("refresh-race");
