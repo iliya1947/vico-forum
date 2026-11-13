@@ -1,22 +1,16 @@
 # ChatGPT-6 — personal log
 
-## Active assignment — SA04-J8
+## SA04-J8 — implementation complete / AUTHOR STOP
 
-Continue cumulative Draft #330 from accepted J7 exact `5e76474908156d6acbab1d2cf98138e6a37cabc8`.
+- Cumulative Draft #330 stable exact head `41e26f191357aacde3de2dae3a3c7fed20756a30`, open/draft/unmerged. Accepted baseline J7 Mira PASS exact `5e76474908156d6acbab1d2cf98138e6a37cabc8`.
+- `c4f366d51fcce54d05db5415ba065cf7243bb747` — `db/forum-repository.ts` only: `markTopicSolved` and `selectBestAnswer` retain one short existing Drizzle transaction each. Existing topic mutex becomes `FOR NO KEY UPDATE` to permit Complaint topic FK `KEY SHARE` while still serializing solution/content mutations. All applicable existing domain validations (topic, author Own, solved/duplicate, candidate topic membership, first post) happen before shared same-transaction trusted actor guard.
+- For Help `markTopicSolved`, pending duplicate signal rows lock in stable `id` order with `FOR NO KEY UPDATE` before actor admission; then existing Any-only `admin.forum` admission, topic solved update, pending duplicate supersession, Any-only `topic.solved` History last. Non-Help path does not alter Help signals.
+- For Help real `selectBestAnswer` changes, old/new answer rows lock by sorted post ID `FOR NO KEY UPDATE`, followed by all affected pending old-answer needs-review/outdated plus topic duplicate signal rows by sorted signal ID `FOR NO KEY UPDATE`, **before** the shared actor guard. After admission, Any-only `admin.forum` measure, unchanged old-answer `best-answer-replaced` moderation, new-answer moderation clearing, exact supersession and topic best-answer update; Any-only real-change `topic.bestAnswerChanged` History last.
+- Active same-answer selection now returns unchanged `topicAuthorId/isSolved` without redundant topic UPDATE or History, but only **after** authoritative actor admission (and existing Any measure). Inactive/missing cannot use same-answer no-op or any real Own/Any effect. No HTTP action implementation or permissions change.
+- `4db14b45a24336c1401722434c254c3de976e663` + `b0c1c008eda2e800d3a982e0535532bbba690eff` — new `tests/database/sa04-forum-solution-lifecycle.test.ts` with **13 PostgreSQL17 cases**. Active Own/Any solved/selection/History; Help old/new moderation and pending signals including unrelated pending preservation; active same-answer no-op; missing/unauthorized/confirmed-duplicate/cross-topic/first-post; inactive/missing Own/Any facts; state-first and writer-first lifecycle race directions for both writers with actor lock through COMMIT; old/new answer J3-style post-lock contention; pending signal lock/withdrawal overlap; same-actor Complaint-style post `FOR UPDATE` → actor `FOR NO KEY UPDATE` → FK `KEY SHARE` compatibility under competing solution topic mutex. Named native PostgreSQL lock waits and before/after facts.
+- `41e26f191357aacde3de2dae3a3c7fed20756a30` — `app/forum/write-actions.test.ts` canonical `markSolved`/`selectBestAnswer` Own/Any injected late AccountInactive/Missing errors map through unchanged `runForumMutation` to generic **401 unauthenticated**, `private, no-store`, no redirect/solutionPrompt/false success/lifecycle detail. Existing Stage4 solution-confirmation redirects, permission/origin/scope, unexpected and storage failures unchanged.
+- Personally inspected all four bounded J8 commit diffs; only three implementation/test files changed. No J9+, Help signal/solution moderation standalone writer changes, Complaint domain changes, schema/migrations/permissions/dependencies, #315, K, SA-05, permanent docs or Stage 6.
+- **Exact-head GitHub Actions SUCCESS:** CI run `43518908957`: native PG17 **844/844** (new J8 **13/13**, Admin History existing **28/28**); application/unit **2275/2275** (new canonical action test), lint/typecheck/build/schema/migrations PASS. SA-03 unified profile Chromium run `43518908959` SUCCESS. AP-10 isolated browser run `43518908974` SUCCESS **4/4 jobs**. No red-run remediation or production code corrections after initial J8 commit.
+- These are synthetic GitHub Actions/local/browser checks, not production deployment or Owner visual acceptance.
 
-Deliver **J8 only** for `markTopicSolved` and `selectBestAnswer`.
-
-Target:
-- topic/dependent answer+signal locks before actor, with stable ordering and accepted non-key lock compatibility;
-- same-transaction AccountState guard for both Own and Any;
-- Any-only `admin.forum` measure remains after lifecycle;
-- preserve all existing author/duplicate/candidate/first-post/domain rules;
-- preserve solved and best-answer side effects, Help moderation/signal transitions, returned selection data and Any-only real-transition History;
-- active same-answer stays a no-op success; inactive/missing gets no success and changes no topic/post/signal/History facts.
-
-Provide focused native PG active/inactive/missing/no-op facts, both lifecycle race directions, edit/solution + signal + Complaint FK lock-compatibility evidence, plus applicable solved/best-answer/History/AP-10/canonical action regressions.
-
-No J9+, #315, K, SA-05, schema/migration/permission/dependency, docs or Stage 6 work.
-
-After exact-head checks and bounded self-inspection: **AUTHOR STOP for Mira J8 review**.
-
+**Lira AUTHOR STOP → Mira bounded J8 coordinator review** of Draft #330 exact stable `41e26f191357aacde3de2dae3a3c7fed20756a30`. J9–J12, Lev, Mark unassigned. Retain J7 permanent doc-lock wording update for separate docs closeout. Whole-J review only after J12.
