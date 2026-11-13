@@ -890,6 +890,48 @@ describe("forum write route actions", () => {
     expect(missingReason.setHelpSolutionModeration).not.toHaveBeenCalled();
   });
 
+  it("maps all four late Help signal AccountState denials to private 401 without false redirect", async () => {
+    for (const intent of ["submitHelpSignal", "withdrawHelpSignal", "acceptHelpSignal", "rejectHelpSignal"] as const) {
+      for (const error of [new AccountInactiveError(), new AccountMissingError()]) {
+        const w = writer();
+        const method = intent === "submitHelpSignal"
+          ? w.createHelpSignal
+          : intent === "withdrawHelpSignal"
+            ? w.withdrawHelpSignal : w.resolveHelpSignal;
+        method.mockRejectedValueOnce(error);
+        const ctx = context(w, true, ["forum.helpSignal.create", "forum.helpNeedsDetails.manage"]);
+        if (intent === "acceptHelpSignal" || intent === "rejectHelpSignal") {
+          ctx.set(forumReaderContext, {
+            readHelpSignal: vi.fn(async () => ({
+              id: "signal-1", kind: "needs-details", topicId: "help-question",
+              targetPostId: null, proposedOriginalTopicId: null,
+              submittedByUserId: "other-user", explanation: "Explain this",
+              status: "pending", createdAt: new Date(),
+              resolvedByUserId: null, resolvedAt: null,
+            })),
+          } as never);
+        }
+        const result = await topicAction({
+          request: request("/en/topics/help-question", {
+            intent, kind: "needs-details", explanation: "Missing details",
+            signalId: "signal-1", actorId: "forged",
+          }),
+          params: { locale: "en", topicId: "help-question" },
+          context: ctx,
+        });
+        expect(result).toMatchObject({
+          data: { error: "unauthenticated" },
+          init: { status: 401, headers: { "Cache-Control": "private, no-store" } },
+        });
+        expect(result).not.toBeInstanceOf(Response);
+        expect(JSON.stringify(result)).not.toMatch(/AccountInactive|AccountMissing|deactivated|Location|ok.true/);
+        expect(method).toHaveBeenCalledWith(expect.objectContaining({
+          actorId: "session-user",
+        }));
+      }
+    }
+  });
+
   it("routes Help signals through their exact server permissions", async () => {
     const submitWriter = writer();
     const submitted = await topicAction({
