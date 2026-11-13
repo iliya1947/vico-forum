@@ -4933,3 +4933,17 @@ Mira reviewed cumulative Draft #329 exact `bd717165685095efac74ddd12a9a3339c6008
 - Exact-head CI #43400246709: 2269 app + 739 PostgreSQL17, focused I4a+I4b 14/14 (I4b 5/5); SA01/SA03/AP10 Chromium workflows SUCCESS.
 
 **Verdict: PASS — 0 confirmed current-scope I4b defects.** STOP before I4c assignment. Lev/Mark remain unassigned.
+
+
+## 2026-11-13 — SA04-I4c assignment
+
+Mira checkpointed I4b PASS at exact `bd717165685095efac74ddd12a9a3339c6008df2`. The next bounded author result is **I4c only**.
+
+- Close AccountState admission→write races for current Better Auth **account** persistence that targets an existing user/account: create/link/update/updateMany/delete, including current password/provider-token/linking paths.
+- Resolve the authoritative target from Better Auth's canonical persisted write shape rather than submitted identity, and keep the relevant existing user active through the bounded account write/commit under concurrent deactivation.
+- Preserve new-registration account creation for its active newly-created user and current Better Auth validation, hooks/facts and successful password/provider/linking behavior.
+- No transaction/lock may span OAuth/provider network exchange; only the persistence seam belongs to this checkpoint.
+- Focused BA1.7.7 + PostgreSQL17 evidence must cover current account write shapes/selectors, active behavior, both race orderings and unavailable-vs-unexpected failure semantics.
+- No physical user deletion, no I4d destructive session work/own inactive signout exception, no I5/J+, schema/product expansion unless required, docs/merge/#315/SA05+/Stage6.
+
+After author inspection and applicable green checks, publish one stable exact #329 head and STOP for Mira I4c review. Lev/Mark remain unassigned.
