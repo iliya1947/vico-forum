@@ -1,5 +1,15 @@
 # Admin panel — communication
 
+## 2026-11-13 — SA04-J3a assignment → Lira
+
+- J1 and J2 remain Mira checkpoint-PASS. Start from cumulative Draft #330 exact `22a6733ee661e22665406974d5a3ac515866fd51`, base/main `44d6b69a8d235cc8b1ee30953839be71e6ab836a`; keep accepted publication behavior.
+- **Lira owns J3a only:** authoritative AccountState admission for existing repository mutations `reviseTopicTitle` and `revisePostBody`, including their currently supported `correctionScope: "own" | "any"` paths, immutable revision writes, current-revision CAS update, and conditional source-locale Admin History within the same transaction.
+- Derive lifecycle authority from the actual authenticated `authorId` actor supplied to these writer calls, not the existing topic/post author's persisted identity. A missing/inactive actor must not create a revision, advance current revision, append History, or receive successful mutation output even when prior request admission passed while active. Preserve original owner/any authorization, measures, revision conflict semantics and active behavior.
+- Reuse accepted J1 Drizzle guard in each actual caller-owned revision transaction, with lock ordering consistent with current revision and Admin History paths. Preserve unavailable vs unexpected classifications; canonical mutation errors must fail closed and private/no-store, including late inactive/missing actor.
+- Focused PostgreSQL17 evidence: active owner and permitted any/Admin controls; missing/inactive admission; denied immutability of revision/current pointer/History; both lifecycle race directions with final write and COMMIT ordering; applicable existing revision/source-locale regressions and exact-head CI.
+- **Not in J3a:** `editPublishedPost` and its draft/attachment receipt replay (J3b); `ForumService.correctTopicTitleSourceLocale` / `correctPostBodySourceLocale` early same-locale successful no-op and their canonical route boundary (J3c); J4+, standalone attachment K, SA05, #315 remediation, documentation and Stage6.
+- Lira continues Draft #330, personally inspects J3a delta, publishes stable exact head and applicable checks, then **AUTHOR STOP for Mira J3a checkpoint review**. J3b/J3c, J4–J12, Lev and Mark remain unassigned.
+
 ## 2026-11-13 — Mira bounded SA04-J2 checkpoint PASS
 
 - Reviewed cumulative Draft #330 exact `22a6733ee661e22665406974d5a3ac515866fd51` from accepted J1 `35902e3ebd7636121b3a4af1e67b3da8ec365be2`: complete 8-commit / 5-file J2 delta against the accepted publication scope and current source-of-truth.
