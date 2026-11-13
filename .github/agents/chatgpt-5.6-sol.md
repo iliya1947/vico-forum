@@ -2368,3 +2368,13 @@ Do not treat a user's anger, criticism or request to think as implicit permissio
 - Acceptance is outcome-based: no admission→write race against concurrent deactivation; preserve I3 create gate, active sliding/cookie behavior, SA-02 successful facts and failure classification.
 - I4b existing-user writes, I4c account writes, I4d destructive sessions/own-signout closure, I5/J+ remain unassigned.
 - Next is Lira author delivery on one stable exact head, then Mira bounded I4a checkpoint review. Lev/Mark remain stopped.
+
+
+## 2026-11-13 — SA04-I4a checkpoint review: CHANGES REQUIRED
+
+- Reviewed exact `84885a2029267d31fa5b89bf84ef85fc2e9b72be`, full four-path I4a delta, I1–I3 preservation chain and exact Better Auth v1.7.7 transaction/adapter/session source.
+- Confirmed **I4A-MIRA-01:** Better Auth as-is `runWithTransaction` supplies the raw adapter when project Drizzle transactions are disabled; the I4a Proxy is not propagated into that context, so real email signup session create can fall back to unlocked I3 admission and race deactivation before INSERT.
+- Confirmed **I4A-MIRA-02:** when a due pre-routing session loses the final update-lock race to deactivation, guard Unauthorized escapes direct `auth.api.getSession`/runtime and breaks accepted I1 guest/null behavior; current new test covers HTTP route only.
+- Confirmed **I4A-MIRA-03:** new wrapper-owned raw transaction/token SQL availability errors are not fed through the existing unavailable classifier on normal auth HTTP handling; the added outage test covers only AccountState locked-read failure.
+- Exact-head Actions are green but do not exercise these chains. Full remaining bounded sweep found no fourth I4a defect; I4b/c/d omissions remain future work.
+- Verdict **CHANGES REQUIRED**. Return all three as one bounded Lira correction package; no Lev review.
