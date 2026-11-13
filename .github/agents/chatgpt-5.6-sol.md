@@ -2322,3 +2322,13 @@ Do not treat a user's anger, criticism or request to think as implicit permissio
 - Confirmed no I2–I4 enforcement was smuggled into I1 and no missing later checkpoint was treated as an I1 defect.
 - Exact-head workflow evidence rechecked SUCCESS.
 - Verdict: **PASS, 0 current-scope defects.** Stop before I2 assignment.
+
+
+## 2026-11-13 — SA04-I2 checkpoint review
+
+- Reviewed exact `5ac398f472d18e32e9ab836eef99f6f62a6de4ee` and full I1→I2 delta.
+- Confirmed `I2-MIRA-01`: non-get-session actor preflight can run Better Auth sliding session refresh before A2 active-account admission because `getAuthoritativeSessionFromCtx` does not suppress refresh.
+- Consequence: inactive due session may receive persisted expiry/update mutation and Set-Cookie before the request is rejected, contradicting the accepted I2 ordering requirement.
+- Existing tests do not cover due inactive session on a protected non-get-session endpoint.
+- Full remaining I2 sweep found no additional current-scope defects; I3/I4 omissions remain future checkpoints.
+- Verdict: **CHANGES REQUIRED**. Return one correction package to Lira; no Lev review.
