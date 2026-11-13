@@ -1,11 +1,26 @@
 # Admin panel — current workflow
 
 - **Service PR #251. Current main: `44d6b69a8d235cc8b1ee30953839be71e6ab836a`. SA04-I #329 merged.**
-- **SA04-J full technical plan: Mira scope/fit PASS.** Accepted plan: [#6858869802](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6858869802).
-- Mira verified the plan against the accepted SA04 master J boundary, current Forum writer/service/repository seams, current #315 head `fc32f0ba36120b89a27831993519a00f2a40b953`, and the J↔K separation.
-- **No confirmed scope/fit defect.** J remains all authoritative Forum actor writes/replays/final publication; standalone attachment APIs remain K and J does not close K.
-- Lev planning complete / STOP. Lira/Mark unassigned. Implementation PR/head: none.
-- **Next bounded coordinator task:** decompose the accepted complete J plan into bounded Lira implementation substeps and prepare only the first author handoff. Lira must not receive full J at once.
+- **SA04-J technical plan accepted:** Lev plan [#6858869802](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6858869802), Mira scope/fit PASS.
+- **Developer-fixed execution rule:** Lev plans the full technical stage; Lira implementation is split into bounded checkpoints.
+- **J implementation decomposition:**
+  1. **J1 — shared Drizzle AccountState mutation admission seam** for Forum transactions; no Forum mutation integration yet.
+  2. **J2 — publication:** createTopic / createTopicWithInitialPost / createPost, including replay and transaction-side final bind/receipt.
+  3. **J3 — revisions/edit/source-locale:** reviseTopicTitle / revisePostBody / editPublishedPost + the two same-locale service success paths.
+  4. **J4 — profile write:** updateProfile.
+  5. **J5 — read-state write:** advanceTopicReadState.
+  6. **J6 — inbox acknowledgement:** markNotificationRead / markReplyNotificationRead.
+  7. **J7 — topic state moderation:** setTopicClosed / pinTopic / unpinTopic.
+  8. **J8 — solved/best answer:** markTopicSolved / selectBestAnswer.
+  9. **J9 — Help Signals:** createHelpSignal / withdrawHelpSignal / resolveHelpSignal.
+  10. **J10 — Help solution moderation:** setHelpSolutionModeration.
+  11. **J11 — duplicates/appeals:** confirm/remove duplicate, appeal, resolve duplicate appeal.
+  12. **J12 — cumulative J closure:** preserve F presence, complete cross-family lock/race map and connected native/HTTP/Worker/browser evidence for the full cumulative J head; no new family unless a verified J gap is found.
+- **Active checkpoint: J1 only. Lira owns J1.**
+- **J1 result:** extend the existing AccountState mutation admission so a Drizzle Forum transaction can perform authoritative active/missing/inactive admission and hold the lifecycle row lock through caller commit/rollback, while preserving the existing native AccountState API and error classification.
+- **J1 done when:** focused tests prove active/inactive/missing, unavailable-vs-unexpected classification and transaction-local lock behavior; no ForumRepository mutation is wired to the new seam yet; no schema/migration/dependency/public-contract change.
+- Lira starts a new cumulative **Draft SA04-J implementation PR from current main**, implements J1 only, personally inspects the bounded result, publishes exact head/evidence, then **STOPs for Mira J1 checkpoint review**.
+- **Lev/Mark unassigned. J2+ are not assigned.**
 
 ## I5 author checkpoint decomposition
 
