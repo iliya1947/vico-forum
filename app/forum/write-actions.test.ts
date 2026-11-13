@@ -368,6 +368,29 @@ describe("forum write route actions", () => {
     expect(crossOrigin.pinTopic).not.toHaveBeenCalled();
   });
 
+  it("maps late pin/unpin lifecycle rejection to private 401 without success redirect", async () => {
+    for (const intent of ["pinTopic", "unpinTopic"] as const) {
+      for (const error of [new AccountInactiveError(), new AccountMissingError()]) {
+        const w = writer();
+        vi.mocked(w[intent]).mockRejectedValueOnce(error);
+        const result = await topicAction({
+          request: request("/en/topics/t", { intent }),
+          params: { locale: "en", topicId: "t" },
+          context: context(w, true, ["forum.topic.pin"]),
+        });
+        expect(result).toMatchObject({
+          data: { error: "unauthenticated" },
+          init: { status: 401, headers: { "Cache-Control": "private, no-store" } },
+        });
+        expect(result).not.toBeInstanceOf(Response);
+        expect(JSON.stringify(result)).not.toMatch(/AccountInactive|AccountMissing|deactivated|Location/);
+        expect(w[intent]).toHaveBeenCalledExactlyOnceWith({
+          topicId: "t", actorId: "session-user",
+        });
+      }
+    }
+  });
+
   it("advances only the authenticated user's topic read state", async () => {
     const forumWriter = writer();
     await topicAction({
