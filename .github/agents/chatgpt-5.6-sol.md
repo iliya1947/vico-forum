@@ -2527,3 +2527,14 @@ Do not treat a user's anger, criticism or request to think as implicit permissio
 - **Excluded:** I5e final cumulative sweep/evidence map and whole-I author inspection; J–R; SA05 deactivation operation/UI; #315 remediation; live Google/external OAuth; Stage6/production; physical deletion/reactivation/forced foreign-session controls; schema/product expansion; docs closeout or merge.
 - Publish one stable exact #329 head with actual browser evidence and exact CI/workflow results, personally inspect the bounded delta/behavior, then **STOP for Mira bounded I5d checkpoint review**. I5e and Lev/Mark remain unassigned.
 
+## 2026-11-13 — SA04-I5d Mira bounded checkpoint PASS
+
+- Reviewed cumulative Draft #329 exact `74c6f43ae2d67526e2ad17aa50392aebf41abbca` from accepted I5c `23554aad29ddd23edb540cddc2069533ebe99329`.
+- Exact I5d delta: one commit, only `tests/browser/settings-account/check.py` (+123/-3); no production/runtime/schema/migration/dependency/docs change.
+- Verified the new browser sequence mounts two genuine Account & security pages before fixture-only deactivation. Fresh document and React Router `.data` requests from both old cookie jars re-enter the built Worker auth boundary and return private/no-store 401 without protected Account forms/session projection or captured credential/session/provider secrets.
+- Verified the old already-mounted password form is submitted by real Chromium click after deactivation, not reconstructed through a direct test request. The real route returns private 401; persisted account credential/provider fields and both retained session rows remain byte-for-byte-equivalent to the pre-deactivation snapshot for the asserted columns.
+- Verified the second untouched stale tab's real header Sign out invokes canonical `/api/auth/sign-out`; only its signed current retained session is deleted and its session cookie disappears. The first retained inactive session remains stored but cannot open Account & security. Unrelated active account remains usable; public forum remains readable.
+- Existing accepted SET-05 active behavior, freshness/stale identity, rate-limit and locale/RTL/responsive assertions still execute in the same reused Settings browser job. No separate workflow or browser OAuth simulation was added.
+- Exact-head checks independently rechecked: CI #43439236882 SUCCESS — 184/184 app files, 2269/2269 tests; 69/69 PG17 files, 765/765 tests; AP-10 #43439236624 SUCCESS 4/4 browser jobs with all four new lifecycle checkpoints; SA-01 #43439236742 and SA-03 #43439236903 SUCCESS.
+- **Verdict: PASS — 0 confirmed current-scope I5d defects.** STOP. I5e remains unassigned until separate continuation; Lev/Mark remain stopped.
+
