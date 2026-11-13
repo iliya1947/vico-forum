@@ -92,8 +92,13 @@ describe("Package 6 populated 0054 to 0055 PostgreSQL upgrade",()=>{
       for(const file of (await readdir("drizzle")).filter(x=>/^\d{4}_.+\.sql$/.test(x)&&x<"0055_").sort()){
         await upgrade.query((await readFile(`drizzle/${file}`,"utf8")).replaceAll('"public".',`"${upgradeSchema}".`));
       }
-      // Fixture remains at pre-0055 state, but current Drizzle inserts AP-08 columns.
+      // This deliberately tests pre-0055 notification history, while fixture topics
+      // are created by the current Forum writer (AP-08 + SA04-J2 expectations).
       await upgrade.query("alter table forum_topics add column is_closed boolean not null default false, add column closure_version integer not null default 0");
+      await upgrade.query(`alter table "user"
+        add column deactivated_at timestamptz,
+        add column deactivated_by_user_id text,
+        add column retain_at_least_until timestamptz`);
       for(const id of ["upgrade-author","upgrade-reporter-one","upgrade-reporter-two","upgrade-reviewer"])
         await upgrade.query('insert into "user"(id,name,email) values($1,$1,$2)',[id,`${id}@test.invalid`]);
       const forumUpgrade=new DrizzleForumRepository(drizzle(upgrade),{cooldownMs:0,now:()=>new Date()},historicalForumMeasureAdmission);
