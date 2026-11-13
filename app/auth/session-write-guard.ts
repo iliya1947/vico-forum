@@ -65,7 +65,7 @@ export function guardBetterAuthSessionWrites(
             model?: unknown;
             data?: { userId?: unknown };
             where?: { field?: unknown; value?: unknown; operator?: unknown }[];
-            update?: { userId?: unknown };
+            update?: { userId?: unknown; id?: unknown };
           } | undefined;
           const sessionWrite = command?.model === "session" &&
             (property === "create" || property === "update");
