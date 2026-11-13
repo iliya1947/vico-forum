@@ -1,12 +1,12 @@
 # Admin panel — current workflow
 
 - Service PR **#251**. Main/base **`13456a17f23c1385bef8ab11c735f43d201edd02`**; previously accepted SA04-A1 + A2–H are merged.
-- **Current checkpoint: SA04-I2 Mira repeat checkpoint PASS on exact `b7dc303ee0d10312e5d41af9889d26d6b264a6e6`; `I2-MIRA-01` CLOSED, 0 remaining confirmed current-scope I2 defects.** PR #329 remains cumulative Draft; I3–I5/J+ unassigned.
+- **Current checkpoint: SA04-I3 assigned to Lira in cumulative Draft PR #329 from accepted I2 head `b7dc303ee0d10312e5d41af9889d26d6b264a6e6`.** I4–I5/J+ unassigned; Lev/Mark STOP.
 - Cumulative [Draft implementation PR #329](https://github.com/iliya1947/vico-forum/pull/329), branch `chatgpt/sa04-i1-pre-routing-session-admission`, exact `b7dc303ee0d10312e5d41af9889d26d6b264a6e6`. Open/Draft/unmerged; 15 cumulative commits, 3 I2-MIRA-01 correction commits; two changed project files only. Original I1 and I2 scope retained.
 - **Correction:** all I2 protected-actor preflights bypass cookie cache and disable session refresh until the persisted A2 active-account check succeeds. Due inactive session cannot slide/update or emit refresh cookie; active normal operations reuse their one checked session; only due active session returns refresh ownership to the canonical Better Auth endpoint. Existing I1 routing, direct API and inactive own sign-out retained.
 - **Author evidence:** real Better Auth 1.7.7 + PostgreSQL 17 due inactive/active `/list-sessions` regression asserts 401/no Set-Cookie/no DB update versus active 200/refresh. Four existing OAuth-link single-lookup regressions failed after the first broader correction, then recovered after narrowing the active due refresh path. Author inspected all three corrective diffs plus final scoped code/tests and pinned upstream behavior.
 - **All exact-head checks SUCCESS:** [CI #43379564521](https://github.com/iliya1947/vico-forum/actions/runs/43379564521): 2269 app + 722 native PG17, migration/schema/build/lint/typecheck/Worker; [SA01 #43379564649](https://github.com/iliya1947/vico-forum/actions/runs/43379564649), [SA03 #43379564578](https://github.com/iliya1947/vico-forum/actions/runs/43379564578), [AP10 #43379564500](https://github.com/iliya1947/vico-forum/actions/runs/43379564500) all SUCCESS; AP10 4 jobs.
-- **Next:** Mira reviews bounded correction I2-MIRA-01 and I2-preservation against stable `b7dc303ee0d10312e5d41af9889d26d6b264a6e6`. No docs closeout, merge, SA05+, Stage6/production or #315. Lira STOP.
+- **Next after I3 author STOP:** Mira bounded I3 checkpoint review on the new stable exact head. No docs closeout, merge, I4+, SA05+, Stage6/production or #315.
 
 
 ## Mandatory author verification
@@ -389,3 +389,17 @@ Before any project-changing action or agent handoff, Mira must check in this ord
 - Exact-head CI #43379564521, SA01 #43379564649, SA03 #43379564578 and AP10 #43379564500 are SUCCESS.
 - `I2-MIRA-01` is **CLOSED**. **PASS — 0 remaining confirmed current-scope I2 defects.**
 - I3–I5/J+ remain separate future checkpoints, not I2 defects. #329 stays cumulative Draft; no Lev review is spent on this intermediate checkpoint.
+
+
+## 2026-11-13 — SA04-I3 bounded author handoff
+
+- Baseline: current main `13456a17f23c1385bef8ab11c735f43d201edd02`; cumulative Draft #329 accepted I2 exact head `b7dc303ee0d10312e5d41af9889d26d6b264a6e6`.
+- **Only I3 is assigned to Lira:** authoritative target admission immediately before Better Auth creates a new session.
+- Required result: if the server-resolved target user is persisted inactive or missing, **no new Better Auth session may be created or issued**, including guest/returning flows with no prior active request session.
+- The admission must be unconditional with respect to SA-02 telemetry/observer configuration and must compose with the existing session-create `after` fact/evidence machinery rather than replacing it. Refused creation must not emit a successful `auth.sessionCreated` fact; successful active creation semantics/facts remain intact.
+- Acceptance must cover the real pinned Better Auth 1.7.7 creation seam for at least: returning email/password sign-in, existing-user Google callback through the existing synthetic provider boundary, and direct/native internal session creation. New active signup/session creation remains unchanged.
+- Preserve the existing I1/I2 actor gates, registration flags, explicit Google-linking rules, password/rate-limit behavior, session cookies/order and classified account-state unavailable vs unexpected failure semantics.
+- **I3 stops at session creation.** Existing-user `user`/`account` updates or provider/password writes that can happen earlier in a sign-in/callback are **not** claimed closed here; their authoritative atomic target-write protection is I4. Do not widen I3 to an adapter-wide target-write decorator.
+- Continue in existing cumulative Draft #329; do not create another implementation PR and do not mark it Ready/mergeable-complete.
+- Ready for checkpoint when focused real Better Auth + PostgreSQL tests prove inactive/missing target no-session/no-session-cookie across the required creation paths, active controls remain intact, applicable existing auth/SA regressions are green, Lira personally inspects the bounded diff/behavior, publishes stable exact head/evidence, then **STOP**.
+- I4–I5/J+ remain unassigned. Lev/Mark remain unassigned.
