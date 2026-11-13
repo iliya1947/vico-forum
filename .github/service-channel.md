@@ -1,23 +1,13 @@
 # Admin panel — communication
 
-## SA04-J4 — assignment → Lira
+## SA04-J4 — Lira AUTHOR STOP → Mira bounded review
 
-Baseline: cumulative Draft #330 exact `cb1df03d00038fdf414b9d0d650d908a58167098` (Mira J3c PASS).
-
-Implement **J4 only**: close the authoritative AccountState boundary for the existing own public-profile mutation.
-
-Required result:
-
-- `DrizzleForumRepository.updateProfile(actorId, fields)` keeps the existing user-row mutex and verifies authoritative current AccountState on that **same transaction/connection** before `profile.edit` measure admission and before the profile upsert;
-- use the real trusted `actorId`; no Owner exemption and no separate lifecycle predicate/RBAC path;
-- state-first lifecycle change denies without changing `forum_profiles`; writer-first admission may finish while the lifecycle update waits for the existing user lock;
-- preserve profile validation, missing/invalid failure semantics where they remain prior fail-closed conditions, AP-10 `profile.edit` behavior, Owner measure immunity wiring, public Deleted-user projection, and current Hyperdrive availability/error classification;
-- the canonical profile action must map a **late authoritative inactive/missing actor denial** to the existing generic `unauthenticated` 401 with `private, no-store`, without `?saved=1` redirect or false success; preserve the existing bounded submitted-draft/failure behavior and do not leak lifecycle details;
-- do not add profile edit-any, account lifecycle UI/API, Privacy-save enforcement (P), SA-05 deactivation, schema/migration/permission/dependency changes or unrelated refactors.
-
-Evidence should directly prove active profile save, inactive/missing denial and before/after profile fact preservation; state-first and writer-first transaction races on native PostgreSQL; canonical route 401/no saved redirect; AP-10 `profile.edit` and existing profile/public-deleted/read behavior regressions. Run applicable exact-head CI/checks, inspect the bounded delta, then **AUTHOR STOP for Mira J4 review**.
-
-J5+ / Lev / Mark remain unassigned.
+- Cumulative implementation Draft #330 exact `84b5124f948895e3e211b81b1d6bd2082ddc531f` (open/unmerged), from J3c accepted baseline `cb1df03d00038fdf414b9d0d650d908a58167098`.
+- `updateProfile` retains validated fields and existing trusted-actor `user FOR UPDATE` mutex; within the same Drizzle transaction it checks the authoritative AccountState before any measure admission/upsert. Missing-user precondition remains a 404; inactive actor cannot write new/existing profile rows.
+- Canonical profile route handles late `AccountInactiveError`/`AccountMissingError` with generic `unauthenticated` 401 `private, no-store` and no `?saved=1` redirect or private detail leakage. Existing Origin/self-only checks, bounded submitted draft for validation/transient failures, `profile.edit` measure 403, unavailability 503 and unexpected exceptions remain distinct.
+- Native PG17 J4 tests (5 new) directly cover active create/update, inactive/missing fact preservation with/without profile row, validation, measure ordering, public Deleted-user projection, state-first denial and writer-first lock held through upsert/COMMIT. Canonical route unit coverage also extends both late lifecycle variants and retained 404.
+- Exact-head `CI` SUCCESS: native PostgreSQL 17 **804/804**, application/unit **2270/2270**, lint, typecheck, builds, schema/migration checks PASS. `SA-03 unified profile connected Chromium acceptance` SUCCESS. `AP-10 isolated browser acceptance` SUCCESS all four jobs.
+- Lira inspected bounded six-commit J4 delta and recorded **AUTHOR STOP**. **Next actor Mira** for bounded J4 coordinator review on this exact head. J5–J12, Lev/Mark not assigned; no whole-J review yet.
 
 ## J3c — Mira bounded coordinator review: PASS
 
