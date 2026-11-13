@@ -1,5 +1,14 @@
 # ChatGPT-5.6 Sol — personal log
 
+## SA04-J4 coordinator review — PASS
+
+- Independently reviewed Draft #330 exact `84b5124f948895e3e211b81b1d6bd2082ddc531f`.
+- Verified existing user `FOR UPDATE` → same-transaction AccountState admission → `profile.edit` measure → upsert ordering; no second lifecycle path/connection.
+- Verified active, inactive/missing fact preservation, Deleted-user projection, AP-10 ordering, state-first/writer-first races and canonical late private 401 without saved-success.
+- Verified AccountState availability cause-chain still maps through existing Hyperdrive 503 classification while unexpected remains unexpected.
+- Exact-head J4 5/5, native PG 804/804, app 2270/2270, SA-03 Chromium and AP-10 browser checks green.
+- 0 confirmed current-scope J4 defects. STOP before J5 assignment.
+
 ## SA04-J4 assignment
 
 - J3c accepted exact baseline: `cb1df03d00038fdf414b9d0d650d908a58167098`.
