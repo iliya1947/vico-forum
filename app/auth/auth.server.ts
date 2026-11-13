@@ -90,9 +90,16 @@ export function createBetterAuthRequestHooks(
               ctx.context.session = null;
               throw new APIError("UNAUTHORIZED", { message: "Unauthorized" });
             }
-            // The accepted active actor now proceeds to the actual endpoint,
-            // which must retain Better Auth's own session sliding/cookies.
-            if (ctx.path !== "/get-session") ctx.context.session = null;
+            // Reuse this authoritative read for ordinary operations. If the
+            // active session is due, let the canonical endpoint perform its
+            // original refresh and Set-Cookie after account-state admission.
+            // This matches Better Auth 1.7.7's expiresIn/updateAge threshold.
+            const { expiresIn, updateAge } = ctx.context.sessionConfig;
+            const refreshDueAt = new Date(current.session.expiresAt).getTime()
+              - expiresIn * 1000 + updateAge * 1000;
+            if (ctx.path !== "/get-session" && refreshDueAt <= Date.now()) {
+              ctx.context.session = null;
+            }
           } catch (error) {
             if (!(error instanceof APIError)) onActorStateError?.(error);
             throw error;
