@@ -1,5 +1,15 @@
 # Admin panel — communication
 
+## 2026-11-13 — Mira bounded SA04-J1 checkpoint PASS
+
+- Reviewed cumulative Draft #330 exact `35902e3ebd7636121b3a4af1e67b3da8ec365be2` against J1 assignment, accepted full J plan and current source-of-truth.
+- Complete implementation delta is two files: `db/account-state.ts` and `tests/database/account-state.test.ts`; no Forum writer, schema, migration, dependency, route or public contract change.
+- The Drizzle helper selects the same lifecycle tuple, uses `FOR NO KEY UPDATE` inside the caller-owned transaction and reuses shared tuple validation/error classification while preserving the native AccountState APIs.
+- Real PostgreSQL17 evidence covers active/inactive/missing behavior, COMMIT/ROLLBACK lock lifetime, FK KEY SHARE compatibility and deactivation-first denial; synthetic error-shape coverage distinguishes availability/timeouts from unexpected/programming/invalid-tuple failures.
+- Independently checked exact Drizzle ORM 0.45.2 source: the transaction callback receives `NodePgTransaction`; current J1 real calls use that transaction. The helper's broader structural `Pick<NodePgDatabase,"select">` type can technically accept autocommit DB, but no current Forum integration exists and the J1 contract explicitly requires caller-owned transaction use. Classified as a future-integration misuse risk, **not a current-scope J1 defect**; verify actual tx callers at J2+.
+- Exact-head GitHub Actions CI #43466409877 has successful `checks` and `database` jobs. Green CI supports but does not replace source review.
+- **Verdict: PASS — 0 confirmed current-scope J1 defects.** #330 remains cumulative Draft. No Lev review yet; J2 is not assigned by this checkpoint.
+
 ## 2026-11-13 — SA04-J1 Lira Drizzle AccountState guard AUTHOR STOP → Mira checkpoint
 
 - **Assigned J1 only.** SA04-I implementation #329 is merged, current main/base `44d6b69a8d235cc8b1ee30953839be71e6ab836a`. Mira-approved Lev full J technical plan [#6858869802](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6858869802) is implemented in separately assignable checkpoints J1–J12. New cumulative [Draft PR #330](https://github.com/iliya1947/vico-forum/pull/330) open/unmerged, stable exact `35902e3ebd7636121b3a4af1e67b3da8ec365be2`, 3 commits, exactly **two changed files**: `db/account-state.ts` (+80/-31) and `tests/database/account-state.test.ts` (+141).
