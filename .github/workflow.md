@@ -1,13 +1,11 @@
 # Admin panel — current workflow
 
-- **Service PR #251.** Current main/base `13456a17f23c1385bef8ab11c735f43d201edd02`; SA04-A1/A2–H merged.
-- **SA04-I review cycle CLOSED: Mira coordinator PASS + Lev independent technical PASS** on the same stable exact implementation head `74c6f43ae2d67526e2ad17aa50392aebf41abbca`; **0 confirmed current-scope defects**.
-- Implementation [#329](https://github.com/iliya1947/vico-forum/pull/329) is **Ready for review**, open/unmerged, mergeable; 52 commits, eight changed paths, behind current main by 0. Reviewed source head unchanged.
-- Exact-head GitHub evidence: CI #43439236882 SUCCESS (2269 app / 765 PostgreSQL17 plus lint/typecheck/build/schema parity/Worker), AP-10 #43439236624 SUCCESS 4/4 Chromium jobs, SA-01 #43439236742 SUCCESS, SA-03 #43439236903 SUCCESS.
-- Lev independent report [#6857634901](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6857634901): independent native/application/Worker/browser reruns and additional sign-out/fault probe PASS; no source change.
-- **Next action: Owner merge of #329.** Do not extend this already reviewed PR with J+; implementation changes would invalidate the completed exact-head review cycle.
-- After merge, synchronize new main before assigning the next bounded SA04 result. Lira/Lev STOP; Mark unassigned.
-- This closes **SA04-I only**, not all SA04. J–R authoritative application writers, S package closure, SA05 deactivation operation/UI/event, #315 remediation, docs closeout and Stage6/production remain separate.
+- **Service PR #251.** Current `main` is **`44d6b69a8d235cc8b1ee30953839be71e6ab836a`**.
+- **SA04-I merged:** implementation #329 merged from reviewed exact head `74c6f43ae2d67526e2ad17aa50392aebf41abbca` after Mira coordinator PASS + Lev independent PASS, both with 0 confirmed current-scope defects.
+- #329 is closed/merged. Its reviewed implementation must not be reused or extended.
+- **No active implementation assignment.** Lira/Lev STOP; Mark unassigned.
+- J–R authoritative application writers, S connected package closure, SA05 deactivation operation/UI/event, #315 remediation, documentation closeout and Stage6/production remain separate and unstarted by this merge.
+- **Next continuation:** re-scope the next bounded SA04 result from current main before any new implementation PR/handoff. Do not assume the old pre-merge head or stale plan state.
 
 ## I5 author checkpoint decomposition
 
