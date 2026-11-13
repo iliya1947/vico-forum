@@ -58,7 +58,7 @@ Current J decomposition for Lira execution:
 7. **J5 — read-state writer.** **Mira bounded PASS on `af25adf18fd065e5af4a7e6da2c670f28613a10f`.**
 8. **J6 — inbox acknowledgement writers.** **Mira bounded PASS on `9a0a095b41c26ef41d6d136f4cf673c8bc325b08`.**
 9. **J7 — topic close/pin/unpin state writers.** **Mira bounded PASS on `5e76474908156d6acbab1d2cf98138e6a37cabc8`.**
-10. **J8 — solved/best-answer writers.** Unassigned.
+10. **J8 — solved/best-answer writers.** **Active → Lira.**
 11. **J9 — Help Signals submit/withdraw/resolve.** Unassigned.
 12. **J10 — Help solution moderation.** Unassigned.
 13. **J11 — duplicate/appeal family.** Unassigned.
@@ -120,6 +120,23 @@ Exact-head evidence: J7 native PG17 **11/11**, AP-08 closure races **4/4**, Post
 Permanent documentation is intentionally separate from the implementation PR. Current `main` documentation still describes the pre-J close/reply `FOR UPDATE` lock wording; when cumulative J is accepted for merge, the separate docs closeout must align that technical wording with the accepted `NO KEY UPDATE` lock protocol without changing the product serialization contract.
 
 J8–J12 remain unassigned. Complaint commands N, #315, K, SA-05 and Stage 6 remain separate.
+
+## J8 — active assignment to Lira
+
+Baseline: cumulative Draft #330 exact `5e76474908156d6acbab1d2cf98138e6a37cabc8` (J7 Mira PASS).
+
+Scope: authoritative AccountState admission for `markTopicSolved` and `selectBestAnswer` only.
+
+Required behavior:
+- preserve target-first solution locking: topic and every existing answer/signal row that this operation can mutate are acquired before actor admission, with stable ordering for multi-row sets; use non-key-changing row lock strength where the accepted J graph requires FK compatibility;
+- both `own` and `any` scopes require the same authoritative active actor; `admin.forum` measure admission remains only the existing `any` rule and occurs after lifecycle admission;
+- preserve topic author/Own checks, Help service-section rules, active-duplicate prohibition, candidate topic membership and original-first-post prohibition;
+- `markTopicSolved` preserves already-solved conflict, real solved effect, Help duplicate-signal supersession and Any-only History;
+- `selectBestAnswer` preserves same-answer success/no-op, replaced-answer moderation state, new-answer moderation reset, affected pending-signal supersession, returned `topicAuthorId/isSolved`, solution-confirmation behavior and Any-only real-change History;
+- inactive/missing gets no real/no-op success and leaves topic/best-answer/moderation/signal/History facts unchanged;
+- History remains the final write and Own operations remain absent from administrative History.
+
+Evidence includes active Own/Any controls, same-answer no-op, inactive/missing before/after facts, state-first/writer-first lifecycle races, edit↔solution post-lock compatibility, overlapping pending-signal compatibility and same-actor/content Complaint FK compatibility. No J9+ implementation.
 
 ## Important cross-cutting boundaries
 
