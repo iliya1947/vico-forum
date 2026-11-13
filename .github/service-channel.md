@@ -4832,3 +4832,18 @@ I4 is too broad for one Lira handoff because pinned Better Auth 1.7.7 uses diffe
 4. **I4d:** session revoke/delete/deleteMany + own-signout exception + connected I4 write-shape/race sweep.
 
 All remain in cumulative Draft #329. I4a–I4c are not mergeable/completed-I claims; I4d closes row I4. I5/J+ remain separate. No sub-checkpoint assigned yet; next separate continuation assigns I4a only.
+
+
+## 2026-11-13 — SA04-I4a active assignment
+
+I4 granularity is already fixed as I4a→I4d. This continuation assigns **I4a only** to Lira in the existing cumulative Draft #329 from accepted I3 exact `ba2337d788161915dbeb2de49ff320b4dad61768`.
+
+Required bounded result:
+1. Close lifecycle admission/write races for canonical **session creation** and **session refresh/update**.
+2. The server-resolved session target must remain active through the write; concurrent deactivation cannot be admitted and then interleave before persistence.
+3. Preserve I3's always-on create gate, active session/sliding-cookie behavior, existing successful SA-02 auth facts, and current unavailable-vs-unexpected failure semantics.
+4. Prove the real pinned Better Auth 1.7.7 create and token-selected update/refresh seams with focused native PostgreSQL concurrency evidence and active controls.
+
+Excluded: session revoke/delete/deleteMany and own-signout exception (I4d), existing-user writes (I4b), account/link/password/provider writes (I4c), I5/J+, SA05+, Stage6/production, docs closeout and #315 remediation.
+
+I4a remains an intermediate Draft checkpoint only. Lira must author-inspect the completed bounded delta, publish a stable exact head with applicable green checks/evidence, then **STOP for Mira I4a checkpoint review**. Lev/Mark remain unassigned.
