@@ -4781,3 +4781,12 @@ Lira must perform author inspection, publish the stable A2 head/evidence and STO
 - **Exact head Actions all SUCCESS:** [CI #43379564521](https://github.com/iliya1947/vico-forum/actions/runs/43379564521): 2269/2269 application, 722/722 real native PG17, migration history/schema/lint/typecheck/build/Worker; [SA01 #43379564649](https://github.com/iliya1947/vico-forum/actions/runs/43379564649), [SA03 #43379564578](https://github.com/iliya1947/vico-forum/actions/runs/43379564578), [AP10 #43379564500](https://github.com/iliya1947/vico-forum/actions/runs/43379564500) SUCCESS, all AP10 jobs.
 - **Lira AUTHOR STOP; next Mira:** repeat bounded I2 checkpoint on stable `b7dc303ee0d10312e5d41af9889d26d6b264a6e6`, either PASS/close I2-MIRA-01 or concrete confirmed current-scope defect packet. I3–I5/J+/Lev/Mark unassigned, no docs closeout/merge/production/SA05/#315.
 
+
+
+## 2026-11-13 — SA04-I2 correction accepted
+
+- Mira repeated the bounded I2 review on Draft #329 exact `b7dc303ee0d10312e5d41af9889d26d6b264a6e6`.
+- `I2-MIRA-01` is **CLOSED**: inactive due sessions cannot slide/update or emit refresh cookies during actor preflight; active canonical refresh behavior is preserved after successful account-state admission.
+- Exact-head native regression and all applicable workflows are green.
+- **I2 PASS — 0 remaining confirmed current-scope defects.**
+- #329 remains cumulative Draft. No Lev review at this intermediate checkpoint; I3–I5/J+ remain unassigned pending separate continuation.
