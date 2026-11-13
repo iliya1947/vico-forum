@@ -1,5 +1,13 @@
 # ChatGPT-5.6 Sol — personal log
 
+## SA04-J7 assignment
+
+- J6 accepted exact baseline: `9a0a095b41c26ef41d6d136f4cf673c8bc325b08`.
+- Current seams: close/pin/unpin all lock topic then act; none has AccountState admission. Closure returns same-state success before its measure check; pin/unpin perform the measure check before their idempotent effect.
+- Accepted J lock graph requires topic/dependent rows → actor → effect → History. Current topic `FOR UPDATE` also needs bounded compatibility review against reply `NO KEY UPDATE` and existing Complaint content→actor→FK `KEY SHARE` ordering; only the J7 topic mutex may be weakened if required by that accepted graph.
+- Assigned J7 only to Lira. J8+ and separate domains remain excluded.
+- Next Mira action: bounded J7 review after stable-head AUTHOR STOP.
+
 ## SA04-J6 coordinator review — PASS
 
 - Independently reviewed Draft #330 exact `9a0a095b41c26ef41d6d136f4cf673c8bc325b08`.
