@@ -3975,10 +3975,9 @@ export class DrizzleForumRepository {
         sectionId: forumTopics.sectionId,
         isSolved: forumTopics.isSolved,
       }).from(forumTopics)
-        .where(eq(forumTopics.id, topicId)).for("update");
+        .where(eq(forumTopics.id, topicId)).for("no key update");
       if (!topic) throw new ForumEntityNotFoundError("topic does not exist");
       if (scope === "own" && topic.authorId !== actorId) throw new ForumAuthorizationError("only the topic author may solve it");
-      if (scope === "any") await this.measureAdmission(tx, actorId, "admin.forum");
       if (topic.isSolved) throw new ForumStateConflictError("topic is already solved");
       const [activeDuplicate] = await tx
         .select({ id: forumHelpDuplicateRelationships.id })
@@ -3991,6 +3990,21 @@ export class DrizzleForumRepository {
       if (activeDuplicate) {
         throw new ForumStateConflictError("a confirmed duplicate cannot be marked solved");
       }
+      if (topic.sectionId === HELP_SOLUTIONS_SERVICE_SECTION_ID) {
+        // Dependency rows before the actor lock: keep pending-set updates and
+        // the existing Help signal review path in a stable content→actor order.
+        await tx.select({ id: forumHelpSignals.id })
+          .from(forumHelpSignals)
+          .where(and(
+            eq(forumHelpSignals.topicId, topicId),
+            eq(forumHelpSignals.kind, "duplicate"),
+            eq(forumHelpSignals.status, "pending"),
+          ))
+          .orderBy(asc(forumHelpSignals.id))
+          .for("no key update");
+      }
+      await assertActiveAccountForDrizzleMutation(tx, actorId);
+      if (scope === "any") await this.measureAdmission(tx, actorId, "admin.forum");
       await tx.update(forumTopics).set({ isSolved: true }).where(eq(forumTopics.id, topicId));
       if (topic.sectionId === HELP_SOLUTIONS_SERVICE_SECTION_ID) {
         await tx.update(forumHelpSignals)
@@ -4020,10 +4034,9 @@ export class DrizzleForumRepository {
         })
         .from(forumTopics)
         .where(eq(forumTopics.id, topicId))
-        .for("update");
+        .for("no key update");
       if (!topic) throw new ForumEntityNotFoundError("topic does not exist");
       if (scope === "own" && topic.authorId !== actorId) throw new ForumAuthorizationError("only the topic author may select an answer");
-      if (scope === "any") await this.measureAdmission(tx, actorId, "admin.forum");
       const [activeDuplicate] = await tx
         .select({ id: forumHelpDuplicateRelationships.id })
         .from(forumHelpDuplicateRelationships)
@@ -4049,6 +4062,44 @@ export class DrizzleForumRepository {
       if (
         topic.sectionId === HELP_SOLUTIONS_SERVICE_SECTION_ID
         && topic.bestAnswerPostId !== postId
+      ) {
+        // Both post-moderation rows are locked before their signal rows. Stable
+        // ID order avoids old/new answer lock inversions during replacements.
+        const affectedPostIds = [postId, topic.bestAnswerPostId]
+          .filter((id): id is string => id !== null).sort();
+        await tx.select({ id: forumPosts.id })
+          .from(forumPosts)
+          .where(and(eq(forumPosts.topicId, topicId), inArray(forumPosts.id, affectedPostIds)))
+          .orderBy(asc(forumPosts.id))
+          .for("no key update");
+        const affectedKinds = topic.bestAnswerPostId
+          ? or(
+              eq(forumHelpSignals.kind, "duplicate"),
+              and(
+                eq(forumHelpSignals.targetPostId, topic.bestAnswerPostId),
+                inArray(forumHelpSignals.kind, ["needs-review", "solution-outdated"]),
+              ),
+            )
+          : eq(forumHelpSignals.kind, "duplicate");
+        await tx.select({ id: forumHelpSignals.id })
+          .from(forumHelpSignals)
+          .where(and(
+            eq(forumHelpSignals.topicId, topicId),
+            eq(forumHelpSignals.status, "pending"),
+            affectedKinds,
+          ))
+          .orderBy(asc(forumHelpSignals.id))
+          .for("no key update");
+      }
+      await assertActiveAccountForDrizzleMutation(tx, actorId);
+      if (scope === "any") await this.measureAdmission(tx, actorId, "admin.forum");
+      // Active same-answer selection is a genuine no-op; inactive/missing
+      // actors are still denied before this success boundary.
+      if (topic.bestAnswerPostId === postId) {
+        return { topicAuthorId: topic.authorId, isSolved: topic.isSolved };
+      }
+      if (
+        topic.sectionId === HELP_SOLUTIONS_SERVICE_SECTION_ID
       ) {
         if (topic.bestAnswerPostId) {
           await tx.update(forumPosts)
