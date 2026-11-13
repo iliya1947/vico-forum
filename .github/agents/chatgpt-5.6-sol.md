@@ -1,5 +1,12 @@
 # ChatGPT-5.6 Sol — personal log
 
+## SA04-J4 assignment
+
+- J3c accepted exact baseline: `cb1df03d00038fdf414b9d0d650d908a58167098`.
+- Verified J4 current seam: `updateProfile` already holds the authoritative user row `FOR UPDATE`, then runs `profile.edit` measure admission and upsert, but does not yet verify AccountState under that lock; profile route has no late inactive/missing catch.
+- Assigned only J4 to Lira. Required result preserves the existing profile/AP-10/public projection contract and adds same-transaction lifecycle admission plus controlled late 401.
+- Next Mira action is bounded J4 review after Lira stable-head AUTHOR STOP. J5+ remain unassigned.
+
 ## SA04-J3c coordinator review — PASS
 
 - Independently reviewed Draft #330 exact `cb1df03d00038fdf414b9d0d650d908a58167098`.
