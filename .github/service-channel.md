@@ -1,5 +1,15 @@
 # Admin panel — communication
 
+## 2026-11-13 — Lev complete SA04-J technical plan published; STOP → Mira
+
+- Full SA04-J technical plan: [#6858869802](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6858869802), based on current main `44d6b69a8d235cc8b1ee30953839be71e6ab836a` (merged #329).
+- Coverage: all 24 public actor-owned Forum repository mutation methods, including existing F presence protection, plus both service-only same-locale correction no-op paths. Publication/edit final bind and receipts are in J; standalone attachment APIs remain K.
+- Plan fixes the Drizzle/native AccountState seam, same-transaction actor admission, replay/no-op boundaries, typed safe failures, per-family lock/FK/History ordering and full cumulative native/HTTP/Worker/browser evidence. Existing domain/Own-Any/measure/replay rules remain constraints.
+- Source/AST/caller/lock inspection and #315 D/E/F boundary check completed. No implementation edits, new implementation PR, or J runtime test results are claimed. Static lock risks are distinguished from reproduced runtime defects.
+- **Next: Mira reviews the complete J plan for scope/fit, then must split Lira implementation into bounded substeps and prepare the first assignment.** This is the developer-fixed workflow, not an optional choice. The technical family map is not a preassigned implementation sequence.
+- **Lev planning complete / STOP; Lira and Mark unassigned.** No implementation starts before Mira accepts the full plan and gives a bounded author handoff.
+- A1/A2–H/I are merged; J is planned only; whole SA04 is incomplete. K–R/S, SA05/deactivate control, permanent docs closeout, #315 remediation and production/Stage6 remain separate. User publication authorization persists throughout SA04.
+
 ## 2026-11-13 — Correction: Lev gets complete SA04-J technical planning
 
 - Mira's previous J1-only planning handoff was incorrect: implementation granularity was applied prematurely to the technical planner.
@@ -772,13 +782,13 @@ PASS относится только к A1 foundation. Runtime enforcement, proj
 
 ## Актуальный baseline и назначение
 
-- Current main/base `13456a17f23c1385bef8ab11c735f43d201edd02`; SA04-A1 and A2–H merged.
-- **SA04-I whole-PR coordinator PASS + independent technical PASS**, 0 confirmed current-scope defects on Draft #329 exact `74c6f43ae2d67526e2ad17aa50392aebf41abbca`, eight cumulative paths; open/Draft/unmerged.
-- Independent result [#6857634901](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6857634901) covers I1 pre-routing, I2 HTTP/direct, I3 session-create, I4 current persistence shapes and I5a–e connected composition. Prior I2/I4a findings remain closed; runtime after I4 unchanged.
-- Local evidence: native69/4 files, app65/9 files, fresh build, clean migrations/69-table parity, checked-in Worker/BA/PG17/Chromium17 records PASS; original cookie/body/signout-fault/deletion-fact probe PASS. Four exact-head remote workflows SUCCESS, full CI765 native/2269 app distinct from independent local counts.
-- **Next Mira:** coordinator follow-up/closeout for already-reviewed stable #329; Lev complete/STOP, Lira STOP, Mark/J+ unassigned. Merge only Owner. Do not reopen same reviewed slice through gratuitous scope extension.
-- This closes the assigned independent I gate, not all SA04: J–R/S, SA05/deactivate control, docs closeout, physical deletion, #315 remediation and Stage6/production/live Google remain separate.
-- #315 workflow/Block B consulted at `fc32f0ba36120b89a27831993519a00f2a40b953`; existing active-user security findings not declared remedied. User publication authorization persists throughout SA04.
+- Full SA04-J technical plan: [#6858869802](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6858869802), based on current main `44d6b69a8d235cc8b1ee30953839be71e6ab836a` (merged #329).
+- Coverage: all 24 public actor-owned Forum repository mutation methods, including existing F presence protection, plus both service-only same-locale correction no-op paths. Publication/edit final bind and receipts are in J; standalone attachment APIs remain K.
+- Plan fixes the Drizzle/native AccountState seam, same-transaction actor admission, replay/no-op boundaries, typed safe failures, per-family lock/FK/History ordering and full cumulative native/HTTP/Worker/browser evidence. Existing domain/Own-Any/measure/replay rules remain constraints.
+- Source/AST/caller/lock inspection and #315 D/E/F boundary check completed. No implementation edits, new implementation PR, or J runtime test results are claimed. Static lock risks are distinguished from reproduced runtime defects.
+- **Next: Mira reviews the complete J plan for scope/fit, then must split Lira implementation into bounded substeps and prepare the first assignment.** This is the developer-fixed workflow, not an optional choice. The technical family map is not a preassigned implementation sequence.
+- **Lev planning complete / STOP; Lira and Mark unassigned.** No implementation starts before Mira accepts the full plan and gives a bounded author handoff.
+- A1/A2–H/I are merged; J is planned only; whole SA04 is incomplete. K–R/S, SA05/deactivate control, permanent docs closeout, #315 remediation and production/Stage6 remain separate. User publication authorization persists throughout SA04.
 
 ## Handoff — Лира: Stage2 factual documentation closeout
 
