@@ -2,7 +2,7 @@
 
 ## Channel rotation from #251
 
-This service channel replaces #251 for ongoing Admin/Super-admin work. #251 remains historical evidence and should not receive new operational state after the successor PR opens.
+Service PR #331 replaces #251 for ongoing Admin/Super-admin work. #251 is historical evidence only and must not receive new operational state.
 
 ### Confirmed current state
 
