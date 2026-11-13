@@ -1,16 +1,13 @@
 # Admin panel — current workflow
 
 - **Service PR #251.** Current main/base `13456a17f23c1385bef8ab11c735f43d201edd02`; SA04-A1/A2–H merged.
-- **Current stage: SA04-I cumulative whole-PR coordinator PASS + independent Lev technical PASS, 0 confirmed current-scope defects on the same stable exact head.**
-- Implementation [Draft #329](https://github.com/iliya1947/vico-forum/pull/329), reviewed exact **`74c6f43ae2d67526e2ad17aa50392aebf41abbca`**, eight cumulative changed paths, open/Draft/unmerged.
-- Independent whole-I report [#6857634901](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6857634901); covers I1–I5 including accepted I5a–e. Lev previously planned I5 but did not implement #329; source/assertions unchanged during review.
-- Independent local PASS: 69/69 native tests across four touched suites, 65/65 application tests across nine relevant files, fresh Worker build, clean disposable migrations and 69-table manifest parity; checked-in connected Settings/I5 Chromium harness 17/17, pageErrors/externalRequests empty.
-- Original extra probe PASS: forged cookies/body cannot broaden signed one-session inactive signout, foreign/other retained sessions remain, actual deletion fact only on successful deletion; typed lifecycle availability swallowed inside BA signout restored to no-store503, unexpected propagated, no false facts.
-- Exact-head CI #43439236882, AP10 #43439236624, SA01 #43439236742 and SA03 #43439236903 independently rechecked SUCCESS. Remote full2269/765 results are distinct from local65/69.
-- **Next recipient: Mira**, coordinator follow-up/closeout for this reviewed stable slice under current workflow. Lev completed/STOP; Lira STOP; Mark/J+ unassigned. Do not extend a ready reviewed PR merely to repeat substantially the same independent review.
-- PASS is whole **I only**, not all SA04. No J–R/S completion, SA05 deactivate operation/UI/event, physical user deletion, docs closeout/merge, #315 remediation, Stage6/production/live Google accepted or started by this result. Owner alone merges.
-- Standing user permission for plan/review reports and service-state publication persists throughout SA04.
-- I5 author-checkpoint chronology is retained below; the current review gate is the completed whole-I PASS above.
+- **SA04-I review cycle CLOSED: Mira coordinator PASS + Lev independent technical PASS** on the same stable exact implementation head `74c6f43ae2d67526e2ad17aa50392aebf41abbca`; **0 confirmed current-scope defects**.
+- Implementation [#329](https://github.com/iliya1947/vico-forum/pull/329) is **Ready for review**, open/unmerged, mergeable; 52 commits, eight changed paths, behind current main by 0. Reviewed source head unchanged.
+- Exact-head GitHub evidence: CI #43439236882 SUCCESS (2269 app / 765 PostgreSQL17 plus lint/typecheck/build/schema parity/Worker), AP-10 #43439236624 SUCCESS 4/4 Chromium jobs, SA-01 #43439236742 SUCCESS, SA-03 #43439236903 SUCCESS.
+- Lev independent report [#6857634901](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6857634901): independent native/application/Worker/browser reruns and additional sign-out/fault probe PASS; no source change.
+- **Next action: Owner merge of #329.** Do not extend this already reviewed PR with J+; implementation changes would invalidate the completed exact-head review cycle.
+- After merge, synchronize new main before assigning the next bounded SA04 result. Lira/Lev STOP; Mark unassigned.
+- This closes **SA04-I only**, not all SA04. J–R authoritative application writers, S package closure, SA05 deactivation operation/UI/event, #315 remediation, docs closeout and Stage6/production remain separate.
 
 ## I5 author checkpoint decomposition
 
