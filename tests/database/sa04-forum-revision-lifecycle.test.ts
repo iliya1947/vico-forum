@@ -59,7 +59,7 @@ async function seed(ownerId: string = active): Promise<Item> {
 function revise(
   repository: DrizzleForumRepository, kind: Kind, item: Item, actorId: string, scope: Scope,
 ) {
-  const revision = { id: uuid(), originalContent: "Revised content", sourceLocale: "ru" };
+  const revision = { id: uuid(), originalContent: "Revised content", sourceLocale: scope === "any" ? "he" : "ru" };
   return kind === "title"
     ? repository.reviseTopicTitle(item.topicId, item.titleRevisionId, revision, actorId, scope)
     : repository.revisePostBody(item.postId, item.postRevisionId, revision, actorId, scope);
@@ -201,13 +201,12 @@ describe("SA04-J3a actor lifecycle admission for immutable revisions", () => {
       const item = await seed();
       const writer = new Client({ connectionString: url, options });
       await writer.connect();
-      const target = kind === "title" ? "forum_topic_title_revisions" : "forum_post_revisions";
       const paused = pauseQuery(writer, sql =>
-        sql.toLowerCase().startsWith('insert into "' + target + '"'));
+        sql.toLowerCase().startsWith('insert into "admin_history"'));
       let deactivatorOpen = false;
       try {
         const pending = revise(isolatedWriter(writer), kind, item, actor, "any");
-        await paused.observed; // Actor row mutex held before immutable revision INSERT.
+        await paused.observed; // Revision and current-pointer CAS already ran; History is the last write.
         await fixture.query("begin");
         deactivatorOpen = true;
         await fixture.query("set local lock_timeout = '180ms'");
