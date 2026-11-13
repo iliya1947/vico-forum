@@ -1,3 +1,25 @@
+# Лира — актуальное назначение: SA04-J2 publication (2026-11-13)
+
+Continue cumulative Draft #330 from accepted J1 exact `35902e3ebd7636121b3a4af1e67b3da8ec365be2`.
+
+Implement **J2 only: authoritative AccountState admission for Forum publication**:
+- `createTopic`;
+- `createTopicWithInitialPost`;
+- `createPost`;
+including matching publication receipt replay and the existing same-transaction publication final bind/receipt path.
+
+Required result: inactive or missing actor cannot obtain a fresh publication or successful matching replay through current direct/canonical publication paths. Preserve active behavior and existing publication/domain semantics.
+
+Use the accepted J1 admission on the actual caller-owned Drizzle transaction. Preserve the publication lock/replay ordering from Lev's accepted full J plan. Do not expand into J3 edit/revision/source-locale, standalone attachment APIs K, or later checkpoints.
+
+Done when focused PostgreSQL evidence covers active controls, inactive/missing denial, replay behavior, denied-write fact preservation, and both lifecycle race directions for this publication family, with applicable regressions/CI green.
+
+After implementation, personally inspect the J2 delta and cumulative J1+J2 behavior, publish one stable exact head/evidence, then **STOP for Mira J2 checkpoint review**.
+
+J3+ unassigned. Lev/Mark unassigned.
+
+---
+
 # Лира — SA04-J1 Drizzle mutation AccountState foundation; AUTHOR STOP → Mira
 
 - **Assignment:** only J1, after merged SA04-I, under Mira-approved full J plan; J2–J12 unassigned. Main/base `44d6b69a8d235cc8b1ee30953839be71e6ab836a`. New [cumulative Draft #330](https://github.com/iliya1947/vico-forum/pull/330) exact stable `35902e3ebd7636121b3a4af1e67b3da8ec365be2`, 3 commits, two project files. No merge, product/docs/schema/dependencies.
