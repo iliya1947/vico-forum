@@ -2342,3 +2342,12 @@ Do not treat a user's anger, criticism or request to think as implicit permissio
 - Exact-head CI/browser evidence rechecked SUCCESS.
 - Verdict: **PASS; I2-MIRA-01 CLOSED; 0 remaining I2 current-scope defects.**
 - Stop before I3 assignment.
+
+
+## 2026-11-13 — SA04-I3 checkpoint review
+
+- Reviewed exact `ba2337d788161915dbeb2de49ff320b4dad61768`, full I2→I3 delta and the three changed project files.
+- Verified always-on `session.create.before` AccountState admission, correct nested composition with SA-02 `create.after`, inactive/missing no-session/no-cookie behavior across email/Google/direct-native paths, active preservation and lifecycle-storage failure classification.
+- Exact-head workflow evidence rechecked SUCCESS.
+- I4 atomic/race closure remains a separate accepted future checkpoint and was not treated as an I3 defect.
+- Verdict: **PASS, 0 current-scope I3 defects.** Stop before I4 assignment.
