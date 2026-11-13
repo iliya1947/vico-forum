@@ -16,6 +16,7 @@ import { action as sectionAction } from "../routes/section";
 import { action as topicAction } from "../routes/topic";
 import { ForumWriteRateLimitError } from "../../db/forum-write-policy";
 import { UserMeasureRestrictedError } from "../../db/user-measure-policy";
+import { AccountInactiveError, AccountMissingError } from "../../db/account-state";
 import { ForumAuthorizationError, ForumEntityNotFoundError, ForumStateConflictError } from "../../db/forum-repository";
 import {
   contentGenerationActionContext,
@@ -378,6 +379,27 @@ describe("forum write route actions", () => {
       userId: "session-user",
       topicId: "t",
       postId: "post-3",
+    });
+  });
+
+  it("maps late markTopicRead inactive/missing admission to private 401 without ok success", async () => {
+    const forumWriter = writer();
+    for (const error of [new AccountInactiveError(), new AccountMissingError()]) {
+      vi.mocked(forumWriter.advanceTopicReadState).mockRejectedValueOnce(error);
+      const response = await topicAction({
+        request: request("/en/topics/t", { intent: "markTopicRead", postId: "post-3" }),
+        params: { locale: "en", topicId: "t" },
+        context: context(forumWriter),
+      });
+      expect(response).toMatchObject({
+        data: { error: "unauthenticated" },
+        init: { status: 401, headers: { "Cache-Control": "private, no-store" } },
+      });
+      expect(JSON.stringify(response)).not.toMatch(/"ok":true|AccountInactive|AccountMissing|deactivated/);
+    }
+    expect(forumWriter.advanceTopicReadState).toHaveBeenCalledTimes(2);
+    expect(forumWriter.advanceTopicReadState).toHaveBeenLastCalledWith({
+      userId: "session-user", topicId: "t", postId: "post-3",
     });
   });
 
