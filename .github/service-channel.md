@@ -1,5 +1,28 @@
 # Admin panel — communication
 
+## SA04-J5 — assignment → Lira
+
+Baseline: cumulative Draft #330 exact `84b5124f948895e3e211b81b1d6bd2082ddc531f` (Mira J4 PASS).
+
+Implement **J5 only**: close authoritative AccountState admission for topic read-state mutation `advanceTopicReadState`.
+
+Required result:
+
+- move the mutation from its current target-read → autocommit upsert → separate readback shape into one short authoritative transaction;
+- before actor admission, establish the existing target **topic/post FK dependencies** using the accepted lock graph; use only dependency-strength locking that does not introduce a SHARE→UPDATE upgrade or reverse actor→content ordering;
+- after those dependencies, admit the trusted `userId` through the shared AccountState mutation guard on the **same transaction/connection**;
+- only then run the existing monotonic upsert. Preserve the current ordering rule exactly: marker advances by post `created_at`, then post ID tie-break; same/backward requests remain no-op for an active actor;
+- read/return the resulting topic read state through that same transaction so the actor lock remains held through the operation result and COMMIT/ROLLBACK;
+- inactive/missing actor must not create or advance a marker and must not receive success from same/backward no-op paths;
+- preserve target-not-in-topic failure, `new / unread / read`, `firstUnreadPostId`, concurrent monotonic behavior, FK constraints and the existing canonical `markTopicRead` action semantics;
+- the canonical action already uses `runForumMutation`; retain its generic lifecycle denial mapping to private/no-store `401 unauthenticated`. Do not add a second read-state HTTP policy.
+
+Evidence should directly cover active first advance/forward/same/backward behavior; inactive and missing actors with before/after marker facts; state-first and writer-first races using separate PG connections; concurrent monotonic/tie-break regression; bounded compatibility with a concurrent content mutation proving no new actor/content deadlock or lock upgrade; canonical `markTopicRead` late lifecycle denial/no false `ok` success; and applicable unread/new route/read-state regressions.
+
+Explicitly excluded: #315 `READSTATE-CACHE-01`, J6+, standalone attachment K, SA-05, schema/migration/permission/dependency changes, permanent docs and Stage 6.
+
+Run applicable exact-head CI/checks, inspect the bounded delta, publish one stable #330 head/evidence, then **AUTHOR STOP for Mira J5 review**. Lev/Mark remain inactive.
+
 ## J4 — Mira bounded coordinator review: PASS
 
 - Reviewed exact Draft #330 head `84b5124f948895e3e211b81b1d6bd2082ddc531f` against the accepted J4 assignment, Lev's full-J profile lock/lifecycle/error plan, current AP-10 profile restriction contract and canonical SA-03 profile behavior.
