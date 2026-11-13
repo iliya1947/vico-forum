@@ -1,18 +1,21 @@
 # Admin panel — current workflow
 
 - **Service PR #251.** Main/base `13456a17f23c1385bef8ab11c735f43d201edd02`; SA04-A1/A2–H merged. I1–I4 coordinator checkpoints PASS; I5 remains final connected closure for SA04-I.
-- **Current stage/owner: Mira — bounded I5a checkpoint review.** Lira completed **I5a native core connected chain**, personally inspected and has AUTHOR STOP. I5b–I5e remain unassigned until separate Mira continuation after I5a PASS.
-- **Implementation PR/head:** cumulative [Draft #329](https://github.com/iliya1947/vico-forum/pull/329), stable exact `58130793d05f6eb2a8b867b2fb546ccddcd6fb59`, previous accepted I4d `85104942e75071a67b4a4b37212ce5bca7361fe4`. Three I5a commits; only `tests/database/sa04-session-atomic.test.ts` (+146 lines). No runtime/schema/dependency/docs changes; PR open/Draft/unmerged.
-- **Exact-head checks:** [CI #43425686486](https://github.com/iliya1947/vico-forum/actions/runs/43425686486) SUCCESS — 2269 app / 754 PostgreSQL17, 29 scoped I4a–I5a; [SA01 #43425686622](https://github.com/iliya1947/vico-forum/actions/runs/43425686622), [SA03 #43425686478](https://github.com/iliya1947/vico-forum/actions/runs/43425686478), [AP10 #43425686467](https://github.com/iliya1947/vico-forum/actions/runs/43425686467) all Chromium SUCCESS (AP10 4/4). Existing browser regressions are not I5d acceptance.
-- **Next:** Mira checks I5a real BA/PG17 connected tests and I1–I4 composition on the stable exact head: PASS or one verified current-scope defect packet. Later I5b SET-05, I5c OAuth/telemetry/failures, I5d built Worker/browser, I5e cumulative author sweep remain planned **not authorized**; no Lev/Mark independent review until full I5 and Mira cumulative whole-I PASS. No J–R, SA05, #315, docs/merge, Stage6/production.
+- **I5a bounded checkpoint: Mira PASS.** Reviewed cumulative Draft #329 stable exact `58130793d05f6eb2a8b867b2fb546ccddcd6fb59` against the I5a assignment and current unchanged main/source-of-truth.
+- I5a delta is three commits / one existing test file (`tests/database/sa04-session-atomic.test.ts`, +146), no runtime/schema/dependency/docs change.
+- Verified the connected real Better Auth 1.7.7 + PostgreSQL17 scenario links retained old cookies/sessions → pre-routing guest transition → canonical HTTP/direct denial → final session create/update/delete guards → inactive own-signout cleanup, while preserving unrelated active behavior and endpoint-last login cookie behavior.
+- No current-scope I5a runtime defect reproduced. Existing I1–I4 focused proofs remain the detailed race/error/selector evidence rather than being duplicated.
+- Exact-head CI independently rechecked SUCCESS: CI #43425686486 — 184/184 app files, 2269/2269 app tests; 69/69 PG17 files, 754/754 tests; `sa04-session-atomic.test.ts` 29/29 including I5a. SA01 #43425686622, SA03 #43425686478 and AP10 #43425686467 are SUCCESS.
+- **Current stage: STOP after I5a PASS. I5b–I5e are unassigned.** On the next explicit continuation, Mira may prepare/assign **I5b only** (SET-05 stale/deactivated chain) from this accepted head.
+- No Lev/Mark independent review until all I5 author checkpoints are complete and Mira cumulative whole-I PASS. No J–R, SA05, #315 remediation, docs/merge, Stage6/production.
 
-## I5 author checkpoint decomposition (only I5a complete)
+## I5 author checkpoint decomposition
 
-1. **I5a — native core connected chain:** two retained sessions/cookies, inactive pre-routing, canonical HTTP/direct denial, session create/refresh/final guards, signed own-signout cleanup; unrelated active controls. **AUTHOR STOP; Mira checkpoint pending.**
+1. **I5a — native core connected chain:** **PASS** on exact `58130793d05f6eb2a8b867b2fb546ccddcd6fb59`.
 2. **I5b — SET-05 stale/deactivated chain:** read/password/session controls and late deactivation. Not assigned.
 3. **I5c — Google/link and observer/failure composition:** pending callback, telemetry on/off, transaction callback and failures. Not assigned.
 4. **I5d — built Worker/browser connected acceptance:** stale mounted Account, old cookies, independent account, sign-out, private/public boundaries. Not assigned.
-5. **I5e — final connected sweep/evidence map:** complete after I5a–d PASS and personal cumulative I inspection. Not assigned.
+5. **I5e — final connected sweep/evidence map:** after I5a–d PASS and personal cumulative I inspection. Not assigned.
 
 ## Mandatory author verification
 
