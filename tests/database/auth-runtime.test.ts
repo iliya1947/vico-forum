@@ -478,6 +478,53 @@ describe("Better Auth PostgreSQL runtime", () => {
     )).rows[0]?.name).toBe("I3 original name");
   });
 
+  it("SA04-I3 classifies session-create account-state storage failures without issuing sessions", async () => {
+    const normal = createHyperdriveAuthRuntime(databaseUrl, env, () => authClient());
+    const email = "i3-session-state-error@example.test";
+    const password = "integration-password-123";
+    const signup = await normal.handle(new Request(`${env.BETTER_AUTH_URL}/api/auth/sign-up/email`, {
+      method: "POST", headers: { Origin: env.BETTER_AUTH_URL,
+        "content-type": "application/json", "cf-connecting-ip": "203.0.113.112" },
+      body: JSON.stringify({ name: "I3 storage", email, password }),
+    }));
+    expect(signup.status).toBe(200);
+    const userId = (await signup.json() as { user: { id: string } }).user.id;
+    const before = (await client.query<{ id: string; token: string }>(
+      'select id,token from "session" where user_id=$1 order by id', [userId],
+    )).rows;
+    const withFault = (fault: Error) => createHyperdriveAuthRuntime(databaseUrl, env, () => {
+      const connection = authClient();
+      const original = connection.query.bind(connection);
+      vi.spyOn(connection, "query").mockImplementation(((...args: unknown[]) => {
+        const statement = args[0];
+        const query = typeof statement === "string" ? statement
+          : statement && typeof statement === "object" && "text" in statement
+            ? (statement as { text: unknown }).text : null;
+        if (typeof query === "string" && query.includes(" as deactivated_at")) {
+          return Promise.reject(fault);
+        }
+        return Reflect.apply(original, connection, args);
+      }) as never);
+      return connection;
+    });
+    const request = () => new Request(`${env.BETTER_AUTH_URL}/api/auth/sign-in/email`, {
+      method: "POST", headers: { Origin: env.BETTER_AUTH_URL,
+        "content-type": "application/json", "cf-connecting-ip": "203.0.113.113" },
+      body: JSON.stringify({ email, password }),
+    });
+    const unavailable = Object.assign(new Error("SECRET_I3_DB_RESET"), { code: "ECONNRESET" });
+    const denied = await withFault(unavailable).handle(request());
+    expect(denied.status).toBe(503);
+    expect(denied.headers.get("Cache-Control")).toBe("no-store");
+    expect(denied.headers.getSetCookie().some(value => value.includes("session_token="))).toBe(false);
+    expect(await denied.text()).not.toContain("SECRET_I3_DB_RESET");
+    await expect(withFault(new TypeError("Unexpected I3 state SQL failure")).handle(request()))
+      .rejects.toBeInstanceOf(AccountStateUnexpectedError);
+    expect((await client.query<{ id: string; token: string }>(
+      'select id,token from "session" where user_id=$1 order by id', [userId],
+    )).rows).toEqual(before);
+  });
+
   it("keeps a new login after pre-routing cleanup of an expired session cookie", async () => {
     const runtime = createHyperdriveAuthRuntime(databaseUrl, env, () => authClient());
     const headers = { "content-type": "application/json", Origin: env.BETTER_AUTH_URL, "cf-connecting-ip": "203.0.113.40" };
