@@ -1,5 +1,21 @@
 # Admin panel — communication
 
+## 2026-11-13 — Mira correction: whole-I5 handoff rescinded; I5a only assigned
+
+- Developer caught the granularity error **before Lira received/started the whole-I5 task**. Draft #329 is independently rechecked unchanged at exact `85104942e75071a67b4a4b37212ce5bca7361fe4`.
+- The prior statement that one final I5 outcome implied one author handoff was wrong. **Final result stays connected; author work is now checkpointed.**
+- Fixed author sequence:
+  1. **I5a native core connected chain** — retained cookies/sessions, I1 identity, HTTP/direct admission, session create/refresh/final persistence, own-signout cleanup, active/unrelated controls.
+  2. **I5b SET-05 chain** — stale/deactivated Account & security reads/password/session operations and final-guard races.
+  3. **I5c Google/observer/failure composition** — pending explicit link/callback, telemetry/transaction callback, availability vs unexpected restoration.
+  4. **I5d Worker/browser chain** — real mounted Account UI + stale cookies + inactive denial + unrelated active control + sign-out cleanup/private boundary.
+  5. **I5e final connected sweep/evidence map** — only after I5a–d PASS; cumulative author inspection and any remaining connected evidence gap.
+- **Only I5a is assigned now.** I5b–e are not authorized and will be assigned separately after Mira checkpoint review of the preceding slice.
+- Runtime code is not changed pre-emptively; only a reproduced current-scope I5a gap permits the smallest correction and regression.
+- J–R, SA05, #315 remediation, physical deletion/reactivation/forced-session control, secondary storage, permanent docs and Stage6 remain outside I5.
+- Lev/Mark remain unassigned until the full I5 author sequence and Mira cumulative whole-I PASS.
+
+
 ## 2026-11-13 — Mira I5 plan review PASS → Lira implementation
 
 - Reviewed Lev technical plan [#6851946924](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6851946924) against the fixed I5 decomposition, current main/source-of-truth and stable #329 exact `85104942e75071a67b4a4b37212ce5bca7361fe4`.
