@@ -1,5 +1,11 @@
 # ChatGPT-5.6 Sol — personal log
 
+## 2026-11-13 — SA04-J3a bounded assignment
+
+- Pre-action: coordinator role/authority confirmed; latest J2 exact head preserved; J3 contains independently completable revision, edit and service-no-op subfamilies.
+- Assigned only **J3a** to Lira: transaction-local actor AccountState protection for `reviseTopicTitle` and `revisePostBody` (own/any), preserving CAS, revision/History atomicity and classified errors.
+- J3b edit/attachment receipt, J3c service source-locale no-op, J4+, Lev/Mark unassigned. Next Mira gate: Lira stable author J3a head → bounded checkpoint review.
+
 ## 2026-11-13 — SA04-J2 bounded checkpoint PASS
 
 - Reviewed exact #330 head `22a6733ee661e22665406974d5a3ac515866fd51`, full J2 8-commit / 5-file delta, production publication paths, J1 transaction guard, lock ordering, replay/finalization boundaries, late HTTP classification and focused PG17 evidence.
