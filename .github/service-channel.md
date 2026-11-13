@@ -1,5 +1,16 @@
 # Admin panel — communication
 
+## J9 — Mira bounded coordinator review: PASS
+
+- Reviewed cumulative Draft #330 stable exact `ce9c068f5f5d1d3b291f1f6b8125fa7f55d9549b` against the accepted J9 slice and full-J lock/lifecycle plan. Delta from J8 PASS `41e26f191357aacde3de2dae3a3c7fed20756a30`: four bounded commits / three files only.
+- `createHelpSignal` preserves sorted topic dependencies and applicable selected-solution post before the same-transaction actor `FOR NO KEY UPDATE`; the existing create-only measure and Help cooldown remain after admission. Cooldown reuses that actor mutex with no `FOR UPDATE` upgrade or second connection.
+- Withdrawal and rejected review preserve signal→actor ordering and acquire no later content locks. Withdrawal remains measure/History-free; rejected review keeps `admin.forum`, one status effect and one final `help.signalReviewed`.
+- Accepted review preserves topics → applicable solution post → complete potentially affected pending signal set in stable signal-ID order → target reread/revalidation → actor → admin measure → effect → one final review History. Duplicate scope includes the existing third-topic `proposedOriginalTopicId` reach; solution moderation and accepted/superseded predicates remain unchanged.
+- Current-stage behavior remains intact: all four submit kinds, withdrawal, rejected review, accepted and accepted→superseded outcomes, broad duplicate supersession, trusted session actor, generic private/no-store late lifecycle 401, and single-event History semantics. The test-fixture-only stale-solution adjustment reflects accepted J8 supersession behavior and does not hide a J9 production correction.
+- Focused native PG17 file contains 32 expanded J9 cases covering active/inactive/missing behavior, before/after facts, measure separation, cooldown lock strength, state-first/writer-first races, target withdrawal, bulk third-topic signal contention, J8 post contention and Complaint FK compatibility. Exact-head GitHub workflows independently rechecked: CI database/checks SUCCESS, SA-03 Chromium SUCCESS, AP-10 browser/settings/history/administrator jobs all SUCCESS.
+- No J10–J12, Complaint N, #315, K, SA-05, schema/migration/permission/dependency, permanent-doc or Stage-6 change is part of this slice. The separate J7 permanent-doc lock-wording closeout remains deferred.
+- **Verdict: PASS — 0 confirmed current-scope J9 defects. STOP before J10 assignment.** J10–J12, Lev and Mark remain unassigned.
+
 ## SA04-J9 — Lira AUTHOR STOP → Mira bounded coordinator review
 
 - **Stable implementation:** cumulative Draft #330 exact `ce9c068f5f5d1d3b291f1f6b8125fa7f55d9549b`, open/draft/unmerged. Baseline J8 Mira PASS `41e26f191357aacde3de2dae3a3c7fed20756a30`.
