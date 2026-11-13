@@ -4114,6 +4114,9 @@ export class DrizzleForumRepository {
 
   async reviseTopicTitle(topicId: string, expectedRevisionId: string, revision: ForumRevisionContent, authorId: string, correctionScope?: "own" | "any") {
     return this.database.transaction(async (tx) => {
+      await tx.select({ id: forumTopics.id }).from(forumTopics)
+        .where(eq(forumTopics.id, topicId)).for("no key update");
+      await assertActiveAccountForDrizzleMutation(tx, authorId);
       if (correctionScope === "any") await this.measureAdmission(tx, authorId, "admin.forum");
       const [previous]=correctionScope==="any"?await tx.select({sourceLocale:forumTopicTitleRevisions.sourceLocale}).from(forumTopicTitleRevisions).where(eq(forumTopicTitleRevisions.id,expectedRevisionId)):[];
       await tx.insert(forumTopicTitleRevisions).values({ ...revision, topicId, authorId });
@@ -4129,6 +4132,9 @@ export class DrizzleForumRepository {
 
   async revisePostBody(postId: string, expectedRevisionId: string, revision: ForumRevisionContent, authorId: string, correctionScope?: "own" | "any") {
     return this.database.transaction(async (tx) => {
+      await tx.select({ id: forumPosts.id }).from(forumPosts)
+        .where(eq(forumPosts.id, postId)).for("no key update");
+      await assertActiveAccountForDrizzleMutation(tx, authorId);
       if (correctionScope === "any") await this.measureAdmission(tx, authorId, "admin.forum");
       const [previous]=correctionScope==="any"?await tx.select({sourceLocale:forumPostRevisions.sourceLocale}).from(forumPostRevisions).where(eq(forumPostRevisions.id,expectedRevisionId)):[];
       await tx.insert(forumPostRevisions).values({ ...revision, postId, authorId });
