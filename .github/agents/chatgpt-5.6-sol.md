@@ -2359,3 +2359,12 @@ Do not treat a user's anger, criticism or request to think as implicit permissio
 - One I4 handoff would combine token-resolved session updates, id/email-resolved user updates, id/userId-resolved account mutations, OAuth/provider/password semantics, destructive session paths and the inactive own-signout exception.
 - Split I4 into I4a session non-destructive writes, I4b existing-user writes, I4c account writes, I4d session destructive writes + connected closure.
 - This is scope decomposition only: no implementation, no Lira assignment, no Lev/Mark involvement. Next explicit continuation may assign I4a.
+
+
+## 2026-11-13 — SA04-I4a assignment
+
+- Pre-action gate passed: coordination role, current #251 continuation authority, one bounded Lira result, cumulative #329 preservation.
+- Assigned only I4a from accepted I3 exact `ba2337d788161915dbeb2de49ff320b4dad61768`: atomic lifecycle closure for non-destructive session create and refresh/update writes.
+- Acceptance is outcome-based: no admission→write race against concurrent deactivation; preserve I3 create gate, active sliding/cookie behavior, SA-02 successful facts and failure classification.
+- I4b existing-user writes, I4c account writes, I4d destructive sessions/own-signout closure, I5/J+ remain unassigned.
+- Next is Lira author delivery on one stable exact head, then Mira bounded I4a checkpoint review. Lev/Mark remain stopped.
