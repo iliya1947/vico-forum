@@ -4,17 +4,21 @@
 - **I5a PASS** exact `58130793d05f6eb2a8b867b2fb546ccddcd6fb59`.
 - **I5b PASS** exact `705519ce10f78801c2614a1cafa13347e0d2a75b`.
 - **I5c PASS** exact `23554aad29ddd23edb540cddc2069533ebe99329`.
-- **Current checkpoint: I5d author STOP → Mira bounded I5d reviewer.** Cumulative [Draft implementation #329](https://github.com/iliya1947/vico-forum/pull/329) stable exact `74c6f43ae2d67526e2ad17aa50392aebf41abbca`, one I5d commit from the I5c PASS head, only `tests/browser/settings-account/check.py`; runtime/schema/dependencies/docs unchanged.
-- **Verified I5d result:** real built Worker / Better Auth 1.7.7 / PG17 / Chromium with two signed retained sessions, one independently active control and Account & security mounted before fixture-only deactivation. Both old cookies deny fresh protected Account document/data 401, private/no-store and secret-free; real mounted password form POST fails closed without protected change; inactive signed own UI Sign out deletes/clears only its current retained session, other old retained session stays stored but unauthorized; guest/public forum remains readable and unrelated active Account stays functional. Existing active SET-05 and EN/RU/HE/RTL browser cases preserved.
-- **Exact-head Actions SUCCESS:** [CI #43439236882](https://github.com/iliya1947/vico-forum/actions/runs/43439236882) 2269 app / 765 PG17 + lint/typecheck/build/Worker/parity; [AP-10 #43439236624](https://github.com/iliya194/vico-forum/actions/runs/43439236624) 4/4 browser jobs; [SA-01 #43439236742](https://github.com/iliya194/vico-forum/actions/runs/43439236742) and [SA-03 #43439236903](https://github.com/iliya194/vico-forum/actions/runs/43439236903) browser SUCCESS. Lira bounded author inspection complete; no runtime defect reproduced.
-- **Next:** Mira reviews only I5d on stable exact `74c6f43ae2d67526e2ad17aa50392aebf41abbca`: PASS or one confirmed current-scope correction package. Lira STOP; **I5e and Lev/Mark unassigned.** No J–R, SA05, #315, documentation closeout/merge, Stage6/production/live Google.
+- **I5d bounded Mira checkpoint PASS** exact `74c6f43ae2d67526e2ad17aa50392aebf41abbca`; 0 confirmed current-scope defects.
+- I5d delta: one commit, only `tests/browser/settings-account/check.py` (+123/-3); no production/runtime/schema/dependency/docs changes.
+- Verified real built Worker + Better Auth 1.7.7 + disposable PostgreSQL17 + Chromium lifecycle chain: two genuine retained signed sessions/cookies, mounted Account page before fixture-only deactivation, unrelated active control account, fresh protected document and `.data` denial from both old cookies, and a real mounted password form POST rejected without credential/session mutation.
+- The before/after database snapshots include retained session IDs/tokens/timestamps and account credential/provider-secret columns; protected requests do not mutate them. Responses are private/no-store and do not expose captured session/password/provider secrets. Unrelated active Account & security remains functional.
+- Verified the accepted inactive own-signout exception through the real stale-tab header control/canonical `/api/auth/sign-out`: only that signed current retained session is deleted and its cookie cleared; the other inactive retained session stays persisted and unauthorized. Public forum read remains available.
+- Existing active SET-05, freshness/stale-identity, shared 3/10s password rate limit and EN/RU/HE/RTL/responsive browser checks remain green. Exact-head CI: 184/184 app files, 2269/2269 app tests; 69/69 PG17 files, 765/765 tests; AP-10 browser 4/4; SA-01/SA-03 browser SUCCESS.
+- **Current stage: STOP after I5d PASS. I5e is unassigned.** Next explicit continuation may assign **I5e only** for final connected sweep/evidence map + cumulative I author inspection.
+- Lev/Mark remain unassigned until I5e completes and Mira cumulative whole-I PASS. No J–R, SA05, #315 remediation, docs/merge, Stage6/production/live Google.
 
 ## I5 author checkpoint decomposition
 
 1. **I5a — native core connected chain:** Mira PASS exact `58130793d05f6eb2a8b867b2fb546ccddcd6fb59`.
 2. **I5b — SET-05 stale/deactivated chain:** Mira PASS exact `705519ce10f78801c2614a1cafa13347e0d2a75b`.
 3. **I5c — Google callback/link and observer/failure composition:** **Mira PASS** exact `23554aad29ddd23edb540cddc2069533ebe99329`.
-4. **I5d — built Worker/browser connected acceptance:** **Lira AUTHOR STOP → Mira review** on exact `74c6f43ae2d67526e2ad17aa50392aebf41abbca`.
+4. **I5d — built Worker/browser connected acceptance:** **Mira PASS** exact `74c6f43ae2d67526e2ad17aa50392aebf41abbca`.
 5. **I5e — final connected sweep/evidence map:** after I5a–d PASS and author cumulative I inspection. Not assigned.
 
 ## Mandatory author verification
