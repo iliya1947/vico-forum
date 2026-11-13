@@ -2,9 +2,12 @@ import { readFile } from "node:fs/promises";
 import { betterAuth } from "better-auth";
 import { drizzle } from "drizzle-orm/node-postgres";
 import { Client } from "pg";
+import { RouterContextProvider } from "react-router";
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
 import { betterAuthOptions, createHyperdriveAuthRuntime, type BetterAuthEnvironment } from "../../app/auth/auth.server";
 import { AccountStateUnexpectedError } from "../../db/account-state";
+import { authSessionForRequest } from "../../app/auth/request-context";
+import { initializeAuthContext, withAuthSessionCookies } from "../../app/auth/session-context";
 import { installRegistrationPolicyFixture } from "./registration-policy-fixture";
 
 const url = process.env.DATABASE_URL;
@@ -937,4 +940,143 @@ describe("SA04-I4d Better Auth 1.7.7 destructive session write atomicity", () =>
       .handle(request())).rejects.toBeInstanceOf(AccountStateUnexpectedError);
     expect((await sessions(userId)).map(x => x.token)).toEqual([session.token]);
   });
+});
+
+describe("SA04-I5a connected native account lifecycle across retained cookies", () => {
+  it("composes pre-routing, HTTP/direct denial, final write guards and isolated inactive own sign-out", async () => {
+    // One real Better Auth/PG17 chain, rather than independent mocked boundary results.
+    const runtime = createHyperdriveAuthRuntime(url, env, () =>
+      new Client({ connectionString: url, options: "-c search_path=" + schema }));
+    const owner = await signUp("i5a-retained-owner");
+    const unrelated = await signUp("i5a-unrelated-active");
+    const email = "i4a-i5a-retained-owner@example.test";
+    const activeEmail = "i4a-i5a-unrelated-active@example.test";
+    const call = (endpoint: string, cookie: string, body?: object) => runtime.handle(new Request(
+      origin + "/api/auth/" + endpoint, {
+        method: body ? "POST" : "GET",
+        headers: { Cookie: cookie, Origin: origin,
+          "cf-connecting-ip": `203.0.113.${ip++}`,
+          ...(body ? { "content-type": "application/json" } : {}) },
+        ...(body ? { body: JSON.stringify(body) } : {}),
+      }));
+    const secondLogin = await runtime.handle(new Request(origin + "/api/auth/sign-in/email", {
+      method: "POST",
+      headers: { Origin: origin, "content-type": "application/json",
+        "cf-connecting-ip": `203.0.113.${ip++}` },
+      body: JSON.stringify({ email, password }),
+    }));
+    expect(secondLogin.status).toBe(200);
+    const secondCookie = secondLogin.headers.getSetCookie()
+      .find(value => value.includes("session_token="))?.split(";", 1)[0];
+    expect(secondCookie).toBeTruthy();
+    expect(secondCookie).not.toBe(owner.cookie);
+    const cookies = [owner.cookie, secondCookie!];
+
+    const sessions = async (userId: string) => (await writer.query<{
+      id: string; token: string; expires_at: Date; updated_at: Date;
+    }>('select id,token,expires_at,updated_at from "session" where user_id=$1 order by id',
+      [userId])).rows;
+    expect(await sessions(owner.userId)).toHaveLength(2);
+    const unrelatedBefore = await sessions(unrelated.userId);
+    expect(unrelatedBefore).toHaveLength(1);
+    for (const cookie of cookies) {
+      const context = new RouterContextProvider();
+      await initializeAuthContext(context,
+        new Request(origin + "/en", { headers: { Cookie: cookie } }), runtime);
+      expect(authSessionForRequest(context)?.user.id).toBe(owner.userId);
+    }
+
+    // Both old signed cookies become guest after the persisted lifecycle change;
+    // even a due session must not slide or mutate as part of denial.
+    await writer.query(`update "session" set expires_at=now()+interval '5 days',
+      updated_at=now()-interval '2 days' where user_id=$1`, [owner.userId]);
+    const retained = await sessions(owner.userId);
+    await deactivator.query(deactivateSql, [owner.userId]);
+    for (const cookie of cookies) {
+      const context = new RouterContextProvider();
+      const lookup = await initializeAuthContext(context,
+        new Request(origin + "/en", { headers: { Cookie: cookie } }), runtime);
+      expect(authSessionForRequest(context)).toBeNull();
+      expect(withAuthSessionCookies(new Response("public"), lookup).status).toBe(200);
+      expect(lookup.getSetCookie().some(value =>
+        value.includes("session_token=") && !value.includes("Max-Age=0"))).toBe(false);
+      for (const endpoint of ["get-session", "list-sessions"]) {
+        const denied = await call(endpoint, cookie);
+        expect(denied.status, endpoint).toBe(401);
+        expect(denied.headers.getSetCookie().some(value =>
+          value.includes("session_token=") && !value.includes("Max-Age=0"))).toBe(false);
+        expect(await denied.text()).not.toContain(email);
+      }
+      const update = await call("update-user", cookie, { name: "I5A_FORBIDDEN_RENAME" });
+      expect(update.status).toBe(401);
+    }
+
+    const direct = (await auth.$context).internalAdapter;
+    const headers = new Headers({ Cookie: secondCookie });
+    await expect(auth.api.getSession({ headers })).rejects.toMatchObject({ status: "UNAUTHORIZED" });
+    await expect(auth.api.updateUser({
+      headers, body: { name: "I5A_DIRECT_FORBIDDEN_RENAME" },
+    })).rejects.toMatchObject({ status: "UNAUTHORIZED" });
+    await expect(direct.createSession(owner.userId))
+      .rejects.toMatchObject({ status: "UNAUTHORIZED" });
+    await expect(direct.updateSession(owner.session.token, {
+      expiresAt: new Date(Date.now() + 8 * 86400_000), updatedAt: new Date(),
+    })).rejects.toMatchObject({ status: "UNAUTHORIZED" });
+    await expect(direct.deleteUserSessions(owner.userId))
+      .rejects.toMatchObject({ status: "UNAUTHORIZED" });
+
+    const inactiveLogin = await runtime.handle(new Request(origin + "/api/auth/sign-in/email", {
+      method: "POST",
+      headers: { Origin: origin, "content-type": "application/json",
+        "cf-connecting-ip": `203.0.113.${ip++}` },
+      body: JSON.stringify({ email, password }),
+    }));
+    expect(inactiveLogin.status).toBe(401);
+    expect(inactiveLogin.headers.getSetCookie().some(value =>
+      value.includes("session_token=") && !value.includes("Max-Age=0"))).toBe(false);
+    expect(await sessions(owner.userId)).toEqual(retained);
+
+    // Signed current-cookie cleanup is the only allowed destructive inactive write.
+    const signedOut = await call("sign-out", owner.cookie, {});
+    expect(signedOut.status).toBe(200);
+    expect(signedOut.headers.getSetCookie().some(value =>
+      value.includes("session_token") && value.includes("Max-Age=0"))).toBe(true);
+    const remaining = await sessions(owner.userId);
+    expect(remaining).toHaveLength(1);
+    expect(remaining[0].token).not.toBe(owner.session.token);
+    expect(remaining[0]).toEqual(retained.find(value => value.token !== owner.session.token));
+    expect((await runtime.getSession(new Headers({ Cookie: secondCookie })).session).toBeNull();
+    expect((await call("list-sessions", secondCookie!)).status).toBe(401);
+    expect((await writer.query<{ name: string; deactivated_at: Date | null }>(
+      'select name,deactivated_at from "user" where id=$1', [owner.userId],
+    )).rows[0]).toMatchObject({ name: "I4a active member",
+      deactivated_at: expect.any(Date) });
+
+    // Expiration remains guest-only; endpoint-last login cookies must win
+    // over preliminary old-cookie cleanup for an unrelated still-active user.
+    await writer.query("update \"session\" set expires_at=now()-interval '1 minute' where token=$1",
+      [remaining[0].token]);
+    expect((await runtime.getSession(new Headers({ Cookie: secondCookie })).session).toBeNull();
+    const loginRequest = new Request(origin + "/api/auth/sign-in/email", {
+      method: "POST",
+      headers: { Cookie: secondCookie!, Origin: origin, "content-type": "application/json",
+        "cf-connecting-ip": `203.0.113.${ip++}` },
+      body: JSON.stringify({ email: activeEmail, password }),
+    });
+    const pre = await initializeAuthContext(new RouterContextProvider(), loginRequest, runtime);
+    const final = withAuthSessionCookies(await runtime.handle(loginRequest), pre);
+    expect(final.status).toBe(200);
+    const newCookie = final.headers.getSetCookie()
+      .filter(value => value.includes("session_token=")).at(-1)?.split(";", 1)[0];
+    expect(newCookie).toBeTruthy();
+    expect(newCookie).not.toBe(secondCookie);
+    expect((await runtime.getSession(new Headers({ Cookie: newCookie! })).session?.user.id)
+      .toBe(unrelated.userId);
+    expect((await call("list-sessions", unrelated.cookie)).status).toBe(200);
+    expect((await sessions(unrelated.userId)).map(value => value.token))
+      .toContain(unrelatedBefore[0].token);
+    expect((await writer.query<{ deactivated_at: Date | null }>(
+      'select deactivated_at from "user" where id=$1', [unrelated.userId],
+    )).rows[0]?.deactivated_at).toBeNull();
+  }, 45_000);
 });
