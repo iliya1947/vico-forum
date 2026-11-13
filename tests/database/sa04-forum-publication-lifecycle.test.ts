@@ -33,7 +33,7 @@ async function deactivate(id: string) {
   await fixture.query(`update "user" set deactivated_at=now(),
     deactivated_by_user_id=$1,retain_at_least_until=now()+interval '2 years' where id=$1`, [id]);
 }
-function newTopic(authorId: string, id = uuid(), draft?: { contextKey: string; draftId: string; attachmentIds: string[] }) {
+function newTopic(authorId: string, id: string = uuid(), draft?: { contextKey: string; draftId: string; attachmentIds: string[] }) {
   return {
     id, sectionId, authorId, titleRevision: {
       id: uuid(), originalContent: "J2 topic title", sourceLocale: "en",
