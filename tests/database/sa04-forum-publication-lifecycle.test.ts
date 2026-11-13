@@ -82,7 +82,7 @@ async function stagedFile(ownerId: string, contextKey: string) {
   return { contextKey, draftId, attachmentIds: [attachmentId] };
 }
 async function draftState(ownerId: string, draftId: string) {
-  return (await fixture.query(`select status from forum_attachment_draft_generations
+  return (await fixture.query(`select target_draft_id from forum_attachment_draft_generations
     where owner_id=$1 and draft_id=$2`, [ownerId, draftId])).rows;
 }
 
@@ -169,7 +169,7 @@ describe("SA04-J2 authoritative Forum publication lifecycle", () => {
 
   it("preserves active topic receipt replay after closure, but rejects retained inactive replay without mutation", async () => {
     const actor = await user("j2-topic-replay-" + uuid());
-    const draft = await stagedFile(actor, `section:${sectionId}:topic`);
+    const draft = await stagedFile(actor, `section:${sectionId}:new`);
     const request = newTopic(actor, uuid(), draft);
     const result = await forum.createTopicWithInitialPost(request);
     const firstReceipt = (await fixture.query("select topic_id,post_id from forum_publication_receipts where owner_id=$1", [actor])).rows;
