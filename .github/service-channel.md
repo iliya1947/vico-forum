@@ -1,5 +1,28 @@
 # Admin panel — communication
 
+## SA04-J6 — assignment → Lira
+
+Baseline: cumulative Draft #330 exact `af25adf18fd065e5af4a7e6da2c670f28613a10f` (Mira J5 PASS).
+
+Implement **J6 only**: authoritative lifecycle admission for inbox acknowledgement writers `markNotificationRead` and `markReplyNotificationRead`.
+
+Required result:
+
+- both writers use one short transaction and the trusted `userId`;
+- authoritative AccountState admission occurs **before** the actor's own notification row lock/update, matching the accepted Inbox lock order;
+- unified `markNotificationRead` preserves recipient ownership, complaint Case participant-membership checks, reply/mention target return, complaint Decision/Appeal-result target return and existing 404 behavior for an active actor;
+- legacy `markReplyNotificationRead` remains reply/mention-only and recipient-owned; do not create a new HTTP route for it;
+- active already-read acknowledgement remains idempotent and does not reset `read_at`;
+- inactive/missing actor cannot mutate `read_at` or receive success, including already-read paths;
+- canonical `/:locale/notifications` action continues through shared `runForumMutation`: late lifecycle denial → generic `401 unauthenticated`, `private, no-store`, with no redirect/false success/lifecycle detail;
+- preserve storage-unavailable 503 and unexpected-error behavior.
+
+Evidence should directly cover active unread/already-read unified reply, mention, complaint-decision and complaint-appeal-result branches; legacy reply/mention; wrong recipient/non-member/not-found regressions; inactive/missing before/after `read_at` facts; state-first and writer-first lifecycle races for both writer shapes; canonical action lifecycle denial and redirect regressions.
+
+Excluded: Complaint commands/domain changes (N), J7+, new legacy HTTP surface, #315 remediation, attachment K, SA-05, schema/migration/permission/dependency changes, docs and Stage 6.
+
+Run applicable exact-head CI/checks, inspect the bounded delta, publish one stable #330 head/evidence, then **AUTHOR STOP for Mira J6 review**. Lev/Mark remain inactive.
+
 ## J5 — Mira bounded coordinator review: PASS
 
 - Reviewed cumulative Draft #330 exact `af25adf18fd065e5af4a7e6da2c670f28613a10f` against the accepted J5 assignment and Lev's full-J read-state/lock graph.
