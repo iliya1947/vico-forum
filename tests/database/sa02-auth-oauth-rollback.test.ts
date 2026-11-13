@@ -206,8 +206,9 @@ describe("SA02 native Better Auth v1.7.7 OAuth, partial commit and rollback fact
       where id=$1`,[userId]);
     const blockedStart=await initiate(await authFactory(),"sign-in/social");
     const blocked=await callback(await authFactory(),blockedStart.state,blockedStart.cookies);
-    expect(blocked.status).toBe(302);
-    expect(new URL(blocked.headers.get("Location")!,origin).searchParams.has("error")).toBe(true);
+    // A session-create admission APIError is returned directly by this
+    // Better Auth 1.7.7 callback path rather than a synthetic redirect.
+    expect(blocked.status).toBe(401);
     expect(sessionCookie(blocked)).toBeFalsy();
     expect((await client.query<{id:string;token:string}>(
       'select id,token from session where user_id=$1 order by id',[userId])).rows).toEqual(before);
