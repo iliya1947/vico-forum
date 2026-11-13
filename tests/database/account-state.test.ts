@@ -315,7 +315,7 @@ describe("SA04-A2 server-only account-state read foundation", () => {
 
   it("J1 shares native validation and wrapped storage-error classification in Drizzle", async () => {
     type DrizzleTx = Parameters<typeof assertActiveAccountForDrizzleMutation>[0];
-    const fakeRows = (get: () => Promise<unknown>): DrizzleTx => ({
+    const fakeRows = (get: (strength?: unknown) => Promise<unknown>): DrizzleTx => ({
       select: () => ({ from: () => ({ where: () => ({ for: get }) }) }),
     }) as unknown as DrizzleTx;
     const disconnected = Object.assign(new Error("private J1 lost client"), { code: "08006" });
@@ -356,17 +356,12 @@ describe("SA04-A2 server-only account-state read foundation", () => {
         retain_at_least_until: new Date("2025-02-28T12:34:56Z"),
       }]), "j1-inactive",
     )).rejects.toBeInstanceOf(AccountInactiveError);
-    // The only recognized lock strength is the approved non-key actor row lock.
     const lockCalls: unknown[] = [];
-    await assertActiveAccountForDrizzleMutation(fakeRows(async function (this: unknown) {
+    await assertActiveAccountForDrizzleMutation(fakeRows(async (strength) => {
+      lockCalls.push(strength);
       return [{ deactivated_at: null, deactivated_by_user_id: null, retain_at_least_until: null }];
     }), "j1-active");
-    const lockSpy = fakeRows(async () => {
-      lockCalls.push("executed");
-      return [{ deactivated_at: null, deactivated_by_user_id: null, retain_at_least_until: null }];
-    });
-    await assertActiveAccountForDrizzleMutation(lockSpy, "j1-active");
-    expect(lockCalls).toEqual(["executed"]);
+    expect(lockCalls).toEqual(["no key update"]);
   });
 
   it("J1 holds the Drizzle actor lock through COMMIT, compatible with foreign KEY SHARE", async () => {
