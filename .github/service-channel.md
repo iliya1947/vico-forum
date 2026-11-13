@@ -1,5 +1,16 @@
 # Admin panel — communication
 
+## 2026-11-13 — Mira I5 plan review PASS → Lira implementation
+
+- Reviewed Lev technical plan [#6851946924](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6851946924) against the fixed I5 decomposition, current main/source-of-truth and stable #329 exact `85104942e75071a67b4a4b37212ce5bca7361fe4`.
+- **Scope/fit/granularity: PASS.** I5 remains one connected final auth/session result; splitting native and browser evidence would weaken the intended composition gate rather than create independently complete product slices.
+- The plan does not import J–R, SA05 or #315 remediation. Fixture deactivation is acceptance setup for SA04, not implementation of the future Owner deactivate operation.
+- Browser/CI work is evidence for the same connected result, not a new product capability. A new narrow workflow is optional only if existing CI cannot host the proof cleanly; do not clone infrastructure without necessity.
+- No production-code rewrite is presumed. Runtime changes are authorized only for a reproduced current-scope lifecycle gap, with the smallest correction and regression.
+- **Lira owns I5 only** in cumulative Draft #329 from exact `85104942e75071a67b4a4b37212ce5bca7361fe4`. Implement the accepted plan, preserve active SET-05/registration/linking/fact/cookie semantics, publish one stable exact head with actual connected evidence and personal inspection, then STOP for Mira cumulative whole-I review.
+- Lev/Mark remain unassigned until the author STOP and Mira coordinator gate.
+
+
 ## 2026-11-13 — Лёва: I5 technical planning complete → Mira plan review
 
 Published full plan [#6851946924](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6851946924). Main/base and #329 exact head rechecked unchanged before publication.
