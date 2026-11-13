@@ -1,5 +1,47 @@
 # Admin panel — communication
 
+## 2026-11-13 — Лёва: SA04-I independent whole-PR PASS → Mira
+
+## Лёва — независимая техническая whole-PR проверка SA04-I: PASS
+
+Проверен **весь cumulative PR [#329](https://github.com/iliya1947/vico-forum/pull/329), восемь файлов**, exact head `74c6f43ae2d67526e2ad17aa50392aebf41abbca`, base/current main `13456a17f23c1385bef8ab11c735f43d201edd02`. Scope — I1–I5, включая принятое операционное разбиение I5a–e и связную композицию текущего настроенного Better Auth1.7.7.
+
+**PASS — 0 подтверждённых current-scope дефектов.** Это тот же stable head, на котором Мира дала cumulative whole-I coordinator PASS. В реализации #329 не участвовал; ранее готовил технический план I5. Во время review реализацию и авторские assertions не менял.
+
+### Проверенная композиция
+
+- I1 не передаёт retained inactive user в request identity; late losing refresh остаётся guest/null. I2 проверяет текущие HTTP/direct authenticated paths и pathless setPassword, не продлевая inactive due session при предварительном lookup. I3 session-create gate сохраняется независимо от telemetry.
+- I4 покрывает реальные current configured session/user/account persistence shapes: persisted target, тот же request-native Client, A2 `FOR NO KEY UPDATE`, original Better Auth write и COMMIT. Transaction callback adapter повторно обёрнут; concurrent revoke-other deletes на одном Client сериализованы. Не требуется новый transaction/lock на весь provider network flow.
+- Исключение inactive own-signout ограничено signed current cookie token и одним cleanup; bulk revoke и чужие session targets его не наследуют. Lifecycle unavailable/unexpected различаются и восстанавливаются после Better Auth error wrapping.
+- Active SET-05 password/freshness/own-session protections, shared canonical limiter, registration/linking policy, endpoint-last cookies и success-only SA02 facts сохранены. Дополнения I5 связывают эти границы; runtime source после принятого I4 head не менялся.
+- Публичные/state fields не расширены; schema/migrations/dependencies/permanent docs в cumulative diff не менялись. Предыдущее A1/A2–H acceptance не выдаётся за новую проверку этого PR.
+
+### Независимо выполненные проверки
+
+- **4/4 затронутых native suites, 69/69 tests PASS** на собственной disposable PostgreSQL17: auth-runtime, session-atomic, account-security и OAuth/rollback. Реальные persisted-state races, обе очередности final admission/write, I5 retained cookies/SET-05/pending callback и observer/failure cases.
+- **9/9 релевантных application files, 65/65 tests PASS**: auth configuration/client/context/controls/linking/credentials, auth passthrough и Settings Account.
+- Свежий Worker build, clean migrations 0000–0065 и **69-table manifest parity PASS**.
+- Полный checked-in Settings Account/I5 Chromium harness повторён на собственном build/DB: **17/17 records PASS**, exact implementation SHA; **pageErrors=[], externalRequests=[]**. Активные SET-05 forms/limiter/freshness, EN/RU/HE/RTL/mobile, две retained cookies после fixture-deactivation, private document/.data401 без protected mutation, реальная stale password form и настоящая Sign out кнопка. Копия harness адаптирована только к локальным repo path и Chromium executable; assertions сохранены.
+- **Собственный дополнительный original native probe PASS:** unsigned/tampered cookies не удаляют sessions; inactive actor не отзывает чужую; подставленные token/userId в sign-out body не выбирают cleanup target. Удаляется ровно текущая подписанная session, появляется один реальный deletion fact, другая inactive session и unrelated account сохраняются.
+- В том же original probe A2 lifecycle fault внутри sign-out, который Better Auth ловит локально, восстановлен runtime как safe no-store503; unexpected failure пропагируется; physical session остаётся и ложного deletion fact нет.
+- Через GitHub API повторно проверены SUCCESS на том же exact head: [CI #43439236882](https://github.com/iliya1947/vico-forum/actions/runs/43439236882), [AP10 #43439236624](https://github.com/iliya1947/vico-forum/actions/runs/43439236624), [SA01 #43439236742](https://github.com/iliya1947/vico-forum/actions/runs/43439236742), [SA03 #43439236903](https://github.com/iliya1947/vico-forum/actions/runs/43439236903). Полные remote 2269 app/765 native не объявляются локально повторёнными: собственные runs — 65 app/69 native.
+
+### Границы результата
+
+Google callback/link проверяется genuine Better Auth handler/state/adapter/PG17 с synthetic provider seam в native suite. Это отдельно от built Worker/browser email/Settings acceptance и от runtime error-composition proof; **live Google/deployed OAuth acceptance не заявляется**.
+
+#315 учтён на `fc32f0ba36120b89a27831993519a00f2a40b953` по current workflow и Block B. Existing AUTH-LINK/SESSION/CACHE и другие audit findings не объявлены закрытыми этим lifecycle PASS. В частности, восстановленный typed lifecycle fault не означает общей remediation всех canonical adapter-delete failures.
+
+Это PASS **SA04-I**, не всего SA04: J–R authoritative application writers, S full-package connected closure, SA05 deactivate action/UI/event, physical user deletion/reactivation, unconfigured secondary storage, docs closeout, merge, #315 remediation и Stage6/production не выполнялись и не назначаются этим результатом.
+
+Все восемь source hashes совпадают с reviewed exact head. Worktree чист; свой Worker остановлен, synthetic vars/dependency link и disposable PostgreSQL-контейнер удалены.
+
+**Следующий получатель — Мира:** принять независимый whole-I PASS и определить coordinator closeout/следующий bounded шаг для уже проверенного stable #329 по текущему workflow. Не расширять готовый проверенный PR ради повторения того же review. Лира/Марк и J+ этим сообщением не назначаются; merge — полномочие владельца. Лёва завершил назначение и STOP.
+
+**Действие разработчика: подключить Миру.**
+
+Published report: [#6857634901](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6857634901). Standing developer authorization covers report/service publication throughout SA04.
+
 ## 2026-11-13 — Mira SA04-I cumulative whole-PR coordinator review PASS → Lev independent review
 
 - **Reviewed exact implementation:** Draft #329 `74c6f43ae2d67526e2ad17aa50392aebf41abbca` against current `main` `13456a17f23c1385bef8ab11c735f43d201edd02`; 52 commits, eight changed paths, behind main by 0.
@@ -705,13 +747,13 @@ PASS относится только к A1 foundation. Runtime enforcement, proj
 
 ## Актуальный baseline и назначение
 
-- Current main/base `13456a17f23c1385bef8ab11c735f43d201edd02`; SA04-A1 (#327) and A2–H (#328) merged. Previous independent acceptance remains historical delivered evidence.
-- Cumulative Draft #329 exact `85104942e75071a67b4a4b37212ce5bca7361fe4`, open/Draft/unmerged; I1–I4 coordinator checkpoints PASS, I4 closed. Whole-I is not yet accepted because I5 remains required.
-- **I5 technical planning COMPLETE**, published [#6851946924](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6851946924); one bounded connected Better Auth lifecycle closure, no further decomposition necessary on inspected current seams.
-- Current code already contains request/session/create/final adapter gates. No confirmed source-based need to prescribe a runtime rewrite; targeted native/SET05 browser/CI composition evidence is the minimal proposed result. Any code correction requires a reproduced current-I gap and minimal regression-backed fix.
-- **Next Mira:** review plan fit/granularity before any Lira assignment. Lev completed/STOP; Lira/Mark unassigned. After author I5 STOP, Mira cumulative whole-I PASS precedes Lev same-head independent review.
-- Planning did not modify implementation/schema/dependencies/permanent docs or run implementation tests/build/browser. No I5/whole-I/full-SA04 PASS claimed.
-- #315 consulted on `fc32f0ba36120b89a27831993519a00f2a40b953`; separate active-user security findings, J–R, SA05, docs closeout/merge and Stage6/production remain outside this result. User publication approval persists through SA04.
+- Current main/base `13456a17f23c1385bef8ab11c735f43d201edd02`; SA04-A1 and A2–H merged.
+- **SA04-I whole-PR coordinator PASS + independent technical PASS**, 0 confirmed current-scope defects on Draft #329 exact `74c6f43ae2d67526e2ad17aa50392aebf41abbca`, eight cumulative paths; open/Draft/unmerged.
+- Independent result [#6857634901](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6857634901) covers I1 pre-routing, I2 HTTP/direct, I3 session-create, I4 current persistence shapes and I5a–e connected composition. Prior I2/I4a findings remain closed; runtime after I4 unchanged.
+- Local evidence: native69/4 files, app65/9 files, fresh build, clean migrations/69-table parity, checked-in Worker/BA/PG17/Chromium17 records PASS; original cookie/body/signout-fault/deletion-fact probe PASS. Four exact-head remote workflows SUCCESS, full CI765 native/2269 app distinct from independent local counts.
+- **Next Mira:** coordinator follow-up/closeout for already-reviewed stable #329; Lev complete/STOP, Lira STOP, Mark/J+ unassigned. Merge only Owner. Do not reopen same reviewed slice through gratuitous scope extension.
+- This closes the assigned independent I gate, not all SA04: J–R/S, SA05/deactivate control, docs closeout, physical deletion, #315 remediation and Stage6/production/live Google remain separate.
+- #315 workflow/Block B consulted at `fc32f0ba36120b89a27831993519a00f2a40b953`; existing active-user security findings not declared remedied. User publication authorization persists throughout SA04.
 
 ## Handoff — Лира: Stage2 factual documentation closeout
 
