@@ -1,12 +1,11 @@
 # Admin panel — current workflow
 
 - **Service PR #251.** Current `main` is **`44d6b69a8d235cc8b1ee30953839be71e6ab836a`**; SA04-I is merged.
-- **Current bounded result: SA04-J1 planning only.** J is operationally split before implementation because the original row covers too many independent forum mutation families.
-- **J1 scope:** authoritative **new forum publication** writes by an actor — current topic creation (including topic + initial post) and reply creation, including their persisted receipt/replay and in-transaction publication side effects. The result is that an inactive actor cannot obtain a new publication capability through canonical or direct current forum write paths.
-- Topic and reply publication stay together for J1 because the current implementation shares publication receipt/draft-finalization semantics; splitting inside that transaction family would create an artificial partial boundary.
-- **Excluded from J1:** attachment-store admission/late upload/finalization package K; published-content edits/source-locale corrections; topic state/admin mutations; Help duplicate/signal/moderation mutations; profile/read-state/notification-read writes; L–R; S; SA05; #315 remediation; docs; Stage6/production.
-- **Technical planner: Lev.** Prepare the J1 technical plan from current main only; inspect actual current seams, lock/order/replay behavior and required evidence. Do not implement. If current source proves J1 cannot be isolated safely from an excluded family, report that finding instead of expanding scope silently.
-- **Lira/Mark unassigned.** No implementation PR is started until Mira reviews Lev's J1 plan.
+- **Current stage: SA04-J technical planning.**
+- **Technical planner: Lev.** Plan the complete accepted **SA04-J — Forum authoritative actor writes protected by AccountState** from current main.
+- Planning covers the full J boundary from the accepted SA04 package plan. Do not implement and do not pre-split the implementation.
+- After Lev publishes the J plan and STOPs, Mira reviews scope/fit/granularity and only then decides whether Lira implementation needs bounded substeps.
+- **Lira/Mark unassigned.** No implementation PR is started until Mira accepts the J technical plan.
 
 ## I5 author checkpoint decomposition
 
