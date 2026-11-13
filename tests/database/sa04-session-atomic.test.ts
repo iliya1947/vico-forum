@@ -299,6 +299,58 @@ describe("SA04-I4a Better Auth 1.7.7 native session write atomicity", () => {
       .toEqual(snapshot);
   }, 30_000);
 
+  it("classifies BEGIN, token lookup and COMMIT failures owned by the session guard", async () => {
+    const { userId, cookie, session } = await signUp("wrapper-sql-failure");
+    await writer.query(`update "session" set expires_at=now()+interval '5 days',
+      updated_at=now()-interval '2 days' where token=$1`, [session.token]);
+    const snapshot = (await writer.query<{ id: string; token: string; expires_at: Date }>(
+      'select id,token,expires_at from "session" where user_id=$1 order by id', [userId],
+    )).rows;
+
+    const withFailure = (sqlIsTarget: (sql: string) => boolean, fault: Error) =>
+      createHyperdriveAuthRuntime(url, env, () => {
+        const client = new Client({ connectionString: url, options: `-c search_path=${schema}` });
+        const original = client.query;
+        let injected = false;
+        client.query = ((...args: unknown[]) => {
+          if (!injected && sqlIsTarget(nativeSql(args[0]))) {
+            injected = true;
+            return Promise.reject(fault);
+          }
+          return Reflect.apply(original, client, args);
+        }) as typeof client.query;
+        return client;
+      });
+
+    const signIn = () => new Request(`${origin}/api/auth/sign-in/email`, {
+      method: "POST",
+      headers: { Origin: origin, "content-type": "application/json",
+        "cf-connecting-ip": `203.0.113.${ip++}` },
+      body: JSON.stringify({ email: "i4a-wrapper-sql-failure@example.test", password }),
+    });
+    const refresh = () => new Request(`${origin}/api/auth/get-session`, {
+      headers: { Cookie: cookie },
+    });
+    for (const [name, match, request] of [
+      ["BEGIN", (sql: string) => sql === "BEGIN", signIn],
+      ["token SELECT", (sql: string) => sql.startsWith('select user_id from "session" where token'), refresh],
+      ["COMMIT", (sql: string) => sql === "COMMIT", signIn],
+    ] as const) {
+      const unavailable = Object.assign(new Error(`SECRET_${name}_DB_LOST`), { code: "ECONNRESET" });
+      const result = await withFailure(match, unavailable).handle(request());
+      expect(result.status, name).toBe(503);
+      expect(result.headers.get("Cache-Control"), name).toBe("no-store");
+      expect(result.headers.getSetCookie().some(value => value.includes("session_token=")), name)
+        .toBe(false);
+      expect(await result.text()).not.toContain(`SECRET_${name}_DB_LOST`);
+      await expect(withFailure(match, new TypeError(`Unexpected I4a ${name} failure`))
+        .handle(request())).rejects.toBeInstanceOf(AccountStateUnexpectedError);
+      expect((await writer.query<{ id: string; token: string; expires_at: Date }>(
+        'select id,token,expires_at from "session" where user_id=$1 order by id', [userId],
+      )).rows).toEqual(snapshot);
+    }
+  });
+
   it("denies canonical due-session HTTP refresh if deactivation commits between preflight and locked UPDATE", async () => {
     const { userId, cookie, session } = await signUp("refresh-race");
     await writer.query(`update "session" set expires_at=now()+interval '5 days',
