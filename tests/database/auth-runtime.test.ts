@@ -330,6 +330,59 @@ describe("Better Auth PostgreSQL runtime", () => {
     expect((await call("get-session", active.cookie)).status).toBe(200);
   });
 
+  it("SA04-I2 does not refresh a due inactive session during protected HTTP preflight", async () => {
+    const runtime = createHyperdriveAuthRuntime(databaseUrl, env, () => authClient());
+    const signup = async (email: string, ip: string) => {
+      const response = await runtime.handle(new Request(`${env.BETTER_AUTH_URL}/api/auth/sign-up/email`, {
+        method: "POST", headers: { "content-type": "application/json",
+          Origin: env.BETTER_AUTH_URL, "cf-connecting-ip": ip },
+        body: JSON.stringify({ name: "I2 due session", email, password: "integration-password-123" }),
+      }));
+      expect(response.status).toBe(200);
+      const user = await response.json() as { user: { id: string } };
+      const cookie = response.headers.getSetCookie()
+        .find(value => value.includes("session_token="))?.split(";", 1)[0];
+      if (!cookie) throw new Error("Missing I2 due-session cookie");
+      return { userId: user.user.id, cookie };
+    };
+    const inactive = await signup("i2-due-inactive@example.test", "203.0.113.108");
+    const active = await signup("i2-due-active@example.test", "203.0.113.109");
+
+    const sessionRow = async (userId: string) => (await client.query<{
+      id: string; token: string; expires_at: Date; updated_at: Date;
+    }>('select id, token, expires_at, updated_at from "session" where user_id=$1', [userId])).rows[0];
+    const stageDue = async (userId: string) => {
+      await client.query(`update "session" set expires_at=now()+interval '5 days',
+        updated_at=now()-interval '2 days' where user_id=$1`, [userId]);
+      const row = await sessionRow(userId);
+      if (!row) throw new Error("Missing I2 due-session database row");
+      return row;
+    };
+    const beforeInactive = await stageDue(inactive.userId);
+    const beforeActive = await stageDue(active.userId);
+    await client.query(`update "user" set deactivated_at='2026-11-12T00:00:00Z',
+      deactivated_by_user_id=$1, retain_at_least_until='2027-11-13T00:00:00Z'
+      where id=$1`, [inactive.userId]);
+
+    const listSessions = (cookie: string) => runtime.handle(new Request(
+      `${env.BETTER_AUTH_URL}/api/auth/list-sessions`, { headers: { Cookie: cookie } },
+    ));
+    const denied = await listSessions(inactive.cookie);
+    expect(denied.status).toBe(401);
+    expect(denied.headers.getSetCookie()).toEqual([]);
+    expect(await sessionRow(inactive.userId)).toEqual(beforeInactive);
+
+    // The real endpoint still owns sliding refresh after successful active admission.
+    const allowed = await listSessions(active.cookie);
+    expect(allowed.status).toBe(200);
+    expect(allowed.headers.getSetCookie().some(value => value.includes("session_token="))).toBe(true);
+    const refreshed = await sessionRow(active.userId);
+    expect(refreshed?.id).toBe(beforeActive.id);
+    expect(refreshed?.token).toBe(beforeActive.token);
+    expect(refreshed?.expires_at.getTime()).toBeGreaterThan(beforeActive.expires_at.getTime());
+    expect(refreshed?.updated_at.getTime()).toBeGreaterThan(beforeActive.updated_at.getTime());
+  });
+
   it("SA04-I2 maps authenticated auth HTTP state outages to 503 and keeps unexpected failures", async () => {
     const baseRuntime = createHyperdriveAuthRuntime(databaseUrl, env, () => authClient());
     const signup = await baseRuntime.handle(new Request(`${env.BETTER_AUTH_URL}/api/auth/sign-up/email`, {
