@@ -31,13 +31,11 @@ function classifySessionWriteSqlError(error: unknown): AccountStateUnavailableEr
 }
 
 /**
- * Better Auth 1.7.7's session create/update adapter calls are the canonical
- * persistence seam. The earlier session.create.before hook performs admission
- * but cannot hold a PostgreSQL row lock across the subsequent adapter call.
- *
- * This adapter wrapper uses the same native request connection for the
- * transaction, authoritative target lookup, user-row lock and actual write.
- * Other models and session deletion/revocation stay on their original paths.
+ * Better Auth 1.7.7's actual adapter writes are the atomic persistence seam.
+ * Session create/update (I4a) and existing-user update/updateMany (I4b)
+ * share the native request connection for target resolution, active user-row
+ * lock, canonical adapter write and transaction commit. Session deletion,
+ * account and new-user writes retain their original paths.
  */
 export function guardBetterAuthSessionWrites(
   database: NodePgDatabase,
@@ -58,7 +56,8 @@ export function guardBetterAuthSessionWrites(
           return <T>(fn: (trx: typeof adapter) => Promise<T>): Promise<T> =>
             Reflect.apply(method, target, [async (trx: typeof adapter) => fn(wrap(trx))]);
         }
-        if (typeof method !== "function" || (property !== "create" && property !== "update")) {
+        if (typeof method !== "function" ||
+          (property !== "create" && property !== "update" && property !== "updateMany")) {
           return method;
         }
         return async (...args: unknown[]) => {
@@ -68,7 +67,11 @@ export function guardBetterAuthSessionWrites(
             where?: { field?: unknown; value?: unknown; operator?: unknown }[];
             update?: { userId?: unknown };
           } | undefined;
-          if (command?.model !== "session") {
+          const sessionWrite = command?.model === "session" &&
+            (property === "create" || property === "update");
+          const userWrite = command?.model === "user" &&
+            (property === "update" || property === "updateMany");
+          if (!sessionWrite && !userWrite) {
             return Reflect.apply(method, target, args);
           }
 
@@ -82,7 +85,35 @@ export function guardBetterAuthSessionWrites(
           try {
             await query("BEGIN");
             begun = true;
-            if (property === "create") {
+            if (userWrite) {
+              // BA 1.7.7 internalAdapter.updateUser uses a unique id selector;
+              // updateUserByEmail uses a normalized, unique email selector.
+              // Resolve and lock the persisted row, never the submitted update.
+              const where = command.where;
+              const selector = where?.length === 1 ? where[0] : null;
+              if (!selector || (selector.field !== "id" && selector.field !== "email") ||
+                typeof selector.value !== "string" || !selector.value ||
+                (selector.operator !== undefined && selector.operator !== "eq")) {
+                throw new AccountStateUnexpectedError();
+              }
+              const rows = (await query<{ id: string }>(
+                selector.field === "id"
+                  ? 'select id from "user" where id = $1 for no key update'
+                  : 'select id from "user" where email = $1 for no key update',
+                [selector.value],
+              )).rows;
+              if (rows.length > 1) throw new AccountStateUnexpectedError();
+              if (!rows.length) {
+                await query("COMMIT");
+                begun = false;
+                return property === "updateMany" ? 0 : null;
+              }
+              // An update can modify the target's attributes, not transfer its id.
+              if (command.update?.id !== undefined && command.update.id !== rows[0].id) {
+                throw new AccountStateUnexpectedError();
+              }
+              await assertActiveAccountForMutation(connection, rows[0].id);
+            } else if (property === "create") {
               await assertActiveAccountForMutation(connection, command.data?.userId as string);
             } else {
               // The pinned internalAdapter.updateSession writes by the trusted
@@ -124,6 +155,7 @@ export function guardBetterAuthSessionWrites(
               }
             }
             if (failure instanceof AccountInactiveError || failure instanceof AccountMissingError) {
+              if (userWrite) throw new APIError("UNAUTHORIZED", { message: "Unauthorized" });
               throw new InactiveSessionWriteError();
             }
             if (failure instanceof AccountStateUnavailableError ||
