@@ -2389,3 +2389,13 @@ Do not treat a user's anger, criticism or request to think as implicit permissio
 - Verified both race orderings for create/update, I1–I3 preservation, active sliding/cookies, SA-02 successful facts and unchanged I4a boundaries.
 - CI #43395760369 independently checked: 2269/2269 app, 734/734 PG17 including 9/9 I4a; SA01/SA03/AP10 exact-head Chromium SUCCESS.
 - Verdict: **PASS, 0 remaining current-scope I4a defects.** Stop before I4b; no Lev review until full I closes.
+
+
+## 2026-11-13 — SA04-I4b assignment
+
+- Developer continuation after I4a PASS authorizes the next bounded result.
+- Pre-action gate passed: this is Mira coordination, I4b is one independently completable result, cumulative #329 is preserved, and no later I4 scope is pulled forward.
+- Assigned Lira only existing-user `user` write atomic lifecycle closure from exact `7e80479e03167a8856fe1b2094b8c17678f4ce22`.
+- Outcome: authoritative current Better Auth user target stays active through the actual persisted update/commit under concurrent deactivation; selectors are resolved from canonical server-side write semantics, not trusted submitted identity.
+- Preserve new-user creation, accepted I1–I4a, active update behavior, Better Auth validation/hooks/facts and failure classification.
+- I4c account writes, I4d destructive sessions, user deletion, I5/J+ remain unassigned. Next gate is Lira stable-head author STOP → Mira I4b checkpoint review; no Lev/Mark yet.
