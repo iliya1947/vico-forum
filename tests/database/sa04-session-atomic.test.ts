@@ -525,3 +525,218 @@ describe("SA04-I4b Better Auth 1.7.7 existing-user write atomicity", () => {
     )).rows[0]?.name).toBe("I4a active member");
   });
 });
+
+describe("SA04-I4c Better Auth 1.7.7 existing-account write atomicity", () => {
+  async function accounts(userId: string) {
+    return (await writer.query<{
+      id: string; account_id: string; provider_id: string; password: string | null;
+    }>('select id,account_id,provider_id,password from account where user_id=$1 order by id', [userId])).rows;
+  }
+
+  it("holds active owner lock through linkAccount INSERT and denies later inactive create", async () => {
+    const { userId } = await signUp("i4c-link-first");
+    const direct = (await auth.$context).internalAdapter;
+    const paused = pauseNativeQuery(writer, sql => /^insert into "account"\s/i.test(sql));
+    try {
+      const linking = direct.linkAccount({ userId, providerId: "google", accountId: "new-link" });
+      await paused.entered;
+      await deactivator.query("set lock_timeout='120ms'");
+      await expect(deactivator.query(deactivateSql, [userId]))
+        .rejects.toMatchObject({ code: "55P03" });
+      paused.resume();
+      expect((await linking)?.accountId).toBe("new-link");
+    } finally {
+      paused.resume();
+      paused.restore();
+      await deactivator.query("set lock_timeout='0'");
+    }
+    expect((await accounts(userId)).map(x => x.provider_id).sort()).toEqual(["credential", "google"]);
+    await deactivator.query(deactivateSql, [userId]);
+    await expect(direct.createAccount({
+      userId, providerId: "google", accountId: "ILLEGAL_LATE_CREATE",
+    })).rejects.toMatchObject({ status: "UNAUTHORIZED" });
+    expect(await accounts(userId)).toHaveLength(2);
+  }, 30_000);
+
+  it("denies existing-user account create if deactivation commits before final lock", async () => {
+    const { userId } = await signUp("i4c-create-loser");
+    const direct = (await auth.$context).internalAdapter;
+    const paused = pauseNativeQuery(writer, sql => /for no key update/i.test(sql));
+    try {
+      const creating = direct.createAccount({
+        userId, providerId: "google", accountId: "ILLEGAL_NEW_GOOGLE",
+      });
+      await paused.entered;
+      await deactivator.query(deactivateSql, [userId]);
+      paused.resume();
+      await expect(creating).rejects.toMatchObject({ status: "UNAUTHORIZED" });
+    } finally {
+      paused.resume();
+      paused.restore();
+    }
+    expect((await accounts(userId)).map(x => x.provider_id)).toEqual(["credential"]);
+  }, 30_000);
+
+  it("resolves account UPDATE by persisted primary key and guards password and OAuth tokens", async () => {
+    const { userId } = await signUp("i4c-account-update");
+    const direct = (await auth.$context).internalAdapter;
+    const credential = (await accounts(userId))[0];
+    const linked = await direct.createAccount({
+      userId, providerId: "google", accountId: "oauth-token-subject",
+    });
+    expect((await direct.updateAccount(linked.id, { accessToken: "NEW_GOOGLE_TOKEN" }))?.accessToken)
+      .toBe("NEW_GOOGLE_TOKEN");
+    const paused = pauseNativeQuery(writer, sql => /^update "account" set /i.test(sql));
+    try {
+      const changing = direct.updateAccount(credential.id, { password: "ACTIVE_NEW_PASSWORD_HASH" });
+      await paused.entered;
+      await deactivator.query("set lock_timeout='120ms'");
+      await expect(deactivator.query(deactivateSql, [userId]))
+        .rejects.toMatchObject({ code: "55P03" });
+      paused.resume();
+      expect((await changing)?.password).toBe("ACTIVE_NEW_PASSWORD_HASH");
+    } finally {
+      paused.resume();
+      paused.restore();
+      await deactivator.query("set lock_timeout='0'");
+    }
+    await deactivator.query(deactivateSql, [userId]);
+    await expect(direct.updateAccount(linked.id, { accessToken: "ILLEGAL_LATE_TOKEN" }))
+      .rejects.toMatchObject({ status: "UNAUTHORIZED" });
+    expect((await accounts(userId)).find(x => x.id === credential.id)?.password)
+      .toBe("ACTIVE_NEW_PASSWORD_HASH");
+    expect((await writer.query<{ access_token: string }>(
+      'select access_token from account where id=$1', [linked.id],
+    )).rows[0]?.access_token).toBe("NEW_GOOGLE_TOKEN");
+  }, 30_000);
+
+  it("guards updatePassword credential multi-selector, including deactivation-first", async () => {
+    const { userId } = await signUp("i4c-password-many");
+    const direct = (await auth.$context).internalAdapter;
+    const credentialId = (await accounts(userId))[0].id;
+    await direct.updatePassword(userId, "PERSISTED_ACTIVE_PASSWORD");
+    const paused = pauseNativeQuery(writer, sql =>
+      sql.startsWith('select user_id from "account" where user_id = $1 and provider_id = $2 and account_id = $3'));
+    try {
+      const reset = direct.updatePassword(userId, "ILLEGAL_AFTER_DEACTIVATION");
+      await paused.entered;
+      await deactivator.query(deactivateSql, [userId]);
+      paused.resume();
+      await expect(reset).rejects.toMatchObject({ status: "UNAUTHORIZED" });
+    } finally {
+      paused.resume();
+      paused.restore();
+    }
+    expect((await writer.query<{ password: string }>(
+      'select password from account where id=$1', [credentialId],
+    )).rows[0]?.password).toBe("PERSISTED_ACTIVE_PASSWORD");
+    await expect((await auth.$context).adapter.updateMany({
+      model: "account", where: [
+        { field: "userId", value: userId }, { field: "providerId", value: "credential" },
+        { field: "accountId", value: userId },
+      ],
+      update: { password: "ILLEGAL_DIRECT_MANY" },
+    })).rejects.toMatchObject({ status: "UNAUTHORIZED" });
+  }, 30_000);
+
+  it("preserves HTTP unlink and blocks deactivation-first account deletion by id and userId", async () => {
+    const { userId, cookie } = await signUp("i4c-unlink");
+    const direct = (await auth.$context).internalAdapter;
+    const initial = await direct.createAccount({
+      userId, providerId: "google", accountId: "unlink-active-account",
+    });
+    const response = await auth.handler(new Request(origin + "/api/auth/unlink-account", {
+      method: "POST",
+      headers: { Origin: origin, Cookie: cookie, "content-type": "application/json" },
+      body: JSON.stringify({ accountId: initial.id }),
+    }));
+    expect(response.status).toBe(200);
+    expect(await accounts(userId)).toHaveLength(1);
+    const retained = await direct.createAccount({
+      userId, providerId: "google", accountId: "do-not-delete",
+    });
+    const paused = pauseNativeQuery(writer, sql =>
+      sql.startsWith('select user_id from "account" where id = $1'));
+    try {
+      const removing = direct.deleteAccount(retained.id);
+      await paused.entered;
+      await deactivator.query(deactivateSql, [userId]);
+      paused.resume();
+      await expect(removing).rejects.toMatchObject({ status: "UNAUTHORIZED" });
+    } finally {
+      paused.resume();
+      paused.restore();
+    }
+    expect((await accounts(userId)).map(x => x.account_id)).toContain("do-not-delete");
+    await expect(direct.deleteAccounts(userId)).rejects.toMatchObject({ status: "UNAUTHORIZED" });
+    expect((await writer.query<{ id: string }>(
+      'select id from "user" where id=$1', [userId],
+    )).rows).toHaveLength(1);
+  }, 30_000);
+
+  it("holds account DELETE through commit and supports active account deleteMany", async () => {
+    const { userId } = await signUp("i4c-delete-first");
+    const direct = (await auth.$context).internalAdapter;
+    const linked = await direct.createAccount({
+      userId, providerId: "google", accountId: "delete-first-account",
+    });
+    const paused = pauseNativeQuery(writer, sql => /^delete from "account" /i.test(sql));
+    try {
+      const removing = direct.deleteAccount(linked.id);
+      await paused.entered;
+      await deactivator.query("set lock_timeout='120ms'");
+      await expect(deactivator.query(deactivateSql, [userId]))
+        .rejects.toMatchObject({ code: "55P03" });
+      paused.resume();
+      await removing;
+    } finally {
+      paused.resume();
+      paused.restore();
+      await deactivator.query("set lock_timeout='0'");
+    }
+    expect((await accounts(userId)).map(x => x.provider_id)).toEqual(["credential"]);
+    await direct.deleteAccounts(userId);
+    expect(await accounts(userId)).toHaveLength(0);
+    expect((await writer.query<{ id: string }>(
+      'select id from "user" where id=$1', [userId],
+    )).rows).toHaveLength(1);
+    expect(await direct.createAccount({
+      userId, providerId: "google", accountId: "relink-after-delete-many",
+    })).toMatchObject({ userId, accountId: "relink-after-delete-many" });
+  }, 30_000);
+
+  it("classifies account selector SQL outage and preserves real HTTP change-password", async () => {
+    const { userId, cookie } = await signUp("i4c-password-http");
+    const original = (await accounts(userId))[0];
+    const request = () => new Request(origin + "/api/auth/change-password", {
+      method: "POST",
+      headers: { Origin: origin, Cookie: cookie, "content-type": "application/json" },
+      body: JSON.stringify({
+        currentPassword: password, newPassword: "new-i4c-password-123", revokeOtherSessions: false,
+      }),
+    });
+    const failingRuntime = (fault: Error) => createHyperdriveAuthRuntime(url, env, () => {
+      const client = new Client({ connectionString: url, options: "-c search_path=" + schema });
+      const originalQuery = client.query;
+      client.query = ((...args: unknown[]) => {
+        if (nativeSql(args[0]).startsWith('select user_id from "account" where id = $1')) {
+          return Promise.reject(fault);
+        }
+        return Reflect.apply(originalQuery, client, args);
+      }) as typeof client.query;
+      return client;
+    });
+    const fault = Object.assign(new Error("PRIVATE_I4C_DB_DISCONNECT"), { code: "ECONNRESET" });
+    const unavailable = await failingRuntime(fault).handle(request());
+    expect(unavailable.status).toBe(503);
+    expect(unavailable.headers.get("Cache-Control")).toBe("no-store");
+    expect(unavailable.headers.getSetCookie().some(x => x.includes("session_token="))).toBe(false);
+    expect(await unavailable.text()).not.toContain("PRIVATE_I4C_DB_DISCONNECT");
+    await expect(failingRuntime(new TypeError("I4c unexpected account target")).handle(request()))
+      .rejects.toBeInstanceOf(AccountStateUnexpectedError);
+    expect((await accounts(userId))[0]).toEqual(original);
+    const success = await auth.handler(request());
+    expect(success.status).toBe(200);
+    expect((await accounts(userId))[0].password).not.toBe(original.password);
+  }, 30_000);
+});
