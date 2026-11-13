@@ -33,15 +33,16 @@ function classifySessionWriteSqlError(error: unknown): AccountStateUnavailableEr
 /**
  * Better Auth 1.7.7's actual adapter writes are the atomic persistence seam.
  * Session create/update (I4a), existing-user update/updateMany (I4b)
- * and account create/update/updateMany/delete/deleteMany (I4c) use the native
- * request connection for persisted target resolution, active user-row lock,
- * original adapter write and COMMIT. Session deletion and user creation/deletion
- * remain on their original paths.
+ * account create/update/updateMany/delete/deleteMany (I4c), and session
+ * delete/deleteMany (I4d) use the native request connection for persisted
+ * target resolution, active user-row lock, original adapter write and COMMIT.
+ * New-user creation and physical user deletion remain on their original paths.
  */
 export function guardBetterAuthSessionWrites(
   database: NodePgDatabase,
   factory: ReturnType<typeof drizzleAdapter>,
   onAccountStateError?: (error: unknown) => void,
+  consumeOwnSignOutToken?: (token: string) => boolean,
 ): ReturnType<typeof drizzleAdapter> {
   const connection = (database as NodePgDatabase & { $client: Client }).$client;
   return (options: BetterAuthOptions) => {
@@ -76,7 +77,9 @@ export function guardBetterAuthSessionWrites(
           const accountWrite = command?.model === "account" &&
             (property === "create" || property === "update" || property === "updateMany" ||
               property === "delete" || property === "deleteMany");
-          if (!sessionWrite && !userWrite && !accountWrite) {
+          const sessionDelete = command?.model === "session" &&
+            (property === "delete" || property === "deleteMany");
+          if (!sessionWrite && !userWrite && !accountWrite && !sessionDelete) {
             return Reflect.apply(method, target, args);
           }
 
@@ -183,6 +186,52 @@ export function guardBetterAuthSessionWrites(
               await assertActiveAccountForMutation(connection, rows[0].id);
             } else if (property === "create") {
               await assertActiveAccountForMutation(connection, command.data?.userId as string);
+            } else if (sessionDelete) {
+              // BA 1.7.7 deletes one session by token, all owned sessions by
+              // userId, or a selected token list. Resolve the actual persisted
+              // owner; never trust an arbitrary request actor or submitted owner.
+              const where = command.where;
+              const selector = where?.length === 1 ? where[0] : null;
+              const token = selector?.field === "token" && typeof selector.value === "string"
+                ? selector.value : null;
+              const byToken = property === "delete" && token && token.length > 0 &&
+                (selector?.operator === undefined || selector.operator === "eq");
+              const byUser = property === "deleteMany" && selector?.field === "userId" &&
+                typeof selector.value === "string" && selector.value.length > 0 &&
+                (selector.operator === undefined || selector.operator === "eq");
+              const byTokens = property === "deleteMany" && selector?.field === "token" &&
+                selector.operator === "in" && Array.isArray(selector.value) &&
+                selector.value.every(value => typeof value === "string" && value.length > 0);
+              if (!byToken && !byUser && !byTokens) throw new AccountStateUnexpectedError();
+              const rows = byToken
+                ? (await query<{ user_id: string }>(
+                  'select distinct user_id from "session" where token = $1', [token],
+                )).rows
+                : byUser
+                  ? (await query<{ user_id: string }>(
+                    'select distinct user_id from "session" where user_id = $1', [selector!.value],
+                  )).rows
+                  : (await query<{ user_id: string }>(
+                    'select distinct user_id from "session" where token = any($1::text[])',
+                    [selector!.value],
+                  )).rows;
+              if (rows.length > 1) throw new AccountStateUnexpectedError();
+              if (!rows.length) {
+                await query("COMMIT");
+                begun = false;
+                return property === "deleteMany" ? 0 : null;
+              }
+              const owner = rows[0].user_id;
+              // Only the signed current cookie of /sign-out admits inactive
+              // cleanup. Never extend that exception to revoke or bulk writes.
+              const ownSignOut = !!byToken && !!token && consumeOwnSignOutToken?.(token) === true;
+              try {
+                await assertActiveAccountForMutation(connection, owner);
+              } catch (error) {
+                if (!(error instanceof AccountInactiveError) || !ownSignOut) throw error;
+                // The same FOR NO KEY UPDATE row lock survives this caught
+                // inactive result through the canonical DELETE and COMMIT.
+              }
             } else {
               // The pinned internalAdapter.updateSession writes by the trusted
               // session token, not a caller-supplied userId or request identity.
@@ -223,7 +272,7 @@ export function guardBetterAuthSessionWrites(
               }
             }
             if (failure instanceof AccountInactiveError || failure instanceof AccountMissingError) {
-              if (userWrite || accountWrite) {
+              if (userWrite || accountWrite || sessionDelete) {
                 throw new APIError("UNAUTHORIZED", { message: "Unauthorized" });
               }
               throw new InactiveSessionWriteError();
