@@ -32,10 +32,11 @@ function classifySessionWriteSqlError(error: unknown): AccountStateUnavailableEr
 
 /**
  * Better Auth 1.7.7's actual adapter writes are the atomic persistence seam.
- * Session create/update (I4a) and existing-user update/updateMany (I4b)
- * share the native request connection for target resolution, active user-row
- * lock, canonical adapter write and transaction commit. Session deletion,
- * account and new-user writes retain their original paths.
+ * Session create/update (I4a), existing-user update/updateMany (I4b)
+ * and account create/update/updateMany/delete/deleteMany (I4c) use the native
+ * request connection for persisted target resolution, active user-row lock,
+ * original adapter write and COMMIT. Session deletion and user creation/deletion
+ * remain on their original paths.
  */
 export function guardBetterAuthSessionWrites(
   database: NodePgDatabase,
@@ -57,7 +58,8 @@ export function guardBetterAuthSessionWrites(
             Reflect.apply(method, target, [async (trx: typeof adapter) => fn(wrap(trx))]);
         }
         if (typeof method !== "function" ||
-          (property !== "create" && property !== "update" && property !== "updateMany")) {
+          (property !== "create" && property !== "update" && property !== "updateMany" &&
+            property !== "delete" && property !== "deleteMany")) {
           return method;
         }
         return async (...args: unknown[]) => {
@@ -71,7 +73,10 @@ export function guardBetterAuthSessionWrites(
             (property === "create" || property === "update");
           const userWrite = command?.model === "user" &&
             (property === "update" || property === "updateMany");
-          if (!sessionWrite && !userWrite) {
+          const accountWrite = command?.model === "account" &&
+            (property === "create" || property === "update" || property === "updateMany" ||
+              property === "delete" || property === "deleteMany");
+          if (!sessionWrite && !userWrite && !accountWrite) {
             return Reflect.apply(method, target, args);
           }
 
@@ -85,7 +90,70 @@ export function guardBetterAuthSessionWrites(
           try {
             await query("BEGIN");
             begun = true;
-            if (userWrite) {
+            if (accountWrite) {
+              if (property === "create") {
+                // BA createAccount/linkAccount and both registration paths
+                // resolve the owner before canonical adapter persistence.
+                await assertActiveAccountForMutation(connection, command.data?.userId as string);
+              } else {
+                // BA updateAccount/deleteAccount select by the persisted account
+                // primary key. updatePassword targets one owner's credential rows;
+                // deleteAccounts targets all account rows of one persisted owner.
+                const where = command.where;
+                if (!where?.length) throw new AccountStateUnexpectedError();
+                const fields = new Map<string, string>();
+                for (const selector of where) {
+                  if ((selector.field !== "id" && selector.field !== "userId" &&
+                    selector.field !== "providerId" && selector.field !== "accountId") ||
+                    typeof selector.value !== "string" || !selector.value ||
+                    (selector.operator !== undefined && selector.operator !== "eq") ||
+                    fields.has(selector.field)) {
+                    throw new AccountStateUnexpectedError();
+                  }
+                  fields.set(selector.field, selector.value);
+                }
+                const idOnly = fields.size === 1 && fields.has("id");
+                const ownerOnly = fields.size === 1 && fields.has("userId") &&
+                  property === "deleteMany";
+                const credentialSet = fields.size === 3 && fields.has("userId") &&
+                  fields.get("providerId") === "credential" &&
+                  fields.get("accountId") === fields.get("userId") &&
+                  property === "updateMany";
+                if (!idOnly && !ownerOnly && !credentialSet) {
+                  throw new AccountStateUnexpectedError();
+                }
+                const selected = idOnly
+                  ? await query<{ user_id: string }>(
+                    'select user_id from "account" where id = $1',
+                    [fields.get("id")],
+                  )
+                  : credentialSet
+                    ? await query<{ user_id: string }>(
+                      'select user_id from "account" where user_id = $1 and provider_id = $2 and account_id = $3',
+                      [fields.get("userId"), fields.get("providerId"), fields.get("accountId")],
+                    )
+                    : await query<{ user_id: string }>(
+                      'select user_id from "account" where user_id = $1',
+                      [fields.get("userId")],
+                    );
+                const owners = new Set(selected.rows.map(row => row.user_id));
+                if (idOnly && selected.rows.length > 1 || owners.size > 1) {
+                  throw new AccountStateUnexpectedError();
+                }
+                if (!owners.size) {
+                  await query("COMMIT");
+                  begun = false;
+                  return property === "updateMany" || property === "deleteMany" ? 0 : null;
+                }
+                const owner = owners.values().next().value;
+                if (typeof owner !== "string" || !owner ||
+                  (command.update?.userId !== undefined && command.update.userId !== owner) ||
+                  (command.update?.id !== undefined && command.update.id !== fields.get("id"))) {
+                  throw new AccountStateUnexpectedError();
+                }
+                await assertActiveAccountForMutation(connection, owner);
+              }
+            } else if (userWrite) {
               // BA 1.7.7 internalAdapter.updateUser uses a unique id selector;
               // updateUserByEmail uses a normalized, unique email selector.
               // Resolve and lock the persisted row, never the submitted update.
@@ -155,7 +223,9 @@ export function guardBetterAuthSessionWrites(
               }
             }
             if (failure instanceof AccountInactiveError || failure instanceof AccountMissingError) {
-              if (userWrite) throw new APIError("UNAUTHORIZED", { message: "Unauthorized" });
+              if (userWrite || accountWrite) {
+                throw new APIError("UNAUTHORIZED", { message: "Unauthorized" });
+              }
               throw new InactiveSessionWriteError();
             }
             if (failure instanceof AccountStateUnavailableError ||
