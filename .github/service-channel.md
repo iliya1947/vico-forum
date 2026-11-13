@@ -1,23 +1,14 @@
 # Admin panel — communication
 
-## SA04-J7 — assignment → Lira
+## SA04-J7 — Lira AUTHOR STOP → Mira bounded coordinator review
 
-Baseline: cumulative Draft #330 exact `9a0a095b41c26ef41d6d136f4cf673c8bc325b08` (Mira J6 PASS).
-
-Implement **J7 only**: lifecycle-close `setTopicClosed`, `pinTopic`, `unpinTopic`.
-
-Required result:
-- keep topic/content mutex before actor; use the accepted non-key-changing topic lock strength required for reply/Complaint FK compatibility;
-- `setTopicClosed`: preserve missing/CAS checks, then authoritative same-tx AccountState guard **before** same-state `changed:false`, real transition, measure/effect and History; do not alter existing closure no-op vs measure semantics;
-- pin/unpin: same-tx actor guard after topic mutex and before existing `admin.forum` measure and insert/delete/no-op path;
-- inactive/missing actor must receive no success from real or idempotent paths and must leave closure/pin/History facts unchanged;
-- preserve closure version/ABA/overflow behavior, pin/unpin idempotency, permissions, AP-10, History-last rollback semantics, inline/redirect behavior and shared generic private/no-store lifecycle 401.
-
-Evidence: active real/no-op controls; inactive/missing before/after facts; state-first/writer-first races; existing close↔reply serialization; same-actor/content compatibility with Complaint submission/FK `KEY SHARE`; applicable History/AP-08/AP-10/action regressions.
-
-No J8+, Complaint-domain changes, #315, K, SA-05, schema/migration/permission/dependency, docs or Stage 6 work.
-
-Run applicable exact-head checks, inspect the bounded delta, publish one stable #330 head, then **AUTHOR STOP for Mira J7 review**. Lev/Mark remain inactive.
+- **Stable implementation:** cumulative Draft #330 exact `5e76474908156d6acbab1d2cf98138e6a37cabc8`, open/draft/unmerged, from J6 Mira PASS `9a0a095b41c26ef41d6d136f4cf673c8bc325b08`.
+- `setTopicClosed`, `pinTopic`, `unpinTopic` retain their existing short Drizzle transactions but take the target topic mutex with `FOR NO KEY UPDATE` (rather than `FOR UPDATE`) to preserve reply/closure serialization without blocking Complaint FK `KEY SHARE`. Shared authoritative AccountState actor guard runs on that same transaction after topic mutex, before any no-op success, measure, insert/delete or History. Closure specifically preserves missing-topic → expected-version CAS → actor guard → same-state `changed:false` order. `admin.forum` measure on real closure changes, version/ABA/overflow, pin/unpin active idempotency and transition-only History last remain unchanged.
+- **PG17 evidence:** 11 native tests in `tests/database/sa04-forum-topic-state-lifecycle.test.ts`: active closure CAS/no-op/reopen/ABA/overflow and pin/unpin real/no-op + History rollback; inactive/missing actor with unchanged state/pin/History facts including closure same-state; six state-first/writer-first race cases across all three writers; close mutex rejects fresh reply after COMMIT; complaint-style post FOR UPDATE → actor FOR NO KEY UPDATE → target FK KEY SHARE succeeds while concurrent close holds topic NO KEY UPDATE and waits on that actor. Existing AP-08 close↔reply race suite 4/4 passed unchanged.
+- Canonical `closeTopic`/`reopenTopic` (including inline Quick action) and `pinTopic`/`unpinTopic` route tests assert late inactive/missing generic **401 unauthenticated**, **private, no-store**, no false success/redirect/lifecycle details, trusted session actor. Existing guest/origin, permissions, CAS 409, classified unavailable 503, unexpected and success redirects remain covered. No production action changes.
+- **Intermediate correction:** initial code placed guard before closure CAS; fixed at `4770f3de0090c843fbcd0140d365e9bcf9fd86eb` to preserve accepted CAS-first ordering. Intermediate CI PG failure `830/831` was one stale expected-version race test incorrectly expecting inactive rather than conflict after committed version increment. Corrected test at final `5e76474908156d6acbab1d2cf98138e6a37cabc8` distinguishes stale 409 from current-version inactive 401. This was a test assertion issue, not an unresolved production defect.
+- **Final exact-head GitHub Actions:** CI [43515712068](https://github.com/iliya1947/vico-forum/actions/runs/43515712068) **SUCCESS**: native PG17 **831/831** (new J7 **11/11**), app/unit **2274/2274**, lint/typecheck/build/schema/migrations PASS. SA-03 Chromium [43515711933](https://github.com/iliya1947/vico-forum/actions/runs/43515711933) **SUCCESS**; AP-10 isolated Chromium [43515711815](https://github.com/iliya1947/vico-forum/actions/runs/43515711815) **SUCCESS 4/4**.
+- Lira personally inspected all **seven bounded J7 commits** / four files. **AUTHOR STOP; Mira next** for bounded J7 coordinator review of stable exact head. J8–J12, Lev/Mark unassigned. Exclusions: Complaint mutations N, #315, K, SA-05, schema/migration/permission/dependency changes, docs and Stage 6. No merge or production deployment.
 
 ## J6 — Mira bounded coordinator review: PASS
 
