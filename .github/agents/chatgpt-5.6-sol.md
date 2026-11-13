@@ -2456,3 +2456,10 @@ Do not treat a user's anger, criticism or request to think as implicit permissio
 - Native/browser/CI additions are acceptance evidence for the same closure. Production runtime changes are conditional on reproduced current-scope gaps only.
 - J–R writers, SA05 deactivation operation, #315 remediation, physical deletion/reactivation/forced-session control, secondary storage and Stage6 remain excluded.
 - Assigned Lira I5 only. Next gate after one stable author head/evidence is Mira cumulative whole-I coordinator review; Lev independent review follows only after that PASS.
+
+
+## 2026-11-13 — correction: I5 author granularity
+
+- Prior whole-I5 handoff to Lira was too large. Developer caught it before author execution; #329 remained exact `85104942e75071a67b4a4b37212ce5bca7361fe4`.
+- Final I5 connected outcome is retained, but author work is split into I5a native core → I5b SET-05 → I5c Google/observer/failure → I5d Worker/browser → I5e final sweep/evidence map.
+- Only I5a is assigned now. Every later checkpoint requires a separate Mira continuation after the previous checkpoint review.
