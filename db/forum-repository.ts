@@ -1,5 +1,5 @@
 import { projectPublicAccountIdentity, PublicIdentityInvariantError } from "./public-identity";
-import { activeAccountPredicate, AccountInactiveError, type AccountState } from "./account-state";
+import { activeAccountPredicate, AccountInactiveError, assertActiveAccountForDrizzleMutation, type AccountState } from "./account-state";
 import {appendForumHistory} from "./forum-history";
 import { lockPrivacySubject } from "./user-privacy";
 import type {HelpSignalHistoryEffect} from "./admin-history";
@@ -697,6 +697,7 @@ export class DrizzleForumRepository {
 
   async createTopic(input: CreateTopicInput): Promise<ForumTopic> {
     return this.database.transaction(async (tx) => {
+      await assertActiveAccountForDrizzleMutation(tx, input.authorId);
       await this.measureAdmission(tx, input.authorId, "topics.create");
       await tx.insert(forumTopics).values({
         id: input.id,
@@ -744,6 +745,8 @@ export class DrizzleForumRepository {
         await lockAttachmentDraftScope(tx, input.authorId, input.publishedDraft.contextKey);
         const existing = await this.publicationReceipt(tx, input.authorId, input.publishedDraft, fingerprint);
         if (existing) {
+          // An idempotent receipt is not active-account admission.
+          await assertActiveAccountForDrizzleMutation(tx, input.authorId);
           // Receipt replay may follow closure: project persisted closure, not a default.
           const [persisted] = await tx.select({
             isClosed: forumTopics.isClosed, closureVersion: forumTopics.closureVersion,
@@ -764,6 +767,7 @@ export class DrizzleForumRepository {
           };
         }
       }
+      await assertActiveAccountForDrizzleMutation(tx, input.authorId);
       await this.measureAdmission(tx, input.authorId, "topics.create");
       const createdAt = await enforceForumWriteCooldown(tx, input.authorId, this.writePolicy);
       const [section] = await tx.select({ id: forumSections.id }).from(forumSections)
@@ -845,6 +849,7 @@ export class DrizzleForumRepository {
         await lockAttachmentDraftScope(tx, input.authorId, input.publishedDraft.contextKey);
         const existing = await this.publicationReceipt(tx, input.authorId, input.publishedDraft, fingerprint);
         if (existing) {
+          await assertActiveAccountForDrizzleMutation(tx, input.authorId);
           return {
             id: existing.postId, topicId: existing.topicId, authorId: input.authorId,
             parentPostId: input.parentPostId ?? null,
@@ -855,7 +860,8 @@ export class DrizzleForumRepository {
       }
       const [topic] = await tx.select({ id: forumTopics.id, authorId: forumTopics.authorId, isClosed: forumTopics.isClosed }).from(forumTopics)
         .where(eq(forumTopics.id, input.topicId))
-        .for("update");
+        // Still serializes topic-state writers without blocking other FK KEY SHARE reads.
+        .for("no key update");
       if (!topic) throw new ForumEntityNotFoundError("topic does not exist");
       if (topic.isClosed) throw new ForumTopicClosedError("topic is closed to new replies");
       const [activeDuplicate] = await tx
@@ -869,16 +875,19 @@ export class DrizzleForumRepository {
       if (activeDuplicate) {
         throw new ForumStateConflictError("a confirmed duplicate cannot receive new replies");
       }
-      await this.measureAdmission(tx, input.authorId, "replies.create");
-      const createdAt = await enforceForumWriteCooldown(tx, input.authorId, this.writePolicy);
       const parentPostId = input.parentPostId ?? null;
       let parentAuthorId: string | null = null;
       if (parentPostId) {
+        // Resolve/lock the existing FK parent before taking the actor mutex.
         const [parent] = await tx.select({ id: forumPosts.id, authorId: forumPosts.authorId }).from(forumPosts)
-          .where(and(eq(forumPosts.id, parentPostId), eq(forumPosts.topicId, input.topicId)));
+          .where(and(eq(forumPosts.id, parentPostId), eq(forumPosts.topicId, input.topicId)))
+          .for("key share");
         if (!parent) throw new ForumEntityNotFoundError("parent post does not exist in topic");
         parentAuthorId = parent.authorId;
       }
+      await assertActiveAccountForDrizzleMutation(tx, input.authorId);
+      await this.measureAdmission(tx, input.authorId, "replies.create");
+      const createdAt = await enforceForumWriteCooldown(tx, input.authorId, this.writePolicy);
       await tx.insert(forumPosts).values({
         id: input.id,
         topicId: input.topicId,
