@@ -1,5 +1,13 @@
 # ChatGPT-5.6 Sol — personal log
 
+## SA04-J8 assignment
+
+- J7 accepted exact baseline: `5e76474908156d6acbab1d2cf98138e6a37cabc8`.
+- Current seams: neither solution writer has AccountState admission. `markTopicSolved` may supersede pending duplicate signals after the topic lock; `selectBestAnswer` may mutate old/new solution posts plus pending moderation/duplicate signals after its topic lock.
+- Accepted J graph requires those existing affected rows before actor, then lifecycle, then Any-only measure/effects, History last. This also prevents edit/signal actor inversion and requires non-key lock compatibility with existing Complaint FK checks.
+- Assigned J8 only to Lira. J9+ remain excluded/unassigned.
+- Next Mira action: bounded J8 review after stable-head AUTHOR STOP.
+
 ## SA04-J7 coordinator review — PASS
 
 - Independently reviewed Draft #330 exact `5e76474908156d6acbab1d2cf98138e6a37cabc8`.
