@@ -1,5 +1,16 @@
 # Admin panel — communication
 
+## 2026-11-13 — SA04-J implementation decomposition fixed; J1 assigned to Lira
+
+- The accepted complete J technical plan is decomposed **only for Lira implementation** into 12 bounded checkpoints: shared Drizzle AccountState seam; publication; revisions/edit/source-locale; profile; read-state; inbox; topic state; solved/best answer; Help Signals; Help moderation; duplicates/appeals; cumulative J closure.
+- This decomposition does not narrow or replace Lev's complete J plan. It is the developer-required execution granularity for Lira.
+- **Only J1 is active.** J2–J12 are sequencing records, not assignments.
+- **J1 scope:** provide the shared Drizzle-transaction AccountState mutation-admission seam required by later Forum writers, preserving existing native AccountState behavior and typed error semantics.
+- J1 must not integrate any ForumRepository mutation yet and must not introduce schema/migration/dependency/public-contract changes.
+- J1 acceptance is focused: active/inactive/missing, unavailable/unexpected classification and proof that the lifecycle row lock remains transaction-local through the caller's transaction boundary.
+- Lira creates/uses a new cumulative Draft SA04-J implementation PR from main `44d6b69a8d235cc8b1ee30953839be71e6ab836a`, implements **J1 only**, performs author inspection, publishes stable exact head/evidence and STOPs for Mira.
+- Lev and Mark are unassigned; no independent review is spent on J1 alone.
+
 ## 2026-11-13 — Mira scope/fit review of full SA04-J plan: PASS
 
 - Reviewed Lev's complete SA04-J technical plan [#6858869802](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6858869802) against current main `44d6b69a8d235cc8b1ee30953839be71e6ab836a`, the accepted master SA04-J contract and current Forum service/repository/writer seams.
