@@ -4896,3 +4896,16 @@ Mira independently re-reviewed Draft #329 exact `7e80479e03167a8856fe1b2094b8c17
 5. Exact-head evidence independently checked: CI #43395760369 SUCCESS (2269 app / 734 PG17, 9 focused I4a), SA01 #43395760261, SA03 #43395760395, AP10 #43395760289 SUCCESS.
 
 **Mira verdict: PASS, 0 remaining I4a defects.** #329 remains cumulative Draft. Stop here; no Lev/Mark review and no I4b assignment in this checkpoint. Next separate continuation may assign I4b only.
+
+
+## 2026-11-13 — SA04-I4b assignment → Lira
+
+Mira has closed I4a PASS on exact `7e80479e03167a8856fe1b2094b8c17678f4ce22`. Continue the same cumulative Draft #329 with **I4b only**.
+
+Required result: all current Better Auth writes that update an already-persisted `user` must resolve the authoritative target from the canonical write shape and hold that target active atomically through the write/commit, so deactivation cannot win between admission and persistence. Preserve active behavior, current Better Auth validation/hooks/facts, I1–I4a behavior and existing unavailable-vs-unexpected failure semantics.
+
+Acceptance: focused real Better Auth 1.7.7 + PostgreSQL17 evidence for the current existing-user update selectors/seams, including writer-first and deactivation-first races and active controls. New-user creation stays normal.
+
+Do not start user deletion, I4c account/provider/password/linking writes, I4d destructive session writes/own-signout exception, I5/J+, schema/product expansion, docs, #315, SA05+ or Stage6/production.
+
+After author inspection and applicable checks, publish one stable exact #329 head/evidence and **STOP for Mira I4b checkpoint review**. Lev/Mark remain stopped.
