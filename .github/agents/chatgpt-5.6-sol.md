@@ -2473,3 +2473,12 @@ Do not treat a user's anger, criticism or request to think as implicit permissio
 - Existing I1–I4 tests remain the detailed race/error/selector proofs; no I5b–e evidence was falsely credited to I5a.
 - Exact-head CI and browser regression runs independently rechecked SUCCESS: 2269 app, 754 PG17, SA04 session atomic 29/29, SA01/SA03/AP10 green.
 - **PASS — 0 confirmed current-scope I5a defects.** STOP. I5b remains unassigned until explicit continuation.
+
+## 2026-11-13 — SA04-I5b bounded handoff
+
+- Restored #251 from current main/source-of-truth and accepted I5a exact `58130793d05f6eb2a8b867b2fb546ccddcd6fb59`.
+- Pre-action gate passed: Mira coordination authority; one independently completable Lira result; cumulative #329 preserved; no later I5/SA05 scope pulled forward.
+- Assigned **I5b only**: SET-05 stale/deactivated connected chain for existing linked-method/password/own-session operations, with late deactivation and preservation of accepted SET-05/I1–I5a semantics.
+- Runtime correction is conditional on a reproduced current-scope gap. I5c–I5e, J–R, SA05, #315, physical deletion/reactivation/forced foreign-session controls, docs and Stage6/production remain outside the handoff.
+- Next gate: Lira stable exact author head/evidence + personal inspection → Mira bounded I5b checkpoint review. Lev/Mark remain stopped.
+
