@@ -1,5 +1,13 @@
 # Admin panel — communication
 
+## 2026-11-13 — SA04-J3b assignment → Lira
+
+- Baseline: cumulative Draft #330 exact `39df1262d9b536df87b0147e4a8a400d65b7d038`, with J1/J2/J3a already Mira PASS.
+- **Implement J3b only:** close the authoritative actor-lifecycle boundary for existing `editPublishedPost`. Both successful matching receipt replay and fresh published-post edit must require the actual `actorId` to remain active at the authoritative transaction boundary.
+- Preserve the accepted J lock/replay ordering and all current Editor 2.0 semantics: post ownership, expected-revision conflict/rebase behavior, measures, retained/new attachment selection, mention recording, draft finalization and receipt idempotency. Denied stale/inactive/missing edit must not create a revision, move the current revision, change public attachment refs, create mentions, retire/finalize the operation or create/alter a receipt.
+- Done when focused PG17 evidence covers active fresh edit and replay, inactive/missing denial, denied-fact preservation, and both lifecycle race directions through final attachment/receipt work; applicable existing edit/attachment and canonical HTTP regressions are green. Publish one stable exact head and author inspection, then **STOP for Mira J3b checkpoint review**.
+- **Excluded:** J3c source-locale service no-op/HTTP work, J4+, standalone attachment K, SA05, #315 remediation, documentation and Stage6. Lev/Mark remain stopped.
+
 ## 2026-11-13 — Mira bounded SA04-J3a checkpoint PASS
 
 - Reviewed J3a delta from accepted J2 `22a6733ee661e22665406974d5a3ac515866fd51` to stable exact cumulative Draft #330 head `39df1262d9b536df87b0147e4a8a400d65b7d038`: 3 commits, exactly two files (`db/forum-repository.ts`, `tests/database/sa04-forum-revision-lifecycle.test.ts`).
