@@ -6,6 +6,7 @@ import { forumReaderContext, forumWriterContext } from "../forum/request-context
 import type { ForumReader } from "../../db/forum-repository";
 import { ForumStorageUnavailableError, type ForumWriter } from "../../db/hyperdrive-forum";
 import { UserMeasureRestrictedError } from "../../db/user-measure-policy";
+import { AccountInactiveError, AccountMissingError } from "../../db/account-state";
 import { userMeasureContext } from "../measures/request-context";
 import { authorizationContext, authorizationOwnerContext } from "../authorization/request-context";
 import { action, loader } from "./profile";
@@ -120,6 +121,22 @@ describe("profile route", () => {
       params, context: setup(null).context,
     });
     expect(publicPage.data.profile.bio).toBe("");
+  });
+  it("returns generic private 401 for late inactive/missing actors without false saved redirect or lifecycle details", async () => {
+    const env = setup();
+    for (const error of [new AccountInactiveError(), new AccountMissingError()]) {
+      env.updateProfile.mockRejectedValueOnce(error);
+      const response = await action({ request: request({ bio: "PRIVATE_NEW_PROFILE_BIO" }), params, context: env.context });
+      expect(response).not.toBeInstanceOf(Response);
+      expect(response).toMatchObject({
+        data: { error: "unauthenticated" },
+        init: { status: 401, headers: { "Cache-Control": "private, no-store" } },
+      });
+      expect(JSON.stringify(response)).not.toMatch(/PRIVATE_NEW_PROFILE_BIO|AccountInactive|AccountMissing|deactivated|saved=1/);
+    }
+    expect(env.updateProfile).toHaveBeenCalledTimes(2);
+    env.updateProfile.mockRejectedValueOnce(new ForumEntityNotFoundError("user does not exist"));
+    expect(status(await action({ request: request(), params, context: env.context }))).toBe(404);
   });
   it("preserves draft on invalid input and transient storage failures; rethrows bugs", async () => {
     const env = setup();
