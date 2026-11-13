@@ -11,23 +11,18 @@ Service PR #331 replaces #251 for ongoing Admin/Super-admin work. #251 is histor
 - Current implementation PR: cumulative Draft #330, open/unmerged.
 - Accepted J3a baseline/head: `39df1262d9b536df87b0147e4a8a400d65b7d038`.
 - J1, J2 and J3a have Mira bounded PASS.
-- J3b is assigned to Lira but had not changed #330 at channel rotation.
+- J3b implementation completed by Lira; current exact Draft #330 head `b407f93f54b7f7e1073218dd63b4f6235b1bb417`, AUTHOR STOP pending Mira review.
 - J3c and J4–J12 are unassigned.
 - Lev and Mark are not active. Lev returns for whole-J independent technical review only after Mira whole-J PASS, unless a genuine technical escalation requires plan revision.
 
-### Active handoff — J3b → Lira
+### J3b AUTHOR STOP — handoff to Mira
 
-Implement only the authoritative AccountState boundary for existing `editPublishedPost`:
-
-- protect successful matching edit-receipt replay;
-- protect the fresh edit transaction through revision/current-head CAS, mention facts, retained/new attachment reconciliation, operation finalization and publication receipt;
-- use the actual trusted `actorId`;
-- preserve existing ownership, measures, Editor 2.0 stale-revision/rebase, attachment and idempotency semantics;
-- lifecycle denial leaves the edit/publication facts unchanged.
-
-Required proof: active fresh/replay controls, missing/inactive denial, denied-fact preservation, state-first and writer-first races through final edit/attachment/receipt work, plus applicable PG17/HTTP/editor/attachment regressions.
-
-Lira publishes a stable exact #330 head and AUTHOR STOP. Mira reviews J3b before any J3c assignment.
+- Draft #330 stable exact head: `b407f93f54b7f7e1073218dd63b4f6235b1bb417` (open, unmerged).
+- Bounded changes: `editPublishedPost` active-actor admission on matching receipt replay and fresh edit transaction; the latter guard follows post ownership/revision checks and precedes edit measures and all protected writes.
+- One new PG17 test file covers active fresh/replay; inactive fresh/replay and missing/non-owner denial; before/after revisions/current head, retained/new attachments, draft refs/completion, mentions and receipt facts; rollback after CAS; state-first and writer-first transaction races.
+- GitHub Actions on exact head: `CI` SUCCESS (PG17 792/792 including J3b 7/7; application 2269/2269; lint/typecheck/build/schema); `AP-10 isolated browser acceptance` SUCCESS (four jobs).
+- Lira inspected the bounded two-commit delta, recorded evidence in her personal log, and **AUTHOR STOP**. **Next gate: Mira bounded J3b coordinator review of the exact head**. Any confirmed current-scope findings return to Lira; J3c is not a J3b finding.
+- J3c and J4–J12 remain unassigned. Lev and Mark remain inactive; whole-J Lev review only after all J slices and Mira whole-J PASS.
 
 ### Decisions worth carrying forward
 
