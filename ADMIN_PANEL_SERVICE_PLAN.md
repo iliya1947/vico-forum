@@ -59,7 +59,7 @@ Current J decomposition for Lira execution:
 8. **J6 — inbox acknowledgement writers.** **Mira bounded PASS on `9a0a095b41c26ef41d6d136f4cf673c8bc325b08`.**
 9. **J7 — topic close/pin/unpin state writers.** **Mira bounded PASS on `5e76474908156d6acbab1d2cf98138e6a37cabc8`.**
 10. **J8 — solved/best-answer writers.** **Mira bounded PASS on `41e26f191357aacde3de2dae3a3c7fed20756a30`.**
-11. **J9 — Help Signals submit/withdraw/resolve.** **Lira implementation complete / AUTHOR STOP on `ce9c068f5f5d1d3b291f1f6b8125fa7f55d9549b`; Mira bounded review pending.**
+11. **J9 — Help Signals submit/withdraw/resolve.** **Mira bounded PASS on `ce9c068f5f5d1d3b291f1f6b8125fa7f55d9549b`.**
 12. **J10 — Help solution moderation.** Unassigned.
 13. **J11 — duplicate/appeal family.** Unassigned.
 14. **J12 — cumulative J closeout/evidence.** Unassigned.
@@ -137,13 +137,13 @@ No J9+, Complaint-domain, #315, K, SA-05, schema/migration/permission/dependency
 
 J9–J12 remain unassigned; Lev/Mark remain inactive.
 
-## J9 — implementation complete / Mira bounded review pending
+## J9 — Mira bounded PASS
 
 Lira completed authoritative AccountState admission for `createHelpSignal`, `withdrawHelpSignal`, rejected and accepted `resolveHelpSignal` in cumulative Draft #330 exact `ce9c068f5f5d1d3b291f1f6b8125fa7f55d9549b`, baseline J8 Mira PASS exact `41e26f191357aacde3de2dae3a3c7fed20756a30`.
 
 Existing short Drizzle transactions now retain topic/post/signal dependencies before the same-transaction trusted actor guard `FOR NO KEY UPDATE`. New submissions preserve sorted topic locks and current solution post dependency with `FOR NO KEY UPDATE`, then actor → existing create-only `helpSignals.submit` → signal cooldown/uniqueness/insert. Cooldown reuses the authoritative actor mutex with no actor `FOR UPDATE` upgrade/second connection. Withdrawal retains existing signal lock/Own pending checks → actor → update without measures. Rejected review retains signal lock/pending → actor → `admin.forum` → reject → one History last. Accepted review locks sorted topics, applicable solution post, and complete affected pending signal set plus target by stable ID, including third-topic `proposedOriginalTopicId` duplicate signals, revalidates target, then actor → admin measure → existing kind-specific accepted or superseded effects → one `help.signalReviewed` History last. Inactive/missing cannot succeed or mutate any topic/post/signal/relationship/History fact.
 
-New PG17 **32/32** cases cover all four submit kinds; withdrawal/rejected; materially different accepted/superseded outcomes; duplicate broad supersession; create-only measure/cooldown, withdrawal unaffected by blocked submission; actor lock strength; before/after inactive/missing; four state-first and four writer-first lifecycle shapes; overlapping signal/post locks and Complaint FK compatibility. Canonical all-four-intent late lifecycle denials remain private generic 401 with no redirect or status detail. Exact-head CI PG17 **876/876**, app/unit **2276/2276**, lint/typecheck/build/schema/Workers PASS; SA-03 Chromium SUCCESS; AP-10 Chromium **4/4 jobs SUCCESS**. Four bounded commits / three files inspected. **Lira AUTHOR STOP → Mira J9 bounded review** on exact `ce9c068f5f5d1d3b291f1f6b8125fa7f55d9549b`. J10–J12, Lev, Mark unassigned. No scope-expanding J10+, Complaint N, #315, K, SA-05, schema/migrations/permissions/dependencies, permanent docs or Stage 6 work; J7 doc-lock wording remains a separate docs-closeout item.
+New PG17 **32/32** cases cover all four submit kinds; withdrawal/rejected; materially different accepted/superseded outcomes; duplicate broad supersession; create-only measure/cooldown, withdrawal unaffected by blocked submission; actor lock strength; before/after inactive/missing; four state-first and four writer-first lifecycle shapes; overlapping signal/post locks and Complaint FK compatibility. Canonical all-four-intent late lifecycle denials remain private generic 401 with no redirect or status detail. Exact-head CI PG17 **876/876**, app/unit **2276/2276**, lint/typecheck/build/schema/Workers PASS; SA-03 Chromium SUCCESS; AP-10 Chromium **4/4 jobs SUCCESS**. Four bounded commits / three files inspected. **Mira bounded review: PASS — 0 confirmed current-scope J9 defects** on exact `ce9c068f5f5d1d3b291f1f6b8125fa7f55d9549b`. J10–J12, Lev, Mark remain unassigned; STOP before J10 assignment. No scope-expanding J10+, Complaint N, #315, K, SA-05, schema/migrations/permissions/dependencies, permanent docs or Stage 6 work; J7 doc-lock wording remains a separate docs-closeout item.
 
 ## Important cross-cutting boundaries
 
