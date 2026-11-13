@@ -1718,18 +1718,18 @@ export class DrizzleForumRepository {
   ): Promise<{ topicId: string; postId: string }> {
     return this.database.transaction(async (tx) => {
       await assertActiveAccountForDrizzleMutation(tx, userId);
-    const [notification] = await tx
-      .update(forumReplyNotifications)
-      .set({ readAt: sql`coalesce(${forumReplyNotifications.readAt}, now())` })
-      .where(and(
-        eq(forumReplyNotifications.id, notificationId),
-        eq(forumReplyNotifications.recipientUserId, userId),
-        inArray(forumReplyNotifications.kind,["reply","mention"]),
-      ))
-      .returning({
-        topicId: forumReplyNotifications.topicId,
-        postId: forumReplyNotifications.postId,
-      });
+      const [notification] = await tx
+        .update(forumReplyNotifications)
+        .set({ readAt: sql`coalesce(${forumReplyNotifications.readAt}, now())` })
+        .where(and(
+          eq(forumReplyNotifications.id, notificationId),
+          eq(forumReplyNotifications.recipientUserId, userId),
+          inArray(forumReplyNotifications.kind,["reply","mention"]),
+        ))
+        .returning({
+          topicId: forumReplyNotifications.topicId,
+          postId: forumReplyNotifications.postId,
+        });
     if (!notification?.topicId || !notification.postId) throw new ForumEntityNotFoundError("notification does not exist for user");
     return {topicId:notification.topicId,postId:notification.postId};
     });
