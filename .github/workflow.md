@@ -1,22 +1,19 @@
 # Admin panel — current workflow
 
-- **Service PR #251.** Main/base `13456a17f23c1385bef8ab11c735f43d201edd02`; SA04-A1/A2–H merged; I1–I4 coordinator-PASS.
-- **I5a PASS** exact `58130793d05f6eb2a8b867b2fb546ccddcd6fb59`.
-- **I5b PASS** exact `705519ce10f78801c2614a1cafa13347e0d2a75b`.
-- **Current stage/owner: I5c → Lira only.** Continue cumulative Draft #329 from exact `705519ce10f78801c2614a1cafa13347e0d2a75b`.
-- **I5c result:** connected Better Auth 1.7.7 Google callback/link lifecycle closure plus SA-02 observer/fact/failure composition. A Google sign-in or explicit-link flow initiated while the target is active but completed after authoritative deactivation must not create/update/link protected user/account/session state or emit a false successful auth fact.
-- Preserve active Google registration/returning-sign-in/explicit-link behavior, verified-email/explicit-link identity rules, current exact auth-fact semantics, transaction-callback composition, observer/proof best-effort isolation, and classified lifecycle-storage unavailable versus unexpected failure behavior. Enforcement must not depend on optional telemetry/observer presence.
-- Runtime correction is allowed only if I5c reproduces a real current-scope defect; use the smallest local fix plus regression.
-- **Boundary:** synthetic/local Google seam only. No live Google/Stage6; no built Worker/browser lifecycle acceptance (I5d); no final connected sweep/evidence map (I5e); no J–R, SA05, #315 remediation, physical deletion/reactivation/forced-session controls, docs or merge.
-- Lira publishes one stable exact #329 head with applicable native Better Auth 1.7.7 + PostgreSQL17 evidence and personal inspection, then **STOP for Mira bounded I5c review**. I5d–I5e and Lev/Mark remain unassigned.
+- **Service PR #251.** Main/base `13456a17f23c1385bef8ab11c735f43d201edd02`; SA04-A1/A2–H merged, I1–I4 accepted coordinator checkpoints.
+- **I5a Mira PASS** exact `58130793d05f6eb2a8b867b2fb546ccddcd6fb59`; **I5b Mira PASS** exact `705519ce10f78801c2614a1cafa13347e0d2a75b`.
+- **Current stage/owner: Mira — bounded I5c checkpoint review.** Lira completed I5c real BA1.7.7/PG17 OAuth callback/SA02 observer/failure evidence, has AUTHOR STOP; I5d–I5e unassigned until separate Mira continuation after I5c PASS.
+- **Implementation PR/head:** cumulative [Draft #329](https://github.com/iliya1947/vico-forum/pull/329) stable exact `23554aad29ddd23edb540cddc2069533ebe99329`, prior I5b `705519ce10f78801c2614a1cafa13347e0d2a75b`; open/Draft/unmerged. Three I5c commits, only `tests/database/sa02-auth-oauth-rollback.test.ts` (+169/-9); no production/schema/dependency/docs changes.
+- **Exact-head checks:** [CI #43434644297](https://github.com/iliya1947/vico-forum/actions/runs/43434644297) SUCCESS — 2269 app / 765 PG17 (14 OAuth suite, seven new I5c), lint/typecheck/build/migration/Worker; [SA01 #43434644424](https://github.com/iliya1947/vico-forum/actions/runs/43434644424), [SA03 #43434644305](https://github.com/iliya1947/vico-forum/actions/runs/43434644305), [AP10 #43434644242](https://github.com/iliya1947/vico-forum/actions/runs/43434644242) Chromium SUCCESS, AP10 4/4.
+- **Next:** Mira reviews bounded I5c signed callback, authoritative inactive final guard, optional observer and SQL-fault classification composition on this stable exact head: PASS or one verified current-scope corrective package. I5d new built Worker/browser, I5e cumulative sweep and independent Lev/Mark remain unassigned; no J–R/SA05/#315/docs/merge/Stage6/production.
 
 ## I5 author checkpoint decomposition
 
 1. **I5a — native core connected chain:** Mira PASS exact `58130793d05f6eb2a8b867b2fb546ccddcd6fb59`.
-2. **I5b — SET-05 stale/deactivated chain:** **Mira PASS** exact `705519ce10f78801c2614a1cafa13347e0d2a75b`.
-3. **I5c — Google/link and observer/failure composition:** **ACTIVE → Lira**, starting from exact `705519ce10f78801c2614a1cafa13347e0d2a75b`.
+2. **I5b — SET-05 stale/deactivated chain:** Mira PASS exact `705519ce10f78801c2614a1cafa13347e0d2a75b`.
+3. **I5c — Google callback/link and observer/failure composition:** Lira AUTHOR STOP exact `23554aad29ddd23edb540cddc2069533ebe99329`; Mira checkpoint pending.
 4. **I5d — built Worker/browser connected acceptance:** stale mounted Account, old cookies, independent account, sign-out, private/public boundaries. Not assigned.
-5. **I5e — final connected sweep/evidence map:** after I5a–d PASS, cumulative author inspection. Not assigned.
+5. **I5e — final connected sweep/evidence map:** after I5a–d PASS and author cumulative I inspection. Not assigned.
 
 ## Mandatory author verification
 
