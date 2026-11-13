@@ -11,6 +11,7 @@ import {
 import { InvalidForumContentError } from "../../db/forum-service";
 import { ForumWriteRateLimitError } from "../../db/forum-write-policy";
 import { UserMeasureRestrictedError } from "../../db/user-measure-policy";
+import { AccountInactiveError, AccountMissingError } from "../../db/account-state";
 import { ForumStorageUnavailableError } from "../../db/hyperdrive-forum";
 import { forumWriterForRequest } from "./request-context";
 import { authorizationForRequest } from "../authorization/request-context";
@@ -109,6 +110,9 @@ export async function runForumMutation<T>(
   try {
     return await operation(forumWriterForRequest(context), session.user.id);
   } catch (error) {
+    // A persisted lifecycle change can win after the authenticated request preflight.
+    if (error instanceof AccountInactiveError || error instanceof AccountMissingError)
+      return mutationFailure("unauthenticated", 401);
     if (error instanceof InvalidForumContentError) return mutationFailure("invalid", 400);
     if (error instanceof ForumEntityNotFoundError) return mutationFailure("notFound", 404);
     if (error instanceof ForumAuthorizationError || error instanceof UserMeasureRestrictedError) return mutationFailure("forbidden", 403);
