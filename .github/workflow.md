@@ -1,12 +1,12 @@
 # Admin panel — current workflow
 
 - Service PR **#251**. Main/base unchanged `13456a17f23c1385bef8ab11c735f43d201edd02`; SA04-A1 + A2–H merged; I1/I2/I3/I4a coordinator checkpoint-PASS.
-- **Current checkpoint: SA04-I4b Lira AUTHOR STOP.** Next **Mira independent bounded I4b checkpoint review** on exact `bd717165685095efac74ddd12a9a3339c6008df2`, PASS or verified current-scope defect packet. I4c/I4d/I5/J+ and Lev/Mark unassigned.
+- **Current checkpoint: SA04-I4b Mira bounded checkpoint PASS.** Exact reviewed Draft #329 head `bd717165685095efac74ddd12a9a3339c6008df2`; **0 confirmed current-scope I4b defects**. I4c/I4d/I5/J+ and Lev/Mark remain unassigned.
 - [Cumulative Draft implementation #329](https://github.com/iliya1947/vico-forum/pull/329), branch `chatgpt/sa04-i1-pre-routing-session-admission`, exact `bd717165685095efac74ddd12a9a3339c6008df2`, unchanged base, open/Draft/unmerged; 35 cumulative commits/six cumulative project paths. I4b added three commits affecting **two existing paths**: `app/auth/session-write-guard.ts`, `tests/database/sa04-session-atomic.test.ts`.
 - **I4b result:** Better Auth1.7.7 adapter `user.update/updateMany` with canonical unique `id` or normalized `email` selectors resolves and `FOR NO KEY UPDATE`-locks persisted target; shared A2 active-state guard and original adapter UPDATE execute on the **same native PG connection** through COMMIT, serializing competing deactivation. Missing target returns original null/zero; inactive is Unauthorized; unsupported bulk selector/id transfer fails closed. New-user creation, user deletion, I4a session write paths, auth hooks and facts unchanged.
 - **Real native acceptance:** five new BA/PG17 tests: target-id writer-first lock contention, email-selected deactivation-first rejection + active control, canonical HTTP /update-user active/late deactivation denial, user updateMany/missing/new-user controls and native error 503 vs unexpected. 14 focused I4a/I4b tests pass.
 - **Exact-head checks ALL SUCCESS:** [CI #43400246709](https://github.com/iliya1947/vico-forum/actions/runs/43400246709) **2269 app/739 PostgreSQL17**, lint/typecheck/build/schema/migration/Worker; [SA01 #43400246683](https://github.com/iliya1947/vico-forum/actions/runs/43400246683), [SA03 #43400246745](https://github.com/iliya1947/vico-forum/actions/runs/43400246745), [AP10 #43400246722](https://github.com/iliya1947/vico-forum/actions/runs/43400246722) Chromium SUCCESS, AP10 all four jobs.
-- **Next:** Mira I4b checkpoint only; no I4c+ implementation, Lev/Mark, merge, docs closeout, #315, SA05+ or Stage6/production.
+- **Next:** STOP at completed I4b checkpoint. On a separate developer continuation, assign only **I4c — account write atomic lifecycle closure** in cumulative Draft #329. No I4d, I5/J+, Lev/Mark review, merge, docs closeout, #315, SA05+ or Stage6/production yet.
 
 
 ## Mandatory author verification
@@ -500,3 +500,14 @@ Full remaining I4a sweep found no additional confirmed current-scope defect. Mis
 - Exact final CI #43400246709 SUCCESS (**2269 app +739 PG17**), SA01 #43400246683, SA03 #43400246745 and AP10 #43400246722 Chromium all SUCCESS (four AP10 jobs). Lira inspected three I4b patches/current two-file delta, pinned upstream BA user update hooks/selectors and I1–I4a preservation. PR #329 description updated.
 - **Lira AUTHOR STOP, Mira bounded I4b checkpoint next** on `bd717165685095efac74ddd12a9a3339c6008df2`; I4c–I4d/I5/J+, Lev/Mark, docs closeout/merge/production/#315/SA05+ remain unassigned.
 
+
+
+## 2026-11-13 — SA04-I4b Mira checkpoint PASS
+
+- Reviewed cumulative Draft #329 exact `bd717165685095efac74ddd12a9a3339c6008df2` from accepted I4a `7e80479e03167a8856fe1b2094b8c17678f4ce22`: complete three-commit/two-path I4b delta, shared A2 mutation guard, current auth composition, task/Stage source-of-truth and pinned Better Auth v1.7.7 existing-user write seams.
+- Better Auth v1.7.7 `internalAdapter.updateUser` resolves the target by one logical `id` selector and `updateUserByEmail` by one normalized logical `email` selector; `updateWithHooks` / `updateManyWithHooks` hand those canonical selectors to the current adapter. The I4b guard intercepts those actual `user.update/updateMany` persistence calls, resolves the persisted row, holds `FOR NO KEY UPDATE`, rechecks A2 active state and executes the original adapter write on the same native PostgreSQL connection through COMMIT.
+- Writer-first target-id evidence proves competing deactivation cannot pass the held user-row lock; deactivation-first email/HTTP evidence proves a target that becomes inactive after earlier request admission is denied at the final write seam without changing the user row or issuing a new session cookie. Missing unique targets preserve adapter null/zero semantics; active controls and new-user creation remain unchanged.
+- Lifecycle columns remain server-owned and outside Better Auth additional fields. Physical user deletion is not introduced. Password/provider/account writes remain I4c; destructive session paths remain I4d. Those omissions are accepted later checkpoints, not I4b defects.
+- Wrapper-owned target-resolution SQL preserves the accepted availability→controlled no-store 503 vs unexpected propagation semantics. The I4b fail-closed rejection of unsupported non-unique user-update shapes does not break any current Better Auth v1.7.7 configured user-write seam.
+- Independent exact-head Actions checked: CI #43400246709 SUCCESS — 184/184 app files, 2269/2269 app tests; 69/69 PostgreSQL17 files, 739/739 tests, including 14/14 focused I4a+I4b and 5/5 I4b. SA01 #43400246683, SA03 #43400246745 and AP10 #43400246722 are SUCCESS; AP10 all four browser jobs passed.
+- **PASS — 0 confirmed current-scope I4b defects.** #329 remains cumulative Draft. No Lev review until full I is complete and Mira cumulative whole-I PASS.
