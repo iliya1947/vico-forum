@@ -177,6 +177,10 @@ describe("SA04-J7 authoritative topic closure/pin admission", () => {
     const beforeOpen = await snapshot(open.id), beforePinned = await snapshot(pinned.id);
     await deactivate(open.actor);
     await deactivate(pinned.actor);
+    // Existing closure CAS and missing-topic rejection retain precedence over actor admission.
+    await expect(forum.setTopicClosed({
+      topicId: open.id, actorId: open.actor, isClosed: true, expectedClosureVersion: 1,
+    })).rejects.toBeInstanceOf(ForumStateConflictError);
     for (const op of ["close", "pin", "unpin"] as const) {
       await expect(perform(op, open)).rejects.toBeInstanceOf(AccountInactiveError);
       await expect(perform(op, { ...open, actor: "j7-missing-" + uuid() }))
