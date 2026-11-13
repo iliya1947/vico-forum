@@ -1,5 +1,28 @@
 # Admin panel — communication
 
+## SA04-J8 — assignment → Lira
+
+Baseline: cumulative Draft #330 exact `5e76474908156d6acbab1d2cf98138e6a37cabc8` (Mira J7 PASS).
+
+Implement **J8 only**: lifecycle-close `markTopicSolved` and `selectBestAnswer`.
+
+Required result:
+- keep existing topic/domain checks and acquire the existing rows that can be mutated by the selected solution operation **before** actor admission; old/new answer rows and affected pending-signal sets must use stable ordering, matching Lev's accepted J lock graph;
+- use non-key-changing topic/post mutex strength where needed so existing Complaint FK `KEY SHARE` can complete without weakening solution/edit serialization;
+- authoritative AccountState admission is on the same transaction/connection for both `own` and `any`;
+- keep `admin.forum` measure admission only for `any`, after lifecycle admission;
+- preserve current missing/ownership/conflict precedence: already-solved, confirmed duplicate, candidate missing/cross-topic, original first post and other existing domain failures stay fail-closed;
+- `markTopicSolved` keeps Help pending duplicate-signal supersession and emits `topic.solved` History only for real Any-scope transition;
+- `selectBestAnswer` keeps active same-answer success without effects/History; on real Help replacement preserve old-answer `best-answer-replaced` moderation, new-answer moderation clearing, exact pending signal supersession, topic best-answer update and Any-only `topic.bestAnswerChanged` History;
+- inactive/missing must not receive same-answer or other success and must leave topic, post moderation, signals and History unchanged;
+- preserve returned `topicAuthorId/isSolved` and canonical solution-confirmation redirect/inline behavior; shared lifecycle denial remains generic private/no-store 401.
+
+Evidence should directly cover Own/Any active behavior; active same-answer no-op; inactive/missing real and no-op paths; before/after moderation/signal/History facts; state-first/writer-first races for both methods; stable old/new post lock interaction with J3 edit; overlapping affected-signal interaction with current signal paths; same-actor/content Complaint FK compatibility; applicable Stage4 solved/best-answer, AP-05 History, AP-10 and canonical action regressions.
+
+Excluded: J9+ changes, broader Help refactor, #315, K, SA-05, schema/migration/permission/dependency changes, permanent docs and Stage 6.
+
+Run applicable exact-head checks, inspect the bounded delta, publish one stable #330 head, then **AUTHOR STOP for Mira J8 review**. Lev/Mark remain inactive.
+
 ## J7 — Mira bounded coordinator review: PASS
 
 - Reviewed cumulative Draft #330 exact `5e76474908156d6acbab1d2cf98138e6a37cabc8` against the accepted J7 assignment, Lev's full-J lock graph and current AP-05/AP-08/AP-10 contracts.
