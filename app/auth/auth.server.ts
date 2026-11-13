@@ -17,6 +17,7 @@ import {
 } from "./request-context";
 import { createRegistrationAdmission } from "./registration-admission";
 import { safeDeviceLabel } from "./session-label";
+import { guardBetterAuthSessionWrites } from "./session-write-guard";
 import {
   account,
   betterAuthUserAdditionalFields,
@@ -150,10 +151,10 @@ export function betterAuthOptions(
   return {
     secret: env.BETTER_AUTH_SECRET,
     baseURL: env.BETTER_AUTH_URL,
-    database: drizzleAdapter(database, {
+    database: guardBetterAuthSessionWrites(database, drizzleAdapter(database, {
       provider: "pg" as const,
       schema: betterAuthSchema,
-    }),
+    }), onActorStateError),
     // This gate belongs to the canonical Better Auth configuration, not to
     // optional SA-02 observers or only the HTTP request handler.
     databaseHooks: {
