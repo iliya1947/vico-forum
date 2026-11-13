@@ -56,7 +56,7 @@ Current J decomposition for Lira execution:
 5. **J3c — source-locale service no-op + canonical HTTP boundary.** **Mira bounded PASS on `cb1df03d00038fdf414b9d0d650d908a58167098`.**
 6. **J4 — profile writer.** **Mira bounded PASS on `84b5124f948895e3e211b81b1d6bd2082ddc531f`.**
 7. **J5 — read-state writer.** **Mira bounded PASS on `af25adf18fd065e5af4a7e6da2c670f28613a10f`.**
-8. **J6 — inbox acknowledgement writers.** **Active → Lira.**
+8. **J6 — inbox acknowledgement writers.** **Lira implementation complete / AUTHOR STOP on `9a0a095b41c26ef41d6d136f4cf673c8bc325b08`; Mira bounded review pending.**
 9. **J7 — topic close/pin/unpin state writers.** Unassigned.
 10. **J8 — solved/best-answer writers.** Unassigned.
 11. **J9 — Help Signals submit/withdraw/resolve.** Unassigned.
@@ -97,11 +97,11 @@ Cumulative Draft #330 exact `84b5124f948895e3e211b81b1d6bd2082ddc531f`: PostgreS
 
 Cumulative Draft #330 exact `af25adf18fd065e5af4a7e6da2c670f28613a10f` passed Mira bounded review with zero confirmed current-scope defects. `advanceTopicReadState` now uses the accepted topic/post `FOR KEY SHARE` dependency order, same-transaction AccountState admission, unchanged monotonic timestamp/ID upsert and same-transaction readback. Same/backward no-op requires active actor. Native PG17 **811/811** (J5 7/7), application/unit **2271/2271**, CI/SA-03/AP-10 checks green. #315 `READSTATE-CACHE-01` remains separate.
 
-## J6 — active assignment to Lira
+## J6 current handoff — Mira bounded review pending
 
-Baseline: Draft #330 exact `af25adf18fd065e5af4a7e6da2c670f28613a10f`.
+Lira implemented authoritative AccountState closure of both notification acknowledgement writers in cumulative Draft #330 exact `9a0a095b41c26ef41d6d136f4cf673c8bc325b08`, based on J5 Mira PASS `af25adf18fd065e5af4a7e6da2c670f28613a10f`. Unified `markNotificationRead` uses its existing transaction with the actor guard before owned notification `FOR UPDATE`, member validation and idempotent update; legacy `markReplyNotificationRead` now uses one short transaction with actor guard before the original recipient-owned reply/mention-only UPDATE. Active already-read keeps its original timestamp; inactive/missing fails before any notification write or no-op success. Canonical notifications action retains shared generic private/no-store 401.
 
-Scope: authoritative AccountState admission for `markNotificationRead` and legacy `markReplyNotificationRead`. Both use one short transaction with trusted actor admission before own-notification lock/update. Unified reply/mention plus complaint-decision/complaint-appeal-result recipient/membership behavior and legacy reply/mention behavior remain intact. Active already-read is idempotent; inactive/missing cannot obtain success or change `read_at`. Canonical `/:locale/notifications` action keeps shared private/no-store lifecycle 401. No new legacy HTTP path, Complaint mutation change, schema/migration/permission/dependency work, J7+, #315 remediation, SA-05 or Stage 6.
+Native PG17 **820/820** (nine new J6 tests), application/unit **2272/2272**; CI SUCCESS and SA-03 Chromium SUCCESS. AP-10 browser final SUCCESS 4/4: the first general-browser attempt encountered a `socket hang up` at an unrelated topic POST; same-head failed-job rerun succeeded without code changes. Original transport cause is not confirmed. Lira completed bounded commit inspection and **AUTHOR STOP**. Mira is next for J6 bounded review on exact `9a0a095b41c26ef41d6d136f4cf673c8bc325b08`; J7–J12 unassigned. Complaint commands N, #315, K, SA-05, docs, Stage 6 remain separate.
 
 ## Important cross-cutting boundaries
 
