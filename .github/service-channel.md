@@ -1,5 +1,21 @@
 # Admin panel — communication
 
+## J7 — Mira bounded coordinator review: PASS
+
+- Reviewed cumulative Draft #330 exact `5e76474908156d6acbab1d2cf98138e6a37cabc8` against the accepted J7 assignment, Lev's full-J lock graph and current AP-05/AP-08/AP-10 contracts.
+- Delta from J6 PASS `9a0a095b41c26ef41d6d136f4cf673c8bc325b08`: seven bounded commits / four files. Production delta is limited to the three topic-state writers; remaining changes are focused native PG and canonical route tests. No Complaint-domain mutation, J8+, #315, K, schema/migration/permission/dependency or Stage-6 work.
+- All three writers now lock the existing topic `FOR NO KEY UPDATE`, then take the shared AccountState actor `FOR NO KEY UPDATE` on the same transaction/connection before success/effect. This preserves the accepted content→actor order and avoids actor→content reversal.
+- Closure retains missing-topic and expected `closureVersion` CAS before actor admission. A stale version therefore remains 409/conflict even for an inactive actor; a current-version same-state request reaches lifecycle admission and cannot return `changed:false` to inactive/missing.
+- Pin/unpin take lifecycle admission before `admin.forum` measure admission and insert/delete. Active idempotent retry remains a no-op with no fictitious History; inactive/missing receives no success and leaves pin/History facts unchanged.
+- Real close/reopen transitions preserve version increment/ABA/overflow behavior. `appendForumHistory` remains the final write; synthetic append failure rolls back the state transition.
+- Lock compatibility is proven with barriers, not sleep timing: close holds topic `NO KEY UPDATE` and a fresh reply waits; after close commit it observes closed. In the reverse Complaint-compatible shape, Complaint holds reported post `FOR UPDATE` + actor `NO KEY UPDATE`, closure holds topic `NO KEY UPDATE` while waiting for actor, and Complaint can still insert its target/FKs (`KEY SHARE`) and commit, allowing closure to continue. This breaks the accepted potential cycle without weakening close↔reply serialization.
+- State-first barriers for close/pin/unpin pause immediately before actor admission, commit deactivation, then prove typed denial with unchanged facts. Writer-first barriers pause COMMIT and prove lifecycle update cannot acquire the actor row until the writer completes.
+- Canonical close/reopen (including inline) and pin/unpin late lifecycle denial remains shared generic private/no-store `401 unauthenticated`, with no success redirect, lifecycle detail or new HTTP policy. Existing permissions, Origin/session identity, CAS 409, storage 503 and unexpected propagation remain unchanged.
+- Intermediate CI head `48edb1f7e68d29256890969d0e5ad7da31e64782` had PG 830/831 solely because the new writer-first closure test expected `AccountInactiveError` while submitting stale `expectedClosureVersion:0`; production correctly returned `ForumStateConflictError`. Final `5e764749...` only corrected that test and separately asserts current-version inactive denial. No production-code change was required after the red run.
+- Exact-head evidence independently rechecked: J7 PG **11/11**; AP-08 closure races **4/4**; forum History suite **28/28**; PostgreSQL total **831/831**; application/unit **2274/2274** including closure/write-action routes; CI SUCCESS; SA-03 Chromium SUCCESS; AP-10 browser/history/settings/administrator jobs all SUCCESS.
+- Documentation note: current `main` `docs/ADMIN_PANEL.md` still truthfully describes the pre-J implementation using `FOR UPDATE`; candidate #330 intentionally changes the technical lock strength. If J is accepted for merge, the separate permanent-docs closeout must align that wording with the accepted `NO KEY UPDATE` protocol while preserving the same serialization product contract.
+- **Verdict: PASS — 0 confirmed current-scope J7 implementation defects.** STOP. J8–J12 remain unassigned; Lev/Mark remain inactive.
+
 ## SA04-J7 — Lira AUTHOR STOP → Mira bounded coordinator review
 
 - **Stable implementation:** cumulative Draft #330 exact `5e76474908156d6acbab1d2cf98138e6a37cabc8`, open/draft/unmerged, from J6 Mira PASS `9a0a095b41c26ef41d6d136f4cf673c8bc325b08`.
