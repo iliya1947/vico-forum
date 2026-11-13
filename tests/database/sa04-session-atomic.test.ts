@@ -3,7 +3,8 @@ import { betterAuth } from "better-auth";
 import { drizzle } from "drizzle-orm/node-postgres";
 import { Client } from "pg";
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
-import { betterAuthOptions, type BetterAuthEnvironment } from "../../app/auth/auth.server";
+import { betterAuthOptions, createHyperdriveAuthRuntime, type BetterAuthEnvironment } from "../../app/auth/auth.server";
+import { AccountStateUnexpectedError } from "../../db/account-state";
 import { installRegistrationPolicyFixture } from "./registration-policy-fixture";
 
 const url = process.env.DATABASE_URL;
@@ -175,6 +176,39 @@ describe("SA04-I4a Better Auth 1.7.7 native session write atomicity", () => {
       'select expires_at,updated_at from "session" where token=$1', [session.token],
     )).rows[0]).toEqual(persisted);
   }, 30_000);
+
+  it("classifies a locked session-write state outage after preflight without issuing a session", async () => {
+    const { userId } = await signUp("write-outage");
+    const before = (await writer.query<{ id: string; token: string }>(
+      'select id,token from "session" where user_id=$1 order by id', [userId],
+    )).rows;
+    const failedRuntime = (failure: Error) => createHyperdriveAuthRuntime(url, env, () => {
+      const connection = new Client({ connectionString: url, options: `-c search_path=${schema}` });
+      const original = connection.query;
+      connection.query = ((...args: unknown[]) => {
+        if (/for no key update/i.test(nativeSql(args[0]))) return Promise.reject(failure);
+        return Reflect.apply(original, connection, args);
+      }) as typeof connection.query;
+      return connection;
+    });
+    const request = () => new Request(`${origin}/api/auth/sign-in/email`, {
+      method: "POST",
+      headers: { Origin: origin, "content-type": "application/json",
+        "cf-connecting-ip": `203.0.113.${ip++}` },
+      body: JSON.stringify({ email: "i4a-write-outage@example.test", password }),
+    });
+    const down = Object.assign(new Error("SECRET_I4A_NATIVE_CONNECTION_LOST"), { code: "ECONNRESET" });
+    const unavailable = await failedRuntime(down).handle(request());
+    expect(unavailable.status).toBe(503);
+    expect(unavailable.headers.get("Cache-Control")).toBe("no-store");
+    expect(unavailable.headers.getSetCookie().some(v => v.includes("session_token="))).toBe(false);
+    expect(await unavailable.text()).not.toContain("SECRET_I4A_NATIVE_CONNECTION_LOST");
+    await expect(failedRuntime(new TypeError("I4a bad state reader")).handle(request()))
+      .rejects.toBeInstanceOf(AccountStateUnexpectedError);
+    expect((await writer.query<{ id: string; token: string }>(
+      'select id,token from "session" where user_id=$1 order by id', [userId],
+    )).rows).toEqual(before);
+  });
 
   it("denies canonical due-session HTTP refresh if deactivation commits between preflight and locked UPDATE", async () => {
     const { userId, cookie, session } = await signUp("refresh-race");
