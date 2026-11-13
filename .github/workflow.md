@@ -1,12 +1,12 @@
 # Admin panel — current workflow
 
 - Service PR **#251**. Main/base **`13456a17f23c1385bef8ab11c735f43d201edd02`**, accepted SA04-A1 + A2–H merged. I1/I2 are checkpoint-PASS.
-- **Current checkpoint: SA04-I3 Lira AUTHOR STOP** on exact **`ba2337d788161915dbeb2de49ff320b4dad61768`**. **Next Mira bounded SA04-I3 checkpoint/scope review**, PASS or confirmed current-scope defects. I4–I5/J+ and Lev/Mark remain unassigned.
+- **Current checkpoint: SA04-I3 Mira checkpoint PASS on exact `ba2337d788161915dbeb2de49ff320b4dad61768`; 0 confirmed current-scope I3 defects.** PR #329 remains cumulative Draft. I4–I5/J+ unassigned; Lev/Mark STOP.
 - Cumulative [Draft implementation #329](https://github.com/iliya1947/vico-forum/pull/329), branch `chatgpt/sa04-i1-pre-routing-session-admission`, stable `ba2337d788161915dbeb2de49ff320b4dad61768`, base `13456a17f23c1385bef8ab11c735f43d201edd02`, open/Draft/unmerged; 21 cumulative / 6 I3 commits, **3 changed project files**.
 - **I3 result:** canonical Better Auth 1.7.7 `databaseHooks.session.create.before` in `betterAuthOptions` reads persisted A2 state on same native PG client before INSERT/session cookie; inactive/missing blocked even without SA02 observer or HTTP. Existing SA02 `create.after` success facts survive `createAuth` hook merge. I1/I2 preserved; I4 existing-target writes remain out of scope.
 - **Evidence:** native returning email/password HTTP, existing Google callback via synthetic provider with SA02 facts, direct internal adapter, active/inactive/missing rows, retained physical sessions and missing cookie, classified 503 vs unexpected failures. Initial native CI showed a direct adapter escaped a gate placed only in `createAuth`; gate moved to common `betterAuthOptions`. Corrected pinned Google callback expectation 401, no code workaround.
 - **Exact-head all SUCCESS:** [CI #43384252236](https://github.com/iliya1947/vico-forum/actions/runs/43384252236): **2269 app / 725 PG17**, schema/migrations/typecheck/lint/build/Worker; [SA01 #43384252121](https://github.com/iliya1947/vico-forum/actions/runs/43384252121), [SA03 #43384252107](https://github.com/iliya1947/vico-forum/actions/runs/43384252107), [AP10 #43384252129](https://github.com/iliya1947/vico-forum/actions/runs/43384252129) Chromium SUCCESS (AP10 four jobs).
-- **Next:** Mira independent bounded I3 checkpoint on exact `ba2337d788161915dbeb2de49ff320b4dad61768`. No I4+, docs closeout, merge, SA05+, Stage6/production or #315.
+- **Next:** separate continuation may prepare SA04-I4. No I4 assignment yet; no docs closeout, merge, SA05+, Stage6/production or #315.
 
 
 ## Mandatory author verification
@@ -410,3 +410,14 @@ Before any project-changing action or agent handoff, Mira must check in this ord
 - Initial native I3 suite found native direct `betterAuth(betterAuthOptions(...))` bypass when hook existed only in `createAuth`; corrected by moving into canonical options. Existing Google callback denial is HTTP 401, not assumed 302; corrected test only. Final exact-head CI #43384252236 SUCCESS (2269 app/725 PG17); SA01 #43384252121, SA03 #43384252107, AP10 #43384252129 all SUCCESS.
 - Lira inspected all six I3 commits/final 3-file diff and pinned BA 1.7.7 source; author evidence only, not Mira/Lev review. **Next Mira I3 checkpoint**. I4+/Lev/Mark unassigned; STOP.
 
+
+
+## 2026-11-13 — SA04-I3 Mira checkpoint PASS
+
+- Reviewed cumulative Draft #329 exact `ba2337d788161915dbeb2de49ff320b4dad61768`, complete accepted-I2→I3 six-commit delta across the three changed project files.
+- The canonical Better Auth configuration now has an always-on `databaseHooks.session.create.before` lifecycle gate, independent of SA-02 observer configuration. It reads persisted A2 AccountState on the same request-owned PostgreSQL client and rejects inactive/missing targets before canonical session persistence/cookie issuance.
+- `createAuth` correctly composes the existing SA-02 `session.create.after` observer with the I3 `create.before` hook by nested spreading the existing session/create hook; successful `auth.sessionCreated` evidence remains intact.
+- Native coverage proves returning email/password HTTP sign-in, direct `internalAdapter.createSession`, existing-user synthetic Google callback, active controls, inactive/missing no-session/no-cookie, and classified lifecycle-storage outage vs unexpected failure. Exact-head CI #43384252236, SA01 #43384252121, SA03 #43384252107 and AP10 #43384252129 are SUCCESS.
+- The remaining check/write race and atomic target-write protection belong to the already-separated **I4** checkpoint. They are not promoted to an I3 defect; I3 neither claims nor implements that atomic closure.
+- **PASS — 0 confirmed current-scope I3 defects.**
+- #329 remains cumulative Draft. No Lev review is spent on this intermediate checkpoint. I4–I5/J+ remain unassigned.
