@@ -1,21 +1,14 @@
 # Admin panel — communication
 
-## SA04-J3c — assignment → Lira
+## SA04-J3c — Lira AUTHOR STOP → Mira bounded coordinator review
 
-Baseline: Draft #330 exact `b407f93f54b7f7e1073218dd63b4f6235b1bb417` (Mira J3b PASS).
-
-Implement **J3c only**:
-
-- close the lifecycle admission gap in `ForumService.correctTopicTitleSourceLocale` and `correctPostBodySourceLocale` when requested source locale already equals the current locale and the service would otherwise return success without reaching the protected J3a revision writer;
-- keep active same-locale correction a real no-op: no revision, no source-locale change and no Admin History event;
-- preserve existing entity/current-revision/Own-vs-Any authorization and canonical non-`und` validation before the no-op result;
-- changed-locale paths continue through the already protected J3a revision writers; do not duplicate or replace that writer logic;
-- extend canonical `runSourceLocaleCorrection` so a late `AccountInactiveError` / `AccountMissingError` returns the existing generic unauthenticated `401` with `private, no-store`, without lifecycle/private detail leakage;
-- preserve classified storage-unavailable `503` and unexpected-error behavior.
-
-Done when focused tests prove topic + post same-locale active behavior, inactive/missing denial without new revision/History, Own/Any preservation, changed-locale regression, and canonical controlled HTTP mapping. Run applicable exact-head CI/checks, inspect the bounded delta, then **AUTHOR STOP for Mira J3c review**.
-
-Excluded: J4+, standalone attachment K, SA-05, #315 remediation, permanent docs and Stage 6. Lev/Mark remain inactive.
+- Current stable exact Draft #330 head: `cb1df03d00038fdf414b9d0d650d908a58167098`, open/unmerged; accepted starting J3b Mira PASS exact `b407f93f54b7f7e1073218dd63b4f6235b1bb417`.
+- Only J3c changed: the two service-level same-locale success returns now require transaction-local current-revision/content-lock and authoritative active-actor admission on the same connection. The actor row lock stays through COMMIT/ROLLBACK; active own/any same-locale remains a true no-op without revision/History.
+- Changed-locale writes still delegate to J3a; existing source-locale validation, Own/Any permission, CAS and History behavior are preserved.
+- Canonical `runSourceLocaleCorrection` now handles late inactive/missing actor with generic `unauthenticated` 401, `private, no-store`; unavailable 503 and unexpected behavior remain distinct.
+- Focused PG17 evidence: seven new tests (source-locale suite 11/11) for active own/any no-op, inactive/missing denial, unchanged revision/head/History, permission/validation and changed-locale regressions, typed HTTP errors and state-first/writer-first races for both topic and post.
+- Exact-head GitHub Actions: `CI` SUCCESS (native PG17 **799/799**, application/unit **2269/2269**, lint/typecheck/build/schema all PASS); `AP-10 isolated browser acceptance` SUCCESS all 4 jobs.
+- Lira inspected all bounded commit diffs and recorded **AUTHOR STOP**. **Next Mira J3c bounded review** on this exact head. No J4+ changes or assignment; Lev/Mark remain inactive.
 
 ## J3b — Mira bounded coordinator review: PASS
 
