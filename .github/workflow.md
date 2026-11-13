@@ -2,18 +2,19 @@
 
 - **Service PR #251.** Main/base `13456a17f23c1385bef8ab11c735f43d201edd02`; SA04-A1/A2–H merged; I1–I4 coordinator-PASS.
 - **I5a PASS** exact `58130793d05f6eb2a8b867b2fb546ccddcd6fb59`.
-- **I5b bounded Mira checkpoint PASS** exact `705519ce10f78801c2614a1cafa13347e0d2a75b`; 0 confirmed current-scope defects.
-- I5b delta is two commits in `tests/database/account-security.test.ts` only (+132/-1); no production/runtime/schema/dependency/docs changes.
-- Verified real Better Auth 1.7.7 + PostgreSQL17 stale-context denial after committed deactivation, preserved inactive own-signout cleanup, and three late-deactivation races at the final guarded password/revoke write boundary. No private SET-05 read or protected mutation remains available after a completed deactivation; unrelated active behavior is preserved.
-- Exact-head CI independently rechecked: 184/184 app files, 2269/2269 app tests; 69/69 PG17 files, 758/758 tests; `account-security.test.ts` 12/12. SA01/SA03/AP10 exact-head Chromium workflows are SUCCESS.
-- **Current stage: STOP after I5b PASS. I5c–I5e are unassigned.** Next explicit continuation may assign **I5c only** (Google/link + observer/failure composition).
-- Lev/Mark remain unassigned until all I5 author checkpoints are complete and Mira cumulative whole-I PASS. No J–R, SA05, #315 remediation, docs/merge, Stage6/production.
+- **I5b PASS** exact `705519ce10f78801c2614a1cafa13347e0d2a75b`.
+- **Current stage/owner: I5c → Lira only.** Continue cumulative Draft #329 from exact `705519ce10f78801c2614a1cafa13347e0d2a75b`.
+- **I5c result:** connected Better Auth 1.7.7 Google callback/link lifecycle closure plus SA-02 observer/fact/failure composition. A Google sign-in or explicit-link flow initiated while the target is active but completed after authoritative deactivation must not create/update/link protected user/account/session state or emit a false successful auth fact.
+- Preserve active Google registration/returning-sign-in/explicit-link behavior, verified-email/explicit-link identity rules, current exact auth-fact semantics, transaction-callback composition, observer/proof best-effort isolation, and classified lifecycle-storage unavailable versus unexpected failure behavior. Enforcement must not depend on optional telemetry/observer presence.
+- Runtime correction is allowed only if I5c reproduces a real current-scope defect; use the smallest local fix plus regression.
+- **Boundary:** synthetic/local Google seam only. No live Google/Stage6; no built Worker/browser lifecycle acceptance (I5d); no final connected sweep/evidence map (I5e); no J–R, SA05, #315 remediation, physical deletion/reactivation/forced-session controls, docs or merge.
+- Lira publishes one stable exact #329 head with applicable native Better Auth 1.7.7 + PostgreSQL17 evidence and personal inspection, then **STOP for Mira bounded I5c review**. I5d–I5e and Lev/Mark remain unassigned.
 
 ## I5 author checkpoint decomposition
 
 1. **I5a — native core connected chain:** Mira PASS exact `58130793d05f6eb2a8b867b2fb546ccddcd6fb59`.
 2. **I5b — SET-05 stale/deactivated chain:** **Mira PASS** exact `705519ce10f78801c2614a1cafa13347e0d2a75b`.
-3. **I5c — Google/link and observer/failure composition:** pending callback, telemetry on/off, transaction callback and failures. Not assigned.
+3. **I5c — Google/link and observer/failure composition:** **ACTIVE → Lira**, starting from exact `705519ce10f78801c2614a1cafa13347e0d2a75b`.
 4. **I5d — built Worker/browser connected acceptance:** stale mounted Account, old cookies, independent account, sign-out, private/public boundaries. Not assigned.
 5. **I5e — final connected sweep/evidence map:** after I5a–d PASS, cumulative author inspection. Not assigned.
 
