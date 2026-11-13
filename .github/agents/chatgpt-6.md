@@ -1,3 +1,14 @@
+# Лира — SA04-J1 Drizzle mutation AccountState foundation; AUTHOR STOP → Mira
+
+- **Assignment:** only J1, after merged SA04-I, under Mira-approved full J plan; J2–J12 unassigned. Main/base `44d6b69a8d235cc8b1ee30953839be71e6ab836a`. New [cumulative Draft #330](https://github.com/iliya1947/vico-forum/pull/330) exact stable `35902e3ebd7636121b3a4af1e67b3da8ec365be2`, 3 commits, two project files. No merge, product/docs/schema/dependencies.
+- **Technical author result:** in `db/account-state.ts`, added `assertActiveAccountForDrizzleMutation`, selecting exactly the A2 lifecycle tuple in the *caller-owned Drizzle PostgreSQL transaction* with `.for("no key update")`; native Drizzle parsers and cause-chain error classifier now reuse the same pure validation. Retains `AccountInactiveError`/`AccountMissingError`, unavailable timeout/connection vs unexpected failure, valid active behavior and existing native reader/mutation API. The helper assumes caller's existing transaction (no implicit BEGIN, second client, autonomous SQL, Forum wiring or new state).
+- **Coverage:** 4 new `tests/database/account-state.test.ts` cases: real typed Drizzle active/inactive/missing and same-transaction mutation, invalid-ID; synthetic Drizzle query/cause/classification/malformed tuple and lock strength; concurrent PG17 row lock through COMMIT with FK KEY SHARE compatibility; ROLLBACK no fact and deactivation-first persisted denial, no protected update. Existing A2 tests unchanged and green.
+- **Personal inspection:** read exact two-file cumulative diff, current native and Drizzle query code, 0065 lifecycle constraint, A2 test suite, J1 scoped acceptance, source-of-truth PROJECT/STATE/ROADMAP/Super-admin docs and Lev full J plan. Type/lint/build verified in CI, not locally (container cannot reach the private repository or install pin deps). No current J1 defect reproduced.
+- **Exact CI:** [#43466409877](https://github.com/iliya1947/vico-forum/actions/runs/43466409877) SUCCESS, `checks` + `database`: 2269/2269 app (184/184 files); 769/769 PostgreSQL17 (69/69 files), focused A2+J1 14/14; lint/typecheck/build/migration/schema parity/Worker smoke. No unreported AP10/SA01/SA03 reruns.
+- **J1 AUTHOR STOP.** Next Mira bounded J1 review exact `35902e3ebd7636121b3a4af1e67b3da8ec365be2`, PASS or verified current-scope correction package. Only Mira may assign J2 next; Lev/Mark unassigned. No J2+ work or SA05/Stage6/production.
+
+---
+
 # Лира — актуальное назначение: SA04-J1 (2026-11-13)
 
 Current main: `44d6b69a8d235cc8b1ee30953839be71e6ab836a`.
