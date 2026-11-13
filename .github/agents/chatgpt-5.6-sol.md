@@ -2378,3 +2378,14 @@ Do not treat a user's anger, criticism or request to think as implicit permissio
 - Confirmed **I4A-MIRA-03:** new wrapper-owned raw transaction/token SQL availability errors are not fed through the existing unavailable classifier on normal auth HTTP handling; the added outage test covers only AccountState locked-read failure.
 - Exact-head Actions are green but do not exercise these chains. Full remaining bounded sweep found no fourth I4a defect; I4b/c/d omissions remain future work.
 - Verdict **CHANGES REQUIRED**. Return all three as one bounded Lira correction package; no Lev review.
+
+
+## 2026-11-13 — SA04-I4a repeat checkpoint review PASS
+
+- Re-reviewed exact `7e80479e03167a8856fe1b2094b8c17678f4ce22` as a fresh bounded I4a cycle, including full accepted-I3→current I4a delta, all six corrections, official Better Auth v1.7.7 transaction/adapter/session seams, current project/Stage contracts and exact-head CI.
+- **I4A-MIRA-01 CLOSED:** transaction callback adapter is re-wrapped before BA AsyncLocalStorage; transaction-context session create cannot bypass lifecycle locking.
+- **I4A-MIRA-02 CLOSED:** typed late inactive write denial is mapped to guest/null only at pre-routing session resolution; HTTP/direct Unauthorized remains intact.
+- **I4A-MIRA-03 CLOSED:** I4a-owned raw SQL errors preserve availability→controlled 503 vs unexpected propagation.
+- Verified both race orderings for create/update, I1–I3 preservation, active sliding/cookies, SA-02 successful facts and unchanged I4a boundaries.
+- CI #43395760369 independently checked: 2269/2269 app, 734/734 PG17 including 9/9 I4a; SA01/SA03/AP10 exact-head Chromium SUCCESS.
+- Verdict: **PASS, 0 remaining current-scope I4a defects.** Stop before I4b; no Lev review until full I closes.
