@@ -1931,3 +1931,16 @@ Preserve the existing special case that an inactive user may sign out **their ow
 Do not implement I3 session-create admission, I4 server-resolved target-write atomic closure, I5 or J+.
 
 Add focused real HTTP/direct tests, inspect the completed bounded diff yourself, publish stable exact head/evidence, then **STOP** for Mira checkpoint review.
+
+
+## 2026-11-13 — assigned correction: I2-MIRA-01
+
+Correct **only `I2-MIRA-01`** in cumulative Draft PR #329 from reviewed head `5ac398f472d18e32e9ab836eef99f6f62a6de4ee`.
+
+Confirmed defect: for non-`/get-session` protected authenticated operations, I2 preflight can slide/update a due Better Auth session before AccountState admission rejects an inactive actor.
+
+Required result: inactive actor preflight performs no session refresh/update and emits no refresh cookie before lifecycle admission; after successful active admission, the canonical endpoint's existing session behavior remains intact.
+
+Add a focused real Better Auth/native regression with a **due inactive** session on a protected non-`get-session` path, checking persisted session state/cookies and an active control. Do not start I3–I5 or J+.
+
+Inspect the bounded correction yourself, publish new stable exact head and actual checks/evidence, then **STOP** for Mira repeat I2 review.
