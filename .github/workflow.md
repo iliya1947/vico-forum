@@ -1,11 +1,11 @@
 # Admin panel — current workflow
 
 - **Service PR #251. Current main: `44d6b69a8d235cc8b1ee30953839be71e6ab836a`. SA04-I #329 merged.**
-- **Current stage: SA04-J full technical plan published → Mira scope/fit review.**
-- **Mira:** review the complete accepted J boundary against Lev's full [technical plan #6858869802](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6858869802), then **must split Lira implementation into bounded substeps** and prepare the first concrete author handoff. Lira implementation granularity is a fixed developer decision; do not assign full J as one author step and do not retroactively restrict Lev to J1 planning.
-- **Lev: planning complete / STOP.** Source-based map covers 24 actor-owned repository writes + two service-only correction no-op paths, transaction/lock/replay/error/evidence constraints. No implementation performed.
-- **Lira/Mark unassigned. Implementation PR/head: none.** No implementation starts until Mira accepts the complete J technical plan and prepares a bounded assignment.
-- Approved master plan and existing history/mandatory guards remain unchanged. Whole SA04 is incomplete; later checkpoints/SA05/#315/Stage6 are not assigned by this handoff.
+- **SA04-J full technical plan: Mira scope/fit PASS.** Accepted plan: [#6858869802](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6858869802).
+- Mira verified the plan against the accepted SA04 master J boundary, current Forum writer/service/repository seams, current #315 head `fc32f0ba36120b89a27831993519a00f2a40b953`, and the J↔K separation.
+- **No confirmed scope/fit defect.** J remains all authoritative Forum actor writes/replays/final publication; standalone attachment APIs remain K and J does not close K.
+- Lev planning complete / STOP. Lira/Mark unassigned. Implementation PR/head: none.
+- **Next bounded coordinator task:** decompose the accepted complete J plan into bounded Lira implementation substeps and prepare only the first author handoff. Lira must not receive full J at once.
 
 ## I5 author checkpoint decomposition
 
