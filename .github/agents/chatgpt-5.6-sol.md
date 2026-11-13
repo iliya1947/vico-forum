@@ -1,5 +1,13 @@
 # ChatGPT-5.6 Sol — personal log
 
+## SA04-J5 assignment
+
+- J4 accepted exact baseline: `84b5124f948895e3e211b81b1d6bd2082ddc531f`.
+- Verified current J5 seam: `advanceTopicReadState` currently validates target post outside a transaction, performs monotonic upsert outside a transaction, then reads state separately. It therefore has no transaction-local AccountState admission and inactive actor can reach same/backward success paths.
+- Accepted J plan requires topic/post FK dependencies → actor guard → monotonic upsert → same-tx readback, without reverse actor→content locking or SHARE→UPDATE upgrade.
+- Assigned J5 only to Lira; #315 `READSTATE-CACHE-01` and J6+ remain excluded/unassigned.
+- Next Mira action is bounded J5 review after Lira stable-head AUTHOR STOP.
+
 ## SA04-J4 coordinator review — PASS
 
 - Independently reviewed Draft #330 exact `84b5124f948895e3e211b81b1d6bd2082ddc531f`.
