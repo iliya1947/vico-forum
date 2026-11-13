@@ -2419,3 +2419,13 @@ Do not treat a user's anger, criticism or request to think as implicit permissio
 - Preserve active new-registration account creation and canonical Better Auth validation/hooks/facts; do not span OAuth network exchange with the lifecycle transaction/lock.
 - I4d/I5/J+, physical user deletion, docs/merge/#315/SA05+/Stage6 remain outside this author checkpoint.
 - Next gate after Lira stable head/evidence: Mira bounded I4c checkpoint review. No Lev/Mark yet.
+
+
+## 2026-11-13 — SA04-I4c review result
+
+- Reviewed #329 exact `0c36648638a11e69e657a83dcfd54b9cf06d2e84`, both I4c commits/two changed paths and preserved I4a/I4b behavior.
+- Rechecked official Better Auth v1.7.7 account sources: create/link userId, update/delete account id, credential updatePassword triple selector, deleteAccounts userId, plus current password/unlink/provider-token/OAuth call sites.
+- Confirmed final account persistence uses same-client transaction + authoritative persisted owner + A2 active row lock through original mutation/COMMIT; no OAuth/provider network call occurs inside that lock.
+- Confirmed project hooks remain success-only, current configured auth adds no unhandled account writer family, and actor-state observer preserves unavailable→503 even where Better Auth wraps token-route errors.
+- Exact-head evidence checked SUCCESS: 2269 app, 746 PG17, 21 focused I4a–I4c; SA01/SA03/AP10 browser workflows green.
+- **PASS — 0 confirmed current-scope I4c defects.** Stop before I4d; no Lev/Mark until full I completion.
