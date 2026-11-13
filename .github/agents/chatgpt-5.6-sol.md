@@ -1,5 +1,13 @@
 # ChatGPT-5.6 Sol — personal log
 
+## SA04-J6 assignment
+
+- J5 accepted exact baseline: `af25adf18fd065e5af4a7e6da2c670f28613a10f`.
+- Verified current J6 seams: unified `markNotificationRead` is transactional but currently locks notification before actor lifecycle admission; legacy `markReplyNotificationRead` is autocommit. Both allow lifecycle-stale acknowledgement/no-op success today.
+- Accepted J lock order is actor guard → own notification lock/update; complaint membership SELECT remains an ordinary read after actor admission and existing recipient/membership semantics stay intact.
+- Assigned J6 only to Lira. Complaint mutations stay N; J7+ and #315 remain excluded.
+- Next Mira action is bounded J6 review after Lira stable-head AUTHOR STOP.
+
 ## SA04-J5 coordinator review — PASS
 
 - Independently reviewed Draft #330 exact `af25adf18fd065e5af4a7e6da2c670f28613a10f`.
