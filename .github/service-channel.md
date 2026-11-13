@@ -1,5 +1,17 @@
 # Admin panel — communication
 
+## J3b — Mira bounded coordinator review: PASS
+
+- Reviewed exact Draft #330 head `b407f93f54b7f7e1073218dd63b4f6235b1bb417` against accepted J3b scope and Lev's full-J transaction/lock/replay plan.
+- Delta from accepted J3a `39df1262d9b536df87b0147e4a8a400d65b7d038`: exactly two commits/two files — two lifecycle-guard insertions in `editPublishedPost` plus focused native PostgreSQL lifecycle tests.
+- Matching edit receipt replay keeps draft-scope lock first, validates receipt identity, then requires the actual `actorId` to remain active before success return. No replay-side write occurs before admission.
+- Fresh edit keeps existing post `FOR UPDATE`, ownership and expected-revision checks; then the same transaction takes the AccountState actor lock before measures and every protected edit write. Revision/CAS, mentions, retained/new attachment mutation, draft finalization and publication receipt remain under that transaction through COMMIT/ROLLBACK.
+- Confirmed denied inactive fresh/replay paths preserve revision head/count, public attachment bindings, mention facts, draft refs/completion and receipt facts. Existing stale-revision/rollback, attachment-only, retained/new selection, lost-response replay and mention regressions remain green.
+- State-first race proves committed deactivation after content lock but before actor admission is observed and denies with no edit facts. Writer-first race withholds COMMIT after all edit/finalization writes and proves deactivation cannot acquire the user row until writer completion.
+- Canonical edit action does not convert lifecycle denial into edit conflict; late `AccountInactiveError`/`AccountMissingError` reaches shared `runForumMutation`, which returns private/no-store unauthenticated 401. Source-locale no-op mapping remains separate J3c scope.
+- Exact-head GitHub Actions independently rechecked: CI SUCCESS (`database`, `checks`); AP-10 isolated browser acceptance SUCCESS 4/4.
+- **Verdict: PASS — 0 confirmed current-scope J3b defects.** STOP. J3c and J4–J12 remain unassigned; Lev/Mark remain inactive.
+
 ## Channel rotation from #251
 
 Service PR #331 replaces #251 for ongoing Admin/Super-admin work. #251 is historical evidence only and must not receive new operational state.
