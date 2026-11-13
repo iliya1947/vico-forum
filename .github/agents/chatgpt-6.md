@@ -2041,3 +2041,16 @@ Personally inspect the completed bounded/cumulative I4 diff and logic, publish o
 - Personally inspected six patches, completed bounded code/diff, existing auth hooks/observer/cookie paths, account-state lock code and all added tests. Seven new native BA+PostgreSQL17 tests prove both concurrency orders, delete selectors and mixed-owner denial, parallel revocation serialisation, active HTTP revoke endpoints, signed inactive own signout, expired guest resolution, unavailable-vs-unexpected error handling. No other project paths changed.
 - Exact-head [CI #43408842355](https://github.com/iliya1947/vico-forum/actions/runs/43408842355) SUCCESS: app **2269/2269** (184 files), PG17 **753/753** (69 files), 28/28 focused I4a–d; lint/typecheck/build/migrations/Worker smoke. [SA01 #43408842422](https://github.com/iliya1947/vico-forum/actions/runs/43408842422), [SA03 #43408842363](https://github.com/iliya1947/vico-forum/actions/runs/43408842363), [AP10 #43408842330](https://github.com/iliya1947/vico-forum/actions/runs/43408842330) Chromium SUCCESS (AP10 4/4).
 - **AUTHOR STOP.** Mira's fresh bounded I4d and connected cumulative whole-I review now required on exactly this head. No Mira PASS or Lev/Mark review, no I5/J+, merge, docs/production/Stage6/#315/SA05+ claims.
+
+
+## 2026-11-13 — assigned: SA04-I5 connected Better Auth closure
+
+Continue cumulative Draft #329 from exact Mira-accepted I4 head `85104942e75071a67b4a4b37212ce5bca7361fe4`. Implement **I5 only** according to Lev's accepted technical plan [#6851946924](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6851946924).
+
+Required result: prove the current configured Better Auth lifecycle is connected end-to-end after I1–I4 — inactive persisted accounts do not regain request identity, new/refreshed sessions or protected auth/user/account/session capability; active behavior, SET-05, registration/linking, SA-02 facts, error classification/cookie ordering and the signed own-signout cleanup exception remain correct.
+
+Use the existing I1–I4 proofs and add only the missing connected native + Worker/browser/CI evidence from the plan. Do **not** rewrite production runtime pre-emptively. If a connected scenario reproduces a current-scope gap, diagnose the complete chain and apply the smallest local correction plus regression; if closure would require a substantial technical-plan change or a second independent result, STOP back to Mira/Lev.
+
+Do not implement J–R application writers, physical user deletion, SA05 deactivation route/control/event, reactivation/separate forced-session Owner action, #315 remediation, unconfigured secondary storage, permanent docs closeout or Stage6/production/external OAuth work.
+
+Completion: one stable exact #329 head; actual applicable green checks and connected evidence; concise entrypoint→I1/I2/I3/I4→evidence map; personal inspection of the cumulative I result. Then **AUTHOR STOP for Mira cumulative whole-I coordinator review**. Lev/Mark remain unassigned.
