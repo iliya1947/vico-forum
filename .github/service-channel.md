@@ -4820,3 +4820,15 @@ Lira must perform author inspection, publish the stable A2 head/evidence and STO
 - Session creation is now fail-closed for persisted inactive/missing targets on returning email sign-in, existing-user Google callback and direct/native creation, independent of SA-02 telemetry; active and successful auth-fact behavior is preserved.
 - Atomic target-write/check-write race closure is intentionally I4 and remains unimplemented/unassigned, not an I3 defect.
 - #329 stays cumulative Draft. Lev/Mark remain STOP; I4–I5/J+ remain unassigned pending separate continuation.
+
+
+## 2026-11-13 — SA04-I4 decomposition accepted by Mira
+
+I4 is too broad for one Lira handoff because pinned Better Auth 1.7.7 uses different authoritative target selectors and mutation semantics across session/user/account writes. The accepted plan is preserved but operationally split:
+
+1. **I4a:** session create/update atomic lifecycle closure; no deletes.
+2. **I4b:** existing-user update atomic lifecycle closure.
+3. **I4c:** account create/link/update/updateMany/delete atomic lifecycle closure.
+4. **I4d:** session revoke/delete/deleteMany + own-signout exception + connected I4 write-shape/race sweep.
+
+All remain in cumulative Draft #329. I4a–I4c are not mergeable/completed-I claims; I4d closes row I4. I5/J+ remain separate. No sub-checkpoint assigned yet; next separate continuation assigns I4a only.
