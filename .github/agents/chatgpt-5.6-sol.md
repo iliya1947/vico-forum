@@ -2514,3 +2514,16 @@ Do not treat a user's anger, criticism or request to think as implicit permissio
 - Exact-head CI independently checked: 184/184 app files, 2269/2269 tests; 69/69 PostgreSQL17 files, 765/765 tests; `sa02-auth-oauth-rollback.test.ts` 14/14. SA01 #43434644424, SA03 #43434644305 and AP10 #43434644242 are SUCCESS.
 - **Verdict: PASS — 0 confirmed current-scope I5c defects.** STOP. I5d–I5e remain unassigned until separate continuation; Lev/Mark remain stopped.
 
+## 2026-11-13 — SA04-I5d assignment → Lira
+
+- Starting point: cumulative Draft #329 exact `23554aad29ddd23edb540cddc2069533ebe99329`; I5a–I5c are Mira checkpoint-PASS. Main/base remains `13456a17f23c1385bef8ab11c735f43d201edd02`.
+- **Lira owns I5d only:** built Worker/Better Auth 1.7.7/PostgreSQL17/Chromium connected lifecycle acceptance. Extend the existing `tests/browser/settings-account/check.py` acceptance path; the current AP-10 `settings_browser` job already runs it, so a separate SET-05/I5d GitHub Actions workflow is outside this handoff.
+- Required connected scenario: create one real account with two genuine retained sessions/cookies and an unrelated active account; mount Account & security while the first account is still active; fixture-deactivate only that account in the disposable database while leaving the page mounted.
+- After deactivation, prove through the real built Worker that fresh Account document/data access from the old cookies is denied and contains no protected account/session projection; submit at least one already-mounted protected Account form through the real route and prove no password/session mutation survives. Do not require push invalidation before a request/revalidation.
+- The unrelated active account must continue to use Account & security normally. Both old cookies of the inactive account must remain non-active.
+- While a stale tab still has the ordinary Sign out control, use the real browser UI/canonical sign-out path. It may clear/delete **only that signed current retained session**; the other retained inactive session must remain persisted but denied. No bulk purge, reactivation or state-clearing behavior.
+- Preserve public/private boundaries: guest/public forum reads stay available; Account document/data and controlled failures remain private/no-store and expose no session token, password/hash or OAuth/provider secret. Existing active SET-05 controls, stale/freshness/rate-limit behavior and current EN/RU/HE/RTL/browser assertions must remain green; no live Google or browser imitation of the I5c OAuth callback proof.
+- Runtime changes are authorized only if this connected browser evidence reproduces a real current-scope I5d defect; then apply only the smallest local correction plus regression.
+- **Excluded:** I5e final cumulative sweep/evidence map and whole-I author inspection; J–R; SA05 deactivation operation/UI; #315 remediation; live Google/external OAuth; Stage6/production; physical deletion/reactivation/forced foreign-session controls; schema/product expansion; docs closeout or merge.
+- Publish one stable exact #329 head with actual browser evidence and exact CI/workflow results, personally inspect the bounded delta/behavior, then **STOP for Mira bounded I5d checkpoint review**. I5e and Lev/Mark remain unassigned.
+
