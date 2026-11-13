@@ -5,7 +5,7 @@
 - Mira's previous J1-only planning handoff was incorrect: implementation granularity was applied prematurely to the technical planner.
 - **Correct assignment:** Lev plans the complete accepted SA04-J boundary — all Forum authoritative actor writes protected by AccountState — from current main `44d6b69a8d235cc8b1ee30953839be71e6ab836a`.
 - Lev determines the technical decomposition, transaction/lock/replay boundaries and evidence for J as a whole. He does not implement.
-- Mira reviews Lev's complete J plan afterward and decides how finely Lira's implementation should be split.
+- Mira reviews Lev's complete J plan afterward and **must split Lira's implementation into bounded substeps**. The developer has already fixed this workflow: Lev receives the full technical scope; Lira receives only bounded implementation slices.
 - Lira and Mark remain unassigned.
 
 ## 2026-11-13 — SA04-I #329 merged; post-merge synchronization
