@@ -4112,6 +4112,30 @@ export class DrizzleForumRepository {
     };
   }
 
+  /** Same-locale source correction is a success boundary even without a new revision. */
+  async admitSourceLocaleNoop(input: {
+    kind: "topic" | "post"; contentId: string; expectedRevisionId: string;
+    actorId: string; scope: "own" | "any";
+  }): Promise<void> {
+    await this.database.transaction(async (tx) => {
+      const [content] = input.kind === "topic"
+        ? await tx.select({
+          authorId: forumTopics.authorId,
+          revisionId: forumTopics.currentTitleRevisionId,
+        }).from(forumTopics).where(eq(forumTopics.id, input.contentId)).for("no key update")
+        : await tx.select({
+          authorId: forumPosts.authorId,
+          revisionId: forumPosts.currentRevisionId,
+        }).from(forumPosts).where(eq(forumPosts.id, input.contentId)).for("no key update");
+      if (!content) throw new ForumEntityNotFoundError("source locale content does not exist");
+      if (content.revisionId !== input.expectedRevisionId)
+        throw new ForumStateConflictError("source locale current revision changed");
+      if (input.scope === "own" && content.authorId !== input.actorId)
+        throw new ForumAuthorizationError("actor cannot correct another author's source locale");
+      await assertActiveAccountForDrizzleMutation(tx, input.actorId);
+    });
+  }
+
   async reviseTopicTitle(topicId: string, expectedRevisionId: string, revision: ForumRevisionContent, authorId: string, correctionScope?: "own" | "any") {
     return this.database.transaction(async (tx) => {
       await tx.select({ id: forumTopics.id }).from(forumTopics)
