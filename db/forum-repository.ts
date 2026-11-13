@@ -679,6 +679,7 @@ export class DrizzleForumRepository {
       const [owner] = await tx.select({ id: user.id }).from(user)
         .where(eq(user.id, actorId)).for("update");
       if (!owner) throw new ForumEntityNotFoundError("user does not exist");
+      await assertActiveAccountForDrizzleMutation(tx, actorId);
       await this.measureAdmission(tx, actorId, "profile.edit");
       await tx.insert(forumProfiles).values({ userId: actorId, ...fields })
         .onConflictDoUpdate({ target: forumProfiles.userId, set: { ...fields, updatedAt: sql`now()` } });
