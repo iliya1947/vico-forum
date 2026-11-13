@@ -890,6 +890,33 @@ describe("forum write route actions", () => {
     expect(missingReason.setHelpSolutionModeration).not.toHaveBeenCalled();
   });
 
+  it("maps all three Help moderation late AccountState denials to private 401", async () => {
+    for (const intent of ["markSolutionNeedsReview", "markSolutionOutdated", "clearSolutionModeration"] as const) {
+      for (const error of [new AccountInactiveError(), new AccountMissingError()]) {
+        const w = writer();
+        w.setHelpSolutionModeration.mockRejectedValueOnce(error);
+        const result = await topicAction({
+          request: request("/en/topics/help-question", {
+            intent, expectedBestAnswerPostId: "answer-1",
+            ...(intent === "markSolutionOutdated" ? { outdatedReason: "No longer safe" } : {}),
+            actorId: "forged",
+          }),
+          params: { locale: "en", topicId: "help-question" },
+          context: context(w, true, ["forum.solution.manageAny"]),
+        });
+        expect(result).toMatchObject({
+          data: { error: "unauthenticated" },
+          init: { status: 401, headers: { "Cache-Control": "private, no-store" } },
+        });
+        expect(result).not.toBeInstanceOf(Response);
+        expect(JSON.stringify(result)).not.toMatch(/AccountInactive|AccountMissing|deactivated|Location|ok.true/);
+        expect(w.setHelpSolutionModeration).toHaveBeenCalledWith(expect.objectContaining({
+          actorId: "session-user", expectedBestAnswerPostId: "answer-1",
+        }));
+      }
+    }
+  });
+
   it("maps all four late Help signal AccountState denials to private 401 without false redirect", async () => {
     for (const intent of ["submitHelpSignal", "withdrawHelpSignal", "acceptHelpSignal", "rejectHelpSignal"] as const) {
       for (const error of [new AccountInactiveError(), new AccountMissingError()]) {
