@@ -1,5 +1,6 @@
 import { eq, isNull, sql, type SQL } from "drizzle-orm";
 import { PgDialect, type AnyPgColumn } from "drizzle-orm/pg-core";
+import type { NodePgDatabase } from "drizzle-orm/node-postgres";
 import type { Client } from "pg";
 import { isPostgresAvailabilityFailure } from "../app/localization/persistent-registry";
 import { isPostgresConnectionTimeout, isPostgresQueryTimeout } from "./postgres-deadlines";
@@ -50,9 +51,9 @@ export class AccountMissingError extends Error {
 }
 
 type AccountStateRow = {
-  deactivated_at: Date | null;
-  deactivated_by_user_id: string | null;
-  retain_at_least_until: Date | null;
+  deactivated_at: unknown;
+  deactivated_by_user_id: unknown;
+  retain_at_least_until: unknown;
 };
 
 const dialect = new PgDialect();
@@ -73,13 +74,50 @@ function unavailable(error: unknown): boolean {
   return false;
 }
 
-/** Shared state query: the mutation variant acquires a transaction-local row lock. */
-async function loadAccountState(
-  connection: Pick<Client, "query">, userId: string, lockForMutation: boolean,
-): Promise<AccountState> {
+function checkAccountId(userId: string): void {
   if (typeof userId !== "string" || userId.length === 0) {
     throw new AccountStateUnexpectedError();
   }
+}
+
+/** The native PG and Drizzle paths must accept exactly the same persisted tuple. */
+function parseAccountStateRows(userId: string, rows: readonly AccountStateRow[]): AccountState {
+  if (rows.length === 0) return { status: "missing", userId };
+  if (rows.length !== 1) throw new AccountStateUnexpectedError();
+  const state = rows[0];
+  if (!state) throw new AccountStateUnexpectedError();
+  if (state.deactivated_at === null) {
+    if (state.deactivated_by_user_id !== null || state.retain_at_least_until !== null) {
+      throw new AccountStateUnexpectedError();
+    }
+    return { status: "active", userId };
+  }
+  if (!validTimestamp(state.deactivated_at) || !validTimestamp(state.retain_at_least_until)
+    || typeof state.deactivated_by_user_id !== "string" || state.deactivated_by_user_id.trim() === "") {
+    throw new AccountStateUnexpectedError();
+  }
+  return {
+    status: "deactivated",
+    userId,
+    deactivatedAt: state.deactivated_at,
+    deactivatedByUserId: state.deactivated_by_user_id,
+    retainAtLeastUntil: state.retain_at_least_until,
+  };
+}
+
+function accountStateReadError(error: unknown): AccountStateUnavailableError | AccountStateUnexpectedError {
+  if (error instanceof AccountStateUnavailableError || error instanceof AccountStateUnexpectedError) {
+    return error;
+  }
+  if (unavailable(error)) return new AccountStateUnavailableError({ cause: error });
+  return new AccountStateUnexpectedError({ cause: error });
+}
+
+/** Shared native state query: the mutation variant locks the caller's transaction row. */
+async function loadAccountState(
+  connection: Pick<Client, "query">, userId: string, lockForMutation: boolean,
+): Promise<AccountState> {
+  checkAccountId(userId);
   try {
     const statement = dialect.sqlToQuery(sql`
       select ${user.deactivatedAt} as deactivated_at,
@@ -89,31 +127,27 @@ async function loadAccountState(
       where ${eq(user.id, userId)}
       ${lockForMutation ? sql`for no key update` : sql``}
     `);
-    const rows = (await connection.query<AccountStateRow>(statement.sql, statement.params)).rows;
-    if (rows.length === 0) return { status: "missing", userId };
-    if (rows.length !== 1) throw new AccountStateUnexpectedError();
-    const state = rows[0];
-    if (state.deactivated_at === null) {
-      if (state.deactivated_by_user_id !== null || state.retain_at_least_until !== null) {
-        throw new AccountStateUnexpectedError();
-      }
-      return { status: "active", userId };
-    }
-    if (!validTimestamp(state.deactivated_at) || !validTimestamp(state.retain_at_least_until)
-      || typeof state.deactivated_by_user_id !== "string" || state.deactivated_by_user_id.trim() === "") {
-      throw new AccountStateUnexpectedError();
-    }
-    return {
-      status: "deactivated",
-      userId,
-      deactivatedAt: state.deactivated_at,
-      deactivatedByUserId: state.deactivated_by_user_id,
-      retainAtLeastUntil: state.retain_at_least_until,
-    };
+    return parseAccountStateRows(userId,
+      (await connection.query<AccountStateRow>(statement.sql, statement.params)).rows);
   } catch (error) {
-    if (error instanceof AccountStateUnexpectedError) throw error;
-    if (unavailable(error)) throw new AccountStateUnavailableError({ cause: error });
-    throw new AccountStateUnexpectedError({ cause: error });
+    throw accountStateReadError(error);
+  }
+}
+
+/** Query through the caller's Drizzle transaction, never a separate connection. */
+async function loadDrizzleAccountStateForMutation(
+  transaction: Pick<NodePgDatabase, "select">, userId: string,
+): Promise<AccountState> {
+  checkAccountId(userId);
+  try {
+    const rows = await transaction.select({
+      deactivated_at: user.deactivatedAt,
+      deactivated_by_user_id: user.deactivatedByUserId,
+      retain_at_least_until: user.retainAtLeastUntil,
+    }).from(user).where(eq(user.id, userId)).for("no key update");
+    return parseAccountStateRows(userId, rows);
+  } catch (error) {
+    throw accountStateReadError(error);
   }
 }
 
@@ -147,4 +181,19 @@ export async function assertActiveAccountForMutation(
   transaction: Pick<Client, "query">, userId: string,
 ): Promise<void> {
   assertActiveState(await loadAccountState(transaction, userId, true));
+}
+
+/**
+ * Authoritative mutation admission inside an already-open Drizzle PostgreSQL
+ * transaction. The caller must use this SAME transaction for protected writes
+ * and keep it open through COMMIT/ROLLBACK. Do not invoke on an autocommit DB:
+ * a transaction-local FOR NO KEY UPDATE lock would be immediately released.
+ *
+ * This adds no Forum writer integration or new lifecycle rule: both SQL paths
+ * share the same persisted-tuple validator and error classifier.
+ */
+export async function assertActiveAccountForDrizzleMutation(
+  transaction: Pick<NodePgDatabase, "select">, userId: string,
+): Promise<void> {
+  assertActiveState(await loadDrizzleAccountStateForMutation(transaction, userId));
 }
