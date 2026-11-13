@@ -1,9 +1,17 @@
 # Admin panel — current workflow
 
-- **Service PR #251.** Main/base `13456a17f23c1385bef8ab11c735f43d201edd02`; SA04-A1/A2–H merged; I1–I4 coordinator checkpoints PASS. I4 is closed; **I5 remains the final checkpoint required to close SA04-I**.
-- **Current stage/owner:** **Lev — I5 technical planning only.** Mira completed the I5 scope/granularity gate: one bounded result, **connected Better Auth lifecycle closure** over the current configured auth/session subsystem. Lira and Mark are unassigned.
-- **Implementation PR/head:** cumulative [Draft #329](https://github.com/iliya1947/vico-forum/pull/329), stable exact `85104942e75071a67b4a4b37212ce5bca7361fe4`, base/main `13456a17f23c1385bef8ab11c735f43d201edd02`. No implementation change is authorized during Lev's planning step.
-- **Next:** Lev inspects the actual repository, accepted SA04-I contract and pinned Better Auth 1.7.7, then publishes the minimal technical plan/evidence needed to close I5 or decomposes I5 only if the connected closure is not safely one author result. Lev STOPs after planning. Mira then checks plan fit/granularity before any Lira implementation assignment. No J–R writers, physical user deletion, SA05 deactivate operation/control, docs closeout, #315, Stage6/production or external rollout.
+- **Service PR #251.** Main/base `13456a17f23c1385bef8ab11c735f43d201edd02`; SA04-A1/A2–H merged. I1–I4 coordinator checkpoints PASS; **I5 remains required to close SA04-I**.
+- **Current stage/owner: Mira — I5 plan scope/fit/granularity review. Lev technical planning COMPLETE/STOP.**
+- Published I5 technical plan: [#6851946924](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6851946924). One bounded connected auth/session result; no further I5 decomposition proposed from inspected current seams.
+- Cumulative implementation [Draft #329](https://github.com/iliya1947/vico-forum/pull/329), exact `85104942e75071a67b4a4b37212ce5bca7361fe4`, open/Draft/unmerged; planning did not change head.
+- Source-based I5 plan: one bounded connected Better Auth lifecycle closure on current configured subsystem, preserving I1–I4 and SET05.
+- No source-confirmed mandatory runtime rewrite; prefer targeted connected native tests + extension of existing Settings Account browser harness + read-only disposable PR CI. Runtime corrections only for reproduced current-scope gaps, with smallest fix/regression.
+- Required composition evidence: two old cookies, inactive pre-routing/HTTP/direct/SET05 denial, pending Google link/callback with existing native provider seam, final persistence ordering, active/expired/sliding cookie ordering, telemetry on/off, classified failure restoration, signed one-session own-signout exception.
+- Current I4 family proofs are reused rather than multiplied across every endpoint. No entire-OAuth transaction/lock and no invented global rollback of earlier committed work. J–R, SA05, #315 remediation and external activation stay separate.
+- Planning only: no implementation edits or local tests/build/browser executed; not an I5 or whole-I PASS. Next Mira plan scope/fit/granularity review; Lira/Mark unassigned.
+- After Mira plan approval, Mira may assign exactly one bounded I5 result to Lira. After author STOP, cumulative whole-I coordinator review precedes Lev independent review of the same stable head.
+- No J–R writers, physical user deletion, SA05 deactivate/control, permanent docs closeout, merge, #315 remediation, Stage6/production or external rollout authorized by this plan.
+- Developer standing permission for review/plan reports and service-state publication persists throughout SA04.
 
 ## Mandatory author verification
 
@@ -541,3 +549,13 @@ Full remaining I4a sweep found no additional confirmed current-scope defect. Mis
 - Preserve accepted I1–I4c behavior, Better Auth validation/hooks, successful SA-02 facts, active session semantics, and lifecycle-storage unavailable-vs-unexpected handling. Focused evidence must use the real pinned Better Auth 1.7.7 + PostgreSQL17 paths and cover relevant concurrent orderings, active controls and the inactive own-signout case.
 - **Boundary:** no physical user deletion, no reactivation, no separate forced-session Owner action, no schema/product expansion unless a verified I4d blocker requires it, and no I5/J+, docs closeout, #315, SA05+ or Stage6/production.
 - Continue in the same cumulative Draft #329. After implementation and personal author inspection, Lira publishes one stable exact head with applicable green evidence and **STOPs for Mira bounded I4d checkpoint review**. Lev/Mark remain unassigned; I4 is not closed until Mira reviews this final I4 checkpoint.
+
+
+## 2026-11-13 — Lev I5 technical planning complete; Mira plan review next
+
+- Plan [#6851946924](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6851946924), anchored to exact #329 `85104942e75071a67b4a4b37212ce5bca7361fe4` and main `13456a17f23c1385bef8ab11c735f43d201edd02`.
+- Source-based I5 plan: one bounded connected Better Auth lifecycle closure on current configured subsystem, preserving I1–I4 and SET05.
+- No source-confirmed mandatory runtime rewrite; prefer targeted connected native tests + extension of existing Settings Account browser harness + read-only disposable PR CI. Runtime corrections only for reproduced current-scope gaps, with smallest fix/regression.
+- Required composition evidence: two old cookies, inactive pre-routing/HTTP/direct/SET05 denial, pending Google link/callback with existing native provider seam, final persistence ordering, active/expired/sliding cookie ordering, telemetry on/off, classified failure restoration, signed one-session own-signout exception.
+- Current I4 family proofs are reused rather than multiplied across every endpoint. No entire-OAuth transaction/lock and no invented global rollback of earlier committed work. J–R, SA05, #315 remediation and external activation stay separate.
+- Planning only: no implementation edits or local tests/build/browser executed; not an I5 or whole-I PASS. Next Mira plan scope/fit/granularity review; Lira/Mark unassigned.
