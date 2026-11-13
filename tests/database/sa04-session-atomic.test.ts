@@ -836,8 +836,30 @@ describe("SA04-I4d Better Auth 1.7.7 destructive session write atomicity", () =>
     expect((await call("revoke-session", { token: first.token })).status).toBe(200);
     expect((await sessions(userId)).map(x => x.token)).toEqual([session.token]);
     const second = await direct.createSession(userId);
-    expect((await call("revoke-other-sessions")).status).toBe(200);
+    const concurrentOther = await direct.createSession(userId);
+    const thirdOther = await direct.createSession(userId);
+    const originalQuery = writer.query;
+    let beginCount = 0;
+    writer.query = ((...args: unknown[]) => {
+      if (nativeSql(args[0]) === "BEGIN") beginCount++;
+      return Reflect.apply(originalQuery, writer, args);
+    }) as typeof writer.query;
+    const paused = pauseNativeQuery(writer, sql => /^delete from "session" /i.test(sql));
+    try {
+      const revoking = call("revoke-other-sessions");
+      await paused.entered;
+      // BA's Promise.all tries to delete every other session concurrently;
+      // all adapter transactions must serialize on this single PG Client.
+      expect(beginCount).toBe(1);
+      paused.resume();
+      expect((await revoking).status).toBe(200);
+    } finally {
+      paused.resume();
+      paused.restore();
+      writer.query = originalQuery;
+    }
     expect((await sessions(userId)).map(x => x.token)).toEqual([session.token]);
+    expect(concurrentOther.token).not.toBe(thirdOther.token);
     const third = await direct.createSession(userId);
     expect(third.token).not.toBe(second.token);
     expect((await call("revoke-sessions")).status).toBe(200);
