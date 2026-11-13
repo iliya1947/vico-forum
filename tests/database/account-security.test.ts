@@ -1,9 +1,12 @@
 import { readFile } from "node:fs/promises";
 import { Client } from "pg";
+import { RouterContextProvider } from "react-router";
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
 import { createHyperdriveAuthRuntime, type BetterAuthEnvironment } from "../../app/auth/auth.server";
 import { AccountSecurityError, type AccountSecurityIdentity } from "../../app/auth/request-context";
 import { installRegistrationPolicyFixture } from "./registration-policy-fixture";
+import { initializeAuthContext } from "../../app/auth/session-context";
+import { action as accountAction, loader as accountLoader } from "../../app/routes/settings-account";
 
 const url = process.env.DATABASE_URL;
 if (!url) throw new Error("DATABASE_URL is required for account security integration tests");
@@ -245,4 +248,146 @@ describe("SET-05 request-local Better Auth security capability", () => {
     expect((await runtime.getSession(headers(a2))).session?.user.id).toBe(a2.id);
     expect((await signIn("expired@example.test")).status).toBe(200);
   });
+});
+
+const deactivateI5b = `update "user" set deactivated_at='2026-11-12T00:00:00Z',
+  deactivated_by_user_id=$1, retain_at_least_until='2027-11-13T00:00:00Z'
+  where id=$1`;
+
+async function retainedSecurityState(userId: string) {
+  const sessions = (await client.query<{ id: string; token: string; expires_at: Date }>(
+    'select id, token, expires_at from "session" where user_id=$1 order by id', [userId],
+  )).rows;
+  const accounts = (await client.query<{ id: string; provider_id: string; password: string | null }>(
+    'select id,provider_id,password from account where user_id=$1 order by id', [userId],
+  )).rows;
+  return { sessions, accounts };
+}
+
+/** Delay the actual guarded write BEGIN, not a mocked Better Auth result or preflight. */
+function pauseI5bFinalWrite() {
+  let entered!: () => void;
+  let release!: () => void;
+  const reached = new Promise<void>(resolve => { entered = resolve; });
+  const permitted = new Promise<void>(resolve => { release = resolve; });
+  let paused = false;
+  const guarded = createHyperdriveAuthRuntime(url!, env, () => {
+    const connection = authClient();
+    const original = connection.query;
+    connection.query = ((...args: unknown[]) => {
+      const statement = args[0];
+      const sql = typeof statement === "string" ? statement
+        : statement && typeof statement === "object" && "text" in statement &&
+          typeof statement.text === "string" ? statement.text : "";
+      if (!paused && sql === "BEGIN") {
+        paused = true;
+        entered();
+        return permitted.then(() => Reflect.apply(original, connection, args));
+      }
+      return Reflect.apply(original, connection, args);
+    }) as typeof connection.query;
+    return connection;
+  });
+  return { security: guarded.security!, reached, resume: () => release() };
+}
+
+describe("SA04-I5b connected SET-05 stale/deactivated account lifecycle", () => {
+  it("rechecks real stale page/session identity for every private read and self-service action", async () => {
+    const owner = await signUp("i5b-stale-account@example.test");
+    const other = await resolvedActor(await signIn("i5b-stale-account@example.test"));
+    const unrelated = await signUp("i5b-unrelated@example.test");
+    const page = new Request(env.BETTER_AUTH_URL + "/en/settings/account", {
+      headers: { Cookie: owner.cookie },
+    });
+    const mounted = new RouterContextProvider();
+    await initializeAuthContext(mounted, page, runtime);
+    expect((await security.read(headers(owner), owner.identity)).sessions).toHaveLength(2);
+    const original = await retainedSecurityState(owner.id);
+    await client.query(deactivateI5b, [owner.id]);
+
+    // A mounted page carries a previously active request context; its loader
+    // and form action MUST recheck account state against Better Auth, not trust it.
+    await expect(accountLoader({ request: page, params: { locale: "en" }, context: mounted }))
+      .rejects.toMatchObject({ status: 401, headers: expect.any(Headers) });
+    for (const intent of ["change-password", "revoke-one", "revoke-others"] as const) {
+      const form = new URLSearchParams({
+        intent, expectedUserId: owner.id, expectedSessionId: owner.identity.sessionId,
+        ...(intent === "change-password"
+          ? { currentPassword: password, newPassword: "i5b-never-applied-password" }
+          : intent === "revoke-one" ? { sessionId: other.identity.sessionId } : {}),
+      });
+      const denied = await accountAction({
+        request: new Request(env.BETTER_AUTH_URL + "/en/settings/account", {
+          method: "POST",
+          headers: { Cookie: owner.cookie, Origin: env.BETTER_AUTH_URL,
+            "Content-Type": "application/x-www-form-urlencoded" },
+          body: form,
+        }),
+        params: { locale: "en" }, context: mounted,
+      });
+      expect(denied.data).toEqual({ error: "unauthenticated" });
+      expect(denied.init?.status).toBe(401);
+      expect(new Headers(denied.init?.headers).get("Cache-Control")).toBe("private, no-store");
+      expect(JSON.stringify(denied.data)).not.toContain("i5b-never-applied-password");
+    }
+
+    for (const actor of [owner, other]) {
+      await errorCode(security.read(headers(actor), actor.identity), "unauthenticated");
+      await errorCode(security.changePassword(headers(actor), actor.identity,
+        password, "i5b-never-applied-password"), "unauthenticated");
+      await errorCode(security.revokeOneOther(headers(actor), actor.identity,
+        actor === owner ? other.identity.sessionId : owner.identity.sessionId), "unauthenticated");
+      await errorCode(security.revokeAllOthers(headers(actor), actor.identity), "unauthenticated");
+      expect((await runtime.getSession(headers(actor))).session).toBeNull();
+    }
+    expect(await retainedSecurityState(owner.id)).toEqual(original);
+    expect((await runtime.getSession(headers(unrelated))).session?.user.id).toBe(unrelated.id);
+    expect((await security.read(headers(unrelated), unrelated.identity)).linkedMethods)
+      .toEqual(["password"]);
+
+    // The accepted own sign-out exception is not a security mutation bypass.
+    const signedOut = await authRequest("sign-out", {}, owner.cookie);
+    expect(signedOut.status).toBe(200);
+    expect(signedOut.headers.getSetCookie().some(value =>
+      value.includes("session_token") && value.includes("Max-Age=0"))).toBe(true);
+    const left = await retainedSecurityState(owner.id);
+    expect(left.sessions.map(row => row.id)).toEqual([other.identity.sessionId]);
+    expect(left.accounts).toEqual(original.accounts);
+  }, 30_000);
+
+  it.each(["password", "revoke-one", "revoke-others"] as const)(
+    "denies a %s write when deactivation commits after SET-05 active preflight", async (kind) => {
+      const owner = await signUp(`i5b-late-${kind}@example.test`);
+      const other = await resolvedActor(await signIn(`i5b-late-${kind}@example.test`));
+      const unrelated = await signUp(`i5b-late-other-${kind}@example.test`);
+      const before = await retainedSecurityState(owner.id);
+      expect(before.sessions).toHaveLength(2);
+      const pause = pauseI5bFinalWrite();
+      let operation: Promise<void> | undefined;
+      try {
+        // Existing security runtime performs verifyIdentity (+ freshness for
+        // revocation) before reaching this actual adapter write BEGIN.
+        operation = kind === "password"
+          ? pause.security.changePassword(headers(owner), owner.identity,
+            password, "i5b-should-not-be-saved")
+          : kind === "revoke-one"
+            ? pause.security.revokeOneOther(headers(owner), owner.identity, other.identity.sessionId)
+            : pause.security.revokeAllOthers(headers(owner), owner.identity);
+        await pause.reached;
+        // Independent PostgreSQL connection commits while the writer is still
+        // before its final authoritative state lock.
+        await client.query(deactivateI5b, [owner.id]);
+        pause.resume();
+        await errorCode(operation, "unauthenticated");
+      } finally {
+        pause.resume();
+      }
+      expect(await retainedSecurityState(owner.id)).toEqual(before);
+      expect((await runtime.getSession(headers(owner))).session).toBeNull();
+      expect((await runtime.getSession(headers(other))).session).toBeNull();
+      expect((await runtime.getSession(headers(unrelated))).session?.user.id).toBe(unrelated.id);
+      expect((await security.read(headers(unrelated), unrelated.identity)).sessionAccess)
+        .toBe("ready");
+    }, 30_000,
+  );
 });
