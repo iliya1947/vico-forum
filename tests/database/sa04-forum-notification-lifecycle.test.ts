@@ -20,14 +20,14 @@ const uuid = () => crypto.randomUUID();
 const authorId = "j6-author", reviewerId = "j6-reviewer";
 type Kind = "reply" | "mention" | "complaint-decision" | "complaint-appeal-result";
 type Fixture = {
-  actorId: string; topicId: string; postId: string; caseId: string; appealId: string;
+  actorId: string; topicId: string; postId: string; mentionPostId: string; caseId: string; appealId: string;
   notices: Record<Kind, string>;
 };
 type Writer = "unified" | "legacy";
 
 async function newUser(): Promise<string> {
   const id = "j6-user-" + uuid();
-  await fixture.query('insert into "user" (id,name,email) values ($1,$1,$3)', [id, id, id + "@example.test"]);
+  await fixture.query('insert into "user" (id,name,email) values ($1,$2,$3)', [id, id, id + "@example.test"]);
   return id;
 }
 
@@ -44,7 +44,7 @@ async function readAt(notificationId: string): Promise<Date | null> {
 }
 
 async function seed(): Promise<Fixture> {
-  const actorId = await newUser(), topicId = uuid(), postId = uuid(), revisionId = uuid();
+  const actorId = await newUser(), topicId = uuid(), postId = uuid(), mentionPostId = uuid(), revisionId = uuid();
   const caseId = uuid(), targetId = uuid(), decisionId = uuid(), appealId = uuid();
   await forum.createTopicWithInitialPost({
     id: topicId, sectionId: "j6-section", authorId,
@@ -53,6 +53,10 @@ async function seed(): Promise<Fixture> {
       id: postId, topicId, authorId,
       bodyRevision: { id: revisionId, originalContent: "Original message", sourceLocale: "en" },
     },
+  });
+  await forum.createPost({
+    id: mentionPostId, topicId, authorId,
+    bodyRevision: { id: uuid(), originalContent: "Mention message", sourceLocale: "en" },
   });
   await fixture.query("insert into forum_complaint_targets"
     + " (id,kind,topic_id,post_id,post_revision_id,affected_author_id)"
@@ -79,7 +83,7 @@ async function seed(): Promise<Fixture> {
     await fixture.query("insert into forum_reply_notifications"
       + " (id,recipient_user_id,actor_user_id,topic_id,post_id,kind)"
       + " values($1,$2,$3,$4,$5,$6)",
-    [notices[kind], actorId, authorId, topicId, postId, kind]);
+    [notices[kind], actorId, authorId, topicId, kind === "reply" ? postId : mentionPostId, kind]);
   }
   await fixture.query("insert into forum_reply_notifications"
     + " (id,recipient_user_id,complaint_decision_id,kind)"
@@ -89,7 +93,7 @@ async function seed(): Promise<Fixture> {
     + " (id,recipient_user_id,complaint_appeal_id,kind)"
     + " values ($1,$2,$3,'complaint-appeal-result')",
   [notices["complaint-appeal-result"], actorId, appealId]);
-  return { actorId, topicId, postId, caseId, appealId, notices };
+  return { actorId, topicId, postId, mentionPostId, caseId, appealId, notices };
 }
 
 async function mark(writer: Writer, actorId: string, id: string, repo = forum) {
@@ -154,7 +158,7 @@ describe("SA04-J6 authoritative notification acknowledgement", () => {
         ? { kind, caseId: x.caseId }
         : kind === "complaint-appeal-result"
           ? { kind, caseId: x.caseId, appealId: x.appealId }
-          : { kind, topicId: x.topicId, postId: x.postId };
+          : { kind, topicId: x.topicId, postId: kind === "reply" ? x.postId : x.mentionPostId };
       expect(await forum.markNotificationRead(x.actorId, id)).toEqual(expected);
       const original = await readAt(id);
       expect(original).toBeInstanceOf(Date);
@@ -168,11 +172,11 @@ describe("SA04-J6 authoritative notification acknowledgement", () => {
     for (const kind of ["reply", "mention"] as const) {
       const id = x.notices[kind];
       expect(await forum.markReplyNotificationRead(x.actorId, id))
-        .toEqual({ topicId: x.topicId, postId: x.postId });
+        .toEqual({ topicId: x.topicId, postId: kind === "reply" ? x.postId : x.mentionPostId });
       const original = await readAt(id);
       expect(original).toBeInstanceOf(Date);
       expect(await forum.markReplyNotificationRead(x.actorId, id))
-        .toEqual({ topicId: x.topicId, postId: x.postId });
+        .toEqual({ topicId: x.topicId, postId: kind === "reply" ? x.postId : x.mentionPostId });
       expect(await readAt(id)).toEqual(original);
     }
     await expect(forum.markReplyNotificationRead(x.actorId, x.notices["complaint-decision"]))
