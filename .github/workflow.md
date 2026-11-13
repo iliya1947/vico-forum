@@ -1,19 +1,11 @@
 # Admin panel — current workflow
 
-- **Service PR #251.** Main/base `13456a17f23c1385bef8ab11c735f43d201edd02`; SA04-A1/A2–H merged; I1–I4 coordinator-PASS.
-- **I5a PASS** exact `58130793d05f6eb2a8b867b2fb546ccddcd6fb59`.
-- **I5b PASS** exact `705519ce10f78801c2614a1cafa13347e0d2a75b`.
-- **I5c PASS** exact `23554aad29ddd23edb540cddc2069533ebe99329`.
-- **I5d PASS** exact `74c6f43ae2d67526e2ad17aa50392aebf41abbca`.
-- **Current stage/owner: I5e → Lira only.** Continue cumulative Draft #329 from exact `74c6f43ae2d67526e2ad17aa50392aebf41abbca`.
-- **I5e result:** final connected evidence map plus personal cumulative author inspection of the whole current I implementation. This is a closure/sweep checkpoint, not a request for another generic test package.
-- Inspect the complete #329 implementation delta against main `13456a17f23c1385bef8ab11c735f43d201edd02` and map every current configured lifecycle boundary to actual code and accepted evidence: I1 pre-routing identity, I2 canonical HTTP/direct actor admission, I3 new-session admission, I4 session/user/account/destructive persistence and transaction/failure composition, then I5a native chain, I5b SET-05, I5c Google/link observer composition and I5d built Worker/browser acceptance.
-- Confirm there is no missing **current configured** Better Auth 1.7.7 user/account/session lifecycle seam, contradiction between the guards, or evidence gap that can change the I result. Preserve active behavior, registration/linking, SET-05 freshness/rate-limit, cookie ordering, exact SA-02 fact semantics, classified unavailable-vs-unexpected handling, private/no-store boundaries and the narrow inactive own-signout exception.
-- Classify future/unconfigured Better Auth families and J–R/SA05/#315 items as outside I5e unless they expose an actual current I bypass. Do not add code/tests only to duplicate already accepted proof.
-- **If no current-scope gap is found, implementation #329 must remain on exact `74c6f43ae2d67526e2ad17aa50392aebf41abbca`.** Recheck that the exact-head CI/AP10/SA01/SA03 results are still SUCCESS and cite the existing runs.
-- If the sweep reproduces a real current-scope I gap, first establish the causal chain, then only the smallest local correction + focused regression; any substantial solution change requires STOP back through Mira to Lev. Any implementation change requires fresh applicable exact-head checks.
-- **Boundary:** no J–R, SA05 deactivate UI/action/event, #315 remediation, physical deletion/reactivation/forced foreign-session controls, live Google/Stage6/production, schema/product expansion, documentation closeout or merge.
-- Lira publishes the final evidence map and cumulative author-inspection result in #251, keeps or publishes one stable exact #329 head, then **AUTHOR STOP for Mira cumulative whole-I coordinator review**. Lev/Mark remain unassigned until that Mira whole-I PASS.
+- **Service PR #251.** Current `main` `13456a17f23c1385bef8ab11c735f43d201edd02`. SA04-A1/A2–H merged; I1–I4 coordinator-PASS.
+- **I5a, I5b, I5c, I5d Mira bounded checkpoints PASS** on exact `58130793d05f6eb2a8b867b2fb546ccddcd6fb59`, `705519ce10f78801c2614a1cafa13347e0d2a75b`, `23554aad29ddd23edb540cddc2069533ebe99329`, `74c6f43ae2d67526e2ad17aa50392aebf41abbca`, respectively.
+- **Current state: I5e Lira cumulative author inspection/evidence map COMPLETE; AUTHOR STOP → Mira cumulative whole-I coordinator review.** Implementation [Draft #329](https://github.com/iliya1947/vico-forum/pull/329), stable exact `74c6f43ae2d67526e2ad17aa50392aebf41abbca`, open/unmerged; 52 cumulative commits, eight project paths (two runtime, five test, one Node config), unchanged base/main. No I5e implementation edits, tests, or new CI required.
+- **I5e result:** read full #329 unified per-file patches and current auth runtime/guard, inspected A2 account-state, pre-routing and request-local session/cookie composition plus SA02 observer/proof, mapped accepted I1 pre-routing; I2 protected HTTP/direct; I3 session creation; I4a–d session/user/account/destructive atomic writes, transaction wrapping, classified failures/own-signout; I5a native retained-cookie chain; I5b stale SET-05; I5c Google/link observer/failure; I5d real built Worker/Chromium. No missing **current configured** Better Auth 1.7.7 auth/session lifecycle seam, contradictory accepted proof or current I result-changing evidence gap found. Unconfigured future provider/session-storage families and J–R/SA05/#315 remain out of scope.
+- **Exact-head Actions independently rechecked SUCCESS:** [CI #43439236882](https://github.com/iliya194/vico-forum/actions/runs/43439236882) 2269 app / 765 PG17 plus lint/typecheck/build/schema parity/Worker; [AP-10 #43439236624](https://github.com/iliya194/vico-forum/actions/runs/43439236624) 4/4 Chromium jobs; [SA-01 #43439236742](https://github.com/iliya194/vico-forum/actions/runs/43439236742) and [SA-03 #43439236903](https://github.com/iliya194/vico-forum/actions/runs/43439236903) Chromium SUCCESS.
+- **Next:** Mira performs cumulative whole-I coordinator review on stable exact `74c6f43ae2d67526e2ad17aa50392aebf41abbca` (PASS or one confirmed current-scope corrective package). **Lira STOP.** Lev independent review only after Mira whole-I PASS and separate appointment; Mark unassigned. No J–R, SA05, #315, docs closeout/merge, Stage6/production/live Google.
 
 ## I5 author checkpoint decomposition
 
@@ -21,7 +13,7 @@
 2. **I5b — SET-05 stale/deactivated chain:** Mira PASS exact `705519ce10f78801c2614a1cafa13347e0d2a75b`.
 3. **I5c — Google callback/link and observer/failure composition:** **Mira PASS** exact `23554aad29ddd23edb540cddc2069533ebe99329`.
 4. **I5d — built Worker/browser connected acceptance:** **Mira PASS** exact `74c6f43ae2d67526e2ad17aa50392aebf41abbca`.
-5. **I5e — final connected sweep/evidence map:** **ACTIVE → Lira**, starting from exact `74c6f43ae2d67526e2ad17aa50392aebf41abbca`.
+5. **I5e — final connected sweep/evidence map:** **Lira AUTHOR STOP → Mira cumulative whole-I review**, exact `74c6f43ae2d67526e2ad17aa50392aebf41abbca`.
 
 ## Mandatory author verification
 
