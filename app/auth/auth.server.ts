@@ -251,6 +251,31 @@ export function createAuth(
       },
     };
   }
+  // Session creation must be admitted even when SA-02 fact observation is off.
+  // The pinned Better Auth 1.7.7 internalAdapter.createSession uses this
+  // database create.before hook before persisting or issuing a session cookie.
+  options.databaseHooks = {
+    ...options.databaseHooks,
+    session: {
+      ...options.databaseHooks?.session,
+      create: {
+        ...options.databaseHooks?.session?.create,
+        before: async pending => {
+          try {
+            const userId = pending.userId;
+            const connection = (database as NodePgDatabase & { $client: Client }).$client;
+            const state = await readAccountState(connection, userId);
+            if (state.status !== "active") {
+              throw new APIError("UNAUTHORIZED", { message: "Unauthorized" });
+            }
+          } catch (error) {
+            if (!(error instanceof APIError)) onActorStateError?.(error);
+            throw error;
+          }
+        },
+      },
+    },
+  };
   if (onDeleted || onCreatedProof) {
     const factory = options.database as ReturnType<typeof drizzleAdapter>;
     options.database = (authOptions: BetterAuthOptions) => new Proxy(factory(authOptions), {
