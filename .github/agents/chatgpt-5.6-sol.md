@@ -2439,3 +2439,11 @@ Do not treat a user's anger, criticism or request to think as implicit permissio
 - Exact-head CI #43408842355, SA01 #43408842422, SA03 #43408842363 and AP10 #43408842330 independently confirmed SUCCESS on the reviewed head.
 - **PASS — 0 confirmed current-scope I4d/I1–I4 defects. I4 coordinator closure complete.**
 - Fixed decomposition still requires **I5 connected Better Auth closure** before checkpoint I can close. Stop before I5 assignment; no Lev/Mark yet.
+
+
+## 2026-11-13 — SA04-I5 scope/granularity gate
+
+- Re-read current main `AGENTS.md` and current project/Super-admin/auth/Settings source-of-truth before handoff. The bounded workflow now requires Lev technical planning before Lira implementation.
+- I5 remains one bounded final auth result: connected Better Auth lifecycle closure across the current configured auth/session subsystem after accepted I1–I4. It is not presumed test-only; connected inspection may reveal a current-scope implementation correction.
+- J–R application writers and SA05 deactivation action/control remain later scopes; physical user deletion, reactivation/forced-session Owner controls, unconfigured secondary storage and Stage6/external acceptance are excluded.
+- Assigned Lev technical planning only on stable #329 exact `85104942e75071a67b4a4b37212ce5bca7361fe4`. Lira/Mark remain unassigned. Next Mira action is plan fit/granularity review after Lev STOP.
