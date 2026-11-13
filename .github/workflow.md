@@ -1,7 +1,7 @@
 # Admin panel — current workflow
 
 - Service PR **#251**. Main/base **`13456a17f23c1385bef8ab11c735f43d201edd02`**, prior reviewed A1 + A2–H merged. A1/#327 and A2–H/#328 are closed; neither reopened.
-- **Current checkpoint: SA04-I2 implementation complete on stable head; Lira STOP → Mira independent bounded I2 checkpoint/scope review.** Accepted I1 Mira PASS on `649dada0e2dfc5333c7c072170c0fd8c71a4501a`. Technical plan: current SA04-I five-checkpoint split I1→I5.
+- **Current checkpoint: SA04-I2 Mira CHANGES REQUIRED on exact `5ac398f472d18e32e9ab836eef99f6f62a6de4ee`; one confirmed current-scope defect `I2-MIRA-01`.** Lira correction assigned in Draft #329; I3–I5/J+ remain blocked/unassigned.
 - Cumulative [Draft implementation PR #329](https://github.com/iliya1947/vico-forum/pull/329), branch `chatgpt/sa04-i1-pre-routing-session-admission`, exact **`5ac398f472d18e32e9ab836eef99f6f62a6de4ee`**. Open/Draft/unmerged; 12 cumulative commits, nine I2 commits and two total changed project files. I3–I5/J+ not assigned; Lev/Mark remain STOP.
 - **I2 scope complete:** authenticated Better Auth HTTP and direct `auth.api.*` actor operations require the accepted A2 persisted active-account read on the same native PostgreSQL client before private response/mutation. Inactive/missing actor is unauthorized; active remains permitted. Inactive own `/sign-out` remains usable for native session deletion and cookie cleanup.
 - **Preserved:** I1 server-owned pre-routing session lookup; BA 1.7.7 `/get-session` sliding/cleanup/Set-Cookie ownership and endpoint ordering, existing Google link stale-identity, password freshness/rate limit, classified unavailable/no-store 503 and unexpected-error propagation. I3 new-session target races, I4 atomic target-write, I5 connected closure and J+ excluded.
@@ -357,3 +357,15 @@ Before any project-changing action or agent handoff, Mira must check in this ord
 - Continue in existing cumulative Draft #329; do not create another implementation PR and do not mark it Ready.
 - Ready for checkpoint when focused HTTP + direct-API tests prove inactive denial/active preservation/sign-out exception and applicable existing auth regressions are green; Lira performs author inspection, publishes stable exact head/evidence, then **STOP**.
 - Lev/Mark remain unassigned.
+
+
+## 2026-11-13 — SA04-I2 Mira checkpoint: CHANGES REQUIRED
+
+- Reviewed cumulative Draft #329 exact `5ac398f472d18e32e9ab836eef99f6f62a6de4ee`, complete accepted-I1→I2 delta and applicable auth/session contracts.
+- **I2-MIRA-01 — confirmed current-scope defect.** For protected authenticated endpoints other than `/get-session`, the new pre-hook calls `getAuthoritativeSessionFromCtx(ctx)` before A2 AccountState admission. That helper performs the authoritative session lookup with cookie-cache bypass but **without disabling session refresh**. A due inactive session can therefore be slid/updated and emit Set-Cookie **before** `readAccountState` rejects the inactive actor.
+- This violates accepted SA04 §4/I2 requirements that preliminary auth admission disable refresh and that inactive authenticated operations be denied before private response/mutation. It is not I3/I4 future work: the mutation is caused by the I2 actor preflight itself.
+- Existing I2 tests prove active sliding and inactive denial, but do not stage a due inactive session on a non-`get-session` protected endpoint, so they do not catch this ordering defect.
+- Required correction result: inactive actor preflight must not refresh/update session or issue a refreshed session cookie before AccountState admission; active-user canonical endpoint/session behavior must remain unchanged after successful admission. Implementation method is left to Lira within the accepted I2 boundary.
+- Add focused native regression proving a **due inactive** session on at least one non-`get-session` protected HTTP/direct path is denied with unchanged persisted expiry/update state and no pre-admission refresh cookie, while the corresponding active path retains canonical behavior.
+- No other current-scope I2 defects confirmed in the completed sweep. I3/I4 gaps remain correctly future checkpoints.
+- Lira corrects only `I2-MIRA-01` in existing Draft #329, performs author inspection, publishes new stable exact head/evidence and STOPs. Mira then repeats the bounded I2 checkpoint review. Lev/Mark remain unassigned.
