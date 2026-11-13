@@ -406,6 +406,60 @@ describe("SA04-I5c Better Auth Google callback lifecycle and exact-fact composit
         .toBeInstanceOf(Date);
     },30000);
 
+  it.each(["unavailable","unexpected"] as const)(
+    "does not turn a $kind lifecycle SQL failure at Google callback into success or policy closure",
+    async(kind)=>{
+      identityEmail=`i5c-fault-${kind}@example.test`;identitySub=`i5c-fault-${kind}`;
+      const enrolled=await initiate(await authFactory(),"sign-in/social");
+      expect((await callback(await authFactory(),enrolled.state,enrolled.cookies)).status).toBe(302);
+      const ownerId=(await accounts()).find(a=>a.provider_id==="google")!.user_id;
+      events.length=0;
+      const start=await initiate(await authFactory(),"sign-in/social");
+      const before=await i5cPersistedRows(ownerId);
+      const total=await countRows();
+      const failures:unknown[]=[];
+      const auth=await authFactory(null,false,{onStateError:error=>{failures.push(error);}});
+      const original=client.query;
+      let trapped=false;
+      client.query=((...args:unknown[])=>{
+        const statement=args[0];
+        const sql=typeof statement==="string"?statement:
+          statement && typeof statement==="object" && "text" in statement &&
+            typeof statement.text==="string"?statement.text:"";
+        if(!trapped && sql.includes(" as deactivated_at")) {
+          trapped=true;
+          const fault=kind==="unavailable"
+            ? Object.assign(new Error("PRIVATE_I5C_DISCONNECT"),{code:"ECONNRESET"})
+            : new TypeError("PRIVATE_I5C_UNEXPECTED_STATE");
+          return Promise.reject(fault);
+        }
+        return Reflect.apply(original,client,args);
+      }) as typeof client.query;
+      let response:Response|undefined;
+      let thrown:unknown;
+      try{
+        try{response=await callback(auth,start.state,start.cookies);}
+        catch(error){thrown=error;}
+      }finally{client.query=original;}
+      expect(trapped).toBe(true);
+      expect(failures).toEqual([expect.objectContaining({
+        name:kind==="unavailable"?"AccountStateUnavailableError":"AccountStateUnexpectedError",
+      })]);
+      if(response){
+        expect(response.status).not.toBe(200);
+        expect(sessionCookie(response)).toBeFalsy();
+        const location=response.headers.get("Location");
+        if(location)expect(new URL(location,origin).searchParams.get("error"))
+          .not.toBe("vico_google_registration_closed");
+        expect(await response.text()).not.toMatch(/PRIVATE_I5C_DISCONNECT|PRIVATE_I5C_UNEXPECTED_STATE/);
+      }else{
+        expect(thrown).toBeDefined();
+      }
+      expect(await i5cPersistedRows(ownerId)).toEqual(before);
+      expect(await countRows()).toEqual(total);
+      expect(events).toEqual([]);
+    },30000);
+
   it("observer capture and gap failures cannot veto a genuine Google commit",async()=>{
     identityEmail="i5c-observer-fail@example.test";identitySub="i5c-observer-fail";
     const broken:AuthCreationObserver={
