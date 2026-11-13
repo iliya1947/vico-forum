@@ -52,7 +52,7 @@ Current J decomposition for Lira execution:
 1. **J1 — shared Drizzle mutation guard.** Mira PASS exact `35902e3ebd7636121b3a4af1e67b3da8ec365be2`.
 2. **J2 — publication:** `createTopic`, `createTopicWithInitialPost`, `createPost`, matching receipt replay and final publication binding/receipt. Mira PASS exact `22a6733ee661e22665406974d5a3ac515866fd51`.
 3. **J3a — low-level revisions:** `reviseTopicTitle`, `revisePostBody`, own/any paths. Mira PASS exact `39df1262d9b536df87b0147e4a8a400d65b7d038`.
-4. **J3b — published-post edit:** `editPublishedPost`, matching edit receipt replay, revision/CAS, mentions, retained/new attachment binding, draft finalization and receipt. **Active assignment to Lira; not yet implemented at channel rotation.**
+4. **J3b — published-post edit:** `editPublishedPost`, matching edit receipt replay, revision/CAS, mentions, retained/new attachment binding, draft finalization and receipt. **Lira implementation complete on `b407f93f54b7f7e1073218dd63b4f6235b1bb417`; Mira bounded review pending.**
 5. **J3c — source-locale service no-op + canonical HTTP boundary.** Unassigned.
 6. **J4 — profile writer.** Unassigned.
 7. **J5 — read-state writer.** Unassigned.
@@ -66,7 +66,7 @@ Current J decomposition for Lira execution:
 
 After the implementation decomposition is complete, Mira performs the coordinator whole-J review on one stable exact head. Only after Mira PASS does Lev perform the independent technical whole-J review of that same head. Lev's technical planning/review work is not to be fragmented into the small Lira implementation slices unless the developer explicitly changes that rule.
 
-## Active J3b contract
+## J3b contract — implementation complete, Mira review pending
 
 Implementation PR: cumulative Draft #330. Accepted baseline: `39df1262d9b536df87b0147e4a8a400d65b7d038`.
 
@@ -78,7 +78,7 @@ Required behavior:
 - Denied lifecycle request must not create a revision, move the current revision, change public attachment refs, create mentions, retire/finalize the operation or create/alter the receipt.
 - Active behavior, owner-only edit rule, expected-revision conflict/rebase behavior, measure enforcement, retained/new attachment selection, idempotent lost-response retry and attachment atomicity remain unchanged.
 - Evidence must include active fresh/replay controls, missing/inactive denial, before/after fact preservation, both lifecycle race directions through final attachment/receipt work, and applicable PostgreSQL/HTTP/editor/attachment regressions.
-- Lira publishes one stable exact head and AUTHOR STOP. Mira then performs bounded J3b review.
+- Lira published stable exact Draft #330 head `b407f93f54b7f7e1073218dd63b4f6235b1bb417`, checked CI/browser evidence and recorded AUTHOR STOP. Mira performs bounded J3b review next.
 - J3c is not a J3b defect. J4+ are not current scope.
 
 ## Important cross-cutting boundaries
