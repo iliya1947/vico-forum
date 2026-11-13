@@ -752,6 +752,34 @@ describe("forum write route actions", () => {
     expect(JSON.stringify(response)).not.toContain("forum write cooldown is active");
   });
 
+  it("keeps canonical solution Own/Any late lifecycle denial private, with no false confirmation redirect", async () => {
+    for (const intent of ["markSolved", "selectBestAnswer"] as const) {
+      for (const scope of ["own", "any"] as const) {
+        for (const error of [new AccountInactiveError(), new AccountMissingError()]) {
+          const w = writer();
+          const fn = intent === "markSolved" ? w.markTopicSolved : w.selectBestAnswer;
+          fn.mockRejectedValueOnce(error);
+          const result = await topicAction({
+            request: request("/en/topics/topic-1", {
+              intent, postId: "post-2", operationScope: scope, actorId: "forged",
+            }),
+            params: { locale: "en", topicId: "topic-1" },
+            context: context(w, true, ["forum.solution.manageOwn", "forum.solution.manageAny"]),
+          });
+          expect(result).toMatchObject({
+            data: { error: "unauthenticated" },
+            init: { status: 401, headers: { "Cache-Control": "private, no-store" } },
+          });
+          expect(result).not.toBeInstanceOf(Response);
+          expect(JSON.stringify(result)).not.toMatch(/AccountInactive|AccountMissing|deactivated|solutionPrompt|Location|ok.true/);
+          expect(fn).toHaveBeenCalledWith(expect.objectContaining({
+            topicId: "topic-1", actorId: "session-user", scope,
+          }));
+        }
+      }
+    }
+  });
+
   it("derives solution scope from server permissions and ignores forged authorization fields", async () => {
     const ownWriter = writer();
     await topicAction({
