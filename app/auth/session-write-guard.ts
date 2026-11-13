@@ -47,6 +47,9 @@ export function guardBetterAuthSessionWrites(
   const connection = (database as NodePgDatabase & { $client: Client }).$client;
   return (options: BetterAuthOptions) => {
     const adapter = factory(options);
+    // /revoke-other-sessions invokes concurrent deleteSession calls using one
+    // request's native PG Client. Never interleave their BEGIN/COMMIT boundaries.
+    let deletionTail: Promise<void> = Promise.resolve();
     // The pinned Better Auth as-is transaction fallback calls its callback
     // with the underlying adapter, then uses that value via AsyncLocalStorage.
     // Re-wrap the supplied transaction adapter so signup/OAuth session creates
@@ -63,7 +66,7 @@ export function guardBetterAuthSessionWrites(
             property !== "delete" && property !== "deleteMany")) {
           return method;
         }
-        return async (...args: unknown[]) => {
+        const guarded = async (...args: unknown[]) => {
           const command = args[0] as {
             model?: unknown;
             data?: { userId?: unknown };
@@ -272,7 +275,7 @@ export function guardBetterAuthSessionWrites(
               }
             }
             if (failure instanceof AccountInactiveError || failure instanceof AccountMissingError) {
-              if (userWrite || accountWrite || sessionDelete) {
+              if (userWrite || accountWrite) {
                 throw new APIError("UNAUTHORIZED", { message: "Unauthorized" });
               }
               throw new InactiveSessionWriteError();
@@ -283,6 +286,14 @@ export function guardBetterAuthSessionWrites(
             }
             throw failure;
           }
+        };
+        return (...args: unknown[]) => {
+          const command = args[0] as { model?: unknown } | undefined;
+          if (command?.model !== "session" ||
+            (property !== "delete" && property !== "deleteMany")) return guarded(...args);
+          const task = deletionTail.then(() => guarded(...args));
+          deletionTail = task.then(() => undefined, () => undefined);
+          return task;
         };
       },
     });
