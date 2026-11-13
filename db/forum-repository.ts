@@ -1752,9 +1752,9 @@ export class DrizzleForumRepository {
         isClosed: forumTopics.isClosed, closureVersion: forumTopics.closureVersion,
       }).from(forumTopics).where(eq(forumTopics.id, input.topicId)).for("no key update");
       if (!topic) throw new ForumEntityNotFoundError("topic does not exist");
-      await assertActiveAccountForDrizzleMutation(tx, input.actorId);
       if (topic.closureVersion !== input.expectedClosureVersion)
         throw new ForumStateConflictError("topic closure state changed");
+      await assertActiveAccountForDrizzleMutation(tx, input.actorId);
       if (topic.isClosed === input.isClosed)
         return { isClosed: topic.isClosed, closureVersion: topic.closureVersion, changed: false };
       await this.measureAdmission(tx, input.actorId, "admin.forum");
