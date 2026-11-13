@@ -424,6 +424,60 @@ describe("Better Auth PostgreSQL runtime", () => {
       .rejects.toBeInstanceOf(AccountStateUnexpectedError);
   });
 
+  it("SA04-I3 rejects new sessions for inactive and missing targets with telemetry disabled", async () => {
+    const runtime = createHyperdriveAuthRuntime(databaseUrl, env, () => authClient());
+    const email = "i3-returning-password@example.test";
+    const password = "integration-password-123";
+    const signup = await runtime.handle(new Request(`${env.BETTER_AUTH_URL}/api/auth/sign-up/email`, {
+      method: "POST", headers: { Origin: env.BETTER_AUTH_URL,
+        "content-type": "application/json", "cf-connecting-ip": "203.0.113.110" },
+      body: JSON.stringify({ name: "I3 original name", email, password }),
+    }));
+    expect(signup.status).toBe(200);
+    const userId = (await signup.json() as { user: { id: string } }).user.id;
+    const count = async () => (await client.query<{ total: number }>(
+      'select count(*)::int as total from "session" where user_id=$1', [userId],
+    )).rows[0]?.total;
+    const before = await count();
+    expect(before).toBe(1);
+    const signIn = () => runtime.handle(new Request(`${env.BETTER_AUTH_URL}/api/auth/sign-in/email`, {
+      method: "POST", headers: { Origin: env.BETTER_AUTH_URL,
+        "content-type": "application/json", "cf-connecting-ip": "203.0.113.111" },
+      body: JSON.stringify({ email, password }),
+    }));
+
+    const activeSignIn = await signIn();
+    expect(activeSignIn.status).toBe(200);
+    expect(activeSignIn.headers.getSetCookie().some(value => value.includes("session_token="))).toBe(true);
+    expect(await count()).toBe(before! + 1);
+
+    // The actual pinned internal adapter is also reachable without HTTP and
+    // without an SA-02 observer, so the creation gate cannot depend on either.
+    const auth = betterAuth(betterAuthOptions(drizzle(client), env));
+    const direct = (await auth.$context).internalAdapter;
+    const activeNative = await direct.createSession(userId);
+    expect(activeNative?.userId).toBe(userId);
+    expect(await count()).toBe(before! + 2);
+    await client.query(`update "user" set deactivated_at='2026-11-12T00:00:00Z',
+      deactivated_by_user_id=$1, retain_at_least_until='2027-11-13T00:00:00Z'
+      where id=$1`, [userId]);
+
+    const sessionRows = async () => (await client.query<{
+      id: string; token: string; user_id: string; expires_at: Date;
+    }>('select id,token,user_id,expires_at from "session" where user_id=$1 order by id', [userId])).rows;
+    const retained = await sessionRows();
+    const denied = await signIn();
+    expect(denied.status).toBe(401);
+    expect(denied.headers.getSetCookie().some(value => value.includes("session_token="))).toBe(false);
+    expect(JSON.stringify(await denied.text())).not.toContain("I3 original name");
+    await expect(direct.createSession(userId)).rejects.toMatchObject({ status: "UNAUTHORIZED" });
+    await expect(direct.createSession("missing-i3-target")).rejects.toMatchObject({ status: "UNAUTHORIZED" });
+    expect(await sessionRows()).toEqual(retained);
+    expect((await client.query<{ name: string }>(
+      'select name from "user" where id=$1', [userId],
+    )).rows[0]?.name).toBe("I3 original name");
+  });
+
   it("keeps a new login after pre-routing cleanup of an expired session cookie", async () => {
     const runtime = createHyperdriveAuthRuntime(databaseUrl, env, () => authClient());
     const headers = { "content-type": "application/json", Origin: env.BETTER_AUTH_URL, "cf-connecting-ip": "203.0.113.40" };
