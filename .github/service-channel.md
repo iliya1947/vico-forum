@@ -1,14 +1,12 @@
 # Admin panel — communication
 
-## 2026-11-13 — Mira scopes SA04-J1 → Lev technical planning
+## 2026-11-13 — Correction: Lev gets complete SA04-J technical planning
 
-- Current main after merged SA04-I: `44d6b69a8d235cc8b1ee30953839be71e6ab836a`.
-- The accepted SA04 plan's row J is too broad for one author handoff: current ForumWriter/ForumRepository exposes separate publication, edit, topic-state, Help, profile and member-state mutation families.
-- **First bounded result is J1 — new forum publication writes only:** topic creation (including the canonical topic + initial-post publication flow) and reply creation, with the current receipt/replay and same-transaction publication side effects preserved.
-- Topic + reply remain one planning unit because both current publication paths share draft-generation/publication-receipt/finalization semantics; J1 must not create a partial lifecycle boundary across that shared publication family.
-- J1 does **not** authorize attachment-store package K, edit/source-locale, topic-state, Help, profile/read-state/notification-read, L–R/S, SA05, #315 remediation, documentation or Stage6 work.
-- **Lev assignment is planning only.** Determine the exact current J1 enforcement seams, transaction/lock ordering, replay/finalization behavior and evidence needed from current main. No implementation. If source inspection shows the bounded result cannot be isolated cleanly, return that technical finding to Mira rather than silently widening it.
-- Lira and Mark remain unassigned. After Lev STOP, Mira reviews plan scope/fit/granularity before any implementation handoff.
+- Mira's previous J1-only planning handoff was incorrect: implementation granularity was applied prematurely to the technical planner.
+- **Correct assignment:** Lev plans the complete accepted SA04-J boundary — all Forum authoritative actor writes protected by AccountState — from current main `44d6b69a8d235cc8b1ee30953839be71e6ab836a`.
+- Lev determines the technical decomposition, transaction/lock/replay boundaries and evidence for J as a whole. He does not implement.
+- Mira reviews Lev's complete J plan afterward and decides how finely Lira's implementation should be split.
+- Lira and Mark remain unassigned.
 
 ## 2026-11-13 — SA04-I #329 merged; post-merge synchronization
 
