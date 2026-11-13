@@ -58,7 +58,7 @@ Current J decomposition for Lira execution:
 7. **J5 — read-state writer.** **Mira bounded PASS on `af25adf18fd065e5af4a7e6da2c670f28613a10f`.**
 8. **J6 — inbox acknowledgement writers.** **Mira bounded PASS on `9a0a095b41c26ef41d6d136f4cf673c8bc325b08`.**
 9. **J7 — topic close/pin/unpin state writers.** **Mira bounded PASS on `5e76474908156d6acbab1d2cf98138e6a37cabc8`.**
-10. **J8 — solved/best-answer writers.** **Active → Lira.**
+10. **J8 — solved/best-answer writers.** **Lira implementation complete / AUTHOR STOP on `41e26f191357aacde3de2dae3a3c7fed20756a30`; Mira bounded review pending.**
 11. **J9 — Help Signals submit/withdraw/resolve.** Unassigned.
 12. **J10 — Help solution moderation.** Unassigned.
 13. **J11 — duplicate/appeal family.** Unassigned.
@@ -121,22 +121,13 @@ Permanent documentation is intentionally separate from the implementation PR. Cu
 
 J8–J12 remain unassigned. Complaint commands N, #315, K, SA-05 and Stage 6 remain separate.
 
-## J8 — active assignment to Lira
+## J8 current handoff — Mira bounded review pending
 
-Baseline: cumulative Draft #330 exact `5e76474908156d6acbab1d2cf98138e6a37cabc8` (J7 Mira PASS).
+Lira completed authoritative AccountState admission for `markTopicSolved` and `selectBestAnswer` in cumulative Draft #330 exact `41e26f191357aacde3de2dae3a3c7fed20756a30`, based on J7 Mira PASS `5e76474908156d6acbab1d2cf98138e6a37cabc8`.
 
-Scope: authoritative AccountState admission for `markTopicSolved` and `selectBestAnswer` only.
+Both writers keep one short Drizzle transaction with solution topic `FOR NO KEY UPDATE` before trusted actor AccountState admission. Applicable Help affected post and signal row locks precede actor admission with stable post-ID and signal-ID ordering; the accepted non-key lock strength preserves Complaint FK `KEY SHARE`. Missing topic, Own author, already-solved/confirmed duplicate, candidate missing/cross-topic/first post restrictions remain. Only after domain dependencies: actor admission → existing Any-only `admin.forum` measure → unchanged real effects and Any-only History last. Active same-answer returns unchanged selection metadata without effect/History, after actor admission; inactive/missing Own/Any cannot obtain no-op or real success.
 
-Required behavior:
-- preserve target-first solution locking: topic and every existing answer/signal row that this operation can mutate are acquired before actor admission, with stable ordering for multi-row sets; use non-key-changing row lock strength where the accepted J graph requires FK compatibility;
-- both `own` and `any` scopes require the same authoritative active actor; `admin.forum` measure admission remains only the existing `any` rule and occurs after lifecycle admission;
-- preserve topic author/Own checks, Help service-section rules, active-duplicate prohibition, candidate topic membership and original-first-post prohibition;
-- `markTopicSolved` preserves already-solved conflict, real solved effect, Help duplicate-signal supersession and Any-only History;
-- `selectBestAnswer` preserves same-answer success/no-op, replaced-answer moderation state, new-answer moderation reset, affected pending-signal supersession, returned `topicAuthorId/isSolved`, solution-confirmation behavior and Any-only real-change History;
-- inactive/missing gets no real/no-op success and leaves topic/best-answer/moderation/signal/History facts unchanged;
-- History remains the final write and Own operations remain absent from administrative History.
-
-Evidence includes active Own/Any controls, same-answer no-op, inactive/missing before/after facts, state-first/writer-first lifecycle races, edit↔solution post-lock compatibility, overlapping pending-signal compatibility and same-actor/content Complaint FK compatibility. No J9+ implementation.
+Native PG17 **13/13** new lifecycle tests cover Own/Any, Help old/new moderation, signal supersession, History, same-answer idempotency and missing/ownership/conflict paths; state-first and writer-first actor races for both writers; J3-style post locks, affected signal contention and Complaint post→actor→FK lock compatibility. Existing Admin History **28/28**. Canonical Own/Any solution actions map late lifecycle denial to generic private/no-store 401 without confirmation prompt or redirect. Exact-head CI **844/844 PG**, **2275/2275 app**, lint/typecheck/build/schema PASS; SA-03 Chromium SUCCESS; AP-10 Chromium **4/4 SUCCESS**. No red-run remediation. Lira inspected four bounded commits / three files and records **AUTHOR STOP**; Mira next for bounded J8 review on stable `41e26f191357aacde3de2dae3a3c7fed20756a30`. J9–J12 remain unassigned. No J9+, Complaint N, #315, K, SA-05, schema/migration/permission/dependency, docs or Stage-6 changes. J7 technical lock wording in main permanent docs is deferred to separate docs closeout per AGENTS.md.
 
 ## Important cross-cutting boundaries
 
