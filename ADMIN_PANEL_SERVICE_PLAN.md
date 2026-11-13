@@ -60,9 +60,39 @@ Current J decomposition for Lira execution:
 9. **J7 — topic close/pin/unpin state writers.** **Mira bounded PASS on `5e76474908156d6acbab1d2cf98138e6a37cabc8`.**
 10. **J8 — solved/best-answer writers.** **Mira bounded PASS on `41e26f191357aacde3de2dae3a3c7fed20756a30`.**
 11. **J9 — Help Signals submit/withdraw/resolve.** **Mira bounded PASS on `ce9c068f5f5d1d3b291f1f6b8125fa7f55d9549b`.**
-12. **J10 — Help solution moderation.** Unassigned.
-13. **J11 — duplicate/appeal family.** Unassigned.
-14. **J12 — cumulative J closeout/evidence.** Unassigned.
+12. **J10 — Help solution moderation.** **Assigned to Lira from J9 PASS baseline `ce9c068f5f5d1d3b291f1f6b8125fa7f55d9549b`.**
+13. **J11 — duplicate/appeal family.** Ready next assignment; not active until J10 Mira PASS.
+14. **J12 — cumulative J closeout/evidence.** Ready next assignment; not active until J11 Mira PASS.
+
+## Ready remaining J assignments
+
+These assignments are fixed now so the coordinator does not reconstruct them after each PASS.
+
+### J10 — Help solution moderation — ACTIVE
+
+Baseline: J9 Mira PASS exact `ce9c068f5f5d1d3b291f1f6b8125fa7f55d9549b`.
+
+Required result: close authoritative AccountState admission for `setHelpSolutionModeration` without changing its product contract. Preserve expected-best-answer validation, existing reason semantics, unchanged-state History suppression and the exact pending-signal supersession rules. The accepted J lock graph applies: target topic and every existing post/signal row the operation can mutate must be secured before the trusted actor lifecycle mutex; then existing `admin.forum` measure, effects and real History last. The topic/post lock strength must remain compatible with the already accepted J7–J9/Complaint FK graph; do not introduce actor→content reversal, actor lock upgrade or a second connection.
+
+Ready evidence: active moderation states including clear/no-op-equivalent History suppression; inactive/missing fact preservation; state-first and writer-first lifecycle races; answer-post and affected-signal contention; same-actor Complaint/content compatibility where applicable; canonical late lifecycle denial through the existing route as generic private/no-store 401; applicable existing Help/Admin History/AP-10 regressions and exact-head CI/browser gates.
+
+Scope: J10 only. J11/J12, Complaint N, #315, K, SA-05, permanent docs and Stage 6 stay out.
+
+### J11 — duplicate/appeal family — READY AFTER J10 PASS
+
+Methods: `confirmHelpDuplicate`, `removeHelpDuplicate`, `appealHelpDuplicate`, `resolveHelpDuplicateAppeal`.
+
+Required result: add authoritative same-transaction active-actor admission to all four methods while preserving current relationship/appeal identity, ownership, expected-ID, canonical-root, pending uniqueness, accepted/rejected effects and History semantics. Existing domain dependencies that can later be mutated must be locked before actor admission. In particular, confirmation must include the complete pending duplicate-signal set its bulk supersession can affect in stable order; removal must include any pending appeal it may resolve; appeal keeps its no-measure/no-History product behavior; resolution keeps its exact expected pending appeal and accepted relationship-removal behavior. Then actor → applicable existing measure → effects → History last. Keep the accepted non-key lock/FK compatibility and no reverse actor→content ordering.
+
+Ready evidence: active behavior for all four methods and materially different appeal outcomes; inactive/missing fact preservation; state-first/writer-first races; overlapping relationship/appeal/signal operations in bounded stable order; canonical late lifecycle 401 mapping; existing duplicate/appeal/History/AP-10 regressions and exact-head CI/browser gates.
+
+Scope: J11 only. J12 and all non-J domains stay out.
+
+### J12 — cumulative J closeout/evidence — READY AFTER J11 PASS
+
+No speculative new feature work. On one stable exact Draft #330 head, close the accepted full-J evidence contract: inventory every J actor-owned Forum writer plus both source-locale no-op entrypoints and presence regression; verify actual transaction/lock graph and absence of actor lock upgrades/second connections; verify active/inactive/missing, replay/no-op, state-first/writer-first and required cross-writer compatibility coverage; verify canonical HTTP/Worker error handling and applicable full regression gates. If this sweep finds a real current-J defect, correct only that defect and regenerate evidence; future K+ or #315 work is not a J finding.
+
+Deliver AUTHOR STOP with the stable exact head and concise cumulative evidence packet for Mira whole-J coordinator review. Only after Mira whole-J PASS does Lev perform the independent whole-J review of that same exact head.
 
 After the implementation decomposition is complete, Mira performs the coordinator whole-J review on one stable exact head. Only after Mira PASS does Lev perform the independent technical whole-J review of that same head. Lev's technical planning/review work is not to be fragmented into the small Lira implementation slices unless the developer explicitly changes that rule.
 
