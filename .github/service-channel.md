@@ -1,5 +1,22 @@
 # Admin panel — communication
 
+## SA04-J3c — assignment → Lira
+
+Baseline: Draft #330 exact `b407f93f54b7f7e1073218dd63b4f6235b1bb417` (Mira J3b PASS).
+
+Implement **J3c only**:
+
+- close the lifecycle admission gap in `ForumService.correctTopicTitleSourceLocale` and `correctPostBodySourceLocale` when requested source locale already equals the current locale and the service would otherwise return success without reaching the protected J3a revision writer;
+- keep active same-locale correction a real no-op: no revision, no source-locale change and no Admin History event;
+- preserve existing entity/current-revision/Own-vs-Any authorization and canonical non-`und` validation before the no-op result;
+- changed-locale paths continue through the already protected J3a revision writers; do not duplicate or replace that writer logic;
+- extend canonical `runSourceLocaleCorrection` so a late `AccountInactiveError` / `AccountMissingError` returns the existing generic unauthenticated `401` with `private, no-store`, without lifecycle/private detail leakage;
+- preserve classified storage-unavailable `503` and unexpected-error behavior.
+
+Done when focused tests prove topic + post same-locale active behavior, inactive/missing denial without new revision/History, Own/Any preservation, changed-locale regression, and canonical controlled HTTP mapping. Run applicable exact-head CI/checks, inspect the bounded delta, then **AUTHOR STOP for Mira J3c review**.
+
+Excluded: J4+, standalone attachment K, SA-05, #315 remediation, permanent docs and Stage 6. Lev/Mark remain inactive.
+
 ## J3b — Mira bounded coordinator review: PASS
 
 - Reviewed exact Draft #330 head `b407f93f54b7f7e1073218dd63b4f6235b1bb417` against accepted J3b scope and Lev's full-J transaction/lock/replay plan.
