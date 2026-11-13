@@ -1,5 +1,23 @@
 # Admin panel — communication
 
+## J8 — Mira bounded coordinator review: PASS
+
+- Reviewed cumulative Draft #330 exact `41e26f191357aacde3de2dae3a3c7fed20756a30` against the accepted J8 assignment, Lev's full-J solution lock graph and current Stage4/AP-05/AP-10 solution contracts.
+- Delta from J7 PASS `5e76474908156d6acbab1d2cf98138e6a37cabc8`: four bounded commits / three files. Production delta is only `markTopicSolved` and `selectBestAnswer`; remaining changes are focused native PG lifecycle/lock tests and canonical route regression. No J9+, Complaint-domain, #315, K, schema/migration/permission/dependency or Stage-6 work.
+- Both writers keep the topic mutex first, now `FOR NO KEY UPDATE`. Help real solution effects pre-lock old/new answer rows by stable post ID and the exact affected pending signal rows by stable signal ID before actor admission. `markTopicSolved` similarly pre-locks the pending duplicate-signal set it can supersede.
+- Shared AccountState actor admission is then taken on the same transaction/connection for both Own and Any. Existing Any-only `admin.forum` measure admission remains after lifecycle; Own keeps no punitive admin measure.
+- Existing fail-closed precedence is preserved: missing topic, Own author mismatch, already-solved, active confirmed duplicate, missing/cross-topic candidate and original first post all reject before success. No actor identity comes from form input.
+- Active same-answer selection is now an explicit no-effect return after lifecycle/Any measure admission. It preserves `topicAuthorId/isSolved`, does not re-update topic/post/signal state and does not append History. Inactive/missing actor cannot reach this success boundary.
+- Real Help replacement preserves prior behavior: old answer becomes `outdated / best-answer-replaced`, selected answer moderation is cleared, old-answer needs-review/outdated signals and topic duplicate signals are superseded, unrelated new-answer signal remains pending, then topic best-answer changes. Any real change appends `topic.bestAnswerChanged` last; Own emits no Admin History. Solved Any similarly appends only its real `topic.solved` event last.
+- Native state-first barriers pause after domain dependencies and before AccountState, commit deactivation and prove typed denial with unchanged topic/post/signal/History facts. Writer-first barriers pause COMMIT after effects/History and prove lifecycle update cannot acquire the actor row until the writer commits.
+- Lock compatibility: existing J3-style post `NO KEY UPDATE` holders serialize with J8 old/new answer locks; existing withdrawal-style signal writer locks serialize before J8 actor admission. Actual Complaint submit code was cross-checked: it takes reported post/topic `FOR UPDATE`, then actor mutex, then inserts target rows whose FK requires `KEY SHARE`. J8's topic/post `NO KEY UPDATE` allows that FK to complete, so the actor/content cycle identified in Lev's plan is not introduced.
+- Non-Help best-answer does not need an old/new moderation-row mutex: after actor its only new post dependency is the FK `KEY SHARE` for the topic best-answer update, which is compatible with ordinary post `NO KEY UPDATE` edits and with the accepted Complaint completion ordering.
+- Canonical `markSolved` / `selectBestAnswer` Own/Any late lifecycle denial remains shared generic private/no-store `401 unauthenticated`, with no redirect, `solutionPrompt`, false success, lifecycle detail or forged actor use. Existing permission/scope/origin/unavailable/unexpected behavior is unchanged.
+- Exact-head GitHub Actions independently rechecked: J8 PG **13/13**; Admin History **28/28**; Stage4 core solution flow green; PostgreSQL **844/844**; application/unit **2275/2275**; CI SUCCESS; SA-03 Chromium SUCCESS; AP-10 browser/history/settings/administrator jobs all SUCCESS.
+- No red-run remediation or production correction occurred during J8.
+- The previously recorded J7 permanent-doc `FOR UPDATE`→`FOR NO KEY UPDATE` wording mismatch remains a docs-closeout item, not a J8 implementation defect.
+- **Verdict: PASS — 0 confirmed current-scope J8 defects.** STOP. J9–J12 remain unassigned; Lev/Mark remain inactive.
+
 ## SA04-J8 — Lira AUTHOR STOP → Mira bounded coordinator review
 
 - **Stable implementation:** cumulative Draft #330 exact `41e26f191357aacde3de2dae3a3c7fed20756a30`, open/draft/unmerged, based on J7 Mira PASS `5e76474908156d6acbab1d2cf98138e6a37cabc8`.
