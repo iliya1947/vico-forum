@@ -1,5 +1,11 @@
 # ChatGPT-5.6 Sol — personal log
 
+## SA04-J3c assignment
+
+- J3b accepted exact baseline: `b407f93f54b7f7e1073218dd63b4f6235b1bb417`.
+- Verified current gap is exactly two service-level same-locale success returns plus missing lifecycle mapping in `runSourceLocaleCorrection`; changed-locale writes are already protected by J3a.
+- Assigned J3c only to Lira. Next Mira action is bounded review after Lira stable-head AUTHOR STOP. J4+ remain unassigned.
+
 ## SA04-J3b coordinator review — PASS
 
 - Independently reviewed Draft #330 exact `b407f93f54b7f7e1073218dd63b4f6235b1bb417`.
