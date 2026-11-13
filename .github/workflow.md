@@ -1,11 +1,12 @@
 # Admin panel — current workflow
 
-- **Service PR #251.** Current `main` is **`44d6b69a8d235cc8b1ee30953839be71e6ab836a`**.
-- **SA04-I merged:** implementation #329 merged from reviewed exact head `74c6f43ae2d67526e2ad17aa50392aebf41abbca` after Mira coordinator PASS + Lev independent PASS, both with 0 confirmed current-scope defects.
-- #329 is closed/merged. Its reviewed implementation must not be reused or extended.
-- **No active implementation assignment.** Lira/Lev STOP; Mark unassigned.
-- J–R authoritative application writers, S connected package closure, SA05 deactivation operation/UI/event, #315 remediation, documentation closeout and Stage6/production remain separate and unstarted by this merge.
-- **Next continuation:** re-scope the next bounded SA04 result from current main before any new implementation PR/handoff. Do not assume the old pre-merge head or stale plan state.
+- **Service PR #251.** Current `main` is **`44d6b69a8d235cc8b1ee30953839be71e6ab836a`**; SA04-I is merged.
+- **Current bounded result: SA04-J1 planning only.** J is operationally split before implementation because the original row covers too many independent forum mutation families.
+- **J1 scope:** authoritative **new forum publication** writes by an actor — current topic creation (including topic + initial post) and reply creation, including their persisted receipt/replay and in-transaction publication side effects. The result is that an inactive actor cannot obtain a new publication capability through canonical or direct current forum write paths.
+- Topic and reply publication stay together for J1 because the current implementation shares publication receipt/draft-finalization semantics; splitting inside that transaction family would create an artificial partial boundary.
+- **Excluded from J1:** attachment-store admission/late upload/finalization package K; published-content edits/source-locale corrections; topic state/admin mutations; Help duplicate/signal/moderation mutations; profile/read-state/notification-read writes; L–R; S; SA05; #315 remediation; docs; Stage6/production.
+- **Technical planner: Lev.** Prepare the J1 technical plan from current main only; inspect actual current seams, lock/order/replay behavior and required evidence. Do not implement. If current source proves J1 cannot be isolated safely from an excluded family, report that finding instead of expanding scope silently.
+- **Lira/Mark unassigned.** No implementation PR is started until Mira reviews Lev's J1 plan.
 
 ## I5 author checkpoint decomposition
 
