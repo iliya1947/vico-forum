@@ -2332,3 +2332,13 @@ Do not treat a user's anger, criticism or request to think as implicit permissio
 - Existing tests do not cover due inactive session on a protected non-get-session endpoint.
 - Full remaining I2 sweep found no additional current-scope defects; I3/I4 omissions remain future checkpoints.
 - Verdict: **CHANGES REQUIRED**. Return one correction package to Lira; no Lev review.
+
+
+## 2026-11-13 — SA04-I2 repeat checkpoint review
+
+- Rechecked exact `b7dc303ee0d10312e5d41af9889d26d6b264a6e6` after `I2-MIRA-01`.
+- Correction makes preliminary actor resolution read-only for all protected operations and delays canonical sliding refresh until active-account admission succeeds.
+- Verified due-inactive no DB/session/cookie mutation, due-active canonical refresh, preservation of non-due active/link behavior, own sign-out, direct API and failure semantics.
+- Exact-head CI/browser evidence rechecked SUCCESS.
+- Verdict: **PASS; I2-MIRA-01 CLOSED; 0 remaining I2 current-scope defects.**
+- Stop before I3 assignment.
