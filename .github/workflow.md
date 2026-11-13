@@ -1,26 +1,11 @@
 # Admin panel — current workflow
 
-- **Service PR #251. Current main: `44d6b69a8d235cc8b1ee30953839be71e6ab836a`. SA04-I #329 merged.**
-- **SA04-J technical plan accepted:** Lev plan [#6858869802](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6858869802), Mira scope/fit PASS.
-- **Developer-fixed execution rule:** Lev plans the full technical stage; Lira implementation is split into bounded checkpoints.
-- **J implementation decomposition:**
-  1. **J1 — shared Drizzle AccountState mutation admission seam** for Forum transactions; no Forum mutation integration yet.
-  2. **J2 — publication:** createTopic / createTopicWithInitialPost / createPost, including replay and transaction-side final bind/receipt.
-  3. **J3 — revisions/edit/source-locale:** reviseTopicTitle / revisePostBody / editPublishedPost + the two same-locale service success paths.
-  4. **J4 — profile write:** updateProfile.
-  5. **J5 — read-state write:** advanceTopicReadState.
-  6. **J6 — inbox acknowledgement:** markNotificationRead / markReplyNotificationRead.
-  7. **J7 — topic state moderation:** setTopicClosed / pinTopic / unpinTopic.
-  8. **J8 — solved/best answer:** markTopicSolved / selectBestAnswer.
-  9. **J9 — Help Signals:** createHelpSignal / withdrawHelpSignal / resolveHelpSignal.
-  10. **J10 — Help solution moderation:** setHelpSolutionModeration.
-  11. **J11 — duplicates/appeals:** confirm/remove duplicate, appeal, resolve duplicate appeal.
-  12. **J12 — cumulative J closure:** preserve F presence, complete cross-family lock/race map and connected native/HTTP/Worker/browser evidence for the full cumulative J head; no new family unless a verified J gap is found.
-- **Active checkpoint: J1 only. Lira owns J1.**
-- **J1 result:** extend the existing AccountState mutation admission so a Drizzle Forum transaction can perform authoritative active/missing/inactive admission and hold the lifecycle row lock through caller commit/rollback, while preserving the existing native AccountState API and error classification.
-- **J1 done when:** focused tests prove active/inactive/missing, unavailable-vs-unexpected classification and transaction-local lock behavior; no ForumRepository mutation is wired to the new seam yet; no schema/migration/dependency/public-contract change.
-- Lira starts a new cumulative **Draft SA04-J implementation PR from current main**, implements J1 only, personally inspects the bounded result, publishes exact head/evidence, then **STOPs for Mira J1 checkpoint review**.
-- **Lev/Mark unassigned. J2+ are not assigned.**
+- **Service PR #251. Current main:** `44d6b69a8d235cc8b1ee30953839be71e6ab836a`. SA04-I merged #329, coordinator and Lev whole-I PASS.
+- **SA04-J full technical plan accepted:** [Lev #6858869802](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6858869802), Mira scope/fit PASS. Developer-approved checkpoint decomposition J1–J12 remains active.
+- **Current checkpoint: J1 Lira AUTHOR STOP → Mira bounded J1 review.** New cumulative implementation [Draft #330](https://github.com/iliya1947/vico-forum/pull/330) open/unmerged, base current main `44d6b69a8d235cc8b1ee30953839be71e6ab836a`, stable exact head `35902e3ebd7636121b3a4af1e67b3da8ec365be2` (three commits; two files).
+- **J1 author result:** `db/account-state.ts` adds a typed Drizzle-transaction AccountState mutation guard using caller's tx `select` of the full lifecycle tuple + `FOR NO KEY UPDATE`, reusing native parser/validator and unavailable/unexpected classifier. Existing native API is preserved. No ForumRepository integration in J1. Four new real PG17/error-shape tests in `tests/database/account-state.test.ts` cover active/inactive/missing, invalid tuples, wrapped disconnect/timeouts/programming errors, authoritative same-tx lock through COMMIT/ROLLBACK, FK KEY SHARE and deactivation-first denial.
+- **Exact-head CI:** [#43466409877](https://github.com/iliya1947/vico-forum/actions/runs/43466409877) **SUCCESS**, 2269/2269 app (184/184 files), 769/769 PostgreSQL17 (69/69 files), focused AccountState 14/14 including four new J1, lint/typecheck/build/schema parity/Worker smoke PASS. No J1 runtime/schema/migration/dependency/public API change beyond the required internal transaction helper.
+- **Next:** Mira conducts bounded J1 checkpoint review on exact `35902e3ebd7636121b3a4af1e67b3da8ec365be2` (PASS or one verified current-scope corrective package), then STOP. J2–J12 **not assigned**; Lev/Mark unassigned. No J Forum writer implementation, SA05, #315, docs closeout, production or merge.
 
 ## I5 author checkpoint decomposition
 
