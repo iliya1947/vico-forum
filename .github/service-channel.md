@@ -1,5 +1,15 @@
 # Admin panel — communication
 
+## 2026-11-13 — Mira bounded SA04-J2 checkpoint PASS
+
+- Reviewed cumulative Draft #330 exact `22a6733ee661e22665406974d5a3ac515866fd51` from accepted J1 `35902e3ebd7636121b3a4af1e67b3da8ec365be2`: complete 8-commit / 5-file J2 delta against the accepted publication scope and current source-of-truth.
+- Confirmed `createTopic`, `createTopicWithInitialPost` and `createPost` use J1 `assertActiveAccountForDrizzleMutation` on the real caller-owned Drizzle transaction. Matching receipt replay performs authoritative active-account admission before success; fresh topic/reply publication holds that same lifecycle row lock through post/topic/revision, notifications/mentions, attachment final binding/retirement, receipt and COMMIT.
+- Rechecked lock graph rather than relying on green tests: draft scope/receipt remains first; fresh reply takes topic `FOR NO KEY UPDATE`, optional parent `FOR KEY SHARE`, then actor `FOR NO KEY UPDATE`; cooldown reacquires the same actor lock on the same transaction. Existing current-scope topic/post writers do not establish a confirmed reverse lock cycle, and the weaker topic lock still conflicts with current topic-state UPDATE writers while remaining FK-compatible.
+- Confirmed canonical service/Hyperdrive paths converge on these guarded repository methods; no current publication bypass or autocommit use of the J1 helper was found. `runForumMutation` maps only the late typed inactive/missing actor result to generic private/no-store 401. Hyperdrive cause-chain handling still maps PostgreSQL availability failures to safe 503 while unexpected failures propagate.
+- Focused PG17 evidence covers active, missing/inactive, topic/reply matching replay, no denied publication side effects, deactivation-first and writer-first ordering, real attachment finalization/receipt, and real Hyperdrive stale-authenticated request behavior. Exact-head [CI #43472880241](https://github.com/iliya1947/vico-forum/actions/runs/43472880241) and [AP-10 #43472880424](https://github.com/iliya1947/vico-forum/actions/runs/43472880424) are SUCCESS; AP-10 is 4/4.
+- J3 edit/revision/source-locale, standalone attachment K, later writer families and SA05 are later scopes and were not misclassified as J2 defects.
+- **Verdict: PASS — 0 confirmed current-scope J2 defects.** STOP after this bounded review. J3–J12, Lev/Mark remain unassigned; #330 stays cumulative Draft/unmerged.
+
 ## 2026-11-13 — SA04-J2 Лира final publication lifecycle — AUTHOR STOP → Mira bounded review
 
 **Assigned bounded result:** full J2 only, existing J1 accepted by Mira on `35902e3ebd7636121b3a4af1e67b3da8ec365be2`. Current cumulative [Draft #330](https://github.com/iliya1947/vico-forum/pull/330), base/main `44d6b69a8d235cc8b1ee30953839be71e6ab836a`, stable exact head `22a6733ee661e22665406974d5a3ac515866fd51`, open/draft/unmerged; 11 cumulative commits, 7 files. J2 is exactly 8 commits, 5 touched files: `db/forum-repository.ts`, `app/forum/mutations.server.ts`, `tests/database/sa04-forum-publication-lifecycle.test.ts`, `tests/database/migrations.test.ts`, `tests/database/complaints-foundation.test.ts`.
