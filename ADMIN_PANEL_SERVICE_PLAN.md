@@ -59,7 +59,7 @@ Current J decomposition for Lira execution:
 8. **J6 — inbox acknowledgement writers.** **Mira bounded PASS on `9a0a095b41c26ef41d6d136f4cf673c8bc325b08`.**
 9. **J7 — topic close/pin/unpin state writers.** **Mira bounded PASS on `5e76474908156d6acbab1d2cf98138e6a37cabc8`.**
 10. **J8 — solved/best-answer writers.** **Mira bounded PASS on `41e26f191357aacde3de2dae3a3c7fed20756a30`.**
-11. **J9 — Help Signals submit/withdraw/resolve.** Unassigned.
+11. **J9 — Help Signals submit/withdraw/resolve.** **Active → Lira.**
 12. **J10 — Help solution moderation.** Unassigned.
 13. **J11 — duplicate/appeal family.** Unassigned.
 14. **J12 — cumulative J closeout/evidence.** Unassigned.
@@ -136,6 +136,26 @@ Exact-head evidence independently rechecked: J8 native PG17 **13/13**; existing 
 No J9+, Complaint-domain, #315, K, SA-05, schema/migration/permission/dependency, permanent-doc or Stage-6 changes were introduced. The existing J7 permanent-doc lock-wording closeout remains deferred to the separate docs PR required by AGENTS.md.
 
 J9–J12 remain unassigned; Lev/Mark remain inactive.
+
+## J9 — active assignment to Lira
+
+Baseline: cumulative Draft #330 exact `41e26f191357aacde3de2dae3a3c7fed20756a30` (J8 Mira PASS).
+
+Scope: authoritative AccountState admission for `createHelpSignal`, `withdrawHelpSignal` and both transaction branches of `resolveHelpSignal` only.
+
+Required behavior:
+- `createHelpSignal`: preserve sorted topic/domain validation; for solution-signal kinds acquire the current selected solution post dependency before actor admission. Then acquire authoritative actor AccountState on the same transaction, keep existing create-only `helpSignals.submit` measure, and preserve signal cooldown without a second/stronger user-row lock: reuse the lifecycle actor mutex and read latest signal after it. Preserve all four kinds, duplicate-root rules, pending uniqueness and returned created signal.
+- `withdrawHelpSignal`: existing signal lock/ownership/pending validation → actor admission → withdrawal update. Withdrawal remains outside `helpSignals.submit` and `admin.forum` measures.
+- rejected `resolveHelpSignal`: existing target signal lock/pending validation → actor admission → existing `admin.forum` measure → rejected update → one `help.signalReviewed` History event last.
+- accepted `resolveHelpSignal`: preserve sorted topic locking; before actor admission lock any existing solution post and the complete set of pending signal rows that the actual branch can mutate, with post-before-signal and stable signal-ID order. Re-read/revalidate authoritative target state after the locks. Then actor admission → existing `admin.forum` measure → unchanged accepted/superseded effects → one History event last.
+- accepted review may legitimately resolve as `superseded`; lifecycle admission must precede every supersede/update/History success path. For duplicate review the prelocked signal set must cover the same broad predicates as the current bulk update, including affected third-topic rows reached through `proposedOriginalTopicId`.
+- preserve current needs-details, needs-review, solution-outdated and duplicate effects, permissions, explanations, relationship rules, History effect payload/suppression and canonical action redirects.
+- inactive/missing actor gets no created/withdrawn/rejected/accepted/superseded success and leaves signal/topic/post/relationship/History facts unchanged. Existing invalid/not-found/authorization/conflict precedence remains fail-closed.
+- canonical `submitHelpSignal`, `withdrawHelpSignal`, `acceptHelpSignal`, `rejectHelpSignal` stay on shared `runForumMutation`; late lifecycle denial remains generic private/no-store 401.
+
+Evidence includes active controls for all signal kinds and both review outcomes (including accepted→superseded branches), create-only measure/cooldown behavior, withdrawal-under-submit-restriction, inactive/missing fact preservation, state-first/writer-first races across submit/withdraw/rejected/accepted shapes, no actor-lock upgrade/second connection, overlapping signal review/withdrawal serialization, J8 solution/post compatibility and same-actor/content Complaint FK compatibility.
+
+No J10+ implementation.
 
 ## Important cross-cutting boundaries
 
