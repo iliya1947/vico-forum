@@ -12,6 +12,7 @@ import {
   activeAccountPredicate,
   assertActiveAccount,
   assertActiveAccountForMutation,
+  assertActiveAccountForDrizzleMutation,
   readAccountState,
 } from "../../db/account-state";
 import { user } from "../../db/schema";
@@ -287,6 +288,151 @@ describe("SA04-A2 server-only account-state read foundation", () => {
     } finally {
       if (transactionOpen) await client.query("rollback");
       await dependent.end();
+    }
+  });
+
+  it("J1 admits active Drizzle transaction actor and preserves typed inactive/missing denial", async () => {
+    await addUser("j1-active");
+    await addUser("j1-inactive");
+    await markDeactivated("j1-inactive");
+    const database = drizzle(client);
+    await database.transaction(async (tx) => {
+      await expect(assertActiveAccountForDrizzleMutation(tx, "j1-active"))
+        .resolves.toBeUndefined();
+      await expect(assertActiveAccountForDrizzleMutation(tx, "j1-inactive"))
+        .rejects.toBeInstanceOf(AccountInactiveError);
+      await expect(assertActiveAccountForDrizzleMutation(tx, "j1-missing"))
+        .rejects.toBeInstanceOf(AccountMissingError);
+      await expect(assertActiveAccountForDrizzleMutation(tx, ""))
+        .rejects.toBeInstanceOf(AccountStateUnexpectedError);
+      await tx.update(user).set({ name: "J1 admitted active" }).where(eq(user.id, "j1-active"));
+    });
+    expect((await client.query('select name from "user" where id=$1', ["j1-active"]))
+      .rows[0]?.name).toBe("J1 admitted active");
+    expect((await client.query('select name from "user" where id=$1', ["j1-inactive"]))
+      .rows[0]?.name).toBe("Public j1-inactive");
+  });
+
+  it("J1 shares native validation and wrapped storage-error classification in Drizzle", async () => {
+    type DrizzleTx = Parameters<typeof assertActiveAccountForDrizzleMutation>[0];
+    const fakeRows = (get: () => Promise<unknown>): DrizzleTx => ({
+      select: () => ({ from: () => ({ where: () => ({ for: get }) }) }),
+    }) as unknown as DrizzleTx;
+    const disconnected = Object.assign(new Error("private J1 lost client"), { code: "08006" });
+    const timeout = Object.assign(new Error("canceling statement due to statement timeout"), {
+      code: "57014",
+    });
+    const wrappedTimeout = new Error("nested Drizzle failure", { cause: timeout });
+    for (const error of [disconnected, wrappedTimeout]) {
+      await expect(assertActiveAccountForDrizzleMutation(
+        fakeRows(async () => { throw error; }), "j1-actor",
+      )).rejects.toMatchObject({ name: "AccountStateUnavailableError", cause: error });
+    }
+    const undefinedColumn = Object.assign(new Error("undefined column"), { code: "42703" });
+    await expect(assertActiveAccountForDrizzleMutation(
+      fakeRows(async () => { throw undefinedColumn; }), "j1-actor",
+    )).rejects.toMatchObject({ name: "AccountStateUnexpectedError", cause: undefinedColumn });
+    await expect(assertActiveAccountForDrizzleMutation(
+      fakeRows(async () => { throw new TypeError("programming fault"); }), "j1-actor",
+    )).rejects.toBeInstanceOf(AccountStateUnexpectedError);
+    for (const rows of [
+      [{ deactivated_at: null, deactivated_by_user_id: "owner", retain_at_least_until: null }],
+      [{ deactivated_at: "2024-02-29", deactivated_by_user_id: "owner",
+        retain_at_least_until: new Date("2025-02-28T00:00:00Z") }],
+      [{ deactivated_at: null, deactivated_by_user_id: null, retain_at_least_until: null },
+        { deactivated_at: null, deactivated_by_user_id: null, retain_at_least_until: null }],
+    ]) {
+      await expect(assertActiveAccountForDrizzleMutation(
+        fakeRows(async () => rows), "j1-actor",
+      )).rejects.toBeInstanceOf(AccountStateUnexpectedError);
+    }
+    await expect(assertActiveAccountForDrizzleMutation(
+      fakeRows(async () => []), "j1-missing",
+    )).rejects.toBeInstanceOf(AccountMissingError);
+    await expect(assertActiveAccountForDrizzleMutation(
+      fakeRows(async () => [{
+        deactivated_at: new Date("2024-02-29T12:34:56Z"),
+        deactivated_by_user_id: "bound-owner",
+        retain_at_least_until: new Date("2025-02-28T12:34:56Z"),
+      }]), "j1-inactive",
+    )).rejects.toBeInstanceOf(AccountInactiveError);
+    // The only recognized lock strength is the approved non-key actor row lock.
+    const lockCalls: unknown[] = [];
+    await assertActiveAccountForDrizzleMutation(fakeRows(async function (this: unknown) {
+      return [{ deactivated_at: null, deactivated_by_user_id: null, retain_at_least_until: null }];
+    }), "j1-active");
+    const lockSpy = fakeRows(async () => {
+      lockCalls.push("executed");
+      return [{ deactivated_at: null, deactivated_by_user_id: null, retain_at_least_until: null }];
+    });
+    await assertActiveAccountForDrizzleMutation(lockSpy, "j1-active");
+    expect(lockCalls).toEqual(["executed"]);
+  });
+
+  it("J1 holds the Drizzle actor lock through COMMIT, compatible with foreign KEY SHARE", async () => {
+    await addUser("j1-locked");
+    const competing = new Client({ connectionString: databaseUrl, options: `-c search_path=${schema}` });
+    await competing.connect();
+    try {
+      await drizzle(client).transaction(async (tx) => {
+        await assertActiveAccountForDrizzleMutation(tx, "j1-locked");
+        await competing.query("begin");
+        try {
+          await competing.query("set local lock_timeout = '180ms'");
+          // This FK insertion needs KEY SHARE, which must not conflict with NO KEY UPDATE.
+          await competing.query(
+            "insert into account (id,account_id,provider_id,user_id,updated_at)" +
+            " values ('j1-fk','j1-fk','credential',$1,now())", ["j1-locked"],
+          );
+          await expect(competing.query(`update "user" set name='SHOULD_BLOCK' where id=$1`,
+            ["j1-locked"])).rejects.toMatchObject({ code: "55P03" });
+        } finally {
+          await competing.query("rollback");
+        }
+        await tx.update(user).set({ name: "J1 committed" }).where(eq(user.id, "j1-locked"));
+      });
+      expect((await client.query('select name from "user" where id=$1', ["j1-locked"]))
+        .rows[0]?.name).toBe("J1 committed");
+      await competing.query(`update "user" set name='J1 after commit' where id=$1`, ["j1-locked"]);
+      expect((await client.query('select name from "user" where id=$1', ["j1-locked"]))
+        .rows[0]?.name).toBe("J1 after commit");
+    } finally {
+      await competing.end();
+    }
+  });
+
+  it("J1 releases Drizzle lock on ROLLBACK and denies deactivation-first writes", async () => {
+    await addUser("j1-race");
+    const competing = new Client({ connectionString: databaseUrl, options: `-c search_path=${schema}` });
+    await competing.connect();
+    try {
+      await expect(drizzle(client).transaction(async (tx) => {
+        await assertActiveAccountForDrizzleMutation(tx, "j1-race");
+        await tx.update(user).set({ name: "NEVER_COMMITTED" }).where(eq(user.id, "j1-race"));
+        await competing.query("begin");
+        try {
+          await competing.query("set local lock_timeout = '180ms'");
+          await expect(competing.query(`update "user" set name='SHOULD_BLOCK' where id=$1`,
+            ["j1-race"])).rejects.toMatchObject({ code: "55P03" });
+        } finally {
+          await competing.query("rollback");
+        }
+        throw new Error("J1 deliberate rollback");
+      })).rejects.toThrow("J1 deliberate rollback");
+      expect((await client.query('select name from "user" where id=$1', ["j1-race"]))
+        .rows[0]?.name).toBe("Public j1-race");
+
+      await competing.query(`update "user" set deactivated_at='2024-02-29T12:34:56Z',
+        deactivated_by_user_id='bound-owner',
+        retain_at_least_until='2025-02-28T12:34:56Z' where id=$1`, ["j1-race"]);
+      await expect(drizzle(client).transaction(async (tx) => {
+        await assertActiveAccountForDrizzleMutation(tx, "j1-race");
+        await tx.update(user).set({ name: "NEVER_ALLOWED" }).where(eq(user.id, "j1-race"));
+      })).rejects.toBeInstanceOf(AccountInactiveError);
+      expect((await client.query('select name from "user" where id=$1', ["j1-race"]))
+        .rows[0]?.name).toBe("Public j1-race");
+    } finally {
+      await competing.end();
     }
   });
 });
