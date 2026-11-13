@@ -893,6 +893,22 @@ describe("SA04-I4d Better Auth 1.7.7 destructive session write atomicity", () =>
     expect(foreignActive.status).toBe(200);
   });
 
+  it("keeps pre-routing expired inactive session resolution guest-only", async () => {
+    const { userId, cookie } = await signUp("i4d-expired-inactive");
+    await writer.query('update "session" set expires_at=now()-interval \'1 day\' where user_id=$1',
+      [userId]);
+    await deactivator.query(deactivateSql, [userId]);
+    const runtime = createHyperdriveAuthRuntime(url, env, () =>
+      new Client({ connectionString: url, options: "-c search_path=" + schema }));
+    const resolved = await runtime.getSession(new Headers({ Cookie: cookie }));
+    expect(resolved.session).toBeNull();
+    expect(resolved.headers.getSetCookie().some(value =>
+      value.includes("session_token=") && !value.includes("Max-Age=0"))).toBe(false);
+    expect((await writer.query<{ name: string }>(
+      'select name from "user" where id=$1', [userId],
+    )).rows[0]?.name).toBe("I4a active member");
+  });
+
   it("classifies destructive target SQL outages and does not claim a session deletion", async () => {
     const { userId, cookie, session } = await signUp("i4d-failed-revoke");
     const request = () => new Request(origin + "/api/auth/revoke-session", {
