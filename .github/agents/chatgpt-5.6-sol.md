@@ -2351,3 +2351,11 @@ Do not treat a user's anger, criticism or request to think as implicit permissio
 - Exact-head workflow evidence rechecked SUCCESS.
 - I4 atomic/race closure remains a separate accepted future checkpoint and was not treated as an I3 defect.
 - Verdict: **PASS, 0 current-scope I3 defects.** Stop before I4 assignment.
+
+
+## 2026-11-13 — SA04-I4 granularity analysis
+
+- Rechecked accepted SA04 §4 target-write contract against current #329 and exact Better Auth v1.7.7 tag `db02f233918ad1233bf0753e437e1c0da353273d`.
+- One I4 handoff would combine token-resolved session updates, id/email-resolved user updates, id/userId-resolved account mutations, OAuth/provider/password semantics, destructive session paths and the inactive own-signout exception.
+- Split I4 into I4a session non-destructive writes, I4b existing-user writes, I4c account writes, I4d session destructive writes + connected closure.
+- This is scope decomposition only: no implementation, no Lira assignment, no Lev/Mark involvement. Next explicit continuation may assign I4a.
