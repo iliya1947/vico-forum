@@ -3,21 +3,22 @@
 - **Service PR #251.** Main/base `13456a17f23c1385bef8ab11c735f43d201edd02`; SA04-A1/A2–H merged; I1–I4 coordinator-PASS.
 - **I5a PASS** exact `58130793d05f6eb2a8b867b2fb546ccddcd6fb59`.
 - **I5b PASS** exact `705519ce10f78801c2614a1cafa13347e0d2a75b`.
-- **I5c bounded Mira checkpoint PASS** exact `23554aad29ddd23edb540cddc2069533ebe99329`; 0 confirmed current-scope defects.
-- I5c delta: three commits, only `tests/database/sa02-auth-oauth-rollback.test.ts` (+169/-9); no production/runtime/schema/dependency/docs changes.
-- Verified real Better Auth 1.7.7 callback ordering against official `callback.ts`/`link-account.ts`: provider profile returns before canonical returning-account update / explicit-link account create / user update / session create. Fixture deactivation at that seam therefore tests the actual final I4 lifecycle gates, not a mocked preflight.
-- Verified returning Google and explicit link both fail closed after deactivation with SA02 observer/proof enabled and disabled; persisted provider/user/session state and exact auth facts remain unchanged. Existing active registration/link/returning, registration-policy, stale-link and transaction callback tests remain green.
-- Lifecycle SQL outage/unexpected faults reach the real guarded account write and remain mutation-free; existing production `createHyperdriveAuthRuntime.handle` I2/I3 regressions independently preserve the final mapping: classified lifecycle outage → safe no-store 503, unexpected state error → unexpected error path. Observer/proof failures remain best-effort and do not veto an active auth commit.
-- Exact-head CI independently rechecked: 184/184 app files, 2269/2269 app tests; 69/69 PG17 files, 765/765 tests; OAuth suite 14/14 with seven I5c cases. SA01/SA03/AP10 exact-head Chromium workflows are SUCCESS.
-- **Current stage: STOP after I5c PASS. I5d–I5e are unassigned.** Next explicit continuation may assign **I5d only**.
-- Lev/Mark remain unassigned until all I5 author checkpoints are complete and Mira cumulative whole-I PASS. No J–R, SA05, #315 remediation, docs/merge, Stage6/production.
+- **I5c PASS** exact `23554aad29ddd23edb540cddc2069533ebe99329`.
+- **Current stage/owner: I5d → Lira only.** Continue cumulative Draft #329 from exact `23554aad29ddd23edb540cddc2069533ebe99329`.
+- **I5d result:** one built Worker + Better Auth 1.7.7 + PostgreSQL17 + Chromium lifecycle acceptance extension through the existing `tests/browser/settings-account/check.py` path.
+- Required browser chain: genuine account with two retained sessions/cookies plus unrelated active account; keep Account & security mounted, fixture-deactivate only the first persisted account, then prove fresh protected document/data access and an old mounted protected form submission fail closed with no private DTO/secret exposure or protected password/session mutation. Both old cookies remain non-active; unrelated account remains usable.
+- Preserve the accepted narrow inactive own-signout exception in the stale tab: real sign-out UI/canonical POST clears/deletes exactly that current retained session; the second retained inactive session remains stored but denied. No automatic bulk purge/reactivation.
+- Public forum read remains available as guest; private Account responses remain private/no-store and must not expose session tokens, password/hash or provider secrets. Existing active SET-05, freshness, stale-identity, rate-limit, EN/RU/HE/RTL assertions remain green; do not duplicate I5a–I5c native proof or simulate live Google.
+- Reuse the existing AP-10 `settings_browser` acceptance job that already runs `settings-account/check.py`; do not create a separate SET-05/I5d workflow. Runtime correction only if this real browser chain reproduces a current-scope defect, then smallest local fix + regression.
+- **Boundary:** no I5e cumulative sweep/evidence map; no J–R, SA05 deactivation UI/action, #315 remediation, live Google/Stage6/production, physical deletion/reactivation/forced-session controls, docs closeout or merge.
+- Lira publishes one stable exact #329 head with browser evidence, exact CI/workflow results and personal author inspection, then **STOP for Mira bounded I5d review**. I5e and Lev/Mark remain unassigned.
 
 ## I5 author checkpoint decomposition
 
 1. **I5a — native core connected chain:** Mira PASS exact `58130793d05f6eb2a8b867b2fb546ccddcd6fb59`.
 2. **I5b — SET-05 stale/deactivated chain:** Mira PASS exact `705519ce10f78801c2614a1cafa13347e0d2a75b`.
 3. **I5c — Google callback/link and observer/failure composition:** **Mira PASS** exact `23554aad29ddd23edb540cddc2069533ebe99329`.
-4. **I5d — built Worker/browser connected acceptance:** stale mounted Account, old cookies, independent account, sign-out, private/public boundaries. Not assigned.
+4. **I5d — built Worker/browser connected acceptance:** **ACTIVE → Lira**, starting from exact `23554aad29ddd23edb540cddc2069533ebe99329`.
 5. **I5e — final connected sweep/evidence map:** after I5a–d PASS and author cumulative I inspection. Not assigned.
 
 ## Mandatory author verification
