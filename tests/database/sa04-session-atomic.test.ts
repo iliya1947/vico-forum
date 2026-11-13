@@ -378,3 +378,150 @@ describe("SA04-I4a Better Auth 1.7.7 native session write atomicity", () => {
     )).rows[0]).toEqual(before);
   }, 30_000);
 });
+
+describe("SA04-I4b Better Auth 1.7.7 existing-user write atomicity", () => {
+  it("holds target-id user lock across native updateUser and blocks competing deactivation", async () => {
+    const { userId } = await signUp("user-id-writer-first");
+    const direct = (await auth.$context).internalAdapter;
+    const paused = pauseNativeQuery(writer, sql => /^update "user" set /i.test(sql));
+    try {
+      const writing = direct.updateUser(userId, { name: "Updated active member" });
+      await paused.entered;
+      await deactivator.query("set lock_timeout='120ms'");
+      await expect(deactivator.query(deactivateSql, [userId]))
+        .rejects.toMatchObject({ code: "55P03" });
+      paused.resume();
+      const updated = await writing;
+      expect(updated?.id).toBe(userId);
+      expect(updated?.name).toBe("Updated active member");
+    } finally {
+      paused.resume();
+      paused.restore();
+      await deactivator.query("set lock_timeout='0'");
+    }
+    await deactivator.query(deactivateSql, [userId]);
+    await expect(direct.updateUser(userId, { name: "ILLEGAL_AFTER_DEACTIVATION" }))
+      .rejects.toMatchObject({ status: "UNAUTHORIZED" });
+    expect((await writer.query<{ name: string }>(
+      'select name from "user" where id=$1', [userId],
+    )).rows[0]?.name).toBe("Updated active member");
+  }, 30_000);
+
+  it("uses the persisted email-selected user row, rejecting a deactivation before its lock", async () => {
+    const { userId } = await signUp("user-email-deactivation-first");
+    const direct = (await auth.$context).internalAdapter;
+    const email = "i4a-user-email-deactivation-first@example.test";
+    const updated = await direct.updateUserByEmail(email.toUpperCase(), { name: "Email target active" });
+    expect(updated?.id).toBe(userId);
+    const paused = pauseNativeQuery(writer, sql =>
+      sql.startsWith('select id from "user" where email = $1 for no key update'));
+    try {
+      const writing = direct.updateUserByEmail(email, { name: "ILLEGAL_LATE_EMAIL" });
+      await paused.entered;
+      await deactivator.query(deactivateSql, [userId]);
+      paused.resume();
+      await expect(writing).rejects.toMatchObject({ status: "UNAUTHORIZED" });
+    } finally {
+      paused.resume();
+      paused.restore();
+    }
+    expect((await writer.query<{ name: string }>(
+      'select name from "user" where id=$1', [userId],
+    )).rows[0]?.name).toBe("Email target active");
+    await expect(direct.updateUserByEmail(email, { name: "ILLEGAL_INACTIVE_EMAIL" }))
+      .rejects.toMatchObject({ status: "UNAUTHORIZED" });
+  }, 30_000);
+
+  it("keeps canonical HTTP /update-user success, but refuses deactivation after actor preflight", async () => {
+    const { userId, cookie } = await signUp("user-http-actor");
+    const send = (name: string) => auth.handler(new Request(`${origin}/api/auth/update-user`, {
+      method: "POST",
+      headers: { Origin: origin, Cookie: cookie, "content-type": "application/json" },
+      body: JSON.stringify({ name }),
+    }));
+    const active = await send("Successful HTTP user update");
+    expect(active.status).toBe(200);
+    const paused = pauseNativeQuery(writer, sql =>
+      sql.startsWith('select id from "user" where id = $1 for no key update'));
+    try {
+      const writing = send("ILLEGAL_HTTP_AFTER_STATE_RACE");
+      await paused.entered;
+      await deactivator.query(deactivateSql, [userId]);
+      paused.resume();
+      const denied = await writing;
+      expect(denied.status).toBe(401);
+      expect(denied.headers.getSetCookie().some(x => x.includes("session_token="))).toBe(false);
+    } finally {
+      paused.resume();
+      paused.restore();
+    }
+    expect((await writer.query<{ name: string }>(
+      'select name from "user" where id=$1', [userId],
+    )).rows[0]?.name).toBe("Successful HTTP user update");
+  }, 30_000);
+
+  it("guards user updateMany unique target; preserves no-match semantics and new-user creation", async () => {
+    const { userId } = await signUp("user-many");
+    const adapter = (await auth.$context).adapter;
+    const hit = await adapter.updateMany({
+      model: "user", where: [{ field: "id", value: userId }],
+      update: { name: "Selected active user many" },
+    });
+    expect(hit).toBe(1);
+    const missingId = await adapter.update({
+      model: "user", where: [{ field: "id", value: "absent-user-id" }],
+      update: { name: "Unchanged" },
+    });
+    expect(missingId).toBeNull();
+    const missingEmail = await adapter.updateMany({
+      model: "user", where: [{ field: "email", value: "unknown@example.test" }],
+      update: { name: "Unchanged" },
+    });
+    expect(missingEmail).toBe(0);
+    await expect(adapter.updateMany({
+      model: "user", where: [{ field: "createdAt", value: new Date() }],
+      update: { name: "UNSUPPORTED_WIDE_UPDATE" },
+    })).rejects.toBeInstanceOf(AccountStateUnexpectedError);
+    await deactivator.query(deactivateSql, [userId]);
+    await expect(adapter.updateMany({
+      model: "user", where: [{ field: "id", value: userId }],
+      update: { name: "ILLEGAL_INACTIVE_MANY" },
+    })).rejects.toMatchObject({ status: "UNAUTHORIZED" });
+    expect((await writer.query<{ name: string }>(
+      'select name from "user" where id=$1', [userId],
+    )).rows[0]?.name).toBe("Selected active user many");
+    const fresh = await signUp("new-user-still-works");
+    expect(fresh.userId).not.toBe(userId);
+  });
+
+  it("classifies native user-selector storage unavailability separately from unexpected failure", async () => {
+    const { userId, cookie } = await signUp("user-state-read-failure");
+    const failedRuntime = (failure: Error) => createHyperdriveAuthRuntime(url, env, () => {
+      const connection = new Client({ connectionString: url, options: `-c search_path=${schema}` });
+      const original = connection.query;
+      connection.query = ((...args: unknown[]) => {
+        if (nativeSql(args[0]).startsWith('select id from "user" where id = $1 for no key update')) {
+          return Promise.reject(failure);
+        }
+        return Reflect.apply(original, connection, args);
+      }) as typeof connection.query;
+      return connection;
+    });
+    const request = () => new Request(`${origin}/api/auth/update-user`, {
+      method: "POST",
+      headers: { Cookie: cookie, Origin: origin, "content-type": "application/json" },
+      body: JSON.stringify({ name: "ILLEGAL_ON_STATE_FAILURE" }),
+    });
+    const unavailable = Object.assign(new Error("PRIVATE_I4B_DB_DISCONNECT"), { code: "ECONNRESET" });
+    const response = await failedRuntime(unavailable).handle(request());
+    expect(response.status).toBe(503);
+    expect(response.headers.get("Cache-Control")).toBe("no-store");
+    expect(await response.text()).not.toContain("PRIVATE_I4B_DB_DISCONNECT");
+    expect(response.headers.getSetCookie().some(x => x.includes("session_token="))).toBe(false);
+    await expect(failedRuntime(new TypeError("unexpected I4b user target SQL")).handle(request()))
+      .rejects.toBeInstanceOf(AccountStateUnexpectedError);
+    expect((await writer.query<{ name: string }>(
+      'select name from "user" where id=$1', [userId],
+    )).rows[0]?.name).toBe("I4a active member");
+  });
+});
