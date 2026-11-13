@@ -1,5 +1,17 @@
 # Admin panel — communication
 
+## J10 — assigned to Lira immediately after J9 PASS
+
+- Baseline: cumulative Draft #330 exact `ce9c068f5f5d1d3b291f1f6b8125fa7f55d9549b`, J9 Mira PASS.
+- Scope: only `setHelpSolutionModeration`.
+- Required result: authoritative same-transaction AccountState admission while preserving expected-best-answer validation, reason/state semantics, exact pending-signal supersession and unchanged-state History suppression. Existing topic, current answer post and all pending signal rows the effect can mutate belong before actor admission under the accepted J lock graph; then existing `admin.forum` measure, effect and real History last. Preserve the accepted non-key/FK-compatible lock protocol and do not introduce actor→content reversal, actor lock upgrade or second connection.
+- Evidence must cover active states/clear, inactive+missing before/after facts, both lifecycle race directions, post/signal contention and relevant Complaint/content compatibility, canonical private/no-store late 401, existing Help/Admin History/AP-10 regressions and exact-head CI/browser gates.
+- J11/J12 are already prewritten in the service plan and remain inactive until their preceding Mira PASS. Lira AUTHOR STOP after J10 only.
+
+## #331 continuation decision
+
+- One owner `...` advances the workflow. After a Mira bounded PASS, if the next assignment is already defined, Mira activates it immediately in the same turn. No second `...` is required only to assign the next slice.
+
 ## J9 — Mira bounded coordinator review: PASS
 
 - Reviewed cumulative Draft #330 stable exact `ce9c068f5f5d1d3b291f1f6b8125fa7f55d9549b` against the accepted J9 slice and full-J lock/lifecycle plan. Delta from J8 PASS `41e26f191357aacde3de2dae3a3c7fed20756a30`: four bounded commits / three files only.
