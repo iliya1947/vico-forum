@@ -1,5 +1,15 @@
 # Admin panel — communication
 
+## 2026-11-13 — Mira bounded SA04-J3a checkpoint PASS
+
+- Reviewed J3a delta from accepted J2 `22a6733ee661e22665406974d5a3ac515866fd51` to stable exact cumulative Draft #330 head `39df1262d9b536df87b0147e4a8a400d65b7d038`: 3 commits, exactly two files (`db/forum-repository.ts`, `tests/database/sa04-forum-revision-lifecycle.test.ts`).
+- Confirmed both authoritative low-level revision writers take the existing target topic/post `FOR NO KEY UPDATE` before the real caller actor lifecycle row, then keep J1 AccountState admission, optional any-scope measure check, immutable revision insert, current-revision CAS and conditional source-locale Admin History in one Drizzle transaction through COMMIT/ROLLBACK. The target lock strength matches the later non-key pointer UPDATE and stays consistent with the accepted J lock order.
+- Confirmed actor identity is the supplied `authorId`, not the historical content owner. Active own revisions and active any/Admin correction of inactive historical-owned content remain valid. Missing/inactive actors roll back with no new revision, pointer movement or History fact.
+- Rechecked the native PG race evidence rather than relying on green CI: state-first pauses after target lock but before actor admission and observes committed inactive state; writer-first pauses at final History append after revision/CAS and proves deactivation cannot acquire the user row before writer completion. Both title and post paths are covered.
+- Existing canonical source-locale HTTP path still has separate J3c work: the service same-locale success/no-op bypasses revision writers and `runSourceLocaleCorrection` has not yet received the late AccountState denial mapping. This was explicitly excluded from J3a and is **not** classified as a J3a defect. J3b edit/receipt replay is likewise later scope.
+- Exact-head GitHub Actions rechecked: CI #43483159401 SUCCESS (`database`, `checks`); AP-10 #43483158863 SUCCESS (`history_browser`, `settings_administrator_browser`, `settings_browser`, `browser`).
+- **Verdict: PASS — 0 confirmed current-scope J3a defects.** STOP. J3b/J3c and J4–J12 remain unassigned; #330 stays cumulative Draft/unmerged; Lev/Mark remain stopped.
+
 ## 2026-11-13 — SA04-J3a author complete → Mira bounded checkpoint review
 
 - **Lira J3a only delivered** in cumulative [Draft #330](https://github.com/iliya1947/vico-forum/pull/330), stable exact head `39df1262d9b536df87b0147e4a8a400d65b7d038` (open/draft/unmerged). Baseline accepted J2 head `22a6733ee661e22665406974d5a3ac515866fd51`; three J3a commits `3650403`, `f6a5d7b`, `39df126`, touching only `db/forum-repository.ts` and new `tests/database/sa04-forum-revision-lifecycle.test.ts`; total 14 commits/8 files.
