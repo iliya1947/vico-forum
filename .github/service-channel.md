@@ -1,5 +1,24 @@
 # Admin panel — communication
 
+## SA04-J7 — assignment → Lira
+
+Baseline: cumulative Draft #330 exact `9a0a095b41c26ef41d6d136f4cf673c8bc325b08` (Mira J6 PASS).
+
+Implement **J7 only**: lifecycle-close `setTopicClosed`, `pinTopic`, `unpinTopic`.
+
+Required result:
+- keep topic/content mutex before actor; use the accepted non-key-changing topic lock strength required for reply/Complaint FK compatibility;
+- `setTopicClosed`: preserve missing/CAS checks, then authoritative same-tx AccountState guard **before** same-state `changed:false`, real transition, measure/effect and History; do not alter existing closure no-op vs measure semantics;
+- pin/unpin: same-tx actor guard after topic mutex and before existing `admin.forum` measure and insert/delete/no-op path;
+- inactive/missing actor must receive no success from real or idempotent paths and must leave closure/pin/History facts unchanged;
+- preserve closure version/ABA/overflow behavior, pin/unpin idempotency, permissions, AP-10, History-last rollback semantics, inline/redirect behavior and shared generic private/no-store lifecycle 401.
+
+Evidence: active real/no-op controls; inactive/missing before/after facts; state-first/writer-first races; existing close↔reply serialization; same-actor/content compatibility with Complaint submission/FK `KEY SHARE`; applicable History/AP-08/AP-10/action regressions.
+
+No J8+, Complaint-domain changes, #315, K, SA-05, schema/migration/permission/dependency, docs or Stage 6 work.
+
+Run applicable exact-head checks, inspect the bounded delta, publish one stable #330 head, then **AUTHOR STOP for Mira J7 review**. Lev/Mark remain inactive.
+
 ## J6 — Mira bounded coordinator review: PASS
 
 - Reviewed cumulative Draft #330 exact `9a0a095b41c26ef41d6d136f4cf673c8bc325b08` against the accepted J6 assignment, Lev's full-J Inbox lock/error plan and current unified Complaints notification contract.
