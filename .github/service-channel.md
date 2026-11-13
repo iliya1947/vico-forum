@@ -1,5 +1,17 @@
 # Admin panel — communication
 
+## 2026-11-13 — Лёва: I5 technical planning complete → Mira plan review
+
+Published full plan [#6851946924](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6851946924). Main/base and #329 exact head rechecked unchanged before publication.
+
+- Source-based I5 plan: one bounded connected Better Auth lifecycle closure on current configured subsystem, preserving I1–I4 and SET05.
+- No source-confirmed mandatory runtime rewrite; prefer targeted connected native tests + extension of existing Settings Account browser harness + read-only disposable PR CI. Runtime corrections only for reproduced current-scope gaps, with smallest fix/regression.
+- Required composition evidence: two old cookies, inactive pre-routing/HTTP/direct/SET05 denial, pending Google link/callback with existing native provider seam, final persistence ordering, active/expired/sliding cookie ordering, telemetry on/off, classified failure restoration, signed one-session own-signout exception.
+- Current I4 family proofs are reused rather than multiplied across every endpoint. No entire-OAuth transaction/lock and no invented global rollback of earlier committed work. J–R, SA05, #315 remediation and external activation stay separate.
+- Planning only: no implementation edits or local tests/build/browser executed; not an I5 or whole-I PASS. Next Mira plan scope/fit/granularity review; Lira/Mark unassigned.
+
+Pinned official Better Auth1.7.7 dispatcher/hooks/internal adapter/OAuth/session sources and installed transaction/signout source consulted. #315 Block B/workflow checked at fc32f0ba36120b89a27831993519a00f2a40b953; AUTH-LINK/SESSION findings are not silently imported as I5 remediation. Master SA04 plan unchanged; this operational I5 plan is not an implementation handoff.
+
 ## 2026-11-13 — Mira SA04-I5 scope gate → Lev technical planning
 
 - I4 coordinator closure remains PASS on cumulative Draft #329 exact `85104942e75071a67b4a4b37212ce5bca7361fe4`; implementation head/base are unchanged.
@@ -608,13 +620,13 @@ PASS относится только к A1 foundation. Runtime enforcement, proj
 
 ## Актуальный baseline и назначение
 
-- Main/base `593a03964b8407b249f7c9f5eb117ddb8b07736d`; SA04-A1 #327 merged from reviewed head. SA03 and its factual docs fully closed.
-- **Current slice SA04-A2–H: coordinator whole-PR PASS + independent technical whole-PR PASS**, 0 confirmed current-scope defects at Draft #328 exact head `0a917b6f4f55f991bea6e6031b43a0c4f0dc2f85`, 49 cumulative files; open/Draft/unmerged.
-- Independent result [#6835789162](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6835789162): common AccountState/neutral identity foundation plus all assigned B–H public/read-side consumers, including directory matching/count, mentions and online/heartbeat. A4-MIRA-01 CLOSED. No schema/migration/dependency change.
-- Independently executed: 2269 app tests, 106 touched native tests, fresh Worker build, clean disposable migrations, 69-table manifest parity, Drizzle metadata; original 11-family before/after comparison and Chromium real-runtime probes (36+5 records) PASS. Four exact-head remote workflows SUCCESS; local native result is not misrepresented as the full remote717.
-- Public retained identity suppressed; existing content/IDs/order/counts and authorized private composition preserved. No current-scope findings; existing #315 PUBLIC-PROJECTION-01/cache/availability remediation remains separate.
-- **Next Mira:** coordinator next step for reviewed stable slice; Lev completed/STOP, Lira/Mark STOP. I+ enforcement remains unassigned. No whole-SA04/SA05 acceptance, deactivate control, docs closeout, merge or production authorization supplied by this review.
-- #315 consulted at `fc32f0ba36120b89a27831993519a00f2a40b953`. Developer permission for report/service publication persists for all SA04.
+- Current main/base `13456a17f23c1385bef8ab11c735f43d201edd02`; SA04-A1 (#327) and A2–H (#328) merged. Previous independent acceptance remains historical delivered evidence.
+- Cumulative Draft #329 exact `85104942e75071a67b4a4b37212ce5bca7361fe4`, open/Draft/unmerged; I1–I4 coordinator checkpoints PASS, I4 closed. Whole-I is not yet accepted because I5 remains required.
+- **I5 technical planning COMPLETE**, published [#6851946924](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6851946924); one bounded connected Better Auth lifecycle closure, no further decomposition necessary on inspected current seams.
+- Current code already contains request/session/create/final adapter gates. No confirmed source-based need to prescribe a runtime rewrite; targeted native/SET05 browser/CI composition evidence is the minimal proposed result. Any code correction requires a reproduced current-I gap and minimal regression-backed fix.
+- **Next Mira:** review plan fit/granularity before any Lira assignment. Lev completed/STOP; Lira/Mark unassigned. After author I5 STOP, Mira cumulative whole-I PASS precedes Lev same-head independent review.
+- Planning did not modify implementation/schema/dependencies/permanent docs or run implementation tests/build/browser. No I5/whole-I/full-SA04 PASS claimed.
+- #315 consulted on `fc32f0ba36120b89a27831993519a00f2a40b953`; separate active-user security findings, J–R, SA05, docs closeout/merge and Stage6/production remain outside this result. User publication approval persists through SA04.
 
 ## Handoff — Лира: Stage2 factual documentation closeout
 
