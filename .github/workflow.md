@@ -1,10 +1,9 @@
 # Admin panel — current workflow
 
-- **Service PR #251. Current main/base:** `44d6b69a8d235cc8b1ee30953839be71e6ab836a`. Accepted full SA04-J technical plan: [Lev #6858869802](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6858869802). Lira implementation remains bounded.
-- **J1 Mira PASS** exact `35902e3ebd7636121b3a4af1e67b3da8ec365be2`; **J2 Mira PASS** exact `22a6733ee661e22665406974d5a3ac515866fd51`. Cumulative [Draft #330](https://github.com/iliya1947/vico-forum/pull/330) open/unmerged, currently at J2 head.
-- **Active checkpoint: J3a — Lira only.** `reviseTopicTitle` and `revisePostBody` repository transaction lifecycle gate, including permitted own/any revision variants, persisted revision and conditional Admin History. Exact assignment is at top of communication file.
-- J3 is split for **Lira execution only**: J3a revision writers → J3b published-post edit/draft receipt → J3c source-locale service no-op and canonical routes. Only J3a assigned; J3b/J3c and J4–J12 unassigned.
-- **Next:** Lira implements J3a in cumulative Draft #330 from accepted J2 head, publishes exact-head tests and personal author inspection, then STOP for Mira bounded J3a review. Lev/Mark remain stopped; no whole-J Codex review/merge/docs/Stage6.
+- **Service PR #251. Active checkpoint: J3a AUTHOR STOP → Mira bounded J3a review.** Cumulative [Draft #330](https://github.com/iliya1947/vico-forum/pull/330) open/unmerged, stable exact implementation head `39df1262d9b536df87b0147e4a8a400d65b7d038` (14 commits/8 files). Accepted J1 and J2 Mira PASS remain unchanged; J2 baseline `22a6733ee661e22665406974d5a3ac515866fd51`. Technical plan accepted [Lev #6858869802](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6858869802).
+- **J3a delivered:** `reviseTopicTitle` and `revisePostBody` keep target topic/post `NO KEY UPDATE` before same-transaction actor `AccountState` gate, immutable revision, CAS and conditional Admin History. Own/any and active moderator on inactive historical-owned content preserved. Only two J3a files touched; no J3b/J3c.
+- **Exact-head evidence:** [CI #43483159401](https://github.com/iliya1947/vico-forum/actions/runs/43483159401) SUCCESS 2269/2269 app, 785/785 PG17 (J3a 9/9), lint/typecheck/build/schema/Worker; [AP10 #43483158863](https://github.com/iliya1947/vico-forum/actions/runs/43483158863) SUCCESS 4/4 Chromium. Lira personal diff/code/test/lock-order inspection complete, no verified current J3a gap.
+- **Next:** Mira reviews bounded J3a exact head and records PASS or one verified scope-specific correction package. Lira STOP. J3b published-post edit/receipts and J3c service source-locale no-op/route remain not assigned, as do J4–J12; Lev/Mark STOP. No merge, docs closeout, SA05, #315 or Stage6.
 
 ## I5 author checkpoint decomposition
 
