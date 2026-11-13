@@ -1,6 +1,6 @@
 # Admin / Super-admin — active service plan
 
-This is the compact continuation of service PR #251. PR #251 is historical evidence only after this successor opens; do not continue operational work there.
+This is service PR #331, the compact continuation of service PR #251. PR #251 is historical evidence only; do not continue operational work there.
 
 ## Current project boundary
 
