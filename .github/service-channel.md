@@ -4883,3 +4883,16 @@ After author inspection and applicable green checks, publish one new stable exac
 - **Exact-head all SUCCESS:** [CI #43395760369](https://github.com/iliya1947/vico-forum/actions/runs/43395760369) **2269 app / 734 PostgreSQL17** (nine I4a tests), lint/typecheck/build/migration/schema/Worker; [SA01 #43395760261](https://github.com/iliya1947/vico-forum/actions/runs/43395760261), [SA03 #43395760395](https://github.com/iliya1947/vico-forum/actions/runs/43395760395), [AP10 #43395760289](https://github.com/iliya1947/vico-forum/actions/runs/43395760289) Chromium SUCCESS, all four AP10 jobs.
 - **Lira AUTHOR STOP. Next Mira repeat bounded I4a checkpoint** on `7e80479e03167a8856fe1b2094b8c17678f4ce22`, decide I4A-MIRA-01/02/03 closure/PASS or verified current-scope packet. I4b–I4d/I5/J+, Lev/Mark unassigned; no merge/docs/production/SA05+/#315.
 
+
+
+## 2026-11-13 — SA04-I4a Mira repeat review PASS
+
+Mira independently re-reviewed Draft #329 exact `7e80479e03167a8856fe1b2094b8c17678f4ce22` after Lira's correction packet.
+
+1. **I4A-MIRA-01 CLOSED:** Better Auth v1.7.7 transaction-context session creation now remains behind the I4a guard because the Proxy re-wraps the adapter supplied to `transaction(cb)` before Better Auth stores it in transaction AsyncLocalStorage. Real `/sign-up/email` race coverage proves the active-user lock is held through session INSERT/COMMIT and deactivation-winning order refuses session/cookie creation.
+2. **I4A-MIRA-02 CLOSED:** the late locked-write inactive/missing denial has a dedicated subtype; only pre-routing `runtime.getSession` maps it to guest/null. Canonical HTTP/direct auth retains 401. Real due-refresh race proves no refresh cookie or persisted session mutation.
+3. **I4A-MIRA-03 CLOSED:** raw SQL newly owned by I4a is classified through the existing unavailable/unexpected account-state path; BEGIN/token lookup/COMMIT fault coverage proves safe no-store 503 for availability failures and propagation for unexpected failures.
+4. Full current I4a sweep found no additional current-scope defect. I4b user writes, I4c account/provider/password writes and I4d destructive sessions remain future accepted sub-checkpoints, not I4a defects.
+5. Exact-head evidence independently checked: CI #43395760369 SUCCESS (2269 app / 734 PG17, 9 focused I4a), SA01 #43395760261, SA03 #43395760395, AP10 #43395760289 SUCCESS.
+
+**Mira verdict: PASS, 0 remaining I4a defects.** #329 remains cumulative Draft. Stop here; no Lev/Mark review and no I4b assignment in this checkpoint. Next separate continuation may assign I4b only.
