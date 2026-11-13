@@ -1,13 +1,18 @@
 # Admin panel — current workflow
 
-- **Service PR #251.** Main/base `13456a17f23c1385bef8ab11c735f43d201edd02`; SA04-A1/A2–H merged. I1–I4 coordinator checkpoints PASS; **I5 is now the active final checkpoint for SA04-I**.
-- **Current stage/owner: Lira — SA04-I5 implementation.** Mira reviewed Lev plan [#6851946924](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6851946924): **PASS on scope/fit/granularity; one bounded result, no further split.**
-- **Starting implementation head:** cumulative [Draft #329](https://github.com/iliya1947/vico-forum/pull/329) exact `85104942e75071a67b4a4b37212ce5bca7361fe4`, base/main `13456a17f23c1385bef8ab11c735f43d201edd02`.
-- **Required result:** connected Better Auth lifecycle closure for the current configured auth/session subsystem, proving I1–I4 compose across real Worker/pre-routing, HTTP/direct auth, session creation/final persistence, SET-05, Google callback/linking seam, cookie ordering, observer/failure handling and the inactive own-signout exception.
-- Existing I1–I4 proofs are reused. Add only missing connected native/browser/CI evidence. Change production runtime only for a **reproduced current-scope gap**, using the smallest local fix plus regression.
-- **Boundary:** no J–R application-writer implementation, physical user deletion, SA05 deactivate route/control/event, reactivation/separate forced-session control, #315 remediation, unconfigured secondary storage, permanent docs closeout, Stage6/production/external OAuth acceptance.
-- Lira publishes one stable exact head with actual applicable checks, connected evidence, evidence map and personal inspection, then **STOPs for Mira cumulative whole-I coordinator review**. Lev/Mark are not implementation reviewers yet.
-- Only after Mira whole-I PASS may Lev receive the same stable head for independent technical review.
+- **Service PR #251.** Main/base `13456a17f23c1385bef8ab11c735f43d201edd02`; SA04-A1/A2–H merged. I1–I4 coordinator checkpoints PASS; **I5 remains the final checkpoint required to close SA04-I**.
+- **Correction:** prior handoff of the whole I5 to Lira is rescinded before author work started. Draft #329 remains unchanged at exact `85104942e75071a67b4a4b37212ce5bca7361fe4`.
+- I5 keeps one final connected outcome, but Lira author work is split into sequential small checkpoints:
+  1. **I5a — native core connected chain:** two retained sessions/cookies + inactive pre-routing identity + canonical HTTP/direct denial + session create/refresh/final persistence + inactive own-signout cleanup; active/unrelated controls preserved.
+  2. **I5b — SET-05 stale/deactivated chain:** Account & security reads/password/session controls across late deactivation and final guards.
+  3. **I5c — Google/observer/failure composition:** pending explicit link/callback, telemetry on/off, transaction callback and unavailable-vs-unexpected restoration.
+  4. **I5d — built Worker/browser connected acceptance:** stale mounted Account UI, old cookies, active unrelated account, real sign-out cleanup, private/public boundary.
+  5. **I5e — final connected sweep/evidence map:** only after I5a–d PASS; close remaining connected evidence gaps and perform author cumulative I inspection.
+- **Current stage/owner: Lira — I5a only.** Starting head #329 exact `85104942e75071a67b4a4b37212ce5bca7361fe4`.
+- Production runtime changes are allowed only for a reproduced I5a current-scope gap and must be the smallest local correction + regression.
+- **Boundary:** no I5b–e work yet, no J–R application writers, physical user deletion, SA05 deactivate route/control/event, reactivation/separate forced-session control, #315 remediation, unconfigured secondary storage, docs closeout, Stage6/production/external OAuth.
+- Lira publishes one stable exact head with I5a evidence and personal inspection, then **STOPs for Mira I5a checkpoint review**. Later I5 checkpoints are assigned separately only after the preceding checkpoint PASS.
+- No Lev/Mark review until all I5 author checkpoints are complete and Mira cumulative whole-I PASS.
 
 ## Mandatory author verification
 
