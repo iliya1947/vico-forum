@@ -245,7 +245,16 @@ describe("SA04-J7 authoritative topic closure/pin admission", () => {
           op === "close" ? ["topic.closed"] : op === "pin" ? ["topic.pinned"] : [],
         );
         await deactivate(x.actor);
-        await expect(perform(op, x)).rejects.toBeInstanceOf(AccountInactiveError);
+        if (op === "close") {
+          // The old expectation still fails CAS before lifecycle; the current
+          // expectation reaches the authoritative actor guard and is denied.
+          await expect(perform(op, x)).rejects.toBeInstanceOf(ForumStateConflictError);
+          await expect(forum.setTopicClosed({
+            topicId: x.id, actorId: x.actor, isClosed: true, expectedClosureVersion: 1,
+          })).rejects.toBeInstanceOf(AccountInactiveError);
+        } else {
+          await expect(perform(op, x)).rejects.toBeInstanceOf(AccountInactiveError);
+        }
         expect(await snapshot(x.id)).toEqual(committed);
       } finally {
         paused.resume();
