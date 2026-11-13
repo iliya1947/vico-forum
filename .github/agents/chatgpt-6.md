@@ -1,5 +1,16 @@
 # ChatGPT-6 — personal log
 
+## SA04-J10 — implementation complete / AUTHOR STOP
+
+- **Baseline:** J9 Mira PASS exact `ce9c068f5f5d1d3b291f1f6b8125fa7f55d9549b`. Implementation cumulative Draft #330 stable exact `6bd20801d399557c2f6964fc0a8acd4058a14cb6`, open/draft/unmerged.
+- **Production `90bda333a8c7ae131efc77c2d7a20ad454fe1a49`:** only `setHelpSolutionModeration` in `db/forum-repository.ts`. Existing Help-only, solved, selected answer and expected-best-answer checks precede same-transaction target topic `FOR NO KEY UPDATE` → selected answer post `FOR NO KEY UPDATE` → exact pending `needs-review` or `needs-review + solution-outdated` signal set by stable ID `FOR NO KEY UPDATE` → authoritative trusted actor `assertActiveAccountForDrizzleMutation` → existing `admin.forum` measure → original moderation/supersession effect → transition-only History last. No actor upgrade, extra connection, reverse actor→content lock, schema or public contract change.
+- **Native PG17 `f6f0c09837f3cb4a663ccb72d1fa8ba80d2aab92`:** 10 cases in new `tests/database/sa04-forum-help-moderation-lifecycle.test.ts`: active needs-review/outdated/clear and repeated no-op History; exact signal kinds; stale target/unsolved/missing precedence; inactive/missing fact preservation for all three states; state-first deactivation after content locks; writer-first COMMIT barrier; answer-post and pending-signal contention; same-actor Complaint post→actor→FK `KEY SHARE` compatibility.
+- **HTTP `6bd20801d399557c2f6964fc0a8acd4058a14cb6`:** `app/forum/write-actions.test.ts` covers all three canonical Help moderation intents with late AccountInactive/Missing → generic 401 `unauthenticated`, `private, no-store`, no redirect/status leak or client-forged actor; production handler unchanged.
+- **Exact-head GitHub Actions:** [CI 43528412469](https://github.com/iliya1947/vico-forum/actions/runs/43528412469) database + checks SUCCESS (includes new native PG suite, existing Help/Admin History and app regression, lint, typecheck, builds, Workers/schema); [SA-03 Chromium 43528412525](https://github.com/iliya1947/vico-forum/actions/runs/43528412525) SUCCESS; [AP-10 isolated Chromium 43528412528](https://github.com/iliya1947/vico-forum/actions/runs/43528412528) all 4/4 jobs SUCCESS.
+- Inspected all three J10 commit diffs and exact branch head; only `db/forum-repository.ts`, new J10 native PG test and `app/forum/write-actions.test.ts` changed. J11/J12, Complaint N, #315, K, SA-05, dependencies, permissions, migrations, permanent docs and Stage 6 untouched. This is repository/local-CI evidence, not production or Owner visual acceptance; J7 docs lock wording remains for separate docs closeout.
+
+**Lira AUTHOR STOP → Mira bounded J10 coordinator review** on cumulative Draft #330 stable exact `6bd20801d399557c2f6964fc0a8acd4058a14cb6`. J11/J12, Lev and Mark not yet active. No merge.
+
 ## SA04-J10 — ACTIVE ASSIGNMENT
 
 Baseline: J9 Mira PASS exact `ce9c068f5f5d1d3b291f1f6b8125fa7f55d9549b` in cumulative Draft #330.
