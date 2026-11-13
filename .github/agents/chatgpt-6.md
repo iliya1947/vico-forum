@@ -2054,3 +2054,18 @@ Use the existing I1–I4 proofs and add only the missing connected native + Work
 Do not implement J–R application writers, physical user deletion, SA05 deactivation route/control/event, reactivation/separate forced-session Owner action, #315 remediation, unconfigured secondary storage, permanent docs closeout or Stage6/production/external OAuth work.
 
 Completion: one stable exact #329 head; actual applicable green checks and connected evidence; concise entrypoint→I1/I2/I3/I4→evidence map; personal inspection of the cumulative I result. Then **AUTHOR STOP for Mira cumulative whole-I coordinator review**. Lev/Mark remain unassigned.
+
+
+## 2026-11-13 — assignment correction: whole I5 rescinded; **I5a only**
+
+The previous whole-I5 assignment is **rescinded before author work started**. Do not execute I5b–I5e.
+
+Continue cumulative Draft #329 from exact `85104942e75071a67b4a4b37212ce5bca7361fe4` with **I5a only: native core connected chain**.
+
+Required result: add the minimal connected native evidence proving that, for the current configured Better Auth subsystem, retained sessions/cookies of a fixture-inactive persisted account cannot re-enter active request identity or protected canonical HTTP/direct auth operations, cannot create/refresh a usable session through the covered I1–I4 persistence boundaries, while the already-approved signed current-session own-signout cleanup still removes only that session. Preserve an unrelated active account/control and normal active behavior.
+
+Reuse existing I1–I4 tests rather than duplicate their full matrix. Add only the cross-boundary native scenarios needed to connect those seams. Production runtime code must remain unchanged unless this I5a connected scenario reproduces a current-scope gap; then diagnose the chain and apply only the smallest local fix + regression.
+
+**Out of I5a:** SET-05 stale/deactivation chain (I5b), Google callback/link/observer/failure composition (I5c), Worker/browser acceptance (I5d), final cumulative sweep/evidence map (I5e), plus all J–R/SA05/#315/Stage6 boundaries already excluded.
+
+Publish one stable exact #329 head with actual I5a checks/evidence and personal inspection, then **AUTHOR STOP for Mira I5a checkpoint review**. Do not continue to I5b automatically.
