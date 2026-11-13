@@ -1,5 +1,20 @@
 # Admin panel — communication
 
+## 2026-11-13 — Mira SA04-I5a bounded checkpoint PASS
+
+Reviewed cumulative Draft #329 exact `58130793d05f6eb2a8b867b2fb546ccddcd6fb59` from accepted I4 `85104942e75071a67b4a4b37212ce5bca7361fe4`.
+
+- Compare confirms exactly three I5a commits and one changed project file: `tests/database/sa04-session-atomic.test.ts` (+146), with no production/runtime, schema, dependency or permanent-doc change.
+- The new real BA1.7.7 + PG17 connected case starts with two valid retained sessions for one account and an unrelated active control; after fixture deactivation both old cookies resolve guest/null without sliding.
+- Canonical HTTP `get-session/list-sessions/update-user`, direct BA `getSession/updateUser`, and guarded session create/update/deleteUserSessions all refuse the inactive target; inactive email sign-in creates no usable session/cookie and denied operations leave retained data unchanged.
+- Signed current-cookie `/sign-out` deletes exactly that inactive session and clears its cookie; the second retained session remains denied. Expiration stays guest-only; login of the unrelated active user through a stale old cookie preserves endpoint-last new-session cookie behavior.
+- The test reuses accepted I1–I4 detailed proofs for race orderings, selectors and storage-error classification instead of multiplying the matrix. No I5b SET-05, I5c OAuth/observer/failure, I5d browser or I5e final sweep is claimed.
+- Exact-head evidence independently rechecked: CI #43425686486 SUCCESS — 2269 app / 754 PG17; the SA04 session atomic file is 29/29 including the I5a case. SA01 #43425686622, SA03 #43425686478 and AP10 #43425686467 all SUCCESS.
+- **Verdict: PASS — 0 confirmed current-scope I5a defects.**
+
+STOP after I5a. I5b–I5e remain unassigned; next explicit continuation may assign I5b only. Lev/Mark remain unassigned until full I5 author completion and Mira cumulative whole-I PASS.
+
+
 ## 2026-11-13 — Mira correction: whole-I5 handoff rescinded; I5a only assigned
 
 - Developer caught the granularity error **before Lira received/started the whole-I5 task**. Draft #329 is independently rechecked unchanged at exact `85104942e75071a67b4a4b37212ce5bca7361fe4`.
