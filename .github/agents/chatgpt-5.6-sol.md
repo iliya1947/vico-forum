@@ -2538,3 +2538,16 @@ Do not treat a user's anger, criticism or request to think as implicit permissio
 - Exact-head checks independently rechecked: CI #43439236882 SUCCESS — 184/184 app files, 2269/2269 tests; 69/69 PG17 files, 765/765 tests; AP-10 #43439236624 SUCCESS 4/4 browser jobs with all four new lifecycle checkpoints; SA-01 #43439236742 and SA-03 #43439236903 SUCCESS.
 - **Verdict: PASS — 0 confirmed current-scope I5d defects.** STOP. I5e remains unassigned until separate continuation; Lev/Mark remain stopped.
 
+## 2026-11-13 — SA04-I5e final connected sweep → Lira
+
+- Starting point: cumulative Draft #329 exact `74c6f43ae2d67526e2ad17aa50392aebf41abbca`; I5a–I5d are Mira checkpoint-PASS. Main/base remains `13456a17f23c1385bef8ab11c735f43d201edd02`.
+- **Lira owns I5e only:** final connected evidence map and personal cumulative author inspection of the whole current I implementation. I5e is a closure/sweep checkpoint, not another generic implementation/test block.
+- Inspect the complete #329 delta against main and trace the current configured Better Auth 1.7.7 lifecycle chain end-to-end: Worker/pre-routing I1; protected canonical HTTP/direct I2; new-session I3; all accepted I4 session/user/account/destructive write + transaction/error seams; I5a native connected chain; I5b SET-05 stale/deactivated chain; I5c Google/link + optional SA02 observer/failure composition; I5d real built Worker/browser stale-page chain.
+- Produce one concise evidence map: requirement/boundary → authoritative code seam → accepted native/browser evidence → exact head/run. Verify that no current configured user/account/session lifecycle seam is missing and no accepted proofs contradict each other.
+- Preserve active registration/sign-in/linking, SET-05 freshness and shared password limiter, cookie ordering/sliding/cleanup, exact SA02 success facts, observer best-effort behavior, unavailable-vs-unexpected classification, private/no-store responses and the one-token inactive own-signout exception.
+- Future/unconfigured Better Auth families, J–R, SA05 lifecycle operation/UI, and existing #315 active-user findings are not I5e defects by themselves. If an inspected overlap exposes a real current I bypass, verify the causal chain before treating it as current-scope.
+- **No-gap path:** do not modify implementation or add redundant tests; keep #329 exact `74c6f43ae2d67526e2ad17aa50392aebf41abbca`, recheck its existing CI #43439236882, AP10 #43439236624, SA01 #43439236742 and SA03 #43439236903 results, and report the cumulative inspection/evidence map.
+- **Gap path:** only after reproducing a current-scope defect, apply the smallest local correction + focused regression. If that changes the accepted technical solution materially, STOP and return through Mira to Lev. Any implementation change requires fresh exact-head applicable checks.
+- **Excluded:** J–R; SA05 deactivate route/control/event; #315 remediation; physical deletion/reactivation/forced foreign-session controls; live Google/external OAuth; Stage6/production; schema/product expansion; documentation closeout or merge.
+- Publish one stable exact #329 head and final author evidence in #251, then **AUTHOR STOP for Mira cumulative whole-I coordinator review**. Lev/Mark remain unassigned until that PASS.
+
