@@ -2429,3 +2429,13 @@ Do not treat a user's anger, criticism or request to think as implicit permissio
 - Confirmed project hooks remain success-only, current configured auth adds no unhandled account writer family, and actor-state observer preserves unavailable→503 even where Better Auth wraps token-route errors.
 - Exact-head evidence checked SUCCESS: 2269 app, 746 PG17, 21 focused I4a–I4c; SA01/SA03/AP10 browser workflows green.
 - **PASS — 0 confirmed current-scope I4c defects.** Stop before I4d; no Lev/Mark until full I completion.
+
+
+## 2026-11-13 — SA04-I4d + cumulative I1–I4 review result
+
+- Reviewed #329 exact `85104942e75071a67b4a4b37212ce5bca7361fe4`, six I4d commits, final destructive-session delta, accepted I1–I4c chain and official Better Auth v1.7.7 internal-adapter/with-hooks/session/sign-out behavior.
+- Verified authoritative persisted session-owner resolution, same-client transaction + A2 lifecycle row lock through delete/COMMIT, bounded selector handling, same-client concurrent delete serialization, and the one-use signed-current-cookie inactive own-signout exception.
+- Rechecked current configured Better Auth session/user/account mutation families covered by I4a–I4d; no additional current-scope write seam/race confirmed. Future/unconfigured physical deletion, secondary storage and Owner lifecycle actions were excluded rather than misclassified.
+- Exact-head CI #43408842355, SA01 #43408842422, SA03 #43408842363 and AP10 #43408842330 independently confirmed SUCCESS on the reviewed head.
+- **PASS — 0 confirmed current-scope I4d/I1–I4 defects. I4 coordinator closure complete.**
+- Fixed decomposition still requires **I5 connected Better Auth closure** before checkpoint I can close. Stop before I5 assignment; no Lev/Mark yet.
