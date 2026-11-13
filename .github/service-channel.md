@@ -4971,3 +4971,14 @@ Mira independently reviewed cumulative Draft #329 exact `0c36648638a11e69e657a83
 - Exact-head CI #43404347307: 2269 app + 746 PostgreSQL17, focused I4a–I4c 21/21; SA01/SA03/AP10 Chromium workflows SUCCESS.
 
 **Verdict: PASS — 0 confirmed current-scope I4c defects.** STOP before I4d assignment. Lev/Mark remain unassigned.
+
+
+## 2026-11-13 — SA04-I4d assignment → Lira
+
+- Starting point: cumulative Draft #329 exact Mira-accepted I4c head `0c36648638a11e69e657a83dcfd54b9cf06d2e84`; main/base remains `13456a17f23c1385bef8ab11c735f43d201edd02`.
+- **Lira owns I4d only:** close the current Better Auth destructive session persistence family — revoke/delete/deleteMany — and preserve the already accepted inactive user's own-signout cleanup exception.
+- Required result: destructive session operations must use the authoritative persisted session target/owner and retain correct lifecycle/deactivation ordering without allowing an inactive account to regain protected use. Own sign-out of an already inactive account must still be able to remove/revoke its own session and clear the client-side session state as currently approved.
+- After the destructive-session closure, perform the connected **I4 write-shape/race sweep** over every current configured Better Auth session/user/account mutation family covered by I4a–I4d. A missing current write seam or race found by that sweep is part of I4 closure; future/unconfigured families are not.
+- Preserve accepted I1–I4c behavior, Better Auth validation/hooks, successful SA-02 facts, active session semantics, and lifecycle-storage unavailable-vs-unexpected handling. Focused evidence must use the real pinned Better Auth 1.7.7 + PostgreSQL17 paths and cover relevant concurrent orderings, active controls and the inactive own-signout case.
+- **Boundary:** no physical user deletion, no reactivation, no separate forced-session Owner action, no schema/product expansion unless a verified I4d blocker requires it, and no I5/J+, docs closeout, #315, SA05+ or Stage6/production.
+- Continue in the same cumulative Draft #329. After implementation and personal author inspection, Lira publishes one stable exact head with applicable green evidence and **STOPs for Mira bounded I4d checkpoint review**. Lev/Mark remain unassigned; I4 is not closed until Mira reviews this final I4 checkpoint.
