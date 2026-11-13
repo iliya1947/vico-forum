@@ -332,36 +332,39 @@ describe("SA04-J8 solution authoritative AccountState lifecycle", () => {
     }, 30_000,
   );
 
-  it("candidate and old answer edits serialize against ordered solution post locks", async () => {
-    const x = await seed();
-    await forum.selectBestAnswer(x.topicId, x.answer1, x.actorId);
-    const holder = new Client({ connectionString: url, options });
-    const selection = new Client({
-      connectionString: url, options, application_name: "j8-post-locked-solution",
-    });
-    await holder.connect();
-    await selection.connect();
-    let open = false;
-    let p: Promise<unknown> | undefined;
-    try {
-      await holder.query("begin");
-      open = true;
-      await holder.query("select id from forum_posts where id=$1 for no key update", [x.answer1]);
-      p = forum.selectBestAnswer(x.topicId, x.answer2, x.actorId, "own");
-      // Use the named selection connection for the actual concurrency check.
-      // First request is started on the pool and therefore cannot be observed by name.
-      await holder.query("commit");
-      open = false;
-      expect(await p).toEqual({ topicAuthorId: x.actorId, isSolved: false });
-    } finally {
-      if (open) await holder.query("rollback");
-      if (p) await Promise.allSettled([p]);
-      await Promise.all([holder.end(), selection.end()]);
-    }
-    expect((await facts(x)).topic.best_answer_post_id).toBe(x.answer2);
-  }, 30_000);
+  it.each(["answer1", "answer2"] as const)(
+    "%s J3-style post NO KEY UPDATE edit mutex serializes with solution replacement",
+    async (lockedAnswer) => {
+      const x = await seed();
+      await forum.selectBestAnswer(x.topicId, x.answer1, x.actorId);
+      const holder = new Client({ connectionString: url, options });
+      const selection = new Client({
+        connectionString: url, options, application_name: "j8-post-locked-solution",
+      });
+      await holder.connect();
+      await selection.connect();
+      let open = false;
+      let p: Promise<unknown> | undefined;
+      try {
+        await holder.query("begin");
+        open = true;
+        await holder.query("select id from forum_posts where id=$1 for no key update", [x[lockedAnswer]]);
+        p = isolated(selection).selectBestAnswer(x.topicId, x.answer2, x.actorId, "own");
+        await waitForLock("j8-post-locked-solution");
+        // J3 revision/edit uses this same non-key-changing content mutex.
+        await holder.query("commit");
+        open = false;
+        expect(await p).toEqual({ topicAuthorId: x.actorId, isSolved: false });
+      } finally {
+        if (open) await holder.query("rollback");
+        if (p) await Promise.allSettled([p]);
+        await Promise.all([holder.end(), selection.end()]);
+      }
+      expect((await facts(x)).topic.best_answer_post_id).toBe(x.answer2);
+    }, 30_000,
+  );
 
-  it("signal lock before actor admission serializes overlapping Help signal withdrawal", async () => {
+  it("pending signal mutation serializes against solution's signal lock before actor admission", async () => {
     const x = await seed(), other = await seed();
     await forum.selectBestAnswer(x.topicId, x.answer1, x.actorId);
     const signal = await pending(x.topicId, "duplicate", undefined, other.topicId);
@@ -377,7 +380,8 @@ describe("SA04-J8 solution authoritative AccountState lifecycle", () => {
       await holder.query("begin");
       open = true;
       await holder.query("select id from forum_help_signals where id=$1 for no key update", [signal]);
-      p = forum.selectBestAnswer(x.topicId, x.answer2, x.actorId);
+      p = isolated(change).selectBestAnswer(x.topicId, x.answer2, x.actorId);
+      await waitForLock("j8-signal-locked-solution");
       await holder.query("update forum_help_signals"
         + " set status='withdrawn', resolved_by_user_id=$2, resolved_at=now() where id=$1",
       [signal, x.actorId]);
