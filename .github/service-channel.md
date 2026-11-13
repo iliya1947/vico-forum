@@ -1,5 +1,30 @@
 # Admin panel — communication
 
+## SA04-J9 — assignment → Lira
+
+Baseline: cumulative Draft #330 exact `41e26f191357aacde3de2dae3a3c7fed20756a30` (Mira J8 PASS).
+
+Implement **J9 only**: lifecycle-close `createHelpSignal`, `withdrawHelpSignal`, and both rejected/accepted `resolveHelpSignal` transaction branches.
+
+Required result:
+
+- **Submit:** retain sorted topic/domain checks; for needs-review/solution-outdated acquire current best-answer post dependency before actor. Then same-tx AccountState guard → existing create-only `helpSignals.submit` measure → cooldown → pending check/insert. Refactor the Help-signal cooldown only as needed to **reuse the already-held actor `FOR NO KEY UPDATE` mutex**; do not reacquire/upgrade that user row to `FOR UPDATE`. Latest-signal cooldown read remains after actor admission.
+- **Withdrawal:** target signal lock + topic/author/pending validation → actor guard → update. No punitive measure is added.
+- **Rejected review:** target signal lock/pending validation → actor guard → existing `admin.forum` measure → reject → one `help.signalReviewed` History append last.
+- **Accepted review:** preserve sorted topic locks. Before actor, acquire any solution post the branch may mutate and **all existing pending signal rows the branch may update**, post rows first and signal IDs in stable order; then revalidate target/applicability. Only after those dependencies: actor guard → `admin.forum` → current accepted/superseded effects → one History append last.
+- Accepted→superseded is a mutation/success boundary and must be lifecycle-closed. Duplicate accepted review must prelock the full current bulk-update set, including rows from third topics selected through `proposedOriginalTopicId`; do not narrow existing predicates/results.
+- Preserve needs-details / needs-review / solution-outdated / duplicate effects, explanation semantics, relationship rules, permissions, current History payload and no duplicate inner History.
+- Inactive/missing actor cannot create, withdraw, reject, accept or supersede and cannot change topic/post/signal/relationship/History facts. Existing malformed/not-found/ownership/conflict failures remain distinct.
+- Canonical four intents continue through shared `runForumMutation`; late AccountInactive/Missing remains generic private/no-store 401 with no redirect/false success/lifecycle detail.
+
+Evidence should directly cover active all four submit kinds; active withdrawal; rejected review; accepted and accepted→superseded materially different branches; create-only AP-10 `helpSignals.submit` restriction with withdrawal still allowed; `admin.forum` review restriction; inactive/missing before/after facts; state-first/writer-first races for submit/withdraw/rejected/accepted; no actor lock upgrade/second connection; overlapping review/withdrawal and bulk-signal serialization; J8 solution-post interaction; same-actor/content Complaint FK compatibility; existing migrations/Help History/AP-10/canonical route regressions.
+
+Excluded: standalone `setHelpSolutionModeration` J10, duplicate/appeal writers J11, J12 closeout, #315, K, SA-05, schema/migration/permission/dependency, permanent docs and Stage 6.
+
+If satisfying the accepted graph requires a broader lock-protocol redesign beyond these J9 writers, stop and escalate the technical question rather than widening scope.
+
+Run applicable exact-head checks, inspect the bounded delta, publish one stable #330 head, then **AUTHOR STOP for Mira J9 review**. Lev/Mark remain inactive.
+
 ## J8 — Mira bounded coordinator review: PASS
 
 - Reviewed cumulative Draft #330 exact `41e26f191357aacde3de2dae3a3c7fed20756a30` against the accepted J8 assignment, Lev's full-J solution lock graph and current Stage4/AP-05/AP-10 solution contracts.
