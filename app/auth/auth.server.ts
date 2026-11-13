@@ -67,9 +67,19 @@ export function createBetterAuthRequestHooks(
   database: NodePgDatabase,
   onActorStateError?: (error: unknown) => void,
   preRoutingSessionLookup = false,
+  rememberOwnSignOutToken?: (token: string) => void,
 ): NonNullable<BetterAuthOptions["hooks"]> {
   return {
     before: createAuthMiddleware(async (ctx) => {
+      // The pinned sign-out endpoint deletes its verified signed-cookie token,
+      // even when the persisted actor is inactive. Authorize that one cleanup
+      // token only; no other endpoint or direct adapter delete inherits it.
+      if (ctx.path === "/sign-out" && rememberOwnSignOutToken) {
+        const token = await ctx.getSignedCookie(
+          ctx.context.authCookies.sessionToken.name, ctx.context.secret,
+        );
+        if (typeof token === "string" && token) rememberOwnSignOutToken(token);
+      }
       let current: Awaited<ReturnType<typeof getAuthoritativeSessionFromCtx>> = null;
       // Pathless server-only methods are keyed by operationId in Better Auth's
       // common direct-API dispatcher (e.g. setPassword), not a routed URL.
@@ -148,13 +158,16 @@ export function betterAuthOptions(
   onActorStateError?: (error: unknown) => void,
   preRoutingSessionLookup = false,
 ): BetterAuthOptions {
+  // Better Auth is created per request in the Worker runtime; a consumed,
+  // signed token never broadens the inactive exception to other deletions.
+  const ownSignOutTokens = new Set<string>();
   return {
     secret: env.BETTER_AUTH_SECRET,
     baseURL: env.BETTER_AUTH_URL,
     database: guardBetterAuthSessionWrites(database, drizzleAdapter(database, {
       provider: "pg" as const,
       schema: betterAuthSchema,
-    }), onActorStateError),
+    }), onActorStateError, token => ownSignOutTokens.delete(token)),
     // This gate belongs to the canonical Better Auth configuration, not to
     // optional SA-02 observers or only the HTTP request handler.
     databaseHooks: {
@@ -174,7 +187,8 @@ export function betterAuthOptions(
     user: { additionalFields: betterAuthUserAdditionalFields, validateUserInfo: createRegistrationAdmission(database) },
     account: { accountLinking: { disableImplicitLinking: true } },
     emailAndPassword: betterAuthEmailPasswordOptions,
-    hooks: createBetterAuthRequestHooks(database, onActorStateError, preRoutingSessionLookup),
+    hooks: createBetterAuthRequestHooks(database, onActorStateError, preRoutingSessionLookup,
+      token => { ownSignOutTokens.add(token); }),
     socialProviders: {
       google: {
         clientId: env.GOOGLE_CLIENT_ID,
