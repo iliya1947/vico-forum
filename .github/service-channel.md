@@ -1,5 +1,24 @@
 # Admin panel — communication
 
+## SA04-J4 — assignment → Lira
+
+Baseline: cumulative Draft #330 exact `cb1df03d00038fdf414b9d0d650d908a58167098` (Mira J3c PASS).
+
+Implement **J4 only**: close the authoritative AccountState boundary for the existing own public-profile mutation.
+
+Required result:
+
+- `DrizzleForumRepository.updateProfile(actorId, fields)` keeps the existing user-row mutex and verifies authoritative current AccountState on that **same transaction/connection** before `profile.edit` measure admission and before the profile upsert;
+- use the real trusted `actorId`; no Owner exemption and no separate lifecycle predicate/RBAC path;
+- state-first lifecycle change denies without changing `forum_profiles`; writer-first admission may finish while the lifecycle update waits for the existing user lock;
+- preserve profile validation, missing/invalid failure semantics where they remain prior fail-closed conditions, AP-10 `profile.edit` behavior, Owner measure immunity wiring, public Deleted-user projection, and current Hyperdrive availability/error classification;
+- the canonical profile action must map a **late authoritative inactive/missing actor denial** to the existing generic `unauthenticated` 401 with `private, no-store`, without `?saved=1` redirect or false success; preserve the existing bounded submitted-draft/failure behavior and do not leak lifecycle details;
+- do not add profile edit-any, account lifecycle UI/API, Privacy-save enforcement (P), SA-05 deactivation, schema/migration/permission/dependency changes or unrelated refactors.
+
+Evidence should directly prove active profile save, inactive/missing denial and before/after profile fact preservation; state-first and writer-first transaction races on native PostgreSQL; canonical route 401/no saved redirect; AP-10 `profile.edit` and existing profile/public-deleted/read behavior regressions. Run applicable exact-head CI/checks, inspect the bounded delta, then **AUTHOR STOP for Mira J4 review**.
+
+J5+ / Lev / Mark remain unassigned.
+
 ## J3c — Mira bounded coordinator review: PASS
 
 - Reviewed exact Draft #330 head `cb1df03d00038fdf414b9d0d650d908a58167098` against accepted J3c assignment, Lev's full-J no-op/lock/error plan, current Admin source-locale contract and CNT-03 revision semantics.
