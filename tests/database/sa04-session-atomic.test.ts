@@ -740,3 +740,163 @@ describe("SA04-I4c Better Auth 1.7.7 existing-account write atomicity", () => {
     expect((await accounts(userId))[0].password).not.toBe(original.password);
   }, 30_000);
 });
+
+
+describe("SA04-I4d Better Auth 1.7.7 destructive session write atomicity", () => {
+  async function sessions(userId: string) {
+    return (await writer.query<{ id: string; token: string }>(
+      'select id,token from "session" where user_id=$1 order by id', [userId],
+    )).rows;
+  }
+
+  it("holds the active owner lock through the original token-selected DELETE", async () => {
+    const { userId, session } = await signUp("i4d-single-first");
+    const direct = (await auth.$context).internalAdapter;
+    const paused = pauseNativeQuery(writer, sql => /^delete from "session" /i.test(sql));
+    try {
+      const deleting = direct.deleteSession(session.token);
+      await paused.entered;
+      await deactivator.query("set lock_timeout='120ms'");
+      await expect(deactivator.query(deactivateSql, [userId]))
+        .rejects.toMatchObject({ code: "55P03" });
+      paused.resume();
+      await deleting;
+    } finally {
+      paused.resume();
+      paused.restore();
+      await deactivator.query("set lock_timeout='0'");
+    }
+    expect(await sessions(userId)).toEqual([]);
+  }, 30_000);
+
+  it("refuses deactivation-first token and bulk deletions without a state change", async () => {
+    const { userId, session } = await signUp("i4d-single-loser");
+    const direct = (await auth.$context).internalAdapter;
+    const snapshot = await sessions(userId);
+    const paused = pauseNativeQuery(writer, sql =>
+      sql.startsWith('select distinct user_id from "session" where token = $1'));
+    try {
+      const deleting = direct.deleteSession(session.token);
+      await paused.entered;
+      await deactivator.query(deactivateSql, [userId]);
+      paused.resume();
+      await expect(deleting).rejects.toMatchObject({ status: "UNAUTHORIZED" });
+    } finally {
+      paused.resume();
+      paused.restore();
+    }
+    await expect(direct.deleteUserSessions(userId))
+      .rejects.toMatchObject({ status: "UNAUTHORIZED" });
+    await expect(direct.deleteSessions([session.token]))
+      .rejects.toMatchObject({ status: "UNAUTHORIZED" });
+    expect(await sessions(userId)).toEqual(snapshot);
+  }, 30_000);
+
+  it("protects same-user deleteMany and rejects multi-owner token batches", async () => {
+    const mine = await signUp("i4d-many-first");
+    const foreign = await signUp("i4d-many-other");
+    const direct = (await auth.$context).internalAdapter;
+    const extra = await direct.createSession(mine.userId);
+    await expect(direct.deleteSessions([mine.session.token, foreign.session.token]))
+      .rejects.toBeInstanceOf(AccountStateUnexpectedError);
+    expect(await sessions(mine.userId)).toHaveLength(2);
+    expect(await sessions(foreign.userId)).toHaveLength(1);
+
+    await direct.deleteSessions([extra.token]);
+    expect((await sessions(mine.userId)).map(x => x.token)).toEqual([mine.session.token]);
+    const paused = pauseNativeQuery(writer, sql => /^delete from "session" /i.test(sql));
+    try {
+      const deleting = direct.deleteUserSessions(mine.userId);
+      await paused.entered;
+      await deactivator.query("set lock_timeout='120ms'");
+      await expect(deactivator.query(deactivateSql, [mine.userId]))
+        .rejects.toMatchObject({ code: "55P03" });
+      paused.resume();
+      await deleting;
+    } finally {
+      paused.resume();
+      paused.restore();
+      await deactivator.query("set lock_timeout='0'");
+    }
+    expect(await sessions(mine.userId)).toEqual([]);
+    expect(await sessions(foreign.userId)).toHaveLength(1);
+  }, 30_000);
+
+  it("preserves actual active HTTP revoke-one, other and all session endpoints", async () => {
+    const { userId, cookie, session } = await signUp("i4d-revocations");
+    const direct = (await auth.$context).internalAdapter;
+    const call = (endpoint: string, body: object = {}) => auth.handler(new Request(
+      origin + "/api/auth/" + endpoint, {
+        method: "POST",
+        headers: { Cookie: cookie, Origin: origin, "content-type": "application/json" },
+        body: JSON.stringify(body),
+      },
+    ));
+    const first = await direct.createSession(userId);
+    expect((await call("revoke-session", { token: first.token })).status).toBe(200);
+    expect((await sessions(userId)).map(x => x.token)).toEqual([session.token]);
+    const second = await direct.createSession(userId);
+    expect((await call("revoke-other-sessions")).status).toBe(200);
+    expect((await sessions(userId)).map(x => x.token)).toEqual([session.token]);
+    const third = await direct.createSession(userId);
+    expect(third.token).not.toBe(second.token);
+    expect((await call("revoke-sessions")).status).toBe(200);
+    expect(await sessions(userId)).toEqual([]);
+  });
+
+  it("allows only signed own inactive sign-out, deleting exactly the current session", async () => {
+    const inactive = await signUp("i4d-inactive-signout");
+    const foreign = await signUp("i4d-foreign-signout");
+    const direct = (await auth.$context).internalAdapter;
+    const retainedOther = await direct.createSession(inactive.userId);
+    await deactivator.query(deactivateSql, [inactive.userId]);
+    await expect(direct.deleteSession(retainedOther.token))
+      .rejects.toMatchObject({ status: "UNAUTHORIZED" });
+
+    const signedOut = await auth.handler(new Request(origin + "/api/auth/sign-out", {
+      method: "POST",
+      headers: { Cookie: inactive.cookie, Origin: origin, "content-type": "application/json" },
+      body: JSON.stringify({}),
+    }));
+    expect(signedOut.status).toBe(200);
+    expect(signedOut.headers.getSetCookie().some(value =>
+      value.includes("session_token") && value.includes("Max-Age=0"))).toBe(true);
+    expect((await sessions(inactive.userId)).map(x => x.token)).toEqual([retainedOther.token]);
+    await expect(direct.deleteSession(retainedOther.token))
+      .rejects.toMatchObject({ status: "UNAUTHORIZED" });
+    expect(await sessions(foreign.userId)).toHaveLength(1);
+    const foreignActive = await auth.handler(new Request(origin + "/api/auth/get-session", {
+      headers: { Cookie: foreign.cookie },
+    }));
+    expect(foreignActive.status).toBe(200);
+  });
+
+  it("classifies destructive target SQL outages and does not claim a session deletion", async () => {
+    const { userId, cookie, session } = await signUp("i4d-failed-revoke");
+    const request = () => new Request(origin + "/api/auth/revoke-session", {
+      method: "POST",
+      headers: { Cookie: cookie, Origin: origin, "content-type": "application/json" },
+      body: JSON.stringify({ token: session.token }),
+    });
+    const withFailure = (fault: Error) => createHyperdriveAuthRuntime(url, env, () => {
+      const client = new Client({ connectionString: url, options: "-c search_path=" + schema });
+      const original = client.query;
+      client.query = ((...args: unknown[]) => {
+        if (nativeSql(args[0]).startsWith('select distinct user_id from "session" where token = $1')) {
+          return Promise.reject(fault);
+        }
+        return Reflect.apply(original, client, args);
+      }) as typeof client.query;
+      return client;
+    });
+    const unavailable = Object.assign(new Error("PRIVATE_I4D_REVOKE_DISCONNECT"), { code: "ECONNRESET" });
+    const denied = await withFailure(unavailable).handle(request());
+    expect(denied.status).toBe(503);
+    expect(denied.headers.get("Cache-Control")).toBe("no-store");
+    expect(denied.headers.getSetCookie().some(x => x.includes("session_token="))).toBe(false);
+    expect(await denied.text()).not.toContain("PRIVATE_I4D_REVOKE_DISCONNECT");
+    await expect(withFailure(new TypeError("I4d unexpected session owner SQL"))
+      .handle(request())).rejects.toBeInstanceOf(AccountStateUnexpectedError);
+    expect((await sessions(userId)).map(x => x.token)).toEqual([session.token]);
+  });
+});
