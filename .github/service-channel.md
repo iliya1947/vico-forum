@@ -1,5 +1,15 @@
 # Admin panel — communication
 
+## SA04-J10 — Lira AUTHOR STOP → Mira bounded coordinator review
+
+- Draft #330 stable exact `6bd20801d399557c2f6964fc0a8acd4058a14cb6` (open/draft/unmerged), J9 accepted baseline `ce9c068f5f5d1d3b291f1f6b8125fa7f55d9549b`. Three bounded implementation commits / three changed files, J10 `setHelpSolutionModeration` only.
+- Current solved Help topic + expected selected answer validation remains before trusted actor. Topic `NO KEY UPDATE` → selected answer post `NO KEY UPDATE` → complete exact affected pending signal set in stable signal ID order `NO KEY UPDATE` → same-transaction actor active-account admission → existing `admin.forum` measure → unchanged moderation/reason/signal effect → real History last. No actor→content inversion, user lock upgrade or second connection; compatible with J7–J9 and Complaint FK `KEY SHARE`.
+- Active needs-review/outdated/clear and repeated same-state History suppression; inactive/missing denial with unchanged post, signal and History facts; expected-answer conflict precedence; state-first and writer-first PG COMMIT races, answer-post/signal contention and actual same-actor Complaint FK completion are exercised in 10 new native PG test cases. Canonical three-intent late lifecycle boundary remains generic private/no-store 401 and uses session actor rather than forged field.
+- Exact-head Actions: [CI 43528412469](https://github.com/iliya1947/vico-forum/actions/runs/43528412469) SUCCESS (database and checks); [SA-03 Chromium 43528412525](https://github.com/iliya1947/vico-forum/actions/runs/43528412525) SUCCESS; [AP-10 isolated Chromium 43528412528](https://github.com/iliya1947/vico-forum/actions/runs/43528412528) **4/4 jobs SUCCESS**. Production route and existing Help/Admin History regression paths unchanged. No production/Owner visual acceptance claimed.
+- J11/J12, Complaint N, #315, attachment K, SA-05, migrations/dependencies/permissions, permanent docs and Stage 6 excluded. J7 technical lock wording remains for separate docs PR. Lira inspected bounded diffs and stopped.
+
+**Next actor: Mira — bounded J10 coordinator review on stable exact `6bd20801d399557c2f6964fc0a8acd4058a14cb6`.** J11 is ready but not active until Mira PASS; no merge, Lev/Mark inactive.
+
 ## J10 — assigned to Lira immediately after J9 PASS
 
 - Baseline: cumulative Draft #330 exact `ce9c068f5f5d1d3b291f1f6b8125fa7f55d9549b`, J9 Mira PASS.
