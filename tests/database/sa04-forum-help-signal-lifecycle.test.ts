@@ -272,10 +272,12 @@ describe("SA04-J9 Help Signals AccountState lifecycle", () => {
 
   it("stale solution target supersedes the entire old-target pending set, not new best answer signals", async () => {
     const x = await question(true), moderator = await person();
+    await forum.selectBestAnswer(x.topicId, x.otherAnswerId, x.authorId);
+    // Simulate pending reports submitted before a delayed review snapshot of
+    // the former selected answer; J8 would supersede older pending rows.
     const stale = await pending(x, "needs-review", x.answerId);
     const oldOther = await pending(x, "solution-outdated", x.answerId);
     const newTarget = await pending(x, "needs-review", x.otherAnswerId);
-    await forum.selectBestAnswer(x.topicId, x.otherAnswerId, x.authorId);
     const before = await facts(x);
     expect(await forum.resolveHelpSignal(stale.id, moderator, "accepted")).toBe("superseded");
     const after = await facts(x);
