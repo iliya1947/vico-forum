@@ -55,8 +55,8 @@ Current J decomposition for Lira execution:
 4. **J3b — published-post edit:** `editPublishedPost`, matching edit receipt replay, revision/CAS, mentions, retained/new attachment binding, draft finalization and receipt. **Mira bounded PASS on `b407f93f54b7f7e1073218dd63b4f6235b1bb417`.**
 5. **J3c — source-locale service no-op + canonical HTTP boundary.** **Mira bounded PASS on `cb1df03d00038fdf414b9d0d650d908a58167098`.**
 6. **J4 — profile writer.** **Mira bounded PASS on `84b5124f948895e3e211b81b1d6bd2082ddc531f`.**
-7. **J5 — read-state writer.** **Lira implementation complete / AUTHOR STOP on `af25adf18fd065e5af4a7e6da2c670f28613a10f`; Mira bounded review pending.**
-8. **J6 — inbox acknowledgement writers.** Unassigned.
+7. **J5 — read-state writer.** **Mira bounded PASS on `af25adf18fd065e5af4a7e6da2c670f28613a10f`.**
+8. **J6 — inbox acknowledgement writers.** **Active → Lira.**
 9. **J7 — topic close/pin/unpin state writers.** Unassigned.
 10. **J8 — solved/best-answer writers.** Unassigned.
 11. **J9 — Help Signals submit/withdraw/resolve.** Unassigned.
@@ -93,11 +93,15 @@ Lira completed the existing public-profile `updateProfile` authoritative Account
 
 Cumulative Draft #330 exact `84b5124f948895e3e211b81b1d6bd2082ddc531f`: PostgreSQL 17 **804/804** (five new J4 tests), application/unit **2270/2270**; lint/typecheck/build/schema PASS; SA-03 unified profile Chromium SUCCESS; AP-10 browser four jobs PASS. Lira completed AUTHOR STOP and Mira independently accepted bounded J4 with PASS and zero confirmed current-scope defects. J5 was subsequently assigned to Lira. J6–J12 remain unassigned.
 
-## J5 current handoff — Mira review pending
+## J5 — Mira bounded PASS
 
-Lira completed authoritative AccountState closure of `advanceTopicReadState` in cumulative Draft #330 exact `af25adf18fd065e5af4a7e6da2c670f28613a10f`. Topic/post FK dependencies are locked with `FOR KEY SHARE` before transaction-local actor admission. The unchanged monotonic upsert and readback execute within the same transaction through COMMIT. Active same/backward no-op remains a no-op; inactive/missing actor receives no success; canonical `markTopicRead` retains the generic private/no-store 401 lifecycle mapping.
+Cumulative Draft #330 exact `af25adf18fd065e5af4a7e6da2c670f28613a10f` passed Mira bounded review with zero confirmed current-scope defects. `advanceTopicReadState` now uses the accepted topic/post `FOR KEY SHARE` dependency order, same-transaction AccountState admission, unchanged monotonic timestamp/ID upsert and same-transaction readback. Same/backward no-op requires active actor. Native PG17 **811/811** (J5 7/7), application/unit **2271/2271**, CI/SA-03/AP-10 checks green. #315 `READSTATE-CACHE-01` remains separate.
 
-Native PG17 **811/811** (seven new J5 lifecycle/monotonic/race/content-lock tests); application/unit **2271/2271**; lint/typecheck/build/schema PASS; SA-03 Chromium SUCCESS; AP-10 browser 4/4 PASS. Lira **AUTHOR STOP**. Mira is next for bounded J5 coordinator review of the exact head. J6–J12 remain unassigned. #315 `READSTATE-CACHE-01`, attachment K, SA-05 and Stage 6 are excluded.
+## J6 — active assignment to Lira
+
+Baseline: Draft #330 exact `af25adf18fd065e5af4a7e6da2c670f28613a10f`.
+
+Scope: authoritative AccountState admission for `markNotificationRead` and legacy `markReplyNotificationRead`. Both use one short transaction with trusted actor admission before own-notification lock/update. Unified reply/mention plus complaint-decision/complaint-appeal-result recipient/membership behavior and legacy reply/mention behavior remain intact. Active already-read is idempotent; inactive/missing cannot obtain success or change `read_at`. Canonical `/:locale/notifications` action keeps shared private/no-store lifecycle 401. No new legacy HTTP path, Complaint mutation change, schema/migration/permission/dependency work, J7+, #315 remediation, SA-05 or Stage 6.
 
 ## Important cross-cutting boundaries
 
