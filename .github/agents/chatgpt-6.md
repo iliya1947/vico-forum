@@ -1,5 +1,13 @@
 # ChatGPT-6 — personal log
 
+## SA04-J10 — ACTIVE ASSIGNMENT
+
+Baseline: J9 Mira PASS exact `ce9c068f5f5d1d3b291f1f6b8125fa7f55d9549b` in cumulative Draft #330.
+
+Implement J10 only: close authoritative AccountState admission for `setHelpSolutionModeration`. Preserve the existing expected-best-answer validation, moderation/reason semantics, exact pending-signal supersession and unchanged-state History suppression. Follow the accepted J dependency-before-actor graph for every existing topic/post/signal row this operation can mutate, then actor → existing `admin.forum` measure → effect → real History last, without actor lock upgrade, second connection or reverse actor→content ordering. Keep the already accepted J7–J9/Complaint FK-compatible lock protocol.
+
+Provide focused native PG lifecycle/race/lock evidence, canonical late lifecycle route regression and applicable existing Help/Admin History/AP-10/CI/browser gates. Do not implement J11/J12 or any non-J domain. AUTHOR STOP on one stable exact head for Mira bounded J10 review.
+
 ## SA04-J9 — implementation complete / AUTHOR STOP
 
 - **Baseline:** J8 Mira PASS exact `41e26f191357aacde3de2dae3a3c7fed20756a30`. Cumulative Draft #330 stable exact head `ce9c068f5f5d1d3b291f1f6b8125fa7f55d9549b`, open/draft/unmerged. Only J9 scope implemented.
