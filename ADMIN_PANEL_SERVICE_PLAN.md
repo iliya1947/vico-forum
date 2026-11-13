@@ -60,7 +60,7 @@ Current J decomposition for Lira execution:
 9. **J7 — topic close/pin/unpin state writers.** **Mira bounded PASS on `5e76474908156d6acbab1d2cf98138e6a37cabc8`.**
 10. **J8 — solved/best-answer writers.** **Mira bounded PASS on `41e26f191357aacde3de2dae3a3c7fed20756a30`.**
 11. **J9 — Help Signals submit/withdraw/resolve.** **Mira bounded PASS on `ce9c068f5f5d1d3b291f1f6b8125fa7f55d9549b`.**
-12. **J10 — Help solution moderation.** **Assigned to Lira from J9 PASS baseline `ce9c068f5f5d1d3b291f1f6b8125fa7f55d9549b`.**
+12. **J10 — Help solution moderation.** **Lira AUTHOR STOP exact `6bd20801d399557c2f6964fc0a8acd4058a14cb6`; awaiting Mira bounded review.**
 13. **J11 — duplicate/appeal family.** Ready next assignment; not active until J10 Mira PASS.
 14. **J12 — cumulative J closeout/evidence.** Ready next assignment; not active until J11 Mira PASS.
 
@@ -68,7 +68,7 @@ Current J decomposition for Lira execution:
 
 These assignments are fixed now so the coordinator does not reconstruct them after each PASS.
 
-### J10 — Help solution moderation — ACTIVE
+### J10 — Help solution moderation — AUTHOR STOP / MIRA REVIEW NEXT
 
 Baseline: J9 Mira PASS exact `ce9c068f5f5d1d3b291f1f6b8125fa7f55d9549b`.
 
