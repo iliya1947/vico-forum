@@ -3220,7 +3220,7 @@ export class DrizzleForumRepository {
           .from(forumTopics)
           .where(inArray(forumTopics.id, lockedIds))
           .orderBy(asc(forumTopics.id))
-          .for("update");
+          .for("no key update");
         if (topics.length !== 2) {
           throw new ForumEntityNotFoundError("duplicate question or proposed original question does not exist");
         }
@@ -3268,20 +3268,13 @@ export class DrizzleForumRepository {
           })
           .from(forumTopics)
           .where(eq(forumTopics.id, input.topicId))
-          .for("update");
+          .for("no key update");
         if (!lockedTopic) throw new ForumEntityNotFoundError("topic does not exist");
         if (lockedTopic.sectionId !== HELP_SOLUTIONS_SERVICE_SECTION_ID) {
           throw new ForumStateConflictError("Help signals are only available for Help & solutions questions");
         }
         topic = lockedTopic;
       }
-
-      // New Help signals are restricted independently of withdrawal, appeals and
-      // moderator review. Check after topic locks but before cooldown writes.
-      await this.measureAdmission(tx, input.actorId, "helpSignals.submit");
-      // Keep the same lock order as reply writes: topic row(s) first, then
-      // the per-user write mutex used by the signal cooldown.
-      await enforceHelpSignalWriteCooldown(tx, input.actorId, this.writePolicy);
 
       let targetPostId: string | null = null;
       if (input.kind === "needs-details") {
@@ -3302,7 +3295,7 @@ export class DrizzleForumRepository {
             eq(forumPosts.topicId, input.topicId),
             eq(forumPosts.id, targetPostId),
           ))
-          .for("update");
+          .for("no key update");
         if (!answer) throw new ForumStateConflictError("current selected solution does not exist");
         if (
           (input.kind === "needs-review" && answer.status !== null)
@@ -3311,6 +3304,13 @@ export class DrizzleForumRepository {
           throw new ForumStateConflictError("requested solution moderation state is already authoritative");
         }
       }
+
+      // The actor NO KEY UPDATE mutex serializes the cooldown and the write.
+      // Never upgrade the actor row with an additional FOR UPDATE lock.
+      await assertActiveAccountForDrizzleMutation(tx, input.actorId);
+      // Submission restriction does not apply to signal withdrawal or review.
+      await this.measureAdmission(tx, input.actorId, "helpSignals.submit");
+      await enforceHelpSignalWriteCooldown(tx, input.actorId, this.writePolicy);
 
       const pendingConditions = [
         eq(forumHelpSignals.status, "pending"),
@@ -3375,6 +3375,7 @@ export class DrizzleForumRepository {
       if (signal.status !== "pending") {
         throw new ForumStateConflictError("only a pending Help signal may be withdrawn");
       }
+      await assertActiveAccountForDrizzleMutation(tx, actorId);
       await tx
         .update(forumHelpSignals)
         .set({
@@ -3406,6 +3407,7 @@ export class DrizzleForumRepository {
         if (signal.status !== "pending") {
           throw new ForumStateConflictError("Help signal is no longer pending");
         }
+        await assertActiveAccountForDrizzleMutation(tx, actorId);
         await this.measureAdmission(tx, actorId, "admin.forum");
         await tx
           .update(forumHelpSignals)
@@ -3449,8 +3451,59 @@ export class DrizzleForumRepository {
         .from(forumTopics)
         .where(inArray(forumTopics.id, topicIds))
         .orderBy(asc(forumTopics.id))
-        .for("update");
+        .for("no key update");
 
+      // Accepted reviews may update solution moderation and multiple signals.
+      // Lock any existing post dependency before signals, then the entire
+      // potentially affected pending signal set by stable ID, including the
+      // third-topic proposed-original rows in duplicate review.
+      const reviewedTopic = topics.find((row) => row.id === snapshot.topicId);
+      if (
+        (kind === "needs-review" || kind === "solution-outdated")
+        && snapshot.targetPostId
+        && reviewedTopic?.isSolved
+        && reviewedTopic.bestAnswerPostId === snapshot.targetPostId
+      ) {
+        await tx.select({ id: forumPosts.id })
+          .from(forumPosts)
+          .where(and(
+            eq(forumPosts.topicId, snapshot.topicId),
+            eq(forumPosts.id, snapshot.targetPostId),
+          ))
+          .for("no key update");
+      }
+      const pendingSignalScope = kind === "needs-details"
+        ? and(
+            eq(forumHelpSignals.topicId, snapshot.topicId),
+            eq(forumHelpSignals.kind, "needs-details"),
+          )
+        : kind === "needs-review" || kind === "solution-outdated"
+          ? and(
+              eq(forumHelpSignals.topicId, snapshot.topicId),
+              eq(forumHelpSignals.targetPostId, snapshot.targetPostId ?? ""),
+              inArray(forumHelpSignals.kind, ["needs-review", "solution-outdated"]),
+            )
+          : and(
+              eq(forumHelpSignals.kind, "duplicate"),
+              or(
+                eq(forumHelpSignals.topicId, snapshot.topicId),
+                ...(snapshot.proposedOriginalTopicId
+                  ? [eq(forumHelpSignals.topicId, snapshot.proposedOriginalTopicId)]
+                  : []),
+                eq(forumHelpSignals.proposedOriginalTopicId, snapshot.topicId),
+              ),
+            );
+      await tx.select({ id: forumHelpSignals.id })
+        .from(forumHelpSignals)
+        .where(or(
+          eq(forumHelpSignals.id, signalId),
+          and(eq(forumHelpSignals.status, "pending"), pendingSignalScope),
+        ))
+        .orderBy(asc(forumHelpSignals.id))
+        .for("no key update");
+
+      // The locked target is read after the entire set is held: a concurrent
+      // withdrawal/rejection must be reflected before any actor admission.
       const [signal] = await tx
         .select({
           id: forumHelpSignals.id,
@@ -3462,12 +3515,12 @@ export class DrizzleForumRepository {
           status: forumHelpSignals.status,
         })
         .from(forumHelpSignals)
-        .where(eq(forumHelpSignals.id, signalId))
-        .for("update");
+        .where(eq(forumHelpSignals.id, signalId));
       if (!signal) throw new ForumEntityNotFoundError("Help signal does not exist");
       if (signal.status !== "pending") {
         throw new ForumStateConflictError("Help signal is no longer pending");
       }
+      await assertActiveAccountForDrizzleMutation(tx, actorId);
       await this.measureAdmission(tx, actorId, "admin.forum");
 
       const topic = topics.find((row) => row.id === signal.topicId);
@@ -3541,7 +3594,7 @@ export class DrizzleForumRepository {
             eq(forumPosts.topicId, signal.topicId),
             eq(forumPosts.id, signal.targetPostId),
           ))
-          .for("update");
+          .for("no key update");
         if (!answer) return supersedeCurrent();
 
         if (
@@ -4473,9 +4526,9 @@ async function enforceHelpSignalWriteCooldown(
   actorId: string,
   policy: ForumWritePolicy,
 ): Promise<Date> {
-  // Signal submissions use the same bounded write policy, but keep their
-  // cooldown independent from normal topic/reply authoring.
-  await tx.select({ id: user.id }).from(user).where(eq(user.id, actorId)).for("update");
+  // Caller already holds the authoritative actor FOR NO KEY UPDATE mutex
+  // in the same transaction. Keep signal cooldown independent from posts,
+  // without upgrading that actor lock or opening a second connection.
   const [latest] = await tx.select({ createdAt: forumHelpSignals.createdAt })
     .from(forumHelpSignals)
     .where(eq(forumHelpSignals.submittedByUserId, actorId))
