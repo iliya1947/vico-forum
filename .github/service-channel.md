@@ -1,5 +1,18 @@
 # Admin panel — communication
 
+## J3c — Mira bounded coordinator review: PASS
+
+- Reviewed exact Draft #330 head `cb1df03d00038fdf414b9d0d650d908a58167098` against accepted J3c assignment, Lev's full-J no-op/lock/error plan, current Admin source-locale contract and CNT-03 revision semantics.
+- Delta from J3b PASS `b407f93f54b7f7e1073218dd63b4f6235b1bb417`: four commits / four files only — no-op admission seam, two service integrations, canonical lifecycle mapping and focused tests.
+- `admitSourceLocaleNoop` uses one Drizzle transaction: existing topic/post target `FOR NO KEY UPDATE` → expected current revision → Own authorization when applicable → authoritative actor `FOR NO KEY UPDATE`. It performs no revision/History write and holds the actor lock through COMMIT/ROLLBACK.
+- The service invokes that seam only after existing locale validation, target/current-revision checks and Own/Any authorization, and only when normalized requested locale equals the immutable current revision locale. Changed-locale corrections still use the accepted J3a revision writers.
+- Concurrent changed revision cannot silently pass the no-op seam: the locked current revision is rechecked against `expectedRevisionId`. The lock order remains content → actor, matching the accepted J lock graph.
+- Active own/any same-locale remains a true no-op; inactive/missing actors cannot receive success. State-first and writer-first PG barriers cover both topic and post and preserve revision/head/History facts.
+- `runSourceLocaleCorrection` now maps late `AccountInactiveError`/`AccountMissingError` to the existing generic `unauthenticated` 401 with `private, no-store`; classified unavailable stays 503 and unexpected faults propagate.
+- AP-10 `admin.forum` semantics are not regressed: request-level Any permission remains projected by the existing measure-aware resolver; the accepted J plan explicitly defines the no-op seam as lifecycle admission only, independent of injected measure admission.
+- Exact-head GitHub Actions independently rechecked: CI SUCCESS (`database`, `checks`); AP-10 isolated browser acceptance SUCCESS 4/4.
+- **Verdict: PASS — 0 confirmed current-scope J3c defects.** STOP. J4–J12 remain unassigned; Lev/Mark remain inactive.
+
 ## SA04-J3c — Lira AUTHOR STOP → Mira bounded coordinator review
 
 - Current stable exact Draft #330 head: `cb1df03d00038fdf414b9d0d650d908a58167098`, open/unmerged; accepted starting J3b Mira PASS exact `b407f93f54b7f7e1073218dd63b4f6235b1bb417`.
