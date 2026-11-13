@@ -2,6 +2,11 @@ import { readFile, readdir } from "node:fs/promises";
 import { drizzle } from "drizzle-orm/node-postgres";
 import { Client, Pool } from "pg";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { RouterContextProvider } from "react-router";
+import { authSessionContext, type AuthSession } from "../../app/auth/request-context";
+import { forumWriterContext } from "../../app/forum/request-context";
+import { runForumMutation } from "../../app/forum/mutations.server";
+import { createHyperdriveForumWriter } from "../../db/hyperdrive-forum";
 import { AccountInactiveError, AccountMissingError } from "../../db/account-state";
 import { DrizzleForumAttachments } from "../../db/forum-attachments";
 import { DrizzleForumRepository } from "../../db/forum-repository";
@@ -240,6 +245,58 @@ describe("SA04-J2 authoritative Forum publication lifecycle", () => {
       await writer.end();
     }
   }, 30_000);
+
+  it("maps late persisted publication denial to canonical private 401 after a stale authenticated preflight", async () => {
+    const actor = await user("j2-stale-request-" + uuid());
+    const now = new Date();
+    const context = new RouterContextProvider();
+    const session: AuthSession = {
+      user: {
+        id: actor, name: "Stale request", email: actor + "@test.invalid",
+        emailVerified: false, createdAt: now, updatedAt: now,
+      },
+      session: {
+        id: uuid(), token: "signed-stale-identity", userId: actor,
+        createdAt: now, updatedAt: now, expiresAt: new Date(now.getTime() + 60_000),
+      },
+    };
+    context.set(authSessionContext, session);
+    context.set(forumWriterContext,
+      createHyperdriveForumWriter(url, () => new Client({ connectionString: url, options }),
+        policy, noMeasures));
+    const request = new Request("https://forum.example/en/sections/" + sectionId, {
+      method: "POST", headers: { Origin: "https://forum.example" },
+    });
+
+    const created = await runForumMutation(request, context, (writer, authorId) =>
+      writer.createTopic({ sectionId, authorId, title: "Active topic", body: "Initial post" }));
+    expect(created).toHaveProperty("topicId");
+
+    // The route still has the previously authenticated request identity; a
+    // separate fixture state write committed before the authoritative writer.
+    await deactivate(actor);
+    const before = await facts();
+    const forbiddenTopic = await runForumMutation(request, context, (writer, authorId) =>
+      writer.createTopic({ sectionId, authorId, title: "FORBIDDEN", body: "FORBIDDEN" }));
+    expect(forbiddenTopic).toMatchObject({ data: { error: "unauthenticated" }, init: { status: 401 } });
+    expect((forbiddenTopic as { init?: { headers?: Record<string, string> } }).init
+      ?.headers?.["Cache-Control"]).toBe("private, no-store");
+
+    const forbiddenReply = await runForumMutation(request, context, (writer, authorId) =>
+      writer.createReply({ topicId: baseline, authorId, body: "FORBIDDEN" }));
+    expect(forbiddenReply).toMatchObject({ data: { error: "unauthenticated" }, init: { status: 401 } });
+    expect(await facts()).toEqual(before);
+
+    const missingContext = new RouterContextProvider();
+    missingContext.set(authSessionContext, {
+      ...session, user: { ...session.user, id: "j2-missing-" + uuid() },
+    });
+    missingContext.set(forumWriterContext, context.get(forumWriterContext));
+    const missing = await runForumMutation(request, missingContext, (writer, authorId) =>
+      writer.createReply({ topicId: baseline, authorId, body: "FORBIDDEN MISSING" }));
+    expect(missing).toMatchObject({ data: { error: "unauthenticated" }, init: { status: 401 } });
+    expect(await facts()).toEqual(before);
+  });
 
   it("writer-first actor lock covers publication's final attachment bind and receipt through COMMIT", async () => {
     const actor = await user("j2-race-winner-" + uuid());
