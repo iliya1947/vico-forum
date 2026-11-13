@@ -56,7 +56,7 @@ Current J decomposition for Lira execution:
 5. **J3c — source-locale service no-op + canonical HTTP boundary.** **Mira bounded PASS on `cb1df03d00038fdf414b9d0d650d908a58167098`.**
 6. **J4 — profile writer.** **Mira bounded PASS on `84b5124f948895e3e211b81b1d6bd2082ddc531f`.**
 7. **J5 — read-state writer.** **Mira bounded PASS on `af25adf18fd065e5af4a7e6da2c670f28613a10f`.**
-8. **J6 — inbox acknowledgement writers.** **Lira implementation complete / AUTHOR STOP on `9a0a095b41c26ef41d6d136f4cf673c8bc325b08`; Mira bounded review pending.**
+8. **J6 — inbox acknowledgement writers.** **Mira bounded PASS on `9a0a095b41c26ef41d6d136f4cf673c8bc325b08`.**
 9. **J7 — topic close/pin/unpin state writers.** Unassigned.
 10. **J8 — solved/best-answer writers.** Unassigned.
 11. **J9 — Help Signals submit/withdraw/resolve.** Unassigned.
@@ -97,11 +97,15 @@ Cumulative Draft #330 exact `84b5124f948895e3e211b81b1d6bd2082ddc531f`: PostgreS
 
 Cumulative Draft #330 exact `af25adf18fd065e5af4a7e6da2c670f28613a10f` passed Mira bounded review with zero confirmed current-scope defects. `advanceTopicReadState` now uses the accepted topic/post `FOR KEY SHARE` dependency order, same-transaction AccountState admission, unchanged monotonic timestamp/ID upsert and same-transaction readback. Same/backward no-op requires active actor. Native PG17 **811/811** (J5 7/7), application/unit **2271/2271**, CI/SA-03/AP-10 checks green. #315 `READSTATE-CACHE-01` remains separate.
 
-## J6 current handoff — Mira bounded review pending
+## J6 — Mira bounded PASS
 
-Lira implemented authoritative AccountState closure of both notification acknowledgement writers in cumulative Draft #330 exact `9a0a095b41c26ef41d6d136f4cf673c8bc325b08`, based on J5 Mira PASS `af25adf18fd065e5af4a7e6da2c670f28613a10f`. Unified `markNotificationRead` uses its existing transaction with the actor guard before owned notification `FOR UPDATE`, member validation and idempotent update; legacy `markReplyNotificationRead` now uses one short transaction with actor guard before the original recipient-owned reply/mention-only UPDATE. Active already-read keeps its original timestamp; inactive/missing fails before any notification write or no-op success. Canonical notifications action retains shared generic private/no-store 401.
+Cumulative Draft #330 exact `9a0a095b41c26ef41d6d136f4cf673c8bc325b08` passed Mira bounded review with **zero confirmed current-scope J6 defects**.
 
-Native PG17 **820/820** (nine new J6 tests), application/unit **2272/2272**; CI SUCCESS and SA-03 Chromium SUCCESS. AP-10 browser final SUCCESS 4/4: the first general-browser attempt encountered a `socket hang up` at an unrelated topic POST; same-head failed-job rerun succeeded without code changes. Original transport cause is not confirmed. Lira completed bounded commit inspection and **AUTHOR STOP**. Mira is next for J6 bounded review on exact `9a0a095b41c26ef41d6d136f4cf673c8bc325b08`; J7–J12 unassigned. Complaint commands N, #315, K, SA-05, docs, Stage 6 remain separate.
+Unified `markNotificationRead` keeps its existing short transaction but now performs authoritative AccountState admission before the recipient-owned notification `FOR UPDATE`, ordinary complaint membership read and idempotent `read_at` update. Legacy `markReplyNotificationRead` now uses one short transaction with the same actor-first lifecycle admission before its recipient-owned reply/mention-only UPDATE/RETURNING. Active already-read keeps the original timestamp; inactive/missing receives neither write nor no-op success. Unified reply/mention and complaint Decision/Appeal-result targets, recipient/membership checks, legacy kind restriction and canonical private/no-store 401 behavior remain intact.
+
+Exact-head evidence: J6 native PG17 **9/9**, PostgreSQL total **820/820**, application/unit **2272/2272**, CI SUCCESS and SA-03 Chromium SUCCESS. AP-10 browser final run is SUCCESS: the first attempt's unrelated general-browser topic POST produced Playwright `socket hang up` while Worker logs recorded the request as 403 and continued serving; the same exact head's failed browser job rerun passed without implementation changes. Root cause of that recovered transport/test failure remains unconfirmed and it is not classified as a J6 defect.
+
+J7–J12 remain unassigned. Complaint commands N, #315, K, SA-05, docs and Stage 6 remain separate.
 
 ## Important cross-cutting boundaries
 
