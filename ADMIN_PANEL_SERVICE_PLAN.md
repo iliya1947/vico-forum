@@ -57,7 +57,7 @@ Current J decomposition for Lira execution:
 6. **J4 — profile writer.** **Mira bounded PASS on `84b5124f948895e3e211b81b1d6bd2082ddc531f`.**
 7. **J5 — read-state writer.** **Mira bounded PASS on `af25adf18fd065e5af4a7e6da2c670f28613a10f`.**
 8. **J6 — inbox acknowledgement writers.** **Mira bounded PASS on `9a0a095b41c26ef41d6d136f4cf673c8bc325b08`.**
-9. **J7 — topic close/pin/unpin state writers.** **Active → Lira.**
+9. **J7 — topic close/pin/unpin state writers.** **Lira implementation complete / AUTHOR STOP on `5e76474908156d6acbab1d2cf98138e6a37cabc8`; Mira bounded review pending.**
 10. **J8 — solved/best-answer writers.** Unassigned.
 11. **J9 — Help Signals submit/withdraw/resolve.** Unassigned.
 12. **J10 — Help solution moderation.** Unassigned.
@@ -107,21 +107,15 @@ Exact-head evidence: J6 native PG17 **9/9**, PostgreSQL total **820/820**, appli
 
 J7–J12 remain unassigned. Complaint commands N, #315, K, SA-05, docs and Stage 6 remain separate.
 
-## J7 — active assignment to Lira
+## J7 current handoff — Mira bounded review pending
 
-Baseline: Draft #330 exact `9a0a095b41c26ef41d6d136f4cf673c8bc325b08` (J6 Mira PASS).
+Lira completed J7 `setTopicClosed`/`pinTopic`/`unpinTopic` in cumulative Draft #330 exact `5e76474908156d6acbab1d2cf98138e6a37cabc8` after J6 Mira PASS `9a0a095b41c26ef41d6d136f4cf673c8bc325b08`.
 
-Scope: authoritative AccountState admission for `setTopicClosed`, `pinTopic`, `unpinTopic`.
+All three short transactions now take existing topic mutex as `FOR NO KEY UPDATE`, retaining reply/closure serialization and allowing existing Complaint FK `KEY SHARE`. Same-transaction authoritative actor guard is before any idempotent success, measure/effect or History. Closure preserves existing missing-topic and closure-version CAS checks **before** actor admission, then guards before `changed:false`. Pin/unpin keep `admin.forum` and transition-only History; no new permissions or HTTP policy.
 
-Required behavior:
-- preserve target-first ordering: topic mutex before actor; use the accepted non-key-changing topic lock strength so reply/state serialization remains while FK `KEY SHARE` can complete;
-- `setTopicClosed`: existing target/CAS checks remain first, then actor admission before `changed:false` no-op or any state/History effect; existing closure no-op/measure ordering remains unchanged;
-- pin/unpin: actor admission after topic mutex and before existing `admin.forum` measure/effect/no-op path;
-- inactive/missing actor gets no changed/no-op success and no topic/pin/History mutation;
-- History stays last and atomic with real transitions only;
-- preserve closure version/ABA/overflow semantics, pin/unpin idempotency, AP-10 `admin.forum`, permissions, inline/redirect behavior and shared private/no-store lifecycle 401.
+Evidence: 11 new native PG17 tests on actual state/no-op, inactive/missing before/after closure/pin/History, CAS/ABA/overflow, History rollback, both lifecycle race directions for all three writers, close↔reply mutex and simulated Complaint content→actor→FK compatibility. Existing AP-08 concurrency suite passes 4/4; canonical close/reopen/inline/pin/unpin late lifecycle 401 tests pass. Exact-head CI **831/831 PG**, **2274/2274 application**, lint/typecheck/build/schema PASS; SA-03 Chromium SUCCESS; AP-10 Chromium **4/4 SUCCESS**.
 
-Evidence includes active real/no-op paths, inactive/missing fact preservation, state-first/writer-first races, close↔reply serialization and same-actor/content compatibility with existing Complaint submission/FK locking. No schema/migration/permission/dependency or J8+ work.
+Corrective history: initial lifecycle guard was ahead of CAS and was moved behind the accepted CAS check. Intermediate PG 830/831 uncovered a stale-expectation error in the new race test, fixed so stale CAS conflict and current-version inactive denial are independently asserted. Stable final exact head is green. Lira **AUTHOR STOP**; next **Mira bounded J7 coordinator review**. J8–J12 remain unassigned; Complaint commands N, #315, K, SA-05, permanent docs and Stage 6 are separate.
 
 ## Important cross-cutting boundaries
 
