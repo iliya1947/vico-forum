@@ -1,17 +1,14 @@
 # Admin panel — current workflow
 
-- **Service PR #331:** active Admin/Super-admin continuation after archived #251; never merge service PR.
-- **Current main:** `44d6b69a8d235cc8b1ee30953839be71e6ab836a`.
-- **Technical plan:** accepted SA-04 master + full SA04-J; Lira implementation in bounded J slices.
-- **Implementation PR:** cumulative Draft #330, open/unmerged.
-- **Accepted implementation baseline:** J7 Mira PASS exact `5e76474908156d6acbab1d2cf98138e6a37cabc8`.
-- **Completed checkpoints:** J1 → J2 → J3a → J3b → J3c → J4 → J5 → J6 → J7, all Mira PASS.
-- **Active checkpoint:** **J8 → Lira**.
-- **J8 scope only:** `markTopicSolved` and `selectBestAnswer`.
-- **Required result:** existing topic/dependent answer+signal locks → same-transaction authoritative actor admission → existing Any-only measure → solution effects → History last. Own and Any both require active actor. Same-answer selection remains an active-user no-op only.
-- Preserve author/scope, duplicate, candidate/first-post, Help moderation/signal side effects, returned solution-prompt data and Any-only History semantics.
-- Lira continues cumulative #330 from accepted J7 head, adds focused native PG lifecycle/no-op/race/lock-compatibility and canonical action regressions, inspects the bounded delta, publishes one stable exact head and **AUTHOR STOP for Mira J8 review**.
-- **Documentation note retained:** J7 lock wording in permanent docs is deferred to the separate docs closeout required by AGENTS.md.
-- **Explicit exclusions:** J9–J12, Help Signal implementation J9, solution moderation J10, duplicates/appeals J11, #315, K, SA-05, schema/migration/permission/dependency changes, permanent docs and Stage 6.
-- **Unassigned:** J9–J12, Lev, Mark.
-- **After J12:** Mira coordinator whole-J review → only after whole-J PASS Lev independent technical whole-J review of the same exact head.
+- **Service PR #331:** active Admin/Super-admin continuation after archived #251; never merge.
+- **Main at channel rotation:** `44d6b69a8d235cc8b1ee30953839be71e6ab836a`.
+- **Technical plan:** accepted SA-04 master + full SA04-J, implemented in bounded J slices.
+- **Implementation PR:** cumulative Draft #330, open/unmerged, stable exact head `41e26f191357aacde3de2dae3a3c7fed20756a30`.
+- **Accepted checkpoints:** J1 → J2 → J3a → J3b → J3c → J4 → J5 → J6 → J7, all Mira PASS. J7 exact `5e76474908156d6acbab1d2cf98138e6a37cabc8`.
+- **Active gate:** **J8 Lira implementation complete, exact-head CI/browser SUCCESS, AUTHOR STOP → Mira bounded coordinator review pending.**
+- **J8 scope:** `markTopicSolved`, `selectBestAnswer`. Topic `FOR NO KEY UPDATE` → affected answer rows sorted `FOR NO KEY UPDATE` → affected pending signal rows sorted `FOR NO KEY UPDATE` → same-transaction authoritative actor guard → existing Any-only `admin.forum` measure → solution effects → real Any-only History last. Own/Any require active actor; active same-answer stays a genuine no-op after guard; existing domain/redirect semantics preserved.
+- **Evidence:** native PG17 **844/844** (J8 **13/13**, existing Admin History **28/28**), app/unit **2275/2275**, lint/typecheck/build/schema PASS; SA-03 Chromium SUCCESS; AP-10 browser **4/4** SUCCESS on same exact head.
+- **Next actor:** Mira bounded J8 coordinator review of Draft #330 exact stable head. Confirmed current-scope findings return to Lira in one packet.
+- **Unassigned:** J9–J12, Lev, Mark. After J12 Mira whole-J coordinator review → only after PASS Lev independent technical whole-J review of same exact head.
+- **Documentation note:** J7 topic lock strength wording in current-main permanent docs must be aligned in the separate docs closeout; not in implementation PR.
+- **Separate:** Complaint commands N, #315 remediation, attachment K, SA-05, J9+ standalone Help implementation, permanent docs and Stage 6.
