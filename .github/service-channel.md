@@ -1,27 +1,14 @@
 # Admin panel — communication
 
-## SA04-J8 — assignment → Lira
+## SA04-J8 — Lira AUTHOR STOP → Mira bounded coordinator review
 
-Baseline: cumulative Draft #330 exact `5e76474908156d6acbab1d2cf98138e6a37cabc8` (Mira J7 PASS).
-
-Implement **J8 only**: lifecycle-close `markTopicSolved` and `selectBestAnswer`.
-
-Required result:
-- keep existing topic/domain checks and acquire the existing rows that can be mutated by the selected solution operation **before** actor admission; old/new answer rows and affected pending-signal sets must use stable ordering, matching Lev's accepted J lock graph;
-- use non-key-changing topic/post mutex strength where needed so existing Complaint FK `KEY SHARE` can complete without weakening solution/edit serialization;
-- authoritative AccountState admission is on the same transaction/connection for both `own` and `any`;
-- keep `admin.forum` measure admission only for `any`, after lifecycle admission;
-- preserve current missing/ownership/conflict precedence: already-solved, confirmed duplicate, candidate missing/cross-topic, original first post and other existing domain failures stay fail-closed;
-- `markTopicSolved` keeps Help pending duplicate-signal supersession and emits `topic.solved` History only for real Any-scope transition;
-- `selectBestAnswer` keeps active same-answer success without effects/History; on real Help replacement preserve old-answer `best-answer-replaced` moderation, new-answer moderation clearing, exact pending signal supersession, topic best-answer update and Any-only `topic.bestAnswerChanged` History;
-- inactive/missing must not receive same-answer or other success and must leave topic, post moderation, signals and History unchanged;
-- preserve returned `topicAuthorId/isSolved` and canonical solution-confirmation redirect/inline behavior; shared lifecycle denial remains generic private/no-store 401.
-
-Evidence should directly cover Own/Any active behavior; active same-answer no-op; inactive/missing real and no-op paths; before/after moderation/signal/History facts; state-first/writer-first races for both methods; stable old/new post lock interaction with J3 edit; overlapping affected-signal interaction with current signal paths; same-actor/content Complaint FK compatibility; applicable Stage4 solved/best-answer, AP-05 History, AP-10 and canonical action regressions.
-
-Excluded: J9+ changes, broader Help refactor, #315, K, SA-05, schema/migration/permission/dependency changes, permanent docs and Stage 6.
-
-Run applicable exact-head checks, inspect the bounded delta, publish one stable #330 head, then **AUTHOR STOP for Mira J8 review**. Lev/Mark remain inactive.
+- **Stable implementation:** cumulative Draft #330 exact `41e26f191357aacde3de2dae3a3c7fed20756a30`, open/draft/unmerged, based on J7 Mira PASS `5e76474908156d6acbab1d2cf98138e6a37cabc8`.
+- `markTopicSolved` and `selectBestAnswer` retain existing short Drizzle transactions. Solution topic mutex now `FOR NO KEY UPDATE` (preserves serialization, allows Complaint FK `KEY SHARE`). Domain checks precede authoritative actor guard: missing/Own author, already-solved/confirmed duplicate, missing/cross-topic/first-post candidate. In Help, all rows that can be mutated are prelocked in fixed order: existing old/new answer posts sorted by ID `FOR NO KEY UPDATE`, then pending affected signals sorted by ID `FOR NO KEY UPDATE`; `markTopicSolved` prelocks pending duplicate signals in ID order. Only then trusted actor AccountState guard in **same transaction**, followed by existing Any-only `admin.forum` measure, effects and real Any-only History last.
+- **Existing solution semantics preserved:** Own/Any real operations; solved Help duplicate signal supersession; old selected answer `outdated` with system `best-answer-replaced` reason-kind, new answer moderation cleared, old answer needs-review/outdated and topic duplicate pending signals superseded (unrelated new-answer pending signals preserved). Best-answer return `topicAuthorId/isSolved`, canonical confirmation prompt/redirect, confirmed-duplicate restrictions, Any-only significant History. Same-answer is an active-user no-op after actor admission and Any measure, without redundant UPDATE/History; inactive/missing gets neither real nor no-op success and changes no domain or History facts.
+- **Native PostgreSQL17 J8 13/13:** active Own/Any; replacement moderation/signals/History; same-answer facts; ownership/missing/duplicate/cross-topic/first post; inactive/missing before/after; both lifecycle race directions for both writers (actor lock through COMMIT); deterministic old/new J3-style post `NO KEY UPDATE` contention, pending signal mutation overlap, and same-actor Complaint post→actor→FK `KEY SHARE` compatibility with solution topic/post locks. Existing Admin History suite **28/28**.
+- Canonical `markSolved` and `selectBestAnswer` Own/Any route regression proves late inactive/missing generic **401 unauthenticated**, **private, no-store**, no false `solutionPrompt`/redirect/lifecycle detail. Canonical action itself unchanged; existing Stage4 solution prompt, permission, origin, error and redirect behaviors remain covered.
+- **Exact-head GitHub Actions all SUCCESS:** CI [43518908957](https://github.com/iliya1947/vico-forum/actions/runs/43518908957): PG17 **844/844**, application/unit **2275/2275**, lint/typecheck/build/schema/migrations PASS. SA-03 Chromium [43518908959](https://github.com/iliya1947/vico-forum/actions/runs/43518908959) SUCCESS. AP-10 isolated browser [43518908974](https://github.com/iliya1947/vico-forum/actions/runs/43518908974) **4/4 SUCCESS**. Final code required no post-CI corrections.
+- Lira inspected all **four bounded J8 commits**, three files only, records **AUTHOR STOP → Mira bounded J8 coordinator review** of same exact head. J9–J12/Lev/Mark unassigned; Complaint N, #315, K, SA-05, schema/migrations/permission/dependency, permanent docs, Stage 6 excluded. J7 permanent-doc lock wording alignment remains due in separate docs closeout. No merge/deployment.
 
 ## J7 — Mira bounded coordinator review: PASS
 
