@@ -1,22 +1,15 @@
 # ChatGPT-6 — personal log
 
-## Active assignment — SA04-J6
+## SA04-J6 — implementation complete / AUTHOR STOP
 
-Continue cumulative Draft #330 from accepted J5 exact `af25adf18fd065e5af4a7e6da2c670f28613a10f`.
+- Cumulative Draft #330 exact stable head `9a0a095b41c26ef41d6d136f4cf673c8bc325b08`, open/unmerged, from J5 Mira PASS exact `af25adf18fd065e5af4a7e6da2c670f28613a10f`.
+- `89ad07720e01b1b079b8db95401959bcc9649049` / `e576abbfaf311fa2c8cfe21ae840e77a003e0f1d`: `db/forum-repository.ts`. Unified `markNotificationRead` reuses its one transaction and performs shared authoritative `assertActiveAccountForDrizzleMutation(tx, userId)` before the existing recipient-owned `FOR UPDATE OF n`, membership/target reads and `read_at` update. Legacy `markReplyNotificationRead` now owns one transaction and takes the same actor guard before its existing conditional reply/mention UPDATE/RETURNING. Actor lock remains held through COMMIT/ROLLBACK, including active already-read success; no new route.
+- `e95a9b927f30ce089f4b946c7c28ed5a7f094813` / `f12064703348044cc4178940d36c9c9b03e4780b` / `9a0a095b41c26ef41d6d136f4cf673c8bc325b08`: nine focused native PG17 cases in `tests/database/sa04-forum-notification-lifecycle.test.ts`. Active unread/already-read and unchanged timestamps for unified reply/mention/complaint Decision/Appeal-result and legacy reply/mention; missing/wrong-recipient/nonmember/legacy-kind denial; inactive/missing no first or no-op acknowledgement and unchanged `read_at`; state-first and writer-first lifecycle races through COMMIT for BOTH writers. Fixture corrections ensure valid user bind parameters, unique post per recipient notification and zero unrelated cooldown/measure admission.
+- `79eaa150ec18f643207fb14b6c6a75bc370e0b2e`: `app/routes/notifications.test.ts` verifies existing `runForumMutation` late inactive/missing generic 401 `unauthenticated`, `private, no-store`, no redirect/lifecycle detail; preserves unavailable 503 and unexpected propagation. Existing canonical reply/complaint redirect tests green. Canonical action itself unchanged.
+- Personally inspected six bounded J6 implementation/test commit diffs. Scope limited to 3 files; no Complaint command changes, new legacy HTTP, J7+, schema/migration/permissions/dependencies, #315, K, SA-05 or Stage 6.
+- Exact-head `CI` run `43510115276` SUCCESS: native PG17 **820/820** (J6 suite **9/9**), application/unit **2272/2272**, lint/typecheck/build/schema/migrations PASS.
+- Exact-head `SA-03 unified profile connected Chromium acceptance` run `43510115184` SUCCESS.
+- `AP-10 isolated browser acceptance` run `43510115118`: first attempt's general browser job failed at unrelated topic POST with Playwright `socket hang up` (no confirmed J6 cause); other three jobs SUCCESS. Re-ran **only failed browser job on same exact head**, without changing implementation; retry SUCCESS and workflow final conclusion **SUCCESS 4/4**. The original socket-drop cause was not proven, so this is an explicitly recorded recovered CI failure, not a fixed code defect.
+- Evidence is synthetic GitHub Actions/local runtime, not production deployment or Owner visual acceptance.
 
-Deliver **J6 only**: authoritative active-account admission for `markNotificationRead` and `markReplyNotificationRead`.
-
-Required outcome:
-- one short transaction per acknowledgement writer;
-- trusted actor AccountState guard before own notification lock/update;
-- unified reply/mention + complaint Decision/Appeal-result recipient/membership behavior preserved;
-- legacy remains recipient-owned reply/mention only, with no new HTTP path;
-- active already-read stays idempotent; inactive/missing gets no write and no no-op success;
-- canonical notifications action keeps shared generic private/no-store lifecycle 401 and existing redirect/error behavior.
-
-Provide focused native PG active/inactive/missing/already-read facts, both lifecycle race directions for unified and legacy shapes, complaint/member regressions and canonical route coverage. Run applicable exact-head checks and inspect the bounded delta.
-
-No Complaint mutation changes, J7+, #315, attachment K, SA-05, schema/migration/permission/dependency, docs or Stage 6 work.
-
-After implementation publish one stable exact #330 head and **AUTHOR STOP for Mira J6 review**.
-
+**AUTHOR STOP → Mira J6 bounded coordinator review** of exact Draft #330 head `9a0a095b41c26ef41d6d136f4cf673c8bc325b08`. J7–J12 / Lev / Mark unassigned; no whole-J review. Separate #315, K, SA-05, docs, Stage 6.
