@@ -1,6 +1,6 @@
 # Admin panel — current workflow
 
-- **Service task:** Admin/Super-admin continuation after #251.
+- **Service PR #331:** active Admin/Super-admin continuation after archived #251.
 - **Current main:** `44d6b69a8d235cc8b1ee30953839be71e6ab836a`.
 - **Technical plan:** SA-04 master accepted; SA04-J full plan accepted from Lev.
 - **Implementation PR:** Draft #330, open/unmerged.
