@@ -2016,3 +2016,18 @@ Inspect the completed bounded I3 diff/logic yourself, publish stable exact head 
 - All exact-head GitHub Actions **SUCCESS**: [CI #43404347307](https://github.com/iliya1947/vico-forum/actions/runs/43404347307) **2269/2269 app, 746/746 PG17**, lint/typecheck/build/migrations/schema/Worker; [SA01 #43404347457](https://github.com/iliya1947/vico-forum/actions/runs/43404347457), [SA03 #43404347332](https://github.com/iliya1947/vico-forum/actions/runs/43404347332), [AP10 #43404347259](https://github.com/iliya1947/vico-forum/actions/runs/43404347259) all Chromium successful, AP10 four jobs. PR #329 title/body updated, service #251 workflow/channel updated.
 - **Lira AUTHOR STOP:** Mira independently reviews bounded I4c on exact `0c36648638a11e69e657a83dcfd54b9cf06d2e84`, PASS or verified complete current-scope packet; I4d/I5/J+, Lev/Mark, docs closeout, merge, #315/SA05+/Stage6/production unassigned.
 
+
+
+## 2026-11-13 — assigned: SA04-I4d final I4 closure
+
+Continue cumulative Draft PR #329 from Mira-accepted I4c exact head `0c36648638a11e69e657a83dcfd54b9cf06d2e84`. Implement **I4d only**.
+
+Required result: close the current Better Auth destructive session persistence family — revoke/delete/deleteMany — using the authoritative persisted session target/owner and correct lifecycle/deactivation ordering. Preserve the accepted exception that an already inactive user can still perform **own sign-out cleanup** of their own retained session/client state; that exception must not reopen any other protected use.
+
+Then perform the connected I4 write-shape/race sweep across every current configured Better Auth session/user/account mutation family covered by I4a–I4d. If that sweep proves a current I4 seam is still unguarded, correct only that confirmed I4 gap before declaring the checkpoint complete.
+
+Preserve I1–I4c, active session behavior, Better Auth validation/hooks, successful SA-02 facts and unavailable-vs-unexpected lifecycle-storage handling. Use focused real Better Auth 1.7.7 + PostgreSQL17 evidence for destructive session paths, relevant race orderings, active controls and inactive own-signout.
+
+Do not implement physical user deletion, reactivation, a separate forced-session Owner action, I5/J+, docs closeout, #315, SA05+ or Stage6/production.
+
+Personally inspect the completed bounded/cumulative I4 diff and logic, publish one stable exact #329 head with actual applicable checks/evidence, then **STOP for Mira I4d checkpoint review**. Lev/Mark remain unassigned.
