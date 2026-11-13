@@ -140,6 +140,8 @@ export async function runSourceLocaleCorrection<T>(
   try {
     return await operation(forumWriterForRequest(context), session.user.id);
   } catch (error) {
+    if (error instanceof AccountInactiveError || error instanceof AccountMissingError)
+      return sourceLocaleCorrectionFailure("unauthenticated", 401);
     if (error instanceof InvalidForumContentError) return sourceLocaleCorrectionFailure("invalid", 400);
     if (error instanceof ForumEntityNotFoundError) return sourceLocaleCorrectionFailure("notFound", 404);
     if (error instanceof ForumAuthorizationError || error instanceof UserMeasureRestrictedError) return sourceLocaleCorrectionFailure("forbidden", 403);
