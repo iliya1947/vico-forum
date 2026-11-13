@@ -1,18 +1,18 @@
 # Admin panel — current workflow
 
-- **Service PR #251.** Main/base `13456a17f23c1385bef8ab11c735f43d201edd02`; SA04-A1/A2–H merged. I1–I4 coordinator checkpoints PASS; **I5 remains the final checkpoint required to close SA04-I**.
-- **Correction:** prior handoff of the whole I5 to Lira is rescinded before author work started. Draft #329 remains unchanged at exact `85104942e75071a67b4a4b37212ce5bca7361fe4`.
-- I5 keeps one final connected outcome, but Lira author work is split into sequential small checkpoints:
-  1. **I5a — native core connected chain:** two retained sessions/cookies + inactive pre-routing identity + canonical HTTP/direct denial + session create/refresh/final persistence + inactive own-signout cleanup; active/unrelated controls preserved.
-  2. **I5b — SET-05 stale/deactivated chain:** Account & security reads/password/session controls across late deactivation and final guards.
-  3. **I5c — Google/observer/failure composition:** pending explicit link/callback, telemetry on/off, transaction callback and unavailable-vs-unexpected restoration.
-  4. **I5d — built Worker/browser connected acceptance:** stale mounted Account UI, old cookies, active unrelated account, real sign-out cleanup, private/public boundary.
-  5. **I5e — final connected sweep/evidence map:** only after I5a–d PASS; close remaining connected evidence gaps and perform author cumulative I inspection.
-- **Current stage/owner: Lira — I5a only.** Starting head #329 exact `85104942e75071a67b4a4b37212ce5bca7361fe4`.
-- Production runtime changes are allowed only for a reproduced I5a current-scope gap and must be the smallest local correction + regression.
-- **Boundary:** no I5b–e work yet, no J–R application writers, physical user deletion, SA05 deactivate route/control/event, reactivation/separate forced-session control, #315 remediation, unconfigured secondary storage, docs closeout, Stage6/production/external OAuth.
-- Lira publishes one stable exact head with I5a evidence and personal inspection, then **STOPs for Mira I5a checkpoint review**. Later I5 checkpoints are assigned separately only after the preceding checkpoint PASS.
-- No Lev/Mark review until all I5 author checkpoints are complete and Mira cumulative whole-I PASS.
+- **Service PR #251.** Main/base `13456a17f23c1385bef8ab11c735f43d201edd02`; SA04-A1/A2–H merged. I1–I4 coordinator checkpoints PASS; I5 remains final connected closure for SA04-I.
+- **Current stage/owner: Mira — bounded I5a checkpoint review.** Lira completed **I5a native core connected chain**, personally inspected and has AUTHOR STOP. I5b–I5e remain unassigned until separate Mira continuation after I5a PASS.
+- **Implementation PR/head:** cumulative [Draft #329](https://github.com/iliya1947/vico-forum/pull/329), stable exact `58130793d05f6eb2a8b867b2fb546ccddcd6fb59`, previous accepted I4d `85104942e75071a67b4a4b37212ce5bca7361fe4`. Three I5a commits; only `tests/database/sa04-session-atomic.test.ts` (+146 lines). No runtime/schema/dependency/docs changes; PR open/Draft/unmerged.
+- **Exact-head checks:** [CI #43425686486](https://github.com/iliya1947/vico-forum/actions/runs/43425686486) SUCCESS — 2269 app / 754 PostgreSQL17, 29 scoped I4a–I5a; [SA01 #43425686622](https://github.com/iliya1947/vico-forum/actions/runs/43425686622), [SA03 #43425686478](https://github.com/iliya1947/vico-forum/actions/runs/43425686478), [AP10 #43425686467](https://github.com/iliya1947/vico-forum/actions/runs/43425686467) all Chromium SUCCESS (AP10 4/4). Existing browser regressions are not I5d acceptance.
+- **Next:** Mira checks I5a real BA/PG17 connected tests and I1–I4 composition on the stable exact head: PASS or one verified current-scope defect packet. Later I5b SET-05, I5c OAuth/telemetry/failures, I5d built Worker/browser, I5e cumulative author sweep remain planned **not authorized**; no Lev/Mark independent review until full I5 and Mira cumulative whole-I PASS. No J–R, SA05, #315, docs/merge, Stage6/production.
+
+## I5 author checkpoint decomposition (only I5a complete)
+
+1. **I5a — native core connected chain:** two retained sessions/cookies, inactive pre-routing, canonical HTTP/direct denial, session create/refresh/final guards, signed own-signout cleanup; unrelated active controls. **AUTHOR STOP; Mira checkpoint pending.**
+2. **I5b — SET-05 stale/deactivated chain:** read/password/session controls and late deactivation. Not assigned.
+3. **I5c — Google/link and observer/failure composition:** pending callback, telemetry on/off, transaction callback and failures. Not assigned.
+4. **I5d — built Worker/browser connected acceptance:** stale mounted Account, old cookies, independent account, sign-out, private/public boundaries. Not assigned.
+5. **I5e — final connected sweep/evidence map:** complete after I5a–d PASS and personal cumulative I inspection. Not assigned.
 
 ## Mandatory author verification
 
