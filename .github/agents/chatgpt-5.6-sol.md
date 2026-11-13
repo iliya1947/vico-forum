@@ -2399,3 +2399,14 @@ Do not treat a user's anger, criticism or request to think as implicit permissio
 - Outcome: authoritative current Better Auth user target stays active through the actual persisted update/commit under concurrent deactivation; selectors are resolved from canonical server-side write semantics, not trusted submitted identity.
 - Preserve new-user creation, accepted I1–I4a, active update behavior, Better Auth validation/hooks/facts and failure classification.
 - I4c account writes, I4d destructive sessions, user deletion, I5/J+ remain unassigned. Next gate is Lira stable-head author STOP → Mira I4b checkpoint review; no Lev/Mark yet.
+
+
+## 2026-11-13 — SA04-I4b review result
+
+- Reviewed #329 exact `bd717165685095efac74ddd12a9a3339c6008df2`, all three I4b commits/two changed paths and preserved I4a behavior.
+- Rechecked Better Auth v1.7.7 primary source: existing-user `updateUser` uses unique id, `updateUserByEmail` uses normalized unique email, and hook helpers delegate the actual write to the current adapter.
+- Verified the guard protects that final adapter seam with same-client transaction + persisted target row lock + A2 active-state check through the original UPDATE and COMMIT.
+- Verified both race orderings, canonical HTTP late denial/no cookie/no mutation, missing-target null/zero behavior, active/new-user preservation, and classified availability vs unexpected failures.
+- Account/password/provider writes are I4c; destructive sessions are I4d; physical user deletion is outside I4b. No missing later scope was promoted to an I4b defect.
+- Exact-head CI/browser evidence independently checked SUCCESS: 2269 app, 739 PG17, 14 focused I4a/I4b (5 I4b), SA01/SA03/AP10.
+- **PASS — 0 confirmed current-scope I4b defects.** Stop before I4c.
