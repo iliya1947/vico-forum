@@ -69,7 +69,7 @@ export function guardBetterAuthSessionWrites(
             update?: { userId?: unknown };
           } | undefined;
           if (command?.model !== "session") {
-            return Reflect.apply(method, adapter, args);
+            return Reflect.apply(method, target, args);
           }
 
           // Only wrapper-owned SQL is classified here. Adapter/BA errors
@@ -110,7 +110,7 @@ export function guardBetterAuthSessionWrites(
               await assertActiveAccountForMutation(connection, rows[0].user_id);
             }
 
-            const result = await Reflect.apply(method, adapter, args);
+            const result = await Reflect.apply(method, target, args);
             await query("COMMIT");
             begun = false;
             return result;
