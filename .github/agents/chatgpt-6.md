@@ -1,22 +1,16 @@
 # ChatGPT-6 — personal log
 
-## Active assignment — SA04-J7
+## SA04-J7 — implementation complete / AUTHOR STOP
 
-Continue cumulative Draft #330 from accepted J6 exact `9a0a095b41c26ef41d6d136f4cf673c8bc325b08`.
+- Cumulative Draft #330 stable exact head `5e76474908156d6acbab1d2cf98138e6a37cabc8`, open/draft/unmerged; accepted J6 Mira PASS baseline `9a0a095b41c26ef41d6d136f4cf673c8bc325b08`.
+- `d30faefedc40369aee247f03a484f95c48d90f5d`: `db/forum-repository.ts` `setTopicClosed`, `pinTopic`, `unpinTopic` use existing target topic mutex at **`FOR NO KEY UPDATE`** rather than `FOR UPDATE` (keeps non-key topic serialization with replies but permits Complaint `KEY SHARE` FK); then same-transaction authoritative trusted actor guard before no-op or effect. Existing measure, CAS, transition-only `appendForumHistory` last are retained. No separate actor connection or stronger post lock.
+- `4770f3de0090c843fbcd0140d365e9bcf9fd86eb`: bounded correction to retain the exact original closure order **missing topic → version CAS → actor AccountState guard → same-state `changed:false`**. This ensures stale expected version keeps 409 precedence before lifecycle guard but current-version no-op requires active actor. No change to pin/unpin order or domain effects.
+- `d2ff10a6975b33ba4573b8c1613e061a32b65211`, `48edb1f7e68d29256890969d0e5ad7da31e64782`, `5e76474908156d6acbab1d2cf98138e6a37cabc8`: `tests/database/sa04-forum-topic-state-lifecycle.test.ts`, **11** native PG17 tests: active close/reopen CAS/ABA, overflow, closure same-state no-op; pin/unpin idempotency, transition-only History, missing-topic and rollback; inactive/missing actor facts/History preservation for all real/no-op paths with explicit stale-version precedence; state-first and writer-first separate connection lifecycle barriers for all three writers; close→fresh reply mutex serialization; same-actor simulated Complaint post `FOR UPDATE` → user `FOR NO KEY UPDATE` → target FK `KEY SHARE` cycle-avoidance under concurrently held topic `NO KEY UPDATE`.
+- `bc550685384b80c036b2f54d75aedb86b5c70aad` — `app/forum/topic-closure-action.test.ts`: generic `401 unauthenticated`, `private, no-store` for late missing/inactive on close/reopen + inline variants, no success/redirect/lifecycle detail. Existing permissions, CAS 409, unavailable 503, unexpected and redirects untouched.
+- `797e2a3962acd1ba34781570e8d897cc41d8affa` — `app/forum/write-actions.test.ts`: same canonical late lifecycle private 401 for pin/unpin using trusted session actor. Existing pin permission/origin/guest/redirect assertions unchanged.
+- Inspected all seven bounded J7 commit diffs personally; only four files changed. No Complaint mutation change, J8+, #315, K, SA-05, schema/migration/permission/dependency, permanent docs or Stage 6 work.
+- Corrective CI history: initial head `797e2a3962acd1ba34781570e8d897cc41d8affa` passed CI PG **831/831**, app **2274/2274**, SA-03, AP-10 4/4. During exact assignment reconciliation, noticed closure CAS must precede lifecycle guard. On intermediate head `48edb1f7e68d29256890969d0e5ad7da31e64782`, PG tests **830/831**: one race-test expected `AccountInactiveError` despite stale `expectedClosureVersion:0` after a committed close; actual `ForumStateConflictError` is required by the accepted CAS-first contract. Test-only `5e764749...` fixes expectation and separately verifies current-version inactive denial; **no additional production-code change**. The intermediate failure was test assertion error, not implementation defect.
+- **Final exact-head GitHub Actions:** CI `43515712068` SUCCESS — native PostgreSQL17 **831/831** (J7 **11/11**, AP-08 closure races **4/4**), application/unit **2274/2274**, lint/typecheck/build/schema/migrations PASS; SA-03 unified profile connected Chromium `43515711933` SUCCESS; AP-10 isolated browser `43515711815` SUCCESS **4/4** jobs.
+- These are synthetic CI/repository/browser evidences, not production deployment or owner visual acceptance.
 
-Deliver **J7 only** for `setTopicClosed`, `pinTopic`, `unpinTopic`.
-
-Target:
-- topic mutex/dependencies before actor; preserve accepted non-key-changing lock compatibility with reply and Complaint FK work;
-- authoritative same-tx AccountState admission before closure same-state success and before pin/unpin effect/no-op;
-- preserve closure CAS/version/ABA/overflow and existing measure ordering;
-- preserve pin/unpin idempotency and real-transition-only History;
-- inactive/missing leaves closure/pin/History facts unchanged and gets no no-op success;
-- canonical actions retain permissions, AP-10 and generic private/no-store lifecycle 401.
-
-Provide focused native PG active/inactive/missing/no-op facts, lifecycle races, close↔reply and Complaint lock-compatibility evidence, plus applicable route/History/AP-08/AP-10 regressions.
-
-No J8+, Complaint mutation changes, #315, K, SA-05, schema/migration/permission/dependency, docs or Stage 6 work.
-
-After exact-head checks and bounded self-inspection: **AUTHOR STOP for Mira J7 review**.
-
+**Lira AUTHOR STOP → Mira bounded J7 coordinator review** of exact Draft #330 head `5e76474908156d6acbab1d2cf98138e6a37cabc8`. J8–J12, Lev and Mark remain unassigned. Full-J review only after J12; #315, Complaint N, K, SA-05 and Stage 6 separate.
