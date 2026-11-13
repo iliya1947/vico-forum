@@ -17,7 +17,7 @@ import {
 } from "./request-context";
 import { createRegistrationAdmission } from "./registration-admission";
 import { safeDeviceLabel } from "./session-label";
-import { guardBetterAuthSessionWrites } from "./session-write-guard";
+import { guardBetterAuthSessionWrites, InactiveSessionWriteError } from "./session-write-guard";
 import {
   account,
   betterAuthUserAdditionalFields,
@@ -572,6 +572,12 @@ export function createHyperdriveAuthRuntime(
           };
         }, true, undefined, true);
       } catch (error) {
+        // The authoritative account may deactivate between I1's initial
+        // session read and I4a's locked refresh write. That late denial is
+        // still a guest identity at the pre-routing boundary, not a 401 page.
+        if (error instanceof InactiveSessionWriteError) {
+          return { session: null, headers: new Headers() };
+        }
         if (error instanceof AccountStateUnavailableError || sessionStorageUnavailable(error)) {
           throw new AuthSessionUnavailableError({ cause: error });
         }
