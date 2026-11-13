@@ -4,14 +4,16 @@
 - **I5a PASS** exact `58130793d05f6eb2a8b867b2fb546ccddcd6fb59`.
 - **I5b PASS** exact `705519ce10f78801c2614a1cafa13347e0d2a75b`.
 - **I5c PASS** exact `23554aad29ddd23edb540cddc2069533ebe99329`.
-- **I5d bounded Mira checkpoint PASS** exact `74c6f43ae2d67526e2ad17aa50392aebf41abbca`; 0 confirmed current-scope defects.
-- I5d delta: one commit, only `tests/browser/settings-account/check.py` (+123/-3); no production/runtime/schema/dependency/docs changes.
-- Verified real built Worker + Better Auth 1.7.7 + disposable PostgreSQL17 + Chromium lifecycle chain: two genuine retained signed sessions/cookies, mounted Account page before fixture-only deactivation, unrelated active control account, fresh protected document and `.data` denial from both old cookies, and a real mounted password form POST rejected without credential/session mutation.
-- The before/after database snapshots include retained session IDs/tokens/timestamps and account credential/provider-secret columns; protected requests do not mutate them. Responses are private/no-store and do not expose captured session/password/provider secrets. Unrelated active Account & security remains functional.
-- Verified the accepted inactive own-signout exception through the real stale-tab header control/canonical `/api/auth/sign-out`: only that signed current retained session is deleted and its cookie cleared; the other inactive retained session stays persisted and unauthorized. Public forum read remains available.
-- Existing active SET-05, freshness/stale-identity, shared 3/10s password rate limit and EN/RU/HE/RTL/responsive browser checks remain green. Exact-head CI: 184/184 app files, 2269/2269 app tests; 69/69 PG17 files, 765/765 tests; AP-10 browser 4/4; SA-01/SA-03 browser SUCCESS.
-- **Current stage: STOP after I5d PASS. I5e is unassigned.** Next explicit continuation may assign **I5e only** for final connected sweep/evidence map + cumulative I author inspection.
-- Lev/Mark remain unassigned until I5e completes and Mira cumulative whole-I PASS. No J–R, SA05, #315 remediation, docs/merge, Stage6/production/live Google.
+- **I5d PASS** exact `74c6f43ae2d67526e2ad17aa50392aebf41abbca`.
+- **Current stage/owner: I5e → Lira only.** Continue cumulative Draft #329 from exact `74c6f43ae2d67526e2ad17aa50392aebf41abbca`.
+- **I5e result:** final connected evidence map plus personal cumulative author inspection of the whole current I implementation. This is a closure/sweep checkpoint, not a request for another generic test package.
+- Inspect the complete #329 implementation delta against main `13456a17f23c1385bef8ab11c735f43d201edd02` and map every current configured lifecycle boundary to actual code and accepted evidence: I1 pre-routing identity, I2 canonical HTTP/direct actor admission, I3 new-session admission, I4 session/user/account/destructive persistence and transaction/failure composition, then I5a native chain, I5b SET-05, I5c Google/link observer composition and I5d built Worker/browser acceptance.
+- Confirm there is no missing **current configured** Better Auth 1.7.7 user/account/session lifecycle seam, contradiction between the guards, or evidence gap that can change the I result. Preserve active behavior, registration/linking, SET-05 freshness/rate-limit, cookie ordering, exact SA-02 fact semantics, classified unavailable-vs-unexpected handling, private/no-store boundaries and the narrow inactive own-signout exception.
+- Classify future/unconfigured Better Auth families and J–R/SA05/#315 items as outside I5e unless they expose an actual current I bypass. Do not add code/tests only to duplicate already accepted proof.
+- **If no current-scope gap is found, implementation #329 must remain on exact `74c6f43ae2d67526e2ad17aa50392aebf41abbca`.** Recheck that the exact-head CI/AP10/SA01/SA03 results are still SUCCESS and cite the existing runs.
+- If the sweep reproduces a real current-scope I gap, first establish the causal chain, then only the smallest local correction + focused regression; any substantial solution change requires STOP back through Mira to Lev. Any implementation change requires fresh applicable exact-head checks.
+- **Boundary:** no J–R, SA05 deactivate UI/action/event, #315 remediation, physical deletion/reactivation/forced foreign-session controls, live Google/Stage6/production, schema/product expansion, documentation closeout or merge.
+- Lira publishes the final evidence map and cumulative author-inspection result in #251, keeps or publishes one stable exact #329 head, then **AUTHOR STOP for Mira cumulative whole-I coordinator review**. Lev/Mark remain unassigned until that Mira whole-I PASS.
 
 ## I5 author checkpoint decomposition
 
@@ -19,7 +21,7 @@
 2. **I5b — SET-05 stale/deactivated chain:** Mira PASS exact `705519ce10f78801c2614a1cafa13347e0d2a75b`.
 3. **I5c — Google callback/link and observer/failure composition:** **Mira PASS** exact `23554aad29ddd23edb540cddc2069533ebe99329`.
 4. **I5d — built Worker/browser connected acceptance:** **Mira PASS** exact `74c6f43ae2d67526e2ad17aa50392aebf41abbca`.
-5. **I5e — final connected sweep/evidence map:** after I5a–d PASS and author cumulative I inspection. Not assigned.
+5. **I5e — final connected sweep/evidence map:** **ACTIVE → Lira**, starting from exact `74c6f43ae2d67526e2ad17aa50392aebf41abbca`.
 
 ## Mandatory author verification
 
