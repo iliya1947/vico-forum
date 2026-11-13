@@ -1,11 +1,11 @@
 # Admin panel — current workflow
 
 - Service PR **#251**. Main/base `13456a17f23c1385bef8ab11c735f43d201edd02`; SA04-A1 + A2–H merged, I1/I2/I3 Mira checkpoint-PASS.
-- **Current checkpoint: I4A-MIRA-01/02/03 correction by Lira complete; AUTHOR STOP.** Next **Mira repeat bounded SA04-I4a checkpoint** on stable exact `7e80479e03167a8856fe1b2094b8c17678f4ce22`: PASS/closure or verified remaining current-scope defects. I4b–I4d/I5/J+ and Lev/Mark unassigned.
+- **Current checkpoint: SA04-I4a Mira repeat checkpoint PASS.** Exact reviewed Draft #329 head `7e80479e03167a8856fe1b2094b8c17678f4ce22`; **I4A-MIRA-01/02/03 CLOSED**, 0 remaining confirmed current-scope I4a defects. I4b–I4d/I5/J+ and Lev/Mark remain unassigned.
 - [Draft implementation PR #329](https://github.com/iliya1947/vico-forum/pull/329), branch `chatgpt/sa04-i1-pre-routing-session-admission`, exact `7e80479e03167a8856fe1b2094b8c17678f4ce22`, unchanged base, open/Draft/unmerged; 32 cumulative commits, six cumulative project files. Correction from reviewed `84885a2029267d31fa5b89bf84ef85fc2e9b72be`: six commits, **three changed correction files**.
 - **Three confirmed I4a defect corrections:** (01) Better Auth 1.7.7 as-is `runWithTransaction` callback adapter now re-wrapped so native session creation cannot bypass same-client active user lock/INSERT; (02) only late I4a inactive session-refresh denial maps to guest/null at pre-routing `runtime.getSession`, preserving HTTP/direct 401; (03) I4a-owned BEGIN/token SELECT/COMMIT/ROLLBACK SQL errors classified unavailable→503 vs unexpected.
 - **Evidence:** real BA/PG17 transaction-context `/sign-up/email` create races (both orders), pre-routing due refresh losing deactivation race, raw SQL fault matrix (BEGIN/token SELECT/COMMIT); nine focused native I4a tests. Final exact-head checks **ALL SUCCESS**: [CI #43395760369](https://github.com/iliya1947/vico-forum/actions/runs/43395760369) 2269 application + 734 PG17, [SA01 #43395760261](https://github.com/iliya1947/vico-forum/actions/runs/43395760261), [SA03 #43395760395](https://github.com/iliya1947/vico-forum/actions/runs/43395760395), [AP10 #43395760289](https://github.com/iliya1947/vico-forum/actions/runs/43395760289) Chromium SUCCESS, AP10 four jobs.
-- **Next:** Mira repeat independent I4a checkpoint review only. No I4b+, docs closeout, merge, SA05+, #315 or Stage6/production.
+- **Next:** STOP at completed I4a checkpoint. On a separate developer continuation, assign only **I4b — existing-user write atomic lifecycle closure** in cumulative Draft #329. No I4c/d, I5/J+, Lev review, merge, docs closeout, #315, SA05+ or Stage6/production yet.
 
 
 ## Mandatory author verification
@@ -467,3 +467,15 @@ Reviewed exact `84885a2029267d31fa5b89bf84ef85fc2e9b72be`, the complete accepted
 **Correction packet only:** make all current configured session create paths honor the atomic lifecycle closure even inside Better Auth transaction context; preserve guest/null pre-routing behavior when deactivation wins a due-refresh race while keeping canonical HTTP denial semantics; route availability failures from the new wrapper-owned SQL through the existing unavailable classification without masking unexpected errors. Add focused regressions for each chain.
 
 Full remaining I4a sweep found no additional confirmed current-scope defect. Missing I4b/I4c/I4d model families remain future accepted sub-checkpoints, not I4a findings. **Verdict: CHANGES REQUIRED.** No Lev review.
+
+
+## 2026-11-13 — SA04-I4a Mira repeat checkpoint PASS
+
+- Re-reviewed cumulative Draft #329 exact `7e80479e03167a8856fe1b2094b8c17678f4ce22` from accepted I3 `ba2337d788161915dbeb2de49ff320b4dad61768`, including the full 11-commit/four-path I4a delta and the six corrective commits after prior `84885a2029267d31fa5b89bf84ef85fc2e9b72be`.
+- Rechecked current `AGENTS.md`, project/Stage source-of-truth and official pinned Better Auth v1.7.7 transaction/adapter/session sources.
+- **I4A-MIRA-01 CLOSED:** the adapter Proxy now also wraps `transaction(cb)`; Better Auth's as-is transaction fallback therefore stores a guarded callback adapter in AsyncLocalStorage, so transaction-context session creation (real `/sign-up/email`) cannot bypass the same-client active-user lock/INSERT boundary.
+- **I4A-MIRA-02 CLOSED:** only the typed late inactive/missing I4a write denial is translated to guest/null by pre-routing `AuthRuntime.getSession`; canonical HTTP/direct Better Auth still receives Unauthorized. Real due-refresh race evidence preserves the retained row and emits no new cookie.
+- **I4A-MIRA-03 CLOSED:** wrapper-owned BEGIN/token SELECT/COMMIT/ROLLBACK failures are cause-chain classified into existing unavailable vs unexpected account-state errors; normal runtime handling returns controlled no-store 503 only for classified availability failures and propagates unexpected failures.
+- Writer-first and deactivation-first create/update races still hold the authoritative active target through persistence; I1–I3, active sliding/cookie behavior and successful SA-02 session facts remain preserved. Session destructive writes, user writes and account/provider/password writes remain correctly outside I4a.
+- Independent exact-head evidence: CI #43395760369 SUCCESS — 184/184 files, 2269/2269 app tests; 69/69 files, 734/734 PostgreSQL17 tests including 9/9 I4a; lint/typecheck/build/schema/migration/Worker steps SUCCESS. SA01 #43395760261, SA03 #43395760395 and AP10 #43395760289 Chromium runs all SUCCESS.
+- **PASS — 0 remaining confirmed current-scope I4a defects.** I4a is an intermediate checkpoint only; no Lev review until full I is complete and Mira cumulative whole-I PASS. Stop before I4b assignment.
