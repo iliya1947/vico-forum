@@ -2482,3 +2482,13 @@ Do not treat a user's anger, criticism or request to think as implicit permissio
 - Runtime correction is conditional on a reproduced current-scope gap. I5c–I5e, J–R, SA05, #315, physical deletion/reactivation/forced foreign-session controls, docs and Stage6/production remain outside the handoff.
 - Next gate: Lira stable exact author head/evidence + personal inspection → Mira bounded I5b checkpoint review. Lev/Mark remain stopped.
 
+## 2026-11-13 — SA04-I5b Mira bounded checkpoint PASS
+
+- Reviewed cumulative Draft #329 exact `705519ce10f78801c2614a1cafa13347e0d2a75b` from accepted I5a `58130793d05f6eb2a8b867b2fb546ccddcd6fb59`.
+- Exact I5b delta: two commits, only `tests/database/account-security.test.ts` (+132/-1); no production/runtime/schema/migration/dependency/docs change.
+- Verified the stale mounted request-context case re-enters the real request-local AuthRuntime/Better Auth session boundary after fixture deactivation: linked-method/session read, password change, revoke-one-other and revoke-all-others all fail unauthenticated; retained password/session/account data is unchanged, unrelated active account remains usable, and the accepted signed inactive own-signout exception deletes only the current retained session.
+- Verified the three final-write race tests pause the real guarded adapter `BEGIN` only after SET-05 identity/freshness preflight, commit deactivation on an independent PostgreSQL connection, then prove password update, single revoke and all-other revoke are denied by the accepted A2/I4 final lifecycle lock without mutation.
+- A concurrent deactivation that begins only after a private read has already passed admission is not a missing I5b atomic-write requirement; SA04's atomic race contract is for authoritative mutations/finalization. I5d remains the later built Worker/browser stale-mounted acceptance.
+- Exact-head CI independently checked: 184/184 app files, 2269/2269 tests; 69/69 PostgreSQL17 files, 758/758 tests; `account-security.test.ts` 12/12. SA01 #43429535334, SA03 #43429535380 and AP10 #43429535405 are SUCCESS.
+- **Verdict: PASS — 0 confirmed current-scope I5b defects.** STOP. I5c–I5e remain unassigned until separate continuation; Lev/Mark remain stopped.
+
