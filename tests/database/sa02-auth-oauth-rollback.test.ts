@@ -57,11 +57,17 @@ async function accounts(){
     "select id,user_id,provider_id from account order by provider_id,id"
   )).rows;
 }
-async function authFactory(actor:string|null=null,transaction=false) {
-  const sink=observer(actor);
-  const proof=new AuthCreationEvidence(database,
-    fact=>sink.capture(fact),id=>sink.trustedActorFor(id),()=>undefined);
-  const base=createAuth(database,env,undefined,undefined,undefined,sink,undefined,proof);
+async function authFactory(actor:string|null=null,transaction=false,config?:{
+  withObserver?:boolean;
+  onProfile?:()=>Promise<void>;
+  observer?:AuthCreationObserver;
+  onStateError?:(error:unknown)=>void;
+}) {
+  const sink=config?.withObserver===false?undefined:config?.observer??observer(actor);
+  const proof=sink?new AuthCreationEvidence(database,
+    fact=>sink.capture(fact),id=>sink.trustedActorFor(id),count=>sink.recordGap?.(count)):undefined;
+  const base=createAuth(database,env,undefined,undefined,undefined,sink,undefined,proof,
+    config?.onStateError);
   const auth=transaction ? betterAuth({
     ...betterAuthOptions(database,env),
     database:drizzleAdapter(database,{provider:"pg",schema:betterAuthSchema,transaction:true}),
@@ -72,13 +78,16 @@ async function authFactory(actor:string|null=null,transaction=false) {
   if(!google) throw new Error("Synthetic Google provider not registered");
   Object.assign(google,{
     validateAuthorizationCode:async()=>({accessToken:"synthetic-provider-access"}),
-    getUserInfo:async()=>({
+    getUserInfo:async()=>{
+      await config?.onProfile?.();
+      return {
       user:{email:identityEmail,emailVerified:identityVerified,name:"Synthetic Google"},
       data:{sub:identitySub,email:identityEmail,email_verified:identityVerified,
         name:"Synthetic Google",iss:"https://accounts.google.com",
         aud:env.GOOGLE_CLIENT_ID,azp:env.GOOGLE_CLIENT_ID,
         exp:2000000000,iat:1900000000,jti:"synthetic-jti"},
-    }),
+      };
+    },
   });
   // Mirror the production request's after-operation proof flush, with the
   // genuine Better Auth handler and PostgreSQL adapter unchanged.
@@ -88,7 +97,12 @@ async function authFactory(actor:string|null=null,transaction=false) {
       return async (request:Request)=>{
         const restore=observeAuthNativeMutations(client,proof);
         try{return await auth.handler(request);}
-        finally{restore();await proof.flush();}
+        finally{
+          restore();
+          // Match createHyperdriveAuthRuntime's best-effort proof flush:
+          // telemetry failures cannot override an already committed auth outcome.
+          try{await proof?.flush();}catch{/* best effort */}
+        }
       };
     },
   });
@@ -186,6 +200,49 @@ describe("SA02 native Better Auth v1.7.7 OAuth, partial commit and rollback fact
     expect((await countRows()).sessions).toBe(2);
   });
 
+  it("SA04-I3 gates returning Google callbacks before session persistence, preserving SA02 facts",async()=>{
+    identityEmail="sa04-i3-oauth-returning@example.test";identitySub="sa04-i3-google";
+    const first=await initiate(await authFactory(),"sign-in/social");
+    const enrolled=await callback(await authFactory(),first.state,first.cookies);
+    expect(enrolled.status).toBe(302);
+    expect(sessionCookie(enrolled)).toBeTruthy();
+    const linked=(await accounts()).find(row=>row.provider_id==="google");
+    expect(linked).toBeDefined();
+    const userId=linked!.user_id;
+    expect(events.map(e=>e.kind)).toEqual(["account.created","auth.methodLinked","auth.sessionCreated"]);
+    events.length=0;
+
+    const before=(await client.query<{id:string;token:string}>(
+      'select id,token from session where user_id=$1 order by id',[userId])).rows;
+    expect(before).toHaveLength(1);
+    await client.query(`update "user" set deactivated_at='2026-11-12T00:00:00Z',
+      deactivated_by_user_id=$1, retain_at_least_until='2027-11-13T00:00:00Z'
+      where id=$1`,[userId]);
+    const blockedStart=await initiate(await authFactory(),"sign-in/social");
+    const blocked=await callback(await authFactory(),blockedStart.state,blockedStart.cookies);
+    // A session-create admission APIError is returned directly by this
+    // Better Auth 1.7.7 callback path rather than a synthetic redirect.
+    expect(blocked.status).toBe(401);
+    expect(sessionCookie(blocked)).toBeFalsy();
+    expect((await client.query<{id:string;token:string}>(
+      'select id,token from session where user_id=$1 order by id',[userId])).rows).toEqual(before);
+    expect(events).toEqual([]);
+    expect((await accounts()).filter(row=>row.provider_id==="google"))
+      .toEqual([linked]);
+
+    await client.query(`update "user" set deactivated_at=null,
+      deactivated_by_user_id=null, retain_at_least_until=null where id=$1`,[userId]);
+    const restored=await initiate(await authFactory(),"sign-in/social");
+    const accepted=await callback(await authFactory(),restored.state,restored.cookies);
+    expect(accepted.status).toBe(302);
+    expect(sessionCookie(accepted)).toBeTruthy();
+    expect(events).toEqual([expect.objectContaining({
+      kind:"auth.sessionCreated",userId,
+    })]);
+    expect((await client.query<{total:number}>(
+      'select count(*)::int total from session where user_id=$1',[userId])).rows[0]?.total).toBe(2);
+  });
+
   it("proves explicit verified Google link from current account, not OAuth initiation or repeated link",async()=>{
     const local=await registerEmail("sa02-oauth-link@example.test");
     events.length=0;
@@ -279,4 +336,150 @@ describe("SA02 native Better Auth v1.7.7 OAuth, partial commit and rollback fact
     expect(events.map(f=>f.kind)).toEqual(["account.created","auth.methodLinked","auth.sessionCreated"]);
     expect(await countRows()).toMatchObject({users:1,accounts:1,sessions:1});
   });
+});
+
+const inactiveI5c = `update "user" set deactivated_at='2026-11-12T00:00:00Z',
+  deactivated_by_user_id=$1, retain_at_least_until='2027-11-13T00:00:00Z' where id=$1`;
+
+async function i5cPersistedRows(userId:string) {
+  const linked=(await client.query<{
+    id:string;provider_id:string;access_token:string|null;refresh_token:string|null;updated_at:Date;
+  }>("select id,provider_id,access_token,refresh_token,updated_at from account where user_id=$1 order by id",
+    [userId])).rows;
+  const sessions=(await client.query<{id:string;token:string;expires_at:Date}>(
+    "select id,token,expires_at from session where user_id=$1 order by id",[userId])).rows;
+  const user=(await client.query<{id:string;name:string;email_verified:boolean}>(
+    'select id,name,email_verified from "user" where id=$1',[userId])).rows;
+  return {linked,sessions,user};
+}
+
+describe("SA04-I5c Better Auth Google callback lifecycle and exact-fact composition",()=>{
+  it.each([
+    {kind:"returning",withObserver:true},
+    {kind:"returning",withObserver:false},
+    {kind:"link",withObserver:true},
+    {kind:"link",withObserver:false},
+  ] as const)("holds $kind callback at provider seam; inactive final owner cannot mutate (observer=$withObserver)",
+    async({kind,withObserver})=>{
+      const email=`i5c-${kind}-${withObserver}@example.test`;
+      const local=kind==="returning"?null:await registerEmail(email);
+      identityEmail=email;identitySub=`i5c-${kind}-${withObserver}`;
+      let ownerId:string;
+      if(kind==="returning"){
+        const initial=await initiate(await authFactory(),"sign-in/social");
+        const enrolled=await callback(await authFactory(),initial.state,initial.cookies);
+        expect(enrolled.status).toBe(302);
+        ownerId=(await accounts()).find(a=>a.provider_id==="google")!.user_id;
+      }else ownerId=local!.userId;
+
+      events.length=0;
+      const start=kind==="returning"
+        ? await initiate(await authFactory(),"sign-in/social")
+        : await initiate(await authFactory(ownerId),"link-social",{
+          Cookie:local!.cookie,"x-vico-link-user":ownerId,
+        });
+      const before=await i5cPersistedRows(ownerId);
+      const counts=await countRows();
+      let release!:()=>void;
+      let entered!:()=>void;
+      const reached=new Promise<void>(resolve=>{entered=resolve;});
+      const proceed=new Promise<void>(resolve=>{release=resolve;});
+      const auth=await authFactory(ownerId,false,{
+        withObserver,onProfile:async()=>{entered();await proceed;},
+      });
+      const request=callback(auth,start.state,
+        [local?.cookie,start.cookies].filter(Boolean).join("; "));
+      try{
+        await reached;
+        // The signed OAuth state is valid and provider exchange reached getUserInfo;
+        // the independent persisted lifecycle change wins before BA's final write.
+        await client.query(inactiveI5c,[ownerId]);
+      }finally{release();}
+      const denied=await request;
+      expect([401,302,403]).toContain(denied.status);
+      expect(sessionCookie(denied)).toBeFalsy();
+      expect(await i5cPersistedRows(ownerId)).toEqual(before);
+      expect(await countRows()).toEqual(counts);
+      expect(events).toEqual([]);
+      expect((await client.query<{deactivated_at:Date}>(
+        'select deactivated_at from "user" where id=$1',[ownerId])).rows[0]?.deactivated_at)
+        .toBeInstanceOf(Date);
+    },30000);
+
+  it.each(["unavailable","unexpected"] as const)(
+    "does not turn a $kind lifecycle SQL failure at Google callback into success or policy closure",
+    async(kind)=>{
+      identityEmail=`i5c-fault-${kind}@example.test`;identitySub=`i5c-fault-${kind}`;
+      const enrolled=await initiate(await authFactory(),"sign-in/social");
+      expect((await callback(await authFactory(),enrolled.state,enrolled.cookies)).status).toBe(302);
+      const ownerId=(await accounts()).find(a=>a.provider_id==="google")!.user_id;
+      events.length=0;
+      const start=await initiate(await authFactory(),"sign-in/social");
+      const before=await i5cPersistedRows(ownerId);
+      const total=await countRows();
+      const failures:unknown[]=[];
+      const auth=await authFactory(null,false,{onStateError:error=>{failures.push(error);}});
+      const original=client.query;
+      let trapped=false;
+      client.query=((...args:unknown[])=>{
+        const statement=args[0];
+        const sql=typeof statement==="string"?statement:
+          statement && typeof statement==="object" && "text" in statement &&
+            typeof statement.text==="string"?statement.text:"";
+        if(!trapped && sql.includes(" as deactivated_at")) {
+          trapped=true;
+          const fault=kind==="unavailable"
+            ? Object.assign(new Error("PRIVATE_I5C_DISCONNECT"),{code:"ECONNRESET"})
+            : new TypeError("PRIVATE_I5C_UNEXPECTED_STATE");
+          return Promise.reject(fault);
+        }
+        return Reflect.apply(original,client,args);
+      }) as typeof client.query;
+      let response:Response|undefined;
+      let thrown:unknown;
+      try{
+        try{response=await callback(auth,start.state,start.cookies);}
+        catch(error){thrown=error;}
+      }finally{client.query=original;}
+      expect(trapped).toBe(true);
+      expect(failures).toEqual([expect.objectContaining({
+        name:kind==="unavailable"?"AccountStateUnavailableError":"AccountStateUnexpectedError",
+      })]);
+      if(response){
+        expect(response.status).not.toBe(200);
+        expect(sessionCookie(response)).toBeFalsy();
+        const location=response.headers.get("Location");
+        if(location)expect(new URL(location,origin).searchParams.get("error"))
+          .not.toBe("vico_google_registration_closed");
+        expect(await response.text()).not.toMatch(/PRIVATE_I5C_DISCONNECT|PRIVATE_I5C_UNEXPECTED_STATE/);
+      }else{
+        expect(thrown).toBeDefined();
+      }
+      expect(await i5cPersistedRows(ownerId)).toEqual(before);
+      expect(await countRows()).toEqual(total);
+      expect(events).toEqual([]);
+    },30000);
+
+  it("observer capture and gap failures cannot veto a genuine Google commit",async()=>{
+    identityEmail="i5c-observer-fail@example.test";identitySub="i5c-observer-fail";
+    const broken:AuthCreationObserver={
+      capture:()=>{throw new Error("I5C_PRIVATE_OBSERVER_FAILURE");},
+      trustedActorFor:()=>{throw new Error("I5C_PRIVATE_ACTOR_FAILURE");},
+      recordGap:()=>{throw new Error("I5C_PRIVATE_GAP_FAILURE");},
+    };
+    const start=await initiate(await authFactory(),"sign-in/social");
+    const enrolled=await callback(await authFactory(null,false,{observer:broken}),
+      start.state,start.cookies);
+    expect(enrolled.status).toBe(302);
+    expect(sessionCookie(enrolled)).toBeTruthy();
+    expect(await countRows()).toMatchObject({users:1,accounts:1,sessions:1,facts:0});
+    expect(events).toEqual([]);
+    const repeat=await initiate(await authFactory(),"sign-in/social");
+    const returning=await callback(await authFactory(null,false,{observer:broken}),
+      repeat.state,repeat.cookies);
+    expect(returning.status).toBe(302);
+    expect(sessionCookie(returning)).toBeTruthy();
+    expect(await countRows()).toMatchObject({users:1,accounts:1,sessions:2,facts:0});
+    expect(events).toEqual([]);
+  },30000);
 });
