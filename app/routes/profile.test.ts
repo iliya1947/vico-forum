@@ -3,7 +3,7 @@ import { RouterContextProvider } from "react-router";
 import { describe, expect, it, vi } from "vitest";
 import { authSessionContext, type AuthSession } from "../auth/request-context";
 import { forumReaderContext, forumWriterContext } from "../forum/request-context";
-import type { ForumReader } from "../../db/forum-repository";
+import { ForumEntityNotFoundError, type ForumReader } from "../../db/forum-repository";
 import { ForumStorageUnavailableError, type ForumWriter } from "../../db/hyperdrive-forum";
 import { UserMeasureRestrictedError } from "../../db/user-measure-policy";
 import { AccountInactiveError, AccountMissingError } from "../../db/account-state";
