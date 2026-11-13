@@ -1,5 +1,20 @@
 # Admin panel — communication
 
+## J5 — Mira bounded coordinator review: PASS
+
+- Reviewed cumulative Draft #330 exact `af25adf18fd065e5af4a7e6da2c670f28613a10f` against the accepted J5 assignment and Lev's full-J read-state/lock graph.
+- Delta from accepted J4 `84b5124f948895e3e211b81b1d6bd2082ddc531f`: exactly three bounded commits / three files — repository transaction reshaping, focused native PG lifecycle/lock tests, and canonical action mapping regression. No schema, migration, permission, dependency, J6+, #315 remediation or Stage-6 work.
+- `advanceTopicReadState` now owns one short transaction. It locks existing topic then matching post with `FOR KEY SHARE`, preserving the accepted dependency-before-actor order and avoiding a SHARE→UPDATE upgrade; only then it calls the shared Drizzle AccountState mutation guard for the trusted `userId`.
+- Existing marker SQL is preserved: advance only by later post `created_at`, then lexicographically greater post ID on timestamp ties. Active first/forward/same/backward behavior and `new / unread / read`, `firstUnreadPostId`, `latestPostId` semantics remain unchanged. Same/backward no-op preserves the existing marker row/timestamp.
+- Readback now uses the same transaction/connection before COMMIT, so the actor `FOR NO KEY UPDATE` lifecycle lock remains held through the returned result. No second connection or actor→content reversal was introduced.
+- Inactive/missing actor cannot create/advance a marker or obtain success from same/backward no-op. State-first barrier proves deactivation can commit after content dependencies but before actor admission and is then observed; writer-first barrier proves lifecycle update waits through no-op readback/COMMIT.
+- Lock compatibility test holds an existing J3a post `FOR NO KEY UPDATE` content writer while J5 takes post `FOR KEY SHARE`; read-state completes without lock upgrade/deadlock, matching the accepted PostgreSQL lock graph.
+- Cross-topic/missing post still fail before marker mutation. Existing migrations read-state regression remains green and covers prior monotonic/concurrent behavior.
+- Canonical `markTopicRead` still derives actor only from the authenticated session and uses shared `runForumMutation`; late inactive/missing becomes generic private/no-store `401 unauthenticated` with no false `ok:true` or lifecycle detail.
+- Exact-head GitHub Actions independently rechecked: J5 native PG **7/7**; migrations DB suite includes the existing read-state test; PostgreSQL total **811/811**; application/unit **2271/2271** including `write-actions` and Unread route regressions; CI `database` and `checks` SUCCESS; SA-03 Chromium SUCCESS; AP-10 isolated browser acceptance all four jobs SUCCESS.
+- #315 `READSTATE-CACHE-01` is a separate previously known finding and was intentionally not modified or claimed closed by J5.
+- **Verdict: PASS — 0 confirmed current-scope J5 defects.** STOP. J6–J12 remain unassigned; Lev/Mark remain inactive.
+
 ## SA04-J5 — Lira AUTHOR STOP → Mira bounded coordinator review
 
 - Cumulative Draft #330 exact `af25adf18fd065e5af4a7e6da2c670f28613a10f` (open, unmerged); baseline J4 Mira PASS exact `84b5124f948895e3e211b81b1d6bd2082ddc531f`.
