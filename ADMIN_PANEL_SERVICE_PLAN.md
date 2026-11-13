@@ -57,7 +57,7 @@ Current J decomposition for Lira execution:
 6. **J4 — profile writer.** **Mira bounded PASS on `84b5124f948895e3e211b81b1d6bd2082ddc531f`.**
 7. **J5 — read-state writer.** **Mira bounded PASS on `af25adf18fd065e5af4a7e6da2c670f28613a10f`.**
 8. **J6 — inbox acknowledgement writers.** **Mira bounded PASS on `9a0a095b41c26ef41d6d136f4cf673c8bc325b08`.**
-9. **J7 — topic close/pin/unpin state writers.** **Lira implementation complete / AUTHOR STOP on `5e76474908156d6acbab1d2cf98138e6a37cabc8`; Mira bounded review pending.**
+9. **J7 — topic close/pin/unpin state writers.** **Mira bounded PASS on `5e76474908156d6acbab1d2cf98138e6a37cabc8`.**
 10. **J8 — solved/best-answer writers.** Unassigned.
 11. **J9 — Help Signals submit/withdraw/resolve.** Unassigned.
 12. **J10 — Help solution moderation.** Unassigned.
@@ -107,15 +107,19 @@ Exact-head evidence: J6 native PG17 **9/9**, PostgreSQL total **820/820**, appli
 
 J7–J12 remain unassigned. Complaint commands N, #315, K, SA-05, docs and Stage 6 remain separate.
 
-## J7 current handoff — Mira bounded review pending
+## J7 — Mira bounded PASS
 
-Lira completed J7 `setTopicClosed`/`pinTopic`/`unpinTopic` in cumulative Draft #330 exact `5e76474908156d6acbab1d2cf98138e6a37cabc8` after J6 Mira PASS `9a0a095b41c26ef41d6d136f4cf673c8bc325b08`.
+Cumulative Draft #330 exact `5e76474908156d6acbab1d2cf98138e6a37cabc8` passed Mira bounded review with **zero confirmed current-scope J7 defects**.
 
-All three short transactions now take existing topic mutex as `FOR NO KEY UPDATE`, retaining reply/closure serialization and allowing existing Complaint FK `KEY SHARE`. Same-transaction authoritative actor guard is before any idempotent success, measure/effect or History. Closure preserves existing missing-topic and closure-version CAS checks **before** actor admission, then guards before `changed:false`. Pin/unpin keep `admin.forum` and transition-only History; no new permissions or HTTP policy.
+`setTopicClosed`, `pinTopic` and `unpinTopic` now retain target-first ordering with topic `FOR NO KEY UPDATE`, then same-transaction authoritative AccountState admission before any idempotent success or protected effect. Closure keeps missing-topic and closure-version CAS precedence before lifecycle admission, then denies inactive/missing before same-state `changed:false`; pin/unpin deny before measure/effect/no-op. Existing `admin.forum`, version/ABA/overflow, transition-only History and History-last rollback behavior are preserved.
 
-Evidence: 11 new native PG17 tests on actual state/no-op, inactive/missing before/after closure/pin/History, CAS/ABA/overflow, History rollback, both lifecycle race directions for all three writers, close↔reply mutex and simulated Complaint content→actor→FK compatibility. Existing AP-08 concurrency suite passes 4/4; canonical close/reopen/inline/pin/unpin late lifecycle 401 tests pass. Exact-head CI **831/831 PG**, **2274/2274 application**, lint/typecheck/build/schema PASS; SA-03 Chromium SUCCESS; AP-10 Chromium **4/4 SUCCESS**.
+The weaker non-key-changing topic mutex is the accepted J lock correction: it still conflicts with reply/topic state `FOR NO KEY UPDATE`, preserving close↔reply serialization, while permitting Complaint target FK `KEY SHARE` to complete when Complaint already holds content→actor. Native barrier evidence proves both lifecycle race directions for all three writers and this same-actor/content lock compatibility.
 
-Corrective history: initial lifecycle guard was ahead of CAS and was moved behind the accepted CAS check. Intermediate PG 830/831 uncovered a stale-expectation error in the new race test, fixed so stale CAS conflict and current-version inactive denial are independently asserted. Stable final exact head is green. Lira **AUTHOR STOP**; next **Mira bounded J7 coordinator review**. J8–J12 remain unassigned; Complaint commands N, #315, K, SA-05, permanent docs and Stage 6 are separate.
+Exact-head evidence: J7 native PG17 **11/11**, AP-08 closure races **4/4**, PostgreSQL total **831/831**, application/unit **2274/2274**, CI SUCCESS, SA-03 Chromium SUCCESS and AP-10 browser **4/4 SUCCESS**. Intermediate head `48edb1f...` failed only because a newly added test expected lifecycle denial from a stale closure version; actual production behavior correctly returned the accepted CAS-first `ForumStateConflictError`. Final commit changed that test expectation and added a current-version inactive assertion; no production-code correction followed that red run.
+
+Permanent documentation is intentionally separate from the implementation PR. Current `main` documentation still describes the pre-J close/reply `FOR UPDATE` lock wording; when cumulative J is accepted for merge, the separate docs closeout must align that technical wording with the accepted `NO KEY UPDATE` lock protocol without changing the product serialization contract.
+
+J8–J12 remain unassigned. Complaint commands N, #315, K, SA-05 and Stage 6 remain separate.
 
 ## Important cross-cutting boundaries
 
