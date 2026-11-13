@@ -1630,6 +1630,7 @@ export class DrizzleForumRepository {
 
   async markNotificationRead(userId:string,notificationId:string):Promise<ForumNotificationTarget>{
     return this.database.transaction(async tx=>{
+      await assertActiveAccountForDrizzleMutation(tx, userId);
       const row=await tx.execute<{kind:ForumNotificationTarget["kind"];caseId:string|null;appealId:string|null;topicId:string|null;postId:string|null}>(sql`
         select n.kind,coalesce(d.case_id,a.case_id) as "caseId",a.id as "appealId",n.topic_id as "topicId",n.post_id as "postId"
         from forum_reply_notifications n
@@ -1715,7 +1716,9 @@ export class DrizzleForumRepository {
     userId: string,
     notificationId: string,
   ): Promise<{ topicId: string; postId: string }> {
-    const [notification] = await this.database
+    return this.database.transaction(async (tx) => {
+      await assertActiveAccountForDrizzleMutation(tx, userId);
+    const [notification] = await tx
       .update(forumReplyNotifications)
       .set({ readAt: sql`coalesce(${forumReplyNotifications.readAt}, now())` })
       .where(and(
@@ -1729,6 +1732,7 @@ export class DrizzleForumRepository {
       });
     if (!notification?.topicId || !notification.postId) throw new ForumEntityNotFoundError("notification does not exist for user");
     return {topicId:notification.topicId,postId:notification.postId};
+    });
   }
 
   async readTopicPinState(topicId: string): Promise<boolean> {
