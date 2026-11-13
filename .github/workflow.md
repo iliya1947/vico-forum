@@ -1,17 +1,13 @@
 # Admin panel — current workflow
 
-- **Service PR #251.** Main/base `13456a17f23c1385bef8ab11c735f43d201edd02`; SA04-A1/A2–H merged. I1–I4 coordinator checkpoints PASS; **I5 remains required to close SA04-I**.
-- **Current stage/owner: Mira — I5 plan scope/fit/granularity review. Lev technical planning COMPLETE/STOP.**
-- Published I5 technical plan: [#6851946924](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6851946924). One bounded connected auth/session result; no further I5 decomposition proposed from inspected current seams.
-- Cumulative implementation [Draft #329](https://github.com/iliya1947/vico-forum/pull/329), exact `85104942e75071a67b4a4b37212ce5bca7361fe4`, open/Draft/unmerged; planning did not change head.
-- Source-based I5 plan: one bounded connected Better Auth lifecycle closure on current configured subsystem, preserving I1–I4 and SET05.
-- No source-confirmed mandatory runtime rewrite; prefer targeted connected native tests + extension of existing Settings Account browser harness + read-only disposable PR CI. Runtime corrections only for reproduced current-scope gaps, with smallest fix/regression.
-- Required composition evidence: two old cookies, inactive pre-routing/HTTP/direct/SET05 denial, pending Google link/callback with existing native provider seam, final persistence ordering, active/expired/sliding cookie ordering, telemetry on/off, classified failure restoration, signed one-session own-signout exception.
-- Current I4 family proofs are reused rather than multiplied across every endpoint. No entire-OAuth transaction/lock and no invented global rollback of earlier committed work. J–R, SA05, #315 remediation and external activation stay separate.
-- Planning only: no implementation edits or local tests/build/browser executed; not an I5 or whole-I PASS. Next Mira plan scope/fit/granularity review; Lira/Mark unassigned.
-- After Mira plan approval, Mira may assign exactly one bounded I5 result to Lira. After author STOP, cumulative whole-I coordinator review precedes Lev independent review of the same stable head.
-- No J–R writers, physical user deletion, SA05 deactivate/control, permanent docs closeout, merge, #315 remediation, Stage6/production or external rollout authorized by this plan.
-- Developer standing permission for review/plan reports and service-state publication persists throughout SA04.
+- **Service PR #251.** Main/base `13456a17f23c1385bef8ab11c735f43d201edd02`; SA04-A1/A2–H merged. I1–I4 coordinator checkpoints PASS; **I5 is now the active final checkpoint for SA04-I**.
+- **Current stage/owner: Lira — SA04-I5 implementation.** Mira reviewed Lev plan [#6851946924](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6851946924): **PASS on scope/fit/granularity; one bounded result, no further split.**
+- **Starting implementation head:** cumulative [Draft #329](https://github.com/iliya1947/vico-forum/pull/329) exact `85104942e75071a67b4a4b37212ce5bca7361fe4`, base/main `13456a17f23c1385bef8ab11c735f43d201edd02`.
+- **Required result:** connected Better Auth lifecycle closure for the current configured auth/session subsystem, proving I1–I4 compose across real Worker/pre-routing, HTTP/direct auth, session creation/final persistence, SET-05, Google callback/linking seam, cookie ordering, observer/failure handling and the inactive own-signout exception.
+- Existing I1–I4 proofs are reused. Add only missing connected native/browser/CI evidence. Change production runtime only for a **reproduced current-scope gap**, using the smallest local fix plus regression.
+- **Boundary:** no J–R application-writer implementation, physical user deletion, SA05 deactivate route/control/event, reactivation/separate forced-session control, #315 remediation, unconfigured secondary storage, permanent docs closeout, Stage6/production/external OAuth acceptance.
+- Lira publishes one stable exact head with actual applicable checks, connected evidence, evidence map and personal inspection, then **STOPs for Mira cumulative whole-I coordinator review**. Lev/Mark are not implementation reviewers yet.
+- Only after Mira whole-I PASS may Lev receive the same stable head for independent technical review.
 
 ## Mandatory author verification
 
