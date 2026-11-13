@@ -1,11 +1,34 @@
 import { drizzleAdapter } from "@better-auth/drizzle-adapter";
 import { APIError, type BetterAuthOptions } from "better-auth";
 import type { NodePgDatabase } from "drizzle-orm/node-postgres";
-import type { Client } from "pg";
+import type { Client, QueryResultRow } from "pg";
+import { isPostgresConnectionTimeout, isPostgresQueryTimeout } from "../../db/postgres-deadlines";
+import { isPostgresAvailabilityFailure } from "../localization/persistent-registry";
 import {
   AccountInactiveError, AccountMissingError, AccountStateUnexpectedError,
   AccountStateUnavailableError, assertActiveAccountForMutation,
 } from "../../db/account-state";
+
+/** Distinguishes an I4a late session-write denial from unrelated auth failures. */
+export class InactiveSessionWriteError extends APIError {
+  constructor() {
+    super("UNAUTHORIZED", { message: "Unauthorized" });
+  }
+}
+
+function classifySessionWriteSqlError(error: unknown): AccountStateUnavailableError | AccountStateUnexpectedError {
+  const seen = new Set<unknown>();
+  let current = error;
+  while (current && typeof current === "object" && !seen.has(current)) {
+    seen.add(current);
+    if (isPostgresAvailabilityFailure(current) || isPostgresConnectionTimeout(current) ||
+      isPostgresQueryTimeout(current)) {
+      return new AccountStateUnavailableError({ cause: error });
+    }
+    current = (current as { cause?: unknown }).cause;
+  }
+  return new AccountStateUnexpectedError({ cause: error });
+}
 
 /**
  * Better Auth 1.7.7's session create/update adapter calls are the canonical
@@ -24,9 +47,17 @@ export function guardBetterAuthSessionWrites(
   const connection = (database as NodePgDatabase & { $client: Client }).$client;
   return (options: BetterAuthOptions) => {
     const adapter = factory(options);
-    return new Proxy(adapter, {
+    // The pinned Better Auth as-is transaction fallback calls its callback
+    // with the underlying adapter, then uses that value via AsyncLocalStorage.
+    // Re-wrap the supplied transaction adapter so signup/OAuth session creates
+    // cannot bypass this same-client lock/write boundary.
+    const wrap = (current: typeof adapter): typeof adapter => new Proxy(current, {
       get(target, property, receiver) {
         const method = Reflect.get(target, property, receiver);
+        if (property === "transaction" && typeof method === "function") {
+          return <T>(fn: (trx: typeof adapter) => Promise<T>): Promise<T> =>
+            Reflect.apply(method, target, [async (trx: typeof adapter) => fn(wrap(trx))]);
+        }
         if (typeof method !== "function" || (property !== "create" && property !== "update")) {
           return method;
         }
@@ -41,9 +72,15 @@ export function guardBetterAuthSessionWrites(
             return Reflect.apply(method, adapter, args);
           }
 
+          // Only wrapper-owned SQL is classified here. Adapter/BA errors
+          // retain their original semantics and are not reclassified.
+          const query = async <T extends QueryResultRow>(sql: string, params?: unknown[]) => {
+            try { return await connection.query<T>(sql, params); }
+            catch (error) { throw classifySessionWriteSqlError(error); }
+          };
           let begun = false;
           try {
-            await connection.query("BEGIN");
+            await query("BEGIN");
             begun = true;
             if (property === "create") {
               await assertActiveAccountForMutation(connection, command.data?.userId as string);
@@ -56,12 +93,12 @@ export function guardBetterAuthSessionWrites(
                 (selector.operator !== undefined && selector.operator !== "eq")) {
                 throw new AccountStateUnexpectedError();
               }
-              const rows = (await connection.query<{ user_id: string }>(
+              const rows = (await query<{ user_id: string }>(
                 'select user_id from "session" where token = $1', [selector.value],
               )).rows;
               if (rows.length > 1) throw new AccountStateUnexpectedError();
               if (rows.length === 0) {
-                await connection.query("COMMIT");
+                await query("COMMIT");
                 begun = false;
                 return null;
               }
@@ -74,25 +111,30 @@ export function guardBetterAuthSessionWrites(
             }
 
             const result = await Reflect.apply(method, adapter, args);
-            await connection.query("COMMIT");
+            await query("COMMIT");
             begun = false;
             return result;
           } catch (error) {
+            let failure = error;
             if (begun) {
-              try { await connection.query("ROLLBACK"); }
-              catch { /* The caller closes this connection on failure. */ }
+              try { await query("ROLLBACK"); }
+              catch (rollbackError) {
+                // Losing the connection during rollback is not a normal denial.
+                failure = rollbackError;
+              }
             }
-            if (error instanceof AccountInactiveError || error instanceof AccountMissingError) {
-              throw new APIError("UNAUTHORIZED", { message: "Unauthorized" });
+            if (failure instanceof AccountInactiveError || failure instanceof AccountMissingError) {
+              throw new InactiveSessionWriteError();
             }
-            if (error instanceof AccountStateUnavailableError ||
-              error instanceof AccountStateUnexpectedError) {
-              onAccountStateError?.(error);
+            if (failure instanceof AccountStateUnavailableError ||
+              failure instanceof AccountStateUnexpectedError) {
+              onAccountStateError?.(failure);
             }
-            throw error;
+            throw failure;
           }
         };
       },
     });
+    return wrap(adapter);
   };
 }
