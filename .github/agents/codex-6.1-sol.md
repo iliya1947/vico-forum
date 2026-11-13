@@ -1,3 +1,15 @@
+# Лёва — актуальное назначение: SA04-J1 technical planning (2026-11-13)
+
+Current main: `44d6b69a8d235cc8b1ee30953839be71e6ab836a`.
+
+Prepare the technical plan for **J1 only: authoritative new forum publication writes**. Inspect the current canonical/direct topic-creation and reply-creation paths, their transaction boundaries, receipt/replay and publication-finalization side effects, and determine the minimal AccountState enforcement/evidence required. Planning only; do not modify implementation.
+
+Do not silently expand into attachment-store package K, published-content edits/source-locale correction, topic state/admin actions, Help mutations, profile/read-state/notification-read writes, L–R/S, SA05, #315 remediation, docs or Stage6. If current source shows J1 cannot be isolated safely from one of those areas, report the reason and STOP for Mira.
+
+After publishing the plan/evidence in #251, **STOP for Mira scope/fit/granularity review**. Lira/Mark remain unassigned.
+
+---
+
 # Лёва — актуальный checkpoint: SA04-I independent whole-PR PASS (2026-11-13)
 
 Full report [#6857634901](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6857634901). Exact #329 `74c6f43ae2d67526e2ad17aa50392aebf41abbca`, main/base `13456a17f23c1385bef8ab11c735f43d201edd02`. Coordinator whole-I and independent technical PASS cover the same head. Previously planned I5, did not implement #329. Lev completed/STOP; Mira coordinator follow-up next.
