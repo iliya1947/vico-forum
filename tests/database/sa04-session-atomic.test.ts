@@ -1049,7 +1049,7 @@ describe("SA04-I5a connected native account lifecycle across retained cookies", 
     if (!remainingSession) throw new Error("Missing other retained session");
     expect(remainingSession.token).not.toBe(owner.session.token);
     expect(remainingSession).toEqual(retained.find(value => value.token !== owner.session.token));
-    expect((await runtime.getSession(new Headers({ Cookie: secondCookie! })).session).toBeNull();
+    expect((await runtime.getSession(new Headers({ Cookie: secondCookie! }))).session).toBeNull();
     expect((await call("list-sessions", secondCookie!)).status).toBe(401);
     expect((await writer.query<{ name: string; deactivated_at: Date | null }>(
       'select name,deactivated_at from "user" where id=$1', [owner.userId],
@@ -1060,7 +1060,7 @@ describe("SA04-I5a connected native account lifecycle across retained cookies", 
     // over preliminary old-cookie cleanup for an unrelated still-active user.
     await writer.query("update \"session\" set expires_at=now()-interval '1 minute' where token=$1",
       [remainingSession.token]);
-    expect((await runtime.getSession(new Headers({ Cookie: secondCookie! })).session).toBeNull();
+    expect((await runtime.getSession(new Headers({ Cookie: secondCookie! }))).session).toBeNull();
     const loginRequest = new Request(origin + "/api/auth/sign-in/email", {
       method: "POST",
       headers: { Cookie: secondCookie!, Origin: origin, "content-type": "application/json",
@@ -1074,7 +1074,7 @@ describe("SA04-I5a connected native account lifecycle across retained cookies", 
       .filter(value => value.includes("session_token=")).at(-1)?.split(";", 1)[0];
     expect(newCookie).toBeTruthy();
     expect(newCookie).not.toBe(secondCookie);
-    expect((await runtime.getSession(new Headers({ Cookie: newCookie! })).session?.user.id)
+    expect((await runtime.getSession(new Headers({ Cookie: newCookie! }))).session?.user.id)
       .toBe(unrelated.userId);
     expect((await call("list-sessions", unrelated.cookie)).status).toBe(200);
     expect((await sessions(unrelated.userId)).map(value => value.token))
