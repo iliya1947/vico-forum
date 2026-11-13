@@ -186,6 +186,48 @@ describe("SA02 native Better Auth v1.7.7 OAuth, partial commit and rollback fact
     expect((await countRows()).sessions).toBe(2);
   });
 
+  it("SA04-I3 gates returning Google callbacks before session persistence, preserving SA02 facts",async()=>{
+    identityEmail="sa04-i3-oauth-returning@example.test";identitySub="sa04-i3-google";
+    const first=await initiate(await authFactory(),"sign-in/social");
+    const enrolled=await callback(await authFactory(),first.state,first.cookies);
+    expect(enrolled.status).toBe(302);
+    expect(sessionCookie(enrolled)).toBeTruthy();
+    const linked=(await accounts()).find(row=>row.provider_id==="google");
+    expect(linked).toBeDefined();
+    const userId=linked!.user_id;
+    expect(events.map(e=>e.kind)).toEqual(["account.created","auth.methodLinked","auth.sessionCreated"]);
+    events.length=0;
+
+    const before=(await client.query<{id:string;token:string}>(
+      'select id,token from session where user_id=$1 order by id',[userId])).rows;
+    expect(before).toHaveLength(1);
+    await client.query(`update "user" set deactivated_at='2026-11-12T00:00:00Z',
+      deactivated_by_user_id=$1, retain_at_least_until='2027-11-13T00:00:00Z'
+      where id=$1`,[userId]);
+    const blockedStart=await initiate(await authFactory(),"sign-in/social");
+    const blocked=await callback(await authFactory(),blockedStart.state,blockedStart.cookies);
+    expect(blocked.status).toBe(302);
+    expect(new URL(blocked.headers.get("Location")!,origin).searchParams.has("error")).toBe(true);
+    expect(sessionCookie(blocked)).toBeFalsy();
+    expect((await client.query<{id:string;token:string}>(
+      'select id,token from session where user_id=$1 order by id',[userId])).rows).toEqual(before);
+    expect(events).toEqual([]);
+    expect((await accounts()).filter(row=>row.provider_id==="google"))
+      .toEqual([linked]);
+
+    await client.query(`update "user" set deactivated_at=null,
+      deactivated_by_user_id=null, retain_at_least_until=null where id=$1`,[userId]);
+    const restored=await initiate(await authFactory(),"sign-in/social");
+    const accepted=await callback(await authFactory(),restored.state,restored.cookies);
+    expect(accepted.status).toBe(302);
+    expect(sessionCookie(accepted)).toBeTruthy();
+    expect(events).toEqual([expect.objectContaining({
+      kind:"auth.sessionCreated",userId,
+    })]);
+    expect((await client.query<{total:number}>(
+      'select count(*)::int total from session where user_id=$1',[userId])).rows[0]?.total).toBe(2);
+  });
+
   it("proves explicit verified Google link from current account, not OAuth initiation or repeated link",async()=>{
     const local=await registerEmail("sa02-oauth-link@example.test");
     events.length=0;
