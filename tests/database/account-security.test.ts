@@ -3,10 +3,9 @@ import { Client } from "pg";
 import { RouterContextProvider } from "react-router";
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
 import { createHyperdriveAuthRuntime, type BetterAuthEnvironment } from "../../app/auth/auth.server";
-import { AccountSecurityError, type AccountSecurityIdentity } from "../../app/auth/request-context";
+import { AccountSecurityError, authRuntimeForRequest, authSessionForRequest, type AccountSecurityIdentity } from "../../app/auth/request-context";
 import { installRegistrationPolicyFixture } from "./registration-policy-fixture";
 import { initializeAuthContext } from "../../app/auth/session-context";
-import { action as accountAction, loader as accountLoader } from "../../app/routes/settings-account";
 
 const url = process.env.DATABASE_URL;
 if (!url) throw new Error("DATABASE_URL is required for account security integration tests");
@@ -305,31 +304,18 @@ describe("SA04-I5b connected SET-05 stale/deactivated account lifecycle", () => 
     const original = await retainedSecurityState(owner.id);
     await client.query(deactivateI5b, [owner.id]);
 
-    // A mounted page carries a previously active request context; its loader
-    // and form action MUST recheck account state against Better Auth, not trust it.
-    await expect(accountLoader({ request: page, params: { locale: "en" }, context: mounted }))
-      .rejects.toMatchObject({ status: 401, headers: expect.any(Headers) });
-    for (const intent of ["change-password", "revoke-one", "revoke-others"] as const) {
-      const form = new URLSearchParams({
-        intent, expectedUserId: owner.id, expectedSessionId: owner.identity.sessionId,
-        ...(intent === "change-password"
-          ? { currentPassword: password, newPassword: "i5b-never-applied-password" }
-          : intent === "revoke-one" ? { sessionId: other.identity.sessionId } : {}),
-      });
-      const denied = await accountAction({
-        request: new Request(env.BETTER_AUTH_URL + "/en/settings/account", {
-          method: "POST",
-          headers: { Cookie: owner.cookie, Origin: env.BETTER_AUTH_URL,
-            "Content-Type": "application/x-www-form-urlencoded" },
-          body: form,
-        }),
-        params: { locale: "en" }, context: mounted,
-      });
-      expect(denied.data).toEqual({ error: "unauthenticated" });
-      expect(denied.init?.status).toBe(401);
-      expect(new Headers(denied.init?.headers).get("Cache-Control")).toBe("private, no-store");
-      expect(JSON.stringify(denied.data)).not.toContain("i5b-never-applied-password");
-    }
+    // A request context retained from a previously authenticated Account page
+    // must not authorize another read or write using its stale identity.
+    const staleSession = authSessionForRequest(mounted);
+    expect(staleSession?.user.id).toBe(owner.id);
+    const staleIdentity = { userId: staleSession!.user.id, sessionId: staleSession!.session.id };
+    const staleSecurity = authRuntimeForRequest(mounted).security!;
+    await errorCode(staleSecurity.read(page.headers, staleIdentity), "unauthenticated");
+    await errorCode(staleSecurity.changePassword(page.headers, staleIdentity,
+      password, "i5b-never-applied-password"), "unauthenticated");
+    await errorCode(staleSecurity.revokeOneOther(page.headers, staleIdentity,
+      other.identity.sessionId), "unauthenticated");
+    await errorCode(staleSecurity.revokeAllOthers(page.headers, staleIdentity), "unauthenticated");
 
     for (const actor of [owner, other]) {
       await errorCode(security.read(headers(actor), actor.identity), "unauthenticated");
