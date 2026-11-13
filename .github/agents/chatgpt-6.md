@@ -1,23 +1,16 @@
 # ChatGPT-6 — personal log
 
-## Active assignment — SA04-J9
+## SA04-J9 — implementation complete / AUTHOR STOP
 
-Continue cumulative Draft #330 from accepted J8 exact `41e26f191357aacde3de2dae3a3c7fed20756a30`.
+- **Baseline:** J8 Mira PASS exact `41e26f191357aacde3de2dae3a3c7fed20756a30`. Cumulative Draft #330 stable exact head `ce9c068f5f5d1d3b291f1f6b8125fa7f55d9549b`, open/draft/unmerged. Only J9 scope implemented.
+- **`1dfcfd900571c14d446a6b09bda720aed10a0474` — `db/forum-repository.ts`:** `createHelpSignal` (four kinds), `withdrawHelpSignal`, and rejected/accepted `resolveHelpSignal` now use authoritative `assertActiveAccountForDrizzleMutation` on their existing same Drizzle transaction, after content/dependency locks and domain validation and before any effect or success. Actor is trusted `actorId`, including superseded review paths; inactive/missing cannot mutate or succeed.
+- **Submission:** duplicate signal topic locks keep sorted ID order but use `FOR NO KEY UPDATE`; single Help topic and current solution-post dependency also use `FOR NO KEY UPDATE`, before actor. After actor: existing create-only `helpSignals.submit` measure, Help signal cooldown, pending uniqueness check and INSERT RETURNING. `enforceHelpSignalWriteCooldown` now reuses the actor mutex: it reads the latest signal after admission without a second user SELECT or `FOR UPDATE` upgrade and without moving to another connection. Cooldown remains independent of ordinary forum publishing.
+- **Withdrawal/rejected review:** preserve target signal `FOR UPDATE` and existing not-found/ownership/pending ordering, then actor. Withdrawal has no punitive measure/History; rejected review preserves Any `admin.forum` measure, rejection and one `help.signalReviewed` History event last.
+- **Accepted review:** unchanged initial snapshot; sorted topic `FOR NO KEY UPDATE` mutexes; applicable solution post `FOR NO KEY UPDATE`; all potentially affected pending signal rows plus target selected in **stable signal-ID order `FOR NO KEY UPDATE`** (not target-first), including duplicate third-topic `proposedOriginalTopicId` reach. Target signal reread and pending revalidated after complete set is locked, then actor, existing `admin.forum`, unchanged kind-specific accepted/superseded effects and one final `help.signalReviewed` History event. Any later post row re-lock uses `NO KEY UPDATE`, avoiding FK `KEY SHARE` incompatibility. Existing detailed History payload and suppression preserved.
+- **`e6d7e3e069be0a304a7028ad1d421c07d79ba3cf` + `292b06596ae561dd5b8a206fc6e22cb5845c9d21` — native PG17** `tests/database/sa04-forum-help-signal-lifecycle.test.ts` **32/32:** active all four kinds, active withdrawal/rejection, accepted and accepted→superseded domain branches, duplicate accepted with third-topic proposed-original supersession, stale solution targets, exact History effect, create-only measure/review-only measure and withdrawal without measure, independent cooldown and trace of exactly one actor `NO KEY UPDATE` per submit without user `FOR UPDATE`. Inactive/missing before/after topic/post/signal/relationship/History snapshots; state-first and writer-first COMMIT barriers for submit/withdraw/reject/accept; target withdrawal contention, third-topic signal contention, J8 solution post contention and Complaint post→actor→FK `KEY SHARE` completion under same-actor signal submission. A test-fixture adjustment places stale signal rows after best-answer replacement, because J8 correctly supersedes earlier stale rows; no production correction was needed.
+- **`ce9c068f5f5d1d3b291f1f6b8125fa7f55d9549b` — canonical route test:** `app/forum/write-actions.test.ts` verifies all four intents (`submitHelpSignal`, `withdrawHelpSignal`, `acceptHelpSignal`, `rejectHelpSignal`) map late inactive/missing from trusted actor through unchanged shared route to generic **401 unauthenticated**, `private, no-store`, no false redirect/success or lifecycle details. Route production unchanged.
+- Personally inspected **four bounded J9 commit diffs**. Only three files changed: `db/forum-repository.ts`, new native PG J9 test and `app/forum/write-actions.test.ts`. No J10–J12, standalone solution moderation/duplicate-appeal writers, Complaint mutations, #315, K, SA-05, schema/migrations/permissions/dependencies, permanent docs or Stage 6 changes.
+- **All exact-head GitHub Actions completed SUCCESS:** [CI 43525153447](https://github.com/iliya1947/vico-forum/actions/runs/43525153447): native PG17 **876/876** (new J9 **32/32**, migrations **56/56**, Admin History **28/28**); application/unit **2276/2276**; lint/typecheck/build/schema/Workers checks PASS. [SA-03 Chromium 43525153454](https://github.com/iliya1947/vico-forum/actions/runs/43525153454) SUCCESS. [AP-10 Chromium 43525153459](https://github.com/iliya1947/vico-forum/actions/runs/43525153459) all **4/4 jobs SUCCESS**.
+- GitHub Actions evidence is synthetic/native PG/browser, not production deployment or Owner visual acceptance. No merge. J7 permanent-doc technical topic-lock wording still awaits separate docs closeout.
 
-Deliver **J9 only**: `createHelpSignal`, `withdrawHelpSignal`, and both branches of `resolveHelpSignal`.
-
-Target:
-- submit domain/topic + applicable solution-post dependencies before same-tx actor guard; then existing create-only measure/cooldown/insert;
-- reuse lifecycle actor `FOR NO KEY UPDATE` for Help cooldown, with no user-row lock upgrade/second connection;
-- withdrawal: signal → actor → update, no measure;
-- rejected review: signal → actor → existing admin measure → update → History last;
-- accepted review: sorted topics → applicable post rows → complete affected pending-signal set in stable ID order → actor → existing admin measure → accepted/superseded effects → History last;
-- preserve all current kind-specific domain behavior, broad duplicate supersession predicates, History payloads and canonical action semantics;
-- inactive/missing receives no real or superseded success and leaves all relevant facts unchanged.
-
-Provide focused native PG active/inactive/missing facts, all materially different kinds/outcomes, lifecycle races, actor-lock-strength evidence, overlapping signal/post/Complaint lock compatibility, AP-10 measure regressions and canonical late-lifecycle 401 tests.
-
-No J10+, #315, K, SA-05, schema/migration/permission/dependency, docs or Stage 6 work. Escalate instead of widening the accepted lock protocol.
-
-After exact-head checks and bounded self-inspection: **AUTHOR STOP for Mira J9 review**.
-
+**Lira AUTHOR STOP → Mira bounded J9 coordinator review** on cumulative Draft #330 stable exact `ce9c068f5f5d1d3b291f1f6b8125fa7f55d9549b`. J10–J12, Lev and Mark unassigned. After J12: Mira whole-J coordinator review, then Lev independent whole-J review of same stable exact head.
