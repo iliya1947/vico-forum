@@ -1,27 +1,13 @@
 # Admin panel — communication
 
-## SA04-J5 — assignment → Lira
+## SA04-J5 — Lira AUTHOR STOP → Mira bounded coordinator review
 
-Baseline: cumulative Draft #330 exact `84b5124f948895e3e211b81b1d6bd2082ddc531f` (Mira J4 PASS).
-
-Implement **J5 only**: close authoritative AccountState admission for topic read-state mutation `advanceTopicReadState`.
-
-Required result:
-
-- move the mutation from its current target-read → autocommit upsert → separate readback shape into one short authoritative transaction;
-- before actor admission, establish the existing target **topic/post FK dependencies** using the accepted lock graph; use only dependency-strength locking that does not introduce a SHARE→UPDATE upgrade or reverse actor→content ordering;
-- after those dependencies, admit the trusted `userId` through the shared AccountState mutation guard on the **same transaction/connection**;
-- only then run the existing monotonic upsert. Preserve the current ordering rule exactly: marker advances by post `created_at`, then post ID tie-break; same/backward requests remain no-op for an active actor;
-- read/return the resulting topic read state through that same transaction so the actor lock remains held through the operation result and COMMIT/ROLLBACK;
-- inactive/missing actor must not create or advance a marker and must not receive success from same/backward no-op paths;
-- preserve target-not-in-topic failure, `new / unread / read`, `firstUnreadPostId`, concurrent monotonic behavior, FK constraints and the existing canonical `markTopicRead` action semantics;
-- the canonical action already uses `runForumMutation`; retain its generic lifecycle denial mapping to private/no-store `401 unauthenticated`. Do not add a second read-state HTTP policy.
-
-Evidence should directly cover active first advance/forward/same/backward behavior; inactive and missing actors with before/after marker facts; state-first and writer-first races using separate PG connections; concurrent monotonic/tie-break regression; bounded compatibility with a concurrent content mutation proving no new actor/content deadlock or lock upgrade; canonical `markTopicRead` late lifecycle denial/no false `ok` success; and applicable unread/new route/read-state regressions.
-
-Explicitly excluded: #315 `READSTATE-CACHE-01`, J6+, standalone attachment K, SA-05, schema/migration/permission/dependency changes, permanent docs and Stage 6.
-
-Run applicable exact-head CI/checks, inspect the bounded delta, publish one stable #330 head/evidence, then **AUTHOR STOP for Mira J5 review**. Lev/Mark remain inactive.
+- Cumulative Draft #330 exact `af25adf18fd065e5af4a7e6da2c670f28613a10f` (open, unmerged); baseline J4 Mira PASS exact `84b5124f948895e3e211b81b1d6bd2082ddc531f`.
+- `advanceTopicReadState` now uses one short Drizzle transaction: target topic then matching post `FOR KEY SHARE` FK dependency locks → authoritative active `userId` AccountState guard under user `FOR NO KEY UPDATE` on the same connection → existing monotonic `created_at`/post-ID tiebreak UPSERT → same-tx readback before COMMIT. The readonly `readTopicReadState` API is unchanged.
+- Active first/forward/same/backward and `new/unread/read`, firstUnread and latest post semantics are preserved. Inactive/missing actor cannot create/advance marker or receive same/backward no-op success. Missing/cross-topic target fails before mutation.
+- New PG17 tests cover monotonic concurrent winner and equal-timestamp ID ordering, state-first denial after dependency locks, writer-first actor lock held through no-op result/COMMIT, and KEY SHARE compatibility with J3a content writer holding post `FOR NO KEY UPDATE`. Canonical `markTopicRead` continues using shared `runForumMutation`, with late inactive/missing 401 generic `unauthenticated`, `private, no-store`, no `ok:true`.
+- Exact-head `CI` SUCCESS: PostgreSQL **811/811** (J5 new **7/7**), application/unit **2271/2271**, lint/typecheck/build/schema PASS. `SA-03 unified profile connected Chromium acceptance` SUCCESS. `AP-10 isolated browser acceptance` SUCCESS all **4/4** jobs.
+- Lira personally inspected the three bounded commit diffs and recorded **AUTHOR STOP**. **Next actor Mira** for J5 bounded review on stable exact head. #315 `READSTATE-CACHE-01` is excluded; J6–J12 / Lev / Mark unassigned. No schema, migrations, broader read-state/cache remediation or Stage 6 work.
 
 ## J4 — Mira bounded coordinator review: PASS
 
