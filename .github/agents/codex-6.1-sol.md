@@ -1,3 +1,21 @@
+# Лёва — актуальный checkpoint: SA04-I5 technical plan published (2026-11-13)
+
+**Planning COMPLETE/STOP; Mira plan scope/fit review next.** Full plan [#6851946924](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6851946924), exact #329 `85104942e75071a67b4a4b37212ce5bca7361fe4`, main/base `13456a17f23c1385bef8ab11c735f43d201edd02`. I1–I4 coordinator checkpoints PASS; I5/whole-I not accepted.
+
+- Source-based I5 plan: one bounded connected Better Auth lifecycle closure on current configured subsystem, preserving I1–I4 and SET05.
+- No source-confirmed mandatory runtime rewrite; prefer targeted connected native tests + extension of existing Settings Account browser harness + read-only disposable PR CI. Runtime corrections only for reproduced current-scope gaps, with smallest fix/regression.
+- Required composition evidence: two old cookies, inactive pre-routing/HTTP/direct/SET05 denial, pending Google link/callback with existing native provider seam, final persistence ordering, active/expired/sliding cookie ordering, telemetry on/off, classified failure restoration, signed one-session own-signout exception.
+- Current I4 family proofs are reused rather than multiplied across every endpoint. No entire-OAuth transaction/lock and no invented global rollback of earlier committed work. J–R, SA05, #315 remediation and external activation stay separate.
+- Planning only: no implementation edits or local tests/build/browser executed; not an I5 or whole-I PASS. Next Mira plan scope/fit/granularity review; Lira/Mark unassigned.
+
+Inspected actual six-file cumulative #329, auth.server/session-write-guard, Worker/context/cookie composition, SET05 route/runtime and current native/OAuth/browser coverage. Official tag1.7.7 direct/common dispatch, hooks, internal adapter, OAuth and session sources fetched; installed core transaction fallback + signout sources verified. No mandatory code fix was confirmed by source diagnosis; no implementation tests run, no runtime test environment created. This is not independent whole-PR review.
+
+I5 remains one result: current configured subsystem composition, native+actual built Worker/browser evidence, preserving SET05 and lifecycle write ordering. Do not invent push revocation, global OAuth rollback, unconfigured secondary storage, raw direct active token cleanup, upgraded freshness or session-revoke-link security remediation. Known #315 AUTH-LINK-01/AUTH-SESSION-01/02/03 boundaries explicitly separated at fc32f0ba36120b89a27831993519a00f2a40b953.
+
+Reproducible planning: /workspace/work/sa04-i5-plan-evidence/I5_TECHNICAL_PLAN.md and SOURCE_MANIFEST.json. Worktree /workspace/work/sa04-i5-plan clean on exact head; no test/build/vars/dependency installation or source mutation. Standing developer publication permission covers all SA04. Master plan unchanged.
+
+---
+
 # Лёва — актуальный checkpoint: SA04-A2–H independent whole-PR PASS (2026-11-12)
 
 Published report [#6835789162](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6835789162). User authorization for review-report/service publication persists throughout SA04.
