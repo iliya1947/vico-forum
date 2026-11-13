@@ -1,5 +1,15 @@
 # Admin panel — communication
 
+## 2026-11-13 — SA04-J2 publication assigned to Lira
+
+- J1 remains accepted at Draft #330 exact `35902e3ebd7636121b3a4af1e67b3da8ec365be2`.
+- **Only J2 is active:** authoritative AccountState protection for Forum publication — `createTopic`, `createTopicWithInitialPost`, `createPost`.
+- J2 includes publication receipt/replay and the existing publication-transaction final bind/receipt path because these are part of the same authoritative publication transaction. It does **not** include standalone attachment upload/draft/storage admission; that remains K.
+- Required result: inactive/missing actor cannot obtain a fresh publication or a successful matching replay through direct/canonical current publication paths. Active publication/replay, cooldown/measures, closure/duplicate checks, tags, mentions/reply notifications and publication atomicity remain preserved.
+- Publication ordering follows the accepted full J plan: draft scope/receipt first; fresh reply content dependencies before actor; actor admission before first write and before replay success. The accepted J1 helper must be called with the real transaction object, not autocommit DB.
+- J3 edit/revision/source-locale and all later families remain unassigned.
+- Lira continues cumulative Draft #330, implements J2 only, performs author inspection, records exact head/evidence and STOPs for Mira. Lev/Mark remain unassigned.
+
 ## 2026-11-13 — Mira bounded SA04-J1 checkpoint PASS
 
 - Reviewed cumulative Draft #330 exact `35902e3ebd7636121b3a4af1e67b3da8ec365be2` against J1 assignment, accepted full J plan and current source-of-truth.
