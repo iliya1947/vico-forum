@@ -4762,3 +4762,12 @@ Lira must perform author inspection, publish the stable A2 head/evidence and STO
 - Preserve all active semantics and the existing explicit link/password/session policies. Inactive **own sign-out remains allowed** solely to delete its own current session/clear cookie.
 - I3 new-session target admission and I4 atomic target-write closure remain separate future checkpoints; guest sign-in/callback behavior is not falsely claimed closed by I2.
 - Author handoff requires focused real Better Auth HTTP/direct evidence, stable exact head, personal inspection and STOP for Mira checkpoint review.
+
+
+## 2026-11-13 — SA04-I2 coordinator finding
+
+- **CHANGES REQUIRED — one confirmed current-scope defect: `I2-MIRA-01`.**
+- The I2 pre-hook uses Better Auth authoritative session resolution without refresh suppression on non-`/get-session` protected endpoints. A due inactive session can therefore be refreshed before lifecycle admission rejects it.
+- This is inside I2 because the preflight itself performs the mutation before the inactive-account gate; it is not deferred session-create/target-write work from I3/I4.
+- Correction must preserve active endpoint semantics while proving inactive preflight cannot slide/update the retained session or emit a refresh cookie before denial.
+- No other I2 current-scope defects confirmed. #329 remains Draft; I3+ stays unassigned until correction + repeat Mira PASS.
