@@ -4,8 +4,8 @@
 - **Current stage: SA04-J technical planning.**
 - **Technical planner: Lev.** Plan the complete accepted **SA04-J — Forum authoritative actor writes protected by AccountState** from current main.
 - Planning covers the full J boundary from the accepted SA04 package plan. Do not implement and do not pre-split the implementation.
-- After Lev publishes the J plan and STOPs, Mira reviews scope/fit/granularity and only then decides whether Lira implementation needs bounded substeps.
-- **Lira/Mark unassigned.** No implementation PR is started until Mira accepts the J technical plan.
+- After Lev publishes the complete J plan and STOPs, Mira reviews scope/fit and decomposes Lira's implementation into bounded substeps. **Lira implementation is always split; this is an existing developer decision, not a Mira choice.**
+- **Lira/Mark unassigned.** No implementation PR is started until Mira accepts the complete J technical plan and prepares the first bounded Lira implementation handoff.
 
 ## I5 author checkpoint decomposition
 
