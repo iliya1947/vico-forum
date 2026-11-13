@@ -5103,3 +5103,14 @@ Mira independently reviewed cumulative Draft #329 exact `0c36648638a11e69e657a83
 - Exact-head CI independently checked: 184/184 app files, 2269/2269 tests; 69/69 PostgreSQL17 files, 758/758 tests; `account-security.test.ts` 12/12. SA01 #43429535334, SA03 #43429535380 and AP10 #43429535405 are SUCCESS.
 - **Verdict: PASS — 0 confirmed current-scope I5b defects.** STOP. I5c–I5e remain unassigned until separate continuation; Lev/Mark remain stopped.
 
+## 2026-11-13 — SA04-I5c assignment → Lira
+
+- Starting point: cumulative Draft #329 exact `705519ce10f78801c2614a1cafa13347e0d2a75b`; I5a and I5b are Mira checkpoint-PASS. Main/base remains `13456a17f23c1385bef8ab11c735f43d201edd02`.
+- **Lira owns I5c only:** connected Google OAuth/link callback lifecycle plus SA-02 auth-fact/observer/failure composition on the pinned Better Auth 1.7.7 local synthetic-provider seam.
+- Required result: a returning-Google or explicit-link flow that was legitimately initiated while active but reaches its callback after authoritative deactivation must fail closed before any protected user/account/provider/session mutation survives and must not manufacture `account.created`, `auth.methodLinked` or `auth.sessionCreated` success facts. Preserve the already-approved inactive own-signout exception; it is unrelated to callback admission.
+- Preserve current active flows: new Google registration, returning Google sign-in, verified explicit linking, stale-link identity checks, provider/email verification, registration-policy behavior and existing exact SA-02 fact meanings. Lifecycle enforcement must remain effective whether optional SA-02 fact observers/proofs are present or absent, and current Better Auth transaction-callback composition must not bypass the accepted I3/I4 gates.
+- Verify failure composition at this boundary: classified lifecycle/account-state storage unavailability stays controlled/fail-closed with no sensitive provider/session payload exposure; unexpected schema/programming/configuration failure is not silently converted into guest, ordinary policy denial or false success. Observer/proof recording failure remains best-effort and must not change the auth outcome or create a false exact fact.
+- Runtime changes are authorized only after reproducing a real I5c current-scope defect; then apply only the smallest local correction plus regression.
+- **Excluded:** live Google/external OAuth, Stage6, built Worker/Chromium stale-page flow (I5d), final cumulative sweep/evidence map (I5e), J–R, SA05 deactivation operation/UI, #315 remediation, physical deletion/reactivation/forced foreign-session controls, schema/product expansion, docs closeout or merge.
+- After one stable exact head, applicable native Better Auth 1.7.7 + PostgreSQL17 evidence and personal author inspection, **STOP for Mira bounded I5c checkpoint review**. I5d–I5e and Lev/Mark remain unassigned.
+
