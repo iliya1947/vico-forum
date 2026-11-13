@@ -1478,13 +1478,19 @@ export class DrizzleForumRepository {
   }
 
   async readTopicReadState(userId: string, topicId: string): Promise<ForumTopicReadState | undefined> {
-    const [topic] = await this.database
+    return this.readTopicReadStateOn(this.database, userId, topicId);
+  }
+
+  private async readTopicReadStateOn(
+    database: Pick<NodePgDatabase, "select">, userId: string, topicId: string,
+  ): Promise<ForumTopicReadState | undefined> {
+    const [topic] = await database
       .select({ id: forumTopics.id })
       .from(forumTopics)
       .where(eq(forumTopics.id, topicId));
     if (!topic) return undefined;
 
-    const [marker] = await this.database
+    const [marker] = await database
       .select({ lastReadPostId: forumTopicReadStates.lastReadPostId })
       .from(forumTopicReadStates)
       .where(and(
@@ -1492,7 +1498,7 @@ export class DrizzleForumRepository {
         eq(forumTopicReadStates.topicId, topicId),
       ));
 
-    const posts = await this.database
+    const posts = await database
       .select({ id: forumPosts.id })
       .from(forumPosts)
       .where(eq(forumPosts.topicId, topicId))
@@ -1534,39 +1540,47 @@ export class DrizzleForumRepository {
   }
 
   async advanceTopicReadState(userId: string, topicId: string, postId: string): Promise<ForumTopicReadState> {
-    const [target] = await this.database
-      .select({ id: forumPosts.id })
-      .from(forumPosts)
-      .where(and(eq(forumPosts.topicId, topicId), eq(forumPosts.id, postId)));
-    if (!target) throw new ForumEntityNotFoundError("post does not exist in topic");
+    return this.database.transaction(async (tx) => {
+      // FK dependencies before actor admission. KEY SHARE is compatible with
+      // concurrent non-key content edits and does not require lock upgrades.
+      const [topic] = await tx.select({ id: forumTopics.id }).from(forumTopics)
+        .where(eq(forumTopics.id, topicId)).for("key share");
+      if (!topic) throw new ForumEntityNotFoundError("topic does not exist");
+      const [target] = await tx.select({ id: forumPosts.id }).from(forumPosts)
+        .where(and(eq(forumPosts.topicId, topicId), eq(forumPosts.id, postId)))
+        .for("key share");
+      if (!target) throw new ForumEntityNotFoundError("post does not exist in topic");
 
-    await this.database.execute(sql`
-      insert into forum_topic_read_states (user_id, topic_id, last_read_post_id, updated_at)
-      values (${userId}, ${topicId}, ${postId}, now())
-      on conflict (user_id, topic_id) do update
-      set last_read_post_id = excluded.last_read_post_id,
-          updated_at = now()
-      where exists (
-        select 1
-        from forum_posts as candidate
-        inner join forum_posts as current_marker
-          on current_marker.topic_id = forum_topic_read_states.topic_id
-         and current_marker.id = forum_topic_read_states.last_read_post_id
-        where candidate.topic_id = excluded.topic_id
-          and candidate.id = excluded.last_read_post_id
-          and (
-            candidate.created_at > current_marker.created_at
-            or (
-              candidate.created_at = current_marker.created_at
-              and candidate.id > current_marker.id
+      await assertActiveAccountForDrizzleMutation(tx, userId);
+
+      await tx.execute(sql`
+        insert into forum_topic_read_states (user_id, topic_id, last_read_post_id, updated_at)
+        values (${userId}, ${topicId}, ${postId}, now())
+        on conflict (user_id, topic_id) do update
+        set last_read_post_id = excluded.last_read_post_id,
+            updated_at = now()
+        where exists (
+          select 1
+          from forum_posts as candidate
+          inner join forum_posts as current_marker
+            on current_marker.topic_id = forum_topic_read_states.topic_id
+           and current_marker.id = forum_topic_read_states.last_read_post_id
+          where candidate.topic_id = excluded.topic_id
+            and candidate.id = excluded.last_read_post_id
+            and (
+              candidate.created_at > current_marker.created_at
+              or (
+                candidate.created_at = current_marker.created_at
+                and candidate.id > current_marker.id
+              )
             )
-          )
-      )
-    `);
+        )
+      `);
 
-    const state = await this.readTopicReadState(userId, topicId);
-    if (!state) throw new ForumEntityNotFoundError("topic does not exist");
-    return state;
+      const state = await this.readTopicReadStateOn(tx, userId, topicId);
+      if (!state) throw new ForumEntityNotFoundError("topic does not exist");
+      return state;
+    });
   }
 
   async readNotifications(userId:string,page:number):Promise<ForumNotificationPage>{
