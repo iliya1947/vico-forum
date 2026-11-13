@@ -1,18 +1,18 @@
 # Admin panel — current workflow
 
 - **Service PR #251.** Main/base `13456a17f23c1385bef8ab11c735f43d201edd02`; SA04-A1/A2–H merged. I1–I4 coordinator checkpoints PASS; I5 remains final connected closure for SA04-I.
-- **I5a bounded checkpoint: Mira PASS.** Reviewed cumulative Draft #329 stable exact `58130793d05f6eb2a8b867b2fb546ccddcd6fb59` against the I5a assignment and current unchanged main/source-of-truth.
-- I5a delta is three commits / one existing test file (`tests/database/sa04-session-atomic.test.ts`, +146), no runtime/schema/dependency/docs change.
-- Verified the connected real Better Auth 1.7.7 + PostgreSQL17 scenario links retained old cookies/sessions → pre-routing guest transition → canonical HTTP/direct denial → final session create/update/delete guards → inactive own-signout cleanup, while preserving unrelated active behavior and endpoint-last login cookie behavior.
-- No current-scope I5a runtime defect reproduced. Existing I1–I4 focused proofs remain the detailed race/error/selector evidence rather than being duplicated.
-- Exact-head CI independently rechecked SUCCESS: CI #43425686486 — 184/184 app files, 2269/2269 app tests; 69/69 PG17 files, 754/754 tests; `sa04-session-atomic.test.ts` 29/29 including I5a. SA01 #43425686622, SA03 #43425686478 and AP10 #43425686467 are SUCCESS.
-- **Current stage: STOP after I5a PASS. I5b–I5e are unassigned.** On the next explicit continuation, Mira may prepare/assign **I5b only** (SET-05 stale/deactivated chain) from this accepted head.
-- No Lev/Mark independent review until all I5 author checkpoints are complete and Mira cumulative whole-I PASS. No J–R, SA05, #315 remediation, docs/merge, Stage6/production.
+- **I5a bounded checkpoint: Mira PASS** on cumulative Draft #329 exact `58130793d05f6eb2a8b867b2fb546ccddcd6fb59`; 0 confirmed current-scope defects.
+- **I5b is now the only active author checkpoint → Lira.** Continue the same cumulative Draft #329 from exact `58130793d05f6eb2a8b867b2fb546ccddcd6fb59`.
+- I5b result: prove the existing SET-05 Account & security read/password/own-session paths remain fail-closed after authoritative account deactivation, including a late-deactivation/stale mounted state between prior session/page state and the operation. Runtime correction is authorized only for a reproduced current-scope gap and must stay local to that gap.
+- Preserve current SET-05 semantics: safe linked-method projection, credential-password/current-password/rate-limit behavior, fresh-session requirements, revoke-one-other/revoke-all-other target rules, current-session preservation, stale identity/session expectations, private/no-store responses, Better Auth cookie ordering and classified unavailable-vs-unexpected failures. Preserve the accepted inactive own-signout cleanup exception.
+- I5b may use deactivation as fixture/state transition only; it does **not** implement SA05 deactivation controls. Pending Google/link callback + observer/failure composition is I5c; built Worker/browser connected acceptance is I5d; final sweep/evidence map is I5e.
+- **Current stage: Lira I5b author work only.** I5c–I5e, J–R, SA05, #315 remediation, physical deletion/reactivation/forced foreign-session controls, docs/merge and Stage6/production remain unassigned.
+- After one stable exact head, applicable connected evidence and personal author inspection, **Lira STOPs for Mira bounded I5b checkpoint review**. Lev/Mark remain unassigned until all I5 author checkpoints are complete and Mira cumulative whole-I PASS.
 
 ## I5 author checkpoint decomposition
 
 1. **I5a — native core connected chain:** **PASS** on exact `58130793d05f6eb2a8b867b2fb546ccddcd6fb59`.
-2. **I5b — SET-05 stale/deactivated chain:** read/password/session controls and late deactivation. Not assigned.
+2. **I5b — SET-05 stale/deactivated chain:** **ACTIVE — assigned to Lira** from exact `58130793d05f6eb2a8b867b2fb546ccddcd6fb59`; read/password/session controls and late deactivation only.
 3. **I5c — Google/link and observer/failure composition:** pending callback, telemetry on/off, transaction callback and failures. Not assigned.
 4. **I5d — built Worker/browser connected acceptance:** stale mounted Account, old cookies, independent account, sign-out, private/public boundaries. Not assigned.
 5. **I5e — final connected sweep/evidence map:** after I5a–d PASS and personal cumulative I inspection. Not assigned.
