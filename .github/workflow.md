@@ -1,9 +1,9 @@
 # Admin panel — current workflow
 
-- **Service PR #251.** Main/base `13456a17f23c1385bef8ab11c735f43d201edd02`, SA04-A1/A2–H merged; I1/I2/I3/I4a/I4b/I4c/**I4d** coordinator checkpoint-PASS. **I4 atomic existing-target mutation closure is complete; I5 remains required to close checkpoint I.**
-- **Current stage/owner:** no implementation or independent-review agent is assigned. Mira completed the bounded I4d checkpoint plus connected cumulative I1–I4 review on stable exact `85104942e75071a67b4a4b37212ce5bca7361fe4`: **PASS, 0 confirmed current-scope defects**.
-- **Implementation PR/head:** cumulative [Draft #329](https://github.com/iliya1947/vico-forum/pull/329), stable exact `85104942e75071a67b4a4b37212ce5bca7361fe4`, base/main `13456a17f23c1385bef8ab11c735f43d201edd02`. PR remains open/Draft/unmerged. GitHub Actions CI #43408842355, SA01 #43408842422, SA03 #43408842363 and AP10 #43408842330 were independently rechecked **SUCCESS on this exact head**.
-- **Next:** on a separate continuation, Mira performs the I5 scope/granularity gate for the approved **connected Better Auth closure**. Only I5 may close checkpoint I. Do not assign Lev/Mark or merge #329 before that closure and the later coordinator/independent gates. No J+, docs closeout, #315, SA05+, Stage6 or production yet.
+- **Service PR #251.** Main/base `13456a17f23c1385bef8ab11c735f43d201edd02`; SA04-A1/A2–H merged; I1–I4 coordinator checkpoints PASS. I4 is closed; **I5 remains the final checkpoint required to close SA04-I**.
+- **Current stage/owner:** **Lev — I5 technical planning only.** Mira completed the I5 scope/granularity gate: one bounded result, **connected Better Auth lifecycle closure** over the current configured auth/session subsystem. Lira and Mark are unassigned.
+- **Implementation PR/head:** cumulative [Draft #329](https://github.com/iliya1947/vico-forum/pull/329), stable exact `85104942e75071a67b4a4b37212ce5bca7361fe4`, base/main `13456a17f23c1385bef8ab11c735f43d201edd02`. No implementation change is authorized during Lev's planning step.
+- **Next:** Lev inspects the actual repository, accepted SA04-I contract and pinned Better Auth 1.7.7, then publishes the minimal technical plan/evidence needed to close I5 or decomposes I5 only if the connected closure is not safely one author result. Lev STOPs after planning. Mira then checks plan fit/granularity before any Lira implementation assignment. No J–R writers, physical user deletion, SA05 deactivate operation/control, docs closeout, #315, Stage6/production or external rollout.
 
 ## Mandatory author verification
 
