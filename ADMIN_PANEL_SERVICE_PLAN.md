@@ -53,8 +53,8 @@ Current J decomposition for Lira execution:
 2. **J2 — publication:** `createTopic`, `createTopicWithInitialPost`, `createPost`, matching receipt replay and final publication binding/receipt. Mira PASS exact `22a6733ee661e22665406974d5a3ac515866fd51`.
 3. **J3a — low-level revisions:** `reviseTopicTitle`, `revisePostBody`, own/any paths. Mira PASS exact `39df1262d9b536df87b0147e4a8a400d65b7d038`.
 4. **J3b — published-post edit:** `editPublishedPost`, matching edit receipt replay, revision/CAS, mentions, retained/new attachment binding, draft finalization and receipt. **Mira bounded PASS on `b407f93f54b7f7e1073218dd63b4f6235b1bb417`.**
-5. **J3c — source-locale service no-op + canonical HTTP boundary.** **Lira implementation complete / AUTHOR STOP on `cb1df03d00038fdf414b9d0d650d908a58167098`; Mira bounded review pending.**
-6. **J4 — profile writer.** Unassigned.
+5. **J3c — source-locale service no-op + canonical HTTP boundary.** **Mira bounded PASS on `cb1df03d00038fdf414b9d0d650d908a58167098`.**
+6. **J4 — profile writer.** **Lira implementation complete / AUTHOR STOP on `84b5124f948895e3e211b81b1d6bd2082ddc531f`; Mira bounded review pending.**
 7. **J5 — read-state writer.** Unassigned.
 8. **J6 — inbox acknowledgement writers.** Unassigned.
 9. **J7 — topic close/pin/unpin state writers.** Unassigned.
@@ -81,11 +81,17 @@ Required behavior:
 - Lira published stable exact Draft #330 head `b407f93f54b7f7e1073218dd63b4f6235b1bb417`; Mira completed J3b bounded review with PASS and zero confirmed current-scope defects.
 - J3c is not a J3b defect. J4+ are not current scope.
 
-## J3c current handoff — Mira review pending
+## J3c — Mira bounded PASS
 
 Lira completed the two service-level same-locale source-correction admission paths and canonical late AccountState HTTP denial mapping in cumulative Draft #330 at exact `cb1df03d00038fdf414b9d0d650d908a58167098`. Same-locale topic/post operations keep validation, owner/any authorization, revision consistency and zero revision/History writes while transactionally locking the actual actor. Changed-locale writers are unchanged from accepted J3a.
 
-Native PostgreSQL 17 tests: 799/799 (seven new J3c cases). Application/unit: 2269/2269. CI lint/typecheck/build/schema PASS. Separate AP-10 browser workflow: 4/4 PASS. Lira **AUTHOR STOP**; Mira owns the next bounded J3c coordinator review on that head. J4–J12 remain unassigned.
+Native PostgreSQL 17 tests: 799/799 (seven new J3c cases). Application/unit: 2269/2269. CI lint/typecheck/build/schema PASS. Separate AP-10 browser workflow: 4/4 PASS. Lira completed AUTHOR STOP; Mira independently completed J3c bounded coordinator review with PASS and zero confirmed current-scope defects. J4 was subsequently assigned to Lira.
+
+## J4 current handoff — Mira bounded review pending
+
+Lira completed the existing public-profile `updateProfile` authoritative AccountState admission under its original user-row `FOR UPDATE` mutex and on the same transaction before `profile.edit` and profile upsert, plus the canonical late inactive/missing private/no-store 401 mapping. Active save/validation, existing missing-user handling, AP-10 measure checks, public Deleted-user projection and bounded HTTP failure behavior remain intact.
+
+Cumulative Draft #330 exact `84b5124f948895e3e211b81b1d6bd2082ddc531f`: PostgreSQL 17 **804/804** (five new J4 tests), application/unit **2270/2270**; lint/typecheck/build/schema PASS; SA-03 unified profile Chromium SUCCESS; AP-10 browser four jobs PASS. Lira **AUTHOR STOP**. Mira is next for bounded J4 coordinator review of that exact head. J5–J12 unassigned; no Lev/Mark review yet.
 
 ## Important cross-cutting boundaries
 
