@@ -97,7 +97,12 @@ async function authFactory(actor:string|null=null,transaction=false,config?:{
       return async (request:Request)=>{
         const restore=observeAuthNativeMutations(client,proof);
         try{return await auth.handler(request);}
-        finally{restore();await proof?.flush();}
+        finally{
+          restore();
+          // Match createHyperdriveAuthRuntime's best-effort proof flush:
+          // telemetry failures cannot override an already committed auth outcome.
+          try{await proof?.flush();}catch{/* best effort */}
+        }
       };
     },
   });
