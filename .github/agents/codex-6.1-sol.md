@@ -1019,3 +1019,14 @@ Review cumulative Draft PR #328 exact head `0a917b6f4f55f991bea6e6031b43a0c4f0dc
 Independently check the whole A2–H scope against the accepted SA04 plan, current Stage and repository behavior, including cross-checkpoint interactions. Classify only confirmed defects of the delivered A2–H scope; missing I+ enforcement/SA05 behavior is future work, not a defect by itself. Do not implement changes during review.
 
 Publish one complete findings packet or PASS in #251, record your result in your service file/workflow as appropriate, then STOP. SA04-I remains unassigned.
+
+
+## 2026-11-13 — active assignment: SA04-I5 technical plan
+
+Prepare the **SA04-I5 technical plan only** against cumulative Draft #329 exact `85104942e75071a67b4a4b37212ce5bca7361fe4` and current main/base `13456a17f23c1385bef8ab11c735f43d201edd02`. I1–I4 have coordinator PASS; I5 is the final checkpoint required to close SA04-I.
+
+Required result: determine the minimal concrete implementation/acceptance work needed for the **connected Better Auth lifecycle closure** of the current configured auth/session subsystem. Inspect how the accepted I1–I4 boundaries compose in real current paths, identify any remaining current-scope seam or integration gap, and specify the repository seams plus acceptance needed for Lira. Do not assume the green intermediate checkpoints prove connected closure. If I5 is not safely one author result, decompose only I5.
+
+Preserve current SET-05 password/session behavior, registration/linking policies, active auth semantics, SA-02 auth facts and lifecycle-storage failure distinctions. J–R application writers, physical user deletion, SA05 deactivation operation/control, reactivation/separate forced-session Owner action, unconfigured secondary-session storage, docs/#315 and Stage6/external acceptance are outside I5.
+
+No implementation in this assignment. Publish the technical plan/result in #251, update your service context as appropriate, then **STOP for Mira plan review**. Lira/Mark remain unassigned.
