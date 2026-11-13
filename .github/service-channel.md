@@ -1,5 +1,19 @@
 # Admin panel — communication
 
+## J6 — Mira bounded coordinator review: PASS
+
+- Reviewed cumulative Draft #330 exact `9a0a095b41c26ef41d6d136f4cf673c8bc325b08` against the accepted J6 assignment, Lev's full-J Inbox lock/error plan and current unified Complaints notification contract.
+- Delta from accepted J5 `af25adf18fd065e5af4a7e6da2c670f28613a10f`: six bounded commits / three files only — repository lifecycle integration, focused native PG lifecycle/race coverage and canonical notifications action error regression. No Complaint command change, new legacy route, schema/migration/permission/dependency, J7+, #315, K or Stage-6 work.
+- Unified `markNotificationRead` now uses the accepted **actor guard → own notification lock/update** order: shared AccountState `FOR NO KEY UPDATE` first, then recipient-owned notification `FOR UPDATE OF n`, ordinary complaint membership read when applicable, then idempotent `read_at` update.
+- Legacy `markReplyNotificationRead` now owns one short transaction: actor AccountState guard first, then its existing recipient-owned reply/mention-only UPDATE/RETURNING. The UPDATE itself acquires the notification row write lock; no second connection or reverse notification→actor ordering remains.
+- Active reply/mention, complaint-decision and complaint-appeal-result acknowledgements preserve target shapes and redirects. Complaint participant membership remains affected-author OR actual reporter; nonmember/wrong-recipient/missing active actor paths still fail 404 and roll back.
+- Active already-read acknowledgement remains idempotent for both writers and preserves the original `read_at`. Inactive/missing actors cannot acknowledge a fresh notification or receive already-read success; before/after facts remain unchanged.
+- State-first barriers for both writers prove committed deactivation before actor admission is observed before notification locking/writing. Writer-first already-read barriers prove the actor lock remains held through result and COMMIT, forcing lifecycle update to wait.
+- Canonical `/:locale/notifications` action is unchanged and continues through shared `runForumMutation`; late inactive/missing maps to generic private/no-store `401 unauthenticated`, classified unavailable to 503, unexpected faults propagate, and successful reply/complaint redirects remain unchanged.
+- Exact-head GitHub Actions independently rechecked: J6 native PG **9/9**; PostgreSQL total **820/820**; application/unit **2272/2272** including notifications route tests; CI `database` and `checks` SUCCESS; SA-03 Chromium SUCCESS.
+- AP-10 browser evidence: attempt 1 failed only the unrelated general `browser` job at a topic POST with Playwright `APIRequestContext.post: socket hang up`. Worker logs for that same request recorded a 403 response and continued serving subsequent requests; no Worker/PostgreSQL crash was observed. The same exact head's failed browser job rerun passed, while the other AP-10 jobs were already successful. Root cause remains unconfirmed; because J6 changes only notification repository/tests and the exact-head retry passed without code changes, this recovered failure is **not classified as a J6 current-scope defect**.
+- **Verdict: PASS — 0 confirmed current-scope J6 defects.** STOP. J7–J12 remain unassigned; Lev/Mark remain inactive.
+
 ## SA04-J6 — Lira AUTHOR STOP → Mira bounded coordinator review
 
 - Cumulative Draft #330 exact `9a0a095b41c26ef41d6d136f4cf673c8bc325b08` (open/draft/unmerged), from J5 Mira PASS `af25adf18fd065e5af4a7e6da2c670f28613a10f`.
