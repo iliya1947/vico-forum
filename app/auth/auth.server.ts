@@ -154,6 +154,22 @@ export function betterAuthOptions(
       provider: "pg" as const,
       schema: betterAuthSchema,
     }),
+    // This gate belongs to the canonical Better Auth configuration, not to
+    // optional SA-02 observers or only the HTTP request handler.
+    databaseHooks: {
+      session: { create: { before: async pending => {
+        try {
+          const connection = (database as NodePgDatabase & { $client: Client }).$client;
+          const state = await readAccountState(connection, pending.userId);
+          if (state.status !== "active") {
+            throw new APIError("UNAUTHORIZED", { message: "Unauthorized" });
+          }
+        } catch (error) {
+          if (!(error instanceof APIError)) onActorStateError?.(error);
+          throw error;
+        }
+      } } },
+    },
     user: { additionalFields: betterAuthUserAdditionalFields, validateUserInfo: createRegistrationAdmission(database) },
     account: { accountLinking: { disableImplicitLinking: true } },
     emailAndPassword: betterAuthEmailPasswordOptions,
@@ -197,6 +213,7 @@ export function createAuth(
       } catch { return null; }
     }
     options.databaseHooks = {
+      ...options.databaseHooks,
       user: { create: { after: async created => {
         if (typeof created.id !== "string") return;
         createdUsers.add(created.id);
@@ -237,7 +254,8 @@ export function createAuth(
         } },
       },
       session: {
-        create: { after: async created => {
+        ...options.databaseHooks?.session,
+        create: { ...options.databaseHooks?.session?.create, after: async created => {
           if (typeof created.id !== "string" || typeof created.userId !== "string") return;
           emit({
             kind: "auth.sessionCreated", userId: created.userId, sessionId: created.id,
@@ -251,31 +269,6 @@ export function createAuth(
       },
     };
   }
-  // Session creation must be admitted even when SA-02 fact observation is off.
-  // The pinned Better Auth 1.7.7 internalAdapter.createSession uses this
-  // database create.before hook before persisting or issuing a session cookie.
-  options.databaseHooks = {
-    ...options.databaseHooks,
-    session: {
-      ...options.databaseHooks?.session,
-      create: {
-        ...options.databaseHooks?.session?.create,
-        before: async pending => {
-          try {
-            const userId = pending.userId;
-            const connection = (database as NodePgDatabase & { $client: Client }).$client;
-            const state = await readAccountState(connection, userId);
-            if (state.status !== "active") {
-              throw new APIError("UNAUTHORIZED", { message: "Unauthorized" });
-            }
-          } catch (error) {
-            if (!(error instanceof APIError)) onActorStateError?.(error);
-            throw error;
-          }
-        },
-      },
-    },
-  };
   if (onDeleted || onCreatedProof) {
     const factory = options.database as ReturnType<typeof drizzleAdapter>;
     options.database = (authOptions: BetterAuthOptions) => new Proxy(factory(authOptions), {
