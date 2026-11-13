@@ -1,3 +1,17 @@
+# Лёва — SA04-J полный технический план завершён / STOP (2026-11-13)
+
+- Full SA04-J technical plan: [#6858869802](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6858869802), based on current main `44d6b69a8d235cc8b1ee30953839be71e6ab836a` (merged #329).
+- Coverage: all 24 public actor-owned Forum repository mutation methods, including existing F presence protection, plus both service-only same-locale correction no-op paths. Publication/edit final bind and receipts are in J; standalone attachment APIs remain K.
+- Plan fixes the Drizzle/native AccountState seam, same-transaction actor admission, replay/no-op boundaries, typed safe failures, per-family lock/FK/History ordering and full cumulative native/HTTP/Worker/browser evidence. Existing domain/Own-Any/measure/replay rules remain constraints.
+- Source/AST/caller/lock inspection and #315 D/E/F boundary check completed. No implementation edits, new implementation PR, or J runtime test results are claimed. Static lock risks are distinguished from reproduced runtime defects.
+- **Next: Mira reviews the complete J plan for scope/fit, then must split Lira implementation into bounded substeps and prepare the first assignment.** This is the developer-fixed workflow, not an optional choice. The technical family map is not a preassigned implementation sequence.
+- **Lev planning complete / STOP; Lira and Mark unassigned.** No implementation starts before Mira accepts the full plan and gives a bounded author handoff.
+- A1/A2–H/I are merged; J is planned only; whole SA04 is incomplete. K–R/S, SA05/deactivate control, permanent docs closeout, #315 remediation and production/Stage6 remain separate. User publication authorization persists throughout SA04.
+
+Локальные planning artifacts: `/workspace/work/sa04-j-plan-evidence/SA04_J_TECHNICAL_PLAN.md`, `method-inventory.json`, `mutation-inventory.json`. Read-only checkout `/workspace/work/sa04-j-plan` на exact main; source checkout clean. Проверены Drizzle transaction API/installed0.45.2 и PostgreSQL17 locking docs; runtime J evidence будет получено при реализации. Это planning checkpoint, не независимый review реализации.
+
+---
+
 # Лёва — актуальное назначение: SA04-J technical planning (2026-11-13)
 
 Current main: `44d6b69a8d235cc8b1ee30953839be71e6ab836a`.
