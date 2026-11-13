@@ -1,16 +1,15 @@
 # Admin panel — current workflow
 
-- **Service PR #331:** active Admin/Super-admin continuation after historical #251; never merge service PR.
-- **Current main:** `44d6b69a8d235cc8b1ee30953839be71e6ab836a`.
-- **Technical plan:** SA-04 master + full SA04-J accepted. J execution split into bounded Lira slices.
+- **Service PR #331:** active Admin/Super-admin service channel after archived #251; never merge.
+- **Current main at channel rotation:** `44d6b69a8d235cc8b1ee30953839be71e6ab836a`.
+- **Technical plan:** accepted SA-04 master and full SA04-J; Lira implementation in bounded J slices.
 - **Implementation PR:** cumulative Draft #330, open/unmerged.
-- **Accepted implementation baseline:** J3c Mira PASS exact `cb1df03d00038fdf414b9d0d650d908a58167098`.
-- **Completed checkpoints:** J1 → J2 → J3a → J3b → J3c, all Mira PASS.
-- **Active checkpoint:** **J4 → Lira**.
-- **J4 scope only:** authoritative AccountState closure of the existing own public-profile writer `updateProfile` and its canonical profile action error boundary.
-- **Required result:** existing user-row lock remains authoritative; active-account state is verified in the same transaction before `profile.edit` measure admission and profile upsert. Inactive/missing actor must not persist profile facts or receive a false saved-success result. Late lifecycle denial uses existing generic private/no-store unauthenticated 401. Existing validation, self-only route identity, AP-10 `profile.edit`, public/deleted projection, bounded draft handling, storage-unavailable classification and unexpected-error behavior remain unchanged.
-- Lira continues cumulative #330 from accepted J3c head, adds focused native PG/profile-route/race evidence plus applicable regressions, personally inspects the bounded delta, publishes one stable exact head and **AUTHOR STOP for Mira J4 review**.
-- **Unassigned:** J5–J12, Lev, Mark.
-- **After J12:** Mira coordinator whole-J review → only after whole-J PASS Lev independent whole-J technical review of the same exact head.
+- **Stable exact implementation head:** `84b5124f948895e3e211b81b1d6bd2082ddc531f`.
+- **Accepted checkpoints:** J1 → J2 → J3a → J3b → J3c (all Mira PASS). J3c accepted exact `cb1df03d00038fdf414b9d0d650d908a58167098`.
+- **Active gate:** **J4 — Lira implementation complete; exact-head CI/browser SUCCESS; AUTHOR STOP → Mira bounded coordinator review pending.**
+- **J4 scope:** existing own public-profile `updateProfile` checks authoritative AccountState under its existing user-row lock in the same transaction before `profile.edit` and upsert; canonical route maps late inactive/missing denial to generic private/no-store 401 without saved-success.
+- **Evidence:** native PG17 804/804 (J4 5/5 new), application/unit 2270/2270, lint/typecheck/build/schema PASS; SA-03 unified profile Chromium SUCCESS; AP-10 browser SUCCESS 4/4.
+- **Next actor:** Mira reviews bounded J4 on stable exact Draft #330 head; any confirmed current-scope defects return to Lira in one packet.
+- **Unassigned:** J5–J12, Lev, Mark. After J12 Mira coordinator whole-J review → Lev independent technical whole-J review of same exact head only after Mira PASS.
 - **Later SA04:** K → L → M → N → O → P → Q → R → S.
-- **Separate:** SA-05 blocked until complete SA-04; #315 remediation, permanent docs closeout and Stage 6.
+- **Separate:** SA-05 blocked pending SA-04; #315 remediation, permanent documentation and Stage 6.
