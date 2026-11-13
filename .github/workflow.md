@@ -1,16 +1,12 @@
 # Admin panel — current workflow
 
-- **Service PR #251. Current main:** `44d6b69a8d235cc8b1ee30953839be71e6ab836a`. SA04-J cumulative implementation is Draft #330.
-- **Accepted technical plan:** Lev #6858869802. **Developer-fixed execution:** Lira receives bounded J1–J12 checkpoints.
-- **J1:** Mira PASS exact `35902e3ebd7636121b3a4af1e67b3da8ec365be2`; shared Drizzle AccountState mutation-admission seam accepted.
-- **Active checkpoint: J2 — publication. Lira owns J2 only.**
-- **J2 scope:** protect authoritative AccountState admission for `createTopic`, `createTopicWithInitialPost`, and `createPost`, including matching publication receipt replay and the existing same-transaction publication final bind/receipt side effects.
-- **Required boundary:** direct low-level `createTopic` and canonical topic+initial-post/reply paths must deny inactive/missing actors at the authoritative transaction boundary. Matching replay must not return success to an inactive actor. Active replay and existing publication/domain policy remain unchanged.
-- Preserve the accepted publication lock ordering: existing draft scope/receipt first; for fresh reply, existing topic/required parent dependency before actor admission; actor admission before first publication write and before replay success. Use the J1 helper on the actual caller-owned Drizzle transaction, never an autocommit database object.
-- **Excluded from J2:** published-post edit/revisions/source-locale (J3), standalone attachment upload/draft/storage APIs (K), J4+, SA05, #315 remediation, docs and Stage6.
-- **J2 done when:** focused PostgreSQL evidence covers active control, inactive/missing denial, matching replay preservation/denial, denied fresh publication leaving no new publication facts/final bind/receipt, and both lifecycle race directions for publication; applicable publication/attachment regression tests and normal CI pass.
-- Continue cumulative Draft #330 from accepted J1 exact head. After J2 implementation and author inspection, publish one stable exact head/evidence and **STOP for Mira J2 checkpoint review**.
-- **J3+ unassigned. Lev/Mark unassigned. No independent Codex review yet.**
+- **Service PR #251. Current main/base:** `44d6b69a8d235cc8b1ee30953839be71e6ab836a`. SA04-I #329 merged. Full SA04-J technical plan accepted, [Lev #6858869802](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6858869802); Mira's bounded J1–J12 execution decomposition remains in force.
+- **J1 Mira PASS** cumulative Draft #330 exact `35902e3ebd7636121b3a4af1e67b3da8ec365be2`.
+- **Current checkpoint: J2 Lira AUTHOR STOP → Mira bounded J2 review.** Same cumulative [Draft implementation #330](https://github.com/iliya1947/vico-forum/pull/330), open/draft/unmerged, stable exact `22a6733ee661e22665406974d5a3ac515866fd51`, 11 cumulative commits/7 files; J2 itself 8 commits/5 files, no J3+ integration.
+- **J2 result:** `db/forum-repository.ts` calls J1 `assertActiveAccountForDrizzleMutation` in original Drizzle transactions for `createTopic`, `createTopicWithInitialPost` and `createPost`, including matching receipt replay and final bind/receipt. Existing publication draft advisory lock/receipt is first; fresh reply locks topic/parent dependency before actor, then active check before measure/cooldown/new writes. Existing cooldown reuses same transaction actor mutex. Retained inactive/missing users cannot publish or replay despite no-op measure fixtures. `app/forum/mutations.server.ts` converts late account inactive/missing to generic private/no-store 401 at canonical Forum mutation boundary; unavailable/unexpected kept distinct. Historical fixture adjustments are only for new A1 tuple and initial actor-mutex barrier.
+- **Exact-head evidence independently checked by author:** [CI #43472880241](https://github.com/iliya1947/vico-forum/actions/runs/43472880241) SUCCESS — 2269/2269 application, 776/776 PostgreSQL17, 7/7 new J2, lint/typecheck/build/schema/Worker. [AP-10 #43472880424](https://github.com/iliya1947/vico-forum/actions/runs/43472880424) SUCCESS — 4/4 Chromium jobs. Author reviewed exact J2/cumulative patch, race ordering, production mutation mapper and persisted side effects. No confirmed current-scope J2 bug remains.
+- **Next:** Mira reviews bounded J2 on exact `22a6733ee661e22665406974d5a3ac515866fd51`, PASS or a single proven current-scope correction package. **Lira STOP.** J3–J12 not assigned; Lev/Mark unassigned; no independent Codex whole-J review, merge, docs closeout, J3–R, SA05, #315 or Stage6/production.
+
 
 ## I5 author checkpoint decomposition
 
