@@ -1,11 +1,13 @@
 # Admin panel — current workflow
 
-- **Service PR #251. Current main:** `44d6b69a8d235cc8b1ee30953839be71e6ab836a`. SA04-I merged #329, coordinator and Lev whole-I PASS.
-- **SA04-J full technical plan accepted:** [Lev #6858869802](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6858869802), Mira scope/fit PASS. Developer-approved checkpoint decomposition J1–J12 remains active.
-- **Current checkpoint: J1 Lira AUTHOR STOP → Mira bounded J1 review.** New cumulative implementation [Draft #330](https://github.com/iliya1947/vico-forum/pull/330) open/unmerged, base current main `44d6b69a8d235cc8b1ee30953839be71e6ab836a`, stable exact head `35902e3ebd7636121b3a4af1e67b3da8ec365be2` (three commits; two files).
-- **J1 author result:** `db/account-state.ts` adds a typed Drizzle-transaction AccountState mutation guard using caller's tx `select` of the full lifecycle tuple + `FOR NO KEY UPDATE`, reusing native parser/validator and unavailable/unexpected classifier. Existing native API is preserved. No ForumRepository integration in J1. Four new real PG17/error-shape tests in `tests/database/account-state.test.ts` cover active/inactive/missing, invalid tuples, wrapped disconnect/timeouts/programming errors, authoritative same-tx lock through COMMIT/ROLLBACK, FK KEY SHARE and deactivation-first denial.
-- **Exact-head CI:** [#43466409877](https://github.com/iliya1947/vico-forum/actions/runs/43466409877) **SUCCESS**, 2269/2269 app (184/184 files), 769/769 PostgreSQL17 (69/69 files), focused AccountState 14/14 including four new J1, lint/typecheck/build/schema parity/Worker smoke PASS. No J1 runtime/schema/migration/dependency/public API change beyond the required internal transaction helper.
-- **Next:** Mira conducts bounded J1 checkpoint review on exact `35902e3ebd7636121b3a4af1e67b3da8ec365be2` (PASS or one verified current-scope corrective package), then STOP. J2–J12 **not assigned**; Lev/Mark unassigned. No J Forum writer implementation, SA05, #315, docs closeout, production or merge.
+- **Service PR #251. Current main:** `44d6b69a8d235cc8b1ee30953839be71e6ab836a`. SA04-I merged #329.
+- **SA04-J full technical plan accepted:** Lev #6858869802; developer-fixed J1–J12 Lira decomposition remains active.
+- **J1 Mira bounded checkpoint: PASS** on cumulative Draft #330 exact `35902e3ebd7636121b3a4af1e67b3da8ec365be2`.
+- Reviewed the complete two-file J1 delta, resulting AccountState helper/tests, current source-of-truth, pinned Drizzle ORM 0.45.2 transaction implementation, exact-head CI and PostgreSQL lock/error semantics. **0 confirmed current-scope J1 defects.**
+- J1 delivers only the shared caller-owned Drizzle transaction AccountState mutation admission; no ForumRepository writer is integrated yet. Existing native API/error behavior is preserved by shared tuple parsing/classification.
+- The helper's structural type can also be satisfied by an ordinary NodePgDatabase; this is **not a current J1 defect** because the J1 contract requires caller-owned transaction use, all real J1 use is transactional, and no Forum caller exists yet. At each J2+ integration, Mira must verify the actual caller passes its transaction rather than autocommit DB.
+- Exact-head CI #43466409877 SUCCESS: checks + database jobs. #330 stays cumulative Draft; no Lev independent review is spent on J1 alone.
+- **Next bounded coordinator task after developer continuation:** prepare J2 publication assignment for Lira from accepted J plan and J1 exact head. J2+ remain unassigned now. Lev/Mark unassigned.
 
 ## I5 author checkpoint decomposition
 
