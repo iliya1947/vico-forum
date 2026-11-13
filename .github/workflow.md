@@ -1,10 +1,10 @@
 # Admin panel — current workflow
 
-- **Service PR #251. J3a Mira PASS.** Cumulative [Draft #330](https://github.com/iliya1947/vico-forum/pull/330) remains open/draft/unmerged on stable exact implementation head `39df1262d9b536df87b0147e4a8a400d65b7d038` (14 commits/8 files). J1/J2 PASS remain unchanged; accepted full technical plan: [Lev #6858869802](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6858869802).
-- **J3a review result:** PASS, 0 confirmed current-scope defects. Both low-level revision writers lock the existing topic/post target `FOR NO KEY UPDATE`, then gate the actual transaction actor through J1 `assertActiveAccountForDrizzleMutation`, then preserve optional measure admission, immutable revision write, current-head CAS and conditional Admin History through the same COMMIT/ROLLBACK boundary.
-- Active own and permitted any corrections remain valid, including an active moderator correcting content whose historical author is inactive. Missing/inactive actor cannot persist a revision, advance the current pointer or append History. Writer-first/state-first PG races cover both revision kinds; the actor lock is held through the final conditional History append and transaction completion.
-- Exact-head evidence independently rechecked: CI #43483159401 SUCCESS (`checks`, `database`); AP-10 #43483158863 SUCCESS 4/4 Chromium. No implementation movement occurred during review.
-- **STOP after J3a. No active implementation assignment.** J3b published-post edit/receipt replay and J3c source-locale same-locale no-op/canonical HTTP mapping remain later bounded parts of J3, not J3a defects. J4–J12, Lev and Mark remain unassigned. No merge/docs closeout/SA05/#315/Stage6.
+- **Service PR #251. Active checkpoint: J3b → Lira.** Cumulative [Draft #330](https://github.com/iliya1947/vico-forum/pull/330) remains open/draft/unmerged; accepted baseline is J3a Mira PASS exact `39df1262d9b536df87b0147e4a8a400d65b7d038`. Full J technical plan remains [Lev #6858869802](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6858869802).
+- **J3b scope only:** authoritative AccountState admission for `editPublishedPost`, including matching edit receipt replay and the fresh edit transaction through revision/CAS, mentions, retained/new attachment binding changes, draft finalization and publication receipt.
+- Required result: an inactive/missing actual edit actor cannot receive successful matching replay or persist any fresh edit fact after lifecycle closure wins. Existing owner-only edit authorization, expected-revision conflict/rebase behavior, attachment selection semantics, measures and active replay behavior stay unchanged.
+- Lira continues #330 from the accepted J3a head, produces focused PostgreSQL/race evidence plus applicable edit/attachment/HTTP regressions, personally inspects the bounded delta, then publishes one stable exact head and **AUTHOR STOP for Mira J3b review**.
+- **Not assigned:** J3c source-locale same-locale no-op/canonical HTTP boundary; J4–J12; Lev/Mark review; merge/docs/SA05/#315/Stage6.
 
 ## I5 author checkpoint decomposition
 
