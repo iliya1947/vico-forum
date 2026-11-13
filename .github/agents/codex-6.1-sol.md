@@ -6,7 +6,7 @@ Prepare the technical plan for the **complete accepted SA04-J boundary: Forum au
 
 Determine the actual current mutation families, authoritative enforcement seams, transaction/lock/replay ordering, preservation constraints and required evidence across J as a whole. Planning only; do not modify implementation.
 
-Do not pre-split J for Lira. After publishing the complete J plan/evidence in #251, **STOP for Mira scope/fit/granularity review**. Lira/Mark remain unassigned.
+Do not pre-split J for yourself: plan the complete J technical scope. After publishing the complete J plan/evidence in #251, **STOP for Mira scope/fit review and bounded decomposition of Lira implementation**. The developer has already fixed the workflow: Lev gets the full planning scope; Lira implementation is split. Lira/Mark remain unassigned.
 
 ---
 
