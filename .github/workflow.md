@@ -1,12 +1,12 @@
 # Admin panel — current workflow
 
 - Service PR **#251**. Main/base **`13456a17f23c1385bef8ab11c735f43d201edd02`**, accepted SA04-A1 + A2–H merged. I1/I2 are checkpoint-PASS.
-- **Current checkpoint: SA04-I4 granularity gate complete.** I4 is split into I4a→I4d; **none assigned yet**. Accepted cumulative Draft #329 head remains `ba2337d788161915dbeb2de49ff320b4dad61768`. I5/J+ unassigned; Lev/Mark STOP.
+- **Current checkpoint: SA04-I4a assigned to Lira.** I4a is the only active sub-checkpoint. Accepted cumulative Draft #329 start head is `ba2337d788161915dbeb2de49ff320b4dad61768`. I4b–I4d/I5/J+ remain unassigned; Lev/Mark STOP.
 - Cumulative [Draft implementation #329](https://github.com/iliya1947/vico-forum/pull/329), branch `chatgpt/sa04-i1-pre-routing-session-admission`, stable `ba2337d788161915dbeb2de49ff320b4dad61768`, base `13456a17f23c1385bef8ab11c735f43d201edd02`, open/Draft/unmerged; 21 cumulative / 6 I3 commits, **3 changed project files**.
 - **I3 result:** canonical Better Auth 1.7.7 `databaseHooks.session.create.before` in `betterAuthOptions` reads persisted A2 state on same native PG client before INSERT/session cookie; inactive/missing blocked even without SA02 observer or HTTP. Existing SA02 `create.after` success facts survive `createAuth` hook merge. I1/I2 preserved; I4 existing-target writes remain out of scope.
 - **Evidence:** native returning email/password HTTP, existing Google callback via synthetic provider with SA02 facts, direct internal adapter, active/inactive/missing rows, retained physical sessions and missing cookie, classified 503 vs unexpected failures. Initial native CI showed a direct adapter escaped a gate placed only in `createAuth`; gate moved to common `betterAuthOptions`. Corrected pinned Google callback expectation 401, no code workaround.
 - **Exact-head all SUCCESS:** [CI #43384252236](https://github.com/iliya1947/vico-forum/actions/runs/43384252236): **2269 app / 725 PG17**, schema/migrations/typecheck/lint/build/Worker; [SA01 #43384252121](https://github.com/iliya1947/vico-forum/actions/runs/43384252121), [SA03 #43384252107](https://github.com/iliya1947/vico-forum/actions/runs/43384252107), [AP10 #43384252129](https://github.com/iliya1947/vico-forum/actions/runs/43384252129) Chromium SUCCESS (AP10 four jobs).
-- **Next:** separate continuation prepares/assigns **I4a only**. No I4b–I4d/I5/J+ assignment yet; no docs closeout, merge, SA05+, Stage6/production or #315.
+- **Next:** Lira implements **I4a only** in cumulative Draft #329, publishes a stable exact head with focused race evidence and author inspection, then STOPs for Mira I4a checkpoint review. No I4b–I4d/I5/J+ assignment yet; no docs closeout, merge, SA05+, Stage6/production or #315.
 
 
 ## Mandatory author verification
@@ -436,3 +436,13 @@ Before any project-changing action or agent handoff, Mira must check in this ord
 - Missing later model families in an earlier checkpoint are future I4 sub-checkpoints, not defects of that earlier bounded result.
 - After each author STOP Mira performs a bounded checkpoint review; no Lev review until full I is complete and Mira cumulative whole-I PASS.
 - **No I4 sub-checkpoint is assigned by this granularity-gate step.**
+
+
+## 2026-11-13 — SA04-I4a assigned
+
+- Starting point: cumulative Draft #329 exact accepted I3 head `ba2337d788161915dbeb2de49ff320b4dad61768`; main/base remains `13456a17f23c1385bef8ab11c735f43d201edd02`.
+- **Lira owns I4a only:** close the AccountState admission→write race for canonical non-destructive session writes — new session creation and session refresh/update.
+- Required result: the authoritative session target must remain active through the corresponding session write; a concurrent lifecycle transition must not slip between admission and persistence. Preserve the accepted I3 always-on create admission, active sliding/session/cookie semantics and existing successful SA-02 auth-fact behavior.
+- Focused evidence must exercise the real Better Auth 1.7.7 create and token-selected refresh/update seams with active controls and concurrent deactivation ordering. Keep lifecycle-storage unavailable vs unexpected failure semantics intact.
+- **Boundary:** no session revoke/delete/deleteMany or own-signout exception work (I4d), no existing-user writes (I4b), no account/link/password/provider writes (I4c), no I5/J+, no schema/product expansion unless strictly required by I4a.
+- I4a is an intermediate Draft checkpoint and does not close I4 or I. After implementation, Lira personally inspects the bounded cumulative delta, runs applicable checks, publishes one stable exact head/evidence, and **STOPs for Mira I4a checkpoint review**. Lev/Mark remain unassigned.
