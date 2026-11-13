@@ -2410,3 +2410,12 @@ Do not treat a user's anger, criticism or request to think as implicit permissio
 - Account/password/provider writes are I4c; destructive sessions are I4d; physical user deletion is outside I4b. No missing later scope was promoted to an I4b defect.
 - Exact-head CI/browser evidence independently checked SUCCESS: 2269 app, 739 PG17, 14 focused I4a/I4b (5 I4b), SA01/SA03/AP10.
 - **PASS — 0 confirmed current-scope I4b defects.** Stop before I4c.
+
+
+## 2026-11-13 — SA04-I4c handoff
+
+- I4b PASS exact `bd717165685095efac74ddd12a9a3339c6008df2`; #329 verified open/Draft and unchanged before handoff.
+- Assigned **I4c only** to Lira: atomic lifecycle closure at current Better Auth account create/link/update/updateMany/delete persistence seams, including password/provider-token/linking paths that target existing user/account state.
+- Preserve active new-registration account creation and canonical Better Auth validation/hooks/facts; do not span OAuth network exchange with the lifecycle transaction/lock.
+- I4d/I5/J+, physical user deletion, docs/merge/#315/SA05+/Stage6 remain outside this author checkpoint.
+- Next gate after Lira stable head/evidence: Mira bounded I4c checkpoint review. No Lev/Mark yet.
