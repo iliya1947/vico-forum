@@ -1,27 +1,15 @@
 # Admin panel — communication
 
-## SA04-J6 — assignment → Lira
+## SA04-J6 — Lira AUTHOR STOP → Mira bounded coordinator review
 
-Baseline: cumulative Draft #330 exact `af25adf18fd065e5af4a7e6da2c670f28613a10f` (Mira J5 PASS).
-
-Implement **J6 only**: authoritative lifecycle admission for inbox acknowledgement writers `markNotificationRead` and `markReplyNotificationRead`.
-
-Required result:
-
-- both writers use one short transaction and the trusted `userId`;
-- authoritative AccountState admission occurs **before** the actor's own notification row lock/update, matching the accepted Inbox lock order;
-- unified `markNotificationRead` preserves recipient ownership, complaint Case participant-membership checks, reply/mention target return, complaint Decision/Appeal-result target return and existing 404 behavior for an active actor;
-- legacy `markReplyNotificationRead` remains reply/mention-only and recipient-owned; do not create a new HTTP route for it;
-- active already-read acknowledgement remains idempotent and does not reset `read_at`;
-- inactive/missing actor cannot mutate `read_at` or receive success, including already-read paths;
-- canonical `/:locale/notifications` action continues through shared `runForumMutation`: late lifecycle denial → generic `401 unauthenticated`, `private, no-store`, with no redirect/false success/lifecycle detail;
-- preserve storage-unavailable 503 and unexpected-error behavior.
-
-Evidence should directly cover active unread/already-read unified reply, mention, complaint-decision and complaint-appeal-result branches; legacy reply/mention; wrong recipient/non-member/not-found regressions; inactive/missing before/after `read_at` facts; state-first and writer-first lifecycle races for both writer shapes; canonical action lifecycle denial and redirect regressions.
-
-Excluded: Complaint commands/domain changes (N), J7+, new legacy HTTP surface, #315 remediation, attachment K, SA-05, schema/migration/permission/dependency changes, docs and Stage 6.
-
-Run applicable exact-head CI/checks, inspect the bounded delta, publish one stable #330 head/evidence, then **AUTHOR STOP for Mira J6 review**. Lev/Mark remain inactive.
+- Cumulative Draft #330 exact `9a0a095b41c26ef41d6d136f4cf673c8bc325b08` (open/draft/unmerged), from J5 Mira PASS `af25adf18fd065e5af4a7e6da2c670f28613a10f`.
+- Unified `markNotificationRead`: existing short Drizzle tx now begins with trusted actor `assertActiveAccountForDrizzleMutation(tx, userId)`, then original own notification `FOR UPDATE OF n` → complaint Case participant membership or reply/mention target validation → original idempotent `read_at = coalesce(read_at, statement_timestamp())`. The lock lasts until COMMIT/ROLLBACK, including already-read.
+- Legacy `markReplyNotificationRead`: existing recipient-owned reply/mention-only UPDATE/RETURNING is now enclosed in a short Drizzle tx preceded by the same authoritative actor guard. Existing `coalesce(read_at, now())` and no new legacy route.
+- Native PG17 J6 **9/9**: unified reply, mention, complaint Decision, Appeal-result active unread/already-read and preserved timestamp/targets; legacy reply/mention; missing/wrong recipient/nonmember and active 404; inactive/missing no write or already-read success, fact preservation; state-first and writer-first lifecycle races for **both** methods.
+- Canonical notifications action remains unchanged and uses shared `runForumMutation`. Route regression verifies late lifecycle generic private/no-store `401 unauthenticated` with no redirect or detail, and existing unavailable 503/unexpected paths. Existing recipient, complaint-domain and reply/mention regressions remain green.
+- Exact-head CI run `43510115276` SUCCESS: PG17 **820/820**, application/unit **2272/2272**, lint/typecheck/build/schema PASS; SA-03 Chromium run `43510115184` SUCCESS.
+- AP-10 browser run `43510115118`: three jobs initially PASS; general browser first attempt failed at unrelated topic POST with Playwright `socket hang up`. Targeted same-exact-head rerun of only failed job SUCCESS without any code change; final AP-10 workflow SUCCESS all **4/4**. Transient transport explanation remains unverified; original failure and recovery retained in evidence.
+- Lira personally inspected all six bounded J6 commit diffs and records **AUTHOR STOP**. **Mira next** for J6 bounded coordinator review of stable exact head. J7–J12 / Lev / Mark unassigned. Excludes Complaint mutations (N), #315, new legacy route, K, SA-05, schema/migration/permission/dependency, docs, Stage 6.
 
 ## J5 — Mira bounded coordinator review: PASS
 
