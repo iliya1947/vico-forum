@@ -1,5 +1,14 @@
 # ChatGPT-5.6 Sol — personal log
 
+## SA04-J9 assignment
+
+- J8 accepted exact baseline: `41e26f191357aacde3de2dae3a3c7fed20756a30`.
+- Current submit path has no AccountState guard; its Help cooldown reacquires actor user `FOR UPDATE`, and solution-signal target post locking happens after that actor/cooldown lock. J9 must reuse the lifecycle `NO KEY UPDATE` actor mutex and move solution-post dependencies before it.
+- Withdrawal/rejected review already use signal→effect shape and can become signal→actor→effect/History without later content locks.
+- Accepted review currently takes topics + target signal, then measure, but may later lock solution post and bulk-update sibling signals. Accepted J graph requires post(s) then complete affected signal set before actor, with stable signal order; duplicate branch includes its wider third-topic `proposedOriginalTopicId` predicate.
+- Assigned J9 only to Lira. J10+ remain excluded/unassigned.
+- Next Mira action: bounded J9 review after stable-head AUTHOR STOP.
+
 ## SA04-J8 coordinator review — PASS
 
 - Independently reviewed Draft #330 exact `41e26f191357aacde3de2dae3a3c7fed20756a30`.
