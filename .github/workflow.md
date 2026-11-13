@@ -1,9 +1,9 @@
 # Admin panel — current workflow
 
-- **Service PR #251.** Main/base `13456a17f23c1385bef8ab11c735f43d201edd02`, SA04-A1/A2–H merged; I1/I2/I3/I4a/I4b/I4c coordinator checkpoint-PASS. **I4d author complete; Mira checkpoint pending.**
-- **Current stage/owner:** Mira's bounded I4d checkpoint and connected cumulative whole-I review. Author Lira has **STOPped** after the implementation and checks; Lev/Mark remain unassigned.
-- **Implementation PR/head:** cumulative [Draft #329](https://github.com/iliya1947/vico-forum/pull/329), stable exact `85104942e75071a67b4a4b37212ce5bca7361fe4` (previous accepted I4c `0c36648638a11e69e657a83dcfd54b9cf06d2e84`). PR open/Draft/unmerged. CI #43408842355, SA01 #43408842422, SA03 #43408842363, AP10 #43408842330 all SUCCESS on exact head. Full author evidence is in Lira's agent file, communication and #329 body.
-- **Next:** Mira reviews current I4d scope and connected I4 cumulative writes/races on this exact stable head, records PASS or one verified current-scope corrective package. Only after Mira accepts this cumulative I scope may the workflow decide the next independent review gate; no I5/J+, merge, docs closeout, #315, SA05+, Stage6/production yet.
+- **Service PR #251.** Main/base `13456a17f23c1385bef8ab11c735f43d201edd02`, SA04-A1/A2–H merged; I1/I2/I3/I4a/I4b/I4c/**I4d** coordinator checkpoint-PASS. **I4 atomic existing-target mutation closure is complete; I5 remains required to close checkpoint I.**
+- **Current stage/owner:** no implementation or independent-review agent is assigned. Mira completed the bounded I4d checkpoint plus connected cumulative I1–I4 review on stable exact `85104942e75071a67b4a4b37212ce5bca7361fe4`: **PASS, 0 confirmed current-scope defects**.
+- **Implementation PR/head:** cumulative [Draft #329](https://github.com/iliya1947/vico-forum/pull/329), stable exact `85104942e75071a67b4a4b37212ce5bca7361fe4`, base/main `13456a17f23c1385bef8ab11c735f43d201edd02`. PR remains open/Draft/unmerged. GitHub Actions CI #43408842355, SA01 #43408842422, SA03 #43408842363 and AP10 #43408842330 were independently rechecked **SUCCESS on this exact head**.
+- **Next:** on a separate continuation, Mira performs the I5 scope/granularity gate for the approved **connected Better Auth closure**. Only I5 may close checkpoint I. Do not assign Lev/Mark or merge #329 before that closure and the later coordinator/independent gates. No J+, docs closeout, #315, SA05+, Stage6 or production yet.
 
 ## Mandatory author verification
 
