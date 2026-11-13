@@ -1,7 +1,7 @@
 # Admin panel — current workflow
 
 - Service PR **#251**. Main/base **`13456a17f23c1385bef8ab11c735f43d201edd02`**; previously accepted SA04-A1 + A2–H are merged.
-- **Current checkpoint: SA04-I2-MIRA-01 Lira correction AUTHOR STOP**, exact `b7dc303ee0d10312e5d41af9889d26d6b264a6e6`; next **Mira repeat I2 checkpoint review** for PASS or confirmed current-scope defects. I3–I5/J+ unassigned; Lev/Mark STOP.
+- **Current checkpoint: SA04-I2 Mira repeat checkpoint PASS on exact `b7dc303ee0d10312e5d41af9889d26d6b264a6e6`; `I2-MIRA-01` CLOSED, 0 remaining confirmed current-scope I2 defects.** PR #329 remains cumulative Draft; I3–I5/J+ unassigned.
 - Cumulative [Draft implementation PR #329](https://github.com/iliya1947/vico-forum/pull/329), branch `chatgpt/sa04-i1-pre-routing-session-admission`, exact `b7dc303ee0d10312e5d41af9889d26d6b264a6e6`. Open/Draft/unmerged; 15 cumulative commits, 3 I2-MIRA-01 correction commits; two changed project files only. Original I1 and I2 scope retained.
 - **Correction:** all I2 protected-actor preflights bypass cookie cache and disable session refresh until the persisted A2 active-account check succeeds. Due inactive session cannot slide/update or emit refresh cookie; active normal operations reuse their one checked session; only due active session returns refresh ownership to the canonical Better Auth endpoint. Existing I1 routing, direct API and inactive own sign-out retained.
 - **Author evidence:** real Better Auth 1.7.7 + PostgreSQL 17 due inactive/active `/list-sessions` regression asserts 401/no Set-Cookie/no DB update versus active 200/refresh. Four existing OAuth-link single-lookup regressions failed after the first broader correction, then recovered after narrowing the active due refresh path. Author inspected all three corrective diffs plus final scoped code/tests and pinned upstream behavior.
@@ -377,3 +377,15 @@ Before any project-changing action or agent handoff, Mira must check in this ord
 - Read-only no-cache preflight; inactive 401 with no retained session refresh/Set-Cookie, active due normal endpoint refresh and normal session/link-state one-read preservation. Added one due inactive/active real BA/PG17 regression, 3 correction commits, only `app/auth/auth.server.ts` and `tests/database/auth-runtime.test.ts`.
 - First CI database failed four existing OAuth-link one-lookup assertions; root-cause was unconditional active reread. Fixed by rerunning canonical refresh only for due active sessions. Final exact-head Actions **all SUCCESS**: CI #43379564521 (2269 app, 722 PG17), SA01 #43379564649, SA03 #43379564578, AP10 #43379564500 (4 jobs).
 - Lira personally inspected all three correction commits and final bounded diff/upstream pinned Better Auth behavior; **not** Mira/Lev review. **Next Mira repeat I2 checkpoint on exact `b7dc303ee0d10312e5d41af9889d26d6b264a6e6`**. I3+/Lev/Mark STOP; PR remains Draft/unmerged.
+
+
+## 2026-11-13 — SA04-I2 repeat Mira checkpoint PASS
+
+- Re-reviewed cumulative Draft #329 exact `b7dc303ee0d10312e5d41af9889d26d6b264a6e6` after the bounded `I2-MIRA-01` correction, including the full three-commit correction delta and preservation of previously reviewed I2 behavior.
+- The actor preflight now resolves every protected actor session with cookie cache bypassed and refresh disabled, then performs the A2 persisted AccountState admission on the same request-owned PostgreSQL client.
+- Inactive/missing actor is denied before session refresh/update; the new real Better Auth 1.7.7 + PostgreSQL regression proves a staged due inactive `/list-sessions` request returns 401 with no Set-Cookie and unchanged session id/token/expiry/update timestamp.
+- After active admission, a due active session releases the temporary request context so the canonical endpoint retains its original refresh/Set-Cookie ownership; non-due active paths keep the one authoritative preflight session and existing Google-link behavior.
+- Existing own sign-out exception, I1 pre-routing behavior, direct API admission, state-failure classification and cookie ordering remain intact.
+- Exact-head CI #43379564521, SA01 #43379564649, SA03 #43379564578 and AP10 #43379564500 are SUCCESS.
+- `I2-MIRA-01` is **CLOSED**. **PASS — 0 remaining confirmed current-scope I2 defects.**
+- I3–I5/J+ remain separate future checkpoints, not I2 defects. #329 stays cumulative Draft; no Lev review is spent on this intermediate checkpoint.
