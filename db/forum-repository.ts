@@ -3756,7 +3756,7 @@ export class DrizzleForumRepository {
         })
         .from(forumTopics)
         .where(eq(forumTopics.id, topicId))
-        .for("update");
+        .for("no key update");
       if (!topic) throw new ForumEntityNotFoundError("topic does not exist");
       if (topic.sectionId !== HELP_SOLUTIONS_SERVICE_SECTION_ID) {
         throw new ForumStateConflictError("solution moderation is only available for Help & solutions questions");
@@ -3770,8 +3770,37 @@ export class DrizzleForumRepository {
       if (topic.bestAnswerPostId !== expectedBestAnswerPostId) {
         throw new ForumStateConflictError("best answer is no longer the expected moderation target");
       }
+      // J10: acquire every mutable content dependency before the actor mutex.
+      // Non-key locks remain compatible with the Complaint target FK KEY SHARE.
+      const [previous] = await tx
+        .select({
+          status: forumPosts.solutionModerationStatus,
+          reason: forumPosts.solutionOutdatedReason,
+          kind: forumPosts.solutionOutdatedReasonKind,
+        })
+        .from(forumPosts)
+        .where(and(
+          eq(forumPosts.topicId, topicId),
+          eq(forumPosts.id, topic.bestAnswerPostId),
+        ))
+        .for("no key update");
+      if (status !== null) {
+        const staleKinds: HelpSignalKind[] = status === "outdated"
+          ? ["needs-review", "solution-outdated"]
+          : ["needs-review"];
+        await tx.select({ id: forumHelpSignals.id })
+          .from(forumHelpSignals)
+          .where(and(
+            eq(forumHelpSignals.topicId, topicId),
+            eq(forumHelpSignals.targetPostId, topic.bestAnswerPostId),
+            eq(forumHelpSignals.status, "pending"),
+            inArray(forumHelpSignals.kind, staleKinds),
+          ))
+          .orderBy(asc(forumHelpSignals.id))
+          .for("no key update");
+      }
+      await assertActiveAccountForDrizzleMutation(tx, actorId);
       await this.measureAdmission(tx, actorId, "admin.forum");
-      const [previous]=await tx.select({status:forumPosts.solutionModerationStatus,reason:forumPosts.solutionOutdatedReason,kind:forumPosts.solutionOutdatedReasonKind}).from(forumPosts).where(eq(forumPosts.id,topic.bestAnswerPostId));
       await tx.update(forumPosts)
         .set({
           solutionModerationStatus: status,
