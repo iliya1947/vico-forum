@@ -52,8 +52,8 @@ Current J decomposition for Lira execution:
 1. **J1 — shared Drizzle mutation guard.** Mira PASS exact `35902e3ebd7636121b3a4af1e67b3da8ec365be2`.
 2. **J2 — publication:** `createTopic`, `createTopicWithInitialPost`, `createPost`, matching receipt replay and final publication binding/receipt. Mira PASS exact `22a6733ee661e22665406974d5a3ac515866fd51`.
 3. **J3a — low-level revisions:** `reviseTopicTitle`, `revisePostBody`, own/any paths. Mira PASS exact `39df1262d9b536df87b0147e4a8a400d65b7d038`.
-4. **J3b — published-post edit:** `editPublishedPost`, matching edit receipt replay, revision/CAS, mentions, retained/new attachment binding, draft finalization and receipt. **Lira implementation complete on `b407f93f54b7f7e1073218dd63b4f6235b1bb417`; Mira bounded review pending.**
-5. **J3c — source-locale service no-op + canonical HTTP boundary.** Unassigned.
+4. **J3b — published-post edit:** `editPublishedPost`, matching edit receipt replay, revision/CAS, mentions, retained/new attachment binding, draft finalization and receipt. **Mira bounded PASS on `b407f93f54b7f7e1073218dd63b4f6235b1bb417`.**
+5. **J3c — source-locale service no-op + canonical HTTP boundary.** **Lira implementation complete / AUTHOR STOP on `cb1df03d00038fdf414b9d0d650d908a58167098`; Mira bounded review pending.**
 6. **J4 — profile writer.** Unassigned.
 7. **J5 — read-state writer.** Unassigned.
 8. **J6 — inbox acknowledgement writers.** Unassigned.
@@ -66,7 +66,7 @@ Current J decomposition for Lira execution:
 
 After the implementation decomposition is complete, Mira performs the coordinator whole-J review on one stable exact head. Only after Mira PASS does Lev perform the independent technical whole-J review of that same head. Lev's technical planning/review work is not to be fragmented into the small Lira implementation slices unless the developer explicitly changes that rule.
 
-## J3b contract — implementation complete, Mira review pending
+## J3b contract — Mira bounded PASS
 
 Implementation PR: cumulative Draft #330. Accepted baseline: `39df1262d9b536df87b0147e4a8a400d65b7d038`.
 
@@ -78,8 +78,14 @@ Required behavior:
 - Denied lifecycle request must not create a revision, move the current revision, change public attachment refs, create mentions, retire/finalize the operation or create/alter the receipt.
 - Active behavior, owner-only edit rule, expected-revision conflict/rebase behavior, measure enforcement, retained/new attachment selection, idempotent lost-response retry and attachment atomicity remain unchanged.
 - Evidence must include active fresh/replay controls, missing/inactive denial, before/after fact preservation, both lifecycle race directions through final attachment/receipt work, and applicable PostgreSQL/HTTP/editor/attachment regressions.
-- Lira published stable exact Draft #330 head `b407f93f54b7f7e1073218dd63b4f6235b1bb417`, checked CI/browser evidence and recorded AUTHOR STOP. Mira performs bounded J3b review next.
+- Lira published stable exact Draft #330 head `b407f93f54b7f7e1073218dd63b4f6235b1bb417`; Mira completed J3b bounded review with PASS and zero confirmed current-scope defects.
 - J3c is not a J3b defect. J4+ are not current scope.
+
+## J3c current handoff — Mira review pending
+
+Lira completed the two service-level same-locale source-correction admission paths and canonical late AccountState HTTP denial mapping in cumulative Draft #330 at exact `cb1df03d00038fdf414b9d0d650d908a58167098`. Same-locale topic/post operations keep validation, owner/any authorization, revision consistency and zero revision/History writes while transactionally locking the actual actor. Changed-locale writers are unchanged from accepted J3a.
+
+Native PostgreSQL 17 tests: 799/799 (seven new J3c cases). Application/unit: 2269/2269. CI lint/typecheck/build/schema PASS. Separate AP-10 browser workflow: 4/4 PASS. Lira **AUTHOR STOP**; Mira owns the next bounded J3c coordinator review on that head. J4–J12 remain unassigned.
 
 ## Important cross-cutting boundaries
 
