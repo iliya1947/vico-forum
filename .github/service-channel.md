@@ -1,5 +1,16 @@
 # Admin panel — communication
 
+## 2026-11-13 — Mira SA04-I5 scope gate → Lev technical planning
+
+- I4 coordinator closure remains PASS on cumulative Draft #329 exact `85104942e75071a67b4a4b37212ce5bca7361fe4`; implementation head/base are unchanged.
+- Rechecked current `main/AGENTS.md`: the active bounded cycle now requires **Mira scope → Lev technical plan → Lira implementation → Mira whole-PR review → Lev independent review**. Therefore I5 is not handed directly to Lira.
+- **I5 scope/granularity:** one bounded final auth result — connected closure of the current configured Better Auth lifecycle enforcement assembled by I1–I4. It must establish that the accepted pre-routing identity, authenticated HTTP/direct admission, new-session admission, existing-target mutation closure and inactive-own-signout exception compose correctly across the real current auth/session paths. It may require implementation corrections if the connected inspection proves a current-scope gap; it is not presumed test-only.
+- Current SET-05 password/session behavior and existing registration/linking/session policies are preservation constraints. Missing J–R application-writer lifecycle enforcement is later SA04 scope, not an I5 defect by itself.
+- **Boundaries:** no physical Better Auth user deletion, no SA05 deactivate command/control, no reactivation or separate forced-session Owner action, no unconfigured secondary-session-storage work, no J–R writer implementation, no docs closeout/#315/Stage6/production/external OAuth acceptance.
+- **Lev assignment:** prepare the I5 technical plan against the actual exact #329 head and current source-of-truth. Identify the minimal concrete repository seams and connected acceptance required to close I; determine whether code changes are needed; if one author result is not safe, decompose only I5. Do not implement. Publish plan/result in #251 and STOP.
+- Lira/Mark remain unassigned. After Lev STOP, Mira checks the plan for scope/fit/granularity before implementation handoff.
+
+
 ## 2026-11-13 — Mira SA04-I4d + cumulative I1–I4 review PASS
 
 - Reviewed cumulative Draft #329 exact stable `85104942e75071a67b4a4b37212ce5bca7361fe4` against the bounded I4d handoff, accepted I1–I4 contracts, current Stage boundaries and official Better Auth v1.7.7 persistence/routes.
