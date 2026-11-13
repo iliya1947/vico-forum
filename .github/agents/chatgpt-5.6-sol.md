@@ -1,5 +1,13 @@
 # ChatGPT-5.6 Sol — personal log
 
+## 2026-11-13 — SA04-J2 publication assigned
+
+- J1 remains PASS exact `35902e3ebd7636121b3a4af1e67b3da8ec365be2`.
+- Assigned Lira J2 only: `createTopic`, `createTopicWithInitialPost`, `createPost`, including publication replay and transaction-side final bind/receipt.
+- Explicitly excluded J3 edit/revision/source-locale and standalone attachment APIs K.
+- Required actual integration uses the J1 helper on caller-owned Drizzle tx; transaction/replay ordering remains per accepted Lev full J plan.
+- Lira continues cumulative Draft #330 and STOPs after stable J2 head. No Codex review yet.
+
 ## 2026-11-13 — SA04-J1 bounded checkpoint PASS
 
 - Reviewed exact #330 head `35902e3ebd7636121b3a4af1e67b3da8ec365be2`, all two-file changes and resulting helper/tests against J1 and Lev's accepted complete J plan.
