@@ -1,11 +1,10 @@
 # Admin panel — current workflow
 
-- **Service PR #251. Current main/base:** `44d6b69a8d235cc8b1ee30953839be71e6ab836a`. SA04-I #329 merged. Full SA04-J technical plan accepted, [Lev #6858869802](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6858869802); developer-fixed bounded J1–J12 execution for Lira remains in force.
-- **J1 Mira PASS:** cumulative Draft #330 exact `35902e3ebd7636121b3a4af1e67b3da8ec365be2`.
-- **J2 Mira PASS:** cumulative [Draft #330](https://github.com/iliya1947/vico-forum/pull/330) exact `22a6733ee661e22665406974d5a3ac515866fd51`; J2 delta 8 commits / 5 files. Coordinator review found **0 confirmed current-scope J2 defects**.
-- Verified J2 authoritative lifecycle admission for low-level and canonical topic/reply publication, matching receipt replay, same-transaction attachment final bind/receipt, late stale-request 401 mapping, active behavior and both lifecycle race directions. Publication lock ordering remains compatible with existing current-scope writers; no autocommit J1-helper use or canonical publication bypass was found.
-- Exact-head evidence rechecked: [CI #43472880241](https://github.com/iliya1947/vico-forum/actions/runs/43472880241) SUCCESS (`checks`, `database`); [AP-10 #43472880424](https://github.com/iliya1947/vico-forum/actions/runs/43472880424) SUCCESS 4/4 Chromium jobs.
-- **STOP after J2 review. No active implementation assignment.** J3–J12, Lev and Mark remain unassigned; no independent Codex whole-J review, merge, docs closeout, K–R, SA05, #315 or Stage6/production. The next continuation may scope/assign **J3 only** after a separate Mira pre-action/granularity gate.
+- **Service PR #251. Current main/base:** `44d6b69a8d235cc8b1ee30953839be71e6ab836a`. Accepted full SA04-J technical plan: [Lev #6858869802](https://github.com/iliya1947/vico-forum/pull/251#issuecomment-6858869802). Lira implementation remains bounded.
+- **J1 Mira PASS** exact `35902e3ebd7636121b3a4af1e67b3da8ec365be2`; **J2 Mira PASS** exact `22a6733ee661e22665406974d5a3ac515866fd51`. Cumulative [Draft #330](https://github.com/iliya1947/vico-forum/pull/330) open/unmerged, currently at J2 head.
+- **Active checkpoint: J3a — Lira only.** `reviseTopicTitle` and `revisePostBody` repository transaction lifecycle gate, including permitted own/any revision variants, persisted revision and conditional Admin History. Exact assignment is at top of communication file.
+- J3 is split for **Lira execution only**: J3a revision writers → J3b published-post edit/draft receipt → J3c source-locale service no-op and canonical routes. Only J3a assigned; J3b/J3c and J4–J12 unassigned.
+- **Next:** Lira implements J3a in cumulative Draft #330 from accepted J2 head, publishes exact-head tests and personal author inspection, then STOP for Mira bounded J3a review. Lev/Mark remain stopped; no whole-J Codex review/merge/docs/Stage6.
 
 ## I5 author checkpoint decomposition
 
