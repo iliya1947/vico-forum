@@ -4173,6 +4173,7 @@ export class DrizzleForumRepository {
       if (replay) {
         if (replay.topicId !== input.topicId || replay.postId !== input.postId)
           throw new ForumStateConflictError("edit receipt references another post");
+        await assertActiveAccountForDrizzleMutation(tx, input.actorId);
         return;
       }
       const [post] = await tx.select({
@@ -4185,6 +4186,7 @@ export class DrizzleForumRepository {
       if (post.authorId !== input.actorId) throw new ForumAuthorizationError("only author can edit post");
       if (post.revisionId !== input.expectedRevisionId)
         throw new ForumStateConflictError("post revision changed before edit");
+      await assertActiveAccountForDrizzleMutation(tx, input.actorId);
       await this.measureAdmission(tx, input.actorId, "posts.edit");
       const existing = await tx.select({ id: forumPostAttachments.attachmentId })
         .from(forumPostAttachments).where(eq(forumPostAttachments.postId, input.postId));
