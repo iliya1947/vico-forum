@@ -1,5 +1,15 @@
 # ChatGPT-5.6 Sol — personal log
 
+## SA04-J6 coordinator review — PASS
+
+- Independently reviewed Draft #330 exact `9a0a095b41c26ef41d6d136f4cf673c8bc325b08`.
+- Verified unified actor guard → notification `FOR UPDATE` → ordinary complaint membership SELECT → idempotent update, and legacy actor guard → recipient/kind UPDATE/RETURNING in one transaction.
+- Verified active all unified kinds, legacy reply/mention, wrong recipient/nonmember/not-found, inactive/missing fact preservation, active already-read timestamp preservation, and state-first/writer-first races for both writer shapes.
+- Verified canonical notifications late lifecycle private/no-store 401, 503 availability and unexpected propagation; successful redirects unchanged.
+- Exact-head evidence: J6 PG 9/9; native PG 820/820; app 2272/2272; CI and SA-03 green.
+- Investigated AP-10 attempt-1 browser failure: Playwright socket hang-up on unrelated topic POST; Worker logged the request as 403 and remained alive; same exact-head failed-job rerun passed with no code change. Root cause unconfirmed; not a J6 defect.
+- 0 confirmed current-scope J6 defects. STOP before J7 assignment.
+
 ## SA04-J6 assignment
 
 - J5 accepted exact baseline: `af25adf18fd065e5af4a7e6da2c670f28613a10f`.
