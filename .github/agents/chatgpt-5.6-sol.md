@@ -2463,3 +2463,13 @@ Do not treat a user's anger, criticism or request to think as implicit permissio
 - Prior whole-I5 handoff to Lira was too large. Developer caught it before author execution; #329 remained exact `85104942e75071a67b4a4b37212ce5bca7361fe4`.
 - Final I5 connected outcome is retained, but author work is split into I5a native core → I5b SET-05 → I5c Google/observer/failure → I5d Worker/browser → I5e final sweep/evidence map.
 - Only I5a is assigned now. Every later checkpoint requires a separate Mira continuation after the previous checkpoint review.
+
+
+## 2026-11-13 — SA04-I5a bounded checkpoint PASS
+
+- Reviewed #329 exact `58130793d05f6eb2a8b867b2fb546ccddcd6fb59` against I5a only; main remains `13456a17f23c1385bef8ab11c735f43d201edd02`.
+- Delta: 3 commits, only `tests/database/sa04-session-atomic.test.ts` +146; no runtime/schema/dependency/docs changes.
+- Verified connected BA1.7.7/PG17 retained-cookie chain across pre-routing, canonical HTTP/direct admission, session create/update/delete guards, inactive sign-in denial, one-session own-signout cleanup, expiration and unrelated active login/cookie ordering.
+- Existing I1–I4 tests remain the detailed race/error/selector proofs; no I5b–e evidence was falsely credited to I5a.
+- Exact-head CI and browser regression runs independently rechecked SUCCESS: 2269 app, 754 PG17, SA04 session atomic 29/29, SA01/SA03/AP10 green.
+- **PASS — 0 confirmed current-scope I5a defects.** STOP. I5b remains unassigned until explicit continuation.
