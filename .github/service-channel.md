@@ -4790,3 +4790,13 @@ Lira must perform author inspection, publish the stable A2 head/evidence and STO
 - Exact-head native regression and all applicable workflows are green.
 - **I2 PASS — 0 remaining confirmed current-scope defects.**
 - #329 remains cumulative Draft. No Lev review at this intermediate checkpoint; I3–I5/J+ remain unassigned pending separate continuation.
+
+
+## 2026-11-13 — SA04-I3 active assignment
+
+- I1 and corrected I2 remain Mira checkpoint-PASS; accepted cumulative head is `b7dc303ee0d10312e5d41af9889d26d6b264a6e6`.
+- Lira now owns **I3 only** in existing Draft #329: every Better Auth new-session creation path must reject an inactive/missing server-resolved target before the session is persisted/issued.
+- I3 is independent of auth-fact telemetry: the gate applies even with no observer, while existing successful `session.create.after` fact/evidence behavior is preserved.
+- Required evidence spans returning email sign-in, existing-user Google callback and direct/native session creation, with active controls and storage-failure classification.
+- Existing user/account/provider writes that occur before session creation remain explicitly **I4**, not an I3 completion claim.
+- Lira verifies the bounded diff, publishes a stable exact head/evidence and STOPs for Mira I3 checkpoint review. I4–I5/J+ remain unassigned.
