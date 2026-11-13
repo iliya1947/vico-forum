@@ -78,21 +78,21 @@ export function createBetterAuthRequestHooks(
         && !(preRoutingSessionLookup && ctx.path === "/get-session")) {
         // Also runs for auth.api.* calls; direct endpoint dispatch shares this
         // pinned Better Auth hook with the canonical HTTP handler.
-        if (ctx.path === "/get-session") {
-          // Preflight must not slide a session before the actual get-session
-          // endpoint: it owns its refresh and resulting Set-Cookie response.
-          ctx.context.session = null;
-          current = await getSessionFromCtx(ctx, { disableCookieCache: true, disableRefresh: true });
-        } else {
-          current = await getAuthoritativeSessionFromCtx(ctx);
-        }
+        // All preliminary actor admission must be read-only, including paths
+        // other than /get-session: a due inactive session cannot be refreshed.
+        ctx.context.session = null;
+        current = await getSessionFromCtx(ctx, { disableCookieCache: true, disableRefresh: true });
         if (current) {
           try {
             const connection = (database as NodePgDatabase & { $client: Client }).$client;
             const state = await readAccountState(connection, current.user.id);
             if (state.status !== "active") {
+              ctx.context.session = null;
               throw new APIError("UNAUTHORIZED", { message: "Unauthorized" });
             }
+            // The accepted active actor now proceeds to the actual endpoint,
+            // which must retain Better Auth's own session sliding/cookies.
+            if (ctx.path !== "/get-session") ctx.context.session = null;
           } catch (error) {
             if (!(error instanceof APIError)) onActorStateError?.(error);
             throw error;
