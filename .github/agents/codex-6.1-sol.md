@@ -1,12 +1,12 @@
-# Лёва — актуальное назначение: SA04-J1 technical planning (2026-11-13)
+# Лёва — актуальное назначение: SA04-J technical planning (2026-11-13)
 
 Current main: `44d6b69a8d235cc8b1ee30953839be71e6ab836a`.
 
-Prepare the technical plan for **J1 only: authoritative new forum publication writes**. Inspect the current canonical/direct topic-creation and reply-creation paths, their transaction boundaries, receipt/replay and publication-finalization side effects, and determine the minimal AccountState enforcement/evidence required. Planning only; do not modify implementation.
+Prepare the technical plan for the **complete accepted SA04-J boundary: Forum authoritative actor writes protected by AccountState**.
 
-Do not silently expand into attachment-store package K, published-content edits/source-locale correction, topic state/admin actions, Help mutations, profile/read-state/notification-read writes, L–R/S, SA05, #315 remediation, docs or Stage6. If current source shows J1 cannot be isolated safely from one of those areas, report the reason and STOP for Mira.
+Determine the actual current mutation families, authoritative enforcement seams, transaction/lock/replay ordering, preservation constraints and required evidence across J as a whole. Planning only; do not modify implementation.
 
-After publishing the plan/evidence in #251, **STOP for Mira scope/fit/granularity review**. Lira/Mark remain unassigned.
+Do not pre-split J for Lira. After publishing the complete J plan/evidence in #251, **STOP for Mira scope/fit/granularity review**. Lira/Mark remain unassigned.
 
 ---
 
