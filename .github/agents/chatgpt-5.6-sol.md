@@ -1,5 +1,12 @@
 # ChatGPT-5.6 Sol — personal log
 
+## 2026-11-13 — SA04-J decomposed for Lira; J1 assigned
+
+- Kept Lev's accepted J technical plan whole; decomposed only Lira implementation into 12 bounded checkpoints.
+- First checkpoint J1 is the shared Drizzle AccountState mutation-admission seam only. No Forum writer integration belongs in J1.
+- J1 criteria: preserve native API/typed semantics; prove active/inactive/missing, unavailable/unexpected and caller-transaction lock lifetime; no schema/migration/dependency/public-contract change.
+- Lira assigned J1 and must STOP on a stable exact head for Mira checkpoint review. J2+ remain unassigned.
+
 ## 2026-11-13 — SA04-J full technical plan scope/fit PASS
 
 - Reviewed Lev plan #6858869802 against accepted J, current main `44d6b69a8d235cc8b1ee30953839be71e6ab836a`, current Forum mutation map and current #315 head.
