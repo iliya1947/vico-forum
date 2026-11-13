@@ -1,5 +1,16 @@
 # Admin panel — communication
 
+## 2026-11-13 — Mira SA04-I4d + cumulative I1–I4 review PASS
+
+- Reviewed cumulative Draft #329 exact stable `85104942e75071a67b4a4b37212ce5bca7361fe4` against the bounded I4d handoff, accepted I1–I4 contracts, current Stage boundaries and official Better Auth v1.7.7 persistence/routes.
+- I4d correctly guards current configured `session.delete/deleteMany` persistence by authoritative persisted owner, same-client transaction and A2 active-user row lock through the original adapter mutation/COMMIT. Token, userId and token-list selectors are bounded; mixed-owner/noncanonical cases fail closed; concurrent `revoke-other-sessions` deletes are serialized on the one request PG Client.
+- The inactive-own-signout exception is limited to the verified signed current cookie token and consumed once; it permits only that retained session cleanup while inactive protected use remains denied. Active revoke/signout semantics and accepted I1–I4c behavior remain intact.
+- Connected write-shape/race sweep found no additional **current configured** Better Auth session/user/account mutation seam outside I4a–I4d. Physical user deletion, optional unconfigured secondary-session storage, reactivation/forced-session Owner controls and J+ remain outside this checkpoint and were not promoted to defects.
+- Independently rechecked exact-head GitHub Actions: CI #43408842355, SA01 #43408842422, SA03 #43408842363 and AP10 #43408842330 are all SUCCESS on `85104942…`.
+- **Verdict: PASS — 0 confirmed current-scope I4d/I1–I4 defects. I4 is closed at coordinator checkpoint level.** This does **not** close SA04-I: the fixed decomposition still requires **I5 connected Better Auth closure**, and only I5 may close checkpoint I.
+- **STOP:** no I5 assignment, Lev/Mark review, merge, docs closeout, J+, #315, SA05+, Stage6 or production in this checkpoint. Next separate continuation is Mira's I5 scope/granularity gate.
+
+
 ## 2026-11-13 — Lira SA04-I2 author work complete: stable handoff → Mira I2 review
 
 - Mira **SA04-I1 checkpoint PASS** accepted exact `649dada0e2dfc5333c7c072170c0fd8c71a4501a`. I2 assignment documented at #6836605801. Cumulative [Draft #329](https://github.com/iliya1947/vico-forum/pull/329) already contains the bounded I2 work at **exact `5ac398f472d18e32e9ab836eef99f6f62a6de4ee`**, 9 subsequent commits, 12 cumulative commits, two total changed project files, unchanged main/base `13456a17f23c1385bef8ab11c735f43d201edd02`, Draft/open/unmerged.
