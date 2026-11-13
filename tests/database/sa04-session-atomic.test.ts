@@ -979,6 +979,8 @@ describe("SA04-I5a connected native account lifecycle across retained cookies", 
     expect(await sessions(owner.userId)).toHaveLength(2);
     const unrelatedBefore = await sessions(unrelated.userId);
     expect(unrelatedBefore).toHaveLength(1);
+    const unrelatedSession = unrelatedBefore[0];
+    if (!unrelatedSession) throw new Error("Missing unrelated active session");
     for (const cookie of cookies) {
       const context = new RouterContextProvider();
       await initializeAuthContext(context,
@@ -1012,7 +1014,7 @@ describe("SA04-I5a connected native account lifecycle across retained cookies", 
     }
 
     const direct = (await auth.$context).internalAdapter;
-    const headers = new Headers({ Cookie: secondCookie });
+    const headers = new Headers({ Cookie: secondCookie! });
     await expect(auth.api.getSession({ headers })).rejects.toMatchObject({ status: "UNAUTHORIZED" });
     await expect(auth.api.updateUser({
       headers, body: { name: "I5A_DIRECT_FORBIDDEN_RENAME" },
@@ -1043,9 +1045,11 @@ describe("SA04-I5a connected native account lifecycle across retained cookies", 
       value.includes("session_token") && value.includes("Max-Age=0"))).toBe(true);
     const remaining = await sessions(owner.userId);
     expect(remaining).toHaveLength(1);
-    expect(remaining[0].token).not.toBe(owner.session.token);
-    expect(remaining[0]).toEqual(retained.find(value => value.token !== owner.session.token));
-    expect((await runtime.getSession(new Headers({ Cookie: secondCookie })).session).toBeNull();
+    const remainingSession = remaining[0];
+    if (!remainingSession) throw new Error("Missing other retained session");
+    expect(remainingSession.token).not.toBe(owner.session.token);
+    expect(remainingSession).toEqual(retained.find(value => value.token !== owner.session.token));
+    expect((await runtime.getSession(new Headers({ Cookie: secondCookie! })).session).toBeNull();
     expect((await call("list-sessions", secondCookie!)).status).toBe(401);
     expect((await writer.query<{ name: string; deactivated_at: Date | null }>(
       'select name,deactivated_at from "user" where id=$1', [owner.userId],
@@ -1055,8 +1059,8 @@ describe("SA04-I5a connected native account lifecycle across retained cookies", 
     // Expiration remains guest-only; endpoint-last login cookies must win
     // over preliminary old-cookie cleanup for an unrelated still-active user.
     await writer.query("update \"session\" set expires_at=now()-interval '1 minute' where token=$1",
-      [remaining[0].token]);
-    expect((await runtime.getSession(new Headers({ Cookie: secondCookie })).session).toBeNull();
+      [remainingSession.token]);
+    expect((await runtime.getSession(new Headers({ Cookie: secondCookie! })).session).toBeNull();
     const loginRequest = new Request(origin + "/api/auth/sign-in/email", {
       method: "POST",
       headers: { Cookie: secondCookie!, Origin: origin, "content-type": "application/json",
@@ -1074,7 +1078,7 @@ describe("SA04-I5a connected native account lifecycle across retained cookies", 
       .toBe(unrelated.userId);
     expect((await call("list-sessions", unrelated.cookie)).status).toBe(200);
     expect((await sessions(unrelated.userId)).map(value => value.token))
-      .toContain(unrelatedBefore[0].token);
+      .toContain(unrelatedSession.token);
     expect((await writer.query<{ deactivated_at: Date | null }>(
       'select deactivated_at from "user" where id=$1', [unrelated.userId],
     )).rows[0]?.deactivated_at).toBeNull();
