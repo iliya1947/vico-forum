@@ -97,7 +97,7 @@ afterAll(async () => {
 describe("SA04-I4a Better Auth 1.7.7 native session write atomicity", () => {
   it("locks real signup transaction-context session INSERT before concurrent deactivation", async () => {
     const email = "i4a-transaction-signup@example.test";
-    const paused = pauseNativeQuery(writer, sql => /^insert into "session"\\s/i.test(sql));
+    const paused = pauseNativeQuery(writer, sql => /^insert into "session"\s/i.test(sql));
     try {
       const signing = auth.handler(new Request(`${origin}/api/auth/sign-up/email`, {
         method: "POST",
