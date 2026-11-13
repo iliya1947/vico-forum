@@ -1,5 +1,17 @@
 # Admin panel — communication
 
+## J4 — Mira bounded coordinator review: PASS
+
+- Reviewed exact Draft #330 head `84b5124f948895e3e211b81b1d6bd2082ddc531f` against the accepted J4 assignment, Lev's full-J profile lock/lifecycle/error plan, current AP-10 profile restriction contract and canonical SA-03 profile behavior.
+- Delta from accepted J3c `cb1df03d00038fdf414b9d0d650d908a58167098`: six bounded commits / four files only; no schema, migration, permission, dependency, Privacy P, SA-05 or J5+ work.
+- `updateProfile` preserves input validation before transaction, existing user `FOR UPDATE` mutex and missing-user 404. On the same Drizzle transaction it then performs authoritative AccountState admission before `profile.edit` measure admission and profile upsert. No second connection or alternate lifecycle predicate is introduced.
+- The existing stronger user lock is held through AccountState verification, measure admission, upsert and COMMIT/ROLLBACK. State-first deactivation is observed and denies with unchanged profile facts; writer-first admission may complete while lifecycle update waits for that row lock.
+- Active actor create/update semantics remain intact. Inactive actor with or without an existing profile row cannot create/update profile facts; public projection remains neutral Deleted-user identity. Existing AP-10 `profile.edit` denial still follows active-account admission and leaves facts unchanged.
+- Canonical profile action maps late `AccountInactiveError`/`AccountMissingError` to generic `unauthenticated` 401 with `private, no-store`, no `?saved=1`, draft/lifecycle leakage or false success. Existing prior missing-user 404, validation handling, AP-10 403, storage 503 and unexpected propagation remain distinct.
+- Hyperdrive availability semantics remain valid: AccountState availability wrappers retain the original classified failure in the cause chain, and the existing forum availability classifier walks that chain to `ForumStorageUnavailableError`; AccountState unexpected faults are not classified as unavailable or unauthenticated.
+- Exact-head evidence independently rechecked from GitHub Actions logs: new J4 native PG suite 5/5; native PostgreSQL total 804/804; application/unit 2270/2270; CI `database` and `checks` SUCCESS; SA-03 unified-profile Chromium SUCCESS; AP-10 browser acceptance all four jobs SUCCESS.
+- **Verdict: PASS — 0 confirmed current-scope J4 defects.** STOP. J5–J12 remain unassigned; Lev/Mark remain inactive.
+
 ## SA04-J4 — Lira AUTHOR STOP → Mira bounded review
 
 - Cumulative implementation Draft #330 exact `84b5124f948895e3e211b81b1d6bd2082ddc531f` (open/unmerged), from J3c accepted baseline `cb1df03d00038fdf414b9d0d650d908a58167098`.
