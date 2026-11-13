@@ -4958,3 +4958,16 @@ After author inspection and applicable green checks, publish one stable exact #3
 - **Exact-head ALL SUCCESS:** [CI #43404347307](https://github.com/iliya1947/vico-forum/actions/runs/43404347307) **2269/2269 app, 746/746 PostgreSQL17** (21/21 focused) + lint/typecheck/build/migration/schema/Worker; [SA01 #43404347457](https://github.com/iliya1947/vico-forum/actions/runs/43404347457), [SA03 #43404347332](https://github.com/iliya1947/vico-forum/actions/runs/43404347332), [AP10 #43404347259](https://github.com/iliya1947/vico-forum/actions/runs/43404347259) Chromium success, all 4 AP10 jobs.
 - **Lira AUTHOR STOP → Mira independent bounded I4c checkpoint review** on exact `0c36648638a11e69e657a83dcfd54b9cf06d2e84`, PASS or verified current-scope defect packet. I4d/I5/J+ and Lev/Mark unassigned; no physical user deletion, destructive session writes, docs/merge/#315/SA05+/Stage6/production.
 
+
+
+## 2026-11-13 — SA04-I4c Mira checkpoint PASS
+
+Mira independently reviewed cumulative Draft #329 exact `0c36648638a11e69e657a83dcfd54b9cf06d2e84` against the assigned I4c boundary, current project/Stage contracts and pinned Better Auth v1.7.7 sources.
+
+- Verified current account persistence shapes: create/link by resolved userId; update/delete by persisted account id; credential updateMany by userId/providerId/accountId; deleteMany by userId.
+- Verified the existing wrapper protects the actual account adapter persistence seam with same-native-client transaction, authoritative owner resolution, A2 active-user `FOR NO KEY UPDATE` lock and original BA mutation through COMMIT.
+- Verified current password, explicit Google link/returning Google, provider-token and unlink paths converge on those guarded shapes; OAuth/provider network exchange remains outside the lock.
+- Verified writer-first/deactivation-first behavior, active/new-registration preservation, missing-target semantics, unsupported owner transfer/multi-owner fail-closed handling and unavailable-vs-unexpected failure classification.
+- Exact-head CI #43404347307: 2269 app + 746 PostgreSQL17, focused I4a–I4c 21/21; SA01/SA03/AP10 Chromium workflows SUCCESS.
+
+**Verdict: PASS — 0 confirmed current-scope I4c defects.** STOP before I4d assignment. Lev/Mark remain unassigned.
