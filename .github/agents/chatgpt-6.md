@@ -1,14 +1,19 @@
 # ChatGPT-6 — personal log
 
-## SA04-J3c — implementation complete / AUTHOR STOP
+## Active assignment — SA04-J4
 
-- Implementation: cumulative Draft #330 stable exact head `cb1df03d00038fdf414b9d0d650d908a58167098` (open, unmerged), based on J3b Mira PASS exact `b407f93f54b7f7e1073218dd63b4f6235b1bb417`.
-- `096d024726c29ad2ff4ece4f2ed6915bee832d4d`: one repository `admitSourceLocaleNoop` method. It locks the existing topic/post target `FOR NO KEY UPDATE`, checks the current expected revision and own-author scope, then checks and locks authoritative `actorId` AccountState in the **same Drizzle transaction** through COMMIT/ROLLBACK. No revision or History write on a successful no-op.
-- `5cd1cb0ad641c3e21157d1af4cf0b74b3dbce043`: `ForumService.correctTopicTitleSourceLocale` and `correctPostBodySourceLocale` call the admission method only for same-locale success. Existing validation/ownership and changed-locale J3a writers are retained.
-- `5d0ab2ebe28be30b0121bc4553173742689eced5`: `runSourceLocaleCorrection` catches late `AccountInactiveError`/`AccountMissingError` and returns existing `unauthenticated` 401 with `private, no-store`, without leaking lifecycle details. Unavailable 503 and unexpected error paths remain distinct.
-- `cb1df03d00038fdf414b9d0d650d908a58167098`: seven focused new PG17 tests added to existing `source-locale-correction.test.ts`: active own/any same-locale no-op, inactive and missing denial, persisted revision/head/History preservation, validation/permission/CAS controls, canonical late lifecycle/unavailable/unexpected classification, and both lifecycle race directions for topic/post with separate native connections.
-- Personally inspected all four bounded commit diffs. No migration, schema, new permission/API, dependencies, editor/attachment changes or J4+ work.
-- Exact-head GitHub Actions `CI` SUCCESS: PostgreSQL 17 **799/799**, including source-locale suite **11/11**; application/unit **2269/2269**; lint, typecheck, both builds and migration/schema gates PASS.
-- Exact-head `AP-10 isolated browser acceptance` SUCCESS: all four Chromium/history/settings jobs PASS. These are synthetic CI/local-runtime checks, not production/owner visual acceptance.
+Continue cumulative Draft #330 from accepted J3c exact `cb1df03d00038fdf414b9d0d650d908a58167098`.
 
-**AUTHOR STOP → Mira bounded J3c coordinator review** on exact Draft #330 head `cb1df03d00038fdf414b9d0d650d908a58167098`. J4–J12, Lev and Mark remain unassigned. #315, SA-05, docs closeout and Stage 6 remain separate.
+Deliver **J4 only**: authoritative active-account admission for the existing own public-profile writer and its canonical action boundary.
+
+Required outcome:
+- `updateProfile` keeps its existing user-row serialization and verifies current AccountState on the same transaction/connection before `profile.edit` measure admission and profile upsert;
+- inactive/missing actor cannot persist profile changes;
+- state-first and writer-first races obey the accepted lifecycle ordering;
+- canonical profile action maps late inactive/missing denial to generic private/no-store 401, never saved-success;
+- preserve validation, self-only actor identity, AP-10 `profile.edit`, Owner measure immunity wiring, public Deleted-user projection, bounded draft behavior, unavailable 503 and unexpected-error handling.
+
+Use focused profile DB/route/race evidence and applicable existing regressions. No J5+, Privacy save P, SA-05, schema/migration/permission/dependency or unrelated work.
+
+After implementation: personally inspect the bounded delta, publish one stable exact #330 head/evidence, then **AUTHOR STOP for Mira J4 review**.
+
