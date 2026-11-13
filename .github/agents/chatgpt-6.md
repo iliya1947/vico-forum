@@ -1953,3 +1953,18 @@ Inspect the bounded correction yourself, publish new stable exact head and actua
 - Mandatory author code/diff inspection: all 3 correction commits, final bounded source/tests, project file count unchanged and pinned BA session behavior. Final exact-head **CI #43379564521 SUCCESS (2269 app; 722 native PG17, schema/migration, typecheck/lint/build/Worker)**; SA01 #43379564649, SA03 #43379564578 and AP10 #43379564500 all SUCCESS, 4 AP10 jobs. No confirmed remaining assigned I2-MIRA-01 defect; author assessment only.
 - PR #329 updated factual body, open/Draft/unmerged. Service workflow/common updated, final #251 handoff comment follows. **Lira STOP**, next Mira repeat bounded I2 review on exact `b7dc303ee0d10312e5d41af9889d26d6b264a6e6`; I3–I5/J+/Lev/Mark unassigned, no merge, docs closeout or production.
 
+
+
+## 2026-11-13 — assigned: SA04-I3
+
+Continue cumulative Draft PR #329 from accepted I2 exact head `b7dc303ee0d10312e5d41af9889d26d6b264a6e6`. Implement **I3 only**.
+
+Result: immediately before Better Auth creates a new session, the authoritative target account must be admitted from persisted AccountState. Inactive/missing target => no new session row and no issued session cookie/identity. This must work even when no SA-02 auth-fact observer is configured.
+
+Preserve the existing successful `session.create.after` fact/evidence behavior, I1/I2 gates, active signup/sign-in behavior, registration policy, Google-linking rules, password/rate-limit behavior, cookie ordering and error classification.
+
+Prove the real pinned Better Auth 1.7.7 creation seam for returning email/password sign-in, existing-user Google callback via the current synthetic provider seam, and direct/native internal session creation, with active controls.
+
+Do **not** close earlier existing-user/account/provider target writes in this checkpoint; those are I4. Do not start I4–I5 or J+.
+
+Inspect the completed bounded I3 diff/logic yourself, publish stable exact head and actual checks/evidence, then **STOP** for Mira checkpoint review.
