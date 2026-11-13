@@ -1,5 +1,15 @@
 # ChatGPT-5.6 Sol — personal log
 
+## SA04-J5 coordinator review — PASS
+
+- Independently reviewed Draft #330 exact `af25adf18fd065e5af4a7e6da2c670f28613a10f`.
+- Verified topic KEY SHARE → post KEY SHARE → same-tx AccountState actor lock → unchanged monotonic upsert → same-tx readback ordering and absence of actor→content reversal/lock upgrade.
+- Verified active first/forward/same/backward semantics, inactive/missing fact preservation, state-first/writer-first races, concurrent timestamp/ID monotonicity, cross-topic/missing target failures and J3a content-lock compatibility.
+- Verified canonical `markTopicRead` late lifecycle mapping remains shared private/no-store 401 with trusted session actor and no false success.
+- Exact-head evidence: J5 PG 7/7; native PG 811/811; app 2271/2271; CI, SA-03 Chromium and AP-10 browser jobs green.
+- #315 `READSTATE-CACHE-01` remains separate and unresolved by J5.
+- 0 confirmed current-scope J5 defects. STOP before J6 assignment.
+
 ## SA04-J5 assignment
 
 - J4 accepted exact baseline: `84b5124f948895e3e211b81b1d6bd2082ddc531f`.
