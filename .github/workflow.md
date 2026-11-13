@@ -1,13 +1,16 @@
 # Admin panel — current workflow
 
-- **Service PR #251. Current main:** `44d6b69a8d235cc8b1ee30953839be71e6ab836a`. SA04-I merged #329.
-- **SA04-J full technical plan accepted:** Lev #6858869802; developer-fixed J1–J12 Lira decomposition remains active.
-- **J1 Mira bounded checkpoint: PASS** on cumulative Draft #330 exact `35902e3ebd7636121b3a4af1e67b3da8ec365be2`.
-- Reviewed the complete two-file J1 delta, resulting AccountState helper/tests, current source-of-truth, pinned Drizzle ORM 0.45.2 transaction implementation, exact-head CI and PostgreSQL lock/error semantics. **0 confirmed current-scope J1 defects.**
-- J1 delivers only the shared caller-owned Drizzle transaction AccountState mutation admission; no ForumRepository writer is integrated yet. Existing native API/error behavior is preserved by shared tuple parsing/classification.
-- The helper's structural type can also be satisfied by an ordinary NodePgDatabase; this is **not a current J1 defect** because the J1 contract requires caller-owned transaction use, all real J1 use is transactional, and no Forum caller exists yet. At each J2+ integration, Mira must verify the actual caller passes its transaction rather than autocommit DB.
-- Exact-head CI #43466409877 SUCCESS: checks + database jobs. #330 stays cumulative Draft; no Lev independent review is spent on J1 alone.
-- **Next bounded coordinator task after developer continuation:** prepare J2 publication assignment for Lira from accepted J plan and J1 exact head. J2+ remain unassigned now. Lev/Mark unassigned.
+- **Service PR #251. Current main:** `44d6b69a8d235cc8b1ee30953839be71e6ab836a`. SA04-J cumulative implementation is Draft #330.
+- **Accepted technical plan:** Lev #6858869802. **Developer-fixed execution:** Lira receives bounded J1–J12 checkpoints.
+- **J1:** Mira PASS exact `35902e3ebd7636121b3a4af1e67b3da8ec365be2`; shared Drizzle AccountState mutation-admission seam accepted.
+- **Active checkpoint: J2 — publication. Lira owns J2 only.**
+- **J2 scope:** protect authoritative AccountState admission for `createTopic`, `createTopicWithInitialPost`, and `createPost`, including matching publication receipt replay and the existing same-transaction publication final bind/receipt side effects.
+- **Required boundary:** direct low-level `createTopic` and canonical topic+initial-post/reply paths must deny inactive/missing actors at the authoritative transaction boundary. Matching replay must not return success to an inactive actor. Active replay and existing publication/domain policy remain unchanged.
+- Preserve the accepted publication lock ordering: existing draft scope/receipt first; for fresh reply, existing topic/required parent dependency before actor admission; actor admission before first publication write and before replay success. Use the J1 helper on the actual caller-owned Drizzle transaction, never an autocommit database object.
+- **Excluded from J2:** published-post edit/revisions/source-locale (J3), standalone attachment upload/draft/storage APIs (K), J4+, SA05, #315 remediation, docs and Stage6.
+- **J2 done when:** focused PostgreSQL evidence covers active control, inactive/missing denial, matching replay preservation/denial, denied fresh publication leaving no new publication facts/final bind/receipt, and both lifecycle race directions for publication; applicable publication/attachment regression tests and normal CI pass.
+- Continue cumulative Draft #330 from accepted J1 exact head. After J2 implementation and author inspection, publish one stable exact head/evidence and **STOP for Mira J2 checkpoint review**.
+- **J3+ unassigned. Lev/Mark unassigned. No independent Codex review yet.**
 
 ## I5 author checkpoint decomposition
 
