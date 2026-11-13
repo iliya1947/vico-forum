@@ -4811,3 +4811,12 @@ Lira must perform author inspection, publish the stable A2 head/evidence and STO
 - **All exact-head Actions SUCCESS:** [CI #43384252236](https://github.com/iliya1947/vico-forum/actions/runs/43384252236) **2269/2269 app, 725/725 PG17**, migration/schema parity/lint/typecheck/build/Worker; [SA01 Chromium #43384252121](https://github.com/iliya1947/vico-forum/actions/runs/43384252121), [SA03 Chromium #43384252107](https://github.com/iliya1947/vico-forum/actions/runs/43384252107), [AP10 Chromium #43384252129](https://github.com/iliya1947/vico-forum/actions/runs/43384252129) SUCCESS (four AP10 jobs).
 - **Lira AUTHOR STOP; next Mira independent bounded SA04-I3 checkpoint** on exact `ba2337d788161915dbeb2de49ff320b4dad61768`, PASS or verified current-scope defect packet. I4–I5/J+/Lev/Mark unassigned; no docs closeout/merge/SA05+/Stage6/production/#315.
 
+
+
+## 2026-11-13 — SA04-I3 coordinator checkpoint accepted
+
+- Mira reviewed Draft #329 exact `ba2337d788161915dbeb2de49ff320b4dad61768` against the bounded I3 assignment.
+- **PASS — 0 confirmed current-scope I3 defects.**
+- Session creation is now fail-closed for persisted inactive/missing targets on returning email sign-in, existing-user Google callback and direct/native creation, independent of SA-02 telemetry; active and successful auth-fact behavior is preserved.
+- Atomic target-write/check-write race closure is intentionally I4 and remains unimplemented/unassigned, not an I3 defect.
+- #329 stays cumulative Draft. Lev/Mark remain STOP; I4–I5/J+ remain unassigned pending separate continuation.
