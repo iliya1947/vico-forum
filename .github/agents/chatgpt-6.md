@@ -1,5 +1,11 @@
 # ChatGPT-6 — personal log
 
+## SA04-K5 subtask 3/5 — connected ambiguous ACK/cleanup/fence DONE; STOP
+
+- Stable cumulative #332 `421c9a0f2f166cf7989f76025d86cab1a21c79d2` remains Draft/unmerged. No production application/source/schema/real binding changes; evidence-only CI harness in `tests/browser/sa04-attachments/` and workflow. Integration covers actual Worker/Better Auth/PG17/local R2, real stream/journal barriers plus real `ForumAttachmentCleanup` through disposable local-only R2 binding. Three K5 connected run phases include one transient local Miniflare `Headers` proxy serialization issue, corrected only in test fixture. Final [K5 #43632617101](https://github.com/iliya1947/vico-forum/actions/runs/43632617101) SUCCESS **25/25**, [CI #43632616982](https://github.com/iliya1947/vico-forum/actions/runs/43632616982) SUCCESS PG17 **956/956**, app **2306/2306**, all standard gates; exact-head AP10/SA01/SA03/J12 browser workflows SUCCESS.
+- Confirmed tested: lost actual HTTP response after committed 201 → same logical ID replay and same physical R2 object; post-PUT unknown DB/503 keeps R2 until reference-aware cleanup; pending HTTP payload vs expired claim lease/cleanup cannot resurrect object; genuine R2 cleanup removes detached/cancelled objects, retains published inactive-author files, observes claim lease and bounded reservation-sweep. Existing application R2 storage code unchanged.
+- **Stop after subtask 3/5**. Next only explicit developer `...`: bounded 4/5 mounted browser Editor Retry/Remove/Cancel/late-ACK behavior, no schema/docs/prod changes. Subtask 5 final cumulative checks/handoff follows separately.
+
 ## SA04-K5 subtask 2/5 — test helper CI stabilization DONE, Lira STOP
 
 - Audited baseline `02a9c00063eb2a890837154c449c2984841834c2` had only `no-undef` errors in two test-only Node ESM helper files because ESLint config assigns Node globals to `.github/scripts/**/*.mjs` but not these new browser test helpers. Exact error count 12 on [old CI 43624481844](https://github.com/iliya1947/vico-forum/actions/runs/43624481844). No confirmed application defect.
