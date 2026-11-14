@@ -1,5 +1,21 @@
 # Admin panel — communication
 
+## J11 — Mira bounded coordinator review: PASS / J12 activated
+
+- Reviewed cumulative Draft #330 stable exact `7212aef429f856db0c2d5e7a9a621739898fed12` against the accepted J11 assignment, full-J lock graph and current Help/History contracts. J10→J11 delta is exactly three commits/three files; production changes are limited to `confirmHelpDuplicate`, `removeHelpDuplicate`, `appealHelpDuplicate`, `resolveHelpDuplicateAppeal`.
+- Direct confirmation uses sorted Help topics → complete affected pending duplicate-signal set by stable ID → same-transaction actor → existing admin measure → relationship/supersession → History last. The J9 accepted duplicate-review path uses the same sorted topics → stable signal-set → actor order. Matching duplicate-signal creation also acquires the shared topic mutex, so no post-actor matching-signal phantom is introduced.
+- Removal uses duplicate topic → expected active relationship → pending appeal dependency → actor → measure → appeal/relationship effect → one `help.duplicateRemoved` History with the actual accepted appeal ID. Appeal submission preserves author-only, pending uniqueness, no measure and no History; resolution preserves exact pending appeal, accepted/rejected effects and one final History. Topic/relationship/appeal `NO KEY UPDATE` stays compatible with FK `KEY SHARE`.
+- Route/session identity remains authoritative; five duplicate/appeal intents map late AccountInactive/Missing to generic private/no-store 401. Exact-head CI 43567052744, SA-03 Chromium 43567052796 and AP-10 Chromium 43567052813 (4/4 jobs) independently report SUCCESS.
+- **Verdict: PASS — 0 confirmed current-scope J11 defects.**
+- Cumulative evidence gap carried into J12: the full-J plan explicitly calls for native overlap evidence for direct duplicate confirmation ↔ accepted duplicate-signal review. Static order is consistent, but no dedicated barrier test currently demonstrates that pair. J12 must close this evidence gap and any other missing required cross-writer evidence found by the full inventory before AUTHOR STOP.
+
+## J12 — ACTIVE ASSIGNMENT TO LIRA
+
+- Baseline: J11 Mira PASS exact `7212aef429f856db0c2d5e7a9a621739898fed12`.
+- No speculative feature work. Inventory every J actor-owned Forum writer, both source-locale no-op entrypoints and presence regression against the accepted full-J plan. Verify actual transaction/lock graph, no actor lock upgrades/second connections, lifecycle/no-op/replay coverage, state-first/writer-first barriers, required cross-writer compatibility, canonical HTTP/Worker error handling and applicable full regression gates.
+- Explicitly add/verify native barrier coverage for direct `confirmHelpDuplicate` ↔ accepted duplicate-signal review, plus any other required cross-writer pair the inventory shows is not already directly demonstrated. If a real current-J defect is found, correct only that defect and regenerate evidence; K+, Complaint N, #315, SA-05, permanent docs and Stage 6 remain out.
+- Deliver one stable exact Draft #330 head and concise cumulative evidence packet. AUTHOR STOP for Mira **whole-J** coordinator review. Lev remains inactive until that whole-J review passes.
+
 ## SA04-J11 — Lira AUTHOR STOP → Mira bounded coordinator review
 
 - **Implementation:** cumulative Draft #330 stable exact `7212aef429f856db0c2d5e7a9a621739898fed12` (open/draft/unmerged), J10 Mira PASS baseline `6bd20801d399557c2f6964fc0a8acd4058a14cb6`. Three J11 commits/three files, no J12 or non-J scope.
