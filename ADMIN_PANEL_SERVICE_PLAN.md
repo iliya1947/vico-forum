@@ -26,7 +26,7 @@ Accepted master technical plan: predecessor #251 comment **#6806249892**.
 - **A–H:** account-state storage + neutral public identity/projection foundation — delivered in current main.
 - **I:** Better Auth active-account closure — delivered in current main.
 - **J:** Forum authoritative actor writes — **delivered/merged by PR #330**, merge commit `398dae18d5ca7c3fc6dd84fd93a29d7c381ba366`; Mira cumulative whole-J PASS + Lev independent whole-J PASS on implementation head `800df2a56c4853a0c261f4cdb1b9969efe5c4b3e`.
-- **K:** attachment upload/draft/finalization admission — **K1–K4 Mira PASS; K5 cumulative connected closure active in Draft #332**.
+- **K:** attachment upload/draft/finalization admission — **Mira whole-K PASS on stable cumulative Draft #332 exact `bb9d1497c5d5f14bfff6a1edf64e19eed5fd5105`; Lev independent whole-K review active on the same head**.
 - **L:** authorization mutations.
 - **M:** AP-10 mutations/appeals.
 - **N:** Complaints mutation/participation.
@@ -56,6 +56,19 @@ Planning must establish from current `main`:
 
 If current code/source-of-truth conflicts with the accepted master plan or a correct K solution requires a broader architectural change, Lev stops with a technical escalation instead of silently expanding scope.
 
+### Whole-K coordinator review — ACCEPTED
+
+Mira coordinator whole-K review **PASS** on stable cumulative Draft #332 exact `bb9d1497c5d5f14bfff6a1edf64e19eed5fd5105`: **0 confirmed current-K defects**.
+
+Reviewed cumulative production delta, all seven lifecycle-gated attachment entrypoints, deliberately ungated public/security/cleanup boundaries, J publication/finalization composition, lock ordering, AP-10 semantics, all four authoring contexts, cleanup/claim/lease rules, late PUT/ambiguous ACK behavior, private error privacy and connected local-R2 runtime evidence.
+
+Independent exact-head evidence rechecked:
+- CI 43638470727 SUCCESS — PG17 **956/956** (84 files), app **2306/2306** (186 files), K1/K2/K3/K4 **7/7 each**, attachment fence **22/22**, route/editor/Worker focused suites green, typecheck/build/schema/migration/Worker gates green;
+- K5 connected run 43638470788 SUCCESS — **29/29** built Worker + genuine Better Auth + PostgreSQL 17 + local-only R2 + Chromium cases;
+- exact-head AP-10, SA-01, SA-03 and SA04-J12 browser workflows SUCCESS.
+
+Next gate: **Lev independent whole-K technical review of this same exact head**. Any implementation change invalidates this review snapshot and returns the cumulative PR to a new Mira whole-K cycle.
+
 ## Remaining accepted Super-admin package sequence after SA-04
 
 Source: accepted Lev bounded decomposition in predecessor #251 comment **#6745289141**.
@@ -66,6 +79,8 @@ Source: accepted Lev bounded decomposition in predecessor #251 comment **#674528
 - **SA-08:** full Overview + cross-area filters/History/actions + end-to-end Super-admin integration/closeout. All 13 approved Monitoring areas must be accounted for; **Infrastructure remains Stage-6-only** until Stage 6 is explicitly resumed.
 
 SA-05–SA-08 are already accepted future packages; they are not invented follow-up work. They remain blocked until the preceding package is fully accepted/merged according to the active workflow.
+
+**Developer planning gate:** after full SA-04 closure and before any SA-05 implementation, the remaining **SA-05–SA-08 must be technically planned as one complete dependency chain** to sufficient implementation depth (cross-package contracts, data/seams, critical interaction/race/security boundaries and acceptance). Package implementation must follow that accepted complete plan; only details that genuinely depend on the then-current `main` may be refined later. Do not use per-package just-in-time planning as a substitute for this full remaining-chain plan.
 
 ## Historical anchors
 
