@@ -1,5 +1,14 @@
 # ChatGPT-6 — personal log
 
+## SA04-K4 bounded implementation — Lira AUTHOR STOP / Mira review next
+
+- **Cumulative Draft #332:** exact `8f89a7101d356eb52ccf1021a63341a4e0a37967`, open/draft/unmerged, from accepted K3 `dae431fc920c79cad654627052365a3fd2380fe4`.
+- **Production:** one in-transaction AccountState actor NKU in `cancelOperation` after existing draft advisory scope and before retirement/ref deletion. Covers active empty/live/idempotent terminal operation and forbids inactive/missing acknowledgement or mutation. No external GET/PUT/DELETE lock extension, no AP10 restriction on Cancel, no public refs/receipt changes.
+- **Native:** `tests/database/sa04-attachment-k4-cancel.test.ts` **7/7 PASS** (active/AP10 empty/live/terminal; exact scoping/foreign refs; inactive/missing unchanged state; both actor-state race orders; real two-writer Cancel↔metadata finalization in both orders with physical scope blocker).
+- **HTTP/UI:** canonical DELETE tests 401/503/unexpected, no R2 side effects; existing per-file 405 and active AP10 Cancel kept. Editor hook unchanged, new 401 denied Cancel test proves local reset/abort ignores late ACK without asserting server COMMIT.
+- **Exact-head [CI 43616566018](https://github.com/iliya1947/vico-forum/actions/runs/43616566018) SUCCESS:** PG17 956/956 (84 files), K4 7/7, K3 7/7, fence 22/22; app 2306/2306 (186 files), attachment-upload route 42/42, editor attachment-operation 21/21; lint/typecheck/build/migrations/Workers PASS; [AP10](https://github.com/iliya1947/vico-forum/actions/runs/43616566010), [SA01](https://github.com/iliya1947/vico-forum/actions/runs/43616566021), [SA03](https://github.com/iliya1947/vico-forum/actions/runs/43616566002), [SA04-J12](https://github.com/iliya1947/vico-forum/actions/runs/43616566087) exact-head browser workflows SUCCESS. Not K5 connected local-R2 attachment acceptance.
+- **AUTHOR STOP.** Mira bounded K4 review next. K5 inactive. No merge/deploy or broader work.
+
 ## SA04-K4 — ACTIVE ASSIGNMENT: whole-operation Cancel lifecycle admission
 
 Continue cumulative Draft #332 from accepted K3 exact `dae431fc920c79cad654627052365a3fd2380fe4`. Accepted complete K plan: #331 comment #6877583725. Only **K4** is active.
