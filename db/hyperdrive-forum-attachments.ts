@@ -1,4 +1,5 @@
 import { drizzle } from "drizzle-orm/node-postgres";
+import { AccountStateUnavailableError } from "./account-state";
 import { assertNoActiveUserMeasureRestriction } from "./user-measure-policy";
 import type { Client } from "pg";
 import { isPostgresAvailabilityFailure } from "../app/localization/persistent-registry";
@@ -46,7 +47,8 @@ function isAttachmentStorageAvailabilityFailure(error: unknown): boolean {
   ) {
     seen.add(current);
     if (
-      isPostgresAvailabilityFailure(current)
+      current instanceof AccountStateUnavailableError
+      || isPostgresAvailabilityFailure(current)
       || isPostgresConnectionTimeout(current)
       || isPostgresQueryTimeout(current)
     ) {
