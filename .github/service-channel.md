@@ -1,5 +1,13 @@
 # Admin panel — communication
 
+## 2026-11-14 — SA04-K1 Lira AUTHOR STOP / bounded Mira gate
+
+- **Draft [#332](https://github.com/iliya1947/vico-forum/pull/332)** created from main `398dae18d5ca7c3fc6dd84fd93a29d7c381ba366`, implementation exact head **`ad20fa37be4e0f887fc5ffac644f6304a9e1eb8f`**, open/draft/unmerged; only K1 implemented.
+- Existing Drizzle AccountState guard now runs within **both** attachment `admitUpload` and `createDraftAttachment` transactions, ordered draft scope → actor and draft scope → existing fenced journal row → actor respectively. Denied inactive/missing cannot receive committed stable-ID metadata/replay or new asset/ref; active replay continues despite AP10 upload restriction; fresh upload remains restricted. No J or K2–K5 code.
+- Upload POST maps typed inactive/missing to private/no-store **401**, typed account-state unavailable to **503**, unknown remains unexpected; deterministic post-PUT account denial may best-effort remove only fresh physical key, unknown COMMIT failure retains recovery semantics. Hyperdrive cause-chain classifies typed AccountState outage.
+- **Exact-head CI SUCCESS:** [43599514990](https://github.com/iliya1947/vico-forum/actions/runs/43599514990) PG17 **935/935** in **81 files**, native K1 **7/7** incl both race directions and journal contention, upload fencing **22/22** incl early/late HTTP 401 and safe cleanup, app/unit **2282/2282** in **185 files**, lint/typecheck/build/migrations/Worker smoke PASS. Original intermediate test-only lint/assertion errors fixed. Dedicated local R2/real Better Auth Chromium K lifecycle acceptance belongs to K5; **not claimed** for K1.
+- **Next: Mira bounded K1 coordinator review of `ad20fa37be4e0f887fc5ffac644f6304a9e1eb8f`**, then only on Mira PASS K2 activation in cumulative Draft #332; Lev/Mark inactive, no merge, production or Stage6.
+
 ## 2026-11-14 — Mira scope/fit PASS on SA04-K plan; K1 activated
 
 - Reviewed Lev's complete K plan #6877583725 against current `main=398dae18d5ca7c3fc6dd84fd93a29d7c381ba366`, current attachment source/callers and permanent Editor/Admin/Authorization contracts.
