@@ -229,8 +229,8 @@ describe("SA04-K1 authoritative upload admission and metadata finalization", () 
   it("locks an existing fenced journal before actor admission; state-first cannot create a ref", async () => {
     const actor = await user();
     const op = operation(actor), asset = upload(op, uuid(), true);
-    await store.recordUploadObject(asset.objectKey);
-    await store.activateUploadObject(asset.objectKey, "positive-reservation-etag");
+    await store.recordUploadObject(actor, asset.objectKey);
+    await store.activateUploadObject(actor, asset.objectKey, "positive-reservation-etag");
     const blocker = new Client({ connectionString: url, options });
     const contender = new Client({ connectionString: url, options });
     await Promise.all([blocker.connect(), contender.connect()]);
