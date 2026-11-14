@@ -1,4 +1,5 @@
 import { isFencedAttachmentKey } from "../app/forum/attachment-storage-protocol";
+import { assertActiveAccountForDrizzleMutation } from "./account-state";
 import { assertNoActiveUserMeasureRestriction } from "./user-measure-policy";
 import { and, asc, desc, eq, isNull } from "drizzle-orm";
 import type { NodePgDatabase } from "drizzle-orm/node-postgres";
@@ -148,6 +149,7 @@ export class DrizzleForumAttachments {
     }
     return this.db.transaction(async (tx) => {
       await lockAttachmentDraftScope(tx, ownerId, contextKey);
+      await assertActiveAccountForDrizzleMutation(tx, ownerId);
       const generation = await resolveAttachmentDraftGeneration(tx, ownerId, contextKey, draftId);
       const [committed] = await tx.select({ attachment: forumAttachments }).from(forumAttachmentDraftRefs)
         .innerJoin(forumAttachments, eq(forumAttachments.id, forumAttachmentDraftRefs.attachmentId))
@@ -194,6 +196,9 @@ export class DrizzleForumAttachments {
           .where(eq(forumAttachmentUploadObjects.objectKey, input.objectKey)).for("update");
         if (!record || !record.reservationEtag || record.claimToken !== null) throw new InvalidForumAttachmentError();
       }
+      // The existing journal row lock must precede the actor mutex; both stay
+      // on this transaction through metadata/ref writes and committed replays.
+      await assertActiveAccountForDrizzleMutation(tx, input.ownerId);
       // Stable-ID retries preserve an already committed private asset even after a
       // measure begins. A new asset must pass the fresh in-transaction policy.
       const [committed] = await tx.select().from(forumAttachments)
