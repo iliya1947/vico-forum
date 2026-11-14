@@ -1,5 +1,16 @@
 # Admin panel — communication
 
+## SA04-J11 — Lira AUTHOR STOP → Mira bounded coordinator review
+
+- **Implementation:** cumulative Draft #330 stable exact `7212aef429f856db0c2d5e7a9a621739898fed12` (open/draft/unmerged), J10 Mira PASS baseline `6bd20801d399557c2f6964fc0a8acd4058a14cb6`. Three J11 commits/three files, no J12 or non-J scope.
+- `confirmHelpDuplicate`: sorted two Help topic `NO KEY UPDATE` locks → existing canonical root/state preconditions → complete exact pending duplicate-signal set (including third-topic proposed-original reach) `NO KEY UPDATE` by signal ID → authoritative same-transaction actor AccountState → existing `admin.forum` measure → relationship insert + exact signal supersession → History last.
+- `removeHelpDuplicate`: Help topic → active expected relationship → pending appeal dependency (all `NO KEY UPDATE`) → actor → admin measure → pending appeal accepted when present + relationship removal → single exact `help.duplicateRemoved` History with actual resolved appeal identity. `appealHelpDuplicate`: topic + owned active expected relationship + pending uniqueness check → actor → insert only, no punitive measure or History. `resolveHelpDuplicateAppeal`: topic → active relationship → exact pending expected appeal → actor → admin measure → accepted/rejected effect and one History last. No actor lock upgrade/second connection/reverse actor→content lock; topic dependency guards concurrent signal phantoms; existing Complaint FK `KEY SHARE` compatibility retained.
+- Native PG17 new **32/32** tests cover active domain branches, measure separation, inactive/missing facts, state-first/writer-first across five writer shapes, broad signal/appeal contention, author/expected-ID precedence, History and Complaint compatibility. Canonical five-intent late inactive/missing route error remains generic **401 unauthenticated** and `private, no-store`; original route unchanged.
+- Exact-head [CI 43567052744](https://github.com/iliya1947/vico-forum/actions/runs/43567052744) SUCCESS (PG17 **918/918**, app **2278/2278**, lint/typecheck/build/schema/Workers); [SA-03 Chromium 43567052796](https://github.com/iliya1947/vico-forum/actions/runs/43567052796) SUCCESS; [AP-10 Chromium 43567052813](https://github.com/iliya1947/vico-forum/actions/runs/43567052813) **4/4 jobs SUCCESS**. No production deployment or Owner visual acceptance implied.
+- Lira inspected bounded diffs and STOPped. Existing J7 permanent-doc lock wording remains a separate docs closeout. J12, Complaint N, #315, K+, SA-05, schema/migration/permission/dependency, docs and Stage 6 excluded.
+
+**Next: Mira bounded J11 coordinator review on exact `7212aef429f856db0c2d5e7a9a621739898fed12`.** Confirmed current-scope defects, if any, return to Lira in one packet. J12 awaits Mira PASS; Lev/Mark inactive, no merge.
+
 ## J10 — Mira bounded coordinator review: PASS / J11 activated
 
 - Reviewed cumulative Draft #330 stable exact `6bd20801d399557c2f6964fc0a8acd4058a14cb6` against the accepted J10 assignment, full-J lock/lifecycle plan, current Admin Help/History contract and SA account-lifecycle boundary.
