@@ -3851,9 +3851,8 @@ export class DrizzleForumRepository {
         .from(forumTopics)
         .where(inArray(forumTopics.id, lockedIds))
         .orderBy(asc(forumTopics.id))
-        .for("update");
+        .for("no key update");
       if (topics.length !== 2) throw new ForumEntityNotFoundError("duplicate question or original question does not exist");
-      await this.measureAdmission(tx, actorId, "admin.forum");
       if (topics.some((topic) => topic.sectionId !== HELP_SOLUTIONS_SERVICE_SECTION_ID)) {
         throw new ForumStateConflictError("duplicate relationships are only available between Help & solutions questions");
       }
@@ -3889,6 +3888,24 @@ export class DrizzleForumRepository {
         throw new ForumStateConflictError("a canonical original cannot become a duplicate while active duplicates point to it");
       }
 
+      // The exact bulk-supersession set must precede the lifecycle mutex.
+      // Topic mutexes also serialize concurrent pending duplicate-signal inserts.
+      await tx.select({ id: forumHelpSignals.id })
+        .from(forumHelpSignals)
+        .where(and(
+          eq(forumHelpSignals.kind, "duplicate"),
+          eq(forumHelpSignals.status, "pending"),
+          or(
+            eq(forumHelpSignals.topicId, topicId),
+            eq(forumHelpSignals.topicId, originalTopicId),
+            eq(forumHelpSignals.proposedOriginalTopicId, topicId),
+          ),
+        ))
+        .orderBy(asc(forumHelpSignals.id))
+        .for("no key update");
+      await assertActiveAccountForDrizzleMutation(tx, actorId);
+      await this.measureAdmission(tx, actorId, "admin.forum");
+
       const relationshipId=crypto.randomUUID();
       await tx.insert(forumHelpDuplicateRelationships).values({
         id: relationshipId,
@@ -3921,7 +3938,7 @@ export class DrizzleForumRepository {
         .select({ id: forumTopics.id, sectionId: forumTopics.sectionId })
         .from(forumTopics)
         .where(eq(forumTopics.id, topicId))
-        .for("update");
+        .for("no key update");
       if (!topic) throw new ForumEntityNotFoundError("topic does not exist");
       if (topic.sectionId !== HELP_SOLUTIONS_SERVICE_SECTION_ID) {
         throw new ForumStateConflictError("duplicate relationships are only available for Help & solutions questions");
@@ -3933,11 +3950,21 @@ export class DrizzleForumRepository {
           eq(forumHelpDuplicateRelationships.duplicateTopicId, topicId),
           isNull(forumHelpDuplicateRelationships.removedAt),
         ))
-        .for("update");
+        .for("no key update");
       if (!relationship) throw new ForumStateConflictError("question is not a confirmed duplicate");
       if (relationship.id !== expectedRelationshipId) {
         throw new ForumStateConflictError("duplicate relationship is no longer the expected relationship");
       }
+      // Removal may accept the current pending appeal as part of the same effect.
+      await tx.select({ id: forumHelpDuplicateAppeals.id })
+        .from(forumHelpDuplicateAppeals)
+        .where(and(
+          eq(forumHelpDuplicateAppeals.relationshipId, relationship.id),
+          eq(forumHelpDuplicateAppeals.status, "pending"),
+        ))
+        .orderBy(asc(forumHelpDuplicateAppeals.id))
+        .for("no key update");
+      await assertActiveAccountForDrizzleMutation(tx, actorId);
       await this.measureAdmission(tx, actorId, "admin.forum");
 
       const resolvedAt = sql`statement_timestamp()`;
@@ -3960,7 +3987,7 @@ export class DrizzleForumRepository {
         .select({ id: forumTopics.id, sectionId: forumTopics.sectionId, authorId: forumTopics.authorId })
         .from(forumTopics)
         .where(eq(forumTopics.id, topicId))
-        .for("update");
+        .for("no key update");
       if (!topic) throw new ForumEntityNotFoundError("topic does not exist");
       if (topic.sectionId !== HELP_SOLUTIONS_SERVICE_SECTION_ID) {
         throw new ForumStateConflictError("duplicate appeals are only available for Help & solutions questions");
@@ -3975,7 +4002,7 @@ export class DrizzleForumRepository {
           eq(forumHelpDuplicateRelationships.duplicateTopicId, topicId),
           isNull(forumHelpDuplicateRelationships.removedAt),
         ))
-        .for("update");
+        .for("no key update");
       if (!relationship) throw new ForumStateConflictError("question is not a confirmed duplicate");
       if (relationship.id !== expectedRelationshipId) {
         throw new ForumStateConflictError("duplicate relationship is no longer the expected relationship");
@@ -3987,8 +4014,9 @@ export class DrizzleForumRepository {
           eq(forumHelpDuplicateAppeals.relationshipId, relationship.id),
           eq(forumHelpDuplicateAppeals.status, "pending"),
         ))
-        .for("update");
+        .for("no key update");
       if (pending) throw new ForumStateConflictError("duplicate appeal is already pending");
+      await assertActiveAccountForDrizzleMutation(tx, actorId);
 
       await tx.insert(forumHelpDuplicateAppeals).values({
         id: crypto.randomUUID(),
@@ -4010,7 +4038,7 @@ export class DrizzleForumRepository {
         .select({ id: forumTopics.id, sectionId: forumTopics.sectionId })
         .from(forumTopics)
         .where(eq(forumTopics.id, topicId))
-        .for("update");
+        .for("no key update");
       if (!topic) throw new ForumEntityNotFoundError("topic does not exist");
       if (topic.sectionId !== HELP_SOLUTIONS_SERVICE_SECTION_ID) {
         throw new ForumStateConflictError("duplicate appeals are only available for Help & solutions questions");
@@ -4022,7 +4050,7 @@ export class DrizzleForumRepository {
           eq(forumHelpDuplicateRelationships.duplicateTopicId, topicId),
           isNull(forumHelpDuplicateRelationships.removedAt),
         ))
-        .for("update");
+        .for("no key update");
       if (!relationship) throw new ForumStateConflictError("question is not a confirmed duplicate");
       const [appeal] = await tx
         .select({ id: forumHelpDuplicateAppeals.id })
@@ -4031,10 +4059,11 @@ export class DrizzleForumRepository {
           eq(forumHelpDuplicateAppeals.relationshipId, relationship.id),
           eq(forumHelpDuplicateAppeals.status, "pending"),
         ))
-        .for("update");
+        .for("no key update");
       if (!appeal || appeal.id !== expectedAppealId) {
         throw new ForumStateConflictError("duplicate appeal is no longer the expected pending appeal");
       }
+      await assertActiveAccountForDrizzleMutation(tx, actorId);
       await this.measureAdmission(tx, actorId, "admin.forum");
 
       const resolvedAt = sql`statement_timestamp()`;
