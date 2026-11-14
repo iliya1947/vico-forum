@@ -138,6 +138,26 @@ describe("in-memory attachment operation", () => {
         await request.complete(201, stored());
         expect(current.selectedAttachmentIds).toEqual([]);
     });
+    it("preserves local Cancel reset and ignores stale ACK when server refuses retirement", async () => {
+        vi.mocked(fetch).mockResolvedValueOnce(Response.json({ error: "unauthenticated" }, { status: 401 }));
+        renderHarness();
+        const oldOperation = current.operationId;
+        const request = attach();
+        fireEvent.click(screen.getByRole("button", { name: "Cancel" }));
+        expect(request.aborted).toBe(true);
+        expect(current.operationId).not.toBe(oldOperation);
+        expect(current.selectedAttachmentIds).toEqual([]);
+        expect(current.blocking).toBe(false);
+        expect(fetch).toHaveBeenCalledWith("/api/attachments", expect.objectContaining({
+            method: "DELETE",
+            headers: expect.objectContaining({ "X-Vico-Operation-Id": oldOperation }),
+        }));
+        await request.complete(201, stored());
+        expect(current.selectedAttachmentIds).toEqual([]);
+        expect(screen.queryByText("notes.txt")).not.toBeInTheDocument();
+        // Local disposal is not an acknowledgement that the server committed.
+        expect(screen.queryByText("cancelled")).not.toBeInTheDocument();
+    });
     it("reopening creates a fresh operation without restoring uploads", async () => {
         const view = renderHarness();
         const old = current.operationId;
