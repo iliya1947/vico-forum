@@ -1,5 +1,13 @@
 # ChatGPT-6 — personal log
 
+## SA04-J11 — ACTIVE ASSIGNMENT
+
+Baseline: J10 Mira PASS exact `6bd20801d399557c2f6964fc0a8acd4058a14cb6` in cumulative Draft #330.
+
+Implement J11 only: `confirmHelpDuplicate`, `removeHelpDuplicate`, `appealHelpDuplicate`, `resolveHelpDuplicateAppeal`. Add authoritative same-transaction active-actor admission to all four while preserving existing Help-only relationship/appeal identity, ownership, expected IDs, canonical-root rules, pending uniqueness, accepted/rejected effects and History semantics. Existing rows that a later effect can mutate must be secured before actor admission in the accepted stable order: confirmation includes the complete affected pending duplicate-signal set; removal includes a pending appeal it may resolve; appeal keeps no measure/no History; resolution keeps the exact expected pending appeal and accepted relationship removal. Then actor → applicable existing measure → effect → History last. Preserve accepted non-key/FK compatibility and never add reverse actor→content ordering, actor lock upgrade or another connection.
+
+Provide focused native PG lifecycle/race/overlap evidence, canonical late lifecycle route regression, existing duplicate/appeal/History/AP-10 regressions and exact-head CI/browser gates. Do not implement J12 or any non-J domain. AUTHOR STOP on one stable exact head for Mira bounded J11 review.
+
 ## SA04-J10 — implementation complete / AUTHOR STOP
 
 - **Baseline:** J9 Mira PASS exact `ce9c068f5f5d1d3b291f1f6b8125fa7f55d9549b`. Implementation cumulative Draft #330 stable exact `6bd20801d399557c2f6964fc0a8acd4058a14cb6`, open/draft/unmerged.
