@@ -1082,11 +1082,6 @@ try:
                no_resurrection=True, actual_r2_deleted=True, no_asset_ref=True)
 
 
-        # Diagnose a genuinely stuck Playwright route/PG callback rather than
-        # consuming the full CI job budget without a traceback.
-        import faulthandler
-        faulthandler.dump_traceback_later(180, exit=True)
-
         # K5 mounted-editor lifecycle matrix. These are real React-rendered
         # reply forms and XHRs against the built Worker/Better Auth/local R2.
         # A lost HTTP ACK is simulated only after route.fetch sees real 201.
@@ -1229,9 +1224,13 @@ try:
             request.headers.get("x-vico-attachment-id")
         ) if request.url == base + "/api/attachments"
              and request.method == "POST" else None)
-        print("K5_UI_CANCEL_GATE_SPAWN", flush=True)
+        cancel_requests = []
+        cancel_page.on("request", lambda request: cancel_requests.append({
+            "operation": request.headers.get("x-vico-operation-id"),
+            "method": request.method,
+        }) if request.url == base + "/api/attachments"
+             and request.method == "DELETE" else None)
         cancel_gate = PgBarrier()
-        print("K5_UI_CANCEL_GATE_READY", flush=True)
         try:
             cancel_gate.send({
                 "action": "begin-scope", "actor": cancel_id, "context": context_key,
@@ -1241,33 +1240,26 @@ try:
                 "buffer": b"K5 Cancel pending upload never republishes",
             })
             wait_blocking(cancel_gate.backend_pid, "mounted Cancel pending POST")
-            print("K5_UI_CANCEL_POST_BLOCKED", flush=True)
             expect(cancel_form.locator(".markdown-editor-attachment.is-uploading")).to_have_count(1)
-            with cancel_page.expect_response(
-                lambda response: response.url == base + "/api/attachments"
-                and response.request.method == "DELETE", timeout=30000
-            ) as cancel_ack:
-                print("K5_UI_CANCEL_CLICK_START", flush=True)
-                cancel_form.locator(".markdown-editor-actions").get_by_role(
-                    "button", name="Cancel", exact=True).click()
-                print("K5_UI_CANCEL_CLICK_DONE", flush=True)
-                cancel_gate.send({"action": "commit"})
-                print("K5_UI_CANCEL_COMMIT_DONE", flush=True)
-            assert cancel_ack.value.status == 200
-            assert cancel_ack.value.json()["outcome"] == "cancelled"
-            print("K5_UI_CANCEL_ACK_OBSERVED", flush=True)
+            # The actual editor deliberately fire-and-forgets DELETE; a page
+            # response watcher can outlive the hidden form. Observe the
+            # request and authoritative completion marker instead.
+            cancel_form.locator(".markdown-editor-actions").get_by_role(
+                "button", name="Cancel", exact=True).click()
+            cancel_gate.send({"action": "commit"})
+            wait_for(lambda: sql("""select draft_id from forum_attachment_draft_generations
+              where owner_id=$1 and context_key=$2 and draft_id=$3""",
+              [cancel_id, context_key, cancel_operation]),
+              "real mounted Cancel retirement", 18)
         finally:
-            print("K5_UI_CANCEL_GATE_CLOSE_START", flush=True)
             cancel_gate.close()
-            print("K5_UI_CANCEL_GATE_CLOSE_DONE", flush=True)
         assert len(cancel_uploads) == 1
+        assert len(cancel_requests) == 1 and cancel_requests[0]["operation"] == cancel_operation
         assert cancel_form.locator('input[name="editorOperationId"]').input_value() != cancel_operation
         assert json.loads(cancel_form.locator('input[name="editorAttachmentIds"]').input_value()) == []
         expect(cancel_editor).to_have_value("")
         assert not cancel_form.is_visible()
-        print("K5_UI_CANCEL_RESUME_CLICK_START", flush=True)
         cancel_page.locator("button.forum-composer-resume").click()
-        print("K5_UI_CANCEL_RESUME_CLICK_DONE", flush=True)
         expect(cancel_form).to_be_visible()
         assert cancel_form.locator(".markdown-editor-attachment").count() == 0
         assert sql("""select attachment_id from forum_attachment_draft_refs
@@ -1325,13 +1317,17 @@ try:
         expect(denied_editor).to_have_value("K5 inactive Retry keeps entered text and selected File")
         assert json.loads(denied_form.locator('input[name="editorAttachmentIds"]').input_value()) == []
         assert stats(denied_id) == denied_before
-        with denied_page.expect_response(
-            lambda response: response.url == base + "/api/attachments"
-            and response.request.method == "DELETE", timeout=30000
-        ) as denied_cancel_ack:
-            denied_form.locator(".markdown-editor-actions").get_by_role(
-                "button", name="Cancel", exact=True).click()
-        refused(denied_cancel_ack.value, 401)
+        denied_cancel_requests = []
+        denied_page.on("request", lambda request: denied_cancel_requests.append(
+            request.headers.get("x-vico-operation-id")
+        ) if request.url == base + "/api/attachments"
+             and request.method == "DELETE" else None)
+        denied_form.locator(".markdown-editor-actions").get_by_role(
+            "button", name="Cancel", exact=True).click()
+        # Server denial is independently checked on the same old operation;
+        # UI reset does not depend on a delivered fire-and-forget fetch ACK.
+        refused(cancel(denied_ctx, topic_id, denied_operation), 401)
+        assert denied_cancel_requests == [denied_operation], denied_cancel_requests
         assert denied_form.locator('input[name="editorOperationId"]').input_value() != denied_operation
         expect(denied_editor).to_have_value("")
         assert json.loads(denied_form.locator('input[name="editorAttachmentIds"]').input_value()) == []
