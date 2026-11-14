@@ -1,5 +1,13 @@
 # ChatGPT-6 — personal log
 
+## SA04-K3 bounded implementation — Lira AUTHOR STOP / Mira review next
+
+- **Cumulative Draft #332:** stable `dae431fc920c79cad654627052365a3fd2380fe4`, open/draft/unmerged, from accepted K2 `eaf57c46ca28baff9a11ae637f37d7d850934ab9`.
+- **Production:** `db/forum-attachments.ts` adds same-tx actor NKU after draft scope/before generation and private metadata query for list/file. `app/routes/attachment-download.ts` maps AccountInactive/Missing to private/no-store 401 and typed AccountStateUnavailable to 503; unexpected errors remain thrown. Existing upload GET already used the matching K1 controlled mapper. `workers/private-failure-response.ts` + `workers/app.ts` narrowly ensure unexpected attachment GET/HEAD 5xx are private/no-store without changing public GET caching. Bucket GET stays outside DB actor mutex. Public `readPublishedAttachment` and AP10 upload restrictions unchanged.
+- **Evidence:** native `tests/database/sa04-attachment-k3-private-reads.test.ts` 7/7, both reads state-first and writer-first with real PG17 actor-lock/COMMIT barriers, active/empty/inactive/missing, AP10 reader compatibility, inactive author's published post asset. Added list/file route 401/503/unexpected/bucket-fence tests and worker 5xx helper 4/4. No schema/permission/HTTP protocol changes.
+- **Exact-head [CI #43608804921](https://github.com/iliya1947/vico-forum/actions/runs/43608804921) SUCCESS:** PG17 949/949 (83 files), app 2300/2300 (186 files), lint/typecheck/build/migrations/Workers; [AP-10](https://github.com/iliya1947/vico-forum/actions/runs/43608804912), [SA01](https://github.com/iliya1947/vico-forum/actions/runs/43608804822), [SA03](https://github.com/iliya1947/vico-forum/actions/runs/43608804997), [SA04-J12](https://github.com/iliya1947/vico-forum/actions/runs/43608804949) exact-head browser workflows SUCCESS. Not K5 connected local-R2 browser attachment acceptance.
+- **AUTHOR STOP.** Mira bounded K3 review is next. K4–K5 inactive; no merge/deploy or broader work.
+
 ## SA04-K3 — ACTIVE ASSIGNMENT: private attachment read lifecycle admission
 
 Continue cumulative Draft #332 from accepted K2 exact `eaf57c46ca28baff9a11ae637f37d7d850934ab9`. Accepted complete K plan: #331 comment #6877583725. Only **K3** is active.
