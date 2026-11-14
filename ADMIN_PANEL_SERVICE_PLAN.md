@@ -62,7 +62,7 @@ Current J decomposition for Lira execution:
 11. **J9 — Help Signals submit/withdraw/resolve.** **Mira bounded PASS on `ce9c068f5f5d1d3b291f1f6b8125fa7f55d9549b`.**
 12. **J10 — Help solution moderation.** **Mira bounded PASS exact `6bd20801d399557c2f6964fc0a8acd4058a14cb6`.**
 13. **J11 — duplicate/appeal family.** **Mira bounded PASS exact `7212aef429f856db0c2d5e7a9a621739898fed12`.**
-14. **J12 — cumulative J closeout/evidence.** **Lira AUTHOR STOP exact `85f1de98230fb495e90dcd8923ebfcf0f43bad3c`; awaiting Mira coordinator whole-J review.**
+14. **J12 — cumulative J closeout/evidence.** **Mira whole-J review returned exact `85f1de98230fb495e90dcd8923ebfcf0f43bad3c` to Lira: connected repository/local acceptance is incomplete; no confirmed production-J defect found.**
 
 ## Ready remaining J assignments
 
@@ -94,11 +94,14 @@ Scope: J11 only. J12 and all non-J domains stay out.
 Mira bounded review result on exact `7212aef429f856db0c2d5e7a9a621739898fed12`: **PASS, 0 confirmed current-scope J11 defects.** J10→J11 is exactly three commits/three files; production change is limited to the four duplicate/appeal writers. Direct confirmation and accepted duplicate-signal review share the accepted sorted topic → stable signal-set → actor order; remove/appeal/resolve serialize through the duplicate topic plus relationship/appeal dependencies; History remains last and appeal submission remains measure/History-free. Exact-head CI, SA-03 Chromium and all four AP-10 Chromium jobs independently report SUCCESS. The full-J plan's explicit native overlap evidence for direct duplicate confirmation ↔ accepted duplicate-signal review is not yet directly exercised by a dedicated barrier test; this is a **J12 cumulative-evidence gap, not a confirmed J11 production defect**, and must be closed before J12 AUTHOR STOP.
 
 
-### J12 — cumulative J closeout/evidence — AUTHOR STOP / WHOLE-J REVIEW NEXT
+### J12 — cumulative J closeout/evidence — WHOLE-J REVIEW RETURNED / LIRA CORRECTION ACTIVE
 
 No speculative new feature work. Baseline is J11 Mira PASS exact `7212aef429f856db0c2d5e7a9a621739898fed12`. On one stable exact Draft #330 head, close the accepted full-J evidence contract: inventory every J actor-owned Forum writer plus both source-locale no-op entrypoints and presence regression; verify actual transaction/lock graph and absence of actor lock upgrades/second connections; verify active/inactive/missing, replay/no-op, state-first/writer-first and required cross-writer compatibility coverage; verify canonical HTTP/Worker error handling and applicable full regression gates. Explicitly close the still-missing native barrier evidence for direct `confirmHelpDuplicate` ↔ accepted duplicate-signal review (and any other required cross-writer pair the inventory shows is not already directly demonstrated). If this sweep finds a real current-J defect, correct only that defect and regenerate evidence; future K+ or #315 work is not a J finding.
 
 Deliver AUTHOR STOP with the stable exact head and concise cumulative evidence packet for Mira whole-J coordinator review. Only after Mira whole-J PASS does Lev perform the independent whole-J review of that same exact head.
+
+Mira whole-J coordinator review of exact `85f1de98230fb495e90dcd8923ebfcf0f43bad3c`: **RETURNED — one current-J acceptance finding, zero confirmed production-code defects.** Native/source review confirms the 24-writer inventory, both source-locale no-op entries, AccountState transaction/lock graph, replay/no-op behavior and required native cross-writer compatibility. The remaining finding is connected acceptance: J12's canonical late-deactivation test injects a synthetic `AuthSession` directly into `RouterContextProvider`; it does not traverse a built Worker route with a real Better Auth session. The exact-head SA-03/AP-10 Chromium workflows also do not exercise J lifecycle deactivation, so they do not satisfy the accepted full-J browser matrix. Before whole-J PASS, repository/local evidence must include the accepted plan's built Worker + Better Auth + disposable PostgreSQL late-deactivation route check, safe actual-route unavailable/unexpected classification, and meaningful Chromium coverage for the listed publication/reply/edit/profile, Forum moderation/Help, inbox and read-state lifecycle outcomes. This is not Stage 6/deployed acceptance and not #315 work. No production change is requested unless the missing connected evidence exposes a real defect.
+
 
 After the implementation decomposition is complete, Mira performs the coordinator whole-J review on one stable exact head. Only after Mira PASS does Lev perform the independent technical whole-J review of that same head. Lev's technical planning/review work is not to be fragmented into the small Lira implementation slices unless the developer explicitly changes that rule.
 
