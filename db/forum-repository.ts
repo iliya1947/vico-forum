@@ -4384,6 +4384,12 @@ export class DrizzleForumRepository {
         await assertActiveAccountForDrizzleMutation(tx, input.actorId);
         return;
       }
+      // Mention notifications have an independent topic FK. Resolve its
+      // KEY SHARE dependency before the post and actor mutexes, so an existing
+      // topic-title Complaint cannot hold topic FOR UPDATE while waiting on
+      // the same actor that a fresh edit already locked.
+      await tx.select({ id: forumTopics.id }).from(forumTopics)
+        .where(eq(forumTopics.id, input.topicId)).for("key share");
       const [post] = await tx.select({
         id: forumPosts.id, authorId: forumPosts.authorId,
         revisionId: forumPosts.currentRevisionId,
