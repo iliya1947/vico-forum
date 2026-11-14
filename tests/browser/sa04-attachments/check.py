@@ -909,7 +909,8 @@ try:
         rename_back = "forum_attachment_draft_refs_k5_temp"
         sql("alter table forum_attachment_draft_refs rename to " + rename_back)
         try:
-            for method in ("POST", "GET-list", "GET-file"):
+            for method in ("POST", "GET-list", "GET-file",
+                           "GET-list-encoded-alias", "HEAD-file-case-alias"):
                 op, asset = str(uuid4()), str(uuid4())
                 if method == "POST":
                     body = "K5 unexpected SQL failure"
@@ -921,15 +922,19 @@ try:
                         "X-Vico-Attachment-Size": str(len(body.encode())),
                         **headers(context_key, op),
                     }
-                elif method == "GET-list":
-                    path, body = "/api/attachments", None
-                    req_headers = headers(context_key, op)
+                elif method in ("GET-list", "GET-list-encoded-alias"):
+                    path = ("/api/%61ttachments/" if method == "GET-list-encoded-alias"
+                            else "/api/attachments")
+                    body, req_headers = None, headers(context_key, op)
                 else:
                     body, req_headers = None, {}
-                    path = ("/api/attachments/file/" + asset + "?operation=" + op +
+                    route = ("/API/ATTACHMENTS/FILE/" if method == "HEAD-file-case-alias"
+                             else "/api/attachments/file/")
+                    path = (route + asset + "?operation=" + op +
                             "&context=" + quote(context_key, safe=""))
-                start_browser_request(fault_page, path,
-                    "POST" if method == "POST" else "GET", req_headers, body)
+                http_method = "POST" if method == "POST" else (
+                    "HEAD" if method == "HEAD-file-case-alias" else "GET")
+                start_browser_request(fault_page, path, http_method, req_headers, body)
                 result = finish_browser_request(fault_page)
                 assert result.get("status") == 500, (method, result)
                 assert "no-store" in result["cache"], (method, result)
