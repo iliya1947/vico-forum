@@ -1,5 +1,29 @@
 # ChatGPT-6 — personal log
 
+## SA04-K2 — ACTIVE ASSIGNMENT: PREPARING/READY journal lifecycle admission
+
+Continue cumulative Draft #332 from accepted K1 exact `ad20fa37be4e0f887fc5ffac644f6304a9e1eb8f`. Accepted complete K plan: #331 comment #6877583725. Only **K2** is active.
+
+Required result: lifecycle-close the two upload journal commands without changing schema/storage protocol:
+- `recordUploadObject(actorId, objectKey)` must require a trusted server actor and perform AccountState admission + fresh journal INSERT in one short DB transaction;
+- `activateUploadObject(actorId, objectKey, reservationEtag)` must lock the existing journal row first, then perform AccountState admission and the existing conditional PREPARING→READY update in the same transaction;
+- canonical upload callbacks pass only authoritative `scope.userId`; do not accept client actor input or persist actor on the journal.
+
+Acceptance:
+- inactive/missing cannot create PREPARING or activate READY; writer-first may commit before later deactivation and state-first denies;
+- no reservation begins before successful PREPARING commit; no payload begins before successful READY commit;
+- claimed/missing/already-ready journal rows retain current fail-closed behavior and cleanup claim/lease semantics;
+- lock evidence proves activate/finalizer uses journal→actor and does not introduce actor→existing-journal inversion;
+- Hyperdrive/interface/direct/test callers are explicitly updated to mandatory actor signatures;
+- canonical lifecycle failures keep 401 / classified 503 / unexpected distinction, with existing safe object cleanup behavior;
+- focused real PostgreSQL and attachment-fence tests cover both race directions and current fence/cleanup behavior; run applicable exact-head CI and AUTHOR STOP on one new stable #332 head.
+
+Do not implement K3 private reads, K4 Cancel or K5 connected Worker/BA/PG/local-R2/Chromium closure early. No schema, new journal owner column, storage protocol redesign, L–S, SA05, #315, docs or Stage6. If a correct K2 change requires broader lock/protocol redesign, stop for Lev technical escalation.
+
+---
+
+# ChatGPT-6 — personal log
+
 ## SA04-K1 bounded implementation — Lira AUTHOR STOP / Mira review next
 
 - **Implementation:** new cumulative [Draft PR #332](https://github.com/iliya1947/vico-forum/pull/332), branch `chatgpt/sa04-k1-attachment-admission` based current main `398dae18d5ca7c3fc6dd84fd93a29d7c381ba366`, **stable exact head `ad20fa37be4e0f887fc5ffac644f6304a9e1eb8f`**, open/draft/unmerged. #330 is merged and never reused.
@@ -26,4 +50,5 @@ Acceptance:
 - create a **new cumulative Draft implementation PR from current main** and AUTHOR STOP on one stable exact head with applicable checks and a concise evidence packet for Mira.
 
 Do not implement K2 journal actor signatures, K3 private reads, K4 Cancel or K5 connected local-R2/browser closure early. L–S, SA05, #315, permanent docs and Stage6 are out of scope. If K1 cannot be completed locally without changing the accepted K lock/protocol or broader architecture, stop with a technical escalation for Lev.
+
 
