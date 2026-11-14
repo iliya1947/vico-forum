@@ -26,7 +26,7 @@ Accepted master technical plan: predecessor #251 comment **#6806249892**.
 - **A–H:** account-state storage + neutral public identity/projection foundation — delivered in current main.
 - **I:** Better Auth active-account closure — delivered in current main.
 - **J:** Forum authoritative actor writes — **delivered/merged by PR #330**, merge commit `398dae18d5ca7c3fc6dd84fd93a29d7c381ba366`; Mira cumulative whole-J PASS + Lev independent whole-J PASS on implementation head `800df2a56c4853a0c261f4cdb1b9969efe5c4b3e`.
-- **K:** attachment upload/draft/finalization admission — **next package; technical planning active**.
+- **K:** attachment upload/draft/finalization admission — **implementation in progress: K1 Lira AUTHOR STOP on Draft #332 exact `ad20fa37be4e0f887fc5ffac644f6304a9e1eb8f`, awaiting Mira bounded review; K2–K5 prepared/inactive**.
 - **L:** authorization mutations.
 - **M:** AP-10 mutations/appeals.
 - **N:** Complaints mutation/participation.
@@ -73,6 +73,8 @@ Accepted K inventory:
 - not lifecycle-gated by K: public `readPublishedAttachment`, server-owned `recordSecurityEvent`, permission-scoped `readSecurityAttachmentEvents`, and system cleanup.
 
 Accepted bounded queue: **K1 metadata/replay → K2 PREPARING/READY journal → K3 private reads → K4 Cancel → K5 cumulative connected closure**. Only one implementation slice is active at a time. Whole-K coordinator review happens after K5 on one stable cumulative head; only after Mira PASS does Lev independently review that same head.
+
+**K1 author evidence (not Mira PASS):** cumulative Draft [#332](https://github.com/iliya1947/vico-forum/pull/332) exact `ad20fa37be4e0f887fc5ffac644f6304a9e1eb8f`, transaction-local AccountState in `admitUpload` and `createDraftAttachment`, controlled 401/503 and scoped fresh-key cleanup, native 7/7 PG barriers and 22/22 upload fence/route tests, [CI 43599514990](https://github.com/iliya1947/vico-forum/actions/runs/43599514990) PG17 935/935 and application 2282/2282, all checks SUCCESS. Next Mira bounded K1 review. K2–K5 not started.
 
 ### Active K1 — metadata/replay admission
 
