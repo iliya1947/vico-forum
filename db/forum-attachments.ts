@@ -298,6 +298,7 @@ export class DrizzleForumAttachments {
       || !isForumAttachmentUuid(draftId) || !isForumAttachmentUuid(attachmentId)) throw new InvalidForumAttachmentError();
     return this.db.transaction(async (tx) => {
       await lockAttachmentDraftScope(tx, ownerId, contextKey);
+      await assertActiveAccountForDrizzleMutation(tx, ownerId);
       const current = await resolveAttachmentDraftGeneration(tx, ownerId, contextKey, draftId);
       // A direct file request must honor the authoritative 30-day text-draft TTL
       // even when no metadata/get request has run cleanup yet. This is read-only:
@@ -349,6 +350,7 @@ export class DrizzleForumAttachments {
     if (!ownerId || !isEditorDraftContextKey(contextKey) || !isForumAttachmentUuid(draftId)) throw new InvalidForumAttachmentError();
     return this.db.transaction(async (tx) => {
       await lockAttachmentDraftScope(tx, ownerId, contextKey);
+      await assertActiveAccountForDrizzleMutation(tx, ownerId);
       const generation = await resolveAttachmentDraftGeneration(tx, ownerId, contextKey, draftId);
       const rows = await tx.select({ attachment: forumAttachments }).from(forumAttachmentDraftRefs)
         .innerJoin(forumAttachments, eq(forumAttachments.id, forumAttachmentDraftRefs.attachmentId))
