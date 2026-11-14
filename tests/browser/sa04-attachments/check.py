@@ -335,6 +335,7 @@ try:
         delayed_ctx, delayed, delayed_id = account(browser, "delayed", "203.0.113.164")
         race_ctx, race_page, race_id = account(browser, "race", "203.0.113.165")
         journal_ctx, journal_page, journal_id = account(browser, "journal", "203.0.113.166")
+        fault_ctx, fault_page, fault_id = account(browser, "fault", "203.0.113.167")
         topic_id = topic(author)
         context_key = "topic:" + topic_id + ":reply"
         record("built-worker-genuine-better-auth-five-sessions-pg-fixture",
@@ -606,6 +607,91 @@ try:
                    physical_lock=True, no_asset=True)
         finally:
             journal_lock.close()
+
+
+        # Three real PostgreSQL query-timeout failures. A held scope lock
+        # blocks each actual repository operation until the web DB caller
+        # deadline classifies the dependency as unavailable (503). A private
+        # result must never become success-shaped or cacheable.
+        fault_page.goto(base + "/en/topics/" + topic_id, wait_until="networkidle")
+        fault_ctx.unroute("**/*")
+        for method in ("POST", "GET-list", "GET-file"):
+            op, asset = str(uuid4()), str(uuid4())
+            if method == "POST":
+                path = "/api/attachments"
+                payload = "K5 timeout before R2 object"
+                req_headers = {
+                    "Content-Type": "text/plain",
+                    "X-Vico-Attachment-Id": asset,
+                    "X-Vico-Attachment-Name": "k5-timeout.txt",
+                    "X-Vico-Attachment-Size": str(len(payload.encode())),
+                    **headers(context_key, op),
+                }
+            elif method == "GET-list":
+                path, payload = "/api/attachments", None
+                req_headers = headers(context_key, op)
+            else:
+                path = ("/api/attachments/file/" + asset + "?operation=" + op +
+                        "&context=" + quote(context_key, safe=""))
+                payload, req_headers = None, {}
+            preflight = stats(fault_id)
+            gate = PgBarrier()
+            try:
+                gate.send({"action": "begin-scope",
+                           "actor": fault_id, "context": context_key})
+                start_browser_request(fault_page, path,
+                    "POST" if method == "POST" else "GET",
+                    req_headers, payload)
+                wait_blocking(gate.backend_pid, "classified 503 " + method)
+                result = finish_browser_request(fault_page)
+                assert result.get("status") == 503, (method, result)
+                assert "no-store" in result["cache"], (method, result)
+                assert "private/fenced-v1/" not in result["body"], (method, result)
+                record("actual-worker-classified-503-" + method,
+                       physical_lock=True, no_store=True)
+            finally:
+                gate.send({"action": "commit"})
+                gate.close()
+            assert stats(fault_id) == preflight
+
+        # A missing application relation is a schema/programming fault, not
+        # an availability classification. This synthetic fault uses an
+        # instantly restored table rename in the disposable database only.
+        # The Worker must surface framework 500 and protect resource-cache
+        # privacy for POST/list/private-file, not forge 401 or 503.
+        rename_back = "forum_attachment_draft_refs_k5_temp"
+        sql("alter table forum_attachment_draft_refs rename to " + rename_back)
+        try:
+            for method in ("POST", "GET-list", "GET-file"):
+                op, asset = str(uuid4()), str(uuid4())
+                if method == "POST":
+                    body = "K5 unexpected SQL failure"
+                    path = "/api/attachments"
+                    req_headers = {
+                        "Content-Type": "text/plain",
+                        "X-Vico-Attachment-Id": asset,
+                        "X-Vico-Attachment-Name": "k5-fault.txt",
+                        "X-Vico-Attachment-Size": str(len(body.encode())),
+                        **headers(context_key, op),
+                    }
+                elif method == "GET-list":
+                    path, body = "/api/attachments", None
+                    req_headers = headers(context_key, op)
+                else:
+                    body, req_headers = None, {}
+                    path = ("/api/attachments/file/" + asset + "?operation=" + op +
+                            "&context=" + quote(context_key, safe=""))
+                start_browser_request(fault_page, path,
+                    "POST" if method == "POST" else "GET", req_headers, body)
+                result = finish_browser_request(fault_page)
+                assert result.get("status") == 500, (method, result)
+                assert "no-store" in result["cache"], (method, result)
+                assert "private/fenced-v1/" not in result["body"], (method, result)
+                record("actual-worker-unexpected-500-private-" + method,
+                       no_store=True, not_reclassified=True)
+        finally:
+            sql("alter table " + rename_back +
+                " rename to forum_attachment_draft_refs")
 
         assert not external, external[:10]
         assert not page_errors, page_errors[:10]
