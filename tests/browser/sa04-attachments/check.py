@@ -461,15 +461,15 @@ try:
         record("mounted-chromium-inactive-upload-denied-keeps-editor-text-and-state")
 
 
-        # Causal state-first: hold the authoritative actor row, observe the
-        # real Worker query blocked on that exact backend, then deactivate
+        # Causal state-first: hold the authoritative draft-scope advisory
+        # lock, observe the Worker blocked on that backend, then deactivate
         # before releasing. No fresh object/journal/ref may appear.
         race_page.goto(base + "/en/topics/" + topic_id, wait_until="networkidle")
         race_op, race_asset = str(uuid4()), str(uuid4())
         race_before = stats(race_id)
         blocker = PgBarrier()
         try:
-            blocker.send({"action": "begin-actor", "actor": race_id})
+            blocker.send({"action": "begin-scope", "actor": race_id, "context": context_key})
             start_browser_request(race_page, "/api/attachments", "POST", {
                 "Content-Type": "text/plain",
                 "X-Vico-Attachment-Id": race_asset,
@@ -477,9 +477,9 @@ try:
                 "X-Vico-Attachment-Size": str(len("K5 state first upload text".encode())),
                 **headers(context_key, race_op),
             }, "K5 state first upload text")
-            blocked = wait_blocking(blocker.backend_pid, "state-first actor lock")
+            blocked = wait_blocking(blocker.backend_pid, "state-first scope lock")
             assert blocked
-            blocker.send({"action": "deactivate", "actor": race_id})
+            deactivate(race_id)
             blocker.send({"action": "commit"})
             denied = finish_browser_request(race_page)
             assert denied.get("status") == 401, denied
