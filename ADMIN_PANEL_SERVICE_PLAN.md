@@ -26,7 +26,7 @@ Accepted master technical plan: predecessor #251 comment **#6806249892**.
 - **A–H:** account-state storage + neutral public identity/projection foundation — delivered in current main.
 - **I:** Better Auth active-account closure — delivered in current main.
 - **J:** Forum authoritative actor writes — **delivered/merged by PR #330**, merge commit `398dae18d5ca7c3fc6dd84fd93a29d7c381ba366`; Mira cumulative whole-J PASS + Lev independent whole-J PASS on implementation head `800df2a56c4853a0c261f4cdb1b9969efe5c4b3e`.
-- **K:** attachment upload/draft/finalization admission — **K1 + K2 + K3 Mira PASS; K4 active in cumulative Draft #332; K5 prepared/inactive**.
+- **K:** attachment upload/draft/finalization admission — **K1–K3 Mira PASS; K4 Lira AUTHOR STOP on cumulative Draft #332 exact `8f89a7101d356eb52ccf1021a63341a4e0a37967`, pending Mira bounded review; K5 prepared/inactive**.
 - **L:** authorization mutations.
 - **M:** AP-10 mutations/appeals.
 - **N:** Complaints mutation/participation.
@@ -106,7 +106,7 @@ Accepted result:
 
 Exact-head evidence: CI 43608804921 SUCCESS — PG17 **949/949** in 83 files, K3 native **7/7**, K2 **7/7**, K1 **7/7**, fence **22/22**, app **2300/2300** in 186 files, lint/typecheck/build/migrations/Workers PASS. Exact-head AP-10, SA-01, SA-03 and SA04-J12 browser workflows also SUCCESS.
 
-### Active K4 — operation Cancel lifecycle admission
+### K4 — Lira AUTHOR STOP / Mira bounded review pending
 
 Result: authoritative active-account admission for whole-operation `cancelOperation`, preserving current idempotent operation retirement, temporary-ref cleanup and local editor Cancel/Remove behavior.
 
@@ -119,4 +119,7 @@ Readiness:
 - canonical whole-operation DELETE maps lifecycle inactive/missing to private/no-store 401, classified unavailable to 503, unexpected remains unexpected; unsupported/per-file DELETE remains 405;
 - existing local editor Cancel/Remove still resets local intent/XHR state without claiming a server commit on denied Cancel;
 - K5 connected closure remains inactive. No per-file server delete, schema/storage/publication redesign, L–S, SA05, #315, permanent docs or Stage6 work.
+
+**K4 author evidence (not Mira PASS):** cumulative Draft #332 exact `8f89a7101d356eb52ccf1021a63341a4e0a37967`; one production AccountState guard in Cancel, native K4 7/7 with both state-race and real Cancel↔metadata finalization orderings; route denial/unavailable/unexpected plus editor local denial; [CI 43616566018](https://github.com/iliya1947/vico-forum/actions/runs/43616566018) SUCCESS — PG17 956/956, app 2306/2306, lint/typecheck/build/schema/Workers. AP-10/SA-01/SA-03/SA04-J12 exact-head browser workflows SUCCESS. Mira reviews this exact head; only her K4 PASS activates K5.
+
 
