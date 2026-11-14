@@ -62,7 +62,7 @@ Current J decomposition for Lira execution:
 11. **J9 — Help Signals submit/withdraw/resolve.** **Mira bounded PASS on `ce9c068f5f5d1d3b291f1f6b8125fa7f55d9549b`.**
 12. **J10 — Help solution moderation.** **Mira bounded PASS exact `6bd20801d399557c2f6964fc0a8acd4058a14cb6`.**
 13. **J11 — duplicate/appeal family.** **Mira bounded PASS exact `7212aef429f856db0c2d5e7a9a621739898fed12`.**
-14. **J12 — cumulative J closeout/evidence.** **Lira AUTHOR STOP on stable exact `154f15f4bfaa96f405ef372700c555aaecadb091` after connected acceptance correction; awaiting Mira whole-J re-review.**
+14. **J12 / SA04-J-LEV-01 cumulative closeout.** **Lira bounded correction AUTHOR STOP on stable exact `800df2a56c4853a0c261f4cdb1b9969efe5c4b3e`; awaiting fresh Mira whole-J coordinator review after Lev P2 RETURN.**
 
 ## Ready remaining J assignments
 
@@ -93,6 +93,10 @@ Scope: J11 only. J12 and all non-J domains stay out.
 
 Mira bounded review result on exact `7212aef429f856db0c2d5e7a9a621739898fed12`: **PASS, 0 confirmed current-scope J11 defects.** J10→J11 is exactly three commits/three files; production change is limited to the four duplicate/appeal writers. Direct confirmation and accepted duplicate-signal review share the accepted sorted topic → stable signal-set → actor order; remove/appeal/resolve serialize through the duplicate topic plus relationship/appeal dependencies; History remains last and appeal submission remains measure/History-free. Exact-head CI, SA-03 Chromium and all four AP-10 Chromium jobs independently report SUCCESS. The full-J plan's explicit native overlap evidence for direct duplicate confirmation ↔ accepted duplicate-signal review is not yet directly exercised by a dedicated barrier test; this is a **J12 cumulative-evidence gap, not a confirmed J11 production defect**, and must be closed before J12 AUTHOR STOP.
 
+
+### J12 / SA04-J-LEV-01 — bounded correction AUTHOR STOP / Mira whole-J re-review next
+
+Lev independently reviewed the cumulative J after Mira PASS on `154f15f4bfaa96f405ef372700c555aaecadb091` and RETURNED one confirmed current-J P2 edit↔topic-title Complaint actor/topic FK lock inversion. Mira verified this as an actual J dependency-order defect and assigned a local correction. Lira fixed only the fresh edit topic FK dependency ordering and added both real-writer PG17 barrier orderings; preserved replay, validation/CAS, attachment/draft/receipt and closed-topic edit semantics. Author evidence on exact `800df2a56c4853a0c261f4cdb1b9969efe5c4b3e`: PG17 925/925, app/unit 2282/2282, CI/SA04 Chromium/SA-01/SA-03/AP-10 4/4 all SUCCESS. Not independent whole-J PASS; Mira re-review next, then Lev only after Mira PASS.
 
 ### J12 — cumulative J closeout/evidence — LIRA AUTHOR STOP / WHOLE-J RE-REVIEW NEXT
 
