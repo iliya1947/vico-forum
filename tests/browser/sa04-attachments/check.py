@@ -1229,7 +1229,9 @@ try:
             request.headers.get("x-vico-attachment-id")
         ) if request.url == base + "/api/attachments"
              and request.method == "POST" else None)
+        print("K5_UI_CANCEL_GATE_SPAWN", flush=True)
         cancel_gate = PgBarrier()
+        print("K5_UI_CANCEL_GATE_READY", flush=True)
         try:
             cancel_gate.send({
                 "action": "begin-scope", "actor": cancel_id, "context": context_key,
@@ -1239,24 +1241,33 @@ try:
                 "buffer": b"K5 Cancel pending upload never republishes",
             })
             wait_blocking(cancel_gate.backend_pid, "mounted Cancel pending POST")
+            print("K5_UI_CANCEL_POST_BLOCKED", flush=True)
             expect(cancel_form.locator(".markdown-editor-attachment.is-uploading")).to_have_count(1)
             with cancel_page.expect_response(
                 lambda response: response.url == base + "/api/attachments"
                 and response.request.method == "DELETE", timeout=30000
             ) as cancel_ack:
+                print("K5_UI_CANCEL_CLICK_START", flush=True)
                 cancel_form.locator(".markdown-editor-actions").get_by_role(
                     "button", name="Cancel", exact=True).click()
+                print("K5_UI_CANCEL_CLICK_DONE", flush=True)
                 cancel_gate.send({"action": "commit"})
+                print("K5_UI_CANCEL_COMMIT_DONE", flush=True)
             assert cancel_ack.value.status == 200
             assert cancel_ack.value.json()["outcome"] == "cancelled"
+            print("K5_UI_CANCEL_ACK_OBSERVED", flush=True)
         finally:
+            print("K5_UI_CANCEL_GATE_CLOSE_START", flush=True)
             cancel_gate.close()
+            print("K5_UI_CANCEL_GATE_CLOSE_DONE", flush=True)
         assert len(cancel_uploads) == 1
         assert cancel_form.locator('input[name="editorOperationId"]').input_value() != cancel_operation
         assert json.loads(cancel_form.locator('input[name="editorAttachmentIds"]').input_value()) == []
         expect(cancel_editor).to_have_value("")
         assert not cancel_form.is_visible()
+        print("K5_UI_CANCEL_RESUME_CLICK_START", flush=True)
         cancel_page.locator("button.forum-composer-resume").click()
+        print("K5_UI_CANCEL_RESUME_CLICK_DONE", flush=True)
         expect(cancel_form).to_be_visible()
         assert cancel_form.locator(".markdown-editor-attachment").count() == 0
         assert sql("""select attachment_id from forum_attachment_draft_refs
