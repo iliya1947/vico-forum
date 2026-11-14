@@ -199,6 +199,20 @@ def cancel(ctx, topic_id, operation):
         headers={"Origin": base, **headers("topic:" + topic_id + ":reply", operation)})
 
 
+def local_storage_probe(ctx, operation, key=None):
+    """CI-only Worker probe; uses the live Worker binding, never production R2."""
+    payload = {"operation": operation}
+    if key is not None:
+        payload["key"] = key
+    response = ctx.request.post(
+        base + "/__sa04_k5_storage_probe",
+        headers={"Origin": base, "X-K5-Token": "sa04-k5-only-local-probe"},
+        data=payload,
+    )
+    assert response.status == 200, (operation, response.status, response.text()[:220])
+    return response.json()
+
+
 def no_store(response):
     assert "no-store" in response.headers.get("cache-control", "").lower(), (
         response.status, dict(response.headers))
@@ -718,6 +732,129 @@ try:
         finally:
             sql("alter table " + rename_back +
                 " rename to forum_attachment_draft_refs")
+
+        # The real Worker commits metadata and returns 201, but the browser
+        # transport deliberately loses that response. A retry with the SAME
+        # logical upload ID must converge without another R2 reservation/key.
+        fault_page.goto(base + "/en/topics/" + topic_id, wait_until="networkidle")
+        unknown_operation, unknown_asset = str(uuid4()), str(uuid4())
+        unknown_payload = b"K5 real R2 committed before lost browser HTTP ACK"
+        upload_request_headers = {
+            "Content-Type": "text/plain",
+            "X-Vico-Attachment-Id": unknown_asset,
+            "X-Vico-Attachment-Name": "lost-ack.txt",
+            "X-Vico-Attachment-Size": str(len(unknown_payload)),
+            **headers(context_key, unknown_operation),
+        }
+        server_ack = []
+        def drop_committed_ack(route):
+            upstream = route.fetch()
+            assert upstream.status == 201, (upstream.status, upstream.text()[:220])
+            server_ack.append(upstream.status)
+            route.abort("failed")
+        fault_page.route("**/api/attachments", drop_committed_ack)
+        try:
+            start_browser_request(fault_page, "/api/attachments", "POST",
+                                  upload_request_headers, unknown_payload.decode())
+            lost = finish_browser_request(fault_page)
+            assert lost.get("failed") and not lost.get("status"), lost
+            assert server_ack == [201], server_ack
+        finally:
+            fault_page.unroute("**/api/attachments", drop_committed_ack)
+        committed = sql("""select object_key from forum_attachments
+          where id=$1 and owner_id=$2""", [unknown_asset, fault_id])
+        assert len(committed) == 1, committed
+        committed_key = committed[0]["object_key"]
+        assert local_storage_probe(fault_ctx, "head", committed_key) == {
+            "exists": True, "size": len(unknown_payload)}, committed_key
+        before_replay = stats(fault_id)
+        recovered = upload(fault_ctx, fault_id, topic_id, unknown_operation,
+                           unknown_asset, unknown_payload, "lost-ack.txt")
+        assert recovered.status == 201, (recovered.status, recovered.text()[:220])
+        assert recovered.json()["attachment"]["id"] == unknown_asset
+        assert stats(fault_id) == before_replay
+        assert sql("select object_key from forum_attachments where id=$1",
+                   [unknown_asset]) == [{"object_key": committed_key}]
+        restored = private_file(fault_ctx, topic_id, unknown_operation, unknown_asset, "text")
+        assert restored.status == 200 and restored.body() == unknown_payload
+        # Cleanup of a registered, aged object journal retires only the journal;
+        # even when the initial HTTP ACK was lost it must preserve actual R2.
+        sql("""update forum_attachment_upload_objects
+          set created_at=now()-interval '2 hours' where object_key=$1""", [committed_key])
+        local_storage_probe(fault_ctx, "cleanup")
+        assert sql("select object_key from forum_attachment_upload_objects where object_key=$1",
+                   [committed_key]) == []
+        assert local_storage_probe(fault_ctx, "head", committed_key)["exists"] is True
+        assert private_file(fault_ctx, topic_id, unknown_operation, unknown_asset,
+                            "text").body() == unknown_payload
+        record("lost-browser-http-ack-after-real-commit-replay-no-new-r2-and-journal-cleanup",
+               actual_worker_201=True, client_transport_failed=True,
+               metadata_reused=True, r2_retained=True)
+
+        # Ordinary reference-aware cleanup of a CANCELLED temporary attachment
+        # uses the same actual R2 binding, not an in-memory test bucket. Asset
+        # claim precedes R2 DELETE; neither ref nor post may protect this one.
+        cancelled_unknown = cancel(fault_ctx, topic_id, unknown_operation)
+        assert cancelled_unknown.status == 200, cancelled_unknown.text()[:150]
+        assert sql("select attachment_id from forum_attachment_draft_refs where attachment_id=$1",
+                   [unknown_asset]) == []
+        sql("""update forum_attachments set created_at=now()-interval '2 hours'
+          where id=$1""", [unknown_asset])
+        sweep = local_storage_probe(fault_ctx, "cleanup")
+        assert sweep["deleted"] >= 1, sweep
+        assert sql("select id from forum_attachments where id=$1", [unknown_asset]) == []
+        assert local_storage_probe(fault_ctx, "head", committed_key)["exists"] is False
+        record("actual-local-r2-cancelled-orphan-claim-delete-and-reference-recheck",
+               deleted=True, absent_from_r2=True)
+
+        # A real long-lived HTTP upload has PREPARING and READY committed, but
+        # its payload body is still withheld. The actual cleanup processor wins
+        # the aged unregistered journal claim, deletes the local R2 reservation,
+        # and removes the journal BEFORE the body is released. A late conditional
+        # PUT must not recreate an object, asset, ref or 201 after cleanup.
+        author_page.goto(base + "/en/topics/" + topic_id, wait_until="networkidle")
+        author_ctx.unroute("**/*")
+        claimed_operation, claimed_asset = str(uuid4()), str(uuid4())
+        existing_keys = {row["object_key"] for row in sql(
+            "select object_key from forum_attachment_upload_objects")}
+        cookie = "; ".join(item["name"] + "=" + item["value"]
+                           for item in author_ctx.cookies(base))
+        assert cookie
+        held = HeldHttpUpload()
+        try:
+            assert held.send({
+                "action": "start", "cookie": cookie, "attachment": claimed_asset,
+                "operation": claimed_operation, "context": context_key,
+            }) == {"event": "first-chunk-sent", "bytes": 8192}
+            def ready_for_cleanup():
+                rows = sql("""select object_key,reservation_etag
+                  from forum_attachment_upload_objects
+                  where reservation_etag is not null""")
+                return next((row for row in rows
+                             if row["object_key"] not in existing_keys), None)
+            ready_claim = wait_for(ready_for_cleanup, "READY before actual R2 cleanup", 25)
+            key = ready_claim["object_key"]
+            assert local_storage_probe(author_ctx, "head", key)["exists"] is True
+            sql("""update forum_attachment_upload_objects
+              set created_at=now()-interval '2 hours' where object_key=$1""", [key])
+            cleanup = local_storage_probe(author_ctx, "cleanup")
+            assert cleanup["deleted"] >= 1, cleanup
+            assert sql("select object_key from forum_attachment_upload_objects where object_key=$1",
+                       [key]) == []
+            assert local_storage_probe(author_ctx, "head", key)["exists"] is False
+            assert held.send({"action": "release"})["event"] == "remainder-released"
+            result = held.read()
+            assert result.get("status") in (400, 503), result
+            assert result.get("status") != 201
+            assert "no-store" in (result.get("cache") or ""), result
+        finally:
+            held.close()
+        assert sql("select id from forum_attachments where id=$1", [claimed_asset]) == []
+        assert sql("select attachment_id from forum_attachment_draft_refs where attachment_id=$1",
+                   [claimed_asset]) == []
+        assert local_storage_probe(author_ctx, "head", key)["exists"] is False
+        record("actual-cleanup-claim-deletes-r2-before-late-conditional-put",
+               no_resurrection=True, actual_r2_deleted=True, no_asset_ref=True)
 
         assert not external, external[:10]
         assert not page_errors, page_errors[:10]
