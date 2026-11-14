@@ -1,5 +1,11 @@
 # ChatGPT-6 — personal log
 
+## SA04-K5 subtask 4/5 — mounted Chromium Retry/Remove/Cancel DONE; Lira STOP
+
+- Final cumulative #332 exact `bb9d1497c5d5f14bfff6a1edf64e19eed5fd5105`. Only new `tests/browser/sa04-attachments/check.py` changed since 3/5; production source/schema/config unchanged. [Connected K5 run #43638470788](https://github.com/iliya1947/vico-forum/actions/runs/43638470788) SUCCESS **29/29** (baseline 25 + real mounted Retry lost ACK same File/id/bytes, pending Remove vs late 201, pending Cancel vs physical PG lock, inactive Retry 401/File/text preserved/Cancel local reset). [CI #43638470727](https://github.com/iliya1947/vico-forum/actions/runs/43638470727) SUCCESS PG17 956/956, app 2306/2306, standard gates; same-head AP10/SA01/SA03/J12 SUCCESS.
+- Diagnostic failures on interim test SHAs were due only to waiting for a `page.expect_response` on fire-and-forget Cancel while actual server DELETE committed 200; physical PG completion+UI reset correctly replace that inappropriate waiter. No product defect established. Diagnostic watchdog/logs removed in final test.
+- **Stop** until explicit developer `...` for subtask **5/5**: cumulative K5 evidence/diff/checks and formal Lira AUTHOR STOP handoff; do not begin Mira/Lev review automatically.
+
 ## SA04-K5 subtask 3/5 — actual local-R2 cleanup/fence + unknown ACK evidence DONE, STOP
 
 - Stable cumulative Draft #332 `421c9a0f2f166cf7989f76025d86cab1a21c79d2`; compared to subtask2 `328eb7e8cc60f103d34cfbc0ed8f5720f73da1d6`, 5 changed files, only K5 tests/CI harness. No application/production changes.
