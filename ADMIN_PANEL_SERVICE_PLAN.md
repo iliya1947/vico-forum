@@ -61,7 +61,7 @@ Current J decomposition for Lira execution:
 10. **J8 — solved/best-answer writers.** **Mira bounded PASS on `41e26f191357aacde3de2dae3a3c7fed20756a30`.**
 11. **J9 — Help Signals submit/withdraw/resolve.** **Mira bounded PASS on `ce9c068f5f5d1d3b291f1f6b8125fa7f55d9549b`.**
 12. **J10 — Help solution moderation.** **Mira bounded PASS exact `6bd20801d399557c2f6964fc0a8acd4058a14cb6`.**
-13. **J11 — duplicate/appeal family.** **Assigned to Lira from J10 PASS baseline `6bd20801d399557c2f6964fc0a8acd4058a14cb6`.**
+13. **J11 — duplicate/appeal family.** **Lira AUTHOR STOP exact `7212aef429f856db0c2d5e7a9a621739898fed12`; awaiting Mira bounded review.**
 14. **J12 — cumulative J closeout/evidence.** Ready next assignment; not active until J11 Mira PASS.
 
 ## Ready remaining J assignments
@@ -81,7 +81,7 @@ Scope: J10 only. J11/J12, Complaint N, #315, K, SA-05, permanent docs and Stage 
 Mira bounded review result on exact `6bd20801d399557c2f6964fc0a8acd4058a14cb6`: **PASS, 0 confirmed current-scope defects.** The J9→J10 delta is exactly three commits/three files; production change is limited to `setHelpSolutionModeration`. Topic/current-answer/affected pending-signal dependencies precede the same-transaction actor mutex; the topic mutex also serializes concurrent matching signal creation, so the later bulk update cannot acquire a newly inserted matching signal only after actor admission. Existing Help state/reason, expected-answer, transition-only History and measure behavior remain intact. Exact-head CI, SA-03 Chromium and AP-10 four-job Chromium are SUCCESS.
 
 
-### J11 — duplicate/appeal family — ACTIVE
+### J11 — duplicate/appeal family — AUTHOR STOP / MIRA REVIEW NEXT
 
 Methods: `confirmHelpDuplicate`, `removeHelpDuplicate`, `appealHelpDuplicate`, `resolveHelpDuplicateAppeal`.
 
