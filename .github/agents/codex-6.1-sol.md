@@ -1,3 +1,19 @@
+## 2026-11-15 — ACTIVE ASSIGNMENT: independent SA04-K whole-package review
+
+Mira coordinator whole-K PASS is complete on cumulative Draft #332 stable exact `bb9d1497c5d5f14bfff6a1edf64e19eed5fd5105`. Review **that same exact head independently** against the accepted complete K plan (#331 comment #6877583725), current main/source-of-truth and the full cumulative implementation/evidence.
+
+Required result:
+- review the whole K scope, not only K5 or the first finding;
+- verify all seven lifecycle-gated entrypoints, deliberately ungated public/security/cleanup boundaries, lock/transaction ordering, J publication/edit composition, cleanup/lease/fence rules, AP-10 behavior, HTTP/privacy semantics, four authoring contexts and connected Worker/BetterAuth/PG/local-R2/Chromium evidence;
+- classify every possible finding as a confirmed current-K defect or future/out-of-scope issue before requesting changes;
+- do not modify implementation during review.
+
+If no current-K defects remain, record independent **whole-K PASS** on exact `bb9d1497c5d5f14bfff6a1edf64e19eed5fd5105` and stop for Owner merge. If a current-K defect exists, return one complete technical finding packet; broader plan redesign is a technical escalation, not an implementation patch during review.
+
+No L–S, SA05, #315, permanent docs, production/deploy or Stage6 work.
+
+---
+
 # Codex-6.1 Sol — personal log
 
 ## 2026-11-14 — SA04-K complete technical planning delivered / STOP
