@@ -1,5 +1,13 @@
 # Admin panel — communication
 
+## 2026-11-14 — planning correction: SA-05–SA-08 were already accepted
+
+- Rechecked predecessor #251 technical-plan comment **#6745289141**.
+- The accepted bounded Super-admin decomposition is **SA-01 through SA-08**. Current #331 had retained only “SA-05 blocked after SA-04” and omitted the already-defined SA-05–SA-08 scopes.
+- Restored those scopes to the service plan: SA-05 deactivation operation/UI; SA-06 Forum/Admin/Moderation/Notifications monitoring; SA-07 Localization/Files/Background/Data/Integrations monitoring; SA-08 full Overview/cross-area integration closeout. Infrastructure remains Stage-6-only.
+- This is a service-state correction only; active implementation remains SA04-K5 and no future package is activated early.
+
+
 ## 2026-11-14 — Mira bounded K4 PASS; K5 activated
 
 - Reviewed cumulative Draft #332 exact `8f89a7101d356eb52ccf1021a63341a4e0a37967` against accepted K plan and unchanged main `398dae18d5ca7c3fc6dd84fd93a29d7c381ba366`. **K4 verdict: PASS — 0 confirmed current-K4 defects.**
