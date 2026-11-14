@@ -1,5 +1,16 @@
 # ChatGPT-6 — personal log
 
+## SA04-J11 — implementation complete / AUTHOR STOP
+
+- **Baseline:** J10 Mira PASS exact `6bd20801d399557c2f6964fc0a8acd4058a14cb6`. Cumulative implementation Draft #330 open/draft/unmerged stable exact `7212aef429f856db0c2d5e7a9a621739898fed12`. Three J11 commits, three changed files; no other writer implemented.
+- **Production `5d9355a863604efed0a51fd7dae743dfa6b3acdf`:** `db/forum-repository.ts` closes same-transaction trusted actor AccountState for `confirmHelpDuplicate`, `removeHelpDuplicate`, `appealHelpDuplicate`, `resolveHelpDuplicateAppeal`. Existing topic/relationship/pending appeal mutexes use non-key `FOR NO KEY UPDATE`; confirmation locks the exact complete affected pending duplicate-signal set in sorted signal-ID order, including third-topic `proposedOriginalTopicId`; removal prelocks its potentially accepted pending appeal. Existing domain validations precede actor, then applicable unchanged `admin.forum` measure, effect and real History last. Author-only appeal remains no measure/no History. No actor→content inversion, actor lock upgrade or second connection. Topic lock serializes matching signal creation, relationship/appeal conflicts and keeps Complaint FK `KEY SHARE` compatible.
+- **Native PG17 `25875ef749abb3f39fd2aecb3347e998d512dd59`:** 32/32 new cases in `tests/database/sa04-forum-duplicate-lifecycle.test.ts`: exact/broad signal supersession, untouched foreign signal; pending appeal accepted on removal with one History event and correct ID; appeal ownership/pending uniqueness/no measure/no History; rejected vs accepted review identity/effect/History; measure rollback; inactive/missing before/after facts and missing-author ownership precedence; state-first and writer-first COMMIT barriers across five shapes; third-topic signal and pending-appeal row contention; same-actor Complaint post→actor→FK `KEY SHARE` compatibility.
+- **Canonical route `7212aef429f856db0c2d5e7a9a621739898fed12`:** `app/forum/write-actions.test.ts` verifies five duplicate/appeal intents, both late AccountInactive/Missing results: generic **401 unauthenticated**, `private, no-store`, no false redirect, leaked lifecycle state or forged actor; original HTTP implementation unchanged.
+- **Exact-head Actions all completed SUCCESS:** [CI 43567052744](https://github.com/iliya1947/vico-forum/actions/runs/43567052744) native PG17 **918/918**, J11 **32/32**, application/unit **2278/2278**, lint/typecheck/build/schema/Workers; [SA-03 Chromium 43567052796](https://github.com/iliya1947/vico-forum/actions/runs/43567052796) SUCCESS; [AP-10 Chromium 43567052813](https://github.com/iliya1947/vico-forum/actions/runs/43567052813) **4/4 jobs SUCCESS**.
+- Personally inspected all three bounded commit diffs. No J12, other SA-04 K+, Complaint N, #315, SA-05, schema/migrations/permissions/dependencies, permanent docs or Stage 6 change. Separate J7 docs wording remains deferred. Synthetic CI/browser evidence is not deployed production or Owner visual acceptance; no merge.
+
+**Lira AUTHOR STOP → Mira bounded J11 coordinator review** on stable exact `7212aef429f856db0c2d5e7a9a621739898fed12`. J12 not assigned until Mira PASS; Lev and Mark inactive.
+
 ## SA04-J11 — ACTIVE ASSIGNMENT
 
 Baseline: J10 Mira PASS exact `6bd20801d399557c2f6964fc0a8acd4058a14cb6` in cumulative Draft #330.
