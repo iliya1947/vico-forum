@@ -1,5 +1,14 @@
 # ChatGPT-5.6 Sol — personal log
 
+## 2026-11-14 — SA04-K technical-plan scope/fit review PASS
+
+- Fully reviewed Lev plan #6877583725 against current main/source entrypoints and current K-relevant permanent contracts.
+- Verified the actual repository inventory and caller shape: the proposed seven lifecycle gates cover the actor-owned attachment capability boundaries; the three excluded methods remain public/system/admin-read boundaries rather than K actor commands.
+- Verified accepted lock split: scope/journal dependencies before actor where applicable; no lifecycle lock across request stream/R2; final metadata admission closes the late-PUT capability boundary; cleanup/security observation remain server-owned.
+- Rechecked current official Drizzle transaction and Cloudflare R2 conditional-operation documentation; no material mismatch found.
+- **Verdict: PASS.** Activated only K1 for Lira; K2–K5 remain inactive.
+
+
 ## 2026-11-14 — SA04-J merge confirmed / SA04-K scope opened
 
 - Confirmed #330 merged; current main is `398dae18d5ca7c3fc6dd84fd93a29d7c381ba366`. J is delivered and no longer the active gate.
