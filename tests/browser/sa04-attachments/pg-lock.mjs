@@ -43,6 +43,17 @@ async function command(input) {
       }
       return { locked: "journal" };
     }
+    case "begin-ready-journal": {
+      if (inTransaction) throw new Error("lock already held");
+      await client.query("begin"); inTransaction = true;
+      const found = await client.query(
+        "select object_key,reservation_etag from forum_attachment_upload_objects where object_key=$1 for update",
+        [input.key]);
+      if (found.rows.length !== 1 || !found.rows[0].reservation_etag) {
+        throw new Error("journal READY row missing");
+      }
+      return { locked: "ready-journal" };
+    }
     case "deactivate": {
       if (!inTransaction) throw new Error("no active transaction");
       const changed = await client.query(
