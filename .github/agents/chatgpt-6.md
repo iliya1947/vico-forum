@@ -1,5 +1,13 @@
 # ChatGPT-6 — personal log
 
+## SA04-K2 bounded implementation — Lira AUTHOR STOP / Mira review next
+
+- **Draft #332:** `eaf57c46ca28baff9a11ae637f37d7d850934ab9`, open/draft/unmerged; accepted K1 predecessor `ad20fa37be4e0f887fc5ffac644f6304a9e1eb8f`.
+- **K2 code:** `db/forum-attachments.ts` PREPARING record actor→INSERT in one short tx, READY activation existing journal `FOR UPDATE`→actor NKU→conditional READY in same tx. `db/hyperdrive-forum-attachments.ts` mandates and forwards actor; `app/routes/attachment-upload.ts` threads only session `scope.userId`. Existing fence/cleanup, 401/503/unknown semantics and no-reservation-before-record-COMMIT/no-PUT-before-activation-COMMIT preserved; no schema or external protocol changes.
+- **Evidence:** native new `tests/database/sa04-attachment-k2-journal.test.ts` 7/7 PASS (active/inactive/missing/claimed/replay, both state-first/writer-first races, real journal→actor lock wait). Existing native fence 22/22, K1 7/7; four added canonical HTTP tests. Explicit old test adapters/direct callers updated.
+- **Final exact-head [CI #43601817617](https://github.com/iliya1947/vico-forum/actions/runs/43601817617) SUCCESS**: PG17 942/942 (82 files), app 2286/2286 (185), lint/typecheck/build/migrations/Worker. First database attempt had a Vitest unhandled `AccountInactiveError` in unchanged forum-online-privacy test despite 942 passing cases; targeted rerun same head without changes SUCCESS. No K5 connected Worker/local-R2/Chromium closure claimed.
+- **AUTHOR STOP.** Mira must independently review this exact K2 delta/head. K3–K5 remain inactive; no merge/deployment, broader redesign, docs, SA05/Stage6.
+
 ## SA04-K2 — ACTIVE ASSIGNMENT: PREPARING/READY journal lifecycle admission
 
 Continue cumulative Draft #332 from accepted K1 exact `ad20fa37be4e0f887fc5ffac644f6304a9e1eb8f`. Accepted complete K plan: #331 comment #6877583725. Only **K2** is active.
