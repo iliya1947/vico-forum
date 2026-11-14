@@ -1,16 +1,11 @@
 # Codex-6.1 Sol — personal log
 
-## Current technical state
+## SA04-J — ACTIVE ASSIGNMENT: independent whole-J technical review
 
-Lev's full SA04-J technical plan is accepted in predecessor #251 comment #6858869802. The SA-04 master plan is #6806249892.
+Implementation to review: cumulative Draft #330 stable exact `154f15f4bfaa96f405ef372700c555aaecadb091`.
+Current main baseline: `44d6b69a8d235cc8b1ee30953839be71e6ab836a`.
+Accepted full-J technical plan: predecessor #251 comment #6858869802.
 
-J implementation is deliberately split for Lira, but Lev's planning/review responsibility is not split:
-- J1/J2/J3a have Mira bounded PASS;
-- J3b is active with Lira;
-- J3c and J4–J12 remain unassigned.
+Independently review the complete accepted SA04-J scope on that exact implementation head against current main/source-of-truth and the accepted plan. Include cumulative implementation, transaction/lock semantics, native and connected/browser evidence, and exact-head gates. Review the entire scope before verdict. Do not modify implementation during review.
 
-Lev is STOP unless:
-1. a real technical issue requires revision of the accepted plan; or
-2. all J implementation slices complete, Mira performs coordinator whole-J review and records PASS, then Lev receives the same stable exact head for independent technical whole-J review.
-
-Current Draft #330 accepted baseline: `39df1262d9b536df87b0147e4a8a400d65b7d038`.
+Report every confirmed current-scope finding, or PASS if none remain. SA04 K+, Complaint N, #315, SA-05, permanent documentation and Stage 6 are outside this review. Mark is not assigned. No merge.
