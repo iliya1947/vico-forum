@@ -89,9 +89,7 @@ async function connections(count: number): Promise<Client[]> {
   await Promise.all(list.map(client => client.connect()));
   return list;
 }
-async function waitForBlocker(blocked: Client, blocker: Client) {
-  const blockedPid = (await blocked.query<{ pid: number }>("select pg_backend_pid() as pid")).rows[0]!.pid;
-  const blockerPid = (await blocker.query<{ pid: number }>("select pg_backend_pid() as pid")).rows[0]!.pid;
+async function waitForBlocker(blockedPid: number, blockerPid: number) {
   for (let i = 0; i < 200; i++) {
     await fixture.query("select pg_stat_clear_snapshot()");
     const { rows } = await fixture.query<{ blocking: number[] }>(
@@ -233,6 +231,8 @@ describe("SA04-K4 authoritative whole-operation Cancel", () => {
     async order => {
       const actor = await user(), op = operation(actor), candidate = upload(op);
       const [first, second] = await connections(2);
+      const firstPid = (await first.query<{ pid: number }>("select pg_backend_pid() as pid")).rows[0]!.pid;
+      const secondPid = (await second.query<{ pid: number }>("select pg_backend_pid() as pid")).rows[0]!.pid;
       const paused = pauseQuery(first, sql => /^commit$/iu.test(sql.trim()));
       let firstResult: Promise<unknown> | undefined, secondResult: Promise<unknown> | undefined;
       try {
@@ -245,22 +245,9 @@ describe("SA04-K4 authoritative whole-operation Cancel", () => {
           ? repository(second).createDraftAttachment(candidate)
           : cancel(repository(second), op);
         void secondResult.catch(() => undefined);
-        // Queries on the second connection are queued behind the blocked scope.
-        // The inspector must use a separate connection: pg_blocking_pids is physical evidence.
-        const secondPid = (await fixture.query<{ pid: number }>(
-          "select pid from pg_stat_activity where query ilike '%pg_advisory_xact_lock%'"
-          + " and datname = current_database() and pid != pg_backend_pid()"
-          + " order by query_start desc limit 1")).rows[0]?.pid;
-        if (!secondPid) throw new Error("missing real scope waiter");
-        const firstPid = (await first.query<{ pid: number }>("select pg_backend_pid() as pid")).rows[0]!.pid;
-        let blocked = false;
-        for (let i = 0; i < 200; i++) {
-          const { rows } = await fixture.query<{ blocking: number[] }>(
-            "select pg_blocking_pids($1) as blocking", [secondPid]);
-          if (rows[0]?.blocking.includes(firstPid)) { blocked = true; break; }
-          await new Promise(resolve => setTimeout(resolve, 10));
-        }
-        expect(blocked).toBe(true);
+        // The second real writer waits on the first transaction's scope
+        // advisory lock; an independent inspector observes physical blocking.
+        await waitForBlocker(secondPid, firstPid);
         paused.resume();
         if (order === "cancel-first") {
           await firstResult;
