@@ -72,8 +72,8 @@ function setup({ owner = "real-user", allowed = true, withBucket = true } = {}) 
   const rebindDraftAttachments = vi.fn(async () => 0);
   const initializePostEditAttachments = vi.fn(async () => {});
   const admitUpload = vi.fn(async (): Promise<ForumAttachmentMetadata | null> => null);
-  const recordUploadObject = vi.fn(async (key: string) => { void key; });
-  const activateUploadObject = vi.fn(async () => {});
+  const recordUploadObject = vi.fn(async (actor: string, key: string) => { void actor; void key; });
+  const activateUploadObject = vi.fn(async (actor: string, key: string, etag: string) => { void actor; void key; void etag; });
   ctx.set(forumAttachmentStoreContext, {
     admitUpload,
     recordUploadObject,
