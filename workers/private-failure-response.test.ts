@@ -14,7 +14,7 @@ describe("private framework 5xx response cache boundary", () => {
     "/api/attachments/%66ile/valid-id",
     "/api/%61ttachments/%66ile/valid-id/",
   ] as const)(
-    "privatizes unexpected GET and HEAD errors on the accepted resource alias %s", path => {
+    "privatizes unexpected GET and HEAD errors on the accepted resource alias %s", async path => {
       for (const method of ["GET", "HEAD"] as const) {
         const request = new Request("https://forum.test" + path, { method });
         const original = new Response(method === "HEAD" ? null : "Unexpected Error", {
