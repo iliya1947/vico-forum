@@ -1,5 +1,13 @@
 # ChatGPT-6 — personal log
 
+## SA04-J12 — ACTIVE ASSIGNMENT
+
+Baseline: J11 Mira PASS exact `7212aef429f856db0c2d5e7a9a621739898fed12` in cumulative Draft #330.
+
+Perform cumulative J closeout/evidence only. Inventory every accepted full-J actor-owned Forum writer, both source-locale service no-op entrypoints and the already-protected presence path; compare actual transaction/lock order and evidence to the full J plan. Close any missing required active/inactive/missing, replay/no-op, state-first/writer-first, cross-writer compatibility and canonical HTTP/Worker evidence. A known evidence gap is direct native barrier coverage for `confirmHelpDuplicate` ↔ accepted duplicate-signal review; add/verify it. Also identify any other required pair not already directly demonstrated.
+
+Do not add speculative functionality. If the inventory proves a real current-J defect, fix only that defect and regenerate evidence. K+, Complaint N, #315, SA-05, permanent docs and Stage 6 remain out. Run applicable cumulative regressions and exact-head CI/browser gates. Deliver one stable exact Draft #330 head plus concise cumulative evidence packet, then AUTHOR STOP for Mira whole-J coordinator review. Lev remains inactive until Mira whole-J PASS.
+
 ## SA04-J11 — implementation complete / AUTHOR STOP
 
 - **Baseline:** J10 Mira PASS exact `6bd20801d399557c2f6964fc0a8acd4058a14cb6`. Cumulative implementation Draft #330 open/draft/unmerged stable exact `7212aef429f856db0c2d5e7a9a621739898fed12`. Three J11 commits, three changed files; no other writer implemented.
