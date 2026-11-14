@@ -56,6 +56,17 @@ Planning must establish from current `main`:
 
 If current code/source-of-truth conflicts with the accepted master plan or a correct K solution requires a broader architectural change, Lev stops with a technical escalation instead of silently expanding scope.
 
+## Remaining accepted Super-admin package sequence after SA-04
+
+Source: accepted Lev bounded decomposition in predecessor #251 comment **#6745289141**.
+
+- **SA-05:** the single Owner-only deactivate operation + Owner profile control + lifecycle event/retention view. Includes authoritative user lock/atomic event/presence cleanup/idempotency/exact-Owner target restriction. Explicitly excludes forced logout, reactivation and mandatory reason.
+- **SA-06:** Monitoring for **Forum + Administration + Moderation + Notifications**, with History mapping and canonical contextual links/actions using existing authoritative domain operations.
+- **SA-07:** Monitoring for **Localization & translations + Files & attachments + Background processes + Data + Integrations**, using real source-specific observability and honest disabled/unbound states; no production provider/Queue controls.
+- **SA-08:** full Overview + cross-area filters/History/actions + end-to-end Super-admin integration/closeout. All 13 approved Monitoring areas must be accounted for; **Infrastructure remains Stage-6-only** until Stage 6 is explicitly resumed.
+
+SA-05–SA-08 are already accepted future packages; they are not invented follow-up work. They remain blocked until the preceding package is fully accepted/merged according to the active workflow.
+
 ## Historical anchors
 
 - SA-04 master plan: #251 comment #6806249892.
