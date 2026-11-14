@@ -51,6 +51,7 @@ const migrations = [
   "0053_complaint_priority_settings",
   "0054_complaint_history_notifications",
   "0055_complaint_appeal_notifications",
+  "0065_sa04_account_state_foundation",
 ];
 
 const ownerId = "attachment-owner";
