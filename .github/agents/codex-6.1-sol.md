@@ -1,3 +1,20 @@
+# Codex-6.1 Sol — personal log
+
+## 2026-11-15 — SA04-K independent whole-package RETURN / STOP
+
+- **Lev independent whole-K review: RETURN**, one confirmed current-K **SA04-K-LEV-01 / P3** on stable Draft #332 `bb9d1497c5d5f14bfff6a1edf64e19eed5fd5105`. [Full report/reproducer #6885510186](https://github.com/iliya1947/vico-forum/pull/331#issuecomment-6885510186). Whole assigned scope reviewed; no other confirmed current-K defects.
+- New `workers/private-failure-response.ts` classifies raw pathname case-sensitively, while Router accepts trailing slash/case/percent-encoded variants of the same attachment resource. Actual Worker + genuine session + disposable SQL fault gives canonical GET/file HEAD500 with private/no-store, but accepted aliases lose Cache-Control (7 of 10 tested actual500 responses). Healthy aliases reach the same handler without redirect. Body remained generic; no private bytes/SQL disclosure or actual caching is claimed.
+- Bounded correction direction: make private attachment resource classification consistent with accepted Router path variants; preserve status/body/cookies, public GET caching and successful responses. Add alias/malformed-encoding regressions and representative real GET/HEAD500 proof. Do not rewrite routing/auth/storage or broaden into #315.
+- Independent green evidence: native PG17 **956/956, 84 files**; route/editor/R2/privacy app **107/107, 6 files**; fresh build/migrations; full genuine Worker/BA/PG/local-R2/Chromium **29/29**. Full local Hyperdrive env restored after an initial review-environment bridge setup failure; assertions unchanged. Six exact-head remote workflows SUCCESS. Green canonical gates do not close the independently reproduced alias classification defect.
+- **Next actor: Mira**, accept/verify this single finding package and prepare one bounded Lira correction; new stable head + gates → fresh Mira cumulative whole-K review → Lev independent review. **Lev review complete / STOP; Mark inactive; no merge.** Lira is not activated by Lev.
+- Main remains `398dae18d5ca7c3fc6dd84fd93a29d7c381ba366`; #332 Draft/open/unmerged. L–S/SA05/#315/permanent docs/Stage6 remain separate. Developer joint SA05–SA08 technical-planning gate after full SA04 remains in force.
+
+Evidence: `/workspace/work/sa04-k-review-evidence/REVIEW.md`, 23-file source manifest, native/application/build logs, full `browser-repeat/results.json` and original `resource-privacy-probe.{mts,json}` plus expanded/normalization logs. Source/config restored exactly; checkout clean; own Worker/PG stopped/removed, synthetic vars and dependency links removed. Review used actual local-only R2 and genuine sessions, not a replacement mocked app. Only diagnostic classifier calls normalized a Request outside implementation; production code was not patched.
+
+---
+
+## Archived preceding assignment/results
+
 ## 2026-11-15 — ACTIVE ASSIGNMENT: independent SA04-K whole-package review
 
 Mira coordinator whole-K PASS is complete on cumulative Draft #332 stable exact `bb9d1497c5d5f14bfff6a1edf64e19eed5fd5105`. Review **that same exact head independently** against the accepted complete K plan (#331 comment #6877583725), current main/source-of-truth and the full cumulative implementation/evidence.
