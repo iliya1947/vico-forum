@@ -1,5 +1,17 @@
 # Admin panel — communication
 
+## 2026-11-14 — Mira bounded K3 PASS; K4 activated
+
+- Reviewed cumulative Draft #332 exact `dae431fc920c79cad654627052365a3fd2380fe4` against accepted K plan, unchanged current main/source-of-truth, attachment route/storage boundaries and Worker error handling. **K3 verdict: PASS — 0 confirmed current-K3 defects.**
+- Repository reads preserve the accepted order: draft scope → AccountState actor NKU → generation/private query. The DB transaction ends before bucket GET/streaming.
+- Inactive/missing cannot receive private list/file metadata; state-first private-file denial cannot reach bucket GET. AP-10 upload restriction is not reused as a read veto.
+- Public `readPublishedAttachment` remains lifecycle-independent; native evidence explicitly retains published-file membership for an inactive author.
+- Reviewed the new Worker helper separately because it is wider than the repository delta: it changes only 5xx cache privacy, forces private/no-store for attachment GET/HEAD and existing writes, preserves status/body/headers, and leaves ordinary public GET failures unchanged.
+- Exact-head evidence independently rechecked: CI 43608804921 SUCCESS, PG17 949/949, K3 7/7, K2 7/7, K1 7/7, fence 22/22, app 2300/2300. AP-10, SA-01, SA-03 and SA04-J12 runs are SUCCESS on the same SHA.
+- **K4 now active for Lira** in cumulative #332: lifecycle-close whole-operation Cancel only. K5 remains unassigned.
+- Lev STOP; Mark inactive; no merge/deploy.
+
+
 ## 2026-11-14 — SA04-K3 Lira AUTHOR STOP → Mira bounded review
 
 - **Implementation:** cumulative [Draft #332](https://github.com/iliya1947/vico-forum/pull/332), stable exact `dae431fc920c79cad654627052365a3fd2380fe4` from Mira-accepted K2 `eaf57c46ca28baff9a11ae637f37d7d850934ab9`; open/draft/unmerged. Only K3 was added; K4–K5 remain unassigned.
