@@ -1,5 +1,6 @@
 import type { RouterContextProvider } from "react-router";
 import { authSessionForRequest } from "../auth/request-context";
+import { AccountInactiveError, AccountMissingError, AccountStateUnavailableError } from "../../db/account-state";
 import {
   AttachmentBucketUnavailableError,
   attachmentBucketForRequest,
@@ -50,8 +51,9 @@ export async function loader({ request, params, context }: {
       attachment = await store.readDraftAttachment(owner, contextKey, draftId, attachmentId);
     }
   } catch (error) {
+    if (error instanceof AccountInactiveError || error instanceof AccountMissingError) return failure(401);
     if (error instanceof InvalidForumAttachmentError || error instanceof ForumAttachmentDraftConflictError) return failure(404);
-    if (error instanceof ForumAttachmentStorageUnavailableError) return failure(503);
+    if (error instanceof AccountStateUnavailableError || error instanceof ForumAttachmentStorageUnavailableError) return failure(503);
     throw error;
   }
   if (!attachment) return failure(404);
