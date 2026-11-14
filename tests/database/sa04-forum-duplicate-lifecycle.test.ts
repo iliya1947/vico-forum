@@ -387,6 +387,78 @@ describe("SA04-J11 duplicate and appeal authoritative AccountState", () => {
     }
   }, 30_000);
 
+  it.each(["confirm", "review"] as const)(
+    "J12 same-actor direct confirmation ↔ accepted duplicate-signal review: %s wins without deadlock",
+    async (first) => {
+      const x = await fixture();
+      const targetId = await signal(x.duplicate, x.original);
+      const thirdSignal = await signal(x.third, x.duplicate);
+      const leader = new Client({ connectionString: url, options });
+      const follower = new Client({
+        connectionString: url, options, application_name: "j12-duplicate-overlap-" + first,
+      });
+      await Promise.all([leader.connect(), follower.connect()]);
+      const pause = pauseQuery(leader, sql => /^commit$/i.test(sql.trim()));
+      let winning: Promise<unknown> | undefined;
+      let losing: Promise<unknown> | undefined;
+      try {
+        // Both writers use the same actor. The loser must wait for the winner's
+        // topic/relationship/signal dependencies, not invert actor→content locks.
+        winning = first === "confirm"
+          ? isolated(leader).confirmHelpDuplicate(x.duplicate, x.original, x.manager)
+          : isolated(leader).resolveHelpSignal(targetId, x.manager, "accepted");
+        await pause.observed;
+
+        losing = first === "confirm"
+          ? isolated(follower).resolveHelpSignal(targetId, x.manager, "accepted")
+          : isolated(follower).confirmHelpDuplicate(x.duplicate, x.original, x.manager);
+        const losingResult = losing.then(
+          () => ({ status: "fulfilled" as const, error: null }),
+          (error: unknown) => ({ status: "rejected" as const, error }),
+        );
+        await waitForLock("j12-duplicate-overlap-" + first);
+
+        pause.resume();
+        if (first === "review") expect(await winning).toBe("accepted");
+        else await winning;
+
+        const result = await losingResult;
+        expect(result.status).toBe("rejected");
+        expect(result.error).toBeInstanceOf(ForumStateConflictError);
+
+        const final = await facts(x);
+        expect(final.relationships).toHaveLength(1);
+        expect(final.relationships[0]).toMatchObject({
+          duplicate_topic_id: x.duplicate, original_topic_id: x.original, removed_at: null,
+        });
+        expect(signalState(final, thirdSignal)).toMatchObject({
+          status: "superseded", resolved_by_user_id: x.manager,
+        });
+        expect(signalState(final, targetId)).toMatchObject({
+          status: first === "confirm" ? "superseded" : "accepted",
+          resolved_by_user_id: x.manager,
+        });
+        expect(final.history).toHaveLength(1);
+        expect(final.history[0]).toMatchObject({
+          action: first === "confirm" ? "help.duplicateConfirmed" : "help.signalReviewed",
+          actor_id: x.manager,
+        });
+        if (first === "review") {
+          expect(final.history[0].context).toMatchObject({
+            resolution: "accepted", effect: {
+              action: "help.duplicateConfirmed",
+              context: { originalTopicId: x.original },
+            },
+          });
+        }
+      } finally {
+        pause.resume(); pause.restore();
+        await Promise.allSettled([winning, losing].filter(Boolean));
+        await Promise.all([leader.end(), follower.end()]);
+      }
+    }, 30_000,
+  );
+
   it("same-actor Complaint post→actor→FK KEY SHARE completes while confirmation holds topic mutex", async () => {
     const x = await fixture();
     const post = await admin.query<{ id: string }>("select id from forum_posts where topic_id=$1", [x.duplicate]);
