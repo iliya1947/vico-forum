@@ -34,9 +34,11 @@ async function command(input) {
       if (inTransaction) throw new Error("lock already held");
       await client.query("begin"); inTransaction = true;
       const found = await client.query(
-        "select object_key from forum_attachment_upload_objects where object_key=$1 for update",
+        "select object_key,reservation_etag from forum_attachment_upload_objects where object_key=$1 for update",
         [input.key]);
-      if (found.rows.length !== 1) throw new Error("journal row missing");
+      if (found.rows.length !== 1 || found.rows[0].reservation_etag !== null) {
+        throw new Error("journal PREPARING row missing or already READY");
+      }
       return { locked: "journal" };
     }
     case "deactivate": {
