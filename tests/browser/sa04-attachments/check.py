@@ -1005,14 +1005,32 @@ try:
         assert cancelled_unknown.status == 200, cancelled_unknown.text()[:150]
         assert sql("select attachment_id from forum_attachment_draft_refs where attachment_id=$1",
                    [unknown_asset]) == []
-        sql("""update forum_attachments set created_at=now()-interval '2 hours'
+        # Simulate a committed delete claim whose physical DELETE ACK was
+        # lost. Before lease expiry the actual cleanup processor must leave
+        # its R2 object alone; after expiry it resumes the same durable claim.
+        lease_token = str(uuid4())
+        sql("""update forum_attachments
+          set created_at=now()-interval '2 hours',
+            cleanup_status='deleting', cleanup_claim_token=$2,
+            cleanup_claimed_at=now()
+          where id=$1""", [unknown_asset, lease_token])
+        early = local_storage_probe(fault_ctx, "cleanup")
+        assert early["deleted"] == 0, early
+        assert sql("""select cleanup_status,cleanup_claim_token
+          from forum_attachments where id=$1""", [unknown_asset]) == [{
+            "cleanup_status": "deleting", "cleanup_claim_token": lease_token,
+        }]
+        assert local_storage_probe(fault_ctx, "head", committed_key)["exists"] is True
+        sql("""update forum_attachments
+          set cleanup_claimed_at=now()-interval '6 minutes'
           where id=$1""", [unknown_asset])
         sweep = local_storage_probe(fault_ctx, "cleanup")
         assert sweep["deleted"] >= 1, sweep
         assert sql("select id from forum_attachments where id=$1", [unknown_asset]) == []
         assert local_storage_probe(fault_ctx, "head", committed_key)["exists"] is False
-        record("actual-local-r2-cancelled-orphan-claim-delete-and-reference-recheck",
-               deleted=True, absent_from_r2=True)
+        record("actual-local-r2-cancelled-orphan-expired-claim-lease-recovery",
+               not_deleted_before_lease=True, deleted_after_lease=True,
+               absent_from_r2=True)
 
         # A real long-lived HTTP upload has PREPARING and READY committed, but
         # its payload body is still withheld. The actual cleanup processor wins
