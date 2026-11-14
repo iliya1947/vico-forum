@@ -1,5 +1,16 @@
 # Admin panel — communication
 
+## 2026-11-14 — Mira bounded K2 PASS; K3 activated
+
+- Reviewed cumulative Draft #332 exact `eaf57c46ca28baff9a11ae637f37d7d850934ab9` against accepted K plan, current attachment/cleanup/fence code and K-relevant source-of-truth. **K2 verdict: PASS — 0 confirmed current-K2 defects.**
+- Production K2 stays bounded to trusted actor threading plus PREPARING/READY journal transactions. `recordUploadObject`: actor→fresh INSERT; `activateUploadObject`: existing journal FOR UPDATE→actor→conditional READY. No schema, actor persistence, storage protocol or K3+ implementation.
+- Confirmed cleanup/finalizer compatibility: activation and metadata finalization share journal-before-actor ordering; system cleanup takes no actor lock; claimed/missing/already-ready journal states remain fail-closed.
+- Existing caller/test changes only adapt the new mandatory signatures; prior assertions were not weakened.
+- Exact-head CI independently rechecked: 43601817617 attempt 2 SUCCESS, PG17 942/942, K2 7/7, K1 7/7, fence 22/22, app 2286/2286, standard gates PASS. Attempt 1's unhandled AccountInactiveError came from unchanged `forum-online-privacy.test.ts`; it is a timing-sensitive test-harness rejection and did not reproduce on the complete same-SHA rerun. No K2 causal path was found.
+- **K3 now active for Lira** in cumulative #332: lifecycle-close private list/file reads while preserving public published-file access. K4–K5 remain unassigned.
+- Lev STOP; Mark inactive; no merge/deploy.
+
+
 ## 2026-11-14 — SA04-K2 Lira AUTHOR STOP → Mira bounded review
 
 - **Implementation:** cumulative [Draft PR #332](https://github.com/iliya1947/vico-forum/pull/332) exact head `eaf57c46ca28baff9a11ae637f37d7d850934ab9`, open/draft/unmerged, based on accepted K1 head `ad20fa37be4e0f887fc5ffac644f6304a9e1eb8f`. Only bounded K2 was added; K3–K5 remain unassigned.
