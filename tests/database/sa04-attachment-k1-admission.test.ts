@@ -81,9 +81,7 @@ async function facts(op: ReturnType<typeof operation>, id: string) {
   ].join("\n"), [op.ownerId, op.contextKey, op.draftId, id]);
   return rows.rows[0];
 }
-async function blocked(waitingClient: Client, blockingClient: Client) {
-  const waiting = (await waitingClient.query<{pid: number}>("select pg_backend_pid() as pid")).rows[0]!.pid;
-  const blocking = (await blockingClient.query<{pid: number}>("select pg_backend_pid() as pid")).rows[0]!.pid;
+async function blocked(waiting: number, blocking: number) {
   for (let i = 0; i < 120; i++) {
     const result = await fixture.query<{yes: boolean}>(
       "select $2::int = any(pg_blocking_pids($1::int)) as yes", [waiting, blocking]);
@@ -236,6 +234,8 @@ describe("SA04-K1 authoritative upload admission and metadata finalization", () 
     const blocker = new Client({ connectionString: url, options });
     const contender = new Client({ connectionString: url, options });
     await Promise.all([blocker.connect(), contender.connect()]);
+    const blockerPid = (await blocker.query<{pid: number}>("select pg_backend_pid() as pid")).rows[0]!.pid;
+    const contenderPid = (await contender.query<{pid: number}>("select pg_backend_pid() as pid")).rows[0]!.pid;
     const before = await facts(op, asset.id);
     let transaction = false;
     let pending: Promise<unknown> | undefined;
@@ -245,7 +245,7 @@ describe("SA04-K1 authoritative upload admission and metadata finalization", () 
         "select object_key from forum_attachment_upload_objects where object_key=$1 for update",
         [asset.objectKey]);
       pending = writer(contender).createDraftAttachment(asset);
-      await blocked(contender, blocker);
+      await blocked(contenderPid, blockerPid);
       // Existing journal→actor order: deactivation is free while finalization waits on journal.
       await deactivate(actor);
       await blocker.query("commit"); transaction = false;
