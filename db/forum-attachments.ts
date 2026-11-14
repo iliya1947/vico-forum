@@ -364,6 +364,9 @@ export class DrizzleForumAttachments {
     if (!ownerId || !isEditorDraftContextKey(contextKey) || !isForumAttachmentUuid(draftId)) throw new InvalidForumAttachmentError();
     await this.db.transaction(async (tx) => {
       await lockAttachmentDraftScope(tx, ownerId, contextKey);
+      // Even an idempotent/empty Cancel must prove a live actor before it can
+      // acknowledge completion or remove the operation's temporary references.
+      await assertActiveAccountForDrizzleMutation(tx, ownerId);
       await retireAttachmentDraftGeneration(tx, ownerId, contextKey, draftId);
       await tx.delete(forumAttachmentDraftRefs).where(and(eq(forumAttachmentDraftRefs.ownerId, ownerId),
         eq(forumAttachmentDraftRefs.contextKey, contextKey), eq(forumAttachmentDraftRefs.draftId, draftId)));
