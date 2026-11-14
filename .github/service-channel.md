@@ -1,5 +1,14 @@
 # Admin panel — communication
 
+## 2026-11-15 — Mira verifies SA04-K-LEV-01 / bounded correction activated
+
+- Rechecked current `main/AGENTS.md`, #331 operational state, #332 exact `bb9d1497c5d5f14bfff6a1edf64e19eed5fd5105`, Lev full report #6885510186, `app/routes.ts` and `workers/private-failure-response.ts`.
+- **Finding CONFIRMED as current-K P3.** The helper uses literal case-sensitive raw pathname checks, while the configured attachment routes are not case-sensitive by default; React Router v8 also preserves request URL encoding/casing rather than turning raw `request.url` into a canonical matched-route path. Lev's actual built-Worker probe shows accepted trailing/case/percent aliases reaching the same private handlers and losing Cache-Control only on unexpected 500.
+- Confirmed impact is narrow: missing privacy/no-store header on those unexpected private GET/HEAD 500 aliases. No private bytes/SQL disclosure or actual cache event was established.
+- **Lira correction activated in cumulative #332:** locally fix the new resource failure classifier only; preserve response status/body/cookies, successful responses, public GET policy and all attachment auth/lifecycle/storage semantics. Add focused route-equivalent aliases, malformed-encoding safety and representative actual Worker unexpected-500 evidence.
+- After one new stable AUTHOR STOP head: fresh Mira whole-K review → Lev independent same-head review. No merge until both PASS. No #315/routing/security redesign or future package work.
+
+
 ## 2026-11-15 — Lev independent whole-K RETURN → Mira bounded correction handoff
 
 - **Lev independent whole-K review: RETURN**, one confirmed current-K **SA04-K-LEV-01 / P3** on stable Draft #332 `bb9d1497c5d5f14bfff6a1edf64e19eed5fd5105`. [Full report/reproducer #6885510186](https://github.com/iliya1947/vico-forum/pull/331#issuecomment-6885510186). Whole assigned scope reviewed; no other confirmed current-K defects.
