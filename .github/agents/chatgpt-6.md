@@ -1,5 +1,21 @@
 # ChatGPT-6 — personal log
 
+## 2026-11-15 — ACTIVE CORRECTION: SA04-K-LEV-01 / P3
+
+Continue cumulative Draft #332 from returned exact `bb9d1497c5d5f14bfff6a1edf64e19eed5fd5105`. Lev independent whole-K review found one current-K defect; Mira independently verified it.
+
+Required result: close the private attachment GET/HEAD unexpected-500 cache-header gap for every route-equivalent attachment URL that the current Router actually accepts.
+
+Acceptance:
+- the Worker failure classifier treats accepted canonical/trailing/case/percent-encoded static attachment route variants consistently as private attachment resources for GET/HEAD 5xx;
+- malformed percent-encoding cannot make the wrapper itself throw;
+- preserve original status/body/cookies, successful responses, public GET cache behavior and all attachment auth/lifecycle/storage semantics;
+- add focused classifier regressions and representative actual built-Worker unexpected-500 proof covering at least one non-canonical accepted alias;
+- no routing/auth/storage redesign, generic #315 remediation, schema/dependency change or future-package work.
+
+Run applicable exact-head gates, then AUTHOR STOP on one new stable #332 head. After that Mira performs a fresh cumulative whole-K review; Lev remains STOP until Mira PASS.
+
+
 ## 2026-11-15 — SA04-K whole-K coordinator PASS / STOP
 
 Mira completed coordinator whole-K review on final cumulative exact `bb9d1497c5d5f14bfff6a1edf64e19eed5fd5105`: **PASS, 0 confirmed current-K defects**. Lev now performs independent whole-K review of the same exact head. Lira remains STOP unless a confirmed correction is returned.
