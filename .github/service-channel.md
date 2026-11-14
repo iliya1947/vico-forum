@@ -1,5 +1,15 @@
 # Admin panel — communication
 
+## 2026-11-14 — SA04-K5 subtask 2/5 DONE: connected infrastructure/CI stabilized (Lira STOP)
+
+- Developer-directed K5 sequence is **five gated subtasks**. Subtask 1 audit was recorded as [#6882718856](https://github.com/iliya1947/vico-forum/pull/331#issuecomment-6882718856); **subtask 2 is now DONE**, no subtask 3 implementation yet. This is **not whole-K AUTHOR STOP** or Mira review.
+- Implementation [Draft PR #332](https://github.com/iliya1947/vico-forum/pull/332) exact head `328eb7e8cc60f103d34cfbc0ed8f5720f73da1d6`, open/draft/unmerged. Compared to prior audited `02a9c00063eb2a890837154c449c2984841834c2`, precisely **two K5-only Node test helper files** changed: `tests/browser/sa04-attachments/pg-lock.mjs` imports `node:process` and `node:url` explicitly; `tests/browser/sa04-attachments/stream-client.mjs` imports `node:buffer`, `node:process`, `node:url` explicitly. Scoped correction of twelve ESLint `no-undef` errors; no app/production code, dependency, schema, binding or workflow contract changed. No ESLint suppression and no repository-wide global configuration relaxation.
+- **Exact-head [CI #43630454615](https://github.com/iliya1947/vico-forum/actions/runs/43630454615) SUCCESS:** application 2306/2306 in 186 files (route 42/42, editor operation 21/21), PostgreSQL 17 956/956 in 84 files (K1–K4 7/7 each and fencing 22/22); lint/typecheck/build/preview/schema/migrations and built Worker/Hyperdrive/local HTTP smoke all passed.
+- **Exact-head [K5 connected Worker/BA/PG/local R2/Chromium #43630454673](https://github.com/iliya1947/vico-forum/actions/runs/43630454673) SUCCESS:** all 16 existing explicit connected assertions PASS; genuine Better Auth sessions/HTTP, disposable PG17, local-only R2 binding with actual bytes and physical PG/stream barriers. This subtask did not expand connected coverage; it stabilized infrastructure.
+- Same head browser workflows **SUCCESS**: [AP-10 #43630454646](https://github.com/iliya1947/vico-forum/actions/runs/43630454646) all four jobs, [SA-01 #43630454714](https://github.com/iliya1947/vico-forum/actions/runs/43630454714), [SA-03 #43630454439](https://github.com/iliya1947/vico-forum/actions/runs/43630454439), [SA04-J12 #43630454523](https://github.com/iliya1947/vico-forum/actions/runs/43630454523).
+- **Pause after subtask 2.** Next **only after developer `...`**: **subtask 3/5** deterministic remaining connected late-PUT/ambiguous ACK/cleanup/fence evidence, fixing only confirmed current-K defects. Subtask 4 is real mounted Chromium Retry/Remove/Cancel/late ACK; subtask 5 is final cumulative exact-head gates/handoff. No subtask 3 or 4 work was started in this turn.
+- K1–K4 accepted unchanged; K5 remains active/incomplete; no merge/deploy, L–S, SA05, #315, permanent docs, Stage6, whole-K Mira review or Lev review.
+
 ## 2026-11-14 — planning correction: SA-05–SA-08 were already accepted
 
 - Rechecked predecessor #251 technical-plan comment **#6745289141**.
