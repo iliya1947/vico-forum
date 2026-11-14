@@ -26,7 +26,7 @@ Accepted master technical plan: predecessor #251 comment **#6806249892**.
 - **A–H:** account-state storage + neutral public identity/projection foundation — delivered in current main.
 - **I:** Better Auth active-account closure — delivered in current main.
 - **J:** Forum authoritative actor writes — **delivered/merged by PR #330**, merge commit `398dae18d5ca7c3fc6dd84fd93a29d7c381ba366`; Mira cumulative whole-J PASS + Lev independent whole-J PASS on implementation head `800df2a56c4853a0c261f4cdb1b9969efe5c4b3e`.
-- **K:** attachment upload/draft/finalization admission — **K1 + K2 Mira PASS; K3 Lira AUTHOR STOP on cumulative Draft #332 exact `dae431fc920c79cad654627052365a3fd2380fe4`, pending Mira bounded review; K4–K5 prepared/inactive**.
+- **K:** attachment upload/draft/finalization admission — **K1 + K2 + K3 Mira PASS; K4 active in cumulative Draft #332; K5 prepared/inactive**.
 - **L:** authorization mutations.
 - **M:** AP-10 mutations/appeals.
 - **N:** Complaints mutation/participation.
@@ -92,20 +92,31 @@ Accepted result:
 
 Exact-head evidence: CI 43601817617 final attempt SUCCESS — PG17 **942/942** in 82 files, K2 native **7/7**, K1 **7/7**, fence **22/22**, app **2286/2286**, lint/typecheck/build/migrations/Workers PASS. The first database attempt on the same SHA had one unhandled rejection in unchanged `forum-online-privacy.test.ts`; source/lock inspection found no K2 causal path and the complete same-head rerun passed.
 
-### K3 — Lira AUTHOR STOP / Mira bounded review pending
+### K3 — ACCEPTED
 
-Result: authoritative active-account admission for `listDraftAttachments` and `readDraftAttachment`, plus controlled private-list/private-file HTTP failure composition, while preserving public published-file access.
+Mira bounded coordinator review **PASS** on cumulative Draft #332 exact `dae431fc920c79cad654627052365a3fd2380fe4`: 0 confirmed current-K3 defects.
+
+Accepted result:
+- `listDraftAttachments` and `readDraftAttachment` use existing draft scope → actor NKU → generation/private query in one short transaction;
+- no actor lock spans bucket GET/response streaming;
+- inactive/missing private reads return no private metadata/bytes; state-first denial reaches no bucket GET;
+- public published-file membership/read remains independent of author lifecycle;
+- AP-10 `attachments.upload` does not become a private-read restriction;
+- private attachment GET/list controlled failures remain no-store, and unexpected framework 5xx on attachment resource routes are narrowly forced private/no-store without changing public forum GET caching.
+
+Exact-head evidence: CI 43608804921 SUCCESS — PG17 **949/949** in 83 files, K3 native **7/7**, K2 **7/7**, K1 **7/7**, fence **22/22**, app **2300/2300** in 186 files, lint/typecheck/build/migrations/Workers PASS. Exact-head AP-10, SA-01, SA-03 and SA04-J12 browser workflows also SUCCESS.
+
+### Active K4 — operation Cancel lifecycle admission
+
+Result: authoritative active-account admission for whole-operation `cancelOperation`, preserving current idempotent operation retirement, temporary-ref cleanup and local editor Cancel/Remove behavior.
 
 Readiness:
-- both repository reads keep existing draft advisory scope first, then actor NKU, then generation/private query on the same short transaction; no user lock is held across bucket GET or response streaming;
-- inactive/missing actor receives no private metadata/list/file success; state-first private file denial performs **no bucket GET**;
-- writer-first admitted private read may complete before later deactivation, with actor lock held through DB transaction completion;
-- upload GET/list and private file GET provide private/no-store lifecycle 401 and classified unavailable 503; unexpected faults remain unexpected and must not leak private cacheable data;
-- public `?post=...` attachment membership/read remains ungated by author AccountState, including published files of inactive authors;
-- AP-10 `attachments.upload` restriction does not become a private-read restriction;
-- focused native PostgreSQL/route evidence covers active/inactive/missing, state-first/writer-first for both reads, no-bucket-GET denial, public branch preservation and 401/503/unexpected privacy;
-- K4 Cancel and K5 connected closure remain inactive. No schema, storage protocol, cleanup, public-member policy, L–S, SA05, #315, docs or Stage6 work.
-
-**K3 author evidence (not Mira PASS):** cumulative Draft #332 exact `dae431fc920c79cad654627052365a3fd2380fe4`; native K3 7/7 with both actor-read race orders and inactive published-author public membership, PG17 949/949, app 2300/2300, [CI 43608804921](https://github.com/iliya1947/vico-forum/actions/runs/43608804921) SUCCESS; AP-10/SA-01/SA-03/SA04-J12 browser workflows SUCCESS. Narrow worker attachment GET 5xx no-store fallback and private GET lifecycle 401/503 covered. Mira reviews this exact head; only her K3 PASS activates K4.
-
+- repository order remains draft advisory scope → actor NKU → existing retire/delete logic in the same short transaction;
+- inactive/missing actor receives no `cancelled` success, no new completion marker and no temporary-ref deletion, including empty/already-terminal operations;
+- active Cancel remains idempotent for empty/live/already-terminal operation and is not blocked by AP-10 `attachments.upload`;
+- only temporary refs of the exact owner/context/operation may be removed; published/shared bindings, publication receipts, foreign refs and physical bytes remain untouched synchronously;
+- real PostgreSQL evidence covers state-first/writer-first Cancel plus overlap with upload/finalization and existing cleanup/ref behavior; no new actor lock is added to system cleanup/shared generation helpers;
+- canonical whole-operation DELETE maps lifecycle inactive/missing to private/no-store 401, classified unavailable to 503, unexpected remains unexpected; unsupported/per-file DELETE remains 405;
+- existing local editor Cancel/Remove still resets local intent/XHR state without claiming a server commit on denied Cancel;
+- K5 connected closure remains inactive. No per-file server delete, schema/storage/publication redesign, L–S, SA05, #315, permanent docs or Stage6 work.
 
