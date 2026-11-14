@@ -1,5 +1,5 @@
 import { projectPublicAccountIdentity, PublicIdentityInvariantError } from "./public-identity";
-import { activeAccountPredicate, AccountInactiveError, type AccountState } from "./account-state";
+import { activeAccountPredicate, AccountInactiveError, assertActiveAccountForDrizzleMutation, type AccountState } from "./account-state";
 import {appendForumHistory} from "./forum-history";
 import { lockPrivacySubject } from "./user-privacy";
 import type {HelpSignalHistoryEffect} from "./admin-history";
@@ -679,6 +679,7 @@ export class DrizzleForumRepository {
       const [owner] = await tx.select({ id: user.id }).from(user)
         .where(eq(user.id, actorId)).for("update");
       if (!owner) throw new ForumEntityNotFoundError("user does not exist");
+      await assertActiveAccountForDrizzleMutation(tx, actorId);
       await this.measureAdmission(tx, actorId, "profile.edit");
       await tx.insert(forumProfiles).values({ userId: actorId, ...fields })
         .onConflictDoUpdate({ target: forumProfiles.userId, set: { ...fields, updatedAt: sql`now()` } });
@@ -697,6 +698,7 @@ export class DrizzleForumRepository {
 
   async createTopic(input: CreateTopicInput): Promise<ForumTopic> {
     return this.database.transaction(async (tx) => {
+      await assertActiveAccountForDrizzleMutation(tx, input.authorId);
       await this.measureAdmission(tx, input.authorId, "topics.create");
       await tx.insert(forumTopics).values({
         id: input.id,
@@ -744,6 +746,8 @@ export class DrizzleForumRepository {
         await lockAttachmentDraftScope(tx, input.authorId, input.publishedDraft.contextKey);
         const existing = await this.publicationReceipt(tx, input.authorId, input.publishedDraft, fingerprint);
         if (existing) {
+          // An idempotent receipt is not active-account admission.
+          await assertActiveAccountForDrizzleMutation(tx, input.authorId);
           // Receipt replay may follow closure: project persisted closure, not a default.
           const [persisted] = await tx.select({
             isClosed: forumTopics.isClosed, closureVersion: forumTopics.closureVersion,
@@ -764,6 +768,7 @@ export class DrizzleForumRepository {
           };
         }
       }
+      await assertActiveAccountForDrizzleMutation(tx, input.authorId);
       await this.measureAdmission(tx, input.authorId, "topics.create");
       const createdAt = await enforceForumWriteCooldown(tx, input.authorId, this.writePolicy);
       const [section] = await tx.select({ id: forumSections.id }).from(forumSections)
@@ -845,6 +850,7 @@ export class DrizzleForumRepository {
         await lockAttachmentDraftScope(tx, input.authorId, input.publishedDraft.contextKey);
         const existing = await this.publicationReceipt(tx, input.authorId, input.publishedDraft, fingerprint);
         if (existing) {
+          await assertActiveAccountForDrizzleMutation(tx, input.authorId);
           return {
             id: existing.postId, topicId: existing.topicId, authorId: input.authorId,
             parentPostId: input.parentPostId ?? null,
@@ -855,7 +861,8 @@ export class DrizzleForumRepository {
       }
       const [topic] = await tx.select({ id: forumTopics.id, authorId: forumTopics.authorId, isClosed: forumTopics.isClosed }).from(forumTopics)
         .where(eq(forumTopics.id, input.topicId))
-        .for("update");
+        // Still serializes topic-state writers without blocking other FK KEY SHARE reads.
+        .for("no key update");
       if (!topic) throw new ForumEntityNotFoundError("topic does not exist");
       if (topic.isClosed) throw new ForumTopicClosedError("topic is closed to new replies");
       const [activeDuplicate] = await tx
@@ -869,16 +876,19 @@ export class DrizzleForumRepository {
       if (activeDuplicate) {
         throw new ForumStateConflictError("a confirmed duplicate cannot receive new replies");
       }
-      await this.measureAdmission(tx, input.authorId, "replies.create");
-      const createdAt = await enforceForumWriteCooldown(tx, input.authorId, this.writePolicy);
       const parentPostId = input.parentPostId ?? null;
       let parentAuthorId: string | null = null;
       if (parentPostId) {
+        // Resolve/lock the existing FK parent before taking the actor mutex.
         const [parent] = await tx.select({ id: forumPosts.id, authorId: forumPosts.authorId }).from(forumPosts)
-          .where(and(eq(forumPosts.id, parentPostId), eq(forumPosts.topicId, input.topicId)));
+          .where(and(eq(forumPosts.id, parentPostId), eq(forumPosts.topicId, input.topicId)))
+          .for("key share");
         if (!parent) throw new ForumEntityNotFoundError("parent post does not exist in topic");
         parentAuthorId = parent.authorId;
       }
+      await assertActiveAccountForDrizzleMutation(tx, input.authorId);
+      await this.measureAdmission(tx, input.authorId, "replies.create");
+      const createdAt = await enforceForumWriteCooldown(tx, input.authorId, this.writePolicy);
       await tx.insert(forumPosts).values({
         id: input.id,
         topicId: input.topicId,
@@ -1468,13 +1478,19 @@ export class DrizzleForumRepository {
   }
 
   async readTopicReadState(userId: string, topicId: string): Promise<ForumTopicReadState | undefined> {
-    const [topic] = await this.database
+    return this.readTopicReadStateOn(this.database, userId, topicId);
+  }
+
+  private async readTopicReadStateOn(
+    database: Pick<NodePgDatabase, "select">, userId: string, topicId: string,
+  ): Promise<ForumTopicReadState | undefined> {
+    const [topic] = await database
       .select({ id: forumTopics.id })
       .from(forumTopics)
       .where(eq(forumTopics.id, topicId));
     if (!topic) return undefined;
 
-    const [marker] = await this.database
+    const [marker] = await database
       .select({ lastReadPostId: forumTopicReadStates.lastReadPostId })
       .from(forumTopicReadStates)
       .where(and(
@@ -1482,7 +1498,7 @@ export class DrizzleForumRepository {
         eq(forumTopicReadStates.topicId, topicId),
       ));
 
-    const posts = await this.database
+    const posts = await database
       .select({ id: forumPosts.id })
       .from(forumPosts)
       .where(eq(forumPosts.topicId, topicId))
@@ -1524,39 +1540,47 @@ export class DrizzleForumRepository {
   }
 
   async advanceTopicReadState(userId: string, topicId: string, postId: string): Promise<ForumTopicReadState> {
-    const [target] = await this.database
-      .select({ id: forumPosts.id })
-      .from(forumPosts)
-      .where(and(eq(forumPosts.topicId, topicId), eq(forumPosts.id, postId)));
-    if (!target) throw new ForumEntityNotFoundError("post does not exist in topic");
+    return this.database.transaction(async (tx) => {
+      // FK dependencies before actor admission. KEY SHARE is compatible with
+      // concurrent non-key content edits and does not require lock upgrades.
+      const [topic] = await tx.select({ id: forumTopics.id }).from(forumTopics)
+        .where(eq(forumTopics.id, topicId)).for("key share");
+      if (!topic) throw new ForumEntityNotFoundError("topic does not exist");
+      const [target] = await tx.select({ id: forumPosts.id }).from(forumPosts)
+        .where(and(eq(forumPosts.topicId, topicId), eq(forumPosts.id, postId)))
+        .for("key share");
+      if (!target) throw new ForumEntityNotFoundError("post does not exist in topic");
 
-    await this.database.execute(sql`
-      insert into forum_topic_read_states (user_id, topic_id, last_read_post_id, updated_at)
-      values (${userId}, ${topicId}, ${postId}, now())
-      on conflict (user_id, topic_id) do update
-      set last_read_post_id = excluded.last_read_post_id,
-          updated_at = now()
-      where exists (
-        select 1
-        from forum_posts as candidate
-        inner join forum_posts as current_marker
-          on current_marker.topic_id = forum_topic_read_states.topic_id
-         and current_marker.id = forum_topic_read_states.last_read_post_id
-        where candidate.topic_id = excluded.topic_id
-          and candidate.id = excluded.last_read_post_id
-          and (
-            candidate.created_at > current_marker.created_at
-            or (
-              candidate.created_at = current_marker.created_at
-              and candidate.id > current_marker.id
+      await assertActiveAccountForDrizzleMutation(tx, userId);
+
+      await tx.execute(sql`
+        insert into forum_topic_read_states (user_id, topic_id, last_read_post_id, updated_at)
+        values (${userId}, ${topicId}, ${postId}, now())
+        on conflict (user_id, topic_id) do update
+        set last_read_post_id = excluded.last_read_post_id,
+            updated_at = now()
+        where exists (
+          select 1
+          from forum_posts as candidate
+          inner join forum_posts as current_marker
+            on current_marker.topic_id = forum_topic_read_states.topic_id
+           and current_marker.id = forum_topic_read_states.last_read_post_id
+          where candidate.topic_id = excluded.topic_id
+            and candidate.id = excluded.last_read_post_id
+            and (
+              candidate.created_at > current_marker.created_at
+              or (
+                candidate.created_at = current_marker.created_at
+                and candidate.id > current_marker.id
+              )
             )
-          )
-      )
-    `);
+        )
+      `);
 
-    const state = await this.readTopicReadState(userId, topicId);
-    if (!state) throw new ForumEntityNotFoundError("topic does not exist");
-    return state;
+      const state = await this.readTopicReadStateOn(tx, userId, topicId);
+      if (!state) throw new ForumEntityNotFoundError("topic does not exist");
+      return state;
+    });
   }
 
   async readNotifications(userId:string,page:number):Promise<ForumNotificationPage>{
@@ -1606,6 +1630,7 @@ export class DrizzleForumRepository {
 
   async markNotificationRead(userId:string,notificationId:string):Promise<ForumNotificationTarget>{
     return this.database.transaction(async tx=>{
+      await assertActiveAccountForDrizzleMutation(tx, userId);
       const row=await tx.execute<{kind:ForumNotificationTarget["kind"];caseId:string|null;appealId:string|null;topicId:string|null;postId:string|null}>(sql`
         select n.kind,coalesce(d.case_id,a.case_id) as "caseId",a.id as "appealId",n.topic_id as "topicId",n.post_id as "postId"
         from forum_reply_notifications n
@@ -1691,20 +1716,23 @@ export class DrizzleForumRepository {
     userId: string,
     notificationId: string,
   ): Promise<{ topicId: string; postId: string }> {
-    const [notification] = await this.database
-      .update(forumReplyNotifications)
-      .set({ readAt: sql`coalesce(${forumReplyNotifications.readAt}, now())` })
-      .where(and(
-        eq(forumReplyNotifications.id, notificationId),
-        eq(forumReplyNotifications.recipientUserId, userId),
-        inArray(forumReplyNotifications.kind,["reply","mention"]),
-      ))
-      .returning({
-        topicId: forumReplyNotifications.topicId,
-        postId: forumReplyNotifications.postId,
-      });
+    return this.database.transaction(async (tx) => {
+      await assertActiveAccountForDrizzleMutation(tx, userId);
+      const [notification] = await tx
+        .update(forumReplyNotifications)
+        .set({ readAt: sql`coalesce(${forumReplyNotifications.readAt}, now())` })
+        .where(and(
+          eq(forumReplyNotifications.id, notificationId),
+          eq(forumReplyNotifications.recipientUserId, userId),
+          inArray(forumReplyNotifications.kind,["reply","mention"]),
+        ))
+        .returning({
+          topicId: forumReplyNotifications.topicId,
+          postId: forumReplyNotifications.postId,
+        });
     if (!notification?.topicId || !notification.postId) throw new ForumEntityNotFoundError("notification does not exist for user");
     return {topicId:notification.topicId,postId:notification.postId};
+    });
   }
 
   async readTopicPinState(topicId: string): Promise<boolean> {
@@ -1722,10 +1750,11 @@ export class DrizzleForumRepository {
     return this.database.transaction(async (tx) => {
       const [topic] = await tx.select({
         isClosed: forumTopics.isClosed, closureVersion: forumTopics.closureVersion,
-      }).from(forumTopics).where(eq(forumTopics.id, input.topicId)).for("update");
+      }).from(forumTopics).where(eq(forumTopics.id, input.topicId)).for("no key update");
       if (!topic) throw new ForumEntityNotFoundError("topic does not exist");
       if (topic.closureVersion !== input.expectedClosureVersion)
         throw new ForumStateConflictError("topic closure state changed");
+      await assertActiveAccountForDrizzleMutation(tx, input.actorId);
       if (topic.isClosed === input.isClosed)
         return { isClosed: topic.isClosed, closureVersion: topic.closureVersion, changed: false };
       await this.measureAdmission(tx, input.actorId, "admin.forum");
@@ -1753,8 +1782,9 @@ export class DrizzleForumRepository {
       const [topic] = await tx.select({ id: forumTopics.id })
         .from(forumTopics)
         .where(eq(forumTopics.id, topicId))
-        .for("update");
+        .for("no key update");
       if (!topic) throw new ForumEntityNotFoundError("topic does not exist");
+      await assertActiveAccountForDrizzleMutation(tx, pinnedByUserId);
       await this.measureAdmission(tx, pinnedByUserId, "admin.forum");
       const changed = await tx.insert(forumTopicPins)
         .values({ topicId, pinnedByUserId })
@@ -1768,8 +1798,9 @@ export class DrizzleForumRepository {
       const [topic] = await tx.select({ id: forumTopics.id })
         .from(forumTopics)
         .where(eq(forumTopics.id, topicId))
-        .for("update");
+        .for("no key update");
       if (!topic) throw new ForumEntityNotFoundError("topic does not exist");
+      await assertActiveAccountForDrizzleMutation(tx, actorId);
       await this.measureAdmission(tx, actorId, "admin.forum");
       const changed=await tx.delete(forumTopicPins).where(eq(forumTopicPins.topicId, topicId)).returning({topicId:forumTopicPins.topicId});
       if(changed.length)await appendForumHistory(tx,actorId,{action:"topic.unpinned",targetType:"topic",targetId:topicId,context:{before:true,after:false}});
@@ -3189,7 +3220,7 @@ export class DrizzleForumRepository {
           .from(forumTopics)
           .where(inArray(forumTopics.id, lockedIds))
           .orderBy(asc(forumTopics.id))
-          .for("update");
+          .for("no key update");
         if (topics.length !== 2) {
           throw new ForumEntityNotFoundError("duplicate question or proposed original question does not exist");
         }
@@ -3237,20 +3268,13 @@ export class DrizzleForumRepository {
           })
           .from(forumTopics)
           .where(eq(forumTopics.id, input.topicId))
-          .for("update");
+          .for("no key update");
         if (!lockedTopic) throw new ForumEntityNotFoundError("topic does not exist");
         if (lockedTopic.sectionId !== HELP_SOLUTIONS_SERVICE_SECTION_ID) {
           throw new ForumStateConflictError("Help signals are only available for Help & solutions questions");
         }
         topic = lockedTopic;
       }
-
-      // New Help signals are restricted independently of withdrawal, appeals and
-      // moderator review. Check after topic locks but before cooldown writes.
-      await this.measureAdmission(tx, input.actorId, "helpSignals.submit");
-      // Keep the same lock order as reply writes: topic row(s) first, then
-      // the per-user write mutex used by the signal cooldown.
-      await enforceHelpSignalWriteCooldown(tx, input.actorId, this.writePolicy);
 
       let targetPostId: string | null = null;
       if (input.kind === "needs-details") {
@@ -3271,7 +3295,7 @@ export class DrizzleForumRepository {
             eq(forumPosts.topicId, input.topicId),
             eq(forumPosts.id, targetPostId),
           ))
-          .for("update");
+          .for("no key update");
         if (!answer) throw new ForumStateConflictError("current selected solution does not exist");
         if (
           (input.kind === "needs-review" && answer.status !== null)
@@ -3280,6 +3304,13 @@ export class DrizzleForumRepository {
           throw new ForumStateConflictError("requested solution moderation state is already authoritative");
         }
       }
+
+      // The actor NO KEY UPDATE mutex serializes the cooldown and the write.
+      // Never upgrade the actor row with an additional FOR UPDATE lock.
+      await assertActiveAccountForDrizzleMutation(tx, input.actorId);
+      // Submission restriction does not apply to signal withdrawal or review.
+      await this.measureAdmission(tx, input.actorId, "helpSignals.submit");
+      await enforceHelpSignalWriteCooldown(tx, input.actorId, this.writePolicy);
 
       const pendingConditions = [
         eq(forumHelpSignals.status, "pending"),
@@ -3344,6 +3375,7 @@ export class DrizzleForumRepository {
       if (signal.status !== "pending") {
         throw new ForumStateConflictError("only a pending Help signal may be withdrawn");
       }
+      await assertActiveAccountForDrizzleMutation(tx, actorId);
       await tx
         .update(forumHelpSignals)
         .set({
@@ -3375,6 +3407,7 @@ export class DrizzleForumRepository {
         if (signal.status !== "pending") {
           throw new ForumStateConflictError("Help signal is no longer pending");
         }
+        await assertActiveAccountForDrizzleMutation(tx, actorId);
         await this.measureAdmission(tx, actorId, "admin.forum");
         await tx
           .update(forumHelpSignals)
@@ -3418,8 +3451,59 @@ export class DrizzleForumRepository {
         .from(forumTopics)
         .where(inArray(forumTopics.id, topicIds))
         .orderBy(asc(forumTopics.id))
-        .for("update");
+        .for("no key update");
 
+      // Accepted reviews may update solution moderation and multiple signals.
+      // Lock any existing post dependency before signals, then the entire
+      // potentially affected pending signal set by stable ID, including the
+      // third-topic proposed-original rows in duplicate review.
+      const reviewedTopic = topics.find((row) => row.id === snapshot.topicId);
+      if (
+        (kind === "needs-review" || kind === "solution-outdated")
+        && snapshot.targetPostId
+        && reviewedTopic?.isSolved
+        && reviewedTopic.bestAnswerPostId === snapshot.targetPostId
+      ) {
+        await tx.select({ id: forumPosts.id })
+          .from(forumPosts)
+          .where(and(
+            eq(forumPosts.topicId, snapshot.topicId),
+            eq(forumPosts.id, snapshot.targetPostId),
+          ))
+          .for("no key update");
+      }
+      const pendingSignalScope = kind === "needs-details"
+        ? and(
+            eq(forumHelpSignals.topicId, snapshot.topicId),
+            eq(forumHelpSignals.kind, "needs-details"),
+          )
+        : kind === "needs-review" || kind === "solution-outdated"
+          ? and(
+              eq(forumHelpSignals.topicId, snapshot.topicId),
+              eq(forumHelpSignals.targetPostId, snapshot.targetPostId ?? ""),
+              inArray(forumHelpSignals.kind, ["needs-review", "solution-outdated"]),
+            )
+          : and(
+              eq(forumHelpSignals.kind, "duplicate"),
+              or(
+                eq(forumHelpSignals.topicId, snapshot.topicId),
+                ...(snapshot.proposedOriginalTopicId
+                  ? [eq(forumHelpSignals.topicId, snapshot.proposedOriginalTopicId)]
+                  : []),
+                eq(forumHelpSignals.proposedOriginalTopicId, snapshot.topicId),
+              ),
+            );
+      await tx.select({ id: forumHelpSignals.id })
+        .from(forumHelpSignals)
+        .where(or(
+          eq(forumHelpSignals.id, signalId),
+          and(eq(forumHelpSignals.status, "pending"), pendingSignalScope),
+        ))
+        .orderBy(asc(forumHelpSignals.id))
+        .for("no key update");
+
+      // The locked target is read after the entire set is held: a concurrent
+      // withdrawal/rejection must be reflected before any actor admission.
       const [signal] = await tx
         .select({
           id: forumHelpSignals.id,
@@ -3431,12 +3515,12 @@ export class DrizzleForumRepository {
           status: forumHelpSignals.status,
         })
         .from(forumHelpSignals)
-        .where(eq(forumHelpSignals.id, signalId))
-        .for("update");
+        .where(eq(forumHelpSignals.id, signalId));
       if (!signal) throw new ForumEntityNotFoundError("Help signal does not exist");
       if (signal.status !== "pending") {
         throw new ForumStateConflictError("Help signal is no longer pending");
       }
+      await assertActiveAccountForDrizzleMutation(tx, actorId);
       await this.measureAdmission(tx, actorId, "admin.forum");
 
       const topic = topics.find((row) => row.id === signal.topicId);
@@ -3510,7 +3594,7 @@ export class DrizzleForumRepository {
             eq(forumPosts.topicId, signal.topicId),
             eq(forumPosts.id, signal.targetPostId),
           ))
-          .for("update");
+          .for("no key update");
         if (!answer) return supersedeCurrent();
 
         if (
@@ -3672,7 +3756,7 @@ export class DrizzleForumRepository {
         })
         .from(forumTopics)
         .where(eq(forumTopics.id, topicId))
-        .for("update");
+        .for("no key update");
       if (!topic) throw new ForumEntityNotFoundError("topic does not exist");
       if (topic.sectionId !== HELP_SOLUTIONS_SERVICE_SECTION_ID) {
         throw new ForumStateConflictError("solution moderation is only available for Help & solutions questions");
@@ -3686,8 +3770,37 @@ export class DrizzleForumRepository {
       if (topic.bestAnswerPostId !== expectedBestAnswerPostId) {
         throw new ForumStateConflictError("best answer is no longer the expected moderation target");
       }
+      // J10: acquire every mutable content dependency before the actor mutex.
+      // Non-key locks remain compatible with the Complaint target FK KEY SHARE.
+      const [previous] = await tx
+        .select({
+          status: forumPosts.solutionModerationStatus,
+          reason: forumPosts.solutionOutdatedReason,
+          kind: forumPosts.solutionOutdatedReasonKind,
+        })
+        .from(forumPosts)
+        .where(and(
+          eq(forumPosts.topicId, topicId),
+          eq(forumPosts.id, topic.bestAnswerPostId),
+        ))
+        .for("no key update");
+      if (status !== null) {
+        const staleKinds: HelpSignalKind[] = status === "outdated"
+          ? ["needs-review", "solution-outdated"]
+          : ["needs-review"];
+        await tx.select({ id: forumHelpSignals.id })
+          .from(forumHelpSignals)
+          .where(and(
+            eq(forumHelpSignals.topicId, topicId),
+            eq(forumHelpSignals.targetPostId, topic.bestAnswerPostId),
+            eq(forumHelpSignals.status, "pending"),
+            inArray(forumHelpSignals.kind, staleKinds),
+          ))
+          .orderBy(asc(forumHelpSignals.id))
+          .for("no key update");
+      }
+      await assertActiveAccountForDrizzleMutation(tx, actorId);
       await this.measureAdmission(tx, actorId, "admin.forum");
-      const [previous]=await tx.select({status:forumPosts.solutionModerationStatus,reason:forumPosts.solutionOutdatedReason,kind:forumPosts.solutionOutdatedReasonKind}).from(forumPosts).where(eq(forumPosts.id,topic.bestAnswerPostId));
       await tx.update(forumPosts)
         .set({
           solutionModerationStatus: status,
@@ -3738,9 +3851,8 @@ export class DrizzleForumRepository {
         .from(forumTopics)
         .where(inArray(forumTopics.id, lockedIds))
         .orderBy(asc(forumTopics.id))
-        .for("update");
+        .for("no key update");
       if (topics.length !== 2) throw new ForumEntityNotFoundError("duplicate question or original question does not exist");
-      await this.measureAdmission(tx, actorId, "admin.forum");
       if (topics.some((topic) => topic.sectionId !== HELP_SOLUTIONS_SERVICE_SECTION_ID)) {
         throw new ForumStateConflictError("duplicate relationships are only available between Help & solutions questions");
       }
@@ -3776,6 +3888,24 @@ export class DrizzleForumRepository {
         throw new ForumStateConflictError("a canonical original cannot become a duplicate while active duplicates point to it");
       }
 
+      // The exact bulk-supersession set must precede the lifecycle mutex.
+      // Topic mutexes also serialize concurrent pending duplicate-signal inserts.
+      await tx.select({ id: forumHelpSignals.id })
+        .from(forumHelpSignals)
+        .where(and(
+          eq(forumHelpSignals.kind, "duplicate"),
+          eq(forumHelpSignals.status, "pending"),
+          or(
+            eq(forumHelpSignals.topicId, topicId),
+            eq(forumHelpSignals.topicId, originalTopicId),
+            eq(forumHelpSignals.proposedOriginalTopicId, topicId),
+          ),
+        ))
+        .orderBy(asc(forumHelpSignals.id))
+        .for("no key update");
+      await assertActiveAccountForDrizzleMutation(tx, actorId);
+      await this.measureAdmission(tx, actorId, "admin.forum");
+
       const relationshipId=crypto.randomUUID();
       await tx.insert(forumHelpDuplicateRelationships).values({
         id: relationshipId,
@@ -3808,7 +3938,7 @@ export class DrizzleForumRepository {
         .select({ id: forumTopics.id, sectionId: forumTopics.sectionId })
         .from(forumTopics)
         .where(eq(forumTopics.id, topicId))
-        .for("update");
+        .for("no key update");
       if (!topic) throw new ForumEntityNotFoundError("topic does not exist");
       if (topic.sectionId !== HELP_SOLUTIONS_SERVICE_SECTION_ID) {
         throw new ForumStateConflictError("duplicate relationships are only available for Help & solutions questions");
@@ -3820,11 +3950,21 @@ export class DrizzleForumRepository {
           eq(forumHelpDuplicateRelationships.duplicateTopicId, topicId),
           isNull(forumHelpDuplicateRelationships.removedAt),
         ))
-        .for("update");
+        .for("no key update");
       if (!relationship) throw new ForumStateConflictError("question is not a confirmed duplicate");
       if (relationship.id !== expectedRelationshipId) {
         throw new ForumStateConflictError("duplicate relationship is no longer the expected relationship");
       }
+      // Removal may accept the current pending appeal as part of the same effect.
+      await tx.select({ id: forumHelpDuplicateAppeals.id })
+        .from(forumHelpDuplicateAppeals)
+        .where(and(
+          eq(forumHelpDuplicateAppeals.relationshipId, relationship.id),
+          eq(forumHelpDuplicateAppeals.status, "pending"),
+        ))
+        .orderBy(asc(forumHelpDuplicateAppeals.id))
+        .for("no key update");
+      await assertActiveAccountForDrizzleMutation(tx, actorId);
       await this.measureAdmission(tx, actorId, "admin.forum");
 
       const resolvedAt = sql`statement_timestamp()`;
@@ -3847,7 +3987,7 @@ export class DrizzleForumRepository {
         .select({ id: forumTopics.id, sectionId: forumTopics.sectionId, authorId: forumTopics.authorId })
         .from(forumTopics)
         .where(eq(forumTopics.id, topicId))
-        .for("update");
+        .for("no key update");
       if (!topic) throw new ForumEntityNotFoundError("topic does not exist");
       if (topic.sectionId !== HELP_SOLUTIONS_SERVICE_SECTION_ID) {
         throw new ForumStateConflictError("duplicate appeals are only available for Help & solutions questions");
@@ -3862,7 +4002,7 @@ export class DrizzleForumRepository {
           eq(forumHelpDuplicateRelationships.duplicateTopicId, topicId),
           isNull(forumHelpDuplicateRelationships.removedAt),
         ))
-        .for("update");
+        .for("no key update");
       if (!relationship) throw new ForumStateConflictError("question is not a confirmed duplicate");
       if (relationship.id !== expectedRelationshipId) {
         throw new ForumStateConflictError("duplicate relationship is no longer the expected relationship");
@@ -3874,8 +4014,9 @@ export class DrizzleForumRepository {
           eq(forumHelpDuplicateAppeals.relationshipId, relationship.id),
           eq(forumHelpDuplicateAppeals.status, "pending"),
         ))
-        .for("update");
+        .for("no key update");
       if (pending) throw new ForumStateConflictError("duplicate appeal is already pending");
+      await assertActiveAccountForDrizzleMutation(tx, actorId);
 
       await tx.insert(forumHelpDuplicateAppeals).values({
         id: crypto.randomUUID(),
@@ -3897,7 +4038,7 @@ export class DrizzleForumRepository {
         .select({ id: forumTopics.id, sectionId: forumTopics.sectionId })
         .from(forumTopics)
         .where(eq(forumTopics.id, topicId))
-        .for("update");
+        .for("no key update");
       if (!topic) throw new ForumEntityNotFoundError("topic does not exist");
       if (topic.sectionId !== HELP_SOLUTIONS_SERVICE_SECTION_ID) {
         throw new ForumStateConflictError("duplicate appeals are only available for Help & solutions questions");
@@ -3909,7 +4050,7 @@ export class DrizzleForumRepository {
           eq(forumHelpDuplicateRelationships.duplicateTopicId, topicId),
           isNull(forumHelpDuplicateRelationships.removedAt),
         ))
-        .for("update");
+        .for("no key update");
       if (!relationship) throw new ForumStateConflictError("question is not a confirmed duplicate");
       const [appeal] = await tx
         .select({ id: forumHelpDuplicateAppeals.id })
@@ -3918,10 +4059,11 @@ export class DrizzleForumRepository {
           eq(forumHelpDuplicateAppeals.relationshipId, relationship.id),
           eq(forumHelpDuplicateAppeals.status, "pending"),
         ))
-        .for("update");
+        .for("no key update");
       if (!appeal || appeal.id !== expectedAppealId) {
         throw new ForumStateConflictError("duplicate appeal is no longer the expected pending appeal");
       }
+      await assertActiveAccountForDrizzleMutation(tx, actorId);
       await this.measureAdmission(tx, actorId, "admin.forum");
 
       const resolvedAt = sql`statement_timestamp()`;
@@ -3944,10 +4086,9 @@ export class DrizzleForumRepository {
         sectionId: forumTopics.sectionId,
         isSolved: forumTopics.isSolved,
       }).from(forumTopics)
-        .where(eq(forumTopics.id, topicId)).for("update");
+        .where(eq(forumTopics.id, topicId)).for("no key update");
       if (!topic) throw new ForumEntityNotFoundError("topic does not exist");
       if (scope === "own" && topic.authorId !== actorId) throw new ForumAuthorizationError("only the topic author may solve it");
-      if (scope === "any") await this.measureAdmission(tx, actorId, "admin.forum");
       if (topic.isSolved) throw new ForumStateConflictError("topic is already solved");
       const [activeDuplicate] = await tx
         .select({ id: forumHelpDuplicateRelationships.id })
@@ -3960,6 +4101,21 @@ export class DrizzleForumRepository {
       if (activeDuplicate) {
         throw new ForumStateConflictError("a confirmed duplicate cannot be marked solved");
       }
+      if (topic.sectionId === HELP_SOLUTIONS_SERVICE_SECTION_ID) {
+        // Dependency rows before the actor lock: keep pending-set updates and
+        // the existing Help signal review path in a stable content→actor order.
+        await tx.select({ id: forumHelpSignals.id })
+          .from(forumHelpSignals)
+          .where(and(
+            eq(forumHelpSignals.topicId, topicId),
+            eq(forumHelpSignals.kind, "duplicate"),
+            eq(forumHelpSignals.status, "pending"),
+          ))
+          .orderBy(asc(forumHelpSignals.id))
+          .for("no key update");
+      }
+      await assertActiveAccountForDrizzleMutation(tx, actorId);
+      if (scope === "any") await this.measureAdmission(tx, actorId, "admin.forum");
       await tx.update(forumTopics).set({ isSolved: true }).where(eq(forumTopics.id, topicId));
       if (topic.sectionId === HELP_SOLUTIONS_SERVICE_SECTION_ID) {
         await tx.update(forumHelpSignals)
@@ -3989,10 +4145,9 @@ export class DrizzleForumRepository {
         })
         .from(forumTopics)
         .where(eq(forumTopics.id, topicId))
-        .for("update");
+        .for("no key update");
       if (!topic) throw new ForumEntityNotFoundError("topic does not exist");
       if (scope === "own" && topic.authorId !== actorId) throw new ForumAuthorizationError("only the topic author may select an answer");
-      if (scope === "any") await this.measureAdmission(tx, actorId, "admin.forum");
       const [activeDuplicate] = await tx
         .select({ id: forumHelpDuplicateRelationships.id })
         .from(forumHelpDuplicateRelationships)
@@ -4018,6 +4173,44 @@ export class DrizzleForumRepository {
       if (
         topic.sectionId === HELP_SOLUTIONS_SERVICE_SECTION_ID
         && topic.bestAnswerPostId !== postId
+      ) {
+        // Both post-moderation rows are locked before their signal rows. Stable
+        // ID order avoids old/new answer lock inversions during replacements.
+        const affectedPostIds = [postId, topic.bestAnswerPostId]
+          .filter((id): id is string => id !== null).sort();
+        await tx.select({ id: forumPosts.id })
+          .from(forumPosts)
+          .where(and(eq(forumPosts.topicId, topicId), inArray(forumPosts.id, affectedPostIds)))
+          .orderBy(asc(forumPosts.id))
+          .for("no key update");
+        const affectedKinds = topic.bestAnswerPostId
+          ? or(
+              eq(forumHelpSignals.kind, "duplicate"),
+              and(
+                eq(forumHelpSignals.targetPostId, topic.bestAnswerPostId),
+                inArray(forumHelpSignals.kind, ["needs-review", "solution-outdated"]),
+              ),
+            )
+          : eq(forumHelpSignals.kind, "duplicate");
+        await tx.select({ id: forumHelpSignals.id })
+          .from(forumHelpSignals)
+          .where(and(
+            eq(forumHelpSignals.topicId, topicId),
+            eq(forumHelpSignals.status, "pending"),
+            affectedKinds,
+          ))
+          .orderBy(asc(forumHelpSignals.id))
+          .for("no key update");
+      }
+      await assertActiveAccountForDrizzleMutation(tx, actorId);
+      if (scope === "any") await this.measureAdmission(tx, actorId, "admin.forum");
+      // Active same-answer selection is a genuine no-op; inactive/missing
+      // actors are still denied before this success boundary.
+      if (topic.bestAnswerPostId === postId) {
+        return { topicAuthorId: topic.authorId, isSolved: topic.isSolved };
+      }
+      if (
+        topic.sectionId === HELP_SOLUTIONS_SERVICE_SECTION_ID
       ) {
         if (topic.bestAnswerPostId) {
           await tx.update(forumPosts)
@@ -4103,8 +4296,35 @@ export class DrizzleForumRepository {
     };
   }
 
+  /** Same-locale source correction is a success boundary even without a new revision. */
+  async admitSourceLocaleNoop(input: {
+    kind: "topic" | "post"; contentId: string; expectedRevisionId: string;
+    actorId: string; scope: "own" | "any";
+  }): Promise<void> {
+    await this.database.transaction(async (tx) => {
+      const [content] = input.kind === "topic"
+        ? await tx.select({
+          authorId: forumTopics.authorId,
+          revisionId: forumTopics.currentTitleRevisionId,
+        }).from(forumTopics).where(eq(forumTopics.id, input.contentId)).for("no key update")
+        : await tx.select({
+          authorId: forumPosts.authorId,
+          revisionId: forumPosts.currentRevisionId,
+        }).from(forumPosts).where(eq(forumPosts.id, input.contentId)).for("no key update");
+      if (!content) throw new ForumEntityNotFoundError("source locale content does not exist");
+      if (content.revisionId !== input.expectedRevisionId)
+        throw new ForumStateConflictError("source locale current revision changed");
+      if (input.scope === "own" && content.authorId !== input.actorId)
+        throw new ForumAuthorizationError("actor cannot correct another author's source locale");
+      await assertActiveAccountForDrizzleMutation(tx, input.actorId);
+    });
+  }
+
   async reviseTopicTitle(topicId: string, expectedRevisionId: string, revision: ForumRevisionContent, authorId: string, correctionScope?: "own" | "any") {
     return this.database.transaction(async (tx) => {
+      await tx.select({ id: forumTopics.id }).from(forumTopics)
+        .where(eq(forumTopics.id, topicId)).for("no key update");
+      await assertActiveAccountForDrizzleMutation(tx, authorId);
       if (correctionScope === "any") await this.measureAdmission(tx, authorId, "admin.forum");
       const [previous]=correctionScope==="any"?await tx.select({sourceLocale:forumTopicTitleRevisions.sourceLocale}).from(forumTopicTitleRevisions).where(eq(forumTopicTitleRevisions.id,expectedRevisionId)):[];
       await tx.insert(forumTopicTitleRevisions).values({ ...revision, topicId, authorId });
@@ -4120,6 +4340,9 @@ export class DrizzleForumRepository {
 
   async revisePostBody(postId: string, expectedRevisionId: string, revision: ForumRevisionContent, authorId: string, correctionScope?: "own" | "any") {
     return this.database.transaction(async (tx) => {
+      await tx.select({ id: forumPosts.id }).from(forumPosts)
+        .where(eq(forumPosts.id, postId)).for("no key update");
+      await assertActiveAccountForDrizzleMutation(tx, authorId);
       if (correctionScope === "any") await this.measureAdmission(tx, authorId, "admin.forum");
       const [previous]=correctionScope==="any"?await tx.select({sourceLocale:forumPostRevisions.sourceLocale}).from(forumPostRevisions).where(eq(forumPostRevisions.id,expectedRevisionId)):[];
       await tx.insert(forumPostRevisions).values({ ...revision, postId, authorId });
@@ -4158,8 +4381,15 @@ export class DrizzleForumRepository {
       if (replay) {
         if (replay.topicId !== input.topicId || replay.postId !== input.postId)
           throw new ForumStateConflictError("edit receipt references another post");
+        await assertActiveAccountForDrizzleMutation(tx, input.actorId);
         return;
       }
+      // Mention notifications have an independent topic FK. Resolve its
+      // KEY SHARE dependency before the post and actor mutexes, so an existing
+      // topic-title Complaint cannot hold topic FOR UPDATE while waiting on
+      // the same actor that a fresh edit already locked.
+      await tx.select({ id: forumTopics.id }).from(forumTopics)
+        .where(eq(forumTopics.id, input.topicId)).for("key share");
       const [post] = await tx.select({
         id: forumPosts.id, authorId: forumPosts.authorId,
         revisionId: forumPosts.currentRevisionId,
@@ -4170,6 +4400,7 @@ export class DrizzleForumRepository {
       if (post.authorId !== input.actorId) throw new ForumAuthorizationError("only author can edit post");
       if (post.revisionId !== input.expectedRevisionId)
         throw new ForumStateConflictError("post revision changed before edit");
+      await assertActiveAccountForDrizzleMutation(tx, input.actorId);
       await this.measureAdmission(tx, input.actorId, "posts.edit");
       const existing = await tx.select({ id: forumPostAttachments.attachmentId })
         .from(forumPostAttachments).where(eq(forumPostAttachments.postId, input.postId));
@@ -4359,9 +4590,9 @@ async function enforceHelpSignalWriteCooldown(
   actorId: string,
   policy: ForumWritePolicy,
 ): Promise<Date> {
-  // Signal submissions use the same bounded write policy, but keep their
-  // cooldown independent from normal topic/reply authoring.
-  await tx.select({ id: user.id }).from(user).where(eq(user.id, actorId)).for("update");
+  // Caller already holds the authoritative actor FOR NO KEY UPDATE mutex
+  // in the same transaction. Keep signal cooldown independent from posts,
+  // without upgrading that actor lock or opening a second connection.
   const [latest] = await tx.select({ createdAt: forumHelpSignals.createdAt })
     .from(forumHelpSignals)
     .where(eq(forumHelpSignals.submittedByUserId, actorId))

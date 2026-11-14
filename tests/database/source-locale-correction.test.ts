@@ -16,7 +16,9 @@ import { DrizzleContentTranslationStore } from "../../db/content-translation-sto
 import { historicalForumMeasureAdmission } from "./historical-forum-measure-admission";
 import { DrizzleForumRepository } from "../../db/forum-repository";
 import { ForumService } from "../../db/forum-service";
-import { createHyperdriveForumWriter } from "../../db/hyperdrive-forum";
+import { createHyperdriveForumWriter, ForumStorageUnavailableError } from "../../db/hyperdrive-forum";
+import { AccountInactiveError, AccountMissingError } from "../../db/account-state";
+import { runSourceLocaleCorrection } from "../../app/forum/mutations.server";
 
 function requiredDatabaseUrl(): string {
   const value = process.env.DATABASE_URL;
@@ -188,6 +190,74 @@ afterAll(async () => {
   await client.end();
 });
 
+
+async function correctionFacts() {
+  const result = await client.query<{
+    title_head: string; post_head: string;
+    titles: number; posts: number; history: number;
+  }>([
+    "select",
+    "(select current_title_revision_id from forum_topics where id='topic-1') as title_head,",
+    "(select current_revision_id from forum_posts where id='post-b') as post_head,",
+    "(select count(*)::int from forum_topic_title_revisions where topic_id='topic-1') as titles,",
+    "(select count(*)::int from forum_post_revisions where post_id='post-b') as posts,",
+    "(select count(*)::int from admin_history where target_id in ('topic-1','post-b')) as history",
+  ].join("\n"));
+  return result.rows[0];
+}
+
+async function currentCorrectionRevisions() {
+  expect(status(await correctTitle("author-a", "title-r1", "ru"))).toBe(302);
+  expect(status(await correctPost("author-b", "post-b", "post-b-r1", "he"))).toBe(302);
+  const forum = new DrizzleForumRepository(drizzle(client));
+  const title = (await forum.readTopicPage("topic-1"))!.title.id;
+  const post = (await forum.readPost("post-b"))!.body.id;
+  return { title, post };
+}
+
+async function deactivate(id: string) {
+  await client.query('update "user" set deactivated_at=now(),deactivated_by_user_id=$1,'
+    + "retain_at_least_until=now()+interval '2 years' where id=$1", [id]);
+}
+
+function nativeSql(value: unknown): string {
+  if (typeof value === "string") return value;
+  return value && typeof value === "object" && "text" in value
+    && typeof value.text === "string" ? value.text : "";
+}
+
+function pauseQuery(writer: Client, matches: (sql: string) => boolean) {
+  const original = writer.query;
+  let entered!: () => void, release!: () => void;
+  const observed = new Promise<void>(resolve => { entered = resolve; });
+  const permitted = new Promise<void>(resolve => { release = resolve; });
+  let triggered = false;
+  writer.query = ((...args: unknown[]) => {
+    if (!triggered && matches(nativeSql(args[0]))) {
+      triggered = true;
+      entered();
+      return permitted.then(() => Reflect.apply(original, writer, args));
+    }
+    return Reflect.apply(original, writer, args);
+  }) as typeof writer.query;
+  return { observed, resume: () => release(), restore: () => { writer.query = original; } };
+}
+
+function noopCorrection(
+  forum: ForumService, kind: "title" | "post", actorId: string, revisions: { title: string; post: string },
+  scope: "own" | "any" = "own",
+) {
+  return kind === "title"
+    ? forum.correctTopicTitleSourceLocale({
+      topicId: "topic-1", expectedRevisionId: revisions.title,
+      sourceLocale: "ru", actorId, scope,
+    })
+    : forum.correctPostBodySourceLocale({
+      topicId: "topic-1", postId: "post-b", expectedRevisionId: revisions.post,
+      sourceLocale: "he", actorId, scope,
+    });
+}
+
 describe("manual source-locale correction", () => {
   it("copies authoritative content into new revisions and isolates historical translations", async () => {
     await client.query(`
@@ -299,4 +369,130 @@ describe("manual source-locale correction", () => {
     expect(["ru", "de"]).toContain(current?.title.sourceLocale);
     expect(current?.title.originalContent).toBe("Original title");
   });
+  it("keeps active same-locale own/any corrections no-op and enforces Own/Any validation", async () => {
+    const revisions = await currentCorrectionRevisions();
+    const before = await correctionFacts();
+    expect(status(await correctTitle("author-a", revisions.title, "RU"))).toBe(302);
+    expect(status(await correctPost("author-b", "post-b", revisions.post, "HE"))).toBe(302);
+    expect(status(await correctTitle("moderator", revisions.title, "ru"))).toBe(302);
+    expect(status(await correctPost("moderator", "post-b", revisions.post, "he"))).toBe(302);
+    expect(status(await correctPost("author-a", "post-b", revisions.post, "he"))).toBe(403);
+    expect(status(await correctTitle("author-a", "title-r1", "ru"))).toBe(409);
+    expect(status(await correctTitle("author-a", revisions.title, "und"))).toBe(400);
+    expect(await correctionFacts()).toEqual(before);
+  });
+
+  it("denies inactive owner/moderator same-locale success for both content kinds without new facts", async () => {
+    const revisions = await currentCorrectionRevisions();
+    await deactivate("author-a");
+    await deactivate("author-b");
+    await deactivate("moderator");
+    const before = await correctionFacts();
+    for (const response of [
+      await correctTitle("author-a", revisions.title, "ru"),
+      await correctPost("author-b", "post-b", revisions.post, "he"),
+      await correctTitle("moderator", revisions.title, "ru"),
+      await correctPost("moderator", "post-b", revisions.post, "he"),
+    ]) {
+      expect(status(response)).toBe(401);
+      expect(response).toMatchObject({
+        data: { error: "unauthenticated", operation: "sourceLocaleCorrection" },
+      });
+      expect((response as { init?: { headers?: Record<string, string> } }).init?.headers?.["Cache-Control"])
+        .toBe("private, no-store");
+    }
+    expect(await correctionFacts()).toEqual(before);
+    const service = new ForumService(new DrizzleForumRepository(drizzle(client)));
+    await expect(noopCorrection(service, "title", "missing-user", revisions, "any"))
+      .rejects.toBeInstanceOf(AccountMissingError);
+    await expect(noopCorrection(service, "post", "missing-user", revisions, "any"))
+      .rejects.toBeInstanceOf(AccountMissingError);
+    expect(await correctionFacts()).toEqual(before);
+  });
+
+  it("maps late lifecycle/unavailable failures canonically without swallowing unexpected faults", async () => {
+    const ctx = await context("author-a");
+    const req = request("/he/topics/topic-1", {
+      intent: "correctTitleSourceLocale", expectedRevisionId: "title-r1", sourceLocale: "ru",
+    });
+    try {
+      for (const error of [new AccountInactiveError(), new AccountMissingError()]) {
+        const response = await runSourceLocaleCorrection(req, ctx.value, async () => { throw error; });
+        expect(response).toMatchObject({
+          data: { error: "unauthenticated", operation: "sourceLocaleCorrection" },
+          init: { status: 401, headers: { "Cache-Control": "private, no-store" } },
+        });
+      }
+      expect(await runSourceLocaleCorrection(req, ctx.value,
+        async () => { throw new ForumStorageUnavailableError(); })).toMatchObject({
+        data: { error: "unavailable", operation: "sourceLocaleCorrection" },
+        init: { status: 503, headers: { "Cache-Control": "private, no-store" } },
+      });
+      await expect(runSourceLocaleCorrection(req, ctx.value,
+        async () => { throw new TypeError("unexpected"); })).rejects.toThrow("unexpected");
+    } finally {
+      await ctx.close();
+    }
+  });
+
+  for (const kind of ["title", "post"] as const) {
+    it("denies " + kind + " same-locale no-op when deactivation commits before actor admission", async () => {
+      const revisions = await currentCorrectionRevisions();
+      const before = await correctionFacts();
+      const actor = kind === "title" ? "author-a" : "author-b";
+      const writer = scopedClient();
+      await writer.connect();
+      const paused = pauseQuery(writer, sql => /from "user" .*for no key update/i.test(sql));
+      try {
+        const forum = new ForumService(new DrizzleForumRepository(drizzle(writer)));
+        const pending = noopCorrection(forum, kind, actor, revisions);
+        await paused.observed;
+        await deactivate(actor);
+        paused.resume();
+        await expect(pending).rejects.toBeInstanceOf(AccountInactiveError);
+        expect(await correctionFacts()).toEqual(before);
+      } finally {
+        paused.resume();
+        paused.restore();
+        await writer.end();
+      }
+    }, 30_000);
+
+    it("holds " + kind + " no-op actor admission through COMMIT against deactivation", async () => {
+      const revisions = await currentCorrectionRevisions();
+      const before = await correctionFacts();
+      const actor = kind === "title" ? "author-a" : "author-b";
+      const writer = scopedClient();
+      await writer.connect();
+      const paused = pauseQuery(writer, sql => /^commit$/i.test(sql.trim()));
+      let deactivatorOpen = false;
+      try {
+        const forum = new ForumService(new DrizzleForumRepository(drizzle(writer)));
+        const pending = noopCorrection(forum, kind, actor, revisions);
+        await paused.observed;
+        expect(await correctionFacts()).toEqual(before);
+        await client.query("begin");
+        deactivatorOpen = true;
+        await client.query("set local lock_timeout = '180ms'");
+        await expect(client.query('update "user" set deactivated_at=now(),'
+          + "deactivated_by_user_id=$1,retain_at_least_until=now()+interval '2 years' where id=$1",
+        [actor])).rejects.toMatchObject({ code: "55P03" });
+        await client.query("rollback");
+        deactivatorOpen = false;
+        paused.resume();
+        await pending;
+        expect(await correctionFacts()).toEqual(before);
+        await deactivate(actor);
+        await expect(noopCorrection(forum, kind, actor, revisions))
+          .rejects.toBeInstanceOf(AccountInactiveError);
+        expect(await correctionFacts()).toEqual(before);
+      } finally {
+        paused.resume();
+        paused.restore();
+        if (deactivatorOpen) await client.query("rollback");
+        await writer.end();
+      }
+    }, 30_000);
+  }
+
 });

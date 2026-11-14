@@ -119,7 +119,13 @@ export class ForumService {
       throw new ForumStateConflictError("topic title current revision changed");
     }
     assertSourceLocaleCorrectionAuthorized(topic.authorId, input.actorId, input.scope);
-    if (topic.title.sourceLocale === sourceLocale) return;
+    if (topic.title.sourceLocale === sourceLocale) {
+      await this.repository.admitSourceLocaleNoop({
+        kind: "topic", contentId: input.topicId,
+        expectedRevisionId: input.expectedRevisionId, actorId: input.actorId, scope: input.scope,
+      });
+      return;
+    }
     try {
       return await this.repository.reviseTopicTitle(
         input.topicId,
@@ -157,7 +163,13 @@ export class ForumService {
       throw new ForumStateConflictError("post body current revision changed");
     }
     assertSourceLocaleCorrectionAuthorized(post.authorId, input.actorId, input.scope);
-    if (post.body.sourceLocale === sourceLocale) return;
+    if (post.body.sourceLocale === sourceLocale) {
+      await this.repository.admitSourceLocaleNoop({
+        kind: "post", contentId: input.postId,
+        expectedRevisionId: input.expectedRevisionId, actorId: input.actorId, scope: input.scope,
+      });
+      return;
+    }
     try {
       return await this.repository.revisePostBody(
         input.postId,

@@ -16,6 +16,7 @@ import { action as sectionAction } from "../routes/section";
 import { action as topicAction } from "../routes/topic";
 import { ForumWriteRateLimitError } from "../../db/forum-write-policy";
 import { UserMeasureRestrictedError } from "../../db/user-measure-policy";
+import { AccountInactiveError, AccountMissingError } from "../../db/account-state";
 import { ForumAuthorizationError, ForumEntityNotFoundError, ForumStateConflictError } from "../../db/forum-repository";
 import {
   contentGenerationActionContext,
@@ -367,6 +368,29 @@ describe("forum write route actions", () => {
     expect(crossOrigin.pinTopic).not.toHaveBeenCalled();
   });
 
+  it("maps late pin/unpin lifecycle rejection to private 401 without success redirect", async () => {
+    for (const intent of ["pinTopic", "unpinTopic"] as const) {
+      for (const error of [new AccountInactiveError(), new AccountMissingError()]) {
+        const w = writer();
+        vi.mocked(w[intent]).mockRejectedValueOnce(error);
+        const result = await topicAction({
+          request: request("/en/topics/t", { intent }),
+          params: { locale: "en", topicId: "t" },
+          context: context(w, true, ["forum.topic.pin"]),
+        });
+        expect(result).toMatchObject({
+          data: { error: "unauthenticated" },
+          init: { status: 401, headers: { "Cache-Control": "private, no-store" } },
+        });
+        expect(result).not.toBeInstanceOf(Response);
+        expect(JSON.stringify(result)).not.toMatch(/AccountInactive|AccountMissing|deactivated|Location/);
+        expect(w[intent]).toHaveBeenCalledExactlyOnceWith({
+          topicId: "t", actorId: "session-user",
+        });
+      }
+    }
+  });
+
   it("advances only the authenticated user's topic read state", async () => {
     const forumWriter = writer();
     await topicAction({
@@ -378,6 +402,27 @@ describe("forum write route actions", () => {
       userId: "session-user",
       topicId: "t",
       postId: "post-3",
+    });
+  });
+
+  it("maps late markTopicRead inactive/missing admission to private 401 without ok success", async () => {
+    const forumWriter = writer();
+    for (const error of [new AccountInactiveError(), new AccountMissingError()]) {
+      vi.mocked(forumWriter.advanceTopicReadState).mockRejectedValueOnce(error);
+      const response = await topicAction({
+        request: request("/en/topics/t", { intent: "markTopicRead", postId: "post-3" }),
+        params: { locale: "en", topicId: "t" },
+        context: context(forumWriter),
+      });
+      expect(response).toMatchObject({
+        data: { error: "unauthenticated" },
+        init: { status: 401, headers: { "Cache-Control": "private, no-store" } },
+      });
+      expect(JSON.stringify(response)).not.toMatch(/"ok":true|AccountInactive|AccountMissing|deactivated/);
+    }
+    expect(forumWriter.advanceTopicReadState).toHaveBeenCalledTimes(2);
+    expect(forumWriter.advanceTopicReadState).toHaveBeenLastCalledWith({
+      userId: "session-user", topicId: "t", postId: "post-3",
     });
   });
 
@@ -707,6 +752,34 @@ describe("forum write route actions", () => {
     expect(JSON.stringify(response)).not.toContain("forum write cooldown is active");
   });
 
+  it("keeps canonical solution Own/Any late lifecycle denial private, with no false confirmation redirect", async () => {
+    for (const intent of ["markSolved", "selectBestAnswer"] as const) {
+      for (const scope of ["own", "any"] as const) {
+        for (const error of [new AccountInactiveError(), new AccountMissingError()]) {
+          const w = writer();
+          const fn = intent === "markSolved" ? w.markTopicSolved : w.selectBestAnswer;
+          fn.mockRejectedValueOnce(error);
+          const result = await topicAction({
+            request: request("/en/topics/topic-1", {
+              intent, postId: "post-2", operationScope: scope, actorId: "forged",
+            }),
+            params: { locale: "en", topicId: "topic-1" },
+            context: context(w, true, ["forum.solution.manageOwn", "forum.solution.manageAny"]),
+          });
+          expect(result).toMatchObject({
+            data: { error: "unauthenticated" },
+            init: { status: 401, headers: { "Cache-Control": "private, no-store" } },
+          });
+          expect(result).not.toBeInstanceOf(Response);
+          expect(JSON.stringify(result)).not.toMatch(/AccountInactive|AccountMissing|deactivated|solutionPrompt|Location|ok.true/);
+          expect(fn).toHaveBeenCalledWith(expect.objectContaining({
+            topicId: "topic-1", actorId: "session-user", scope,
+          }));
+        }
+      }
+    }
+  });
+
   it("derives solution scope from server permissions and ignores forged authorization fields", async () => {
     const ownWriter = writer();
     await topicAction({
@@ -815,6 +888,108 @@ describe("forum write route actions", () => {
     });
     expect(invalid).toMatchObject({ data: { error: "invalid" }, init: { status: 400 } });
     expect(missingReason.setHelpSolutionModeration).not.toHaveBeenCalled();
+  });
+
+  it("maps all five duplicate/appeal intents to private late lifecycle 401 for the trusted actor", async () => {
+    const commands = [
+      { intent: "confirmHelpDuplicate", method: "confirmHelpDuplicate", fields: { originalTopicId: "help-original" } },
+      { intent: "removeHelpDuplicate", method: "removeHelpDuplicate", fields: { expectedRelationshipId: "rel-1" } },
+      { intent: "appealHelpDuplicate", method: "appealHelpDuplicate", fields: { expectedRelationshipId: "rel-1", explanation: "Not a duplicate" } },
+      { intent: "acceptHelpDuplicateAppeal", method: "resolveHelpDuplicateAppeal", fields: { expectedAppealId: "appeal-1" } },
+      { intent: "rejectHelpDuplicateAppeal", method: "resolveHelpDuplicateAppeal", fields: { expectedAppealId: "appeal-1" } },
+    ] as const;
+    for (const command of commands) {
+      for (const error of [new AccountInactiveError(), new AccountMissingError()]) {
+        const w = writer();
+        w[command.method].mockRejectedValueOnce(error);
+        const result = await topicAction({
+          request: request("/en/topics/help-duplicate", {
+            intent: command.intent, ...command.fields, actorId: "forged",
+          }),
+          params: { locale: "en", topicId: "help-duplicate" },
+          context: context(w, true, command.intent === "appealHelpDuplicate"
+            ? [] : ["forum.helpDuplicate.manage"]),
+        });
+        expect(result).toMatchObject({
+          data: { error: "unauthenticated" },
+          init: { status: 401, headers: { "Cache-Control": "private, no-store" } },
+        });
+        expect(result).not.toBeInstanceOf(Response);
+        expect(JSON.stringify(result)).not.toMatch(/AccountInactive|AccountMissing|deactivated|Location|ok.true/);
+        expect(w[command.method]).toHaveBeenCalledWith(expect.objectContaining({
+          actorId: "session-user",
+        }));
+      }
+    }
+  });
+
+  it("maps all three Help moderation late AccountState denials to private 401", async () => {
+    for (const intent of ["markSolutionNeedsReview", "markSolutionOutdated", "clearSolutionModeration"] as const) {
+      for (const error of [new AccountInactiveError(), new AccountMissingError()]) {
+        const w = writer();
+        w.setHelpSolutionModeration.mockRejectedValueOnce(error);
+        const result = await topicAction({
+          request: request("/en/topics/help-question", {
+            intent, expectedBestAnswerPostId: "answer-1",
+            ...(intent === "markSolutionOutdated" ? { outdatedReason: "No longer safe" } : {}),
+            actorId: "forged",
+          }),
+          params: { locale: "en", topicId: "help-question" },
+          context: context(w, true, ["forum.solution.manageAny"]),
+        });
+        expect(result).toMatchObject({
+          data: { error: "unauthenticated" },
+          init: { status: 401, headers: { "Cache-Control": "private, no-store" } },
+        });
+        expect(result).not.toBeInstanceOf(Response);
+        expect(JSON.stringify(result)).not.toMatch(/AccountInactive|AccountMissing|deactivated|Location|ok.true/);
+        expect(w.setHelpSolutionModeration).toHaveBeenCalledWith(expect.objectContaining({
+          actorId: "session-user", expectedBestAnswerPostId: "answer-1",
+        }));
+      }
+    }
+  });
+
+  it("maps all four late Help signal AccountState denials to private 401 without false redirect", async () => {
+    for (const intent of ["submitHelpSignal", "withdrawHelpSignal", "acceptHelpSignal", "rejectHelpSignal"] as const) {
+      for (const error of [new AccountInactiveError(), new AccountMissingError()]) {
+        const w = writer();
+        const method = intent === "submitHelpSignal"
+          ? w.createHelpSignal
+          : intent === "withdrawHelpSignal"
+            ? w.withdrawHelpSignal : w.resolveHelpSignal;
+        method.mockRejectedValueOnce(error);
+        const ctx = context(w, true, ["forum.helpSignal.create", "forum.helpNeedsDetails.manage"]);
+        if (intent === "acceptHelpSignal" || intent === "rejectHelpSignal") {
+          ctx.set(forumReaderContext, {
+            readHelpSignal: vi.fn(async () => ({
+              id: "signal-1", kind: "needs-details", topicId: "help-question",
+              targetPostId: null, proposedOriginalTopicId: null,
+              submittedByUserId: "other-user", explanation: "Explain this",
+              status: "pending", createdAt: new Date(),
+              resolvedByUserId: null, resolvedAt: null,
+            })),
+          } as never);
+        }
+        const result = await topicAction({
+          request: request("/en/topics/help-question", {
+            intent, kind: "needs-details", explanation: "Missing details",
+            signalId: "signal-1", actorId: "forged",
+          }),
+          params: { locale: "en", topicId: "help-question" },
+          context: ctx,
+        });
+        expect(result).toMatchObject({
+          data: { error: "unauthenticated" },
+          init: { status: 401, headers: { "Cache-Control": "private, no-store" } },
+        });
+        expect(result).not.toBeInstanceOf(Response);
+        expect(JSON.stringify(result)).not.toMatch(/AccountInactive|AccountMissing|deactivated|Location|ok.true/);
+        expect(method).toHaveBeenCalledWith(expect.objectContaining({
+          actorId: "session-user",
+        }));
+      }
+    }
   });
 
   it("routes Help signals through their exact server permissions", async () => {

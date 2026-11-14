@@ -9,6 +9,7 @@ import {
   ForumEntityNotFoundError, ForumStateConflictError, ForumTopicClosedError,
 } from "../../db/forum-repository";
 import { AuthorizationUnavailableError } from "../../db/authorization-service";
+import { AccountInactiveError, AccountMissingError } from "../../db/account-state";
 import { topicAction } from "./actions.server";
 
 const params = { locale: "en", topicId: "target" };
@@ -141,6 +142,30 @@ describe("AP-08 canonical closure HTTP", () => {
     const broken = writer();
     broken.setTopicClosed.mockRejectedValueOnce(failure);
     await expect(submit(form(), context(broken))).rejects.toBe(failure);
+  });
+
+  it("returns private 401 on late lifecycle denial for close/reopen and inline no-op, never success", async () => {
+    for (const intent of ["closeTopic", "reopenTopic"] as const) {
+      for (const error of [new AccountInactiveError(), new AccountMissingError()]) {
+        const w = writer();
+        w.setTopicClosed.mockRejectedValueOnce(error);
+        const result = await submit(form({ ...canonical, intent }), context(w));
+        expect(result).toMatchObject({
+          data: { error: "unauthenticated" },
+          init: { status: 401, headers: { "Cache-Control": "private, no-store" } },
+        });
+        expect(result).not.toBeInstanceOf(Response);
+        expect(JSON.stringify(result)).not.toMatch(/AccountInactive|AccountMissing|deactivated|Location|ok.true/);
+        const inline = writer();
+        inline.setTopicClosed.mockRejectedValueOnce(error);
+        const inlineResult = await submit(form({ ...canonical, intent, inlineQuickAction: "1" }), context(inline));
+        expect(inlineResult).toMatchObject({
+          data: { error: "unauthenticated" },
+          init: { status: 401, headers: { "Cache-Control": "private, no-store" } },
+        });
+        expect(JSON.stringify(inlineResult)).not.toMatch(/ok.true|deactivated|Location/);
+      }
+    }
   });
 
   it("returns a distinct private topicClosed 409 for rejected new replies without HTTP preflight", async () => {
