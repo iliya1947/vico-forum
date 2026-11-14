@@ -1,5 +1,13 @@
 # ChatGPT-6 — personal log
 
+## SA04-J12 correction — ACTIVE ASSIGNMENT: connected acceptance
+
+Returned baseline: `85f1de98230fb495e90dcd8923ebfcf0f43bad3c`. Mira whole-J source/native review found no confirmed production-J defect, but the accepted full-J connected acceptance is incomplete.
+
+Close this one packet only: exercise a canonical Forum mutation through the built Worker with a real Better Auth session and disposable PostgreSQL so an authenticated request is established, a fixture deactivation commits before authoritative writer admission, and the request ends in the generic private/no-store lifecycle denial with no new Forum fact. Include the accepted actual-route unavailable/unexpected safety check. Add meaningful real Chromium lifecycle coverage for the full-J listed publication/reply/edit/profile, Forum moderation/Help, inbox and read-state families, proving denial/state preservation/no false success as applicable.
+
+Keep the existing native/J12 evidence. Do not touch production unless these connected checks expose a real current-J defect; if they do, fix only that defect and regenerate evidence. No Stage 6, #315, K+, Complaint N, SA-05 or permanent-doc work. Run applicable exact-head CI and connected browser gates, then AUTHOR STOP on one new stable exact Draft #330 head for Mira whole-J re-review. Lev and Mark remain inactive.
+
 ## SA04-J12 — cumulative implementation/evidence complete / AUTHOR STOP
 
 - **Stable exact implementation:** cumulative Draft #330 `85f1de98230fb495e90dcd8923ebfcf0f43bad3c`, open/draft/unmerged. J11 Mira PASS baseline `7212aef429f856db0c2d5e7a9a621739898fed12`. Exactly three J12 commits, exclusively two existing native PostgreSQL test files. No J12 production changes.
