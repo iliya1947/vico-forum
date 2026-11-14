@@ -319,7 +319,7 @@ describe('v2 upload writer fencing with actual PostgreSQL',()=>{
    expect(denied.headers.get('cache-control')).toContain('no-store');
    expect(await denied.json()).toEqual({error:'unauthenticated'});
    expect(objects.size).toBe(0);
-   expect(await store.admitUpload(ownerId,committed.contextKey,committed.draftId,committed.id))
+   await expect(store.admitUpload(ownerId,committed.contextKey,committed.draftId,committed.id))
     .rejects.toBeInstanceOf(AccountInactiveError);
    const after=await client.query('select count(*)::int n from forum_attachment_draft_refs where attachment_id=$1',[committed.id]);
    expect(after.rows).toEqual(before.rows);
