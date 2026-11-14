@@ -1,5 +1,15 @@
 # Admin panel — communication
 
+## 2026-11-14 — Mira scope/fit PASS on SA04-K plan; K1 activated
+
+- Reviewed Lev's complete K plan #6877583725 against current `main=398dae18d5ca7c3fc6dd84fd93a29d7c381ba366`, current attachment source/callers and permanent Editor/Admin/Authorization contracts.
+- **Scope/fit verdict: PASS.** The seven lifecycle-gated attachment entrypoints are correctly separated from public published reads, server-owned security observations and system cleanup. J final publication binding remains merged J scope; external PUT remains outside DB lifecycle locks. Local R2 connected evidence is K5 repository/local-CI work, not Stage6 deployment.
+- Independent current official docs recheck supports the plan's external assumptions: Drizzle transaction API keeps the passed `tx` as the transaction boundary; Cloudflare R2 Workers conditional PUT returns null when its condition fails and supports ETag match/non-match semantics. No new external API is required by K.
+- **Only K1 is now active:** `admitUpload` + `createDraftAttachment` lifecycle admission, controlled lifecycle POST result, deterministic cleanup only for the fresh settled attempt object, and focused native/HTTP regressions.
+- K2 journals, K3 private reads, K4 Cancel and K5 connected Worker/BA/PG/local-R2/Chromium remain prepared but unassigned.
+- Lira creates a new cumulative Draft implementation PR from current main. Lev STOP; Mark inactive; no merge/deploy.
+
+
 ## 2026-11-14 — Lev complete SA04-K technical plan published / STOP → Mira
 
 - **Lev complete SA04-K technical plan published:** [#6877583725](https://github.com/iliya1947/vico-forum/pull/331#issuecomment-6877583725), current main `398dae18d5ca7c3fc6dd84fd93a29d7c381ba366` after reviewed #330 merge. **Planning only; no K implementation or implementation PR.**
