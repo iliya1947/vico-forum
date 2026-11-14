@@ -134,11 +134,14 @@ export default {
     context.set(contentGenerationAdmissionContext, createHyperdriveContentGenerationAdmission(webConnectionString, undefined, ownerUserId));
     context.set(contentGenerationActionContext, DISABLED_CONTENT_GENERATION_ACTION_RUNTIME);
     const response = await requestHandler(request, context);
-    // Framework-generated unexpected 5xx on a failed mutation may have no
-    // action/error cache headers. They must not inherit a public cache policy.
-    // Preserve the original status/body/error handling and framework cookies.
+    // Framework-generated unexpected 5xx can lack route error cache headers.
+    // Privatize failed mutations and the private attachment GET/list resources,
+    // without changing the public forum GET cache policy or error handling.
+    const pathname = new URL(request.url).pathname;
+    const privateAttachmentRead = (request.method === "GET" || request.method === "HEAD")
+      && (pathname === "/api/attachments" || pathname.startsWith("/api/attachments/file/"));
     const privateFailure = response.status >= 500
-      && request.method !== "GET" && request.method !== "HEAD";
+      && ((request.method !== "GET" && request.method !== "HEAD") || privateAttachmentRead);
     const finalResponse = privateFailure
       ? new Response(response.body, {
         status: response.status,
