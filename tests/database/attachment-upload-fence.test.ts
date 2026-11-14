@@ -312,7 +312,7 @@ describe('v2 upload writer fencing with actual PostgreSQL',()=>{
   const committed=upload('section:attachment-section:new',crypto.randomUUID());
   await store.createDraftAttachment(committed);
   const before=await client.query('select count(*)::int n from forum_attachment_draft_refs where attachment_id=$1',[committed.id]);
-  const {storage,objects,control}=memoryStorage();
+  const {storage,objects}=memoryStorage();
   await client.query('update "user" set deactivated_at=now(),deactivated_by_user_id=$1,retain_at_least_until=now()+interval \'2 years\' where id=$1',[ownerId]);
   try{
    const denied=await send(storage);expect(denied.status).toBe(401);
