@@ -479,6 +479,9 @@ try:
         # lock, observe the Worker blocked on that backend, then deactivate
         # before releasing. No fresh object/journal/ref may appear.
         race_page.goto(base + "/en/topics/" + topic_id, wait_until="networkidle")
+        # Synchronous Playwright route interception would deadlock while Python
+        # observes PostgreSQL. No external requests are generated after mount.
+        race_ctx.unroute("**/*")
         race_op, race_asset = str(uuid4()), str(uuid4())
         race_before = stats(race_id)
         blocker = PgBarrier()
@@ -515,6 +518,9 @@ try:
         # reservation and activation have completed; the test holds the
         # remainder until after fixture deactivation commits.
         delayed.goto(base + "/en/topics/" + topic_id, wait_until="networkidle")
+        # Synchronous Playwright route interception would deadlock while Python
+        # observes PostgreSQL. No external requests are generated after mount.
+        delayed_ctx.unroute("**/*")
         delayed_op, delayed_asset = str(uuid4()), str(uuid4())
         delayed_before = stats(delayed_id)
         old_keys = {row["object_key"] for row in sql(
@@ -543,6 +549,9 @@ try:
         # change win before activation can acquire the journal row. The
         # real Worker must not issue a successful payload PUT after denial.
         journal_page.goto(base + "/en/topics/" + topic_id, wait_until="networkidle")
+        # Synchronous Playwright route interception would deadlock while Python
+        # observes PostgreSQL. No external requests are generated after mount.
+        journal_ctx.unroute("**/*")
         journal_op, journal_asset = str(uuid4()), str(uuid4())
         before_keys = {row["object_key"] for row in sql(
             "select object_key from forum_attachment_upload_objects")}
