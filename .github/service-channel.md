@@ -1,5 +1,12 @@
 # Admin panel — communication
 
+## SA04-J12 connected correction — first evidence block PASS; remaining gate open
+
+- Returned whole-J baseline `85f1de98230fb495e90dcd8923ebfcf0f43bad3c`. Implementation Draft #330 now exact `b233ad6db2b4519204c8a2e5177f234d15a4131e`, open/draft/unmerged. Added only `scripts/smoke-forum-accountstate-local.ts` plus a CI step; no production mutation or schema change.
+- Verified repository/local actual built Worker → real Better Auth session cookie → canonical Forum reply action → PostgreSQL row-lock wait **after request preflight** → committed actor deactivation → authoritative transactional denial: **401**, **private/no-store**, no redirect, unchanged Forum post/notification/History facts and no denied revision. Positive real-session/canonical-route reply control passed; database log explicitly reports connected smoke PASS. This is distinct from earlier J12 synthetic RouterContextProvider native evidence.
+- [Exact-head CI 43575620554](https://github.com/iliya1947/vico-forum/actions/runs/43575620554) database/checks SUCCESS (PG17 **923/923**, app **2278/2278**); [SA-03 Chromium 43575620634](https://github.com/iliya1947/vico-forum/actions/runs/43575620634) SUCCESS; [AP-10 Chromium 43575620614](https://github.com/iliya1947/vico-forum/actions/runs/43575620614) **4/4 SUCCESS**. Initial CI failures were test-fixture Better Auth signup rate limits and overly broad static HTML scanning, corrected without a production change.
+- **Still open, no Mira whole-J PASS:** actual-route safe storage-unavailable vs unexpected behavior and full J-specific Chromium lifecycle acceptance (publication/reply/edit/profile, Forum moderation/Help, inbox/read-state). These are acceptance/evidence tasks, not presumed production defects. Lev/Mark inactive; no merge or deployment.
+
 ## SA04-J — Mira whole-J coordinator review: RETURNED TO LIRA
 
 - Reviewed cumulative Draft #330 stable exact `85f1de98230fb495e90dcd8923ebfcf0f43bad3c` against the accepted full-J plan and current source-of-truth. The implementation inventory is complete: 24 public actor-owned Forum writers including the F-protected presence path, plus both source-locale same-locale service no-op entrypoints. Source/native review found **0 confirmed production-J defects**.
