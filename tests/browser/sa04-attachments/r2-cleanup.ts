@@ -59,11 +59,16 @@ try {
       break;
     }
     case "orphan-reservation": {
+      // This is a unique, synthetic marker fixture, not the application
+      // reservation path. Miniflare's Node proxy cannot serialize Headers;
+      // use an explicit fresh-key check and ordinary local-only PUT instead.
+      if (await bucket.head(command.key)) {
+        throw new Error("synthetic orphan reservation key already occupied");
+      }
       const created = await bucket.put(command.key, "", {
-        onlyIf: new Headers({ "If-None-Match": "*" }),
         customMetadata: { kind: ATTACHMENT_RESERVATION_KIND },
       });
-      if (!created) throw new Error("synthetic orphan reservation key already occupied");
+      if (!created) throw new Error("synthetic orphan reservation creation failed");
       result = { reserved: true };
       break;
     }
