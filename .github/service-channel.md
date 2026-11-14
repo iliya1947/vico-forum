@@ -1,5 +1,17 @@
 # Admin panel — communication
 
+## 2026-11-14 — Mira bounded K4 PASS; K5 activated
+
+- Reviewed cumulative Draft #332 exact `8f89a7101d356eb52ccf1021a63341a4e0a37967` against accepted K plan and unchanged main `398dae18d5ca7c3fc6dd84fd93a29d7c381ba366`. **K4 verdict: PASS — 0 confirmed current-K4 defects.**
+- Production delta is exactly one lifecycle guard in whole-operation Cancel: existing draft scope → AccountState actor NKU → existing retire-generation/ref deletion. No R2/publication/editor production change.
+- Native K4 evidence confirms active empty/live/terminal idempotence, inactive/missing no fact change, actor lock through COMMIT, and real Cancel↔metadata-finalization serialization in both orders through the existing draft scope. Exact owner/context/operation scoping and physical asset retention are preserved.
+- Canonical DELETE regressions preserve 401/503/unexpected separation, no bucket side effects, per-file DELETE 405 and AP-10-independent active Cancel. Editor production code is unchanged; focused test confirms denied server Cancel still performs only local reset/abort and ignores late ACK.
+- Exact-head evidence independently rechecked: CI 43616566018 SUCCESS — PG17 956/956, K4 7/7, app 2306/2306, route 42/42, editor 21/21; AP-10/SA-01/SA-03/SA04-J12 same-head browser workflows SUCCESS.
+- **K5 now active for Lira** in the same cumulative #332. K5 must close the full accepted §8 evidence contract, including built Worker + genuine Better Auth + PostgreSQL + **local-only R2** and Chromium, late PUT/ambiguous ACK/cleanup/private-GET privacy. Existing browser greens are not substitutes for K-specific connected R2 proof.
+- K5 is the final implementation slice. After AUTHOR STOP, Mira performs whole-K coordinator review; Lev is assigned only after Mira PASS on the same stable exact head.
+- No merge/deploy; L–S/SA05/#315/docs/Stage6 remain out.
+
+
 ## 2026-11-14 — SA04-K4 Lira AUTHOR STOP → Mira bounded review
 
 - **Implementation:** cumulative [Draft PR #332](https://github.com/iliya1947/vico-forum/pull/332), stable exact `8f89a7101d356eb52ccf1021a63341a4e0a37967` from Mira-accepted K3 `dae431fc920c79cad654627052365a3fd2380fe4`; open/draft/unmerged. Only bounded K4 was added; K5 remains unassigned.
