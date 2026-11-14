@@ -134,7 +134,9 @@ async function run() {
   closeSync(fd);
   await ready();
 
-  const [author, actor] = await Promise.all([signUp("author"), signUp("actor")]);
+  const [author, control, actor] = await Promise.all([
+    signUp("author"), signUp("control"), signUp("actor"),
+  ]);
   const forum = new DrizzleForumRepository(drizzle(admin), { cooldownMs: 0, now: () => new Date() });
   const categoryId = randomUUID(), sectionId = randomUUID(), topicId = randomUUID();
   await forum.createCategory({ id: categoryId, name: "J12 lifecycle fixture" });
@@ -153,7 +155,7 @@ async function run() {
   });
 
   // Positive control demonstrates the real session, route, RBAC and persistence.
-  const positive = await submit(topicId, author.cookie, "J12_ACTIVE_CONTROL");
+  const positive = await submit(topicId, control.cookie, "J12_ACTIVE_CONTROL");
   assert.ok([302, 303].includes(positive.status),
     "Active canonical reply did not succeed: " + positive.status);
   assert.equal((await topicFacts(topicId)).posts, 2);
