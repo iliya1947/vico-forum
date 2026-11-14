@@ -1,5 +1,12 @@
 # ChatGPT-6 — personal log
 
+## SA04-K5 subtask 2/5 — test helper CI stabilization DONE, Lira STOP
+
+- Audited baseline `02a9c00063eb2a890837154c449c2984841834c2` had only `no-undef` errors in two test-only Node ESM helper files because ESLint config assigns Node globals to `.github/scripts/**/*.mjs` but not these new browser test helpers. Exact error count 12 on [old CI 43624481844](https://github.com/iliya1947/vico-forum/actions/runs/43624481844). No confirmed application defect.
+- Replaced implicit `process`/`URL`/`Buffer` globals with explicit standard `node:process`, `node:url`, `node:buffer` imports **in those two helper files only**, no eslint config, production code, dependency, schema or runtime change.
+- Final current #332 exact head: `328eb7e8cc60f103d34cfbc0ed8f5720f73da1d6`. [CI 43630454615](https://github.com/iliya1947/vico-forum/actions/runs/43630454615) SUCCESS, PostgreSQL **956/956**, app **2306/2306**, lint/typecheck/build/schema/Worker smoke PASS; [connected K5 43630454673](https://github.com/iliya1947/vico-forum/actions/runs/43630454673) SUCCESS with **16 connected cases**. Exact-head AP-10/SA-01/SA-03/J12 browser workflows SUCCESS.
+- Developer-directed five-subtask queue: audit 1/5 DONE (#331 comment #6882718856), infra/CI 2/5 DONE (here), **pause; next 3/5 only after direct `...`**. Stage 3 is remaining deterministic connected late PUT/unknown ACK/claim/lease/cleanup evidence, stage 4 mounted browser editor interactions, stage 5 whole-K exact-head checks and AUTHOR STOP. No subtask 3 work, whole-K review, merge/deploy.
+
 ## SA04-K5 — ACTIVE ASSIGNMENT: cumulative connected closure
 
 Continue cumulative Draft #332 from accepted K4 exact `8f89a7101d356eb52ccf1021a63341a4e0a37967`. Accepted complete K plan: #331 comment #6877583725. **K5 is the final K implementation/evidence slice.**
