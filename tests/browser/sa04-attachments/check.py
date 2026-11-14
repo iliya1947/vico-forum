@@ -1081,6 +1081,249 @@ try:
         record("actual-cleanup-claim-deletes-r2-before-late-conditional-put",
                no_resurrection=True, actual_r2_deleted=True, no_asset_ref=True)
 
+
+        # K5 mounted-editor lifecycle matrix. These are real React-rendered
+        # reply forms and XHRs against the built Worker/Better Auth/local R2.
+        # A lost HTTP ACK is simulated only after route.fetch sees real 201.
+        retry_ctx, retry_page, retry_id = account(browser, "ui-retry", "203.0.113.172")
+        remove_ctx, remove_page, remove_id = account(browser, "ui-remove", "203.0.113.173")
+        cancel_ctx, cancel_page, cancel_id = account(browser, "ui-cancel", "203.0.113.174")
+        denied_ctx, denied_page, denied_id = account(browser, "ui-denied", "203.0.113.175")
+
+        def mounted_reply(page):
+            response = page.goto(base + "/en/topics/" + topic_id, wait_until="networkidle")
+            assert response and response.status == 200
+            form = page.locator('form.topic-reply-form')
+            expect(form).to_have_count(1)
+            resume = page.locator("button.forum-composer-resume")
+            if resume.count() and resume.is_visible():
+                resume.click()
+            expect(form).to_be_visible()
+            if form.locator(".markdown-editor").get_attribute("data-authoring") != "advanced":
+                form.get_by_role("button", name="Advanced", exact=True).click()
+            return form, form.locator("textarea#reply-body")
+
+        retry_form, retry_editor = mounted_reply(retry_page)
+        retry_editor.fill("K5 mounted text survives missing upload acknowledgement")
+        retry_operation = retry_form.locator('input[name="editorOperationId"]').input_value()
+        retry_bytes = b"K5 genuine selected File retained through ambiguous ACK"
+        routed = []
+        def dropped_browser_ack(route):
+            request = route.request
+            routed.append({
+                "operation": request.headers.get("x-vico-operation-id"),
+                "asset": request.headers.get("x-vico-attachment-id"),
+                "bytes": request.post_data_buffer,
+            })
+            upstream = route.fetch()
+            assert upstream.status == 201, (upstream.status, upstream.text()[:220])
+            route.abort("failed")
+        retry_page.route("**/api/attachments", dropped_browser_ack)
+        try:
+            retry_form.locator('input[type="file"]').set_input_files({
+                "name": "ui-retry.txt", "mimeType": "text/plain",
+                "buffer": retry_bytes,
+            })
+            expect(retry_form.locator(".markdown-editor-attachment.is-error")).to_have_count(1)
+        finally:
+            retry_page.unroute("**/api/attachments", dropped_browser_ack)
+        assert len(routed) == 1 and routed[0]["operation"] == retry_operation
+        assert routed[0]["bytes"] == retry_bytes
+        assert json.loads(retry_form.locator('input[name="editorAttachmentIds"]').input_value()) == []
+        expect(retry_editor).to_have_value("K5 mounted text survives missing upload acknowledgement")
+        committed_retry = sql("""select id,object_key from forum_attachments
+          where id=$1 and owner_id=$2""", [routed[0]["asset"], retry_id])
+        assert len(committed_retry) == 1 and committed_retry[0]["object_key"]
+        retry_before = stats(retry_id)
+        retry_responses = []
+        retry_page.on("request", lambda request: retry_responses.append({
+            "operation": request.headers.get("x-vico-operation-id"),
+            "asset": request.headers.get("x-vico-attachment-id"),
+            "bytes": request.post_data_buffer,
+        }) if request.url == base + "/api/attachments"
+             and request.method == "POST" else None)
+        with retry_page.expect_response(
+            lambda response: response.url == base + "/api/attachments"
+            and response.request.method == "POST", timeout=30000
+        ) as retry_ack:
+            retry_form.locator(".markdown-editor-attachment.is-error").get_by_role(
+                "button", name="Retry", exact=True).click()
+        assert retry_ack.value.status == 201
+        expect(retry_form.locator(".markdown-editor-attachment.is-stored")).to_have_count(1)
+        assert len(retry_responses) == 1, retry_responses
+        assert retry_responses[0] == routed[0], (retry_responses, routed)
+        assert stats(retry_id) == retry_before
+        assert json.loads(retry_form.locator('input[name="editorAttachmentIds"]').input_value()) == [
+            routed[0]["asset"]]
+        expect(retry_editor).to_have_value("K5 mounted text survives missing upload acknowledgement")
+        assert private_file(retry_ctx, topic_id, retry_operation,
+                            routed[0]["asset"], "text").body() == retry_bytes
+        record("chromium-mounted-lost-ack-error-retry-same-id-file-text-and-r2",
+               real_initial_commit=True, no_false_selection=True,
+               same_file_retry=True, same_physical_asset=True)
+
+        # Remove while POST is genuinely blocked inside the PostgreSQL draft
+        # scope. The Worker may later commit 201; UI selection stays removed
+        # and there is no per-file DELETE (server pool is intentionally intact).
+        remove_form, remove_editor = mounted_reply(remove_page)
+        remove_editor.fill("K5 Remove must not erase active Markdown source")
+        remove_operation = remove_form.locator('input[name="editorOperationId"]').input_value()
+        remove_uploads = []
+        remove_deletes = []
+        def observe_remove_request(request):
+            if request.url != base + "/api/attachments":
+                return
+            if request.method == "POST":
+                remove_uploads.append(request.headers.get("x-vico-attachment-id"))
+            if request.method == "DELETE":
+                remove_deletes.append(request.headers)
+        remove_page.on("request", observe_remove_request)
+        remove_gate = PgBarrier()
+        try:
+            remove_gate.send({
+                "action": "begin-scope", "actor": remove_id, "context": context_key,
+            })
+            remove_form.locator('input[type="file"]').set_input_files({
+                "name": "ui-remove-pending.txt", "mimeType": "text/plain",
+                "buffer": b"K5 pending Remove after PG admission barrier",
+            })
+            wait_blocking(remove_gate.backend_pid, "mounted Remove pending POST")
+            expect(remove_form.locator(".markdown-editor-attachment.is-uploading")).to_have_count(1)
+            with remove_page.expect_response(
+                lambda response: response.url == base + "/api/attachments"
+                and response.request.method == "POST", timeout=30000
+            ) as removed_late_ack:
+                remove_form.locator(".markdown-editor-attachment.is-uploading").get_by_role(
+                    "button", name="Remove", exact=True).click()
+                assert remove_form.locator(".markdown-editor-attachment").count() == 0
+                remove_gate.send({"action": "commit"})
+            assert removed_late_ack.value.status == 201
+        finally:
+            remove_gate.close()
+        assert len(remove_uploads) == 1 and remove_uploads[0]
+        assert remove_deletes == [], remove_deletes
+        assert remove_form.locator(".markdown-editor-attachment").count() == 0
+        assert remove_form.locator('input[name="editorOperationId"]').input_value() == remove_operation
+        assert json.loads(remove_form.locator('input[name="editorAttachmentIds"]').input_value()) == []
+        expect(remove_editor).to_have_value("K5 Remove must not erase active Markdown source")
+        assert sql("""select attachment_id from forum_attachment_draft_refs
+          where owner_id=$1 and context_key=$2 and draft_id=$3 and attachment_id=$4""",
+          [remove_id, context_key, remove_operation, remove_uploads[0]]) == [
+              {"attachment_id": remove_uploads[0]}]
+        record("chromium-mounted-remove-pending-real-late-201-keeps-source-and-excludes-selection",
+               actual_pg_barrier=True, no_per_file_delete=True, server_pool_preserved=True)
+
+        # Cancel on a real pending XHR aborts the browser request, rotates the
+        # mounted operation and resets the editor, while a separate whole-op
+        # DELETE retires the old temporary generation through the real Worker.
+        cancel_form, cancel_editor = mounted_reply(cancel_page)
+        cancel_editor.fill("K5 Cancel resets only this mounted editor")
+        cancel_operation = cancel_form.locator('input[name="editorOperationId"]').input_value()
+        cancel_uploads = []
+        cancel_page.on("request", lambda request: cancel_uploads.append(
+            request.headers.get("x-vico-attachment-id")
+        ) if request.url == base + "/api/attachments"
+             and request.method == "POST" else None)
+        cancel_gate = PgBarrier()
+        try:
+            cancel_gate.send({
+                "action": "begin-scope", "actor": cancel_id, "context": context_key,
+            })
+            cancel_form.locator('input[type="file"]').set_input_files({
+                "name": "ui-cancel-pending.txt", "mimeType": "text/plain",
+                "buffer": b"K5 Cancel pending upload never republishes",
+            })
+            wait_blocking(cancel_gate.backend_pid, "mounted Cancel pending POST")
+            expect(cancel_form.locator(".markdown-editor-attachment.is-uploading")).to_have_count(1)
+            with cancel_page.expect_response(
+                lambda response: response.url == base + "/api/attachments"
+                and response.request.method == "DELETE", timeout=30000
+            ) as cancel_ack:
+                cancel_form.locator(".markdown-editor-actions").get_by_role(
+                    "button", name="Cancel", exact=True).click()
+                cancel_gate.send({"action": "commit"})
+            assert cancel_ack.value.status == 200
+            assert cancel_ack.value.json()["outcome"] == "cancelled"
+        finally:
+            cancel_gate.close()
+        assert len(cancel_uploads) == 1
+        assert cancel_form.locator('input[name="editorOperationId"]').input_value() != cancel_operation
+        assert json.loads(cancel_form.locator('input[name="editorAttachmentIds"]').input_value()) == []
+        expect(cancel_editor).to_have_value("")
+        assert not cancel_form.is_visible()
+        cancel_page.locator("button.forum-composer-resume").click()
+        expect(cancel_form).to_be_visible()
+        assert cancel_form.locator(".markdown-editor-attachment").count() == 0
+        assert sql("""select attachment_id from forum_attachment_draft_refs
+          where owner_id=$1 and context_key=$2 and draft_id=$3""",
+          [cancel_id, context_key, cancel_operation]) == []
+        record("chromium-mounted-cancel-pending-aborts-xhr-retires-operation-and-resets-ui",
+               actual_pg_barrier=True, canonical_delete=True, new_operation=True)
+
+        # When an already mounted actor becomes inactive, explicit Retry and
+        # server Cancel both fail with controlled 401; local editing/Cancel
+        # still function and do not fabricate a successful upload or published
+        # attachment. First fail only the transport, keeping the File in memory.
+        denied_form, denied_editor = mounted_reply(denied_page)
+        denied_editor.fill("K5 inactive Retry keeps entered text and selected File")
+        denied_operation = denied_form.locator('input[name="editorOperationId"]').input_value()
+        denied_bytes = b"K5 user File is retained across local error and 401"
+        captured_denied = []
+        def initial_network_failure(route):
+            captured_denied.append({
+                "operation": route.request.headers.get("x-vico-operation-id"),
+                "asset": route.request.headers.get("x-vico-attachment-id"),
+                "bytes": route.request.post_data_buffer,
+            })
+            route.abort("failed")
+        denied_page.route("**/api/attachments", initial_network_failure)
+        try:
+            denied_form.locator('input[type="file"]').set_input_files({
+                "name": "ui-inactive-retry.txt", "mimeType": "text/plain",
+                "buffer": denied_bytes,
+            })
+            expect(denied_form.locator(".markdown-editor-attachment.is-error")).to_have_count(1)
+        finally:
+            denied_page.unroute("**/api/attachments", initial_network_failure)
+        assert len(captured_denied) == 1
+        assert captured_denied[0]["bytes"] == denied_bytes
+        assert captured_denied[0]["operation"] == denied_operation
+        denied_before = stats(denied_id)
+        deactivate(denied_id)
+        denied_retries = []
+        denied_page.on("request", lambda request: denied_retries.append({
+            "operation": request.headers.get("x-vico-operation-id"),
+            "asset": request.headers.get("x-vico-attachment-id"),
+            "bytes": request.post_data_buffer,
+        }) if request.url == base + "/api/attachments"
+             and request.method == "POST" else None)
+        with denied_page.expect_response(
+            lambda response: response.url == base + "/api/attachments"
+            and response.request.method == "POST", timeout=30000
+        ) as denied_retry_ack:
+            denied_form.locator(".markdown-editor-attachment.is-error").get_by_role(
+                "button", name="Retry", exact=True).click()
+        refused(denied_retry_ack.value, 401)
+        assert denied_retries == captured_denied, (denied_retries, captured_denied)
+        expect(denied_form.locator(".markdown-editor-attachment.is-error")).to_have_count(1)
+        expect(denied_editor).to_have_value("K5 inactive Retry keeps entered text and selected File")
+        assert json.loads(denied_form.locator('input[name="editorAttachmentIds"]').input_value()) == []
+        assert stats(denied_id) == denied_before
+        with denied_page.expect_response(
+            lambda response: response.url == base + "/api/attachments"
+            and response.request.method == "DELETE", timeout=30000
+        ) as denied_cancel_ack:
+            denied_form.locator(".markdown-editor-actions").get_by_role(
+                "button", name="Cancel", exact=True).click()
+        refused(denied_cancel_ack.value, 401)
+        assert denied_form.locator('input[name="editorOperationId"]').input_value() != denied_operation
+        expect(denied_editor).to_have_value("")
+        assert json.loads(denied_form.locator('input[name="editorAttachmentIds"]').input_value()) == []
+        assert stats(denied_id) == denied_before
+        record("chromium-mounted-inactive-retry-401-preserves-file-text-cancel-401-local-reset",
+               same_file_retry=True, private_no_store=True, no_false_stored=True,
+               local_cancel_survives_denial=True)
+
         assert not external, external[:10]
         assert not page_errors, page_errors[:10]
         browser.close()
