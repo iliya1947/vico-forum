@@ -1,5 +1,5 @@
 import type { RouterContextProvider } from "react-router";
-import { AccountInactiveError, AccountMissingError } from "../../db/account-state";
+import { AccountInactiveError, AccountMissingError, AccountStateUnavailableError } from "../../db/account-state";
 import { authSessionForRequest } from "../auth/request-context";
 import {
   AttachmentBucketUnavailableError,
@@ -134,7 +134,9 @@ function attachmentStoreFailure(error: unknown): Response | null {
   }
   if (error instanceof InvalidForumAttachmentError) return json({ error: "invalid" }, 400);
   if (error instanceof UserMeasureRestrictedError) return json({ error: "forbidden" }, 403);
-  if (error instanceof ForumAttachmentStorageUnavailableError) return json({ error: "unavailable" }, 503);
+  if (error instanceof AccountStateUnavailableError || error instanceof ForumAttachmentStorageUnavailableError) {
+    return json({ error: "unavailable" }, 503);
+  }
   return null;
 }
 
