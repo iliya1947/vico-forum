@@ -411,6 +411,47 @@ describe("private attachment upload API", () => {
     expect(response.status).toBe(405);
     expect(env.cancelOperation).not.toHaveBeenCalled();
   });
+
+  it.each([AccountInactiveError, AccountMissingError])(
+    "rejects late whole-operation Cancel for inactive/missing actor with private no-store 401 (%s)",
+    async ErrorClass => {
+      const env = setup();
+      env.cancelOperation.mockRejectedValueOnce(new ErrorClass());
+      const response = await action({ request: scopedRequest("DELETE"), context: env.ctx });
+      expect(response.status).toBe(401);
+      expect(response.headers.get("Cache-Control")).toBe("no-store");
+      expect(response.headers.get("X-Content-Type-Options")).toBe("nosniff");
+      expect(await response.json()).toEqual({ error: "unauthenticated" });
+      expect(env.cancelOperation).toHaveBeenCalledOnce();
+      expect(env.cancelOperation).toHaveBeenCalledWith("real-user", contextKey, draftId);
+      expect(env.r2.reserve).not.toHaveBeenCalled();
+      expect(env.r2.put).not.toHaveBeenCalled();
+      expect(env.r2.delete).not.toHaveBeenCalled();
+    },
+  );
+
+  it.each([AccountStateUnavailableError, ForumAttachmentStorageUnavailableError])(
+    "keeps classified Cancel infrastructure failure private/no-store 503 (%s)",
+    async ErrorClass => {
+      const env = setup();
+      env.cancelOperation.mockRejectedValueOnce(new ErrorClass());
+      const response = await action({ request: scopedRequest("DELETE"), context: env.ctx });
+      expect(response.status).toBe(503);
+      expect(response.headers.get("Cache-Control")).toBe("no-store");
+      expect(await response.json()).toEqual({ error: "unavailable" });
+      expect(env.r2.delete).not.toHaveBeenCalled();
+    },
+  );
+
+  it("does not silently classify an unexpected Cancel error as a successful retirement", async () => {
+    const env = setup();
+    env.cancelOperation.mockRejectedValueOnce(new Error("unexpected cancel failure"));
+    await expect(action({ request: scopedRequest("DELETE"), context: env.ctx }))
+      .rejects.toThrow("unexpected cancel failure");
+    expect(env.cancelOperation).toHaveBeenCalledOnce();
+    expect(env.r2.delete).not.toHaveBeenCalled();
+  });
+
   it("cancels only the authorized owner/context/operation", async () => {
     const env = setup();
     const response = await action({request: scopedRequest("DELETE"), context: env.ctx});
