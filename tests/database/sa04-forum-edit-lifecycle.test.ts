@@ -383,7 +383,7 @@ describe("SA04-J3b authoritative account admission for published edit", () => {
       } finally {
         barrier.resume();
         barrier.restore();
-        await Promise.allSettled([editing, reporting].filter((value): value is Promise<unknown> => Boolean(value)));
+        await Promise.allSettled([...(editing ? [editing] : []), ...(reporting ? [reporting] : [])]);
         await Promise.all([editor.end(), submitter.end()]);
       }
     }, 40_000,
