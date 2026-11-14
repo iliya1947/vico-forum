@@ -26,7 +26,7 @@ Accepted master technical plan: predecessor #251 comment **#6806249892**.
 - **A–H:** account-state storage + neutral public identity/projection foundation — delivered in current main.
 - **I:** Better Auth active-account closure — delivered in current main.
 - **J:** Forum authoritative actor writes — **delivered/merged by PR #330**, merge commit `398dae18d5ca7c3fc6dd84fd93a29d7c381ba366`; Mira cumulative whole-J PASS + Lev independent whole-J PASS on implementation head `800df2a56c4853a0c261f4cdb1b9969efe5c4b3e`.
-- **K:** attachment upload/draft/finalization admission — **K1 Mira PASS; K2 Lira AUTHOR STOP on cumulative Draft #332 exact `eaf57c46ca28baff9a11ae637f37d7d850934ab9`, awaiting Mira bounded review; K3–K5 prepared/inactive**.
+- **K:** attachment upload/draft/finalization admission — **K1 + K2 Mira PASS; K3 active in cumulative Draft #332; K4–K5 prepared/inactive**.
 - **L:** authorization mutations.
 - **M:** AP-10 mutations/appeals.
 - **N:** Complaints mutation/participation.
@@ -80,30 +80,29 @@ Accepted bounded queue: **K1 metadata/replay → K2 PREPARING/READY journal → 
 
 Mira bounded coordinator review **PASS** on cumulative Draft #332 exact `ad20fa37be4e0f887fc5ffac644f6304a9e1eb8f`: 0 confirmed current-K1 defects. Exact-head CI 43599514990 SUCCESS: PG17 935/935 (K1 7/7; attachment fence 22/22), app 2282/2282, lint/typecheck/build/migrations/Workers checks PASS.
 
-### K2 — Lira AUTHOR STOP / Mira bounded review pending
+### K2 — ACCEPTED
 
-Result: make `recordUploadObject` and `activateUploadObject` authoritative AccountState-gated server commands using the trusted session actor, without changing storage schema or HTTP protocol.
+Mira bounded coordinator review **PASS** on cumulative Draft #332 exact `eaf57c46ca28baff9a11ae637f37d7d850934ab9`: 0 confirmed current-K2 defects.
 
-Readiness:
-- `recordUploadObject(actorId, objectKey)`: one short transaction, actor NKU before INSERT of the fresh server-random journal key; no reservation/PUT begins until commit succeeds;
-- `activateUploadObject(actorId, objectKey, reservationEtag)`: existing journal row `FOR UPDATE` before actor NKU, then existing conditional PREPARING→READY update on the same transaction; claimed/missing/already-ready rows remain denied;
-- canonical upload route threads only trusted `scope.userId` through the existing callbacks; no client actor/header and no actor persistence column;
-- state-first and writer-first races are proven for both journal methods; activate/finalizer lock order cannot become actor→journal; cleanup claims/expired lease retain existing semantics;
-- early lifecycle denial before reservation/PUT returns canonical 401; classified unavailable/unexpected distinctions remain;
-- K3 private reads, K4 Cancel and K5 connected closure remain inactive.
+Accepted result:
+- `recordUploadObject(actorId, objectKey)` uses one short actor NKU → fresh journal INSERT transaction; successful COMMIT precedes any reservation;
+- `activateUploadObject(actorId, objectKey, reservationEtag)` uses existing journal `FOR UPDATE` → actor NKU → existing conditional PREPARING→READY update in one transaction;
+- canonical POST threads only trusted session actor; no actor column/schema/protocol change;
+- missing/claimed/already-ready rows, cleanup claims/leases, fence and metadata-finalizer journal→actor ordering are preserved.
 
-**K2 author evidence (not Mira PASS):** cumulative Draft #332 exact `eaf57c46ca28baff9a11ae637f37d7d850934ab9`, native K2 7/7, fencing 22/22, PG17 942/942, app 2286/2286, [CI 43601817617](https://github.com/iliya1947/vico-forum/actions/runs/43601817617) SUCCESS on final attempt (same-head database retry after unrelated online-privacy unhandled rejection). Mira reviews this exact head; only her K2 PASS activates K3.
+Exact-head evidence: CI 43601817617 final attempt SUCCESS — PG17 **942/942** in 82 files, K2 native **7/7**, K1 **7/7**, fence **22/22**, app **2286/2286**, lint/typecheck/build/migrations/Workers PASS. The first database attempt on the same SHA had one unhandled rejection in unchanged `forum-online-privacy.test.ts`; source/lock inspection found no K2 causal path and the complete same-head rerun passed.
 
+### Active K3 — private attachment reads
 
-
-Result: authoritative same-transaction AccountState admission for `admitUpload` and `createDraftAttachment`, preserving current stable-ID replay/AP-10 behavior and final metadata/ref semantics.
+Result: authoritative active-account admission for `listDraftAttachments` and `readDraftAttachment`, plus controlled private-list/private-file HTTP failure composition, while preserving public published-file access.
 
 Readiness:
-- inactive/missing actor gets no committed replay/fallback/private success and no new metadata/ref;
-- active matching committed replay remains exempt from a newly active `attachments.upload` measure exactly as today;
-- fresh metadata remains subject to the existing measure rule;
-- lifecycle unavailable and unexpected faults retain the accepted 503-vs-unexpected distinction; canonical POST lifecycle denial is private/no-store 401;
-- if final metadata admission deterministically rejects the fresh already-settled physical upload for lifecycle state, only that fresh attempt object may be best-effort deleted; ambiguous commit/storage outcome must not trigger blind deletion;
-- native PostgreSQL coverage proves state-first and writer-first ordering and fact preservation for replay/fresh/fallback paths;
-- K2 journal signatures, K3 private reads, K4 Cancel, K5 connected local-R2/browser closure, L–S, SA05, #315, docs and Stage6 stay out.
+- both repository reads keep existing draft advisory scope first, then actor NKU, then generation/private query on the same short transaction; no user lock is held across bucket GET or response streaming;
+- inactive/missing actor receives no private metadata/list/file success; state-first private file denial performs **no bucket GET**;
+- writer-first admitted private read may complete before later deactivation, with actor lock held through DB transaction completion;
+- upload GET/list and private file GET provide private/no-store lifecycle 401 and classified unavailable 503; unexpected faults remain unexpected and must not leak private cacheable data;
+- public `?post=...` attachment membership/read remains ungated by author AccountState, including published files of inactive authors;
+- AP-10 `attachments.upload` restriction does not become a private-read restriction;
+- focused native PostgreSQL/route evidence covers active/inactive/missing, state-first/writer-first for both reads, no-bucket-GET denial, public branch preservation and 401/503/unexpected privacy;
+- K4 Cancel and K5 connected closure remain inactive. No schema, storage protocol, cleanup, public-member policy, L–S, SA05, #315, docs or Stage6 work.
 
