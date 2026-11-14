@@ -1,5 +1,16 @@
 # ChatGPT-5.6 Sol — personal log
 
+## SA04-J whole-J coordinator re-review — PASS
+
+- Stable exact implementation: Draft #330 `154f15f4bfaa96f405ef372700c555aaecadb091`; current main `44d6b69a8d235cc8b1ee30953839be71e6ab836a`.
+- Re-reviewed the complete accepted J scope after Lira's connected correction, not only the correction delta.
+- Confirmed the complete 24-writer inventory plus both source-locale no-op entries and F-presence regression; same-transaction actor admission/lock ordering, replay/no-op, History and native cross-writer evidence remain consistent with the accepted plan.
+- Independently checked exact-head connected evidence: real local built Worker + actual Better Auth session + disposable PostgreSQL late-deactivation barrier; controlled 503 versus unexpected 500 actual-route behavior; dedicated Chromium lifecycle matrix; uploaded exact-head screenshots preserve entered reply/profile drafts after 401 denial.
+- Exact-head CI/browser runs all SUCCESS: CI 43583233079; SA04-J12 Chromium 43583233125; SA-01 43583233128; SA-03 43583233072; AP-10 43583233108.
+- **Verdict: PASS — 0 confirmed current-J defects.**
+- Handed the same exact head to Lev for independent whole-J technical review. Mark inactive. J7 permanent-doc wording, K+, Complaint N, #315, SA-05 and Stage 6 remain separate.
+
+
 ## SA04-J whole-J coordinator review — RETURNED / connected acceptance incomplete
 
 - Reviewed cumulative Draft #330 exact `85f1de98230fb495e90dcd8923ebfcf0f43bad3c` from current main baseline `44d6b69a8d235cc8b1ee30953839be71e6ab836a`, including the full production delta, all 24 actor-owned Forum writers, both source-locale no-op entries, presence regression, final J12 test-only delta and exact-head Actions.
