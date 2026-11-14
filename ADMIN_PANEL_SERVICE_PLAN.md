@@ -130,7 +130,9 @@ Accepted result:
 
 Exact-head evidence: CI 43616566018 SUCCESS — PG17 **956/956** in 84 files, K4 native **7/7**, K3 **7/7**, fence **22/22**, app **2306/2306** in 186 files, attachment route **42/42**, editor attachment operation **21/21**, lint/typecheck/build/migrations/Workers PASS. AP-10, SA-01, SA-03 and SA04-J12 browser workflows also SUCCESS on the same SHA.
 
-### Active K5 — cumulative connected closure
+### K5 — AUTHOR STOP; whole-K coordinator review pending
+
+K5 five-subtask author closure completed at cumulative implementation Draft #332 stable exact `bb9d1497c5d5f14bfff6a1edf64e19eed5fd5105`. All six exact-head workflows SUCCESS; complete evidence and handoff are in service communication and the #331 final author comment. This is not Mira/Lev whole-K review or merge authorization.
 
 Result: close **all SA04-K evidence** on one stable cumulative #332 head and fix only confirmed current-K defects discovered during that closure.
 
