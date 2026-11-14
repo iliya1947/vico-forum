@@ -1,5 +1,15 @@
 # Admin panel — communication
 
+## 2026-11-14 — SA04-K2 Lira AUTHOR STOP → Mira bounded review
+
+- **Implementation:** cumulative [Draft PR #332](https://github.com/iliya1947/vico-forum/pull/332) exact head `eaf57c46ca28baff9a11ae637f37d7d850934ab9`, open/draft/unmerged, based on accepted K1 head `ad20fa37be4e0f887fc5ffac644f6304a9e1eb8f`. Only bounded K2 was added; K3–K5 remain unassigned.
+- **PREPARING:** `recordUploadObject(actorId, objectKey)` now validates the mandatory trusted actor and acquires the existing AccountState user `FOR NO KEY UPDATE` lock before inserting a fresh fenced journal row in one short Drizzle transaction; the callback completes/commits before an R2 reservation can begin.
+- **READY:** `activateUploadObject(actorId, objectKey, reservationEtag)` locks the existing journal row `FOR UPDATE` **before** AccountState admission, then conditionally updates only unclaimed PREPARING to READY in the same transaction. The journal→actor order matches existing metadata finalization; missing/claimed/already-ready rows remain fail-closed. No schema/owner journal column or storage protocol change.
+- **Actor/callers:** canonical attachment POST supplies only server-owned `scope.userId` to both methods; Hyperdrive interface/forwarder, existing direct callers and test adapters updated. Upload retains private/no-store inactive/missing 401, classified unavailable 503, unexpected errors, pre-reserve/pre-PUT denial and existing cleanup/fence behavior.
+- **Native evidence:** new `tests/database/sa04-attachment-k2-journal.test.ts` **7/7 PG17 PASS**: active PREPARING→READY, missing/claimed/replayed refusal; inactive/missing actor/no new journal state; state-first and writer-first contention for **both** commands, real actor row lock until commit, actual journal→actor lock wait measured through `pg_blocking_pids` without deadlock. Existing attachment-fence **22/22** and K1 native **7/7** stay green; four new canonical HTTP/unit tests check trusted actor/early 401, late 401 and unexpected/unavailable routing.
+- **Exact-head CI SUCCESS:** [GitHub Actions 43601817617](https://github.com/iliya1947/vico-forum/actions/runs/43601817617), final attempt both `database` and `checks` SUCCESS: PG17 **942/942** in 82 files; app **2286/2286** in 185 files; lint/typecheck/build/migration/Worker steps PASS. Initial database attempt passed 942 tests but failed on an unhandled `AccountInactiveError` from unchanged `forum-online-privacy.test.ts`; targeted rerun on the **same SHA**, with no code changes, passed completely. No separate K-specific connected R2/Chromium acceptance claimed; that is K5.
+- **Lira AUTHOR STOP (not Mira review). Next:** Mira bounded K2 review on exact `eaf57c46ca28baff9a11ae637f37d7d850934ab9`. Only Mira PASS may activate K3; Lev/Mark inactive; no merge/deployment, J rework, L–S, SA05, #315, docs or Stage6.
+
 ## 2026-11-14 — Mira bounded K1 PASS; K2 activated
 
 - Reviewed cumulative Draft #332 exact `ad20fa37be4e0f887fc5ffac644f6304a9e1eb8f` against current main, accepted K plan and current Editor/AP10/AccountState contracts. **K1 verdict: PASS — 0 confirmed current-K1 defects.**
