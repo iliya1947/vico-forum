@@ -1082,6 +1082,11 @@ try:
                no_resurrection=True, actual_r2_deleted=True, no_asset_ref=True)
 
 
+        # Diagnose a genuinely stuck Playwright route/PG callback rather than
+        # consuming the full CI job budget without a traceback.
+        import faulthandler
+        faulthandler.dump_traceback_later(180, exit=True)
+
         # K5 mounted-editor lifecycle matrix. These are real React-rendered
         # reply forms and XHRs against the built Worker/Better Auth/local R2.
         # A lost HTTP ACK is simulated only after route.fetch sees real 201.
