@@ -298,6 +298,62 @@ describe("SA04-J2 authoritative Forum publication lifecycle", () => {
     expect(await facts()).toEqual(before);
   });
 
+  it.each(["reply", "mention"] as const)(
+    "J12 reciprocal %s notifications complete when both writers hold different actor mutexes",
+    async (kind) => {
+      const authorA = await user("j12-mutual-a-" + uuid());
+      const authorB = await user("j12-mutual-b-" + uuid());
+      const topicA = await forum.createTopicWithInitialPost(newTopic(authorA));
+      const topicB = await forum.createTopicWithInitialPost(newTopic(authorB));
+      const replyA = newReply(authorA,
+        kind === "reply" ? topicB.topic.id : topicA.topic.id,
+        undefined, kind === "reply" ? topicB.post.id : undefined);
+      const replyB = newReply(authorB,
+        kind === "reply" ? topicA.topic.id : topicB.topic.id,
+        undefined, kind === "reply" ? topicA.post.id : undefined);
+      if (kind === "mention") {
+        replyA.bodyRevision.originalContent = `[User B](/en/users/${encodeURIComponent(authorB)})`;
+        replyB.bodyRevision.originalContent = `[User A](/en/users/${encodeURIComponent(authorA)})`;
+      }
+
+      const first = new Client({ connectionString: url, options });
+      const second = new Client({ connectionString: url, options });
+      await Promise.all([first.connect(), second.connect()]);
+      // Both topics differ: both actor FOR NO KEY UPDATE locks must be acquired
+      // before recipient FK KEY SHARE is taken by the notification inserts.
+      const barrierA = pauseQuery(first, text => /^insert into "forum_posts"/i.test(text.trim()));
+      const barrierB = pauseQuery(second, text => /^insert into "forum_posts"/i.test(text.trim()));
+      let jobA: Promise<unknown> | undefined;
+      let jobB: Promise<unknown> | undefined;
+      try {
+        jobA = isolatedWriter(first).createPost(replyA);
+        jobB = isolatedWriter(second).createPost(replyB);
+        await Promise.all([barrierA.observed, barrierB.observed]);
+        barrierA.resume();
+        barrierB.resume();
+        await Promise.all([jobA, jobB]);
+
+        const notifications = await fixture.query<{
+          recipient_user_id: string; actor_user_id: string; kind: string; post_id: string;
+        }>(
+          "select recipient_user_id,actor_user_id,kind,post_id from forum_reply_notifications"
+            + " where post_id=any($1::text[]) order by post_id",
+          [[replyA.id, replyB.id]],
+        );
+        expect(notifications.rows).toHaveLength(2);
+        expect(notifications.rows).toEqual(expect.arrayContaining([
+          { recipient_user_id: authorB, actor_user_id: authorA, kind, post_id: replyA.id },
+          { recipient_user_id: authorA, actor_user_id: authorB, kind, post_id: replyB.id },
+        ]));
+      } finally {
+        barrierA.resume(); barrierB.resume();
+        barrierA.restore(); barrierB.restore();
+        await Promise.allSettled([jobA, jobB].filter(Boolean));
+        await Promise.all([first.end(), second.end()]);
+      }
+    }, 30_000,
+  );
+
   it("writer-first actor lock covers publication's final attachment bind and receipt through COMMIT", async () => {
     const actor = await user("j2-race-winner-" + uuid());
     const topicId = (await forum.createTopicWithInitialPost(newTopic(active))).topic.id;
