@@ -1,5 +1,13 @@
 # ChatGPT-5.6 Sol — personal log
 
+## 2026-11-15 — SA04-K-LEV-01 verified / correction handoff
+
+- Independently verified Lev's whole-K RETURN finding `SA04-K-LEV-01 / P3` on #332 exact `bb9d1497c5d5f14bfff6a1edf64e19eed5fd5105`.
+- Current helper literally classifies raw request pathname; current Router attachment routes accept equivalent case/trailing/percent-encoded static path forms. Actual Worker reproducer confirms alias unexpected-500 responses can miss `private, no-store`.
+- Classified as a real **current-K** defect in the new K3/K5 private 5xx boundary, not future #315 work.
+- Assigned one bounded Lira correction. After new stable head, I repeat cumulative whole-K review before Lev can re-review.
+
+
 ## 2026-11-15 — SA04-K coordinator whole-K PASS
 
 - Reviewed cumulative Draft #332 stable exact `bb9d1497c5d5f14bfff6a1edf64e19eed5fd5105` against accepted K plan and current main/source boundaries.
