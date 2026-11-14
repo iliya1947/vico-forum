@@ -79,13 +79,16 @@ jobs:
             'BETTER_AUTH_SECRET=sa04-k5-browser-only-secret-0123456789abcdef0123456789abcdef' \
             'BETTER_AUTH_URL=http://127.0.0.1:4205' \
             'GOOGLE_CLIENT_ID=local-test-unused' \
-            'GOOGLE_CLIENT_SECRET=local-test-unused' > .dev.vars
+            'GOOGLE_CLIENT_SECRET=local-test-unused' \
+            'K5_CLEANUP_TOKEN=sa04-k5-only-local-probe' > .dev.vars
           cp wrangler.jsonc "$RUNNER_TEMP/k5-original-wrangler.jsonc"
           node --input-type=module -e '
             import {readFileSync,writeFileSync} from "node:fs";
             const path="wrangler.jsonc";
             const config=JSON.parse(readFileSync(path,"utf8"));
             if (config.r2_buckets) throw new Error("Refuse to overwrite existing R2 configuration");
+            if (config.main !== "./workers/app.ts") throw new Error("Unexpected Worker entrypoint");
+            config.main="./tests/browser/sa04-attachments/worker-entry.ts";
             config.r2_buckets=[{
               binding:"ATTACHMENT_R2",
               bucket_name:"sa04-k5-local-attachments",
