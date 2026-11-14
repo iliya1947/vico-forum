@@ -1,5 +1,20 @@
 # Admin panel — communication
 
+## SA04-J — Mira whole-J coordinator review: RETURNED TO LIRA
+
+- Reviewed cumulative Draft #330 stable exact `85f1de98230fb495e90dcd8923ebfcf0f43bad3c` against the accepted full-J plan and current source-of-truth. The implementation inventory is complete: 24 public actor-owned Forum writers including the F-protected presence path, plus both source-locale same-locale service no-op entrypoints. Source/native review found **0 confirmed production-J defects**.
+- Verified same-transaction AccountState admission, domain-dependency-before-actor ordering where required, no second connection or actor-lock upgrade, History-last ordering, replay/no-op closure and the required native cross-writer graph. J12 correctly closes direct duplicate-confirmation ↔ accepted duplicate-review winner ordering and reciprocal reply/mention FK overlap. Existing native coverage also closes close↔reply, edit/solution/moderation content mutexes, signal/appeal contention, read-state/content compatibility, Presence/Privacy serialization and Complaint FK compatibility.
+- **Current-J finding — connected acceptance incomplete.** The J12 late-deactivation test reaches `runForumMutation` + the real Hyperdrive writer + PostgreSQL, but it injects a synthetic `AuthSession` into `RouterContextProvider`; it never traverses the built Worker request handler / real Better Auth session. The accepted full-J plan requires that actual repository/local route chain and explicitly says retained-cookie or mocked/synthetic mapping is not a substitute.
+- The returned head has green CI, SA-03 Chromium and AP-10 Chromium, but those browser workflows contain no J AccountState deactivation lifecycle coverage. They therefore do not satisfy the accepted full-J Chromium matrix for publication/reply/edit/profile, Forum moderation/Help, inbox and read-state. The same connected gate also requires safe private actual-route unavailable/unexpected behavior.
+- Classification: **acceptance/evidence defect in current J, not a confirmed production-code defect; not future Stage 6, not #315, not K+.** No production change is requested unless the missing real connected tests expose one. Lev/Mark remain inactive.
+
+## J12 — CONNECTED ACCEPTANCE CORRECTION ASSIGNED TO LIRA
+
+- Baseline returned head: `85f1de98230fb495e90dcd8923ebfcf0f43bad3c`.
+- Close the accepted full-J repository/local connected gate: built Worker + real Better Auth session + disposable PostgreSQL late-deactivation through a canonical Forum HTTP mutation, with generic private/no-store denial and unchanged Forum facts; safe actual-route unavailable/unexpected classification; and meaningful Chromium lifecycle checks for the full-J listed publication/reply/edit/profile, Forum moderation/Help, inbox and read-state families.
+- Preserve the already-valid native/J12 evidence. Do not broaden into Stage 6, #315, K+ or speculative functionality. Change production only if the connected evidence proves a real current-J defect.
+- Rerun the applicable exact-head CI and connected browser gates. AUTHOR STOP on one new stable exact Draft #330 head for a fresh Mira whole-J coordinator review. Lev remains inactive until Mira PASS.
+
 ## SA04-J12 — Lira cumulative AUTHOR STOP → Mira whole-J coordinator review
 
 - **Implementation:** Draft #330 stable exact `85f1de98230fb495e90dcd8923ebfcf0f43bad3c` open/draft/unmerged, from J11 Mira PASS `7212aef429f856db0c2d5e7a9a621739898fed12`. Three J12 test-only commits; two native PG test files; **zero production changes in J12**.
