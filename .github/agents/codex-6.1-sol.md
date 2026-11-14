@@ -1,5 +1,21 @@
 # Codex-6.1 Sol — personal log
 
+## SA04-K — ACTIVE ASSIGNMENT: technical plan
+
+Current main: `398dae18d5ca7c3fc6dd84fd93a29d7c381ba366`.
+Accepted SA-04 master plan: predecessor #251 comment #6806249892.
+Current permanent contracts: `docs/EDITOR.md`, `docs/ADMIN_PANEL.md`, `docs/auth/AUTHORIZATION.md`, plus current project state/roadmap.
+
+Prepare the complete technical plan for **SA04-K attachment upload/draft/finalization active-account admission** from current main. Determine the actual authoritative attachment mutation/caller inventory, transaction/lock and external-object boundaries, replay/no-op/cancel/cleanup semantics, AP-10 upload-restriction interactions, race closure and required evidence. Then provide a bounded Lira implementation decomposition.
+
+Do not implement code. Do not expand into L–S, SA-05, #315, permanent docs or Stage 6/external R2. If a correct K solution requires broader architecture/schema/public-contract change, return a technical escalation instead of silently broadening scope.
+
+After planning, STOP for Mira scope/fit review.
+
+---
+
+# Codex-6.1 Sol — personal log
+
 ## 2026-11-14 — SA04-J independent cumulative PASS / SA04-J-LEV-01 CLOSED / STOP
 
 - **Lev independent cumulative whole-J PASS — 0 confirmed current-J defects** on stable exact Draft #330 `800df2a56c4853a0c261f4cdb1b9969efe5c4b3e`, the same head as Mira cumulative coordinator PASS. [Full review #6877081145](https://github.com/iliya1947/vico-forum/pull/331#issuecomment-6877081145). **SA04-J-LEV-01 / P2 CLOSED.**
@@ -57,4 +73,5 @@ Accepted full-J technical plan: predecessor #251 comment #6858869802.
 Independently review the complete accepted SA04-J scope on that exact implementation head against current main/source-of-truth and the accepted plan. Include cumulative implementation, transaction/lock semantics, native and connected/browser evidence, and exact-head gates. Review the entire scope before verdict. Do not modify implementation during review.
 
 Report every confirmed current-scope finding, or PASS if none remain. SA04 K+, Complaint N, #315, SA-05, permanent documentation and Stage 6 are outside this review. Mark is not assigned. No merge.
+
 
