@@ -26,7 +26,7 @@ Accepted master technical plan: predecessor #251 comment **#6806249892**.
 - **A–H:** account-state storage + neutral public identity/projection foundation — delivered in current main.
 - **I:** Better Auth active-account closure — delivered in current main.
 - **J:** Forum authoritative actor writes — **delivered/merged by PR #330**, merge commit `398dae18d5ca7c3fc6dd84fd93a29d7c381ba366`; Mira cumulative whole-J PASS + Lev independent whole-J PASS on implementation head `800df2a56c4853a0c261f4cdb1b9969efe5c4b3e`.
-- **K:** attachment upload/draft/finalization admission — **implementation in progress: K1 Lira AUTHOR STOP on Draft #332 exact `ad20fa37be4e0f887fc5ffac644f6304a9e1eb8f`, awaiting Mira bounded review; K2–K5 prepared/inactive**.
+- **K:** attachment upload/draft/finalization admission — **K1 Mira PASS; K2 Lira AUTHOR STOP on cumulative Draft #332 exact `eaf57c46ca28baff9a11ae637f37d7d850934ab9`, awaiting Mira bounded review; K3–K5 prepared/inactive**.
 - **L:** authorization mutations.
 - **M:** AP-10 mutations/appeals.
 - **N:** Complaints mutation/participation.
@@ -74,13 +74,13 @@ Accepted K inventory:
 
 Accepted bounded queue: **K1 metadata/replay → K2 PREPARING/READY journal → K3 private reads → K4 Cancel → K5 cumulative connected closure**. Only one implementation slice is active at a time. Whole-K coordinator review happens after K5 on one stable cumulative head; only after Mira PASS does Lev independently review that same head.
 
-**K1 author evidence (not Mira PASS):** cumulative Draft [#332](https://github.com/iliya1947/vico-forum/pull/332) exact `ad20fa37be4e0f887fc5ffac644f6304a9e1eb8f`, transaction-local AccountState in `admitUpload` and `createDraftAttachment`, controlled 401/503 and scoped fresh-key cleanup, native 7/7 PG barriers and 22/22 upload fence/route tests, [CI 43599514990](https://github.com/iliya1947/vico-forum/actions/runs/43599514990) PG17 935/935 and application 2282/2282, all checks SUCCESS. Next Mira bounded K1 review. K2–K5 not started.
+**K1 author evidence (historical; subsequently Mira PASS):** cumulative Draft [#332](https://github.com/iliya1947/vico-forum/pull/332) exact `ad20fa37be4e0f887fc5ffac644f6304a9e1eb8f`, transaction-local AccountState in `admitUpload` and `createDraftAttachment`, controlled 401/503 and scoped fresh-key cleanup, native 7/7 PG barriers and 22/22 upload fence/route tests, [CI 43599514990](https://github.com/iliya1947/vico-forum/actions/runs/43599514990) PG17 935/935 and application 2282/2282, all checks SUCCESS. K1 Mira PASS recorded below; K2 author evidence follows.
 
 ### K1 — ACCEPTED
 
 Mira bounded coordinator review **PASS** on cumulative Draft #332 exact `ad20fa37be4e0f887fc5ffac644f6304a9e1eb8f`: 0 confirmed current-K1 defects. Exact-head CI 43599514990 SUCCESS: PG17 935/935 (K1 7/7; attachment fence 22/22), app 2282/2282, lint/typecheck/build/migrations/Workers checks PASS.
 
-### Active K2 — PREPARING/READY journal admission
+### K2 — Lira AUTHOR STOP / Mira bounded review pending
 
 Result: make `recordUploadObject` and `activateUploadObject` authoritative AccountState-gated server commands using the trusted session actor, without changing storage schema or HTTP protocol.
 
@@ -91,6 +91,8 @@ Readiness:
 - state-first and writer-first races are proven for both journal methods; activate/finalizer lock order cannot become actor→journal; cleanup claims/expired lease retain existing semantics;
 - early lifecycle denial before reservation/PUT returns canonical 401; classified unavailable/unexpected distinctions remain;
 - K3 private reads, K4 Cancel and K5 connected closure remain inactive.
+
+**K2 author evidence (not Mira PASS):** cumulative Draft #332 exact `eaf57c46ca28baff9a11ae637f37d7d850934ab9`, native K2 7/7, fencing 22/22, PG17 942/942, app 2286/2286, [CI 43601817617](https://github.com/iliya1947/vico-forum/actions/runs/43601817617) SUCCESS on final attempt (same-head database retry after unrelated online-privacy unhandled rejection). Mira reviews this exact head; only her K2 PASS activates K3.
 
 
 
