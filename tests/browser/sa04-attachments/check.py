@@ -277,42 +277,49 @@ def finish_browser_request(page):
     return page.evaluate("async () => await window.__k5Request")
 
 
-def stream_start(page, topic_id, operation, attachment_id):
-    """Start a streaming browser POST; hold the body after an admitted prefix."""
-    return page.evaluate("""({topic,operation,attachment}) => {
-      const first = new Uint8Array(8192).fill(65);
-      const second = new Uint8Array(8192).fill(66);
-      let held;
-      const body = new ReadableStream({
-        start(controller) {
-          held = controller;
-          controller.enqueue(first);
-        },
-      });
-      window.__k5Release = () => { held.enqueue(second); held.close(); };
-      window.__k5PendingStream = fetch("/api/attachments", {
-        method:"POST", credentials:"same-origin",
-        headers:{
-          "Content-Type":"text/plain",
-          "X-Vico-Attachment-Id":attachment,
-          "X-Vico-Attachment-Name":"k5-delayed.txt",
-          "X-Vico-Attachment-Size":"16384",
-          "X-Vico-Editor-Context":encodeURIComponent("topic:"+topic+":reply"),
-          "X-Vico-Operation-Id":operation,
-        },
-        body, duplex:"half",
-      }).then(async response => ({
-        status:response.status,
-        cache:response.headers.get("cache-control"),
-        body:await response.text()
-      }), error => ({failed:String(error)}));
-      return "stream-held";
-    }""", {"topic":topic_id,"operation":operation,"attachment":attachment_id})
 
+class HeldHttpUpload:
+    """One real HTTP/1.1 chunked client; browser-origin BA cookie is still authority."""
 
-def stream_release(page):
-    page.evaluate("() => window.__k5Release()")
-    return page.evaluate("async () => await window.__k5PendingStream")
+    def __init__(self):
+        env = {**os.environ, "K5_BASE": base}
+        self.process = subprocess.Popen(
+            [node, str(repo / "tests/browser/sa04-attachments/stream-client.mjs")],
+            cwd=repo, env=env, stdin=subprocess.PIPE, stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE, text=True, bufsize=1,
+        )
+
+    def read(self):
+        import select
+        assert self.process.stdout
+        ready, _, _ = select.select([self.process.stdout], [], [], 35)
+        assert ready, ("stream-client timeout", self.process.poll())
+        line = self.process.stdout.readline()
+        assert line, ("stream-client stopped", self.process.poll())
+        result = json.loads(line)
+        assert result.get("event") not in ("error", "protocol-error"), result
+        return result
+
+    def send(self, payload):
+        assert self.process.stdin
+        self.process.stdin.write(json.dumps(payload) + "\n")
+        self.process.stdin.flush()
+        return self.read()
+
+    def close(self):
+        if self.process.poll() is None:
+            try:
+                if self.process.stdin:
+                    self.process.stdin.write('{"action":"abort"}\n')
+                    self.process.stdin.flush()
+                    self.process.stdin.close()
+            except OSError:
+                pass
+            try:
+                self.process.wait(timeout=5)
+            except subprocess.TimeoutExpired:
+                self.process.kill()
+                self.process.wait(timeout=5)
 
 
 try:
@@ -513,8 +520,8 @@ try:
         finally:
             blocker.close()
 
-        # Causal post-READY streaming gate: only the first 8 KiB of a 16 KiB
-        # upload reaches the Worker. A positive journal READY proves R2
+        # Causal post-READY HTTP/1.1 streaming gate: only the first 8 KiB
+        # of a 16 KiB upload reaches the Worker. A positive journal READY proves R2
         # reservation and activation have completed; the test holds the
         # remainder until after fixture deactivation commits.
         delayed.goto(base + "/en/topics/" + topic_id, wait_until="networkidle")
@@ -525,24 +532,38 @@ try:
         delayed_before = stats(delayed_id)
         old_keys = {row["object_key"] for row in sql(
             "select object_key from forum_attachment_upload_objects")}
-        stream_start(delayed, topic_id, delayed_op, delayed_asset)
-        def ready_upload():
-            rows = sql("""select object_key,reservation_etag from forum_attachment_upload_objects
-              where reservation_etag is not null""")
-            return next((row for row in rows
-                         if row["object_key"] not in old_keys), None)
-        ready = wait_for(ready_upload, "held client stream after READY journal", 25)
-        assert ready["reservation_etag"], ready
-        deactivate(delayed_id)
-        delayed_response = stream_release(delayed)
-        assert delayed_response.get("status") == 401, delayed_response
-        assert "no-store" in (delayed_response.get("cache") or "")
+        cookie = "; ".join(item["name"] + "=" + item["value"]
+                           for item in delayed_ctx.cookies(base))
+        assert cookie, "real Better Auth session cookie required"
+        chunked = HeldHttpUpload()
+        try:
+            started = chunked.send({
+                "action": "start", "cookie": cookie,
+                "attachment": delayed_asset, "operation": delayed_op,
+                "context": context_key,
+            })
+            assert started == {"event": "first-chunk-sent", "bytes": 8192}, started
+            def ready_upload():
+                rows = sql("""select object_key,reservation_etag from forum_attachment_upload_objects
+                  where reservation_etag is not null""")
+                return next((row for row in rows
+                             if row["object_key"] not in old_keys), None)
+            ready = wait_for(ready_upload, "held real HTTP/1.1 body after READY", 25)
+            assert ready["reservation_etag"], ready
+            deactivate(delayed_id)
+            released = chunked.send({"action": "release"})
+            assert released["event"] == "remainder-released", released
+            delayed_response = chunked.read()
+            assert delayed_response.get("status") == 401, delayed_response
+            assert "no-store" in (delayed_response.get("cache") or "")
+        finally:
+            chunked.close()
         assert sql("select id from forum_attachments where id=$1", [delayed_asset]) == []
         assert sql("select attachment_id from forum_attachment_draft_refs where attachment_id=$1",
                    [delayed_asset]) == []
         assert stats(delayed_id)["assets"] == delayed_before["assets"]
         assert stats(delayed_id)["refs"] == delayed_before["refs"]
-        record("actual-local-r2-ready-held-browser-stream-deactivation-before-finalize",
+        record("actual-local-r2-ready-held-http-stream-deactivation-before-finalize",
                ready_key=True, no_false_201=True, no_asset_ref=True)
 
         # Block the existing journal mutex in PREPARING and make the state
