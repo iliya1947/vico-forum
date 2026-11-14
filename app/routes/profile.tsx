@@ -12,6 +12,7 @@ import { ForumRouteError } from "../forum/ui";
 import { ForumEntityNotFoundError } from "../../db/forum-repository";
 import { ForumStorageUnavailableError } from "../../db/hyperdrive-forum";
 import { UserMeasureRestrictedError } from "../../db/user-measure-policy";
+import { AccountInactiveError, AccountMissingError } from "../../db/account-state";
 
 type ProfileArgs = { request: Request; params: { locale?: string; userId?: string }; context: RouterContextProvider };
 export type ProfileActionError = "invalid" | "unauthenticated" | "origin" | "forbidden" | "notFound" | "unavailable";
@@ -69,6 +70,8 @@ export async function action({ request, params, context }: ProfileArgs) {
     await forumWriterForRequest(context).updateProfile({ actorId: session.user.id, fields });
     return redirect(`${forumProfilePath(params.locale, session.user.id)}?saved=1`, { headers: { "Cache-Control": "private, no-store" } });
   } catch (error) {
+    if (error instanceof AccountInactiveError || error instanceof AccountMissingError)
+      return failure("unauthenticated", 401);
     if (error instanceof InvalidProfileError) return failure("invalid", 400, draft);
     if (error instanceof ForumEntityNotFoundError) return failure("notFound", 404);
     if (error instanceof UserMeasureRestrictedError) {

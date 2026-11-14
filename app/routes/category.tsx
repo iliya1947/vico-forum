@@ -1,6 +1,6 @@
 import { forumReadLoader } from "../forum/read-availability.server";
 import { DELETED_USER_NAME } from "../../db/public-identity";
-import { redirect, useActionData, useLoaderData, type RouterContextProvider } from "react-router";
+import { redirect, useActionData, useLoaderData, type RouterContextProvider, type HeadersArgs } from "react-router";
 import { authSessionForRequest } from "../auth/request-context";
 import { measureRestrictionsForPresentation } from "../measures/presentation.server";
 import { authorizationForRequest } from "../authorization/request-context";
@@ -20,6 +20,16 @@ import { forumAttentionPath } from "../forum/paths";
 import { CategoryView, HelpSolutionsView } from "../forum/views";
 
 export { helpSolutionsCategoryAction as action } from "../forum/actions.server";
+/** Forward controlled action privacy/retry headers without privatizing public GET. */
+export function headers({ parentHeaders, loaderHeaders, actionHeaders, errorHeaders }: HeadersArgs): Headers {
+  const result = new Headers(parentHeaders);
+  for (const name of ["Cache-Control", "Retry-After"] as const) {
+    const value = errorHeaders?.get(name) ?? actionHeaders.get(name) ?? loaderHeaders.get(name);
+    if (value !== null) result.set(name, value);
+  }
+  return result;
+}
+
 
 const HELP_SOLUTION_FILTERS = new Set<HelpSolutionsSolutionFilter>(["open", "solved", "needs-review", "outdated"]);
 const HELP_ANSWERS_FILTERS = new Set<HelpSolutionsAnswersFilter>(["none", "has"]);

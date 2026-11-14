@@ -2973,10 +2973,14 @@ describe("PostgreSQL 17 locale migrations", () => {
     const bothAuthorLocks = new Promise<void>((resolve) => { release = resolve; });
     const gateAuthorLock = (connection: Client) => {
       const query = connection.query.bind(connection);
+      let acquired = false;
       connection.query = (async (...args: unknown[]) => {
         const result: unknown = await Reflect.apply(query, connection, args);
         const statement = typeof args[0] === "string" ? args[0] : String((args[0] as { text?: unknown })?.text ?? "");
-        if (/from\s+"user"[\s\S]+for\s+(?:no\s+key\s+)?update/iu.test(statement)) {
+        if (!acquired && /from\s+"user"[\s\S]+for\s+(?:no\s+key\s+)?update/iu.test(statement)) {
+          // J2's final lifecycle admission acquires the first mutex; the existing
+          // cooldown safely reacquires it on the SAME transaction.
+          acquired = true;
           synchronized += 1;
           if (synchronized === 2) release();
           await bothAuthorLocks;

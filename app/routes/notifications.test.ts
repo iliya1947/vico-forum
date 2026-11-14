@@ -4,6 +4,8 @@ import { describe, expect, it, vi } from "vitest";
 import { authSessionContext, type AuthSession } from "../auth/request-context";
 import { forumReaderContext, forumWriterContext } from "../forum/request-context";
 import { ForumEntityNotFoundError } from "../../db/forum-repository";
+import { AccountInactiveError, AccountMissingError } from "../../db/account-state";
+import { ForumStorageUnavailableError } from "../../db/hyperdrive-forum";
 import { action, loader } from "./notifications";
 
 const session = {
@@ -221,6 +223,41 @@ describe("notifications route", () => {
       userId: "user-1",
       notificationId: "missing-notification",
     });
+  });
+
+  it("maps late inactive/missing lifecycle denial to generic private 401 with no redirect", async () => {
+    const value = context();
+    const markNotificationRead = vi.fn();
+    value.set(forumWriterContext, { markNotificationRead } as never);
+    for (const error of [new AccountInactiveError(), new AccountMissingError()]) {
+      markNotificationRead.mockRejectedValueOnce(error);
+      const result = await action({
+        request: openRequest(), params: { locale: "en" }, context: value,
+      });
+      expect(result).not.toBeInstanceOf(Response);
+      expect(result).toMatchObject({
+        data: { error: "unauthenticated" },
+        init: { status: 401, headers: { "Cache-Control": "private, no-store" } },
+      });
+      expect(JSON.stringify(result)).not.toMatch(/AccountInactive|AccountMissing|deactivated|Location/);
+    }
+    expect(markNotificationRead).toHaveBeenCalledTimes(2);
+    expect(markNotificationRead).toHaveBeenLastCalledWith({
+      userId: "user-1", notificationId: "notification-1",
+    });
+    markNotificationRead.mockRejectedValueOnce(new ForumStorageUnavailableError());
+    const unavailable = await action({
+      request: openRequest(), params: { locale: "en" }, context: value,
+    });
+    expect(unavailable).toMatchObject({
+      data: { error: "unavailable" },
+      init: { status: 503, headers: { "Cache-Control": "private, no-store" } },
+    });
+    const bug = new Error("unexpected notification failure");
+    markNotificationRead.mockRejectedValueOnce(bug);
+    await expect(action({
+      request: openRequest(), params: { locale: "en" }, context: value,
+    })).rejects.toBe(bug);
   });
 
   it("marks the selected notification read and redirects to its reply", async () => {

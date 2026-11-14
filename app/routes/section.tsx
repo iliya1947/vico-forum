@@ -1,6 +1,6 @@
 import { forumReadLoader } from "../forum/read-availability.server";
 import { DELETED_USER_NAME } from "../../db/public-identity";
-import { useActionData, useLoaderData, type RouterContextProvider } from "react-router";
+import { useActionData, useLoaderData, type RouterContextProvider, type HeadersArgs } from "react-router";
 import { authSessionForRequest } from "../auth/request-context";
 import { measureRestrictionsForPresentation } from "../measures/presentation.server";
 import { authorizationForRequest } from "../authorization/request-context";
@@ -13,6 +13,16 @@ import { ForumRouteError } from "../forum/ui";
 import { SectionView } from "../forum/views";
 
 export { sectionAction as action } from "../forum/actions.server";
+/** Forward controlled action privacy/retry headers without privatizing public GET. */
+export function headers({ parentHeaders, loaderHeaders, actionHeaders, errorHeaders }: HeadersArgs): Headers {
+  const result = new Headers(parentHeaders);
+  for (const name of ["Cache-Control", "Retry-After"] as const) {
+    const value = errorHeaders?.get(name) ?? actionHeaders.get(name) ?? loaderHeaders.get(name);
+    if (value !== null) result.set(name, value);
+  }
+  return result;
+}
+
 
 export const loader = forumReadLoader(async function loader({ params, context }: {
   params: { locale?: string; sectionId?: string };
