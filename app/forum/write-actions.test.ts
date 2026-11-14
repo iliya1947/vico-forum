@@ -890,6 +890,39 @@ describe("forum write route actions", () => {
     expect(missingReason.setHelpSolutionModeration).not.toHaveBeenCalled();
   });
 
+  it("maps all five duplicate/appeal intents to private late lifecycle 401 for the trusted actor", async () => {
+    const commands = [
+      { intent: "confirmHelpDuplicate", method: "confirmHelpDuplicate", fields: { originalTopicId: "help-original" } },
+      { intent: "removeHelpDuplicate", method: "removeHelpDuplicate", fields: { expectedRelationshipId: "rel-1" } },
+      { intent: "appealHelpDuplicate", method: "appealHelpDuplicate", fields: { expectedRelationshipId: "rel-1", explanation: "Not a duplicate" } },
+      { intent: "acceptHelpDuplicateAppeal", method: "resolveHelpDuplicateAppeal", fields: { expectedAppealId: "appeal-1" } },
+      { intent: "rejectHelpDuplicateAppeal", method: "resolveHelpDuplicateAppeal", fields: { expectedAppealId: "appeal-1" } },
+    ] as const;
+    for (const command of commands) {
+      for (const error of [new AccountInactiveError(), new AccountMissingError()]) {
+        const w = writer();
+        w[command.method].mockRejectedValueOnce(error);
+        const result = await topicAction({
+          request: request("/en/topics/help-duplicate", {
+            intent: command.intent, ...command.fields, actorId: "forged",
+          }),
+          params: { locale: "en", topicId: "help-duplicate" },
+          context: context(w, true, command.intent === "appealHelpDuplicate"
+            ? [] : ["forum.helpDuplicate.manage"]),
+        });
+        expect(result).toMatchObject({
+          data: { error: "unauthenticated" },
+          init: { status: 401, headers: { "Cache-Control": "private, no-store" } },
+        });
+        expect(result).not.toBeInstanceOf(Response);
+        expect(JSON.stringify(result)).not.toMatch(/AccountInactive|AccountMissing|deactivated|Location|ok.true/);
+        expect(w[command.method]).toHaveBeenCalledWith(expect.objectContaining({
+          actorId: "session-user",
+        }));
+      }
+    }
+  });
+
   it("maps all three Help moderation late AccountState denials to private 401", async () => {
     for (const intent of ["markSolutionNeedsReview", "markSolutionOutdated", "clearSolutionModeration"] as const) {
       for (const error of [new AccountInactiveError(), new AccountMissingError()]) {
