@@ -26,7 +26,7 @@ Accepted master technical plan: predecessor #251 comment **#6806249892**.
 - **A–H:** account-state storage + neutral public identity/projection foundation — delivered in current main.
 - **I:** Better Auth active-account closure — delivered in current main.
 - **J:** Forum authoritative actor writes — **delivered/merged by PR #330**, merge commit `398dae18d5ca7c3fc6dd84fd93a29d7c381ba366`; Mira cumulative whole-J PASS + Lev independent whole-J PASS on implementation head `800df2a56c4853a0c261f4cdb1b9969efe5c4b3e`.
-- **K:** attachment upload/draft/finalization admission — **K1 + K2 Mira PASS; K3 active in cumulative Draft #332; K4–K5 prepared/inactive**.
+- **K:** attachment upload/draft/finalization admission — **K1 + K2 Mira PASS; K3 Lira AUTHOR STOP on cumulative Draft #332 exact `dae431fc920c79cad654627052365a3fd2380fe4`, pending Mira bounded review; K4–K5 prepared/inactive**.
 - **L:** authorization mutations.
 - **M:** AP-10 mutations/appeals.
 - **N:** Complaints mutation/participation.
@@ -92,7 +92,7 @@ Accepted result:
 
 Exact-head evidence: CI 43601817617 final attempt SUCCESS — PG17 **942/942** in 82 files, K2 native **7/7**, K1 **7/7**, fence **22/22**, app **2286/2286**, lint/typecheck/build/migrations/Workers PASS. The first database attempt on the same SHA had one unhandled rejection in unchanged `forum-online-privacy.test.ts`; source/lock inspection found no K2 causal path and the complete same-head rerun passed.
 
-### Active K3 — private attachment reads
+### K3 — Lira AUTHOR STOP / Mira bounded review pending
 
 Result: authoritative active-account admission for `listDraftAttachments` and `readDraftAttachment`, plus controlled private-list/private-file HTTP failure composition, while preserving public published-file access.
 
@@ -105,4 +105,7 @@ Readiness:
 - AP-10 `attachments.upload` restriction does not become a private-read restriction;
 - focused native PostgreSQL/route evidence covers active/inactive/missing, state-first/writer-first for both reads, no-bucket-GET denial, public branch preservation and 401/503/unexpected privacy;
 - K4 Cancel and K5 connected closure remain inactive. No schema, storage protocol, cleanup, public-member policy, L–S, SA05, #315, docs or Stage6 work.
+
+**K3 author evidence (not Mira PASS):** cumulative Draft #332 exact `dae431fc920c79cad654627052365a3fd2380fe4`; native K3 7/7 with both actor-read race orders and inactive published-author public membership, PG17 949/949, app 2300/2300, [CI 43608804921](https://github.com/iliya1947/vico-forum/actions/runs/43608804921) SUCCESS; AP-10/SA-01/SA-03/SA04-J12 browser workflows SUCCESS. Narrow worker attachment GET 5xx no-store fallback and private GET lifecycle 401/503 covered. Mira reviews this exact head; only her K3 PASS activates K4.
+
 
