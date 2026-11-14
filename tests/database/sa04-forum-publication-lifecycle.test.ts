@@ -354,6 +354,52 @@ describe("SA04-J2 authoritative Forum publication lifecycle", () => {
     }, 30_000,
   );
 
+  it("J12 connected canonical mutation sees deactivation after request preflight but before guarded write", async () => {
+    const actor = await user("j12-connected-stale-" + uuid());
+    const now = new Date();
+    const context = new RouterContextProvider();
+    context.set(authSessionContext, {
+      user: {
+        id: actor, name: "Late-lifecycle actor", email: actor + "@test.invalid",
+        emailVerified: false, createdAt: now, updatedAt: now,
+      },
+      session: {
+        id: uuid(), token: "j12-connected-request", userId: actor,
+        createdAt: now, updatedAt: now, expiresAt: new Date(now.getTime() + 60_000),
+      },
+    } satisfies AuthSession);
+    const writer = new Client({ connectionString: url, options });
+    const paused = pauseQuery(writer, text => /from "user" .*for no key update/i.test(text));
+    context.set(forumWriterContext, createHyperdriveForumWriter(url, () => writer, policy, noMeasures));
+    const request = new Request("https://forum.example/en/topics/" + baseline, {
+      method: "POST", headers: { Origin: "https://forum.example" },
+    });
+    const before = await facts();
+    let pending: Promise<unknown> | undefined;
+    try {
+      // A current authenticated request is already admitted when the DB actor
+      // mutex is reached. The committed lifecycle change must still win.
+      pending = runForumMutation(request, context, (capability, authorId) =>
+        capability.createReply({ topicId: baseline, authorId, body: "DENIED_J12_WRITE" }));
+      await paused.observed;
+      await deactivate(actor);
+      paused.resume();
+
+      const result = await pending;
+      expect(result).toMatchObject({
+        data: { error: "unauthenticated" },
+        init: { status: 401, headers: { "Cache-Control": "private, no-store" } },
+      });
+      expect(result).not.toBeInstanceOf(Response);
+      expect(JSON.stringify(result)).not.toMatch(/AccountInactive|AccountMissing|deactivated|Location|ok.true/);
+      expect(await facts()).toEqual(before);
+    } finally {
+      paused.resume();
+      paused.restore();
+      if (pending) await Promise.allSettled([pending]);
+    }
+  }, 30_000);
+
   it("writer-first actor lock covers publication's final attachment bind and receipt through COMMIT", async () => {
     const actor = await user("j2-race-winner-" + uuid());
     const topicId = (await forum.createTopicWithInitialPost(newTopic(active))).topic.id;
