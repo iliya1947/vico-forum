@@ -49,10 +49,17 @@ async function submit(topicId: string, cookie: string, body: string) {
     body: new URLSearchParams({ intent: "reply", body }),
   }, cookie);
 }
-async function signUp(label: string) {
+async function signUp(label: "author" | "control" | "actor") {
+  // The prior CI smoke uses the same disposable DB's persistent Better Auth
+  // rate-limit table. Test-only distinct Cloudflare IP headers keep these real
+  // registrations independent, without mutating the rate-limit table.
+  const ip = { author: "192.0.2.41", control: "192.0.2.42", actor: "192.0.2.43" }[label];
   const response = await http("/api/auth/sign-up/email", {
     method: "POST",
-    headers: { Origin: base, "Content-Type": "application/json" },
+    headers: {
+      Origin: base, "Content-Type": "application/json",
+      "cf-connecting-ip": ip,
+    },
     body: JSON.stringify({
       name: "J12 " + label,
       email: label + "-" + randomUUID() + "@j12.invalid",
