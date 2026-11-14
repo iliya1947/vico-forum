@@ -1,5 +1,29 @@
 # ChatGPT-6 — personal log
 
+## SA04-K5 — ACTIVE ASSIGNMENT: cumulative connected closure
+
+Continue cumulative Draft #332 from accepted K4 exact `8f89a7101d356eb52ccf1021a63341a4e0a37967`. Accepted complete K plan: #331 comment #6877583725. **K5 is the final K implementation/evidence slice.**
+
+Required result: close the entire accepted SA04-K evidence contract on one stable cumulative #332 head. Do not merely rerun K1–K4 unit tests.
+
+Acceptance:
+- re-sweep all seven lifecycle-gated entrypoints and the intentionally ungated public/system boundaries against current source/lock/caller reality;
+- close native lifecycle and cross-writer/fence matrix for admission, journals, finalizer, private reads and Cancel, including cleanup claim/lease, terminal operation, J publish/edit interactions and AP-10 semantics where the accepted K plan requires them;
+- prove late PUT and ambiguous ACK behavior: deactivation after READY/while payload is pending cannot produce new metadata/ref/false 201; unknown commit/storage outcome must not trigger blind object deletion;
+- add/use an owned **local-only** connected harness with built Worker + genuine Better Auth session/cookies + PostgreSQL + actual Worker `ATTACHMENT_R2` local binding via supported Wrangler/Miniflare. Do not change production bindings/resources/config or use in-memory storage as the connected proof;
+- deterministic actual HTTP barriers: pre-object lifecycle denial, deactivation during pending payload/finalizer, journal-wait state win, classified 503 and unexpected 500 for POST/list/private-file with no-store/safe body, and public published bytes of an inactive author. Use causal PG/stream/storage barriers, not sleeps/poll-only inference;
+- Chromium with real mounted forms/BA cookies/local R2: active upload/retry/publish/download; deactivation after mount and during pending upload; preservation of text/File/selection and no false success; inactive list/private download/retry/Cancel denial; local Remove/Cancel + late ACK; AP-10 committed replay vs fresh rejection; retained published file;
+- keep EN/RTL/responsive checks limited to UI actually affected; do not claim owner visual/deployed acceptance;
+- run all applicable native/fence/publication/J/AP10/forum-permission/route/Hyperdrive/editor/R2-stream suites and standard CI/build/schema gates;
+- if K5 exposes a **confirmed current-K defect**, fix it locally in #332 and rerun the affected/cumulative acceptance. Do not fix future-stage or #315-only findings;
+- AUTHOR STOP only on one final stable exact head with a concise complete evidence packet for Mira **whole-K coordinator review**.
+
+Do not implement L–S, SA05, #315, permanent docs or Stage6/production deployment. No external/production R2 resource, secret or configuration change. If closing K requires broader architecture/schema/storage-protocol redesign rather than a local current-K correction, stop with a technical escalation for Lev.
+
+---
+
+# ChatGPT-6 — personal log
+
 ## SA04-K4 bounded implementation — Lira AUTHOR STOP / Mira review next
 
 - **Cumulative Draft #332:** exact `8f89a7101d356eb52ccf1021a63341a4e0a37967`, open/draft/unmerged, from accepted K3 `dae431fc920c79cad654627052365a3fd2380fe4`.
@@ -121,6 +145,7 @@ Acceptance:
 - create a **new cumulative Draft implementation PR from current main** and AUTHOR STOP on one stable exact head with applicable checks and a concise evidence packet for Mira.
 
 Do not implement K2 journal actor signatures, K3 private reads, K4 Cancel or K5 connected local-R2/browser closure early. L–S, SA05, #315, permanent docs and Stage6 are out of scope. If K1 cannot be completed locally without changing the accepted K lock/protocol or broader architecture, stop with a technical escalation for Lev.
+
 
 
 
