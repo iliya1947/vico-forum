@@ -1,5 +1,14 @@
 # ChatGPT-5.6 Sol — personal log
 
+## SA04-J-LEV-01 verification — CONFIRMED / correction handed to Lira
+
+- Returned implementation baseline: Draft #330 exact `154f15f4bfaa96f405ef372700c555aaecadb091`; main `44d6b69a8d235cc8b1ee30953839be71e6ab836a`.
+- Re-read current AGENTS, PROJECT/PROJECT_STATE/ROADMAP, Complaints contract and the accepted full-J plan. The plan explicitly requires existing Complaints submission ↔ Forum mutation compatibility and dependency-before-actor ordering.
+- Verified source chain: fresh edit locks post, then new J AccountState actor mutex; mention insertion later touches `forum_reply_notifications.topic_id` FK. Existing topic-title Complaint locks topic `FOR UPDATE`, then the same actor `FOR NO KEY UPDATE`. Main lacks the new edit actor mutex. Existing J3b tests contain no real Complaints cross-writer regression.
+- Lev's finding is therefore a confirmed **current-J production defect**, not future Complaint N work. PostgreSQL 17 row-lock rules are consistent with the reported cycle.
+- Assigned one bounded Lira correction. No production change was made during review.
+
+
 ## SA04-J whole-J coordinator re-review — PASS
 
 - Stable exact implementation: Draft #330 `154f15f4bfaa96f405ef372700c555aaecadb091`; current main `44d6b69a8d235cc8b1ee30953839be71e6ab836a`.
