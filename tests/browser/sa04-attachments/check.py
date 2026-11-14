@@ -5,6 +5,7 @@ fixture deactivation is direct SQL only; the actual HTTP traffic passes through
 the ordinary Better Auth session and repository admission gates.
 """
 import argparse
+import base64
 import json
 import os
 import shutil
@@ -48,6 +49,26 @@ finally { await c.end(); }"""
                             input=json.dumps({"query": query, "params": params or []}),
                             cwd=repo, capture_output=True, text=True, check=True, timeout=30)
     return json.loads(result.stdout)
+
+
+def local_r2(action, key=None, batch=None):
+    """Inspect the *same* persisted local-only ATTACHMENT_R2 used by preview."""
+    command = {"action": action}
+    if key is not None:
+        command["key"] = key
+    if batch is not None:
+        command["batch"] = batch
+    result = subprocess.run(
+        ["pnpm", "exec", "tsx", "tests/browser/sa04-attachments/r2-cleanup.ts"],
+        input=json.dumps(command), cwd=repo, capture_output=True, text=True, timeout=80,
+    )
+    if result.returncode:
+        raise AssertionError("local R2 bridge failed: " + result.stderr[-3500:] +
+                             "\n" + result.stdout[-1000:])
+    replies = [line.partition("SA04_K5_R2_RESULT ")[2] for line in result.stdout.splitlines()
+               if line.startswith("SA04_K5_R2_RESULT ")]
+    assert len(replies) == 1, (result.stdout[-2000:], result.stderr[-1000:])
+    return json.loads(replies[0])
 
 
 def count(query, params=None):
@@ -373,6 +394,11 @@ try:
           where a.id=$1 and a.owner_id=$2""", [attachment_id, active_id])
         assert len(meta) == 1 and meta[0]["reservation_etag"]
         assert meta[0]["object_key"].startswith("private/fenced-v1/")
+        local_object = local_r2("inspect", meta[0]["object_key"])
+        assert local_object == {
+            "exists": True, "size": len(payload), "kind": "vico-payload-v1",
+            "base64": base64.b64encode(payload).decode(),
+        }, local_object
         record("chromium-mounted-file-upload-real-r2-verified-ready-journal",
                verified_bytes=len(payload))
 
