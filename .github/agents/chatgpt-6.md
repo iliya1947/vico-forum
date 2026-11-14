@@ -1,5 +1,27 @@
 # ChatGPT-6 — personal log
 
+## SA04-K4 — ACTIVE ASSIGNMENT: whole-operation Cancel lifecycle admission
+
+Continue cumulative Draft #332 from accepted K3 exact `dae431fc920c79cad654627052365a3fd2380fe4`. Accepted complete K plan: #331 comment #6877583725. Only **K4** is active.
+
+Required result: lifecycle-close the existing whole-operation `cancelOperation(ownerId, contextKey, draftId)` without changing its domain/storage contract.
+
+Acceptance:
+- repository transaction uses existing draft scope, then shared AccountState actor NKU, then existing retire-generation + exact temporary-ref delete; the actor lock remains through COMMIT/ROLLBACK;
+- inactive/missing denies before retirement/delete/no-op success, including empty and already-terminal operations; facts remain unchanged;
+- active Cancel stays idempotent and remains available under AP-10 `attachments.upload` restriction;
+- no published/shared attachment binding, publication receipt, foreign ref or physical object is synchronously removed; no per-file DELETE is added;
+- native PG17 evidence covers active empty/live/terminal behavior, state-first/writer-first lifecycle races and relevant overlap with upload/finalization/cleanup/ref protection;
+- canonical whole-operation DELETE gives lifecycle 401, classified 503 and unexpected failure semantics already established for attachment API; unsupported/per-file DELETE remains 405;
+- preserve current editor behavior: local Cancel/Remove may reset local selection/XHR state even if server Cancel is denied and must not imply a committed server cancellation;
+- run applicable exact-head CI and focused route/editor/fence regressions, then AUTHOR STOP on one new stable #332 head.
+
+Do not implement K5 connected Worker/BetterAuth/PostgreSQL/local-R2/Chromium closure early. Do not gate system cleanup/shared generation helpers or add deactivation cleanup. No schema/storage protocol/publication redesign, L–S, SA05, #315, permanent docs or Stage6. If correct K4 requires broader lock/protocol redesign, stop for Lev technical escalation.
+
+---
+
+# ChatGPT-6 — personal log
+
 ## SA04-K3 bounded implementation — Lira AUTHOR STOP / Mira review next
 
 - **Cumulative Draft #332:** stable `dae431fc920c79cad654627052365a3fd2380fe4`, open/draft/unmerged, from accepted K2 `eaf57c46ca28baff9a11ae637f37d7d850934ab9`.
@@ -90,6 +112,7 @@ Acceptance:
 - create a **new cumulative Draft implementation PR from current main** and AUTHOR STOP on one stable exact head with applicable checks and a concise evidence packet for Mira.
 
 Do not implement K2 journal actor signatures, K3 private reads, K4 Cancel or K5 connected local-R2/browser closure early. L–S, SA05, #315, permanent docs and Stage6 are out of scope. If K1 cannot be completed locally without changing the accepted K lock/protocol or broader architecture, stop with a technical escalation for Lev.
+
 
 
 
