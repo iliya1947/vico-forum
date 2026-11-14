@@ -1,5 +1,15 @@
 # Admin panel — communication
 
+## 2026-11-14 — Lev complete SA04-K technical plan published / STOP → Mira
+
+- **Lev complete SA04-K technical plan published:** [#6877583725](https://github.com/iliya1947/vico-forum/pull/331#issuecomment-6877583725), current main `398dae18d5ca7c3fc6dd84fd93a29d7c381ba366` after reviewed #330 merge. **Planning only; no K implementation or implementation PR.**
+- Complete 10-method attachment repository inventory/caller walk: seven AccountState-gated entrypoints — upload decision/replay, metadata/ref finalizer, PREPARING journal record, READY activation, private selection list/file read and whole-operation Cancel. Public post membership reads, server-owned security observations and background cleanup retain their distinct existing rules.
+- Reuse shared Drizzle AccountState guard and one caller-owned transaction; draft/journal dependencies before actor NKU. Journal methods need mandatory trusted server actor threaded through existing route callbacks, without schema or HTTP protocol changes. External PUT remains outside DB locks; final metadata rechecks activity. Deterministic lifecycle rollback may clean only the fresh settled attempt key; unknown COMMIT outcome keeps reference-aware recovery.
+- Plan preserves stable-ID replay, active AP10 upload-restricted replay/GET/Cancel behavior, terminal generation, existing positive-ETag fence, current idle/grace/claim cleanup, J final binding and published files of inactive authors. No Owner lifecycle exemption, last-manager rule, text drafts/per-file DELETE or new AV/storage policy.
+- Full native race/lock/fence and actual Worker/Better Auth/PG/local-R2 + Chromium evidence contract specified, including private GET fault privacy. Local R2 is test-only; the current optional unbound production binding is not activated. No K runtime test PASS is claimed from planning.
+- Proposed bounded Lira queue: **K1 metadata/replay and controlled lifecycle POST result; K2 journal PREPARING/READY; K3 private reads; K4 operation Cancel; K5 cumulative connected closure.** Only after accepting the complete plan may Mira activate **K1** in a new cumulative Draft PR. K2–K5 remain prepared/unassigned.
+- **Next actor: Mira scope/fit review. Lev planning complete / STOP; Lira/Mark inactive/unassigned.** Current master/history retained. L–S, SA05, #315, permanent docs and Stage6/external R2 remain separate. Whole SA04 incomplete.
+
 ## 2026-11-14 — SA04-J merged; SA04-K technical planning activated
 
 - Owner merge of #330 confirmed. Merge commit/current main: `398dae18d5ca7c3fc6dd84fd93a29d7c381ba366`.
