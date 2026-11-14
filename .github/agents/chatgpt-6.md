@@ -1,5 +1,29 @@
 # ChatGPT-6 — personal log
 
+## SA04-K3 — ACTIVE ASSIGNMENT: private attachment read lifecycle admission
+
+Continue cumulative Draft #332 from accepted K2 exact `eaf57c46ca28baff9a11ae637f37d7d850934ab9`. Accepted complete K plan: #331 comment #6877583725. Only **K3** is active.
+
+Required result: close AccountState admission for private temporary attachment reads without changing public published-file access:
+- `listDraftAttachments(ownerId, contextKey, draftId)`: existing draft scope → actor NKU → generation/query in the same short DB transaction;
+- `readDraftAttachment(ownerId, contextKey, draftId, attachmentId)`: existing draft scope → actor NKU → generation/ref lookup in the same short DB transaction;
+- adapt canonical list/private-file HTTP handling so inactive/missing is private/no-store 401, classified storage/lifecycle unavailability remains 503 and unexpected failure remains unexpected/private; the DB actor lock must not be held across bucket GET or response streaming.
+
+Acceptance:
+- inactive/missing obtains no private list/metadata/file success; state-first private file denial causes no bucket GET;
+- writer-first admitted read may finish before later deactivation and demonstrates actor-lock serialization through DB transaction completion;
+- native PostgreSQL evidence covers active/inactive/missing and both race orders for both methods;
+- public `?post=...` membership/file read remains unaffected by the author's lifecycle, including an inactive published author;
+- current AP10 `attachments.upload` restriction does not block private reads;
+- focused route tests cover list and private-file 401/503/unexpected privacy and public-branch preservation;
+- run applicable exact-head CI and AUTHOR STOP on one new stable #332 head.
+
+Do not implement K4 Cancel or K5 connected Worker/BA/PG/local-R2/Chromium closure early. Do not lifecycle-gate public `readPublishedAttachment`, security observations/admin reads, cleanup or shared generation helpers. No schema/storage protocol/public access redesign, L–S, SA05, #315, permanent docs or Stage6. If correct K3 requires broader protocol/Worker redesign beyond the accepted plan, stop for Lev technical escalation.
+
+---
+
+# ChatGPT-6 — personal log
+
 ## SA04-K2 bounded implementation — Lira AUTHOR STOP / Mira review next
 
 - **Draft #332:** `eaf57c46ca28baff9a11ae637f37d7d850934ab9`, open/draft/unmerged; accepted K1 predecessor `ad20fa37be4e0f887fc5ffac644f6304a9e1eb8f`.
@@ -58,5 +82,6 @@ Acceptance:
 - create a **new cumulative Draft implementation PR from current main** and AUTHOR STOP on one stable exact head with applicable checks and a concise evidence packet for Mira.
 
 Do not implement K2 journal actor signatures, K3 private reads, K4 Cancel or K5 connected local-R2/browser closure early. L–S, SA05, #315, permanent docs and Stage6 are out of scope. If K1 cannot be completed locally without changing the accepted K lock/protocol or broader architecture, stop with a technical escalation for Lev.
+
 
 
