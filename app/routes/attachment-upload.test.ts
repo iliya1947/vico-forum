@@ -205,10 +205,10 @@ describe("private attachment upload API", () => {
     const response = await action({ request: request(new TextEncoder().encode("hello")), context: env.ctx });
     expect(response.status).toBe(201);
     expect(env.recordUploadObject).toHaveBeenCalledWith(
-      "real-user", expect.stringMatching(/^private\\/fenced-v1\\//u),
+      "real-user", expect.stringMatching(/^private\/fenced-v1\//u),
     );
     expect(env.activateUploadObject).toHaveBeenCalledWith(
-      "real-user", expect.stringMatching(/^private\\/fenced-v1\\//u), "reservation",
+      "real-user", expect.stringMatching(/^private\/fenced-v1\//u), "reservation",
     );
   });
 
