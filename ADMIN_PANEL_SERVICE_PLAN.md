@@ -26,7 +26,7 @@ Accepted master technical plan: predecessor #251 comment **#6806249892**.
 - **A–H:** account-state storage + neutral public identity/projection foundation — delivered in current main.
 - **I:** Better Auth active-account closure — delivered in current main.
 - **J:** Forum authoritative actor writes — **delivered/merged by PR #330**, merge commit `398dae18d5ca7c3fc6dd84fd93a29d7c381ba366`; Mira cumulative whole-J PASS + Lev independent whole-J PASS on implementation head `800df2a56c4853a0c261f4cdb1b9969efe5c4b3e`.
-- **K:** attachment upload/draft/finalization admission — **Mira whole-K PASS on stable cumulative Draft #332 exact `bb9d1497c5d5f14bfff6a1edf64e19eed5fd5105`; Lev independent whole-K review active on the same head**.
+- **K:** attachment upload/draft/finalization admission — **Lev independent whole-K RETURN on exact `bb9d1497c5d5f14bfff6a1edf64e19eed5fd5105`; confirmed current-K finding `SA04-K-LEV-01 / P3`; bounded Lira correction active in #332**.
 - **L:** authorization mutations.
 - **M:** AP-10 mutations/appeals.
 - **N:** Complaints mutation/participation.
@@ -56,7 +56,7 @@ Planning must establish from current `main`:
 
 If current code/source-of-truth conflicts with the accepted master plan or a correct K solution requires a broader architectural change, Lev stops with a technical escalation instead of silently expanding scope.
 
-### Whole-K coordinator review — ACCEPTED
+### Whole-K coordinator review — HISTORICAL PASS; superseded by independent RETURN
 
 Mira coordinator whole-K review **PASS** on stable cumulative Draft #332 exact `bb9d1497c5d5f14bfff6a1edf64e19eed5fd5105`: **0 confirmed current-K defects**.
 
@@ -67,7 +67,16 @@ Independent exact-head evidence rechecked:
 - K5 connected run 43638470788 SUCCESS — **29/29** built Worker + genuine Better Auth + PostgreSQL 17 + local-only R2 + Chromium cases;
 - exact-head AP-10, SA-01, SA-03 and SA04-J12 browser workflows SUCCESS.
 
-Next gate: **Lev independent whole-K technical review of this same exact head**. Any implementation change invalidates this review snapshot and returns the cumulative PR to a new Mira whole-K cycle.
+Lev subsequently returned one confirmed current-K defect `SA04-K-LEV-01 / P3`; this historical coordinator PASS no longer closes the merge gate. After the bounded correction lands on a new stable head, Mira repeats cumulative whole-K review, then Lev independently reviews that same new head.
+
+
+### SA04-K-LEV-01 — CONFIRMED / correction active
+
+Mira independently verified Lev's P3 finding against current #332 source, the actual Worker reproducer and current React Router v8 route semantics. The new Worker failure wrapper classifies raw `request.url` pathname literally, while the attachment routes accept route-equivalent case/trailing/encoded static-segment variants; on those variants an unexpected private GET/HEAD 500 can therefore miss the required `private, no-store` header.
+
+This is a **current-K privacy/cache-contract defect**, not future #315 work. Confirmed scope is only the new attachment resource 5xx classifier and regressions. Required correction result: classify every attachment URL variant actually accepted by Router as the same private attachment resource for GET/HEAD 5xx; preserve status/body/cookies, successful responses, public GET caching and all auth/lifecycle/storage semantics; malformed encoding must not make the wrapper throw. Add focused alias/malformed regressions plus representative actual Worker unexpected-500 proof. No routing/auth/storage redesign.
+
+After correction: new stable exact #332 head + applicable gates → fresh Mira cumulative whole-K review → Lev independent whole-K review. No merge before both PASS.
 
 ## Remaining accepted Super-admin package sequence after SA-04
 
