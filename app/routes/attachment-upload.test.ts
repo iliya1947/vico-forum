@@ -15,6 +15,7 @@ import type {
 } from "../../db/forum-attachments";
 import { ForumAttachmentStorageUnavailableError } from "../../db/hyperdrive-forum-attachments";
 import { ForumAttachmentDraftConflictError } from "../../db/forum-attachments";
+import { AccountInactiveError, AccountMissingError } from "../../db/account-state";
 import { UserMeasureRestrictedError } from "../../db/user-measure-policy";
 import { action, loader } from "./attachment-upload";
 import routes from "../routes";
@@ -198,6 +199,64 @@ describe("private attachment upload API", () => {
     expect(env.recordUploadObject).toHaveBeenCalledOnce();
   });
 
+
+  it("passes only the session actor through both upload journal commands", async () => {
+    const env = setup();
+    const response = await action({ request: request(new TextEncoder().encode("hello")), context: env.ctx });
+    expect(response.status).toBe(201);
+    expect(env.recordUploadObject).toHaveBeenCalledWith(
+      "real-user", expect.stringMatching(/^private\\/fenced-v1\\//u),
+    );
+    expect(env.activateUploadObject).toHaveBeenCalledWith(
+      "real-user", expect.stringMatching(/^private\\/fenced-v1\\//u), "reservation",
+    );
+  });
+
+  it("denies inactive actor during PREPARING before bucket reservation", async () => {
+    const env = setup();
+    env.recordUploadObject.mockRejectedValueOnce(new AccountInactiveError());
+    const response = await action({ request: request(new TextEncoder().encode("hello")), context: env.ctx });
+    expect(response.status).toBe(401);
+    expect(response.headers.get("Cache-Control")).toBe("no-store");
+    expect(await response.json()).toEqual({ error: "unauthenticated" });
+    expect(env.recordUploadObject).toHaveBeenCalledOnce();
+    expect(env.r2.reserve).not.toHaveBeenCalled();
+    expect(env.r2.put).not.toHaveBeenCalled();
+    expect(env.createDraftAttachment).not.toHaveBeenCalled();
+  });
+
+  it("denies missing actor during READY before payload and cleans only its reservation", async () => {
+    const env = setup();
+    env.activateUploadObject.mockRejectedValueOnce(new AccountMissingError());
+    const response = await action({ request: request(new TextEncoder().encode("hello")), context: env.ctx });
+    expect(response.status).toBe(401);
+    expect(response.headers.get("Cache-Control")).toBe("no-store");
+    expect(await response.json()).toEqual({ error: "unauthenticated" });
+    expect(env.r2.reserve).toHaveBeenCalledOnce();
+    expect(env.r2.put).not.toHaveBeenCalled();
+    expect(env.r2.delete).toHaveBeenCalledOnce();
+    expect(env.createDraftAttachment).not.toHaveBeenCalled();
+  });
+
+  it("distinguishes classified unavailable from unexpected journal activation failures", async () => {
+    const unavailable = setup();
+    unavailable.activateUploadObject.mockRejectedValueOnce(new ForumAttachmentStorageUnavailableError());
+    const response = await action({
+      request: request(new TextEncoder().encode("hello")), context: unavailable.ctx,
+    });
+    expect(response.status).toBe(503);
+    expect(response.headers.get("Cache-Control")).toBe("no-store");
+    expect(await response.json()).toEqual({ error: "unavailable" });
+    expect(unavailable.r2.put).not.toHaveBeenCalled();
+
+    const unexpected = setup();
+    unexpected.activateUploadObject.mockRejectedValueOnce(new Error("unexpected journal bug"));
+    await expect(action({
+      request: request(new TextEncoder().encode("hello")), context: unexpected.ctx,
+    })).rejects.toThrow("unexpected journal bug");
+    expect(unexpected.r2.put).not.toHaveBeenCalled();
+    expect(unexpected.r2.delete).toHaveBeenCalledOnce();
+  });
 
   it("registers classic 65535 through the storage/action path within the default internal-service budget", async () => {
     const env = setup(), data = classicManyEntryZip(65535, true);
