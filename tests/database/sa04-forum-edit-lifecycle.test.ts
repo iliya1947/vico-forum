@@ -4,6 +4,7 @@ import { Client, Pool } from "pg";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { AccountInactiveError } from "../../db/account-state";
 import { DrizzleForumAttachments } from "../../db/forum-attachments";
+import { DrizzleComplaintsRepository } from "../../db/complaints-repository";
 import {
   DrizzleForumRepository, ForumAuthorizationError, ForumStateConflictError,
 } from "../../db/forum-repository";
@@ -31,6 +32,7 @@ type Item = {
   topicId: string;
   postId: string;
   revisionId: string;
+  titleRevisionId: string;
   retainedIds: [string, string];
 };
 
@@ -55,13 +57,13 @@ function file(ownerId: string, contextKey: string, draftId: string) {
   };
 }
 
-async function seed(ownerId: string): Promise<Item> {
-  const topicId = uuid(), postId = uuid(), revisionId = uuid();
+async function seed(ownerId: string, topicAuthorId = ownerId): Promise<Item> {
+  const topicId = uuid(), postId = uuid(), revisionId = uuid(), titleRevisionId = uuid();
   await forum.createTopicWithInitialPost({
-    id: topicId, sectionId, authorId: ownerId,
-    titleRevision: { id: uuid(), originalContent: "J3b lifecycle", sourceLocale: "en" },
+    id: topicId, sectionId, authorId: topicAuthorId,
+    titleRevision: { id: titleRevisionId, originalContent: "J3b lifecycle", sourceLocale: "en" },
     initialPost: {
-      id: uuid(), topicId, authorId: ownerId,
+      id: uuid(), topicId, authorId: topicAuthorId,
       bodyRevision: { id: uuid(), originalContent: "Initial", sourceLocale: "en" },
     },
   });
@@ -73,7 +75,8 @@ async function seed(ownerId: string): Promise<Item> {
     bodyRevision: { id: revisionId, originalContent: "Before", sourceLocale: "en" },
     publishedDraft: { contextKey, draftId, attachmentIds: retained.map(item => item.id) },
   });
-  return { ownerId, topicId, postId, revisionId, retainedIds: [retained[0].id, retained[1].id] };
+  return { ownerId, topicId, postId, revisionId, titleRevisionId,
+    retainedIds: [retained[0].id, retained[1].id] };
 }
 
 async function prepare(item: Item) {
@@ -143,6 +146,19 @@ function pauseQuery(client: Client, matches: (sql: string) => boolean) {
 
 function isolatedWriter(client: Client) {
   return new DrizzleForumRepository(drizzle(client), policy, noMeasures);
+}
+
+/** Observe an actual PostgreSQL row-lock wait, not only an expected scheduling order. */
+async function awaitBlocked(waiterPid: number, blockerPid: number) {
+  for (let attempt = 0; attempt < 160; attempt++) {
+    const result = await fixture.query<{ blocked: boolean }>(
+      "select $2::int = any(pg_blocking_pids($1::int)) as blocked",
+      [waiterPid, blockerPid],
+    );
+    if (result.rows[0]?.blocked) return;
+    await new Promise(resolve => setTimeout(resolve, 25));
+  }
+  throw new Error(`Expected native PostgreSQL lock wait: ${waiterPid} blocked by ${blockerPid}`);
 }
 
 beforeAll(async () => {
@@ -292,4 +308,85 @@ describe("SA04-J3b authoritative account admission for published edit", () => {
       await writer.end();
     }
   }, 30_000);
+  it.each(["complaint-first", "edit-first"] as const)(
+    "SA04-J-LEV-01: real topic-title Complaint and mentioned-post edit both commit (%s)",
+    async (order) => {
+      const actor = await user("j-lev-edit-actor-" + uuid());
+      const topicAuthor = await user("j-lev-title-author-" + uuid());
+      const item = await seed(actor, topicAuthor);
+      const { draftId, request } = await prepare(item);
+      const before = await facts(item, draftId);
+      const editor = new Client({ connectionString: url, options: options + " -c lock_timeout=8s" });
+      const submitter = new Client({ connectionString: url, options: options + " -c lock_timeout=8s" });
+      await Promise.all([editor.connect(), submitter.connect()]);
+      const editPid = (await editor.query<{ pid: number }>("select pg_backend_pid() as pid")).rows[0]!.pid;
+      const complaintPid = (await submitter.query<{ pid: number }>("select pg_backend_pid() as pid")).rows[0]!.pid;
+      const barrier = order === "complaint-first"
+        // Complaint already owns the real topic-title FOR UPDATE when its actor query waits.
+        ? pauseQuery(submitter, text => /select id from "user" .*for no key update/i.test(text))
+        // Edit has already taken topic/post and actor locks, revised post and reached
+        // the real mention INSERT when Complaint tries to lock the title topic.
+        : pauseQuery(editor, text => /insert into forum_reply_notifications/i.test(text));
+      const complaintInput = {
+        operationId: uuid(),
+        target: { kind: "topic-title" as const, topicId: item.topicId, revisionId: item.titleRevisionId },
+        reason: "spam" as const, explanation: "J dependency lock regression",
+      };
+      const complaints = new DrizzleComplaintsRepository(drizzle(submitter),
+        { tenMinutes: 100, day: 100 }, noMeasures);
+      let editing: ReturnType<DrizzleForumRepository["editPublishedPost"]> | undefined;
+      let reporting: ReturnType<DrizzleComplaintsRepository["submit"]> | undefined;
+      try {
+        if (order === "complaint-first") {
+          reporting = complaints.submit(actor, complaintInput);
+          await barrier.observed;
+          editing = isolatedWriter(editor).editPublishedPost(request);
+          await awaitBlocked(editPid, complaintPid);
+        } else {
+          editing = isolatedWriter(editor).editPublishedPost(request);
+          await barrier.observed;
+          reporting = complaints.submit(actor, complaintInput);
+          await awaitBlocked(complaintPid, editPid);
+        }
+        expect(barrier.triggered).toBe(true);
+        barrier.resume();
+        const [, complaintResult] = await Promise.all([editing, reporting]);
+        const after = await facts(item, draftId);
+        expect(after.head).not.toBe(before.head);
+        expect(after.revisions).toBe(before.revisions + 1);
+        expect(after.mentions).toBe(before.mentions + 1);
+        expect(after.bindings).toEqual([item.retainedIds[0], request.attachmentIds[0]].sort());
+        expect(after.refs).toEqual([]);
+        expect(after.receipts).toBe(1);
+        expect(after.completed).toBe(1);
+        expect((await fixture.query(`
+          select recipient_user_id,actor_user_id,topic_id,post_id
+          from forum_reply_notifications where post_id=$1 and kind='mention'`,
+          [item.postId])).rows).toEqual([{
+          recipient_user_id: recipient, actor_user_id: actor,
+          topic_id: item.topicId, post_id: item.postId,
+        }]);
+        expect((await fixture.query(`
+          select reporter_user_id,reason from forum_complaints where id=$1 and case_id=$2`,
+          [complaintResult.complaintId, complaintResult.caseId])).rows).toEqual([
+          { reporter_user_id: actor, reason: "spam" },
+        ]);
+        expect((await fixture.query(`
+          select kind,topic_id,title_revision_id from forum_complaint_targets
+          where id=(select target_id from forum_complaints where id=$1)`,
+          [complaintResult.complaintId])).rows).toEqual([{
+          kind: "topic-title", topic_id: item.topicId, title_revision_id: item.titleRevisionId,
+        }]);
+        // Complaint never retargeted an edited reply and the edit never reset the title.
+        expect((await fixture.query("select current_title_revision_id from forum_topics where id=$1",
+          [item.topicId])).rows).toEqual([{ current_title_revision_id: item.titleRevisionId }]);
+      } finally {
+        barrier.resume();
+        barrier.restore();
+        await Promise.allSettled([editing, reporting].filter((value): value is Promise<unknown> => Boolean(value)));
+        await Promise.all([editor.end(), submitter.end()]);
+      }
+    }, 40_000,
+  );
+
 });
