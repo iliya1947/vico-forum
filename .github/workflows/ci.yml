@@ -120,3 +120,7 @@ jobs:
           node --test scripts/smoke-complaints-ownership.probe.mjs
           pnpm exec tsx scripts/smoke-complaints-local.ts
           test ! -e .dev.vars && test ! -L .dev.vars
+      - name: SA04-J12 built Worker Better Auth AccountState late-deactivation smoke
+        run: |
+          pnpm exec tsx scripts/smoke-forum-accountstate-local.ts
+          test ! -e .dev.vars && test ! -L .dev.vars
