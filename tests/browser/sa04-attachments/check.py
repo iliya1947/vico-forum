@@ -241,11 +241,22 @@ def wait_blocking(backend_pid, purpose):
           where datname=current_database() and pid!=pg_backend_pid()
             and $1=any(pg_blocking_pids(pid))""", [backend_pid])
         return rows if rows else None
-    return wait_for(blocked, purpose, 15.0)
+    try:
+        return wait_for(blocked, purpose, 15.0)
+    except AssertionError:
+        state = sql("""select pid,application_name,state,wait_event_type,wait_event,
+          left(query,220) as query,pg_blocking_pids(pid) as blocked_by
+          from pg_stat_activity where datname=current_database()
+          order by application_name,pid""")
+        print("K5_BLOCK_DIAGNOSTIC " + json.dumps({
+            "purpose":purpose,"holder_pid":backend_pid,"activity":state,
+        }, ensure_ascii=False), flush=True)
+        raise
 
 
 def start_browser_request(page, url, method, request_headers, body=None):
     return page.evaluate("""({url,method,headers,body}) => {
+      window.__k5RequestSettled = null;
       window.__k5Request = fetch(url, {
         method, headers, credentials:"same-origin",
         ...(body === null ? {} : {body}),
@@ -254,7 +265,10 @@ def start_browser_request(page, url, method, request_headers, body=None):
         cache:response.headers.get("cache-control") || "",
         contentType:response.headers.get("content-type") || "",
         body:await response.text()
-      }), error => ({failed:String(error)}));
+      }), error => ({failed:String(error)})).then(result => {
+        window.__k5RequestSettled = result;
+        return result;
+      });
       return "started";
     }""", {"url": url, "method": method, "headers": request_headers, "body": body})
 
@@ -477,7 +491,13 @@ try:
                 "X-Vico-Attachment-Size": str(len("K5 state first upload text".encode())),
                 **headers(context_key, race_op),
             }, "K5 state first upload text")
-            blocked = wait_blocking(blocker.backend_pid, "state-first scope lock")
+            try:
+                blocked = wait_blocking(blocker.backend_pid, "state-first scope lock")
+            except AssertionError:
+                print("K5_BROWSER_REQUEST_DIAGNOSTIC " +
+                      json.dumps(race_page.evaluate("() => window.__k5RequestSettled")),
+                      flush=True)
+                raise
             assert blocked
             deactivate(race_id)
             blocker.send({"action": "commit"})
