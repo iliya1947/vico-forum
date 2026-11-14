@@ -15,7 +15,7 @@ import type {
 } from "../../db/forum-attachments";
 import { ForumAttachmentStorageUnavailableError } from "../../db/hyperdrive-forum-attachments";
 import { ForumAttachmentDraftConflictError } from "../../db/forum-attachments";
-import { AccountInactiveError, AccountMissingError } from "../../db/account-state";
+import { AccountInactiveError, AccountMissingError, AccountStateUnavailableError } from "../../db/account-state";
 import { UserMeasureRestrictedError } from "../../db/user-measure-policy";
 import { action, loader } from "./attachment-upload";
 import routes from "../routes";
@@ -199,6 +199,39 @@ describe("private attachment upload API", () => {
     expect(env.recordUploadObject).toHaveBeenCalledOnce();
   });
 
+
+  it.each([AccountInactiveError, AccountMissingError])(
+    "denies private selection GET with no-store 401, including an empty list (%s)",
+    async ErrorClass => {
+      const env = setup();
+      env.listDraftAttachments.mockRejectedValueOnce(new ErrorClass());
+      const response = await loader({ request: scopedRequest("GET"), context: env.ctx });
+      expect(response.status).toBe(401);
+      expect(response.headers.get("Cache-Control")).toBe("no-store");
+      expect(await response.json()).toEqual({ error: "unauthenticated" });
+      expect(env.listDraftAttachments).toHaveBeenCalledWith("real-user", contextKey, draftId);
+      expect(env.r2.get).not.toHaveBeenCalled();
+    },
+  );
+
+  it.each([AccountStateUnavailableError, ForumAttachmentStorageUnavailableError])(
+    "keeps classified private selection failures unavailable and no-store (%s)",
+    async ErrorClass => {
+      const env = setup();
+      env.listDraftAttachments.mockRejectedValueOnce(new ErrorClass());
+      const response = await loader({ request: scopedRequest("GET"), context: env.ctx });
+      expect(response.status).toBe(503);
+      expect(response.headers.get("Cache-Control")).toBe("no-store");
+      expect(await response.json()).toEqual({ error: "unavailable" });
+    },
+  );
+
+  it("does not misclassify unexpected private GET failure as a lifecycle denial", async () => {
+    const env = setup();
+    env.listDraftAttachments.mockRejectedValueOnce(new Error("unexpected query"));
+    await expect(loader({ request: scopedRequest("GET"), context: env.ctx }))
+      .rejects.toThrow("unexpected query");
+  });
 
   it("passes only the session actor through both upload journal commands", async () => {
     const env = setup();
