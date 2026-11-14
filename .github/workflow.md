@@ -3,15 +3,15 @@
 - **Service PR #331:** active Admin/Super-admin continuation after archived #251; never merge.
 - **Current main at workflow handoff:** `44d6b69a8d235cc8b1ee30953839be71e6ab836a`.
 - **Technical plan:** accepted SA-04 master + full SA04-J; implementation in bounded J slices.
-- **Implementation PR:** cumulative Draft #330, open/draft/unmerged, stable exact head `7212aef429f856db0c2d5e7a9a621739898fed12`.
-- **Accepted checkpoints:** J1 → J2 → J3a → J3b → J3c → J4 → J5 → J6 → J7 → J8 → J9 → J10 → J11, all Mira PASS. J11 exact `7212aef429f856db0c2d5e7a9a621739898fed12`; J10 baseline exact `6bd20801d399557c2f6964fc0a8acd4058a14cb6`.
-- **Active gate:** **J11 Mira bounded coordinator review PASS — 0 confirmed current-scope defects. J12 cumulative closeout/evidence is assigned to Lira from exact baseline `7212aef429f856db0c2d5e7a9a621739898fed12`.**
-- **J11 result:** `confirmHelpDuplicate`, `removeHelpDuplicate`, `appealHelpDuplicate`, `resolveHelpDuplicateAppeal` now use topic/relationship/signal/appeal dependencies → same-tx actor AccountState → applicable original measure → effects and real History last, with FK-compatible `NO KEY UPDATE` and no reverse actor→content locking. Appeal submission remains measure/History-free.
-- **Exact-head evidence:** new J11 PG17 **32/32**, total PG17 **918/918**; app/unit **2278/2278**; [CI 43567052744](https://github.com/iliya1947/vico-forum/actions/runs/43567052744) checks/database SUCCESS; [SA-03 Chromium 43567052796](https://github.com/iliya1947/vico-forum/actions/runs/43567052796) SUCCESS; [AP-10 Chromium 43567052813](https://github.com/iliya1947/vico-forum/actions/runs/43567052813) **4/4 SUCCESS**. Canonical five-intent late lifecycle private 401 regression included.
-- **Next actor:** Lira performs J12 cumulative full-J inventory/evidence closeout on Draft #330 and AUTHOR STOPs on one stable exact head; Mira then performs coordinator whole-J review.
-- **J12 evidence note:** no confirmed J11 production defect, but the accepted full-J plan still requires direct native overlap proof for `confirmHelpDuplicate` ↔ accepted duplicate-signal review; J12 must close this and any other inventory-discovered missing cross-writer evidence before AUTHOR STOP. Lev/Mark remain unassigned; after J12 Mira whole-J coordinator review, then only after PASS Lev independent whole-J review on the same stable exact head.
-- **Documentation note:** J7 topic lock technical wording must be aligned later in separate permanent docs closeout; no docs in implementation PR.
-- **Separate:** #315 remediation, attachment K, Complaint N, SA-05, permanent docs and Stage 6.
+- **Implementation PR:** cumulative Draft #330, open/draft/unmerged, stable exact head `85f1de98230fb495e90dcd8923ebfcf0f43bad3c`.
+- **Accepted bounded checkpoints:** J1 → J2 → J3a → J3b → J3c → J4 → J5 → J6 → J7 → J8 → J9 → J10 → J11, **all Mira bounded PASS**. J11 accepted baseline `7212aef429f856db0c2d5e7a9a621739898fed12`.
+- **Active gate:** **J12 cumulative J implementation/evidence AUTHOR STOP by Lira; next Mira coordinator whole-J review on stable exact `85f1de98230fb495e90dcd8923ebfcf0f43bad3c`.** J12 is not yet Mira whole-J PASS.
+- **Full-J inventory:** 24 public actor-owned Forum repository writes including F-protected presence; two same-locale source-correction no-op service entries. Source/direct lock-graph/replay/History/HTTP evidence indexed in Lira personal log and communication file.
+- **J12 test-only delta:** three commits / two native PG files, five new tests: direct duplicate confirmation versus accepted duplicate-signal review in both winner orders, reciprocal reply/mention FK with both actors locked, and connected canonical mutation→Hyperdrive→PostgreSQL late-deactivation denial. No production J12 code changes.
+- **Exact-head gates:** [CI 43569471223](https://github.com/iliya1947/vico-forum/actions/runs/43569471223) SUCCESS (PG17 **923/923**, app **2278/2278**, lint/typecheck/build/schema/Workers); [SA-03 Chromium 43569471232](https://github.com/iliya1947/vico-forum/actions/runs/43569471232) SUCCESS; [AP-10 Chromium 43569471253](https://github.com/iliya1947/vico-forum/actions/runs/43569471253) **4/4 SUCCESS**. No production/Owner visual acceptance claimed.
+- **Next actor:** Mira coordinator **whole-J** review of cumulative Draft #330 stable exact `85f1de98230fb495e90dcd8923ebfcf0f43bad3c`. Confirmed current-J defects, if any, return as one packet to Lira. **Only after Mira whole-J PASS → Lev independent whole-J technical review of that same stable head.** Mark not assigned.
+- **Documentation:** J7 topic lock wording requires separate permanent-doc closeout, not implementation PR. No docs PR yet.
+- **Separate:** SA04 K+, Complaint N, #315, SA-05, permanent docs and Stage 6. Do not merge either PR.
 
 ## Continuation rule for #331
 
