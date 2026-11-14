@@ -26,7 +26,7 @@ Accepted master technical plan: predecessor #251 comment **#6806249892**.
 - **A–H:** account-state storage + neutral public identity/projection foundation — delivered in current main.
 - **I:** Better Auth active-account closure — delivered in current main.
 - **J:** Forum authoritative actor writes — **delivered/merged by PR #330**, merge commit `398dae18d5ca7c3fc6dd84fd93a29d7c381ba366`; Mira cumulative whole-J PASS + Lev independent whole-J PASS on implementation head `800df2a56c4853a0c261f4cdb1b9969efe5c4b3e`.
-- **K:** attachment upload/draft/finalization admission — **K1–K3 Mira PASS; K4 Lira AUTHOR STOP on cumulative Draft #332 exact `8f89a7101d356eb52ccf1021a63341a4e0a37967`, pending Mira bounded review; K5 prepared/inactive**.
+- **K:** attachment upload/draft/finalization admission — **K1–K4 Mira PASS; K5 cumulative connected closure active in Draft #332**.
 - **L:** authorization mutations.
 - **M:** AP-10 mutations/appeals.
 - **N:** Complaints mutation/participation.
@@ -106,20 +106,32 @@ Accepted result:
 
 Exact-head evidence: CI 43608804921 SUCCESS — PG17 **949/949** in 83 files, K3 native **7/7**, K2 **7/7**, K1 **7/7**, fence **22/22**, app **2300/2300** in 186 files, lint/typecheck/build/migrations/Workers PASS. Exact-head AP-10, SA-01, SA-03 and SA04-J12 browser workflows also SUCCESS.
 
-### K4 — Lira AUTHOR STOP / Mira bounded review pending
+### K4 — ACCEPTED
 
-Result: authoritative active-account admission for whole-operation `cancelOperation`, preserving current idempotent operation retirement, temporary-ref cleanup and local editor Cancel/Remove behavior.
+Mira bounded coordinator review **PASS** on cumulative Draft #332 exact `8f89a7101d356eb52ccf1021a63341a4e0a37967`: 0 confirmed current-K4 defects.
 
-Readiness:
-- repository order remains draft advisory scope → actor NKU → existing retire/delete logic in the same short transaction;
-- inactive/missing actor receives no `cancelled` success, no new completion marker and no temporary-ref deletion, including empty/already-terminal operations;
-- active Cancel remains idempotent for empty/live/already-terminal operation and is not blocked by AP-10 `attachments.upload`;
-- only temporary refs of the exact owner/context/operation may be removed; published/shared bindings, publication receipts, foreign refs and physical bytes remain untouched synchronously;
-- real PostgreSQL evidence covers state-first/writer-first Cancel plus overlap with upload/finalization and existing cleanup/ref behavior; no new actor lock is added to system cleanup/shared generation helpers;
-- canonical whole-operation DELETE maps lifecycle inactive/missing to private/no-store 401, classified unavailable to 503, unexpected remains unexpected; unsupported/per-file DELETE remains 405;
-- existing local editor Cancel/Remove still resets local intent/XHR state without claiming a server commit on denied Cancel;
-- K5 connected closure remains inactive. No per-file server delete, schema/storage/publication redesign, L–S, SA05, #315, permanent docs or Stage6 work.
+Accepted result:
+- `cancelOperation` keeps existing draft advisory scope → actor NKU → retire-generation + exact temporary-ref delete in one transaction;
+- inactive/missing cannot receive empty/live/terminal Cancel success or mutate completion/refs;
+- active Cancel remains idempotent and AP-10 `attachments.upload` independent;
+- no public/shared binding, receipt, foreign ref or physical object is synchronously removed;
+- local editor Cancel/Remove semantics remain local reset/abort intent and do not claim a remote committed Cancel.
 
-**K4 author evidence (not Mira PASS):** cumulative Draft #332 exact `8f89a7101d356eb52ccf1021a63341a4e0a37967`; one production AccountState guard in Cancel, native K4 7/7 with both state-race and real Cancel↔metadata finalization orderings; route denial/unavailable/unexpected plus editor local denial; [CI 43616566018](https://github.com/iliya1947/vico-forum/actions/runs/43616566018) SUCCESS — PG17 956/956, app 2306/2306, lint/typecheck/build/schema/Workers. AP-10/SA-01/SA-03/SA04-J12 exact-head browser workflows SUCCESS. Mira reviews this exact head; only her K4 PASS activates K5.
+Exact-head evidence: CI 43616566018 SUCCESS — PG17 **956/956** in 84 files, K4 native **7/7**, K3 **7/7**, fence **22/22**, app **2306/2306** in 186 files, attachment route **42/42**, editor attachment operation **21/21**, lint/typecheck/build/migrations/Workers PASS. AP-10, SA-01, SA-03 and SA04-J12 browser workflows also SUCCESS on the same SHA.
 
+### Active K5 — cumulative connected closure
+
+Result: close **all SA04-K evidence** on one stable cumulative #332 head and fix only confirmed current-K defects discovered during that closure.
+
+Required cumulative acceptance:
+- re-sweep all seven lifecycle-gated attachment entrypoints and excluded public/system boundaries against the accepted K plan;
+- prove state-first/writer-first lifecycle races and cross-writer/fence matrix across admission, PREPARING/READY, finalization, private reads and Cancel, including cleanup claims/leases and J publication/edit interactions where current K depends on them;
+- preserve late-PUT and ambiguous-ACK rules: no false success/new publication capability after deactivation; no blind deletion on unknown DB/storage commit outcome;
+- connected **built Worker + genuine Better Auth + PostgreSQL + local-only R2 binding** harness using supported local Wrangler/Miniflare facilities; no production config/resource/credential change;
+- deterministic actual HTTP barriers for pre-object denial, late PUT/finalizer denial, journal wait/state-win, POST/list/private-file 503 and unexpected 500 privacy, and public published bytes of inactive author;
+- Chromium on actual mounted forms/BA cookies/local R2 covering active upload/retry/publish/download, deactivation after mount and during pending upload, text/File/selection preservation/no false 201, inactive list/private download/retry/Cancel denial, Remove/Cancel late-ACK isolation, AP-10 committed replay vs new-file rejection, retained published file;
+- applicable native/fence/publication/J/AP10/forum-permission/route/Hyperdrive/editor/R2 suites plus standard CI gates all green on the final exact head;
+- AUTHOR STOP on one final stable cumulative head with complete evidence packet. Then Mira performs **whole-K coordinator review**, and only after Mira PASS does Lev independently review that same exact head.
+
+K5 must not expand into L–S, SA05, #315, permanent docs, production/Stage6 deployment or unrelated redesign. Any current-K defect discovered in K5 may be fixed locally in #332; broader protocol/architecture change requires Lev technical escalation first.
 
