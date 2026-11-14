@@ -460,6 +460,103 @@ try:
         refused(cancel(inactive_ctx, topic_id, inactive_operation))
         record("mounted-chromium-inactive-upload-denied-keeps-editor-text-and-state")
 
+
+        # Causal state-first: hold the authoritative actor row, observe the
+        # real Worker query blocked on that exact backend, then deactivate
+        # before releasing. No fresh object/journal/ref may appear.
+        race_page.goto(base + "/en/topics/" + topic_id, wait_until="networkidle")
+        race_op, race_asset = str(uuid4()), str(uuid4())
+        race_before = stats(race_id)
+        blocker = PgBarrier()
+        try:
+            blocker.send({"action": "begin-actor", "actor": race_id})
+            start_browser_request(race_page, "/api/attachments", "POST", {
+                "Content-Type": "text/plain",
+                "X-Vico-Attachment-Id": race_asset,
+                "X-Vico-Attachment-Name": "k5-state-first.txt",
+                "X-Vico-Attachment-Size": str(len("K5 state first upload text".encode())),
+                **headers(context_key, race_op),
+            }, "K5 state first upload text")
+            blocked = wait_blocking(blocker.backend_pid, "state-first actor lock")
+            assert blocked
+            blocker.send({"action": "deactivate", "actor": race_id})
+            blocker.send({"action": "commit"})
+            denied = finish_browser_request(race_page)
+            assert denied.get("status") == 401, denied
+            assert "no-store" in denied["cache"]
+            assert stats(race_id) == race_before
+            record("actual-worker-state-first-blocked-actor-before-r2",
+                   physical_lock=True, unchanged=True)
+        finally:
+            blocker.close()
+
+        # Causal post-READY streaming gate: only the first 8 KiB of a 16 KiB
+        # upload reaches the Worker. A positive journal READY proves R2
+        # reservation and activation have completed; the test holds the
+        # remainder until after fixture deactivation commits.
+        delayed.goto(base + "/en/topics/" + topic_id, wait_until="networkidle")
+        delayed_op, delayed_asset = str(uuid4()), str(uuid4())
+        delayed_before = stats(delayed_id)
+        old_keys = {row["object_key"] for row in sql(
+            "select object_key from forum_attachment_upload_objects")}
+        stream_start(delayed, topic_id, delayed_op, delayed_asset)
+        def ready_upload():
+            rows = sql("""select object_key,reservation_etag from forum_attachment_upload_objects
+              where reservation_etag is not null""")
+            return next((row for row in rows
+                         if row["object_key"] not in old_keys), None)
+        ready = wait_for(ready_upload, "held client stream after READY journal", 25)
+        assert ready["reservation_etag"], ready
+        deactivate(delayed_id)
+        delayed_response = stream_release(delayed)
+        assert delayed_response.get("status") == 401, delayed_response
+        assert "no-store" in (delayed_response.get("cache") or "")
+        assert sql("select id from forum_attachments where id=$1", [delayed_asset]) == []
+        assert sql("select attachment_id from forum_attachment_draft_refs where attachment_id=$1",
+                   [delayed_asset]) == []
+        assert stats(delayed_id)["assets"] == delayed_before["assets"]
+        assert stats(delayed_id)["refs"] == delayed_before["refs"]
+        record("actual-local-r2-ready-held-browser-stream-deactivation-before-finalize",
+               ready_key=True, no_false_201=True, no_asset_ref=True)
+
+        # Block the existing journal mutex in PREPARING and make the state
+        # change win before activation can acquire the journal row. The
+        # real Worker must not issue a successful payload PUT after denial.
+        journal_page.goto(base + "/en/topics/" + topic_id, wait_until="networkidle")
+        journal_op, journal_asset = str(uuid4()), str(uuid4())
+        before_keys = {row["object_key"] for row in sql(
+            "select object_key from forum_attachment_upload_objects")}
+        journal_before = stats(journal_id)
+        start_browser_request(journal_page, "/api/attachments", "POST", {
+            "Content-Type": "text/plain",
+            "X-Vico-Attachment-Id": journal_asset,
+            "X-Vico-Attachment-Name": "k5-journal-wait.txt",
+            "X-Vico-Attachment-Size": str(len("K5 journal waits actor update".encode())),
+            **headers(context_key, journal_op),
+        }, "K5 journal waits actor update")
+        def preparing():
+            rows = sql("""select object_key,reservation_etag from forum_attachment_upload_objects
+              where reservation_etag is null""")
+            return next((row["object_key"] for row in rows
+                         if row["object_key"] not in before_keys), None)
+        preparing_key = wait_for(preparing, "new PREPARING row before R2 reserve", 12)
+        journal_lock = PgBarrier()
+        try:
+            journal_lock.send({"action": "begin-journal", "key": preparing_key})
+            wait_blocking(journal_lock.backend_pid, "journal activation blocked")
+            deactivate(journal_id)
+            journal_lock.send({"action": "commit"})
+            denied = finish_browser_request(journal_page)
+            assert denied.get("status") == 401, denied
+            assert "no-store" in denied["cache"]
+            assert sql("select id from forum_attachments where id=$1", [journal_asset]) == []
+            assert stats(journal_id)["assets"] == journal_before["assets"]
+            assert stats(journal_id)["refs"] == journal_before["refs"]
+            record("actual-worker-journal-before-actor-deactivation-wins",
+                   physical_lock=True, no_asset=True)
+        finally:
+            journal_lock.close()
+
         assert not external, external[:10]
         assert not page_errors, page_errors[:10]
         browser.close()
