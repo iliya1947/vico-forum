@@ -1,5 +1,16 @@
 # Admin panel — communication
 
+## 2026-11-14 — Mira bounded K1 PASS; K2 activated
+
+- Reviewed cumulative Draft #332 exact `ad20fa37be4e0f887fc5ffac644f6304a9e1eb8f` against current main, accepted K plan and current Editor/AP10/AccountState contracts. **K1 verdict: PASS — 0 confirmed current-K1 defects.**
+- Verified all six changed files, not only tests. Production changes remain limited to `db/forum-attachments.ts`, `db/hyperdrive-forum-attachments.ts` and `app/routes/attachment-upload.ts`; no K2+, schema, docs or Stage6 change.
+- Confirmed transaction/lock placement: `admitUpload` draft scope → actor NKU → generation/replay/measure; `createDraftAttachment` draft scope → generation → existing fenced journal FOR UPDATE → actor NKU → replay/measure/metadata/ref/fallback. No second connection or new post-actor existing dependency was introduced.
+- Confirmed lifecycle denial cannot return committed private replay/fallback; active committed replay keeps the existing AP10 restriction exception; fresh upload retains AP10 admission. Known late lifecycle denial only best-effort deletes the fresh settled physical attempt; unknown COMMIT/storage outcome still avoids blind delete.
+- Independently rechecked exact-head CI 43599514990: PG17 935/935, K1 7/7, attachment fence 22/22, app 2282/2282, standard/build/migration/Worker gates all SUCCESS.
+- **K2 now active for Lira** in the same cumulative #332: trusted actor through PREPARING/READY journal commands, record actor→INSERT tx and activate journal→actor→READY tx, with focused lifecycle/fence races. K3–K5 remain unassigned.
+- Lev STOP; Mark inactive; no merge/deploy.
+
+
 ## 2026-11-14 — SA04-K1 Lira AUTHOR STOP / bounded Mira gate
 
 - **Draft [#332](https://github.com/iliya1947/vico-forum/pull/332)** created from main `398dae18d5ca7c3fc6dd84fd93a29d7c381ba366`, implementation exact head **`ad20fa37be4e0f887fc5ffac644f6304a9e1eb8f`**, open/draft/unmerged; only K1 implemented.
