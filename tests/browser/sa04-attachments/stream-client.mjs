@@ -4,8 +4,11 @@
  * The first body chunk is sent and held until the Python/PG barrier releases it.
  * JSON-lines protocol never logs the cookie or request bytes.
  */
+import { Buffer } from "node:buffer";
 import http from "node:http";
+import process from "node:process";
 import readline from "node:readline";
+import { URL } from "node:url";
 const base = process.env.K5_BASE;
 if (!base) throw new Error("K5_BASE required");
 const endpoint = new URL(base);
