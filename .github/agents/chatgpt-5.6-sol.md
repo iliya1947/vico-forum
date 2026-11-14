@@ -1,5 +1,13 @@
 # ChatGPT-5.6 Sol — personal log
 
+## SA04-J whole-J coordinator review — RETURNED / connected acceptance incomplete
+
+- Reviewed cumulative Draft #330 exact `85f1de98230fb495e90dcd8923ebfcf0f43bad3c` from current main baseline `44d6b69a8d235cc8b1ee30953839be71e6ab836a`, including the full production delta, all 24 actor-owned Forum writers, both source-locale no-op entries, presence regression, final J12 test-only delta and exact-head Actions.
+- Source/native result: **0 confirmed production-J defects.** Verified same-tx lifecycle guard, lock graph, no user-lock upgrade/second connection, replay/no-op paths, History order and native cross-writer compatibility. The J12 duplicate-review and reciprocal notification additions close their intended native gaps.
+- One current-J gate remains: the J12 canonical late-deactivation test injects synthetic session context and does not exercise a built Worker request with a real Better Auth session. Exact-head SA-03/AP-10 Chromium workflows also have no J deactivation lifecycle coverage.
+- The accepted full-J plan requires repository/local built-Worker + Better-Auth + PostgreSQL late-deactivation route evidence, safe actual-route unavailable/unexpected behavior, and meaningful Chromium checks for publication/reply/edit/profile, Forum moderation/Help, inbox and read-state lifecycle outcomes. Green generic CI/browser gates do not substitute for this explicit acceptance.
+- Classified as an **acceptance/evidence defect**, not production-code defect and not Stage 6/#315/future scope. Returned to Lira in one packet; Lev/Mark remain inactive. Fresh whole-J review starts only on Lira's new stable exact head.
+
 ## SA04-J11 coordinator review — PASS / J12 assigned
 
 - Independently reviewed Draft #330 exact `7212aef429f856db0c2d5e7a9a621739898fed12` from J10 PASS baseline `6bd20801d399557c2f6964fc0a8acd4058a14cb6`.
