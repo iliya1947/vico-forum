@@ -1,5 +1,14 @@
 # ChatGPT-6 — personal log
 
+## SA04-K5 subtask 3/5 — actual local-R2 cleanup/fence + unknown ACK evidence DONE, STOP
+
+- Stable cumulative Draft #332 `421c9a0f2f166cf7989f76025d86cab1a21c79d2`; compared to subtask2 `328eb7e8cc60f103d34cfbc0ed8f5720f73da1d6`, 5 changed files, only K5 tests/CI harness. No application/production changes.
+- Cross-process `getPlatformProxy` confirmed exact payload bytes written by the real built Worker and reused the same local-only R2 persistence for actual `ForumAttachmentCleanup`; additional CI-only Worker loopback/token bridge verifies direct cleanup against the same bound R2. Both are synthetic test-only boundaries.
+- Connected: real successful persisted HTTP 201 with browser ACK dropped and stable-ID replay no second asset/ref/journal; settled R2 PUT with PostgreSQL finalizer journal-row statement timeout produces 503, preserves unknown physical bytes for eventual cleanup; late PUT after lease-reclaimed claim and physical DELETE cannot restore; detached orphan is actually deleted; inactive author's published object remains served; orphan reservation marker swept; no false 201/private leak.
+- Initial local marker fixture failed due Miniflare Node proxy unsupported `Headers` serialization, not app behavior; fixed only unique-key synthetic setup.
+- [K5 connected 43632617101](https://github.com/iliya1947/vico-forum/actions/runs/43632617101) SUCCESS 25/25; [CI 43632616982](https://github.com/iliya1947/vico-forum/actions/runs/43632616982) SUCCESS PG17 956/956, app 2306/2306, lint/typecheck/build/schema/Worker smoke; AP10/SA01/SA03/J12 exact-head workflows SUCCESS.
+- K5 queue: 1 audit DONE → 2 infrastructure/CI DONE → **3 connected fence/cleanup DONE; STOP** → 4 mounted editor Chromium actual Retry/Remove/Cancel/late ACK only on explicit next developer `...` → 5 final whole-K author closure. No premature K5 AUTHOR STOP/whole-PR review/merge/production.
+
 ## SA04-K5 subtask 3/5 — connected ambiguous ACK/cleanup/fence DONE; STOP
 
 - Stable cumulative #332 `421c9a0f2f166cf7989f76025d86cab1a21c79d2` remains Draft/unmerged. No production application/source/schema/real binding changes; evidence-only CI harness in `tests/browser/sa04-attachments/` and workflow. Integration covers actual Worker/Better Auth/PG17/local R2, real stream/journal barriers plus real `ForumAttachmentCleanup` through disposable local-only R2 binding. Three K5 connected run phases include one transient local Miniflare `Headers` proxy serialization issue, corrected only in test fixture. Final [K5 #43632617101](https://github.com/iliya1947/vico-forum/actions/runs/43632617101) SUCCESS **25/25**, [CI #43632616982](https://github.com/iliya1947/vico-forum/actions/runs/43632616982) SUCCESS PG17 **956/956**, app **2306/2306**, all standard gates; exact-head AP10/SA01/SA03/J12 browser workflows SUCCESS.
