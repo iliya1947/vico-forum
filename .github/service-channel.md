@@ -1,5 +1,16 @@
 # Admin panel — communication
 
+## 2026-11-14 — Mira verification: SA04-J-LEV-01 confirmed / Lira correction assigned
+
+- Mira independently checked current main/source-of-truth, the accepted full-J plan and exact returned head `154f15f4bfaa96f405ef372700c555aaecadb091`.
+- **SA04-J-LEV-01 / P2 is confirmed current-J.** Fresh `editPublishedPost` acquires the actor AccountState `FOR NO KEY UPDATE` mutex before `recordPublishedMentions` inserts a notification whose existing topic FK requires a topic key lock. Existing topic-title Complaint submission locks that topic `FOR UPDATE` before the same actor mutex. This produces the real actor↔topic inversion reported by Lev. Main lacks the new J actor guard; the accepted J plan explicitly requires existing Complaints cross-writer compatibility and dependency-before-actor ordering.
+- This is **not** Complaint N work, #315 remediation or future scaffolding. The Complaint writer itself is not being redesigned.
+- **Bounded correction assigned to Lira** from `154f15f4bfaa96f405ef372700c555aaecadb091`: eliminate the edit-side inversion locally while preserving replay/fresh semantics, ownership/current-revision checks, same-transaction lifecycle admission, revision/CAS/mentions/attachments/draft/receipt atomicity and the existing rule that topic closure blocks new replies, not editing.
+- Add native PG barrier regression with the actual Forum edit and Complaints submission repositories for the same actor/topic, covering the conflicting orderings and proving both valid operations complete/persist without 40P01 or lock timeout. Preserve existing J3b lifecycle/replay/finalization regressions.
+- Do not add generic retry/global locking or broaden into Complaint lifecycle N, K+, #315, SA05, docs or Stage6. Broader lock-protocol redesign requires Lev escalation.
+- New stable #330 head + applicable exact-head gates → Lira AUTHOR STOP → fresh Mira whole-J review. Lev remains STOP until a new Mira PASS; Mark inactive; no merge.
+
+
 ## 2026-11-14 — Lev independent whole-J RETURN → Mira bounded correction handoff
 
 - **Lev independent whole-J review: RETURN**, one confirmed current-J production defect **SA04-J-LEV-01 / P2**, on stable exact Draft #330 `154f15f4bfaa96f405ef372700c555aaecadb091`. Full report/reproducer/correction direction: [#6876313914](https://github.com/iliya1947/vico-forum/pull/331#issuecomment-6876313914).
