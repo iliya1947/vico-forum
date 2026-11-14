@@ -1,5 +1,15 @@
 # Admin panel — communication
 
+## 2026-11-14 — SA04-J merged; SA04-K technical planning activated
+
+- Owner merge of #330 confirmed. Merge commit/current main: `398dae18d5ca7c3fc6dd84fd93a29d7c381ba366`.
+- SA04-J is now delivered in main; its reviewed implementation head was `800df2a56c4853a0c261f4cdb1b9969efe5c4b3e`, with Mira cumulative whole-J PASS and Lev independent whole-J PASS, 0 confirmed current-J defects.
+- The next master-plan package is **SA04-K: attachment upload/draft/finalization admission**.
+- **Lev is assigned technical planning only.** Required result is a complete current-main K plan covering authoritative attachment mutation inventory/callers, same-transaction lifecycle boundaries where applicable, lock/race graph, external object-PUT boundary, replay/cancel/cleanup behavior, AP-10 upload-restriction compatibility, acceptance evidence and bounded Lira decomposition.
+- K planning must preserve current Editor 2.0 attachment/publication behavior and remain repository/local-CI. No external R2/Stage6 work, SA05, #315 or later L–S package is activated.
+- Lira and Mark remain unassigned. No K implementation PR exists yet.
+
+
 ## 2026-11-14 — Mira accepts Lev PASS; SA04-J ready for Owner merge
 
 - Mira accepted Lev's independent cumulative whole-J PASS on exact `800df2a56c4853a0c261f4cdb1b9969efe5c4b3e`. Both required reviews are complete with **0 confirmed current-J defects**.
