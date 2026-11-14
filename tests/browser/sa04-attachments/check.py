@@ -371,9 +371,13 @@ try:
         race_ctx, race_page, race_id = account(browser, "race", "203.0.113.165")
         journal_ctx, journal_page, journal_id = account(browser, "journal", "203.0.113.166")
         fault_ctx, fault_page, fault_id = account(browser, "fault", "203.0.113.167")
+        ack_ctx, ack_page, ack_id = account(browser, "ack", "203.0.113.168")
+        timeout_ctx, timeout_page, timeout_id = account(browser, "db-ack", "203.0.113.169")
+        claim_ctx, claim_page, claim_id = account(browser, "claim", "203.0.113.170")
+        detached_ctx, detached_page, detached_id = account(browser, "detached", "203.0.113.171")
         topic_id = topic(author)
         context_key = "topic:" + topic_id + ":reply"
-        record("built-worker-genuine-better-auth-five-sessions-pg-fixture",
+        record("built-worker-genuine-better-auth-twelve-sessions-pg-fixture",
                local_r2_binding="ATTACHMENT_R2")
 
         # UI is real Chromium, not a mounted component mock. File input upload
@@ -648,6 +652,209 @@ try:
         finally:
             journal_lock.close()
 
+
+
+        # Commit on the actual Worker/R2/PG path, then intentionally suppress
+        # the HTTP response *after* the Worker returns 201. The Chromium fetch
+        # observes only a transport error and cannot infer the COMMIT outcome.
+        ack_page.goto(base + "/en/topics/" + topic_id, wait_until="networkidle")
+        ack_op, ack_asset = str(uuid4()), str(uuid4())
+        ack_bytes = b"K5 unknown HTTP ACK after real Worker metadata commit"
+        intercepted = []
+        def lose_committed_ack(route):
+            committed = route.fetch(timeout=30000)
+            intercepted.append((committed.status, committed.json().get("outcome")))
+            route.abort("failed")
+        ack_page.route("**/api/attachments", lose_committed_ack)
+        try:
+            start_browser_request(ack_page, "/api/attachments", "POST", {
+                "Content-Type": "text/plain",
+                "X-Vico-Attachment-Id": ack_asset,
+                "X-Vico-Attachment-Name": "k5-ack.txt",
+                "X-Vico-Attachment-Size": str(len(ack_bytes)),
+                **headers(context_key, ack_op),
+            }, ack_bytes.decode())
+            ambiguous = finish_browser_request(ack_page)
+            assert "failed" in ambiguous and "status" not in ambiguous, ambiguous
+            assert intercepted == [(201, "stored")], intercepted
+        finally:
+            ack_page.unroute("**/api/attachments", lose_committed_ack)
+        committed_facts = sql("""select a.object_key,r.attachment_id
+          from forum_attachments a join forum_attachment_draft_refs r
+            on r.attachment_id=a.id
+          where a.id=$1 and a.owner_id=$2 and r.context_key=$3 and r.draft_id=$4""",
+          [ack_asset, ack_id, context_key, ack_op])
+        assert len(committed_facts) == 1, committed_facts
+        ack_key = committed_facts[0]["object_key"]
+        assert local_r2("inspect", ack_key) == {
+            "exists": True, "size": len(ack_bytes), "kind": "vico-payload-v1",
+            "base64": base64.b64encode(ack_bytes).decode(),
+        }
+        committed_before_retry = stats(ack_id)
+        restored = upload(ack_ctx, ack_id, topic_id, ack_op, ack_asset,
+                          ack_bytes, name="k5-ack.txt")
+        assert restored.status == 201, (restored.status, restored.text()[:250])
+        assert restored.json()["attachment"]["id"] == ack_asset
+        assert stats(ack_id) == committed_before_retry
+        assert private_file(ack_ctx, topic_id, ack_op, ack_asset).body() == ack_bytes
+        record("actual-worker-unknown-client-ack-committed-replay-one-r2-key",
+               lost_response=True, committed_asset=True, no_second_journal=True)
+
+        # A genuine settled positive R2 payload precedes the metadata finalizer.
+        # Lock READY journal with a separate PG transaction so the actual Worker
+        # finalizer times out. Its 503 cannot authorize blind deletion: the DB
+        # commit result is untrusted at this boundary, and cleanup owns the key.
+        timeout_page.goto(base + "/en/topics/" + topic_id, wait_until="networkidle")
+        old_timeout_keys = {row["object_key"] for row in sql(
+            "select object_key from forum_attachment_upload_objects")}
+        timeout_op, timeout_asset = str(uuid4()), str(uuid4())
+        timeout_cookie = "; ".join(c["name"] + "=" + c["value"]
+                                   for c in timeout_ctx.cookies(base))
+        timeout_before = stats(timeout_id)
+        hold_body = HeldHttpUpload()
+        held_ready = PgBarrier()
+        try:
+            assert hold_body.send({
+                "action": "start", "cookie": timeout_cookie,
+                "attachment": timeout_asset, "operation": timeout_op,
+                "context": context_key,
+            }) == {"event": "first-chunk-sent", "bytes": 8192}
+            def timeout_ready():
+                rows = sql("""select object_key,reservation_etag from forum_attachment_upload_objects
+                  where reservation_etag is not null""")
+                return next((row for row in rows
+                             if row["object_key"] not in old_timeout_keys), None)
+            staged = wait_for(timeout_ready, "settled PUT/metadata timeout journal", 25)
+            held_ready.send({"action": "begin-ready-journal", "key": staged["object_key"]})
+            assert hold_body.send({"action": "release"})["event"] == "remainder-released"
+            wait_blocking(held_ready.backend_pid, "real post-PUT metadata journal wait")
+            unavailable = hold_body.read()
+            assert unavailable.get("status") == 503, unavailable
+            assert "no-store" in (unavailable.get("cache") or "")
+        finally:
+            held_ready.send({"action": "commit"})
+            held_ready.close()
+            hold_body.close()
+        assert sql("select id from forum_attachments where id=$1", [timeout_asset]) == []
+        assert sql("select attachment_id from forum_attachment_draft_refs where attachment_id=$1",
+                   [timeout_asset]) == []
+        timeout_object = local_r2("inspect", staged["object_key"])
+        assert timeout_object == {
+            "exists": True, "size": 16384, "kind": "vico-payload-v1",
+            "base64": base64.b64encode(b"A" * 8192 + b"B" * 8192).decode(),
+        }, {k: v for k, v in timeout_object.items() if k != "base64"}
+        assert stats(timeout_id)["assets"] == timeout_before["assets"]
+        assert stats(timeout_id)["refs"] == timeout_before["refs"]
+        sql("""update forum_attachment_upload_objects
+          set created_at=now()-interval '2 hours' where object_key=$1""",
+          [staged["object_key"]])
+        cleaned_orphan = local_r2("cleanup")
+        assert cleaned_orphan["deleted"] >= 1, cleaned_orphan
+        assert local_r2("inspect", staged["object_key"]) == {"exists": False}
+        assert sql("select object_key from forum_attachment_upload_objects where object_key=$1",
+                   [staged["object_key"]]) == []
+        record("actual-r2-post-put-db-503-retains-unknown-object-until-cleanup",
+               settled_bytes_before_cleanup=True, eventual_deleted=True, no_asset_ref=True)
+
+        # A READY reservation with a stale, formerly held cleanup lease must
+        # never gain fresh write authority. The first 8 KiB have entered the
+        # real Worker, but the last 8 KiB are held outside R2 by HTTP/1.1.
+        claim_page.goto(base + "/en/topics/" + topic_id, wait_until="networkidle")
+        old_claim_keys = {row["object_key"] for row in sql(
+            "select object_key from forum_attachment_upload_objects")}
+        claim_op, claim_asset = str(uuid4()), str(uuid4())
+        claim_cookie = "; ".join(c["name"] + "=" + c["value"]
+                                 for c in claim_ctx.cookies(base))
+        claim_before = stats(claim_id)
+        held_claim = HeldHttpUpload()
+        try:
+            assert held_claim.send({
+                "action": "start", "cookie": claim_cookie,
+                "attachment": claim_asset, "operation": claim_op,
+                "context": context_key,
+            }) == {"event": "first-chunk-sent", "bytes": 8192}
+            def claim_ready():
+                rows = sql("""select object_key,reservation_etag from forum_attachment_upload_objects
+                  where reservation_etag is not null""")
+                return next((row for row in rows
+                             if row["object_key"] not in old_claim_keys), None)
+            waiting = wait_for(claim_ready, "READY reserved before lease reclaim", 25)
+            reservation = local_r2("inspect", waiting["object_key"])
+            assert reservation["exists"] and reservation["kind"] == "vico-reservation-v1"
+            claim_token = str(uuid4())
+            aged = sql("""update forum_attachment_upload_objects
+              set created_at=now()-interval '2 hours',
+              claimed_at=now()-interval '10 minutes',claim_token=$2
+              where object_key=$1 and reservation_etag is not null
+              returning object_key""", [waiting["object_key"], claim_token])
+            assert aged == [{"object_key": waiting["object_key"]}], aged
+            claim_cleanup = local_r2("cleanup")
+            assert claim_cleanup["deleted"] >= 1, claim_cleanup
+            assert local_r2("inspect", waiting["object_key"]) == {"exists": False}
+            assert sql("select object_key from forum_attachment_upload_objects where object_key=$1",
+                       [waiting["object_key"]]) == []
+            assert held_claim.send({"action": "release"})["event"] == "remainder-released"
+            after_claim = held_claim.read()
+            assert after_claim.get("status") == 503, after_claim
+            assert "no-store" in (after_claim.get("cache") or "")
+        finally:
+            held_claim.close()
+        assert sql("select id from forum_attachments where id=$1", [claim_asset]) == []
+        assert stats(claim_id)["assets"] == claim_before["assets"]
+        assert stats(claim_id)["refs"] == claim_before["refs"]
+        assert local_r2("inspect", waiting["object_key"]) == {"exists": False}
+        record("actual-r2-expired-cleanup-claim-fences-late-http-payload",
+               expired_lease_reclaimed=True, no_201=True, no_resurrection=True)
+
+        # Normal background cleanup must preserve committed published references
+        # of a now-inactive author, but remove truly detached temporary files.
+        published_key = meta[0]["object_key"]
+        sql("""update forum_attachments set created_at=now()-interval '2 hours'
+          where id=$1""", [attachment_id])
+        sql("""update forum_attachment_upload_objects
+          set created_at=now()-interval '2 hours' where object_key=$1""",
+          [published_key])
+        local_r2("cleanup")
+        assert local_r2("inspect", published_key) == {
+            "exists": True, "size": len(payload), "kind": "vico-payload-v1",
+            "base64": base64.b64encode(payload).decode(),
+        }
+        still_public = author_ctx.request.get(public_url)
+        assert still_public.status == 200 and still_public.body() == payload
+        record("actual-r2-cleanup-protects-published-by-inactive-author")
+
+        detached_op, detached_asset = str(uuid4()), str(uuid4())
+        detached_bytes = b"K5 detached asset reclaimed through actual local R2"
+        detached_upload = upload(detached_ctx, detached_id, topic_id,
+                                 detached_op, detached_asset, detached_bytes)
+        assert detached_upload.status == 201, (detached_upload.status, detached_upload.text()[:250])
+        detached_row = sql("select object_key from forum_attachments where id=$1", [detached_asset])
+        assert len(detached_row) == 1
+        detached_key = detached_row[0]["object_key"]
+        detached_cancel = cancel(detached_ctx, topic_id, detached_op)
+        assert detached_cancel.status == 200 and detached_cancel.json()["outcome"] == "cancelled"
+        sql("""update forum_attachments set created_at=now()-interval '2 hours'
+          where id=$1""", [detached_asset])
+        sql("""update forum_attachment_upload_objects
+          set created_at=now()-interval '2 hours' where object_key=$1""", [detached_key])
+        detached_cleanup = local_r2("cleanup")
+        assert detached_cleanup["deleted"] >= 1, detached_cleanup
+        assert sql("select id from forum_attachments where id=$1", [detached_asset]) == []
+        assert local_r2("inspect", detached_key) == {"exists": False}
+        record("actual-r2-cancelled-detached-asset-deleted-by-system-cleanup",
+               no_actor_lifecycle_gate=True, physical_deleted=True)
+
+        # Marker-only orphan without a journal or asset: test the actual local
+        # bucket LIST + protective ownership check + bounded sweep cursor.
+        marker = "private/fenced-v1/00000000-0000-4000-8000-" + uuid4().hex[:12]
+        assert local_r2("orphan-reservation", marker)["reserved"] is True
+        assert local_r2("inspect", marker)["kind"] == "vico-reservation-v1"
+        for _ in range(16):
+            local_r2("cleanup")
+            if local_r2("inspect", marker) == {"exists": False}:
+                break
+        assert local_r2("inspect", marker) == {"exists": False}
+        record("actual-r2-bounded-orphan-marker-sweep-without-db-ownership")
 
         # Three real PostgreSQL query-timeout failures. A held scope lock
         # blocks each actual repository operation until the web DB caller
