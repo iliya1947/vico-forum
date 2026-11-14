@@ -227,6 +227,7 @@ try:
             headless=True, args=["--no-sandbox"],
         )
         active_ctx, active, active_id = account(browser, "active", "203.0.113.201")
+        control_ctx, control, control_id = account(browser, "control", "203.0.113.207")
         member_ctx, member, member_id = account(browser, "member", "203.0.113.202")
         manager_ctx, manager, manager_id = account(
             browser, "moderator", "203.0.113.203", "builtin-moderator")
@@ -260,10 +261,10 @@ try:
           (id,kind,recipient_user_id,actor_user_id,topic_id,post_id)
           values($1,'reply',$2,$3,$4,$5)""",
             [notification_id, inbox_id, active_id, ordinary["id"], ordinary["post"]])
-        record("real-better-auth-six-browser-sessions-and-postgresql-fixtures")
+        record("real-better-auth-seven-browser-sessions-and-postgresql-fixtures")
 
         # Actual active browser session, permission and persistence controls.
-        positive_reply = active_ctx.request.post(
+        positive_reply = control_ctx.request.post(
             base + "/en/topics/" + ordinary["id"],
             headers={"Origin": base},
             form={"intent": "reply", "body": "J12 active browser control"},
@@ -273,8 +274,8 @@ try:
             "active reply", positive_reply.status, positive_reply.text()[:180])
         assert count("select count(*)::int n from forum_posts where topic_id=$1",
                      [ordinary["id"]]) == 2
-        positive_profile = active_ctx.request.post(
-            base + "/en/users/" + active_id,
+        positive_profile = control_ctx.request.post(
+            base + "/en/users/" + control_id,
             headers={"Origin": base},
             form={"intent": "save-profile", "bio": "J12 active profile",
                   "githubUrl": "", "websiteUrl": ""},
@@ -282,7 +283,7 @@ try:
         )
         assert positive_profile.status in (302, 303), (
             "active profile", positive_profile.status, positive_profile.text()[:180])
-        assert sql("select bio from forum_profiles where user_id=$1", [active_id]) == [
+        assert sql("select bio from forum_profiles where user_id=$1", [control_id]) == [
             {"bio": "J12 active profile"}]
         record("actual-session-active-publication-and-profile-controls")
 
