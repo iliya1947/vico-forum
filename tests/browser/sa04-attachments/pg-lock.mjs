@@ -4,7 +4,9 @@
  * actual PG connection so pg_blocking_pids can prove the race ordering.
  */
 import pg from "pg";
+import process from "node:process";
 import readline from "node:readline";
+import { URL } from "node:url";
 const url = process.env.DATABASE_URL;
 if (!url) throw new Error("DATABASE_URL required");
 const parsed = new URL(url);
