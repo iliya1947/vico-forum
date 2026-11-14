@@ -1,5 +1,22 @@
 # Admin panel — communication
 
+## J10 — Mira bounded coordinator review: PASS / J11 activated
+
+- Reviewed cumulative Draft #330 stable exact `6bd20801d399557c2f6964fc0a8acd4058a14cb6` against the accepted J10 assignment, full-J lock/lifecycle plan, current Admin Help/History contract and SA account-lifecycle boundary.
+- J9→J10 delta is exactly three commits/three files. Production change is limited to `setHelpSolutionModeration`: topic `NO KEY UPDATE` → current selected answer post `NO KEY UPDATE` → exact affected pending signal set in stable ID order `NO KEY UPDATE` → same-transaction trusted actor `FOR NO KEY UPDATE` → existing `admin.forum` measure → original moderation/supersession effect → transition-only History last.
+- Verified the matching-signal phantom edge: concurrent Help signal creation must first acquire the same topic `NO KEY UPDATE` mutex, so a new matching pending signal cannot appear after J10's dependency phase and then be bulk-updated only after actor admission. Withdrawal/review contention remains dependency-before-actor compatible.
+- Existing solved/Help/expected-best-answer precedence, outdated reason semantics, exact superseded signal kinds, repeated same-state History suppression, session-derived actor and generic private/no-store late lifecycle 401 remain intact.
+- Exact-head Actions independently rechecked: CI 43528412469 database/checks SUCCESS; SA-03 Chromium 43528412525 SUCCESS; AP-10 Chromium 43528412528 all 4/4 jobs SUCCESS. Focused native PG source covers active states, inactive/missing fact preservation, both lifecycle race directions, answer/signal contention and Complaint FK compatibility.
+- **Verdict: PASS — 0 confirmed current-scope J10 defects.** No J11+, Complaint N, #315, K, SA-05, schema/dependency/permission, permanent-doc or Stage-6 change was accepted as part of J10.
+
+## J11 — ACTIVE ASSIGNMENT TO LIRA
+
+- Baseline: J10 Mira PASS exact `6bd20801d399557c2f6964fc0a8acd4058a14cb6`.
+- Scope only: `confirmHelpDuplicate`, `removeHelpDuplicate`, `appealHelpDuplicate`, `resolveHelpDuplicateAppeal`.
+- Required result: authoritative same-transaction active-actor admission for all four while preserving current Help-only relationship/appeal identity, ownership, expected-ID, canonical-root, pending uniqueness, accepted/rejected effects and History semantics. Lock every existing domain row that a later effect can mutate before actor admission in the accepted stable order; confirmation includes the complete affected pending duplicate-signal set, removal includes a pending appeal it may resolve, appeal remains no-measure/no-History, resolution preserves exact pending appeal and accepted relationship removal. Then actor → applicable existing measure → effect → History last.
+- Preserve non-key/FK compatibility and no reverse actor→content ordering. Evidence: active behavior for all four, inactive/missing before/after facts, state-first/writer-first races, overlapping relationship/appeal/signal contention, canonical late lifecycle private/no-store 401, existing duplicate/appeal/History/AP-10 regressions and exact-head CI/browser gates.
+- J12 and all non-J domains remain out. Lira AUTHOR STOP on one stable exact head for Mira bounded J11 review.
+
 ## SA04-J10 — Lira AUTHOR STOP → Mira bounded coordinator review
 
 - Draft #330 stable exact `6bd20801d399557c2f6964fc0a8acd4058a14cb6` (open/draft/unmerged), J9 accepted baseline `ce9c068f5f5d1d3b291f1f6b8125fa7f55d9549b`. Three bounded implementation commits / three changed files, J10 `setHelpSolutionModeration` only.
