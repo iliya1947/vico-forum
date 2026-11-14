@@ -76,7 +76,23 @@ Accepted bounded queue: **K1 metadata/replay → K2 PREPARING/READY journal → 
 
 **K1 author evidence (not Mira PASS):** cumulative Draft [#332](https://github.com/iliya1947/vico-forum/pull/332) exact `ad20fa37be4e0f887fc5ffac644f6304a9e1eb8f`, transaction-local AccountState in `admitUpload` and `createDraftAttachment`, controlled 401/503 and scoped fresh-key cleanup, native 7/7 PG barriers and 22/22 upload fence/route tests, [CI 43599514990](https://github.com/iliya1947/vico-forum/actions/runs/43599514990) PG17 935/935 and application 2282/2282, all checks SUCCESS. Next Mira bounded K1 review. K2–K5 not started.
 
-### Active K1 — metadata/replay admission
+### K1 — ACCEPTED
+
+Mira bounded coordinator review **PASS** on cumulative Draft #332 exact `ad20fa37be4e0f887fc5ffac644f6304a9e1eb8f`: 0 confirmed current-K1 defects. Exact-head CI 43599514990 SUCCESS: PG17 935/935 (K1 7/7; attachment fence 22/22), app 2282/2282, lint/typecheck/build/migrations/Workers checks PASS.
+
+### Active K2 — PREPARING/READY journal admission
+
+Result: make `recordUploadObject` and `activateUploadObject` authoritative AccountState-gated server commands using the trusted session actor, without changing storage schema or HTTP protocol.
+
+Readiness:
+- `recordUploadObject(actorId, objectKey)`: one short transaction, actor NKU before INSERT of the fresh server-random journal key; no reservation/PUT begins until commit succeeds;
+- `activateUploadObject(actorId, objectKey, reservationEtag)`: existing journal row `FOR UPDATE` before actor NKU, then existing conditional PREPARING→READY update on the same transaction; claimed/missing/already-ready rows remain denied;
+- canonical upload route threads only trusted `scope.userId` through the existing callbacks; no client actor/header and no actor persistence column;
+- state-first and writer-first races are proven for both journal methods; activate/finalizer lock order cannot become actor→journal; cleanup claims/expired lease retain existing semantics;
+- early lifecycle denial before reservation/PUT returns canonical 401; classified unavailable/unexpected distinctions remain;
+- K3 private reads, K4 Cancel and K5 connected closure remain inactive.
+
+
 
 Result: authoritative same-transaction AccountState admission for `admitUpload` and `createDraftAttachment`, preserving current stable-ID replay/AP-10 behavior and final metadata/ref semantics.
 
