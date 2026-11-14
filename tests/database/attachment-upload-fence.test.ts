@@ -2,6 +2,7 @@ import { readFile } from "node:fs/promises";
 import { drizzle } from "drizzle-orm/node-postgres";
 import { Client } from "pg";
 import { ForumAttachmentStorageUnavailableError, createHyperdriveForumAttachmentStore } from "../../db/hyperdrive-forum-attachments";
+import { AccountInactiveError, AccountStateUnavailableError, AccountStateUnexpectedError } from "../../db/account-state";
 import { ATTACHMENT_UPLOAD_PREFIX, ATTACHMENT_RESERVATION_KIND } from "../../app/forum/attachment-storage-protocol";
 import type { PrivateAttachmentBucket } from "../../app/forum/attachment-r2";
 import { RouterContextProvider } from "react-router";
@@ -305,6 +306,62 @@ describe('v2 upload writer fencing with actual PostgreSQL',()=>{
   await new ForumAttachmentCleanup(drizzle(client),storage,()=>new Date(Date.now()+6*60_000)).runOnce();expect(calls).toBe(2);
   release.resolve();await first;expect((await client.query('select cursor from forum_attachment_sweep')).rows[0].cursor).toBe('fresh');
   await client.query('update forum_attachment_sweep set cursor=null');
+ });
+
+ it('K1 denies inactive upload decision before private object reservation, including stable replay',async()=>{
+  const committed=upload('section:attachment-section:new',crypto.randomUUID());
+  await store.createDraftAttachment(committed);
+  const before=await client.query('select count(*)::int n from forum_attachment_draft_refs where attachment_id=$1',[committed.id]);
+  const {storage,objects,control}=memoryStorage();
+  await client.query('update "user" set deactivated_at=now(),deactivated_by_user_id=$1,retain_at_least_until=now()+interval \'2 years\' where id=$1',[ownerId]);
+  try{
+   const denied=await send(storage);expect(denied.status).toBe(401);
+   expect(denied.headers.get('cache-control')).toContain('no-store');
+   expect(await denied.json()).toEqual({error:'unauthenticated'});
+   expect(objects.size).toBe(0);
+   expect(await store.admitUpload(ownerId,committed.contextKey,committed.draftId,committed.id))
+    .rejects.toBeInstanceOf(AccountInactiveError);
+   const after=await client.query('select count(*)::int n from forum_attachment_draft_refs where attachment_id=$1',[committed.id]);
+   expect(after.rows).toEqual(before.rows);
+  }finally{
+   await client.query('update "user" set deactivated_at=null,deactivated_by_user_id=null,retain_at_least_until=null where id=$1',[ownerId]);
+  }
+ });
+ it('K1 late deactivation after settled R2 payload denies final metadata and deletes only fresh key',async()=>{
+  const {storage,objects,control}=memoryStorage();
+  let attemptedKey='';
+  try{
+   const response=await send(storage,{overrides:{
+    createDraftAttachment:async(input:CreateDraftAttachmentInput)=>{
+      attemptedKey=input.objectKey;
+      await client.query('update "user" set deactivated_at=now(),deactivated_by_user_id=$1,retain_at_least_until=now()+interval \'2 years\' where id=$1',[ownerId]);
+      return store.createDraftAttachment(input);
+    },
+   }});
+   expect(response.status).toBe(401);
+   expect(response.headers.get('cache-control')).toContain('no-store');
+   expect(await response.json()).toEqual({error:'unauthenticated'});
+   expect(control.deletes).toContain(attemptedKey);
+   expect(objects.has(attemptedKey)).toBe(false);
+   expect((await client.query('select id from forum_attachments where object_key=$1',[attemptedKey])).rowCount).toBe(0);
+   expect((await client.query('select attachment_id from forum_attachment_draft_refs where attachment_id in (select id from forum_attachments where object_key=$1)',[attemptedKey])).rowCount).toBe(0);
+  }finally{
+   await client.query('update "user" set deactivated_at=null,deactivated_by_user_id=null,retain_at_least_until=null where id=$1',[ownerId]);
+  }
+ });
+ it('K1 returns typed AccountState unavailable as private 503 without starting R2; unexpected still propagates',async()=>{
+  const {storage,objects}=memoryStorage();
+  const unavailable=await send(storage,{overrides:{
+    admitUpload:async()=>{throw new AccountStateUnavailableError();},
+  }});
+  expect(unavailable.status).toBe(503);
+  expect(unavailable.headers.get('cache-control')).toContain('no-store');
+  expect(await unavailable.json()).toEqual({error:'unavailable'});
+  expect(objects.size).toBe(0);
+  await expect(send(storage,{overrides:{
+    admitUpload:async()=>{throw new AccountStateUnexpectedError();},
+  }})).rejects.toBeInstanceOf(AccountStateUnexpectedError);
+  expect(objects.size).toBe(0);
  });
 
 });
