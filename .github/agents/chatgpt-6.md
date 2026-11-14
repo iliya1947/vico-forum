@@ -1,5 +1,21 @@
 # ChatGPT-6 — personal log
 
+## SA04-J-LEV-01 — ACTIVE ASSIGNMENT: bounded edit/Complaint lock-order correction
+
+Baseline: cumulative Draft #330 exact `154f15f4bfaa96f405ef372700c555aaecadb091`.
+
+Required result: fix the confirmed fresh published-edit lock inversion with existing same-actor topic-title Complaint submission, locally and within J. Preserve edit replay/fresh branching, ownership/current-revision checks, authoritative same-transaction AccountState admission, revision/CAS/mention/binding/draft/receipt atomicity and existing closed-topic edit behavior.
+
+Acceptance:
+- native PostgreSQL barrier regression uses the real Forum edit writer and real Complaints submission writer on the same actor/topic and demonstrates bounded completion without 40P01/lock timeout with both valid persisted effects;
+- existing J3b inactive/missing, replay, CAS, mention, attachment/finalization and writer/state lifecycle evidence remains valid;
+- no Complaint lifecycle/policy redesign, generic retry/global locking, K+, #315, SA05, permanent docs or Stage6 scope;
+- if a correct local change requires broader lock-protocol redesign, stop and hand back a technical escalation for Lev;
+- run applicable exact-head CI/browser gates and AUTHOR STOP on one new stable Draft #330 head for a fresh Mira cumulative whole-J coordinator review.
+
+Lev is STOP until Mira PASS on the corrected head. Mark inactive. No merge.
+
+
 ## SA04-J12 third connected correction block PASS — cumulative AUTHOR STOP / Mira whole-J gate
 
 - **Stable implementation:** cumulative Draft #330 exact `154f15f4bfaa96f405ef372700c555aaecadb091`, open/draft/unmerged. J1–J11 previously accepted individually by Mira; Mira's first whole-J review returned exact `85f1de98230fb495e90dcd8923ebfcf0f43bad3c` for missing connected evidence, not for a proven production defect. All three corrective evidence blocks now finished **by author**, subject to **independent whole-J coordinator re-review**.
