@@ -94,7 +94,8 @@ jobs:
             writeFileSync(path,JSON.stringify(config,null,2));
           '
           pnpm build
-          cp "$RUNNER_TEMP/k5-original-wrangler.jsonc" wrangler.jsonc
+          # Keep the same CI-only config through the connected test so the
+          # getPlatformProxy cleanup bridge sees the Worker's local R2 state.
           if ! grep -Rq 'sa04-k5-local-attachments' build/server; then
             echo "Local R2 snapshot not visible in generated Worker build"
             find build -maxdepth 3 -name '*wrangler*' -o -name 'config.json' || true
@@ -103,7 +104,7 @@ jobs:
         run: |
           pnpm exec vite preview --host 127.0.0.1 --port 4205 --strictPort > "$RUNNER_TEMP/sa04-k5-preview.log" 2>&1 &
           preview_pid=$!
-          trap 'kill "$preview_pid" 2>/dev/null || true; rm -f .dev.vars' EXIT
+          trap 'kill "$preview_pid" 2>/dev/null || true; cp "$RUNNER_TEMP/k5-original-wrangler.jsonc" wrangler.jsonc; rm -f .dev.vars' EXIT
           ready=false
           for attempt in $(seq 1 90); do
             if curl --silent --show-error --fail --max-time 2 http://127.0.0.1:4205/he/ > /dev/null 2>&1; then
