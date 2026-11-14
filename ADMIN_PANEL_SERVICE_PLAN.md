@@ -63,3 +63,27 @@ If current code/source-of-truth conflicts with the accepted master plan or a cor
 - A2–H implementation history: #328.
 - I implementation: #329.
 - J implementation/review/merge: #330; operational review history remains in #331.
+
+## SA04-K — accepted technical plan
+
+Lev's complete technical plan is accepted by Mira: predecessor/service comment **#6877583725** on #331, baseline `main=398dae18d5ca7c3fc6dd84fd93a29d7c381ba366`.
+
+Accepted K inventory:
+- lifecycle-gated: `admitUpload`, `createDraftAttachment`, `recordUploadObject`, `activateUploadObject`, `listDraftAttachments`, `readDraftAttachment`, `cancelOperation`;
+- not lifecycle-gated by K: public `readPublishedAttachment`, server-owned `recordSecurityEvent`, permission-scoped `readSecurityAttachmentEvents`, and system cleanup.
+
+Accepted bounded queue: **K1 metadata/replay → K2 PREPARING/READY journal → K3 private reads → K4 Cancel → K5 cumulative connected closure**. Only one implementation slice is active at a time. Whole-K coordinator review happens after K5 on one stable cumulative head; only after Mira PASS does Lev independently review that same head.
+
+### Active K1 — metadata/replay admission
+
+Result: authoritative same-transaction AccountState admission for `admitUpload` and `createDraftAttachment`, preserving current stable-ID replay/AP-10 behavior and final metadata/ref semantics.
+
+Readiness:
+- inactive/missing actor gets no committed replay/fallback/private success and no new metadata/ref;
+- active matching committed replay remains exempt from a newly active `attachments.upload` measure exactly as today;
+- fresh metadata remains subject to the existing measure rule;
+- lifecycle unavailable and unexpected faults retain the accepted 503-vs-unexpected distinction; canonical POST lifecycle denial is private/no-store 401;
+- if final metadata admission deterministically rejects the fresh already-settled physical upload for lifecycle state, only that fresh attempt object may be best-effort deleted; ambiguous commit/storage outcome must not trigger blind deletion;
+- native PostgreSQL coverage proves state-first and writer-first ordering and fact preservation for replay/fresh/fallback paths;
+- K2 journal signatures, K3 private reads, K4 Cancel, K5 connected local-R2/browser closure, L–S, SA05, #315, docs and Stage6 stay out.
+
