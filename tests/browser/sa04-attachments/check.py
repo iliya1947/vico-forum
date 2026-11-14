@@ -201,6 +201,106 @@ def wait_for(predicate, name, budget=18.0):
     raise AssertionError("K5 causal checkpoint not reached: " + name)
 
 
+class PgBarrier:
+    """One fixed PostgreSQL backend holding a real transaction and row/scope lock."""
+
+    def __init__(self):
+        self.process = subprocess.Popen(
+            [node, str(repo / "tests/browser/sa04-attachments/pg-lock.mjs")],
+            cwd=repo, env=os.environ.copy(),
+            stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+            text=True, bufsize=1,
+        )
+        self.backend_pid = self.send({"action": "pid"})["pid"]
+
+    def send(self, command):
+        assert self.process.stdin and self.process.stdout
+        self.process.stdin.write(json.dumps(command) + "\n")
+        self.process.stdin.flush()
+        line = self.process.stdout.readline()
+        assert line, ("barrier exited", self.process.poll(),
+                      self.process.stderr.read() if self.process.stderr else "")
+        result = json.loads(line)
+        assert result.get("ok") is True, (command, result)
+        return result
+
+    def close(self):
+        if self.process.poll() is None:
+            try:
+                self.send({"action": "rollback"})
+            finally:
+                assert self.process.stdin
+                self.process.stdin.close()
+                self.process.wait(timeout=10)
+
+
+def wait_blocking(backend_pid, purpose):
+    """Observe an actual blocked PostgreSQL request through pg_blocking_pids."""
+    def blocked():
+        rows = sql("""select pid, query from pg_stat_activity
+          where datname=current_database() and pid!=pg_backend_pid()
+            and $1=any(pg_blocking_pids(pid))""", [backend_pid])
+        return rows if rows else None
+    return wait_for(blocked, purpose, 15.0)
+
+
+def start_browser_request(page, url, method, request_headers, body=None):
+    return page.evaluate("""({url,method,headers,body}) => {
+      window.__k5Request = fetch(url, {
+        method, headers, credentials:"same-origin",
+        ...(body === null ? {} : {body}),
+      }).then(async response => ({
+        status:response.status,
+        cache:response.headers.get("cache-control") || "",
+        contentType:response.headers.get("content-type") || "",
+        body:await response.text()
+      }), error => ({failed:String(error)}));
+      return "started";
+    }""", {"url": url, "method": method, "headers": request_headers, "body": body})
+
+
+def finish_browser_request(page):
+    return page.evaluate("async () => await window.__k5Request")
+
+
+def stream_start(page, topic_id, operation, attachment_id):
+    """Start a streaming browser POST; hold the body after an admitted prefix."""
+    return page.evaluate("""({topic,operation,attachment}) => {
+      const first = new Uint8Array(8192).fill(65);
+      const second = new Uint8Array(8192).fill(66);
+      let held;
+      const body = new ReadableStream({
+        start(controller) {
+          held = controller;
+          controller.enqueue(first);
+        },
+      });
+      window.__k5Release = () => { held.enqueue(second); held.close(); };
+      window.__k5PendingStream = fetch("/api/attachments", {
+        method:"POST", credentials:"same-origin",
+        headers:{
+          "Content-Type":"text/plain",
+          "X-Vico-Attachment-Id":attachment,
+          "X-Vico-Attachment-Name":"k5-delayed.txt",
+          "X-Vico-Attachment-Size":"16384",
+          "X-Vico-Editor-Context":encodeURIComponent("topic:"+topic+":reply"),
+          "X-Vico-Operation-Id":operation,
+        },
+        body, duplex:"half",
+      }).then(async response => ({
+        status:response.status,
+        cache:response.headers.get("cache-control"),
+        body:await response.text()
+      }), error => ({failed:String(error)}));
+      return "stream-held";
+    }""", {"topic":topic_id,"operation":operation,"attachment":attachment_id})
+
+
+def stream_release(page):
+    page.evaluate("() => window.__k5Release()")
+    return page.evaluate("async () => await window.__k5PendingStream")
+
+
 try:
     with sync_playwright() as pw:
         browser = pw.chromium.launch(
@@ -212,6 +312,8 @@ try:
         restricted_ctx, restricted_page, restricted_id = account(browser, "restricted", "203.0.113.162")
         inactive_ctx, inactive, inactive_id = account(browser, "inactive", "203.0.113.163")
         delayed_ctx, delayed, delayed_id = account(browser, "delayed", "203.0.113.164")
+        race_ctx, race_page, race_id = account(browser, "race", "203.0.113.165")
+        journal_ctx, journal_page, journal_id = account(browser, "journal", "203.0.113.166")
         topic_id = topic(author)
         context_key = "topic:" + topic_id + ":reply"
         record("built-worker-genuine-better-auth-five-sessions-pg-fixture",
