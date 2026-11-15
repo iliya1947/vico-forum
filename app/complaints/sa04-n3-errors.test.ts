@@ -39,6 +39,7 @@ describe("SA04-N3 canonical Complaint lifecycle HTTP mapping", () => {
       const participant = await participantAction({ context: s.context, params: { caseId: "case-1" },
         request: request("/en/complaints/case-1/result", participantFields) });
       expect(participant).toMatchObject({ data: { error: "unauthenticated" }, init: { status: 401 } });
+      if (!("init" in participant)) throw new Error("expected classified participant rejection");
       expect(new Headers(participant.init?.headers).get("Cache-Control")).toBe("private, no-store");
       s.resolveAppeal.mockRejectedValueOnce(error);
       const reviewer = await reviewerAction({ context: s.context,
@@ -57,6 +58,22 @@ describe("SA04-N3 canonical Complaint lifecycle HTTP mapping", () => {
       expect(s.resolveAppeal).toHaveBeenCalledExactlyOnceWith("real-actor", expect.any(Object));
     },
   );
+  it("missing session on an already mounted participant/reviewer form returns typed 401, not thrown Response", async () => {
+    const s = fixture();
+    s.context.set(authSessionContext, null);
+    const participant = await participantAction({ context: s.context, params: { caseId: "case-1" },
+      request: request("/en/complaints/case-1/result", participantFields) });
+    expect(participant).toMatchObject({ data: { error: "unauthenticated" }, init: { status: 401 } });
+    const reviewer = await reviewerAction({ context: s.context,
+      params: { caseId: "case-1", appealId: "appeal-1" },
+      request: request("/en/attention/complaints/case-1/appeals/appeal-1", reviewerFields) });
+    expect(reviewer).toMatchObject({ data: { error: "unauthenticated" }, init: { status: 401 } });
+    if (!("init" in participant)) throw new Error("expected typed participant error");
+    expect(new Headers(participant.init?.headers).get("Cache-Control")).toBe("private, no-store");
+    expect(new Headers(reviewer.init?.headers).get("Cache-Control")).toBe("private, no-store");
+    expect(s.submitAppeal).not.toHaveBeenCalled();
+    expect(s.resolveAppeal).not.toHaveBeenCalled();
+  });
   it("late 401 is private at shared read and command error boundaries", () => {
     for (const error of [new AccountInactiveError(), new AccountMissingError()]) {
       const failure = complaintCommandFailure(error);
