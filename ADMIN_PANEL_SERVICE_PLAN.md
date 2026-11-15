@@ -38,6 +38,14 @@ Accepted master technical plan: predecessor #251 comment **#6806249892**.
 
 ## Whole remaining Super-admin plan — MANDATORY before further implementation
 
+### Whole remaining-plan assignment — Lev ACTIVE
+
+- Baseline: `main=6652c898067d05a7c1476377e95f50cd73937410`.
+- Deliverable: `SUPER_ADMIN_REMAINING_TECHNICAL_PLAN.md`.
+- Scope: `SA04-L–S → SA05 → SA06 → SA07 → SA08`.
+- Existing `SA04_L_S_TECHNICAL_PLAN.md` is a retained detailed subplan, not the overall task plan.
+- Implementation stays stopped until Lev handoff and Mira acceptance of the complete chain.
+
 The current task is **not SA04 in isolation**. It is the remaining Super-admin delivery through **SA08**.
 
 The previously accepted `SA04_L_S_TECHNICAL_PLAN.md` remains valid for the SA04-L–S subchain, but implementation must stay stopped until the complete remaining program is technically planned as one dependency chain:
