@@ -1,6 +1,18 @@
 # ChatGPT-5.6 Sol — personal log
 
 
+## 2026-11-15 — SA04-M1 activation / post-L locator refresh
+
+- Developer continuation received. Current `main=859ea69165f51cd997e61b1d1f30f6663f045965`.
+- Rechecked current AGENTS/project state and accepted M contract. #333 changed no M source/SoT files: `db/user-measures.ts`, measure HTTP/Hyperdrive and ADMIN_PANEL/AUTHORIZATION/SUPER_ADMIN SoTs retain their accepted-baseline blob SHAs.
+- Current M seam still has five writers through one `withLockedTransaction`; shared AccountState native mutation guard remains available. L is now the expected merged adjacent authz/actor-lock dependency.
+- No technical drift or plan conflict found; no Lev replanning gate needed.
+- Activated **M1 only** for Lira inside a new cumulative **M–S Draft** from current main. This PR must remain unmerged through S. M2/N+ are not part of the current assignment.
+- Mira STOP until M1 author checkpoint, then bounded M1 review.
+
+---
+
+
 ## 2026-11-15 — correction: I used the wrong merge boundary
 
 - Developer identified the actual process error: I treated bounded SA04 slices as independently mergeable units.
