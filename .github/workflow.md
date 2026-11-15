@@ -3,13 +3,14 @@
 - **Service PR:** #331, coordination only, never merge. #251 historical archive.
 - **Current main / K base:** `398dae18d5ca7c3fc6dd84fd93a29d7c381ba366`; no drift from the accepted K base.
 - **Package / accepted plan:** SA04-K attachment AccountState lifecycle; #331 comment #6877583725.
-- **Implementation:** cumulative Draft #332, open/draft/unmerged, reviewed stable exact `a610ea89447744f4f3946dfc6e59b4b01d9ad65a`.
-- **Required reviews:** Mira fresh cumulative whole-K coordinator PASS and **Lev independent cumulative whole-K PASS — 0 confirmed current-K defects**, both on that same exact head. [Lev report #6891261025](https://github.com/iliya1947/vico-forum/pull/331#issuecomment-6891261025).
-- **SA04-K-LEV-01 / P3:** independently CLOSED; original real HTTP probe now16/16 private/no-store, including repeated/case/percent aliases.
-- **Evidence status:** six exact-head workflows SUCCESS, remote956PG/2332app/33connected; independent local50native/133app/33connected and original HTTP probe PASS. Full details in report/common log.
-- **CI qualification:** unchanged schema-parity step is green despite BigInt TypeError/exit0. Reproduced on identical main/head inputs; substantive parity is not established by that step. Pre-existing outside K, no K schema/migration/dependency change. Preserve this qualification.
-- **Current actor / next gate:** **Mira — coordinator closeout and prepare #332 for Owner merge decision.** Do not extend reviewed K with L. Merge only Owner.
-- **After Owner merge:** refresh current main before a new L assignment/technical plan.
-- **Lev:** independent review complete / STOP. **Lira / Mark:** inactive.
-- **Boundary:** no agent merge/deploy, #315 remediation, L–S, SA05, permanent docs or Stage6 during this closeout.
-- **Future planning constraint:** after full SA-04 closure, SA-05 implementation is blocked until SA-05–SA-08 are technically planned together as one complete remaining dependency chain.
+- **Implementation:** cumulative [PR #332](https://github.com/iliya1947/vico-forum/pull/332), open/unmerged, stable exact head `a610ea89447744f4f3946dfc6e59b4b01d9ad65a`, **Ready for review / Owner merge gate**.
+- **Coordinator review:** Mira fresh cumulative whole-K **PASS — 0 confirmed current-K defects** on the exact head.
+- **Independent review:** Lev cumulative whole-K **PASS — 0 confirmed current-K defects** on the same exact head. [Full report #6891261025](https://github.com/iliya1947/vico-forum/pull/331#issuecomment-6891261025).
+- **SA04-K-LEV-01 / P3:** CLOSED independently; extended actual HTTP probe is 16/16 private/no-store across canonical/case/percent/repeated-trailing-slash private GET/HEAD aliases.
+- **Exact-head evidence:** CI [43689566922](https://github.com/iliya1947/vico-forum/actions/runs/43689566922) SUCCESS — PG17 **956/956**, application **2332/2332**, Worker private-failure helper **30/30**; K5 [43689566891](https://github.com/iliya1947/vico-forum/actions/runs/43689566891) SUCCESS **33/33**; AP10/SA01/SA03/J12 all SUCCESS on the same SHA.
+- **CI qualification:** unchanged `Verify Drizzle schema parity` step is formally green while `drizzle-kit generate` logs `TypeError: Do not know how to serialize a BigInt` and exits 0. Substantive parity is not claimed from that step. Lev independently reproduced the same behavior on byte-identical main/head schema/config/migration/dependency inputs; no K schema/migration/dependency/CI delta exists.
+- **Current actor / next gate:** **Owner merge decision for #332.** No agent merge.
+- **After Owner merge:** Mira refreshes `main`, records K merged, then opens only the next SA04 package flow; do not start L against the pre-merge base.
+- **Lira / Lev / Mark:** inactive.
+- **Boundary:** no deploy, #315 remediation, L–S implementation, SA05, permanent docs or Stage6 before the merge decision.
+- **Future planning constraint:** after full SA-04 closure, SA-05 implementation remains blocked until SA-05–SA-08 are technically planned together as one complete remaining dependency chain.
