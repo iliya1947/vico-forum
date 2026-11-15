@@ -1,6 +1,16 @@
 # ChatGPT-5.6 Sol — personal log
 
 
+## 2026-11-15 — correction: SA04 review cadence is package-level
+
+- My first version reviewed every internal slice; my second version deferred all review until S. Both were wrong.
+- Correct cadence: Lira owns internal decomposition. Mira checks only completed enclosing packages M/N/O/P/Q/R, with no merge at those checkpoints. On PASS Lira continues the next package in the same cumulative M–S Draft.
+- S is followed by Mira final whole-SA04 review, then Lev independent same-head whole-SA04 review, then one Owner merge.
+- Lev is not used between normal package checkpoints unless technical escalation is required.
+
+---
+
+
 ## 2026-11-15 — correction: no Mira gate between SA04 internal slices
 
 - I incorrectly retained coordinator review after M1/M2-style internal slices even after correcting the merge boundary.
