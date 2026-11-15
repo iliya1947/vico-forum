@@ -1,5 +1,24 @@
 # Codex-6.1 Sol — personal log
 
+## 2026-11-15 — ACTIVE ASSIGNMENT: complete SA04-L–S technical chain plan
+
+Current source-of-truth is post-K `main=6652c898067d05a7c1476377e95f50cd73937410`. #332 is merged; K is delivered. Accepted SA-04 master plan remains #251 comment #6806249892.
+
+Produce **one complete technical plan for the entire remaining SA04-L–S chain before any implementation begins**. Do not plan L in isolation.
+
+Required result:
+- establish the full current-main authoritative entrypoint/caller inventory for L–R;
+- define cross-package dependencies and bounded implementation sequence through S;
+- resolve transaction/admission seams, dependency/actor lock order, replay/no-op/idempotency/CAS precedence, relevant cross-writer races and failure/privacy boundaries;
+- preserve the existing domain contracts and identify the evidence/acceptance required for each package and final S connected closure;
+- make the plan sufficiently concrete that later package implementation does not require new cross-package architecture to be invented just in time.
+
+Use the accepted master and current repository/source-of-truth as constraints; independently determine the correct technical details. If they conflict or a broader change is required, stop with a technical escalation.
+
+**Planning only:** do not modify implementation, create an implementation PR, start L, or work on SA05/#315/docs/Stage6. Return the complete L–S plan to Mira for scope/fit review, then STOP.
+
+---
+
 ## 2026-11-15 — Lev independent whole-K PASS / SA04-K-LEV-01 CLOSED / STOP
 
 - **Independent cumulative whole-K PASS — 0 confirmed current-K defects** on Draft #332 exact `a610ea89447744f4f3946dfc6e59b4b01d9ad65a`, the same head as Mira fresh coordinator PASS. [Full independent review #6891261025](https://github.com/iliya1947/vico-forum/pull/331#issuecomment-6891261025). **SA04-K-LEV-01 / P3 CLOSED.**
