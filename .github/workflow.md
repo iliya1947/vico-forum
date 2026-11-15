@@ -2,15 +2,16 @@
 
 - **Service PR:** #331, coordination only, never merge.
 - **Current main / cumulative SA04 M–S base:** `859ea69165f51cd997e61b1d1f30f6663f045965`.
-- **Cumulative implementation PR:** Draft #334, exact stable head `c594932a6032066d994391ea08606bcb933956e7`, open/unmerged.
+- **Cumulative implementation PR:** Draft #334, exact stable head `614665d9041894eaac32771ff4f81f9db5161389`, open/unmerged; 16 commits / 11 paths from unchanged `main`.
 - **Delivered in main:** SA01–03 and SA04 A–L. L is the historical separate-merge exception (#333).
 - **Completed in cumulative PR:** whole **SA04-M** (M1+M2).
 - **Mira whole-M coordinator review:** **PASS — 0 confirmed current-M defects** on exact `c594932a6032066d994391ea08606bcb933956e7`.
 - **Evidence checked:** all 8 changed paths; production transaction/error mapping; native PostgreSQL race/replay/quota/interleaving coverage; actual Worker+Better Auth+PG17+Chromium connected acceptance; CI 979/979 native and 2347/2347 app; synthetic merge tree equals implementation tree.
 - **Known CI qualification:** unchanged Drizzle 0.31.10 generator BigInt TypeError/exit0 means that single generated-drift step is not substantive parity evidence. M has no schema/migration/dependency delta; real 69-table production manifest parity is green.
 - **Merge boundary:** no merge after M. Same cumulative #334 continues through N→O→P→Q→R→S.
-- **Current gate:** whole-M PASS completed; **N ACTIVE** immediately by the preaccepted workflow. No developer decision is required between package PASS and the next already-planned package.
-- **Lira:** ACTIVE on whole **N (N1→N2→N3)** in the same cumulative Draft #334; no Mira gate between N1/N2/N3.
+- **Current checkpoint:** **N1 complete / Lira bounded STOP**, whole N still ACTIVE by accepted plan; **N2 next** on developer continuation `...` without scope or Mira decision gate. No N3 or O before finishing prior bounded units.
+- **Lira:** N1 AUTHOR CHECKPOINT STOP; next bounded work N2 priority/activity/note/decision; N3 appeal/resolution + whole-N closure follows on subsequent developer continuation. **No Mira gate between N1/N2/N3**; whole-N Mira review after N3.
 - **Lev/Mark:** inactive; Lev only on genuine technical escalation or final whole-SA04 independent review after S.
+- **N1 verified:** Shared `DrizzleComplaintsRepository.actorMutex` now invokes `assertActiveAccountForDrizzleMutation(tx,actor)` on existing transaction (affects its existing seven callers; eighth `savePrioritySettings` remains N2); post Complaint `submit` prelocks topic `FOR KEY SHARE` before post `FOR UPDATE` / actor to close N-DEP-01. Native `tests/database/sa04-complaints-n1.test.ts` **5/5**: active post/title/lifetime + exact replay, missing/inactive no raw changes, state-first and writer-first through commit, both actual post↔title PostgreSQL blocked orders. J↔Complaint existing test adapted only to shared Drizzle guard SQL matcher and passed **9/9**. Exact-head [CI #43752193956](https://github.com/iliya1947/vico-forum/actions/runs/43752193956) **SUCCESS**: native PG17 **984/984** (88 files), app **2347/2347** (187 files), lint/typecheck/build/migrations. [AP10 #43752194006](https://github.com/iliya1947/vico-forum/actions/runs/43752194006) **SUCCESS 4/4**; [SA04-M2 #43752194019](https://github.com/iliya1947/vico-forum/actions/runs/43752194019) **SUCCESS**; [SA03 #43752194029](https://github.com/iliya1947/vico-forum/actions/runs/43752194029) **SUCCESS**. First exact-head native CI caught existing J test's old literal `SELECT id` actor query matcher; corrected test-only, confirmed no source deadlock.
 - **Final SA04 gate:** S AUTHOR STOP → Mira whole-SA04 coordinator review → Lev independent same-head whole-SA04 review → Owner merge once.
 - **Boundary:** no O implementation before whole-N PASS; no SA05, #315 remediation, permanent docs, production/deployment or Stage6.
