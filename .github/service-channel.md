@@ -1,5 +1,21 @@
 # Admin panel — communication
 
+## 2026-11-15 — process correction: findings require Lev rationale before correction
+
+The immediately preceding Mira RETURN/correction packet was procedurally premature. The five items are now **technical findings under discussion**, not confirmed defects and not an instruction to edit the plan.
+
+AGENTS requires divergent technical conclusions to be checked against available facts and discussed in the service PR before a technical-plan change is required. Lev is therefore asked to explain the rationale and intended implementation semantics behind each disputed decision. Mira will then re-evaluate each item as: resolved/no defect, confirmed defect, or genuine developer-choice conflict.
+
+Until that discussion closes:
+- do not revise `SUPER_ADMIN_REMAINING_TECHNICAL_PLAN.md` merely to satisfy the previous packet;
+- do not start implementation;
+- Lira/Mark remain inactive;
+- the accepted L–S subplan remains unchanged.
+
+The discussion questions are posted as a PR Conversation comment and mirrored in Lev's personal assignment.
+
+---
+
 ## 2026-11-15 — Mira whole remaining-plan RETURN → Lev correction packet
 
 Baseline/current main: `6652c898067d05a7c1476377e95f50cd73937410`. Mira reviewed the complete `SUPER_ADMIN_REMAINING_TECHNICAL_PLAN.md` as one chain through SA08. **Verdict: RETURN — 5 confirmed planning gaps.** SA05 command/race design and SA08 core Overview/partial-failure/final acceptance composition otherwise fit the accepted product map. Existing accepted L–S subplan remains valid.
