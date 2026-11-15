@@ -8,7 +8,7 @@ from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 from time import monotonic, sleep
 from urllib.error import HTTPError
-from urllib.parse import urlencode, urlparse
+from urllib.parse import parse_qs, urlencode, urlparse
 from urllib.request import Request, urlopen
 from uuid import uuid4
 from playwright.sync_api import sync_playwright
@@ -233,7 +233,7 @@ try:
         record("actual-participant-state-first-late-401-and-no-durable-effects")
 
         participant_posts=[]
-        page.on("request",lambda req:participant_posts.append(req.url)
+        page.on("request",lambda req:participant_posts.append(req.post_data or "")
             if req.method=="POST" and p1 in req.url else None)
         with page.expect_response(lambda res:res.request.method=="POST" and p1 in res.url) as denied:
             form.locator('button[type="submit"]').click()
@@ -242,9 +242,17 @@ try:
         assert len(participant_posts)==1,participant_posts
         assert form.count()==1, "Late 401 must not unmount the participant draft"
         assert form.locator("textarea").input_value()=="KEEP_N3_PARTICIPANT_DRAFT"
-        assert form.locator('input[name="operationId"]').input_value(), "Participant nonce lost after 401"
+        first_nonce=parse_qs(participant_posts[0]).get("operationId",[])
+        assert len(first_nonce)==1 and first_nonce[0], "Missing participant command nonce"
+        with page.expect_response(lambda res:res.request.method=="POST" and p1 in res.url) as denied_retry:
+            form.locator('button[type="submit"]').click()
+        assert denied_retry.value.status==401
+        sleep(.5)
+        assert len(participant_posts)==2, "Extra automatic participant retry"
+        assert parse_qs(participant_posts[1]).get("operationId")==first_nonce, "Participant retry changed nonce"
+        assert form.locator("textarea").input_value()=="KEEP_N3_PARTICIPANT_DRAFT"
         assert snapshot()==before
-        record("mounted-participant-form-retains-draft-nonce-no-silent-retry")
+        record("mounted-participant-form-retains-draft-and-reuses-nonce-on-explicit-retry")
 
         private(submit(other_ctx,topics[2]),200)
         c2=case(topics[2]);d2=decision(reviewer_ctx,c2)
@@ -286,7 +294,7 @@ try:
         record("all-eight-Complaint-HTTP-writers-deny-after-deactivation")
 
         reviewer_posts=[]
-        reviewer_page.on("request",lambda req:reviewer_posts.append(req.url)
+        reviewer_page.on("request",lambda req:reviewer_posts.append(req.post_data or "")
             if req.method=="POST" and "/appeals/"+a2 in req.url else None)
         with reviewer_page.expect_response(lambda res:res.request.method=="POST" and "/appeals/"+a2 in res.url) as denied:
             review_form.locator('button[type="submit"]').click()
@@ -295,9 +303,17 @@ try:
         assert len(reviewer_posts)==1,reviewer_posts
         assert review_form.count()==1, "Late 401 must not unmount the reviewer draft"
         assert review_form.locator("textarea").input_value()=="KEEP_N3_REVIEWER_DRAFT"
-        assert review_form.locator('input[name="operationId"]').input_value(), "Reviewer nonce lost after 401"
+        first_nonce=parse_qs(reviewer_posts[0]).get("operationId",[])
+        assert len(first_nonce)==1 and first_nonce[0], "Missing reviewer command nonce"
+        with reviewer_page.expect_response(lambda res:res.request.method=="POST" and "/appeals/"+a2 in res.url) as denied_retry:
+            review_form.locator('button[type="submit"]').click()
+        assert denied_retry.value.status==401
+        sleep(.5)
+        assert len(reviewer_posts)==2, "Extra automatic reviewer retry"
+        assert parse_qs(reviewer_posts[1]).get("operationId")==first_nonce, "Reviewer retry changed nonce"
+        assert review_form.locator("textarea").input_value()=="KEEP_N3_REVIEWER_DRAFT"
         assert snapshot()==before
-        record("mounted-reviewer-form-retains-draft-nonce-no-silent-retry")
+        record("mounted-reviewer-form-retains-draft-and-reuses-nonce-on-explicit-retry")
 
         sql("ALTER ROLE postgres IN DATABASE vico_sa04_n_browser_test SET statement_timeout='650ms'")
         try:
