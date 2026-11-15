@@ -1,4 +1,5 @@
 import type { Client } from "pg";
+import { AccountStateUnavailableError } from "./account-state";
 import { drizzle } from "drizzle-orm/node-postgres";
 import { createWebClient, bestEffortDiscardClient, isPostgresConnectionTimeout, isPostgresQueryTimeout } from "./postgres-deadlines";
 import { isPostgresAvailabilityFailure } from "../app/localization/persistent-registry";
@@ -31,9 +32,9 @@ export function createHyperdriveComplaintSubmission(connectionString: string, au
 export function isComplaintStorageUnavailable(error: unknown): boolean {
   const seen = new Set<unknown>();
   let current = error;
-  while (current && (typeof current === "object" || typeof current === "function") && !seen.has(current)) {
+  for (let depth = 0; depth < 16 && current && (typeof current === "object" || typeof current === "function") && !seen.has(current); depth++) {
     seen.add(current);
-    if (isPostgresAvailabilityFailure(current) || isPostgresConnectionTimeout(current) || isPostgresQueryTimeout(current)) return true;
+    if (current instanceof AccountStateUnavailableError || isPostgresAvailabilityFailure(current) || isPostgresConnectionTimeout(current) || isPostgresQueryTimeout(current)) return true;
     current = (current as { cause?: unknown }).cause;
   }
   return false;
