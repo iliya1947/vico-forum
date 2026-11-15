@@ -1,6 +1,16 @@
 # ChatGPT-5.6 Sol — personal log
 
 
+## 2026-11-15 — SA05 clarification reassessed / whole-plan FINAL PASS
+
+- Lev response #6895121086 classified the remaining SA05 eventId question as clarification-only. I independently checked current `main`: `owner_events_entity_idx(entity_type,entity_id,position DESC)` exists; user retains deactivation actor/time/minimum tuple.
+- Reassessment: **resolved / no plan defect**. The second lookup for a new-operation no-op is a local query/locator detail over already-fixed source identity and invariants; it introduces no new source, schema, index, producer, API contract or architecture choice.
+- The earlier provisional finding is withdrawn as a defect only **after** the required Lev discussion/reassessment.
+- Final revised-plan verdict: **PASS — 0 confirmed current-plan defects** across `SA04-L–S → SA05 → SA06 → SA07 → SA08`.
+- Implementation remains stopped. Next permitted slice is L only after developer continuation.
+
+
+
 ## 2026-11-15 — correction: premature final PASS superseded
 
 - My preceding `fresh whole remaining-plan review FINAL PASS` entry is **superseded**.
