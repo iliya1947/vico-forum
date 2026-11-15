@@ -1,5 +1,13 @@
 # ChatGPT-6 — personal log
 
+## 2026-11-15 — M1.4 closeout verified; corrected whole-package review cadence
+
+M1.1–M1.4 complete in same cumulative [Draft PR #334](https://github.com/iliya1947/vico-forum/pull/334), exact `81b20db40454b302689dc9dedb4bc764f62963d6`; main/base unchanged at `859ea69165f51cd997e61b1d1f30f6663f045965`. Final workflow status rechecked **CI #43741372398 SUCCESS** (native PG17 979/979, new M1 9/9, app 2337/2337); **AP10 #43741372426 SUCCESS 4/4 Chromium jobs**. No additional implementation files/commits, PR stays Draft/open/unmerged.
+
+**Latest developer review-boundary correction supersedes earlier M1→Mira note:** M1/M2 are internal Lira work units, **no coordinator review at M1.4**; after **whole M** Mira whole-M review, likewise whole N/O/P/Q/R; whole-SA04 final Mira then Lev, single Owner merge after S. Workflow + PR #334 body reconciled. **Lira STOP after M1.4** under explicit bounded decomposition. Next developer `...` begins bounded M2 author subtask(s) in same Draft; no M2 action in this closeout.
+
+
+
 ## 2026-11-15 — SA04-M1 COMPLETE, AUTHOR CHECKPOINT STOP
 
 Cumulative Draft #334 `81b20db40454b302689dc9dedb4bc764f62963d6` from `main=859ea69165f51cd997e61b1d1f30f6663f045965` (unchanged). M1 only: exactly 2 commits/2 paths (`db/user-measures.ts`, `tests/database/sa04-user-measures-m1.test.ts`). All five AP10 authoritative operations now pass actorId into existing common native transaction (three through withAuthorityTransaction including transition pair, own appeal direct), guard after authz mutex and before operation/replay. No permission/Owner/target/quota/History semantic broadening, no schema/dependency/HTTP M2.
