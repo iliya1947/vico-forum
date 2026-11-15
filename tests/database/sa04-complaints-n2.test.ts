@@ -47,7 +47,7 @@ async function retained() {
   const tables = ["forum_complaint_cases", "forum_complaint_events", "forum_complaint_notes",
     "forum_complaint_decisions", "forum_complaint_activity", "forum_complaint_priority_settings",
     "forum_complaint_appeals", "forum_complaints", "forum_complaint_targets",
-    "forum_complaint_evidence_attachments", "forum_notifications"];
+    "forum_complaint_evidence_attachments", "forum_reply_notifications"];
   const state: Record<string, unknown[]> = {};
   for (const name of tables) state[name] =
     (await fixture.query("select * from " + name + " order by 1")).rows;
