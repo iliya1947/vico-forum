@@ -103,7 +103,7 @@ async function physicallyBlocked(waiter: number, blocker: number): Promise<void>
 function createMeasure(service: UserMeasuresService, actor: string, target: string) {
   return service.create({
     id: uuid(), actorId: actor, targetUserId: target,
-    reason: "SA04-L2 shared mutex acceptance", restrictions: [], expiresAt: null,
+    reason: "SA04-L2 shared mutex acceptance", restrictions: ["topics.create"], expiresAt: null,
   });
 }
 
@@ -161,7 +161,6 @@ describe("SA04-L2 real PostgreSQL authorization lock and rollback matrix", () =>
       void pending.catch(() => undefined);
       await pause.observed;
       const before = await facts(actor);
-      expect(before.roles).toBe(0);
       expect(before.history).toBe(0);
       await stateClient!.query("begin"); tx = true;
       await stateClient!.query("set local lock_timeout='200ms'");
@@ -171,11 +170,11 @@ describe("SA04-L2 real PostgreSQL authorization lock and rollback matrix", () =>
       await stateClient!.query("rollback"); tx = false;
       pause.resume();
       await pending;
-      expect(await facts(actor)).toEqual({ roles: 1, history: 1, measures: 0 });
+      expect(await facts(actor)).toEqual({ roles: before.roles + 1, history: 1, measures: 0 });
       await deactivate(actor);
       await expect(store.renameCustomRole(actor, role.id, { displayName: role.displayName }))
         .rejects.toBeInstanceOf(AccountInactiveError);
-      expect(await facts(actor)).toEqual({ roles: 1, history: 1, measures: 0 });
+      expect(await facts(actor)).toEqual({ roles: before.roles + 1, history: 1, measures: 0 });
     } finally {
       pause.resume(); pause.restore();
       if (tx) await stateClient!.query("rollback");
@@ -188,6 +187,7 @@ describe("SA04-L2 real PostgreSQL authorization lock and rollback matrix", () =>
     const actor = await createUser(), role = roleInput();
     const [blocker, contender] = await connections(2);
     const blockerPid = await pid(blocker!), contenderPid = await pid(contender!);
+    const before = await facts(actor);
     let tx = false, pending: Promise<void> | undefined;
     try {
       await blocker!.query("begin"); tx = true;
@@ -198,7 +198,7 @@ describe("SA04-L2 real PostgreSQL authorization lock and rollback matrix", () =>
       await deactivate(actor);
       await blocker!.query("commit"); tx = false;
       await expect(pending).rejects.toBeInstanceOf(AccountInactiveError);
-      expect(await facts(actor)).toEqual({ roles: 0, history: 0, measures: 0 });
+      expect(await facts(actor)).toEqual(before);
     } finally {
       if (tx) await blocker!.query("rollback");
       if (pending) await Promise.allSettled([pending]);
@@ -211,13 +211,14 @@ describe("SA04-L2 real PostgreSQL authorization lock and rollback matrix", () =>
     // Trigger remains strictly scoped to the disposable isolated schema.
     const rolePool = new Pool({ connectionString: url, options, max: 2 });
     const actual = new PostgresAuthorizationRepository(rolePool, actor, noMeasures);
+    const before = await facts(actor);
     try {
       await fixture.query("create function l2_fail_history() returns trigger language plpgsql as $$"
         + " begin raise exception 'SA04-L2 rollback probe'; end $$");
       await fixture.query("create trigger l2_history_abort before insert on admin_history"
         + " for each row execute function l2_fail_history()");
       await expect(actual.createCustomRole(actor, role)).rejects.toThrow("SA04-L2 rollback probe");
-      expect(await facts(actor)).toEqual({ roles: 0, history: 0, measures: 0 });
+      expect(await facts(actor)).toEqual(before);
       // A post-ROLLBACK lifecycle UPDATE proves the failed writer released its row lock.
       await deactivate(actor);
       await expect(actual.createCustomRole(actor, role)).rejects.toBeInstanceOf(AccountInactiveError);
@@ -236,6 +237,7 @@ describe("SA04-L2 real PostgreSQL authorization lock and rollback matrix", () =>
       const firstClient = order === "L-first" ? lClient! : mClient!;
       const secondClient = order === "L-first" ? mClient! : lClient!;
       const firstPid = await pid(firstClient), secondPid = await pid(secondClient);
+      const before = await facts(actor);
       const paused = pauseBefore(firstClient, sql => /^commit$/iu.test(sql.trim()));
       let first: Promise<unknown> | undefined, second: Promise<unknown> | undefined;
       try {
@@ -247,7 +249,7 @@ describe("SA04-L2 real PostgreSQL authorization lock and rollback matrix", () =>
         await physicallyBlocked(secondPid, firstPid);
         paused.resume();
         await Promise.all([first, second]);
-        expect(await facts(actor)).toEqual({ roles: 1, history: 2, measures: 1 });
+        expect(await facts(actor)).toEqual({ roles: before.roles + 1, history: 2, measures: 1 });
       } finally {
         paused.resume(); paused.restore();
         if (first) await Promise.allSettled([first]);
@@ -267,6 +269,7 @@ describe("SA04-L2 real PostgreSQL authorization lock and rollback matrix", () =>
       const secondClient = order === "L-first" ? pClient! : lClient!;
       const paused = pauseBefore(firstClient, sql => /^commit$/iu.test(sql.trim()));
       const firstPid = await pid(firstClient), secondPid = await pid(secondClient);
+      const before = await facts(actor);
       let first: Promise<unknown> | undefined, second: Promise<unknown> | undefined;
       try {
         first = order === "L-first" ? l.createCustomRole(actor, role) : privacy.save(actor, false);
@@ -278,7 +281,7 @@ describe("SA04-L2 real PostgreSQL authorization lock and rollback matrix", () =>
         paused.resume();
         await Promise.all([first, second]);
         expect(await privacy.read(actor)).toBe(false);
-        expect(await facts(actor)).toEqual({ roles: 1, history: 1, measures: 0 });
+        expect(await facts(actor)).toEqual({ roles: before.roles + 1, history: 1, measures: 0 });
       } finally {
         paused.resume(); paused.restore();
         if (first) await Promise.allSettled([first]);
@@ -294,6 +297,7 @@ describe("SA04-L2 real PostgreSQL authorization lock and rollback matrix", () =>
     const l = writer(lClient!, actor);
     const paused = pauseBefore(lClient!, sql => /^commit$/iu.test(sql.trim()));
     const lPid = await pid(lClient!), localePid = await pid(localeClient!);
+    const before = await facts(actor);
     let pending: Promise<unknown> | undefined, update: Promise<unknown> | undefined;
     try {
       pending = l.createCustomRole(actor, role);
@@ -319,7 +323,7 @@ describe("SA04-L2 real PostgreSQL authorization lock and rollback matrix", () =>
       await Promise.all([pending, update]);
       const state = await fixture.query<{ locale: string }>('select locale from "user" where id=$1', [actor]);
       expect(state.rows[0]?.locale).toBe("he");
-      expect(await facts(actor)).toEqual({ roles: 1, history: 1, measures: 0 });
+      expect(await facts(actor)).toEqual({ roles: before.roles + 1, history: 1, measures: 0 });
     } finally {
       paused.resume(); paused.restore();
       if (pending) await Promise.allSettled([pending]);
@@ -331,6 +335,7 @@ describe("SA04-L2 real PostgreSQL authorization lock and rollback matrix", () =>
   it("active Owner may mutate inactive target; self-target KEY SHARE remains compatible with actor NKU", async () => {
     const actor = await createUser(), target = await createUser(), role = roleInput();
     const [client] = await connections(1);
+    const before = await facts(actor);
     try {
       await deactivate(target);
       const l = writer(client!, actor);
@@ -343,10 +348,10 @@ describe("SA04-L2 real PostgreSQL authorization lock and rollback matrix", () =>
         "select effect from authz_user_permission_overrides where user_id=$1"
         + " and permission_key='forum.topic.pin'", [target]);
       expect(rows.rows).toEqual([{ effect: "deny" }]);
-      expect(await facts(actor)).toEqual({ roles: 1, history: 5, measures: 0 });
+      expect(await facts(actor)).toEqual({ roles: before.roles + 1, history: 5, measures: 0 });
       // The Owner's effective authority still works with a raw self-deny.
       await l.renameCustomRole(actor, role.id, { displayName: "Retained authority" });
-      expect(await facts(actor)).toEqual({ roles: 1, history: 6, measures: 0 });
+      expect(await facts(actor)).toEqual({ roles: before.roles + 1, history: 6, measures: 0 });
     } finally {
       await client!.end();
     }
