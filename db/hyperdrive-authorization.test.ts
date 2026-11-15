@@ -186,8 +186,16 @@ describe("Hyperdrive authorization availability boundary", () => {
           if (sql.startsWith("select id from authz_mutation_lock")) return { rows: [{ id: 1 }], rowCount: 1 };
           throw failure;
         }));
-      await expect(capability.createCustomRole("owner", { slug: "role", displayName: "Role" }))
-        .rejects.toBe(failure);
+      const result = capability.createCustomRole("owner", { slug: "role", displayName: "Role" });
+      if ("code" in failure && failure.code === "42P01") {
+        // The native AccountState boundary wraps an unknown SQL failure without
+        // reclassifying it as availability; the original SQL error stays in cause.
+        await expect(result).rejects.toMatchObject({
+          name: "AccountStateUnexpectedError", cause: failure,
+        });
+      } else {
+        await expect(result).rejects.toBe(failure);
+      }
     }
   });
 });
