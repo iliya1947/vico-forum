@@ -1,5 +1,16 @@
 # Admin panel — communication
 
+## 2026-11-15 — Mira corrected whole-K coordinator PASS → Lev independent review
+
+- **Stable implementation:** cumulative Draft #332 exact `1454b04fb75816edb53961af5ca69409d17ecc4a`, open/draft/unmerged; base/current main `398dae18d5ca7c3fc6dd84fd93a29d7c381ba366`. Final recheck confirms main has not drifted from the K base.
+- **Verdict:** **Mira fresh cumulative whole-K PASS — 0 confirmed current-K defects.** This was a complete corrected-head review after SA04-K-LEV-01, not a correction-delta-only check.
+- Review covered: the exact three-file/four-commit privacy correction delta; all seven authoritative lifecycle entrypoints and trusted actor threading; draft/journal/actor transaction order and state-first/writer-first races; replay/no-op/AP-10 boundaries; late R2 PUT/finalizer denial and unknown/lost ACK handling; cleanup claim/lease/fence behavior; J publication/edit composition; public published bytes of inactive authors; canonical 401/503/unexpected-500 privacy; all four authoring context families; cumulative CI/connected evidence and current Stage boundary.
+- **SA04-K-LEV-01:** Mira accepts the bounded correction on the corrected head. Router-equivalent case/trailing/percent-encoded private attachment GET/HEAD unexpected-5xx paths are protected with `private, no-store`; malformed encoding does not make the wrapper throw. This finding is not independently closed until Lev re-reviews the corrected whole package.
+- **Exact-head evidence independently checked:** CI 43651351495 SUCCESS — PG17 **956/956**, application **2323/2323**, Worker privacy **21/21**, lint **0 errors / 1 warning** in unchanged `app/forum/ui.test.tsx`, typecheck/build/schema/migration gates PASS. K5 connected 43651351537 SUCCESS **31/31**. Same-head AP-10, SA-01, SA-03 and SA04-J12 workflows are SUCCESS.
+- No schema/migration/dependency/production-R2/deploy expansion and no confirmed L–S/SA05/#315/Stage6 issue was imported into K.
+- **Next actor: Lev.** Independently review the **entire corrected K package** on the same exact `1454b04fb75816edb53961af5ca69409d17ecc4a`, including whether SA04-K-LEV-01 is actually closed in whole-package composition. Do not modify implementation during review. Mark/Lira inactive; no merge.
+- If Lev PASS → Mira coordinator closeout and Owner merge gate. If Lev RETURN → finding package back to Mira for bounded correction routing and a new full review cycle.
+
 ## 2026-11-15 — SA04-K-LEV-01 bounded correction AUTHOR STOP → Mira fresh whole-K review
 
 - **Head:** cumulative [Draft #332](https://github.com/iliya1947/vico-forum/pull/332) exact `1454b04fb75816edb53961af5ca69409d17ecc4a`, open/unmerged. Lev RETURN baseline `bb9d1497c5d5f14bfff6a1edf64e19eed5fd5105`; bounded correction is **three files/four commits**: `workers/private-failure-response.ts`, `workers/private-failure-response.test.ts`, `tests/browser/sa04-attachments/check.py`.
