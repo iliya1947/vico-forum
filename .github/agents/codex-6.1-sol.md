@@ -1,5 +1,20 @@
 # Codex-6.1 Sol — personal log
 
+## 2026-11-15 — Lev complete SA04-L–S technical plan delivered / STOP → Mira
+
+- **Complete-chain planning delivered:** [SA04_L_S_TECHNICAL_PLAN.md](https://github.com/iliya1947/vico-forum/blob/chatgpt/admin-panel-service-2/SA04_L_S_TECHNICAL_PLAN.md), [handoff #6891833779](https://github.com/iliya1947/vico-forum/pull/331#issuecomment-6891833779), baseline/current main `6652c898067d05a7c1476377e95f50cd73937410` after #332 merge. Covers **all L/M/N/O/P/Q/R/S**, not L in isolation; awaiting Mira scope/fit acceptance.
+- Full current-main AST/body/caller inventory: **24 authoritative writers** (L6/M5/N8/O1/P1/Q1/R2), plus generation3 action/2 planner paths. Per-domain authoritative guard/tx/lock/replay/no-op/CAS/error/private-cache contract, A–K dependencies, cross-writer races, per-package evidence, complete S closure and executable bounded queue are specified together.
+- **N-DEP-01 planning evidence:** real same-actor post/title Complaint submissions on baseline reproduce40P01 via late topic FK. Same-transaction topic KEY SHARE before post/actor makes both commit. N1 includes only this local content dependency and a production-path regression; no generic retry/global mutex.
+- **R placement explicitly submitted for Mira acceptance:** preserve existing head/task/content/translation ordering; guard before budget/accepted task/head-generation effects. Initial head INSERT is provisional mutex scaffolding in the same rollback-scoped transaction, not a separate admitted commit. Diagnostic title-store control confirms state-first complete rollback0/0/0 and writer-first actor lock through COMMIT. Do not defer this technical master clarification to R implementation or invent a new lock protocol.
+- Shared AccountState, Owner/raw RBAC/AP10/Complaint/Settings/generation contracts preserved; no actor column/task identity change, new schema/migration/dependency/grant, last-admin/recovery rule, deactivate control/event, SA05 or Stage6. #315 remains separate. False-green Drizzle parity evidence limitation retained.
+- **Evidence boundary:**65 source hashes checked, source checkout clean; only two bounded native PG17 planning diagnostics, **no L–S implementation/tests PASS claimed**. Own PG/dependency links removed; implementation branch/PR not created; permanent docs unchanged.
+- **Next actor: Mira**, review/accept the **entire** plan, especially N/R dependencies, complete S evidence and bounded delivery. **Only after complete-chain acceptance may the first bounded L be assigned**. Lira/Mark inactive; Lev planning complete / STOP.
+- SA04 incomplete. After its full acceptance/closeout, the separate mandatory joint **SA05–SA08 technical-planning gate before SA05 implementation** remains unchanged.
+
+---
+
+## Archived preceding assignment/results
+
 ## 2026-11-15 — ACTIVE ASSIGNMENT: complete SA04-L–S technical chain plan
 
 Current source-of-truth is post-K `main=6652c898067d05a7c1476377e95f50cd73937410`. #332 is merged; K is delivered. Accepted SA-04 master plan remains #251 comment #6806249892.
