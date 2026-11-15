@@ -1,6 +1,20 @@
 # Admin panel — communication
 
 
+## 2026-11-15 — SA04-M1 activated in cumulative M–S Draft
+
+- Developer continuation received after the merge-boundary correction.
+- Current `main=859ea69165f51cd997e61b1d1f30f6663f045965`; SA04 A–L are in main. L remains the historical separate-merge exception.
+- Reverified M against current main: `db/user-measures.ts`, `app/measures/routes.server.ts`, `db/hyperdrive-user-measures.ts` and applicable ADMIN_PANEL/AUTHORIZATION/SUPER_ADMIN SoTs have the same blobs as the accepted planning baseline. No post-L M drift or new architecture conflict was found.
+- Accepted M seam remains five writers: create/change/lift/submitAppeal/resolveAppeal through the existing shared `withLockedTransaction`; `assertActiveAccountForMutation` is the native same-transaction lifecycle guard. Existing L↔M mutex evidence is already in main.
+- **Lira ACTIVE: M1 only.** Create one new cumulative Draft implementation PR from current main; that exact PR is the container for all remaining SA04 slices **M→N→O→P→Q→R→S** and must not merge between them.
+- M1 scope is native AccountState admission and native facts/races for all five measure/appeal writers. M2 HTTP/availability/connected acceptance is explicitly later.
+- **Next:** M1 AUTHOR CHECKPOINT STOP → Mira bounded M1 review → on PASS M2 continues in the same cumulative PR. No Owner merge and no Lev gate at this internal checkpoint. Final whole-SA04 independent review remains after S.
+- Mark inactive. No SA05, #315, permanent docs, production/deploy or Stage6.
+
+---
+
+
 ## 2026-11-15 — developer correction: merge boundary is the whole upper-level package
 
 - Verified current GitHub state: #333 is already merged; current `main=859ea69165f51cd997e61b1d1f30f6663f045965`.
