@@ -36,40 +36,14 @@ Accepted master technical plan: predecessor #251 comment **#6806249892**.
 - **R:** new user generation-plan admission.
 - **S:** connected end-to-end SA-04 closure on one stable accepted state.
 
-## Whole remaining Super-admin plan — MANDATORY before further implementation
-
-### Revised complete remaining plan delivered — STOP → Mira fresh whole-plan review
+## Whole remaining Super-admin plan — accepted implementation-depth contract
 
 - Baseline/current main: `6652c898067d05a7c1476377e95f50cd73937410`.
-- Complete revised implementation-depth plan: [SUPER_ADMIN_REMAINING_TECHNICAL_PLAN.md](https://github.com/iliya1947/vico-forum/blob/chatgpt/admin-panel-service-2/SUPER_ADMIN_REMAINING_TECHNICAL_PLAN.md), exact blob `af12946214ac926e776b6cdabdf02971bd4f3480`, publication commit `2ceaac83a9cfad93699c7cdb24197bc93895d634`.
-- Scope: **SA04-L–S → SA05 → SA06 → SA07 → SA08**, with accepted L–S incorporated unchanged and separate final documentation closeout.
-- Lev has incorporated the agreed technical corrections after discussion #6893614964 across dependency/source/storage/index/acceptance sections. Code-only SA07 instrumentation remains accepted without runtime activation; unused06-0 port removed.
-- Native terminal History/provenance/dedup/coverage, fixed bounded R2 samples and reused System DB measurements, truthful auth attribution, complete source/person index map and reader-paired SELECT-only grants are normative in that revised document.
-- **Lev correction STOP → Mira fresh whole-plan scope/fit review**, against original #251 comment #6745289141 and current main/SoT, not delta-only.
-- Whole-plan acceptance pending. Lira/Mark inactive; no implementation PR or L activation. After full PASS the coordinator may activate L only.
-
-The current task is **not SA04 in isolation**. It is the remaining Super-admin delivery through **SA08**.
-
-The previously accepted `SA04_L_S_TECHNICAL_PLAN.md` remains valid for the SA04-L–S subchain, but implementation must stay stopped until the complete remaining program is technically planned as one dependency chain:
-
-`SA04-L–S → SA05 → SA06 → SA07 → SA08`.
-
-Earlier accepted Super-admin decomposition #251 comment #6745289141 defines the package/product boundaries for SA05–SA08, but it is not implementation-depth planning. The new complete plan must make later bounded implementation executable without package-by-package architectural invention.
-
-At minimum it must determine across the whole remaining chain:
-
-1. package/sub-slice dependency and delivery order, including what can only follow full SA04 closure;
-2. authoritative mutation/read/monitor/history/event/observation seams and reuse of existing domain writers/readers;
-3. schema/migration/runtime-grant changes only where actually required, with ownership of each new persisted fact;
-4. transaction/lock/race interactions between SA04 lifecycle enforcement, SA05 deactivation, retained history, monitoring producers and existing domain operations;
-5. privacy/redaction/cache/error boundaries and exact-Owner / ordinary Admin / Attention separation;
-6. monitoring source map for every SA06/SA07 area, including honest disabled/unbound/not-instrumented states and prevention of duplicate event producers;
-7. contextual actions that reuse canonical domain operations rather than creating universal proxies or duplicate mutation backends;
-8. per-package/sub-slice native/Worker/Better Auth/Chromium acceptance and the final SA08 whole-program integration/closeout matrix;
-9. explicit conflicts or product decisions that require developer choice before implementation.
-
-**No implementation resumes until this whole remaining-task plan is accepted by Mira.**
-
+- Complete revised plan: [SUPER_ADMIN_REMAINING_TECHNICAL_PLAN.md](https://github.com/iliya1947/vico-forum/blob/chatgpt/admin-panel-service-2/SUPER_ADMIN_REMAINING_TECHNICAL_PLAN.md), blob `af12946214ac926e776b6cdabdf02971bd4f3480`, publication commit `2ceaac83a9cfad93699c7cdb24197bc93895d634`.
+- Scope is the full dependency chain **SA04-L–S → SA05 → SA06 → SA07 → SA08**, with the accepted L–S subplan incorporated unchanged.
+- Lev's agreed correction set is incorporated. Mira completed the required fresh four-part whole-plan review; after Lev clarification #6895121086 and Mira reassessment #6895280436 the **final verdict is PASS — 0 confirmed current-plan defects**.
+- No unresolved architecture/product decision remains before bounded implementation. Later packages may refresh current-main locators but do not reopen cross-package architecture without a real conflict.
+- Developer continuation has now activated **SA04-L only**. Later packages remain sequential and inactive.
 
 ## SA04-L–S — mandatory complete-chain technical planning
 
@@ -82,7 +56,7 @@ Lev delivered the **entire L–S technical plan** from current main `6652c898067
 
 The Lev diagnostic probes remain planning diagnostics only; Mira did not independently rerun them and they do not constitute implementation/test PASS. Their causal direction was independently checked against current source/lock structure, and each relevant bounded implementation still carries its own required native/production-path regression evidence.
 
-**Planning gate is closed.** The first allowed bounded implementation slice is **L**, but it is not assigned or active until explicit developer command. Lev planning complete / STOP; Lira/Mark inactive; no implementation PR exists. Product decisions, accepted master sequence and future joint SA05–SA08 gate below remain unchanged.
+**Planning gate is closed and developer continuation has been received. SA04-L is the only active implementation package.** Lira creates a separate Draft implementation PR from exact current main and AUTHOR STOPs on one stable head; M+ remain inactive. Lev/Mark are inactive until the review gate requires them.
 
 
 ### SA04-L implementation — CANCELLED before start
