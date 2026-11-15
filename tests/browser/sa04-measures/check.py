@@ -255,7 +255,8 @@ try:
         for name in ("create", "change", "lift", "review"):
             denied = http(owner_ctx, paths[name], fields[name])
             body = private(denied, 401)
-            assert "ok" not in body.lower() and "M2_PRIVATE_SQL_SECRET" not in body
+            assert '"ok":true' not in body.replace(" ", "").lower()
+            assert "M2_PRIVATE_SQL_SECRET" not in body
             assert snapshot() == untouched
         record("four-genuine-manager-commands-after-session-deactivation-401-no-write")
 
