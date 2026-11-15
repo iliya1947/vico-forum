@@ -64,7 +64,7 @@ async function newClient() {
 beforeAll(async () => {
   await fixture.connect();
   await fixture.query("drop schema if exists " + schema + " cascade; create schema " + schema);
-  for (const file of (await readdir("drizzle")).filter(n => /^\\d{4}_.+\\.sql$/.test(n)).sort()) {
+  for (const file of (await readdir("drizzle")).filter(n => /^\d{4}_.+\.sql$/.test(n)).sort()) {
     await fixture.query((await readFile("drizzle/" + file, "utf8")).replaceAll('"public".', '"' + schema + '".'));
   }
   for (const id of [reporter, author, reviewer]) await person(id);
