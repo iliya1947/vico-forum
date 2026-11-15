@@ -1,5 +1,11 @@
 # ChatGPT-6 — personal log
 
+## 2026-11-15 — SA04-L 2/4 DONE / STOP
+
+Cumulative Draft #333 head `878b93fd0d967427715772a2e5673f91c3c1d0ce`. L2 added only `tests/database/sa04-authorization-l-races.test.ts` (359 lines) since L1, no product changes. Eleven actual native PG17 scenarios probe state-first, writer-first retained row lock, waiting authz mutex with concurrent deactivation, History error rollback, L↔M, L↔Privacy in both directions, same/other actor locale, KEY SHARE and active Owner handling inactive target/self raw-deny. Physical blocking proved through `pg_blocking_pids`, not mock. Initial test-only failures fixed at source after confirming their cause: cumulative role count and invalid empty measure restriction. Re-run native 11/11 and cumulative PG970/970, app2332/2332, CI43724850817 SUCCESS. AP10 run43724850786 3/4 successful at checkpoint; final browser running.
+
+**Lira STOP after L2, NOT whole-L AUTHOR STOP.** Next L3 canonical availability and HTTP/Owner connected acceptance; L4 cumulative author closeout. No Mira/Lev handoff, no M+/merge/deployment.
+
 ## 2026-11-15 — SA04-L 1/4 DONE / STOP
 
 Created [Draft PR #333](https://github.com/iliya1947/vico-forum/pull/333) from accepted main6652c898. Exact implementation head `6794b0bbbfd0771ebdbfb4f05565fd280ed4c397`. Reused `assertActiveAccountForMutation(client,actorId)` in shared `PostgresAuthorizationRepository.mutate` after existing authz mutex, before effective permission/Owner/AP10 and dispatch, retaining actor NKU through COMMIT/ROLLBACK.
