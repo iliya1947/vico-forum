@@ -38,13 +38,14 @@ Accepted master technical plan: predecessor #251 comment **#6806249892**.
 
 ## Whole remaining Super-admin plan — MANDATORY before further implementation
 
-### Whole remaining-plan assignment — Lev ACTIVE
+### Complete remaining technical plan delivered — STOP → Mira whole-plan review
 
-- Baseline: `main=6652c898067d05a7c1476377e95f50cd73937410`.
-- Deliverable: `SUPER_ADMIN_REMAINING_TECHNICAL_PLAN.md`.
-- Scope: `SA04-L–S → SA05 → SA06 → SA07 → SA08`.
-- Existing `SA04_L_S_TECHNICAL_PLAN.md` is a retained detailed subplan, not the overall task plan.
-- Implementation stays stopped until Lev handoff and Mira acceptance of the complete chain.
+- Baseline/current main: `6652c898067d05a7c1476377e95f50cd73937410`.
+- Complete implementation-depth plan: [SUPER_ADMIN_REMAINING_TECHNICAL_PLAN.md](https://github.com/iliya1947/vico-forum/blob/chatgpt/admin-panel-service-2/SUPER_ADMIN_REMAINING_TECHNICAL_PLAN.md), publication commit `937eaca9bc3c85080aceaee7bdef94cee757534f`.
+- Scope: **SA04-L–S → SA05 → SA06 → SA07 → SA08**, with the accepted L–S file incorporated unchanged and separate final documentation closeout.
+- Lev planner STOP. Mira reviews the entire remaining chain for scope/fit against original #251 comment #6745289141 and current main/SoT.
+- Whole-plan acceptance is still pending. Lira/Mark inactive; no implementation PR, no L activation. After acceptance the coordinator may activate L only.
+- Normative cross-package resolutions are in that file: lifecycle command/mandatory event, native and passive fact ownership, complete monitoring/action source map, locks/races, necessary chronological indexes and six SELECT-only grant additions, filter/cursor/privacy/error/cache contracts and final connected matrix.
 
 The current task is **not SA04 in isolation**. It is the remaining Super-admin delivery through **SA08**.
 
