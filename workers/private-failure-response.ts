@@ -5,10 +5,10 @@
  */
 function isPrivateAttachmentPath(pathname: string): boolean {
   // React Router accepts case-insensitive static paths, percent-encoded static
-  // segments and an optional trailing slash. Match those resource paths, not
+  // segments and any number of trailing slashes. Match those resource paths, not
   // only the original encoded request pathname.
   const segments = pathname.split("/");
-  if (segments.at(-1) === "") segments.pop();
+  while (segments.at(-1) === "") segments.pop();
   if (segments.length !== 3 && segments.length !== 5) return false;
   try {
     if (decodeURIComponent(segments[1]).toLowerCase() !== "api"
