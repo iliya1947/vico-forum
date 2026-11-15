@@ -1,5 +1,15 @@
 # Admin panel — communication
 
+## 2026-11-15 — SA04-M2.1 adapter classification DONE; Lira bounded STOP
+
+- Same cumulative [Draft PR #334](https://github.com/iliya1947/vico-forum/pull/334) exact stable head `d6a99e0dcdf544b795308297b34205e6f9ebb52c`, based on unchanged `main=859ea69165f51cd997e61b1d1f30f6663f045965`. Cumulative delta **5 commits / 4 paths** (M1 2 files, M2.1 exactly 2). PR remains open/draft/unmerged.
+- M2 decomposed as **M2.1 adapter classification → M2.2 HTTP action mapping/unit tests → M2.3 actual Worker/Chromium + whole-M author closeout**. Execute one bounded subtask per developer continuation; no coordinator gate between them. Mira whole-M review after M2.3, same cumulative PR through S with no intermediate merge.
+- M2.1 product: `db/hyperdrive-user-measures.ts` now classifies bare/cause-wrapped `AccountStateUnavailableError` as existing `UserMeasuresUnavailableError` (downstream 503). Bounded cycle-safe cause traversal retains previous connection/query timeout classification. Known inactive/missing and unexpected schema/programming errors remain unmodified, for M2.2 route mapping. No new permission, schema, service API, route, dependency or HTTP writer changes.
+- New `db/hyperdrive-user-measures.test.ts` tests all **five** existing writer operations, read path, bare/cause-wrapped storage failure, timeout, unexpected typed/schema/programming error, inactive/missing propagation, cyclic causes and preserved successful read. Initial CI failure isolated to test's incorrect assumption that the existing `UserMeasuresUnavailableError` has a custom `Error.name`; corrected **only assertions**, retained existing runtime error class shape.
+- Exact head checks: [CI #43744465096](https://github.com/iliya1947/vico-forum/actions/runs/43744465096) **SUCCESS**, new focused **8/8**, total application **2345/2345 (187 files)**, native PostgreSQL17 **979/979 (87 files)**, lint/typecheck/build/migration SUCCESS. [AP10 #43744465099](https://github.com/iliya1947/vico-forum/actions/runs/43744465099) **SUCCESS 4/4 Chromium jobs** (existing regression, not new M2.3 connected acceptance).
+- **Lira M2.1 STOP**. Next developer `...` activates **M2.2 only** within same Draft PR #334. No M2.3, Mira review, N+, merge, permanent docs, production or Stage6 in M2.1.
+
+---
 
 ## 2026-11-15 — developer correction: coordinator gates are whole-package, not per-slice or whole-SA04-only
 
