@@ -1,5 +1,26 @@
 # Codex-6.1 Sol — personal log
 
+## 2026-11-15 — complete remaining technical plan submitted / planner STOP
+
+Delivered [SUPER_ADMIN_REMAINING_TECHNICAL_PLAN.md](https://github.com/iliya1947/vico-forum/blob/chatgpt/admin-panel-service-2/SUPER_ADMIN_REMAINING_TECHNICAL_PLAN.md), commit `937eaca9bc3c85080aceaee7bdef94cee757534f`, baseline `6652c898067d05a7c1476377e95f50cd73937410`. Full chain **L–S → SA05 → SA06 → SA07 → SA08 → separate DOC closeout**, incorporating the accepted L–S subplan unchanged. This supersedes the ACTIVE planning assignment below; implementation remains blocked pending Mira's whole-plan review.
+
+Plan contains18 sections plus65 source SHA-256 anchors. It resolves mandatory same-client lifecycle event versus passive after-COMMIT task/file/adapter facts, actual native retained creation/read facts, exact Owner/target/replay/UTC-calendar retention, no new last-admin rule, lock graph and source ownership, all remaining monitor keys/actions, bounded sample/read/filter/keyset composition, required indexes and six SELECT-only grants, full final integration/retention/privacy matrix.
+
+Source facts that matter for implementation:
+- owner_events/observations have no SQL enum CHECK needing extension; SA05 no new schema/grants.
+- Existing web role cannot read translation_tasks/locales; planned task/head/spec/budget/sweep SELECT delta is explicit, localization stays on existing separate read connection. No task writes or privileged fallback.
+- Notifications already persist creation and monotonic first read; reuse original identities without second per-recipient journal/fanout.
+- Actual provider calls occur in UI/title/body executors around providerRouter calls; isolate those outcomes from subsequent publication/DB failures. Body segments aggregate per execution attempt.
+- Overview source groups need SAVEPOINT isolation in the shared read transaction; final timeline merge remains in SQL using existing collation and exact microseconds. New sample batches order actual advisory integer keys, including collision safety.
+- Mandatory lifecycle event uses final Owner append advisory lock in caller transaction, never nested connection. Active Owner guard also applies to replay/no-op. Deactivation obtains no authz/content/case/head locks.
+- Known drizzle generate BigInt/exit0 false-green is not substantive parity proof; native migration/manifest/index/role evidence remains required.
+
+No source changes, implementation PR, new runtime service, production/deployment, #315 work or permanent documentation. Planning checkout `/workspace/work/super-admin-remaining-plan` remains clean; evidence `/workspace/work/super-admin-remaining-plan-evidence`. No new DB/Worker/dependency-link resources were created for this extension. Source planning is not future implementation acceptance or a full audit.
+
+**Next:** Mira whole remaining-plan scope/fit review. If corrections, return one complete package to Lev. If accepted, coordinator may activate **L only**. Lira/Mark inactive until then. **Lev STOP.**
+
+---
+
 ## 2026-11-15 — ACTIVE ASSIGNMENT: complete remaining Super-admin technical plan through SA08
 
 Current source-of-truth: `main=6652c898067d05a7c1476377e95f50cd73937410`.
