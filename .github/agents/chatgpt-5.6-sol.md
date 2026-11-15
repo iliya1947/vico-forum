@@ -1,10 +1,38 @@
 # ChatGPT-5.6 Sol — personal log
 
+## 2026-11-15 — fresh SA04-K cumulative whole-K PASS on a610ea89
+
+- Re-ran a fresh cumulative whole-K coordinator review on Draft #332 stable exact `a610ea89447744f4f3946dfc6e59b4b01d9ad65a`; current main/K base remains `398dae18d5ca7c3fc6dd84fd93a29d7c381ba366`.
+- **Verdict: PASS — 0 confirmed current-K defects.**
+- Part 1: exact correction delta is bounded to 3 commits / 3 privacy-evidence files; repeated trailing slash handling now consumes all terminal empty segments without internal-separator normalization or URL rewrite.
+- Part 2: all seven lifecycle entrypoints and native lock/race coverage remain correct and production repository/DB code is byte-identical to the previously reviewed head outside the privacy correction.
+- Part 3: R2 PREPARING→reservation→READY→conditional PUT, late PUT/finalizer, unknown/lost ACK, cleanup claims/leases/fences and J publication/edit cross-races remain coherent; no current-K defect found.
+- Part 4: exact logs checked — app 2332/2332, PG17 956/956, helper 30/30, K5 connected 33/33; AP10/SA01/SA03/J12 same-head workflow jobs SUCCESS. Stage6 and future packages remain out of scope.
+- Evidence caveat: Actions marks Drizzle schema-parity step SUCCESS even though `drizzle-kit generate` logs a BigInt TypeError; I do not claim that specific parity check substantively passed. The workflow and schema are unchanged from main and K has no schema/migration/dependency delta.
+- Activated Lev for independent cumulative whole-K review of the same exact head. Lira/Mark inactive; no merge/L+ work.
+
 ## 2026-11-15 — residual SA04-K-LEV-01 confirmed / Lira correction routed
 
 - Independently verified Lev RETURN #6890890734 on Draft #332 exact `1454b04fb75816edb53961af5ca69409d17ecc4a`.
 - Current helper removes only one terminal empty pathname segment; repeated trailing slashes therefore fail its resource-length check.
-- Checked exact React Router 8.3.1 release source (`da2a0f0`): end matching uses `\\/*, accepting arbitrary trailing slash sequences. Current project routes use that normal matcher. This closes the factual cause chain together with Lev's real Worker probe.
+- Checked exact React Router 8.3.1 release source (`da2a0f0`): end matching uses `\\/*# ChatGPT-5.6 Sol — personal log
+
+## 2026-11-15 — fresh SA04-K cumulative whole-K PASS on a610ea89
+
+- Re-ran a fresh cumulative whole-K coordinator review on Draft #332 stable exact `a610ea89447744f4f3946dfc6e59b4b01d9ad65a`; current main/K base remains `398dae18d5ca7c3fc6dd84fd93a29d7c381ba366`.
+- **Verdict: PASS — 0 confirmed current-K defects.**
+- Part 1: exact correction delta is bounded to 3 commits / 3 privacy-evidence files; repeated trailing slash handling now consumes all terminal empty segments without internal-separator normalization or URL rewrite.
+- Part 2: all seven lifecycle entrypoints and native lock/race coverage remain correct and production repository/DB code is byte-identical to the previously reviewed head outside the privacy correction.
+- Part 3: R2 PREPARING→reservation→READY→conditional PUT, late PUT/finalizer, unknown/lost ACK, cleanup claims/leases/fences and J publication/edit cross-races remain coherent; no current-K defect found.
+- Part 4: exact logs checked — app 2332/2332, PG17 956/956, helper 30/30, K5 connected 33/33; AP10/SA01/SA03/J12 same-head workflow jobs SUCCESS. Stage6 and future packages remain out of scope.
+- Evidence caveat: Actions marks Drizzle schema-parity step SUCCESS even though `drizzle-kit generate` logs a BigInt TypeError; I do not claim that specific parity check substantively passed. The workflow and schema are unchanged from main and K has no schema/migration/dependency delta.
+- Activated Lev for independent cumulative whole-K review of the same exact head. Lira/Mark inactive; no merge/L+ work.
+
+## 2026-11-15 — residual SA04-K-LEV-01 confirmed / Lira correction routed
+
+- Independently verified Lev RETURN #6890890734 on Draft #332 exact `1454b04fb75816edb53961af5ca69409d17ecc4a`.
+- Current helper removes only one terminal empty pathname segment; repeated trailing slashes therefore fail its resource-length check.
+- Checked exact React Router 8.3.1 release source (`da2a0f0`): , accepting arbitrary trailing slash sequences. Current project routes use that normal matcher. This closes the factual cause chain together with Lev's real Worker probe.
 - Classified as the same **current-K P3** private-failure cache/privacy defect, not future #315. No data disclosure or actual cache event established.
 - Routed one bounded Lira completion: fix only private attachment resource classification for repeated trailing slash aliases, retain prior case/encoded/malformed behavior, add focused unit + representative real Worker fault regressions, run applicable exact-head gates.
 - After AUTHOR STOP I must repeat cumulative whole-K review before Lev can re-review. No merge/L+ work.
