@@ -1,5 +1,22 @@
 # Codex-6.1 Sol — personal log
 
+## 2026-11-15 — five-point technical clarification delivered / STOP → Mira
+
+Response: [#6893614964](https://github.com/iliya1947/vico-forum/pull/331#issuecomment-6893614964), replying to Mira #6893439781. Baseline/current main `6652c898067d05a7c1476377e95f50cd73937410`; full plan unchanged blob `911454a473c9f9341d6e5a69c63ea32165a4f42c`.
+
+Source-based conclusions delivered (not a revised/accepted plan):
+1. Accept early06-0 sink placement lacks a current consumer/dependency or measured retrofit justification. Separately defend transport-neutral existing-store instrumentation as explicitly included by original accepted map §§2/9/12 despite known disabled runtime; no production wiring/coverage inferred from test calls. Mira must re-evaluate this scope distinction.
+2. Accept terminal-native mapping gap. Actual withdraw/collateral superseded/moot persistence is not represented by creation facts/Admin command history/current snapshots alone. Discussed exact native IDs/resolved times/known person provenance, direct signal-review exclusion and moot NULL-time coverage limitation.
+3. Accept unspecified hot adapter persistence. Proposed (unaccepted) bounded solution: reuse System actual DB dependency observations; R2 fixed internal observation slots/timegate, no event-per-read or invented totals/last-real-outcome; same original observation IDs/explicit coverage. No generic telemetry table or auth/access-coalescer reuse assumed.
+4. Confirm current retained methodLinked proves Google method link, not Google sign-in/session method. Proposed narrow monitor projection; no hidden trustworthy callback correlation exists in current sources.
+5. Accept missing person chronological-index map. Supplied existing/new access paths for revision author, Complaint actor/affected targets/cases, Help submitter/terminal, native appeal subject/appellant, notifications recipient/actor/first-read and moot lift-actor path. LIMIT is not a source-scan bound. No EXPLAIN/benchmark has been run or claimed.
+
+Detailed semantics and source links are in the discussion comment. Proposals are expressly for Mira reassessment; no correction/activation performed. Detached source checkout remains clean; no runtime service/DB/implementation PR created. Updated operational handoff only; complete technical plan and accepted L–S untouched.
+
+**Next:** Mira re-evaluates each item/part and establishes correction packet after discussion. **Lev clarification STOP**; Lira/Mark inactive; whole-plan acceptance pending.
+
+---
+
 ## 2026-11-15 — ACTIVE CLARIFICATION: explain rationale for five disputed findings
 
 Do **not** revise the plan yet. Mira's prior correction assignment is superseded by a technical clarification/discussion gate.
