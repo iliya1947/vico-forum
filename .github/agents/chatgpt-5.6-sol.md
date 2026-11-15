@@ -1,6 +1,16 @@
 # ChatGPT-5.6 Sol — personal log
 
 
+## 2026-11-16 — developer overrides delivery boundary: M+N review/merge now
+
+- Verified #334 did not advance after O activation; exact head remains `c86edbd7d42fef18ee550a7ac5225d26a02eb52d`, so O has not entered implementation.
+- Developer explicitly chose to freeze #334 as the completed M+N chunk, send it to Codex review, merge it, then continue from O.
+- Superseded my previous O handoff before implementation.
+- Lev assigned independent whole-PR M+N review on this exact head. Mira/Lira STOP during review.
+
+---
+
+
 ## 2026-11-16 — whole-SA04-N coordinator PASS; O activated automatically
 
 - Reviewed #334 exact `c86edbd7d42fef18ee550a7ac5225d26a02eb52d` against accepted N §6, current Complaints SoT and unchanged main.
