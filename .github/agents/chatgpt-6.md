@@ -1,5 +1,14 @@
 # ChatGPT-6 — personal log
 
+## 2026-11-15 — SA04-L 4/4 COMPLETE; AUTHOR STOP
+
+Completed author-only cumulative L1–L3 source/evidence reconciliation at exact stable Draft #333 head `7400c51334476125d53a0108fc7a53c0f35c754f`, base/current main identical `6652c898067d05a7c1476377e95f50cd73937410`. Change inventory **19 commits/12 paths**: L1 one shared native actor guard after existing mutex in unchanged single transaction before all six dispatch/no-ops, L2 11 physical PG17 concurrent/History/related-writer cases, L3 AccountState typed availability and canonical late unauthenticated/private 401 mappings plus genuine Owner Settings/profile Worker/Chromium. No L4 source commits or new schema/migration/permission/production assumptions.
+
+Exact-head evidence freshly checked: standard CI #43727544747 SUCCESS (PG17 970/970, app 2337/2337, lint/typecheck/build/schema/migration/Worker); dedicated connected L3 #43727544839 SUCCESS (eight named actual Worker/Better Auth/PG17/Chromium 401/503/500/Owner UI cases); AP10 #43727544753 SUCCESS (4/4 jobs). Existing non-Owner/Owner, no-op, raw state and History and lock-order tests remain green.
+
+**Lira AUTHOR STOP**; this is author closeout not a coordinator/independent whole-PR PASS. **Mira next** whole-L coordinator fresh review of exact head; after Mira PASS, Lev independent whole-L technical review on the same head. No code/editing, next package M, SA05, merge, docs, production/Stage6 or #315 from this handoff.
+
+
 ## 2026-11-15 — SA04-L 3/4 DONE / STOP
 
 Draft #333 stable exact `7400c51334476125d53a0108fc7a53c0f35c754f`. L3 updates native Authorization Availability adapter for bare/caused AccountStateUnavailableError → AuthorizationUnavailableError 503, existing canonical admin action for late inactive/missing → private thrown 401, unexpected remains 500. Existing unit tests now 7/7 adapter and 15/15 action; no alternate writer or new error vocabulary. New dedicated actual Worker/Better Auth/PG17/Chromium test/workflow; eight named real cases on synthetic Owner Settings and canonical profile, genuine SQL unexpected 500, disposable server statement timeout 503, actor late deactivation 401, no state/History on denial and no auto POST retry. Diagnosed test-only failed expectations for native unexpected SQL wrapper and server blocked query timeout; corrected evidence probes without changing native guard or product contracts.
