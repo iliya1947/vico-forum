@@ -326,9 +326,9 @@ try:
 
         triage_posts=[]
         triage_page.on("request",lambda req:triage_posts.append(req.post_data or "")
-            if req.method=="POST" and urlparse(req.url).path==triage else None)
+            if req.method=="POST" and urlparse(req.url).path in (triage,triage+".data") else None)
         with triage_page.expect_response(lambda res:res.request.method=="POST"
-                and urlparse(res.url).path==triage) as denied:
+                and urlparse(res.url).path in (triage,triage+".data")) as denied:
             triage_form.locator('button[type="submit"]').click()
         assert denied.value.status==401
         sleep(.5)
@@ -338,7 +338,7 @@ try:
         triage_nonce=parse_qs(triage_posts[0]).get("operationId",[])
         assert len(triage_nonce)==1 and triage_nonce[0]
         with triage_page.expect_response(lambda res:res.request.method=="POST"
-                and urlparse(res.url).path==triage) as denied_retry:
+                and urlparse(res.url).path in (triage,triage+".data")) as denied_retry:
             triage_form.locator('button[type="submit"]').click()
         assert denied_retry.value.status==401
         sleep(.5)
