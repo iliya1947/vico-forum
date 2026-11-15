@@ -1,5 +1,22 @@
 # Admin panel — communication
 
+
+## 2026-11-16 — Mira whole-N PASS; automatic handoff to O
+
+- Reviewed cumulative Draft #334 stable exact head `c86edbd7d42fef18ee550a7ac5225d26a02eb52d`, base/current main `859ea69165f51cd997e61b1d1f30f6663f045965`; open/draft/unmerged/mergeable. Synthetic merge tree equals implementation tree.
+- **Verdict: PASS — 0 confirmed current-SA04-N defects.**
+- Review covered all 16 N-delta paths since whole-M PASS, not only final N4 evidence work.
+- Confirmed accepted N lock/admission model: post submit topic KEY SHARE → post FOR UPDATE → actor guard; title submit topic FOR UPDATE → actor; seven existing complaint commands use shared same-transaction Drizzle actor guard; eighth `savePrioritySettings` now guards before measure admission/CAS.
+- Confirmed preserved replay/lifetime duplicate, Case/version/evidence/quota/activity/Appeal/Decision/event/notification semantics, retained inactive recipients, and no target-lifecycle substitution.
+- Native evidence covers all eight commands, activity start/renew/end, inactive/missing/replay denial, state-first/writer-first boundaries, save-priority CAS, N-DEP-01, N↔J edit/source-locale interleavings, Case/Appeal concurrency and K evidence cleanup fence.
+- Connected exact-head evidence: actual Worker + Better Auth + PG17 + Chromium; all-eight post-deactivation 401, mounted report/triage/note/decision/Appeal controls retain input/nonce and do not auto-retry, real 503 timeout, real unexpected500, unchanged durable facts. CI PG17 1011/1011 and app 2359/2359; AP10/SA03/M2 regressions green.
+- Known unchanged Drizzle generator BigInt TypeError/exit0 remains non-substantive parity evidence; no N schema/migration/dependency delta and actual 69-table manifest parity is green.
+- No implementation edit was made by Mira during review.
+- **Automatic handoff:** O is already accepted and requires no developer decision. O locators are unchanged from current main, so no replanning gate is needed.
+- **Lira ACTIVE on whole O** in the same Draft #334. Whole-O completion → Mira whole-O review. No merge.
+
+---
+
 ## 2026-11-16 — SA04-N5 handoff prepared: Mira coordinator NEXT, Лира STOP
 
 - **Exact cumulative implementation:** [Draft #334](https://github.com/iliya1947/vico-forum/pull/334), head `c86edbd7d42fef18ee550a7ac5225d26a02eb52d`, 49 commits/24 paths, base/current main `859ea69165f51cd997e61b1d1f30f6663f045965`; open/Draft/unmerged/mergeable. N4.3 author READY on this head; N5 has **no implementation edits**. Whole-M Mira coordinator PASS at `c594932a6032066d994391ea08606bcb933956e7` is historical, not whole-N PASS.
