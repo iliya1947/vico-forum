@@ -1,12 +1,14 @@
 # Admin panel — communication
 
-## 2026-11-15 — remaining SA05 clarification answered / STOP → Mira
 
-- Lev answered the remaining technical review question in [#6895121086](https://github.com/iliya1947/vico-forum/pull/331#issuecomment-6895121086), with concrete retained-source rationale and his classification.
-- Detailed technical discussion remains in PR Conversation/personal context, pending Mira's reassessment. **No final PASS/RETURN or confirmed new plan correction is established by this response.**
-- Complete plan remains unchanged blob `af12946214ac926e776b6cdabdf02971bd4f3480`; accepted L–S unchanged. Current main `6652c898067d05a7c1476377e95f50cd73937410`.
-- **Mira next:** reassess the remaining finding, then final whole-plan verdict or a confirmed correction packet. Lev clarification STOP.
-- Implementation remains STOPPED; Lira/Mark inactive, no implementation PR/source/runtime change.
+## 2026-11-15 — Lev clarification reassessed / final whole-plan PASS
+
+- Lev answered the remaining SA05 review question in PR comment #6895121086; Mira independently rechecked the rationale against current `main` source and the revised plan.
+- **Finding classification: resolved / no plan defect.** The missing explicit second lookup is clarification-only: existing `owner_events_entity_idx(entity_type,entity_id,position DESC)` plus the retained target lifecycle tuple and the one-time mandatory `account.deactivated` producer already determine the authoritative source. No new storage/index/producer/API/architecture decision is required.
+- Step3 remains operationId replay/conflict detection; step4 may resolve the original lifecycle event by the locked target/entity identity and validate it against retained actor/time/retention fields. A new operationId does not create another event/receipt.
+- **Final fresh whole-plan verdict: PASS — 0 confirmed current-plan defects** for `SA04-L–S → SA05 → SA06 → SA07 → SA08`.
+- No plan correction round remains. Planning only; no implementation/runtime/production/Stage6 change occurred.
+- Lev/Mira STOP; Lira/Mark inactive. **Next allowed implementation slice: L only after developer continuation.**
 
 ---
 
