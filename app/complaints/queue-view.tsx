@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { Link, useFetcher, useRevalidator } from "react-router";
 import { useTranslation } from "react-i18next";
 import { ForumShell } from "../forum/ui";
@@ -71,6 +71,9 @@ export function ComplaintActivity({locale,caseId}:{locale:string;caseId:string})
 export function ComplaintTriageView({locale,item}:{locale:string;item:ComplaintQueueCase}) {
   const {t}=useTranslation("common");
   const fetcher=useFetcher<{ok?:true;error?:"invalid"|"conflict"|"forbidden"|"notFound"|"unavailable"|"unauthenticated"}>();
+  const nonce=useRef("");
+  // A rejected POST retains its operation; success or a new Case version starts a new one.
+  useEffect(()=>{nonce.current="";},[item.version,fetcher.data?.ok]);
   return <ForumShell locale={locale} variant="attention"><section className="complaint-triage">
     <Link to={complaintQueuePath(locale)}>{t("complaintQueueHeading")}</Link>
     <h1>{t("complaintTriageHeading")}</h1>
@@ -79,7 +82,8 @@ export function ComplaintTriageView({locale,item}:{locale:string;item:ComplaintQ
     <ComplaintCaseSummary locale={locale} item={item} openLink={false}/>
     <fetcher.Form key={item.version} method="post" className="complaint-priority-form" onSubmit={event=>{
       const input=event.currentTarget.elements.namedItem("operationId") as HTMLInputElement;
-      if(!input.value)input.value=crypto.randomUUID();
+      if(!nonce.current)nonce.current=crypto.randomUUID();
+      input.value=nonce.current;
     }}>
       <input type="hidden" name="operationId" defaultValue=""/>
       <input type="hidden" name="expectedVersion" value={item.version}/>
