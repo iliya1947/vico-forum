@@ -1,16 +1,14 @@
 # Admin panel — current workflow
 
-- **Service PR:** #331, coordination only, never merge. #251 is archive/source for accepted planning anchors.
-- **Current main:** `6652c898067d05a7c1476377e95f50cd73937410`.
-- **Delivered in main:** SA01–03 and SA04 A–K.
-- **Accepted remaining plan:** full SA04-L–S → SA05 → SA06 → SA07 → SA08; complete-plan blob `af12946214ac926e776b6cdabdf02971bd4f3480`, L–S blob `cde81eeb259a3b7a5c4b96324a92aa310f375915`.
-- **Current package:** SA04-L — implementation/reviews complete, pending Owner merge.
-- **Implementation PR:** [Draft #333](https://github.com/iliya1947/vico-forum/pull/333), exact `7400c51334476125d53a0108fc7a53c0f35c754f`, base `6652c898067d05a7c1476377e95f50cd73937410`, open/draft/unmerged,19 commits/12 changed paths.
-- **Lira:** AUTHOR STOP.
-- **Mira coordinator whole-L:** PASS,0 confirmed current-L defects on the same exact head.
-- **Lev independent whole-L:** **PASS,0 confirmed current-L defects**, [full verdict](https://github.com/iliya1947/vico-forum/pull/331#issuecomment-6897140683); fresh own970native/31focused-app/Worker/Chromium/native69-table schema evidence. Known false-green generator qualification preserved.
-- **Current actor/gate:** **Owner — merge decision for #333**, confirming unchanged reviewed head. No agent merge.
-- **Lev:** review complete / STOP. Lira/Mark inactive.
-- **Next after Owner merge:** Mira refreshes main and assigns the next bounded package under the accepted plan. M is not automatically active.
-- **If implementation changes:** new stable head → Mira coordinator review → Lev independent review.
-- **Boundary:** no M+, SA05 implementation, #315 remediation, permanent docs, production/deployment or Stage6.
+- **Service PR:** #331, coordination only, never merge.
+- **Current main:** `859ea69165f51cd997e61b1d1f30f6663f045965`.
+- **Delivered in main:** SA01–03 and SA04 A–L. SA04-L came through merged #333; reviewed implementation head `7400c51334476125d53a0108fc7a53c0f35c754f`.
+- **Accepted technical scope:** full **SA04 M–S → SA05 → SA06 → SA07 → SA08**; architecture/acceptance unchanged.
+- **Developer delivery correction:** bounded slices inside one upper-level package are **not merge units**. Current corrected blobs: SA04 L–S `56859a08f6c569a2d6fa25b70a700872309acabf`; whole remaining plan `8e12cab22d5c700e31a86ded3d107e216aacdd82`.
+- **Historical exception:** L was already merged separately in #333 before this correction. Do not revert it solely for process shape.
+- **Current phase:** merge-boundary correction complete; **M–S implementation not started**.
+- **Next implementation shape:** one cumulative Draft implementation PR from current main for **M → N → O → P → Q → R → S**. Planned internal author/checkpoint stops remain, but **no Owner merge between M/N/O/P/Q/R**.
+- **Final SA04 gate:** S AUTHOR STOP → Mira whole-SA04 coordinator review → Lev independent review of the same stable exact candidate → Owner merge once.
+- **Current actor:** Developer, next continuation command.
+- **Agents:** Mira STOP after correction; Lira/Lev/Mark inactive.
+- **Boundary:** no SA05 implementation, #315 remediation, permanent docs, production/deployment or Stage6.
