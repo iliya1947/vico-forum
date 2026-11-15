@@ -36,6 +36,31 @@ Accepted master technical plan: predecessor #251 comment **#6806249892**.
 - **R:** new user generation-plan admission.
 - **S:** connected end-to-end SA-04 closure on one stable accepted state.
 
+## Whole remaining Super-admin plan — MANDATORY before further implementation
+
+The current task is **not SA04 in isolation**. It is the remaining Super-admin delivery through **SA08**.
+
+The previously accepted `SA04_L_S_TECHNICAL_PLAN.md` remains valid for the SA04-L–S subchain, but implementation must stay stopped until the complete remaining program is technically planned as one dependency chain:
+
+`SA04-L–S → SA05 → SA06 → SA07 → SA08`.
+
+Earlier accepted Super-admin decomposition #251 comment #6745289141 defines the package/product boundaries for SA05–SA08, but it is not implementation-depth planning. The new complete plan must make later bounded implementation executable without package-by-package architectural invention.
+
+At minimum it must determine across the whole remaining chain:
+
+1. package/sub-slice dependency and delivery order, including what can only follow full SA04 closure;
+2. authoritative mutation/read/monitor/history/event/observation seams and reuse of existing domain writers/readers;
+3. schema/migration/runtime-grant changes only where actually required, with ownership of each new persisted fact;
+4. transaction/lock/race interactions between SA04 lifecycle enforcement, SA05 deactivation, retained history, monitoring producers and existing domain operations;
+5. privacy/redaction/cache/error boundaries and exact-Owner / ordinary Admin / Attention separation;
+6. monitoring source map for every SA06/SA07 area, including honest disabled/unbound/not-instrumented states and prevention of duplicate event producers;
+7. contextual actions that reuse canonical domain operations rather than creating universal proxies or duplicate mutation backends;
+8. per-package/sub-slice native/Worker/Better Auth/Chromium acceptance and the final SA08 whole-program integration/closeout matrix;
+9. explicit conflicts or product decisions that require developer choice before implementation.
+
+**No implementation resumes until this whole remaining-task plan is accepted by Mira.**
+
+
 ## SA04-L–S — mandatory complete-chain technical planning
 
 
@@ -50,16 +75,9 @@ The Lev diagnostic probes remain planning diagnostics only; Mira did not indepen
 **Planning gate is closed.** The first allowed bounded implementation slice is **L**, but it is not assigned or active until explicit developer command. Lev planning complete / STOP; Lira/Mark inactive; no implementation PR exists. Product decisions, accepted master sequence and future joint SA05–SA08 gate below remain unchanged.
 
 
-### SA04-L implementation — ACTIVE
+### SA04-L implementation — CANCELLED before start
 
-Developer authorized implementation after complete-chain planning acceptance.
-
-- Base: exact `main=6652c898067d05a7c1476377e95f50cd73937410`.
-- Actor: **Lira**.
-- Scope: **L only**, per section 4 and Acceptance L of `SA04_L_S_TECHNICAL_PLAN.md`.
-- Deliverable: one separate Draft implementation PR containing the complete six-family authorization lifecycle admission package plus applicable tests/evidence.
-- Handoff: AUTHOR STOP on one stable exact head → Mira whole-PR review → only after Mira PASS Lev independent same-head review.
-- M–S remain inactive until their own turn in the already accepted sequence.
+The earlier L activation was cancelled before any implementation PR/code change. It was based on an incorrectly narrow planning boundary. The whole remaining Super-admin chain through SA08 must be planned and accepted first.
 
 ### Why this gate exists
 
