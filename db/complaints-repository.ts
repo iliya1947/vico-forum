@@ -108,6 +108,7 @@ export class DrizzleComplaintsRepository {
   async savePrioritySettings(actorId: string, input: ComplaintPrioritySettingsCommand) {
     // One atomic full-map CAS; a newly restricted manager cannot commit a change.
     await this.database.transaction(async tx => {
+      await this.actorMutex(tx, actorId);
       await this.measureAdmission(tx, actorId, "admin.complaints");
       const result = await tx.execute(sql`update forum_complaint_priority_settings
         set weights=${JSON.stringify(input.weights)}::jsonb,version=version+1
