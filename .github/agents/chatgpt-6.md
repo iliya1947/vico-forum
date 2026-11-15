@@ -1,5 +1,9 @@
 # ChatGPT-6 — personal log
 
+## 2026-11-15 — SA04-M1 native implementation (working, CI pending)
+
+Cumulative Draft #334 branch `chatgpt/sa04-ms-cumulative-accountstate` created from exact accepted current main `859ea69165f51cd997e61b1d1f30f6663f045965`. Working head `81b20db40454b302689dc9dedb4bc764f62963d6`. Existing AP10 common `withLockedTransaction(actorId,operation)` now checks shared native actor NKU immediately after existing authz mutex and before operation; `withAuthorityTransaction` receives caller actor for create/change/lift/review; own submitAppeal directly supplies subject actor without Owner binding. Same tx and retained original AP10 History/quota/replay/authority.
+New native `tests/database/sa04-user-measures-m1.test.ts` tests all five families active/inactive/missing/no-op/replay, state-first/commit-order/race, real mutex waits, History rollback, inactive target allowed, own appeal. CI #43741372398 and AP10 #43741372426 currently running. No M2/HTTP work, no merge. M1 checkpoint review only after evidence.
 
 ## 2026-11-15 — ACTIVE ASSIGNMENT: SA04-M1 in cumulative M–S implementation PR
 
