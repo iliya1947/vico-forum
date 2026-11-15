@@ -10,5 +10,5 @@
 - **Current actor:** **Mira — next**, reassess the remaining finding after the concrete retained-source explanation, then final whole-plan PASS or a confirmed correction packet.
 - **Lev:** clarification complete / STOP; no plan edit or implementation.
 - **Accepted L–S subplan:** unchanged blob `cde81eeb259a3b7a5c4b96324a92aa310f375915`.
-- **Implementation:** STOPPED. Lira / Mark inactive. No implementation PR exists. L cannot activate before whole-plan gate closes.
+- **Implementation:** STOPPED. Lira / Mark inactive. No implementation PR exists. **L is the next allowed slice only after developer continuation.** L cannot activate before whole-plan gate closes.
 - **Boundary:** planning/discussion only; no implementation, #315 remediation, permanent docs, production/deployment or Stage6 action.
