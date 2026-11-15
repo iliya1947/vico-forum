@@ -1,5 +1,12 @@
 # ChatGPT-6 — personal log
 
+## 2026-11-15 — SA04-L 1/4 DONE / STOP
+
+Created [Draft PR #333](https://github.com/iliya1947/vico-forum/pull/333) from accepted main6652c898. Exact implementation head `6794b0bbbfd0771ebdbfb4f05565fd280ed4c397`. Reused `assertActiveAccountForMutation(client,actorId)` in shared `PostgresAuthorizationRepository.mutate` after existing authz mutex, before effective permission/Owner/AP10 and dispatch, retaining actor NKU through COMMIT/ROLLBACK.
+
+New real PG native all-six direct tests 3/3 for active/inactive/missing, no-op repeat and History/raw tables. Two existing current-L test fixtures updated after first CI: missing actor now AccountMissingError, and shared History concurrency test runs separate actors because same-actor NKU is authoritative. Standard exact-head CI43723492244 SUCCESS, PG959/959 (85 files), app2332/2332 (186 files), lint/typecheck/build/migration/Worker PASS. AP10 run43723492293 3/4 success and pending last job at this checkpoint.
+
+**L1 bounded STOP, NOT AUTHOR STOP.** Next developer continuation → L2 physical native race/rollback/authz mutex/L↔M and cross-user lock acceptance. L3 HTTP/Owner browser; L4 final entire L evidence/author stop. Mira/Lev inactive until full L completion. No merge/deploy or M+.
 
 ## 2026-11-15 — ACTIVE ASSIGNMENT: SA04-L authorization mutations (current)
 
