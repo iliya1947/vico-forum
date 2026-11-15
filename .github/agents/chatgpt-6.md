@@ -1,5 +1,23 @@
 # ChatGPT-6 — personal log
 
+## 2026-11-15 — ACTIVE ASSIGNMENT: bounded SA04-K-LEV-01 residual completion
+
+Implementation: cumulative Draft #332, returned exact head `1454b04fb75816edb53961af5ca69409d17ecc4a`; current main/K base `398dae18d5ca7c3fc6dd84fd93a29d7c381ba366`.
+
+Complete the remaining bounded SA04-K-LEV-01 defect: unexpected GET/HEAD 5xx for Router-accepted private attachment list/file URLs with repeated trailing slashes must retain the same private/no-store protection as canonical and already-fixed aliases.
+
+Scope:
+- `workers/private-failure-response.ts` classification and directly related regressions/evidence only;
+- preserve existing case-insensitive and percent-encoded static-segment handling plus malformed-input safety;
+- cover representative list/file aliases with two or more trailing slashes, including a combined case/encoded variant;
+- prove representative repeated-slash failures through the actual built Worker fault path, not only helper unit tests.
+
+Ready when the local correction is sufficient for all Router-accepted trailing slash sequences, existing successful/public/write behavior is unchanged, applicable exact-head gates are green, and one stable cumulative #332 head is recorded with AUTHOR STOP.
+
+Do not rewrite request URLs, normalize internal separators, redesign routing/auth/SQL/R2, or expand into #315, L–S, SA05, schema/migrations/dependencies, permanent docs or Stage6. Do not merge. After AUTHOR STOP, Mira re-reviews the entire K package before Lev is reactivated.
+
+---
+
 ## 2026-11-15 — SA04-K-LEV-01 P3 bounded correction AUTHOR STOP
 
 Implementation Draft #332 final exact `1454b04fb75816edb53961af5ca69409d17ecc4a` from Lev-returned `bb9d1497c5d5f14bfff6a1edf64e19eed5fd5105`. One local resource-classifier fix plus focused Worker and actual Chromium K5 regressions, three files/four commits. The classifier matches React Router case/trailing/percent static variants for private attachment GET/HEAD unexpected 5xx without rewriting URLs or altering public GET, response status/body/cookies, successful responses or existing write 5xx policy. Malformed percent encoding does not throw.
