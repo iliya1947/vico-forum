@@ -1,5 +1,15 @@
 # Admin panel — communication
 
+## 2026-11-15 — SA04-N4 author evidence reconciliation completed: NOT READY for coordinator
+
+- **Head unchanged:** cumulative [Draft #334](https://github.com/iliya1947/vico-forum/pull/334) `9db8887d94049cc915d8893c40a35b4d92a203d6` (45 commits/24 files), base/current main `859ea69165f51cd997e61b1d1f30f6663f045965`, draft/unmerged. N4 made **no implementation changes**; this is author evidence accounting, **not** an independent whole-PR self-review.
+- **Exact-head facts:** [CI #43763619317](https://github.com/iliya1947/vico-forum/actions/runs/43763619317) PG17 997/997 and app 2359/2359, lint/typecheck/build SUCCESS; [SA04-N connected #43763619346](https://github.com/iliya194/vico-forum/actions/runs/43763619346) SUCCESS; [AP10 #43763619327](https://github.com/iliya194/vico-forum/actions/runs/43763619327) 4/4 SUCCESS; [SA03 #43763619342](https://github.com/iliya194/vico-forum/actions/runs/43763619342) and [SA04-M2 #43763619304](https://github.com/iliya194/vico-forum/actions/runs/43763619304) SUCCESS.
+- **Author acceptance evidence present:** real direct submit(post/title), priority/change, activity start/end, note, decide, appeal, resolve and save-priority with inactive/missing denial and preserved SQL facts; representative state-first/writer-first lock proofs, N-DEP-01 post/title both orders, J Complaint/edit and K immutable retained-evidence/cleanup fences; real BA/Worker/Chromium participant/reviewer and triage form 401/draft/nonce, 503/500, successful Complaint→Decision→Appeal→resolution/inbox.
+- **Not established by checked evidence, rather than known bugs:** (a) real mounted deactivated 401 and re-submission of report and full Case review note/decision forms; existing `tests/browser/complaint-submission/check.py` tested retained nonce on 429, not the lifecycle transition; `app/complaints/review-view.test.tsx` tested other UI states. (b) each N2 transaction path under state-first/writer-first and N↔J source-locale correction contention; representative actor mutex and J edit are proven, but this does not establish all listed planning cases. A green CI is not evidence for an untested scenario.
+- **Disposition:** N4 evidence checkpoint completed, **whole-N author readiness BLOCKED** until bounded gaps are addressed. **No implementation defect has been established from these omissions.** Stage next **N4.1 connected mounted submission/note/decision 401**, then separate **N4.2 current-scope native coverage**, then **N4.3 author readiness**, then **N5 Mira coordination**. One stage per explicit developer `...`. No Mira handoff/O/merge/deploy.
+
+---
+
 ## 2026-11-15 — SA04-N3.3 connected integration DONE, Лира bounded AUTHOR STOP
 
 - **Implementation:** cumulative [Draft #334](https://github.com/iliya1947/vico-forum/pull/334), exact `9db8887d94049cc915d8893c40a35b4d92a203d6`, 45 commits / 24 files, `main=859ea69165f51cd997e61b1d1f30f6663f045965`, still open/Draft/unmerged. N3.2 previously completed; N3.3 only in this step. **Whole N has not received author acceptance/N4 or Mira review.**
