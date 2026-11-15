@@ -1,5 +1,14 @@
 # ChatGPT-6 — personal log
 
+## 2026-11-15 — SA04-N1 native submit actor guard + N-DEP-01 completed; bounded STOP
+
+Restored service PR #331; found Mira whole-M coordinator PASS on previous exact `c594932a6032066d994391ea08606bcb933956e7` and Mira corrected immediate N activation (no developer scope approval). Read current main AGENTS, service technical plan §6, Complaints SoT and code. Scope this turn **N1 only** in cumulative Draft #334.
+
+Changed `db/complaints-repository.ts`: shared Drizzle `assertActiveAccountForDrizzleMutation(tx,actorId)` replaces previous raw actor-row NKU lookup in existing `actorMutex` on same transaction. This applies to seven existing paths; eighth `savePrioritySettings` goes to N2. New post submit topic `FOR KEY SHARE` before post `FOR UPDATE` → actor shared guard closes confirmed N-DEP-01, retains replay/lifetime/Case/evidence semantics. New `tests/database/sa04-complaints-n1.test.ts` 5 true PostgreSQL17 tests: active exact/lifetime replay, inactive/missing unchanged raw facts, state-first/writer-first actor NKU/COMMIT races, post-title concurrent submissions both orders actual `pg_blocking_pids`. Existing J↔Complaint test SQL literal `select id` barrier became stale after shared Drizzle SELECT; initial CI timed out in that *test only*. Updated matcher in `tests/database/sa04-forum-edit-lifecycle.test.ts` (no runtime workaround). Final native J test 9/9 and complaints foundation 74/74 green.
+
+Exact final cumulative head **`614665d9041894eaac32771ff4f81f9db5161389`**, current main/base unchanged `859ea69165f51cd997e61b1d1f30f6663f045965`, PR #334 16 commits / 11 paths, Draft/unmerged. Final [CI #43752193956](https://github.com/iliya1947/vico-forum/actions/runs/43752193956) SUCCESS: native PG17 **984/984 (88 files)**, app **2347/2347 (187 files)**, typecheck/lint/build/schema/migrations. [AP10 #43752194006](https://github.com/iliya1947/vico-forum/actions/runs/43752194006) SUCCESS 4/4; [SA04-M2 #43752194019](https://github.com/iliya1947/vico-forum/actions/runs/43752194019) SUCCESS; [SA03 #43752194029](https://github.com/iliya1947/vico-forum/actions/runs/43752194029) SUCCESS.
+**N1 AUTHOR STOP**. N2 is next internal unit, no Mira gate between N1/N2/N3, no merge before S. N2 not started here.
+
 
 ## 2026-11-15 — ACTIVE ASSIGNMENT: SA04-N whole package in cumulative Draft #334
 
