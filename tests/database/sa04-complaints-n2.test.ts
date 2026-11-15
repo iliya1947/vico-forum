@@ -61,6 +61,49 @@ async function deactivate(id: string) {
 async function newClient() {
   const c = new Client({ connectionString: url, options }); await c.connect(); return c;
 }
+type N2Writer = "priority" | "activity-start" | "activity-end" | "note" | "decision";
+function executeN2(kind: N2Writer, actor: string, caseId: string, expectedVersion: number,
+  operationId: string, client: Client) {
+  const db = repo(client);
+  switch (kind) {
+    case "priority": return db.changePriority(actor, {
+      caseId, expectedVersion, operationId, priority: 3,
+    });
+    case "activity-start": return db.activity(actor, caseId, true);
+    case "activity-end": return db.activity(actor, caseId, false);
+    case "note": return db.addNote(actor, { caseId, operationId, body: "N4.2 concurrent note" });
+    case "decision": return db.decide(actor, {
+      caseId, operationId, expectedVersion, outcome: "not-confirmed", reasoning: "N4.2 concurrent decision",
+    });
+  }
+}
+async function observeBlock(waiter: number, blocker: number) {
+  for (let attempt = 0; attempt < 200; attempt++) {
+    const r = await fixture.query<{ blocked: boolean }>(
+      "select $2::int=any(pg_blocking_pids($1::int)) as blocked", [waiter, blocker]);
+    if (r.rows[0]?.blocked) return;
+    await new Promise(resolve => setTimeout(resolve, 20));
+  }
+  throw new Error("N4.2: expected real PG17 actor-row lock wait");
+}
+function pauseBeforeCommit(writer: Client) {
+  const original = writer.query;
+  let entered!: () => void, release!: () => void;
+  const paused = new Promise<void>(resolve => { entered = resolve; });
+  const resumeCommit = new Promise<void>(resolve => { release = resolve; });
+  let stopped = false;
+  writer.query = ((...args: unknown[]) => {
+    const statement = typeof args[0] === "string" ? args[0] :
+      args[0] && typeof args[0] === "object" && "text" in args[0] ? String(args[0].text) : "";
+    if (!stopped && /^commit$/i.test(statement.trim())) {
+      stopped = true; entered();
+      return resumeCommit.then(() => Reflect.apply(original, writer, args));
+    }
+    return Reflect.apply(original, writer, args);
+  }) as typeof writer.query;
+  return { paused, resume: release, restore: () => { writer.query = original; } };
+}
+
 beforeAll(async () => {
   await fixture.connect();
   await fixture.query("drop schema if exists " + schema + " cascade; create schema " + schema);
@@ -220,4 +263,68 @@ describe("SA04-N2 native Complaint manager actor admission", () => {
       await Promise.all([writer.end(), state.end()]);
     }
   }, 35000);
+
+  it.each(["priority", "activity-start", "activity-end", "note", "decision"] as const)(
+    "N4.2 state-first %s: waits on real actor lock and denies with zero Complaint effects",
+    async kind => {
+      const actor = "n2-n42-state-" + uuid();
+      await person(actor);
+      const caseId = await caseFixture(), expected = await version(caseId), operationId = uuid();
+      if (kind === "activity-end") await repo().activity(actor, caseId, true);
+      const before = await retained(), writer = await newClient(), state = await newClient();
+      const writerPid = (await writer.query<{ pid: number }>("select pg_backend_pid() as pid")).rows[0]!.pid;
+      const statePid = (await state.query<{ pid: number }>("select pg_backend_pid() as pid")).rows[0]!.pid;
+      let pending: ReturnType<typeof executeN2> | undefined;
+      try {
+        await state.query("begin");
+        await state.query('update "user" set deactivated_at=now(),deactivated_by_user_id=$1,'
+          + "retain_at_least_until=now()+interval '2 years' where id=$1", [actor]);
+        pending = executeN2(kind, actor, caseId, expected, operationId, writer);
+        try { await observeBlock(writerPid, statePid); }
+        finally { await state.query("commit"); }
+        await expect(pending).rejects.toBeInstanceOf(AccountInactiveError);
+        expect(await retained()).toEqual(before);
+      } finally {
+        await state.query("rollback").catch(() => undefined);
+        if (pending) await Promise.allSettled([pending]);
+        await Promise.all([writer.end(), state.end()]);
+      }
+    }, 35_000,
+  );
+
+  it.each(["priority", "activity-start", "activity-end", "note", "decision"] as const)(
+    "N4.2 writer-first %s: actor guard survives all durable writes through COMMIT",
+    async kind => {
+      const actor = "n2-n42-writer-" + uuid();
+      await person(actor);
+      const caseId = await caseFixture(), expected = await version(caseId), operationId = uuid();
+      if (kind === "activity-end") await repo().activity(actor, caseId, true);
+      const writer = await newClient(), state = await newClient();
+      const barrier = pauseBeforeCommit(writer);
+      let pending: ReturnType<typeof executeN2> | undefined;
+      try {
+        pending = executeN2(kind, actor, caseId, expected, operationId, writer);
+        await barrier.paused;
+        await state.query("begin");
+        try {
+          await state.query("set local lock_timeout='180ms'");
+          await expect(state.query('update "user" set deactivated_at=now(),'
+            + "deactivated_by_user_id=$1,retain_at_least_until=now()+interval '2 years'"
+            + " where id=$1", [actor])).rejects.toMatchObject({ code: "55P03" });
+        } finally { await state.query("rollback"); }
+        barrier.resume();
+        await pending;
+        const committed = await retained();
+        await deactivate(actor);
+        await expect(executeN2(kind, actor, caseId, expected, operationId, fixture))
+          .rejects.toBeInstanceOf(AccountInactiveError);
+        expect(await retained()).toEqual(committed);
+      } finally {
+        barrier.resume(); barrier.restore();
+        if (pending) await Promise.allSettled([pending]);
+        await state.query("rollback").catch(() => undefined);
+        await Promise.all([writer.end(), state.end()]);
+      }
+    }, 35_000,
+  );
 });
