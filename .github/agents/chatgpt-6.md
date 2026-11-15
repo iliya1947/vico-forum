@@ -1,5 +1,13 @@
 # ChatGPT-6 — personal log
 
+## 2026-11-15 — SA04-N3.2 bounded HTTP/UI correction complete; AUTHOR STOP
+
+Read current main AGENTS / PROJECT / PROJECT_STATE / Complaints / Authorization, service workflow and accepted N technical scope. Found service workflow prematurely claiming whole-N AUTHOR STOP and Mira next on old `9e697d83` while current implementation was already `4302dbb1`, with real failing CI and connected Chromium. Corrected only N3.2 HTTP action mapping and tests. Domain guard already protected Appeal/resolve; no domain change needed. Better Auth pre-routing removes inactive session before action: its thrown private 401 bypassed typed `AccountInactiveError` mapping and mounted fetcher errored/unmounted. Changed `complaintCommandFailure` to return typed existing unauthenticated401 on that Response. Reused existing localized feedback, repaired TypeScript test and added lost-session test. Connected browser confirmed draft survives and actual explicit 401 retry transmits same command nonce, with no auto retry; previous hidden-input DOM-value expectation was overly strict and replaced by actual POST-payload comparison. Final exact #334 head `6293fa087d65c1b63868e173d6d6ca6708ab6d03`, 42 commits / 24 paths, draft/unmerged. Exact-head CI #43760392839 SUCCESS (PG17 997, app 2359), SA04-N #43760392858, AP10 #43760392831 4/4, SA03 #43760392825 and SA04-M2 #43760392859 all SUCCESS.
+
+**N3.2 AUTHOR STOP; next N3.3 only after developer continuation.** No whole N review/Mira/O yet.
+
+---
+
 ## 2026-11-15 — SA04-N2 completed / bounded AUTHOR STOP
 
 Restored #331 and #334 exact N1 `614665d9041894eaac32771ff4f81f9db5161389`, read current AGENTS/main source-of-truth and accepted N technical plan. N2 only. The earlier N1 shared Drizzle guard already protected priority change, activity, notes, and Decision; `savePrioritySettings` still began with AP10 measure admission before the active actor lock. Added `this.actorMutex(tx,actorId)` before the measure and singleton versioned CAS within its existing transaction. No redesign or other product changes.
