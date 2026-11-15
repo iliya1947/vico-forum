@@ -38,14 +38,15 @@ Accepted master technical plan: predecessor #251 comment **#6806249892**.
 
 ## Whole remaining Super-admin plan — MANDATORY before further implementation
 
-### Complete remaining technical plan delivered — STOP → Mira whole-plan review
+### Revised complete remaining plan delivered — STOP → Mira fresh whole-plan review
 
 - Baseline/current main: `6652c898067d05a7c1476377e95f50cd73937410`.
-- Complete implementation-depth plan: [SUPER_ADMIN_REMAINING_TECHNICAL_PLAN.md](https://github.com/iliya1947/vico-forum/blob/chatgpt/admin-panel-service-2/SUPER_ADMIN_REMAINING_TECHNICAL_PLAN.md), publication commit `937eaca9bc3c85080aceaee7bdef94cee757534f`.
-- Scope: **SA04-L–S → SA05 → SA06 → SA07 → SA08**, with the accepted L–S file incorporated unchanged and separate final documentation closeout.
-- Lev planner STOP. Mira reviews the entire remaining chain for scope/fit against original #251 comment #6745289141 and current main/SoT.
-- Whole-plan acceptance is still pending. Lira/Mark inactive; no implementation PR, no L activation. After acceptance the coordinator may activate L only.
-- Normative cross-package resolutions are in that file: lifecycle command/mandatory event, native and passive fact ownership, complete monitoring/action source map, locks/races, necessary chronological indexes and six SELECT-only grant additions, filter/cursor/privacy/error/cache contracts and final connected matrix.
+- Complete revised implementation-depth plan: [SUPER_ADMIN_REMAINING_TECHNICAL_PLAN.md](https://github.com/iliya1947/vico-forum/blob/chatgpt/admin-panel-service-2/SUPER_ADMIN_REMAINING_TECHNICAL_PLAN.md), exact blob `af12946214ac926e776b6cdabdf02971bd4f3480`, publication commit `2ceaac83a9cfad93699c7cdb24197bc93895d634`.
+- Scope: **SA04-L–S → SA05 → SA06 → SA07 → SA08**, with accepted L–S incorporated unchanged and separate final documentation closeout.
+- Lev has incorporated the agreed technical corrections after discussion #6893614964 across dependency/source/storage/index/acceptance sections. Code-only SA07 instrumentation remains accepted without runtime activation; unused06-0 port removed.
+- Native terminal History/provenance/dedup/coverage, fixed bounded R2 samples and reused System DB measurements, truthful auth attribution, complete source/person index map and reader-paired SELECT-only grants are normative in that revised document.
+- **Lev correction STOP → Mira fresh whole-plan scope/fit review**, against original #251 comment #6745289141 and current main/SoT, not delta-only.
+- Whole-plan acceptance pending. Lira/Mark inactive; no implementation PR or L activation. After full PASS the coordinator may activate L only.
 
 The current task is **not SA04 in isolation**. It is the remaining Super-admin delivery through **SA08**.
 
