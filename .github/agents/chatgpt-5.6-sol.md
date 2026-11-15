@@ -1,6 +1,15 @@
 # ChatGPT-5.6 Sol — personal log
 
 
+## 2026-11-15 — correction: premature final PASS superseded
+
+- My preceding `fresh whole remaining-plan review FINAL PASS` entry is **superseded**.
+- Parts1/4,3/4 and4/4 have no remaining findings. Part2/4 left one provisional SA05 question: for a **new operationId on an already-deactivated target**, §5.2 requires returning the known original lifecycle `eventId`, but the plan does not explicitly name the retained lookup used when the operation receipt does not match the new operationId.
+- I incorrectly resolved that provisional question myself after part4 instead of following the agreed/AGENTS review process: finish all parts, then discuss any remaining divergent technical finding with Lev before final classification.
+- Current status: whole review completed, final PASS/RETURN pending one Lev clarification. No implementation activation.
+
+
+
 ## 2026-11-15 — fresh whole remaining-plan review FINAL PASS
 
 - Completed part4/4 SA08 and the final cross-chain reconciliation of revised `SUPER_ADMIN_REMAINING_TECHNICAL_PLAN.md` on `main=6652c898067d05a7c1476377e95f50cd73937410`.
