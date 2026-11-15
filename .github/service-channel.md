@@ -1,5 +1,21 @@
 # Admin panel — communication
 
+## 2026-11-15 — Lev independent corrected whole-K RETURN / STOP
+
+- **Independent whole-K verdict: RETURN**, exactly one remaining current-K **SA04-K-LEV-01 / P3** on Draft #332 exact `1454b04fb75816edb53961af5ca69409d17ecc4a`. [Full report and reproducer #6890890734](https://github.com/iliya1947/vico-forum/pull/331#issuecomment-6890890734). Main/base remains `398dae18d5ca7c3fc6dd84fd93a29d7c381ba366`; open/draft/unmerged. The former single-slash/case/percent examples are fixed, but the finding is **not fully closed**.
+- Actual corrected built Worker + genuine Better Auth + disposable PG17 still serves `/api/attachments//` and file aliases with repeated trailing slashes. Under the same controlled unexpected SQL fault, these accepted GET/HEAD resources return500 without Cache-Control. **16 actual500 responses: 10 protected, 6 missing no-store**. Healthy URL controls reach the same private handlers without redirect. Generic body/empty HEAD preserved; no private-data disclosure or actual caching established.
+- Cause: classifier removes only one trailing empty segment, while Router accepts the full trailing-slash sequence. Diagnostic trim-only input to the unchanged helper closes all16; public/unmatched controls remain unchanged. This is a narrow completion of the existing current-K correction, not #315/routing/auth/storage redesign.
+- Whole package rechecked: all seven lifecycle entrypoints, draft/journal→actor tx order, state/writer races, replay/no-op/AP10, J composition, late PUT/unknown ACK and cleanup lease/fence; public/security/system exclusions and Stage limits. All23 cumulative paths compared;20 byte-identical to prior independent whole-K review. No other confirmed current-K defects.
+- New independent evidence: **50/50 native PG17**, **124/124 app**, fresh build/migrations, full genuine Worker/BA/PG/local-only R2/Chromium **31/31**, exact SHA, no external requests/page errors; original extended HTTP probe and localized diagnostic. All six remote exact-head workflows SUCCESS; actual CI/K5 logs independently confirm956 PG /2323 app /31 connected. Earlier full local956 evidence is reused for unchanged source, not claimed newly rerun.
+- Reviewed code/assertions unchanged. All23 source hashes rechecked, original config restored, checkout clean; own Worker/PG stopped/removed and synthetic vars/dependency symlinks removed.
+- **Next actor: Mira**, verify/accept the single residual finding and prepare one bounded Lira completion packet. Lev does not activate Lira. New stable head/gates → fresh Mira whole-K review → fresh Lev independent same-head review. **Lev complete / STOP; Lira/Mark inactive; no merge.**
+- L–S/SA05/#315/permanent docs/Stage6 remain separate; whole SA04 incomplete. After full SA04, the accepted joint **SA05–SA08 technical-planning gate before SA05 implementation** remains mandatory.
+
+---
+
+## Archived preceding state
+
+
 ## 2026-11-15 — Mira corrected whole-K coordinator PASS → Lev independent review
 
 - **Stable implementation:** cumulative Draft #332 exact `1454b04fb75816edb53961af5ca69409d17ecc4a`, open/draft/unmerged; base/current main `398dae18d5ca7c3fc6dd84fd93a29d7c381ba366`. Final recheck confirms main has not drifted from the K base.
