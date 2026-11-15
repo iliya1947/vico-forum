@@ -910,7 +910,8 @@ try:
         sql("alter table forum_attachment_draft_refs rename to " + rename_back)
         try:
             for method in ("POST", "GET-list", "GET-file",
-                           "GET-list-encoded-alias", "HEAD-file-case-alias"):
+                           "GET-list-encoded-alias", "HEAD-file-case-alias",
+                           "GET-list-multi-slash", "HEAD-file-mixed-multi-slash"):
                 op, asset = str(uuid4()), str(uuid4())
                 if method == "POST":
                     body = "K5 unexpected SQL failure"
@@ -922,18 +923,27 @@ try:
                         "X-Vico-Attachment-Size": str(len(body.encode())),
                         **headers(context_key, op),
                     }
-                elif method in ("GET-list", "GET-list-encoded-alias"):
-                    path = ("/api/%61ttachments/" if method == "GET-list-encoded-alias"
-                            else "/api/attachments")
+                elif method in ("GET-list", "GET-list-encoded-alias",
+                                "GET-list-multi-slash"):
+                    path = {
+                        "GET-list": "/api/attachments",
+                        "GET-list-encoded-alias": "/api/%61ttachments/",
+                        "GET-list-multi-slash": "/API/%61TTACHMENTS///",
+                    }[method]
                     body, req_headers = None, headers(context_key, op)
                 else:
                     body, req_headers = None, {}
-                    route = ("/API/ATTACHMENTS/FILE/" if method == "HEAD-file-case-alias"
-                             else "/api/attachments/file/")
-                    path = (route + asset + "?operation=" + op +
+                    route = {
+                        "GET-file": "/api/attachments/file/",
+                        "HEAD-file-case-alias": "/API/ATTACHMENTS/FILE/",
+                        "HEAD-file-mixed-multi-slash": "/API/ATTACHMENTS/%66ILE/",
+                    }[method]
+                    suffix = "//" if method == "HEAD-file-mixed-multi-slash" else ""
+                    path = (route + asset + suffix + "?operation=" + op +
                             "&context=" + quote(context_key, safe=""))
                 http_method = "POST" if method == "POST" else (
-                    "HEAD" if method == "HEAD-file-case-alias" else "GET")
+                    "HEAD" if method in ("HEAD-file-case-alias",
+                                         "HEAD-file-mixed-multi-slash") else "GET")
                 start_browser_request(fault_page, path, http_method, req_headers, body)
                 result = finish_browser_request(fault_page)
                 assert result.get("status") == 500, (method, result)
