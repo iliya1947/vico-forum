@@ -240,8 +240,11 @@ try:
         assert denied.value.status==401
         sleep(.5)
         assert len(participant_posts)==1,participant_posts
+        assert form.count()==1, "Late 401 must not unmount the participant draft"
+        assert form.locator("textarea").input_value()=="KEEP_N3_PARTICIPANT_DRAFT"
+        assert form.locator('input[name="operationId"]').input_value(), "Participant nonce lost after 401"
         assert snapshot()==before
-        record("mounted-participant-form-no-silent-retry")
+        record("mounted-participant-form-retains-draft-nonce-no-silent-retry")
 
         private(submit(other_ctx,topics[2]),200)
         c2=case(topics[2]);d2=decision(reviewer_ctx,c2)
@@ -290,8 +293,11 @@ try:
         assert denied.value.status==401
         sleep(.5)
         assert len(reviewer_posts)==1,reviewer_posts
+        assert review_form.count()==1, "Late 401 must not unmount the reviewer draft"
+        assert review_form.locator("textarea").input_value()=="KEEP_N3_REVIEWER_DRAFT"
+        assert review_form.locator('input[name="operationId"]').input_value(), "Reviewer nonce lost after 401"
         assert snapshot()==before
-        record("mounted-reviewer-form-no-silent-retry")
+        record("mounted-reviewer-form-retains-draft-nonce-no-silent-retry")
 
         sql("ALTER ROLE postgres IN DATABASE vico_sa04_n_browser_test SET statement_timeout='650ms'")
         try:
