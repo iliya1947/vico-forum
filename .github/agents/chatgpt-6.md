@@ -1,5 +1,35 @@
 # ChatGPT-6 — personal log
 
+
+## 2026-11-16 — ACTIVE ASSIGNMENT: SA04-O whole package in cumulative Draft #334
+
+Mira whole-N coordinator review is **PASS — 0 confirmed current-N defects** on exact `c86edbd7d42fef18ee550a7ac5225d26a02eb52d`. No merge and no developer decision gate exists between N and already-accepted O.
+
+Continue the **same cumulative Draft PR #334**. Implement **whole O** from §7 of `SA04_L_S_TECHNICAL_PLAN.md`.
+
+### Required result
+
+Close authoritative AccountState admission for the existing own-account locale writer while preserving its current single-write semantics:
+
+- keep **one atomic UPDATE** of the authenticated actor's own `user.locale` / existing `updated_at` policy;
+- use the shared active-account SQL predicate in that UPDATE: actor from session only, `id = actor` and active lifecycle condition, with `RETURNING id`;
+- do not add a preliminary unlocked authorization read or a second lifecycle write path;
+- on zero RETURNING, classify on the same client using shared account-state read: inactive/missing as lifecycle denial; impossible active+zero as unexpected invariant;
+- preserve current route ordering: stale `expectedUserId` conflict before writer, registry health/canonical active locale validation before durable save, then writer;
+- late inactive/missing must produce private no-store 401, typed storage unavailability 503, unexpected failure 500; no false 303/`localeSaved`;
+- preserve theme/editor/device preferences as local-only and unrelated to this writer.
+
+Current locators were reverified after N and are unchanged from main:
+- `db/hyperdrive-user-locale.ts` — current single UPDATE writer and availability wrapper;
+- `app/routes/settings-user.tsx` — canonical own Settings locale action and redirect;
+- `app/routes/settings-user-locale.test.ts` — current route contract.
+
+Done when whole O is evidenced on one stable cumulative head: native active/inactive/missing and same-locale save; both physical state orders on the user row; locale + updated_at unchanged on denied writes; typed outage vs unexpected distinction; route canonical/alias/inactive/degraded/stale identity cases; genuine mounted Save after deactivation with no redirect/silent retry; unrelated active account locale negotiation remains correct.
+
+After **whole O** is complete: AUTHOR CHECKPOINT STOP → Mira whole-O coordinator review. Do not merge #334 and do not start P before whole-O PASS.
+
+---
+
 ## 2026-11-16 — N5 handoff recorded for Mira, author STOP
 
 After confirming latest `main` AGENTS and accepted service plan, workflow, and author N4.3 READY, verified stable cumulative Draft #334 `c86edbd7d42fef18ee550a7ac5225d26a02eb52d` (49 commits/24 paths, open/draft/mergeable, main `859ea69165f51cd997e61b1d1f30f6663f045965`). Five exact-head workflows all success: CI #43768050688 PG17 1011 + app 2359, SA04-N #43768050624, AP10 #43768050636 4/4, SA03 #43768050586, SA04-M2 #43768050605. Wrote service workflow and common-channel packet for Mira independent coordinator whole-PR review of **N**, accepted M previous PASS and cumulative regression boundaries; included test locators, acceptance map, verified evidence, rules for returning only confirmed current-N defects. No implementation change, no Mira review or whole-PR self-review, no O/merge. **N5 AUTHOR STOP; next developer connects Mira to service PR #331.**
