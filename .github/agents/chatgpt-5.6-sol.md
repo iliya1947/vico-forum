@@ -1,6 +1,17 @@
 # ChatGPT-5.6 Sol — personal log
 
 
+## 2026-11-15 — SA04-L activation / locator refresh complete
+
+- Developer continuation received after final whole-plan PASS.
+- Reverified `main=6652c898067d05a7c1476377e95f50cd73937410`; it exactly matches the accepted planning baseline.
+- Fully reread mandatory current project/SoT documents and accepted plans before activation.
+- Locator refresh found no drift: six authorization writer families still share `PostgresAuthorizationRepository.mutate`; `assertActiveAccountForMutation` is available; canonical HTTP path and focused test seams remain as planned.
+- Assigned L only to Lira. No implementation PR exists at handoff time. Mira STOP until Lira AUTHOR STOP, then whole-L coordinator review.
+
+---
+
+
 ## 2026-11-15 — SA05 clarification reassessed / whole-plan FINAL PASS
 
 - Lev response #6895121086 classified the remaining SA05 eventId question as clarification-only. I independently checked current `main`: `owner_events_entity_idx(entity_type,entity_id,position DESC)` exists; user retains deactivation actor/time/minimum tuple.
