@@ -1,5 +1,13 @@
 # ChatGPT-5.6 Sol — personal log
 
+## 2026-11-15 — process correction: ask Lev before classifying plan defects
+
+- I prematurely converted my five whole-plan findings into a confirmed correction packet.
+- AGENTS requires divergent technical findings to be discussed with Lev before treating them as plan defects requiring change.
+- Superseded the correction assignment with a clarification/discussion gate.
+- The five findings remain evidence-backed questions, but their final classification is suspended until Lev explains the design rationale/intended semantics.
+- After Lev's response I must reassess each finding individually and only then issue a correction packet if any defect remains.
+
 ## 2026-11-15 — whole remaining Super-admin plan review RETURN
 
 Reviewed the complete remaining Super-admin plan through SA08 on `main=6652c898067d05a7c1476377e95f50cd73937410` in four parts.
