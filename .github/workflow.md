@@ -1,14 +1,16 @@
 # Admin panel — current workflow
 
 - **Service PR:** #331, coordination only, never merge.
-- **Current main:** `859ea69165f51cd997e61b1d1f30f6663f045965`.
-- **Delivered in main:** SA01–03 and SA04 A–L. SA04-L came through merged #333; reviewed implementation head `7400c51334476125d53a0108fc7a53c0f35c754f`.
-- **Accepted technical scope:** full **SA04 M–S → SA05 → SA06 → SA07 → SA08**; architecture/acceptance unchanged.
-- **Developer delivery correction:** bounded slices inside one upper-level package are **not merge units**. Current corrected blobs: SA04 L–S `56859a08f6c569a2d6fa25b70a700872309acabf`; whole remaining plan `8e12cab22d5c700e31a86ded3d107e216aacdd82`.
-- **Historical exception:** L was already merged separately in #333 before this correction. Do not revert it solely for process shape.
-- **Current phase:** merge-boundary correction complete; **M–S implementation not started**.
-- **Next implementation shape:** one cumulative Draft implementation PR from current main for **M → N → O → P → Q → R → S**. Planned internal author/checkpoint stops remain, but **no Owner merge between M/N/O/P/Q/R**.
-- **Final SA04 gate:** S AUTHOR STOP → Mira whole-SA04 coordinator review → Lev independent review of the same stable exact candidate → Owner merge once.
-- **Current actor:** Developer, next continuation command.
-- **Agents:** Mira STOP after correction; Lira/Lev/Mark inactive.
-- **Boundary:** no SA05 implementation, #315 remediation, permanent docs, production/deployment or Stage6.
+- **Current main / cumulative SA04 M–S base:** `859ea69165f51cd997e61b1d1f30f6663f045965`.
+- **Delivered in main:** SA01–03 and SA04 A–L. L is the already-merged historical delivery-boundary exception (#333).
+- **Accepted technical scope:** SA04 **M → N → O → P → Q → R → S**, then SA05 → SA06 → SA07 → SA08; architecture/acceptance unchanged.
+- **Merge boundary:** remaining SA04 uses **one cumulative Draft implementation PR M–S**. No Owner merge between M/N/O/P/Q/R; final merge only after S closure and final whole-SA04 Mira + Lev review.
+- **Current slice:** **M1 ACTIVE** — native AccountState admission for all five AP-10 measure/appeal writers and its native fact/race matrix.
+- **Lira:** ACTIVE. Create the cumulative M–S Draft from current main and implement M1 only.
+- **Implementation PR:** not yet created at handoff; once created it remains the same cumulative PR through S.
+- **Mira:** STOP until M1 author checkpoint; then bounded M1 acceptance only.
+- **Lev:** inactive; no replanning needed because M locators/SoTs are unchanged from accepted baseline and L is the expected adjacent dependency.
+- **Mark:** inactive.
+- **Next checkpoint:** M1 author evidence/STOP → Mira bounded M1 review → on PASS M2 continues in the same cumulative PR. **No merge.**
+- **Final SA04 gate:** S AUTHOR STOP → Mira whole-SA04 coordinator review → Lev independent same stable exact candidate → Owner merge once.
+- **Boundary:** M2/N+ not implemented in M1; no SA05, #315 remediation, permanent docs, production/deployment or Stage6.
