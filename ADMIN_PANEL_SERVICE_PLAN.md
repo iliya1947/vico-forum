@@ -38,7 +38,7 @@ Accepted master technical plan: predecessor #251 comment **#6806249892**.
 
 ## Whole remaining Super-admin plan — accepted implementation-depth contract
 
-- Baseline/current main: `6652c898067d05a7c1476377e95f50cd73937410`.
+- Original accepted planning baseline: `6652c898067d05a7c1476377e95f50cd73937410`; current implementation baseline after merged L: `859ea69165f51cd997e61b1d1f30f6663f045965`.
 - Complete revised plan: [SUPER_ADMIN_REMAINING_TECHNICAL_PLAN.md](https://github.com/iliya1947/vico-forum/blob/chatgpt/admin-panel-service-2/SUPER_ADMIN_REMAINING_TECHNICAL_PLAN.md), current blob `8e12cab22d5c700e31a86ded3d107e216aacdd82`. Technical architecture/acceptance remains the accepted plan; developer correction on 2026-11-15 changes only delivery/merge boundaries.
 - Scope is the full dependency chain **SA04-L–S → SA05 → SA06 → SA07 → SA08**, with the accepted L–S subplan incorporated unchanged.
 - Lev's agreed correction set is incorporated. Mira completed the required fresh four-part whole-plan review; after Lev clarification #6895121086 and Mira reassessment #6895280436 the **final verdict is PASS — 0 confirmed current-plan defects**.
