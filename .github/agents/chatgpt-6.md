@@ -1,5 +1,29 @@
 # ChatGPT-6 — personal log
 
+
+## 2026-11-15 — ACTIVE ASSIGNMENT: SA04-L authorization mutations (current)
+
+Base: exact `main=6652c898067d05a7c1476377e95f50cd73937410`. Whole remaining-plan and L–S planning gates are accepted. The earlier L assignment below was cancelled before implementation because whole-program planning was incomplete; **this new assignment supersedes that cancellation**.
+
+### Required result
+
+Implement **SA04-L only**: close authoritative AccountState admission for all six existing authorization mutation families while preserving their current authorization, Owner, AP-10, no-op and atomic Admin History semantics.
+
+Current locators verified immediately before handoff:
+- `db/authorization-repository.ts`: six writers `createCustomRole`, `renameCustomRole`, `replaceRoleGrants`, `deleteCustomRole`, `assignUserRole`, `setUserOverride`; shared transaction seam `PostgresAuthorizationRepository.mutate`;
+- `db/account-state.ts`: shared native `assertActiveAccountForMutation`;
+- `db/hyperdrive-authorization.ts` / `db/authorization-service.ts`: canonical management capability and availability wrapper;
+- `app/routes/authorization-admin.tsx`: single canonical POST used by Roles, Settings Forum & roles and canonical-profile assignment/override controls;
+- focused existing tests: `db/authorization-repository.test.ts`, `db/hyperdrive-authorization.test.ts`, `app/routes/authorization-admin.test.ts`; connected Settings/profile browser paths already exist.
+
+Done when the accepted L contract is implemented and evidenced on one stable head: all six families are lifecycle-closed including no-op/repeat paths; accepted mutex/actor/permission/Owner/AP-10/History ordering and target semantics hold under state-first/writer-first/rollback races; canonical late lifecycle/unavailable/unexpected HTTP behavior is private and correctly classified; genuine Owner Settings/profile paths are covered; no schema/migration/dependency/grant/permission or unrelated domain change is introduced.
+
+Create a separate Draft implementation PR from the exact base. Record exact PR/head and applicable checks/evidence in #331, then **AUTHOR STOP → Mira whole-L review**.
+
+Do not start M or later packages.
+
+---
+
 ## 2026-11-15 — SA04-L assignment CANCELLED before implementation
 
 - Stop the previous SA04-L assignment.
