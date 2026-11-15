@@ -59,6 +59,7 @@ import { ownerSystemMonitoringContext, ownerSa02MonitoringContext } from "../app
 import { createHyperdriveOwnerSystem } from "../db/hyperdrive-owner-system";
 import { ownerProfileContext } from "../app/profile/request-context";
 import { createHyperdriveOwnerProfile } from "../db/hyperdrive-owner-profile";
+import { protectFrameworkFailure } from "./private-failure-response";
 
 const requestHandler = createRequestHandler(
   () => import("virtual:react-router/server-build"),
@@ -134,19 +135,7 @@ export default {
     context.set(contentGenerationAdmissionContext, createHyperdriveContentGenerationAdmission(webConnectionString, undefined, ownerUserId));
     context.set(contentGenerationActionContext, DISABLED_CONTENT_GENERATION_ACTION_RUNTIME);
     const response = await requestHandler(request, context);
-    // Framework-generated unexpected 5xx on a failed mutation may have no
-    // action/error cache headers. They must not inherit a public cache policy.
-    // Preserve the original status/body/error handling and framework cookies.
-    const privateFailure = response.status >= 500
-      && request.method !== "GET" && request.method !== "HEAD";
-    const finalResponse = privateFailure
-      ? new Response(response.body, {
-        status: response.status,
-        statusText: response.statusText,
-        headers: new Headers(response.headers),
-      })
-      : response;
-    if (privateFailure) finalResponse.headers.set("Cache-Control", "private, no-store");
+    const finalResponse = protectFrameworkFailure(request, response);
     // Record actual 5xx response outcomes only; never request URLs, bodies or credentials.
     // Passive telemetry is best-effort, not a veto for the regular response.
     if (response.status >= 500 && response.status <= 599 && executionContext?.waitUntil) {
