@@ -207,12 +207,7 @@ describe("SA04-L2 real PostgreSQL authorization lock and rollback matrix", () =>
 
   it("a real failed History INSERT rolls back the authorization write and releases actor NKU", async () => {
     const actor = await createUser(), role = roleInput();
-    const store = new PostgresAuthorizationRepository(
-      new Pool({ connectionString: url, options, max: 2 }), actor, noMeasures,
-    );
-    // Use one directly owned Pool so its resources are always closed.
-    const tracked = store as PostgresAuthorizationRepository;
-    // The trigger is scoped to this disposable schema and removed in finally.
+    // Trigger remains strictly scoped to the disposable isolated schema.
     const rolePool = new Pool({ connectionString: url, options, max: 2 });
     const actual = new PostgresAuthorizationRepository(rolePool, actor, noMeasures);
     try {
@@ -229,8 +224,6 @@ describe("SA04-L2 real PostgreSQL authorization lock and rollback matrix", () =>
       await fixture.query("drop trigger if exists l2_history_abort on admin_history");
       await fixture.query("drop function if exists l2_fail_history()");
       await rolePool.end();
-      // Do not retain a second connection pool for this probe.
-      void tracked;
     }
   }, 30_000);
 
