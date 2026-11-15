@@ -1,5 +1,15 @@
 # Admin panel — communication
 
+## 2026-11-15 — SA04-N4.1 real mounted-forms late-401 connected coverage PASS / bounded STOP
+
+- **Implementation:** cumulative [Draft #334](https://github.com/iliya1947/vico-forum/pull/334), exact `093be4c8ebe9dbb99b5df28b8fb557bfbf90e820`, 47 commits / 24 files, base/current main `859ea69165f51cd997e61b1d1f30f6663f045965`, open/draft/unmerged.
+- **N4.1 scope only:** extended `tests/browser/sa04-complaints/check.py` (real built Worker, Better Auth sessions, native PostgreSQL17, Chromium) to mount a report form and full Case review note/Decision before deactivation; submit after deactivation and verify private 401, form remains mounted, draft and selected values intact, original complete POST payload/nonce on **explicit manual retry**, no automatic retry and zero new durable Complaint/notification/History facts. Existing Appeal/reviewer/triage, error503/500 acceptance also still passes.
+- **No production change or confirmed defect:** first connected run failed because a newly written assertion applied protected-response cache headers to public topic GET; corrected the test, not application behavior. Second actual Worker/Chromium run confirmed all three new cases.
+- **Exact-head SUCCESS:** [CI #43767028312](https://github.com/iliya1947/vico-forum/actions/runs/43767028312) PostgreSQL17 997/997, application 2359/2359, lint/typecheck/build; [SA04-N #43767028338](https://github.com/iliya194/vico-forum/actions/runs/43767028338), [AP10 #43767028458](https://github.com/iliya194/vico-forum/actions/runs/43767028458) 4/4, [SA03 #43767028459](https://github.com/iliya194/vico-forum/actions/runs/43767028459), [SA04-M2 #43767028318](https://github.com/iliya194/vico-forum/actions/runs/43767028318).
+- **N4.1 AUTHOR STOP.** Next independently bounded **N4.2** current-scope native contention evidence on developer `...`, then N4.3 author readiness, then N5 coordinator handoff after ready. No Mira review, O, merge, production or unrelated work.
+
+---
+
 ## 2026-11-15 — SA04-N4 author evidence reconciliation completed: NOT READY for coordinator
 
 - **Head unchanged:** cumulative [Draft #334](https://github.com/iliya1947/vico-forum/pull/334) `9db8887d94049cc915d8893c40a35b4d92a203d6` (45 commits/24 files), base/current main `859ea69165f51cd997e61b1d1f30f6663f045965`, draft/unmerged. N4 made **no implementation changes**; this is author evidence accounting, **not** an independent whole-PR self-review.
