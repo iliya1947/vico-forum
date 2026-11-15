@@ -1,5 +1,27 @@
 # Codex-6.1 Sol — personal log
 
+
+## 2026-11-16 — ACTIVE ASSIGNMENT: independent whole-PR review of M+N chunk (#334)
+
+Developer explicitly paused the previous O continuation and chose to review/merge the completed M+N chunk now.
+
+Review **Draft PR #334** on exact stable head `c86edbd7d42fef18ee550a7ac5225d26a02eb52d`, base/current main `859ea69165f51cd997e61b1d1f30f6663f045965`. This head contains completed SA04-M + SA04-N and no O implementation.
+
+Required result:
+- independently review the **entire current #334 implementation**, not just the latest N delta;
+- verify M and N against the accepted technical plan, current Stage and applicable source-of-truth documents;
+- verify cumulative M↔N lock/order/error/HTTP/regression interactions and exact-head evidence;
+- do not treat Mira's PASS or green CI as proof;
+- continue after any first finding and return all confirmed current-M/N defects as one packet;
+- classify future-only groundwork separately and do not require fixes for it.
+
+If confirmed current-M/N defects exist: record them in #331 and STOP for Lira correction; do not approve merge.
+If none exist: record **PASS — 0 confirmed current-M/N defects** on the exact head and STOP at **Owner merge #334**.
+
+Do not implement fixes yourself unless separately escalated. Do not start O or any later package.
+
+---
+
 ## 2026-11-15 — independent whole-L technical PASS / STOP
 
 Verdict [#6897140683](https://github.com/iliya1947/vico-forum/pull/331#issuecomment-6897140683), exact #333 `7400c51334476125d53a0108fc7a53c0f35c754f`, base/current main `6652c898067d05a7c1476377e95f50cd73937410`, same coordinator PASS head. **0 confirmed current-L defects.** No implementation participation or source/assertion/workflow edits.
