@@ -8,7 +8,7 @@ import { complaintQueuePath } from "./queue-view";
 export const complaintPrioritySettingsPath=(locale:string)=>`/${encodeURIComponent(locale)}/attention/complaints/settings`;
 export function ComplaintPrioritySettingsView({locale,settings,canReview}:{locale:string;settings:ComplaintPrioritySettings;canReview:boolean}) {
   const {t}=useTranslation("common");
-  const fetcher=useFetcher<{ok?:true;error?:"invalid"|"conflict"|"forbidden"|"notFound"|"unavailable"}>();
+  const fetcher=useFetcher<{ok?:true;error?:"invalid"|"conflict"|"forbidden"|"notFound"|"unavailable"|"unauthenticated"}>();
   return <ForumShell locale={locale} variant="attention"><section className="complaint-triage">
     {canReview&&<Link to={complaintQueuePath(locale)}>{t("complaintQueueHeading")}</Link>}
     <h1>{t("complaintPrioritySettingsHeading")}</h1>
@@ -26,7 +26,7 @@ export function ComplaintPrioritySettingsView({locale,settings,canReview}:{local
       </fieldset>
     </fetcher.Form>
     {fetcher.data?.ok&&<p role="status">{t("complaintPrioritySettingsSaved")}</p>}
-    {fetcher.data?.error&&<p role="alert">{t(fetcher.data.error==="conflict"?"complaintPrioritySettingsConflict":`complaintError_${fetcher.data.error}`)}</p>}
+    {fetcher.data?.error&&<p role="alert">{t(fetcher.data.error==="conflict"?"complaintPrioritySettingsConflict":fetcher.data.error==="unauthenticated"?"settingsSecurityUnauthenticated":`complaintError_${fetcher.data.error}`)}</p>}
     <Link to={complaintPrioritySettingsPath(locale)}>{t("complaintPrioritySettingsReload")}</Link>
   </section></ForumShell>;
 }
