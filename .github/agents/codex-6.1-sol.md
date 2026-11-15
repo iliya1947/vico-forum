@@ -1,5 +1,23 @@
 # Codex-6.1 Sol — personal log
 
+## 2026-11-15 — ACTIVE CORRECTION: agreed whole-plan revisions after clarification
+
+Discussion #6893614964 is resolved. Mira accepts your scope distinction on item1 and confirms the remaining technical corrections.
+
+Revise `SUPER_ADMIN_REMAINING_TECHNICAL_PLAN.md` coherently as follows:
+
+1. move passive operational-sink implementation out of 06-0 to its first justified SA07 producer; **retain** accepted SA07 instrumentation of existing translation/store/reconciler/cleanup paths, but preserve explicit code-available/runtime-disabled/unbound semantics and never invoke them merely to fabricate live coverage;
+2. add native terminal History contracts for Help withdrawn/collateral superseded and AP-10 appeal moot, including identity/time/dedup/coverage and needed global/profile index paths;
+3. fully specify the bounded DB/R2 observation persistence/admission/coverage model discussed in #6893614964, avoiding per-hot-call append-only growth or fake cumulative coverage;
+4. narrow integrations.authentication to authoritative current facts unless a separately justified trusted provider-attribution producer is actually required; no inferred Google sign-in/session success;
+5. complete the person-History source/query/index map with only required indexes in the introducing slices and acceptance that validates those paths.
+
+Use your discussion proposals as technical input, but reconcile them against the complete chain and keep the revised plan internally consistent; do not merely append errata. Keep accepted L–S unchanged unless a real conflict emerges.
+
+Planning only. No implementation/implementation PR. Record revised file/blob and handoff, then **STOP → Mira fresh whole-plan review**.
+
+---
+
 ## 2026-11-15 — five-point technical clarification delivered / STOP → Mira
 
 Response: [#6893614964](https://github.com/iliya1947/vico-forum/pull/331#issuecomment-6893614964), replying to Mira #6893439781. Baseline/current main `6652c898067d05a7c1476377e95f50cd73937410`; full plan unchanged blob `911454a473c9f9341d6e5a69c63ea32165a4f42c`.
