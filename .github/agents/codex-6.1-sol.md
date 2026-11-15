@@ -1,5 +1,25 @@
 # Codex-6.1 Sol — personal log
 
+## 2026-11-15 — ACTIVE ASSIGNMENT: final corrected SA04-K independent whole-package review
+
+Mira has completed a fresh cumulative whole-K coordinator **PASS** on Draft #332 stable exact `a610ea89447744f4f3946dfc6e59b4b01d9ad65a`. Current main/K base is `398dae18d5ca7c3fc6dd84fd93a29d7c381ba366`. Accepted complete K technical plan: #331 comment #6877583725.
+
+Independently review the **entire SA04-K package on that same exact head** against current main, current source-of-truth and the accepted K plan. Do not treat Mira's PASS or the prior correction as proof.
+
+Required result:
+- review all seven lifecycle-gated attachment entrypoints and the deliberately ungated public/security/system-cleanup boundaries;
+- verify transaction and lock ordering, state-first/writer-first/cross-writer races, replay/no-op/AP10 semantics, J publication/edit composition, R2 PREPARING/READY/conditional-PUT behavior, late PUT/finalizer and ambiguous/lost ACK handling, cleanup claim/lease/fence behavior, HTTP/private-cache behavior and applicable connected evidence;
+- independently re-evaluate **SA04-K-LEV-01 / P3**, including Router-accepted repeated trailing-slash/case/percent aliases in actual Worker behavior;
+- note the factual CI caveat that the unchanged `Verify Drizzle schema parity` step is green while its `drizzle-kit generate` log prints a BigInt TypeError, and determine only whether it establishes any **current-K** defect or evidence gap relevant to this package;
+- classify every issue as confirmed current-K versus unrelated/current-project or future/out-of-scope before returning it;
+- do **not** modify implementation during review.
+
+If no current-K defects remain, record independent **whole-K PASS** on exact `a610ea89447744f4f3946dfc6e59b4b01d9ad65a` and STOP for Mira closeout / Owner merge gate. If a current-K defect remains, return one complete finding packet to Mira; do not activate Lira.
+
+No L–S, SA05, #315 remediation, permanent docs, production/deploy or Stage6 work. Mark inactive. No merge.
+
+---
+
 ## 2026-11-15 — Lev independent corrected whole-K RETURN / STOP
 
 - **Independent whole-K verdict: RETURN**, exactly one remaining current-K **SA04-K-LEV-01 / P3** on Draft #332 exact `1454b04fb75816edb53961af5ca69409d17ecc4a`. [Full report and reproducer #6890890734](https://github.com/iliya1947/vico-forum/pull/331#issuecomment-6890890734). Main/base remains `398dae18d5ca7c3fc6dd84fd93a29d7c381ba366`; open/draft/unmerged. The former single-slash/case/percent examples are fixed, but the finding is **not fully closed**.
