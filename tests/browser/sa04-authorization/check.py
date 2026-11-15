@@ -53,7 +53,7 @@ def facts():
 
 def private(status,headers,expected):
     assert status==expected,(expected,status)
-    cc=headers.get("cache-control",headers.get("Cache-Control",""))
+    cc=next((v for k,v in headers.items() if k.lower()=="cache-control"),"")
     assert {"private","no-store"}<=set(v.strip().lower() for v in cc.split(",")),cc
 
 def visit(page,path,status=200):
@@ -199,14 +199,19 @@ try:
         with ThreadPoolExecutor(max_workers=1) as executor:
             locker=hold_authz_mutex()
             try:
+                # Server-side cancellation is deterministic even if a client-level
+                # query deadline expires while a PostgreSQL row lock is pending.
+                # Only this disposable database receives the temporary setting.
+                sql("alter database vico_sa04_l3_browser_test set statement_timeout='1800ms'")
                 future=executor.submit(raw_post,cookies(owner_ctx),{
                     "intent":"createRole","slug":prefix+"-unavailable","displayName":"Timeout"})
                 await_worker_wait()
-                status,headers,body=future.result(timeout=14)
+                status,headers,body=future.result(timeout=12)
                 private(status,headers,503)
-                assert "Query read timeout" not in body
-                record("real-mutex-wait-503-private-no-store-no-SQL")
+                assert "canceling statement" not in body
+                record("real-server-statement-timeout-503-private-no-store-no-SQL")
             finally:
+                sql("alter database vico_sa04_l3_browser_test reset statement_timeout")
                 locker.communicate("release\n",timeout=15)
         assert facts()=={"history":3,"roles":1,"assignments":1,"overrides":1}
 
