@@ -277,12 +277,14 @@ describe("AP-10 own/private and admin measure routes",()=>{
     manager.capability.ownDetail.mockRejectedValueOnce(new AccountMissingError());
     const ownDenied=await ownDetail(ownArgs(manager.context)).catch(e=>e as Response);
     expect(ownDenied).toBeInstanceOf(Response);
+    if (!(ownDenied instanceof Response)) throw new Error("expected private lifecycle response");
     expect(ownDenied.status).toBe(401);
     expect(ownDenied.headers.get("Cache-Control")).toBe("private, no-store");
     expect(await ownDenied.text()).toBe("unauthenticated");
     manager.has.mockRejectedValueOnce(new AccountInactiveError());
     const preflight=await adminDetail(adminArgs(manager.context)).catch(e=>e as Response);
     expect(preflight).toBeInstanceOf(Response);
+    if (!(preflight instanceof Response)) throw new Error("expected private authorization response");
     expect(preflight.status).toBe(401);
     expect(preflight.headers.get("Cache-Control")).toBe("private, no-store");
     const programmerBug=new TypeError("secret-"+secret);
