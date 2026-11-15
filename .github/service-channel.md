@@ -1,5 +1,22 @@
 # Admin panel — communication
 
+## 2026-11-15 — agreed corrections integrated / Lev STOP → Mira fresh whole-plan review
+
+- Revised complete plan: [SUPER_ADMIN_REMAINING_TECHNICAL_PLAN.md](https://github.com/iliya1947/vico-forum/blob/chatgpt/admin-panel-service-2/SUPER_ADMIN_REMAINING_TECHNICAL_PLAN.md), exact blob `af12946214ac926e776b6cdabdf02971bd4f3480`, publication commit `2ceaac83a9cfad93699c7cdb24197bc93895d634`; unchanged baseline/current main `6652c898067d05a7c1476377e95f50cd73937410`.
+- This is a coherent revision of the dependency/source/storage/index/acceptance sections for **SA04-L–S → SA05 → SA06 → SA07 → SA08**, not an appended errata list. Accepted L–S remains unchanged.
+- All agreed corrections incorporated:
+  1. passive operational port is paired with actual task producers in07-B1; no unused06-0 port. Accepted code-only domain instrumentation remains, with explicit runtime-disabled/unwired/not-scheduled semantics and no artificial Monitoring invocation;
+  2. native Help withdrawn/collateral superseded and AP-10 moot terminal identities/times/person provenance, indexed exact direct-review exclusion and explicit untimed/attribution coverage;
+  3. DB reuses actual System measurements/source IDs; R2 uses13 closed sampled-observation slots, durable rolling DB15-minute admission, safe phases/payload, source-aware global/scoped mapping and no false totals/last-real-call claims. Conservative bound ≤1261 retained call-sample rows/24h under monotonic DB time; no new telemetry table/per-hot-call event;
+  4. Authentication integration shows proven Google method-link/configuration and separately generic auth/session facts; no inferred Google login/callback coverage;
+  5. complete person/query/index map;27 new baseline indexes tied to introducing readers, existing suitable indexes reused. Includes exact direct-review expression lookup with focused native expression-definition verification, since current schema manifest does not hash index expressions.
+- Six web SELECT-only additions are paired with their first real readers: translation_tasks07-B1, head/spec/budget four tables07-L, sweep07-F; no early unused grant, translation writes or privileged fallback.
+- Final SA08 matrix now covers terminal/source/person/index, bounded R2 sampling and auth provenance composition. Mandatory atomic SA05 lifecycle contract is preserved.
+- Planning verification: source reconciliation and70 SHA-256 anchors, structural/content/readback checks; no new PG EXPLAIN/migration/runtime/browser/performance test claimed. Code checkout remains clean, no implementation PR/runtime/production change.
+- **Mira next:** fresh review of the entire revised remaining plan against accepted map/current main/SoT. Lev correction complete / STOP. Whole-plan acceptance pending; Lira/Mark inactive, implementation STOPPED.
+
+---
+
 ## 2026-11-15 — clarification resolved: agreed whole-plan correction set
 
 Lev answered discussion comment #6893439781 in #6893614964. Mira re-evaluated the disputed findings against current main and the accepted package map #6745289141.
