@@ -142,6 +142,56 @@ describe("SA04-N2 native Complaint manager actor admission", () => {
     expect(await retained()).toEqual(before);
   }, 30000);
 
+  it("writer-first priority settings holds actor lock through COMMIT; deactivation then rejects repeat", async () => {
+    const actor = "n2-writer-first-" + uuid(); await person(actor);
+    const before = await repo().readPrioritySettings();
+    const writer = await newClient(), state = await newClient();
+    const original = writer.query;
+    let resume!: () => void, observed!: () => void;
+    const paused = new Promise<void>(resolve => { observed = resolve; });
+    const released = new Promise<void>(resolve => { resume = resolve; });
+    let intercepted = false;
+    writer.query = ((...args: unknown[]) => {
+      const stmt = typeof args[0] === "string" ? args[0] :
+        args[0] && typeof args[0] === "object" && "text" in args[0]
+          ? String(args[0].text) : "";
+      if (!intercepted && /^commit$/i.test(stmt.trim())) {
+        intercepted = true; observed();
+        return released.then(() => Reflect.apply(original, writer, args));
+      }
+      return Reflect.apply(original, writer, args);
+    }) as typeof writer.query;
+    let pending: ReturnType<DrizzleComplaintsRepository["savePrioritySettings"]> | undefined;
+    try {
+      pending = repo(writer).savePrioritySettings(actor, {
+        expectedVersion: before.version, weights: { ...DEFAULT_COMPLAINT_REASON_PRIORITY },
+      });
+      await paused;
+      await state.query("begin");
+      try {
+        await state.query("set local lock_timeout='180ms'");
+        await expect(state.query('update "user" set deactivated_at=now(),deactivated_by_user_id=$1,'
+          + "retain_at_least_until=now()+interval '2 years' where id=$1", [actor]))
+          .rejects.toMatchObject({ code: "55P03" });
+      } finally { await state.query("rollback"); }
+      resume();
+      await pending;
+      const committed = await repo().readPrioritySettings();
+      expect(committed.version).toBe(before.version + 1);
+      await deactivate(actor);
+      await expect(repo().savePrioritySettings(actor, {
+        expectedVersion: committed.version, weights: { ...DEFAULT_COMPLAINT_REASON_PRIORITY },
+      })).rejects.toBeInstanceOf(AccountInactiveError);
+      expect(await repo().readPrioritySettings()).toEqual(committed);
+    } finally {
+      resume();
+      writer.query = original;
+      if (pending) await Promise.allSettled([pending]);
+      await state.query("rollback").catch(() => undefined);
+      await Promise.all([writer.end(), state.end()]);
+    }
+  }, 35000);
+
   it("state-first priority-settings transaction blocks at actor and denies after state COMMIT", async () => {
     const actor = "n2-state-first-" + uuid(); await person(actor);
     const settings = await repo().readPrioritySettings();
