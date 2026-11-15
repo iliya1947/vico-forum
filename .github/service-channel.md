@@ -1,5 +1,16 @@
 # Admin panel — communication
 
+## 2026-11-15 — Lev ACTIVE: whole remaining Super-admin plan through SA08
+
+- Lev is now assigned to the **entire remaining Super-admin task**, not to another isolated package.
+- Planning baseline: `main=6652c898067d05a7c1476377e95f50cd73937410`.
+- Inputs already accepted/available: detailed SA04-L–S subplan `SA04_L_S_TECHNICAL_PLAN.md`; original Super-admin package/product map #251 comment #6745289141; current repository and current SoT.
+- Deliverable: new service file `SUPER_ADMIN_REMAINING_TECHNICAL_PLAN.md` covering `SA04-L–S → SA05 → SA06 → SA07 → SA08` at implementation depth.
+- Acceptance criterion: bounded implementation must later require only current-main detail refresh, not new cross-package architectural planning before each package.
+- Planning only. Lira/Mark inactive; no implementation PR; no L implementation. After Lev STOP, Mira reviews the complete remaining-task plan as one chain.
+
+---
+
 ## 2026-11-15 — process correction: SA04-L STOP / whole remaining Super-admin planning required
 
 - The previous SA04-L implementation activation was **wrongly scoped** and is cancelled before any implementation PR/code change.
