@@ -1,17 +1,17 @@
 # Admin panel — current workflow
 
 - **Service PR:** #331, coordination-only; never merge.
-- **Current main / cumulative SA04 M–S base:** `859ea69165f51cd997e61b1d1f30f6663f045965`.
-- **Cumulative implementation PR:** Draft #334, exact current reviewed head `c86edbd7d42fef18ee550a7ac5225d26a02eb52d`, open/draft/unmerged/mergeable.
-- **Delivered in main:** SA01–03 and SA04 A–L. L is the historical separate-merge exception.
-- **Completed in cumulative PR:** whole M + whole N.
-- **Mira whole-N coordinator review:** **PASS — 0 confirmed current-N defects** on exact `c86edbd7d42fef18ee550a7ac5225d26a02eb52d`.
-- **N evidence checked:** all 16 N-delta paths; production transaction/lock/error mapping; all 8 direct commands; replay/duplicates, state-first/writer-first, save-priority CAS, N-DEP-01, N↔J edit/locale races, evidence cleanup fence, Appeal/Decision notification fanout; actual Worker + Better Auth + PostgreSQL17 + Chromium 401/503/500 and mounted-form nonce retention. Exact-head CI: PG17 1011/1011, app 2359/2359; AP10/SA03/M2 connected regressions green; synthetic merge tree equals implementation tree.
-- **Known CI qualification:** unchanged Drizzle 0.31.10 BigInt generator TypeError/exit0 remains non-substantive generated-parity evidence. N has no schema/migration/dependency delta; actual 69-table production manifest parity is green.
-- **Current package:** **O ACTIVE** — own locale atomic write lifecycle closure in the same cumulative Draft #334.
-- **O locator refresh:** `db/hyperdrive-user-locale.ts`, `app/routes/settings-user.tsx`, `app/routes/settings-user-locale.test.ts` are unchanged from current main; accepted O plan applies without replanning.
-- **Lira:** ACTIVE on whole O. No internal Mira gate unless she chooses author-only substeps; coordinator review only after whole O is complete.
-- **Mira:** STOP until whole-O AUTHOR CHECKPOINT.
-- **Lev/Mark:** inactive; Lev only on genuine technical escalation/plan conflict or final whole-SA04 independent review after S.
-- **Merge boundary:** no merge after N/O/P/Q/R; one Owner merge only after S + final whole-SA04 Mira/Lev reviews.
-- **Boundary:** no P implementation before whole-O PASS; no SA05, #315 remediation, permanent docs, production/deployment or Stage6.
+- **Current main:** `859ea69165f51cd997e61b1d1f30f6663f045965`.
+- **Implementation PR under review:** Draft #334, exact stable head `c86edbd7d42fef18ee550a7ac5225d26a02eb52d`, base `859ea69165f51cd997e61b1d1f30f6663f045965`; open/draft/unmerged/mergeable.
+- **Scope of this merge chunk:** completed **SA04-M + SA04-N only**. No O implementation is present on this head.
+- **Coordinator status:** Mira whole-M PASS and whole-N PASS; cumulative M↔N boundaries were checked, with 0 confirmed current-M/N defects.
+- **Developer route override:** stop the previous O handoff. #334 is now the merge candidate for the M+N chunk.
+- **Current active role:** **Lev (Codex-6.1 Sol)** — independent technical review of the complete #334 M+N implementation on the exact stable head above.
+- **Review scope:** whole implementation PR #334 as it exists now, including M, N and their cumulative interaction/regression boundaries; not just N delta. Verify against accepted M/N plan, current main/Stage/SoTs, exact-head CI and connected evidence. Classify findings current-M/N vs future groundwork.
+- **On confirmed current defect:** return one correction packet to Lira; no merge.
+- **On PASS:** STOP at Owner merge gate for #334. No O/P/Q/R/S work starts before that merge.
+- **Lira:** STOP. O assignment superseded/paused before implementation.
+- **Mira:** STOP during Lev independent review.
+- **Mark:** inactive.
+- **After Owner merge:** refresh main, reread AGENTS, then resume from O in a new implementation PR/branch based on merged main.
+- **Boundary:** no O+, SA05, #315 remediation, permanent docs, production/deployment or Stage6 before #334 merge.
