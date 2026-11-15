@@ -36,14 +36,16 @@ describe("SA04-N3 canonical Complaint lifecycle HTTP mapping", () => {
     "all three canonical command types deny late actor %s as private unauthenticated 401", async error => {
       const s = fixture();
       s.submitAppeal.mockRejectedValueOnce(error);
-      await expect(participantAction({ context: s.context, params: { caseId: "case-1" },
-        request: request("/en/complaints/case-1/result", participantFields) }))
-        .rejects.toMatchObject({ status: 401 });
+      const participant = await participantAction({ context: s.context, params: { caseId: "case-1" },
+        request: request("/en/complaints/case-1/result", participantFields) });
+      expect(participant).toMatchObject({ data: { error: "unauthenticated" }, init: { status: 401 } });
+      expect(new Headers(participant.init?.headers).get("Cache-Control")).toBe("private, no-store");
       s.resolveAppeal.mockRejectedValueOnce(error);
-      await expect(reviewerAction({ context: s.context,
+      const reviewer = await reviewerAction({ context: s.context,
         params: { caseId: "case-1", appealId: "appeal-1" },
-        request: request("/en/attention/complaints/case-1/appeals/appeal-1", reviewerFields) }))
-        .rejects.toMatchObject({ status: 401 });
+        request: request("/en/attention/complaints/case-1/appeals/appeal-1", reviewerFields) });
+      expect(reviewer).toMatchObject({ data: { error: "unauthenticated" }, init: { status: 401 } });
+      expect(new Headers(reviewer.init?.headers).get("Cache-Control")).toBe("private, no-store");
       s.submitComplaint.mockRejectedValueOnce(error);
       const response = await submissionAction({ context: s.context,
         params: { topicId: "topic-1" },
@@ -57,13 +59,9 @@ describe("SA04-N3 canonical Complaint lifecycle HTTP mapping", () => {
   );
   it("late 401 is private at shared read and command error boundaries", () => {
     for (const error of [new AccountInactiveError(), new AccountMissingError()]) {
-      try { complaintCommandFailure(error); throw new Error("expected rejection"); }
-      catch (caught) {
-        expect(caught).toBeInstanceOf(Response);
-        expect((caught as Response).status).toBe(401);
-        expect((caught as Response).headers.get("Cache-Control")).toBe("private, no-store");
-        expect((caught as Response).statusText).not.toContain("Account");
-      }
+      const failure = complaintCommandFailure(error);
+      expect(failure).toMatchObject({ data: { error: "unauthenticated" }, init: { status: 401 } });
+      expect(new Headers(failure.init?.headers).get("Cache-Control")).toBe("private, no-store");
       try { complaintHttpError(error); throw new Error("expected rejection"); }
       catch (caught) {
         expect(caught).toBeInstanceOf(Response);
