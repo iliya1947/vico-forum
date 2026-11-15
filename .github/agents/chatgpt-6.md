@@ -1,5 +1,14 @@
 # ChatGPT-6 — personal log
 
+## 2026-11-15 — SA04-M2.2 complete; Lira bounded STOP
+
+User `...` activated only M2.2 after M2.1. Current main/AGENTS/accepted M scope and cumulative Draft #334 rechecked. Changed only shared `app/measures/routes.server.ts` and AP-10 `app/routes/user-measures.test.ts`. Shared mapping now recognizes native AccountState inactive/missing and returns existing `unauthenticated` private401 for all five AP-10 commands; preserves existing typed 503 and unrelated unexpected throws to K Worker fallback. New tests cover each writer, private headers/data, error/secret leakage, loader/preflight responses, zero silent retry. No new route, success/error vocabulary, permission, schema, dependencies, DB writer, M2.3 connected harness.
+
+Initial exact-head CI revealed TypeScript error only in new test Response-union assertions; corrected explicit `instanceof Response` narrowing, no production fix. Final cumulative [Draft PR #334](https://github.com/iliya1947/vico-forum/pull/334) exact head `e1a37c842888b3293c6e7a4d70ebce594f6ca39c`, base/main `859ea69165f51cd997e61b1d1f30f6663f045965`, 8 commits/6 paths, open/draft/unmerged. [CI #43745627598](https://github.com/iliya1947/vico-forum/actions/runs/43745627598) SUCCESS: native PG979/979, app2347/2347, route 9/9, typecheck/lint/build. [AP10 #43745627606](https://github.com/iliya1947/vico-forum/actions/runs/43745627606) SUCCESS 4/4 Chromium jobs and [SA03 #43745627675](https://github.com/iliya1947/vico-forum/actions/runs/43745627675) SUCCESS. New real M2 late error connected acceptance remains M2.3.
+
+**Lira STOP after M2.2**. Next developer `...` → M2.3 connected and whole-M AUTHOR STOP, then Mira whole-M coordinator review. No intermediate merge, no N+, no other scope.
+
+
 ## 2026-11-15 — SA04-M2.1 complete; bounded author STOP
 
 User continuation activated only M2.1. Verified current GitHub AGENTS, active package cadence in service PR #331, main/base unchanged. Implemented exactly `db/hyperdrive-user-measures.ts` (cause-cycle-safe recognition of typed AccountState unavailable in existing classifier) plus new `db/hyperdrive-user-measures.test.ts` (5 writers, reader, typed/cause errors, unknown errors, account denial, timeouts and cycle).
