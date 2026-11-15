@@ -6,11 +6,15 @@
 - **Current task scope:** complete remaining Super-admin program **SA04-L–S → SA05 → SA06 → SA07 → SA08**.
 - **Planning gate:** complete revised plan `SUPER_ADMIN_REMAINING_TECHNICAL_PLAN.md` blob `af12946214ac926e776b6cdabdf02971bd4f3480` — **Mira final PASS, 0 confirmed planning defects** after Lev clarification #6895121086 and Mira reassessment #6895280436.
 - **Accepted L–S subplan:** blob `cde81eeb259a3b7a5c4b96324a92aa310f375915`.
-- **Current phase:** **SA04-L implementation assigned** after developer continuation.
-- **Current actor:** **Lira — ACTIVE**, implement L only from exact current main; create a separate Draft implementation PR and AUTHOR STOP on one stable exact head with evidence.
+- **Current phase:** SA04-L bounded implementation **1/4 DONE (Lira STOP)**; full L not yet AUTHOR STOP.
+- **Decomposition:** L1 shared actor guard + six-family direct native admission; L2 native physical lock/rollback/race + cross-writer matrix; L3 availability/HTTP 401/503/500 + genuine Owner Settings/profile connected; L4 cumulative whole-L source/evidence and AUTHOR STOP.
+- **Implementation PR:** [Draft #333](https://github.com/iliya1947/vico-forum/pull/333), open/draft/unmerged; exact current implementation head `6794b0bbbfd0771ebdbfb4f05565fd280ed4c397`, based on main `6652c898067d05a7c1476377e95f50cd73937410`.
+- **L1 source:** shared `assertActiveAccountForMutation` on same PG transaction immediately after `authz_mutation_lock`, before existing permission/Owner/AP10 and all six dispatches. Updated existing mock/native fixtures, added native 3-case real PG17 all-six active/inactive/missing + no-ops/History evidence.
+- **L1 CI:** [standard CI #43723492244](https://github.com/iliya1947/vico-forum/actions/runs/43723492244) SUCCESS — real PG17 959/959 (85 files), app 2332/2332 (186 files), lint/typecheck/build/schema/migration/Worker PASS. [AP10 #43723492293](https://github.com/iliya1947/vico-forum/actions/runs/43723492293) running at checkpoint (3/4 jobs SUCCESS); do not call it PASS until final.
+- **Next only on developer continuation:** L2 native lock/race/rollback matrix on same Draft #333; not a Mira/Lev review gate.
+- **Current actor:** Lira STOP after bounded 1/4; reactivates for L2 only on developer continuation.
 - **Mira:** STOP until Lira AUTHOR STOP, then whole-L coordinator review.
 - **Lev:** STOP; independent whole-L review only after Mira PASS on the same stable implementation head.
 - **Mark:** inactive.
-- **Implementation PR:** not created yet; Lira creates it from exact current main.
 - **Next gate:** Lira AUTHOR STOP → Mira whole-L review → if PASS, Lev independent whole-L review → Owner merge decision.
 - **Boundary:** no M+, SA05 implementation, #315 remediation, permanent docs, production/deployment or Stage6 action.
