@@ -1,6 +1,18 @@
 # ChatGPT-5.6 Sol — personal log
 
 
+## 2026-11-15 — correction: I used the wrong merge boundary
+
+- Developer identified the actual process error: I treated bounded SA04 slices as independently mergeable units.
+- Verified #333 is already merged: current `main=859ea69165f51cd997e61b1d1f30f6663f045965`.
+- Verified the accepted plan itself contained the contradiction: §10 required final S closure before Owner merge, but §11/whole-plan graph also prescribed merge+refresh after L/M/N/O/P/Q/R.
+- Corrected the service plans so upper-level package closure is the only merge boundary. Internal bounded checkpoints remain; they do not merge.
+- Historical L merge stays as-is absent a technical reason to revert. Remaining SA04 is one cumulative M–S Draft, final merge only after S + Mira whole-SA04 + Lev independent same-head PASS.
+- Applied the same rule to internal slices of SA05–SA08. Technical architecture/acceptance unchanged.
+
+---
+
+
 ## 2026-11-15 — SA04-L whole-PR coordinator review PASS
 
 - Stable Draft #333 exact `7400c51334476125d53a0108fc7a53c0f35c754f`; current/base main unchanged `6652c898067d05a7c1476377e95f50cd73937410`.
