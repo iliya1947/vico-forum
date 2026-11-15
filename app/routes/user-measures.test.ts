@@ -1,5 +1,6 @@
 import { RouterContextProvider } from "react-router";
 import { describe, expect, it, vi } from "vitest";
+import { AccountInactiveError, AccountMissingError, AccountStateUnexpectedError } from "../../db/account-state";
 import { authSessionContext } from "../auth/request-context";
 import { authorizationContext, authorizationOwnerContext } from "../authorization/request-context";
 import { userMeasureContext } from "../measures/request-context";
@@ -208,6 +209,85 @@ describe("AP-10 own/private and admin measure routes",()=>{
     expect(manager.capability.lift).toHaveBeenCalledWith({
       measureId,operationId,actorId:"subject",expectedVersion:1,reason:"Complete",
     });
+  });
+
+  it("returns private unauthenticated 401 for late inactive/missing actor in all five command actions",async()=>{
+    const manager=env();
+    const createForm=new URLSearchParams({intent:"create",measureId,targetId:"target",
+      reason:"Violation",expiresAt:"",restriction:"replies.create"});
+    const changeForm=new URLSearchParams({intent:"change",operationId,expectedVersion:"1",
+      reason:"Changed",expiresAt:"",restriction:"topics.create"});
+    const liftForm=new URLSearchParams({intent:"lift",operationId,expectedVersion:"1",reason:"Complete"});
+    const reviewForm=new URLSearchParams({intent:"review",operationId,expectedVersion:"1",
+      appealId,outcome:"rejected",remedy:"",explanation:"Not justified"});
+    const appealForm=new URLSearchParams({intent:"appeal",appealId,body:"Review"});
+    const operations=[
+      {name:"create",reject:(error:Error)=>manager.capability.create.mockRejectedValueOnce(error),
+        run:()=>adminCreate({params:{locale:"en"},context:manager.context,
+          request:post("admin/measures",createForm)})},
+      {name:"change",reject:(error:Error)=>manager.capability.change.mockRejectedValueOnce(error),
+        run:()=>adminAction({...adminArgs(manager.context),
+          request:post("admin/measures/"+measureId,changeForm)})},
+      {name:"lift",reject:(error:Error)=>manager.capability.lift.mockRejectedValueOnce(error),
+        run:()=>adminAction({...adminArgs(manager.context),
+          request:post("admin/measures/"+measureId,liftForm)})},
+      {name:"resolveAppeal",reject:(error:Error)=>manager.capability.resolveAppeal.mockRejectedValueOnce(error),
+        run:()=>adminAction({...adminArgs(manager.context),
+          request:post("admin/measures/"+measureId,reviewForm)})},
+      {name:"submitAppeal",reject:(error:Error)=>manager.capability.submitAppeal.mockRejectedValueOnce(error),
+        run:()=>ownAction({...ownArgs(manager.context),
+          request:post("account/measures/"+measureId,appealForm)})},
+    ];
+    for (const operation of operations) {
+      for (const error of [new AccountInactiveError(),new AccountMissingError()]) {
+        operation.reject(error);
+        const result=await operation.run();
+        expect(result).not.toBeInstanceOf(Response);
+        if (result instanceof Response) throw new Error("expected existing typed measure action failure");
+        expect(result.data).toEqual({error:"unauthenticated"});
+        expect(actionStatus(result)).toBe(401);
+        expect(result.init?.headers).toEqual({"Cache-Control":"private, no-store"});
+        expect(JSON.stringify(result)).not.toContain(secret);
+      }
+      const unavailable=new UserMeasuresUnavailableError("db-"+secret);
+      operation.reject(unavailable);
+      const blocked=await operation.run();
+      if (blocked instanceof Response) throw new Error("expected typed unavailable result");
+      expect(blocked.data).toEqual({error:"unavailable"});
+      expect(actionStatus(blocked)).toBe(503);
+      expect(blocked.init?.headers).toEqual({"Cache-Control":"private, no-store"});
+      expect(JSON.stringify(blocked)).not.toContain(secret);
+      const unexpected=new AccountStateUnexpectedError({cause:new Error("SQL-"+secret)});
+      operation.reject(unexpected);
+      await expect(operation.run()).rejects.toBe(unexpected);
+    }
+    expect(manager.capability.create).toHaveBeenCalledTimes(4);
+    expect(manager.capability.change).toHaveBeenCalledTimes(4);
+    expect(manager.capability.lift).toHaveBeenCalledTimes(4);
+    expect(manager.capability.resolveAppeal).toHaveBeenCalledTimes(4);
+    expect(manager.capability.submitAppeal).toHaveBeenCalledTimes(4);
+  });
+
+  it("keeps protected loader/preflight lifecycle denials private and never downgrades unrelated errors",async()=>{
+    const manager=env();
+    manager.capability.adminDetail.mockRejectedValueOnce(new AccountInactiveError());
+    await expect(adminDetail(adminArgs(manager.context))).rejects.toMatchObject({
+      status:401,statusText:"",headers:expect.any(Headers),
+    });
+    manager.capability.ownDetail.mockRejectedValueOnce(new AccountMissingError());
+    const ownDenied=await ownDetail(ownArgs(manager.context)).catch(e=>e as Response);
+    expect(ownDenied).toBeInstanceOf(Response);
+    expect(ownDenied.status).toBe(401);
+    expect(ownDenied.headers.get("Cache-Control")).toBe("private, no-store");
+    expect(await ownDenied.text()).toBe("unauthenticated");
+    manager.has.mockRejectedValueOnce(new AccountInactiveError());
+    const preflight=await adminDetail(adminArgs(manager.context)).catch(e=>e as Response);
+    expect(preflight).toBeInstanceOf(Response);
+    expect(preflight.status).toBe(401);
+    expect(preflight.headers.get("Cache-Control")).toBe("private, no-store");
+    const programmerBug=new TypeError("secret-"+secret);
+    manager.capability.ownDetail.mockRejectedValueOnce(programmerBug);
+    await expect(ownDetail(ownArgs(manager.context))).rejects.toBe(programmerBug);
   });
 
   it("maps stale and unavailable without returning confidential errors; propagates unexpected bugs",async()=>{
