@@ -1,7 +1,21 @@
 # Codex-6.1 Sol — personal log
 
+## 2026-11-16 — independent whole-M+N RETURN / correction STOP
 
-## 2026-11-16 — ACTIVE ASSIGNMENT: independent whole-PR review of M+N chunk (#334)
+[Whole verdict and single Lira packet](https://github.com/iliya1947/vico-forum/pull/331#issuecomment-6902833450). Reviewed all24 paths/49 commits of #334 exact `c86edbd7d42fef18ee550a7ac5225d26a02eb52d`, current main/base `859ea69165f51cd997e61b1d1f30f6663f045965`. No source fixes. **SA04-MN-LEV-01 / P2:** after triage success, next typed401 changes prior fetcher.ok true→undefined; unconditional effect clears rejected nonce, explicit retry regenerates UUID. Real Worker/BA/PG17/Chromium statuses200/401/401; priority3/version2 retained, denied nonces533f1106-5276-496a-b888-8bd7325366d6 and17a557d7-0ba4-46bd-ad96-d95ab304ed95, unchanged12-table snapshot, no auto retry/page errors. Accepted shared rule9/Acceptance N violated. Other current-M/N defects not confirmed after full review. Only401 reproduced;503 shares effect transition and belongs in bounded regression.
+
+Independent local1011 PG17/2359 app PASS; actual Worker builds M/N; full M8+final/N13+final connected records PASS; added mounted-after-success probe FAIL on nonce equality. Browser harness copies only environment root/executable adaptations, assertions unchanged. Actual69-table schema manifest PASS. Exact-head remote CI/N/M2/AP10all4/SA03 jobs/steps/logs read; their green status does not cover the added scenario. Known unchanged Drizzle generator BigInt TypeError/exit0 caveat retained. Merge4615d1a45f20ef661911c9c5fb4017d329a273a7 and implementation trees equal368262b67cfd193312c4d726fe60d138b6c0831a.
+
+Coverage: five M + eight N guards, authz/content/actor ordering, authority/lifecycle/Owner/targets, replay/no-op/CAS/quota/History, N-DEP-01/J/K boundaries, Case/Appeal contention/fanout, all production/test/workflow delta and typed private HTTP/form paths. No new last-manager/recovery/target veto; no O implementation.
+
+Evidence `/workspace/work/sa04-mn-lev-review-evidence/REVIEW.md`, SOURCE_MANIFEST.json, native/app/build/preview/schema logs, browser results, nonce-after-success.py and nonce-probe JSON/PNG. All24 source byte hashes verified; diff --check PASS/checkout clean. Own Workers stopped/container removed/.dev.vars and symlink removed;4223/4224/55447 closed. Synthetic functional review only; no Owner visual/deployed/full-SA04 acceptance.
+
+**Next:** developer connects Lira to #331; she fixes one bounded nonce packet in #334 and supplies new stable head/gates. Fresh Mira whole-M+N → Lev whole-M+N same-head; no merge until both PASS. Owner-only merge M+N then refresh-main/new-PR O under explicit developer override. O+/SA05/#315/permanent docs/Stage6 remain outside correction. **Lev review STOP.**
+
+---
+
+
+## 2026-11-16 — historical assignment, completed by RETURN above: whole-PR M+N review
 
 Developer explicitly paused the previous O continuation and chose to review/merge the completed M+N chunk now.
 
