@@ -1,5 +1,14 @@
 # ChatGPT-6 — personal log
 
+## 2026-11-15 — SA04-L assignment CANCELLED before implementation
+
+- Stop the previous SA04-L assignment.
+- No implementation PR exists and no code change from that assignment should be started.
+- Reason: Mira incorrectly scoped the planning boundary to SA04. The current Super-admin task continues through SA08 and must be technically planned end-to-end before implementation resumes.
+- Lira is inactive until a new bounded implementation assignment is recorded after whole-plan acceptance.
+
+---
+
 ## 2026-11-15 — ACTIVE ASSIGNMENT: SA04-L authorization mutations
 
 Base: exact `main=6652c898067d05a7c1476377e95f50cd73937410`. Complete L–S technical plan is accepted; implement **SA04-L only** from section 4 and its acceptance contract in `SA04_L_S_TECHNICAL_PLAN.md`.
