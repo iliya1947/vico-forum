@@ -27,7 +27,12 @@ export function complaintHttpError(error: unknown): never {
   throw error;
 }
 export function complaintCommandFailure(error: unknown): ReturnType<typeof data<{error:string}>> {
-  if(error instanceof Response)throw error;
+  // A stopped session can disappear during pre-routing Better Auth resolution.
+  // Keep action 401 as fetcher data instead of unmounting an already-entered draft.
+  if(error instanceof Response) {
+    if(error.status===401)return data({error:"unauthenticated"},{status:401,headers:complaintPrivateHeaders});
+    throw error;
+  }
   if(error instanceof AccountInactiveError || error instanceof AccountMissingError)
     return data({error:"unauthenticated"},{status:401,headers:complaintPrivateHeaders});
   const key=error instanceof ComplaintForbiddenError||error instanceof UserMeasureRestrictedError?"forbidden":error instanceof ComplaintNotFoundError?"notFound":
