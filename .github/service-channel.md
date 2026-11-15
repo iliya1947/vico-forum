@@ -1,6 +1,21 @@
 # Admin panel — communication
 
 
+## 2026-11-16 — developer route override: review and merge M+N now
+
+- Developer explicitly changed the delivery route: pause further SA04 work, have Codex review the currently completed chunk, merge it, then continue later.
+- Verified before handoff: Draft #334 is still exact head `c86edbd7d42fef18ee550a7ac5225d26a02eb52d`, base/current main `859ea69165f51cd997e61b1d1f30f6663f045965`; **no O implementation commit exists**. Therefore #334 cleanly represents the completed **M+N** chunk.
+- Previous automatic O activation is superseded before implementation. Lira STOP; O not active.
+- Mira has already PASSed whole M and whole N with 0 confirmed current-scope defects. The developer now requests the independent Codex gate before merging this chunk.
+- **Lev ACTIVE:** independently review the complete implementation PR #334 on the exact stable head above, covering **M+N cumulatively**, accepted M/N contracts, current main/Stage/SoTs, exact-head CI/connected acceptance, and cross-package interactions.
+- Do not limit review to N delta or rely on Mira PASS as proof. First finding does not end review. Classify every confirmed problem as current M/N vs future groundwork.
+- If current defect(s) exist: return one correction packet to Lira; no merge.
+- If PASS: record exact-head verdict and STOP at **Owner merge #334**.
+- After Owner merge, coordinator refreshes main and resumes SA04 from **O** in a fresh implementation PR based on the new main.
+
+---
+
+
 ## 2026-11-16 — Mira whole-N PASS; automatic handoff to O
 
 - Reviewed cumulative Draft #334 stable exact head `c86edbd7d42fef18ee550a7ac5225d26a02eb52d`, base/current main `859ea69165f51cd997e61b1d1f30f6663f045965`; open/draft/unmerged/mergeable. Synthetic merge tree equals implementation tree.
