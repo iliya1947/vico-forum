@@ -1,5 +1,23 @@
 # Codex-6.1 Sol — personal log
 
+## 2026-11-15 — ACTIVE CORRECTION: whole remaining-plan RETURN packet
+
+Mira whole-plan review verdict: **RETURN — 5 confirmed planning gaps** on baseline `main=6652c898067d05a7c1476377e95f50cd73937410`.
+
+Revise `SUPER_ADMIN_REMAINING_TECHNICAL_PLAN.md` as one coherent full-chain plan. The authoritative correction packet is the newest section in `.github/service-channel.md` and covers:
+
+1. remove future-only operational-sink/code-only executor/reconciler/cleanup instrumentation from earlier/current slices;
+2. add truthful retained native terminal History facts for Help withdrawn/collateral superseded and AP-10 appeal moot, with needed keyset/index consequences;
+3. define a concrete bounded persistence model for hot DB/R2 adapter outcomes instead of leaving “coalesced summaries” architecturally unspecified;
+4. resolve Integrations/auth provider attribution against the facts current sources actually prove, or define the missing trusted producer explicitly;
+5. reconcile profile-History person predicates with real current indexes and add only the required person-prefix chronological indexes in their introducing slices.
+
+Keep the accepted SA04-L–S subplan unchanged unless a correction establishes a concrete conflict. Preserve current product boundaries; surface any genuine developer-choice conflict separately.
+
+Planning only. No implementation/code/implementation PR. When the entire revised plan is internally consistent and executable without JIT architecture: record exact file/blob/handoff and **STOP → Mira fresh whole-plan review**.
+
+---
+
 ## 2026-11-15 — complete remaining technical plan submitted / planner STOP
 
 Delivered [SUPER_ADMIN_REMAINING_TECHNICAL_PLAN.md](https://github.com/iliya1947/vico-forum/blob/chatgpt/admin-panel-service-2/SUPER_ADMIN_REMAINING_TECHNICAL_PLAN.md), commit `937eaca9bc3c85080aceaee7bdef94cee757534f`, baseline `6652c898067d05a7c1476377e95f50cd73937410`. Full chain **L–S → SA05 → SA06 → SA07 → SA08 → separate DOC closeout**, incorporating the accepted L–S subplan unchanged. This supersedes the ACTIVE planning assignment below; implementation remains blocked pending Mira's whole-plan review.
