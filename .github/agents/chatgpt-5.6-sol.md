@@ -1,6 +1,16 @@
 # ChatGPT-5.6 Sol — personal log
 
 
+## 2026-11-15 — correction: no Mira gate between SA04 internal slices
+
+- I incorrectly retained coordinator review after M1/M2-style internal slices even after correcting the merge boundary.
+- Developer correction: M1/M2/N1/... are Lira's implementation decomposition only.
+- Correct workflow for remaining SA04: Lira implements M→S autonomously in one cumulative Draft → whole remaining SA04 AUTHOR STOP → Mira whole-SA04 review → Lev independent same-head review → one Owner merge.
+- Intermediate author checkpoints may be recorded, but they do not activate Mira or Lev.
+
+---
+
+
 ## 2026-11-15 — SA04-M1 activation / post-L locator refresh
 
 - Developer continuation received. Current `main=859ea69165f51cd997e61b1d1f30f6663f045965`.
