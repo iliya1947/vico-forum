@@ -50,6 +50,17 @@ The Lev diagnostic probes remain planning diagnostics only; Mira did not indepen
 **Planning gate is closed.** The first allowed bounded implementation slice is **L**, but it is not assigned or active until explicit developer command. Lev planning complete / STOP; Lira/Mark inactive; no implementation PR exists. Product decisions, accepted master sequence and future joint SA05–SA08 gate below remain unchanged.
 
 
+### SA04-L implementation — ACTIVE
+
+Developer authorized implementation after complete-chain planning acceptance.
+
+- Base: exact `main=6652c898067d05a7c1476377e95f50cd73937410`.
+- Actor: **Lira**.
+- Scope: **L only**, per section 4 and Acceptance L of `SA04_L_S_TECHNICAL_PLAN.md`.
+- Deliverable: one separate Draft implementation PR containing the complete six-family authorization lifecycle admission package plus applicable tests/evidence.
+- Handoff: AUTHOR STOP on one stable exact head → Mira whole-PR review → only after Mira PASS Lev independent same-head review.
+- M–S remain inactive until their own turn in the already accepted sequence.
+
 ### Why this gate exists
 
 The accepted SA-04 master plan #6806249892 remains authoritative and already fixes the purpose of L–S plus the common AccountState lifecycle model. A review of the current service plan and #251 planning comments found no separate accepted implementation-depth plan for the remaining L–S chain.
