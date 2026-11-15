@@ -164,6 +164,29 @@ def resolve_fields():
     return {"intent":"resolve","operationId":str(uuid4()),
         "outcome":"overturned","reasoning":"N3 actual reviewer outcome"}
 
+def verify_mounted_denied_form(page, form, path, expected, intent=None):
+    """Exercise two *real* explicit Chromium submissions after a preloaded session is revoked."""
+    posts=[]
+    def matches(req):
+        return (req.method=="POST" and urlparse(req.url).path in (path,path+".data")
+            and (intent is None or parse_qs(req.post_data or "").get("intent")==[intent]))
+    page.on("request",lambda req:posts.append(req.post_data or "") if matches(req) else None)
+    for attempt in range(2):
+        with page.expect_response(lambda response:matches(response.request)) as response:
+            form.locator('button[type="submit"]').click()
+        assert response.value.status==401,(path,intent,response.value.status)
+        sleep(.5)
+        assert len(posts)==attempt+1,(path,intent,posts)
+        assert form.count()==1,(path,intent,"Denied 401 unmounted form")
+        for field,value in expected.items():
+            assert form.locator('[name="'+field+'"]').input_value()==value,(path,intent,field)
+    first,second=(parse_qs(body) for body in posts)
+    nonce=first.get("operationId",[])
+    assert len(nonce)==1 and nonce[0],(path,intent,"Missing command nonce")
+    assert second==first,(path,intent,"Explicit retry changed submitted fields or nonce")
+    for field,value in expected.items():
+        assert first.get(field)==[value],(path,intent,field,first)
+
 try:
     with sync_playwright() as p:
         browser=p.chromium.launch(channel=os.environ.get("PLAYWRIGHT_CHANNEL","chrome"),
@@ -214,6 +237,18 @@ try:
 
         private(submit(reporter_ctx,topics[1]),200)
         c1=case(topics[1]);d1=decision(reviewer_ctx,c1)
+        # Mount a genuine reporter form before Better Auth invalidates this account.
+        report_page=reporter_ctx.new_page()
+        report_page.set_default_timeout(18000)
+        report_page.on("pageerror",lambda err:errors.append(str(err)))
+        report_topic="/en/topics/"+topics[4]
+        report_path=report_topic+"/complaints"
+        private(report_page.goto(base+report_topic,wait_until="networkidle"),200)
+        report_page.locator(".complaint-open").first.click()
+        report_form=report_page.locator("form.complaint-form")
+        assert report_form.count()==1
+        report_form.locator('select[name="reason"]').select_option("other")
+        report_form.locator('textarea[name="explanation"]').fill("KEEP_N4_REPORT_DRAFT")
         p1="/en/complaints/"+c1["id"]+"/result"
         private(page.goto(base+p1,wait_until="networkidle"),200)
         form=page.locator('form:has(input[name="intent"][value="appeal"])')
@@ -254,6 +289,13 @@ try:
         assert snapshot()==before
         record("mounted-participant-form-retains-draft-and-reuses-nonce-on-explicit-retry")
 
+        before=snapshot()
+        verify_mounted_denied_form(report_page,report_form,report_path,
+            {"reason":"other","explanation":"KEEP_N4_REPORT_DRAFT"})
+        assert report_form.locator('[name="operationId"]').input_value()
+        assert snapshot()==before
+        record("mounted-report-form-retains-input-and-nonce-after-late-401")
+
         private(submit(other_ctx,topics[2]),200)
         c2=case(topics[2]);d2=decision(reviewer_ctx,c2)
         p2="/en/complaints/"+c2["id"]+"/result"
@@ -270,6 +312,17 @@ try:
         triage_form=triage_page.locator("form.complaint-priority-form")
         assert triage_form.count()==1
         triage_form.locator('select[name="priority"]').select_option("3")
+        review_path=triage+"/review"
+        case_review_page=reviewer_ctx.new_page()
+        case_review_page.set_default_timeout(18000)
+        case_review_page.on("pageerror",lambda err:errors.append(str(err)))
+        private(case_review_page.goto(base+review_path,wait_until="networkidle"),200)
+        note_form=case_review_page.locator('form:has(input[name="intent"][value="note"])')
+        decision_form=case_review_page.locator('form:has(input[name="intent"][value="decision"])')
+        assert note_form.count()==1 and decision_form.count()==1
+        note_form.locator('textarea[name="body"]').fill("KEEP_N4_NOTE_DRAFT")
+        decision_form.locator('textarea[name="reasoning"]').fill("KEEP_N4_DECISION_DRAFT")
+        decision_form.locator('select[name="outcome"]').select_option("not-confirmed")
         private(reviewer_page.goto(base+r2,wait_until="networkidle"),200)
         review_form=reviewer_page.locator('form:has(input[name="intent"][value="resolve"])')
         assert review_form.count()==1
@@ -347,6 +400,16 @@ try:
         assert triage_form.locator('select[name="priority"]').input_value()=="3"
         assert snapshot()==before
         record("mounted-priority-form-retains-choice-and-nonce-after-late-401")
+
+        before=snapshot()
+        verify_mounted_denied_form(case_review_page,note_form,review_path,
+            {"body":"KEEP_N4_NOTE_DRAFT"},intent="note")
+        assert snapshot()==before
+        record("mounted-review-note-retains-input-and-nonce-after-late-401")
+        verify_mounted_denied_form(case_review_page,decision_form,review_path,
+            {"reasoning":"KEEP_N4_DECISION_DRAFT","outcome":"not-confirmed"},intent="decision")
+        assert snapshot()==before
+        record("mounted-review-decision-retains-input-and-nonce-after-late-401")
 
         sql("ALTER ROLE postgres IN DATABASE vico_sa04_n_browser_test SET statement_timeout='650ms'")
         try:
