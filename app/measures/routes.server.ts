@@ -1,6 +1,7 @@
 import { data, type RouterContextProvider } from "react-router";
 import { authSessionForRequest } from "../auth/request-context";
 import { authorizationForRequest } from "../authorization/request-context";
+import { AccountInactiveError, AccountMissingError } from "../../db/account-state";
 import { AuthorizationUnavailableError } from "../../db/authorization-service";
 import { requireSameOrigin } from "../forum/mutations.server";
 import { InvalidUserMeasureInputError, UserMeasureConflictError, UserMeasureNotFoundError } from "../../db/user-measures";
@@ -15,6 +16,7 @@ export function measureFailure(error: MeasureActionError, status: number) {
 }
 function mappedMeasureError(error: unknown): [MeasureActionError, number] {
   if (error instanceof Response) throw error;
+  if (error instanceof AccountInactiveError || error instanceof AccountMissingError) return ["unauthenticated",401];
   if (error instanceof InvalidUserMeasureInputError) return ["invalid",400];
   if (error instanceof UserMeasureForbiddenError || error instanceof UserMeasureRestrictedError) return ["forbidden",403];
   if (error instanceof UserMeasureNotFoundError) return ["notFound",404];
