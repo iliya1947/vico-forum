@@ -1,6 +1,18 @@
 # Admin panel — communication
 
 
+## 2026-11-15 — automatic package handoff: whole N ACTIVE after whole-M PASS
+
+- Correction to the immediately preceding status: stopping for developer `...` after a clean whole-package PASS was unnecessary.
+- The whole task and package sequence are already accepted. A clean Mira PASS at M is not a product/owner gate; therefore the coordinator should hand off the next planned package immediately.
+- Mira whole-M PASS remains unchanged on `c594932a6032066d994391ea08606bcb933956e7`.
+- **Lira ACTIVE on whole N (N1→N2→N3)** in the same cumulative Draft #334. Internal N slices are author-only decomposition; no Mira/Lev gate between them.
+- Whole-N completion → Mira whole-N coordinator review. On clean PASS the same automatic handoff rule applies to O, then P, Q, R, unless a real defect/plan conflict/developer decision gate appears.
+- No merge through these package checkpoints; one Owner merge remains after S + final whole-SA04 Mira/Lev reviews.
+
+---
+
+
 ## 2026-11-15 — Mira whole-M coordinator PASS
 
 - Reviewed cumulative Draft #334 on **stable exact head `c594932a6032066d994391ea08606bcb933956e7`**, base/current main `859ea69165f51cd997e61b1d1f30f6663f045965`; open/draft/unmerged and mergeable. Synthetic merge tree equals the implementation tree.
