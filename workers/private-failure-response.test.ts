@@ -8,11 +8,17 @@ describe("private framework 5xx response cache boundary", () => {
     "/API/ATTACHMENTS",
     "/api/%61ttachments",
     "/%61pi/ATTACHMENTS/",
+    "/api/attachments//",
+    "/api/attachments///",
+    "/API/%61TTACHMENTS//",
     "/api/attachments/file/valid-id",
     "/api/attachments/file/valid-id/",
     "/API/ATTACHMENTS/FILE/valid-id",
     "/api/attachments/%66ile/valid-id",
     "/api/%61ttachments/%66ile/valid-id/",
+    "/api/attachments/file/valid-id//",
+    "/api/attachments/file/valid-id///",
+    "/API/ATTACHMENTS/%66ILE/valid-id///",
   ] as const)(
     "privatizes unexpected GET and HEAD errors on the accepted resource alias %s", async path => {
       for (const method of ["GET", "HEAD"] as const) {
@@ -41,6 +47,9 @@ describe("private framework 5xx response cache boundary", () => {
     "/api/attachments/files/valid-id",
     "/api/attachments/file",
     "/api/attachments/file/id/extra",
+    "/api//attachments//",
+    "/api/attachments//file/valid-id//",
+    "/api/attachments/file//",
     "/api/%2Fattachments",
     "/api/%",
     "/api/%GG",
