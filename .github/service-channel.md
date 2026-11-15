@@ -1,5 +1,16 @@
 # Admin panel — communication
 
+## 2026-11-15 — SA04-N3.2 Complaint HTTP/UI late-401 form retention COMPLETE, Lira bounded STOP
+
+- **Current implementation:** cumulative [Draft #334](https://github.com/iliya1947/vico-forum/pull/334), exact `6293fa087d65c1b63868e173d6d6ca6708ab6d03`, 42 commits / 24 files, base `main=859ea69165f51cd997e61b1d1f30f6663f045965`, open/unmerged.
+- **Confirmed N3.2 defect:** an already mounted Appeal form sent POST after the user's account was deactivated. Better Auth pre-routing rejected its session; route `complaintCommandFailure` rethrew its generic Response401, causing React Router to unmount the mounted form and lose user input. Changing only the domain `AccountInactiveError` branch did not fix this missing-session path. Connected Chromium reproduced the failure; no conjectural future behavior involved.
+- **Correction:** canonical Complaint command mapper converts thrown 401 session failures to the existing private/no-store `{error:"unauthenticated"}` action result, also used for late typed AccountInactive/Missing. Existing session and permission checks, unexpected failures, domain errors, HTTP statuses and source-of-truth remain unchanged. Current Appeal participant/reviewer and manager feedback reuses existing localized `settingsSecurityUnauthenticated`; no new catalog/permission/migration/schema.
+- **Regression:** `app/complaints/sa04-n3-errors.test.ts` includes the direct lost-session response and TS union narrowing. `app/complaints/appeal-feedback.test.tsx` includes rendered 401 EN/RU/HE for both Appeal forms. Connected real Worker/Better Auth/PG17/Chromium `tests/browser/sa04-complaints/check.py` physically replays a deactivated command and verifies both mounted forms retain their draft; each explicit retry reuses the original posted nonce, with no automatic retry; no durable database changes.
+- **Exact-head SUCCESS:** [CI #43760392839](https://github.com/iliya1947/vico-forum/actions/runs/43760392839) PostgreSQL17 **997/997** and application **2359/2359**, typecheck/lint/build; [SA04-N Chromium #43760392858](https://github.com/iliya1947/vico-forum/actions/runs/43760392858) SUCCESS; [AP10 #43760392831](https://github.com/iliya1947/vico-forum/actions/runs/43760392831) SUCCESS **4/4**; [SA03 #43760392825](https://github.com/iliya1947/vico-forum/actions/runs/43760392825) SUCCESS; [SA04-M2 #43760392859](https://github.com/iliya1947/vico-forum/actions/runs/43760392859) SUCCESS.
+- **Bounded author STOP only for N3.2.** Next developer `...` activates **N3.3 whole-N connected/integration and closure review**, then separate N4 whole-N author acceptance. **No Mira handoff yet**, no merge, no O/SA05/#315/unrelated documentation/Stage6.
+
+---
+
 ## 2026-11-15 — SA04-N2 manager commands + priority settings DONE, Lira bounded STOP
 
 - **Implementation:** cumulative [Draft #334](https://github.com/iliya1947/vico-forum/pull/334), exact `e514d147fbafb72f29a319ed65ca644f0fada24e`, 21 commits / 12 paths, base/current `main=859ea69165f51cd997e61b1d1f30f6663f045965`; open/draft/unmerged. Scope is **N2 only**, N1 already accepted; no N3/O.
