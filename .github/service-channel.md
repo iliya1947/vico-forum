@@ -1,6 +1,20 @@
 # Admin panel — communication
 
 
+## 2026-11-15 — SA04-L activated / Lira ACTIVE
+
+- Developer continuation received after the accepted whole remaining-plan gate. **Active package: SA04-L only — authorization mutations.**
+- Current `main` was reverified immediately before activation: exact `6652c898067d05a7c1476377e95f50cd73937410`, identical to the accepted plan baseline; no locator/architecture drift.
+- Mira fully reread current AGENTS/PROJECT/PROJECT_STATE/ROADMAP plus the accepted L–S and whole remaining plans and applicable Authorization/Admin/Settings/Super-admin SoTs before activation.
+- Live locator refresh confirms the accepted L seam unchanged: all six writers still converge on `PostgresAuthorizationRepository.mutate`; current order is authz singleton mutex → authorization/Owner/AP-10 admission → operation → optional History. Shared native `assertActiveAccountForMutation` exists and the lifecycle gate is not yet present in that mutate path. Canonical `authorization-admin` remains the single HTTP writer for Settings/profile controls.
+- Existing focused seams remain `db/authorization-repository.test.ts`, `db/hyperdrive-authorization.test.ts`, `app/routes/authorization-admin.test.ts`, plus connected Settings/profile browser paths. This is locator refresh, not a new plan.
+- **Lira active:** create one separate Draft implementation PR from exact main, implement the whole L package, run applicable direct/native/race/HTTP/connected checks, record exact PR/head/evidence, then **AUTHOR STOP**.
+- Mira/Lev/Mark STOP during implementation. After AUTHOR STOP: Mira whole-L coordinator review; Lev only after Mira PASS on the same stable head.
+- No M+, SA05, #315, permanent docs, production/deploy or Stage6 work.
+
+---
+
+
 ## 2026-11-15 — Lev clarification reassessed / final whole-plan PASS
 
 - Lev answered the remaining SA05 review question in PR comment #6895121086; Mira independently rechecked the rationale against current `main` source and the revised plan.
