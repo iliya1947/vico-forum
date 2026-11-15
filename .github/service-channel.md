@@ -1,5 +1,15 @@
 # Admin panel — communication
 
+## 2026-11-15 — K merged / SA04-L–S full-chain planning gate
+
+- Owner merged #332. Current source-of-truth `main=6652c898067d05a7c1476377e95f50cd73937410`; SA04-K is delivered. Reviewed K implementation head was `a610ea89447744f4f3946dfc6e59b4b01d9ad65a`, with Mira and Lev whole-K PASS and 0 confirmed current-K defects.
+- Process review before opening L found a planning gap: accepted master plan #6806249892 defines L–S purposes and common AccountState/race principles, but no additional accepted comment/file provides implementation-depth plans for L, M, N, O, P, Q, R and S as one coordinated chain.
+- The missing planning depth is not a request to redesign SA-04. The accepted master remains authoritative. The gap to close before implementation is: complete current-main entrypoint/caller inventory, package dependency graph, authoritative transaction/admission seams, lock ordering, replay/no-op/idempotency/CAS behavior, cross-package/current-A–K races, HTTP/privacy/error boundaries, per-package acceptance and the final S integration matrix.
+- **Lev is active for one complete L–S technical plan.** This is a planning task only. A separate just-in-time L plan is not an acceptable substitute.
+- The plan must make the later implementation sequence bounded and executable without inventing architecture while each package is already in progress. Details genuinely dependent on a later changed `main` may be refreshed then; cross-package contracts must be decided now.
+- If current code/source-of-truth conflicts with the accepted master or the chain requires a broader architectural/product change, Lev stops and reports the conflict rather than silently expanding scope.
+- **After Lev handoff:** Mira reviews the complete chain plan. Lira/Mark stay inactive; no implementation PR exists; no SA05/#315/docs/Stage6 work.
+
 ## 2026-11-15 — SA04-K review cycle CLOSED / Owner merge gate
 
 - Draft #332 exact `a610ea89447744f4f3946dfc6e59b4b01d9ad65a` has now passed both required whole-package gates on the same stable implementation: **Mira PASS** and **Lev independent PASS**, each with **0 confirmed current-K defects**.
