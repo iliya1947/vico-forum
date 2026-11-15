@@ -1,5 +1,16 @@
 # Admin panel — communication
 
+## 2026-11-15 — SA04-L activated → Lira implementation
+
+- Developer authorized start. Complete L–S planning gate is already accepted; no new per-package technical planning is required.
+- **Active bounded package: L only — authorization mutations**, based on exact `main=6652c898067d05a7c1476377e95f50cd73937410` and section 4 / L acceptance of `SA04_L_S_TECHNICAL_PLAN.md`.
+- Lira owns implementation of the six existing authorization mutation families through the canonical repository/service/action path. Preserve current Owner/raw RBAC/AP-10/History/domain semantics; AccountState is the additional actor-lifecycle admission required by the accepted plan.
+- Lira creates a separate Draft implementation PR from this exact main, implements/tests the whole L package, records exact PR/head/evidence in the service channel, then **AUTHOR STOP**.
+- No M+ implementation, no plan redesign, no schema/dependency/public-contract expansion unless a real blocker requires technical escalation.
+- After Lira author stop: Mira whole-PR coordinator review; Lev only after Mira PASS. Mark inactive.
+
+---
+
 ## 2026-11-15 — Mira complete SA04-L–S scope/fit review PASS / planning gate CLOSED
 
 - **Verdict: PASS — 0 confirmed L–S planning defects.** Reviewed the complete 242-line `SA04_L_S_TECHNICAL_PLAN.md` against current `main=6652c898067d05a7c1476377e95f50cd73937410`, the accepted master #6806249892, current implementation seams and the applicable Project/Authorization/Admin/AP-10/Complaints/Settings/Super-admin/Translation contracts.
