@@ -1,5 +1,35 @@
 # ChatGPT-6 — personal log
 
+
+## 2026-11-15 — ACTIVE ASSIGNMENT: SA04-N whole package in cumulative Draft #334
+
+Mira whole-M review is PASS on exact `c594932a6032066d994391ea08606bcb933956e7`; there is no merge and no developer decision gate between accepted package M and already-planned package N.
+
+Continue **the same cumulative Draft PR #334** from current exact head. Implement **whole N**, including its internal N1→N2→N3 work as needed. Do not stop for Mira between N1/N2/N3.
+
+### Required result
+
+Implement accepted SA04-N complaint lifecycle closure from `SA04_L_S_TECHNICAL_PLAN.md`:
+
+- replace the existing seven-command `actorMutex` implementation with the shared same-transaction Drizzle AccountState guard;
+- add the same guard to the eighth writer, `savePrioritySettings`, before measure admission and full-map CAS;
+- close the accepted N-DEP-01 post/title lock-order dependency with the local topic dependency before post/actor, without generic retries or a new global serializer;
+- preserve all existing Complaint replay/duplicate, Case/version, evidence, quota, activity lease, appeal/decision notification, authority and History/event semantics;
+- preserve active-command notifications to retained inactive recipients and do not turn recipient lifecycle into actor admission;
+- preserve current private HTTP behavior, mapping lifecycle/unavailable/unexpected errors through the existing complaint route boundaries.
+
+Current locators reverified on cumulative head:
+- `db/complaints-repository.ts`: `actorMutex`, seven existing guarded commands, `savePrioritySettings`, post/title `submit` lock order;
+- `db/complaints-service.ts`: canonical service entrypoints;
+- `db/hyperdrive-complaints.ts`, `db/hyperdrive-complaint-queue.ts`, `db/hyperdrive-complaint-review.ts`, `db/hyperdrive-complaint-appeal.ts`: existing adapters/availability seam;
+- complaint routes/tests/browser harnesses remain the canonical HTTP/connected paths.
+
+Done when the accepted **whole-N** matrix is evidenced on one stable cumulative head: all eight direct commands, activity start/renew/end, exact/lifetime replay/duplicates, note-after-resolution, initial Decision, eligible Appeal and reviewer resolve; state-first/writer-first for each authoritative boundary; denied attempts leave target/Case/evidence/report/event/lease/notification/quota facts unchanged; save-priority CAS rollback; native N-DEP-01 closure and N↔J/content/locale/evidence-cleanup interleavings; genuine session report/triage/review/result/appeal controls preserve input/nonce, private401/503/unexpected500 and no silent retry.
+
+After the **entire N package** is complete on one stable exact head: **AUTHOR CHECKPOINT STOP → Mira whole-N coordinator review**. Do not merge #334 and do not start O before whole-N PASS.
+
+---
+
 ## 2026-11-15 — SA04-M2.3 genuine connected acceptance PASS; whole-M AUTHOR STOP
 
 Activated M2.3 after M1/M2.1/M2.2 bounded author checkpoints, in single cumulative Draft [#334](https://github.com/iliya1947/vico-forum/pull/334). Added only `tests/browser/sa04-measures/check.py` (302 lines) and `.github/workflows/sa04-m2-measures-browser.yml` (116 lines) on existing source. One test-only correction after first dedicated test reached genuine 500/503/late401: inappropriate `"ok"` substring check in arbitrary response body. Corrected precise `"ok":true` marker, did not change production code. Final dedicated [SA04-M2 #43749106584](https://github.com/iliya1947/vico-forum/actions/runs/43749106584) SUCCESS, 9 recorded actual Worker + Better Auth Owner/subject sessions + disposable PostgreSQL17 + Chromium checkpoints, genuine SQL42P01 protected500, real server statement timeout503, both actor-state/authz-mutex late401 races, all five 401 denied commands, unchanged raw measure/restriction/appeal/History, mounted form one POST no retry, zero page errors/external requests.
