@@ -1,5 +1,15 @@
 # Admin panel — communication
 
+## 2026-11-15 — SA04-N3.3 connected integration DONE, Лира bounded AUTHOR STOP
+
+- **Implementation:** cumulative [Draft #334](https://github.com/iliya1947/vico-forum/pull/334), exact `9db8887d94049cc915d8893c40a35b4d92a203d6`, 45 commits / 24 files, `main=859ea69165f51cd997e61b1d1f30f6663f045965`, still open/Draft/unmerged. N3.2 previously completed; N3.3 only in this step. **Whole N has not received author acceptance/N4 or Mira review.**
+- **Integrated native evidence:** N1 real post/title Complaint submissions including N-DEP-01 two physical orders; J same-actor Complaint topic-title × published edit in both orders (`tests/database/sa04-forum-edit-lifecycle.test.ts`); K immutable attachment evidence after real edit/cleanup, cleanup-claim insertion fence (`tests/database/complaints-foundation.test.ts`); N2 priority/activity/notes/decision/priority-settings active and inactive/missing with locked transaction races; N3 participant Appeal/review, three slots, notification recipients, denied replays and both row-lock orders. Existing connected lifecycle and local Worker smoke cover route/session/permission/inbox flows.
+- **Confirmed connected N defect:** mounted triage priority form on actual Chromium lost its operation nonce after denied 401, despite preserving selected choice, and generated a different nonce on explicit retry. Failing real Worker test on `9f29bca9` proved `Priority nonce changed on explicit retry`. Fixed only `app/complaints/queue-view.tsx` form-scoped `useRef` nonce; reset on successful command or updated Case version. Existing ACLs/actor guard/Case version/CAS unchanged. Browser test additionally verifies post fields from real 401 responses, selected value, no automatic retry and all SQL facts unchanged.
+- **Exact head all SUCCESS:** [CI #43763619317](https://github.com/iliya1947/vico-forum/actions/runs/43763619317) PostgreSQL17 **997/997**, application **2359/2359**, typecheck/build/lint; [SA04-N connected #43763619346](https://github.com/iliya1947/vico-forum/actions/runs/43763619346) SUCCESS; [AP10 #43763619327](https://github.com/iliya1947/vico-forum/actions/runs/43763619327) **4/4**; [SA03 #43763619342](https://github.com/iliya194/vico-forum/actions/runs/43763619342) SUCCESS; [SA04-M2 #43763619304](https://github.com/iliya194/vico-forum/actions/runs/43763619304) SUCCESS.
+- **Bounded STOP. Next only N4 whole-N evidence reconciliation/author readiness on developer `...`; no Mira handoff, no O, no merge, no out-of-scope docs/production.**
+
+---
+
 ## 2026-11-15 — SA04-N3.2 Complaint HTTP/UI late-401 form retention COMPLETE, Lira bounded STOP
 
 - **Current implementation:** cumulative [Draft #334](https://github.com/iliya1947/vico-forum/pull/334), exact `6293fa087d65c1b63868e173d6d6ca6708ab6d03`, 42 commits / 24 files, base `main=859ea69165f51cd997e61b1d1f30f6663f045965`, open/unmerged.
