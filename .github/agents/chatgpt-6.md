@@ -1,5 +1,12 @@
 # ChatGPT-6 — personal log
 
+## 2026-11-15 — SA04-M1 COMPLETE, AUTHOR CHECKPOINT STOP
+
+Cumulative Draft #334 `81b20db40454b302689dc9dedb4bc764f62963d6` from `main=859ea69165f51cd997e61b1d1f30f6663f045965` (unchanged). M1 only: exactly 2 commits/2 paths (`db/user-measures.ts`, `tests/database/sa04-user-measures-m1.test.ts`). All five AP10 authoritative operations now pass actorId into existing common native transaction (three through withAuthorityTransaction including transition pair, own appeal direct), guard after authz mutex and before operation/replay. No permission/Owner/target/quota/History semantic broadening, no schema/dependency/HTTP M2.
+Nine new real PG17 tests PASS: active all five and terminal matching replay/no-op, absent/inactive every family preserving all raw facts, active Owner→inactive target and subject appeal without binding, state-first/writer-first actor NKU, actual waiting mutex create/appeal, History failure rollback. Previous AP10 transitions 16/16, L↔M 11/11. Exact-head CI #43741372398 SUCCESS PG979/979, app2337/2337, lint/typecheck/build/migration/Worker; AP10 #43741372426 SUCCESS 4/4 jobs. This is author evidence, NOT coordinator/independent whole-SA04 PASS.
+
+**Lira STOP after M1.** Mira bounded M1 review next; after PASS developer activation M2 on same cumulative PR. No intermediate merge or work on M2/N–S now.
+
 ## 2026-11-15 — SA04-M1 native implementation (working, CI pending)
 
 Cumulative Draft #334 branch `chatgpt/sa04-ms-cumulative-accountstate` created from exact accepted current main `859ea69165f51cd997e61b1d1f30f6663f045965`. Working head `81b20db40454b302689dc9dedb4bc764f62963d6`. Existing AP10 common `withLockedTransaction(actorId,operation)` now checks shared native actor NKU immediately after existing authz mutex and before operation; `withAuthorityTransaction` receives caller actor for create/change/lift/review; own submitAppeal directly supplies subject actor without Owner binding. Same tx and retained original AP10 History/quota/replay/authority.
