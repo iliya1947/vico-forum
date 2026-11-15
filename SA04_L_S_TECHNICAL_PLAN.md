@@ -207,7 +207,9 @@ S AUTHOR STOP → Mira whole-PR coordinator review → independent Lev same-head
 
 ## 11. Исполнимая bounded decomposition и handoff gates
 
-Сохраняется фактический пакетный маршрут J/K: отдельный cumulative Draft от refreshed main для каждого meaningful L/M/N/O/P/Q/R; author checkpoints ниже находятся внутри своего package PR. После author whole-package STOP — Mira whole-PR, затем Lev independent same-head, Owner merge и refresh. S соединяет принятые пакеты на финальном stable state. Это детализация delivery общего SA04; ни один пункт не активирует Лиру и не разрешает partial deactivate control. Mira принимает гранулярность **до** назначения.
+L/M/N/O/P/Q/R/S — bounded-срезы **одного верхнеуровневого пакета SA04**, а не самостоятельные merge-units. Author checkpoints ниже сохраняются и могут проходить bounded-проверку на стабильном head, но между L/M/N/O/P/Q/R **нет Owner merge и refresh-main gate**. Один cumulative Draft implementation PR должен накапливать пакет до S; только после S AUTHOR STOP выполняются финальные Mira whole-SA04 review → Lev independent same-head review → Owner merge.
+
+Историческое исключение уже произошло: L был отдельно merged в #333 до исправления этой delivery-boundary. Его не откатываем только ради процессной ошибки; он становится частью текущего main-базиса. Для оставшегося SA04 создаётся один cumulative Draft **M→N→O→P→Q→R→S**, который не merge до полного S closure. Это исправляет только delivery/merge boundary и не меняет принятые L–S технические контракты.
 
 | Slice | Один проверяемый результат / обязательное evidence |
 |---|---|
@@ -226,7 +228,7 @@ S AUTHOR STOP → Mira whole-PR coordinator review → independent Lev same-head
 | **S1** | Complete direct/cross-writer A–R inventory coverage и retained projection/privacy regression closure на принятом cumulative state. |
 | **S2** | Real Worker/BA/PG/local-R2/Chromium connected matrix, all applicable exact-head gates, factual evidence packet. AUTHOR STOP → reviews/Owner; отдельный docs closeout далее. |
 
-После каждого slice только Mira решает следующий уже принятый шаг. Автор не меняет cross-package contract по мере работы. Изменённый main между packages требует сверки inventory/locks/callers; обнаруженная новая зависимость возвращается Лёве до расширения. При изменении нескольких TSX components применяется соответствующий React quality checklist; UI refactor не назначен.
+После каждого slice только Mira решает следующий уже принятый шаг. Автор не меняет cross-package contract по мере работы. Внутри одного SA04 cumulative PR следующий slice продолжает тот же implementation head lineage без merge в main. Если main изменился внешне между slices, выполняется сверка inventory/locks/callers; обнаруженная новая зависимость возвращается Лёве до расширения. При изменении нескольких TSX components применяется соответствующий React quality checklist; UI refactor не назначен.
 
 ## 12. Проверенность, ограничения и передача
 
