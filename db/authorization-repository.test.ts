@@ -69,6 +69,9 @@ function mutationPool(insertError: unknown) {
   const query = vi.fn(async (sql: string) => {
     if (sql === "begin" || sql === "rollback") return { rows: [] };
     if (sql.includes("select id from authz_mutation_lock")) return { rows: [{ id: 1 }] };
+    if (sql.includes('from "user"') && sql.includes("for no key update")) {
+      return { rows: [{ deactivated_at: null, deactivated_by_user_id: null, retain_at_least_until: null }] };
+    }
     if (sql.startsWith("select case")) return { rows: [{ allowed: true }] };
     if (sql.includes("from user_measures as measure")) return { rows: [{ restricted: false }] };
     if (sql.startsWith("insert into authz_roles")) throw insertError;
@@ -215,11 +218,12 @@ describe("PostgresAuthorizationRepository mutations", () => {
       await expect(mutate()).rejects.toBeInstanceOf(AuthorizationForbiddenError);
     }
     const statements = query.mock.calls.map(([sql]) => sql);
-    expect(statements).toHaveLength(attempts.length * 4);
+    expect(statements).toHaveLength(attempts.length * 5);
     for (let index = 0; index < attempts.length; index++) {
-      expect(statements.slice(index * 4, index * 4 + 4)).toEqual([
+      expect(statements.slice(index * 5, index * 5 + 5)).toEqual([
         "begin",
         expect.stringContaining("select id from authz_mutation_lock"),
+        expect.stringContaining("for no key update"),
         expect.stringContaining("select case"),
         "rollback",
       ]);
@@ -237,6 +241,7 @@ describe("PostgresAuthorizationRepository mutations", () => {
       expect(query.mock.calls.map(([sql]) => sql)).toEqual([
         "begin",
         expect.stringContaining("select id from authz_mutation_lock"),
+        expect.stringContaining("for no key update"),
         expect.stringContaining("select case"),
         "rollback",
       ]);
