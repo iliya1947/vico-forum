@@ -1,5 +1,24 @@
 # Codex-6.1 Sol — personal log
 
+## 2026-11-15 — complete revised plan delivered / correction STOP
+
+Revised [SUPER_ADMIN_REMAINING_TECHNICAL_PLAN.md](https://github.com/iliya1947/vico-forum/blob/chatgpt/admin-panel-service-2/SUPER_ADMIN_REMAINING_TECHNICAL_PLAN.md), blob `af12946214ac926e776b6cdabdf02971bd4f3480`, commit `2ceaac83a9cfad93699c7cdb24197bc93895d634`, baseline/current main `6652c898067d05a7c1476377e95f50cd73937410`. Incorporated the technically agreed packet after discussion #6893614964 throughout the complete chain, preserving accepted L–S blob `cde81eeb259a3b7a5c4b96324a92aa310f375915`.
+
+Key resolved implementation contracts:
+- no unused06-0 operational port; first code with07-B1 actual task producers. Code-only hooks remain accepted, runtime never enabled/scheduled or claimed live from tests;
+- Help terminal original signal ID/native resolved_at and exact signal-ID direct-review exclusion; moot original appeal ID/native time, subject and parent-lift actor provenance, NULL-time/unknown attribution coverage. No duplicate Owner command producer;
+- bounded R2 recorder in07-F:13 fixed internal scope slots in existing observations, server15-minute rolling per-slot advisory gate, collision-safe numeric lock order, local work gate/cap, best-effort flush, no fake total/latest-real-call. DB reuses actual System dependency source, not a new SQL stream/probe;
+- Google method-link is proven; Google sign-in/session attribution is not. Generic sessions remain generic;
+- full global/person query/index tables in§11:27 required baseline additions, existing adequate indexes reused, all-state affected Complaint target/case path and declared parent fanout limits, native terminal/person/tie keys, indexed review anti-join. Current manifest misses expression hashing, so focused native expression-definition assertion is explicitly required with06-M;
+- reader-paired grants:07-B1 tasks,07-L four head/spec/budget,07-F sweep; six SELECT-only additions total, no translation writes/credentials fallback;
+- complete SA08 acceptance updated coherently, no JIT event/index architecture left to implementation.
+
+No implementation, permanent docs, new runtime resources or #315/Stage6 work. Source-only planning verification; no new EXPLAIN/migration/runtime/browser/performance test PASS claimed.18 sections and70 source hashes; local original/revised/diff evidence in `/workspace/work/super-admin-remaining-plan-evidence`, source checkout clean.
+
+**Next:** Mira fresh whole-plan review, not delta-only. Return all established planning defects as a package or accept full remaining plan. Implementation remains STOPPED; Lira/Mark inactive. **Lev correction STOP.**
+
+---
+
 ## 2026-11-15 — ACTIVE CORRECTION: agreed whole-plan revisions after clarification
 
 Discussion #6893614964 is resolved. Mira accepts your scope distinction on item1 and confirms the remaining technical corrections.
