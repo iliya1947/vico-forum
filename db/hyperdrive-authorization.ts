@@ -1,4 +1,5 @@
 import type { Pool } from "pg";
+import { AccountStateUnavailableError } from "./account-state";
 import { isPostgresAvailabilityFailure } from "../app/localization/persistent-registry";
 import {
   AuthorizationService,
@@ -93,6 +94,7 @@ function isAuthorizationAvailabilityFailure(error: unknown): boolean {
   while (current && (typeof current === "object" || typeof current === "function") && !seen.has(current)) {
     seen.add(current);
     if (
+      current instanceof AccountStateUnavailableError ||
       isPostgresAvailabilityFailure(current) ||
       isPostgresConnectionTimeout(current) ||
       isPostgresQueryTimeout(current)

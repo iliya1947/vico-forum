@@ -8,6 +8,7 @@ import { requireSameOrigin, requiredFormText } from "../forum/mutations.server";
 import { AuthorizationForbiddenError, AuthorizationNotFoundError, AuthorizationRoleAssignedError, AuthorizationRoleSlugConflictError } from "../../db/authorization-repository";
 import { AuthorizationUnavailableError, InvalidAuthorizationInputError } from "../../db/authorization-service";
 import { UserMeasureRestrictedError } from "../../db/user-measure-policy";
+import { AccountInactiveError, AccountMissingError } from "../../db/account-state";
 import {
   AuthorizationAdminView,
   type AuthorizationFailure,
@@ -72,6 +73,10 @@ export async function action({ request, context }: { request: Request; context: 
     else throw new InvalidAuthorizationInputError();
     return { ok: true as const };
   } catch (error) {
+    if (error instanceof AccountInactiveError || error instanceof AccountMissingError) {
+      throw new Response("Unauthenticated", { status: 401,
+        headers: { "Cache-Control": "private, no-store" } });
+    }
     const mapped: [Failure, number] | undefined =
       error instanceof InvalidAuthorizationInputError || error instanceof AuthorizationRoleSlugConflictError ? ["invalid", 400]
       : error instanceof AuthorizationForbiddenError || error instanceof UserMeasureRestrictedError ? ["forbidden", 403]
