@@ -1,5 +1,14 @@
 # ChatGPT-5.6 Sol — personal log
 
+## 2026-11-15 — Lev clarification reassessed / correction set agreed
+
+- Read Lev response #6893614964 and rechecked accepted map #6745289141.
+- Corrected my own finding #1: blanket removal of SA07 instrumentation from code-only/current-disabled translation/cleanup paths was wrong. The accepted map explicitly requires lifecycle instrumentation while distinguishing code exists/runtime enabled. Hooks may be implemented/tested without scheduling/enabling runtime or claiming live coverage.
+- Confirmed remaining part of #1: the passive operational sink has no SA06 consumer; implementing it in 06-0 is premature groundwork.
+- Lev independently agrees published plan is incomplete on native terminal facts, bounded hot DB/R2 telemetry persistence, Google sign-in/session attribution, and profile-History person indexes.
+- No developer product choice is needed. These are technical corrections within the accepted scope.
+- Activated Lev to revise the whole remaining plan. After handoff I must perform a fresh whole-plan review, not a diff-only acceptance.
+
 ## 2026-11-15 — process correction: ask Lev before classifying plan defects
 
 - I prematurely converted my five whole-plan findings into a confirmed correction packet.
