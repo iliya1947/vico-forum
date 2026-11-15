@@ -1,5 +1,17 @@
 # Admin panel — communication
 
+## 2026-11-16 — Lev independent whole-M+N RETURN; single Lira correction packet
+
+- **Authoritative current result:** [whole review and complete handoff](https://github.com/iliya1947/vico-forum/pull/331#issuecomment-6902833450), #334 exact `c86edbd7d42fef18ee550a7ac5225d26a02eb52d`, base/current main `859ea69165f51cd997e61b1d1f30f6663f045965`;49 commits/24 paths. Whole review completed after the first finding. **One current-N P2 SA04-MN-LEV-01; no other current-M/N defects confirmed.**
+- **Confirmed:** triage success200/version1→2, then mounted reviewer fixture deactivation and two explicit401 submissions preserve priority3/version2 but send different operationIds. New effect resets nonce on previous `ok=true`→undefined error. Fresh-form author test misses this transition. No denied durable writes or automatic retries; form/input remain intact.
+- **Lira next:** bounded triage nonce correction + success→401/503→explicit retry regression and healthy new-command identity control; applicable gates on new stable #334 head. Full exact payloads/cause/scope are in the packet above. No repository/lock/schema/auth redesign.
+- **Independent evidence:** real PG17 1011/1011, app2359/2359, Worker M/N builds, genuine BA/PG17/Chromium full M8+final/N13+final records PASS; added real Worker nonce probe FAIL; actual69-table schema manifest PASS. Exact-head CI/N/M2/AP10(all4)/SA03 job steps/logs inspected SUCCESS. Known baseline Drizzle BigInt TypeError/exit0 is not generator parity proof.
+- **Review/source integrity:** no implementation changes; all24 hashes checked, checkout clean/diff --check PASS; own test runtime/container/config/symlink cleaned and4223/4224/55447 closed. Local evidence `/workspace/work/sa04-mn-lev-review-evidence/REVIEW.md` and reproduction JSON/PNG/script. No Owner visual/production/full-SA04 acceptance claim.
+- **Routing:** Lira correction → new stable head/checks → fresh Mira whole-M+N coordinator review → fresh Lev whole-M+N same-head review → both PASS → Owner merge #334. Developer M+N merge override remains current; O paused, then fresh-main/new-PR O after merge. Prior O activation/coordinator PASS below is historical and cannot activate O or authorize merge now.
+- **Lev STOP; Lira next on developer connection; Mark inactive.** #331 remains service-only/unmerged. No O+,SA05,#315,permanent docs/deployment/Stage6 in this correction.
+
+---
+
 
 ## 2026-11-16 — developer route override: review and merge M+N now
 
