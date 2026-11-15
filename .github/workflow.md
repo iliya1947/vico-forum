@@ -9,8 +9,8 @@
 - **Evidence checked:** all 8 changed paths; production transaction/error mapping; native PostgreSQL race/replay/quota/interleaving coverage; actual Worker+Better Auth+PG17+Chromium connected acceptance; CI 979/979 native and 2347/2347 app; synthetic merge tree equals implementation tree.
 - **Known CI qualification:** unchanged Drizzle 0.31.10 generator BigInt TypeError/exit0 means that single generated-drift step is not substantive parity evidence. M has no schema/migration/dependency delta; real 69-table production manifest parity is green.
 - **Merge boundary:** no merge after M. Same cumulative #334 continues through N→O→P→Q→R→S.
-- **Current gate:** Mira review complete / STOP. Await developer continuation before activating N.
-- **Next package when continued:** Lira implements whole **N (N1→N2→N3)** in the same Draft #334; no Mira gate between N1/N2/N3.
+- **Current gate:** whole-M PASS completed; **N ACTIVE** immediately by the preaccepted workflow. No developer decision is required between package PASS and the next already-planned package.
+- **Lira:** ACTIVE on whole **N (N1→N2→N3)** in the same cumulative Draft #334; no Mira gate between N1/N2/N3.
 - **Lev/Mark:** inactive; Lev only on genuine technical escalation or final whole-SA04 independent review after S.
 - **Final SA04 gate:** S AUTHOR STOP → Mira whole-SA04 coordinator review → Lev independent same-head whole-SA04 review → Owner merge once.
-- **Boundary:** no N implementation until developer continuation; no SA05, #315 remediation, permanent docs, production/deployment or Stage6.
+- **Boundary:** no O implementation before whole-N PASS; no SA05, #315 remediation, permanent docs, production/deployment or Stage6.
