@@ -77,9 +77,7 @@ function pauseQuery(client: Client, matches: (query: string) => boolean) {
   }) as typeof client.query;
   return { observed, resume: release, restore: () => { client.query = original; } };
 }
-async function waitForBlock(waiter: Client, blocker: Client) {
-  const w = (await waiter.query<{ pid: number }>("select pg_backend_pid() as pid")).rows[0]!.pid;
-  const b = (await blocker.query<{ pid: number }>("select pg_backend_pid() as pid")).rows[0]!.pid;
+async function waitForBlock(w: number, b: number) {
   for (let attempt = 0; attempt < 200; attempt++) {
     const rows = await fixture.query<{ pids: number[] }>("select pg_blocking_pids($1) as pids", [w]);
     if (rows.rows[0]?.pids.includes(b)) return;
@@ -175,6 +173,8 @@ describe("SA04-N1 native Complaint submit actor admission and content dependenci
       const postClient = await client(), titleClient = await client();
       const first = order === "post-first" ? postClient : titleClient;
       const second = order === "post-first" ? titleClient : postClient;
+      const firstPid = (await first.query<{ pid: number }>("select pg_backend_pid() as pid")).rows[0]!.pid;
+      const secondPid = (await second.query<{ pid: number }>("select pg_backend_pid() as pid")).rows[0]!.pid;
       const pause = pauseQuery(first, query => /from "user"/i.test(query) && /for no key update/i.test(query));
       let firstOp: ReturnType<DrizzleComplaintsRepository["submit"]> | undefined;
       let secondOp: ReturnType<DrizzleComplaintsRepository["submit"]> | undefined;
@@ -182,7 +182,7 @@ describe("SA04-N1 native Complaint submit actor admission and content dependenci
         firstOp = repo(first).submit(actor, report(order === "post-first" ? target.post : target.title));
         await pause.observed;
         secondOp = repo(second).submit(actor, report(order === "post-first" ? target.title : target.post));
-        await waitForBlock(second, first);
+        await waitForBlock(secondPid, firstPid);
         pause.resume();
         const [a, b] = await Promise.all([firstOp, secondOp]);
         expect(a.complaintId).not.toBe(b.complaintId);
