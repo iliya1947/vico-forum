@@ -1,5 +1,15 @@
 # Admin panel — communication
 
+## 2026-11-15 — SA04-N4.2 native PostgreSQL17 contention evidence PASS, Лира bounded STOP
+
+- **Implementation:** cumulative [Draft #334](https://github.com/iliya1947/vico-forum/pull/334) exact `c86edbd7d42fef18ee550a7ac5225d26a02eb52d`, 49 commits / 24 files, base/main `859ea69165f51cd997e61b1d1f30f6663f045965`, open/Draft/unmerged; **only native tests modified**, no production code.
+- **N2 native coverage closed:** `tests/database/sa04-complaints-n2.test.ts` now tests real state-first and writer-first actor locks for **each** remaining N2 Case writer: `changePriority`, `activity(true)`, `activity(false)`, `addNote`, `decide` — 10 new cases. Each state-first waits on the actually held PostgreSQL row lock via `pg_blocking_pids`, then rejects inactive account without new Complaint/notification facts; each writer-first withholds COMMIT, proves deactivation UPDATE cannot bypass held actor lock, commits original operation, then rejects retry after deactivation with facts unchanged. Existing priority-settings save tests already cover both orders.
+- **N↔J locale correction closed:** `tests/database/sa04-complaints-n1.test.ts` now includes 4 real native races: post/title Complaint versus J `revisePostBody` / `reviseTopicTitle` source-locale correction, each in both orders with `pg_blocking_pids`. Locale-first makes fresh old-revision report conflict, preserving prior Complaint facts. Complaint-first commits old immutable evidence and subsequent locale correction advances current revision without retargeting it. Existing independent J edit and K evidence/cleanup fence tests retained.
+- **Exact-head all SUCCESS:** [CI #43768050688](https://github.com/iliya194/vico-forum/actions/runs/43768050688) PostgreSQL17 1011/1011 (N2 15/15; N1 9/9), application 2359/2359, lint/typecheck/build and Worker smoke; [SA04-N Chromium #43768050624](https://github.com/iliya194/vico-forum/actions/runs/43768050624), [AP10 #43768050636](https://github.com/iliya194/vico-forum/actions/runs/43768050636) 4/4, [SA03 #43768050586](https://github.com/iliya194/vico-forum/actions/runs/43768050586), [SA04-M2 #43768050605](https://github.com/iliya194/vico-forum/actions/runs/43768050605).
+- **N4.2 author STOP.** No confirmed production defect in N4.2. Next **N4.3 author whole-N readiness evidence reconciliation** only on separate developer `...`; no executor self-review, Mira review, O, merge, deploy or unrelated docs.
+
+---
+
 ## 2026-11-15 — SA04-N4.1 real mounted-forms late-401 connected coverage PASS / bounded STOP
 
 - **Implementation:** cumulative [Draft #334](https://github.com/iliya1947/vico-forum/pull/334), exact `093be4c8ebe9dbb99b5df28b8fb557bfbf90e820`, 47 commits / 24 files, base/current main `859ea69165f51cd997e61b1d1f30f6663f045965`, open/draft/unmerged.
