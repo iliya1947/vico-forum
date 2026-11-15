@@ -1,5 +1,49 @@
 # Admin panel — communication
 
+## 2026-11-15 — Mira whole remaining-plan RETURN → Lev correction packet
+
+Baseline/current main: `6652c898067d05a7c1476377e95f50cd73937410`. Mira reviewed the complete `SUPER_ADMIN_REMAINING_TECHNICAL_PLAN.md` as one chain through SA08. **Verdict: RETURN — 5 confirmed planning gaps.** SA05 command/race design and SA08 core Overview/partial-failure/final acceptance composition otherwise fit the accepted product map. Existing accepted L–S subplan remains valid.
+
+### Correction packet
+
+1. **Remove future-only groundwork from earlier slices.**
+   - `06-0` must not implement the passive operational sink or catalog/runtime plumbing whose first real current consumer does not exist in SA06.
+   - Current main has no runtime invocation outside tests for `UiTranslationTaskExecutor`, `ContentTopicTitleTaskExecutor`, `ContentPostBodyTaskExecutor`, `TranslationTaskReconciler`; production generation runtime is disabled. `ForumAttachmentCleanup` likewise has no normal runtime/scheduler entrypoint.
+   - Do not instrument those code-only/not-wired paths solely for future runtime. Monitoring may truthfully expose code-available/runtime-not-wired state and persisted current data. Add instrumentation only where an actual current execution path exists. Introduce the operational sink at its first justified current producer, not as generic groundwork.
+
+2. **Complete SA06 native terminal History facts.**
+   - Current plan maps Help/measure native creation facts but loses exact terminal transitions already persisted outside Admin History:
+     - Help signal `withdrawn`;
+     - collateral Help signals becoming `superseded`;
+     - AP-10 pending appeal becoming `moot` during measure lift.
+   - Define truthful normalized source identities/timestamps/actor-target attribution for these retained native terminal facts without duplicating existing Admin History command facts or reconstructing history from current mutable state.
+   - Add the required chronological/person keyset indexes for the chosen terminal branches (for example resolved-time paths) in the actual reader slices.
+
+3. **Finish the persistence model for hot-path DB/R2 adapter telemetry.**
+   - The plan currently requires actual DB/R2 outcomes and last-known success/failure while also forbidding an event per hot read and referring to “coalesced summaries”, but current persistence has no generic coalescing store: `owner_events` is append-only, `owner_monitor_observations` is sampled state, and mutable coalescing is auth/access-specific.
+   - Decide before implementation which adapter outcomes are exact events, which are sampled/coalesced observations/current state, their bounds/time gates/identity/coverage semantics, and where they persist. Do not leave this choice to SA07 implementation and do not add an unbounded journal by accident.
+
+4. **Resolve Integrations/auth provider attribution against real current sources.**
+   - Current retained auth sources do not prove Google-attributed sign-in/session outcomes: `auth.methodLinked` carries method, `auth.sessionCreated` does not; attempt telemetry has generic sign-in and current HTTP mapping does not retain Google callback/provider attribution.
+   - Either narrow the monitor to facts the current sources can truthfully prove (configuration, Google method-link, generic auth/session outcomes) or specify a concrete trusted provider-attribution producer with identity/dedup/privacy/failure semantics. No inferred Google success from secret presence/session creation.
+
+5. **Close the SA08/profile-History person-index DDL gap.**
+   - The plan says new profile History branches push person predicates into each source and rely on current actor/recipient/resource indexes, but current schema lacks suitable person-prefix chronological indexes for several promised sources:
+     - topic-title/post revisions by `author_id`;
+     - Complaint events by actor and affected-user path through Complaint target;
+     - duplicate appeals by appellant;
+     - measure appeals by subject;
+     - any newly accepted terminal branch by its real resolver/subject where profile attribution is promised.
+   - Reconcile the exact profile source map with actual indexes. Add only the indexes required by delivered readers and attach them to the slice that introduces each reader. Do not defer this as SA08 performance cleanup or rely on full retained-source scans behind a hard page LIMIT.
+
+### Required revised-plan result
+
+The revised plan must still cover the full chain `SA04-L–S → SA05 → SA06 → SA07 → SA08`, incorporate these corrections coherently into dependency/slice/index/source/acceptance sections, and leave later bounded implementation with locator refresh only — no unresolved event-storage, provider-attribution, terminal-history or profile-index architecture.
+
+Planning only. No implementation PR/code. After revision: **Lev STOP → Mira fresh whole-plan review**.
+
+---
+
 ## 2026-11-15 — complete remaining Super-admin technical plan delivered / Lev STOP → Mira
 
 - Deliverable: [SUPER_ADMIN_REMAINING_TECHNICAL_PLAN.md](https://github.com/iliya1947/vico-forum/blob/chatgpt/admin-panel-service-2/SUPER_ADMIN_REMAINING_TECHNICAL_PLAN.md), publication commit `937eaca9bc3c85080aceaee7bdef94cee757534f`; baseline/current main `6652c898067d05a7c1476377e95f50cd73937410`.
