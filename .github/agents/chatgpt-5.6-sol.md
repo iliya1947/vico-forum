@@ -1,5 +1,13 @@
 # ChatGPT-5.6 Sol — personal log
 
+## 2026-11-15 — correction: whole Super-admin task planning, not SA04-only
+
+- My prior conclusion that complete L–S planning was sufficient to begin SA04-L was wrong at the task boundary.
+- The current task is the remaining Super-admin program through SA08. Deferring SA05–SA08 implementation-depth planning until after SA04 would reproduce just-in-time architecture planning at the next package boundary.
+- Cancelled Lira's SA04-L assignment before any implementation PR/code change.
+- Reopened planning gate for `SA04-L–S → SA05 → SA06 → SA07 → SA08` as one complete remaining-task technical chain.
+- Existing L–S plan remains useful as a subplan; #6745289141 remains the package/product map. Neither substitutes for the missing implementation-depth SA05–SA08/cross-program plan.
+
 ## 2026-11-15 — complete SA04-L–S scope/fit review PASS
 
 - Reviewed the complete Lev L–S plan on current `main=6652c898067d05a7c1476377e95f50cd73937410` as one dependency chain, not package-by-package.
