@@ -26,7 +26,7 @@ Accepted master technical plan: predecessor #251 comment **#6806249892**.
 - **A–H:** account-state storage + neutral public identity/projection foundation — delivered in current main.
 - **I:** Better Auth active-account closure — delivered in current main.
 - **J:** Forum authoritative actor writes — **delivered/merged by PR #330**, merge commit `398dae18d5ca7c3fc6dd84fd93a29d7c381ba366`; Mira cumulative whole-J PASS + Lev independent whole-J PASS on implementation head `800df2a56c4853a0c261f4cdb1b9969efe5c4b3e`.
-- **K:** attachment upload/draft/finalization admission — cumulative Draft #332 exact `a610ea89447744f4f3946dfc6e59b4b01d9ad65a`; **Mira fresh cumulative whole-K PASS, 0 confirmed current-K defects; Lev independent whole-K review active**. Not merged.
+- **K:** attachment upload/draft/finalization admission — cumulative Draft #332 exact `a610ea89447744f4f3946dfc6e59b4b01d9ad65a`; **Mira fresh cumulative whole-K PASS + Lev independent whole-K PASS, 0 confirmed current-K defects**, both on that exact head; [Lev report #6891261025](https://github.com/iliya1947/vico-forum/pull/331#issuecomment-6891261025). SA04-K-LEV-01 CLOSED. Next Mira closeout / Owner merge decision; not merged.
 - **L:** authorization mutations.
 - **M:** AP-10 mutations/appeals.
 - **N:** Complaints mutation/participation.
@@ -42,9 +42,9 @@ Accepted master technical plan: predecessor #251 comment **#6806249892**.
 
 Draft #332 exact `a610ea89447744f4f3946dfc6e59b4b01d9ad65a` completed a fresh cumulative Mira review after the repeated-trailing-slash correction. **Coordinator verdict: PASS — 0 confirmed current-K defects.** The review covered the full K package, not only the bounded correction, and independently checked exact-head application/PG/connected evidence.
 
-SA04-K is **not yet independently closed or merge-ready**. Lev now reviews the same stable exact head. If Lev PASS, the next gate is Mira closeout → Owner merge decision. If Lev RETURN, findings first return to Mira for current-K verification and the standard correction/re-review cycle.
+Lev completed independent cumulative whole-K review on the same exact head: **PASS — 0 confirmed current-K defects; SA04-K-LEV-01 CLOSED**, [#6891261025](https://github.com/iliya1947/vico-forum/pull/331#issuecomment-6891261025). Original extended actual HTTP probe now16/16 private/no-store; new local50native/133app/33connected PASS. **Next Mira coordinator closeout → Owner merge decision.** No agent merge; L waits for merge/current-main refresh.
 
-Evidence note: the unchanged CI schema-parity step is formally green but its Drizzle generate command logs a BigInt TypeError; that step is not cited as substantive schema-parity proof. K contains no schema/migration/dependency change.
+Evidence note: the unchanged CI schema-parity step is formally green but its Drizzle generate command logs a BigInt TypeError/exit0. Lev independently reproduced it on identical main/head schema/config/migration/dependency inputs; that step is not substantive schema-parity proof. This pre-existing CI limitation is retained in the closeout; K contains no schema/migration/dependency/CI change and no current-K defect was established.
 
 
 **Goal:** close authoritative AccountState admission for actor-owned attachment lifecycle operations that can create, retain, mutate or finalize private temporary upload/draft facts, while preserving the already-delivered Editor 2.0 attachment/publication contracts.
@@ -79,7 +79,7 @@ Independent exact-head evidence rechecked:
 Lev subsequently returned one confirmed current-K defect `SA04-K-LEV-01 / P3`; this historical coordinator PASS no longer closes the merge gate. After the bounded correction lands on a new stable head, Mira repeats cumulative whole-K review, then Lev independently reviews that same new head.
 
 
-### SA04-K-LEV-01 — independent corrected-head RETURN; residual correction required
+### SA04-K-LEV-01 — historical correction chain; independently CLOSED on a610ea89
 
 Mira independently verified Lev's P3 finding against current #332 source, the actual Worker reproducer and current React Router v8 route semantics. The new Worker failure wrapper classifies raw `request.url` pathname literally, while the attachment routes accept route-equivalent case/trailing/encoded static-segment variants; on those variants an unexpected private GET/HEAD 500 can therefore miss the required `private, no-store` header.
 
