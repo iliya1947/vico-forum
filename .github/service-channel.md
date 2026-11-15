@@ -1,5 +1,15 @@
 # Admin panel — communication
 
+## 2026-11-15 — SA04-M2.2 private HTTP response closure DONE; Lira bounded STOP
+
+- Cumulative [Draft PR #334](https://github.com/iliya1947/vico-forum/pull/334), exact head **`e1a37c842888b3293c6e7a4d70ebce594f6ca39c`**, still open/draft/unmerged; base and current `main=859ea69165f51cd997e61b1d1f30f6663f045965` identical. Cumulative diff **8 commits / exactly 6 paths**. M2.2 touched **only two files**: `app/measures/routes.server.ts` and `app/routes/user-measures.test.ts`.
+- Existing shared AP-10 `mappedMeasureError` classifies late `AccountInactiveError`/`AccountMissingError` as existing typed `unauthenticated` **401**, used by all five existing action routes (create/change/lift/own submitAppeal/resolveAppeal); responses retain **private, no-store** and avoid fabricated success/redirect/ordinal. Existing unavailable **503**, validation/forbidden/notFound/conflict, same-origin and no-new-vocabulary contracts remain. Unknown unexpected errors continue propagating for pre-existing generic 500 Worker boundary (actual mounted evidence is **M2.3**, not claimed here). Read loader and preflight existing Response mapping also remains private.
+- Added 2 focused tests to existing AP-10 route suite: for each of five canonical command routes, inactive/missing → private401, unavailable → private503, unexpected state storage failure → original throw; no re-invocation, no secret leaked in typed responses. Additional loader/preflight lifecycle401 and unrelated programming errors. **Route suite 9/9 PASS**. First CI typecheck caught missing TypeScript union narrowing in new test assertions; corrected tests only; no runtime change to fix TS.
+- Exact-head green: [CI #43745627598](https://github.com/iliya1947/vico-forum/actions/runs/43745627598) **SUCCESS**, real native PostgreSQL17 **979/979 (87 files)** incl M1 9, app **2347/2347 (187 files)** incl adapter M2.1 8 and route 9, lint 0 errors/1 existing warning, typecheck/build/migrations PASS. [AP10 #43745627606](https://github.com/iliya1947/vico-forum/actions/runs/43745627606) **SUCCESS 4/4 existing Chromium jobs**. [SA03 connected #43745627675](https://github.com/iliya1947/vico-forum/actions/runs/43745627675) **SUCCESS** for unified profile. These are regressions, **not** the future new M2.3 genuine late-deactivation acceptance.
+- **Lira M2.2 STOP.** Next developer `...` activates **M2.3 only** in same Draft #334: actual built Worker+Better Auth+PostgreSQL17+Chromium acceptance for AP-10 late401, availability503 and genuine unexpected500, no automatic retry and retained forms, then cumulative whole-M author closeout. **Mira reviews only whole M**; no M2.2 gate and **no intermediate merge** through SA04-S. No N+/SA05/permanent docs/production/Stage6/#315.
+
+---
+
 ## 2026-11-15 — SA04-M2.1 adapter classification DONE; Lira bounded STOP
 
 - Same cumulative [Draft PR #334](https://github.com/iliya1947/vico-forum/pull/334) exact stable head `d6a99e0dcdf544b795308297b34205e6f9ebb52c`, based on unchanged `main=859ea69165f51cd997e61b1d1f30f6663f045965`. Cumulative delta **5 commits / 4 paths** (M1 2 files, M2.1 exactly 2). PR remains open/draft/unmerged.
