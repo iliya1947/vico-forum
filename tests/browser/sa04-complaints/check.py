@@ -243,7 +243,7 @@ try:
         report_page.on("pageerror",lambda err:errors.append(str(err)))
         report_topic="/en/topics/"+topics[4]
         report_path=report_topic+"/complaints"
-        private(report_page.goto(base+report_topic,wait_until="networkidle"),200)
+        assert report_page.goto(base+report_topic,wait_until="networkidle").status==200
         report_page.locator(".complaint-open").first.click()
         report_form=report_page.locator("form.complaint-form")
         assert report_form.count()==1
