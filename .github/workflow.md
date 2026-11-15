@@ -3,14 +3,13 @@
 - **Service PR:** #331, coordination only, never merge. #251 historical archive.
 - **Current main / K base:** `398dae18d5ca7c3fc6dd84fd93a29d7c381ba366`; no drift from the accepted K base.
 - **Package / accepted plan:** SA04-K attachment AccountState lifecycle; #331 comment #6877583725.
-- **Implementation:** cumulative [Draft #332](https://github.com/iliya1947/vico-forum/pull/332), open/draft/unmerged, mergeable clean; stable exact head `a610ea89447744f4f3946dfc6e59b4b01d9ad65a`.
-- **Mira fresh cumulative whole-K coordinator review:** **PASS — 0 confirmed current-K defects** on exact `a610ea89447744f4f3946dfc6e59b4b01d9ad65a`. Reviewed correction delta, all seven lifecycle entrypoints, transaction/lock/race semantics, replay/AP10/no-op behavior, public/security/system exclusions, Worker/R2 late-PUT and ACK ambiguity, cleanup/J composition, HTTP/privacy behavior, cumulative connected evidence and current Stage boundary.
-- **SA04-K-LEV-01 / P3:** repeated-trailing-slash completion accepted at the coordinator gate. Real K5 Worker SQL-fault cases now cover repeated/mixed aliases and return private/no-store.
-- **Exact-head evidence:** CI [43689566922](https://github.com/iliya1947/vico-forum/actions/runs/43689566922) SUCCESS — PG17 **956/956** (84 files), application **2332/2332** (186 files), Worker private-failure helper **30/30**, lint 0 errors / 1 unchanged warning, typecheck/build/UI build/migration-history/metadata and Worker smoke successful. **Evidence qualification:** the unchanged `Verify Drizzle schema parity` step is marked SUCCESS by Actions, but `drizzle-kit generate` itself prints `TypeError: Do not know how to serialize a BigInt`; do not claim substantive schema-parity validation from that step. K adds no schema/migration/dependency change.
-- **Connected K5:** [43689566891](https://github.com/iliya1947/vico-forum/actions/runs/43689566891) SUCCESS **33/33** on built Worker + genuine Better Auth + disposable PG17 + local-only R2 + Chromium. AP10 [43689566898](https://github.com/iliya1947/vico-forum/actions/runs/43689566898), SA01 [43689566881](https://github.com/iliya1947/vico-forum/actions/runs/43689566881), SA03 [43689566927](https://github.com/iliya1947/vico-forum/actions/runs/43689566927), J12 [43689566894](https://github.com/iliya1947/vico-forum/actions/runs/43689566894) are all SUCCESS on the same head.
-- **Current actor / next gate:** **Lev — independent cumulative whole-K technical review of the same exact head `a610ea89447744f4f3946dfc6e59b4b01d9ad65a`**. Review the whole K package, not only the last correction, and do not modify implementation.
-- **If Lev PASS:** Mira performs coordinator closeout and prepares #332 for **Owner merge decision**. Do not start L before merge/current-main refresh.
-- **If Lev RETURN:** findings return to Mira for current-K verification → one bounded Lira correction packet → fresh Mira whole-K → fresh Lev whole-K.
-- **Lira / Mark:** inactive.
-- **Boundary:** no merge/deploy, #315 remediation, L–S, SA05, permanent docs or Stage6 during independent review.
+- **Implementation:** cumulative Draft #332, open/draft/unmerged, reviewed stable exact `a610ea89447744f4f3946dfc6e59b4b01d9ad65a`.
+- **Required reviews:** Mira fresh cumulative whole-K coordinator PASS and **Lev independent cumulative whole-K PASS — 0 confirmed current-K defects**, both on that same exact head. [Lev report #6891261025](https://github.com/iliya1947/vico-forum/pull/331#issuecomment-6891261025).
+- **SA04-K-LEV-01 / P3:** independently CLOSED; original real HTTP probe now16/16 private/no-store, including repeated/case/percent aliases.
+- **Evidence status:** six exact-head workflows SUCCESS, remote956PG/2332app/33connected; independent local50native/133app/33connected and original HTTP probe PASS. Full details in report/common log.
+- **CI qualification:** unchanged schema-parity step is green despite BigInt TypeError/exit0. Reproduced on identical main/head inputs; substantive parity is not established by that step. Pre-existing outside K, no K schema/migration/dependency change. Preserve this qualification.
+- **Current actor / next gate:** **Mira — coordinator closeout and prepare #332 for Owner merge decision.** Do not extend reviewed K with L. Merge only Owner.
+- **After Owner merge:** refresh current main before a new L assignment/technical plan.
+- **Lev:** independent review complete / STOP. **Lira / Mark:** inactive.
+- **Boundary:** no agent merge/deploy, #315 remediation, L–S, SA05, permanent docs or Stage6 during this closeout.
 - **Future planning constraint:** after full SA-04 closure, SA-05 implementation is blocked until SA-05–SA-08 are technically planned together as one complete remaining dependency chain.
