@@ -1,5 +1,20 @@
 # Admin panel — communication
 
+## 2026-11-15 — Lev independent whole-K PASS / SA04-K-LEV-01 CLOSED / STOP
+
+- **Independent cumulative whole-K PASS — 0 confirmed current-K defects** on Draft #332 exact `a610ea89447744f4f3946dfc6e59b4b01d9ad65a`, the same head as Mira fresh coordinator PASS. [Full independent review #6891261025](https://github.com/iliya1947/vico-forum/pull/331#issuecomment-6891261025). **SA04-K-LEV-01 / P3 CLOSED.**
+- Repeated the original extended actual Worker/BetterAuth/PG fault reproducer on the unchanged corrected build: all12 healthy URL controls preserved, **16/16 actual unexpected500 GET/HEAD responses now private/no-store**, including repeated trailing slashes and case/percent combinations; previous six omissions eliminated. Closure relies on actual HTTP headers, not simulated normalized responses.
+- Whole assigned K scope rechecked: seven lifecycle-gated entrypoints, same-tx NKU and draft/journal→actor ordering, lifecycle/cross-writer races, replay/no-op/AP10, J publication/edit composition, late PUT/unknown ACK, cleanup/lease/fence and public/security/system exclusions. All23 cumulative paths compared;20 byte-identical to the preceding independent review. No implementation/assertion edits.
+- New local evidence: **50/50 native PG17**, **133/133 application** (privacy helper30/30), fresh build/public migrations and full genuine Worker/BA/PG/local-R2/Chromium **33/33**, exact SHA, `external=[]`, `page_errors=[]`. Six exact-head remote workflows/jobs checked SUCCESS; actual logs956PG/2332app/33connected. Earlier broader local956 evidence is reused only for unchanged source, not claimed newly rerun.
+- **Schema-parity qualification independently confirmed:** Actions step is green despite Drizzle BigInt TypeError/exit0. Direct installed-generator controls on identical main/head schema/config/migration/dependency snapshots reproduce it on both, with unchanged snapshots. Substantive parity is **not verified** by that step. This is pre-existing outside K; no K schema/migration/dependency/CI delta or current-K defect established. Do not carry earlier blanket schema-parity PASS claims forward.
+- All23 source hashes checked; original config restored; review and primary source checkouts clean; own Worker/PG and synthetic vars/dependency links removed.
+- **Next actor: Mira**, accept the independent same-head PASS and complete coordinator closeout / prepare #332 for Owner merge decision, preserving the CI evidence qualification. **Lev complete / STOP; Lira/Mark inactive; no agent merge.** Main remains `398dae18d5ca7c3fc6dd84fd93a29d7c381ba366`; #332 remains Draft/open/unmerged. L must wait for merge/current-main refresh.
+- Whole SA04 remains incomplete; L–S/SA05/#315/permanent docs/Stage6 stay separate. #315 head rechecked `fc32f0ba36120b89a27831993519a00f2a40b953`; existing security findings not declared fixed. After full SA04, joint SA05–SA08 technical planning before SA05 implementation remains mandatory.
+
+---
+
+## Archived preceding state
+
 ## 2026-11-15 — Mira fresh cumulative whole-K PASS on a610ea89 / Lev activated
 
 - Stable implementation remains Draft #332 exact `a610ea89447744f4f3946dfc6e59b4b01d9ad65a`; current main/K base remains `398dae18d5ca7c3fc6dd84fd93a29d7c381ba366`, identical to the accepted K base.
