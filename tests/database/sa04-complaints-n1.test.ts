@@ -165,6 +165,41 @@ describe("SA04-N1 native Complaint submit actor admission and content dependenci
     }
   }, 35000);
 
+  it("writer-first actor lock lasts through COMMIT; subsequent deactivation denies exact replay", async () => {
+    const target = await content(), actor = "n1-writer-first-" + uuid();
+    await fixture.query('insert into "user"(id,name,email) values($1,$1,$2)', [actor, actor + "@test.invalid"]);
+    const writer = await client(), state = await client(), input = report(target.post);
+    const pause = pauseQuery(writer, query => /^commit$/i.test(query.trim()));
+    let pending: ReturnType<DrizzleComplaintsRepository["submit"]> | undefined;
+    try {
+      pending = repo(writer).submit(actor, input);
+      await pause.observed;
+      await state.query("begin");
+      try {
+        await state.query("set local lock_timeout='180ms'");
+        await expect(state.query('update "user" set deactivated_at=now(),'
+          + "deactivated_by_user_id=$1,retain_at_least_until=now()+interval '2 years'"
+          + " where id=$1", [actor])).rejects.toMatchObject({ code: "55P03" });
+      } finally {
+        await state.query("rollback");
+      }
+      pause.resume();
+      const committed = await pending;
+      const after = await facts();
+      expect((await fixture.query("select id from forum_complaints where id=$1",
+        [committed.complaintId])).rows).toEqual([{ id: committed.complaintId }]);
+      await deactivate(actor);
+      await expect(repo().submit(actor, input)).rejects.toBeInstanceOf(AccountInactiveError);
+      expect(await facts()).toEqual(after);
+    } finally {
+      pause.resume();
+      pause.restore();
+      if (pending) await Promise.allSettled([pending]);
+      await state.query("rollback").catch(() => undefined);
+      await Promise.all([writer.end(), state.end()]);
+    }
+  }, 35000);
+
   it.each(["post-first", "title-first"] as const)(
     "N-DEP-01: same-actor real post/title submissions both commit without a topic-FK deadlock (%s)",
     async order => {
