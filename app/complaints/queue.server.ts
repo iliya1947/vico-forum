@@ -20,7 +20,7 @@ export async function complaintReviewer(context: RouterContextProvider, permissi
 export function complaintHttpError(error: unknown): never {
   if(error instanceof Response)throw error;
   const status=error instanceof AccountInactiveError||error instanceof AccountMissingError?401:
-    error instanceof ComplaintForbiddenError||error instanceof UserMeasureRestrictedError?403;error instanceof ComplaintNotFoundError?404:
+    error instanceof ComplaintForbiddenError||error instanceof UserMeasureRestrictedError?403:error instanceof ComplaintNotFoundError?404:
     error instanceof ComplaintInputError?400:error instanceof ComplaintConflictError?409:
     error instanceof ComplaintStorageUnavailableError||error instanceof AuthorizationUnavailableError?503:null;
   if(status)throw new Response("Complaint request failed",{status,headers:complaintPrivateHeaders});
