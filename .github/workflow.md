@@ -7,6 +7,6 @@
 - **Current phase:** implementation STOPPED; full remaining-task technical planning gate reopened for **SA04-L–S → SA05 → SA06 → SA07 → SA08 as one end-to-end dependency chain**.
 - **SA04-L activation:** cancelled before implementation started. No implementation PR was created.
 - **Lira / Mark:** inactive.
-- **Next technical actor:** Lev — complete the whole remaining Super-admin technical plan from current main, using the accepted L–S plan and earlier Super-admin package map as inputs, not as a reason to defer SA05–SA08 architecture.
-- **Implementation is blocked** until Mira reviews and accepts that whole remaining-task plan.
+- **Current technical actor:** **Lev — ACTIVE**. Produce `SUPER_ADMIN_REMAINING_TECHNICAL_PLAN.md` for the whole remaining chain `SA04-L–S → SA05 → SA06 → SA07 → SA08` from current main.
+- **Required next gate:** Lev handoff/STOP → Mira whole-plan scope/fit review. **Implementation is blocked** until that complete plan is accepted.
 - **Boundary:** no L implementation, no #315 remediation, permanent docs closeout, production/deploy or Stage6 while this planning gate is open.
