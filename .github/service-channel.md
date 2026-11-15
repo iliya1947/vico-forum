@@ -1,5 +1,15 @@
 # Admin panel — communication
 
+## 2026-11-15 — Mira fresh cumulative whole-K PASS on a610ea89 / Lev activated
+
+- Stable implementation remains Draft #332 exact `a610ea89447744f4f3946dfc6e59b4b01d9ad65a`; current main/K base remains `398dae18d5ca7c3fc6dd84fd93a29d7c381ba366`, identical to the accepted K base.
+- **Coordinator verdict: PASS — 0 confirmed current-K defects.** Fresh cumulative review covered the full package rather than the three-file residual correction only: seven lifecycle entrypoints, same-transaction AccountState admission, scope/journal→actor ordering, state-first/writer-first races, replay/no-op/AP10 behavior, public published-read exclusion, R2 PREPARING/READY/conditional-PUT fencing, late deactivation/finalization, ambiguous/lost ACK, cleanup leases/claims/ownership, J publication/edit cross-races, HTTP/privacy behavior and current Stage limits.
+- SA04-K-LEV-01 repeated-trailing-slash completion is accepted at the Mira gate. K5 exact-head real Worker evidence includes repeated list and mixed file alias unexpected-500 cases with private/no-store.
+- Exact-head logs independently checked: application **2332/2332**, PG17 **956/956**, private-failure helper **30/30**, K5 connected **33/33**. AP10/SA01/SA03/J12 same-head jobs are SUCCESS.
+- **CI evidence qualification:** unchanged main/#332 `Verify Drizzle schema parity` workflow step is reported SUCCESS, but its `drizzle-kit generate` process logs `TypeError: Do not know how to serialize a BigInt`. Therefore schema-parity itself is not claimed verified by that step. This is outside the K implementation delta (no schema/migration/dependency/CI change) and is recorded only to prevent an inaccurate evidence claim.
+- **Lev is now active** for an independent cumulative whole-K review of the exact same `a610ea89447744f4f3946dfc6e59b4b01d9ad65a`. He must independently determine whether any current-K defect remains and specifically re-evaluate SA04-K-LEV-01 in whole-package composition. No implementation modification during review.
+- Lira/Mark inactive. If Lev PASS → Mira closeout / Owner merge gate. If Lev RETURN → findings first return to Mira for current-K verification. No L–S/SA05/#315/docs/Stage6 or merge.
+
 ## 2026-11-15 — Lira residual SA04-K-LEV-01 / P3 closure AUTHOR STOP → Mira cumulative whole-K review
 
 - **Implementation:** cumulative [Draft #332](https://github.com/iliya1947/vico-forum/pull/332), open/draft/unmerged, exact `a610ea89447744f4f3946dfc6e59b4b01d9ad65a`; base/main `398dae18d5ca7c3fc6dd84fd93a29d7c381ba366`. Correction versus Lev RETURN head `1454b04fb75816edb53961af5ca69409d17ecc4a`: **3 commits / exactly 3 paths**: `workers/private-failure-response.ts`, `workers/private-failure-response.test.ts`, `tests/browser/sa04-attachments/check.py`. No architecture/schema/migrations/dependencies/public routes/production R2/config/deployment changes.
