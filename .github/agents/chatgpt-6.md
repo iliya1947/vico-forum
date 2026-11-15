@@ -4,7 +4,7 @@
 
 Draft #333 stable exact `7400c51334476125d53a0108fc7a53c0f35c754f`. L3 updates native Authorization Availability adapter for bare/caused AccountStateUnavailableError → AuthorizationUnavailableError 503, existing canonical admin action for late inactive/missing → private thrown 401, unexpected remains 500. Existing unit tests now 7/7 adapter and 15/15 action; no alternate writer or new error vocabulary. New dedicated actual Worker/Better Auth/PG17/Chromium test/workflow; eight named real cases on synthetic Owner Settings and canonical profile, genuine SQL unexpected 500, disposable server statement timeout 503, actor late deactivation 401, no state/History on denial and no auto POST retry. Diagnosed test-only failed expectations for native unexpected SQL wrapper and server blocked query timeout; corrected evidence probes without changing native guard or product contracts.
 
-Exact-head CI #43727544747 SUCCESS PG17 970/970, app 2337/2337, lint/typecheck/build/schema/Worker; connected L3 #43727544839 SUCCESS; AP10 #43727544753 3/4 jobs SUCCESS with final Chromium in progress at checkpoint. L3 delta from L2: exactly six files/9 commits.
+Exact-head CI #43727544747 SUCCESS PG17 970/970, app 2337/2337, lint/typecheck/build/schema/Worker; connected L3 #43727544839 SUCCESS; AP10 #43727544753 **SUCCESS 4/4 browser jobs** on same exact head. L3 delta from L2: exactly six files/9 commits.
 
 **Lira bounded STOP after 3/4, NOT whole-L AUTHOR STOP.** Next developer `...` → L4 cumulative whole-L author closeout. Mira/Lev inactive until full L implementation; no merge/deploy/M+/SA05.
 
