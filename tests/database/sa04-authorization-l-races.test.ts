@@ -30,7 +30,8 @@ async function connections(count: number): Promise<Client[]> {
 function boundPool(client: Client): Pool {
   // Only transaction checkout is adapted: every SQL statement reaches the real
   // connected PostgreSQL backend and release never changes the owner of it.
-  const handle = { query: client.query.bind(client), release: () => {} } as unknown as PoolClient;
+  const handle = { query: (...args: unknown[]) => Reflect.apply(client.query, client, args),
+    release: () => {} } as unknown as PoolClient;
   return { connect: async () => handle } as unknown as Pool;
 }
 function writer(client: Client, owner: string) {
