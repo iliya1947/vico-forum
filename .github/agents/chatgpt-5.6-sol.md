@@ -1,5 +1,14 @@
 # ChatGPT-5.6 Sol — personal log
 
+## 2026-11-15 — residual SA04-K-LEV-01 confirmed / Lira correction routed
+
+- Independently verified Lev RETURN #6890890734 on Draft #332 exact `1454b04fb75816edb53961af5ca69409d17ecc4a`.
+- Current helper removes only one terminal empty pathname segment; repeated trailing slashes therefore fail its resource-length check.
+- Checked exact React Router 8.3.1 release source (`da2a0f0`): end matching uses `\\/*, accepting arbitrary trailing slash sequences. Current project routes use that normal matcher. This closes the factual cause chain together with Lev's real Worker probe.
+- Classified as the same **current-K P3** private-failure cache/privacy defect, not future #315. No data disclosure or actual cache event established.
+- Routed one bounded Lira completion: fix only private attachment resource classification for repeated trailing slash aliases, retain prior case/encoded/malformed behavior, add focused unit + representative real Worker fault regressions, run applicable exact-head gates.
+- After AUTHOR STOP I must repeat cumulative whole-K review before Lev can re-review. No merge/L+ work.
+
 ## 2026-11-15 — corrected SA04-K cumulative whole-K PASS
 
 - Fresh cumulative review completed on corrected Draft #332 exact `1454b04fb75816edb53961af5ca69409d17ecc4a`; current main remains `398dae18d5ca7c3fc6dd84fd93a29d7c381ba366`.
