@@ -179,8 +179,10 @@ try:
                 "password":"n3-local-test-password-123456789"})
             assert response.status==200,(label,response.status,response.text()[:200])
             return response.json()["user"]["id"]
-        author_ctx,reporter_ctx,reviewer_ctx,other_ctx=session(),session(),session(),session()
-        author_id=signup(author_ctx,"author")
+        reporter_ctx,reviewer_ctx,other_ctx=session(),session(),session()
+        author_id=prefix+"-author"
+        sql('insert into "user"(id,name,email) values($1,$2,$3)',
+            [author_id,"SA04 N synthetic content author",prefix+"-author@test.invalid"])
         reporter_id=signup(reporter_ctx,"reporter")
         reviewer_id=signup(reviewer_ctx,"reviewer")
         other_id=signup(other_ctx,"other")
@@ -323,7 +325,7 @@ try:
 
         assert not external,external
         assert not errors,errors
-        for ctx in (author_ctx,reporter_ctx,reviewer_ctx,other_ctx):ctx.close()
+        for ctx in (reporter_ctx,reviewer_ctx,other_ctx):ctx.close()
         browser.close()
         record("whole-N-connected-pass")
 finally:
