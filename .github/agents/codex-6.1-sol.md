@@ -1,5 +1,22 @@
 # Codex-6.1 Sol — personal log
 
+
+## 2026-11-15 — ACTIVE CLARIFICATION: remaining SA05 replay/eventId review question
+
+Discussion only. Do **not** edit the plan or implement anything yet.
+
+Mira completed the fresh four-part review and has one remaining provisional SA05 question. In `SUPER_ADMIN_REMAINING_TECHNICAL_PLAN.md` §5.1 the successful response includes `eventId`; §5.2 step3 checks an occurrence keyed by actor+operationId, while step4 says an already-deactivated target — including a request with a **new operationId** — returns its known original event ID without appending another event.
+
+Please explain the intended retained-source lookup for that original event ID when the new operationId has no matching occurrence. Is the current plan contract sufficient as written, or is an explicit lookup/index/identity rule missing?
+
+Classify the current text as one of:
+- sufficient as-is / no plan defect;
+- clarification-only improvement;
+- real planning defect requiring correction.
+
+Base the answer on the current plan and current repository source/constraints. Do not change the plan until Mira reassesses your rationale.
+
+
 ## 2026-11-15 — complete revised plan delivered / correction STOP
 
 Revised [SUPER_ADMIN_REMAINING_TECHNICAL_PLAN.md](https://github.com/iliya1947/vico-forum/blob/chatgpt/admin-panel-service-2/SUPER_ADMIN_REMAINING_TECHNICAL_PLAN.md), blob `af12946214ac926e776b6cdabdf02971bd4f3480`, commit `2ceaac83a9cfad93699c7cdb24197bc93895d634`, baseline/current main `6652c898067d05a7c1476377e95f50cd73937410`. Incorporated the technically agreed packet after discussion #6893614964 throughout the complete chain, preserving accepted L–S blob `cde81eeb259a3b7a5c4b96324a92aa310f375915`.
