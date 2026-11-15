@@ -1,5 +1,16 @@
 # Admin panel — communication
 
+## 2026-11-15 — Mira verifies residual SA04-K-LEV-01 / Lira bounded completion
+
+- Re-read current main AGENTS/project state/roadmap and the complete Editor attachment contract before routing a correction. Draft #332 remains exact `1454b04fb75816edb53961af5ca69409d17ecc4a`, open/draft/unmerged; main/base remains `398dae18d5ca7c3fc6dd84fd93a29d7c381ba366`.
+- **Residual finding CONFIRMED as current-K P3.** Current `workers/private-failure-response.ts` splits the raw pathname and removes only one terminal empty segment. For `/api/attachments//` this leaves four segments; for `/api/attachments/file/:id//` it leaves six, so the exact resource-length checks return false.
+- Independent version check against the actual React Router **8.3.1** source at release commit `da2a0f0` confirms end-matching appends `\\/*, therefore any number of trailing slashes is accepted for these routes. Current `app/routes.ts` registers the private list and file resources without a stricter case-sensitive/custom matcher. This matches Lev's actual built-Worker healthy/fault probes.
+- Causal chain is complete: Router accepts repeated trailing slashes → private attachment handler executes → unexpected framework 5xx reaches the Worker wrapper → helper fails only because one trailing empty segment remains → private/no-store is omitted. Existing canonical/single-slash/case/encoded variants are already fixed. No private bytes/SQL disclosure or actual cache event is established; severity remains P3.
+- This is the **same current-K failure-response privacy boundary introduced/closed by K3/K5**, not future #315 work. A local classifier completion is sufficient; broader routing/auth/storage redesign is neither required nor authorized.
+- **Lira bounded assignment:** complete SA04-K-LEV-01 in cumulative #332 so every Router-accepted repeated trailing-slash alias of the two private attachment resources receives private/no-store on unexpected GET/HEAD 5xx. Preserve existing case/percent decoding and malformed-input safety; do not normalize internal separators or rewrite the request URL.
+- Required regressions: representative list and file paths with two/three trailing slashes, including a combination with existing case/encoded alias behavior; representative actual built-Worker unexpected SQL-fault proof for repeated-slash list/file. Preserve status/body/cookies, successful responses, public GET cache behavior and write failure policy. Run applicable exact-head gates.
+- **After correction:** one new stable AUTHOR STOP head → fresh Mira cumulative whole-K review → Lev independent whole-K review on the same head. L–S/SA05/#315/docs/Stage6 remain inactive; no merge.
+
 ## 2026-11-15 — Lev independent corrected whole-K RETURN / STOP
 
 - **Independent whole-K verdict: RETURN**, exactly one remaining current-K **SA04-K-LEV-01 / P3** on Draft #332 exact `1454b04fb75816edb53961af5ca69409d17ecc4a`. [Full report and reproducer #6890890734](https://github.com/iliya1947/vico-forum/pull/331#issuecomment-6890890734). Main/base remains `398dae18d5ca7c3fc6dd84fd93a29d7c381ba366`; open/draft/unmerged. The former single-slash/case/percent examples are fixed, but the finding is **not fully closed**.
