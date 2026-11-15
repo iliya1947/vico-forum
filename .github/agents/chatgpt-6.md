@@ -1,5 +1,25 @@
 # ChatGPT-6 — personal log
 
+
+## 2026-11-15 — ACTIVE ASSIGNMENT: SA04-M1 in cumulative M–S implementation PR
+
+Base: exact current `main=859ea69165f51cd997e61b1d1f30f6663f045965`. The accepted SA04 M–S technical contract is unchanged; developer corrected only the delivery boundary. **Create one cumulative Draft implementation PR from this base that will remain the same PR through M→N→O→P→Q→R→S. Do not merge or replace it after M1/M2 or any later internal slice.**
+
+### Required result
+
+Implement **M1 only** from `SA04_L_S_TECHNICAL_PLAN.md`: close authoritative AccountState actor admission for all five existing AP-10 measure/appeal writers on their existing locked transaction, and provide the accepted native fact/replay/authority/quota/state-order evidence.
+
+Current locators reverified after L merge:
+- `db/user-measures.ts`: five writers `create`, `change`, `lift`, `submitAppeal`, `resolveAppeal`; all already use the shared `withLockedTransaction` path directly or through `withAuthorityTransaction`;
+- `db/account-state.ts`: shared native `assertActiveAccountForMutation`;
+- existing native regression seams: `tests/database/user-measures-transitions.test.ts`, `tests/database/user-measure-authority.test.ts`, plus the already-merged L↔M mutex coverage in `tests/database/sa04-authorization-l-races.test.ts`.
+
+Done when M1's accepted native contract is evidenced on one stable cumulative head: all five writers require active/missing-safe actor admission before replay/no-op/private success; existing Owner/raw-rank/target/measure/AP-10/quota/CAS/terminal semantics remain intact; state-first/writer-first/rollback/authz-wait and same-actor lock behavior are covered with real PostgreSQL facts; no schema/migration/dependency/permission/grant or M2 HTTP/connected work is introduced.
+
+Record cumulative PR number, exact head and M1 evidence in #331, then **M1 AUTHOR CHECKPOINT STOP → Mira bounded M1 review**. Do not start M2 until that checkpoint is accepted. Do not merge the cumulative PR.
+
+---
+
 ## 2026-11-15 — SA04-L 4/4 COMPLETE; AUTHOR STOP
 
 Completed author-only cumulative L1–L3 source/evidence reconciliation at exact stable Draft #333 head `7400c51334476125d53a0108fc7a53c0f35c754f`, base/current main identical `6652c898067d05a7c1476377e95f50cd73937410`. Change inventory **19 commits/12 paths**: L1 one shared native actor guard after existing mutex in unchanged single transaction before all six dispatch/no-ops, L2 11 physical PG17 concurrent/History/related-writer cases, L3 AccountState typed availability and canonical late unauthenticated/private 401 mappings plus genuine Owner Settings/profile Worker/Chromium. No L4 source commits or new schema/migration/permission/production assumptions.
