@@ -1,5 +1,16 @@
 # ChatGPT-6 — personal log
 
+## 2026-11-15 — SA04-N2 completed / bounded AUTHOR STOP
+
+Restored #331 and #334 exact N1 `614665d9041894eaac32771ff4f81f9db5161389`, read current AGENTS/main source-of-truth and accepted N technical plan. N2 only. The earlier N1 shared Drizzle guard already protected priority change, activity, notes, and Decision; `savePrioritySettings` still began with AP10 measure admission before the active actor lock. Added `this.actorMutex(tx,actorId)` before the measure and singleton versioned CAS within its existing transaction. No redesign or other product changes.
+
+Added `tests/database/sa04-complaints-n2.test.ts` five native PG17 cases: successful existing N2 commands with replay/lease/post-resolution/fanout, inactive/missing denial and complete raw fact preservation, replay-after-deactivation, state-first and writer-first settings lock barrier through actual COMMIT. Initial native red came from my fixture's over-escaped migration file matcher (schema never loaded), corrected test only. Final exact cumulative #334 head **`e514d147fbafb72f29a319ed65ca644f0fada24e`**; main unchanged `859ea69165f51cd997e61b1d1f30f6663f045965`; 21 commits / 12 paths; still draft/open/unmerged.
+
+All final exact-head Actions SUCCESS: [CI 43754961711](https://github.com/iliya1947/vico-forum/actions/runs/43754961711) PG17 989/989 (N2 5/5), checks success; [AP10 43754961702](https://github.com/iliya1947/vico-forum/actions/runs/43754961702) 4/4; [SA03 43754961723](https://github.com/iliya1947/vico-forum/actions/runs/43754961723); [SA04-M2 43754961707](https://github.com/iliya1947/vico-forum/actions/runs/43754961707).
+
+**N2 AUTHOR STOP.** Next N3 Appeal and whole-N closure in same Draft #334 on developer continuation; no intermediate coordinator/Lev gate, no merge, no O/SA05/#315/permanent docs/Stage6.
+
+
 ## 2026-11-15 — SA04-N1 native submit actor guard + N-DEP-01 completed; bounded STOP
 
 Restored service PR #331; found Mira whole-M coordinator PASS on previous exact `c594932a6032066d994391ea08606bcb933956e7` and Mira corrected immediate N activation (no developer scope approval). Read current main AGENTS, service technical plan §6, Complaints SoT and code. Scope this turn **N1 only** in cumulative Draft #334.
