@@ -1,5 +1,12 @@
 # ChatGPT-6 — personal log
 
+## 2026-11-15 — SA04-M2.1 complete; bounded author STOP
+
+User continuation activated only M2.1. Verified current GitHub AGENTS, active package cadence in service PR #331, main/base unchanged. Implemented exactly `db/hyperdrive-user-measures.ts` (cause-cycle-safe recognition of typed AccountState unavailable in existing classifier) plus new `db/hyperdrive-user-measures.test.ts` (5 writers, reader, typed/cause errors, unknown errors, account denial, timeouts and cycle).
+One correction after CI revealed test-only incorrect `Error.name` assumption: existing `UserMeasuresUnavailableError extends Error` does not set its own `name`; changed tests to assert existing message/cause rather than changing runtime class contract. Final cumulative [Draft #334](https://github.com/iliya1947/vico-forum/pull/334) exact `d6a99e0dcdf544b795308297b34205e6f9ebb52c`, 5 commits / 4 cumulative files from main `859ea69165f51cd997e61b1d1f30f6663f045965`. Fresh [CI #43744465096](https://github.com/iliya1947/vico-forum/actions/runs/43744465096) SUCCESS: M2.1 unit8/8, app2345/2345, native PG979/979, typecheck/lint/build/migrations. [AP10 #43744465099](https://github.com/iliya1947/vico-forum/actions/runs/43744465099) SUCCESS 4/4 existing browser jobs.
+**Lira STOP after M2.1.** Next developer `...` → M2.2 HTTP lifecycle401, unavailable503, unknown500 mapping and focused actions; then M2.3 mounted connected test and whole-M author closeout. Mira only whole-M after M2.3. Same cumulative PR #334 unmerged through remaining SA04-S.
+
+
 ## 2026-11-15 — M1.4 closeout verified; corrected whole-package review cadence
 
 M1.1–M1.4 complete in same cumulative [Draft PR #334](https://github.com/iliya1947/vico-forum/pull/334), exact `81b20db40454b302689dc9dedb4bc764f62963d6`; main/base unchanged at `859ea69165f51cd997e61b1d1f30f6663f045965`. Final workflow status rechecked **CI #43741372398 SUCCESS** (native PG17 979/979, new M1 9/9, app 2337/2337); **AP10 #43741372426 SUCCESS 4/4 Chromium jobs**. No additional implementation files/commits, PR stays Draft/open/unmerged.
