@@ -260,6 +260,16 @@ try:
         private(post(other_ctx,p2,appeal_fields(d2)),200)
         a2=sql("select id from forum_complaint_appeals where case_id=$1",[c2["id"]])[0]["id"]
         r2="/en/attention/complaints/"+c2["id"]+"/appeals/"+a2
+        private(submit(other_ctx,topics[3]),200)
+        c3=case(topics[3])
+        triage="/en/attention/complaints/"+c3["id"]
+        triage_page=reviewer_ctx.new_page()
+        triage_page.set_default_timeout(18000)
+        triage_page.on("pageerror",lambda err:errors.append(str(err)))
+        private(triage_page.goto(base+triage,wait_until="networkidle"),200)
+        triage_form=triage_page.locator("form.complaint-priority-form")
+        assert triage_form.count()==1
+        triage_form.locator('select[name="priority"]').select_option("3")
         private(reviewer_page.goto(base+r2,wait_until="networkidle"),200)
         review_form=reviewer_page.locator('form:has(input[name="intent"][value="resolve"])')
         assert review_form.count()==1
@@ -275,8 +285,7 @@ try:
         direct_private(direct(cookie(reviewer_ctx),r2,resolve_fields()),401)
         record("actual-reviewer-state-first-late-401-and-no-fanout")
 
-        private(submit(other_ctx,topics[3]),200)
-        c3=case(topics[3]);before=snapshot()
+        before=snapshot()
         settings=sql("select version,weights from forum_complaint_priority_settings where id=1")[0]
         weights={key:str(value) for key,value in settings["weights"].items()}
         private(post(reviewer_ctx,"/en/attention/complaints/settings",
@@ -314,6 +323,30 @@ try:
         assert review_form.locator("textarea").input_value()=="KEEP_N3_REVIEWER_DRAFT"
         assert snapshot()==before
         record("mounted-reviewer-form-retains-draft-and-reuses-nonce-on-explicit-retry")
+
+        triage_posts=[]
+        triage_page.on("request",lambda req:triage_posts.append(req.post_data or "")
+            if req.method=="POST" and urlparse(req.url).path==triage else None)
+        with triage_page.expect_response(lambda res:res.request.method=="POST"
+                and urlparse(res.url).path==triage) as denied:
+            triage_form.locator('button[type="submit"]').click()
+        assert denied.value.status==401
+        sleep(.5)
+        assert len(triage_posts)==1,triage_posts
+        assert triage_form.count()==1, "Late 401 must not unmount priority form"
+        assert triage_form.locator('select[name="priority"]').input_value()=="3"
+        triage_nonce=parse_qs(triage_posts[0]).get("operationId",[])
+        assert len(triage_nonce)==1 and triage_nonce[0]
+        with triage_page.expect_response(lambda res:res.request.method=="POST"
+                and urlparse(res.url).path==triage) as denied_retry:
+            triage_form.locator('button[type="submit"]').click()
+        assert denied_retry.value.status==401
+        sleep(.5)
+        assert len(triage_posts)==2, "Unexpected automatic priority POST retry"
+        assert parse_qs(triage_posts[1]).get("operationId")==triage_nonce, "Priority nonce changed on explicit retry"
+        assert triage_form.locator('select[name="priority"]').input_value()=="3"
+        assert snapshot()==before
+        record("mounted-priority-form-retains-choice-and-nonce-after-late-401")
 
         sql("ALTER ROLE postgres IN DATABASE vico_sa04_n_browser_test SET statement_timeout='650ms'")
         try:
