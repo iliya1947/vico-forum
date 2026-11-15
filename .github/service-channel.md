@@ -1,5 +1,17 @@
 # Admin panel — communication
 
+
+## 2026-11-15 — developer correction: review boundary is whole SA04, not internal slices
+
+- Internal labels M1/M2/N1/... are **Lira work decomposition only**.
+- They do not create Mira coordinator gates, Lev gates, separate PRs or merge gates.
+- Lira continues autonomously through the already accepted **M→N→O→P→Q→R→S** sequence in the same cumulative Draft, using internal checkpoints only for her own execution/evidence.
+- Mira remains inactive until the entire remaining SA04 implementation is complete on one stable exact head.
+- Then: **Lira AUTHOR STOP → Mira whole-SA04 coordinator review → if PASS, Lev independent same-head whole-SA04 review → Owner merge once.**
+- This supersedes the earlier M1→Mira bounded-checkpoint wording. Technical scope/architecture is unchanged.
+
+---
+
 ## 2026-11-15 — SA04-M1 native AUTHOR CHECKPOINT STOP → Mira bounded M1 review
 
 - **Cumulative [Draft PR #334](https://github.com/iliya1947/vico-forum/pull/334)** head **`81b20db40454b302689dc9dedb4bc764f62963d6`**, base `main=859ea69165f51cd997e61b1d1f30f6663f045965`, current main freshly confirmed identical. PR open/draft/unmerged; exactly **2 commits / 2 file paths**. This same cumulative M–S Draft remains open and must not merge until final SA04-S full closure.
