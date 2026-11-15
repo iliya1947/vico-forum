@@ -72,14 +72,14 @@ Planning must explicitly determine whether the current master assumptions still 
 
 ## SA04-K — scope for technical planning
 
-### SA04-K final review closeout — PASS / PASS
+### SA04-K final review closeout — HISTORICAL pre-merge PASS / PASS
 
 PR #332 exact `a610ea89447744f4f3946dfc6e59b4b01d9ad65a` has completed the required stable-head review cycle: Mira cumulative coordinator **PASS** and Lev independent cumulative **PASS**, both with **0 confirmed current-K defects**. `SA04-K-LEV-01 / P3` is independently closed.
 
-The implementation is now at the **Owner merge gate** only. Agents do not merge. L must not start until #332 is merged and `main` is refreshed. The CI schema-parity caveat remains factual evidence metadata only: the unchanged green step does not substantively prove parity because the generator logs a BigInt TypeError/exit0; K has no schema/migration/dependency/CI delta.
+This was the **pre-merge Owner gate state**. It is superseded by the current master-sequence record above: #332 is merged and K is delivered. The CI schema-parity caveat remains factual evidence metadata only: the unchanged green step does not substantively prove parity because the generator logs a BigInt TypeError/exit0; K has no schema/migration/dependency/CI delta.
 
 
-### Fresh whole-K coordinator review after residual completion — PASS
+### Fresh whole-K coordinator review after residual completion — HISTORICAL PASS
 
 Draft #332 exact `a610ea89447744f4f3946dfc6e59b4b01d9ad65a` completed a fresh cumulative Mira review after the repeated-trailing-slash correction. **Coordinator verdict: PASS — 0 confirmed current-K defects.** The review covered the full K package, not only the bounded correction, and independently checked exact-head application/PG/connected evidence.
 
