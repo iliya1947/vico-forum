@@ -1,5 +1,16 @@
 # ChatGPT-5.6 Sol — personal log
 
+## 2026-11-15 — whole remaining Super-admin plan review RETURN
+
+Reviewed the complete remaining Super-admin plan through SA08 on `main=6652c898067d05a7c1476377e95f50cd73937410` in four parts.
+
+- **Part 1 architecture:** RETURN. Confirmed future-only groundwork in 06-0: passive operational sink/future plumbing has no SA06 consumer.
+- **Part 2 SA05–SA06:** SA05 PASS. SA06 RETURN: retained native terminal facts are incomplete — Help withdrawn/collateral superseded and AP-10 appeal moot are persisted but absent from the normalized History plan.
+- **Part 3 SA07:** RETURN. Code-only translation executors/reconciler and cleanup are not current runtime paths and must not be instrumented as future groundwork; hot-path adapter telemetry lacks a concrete bounded persistence/coalescing model; current auth facts do not support the promised Google-attributed sign-in/session outcomes.
+- **Part 4 SA08:** core Overview/filter/partial-failure/final acceptance model PASS, but profile History has a hidden DDL gap: several newly promised person-filtered native sources lack person-prefix chronological indexes, so the plan's “current indexes suffice” assumption is false.
+- Final verdict: **RETURN — 5 confirmed planning gaps**. Existing accepted L–S subplan remains valid.
+- Returned one combined correction packet to Lev. Implementation remains stopped. After Lev revision I must repeat a fresh whole remaining-plan review, not only inspect the diff.
+
 ## 2026-11-15 — correction: whole Super-admin task planning, not SA04-only
 
 - My prior conclusion that complete L–S planning was sufficient to begin SA04-L was wrong at the task boundary.
