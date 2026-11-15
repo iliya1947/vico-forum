@@ -1,6 +1,20 @@
 # Admin panel — communication
 
 
+## 2026-11-15 — developer correction: coordinator gates are whole-package, not per-slice or whole-SA04-only
+
+- Supersedes both previous extremes.
+- **Internal slices are author-only:** M1/M2, N1/N2/N3, R1/R2/R3 (and any further internal decomposition Lira needs) do not activate Mira/Lev.
+- **Coordinator boundary is the enclosing package:** after whole M → Mira whole-M review; after whole N → Mira whole-N review; then whole O, P, Q and R likewise. These are quality gates only, not merge gates.
+- On Mira PASS, Lira continues the next accepted package in the **same cumulative M–S Draft PR**.
+- **No Owner merge** at M/N/O/P/Q/R boundaries.
+- S completes the remaining SA04. Then Mira performs the final cumulative whole-SA04 review; only after PASS does Lev perform the independent same-head whole-SA04 review; then Owner merge once.
+- Lev is not an ordinary per-package gate because the complete architecture is already accepted; he re-enters earlier only for genuine technical escalation/plan conflict.
+- Current assignment: Lira completes **whole M (M1→M2)**, then stops for Mira whole-M review.
+
+---
+
+
 ## 2026-11-15 — developer correction: review boundary is whole SA04, not internal slices
 
 - Internal labels M1/M2/N1/... are **Lira work decomposition only**.
