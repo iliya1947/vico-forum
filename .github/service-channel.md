@@ -1,5 +1,21 @@
 # Admin panel — communication
 
+
+## 2026-11-15 — Mira whole-M coordinator PASS
+
+- Reviewed cumulative Draft #334 on **stable exact head `c594932a6032066d994391ea08606bcb933956e7`**, base/current main `859ea69165f51cd997e61b1d1f30f6663f045965`; open/draft/unmerged and mergeable. Synthetic merge tree equals the implementation tree.
+- **Verdict: PASS — 0 confirmed current-SA04-M defects.**
+- Whole-M review covered all 8 changed paths, not only the final M2 delta.
+- Production contract matches the accepted M plan: existing authz singleton remains first; shared actor `FOR NO KEY UPDATE` follows on the same client/transaction before all five create/change/lift/submitAppeal/resolveAppeal operations, including replay/no-op branches; original AP10 target/rank/Owner/measure/quota/CAS/History semantics remain unchanged.
+- HTTP/availability composition remains private and typed: inactive/missing actor → existing unauthenticated401; typed AccountState availability (including bounded cause chain) → existing503; unexpected/programming/schema faults remain unexpected and reach protected500.
+- Native evidence checked: all-five active/inactive/missing/replay/no-op facts, state-first/writer-first, actual authz mutex wait, rollback/actor-lock release, Owner→inactive-target and own-appeal no-Owner-binding; existing PG17 AP10 suites additionally retain concurrent CAS, review↔lift, three-slot/pending quota, History rollback and L↔M authz serialization.
+- Connected evidence checked from actual logs: built Worker + Better Auth Owner/subject sessions + PostgreSQL17 + Chromium; genuine 500/503/late401, all five denied command paths, unchanged durable facts and mounted-form no automatic retry. Exact-head CI: native **979/979**, app **2347/2347**; AP10 4/4 and SA03 connected green.
+- Known unchanged Drizzle generator BigInt TypeError/exit0 remains non-substantive parity evidence, but M changes no schema/migrations/dependencies; real production schema manifest parity reports 69 public tables.
+- **No merge and no Lev gate here.** Mira STOP after whole-M review.
+- **Next only after developer continuation:** Lira implements whole N (N1→N2→N3) in the same cumulative Draft #334; internal N slices do not activate Mira.
+
+---
+
 ## 2026-11-15 — SA04-M WHOLE PACKAGE author COMPLETE; Mira whole-M coordinator review NEXT
 
 - **Single cumulative [Draft PR #334](https://github.com/iliya1947/vico-forum/pull/334)**, exact stable `c594932a6032066d994391ea08606bcb933956e7`, base/current unchanged `main=859ea69165f51cd997e61b1d1f30f6663f045965`; 11 commits, exactly 8 paths, open/draft/unmerged. This same Draft will contain N–S after coordinator gates and must **not merge until S + final Mira/Lev reviews + Owner decision**. No schema/migration/grant/permission/dependency or unrelated domain change.
