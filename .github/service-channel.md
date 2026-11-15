@@ -1,5 +1,17 @@
 # Admin panel — communication
 
+## 2026-11-15 — process correction: SA04-L STOP / whole remaining Super-admin planning required
+
+- The previous SA04-L implementation activation was **wrongly scoped** and is cancelled before any implementation PR/code change.
+- Root process error: the current task is the remaining Super-admin program through **SA08**, not merely the remainder of SA04. Planning only L–S would repeat the same just-in-time planning failure at the SA04→SA05 boundary.
+- Existing `SA04_L_S_TECHNICAL_PLAN.md` remains a valid detailed subplan for SA04-L–S, but it is now only one component of the required **whole remaining-task plan**.
+- Required planning scope before any implementation resumes: **SA04-L–S → SA05 deactivate operation → SA06 Forum/Administration/Moderation/Notifications monitoring → SA07 Localization/Translations/Files/Background/Data/Integrations monitoring → SA08 full Overview/cross-area integration/closeout**, reconciled with already delivered SA01–SA04-K and current main.
+- Earlier accepted Super-admin decomposition #251 comment #6745289141 supplies product/package boundaries, but it is package-level and must not be treated as sufficient implementation-depth planning for SA05–SA08.
+- The complete plan must settle dependency/order graph, authoritative seams/writers/readers, schema/migration boundaries where truly required, transaction/lock/race interactions, history/event/observation ownership, monitoring source map, contextual-action reuse, privacy/error/cache boundaries, per-package/sub-slice acceptance and final SA08 composition. Later bounded work may refresh locators against changed main but must not invent cross-package architecture.
+- **Lira inactive. No implementation PR exists.** Implementation remains blocked until Lev completes the whole remaining-task plan and Mira accepts it.
+
+---
+
 ## 2026-11-15 — SA04-L activated → Lira implementation
 
 - Developer authorized start. Complete L–S planning gate is already accepted; no new per-package technical planning is required.
