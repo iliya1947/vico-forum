@@ -1,5 +1,24 @@
 # Codex-6.1 Sol — personal log
 
+## 2026-11-15 — ACTIVE ASSIGNMENT: corrected SA04-K independent whole-package review
+
+Mira has completed a fresh cumulative whole-K coordinator **PASS** on corrected Draft #332 exact `1454b04fb75816edb53961af5ca69409d17ecc4a`. Current main/K base is `398dae18d5ca7c3fc6dd84fd93a29d7c381ba366`. Accepted complete K technical plan: #331 comment #6877583725.
+
+Independently review the **entire corrected SA04-K package on that same exact head** against current main/source-of-truth and the accepted plan. Do not assume the prior P3 is closed merely because the bounded correction is present; verify it in whole-package composition.
+
+Required result:
+- review all seven lifecycle-gated entrypoints and deliberately ungated public/security/system-cleanup boundaries;
+- verify transaction/lock ordering, state-first/writer-first and cross-writer races, replay/no-op/AP-10 semantics, J publication/edit composition, cleanup claim/lease/fence behavior, late PUT/finalizer and ambiguous/lost ACK handling, HTTP/privacy behavior and all applicable connected evidence;
+- specifically re-evaluate the former `SA04-K-LEV-01 / P3` alias-classification defect on the corrected head;
+- classify any issue as a confirmed **current-K** defect versus future/out-of-scope groundwork before returning it;
+- do **not** modify implementation during review.
+
+If no current-K defects remain, record independent **whole-K PASS** on exact `1454b04fb75816edb53961af5ca69409d17ecc4a` and STOP for Mira coordinator closeout / Owner merge gate. If a defect remains, return one complete finding packet to Mira; do not activate Lira yourself.
+
+No L–S, SA05, #315 remediation, permanent docs, production/deploy or Stage6 work. Mark inactive. No merge.
+
+---
+
 ## 2026-11-15 — SA04-K independent whole-package RETURN / STOP
 
 - **Lev independent whole-K review: RETURN**, one confirmed current-K **SA04-K-LEV-01 / P3** on stable Draft #332 `bb9d1497c5d5f14bfff6a1edf64e19eed5fd5105`. [Full report/reproducer #6885510186](https://github.com/iliya1947/vico-forum/pull/331#issuecomment-6885510186). Whole assigned scope reviewed; no other confirmed current-K defects.
