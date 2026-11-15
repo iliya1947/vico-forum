@@ -1,6 +1,7 @@
 import type { Pool, PoolClient } from "pg";
 import { validateUserMeasureRestrictions, type UserMeasureRestrictionId } from "../app/admin/user-measure-restrictions";
 import { appendUserMeasureHistory, type UserMeasureHistoryState } from "./admin-history";
+import { assertActiveAccountForMutation } from "./account-state";
 import { PostgresAuthorizationRepository } from "./authorization-repository";
 import { assertNoActiveUserMeasureRestrictionPg } from "./user-measure-policy";
 import { assertUserMeasureAuthority, assertUserMeasureAdminRestrictionsAuthority,
@@ -162,7 +163,7 @@ export class PostgresUserMeasuresRepository {
   constructor(private readonly pool: Pool, private readonly ownerUserId: string | undefined) {}
 
   async create(input: ValidatedCreate): Promise<MeasureCreateResult> {
-    return this.withAuthorityTransaction(async (client, ownerId) => {
+    return this.withAuthorityTransaction(input.actorId, async (client, ownerId) => {
       const target = await this.lockTarget(client, input.targetUserId);
       const issuerLevel = await this.authority(client, ownerId, input.actorId, target.id);
 
@@ -212,7 +213,7 @@ export class PostgresUserMeasuresRepository {
 
   /** Submitted-appeal identity is exact to a measure; quota remains even after resolution. */
   async submitAppeal(input: ValidatedAppealSubmission): Promise<UserMeasureAppealSubmissionResult> {
-    return this.withLockedTransaction(async client => {
+    return this.withLockedTransaction(input.actorId, async client => {
       const { target, current } = await this.lockMeasure(client, input.measureId);
       if (target.id !== input.actorId) throw new UserMeasureForbiddenError();
       const prior = await client.query<LockedAppeal>(
@@ -249,7 +250,7 @@ export class PostgresUserMeasuresRepository {
 
   /** Review shares exact-measure CAS with ordinary change/lift, never an independent remedy. */
   async resolveAppeal(input: ValidatedAppealResolution): Promise<UserMeasureAppealResolutionResult> {
-    return this.withAuthorityTransaction(async (client, ownerId) => {
+    return this.withAuthorityTransaction(input.actorId, async (client, ownerId) => {
       const { target, current } = await this.lockMeasure(client, input.measureId);
       const issuerLevel = await this.authority(
         client, ownerId, input.actorId, target.id, current.issuer_authority_floor,
@@ -450,7 +451,7 @@ export class PostgresUserMeasuresRepository {
     input: ValidatedChange | ValidatedLift,
     action: "measure.changed" | "measure.lifted",
   ): Promise<MeasureTransitionResult> {
-    return this.withAuthorityTransaction(async (client, ownerId) => {
+    return this.withAuthorityTransaction(input.actorId, async (client, ownerId) => {
       const { target, current } = await this.lockMeasure(client, input.measureId);
       const issuerLevel = await this.authority(
         client, ownerId, input.actorId, target.id, current.issuer_authority_floor,
@@ -522,14 +523,16 @@ export class PostgresUserMeasuresRepository {
   }
 
   private async withAuthorityTransaction<T>(
-    operation: (client: PoolClient, ownerUserId: string) => Promise<T>,
+    actorId: string, operation: (client: PoolClient, ownerUserId: string) => Promise<T>,
   ): Promise<T> {
     // Missing binding disables admin changes, not the subject's own appeal.
     const ownerUserId = requireUserMeasureOwnerId(this.ownerUserId);
-    return this.withLockedTransaction(client => operation(client, ownerUserId));
+    return this.withLockedTransaction(actorId, client => operation(client, ownerUserId));
   }
 
-  private async withLockedTransaction<T>(operation: (client: PoolClient) => Promise<T>): Promise<T> {
+  private async withLockedTransaction<T>(
+    actorId: string, operation: (client: PoolClient) => Promise<T>,
+  ): Promise<T> {
     const client = await this.pool.connect();
     let begun = false;
     try {
@@ -537,6 +540,7 @@ export class PostgresUserMeasuresRepository {
       begun = true;
       const locked = await client.query("select id from authz_mutation_lock where id=1 for update");
       if (locked.rowCount !== 1) throw new UserMeasureConflictError("authorization lock missing");
+      await assertActiveAccountForMutation(client, actorId);
       const result = await operation(client);
       await client.query("commit");
       begun = false;
