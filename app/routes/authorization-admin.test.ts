@@ -4,6 +4,7 @@ import { authSessionContext, type AuthSession } from "../auth/request-context";
 import { authorizationContext, authorizationOwnerContext } from "../authorization/request-context";
 import { AuthorizationRoleAssignedError, AuthorizationRoleSlugConflictError } from "../../db/authorization-repository";
 import { AuthorizationUnavailableError } from "../../db/authorization-service";
+import { AccountInactiveError, AccountMissingError, AccountStateUnexpectedError } from "../../db/account-state";
 import { action, loader } from "./authorization-admin";
 
 const session = { user: { id: "manager", name: "Manager", email: "m@example.test" } } as AuthSession;
@@ -192,4 +193,43 @@ describe("authorization management route", () => {
 
   });
 
+
+  it.each([AccountInactiveError, AccountMissingError])(
+    "maps late %s from all six actual action intents to private unauthenticated Response without success",
+    async ErrorClass => {
+      const intents: { intent: string; fields: Record<string, string>; method: keyof ReturnType<typeof capability> }[] = [
+        { intent: "createRole", fields: { slug: "new-role", displayName: "New" }, method: "createCustomRole" },
+        { intent: "renameRole", fields: { roleId: "role", displayName: "Updated" }, method: "renameCustomRole" },
+        { intent: "roleGrants", fields: { roleId: "role" }, method: "replaceRoleGrants" },
+        { intent: "deleteRole", fields: { roleId: "role" }, method: "deleteCustomRole" },
+        { intent: "assignRole", fields: { userId: "target", roleId: "role" }, method: "assignUserRole" },
+        { intent: "override", fields: { userId: "target", permission: "forum.topic.pin", effect: "inherit" }, method: "setUserOverride" },
+      ];
+      for (const { intent, fields, method } of intents) {
+        const state = ownerContext();
+        const writer = state.value[method];
+        if (!("mockRejectedValueOnce" in writer)) throw new Error("missing writer mock");
+        writer.mockRejectedValueOnce(new ErrorClass());
+        try {
+          await action({ request: request({ intent, ...fields }), context: state.context });
+          throw new Error("late lifecycle error returned success");
+        } catch (error) {
+          expect(error).toBeInstanceOf(Response);
+          const response = error as Response;
+          expect(response.status).toBe(401);
+          expect(response.headers.get("Cache-Control")).toBe("private, no-store");
+          expect(await response.text()).toBe("Unauthenticated");
+        }
+        expect(writer).toHaveBeenCalledOnce();
+      }
+    },
+  );
+
+  it("preserves unexpected lifecycle failure as a genuine 500 path, not a false unavailable/401", async () => {
+    const state = ownerContext();
+    const failure = new AccountStateUnexpectedError({ cause: new TypeError("SQL private detail") });
+    state.value.createCustomRole.mockRejectedValueOnce(failure);
+    await expect(action({ request: request({ intent: "createRole", slug: "broken", displayName: "Broken" }),
+      context: state.context })).rejects.toBe(failure);
+  });
 });
