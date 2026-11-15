@@ -49,6 +49,7 @@ describe("SA04-N3 canonical Complaint lifecycle HTTP mapping", () => {
         params: { topicId: "topic-1" },
         request: request("/en/topics/topic-1/complaints", submissionFields) });
       expect(response).toMatchObject({ data: { error: "unauthenticated" }, init: { status: 401 } });
+      if (response instanceof Response) throw new Error("expected typed submission failure");
       expect(new Headers(response.init?.headers).get("Cache-Control")).toBe("private, no-store");
       expect(s.submitAppeal).toHaveBeenCalledExactlyOnceWith("real-actor", expect.any(Object));
       expect(s.resolveAppeal).toHaveBeenCalledExactlyOnceWith("real-actor", expect.any(Object));
