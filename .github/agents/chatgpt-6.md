@@ -25,11 +25,11 @@ Current locators reverified after L merge:
 - `db/account-state.ts`: shared native `assertActiveAccountForMutation`;
 - existing native regression seams: `tests/database/user-measures-transitions.test.ts`, `tests/database/user-measure-authority.test.ts`, plus the already-merged L↔M mutex coverage in `tests/database/sa04-authorization-l-races.test.ts`.
 
-**Work decomposition:** you may split M1/M2/N1/... internally into as many implementation/checkpoint substeps as needed for reliable execution. These are author work units only: they do not create coordinator review gates, separate implementation PRs, merge gates, or architectural replanning. Follow the already accepted sequence and contracts in the same cumulative M–S Draft.
+**Work decomposition:** M1/M2 are your internal work units for package M. Split them further if useful. Do not stop for Mira between M1 and M2. Complete the whole accepted M package first, then AUTHOR CHECKPOINT STOP for Mira whole-M review. The same rule applies later: N1/N2/N3 → whole-N review; R1/R2/R3 → whole-R review. O/P/Q are already whole packages. These package reviews do not create separate PRs or merge gates.
 
 Done when M1's accepted native contract is evidenced on one stable cumulative head: all five writers require active/missing-safe actor admission before replay/no-op/private success; existing Owner/raw-rank/target/measure/AP-10/quota/CAS/terminal semantics remain intact; state-first/writer-first/rollback/authz-wait and same-actor lock behavior are covered with real PostgreSQL facts; no schema/migration/dependency/permission/grant or M2 HTTP/connected work is introduced.
 
-Record cumulative PR number/head and useful internal evidence in #331 as work progresses. **Do not stop for Mira after M1 or M2.** Continue autonomously through the already accepted M→N→O→P→Q→R→S sequence in the same cumulative PR, using internal author checkpoints as needed. Only after the entire remaining SA04 implementation is complete on one stable exact head: **AUTHOR STOP → Mira whole-SA04 coordinator review**. Do not merge the cumulative PR.
+Record cumulative PR number/head and useful internal evidence in #331 as work progresses. **Do not stop after M1. Complete M1→M2 and the whole M acceptance scope first. Then AUTHOR CHECKPOINT STOP → Mira whole-M coordinator review.** On Mira PASS, continue with N in the same cumulative PR. Repeat at whole-package boundaries N/O/P/Q/R. After S completes the remaining SA04, AUTHOR STOP → Mira final whole-SA04 coordinator review → Lev independent same-head whole-SA04 review. Do not merge the cumulative PR.
 
 ---
 
