@@ -26,7 +26,7 @@ Accepted master technical plan: predecessor #251 comment **#6806249892**.
 - **A–H:** account-state storage + neutral public identity/projection foundation — delivered in current main.
 - **I:** Better Auth active-account closure — delivered in current main.
 - **J:** Forum authoritative actor writes — **delivered/merged by PR #330**, merge commit `398dae18d5ca7c3fc6dd84fd93a29d7c381ba366`; Mira cumulative whole-J PASS + Lev independent whole-J PASS on implementation head `800df2a56c4853a0c261f4cdb1b9969efe5c4b3e`.
-- **K:** attachment upload/draft/finalization admission — corrected cumulative Draft #332 exact `1454b04fb75816edb53961af5ca69409d17ecc4a`; **Lev independent corrected whole-K RETURN: one residual SA04-K-LEV-01 / P3**, [full report #6890890734](https://github.com/iliya1947/vico-forum/pull/331#issuecomment-6890890734). Original alias examples fixed; repeated trailing-slash GET/HEAD500 privacy remains incomplete. Next Mira bounded correction routing; not merged.
+- **K:** attachment upload/draft/finalization admission — cumulative Draft #332 exact `a610ea89447744f4f3946dfc6e59b4b01d9ad65a`; **Mira fresh cumulative whole-K PASS, 0 confirmed current-K defects; Lev independent whole-K review active**. Not merged.
 - **L:** authorization mutations.
 - **M:** AP-10 mutations/appeals.
 - **N:** Complaints mutation/participation.
@@ -37,6 +37,15 @@ Accepted master technical plan: predecessor #251 comment **#6806249892**.
 - **S:** connected end-to-end SA-04 closure on one stable accepted state.
 
 ## SA04-K — scope for technical planning
+
+### Fresh whole-K coordinator review after residual completion — PASS
+
+Draft #332 exact `a610ea89447744f4f3946dfc6e59b4b01d9ad65a` completed a fresh cumulative Mira review after the repeated-trailing-slash correction. **Coordinator verdict: PASS — 0 confirmed current-K defects.** The review covered the full K package, not only the bounded correction, and independently checked exact-head application/PG/connected evidence.
+
+SA04-K is **not yet independently closed or merge-ready**. Lev now reviews the same stable exact head. If Lev PASS, the next gate is Mira closeout → Owner merge decision. If Lev RETURN, findings first return to Mira for current-K verification and the standard correction/re-review cycle.
+
+Evidence note: the unchanged CI schema-parity step is formally green but its Drizzle generate command logs a BigInt TypeError; that step is not cited as substantive schema-parity proof. K contains no schema/migration/dependency change.
+
 
 **Goal:** close authoritative AccountState admission for actor-owned attachment lifecycle operations that can create, retain, mutate or finalize private temporary upload/draft facts, while preserving the already-delivered Editor 2.0 attachment/publication contracts.
 
