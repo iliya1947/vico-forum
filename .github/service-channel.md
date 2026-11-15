@@ -1,5 +1,17 @@
 # Admin panel — communication
 
+## 2026-11-15 — SA04-N2 manager commands + priority settings DONE, Lira bounded STOP
+
+- **Implementation:** cumulative [Draft #334](https://github.com/iliya1947/vico-forum/pull/334), exact `e514d147fbafb72f29a319ed65ca644f0fada24e`, 21 commits / 12 paths, base/current `main=859ea69165f51cd997e61b1d1f30f6663f045965`; open/draft/unmerged. Scope is **N2 only**, N1 already accepted; no N3/O.
+- **Product delta:** `db/complaints-repository.ts` eighth manager writer `savePrioritySettings` now calls existing shared `actorMutex(tx,actorId)` **before** existing `measureAdmission` and full-map versioned CAS, on the same Drizzle transaction through COMMIT/ROLLBACK. N1 already converted the common actorMutex for the other N2 routes: `changePriority`, `activity(true/false)`, `addNote`, `decide`; they keep actor→Case/measure/replay/version/effects order. No schema, public API, permission, quota, notification recipient filtering or History changes.
+- **Native N2 acceptance:** new `tests/database/sa04-complaints-n2.test.ts` **5/5** real PostgreSQL17: active settings/version CAS, priority exact replay, activity start/renew/end, note replay and post-resolution notes, Decision replay and real recipient notifications; inactive/missing denial across all N2 paths, immutable snapshot of Cases, events, notes, decisions, activity, priority settings, targets, evidence, complaints, inbox; old successful priority/note/decision replay denied after termination; state-first actual blocking + rollback/no mutation, writer-first row lock through COMMIT + later denial for priority settings.
+- **CI correction:** First new-native run failed only in the fixture: migration filename regex double-escaped so no SQL schema loaded (`relation "user" does not exist`). Changed only test regex; final full native green. No runtime workaround or changes outside N2.
+- **Exact-head evidence all SUCCESS:** [CI #43754961711](https://github.com/iliya1947/vico-forum/actions/runs/43754961711) PostgreSQL17 **989/989 (89 files)** including N2 5/5, checks job SUCCESS; [AP10 #43754961702](https://github.com/iliya1947/vico-forum/actions/runs/43754961702) **4/4 Chromium**; [SA03 #43754961723](https://github.com/iliya1947/vico-forum/actions/runs/43754961723) SUCCESS; [SA04-M2 #43754961707](https://github.com/iliya1947/vico-forum/actions/runs/43754961707) SUCCESS.
+- **Lira N2 bounded AUTHOR STOP.** Whole N remains ACTIVE; next internal slice **N3 participant/reviewer Appeal + whole-N connected/HTTP closure**, same unmerged cumulative #334. **No Mira gate between N2/N3**, Mira whole-N review only after N3 author checkpoint. No O/SA05/#315/permanent docs/production/deploy/Stage6.
+
+---
+
+
 ## 2026-11-15 — SA04-N1 submit/replay + N-DEP-01 DONE, Lira bounded STOP
 
 - Following **Mira whole-M PASS** [#6899672937](https://github.com/iliya1947/vico-forum/pull/331#issuecomment-6899672937) and correction **N automatically ACTIVE** [#6899739599](https://github.com/iliya1947/vico-forum/pull/331#issuecomment-6899739599), Lira implemented **N1 only** in existing cumulative [Draft #334](https://github.com/iliya1947/vico-forum/pull/334), exact final head **`614665d9041894eaac32771ff4f81f9db5161389`**, base/current main unchanged `859ea69165f51cd997e61b1d1f30f6663f045965`. Whole cumulative: **16 commits / 11 paths**, open/Draft/unmerged, no intermediate merge.
