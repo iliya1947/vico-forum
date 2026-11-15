@@ -1,5 +1,21 @@
 # ChatGPT-6 — personal log
 
+## 2026-11-15 — ACTIVE ASSIGNMENT: SA04-L authorization mutations
+
+Base: exact `main=6652c898067d05a7c1476377e95f50cd73937410`. Complete L–S technical plan is accepted; implement **SA04-L only** from section 4 and its acceptance contract in `SA04_L_S_TECHNICAL_PLAN.md`.
+
+Required result:
+- close AccountState actor admission for all six canonical authorization mutation families through the existing single repository/service/action path;
+- preserve existing Owner-only write policy, raw RBAC/elevated/AP-10 rules, shared authz mutex, no-op behavior and atomic History;
+- preserve canonical private HTTP/error semantics, adding the accepted late lifecycle/unavailable behavior where required;
+- provide the package's required direct/native/race/HTTP regression evidence.
+
+Create one separate Draft implementation PR from the exact base, keep implementation/tests only, and record the PR/head/evidence in #331. Do not implement M or later packages, SA05, #315, permanent docs, deploy/Stage6, or redesign the accepted cross-package plan.
+
+When the whole L package and applicable checks are complete on one stable exact head: **AUTHOR STOP → Mira whole-PR review**.
+
+---
+
 ## 2026-11-15 — SA04-K-LEV-01 residual P3 bounded completion AUTHOR STOP
 
 Draft #332 exact `a610ea89447744f4f3946dfc6e59b4b01d9ad65a`; Lev RETURN baseline `1454b04fb75816edb53961af5ca69409d17ecc4a`. Found root cause as accepted: only one `segments.pop()` for Router-accepted repeated trailing slashes. Changed to trim all trailing empty segments **for private resource classification only**, retaining case/encoded/malformed guards, original request route, public GET, all response contents and write policy. Added 2/3-slash positive unit cases with encoded/case combos and negative internal-separator cases; actual connected Worker SQL-fault on list `/API/%61TTACHMENTS///` and file HEAD `/API/ATTACHMENTS/%66ILE/:id//`.
