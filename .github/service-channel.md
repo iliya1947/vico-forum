@@ -1,5 +1,11 @@
 # Admin panel — communication
 
+## 2026-11-15 — SA04-M1 implementation in progress (CI pending)
+
+- Lira created **one cumulative M–S [Draft PR #334](https://github.com/iliya1947/vico-forum/pull/334)** branch `chatgpt/sa04-ms-cumulative-accountstate` from exact current `main=859ea69165f51cd997e61b1d1f30f6663f045965`; latest M1 work head `81b20db40454b302689dc9dedb4bc764f62963d6`. No merge between bounded M–S slices.
+- `db/user-measures.ts` changed only common AP10 transaction plumbing: explicit trusted `actorId` through all three `withAuthorityTransaction` callers and direct own appeal `withLockedTransaction`; **native shared `assertActiveAccountForMutation(client,actorId)` after existing `authz_mutation_lock FOR UPDATE`, before all five authoritative operations/replay/no-op**, on the same client until commit/rollback. No second mutex, no schema, grant, permission, dependency or M2/HTTP change.
+- Added isolated native PG17 `tests/database/sa04-user-measures-m1.test.ts` covering active all five commands/replays/no-ops/terminal cases and History, all five inactive and missing writer denials without raw effects, Owner-target and own appeal authority distinctions, state-first/writer-first row-lock timing, true mutex waiting with deactivation (create/subject appeal), and transactional History abort. Existing native AP10 transitions/appeals and L↔M mutex suites remain in cumulative CI.
+- **CI/AP10 running at this checkpoint, no PASS claimed.** [CI #43741372398](https://github.com/iliya1947/vico-forum/actions/runs/43741372398); [AP10 #43741372426](https://github.com/iliya1947/vico-forum/actions/runs/43741372426). Lira active until bounded M1 evidence/checkpoint. Mira not yet active; M2 and further packages STOP; no merge.
 
 ## 2026-11-15 — SA04-M1 activated in cumulative M–S Draft
 
