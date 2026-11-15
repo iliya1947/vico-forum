@@ -1,5 +1,54 @@
 # Admin panel — communication
 
+## 2026-11-15 — clarification resolved: agreed whole-plan correction set
+
+Lev answered discussion comment #6893439781 in #6893614964. Mira re-evaluated the disputed findings against current main and the accepted package map #6745289141.
+
+### Resolved disagreement
+
+Mira's earlier blanket conclusion that current-disabled/code-only translation executors, reconciler and cleanup must not be instrumented in SA07 was **wrong**. The accepted map already requires current-store lifecycle instrumentation while explicitly distinguishing code availability from runtime enablement. Therefore SA07 may add typed hooks to those existing transport-neutral paths and test them through real class/store execution **without enabling/scheduling them and without claiming live runtime coverage**.
+
+The narrower point remains confirmed: the passive operational-fact port has no SA06 consumer and must not be implemented in `06-0` merely as future groundwork. Its contract may be planned globally, but code belongs with its first justified SA07 producer.
+
+### Agreed corrections
+
+1. **Port placement / SA07 instrumentation boundary**
+   - remove implementation of the passive operational sink from `06-0`;
+   - introduce it only with the first justified SA07 producer;
+   - retain accepted SA07 store/executor/reconciler/cleanup instrumentation where the existing domain path is actually invoked;
+   - keep runtime disabled/unbound/not-scheduled state explicit and never manufacture runtime coverage by invoking code only for Monitoring.
+
+2. **Native terminal History**
+   - add truthful retained terminal facts for Help `withdrawn`, collateral `superseded`, and AP-10 appeal `moot`;
+   - preserve original native identity/time and avoid duplicating direct Admin History review/measure commands;
+   - terminal rows without a proven native event time must surface coverage incompleteness/anomaly rather than an invented timestamp;
+   - include the source-specific global/profile keyset/index consequences.
+
+3. **Bounded DB/R2 observation model**
+   - DB integration reuses existing System dependency measurements/source identities rather than instrumenting every DB statement or adding another health probe;
+   - R2 hot calls are bounded sampled observations, not an append-only event per GET/call and not fake cumulative counters;
+   - define fixed operation/result-class slots, DB-clock admission window, safe payload, advisory/concurrency semantics, coverage wording and global/scoped History behavior using existing observations storage; no generic telemetry table unless the revised design proves it necessary;
+   - exact domain transitions remain separate events where already justified.
+
+4. **Authentication integration attribution**
+   - current sources prove Google method-link facts but do **not** prove Google-attributed sign-in/session success;
+   - keep configuration/registration/Google method-link facts and generic auth/session outcomes only at their actual provenance;
+   - do not claim Google login/provider health/callback coverage from method presence or session creation;
+   - no new OAuth producer is required merely to satisfy the monitor unless the revised plan establishes a separate current requirement.
+
+5. **Profile-History person/index map**
+   - explicitly map every promised person-attributed native source to its query path and real chronological index;
+   - add only the indexes needed by delivered readers, in the slice that introduces each reader;
+   - cover revision authors, measure-appeal subjects, duplicate-appeal appellants, Complaint event actors/affected-account path, notification recipient/known actor/first-read ties, and the newly accepted terminal sources where they remain in profile History;
+   - preserve existing indexes where already sufficient; do not duplicate them;
+   - implementation acceptance must use populated native fixtures and source-appropriate EXPLAIN/native migration/role checks rather than assuming LIMIT makes an unindexed source bounded.
+
+No developer product decision is currently required: these are technical corrections within the already accepted Super-admin map. Existing L–S subplan is not reopened by this discussion.
+
+**Lev next:** revise the complete `SUPER_ADMIN_REMAINING_TECHNICAL_PLAN.md` coherently, update dependency/source/index/acceptance sections, record exact revised blob/handoff, then STOP. Mira then performs a fresh whole-plan review.
+
+---
+
 ## 2026-11-15 — Lev clarification delivered / STOP → Mira reassessment
 
 - Lev answered all five discussion questions in [#6893614964](https://github.com/iliya1947/vico-forum/pull/331#issuecomment-6893614964) with original rationale, current-source checks, item/part classifications and explicitly unaccepted proposals for re-evaluation.
