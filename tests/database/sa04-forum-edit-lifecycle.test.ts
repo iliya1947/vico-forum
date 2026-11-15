@@ -323,7 +323,7 @@ describe("SA04-J3b authoritative account admission for published edit", () => {
       const complaintPid = (await submitter.query<{ pid: number }>("select pg_backend_pid() as pid")).rows[0]!.pid;
       const barrier = order === "complaint-first"
         // Complaint already owns the real topic-title FOR UPDATE when its actor query waits.
-        ? pauseQuery(submitter, text => /select id from "user" .*for no key update/i.test(text))
+        ? pauseQuery(submitter, text => /from "user"/i.test(text) && /for no key update/i.test(text))
         // Edit has already taken topic/post and actor locks, revised post and reached
         // the real mention INSERT when Complaint tries to lock the title topic.
         : pauseQuery(editor, text => /insert into forum_reply_notifications/i.test(text));
