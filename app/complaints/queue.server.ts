@@ -29,7 +29,7 @@ export function complaintHttpError(error: unknown): never {
 export function complaintCommandFailure(error: unknown): ReturnType<typeof data<{error:string}>> {
   if(error instanceof Response)throw error;
   if(error instanceof AccountInactiveError || error instanceof AccountMissingError)
-    throw new Response("Unauthorized",{status:401,headers:complaintPrivateHeaders});
+    return data({error:"unauthenticated"},{status:401,headers:complaintPrivateHeaders});
   const key=error instanceof ComplaintForbiddenError||error instanceof UserMeasureRestrictedError?"forbidden":error instanceof ComplaintNotFoundError?"notFound":
     error instanceof ComplaintInputError?"invalid":error instanceof ComplaintConflictError?"conflict":
     error instanceof ComplaintStorageUnavailableError||error instanceof AuthorizationUnavailableError?"unavailable":null;
