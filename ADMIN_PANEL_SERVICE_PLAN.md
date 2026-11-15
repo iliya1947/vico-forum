@@ -26,7 +26,7 @@ Accepted master technical plan: predecessor #251 comment **#6806249892**.
 - **A–H:** account-state storage + neutral public identity/projection foundation — delivered in current main.
 - **I:** Better Auth active-account closure — delivered in current main.
 - **J:** Forum authoritative actor writes — **delivered/merged by PR #330**, merge commit `398dae18d5ca7c3fc6dd84fd93a29d7c381ba366`; Mira cumulative whole-J PASS + Lev independent whole-J PASS on implementation head `800df2a56c4853a0c261f4cdb1b9969efe5c4b3e`.
-- **K:** attachment upload/draft/finalization admission — **Lev independent whole-K RETURN on exact `bb9d1497c5d5f14bfff6a1edf64e19eed5fd5105`; confirmed current-K finding `SA04-K-LEV-01 / P3`; bounded Lira correction active in #332**.
+- **K:** attachment upload/draft/finalization admission — corrected cumulative Draft #332 exact `1454b04fb75816edb53961af5ca69409d17ecc4a`; **Mira fresh corrected whole-K PASS, 0 confirmed current-K defects; Lev independent corrected whole-K review active**. Not merged.
 - **L:** authorization mutations.
 - **M:** AP-10 mutations/appeals.
 - **N:** Complaints mutation/participation.
@@ -70,13 +70,24 @@ Independent exact-head evidence rechecked:
 Lev subsequently returned one confirmed current-K defect `SA04-K-LEV-01 / P3`; this historical coordinator PASS no longer closes the merge gate. After the bounded correction lands on a new stable head, Mira repeats cumulative whole-K review, then Lev independently reviews that same new head.
 
 
-### SA04-K-LEV-01 — CONFIRMED / correction active
+### SA04-K-LEV-01 — correction accepted by Mira; independent closure pending
 
 Mira independently verified Lev's P3 finding against current #332 source, the actual Worker reproducer and current React Router v8 route semantics. The new Worker failure wrapper classifies raw `request.url` pathname literally, while the attachment routes accept route-equivalent case/trailing/encoded static-segment variants; on those variants an unexpected private GET/HEAD 500 can therefore miss the required `private, no-store` header.
 
 This is a **current-K privacy/cache-contract defect**, not future #315 work. Confirmed scope is only the new attachment resource 5xx classifier and regressions. Required correction result: classify every attachment URL variant actually accepted by Router as the same private attachment resource for GET/HEAD 5xx; preserve status/body/cookies, successful responses, public GET caching and all auth/lifecycle/storage semantics; malformed encoding must not make the wrapper throw. Add focused alias/malformed regressions plus representative actual Worker unexpected-500 proof. No routing/auth/storage redesign.
 
 After correction: new stable exact #332 head + applicable gates → fresh Mira cumulative whole-K review → Lev independent whole-K review. No merge before both PASS.
+
+### Fresh corrected whole-K coordinator review — PASS
+
+Mira completed a fresh cumulative whole-K review on corrected Draft #332 exact `1454b04fb75816edb53961af5ca69409d17ecc4a`: **PASS — 0 confirmed current-K defects**.
+
+The review covered the bounded SA04-K-LEV-01 correction and complete cumulative K behavior: all seven lifecycle-gated entrypoints, transaction/lock/race ordering, replay/no-op/AP-10 boundaries, external R2 late-PUT/finalizer and ambiguous/lost-ACK handling, cleanup claims/leases/fences, J publication/edit composition, public/system exclusions, HTTP/privacy behavior, authoring-context coverage and Stage boundary.
+
+Exact-head evidence independently rechecked: CI 43651351495 SUCCESS — PG17 **956/956**, application **2323/2323**, Worker privacy **21/21**, lint 0 errors / 1 unchanged warning, typecheck/build/schema/migration gates green; K5 connected 43651351537 SUCCESS **31/31**; same-head AP-10, SA-01, SA-03 and SA04-J12 workflows SUCCESS.
+
+**Next gate:** Lev independently reviews the same exact corrected head. Until Lev PASS, K is not merge-ready and SA04-K-LEV-01 is not independently closed. L–S, SA05, #315, permanent docs and Stage6 remain inactive.
+
 
 ## Remaining accepted Super-admin package sequence after SA-04
 
@@ -154,7 +165,7 @@ Accepted result:
 
 Exact-head evidence: CI 43616566018 SUCCESS — PG17 **956/956** in 84 files, K4 native **7/7**, K3 **7/7**, fence **22/22**, app **2306/2306** in 186 files, attachment route **42/42**, editor attachment operation **21/21**, lint/typecheck/build/migrations/Workers PASS. AP-10, SA-01, SA-03 and SA04-J12 browser workflows also SUCCESS on the same SHA.
 
-### K5 — AUTHOR STOP; whole-K coordinator review pending
+### K5 — HISTORICAL AUTHOR STOP
 
 K5 five-subtask author closure completed at cumulative implementation Draft #332 stable exact `bb9d1497c5d5f14bfff6a1edf64e19eed5fd5105`. All six exact-head workflows SUCCESS; complete evidence and handoff are in service communication and the #331 final author comment. This is not Mira/Lev whole-K review or merge authorization.
 
