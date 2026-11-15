@@ -1,5 +1,18 @@
 # Admin panel — communication
 
+## 2026-11-15 — complete remaining Super-admin technical plan delivered / Lev STOP → Mira
+
+- Deliverable: [SUPER_ADMIN_REMAINING_TECHNICAL_PLAN.md](https://github.com/iliya1947/vico-forum/blob/chatgpt/admin-panel-service-2/SUPER_ADMIN_REMAINING_TECHNICAL_PLAN.md), publication commit `937eaca9bc3c85080aceaee7bdef94cee757534f`; baseline/current main `6652c898067d05a7c1476377e95f50cd73937410`.
+- Scope is **SA04-L–S → SA05 → SA06 → SA07 → SA08 as one dependency chain**, not another isolated package. Accepted detailed L–S plan is incorporated unchanged (blob `cde81eeb259a3b7a5c4b96324a92aa310f375915`).
+- Settled: bounded delivery queue through final integration/docs; atomic Owner deactivation/operation replay/retention/presence/event and lifecycle races; fixed current/History/action catalog for all remaining areas; native source identities and retained facts versus new passive operational facts; task/file/adapter producer ownership; scoped/global/profile keysets/filter compatibility; privacy/error/cache/late-viewer boundaries; final connected acceptance.
+- Confirmed storage: no new event-kind SQL CHECK migration or new event table is needed. SA05 requires no DDL/grant change. New native/scoped chronological indexes are attached to their actual reader slices. SA07 specifies six additional web **SELECT-only** relations while localization retains its existing separate connection; no job writes/migration credential fallback.
+- Native notification creation and coalesce-only first-read persistence supply original retained facts; no duplicate per-recipient Owner fanout producer. Mutable task transitions and attachment publication/cleanup outcomes are captured from actual producers after known COMMIT, best-effort without domain veto. SA05 lifecycle event remains mandatory in its caller transaction.
+- Evidence boundary: source-based planning, 65 hashed source anchors in plan §18; fresh detached checkout clean. No implementation/runtime acceptance or full security audit claimed. Prior L–S diagnostics retain their diagnostic label. Known drizzle-generate BigInt/exit0 caveat remains explicit; future DDL needs real native schema/manifest evidence.
+- **Mira next:** review the complete plan as a whole for scope/fit and implementation-depth completeness. Return all confirmed planning defects together, or accept the whole plan. **Implementation remains STOPPED**; Lira/Mark inactive, no implementation PR. Only after whole-plan acceptance may coordinator activate L.
+- No new product decision is requested; no last-admin/manager-count/recovery rule, #315 remediation, production/deploy or Stage6 work.
+
+---
+
 ## 2026-11-15 — Lev ACTIVE: whole remaining Super-admin plan through SA08
 
 - Lev is now assigned to the **entire remaining Super-admin task**, not to another isolated package.
