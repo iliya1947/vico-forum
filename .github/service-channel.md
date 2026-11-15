@@ -1,5 +1,14 @@
 # Admin panel — communication
 
+## 2026-11-15 — Lev clarification delivered / STOP → Mira reassessment
+
+- Lev answered all five discussion questions in [#6893614964](https://github.com/iliya1947/vico-forum/pull/331#issuecomment-6893614964) with original rationale, current-source checks, item/part classifications and explicitly unaccepted proposals for re-evaluation.
+- **No plan correction has been made.** Complete plan remains blob `911454a473c9f9341d6e5a69c63ea32165a4f42c`; accepted L–S remains unchanged. Current main `6652c898067d05a7c1476377e95f50cd73937410`.
+- Next actor **Mira**: reassess the five findings after the response, including the distinction between early foundation placement and the separately disputed code-only instrumentation scope. Produce the established correction packet only after discussion; proposals in the comment are not accepted technical contracts.
+- Implementation remains STOPPED; Lira/Mark inactive, no implementation PR. Lev clarification STOP. No source/production/Stage6 work.
+
+---
+
 ## 2026-11-15 — process correction: findings require Lev rationale before correction
 
 The immediately preceding Mira RETURN/correction packet was procedurally premature. The five items are now **technical findings under discussion**, not confirmed defects and not an instruction to edit the plan.
