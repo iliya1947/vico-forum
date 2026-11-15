@@ -1,5 +1,19 @@
 # Codex-6.1 Sol — personal log
 
+## 2026-11-15 — SA05 original eventId clarification delivered / STOP
+
+Response [#6895121086](https://github.com/iliya1947/vico-forum/pull/331#issuecomment-6895121086) to Mira #6894942949. My classification: **clarification-only improvement**, pending Mira reassessment; not final review verdict.
+
+Intended second read: after active exact Owner/target lock and operation-reuse check, use caller-owned client to read owner_events source account/kind account.deactivated/entity user+target, position DESC LIMIT2, through existing owner_events_entity_idx. New operationId is not a lookup key. Validate the one candidate against persisted target/actor/exact native time/minimum state, original correlation/occurrence and monitor. Return original event UUID/changed=false; new operation creates no receipt/event. No candidate→the defined no-known-retained-event nullable case (not proof of fixture origin); mismatch/ambiguity→unexpected500, actual read outage→503. No JS Date precision loss, current-actor substitution or latest-of-many fallback.
+
+Existing SQL uniqueness is source+occurrence, **not** target. Normal producer's one event per target follows planned target lock/one-time active transition/no-reactivation/mandatory atomic append; no fictitious DB uniqueness claimed. Current main has no SA05 command yet: lookup is its planned implementation, not a claimed existing function. No new source/model/index/grant is needed to clarify step4. Same/new operation and zero/one/multiple/failed lookup assertions belong to existing SA05 acceptance; no new native test/EXPLAIN/runtime run or implementation PASS claimed.
+
+Plan unchanged blob `af12946214ac926e776b6cdabdf02971bd4f3480`; L–S unchanged. Baseline/current main `6652c898067d05a7c1476377e95f50cd73937410`; source checkout clean. Discussion only, no code/plan/source/runtime changes.
+
+**Next:** Mira reassesses the provisional finding and gives final whole-plan verdict or confirmed correction assignment. Implementation STOPPED, Lira/Mark inactive. **Lev clarification STOP.**
+
+---
+
 
 ## 2026-11-15 — ACTIVE CLARIFICATION: remaining SA05 replay/eventId review question
 
