@@ -4,7 +4,7 @@ Service PR #331 is the active Admin/Super-admin coordination channel. PR #251 is
 
 ## Current boundary
 
-- Current source-of-truth baseline: `main = 398dae18d5ca7c3fc6dd84fd93a29d7c381ba366`.
+- Current source-of-truth baseline: `main = 6652c898067d05a7c1476377e95f50cd73937410`.
 - Stage 6 remains paused; no external deployment, production migration, real R2/Google/provider setup or production data work is authorized here.
 - #315 security remediation remains a separate service task.
 - Permanent SA-04 factual/project documentation is updated only in the separate documentation closeout required by `AGENTS.md`; interim package progress is tracked here.
@@ -26,7 +26,7 @@ Accepted master technical plan: predecessor #251 comment **#6806249892**.
 - **A–H:** account-state storage + neutral public identity/projection foundation — delivered in current main.
 - **I:** Better Auth active-account closure — delivered in current main.
 - **J:** Forum authoritative actor writes — **delivered/merged by PR #330**, merge commit `398dae18d5ca7c3fc6dd84fd93a29d7c381ba366`; Mira cumulative whole-J PASS + Lev independent whole-J PASS on implementation head `800df2a56c4853a0c261f4cdb1b9969efe5c4b3e`.
-- **K:** attachment upload/draft/finalization admission — PR #332 exact `a610ea89447744f4f3946dfc6e59b4b01d9ad65a`; **Mira whole-K PASS + Lev independent whole-K PASS, 0 confirmed current-K defects; Owner merge gate open**. Not merged.
+- **K:** attachment upload/draft/finalization admission — **delivered/merged by PR #332**; reviewed implementation head `a610ea89447744f4f3946dfc6e59b4b01d9ad65a`; Mira whole-K PASS + Lev independent whole-K PASS, 0 confirmed current-K defects.
 - **L:** authorization mutations.
 - **M:** AP-10 mutations/appeals.
 - **N:** Complaints mutation/participation.
@@ -35,6 +35,40 @@ Accepted master technical plan: predecessor #251 comment **#6806249892**.
 - **Q:** registration settings write.
 - **R:** new user generation-plan admission.
 - **S:** connected end-to-end SA-04 closure on one stable accepted state.
+
+## SA04-L–S — mandatory complete-chain technical planning
+
+### Why this gate exists
+
+The accepted SA-04 master plan #6806249892 remains authoritative and already fixes the purpose of L–S plus the common AccountState lifecycle model. A review of the current service plan and #251 planning comments found no separate accepted implementation-depth plan for the remaining L–S chain.
+
+Before any L implementation, the remaining chain must therefore be technically planned **as one system**, not package-by-package just in time. This closes the process gap without reopening settled product decisions.
+
+### Required planning result
+
+Lev must produce one complete current-main technical plan covering **L, M, N, O, P, Q, R and S together**. It must be detailed enough that later bounded implementation can proceed package by package without making cross-package architecture up during implementation.
+
+The plan must establish, from current `main=6652c898067d05a7c1476377e95f50cd73937410`:
+
+1. complete authoritative mutation/finalization entrypoint and caller inventory for every L–R domain, including direct/service/HTTP paths where relevant;
+2. dependency graph and implementation order across L–S, including seams with already delivered A–K and the fixed future SA-05 state-writer boundary;
+3. for every authoritative writer: lifecycle admission point, transaction boundary, dependency/actor lock order, replay/no-op/idempotency/CAS precedence and fail-closed behavior;
+4. cross-writer race matrix that can affect correctness across remaining packages or with already delivered SA-04 work, including state-first/writer-first outcomes and deadlock-sensitive ordering;
+5. preservation of each domain's existing authorization, hierarchy, Owner, measure, Complaint, Settings, generation, History and privacy semantics; AccountState is an additional actor-lifecycle predicate, not a replacement policy;
+6. canonical HTTP/error/cache/privacy behavior where package behavior reaches request boundaries;
+7. a concrete acceptance matrix for each package and for S, including native PostgreSQL/direct repository evidence and the applicable built Worker/Better Auth/Chromium connected closure;
+8. bounded implementation decomposition and package handoff criteria for L–S after the complete plan is accepted.
+
+Planning must explicitly determine whether the current master assumptions still fit the post-K current main. If a correct solution requires a product/architecture/schema/dependency/public-contract change beyond the accepted SA-04 boundary, stop with a technical escalation rather than embedding it in the plan.
+
+### Hard boundary
+
+- **Planning only.** Do not create an implementation PR or modify implementation.
+- Do not produce an L-only technical plan and defer M–S architecture to later.
+- Do not implement SA-05, deactivation, #315 remediation, permanent docs or Stage6.
+- Lira and Mark remain inactive.
+- Handoff is the complete L–S plan to Mira for scope/fit review.
+
 
 ## SA04-K — scope for technical planning
 
