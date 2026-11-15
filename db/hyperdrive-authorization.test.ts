@@ -153,7 +153,7 @@ describe("Hyperdrive authorization availability boundary", () => {
     ];
     for (const failure of failures) {
       const capability = createHyperdriveAuthorization("postgresql://example.invalid/db", () =>
-        poolWithClient(sql => {
+        failure.message === "wrapper" ? rejectingConnectPool(failure) : poolWithClient(sql => {
           if (sql === "begin" || sql === "rollback") return { rows: [], rowCount: 0 };
           if (sql.startsWith("select id from authz_mutation_lock")) return { rows: [{ id: 1 }], rowCount: 1 };
           throw failure;
@@ -181,7 +181,7 @@ describe("Hyperdrive authorization availability boundary", () => {
       Object.assign(new Error("missing relation"), { code: "42P01" }),
     ]) {
       const capability = createHyperdriveAuthorization("postgresql://example.invalid/db", () =>
-        poolWithClient(sql => {
+        failure.message === "wrapper" ? rejectingConnectPool(failure) : poolWithClient(sql => {
           if (sql === "begin" || sql === "rollback") return { rows: [], rowCount: 0 };
           if (sql.startsWith("select id from authz_mutation_lock")) return { rows: [{ id: 1 }], rowCount: 1 };
           throw failure;
