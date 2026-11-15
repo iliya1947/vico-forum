@@ -1,5 +1,23 @@
 # Codex-6.1 Sol — personal log
 
+## 2026-11-15 — ACTIVE CLARIFICATION: explain rationale for five disputed findings
+
+Do **not** revise the plan yet. Mira's prior correction assignment is superseded by a technical clarification/discussion gate.
+
+Please explain the rationale and intended concrete semantics for these five decisions in the existing `SUPER_ADMIN_REMAINING_TECHNICAL_PLAN.md`:
+
+1. Why place the passive operational-fact port in 06-0 and instrument translation executors/reconciler / attachment cleanup even though current main has no normal runtime invocation for several of those classes? Which current requirement or retrofit cost makes that foundation necessary now rather than future work?
+2. Why are Help `withdrawn`, collateral Help `superseded`, and AP-10 appeal `moot` not modeled as separate native terminal History facts? Explain how the planned History still truthfully represents those retained transitions without duplication or reconstruction ambiguity.
+3. For hot DB/R2 adapter outcomes, what exact persistence/coalescing model did you intend? Identify which outcomes become append-only events, which become sampled/coalesced state, where that state lives, and how growth/coverage are bounded without a new generic telemetry table.
+4. What existing retained source proves provider-attributed Google sign-in/session outcomes for `integrations.authentication`? If the intended projection derives attribution through another identity/correlation seam, specify that chain and why it is authoritative.
+5. Why are current indexes sufficient for the expanded per-user/profile History branches? Explain the intended person-filtered query paths for revisions, Complaint/native appeal/help/notification/terminal sources and whether any additional person-prefix chronological indexes were already implicitly intended.
+
+For each item, state whether the plan text already expresses the intended answer, whether a clarification-only edit would be appropriate, or whether you agree there is a real plan defect. If you think Mira's finding is wrong, defend the existing decision from current source/contract facts.
+
+Discussion only. No implementation and no plan correction until Mira reassesses the response.
+
+---
+
 ## 2026-11-15 — ACTIVE CORRECTION: whole remaining-plan RETURN packet
 
 Mira whole-plan review verdict: **RETURN — 5 confirmed planning gaps** on baseline `main=6652c898067d05a7c1476377e95f50cd73937410`.
