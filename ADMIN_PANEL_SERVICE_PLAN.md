@@ -26,7 +26,7 @@ Accepted master technical plan: predecessor #251 comment **#6806249892**.
 - **A–H:** account-state storage + neutral public identity/projection foundation — delivered in current main.
 - **I:** Better Auth active-account closure — delivered in current main.
 - **J:** Forum authoritative actor writes — **delivered/merged by PR #330**, merge commit `398dae18d5ca7c3fc6dd84fd93a29d7c381ba366`; Mira cumulative whole-J PASS + Lev independent whole-J PASS on implementation head `800df2a56c4853a0c261f4cdb1b9969efe5c4b3e`.
-- **K:** attachment upload/draft/finalization admission — cumulative Draft #332 exact `a610ea89447744f4f3946dfc6e59b4b01d9ad65a`; **Mira fresh cumulative whole-K PASS + Lev independent whole-K PASS, 0 confirmed current-K defects**, both on that exact head; [Lev report #6891261025](https://github.com/iliya1947/vico-forum/pull/331#issuecomment-6891261025). SA04-K-LEV-01 CLOSED. Next Mira closeout / Owner merge decision; not merged.
+- **K:** attachment upload/draft/finalization admission — PR #332 exact `a610ea89447744f4f3946dfc6e59b4b01d9ad65a`; **Mira whole-K PASS + Lev independent whole-K PASS, 0 confirmed current-K defects; Owner merge gate open**. Not merged.
 - **L:** authorization mutations.
 - **M:** AP-10 mutations/appeals.
 - **N:** Complaints mutation/participation.
@@ -37,6 +37,13 @@ Accepted master technical plan: predecessor #251 comment **#6806249892**.
 - **S:** connected end-to-end SA-04 closure on one stable accepted state.
 
 ## SA04-K — scope for technical planning
+
+### SA04-K final review closeout — PASS / PASS
+
+PR #332 exact `a610ea89447744f4f3946dfc6e59b4b01d9ad65a` has completed the required stable-head review cycle: Mira cumulative coordinator **PASS** and Lev independent cumulative **PASS**, both with **0 confirmed current-K defects**. `SA04-K-LEV-01 / P3` is independently closed.
+
+The implementation is now at the **Owner merge gate** only. Agents do not merge. L must not start until #332 is merged and `main` is refreshed. The CI schema-parity caveat remains factual evidence metadata only: the unchanged green step does not substantively prove parity because the generator logs a BigInt TypeError/exit0; K has no schema/migration/dependency/CI delta.
+
 
 ### Fresh whole-K coordinator review after residual completion — PASS
 
