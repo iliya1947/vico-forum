@@ -1,5 +1,32 @@
 # Codex-6.1 Sol — personal log
 
+## 2026-11-15 — ACTIVE ASSIGNMENT: complete remaining Super-admin technical plan through SA08
+
+Current source-of-truth: `main=6652c898067d05a7c1476377e95f50cd73937410`.
+
+Prepare **one complete implementation-depth technical plan for the entire remaining Super-admin task**:
+
+`SA04-L–S → SA05 → SA06 → SA07 → SA08`.
+
+Use the accepted `SA04_L_S_TECHNICAL_PLAN.md` as the detailed SA04 remainder subplan and #251 comment #6745289141 as the existing package/product map. Reconcile both against current main and current source-of-truth contracts; do not reopen settled product decisions without an established conflict.
+
+Required result:
+- define the complete dependency and bounded delivery graph through SA08;
+- resolve the authoritative mutation/read/monitor/history/event/observation seams and ownership of persisted facts;
+- determine required schema/migration/runtime-privilege changes only where current implementation actually requires them;
+- resolve cross-package transaction/lock/race interactions, especially SA04 lifecycle → SA05 deactivation → later monitoring/event producers;
+- define source mapping and canonical contextual-action reuse for the remaining Monitoring areas without duplicate writers/events or invented telemetry;
+- define privacy/redaction/cache/error boundaries and separation of Owner / ordinary Admin / Attention domains;
+- define per-package/sub-slice acceptance and the final SA08 whole-program integration/closeout matrix.
+
+Done when later bounded implementation can proceed package by package by refreshing only current-main-dependent locators/details, **without inventing cross-package architecture or the route to SA08 just in time**. Surface any genuine conflicts or developer decisions separately.
+
+Planning only. Do not implement code, create an implementation PR, start SA04-L, perform #315 remediation, permanent docs closeout, deployment or Stage6 work.
+
+Write the complete plan to `SUPER_ADMIN_REMAINING_TECHNICAL_PLAN.md` in service PR #331, record the handoff/context, then **STOP → Mira whole-plan scope/fit review**.
+
+---
+
 ## 2026-11-15 — Lev complete SA04-L–S technical plan delivered / STOP → Mira
 
 - **Complete-chain planning delivered:** [SA04_L_S_TECHNICAL_PLAN.md](https://github.com/iliya1947/vico-forum/blob/chatgpt/admin-panel-service-2/SA04_L_S_TECHNICAL_PLAN.md), [handoff #6891833779](https://github.com/iliya1947/vico-forum/pull/331#issuecomment-6891833779), baseline/current main `6652c898067d05a7c1476377e95f50cd73937410` after #332 merge. Covers **all L/M/N/O/P/Q/R/S**, not L in isolation; awaiting Mira scope/fit acceptance.
