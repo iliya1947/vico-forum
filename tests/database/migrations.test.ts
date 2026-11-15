@@ -22,6 +22,7 @@ import { createHyperdriveForumWriter } from "../../db/hyperdrive-forum";
 import { FORUM_WRITE_COOLDOWN_MS, ForumWriteRateLimitError } from "../../db/forum-write-policy";
 import { PERMISSION_CATALOG, INITIAL_ROLE_GRANTS } from "../../app/authorization/catalog";
 import { AuthorizationService, InvalidAuthorizationInputError } from "../../db/authorization-service";
+import { AccountMissingError } from "../../db/account-state";
 import {
   AuthorizationForbiddenError,
   AuthorizationNotFoundError,
@@ -1980,7 +1981,7 @@ describe("PostgreSQL 17 locale migrations", () => {
           "access.authorization.manage",
         ]);
         await expect(service.createCustomRole("missing-authz-actor", { slug: "intruder", displayName: "Intruder" }))
-          .rejects.toBeInstanceOf(AuthorizationForbiddenError);
+          .rejects.toBeInstanceOf(AccountMissingError);
         expect((await service.listRoles()).some((role) => role.slug === "intruder")).toBe(false);
       } finally {
         await service.replaceRoleGrants("authz-admin", "builtin-user", defaultUserGrants);
