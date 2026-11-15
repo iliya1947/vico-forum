@@ -3,6 +3,7 @@ import { drizzle } from "drizzle-orm/node-postgres";
 import { Client, Pool } from "pg";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { AccountInactiveError, AccountMissingError } from "../../db/account-state";
+import { ComplaintConflictError } from "../../db/complaints-domain";
 import { DrizzleComplaintsRepository } from "../../db/complaints-repository";
 import { DrizzleForumRepository } from "../../db/forum-repository";
 
@@ -234,5 +235,84 @@ describe("SA04-N1 native Complaint submit actor admission and content dependenci
         await Promise.all([postClient.end(), titleClient.end()]);
       }
     }, 40000
+  );
+
+  it.each([
+    { kind: "post", order: "complaint-first" },
+    { kind: "post", order: "locale-first" },
+    { kind: "topic-title", order: "complaint-first" },
+    { kind: "topic-title", order: "locale-first" },
+  ] as const)(
+    "N4.2 N/J real $kind Complaint versus source-locale correction ($order)",
+    async ({ kind, order }) => {
+      const target = await content(), actor = "n1-n42-locale-" + uuid();
+      await fixture.query('insert into "user"(id,name,email) values($1,$1,$2)',
+        [actor, actor + "@test.invalid"]);
+      const command = report(kind === "post" ? target.post : target.title);
+      const newRevisionId = uuid(), originalRevisionId = command.target.revisionId;
+      const revised = { id: newRevisionId, originalContent: "N4.2 corrected locale source", sourceLocale: "he" };
+      const complaintClient = await client(), localeClient = await client();
+      const reportPid = (await complaintClient.query<{ pid: number }>("select pg_backend_pid() as pid")).rows[0]!.pid;
+      const localePid = (await localeClient.query<{ pid: number }>("select pg_backend_pid() as pid")).rows[0]!.pid;
+      const first = order === "complaint-first" ? complaintClient : localeClient;
+      const barrier = pauseQuery(first, q => /from "user"/i.test(q) && /for no key update/i.test(q));
+      const correctedForum = new DrizzleForumRepository(drizzle(localeClient),
+        { cooldownMs: 0, now: () => new Date() }, noMeasures);
+      const correct = () => kind === "post"
+        ? correctedForum.revisePostBody(target.post.postId, target.post.revisionId, revised, actor, "any")
+        : correctedForum.reviseTopicTitle(target.title.topicId, target.title.revisionId, revised, actor, "any");
+      const prior = await facts();
+      let reported: ReturnType<DrizzleComplaintsRepository["submit"]> | undefined;
+      let correcting: ReturnType<typeof correct> | undefined;
+      try {
+        if (order === "complaint-first") {
+          reported = repo(complaintClient).submit(actor, command);
+          await barrier.observed; // Content lock already held by real Complaint submit.
+          correcting = correct();
+          await waitForBlock(localePid, reportPid);
+        } else {
+          correcting = correct();
+          await barrier.observed; // Corrector holds original revision content lock.
+          reported = repo(complaintClient).submit(actor, command);
+          await waitForBlock(reportPid, localePid);
+        }
+        barrier.resume();
+        await correcting;
+        const rows = kind === "post"
+          ? await fixture.query<{ revision_id: string }>(
+            "select current_revision_id as revision_id from forum_posts where id=$1", [target.post.postId])
+          : await fixture.query<{ revision_id: string }>(
+            "select current_title_revision_id as revision_id from forum_topics where id=$1", [target.title.topicId]);
+        expect(rows.rows).toEqual([{ revision_id: newRevisionId }]);
+        const source = kind === "post"
+          ? await fixture.query<{ source_locale: string }>(
+            "select source_locale from forum_post_revisions where id=$1", [newRevisionId])
+          : await fixture.query<{ source_locale: string }>(
+            "select source_locale from forum_topic_title_revisions where id=$1", [newRevisionId]);
+        expect(source.rows).toEqual([{ source_locale: "he" }]);
+        if (order === "locale-first") {
+          await expect(reported).rejects.toBeInstanceOf(ComplaintConflictError);
+          expect(await facts()).toEqual(prior);
+        } else {
+          const committed = await reported;
+          const retained = await fixture.query<{ kind: string; revision_id: string }>(
+            kind === "post"
+              ? `select t.kind,t.post_revision_id as revision_id from forum_complaint_targets t
+                 where t.id=(select target_id from forum_complaints where id=$1)`
+              : `select t.kind,t.title_revision_id as revision_id from forum_complaint_targets t
+                 where t.id=(select target_id from forum_complaints where id=$1)`,
+            [committed.complaintId]);
+          expect(retained.rows).toEqual([{ kind, revision_id: originalRevisionId }]);
+          // A committed report keeps immutable evidence even when locale correction advances current revision.
+          expect((await fixture.query("select id from forum_complaint_cases where id=$1",
+            [committed.caseId])).rows).toEqual([{ id: committed.caseId }]);
+        }
+      } finally {
+        barrier.resume();
+        barrier.restore();
+        await Promise.allSettled([...(reported ? [reported] : []), ...(correcting ? [correcting] : [])]);
+        await Promise.all([complaintClient.end(), localeClient.end()]);
+      }
+    }, 45_000,
   );
 });
