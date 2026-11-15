@@ -1,6 +1,16 @@
 # ChatGPT-5.6 Sol — personal log
 
 
+## 2026-11-15 — correction: clean package PASS hands off next accepted package immediately
+
+- I incorrectly stopped after whole-M PASS and asked the developer for `...` before N.
+- That was not a real developer gate: N is already in the accepted full plan, M passed, no conflict/escalation exists, and the same cumulative PR continues.
+- Corrected workflow: after a clean whole-package Mira PASS, immediately activate the next accepted package. Stop only for a real defect packet, technical escalation, developer decision, or the final owner/merge gate.
+- Whole N is now active for Lira in #334.
+
+---
+
+
 ## 2026-11-15 — whole-SA04-M coordinator review PASS
 
 - Reviewed Draft #334 exact `c594932a6032066d994391ea08606bcb933956e7` against accepted M contract and unchanged main/base `859ea69165f51cd997e61b1d1f30f6663f045965`.
