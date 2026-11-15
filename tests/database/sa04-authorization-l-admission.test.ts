@@ -44,7 +44,7 @@ async function facts(target: string) {
 beforeAll(async () => {
   await fixture.connect();
   await fixture.query("drop schema if exists " + schema + " cascade; create schema " + schema);
-  for (const file of (await readdir("drizzle")).filter(name => /^\\d{4}_.+\\.sql$/u.test(name)).sort()) {
+  for (const file of (await readdir("drizzle")).filter(name => /^\d{4}_.+\.sql$/u.test(name)).sort()) {
     await fixture.query((await readFile("drizzle/" + file, "utf8"))
       .replaceAll('"public".', '"' + schema + '".'));
   }
