@@ -26,7 +26,7 @@ Accepted master technical plan: predecessor #251 comment **#6806249892**.
 - **A–H:** account-state storage + neutral public identity/projection foundation — delivered in current main.
 - **I:** Better Auth active-account closure — delivered in current main.
 - **J:** Forum authoritative actor writes — **delivered/merged by PR #330**, merge commit `398dae18d5ca7c3fc6dd84fd93a29d7c381ba366`; Mira cumulative whole-J PASS + Lev independent whole-J PASS on implementation head `800df2a56c4853a0c261f4cdb1b9969efe5c4b3e`.
-- **K:** attachment upload/draft/finalization admission — corrected cumulative Draft #332 exact `1454b04fb75816edb53961af5ca69409d17ecc4a`; **Mira fresh corrected whole-K PASS, 0 confirmed current-K defects; Lev independent corrected whole-K review active**. Not merged.
+- **K:** attachment upload/draft/finalization admission — corrected cumulative Draft #332 exact `1454b04fb75816edb53961af5ca69409d17ecc4a`; **Lev independent corrected whole-K RETURN: one residual SA04-K-LEV-01 / P3**, [full report #6890890734](https://github.com/iliya1947/vico-forum/pull/331#issuecomment-6890890734). Original alias examples fixed; repeated trailing-slash GET/HEAD500 privacy remains incomplete. Next Mira bounded correction routing; not merged.
 - **L:** authorization mutations.
 - **M:** AP-10 mutations/appeals.
 - **N:** Complaints mutation/participation.
@@ -70,7 +70,7 @@ Independent exact-head evidence rechecked:
 Lev subsequently returned one confirmed current-K defect `SA04-K-LEV-01 / P3`; this historical coordinator PASS no longer closes the merge gate. After the bounded correction lands on a new stable head, Mira repeats cumulative whole-K review, then Lev independently reviews that same new head.
 
 
-### SA04-K-LEV-01 — correction accepted by Mira; independent closure pending
+### SA04-K-LEV-01 — independent corrected-head RETURN; residual correction required
 
 Mira independently verified Lev's P3 finding against current #332 source, the actual Worker reproducer and current React Router v8 route semantics. The new Worker failure wrapper classifies raw `request.url` pathname literally, while the attachment routes accept route-equivalent case/trailing/encoded static-segment variants; on those variants an unexpected private GET/HEAD 500 can therefore miss the required `private, no-store` header.
 
@@ -78,7 +78,7 @@ This is a **current-K privacy/cache-contract defect**, not future #315 work. Con
 
 After correction: new stable exact #332 head + applicable gates → fresh Mira cumulative whole-K review → Lev independent whole-K review. No merge before both PASS.
 
-### Fresh corrected whole-K coordinator review — PASS
+### Fresh corrected whole-K coordinator review — historical PASS, superseded by independent RETURN
 
 Mira completed a fresh cumulative whole-K review on corrected Draft #332 exact `1454b04fb75816edb53961af5ca69409d17ecc4a`: **PASS — 0 confirmed current-K defects**.
 
@@ -86,7 +86,7 @@ The review covered the bounded SA04-K-LEV-01 correction and complete cumulative 
 
 Exact-head evidence independently rechecked: CI 43651351495 SUCCESS — PG17 **956/956**, application **2323/2323**, Worker privacy **21/21**, lint 0 errors / 1 unchanged warning, typecheck/build/schema/migration gates green; K5 connected 43651351537 SUCCESS **31/31**; same-head AP-10, SA-01, SA-03 and SA04-J12 workflows SUCCESS.
 
-**Next gate:** Lev independently reviews the same exact corrected head. Until Lev PASS, K is not merge-ready and SA04-K-LEV-01 is not independently closed. L–S, SA05, #315, permanent docs and Stage6 remain inactive.
+**Independent outcome:** Lev completed whole-K review on that exact head and returned one residual current-K P3, [#6890890734](https://github.com/iliya1947/vico-forum/pull/331#issuecomment-6890890734): classifier handles one trailing slash while Router serves repeated trailing slashes; actual private GET/HEAD500 responses on these paths still omit no-store. Original case/encoded/single-slash examples are independently verified fixed. No other current-K defects confirmed. **Next Mira:** accept/verify the residual packet and route one bounded Lira completion, then new stable head/gates → fresh Mira whole-K → fresh Lev whole-K. K is not merge-ready. L–S, SA05, #315, permanent docs and Stage6 remain inactive.
 
 
 ## Remaining accepted Super-admin package sequence after SA-04
