@@ -4,7 +4,7 @@ Service PR #331 is the active Admin/Super-admin coordination channel. PR #251 is
 
 ## Current boundary
 
-- Current source-of-truth baseline: `main = 6652c898067d05a7c1476377e95f50cd73937410`.
+- Current source-of-truth baseline: `main = 859ea69165f51cd997e61b1d1f30f6663f045965` (SA04-L merged by #333).
 - Stage 6 remains paused; no external deployment, production migration, real R2/Google/provider setup or production data work is authorized here.
 - #315 security remediation remains a separate service task.
 - Permanent SA-04 factual/project documentation is updated only in the separate documentation closeout required by `AGENTS.md`; interim package progress is tracked here.
@@ -27,7 +27,7 @@ Accepted master technical plan: predecessor #251 comment **#6806249892**.
 - **I:** Better Auth active-account closure — delivered in current main.
 - **J:** Forum authoritative actor writes — **delivered/merged by PR #330**, merge commit `398dae18d5ca7c3fc6dd84fd93a29d7c381ba366`; Mira cumulative whole-J PASS + Lev independent whole-J PASS on implementation head `800df2a56c4853a0c261f4cdb1b9969efe5c4b3e`.
 - **K:** attachment upload/draft/finalization admission — **delivered/merged by PR #332**; reviewed implementation head `a610ea89447744f4f3946dfc6e59b4b01d9ad65a`; Mira whole-K PASS + Lev independent whole-K PASS, 0 confirmed current-K defects.
-- **L:** authorization mutations — implemented in Draft #333; Mira coordinator + Lev independent whole-L PASS on exact `7400c51334476125d53a0108fc7a53c0f35c754f`; pending Owner merge, not yet delivered in main.
+- **L:** authorization mutations — delivered/merged by #333, merge commit `859ea69165f51cd997e61b1d1f30f6663f045965`; Mira coordinator + Lev independent whole-L PASS on implementation head `7400c51334476125d53a0108fc7a53c0f35c754f`. This separate L merge is a historical delivery-boundary mistake and is not repeated for M–S.
 - **M:** AP-10 mutations/appeals.
 - **N:** Complaints mutation/participation.
 - **O:** own locale save.
@@ -39,11 +39,11 @@ Accepted master technical plan: predecessor #251 comment **#6806249892**.
 ## Whole remaining Super-admin plan — accepted implementation-depth contract
 
 - Baseline/current main: `6652c898067d05a7c1476377e95f50cd73937410`.
-- Complete revised plan: [SUPER_ADMIN_REMAINING_TECHNICAL_PLAN.md](https://github.com/iliya1947/vico-forum/blob/chatgpt/admin-panel-service-2/SUPER_ADMIN_REMAINING_TECHNICAL_PLAN.md), blob `af12946214ac926e776b6cdabdf02971bd4f3480`, publication commit `2ceaac83a9cfad93699c7cdb24197bc93895d634`.
+- Complete revised plan: [SUPER_ADMIN_REMAINING_TECHNICAL_PLAN.md](https://github.com/iliya1947/vico-forum/blob/chatgpt/admin-panel-service-2/SUPER_ADMIN_REMAINING_TECHNICAL_PLAN.md), current blob `8e12cab22d5c700e31a86ded3d107e216aacdd82`. Technical architecture/acceptance remains the accepted plan; developer correction on 2026-11-15 changes only delivery/merge boundaries.
 - Scope is the full dependency chain **SA04-L–S → SA05 → SA06 → SA07 → SA08**, with the accepted L–S subplan incorporated unchanged.
 - Lev's agreed correction set is incorporated. Mira completed the required fresh four-part whole-plan review; after Lev clarification #6895121086 and Mira reassessment #6895280436 the **final verdict is PASS — 0 confirmed current-plan defects**.
 - No unresolved architecture/product decision remains before bounded implementation. Later packages may refresh current-main locators but do not reopen cross-package architecture without a real conflict.
-- SA04-L implementation and both reviews are complete on Draft #333 exact `7400c51334476125d53a0108fc7a53c0f35c754f`: Mira coordinator + [Lev independent PASS](https://github.com/iliya1947/vico-forum/pull/331#issuecomment-6897140683). Owner merge decision pending; current main unchanged and M+ inactive.
+- SA04-L implementation and both reviews completed on #333 exact `7400c51334476125d53a0108fc7a53c0f35c754f`; #333 is now merged in current main as `859ea69165f51cd997e61b1d1f30f6663f045965`. No revert is required solely to reconstruct the intended PR shape. Remaining SA04 M–S must use one cumulative Draft and **must not merge between M/N/O/P/Q/R**.
 
 ## SA04-L–S — mandatory complete-chain technical planning
 
@@ -56,7 +56,7 @@ Lev delivered the **entire L–S technical plan** from current main `6652c898067
 
 The Lev diagnostic probes remain planning diagnostics only; Mira did not independently rerun them and they do not constitute implementation/test PASS. Their causal direction was independently checked against current source/lock structure, and each relevant bounded implementation still carries its own required native/production-path regression evidence.
 
-**Planning gate is closed. SA04-L is implemented/reviewed and awaiting Owner merge in Draft #333**, exact `7400c51334476125d53a0108fc7a53c0f35c754f`, base `6652c898067d05a7c1476377e95f50cd73937410`. Mira whole-L coordinator PASS and Lev independent whole-L PASS both report0current-L defects; [independent verdict](https://github.com/iliya1947/vico-forum/pull/331#issuecomment-6897140683). Lira/Lev STOP; Mark inactive. Current main still A–K; M+ not active. Only Owner merges; changed implementation head restarts the review cycle.
+**Planning gate is closed. SA04-L is already merged in #333.** Developer corrected the delivery boundary after that merge: L/M/N/O/P/Q/R/S are bounded slices of one SA04 package, not separate merge units. Because L is already in main, the remaining implementation uses one cumulative Draft **M→N→O→P→Q→R→S** from current main; no Owner merge occurs until S closure and final whole-SA04 Mira + Lev review. Lira/Lev/Mark currently inactive; M is not yet assigned.
 
 
 ### SA04-L implementation — CANCELLED before start
