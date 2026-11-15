@@ -1,5 +1,22 @@
 # Admin panel — communication
 
+
+## 2026-11-15 — developer correction: merge boundary is the whole upper-level package
+
+- Verified current GitHub state: #333 is already merged; current `main=859ea69165f51cd997e61b1d1f30f6663f045965`.
+- Confirmed the process defect in the accepted planning text itself: SA04 §10 correctly ended with S → final reviews → Owner merge, while §11 and the whole remaining-plan delivery graph also allowed Owner merge after individual L/M/N/O/P/Q/R slices. That contradiction caused L to be treated as a merge unit.
+- Developer correction: **bounded slices are not merge units**. The merge boundary is the complete upper-level package.
+- SA04: L is already merged as the historical exception. Do not revert technically accepted L solely to reconstruct PR shape. Remaining **M→N→O→P→Q→R→S** must live in one cumulative Draft implementation PR from current main and remain unmerged until S closure.
+- SA05: 05-A/05-B are internal checkpoints of one SA05 cumulative PR; merge after whole SA05 closure.
+- SA06: 06-0/F/A/M/N are internal checkpoints of one SA06 cumulative PR; merge after whole SA06 closure.
+- SA07: 07-B1/L/F/D/I are internal checkpoints of one SA07 cumulative PR; merge after whole SA07 closure.
+- SA08: 08-A/B are internal checkpoints of one SA08 cumulative PR; merge after whole SA08 closure.
+- Technical architecture, contracts and acceptance requirements are unchanged. This is a delivery/process correction only; no technical replanning or implementation change.
+- Corrected plan blobs: `SA04_L_S_TECHNICAL_PLAN.md=56859a08f6c569a2d6fa25b70a700872309acabf`; `SUPER_ADMIN_REMAINING_TECHNICAL_PLAN.md=8e12cab22d5c700e31a86ded3d107e216aacdd82`.
+- M is not active yet. Lira/Lev/Mark inactive. Next continuation may activate M inside the cumulative M–S PR; there will be no merge gate before S.
+
+---
+
 ## 2026-11-15 — Lev independent whole-L PASS → Owner merge decision
 
 - **Independent verdict: PASS —0 confirmed current-SA04-L defects**, [#6897140683](https://github.com/iliya1947/vico-forum/pull/331#issuecomment-6897140683). Draft #333 exact `7400c51334476125d53a0108fc7a53c0f35c754f`, base/current main `6652c898067d05a7c1476377e95f50cd73937410`; same head as Mira coordinator PASS.
