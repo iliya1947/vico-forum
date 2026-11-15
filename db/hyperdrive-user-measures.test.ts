@@ -49,7 +49,7 @@ describe("Hyperdrive AP10 AccountState availability classification", () => {
     for (const failure of failures) {
       mocked.mockRejectedValueOnce(failure);
       await expect(run(capability())).rejects.toMatchObject({
-        name: "UserMeasuresUnavailableError",
+        message: "User measures unavailable",
         cause: failure,
       });
     }
@@ -94,7 +94,7 @@ describe("Hyperdrive AP10 AccountState availability classification", () => {
     const fault = new AccountStateUnavailableError();
     read.mockRejectedValueOnce(new Error("wrapped", { cause: fault }));
     await expect(capability().ownList("target")).rejects.toMatchObject({
-      name: "UserMeasuresUnavailableError",
+      message: "User measures unavailable",
     });
     read.mockResolvedValueOnce([]);
     await expect(capability().ownList("target")).resolves.toEqual([]);
