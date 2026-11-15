@@ -70,7 +70,7 @@ export function ComplaintActivity({locale,caseId}:{locale:string;caseId:string})
 
 export function ComplaintTriageView({locale,item}:{locale:string;item:ComplaintQueueCase}) {
   const {t}=useTranslation("common");
-  const fetcher=useFetcher<{ok?:true;error?:"invalid"|"conflict"|"forbidden"|"notFound"|"unavailable"}>();
+  const fetcher=useFetcher<{ok?:true;error?:"invalid"|"conflict"|"forbidden"|"notFound"|"unavailable"|"unauthenticated"}>();
   return <ForumShell locale={locale} variant="attention"><section className="complaint-triage">
     <Link to={complaintQueuePath(locale)}>{t("complaintQueueHeading")}</Link>
     <h1>{t("complaintTriageHeading")}</h1>
@@ -91,7 +91,7 @@ export function ComplaintTriageView({locale,item}:{locale:string;item:ComplaintQ
       </fieldset>
     </fetcher.Form>
     {fetcher.data?.ok&&<p role="status">{t("complaintPrioritySaved")}</p>}
-    {fetcher.data?.error&&<p role="alert">{t(fetcher.data.error==="conflict"?"complaintTriageConflict":`complaintError_${fetcher.data.error}`)}</p>}
+    {fetcher.data?.error&&<p role="alert">{t(fetcher.data.error==="conflict"?"complaintTriageConflict":fetcher.data.error==="unauthenticated"?"settingsSecurityUnauthenticated":`complaintError_${fetcher.data.error}`)}</p>}
     <p>{t("complaintTriageBoundary")}</p>
   </section></ForumShell>;
 }
