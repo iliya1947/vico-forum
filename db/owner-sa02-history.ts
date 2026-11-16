@@ -325,7 +325,7 @@ const LEGACY_SOURCE_SQL = [
 ].join("\n");
 
 function timelineSql(filterOrigin:OwnerHistoryOrigin|null=null){
-  const predicates = "($1::text is null or $1=any(scopes)) and ($2::text is null or exists(select 1 from unnest(scopes) m where m like ($2||'.%'))) and ($3::timestamptz is null or (at,origin,source_id)<($3::timestamptz,$4::text,$5::text)) and ($8::text is null or kind=$8::text) and ($9::timestamptz is null or at>=$9::timestamptz) and ($10::timestamptz is null or at<$10::timestamptz)";
+  const predicates = "($1::text is null or $1=any(scopes)) and ($2::text is null or exists(select 1 from unnest(scopes) m where m like ($2||'.%'))) and ($3::timestamptz is null or (at,origin,source_id)<($3::timestamptz,$4::text,$5::text)) and ($7::text is null or kind=$7::text) and ($8::timestamptz is null or at>=$8::timestamptz) and ($9::timestamptz is null or at<$9::timestamptz)";
   const legacyOrigins:OwnerHistoryOrigin[]=["system-event","auth-event","account-event","system-observation","admin-history","attachment-evidence","attempt-pattern","attempt-state"];
   const legacy=LEGACY_SOURCE_SQL.split("\nunion all\n").flatMap((sql,index)=>{
     if(filterOrigin!==null && legacyOrigins[index]!==filterOrigin)return [];
@@ -334,7 +334,7 @@ function timelineSql(filterOrigin:OwnerHistoryOrigin|null=null){
     return [`(select ${HISTORY_COLUMNS} from (${sql+direct}) facts(${HISTORY_COLUMNS}) where ${predicates} order by at desc nulls last,origin desc nulls last,source_id desc nulls last limit $6)`];
   });
   const native=nativeHistoryBranches({monitor:"$1",area:"$2",at:"$3",origin:"$4",id:"$5",limit:"$6",
-    filterOrigin,kind:"$8",from:"$9",until:"$10"});
+    filterOrigin,kind:"$7",from:"$8",until:"$9"});
   return `with candidates as (${[...legacy,...native].join(" union all ")}) select ${HISTORY_COLUMNS},to_char(at at time zone 'UTC','YYYY-MM-DD"T"HH24:MI:SS.US"Z"') exact_at from candidates order by at desc nulls last,origin desc nulls last,source_id desc nulls last limit $6`;
 }
 const TIMELINE_SQL=timelineSql();
@@ -349,7 +349,7 @@ export class PostgresOwnerSa02History {
     const cursor=parseOwnerHistoryCursor(options.before,options);
     const result=await this.pool.query<HistoryRow>(filters.origin===null?TIMELINE_SQL:timelineSql(filters.origin),[
       scope.monitor,scope.area,cursor?.at??null,cursor?.origin??null,
-      cursor?.id??null,limit+1,filters.origin,filters.kind,filters.from,filters.until,
+      cursor?.id??null,limit+1,filters.kind,filters.from,filters.until,
     ]);
     const rows=result.rows.slice(0,limit);
     const entries=rows.map(readRow);
