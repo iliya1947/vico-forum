@@ -1,3 +1,22 @@
+## 2026-11-16 — CORRECTION / ACTIVE: Lev continues remaining SA05 through whole-package AUTHOR READY
+
+The previous statement that original 05-A required a separate independent-review gate before continuing was a coordinator error and is superseded.
+
+**Standing developer assignment:** Лёва / Codex-6.1 Sol remains the sole implementer until the developer explicitly changes that decision.
+
+**Cumulative implementation:** Draft #337, branch `chatgpt/sa05-owner-deactivation`, inherited stable head `7a0ce7f4ec4dbf224aa99b3375b18542630bdb81`. Current main remains `efae8111a13aefbf72b4d20972dac461acc602e3`.
+
+Continue the accepted SA05 plan through **all remaining SA05 work / original 05-B**, without an intermediate independent-review stop:
+- finish the canonical exact-Owner profile lifecycle/retention presentation and deactivation confirmation/control over the already delivered command/resource;
+- complete the required real Worker + Better Auth + PostgreSQL 17 + Chromium SA05 acceptance, including stale sessions/open pages, state-first/writer-first lifecycle races, mandatory-event rollback through the actual action, public neutral identity/data, retained Owner-private data, presence removal and no automatic POST replay after auth change/failure/uncertain acknowledgement;
+- preserve the accepted SA05 boundaries: no reactivation, physical deletion, forced session deletion, foreign credential/provider mutation, new RBAC/Owner model, SA06+, #315, Stage6/production/external work or permanent documentation.
+
+**Package ready:** one stable exact #337 head with the complete SA05 implementation and all applicable local/CI/connected evidence. Then publish **whole-SA05 AUTHOR READY → Mira** and STOP. Do not merge #337.
+
+There is **no separate independent-review gate at 05-A or SA05-4**. After whole-SA05 coordinator review, final independent review is performed by non-authors on the same stable exact head; Lev does not review his own implementation.
+
+---
+
 ## 2026-11-16 — Mira coordinator SA05-3 / original 05-A PASS
 
 Reviewed cumulative Draft **#337** on stable exact head **`7a0ce7f4ec4dbf224aa99b3375b18542630bdb81`** against current `main=efae8111a13aefbf72b4d20972dac461acc602e3`, current AGENTS, accepted SA05 §5.1–§5.4 / source-identity contract, inherited SA05-1/2 and the complete SA05-3 delta.
