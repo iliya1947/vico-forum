@@ -98,6 +98,8 @@ it("v2 fully binds source/kind/time/page/route and rejects tampering while old c
   expect(()=>parseOwnerHistoryCursor(before,{...scope,limit:50})).toThrow();
   expect(()=>parseOwnerHistoryCursor(pack({...cursor,filters:{...cursor.filters,origin:"notification-created"}}),scope)).toThrow();
   expect(()=>parseOwnerHistoryCursor(pack({...cursor,filters:{...cursor.filters,until:"2026-11-01T00:00:00.000000Z"}}),scope)).toThrow();
+  expect(()=>parseOwnerHistoryCursor(pack({...cursor,origin:"forum-post-revision"}),scope)).toThrow();
+  expect(()=>parseOwnerHistoryCursor(pack({...cursor,at:"2025-01-01T00:00:00.000000Z"}),scope)).toThrow();
   expect(()=>parseOwnerHistoryCursor(before,{...scope,monitorKey:"forum.state"})).toThrow();
   const old="2026-02-28T00:00:00.000Z~system-event~123e4567-e89b-42d3-a456-426614174000";
   expect(parseOwnerHistoryCursor(old,{area:"system"})).not.toBeNull();
