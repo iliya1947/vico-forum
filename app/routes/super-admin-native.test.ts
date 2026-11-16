@@ -9,7 +9,8 @@ import { loadNativeCurrentArea } from "../super-admin/native-loader.server";
 import { loader as history } from "./super-admin-monitor-history";
 import { loader as events } from "./super-admin-events";
 import { parseOwnerHistoryCursor } from "../../db/owner-sa02-history";
-import { parseOwnerHistoryQuery, withOwnerHistoryFilters } from "../super-admin/history-query.server";
+import { parseOwnerHistoryQuery } from "../super-admin/history-query.server";
+import { withOwnerHistoryFilters } from "../super-admin/history-query-links";
 
 function setup(actor:string|null="owner",binding:string|undefined="owner"){
   const context=new RouterContextProvider();context.set(authSessionContext,actor?{user:{id:actor,name:"Fixture",email:"PRIVATE_EMAIL"}} as never:null);context.set(authorizationOwnerContext,binding);
