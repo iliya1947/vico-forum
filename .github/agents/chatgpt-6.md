@@ -1,5 +1,13 @@
 # ChatGPT-6 — personal log
 
+## 2026-11-17 — Lira final WHOLE SA06 independent review: FAIL F1 / STOP
+
+- Completed independently four bounded checkpoints 1/4–4/4 on cumulative Draft #338 exact `522951ec164fda237b52e9777de846e32e86d47d` (main/base `7e7a803876422c2f40faaf720b59027d468e99dc`,47 paths). Initial user instruction withheld results from all publication until next explicit `...`, which authorized disclosure. Before posting, refreshed AGENTS, workflow, implementation head, sources, accepted §8 contract and relevant CI evidence.
+- **One confirmed current-SA06 defect F1:** `db/owner-native-current.ts` computes administration.measures effective and per-administrative-key counts with active non-Owner measures and enabled children, but omits `issuer_authority_floor > current target raw authority level` which existing `db/user-measure-policy.ts` enforces for administrative restrictions. After canonical Owner role promotion, a measure containing only admin-key restriction can remain counted effective while no longer limiting the target's authoritative action. Source-level counterexample floor2 and target raw level2. Regression must exercise raw-role/override progression and proper AP-10 effective semantics.
+- Published complete independent findings packet in [#331 #6931515146](https://github.com/iliya1947/vico-forum/pull/331#issuecomment-6931515146), and updated service workflow / communication. Relevant exact-head CI: 12 successful runs/16 successful latest jobs, app2507 tests, PG171334 tests, SA06 actual connected Chromium 15 case records PASS; original unrelated first checks failure remains unexplained, same-head retry PASS. No new independently rerun native/browser; no personal artifact screenshots/deployed Owner acceptance claimed.
+- **STOP** with independent SA06 PASS withheld. Mark's independent parallel review remains separate, Mira deferred under developer override. No implementation edit, merge, SA07+, Stage6/production, or permanent documentation work.
+
+---
 ## 2026-11-16 — ACTIVE: independent WHOLE SA06 review
 
 - Review cumulative Draft #338 exact `522951ec164fda237b52e9777de846e32e86d47d`, base/current main `7e7a803876422c2f40faaf720b59027d468e99dc`.
