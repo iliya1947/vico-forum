@@ -89,6 +89,7 @@ beforeAll(async () => {
     "drizzle/0017_content_translation_request_budget.sql",
 
     "drizzle/0019_content_provider_allowance_admission.sql",
+    "drizzle/0065_sa04_account_state_foundation.sql",
   ]) {
     const sql = (await readFile(migration, "utf8"))
       .replaceAll('"public".', `"${schemaName}".`);
@@ -126,7 +127,7 @@ afterAll(async () => {
 describe("content topic-title execution and publication", () => {
   it("dispatches by persisted kind, publishes atomically, and makes duplicate delivery provider-free", async () => {
     const enqueuer = new FakeTranslationTaskEnqueuer();
-    const planned = await createPlanner(client, enqueuer).planAndDispatch(requestRevision(), "he", budgetAdmission());
+    const planned = await createPlanner(client, enqueuer).planAndDispatch(requestRevision(), "he", budgetAdmission(), "author-a");
     if (planned.kind !== "queued") throw new Error("expected queued content task");
 
     const translate = vi.fn(async (): Promise<MachineTranslationResult> => ({
@@ -209,7 +210,7 @@ describe("content topic-title execution and publication", () => {
     const enqueuer = new FakeTranslationTaskEnqueuer();
 
     const planned = await createPlanner(client, enqueuer, providerCapability)
-      .planAndDispatch(requestRevision(), "he", budgetAdmission());
+      .planAndDispatch(requestRevision(), "he", budgetAdmission(), "author-a");
     expect(planned.kind).toBe("queued");
     if (planned.kind !== "queued") throw new Error("expected queued content task");
     expect(dataPolicy.allows).toHaveBeenCalledWith({
@@ -254,7 +255,7 @@ describe("content topic-title execution and publication", () => {
 
   it("reactivates a stale stable identity when the same content work becomes eligible again", async () => {
     const firstEnqueuer = new FakeTranslationTaskEnqueuer();
-    const first = await createPlanner(client, firstEnqueuer).planAndDispatch(requestRevision(), "he", budgetAdmission());
+    const first = await createPlanner(client, firstEnqueuer).planAndDispatch(requestRevision(), "he", budgetAdmission(), "author-a");
     if (first.kind !== "queued") throw new Error("expected queued content task");
 
     const tasks = new DrizzleTranslationTaskStore(drizzle(client));
@@ -272,7 +273,7 @@ describe("content topic-title execution and publication", () => {
     await expect(tasks.markStale(first.task.id, claim.task.claimToken)).resolves.toBe(true);
 
     const secondEnqueuer = new FakeTranslationTaskEnqueuer();
-    const second = await createPlanner(client, secondEnqueuer).planAndDispatch(requestRevision(), "he", budgetAdmission());
+    const second = await createPlanner(client, secondEnqueuer).planAndDispatch(requestRevision(), "he", budgetAdmission(), "author-a");
     expect(second).toMatchObject({
       kind: "queued",
       taskCreated: false,
@@ -286,7 +287,7 @@ describe("content topic-title execution and publication", () => {
   });
 
   it("cannot claim a content task through the UI claim path", async () => {
-    const planned = await createPlanner(client).planAndDispatch(requestRevision(), "he", budgetAdmission());
+    const planned = await createPlanner(client).planAndDispatch(requestRevision(), "he", budgetAdmission(), "author-a");
     if (planned.kind !== "queued") throw new Error("expected queued content task");
 
     const tasks = new DrizzleTranslationTaskStore(drizzle(client));
@@ -304,7 +305,7 @@ describe("content topic-title execution and publication", () => {
 
   it("releases retryable provider failure through the shared attempt budget and later completes", async () => {
     const enqueuer = new FakeTranslationTaskEnqueuer();
-    const planned = await createPlanner(client, enqueuer).planAndDispatch(requestRevision(), "he", budgetAdmission());
+    const planned = await createPlanner(client, enqueuer).planAndDispatch(requestRevision(), "he", budgetAdmission(), "author-a");
     if (planned.kind !== "queued") throw new Error("expected queued content task");
 
     let calls = 0;
@@ -358,7 +359,7 @@ describe("content topic-title execution and publication", () => {
 
   it("terminalizes retry exhaustion without an extra provider call", async () => {
     const enqueuer = new FakeTranslationTaskEnqueuer();
-    const planned = await createPlanner(client, enqueuer).planAndDispatch(requestRevision(), "he", budgetAdmission());
+    const planned = await createPlanner(client, enqueuer).planAndDispatch(requestRevision(), "he", budgetAdmission(), "author-a");
     if (planned.kind !== "queued") throw new Error("expected queued content task");
     await client.query(
       "update translation_tasks set max_attempts = 1 where id = $1",
@@ -393,7 +394,7 @@ describe("content topic-title execution and publication", () => {
     const second = await secondClient();
     try {
       const enqueuer = new FakeTranslationTaskEnqueuer();
-      const planned = await createPlanner(client, enqueuer).planAndDispatch(requestRevision(), "he", budgetAdmission());
+      const planned = await createPlanner(client, enqueuer).planAndDispatch(requestRevision(), "he", budgetAdmission(), "author-a");
       if (planned.kind !== "queued") throw new Error("expected queued content task");
 
       const started = deferred();
@@ -455,7 +456,7 @@ describe("content topic-title execution and publication", () => {
     const second = await secondClient();
     try {
       const enqueuer = new FakeTranslationTaskEnqueuer();
-      const planned = await createPlanner(client, enqueuer).planAndDispatch(requestRevision(), "he", budgetAdmission());
+      const planned = await createPlanner(client, enqueuer).planAndDispatch(requestRevision(), "he", budgetAdmission(), "author-a");
       if (planned.kind !== "queued") throw new Error("expected queued content task");
 
       const started = deferred();
@@ -508,7 +509,7 @@ describe("content topic-title execution and publication", () => {
   it("keeps reconciliation and observability kind-neutral before dispatching content", async () => {
     const plannedEnqueuer = new FakeTranslationTaskEnqueuer();
     const planned = await createPlanner(client, plannedEnqueuer)
-      .planAndDispatch(requestRevision(), "he", budgetAdmission());
+      .planAndDispatch(requestRevision(), "he", budgetAdmission(), "author-a");
     if (planned.kind !== "queued") throw new Error("expected queued content task");
 
     const tasks = new DrizzleTranslationTaskStore(drizzle(client));
@@ -556,7 +557,7 @@ describe("content topic-title execution and publication", () => {
     const second = await secondClient();
     try {
       const enqueuer = new FakeTranslationTaskEnqueuer();
-      const planned = await createPlanner(client, enqueuer).planAndDispatch(requestRevision(), "he", budgetAdmission());
+      const planned = await createPlanner(client, enqueuer).planAndDispatch(requestRevision(), "he", budgetAdmission(), "author-a");
       if (planned.kind !== "queued") throw new Error("expected queued content task");
 
       const started = deferred();
@@ -600,7 +601,7 @@ describe("content topic-title execution and publication", () => {
     const planned = await createPlanner(client).planAndDispatch(
       requestRevision(),
       "he",
-      budgetAdmission(),
+      budgetAdmission(), "author-a",
     );
     if (planned.kind !== "queued") throw new Error("expected queued content task");
 
@@ -666,7 +667,7 @@ describe("content topic-title execution and publication", () => {
     const planned = await createPlanner(client).planAndDispatch(
       requestRevision(),
       "he",
-      budgetAdmission(),
+      budgetAdmission(), "author-a",
     );
     if (planned.kind !== "queued") throw new Error("expected queued content task");
 
@@ -699,7 +700,7 @@ describe("content topic-title execution and publication", () => {
     const planned = await createPlanner(client).planAndDispatch(
       requestRevision(),
       "he",
-      budgetAdmission(),
+      budgetAdmission(), "author-a",
     );
     if (planned.kind !== "queued") throw new Error("expected queued content task");
 
@@ -741,7 +742,7 @@ describe("content topic-title execution and publication", () => {
     const planned = await createPlanner(client).planAndDispatch(
       requestRevision(),
       "he",
-      budgetAdmission(),
+      budgetAdmission(), "author-a",
     );
     if (planned.kind !== "queued") throw new Error("expected queued content task");
 

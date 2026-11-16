@@ -10,6 +10,7 @@ import {
   isPostgresQueryTimeout,
 } from "./postgres-deadlines";
 import { assertNoActiveUserMeasureRestriction } from "./user-measure-policy";
+import { AccountStateUnavailableError, assertActiveAccountForDrizzleMutation } from "./account-state";
 
 type ClientFactory = () => Client;
 
@@ -31,11 +32,11 @@ export function createHyperdriveContentGenerationAdmission(
       try {
         await client.connect();
         await drizzle(client).transaction(async tx => {
+          await assertActiveAccountForDrizzleMutation(tx, actorId);
           await assertNoActiveUserMeasureRestriction(tx, actorId, "translations.generate", ownerUserId);
         });
       } catch (error) {
-        if (isPostgresAvailabilityFailure(error) ||
-          isPostgresConnectionTimeout(error) || isPostgresQueryTimeout(error)) {
+        if (unavailable(error)) {
           throw new ContentGenerationPlanningUnavailableError({ cause: error });
         }
         throw error;
@@ -44,4 +45,16 @@ export function createHyperdriveContentGenerationAdmission(
       }
     },
   };
+}
+
+function unavailable(error: unknown): boolean {
+  const seen = new Set<unknown>();
+  let current = error;
+  for (let depth = 0; depth < 16 && current && typeof current === "object" && !seen.has(current); depth++) {
+    seen.add(current);
+    if (current instanceof AccountStateUnavailableError || isPostgresAvailabilityFailure(current)
+      || isPostgresConnectionTimeout(current) || isPostgresQueryTimeout(current)) return true;
+    current = (current as { cause?: unknown }).cause;
+  }
+  return false;
 }

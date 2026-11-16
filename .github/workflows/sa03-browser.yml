@@ -3,6 +3,7 @@ name: SA-03 unified profile connected Chromium acceptance
 on:
   pull_request:
     paths:
+      - "tests/browser/sa04-completion/**"
       - ".github/workflows/sa03-browser.yml"
       - "tests/browser/user-profile/**"
       - "app/profile/**"

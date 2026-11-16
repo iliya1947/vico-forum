@@ -3,6 +3,7 @@ name: SA04-L3 connected authorization Owner Worker Chromium acceptance
 on:
   pull_request:
     paths:
+      - "tests/browser/sa04-completion/**"
       - ".github/workflows/sa04-l3-authorization-browser.yml"
       - "tests/browser/sa04-authorization/**"
       - "app/routes/authorization-admin.tsx"

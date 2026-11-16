@@ -2,7 +2,7 @@ import { readFile, readdir } from "node:fs/promises";
 import { Client, type Pool, type PoolClient } from "pg";
 import { drizzle } from "drizzle-orm/node-postgres";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { AccountInactiveError, AccountMissingError } from "../../db/account-state";
+import { AccountInactiveError, AccountMissingError, AccountStateUnexpectedError } from "../../db/account-state";
 import { createHyperdriveUserLocale } from "../../db/hyperdrive-user-locale";
 import { DrizzleUserPrivacyRepository } from "../../db/user-privacy";
 import { PostgresRegistrationSettingsRepository } from "../../db/registration-settings";
@@ -104,6 +104,16 @@ describe("SA04 O/P/Q authoritative Settings lifecycle",()=>{
     await expect(command(kind,id,fixture)).rejects.toBeInstanceOf(AccountInactiveError);
     await expect(command(kind,"opq-missing-"+crypto.randomUUID(),fixture)).rejects.toBeInstanceOf(AccountMissingError);
     expect(await facts()).toEqual(before);
+  });
+
+  it("an active locale account with an impossible zero-row UPDATE is an invariant failure, never saved",async()=>{
+    const id=await actor(),before=await facts();
+    await fixture.query("create function opq_skip_locale() returns trigger language plpgsql as $$begin return null;end $$");
+    await fixture.query('create trigger opq_skip_locale before update on "user" for each row execute function opq_skip_locale()');
+    try{
+      await expect(locale(fixture).save(id,"he")).rejects.toBeInstanceOf(AccountStateUnexpectedError);
+      expect(await facts()).toEqual(before);
+    }finally{await fixture.query('drop trigger opq_skip_locale on "user";drop function opq_skip_locale()');}
   });
 
   it.each(kinds)("state-first %s waits on actual subject lock then denies with no durable effects",async kind=>{

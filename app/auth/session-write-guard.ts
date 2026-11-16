@@ -12,7 +12,7 @@ import {
 /** Distinguishes an I4a late session-write denial from unrelated auth failures. */
 export class InactiveSessionWriteError extends APIError {
   constructor() {
-    super("UNAUTHORIZED", { message: "Unauthorized" });
+    super("UNAUTHORIZED", { message: "Unauthorized" }, { "Cache-Control": "private, no-store" });
   }
 }
 
@@ -276,7 +276,7 @@ export function guardBetterAuthSessionWrites(
             }
             if (failure instanceof AccountInactiveError || failure instanceof AccountMissingError) {
               if (userWrite || accountWrite) {
-                throw new APIError("UNAUTHORIZED", { message: "Unauthorized" });
+                throw new APIError("UNAUTHORIZED", { message: "Unauthorized" }, { "Cache-Control": "private, no-store" });
               }
               throw new InactiveSessionWriteError();
             }

@@ -89,6 +89,7 @@ beforeAll(async () => {
     "drizzle/0017_content_translation_request_budget.sql",
 
     "drizzle/0019_content_provider_allowance_admission.sql",
+    "drizzle/0065_sa04_account_state_foundation.sql",
   ]) {
     const sql = (await readFile(migration, "utf8"))
       .replaceAll('"public".', `"${schemaName}".`);
@@ -156,7 +157,7 @@ describe("content post-body durable planning", () => {
     const result = await createPlanner(client, enqueuer).planAndDispatch(
       requestRevision(),
       "he",
-      budgetAdmission(),
+      budgetAdmission(), "author-a",
     );
 
     expect(result).toMatchObject({
@@ -197,7 +198,7 @@ describe("content post-body durable planning", () => {
     });
 
     await expect(
-      createPlanner(client).planAndDispatch(requestRevision(), "he", budgetAdmission()),
+      createPlanner(client).planAndDispatch(requestRevision(), "he", budgetAdmission(), "author-a"),
     ).resolves.toMatchObject({
       kind: "original",
       reason: "translation-current",
@@ -228,7 +229,7 @@ describe("content post-body durable planning", () => {
     const revision = await new DrizzleContentPostBodyPlanningStore(drizzle(client))
       .readCurrentRevision("post-a");
     if (!revision) throw new Error("missing current revision");
-    const result = await createPlanner(client).planAndDispatch(revision, "he", budgetAdmission());
+    const result = await createPlanner(client).planAndDispatch(revision, "he", budgetAdmission(), "author-a");
     expect(result).toMatchObject({ kind: "queued", taskCreated: true });
     const stored = await new ContentTranslationService(translations).readCurrent(revision, "he");
     expect(stored).toMatchObject({ selected: "original", reason: "invalid" });
@@ -265,7 +266,7 @@ describe("content post-body durable planning", () => {
     });
 
     await expect(
-      store.upsertPending(specification, revision, budgetAdmission()),
+      store.upsertPending(specification, revision, budgetAdmission(), "author-a"),
     ).resolves.toEqual({ outcome: "translation-current" });
 
     const [counters, heads, tasks] = await Promise.all([
@@ -301,7 +302,7 @@ describe("content post-body durable planning", () => {
       revisionId: "post-b-r1",
       originalContent: "caller body is ignored",
       sourceLocale: "und",
-    }, "he", budgetAdmission());
+    }, "he", budgetAdmission(), "author-a");
 
     expect(result).toMatchObject({
       kind: "queued",
@@ -328,8 +329,8 @@ describe("content post-body durable planning", () => {
       const firstEnqueuer = new FakeTranslationTaskEnqueuer();
       const secondEnqueuer = new FakeTranslationTaskEnqueuer();
       const [first, duplicate] = await Promise.all([
-        createPlanner(client, firstEnqueuer).planAndDispatch(requestRevision(), "he", budgetAdmission()),
-        createPlanner(second, secondEnqueuer).planAndDispatch(requestRevision(), "he", budgetAdmission()),
+        createPlanner(client, firstEnqueuer).planAndDispatch(requestRevision(), "he", budgetAdmission(), "author-a"),
+        createPlanner(second, secondEnqueuer).planAndDispatch(requestRevision(), "he", budgetAdmission(), "author-a"),
       ]);
 
       expect([first, duplicate]).toEqual(expect.arrayContaining([
@@ -380,12 +381,12 @@ describe("content post-body durable planning", () => {
         createPlanner(client, firstEnqueuer).planAndDispatch(
           requestRevision(),
           "he",
-          admission,
+          admission, "author-a",
         ),
         createPlanner(second, secondEnqueuer).planAndDispatch(
           requestRevision(),
           "he",
-          admission,
+          admission, "author-a",
         ),
       ]);
 
@@ -426,14 +427,14 @@ describe("content post-body durable planning", () => {
     const first = await createPlanner(client).planAndDispatch(
       requestRevision(),
       "he",
-      constrained,
+      constrained, "author-a",
     );
     if (first.kind !== "queued") throw new Error("expected first body request to queue");
 
     const second = await createPlanner(client).planAndDispatch(
       requestRevision(),
       "he",
-      constrained,
+      constrained, "author-a",
     );
     expect(second).toMatchObject({
       kind: "original",
@@ -468,7 +469,7 @@ describe("content post-body durable planning", () => {
     const first = await createPlanner(client, firstEnqueuer).planAndDispatch(
       requestRevision(),
       "he",
-      budgetAdmission(),
+      budgetAdmission(), "author-a",
     );
     if (first.kind !== "queued") throw new Error("expected queued fixture task");
 
@@ -484,7 +485,7 @@ describe("content post-body durable planning", () => {
        where id = '${first.task.id}'
     `);
 
-    const duplicate = await createPlanner(client).planAndDispatch(requestRevision(), "he", budgetAdmission());
+    const duplicate = await createPlanner(client).planAndDispatch(requestRevision(), "he", budgetAdmission(), "author-a");
     expect(duplicate).toMatchObject({
       kind: "queued",
       taskCreated: false,
@@ -523,7 +524,7 @@ describe("content post-body durable planning", () => {
   });
 
   it("does not reactivate a completed stable post-body identity", async () => {
-    const first = await createPlanner(client).planAndDispatch(requestRevision(), "he", budgetAdmission());
+    const first = await createPlanner(client).planAndDispatch(requestRevision(), "he", budgetAdmission(), "author-a");
     if (first.kind !== "queued") throw new Error("expected queued fixture task");
 
     await client.query(`
@@ -545,7 +546,7 @@ describe("content post-body durable planning", () => {
     `);
 
     await expect(
-      createPlanner(client).planAndDispatch(requestRevision(), "he", budgetAdmission()),
+      createPlanner(client).planAndDispatch(requestRevision(), "he", budgetAdmission(), "author-a"),
     ).resolves.toMatchObject({
       kind: "original",
       reason: "task-completed",
@@ -570,7 +571,7 @@ describe("content post-body durable planning", () => {
   });
 
   it("gives a new current body revision a distinct task identity and monotonic generation", async () => {
-    const first = await createPlanner(client).planAndDispatch(requestRevision(), "he", budgetAdmission());
+    const first = await createPlanner(client).planAndDispatch(requestRevision(), "he", budgetAdmission(), "author-a");
     expect(first).toMatchObject({ kind: "queued", task: { generation: 1 } });
 
     await client.query("begin");
@@ -592,7 +593,7 @@ describe("content post-body durable planning", () => {
     const second = await createPlanner(client).planAndDispatch({
       ...requestRevision(),
       revisionId: "post-a-r2",
-    }, "he", budgetAdmission());
+    }, "he", budgetAdmission(), "author-a");
 
     expect(second).toMatchObject({
       kind: "queued",
@@ -613,7 +614,7 @@ describe("content post-body durable planning", () => {
     const authoritative = await store.readCurrentRevision("post-a");
     if (!authoritative) throw new Error("missing post fixture");
 
-    const planned = await createPlanner(client).planAndDispatch(requestRevision(), "he", budgetAdmission());
+    const planned = await createPlanner(client).planAndDispatch(requestRevision(), "he", budgetAdmission(), "author-a");
     if (planned.kind !== "queued") throw new Error("expected queued fixture task");
 
     await client.query(`
@@ -626,7 +627,7 @@ describe("content post-body durable planning", () => {
     `);
 
     await expect(
-      store.upsertPending(planned.task, authoritative, budgetAdmission()),
+      store.upsertPending(planned.task, authoritative, budgetAdmission(), "author-a"),
     ).resolves.toEqual({ outcome: "revision-changed" });
 
     const budget = await client.query<{ used: number }>(`
@@ -644,7 +645,7 @@ describe("content post-body durable planning", () => {
     });
 
     await expect(
-      createPlanner(client, enqueuer).planAndDispatch(requestRevision(), "he", budgetAdmission()),
+      createPlanner(client, enqueuer).planAndDispatch(requestRevision(), "he", budgetAdmission(), "author-a"),
     ).rejects.toBe(failure);
 
     const pending = await client.query<{ id: string; status: string }>(`
@@ -687,7 +688,7 @@ describe("content post-body durable planning", () => {
 
     try {
       await expect(
-        createPlanner(client).planAndDispatch(requestRevision(), "he", budgetAdmission()),
+        createPlanner(client).planAndDispatch(requestRevision(), "he", budgetAdmission(), "author-a"),
       ).rejects.toBeInstanceOf(Error);
 
       const [counters, tasks, heads] = await Promise.all([
@@ -735,11 +736,11 @@ describe("content post-body durable planning", () => {
       revisionId: "title-a-r1",
       originalContent: "caller title",
       sourceLocale: "und",
-    }, "he", titleAdmission);
+    }, "he", titleAdmission, "author-a");
     const body = await createPlanner(client).planAndDispatch(
       requestRevision(),
       "he",
-      bodyAdmission,
+      bodyAdmission, "author-a",
     );
     expect(title.kind).toBe("queued");
     expect(body.kind).toBe("queued");
@@ -764,7 +765,7 @@ describe("content post-body durable planning", () => {
     const planned = await createPlanner(client, enqueuer).planAndDispatch(
       requestRevision(),
       "he",
-      budgetAdmission(),
+      budgetAdmission(), "author-a",
     );
     if (planned.kind !== "queued") throw new Error("expected queued body task");
 
@@ -849,7 +850,7 @@ describe("content post-body durable planning", () => {
     const planned = await createPlanner(client, enqueuer).planAndDispatch(
       requestRevision(),
       "he",
-      budgetAdmission(),
+      budgetAdmission(), "author-a",
     );
     if (planned.kind !== "queued") throw new Error("expected queued body task");
 
@@ -893,7 +894,7 @@ describe("content post-body durable planning", () => {
     const planned = await createPlanner(client, enqueuer).planAndDispatch(
       requestRevision(),
       "he",
-      budgetAdmission(),
+      budgetAdmission(), "author-a",
     );
     if (planned.kind !== "queued") throw new Error("expected queued body task");
 
@@ -955,7 +956,7 @@ describe("content post-body durable planning", () => {
       const planned = await createPlanner(client, enqueuer).planAndDispatch(
         requestRevision(),
         "he",
-        budgetAdmission(),
+        budgetAdmission(), "author-a",
       );
       if (planned.kind !== "queued") throw new Error("expected queued body task");
 
@@ -1020,7 +1021,7 @@ describe("content post-body durable planning", () => {
       const planned = await createPlanner(client, enqueuer).planAndDispatch(
         requestRevision(),
         "he",
-        budgetAdmission(),
+        budgetAdmission(), "author-a",
       );
       if (planned.kind !== "queued") throw new Error("expected queued body task");
 
@@ -1081,7 +1082,7 @@ describe("content post-body durable planning", () => {
       const planned = await createPlanner(client, enqueuer).planAndDispatch(
         requestRevision(),
         "he",
-        budgetAdmission(),
+        budgetAdmission(), "author-a",
       );
       if (planned.kind !== "queued") throw new Error("expected queued body task");
 
@@ -1129,7 +1130,7 @@ describe("content post-body durable planning", () => {
       const planned = await createPlanner(client, enqueuer).planAndDispatch(
         requestRevision(),
         "he",
-        budgetAdmission(),
+        budgetAdmission(), "author-a",
       );
       if (planned.kind !== "queued") throw new Error("expected queued body task");
 
@@ -1182,7 +1183,7 @@ describe("content post-body durable planning", () => {
       const planned = await createPlanner(client, enqueuer).planAndDispatch(
         requestRevision(),
         "he",
-        budgetAdmission(),
+        budgetAdmission(), "author-a",
       );
       if (planned.kind !== "queued") throw new Error("expected queued body task");
 
@@ -1256,7 +1257,7 @@ describe("content post-body durable planning", () => {
     const planned = await createPlanner(client, enqueuer).planAndDispatch(
       requestRevision(),
       "he",
-      budgetAdmission(),
+      budgetAdmission(), "author-a",
     );
     if (planned.kind !== "queued") throw new Error("expected queued body task");
 
@@ -1311,7 +1312,7 @@ describe("content post-body durable planning", () => {
     const planned = await createPlanner(client, enqueuer).planAndDispatch(
       requestRevision(),
       "he",
-      budgetAdmission(),
+      budgetAdmission(), "author-a",
     );
     if (planned.kind !== "queued") throw new Error("expected queued body task");
 
@@ -1376,7 +1377,7 @@ describe("content post-body durable planning", () => {
       ) values ('content-post-body', 'topic-title', 'post-a', 'he', 1)
     `), "23514");
 
-    const created = await createPlanner(client).planAndDispatch(requestRevision(), "he", budgetAdmission());
+    const created = await createPlanner(client).planAndDispatch(requestRevision(), "he", budgetAdmission(), "author-a");
     if (created.kind !== "queued") throw new Error("expected queued fixture task");
 
     await expectDatabaseCode(client.query(`

@@ -3,6 +3,7 @@ name: SA04-N connected Complaints Worker Chromium AccountState acceptance
 on:
   pull_request:
     paths:
+      - "tests/browser/sa04-completion/**"
       - ".github/workflows/sa04-n-complaints-browser.yml"
       - "tests/browser/sa04-complaints/**"
       - "db/complaints-repository.ts"

@@ -99,7 +99,7 @@ export function createBetterAuthRequestHooks(
             const state = await readAccountState(connection, current.user.id);
             if (state.status !== "active") {
               ctx.context.session = null;
-              throw new APIError("UNAUTHORIZED", { message: "Unauthorized" });
+              throw new APIError("UNAUTHORIZED", { message: "Unauthorized" }, { "Cache-Control": "private, no-store" });
             }
             // Reuse this authoritative read for ordinary operations. If the
             // active session is due, let the canonical endpoint perform its
@@ -176,7 +176,7 @@ export function betterAuthOptions(
           const connection = (database as NodePgDatabase & { $client: Client }).$client;
           const state = await readAccountState(connection, pending.userId);
           if (state.status !== "active") {
-            throw new APIError("UNAUTHORIZED", { message: "Unauthorized" });
+            throw new APIError("UNAUTHORIZED", { message: "Unauthorized" }, { "Cache-Control": "private, no-store" });
           }
         } catch (error) {
           if (!(error instanceof APIError)) onActorStateError?.(error);

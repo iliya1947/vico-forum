@@ -22,6 +22,7 @@ import { forumReaderForRequest } from "./request-context";
 import { ForumStorageUnavailableError } from "../../db/hyperdrive-forum";
 import { DELETED_USER_NAME } from "../../db/public-identity";
 import { UserMeasureRestrictedError } from "../../db/user-measure-policy";
+import { AccountInactiveError, AccountMissingError } from "../../db/account-state";
 import {
   ContentGenerationPlanningUnavailableError,
   type ContentGenerationActionResult,
@@ -325,6 +326,9 @@ export async function topicAction({ request, params, context }: {
           : await runtime.capability.generateAutomaticPostBody(input),
       );
     } catch (error) {
+      if (error instanceof AccountInactiveError || error instanceof AccountMissingError) {
+        return mutationFailure("unauthenticated", 401);
+      }
       if (error instanceof UserMeasureRestrictedError) {
         return generationFailure("forbidden", 403);
       }
