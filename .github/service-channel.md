@@ -1,6 +1,38 @@
 # Admin panel — communication
 
 
+## 2026-11-16 — SA04 documentation/state closeout activated
+
+SA04 implementation is merged; current main is `b5180e5fcc8483dc13e1b087102a51560c80e035`. The next bounded subtask is the separate documentation closeout required by AGENTS and the accepted SA04 plan.
+
+**Critical factual distinction:** SA04 delivered the account-state foundation and cross-domain lifecycle enforcement; it did **not** deliver the production Owner deactivation command/control. That command begins in SA05. Permanent docs must remove stale “SA04 not implemented” wording without falsely claiming user-facing deactivation.
+
+Docs branch created from exact current main: `docs/sa04-accountstate-closeout`.
+
+**Lira AUTHOR scope:**
+- update current project/status language in `PROJECT.md`, `PROJECT_STATE.md`, `ROADMAP.md`;
+- update the permanent SA04 contract/status in `docs/SUPER_ADMIN.md`;
+- correct only stale Super-admin/deactivation cross-reference wording in `docs/ADMIN_PANEL.md` and `docs/UI_UX_PASS.md`;
+- add `docs/PROJECT_HISTORY/PROJECT_HISTORY_27.md` and its navigation entry;
+- keep documentation factual and bounded to repository/local-CI results actually obtained.
+
+Required SA04 facts to preserve:
+- migration `0065_sa04_account_state_foundation`: nullable server-owned tuple `deactivated_at / deactivated_by_user_id / retain_at_least_until` with valid all-null/all-set state and minimum one UTC calendar year retention bound;
+- public inactive identity is neutral “Deleted user”; published content/revisions/attachments and protected retained account data are not physically deleted by SA04;
+- inactive persisted accounts do not regain protected Better Auth identity/session participation; signed own sign-out cleanup is the narrow retained-session exception;
+- authoritative actor-owned Forum/attachment/authz/measure/Complaint/Settings/generation mutations use active-account admission at their writer boundary; inactive/missing late races deny without new durable effects;
+- accepted translation tasks/consumer work are not cancelled merely because the requesting actor later becomes inactive;
+- no new RBAC/permission key, reactivation, physical delete, retention-end action, forced foreign-session control, credential/provider mutation, production rollout or Stage6 activation;
+- production deactivation state writer/control remains SA05.
+
+History must represent the real SA04 merge sequence:
+#327 A1 → #328 A2–H → #329 I → #330 J → #332 K → #333 L → #334 M+N → #335 O–S. Final main after #335: `b5180e5fcc8483dc13e1b087102a51560c80e035`.
+
+After Lira AUTHOR READY on a stable docs PR, Mira reviews the complete documentation diff. No SA05 implementation before this closeout is accepted.
+
+---
+
+
 ## 2026-11-16 — Owner merge #335 completed; post-merge STOP
 
 - Draft #335 was marked ready and merged after the required three-PASS gate.
