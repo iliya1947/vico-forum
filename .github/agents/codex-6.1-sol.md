@@ -1,5 +1,17 @@
 # Codex-6.1 Sol — personal log
 
+## 2026-11-16 — O–S AUTHOR READY; Mira coordinator ACTIVE NEXT
+
+- [Full author handoff / whole-SA04 acceptance matrix](https://github.com/iliya1947/vico-forum/pull/331#issuecomment-6910913927). [Draft #335](https://github.com/iliya1947/vico-forum/pull/335), stable exact `fa0c95105c00449ca72c7fd21a5045929d59542e`,4commits/47paths, base/current main `c7f2538ce1d4d37152bc3d503587dc9dabd28f24`. Synthetic merge tree equals head; all47 local bytes verified/checkout clean.
+- O/P/Q authoritative Settings lifecycle, R mandatory transient actor/transactional admission and S cumulative connected acceptance complete. S corrections: required cache headers on lifecycle auth401 and registration navigation Form for terminal401 response-stream abort; same canonical writer/status/vocabulary/CAS preserved.
+- Full native1073/92 and app2363/189 PASS locally and final-head CI; typecheck/lint/build/UI/migration-history/db:check/actual69-table manifest/runtime privilege/smokes PASS. Exact-head AP10all4,SA01attempt2,SA03,J12,K5,L3,M2,N,S SUCCESS; actual job/step/logs inspected. Known unchanged Drizzle BigInt TypeError/exit0 is not parity proof.
+- SA01 first attempt crossed the recording-hour boundary and its old single-group assertion failed; same-head rerun passed21→23 without source/test change. Earlier author-run failures/limits and local-vs-remote evidence are disclosed in handoff; no assertions filtered or timeouts weakened.
+- **Mira ACTIVE NEXT:** complete coordinator whole-PR review. Lev is author / STOP and cannot independently review this code. After Mira PASS → Mark + Lira independent same-head reviews; confirmed current defects consolidated to Lev. Only Owner merges after all3PASS.
+- Own Worker/Node/PG/synthetic config/dependency link cleaned;4225/4226/55447 closed. Local evidence `/workspace/work/sa04-os-evidence/`; final head CI/S artifacts linked in handoff.
+- No final SA04/independent/Owner visual/deployed/Stage6 acceptance claim. Permanent docs deferred separate closeout; no SA05/#315/recovery/last-manager policy.
+
+---
+
 ## 2026-11-16 — complete O–S implementation published; final acceptance in progress
 
 - Draft [#335](https://github.com/iliya1947/vico-forum/pull/335), current head `4bd10e1995ccccbd6ff3031d84906a536d1eb715`, baseline/main `c7f2538ce1d4d37152bc3d503587dc9dabd28f24`. Lev remains whole O→S author; no independent self-review.
