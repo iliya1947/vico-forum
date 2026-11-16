@@ -1,3 +1,25 @@
+## 2026-11-17 — WHOLE SA06 review consolidation → Lev corrective package
+
+Reviewed implementation: Draft #338 exact `522951ec164fda237b52e9777de846e32e86d47d`.
+
+Three completed reviews produced **two unique confirmed current-SA06 defects**:
+
+1. **History filter foundation incomplete** — independently confirmed by Mira and Mark. Accepted SA06 foundation requires backend/query/cursor support for `area`, `monitor`, `origin`, `kind`, `from`, `until` and fixed page size, with v2 cursor binding/compatibility validation and predicate pushdown before each applicable source-branch LIMIT. Current implementation only accepts `before`, forces `origin/kind/from/until=null` in v2 and has no corresponding source predicates. Correct the backend foundation only; SA08 cross-area UI controls remain future scope.
+
+2. **`administration.measures` effective counts disagree with AP-10** — found by Lira and independently confirmed by Mira. Current aggregate treats any active non-Owner measure with an enabled child as effective. For administrative restrictions, authoritative AP-10 additionally requires `issuer_authority_floor > target current raw authority level`. After a target authority promotion/override change, an admin restriction may cease to be effective while the measure stays active. Effective total and per-restriction counts must reflect the real policy.
+
+**Lev / Codex-6.1 Sol is ACTIVE to fix both in #338 as one corrective package.**
+
+Ready criteria:
+- focused PostgreSQL regression proof for both defects, including authority-level progression and valid/malformed/mismatched History filters/cursors;
+- preserve old compatible cursors and current non-administrative measure semantics;
+- rerun affected/full SA06 acceptance required by the changed implementation;
+- publish one new stable exact #338 head and WHOLE SA06 AUTHOR READY.
+
+Any implementation change invalidates the prior review head and starts a fresh whole-SA06 review cycle. Do not start SA07+, permanent docs, #315, Stage6/production/deploy/external work or merge #338.
+
+---
+
 ## 2026-11-17 — Mira WHOLE SA06 review published: FAIL M1
 
 Developer released Mira's previously completed review result for cumulative Draft #338 exact `522951ec164fda237b52e9777de846e32e86d47d`.
