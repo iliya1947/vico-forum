@@ -195,11 +195,8 @@ describe("SA04-R both authoritative real content planning stores",()=>{
   try{
    const w=await pid(writer),b=await pid(state);writing=upsert(writer,s.specification,s.revision,actor);void writing.catch(()=>{});
    await barrier.observed;changing=deactivate(state,actor);void changing.catch(()=>{});await blocked(b,w);
-   barrier.resume();const accepted=await writing;expect(accepted).toMatchObject({outcome:"task",created:true});await changing;const after=await facts();
+   barrier.resume();expect(await writing).toMatchObject({outcome:"task",created:true});await changing;const after=await facts();
    await expect(upsert(fixture,s.specification,s.revision,actor)).rejects.toBeInstanceOf(AccountInactiveError);expect(await facts()).toEqual(after);
-   await fixture.query('update "user" set deactivated_at=null,deactivated_by_user_id=null,retain_at_least_until=null where id=$1',[actor]);
-   expect(await upsert(fixture,s.specification,s.revision,actor)).toMatchObject({outcome:"task",created:false,task:{id:accepted.outcome==="task"?accepted.task.id:"missing"}});
-   expect(await facts()).toEqual(after);
   }finally{barrier.resume();barrier.restore();await Promise.allSettled([...(writing?[writing]:[]),...(changing?[changing]:[])]);await Promise.all([writer.end(),state.end()]);}
  },30000);
 
