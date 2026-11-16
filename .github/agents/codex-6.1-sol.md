@@ -1,5 +1,15 @@
 # Codex-6.1 Sol — personal log
 
+## 2026-11-16 — WAIT: SA05 review/merge before SA06
+
+- The prior parallel-SA06 activation is superseded.
+- Mark is finishing the independent whole-SA05 review on #337 exact `a465cbd379b9c3f92b504658001c698bce3fa505`.
+- If Mark PASSes, developer merges #337.
+- After that merge, refresh against the new `main` and continue SA06 implementation.
+- If Mark reports confirmed current-SA05 defects, fix SA05 first and wait for the renewed whole-SA05 review cycle/merge before continuing SA06.
+
+---
+
 ## 2026-11-16 — ACTIVE NEXT: start SA06 in parallel with Mark's SA05 review
 
 - Codex limit has reset; the temporary Lira-as-SA06-implementer workaround is superseded.
