@@ -5,14 +5,13 @@ Service PR #331 is the active Admin/Super-admin coordination channel. PR #251 is
 ## Current boundary
 
 - **Current main / SA05 baseline:** `efae8111a13aefbf72b4d20972dac461acc602e3`.
-- **Standing developer assignment:** Lev / Codex-6.1 Sol remains sole implementer for all further implementation in #331 until explicitly changed; review independence remains mandatory.
-- **SA05-1 / SA05-2:** Mira coordinator PASS. Accepted SA05-2 head `8f3693a60bd627ac615defbb6b742f38a92fecfb`.
-- **SA05-3 / original05-A AUTHOR READY, Lev STOP:** [cumulative Draft #337](https://github.com/iliya1947/vico-forum/pull/337), stable exact `7a0ce7f4ec4dbf224aa99b3375b18542630bdb81`,5commits/36paths. [Whole checkpoint handoff/evidence](https://github.com/iliya1947/vico-forum/pull/331#issuecomment-6918077490).
-- Original05-A cumulative author implementation now contains command core, protected HTTP action, Owner lifecycle read model, accounts.users lifecycle counts and original-event projection to scoped/global/target+actor History. No visible deactivation control. SA05-1/2/3 are original05-A subdivisions; SA05-4/5 remain original05-B.
-- **Mira ACTIVE NEXT:** whole-SA05-3 / original05-A coordinator closure review on that stable exact head. Confirmed current-checkpoint defects return to Lev; he cannot independently review authored work.
-- Full local+CI native1152/95files and app2458/191files, targeted native102/app84, actual69-table manifest and all applicable existing Chromium regressions PASS;14jobs/10runsSUCCESS, actual steps/logs inspected. Known unchanged Drizzle BigInt generator/exit0 remains non-proof. Native source/read evidence and regressions do not establish SA05-5 genuine Owner connected closure, full-SA05, Owner visual or deployed acceptance.
-- SA05-4/5 are not activated. #337 remains cumulative Draft/unmerged until full SA05 review/closure. Stage6 is paused; no SA06+, #315, production/external action, reactivation/purge/foreign credential/session policy or new recovery/last-manager model.
-- Permanent documentation remains a separate end-of-task PR. Older SA04/delivery sections below retain historical context; active boundary is SA05-3/original05-A review above.
+- **Standing developer assignment:** Lev / Codex-6.1 Sol remains sole implementer until explicitly changed; author cannot independently review.
+- **Current stable implementation head:** `a465cbd379b9c3f92b504658001c698bce3fa505`, cumulative Draft #337,6commits/43paths; remaining05-B source published.
+- **ACTIVE:** Lev final whole-SA05 author checks (full local suites, new connected acceptance and exact-head CI). Not AUTHOR READY yet. Mira whole-package review follows final handoff; context supplied in [#6920247047](https://github.com/iliya1947/vico-forum/pull/331#issuecomment-6920247047) while CI runs.
+- Whole SA05 contains original05-A core/action/read/event projections plus original05-B canonical Owner lifecycle/retention control and genuine connected closure. Earlier intermediate05-A/SA05-4 stop gates are superseded by the latest explicit coordinator correction.
+- After whole-SA05 AUTHOR READY: Mira whole-package coordinator review; after PASS, Lira and Mark final independent reviews of that same stable exact head. Only developer merges; #337 remains Draft/unmerged.
+- No SA06+, #315, deployment/Stage6/production/external work, reactivation/purge/foreign credential/session policy, new recovery/last-manager model or permanent documentation. Permanent docs remain a separate end-of-task PR.
+- Historical sections below retain earlier delivery snapshots; this current boundary and .github/workflow.md govern ongoing work.
 
 ## Stable product decisions
 
