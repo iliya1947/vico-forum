@@ -1,5 +1,14 @@
 # ChatGPT-5.6 Sol — personal log
 
+## 2026-11-16 — Process correction: no intermediate 05-A independent gate
+
+- My prior statement that 05-A needed a separate independent-review gate before SA05 continuation was incorrect.
+- Developer's established route is package-level: Lev continues implementation through the whole remaining SA05; final review occurs after whole-SA05 AUTHOR READY.
+- The earlier SA05-3/05-A PASS remains an intermediate technical check only and does not stop or gate implementation.
+- Service workflow corrected; Lev assigned all remaining SA05 / original 05-B without an SA05-4 review stop.
+
+---
+
 ## 2026-11-16 — SA05-3 / original 05-A coordinator PASS
 
 - Stable exact #337 head: `7a0ce7f4ec4dbf224aa99b3375b18542630bdb81`; main unchanged.
