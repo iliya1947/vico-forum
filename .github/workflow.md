@@ -1,14 +1,13 @@
 # Admin panel — current workflow
 
 - **Service PR:** #331, coordination-only; never merge.
-- **Current main:** `efae8111a13aefbf72b4d20972dac461acc602e3`.
-- **Standing developer assignment:** **Лёва / Codex-6.1 Sol is the sole implementer for all further implementation work in this service task until the developer explicitly changes that decision.**
-- **Cumulative SA05 implementation PR:** Draft #337, branch `chatgpt/sa05-owner-deactivation`.
-- **Current stable implementation head:** `a465cbd379b9c3f92b504658001c698bce3fa505`, cumulative Draft #337,6commits/43paths; remaining05-B source published.
-- **ACTIVE:** Lev final whole-SA05 author checks (full local suites, new connected acceptance and exact-head CI). Not AUTHOR READY yet. Mira whole-package review follows final handoff; context supplied in [#6920247047](https://github.com/iliya1947/vico-forum/pull/331#issuecomment-6920247047) while CI runs.
-- **Delivered inside cumulative SA05:** original 05-A = command core + protected action + lifecycle/read/event projections. Mira's prior 05-A PASS is a useful intermediate check, **not a gate that stops implementation**.
-- **ACTIVE:** Лёва continues **all remaining SA05 / original 05-B through whole-SA05 closure**, without intermediate independent-review stops.
-- **Whole-SA05 completion:** canonical Owner lifecycle/retention presentation + deactivation confirmation/control + required genuine Worker/Better Auth/PostgreSQL17/Chromium stale-session/race/rollback acceptance on one stable exact #337 head.
-- **NEXT after whole-SA05 AUTHOR READY:** Mira whole-package coordinator review. If PASS, final same-head independent reviews by **Лира and Марк**; Лёва is ineligible as author.
-- **Merge:** only the developer performs merge after the complete package review chain.
-- **Boundary:** no SA06+, #315, deployment, Stage6, production/external work or permanent docs during this implementation.
+- **Current main / SA05 baseline:** `efae8111a13aefbf72b4d20972dac461acc602e3`; current-main AGENTS unchanged.
+- **Standing developer assignment:** Lev / Codex-6.1 Sol remains sole implementer until explicitly changed.
+- **Whole-SA05 implementation:** cumulative Draft #337, branch `chatgpt/sa05-owner-deactivation`, stable exact `a465cbd379b9c3f92b504658001c698bce3fa505`,6commits/44paths,+2767/-24.
+- **State:** WHOLE SA05 AUTHOR READY; original05-A core/action/read/event projections + original05-B canonical Owner lifecycle/retention confirmation/control + required genuine connected closure delivered.
+- **Evidence:** [whole-package handoff](https://github.com/iliya1947/vico-forum/pull/331#issuecomment-6920444507); local+exact-head app2473/192files and native1311/96files PASS, including159new native closure; all15jobs/11runs SUCCESS, including new genuine SA05 Worker/BetterAuth/PG17/localR2/Chromium. Actual69-table manifest/privilege/Worker gates PASS. Known unchanged Drizzle BigInt/exit0 is not parity proof.
+- **ACTIVE NEXT:** Mira whole-SA05 coordinator review on that exact head. Return confirmed current-SA05 defects to Lev in one packet.
+- **After Mira PASS:** Lira + Mark final independent whole-SA05 reviews on the same stable exact head; Lev is ineligible as author.
+- **Lev:** AUTHOR STOP; no intermediate05-A/SA05-4 review gate remains.
+- **Merge:** only developer, after complete whole-package review chain; #337 remains Draft/open/unmerged.
+- **Boundary:** no SA06+, #315, deployment/Stage6/production/external work or permanent docs. Author screenshots are not developer visual/deployed acceptance.
