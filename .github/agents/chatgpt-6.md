@@ -1,5 +1,14 @@
 # ChatGPT-6 — personal log
 
+## 2026-11-16 — SA04 factual documentation closeout 2/4: Лира AUTHOR STOP
+
+- Starting base: current merged `main=b5180e5fcc8483dc13e1b087102a51560c80e035`, docs branch `docs/sa04-accountstate-closeout`; previous 1/4 completed only PROJECT/PROJECT_STATE/ROADMAP.
+- 2/4 changed exactly `docs/SUPER_ADMIN.md`, `docs/ADMIN_PANEL.md`, `docs/UI_UX_PASS.md`. Permanent SUPER_ADMIN section records migration 0065 active/deactivated nullable tuple, UTC calendar-year minimum; server-only state; inactive auth/actor transactional admission; replay/race and classified failure; neutral public Deleted user, retained published and private protected data; continued accepted translation tasks; no Owner deactivation UI/state writer until SA05. The other two docs only correct outdated SA status and references.
+- Latest exact docs head `f74be4d85723235a9f8cee3b4f0dc3f312e3d328`. GitHub compare main...docs: ahead 8, behind 0, **six docs paths only**. AGENTS.md read fully from main; source PROJECT/STATE/ROADMAP, SUPER_ADMIN/ADMIN_PANEL/UI_UX and accepted SA04 plan/migration reviewed before edits. No docs PR, code/migration/dependency change, CI or Chromium run claimed.
+- Bounded **AUTHOR STOP**. Next developer `...` enables only 3/4 factual PROJECT_HISTORY_27 + index, then STOP. 4/4 overall consistency/docs PR/CI remains separate, followed by Mira whole-docs review. SA05/#315/Stage6/production not started.
+
+---
+
 ## 2026-11-16 — SA04 documentation closeout checkpoint 1/4 COMPLETE / author STOP
 
 Context refreshed from current main AGENTS SHA `3701368b772d7ef9514a8d7d544b20d8682bbda7`, latest service workflow/channel/accepted plan. Mark independent #335 PASS and Owner squash merge confirmed, current main `b5180e5fcc8483dc13e1b087102a51560c80e035`; new docs branch `docs/sa04-accountstate-closeout` initially identical to main. Task decomposed into four bounded checkpoints: 1 current root docs, 2 permanent Super-admin/targeted Admin+UIUX references, 3 history+index, 4 complete docs PR/validation. Only checkpoint 1 executed.
