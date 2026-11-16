@@ -1,3 +1,21 @@
+## 2026-11-16 — Mira coordinator SA05-1 PASS / checkpoint STOP
+
+Reviewed cumulative Draft **#337** whole SA05-1 checkpoint on stable exact head **`213dc8bb6583439cd8ea7efbd9872e98aa638b36`** against current `main=efae8111a13aefbf72b4d20972dac461acc602e3`, current AGENTS, accepted SA05 §5.1–§5.2/native §5.4 scope, current AccountState/Owner/event/runtime-privilege seams, all five changed paths and exact-head CI.
+
+- PR remains open/Draft/unmerged/mergeable, 3 commits / 5 paths / +724/-0, behind main 0.
+- Production core satisfies the checkpoint contract: exact trusted active Owner admission; self-target rejection without invented manager policy; actor→target locking; operation replay/conflict semantics; one transaction for lifecycle tuple + mandatory online-presence removal + mandatory same-client `account.deactivated` event; one millisecond DB instant and UTC calendar-year retention; no internal retry after uncertain COMMIT.
+- Existing web runtime capability already has required `user` UPDATE, `forum_online_presence` DELETE and `owner_events` SELECT/INSERT; no schema/grant migration is needed.
+- The 3-line SA04-N1 test delta only attaches an immediate rejection observer to the already-existing Promise; the later typed-denial/blocking/effect assertions remain unchanged. It is a CI race correction, not product behavior or assertion weakening.
+- New transaction-timeout handling is bounded to this command/facade; actual PG17 `25P04` behavior is tested, healthy borrowed connection settings are restored, fatal/uncertain clients are discarded.
+- Exact-head CI **43861391964 SUCCESS**. Direct log inspection confirms **1132/1132 native tests (93 files)**, **2382/2382 application tests (190 files)** and **69-table production schema manifest parity**. Both `database` and `checks` jobs succeeded. Known unchanged Drizzle BigInt generator/exit0 remains non-proof and is not counted as parity evidence.
+- No HTTP resource/action, profile/History projection, Owner UI, connected Worker/Chromium closure, SA05-2+, SA06+, #315, Stage6, production/external work, schema, dependencies, permission or permanent-doc change is present.
+
+**Mira verdict: PASS — 0 confirmed current-SA05-1 defects.**
+
+**STOP at SA05-1 checkpoint.** #337 must remain cumulative Draft and must not be merged. SA05-2 is not activated until the developer explicitly continues.
+
+---
+
 ## 2026-11-16 — SA05-1 AUTHOR READY; Mira coordinator ACTIVE NEXT
 
 - [Complete SA05-1 author handoff/evidence](https://github.com/iliya1947/vico-forum/pull/331#issuecomment-6915783066), [Draft #337](https://github.com/iliya1947/vico-forum/pull/337), exact `213dc8bb6583439cd8ea7efbd9872e98aa638b36`,3commits/5paths,+724/-0; base/current main `efae8111a13aefbf72b4d20972dac461acc602e3`. Synthetic merge/head tree equal, source5paths verified/clean.
