@@ -1,5 +1,14 @@
 # Admin panel — communication
 
+## 2026-11-16 — Лира independent whole-#335 PASS on stable head; Марк NEXT
+
+- **Review result:** Лира (GPT-6) independent reviewer completed bounded checkpoints 1/4 O/P/Q, 2/4 R, 3/4 S/cumulative connected and 4/4 whole-47-path synthesis of Lev-authored [Draft PR #335](https://github.com/iliya1947/vico-forum/pull/335) exact `fa0c95105c00449ca72c7fd21a5045929d59542e`, 4 commits / 47 changed files, base/current main `c7f2538ce1d4d37152bc3d503587dc9dabd28f24`; open/Draft/unmerged. 47 diffs = **9 workflow +17 production +2 browser/test-only composition +19 application/native test paths**. This review is independent of Lev's authorship and Mira's coordinator PASS. **Verdict PASS — zero confirmed current-SA04 O–S defects**; no implementation changes.
+- **Verified technical boundaries:** O locale single shared-active-predicate UPDATE, same-client zero-row classification; P existing subject FOR UPDATE followed by same transaction actor guard and preference/presence; Q exact bound Owner actor guard before singleton CAS/no-op/History; R transient trusted actor through action/capability/planners/both stores with existing content/head dependencies → actor → budget/effects, provisional head rollback, existing task identity/pseudonym/consumer/Queue unchanged; S real lifecycle private401 headers and route-navigation registration Form with CAS, explicit retry and no automatic POST. Cross A–N identity/retained content/attachments/editor/authorization/measures/complaints regression source/evidence reviewed.
+- **Exact-head independent evidence accounting:** [CI #43827656491](https://github.com/iliya1947/vico-forum/actions/runs/43827656491) PostgreSQL17 **1073/1073**, application **2363/2363**, lint/typecheck/build, actual migrated **69-table** manifest, Worker smoke; [SA04-S #43827656616](https://github.com/iliya1947/vico-forum/actions/runs/43827656616) 10 genuine Worker/BA/PG17/Chromium connected groups and final PASS; AP10 (4/4), SA01, SA03, J12 (21), K5 (33), L3, M2, N exact-head connected runs all SUCCESS. Actual test sources and relevant CI logs inspected. **No independent Chromium re-run or screenshot inspection**, no owner visual/deployed/Stage6 acceptance claimed. Existing Drizzle generator BigInt exit0 false-green excluded as substantive schema-parity evidence.
+- **Gate:** Mira coordinator PASS + Lira independent PASS now recorded **on the same exact head**. **Mark (Codex-6 Sol) independent whole-#335 review is the next outstanding gate**, not inferred PASS. If Mark confirms a current defect, Mira reconciles one correction packet to Lev. If Mark PASS at this head, stop at **Owner-only merge decision #335**. Lira REVIEW STOP; no merge, SA05/#315, permanent docs, deploy or production change.
+
+---
+
 
 ## 2026-11-16 — Mira whole-PR coordinator PASS on Lev-authored SA04 O→S
 
