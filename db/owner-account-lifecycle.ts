@@ -47,6 +47,9 @@ type LifecycleEvent = {
   correlation_id: string | null; state_matches: boolean | null;
 };
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+function operationId(value: unknown): value is string {
+  return typeof value === "string" && value.length === 36 && UUID.test(value);
+}
 // Same opaque identity bounds as the canonical Owner profile reader; no System-event key regex.
 function accountId(value: unknown): value is string {
   return typeof value === "string" && value.length > 0 && value.length <= 200
@@ -56,7 +59,7 @@ function checkedInput(input: DeactivateOwnerAccountInput): DeactivateOwnerAccoun
   if (!input || typeof input !== "object" || Array.isArray(input)
     || Object.keys(input).sort().join(",") !== "actorId,operationId,targetId"
     || !accountId(input.actorId) || !accountId(input.targetId)
-    || typeof input.operationId !== "string" || !UUID.test(input.operationId)) {
+    || !operationId(input.operationId)) {
     throw new OwnerAccountLifecycleValidationError();
   }
   return { ...input, operationId: input.operationId.toLowerCase() };
@@ -137,7 +140,7 @@ export class PostgresOwnerAccountLifecycleCommand implements OwnerAccountLifecyc
         if (original.rows.length > 1) throw new OwnerAccountLifecycleInvariantError();
         const event = original.rows[0];
         if (event && (!eventSemantics(event, target.deactivatedByUserId, command.targetId)
-          || !event.state_matches || typeof event.correlation_id !== "string" || !UUID.test(event.correlation_id))) {
+          || !event.state_matches || !operationId(event.correlation_id))) {
           throw new OwnerAccountLifecycleInvariantError();
         }
         outcome = result(target, false, event?.id ?? null);

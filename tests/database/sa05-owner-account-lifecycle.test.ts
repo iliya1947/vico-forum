@@ -199,7 +199,8 @@ describe("SA05-1 actual atomic Owner command and facade", () => {
   it("rejects malformed operations/extra command fields and the exact Owner target even on replay", async () => {
     const owner = await person(), target = await person(), request = input(owner, target);
     await command(owner).deactivate(request); const before = await facts();
-    for (const bad of [{ ...request, operationId: "bad" }, { ...request, targetId: target, reason: "unexpected" }]) {
+    for (const bad of [{ ...request, operationId: "bad" }, { ...request, operationId: request.operationId + "\n" },
+      { ...request, targetId: target, reason: "unexpected" }]) {
       await expect(command(owner).deactivate(bad)).rejects.toBeInstanceOf(OwnerAccountLifecycleValidationError);
     }
     await expect(command(owner).deactivate({ ...request, targetId: owner })).rejects.toBeInstanceOf(OwnerAccountLifecycleForbiddenError);

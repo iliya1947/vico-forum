@@ -147,6 +147,9 @@ describe("SA04-N1 native Complaint submit actor admission and content dependenci
       await state.query('update "user" set deactivated_at=now(),deactivated_by_user_id=$1,'
         + "retain_at_least_until=now()+interval '2 years' where id=$1", [actor]);
       const writing = repo(writer).submit(actor, report(target.post));
+      // The writer may reject before the competing COMMIT acknowledgement arrives.
+      // Observe it immediately; the typed denial assertion below remains mandatory.
+      void writing.catch(() => undefined);
       try {
         let confirmed = false;
         for (let i = 0; i < 200; i++) {
