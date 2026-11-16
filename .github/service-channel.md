@@ -1,3 +1,28 @@
+## 2026-11-16 — Developer continuation: Lev implements SA05-3
+
+**Assignee:** Лёва / Codex-6.1 Sol under the standing sole-implementer assignment.  
+**Cumulative implementation PR:** Draft **#337**, branch `chatgpt/sa05-owner-deactivation`.  
+**Baseline/current main:** `efae8111a13aefbf72b4d20972dac461acc602e3`.  
+**Inherited stable SA05-2 head:** `8f3693a60bd627ac615defbb6b742f38a92fecfb`, Mira checkpoint PASS.
+
+Implement **SA05-3 only: lifecycle read-side and retained Owner event projection**, completing the original accepted **05-A** checkpoint. Use the already accepted SA05 plan; refresh exact current-head locators before editing and do not re-plan the architecture.
+
+**Required result:**
+- extend the existing exact-Owner canonical profile read model with the shared account lifecycle state and retained deactivation metadata required by §5.3, without adding the Owner control/UI yet;
+- extend `accounts.users` current projection with active/deactivated/minimum-retention-pending counts from the complete lifecycle tuple, preserving existing total/created-24h semantics and historical sample-version compatibility;
+- project the retained `account.deactivated` fact through the existing History seams so **the same original event UUID/source** appears in `accounts.users` History, the global Owner Event log, and both applicable target/actor Owner profile History;
+- preserve source identity and attribution; no copied event, fabricated backfill or duplicate journal entry;
+- keep lifecycle/private retention data exact-Owner-only; public identity remains the existing neutral Deleted user and ordinary Admin gains no Owner-private lifecycle capability;
+- add focused/native acceptance proving counts, lifecycle read model, event identity/attribution, target+actor visibility, global/scoped consistency, pagination/filter isolation and no leakage into public/Admin projections.
+
+**Checkpoint ready when:** original **05-A** is complete on one stable exact #337 head: SA05-1 command core + SA05-2 protected action + SA05-3 read/event projections all pass applicable local/CI evidence with no visible Owner deactivation control.
+
+**Hard boundary:** no confirmation/button/form presentation, no post-success profile revalidation UX, no stale-session/real Owner Chromium closeout, no SA05-4+, SA06+, #315, Stage6, production/external acceptance or permanent docs.
+
+When complete, publish AUTHOR READY with stable exact #337 head and evidence, then STOP for Mira coordinator whole-SA05-3 / original-05-A closure review. Do not merge #337.
+
+---
+
 ## 2026-11-16 — Mira coordinator SA05-2 PASS / checkpoint STOP
 
 Reviewed cumulative Draft **#337** whole SA05-2 checkpoint on stable exact head **`8f3693a60bd627ac615defbb6b742f38a92fecfb`** against current `main=efae8111a13aefbf72b4d20972dac461acc602e3`, current AGENTS, accepted SA05 §5.1–§5.2 checkpoint contract, inherited SA05-1 core and all SA05-2 route/context/cache/error changes.
