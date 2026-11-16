@@ -74,6 +74,23 @@ function compatibleOrigin(origin:OwnerHistoryOrigin,scope:Scope):boolean {
   if(scope.monitor!==null) return allowed.includes(scope.monitor);
   return scope.area===null || allowed.some(key=>MONITORS[scope.area!].includes(key));
 }
+/** Source-kind/monitor compatibility comes from the existing closed native actions. */
+function compatibleKind(origin:OwnerHistoryOrigin,kind:string,scope:Scope):boolean {
+  let allowed:readonly string[]=ORIGIN_SCOPES[origin];
+  if(origin==="auth-event")allowed=SA02_FACT_MONITORS[kind as keyof typeof SA02_FACT_MONITORS]??[];
+  if(origin==="system-event")allowed=kind==="system.requestFailed"?["system.requests"]:["system.dependencies"];
+  if(origin==="admin-history"){
+    if(kind==="settings.registrationChanged")allowed=["accounts.registration","administration.registration"];
+    else if(kind.startsWith("role.")||kind==="user.roleAssigned"||kind==="user.overrideChanged")allowed=["administration.authorization"];
+    else if(kind.startsWith("measure."))allowed=["administration.measures"];
+    else if(kind==="topic.sourceLocaleCorrected"||kind==="post.sourceLocaleCorrected")allowed=["forum.content"];
+    else if(kind.startsWith("help.")||kind==="topic.solved"||kind==="topic.bestAnswerChanged")allowed=["moderation.help","forum.state"];
+    else if(["topic.pinned","topic.unpinned","topic.closed","topic.reopened"].includes(kind))allowed=["forum.state"];
+    else allowed=[];
+  }
+  if(scope.monitor!==null)return allowed.includes(scope.monitor);
+  return scope.area===null||allowed.some(key=>MONITORS[scope.area!].includes(key));
+}
 type Cursor = {v:1;at:string;origin:OwnerHistoryOrigin;id:string;
   area:OwnerHistoryArea|null;monitor:OwnerHistoryMonitor|null};
 const EXACT = /^([1-9][0-9]{3})-(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01])T([01][0-9]|2[0-3]):([0-5][0-9]):([0-5][0-9])\.([0-9]{6})Z$/;
@@ -119,7 +136,7 @@ function checkedFilters(options:OwnerHistoryOptions){
   if(kind!==null&&(typeof kind!=="string"||kind.length>80||
       !Object.entries(KINDS_BY_ORIGIN).some(([source,kinds])=>
         (origin===null||source===origin)&&
-        compatibleOrigin(source as OwnerHistoryOrigin,scope)&&kinds.includes(kind))))
+        compatibleKind(source as OwnerHistoryOrigin,kind,scope)&&kinds.includes(kind))))
     throw new Error("Invalid Owner History kind/scope");
   const from=canonicalUtcTime(options.from),until=canonicalUtcTime(options.until);
   if(from!==null&&until!==null&&from>until)
