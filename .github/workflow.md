@@ -2,8 +2,9 @@
 
 - **Service PR:** #331, coordination-only; never merge.
 - **Current main:** `efae8111a13aefbf72b4d20972dac461acc602e3`.
-- **SA04:** implementation A–S and separate documentation closeout are fully merged in `main`. Docs PR #336 was squash-merged from exact reviewed head `d89a4f45bafd0c50642565367ec8b2ef2ee112b8` after Mira PASS; #336 is closed/merged.
-- **Post-merge verification:** merge SHA equals current `main`; current `AGENTS.md`, `PROJECT.md`, `PROJECT_STATE.md`, `ROADMAP.md` and `docs/SUPER_ADMIN.md` reread. Permanent state keeps SA04 = AccountState foundation/enforcement and SA05 = still-unimplemented Owner deactivation command/UI.
-- **Current state:** STOP at completed SA04 task boundary. No implementation/review actor active.
-- **NEXT only after explicit developer continuation:** activate SA05 from the already accepted SA05–SA08 plan after current-main locator/dependency refresh. No reapproval of the whole plan is required unless a real current-main conflict is found.
-- **Boundary:** no #315, deployment, Stage6, production or real Owner/Google external acceptance is bundled into this transition.
+- **SA04:** fully closed in `main`, including documentation.
+- **SA05 decomposition:** SA05-1 command core → SA05-2 protected HTTP action → SA05-3 read-side/History → SA05-4 Owner UI → SA05-5 connected closure. These are checkpoints inside one cumulative SA05 implementation PR, not merge units.
+- **ACTIVE:** Лёва implements **SA05-1 only** from the accepted remaining technical plan (§5.1–§5.2 + native-command acceptance in §5.4), after refreshing exact locators/dependencies against current main.
+- **SA05-1 deliverable:** production atomic Owner account-deactivation command core + native PostgreSQL acceptance. No HTTP route/UI/read-side yet.
+- **NEXT after Lev AUTHOR READY:** Mira coordinator whole-checkpoint review of the stable exact SA05-1 head. Confirmed current-scope defects return to Lev in one packet.
+- **Boundary:** no SA05-2+, SA06+, #315, deployment, Stage6, production or real Owner/Google external acceptance during SA05-1.
