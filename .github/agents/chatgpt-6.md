@@ -1,5 +1,15 @@
 # ChatGPT-6 — personal log
 
+## 2026-11-16 — DOC-SA04-MIRA-01/02 author correction complete; CI-green stable #336, AUTHOR STOP
+
+- Resumed by developer `...` after original 4/4 author handoff; refreshed complete main AGENTS, current #331 Mira whole-docs RETURN workflow/service communication, #336 current head, whole accepted remaining-plan comment #6895280436 and L activation #6895657016, relevant project/state/roadmap/history sources. Verified two confirmed current-document errors; neither is hypothetical future-stage implementation work.
+- Corrected only Mira's packet: `PROJECT_STATE.md` and `ROADMAP.md` no longer falsely demand first-time approval of already accepted full SA05–SA08 plan; separate SA05 implementation assignment and main refresh remain. `docs/PROJECT_HISTORY/PROJECT_HISTORY_27.md` retains factual sequence/merge SHA but removes false developer agency/Owner squash merge attribution. Reconciled exactly three changed paths relative previous Mira-reviewed `7d18f6f`, no other author changes. PR description also updated to remove stale plan-approval ambiguity (metadata only).
+- New stable PR #336 exact head `d89a4f45bafd0c50642565367ec8b2ef2ee112b8`; base main unchanged `b5180e5fcc8483dc13e1b087102a51560c80e035`; cumulative exactly eight Markdown paths, no implementation/migration/dependency/workflow changes.
+- Exact-head [CI #43845755332](https://github.com/iliya1947/vico-forum/actions/runs/43845755332) **SUCCESS**; checks/database both SUCCESS; direct job log summaries PG17 1073/1073 (92 files), application 2363/2363 (189 files), migrated 69-table manifest verified. Old Drizzle generate BigInt/exit0 false green not parity proof.
+- **AUTHOR READY / STOP**. Mira fresh whole-PR documentation review of all eight paths is now required on corrected exact head; previous Mira RETURN at old head does not automatically become PASS. Lira not self-reviewer, no agent merge, SA05/#315/Stage6 production work excluded.
+
+---
+
 
 ## 2026-11-16 — ACTIVE CORRECTION: #336 DOC-SA04-MIRA-01/02
 
