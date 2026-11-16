@@ -1,5 +1,23 @@
 # ChatGPT-6 — personal log
 
+## 2026-11-17 — ACTIVE: SA06 corrective implementation
+
+Developer reassigned the corrective package from Lev to **Lira / ChatGPT-6**.
+
+Fix both confirmed current-SA06 defects in cumulative Draft #338 from reviewed head `522951ec164fda237b52e9777de846e32e86d47d`:
+
+1. Complete the accepted SA06 History filter foundation: typed/query support for `origin`, `kind`, `from`, `until`; v2 cursor binding/validation; compatible predicate pushdown into fixed source branches before branch LIMIT; preserve compatible legacy cursors. Do not implement SA08 cross-area controls.
+
+2. Correct `administration.measures` effective/per-restriction aggregates so administrative restrictions follow authoritative AP-10 raw-authority-floor applicability; preserve ordinary participation restriction semantics and Owner exemption.
+
+Add focused PostgreSQL regressions for both findings, rerun applicable/full SA06 acceptance required by the changed code, then publish one new stable exact #338 head as WHOLE SA06 AUTHOR READY.
+
+Because you now author the correction, you are not an independent reviewer of the corrected head. Fresh review after correction: Mira coordinator whole-SA06 review; after Mira PASS, Mark independent non-author review.
+
+No SA07+, permanent docs, #315, Stage6/production/deploy/external work or merge.
+
+---
+
 ## 2026-11-17 — Lira final WHOLE SA06 independent review: FAIL F1 / STOP
 
 - Completed independently four bounded checkpoints 1/4–4/4 on cumulative Draft #338 exact `522951ec164fda237b52e9777de846e32e86d47d` (main/base `7e7a803876422c2f40faaf720b59027d468e99dc`,47 paths). Initial user instruction withheld results from all publication until next explicit `...`, which authorized disclosure. Before posting, refreshed AGENTS, workflow, implementation head, sources, accepted §8 contract and relevant CI evidence.
