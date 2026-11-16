@@ -1,5 +1,15 @@
 # ChatGPT-6 — personal log
 
+## 2026-11-16 — independent #335 whole-O–S review, bounded checkpoint 1/4: O/P/Q inspected; STOP
+
+- **Assignment:** Latest #331 workflow gives Mark and Lira independent whole-PR review of Lev-authored O→S after Mira coordinator PASS. Changed implementation [Draft #335](https://github.com/iliya1947/vico-forum/pull/335) exact `fa0c95105c00449ca72c7fd21a5045929d59542e` (4 commits/47 paths, base/current main `c7f2538ce1d4d37152bc3d503587dc9dabd28f24`), stable/open/draft/unmerged. Lira did **not** author this PR and does not modify it during review.
+- **Decomposition:** review checkpoint 1 O/P/Q source/contract/native; checkpoint 2 R generation, both task stores, planner/callers/native concurrency; checkpoint 3 S HTTP/Browser, auth corrections, workflow scripts and all cumulative cross-boundaries; checkpoint 4 whole-47-path synthesis/exact-head evidence and independent final PASS/RETURN. One completed checkpoint per developer continuation.
+- **Checkpoint 1 inspected:** full current main AGENTS/PROJECT/PROJECT_STATE/ROADMAP/SETTINGS/AUTHORIZATION and accepted technical plan §7/lock map; PR filenames, exact O/P/Q production patches/full sources including `db/hyperdrive-user-locale.ts`, `db/user-privacy.ts`, `db/registration-settings.ts`, `db/account-state.ts`, O/P/Q Hyperdrive adapters, three Settings route/UI actions, existing Forum heartbeat integration; native `tests/database/sa04-settings-opq.test.ts`, `user-locale.test.ts`, `forum-online-privacy.test.ts`, `registration-settings.test.ts` and O/P/Q route/availability test diffs. O's native atomic active-predicate UPDATE + same-client zero-row classification, P existing subject FOR UPDATE before same-tx shared actor admission, Q bound-Owner guard then actor lock before settings singleton/CAS/History, denied response types and successful/no-op protections align with approved sequencing on checked code. Physical blocker/test matrix includes state/writer-first and native snapshots. No confirmed current-O/P/Q defect **from inspected scope**; this is not a verdict on entire #335, and no independent browser rerun is claimed.
+- **Remote exact-head status verified:** 10 workflows SUCCESS including CI `43827656491`, S connected `43827656616` and all relevant regressions. Green CI is supplemental evidence, not an independent proof. Head unchanged before/after checkpoint.
+- **Author/review boundary:** no PR #335 implementation modification, no merged/deployed/docs change and no whole-PR PASS/RETURN yet. No M/O expansion or findings sent to coordinator in absence of confirmed defect. **Checkpoint 1 STOP; next independent checkpoint 2 R** only on developer `...`, then STOP again.
+
+---
+
 
 ## 2026-11-16 — ACTIVE INDEPENDENT REVIEW: whole #335 SA04 O→S
 
