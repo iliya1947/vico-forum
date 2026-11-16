@@ -1,5 +1,15 @@
 # Codex-6.1 Sol — personal log
 
+## 2026-11-16 — Whole SA06 ACTIVE in cumulative Draft #338
+
+- Source head `b6f87b644eab2fe8c0cf7d396bd447b1db67db14`,1commit/38paths; current main/base `7e7a803876422c2f40faaf720b59027d468e99dc` includes developer-merged SA05.
+- Four areas/ten native monitors, original History/person paths and27indexes delivered in source. Native14+populatedquery7 PASS; focusedapp44/type/lint PASS. Full local/CI/new genuine SA06 connected closure ACTIVE; not AUTHOR READY.
+- [Context while CI runs](https://github.com/iliya1947/vico-forum/pull/331#issuecomment-6924980826). Continue through whole-SA06 AUTHOR READY with no slice stop; then Mira/non-author independent reviewers. No SA07,#315,docs,production/deploy/external work or merge.
+- Worktree /workspace/work/sa06; evidence /workspace/work/sa06-evidence. OwnPG17 vico-sa06-test55449, synthetic-only fixtures. KnownDrizzleBigInt/exit0 remains non-proof; actual native manifest independently verifies27index-only delta.
+
+---
+
+
 ## 2026-11-16 — ACTIVE: whole SA06 implementation
 
 - #337 / SA05 is merged. Current exact `main`: `7e7a803876422c2f40faaf720b59027d468e99dc`.
