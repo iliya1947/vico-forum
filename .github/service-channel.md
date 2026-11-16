@@ -1,5 +1,15 @@
 # Admin panel — communication
 
+## 2026-11-16 — SA04 docs closeout 3/4: factual merge history and index COMPLETE; Лира STOP
+
+- Docs branch `docs/sa04-accountstate-closeout`, based on exact merged `main=b5180e5fcc8483dc13e1b087102a51560c80e035`; latest docs checkpoint commit `7d18f6fd7f98a7fd63a8f5154e64052e1b7cc305`. GitHub compare: **ahead 10, behind 0, exactly eight Markdown files** (previous six + two new history/index paths). No code/migration/dependency/workflow change on docs branch; no docs PR or new CI yet.
+- **3/4 bounded scope completed:** created `docs/PROJECT_HISTORY/PROJECT_HISTORY_27.md` (118 lines) and added #27 link to `docs/PROJECT_HISTORY/PROJECT_HISTORY.md`. Verified GitHub metadata: eight Owner-merged implementation PRs, sequence **#327 A1 → #328 A2–H → #329 I → #330 J → #332 K → #333 L → #334 M+N → #335 O–S**. Final main after #335: `b5180e5fcc8483dc13e1b087102a51560c80e035`.
+- History records only delivered SA04 foundation/admissions, documented J deadlock and K private-500 corrections, independent M+N nonce RETURN → local correction → fresh Mira/Lev PASS, and O–S author corrections with final Mira/Lira/Mark exact-head PASS. Final #335 CI recorded as 1073/1073 PG17, 2363/2363 app, actual 69-table migrated manifest; connected S 10 groups PASS. Known pre-existing Drizzle BigInt generate exit0 false-green explicitly **not** counted as substantive parity proof.
+- State boundary preserved: no production Owner deactivation writer/UI (future SA05), no deployed Owner/Google/Stage6/visual acceptance, no new production actions or tests claimed from this docs checkpoint. Historic CI facts come from previously completed PR/review records, not a new local run.
+- **Лира AUTHOR STOP at 3/4.** Next only on explicit developer `...`: separate **4/4** whole-docs consistency, docs PR creation and applicable CI on stable head, author READY/STOP. Only then Mira coordinator whole-docs review. No Lira self-review, Owner merge, SA05/#315/Stage6/deploy now.
+
+---
+
 ## 2026-11-16 — SA04 docs closeout 2/4: permanent contract and cross-references COMPLETE; Лира STOP
 
 - Separate docs branch `docs/sa04-accountstate-closeout` from merged main `b5180e5fcc8483dc13e1b087102a51560c80e035`. Latest checkpoint commit `f74be4d85723235a9f8cee3b4f0dc3f312e3d328`. Comparison main...docs: **ahead 8, behind 0, exactly six documentation files**, no code/migrations/dependencies/workflows changed and **no docs PR yet**.
