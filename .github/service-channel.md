@@ -1,3 +1,15 @@
+## 2026-11-16 — Developer standing assignment: Lev is sole implementer until changed
+
+Direct developer instruction for service task **#331**:
+
+- **All further implementation work is assigned only to Лёва / Codex-6.1 Sol until the developer explicitly decides otherwise.**
+- This concrete assignment overrides the default implementer routing in AGENTS for this task under Working Process §9.
+- Mira must not hand implementation of a later checkpoint/package in this task to Lira, Mark or herself unless the developer explicitly changes this assignment.
+- This directive changes **implementation authorship only**. Coordinator and independent review gates remain separate and must preserve reviewer independence; Lev does not independently review implementation he authored.
+- Current active implementation remains **SA05-2** on cumulative Draft #337.
+
+---
+
 ## 2026-11-16 — Correction: SA05-2 remains with Lev
 
 - The prior SA05-2 assignment to Lira was a coordinator error. Developer intent is that **Lev continues SA05 implementation**, so that assignment is superseded.
