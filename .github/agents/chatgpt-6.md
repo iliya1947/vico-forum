@@ -1,5 +1,16 @@
 # ChatGPT-6 — personal log
 
+## 2026-11-16 — ASSIGNED: independent whole-SA05 review
+
+- Review cumulative Draft #337 exact `a465cbd379b9c3f92b504658001c698bce3fa505` as a non-author after Mira whole-package PASS.
+- Review the entire SA05 package, not merely the last UI commit.
+- Do not edit implementation. Verify current-scope defects vs future work and continue after the first possible finding.
+- PASS → record exact-head whole-package PASS and STOP. Defects → one complete confirmed current-SA05 packet to Mira/Lev.
+- Mark is intentionally not assigned yet.
+- No SA06 work: accepted 06-0 prerequisite is whole SA05 accepted+merged; implementation remains Lev-only until developer changes it.
+
+---
+
 ## 2026-11-16 — Standing implementation routing
 
 - Direct developer instruction for #331: **all further implementation is assigned only to Lev until the developer explicitly changes that decision**.
