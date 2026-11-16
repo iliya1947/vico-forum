@@ -1,6 +1,6 @@
 # PROJECT_STATE.md
 
-Последнее обновление: 2026-11-11
+Последнее обновление: 2026-11-16
 
 ## Назначение
 
@@ -30,7 +30,7 @@ Vico Forum находится в pre-release разработке.
 
 - Stage 0–5 завершены в repository/local-CI path.
 - Текущий standalone product priority по `ROADMAP.md` — UI/UX product pass.
-- Ordinary Admin Panel AP-01–AP-11, owner/authorization redesign Stage 1–2, Settings SET-01–SET-06 и Super-admin SA-01–SA-03 реализованы в repository/local-CI. Следующие SA-пакеты не реализованы. Complaints ведутся отдельно.
+- Ordinary Admin Panel AP-01–AP-11, owner/authorization redesign Stage 1–2, Settings SET-01–SET-06 и Super-admin SA-01–SA-04 реализованы в repository/local-CI. SA-04 поставил AccountState foundation и enforcement; Owner-команда деактивации/UI остаётся SA-05 и не реализована. Complaints ведутся отдельно.
 - Stage 6 external integration поставлен владельцем на паузу и не продолжается без отдельного указания.
 - Публичный production release не выполнен.
 
@@ -45,7 +45,7 @@ Vico Forum находится в pre-release разработке.
 - PostgreSQL 17 + Drizzle ORM `0.45.2`;
 - Better Auth `1.7.7` + PostgreSQL Drizzle adapter;
 - generic `/:locale/*`, runtime `LocaleRegistry`, BCP-47, LTR/RTL и request-scoped i18next;
-- repository migration history: `0000`–`0064`;
+- repository migration history: `0000`–`0065`;
 - externally accepted migration evidence: `0000`–`0020`.
 
 ## Реализованный продукт
@@ -149,9 +149,9 @@ application-реализация для bootstrap identity не требуетс
 и `docs/ADMIN_PANEL.md`. Реальная Google-настройка, binding и deployed acceptance
 остаются Stage 6.
 
-### Super-admin SA-01–SA-03
+### Super-admin SA-01–SA-04
 
-В `main` реализованы bounded **SA-01** и **SA-02** по `docs/SUPER_ADMIN.md`.
+В `main` реализованы bounded **SA-01–SA-04** по `docs/SUPER_ADMIN.md`.
 SA-01 доставил отдельный `/:locale/super-admin` только для exact server-bound Owner,
 два Owner entry point, минимальный Overview, **System Monitoring** (Worker runtime,
 PostgreSQL dependency/version и записанные 5xx), смежную History каждого System monitor,
@@ -196,11 +196,25 @@ attachment-security evidence и ordinary Admin History; arbitrary global observa
 `0064_sa03_profile_history_indexes` добавляет шесть target-chronological indexes без новых
 tables, grants, writers или domain state.
 
-SA-03 не реализует deactivation, foreign credential/session mutations, account lifecycle,
-новые Monitoring areas или полный Owner audit/backfill. Остальные десять Monitoring областей,
-деактивация и SA-04+ ещё не реализованы. Реальные Google/Owner binding, отдельный Owner
-Worker/Access/auth/session/DB boundary, production rollout и deployed acceptance остаются
-Stage 6; visual polish — отдельный UI/UX этап.
+SA-03 не реализует Owner-команду деактивации, foreign credential/session mutations,
+новые Monitoring areas или полный Owner audit/backfill.
+
+SA-04 добавил AccountState/lifecycle foundation миграцией
+`0065_sa04_account_state_foundation` и серверное enforcement активности
+учётной записи в существующих аутентификационных, административных,
+форумных, Settings и translation writer boundaries. Для неактивной учётной
+записи публичная identity-проекция нейтральна; опубликованные сообщения,
+ревизии и вложения остаются, а приватные retained-данные сохраняются под
+прежними ограничениями доступа. Проверены атомарные отказы без новых
+domain effects и связанные PostgreSQL 17 / Worker / Better Auth / Chromium
+сценарии в repository/local-CI. **SA-04 не добавляет Owner-команду/UI
+деактивации, реактивацию или физическое удаление** — production state writer
+и управление деактивацией относятся к SA-05.
+
+Остальные десять Monitoring областей и следующие SA-пакеты не реализованы.
+Реальные Google/Owner binding, отдельный Owner Worker/Access/auth/session/DB
+boundary, production rollout и deployed acceptance остаются Stage 6;
+visual polish — отдельный UI/UX этап.
 
 ### Admin/Super-admin outgoing routing foundation
 
@@ -279,7 +293,7 @@ External topology является mutable state и должна перепро�
 ## Актуальные незавершённые продуктовые границы
 
 - UI/UX product pass ещё требует финального closeout и обязательной real-runtime product/visual acceptance по `docs/UI_UX_PASS.md`.
-- В `main` ordinary Admin Panel AP-01–AP-11, owner/authorization redesign Stage 1–2, Settings SET-01–SET-06 и Super-admin SA-01–SA-03 реализованы в repository/local-CI. Live Monitoring сейчас охватывает System, Accounts & authentication и Security; SA-03 добавил canonical unified profile с independently authorized Admin/Owner sections, но не новую Monitoring area. Остальные десять Monitoring областей, деактивация и SA-04+ ещё не доставлены. Реальные Google/Owner binding и production acceptance остаются Stage 6.
+- В `main` ordinary Admin Panel AP-01–AP-11, owner/authorization redesign Stage 1–2, Settings SET-01–SET-06 и Super-admin SA-01–SA-04 реализованы в repository/local-CI. Live Monitoring охватывает System, Accounts & authentication и Security; SA-03 добавил canonical unified profile, SA-04 — AccountState/lifecycle enforcement без новой Monitoring area. Остальные десять Monitoring областей, Owner-команда/UI деактивации (SA-05) и следующие SA-пакеты не доставлены. Реальные Google/Owner binding и production acceptance остаются Stage 6.
 - Complaints integration/closeout покрыт repository/local-CI проверками; external/deployed acceptance Complaints не выполнялась.
 - Email verification/password recovery остаются отложенными.
 - Editor drafts/autosave остаются отложенными.
@@ -287,7 +301,7 @@ External topology является mutable state и должна перепро�
 
 ## Ближайший маршрут
 
-1. Продолжать утверждённую bounded product-разработку; дальнейшие SA-пакеты запускать только по отдельному назначению, без превращения обычных PR в external rollout.
+1. Завершить отдельную документационную фиксацию принятого SA-04; следующий функциональный пакет SA-05 начинать только после согласования полного технического плана SA-05–SA-08 и отдельного назначения, без превращения обычных PR в external rollout.
 2. Сохранить реализованные Settings SET-01–SET-06 и Owner-only authorization/registration mutation policy; завершение repository/local-CI не считать deployed acceptance. Реальную Google/Owner binding acceptance оставить Stage 6. Complaints продолжать по его профильному контракту/служебному каналу.
 3. Довести UI/UX product pass до финальной real-runtime acceptance.
 4. Возобновлять Stage 6 external integration только по отдельному указанию владельца и по `docs/database/*`.
