@@ -186,3 +186,30 @@ it("a proven timed legacy moot tuple without a retained parent-lift actor stays 
   const fact=(await allGlobal()).find(e=>e.origin==="measure-appeal-moot")!;expect(fact.values).toMatchObject({actorUserId:null,actorSource:"unproven",targetUserId:subject});
   expect((await allPerson(subject)).filter(e=>e.origin===fact.origin)).toHaveLength(1);expect((await allPerson(actor)).filter(e=>e.origin===fact.origin)).toEqual([]);expect((await allPerson(owner)).filter(e=>e.origin===fact.origin)).toEqual([]);
 });
+
+it("SA06 History origin/kind/time filters paginate across more than one page without trimming source branches",async()=>{
+  const author=await person();
+  for(let n=0;n<31;n++)await topic(author);
+  const filter={area:"forum" as const,monitorKey:"forum.content" as const,
+    origin:"forum-title-revision" as const,kind:"forum.titleRevisionCreated",
+    from:"2020-01-01T00:00:00Z",until:"2099-01-01T00:00:00Z"};
+  const first=await history.readTimeline(filter);
+  expect(first.entries).toHaveLength(25);
+  expect(first.next?.startsWith("v2.")).toBe(true);
+  const second=await history.readTimeline({...filter,before:first.next!});
+  expect(second.entries).toHaveLength(6);
+  expect(second.next).toBeNull();
+  const rows=[...first.entries,...second.entries];
+  expect(new Set(rows.map(e=>e.origin+":"+e.id)).size).toBe(31);
+  expect(rows.every(e=>e.origin==="forum-title-revision"&&e.kind==="forum.titleRevisionCreated")).toBe(true);
+  const byKind=await history.readTimeline({area:"forum",monitorKey:"forum.content",kind:"forum.postRevisionCreated"});
+  expect(byKind.entries).toHaveLength(25);
+  expect(byKind.entries.every(e=>e.origin==="forum-post-revision")).toBe(true);
+  const noRows=await history.readTimeline({...filter,from:"2030-01-01T00:00:00Z",until:"2030-01-01T00:00:00Z"});
+  expect(noRows.entries).toEqual([]);expect(noRows.next).toBeNull();
+  await expect(history.readTimeline({...filter,before:first.next!,from:"2019-01-01T00:00:00Z"})).rejects.toThrow();
+  await expect(history.readTimeline({...filter,before:first.next!,limit:50})).rejects.toThrow();
+  await expect(history.readTimeline({...filter,origin:"forum-post-revision",kind:"forum.postRevisionCreated",before:first.next!})).rejects.toThrow();
+  const global=await history.readTimeline({origin:"notification-first-read",kind:"notification.firstRead"});
+  expect(global.entries).toEqual([]);
+});
