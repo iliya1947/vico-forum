@@ -1,5 +1,5 @@
 import { useAdministrativeRouting } from "../administrative-routing/provider";
-import { data, useFetcher, useLoaderData, useRevalidator, type RouterContextProvider } from "react-router";
+import { data, Form, useActionData, useFetcher, useLoaderData, useNavigation, useRevalidator, type RouterContextProvider } from "react-router";
 import { useEffect, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { authSessionForRequest } from "../auth/request-context";
@@ -21,7 +21,6 @@ import { loader as readCanonicalAuthorization } from "./authorization-admin";
 import { settingsPrivateHeaders } from "./settings";
 
 const authorizationFetcherKey = "settings-forum-authorization";
-const registrationFetcherKey = "settings-forum-registration";
 type RegistrationError = "invalid" | "forbidden" | "conflict" | "unavailable";
 const registrationErrorMessages = {
   invalid: "settingsRegistrationInvalid",
@@ -97,24 +96,26 @@ export async function action({ request, context }: { request: Request; context: 
 function RegistrationControls({ registration }: {
   registration: { googleRegistrationEnabled: boolean; emailRegistrationEnabled: boolean; version: number };
 }) {
-  const fetcher = useFetcher<{ok: boolean; error?: RegistrationError}>({ key: registrationFetcherKey });
+  const result = useActionData<{ok: boolean; error?: RegistrationError}>();
+  const navigation = useNavigation();
   const revalidator = useRevalidator();
   const handledConflict = useRef<unknown>(null);
   // RR does not automatically refresh loader data after an action's 409 response.
   // Refresh exactly once per rejected version so the next submit uses current policy.
   useEffect(() => {
-    if (fetcher.state === "idle" && fetcher.data?.error === "conflict"
-      && handledConflict.current !== fetcher.data) {
-      handledConflict.current = fetcher.data;
+    if (navigation.state === "idle" && result?.error === "conflict"
+      && handledConflict.current !== result) {
+      handledConflict.current = result;
       void revalidator.revalidate();
     }
-  }, [fetcher.state, fetcher.data, revalidator]);
+  }, [navigation.state, result, revalidator]);
   const { t } = useTranslation("common");
-  const pending = fetcher.state !== "idle";
+  const pending = navigation.state !== "idle";
   return <section className="settings-registration" aria-labelledby="settings-registration-heading">
     <h2 id="settings-registration-heading">{t("settingsRegistrationHeading")}</h2>
     <p>{t("settingsRegistrationIntro")}</p>
-    <fetcher.Form key={registration.version} method="post" className="settings-registration-form"
+    {/* Match the sibling Settings forms: terminal 401 belongs to the route boundary. */}
+    <Form key={registration.version} method="post" className="settings-registration-form"
       aria-busy={pending || undefined}>
       <input type="hidden" name="expectedVersion" value={registration.version} />
       <label className="settings-registration-option">
@@ -128,9 +129,9 @@ function RegistrationControls({ registration }: {
         <span>{t("settingsRegistrationEmail")}</span>
       </label>
       <button type="submit" disabled={pending}>{pending ? t("authPending") : t("settingsRegistrationSave")}</button>
-    </fetcher.Form>
-    {fetcher.data?.ok ? <p role="status">{t("settingsRegistrationSaved")}</p> : null}
-    {fetcher.data?.error ? <p role="alert">{t(registrationErrorMessages[fetcher.data.error])}</p> : null}
+    </Form>
+    {result?.ok ? <p role="status">{t("settingsRegistrationSaved")}</p> : null}
+    {result?.error ? <p role="alert">{t(registrationErrorMessages[result.error])}</p> : null}
   </section>;
 }
 

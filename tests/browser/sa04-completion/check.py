@@ -33,9 +33,12 @@ const c=new pg.Client({connectionString:process.env.DATABASE_URL});await c.conne
  return json.loads(r.stdout)
 def record(case,**facts):
  records.append({'case':case,**facts});print('SA04_S_CONNECTED '+json.dumps(records[-1]),flush=True)
-def private(r,status):
- assert r.status==status,(r.status,status,r.text()[:250])
+def private_headers(r,status):
+ assert r.status==status,(r.status,status)
  assert {'private','no-store'} <= {x.strip() for x in r.headers.get('cache-control','').split(',')},r.headers
+ return r
+def private(r,status):
+ private_headers(r,status)
  assert 'S_PRIVATE_SQL_SECRET' not in r.text()
  return r
 def post(ctx,path,fields,host=base):
@@ -90,7 +93,8 @@ def mounted_denial(page,form,path):
  with page.expect_response(lambda r:match(r.request)) as response:form.locator('button[type="submit"]').click()
  assert response.value.status==401,response.value.status
  assert 'no-store' in response.value.headers.get('cache-control','')
- sleep(.7);assert len(sent)==1,'Automatic POST retry'
+ page.wait_for_timeout(700);assert len(sent)==1,'Automatic POST retry'
+ assert not page.locator('form.settings-locale-form, form.settings-privacy-form, form.settings-registration-form').count(),'Rejected private form remained mounted'
 
 try:
  with sync_playwright() as p:
@@ -141,6 +145,28 @@ try:
   v=sql('select version from forum_registration_settings where id=1')[0]['version'];before=facts()
   private(post(owner_ctx,path,{'expectedVersion':str(v),'googleRegistrationEnabled':'on','emailRegistrationEnabled':'on'}),200);assert facts()==before
   record('O-P-Q-healthy-save-no-op-presence-policy-and-locale-negotiation')
+
+  # The actual registration form keeps its URL, refreshes CAS after success or
+  # conflict, and requires an explicit second submit after a rejected version.
+  phase='registration-save-conflict';page=owner_ctx.new_page();page_errors(page)
+  private(page.goto(base+'/en/settings/forum',wait_until='networkidle'),200)
+  form=page.locator('form.settings-registration-form');version=form.locator('input[name="expectedVersion"]')
+  sent=[]
+  def registration_post(req):return req.method=='POST' and urlparse(req.url).path in ('/en/settings/forum','/en/settings/forum.data')
+  page.on('request',lambda req:sent.append(req.post_data) if registration_post(req) else None)
+  form.locator('input[name="googleRegistrationEnabled"]').uncheck();old=int(version.input_value())
+  with page.expect_response(lambda r:registration_post(r.request)) as response:form.locator('button[type="submit"]').click()
+  private_headers(response.value,200);page.wait_for_function('(v)=>document.querySelector(".settings-registration-form input[name=expectedVersion]")?.value===String(v)',arg=old+1)
+  assert page.url==base+'/en/settings/forum' and len(sent)==1
+  private(post(owner_ctx,'/en/settings/forum',{'expectedVersion':str(old+1),'googleRegistrationEnabled':'on','emailRegistrationEnabled':'on'}),200)
+  before=facts()
+  with page.expect_response(lambda r:registration_post(r.request)) as response:form.locator('button[type="submit"]').click()
+  private_headers(response.value,409);page.wait_for_function('(v)=>document.querySelector(".settings-registration-form input[name=expectedVersion]")?.value===String(v)',arg=old+2)
+  page.wait_for_timeout(700);assert len(sent)==2 and facts()==before
+  assert form.locator('input[name="googleRegistrationEnabled"]').is_checked()
+  with page.expect_response(lambda r:registration_post(r.request)) as response:form.locator('button[type="submit"]').click()
+  private_headers(response.value,200);page.wait_for_timeout(700);assert len(sent)==3 and facts()==before
+  page.close();record('Q-mounted-save-CAS-conflict-refresh-explicit-no-op-retry')
 
   # Production stays disabled; test composition uses exactly the canonical action.
   t=lambda i:'/he/topics/'+prefix+'-topic-'+str(i)
