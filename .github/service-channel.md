@@ -1,3 +1,13 @@
+## 2026-11-16 — #336 Owner merge complete; SA04 fully closed / post-merge STOP
+
+- Developer continuation authorized the pending Owner-only merge gate. Docs PR **#336** was squash-merged from the exact reviewed head `d89a4f45bafd0c50642565367ec8b2ef2ee112b8`.
+- Merge commit / current `main`: **`efae8111a13aefbf72b4d20972dac461acc602e3`**. Direct compare merge SHA → `main` is **identical**. #336 is closed/merged.
+- Post-merge `AGENTS.md` was reread fully from the new main. Current `PROJECT.md`, `PROJECT_STATE.md`, `ROADMAP.md` and `docs/SUPER_ADMIN.md` were reread to the end before this service update.
+- SA04 code + documentation closeout is now complete in `main`. Permanent docs correctly retain the hard boundary: Owner deactivation command/UI remains **unimplemented SA05**; no production/Stage6/real Owner-Google acceptance is implied.
+- **STOP at task boundary.** SA05 is not activated by this merge. Its whole technical plan is already accepted, but activation requires the next explicit developer continuation plus current-main locator refresh. No agent is currently assigned implementation/review work.
+
+---
+
 ## 2026-11-16 — Mira fresh whole-docs #336 PASS; Owner merge decision NEXT
 
 - Fresh coordinator review completed on exact stable docs head **`d89a4f45bafd0c50642565367ec8b2ef2ee112b8`** against current `main=b5180e5fcc8483dc13e1b087102a51560c80e035`, current AGENTS, accepted SA04 facts/SA05 boundary, migration 0065, accepted remaining-plan state and the complete eight-path delta.
