@@ -1,3 +1,23 @@
+## 2026-11-16 — Mira coordinator SA05-3 / original 05-A PASS
+
+Reviewed cumulative Draft **#337** on stable exact head **`7a0ce7f4ec4dbf224aa99b3375b18542630bdb81`** against current `main=efae8111a13aefbf72b4d20972dac461acc602e3`, current AGENTS, accepted SA05 §5.1–§5.4 / source-identity contract, inherited SA05-1/2 and the complete SA05-3 delta.
+
+- SA05-1 command core and SA05-2 protected action are unchanged by the SA05-3 commit.
+- Exact-Owner profile read model adds lifecycle state through the shared AccountState reader inside the same repeatable-read snapshot; lifecycle data is not exposed through public/Admin projections and no deactivation control/UI was added.
+- `accounts.users` preserves total/created24h and adds decimal-string active/deactivated/minimum-retention-pending counts from complete lifecycle tuples using DB snapshot time. Invalid lifecycle tuples fail closed rather than entering false samples.
+- New `accounts.users` samples are schemaVersion2; existing v1 samples remain unchanged and still obey the existing 15-minute gate.
+- The retained `account.deactivated` fact is projected from the original `owner_events` row only: same UUID/source/time/actor/target/operation reaches accounts.users History, global Event log, target profile History and actor profile History. No copied event, backfill or duplicate writer exists.
+- Global/scoped/person cursor membership and person filtering preserve source identity and target/actor isolation; overlapping actor/target attribution yields one row.
+- Existing actor/target indexes are sufficient for person History; no schema/index/grant/dependency change is present.
+- Exact-head CI **43876918945 SUCCESS**. Direct logs confirm **2458/2458 application tests (191 files)**, **1152/1152 native tests (95 files)**, **69-table migrated manifest parity**, runtime privilege/provisioning/credential probes and the inherited **63-request built-Worker resource smoke**. All exact-head listed Chromium regression workflows are SUCCESS.
+- Genuine Owner/Better Auth/stale-session/rollback connected SA05 acceptance and Owner deactivation presentation remain outside this checkpoint.
+
+**Mira verdict: PASS — 0 confirmed current-SA05-3 defects.**
+
+This passes the **coordinator gate** for original **05-A**, but does not yet make 05-A finally accepted: Lev authored the cumulative implementation and cannot independently review it. The next gate is independent review of this same stable exact head; no SA05-4 implementation is activated yet.
+
+---
+
 ## 2026-11-16 — SA05-3 / original05-A AUTHOR READY; Mira coordinator ACTIVE NEXT
 
 - [Whole checkpoint handoff/evidence](https://github.com/iliya1947/vico-forum/pull/331#issuecomment-6918077490), [cumulative Draft #337](https://github.com/iliya1947/vico-forum/pull/337), stable exact `7a0ce7f4ec4dbf224aa99b3375b18542630bdb81`,5commits/36paths,+1678/-24; SA05-3 delta17paths,+367/-18. Base/current main `efae8111a13aefbf72b4d20972dac461acc602e3`, AGENTS unchanged; synthetic merge/head trees equal, all36 source paths byte-verified/checkout clean.
