@@ -1,10 +1,11 @@
 import type { Pool } from "pg";
+import { ACCOUNT_HISTORY_SELECT_SQL } from "./owner-account-history";
 import type { OwnerHistoryEntry, OwnerHistoryMonitor, OwnerHistoryOrigin,
   OwnerHistoryPayload } from "./owner-sa02-history";
 
 /** Fixed target-specific projection of only sources with persisted person attribution. */
 export type OwnerUserHistoryOrigin =
-  Extract<OwnerHistoryOrigin, "auth-event" | "admin-history" | "attachment-evidence" | "attempt-pattern">;
+  Extract<OwnerHistoryOrigin, "auth-event" | "account-event" | "admin-history" | "attachment-evidence" | "attempt-pattern">;
 export interface OwnerUserHistoryPage {
   readonly entries: readonly OwnerHistoryEntry[];
   readonly next: string | null;
@@ -20,7 +21,7 @@ export class InvalidOwnerUserHistoryCursorError extends Error {
 }
 
 const RESOURCE = "profile-history";
-const ORIGINS: readonly string[] = ["auth-event", "admin-history", "attachment-evidence", "attempt-pattern"];
+const ORIGINS: readonly string[] = ["auth-event", "account-event", "admin-history", "attachment-evidence", "attempt-pattern"];
 const PAGE_SIZE = 25;
 const EXACT = /^([1-9][0-9]{3})-(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01])T([01][0-9]|2[0-3]):([0-5][0-9]):([0-5][0-9])\.([0-9]{6})Z$/;
 type Cursor = {
@@ -122,6 +123,9 @@ const TARGET_TIMELINE_SQL = [
   " from owner_events e where e.source='auth' and e.kind in",
   " ('account.created','auth.methodLinked','auth.passwordChanged',",
   " 'auth.sessionCreated','auth.sessionDeleted')",
+  " and (e.actor_user_id=$1 or e.target_user_id=$1)",
+  "union all",
+  ACCOUNT_HISTORY_SELECT_SQL,
   " and (e.actor_user_id=$1 or e.target_user_id=$1)",
   "union all",
   "select 'attempt-pattern'::text,p.id::text,p.admitted_at,p.admitted_at,",

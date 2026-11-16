@@ -16,6 +16,13 @@ export interface UiMessageDescriptor {
 
 export const canonicalEnglishCatalog = {
   common: {
+    superAdminHistoryOriginAccount: message("superAdminHistoryOriginAccount", "Account lifecycle fact", "SA05-3 exact-Owner lifecycle count and original account-event projection."),
+    superAdminHistoryAccountDeactivated: message("superAdminHistoryAccountDeactivated", "Account deactivated", "SA05-3 exact-Owner lifecycle count and original account-event projection."),
+    superAdminHistoryRetainUntil: message("superAdminHistoryRetainUntil", "Minimum retention until", "SA05-3 exact-Owner lifecycle count and original account-event projection."),
+    superAdminHistoryOperationId: message("superAdminHistoryOperationId", "Operation ID", "SA05-3 exact-Owner lifecycle count and original account-event projection."),
+    superAdminActiveUsers: message("superAdminActiveUsers", "Active accounts", "SA05-3 exact-Owner lifecycle count and original account-event projection."),
+    superAdminDeactivatedUsers: message("superAdminDeactivatedUsers", "Deactivated accounts", "SA05-3 exact-Owner lifecycle count and original account-event projection."),
+    superAdminRetentionPendingUsers: message("superAdminRetentionPendingUsers", "Accounts within minimum retention", "SA05-3 exact-Owner lifecycle count and original account-event projection."),
     complaintAppealInitialResult: message("complaintAppealInitialResult","Original decision","Package 6 participant and reviewer: immutable initial Decision."),
     complaintAppealEffectiveResult: message("complaintAppealEffectiveResult","Current outcome","Package 6 participant and reviewer: effective outcome after resolved appeals."),
     complaintAppealRemaining: message("complaintAppealRemaining","Appeals remaining: {{number}}","Package 6: remaining slots across one initial Decision.",["number"]),

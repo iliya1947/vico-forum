@@ -30,6 +30,7 @@ const measures = [{ id: "00000000-0000-4000-8000-000000000111",
   createdAt: "2026-11-10T10:00:00Z", expiresAt: null, liftedAt: null, version: 1,
   latestChangeReason: null, usedAppeals: 0, pendingAppeal: false }];
 const account = {
+  lifecycle: { status: "active" },
   targetUserId: targetId, email: "secret-target@example.test", emailVerified: false,
   createdAt: "2026-09-01T00:00:00Z", updatedAt: "2026-10-01T00:00:00Z",
   linkedMethods: ["password","google"], hasPassword: true,
@@ -73,6 +74,21 @@ const section = (v:Awaited<ReturnType<typeof loader>>,key:"measures"|"authorizat
   v.data.privileged[key];
 
 describe("SA03 canonical profile server-side independent section composition",()=>{
+  it("serializes retained lifecycle metadata only for exact Owner, never the public/Admin projection",async()=>{
+    const value={...account,lifecycle:{status:"deactivated",deactivatedAt:"2026-11-16T12:00:00.123Z",
+      deactivatedByUserId:"exact-owner",retainAtLeastUntil:"2027-11-16T12:00:00.123Z"}};
+    for(const actor of [null,"administrator","exact-owner"]){
+      const e=env(actor,["admin.users.read","admin.users.blocks.manage","access.authorization.manage"]);
+      e.readTarget.mockResolvedValueOnce(value);
+      const result=await loader(args(e.context));
+      expect(JSON.stringify(result.data.profile)).not.toMatch(/lifecycle|deactivatedAt|retainAtLeastUntil/);
+      if(actor==="exact-owner")expect(section(result,"owner")).toMatchObject({account:{value:{lifecycle:value.lifecycle}}});
+      else{
+        expect(section(result,"owner")).toBeUndefined();expect(e.readTarget).not.toHaveBeenCalled();
+        expect(JSON.stringify(result.data)).not.toMatch(/lifecycle|deactivatedAt|retainAtLeastUntil/);
+      }
+    }
+  });
   it("never reads private DTO for guest, member, or directory-only users even with spoofed Owner cursors",async()=>{
     for(const [actor,permissions] of [
       [null,[]],["member",[]],["directory",["admin.users.read"]],

@@ -8,6 +8,13 @@ import type { UiKey } from "./catalog";
  * translation stale until that translation is reviewed again.
  */
 export const reviewedCommonFingerprints = {
+  superAdminHistoryRetainUntil: "6c7c9194cb898e52aa4c58423c71278218a5adf7de5f94d161b5845fec23e4fb",
+  superAdminHistoryAccountDeactivated: "7738513ec6499eefd23097a673bd6368d25c472d3188512a1936c4a2bff7bca4",
+  superAdminHistoryOperationId: "94cfc1a52af69fe9ab92d13943a5eb197059433dfccdcefd13356dba9012d69a",
+  superAdminActiveUsers: "803462584dd485f93f65ae5748b8b12373a5923a64b549a27de1191c10df9515",
+  superAdminHistoryOriginAccount: "b590aac380aeb86352a26a79ec9a4486b0a27c8336456f1cadb476817059a5bd",
+  superAdminDeactivatedUsers: "32bf5ffd34c2bc8c03dd7bcf48081150bb961768307b7e6f76f097020046d7a6",
+  superAdminRetentionPendingUsers: "cbf8308be56898b65d549ec26debb2c066ecaab1ad3a741ad116f886ca6caef8",
   "complaintAppealInitialResult": "db8124287e48f1c2d2c5e5357b4e909bbb068e2c80df4bd3e08897ba11fe605b",
   "complaintAppealEffectiveResult": "89c1c6d7afdbd72a7cd00d670c21881cac09d62ed58b8c95a2c10f9e831a230f",
   "complaintAppealRemaining": "03eac52669c094cc219fb5d57422c34134d0b6db61cec6cadd62b2569bd6b3ca",

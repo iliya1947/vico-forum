@@ -25,7 +25,8 @@ function monitor(key:Sa02MonitorKey,values:Record<string,string|number|boolean|n
 const accounts:Sa02CurrentState={
   observedAt,recording:"available",
   monitors:[
-    monitor("accounts.users",{total:huge,created24h:"0"},{lastObservedAt:null}),
+    monitor("accounts.users",{total:huge,created24h:"0",activeUsers:"17",
+      deactivatedUsers:"31",retentionPendingUsers:"19"},{lastObservedAt:null}),
     monitor("accounts.methods",{passwordUsers:"2",googleUsers:"3",bothUsers:"1"}),
     monitor("accounts.sessions",{active:"3",expiredRetained:"5"}),
     monitor("accounts.registration",{googleEnabled:false,emailEnabled:true,
@@ -79,6 +80,12 @@ describe("SA02-D2.2 current monitoring route components",()=>{
     expect(container.textContent).toContain("9,007,199,254,740,993");
     expect(container.textContent).not.toContain("9,007,199,254,740,992");
     expect(container.textContent).toContain("New Google registration");
+    const users=container.querySelector('[data-monitor-key="accounts.users"]')!;
+    for(const [label,value] of [["Active accounts","17"],["Deactivated accounts","31"],
+      ["Accounts within minimum retention","19"]]){
+      const row=[...users.querySelectorAll("dl > div")].find(r=>r.querySelector("dt")?.textContent===label);
+      expect(row?.querySelector("dd")?.textContent).toBe(value);
+    }
     expect(container.textContent).toContain("Enabled");
     expect(container.textContent).toContain("Disabled");
     expect(container.textContent).toContain("Unexpired sessions do not indicate who is online.");

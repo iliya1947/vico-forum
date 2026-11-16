@@ -4,6 +4,13 @@ import type { ProviderTranslationValue } from "./translation-validation";
 type CommonTranslationValues = Readonly<Record<UiKey<"common">, ProviderTranslationValue>>;
 
 export const russianCommonValues = {
+  superAdminHistoryOriginAccount: "Факт жизненного цикла аккаунта",
+  superAdminHistoryAccountDeactivated: "Аккаунт деактивирован",
+  superAdminHistoryRetainUntil: "Хранить как минимум до",
+  superAdminHistoryOperationId: "ID операции",
+  superAdminActiveUsers: "Активные аккаунты",
+  superAdminDeactivatedUsers: "Деактивированные аккаунты",
+  superAdminRetentionPendingUsers: "Аккаунты с неистёкшим минимумом хранения",
   "complaintAppealInitialResult": "Первоначальное решение",
   "complaintAppealEffectiveResult": "Текущий итог",
   "complaintAppealRemaining": "Осталось апелляций: {{number}}",
@@ -1149,6 +1156,13 @@ export const russianCommonValues = {
 } as const satisfies CommonTranslationValues;
 
 export const hebrewCommonValues = {
+  superAdminHistoryOriginAccount: "אירוע מחזור חיי חשבון",
+  superAdminHistoryAccountDeactivated: "החשבון הושבת",
+  superAdminHistoryRetainUntil: "שמירה לפחות עד",
+  superAdminHistoryOperationId: "מזהה פעולה",
+  superAdminActiveUsers: "חשבונות פעילים",
+  superAdminDeactivatedUsers: "חשבונות מושבתים",
+  superAdminRetentionPendingUsers: "חשבונות בתקופת השמירה המזערית",
   "complaintAppealInitialResult": "ההחלטה המקורית",
   "complaintAppealEffectiveResult": "התוצאה הנוכחית",
   "complaintAppealRemaining": "ערעורים שנותרו: {{number}}",

@@ -2,15 +2,16 @@ import type { Pool } from "pg";
 import { SYSTEM_MONITORS } from "./owner-system-history";
 import { SA02_MONITORS, type Sa02Area, type Sa02MonitorKey } from "./owner-sa02-catalog";
 import { parseOwnerTimelineCursor } from "./owner-system-monitoring";
+import { ACCOUNT_HISTORY_SELECT_SQL } from "./owner-account-history";
 
 /** Server-only source projection; caller must authorize exact Owner before invoking it. */
 export type OwnerHistoryArea = "system" | Sa02Area;
 export type OwnerHistoryMonitor = typeof SYSTEM_MONITORS[number] | Sa02MonitorKey;
 export type OwnerHistoryOrigin =
-  | "system-event" | "auth-event" | "system-observation" | "admin-history"
+  | "system-event" | "auth-event" | "account-event" | "system-observation" | "admin-history"
   | "attachment-evidence" | "attempt-pattern" | "attempt-state";
 const ORIGINS: readonly string[] = [
-  "system-event", "auth-event", "system-observation", "admin-history",
+  "system-event", "auth-event", "account-event", "system-observation", "admin-history",
   "attachment-evidence", "attempt-pattern", "attempt-state",
 ];
 const AREAS: readonly string[] = ["system","accounts","security"];
@@ -34,6 +35,7 @@ export interface OwnerHistoryOptions {
 const ORIGIN_SCOPES: Record<OwnerHistoryOrigin,readonly OwnerHistoryMonitor[]> = {
   "system-event": SYSTEM_MONITORS,
   "auth-event": ["accounts.users","accounts.methods","accounts.sessions","security.auth"],
+  "account-event": ["accounts.users"],
   "system-observation": [...SYSTEM_MONITORS,...SA02_MONITORS.accounts,...SA02_MONITORS.security],
   "admin-history": ["accounts.registration"],
   "attachment-evidence": ["security.attachments"],
@@ -169,6 +171,8 @@ const TIMELINE_SQL = [
   " from owner_events e where e.source='auth' and e.kind in",
   " ('account.created','auth.methodLinked','auth.passwordChanged',",
   " 'auth.sessionCreated','auth.sessionDeleted')",
+  "union all",
+  ACCOUNT_HISTORY_SELECT_SQL,
   "union all",
   "select 'system-observation'::text,o.id::text,o.observed_at,o.observed_at,",
   " ARRAY[o.monitor_key]::text[],'monitor.observed'::text,o.source,o.quality,o.value",

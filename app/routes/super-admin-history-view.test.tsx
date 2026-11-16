@@ -102,6 +102,23 @@ function mount(locale:"en"|"ru"|"he",area:"events"|"history",routing?:Administra
 }
 
 describe("SA02-D3.1 source-aware original History route presentation",()=>{
+  it.each(["en","ru","he"] as const)("renders the original account lifecycle fact and retention without a mutation control (%s)",async locale=>{
+    const id="001234567890-0000-4000-8000-000000000001",retained="2027-11-16T12:00:00.123Z";
+    const entry:OwnerHistoryPage={entries:[{origin:"account-event",id,occurredAt:at,recordedAt:at,
+      kind:"account.deactivated",source:"account",quality:null,monitorKeys:["accounts.users"],
+      values:{state:"deactivated",actorUserId:"000123456789",targetUserId:"000456789012",
+        retainAtLeastUntil:retained,operationId:"00000000-0000-4000-8000-000000000001"}}],next:null};
+    const {container}=mount(locale,"history",undefined,entry,{area:"accounts",monitorKey:"accounts.users"});
+    await waitFor(()=>expect(container.querySelector('[data-history-origin="account-event"]')).not.toBeNull());
+    const tr=locale==="ru"?russianCommonValues:locale==="he"?hebrewCommonValues:
+      Object.fromEntries(Object.entries(canonicalEnglishCatalog.common).map(([key,d])=>[key,d.source]));
+    expect(container.textContent).toContain(tr.superAdminHistoryOriginAccount);
+    expect(container.textContent).toContain(tr.superAdminHistoryAccountDeactivated);
+    expect(container.textContent).toContain(tr.superAdminHistoryRetainUntil);
+    expect(container.textContent).toContain(id);expect(container.textContent).toContain("000123456789");
+    expect(container.querySelector('time[datetime="'+retained+'"]')).not.toBeNull();
+    expect(container.querySelector(".super-admin-timeline form,.super-admin-timeline button")).toBeNull();
+  });
   it("renders exact facts, measured observations, hourly groups, overflow and original evidence",async()=>{
     const {container}=mount("en","events");
     await waitFor(()=>expect(container.querySelectorAll(".super-admin-timeline li")).toHaveLength(5));

@@ -82,7 +82,8 @@ describe("SA02 snapshot-consistent Owner current-state native sources",()=>{
       "security.auth","security.access","security.attachments",
     ]);
     expect(result.recording).toBe("available");
-    expect(get(result,"accounts.users").values).toEqual({total:"4",created24h:"3"});
+    expect(get(result,"accounts.users").values).toEqual({total:"4",created24h:"3",
+      activeUsers:"4",deactivatedUsers:"0",retentionPendingUsers:"0"});
     expect(get(result,"accounts.methods").values).toEqual({
       passwordUsers:"2",googleUsers:"2",bothUsers:"1",
     });

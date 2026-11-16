@@ -95,6 +95,7 @@ describe("profile presentation", () => {
 
 describe("SA03 canonical profile protected sections", () => {
   const account = {
+    lifecycle: { status: "active" },
     targetUserId:"owner",email:"owner-private@example.test",emailVerified:true,
     createdAt:"2026-09-01T00:00:00.000Z",updatedAt:"2026-10-01T00:00:00.000Z",
     linkedMethods:["password","google"],hasPassword:true,observedAt:"2026-11-10T12:00:00.000Z",
