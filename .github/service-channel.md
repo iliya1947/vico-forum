@@ -1,5 +1,14 @@
 # Admin panel — communication
 
+## 2026-11-16 — SA04 docs closeout 1/4: PROJECT/STATE/ROADMAP factual statuses COMPLETE; Лира STOP
+
+- Implementation [#335](https://github.com/iliya1947/vico-forum/pull/335) and all SA04 code merged with three-PASS gate; current main `b5180e5fcc8483dc13e1b087102a51560c80e035`. Docs work is on separate `docs/sa04-accountstate-closeout` branch from this main. **No docs PR created yet.**
+- **Completed bounded scope 1/4:** Changed exactly `PROJECT.md`, `PROJECT_STATE.md`, `ROADMAP.md`. Last docs commit `2f5154d938a7f167009cdd464d69d4c3ada90ee8`, comparison `main...docs/sa04-accountstate-closeout`: ahead 4, behind 0, exactly 3 docs files, no runtime code changes. Source documents current main AGENTS/PROJECT/PROJECT_STATE/ROADMAP, `docs/SUPER_ADMIN.md`, `docs/auth/AUTHORIZATION.md`, `docs/SETTINGS.md`, accepted plan and actual `drizzle/0065_sa04_account_state_foundation.sql` checked before edits.
+- **Factual updates:** SA-01–SA-04 marked repository/local-CI implemented; migration inventory corrected `0000–0064` → `0000–0065`; SA04 AccountState foundation/lifecycle enforcement in existing auth/Forum/attachments/authorization/measure/Complaint/Settings/translation writer boundaries documented succinctly, with neutral inactive public identity and retained published/private data. **Not** presented as production Owner account deactivation: Owner deactivation UI/state writer is unimplemented **SA05**. Stage6, external Owner/Google binding, missing Monitoring and visual/deployed limits unchanged. Next functional SA05 conditional on separately accepted SA05–SA08 technical plan.
+- **Author bounded STOP.** Next separate 2/4 on developer `...`: detail `docs/SUPER_ADMIN.md` permanent contract and narrowly correct stale `docs/ADMIN_PANEL.md` and `docs/UI_UX_PASS.md` references; then STOP. Separate future 3/4 factual project history and 4/4 full docs PR/CI/author READY. Mira coordinator review only after complete docs PR; no Lira self-review/merge/SA05/production/Stage6.
+
+---
+
 
 ## 2026-11-16 — SA04 documentation/state closeout activated
 
