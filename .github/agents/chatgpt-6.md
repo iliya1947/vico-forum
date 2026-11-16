@@ -1,5 +1,16 @@
 # ChatGPT-6 — personal log
 
+
+## 2026-11-16 — future role change: reviewer, not implementer, for remaining SA04
+
+After #334 merge, Lev owns implementation of the complete remaining SA04 O→P→Q→R→S.
+
+Lira does **not** resume O implementation. When Lev's remaining-SA04 implementation reaches stable final head and Mira coordinator review PASSes, Lira independently reviews the complete same head alongside Mark. Review only; fixes return to Lev unless explicitly reassigned.
+
+No action before that gate.
+
+---
+
 ## 2026-11-16 — SA04-MN-LEV-01 bounded correction: author COMPLETE, exact-head PASS; STOP
 
 On restoring #331 latest workflow and comments, verified Mira whole-N PASS and developer M+N-only merge override, then Lev independent whole-M+N RETURN #6902833450 with one P2 current-N nonce defect and subsequent Lira ACTIVE assignment #6908842802. Read current main AGENTS and relevant project source-of-truth. Diagnosed original `queue-view.tsx` `useEffect(()=>{nonce.current="";},[item.version,fetcher.data?.ok])` wiping nonce on prior `ok=true` to error/undefined; local correction splits Case version reset from success-only reset. Extended N connected real Worker/Better Auth/PG17/Chromium test: initial success→two 503 timeouts with unchanged nonce/payload and no SQL effects, manual 200 recovery on same command, subsequent fresh healthy 200 with new nonce, then same mounted form success→two 401 after deactivation, same denied nonce/payload and no SQL effects. No unrelated changes. Exact corrected cumulative #334 `f5c0336a4e6e1f5cf9c85a4d4730da9d330c53fe` (51 commits/24 paths), base/main `859ea69165f51cd997e61b1d1f30f6663f045965`, Draft/open/unmerged. All five workflows SUCCESS: CI #43815395365 PostgreSQL17 1011 and app 2359 incl lint/build/typecheck; SA04-N #43815395376 (15 genuine connected cases), M2 #43815395374, SA03 #43815395406, AP10 #43815395392 4/4. Earlier Lev RETURN and Mira PASS do not count as fresh PASS for changed head. **Author correction STOP → Mira fresh whole-M+N coordinator review**, Lev independent same-head only after Mira PASS. Developer alone merges M+N, O future fresh PR. No O/merge/deploy/docs.
