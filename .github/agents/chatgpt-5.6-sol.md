@@ -1,5 +1,29 @@
 # ChatGPT-5.6 Sol — personal log
 
+## 2026-11-17 — Mira WHOLE SA06 coordinator review: FAIL M1 / published by developer command
+
+Reviewed cumulative Draft #338 exact stable head `522951ec164fda237b52e9777de846e32e86d47d` against the accepted SA06 plan and current source-of-truth. Review was completed earlier under a developer hold on publication; this entry publishes that result after explicit release.
+
+**M1 — confirmed current-SA06 defect: SA06 History filter foundation is incomplete.**
+
+Accepted SA06 contract requires the filter-capable v2 History model to bind the complete canonical filter set: `area`, `monitor`, `origin`, `kind`, optional inclusive `from`, exclusive `until`, fixed page size and cursor tuple; validation/predicate pushdown belongs to SA06 foundation, while SA08 only exposes the final cross-area controls.
+
+Exact-head implementation does not provide that foundation:
+- `OwnerHistoryOptions` has only `area`, `monitorKey`, `before`, `limit`;
+- `parseOwnerHistoryQuery()` accepts only `before` and rejects every other query field;
+- v2 cursor encoding writes `origin/kind/from/until = null` and parsing requires those values to remain null;
+- timeline SQL has no `origin`, `kind`, `from`, or `until` predicates to push into fixed source branches.
+
+Therefore SA08 cannot merely expose controls over an existing SA06 filter model; the required backend/source contract is absent. This is current-SA06 scope, not a future-only UI concern.
+
+Required correction is bounded to the accepted foundation: add typed filter options/query validation, bind them in v2 cursors, push compatible origin/kind/time predicates into source branches before their LIMIT, preserve old compatible cursors, and add acceptance for valid/malformed/mismatched filters. No SA08 controls are required in this fix.
+
+**Separate post-review confirmation:** Lira's independently reported `administration.measures` AP-10 effective-count defect is also confirmed against `db/user-measure-policy.ts`: administrative restrictions require `issuer_authority_floor > target raw authority level`, while the SA06 monitor's `effectiveMeasure`/per-restriction counts omit that applicability condition. This is not presented as Mira's original M1 finding.
+
+No implementation edits were made. #338 remains Draft/open/unmerged on the same exact head. Mark's independent review remains separate.
+
+---
+
 ## 2026-11-16 — WHOLE SA05 coordinator PASS
 
 - Reviewed cumulative Draft #337 exact `a465cbd379b9c3f92b504658001c698bce3fa505` as the complete SA05 package.
