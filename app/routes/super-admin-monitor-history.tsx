@@ -3,7 +3,7 @@ import { data, Link, useLoaderData, type RouterContextProvider } from "react-rou
 import { requireSuperAdmin, superAdminPrivateHeaders } from "../super-admin/access.server";
 import { ownerSa02MonitoringForRequest } from "../super-admin/request-context";
 import { OwnerSystemUnavailableError } from "../../db/hyperdrive-owner-system";
-import { parseOwnerHistoryQuery } from "../super-admin/history-query.server";
+import { parseOwnerHistoryQuery, withOwnerHistoryFilters } from "../super-admin/history-query.server";
 import { OWNER_MONITORS } from "../../db/owner-monitor-catalog";
 import type { OwnerHistoryArea, OwnerHistoryMonitor, OwnerHistoryOptions } from "../../db/owner-sa02-history";
 import { SuperAdminShell, Timeline } from "../super-admin/view";
@@ -24,12 +24,12 @@ export async function loader({request,params,context}:{
   const options:OwnerHistoryOptions={
     area:area as OwnerHistoryArea,monitorKey:monitorKey as OwnerHistoryMonitor,
   };
-  let before:string|undefined;
-  try {before=parseOwnerHistoryQuery(request.url,options);}
-  catch {throw new Response("Invalid history cursor",{status:400,headers:superAdminPrivateHeaders});}
+  let filters;
+  try {filters=parseOwnerHistoryQuery(request.url,options);}
+  catch {throw new Response("Invalid history filter",{status:400,headers:superAdminPrivateHeaders});}
   try {
-    const page=await ownerSa02MonitoringForRequest(context).readSa02History({...options,before});
-    return data({locale:params.locale??"en",area:options.area!,monitorKey:options.monitorKey!,page,viewerId},
+    const page=await ownerSa02MonitoringForRequest(context).readSa02History(filters);
+    return data({locale:params.locale??"en",area:options.area!,monitorKey:options.monitorKey!,page,viewerId,filters},
       {headers:superAdminPrivateHeaders});
   }catch(error){
     if(error instanceof OwnerSystemUnavailableError)
@@ -38,7 +38,7 @@ export async function loader({request,params,context}:{
   }
 }
 export default function SuperAdminMonitorHistoryRoute(){
-  const {locale,area,monitorKey,page,viewerId}=useLoaderData<typeof loader>();
+  const {locale,area,monitorKey,page,viewerId,filters}=useLoaderData<typeof loader>();
   const routing=useAdministrativeRouting();
   const {t}=useTranslation("common");
   const currentArea=area==="system" ? routing.superAdmin.system(locale)
@@ -51,7 +51,8 @@ export default function SuperAdminMonitorHistoryRoute(){
     <p><Link to={currentArea}>{currentAreaLabel}</Link></p>
     <Timeline page={page} locale={locale} viewerId={viewerId}
       path={before=>superAdminAreaMonitorHistoryPath(locale,
-        {area,monitorKey} as SuperAdminMonitorScope,before,routing)}/>
+        {area,monitorKey} as SuperAdminMonitorScope,before,routing),
+        {origin:filters.origin,kind:filters.kind,from:filters.from,until:filters.until})}/>
   </SuperAdminShell>;
 }
 export const ErrorBoundary=ForumRouteError;
