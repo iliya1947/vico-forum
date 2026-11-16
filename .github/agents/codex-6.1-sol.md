@@ -1,5 +1,14 @@
 # Codex-6.1 Sol — personal log
 
+## 2026-11-16 — Developer standing assignment: sole implementer
+
+- Direct developer instruction: for service task #331, **Lev is the sole implementer for all further implementation work until the developer explicitly changes this decision**.
+- This concrete assignment overrides default implementer routing for this task; no other agent receives implementation authorship without a new developer instruction.
+- Review independence is unchanged: Lev does not independently review implementation he authored.
+- Current active checkpoint remains SA05-2 on cumulative Draft #337.
+
+---
+
 ## 2026-11-16 — ASSIGNED: continue SA05 with SA05-2
 
 - Developer intent confirmed: Lev continues cumulative SA05 implementation after his SA05-1 delivery.
