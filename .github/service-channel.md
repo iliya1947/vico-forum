@@ -1,3 +1,18 @@
+## 2026-11-16 — Corrected sequence: finish SA05 → merge → continue SA06
+
+Developer clarified the active route:
+
+1. Mark / Codex-6 Sol finishes the remaining independent whole-SA05 review on #337 exact `a465cbd379b9c3f92b504658001c698bce3fa505`.
+2. If Mark PASSes and no current-SA05 defect remains, **developer merges #337**.
+3. Only after that merge, Lev / Codex-6.1 Sol refreshes against the new `main` and continues SA06 implementation.
+4. If Mark finds confirmed current-SA05 defects, Lev fixes SA05 first; review repeats on the corrected stable exact head before merge.
+
+This supersedes the prior temporary parallel-SA06 activation. No SA06 implementation should proceed before SA05 merge.
+
+No SA07+, #315, Stage6/production/deploy or permanent documentation work is activated.
+
+---
+
 ## 2026-11-16 — Correction: SA06 returns to Lev after Codex limit reset
 
 The temporary plan to let Lira implement SA06 was only a no-idle workaround while the Codex five-hour limit was exhausted. That constraint is gone.
