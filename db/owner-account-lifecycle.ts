@@ -55,7 +55,7 @@ function accountId(value: unknown): value is string {
   return typeof value === "string" && value.length > 0 && value.length <= 200
     && ![...value].some(char => { const code = char.codePointAt(0)!; return code < 32 || code === 127; });
 }
-function checkedInput(input: DeactivateOwnerAccountInput): DeactivateOwnerAccountInput {
+export function validateOwnerAccountDeactivationInput(input: DeactivateOwnerAccountInput): DeactivateOwnerAccountInput {
   if (!input || typeof input !== "object" || Array.isArray(input)
     || Object.keys(input).sort().join(",") !== "actorId,operationId,targetId"
     || !accountId(input.actorId) || !accountId(input.targetId)
@@ -111,7 +111,7 @@ export class PostgresOwnerAccountLifecycleCommand implements OwnerAccountLifecyc
 
   async deactivate(input: DeactivateOwnerAccountInput): Promise<OwnerAccountDeactivationResult> {
     if (!isBoundOwner(input?.actorId, this.ownerBinding)) throw new OwnerAccountLifecycleForbiddenError();
-    const command = checkedInput(input);
+    const command = validateOwnerAccountDeactivationInput(input);
     const key = await occurrenceKey(command.actorId, command.operationId);
     const client = await this.pool.connect();
     let begun = false, committing = false, discard = false;
