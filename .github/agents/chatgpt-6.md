@@ -1,5 +1,13 @@
 # ChatGPT-6 — personal log
 
+## 2026-11-17 — SA06 corrective stage 2/4: History code published, CI pending
+
+- Active corrective implementation of accepted two current-SA06 defects; **only History stage 2** touched. Interim #338 head `9d8fc0bb6ba5ab5d403734b1c692859b2fc3b530`, still Draft/unmerged. AP-10 fix untouched.
+- History changes: `db/owner-sa02-history.ts` typed closed Origin/Kind/from/until and area/monitor scopes, calendar validation, v2 filter/page-size/tuple binding, preserved compatible legacy cursors, static source-origin-kind pruning, branch time/kind predicates; `db/owner-native-history.ts` native branch predicates before LIMIT; `app/super-admin/history-query.server.ts`, separate client-safe `history-query-links.ts`, global/scoped loader/paging query. Added `app/routes/super-admin-native.test.ts` focused guards/v2 tamper and `tests/database/sa06-native-monitoring.test.ts` filtered 31-row PG keyset regression.
+- CI debugging on intermediate heads: initial TS6307 server import UI `history-labels.ts` removed; React Router client `.server` import from paging links removed by extracting client-safe module; missing test import corrected. Intermediate DB PG17 SA06-native 17 tests and SA06 plans 7 tests PASSED, full 1335/1335 PG17 tests PASSED but intermediate DB job failed on unrelated unhandled rejection in existing `sa04-complaints-n1` N4.2. Not attributed as SA06 defect without proof. Initial Build failure resolved on later code, latest exact-head checks/PG17/Chromium remain pending. No local independent test run claimed.
+- CI at current interim `9d8fc0...`: GitHub workflow CI #43982216530 queued on last fetch; no exact-head success claimed. **Status 2/4 NOT COMPLETE** until applicable check results reviewed. Next only developer `...`: continue stage 2 validation, fix current-head failures if found, stop after bounded stage; do NOT start AP-10 stage3 automatically or declare whole-SA06 AUTHOR READY.
+
+---
 ## 2026-11-17 — SA06 corrective stage 1/4: source/contract mapping DONE
 
 - Refreshed exact Draft #338 `522951ec164fda237b52e9777de846e32e86d47d` and current main `7e7a803876422c2f40faaf720b59027d468e99dc`; fetched full live main AGENTS and current service assignment and accepted plan §7 (all 13.5k chars), §11 (all 13.8k chars). Read all relevant History reader/source classes and AP-10 policy/authority code. No code changes or test executions in this mapping stage.
