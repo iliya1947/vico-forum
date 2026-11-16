@@ -1,6 +1,24 @@
 # Codex-6 Sol — personal log
 
 
+## 2026-11-16 — ACTIVE INDEPENDENT REVIEW: whole #335 SA04 O→S
+
+Mira coordinator review is PASS on Draft #335 exact stable head `fa0c95105c00449ca72c7fd21a5045929d59542e`, base/main `c7f2538ce1d4d37152bc3d503587dc9dabd28f24`. Lev authored the implementation, so you are an independent reviewer.
+
+Independently review the **entire current #335 O→P→Q→R→S implementation plus its cumulative SA04 interactions** on this exact head. Do not restrict review to one subsystem and do not treat Mira PASS, Lev's author evidence or green CI as proof.
+
+Check against current main/Stage/SoTs and the accepted O–S plan, including Settings O/P/Q lifecycle/locking/error semantics, R transient actor + planner/store lock/budget/replay/enqueue/consumer boundaries, author-found S auth/header and registration-form corrections, and connected cumulative acceptance. Continue after any first finding.
+
+Classify every established issue:
+- confirmed **current-SA04** defect → record complete evidence in #331; do not edit #335;
+- future-only/out-of-scope concern → record separately and do not block current SA04;
+- no confirmed current defects → record **PASS — 0 confirmed current-SA04 O–S defects** on exact `fa0c95105c00449ca72c7fd21a5045929d59542e`.
+
+Review only. Do not implement fixes, merge #335, start SA05, docs, deployment or Stage6.
+
+---
+
+
 ## 2026-11-16 — future review assignment for Lev-authored remaining SA04
 
 After #334 is merged, Lev is assigned implementation ownership of remaining SA04 O→P→Q→R→S.
