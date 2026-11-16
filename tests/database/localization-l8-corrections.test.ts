@@ -162,10 +162,10 @@ async function plan(kind: "title" | "body", policy: string) {
     contentTranslations: new ContentTranslationService(new DrizzleContentTranslationStore(db)), providerCapability: { supports: () => true }, enqueuer: new FakeTranslationTaskEnqueuer(), generationPolicyVersion: policy };
   const result = kind === "title" ? await (async () => {
     const store = new DrizzleContentTopicTitlePlanningStore(db), revision = (await store.readCurrentRevision("topic"))!;
-    return new ContentTopicTitleTranslationPlanner({ ...deps, tasks: store }).planAndDispatch(revision, "en", budget);
+    return new ContentTopicTitleTranslationPlanner({ ...deps, tasks: store }).planAndDispatch(revision, "en", budget, "author");
   })() : await (async () => {
     const store = new DrizzleContentPostBodyPlanningStore(db), revision = (await store.readCurrentRevision("post"))!;
-    return new ContentPostBodyTranslationPlanner({ ...deps, tasks: store }).planAndDispatch(revision, "en", budget);
+    return new ContentPostBodyTranslationPlanner({ ...deps, tasks: store }).planAndDispatch(revision, "en", budget, "author");
   })();
   if (result.kind !== "queued") throw new Error("expected queued"); return result.task;
 }

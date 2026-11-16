@@ -7,7 +7,8 @@ import { authorizationOwnerContext } from "../authorization/request-context";
 import { isBoundOwner } from "../authorization/owner";
 import { registryForRequest } from "../localization/request-context";
 import { requireSameOrigin } from "../forum/mutations.server";
-import { UserLocaleAccountMissingError, UserLocaleUnavailableError } from "../../db/hyperdrive-user-locale";
+import { UserLocaleUnavailableError } from "../../db/hyperdrive-user-locale";
+import { AccountInactiveError, AccountMissingError } from "../../db/account-state";
 import { ForumRouteError } from "../forum/ui";
 import { SettingsShell } from "../settings/shell";
 import { settingsUserPath } from "../settings/paths";
@@ -73,7 +74,9 @@ export async function action({ request, context }: Args) {
   try {
     await context.get(userLocaleWriterContext).save(session.user.id, locale[0]);
   } catch (error) {
-    if (error instanceof UserLocaleAccountMissingError) return failure("conflict", 409);
+    if (error instanceof AccountInactiveError || error instanceof AccountMissingError) {
+      throw new Response("Unauthenticated", { status: 401, headers: settingsPrivateHeaders });
+    }
     if (error instanceof UserLocaleUnavailableError) return failure("unavailable", 503);
     throw error;
   }

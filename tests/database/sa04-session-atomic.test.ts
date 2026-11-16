@@ -149,6 +149,7 @@ describe("SA04-I4a Better Auth 1.7.7 native session write atomicity", () => {
       paused.resume();
       const denied = await signing;
       expect(denied.status).toBe(401);
+      expect(denied.headers.get("Cache-Control")).toBe("private, no-store");
       expect(denied.headers.getSetCookie().some(x => x.includes("session_token="))).toBe(false);
       expect((await deactivator.query<{ n: number }>(
         'select count(*)::int n from "session" where user_id=$1', [found.id],
@@ -371,6 +372,7 @@ describe("SA04-I4a Better Auth 1.7.7 native session write atomicity", () => {
       paused.resume();
       const denied = await refreshing;
       expect(denied.status).toBe(401);
+      expect(denied.headers.get("Cache-Control")).toBe("private, no-store");
       expect(denied.headers.getSetCookie().some(value => value.includes("session_token="))).toBe(false);
     } finally {
       paused.resume();
@@ -453,6 +455,7 @@ describe("SA04-I4b Better Auth 1.7.7 existing-user write atomicity", () => {
       paused.resume();
       const denied = await writing;
       expect(denied.status).toBe(401);
+      expect(denied.headers.get("Cache-Control")).toBe("private, no-store");
       expect(denied.headers.getSetCookie().some(x => x.includes("session_token="))).toBe(false);
     } finally {
       paused.resume();

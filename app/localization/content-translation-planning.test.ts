@@ -52,9 +52,10 @@ describe("ContentTopicTitleTranslationPlanner", () => {
         originalContent: "caller text is not authoritative",
       }),
       "en",
-      budgetAdmission(),
+      budgetAdmission(), "planning-actor",
     );
 
+    expect(tasks.actors).toEqual(["planning-actor"]);
     expect(result).toMatchObject({
       kind: "queued",
       taskCreated: true,
@@ -84,7 +85,7 @@ describe("ContentTopicTitleTranslationPlanner", () => {
       })),
     });
 
-    const result = await planner.planAndDispatch(titleRevision({ sourceLocale: "und" }), "he", budgetAdmission());
+    const result = await planner.planAndDispatch(titleRevision({ sourceLocale: "und" }), "he", budgetAdmission(), "planning-actor");
 
     expect(result).toMatchObject({
       kind: "queued",
@@ -116,7 +117,7 @@ describe("ContentTopicTitleTranslationPlanner", () => {
         }),
     });
 
-    await expect(planner.planAndDispatch(revision, target, budgetAdmission())).resolves.toMatchObject({
+    await expect(planner.planAndDispatch(revision, target, budgetAdmission(), "planning-actor")).resolves.toMatchObject({
       kind: "original",
       taskCreated: false,
       reason,
@@ -143,7 +144,7 @@ describe("ContentTopicTitleTranslationPlanner", () => {
     const result = await plannerWith({ providerCapability }).planAndDispatch(
       titleRevision({ originalContent: "caller text must not drive provider capability" }),
       "he",
-      budgetAdmission(),
+      budgetAdmission(), "planning-actor",
     );
 
     expect(result.kind).toBe("queued");
@@ -176,7 +177,7 @@ describe("ContentTopicTitleTranslationPlanner", () => {
     const enqueuer = new FakeTranslationTaskEnqueuer();
 
     const result = await plannerWith({ tasks, enqueuer, translations })
-      .planAndDispatch(revision, "he", budgetAdmission());
+      .planAndDispatch(revision, "he", budgetAdmission(), "planning-actor");
 
     expect(result).toMatchObject({ kind: "original", reason: "translation-current" });
     expect(tasks.specifications).toHaveLength(0);
@@ -191,7 +192,7 @@ describe("ContentTopicTitleTranslationPlanner", () => {
       tasks,
       enqueuer,
       providerCapability: { supports: () => false },
-    }).planAndDispatch(revision, "he", budgetAdmission());
+    }).planAndDispatch(revision, "he", budgetAdmission(), "planning-actor");
 
     expect(result).toMatchObject({ kind: "original", reason: "target-unsupported" });
     expect(tasks.specifications).toHaveLength(0);
@@ -216,7 +217,7 @@ describe("ContentTopicTitleTranslationPlanner", () => {
     const enqueuer = new FakeTranslationTaskEnqueuer();
 
     const result = await plannerWith({ tasks, enqueuer })
-      .planAndDispatch(revision, "he", budgetAdmission());
+      .planAndDispatch(revision, "he", budgetAdmission(), "planning-actor");
 
     expect(result).toEqual({
       kind: "original",
@@ -235,14 +236,14 @@ describe("ContentTopicTitleTranslationPlanner", () => {
     await expect(
       plannerWith({
         tasks: new FakePlanningStore(revision, unavailable),
-      }).planAndDispatch(revision, "he", budgetAdmission()),
+      }).planAndDispatch(revision, "he", budgetAdmission(), "planning-actor"),
     ).rejects.toBe(unavailable);
 
     const unexpected = new Error("programming failure");
     await expect(
       plannerWith({
         tasks: new FakePlanningStore(revision, unexpected),
-      }).planAndDispatch(revision, "he", budgetAdmission()),
+      }).planAndDispatch(revision, "he", budgetAdmission(), "planning-actor"),
     ).rejects.toBe(unexpected);
   });
 
@@ -251,7 +252,7 @@ describe("ContentTopicTitleTranslationPlanner", () => {
     const enqueuer = new FakeTranslationTaskEnqueuer();
 
     await expect(
-      plannerWith({ tasks, enqueuer }).planAndDispatch(titleRevision(), "he", budgetAdmission()),
+      plannerWith({ tasks, enqueuer }).planAndDispatch(titleRevision(), "he", budgetAdmission(), "planning-actor"),
     ).resolves.toMatchObject({
       kind: "original",
       reason: "revision-not-current",
@@ -271,7 +272,7 @@ describe("ContentTopicTitleTranslationPlanner", () => {
       plannerWith({ tasks, enqueuer }).planAndDispatch(
         titleRevision({ sourceLocale: "ru" }),
         "he",
-        budgetAdmission(),
+        budgetAdmission(), "planning-actor",
       ),
     ).rejects.toBe(failure);
     expect(tasks.specifications).toHaveLength(1);
@@ -315,6 +316,7 @@ function resolver(
 class FakePlanningStore implements ContentTopicTitlePlanningStore {
   readonly specifications: ContentTopicTitleTranslationTaskSpecification[] = [];
   readonly admissions: ContentTranslationRequestBudgetAdmission[] = [];
+  readonly actors: string[] = [];
   lastTask: ContentTopicTitleTranslationTask | undefined;
 
   constructor(
@@ -330,12 +332,14 @@ class FakePlanningStore implements ContentTopicTitlePlanningStore {
     specification: ContentTopicTitleTranslationTaskSpecification,
     expectedRevision: ContentTranslationRevision,
     requestBudgetAdmission: ContentTranslationRequestBudgetAdmission,
+    actorId: string,
   ): Promise<ContentTopicTitleTaskUpsertResult> {
     if (this.current?.revisionId !== expectedRevision.revisionId) {
       return { outcome: "revision-changed" };
     }
     this.specifications.push(specification);
     this.admissions.push(requestBudgetAdmission);
+    this.actors.push(actorId);
     if (this.forcedResult instanceof Error) throw this.forcedResult;
     if (this.forcedResult) return this.forcedResult;
     const task: ContentTopicTitleTranslationTask = {

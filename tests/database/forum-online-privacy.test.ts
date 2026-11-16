@@ -4,7 +4,7 @@ import { Client } from "pg";
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
 import { DrizzleForumRepository } from "../../db/forum-repository";
 import { DrizzleUserPrivacyRepository, UserPrivacyAccountMissingError } from "../../db/user-privacy";
-import { AccountInactiveError } from "../../db/account-state";
+import { AccountInactiveError, AccountMissingError } from "../../db/account-state";
 
 const databaseUrl = process.env.DATABASE_URL;
 if (!databaseUrl) throw new Error("DATABASE_URL is required");
@@ -70,7 +70,7 @@ describe("SET-06 authoritative public visibility", () => {
     await firstPrivacy.save("privacy-a", true);
     expect(await secondPrivacy.read("privacy-a")).toBe(true);
     await expect(ownerPrivacy.read("deleted-actor")).rejects.toBeInstanceOf(UserPrivacyAccountMissingError);
-    await expect(ownerPrivacy.save("deleted-actor", false)).rejects.toBeInstanceOf(UserPrivacyAccountMissingError);
+    await expect(ownerPrivacy.save("deleted-actor", false)).rejects.toBeInstanceOf(AccountMissingError);
     await expect(ownerForum.recordOnlinePresence("deleted-actor")).rejects.toBeInstanceOf(UserPrivacyAccountMissingError);
   });
 
@@ -199,11 +199,12 @@ describe("SA04-F online presence lifecycle visibility and admission", () => {
     expect((await owner.query("select * from forum_online_presence where user_id='privacy-b'")).rowCount).toBe(0);
     expect(await ownerForum.readOnlinePresence()).toEqual({ count: 0, members: [] });
     expect(await ownerPrivacy.read("privacy-a")).toBe(true);
-    // Checkpoint P is separate: the existing privacy-save lifecycle admission is unchanged.
-    await ownerPrivacy.save("privacy-a", false);
-    expect(await ownerPrivacy.read("privacy-a")).toBe(false);
-    await ownerPrivacy.save("privacy-a", true);
+    // P now closes both repeated and changed Privacy saves without deleting retained presence.
+    await expect(ownerPrivacy.save("privacy-a", false)).rejects.toBeInstanceOf(AccountInactiveError);
+    await expect(ownerPrivacy.save("privacy-a", true)).rejects.toBeInstanceOf(AccountInactiveError);
     expect(await ownerPrivacy.read("privacy-a")).toBe(true);
+    expect((await owner.query("select last_seen_at from forum_online_presence where user_id='privacy-a'"))
+      .rows[0]?.last_seen_at.getTime()).toBe(original.rows[0]?.last_seen_at.getTime());
   });
 });
 
@@ -276,6 +277,7 @@ describe("SA04-F deactivation/heartbeat row-lock ordering", () => {
       const deactivation = deactivateFixtureAccount(firstClient, id);
       await waitUntilBlocked(firstPid);
       const heartbeat = secondForum.recordOnlinePresence(id);
+      void heartbeat.catch(() => undefined);
       await waitUntilBlocked(secondPid);
       await owner.query("commit");
       await deactivation;

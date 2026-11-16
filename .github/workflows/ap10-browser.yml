@@ -3,6 +3,7 @@ name: AP-10 isolated browser acceptance
 on:
   pull_request:
     paths:
+      - "tests/browser/sa04-completion/**"
       - ".github/workflows/ap10-browser.yml"
       - "tests/browser/user-measures/**"
       - "tests/browser/settings-registration/**"

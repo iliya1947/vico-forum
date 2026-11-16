@@ -3,6 +3,7 @@ name: SA-01 Super-admin connected Chromium acceptance
 on:
   pull_request:
     paths:
+      - "tests/browser/sa04-completion/**"
       - ".github/workflows/sa01-browser.yml"
       - "tests/browser/super-admin/**"
       - "app/super-admin/**"

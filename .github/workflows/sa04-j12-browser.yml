@@ -3,6 +3,7 @@ name: SA04-J12 connected AccountState Chromium acceptance
 on:
   pull_request:
     paths:
+      - "tests/browser/sa04-completion/**"
       - ".github/workflows/sa04-j12-browser.yml"
       - "tests/browser/sa04-account-state/**"
       - "app/forum/**"

@@ -3,6 +3,7 @@ name: SA04-M2 connected AP10 Worker Chromium AccountState acceptance
 on:
   pull_request:
     paths:
+      - "tests/browser/sa04-completion/**"
       - ".github/workflows/sa04-m2-measures-browser.yml"
       - "tests/browser/sa04-measures/**"
       - "db/account-state.ts"

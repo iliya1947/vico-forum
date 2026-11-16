@@ -1,5 +1,6 @@
 import { and, eq, sql } from "drizzle-orm";
 import type { NodePgDatabase } from "drizzle-orm/node-postgres";
+import { assertActiveAccountForDrizzleMutation } from "./account-state";
 
 import type { ContentTranslationRevision } from "../app/localization/content-translation";
 import {
@@ -88,7 +89,9 @@ export class DrizzleContentTopicTitlePlanningStore implements ContentTopicTitleP
     specification: ContentTopicTitleTranslationTaskSpecification,
     expectedRevision: ContentTranslationRevision,
     requestBudgetAdmission: ContentTranslationRequestBudgetAdmission,
+    actorId: string,
   ): Promise<ContentTopicTitleTaskUpsertResult> {
+    requireNonBlank(actorId, "actorId");
     validateContentTopicTitleTranslationTaskSpecification(specification);
     await assertStableIdentity(specification);
     assertExpectedRevision(specification, expectedRevision);
@@ -110,7 +113,7 @@ export class DrizzleContentTopicTitlePlanningStore implements ContentTopicTitleP
 
         // Shared planning/publication order:
         // generation head -> stable task -> current entity/revision -> current translation
-        // -> global budget -> requester budget -> task mutation.
+        // -> actor NKU -> global budget -> requester budget -> task mutation.
         const lockedHead = await transaction.execute<{ current_generation: number }>(sql`
           select current_generation
             from ${translationTaskGenerationHeads}
@@ -175,6 +178,9 @@ export class DrizzleContentTopicTitlePlanningStore implements ContentTopicTitleP
           revisionId: current.revisionId,
           targetLocale: specification.targetLocale,
         });
+        // Provisional head initialization above belongs to this same transaction;
+        // denial rolls it back along with every task, claim and budget effect.
+        await assertActiveAccountForDrizzleMutation(transaction, actorId);
         if (currentTranslation) {
           if (currentTranslation.sourceLocale !== current.sourceLocale) {
             throw new ContentTopicTitleTaskIntegrityError(

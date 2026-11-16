@@ -9,6 +9,7 @@ import {
   RegistrationSettingsValidationError,
 } from "../../db/registration-settings";
 import { PostgresAdminHistoryReader } from "../../db/admin-history";
+import { AccountMissingError } from "../../db/account-state";
 
 const url = process.env.DATABASE_URL;
 if (!url || !["127.0.0.1", "localhost"].includes(new URL(url).hostname)
@@ -60,7 +61,7 @@ describe("SET-02 registration policy singleton", () => {
   it("forbids non-Owner even with admin role and rejects invalid values before writes", async () => {
     await expect(repository.update("settings-manager", owner, mutation(false, true))).rejects.toBeInstanceOf(RegistrationSettingsForbiddenError);
     await expect(repository.update(owner, "settings-manager", mutation(false, true))).rejects.toBeInstanceOf(RegistrationSettingsForbiddenError);
-    await expect(repository.update("missing", "missing", mutation(false, true))).rejects.toBeInstanceOf(RegistrationSettingsForbiddenError);
+    await expect(repository.update("missing", "missing", mutation(false, true))).rejects.toBeInstanceOf(AccountMissingError);
     await expect(repository.update(owner, owner, { ...mutation(false,true), googleRegistrationEnabled: "false" as unknown as boolean }))
       .rejects.toBeInstanceOf(RegistrationSettingsValidationError);
     expect((await repository.read()).version).toBe(currentVersion);

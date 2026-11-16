@@ -1720,6 +1720,7 @@ describe("forum write route actions", () => {
       requester: { name: "body-requester", version: "v1", limit: 20 },
     };
     const capability = new DefaultContentGenerationActionCapability({
+      admission: { assertAllowed: vi.fn(async () => {}) },
       pseudonymizer: { pseudonymize: vi.fn(async () => ({
         actorKind: "authenticated" as const,
         keyVersion: "v1",

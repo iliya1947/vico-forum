@@ -289,6 +289,7 @@ describe("Better Auth PostgreSQL runtime", () => {
     ] as const) {
       const response = await call(endpoint, inactive.cookie, body);
       expect(response.status, endpoint).toBe(401);
+      expect(response.headers.get("Cache-Control"), endpoint).toBe("private, no-store");
       const serialized = await response.text();
       expect(serialized).not.toContain("SECRET_INACTIVE_USER");
       expect(serialized).not.toContain("integration-password-123");
@@ -369,6 +370,7 @@ describe("Better Auth PostgreSQL runtime", () => {
     ));
     const denied = await listSessions(inactive.cookie);
     expect(denied.status).toBe(401);
+    expect(denied.headers.get("Cache-Control")).toBe("private, no-store");
     expect(denied.headers.getSetCookie()).toEqual([]);
     expect(await sessionRow(inactive.userId)).toEqual(beforeInactive);
 
@@ -468,6 +470,7 @@ describe("Better Auth PostgreSQL runtime", () => {
     const retained = await sessionRows();
     const denied = await signIn();
     expect(denied.status).toBe(401);
+    expect(denied.headers.get("Cache-Control")).toBe("private, no-store");
     expect(denied.headers.getSetCookie().some(value => value.includes("session_token="))).toBe(false);
     expect(JSON.stringify(await denied.text())).not.toContain("I3 original name");
     await expect(direct.createSession(userId)).rejects.toMatchObject({ status: "UNAUTHORIZED" });

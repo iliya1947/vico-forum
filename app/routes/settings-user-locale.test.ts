@@ -5,7 +5,8 @@ import { authorizationOwnerContext } from "../authorization/request-context";
 import { registryLoaderContext } from "../localization/request-context";
 import { InMemoryLocaleRegistry } from "../localization/registry";
 import { userLocaleWriterContext } from "../settings/user-locale-context";
-import { UserLocaleAccountMissingError, UserLocaleUnavailableError } from "../../db/hyperdrive-user-locale";
+import { UserLocaleUnavailableError } from "../../db/hyperdrive-user-locale";
+import { AccountInactiveError, AccountMissingError } from "../../db/account-state";
 import { action, loader } from "./settings-user";
 
 const registry = new InMemoryLocaleRegistry([
@@ -139,11 +140,16 @@ describe("SET-03 authoritative account-locale action", () => {
 
   it("classifies missing account and storage unavailability without false success", async () => {
     const { context, save } = setup();
-    save.mockRejectedValueOnce(new UserLocaleAccountMissingError("gone"));
-    expect(await rejected(context, request())).toMatchObject({ status: 409, body: { error: "conflict" } });
+    for (const error of [new AccountMissingError(), new AccountInactiveError()]) {
+      save.mockRejectedValueOnce(error);
+      const denied = await action({ request: request(), params: { locale: "en" }, context }).catch(e => e as Response);
+      expect(denied).toBeInstanceOf(Response);
+      expect((denied as Response).status).toBe(401);
+      expect((denied as Response).headers.get("Cache-Control")).toBe("private, no-store");
+    }
     save.mockRejectedValueOnce(new UserLocaleUnavailableError("down"));
     expect(await rejected(context, request())).toMatchObject({ status: 503, body: { error: "unavailable" } });
-    expect(save).toHaveBeenCalledTimes(2);
+    expect(save).toHaveBeenCalledTimes(3);
   });
 
   it("preserves unexpected DB/schema failures rather than reporting ordinary denial", async () => {

@@ -3,6 +3,7 @@ name: SA04-K5 connected attachment Worker R2 Chromium acceptance
 on:
   pull_request:
     paths:
+      - "tests/browser/sa04-completion/**"
       - ".github/workflows/sa04-k5-attachments-browser.yml"
       - "tests/browser/sa04-attachments/**"
       - "app/forum/**"

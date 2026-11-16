@@ -7,6 +7,7 @@ import { loader as forumLoader, action as registrationAction } from "./settings-
 import { registrationSettingsContext } from "../settings/request-context";
 import { RegistrationSettingsConflictError, RegistrationSettingsForbiddenError } from "../../db/registration-settings";
 import { RegistrationSettingsUnavailableError } from "../../db/hyperdrive-registration-settings";
+import { AccountInactiveError, AccountMissingError, AccountStateUnexpectedError } from "../../db/account-state";
 
 function environment(actorId: string | null = "owner", ownerBinding: unknown = "owner") {
   const context = new RouterContextProvider();
@@ -157,5 +158,24 @@ describe("SET-02 Owner registration update HTTP guard", () => {
     actor.registration.read.mockRejectedValueOnce(new Error("unexpected schema"));
     await expect(forumLoader({ params: { locale: "en" }, context: actor.context }))
       .rejects.toThrow("unexpected schema");
+  });
+
+  it("late lifecycle denies even a preflight-admitted Owner as private401, never saved", async () => {
+    for (const error of [new AccountInactiveError(), new AccountMissingError()]) {
+      const actor = environment();
+      actor.registration.update.mockRejectedValueOnce(error);
+      const denied = await registrationAction({
+        request: post({ expectedVersion: "7" }), context: actor.context,
+      }).catch(e => e as Response);
+      expect(denied).toBeInstanceOf(Response);
+      expect((denied as Response).status).toBe(401);
+      expect((denied as Response).headers.get("Cache-Control")).toBe("private, no-store");
+      expect(await (denied as Response).text()).toBe("Unauthenticated");
+    }
+    const actor = environment();
+    const error = new AccountStateUnexpectedError();
+    actor.registration.update.mockRejectedValueOnce(error);
+    await expect(registrationAction({ request: post({ expectedVersion: "7" }), context: actor.context }))
+      .rejects.toBe(error);
   });
 });
