@@ -1,3 +1,25 @@
+## 2026-11-17 — Developer overnight route: Lev whole-#338 verification → immediate dependent SA07
+
+This route is **conditional and activates only after Lira publishes WHOLE SA06 AUTHOR READY on a new stable exact #338 head**. Lira remains the active corrective implementer until then.
+
+After Lira handoff:
+
+1. **Lev / Codex-6.1 Sol performs a fresh technical review of the entire cumulative #338**, not only Lira's corrective delta. Recheck the whole SA06 package on that exact head, including the two corrected defects and regression/interaction boundaries affected by her edits.
+
+2. If Lev finds no confirmed current-SA06 defect, he records the exact clean head and **immediately starts SA07 from that #338 head without waiting for #338 merge**.
+
+3. If Lev finds a confirmed current-SA06 defect, he **fixes it himself in #338**, reruns the affected/required SA06 acceptance and continues whole-#338 verification until no confirmed current-SA06 defect remains. Then he immediately starts SA07 from the resulting corrected #338 head, again **without waiting for merge**.
+
+4. SA07 must be a **separate dependent implementation PR/branch** based on the accepted/corrected #338 head. #338 remains unmerged while SA07 work proceeds. If #338 later changes, dependent SA07 must be updated/rechecked against the new prerequisite head before acceptance.
+
+Purpose of this developer override: maximize useful progress while the developer is offline/asleep and avoid an idle merge prerequisite.
+
+This supersedes the earlier route that required Mira/Mark review and #338 merge before SA07 could start. It does **not** turn Lev's review into independent review: Lev is an SA06 author. Independent/coordinator review can still occur later; it is no longer a prerequisite for beginning dependent SA07 work.
+
+No SA08+, permanent docs, #315, Stage6/production/deploy/external work is activated by this route.
+
+---
+
 ## 2026-11-17 — Developer reassignment: SA06 corrective package → Lira
 
 Developer reassigned the confirmed SA06 corrective package from Lev to **Lira / ChatGPT-6**.
