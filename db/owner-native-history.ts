@@ -38,13 +38,16 @@ export function nativeHistoryCoverageSql(key:NativeMonitorKey):string {
     ${native.length?' union all '+native.join(' union all '):''}) retained`;
 }
 export type NativeHistoryBindings={person?:string;monitor?:string;area?:string;at:string;origin:string;id:string;limit:string;
-  filterOrigin?:string|null;kind?:string;from?:string;until?:string};
+  filterOrigin?:string|null;filterArea?:string|null;filterMonitor?:string|null;
+  kind?:string;from?:string;until?:string};
 
 /** Every person/role and cursor predicate precedes its branch-local LIMIT. */
 export function nativeHistoryBranches(b:NativeHistoryBindings):string[]{
   return sources.flatMap(s=>{
     // Origin selection is a validated closed catalog value; omit irrelevant branches.
     if(b.filterOrigin!==undefined&&b.filterOrigin!==null&&s.origin!==b.filterOrigin)return [];
+    if(b.filterMonitor!==undefined&&b.filterMonitor!==null&&!s.scopes.includes(b.filterMonitor))return [];
+    if(b.filterArea!==undefined&&b.filterArea!==null&&!s.scopes.some(k=>k.startsWith(b.filterArea+".")))return [];
     const scopes=`ARRAY[${s.scopes.map(k=>`'${k}'`).join(",")}]::text[]`;
     // Resolve the fixed origin comparison outside the native row key. Keeping
     // a constant between time/id in a three-column ROW prevents PostgreSQL
