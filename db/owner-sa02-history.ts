@@ -189,7 +189,14 @@ export function parseOwnerHistoryCursor(value:string|undefined,options:OwnerHist
         ||!f||Object.keys(f).sort().join(",")!=="area,from,kind,monitor,origin,pageSize,until"
         ||f.area!==scope.area||f.monitor!==scope.monitor||f.origin!==filters.origin||f.kind!==filters.kind||f.from!==filters.from||f.until!==filters.until||f.pageSize!==(options.limit??25))throw new Error("Filter-bound cursor mismatch");
       const {filters:ignored,...legacy}=parsed;void ignored;
-      return checkedCursorShape({...legacy,v:1},scope);
+      const cursor=checkedCursorShape({...legacy,v:1},scope);
+      if((filters.origin!==null&&cursor.origin!==filters.origin)||
+         (filters.kind!==null&&(!KINDS_BY_ORIGIN[cursor.origin].includes(filters.kind)||
+           !compatibleKind(cursor.origin,filters.kind,scope)))||
+         (filters.from!==null&&cursor.at<filters.from)||
+         (filters.until!==null&&cursor.at>=filters.until))
+        throw new Error("History cursor incompatible with selected filters");
+      return cursor;
     }catch{throw new Error("Invalid Owner History cursor");}
   }
   if(filters.origin!==null||filters.kind!==null||filters.from!==null||filters.until!==null)
