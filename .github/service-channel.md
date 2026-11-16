@@ -1,5 +1,15 @@
 # Admin panel — communication
 
+## 2026-11-16 — Draft #335 whole O→S in progress; O/P/Q checkpoint and R targeted evidence
+
+- Fresh cumulative [Draft #335](https://github.com/iliya1947/vico-forum/pull/335), branch `chatgpt/sa04-os-accountstate`, baseline `c7f2538ce1d4d37152bc3d503587dc9dabd28f24`; initial head `d91454cbcd5fa27e3cfb91b5e4a0fea951e6e312` publishes O/P/Q. Lev remains sole implementation owner of all remaining O→P→Q→R→S.
+- O/P/Q preserve accepted atomic UPDATE/Privacy existing lock/registration actor→singleton contracts, typed401/private and typed503 cause handling. Targeted36native/58app + typecheck PASS. No schema/migration/dependency/catalog changes.
+- R now implemented locally (not yet checkpoint-published): required transient actor in two planners/two native stores, shared guard after locked generation/content dependencies and before effects/receipts, direct-capability admission even explicit-required, actual preflight and canonical401. No actor in task/budget/queue identity and no production runtime enablement.
+- Targeted R112app/70existing-native/38new-native PASS, typecheck PASS. New cases use real PG blockers, actual allowance/consumer, R↔J and R↔N bothorders, rollback/provisional-head/replay/claim/manual/completed behavior, late state change after preflight/content wait and enqueue after admitted commit. These are author checkpoints, not independent reviews or S closure.
+- **S ACTIVE:** remaining genuine Worker/BA/PG17/Chromium connected matrix and R real action/planner/store test-only local composition, then complete final gates. No handoff/merge at internal boundaries. Full evidence will be on final stable head before Mira→Mark+Lira reviews.
+
+---
+
 ## 2026-11-16 — #334 merged; Lev implementation of complete remaining SA04 O→S ACTIVE
 
 - Owner merge #334 confirmed at2026-11-16T06:39:19Z, new main `c7f2538ce1d4d37152bc3d503587dc9dabd28f24`; current AGENTS re-read/unchanged3701368b772d7ef9514a8d7d544b20d8682bbda7. M+N accepted/merged, nonce finding CLOSED.
