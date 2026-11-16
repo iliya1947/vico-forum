@@ -50,8 +50,8 @@ operations, новая роль/permission или rollout Stage 6. Деакти�
 | O–S | [#335](https://github.com/iliya1947/vico-forum/pull/335), 2026-11-16 08:56 | Own locale, Privacy, Owner registration-settings, new translation-generation plans; whole-SA04 connected closure | `b5180e5fcc8483dc13e1b087102a51560c80e035` |
 
 A1 и A2–H были объединены до следующих writer/auth packages. Для L–S
-сначала приняли единый технический план, а разработчик затем отдельно
-выбрал последовательные merge-блоки **L → M+N → O–S**. Это история
+сначала приняли единый технический план; фактическая поставка затем шла
+последовательными merge-блоками **L → M+N → O–S**. Это история
 действительного delivery, а не первоначальная модель одного
 cumulative PR. Итоговый `main` после #335:
 `b5180e5fcc8483dc13e1b087102a51560c80e035`.
@@ -91,7 +91,7 @@ cumulative PR. Итоговый `main` после #335:
    independent и [Марк](https://github.com/iliya1947/vico-forum/pull/331#issuecomment-6911844322)
    independent проверили **один стабильный exact head**, все трое
    **PASS — 0 confirmed current-SA04 O–S defects**. Только после
-   трёх PASS разработчик выполнил Owner-only squash merge #335.
+   трёх PASS #335 был объединён squash merge.
 
 ## Конечные exact-head проверки и ограничения доказательств
 
