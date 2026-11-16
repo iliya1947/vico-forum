@@ -17,7 +17,8 @@ function unavailable(error: unknown): boolean {
   for (let depth = 0; depth < 16 && current && typeof current === "object" && !seen.has(current); depth++) {
     seen.add(current);
     if (current instanceof AccountStateUnavailableError || isPostgresAvailabilityFailure(current)
-      || isPostgresConnectionTimeout(current) || isPostgresQueryTimeout(current)) return true;
+      || isPostgresConnectionTimeout(current) || isPostgresQueryTimeout(current)
+      || (current as { code?: unknown }).code === "25P04") return true;
     current = (current as { cause?: unknown }).cause;
   }
   return false;

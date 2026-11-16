@@ -115,7 +115,15 @@ export class PostgresOwnerAccountLifecycleCommand implements OwnerAccountLifecyc
     const key = await occurrenceKey(command.actorId, command.operationId);
     const client = await this.pool.connect();
     let begun = false, committing = false, discard = false;
+    let connectionError: Error | undefined, previousTimeout: string | undefined;
+    const onConnectionError = (error: Error) => { connectionError = error; discard = true; };
+    client.on("error", onConnectionError);
     try {
+      previousTimeout = (await client.query<{ transaction_timeout: string }>("show transaction_timeout")).rows[0]?.transaction_timeout;
+      if (typeof previousTimeout !== "string") throw new OwnerAccountLifecycleInvariantError();
+      // PG17 starts this timer at BEGIN; SET LOCAL after BEGIN does not start it.
+      // Restore the borrowed connection's prior setting before returning it.
+      await client.query("set transaction_timeout='5000ms'");
       await client.query("begin"); begun = true;
       await client.query("set local transaction_timeout='5000ms'; set local statement_timeout='2000ms'; set local lock_timeout='750ms'");
       await assertActiveAccountForMutation(client, command.actorId);
@@ -164,14 +172,24 @@ export class PostgresOwnerAccountLifecycleCommand implements OwnerAccountLifecyc
       await client.query("commit"); committing = false;
       return outcome;
     } catch (error) {
+      const failure = connectionError ?? error;
       if (committing) {
         discard = true;
-        throw new OwnerAccountLifecycleCommitUncertainError({ cause: error });
+        throw new OwnerAccountLifecycleCommitUncertainError({ cause: failure });
       }
-      if (begun) {
+      if (begun && !discard) {
         try { await client.query("rollback"); } catch { discard = true; }
-      } else discard = true;
-      throw error;
-    } finally { client.release(discard); }
+      } else if (!begun) discard = true;
+      throw failure;
+    } finally {
+      if (!discard && previousTimeout !== undefined) {
+        try { await client.query("select set_config('transaction_timeout',$1,false)", [previousTimeout]); }
+        catch { discard = true; }
+      }
+      // A discarded socket can emit its terminal error after the query rejects.
+      // Keep its listener until disposal; it is never returned to another borrower.
+      if (!discard) client.removeListener("error", onConnectionError);
+      client.release(discard);
+    }
   }
 }

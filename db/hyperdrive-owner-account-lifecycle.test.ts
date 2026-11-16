@@ -20,6 +20,7 @@ describe("SA05 command facade error/cleanup contract", () => {
     Object.assign(new Error("transport"), { code: "ECONNRESET" }),
     Object.assign(new Error("canceling statement due to statement timeout"), { code: "57014" }),
     Object.assign(new Error("canceling statement due to lock timeout"), { code: "55P03" }),
+    Object.assign(new Error("terminating connection due to transaction timeout"), { code: "25P04" }),
   ])("classifies only known storage failure: %s", async error => {
     const { run, end } = invocation(error);
     await expect(run()).rejects.toMatchObject({ name: "OwnerAccountLifecycleUnavailableError", cause: error });

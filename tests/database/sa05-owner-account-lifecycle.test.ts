@@ -142,7 +142,8 @@ describe("SA05-1 actual atomic Owner command and facade", () => {
     expect(tuple.deactivated_by_user_id).toBe(owner); expect(tuple.deactivated_at.toISOString()).toBe(saved.deactivatedAt);
     expect(event.occurred_at).toEqual(tuple.deactivated_at);
     const append = calls.findIndex(sql => sql.includes("pg_advisory_xact_lock"));
-    expect(calls.slice(append + 1)).toHaveLength(2); expect(calls[append + 1]).toMatch(/insert into owner_events/); expect(calls.at(-1)).toBe("commit");
+    expect(calls.slice(append + 1)).toHaveLength(3); expect(calls[append + 1]).toMatch(/insert into owner_events/);
+    expect(calls[append + 2]).toBe("commit"); expect(calls.at(-1)).toMatch(/set_config\('transaction_timeout'/);
     expect(calls.some(sql => /authz_mutation_lock|delete from (account|session)|for update/i.test(sql))).toBe(false);
     await availableLocks(owner, target);
   });
@@ -324,6 +325,36 @@ describe("SA05-1 actual atomic Owner command and facade", () => {
       await expect(createHyperdriveOwnerAccountLifecycle(url!, owner, () => ownPool()).deactivate(input(owner, target))).rejects.toBeInstanceOf(OwnerAccountLifecycleUnavailableError);
     } finally { await locker.query("rollback"); locker.release(); }
     expect(await facts()).toEqual(before);
+  });
+  it("classifies the actual PostgreSQL17 transaction deadline as unavailable and rolls back", async () => {
+    const owner = await person(), target = await person(), before = await facts();
+    let failure: unknown;
+    const source = ownPool(async (sql, run) => {
+      if (sql === "set transaction_timeout='5000ms'") return run("set transaction_timeout='80ms'");
+      if (sql.includes('from "user"') && sql.includes("for no key update")) {
+        try { await run("select pg_sleep(0.2) where $1::text is not null"); }
+        catch (error) { failure = error; throw error; }
+      }
+      return run();
+    });
+    await expect(createHyperdriveOwnerAccountLifecycle(url!, owner, () => source).deactivate(input(owner, target)))
+      .rejects.toBeInstanceOf(OwnerAccountLifecycleUnavailableError);
+    expect(failure).toMatchObject({ code: "25P04" });
+    expect(await facts()).toEqual(before); await availableLocks(owner, target);
+  });
+  it.each(["commit", "rollback"] as const)("restores the borrowed connection's prior transaction timeout after %s", async ending => {
+    const owner = await person(), target = await person(), failure = new TypeError("synthetic transition failure"); let configured = false;
+    const source = ownPool(async (sql, run) => {
+      if (sql === "show transaction_timeout" && !configured) { configured = true; await run("set transaction_timeout='17s'"); }
+      if (sql.includes("with instant as materialized") && ending === "rollback") throw failure;
+      return run();
+    });
+    if (ending === "commit") expect(await command(owner, source).deactivate(input(owner, target))).toMatchObject({ changed: true });
+    else await expect(command(owner, source).deactivate(input(owner, target))).rejects.toBe(failure);
+    const borrowed = await source.connect();
+    try { expect((await borrowed.query("show transaction_timeout")).rows[0].transaction_timeout).toBe("17s"); }
+    finally { borrowed.release(); }
+    await availableLocks(owner, target);
   });
   it.each(["begin-ack-lost", "rollback-fails"] as const)("%s discards the connection without replacing the primary failure or retrying", async mode => {
     const owner = await person(), target = await person(), failure = new TypeError("synthetic primary failure"); let commits = 0;
