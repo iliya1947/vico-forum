@@ -1,3 +1,18 @@
+## 2026-11-16 — Developer assignment: Lev implements SA05-1
+
+**Assignee:** Лёва / Codex-6.1 Sol  
+**Baseline:** current `main=efae8111a13aefbf72b4d20972dac461acc602e3`.
+
+Implement **SA05-1 only: the atomic Owner account-deactivation command core** from the already accepted SA05 plan. Use `SUPER_ADMIN_REMAINING_TECHNICAL_PLAN.md` §5.1–§5.2 and the native-command portion of §5.4 as the authoritative scope, refreshing exact source locators/dependencies against current `main` before editing.
+
+**Required result:** a cumulative SA05 implementation PR containing the production command/facade core and native PostgreSQL acceptance for this checkpoint.
+
+**SA05-1 is complete when native acceptance proves:** exact trusted Owner actor/binding and target-error handling; Owner self-target rejection while other eligible targets remain valid; same-operation replay, conflicting operation reuse and concurrent command behavior; UTC calendar-year retention including leap/DST boundaries and millisecond state/event equality; atomic lifecycle update + online-presence removal + mandatory Owner lifecycle event with rollback on event/presence failure; unknown-COMMIT + explicit retry behavior; unrelated account/provider/password/grant/content data unchanged except the intended lifecycle/presence state.
+
+**Hard checkpoint boundary:** do **not** implement the HTTP resource/action, canonical-profile read-side/History projection, Owner UI, Chromium/Worker closure, SA06+, #315, Stage6 or production/external work. Stop after SA05-1 evidence is published and hand the stable exact head back to Mira for coordinator review.
+
+---
+
 ## 2026-11-16 — #336 Owner merge complete; SA04 fully closed / post-merge STOP
 
 - Developer continuation authorized the pending Owner-only merge gate. Docs PR **#336** was squash-merged from the exact reviewed head `d89a4f45bafd0c50642565367ec8b2ef2ee112b8`.
