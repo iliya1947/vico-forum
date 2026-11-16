@@ -1,3 +1,24 @@
+## 2026-11-16 — ACTIVE independent review: Lira only
+
+**Reviewer now:** Лира / ChatGPT-6.  
+**Do not assign Mark yet.** Developer explicitly deferred Mark until the Codex limit refreshes.
+
+Review the **entire cumulative SA05 implementation** in Draft #337 on stable exact head `a465cbd379b9c3f92b504658001c698bce3fa505`, after Mira whole-package PASS.
+
+Required review scope: complete accepted SA05 package, not only the final UI delta — command/facade, protected HTTP/Worker/cache path, lifecycle/read/count/event projections, canonical Owner control/viewer-target invalidation, native writer/race/rollback closure and genuine connected Worker + Better Auth + PG17 + local R2 + Chromium acceptance.
+
+Review rules:
+- independent review only; do not modify implementation;
+- classify findings as real current-SA05 defects vs future work;
+- first finding does not end the review;
+- if PASS, record exact-head whole-SA05 PASS and STOP;
+- if defects exist, return one complete confirmed current-SA05 packet to Mira/Lev; do not fix them yourself;
+- #337 remains Draft/unmerged.
+
+**No SA06 work is assigned.** Accepted queue requires `06-0 | Whole SA05 accepted and merged`; current main does not contain SA05 yet, and the standing developer assignment also keeps implementation solely with Lev until explicitly changed.
+
+---
+
 ## 2026-11-16 — Mira WHOLE SA05 coordinator PASS
 
 Reviewed cumulative Draft **#337** on stable exact head **`a465cbd379b9c3f92b504658001c698bce3fa505`** against current `main=efae8111a13aefbf72b4d20972dac461acc602e3`, current AGENTS, accepted SA05 §5.1–§5.4 and applicable whole-package acceptance seams.
