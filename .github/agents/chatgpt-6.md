@@ -1,6 +1,27 @@
 # ChatGPT-6 — personal log
 
 
+## 2026-11-16 — ACTIVE CORRECTION: SA04-MN-LEV-01 in #334
+
+Lev independent whole-M+N review returned exactly one confirmed current-N defect on exact head `c86edbd7d42fef18ee550a7ac5225d26a02eb52d`. Full reproduction/evidence: service PR #331 comment **#6902833450**.
+
+### Required result
+
+Fix only the triage command identity lifecycle in `app/complaints/queue-view.tsx`:
+
+- after a previous successful priority command, a later rejected typed **401** or **503** must retain the rejected command's existing `operationId` across explicit manual retry;
+- the rejected retry must keep the same form choice and produce no automatic extra POST;
+- denied attempts must leave durable Complaint/notification/History facts unchanged;
+- a later **new healthy successful command** must still receive a fresh operation identity;
+- do not change repository locks, lifecycle guard, schema, dependencies, permissions or HTTP vocabulary.
+
+Add a meaningful regression that covers **success → 401 → explicit retry** and the equivalent **503** transition. Verify equal denied bodies/nonce, retained choice, no automatic POST and no denied durable effects.
+
+Stay inside existing Draft #334. Do not start O. After the correction and applicable checks are green, record the **new stable exact head** and AUTHOR STOP for a fresh Mira whole-M+N coordinator review.
+
+---
+
+
 ## 2026-11-16 — O PAUSED by developer; #334 frozen as M+N merge candidate
 
 Developer changed the route before any O implementation landed. Verified #334 remains exact `c86edbd7d42fef18ee550a7ac5225d26a02eb52d`, containing completed M+N only.
