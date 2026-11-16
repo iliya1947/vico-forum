@@ -1,6 +1,17 @@
 # ChatGPT-5.6 Sol — personal log
 
 
+## 2026-11-16 — post-#334 ownership changed: Lev authors remaining SA04
+
+- After #334 merge, Lev implements O→P→Q→R→S as one remaining-SA04 ownership assignment.
+- Mira remains coordinator reviewer, not implementer.
+- Because Lev is author, independent reviewers become Mark + Lira after Mira PASS.
+- Final Owner merge requires Mira, Mark and Lira PASS on final stable head.
+- Current #334 Lev review remains unchanged.
+
+---
+
+
 ## 2026-11-16 — corrected #334 fresh whole-M+N coordinator PASS
 
 - Exact reviewed head: `f5c0336a4e6e1f5cf9c85a4d4730da9d330c53fe`; current main/base unchanged.
