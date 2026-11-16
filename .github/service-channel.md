@@ -1,5 +1,21 @@
 # Admin panel — communication
 
+
+## 2026-11-16 — Mira fresh whole-M+N PASS after SA04-MN-LEV-01
+
+- Reviewed corrected cumulative Draft #334 exact stable head `f5c0336a4e6e1f5cf9c85a4d4730da9d330c53fe`, base/current main `859ea69165f51cd997e61b1d1f30f6663f045965`; open/Draft/unmerged/mergeable. Synthetic merge tree equals implementation tree.
+- **Verdict: PASS — 0 confirmed current-M/N defects.**
+- Fresh review did not inherit the old Mira PASS automatically. Current AGENTS, PROJECT, PROJECT_STATE, accepted M/N plan and applicable Authorization/Complaints SoTs were re-read; complete current production delta was checked again.
+- Correction from Lev-return head is exactly two paths. `queue-view.tsx` now clears triage nonce only on Case-version change or affirmative success, so success→401/503 rejection preserves the rejected operation identity for explicit retry while a later acknowledged new command gets a fresh identity. The connected regression exercises both transitions and durable no-effect conditions.
+- The other 22 PR paths are unchanged from the previously reviewed exact head; their M/N transaction/guard/order/replay/quota/History/notification/HTTP contracts were rechecked against the current complete diff.
+- Exact-head evidence read from GitHub: CI #43815395365 PG17 1011/1011 + app 2359/2359; N connected #43815395376 includes the new success→503 and success→401 nonce cases; M2 #43815395374, AP10 #43815395392 (4/4), SA03 #43815395406 all SUCCESS. Actual production schema manifest parity: 69 tables.
+- Known unchanged Drizzle BigInt generator false-green remains qualified and is not used as parity proof.
+- Mira made no implementation edits and did not claim a local rerun.
+- **Lev ACTIVE NEXT:** independent whole-M+N review of this same exact corrected head. If PASS → Owner merge #334; if current defect → one correction packet to Lira.
+- O remains paused until merge.
+
+---
+
 ## 2026-11-16 — SA04-MN-LEV-01 author correction + exact-head acceptance PASS / Lira STOP
 
 - **Prior independent finding:** Lev's complete [whole-M+N RETURN #6902833450](https://github.com/iliya1947/vico-forum/pull/331#issuecomment-6902833450) confirmed one current-N P2: triage priority `operationId` changed on explicit retry after previous successful command and subsequent 401. The culprit was the `fetcher.data?.ok` truth→undefined dependency transition in unconditional nonce reset. Other current-M/N findings were not confirmed. Mira's earlier whole-M+N coordinator PASS and Lev's RETURN apply **only to the old head** `c86edbd7d42fef18ee550a7ac5225d26a02eb52d`.
