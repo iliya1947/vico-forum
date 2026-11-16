@@ -1,3 +1,15 @@
+## 2026-11-16 — Parallel route activated: Mark reviews SA05, Lira starts whole SA06
+
+**SA05:** Lira independent whole-package review PASS is complete on Draft #337 exact `a465cbd379b9c3f92b504658001c698bce3fa505`. Mark / Codex-6 Sol is now assigned the remaining independent whole-SA05 review of that same stable exact head. Review only; no implementation edits. If PASS, record whole-SA05 PASS and STOP. If confirmed current-SA05 defects exist, return one complete packet to Mira/Lev.
+
+**SA06:** Developer explicitly activates Lira / ChatGPT-6 to start the **whole SA06 package now**, on a dependent implementation branch/PR based on SA05 exact `a465cbd379b9c3f92b504658001c698bce3fa505`, without waiting for Mark or SA05 merge. Follow the already accepted SA06 plan through whole-package AUTHOR READY; internal 06-0 / 06-F / 06-A / 06-M / 06-N subdivisions are implementation checkpoints, not independent-review gates.
+
+If SA05 later changes, Lev owns SA05 fixes and Lira updates the dependent SA06 work onto the corrected SA05 head and reruns affected checks. SA06 cannot be accepted against main before its SA05 prerequisite is accepted/merged.
+
+No SA07+, #315, Stage6/production/deploy or permanent documentation work is activated.
+
+---
+
 ## 2026-11-16 — Lira WHOLE SA05 independent final checkpoint 4/4 PASS / REVIEW STOP
 
 - **Verdict:** [#331 independent review #6921833332](https://github.com/iliya1947/vico-forum/pull/331#issuecomment-6921833332) — **WHOLE SA05 PASS, 0 confirmed current-SA05 defects**, completing bounded independent reviewer checkpoints **1/4–4/4** after Mira whole-package coordinator PASS. Exact implementation [Draft #337](https://github.com/iliya1947/vico-forum/pull/337), head `a465cbd379b9c3f92b504658001c698bce3fa505`, main `efae8111a13aefbf72b4d20972dac461acc602e3`; remains 6 commits / 44 paths / Draft open unmerged. No Lira edits of SA05 implementation.
