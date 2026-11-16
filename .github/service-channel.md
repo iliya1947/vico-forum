@@ -1,5 +1,18 @@
 # Admin panel — communication
 
+
+## 2026-11-16 — SA04-MN-LEV-01 handed to Lira
+
+- Lev independent whole-M+N review returned one confirmed current-N P2 defect; no other current-M/N defects were established.
+- Defect: triage nonce resets after a prior success when the next command returns typed 401/503, so explicit retry gets a new `operationId`.
+- Root cause confirmed in current source: unconditional `useEffect(...,[item.version,fetcher.data?.ok])` clears the rejected nonce on `ok:true → undefined`.
+- **Lira ACTIVE** on the single bounded correction packet from #6902833450 in existing Draft #334.
+- Required regression covers success→401→manual retry and 503 equivalent; same denied operation identity, retained choice, no auto retry, no denied durable effects; later healthy new command gets fresh identity.
+- No O, no unrelated refactor, no merge.
+- New stable head/checks → fresh Mira whole-M+N coordinator review → Lev same-head independent review → Owner merge if both PASS.
+
+---
+
 ## 2026-11-16 — Lev independent whole-M+N RETURN; single Lira correction packet
 
 - **Authoritative current result:** [whole review and complete handoff](https://github.com/iliya1947/vico-forum/pull/331#issuecomment-6902833450), #334 exact `c86edbd7d42fef18ee550a7ac5225d26a02eb52d`, base/current main `859ea69165f51cd997e61b1d1f30f6663f045965`;49 commits/24 paths. Whole review completed after the first finding. **One current-N P2 SA04-MN-LEV-01; no other current-M/N defects confirmed.**
