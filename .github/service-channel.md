@@ -1,3 +1,12 @@
+## 2026-11-16 — Correction: SA05-2 remains with Lev
+
+- The prior SA05-2 assignment to Lira was a coordinator error. Developer intent is that **Lev continues SA05 implementation**, so that assignment is superseded.
+- Verified after the mistake: Draft #337 is still unchanged at exact head `213dc8bb6583439cd8ea7efbd9872e98aa638b36`; no Lira implementation landed and no rollback is needed.
+- **ACTIVE:** Lev implements SA05-2 only on cumulative #337. Lira is not assigned implementation work on this checkpoint.
+- After Lev AUTHOR READY → Mira coordinator whole-checkpoint review. #337 remains Draft/unmerged.
+
+---
+
 ## 2026-11-16 — Developer continuation: Lira implements SA05-2
 
 **Assignee:** Лира / ChatGPT-6  
