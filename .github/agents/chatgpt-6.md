@@ -1,5 +1,27 @@
 # ChatGPT-6 — personal log
 
+
+## 2026-11-16 — ACTIVE AUTHOR: SA04 documentation/state closeout
+
+Current main: `b5180e5fcc8483dc13e1b087102a51560c80e035`. Dedicated docs branch already exists: `docs/sa04-accountstate-closeout`.
+
+Create the separate **docs-only PR** closing completed SA04. Read current AGENTS/PROJECT/PROJECT_STATE/ROADMAP and every permanent SoT you edit before changing it.
+
+Required result:
+- factual state says **SA01–SA04 implemented in repository/local-CI**;
+- SA04 is described as AccountState/public-neutralization/auth-session/cross-domain active-actor enforcement;
+- **do not say the Owner deactivation command/UI exists** — that is SA05;
+- repository migration baseline becomes `0000–0065`;
+- stale “SA04+/deactivation not delivered” wording is corrected only where it is now factually wrong;
+- add compact historical snapshot `PROJECT_HISTORY_27.md` covering the real multi-PR sequence #327/#328/#329/#330/#332/#333/#334/#335, important correction/review facts and final evidence;
+- keep Stage6/external/production/real Google/Owner binding/final visual acceptance unclaimed.
+
+Expected files: `PROJECT.md`, `PROJECT_STATE.md`, `ROADMAP.md`, `docs/SUPER_ADMIN.md`, narrowly `docs/ADMIN_PANEL.md` and `docs/UI_UX_PASS.md`, history index + new history 27. Expand the file set only if a current permanent contradiction is actually found.
+
+No runtime/source/schema/migration/dependency/workflow changes. No SA05 implementation. Do not merge. When the docs PR reaches a stable head, record AUTHOR READY in #331 and STOP for Mira whole-docs review.
+
+---
+
 ## 2026-11-16 — Lira final independent whole-#335 review: PASS (checkpoint 4/4), STOP
 
 - **Assignment/scope:** final independent reviewer of Lev-authored complete remaining SA04 O→S implementation and cumulative A→R behavior, after Mira coordinator PASS. Implementation [Draft #335](https://github.com/iliya1947/vico-forum/pull/335), stable exact head `fa0c95105c00449ca72c7fd21a5045929d59542e`, 4 commits / **47 PR changed files**, base `c7f2538ce1d4d37152bc3d503587dc9dabd28f24`, draft/open/unmerged. Lira is **not** its author. All four bounded checkpoints O/P/Q, R, S/connected/cumulative, 47-file final diff reconciliation completed, no implementation writes.
