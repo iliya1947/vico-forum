@@ -168,8 +168,8 @@ Monitoring area или UI деактивации. Публичная identity н
 Утверждённая структура всех 13 Monitoring областей и contextual
 state → History → applicable actions закреплена в `docs/SUPER_ADMIN.md`.
 Остальные десять Monitoring областей, Owner-команда/UI деактивации (SA-05)
-и последующие SA-пакеты ещё не доставлены. Полный технический план SA-05–SA-08
-требует отдельного согласования до реализации SA-05.
+и последующие SA-пакеты ещё не доставлены. Технический план SA-05–SA-08
+уже принят; до начала SA-05 нужны отдельное назначение и сверка актуального `main`.
 Visual polish и real Google/Owner binding, infrastructure/production
 acceptance не подтверждены этими merge; Stage 6 остаётся paused.
 
