@@ -38,7 +38,7 @@ Related sources of truth:
 - [PROJECT.md](../PROJECT.md) — product and architecture baseline;
 - [AUTHORIZATION.md](auth/AUTHORIZATION.md) — authoritative application authorization;
 - [SETTINGS.md](SETTINGS.md) — Settings surfaces, Owner-only Forum & roles and registration policy;
-- [SUPER_ADMIN.md](SUPER_ADMIN.md) — separate exact-Owner-only Super-admin and delivered SA-01–SA-03 boundaries;
+- [SUPER_ADMIN.md](SUPER_ADMIN.md) — separate exact-Owner-only Super-admin and delivered SA-01–SA-04 boundaries;
 - [UI_UX_PASS.md](UI_UX_PASS.md) — shared presentation, localization and acceptance;
 - [PROJECT_STATE.md](../PROJECT_STATE.md) — factual implementation state;
 - [ROADMAP.md](../ROADMAP.md) — development and release boundaries.
@@ -100,13 +100,15 @@ Three boundaries remain distinct:
   private explanations into the global panel.
 - **Contextual administration** exposes applicable Quick actions near an object. It shares
   authoritative operations with the global panel, not a second administration backend.
-- **Super-admin** is a separate exact server-bound Owner-only surface. SA-01–SA-03 are
+- **Super-admin** is a separate exact server-bound Owner-only surface. SA-01–SA-04 are
   implemented in the repository: System, Accounts & authentication and Security Monitoring,
   adjacent per-monitor History, a source-aware global Event log, the canonical unified user
-  profile with an exact-Owner private section, and an inert Stage-6 Infrastructure placeholder.
-  Account deactivation and the remaining Monitoring areas are **not delivered**; live
-  infrastructure, deployments, secrets and providers remain Stage-6 work. Ordinary Admin
-  permissions never grant access to exact-Owner sections.
+  profile with an exact-Owner private section, an inert Stage-6 Infrastructure placeholder,
+  and SA-04 AccountState/active-account enforcement across existing domains.
+  **Owner deactivation command/UI remains unimplemented SA-05**; the ten remaining
+  Monitoring areas are also not delivered. Live infrastructure, deployments, secrets
+  and providers remain Stage-6 work. Ordinary Admin permissions never grant
+  access to exact-Owner sections.
 
 Reserved Help & solutions category/service-section identities retain their existing rules.
 Administrative browsing must not turn the internal service section into an ordinary public
