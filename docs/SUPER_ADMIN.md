@@ -206,16 +206,80 @@ Forward migration `0064_sa03_profile_history_indexes` adds six target-chronologi
 indexes across existing Owner events, attempt patterns, attachment evidence and Admin History.
 It adds no relation, domain state, permission, grant or runtime writer.
 
-## Approved future boundaries after SA-03
+## SA-04 — implemented AccountState foundation and enforcement
 
-The approved future Owner-only **deactivation** product behavior is: the deactivated account ceases active forum use; published content remains; the public identity becomes **Deleted user**; underlying private/account data remains retained for **at least one year**. The exact bound Owner cannot deactivate their own account. No mandatory reason is required. Physical account deletion, end-of-retention action, reactivation, forced-session-termination controls, credential/provider manipulation, and a second Owner/recovery model are **not** authorized by this description. **SA-03 does not implement deactivation.**
+SA-04 is a **repository/local-CI account-lifecycle foundation**, not an Owner-facing
+deactivation feature. Forward migration `0065_sa04_account_state_foundation` adds three
+server-owned nullable columns to the existing Better Auth `user` row:
+`deactivated_at`, `deactivated_by_user_id` and `retain_at_least_until`.
+All three NULL means active. A deactivated tuple requires all three set, a nonblank
+deactivating actor ID and a retention bound no earlier than one **UTC calendar year**
+after deactivation; the database CHECK enforces this. Existing accounts remain active
+without backfill. These fields are neither writable Better Auth additionalFields
+nor ordinary auth/public DTO fields. SA-04 adds no user-facing state writer, automatic
+retention-expiry action or physical-delete path.
 
-Additional Monitoring sources, new Owner-only actions, deactivation, account-status lifecycle
-or a broader full-audit model require later bounded delivery and real source-specific evidence.
-SA-03 does not claim completion of the remaining Super-admin plan.
+Neither a previously authenticated cookie nor Owner/admin permissions bypass the
+active-account requirement. Better Auth session resolution, existing direct and HTTP
+auth APIs, session creation and account-target writes reject inactive/missing identity
+or target instead of granting new authenticated authority. The narrow exception is
+**own signed sign-out** to clear the old session/cookie, not forced revocation of
+someone else's sessions. Classified AccountState storage failure is distinguished
+from inactive/guest and unexpected failure; it never grants access by fallback.
+
+The existing **authoritative actor-owned writer boundaries** additionally admit the
+active actor inside their database transaction, even when preflight admission has
+already passed. This covers Forum topic/post/profile/Help operations, notifications,
+read-state and presence; attachment upload/private draft/finalization/Cancel;
+authorization mutations; AP-10 measures and appeals; Complaints participation,
+triage, notes, decisions and appeals; own locale and Privacy saves; exact-Owner
+registration-settings writes; and new user-content translation-generation plans.
+The lifecycle predicate also applies to relevant no-op and committed-replay paths,
+without replacing existing permission, hierarchy, measure, Owner, CAS, receipt,
+History or storage-fence contracts. If a writer commits before the competing
+state change, that admitted write stands; if the state change wins the authoritative
+admission, the denied attempt creates no new durable domain effects. Already
+accepted translation tasks/consumers continue normally rather than being cancelled
+by later inactivity. SA-04 does not retroactively erase a committed publication
+or an already in-flight physical upload.
+
+The shared public identity projection retains stable user/profile IDs and
+published topic/post content, revisions and attachments while rendering inactive
+people as localized **Deleted user** with neutral avatar and without old public
+name/image, bio or external links in serialized public data. The protection also
+covers public author/notification/revision projections, the Users directory
+identity and name-based search, mention suggestions, and online list/count/heartbeat.
+Existing authorized private account, History and immutable evidence keep their
+original retained data under their separate access controls; those records are
+not physically deleted or globally anonymized.
+
+Known inactive/missing lifecycle denials at protected request boundaries use
+private/no-store authentication failure; classified state storage unavailability
+returns protected `503`, while unexpected errors retain the unexpected-error path.
+Mounted forms retain explicit user control and do not silently replay denied writes
+or show false success. SA-04 introduces no new permission/RBAC, Monitoring area,
+reactivation, foreign credential/provider operation, forced-session control,
+Stage-6 activation or production rollout.
+
+## SA-05 and later — approved future boundaries
+
+The approved future exact-Owner-only **deactivation command and UI** belong to
+**SA-05**, not SA-04. The deactivated account ceases active forum use, but published
+content remains, public identity is **Deleted user**, and private/account data is
+retained for at least one year. The bound Owner may not deactivate their own account
+and no mandatory reason is required. SA-04 implements the underlying state and
+enforcement, **not** the production command that changes account state.
+Reactivation, physical deletion, retention-end actions, forced session termination,
+foreign credential/provider mutation and a second Owner/recovery model are not
+approved by this product boundary.
+
+Additional Monitoring sources, new Owner-only actions and a broader full-audit
+model require later bounded delivery and real source-specific evidence. Exactly
+System, Accounts & authentication and Security are live Monitoring areas today;
+the other ten are not delivered.
 
 The **Infrastructure** tab is present at `/:locale/super-admin/infrastructure` as an honest **Under development / Stage 6** placeholder. It exposes no live Cloudflare/Neon/deployment/secret/provider data, controls, credentials or infrastructure API. Actual infrastructure administration and external runtime checks are deferred until the Owner explicitly resumes Stage 6.
 
-## SA-01–SA-03 acceptance boundary
+## SA-01–SA-04 acceptance boundary
 
-SA-01–SA-03 have passed repository CI, native PostgreSQL 17 and built Worker/Better Auth/Chromium acceptance, followed by coordinator and independent technical review, and all three implementations are merged. SA-02 acceptance covers real local Better Auth signup/sign-in/password/session lifecycle flows, exact source identity across current/scoped/global views, protected document/data admission and storage degradation/recovery. SA-03 acceptance additionally covers the canonical public/Admin/Owner profile composition, exact target/source isolation and pagination, Owner-self measure routing, protected outage handling, EN/RU/HE/RTL/responsive behavior, delayed sign-out invalidation and SPA account switching without stale private DOM. Those checks use disposable/local test infrastructure and synthetic Owner binding. They do **not** imply production deployment, live Google OAuth, real Owner binding, Stage-6 integrations, complete security monitoring, deactivation, or final owner visual-polish acceptance. The broader approved product model remains staged; no later package becomes authorized merely by this documentation.
+SA-01–SA-04 have passed repository/local-CI, native PostgreSQL 17 and applicable built Worker/Better Auth/Chromium connected acceptance, followed by coordinator and independent technical review; all four implementations are merged. SA-02 acceptance covers real local Better Auth signup/sign-in/password/session lifecycle flows, exact source identity across current/scoped/global views, protected document/data admission and storage degradation/recovery. SA-03 acceptance additionally covers the canonical public/Admin/Owner profile composition, exact target/source isolation and pagination, Owner-self measure routing, protected outage handling, EN/RU/HE/RTL/responsive behavior, delayed sign-out invalidation and SPA account switching without stale private DOM. SA-04 additionally verifies AccountState migration/predicates, neutral public identity, HTTP/direct authentication and transaction-local writer enforcement, lifecycle races and connected retained-content behavior. These checks use disposable/local test infrastructure, fixture-deactivated users and synthetic Owner binding. They do **not** imply production deployment, live Google OAuth, real Owner binding, Stage-6 integrations, complete security monitoring, an Owner deactivation command/UI, or final owner visual-polish acceptance. The broader approved product model remains staged; no later package becomes authorized merely by this documentation.
