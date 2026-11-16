@@ -21,11 +21,25 @@ function isPrivateAttachmentPath(pathname: string): boolean {
   }
 }
 
+/** Match the registered canonical resource and its accepted static/data aliases. */
+export function isOwnerAccountLifecyclePath(pathname: string): boolean {
+  const segments = pathname.split("/");
+  while (segments.at(-1) === "") segments.pop();
+  if (segments.length !== 6 || !segments[1] || !segments[3]) return false;
+  try {
+    const last = decodeURIComponent(segments[5]).toLowerCase();
+    return decodeURIComponent(segments[2]).toLowerCase() === "users"
+      && decodeURIComponent(segments[4]).toLowerCase() === "owner"
+      && (last === "deactivate" || last === "deactivate.data");
+  } catch { return false; }
+}
+
 export function protectFrameworkFailure(request: Request, response: Response): Response {
-  if (response.status < 500 || response.status > 599) return response;
+  const ownerAction = isOwnerAccountLifecyclePath(new URL(request.url).pathname);
+  if (!ownerAction && (response.status < 500 || response.status > 599)) return response;
   const privateAttachmentRead = (request.method === "GET" || request.method === "HEAD")
     && isPrivateAttachmentPath(new URL(request.url).pathname);
-  if ((request.method === "GET" || request.method === "HEAD") && !privateAttachmentRead) {
+  if (!ownerAction && (request.method === "GET" || request.method === "HEAD") && !privateAttachmentRead) {
     return response;
   }
   const protectedResponse = new Response(response.body, {

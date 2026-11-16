@@ -1,6 +1,13 @@
 import type { Pool } from "pg";
 import { safeDeviceLabel } from "../app/auth/session-label";
 import { normalizeAttemptIp } from "../app/observability/attempt-source";
+import { readAccountState, AccountStateUnexpectedError } from "./account-state";
+
+/** Serialized shared state, available only inside the exact-Owner projection. */
+export type OwnerAccountLifecycleSnapshot =
+  | { readonly status: "active" }
+  | { readonly status: "deactivated"; readonly deactivatedAt: string;
+      readonly deactivatedByUserId: string; readonly retainAtLeastUntil: string };
 
 /** All fields are an explicit safe Owner-only projection; no Better Auth record is serialized. */
 export interface OwnerTargetSession {
@@ -14,6 +21,7 @@ export interface OwnerTargetSession {
 }
 export interface OwnerUserProfileSnapshot {
   readonly targetUserId: string;
+  readonly lifecycle: OwnerAccountLifecycleSnapshot;
   readonly email: string;
   readonly emailVerified: boolean;
   readonly createdAt: string;
@@ -136,6 +144,15 @@ export class PostgresOwnerUserProfile implements OwnerUserProfileReader {
         await client.query("commit"); started = false;
         return null;
       }
+      // Same repeatable-read snapshot and shared full-tuple parser as every
+      // authoritative lifecycle path; this read confers no mutation authority.
+      const state = await readAccountState(client, query.targetId);
+      if (state.status === "missing") throw new AccountStateUnexpectedError();
+      const lifecycle: OwnerAccountLifecycleSnapshot = state.status === "active"
+        ? { status: "active" }
+        : { status: "deactivated", deactivatedAt: validDate(state.deactivatedAt),
+          deactivatedByUserId: state.deactivatedByUserId,
+          retainAtLeastUntil: validDate(state.retainAtLeastUntil) };
       const counts = (await client.query<CountRow>(
         "select count(*) filter(where expires_at > ($2::timestamptz at time zone 'UTC'))::text active," +
         " count(*) filter(where expires_at <= ($2::timestamptz at time zone 'UTC'))::text expired" +
@@ -172,6 +189,7 @@ export class PostgresOwnerUserProfile implements OwnerUserProfileReader {
         };
       });
       return {
+        lifecycle,
         targetUserId: identity.id, email: identity.email, emailVerified: identity.email_verified,
         createdAt: validDate(identity.created_at), updatedAt: validDate(identity.updated_at),
         linkedMethods: [

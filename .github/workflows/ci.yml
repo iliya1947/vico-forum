@@ -124,3 +124,7 @@ jobs:
         run: |
           pnpm exec tsx scripts/smoke-forum-accountstate-local.ts
           test ! -e .dev.vars && test ! -L .dev.vars
+      - name: SA05-2 built Worker protected Owner resource and alias smoke
+        run: |
+          pnpm exec tsx scripts/smoke-owner-deactivation-local.ts
+          test ! -e .dev.vars && test ! -L .dev.vars

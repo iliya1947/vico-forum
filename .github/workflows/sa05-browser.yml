@@ -1,0 +1,121 @@
+name: SA05 whole Owner deactivation connected acceptance
+
+on:
+  pull_request:
+    paths:
+      - ".github/workflows/sa05-browser.yml"
+      - "tests/browser/sa05/**"
+      - "tests/browser/sa04-attachments/stream-client.mjs"
+      - "app/profile/**"
+      - "app/forum/profile-view.tsx"
+      - "app/routes/owner-deactivate.ts"
+      - "app/routes/profile.tsx"
+      - "app/routes.ts"
+      - "app/auth/**"
+      - "app/localization/catalog.ts"
+      - "app/localization/manual-values.ts"
+      - "app/localization/manual-fingerprints.ts"
+      - "app/styles.css"
+      - "db/owner-*.ts"
+      - "db/hyperdrive-owner-*.ts"
+      - "db/account-state.ts"
+      - "db/forum-attachments.ts"
+      - "workers/app.ts"
+      - "workers/private-failure-response.ts"
+
+permissions:
+  contents: read
+
+jobs:
+  owner_deactivation_browser:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_DB: vico_sa05_browser_test
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d vico_sa05_browser_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      CI: "true"
+      DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:5432/vico_sa05_browser_test
+      CLOUDFLARE_HYPERDRIVE_LOCAL_CONNECTION_STRING_HYPERDRIVE: postgresql://postgres:postgres@127.0.0.1:5432/vico_sa05_browser_test
+      CLOUDFLARE_HYPERDRIVE_LOCAL_CONNECTION_STRING_WEB_HYPERDRIVE: postgresql://postgres:postgres@127.0.0.1:5432/vico_sa05_browser_test
+      IMPLEMENTATION_SHA: ${{ github.event.pull_request.head.sha }}
+      PLAYWRIGHT_CHANNEL: chrome
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+      - uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1 # v4
+        with:
+          version: 12.3.4
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+        with:
+          node-version-file: .node-version
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Migrate disposable PostgreSQL17
+        run: |
+          node --input-type=module -e '
+            import pg from "pg";
+            import {drizzle} from "drizzle-orm/node-postgres";
+            import {migrate} from "drizzle-orm/node-postgres/migrator";
+            const c=new pg.Client({connectionString:process.env.DATABASE_URL});
+            await c.connect();
+            try {await migrate(drizzle(c),{migrationsFolder:"./drizzle"});}
+            finally {await c.end();}
+          '
+      - name: Install pinned isolated Playwright
+        run: |
+          python3 -m venv "$RUNNER_TEMP/sa05-playwright"
+          "$RUNNER_TEMP/sa05-playwright/bin/pip" install playwright==1.62.0
+      - name: Build actual Worker with local-only R2 and synthetic Owner
+        run: |
+          umask 077
+          printf '%s\n' \
+            'BETTER_AUTH_SECRET=sa05-only-local-secret-0123456789abcdef0123456789abcdef' \
+            'BETTER_AUTH_URL=http://127.0.0.1:4235' \
+            'GOOGLE_CLIENT_ID=local-test-unused' \
+            'GOOGLE_CLIENT_SECRET=local-test-unused' \
+            'VICO_OWNER_USER_ID=sa05-synthetic-owner' > .dev.vars
+          cp wrangler.jsonc "$RUNNER_TEMP/sa05-original-wrangler.jsonc"
+          node --input-type=module -e '
+            import {readFileSync,writeFileSync} from "node:fs";
+            const path="wrangler.jsonc",config=JSON.parse(readFileSync(path,"utf8"));
+            if(config.main!=="./workers/app.ts"||config.r2_buckets)throw new Error("Unexpected local fixture config");
+            config.r2_buckets=[{binding:"ATTACHMENT_R2",bucket_name:"sa05-local-attachments",remote:false}];
+            writeFileSync(path,JSON.stringify(config,null,2));
+          '
+          pnpm build
+      - name: Real Owner action, two genuine target sessions, UI and late-write acceptance
+        run: |
+          pnpm exec vite preview --host 127.0.0.1 --port 4235 --strictPort > "$RUNNER_TEMP/sa05-preview.log" 2>&1 &
+          preview_pid=$!
+          trap 'kill "$preview_pid" 2>/dev/null || true; cp "$RUNNER_TEMP/sa05-original-wrangler.jsonc" wrangler.jsonc; rm -f .dev.vars' EXIT
+          ready=false
+          for attempt in $(seq 1 90); do
+            if curl --silent --fail --max-time 2 http://127.0.0.1:4235/en/ > /dev/null; then ready=true; break; fi
+            if ! kill -0 "$preview_pid" 2>/dev/null; then break; fi
+            sleep 1
+          done
+          if [ "$ready" != true ]; then tail -n 80 "$RUNNER_TEMP/sa05-preview.log"; exit 1; fi
+          "$RUNNER_TEMP/sa05-playwright/bin/python" tests/browser/sa05/check.py \
+            --url http://127.0.0.1:4235 --output "$RUNNER_TEMP/sa05-evidence" || {
+              tail -n 100 "$RUNNER_TEMP/sa05-preview.log"
+              exit 1
+            }
+      - name: Preserve synthetic connected evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: sa05-whole-worker-ba-pg17-r2-chromium
+          path: ${{ runner.temp }}/sa05-evidence/
+          if-no-files-found: warn
+          retention-days: 7

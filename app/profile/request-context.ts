@@ -4,8 +4,11 @@ import { authorizationOwnerContext } from "../authorization/request-context";
 import { isBoundOwner } from "../authorization/owner";
 import type { OwnerUserProfileReader, OwnerUserProfileSnapshot } from "../../db/owner-user-profile";
 import type { OwnerUserHistoryReader, OwnerUserHistoryPage } from "../../db/owner-user-history";
+import type { OwnerAccountLifecycleCommand } from "../../db/owner-account-lifecycle";
 
 export const ownerProfileContext = createContext<OwnerUserProfileReader & OwnerUserHistoryReader>();
+/** Server-constructed command; direct calls also enforce trusted binding/active actor. */
+export const ownerAccountLifecycleContext = createContext<OwnerAccountLifecycleCommand>();
 
 export interface AuthorizedOwnerProfileReader {
   readTarget(targetId: string, before?: string): Promise<OwnerUserProfileSnapshot | null>;

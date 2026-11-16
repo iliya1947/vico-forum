@@ -9,6 +9,7 @@ type Label = UiKey<"common">;
 const origins: Record<OwnerHistoryOrigin,Label> = {
   "system-event":"superAdminHistoryOriginSystem",
   "auth-event":"superAdminHistoryOriginAuth",
+  "account-event":"superAdminHistoryOriginAccount",
   "system-observation":"superAdminHistoryOriginSample",
   "admin-history":"superAdminHistoryOriginAdmin",
   "attachment-evidence":"superAdminHistoryOriginAttachment",
@@ -17,6 +18,7 @@ const origins: Record<OwnerHistoryOrigin,Label> = {
 };
 const kinds: Record<string,Label> = {
   "account.created":"superAdminHistoryAccountCreated",
+  "account.deactivated":"superAdminHistoryAccountDeactivated",
   "auth.methodLinked":"superAdminHistoryMethodLinked",
   "auth.passwordChanged":"superAdminHistoryPasswordChanged",
   "auth.sessionCreated":"superAdminHistorySessionCreated",
@@ -31,6 +33,11 @@ const kinds: Record<string,Label> = {
 };
 const fields:Record<string,Label> = {
   actorUserId:"superAdminHistoryActor",
+  retainAtLeastUntil:"superAdminHistoryRetainUntil",
+  operationId:"superAdminHistoryOperationId",
+  activeUsers:"superAdminActiveUsers",
+  deactivatedUsers:"superAdminDeactivatedUsers",
+  retentionPendingUsers:"superAdminRetentionPendingUsers",
   targetUserId:"superAdminHistoryTargetUser",
   targetType:"superAdminHistoryTargetType",
   targetId:"superAdminHistoryTargetId",
@@ -84,12 +91,13 @@ const fields:Record<string,Label> = {
   hourlyCapacityPerPool:"superAdminSa02Capacity",
 };
 const timestampFields=new Set(["recordingEpochStart","firstOccurredAt","lastOccurredAt",
-  "updatedAt","lastEventAt","lastSeenAt"]);
+  "updatedAt","lastEventAt","lastSeenAt","retainAtLeastUntil"]);
 const numericFields=new Set([
   "total","created24h","passwordUsers","googleUsers","bothUsers","active",
   "expiredRetained","attributedAttempts","rateLimitedAttempts","retainedPatterns",
   "unknownAttempts","overflowAttempts","gapAttempts","currentHourAuthenticatedUsed",
   "currentHourAnonymousUsed","hourlyCapacityPerPool","evidence24h","declaredByteSize","count",
+  "activeUsers","deactivatedUsers","retentionPendingUsers",
 ]);
 
 /** Observation labels depend on the authoritative monitor, not just the field name. */

@@ -46,6 +46,8 @@ beforeAll(async () => {
     .replaceAll('"public".', '"' + schema + '".')
     .replaceAll("--> statement-breakpoint", "");
   await client.query(migration);
+  await client.query((await readFile("drizzle/0065_sa04_account_state_foundation.sql", "utf8"))
+    .replaceAll('"public".', '"' + schema + '".'));
 });
 beforeEach(async () => {
   await client.query('truncate "user",account,session,verification,rate_limit cascade');
@@ -72,7 +74,7 @@ describe("SA03 exact-Owner readonly target profile native projection", () => {
     expect(result).not.toBeNull();
     expect(result).toMatchObject({
       targetUserId: "target-A", email: "private-a@example.test", emailVerified: true,
-      linkedMethods: ["password","google"], hasPassword: true,
+      lifecycle: { status: "active" }, linkedMethods: ["password","google"], hasPassword: true,
       sessionCounts: { active: "1", expiredRetained: "1" },
     });
     expect(result!.sessions).toHaveLength(2);
@@ -90,7 +92,7 @@ describe("SA03 exact-Owner readonly target profile native projection", () => {
       expect(serialized).not.toContain(secret);
     }
     expect(Object.keys(result!).sort()).toEqual([
-      "createdAt","email","emailVerified","hasPassword","linkedMethods","nextSessionsCursor",
+      "createdAt","email","emailVerified","hasPassword","lifecycle","linkedMethods","nextSessionsCursor",
       "observedAt","sessionCounts","sessions","targetUserId","updatedAt",
     ]);
     expect(Object.keys(result!.sessions[0]).sort()).toEqual([

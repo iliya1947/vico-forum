@@ -57,17 +57,17 @@ import {createHyperdriveComplaintAppeal} from "../db/hyperdrive-complaint-appeal
 import { resolveRuntimeDatabaseConnectionStrings } from "./database-bindings";
 import { ownerSystemMonitoringContext, ownerSa02MonitoringContext } from "../app/super-admin/request-context";
 import { createHyperdriveOwnerSystem } from "../db/hyperdrive-owner-system";
-import { ownerProfileContext } from "../app/profile/request-context";
+import { ownerAccountLifecycleContext, ownerProfileContext } from "../app/profile/request-context";
 import { createHyperdriveOwnerProfile } from "../db/hyperdrive-owner-profile";
-import { protectFrameworkFailure } from "./private-failure-response";
+import { createHyperdriveOwnerAccountLifecycle } from "../db/hyperdrive-owner-account-lifecycle";
+import { isOwnerAccountLifecyclePath, protectFrameworkFailure } from "./private-failure-response";
 
 const requestHandler = createRequestHandler(
   () => import("virtual:react-router/server-build"),
   import.meta.env.MODE,
 );
 
-export default {
-  async fetch(request, env, executionContext?: ExecutionContext) {
+async function applicationFetch(request: Request, env: Env, executionContext?: ExecutionContext): Promise<Response> {
     const requestStarted = performance.now();
     const context = new RouterContextProvider();
     const { localizationConnectionString, webConnectionString } = resolveRuntimeDatabaseConnectionStrings(env);
@@ -122,6 +122,7 @@ export default {
     context.set(ownerSystemMonitoringContext, ownerMonitoring);
     context.set(ownerSa02MonitoringContext, ownerMonitoring);
     context.set(ownerProfileContext, createHyperdriveOwnerProfile(webConnectionString));
+    context.set(ownerAccountLifecycleContext, createHyperdriveOwnerAccountLifecycle(webConnectionString, ownerUserId));
     const authorization = createHyperdriveAuthorization(webConnectionString, undefined, ownerUserId);
     const effectiveAuthorization = withForumAdministrativeRestrictions(
       authorization, webConnectionString, undefined, ownerUserId,
@@ -151,6 +152,22 @@ export default {
         .then(() => collector.flush().catch(() => undefined));
       if (executionContext?.waitUntil) executionContext.waitUntil(task);
       else await task;
+    }
+}
+
+export default {
+  async fetch(request, env, executionContext?: ExecutionContext) {
+    const ownerAction = isOwnerAccountLifecyclePath(new URL(request.url).pathname);
+    try {
+      const response = await applicationFetch(request, env, executionContext);
+      return ownerAction ? protectFrameworkFailure(request, response) : response;
+    } catch (error) {
+      if (!ownerAction) throw error;
+      if (error instanceof Response && error.status < 500) return protectFrameworkFailure(request, error);
+      const status = error instanceof Response ? error.status : 500;
+      return protectFrameworkFailure(request, new Response(status === 503 ? "Service unavailable" : "Unexpected server failure", {
+        status, headers: { "Content-Type": "text/plain; charset=utf-8" },
+      }));
     }
   },
 } satisfies ExportedHandler<Env>;

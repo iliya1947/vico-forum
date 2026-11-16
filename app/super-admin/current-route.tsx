@@ -20,7 +20,9 @@ type MonitorPresentation = {
 const presentations:Record<Sa02MonitorKey,MonitorPresentation> = {
   "accounts.users": {
     title:"superAdminSa02Users",context:"users",note:"superAdminSa02UsersNote",
-    fields:[["total","superAdminSa02TotalUsers","count"],["created24h","superAdminSa02Created24h","count"]],
+    fields:[["total","superAdminSa02TotalUsers","count"],["created24h","superAdminSa02Created24h","count"],
+      ["activeUsers","superAdminActiveUsers","count"],["deactivatedUsers","superAdminDeactivatedUsers","count"],
+      ["retentionPendingUsers","superAdminRetentionPendingUsers","count"]],
   },
   "accounts.methods": {
     title:"superAdminSa02Methods",context:"account",note:"superAdminSa02MethodsNote",

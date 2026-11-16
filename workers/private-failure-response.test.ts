@@ -3,6 +3,23 @@ import { protectFrameworkFailure } from "./private-failure-response";
 
 describe("private framework 5xx response cache boundary", () => {
   it.each([
+    "/en/users/opaque/owner/deactivate", "/he/users/opaque/owner/deactivate.data",
+    "/ru/USERS/opaque/OWNER/DEACTIVATE///", "/en/%75sers/a%2Fb/%6fwner/%64eactivate.data//",
+  ])("protects every framework/resource outcome on Owner action alias %s", async path => {
+    for (const status of [200, 307, 400, 401, 403, 404, 405, 500, 503]) {
+      const original = new Response("original", { status, headers: { "Set-Cookie": "endpoint=kept", "X-Existing": "kept" } });
+      const response = protectFrameworkFailure(new Request("https://forum.test" + path), original);
+      expect(response.status).toBe(status); expect(response.headers.get("Cache-Control")).toBe("private, no-store");
+      expect(response.headers.get("Set-Cookie")).toBe("endpoint=kept"); expect(response.headers.get("X-Existing")).toBe("kept");
+      expect(await response.text()).toBe("original");
+    }
+  });
+  it.each(["/en/users/id", "/en/users/id/owner/deactivate-extra", "/en/users/id/owner/deactivate/extra",
+    "/en//users/id/owner/deactivate", "/en/users/id/%GG/deactivate"])("leaves unmatched public path %s unchanged", path => {
+    const original = new Response("public", { headers: { "Cache-Control": "public, max-age=60" } });
+    expect(protectFrameworkFailure(new Request("https://forum.test" + path), original)).toBe(original);
+  });
+  it.each([
     "/api/attachments",
     "/api/attachments/",
     "/API/ATTACHMENTS",

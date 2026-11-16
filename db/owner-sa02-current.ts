@@ -16,7 +16,7 @@ export interface Sa02CurrentState {
 }
 const IDS: readonly Sa02MonitorKey[] = [...SA02_MONITORS.accounts, ...SA02_MONITORS.security];
 const FIELD_NAMES: Record<Sa02MonitorKey, readonly string[]> = {
-  "accounts.users": ["total", "created24h"],
+  "accounts.users": ["total", "created24h", "activeUsers", "deactivatedUsers", "retentionPendingUsers"],
   "accounts.methods": ["passwordUsers", "googleUsers", "bothUsers"],
   "accounts.sessions": ["active", "expiredRetained"],
   "accounts.registration": ["googleEnabled", "emailEnabled", "version", "updatedAt"],
@@ -52,8 +52,9 @@ function safeSample(item: Measured): string {
 /** One 15-minute sample per monitor even if a counter changes sooner. */
 async function recordSample(pool: Pool, item: Measured): Promise<void> {
   const json=safeSample(item);
+  const schemaVersion=item.key==="accounts.users" ? 2 : 1;
   const bytes=await crypto.subtle.digest("SHA-256",
-    new TextEncoder().encode(JSON.stringify([item.key,"global","database",1,"measured",JSON.parse(json)])));
+    new TextEncoder().encode(JSON.stringify([item.key,"global","database",schemaVersion,"measured",JSON.parse(json)])));
   const fingerprint=Array.from(new Uint8Array(bytes),b=>b.toString(16).padStart(2,"0")).join("");
   const client=await pool.connect();
   let started=false;
@@ -68,8 +69,8 @@ async function recordSample(pool: Pool, item: Measured): Promise<void> {
     if(!recent.rows[0]?.fresh) {
       await client.query("insert into owner_monitor_observations "+
         "(id,monitor_key,resource_scope,source,schema_version,quality,value,fingerprint) "+
-        "values ($1,$2,'global','database',1,'measured',$3::jsonb,$4)",
-        [crypto.randomUUID(),item.key,json,fingerprint]);
+        "values ($1,$2,'global','database',$5,'measured',$3::jsonb,$4)",
+        [crypto.randomUUID(),item.key,json,fingerprint,schemaVersion]);
     }
     await client.query("commit");started=false;
   } catch(error) {
@@ -78,7 +79,7 @@ async function recordSample(pool: Pool, item: Measured): Promise<void> {
   } finally {client.release();}
 }
 
-type UserRow={total:string;recent:string;first:Date|null};
+type UserRow={total:string;recent:string;first:Date|null;active:string;deactivated:string;pending:string};
 type MethodRow={password_users:string;google_users:string;both_users:string;first:Date|null};
 type SessionRow={active:string;expired:string;first:Date|null};
 type RegRow={id:number;google_registration_enabled:boolean;email_registration_enabled:boolean;
@@ -90,11 +91,26 @@ type AttemptRow={attributed:string;rate_limited:string;patterns:string;unknown:s
 
 async function readSnapshot(client:PoolClient,now:Date):Promise<Measured[]> {
   const u=(await client.query<UserRow>(
+    // Count complete tuples, never infer activity from a retained session or
+    // classify a partial lifecycle tuple as an active/deactivated account.
+    "with states as (select created_at,retain_at_least_until,"+
+    " (deactivated_at is null and deactivated_by_user_id is null and retain_at_least_until is null) active,"+
+    " (deactivated_at is not null and deactivated_by_user_id is not null"+
+    " and btrim(deactivated_by_user_id,chr(32)||chr(9)||chr(10)||chr(13)||chr(12)||chr(11))<>''"+
+    " and retain_at_least_until is not null and isfinite(deactivated_at) and isfinite(retain_at_least_until)"+
+    " and (retain_at_least_until at time zone 'UTC') >="+
+    " ((deactivated_at at time zone 'UTC')+interval '1 year')) deactivated from \"user\") "+
     "select count(*)::text total, "+
+    "count(*) filter(where active)::text active,"+
+    "count(*) filter(where deactivated)::text deactivated,"+
+    "count(*) filter(where deactivated and retain_at_least_until>$1::timestamptz)::text pending,"+
     "count(*) filter(where created_at between "+
     "($1::timestamptz at time zone 'UTC')-interval '24 hours' and "+
     "($1::timestamptz at time zone 'UTC'))::text recent,"+
-    "min(created_at at time zone 'UTC') first from \"user\"",[now])).rows[0];
+    "min(created_at at time zone 'UTC') first from states",[now])).rows[0];
+  if (!u || [u.total,u.recent,u.active,u.deactivated,u.pending].some(value=>!/^\d+$/.test(value))
+    || BigInt(u.total)!==BigInt(u.active)+BigInt(u.deactivated)
+    || BigInt(u.pending)>BigInt(u.deactivated)) throw new Error("Owner account lifecycle counters invariant failed");
   const m=(await client.query<MethodRow>(
     "with methods as (select u.id, "+
     "exists(select 1 from account a where a.user_id=u.id and a.provider_id='credential' "+
@@ -127,7 +143,8 @@ async function readSnapshot(client:PoolClient,now:Date):Promise<Measured[]> {
     "min(created_at) first,max(created_at) last "+
     "from forum_attachment_security_events",[now])).rows[0];
   const items:Measured[]=[
-    {key:"accounts.users",values:{total:u.total,created24h:u.recent},first:u.first},
+    {key:"accounts.users",values:{total:u.total,created24h:u.recent,activeUsers:u.active,
+      deactivatedUsers:u.deactivated,retentionPendingUsers:u.pending},first:u.first},
     {key:"accounts.methods",values:{passwordUsers:m.password_users,googleUsers:m.google_users,
       bothUsers:m.both_users},first:m.first},
     {key:"accounts.sessions",values:{active:ss.active,expiredRetained:ss.expired},first:ss.first},
@@ -207,6 +224,7 @@ export class PostgresOwnerSa02Current {
         const firstFact=(await this.pool.query<{first:Date|null}>(
           "select min(occurred_at) first from owner_events where "+
           "(source='auth' and monitor_key=$1) or "+
+          "(source='account' and kind='account.deactivated' and monitor_key='accounts.users' and $1='accounts.users') or "+
           "(source='auth' and $1='security.auth' and kind in "+
           "('auth.methodLinked','auth.passwordChanged','auth.sessionCreated','auth.sessionDeleted'))",
           [item.key])).rows[0]?.first??null;
