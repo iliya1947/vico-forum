@@ -4,15 +4,11 @@ Service PR #331 is the active Admin/Super-admin coordination channel. PR #251 is
 
 ## Current boundary
 
-- **Current main / SA05 baseline:** `efae8111a13aefbf72b4d20972dac461acc602e3`; current-main AGENTS unchanged.
-- **Standing developer assignment:** Lev / Codex-6.1 Sol remains sole implementer until explicitly changed; review independence mandatory.
-- **WHOLE SA05 AUTHOR READY:** cumulative Draft #337 stable exact `a465cbd379b9c3f92b504658001c698bce3fa505`,6commits/44paths,+2767/-24. [Complete handoff/evidence](https://github.com/iliya1947/vico-forum/pull/331#issuecomment-6920444507).
-- Original05-A + original05-B delivered together: command/facade + protected resource/Worker + lifecycle/counts/samples/original-event History + canonical Owner retention/confirmation/control + genuine connected closure. Earlier intermediate05-A/SA05-4 review stops are superseded.
-- Full local+CI app2473/192files and native1311/96files PASS (new159native closure); all15jobs/11runsSUCCESS, including new SA05 genuine connected acceptance and AP10all4/SA01/SA03/J12/K5/L3/M2/N/S regressions. Actual69-table manifest/runtime gates PASS. Known unchanged Drizzle BigInt/exit0 is not parity proof.
-- **Mira ACTIVE NEXT:** whole-SA05 coordinator review on this exact head. Confirmed current-SA05 defects to Lev in one packet. Lev AUTHOR STOP, no independent self-review.
-- After Mira PASS, **Lira+Mark** final independent same-head reviews; only developer merges. #337 remains Draft/open/unmerged.
-- No SA06+, #315, deployment/Stage6/production/external action, reactivation/purge/foreign credential/session policy/new recovery or last-manager model. Author visual evidence is not developer acceptance.
-- Permanent docs remain separate end-of-task PR. Older sections retain historical snapshots; this current boundary and workflow govern.
+- SA05 #337 is developer-merged; current main/base `7e7a803876422c2f40faaf720b59027d468e99dc`.
+- Lev remains sole implementer of wholeSA06 through AUTHOR READY; cumulative Draft #338, branch `chatgpt/sa06-native-monitoring`, first head `b6f87b644eab2fe8c0cf7d396bd447b1db67db14`,1commit/38paths.
+- Current source delivers four areas/ten real native monitors, original global/scoped/person facts/coverage, canonical navigation/viewer isolation and accepted27 chronological indexes in0066. No SA07 passive port or widened grants.
+- Local14native source/aggregate/real-writer cases +7populated query/index cases PASS; focused app44/4files/type/lint PASS. Full suites/exact CI/new genuine connected SA06 acceptance ACTIVE. Not AUTHOR READY or review PASS.
+- Continue remaining whole-SA06 acceptance without intermediate slice review/merge stops. After final whole-SA06 AUTHOR READY → Mira coordinator whole-package review, then non-author independent review. No SA07+, #315, permanent docs, Stage6/production/deploy/external work or merge.
 
 ## Stable product decisions
 
