@@ -4,14 +4,15 @@ Service PR #331 is the active Admin/Super-admin coordination channel. PR #251 is
 
 ## Current boundary
 
-- **Current main / SA05 baseline:** `efae8111a13aefbf72b4d20972dac461acc602e3`. SA04 code and separate documentation closeout are complete in main via #335 and #336.
-- **SA05-1 AUTHOR READY / STOP:** Lev implemented only atomic Owner deactivation command/facade + native acceptance in cumulative [Draft #337](https://github.com/iliya1947/vico-forum/pull/337), stable exact head `213dc8bb6583439cd8ea7efbd9872e98aa638b36`. [Complete handoff and evidence](https://github.com/iliya1947/vico-forum/pull/331#issuecomment-6915783066).
-- **Mira ACTIVE NEXT:** coordinator whole-SA05-1 checkpoint review against accepted remaining-plan §5.1–§5.2 command-core/native §5.4 scope. Confirmed current-checkpoint defects return to Lev; author does not independently review own implementation. No coordinator verdict or independent assignment exists yet.
-- SA05 checkpoints are command core → protected HTTP action → read-side/History → Owner UI → connected closure in one cumulative implementation PR. **No SA05-2 activation or merge at SA05-1.**
-- Full final native1132/app2382, CI43861391964, actual69-table manifest and applicable standard gates PASS; unchanged Drizzle generator qualification retained. Full-SA05, browser, Owner visual and deployed acceptance are not claimed.
-- Stage6 remains paused; no production/external action, SA06+, #315 security remediation, reactivation/purge/foreign credential/session policy or new recovery/last-manager model is included.
-- Permanent documentation closes in a separate end-of-task PR per AGENTS; current checkpoint adds no permanent docs.
-- SA04 planning/delivery sections below retain their historical accepted context; the current assignment is the SA05-1 review boundary above.
+- **Current main / SA05 baseline:** `efae8111a13aefbf72b4d20972dac461acc602e3`.
+- **Standing developer assignment:** Lev / Codex-6.1 Sol is the sole implementer for all further implementation in #331 until the developer changes this decision. Review independence is unchanged.
+- **SA05-1:** Mira coordinator PASS, 0 confirmed defects, checkpoint `213dc8bb6583439cd8ea7efbd9872e98aa638b36`.
+- **ACTIVE SA05-2:** protected HTTP action/context/Worker layer implemented and published in cumulative [Draft #337](https://github.com/iliya1947/vico-forum/pull/337), stable source head `8f3693a60bd627ac615defbb6b742f38a92fecfb`; final full-suite/CI evidence in progress. [Mira context and published implementation](https://github.com/iliya1947/vico-forum/pull/331#issuecomment-6917066895).
+- Local full app2454/191 PASS; targeted route/Worker/cache110 and actual route+core native69 PASS; built Worker guest63 request smoke PASS. Exact-head CI43871236043 database PASS/native1142/94 and actual69-table manifest PASS; remaining applicable checks are still running. No premature complete-checkpoint verdict.
+- **NEXT:** whole-SA05-2 AUTHOR READY with completed evidence → Mira coordinator checkpoint review. Lev is author and cannot independently review this implementation.
+- SA05 checkpoints remain command core → protected HTTP action → read-side/History → Owner UI → connected closure in one cumulative Draft PR. No SA05-3+, full-SA05/Owner visual/deployed acceptance or merge at this checkpoint.
+- Stage6 remains paused; no production/external action, SA06+, #315, reactivation/purge/foreign credential/session policy or new recovery/last-manager model. Permanent documentation remains a separate end-of-task PR.
+- SA04 and older delivery sections below retain historical context; the active boundary is SA05-2 above.
 
 ## Stable product decisions
 
