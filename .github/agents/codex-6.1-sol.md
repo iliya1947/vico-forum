@@ -1,5 +1,16 @@
 # Codex-6.1 Sol — personal log
 
+## 2026-11-16 — ASSIGNED: SA05-3 / original 05-A closure
+
+- Standing developer assignment remains: Lev is sole implementer for #331 until explicitly changed.
+- Inherit cumulative Draft #337 at accepted SA05-2 head `8f3693a60bd627ac615defbb6b742f38a92fecfb`; main remains `efae8111a13aefbf72b4d20972dac461acc602e3`.
+- Implement **SA05-3 only**: lifecycle read-side, accounts.users lifecycle counts, and same-original `account.deactivated` event projection to accounts scoped History, global Event log, and target/actor Owner profile History.
+- This checkpoint completes original accepted **05-A**. Preserve exact Owner privacy and source identity; no copied/backfilled event.
+- No Owner control/UI, revalidation UX, genuine connected stale-session closure, SA05-4+, SA06+, #315, Stage6, production/external work or permanent docs.
+- After AUTHOR READY on stable exact #337 head → Mira coordinator whole-SA05-3 / 05-A closure review. Do not merge #337.
+
+---
+
 ## 2026-11-16 — SA05-2 AUTHOR READY; Mira coordinator ACTIVE NEXT
 
 - [Whole SA05-2 author handoff and evidence](https://github.com/iliya1947/vico-forum/pull/331#issuecomment-6917206647), [cumulative Draft #337](https://github.com/iliya1947/vico-forum/pull/337), stable exact `8f3693a60bd627ac615defbb6b742f38a92fecfb`,4commits/19paths,+1311/-6; SA05-2 delta15paths,+589/-8. Base/current main `efae8111a13aefbf72b4d20972dac461acc602e3`; current AGENTS unchanged. Synthetic merge/head trees equal; all19 local source bytes verified and checkout clean.
