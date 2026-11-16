@@ -1,3 +1,20 @@
+## 2026-11-16 — SA05 merged; Lev ACTIVE on whole SA06
+
+Developer merged #337. Current exact `main` is `7e7a803876422c2f40faaf720b59027d468e99dc`; it contains the accepted SA05 implementation.
+
+**Lev / Codex-6.1 Sol is now ACTIVE for the whole SA06 package** against current `main`:
+`06-0 → 06-F → 06-A → 06-M → 06-N`, ending at whole-SA06 AUTHOR READY.
+
+Use the already accepted complete remaining technical plan. Refresh exact source locators against current `main` before implementation; do not reopen settled architecture merely because the planning baseline was older. Escalate only a real source-contract conflict or required plan change.
+
+Implementation remains one cumulative SA06 PR. Internal slices are not independent review or merge gates. After whole-SA06 AUTHOR READY, Mira performs the coordinator whole-package review on one stable exact head, followed by independent non-author review.
+
+Permanent project docs currently lag the newly merged SA05 factual status by design of the accepted DOC-closeout sequence; do not mix that documentation work into the SA06 implementation PR.
+
+No SA07+, #315, Stage6/production/deploy/external work or permanent documentation is activated.
+
+---
+
 ## 2026-11-16 — WHOLE SA05 review chain complete: READY FOR DEVELOPER MERGE
 
 Draft #337 exact stable head `a465cbd379b9c3f92b504658001c698bce3fa505` has completed the required whole-package review chain:
