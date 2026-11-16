@@ -3,7 +3,8 @@ import { data, Link, useLoaderData, type RouterContextProvider } from "react-rou
 import { requireSuperAdmin, superAdminPrivateHeaders } from "../super-admin/access.server";
 import { ownerSa02MonitoringForRequest } from "../super-admin/request-context";
 import { OwnerSystemUnavailableError } from "../../db/hyperdrive-owner-system";
-import { parseOwnerHistoryQuery, withOwnerHistoryFilters } from "../super-admin/history-query.server";
+import { parseOwnerHistoryQuery } from "../super-admin/history-query.server";
+import { withOwnerHistoryFilters } from "../super-admin/history-query-links";
 import { OWNER_MONITORS } from "../../db/owner-monitor-catalog";
 import type { OwnerHistoryArea, OwnerHistoryMonitor, OwnerHistoryOptions } from "../../db/owner-sa02-history";
 import { SuperAdminShell, Timeline } from "../super-admin/view";
