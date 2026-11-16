@@ -1,3 +1,29 @@
+## 2026-11-16 — Developer continuation: Lira implements SA05-2
+
+**Assignee:** Лира / ChatGPT-6  
+**Cumulative implementation PR:** Draft **#337**, branch `chatgpt/sa05-owner-deactivation`.  
+**Baseline/current main:** `efae8111a13aefbf72b4d20972dac461acc602e3`.  
+**Inherited stable SA05-1 head:** `213dc8bb6583439cd8ea7efbd9872e98aa638b36`, Mira checkpoint PASS.
+
+Implement **SA05-2 only: the protected HTTP/request-context action layer** over the accepted SA05-1 command core. The complete SA05 technical plan is already accepted; do not re-plan the architecture. Refresh only exact current-main locators before editing.
+
+**Required result:** extend the same cumulative #337 branch so production wiring exposes the dedicated Owner deactivation POST action while preserving the existing SA05-1 command contract.
+
+**SA05-2 scope / readiness:**
+- construct the lifecycle capability in trusted server request context / Worker wiring from the validated Owner binding; never accept Owner authority from browser form data, email/role checks, permission keys or a generic elevated dispatcher;
+- add the dedicated canonical POST resource `/:locale/users/:userId/owner/deactivate` in the existing route tree, with no new detail page;
+- enforce current authenticated exact Owner before private target work, supported method, existing same-origin mutation protection, and an exact bounded form containing `intent=deactivate`, `expectedActorId`, `targetUserId`, `operationId`;
+- enforce URL/body target agreement; duplicate/unknown fields, malformed identity/UUID or target mismatch → 400; stale expected actor → 409; exact configured Owner target → 403; missing target → 404; missing/inactive authoritative actor → lifecycle 401; classified storage availability/timeout → 503; unexpected invariant → sanitized 500;
+- preserve the current protected private/no-store response/cache behavior for accepted route spellings/framework failures, including the already-established alias/.data/repeated-slash handling;
+- return the typed 200 lifecycle result from the command without fabricating event IDs or retrying uncertain acknowledgement;
+- tests must exercise the real route/request-context wiring and prove denial occurs before forbidden private work, while keeping SA05-1 native behavior intact.
+
+**Hard checkpoint boundary:** no canonical-profile lifecycle projection, accounts monitor/History projection, Owner confirmation UI, automatic revalidation UX, Chromium/real-session connected closure, SA05-3+, SA06+, #315, Stage6, production/external acceptance or permanent documentation.
+
+When complete, publish AUTHOR READY with a stable exact #337 head and applicable CI evidence, then STOP for Mira coordinator whole-SA05-2 checkpoint review. Do not merge #337.
+
+---
+
 ## 2026-11-16 — Mira coordinator SA05-1 PASS / checkpoint STOP
 
 Reviewed cumulative Draft **#337** whole SA05-1 checkpoint on stable exact head **`213dc8bb6583439cd8ea7efbd9872e98aa638b36`** against current `main=efae8111a13aefbf72b4d20972dac461acc602e3`, current AGENTS, accepted SA05 §5.1–§5.2/native §5.4 scope, current AccountState/Owner/event/runtime-privilege seams, all five changed paths and exact-head CI.
