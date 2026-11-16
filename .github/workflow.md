@@ -10,7 +10,7 @@
 - **Confirmed unique current-SA06 defects:** 2.
 - **Developer reassignment:** the corrective package is assigned to **Lira / ChatGPT-6**, not Lev.
 - **ACTIVE implementer:** **Lira fixes both confirmed defects in #338 as one corrective package.**
-- **Bounded Lira corrective stages:** 1/4 contract/source dependency mapping **DONE** (no implementation edits); 2/4 History foundation implementation; 3/4 AP-10 current-state correction; 4/4 focused/full checks and one stable exact AUTHOR READY. **NEXT on developer `...`: stage 2/4 only.**
+- **Bounded Lira corrective stages:** 1/4 contract/source dependency mapping **DONE**; 2/4 History foundation **CODE PUBLISHED / CI PENDING**, current interim Draft #338 head `9d8fc0bb6ba5ab5d403734b1c692859b2fc3b530` (not stable AUTHOR READY); 3/4 AP-10 correction not started; 4/4 full SA06 checks and AUTHOR READY not started. **NEXT on developer `...`: finish stage 2/4 validation and correct any current-head failures; stop after stage 2.**
 - **Lev / Codex-6.1 Sol:** corrective implementation assignment superseded; WAIT. He remains original SA06 author and is not an independent reviewer of the corrected head.
 - **Correction 1:** complete the accepted SA06 History filter foundation: typed/query support for `origin`, `kind`, `from`, `until`; v2 cursor binding/validation; compatible source-branch predicate pushdown before branch LIMIT; preserve compatible old cursors. SA08 UI controls remain out of scope.
 - **Correction 2:** make `administration.measures` effective and per-restriction counts follow actual AP-10 applicability, including the raw-authority-floor rule for administrative restrictions; active count may remain while effective/admin-key counts cease to apply after authority changes.
