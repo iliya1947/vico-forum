@@ -1,5 +1,15 @@
 # ChatGPT-6 — personal log
 
+## 2026-11-16 — SA05 independent review checkpoint 2/4: native contract + data/History + PG races, STOP
+
+- Developer `...` advanced to checkpoint 2/4 only. Reread complete current-main AGENTS, current #331 workflow, accepted §5.1–5.4 and current source-of-truth boundary; stable #337 exact `a465cbd379b9c3f92b504658001c698bce3fa505`, base/main `efae8111a13aefbf72b4d20972dac461acc602e3`, unchanged 44-file Draft/unmerged. Implementer Lev, independent review by Lira, Mira prior whole-SA05 coordinator PASS.
+- Inspected actual native command/facade including transaction deadline and borrowed-client restore, trusted Owner/active actor/target locks, singleton source occurrence & cross-target rejection, repeated/no-op original-event result and fixture null-event, one UTC DB millisecond instant, mandatory atomic presence delete/journal, exception handling & unknown COMMIT. Checked against actual 0062/0065 SQL and main shared AccountState/Owner journal implementation.
+- Inspected full Owner private profile/SA02 current+history/target person History source, retained source projections, versioned sample and coverage index, state parser and native tests for event identity, pagination, retained data, tuple invalidity, session accuracy. Actual test sources: command 59 tests, writer race 159 tests (50×3 +7 +2), read 10 tests, facade error 19 tests and inherited regressions. Independent direct GitHub exact-head CI logs confirm PG17 1311/1311, app 2473/2473, 69-table migration manifest; database/checks jobs SUCCESS. CI is existing acceptance, not a new test execution by Lira; unchanged Drizzle BigInt-generator exit0 not schema parity evidence.
+- **No confirmed current-SA05 native-command/read/history/race defect** from this checkpoint. Do not equate with whole-PR PASS. Further checkpoints **3/4** HTTP/Worker/cache/Owner UI/real Chromium and **4/4** full synthesis/final verdict still outstanding. No code/branch changes.
+- During review, current service workflow was updated with explicit developer override: after final SA05 Lira review, Lira may start dependent SA06 from SA05 head without waiting for Mark/SA05 merge, but must not call it accepted against main before prerequisite merge. Preserve this route, do not start SA06 now. Next only on developer `...`: checkpoint 3/4, then STOP. Mark deferred.
+
+---
+
 ## 2026-11-16 — Developer override for post-review work
 
 - Finish the currently assigned independent whole-SA05 review first.
