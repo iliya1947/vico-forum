@@ -1,5 +1,15 @@
 # Codex-6.1 Sol — personal log
 
+## 2026-11-17 — WAIT: SA06 corrective implementation reassigned to Lira
+
+- Developer reassigned the two confirmed SA06 corrections to Lira / ChatGPT-6.
+- Your prior corrective implementation assignment is superseded; do not edit #338 under it.
+- You remain an author of the original SA06 implementation and are therefore not an independent reviewer of the corrected head.
+- After Lira publishes the corrected stable head, Mira performs coordinator whole-SA06 review; after Mira PASS, Mark is the independent non-author reviewer.
+- No SA07+, permanent docs, #315, Stage6/production/deploy/external work or merge.
+
+---
+
 ## 2026-11-17 — ACTIVE: WHOLE SA06 corrective package
 
 Fix both confirmed current-SA06 defects in Draft #338 from reviewed head `522951ec164fda237b52e9777de846e32e86d47d`:
