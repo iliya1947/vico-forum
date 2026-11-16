@@ -37,11 +37,14 @@ export function nativeHistoryCoverageSql(key:NativeMonitorKey):string {
     ${admin}
     ${native.length?' union all '+native.join(' union all '):''}) retained`;
 }
-export type NativeHistoryBindings={person?:string;monitor?:string;area?:string;at:string;origin:string;id:string;limit:string};
+export type NativeHistoryBindings={person?:string;monitor?:string;area?:string;at:string;origin:string;id:string;limit:string;
+  filterOrigin?:string|null;kind?:string;from?:string;until?:string};
 
 /** Every person/role and cursor predicate precedes its branch-local LIMIT. */
 export function nativeHistoryBranches(b:NativeHistoryBindings):string[]{
   return sources.flatMap(s=>{
+    // Origin selection is a validated closed catalog value; omit irrelevant branches.
+    if(b.filterOrigin!==undefined&&b.filterOrigin!==null&&s.origin!==b.filterOrigin)return [];
     const scopes=`ARRAY[${s.scopes.map(k=>`'${k}'`).join(",")}]::text[]`;
     // Resolve the fixed origin comparison outside the native row key. Keeping
     // a constant between time/id in a three-column ROW prevents PostgreSQL
@@ -49,7 +52,10 @@ export function nativeHistoryBranches(b:NativeHistoryBindings):string[]{
     const cursor=`(${b.at}::timestamptz is null or ('${s.origin}'::text<${b.origin}::text and ${s.at}<=${b.at}::timestamptz) or ('${s.origin}'::text=${b.origin}::text and (${s.at},${s.id}::text)<(${b.at}::timestamptz,${b.id}::text)) or ('${s.origin}'::text>${b.origin}::text and ${s.at}<${b.at}::timestamptz))`;
     const scope=[b.monitor?`(${b.monitor}::text is null or ${b.monitor}::text=any(${scopes}))`:"true",b.area?`(${b.area}::text is null or ${b.area}::text=any(ARRAY[${s.scopes.map(k=>`'${k.split('.')[0]}'`).join(',')}]::text[]))`:"true"].join(" and ");
     const projection=`select '${s.origin}'::text origin,${s.id}::text source_id,${s.at} at,${s.at} recorded_at,${scopes} scopes,${s.kind} kind,'${s.from.split(' ')[0]}'::text source,null::text quality,${s.details} details from ${s.from}`;
-    const query=(person="true",nulls="last")=>`${projection} where ${s.where} and ${scope} and ${cursor} and ${person} order by ${s.at} desc nulls ${nulls},${s.id} desc nulls ${nulls} limit ${b.limit}`;
+    const byKind=b.kind?` and (${b.kind}::text is null or (${s.kind})=${b.kind}::text)`:"";
+    const byFrom=b.from?` and (${b.from}::timestamptz is null or ${s.at}>=${b.from}::timestamptz)`:"";
+    const byUntil=b.until?` and (${b.until}::timestamptz is null or ${s.at}<${b.until}::timestamptz)`:"";
+    const query=(person="true",nulls="last")=>`${projection} where ${s.where} and ${scope} and ${cursor} and ${person}${byKind}${byFrom}${byUntil} order by ${s.at} desc nulls ${nulls},${s.id} desc nulls ${nulls} limit ${b.limit}`;
     if(!b.person)return ["("+query()+")"];
     const result=s.people.map(p=>"("+query(`${p}=${b.person}`,(s.origin==="help-signal-created"||s.origin==="notification-created"&&p==="n.recipient_user_id")?"first":"last")+")");
     if(s.parent){
