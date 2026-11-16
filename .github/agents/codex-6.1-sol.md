@@ -1,5 +1,16 @@
 # Codex-6.1 Sol — personal log
 
+## 2026-11-16 — SA05-1 implementation published; final checkpoint checks ACTIVE
+
+- Cumulative [Draft #337](https://github.com/iliya1947/vico-forum/pull/337), branch `chatgpt/sa05-owner-deactivation`, current exact head `6d0a9f203b12bca4c22a43e518fa4d9493fce086`,1commit/4paths; base/current main `efae8111a13aefbf72b4d20972dac461acc602e3`.
+- Refreshed current-main AGENTS/PROJECT/PROJECT_STATE and relevant Owner/auth/lifecycle/event/privilege seams against accepted §5.1–§5.2. No locator/schema/dependency conflict found.
+- Native command + operation-scoped facade implemented: exact trusted active Owner, target NO KEY UPDATE, operation occurrence/replay/conflict, UTC calendar retention from one truncated DB instant, mandatory same-tx presence removal and account.deactivated event, event append lock last, distinct uncertain COMMIT without retry. No credentials/session/role/content rewrites or new last-manager policy.
+- Targeted actual PG17 command/facade **56 native cases PASS**; **18** availability/semantic/uncertain/cleanup app cases PASS; typecheck/lint PASS (one unchanged baseline warning). Includes actual blockers, stronger Privacy/heartbeat both orders, unrelated writer control, leap/DST/session-zone cases, fault rollback, lost COMMIT ACK and column-limited non-owner DB role/append-only event access.
+- Full local native/application suites and exact-head standard CI ACTIVE; not AUTHOR READY yet. HTTP/context/Worker wiring, read-side/History, Owner UI and connected closure remain subsequent SA05 checkpoints. No browser/visual/full-SA05/merge readiness claim.
+- Lev continues SA05-1 final evidence. Then stable checkpoint → Mira coordinator review; no SA05-2+, independent self-review, #315, production/Stage6 or premature permanent docs.
+
+---
+
 ## 2026-11-16 — ASSIGNED: implement SA05-1
 
 - Developer assigned Lev as implementation owner for **SA05-1 only** on current `main=efae8111a13aefbf72b4d20972dac461acc602e3`.
