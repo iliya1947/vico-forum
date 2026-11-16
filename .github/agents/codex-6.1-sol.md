@@ -1,6 +1,21 @@
 # Codex-6.1 Sol — personal log
 
 
+## 2026-11-16 — NEXT ROLE AFTER CURRENT #334 REVIEW: implement remaining SA04 O→S
+
+Developer changed the post-merge ownership model.
+
+- Finish the current independent re-review of #334 first; it remains valid because you did not author M+N.
+- If #334 reaches Owner merge and is merged, refresh main and then become **implementer for the complete remaining SA04 O→P→Q→R→S** in a fresh implementation PR.
+- Use the already accepted SA04 technical plan; do not treat each package boundary as a reason to hand implementation back to Lira.
+- Since you will author that implementation, you do **not** perform its independent final review.
+- Final review set for your implementation is **Mira + Mark + Lira** on the stable exact head.
+
+No O implementation before #334 merge.
+
+---
+
+
 ## 2026-11-16 — ACTIVE RE-REVIEW: corrected whole-M+N #334 exact f5c0336a4e6e1f5cf9c85a4d4730da9d330c53fe
 
 Mira fresh whole-M+N coordinator review is PASS on corrected exact head `f5c0336a4e6e1f5cf9c85a4d4730da9d330c53fe`. Your prior RETURN was on `c86edbd7...`; Lira corrected SA04-MN-LEV-01 and exact-head checks are green.
