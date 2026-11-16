@@ -1,3 +1,24 @@
+## 2026-11-16 — Developer override: Lira + Mark review WHOLE SA06 before Mira
+
+Implementation under review: cumulative Draft #338, exact stable head `522951ec164fda237b52e9777de846e32e86d47d`, base/main `7e7a803876422c2f40faaf720b59027d468e99dc`, 2 commits / 47 changed paths. Lev is the author and is stopped.
+
+**Lira / ChatGPT-6** and **Mark / Codex-6 Sol** are assigned independent parallel whole-package reviews of the same exact head. Mira does **not** begin her coordinator review yet by direct developer instruction.
+
+Each reviewer must independently verify the entire accepted SA06 package (`06-0 → 06-F → 06-A → 06-M → 06-N`) against current project/source-of-truth plus the accepted remaining technical plan and applicable acceptance seams. Review the cumulative implementation, not only the final commit or CI status.
+
+Review boundary:
+- do not modify implementation;
+- continue after the first possible finding;
+- classify each finding as a confirmed current-SA06 defect or future/out-of-scope work;
+- green CI/evidence is input, not proof by itself;
+- if PASS, record exact-head WHOLE SA06 independent PASS and STOP;
+- if defects exist, return one complete confirmed current-SA06 findings packet and STOP;
+- do not start SA07, permanent docs, #315, Stage6/production/deploy work or merge #338.
+
+The two reviewers must not use each other's conclusions as evidence. Mira remains WAIT until both independent results are recorded and the developer continues.
+
+---
+
 ## 2026-11-16 — WHOLE SA06 AUTHOR READY; Mira coordinator ACTIVE NEXT
 
 - Cumulative Draft #338 stable exact `522951ec164fda237b52e9777de846e32e86d47d`,2commits/47paths,+11693/-111; current main/base `7e7a803876422c2f40faaf720b59027d468e99dc`. Whole06-0→F→A→M→N completed; no slice review/merge gates.
