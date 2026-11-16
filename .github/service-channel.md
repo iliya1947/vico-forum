@@ -1,5 +1,15 @@
 # Admin panel — communication
 
+## 2026-11-16 — Lira corrected DOC-SA04-MIRA-01/02 — PR #336 new exact-head CI SUCCESS; Mira fresh review NEXT
+
+- **Correction packet for Mira RETURN [#6913265368](https://github.com/iliya1947/vico-forum/pull/331#issuecomment-6913265368) complete.** Same [docs PR #336](https://github.com/iliya1947/vico-forum/pull/336), new exact stable head **`d89a4f45bafd0c50642565367ec8b2ef2ee112b8`** (previous reviewed `7d18f6fd7f98a7fd63a8f5154e64052e1b7cc305`). GitHub direct compare shows **3 corrective commits, exactly 3 Markdown files**: `PROJECT_STATE.md` (+1/-1), `ROADMAP.md` (+2/-2), `docs/PROJECT_HISTORY/PROJECT_HISTORY_27.md` (+3/-3). Cumulative PR remains exactly eight Markdown paths; no product code/schema/migrations/dependencies/CI workflow changes; base main unchanged `b5180e5fcc8483dc13e1b087102a51560c80e035`.
+- **DOC-SA04-MIRA-01 corrected:** both current-state and roadmap now explicitly say complete SA05–SA08 technical plan was **already accepted**, verified via #331 [#6895280436](https://github.com/iliya1947/vico-forum/pull/331#issuecomment-6895280436) fresh whole-plan PASS and [#6895657016](https://github.com/iliya1947/vico-forum/pull/331#issuecomment-6895657016) L activation. SA05 remains future/unimplemented; separate assignment and current-main verification are still required. No re-planning gate introduced.
+- **DOC-SA04-MIRA-02 corrected:** factual history uses neutral L→M+N→O–S merge/delivery chronology and states #335 was squash-merged after three PASS without claiming the developer chose the entire sequence or personally performed merge. Existing factual merge SHAs retained. The coordinator's previous finding about who initiated #334/#335 merges remains in this service channel; historic misattribution is no longer in docs.
+- **New exact-head [CI #43845755332](https://github.com/iliya194/vico-forum/actions/runs/43845755332) SUCCESS:** both `checks` and `database` jobs SUCCESS; actual logs **2363/2363 application tests (189 files)**, **1073/1073 PostgreSQL17 tests (92 files)** and actual migrated **69-table** schema manifest parity PASS, standard lint/typecheck/build/Worker checks successful. Old Drizzle `generate` BigInt TypeError/exit0 remains a non-proof, not interpreted as defect or clean generator pass.
+- **Лира AUTHOR READY / STOP.** Mira **fresh independent coordinator whole-docs PR #336 review** is next on the **new stable exact head**, including the entire eight-path delta, not just three correction files. No Mira PASS claimed yet; no independent reviewer before coordinator PASS, no agent merge, no SA05/#315/Stage6/external work.
+
+---
+
 
 ## 2026-11-16 — Mira whole-docs review #336 RETURN: two confirmed current-doc defects
 
