@@ -1,5 +1,4 @@
 import type { Pool } from "pg";
-import { actionLabels } from "../app/admin/history-labels";
 import { SA02_FACT_MONITORS } from "./owner-sa02-catalog";
 import { OWNER_MONITORS, ADMIN_MONITOR_SCOPES_SQL, type OwnerMonitorArea, type OwnerMonitorKey } from "./owner-monitor-catalog";
 import { nativeHistoryBranches, NATIVE_HISTORY_ORIGINS, NATIVE_ORIGIN_MONITORS, HISTORY_COLUMNS, readNativeHistoryCoverage, type NativeHistoryOrigin, type OwnerSourceCoverage } from "./owner-native-history";
@@ -17,6 +16,15 @@ const ORIGINS: readonly string[] = [
   "system-event", "auth-event", "account-event", "system-observation", "admin-history",
   "attachment-evidence", "attempt-pattern", "attempt-state", ...NATIVE_HISTORY_ORIGINS,
 ];
+const ADMIN_ACTION_KINDS = [
+  "settings.registrationChanged","role.created","role.renamed","role.deleted","role.grantsChanged",
+  "user.roleAssigned","user.overrideChanged","help.signalReviewed",
+  "topic.pinned","topic.unpinned","topic.solved","topic.closed","topic.reopened",
+  "topic.bestAnswerChanged","help.solutionModerationChanged","help.duplicateConfirmed",
+  "help.duplicateRemoved","help.duplicateAppealResolved","topic.sourceLocaleCorrected",
+  "post.sourceLocaleCorrected","measure.created","measure.changed","measure.lifted",
+  "measure.appealResolved",
+] as const;
 const AREAS: readonly string[] = Object.keys(OWNER_MONITORS);
 const MONITORS: Record<OwnerHistoryArea,readonly string[]> = OWNER_MONITORS;
 export type OwnerHistoryValue = string | number | boolean | null;
@@ -53,7 +61,7 @@ const KINDS_BY_ORIGIN: Record<OwnerHistoryOrigin,readonly string[]> = {
   "auth-event":Object.keys(SA02_FACT_MONITORS),
   "account-event":["account.deactivated"],
   "system-observation":["monitor.observed"],
-  "admin-history":Object.keys(actionLabels),
+  "admin-history":ADMIN_ACTION_KINDS,
   "attachment-evidence":["attachment.securityEvidence"],
   "attempt-pattern":["attempt.coalesced"],
   "attempt-state":["attempt.unknown","attempt.overflow","attempt.gap"],
