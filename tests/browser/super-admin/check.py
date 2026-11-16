@@ -391,7 +391,9 @@ try:
         expect(owner.locator('a[href="/en/super-admin/monitoring/system"]')).to_have_count(1)
         expect(owner.locator('a[href="/en/super-admin/monitoring/accounts"]')).to_have_count(1)
         expect(owner.locator('a[href="/en/super-admin/monitoring/security"]')).to_have_count(1)
-        assert owner.locator(".super-admin-pending-areas li").count() == 10
+        for area in ("forum", "administration", "moderation", "notifications"):
+            expect(owner.locator('a[href="/en/super-admin/monitoring/' + area + '"]')).to_have_count(1)
+        assert owner.locator(".super-admin-pending-areas li").count() == 6
         for key in ("system.runtime", "system.dependencies", "system.requests"):
             path = "/en/super-admin/monitoring/system/" + key + "/history"
             get(owner, path)

@@ -167,3 +167,22 @@ it("new cursor round-trips worst supported Unicode IDs, binds scope/page size, a
   expect(()=>parseOwnerHistoryCursor("v2."+"a".repeat(4095),scope)).toThrow();
   expect(parseOwnerHistoryCursor("2026-01-01T00:00:00.123Z~system-event~123e4567-e89b-42d3-a456-426614174000",{area:"system"})?.origin).toBe("system-event");
 });
+
+it("accepted-review lift preserves the one native review command and does not invent another moot outcome",async()=>{
+  const actor=await person(true),subject=await person(),measureId=uuid();
+  await measures().create({id:measureId,actorId:actor,targetUserId:subject,reason:"SA06_PRIVATE_REASON",restrictions:["replies.create"],expiresAt:null});
+  const appeal=await measures().submitAppeal({id:uuid(),measureId,actorId:subject,body:"SA06_PRIVATE_APPEAL"});
+  await measures().resolveAppeal({measureId,appealId:appeal.id,actorId:actor,operationId:uuid(),expectedVersion:1,outcome:"accepted",explanation:"SA06_PRIVATE_ACCEPTED",remedy:"lift",restrictions:null,expiresAt:null});
+  const facts=await allGlobal();expect(facts.filter(e=>e.kind==="measure.appealResolved")).toHaveLength(1);expect(facts.filter(e=>e.origin==="measure-appeal-moot")).toEqual([]);
+  expect((await current.readCurrent("administration")).monitors.find(m=>m.key==="administration.measures")!.values).toMatchObject({lifted:"1",appealsAccepted:"1",appealsMoot:"0"});
+  expect((await c.query("select count(*)::int n from owner_events")).rows[0].n).toBe(0);
+});
+
+it("a proven timed legacy moot tuple without a retained parent-lift actor stays unattributed",async()=>{
+  const actor=await person(true),subject=await person(),measureId=uuid(),appealId=uuid();
+  await measures().create({id:measureId,actorId:actor,targetUserId:subject,reason:"SA06_PRIVATE_REASON",restrictions:["replies.create"],expiresAt:null});
+  // Legacy native tuple fixture only: no parent lift is asserted or fabricated.
+  await c.query("with clock as(select clock_timestamp() at) insert into user_measure_appeals(id,measure_id,subject_user_id,ordinal,body,status,created_at,resolved_at) select $1,$2,$3,1,'SA06_PRIVATE_LEGACY','moot',at,at from clock",[appealId,measureId,subject]);
+  const fact=(await allGlobal()).find(e=>e.origin==="measure-appeal-moot")!;expect(fact.values).toMatchObject({actorUserId:null,actorSource:"unproven",targetUserId:subject});
+  expect((await allPerson(subject)).filter(e=>e.origin===fact.origin)).toHaveLength(1);expect((await allPerson(actor)).filter(e=>e.origin===fact.origin)).toEqual([]);expect((await allPerson(owner)).filter(e=>e.origin===fact.origin)).toEqual([]);
+});

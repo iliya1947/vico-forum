@@ -104,6 +104,25 @@ it("protects early session outages, unexpected initialization faults and binding
   expect(runtime.router).not.toHaveBeenCalled(); expect(lifecycle.deactivate).not.toHaveBeenCalled();
 });
 
+it.each([
+  "/en/super-admin.data", "/en/super-admin/monitoring/forum",
+  "/ru/super-admin/monitoring/administration.data", "/he/SUPER-ADMIN/monitoring/moderation.data///",
+  "/en/%73uper-admin/monitoring/notifications/notifications.inbox/history.data",
+])("protects early authentication and initialization failures before Router for %s", async path => {
+  const req = new Request("https://forum.test" + path);
+  runtime.getSession.mockRejectedValueOnce(new AuthSessionUnavailableError({ cause: new Error("PRIVATE_SQL") }));
+  const outage = await worker.fetch(req as never, env as never);
+  expect(outage.status).toBe(503); expect(outage.headers.get("Cache-Control")).toBe("private, no-store");
+  expect(await outage.text()).not.toContain("PRIVATE_SQL");
+  runtime.getSession.mockRejectedValueOnce(new TypeError("PRIVATE_CONFIGURATION"));
+  const unexpected = await worker.fetch(req as never, env as never);
+  expect(unexpected.status).toBe(500); expect(unexpected.headers.get("Cache-Control")).toBe("private, no-store");
+  expect(await unexpected.text()).not.toContain("PRIVATE_CONFIGURATION");
+  const bindings = await worker.fetch(req as never, {} as never);
+  expect(bindings.status).toBe(500); expect(bindings.headers.get("Cache-Control")).toBe("private, no-store");
+  expect(runtime.router).not.toHaveBeenCalled();
+});
+
 it("returns a safe no-store 503 before Router on a classified session storage outage", async () => {
   runtime.getSession.mockRejectedValueOnce(new AuthSessionUnavailableError({ cause: new Error("private database details") }));
   const response = await worker.fetch(request, env as never);

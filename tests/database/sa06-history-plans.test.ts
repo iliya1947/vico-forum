@@ -10,7 +10,9 @@ const schema="sa06_history_plans_test",options="-c search_path="+schema,c=new Cl
 const focus="sa06-plan-focus",other="sa06-plan-other";
 beforeAll(async()=>{
   await c.connect();await c.query("drop schema if exists "+schema+" cascade;create schema "+schema);
-  for(const f of(await readdir("drizzle")).filter(f=>/^\d{4}_.+\.sql$/.test(f)).sort())await c.query((await readFile("drizzle/"+f,"utf8")).replaceAll('"public".','"'+schema+'".'));
+  // Commit the populated accepted baseline first, then apply the forward
+  // indexes. Other native tests independently migrate a clean DB through0066.
+  for(const f of(await readdir("drizzle")).filter(f=>/^\d{4}_.+\.sql$/.test(f)&&!f.startsWith("0066_")).sort())await c.query((await readFile("drizzle/"+f,"utf8")).replaceAll('"public".','"'+schema+'".'));
   await c.query('insert into "user"(id,name,email) values($1,$1,$1||\'@test.invalid\'),($2,$2,$2||\'@test.invalid\')',[focus,other]);
   await c.query("begin;set constraints all deferred");
   try{
@@ -32,6 +34,10 @@ beforeAll(async()=>{
     await c.query(`insert into admin_history(id,actor_id,actor_label,action,target_type,target_id,target_label,context) select gen_random_uuid(),$1,'PRIVATE_ACTOR','help.signalReviewed','topic','plan-topic-'||n,'PRIVATE_LABEL',jsonb_build_object('signalId',case when n<=20 and n%2=0 then 'plan-signal-'||n else 'nonmatching-'||n end) from generate_series(1,10000)n`,[other]);
     await c.query("commit");
   }catch(error){await c.query("rollback");throw error;}
+  const sources=["forum_topic_title_revisions","forum_post_revisions","forum_help_signals","forum_help_duplicate_appeals","user_measure_appeals","forum_complaint_events","forum_reply_notifications","admin_history"];
+  const before=[];for(const table of sources)before.push((await c.query("select count(*)::text n,md5(string_agg(id::text,',' order by id::text)) ids from "+table)).rows[0]);
+  await c.query(await readFile("drizzle/0066_sa06_native_monitor_indexes.sql","utf8"));
+  for(let i=0;i<sources.length;i++)expect((await c.query("select count(*)::text n,md5(string_agg(id::text,',' order by id::text)) ids from "+sources[i])).rows[0]).toEqual(before[i]);
   await c.query("analyze");
 },30000);
 afterAll(async()=>{await pool.end();await c.query("drop schema if exists "+schema+" cascade");await c.end();});
