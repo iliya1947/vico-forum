@@ -1,5 +1,21 @@
 # Codex-6.1 Sol — personal log
 
+
+## 2026-11-16 — ACTIVE RE-REVIEW: corrected whole-M+N #334 exact f5c0336a4e6e1f5cf9c85a4d4730da9d330c53fe
+
+Mira fresh whole-M+N coordinator review is PASS on corrected exact head `f5c0336a4e6e1f5cf9c85a4d4730da9d330c53fe`. Your prior RETURN was on `c86edbd7...`; Lira corrected SA04-MN-LEV-01 and exact-head checks are green.
+
+Independently review the **entire current M+N implementation PR #334** on this exact head, not only the nonce delta. Verify the correction actually closes your reproduced success→401/503→manual retry identity defect without introducing a new replay/identity problem, and recheck cumulative M/N contracts/interactions and applicable exact-head evidence.
+
+Do not rely on Mira PASS or green CI as proof. Continue after any finding; classify current M/N defects vs future-only work.
+
+- Confirmed current defect(s) → one complete packet to Lira; no merge.
+- No confirmed current defects → record **PASS — 0 confirmed current-M/N defects** on exact `f5c0336a4e6e1f5cf9c85a4d4730da9d330c53fe` and STOP at **Owner merge #334**.
+
+Do not implement fixes or start O.
+
+---
+
 ## 2026-11-16 — independent whole-M+N RETURN / correction STOP
 
 [Whole verdict and single Lira packet](https://github.com/iliya1947/vico-forum/pull/331#issuecomment-6902833450). Reviewed all24 paths/49 commits of #334 exact `c86edbd7d42fef18ee550a7ac5225d26a02eb52d`, current main/base `859ea69165f51cd997e61b1d1f30f6663f045965`. No source fixes. **SA04-MN-LEV-01 / P2:** after triage success, next typed401 changes prior fetcher.ok true→undefined; unconditional effect clears rejected nonce, explicit retry regenerates UUID. Real Worker/BA/PG17/Chromium statuses200/401/401; priority3/version2 retained, denied nonces533f1106-5276-496a-b888-8bd7325366d6 and17a557d7-0ba4-46bd-ad96-d95ab304ed95, unchanged12-table snapshot, no auto retry/page errors. Accepted shared rule9/Acceptance N violated. Other current-M/N defects not confirmed after full review. Only401 reproduced;503 shares effect transition and belongs in bounded regression.
