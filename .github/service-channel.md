@@ -1,3 +1,15 @@
+## 2026-11-16 — SA05-3 / original05-A AUTHOR READY; Mira coordinator ACTIVE NEXT
+
+- [Whole checkpoint handoff/evidence](https://github.com/iliya1947/vico-forum/pull/331#issuecomment-6918077490), [cumulative Draft #337](https://github.com/iliya1947/vico-forum/pull/337), stable exact `7a0ce7f4ec4dbf224aa99b3375b18542630bdb81`,5commits/36paths,+1678/-24; SA05-3 delta17paths,+367/-18. Base/current main `efae8111a13aefbf72b4d20972dac461acc602e3`, AGENTS unchanged; synthetic merge/head trees equal, all36 source paths byte-verified/checkout clean.
+- Original05-A author implementation complete: inherited SA05-1 core + SA05-2 protected action + SA05-3 exact-Owner lifecycle DTO, accounts.users lifecycle counters/DB-time/version2 samples with originalv1/gate compatibility, shared original account-event projection to scoped/global/target+actor History. No copied/backfilled event or Owner deactivation control. Raw retained sessions keep their existing meaning.
+- New native10cases prove actual command/read/public-Admin privacy, original event/replay/no-op, all136account counts, old/new sample/fingerprint/gate/concurrency, source/person/scoped keysets and61tied identities, partial/infinite-state denial and actual prepared person-query EXPLAIN with12000 unrelated+40relevant facts using existing indexes. Targeted native102/7files and app84/7files PASS, including EN/RU/HE/manual packs.
+- Full local+CI native1152/95files and app2458/191files PASS. [CI43876918945](https://github.com/iliya1947/vico-forum/actions/runs/43876918945) checks+database SUCCESS; actual steps/logs inspected for builds/UI/type/lint/migration-history/db:check/69-table manifest/runtime privilege/provisioning/credential probes/Worker/P7/J12/63guestresource smoke. Known unchanged Drizzle BigInt TypeError/exit0 remains non-proof; actual migrated manifest is separate substantive evidence.
+- All applicable exact-head existing Chromium regressions SUCCESS first attempt: AP10all4,SA01,SA03,J12,K5,L3,M2,N,S;14jobs/10runs overall. These are not SA05-5 genuine Owner/stale-session/rollback connected closure or Owner visual/deployed acceptance.
+- Own disposable PG/dependency link removed,55448closed; no local Worker/browser/synthetic config started for SA05-3. Local evidence `/workspace/work/sa05-3-evidence/`. Source/context was handed to Mira while finalCI ran. Initial fixture-only UUID/text-cast/old safe-field fixture updates are disclosed in the handoff; no product workaround or weakened original privacy/total assertions.
+- **Mira ACTIVE NEXT:** coordinator whole-SA05-3 / original05-A closure review on the exact head above, including cumulative core/action/read/source/privacy/sample/cursor seams; return confirmed current-checkpoint defects to Lev in one packet. **Lev AUTHOR STOP**, not independent reviewer. Standing sole-implementer assignment persists; no SA05-4+, SA06+, #315, production/Stage6, permanent docs or merge of #337.
+
+---
+
 ## 2026-11-16 — Developer continuation: Lev implements SA05-3
 
 **Assignee:** Лёва / Codex-6.1 Sol under the standing sole-implementer assignment.  
