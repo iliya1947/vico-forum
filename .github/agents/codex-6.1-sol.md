@@ -1,5 +1,19 @@
 # Codex-6.1 Sol — personal log
 
+## 2026-11-16 — corrected whole-M+N independent PASS / Owner merge STOP
+
+[Verdict](https://github.com/iliya1947/vico-forum/pull/331#issuecomment-6909332856). #334 exact `f5c0336a4e6e1f5cf9c85a4d4730da9d330c53fe`, base/current main `859ea69165f51cd997e61b1d1f30f6663f045965`;51commits/24paths. Whole current M+N independently rechecked; **PASS,0 confirmed current-M/N defects,SA04-MN-LEV-01 CLOSED**. Same corrected head as Mira PASS. Two correction paths read, other22 SHA256-identical to prior own full review; complete production contracts/interactions rechecked. No code/test/workflow edits.
+
+Own original mounted reproducer200/401/401 PASS: both denied nonce a19c8389-b05f-40c8-a9a0-2c506d1afb7e. Extended actual Worker/BA/PG17/Chromium200/503/503/200/200/401/401 PASS:503/recovery nonce576280ea-b042-4ad9-ad7b-b69ea935a57a retained, healthy next0f2da84a-d861-4c86-ab3e-6d99fc9a9b99 fresh, both401 nonce8170a110-6db5-49cc-b251-919a5225dca0 retained. Whole denied payload equality, no auto POST, unchanged12-table denied snapshots, mounted input/no page errors; successful Case advances1→4 confirmed.
+
+Local90files1011/1011 native257.86s;188files2359/2359 app345.56s; actual Worker build/fresh DB migration/69-table manifest PASS. Full author N harness local attempt stops at installed Chromium/Playwright Network.getResponseBody error reading successful recovered200, not counted as full local N PASS; source assertions unmodified. Own probes complete and remote exact-head full N15records/finalPASS read. CI43815395365,N43815395376,M243815395374,AP1043815395392all4,SA0343815395406 job steps/logs inspected SUCCESS. M2/AP10/SA03 not locally rerun on this head. Drizzle generator BigInt TypeError/exit0 qualification retained; actual manifest separate. Merge/implementation tree equal6efaf1ecfd389599a96604bfdd65c0c203986448.
+
+Fresh PROJECT/PROJECT_STATE/currentAGENTS/plan/service and relevant M/N SoTs/dependencies checked; no last-manager/recovery/new target veto. Current main remains same. All24 source hashes verified; diff --check PASS/checkout clean, own runtime/container/config/symlink removed;4224/55447closed. Evidence `/workspace/work/sa04-mn-lev-rereview-evidence/REVIEW.md`, SOURCE_MANIFEST.json, logs, original and extended script/JSON/PNG. No Owner visual/deployed/full-SA04 acceptance.
+
+**Current STOP:** Owner merges #334. Latest assignment after merge is **me implementing complete remaining O→P→Q→R→S** from refreshed main in new PR; do not route O authorship to Lira. I cannot independently review that future implementation: Mira coordinator first, then Mark and Lira independent same stable head, all3PASS before Owner merge. No O before #334 merge; no SA05/#315/docs/production/Stage6 scope expansion.
+
+---
+
 
 ## 2026-11-16 — NEXT ROLE AFTER CURRENT #334 REVIEW: implement remaining SA04 O→S
 
@@ -16,7 +30,7 @@ No O implementation before #334 merge.
 ---
 
 
-## 2026-11-16 — ACTIVE RE-REVIEW: corrected whole-M+N #334 exact f5c0336a4e6e1f5cf9c85a4d4730da9d330c53fe
+## 2026-11-16 — historical re-review assignment, completed PASS above: #334 exact f5c0336a4e6e1f5cf9c85a4d4730da9d330c53fe
 
 Mira fresh whole-M+N coordinator review is PASS on corrected exact head `f5c0336a4e6e1f5cf9c85a4d4730da9d330c53fe`. Your prior RETURN was on `c86edbd7...`; Lira corrected SA04-MN-LEV-01 and exact-head checks are green.
 
