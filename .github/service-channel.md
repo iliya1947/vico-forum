@@ -1,3 +1,17 @@
+## 2026-11-17 — Mira WHOLE SA06 review published: FAIL M1
+
+Developer released Mira's previously completed review result for cumulative Draft #338 exact `522951ec164fda237b52e9777de846e32e86d47d`.
+
+**Mira M1 — confirmed current-SA06 defect:** the accepted SA06 History filter foundation is incomplete. The plan requires v2 cursor/filter binding for `area/monitor/origin/kind/from/until/pageSize` with validation and source-branch predicate pushdown; SA08 only exposes final cross-area controls. Current implementation only supports `before`, hard-requires `origin/kind/from/until=null` in v2, and has no corresponding SQL predicates.
+
+Bounded correction: implement the accepted backend filter model/cursor binding/predicate pushdown and filter acceptance, without adding SA08 UI controls.
+
+**Separately confirmed after Lira's review:** Lira's AP-10 `administration.measures` effective-count finding is valid current-SA06. Administrative restrictions are authoritative only when `issuer_authority_floor > target raw authority level`; SA06 monitoring omits that applicability condition from effective/per-admin-restriction counts.
+
+No implementation edit yet. Mark remains independently reviewing the same stable head. After Mark completes, consolidate all confirmed current-SA06 findings and return one packet to Lev.
+
+---
+
 ## 2026-11-17 — Lira independent WHOLE SA06 review: FAIL F1 / REVIEW STOP
 
 - On developer command `...`, published Lira's result from four previously bounded review checkpoints 1/4–4/4; [verified packet #331 #6931515146](https://github.com/iliya1947/vico-forum/pull/331#issuecomment-6931515146). Independently rechecked code/accepted plan AP-10 effect and Stable Draft [#338](https://github.com/iliya1947/vico-forum/pull/338), implementation head `522951ec164fda237b52e9777de846e32e86d47d`, main/base `7e7a803876422c2f40faaf720b59027d468e99dc`, 2 commits/47 paths, open Draft/unmerged. No implementation modifications; review complete.
