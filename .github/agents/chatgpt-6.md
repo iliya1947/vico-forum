@@ -1,5 +1,15 @@
 # ChatGPT-6 — personal log
 
+## 2026-11-16 — Developer override for post-review work
+
+- Finish the currently assigned independent whole-SA05 review first.
+- After that review result is recorded, you may immediately start **SA06 implementation** on top of SA05 exact `a465cbd379b9c3f92b504658001c698bce3fa505`, without waiting for Mark or SA05 merge.
+- If SA05 later changes, rebase/adapt SA06 to the corrected SA05 head and rerun affected checks.
+- SA05 fixes remain Lev's responsibility unless reassigned.
+- No SA07+, #315, Stage6/production/deploy work.
+
+---
+
 ## 2026-11-16 — SA05 independent review checkpoint 1/4: contract/inventory DONE, REVIEW STOP
 
 - Developer `...` advanced from previous docs-review route: current #331 workflow now assigns **Lira solely** to independent whole-SA05 review of **Draft #337**; #336 docs is merged; author Lev only, prior Mira coordinator whole-SA05 PASS; Mark deferred pending explicit developer activation. Checked latest main AGENTS to actual end and current operative service plan/communication; no implementation change.
