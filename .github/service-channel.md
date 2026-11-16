@@ -1,3 +1,9 @@
+## 2026-11-16 — Whole SA06 ACTIVE in Draft #338
+
+Lev continues whole-SA06 implementation/acceptance in cumulative Draft #338, first head `b6f87b644eab2fe8c0cf7d396bd447b1db67db14`, from merged-SA05 main `7e7a803876422c2f40faaf720b59027d468e99dc`. Source published;14native aggregate/writer/source cases and7populated query/index cases PASS; type/lint/focused app PASS. Full suites and new genuine connected acceptance ACTIVE. Not AUTHOR READY; no intermediate review/merge gate. [Progress/evidence](https://github.com/iliya1947/vico-forum/pull/331#issuecomment-6924980826). No SA07/docs/production/#315/merge.
+
+---
+
 ## 2026-11-16 — SA05 merged; Lev ACTIVE on whole SA06
 
 Developer merged #337. Current exact `main` is `7e7a803876422c2f40faaf720b59027d468e99dc`; it contains the accepted SA05 implementation.
