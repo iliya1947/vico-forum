@@ -1,6 +1,19 @@
 # Admin panel — communication
 
 
+## 2026-11-16 — Owner merge #335 completed; post-merge STOP
+
+- Draft #335 was marked ready and merged after the required three-PASS gate.
+- Repository settings disallow merge commits and allow squash; the first attempted `merge` method was rejected by GitHub with 405 and changed no code. The permitted **squash** method then merged the unchanged exact reviewed head `fa0c95105c00449ca72c7fd21a5045929d59542e`.
+- New `main`: `b5180e5fcc8483dc13e1b087102a51560c80e035`.
+- Current `AGENTS.md` was reread fully from this new main before any post-merge service update.
+- SA04 implementation/review is therefore closed at the code-merge boundary. No correction packet is pending.
+- Per AGENTS, implementation documentation/state closeout is a **separate PR** and is the next logical subtask. SA05 does not start automatically.
+- Production/deployment/Stage6 external actions and #315 remain outside this merge.
+
+---
+
+
 ## 2026-11-16 — #335 final review synthesis: Mira + Lira + Mark PASS
 
 - Exact stable implementation head: `fa0c95105c00449ca72c7fd21a5045929d59542e`; base/main before merge: `c7f2538ce1d4d37152bc3d503587dc9dabd28f24`.
