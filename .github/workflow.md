@@ -1,17 +1,9 @@
 # Admin panel — current workflow
 
-- **Service PR:** #331, coordination-only; never merge.
-- **Current main:** `859ea69165f51cd997e61b1d1f30f6663f045965`.
-- **Implementation PR:** Draft/open/unmerged #334, reviewed head `c86edbd7d42fef18ee550a7ac5225d26a02eb52d`, base `859ea69165f51cd997e61b1d1f30f6663f045965`.
-- **Merge chunk:** SA04-M + SA04-N only. O absent.
-- **Latest verdict:** Lev independent **whole-M+N RETURN**, one confirmed current-N P2 **SA04-MN-LEV-01**, [complete packet](https://github.com/iliya1947/vico-forum/pull/331#issuecomment-6902833450). Review completed across all24 paths; no other current-M/N defects confirmed.
-- **Historical coordinator status:** Mira whole-M and whole-N PASS on the reviewed head; these do not close the merge gate after independent RETURN.
-- **Current active executor:** **Lira (ChatGPT-6)** — correct the single bounded packet **SA04-MN-LEV-01** in #334: triage operationId preservation after success→401/503→manual retry, meaningful regression and applicable gates. Full reproduction is in #331 comment #6902833450.
-- **Lev:** independent review complete / STOP; no implementation edits.
-- **Mira:** STOP until Lira produces a new stable head/checks; then fresh whole-M+N coordinator review.
-- **Mark:** inactive.
-- **Review route:** correction → new stable exact head + applicable checks → fresh Mira whole-M+N coordinator review → Lev independent whole-M+N same-head review.
-- **Merge:** blocked until current packet closed and both required reviews PASS. Only Owner merges #334.
-- **Developer route override retained:** merge the M+N chunk after required gates; then refresh main/reread AGENTS and resume O in a fresh PR/branch.
-- **O:** paused before implementation; no O+ before #334 merge.
-- **Boundary:** no SA05, #315 remediation, permanent docs, production/deployment or Stage6 as part of this correction.
+- **Service PR:** [#331](https://github.com/iliya1947/vico-forum/pull/331), coordination-only, never merge. **Current main:** `859ea69165f51cd997e61b1d1f30f6663f045965`.
+- **Implementation:** cumulative [Draft #334](https://github.com/iliya1947/vico-forum/pull/334), exact stable **`f5c0336a4e6e1f5cf9c85a4d4730da9d330c53fe`**, 51 commits/24 changed paths, base `main` above; open/Draft/unmerged. Frozen merge chunk **SA04-M+N**; O absent.
+- **Current stage:** **SA04-MN-LEV-01 bounded author correction COMPLETE; Лира AUTHOR STOP.** Lev independent whole-M+N review [#6902833450](https://github.com/iliya1947/vico-forum/pull/331#issuecomment-6902833450) returned one confirmed current-N P2, triage form loses `operationId` on success→rejected response due to unconditional `[item.version,fetcher.data?.ok]` effect. Local fix in `app/complaints/queue-view.tsx` resets on new Case version or affirmative success only; no reset on denial. Expanded real Worker/Better Auth/PG17/Chromium `tests/browser/sa04-complaints/check.py` with success→503→manual retry→healthy new command plus success→401→manual retry, same rejected input/nonce, no auto retry or durable effects. No database/authority/schema/dependency changes.
+- **Exact-head SUCCESS:** [CI #43815395365](https://github.com/iliya1947/vico-forum/actions/runs/43815395365) PostgreSQL17 **1011/1011**, app **2359/2359**, lint/typecheck/build and Worker smoke; [SA04-N connected #43815395376](https://github.com/iliya1947/vico-forum/actions/runs/43815395376) SUCCESS including both new mounted transitions; [SA04-M2 #43815395374](https://github.com/iliya1947/vico-forum/actions/runs/43815395374) SUCCESS; [SA03 #43815395406](https://github.com/iliya1947/vico-forum/actions/runs/43815395406) SUCCESS; [AP10 #43815395392](https://github.com/iliya1947/vico-forum/actions/runs/43815395392) **4/4 SUCCESS**.
+- **NEXT ACTIVE ROLE:** **Мира (ChatGPT-5.6 Sol)** — fresh independent **whole-M+N coordinator review** of the exact corrected cumulative head above against current `main`, accepted plan §5–6 and source-of-truth, including verification of Lev's packet; previous Mira whole-M/N PASS was for old `c86edbd7...` head and does not apply to corrected head. If confirmed current-M/N defects, return one bounded packet to Лира. **Only after Mira whole-M+N PASS → Лёва (Codex-6.1 Sol) independent whole-M+N review of the same head.**
+- **Review/merge:** Lev's previous RETURN not superseded by author assertion; no merge until both fresh gates PASS, only Owner merges #334. After Owner merge, refresh `main` and resume O in a **fresh implementation PR** per developer override. No premature O, SA05, #315, docs, production or Stage6 changes.
+- **Roles:** Лира STOP; Мира next (developer connects); Лёва STOP until Mira PASS; Марк inactive.
