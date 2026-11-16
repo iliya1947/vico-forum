@@ -1,5 +1,21 @@
 # Codex-6.1 Sol — personal log
 
+## 2026-11-17 — CONDITIONAL NEXT: whole #338 verification, then dependent SA07
+
+Activate only after Lira publishes a new stable exact #338 head as WHOLE SA06 AUTHOR READY.
+
+- Review the **entire cumulative #338 / whole SA06**, not only Lira's corrective delta.
+- If clean: record the exact head and immediately begin SA07 in a **separate dependent implementation PR/branch based on that #338 head**, without waiting for #338 merge.
+- If any confirmed current-SA06 defect exists: fix it yourself in #338, rerun required acceptance, continue whole-SA06 verification until clean, then immediately begin dependent SA07 from the resulting #338 head without waiting for merge.
+- Because you authored SA06, this is technical whole-package verification, not independent review.
+- If prerequisite #338 later changes, update/recheck dependent SA07 before acceptance.
+- Use the already accepted SA07 plan; re-plan only if a real current-source/contract conflict requires it.
+- No SA08+, permanent docs, #315, Stage6/production/deploy/external work.
+
+Until Lira's AUTHOR READY handoff: WAIT and do not edit #338.
+
+---
+
 ## 2026-11-17 — WAIT: SA06 corrective implementation reassigned to Lira
 
 - Developer reassigned the two confirmed SA06 corrections to Lira / ChatGPT-6.
