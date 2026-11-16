@@ -2,11 +2,15 @@
 
 - **Service PR:** #331, coordination-only; never merge.
 - **Current main/base:** `7e7a803876422c2f40faaf720b59027d468e99dc`.
-- **Whole-SA06 implementation:** cumulative Draft #338, stable exact `522951ec164fda237b52e9777de846e32e86d47d`, 2 commits / 47 changed paths.
-- **Author:** Lev / Codex-6.1 Sol — WHOLE SA06 AUTHOR READY / AUTHOR STOP.
-- **Lira independent WHOLE-SA06:** REVIEW FAIL — 1 confirmed current-SA06 defect: administration.measures effective/per-admin-restriction counts omit AP-10 raw-authority-floor applicability.
-- **Mira coordinator WHOLE-SA06:** REVIEW FAIL — 1 own confirmed current-SA06 defect M1: SA06 History v2 filter foundation is incomplete (missing origin/kind/from/until query model, cursor binding and SQL predicate pushdown). Mira separately confirmed Lira's defect as real current-SA06.
-- **Mark / Codex-6 Sol:** independent WHOLE-SA06 review still assigned on the original exact head; his result remains independent and pending.
-- **Do not edit #338 yet while Mark is still reviewing the stable head.**
-- **After Mark completes:** consolidate all confirmed current-SA06 defects into one packet for Lev; Lev fixes them in one pass. Any implementation change creates a new stable head and requires a fresh whole-SA06 review cycle.
-- **Boundary:** no merge #338, no SA07+, permanent docs, #315, Stage6/production/deploy/external work.
+- **Whole-SA06 implementation:** cumulative Draft #338, reviewed exact head `522951ec164fda237b52e9777de846e32e86d47d`.
+- **Review results on that head:**
+  - Lira / ChatGPT-6: FAIL — confirmed AP-10 effective-count defect in `administration.measures`.
+  - Mira / ChatGPT-5.6 Sol: FAIL — confirmed incomplete SA06 History filter foundation.
+  - Mark / Codex-6 Sol: FINDING — independently confirmed the same History filter foundation defect.
+- **Confirmed unique current-SA06 defects:** 2.
+- **ACTIVE:** Lev / Codex-6.1 Sol fixes both defects in #338 as one corrective package.
+- **Correction 1:** complete the accepted SA06 History filter foundation: typed/query support for `origin`, `kind`, `from`, `until` in addition to existing scope; v2 cursor binding/validation; compatible source-branch predicate pushdown before branch LIMIT; preserve compatible old cursors. SA08 UI controls remain out of scope.
+- **Correction 2:** make `administration.measures` effective and per-restriction counts follow actual AP-10 applicability, including the raw-authority-floor rule for administrative restrictions; active count may remain while effective/admin-key counts cease to apply after authority changes.
+- **Acceptance for correction:** add focused PostgreSQL proof for both defects and rerun affected/full SA06 acceptance required by changed code. When complete, publish one new stable exact head and WHOLE SA06 AUTHOR READY.
+- **After code changes:** fresh whole-SA06 review cycle is required on the new exact head. No merge #338 and no SA07+ before that cycle passes.
+- **Boundary:** no permanent docs, #315, Stage6/production/deploy/external work.
