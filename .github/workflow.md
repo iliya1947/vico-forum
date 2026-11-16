@@ -1,10 +1,16 @@
 # Admin panel — current workflow
 
 - **Service PR:** #331, coordination-only; never merge.
-- **Current main:** `b5180e5fcc8483dc13e1b087102a51560c80e035`.
-- **SA04 implementation #335:** **MERGED** by Owner continuation using the repository's allowed squash method. Reviewed implementation exact head was `fa0c95105c00449ca72c7fd21a5045929d59542e`.
-- **Final review gate:** Mira PASS + Lira independent PASS + Mark independent PASS; 0 confirmed current-SA04 O–S defects.
-- **Post-merge state:** implementation/review subtask closed. Current main AGENTS.md reread after merge and remains the operative workflow.
-- **STOP boundary:** do not start SA05 automatically.
-- **Next logical subtask:** separate SA04 documentation closeout, including factual PROJECT_STATE/history/affected permanent SoTs only as required by the completed implementation. It must use its own documentation PR per AGENTS.
-- **Still out of scope here:** #315 remediation, production/deployment/Stage6 external actions and SA05 implementation.
+- **Current main:** `b5180e5fcc8483dc13e1b087102a51560c80e035` after merged #335.
+- **SA04 code:** complete and merged. Final code review gate was Mira + Lira + Mark PASS, 0 confirmed current-SA04 defects.
+- **Current subtask:** separate **SA04 documentation/state closeout** required by AGENTS and the accepted SA04 plan.
+- **Docs branch:** `docs/sa04-accountstate-closeout`, created from exact current main `b5180e5fcc8483dc13e1b087102a51560c80e035`; no documentation commit/PR yet.
+- **ACTIVE AUTHOR:** **Lira (ChatGPT-6)**.
+- **Author scope:** factual permanent-doc closeout only. No product/runtime code, schema, migration, dependencies, CI workflow changes, SA05 implementation, #315, deployment or Stage6.
+- **Required factual corrections:** record SA04 as implemented repository/local-CI **AccountState/lifecycle foundation and enforcement**, while explicitly preserving that **the production Owner deactivation command/UI is not implemented and belongs to SA05**.
+- **Expected documentation set:** `PROJECT.md`, `PROJECT_STATE.md`, `ROADMAP.md`, `docs/SUPER_ADMIN.md`, stale cross-reference wording in `docs/ADMIN_PANEL.md` and `docs/UI_UX_PASS.md`, plus new `docs/PROJECT_HISTORY/PROJECT_HISTORY_27.md` and the history index.
+- **PROJECT_STATE factual delta:** update date; migration history through `0065_sa04_account_state_foundation`; Super-admin status SA01–SA04; remove claims that SA04 itself is undelivered; retain Stage6/external and final visual limits.
+- **SUPER_ADMIN permanent contract:** document the delivered SA04 lifecycle tuple/public neutral projection/auth-session closure/cross-domain active-actor admission and preserved retention/content semantics. Do not claim SA05 deactivation action, reactivation, hard delete, forced foreign logout or retention-end job.
+- **History:** preserve the actual multi-PR SA04 delivery (#327 A1, #328 A2–H, #329 I, #330 J, #332 K, #333 L, #334 M+N, #335 O–S), significant correction/review facts and final repository/local-CI evidence without turning history into current SoT.
+- **After author READY:** Mira coordinator reviews the whole docs PR. Since Lira is author, she does not independently review her own docs. Any independent docs reviewer is assigned only after Mira PASS.
+- **Boundary:** no merge by agents.
