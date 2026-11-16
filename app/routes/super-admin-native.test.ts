@@ -88,7 +88,7 @@ it("v2 fully binds source/kind/time/page/route and rejects tampering while old c
     origin:"forum-title-revision",id:"a",filters:{area:"forum",monitor:"forum.content",
       origin:"forum-title-revision",kind:"forum.titleRevisionCreated",
       from:"2026-01-01T00:00:00.000000Z",until:"2027-01-01T00:00:00.000000Z",pageSize:25}};
-  const pack=(value:unknown)=>"v2."+btoa(JSON.stringify(value)).replace(/\\+/g,"-").replace(/\\//g,"_").replace(/=+$/,"");
+  const pack=(value:unknown)=>"v2."+btoa(JSON.stringify(value)).replace(/\+/g,"-").replace(/\//g,"_").replace(/=+$/,"");
   const before=pack(cursor);
   expect(parseOwnerHistoryCursor(before,scope)).toMatchObject({origin:"forum-title-revision",id:"a"});
   expect(()=>parseOwnerHistoryCursor(before,{...scope,kind:"forum.postRevisionCreated"})).toThrow();
