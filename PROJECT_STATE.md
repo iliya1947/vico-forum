@@ -301,7 +301,7 @@ External topology является mutable state и должна перепро�
 
 ## Ближайший маршрут
 
-1. Завершить отдельную документационную фиксацию принятого SA-04; следующий функциональный пакет SA-05 начинать только после согласования полного технического плана SA-05–SA-08 и отдельного назначения, без превращения обычных PR в external rollout.
+1. Следующий функциональный пакет SA-05 начинать только после согласования полного технического плана SA-05–SA-08 и отдельного назначения, без превращения обычных PR в external rollout.
 2. Сохранить реализованные Settings SET-01–SET-06 и Owner-only authorization/registration mutation policy; завершение repository/local-CI не считать deployed acceptance. Реальную Google/Owner binding acceptance оставить Stage 6. Complaints продолжать по его профильному контракту/служебному каналу.
 3. Довести UI/UX product pass до финальной real-runtime acceptance.
 4. Возобновлять Stage 6 external integration только по отдельному указанию владельца и по `docs/database/*`.
