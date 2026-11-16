@@ -55,12 +55,12 @@ import { createHyperdriveComplaintReview } from "../db/hyperdrive-complaint-revi
 import {complaintAppealContext} from "../app/complaints/appeal-context";
 import {createHyperdriveComplaintAppeal} from "../db/hyperdrive-complaint-appeal";
 import { resolveRuntimeDatabaseConnectionStrings } from "./database-bindings";
-import { ownerSystemMonitoringContext, ownerSa02MonitoringContext } from "../app/super-admin/request-context";
+import { ownerSystemMonitoringContext, ownerSa02MonitoringContext, ownerNativeMonitoringContext } from "../app/super-admin/request-context";
 import { createHyperdriveOwnerSystem } from "../db/hyperdrive-owner-system";
 import { ownerAccountLifecycleContext, ownerProfileContext } from "../app/profile/request-context";
 import { createHyperdriveOwnerProfile } from "../db/hyperdrive-owner-profile";
 import { createHyperdriveOwnerAccountLifecycle } from "../db/hyperdrive-owner-account-lifecycle";
-import { isOwnerAccountLifecyclePath, protectFrameworkFailure } from "./private-failure-response";
+import { isOwnerAccountLifecyclePath, isOwnerMonitoringPath, protectFrameworkFailure } from "./private-failure-response";
 
 const requestHandler = createRequestHandler(
   () => import("virtual:react-router/server-build"),
@@ -118,9 +118,10 @@ async function applicationFetch(request: Request, env: Env, executionContext?: E
     context.set(registrationSettingsContext, createHyperdriveRegistrationSettings(webConnectionString, ownerUserId));
     context.set(userLocaleWriterContext, createHyperdriveUserLocale(webConnectionString));
     context.set(userPrivacyContext, createHyperdriveUserPrivacy(webConnectionString));
-    const ownerMonitoring = createHyperdriveOwnerSystem(webConnectionString, import.meta.env.MODE);
+    const ownerMonitoring = createHyperdriveOwnerSystem(webConnectionString, import.meta.env.MODE, ownerUserId);
     context.set(ownerSystemMonitoringContext, ownerMonitoring);
     context.set(ownerSa02MonitoringContext, ownerMonitoring);
+    context.set(ownerNativeMonitoringContext, ownerMonitoring);
     context.set(ownerProfileContext, createHyperdriveOwnerProfile(webConnectionString));
     context.set(ownerAccountLifecycleContext, createHyperdriveOwnerAccountLifecycle(webConnectionString, ownerUserId));
     const authorization = createHyperdriveAuthorization(webConnectionString, undefined, ownerUserId);
@@ -157,7 +158,8 @@ async function applicationFetch(request: Request, env: Env, executionContext?: E
 
 export default {
   async fetch(request, env, executionContext?: ExecutionContext) {
-    const ownerAction = isOwnerAccountLifecyclePath(new URL(request.url).pathname);
+    const ownerAction = isOwnerAccountLifecyclePath(new URL(request.url).pathname)
+      || isOwnerMonitoringPath(new URL(request.url).pathname);
     try {
       const response = await applicationFetch(request, env, executionContext);
       return ownerAction ? protectFrameworkFailure(request, response) : response;

@@ -9,23 +9,23 @@ import { SuperAdminShell, Timeline } from "../super-admin/view";
 import { ForumRouteError } from "../forum/ui";
 export {headers,meta} from "./super-admin";
 export async function loader({request,params,context}:{request:Request;params:{locale?:string};context:RouterContextProvider}) {
-  requireSuperAdmin(context);
+  const viewerId=requireSuperAdmin(context);
   let before:string|undefined;
   try {before=parseOwnerHistoryQuery(request.url);}
   catch {throw new Response("Invalid history cursor",{status:400,headers:superAdminPrivateHeaders});}
   try {
     const page=await ownerSa02MonitoringForRequest(context).readSa02History({before});
-    return data({locale:params.locale??"en",page},{headers:superAdminPrivateHeaders});
+    return data({locale:params.locale??"en",page,viewerId},{headers:superAdminPrivateHeaders});
   } catch(error) {
     if(error instanceof OwnerSystemUnavailableError) throw new Response("Unavailable",{status:503,headers:superAdminPrivateHeaders});
     throw error;
   }
 }
 export default function SuperAdminEventsRoute() {
-  const {locale,page}=useLoaderData<typeof loader>();
+  const {locale,page,viewerId}=useLoaderData<typeof loader>();
   const routing = useAdministrativeRouting();
   return <SuperAdminShell locale={locale} current="events">
-    <Timeline page={page} locale={locale} path={before=>superAdminEventLogPath(locale,before,routing)}/>
+    <Timeline page={page} locale={locale} viewerId={viewerId} path={before=>superAdminEventLogPath(locale,before,routing)}/>
   </SuperAdminShell>;
 }
 export const ErrorBoundary=ForumRouteError;

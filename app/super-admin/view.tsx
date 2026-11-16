@@ -13,6 +13,9 @@ import type { SystemMonitorKey } from "../../db/owner-system-history";
 import type { OwnerHistoryPage } from "../../db/owner-sa02-history";
 import type { Sa02CurrentState } from "../../db/owner-sa02-current";
 import { HistoryEntry } from "./history-entry";
+import { useOwnerSnapshot } from "./owner-snapshot";
+import { NATIVE_AREAS } from "../../db/owner-monitor-catalog";
+import { nativeAreaLabels } from "./native-labels";
 
 const keys: Record<SystemMonitorKey, "superAdminRuntime" | "superAdminDatabase" | "superAdminRequests"> = {
   "system.runtime": "superAdminRuntime",
@@ -20,7 +23,7 @@ const keys: Record<SystemMonitorKey, "superAdminRuntime" | "superAdminDatabase" 
   "system.requests": "superAdminRequests",
 };
 const monitoringAreas = [
-  "superAdminAreaForum", "superAdminAreaLocalization", "superAdminAreaNotifications", "superAdminAreaFiles", "superAdminAreaAdministration", "superAdminAreaModeration", "superAdminAreaBackground", "superAdminAreaData", "superAdminAreaIntegrations"
+  "superAdminAreaLocalization", "superAdminAreaFiles", "superAdminAreaBackground", "superAdminAreaData", "superAdminAreaIntegrations"
 ] as const;
 
 /** One Owner-only shell, reused across routes; a visible link never grants access. */
@@ -95,11 +98,14 @@ export function SystemMonitorCards({locale,system}: {locale:string;system:System
 export function formatTime(value: string,locale:string) {
   return new Intl.DateTimeFormat(locale,{dateStyle:"medium",timeStyle:"medium",timeZone:"UTC"}).format(new Date(value));
 }
-export function Timeline({ page, locale, path }: {page:OwnerTimelinePage|OwnerHistoryPage;locale:string;path:(before?:string)=>string}) {
+export function Timeline({ page, locale, path,viewerId }: {page:OwnerTimelinePage|OwnerHistoryPage;locale:string;path:(before?:string)=>string;viewerId?:string}) {
   const {t} = useTranslation("common");
+  const visible=useOwnerSnapshot(page,viewerId);
+  if(!visible)return null;
   return <section aria-labelledby="super-admin-timeline-heading">
     <h2 id="super-admin-timeline-heading">{t("superAdminHistory")}</h2>
     <p>{t("superAdminTimelineCoverage")}</p>
+    {"coverage" in page?page.coverage?.filter(c=>BigInt(c.count)>0n).map(c=><p role="status" key={c.reason}>{t("sa06CoverageWarning")} <bdi>{new Intl.NumberFormat(locale).format(BigInt(c.count))}</bdi></p>):null}
     {page.entries.length === 0 ? <p className="empty-state">{t("superAdminNoHistory")}</p>
       : <ol className="super-admin-timeline">{page.entries.map(entry=>
         <HistoryEntry key={entry.origin+":"+entry.id} entry={entry} locale={locale}/>)}</ol>}
@@ -195,6 +201,7 @@ export function SuperAdminMonitoringIndex({locale}: {locale:string}) {
       <Link className="admin-destination" to={superAdminSystemPath(locale,routing)}>{t("superAdminSystem")}</Link>
       <Link className="admin-destination" to={superAdminAccountsPath(locale,routing)}>{t("superAdminAreaAccounts")}</Link>
       <Link className="admin-destination" to={superAdminSecurityPath(locale,routing)}>{t("superAdminAreaSecurity")}</Link>
+      {NATIVE_AREAS.map(area=><Link key={area} className="admin-destination" to={routing.superAdmin.nativeArea(locale,area)}>{t(nativeAreaLabels[area])}</Link>)}
       <p>{t("superAdminAreasLater")}</p>
       <ul className="super-admin-pending-areas">
         {monitoringAreas.map(area=><li key={area}><bdi>{t(area)}</bdi> <span>{t("adminInDevelopment")}</span></li>)}

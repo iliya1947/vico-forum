@@ -4,21 +4,7 @@ import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import type { AdminHistoryEvent, AdminHistoryPage, AdminHistoryChange, UserMeasureHistoryChange, UserMeasureHistoryState } from "../../db/admin-history";
 
-const actionLabels = {
-  "settings.registrationChanged": "historyRegistrationChanged",
-  "role.created": "historyRoleCreated", "role.renamed": "historyRoleRenamed", "role.deleted": "historyRoleDeleted",
-  "role.grantsChanged": "historyGrantsChanged", "user.roleAssigned": "historyRoleAssigned", "user.overrideChanged": "historyOverrideChanged",
-  "help.signalReviewed": "historySignalReviewed",
-  "topic.pinned": "historyTopicPinned", "topic.unpinned": "historyTopicUnpinned", "topic.solved": "historyTopicSolved",
-  "topic.closed": "historyTopicClosed", "topic.reopened": "historyTopicReopened",
-  "topic.bestAnswerChanged": "historyBestAnswerChanged", "help.solutionModerationChanged": "historySolutionModerationChanged",
-  "help.duplicateConfirmed": "historyDuplicateConfirmed", "help.duplicateRemoved": "historyDuplicateRemoved",
-  "help.duplicateAppealResolved": "historyDuplicateAppealResolved", "topic.sourceLocaleCorrected": "historySourceLocaleCorrected", "post.sourceLocaleCorrected": "historySourceLocaleCorrected",
-  "measure.created": "historyMeasureCreated",
-  "measure.changed": "historyMeasureChanged",
-  "measure.lifted": "historyMeasureLifted",
-  "measure.appealResolved": "historyMeasureAppealResolved",
-} as const;
+import { actionLabels } from "./history-labels";
 function ModerationDetails({context}: {context:{postId:string;before:string|null;after:string|null}}) {
   const {t}=useTranslation("common");
   const status=(value:string|null)=>t(value==="outdated"?"helpSolutionOutdated":value==="needs-review"?"helpSolutionNeedsReview":"historyNoValue");

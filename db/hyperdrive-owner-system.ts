@@ -7,6 +7,8 @@ import { isPostgresAvailabilityFailure } from "../app/localization/persistent-re
 import {
   PostgresOwnerSystemMonitoring, type OwnerSystemMonitoring,
 } from "./owner-system-monitoring";
+import { PostgresOwnerNativeCurrent, type NativeCurrentState } from "./owner-native-current";
+import type { NativeMonitorArea } from "./owner-monitor-catalog";
 
 export class OwnerSystemUnavailableError extends Error {}
 
@@ -14,6 +16,9 @@ export class OwnerSystemUnavailableError extends Error {}
 export interface OwnerSa02Monitoring {
   readSa02Current(): Promise<Sa02CurrentState>;
   readSa02History(options?: OwnerHistoryOptions): Promise<OwnerHistoryPage>;
+}
+export interface OwnerNativeMonitoring {
+  readNativeCurrent(area: NativeMonitorArea): Promise<NativeCurrentState>;
 }
 
 function isStorageUnavailable(error: unknown): boolean {
@@ -28,7 +33,7 @@ function isStorageUnavailable(error: unknown): boolean {
   return false;
 }
 
-export function createHyperdriveOwnerSystem(connectionString: string, mode: string): OwnerSystemMonitoring & OwnerSa02Monitoring {
+export function createHyperdriveOwnerSystem(connectionString: string, mode: string, ownerUserId?: string): OwnerSystemMonitoring & OwnerSa02Monitoring & OwnerNativeMonitoring {
   async function run<T>(work: (pool: ReturnType<typeof createWebPool>) => Promise<T>): Promise<T> {
     const pool = createWebPool(connectionString);
     try {
@@ -47,5 +52,9 @@ export function createHyperdriveOwnerSystem(connectionString: string, mode: stri
       run(pool => new PostgresOwnerSystemMonitoring(pool, mode).recordRequestFailure(status, latency)),
     readSa02Current: () => run(pool => new PostgresOwnerSa02Current(pool).readCurrent()),
     readSa02History: options => run(pool => new PostgresOwnerSa02History(pool).readTimeline(options)),
+    readNativeCurrent: area => {
+      if (!ownerUserId) throw new Error("Owner monitoring binding missing");
+      return run(pool => new PostgresOwnerNativeCurrent(pool, ownerUserId).readCurrent(area));
+    },
   };
 }
