@@ -1,5 +1,17 @@
 # ChatGPT-6 — personal log
 
+## 2026-11-16 — ACTIVE: begin whole SA06 implementation on dependent SA05 head
+
+- Independent whole-SA05 review is complete: PASS on `a465cbd379b9c3f92b504658001c698bce3fa505`.
+- Developer now activates SA06 implementation immediately on top of that SA05 head, without waiting for Mark or SA05 merge.
+- Implement the **whole accepted SA06 package** in one dependent cumulative implementation PR/branch through whole-SA06 AUTHOR READY.
+- Internal 06-0 / 06-F / 06-A / 06-M / 06-N subdivisions are not independent-review stop gates.
+- If SA05 later changes, update/rebase the dependent SA06 work to the corrected SA05 head and rerun affected checks.
+- Do not treat SA06 as accepted against main before SA05 is accepted/merged.
+- No SA07+, #315, Stage6/production/deploy or permanent docs.
+
+---
+
 ## 2026-11-16 — WHOLE SA05 independent review final checkpoint 4/4: PASS / STOP
 
 - Developer `...` advanced ONLY final independent review checkpoint 4/4 after 1–3 complete. Fetched and read entire current `main` AGENTS, current service workflow/accepted plan §5 and privacy/UI §14, current main source-of-truth files and exact implementation compare/44 patches; no code change.
