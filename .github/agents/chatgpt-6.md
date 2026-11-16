@@ -1,5 +1,17 @@
 # ChatGPT-6 — personal log
 
+
+## 2026-11-16 — ACTIVE CORRECTION: #336 DOC-SA04-MIRA-01/02
+
+Mira whole-docs coordinator review RETURNED exact `7d18f6fd7f98a7fd63a8f5154e64052e1b7cc305` with exactly two confirmed current-doc defects.
+
+1. **DOC-SA04-MIRA-01:** correct `PROJECT_STATE.md` and `ROADMAP.md` so they no longer claim the complete SA05–SA08 technical plan still needs agreement. Final fresh whole-plan PASS already exists in #331 #6895280436; whole remaining-plan acceptance is explicit in #6895657016. SA05 remains unimplemented/inactive and still needs a separate implementation assignment/current-main refresh, but not re-planning/re-approval.
+2. **DOC-SA04-MIRA-02:** correct `PROJECT_HISTORY_27.md` to remove false attribution that the developer selected all L→M+N→O–S merge blocks and personally performed the #335 squash merge. Preserve only factual delivery sequence/SHAs and neutral merge wording. L was already a historical exception; developer explicitly chose M+N review+merge; later #334/#335 merges were initiated by Mira contrary to Owner-only process. Do not turn that error into an Owner action.
+
+Do not change the otherwise accepted SA04/SA05 boundary or broaden docs. Keep #336 docs-only. Run applicable CI on the new stable head, record AUTHOR READY, then STOP for Mira fresh whole-docs review. No self-review, independent reviewer, merge or SA05 implementation.
+
+---
+
 ## 2026-11-16 — SA04 docs 4/4 AUTHOR READY / STOP — PR #336
 
 - Resumed only fourth bounded documentation checkpoint on developer `...`. Read current `main` AGENTS in full, current service workflow and relevant current-stage documentation. Reconciled all eight proposed Markdown paths, merged #327–#335 chronology and last CI/review facts against `main`, migration `0065`, permanent SA04 contract and the actual GitHub PR patch. No confirmed current-scope inconsistency requiring an additional docs edit.
