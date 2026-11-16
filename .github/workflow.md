@@ -6,9 +6,9 @@
 - **Merge chunk:** SA04-M + SA04-N only. O absent.
 - **Latest verdict:** Lev independent **whole-M+N RETURN**, one confirmed current-N P2 **SA04-MN-LEV-01**, [complete packet](https://github.com/iliya1947/vico-forum/pull/331#issuecomment-6902833450). Review completed across all24 paths; no other current-M/N defects confirmed.
 - **Historical coordinator status:** Mira whole-M and whole-N PASS on the reviewed head; these do not close the merge gate after independent RETURN.
-- **Next executor:** **Lira (ChatGPT-6)**, on developer connection — correct the single bounded packet in #334: triage operationId preservation after success→401/503→manual retry, meaningful regression and applicable gates. Full task/reproduction already in #331.
+- **Current active executor:** **Lira (ChatGPT-6)** — correct the single bounded packet **SA04-MN-LEV-01** in #334: triage operationId preservation after success→401/503→manual retry, meaningful regression and applicable gates. Full reproduction is in #331 comment #6902833450.
 - **Lev:** independent review complete / STOP; no implementation edits.
-- **Mira:** next reviews whole-M+N after Lira's new stable head/checks.
+- **Mira:** STOP until Lira produces a new stable head/checks; then fresh whole-M+N coordinator review.
 - **Mark:** inactive.
 - **Review route:** correction → new stable exact head + applicable checks → fresh Mira whole-M+N coordinator review → Lev independent whole-M+N same-head review.
 - **Merge:** blocked until current packet closed and both required reviews PASS. Only Owner merges #334.
