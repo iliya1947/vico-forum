@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import type { ProfileOwnerData } from "./sections";
 import { HistoryEntry } from "../super-admin/history-entry";
 import { forumProfilePath } from "../forum/paths";
+import { OwnerLifecycleControl } from "./lifecycle-control";
 
 function utc(value: string, locale: string) {
   const parsed = new Date(value);
@@ -43,6 +44,17 @@ export function OwnerProfileSections({ locale, targetId, owner }: {
         key={owner.viewerId + ":" + targetId}>
         <h2 id="owner-account-heading">{t("profileOwnerPrivate")}</h2>
         <dl>
+          <div id="owner-lifecycle"><dt>{t("ownerLifecycleState")}</dt>
+            <dd>{t(account!.lifecycle.status === "active" ? "ownerLifecycleActive" : "ownerLifecycleDeactivated")}</dd></div>
+          {account!.lifecycle.status === "deactivated" ? <>
+            <div><dt>{t("ownerLifecycleDeactivatedAt")}</dt><dd>
+              <time dateTime={account!.lifecycle.deactivatedAt}>{utc(account!.lifecycle.deactivatedAt, locale)} · <bdi>{account!.lifecycle.deactivatedAt}</bdi></time>
+            </dd></div>
+            <div><dt>{t("ownerLifecycleDeactivatedBy")}</dt><dd><bdi>{account!.lifecycle.deactivatedByUserId}</bdi></dd></div>
+            <div><dt>{t("superAdminHistoryRetainUntil")}</dt><dd>
+              <time dateTime={account!.lifecycle.retainAtLeastUntil}>{utc(account!.lifecycle.retainAtLeastUntil, locale)} · <bdi>{account!.lifecycle.retainAtLeastUntil}</bdi></time>
+            </dd></div>
+          </> : null}
           <div><dt>{t("profileOwnerEmail")}</dt><dd><bdi dir="auto">{account!.email}</bdi></dd></div>
           <div><dt>{t("profileOwnerEmailVerified")}</dt><dd>{t(account!.emailVerified ? "superAdminHistoryYes" : "superAdminHistoryNo")}</dd></div>
           <div><dt>{t("profileJoined")}</dt><dd><time dateTime={account!.createdAt}>{utc(account!.createdAt, locale)}</time></dd></div>
@@ -53,6 +65,7 @@ export function OwnerProfileSections({ locale, targetId, owner }: {
               : t("profileOwnerNone")
           }</dd></div>
         </dl>
+        <OwnerLifecycleControl locale={locale} viewerId={owner.viewerId} account={account!}/>
         <section id="owner-sessions" aria-labelledby="owner-sessions-heading">
           <h3 id="owner-sessions-heading">{t("settingsSecuritySessions")}</h3>
           <p>{t("profileOwnerSessionsNote")}</p>

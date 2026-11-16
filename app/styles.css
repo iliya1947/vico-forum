@@ -9203,6 +9203,12 @@ a.topic-tag:focus-visible {
 .profile-form textarea { resize: vertical; }
 .profile-feedback { border-inline-start: .2rem solid var(--color-accent); padding: .75rem; background: var(--color-accent-soft); }
 .profile-feedback.is-error { color: var(--color-danger); border-color: var(--color-danger); }
+.owner-lifecycle-control { margin-block: 1.5rem; }
+.owner-deactivate-button { background: var(--color-surface); border-color: var(--color-danger); color: var(--color-danger); }
+.owner-deactivate-button:hover { background: color-mix(in srgb, var(--color-danger) 10%, var(--color-surface)); }
+.owner-deactivation-dialog { box-sizing: border-box; inline-size: min(34rem, calc(100vw - 2rem)); max-block-size: calc(100dvh - 2rem); overflow: auto; padding: clamp(1rem, 3vw, 2rem); border: 1px solid var(--color-border); border-radius: .7rem; color: var(--color-text); background: var(--color-surface); overflow-wrap: anywhere; }
+.owner-deactivation-dialog::backdrop { background: rgb(0 0 0 / .55); }
+.owner-deactivation-dialog :is(button, a):focus-visible { outline: 2px solid var(--color-focus); outline-offset: 3px; }
 .profile-card :is(a, button, input, textarea):focus-visible, .topic-message-profile-link:focus-visible { outline: 2px solid var(--color-focus); outline-offset: 3px; }
 @media (max-width: 30rem) {
   .profile-statistics { grid-template-columns: 1fr; gap: .8rem; }

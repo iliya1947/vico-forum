@@ -8,6 +8,22 @@ import type { UiKey } from "./catalog";
  * translation stale until that translation is reviewed again.
  */
 export const reviewedCommonFingerprints = {
+  ownerLifecycleState: "9f176b8b8e87fa66a53f5cf50b31fa71126af4f2e8cfe45139ebd6cd8c84b36f",
+  ownerLifecycleActive: "653a2d29f43adbbabc05778f44f92d19bbcb1a51a36e71e460e37fba2ea4fe00",
+  ownerLifecycleDeactivated: "1d4093d6d32197c681c91d78be31e91547c1d0b3b2b8e76688d06f533e89abc2",
+  ownerLifecycleDeactivatedAt: "58fa7511db25bbc2098497e409e665217c7598fc3b0b2290ca1d8ec55d42b658",
+  ownerLifecycleDeactivatedBy: "7360c51b6d283627f448f2f35a57a824dcdcd0c9739dc3bd6d266af4ad134fc2",
+  ownerDeactivateOpen: "05d88dc0438380e4b8422a502079aa7001fc84e87498bebee1d8fc08bca2a90c",
+  ownerDeactivateHeading: "6cec8f799b3cde3178eb1bc6897b082d06340c4f71458a05ec75da963d2e46c6",
+  ownerDeactivateEffects: "8d6a1ab4a4cd7155726fe62467ff9a63d89966a44cd1dac7b4d969ea5c342e61",
+  ownerDeactivateConfirm: "d985851ce2c1f9b692cf37043c947d70a624c37a9c11c0d1813292db174c0c94",
+  ownerDeactivatePending: "fc9d015f11ff7d1ad68a32ce78175d06b3d837adea076766b3370886097743be",
+  ownerDeactivateConfirmed: "e127d5d0c535f64c4a4e3ebfc6bed545db0e3a4548ba071b02019fd90058ae12",
+  ownerDeactivateInvalid: "b4c2735f4e5e5e90a3294ca547b7c5b6a4a59952082594940e900faa4fd05ab0",
+  ownerDeactivateAuthChanged: "8bb1bfd596c8da597327ccf92af5e638aae4b7a11a280fd375cbbce351be5cc9",
+  ownerDeactivateNotFound: "6c053337ee1a647e374ffc4a5df9b44b95a15c9497d958c5564373b89e69dd00",
+  ownerDeactivateUnavailable: "0731dd1ca16a7bedcaf0155e87be93fa695478b881d26a6cec64e7891fdfa82d",
+  ownerDeactivateUnconfirmed: "4b67449006b8670ac3c7639c91eec0ce14acb36bbc2ec9b9f51b6ae58a119c33",
   superAdminHistoryRetainUntil: "6c7c9194cb898e52aa4c58423c71278218a5adf7de5f94d161b5845fec23e4fb",
   superAdminHistoryAccountDeactivated: "7738513ec6499eefd23097a673bd6368d25c472d3188512a1936c4a2bff7bca4",
   superAdminHistoryOperationId: "94cfc1a52af69fe9ab92d13943a5eb197059433dfccdcefd13356dba9012d69a",

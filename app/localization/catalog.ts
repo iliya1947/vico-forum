@@ -16,6 +16,22 @@ export interface UiMessageDescriptor {
 
 export const canonicalEnglishCatalog = {
   common: {
+    ownerLifecycleState: message("ownerLifecycleState", "Account state", "SA05 exact-Owner canonical profile lifecycle and deactivation confirmation."),
+    ownerLifecycleActive: message("ownerLifecycleActive", "Active", "SA05 exact-Owner canonical profile lifecycle and deactivation confirmation."),
+    ownerLifecycleDeactivated: message("ownerLifecycleDeactivated", "Deactivated", "SA05 exact-Owner canonical profile lifecycle and deactivation confirmation."),
+    ownerLifecycleDeactivatedAt: message("ownerLifecycleDeactivatedAt", "Deactivated at", "SA05 exact-Owner canonical profile lifecycle and deactivation confirmation."),
+    ownerLifecycleDeactivatedBy: message("ownerLifecycleDeactivatedBy", "Deactivated by", "SA05 exact-Owner canonical profile lifecycle and deactivation confirmation."),
+    ownerDeactivateOpen: message("ownerDeactivateOpen", "Deactivate account", "SA05 exact-Owner canonical profile lifecycle and deactivation confirmation."),
+    ownerDeactivateHeading: message("ownerDeactivateHeading", "Deactivate this account?", "SA05 exact-Owner canonical profile lifecycle and deactivation confirmation."),
+    ownerDeactivateEffects: message("ownerDeactivateEffects", "This account will lose active forum access. Published content stays under {{deletedUser}}. Private account data is retained for at least one year.", "SA05 exact-Owner canonical profile lifecycle and deactivation confirmation.", ["deletedUser"]),
+    ownerDeactivateConfirm: message("ownerDeactivateConfirm", "Confirm deactivation", "SA05 exact-Owner canonical profile lifecycle and deactivation confirmation."),
+    ownerDeactivatePending: message("ownerDeactivatePending", "Deactivating…", "SA05 exact-Owner canonical profile lifecycle and deactivation confirmation."),
+    ownerDeactivateConfirmed: message("ownerDeactivateConfirmed", "Account deactivated.", "SA05 exact-Owner canonical profile lifecycle and deactivation confirmation."),
+    ownerDeactivateInvalid: message("ownerDeactivateInvalid", "The confirmation is invalid. Refresh the profile before continuing.", "SA05 exact-Owner canonical profile lifecycle and deactivation confirmation."),
+    ownerDeactivateAuthChanged: message("ownerDeactivateAuthChanged", "Your access changed. Refresh the profile before continuing.", "SA05 exact-Owner canonical profile lifecycle and deactivation confirmation."),
+    ownerDeactivateNotFound: message("ownerDeactivateNotFound", "This account is no longer available. Refresh the profile.", "SA05 exact-Owner canonical profile lifecycle and deactivation confirmation."),
+    ownerDeactivateUnavailable: message("ownerDeactivateUnavailable", "The service is unavailable. Refresh the profile to check the current state.", "SA05 exact-Owner canonical profile lifecycle and deactivation confirmation."),
+    ownerDeactivateUnconfirmed: message("ownerDeactivateUnconfirmed", "The result could not be confirmed. Refresh the profile before starting another operation.", "SA05 exact-Owner canonical profile lifecycle and deactivation confirmation."),
     superAdminHistoryOriginAccount: message("superAdminHistoryOriginAccount", "Account lifecycle fact", "SA05-3 exact-Owner lifecycle count and original account-event projection."),
     superAdminHistoryAccountDeactivated: message("superAdminHistoryAccountDeactivated", "Account deactivated", "SA05-3 exact-Owner lifecycle count and original account-event projection."),
     superAdminHistoryRetainUntil: message("superAdminHistoryRetainUntil", "Minimum retention until", "SA05-3 exact-Owner lifecycle count and original account-event projection."),
