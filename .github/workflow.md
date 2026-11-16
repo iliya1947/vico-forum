@@ -12,5 +12,6 @@
 - **On Lev current defect:** one correction packet to Lira; no merge.
 - **On Lev PASS:** STOP at **Owner merge #334**.
 - **Lira/Mira/Mark:** STOP/inactive during Lev review.
-- **After Owner merge:** refresh main/reread AGENTS, then resume O in a fresh implementation PR.
+- **After Owner merge:** refresh main/reread AGENTS, then **Lev becomes implementer for the entire remaining SA04 O→P→Q→R→S** in one fresh implementation PR based on merged main. Do not hand O back to Lira package-by-package.
+- **Post-merge review model for Lev-authored remaining SA04:** Mira coordinator whole-PR review first; after Mira PASS, **Mark and Lira both independently review the same stable exact head**. Lev cannot independently review his own implementation. Current-scope defects from any reviewer return as one consolidated correction cycle to Lev. Final Owner merge only after all three reviewers PASS.
 - **Boundary:** no O+, SA05, #315 remediation, permanent docs, production/deployment or Stage6 before #334 merge.
