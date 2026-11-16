@@ -1,3 +1,28 @@
+## 2026-11-17 — Developer reassignment: SA06 corrective package → Lira
+
+Developer reassigned the confirmed SA06 corrective package from Lev to **Lira / ChatGPT-6**.
+
+Implementation under correction: cumulative Draft #338, reviewed exact head `522951ec164fda237b52e9777de846e32e86d47d`.
+
+Lira fixes both confirmed current-SA06 defects in one pass:
+
+1. **History filter foundation** — add the already accepted SA06 backend/query model for `origin`, `kind`, `from`, `until`, bind/validate them in v2 cursors, and push compatible predicates into fixed source branches before branch LIMIT. Preserve compatible old cursors. Do not implement SA08 UI controls.
+
+2. **AP-10 effective counts** — make `administration.measures` effective total and per-restriction counts follow actual AP-10 applicability. Administrative restrictions require the authoritative raw-authority-floor relation; ordinary participation restrictions keep their existing semantics and Owner exemption remains intact.
+
+Acceptance:
+- add focused PostgreSQL regressions for both defects;
+- rerun the affected/full SA06 acceptance required by the changed code;
+- publish one new stable exact #338 head and WHOLE SA06 AUTHOR READY.
+
+Lev's corrective implementation assignment is superseded. He remains an author of the original SA06 implementation and therefore is not an independent reviewer of the corrected head.
+
+After correction, fresh review order is: Mira coordinator whole-SA06 review → after PASS, Mark independent non-author review. Lira and Lev are both implementation authors and do not perform independent review of the corrected head.
+
+No merge #338, SA07+, permanent docs, #315, Stage6/production/deploy/external work is activated.
+
+---
+
 ## 2026-11-17 — WHOLE SA06 review consolidation → Lev corrective package
 
 Reviewed implementation: Draft #338 exact `522951ec164fda237b52e9777de846e32e86d47d`.
