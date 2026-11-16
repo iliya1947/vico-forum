@@ -311,6 +311,58 @@ try:
         private(triage_page.goto(base+triage,wait_until="networkidle"),200)
         triage_form=triage_page.locator("form.complaint-priority-form")
         assert triage_form.count()==1
+        priority_posts=[]
+        def priority_request(req):
+            return req.method=="POST" and urlparse(req.url).path in (triage,triage+".data")
+        triage_page.on("request",lambda req:priority_posts.append(req.post_data or "")
+            if priority_request(req) else None)
+        def priority_save(status):
+            with triage_page.expect_response(lambda res:priority_request(res.request)) as response:
+                triage_form.locator('button[type="submit"]').click()
+            private(response.value,status)
+            sleep(.55)
+            return parse_qs(priority_posts[-1])
+        def expect_version(expected):
+            triage_page.wait_for_function("""value =>
+                document.querySelector('form.complaint-priority-form input[name="expectedVersion"]')
+                    ?.value===String(value)""",arg=expected)
+
+        # Reproduce Lev's real mounted success -> rejected response -> manual retry transition.
+        triage_form.locator('select[name="priority"]').select_option("1")
+        initial_success=priority_save(200)
+        assert len(priority_posts)==1 and initial_success.get("operationId")
+        expect_version(c3["version"]+1)
+        triage_form.locator('select[name="priority"]').select_option("2")
+        before_503=snapshot()
+        sql("ALTER ROLE postgres IN DATABASE vico_sa04_n_browser_test SET statement_timeout='650ms'")
+        try:
+            holder=hold(reviewer_id)
+            try:
+                denied_503=priority_save(503)
+                assert len(priority_posts)==2
+                assert triage_form.locator('select[name="priority"]').input_value()=="2"
+                denied_503_retry=priority_save(503)
+                assert len(priority_posts)==3, "Priority silently retried a 503"
+                assert denied_503_retry==denied_503, "Success -> 503 changed priority nonce or payload"
+                assert denied_503.get("operationId")!=initial_success.get("operationId")
+                assert triage_form.locator('select[name="priority"]').input_value()=="2"
+            finally:release(holder)
+        finally:
+            sql("ALTER ROLE postgres IN DATABASE vico_sa04_n_browser_test RESET statement_timeout")
+        assert snapshot()==before_503, "Denied 503 wrote durable Complaint facts"
+
+        # A recovered explicit retry may commit the same operation. A subsequent fresh
+        # successful command must instead use a new identity.
+        recovered=priority_save(200)
+        assert len(priority_posts)==4 and recovered==denied_503
+        expect_version(c3["version"]+2)
+        triage_form.locator('select[name="priority"]').select_option("1")
+        healthy_new=priority_save(200)
+        assert len(priority_posts)==5
+        assert healthy_new.get("operationId")!=recovered.get("operationId")
+        expect_version(c3["version"]+3)
+        c3=case(topics[3])
+        record("mounted-priority-success-503-retry-then-healthy-new-nonce")
         triage_form.locator('select[name="priority"]').select_option("3")
         review_path=triage+"/review"
         case_review_page=reviewer_ctx.new_page()
@@ -390,6 +442,7 @@ try:
         assert triage_form.locator('select[name="priority"]').input_value()=="3"
         triage_nonce=parse_qs(triage_posts[0]).get("operationId",[])
         assert len(triage_nonce)==1 and triage_nonce[0]
+        assert triage_nonce!=healthy_new.get("operationId"), "Success -> 401 reused committed nonce"
         with triage_page.expect_response(lambda res:res.request.method=="POST"
                 and urlparse(res.url).path in (triage,triage+".data")) as denied_retry:
             triage_form.locator('button[type="submit"]').click()
@@ -399,7 +452,7 @@ try:
         assert parse_qs(triage_posts[1]).get("operationId")==triage_nonce, "Priority nonce changed on explicit retry"
         assert triage_form.locator('select[name="priority"]').input_value()=="3"
         assert snapshot()==before
-        record("mounted-priority-form-retains-choice-and-nonce-after-late-401")
+        record("mounted-priority-success-401-retains-choice-and-nonce-on-explicit-retry")
 
         before=snapshot()
         verify_mounted_denied_form(case_review_page,note_form,review_path,
