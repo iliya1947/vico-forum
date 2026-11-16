@@ -1,6 +1,18 @@
 # ChatGPT-5.6 Sol — personal log
 
 
+## 2026-11-16 — #336 whole-docs coordinator RETURN
+
+- Reviewed exact stable docs head `7d18f6fd7f98a7fd63a8f5154e64052e1b7cc305` vs main `b5180e5fcc8483dc13e1b087102a51560c80e035`, 8 Markdown paths, CI SUCCESS.
+- Verdict: **RETURN — two confirmed current-doc defects, no third defect confirmed.**
+- DOC-SA04-MIRA-01: root current-state/roadmap wrongly reopens the already accepted whole SA05–SA08 technical plan. Evidence: #331 #6895280436 final whole-plan PASS; #6895657016 accepted remaining-plan activation.
+- DOC-SA04-MIRA-02: history falsely attributes the effective L/M+N/O–S merge route and #335 squash action to the developer. Correction must neutralize actor attribution and preserve factual merge sequence only.
+- All other SA04 factual contract/state/history claims checked are consistent with merged implementation and accepted boundaries.
+- No docs edit performed by Mira. Lira gets one bounded correction packet. Fresh whole-docs review required on new exact head before independent review.
+
+---
+
+
 ## 2026-11-16 — #335 whole O→S coordinator PASS
 
 - Exact reviewed head: `fa0c95105c00449ca72c7fd21a5045929d59542e`, base/main `c7f2538ce1d4d37152bc3d503587dc9dabd28f24`; 47 paths, no head drift, synthetic merge tree equal.
