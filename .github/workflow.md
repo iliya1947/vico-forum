@@ -5,8 +5,8 @@
 - **Cumulative SA05 implementation PR:** Draft #337, branch `chatgpt/sa05-owner-deactivation`.
 - **SA05-1 checkpoint:** stable head `213dc8bb6583439cd8ea7efbd9872e98aa638b36`; Лёва author; Mira coordinator PASS, 0 confirmed defects.
 - **SA05 decomposition:** SA05-1 command core → SA05-2 protected HTTP action → SA05-3 read-side/History → SA05-4 Owner UI → SA05-5 connected closure. Checkpoints are not merge units.
-- **ACTIVE:** Лира implements **SA05-2 only** on the same cumulative #337 branch. Whole SA05 architecture is already accepted; only current-main locator refresh is allowed before implementation.
-- **SA05-2 deliverable:** trusted request-context/Worker construction + dedicated protected POST action + exact request/error/cache contract + route-level acceptance over the existing SA05-1 core.
-- **NEXT after Lira AUTHOR READY:** Mira coordinator whole-SA05-2 checkpoint review on the new stable exact #337 head.
-- **Review independence note:** Лёва authored SA05-1 inside cumulative #337 and therefore cannot be the independent whole-cumulative reviewer for that authored code; final reviewer assignment will follow AGENTS when the relevant review gate is reached.
-- **Boundary:** #337 remains Draft/unmerged; no SA05-3+, SA06+, #315, deployment, Stage6, production or real Owner/Google connected acceptance during SA05-2.
+- **ACTIVE:** Лёва continues implementation with **SA05-2 only** on the same cumulative #337 branch. The earlier Lira assignment was a coordinator error and is superseded; #337 remained unchanged at `213dc8bb6583439cd8ea7efbd9872e98aa638b36`, so no implementation rollback is required.
+- **SA05-2 deliverable:** trusted request-context/Worker construction + dedicated protected POST action + accepted request/error/cache contract + route-level acceptance over the existing SA05-1 core.
+- **NEXT after Lev AUTHOR READY:** Mira coordinator whole-SA05-2 checkpoint review on the new stable exact #337 head.
+- **Review independence:** Лёва is cumulative SA05 author and cannot independently review his own implementation; independent reviewers are assigned only after coordinator PASS.
+- **Boundary:** #337 stays Draft/unmerged; no SA05-3+, SA06+, #315, deployment, Stage6, production or real Owner/Google connected acceptance during SA05-2.
