@@ -5,10 +5,11 @@ Service PR #331 is the active Admin/Super-admin coordination channel. PR #251 is
 ## Current boundary
 
 - SA05 #337 is developer-merged; current main/base `7e7a803876422c2f40faaf720b59027d468e99dc`.
-- Lev remains sole implementer of wholeSA06 through AUTHOR READY; cumulative Draft #338, branch `chatgpt/sa06-native-monitoring`, first head `b6f87b644eab2fe8c0cf7d396bd447b1db67db14`,1commit/38paths.
-- Current source delivers four areas/ten real native monitors, original global/scoped/person facts/coverage, canonical navigation/viewer isolation and accepted27 chronological indexes in0066. No SA07 passive port or widened grants.
-- Local14native source/aggregate/real-writer cases +7populated query/index cases PASS; focused app44/4files/type/lint PASS. Full suites/exact CI/new genuine connected SA06 acceptance ACTIVE. Not AUTHOR READY or review PASS.
-- Continue remaining whole-SA06 acceptance without intermediate slice review/merge stops. After final whole-SA06 AUTHOR READY → Mira coordinator whole-package review, then non-author independent review. No SA07+, #315, permanent docs, Stage6/production/deploy/external work or merge.
+- **Whole SA06 AUTHOR READY:** cumulative Draft #338, stable exact `522951ec164fda237b52e9777de846e32e86d47d`,2commits/47paths. Lev completed all `06-0 → 06-F → 06-A → 06-M → 06-N` and records AUTHOR STOP.
+- **Mira coordinator whole-SA06 review ACTIVE NEXT** on that same head; after coordinator PASS, assigned independent non-author reviewers. Internal slices are not review/merge gates. [Complete task and evidence](https://github.com/iliya1947/vico-forum/pull/331#issuecomment-6925817870).
+- Four areas/ten real native monitors, original global/scoped/person facts and terminal coverage, canonical controls/navigation/viewer isolation, and accepted27 indexes in0066. No new passive producer port or widened grants.
+- Local+exact CI app2507/194files/native1334/98files PASS; all16jobs/12runs SUCCESS, including genuine SA06 Worker/BA/PG17/Chromium. Initial unchanged navigation-test failure recovered via same-head job retry; cause unknown. Known Drizzle generator BigInt/exit0 remains non-proof; actual migrated69-table manifest/expression/index plans separately verify structure.
+- No SA07+, #315, permanent docs, Stage6/production/deploy/external work or merge. Author browser evidence does not claim developer visual/deployed acceptance.
 
 ## Stable product decisions
 
