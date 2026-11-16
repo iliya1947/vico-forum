@@ -1,5 +1,16 @@
 # Codex-6 Sol — personal log
 
+## 2026-11-16 — ASSIGNED: independent WHOLE SA05 review
+
+- Review Draft #337 exact `a465cbd379b9c3f92b504658001c698bce3fa505` as an independent non-author.
+- Scope is the entire accepted SA05 package, not only the last commit.
+- Do not modify implementation. Verify all possible findings through the current-SA05/future-work boundary and continue after the first finding.
+- PASS → record whole-SA05 exact-head PASS and STOP.
+- Defects → return one complete confirmed current-SA05 packet to Mira/Lev.
+- Lira has already independently PASSed this exact head; do not use her conclusion as evidence.
+- #337 stays Draft/unmerged; no SA06/SA07 implementation work is assigned to Mark.
+
+---
 
 ## 2026-11-16 — ACTIVE INDEPENDENT REVIEW: whole #335 SA04 O→S
 
