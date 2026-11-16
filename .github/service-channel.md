@@ -1,5 +1,14 @@
 # Admin panel — communication
 
+## 2026-11-16 — SA04 docs closeout 2/4: permanent contract and cross-references COMPLETE; Лира STOP
+
+- Separate docs branch `docs/sa04-accountstate-closeout` from merged main `b5180e5fcc8483dc13e1b087102a51560c80e035`. Latest checkpoint commit `f74be4d85723235a9f8cee3b4f0dc3f312e3d328`. Comparison main...docs: **ahead 8, behind 0, exactly six documentation files**, no code/migrations/dependencies/workflows changed and **no docs PR yet**.
+- **Completed only 2/4:** `docs/SUPER_ADMIN.md` now distinguishes delivered SA01–SA04 from unimplemented SA05. It specifies migration `0065`'s nullable server-owned tuple and UTC-calendar-year CHECK, neutral public **Deleted user** projection/retained public content, Better Auth and transactional actor admission across domains, concurrency/replay/exception boundaries, accepted background generation work, and repository/local-CI acceptance limitations. `docs/ADMIN_PANEL.md` and `docs/UI_UX_PASS.md` receive only stale SA04 status and cross-reference corrections.
+- **No Owner deactivation command/UI is claimed.** That state writer/control remains SA05. Monitoring remains 3 live/10 pending. No real Owner binding, deployed/production, owner visual or Stage6 claim. No local/CI tests run for this docs-only checkpoint; documentation consistency and exact changed-path set were checked through GitHub.
+- **AUTHOR STOP.** Next only on developer `...`: bounded **3/4** historical factual closeout `docs/PROJECT_HISTORY/PROJECT_HISTORY_27.md` and history index; then STOP. Separate **4/4** whole-document consistency, docs PR/CI, author READY. Coordinator whole-doc review by Mira only after 4/4; no self-review or merge.
+
+---
+
 ## 2026-11-16 — SA04 docs closeout 1/4: PROJECT/STATE/ROADMAP factual statuses COMPLETE; Лира STOP
 
 - Implementation [#335](https://github.com/iliya1947/vico-forum/pull/335) and all SA04 code merged with three-PASS gate; current main `b5180e5fcc8483dc13e1b087102a51560c80e035`. Docs work is on separate `docs/sa04-accountstate-closeout` branch from this main. **No docs PR created yet.**
