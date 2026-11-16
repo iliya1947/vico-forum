@@ -1,5 +1,15 @@
 # ChatGPT-6 — personal log
 
+## 2026-11-16 — ASSIGNED: implement SA05-2 on cumulative #337
+
+- Developer continuation activates **SA05-2 only**. Implement on Draft #337 / `chatgpt/sa05-owner-deactivation`, inheriting SA05-1 stable PASS head `213dc8bb6583439cd8ea7efbd9872e98aa638b36`; main remains `efae8111a13aefbf72b4d20972dac461acc602e3`.
+- Whole SA05 plan is already accepted; refresh exact locators only, no architecture re-planning.
+- Deliverable: trusted Worker/request-context construction + protected canonical POST deactivation action + strict form/Origin/Owner/error/cache contract + route-level tests using the existing command core.
+- STOP boundary: no read-side/History, Owner UI, connected Chromium/real-session closure, SA05-3+, SA06+, #315, Stage6, production/external acceptance or permanent docs.
+- After AUTHOR READY on stable exact #337 head → Mira coordinator whole-SA05-2 checkpoint review. Do not merge #337.
+
+---
+
 ## 2026-11-16 — DOC-SA04-MIRA-01/02 author correction complete; CI-green stable #336, AUTHOR STOP
 
 - Resumed by developer `...` after original 4/4 author handoff; refreshed complete main AGENTS, current #331 Mira whole-docs RETURN workflow/service communication, #336 current head, whole accepted remaining-plan comment #6895280436 and L activation #6895657016, relevant project/state/roadmap/history sources. Verified two confirmed current-document errors; neither is hypothetical future-stage implementation work.
