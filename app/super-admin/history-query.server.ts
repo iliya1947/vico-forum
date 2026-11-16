@@ -30,15 +30,3 @@ export function parseOwnerHistoryQuery(url:string,scope:OwnerHistoryOptions={}):
   parseOwnerHistoryCursor(options.before,options);
   return {...options,before:options.before};
 }
-
-/** Retain validated filters when an existing History paging link changes before. */
-export function withOwnerHistoryFilters(href:string,options:OwnerHistoryOptions):string {
-  const [pathname,query]=href.split("?",2),params=new URLSearchParams(query);
-  for(const [name,value] of [
-    ["area",options.area],["monitor",options.monitorKey],
-    ["origin",options.origin],["kind",options.kind],
-    ["from",options.from],["until",options.until],
-  ] as const)if(value!==undefined)params.set(name,value);
-  const suffix=params.toString();
-  return suffix?pathname+"?"+suffix:pathname;
-}
