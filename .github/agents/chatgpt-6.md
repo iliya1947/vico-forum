@@ -1,5 +1,14 @@
 # ChatGPT-6 — personal log
 
+## 2026-11-16 — SA06 assignment superseded
+
+- The temporary post-review SA06 implementation assignment is cancelled because the Codex five-hour limit has reset.
+- Your whole-SA05 independent review remains complete: PASS on `a465cbd379b9c3f92b504658001c698bce3fa505`.
+- Do not start SA06 implementation under the superseded assignment.
+- Lev resumes the standing implementation role for SA06.
+
+---
+
 ## 2026-11-16 — ACTIVE: begin whole SA06 implementation on dependent SA05 head
 
 - Independent whole-SA05 review is complete: PASS on `a465cbd379b9c3f92b504658001c698bce3fa505`.
