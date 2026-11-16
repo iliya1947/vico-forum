@@ -13,16 +13,18 @@ import ComplaintResultRoute,{action as submitAction,shouldRevalidate as submitRe
 import {action as resolveAction,shouldRevalidate as resolveRevalidate} from "../routes/complaint-appeal-review";
 import {ComplaintInputError,ComplaintConflictError,ComplaintForbiddenError,ComplaintNotFoundError} from "../../db/complaints-domain";
 import {ComplaintStorageUnavailableError} from "../../db/hyperdrive-complaints";
+import {AccountInactiveError} from "../../db/account-state";
 import type {AppealReviewPage} from "../../db/complaint-appeal-read";
 
-type Failure="invalid"|"conflict"|"forbidden"|"notFound"|"unavailable";
+type Failure="invalid"|"conflict"|"forbidden"|"notFound"|"unavailable"|"unauthenticated";
 type Command="submit"|"resolve";
 const cases=[
  {code:"invalid",status:400,submitKey:"complaintAppealSubmitErrorInvalid",resolveKey:"complaintAppealResolveErrorInvalid"},
  {code:"conflict",status:409,submitKey:"complaintAppealSubmitErrorConflict",resolveKey:"complaintAppealResolveErrorConflict"},
  {code:"forbidden",status:403,submitKey:"complaintAppealErrorForbidden",resolveKey:"complaintAppealErrorForbidden"},
  {code:"notFound",status:404,submitKey:"complaintAppealErrorNotFound",resolveKey:"complaintAppealErrorNotFound"},
- {code:"unavailable",status:503,submitKey:"complaintAppealErrorUnavailable",resolveKey:"complaintAppealErrorUnavailable"}
+ {code:"unavailable",status:503,submitKey:"complaintAppealErrorUnavailable",resolveKey:"complaintAppealErrorUnavailable"},
+ {code:"unauthenticated",status:401,submitKey:"settingsSecurityUnauthenticated",resolveKey:"settingsSecurityUnauthenticated"}
 ] as const;
 function failure(code:Failure):Error{
  switch(code){
@@ -31,6 +33,7 @@ function failure(code:Failure):Error{
   case "forbidden":return new ComplaintForbiddenError("forbidden");
   case "notFound":return new ComplaintNotFoundError("missing");
   case "unavailable":return new ComplaintStorageUnavailableError("unavailable");
+  case "unauthenticated":return new AccountInactiveError();
  }
 }
 const timestamp="2026-11-02T10:20:00.000Z";

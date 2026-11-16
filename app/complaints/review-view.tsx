@@ -122,7 +122,7 @@ export function ComplaintReviewView({locale,item}:{locale:string;item:ReviewCase
     <button type="submit" disabled={note.state!=="idle"}>{t("complaintReviewNoteSave")}</button>
    </note.Form>
    {note.data?.ok?<p role="status">{t("complaintReviewNoteSaved")}</p>:null}
-   {note.data?.error?<p role="alert">{t(note.data.error==="conflict"?"complaintTriageConflict":("complaintError_"+note.data.error) as "complaintError_invalid")}</p>:null}
+   {note.data?.error?<p role="alert">{t(note.data.error==="conflict"?"complaintTriageConflict":note.data.error==="unauthenticated"?"settingsSecurityUnauthenticated":("complaintError_"+note.data.error) as "complaintError_invalid")}</p>:null}
   </section>
   <section>
    <h2>{t("complaintReviewDecision")}</h2>
@@ -140,7 +140,7 @@ export function ComplaintReviewView({locale,item}:{locale:string;item:ReviewCase
       {stale?<p role="alert">{t("complaintReviewChanged")} <button type="button" onClick={()=>{setReviewedVersion(item.version);decisionNonce.current="";}}>{t("complaintReviewAcceptChanges")}</button></p>:null}
       <button type="submit" disabled={stale||decision.state!=="idle"}>{t("complaintReviewResolve")}</button>
      </decision.Form>}
-   {decision.data?.error?<p role="alert">{t(decision.data.error==="conflict"?"complaintReviewChanged":("complaintError_"+decision.data.error) as "complaintError_invalid")}</p>:null}
+   {decision.data?.error?<p role="alert">{t(decision.data.error==="conflict"?"complaintReviewChanged":decision.data.error==="unauthenticated"?"settingsSecurityUnauthenticated":("complaintError_"+decision.data.error) as "complaintError_invalid")}</p>:null}
   </section>
  </section></ForumShell>;
 }

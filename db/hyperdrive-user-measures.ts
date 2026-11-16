@@ -1,5 +1,6 @@
 import { createWebPool, bestEffortDiscardClient, isPostgresConnectionTimeout, isPostgresQueryTimeout } from "./postgres-deadlines";
 import { isPostgresAvailabilityFailure } from "../app/localization/persistent-registry";
+import { AccountStateUnavailableError } from "./account-state";
 import { PostgresUserMeasuresRepository, UserMeasuresService,
   type CreateUserMeasureInput, type ChangeUserMeasureInput, type LiftUserMeasureInput,
   type SubmitUserMeasureAppealInput, type ResolveUserMeasureAppealInput } from "./user-measures";
@@ -8,9 +9,17 @@ import type { UserMeasureCapability } from "../app/measures/request-context";
 
 export class UserMeasuresUnavailableError extends Error {}
 
-function unavailable(error: unknown) {
-  return isPostgresAvailabilityFailure(error) ||
-    isPostgresConnectionTimeout(error) || isPostgresQueryTimeout(error);
+function unavailable(error: unknown): boolean {
+  const seen = new Set<unknown>();
+  let current = error;
+  while (current && (typeof current === "object" || typeof current === "function") && !seen.has(current)) {
+    seen.add(current);
+    if (current instanceof AccountStateUnavailableError ||
+      isPostgresAvailabilityFailure(current) ||
+      isPostgresConnectionTimeout(current) || isPostgresQueryTimeout(current)) return true;
+    current = (current as { cause?: unknown }).cause;
+  }
+  return false;
 }
 
 /** One bounded PostgreSQL pool per operation, including fresh active-session permission resolution. */
