@@ -72,8 +72,9 @@ export function ComplaintTriageView({locale,item}:{locale:string;item:ComplaintQ
   const {t}=useTranslation("common");
   const fetcher=useFetcher<{ok?:true;error?:"invalid"|"conflict"|"forbidden"|"notFound"|"unavailable"|"unauthenticated"}>();
   const nonce=useRef("");
-  // A rejected POST retains its operation; success or a new Case version starts a new one.
-  useEffect(()=>{nonce.current="";},[item.version,fetcher.data?.ok]);
+  // A rejected POST retains the same operation even after an earlier successful command.
+  useEffect(()=>{nonce.current="";},[item.version]);
+  useEffect(()=>{if(fetcher.data?.ok)nonce.current="";},[fetcher.data?.ok]);
   return <ForumShell locale={locale} variant="attention"><section className="complaint-triage">
     <Link to={complaintQueuePath(locale)}>{t("complaintQueueHeading")}</Link>
     <h1>{t("complaintTriageHeading")}</h1>
