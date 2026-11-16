@@ -1,4 +1,6 @@
 import type { Pool } from "pg";
+import { actionLabels } from "../app/admin/history-labels";
+import { SA02_FACT_MONITORS } from "./owner-sa02-catalog";
 import { OWNER_MONITORS, ADMIN_MONITOR_SCOPES_SQL, type OwnerMonitorArea, type OwnerMonitorKey } from "./owner-monitor-catalog";
 import { nativeHistoryBranches, NATIVE_HISTORY_ORIGINS, NATIVE_ORIGIN_MONITORS, HISTORY_COLUMNS, readNativeHistoryCoverage, type NativeHistoryOrigin, type OwnerSourceCoverage } from "./owner-native-history";
 import { SYSTEM_MONITORS } from "./owner-system-history";
@@ -30,6 +32,10 @@ export interface OwnerHistoryOptions {
   monitorKey?: OwnerHistoryMonitor;
   before?:string;
   limit?:number;
+  origin?:OwnerHistoryOrigin;
+  kind?:string;
+  from?:string;
+  until?:string;
 }
 const ORIGIN_SCOPES: Record<OwnerHistoryOrigin,readonly string[]> = {
   ...NATIVE_ORIGIN_MONITORS,
@@ -41,6 +47,26 @@ const ORIGIN_SCOPES: Record<OwnerHistoryOrigin,readonly string[]> = {
   "attachment-evidence": ["security.attachments"],
   "attempt-pattern": ["accounts.registration","security.auth","security.access"],
   "attempt-state": ["security.auth","security.access"],
+};
+const KINDS_BY_ORIGIN: Record<OwnerHistoryOrigin,readonly string[]> = {
+  "system-event":["system.dependencyUnavailable","system.requestFailed"],
+  "auth-event":Object.keys(SA02_FACT_MONITORS),
+  "account-event":["account.deactivated"],
+  "system-observation":["monitor.observed"],
+  "admin-history":Object.keys(actionLabels),
+  "attachment-evidence":["attachment.securityEvidence"],
+  "attempt-pattern":["attempt.coalesced"],
+  "attempt-state":["attempt.unknown","attempt.overflow","attempt.gap"],
+  "forum-title-revision":["forum.titleRevisionCreated"],
+  "forum-post-revision":["forum.postRevisionCreated"],
+  "complaint-event":["complaint.submitted","complaint.noted","complaint.decided","complaint.appealed","complaint.appeal-resolved","complaint.priority-changed","complaint.review-started"],
+  "help-signal-created":["help.signalCreated"],
+  "duplicate-appeal-created":["help.duplicateAppealCreated"],
+  "measure-appeal-created":["measure.appealCreated"],
+  "help-signal-terminal":["help.signalWithdrawn","help.signalSuperseded"],
+  "measure-appeal-moot":["measure.appealMoot"],
+  "notification-created":["notification.created"],
+  "notification-first-read":["notification.firstRead"],
 };
 type Scope = {area:OwnerHistoryArea|null;monitor:OwnerHistoryMonitor|null};
 function compatibleOrigin(origin:OwnerHistoryOrigin,scope:Scope):boolean {
@@ -73,6 +99,33 @@ function checkExactAt(at:unknown):at is string {
   const asDate=new Date(millisecond);
   return Number.isFinite(asDate.getTime()) && asDate.toISOString()===millisecond;
 }
+/** Closed SQL-filter values; exact UTC calendar validation precedes any database call. */
+function canonicalUtcTime(value:unknown):string|null {
+  if(value===undefined)return null;
+  if(typeof value!=="string")throw new Error("Invalid Owner History time");
+  const m=/^([1-9][0-9]{3}-(?:0[1-9]|1[0-2])-(?:0[1-9]|[12][0-9]|3[01])T(?:[01][0-9]|2[0-3]):[0-5][0-9]:[0-5][0-9])(?:\.([0-9]{3})([0-9]{3})?)?Z$/.exec(value);
+  if(!m)throw new Error("Invalid Owner History time");
+  const millis=m[1]+"."+(m[2]??"000")+"Z";
+  const date=new Date(millis);
+  if(!Number.isFinite(date.getTime())||date.toISOString()!==millis)
+    throw new Error("Invalid Owner History calendar time");
+  return m[1]+"."+(m[2]??"000")+(m[3]??"000")+"Z";
+}
+function checkedFilters(options:OwnerHistoryOptions){
+  const scope=checkedScope(options);
+  const origin=options.origin??null,kind=options.kind??null;
+  if(origin!==null&&(!ORIGINS.includes(origin)||!compatibleOrigin(origin,scope)))
+    throw new Error("Invalid Owner History origin/scope");
+  if(kind!==null&&(typeof kind!=="string"||kind.length>80||
+      !Object.entries(KINDS_BY_ORIGIN).some(([source,kinds])=>
+        (origin===null||source===origin)&&
+        compatibleOrigin(source as OwnerHistoryOrigin,scope)&&kinds.includes(kind))))
+    throw new Error("Invalid Owner History kind/scope");
+  const from=canonicalUtcTime(options.from),until=canonicalUtcTime(options.until);
+  if(from!==null&&until!==null&&from>until)
+    throw new Error("Invalid Owner History time range");
+  return {scope,origin,kind,from,until};
+}
 function base64url(value:string):string {
   const octets=new TextEncoder().encode(value);
   let binary="";
@@ -99,7 +152,7 @@ function checkedCursorShape(value:unknown,scope:Scope):Cursor {
   return cursor as unknown as Cursor;
 }
 export function parseOwnerHistoryCursor(value:string|undefined,options:OwnerHistoryOptions={}):Cursor|null{
-  const scope=checkedScope(options);
+  const filters=checkedFilters(options),scope=filters.scope;
   if(value===undefined) return null;
   if(typeof value==="string"&&value.startsWith("v2.")){
     if(value.length>4096||!/^v2\.[A-Za-z0-9_-]+$/.test(value))throw new Error("Invalid Owner History cursor");
@@ -109,11 +162,13 @@ export function parseOwnerHistoryCursor(value:string|undefined,options:OwnerHist
       const parsed=JSON.parse(decoded),f=parsed?.filters;
       if(!parsed||Object.keys(parsed).sort().join(",")!=="area,at,filters,id,monitor,origin,v"||parsed.v!==2
         ||!f||Object.keys(f).sort().join(",")!=="area,from,kind,monitor,origin,pageSize,until"
-        ||f.area!==scope.area||f.monitor!==scope.monitor||f.origin!==null||f.kind!==null||f.from!==null||f.until!==null||f.pageSize!==(options.limit??25))throw new Error("Filter-bound cursor mismatch");
+        ||f.area!==scope.area||f.monitor!==scope.monitor||f.origin!==filters.origin||f.kind!==filters.kind||f.from!==filters.from||f.until!==filters.until||f.pageSize!==(options.limit??25))throw new Error("Filter-bound cursor mismatch");
       const {filters:ignored,...legacy}=parsed;void ignored;
       return checkedCursorShape({...legacy,v:1},scope);
     }catch{throw new Error("Invalid Owner History cursor");}
   }
+  if(filters.origin!==null||filters.kind!==null||filters.from!==null||filters.until!==null)
+    throw new Error("Legacy cursor cannot carry Owner History filters");
   if(typeof value!=="string" || value.length<1 || value.length>680)
     throw new Error("Invalid Owner History cursor");
   // Preserve the existing valid SA-01 three-part timestamp/origin/UUID cursor.
@@ -139,11 +194,15 @@ export function parseOwnerHistoryCursor(value:string|undefined,options:OwnerHist
     throw new Error("Invalid Owner History cursor");
   }
 }
-function encodeCursor(row:HistoryRow,scope:Scope,limit:number):string{
+function encodeCursor(row:HistoryRow,filters:ReturnType<typeof checkedFilters>,limit:number):string{
+  const {scope}=filters;
   const result:Cursor={v:1,at:row.exact_at,origin:row.origin,id:row.source_id,
     area:scope.area,monitor:scope.monitor};
-  if((NATIVE_HISTORY_ORIGINS as readonly string[]).includes(row.origin)||(scope.area!==null&&!["system","accounts","security"].includes(scope.area))){
-    const text=JSON.stringify({...result,v:2,filters:{area:scope.area,monitor:scope.monitor,origin:null,kind:null,from:null,until:null,pageSize:limit}});
+  if(filters.origin!==null||filters.kind!==null||filters.from!==null||filters.until!==null||
+      (NATIVE_HISTORY_ORIGINS as readonly string[]).includes(row.origin)||
+      (scope.area!==null&&!["system","accounts","security"].includes(scope.area))){
+    const text=JSON.stringify({...result,v:2,filters:{area:scope.area,monitor:scope.monitor,
+      origin:filters.origin,kind:filters.kind,from:filters.from,until:filters.until,pageSize:limit}});
     const encoded="v2."+base64url(text);
     if(new TextEncoder().encode(text).length>3072||encoded.length>4096)throw new Error("Owner History cursor bounds exceeded");
     return encoded;
@@ -265,14 +324,17 @@ const LEGACY_SOURCE_SQL = [
   " from owner_attempt_telemetry_state s where s.slot not like 'quota.%'",
 ].join("\n");
 
-function timelineSql(){
-  const predicates = "($1::text is null or $1=any(scopes)) and ($2::text is null or exists(select 1 from unnest(scopes) m where m like ($2||'.%'))) and ($3::timestamptz is null or (at,origin,source_id)<($3::timestamptz,$4::text,$5::text))";
-  const legacy=LEGACY_SOURCE_SQL.split("\nunion all\n").map((sql,index)=>{
-    // Preserve direct equality prefixes for the scoped chronological indexes.
+function timelineSql(filterOrigin:OwnerHistoryOrigin|null=null){
+  const predicates = "($1::text is null or $1=any(scopes)) and ($2::text is null or exists(select 1 from unnest(scopes) m where m like ($2||'.%'))) and ($3::timestamptz is null or (at,origin,source_id)<($3::timestamptz,$4::text,$5::text)) and ($8::text is null or kind=$8::text) and ($9::timestamptz is null or at>=$9::timestamptz) and ($10::timestamptz is null or at<$10::timestamptz)";
+  const legacyOrigins:OwnerHistoryOrigin[]=["system-event","auth-event","account-event","system-observation","admin-history","attachment-evidence","attempt-pattern","attempt-state"];
+  const legacy=LEGACY_SOURCE_SQL.split("\nunion all\n").flatMap((sql,index)=>{
+    if(filterOrigin!==null && legacyOrigins[index]!==filterOrigin)return [];
+    // Preserve direct equality prefixes for scoped chronological indexes.
     const direct=index===0?" and ($1::text is null or e.monitor_key=$1)":index===3?" and ($1::text is null or o.monitor_key=$1)":"";
-    return `(select ${HISTORY_COLUMNS} from (${sql+direct}) facts(${HISTORY_COLUMNS}) where ${predicates} order by at desc nulls last,origin desc nulls last,source_id desc nulls last limit $6)`;
+    return [`(select ${HISTORY_COLUMNS} from (${sql+direct}) facts(${HISTORY_COLUMNS}) where ${predicates} order by at desc nulls last,origin desc nulls last,source_id desc nulls last limit $6)`];
   });
-  const native=nativeHistoryBranches({monitor:"$1",area:"$2",at:"$3",origin:"$4",id:"$5",limit:"$6"});
+  const native=nativeHistoryBranches({monitor:"$1",area:"$2",at:"$3",origin:"$4",id:"$5",limit:"$6",
+    filterOrigin,kind:"$8",from:"$9",until:"$10"});
   return `with candidates as (${[...legacy,...native].join(" union all ")}) select ${HISTORY_COLUMNS},to_char(at at time zone 'UTC','YYYY-MM-DD"T"HH24:MI:SS.US"Z"') exact_at from candidates order by at desc nulls last,origin desc nulls last,source_id desc nulls last limit $6`;
 }
 const TIMELINE_SQL=timelineSql();
@@ -280,19 +342,22 @@ const TIMELINE_SQL=timelineSql();
 export class PostgresOwnerSa02History {
   constructor(private readonly pool:Pick<Pool,"query">){}
   async readTimeline(options:OwnerHistoryOptions={}):Promise<OwnerHistoryPage> {
-    const scope=checkedScope(options);
+    const filters=checkedFilters(options),scope=filters.scope;
     const limit=options.limit??25;
     if(!Number.isInteger(limit) || limit<1 || limit>50)
       throw new Error("Invalid Owner History limit");
     const cursor=parseOwnerHistoryCursor(options.before,options);
-    const result=await this.pool.query<HistoryRow>(TIMELINE_SQL,[
+    const result=await this.pool.query<HistoryRow>(filters.origin===null?TIMELINE_SQL:timelineSql(filters.origin),[
       scope.monitor,scope.area,cursor?.at??null,cursor?.origin??null,
-      cursor?.id??null,limit+1,
+      cursor?.id??null,limit+1,filters.origin,filters.kind,filters.from,filters.until,
     ]);
     const rows=result.rows.slice(0,limit);
     const entries=rows.map(readRow);
     const last=rows.at(-1);
-    return {entries,next:result.rows.length>limit && last ? encodeCursor(last,scope,limit) : null,
-      coverage:await readNativeHistoryCoverage(this.pool,undefined,(!scope.area||scope.area==="administration")&&(!scope.monitor||scope.monitor==="administration.measures"))};
+    return {entries,next:result.rows.length>limit && last ? encodeCursor(last,filters,limit) : null,
+      coverage:await readNativeHistoryCoverage(this.pool,undefined,
+        (!scope.area||scope.area==="administration")&&(!scope.monitor||scope.monitor==="administration.measures")&&
+        (filters.origin===null||filters.origin==="measure-appeal-moot")&&
+        (filters.kind===null||filters.kind==="measure.appealMoot"))};
   }
 }
