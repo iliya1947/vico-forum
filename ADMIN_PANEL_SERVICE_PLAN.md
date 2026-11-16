@@ -4,13 +4,14 @@ Service PR #331 is the active Admin/Super-admin coordination channel. PR #251 is
 
 ## Current boundary
 
-- **Current route (developer override, 2026-11-16):** Owner merged #334 at2026-11-16T06:39:19Z; M+N coordinator/independent PASS on `f5c0336a4e6e1f5cf9c85a4d4730da9d330c53fe`, SA04-MN-LEV-01 CLOSED. [Technical verdict](https://github.com/iliya1947/vico-forum/pull/331#issuecomment-6909332856).
-- **Lev authors all remaining O→P→Q→R→S** in cumulative Draft [#335](https://github.com/iliya1947/vico-forum/pull/335), stable exact implementation head `fa0c95105c00449ca72c7fd21a5045929d59542e`; **AUTHOR READY / STOP**, complete final-head author evidence [#6910913927](https://github.com/iliya1947/vico-forum/pull/331#issuecomment-6910913927). **Mira coordinator whole-PR review ACTIVE NEXT**, then Mark + Lira independent same-head reviews. No package-by-package authorship handoff. After completion: Mira coordinator → Mark + Lira independent same stable head → all3PASS → Owner merge. Lev cannot independently review his own code.
-- Current source-of-truth / implementation baseline: `main=c7f2538ce1d4d37152bc3d503587dc9dabd28f24` (M+N merged by #334).
-- Stage 6 remains paused; no external deployment, production migration, real R2/Google/provider setup or production data work is authorized here.
-- #315 security remediation remains a separate service task.
-- Permanent SA-04 factual/project documentation is updated only in the separate documentation closeout required by `AGENTS.md`; interim package progress is tracked here.
-- SA-05 remains blocked until full SA-04 A–S completion and final acceptance.
+- **Current main / SA05 baseline:** `efae8111a13aefbf72b4d20972dac461acc602e3`. SA04 code and separate documentation closeout are complete in main via #335 and #336.
+- **SA05-1 AUTHOR READY / STOP:** Lev implemented only atomic Owner deactivation command/facade + native acceptance in cumulative [Draft #337](https://github.com/iliya1947/vico-forum/pull/337), stable exact head `213dc8bb6583439cd8ea7efbd9872e98aa638b36`. [Complete handoff and evidence](https://github.com/iliya1947/vico-forum/pull/331#issuecomment-6915783066).
+- **Mira ACTIVE NEXT:** coordinator whole-SA05-1 checkpoint review against accepted remaining-plan §5.1–§5.2 command-core/native §5.4 scope. Confirmed current-checkpoint defects return to Lev; author does not independently review own implementation. No coordinator verdict or independent assignment exists yet.
+- SA05 checkpoints are command core → protected HTTP action → read-side/History → Owner UI → connected closure in one cumulative implementation PR. **No SA05-2 activation or merge at SA05-1.**
+- Full final native1132/app2382, CI43861391964, actual69-table manifest and applicable standard gates PASS; unchanged Drizzle generator qualification retained. Full-SA05, browser, Owner visual and deployed acceptance are not claimed.
+- Stage6 remains paused; no production/external action, SA06+, #315 security remediation, reactivation/purge/foreign credential/session policy or new recovery/last-manager model is included.
+- Permanent documentation closes in a separate end-of-task PR per AGENTS; current checkpoint adds no permanent docs.
+- SA04 planning/delivery sections below retain their historical accepted context; the current assignment is the SA05-1 review boundary above.
 
 ## Stable product decisions
 
@@ -32,11 +33,11 @@ Accepted master technical plan: predecessor #251 comment **#6806249892**.
 - **L:** authorization mutations — delivered/merged by #333, merge commit `859ea69165f51cd997e61b1d1f30f6663f045965`; Mira coordinator + Lev independent whole-L PASS on implementation head `7400c51334476125d53a0108fc7a53c0f35c754f`. This L merge predates the delivery corrections below; the current developer override separately chooses M+N as the next merge chunk.
 - **M:** AP-10 mutations/appeals — delivered/merged by #334 with fresh coordinator + independent whole-M+N PASS.
 - **N:** Complaints mutation/participation — delivered/merged by #334; SA04-MN-LEV-01 independently CLOSED.
-- **O:** own locale save — author complete in #335; coordinator/independent reviews pending.
-- **P:** Privacy save — author complete in #335; coordinator/independent reviews pending.
-- **Q:** registration settings write — author complete in #335; coordinator/independent reviews pending.
-- **R:** new user generation-plan admission — author complete in #335; coordinator/independent reviews pending.
-- **S:** whole-SA04 author connected acceptance complete on #335 stable head; final SA04 acceptance remains gated by Mira + Mark + Lira PASS and Owner merge. Full native1073/app2363 and exact-head connected CI PASS; unchanged Drizzle generator limitation qualified.
+- **O:** own locale save — delivered/merged in #335.
+- **P:** Privacy save — delivered/merged in #335.
+- **Q:** registration settings write — delivered/merged in #335.
+- **R:** new user generation-plan admission — delivered/merged in #335.
+- **S:** SA04 connected acceptance completed and code merged in #335; separate factual documentation closeout merged in #336. Repository/local-CI boundary and unchanged Drizzle generator qualification retained.
 
 ## Whole remaining Super-admin plan — accepted implementation-depth contract
 
