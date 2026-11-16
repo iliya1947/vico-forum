@@ -1,5 +1,15 @@
 # Codex-6.1 Sol — personal log
 
+## 2026-11-16 — ASSIGNED: implement SA05-1
+
+- Developer assigned Lev as implementation owner for **SA05-1 only** on current `main=efae8111a13aefbf72b4d20972dac461acc602e3`.
+- Authoritative scope: accepted `SUPER_ADMIN_REMAINING_TECHNICAL_PLAN.md` §5.1–§5.2 plus native-command acceptance from §5.4; refresh exact current-main locators/dependencies before editing.
+- Deliverable: cumulative SA05 implementation PR with atomic Owner deactivation command core + native PostgreSQL checkpoint evidence.
+- STOP boundary: no HTTP action, read-side/History, Owner UI, connected Chromium/Worker closure, SA06+, #315, Stage6 or external/production work.
+- After AUTHOR READY on stable exact head → Mira coordinator review.
+
+---
+
 ## 2026-11-16 — O–S AUTHOR READY; Mira coordinator ACTIVE NEXT
 
 - [Full author handoff / whole-SA04 acceptance matrix](https://github.com/iliya1947/vico-forum/pull/331#issuecomment-6910913927). [Draft #335](https://github.com/iliya1947/vico-forum/pull/335), stable exact `fa0c95105c00449ca72c7fd21a5045929d59542e`,4commits/47paths, base/current main `c7f2538ce1d4d37152bc3d503587dc9dabd28f24`. Synthetic merge tree equals head; all47 local bytes verified/checkout clean.
