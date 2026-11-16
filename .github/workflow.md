@@ -2,18 +2,19 @@
 
 - **Service PR:** #331, coordination-only; never merge.
 - **Current main/base:** `7e7a803876422c2f40faaf720b59027d468e99dc`.
-- **Whole-SA06 implementation:** cumulative Draft #338, reviewed exact head `522951ec164fda237b52e9777de846e32e86d47d`.
-- **Completed reviews on that head:**
+- **Whole-SA06 implementation:** cumulative Draft #338. Original reviewed exact head `522951ec164fda237b52e9777de846e32e86d47d`.
+- **Completed reviews on original head:**
   - Lira / ChatGPT-6: FAIL — confirmed AP-10 effective-count defect in `administration.measures`.
   - Mira / ChatGPT-5.6 Sol: FAIL — confirmed incomplete SA06 History filter foundation.
   - Mark / Codex-6 Sol: FINDING — independently confirmed the same History filter foundation defect.
 - **Confirmed unique current-SA06 defects:** 2.
-- **Developer reassignment:** the corrective package is assigned to **Lira / ChatGPT-6**, not Lev.
-- **ACTIVE implementer:** **Lira fixes both confirmed defects in #338 as one corrective package.**
-- **Bounded Lira corrective stages:** 1/4 contract/source dependency mapping **DONE**; 2/4 History foundation **CODE PUBLISHED / CI PENDING**, current interim Draft #338 head `9d8fc0bb6ba5ab5d403734b1c692859b2fc3b530` (not stable AUTHOR READY); 3/4 AP-10 correction not started; 4/4 full SA06 checks and AUTHOR READY not started. **NEXT on developer `...`: finish stage 2/4 validation and correct any current-head failures; stop after stage 2.**
-- **Lev / Codex-6.1 Sol:** corrective implementation assignment superseded; WAIT. He remains original SA06 author and is not an independent reviewer of the corrected head.
+- **ACTIVE implementer:** **Lira / ChatGPT-6** fixes both defects in #338. Live #338 head is currently `17b3330133327b6b9d6ab62c379fa50599fec474`; it is still a working head, not a declared stable WHOLE SA06 AUTHOR READY head.
 - **Correction 1:** complete the accepted SA06 History filter foundation: typed/query support for `origin`, `kind`, `from`, `until`; v2 cursor binding/validation; compatible source-branch predicate pushdown before branch LIMIT; preserve compatible old cursors. SA08 UI controls remain out of scope.
-- **Correction 2:** make `administration.measures` effective and per-restriction counts follow actual AP-10 applicability, including the raw-authority-floor rule for administrative restrictions; active count may remain while effective/admin-key counts cease to apply after authority changes.
-- **Acceptance:** focused PostgreSQL proof for both defects plus applicable/full SA06 acceptance required by changed code. Then one new stable exact head and WHOLE SA06 AUTHOR READY.
-- **Fresh review after correction:** Mira coordinator whole-SA06 review first; after Mira PASS, Mark is the independent non-author reviewer. Lira and Lev are ineligible as independent reviewers of the corrected head because both authored SA06 implementation.
-- **Boundary:** no merge #338, no SA07+, permanent docs, #315, Stage6/production/deploy/external work before the new review cycle passes.
+- **Correction 2:** make `administration.measures` effective/per-restriction counts follow actual AP-10 applicability, including raw-authority-floor semantics for administrative restrictions; preserve ordinary participation restrictions and Owner exemption.
+- **Lira acceptance:** focused PostgreSQL proof for both defects plus applicable/full SA06 acceptance required by changed code, ending in one stable exact #338 head and WHOLE SA06 AUTHOR READY.
+- **Developer overnight override after Lira AUTHOR READY:** Lev / Codex-6.1 Sol performs a fresh technical review of the **entire cumulative #338 / whole SA06**, not only Lira's delta.
+  - If no confirmed current-SA06 defects remain: Lev records the clean exact head and immediately starts **SA07** in a separate dependent implementation PR/branch based on that #338 head, **without waiting for #338 merge**.
+  - If Lev finds a confirmed current-SA06 defect: Lev fixes it himself in #338, reruns required acceptance and continues whole-SA06 verification until clean; then immediately starts dependent SA07 from the resulting #338 head, again **without waiting for merge**.
+- **Review meaning:** Lev is an SA06 author, so this is technical whole-package verification, not independent review. Coordinator/independent review may continue later but is **not a prerequisite for beginning dependent SA07** under this developer override.
+- **Dependency rule:** if #338 changes after SA07 branches, SA07 must be updated/rechecked against the corrected prerequisite head before SA07 acceptance.
+- **Boundary:** no SA08+, permanent docs, #315, Stage6/production/deploy/external work. Developer remains merge authority.
