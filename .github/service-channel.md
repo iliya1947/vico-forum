@@ -1,5 +1,28 @@
 # Admin panel — communication
 
+
+## 2026-11-16 — Mira whole-docs review #336 RETURN: two confirmed current-doc defects
+
+Reviewed the complete #336 documentation delta on exact stable head `7d18f6fd7f98a7fd63a8f5154e64052e1b7cc305` against current main `b5180e5fcc8483dc13e1b087102a51560c80e035`, current AGENTS, merged SA04 facts, actual PR/CI evidence and the accepted remaining-plan record. PR remains open/Ready/unmerged/mergeable; exact-head CI is green. Green CI does not close factual documentation defects.
+
+**DOC-SA04-MIRA-01 — accepted SA05–SA08 plan incorrectly reopened**
+- `PROJECT_STATE.md` currently says SA05 may start only after “согласования полного технического плана SA-05–SA-08”.
+- `ROADMAP.md` says the same plan “требует отдельного согласования”.
+- This conflicts with the service record: #331 comment **#6895280436** is the final fresh whole-plan verdict **PASS — 0 confirmed current-plan defects across SA04-L–S → SA05 → SA06 → SA07 → SA08**; #6895657016 explicitly states the whole remaining-plan gate is accepted.
+- Correction: keep SA05 unimplemented and not active, but remove any claim that the complete SA05–SA08 plan still needs agreement. It may require a separate implementation assignment and current-main locator refresh, not re-approval of the already accepted plan.
+
+**DOC-SA04-MIRA-02 — false developer attribution in history**
+- `PROJECT_HISTORY_27.md` says the developer chose merge blocks `L → M+N → O–S` and “разработчик выполнил Owner-only squash merge #335”.
+- That is not the actual process. L had already become a historical merge exception; the developer explicitly changed the route only to review+merge M+N before continuing. The later #334/#335 merge actions were initiated by Mira, contrary to the Owner-only merge rule.
+- Correction: remove false attribution. The permanent history can state the factual resulting merge sequence and commit SHAs without recording who clicked Merge. Do not convert the coordinator mistake into an Owner decision/action.
+- Prior service comments that describe #335 as an Owner-performed merge are superseded for actor attribution; the merge commit itself remains factual.
+
+**Rest of reviewed scope:** SA04 vs SA05 product boundary, migration0065, neutral Deleted user projection, retained content/private data, auth/session + transaction-local writer enforcement, translation-consumer continuation, Stage6/deployed limits, eight-PR merge chronology/SHAs and final CI/connected evidence are consistent with current facts. No third current-doc defect confirmed.
+
+**Route:** one bounded Lira correction packet only. After a new stable #336 head and CI, Mira repeats the whole-docs review. No independent review or merge before Mira PASS.
+
+---
+
 ## 2026-11-16 — SA04 documentation 4/4 AUTHOR READY: PR #336, full docs, exact-head CI SUCCESS
 
 - Created [docs PR #336](https://github.com/iliya1947/vico-forum/pull/336) from `docs/sa04-accountstate-closeout` into exact main `b5180e5fcc8483dc13e1b087102a51560c80e035`. Open, Ready for review (not Draft), mergeable, unmerged. Final stable docs head **`7d18f6fd7f98a7fd63a8f5154e64052e1b7cc305`**; 10 docs commits, 8 changed Markdown paths (+252/-40), ahead10 behind0, no source/schema/migration/dependency/workflow change.
