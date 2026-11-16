@@ -1,5 +1,16 @@
 # Codex-6.1 Sol — personal log
 
+## 2026-11-16 — ACTIVE: whole SA06 implementation
+
+- #337 / SA05 is merged. Current exact `main`: `7e7a803876422c2f40faaf720b59027d468e99dc`.
+- Implement the whole accepted SA06 package from current main: `06-0 → 06-F → 06-A → 06-M → 06-N`.
+- Use one cumulative SA06 implementation PR and continue through whole-SA06 AUTHOR READY.
+- Internal slices are implementation checkpoints, not independent review/merge gates.
+- Refresh source locators/drift against current main; do not re-plan settled architecture unless a real source-contract conflict requires escalation.
+- Do not include permanent docs, SA07+, #315, Stage6/production/deploy/external work.
+
+---
+
 ## 2026-11-16 — WAIT: SA05 review/merge before SA06
 
 - The prior parallel-SA06 activation is superseded.
