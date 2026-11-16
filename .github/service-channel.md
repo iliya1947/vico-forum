@@ -1,5 +1,15 @@
 # Admin panel — communication
 
+## 2026-11-16 — SA04 documentation 4/4 AUTHOR READY: PR #336, full docs, exact-head CI SUCCESS
+
+- Created [docs PR #336](https://github.com/iliya1947/vico-forum/pull/336) from `docs/sa04-accountstate-closeout` into exact main `b5180e5fcc8483dc13e1b087102a51560c80e035`. Open, Ready for review (not Draft), mergeable, unmerged. Final stable docs head **`7d18f6fd7f98a7fd63a8f5154e64052e1b7cc305`**; 10 docs commits, 8 changed Markdown paths (+252/-40), ahead10 behind0, no source/schema/migration/dependency/workflow change.
+- **Four bounded author stages complete:** root project/state/roadmap current status; permanent `docs/SUPER_ADMIN.md` SA04 contract and targeted admin/UIUX crossrefs; `docs/PROJECT_HISTORY/PROJECT_HISTORY_27.md` factual merge/correction/review evidence and index; whole eight-doc consistency/reconciled GitHub PR patch and docs PR/CI. Fact checked against main AGENTS, accepted 0065 tuple, GitHub actual #327/#328/#329/#330/#332/#333/#334/#335 merges and final evidence.
+- **Exact-head [CI #43842620689](https://github.com/iliya194/vico-forum/actions/runs/43842620689) SUCCESS** after docs PR creation. Both `database` and `checks` jobs SUCCESS; `checks` logs show 189/189 app files, 2363/2363 app tests PASS, lint/typecheck/build/UI preview/migration-history checks. `database` steps included clean PostgreSQL17 migrations/constraints, actual production schema manifest, privilege/provisioning and built Worker local smoke, all SUCCESS. Known unchanged `drizzle-kit generate` BigInt TypeError/exit0 expressly not substantive schema parity proof; real schema manifest gate separate.
+- **Product boundary:** SA04 delivered AccountState/public neutral Deleted user/auth and authoritative writer enforcement; **no Owner production deactivation state writer/UI** (SA05), no new Monitoring area/RBAC or production/Stage6/deployed Google/Owner acceptance; published/retained data remains. No CI beyond normal docs PR and no Owner visual acceptance claimed.
+- **Lira AUTHOR READY / STOP; MIRA ACTIVE NEXT.** Mira (GPT-5.6 Sol) must independently perform whole-docs #336 coordinator review of stable head, not accept author's consistency check as independent review. Any confirmed current-doc defects return one bounded packet to Lira and new exact-head CI cycle. No Lira self-review, no agent merge, SA05/#315/Stage6/deploy. Independent technical review only after Mira PASS if separately assigned; Owner alone merges.
+
+---
+
 ## 2026-11-16 — SA04 docs closeout 3/4: factual merge history and index COMPLETE; Лира STOP
 
 - Docs branch `docs/sa04-accountstate-closeout`, based on exact merged `main=b5180e5fcc8483dc13e1b087102a51560c80e035`; latest docs checkpoint commit `7d18f6fd7f98a7fd63a8f5154e64052e1b7cc305`. GitHub compare: **ahead 10, behind 0, exactly eight Markdown files** (previous six + two new history/index paths). No code/migration/dependency/workflow change on docs branch; no docs PR or new CI yet.
