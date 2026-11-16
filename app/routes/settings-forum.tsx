@@ -10,6 +10,7 @@ import { registrationSettingsContext } from "../settings/request-context";
 import { RegistrationSettingsConflictError, RegistrationSettingsForbiddenError,
   RegistrationSettingsValidationError } from "../../db/registration-settings";
 import { RegistrationSettingsUnavailableError } from "../../db/hyperdrive-registration-settings";
+import { AccountInactiveError, AccountMissingError } from "../../db/account-state";
 import {
   AuthorizationManagementContent, type AuthorizationFailure,
 } from "../authorization/admin-view";
@@ -82,6 +83,9 @@ export async function action({ request, context }: { request: Request; context: 
     });
     return data({ ok: true as const }, { headers: settingsPrivateHeaders });
   } catch (error) {
+    if (error instanceof AccountInactiveError || error instanceof AccountMissingError) {
+      throw new Response("Unauthenticated", { status: 401, headers: settingsPrivateHeaders });
+    }
     if (error instanceof RegistrationSettingsValidationError) return failure("invalid", 400);
     if (error instanceof RegistrationSettingsForbiddenError) return failure("forbidden", 403);
     if (error instanceof RegistrationSettingsConflictError) return failure("conflict", 409);

@@ -1,6 +1,7 @@
 import { eq, sql } from "drizzle-orm";
 import type { NodePgDatabase } from "drizzle-orm/node-postgres";
 import { forumOnlinePresence, user, userPrivacyPreferences } from "./schema";
+import { AccountMissingError, assertActiveAccountForDrizzleMutation } from "./account-state";
 
 export class UserPrivacyAccountMissingError extends Error {
   constructor(message = "Authenticated account no longer exists") {
@@ -17,7 +18,6 @@ export async function lockPrivacySubject(tx: PrivacyTransaction, actorId: string
     .where(eq(user.id, actorId)).for("update");
   if (!account) throw new UserPrivacyAccountMissingError();
   // Return the authoritative lifecycle value under the same row lock.
-  // Privacy saves intentionally do not enforce account activity in SA04-F.
   return account.deactivatedAt;
 }
 
@@ -37,7 +37,15 @@ export class DrizzleUserPrivacyRepository {
 
   async save(actorId: string, showOnline: boolean): Promise<void> {
     await this.database.transaction(async (tx) => {
-      await lockPrivacySubject(tx, actorId);
+      try {
+        await lockPrivacySubject(tx, actorId);
+      } catch (error) {
+        // Writer admission differs from the existing read-only missing-account contract.
+        if (error instanceof UserPrivacyAccountMissingError) throw new AccountMissingError();
+        throw error;
+      }
+      // Reuse the stronger subject lock held above, before ON/OFF/repeated effects.
+      await assertActiveAccountForDrizzleMutation(tx, actorId);
       await tx.insert(userPrivacyPreferences).values({ userId: actorId, showOnline })
         .onConflictDoUpdate({
           target: userPrivacyPreferences.userId,

@@ -11,6 +11,7 @@ import { userPrivacyContext } from "../settings/user-privacy-context";
 import { SettingsShell } from "../settings/shell";
 import { UserPrivacyAccountMissingError } from "../../db/user-privacy";
 import { UserPrivacyUnavailableError } from "../../db/hyperdrive-user-privacy";
+import { AccountInactiveError, AccountMissingError } from "../../db/account-state";
 import { settingsPrivateHeaders } from "./settings";
 
 type Args = { request: Request; params: { locale?: string }; context: RouterContextProvider };
@@ -76,7 +77,9 @@ export async function action({ request, context }: Args) {
     await context.get(userPrivacyContext).save(session.user.id, value === "true");
     return data<PrivacyOutcome>({ saved: true }, { headers: settingsPrivateHeaders });
   } catch (error) {
-    if (error instanceof UserPrivacyAccountMissingError) return failure("conflict", 409);
+    if (error instanceof AccountInactiveError || error instanceof AccountMissingError) {
+      throw new Response("Unauthenticated", { status: 401, headers: settingsPrivateHeaders });
+    }
     if (error instanceof UserPrivacyUnavailableError) return failure("unavailable", 503);
     throw error;
   }

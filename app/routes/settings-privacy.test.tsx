@@ -13,6 +13,7 @@ import { hebrewCommonValues, russianCommonValues } from "../localization/manual-
 import { userPrivacyContext } from "../settings/user-privacy-context";
 import { UserPrivacyUnavailableError } from "../../db/hyperdrive-user-privacy";
 import { UserPrivacyAccountMissingError } from "../../db/user-privacy";
+import { AccountInactiveError, AccountMissingError } from "../../db/account-state";
 import routes from "../routes";
 import SettingsPrivacyRoute, { action, headers, loader } from "./settings-privacy";
 
@@ -146,10 +147,13 @@ describe("SET-06 independently guarded Privacy route", () => {
     const outage = await run(post());
     expect(outage.data).toEqual({ error: "unavailable" });
     expect(outage.init?.status).toBe(503);
-    privacy.save.mockRejectedValueOnce(new UserPrivacyAccountMissingError());
-    const stale = await run(post());
-    expect(stale.data).toEqual({ error: "conflict" });
-    expect(stale.init?.status).toBe(409);
+    for (const error of [new AccountMissingError(), new AccountInactiveError()]) {
+      privacy.save.mockRejectedValueOnce(error);
+      const denied = await run(post()).catch(e => e as Response);
+      expect(denied).toBeInstanceOf(Response);
+      expect((denied as Response).status).toBe(401);
+      expect((denied as Response).headers.get("Cache-Control")).toBe("private, no-store");
+    }
     const bug = new Error("unexpected SQL error");
     privacy.save.mockRejectedValueOnce(bug);
     await expect(run(post())).rejects.toBe(bug);

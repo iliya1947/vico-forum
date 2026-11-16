@@ -1,4 +1,5 @@
 import type { Pool } from "pg";
+import { AccountStateUnavailableError } from "./account-state";
 import { isPostgresAvailabilityFailure } from "../app/localization/persistent-registry";
 import { createWebPool, bestEffortDiscardClient, isPostgresConnectionTimeout, isPostgresQueryTimeout } from "./postgres-deadlines";
 import { PostgresRegistrationSettingsRepository, type RegistrationSettingsUpdate } from "./registration-settings";
@@ -10,7 +11,7 @@ function classifiedAvailability(error: unknown): boolean {
   let current = error;
   while (current && typeof current === "object" && !seen.has(current)) {
     seen.add(current);
-    if (isPostgresAvailabilityFailure(current) || isPostgresConnectionTimeout(current)
+    if (current instanceof AccountStateUnavailableError || isPostgresAvailabilityFailure(current) || isPostgresConnectionTimeout(current)
       || isPostgresQueryTimeout(current)) return true;
     current = (current as { cause?: unknown }).cause;
   }
