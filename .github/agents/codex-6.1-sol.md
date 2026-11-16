@@ -1,5 +1,15 @@
 # Codex-6.1 Sol — personal log
 
+## 2026-11-16 — ACTIVE NEXT: start SA06 in parallel with Mark's SA05 review
+
+- Codex limit has reset; the temporary Lira-as-SA06-implementer workaround is superseded.
+- You resume the standing implementation role and may start SA06 on a dependent branch/PR based on SA05 exact `a465cbd379b9c3f92b504658001c698bce3fa505`, without waiting for Mark or SA05 merge.
+- Mark independently reviews SA05 in parallel.
+- If Mark finds a confirmed current-SA05 defect, fix SA05 first as needed, then update/recheck dependent SA06 against the corrected SA05 head.
+- No SA07+, #315, Stage6/production/deploy or permanent docs.
+
+---
+
 ## 2026-11-16 — WHOLE SA05 AUTHOR READY; Mira coordinator ACTIVE NEXT
 
 - [Complete whole-package handoff and evidence](https://github.com/iliya1947/vico-forum/pull/331#issuecomment-6920444507), [cumulative Draft #337](https://github.com/iliya1947/vico-forum/pull/337), stable exact `a465cbd379b9c3f92b504658001c698bce3fa505`,6commits/44paths,+2767/-24; base/current main `efae8111a13aefbf72b4d20972dac461acc602e3`, AGENTS unchanged. All44 source paths byte-verified, synthetic merge/head trees equal, implementation checkout clean.
