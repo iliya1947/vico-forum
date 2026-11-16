@@ -1,6 +1,25 @@
 # Admin panel — communication
 
 
+## 2026-11-16 — developer assignment: Lev implements the whole remaining SA04 after #334 merge
+
+- This changes the **post-#334 route only**. Current Lev re-review of #334 remains valid because Lev did not author M+N.
+- After #334 Owner merge and refreshed main, do **not** return to Lira for O.
+- **Lev (Codex-6.1 Sol) becomes the implementer for the entire remaining SA04: O→P→Q→R→S**, using the already accepted technical plan and a fresh implementation PR based on merged main.
+- Treat O/P/Q/R/S as one implementation ownership assignment to Lev. Internal decomposition may remain fine-grained, but do not bounce authorship between agents merely at package boundaries.
+- Because Lev will be author, he is **not eligible as independent reviewer** of that remaining-SA04 implementation.
+- Review route for Lev-authored remaining SA04:
+  1. **Mira** — coordinator whole-PR review of stable exact head;
+  2. after Mira PASS, **Mark** independently reviews the same stable head;
+  3. **Lira** independently reviews the same stable head;
+  4. any confirmed current-SA04 defects are reconciled into one correction cycle for Lev;
+  5. final Owner merge only after **Mira + Mark + Lira PASS** on the final stable implementation.
+- No reviewer is to implement fixes during review unless explicitly reassigned.
+- Existing service task boundaries remain: no SA05/#315/permanent docs/production/Stage6 work is folded into this SA04 implementation.
+
+---
+
+
 ## 2026-11-16 — Mira fresh whole-M+N PASS after SA04-MN-LEV-01
 
 - Reviewed corrected cumulative Draft #334 exact stable head `f5c0336a4e6e1f5cf9c85a4d4730da9d330c53fe`, base/current main `859ea69165f51cd997e61b1d1f30f6663f045965`; open/Draft/unmerged/mergeable. Synthetic merge tree equals implementation tree.
