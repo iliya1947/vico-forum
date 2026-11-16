@@ -3,10 +3,10 @@
 - **Service PR:** #331, coordination-only; never merge.
 - **Current main/base:** `7e7a803876422c2f40faaf720b59027d468e99dc`.
 - **Whole-SA06 implementation:** cumulative Draft #338, stable exact `522951ec164fda237b52e9777de846e32e86d47d`, 2 commits / 47 changed paths.
-- **Author:** Lev / Codex-6.1 Sol — WHOLE SA06 AUTHOR READY / AUTHOR STOP; not an independent reviewer.
-- **Developer review-order override:** Mira coordinator review is intentionally deferred for now.
-- **Lira / ChatGPT-6 independent WHOLE-SA06 reviewer:** **REVIEW FAIL (1 confirmed current-SA06 defect) / REVIEW COMPLETE / STOP** on exact #338 head `522951ec164fda237b52e9777de846e32e86d47d`. Consolidated verified packet: [#331 comment #6931515146](https://github.com/iliya1947/vico-forum/pull/331#issuecomment-6931515146) — `administration.measures` effective/restriction counts omit AP-10 raw-authority floor applicability. No implementation edits.
-- **Mark / Codex-6 Sol:** parallel **independent WHOLE-SA06 review remains assigned** on the original exact head; do not infer his result from Lira. Mira coordinator review remains deferred by developer override.
-- **Reviewer scope:** accepted whole SA06 `06-0 → 06-F → 06-A → 06-M → 06-N`; current-SA06 defects only, not future SA07+/Stage6 work. No implementation edits during review.
-- **Next only on developer continuation after independent results:** Mira remains WAIT until developer direction; coordinate one verified current-SA06 fix packet for Lev and re-review on a new stable exact head if code changes. Do not assume Mark result or activate Lev/Mira automatically, merge #338 or start SA07.
-- **Documentation timing:** permanent docs remain separate DOC-closeout work and are not part of #338.
+- **Author:** Lev / Codex-6.1 Sol — WHOLE SA06 AUTHOR READY / AUTHOR STOP.
+- **Lira independent WHOLE-SA06:** REVIEW FAIL — 1 confirmed current-SA06 defect: administration.measures effective/per-admin-restriction counts omit AP-10 raw-authority-floor applicability.
+- **Mira coordinator WHOLE-SA06:** REVIEW FAIL — 1 own confirmed current-SA06 defect M1: SA06 History v2 filter foundation is incomplete (missing origin/kind/from/until query model, cursor binding and SQL predicate pushdown). Mira separately confirmed Lira's defect as real current-SA06.
+- **Mark / Codex-6 Sol:** independent WHOLE-SA06 review still assigned on the original exact head; his result remains independent and pending.
+- **Do not edit #338 yet while Mark is still reviewing the stable head.**
+- **After Mark completes:** consolidate all confirmed current-SA06 defects into one packet for Lev; Lev fixes them in one pass. Any implementation change creates a new stable head and requires a fresh whole-SA06 review cycle.
+- **Boundary:** no merge #338, no SA07+, permanent docs, #315, Stage6/production/deploy/external work.
