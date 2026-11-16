@@ -50,7 +50,7 @@ export default function SuperAdminMonitorHistoryRoute(){
   return <SuperAdminShell locale={locale} current="monitoring">
     <p><Link to={currentArea}>{currentAreaLabel}</Link></p>
     <Timeline page={page} locale={locale} viewerId={viewerId}
-      path={before=>superAdminAreaMonitorHistoryPath(locale,
+      path={before=>withOwnerHistoryFilters(superAdminAreaMonitorHistoryPath(locale,
         {area,monitorKey} as SuperAdminMonitorScope,before,routing),
         {origin:filters.origin,kind:filters.kind,from:filters.from,until:filters.until})}/>
   </SuperAdminShell>;
