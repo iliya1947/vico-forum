@@ -1,5 +1,26 @@
 # Admin panel — communication
 
+
+## 2026-11-16 — Mira whole-PR coordinator PASS on Lev-authored SA04 O→S
+
+- Reviewed [Draft #335](https://github.com/iliya1947/vico-forum/pull/335) exact stable head `fa0c95105c00449ca72c7fd21a5045929d59542e`, base/current main `c7f2538ce1d4d37152bc3d503587dc9dabd28f24`; open/Draft/unmerged/mergeable, 4 commits / 47 changed paths. Synthetic merge tree equals implementation tree.
+- **Verdict: PASS — 0 confirmed current-SA04 O–S defects.**
+- Review was whole-PR, not author-delta-only. Current AGENTS, PROJECT, PROJECT_STATE, accepted O–S plan and relevant Settings, Authorization, content-translation/job/storage SoTs were checked against the full production/test/workflow delta.
+- **O:** one atomic active-predicate own-locale UPDATE; same-client zero-row lifecycle classification; impossible active+zero remains unexpected; route keeps stale identity/registry ordering and private 401/503/500 semantics.
+- **P:** existing subject `FOR UPDATE` remains first; shared lifecycle admission reuses that transaction/row before preference/presence effects. Missing read semantics remain separate; OFF/ON/repeat and heartbeat ordering preserved.
+- **Q:** exact Owner admission remains; transaction order is actor lifecycle guard → registration singleton lock/CAS/no-op/change → History last → commit. No new Owner fallback, permission, lifecycle event or registration semantics.
+- **R:** actor is mandatory transient server context through direct capabilities, planners and both real stores; it is not persisted in specification/task/budget/enqueue identity. Store order remains head/task/content/revision/current translation → actor → budget/effects; provisional head is same-transaction scaffolding and rolls back on denial. Existing consumers/reconciliation continue after accepted commit; production runtime remains disabled.
+- Canonical topic action and direct capability both perform preflight admission by design. This is not duplicate durable admission: preflight performs lifecycle/restriction checks only, while the store guard is the authoritative race boundary required by the accepted plan.
+- **S corrections checked:** lifecycle Better Auth 401s now carry private/no-store without changing authentication policy; registration switched from fetcher form to the sibling route-navigation Form to avoid the reproduced React Router self-abort while preserving the same route/writer/CAS/statuses and explicit retry behavior.
+- Native race tests exercise actual PostgreSQL blocking/state ordering and persisted facts for O/P/Q and both R stores, including R↔J/N, budget contention, rollback, lost enqueue ACK and accepted consumer continuation.
+- Exact-head GitHub evidence read: CI #43827656491 PG17 1073/1073 + app 2363/2363 + actual 69-table manifest; S #43827656616 records ten connected groups and final pass; AP10/SA01/SA03/J12/K5/L3/M2/N regressions SUCCESS. SA01 first attempt's recording-hour boundary is not a current O–S defect; same-head isolated rerun passed without source/test change.
+- Known unchanged Drizzle 0.31.10 BigInt generate TypeError/exit0 is still not substantive schema-parity evidence. #335 changes no schema/migrations/dependencies; actual migrated manifest is green.
+- Mira made no implementation edits and did not claim local reruns.
+- **Next:** Mark and Lira independently review this exact same whole #335 head. Confirmed current findings are reconciled into one correction packet to Lev; future-only issues do not block current SA04. Only after Mira+Mark+Lira PASS does the process stop at Owner merge.
+- No agent merge, no SA05, no docs/deploy/Stage6 expansion.
+
+---
+
 ## 2026-11-16 — O–S AUTHOR READY; Mira coordinator ACTIVE NEXT
 
 - [Full author handoff / whole-SA04 acceptance matrix](https://github.com/iliya1947/vico-forum/pull/331#issuecomment-6910913927). [Draft #335](https://github.com/iliya1947/vico-forum/pull/335), stable exact `fa0c95105c00449ca72c7fd21a5045929d59542e`,4commits/47paths, base/current main `c7f2538ce1d4d37152bc3d503587dc9dabd28f24`. Synthetic merge tree equals head; all47 local bytes verified/checkout clean.
