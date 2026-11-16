@@ -1,5 +1,18 @@
 # Codex-6.1 Sol — personal log
 
+## 2026-11-16 — WHOLE SA05 AUTHOR READY; Mira coordinator ACTIVE NEXT
+
+- [Complete whole-package handoff and evidence](https://github.com/iliya1947/vico-forum/pull/331#issuecomment-6920444507), [cumulative Draft #337](https://github.com/iliya1947/vico-forum/pull/337), stable exact `a465cbd379b9c3f92b504658001c698bce3fa505`,6commits/44paths,+2767/-24; base/current main `efae8111a13aefbf72b4d20972dac461acc602e3`, AGENTS unchanged. All44 source paths byte-verified, synthetic merge/head trees equal, implementation checkout clean.
+- Original05-A +05-B complete: atomic command, protected resource/Worker/cache, lifecycle/private read/count/versioned sample/original source History, canonical exact-Owner confirmation/control with stable operation/cancel/focus/error/GET revalidation/no automatic POST replay and viewer/target late-response isolation. No foreign credential/session/role/content deletion, schema/dependency/permission/new recovery/last-manager policy.
+- Full local+exact-head CI: app2473/192files and native1311/96files PASS. New native159 covers actual command against50writer variants ×three real commit/rollback orders, seven honest Owner-only L/Q boundary cases and two already-accepted actual job completions after real deactivation. No fabricated second Owner binding or fixture-only deactivation claim for this matrix.
+- New genuine [SA05 connected43893277198](https://github.com/iliya1947/vico-forum/actions/runs/43893277198) SUCCESS first attempt: production Worker entry/BA/PG17/localR2/Chromium, two old genuine target sessions and mounted forms, pending real Forum writer, mandatory-event500 rollback/lock503, retained published file/private identity/raw sessions/neutral public views/no online, original event in four views, actual lost ACK/late upload/late target ACK, auth switch/sign-out invalidation/no replay. Artifact14237642647 expires2026-11-23.
+- [CI43893277138](https://github.com/iliya1947/vico-forum/actions/runs/43893277138) checks+database SUCCESS; all existing applicable Chromium workflows SUCCESS including AP10all4,SA01,SA03,J12,K5,L3,M2,N,S: **15jobs/11runs**, actual steps/logs inspected. Actual69-table migrated manifest/runtime privilege/provisioning/credential/Worker gates PASS. Known unchanged Drizzle BigInt generator/exit0 remains non-proof; structural manifest is separate substantive evidence.
+- EN/RU/HE/RTL/320/768/1280/native keyboard/modal + dark mobile screenshot author evidence; no developer visual/deployed/Stage6 acceptance claim. Own local PG/preview/synthetic config/vars/dependency link removed,4235/55448closed, original Wrangler byte-restored. Local evidence `/workspace/work/sa05-final-evidence/`; original diagnostic failures and bounded fixture/UI corrections disclosed in handoff.
+- **Mira ACTIVE NEXT:** whole-SA05 coordinator review against accepted plan §5 and applicable §15 seams on this exact head; confirmed current-SA05 defects to Lev as one packet. **Lev AUTHOR STOP**, not independent reviewer. After Mira PASS, final same-head non-author reviews **Lira+Mark**. No intermediate05-A/SA05-4 gate; no merge, SA06+, #315, permanent docs or production/external work.
+
+---
+
+
 ## 2026-11-16 — Whole-SA05 source published; final author checks ACTIVE
 
 - **Current stable implementation head:** `a465cbd379b9c3f92b504658001c698bce3fa505`, cumulative Draft #337,6commits/43paths; remaining05-B source published.
