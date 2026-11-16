@@ -1,5 +1,16 @@
 # Codex-6.1 Sol — personal log
 
+## 2026-11-17 — ACTIVE: WHOLE SA06 corrective package
+
+Fix both confirmed current-SA06 defects in Draft #338 from reviewed head `522951ec164fda237b52e9777de846e32e86d47d`:
+
+1. Complete the accepted SA06 History filter foundation: `origin/kind/from/until` query model, v2 cursor binding/validation and compatible source-branch predicate pushdown before LIMIT, while preserving compatible legacy cursors. Do not implement SA08 controls.
+2. Correct `administration.measures` effective/per-restriction aggregates so administrative restrictions follow the same AP-10 raw-authority-floor applicability as authoritative admission; preserve ordinary participation restriction behavior and Owner exemption.
+
+Add focused PostgreSQL regressions for both, rerun the applicable/full SA06 acceptance, then publish one new stable exact #338 head as WHOLE SA06 AUTHOR READY. No SA07+, docs, #315, Stage6/production/deploy/external work or merge.
+
+---
+
 ## 2026-11-16 — WHOLE SA06 AUTHOR READY / AUTHOR STOP
 
 - [Whole-package scope/evidence/Mira task](https://github.com/iliya1947/vico-forum/pull/331#issuecomment-6925817870), Draft #338 stable `522951ec164fda237b52e9777de846e32e86d47d`,2commits/47paths,+11693/-111; main/base7e7a803876422c2f40faaf720b59027d468e99dc.
