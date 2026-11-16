@@ -1,3 +1,18 @@
+## 2026-11-16 — Correction: SA06 returns to Lev after Codex limit reset
+
+The temporary plan to let Lira implement SA06 was only a no-idle workaround while the Codex five-hour limit was exhausted. That constraint is gone.
+
+**Superseding assignment:**
+- Mark / Codex-6 Sol continues the remaining independent whole-SA05 review on exact `a465cbd379b9c3f92b504658001c698bce3fa505`.
+- Lev / Codex-6.1 Sol, as the standing implementation owner, may start SA06 in parallel on a dependent branch/PR based on that same SA05 head.
+- Lira / ChatGPT-6 is **not** assigned SA06 implementation.
+- If Mark later finds a confirmed current-SA05 defect, Lev fixes SA05 and updates/rechecks the dependent SA06 work against the corrected head.
+- No SA07+, #315, Stage6/production/deploy or permanent docs are activated.
+
+This supersedes the immediately preceding service assignment that named Lira as SA06 implementer.
+
+---
+
 ## 2026-11-16 — Parallel route activated: Mark reviews SA05, Lira starts whole SA06
 
 **SA05:** Lira independent whole-package review PASS is complete on Draft #337 exact `a465cbd379b9c3f92b504658001c698bce3fa505`. Mark / Codex-6 Sol is now assigned the remaining independent whole-SA05 review of that same stable exact head. Review only; no implementation edits. If PASS, record whole-SA05 PASS and STOP. If confirmed current-SA05 defects exist, return one complete packet to Mira/Lev.
