@@ -1,3 +1,18 @@
+## 2026-11-16 — Developer decision: Lira may start SA06 before SA05 merge
+
+After Lira completes her independent whole-SA05 review, **Lira / ChatGPT-6 may immediately start SA06 implementation on top of the current stable SA05 head `a465cbd379b9c3f92b504658001c698bce3fa505`**, without waiting for Mark's SA05 review or the SA05 merge.
+
+This is an explicit developer override of the earlier package-order/implementer restriction for SA06.
+
+Boundary:
+- SA05 implementation/fixes remain with Lev unless the developer changes that assignment.
+- Mark may still independently review SA05 later.
+- If SA05 changes after Mark/Mira review, Lira rebases/updates the dependent SA06 work onto the corrected SA05 head and reruns the affected checks.
+- Do not treat a dependent SA06 branch as accepted against main until its SA05 prerequisite is accepted/merged.
+- No SA07+, #315, Stage6/production/deploy work is activated by this decision.
+
+---
+
 ## 2026-11-16 — Lira independent SA05 review checkpoint 1/4: contract + whole-PR diff inventory COMPLETE, STOP
 
 - Current assignment from #331: **Lira only** as independent reviewer of whole SA05 Draft [#337](https://github.com/iliya1947/vico-forum/pull/337), exact stable `a465cbd379b9c3f92b504658001c698bce3fa505`, base/current main `efae8111a13aefbf72b4d20972dac461acc602e3`; Mira prior whole-SA05 coordinator PASS on this exact head. Mark remains deliberately unassigned until developer activation. Lev sole implementation author; no self-review.
