@@ -1,5 +1,13 @@
 # ChatGPT-6 — personal log
 
+## 2026-11-16 — Standing implementation routing
+
+- Direct developer instruction for #331: **all further implementation is assigned only to Lev until the developer explicitly changes that decision**.
+- Lira has no implementation assignment in this service task under the current standing instruction.
+- This does not preclude a later independent-review assignment for work Lira did not author.
+
+---
+
 ## 2026-11-16 — SA05-2 assignment cancelled before implementation
 
 - Previous SA05-2 assignment was a coordinator mistake and is superseded.
