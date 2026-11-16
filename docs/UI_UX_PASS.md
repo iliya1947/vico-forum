@@ -58,11 +58,13 @@ bundle, чтобы GitHub Pages не мог после deploy отдать ifram
 The ordinary admin-panel contract is [ADMIN_PANEL.md](ADMIN_PANEL.md): its global structure,
 admission/action boundaries, shared Quick actions and separation from Needs attention and
 the distinct exact-Owner-only [Super-admin](SUPER_ADMIN.md). Ordinary Admin AP-01–AP-11
-and Super-admin SA-01–SA-03 are now implemented in repository/local-CI. SA-03 delivers the
-functional canonical unified user profile with server-authorized Admin/Owner sections; the
-remaining Monitoring areas and deactivation remain separate bounded work, and final profile
-visual polish stays in the later refinement boundary. Earlier topic-level Admin panel wording
-in this document refers to contextual controls, not a substitute for the implemented ordinary
+and Super-admin SA-01–SA-04 are implemented in repository/local-CI. SA-03 delivers the
+functional canonical unified user profile with server-authorized Admin/Owner sections.
+SA-04 delivers AccountState/active-account enforcement and neutral **Deleted user**
+public identity without adding an Owner deactivation command/UI; that command belongs
+to unimplemented SA-05. The ten remaining Monitoring areas and final profile visual
+polish remain separate bounded work. Earlier topic-level Admin panel wording in this
+document refers to contextual controls, not a substitute for the implemented ordinary
 Admin or Super-admin workspaces.
 
 The pass must preserve these existing constraints:
