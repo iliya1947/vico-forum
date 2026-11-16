@@ -1,5 +1,13 @@
 # ChatGPT-6 — personal log
 
+## 2026-11-16 — SA05-2 assignment cancelled before implementation
+
+- Previous SA05-2 assignment was a coordinator mistake and is superseded.
+- Verified cumulative #337 remained at `213dc8bb6583439cd8ea7efbd9872e98aa638b36`; no Lira implementation change landed.
+- Lira has **no active SA05-2 implementation assignment**. Lev continues SA05 implementation.
+
+---
+
 ## 2026-11-16 — ASSIGNED: implement SA05-2 on cumulative #337
 
 - Developer continuation activates **SA05-2 only**. Implement on Draft #337 / `chatgpt/sa05-owner-deactivation`, inheriting SA05-1 stable PASS head `213dc8bb6583439cd8ea7efbd9872e98aa638b36`; main remains `efae8111a13aefbf72b4d20972dac461acc602e3`.
