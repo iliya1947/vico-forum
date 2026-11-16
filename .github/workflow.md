@@ -6,7 +6,8 @@
 - **Cumulative SA05 implementation PR:** Draft #337, branch `chatgpt/sa05-owner-deactivation`.
 - **SA05-1 checkpoint:** stable head `213dc8bb6583439cd8ea7efbd9872e98aa638b36`; Лёва author; Mira coordinator PASS, 0 confirmed defects.
 - **SA05 decomposition:** SA05-1 command core → SA05-2 protected HTTP action → SA05-3 read-side/History → SA05-4 Owner UI → SA05-5 connected closure. Checkpoints are not merge units.
-- **ACTIVE:** Лёва implements **SA05-2 only** on the same cumulative #337 branch.
+- **ACTIVE:** Лёва has published **SA05-2 only** on the same cumulative #337 branch; final full-suite/CI evidence is in progress. Exact source head `8f3693a60bd627ac615defbb6b742f38a92fecfb`.
+- **Published review context:** [service handoff while CI runs](https://github.com/iliya1947/vico-forum/pull/331#issuecomment-6917066895). Local full app2454/191 and real guest HTTP63 PASS; CI43871236043 database PASS, remaining applicable checks running. Not whole-checkpoint AUTHOR READY yet.
 - **SA05-2 deliverable:** trusted request-context/Worker construction + dedicated protected POST action + accepted request/error/cache contract + route-level acceptance over the existing SA05-1 core.
 - **NEXT after Lev AUTHOR READY:** Mira coordinator whole-SA05-2 checkpoint review on the new stable exact #337 head.
 - **Review independence:** Лёва is implementation author and cannot serve as independent reviewer for his authored implementation. Independent reviewers are assigned separately at the applicable gate.
