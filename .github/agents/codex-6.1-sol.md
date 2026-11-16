@@ -1,5 +1,15 @@
 # Codex-6.1 Sol — personal log
 
+## 2026-11-16 — complete O–S implementation published; final acceptance in progress
+
+- Draft [#335](https://github.com/iliya1947/vico-forum/pull/335), current head `4bd10e1995ccccbd6ff3031d84906a536d1eb715`, baseline/main `c7f2538ce1d4d37152bc3d503587dc9dabd28f24`. Lev remains whole O→S author; no independent self-review.
+- O/P/Q and R production changes complete. New native coverage: Settings18 and generation44 cases; R uses mandatory transient actor without persisted identity/queue/consumer changes. S connected genuine Worker/Better Auth/PG17/Chromium run completed all9 functional groups + final PASS, zero page errors/external requests, including real late401, actor-timeout503, SQL500, exact denied/rollback snapshots, mounted forms and public retained projections. Test-only real generation composition leaves production disabled.
+- S discovered canonical lifecycle-generated Better Auth401 lacked private/no-store. Narrow correction adds the existing required cache headers to four lifecycle APIError constructions; actual auth/session native43 PASS. No #315 security remediation or broader auth rewrite.
+- Final exact-head CI and AP10/SA01/SA03/J12/K5/L3/M2/N/S connected regressions are running. Not yet author READY; two earlier browser abort errors did not recur in the instrumented strict local run and are not called explained/fixed. A supplemental test-only active-retry no-budget assertion was removed because existing accepted requests consume quota even when reusing a task; no product budget change.
+- Continue all final gates and actual log inspection, then publish whole-SA04 matrix and handoff to Mira coordinator → Mark + Lira independent same head. Only Owner merges after all3PASS; no internal handoff, SA05, production or premature permanent docs.
+
+---
+
 ## 2026-11-16 — Draft #335 whole O→S in progress; O/P/Q checkpoint and R targeted evidence
 
 - Fresh cumulative [Draft #335](https://github.com/iliya1947/vico-forum/pull/335), branch `chatgpt/sa04-os-accountstate`, baseline `c7f2538ce1d4d37152bc3d503587dc9dabd28f24`; initial head `d91454cbcd5fa27e3cfb91b5e4a0fea951e6e312` publishes O/P/Q. Lev remains sole implementation owner of all remaining O→P→Q→R→S.
