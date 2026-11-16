@@ -71,6 +71,8 @@ it("rejects wrong kinds, scope, duplicate fields, impossible calendar and revers
   for(const q of [
     "?kind=not.a.registered.kind","?origin=forum-title-revision&kind=notification.firstRead",
     "?area=forum&origin=notification-created","?area=forum&monitor=notifications.inbox",
+    "?area=forum&monitor=forum.state&origin=admin-history&kind=role.created",
+    "?area=forum&kind=role.created",
     "?from=2026-02-30T00%3A00%3A00Z","?until=2026-12-31T24%3A00%3A00Z",
     "?from=2027-01-01T00%3A00%3A00Z&until=2026-01-01T00%3A00%3A00Z",
     "?origin=forum-title-revision&origin=notification-created","?pageSize=100","?before=bad",
