@@ -1,5 +1,15 @@
 # ChatGPT-6 — personal log
 
+## 2026-11-16 — SA04 documentation closeout checkpoint 1/4 COMPLETE / author STOP
+
+Context refreshed from current main AGENTS SHA `3701368b772d7ef9514a8d7d544b20d8682bbda7`, latest service workflow/channel/accepted plan. Mark independent #335 PASS and Owner squash merge confirmed, current main `b5180e5fcc8483dc13e1b087102a51560c80e035`; new docs branch `docs/sa04-accountstate-closeout` initially identical to main. Task decomposed into four bounded checkpoints: 1 current root docs, 2 permanent Super-admin/targeted Admin+UIUX references, 3 history+index, 4 complete docs PR/validation. Only checkpoint 1 executed.
+
+Read current main PROJECT, PROJECT_STATE, entire ROADMAP, relevant SUPER_ADMIN, AUTHORIZATION, SETTINGS, actual 0065 migration and service scope. On docs branch updated only `PROJECT.md`, `PROJECT_STATE.md`, `ROADMAP.md` to reflect merged SA-04 as AccountState foundation + existing active-actor enforcement, not a delivered Owner deactivation command/UI; migration inventory now through 0065, repository/local-CI vs undeployed Stage6 remains explicit. Future SA05 Owner control and separate technical plan SA05–SA08 preserved. Verified GitHub compare: ahead4/behind0, **3 doc paths**, no product code, latest `2f5154d938a7f167009cdd464d69d4c3ada90ee8`. No whole-document acceptance, no docs PR, no independent self-review or merge yet.
+
+**Bounded STOP:** developer `...` → checkpoint 2/4 `docs/SUPER_ADMIN.md` permanent SA04 contract + only stale SA04 crossrefs in ADMIN_PANEL/UI_UX_PASS; then STOP. History and docs PR strictly later. No SA05/#315/deploy/Stage6.
+
+---
+
 
 ## 2026-11-16 — ACTIVE AUTHOR: SA04 documentation/state closeout
 
