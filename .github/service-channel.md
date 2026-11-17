@@ -1,3 +1,15 @@
+## 2026-11-17 — WHOLE SA08 review gate CLOSED; Owner visual acceptance next
+
+- Draft #340 remains unchanged at stable exact `5eb6656d933eb39a5df45c1ddca85d3679d600c5`, open/Draft/unmerged/mergeable=true.
+- Mira coordinator WHOLE SA08: PASS / 0 confirmed current-SA08 defects.
+- Lira NEW independent WHOLE SA08: PASS / 0 confirmed current-SA08 defects, #6960310054. Her earlier withdrawn PASS remains invalid.
+- Mark independent WHOLE SA08: PASS / 0 confirmed current-SA08 defects, #6960406898. Mark independently ran focused PG17/app suites and checked exact-head CI evidence; no implementation edits.
+- Therefore the assigned code-review gate is closed on this exact implementation head. Any implementation change resets it.
+- **Active pre-merge gate:** personally attributed Owner visual acceptance required by the accepted §15 UI-composition contract / current review policy. This review evidence does not substitute for that acceptance.
+- No agent merge. No permanent docs/#315/Stage6/production/deploy/external work before the current gate is resolved. Developer remains sole merge authority.
+
+---
+
 ## 2026-11-17 — Лира: NEW independent WHOLE SA08 PASS (повторная проверка 3/3 COMPLETE)
 
 - **Новый независимый результат:** PASS /0 confirmed current-SA08 defects; [полный отчёт #331 #6960310054](https://github.com/iliya1947/vico-forum/pull/331#issuecomment-6960310054). Это отдельная трёхэтапная проверка: [1/3 #6959379869](https://github.com/iliya1947/vico-forum/pull/331#issuecomment-6959379869), [2/3 #6959484599](https://github.com/iliya1947/vico-forum/pull/331#issuecomment-6959484599), [3/3 #6960310054](https://github.com/iliya1947/vico-forum/pull/331#issuecomment-6960310054). Старый PASS #6957478441 **по-прежнему недействителен** и не восстановлен.
