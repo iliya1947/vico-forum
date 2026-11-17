@@ -4,14 +4,26 @@
 
 Super-admin is the separate **exact server-bound Owner-only** administration surface of Vico Forum. It is distinct from the ordinary permission-scoped [Admin panel](ADMIN_PANEL.md), [Settings](SETTINGS.md), and [Needs attention](moderation/COMPLAINTS.md).
 
-The approved product model is staged: **SA-01–SA-04** are implemented and merged into `main` in the repository/local-CI path. SA-01 delivers the shell, System Monitoring, adjacent History, a global source-aware Event log foundation, retained Owner event/observation storage, passive safe 5xx telemetry, and an inert Infrastructure placeholder. SA-02 adds live **Accounts & authentication** and **Security** Monitoring, source-aware adjacent/global History, exact persisted auth-transition facts and bounded source-attributed attempt telemetry. SA-03 adds the canonical unified user profile with independently authorized ordinary-Admin sections and exact-Owner private account/session/target-History sections. SA-04 adds AccountState storage, neutral public identity and active-account enforcement across existing authenticated writer paths. The Owner deactivation command/UI remains **unimplemented SA-05**; later packages, Monitoring areas, live infrastructure and external/deployed Owner acceptance remain separate.
+**SA-01–SA-08 are implemented and merged into `main` in the repository/local-CI path.**
+SA-01–SA-02 deliver exact-Owner entry/navigation, System/Accounts/Security current
+Monitoring, retained observations/auth facts, bounded attempt telemetry and shared
+source-aware History. SA-03 delivers the canonical unified profile with independently
+authorized public/Admin/Owner sections. SA-04 closes active-account admission across
+Better Auth and authoritative writers with neutral inactive public identity. SA-05
+adds the actual canonical exact-Owner deactivation command. SA-06 delivers native
+Forum/Administration/Moderation/Notifications Monitoring. SA-07 delivers
+Background/Localization/Files/Data/Integrations from existing native sources.
+SA-08 composes all twelve measured areas into Overview, completes global/scoped
+History filters and connected repository acceptance. **Infrastructure remains an
+inert Stage-6 placeholder; production integrations, real Google/Owner binding,
+external deployment and final UI/UX acceptance are not implied.**
 
 Current factual implementation status is in [PROJECT_STATE.md](../PROJECT_STATE.md); implementation/review/merge evidence is in [project history](PROJECT_HISTORY/PROJECT_HISTORY.md). Production/Stage-6 status is governed separately by [ROADMAP.md](../ROADMAP.md) and `docs/database/*`.
 
 ## Authority and separation of concerns
 
 - The entire Super-admin surface requires an authenticated Better Auth session whose `user.id` **exactly matches** the trusted server-side `VICO_OWNER_USER_ID`. An administrator, ordinary role, dynamic permission grant, email or provider claim does not confer this authority.
-- SA-01–SA-04 add **no** Owner role, permission key, second RBAC, generic elevated mutation capability, or alternative Owner-binding/bootstrap mechanism. The single-Owner product model remains in [AUTHORIZATION.md](auth/AUTHORIZATION.md).
+- SA-01–SA-08 add **no** Owner role, permission key, second RBAC, generic elevated mutation capability, or alternative Owner-binding/bootstrap mechanism. The single-Owner product model remains in [AUTHORIZATION.md](auth/AUTHORIZATION.md).
 - The Owner has two approved links to the **same** canonical `/:locale/super-admin` destination: an Owner-only entry in ordinary administration, and an Owner-only entry from the Owner account/profile navigation.
 - Ordinary **Admin** remains the authoritative location for forum object management, user administration and measures, Roles authorization views, and ordinary significant-action History. **Settings** retains role/permission/registration configuration and personal account settings. **Needs attention** retains Signals, Complaints, and Security work queues. Super-admin does not replace or duplicate their operations or authorization checks.
 - Every implemented protected Super-admin route independently checks Owner authority before cursor/input parsing or private reads. Private document/data responses and controlled errors use `private, no-store`; no session returns 401, a non-Owner returns 403, malformed cursor/query returns 400, unknown or mismatched monitor scopes return 404, and classified monitoring-storage unavailability returns 503. Unexpected database/schema/programming failures are not misreported as malformed input.
@@ -20,7 +32,7 @@ Current factual implementation status is in [PROJECT_STATE.md](../PROJECT_STATE.
 
 The merged `AdministrativeRouting` foundation has distinct typed destination families:
 `superAdmin` for Owner-surface links and `admin` for ordinary administration.
-Current Super-admin shell, Monitoring/System/Accounts/Security/History/Event log links and the approved
+Current Super-admin shell, all delivered Monitoring/History/Event log links and the approved
 Owner entries use the active UI or request-scoped resolver. A trusted replacement
 resolver can produce a different Owner base/origin without rewriting those outgoing
 addresses; the current default remains `/:locale/super-admin/*`.
@@ -37,7 +49,7 @@ a link or destination never confers Owner authority.
 
 The Super-admin product consists of **Overview**, **Monitoring & Event log**, and **Infrastructure**. User-specific administrative/Owner information belongs in the approved **unified user profile** model, not a second Super-admin user-detail implementation.
 
-**Overview** is a concise cross-area current-state summary, with relevant problems and navigation to details. It does not replicate all Monitoring views or require invented metrics. The current implementation uses real **System** measurements, compact **Accounts & authentication** and **Security** summaries, and a small recent-event projection; it does **not** claim to summarize unavailable future monitoring sources.
+**Overview** is a concise cross-area current-state summary, with relevant problems, source/coverage qualifiers and navigation to details. It does not duplicate the Monitoring readers or invent metrics. SA-08 composes the real measured state of **all twelve delivered areas** from the same authoritative sources; **Infrastructure** is a visible, unmeasured Stage-6 placeholder.
 
 **Monitoring** has these thirteen approved logical areas:
 
@@ -55,7 +67,7 @@ The Super-admin product consists of **Overview**, **Monitoring & Event log**, an
 12. Integrations
 13. Infrastructure
 
-**System**, **Accounts & authentication**, and **Security** are live after SA-01/SA-02. The remaining nine non-Infrastructure areas are explicitly **Under development**; the Infrastructure area is Stage-6-only and also a placeholder. These names define future organization, **not** a complete approved metric/event/action catalog or permission to build new producers.
+**All twelve non-Infrastructure areas are delivered** with closed, code-backed monitor catalogs and source-specific truthful coverage. Infrastructure alone remains **Under development / Stage 6**, without live readings or control. An area being delivered does not assert complete observation, a running provider/scheduler, live external credentials, a full audit or permission to invent new producers.
 
 For each monitor that is actually implemented, the approved contextual model is:
 
@@ -79,7 +91,7 @@ A successful System read produces or reuses bounded persisted observations. Unch
 
 Each card displays the time of the current read and **Coverage since**. The coverage start is the **earliest actually retained timestamp** across observations and matching System events for that monitor, not the last sample and not an invented pre-history interval. The last recorded observation timestamp is tracked internally but is not separately displayed on the current cards.
 
-The SA-01 System projection remains unchanged. SA-02 later extends Overview with compact Accounts/Security summaries from the same current readers; unavailable future areas are not presented as measured.
+The original SA-01 System monitors and their sampling semantics remain authoritative. SA-02 extended the earlier Overview with Accounts/Security; SA-08 now composes all delivered area summaries from shared native reads without double-counting or fabricating measurements.
 
 ### Adjacent History and global Event log
 
@@ -93,7 +105,7 @@ The SA-01 System projection remains unchanged. SA-02 later extends Overview with
 
 Forward migration `0062_owner_monitoring_foundation` introduced the append-only `owner_events` and `owner_monitor_observations` tables. The web runtime receives the bounded SELECT/INSERT access required for recorded events/observations and reads, not UPDATE/DELETE or identity-sequence mutation access. Owner records are source-aware, immutable after append, deduplicated by occurrence where applicable, and use bounded/safe payloads rather than copied passwords, tokens, raw requests, or private user data.
 
-The approved Owner monitoring/event history policy is **indefinite retention until an explicit Owner policy change**, with **no ordinary UI deletion**. This is not a promise of historical backfill or full audit coverage from before the producers were connected. There is no retention/cleanup job. SA-02 adds bounded authentication/account facts and attempt telemetry. SA-03 projects only target-attributable retained sources into the canonical profile; it does not invent backfill, copy source identities, or add a deactivation producer.
+The approved Owner monitoring/event history policy is **indefinite retention until an explicit Owner policy change**, with **no ordinary UI deletion**. This is not a promise of historical backfill or full audit coverage from before the producers were connected. There is no retention/cleanup job. SA-02 adds bounded authentication/account facts and attempt telemetry. SA-03 projects only target-attributable retained sources into the canonical profile; it did not invent backfill, copy source identities, or itself add a deactivation producer. SA-05 later added that separate canonical Owner operation.
 
 The Worker records a small sanitized event for an actual HTTP 5xx response on a best-effort basis. Recording failure must not change the original response; it is **not** an exhaustive request log. A classified query-timeout/storage failure can produce a protected 503; unrelated unexpected errors retain their normal classification.
 
@@ -261,25 +273,160 @@ or show false success. SA-04 introduces no new permission/RBAC, Monitoring area,
 reactivation, foreign credential/provider operation, forced-session control,
 Stage-6 activation or production rollout.
 
-## SA-05 and later — approved future boundaries
+## SA-05 — implemented canonical Owner account deactivation
 
-The approved future exact-Owner-only **deactivation command and UI** belong to
-**SA-05**, not SA-04. The deactivated account ceases active forum use, but published
-content remains, public identity is **Deleted user**, and private/account data is
-retained for at least one year. The bound Owner may not deactivate their own account
-and no mandatory reason is required. SA-04 implements the underlying state and
-enforcement, **not** the production command that changes account state.
-Reactivation, physical deletion, retention-end actions, forced session termination,
-foreign credential/provider mutation and a second Owner/recovery model are not
-approved by this product boundary.
+SA-05 adds the **actual state-changing command** to the approved canonical
+`/:locale/users/:userId` profile, not to a second user-detail or Super-admin
+mutation backend. Only the currently authenticated exact server-bound Owner can
+invoke it. The Owner cannot deactivate themselves; submitted target/operation
+identity does not establish actor authority. The command requires no mandatory
+reason. Ordinary Admin measure or authorization management does not confer this
+capability.
 
-Additional Monitoring sources, new Owner-only actions and a broader full-audit
-model require later bounded delivery and real source-specific evidence. Exactly
-System, Accounts & authentication and Security are live Monitoring areas today;
-the other ten are not delivered.
+In one authoritative PostgreSQL transaction, the operation serializes the
+Owner/target lifecycle admission, changes the existing SA-04 AccountState tuple,
+clears public presence as required, and records the **one original retained
+deactivation event**. Replays/no-ops and uncertain acknowledgements do not
+produce a second effect or invented successful history. Mandatory event failure
+rolls back the lifecycle/presence change. Concurrent writers follow the
+authoritative actor/state commit order: a writer that committed first stands;
+a later writer denied by active-account admission cannot add domain effects.
+Previously accepted background tasks are not retroactively cancelled.
 
-The **Infrastructure** tab is present at `/:locale/super-admin/infrastructure` as an honest **Under development / Stage 6** placeholder. It exposes no live Cloudflare/Neon/deployment/secret/provider data, controls, credentials or infrastructure API. Actual infrastructure administration and external runtime checks are deferred until the Owner explicitly resumes Stage 6.
+The account ceases new authenticated participation on its next protected
+request; previously issued cookies are not treated as authority, while
+own signed sign-out remains possible. Public profiles, authors and identity
+projections display neutral **Deleted user** without revealing old identity;
+published forum content, revisions and attachments remain visible under their
+existing access rules. Private/account data, evidence and attributed retained
+History are not purged, with `retain_at_least_until` at least one UTC calendar
+year after deactivation. This is **not** a hard delete, forced foreign-session
+termination, reactivation or expiration-triggered purge. No new Owner role,
+credential/provider mutation or production rollout is introduced.
 
-## SA-01–SA-04 acceptance boundary
+## SA-06 — implemented native Forum, Administration, Moderation and Notifications
 
-SA-01–SA-04 have passed repository/local-CI, native PostgreSQL 17 and applicable built Worker/Better Auth/Chromium connected acceptance, followed by coordinator and independent technical review; all four implementations are merged. SA-02 acceptance covers real local Better Auth signup/sign-in/password/session lifecycle flows, exact source identity across current/scoped/global views, protected document/data admission and storage degradation/recovery. SA-03 acceptance additionally covers the canonical public/Admin/Owner profile composition, exact target/source isolation and pagination, Owner-self measure routing, protected outage handling, EN/RU/HE/RTL/responsive behavior, delayed sign-out invalidation and SPA account switching without stale private DOM. SA-04 additionally verifies AccountState migration/predicates, neutral public identity, HTTP/direct authentication and transaction-local writer enforcement, lifecycle races and connected retained-content behavior. These checks use disposable/local test infrastructure, fixture-deactivated users and synthetic Owner binding. They do **not** imply production deployment, live Google OAuth, real Owner binding, Stage-6 integrations, complete security monitoring, an Owner deactivation command/UI, or final owner visual-polish acceptance. The broader approved product model remains staged; no later package becomes authorized merely by this documentation.
+SA-06 extends the same Owner Monitoring/History model to four native areas
+and ten fixed monitors:
+
+- **Forum:** `forum.structure`, `forum.state`, `forum.content`,
+  `forum.presence`;
+- **Administration:** `administration.authorization`,
+  `administration.measures`, `administration.registration`;
+- **Moderation:** `moderation.help`, `moderation.complaints`;
+- **Notifications:** `notifications.inbox`.
+
+Current figures come from complete native PostgreSQL aggregates at a defined
+read-time, not from a truncated UI page. A truly empty source is zero; a failed
+source is unavailable rather than an invented healthy zero. Recording of
+monitor snapshots remains bounded and best-effort; a failed observation write
+does not erase a successfully measured current value. Existing visibility,
+permission and lifecycle rules retain their original authoritative domain
+boundaries; read-only Monitoring never performs the domain action.
+
+Adjacent/global/Owner-target History project the **original native source
+IDs**, immutable revisions, Admin commands, Help/Complaint events, measure
+appeals and terminal outcomes, and notification creation/first-read events
+where the actual source proves them. One source fact can be associated with
+several monitor scopes without becoming duplicate global events. Actor,
+subject, recipient and first-read attribution are limited to persisted proof;
+unknown terminal time or legacy actor remains explicitly unknown instead of
+being guessed. Stable timestamp/ID cursor pagination and fixed source-aware
+filters do not silently skip relevant retained rows. Forward migration
+`0066_sa06_native_monitor_indexes` adds the required native chronological,
+person-attributed and terminal/source-lookup indexes without a new journal,
+permission, producer or source-table rewrite.
+
+## SA-07 — implemented Background, Localization, Files, Data and Integrations
+
+SA-07 supplies five additional areas using existing domain and operational
+sources, with fixed read-only catalogs:
+
+- **Background processes:** `background.translation`,
+  `background.attachments` — real retained task/cleanup state and bounded
+  successful-transition facts; scheduler/provider runtime that is disabled
+  or not wired is labeled as such.
+- **Localization & translations:** `localization.registry`,
+  `localization.ui`, `localization.content`,
+  `localization.budget` — actual persistent locale/translation/bundle,
+  current-revision and budget state, with the localization DB read separated
+  from the web DB role. Unknown provider wiring or limits are not fabricated.
+- **Files & attachments:** `files.assets`, `files.operations` —
+  authoritative metadata/journal/cleanup counts; retained observations for
+  the 13 supported private storage slots, not a fresh R2 probe on page GET.
+- **Data:** `data.application`, `data.compatibility`,
+  `data.retention` — real application/compatibility state and explicit
+  coverage/unchecked retention boundaries, without performing migration
+  or retention cleanup.
+- **Integrations:** `integrations.database`,
+  `integrations.authentication`, `integrations.translation`,
+  `integrations.storage` — bounded evidence from already observed
+  dependency/auth/task/storage sources; configuration is not proof of a
+  successful external operation.
+
+A successful operational event remains one native `owner_events` identity
+through global/scoped History. Local transport/mock provider fixtures used in
+CI never claim a live Cloudflare/Neon/Google/provider integration. Monitoring
+does not trigger R2 calls, translation-generation/provider work, Queue jobs,
+credential changes, background cleanup or a second audit writer. Sources
+distinguish measured, sampled, best-effort, disabled, unavailable, stale
+and unattributed coverage; a retained sample is not a live provider call or
+an exhaustive continuous event stream.
+
+## SA-08 — implemented complete Overview and closed History controls
+
+SA-08 composes the approved **13-area** Overview: twelve measured source areas
+and the explicitly unmeasured **Infrastructure** placeholder. Current counts,
+timestamps, registration, task, file and retention summaries reuse their
+existing native readers, not a new data store or repeated source probes.
+The bounded web snapshot and separately bound localization read provide
+source-local consistency. Independent classified unavailable sources are
+isolated with SAVEPOINT recovery; successful neighboring areas retain
+their measured values. The composer uses at most 40 fixed source-read
+statements and a 10-second read budget, then closes read transactions before
+any bounded global observation batch. Global sample gates use the existing
+15-minute deduplication semantics and ordered advisory locks. A failed
+recorder cannot turn a valid current read into a false zero. Unknown or
+partially covered state never becomes an overall healthy assertion.
+
+The global Event log and every applicable adjacent History retain the same
+original `(origin, source ID)` fact identity and closed allowlisted filters:
+area, monitor, source origin, fact kind and UTC start/end. Invalid/duplicate,
+scope-incompatible or impossible-calendar filters fail before private SQL.
+Keyset cursors bind the full selected filter set and page size, preserve
+microsecond timestamps, and retain compatibility with previously valid
+unfiltered cursors. UI links/paging round-trip the active filters.
+Historical/event/source timestamps, limited coverage, missing actor proof
+and sampled observations are identified rather than silently normalized
+into a continuous full audit.
+
+Contextual actions navigate to the existing guarded **Admin**, **Settings**,
+**Needs attention** or canonical **profile** operation as appropriate, with
+their existing session, permission, actor, origin, CAS and History contracts.
+A Monitoring card or an action link does not authorize a new write. On known
+sign-out, actor change or late private response, previously matched Owner
+presentation is not revived by stale client data. All private success,
+document/data and controlled-error responses retain no-store protection.
+
+## Infrastructure and acceptance boundary
+
+The `/:locale/super-admin/infrastructure` tab is a truthful **Under
+development / Stage 6** placeholder. It exposes no live Cloudflare/Neon,
+deployment, secret, provider or storage-administration API. Separate Owner
+Worker, Access, authentication/session isolation, production DB/deployment
+separation, real OAuth/Owner binding and external runtime checks require
+explicit Stage-6 work and approval.
+
+**SA-01–SA-08 are complete in the repository/local-CI delivery scope.**
+The whole-SA08 connected acceptance covers actual built Worker, genuine
+Better Auth sessions, disposable PostgreSQL 17, Chromium and local R2
+where applicable, including canonical Owner action/lifecycle races,
+native source identity, multi-page filtered History, partial failures,
+privacy, keyboard/responsive and EN/RU/HE/RTL presentation. These checks
+do **not** establish deployed infrastructure, production migration/roles,
+live Google OAuth, real `VICO_OWNER_USER_ID`, active external
+provider/Queue operations or full security/event collection. The actual
+Owner visual/UI refinement and final product acceptance belong to a
+**later separate UI/UX pass** by explicit Developer decision, and did
+not block the SA-08 implementation merge. No other disabled capability
+becomes implemented merely by documenting its approved destination.
