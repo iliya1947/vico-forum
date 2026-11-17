@@ -98,3 +98,14 @@ DB-прогона устранена настройкой UTC как в CI; по
 Лёва — автор реализации и независимое review не выполняет. После review/merge нужен
 отдельный заключительный docs PR для authorization/AP-10/PROJECT_STATE.
 #320 и #331 не изменялись; production actions не выполнялись. STOP.
+
+
+## 2026-11-18 — Мира: coordinator technical review завершён
+
+Проверен весь принятый scope implementation PR #343 на stable exact head `10321fdae762004ac2d55e9618a89c6c41e0d2ac` против текущего `main` `906d15d896cc3a4f3b7dc9a03f46acd883925d1d`.
+
+Подтверждённых current-scope дефектов не найдено. Проверены permission/catalog/default grants и migration 0067, authoritative ownership + `posts.edit` admission, active-account boundary, immutable revision/CAS/no-op, translation currentness, route validation/failure mapping, loader capability, title editor conflict flow, schema snapshot/manifest и относящиеся tests/browser checks.
+
+GitHub на exact head показывает 17 check-runs, все с conclusion=success; schema snapshot 0067 отличается от 0066 только новым snapshot id/prevId и расширенным `authz_permissions_catalog_check`.
+
+Формальный coordinator PASS/APPROVE пока не зафиксирован только из-за обязательного owner visual acceptance для UI-изменения по текущему AGENTS.md. Browser evidence Лёвы не заменяет решение владельца. После owner visual acceptance, если implementation head не изменится, Мира фиксирует PASS и передаёт exact head Марку.
