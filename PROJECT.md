@@ -53,24 +53,31 @@ application permissions разрешаются отдельно server-side.
 Постоянный контракт обычной админ-панели — [`docs/ADMIN_PANEL.md`](./docs/ADMIN_PANEL.md).
 Он задаёт структуру и permission boundaries: AP-01–AP-11 реализованы в repository/local-CI.
 Отдельный exact-Owner-only Super-admin описан в [`docs/SUPER_ADMIN.md`](./docs/SUPER_ADMIN.md):
-SA-01–SA-04 реализованы в repository/local-CI. SA-01 доставил Owner shell/два входа,
-System Monitoring, смежную History, общий Event log foundation и Stage-6 Infrastructure
-placeholder; SA-02 добавил live Accounts & authentication и Security Monitoring
-(4 + 3 монитора), source-aware adjacent/global History, точные auth-transition facts
-и bounded source-attributed attempt telemetry. SA-03 сделал canonical
-`/:locale/users/:userId` единым user-detail: public profile дополняется независимо
-авторизованными Admin sections для существующих measures/authorization controls и exact-Owner
-private sections с account identity, linked methods, safe sessions/device data и target-scoped
-retained History. Legacy Admin user-detail остаётся только guarded compatibility redirect;
-migration `0064` добавляет шесть target-chronological indexes без новых tables/grants/writers.
-SA-04 добавил AccountState foundation (migration `0065`) и серверное enforcement
-активности аккаунта в авторизованных сессиях и пользовательских операциях Forum,
-вложений, authorization, мер, жалоб, Settings и запросов генерации переводов.
-Неактивный аккаунт отображается публично нейтрально как «Deleted user», тогда как
-опубликованный контент и защищённые retained-данные сохраняются. Это repository/local-CI
-реализация без production rollout. **Owner-команда и UI деактивации аккаунта не
-реализованы — они относятся к SA-05**. Остальные десять Monitoring-областей и
-последующие SA-пакеты также остаются отдельной работой.
+**SA-01–SA-08 реализованы в repository/local-CI**. SA-01–SA-02 создали Owner shell,
+System, Accounts & authentication, Security Monitoring, смежную/глобальную source-aware
+History, retained observations/auth facts и bounded attempt telemetry. SA-03
+объединил публичный профиль `/:locale/users/:userId` с независимо защищёнными
+Admin-разделами и exact-Owner private account/session/target History; старый Admin
+detail остался guarded redirect. SA-04 внедрил AccountState и серверное enforcement
+активности в Better Auth и существующих авторитетных write boundaries, сохранив
+опубликованный контент и нейтральную identity неактивного пользователя.
+
+**SA-05** добавил canonical exact-Owner-only команду деактивации в unified profile:
+атомарное изменение lifecycle/retention и original event, без self-deactivation,
+reactivation, physical purge, foreign-session termination или credential mutation.
+**SA-06** доставил native Forum, Administration, Moderation и Notifications Monitoring
+и соответствующую оригинальную History; **SA-07** — Background processes,
+Localization & translations, Files & attachments, Data и Integrations из существующих
+native источников, без активации внешних provider/R2/Queue вызовов при Monitoring GET.
+**SA-08** завершил Overview по 12 измеряемым областям и честному Stage-6-only
+Infrastructure placeholder (всего 13), фильтры глобальной/смежной History и
+canonical действия через исходные Admin/Settings/Attention/profile boundaries.
+Миграции `0062`–`0066` находятся в repository history.
+
+Это **не** production rollout, deployed Google OAuth, реальная конфигурация
+`VICO_OWNER_USER_ID`, Neon/Hyperdrive/Queue/R2/provider acceptance или отдельный
+Owner Worker/Access. Stage 6 остаётся отдельным; визуальная приёмка/полировка
+отнесена владельцем к позднему UI/UX pass.
 Обычная панель, Needs attention и Super-admin не объединяют permission boundaries или
 mutation backends.
 Settings ведётся отдельно по [`docs/SETTINGS.md`](docs/SETTINGS.md): SET-01 закрепил
