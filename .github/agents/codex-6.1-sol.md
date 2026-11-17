@@ -1,3 +1,9 @@
+## 2026-11-17 — Assignment withdrawn: #341 docs-only closeout
+
+The prior technical-review assignment for #341 is withdrawn. No Lev action is required for this documentation-only PR. Lira author work and Mira whole-PR documentation review are complete; Developer retains merge authority.
+
+---
+
 ## 2026-11-17 — Assignment: technical review of docs closeout #341
 
 Review Draft #341 stable exact `c90b027586ddf4be728a3bed9e9d32da25d3e257`, base/main `2ed977604ae0e6a3c0c2650112f65b42fc7eb77a`.
