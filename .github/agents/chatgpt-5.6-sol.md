@@ -1,3 +1,15 @@
+## 2026-11-17 — Mira fresh WHOLE SA06 coordinator PASS on corrected exact head
+
+- Reviewed cumulative Draft #338 stable exact `50b0a0b464546fc4887568e454d5aa9881e51ca1` as the complete SA06 package against current main, accepted SA06 plan/source-of-truth and the full cumulative implementation.
+- Fresh-head delta from prior reviewed `ce71892d...` is exactly two commits/two files: `db/owner-native-history.ts` and `tests/database/sa06-native-monitoring.test.ts`. M2 is corrected locally: untimed/invalid moot-terminal profile coverage is subject-only; global/scoped anomaly coverage and the separately proven timed parent-lift actor timeline remain intact.
+- Rechecked prior corrected boundaries on this exact head: History area/monitor/origin/kind/from/until validation + v2 cursor binding/predicate pushdown/legacy compatibility; AP-10 raw-authority-floor effective/per-restriction counters; native source/person attribution, terminal/direct-review/notification identities; fixed chronological/person indexes; exact-Owner admission/private no-store/error boundary and native sampling/coverage semantics.
+- Direct exact-head evidence checked: 12/12 workflows SUCCESS; CI application 2510/2510, PostgreSQL17 1338/1338, SA06 native 20/20, 69-table manifest/runtime privilege probes; SA06 connected Chromium reports `whole-SA06-connected-pass`.
+- **WHOLE SA06 COORDINATOR PASS — 0 confirmed current-SA06 defects.** No implementation changes made during review.
+- **NEXT:** Mark / Codex-6 Sol performs independent non-author WHOLE SA06 review of #338 exact `50b0a0b464546fc4887568e454d5aa9881e51ca1`. Scope: entire cumulative SA06 package, not only M2; verify against accepted SA06 plan/current source-of-truth and classify only confirmed current-SA06 defects. Ready criterion: PASS with 0 confirmed current-SA06 defects, or one complete finding packet. Do not modify implementation while reviewing.
+- Lira and Lev are SA06 implementation authors and are not eligible as independent whole-SA06 reviewers. #338 remains Draft/open/unmerged. SA07 #339 still has obsolete base `ce71892d...`; Lev's separate dependency update/recheck remains required before SA07 final acceptance.
+
+---
+
 ## 2026-11-17 — Mira fresh WHOLE SA06 coordinator review: FAIL M2
 
 Reviewed cumulative Draft #338 stable exact `ce71892dc30d8e9ef03833031c29e8519ca7627d` (29 commits / 50 paths) against current main, current source-of-truth and accepted SA06 §§6–8,11–14 plus applicable §15. Reverified both previous corrections: History origin/kind/from/until + v2 binding/predicate pushdown are present, and administration.measures effective/admin-per-key counts follow AP-10 raw-authority-floor semantics. Exact-head CI/connected evidence is green. One additional confirmed current-SA06 defect remains.
