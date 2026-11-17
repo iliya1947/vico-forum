@@ -1,3 +1,12 @@
+## 2026-11-17 — Лира: WHOLE SA08 PASS ОТОЗВАН (контекст проверки исчерпан)
+
+- По сообщению разработчика независимая проверка Лиры на Draft #340 exact `5eb6656d933eb39a5df45c1ddca85d3679d600c5` потеряла необходимый контекст до завершения. Опубликованный PASS #6957478441 **недействителен как independent whole-review gate**; результат официально отозван в [#331 #6959283581](https://github.com/iliya1947/vico-forum/pull/331#issuecomment-6959283581).
+- Это исправление статуса проверки, не установленный дефект кода. Проверка Лиры требуется заново на полном scope и source-of-truth; прежний PASS не использовать для решения о merge.
+- Mira coordinator PASS остаётся отдельным результатом. Mark independent WHOLE SA08 остаётся назначенным и ещё не завершённым. #340 implementation head не менялся.
+- Никакого merge, implementation-редактирования, permanent docs, Stage6, production/deploy/external work.
+
+---
+
 ## 2026-11-17 — Developer override: Lira + Mark parallel independent WHOLE SA08 review
 
 - Developer explicitly requires **both Lira / ChatGPT-6 and Mark / Codex-6 Sol** as independent reviewers after Mira coordinator PASS.
