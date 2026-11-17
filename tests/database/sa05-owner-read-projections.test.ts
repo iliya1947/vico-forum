@@ -177,7 +177,9 @@ describe("SA05-3 / original 05-A native read and retained-event projections",()=
     await client.query("analyze owner_events");
     for(const id of [owner,"index-subject-19"]){
       let captured:{sql:string;values:unknown[]}|undefined;
-      const traced={query:(async(sql:string,values:unknown[])=>{captured={sql,values};return pool.query(sql,values);}) as Pool["query"]};
+      // SA06 adds an explicit coverage query after the timeline. EXPLAIN must
+      // still inspect the actual chronological statement, not that metadata.
+      const traced={query:(async(sql:string,values:unknown[])=>{if(sql.startsWith("with candidates as"))captured={sql,values};return pool.query(sql,values);}) as Pool["query"]};
       const page=await new PostgresOwnerUserHistory(traced).readHistory(id);
       expect(page.entries).toHaveLength(id===owner?25:1);
       const result=await client.query("explain (analyze,buffers,format json) "+captured!.sql,captured!.values);

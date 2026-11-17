@@ -35,7 +35,8 @@ export function isOwnerAccountLifecyclePath(pathname: string): boolean {
 }
 
 export function protectFrameworkFailure(request: Request, response: Response): Response {
-  const ownerAction = isOwnerAccountLifecyclePath(new URL(request.url).pathname);
+  const ownerAction = isOwnerAccountLifecyclePath(new URL(request.url).pathname)
+    || isOwnerMonitoringPath(new URL(request.url).pathname);
   if (!ownerAction && (response.status < 500 || response.status > 599)) return response;
   const privateAttachmentRead = (request.method === "GET" || request.method === "HEAD")
     && isPrivateAttachmentPath(new URL(request.url).pathname);
@@ -49,4 +50,12 @@ export function protectFrameworkFailure(request: Request, response: Response): R
   });
   protectedResponse.headers.set("Cache-Control", "private, no-store");
   return protectedResponse;
+}
+
+/** All registered Owner pages share this private prefix, including static/data aliases. */
+export function isOwnerMonitoringPath(pathname:string):boolean {
+  const segments=pathname.split("/");
+  if(!segments[1]||!segments[2])return false;
+  try{return ["super-admin","super-admin.data"].includes(decodeURIComponent(segments[2]).toLowerCase());}
+  catch{return false;}
 }

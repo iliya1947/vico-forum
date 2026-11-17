@@ -1,14 +1,17 @@
 import type { Pool } from "pg";
+import { ADMIN_MONITOR_SCOPES_SQL } from "./owner-monitor-catalog";
+import { NATIVE_HISTORY_ORIGINS, nativeHistoryBranches, HISTORY_COLUMNS, readNativeHistoryCoverage, type NativeHistoryOrigin, type OwnerSourceCoverage } from "./owner-native-history";
 import { ACCOUNT_HISTORY_SELECT_SQL } from "./owner-account-history";
 import type { OwnerHistoryEntry, OwnerHistoryMonitor, OwnerHistoryOrigin,
   OwnerHistoryPayload } from "./owner-sa02-history";
 
 /** Fixed target-specific projection of only sources with persisted person attribution. */
 export type OwnerUserHistoryOrigin =
-  Extract<OwnerHistoryOrigin, "auth-event" | "account-event" | "admin-history" | "attachment-evidence" | "attempt-pattern">;
+  Extract<OwnerHistoryOrigin, "auth-event" | "account-event" | "admin-history" | "attachment-evidence" | "attempt-pattern"> | NativeHistoryOrigin;
 export interface OwnerUserHistoryPage {
   readonly entries: readonly OwnerHistoryEntry[];
   readonly next: string | null;
+  readonly coverage?: readonly OwnerSourceCoverage[];
 }
 export interface OwnerUserHistoryReader {
   readHistory(targetId: string, before?: string): Promise<OwnerUserHistoryPage>;
@@ -21,7 +24,7 @@ export class InvalidOwnerUserHistoryCursorError extends Error {
 }
 
 const RESOURCE = "profile-history";
-const ORIGINS: readonly string[] = ["auth-event", "account-event", "admin-history", "attachment-evidence", "attempt-pattern"];
+const ORIGINS: readonly string[] = ["auth-event", "account-event", "admin-history", "attachment-evidence", "attempt-pattern", ...NATIVE_HISTORY_ORIGINS];
 const PAGE_SIZE = 25;
 const EXACT = /^([1-9][0-9]{3})-(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01])T([01][0-9]|2[0-3]):([0-5][0-9]):([0-5][0-9])\.([0-9]{6})Z$/;
 type Cursor = {
@@ -106,8 +109,7 @@ function project(row: Row): OwnerHistoryEntry {
  * An actor==subject native row occurs only once within its source; source identity is
  * preserved, and unattributed global observations/gap slots never join a person.
  */
-const TARGET_TIMELINE_SQL = [
-  "with entries as (",
+const LEGACY_PERSON_SQL = [
   "select 'auth-event'::text origin,e.id::text source_id,e.occurred_at at,",
   " e.recorded_at recorded_at, case e.kind",
   " when 'account.created' then ARRAY['accounts.users']::text[]",
@@ -155,8 +157,7 @@ const TARGET_TIMELINE_SQL = [
   " from forum_attachment_security_events f where f.uploaded_by_user_id=$1",
   "union all",
   "select 'admin-history'::text,a.id::text,a.occurred_at,a.occurred_at,",
-  " case when a.action='settings.registrationChanged'",
-  " then ARRAY['accounts.registration']::text[] else ARRAY[]::text[] end,",
+  ADMIN_MONITOR_SCOPES_SQL+",",
   " a.action,'admin_history'::text,null::text,",
   " jsonb_build_object('actorUserId',a.actor_id,'targetType',a.target_type,'targetId',a.target_id) ||",
   " case when a.action='settings.registrationChanged' then jsonb_build_object(",
@@ -177,15 +178,21 @@ const TARGET_TIMELINE_SQL = [
   " or (a.target_type='user' and a.target_id=$1)",
   " or (a.target_type='user-measure' and exists (",
   " select 1 from user_measures m where m.target_user_id=$1 and m.id::text=a.target_id))",
-  "), timeline as (",
-  " select *,to_char(at at time zone 'UTC','YYYY-MM-DD\"T\"HH24:MI:SS.US\"Z\"') exact_at,",
-  " to_char(recorded_at at time zone 'UTC','YYYY-MM-DD\"T\"HH24:MI:SS.US\"Z\"') exact_recorded_at",
-  " from entries)",
-  " select origin,source_id,exact_at,exact_recorded_at,scopes,kind,source,quality,details",
-  " from timeline where ($2::timestamptz is null or",
-  " (at,origin,source_id)<($2::timestamptz,$3::text,$4::text))",
-  " order by at desc,origin desc,source_id desc limit $5",
 ].join("\n");
+function personTimelineSql(){
+  const cursor="($2::timestamptz is null or (at,origin,source_id)<($2::timestamptz,$3::text,$4::text))";
+  const branches=LEGACY_PERSON_SQL.split("\nunion all\n");
+  const admin=branches.pop()!;const marker=" from admin_history a where";
+  const select=admin.slice(0,admin.indexOf(marker));
+  branches.push(select+" from admin_history a where a.actor_id=$1",select+" from admin_history a where a.target_type='user' and a.target_id=$1");
+  const legacy=branches.map(sql=>`(select ${HISTORY_COLUMNS} from (${sql}) facts(${HISTORY_COLUMNS}) where ${cursor} order by at desc nulls last,origin desc nulls last,source_id desc nulls last limit $5)`);
+  const measureFact=select+" from admin_history a where a.target_type='user-measure' and a.target_id=parents.id::text";
+  legacy.push(`(select ${HISTORY_COLUMNS.split(',').map(c=>"f."+c).join(',')} from user_measures parents cross join lateral (select ${HISTORY_COLUMNS} from (${measureFact}) facts(${HISTORY_COLUMNS}) where ${cursor} order by at desc nulls last,origin desc nulls last,source_id desc nulls last limit $5) f where parents.target_user_id=$1 order by f.at desc nulls last,f.origin desc nulls last,f.source_id desc nulls last limit $5)`);
+  const native=nativeHistoryBranches({person:"$1",at:"$2",origin:"$3",id:"$4",limit:"$5"});
+  return `with candidates as (${[...legacy,...native].join(" union all ")}), unique_facts as (select distinct on(origin,source_id) ${HISTORY_COLUMNS} from candidates order by origin,source_id)
+    select origin,source_id,to_char(at at time zone 'UTC','YYYY-MM-DD"T"HH24:MI:SS.US"Z"') exact_at,to_char(recorded_at at time zone 'UTC','YYYY-MM-DD"T"HH24:MI:SS.US"Z"') exact_recorded_at,scopes,kind,source,quality,details from unique_facts order by at desc nulls last,origin desc nulls last,source_id desc nulls last limit $5`;
+}
+const TARGET_TIMELINE_SQL=personTimelineSql();
 
 export class PostgresOwnerUserHistory implements OwnerUserHistoryReader {
   constructor(private readonly database: Pick<Pool, "query">) {}
@@ -199,6 +206,7 @@ export class PostgresOwnerUserHistory implements OwnerUserHistoryReader {
     const entries = rows.map(project);
     const last = rows.at(-1);
     return { entries,
-      next: result.rows.length > PAGE_SIZE && last ? encodeCursor(last, targetId) : null };
+      next: result.rows.length > PAGE_SIZE && last ? encodeCursor(last, targetId) : null,
+      coverage: await readNativeHistoryCoverage(this.database,targetId) };
   }
 }

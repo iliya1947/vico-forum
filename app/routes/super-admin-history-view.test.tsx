@@ -89,7 +89,7 @@ function mount(locale:"en"|"ru"|"he",area:"events"|"history",routing?:Administra
   const path=area==="events"?`/${locale}/super-admin/events`
     :`/${locale}/super-admin/monitoring/${scope.area}/${scope.monitorKey}/history`;
   router=createMemoryRouter([{path,loader:()=>({
-    locale,area:scope.area,monitorKey:scope.monitorKey,page:sourcePage,
+    locale,area:scope.area,monitorKey:scope.monitorKey,page:sourcePage,filters:{},
   }),element:area==="events"?<SuperAdminEventsRoute/>:<SuperAdminMonitorHistoryRoute/>}],
   {initialEntries:[path]});
   return render(<I18nextProvider i18n={i18n}>

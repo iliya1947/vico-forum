@@ -3,6 +3,30 @@ import { protectFrameworkFailure } from "./private-failure-response";
 
 describe("private framework 5xx response cache boundary", () => {
   it.each([
+    "/en/super-admin", "/he/super-admin.data", "/ru/super-admin/events.data",
+    "/en/super-admin/monitoring/forum", "/en/super-admin/monitoring/administration.data",
+    "/he/SUPER-ADMIN/monitoring/moderation.data///",
+    "/ru/%73uper-admin/monitoring/notifications/notifications.inbox/history.data",
+  ])("keeps every Owner monitoring outcome private on %s", async path => {
+    for (const status of [200, 307, 400, 401, 403, 404, 500, 503]) {
+      const original = new Response("original", { status, headers: {
+        "Cache-Control": "public, max-age=600", "Set-Cookie": "session=kept; HttpOnly", "X-Existing": "kept",
+      } });
+      const response = protectFrameworkFailure(new Request("https://forum.test" + path), original);
+      expect(response.status).toBe(status);
+      expect(response.headers.get("Cache-Control")).toBe("private, no-store");
+      expect(response.headers.get("Set-Cookie")).toBe("session=kept; HttpOnly");
+      expect(response.headers.get("X-Existing")).toBe("kept");
+      expect(await response.text()).toBe("original");
+    }
+  });
+  it.each(["/en/super-admin-extra", "/en/%GG/monitoring/forum", "/en//super-admin", "/super-admin/forum"])(
+    "does not reclassify unmatched monitoring prefix %s", path => {
+      const original = new Response("public", { status: 500, headers: { "Cache-Control": "public, max-age=60" } });
+      expect(protectFrameworkFailure(new Request("https://forum.test" + path), original)).toBe(original);
+    },
+  );
+  it.each([
     "/en/users/opaque/owner/deactivate", "/he/users/opaque/owner/deactivate.data",
     "/ru/USERS/opaque/OWNER/DEACTIVATE///", "/en/%75sers/a%2Fb/%6fwner/%64eactivate.data//",
   ])("protects every framework/resource outcome on Owner action alias %s", async path => {

@@ -2,11 +2,18 @@ import { useTranslation } from "react-i18next";
 import type { UiKey } from "../localization/catalog";
 import type { OwnerHistoryEntry, OwnerHistoryOrigin, OwnerHistoryValue } from "../../db/owner-sa02-history";
 import type { OwnerTimelineEntry } from "../../db/owner-system-monitoring";
+import { nativeLabels } from "./native-labels";
+import { actionLabels } from "../admin/history-labels";
 
 type HistoryItem = OwnerHistoryEntry | OwnerTimelineEntry;
 type Label = UiKey<"common">;
 
 const origins: Record<OwnerHistoryOrigin,Label> = {
+  "forum-title-revision":"sa06NativeRevision", "forum-post-revision":"sa06NativeRevision",
+  "complaint-event":"sa06NativeComplaint", "help-signal-created":"sa06NativeCreated",
+  "duplicate-appeal-created":"sa06NativeCreated", "measure-appeal-created":"sa06NativeCreated",
+  "help-signal-terminal":"sa06NativeTerminal", "measure-appeal-moot":"sa06NativeTerminal",
+  "notification-created":"sa06NativeCreated", "notification-first-read":"sa06NativeFirstRead",
   "system-event":"superAdminHistoryOriginSystem",
   "auth-event":"superAdminHistoryOriginAuth",
   "account-event":"superAdminHistoryOriginAccount",
@@ -131,6 +138,7 @@ function Value({name,value,locale}: {name:string;value:OwnerHistoryValue;locale:
       <span> · </span><bdi>{value}</bdi></>;
   if(typeof value==="string" && numericFields.has(name) && /^[0-9]+$/.test(value))
     return <bdi>{new Intl.NumberFormat(locale).format(BigInt(value))}</bdi>;
+  if(typeof value==="string"&&nativeLabels[value])return <span>{t(nativeLabels[value])}</span>;
   return <bdi>{String(value)}</bdi>;
 }
 
@@ -143,7 +151,7 @@ export function HistoryEntry({entry,locale}: {entry:HistoryItem;locale:string}){
     observed?"superAdminObservedAt":"superAdminHistoryOccurredAt";
   const monitors="monitorKeys" in entry?entry.monitorKeys:
     entry.monitorKey?[entry.monitorKey]:[];
-  const label=kinds[entry.kind];
+  const label=kinds[entry.kind]??nativeLabels[entry.kind]??actionLabels[entry.kind as keyof typeof actionLabels];
   return <li data-history-origin={entry.origin} data-history-kind={entry.kind}>
     <h3>{label?t(label):<bdi>{entry.kind}</bdi>}</h3>
     <p>{t(origins[entry.origin])} · {t("superAdminHistorySource")}: <bdi>{entry.source}</bdi></p>
@@ -165,7 +173,7 @@ export function HistoryEntry({entry,locale}: {entry:HistoryItem;locale:string}){
     {entry.origin==="attachment-evidence" ? <p className="super-admin-history-note">
       {t("superAdminHistoryEvidenceNote")}</p> : null}
     <dl>{Object.entries(entry.values).map(([name,value])=>{
-      const label=fieldLabel(entry,name);
+      const label=fieldLabel(entry,name)??nativeLabels[name];
       return <div key={name}>
         <dt>{label ? t(label) : <bdi>{name}</bdi>}</dt>
         <dd><Value name={name} value={value} locale={locale}/></dd>
