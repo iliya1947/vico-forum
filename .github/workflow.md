@@ -2,8 +2,8 @@
 
 - **Service PR:** #331 coordination-only, never merge.
 - **Current main:** `1e4bcf83ff7bda0ec772a8098671ca9afe63888a`; SA06 #338 merged by Developer.
-- **SA07 implementation:** Draft #339 stable exact `4d29735f915adb69cbe641c95d259c904e7114cd`, base `main`, GitHub `mergeable=true`, behind main 0.
-- **Lira reconciliation + author/self review:** complete; whole-SA07 author/self PASS with 0 confirmed current-SA07 defects. Because Lira changed the branch during reconciliation, this is not the independent gate.
-- **ACTIVE independent gate:** Mark / Codex-6 Sol performs independent WHOLE SA07 review of the same exact #339 head `4d29735f915adb69cbe641c95d259c904e7114cd`. Entire cumulative SA07 scope; no implementation edits during review. PASS requires 0 confirmed current-SA07 defects; otherwise one complete current-scope finding packet.
-- **After Mark:** if independent PASS and #339 exact head remains unchanged, SA07 review cycle is complete and Developer decides merge. Any implementation change resets the review head/cycle.
-- **Boundary:** no SA08+, permanent docs, #315, Stage6/production/deploy/external work. Owner remains merge authority.
+- **SA07 implementation:** Draft #339 exact `4d29735f915adb69cbe641c95d259c904e7114cd`, base `main`, open/Draft.
+- **Mark independent WHOLE SA07 review:** **FAIL M1 — 1 confirmed current-SA07 defect.** `task.reconciliationPass` can appear in unfiltered `integrations.translation` History but the equivalent closed kind filter is rejected because projection and `compatibleKind()` disagree.
+- **ACTIVE correction:** Lira / ChatGPT-6 fixes only this mapping inconsistency and adds scoped unfiltered + kind-filtered History regression coverage. No SA07 redesign/scope expansion.
+- **After correction:** new stable exact #339 head + applicable checks → Mira fresh WHOLE SA07 coordinator review → only after PASS, Mark independent WHOLE SA07 review on the same exact head.
+- **Boundary:** no merge, SA08+, permanent docs, #315, Stage6/production/deploy/external work. Owner remains merge authority.
