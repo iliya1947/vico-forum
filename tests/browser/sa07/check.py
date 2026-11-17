@@ -1,8 +1,8 @@
-"""Genuine BA/Worker/PG17 Background and Localization acceptance. Code-only fixture invocation does not enable job runtime."""
+"""Genuine BA/Worker/PG17 Background, Localization and Files acceptance. Code-only fixture invocation does not enable job runtime."""
 import argparse,json,os,select,shutil,subprocess
 from pathlib import Path
 from uuid import uuid4
-from urllib.parse import urlparse
+from urllib.parse import urlparse,quote
 from contextlib import contextmanager
 from playwright.sync_api import sync_playwright,expect
 p=argparse.ArgumentParser();p.add_argument('--url',default='http://127.0.0.1:4237');p.add_argument('--output',type=Path,required=True);a=p.parse_args();base=a.url.rstrip('/');repo=Path(__file__).resolve().parents[3]
@@ -16,9 +16,17 @@ def sql(statement,params=None):return rpc({'operation':'sql','sql':statement,'pa
 def private(response,status):
  assert response.status==status,(response.status,status)
  assert {'private','no-store'}<={x.strip() for x in response.headers.get('cache-control','').split(',')}
- body=response.text();assert 'SA07_PRIVATE' not in body;assert 'SA07_L_PRIVATE' not in body;return response
+ body=response.text();assert 'SA07_PRIVATE' not in body;assert 'SA07_L_PRIVATE' not in body;assert 'SA07_F_PRIVATE' not in body;assert 'private/fenced-v1/' not in body;return response
 
 def visit(page,path):private(page.goto(base+path,wait_until='networkidle'),200)
+def local_r2(action,key=None,batch=None):
+ command={'action':action}
+ if key is not None:command['key']=key
+ if batch is not None:command['batch']=batch
+ result=subprocess.run(['pnpm','exec','tsx','tests/browser/sa07/r2-cleanup.ts'],cwd=repo,input=json.dumps(command),capture_output=True,text=True,timeout=45)
+ assert result.returncode==0,result.stderr[-2000:]
+ replies=[line.partition('SA07_R2_RESULT ')[2] for line in result.stdout.splitlines() if line.startswith('SA07_R2_RESULT ')]
+ assert len(replies)==1,result.stdout[-1000:];return json.loads(replies[0])
 @contextmanager
 def hold(statement):
  code="import pg from 'pg';const c=new pg.Client({connectionString:process.env.DATABASE_URL});await c.connect();await c.query('begin');await c.query(process.argv[1]);console.log('HELD');process.stdin.once('data',async()=>{await c.query('rollback');await c.end();});"
@@ -146,10 +154,108 @@ try:
    except Exception:pass
   page.wait_for_timeout(250);expect(page.locator('[data-localization-current]')).to_have_count(0);page.unroute('**/super-admin/monitoring/localization.data*')
   record('Localization-known-signout-and-late-Owner-response-do-not-restore-private-DOM')
-  assert not errors,errors;assert not external,external;record('SA07-B1-L-connected-pass');browser.close()
+  record('SA07-B1-L-connected-pass')
+  assert oc.request.post(base+'/api/auth/sign-in/email',headers={'Origin':base},data={'email':email,'password':password}).status==200
+  assert sql('update "session" set user_id=$1 where user_id=$2 returning id',[owner,issued])
+  file_current='/en/super-admin/monitoring/files';file_keys=['files.assets','files.operations']
+  before=sql("select id from owner_monitor_observations where monitor_key like 'files.%' order by id")
+  for ctx,status in [(guest,401),(ac,403),(mc,403)]:
+   for path in [file_current]+[file_current+'/'+key+'/history' for key in file_keys]:
+    for suffix in ['', '.data']:private(ctx.request.get(base+path+suffix),status)
+  assert sql("select id from owner_monitor_observations where monitor_key like 'files.%' order by id")==before
+  member_page=mc.new_page();member_page.on('pageerror',lambda e:errors.append(str(e)))
+  assert member_page.goto(base+'/en/topics/'+local_fixture['topic'],wait_until='networkidle').status==200
+  form=member_page.locator('form[method="post"]:has(input[name="intent"][value="reply"])');expect(form).to_have_count(1)
+  resume=member_page.locator('button.forum-composer-resume')
+  if resume.count() and resume.is_visible():resume.click()
+  operation=form.locator('input[name="editorOperationId"]').input_value();payload=b'SA07 actual Worker local R2 evidence'
+  with member_page.expect_request_finished(lambda r:r.method=='POST' and r.url==base+'/api/attachments',timeout=30000) as loaded:
+   form.locator('input[type="file"]').set_input_files({'name':'sa07-evidence.txt','mimeType':'text/plain','buffer':payload})
+  assert loaded.value.response().status==201
+  for _ in range(100):
+   selected=json.loads(form.locator('input[name="editorAttachmentIds"]').input_value())
+   if selected:break
+   member_page.wait_for_timeout(25)
+  assert len(selected)==1;asset=selected[0]
+  stored=sql('select object_key from forum_attachments where id=$1',[asset])[0]['object_key']
+  assert local_r2('inspect',stored)['exists']
+  publish_form={'intent':'reply','body':'A published attachment','editorActorId':member,'editorOperationId':operation,'editorAttachmentIds':json.dumps([asset])}
+  published=mc.request.post(base+'/en/topics/'+local_fixture['topic'],headers={'Origin':base},form=publish_form,max_redirects=0);assert published.status in (302,303)
+  assert mc.request.post(base+'/en/topics/'+local_fixture['topic'],headers={'Origin':base},form=publish_form,max_redirects=0).status in (302,303)
+  post=sql('select post_id from forum_post_attachments where attachment_id=$1',[asset])[0]['post_id']
+  download=guest.request.get(base+'/api/attachments/file/'+asset+'?post='+post);assert download.status==200 and download.body()==payload
+  def upload_bytes(attachment,op,body,name='sa07-unused.txt'):
+   return mc.request.post(base+'/api/attachments',headers={'Origin':base,'Content-Type':'text/plain','X-Vico-Attachment-Id':attachment,'X-Vico-Attachment-Name':quote(name,safe=''),'X-Vico-Attachment-Size':str(len(body)),'X-Vico-Editor-Context':quote('topic:'+local_fixture['topic']+':reply',safe=''),'X-Vico-Operation-Id':op},data=body)
+  unused=str(uuid4());unused_op=str(uuid4());assert upload_bytes(unused,unused_op,b'An abandoned private upload').status==201
+  unused_key=sql('select object_key from forum_attachments where id=$1',[unused])[0]['object_key']
+  rejected=str(uuid4());refused=upload_bytes(rejected,str(uuid4()),b'MZ'+b'0'*50,'sa07-suspicious.exe');assert refused.status==422,(refused.status,refused.text())
+  evidence=sql('select id from forum_attachment_security_events where upload_id=$1',[rejected])[0]['id']
+  for _ in range(100):
+   facts=sql("select kind,entity_id from owner_events where source='operation' and entity_id=$1",[asset])
+   if len(facts)==2:break
+   page.wait_for_timeout(25)
+  assert sorted(row['kind'] for row in facts)==['file.accepted','file.published']
+  command=oc.request.post(base+'/en/users/'+member+'/owner/deactivate',headers={'Origin':base},form={'intent':'deactivate','expectedActorId':owner,'targetUserId':member,'operationId':str(uuid4())});private(command,200)
+  assert upload_bytes(str(uuid4()),str(uuid4()),b'Post-deactivation upload denied').status==401
+  assert guest.request.get(base+'/api/attachments/file/'+asset+'?post='+post).body()==payload
+  sql("update forum_attachments set created_at=now()-interval '2 hours' where id=any($1::text[])",[[asset,unused]])
+  sql("update forum_attachment_draft_refs set created_at=now()-interval '25 hours' where attachment_id=$1",[unused])
+  orphan='private/fenced-v1/'+str(uuid4());assert local_r2('orphan-reservation',orphan)['reserved']
+  cleaned=local_r2('cleanup',batch=20);assert cleaned['prunedRefs']>=1 and cleaned['deleted']>=2
+  assert not local_r2('inspect',unused_key)['exists'];assert not local_r2('inspect',orphan)['exists'];assert local_r2('inspect',stored)['exists']
+  assert not sql('select id from forum_attachments where id=$1',[unused]);assert sql('select id from forum_attachments where id=$1',[asset])
+  record('actual-Worker-upload-publication-replay-Owner-deactivation-and-real-local-R2-cleanup-no-false-acceptance')
+  sql("delete from owner_monitor_observations where monitor_key like 'files.%' and resource_scope='global'")
+  sql("create function sa07_f_sample_fault() returns trigger language plpgsql as $$begin raise exception 'SA07_F_PRIVATE_SQL';end$$;create trigger sa07_f_sample_fault before insert on owner_monitor_observations for each row execute function sa07_f_sample_fault()")
+  try:assert 'unavailable' in private(oc.request.get(base+file_current+'.data'),200).text()
+  finally:sql('drop trigger sa07_f_sample_fault on owner_monitor_observations;drop function sa07_f_sample_fault()')
+  slots=sql("select id,value from owner_monitor_observations where resource_scope like 'storage:%' order by id");assert len(slots)>=3
+  for locale in ['en','ru','he']:
+   for width in [1280,768,320]:
+    page.set_viewport_size({'width':width,'height':900});visit(page,f'/{locale}/super-admin/monitoring/files')
+    expect(page.locator('[data-file-current]')).to_have_count(1);expect(page.locator('[data-storage-slot]')).to_have_count(13)
+    assert page.locator('html').get_attribute('dir')==('rtl' if locale=='he' else 'ltr');assert page.evaluate('document.documentElement.scrollWidth<=innerWidth+1')
+    for key in file_keys:expect(page.locator('[data-monitor-key="'+key+'"] form')).to_have_count(0)
+    if width==320:
+     page.locator('[data-storage-slot="storage:get:returned"] summary').click();assert page.evaluate('document.documentElement.scrollWidth<=innerWidth+1');page.screenshot(path=str(a.output/(locale+'-files-320.png')),full_page=True)
+   record('localized-responsive-Files-original-samples-and-unmeasured-slots',locale=locale)
+  page.set_viewport_size({'width':1280,'height':900});visit(page,file_current)
+  with page.expect_request_finished(lambda r:r.method=='GET' and '/monitoring/files.data' in r.url,timeout=15000) as done:page.locator('[data-monitor-key="files.assets"] nav a').nth(1).click()
+  private(done.value.response(),200)
+  assert sql("select id,value from owner_monitor_observations where resource_scope like 'storage:%' order by id")==slots
+  assert evidence in collect(page,file_current+'/files.assets/history?origin=attachment-evidence')
+  assert evidence in collect(page,'/en/super-admin/monitoring/security/security.attachments/history?origin=attachment-evidence')
+  for key in file_keys:
+   assert asset in collect(page,file_current+'/'+key+'/history?kind=file.accepted')
+  cleanup_fact=sql("select id from owner_events where source='operation' and kind='file.cleanupPass' order by occurred_at desc limit 1")[0]['id']
+  assert cleanup_fact in collect(page,file_current+'/files.operations/history?kind=file.cleanupPass')
+  storage_history=collect(page,file_current+'/files.operations/history?origin=system-observation')
+  for sample in slots:assert sample['id'] in storage_history
+  assert 'SA07_F_PRIVATE' not in page.locator('body').inner_text()
+  visit(page,'/en/super-admin/monitoring/background');expect(page.locator('[data-monitor-key="background.attachments"]')).to_have_count(1)
+  private(oc.request.get(base+file_current+'?operation=delete'),400)
+  sql('alter table forum_attachment_sweep rename to sa07_f_hidden_sweep')
+  try:
+   for path in [file_current+'.data','/en/SUPER-ADMIN/monitoring/FILES.data','/en/%73uper-admin/monitoring/files///']:private(oc.request.get(base+path),503)
+   private(guest.request.get(base+file_current+'.data'),401)
+  finally:sql('alter table sa07_f_hidden_sweep rename to forum_attachment_sweep')
+  with hold('lock table forum_attachments in access exclusive mode'):private(oc.request.get(base+file_current+'.data',timeout=15000),503)
+  record('Files-original-security-and-storage-identities-no-bucket-call-on-GET-source-faults-private-aliases')
+  visit(page,file_current);held=[];page.route('**/super-admin/monitoring/files.data*',delayed);page.locator('[data-monitor-key="files.assets"] nav a').nth(1).click()
+  for _ in range(100):
+   if held:break
+   page.wait_for_timeout(20)
+  assert held
+  with page.expect_response(lambda r:r.request.method=='POST' and '/api/auth/sign-out' in r.url) as signed:page.locator('.auth-sign-out').click()
+  assert signed.value.status==200;expect(page.locator('.auth-controls[data-state=guest]')).to_have_count(1);expect(page.locator('[data-file-current]')).to_have_count(0)
+  for route,response in held:
+   try:route.fulfill(response=response)
+   except Exception:pass
+  page.wait_for_timeout(250);expect(page.locator('[data-file-current]')).to_have_count(0);page.unroute('**/super-admin/monitoring/files.data*')
+  assert not errors,errors;assert not external,external;record('SA07-B1-L-F-connected-pass');browser.close()
 finally:
  if pg:
   pg.stdin.close()
   try:pg.wait(timeout=8)
   except subprocess.TimeoutExpired:pg.terminate();pg.wait(timeout=5)
- (a.output/'results.json').write_text(json.dumps({'head':os.environ.get('IMPLEMENTATION_SHA'),'scope':'SA07-B1 and07-L only; actual stores/registry/UI/content/budget; runtime stays disabled/unwired','cases':records,'pageErrors':errors,'external':external},ensure_ascii=False,indent=2))
+ (a.output/'results.json').write_text(json.dumps({'head':os.environ.get('IMPLEMENTATION_SHA'),'scope':'SA07-B1/L/F; actual Worker/BA/PG17/local private R2; cleanup code-only pass, no scheduler/runtime activation','cases':records,'pageErrors':errors,'external':external},ensure_ascii=False,indent=2))

@@ -400,7 +400,7 @@ test("requires exact localization and web relation ACLs", () => {
   const crossDomain = fixture();
   crossDomain.relationPrivileges.push({
     schema: "public",
-    name: "forum_attachment_sweep",
+    name: "locales",
     kind: "table",
     grantee: roles.webRole,
     privilege: "SELECT",

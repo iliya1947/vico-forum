@@ -1,3 +1,4 @@
+import {OperationalFactBuffer,type OwnerOperationalFactSink,type CleanupPassValues} from "../app/observability/operational-facts";
 import { and, eq } from "drizzle-orm";
 import { forumAttachmentDraftRefs } from "./schema";
 import { sql } from "drizzle-orm";
@@ -40,10 +41,11 @@ export class ForumAttachmentCleanup {
     private readonly db: NodePgDatabase,
     private readonly storage: Pick<PrivateAttachmentBucket, "delete" | "listReservations">,
     private readonly clock: () => Date = () => new Date(),
+    private readonly operational?:OwnerOperationalFactSink,
   ) {}
 
   private async cleanupUploadObjects(batchSize: number) {
-    const counts = { claimed: 0, deleted: 0, failed: 0 };
+    const counts = { claimed: 0, deleted: 0, failed: 0,deletedRows:0,retiredRegistered:0 };
     for (let i = 0; i < batchSize; i++) {
       const token = crypto.randomUUID();
       const now = this.clock();
@@ -69,15 +71,16 @@ export class ForumAttachmentCleanup {
         return { key: row.object_key, registered: false };
       });
       if (!item) break;
-      if (item.registered) continue;
+      if (item.registered) {counts.retiredRegistered++;continue;}
       counts.claimed++;
       try {
         await this.storage.delete(item.key);
         // Claim blocks PREPARING activation. READY has exactly one completed
         // initializer: DELETE makes every late positive-match payload fail.
-        await this.db.execute(sql`delete from forum_attachment_upload_objects
-          where object_key=${item.key} and claim_token=${token}`);
+        const removed=await this.db.execute(sql`delete from forum_attachment_upload_objects
+          where object_key=${item.key} and claim_token=${token} returning object_key`);
         counts.deleted++;
+        counts.deletedRows+=removed.rows.length;
       } catch {
         counts.failed++;
       }
@@ -200,17 +203,25 @@ export class ForumAttachmentCleanup {
     if (!Number.isSafeInteger(batchSize) || batchSize < 1 || batchSize > ATTACHMENT_CLEANUP_BATCH_SIZE) {
       throw new RangeError("invalid attachment cleanup batch size");
     }
+    const facts=new OperationalFactBuffer(this.operational),runId=this.operational?crypto.randomUUID():"";
+    const measured:CleanupPassValues={prunedRefs:0,assetClaimed:0,assetDeleted:0,assetFailed:0,
+      journalClaimed:0,journalDeleteAcknowledged:0,journalDeletedRows:0,journalRetiredRegistered:0,journalFailed:0,
+      markerClaimed:0,markerDeleteAcknowledged:0,markerFailed:0,partialCounts:true,stoppedPhase:"prune"};
+    try{
     const prunedRefs = await this.pruneStaleRefs(batchSize);
+    measured.prunedRefs=prunedRefs;measured.stoppedPhase="journal";
     // Independent bounded budgets ensure asset progress and marker discovery.
     // At default batch20: at most20 journal/asset deletes plus5 marker deletes.
     const uploads = await this.cleanupUploadObjects(Math.ceil(batchSize / 2));
+    measured.journalClaimed=uploads.claimed;measured.journalDeleteAcknowledged=uploads.deleted;
+    measured.journalDeletedRows=uploads.deletedRows;measured.journalRetiredRegistered=uploads.retiredRegistered;measured.journalFailed=uploads.failed;measured.stoppedPhase="assets";
     let claimed = uploads.claimed;
     let deleted = uploads.deleted;
     let failed = uploads.failed;
     for (let i = 0; i < batchSize - uploads.claimed; i++) {
       const item = await this.claimOne();
       if (!item) break;
-      claimed++;
+      claimed++;measured.assetClaimed++;
       try {
         // delete is idempotent: missing objects succeed (e.g. after a lost ACK).
         await this.storage.delete(item.object_key);
@@ -223,14 +234,21 @@ export class ForumAttachmentCleanup {
           and not exists (select 1 from forum_complaint_evidence_attachments e where e.attachment_id = a.id)
           returning a.id
         `);
-        deleted += result.rows.length;
+        deleted += result.rows.length;measured.assetDeleted+=result.rows.length;
       } catch {
         // Keep the durable claim; another run retries when the lease expires.
-        failed++;
+        failed++;measured.assetFailed++;
       }
     }
+    measured.stoppedPhase="markers";
     const markers = await this.sweepReservations(Math.max(1, Math.floor(batchSize / 4)));
+    measured.markerClaimed=markers.claimed;measured.markerDeleteAcknowledged=markers.deleted;measured.markerFailed=markers.failed;measured.partialCounts=false;measured.stoppedPhase="complete";
     return { prunedRefs, claimed: claimed + markers.claimed,
       deleted: deleted + markers.deleted, failed: failed + markers.failed };
+    }finally{
+      // Every constituent domain transaction/adapter call has settled before this independent passive flush.
+      facts.captureCleanup(runId,new Date().toISOString().replace("Z","000Z"),measured);
+      await facts.flush();
+    }
   }
 }

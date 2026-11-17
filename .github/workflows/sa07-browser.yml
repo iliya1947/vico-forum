@@ -1,4 +1,4 @@
-name: SA07 Background and Localization connected Chromium acceptance
+name: SA07 Background Localization and Files connected Chromium acceptance
 
 on:
   pull_request:
@@ -8,6 +8,7 @@ on:
       - ".github/scripts/runtime-privileges.*"
       - ".github/scripts/verify-runtime-privilege-probes.mjs"
       - "app/observability/operational-facts*"
+      - "app/observability/storage-observations*"
       - "app/localization/*execution.ts"
       - "app/localization/translation-provider.ts"
       - "app/localization/translation-task-reconciliation.ts"
@@ -25,8 +26,14 @@ on:
       - "app/localization/manual-fingerprints.ts"
       - "db/owner-*.ts"
       - "db/hyperdrive-owner-*.ts"
+      - "db/hyperdrive-operational-recording.ts"
+      - "db/hyperdrive-forum*.ts"
+      - "db/forum-attachments.ts"
+      - "db/forum-attachment-cleanup.ts"
+      - "db/forum-repository.ts"
       - "db/schema.ts"
       - "workers/app.ts"
+      - "workers/attachment-storage.ts"
       - "workers/private-failure-response.ts"
 
 permissions:
@@ -91,8 +98,14 @@ jobs:
             'GOOGLE_CLIENT_ID=local-test-unused' \
             'GOOGLE_CLIENT_SECRET=local-test-unused' \
             'VICO_OWNER_USER_ID=sa07-synthetic-owner' > .dev.vars
+          node --input-type=module -e '
+            import {readFileSync,writeFileSync} from "node:fs";
+            const path="wrangler.jsonc",config=JSON.parse(readFileSync(path,"utf8"));
+            config.r2_buckets=[{binding:"ATTACHMENT_R2",bucket_name:"sa04-k5-local-attachments",remote:false}];
+            writeFileSync(path,JSON.stringify(config,null,2));
+          '
           pnpm build
-      - name: Real Background/Localization sources, History, privacy and late-response acceptance
+      - name: Real Background/Localization/Files sources, local R2, History, privacy and late-response acceptance
         run: |
           pnpm exec vite preview --host 127.0.0.1 --port 4237 --strictPort > "$RUNNER_TEMP/sa07-preview.log" 2>&1 &
           preview_pid=$!

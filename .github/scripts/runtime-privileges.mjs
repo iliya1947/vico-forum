@@ -10,6 +10,7 @@ export const runtimeCapabilityContracts = Object.freeze({
   }),
   web: Object.freeze({
     relations: Object.freeze({
+      forum_attachment_sweep: Object.freeze(["SELECT"]),
       translation_tasks: Object.freeze(["SELECT"]),
       translation_task_generation_heads: Object.freeze(["SELECT"]),
       content_topic_title_translation_tasks: Object.freeze(["SELECT"]),

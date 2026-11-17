@@ -4,6 +4,7 @@ import type { OwnerHistoryEntry, OwnerHistoryOrigin, OwnerHistoryValue } from ".
 import type { OwnerTimelineEntry } from "../../db/owner-system-monitoring";
 import { nativeLabels } from "./native-labels";
 import { actionLabels } from "../admin/history-labels";
+import {fileLabels} from "./file-labels";
 import {taskLabels} from "./task-labels";
 import {localizationLabels} from "./localization-labels";
 
@@ -155,7 +156,7 @@ export function HistoryEntry({entry,locale}: {entry:HistoryItem;locale:string}){
     observed?"superAdminObservedAt":"superAdminHistoryOccurredAt";
   const monitors="monitorKeys" in entry?entry.monitorKeys:
     entry.monitorKey?[entry.monitorKey]:[];
-  const label=kinds[entry.kind]??nativeLabels[entry.kind]??taskLabels[entry.kind]??actionLabels[entry.kind as keyof typeof actionLabels];
+  const label=kinds[entry.kind]??nativeLabels[entry.kind]??taskLabels[entry.kind]??fileLabels[entry.kind]??actionLabels[entry.kind as keyof typeof actionLabels];
   return <li data-history-origin={entry.origin} data-history-kind={entry.kind}>
     <h3>{label?t(label):<bdi>{entry.kind}</bdi>}</h3>
     <p>{t(origins[entry.origin])} · {t("superAdminHistorySource")}: <bdi>{entry.source}</bdi></p>
@@ -179,7 +180,7 @@ export function HistoryEntry({entry,locale}: {entry:HistoryItem;locale:string}){
       {t("superAdminHistoryEvidenceNote")}</p> : null}
     <dl>{Object.entries(entry.values).map(([name,value])=>{
       const taskEntry=entry.origin==="operational-event"||observed&&monitors.includes("background.translation");
-      const label=observed&&monitors.some(key=>key.startsWith("localization."))?localizationLabels[name]??fieldLabel(entry,name):entry.kind==="integration.translationCall"&&name==="failed"?taskLabels.failedCalls:
+      const label=entry.kind.startsWith("file.")||observed&&monitors.some(key=>key.startsWith("files.")||key==="background.attachments"||key==="integrations.storage")?fileLabels[name]??fieldLabel(entry,name)??taskLabels[name]:observed&&monitors.some(key=>key.startsWith("localization."))?localizationLabels[name]??fieldLabel(entry,name):entry.kind==="integration.translationCall"&&name==="failed"?taskLabels.failedCalls:
         taskEntry?taskLabels[name]??fieldLabel(entry,name)??nativeLabels[name]:fieldLabel(entry,name)??nativeLabels[name]??taskLabels[name];
       return <div key={name}>
         <dt>{label ? t(label) : <bdi>{name}</bdi>}</dt>

@@ -133,13 +133,13 @@ describe("SA-01 Owner-only UI/locale navigation", () => {
   it.each(["ru", "he"] as const)("shows pending areas as localized, not functional monitors in %s", locale => {
     const { container, router } = mount(locale, <SuperAdminMonitoringIndex locale={locale}/>);
     try {
-      expect(container.querySelectorAll(".super-admin-pending-areas li")).toHaveLength(4);
+      expect(container.querySelectorAll(".super-admin-pending-areas li")).toHaveLength(3);
       expect(container.querySelector(".super-admin-monitor")).toBeNull();
       const labels = locale === "ru" ? russianCommonValues : hebrewCommonValues;
       expect(container.querySelector(".super-admin-pending-areas")?.textContent).not.toContain(labels.superAdminAreaForum);
       expect(container.querySelector('a[href$="/super-admin/monitoring/forum"]')).toHaveTextContent(labels.superAdminAreaForum);
       expect(container.querySelector('a[href$="/super-admin/monitoring/background"]')).toHaveTextContent(labels.superAdminAreaBackground);
-      expect(container.querySelectorAll('.admin-overview > a.admin-destination')).toHaveLength(9);
+      expect(container.querySelectorAll('.admin-overview > a.admin-destination')).toHaveLength(10);
       expect(container.querySelector('a[href$="/super-admin/monitoring/security"]'))
         .toHaveTextContent(labels.superAdminAreaSecurity);
       expect(container.querySelector('a[href$="/super-admin/monitoring/accounts"]'))

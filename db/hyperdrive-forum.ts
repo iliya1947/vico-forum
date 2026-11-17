@@ -1,3 +1,4 @@
+import type {OwnerOperationalFactSink} from "../app/observability/operational-facts";
 import { drizzle } from "drizzle-orm/node-postgres";
 import type { Client } from "pg";
 import { isPostgresAvailabilityFailure } from "../app/localization/persistent-registry";
@@ -129,12 +130,13 @@ export function createHyperdriveForumWriter(
   clientFactory: ClientFactory = () => createWebClient(connectionString),
   writePolicy: ForumWritePolicy = forumWritePolicy,
   measureAdmission: typeof assertNoActiveUserMeasureRestriction = assertNoActiveUserMeasureRestriction,
+  operational?:OwnerOperationalFactSink,
 ): ForumWriter {
   async function write<T>(operation: (service: ForumService) => Promise<T>): Promise<T> {
     const client = clientFactory();
     try {
       await client.connect();
-      return await operation(new ForumService(new DrizzleForumRepository(drizzle(client), writePolicy, measureAdmission)));
+      return await operation(new ForumService(new DrizzleForumRepository(drizzle(client), writePolicy, measureAdmission,operational)));
     } catch (error) {
       if (isForumStorageAvailabilityFailure(error)) throw new ForumStorageUnavailableError({ cause: error });
       throw error;

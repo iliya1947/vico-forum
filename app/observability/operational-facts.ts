@@ -2,7 +2,9 @@
 export const TASK_TRANSITION_KINDS = ["task.planned","task.claimed","task.allowanceAdmitted",
   "task.allowanceDeferred","task.retryReleased","task.failed","task.stale","task.completed"] as const;
 export type TaskTransitionKind = typeof TASK_TRANSITION_KINDS[number];
-export type OperationalKind = TaskTransitionKind | "task.reconciliationPass" | "integration.translationCall";
+export const FILE_TRANSITION_KINDS=["file.accepted","file.published","file.unpublished","file.referencesChanged","file.cleanupPass"] as const;
+export type FileTransitionKind=typeof FILE_TRANSITION_KINDS[number];
+export type OperationalKind = TaskTransitionKind | "task.reconciliationPass" | "integration.translationCall" | FileTransitionKind;
 export type OperationalScalar = string | number | boolean | null;
 export interface OwnerOperationalFact {
   kind: OperationalKind; sourceId: string; occurredAt: string; occurrenceDigest: string;
@@ -48,6 +50,29 @@ export class OperationalFactBuffer {
     this.capture({kind:"integration.translationCall",sourceId,occurredAt,actorUserId:null,
       identity:["integration.translationCall",...identity],values:{schemaVersion:1,...values}});
   }
+  captureFileAccepted(row:{id:string;ownerId:string;detectedType:string;byteSize:number;operationAt:string}){
+    const known=["png","jpeg","gif","webp","pdf","zip","7z","gzip","tar","ole","text","executable","unknown"];
+    this.capture({kind:"file.accepted",sourceId:row.id,occurredAt:row.operationAt,actorUserId:row.ownerId,
+      identity:["file.accepted",row.id,row.operationAt],values:{schemaVersion:1,detectedType:known.includes(row.detectedType)?row.detectedType:"other",byteSize:row.byteSize}});
+  }
+  captureFileReferences(postId:string,actorUserId:string,changes:{added:FileReferenceTransition[];removed:FileReferenceTransition[]}){
+    if(!this.sink)return;
+    const total=changes.added.length+changes.removed.length;if(!total)return;
+    // At most19 detail facts leave room for all13 storage slots in an ordinary request.
+    if(total>19||this.pending.length+total>MAX_OPERATIONAL_FACTS){
+      const runId=crypto.randomUUID(),occurredAt=[...changes.added,...changes.removed].map(r=>r.operationAt).sort().at(-1)!;
+      this.capture({kind:"file.referencesChanged",sourceId:runId,occurredAt,actorUserId,
+        identity:["file.referencesChanged",runId],values:{schemaVersion:1,postId,addedCount:changes.added.length,removedCount:changes.removed.length,perFileDetailsComplete:false}});return;
+    }
+    for(const [rows,kind]of [[changes.added,"file.published"],[changes.removed,"file.unpublished"]] as const)for(const row of rows)
+      this.capture({kind,sourceId:row.attachmentId,occurredAt:row.operationAt,actorUserId,
+        identity:[kind,postId,row.attachmentId,row.referenceCreatedAt,row.operationAt],
+        values:{schemaVersion:1,postId,attachmentId:row.attachmentId,referenceCreatedAt:row.referenceCreatedAt,perFileDetailsComplete:true}});
+  }
+  captureCleanup(sourceId:string,occurredAt:string,values:CleanupPassValues){
+    this.capture({kind:"file.cleanupPass",sourceId,occurredAt,actorUserId:null,
+      identity:["file.cleanupPass",sourceId],values:{schemaVersion:1,...values}});
+  }
   private capture(fact:Pending) {
     if(!this.sink)return;
     if(this.finalized||this.pending.length>=MAX_OPERATIONAL_FACTS){this.missed++;return;}
@@ -68,6 +93,13 @@ export class OperationalFactBuffer {
     }catch{this.missed++;} // No retry after an ambiguous append, and no telemetry about telemetry.
     if(this.missed)try{console.warn("owner-operational-recording-unavailable");}catch{/* Reporting cannot veto the domain result. */}
   }
+}
+export interface FileReferenceTransition {attachmentId:string;referenceCreatedAt:string;operationAt:string}
+export interface CleanupPassValues {
+  prunedRefs:number;assetClaimed:number;assetDeleted:number;assetFailed:number;
+  journalClaimed:number;journalDeleteAcknowledged:number;journalDeletedRows:number;journalRetiredRegistered:number;journalFailed:number;
+  markerClaimed:number;markerDeleteAcknowledged:number;markerFailed:number;partialCounts:boolean;
+  stoppedPhase:"prune"|"journal"|"assets"|"markers"|"complete";
 }
 
 /** Counts only adapter invocations admitted by the actual provider router. */

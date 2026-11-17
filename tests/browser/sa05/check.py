@@ -226,7 +226,8 @@ try:
    try:child.wait(timeout=8)
    except subprocess.TimeoutExpired:child.terminate();child.wait(timeout=5)
   assert not sql('select id from forum_attachments where id=$1',[delayed_asset]) and not sql('select attachment_id from forum_attachment_draft_refs where attachment_id=$1',[delayed_asset])
-  record('actual-command-after-real-local-R2-READY-rejects-late-upload-without-metadata-ref')
+  assert not sql("select id from owner_events where source='operation' and kind='file.accepted' and entity_id=$1",[delayed_asset])
+  record('actual-command-after-real-local-R2-READY-rejects-late-upload-without-metadata-ref-or-accepted-fact')
 
   # Hold the genuine successful action response after its database commit.
   # Browser Back changes the displayed target before that late response arrives;

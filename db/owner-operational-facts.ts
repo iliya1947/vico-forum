@@ -1,14 +1,16 @@
 import type { Pool } from "pg";
 import { getTableColumns,sql } from "drizzle-orm";
 import { translationTasks } from "./schema";
-import { TASK_TRANSITION_KINDS,type OwnerOperationalFact,type OwnerOperationalFactSink } from "../app/observability/operational-facts";
+import { TASK_TRANSITION_KINDS,FILE_TRANSITION_KINDS,type OwnerOperationalFact,type OwnerOperationalFactSink } from "../app/observability/operational-facts";
 
 /** Exact RETURNING time retains microseconds even when ordinary Drizzle Dates use milliseconds. */
 export const operationalTaskColumns={...getTableColumns(translationTasks),
   operationAt:sql<string>`to_char(${translationTasks.updatedAt} at time zone 'UTC','YYYY-MM-DD"T"HH24:MI:SS.US"Z"')`};
 const fields=new Set(["schemaVersion","taskKind","generation","attemptCount","maxAttempts","attemptStarted",
   "selected","enqueued","enqueueFailures","pending","expiredProcessing","outcome","calls","succeeded","failed","durationMs",
-  "failureCode","failureDisposition"]);
+  "failureCode","failureDisposition","detectedType","byteSize","postId","attachmentId","referenceCreatedAt","addedCount","removedCount","perFileDetailsComplete",
+  "prunedRefs","assetClaimed","assetDeleted","assetFailed","journalClaimed","journalDeleteAcknowledged","journalDeletedRows","journalRetiredRegistered","journalFailed",
+  "markerClaimed","markerDeleteAcknowledged","markerFailed","partialCounts","stoppedPhase"]);
 const taskKinds=["ui","content-topic-title","content-post-body"];
 const failureCodes=["provider-rate-limited","provider-temporary","provider-terminal","provider-unsupported",
   "provider-output-invalid","message-kind-unsupported","dependency-temporary","execution-bound-exceeded","attempt-budget-exhausted"];
@@ -17,7 +19,7 @@ const failureCodes=["provider-rate-limited","provider-temporary","provider-termi
 export class PostgresOwnerOperationalFactSink implements OwnerOperationalFactSink {
   constructor(private readonly pool:Pick<Pool,"connect">){}
   async append(fact:OwnerOperationalFact):Promise<void>{
-    if(![...TASK_TRANSITION_KINDS,"task.reconciliationPass","integration.translationCall"].includes(fact.kind)
+    if(![...TASK_TRANSITION_KINDS,...FILE_TRANSITION_KINDS,"task.reconciliationPass","integration.translationCall"].includes(fact.kind)
       ||!/^\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d\.\d{6}Z$/.test(fact.occurredAt)
       ||!Number.isFinite(new Date(fact.occurredAt).getTime())||!/^[a-f0-9]{64}$/.test(fact.occurrenceDigest)
       ||!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(fact.sourceId)
@@ -25,8 +27,7 @@ export class PostgresOwnerOperationalFactSink implements OwnerOperationalFactSin
     for(const [name,value]of Object.entries(fact.values)){
       if(!fields.has(name)||value!==null&&!["string","number","boolean"].includes(typeof value)
         ||typeof value==="number"&&(!Number.isSafeInteger(value)||value<0)
-        ||typeof value==="string"&&!(name==="taskKind"?taskKinds:name==="failureCode"?failureCodes:
-          name==="failureDisposition"?["terminal","retry-exhausted"]:name==="outcome"?["complete","partial-failure"]:[]).includes(value))
+        ||typeof value==="string"&&!validStringField(name,value))
         throw new Error("Invalid operational fact field");
     }
     if(fact.values.schemaVersion!==1)throw new Error("Invalid operational fact version");
@@ -34,8 +35,8 @@ export class PostgresOwnerOperationalFactSink implements OwnerOperationalFactSin
     // clock in the safe payload and identity without changing that schema.
     const payload=JSON.stringify({...fact.values,sourceTransitionAt:fact.occurredAt});
     if(new TextEncoder().encode(payload).length>8192)throw new Error("Oversized operational fact");
-    const monitor=fact.kind==="integration.translationCall"?"integrations.translation":"background.translation";
-    const entityType=fact.kind==="task.reconciliationPass"?"translation-pass":"translation-task";
+    const monitor=fact.kind==="integration.translationCall"?"integrations.translation":fact.kind==="file.accepted"?"files.assets":fact.kind==="file.cleanupPass"?"background.attachments":fact.kind.startsWith("file.")?"files.operations":"background.translation";
+    const entityType=fact.kind==="task.reconciliationPass"?"translation-pass":fact.kind==="file.cleanupPass"?"attachment-cleanup-pass":fact.kind==="file.referencesChanged"?"attachment-reference-operation":fact.kind.startsWith("file.")?"attachment":"translation-task";
     const c=await this.pool.connect();let begun=false,committing=false,discard=false;
     try{
       await c.query("begin");begun=true;
@@ -60,4 +61,15 @@ export class PostgresOwnerOperationalFactSink implements OwnerOperationalFactSin
       throw error;
     }finally{c.release(discard);}
   }
+}
+function isSafeForumId(value:string){return value.length>0&&value.length<=200&&value===value.trim()&&![...value].some(char=>char.charCodeAt(0)<32||char.charCodeAt(0)===127);}
+
+function validStringField(name:string,value:string):boolean{
+  if(name==="postId")return isSafeForumId(value);
+  if(name==="attachmentId")return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value);
+  if(name==="referenceCreatedAt")return /^\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d\.\d{6}Z$/.test(value)&&Number.isFinite(Date.parse(value));
+  const allowed:Record<string,readonly string[]>={taskKind:taskKinds,failureCode:failureCodes,
+    detectedType:["png","jpeg","gif","webp","pdf","zip","7z","gzip","tar","ole","text","executable","unknown","other"],
+    stoppedPhase:["prune","journal","assets","markers","complete"],failureDisposition:["terminal","retry-exhausted"],outcome:["complete","partial-failure"]};
+  return allowed[name]?.includes(value)??false;
 }

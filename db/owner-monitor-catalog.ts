@@ -1,5 +1,9 @@
 import { SYSTEM_MONITORS } from "./owner-system-history";
 import { SA02_MONITORS } from "./owner-sa02-catalog";
+import {STORAGE_SLOTS} from "../app/observability/storage-observations";
+
+export const STORAGE_OBSERVATION_PREDICATE_SQL=`o.monitor_key='integrations.storage' and o.resource_scope in (${STORAGE_SLOTS.map(scope=>"'"+scope+"'").join(',')})`;
+export const STORAGE_OBSERVATION_SCOPES_SQL=`case when ${STORAGE_OBSERVATION_PREDICATE_SQL} then ARRAY['integrations.storage','files.operations']::text[] else ARRAY[o.monitor_key]::text[] end`;
 
 /** Closed, code-backed capabilities. A catalog entry is never a query or a writer. */
 export const NATIVE_MONITORS = {
@@ -11,7 +15,7 @@ export const NATIVE_MONITORS = {
 export type NativeMonitorArea = keyof typeof NATIVE_MONITORS;
 export type NativeMonitorKey = (typeof NATIVE_MONITORS)[NativeMonitorArea][number];
 export const LOCALIZATION_MONITORS={localization:["localization.registry","localization.ui","localization.content","localization.budget"]} as const;
-export const OPERATIONAL_MONITORS={background:["background.translation"],integrations:["integrations.translation"]} as const;
+export const OPERATIONAL_MONITORS={background:["background.translation","background.attachments"],files:["files.assets","files.operations"],integrations:["integrations.translation","integrations.storage"]} as const;
 export const OWNER_MONITORS = { system: SYSTEM_MONITORS, ...SA02_MONITORS, ...NATIVE_MONITORS,...OPERATIONAL_MONITORS,...LOCALIZATION_MONITORS } as const;
 export type OwnerMonitorArea = keyof typeof OWNER_MONITORS;
 export type OwnerMonitorKey = (typeof OWNER_MONITORS)[OwnerMonitorArea][number];

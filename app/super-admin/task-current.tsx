@@ -1,3 +1,5 @@
+import {FileMonitorCard} from "./file-current";
+import type {FileCurrentMonitor} from "../../db/owner-file-monitoring";
 import {Link} from "react-router";
 import {useTranslation} from "react-i18next";
 import type {OwnerTaskCurrent} from "../../db/owner-task-monitoring";
@@ -6,7 +8,7 @@ import {SuperAdminShell,formatTime} from "./view";
 import {useOwnerSnapshot} from "./owner-snapshot";
 import {taskLabels} from "./task-labels";
 
-export function SuperAdminBackground({locale,state,viewerId}:{locale:string;state:OwnerTaskCurrent;viewerId:string}){
+export function SuperAdminBackground({locale,state,viewerId,cleanup}:{locale:string;state:OwnerTaskCurrent;viewerId:string;cleanup?:FileCurrentMonitor}){
   const {t}=useTranslation("common"),routing=useAdministrativeRouting(),visible=useOwnerSnapshot(state,viewerId);
   if(!visible)return <SuperAdminShell locale={locale} current="monitoring"><p role="status">{t("profileSectionUnavailable")}</p></SuperAdminShell>;
   return <SuperAdminShell locale={locale} current="monitoring"><section className="admin-overview" data-task-current aria-labelledby="background-heading">
@@ -30,5 +32,6 @@ export function SuperAdminBackground({locale,state,viewerId}:{locale:string;stat
         {" · "}<Link to={routing.superAdmin.monitoring(locale)}>{t("superAdminMonitoring")}</Link>
       </nav>
     </article>
+    {cleanup?<FileMonitorCard locale={locale} monitor={cleanup}/>:null}
   </section></SuperAdminShell>;
 }

@@ -1,3 +1,6 @@
+import {createHyperdriveOperationalRecording} from "../db/hyperdrive-operational-recording";
+import {createHyperdriveOwnerFiles} from "../db/hyperdrive-owner-files";
+import {ownerFilesMonitoringContext} from "../app/super-admin/request-context";
 import { RouterContextProvider, createRequestHandler } from "react-router";
 import { forumReaderContext, forumWriterContext } from "../app/forum/request-context";
 import { forumAttachmentStoreContext, privateAttachmentBucketContext } from "../app/forum/attachment-request-context";
@@ -73,6 +76,7 @@ async function applicationFetch(request: Request, env: Env, executionContext?: E
     const requestStarted = performance.now();
     const context = new RouterContextProvider();
     const { localizationConnectionString, webConnectionString } = resolveRuntimeDatabaseConnectionStrings(env);
+    const operational=createHyperdriveOperationalRecording(webConnectionString);
     const collector = new RequestAttemptCollector(captureAttemptIngressSource(request),
       () => createHyperdriveAttemptTelemetry(webConnectionString));
     context.set(requestAttemptCollectorContext, collector);
@@ -101,10 +105,10 @@ async function applicationFetch(request: Request, env: Env, executionContext?: E
     const ownerUserId = validOwnerUserId((env as Env & { VICO_OWNER_USER_ID?: string }).VICO_OWNER_USER_ID);
     const measureAdmission = withOwnerUserMeasureAdmission(ownerUserId);
     context.set(forumReaderContext, createHyperdriveForumReader(webConnectionString));
-    context.set(forumWriterContext, createHyperdriveForumWriter(webConnectionString, undefined, undefined, measureAdmission));
-    context.set(forumAttachmentStoreContext, createHyperdriveForumAttachmentStore(webConnectionString, undefined, measureAdmission));
+    context.set(forumWriterContext, createHyperdriveForumWriter(webConnectionString, undefined, undefined, measureAdmission,operational.sink));
+    context.set(forumAttachmentStoreContext, createHyperdriveForumAttachmentStore(webConnectionString, undefined, measureAdmission,operational.sink));
     const attachmentBucket = (env as Env & { ATTACHMENT_R2?: R2Bucket }).ATTACHMENT_R2;
-    context.set(privateAttachmentBucketContext, attachmentBucket ? privateAttachmentBucket(attachmentBucket) : null);
+    context.set(privateAttachmentBucketContext, attachmentBucket ? privateAttachmentBucket(attachmentBucket,operational.storageCapture) : null);
     context.set(registryLoaderContext, createHyperdriveRegistryLoader(localizationConnectionString));
     context.set(uiTranslationStoreContext, createHyperdriveUiTranslationStore(localizationConnectionString));
     context.set(
@@ -124,6 +128,7 @@ async function applicationFetch(request: Request, env: Env, executionContext?: E
     context.set(ownerSystemMonitoringContext, ownerMonitoring);
     context.set(ownerSa02MonitoringContext, ownerMonitoring);
     context.set(ownerNativeMonitoringContext, ownerMonitoring);
+    context.set(ownerFilesMonitoringContext,createHyperdriveOwnerFiles(webConnectionString,!!attachmentBucket,ownerUserId));
     context.set(ownerLocalizationMonitoringContext,createHyperdriveOwnerLocalization(webConnectionString,localizationConnectionString,ownerUserId));
     context.set(ownerProfileContext, createHyperdriveOwnerProfile(webConnectionString));
     context.set(ownerAccountLifecycleContext, createHyperdriveOwnerAccountLifecycle(webConnectionString, ownerUserId));
@@ -153,7 +158,8 @@ async function applicationFetch(request: Request, env: Env, executionContext?: E
       // replace the original HTTP response/exception with telemetry failure.
       const task = facts.flush()
         .catch(() => collector.recordGap("auth"))
-        .then(() => collector.flush().catch(() => undefined));
+        .then(() => collector.flush().catch(() => undefined))
+        .then(()=>operational.flush().catch(()=>undefined));
       if (executionContext?.waitUntil) executionContext.waitUntil(task);
       else await task;
     }

@@ -1,7 +1,7 @@
-import {TASK_TRANSITION_KINDS} from "../app/observability/operational-facts";
+import {TASK_TRANSITION_KINDS,FILE_TRANSITION_KINDS} from "../app/observability/operational-facts";
 import type { Pool } from "pg";
 import { SA02_FACT_MONITORS } from "./owner-sa02-catalog";
-import { OWNER_MONITORS, ADMIN_MONITOR_SCOPES_SQL, TASK_FACT_MONITOR_SCOPES_SQL, type OwnerMonitorArea, type OwnerMonitorKey } from "./owner-monitor-catalog";
+import { OWNER_MONITORS, ADMIN_MONITOR_SCOPES_SQL, TASK_FACT_MONITOR_SCOPES_SQL,STORAGE_OBSERVATION_PREDICATE_SQL,STORAGE_OBSERVATION_SCOPES_SQL, type OwnerMonitorArea, type OwnerMonitorKey } from "./owner-monitor-catalog";
 import { nativeHistoryBranches, NATIVE_HISTORY_ORIGINS, NATIVE_ORIGIN_MONITORS, HISTORY_COLUMNS, readNativeHistoryCoverage, type NativeHistoryOrigin, type OwnerSourceCoverage } from "./owner-native-history";
 import { SYSTEM_MONITORS } from "./owner-system-history";
 import { parseOwnerTimelineCursor } from "./owner-system-monitoring";
@@ -48,18 +48,18 @@ export interface OwnerHistoryOptions {
 }
 const ORIGIN_SCOPES: Record<OwnerHistoryOrigin,readonly string[]> = {
   ...NATIVE_ORIGIN_MONITORS,
-  "operational-event":["background.translation","integrations.translation","localization.ui","localization.content","localization.budget"],
+  "operational-event":["background.translation","integrations.translation","localization.ui","localization.content","localization.budget","background.attachments","files.assets","files.operations"],
   "system-event": SYSTEM_MONITORS,
   "auth-event": ["accounts.users","accounts.methods","accounts.sessions","security.auth"],
   "account-event": ["accounts.users"],
   "system-observation": Object.values(OWNER_MONITORS).flat(),
   "admin-history": ["accounts.registration","administration.registration","administration.authorization","administration.measures","forum.content","localization.content","forum.state","moderation.help"],
-  "attachment-evidence": ["security.attachments"],
+  "attachment-evidence": ["security.attachments","files.assets"],
   "attempt-pattern": ["accounts.registration","security.auth","security.access"],
   "attempt-state": ["security.auth","security.access"],
 };
 const KINDS_BY_ORIGIN: Record<OwnerHistoryOrigin,readonly string[]> = {
-  "operational-event":[...TASK_TRANSITION_KINDS,"task.reconciliationPass","integration.translationCall"],
+  "operational-event":[...TASK_TRANSITION_KINDS,...FILE_TRANSITION_KINDS,"task.reconciliationPass","integration.translationCall"],
   "system-event":["system.dependencyUnavailable","system.requestFailed"],
   "auth-event":Object.keys(SA02_FACT_MONITORS),
   "account-event":["account.deactivated"],
@@ -88,7 +88,7 @@ function compatibleOrigin(origin:OwnerHistoryOrigin,scope:Scope):boolean {
 /** Source-kind/monitor compatibility comes from the existing closed native actions. */
 function compatibleKind(origin:OwnerHistoryOrigin,kind:string,scope:Scope):boolean {
   let allowed:readonly string[]=ORIGIN_SCOPES[origin];
-  if(origin==="operational-event")allowed=kind==="integration.translationCall"?["background.translation","integrations.translation"]:kind==="task.reconciliationPass"?["background.translation"]:kind==="task.allowanceAdmitted"||kind==="task.allowanceDeferred"?["background.translation","localization.ui","localization.content","localization.budget"]:["background.translation","localization.ui","localization.content"];
+  if(origin==="operational-event")allowed=kind==="file.cleanupPass"?["background.attachments","files.operations"]:kind.startsWith("file.")?["files.assets","files.operations"]:kind==="integration.translationCall"?["background.translation","integrations.translation"]:kind==="task.reconciliationPass"?["background.translation"]:kind==="task.allowanceAdmitted"||kind==="task.allowanceDeferred"?["background.translation","localization.ui","localization.content","localization.budget"]:["background.translation","localization.ui","localization.content"];
   if(origin==="auth-event")allowed=SA02_FACT_MONITORS[kind as keyof typeof SA02_FACT_MONITORS]??[];
   if(origin==="system-event")allowed=kind==="system.requestFailed"?["system.requests"]:["system.dependencies"];
   if(origin==="admin-history"){
@@ -294,8 +294,8 @@ const LEGACY_SOURCE_SQL = [
   ACCOUNT_HISTORY_SELECT_SQL,
   "union all",
   "select 'system-observation'::text,o.id::text,o.observed_at,o.observed_at,",
-  " ARRAY[o.monitor_key]::text[],'monitor.observed'::text,o.source,o.quality,o.value",
-  " from owner_monitor_observations o where o.resource_scope='global'",
+  STORAGE_OBSERVATION_SCOPES_SQL+",'monitor.observed'::text,o.source,o.quality,o.value||case when "+STORAGE_OBSERVATION_PREDICATE_SQL+" then jsonb_build_object('sampleScope',o.resource_scope) else '{}'::jsonb end",
+  " from owner_monitor_observations o where (o.resource_scope='global' or ("+STORAGE_OBSERVATION_PREDICATE_SQL+"))",
   "union all",
   "select 'admin-history'::text,a.id::text,a.occurred_at,a.occurred_at,",
   ADMIN_MONITOR_SCOPES_SQL+",",
@@ -318,7 +318,7 @@ const LEGACY_SOURCE_SQL = [
   " from admin_history a",
   "union all",
   "select 'attachment-evidence'::text,f.id::text,f.created_at,f.created_at,",
-  " ARRAY['security.attachments']::text[],'attachment.securityEvidence'::text,",
+  " ARRAY['security.attachments','files.assets']::text[],'attachment.securityEvidence'::text,",
   " 'forum_attachment_security_events'::text,null::text,",
   " jsonb_build_object('uploadId',f.upload_id,'uploadedByUserId',f.uploaded_by_user_id,",
   " 'detectedType',f.detected_type,'reason',f.reason,'declaredByteSize',f.declared_byte_size)",
@@ -369,6 +369,14 @@ const LEGACY_SOURCE_SQL = [
   "select 'operational-event'::text,e.id::text,e.occurred_at,e.recorded_at,ARRAY['integrations.translation','background.translation']::text[],",
   "e.kind,e.source,'best-effort'::text,e.payload||jsonb_build_object('taskId',e.entity_id,'actorUserId',e.actor_user_id)",
   "from owner_events e where e.source='operation' and e.monitor_key='integrations.translation' and e.kind='integration.translationCall'",
+  "union all",
+  "select 'operational-event'::text,e.id::text,e.occurred_at,e.recorded_at,ARRAY['files.assets','files.operations']::text[],",
+  "e.kind,e.source,'best-effort'::text,e.payload||jsonb_build_object(case when e.kind='file.referencesChanged' then 'operationId' else 'attachmentId' end,e.entity_id,'actorUserId',e.actor_user_id)",
+  "from owner_events e where e.source='operation' and e.monitor_key in ('files.assets','files.operations') and e.kind in ('file.accepted','file.published','file.unpublished','file.referencesChanged')",
+  "union all",
+  "select 'operational-event'::text,e.id::text,e.occurred_at,e.recorded_at,ARRAY['background.attachments','files.operations']::text[],",
+  "e.kind,e.source,'best-effort'::text,e.payload||jsonb_build_object('runId',e.entity_id)",
+  "from owner_events e where e.source='operation' and e.monitor_key='background.attachments' and e.kind='file.cleanupPass'",
 ].join("\n");
 
 function timelineSql(filterOrigin:OwnerHistoryOrigin|null=null,scope:Scope={area:null,monitor:null},
@@ -378,11 +386,11 @@ function timelineSql(filterOrigin:OwnerHistoryOrigin|null=null,scope:Scope={area
     (filterKind===null||(KINDS_BY_ORIGIN[origin as OwnerHistoryOrigin].includes(filterKind)&&
       compatibleKind(origin as OwnerHistoryOrigin,filterKind,scope))));
   const predicates = "($1::text is null or $1=any(scopes)) and ($2::text is null or exists(select 1 from unnest(scopes) m where m like ($2||'.%'))) and ($3::timestamptz is null or (at,origin,source_id)<($3::timestamptz,$4::text,$5::text)) and ($7::text is null or kind=$7::text) and ($8::timestamptz is null or at>=$8::timestamptz) and ($9::timestamptz is null or at<$9::timestamptz)";
-  const legacyOrigins:OwnerHistoryOrigin[]=["system-event","auth-event","account-event","system-observation","admin-history","attachment-evidence","attempt-pattern","attempt-state","operational-event","operational-event"];
+  const legacyOrigins:OwnerHistoryOrigin[]=["system-event","auth-event","account-event","system-observation","admin-history","attachment-evidence","attempt-pattern","attempt-state","operational-event","operational-event","operational-event","operational-event"];
   const legacy=LEGACY_SOURCE_SQL.split("\nunion all\n").flatMap((sql,index)=>{
     if(!allowedOrigins.includes(legacyOrigins[index]))return [];
     // Preserve direct equality prefixes for scoped chronological indexes.
-    const direct=index===0?" and ($1::text is null or e.monitor_key=$1)":index===3?" and ($1::text is null or o.monitor_key=$1)":"";
+    const direct=index===0?" and ($1::text is null or e.monitor_key=$1)":index===3?" and ($1::text is null or o.monitor_key=$1 or ($1::text='files.operations' and ("+STORAGE_OBSERVATION_PREDICATE_SQL+")))":"";
     return [`(select ${HISTORY_COLUMNS} from (${sql+direct}) facts(${HISTORY_COLUMNS}) where ${predicates} order by at desc nulls last,origin desc nulls last,source_id desc nulls last limit $6)`];
   });
   const native=nativeHistoryBranches({monitor:"$1",area:"$2",at:"$3",origin:"$4",id:"$5",limit:"$6",
