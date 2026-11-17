@@ -6,10 +6,10 @@ Service PR #331 is the active Admin/Super-admin coordination channel. PR #251 is
 
 - Main `45406723c4b53ceba9392d3fb7dc84e8adaa9768` includes SA06 #338 + SA07 #339 after completed reviews.
 - Cumulative Draft #340 stable exact `5eb6656d933eb39a5df45c1ddca85d3679d600c5`, open/Draft/unmerged/mergeable=true,8 commits/41 paths; Lev authored SA08.
-- SA08-A bounded PASS remains valid. Mira WHOLE-SA08 FAIL M1 on83f7cb24 identified incomplete real missing/wrong-binding canonical profile/action acceptance.2-file test-only correction now covers public/Admin/no-Owner-private profile document/data/prefetch and actual canonical deactivation refusal, genuine former Owner/Admin/member/guest in both runtime modes, proven native private-reader fault boundary and unchanged target/lifecycle/history/domain snapshots. Product source unchanged.
-- **Correction AUTHOR READY:** all14 exact workflows/18 latest jobs SUCCESS; app2569/208, native1410/104/no unhandled error,69-table manifest/runtime/split-authority/credential probes and real Worker/R2 chains PASS. SA08 main20 +6 real binding chains PASS.
-- Updated complete source/commands/run/job/fixture matrix: [SA08_FINAL_EVIDENCE.md](SA08_FINAL_EVIDENCE.md); handoff #331 comment6956384422. Prior Mira FAIL preserved pending fresh review; no independent self-review/Owner visual/live acceptance claimed.
-- **ACTIVE next: Mira fresh WHOLE SA08 coordinator review** of complete cumulative #340 on this same exact head; Lev edits STOP. **Mark blocked until Mira PASS**, then independent non-author whole-SA08 review on same head. Implementation changes reset head/cycle.
+- SA08-A bounded PASS remains valid. Final M1 correction is2 acceptance files only; product source remains unchanged from the accepted product head.
+- **Mira WHOLE SA08 COORDINATOR PASS:** M1 real missing/wrong-binding canonical profile/action acceptance is CLOSED; full cumulative SA08 review found0 confirmed current-SA08 defects. Exact head has all14 workflows SUCCESS, app2569/208, native1410/104,69-table manifest/runtime/split-authority/credential probes PASS, and SA08 main +6 corrected binding-chain records PASS.
+- Full evidence matrix: [SA08_FINAL_EVIDENCE.md](SA08_FINAL_EVIDENCE.md). Coordinator handoff: #331 comment6957009585. Actual Owner visual/live acceptance remains separately attributed.
+- **ACTIVE next:** Mark / Codex-6 Sol independent non-author WHOLE SA08 review of complete cumulative #340 on this same exact head because Lev authored SA08. Implementation changes reset head/review cycle.
 - No agents launched, intermediate merge, permanent docs, #315, Stage6/production/deploy/external work; Owner remains merge authority. Known Drizzle generator BigInt false-green excluded from schema parity proof.
 
 ## Stable product decisions
