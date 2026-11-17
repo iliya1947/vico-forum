@@ -60,3 +60,12 @@ source-locale correction не разрешают переименование т
 Технический план принят с overrides Миры: E1 включён; отдельный title-edit cooldown исключён; отдельная recovery/idempotency subsystem не создаётся.
 
 Следующий участник: Лира / ChatGPT-6. Реализовать bounded scope в отдельном implementation PR от актуального `main`, выполнить применимые проверки и зафиксировать stable implementation head. После этого STOP и возврат Мире на coordinator whole-PR review.
+
+
+## 2026-11-18 — владелец переназначил реализацию Лёве
+
+Предыдущее назначение Лире отменено. По прямому решению владельца bounded implementation выполняет Лёва / Codex-6.1 Sol.
+
+Scope и принятые решения E1/E2 не меняются. Лёва создаёт отдельный implementation PR от актуального `main`, реализует утверждённый план с overrides Миры, выполняет применимые проверки и фиксирует stable implementation head.
+
+После этого Мира проводит coordinator whole-PR review. Так как Лёва будет автором реализации, независимый технический review после PASS Миры выполняет Марк / Codex-6 Sol на том же exact head.
