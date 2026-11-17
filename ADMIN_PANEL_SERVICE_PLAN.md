@@ -5,9 +5,9 @@ Service PR #331 is the active Admin/Super-admin coordination channel. PR #251 is
 ## Current boundary
 
 - Current main7e7a8038; prerequisite Draft338 ce71892d open/unmerged, Mira fresh whole-SA06 M2 FAIL; Lira corrects false person coverage attribution. Earlier Lev author verification was not independent.
-- Explicit overnight override activates dependent cumulative [Draft #339](https://github.com/iliya1947/vico-forum/pull/339), branch `chatgpt/sa07-native-operations`, base `chatgpt/sa06-native-monitoring`; current exact `1afb8954e435eeb2edb098ff77a8dd56035927fe`.
+- Explicit overnight override activates dependent cumulative [Draft #339](https://github.com/iliya1947/vico-forum/pull/339), branch `chatgpt/sa07-native-operations`, base `chatgpt/sa06-native-monitoring`; current exact `98f6ce48bc0efce465d89eff5267db3e82524fe1`.
 -07-B1/L/F/D predecessor22f all13 exact workflows SUCCESS: app2555/205,native1388/102,manifest69,cumulative connected32. Source-specific details remain in the common/personal logs. Known Drizzle BigInt/exit0 is not parity proof.
-- **07-B1/L/F/D/I source delivered; final whole-SA07 author acceptance ACTIVE** in the same cumulative PR. New Integrations native9/focusedapp69/8/History7/type/build/lint PASS. Full local/connected and new exact CI ACTIVE; one large-catalog Localization native deadline needs reconciliation. Whole SA07 not AUTHOR READY; no internal review/merge gate. Update/recheck dependency when338 changes; SA06 M2 remains assigned to Lira.
+- **07-B1/L/F/D/I code and current-base author acceptance complete** in the same cumulative PR. Exact98f6 all13 workflows/17jobs SUCCESS: app2568/208,native1397/103,manifest69,connected40; local actual connected40 with zero pageErrors/external requests and EN/RU/HE320 screenshots inspected. Local native large-catalog deadline did not recur in unchanged isolated12/12 or full exact CI; no assertion/deadline change. No independent self-review/final cumulative acceptance claimed. **Next: Lira corrects prerequisite338 M2 already assigned in #331; Lev immediately updates/rechecks339 on new head.** Mira whole-SA06 review then Mark after PASS remains separate. No internal merge gate.
 - No SA08+, #315, permanent docs, Stage6/production/deploy/external work or merge. Author browser checks do not establish developer visual/deployed approval.
 
 ## Stable product decisions
