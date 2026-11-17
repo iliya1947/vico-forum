@@ -1,3 +1,14 @@
+## 2026-11-17 — Developer assignment: Lira continues #341
+
+- Developer explicitly assigned **Lira / ChatGPT-6** to continue the documentation closeout.
+- Target: Draft #341, branch `docs/super-admin-sa05-sa08-closeout`, current head `9595cb6026f60be4975e5164746c0986716712f6`, base/main `2ed977604ae0e6a3c0c2650112f65b42fc7eb77a`.
+- Existing first commit updates only `PROJECT_STATE.md`; Lira may correct/refine it as part of the same docs closeout.
+- Remaining confirmed scope: reconcile `PROJECT.md`, `PROJECT_STATE.md`, `ROADMAP.md`, `docs/SUPER_ADMIN.md`, factual SA01–04 status references in `docs/ADMIN_PANEL.md` and `docs/UI_UX_PASS.md`; update `docs/PROJECT_HISTORY/PROJECT_HISTORY.md` and add one compact SA05–SA08 history snapshot.
+- Boundaries: documentation-only; no application code/schema/dependency/runtime/deploy/production changes. Repository/local-CI completion must not be represented as Stage6/deployed acceptance. Visual/UI polish remains the later separate pass.
+- Ready criterion: one coherent factual docs diff on #341 with no stale SA01–04 / unimplemented-SA05 claims in the scoped files, then handoff for Mira whole-PR review.
+
+---
+
 ## 2026-11-17 — docs closeout PR #341 opened
 
 - Draft documentation-only PR **#341** created from current main `2ed977604ae0e6a3c0c2650112f65b42fc7eb77a`.
