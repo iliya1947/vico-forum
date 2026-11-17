@@ -202,8 +202,13 @@ try:
   assert guest.request.get(base+'/api/attachments/file/'+asset+'?post='+post).body()==payload
   sql("update forum_attachments set created_at=now()-interval '2 hours' where id=any($1::text[])",[[asset,unused]])
   sql("update forum_attachment_draft_refs set created_at=now()-interval '25 hours' where attachment_id=$1",[unused])
-  orphan='private/fenced-v1/'+str(uuid4());assert local_r2('orphan-reservation',orphan)['reserved']
-  cleaned=local_r2('cleanup',batch=20);assert cleaned['prunedRefs']>=1 and cleaned['deleted']>=2
+  orphan='private/fenced-v1/00000000-0000-4000-8000-'+uuid4().hex[:12];assert local_r2('orphan-reservation',orphan)['reserved']
+  assert local_r2('inspect',orphan)['kind']=='vico-reservation-v1'
+  cleaned=local_r2('cleanup',batch=20);assert cleaned['prunedRefs']>=1 and cleaned['deleted']>=1,cleaned
+  # LIST limits include payloads. A marker may require a later bounded cursor pass.
+  for _ in range(16):
+   if not local_r2('inspect',orphan)['exists']:break
+   local_r2('cleanup',batch=20)
   assert not local_r2('inspect',unused_key)['exists'];assert not local_r2('inspect',orphan)['exists'];assert local_r2('inspect',stored)['exists']
   assert not sql('select id from forum_attachments where id=$1',[unused]);assert sql('select id from forum_attachments where id=$1',[asset])
   record('actual-Worker-upload-publication-replay-Owner-deactivation-and-real-local-R2-cleanup-no-false-acceptance')
