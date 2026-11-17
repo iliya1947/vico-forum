@@ -1,3 +1,9 @@
+## 2026-11-17 — SA08-A assignment superseded
+
+The earlier SA08-A implementation assignment to Lira was a coordination error and is superseded. Lev / Codex-6.1 Sol remains the active implementation path and owns SA08-A. Lira has no active SA08-A implementation task from this assignment.
+
+---
+
 ## 2026-11-17 — SA07 merged; SA08-A assigned to Lira
 
 - Developer merged #339. Current `main` is `45406723c4b53ceba9392d3fb7dc84e8adaa9768`.
