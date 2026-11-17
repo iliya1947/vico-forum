@@ -1,21 +1,10 @@
 # Admin panel — current workflow
 
-- **Service PR:** #331, coordination-only; never merge.
+- **Service PR:** #331 coordination-only, never merge.
 - **Current main/base:** `7e7a803876422c2f40faaf720b59027d468e99dc`.
-- **Whole-SA06 implementation:** cumulative Draft #338. Original reviewed exact head `522951ec164fda237b52e9777de846e32e86d47d`.
-- **Completed reviews on original head:**
-  - Lira / ChatGPT-6: FAIL — confirmed AP-10 effective-count defect in `administration.measures`.
-  - Mira / ChatGPT-5.6 Sol: FAIL — confirmed incomplete SA06 History filter foundation.
-  - Mark / Codex-6 Sol: FINDING — independently confirmed the same History filter foundation defect.
-- **Confirmed unique current-SA06 defects:** 2.
-- **ACTIVE implementer:** **Lira / ChatGPT-6** fixes both defects in #338. Live #338 head is currently `ce71892dc30d8e9ef03833031c29e8519ca7627d`; it is still a working head, not a declared stable WHOLE SA06 AUTHOR READY head.
-- **Bounded correction progress:** stage 1/4 scope mapping DONE; stage 2/4 History filtering/cursors DONE; **stage 3/4 AP-10 raw-authority-floor effective/per-key SQL and PostgreSQL regression DONE / exact-head PASS** on working Draft #338 `ce71892dc30d8e9ef03833031c29e8519ca7627d`. [CI #43984956444](https://github.com/iliya1947/vico-forum/actions/runs/43984956444) SUCCESS after same-head DB retry: 2510/2510 application (194 files), 1336/1336 PG17 (98 files), SA06 native 18/18, 69-table schema manifest/Worker smoke; SA06 connected Chromium #43984956396 SUCCESS; **12/12 exact-head workflow runs SUCCESS**. First DB attempt had unrelated unhandled SA04 Complaints N4.2 rejection after all tests passed; retained in history, no unrelated code change. **Stage 4/4 final cumulative whole-SA06 validation/handoff NOT STARTED; #338 is NOT declared WHOLE SA06 AUTHOR READY. NEXT on developer `...`: bounded stage 4/4 only, final cumulative source/acceptance reconciliation and one exact-head author handoff; STOP after stage 4.**
-- **Correction 1:** complete the accepted SA06 History filter foundation: typed/query support for `origin`, `kind`, `from`, `until`; v2 cursor binding/validation; compatible source-branch predicate pushdown before branch LIMIT; preserve compatible old cursors. SA08 UI controls remain out of scope.
-- **Correction 2:** make `administration.measures` effective/per-restriction counts follow actual AP-10 applicability, including raw-authority-floor semantics for administrative restrictions; preserve ordinary participation restrictions and Owner exemption.
-- **Lira acceptance:** focused PostgreSQL proof for both defects plus applicable/full SA06 acceptance required by changed code, ending in one stable exact #338 head and WHOLE SA06 AUTHOR READY.
-- **Developer overnight override after Lira AUTHOR READY:** Lev / Codex-6.1 Sol performs a fresh technical review of the **entire cumulative #338 / whole SA06**, not only Lira's delta.
-  - If no confirmed current-SA06 defects remain: Lev records the clean exact head and immediately starts **SA07** in a separate dependent implementation PR/branch based on that #338 head, **without waiting for #338 merge**.
-  - If Lev finds a confirmed current-SA06 defect: Lev fixes it himself in #338, reruns required acceptance and continues whole-SA06 verification until clean; then immediately starts dependent SA07 from the resulting #338 head, again **without waiting for merge**.
-- **Review meaning:** Lev is an SA06 author, so this is technical whole-package verification, not independent review. Coordinator/independent review may continue later but is **not a prerequisite for beginning dependent SA07** under this developer override.
-- **Dependency rule:** if #338 changes after SA07 branches, SA07 must be updated/rechecked against the corrected prerequisite head before SA07 acceptance.
-- **Boundary:** no SA08+, permanent docs, #315, Stage6/production/deploy/external work. Developer remains merge authority.
+- **Cumulative SA06 implementation:** Draft #338 exact stable head `ce71892dc30d8e9ef03833031c29e8519ca7627d`, open/unmerged, 29 commits/50 paths.
+- **Lira corrective stages 1/4 mapping, 2/4 History, 3/4 AP-10, 4/4 cumulative author verification: DONE. WHOLE SA06 AUTHOR READY; Lira AUTHOR STOP.** Corrected History `origin/kind/from/until`, v2 cursor/filter binding and branch pushdown; AP-10 native effective/per-key raw-authority-floor applicability. No new current-SA06 defect identified during author reconciliation; not an independent review.
+- **Evidence:** 12/12 exact-head GitHub workflow runs SUCCESS; CI #43984956444 checks 2510/2510 application, database 1336/1336 PG17 including native SA06 18/18; SA06 genuine connected Chromium #43984956396 SUCCESS, final `whole-SA06-connected-pass`. DB job same-head retry PASS after Complaints unhandled rejection on first attempt (cause unverified). No deployed Owner/owner visual approval claimed.
+- **NEXT ACTIVE:** Lev / Codex-6.1 Sol performs technical whole-#338 verification of the entire cumulative SA06 package on this exact head, not only corrective delta. Lev is an author, not independent reviewer. If confirmed current-SA06 defect, Lev fixes in #338, reruns required acceptance and continues verification until clean; then immediately starts SA07 as separate dependent implementation PR/branch from accepted #338 head without waiting for merge.
+- **Dependency:** if #338 changes subsequently, dependent SA07 must be updated/rechecked. Coordinator/independent reviews may occur later but do not gate beginning SA07 under latest developer override. Owner retains merge authority.
+- **Boundary:** no SA08+, permanent docs, #315, Stage6/production/deploy/external work, or #338 merge.
