@@ -39,7 +39,7 @@ Git history и PR остаются первичными историческим
 25. [`PROJECT_HISTORY_25.md`](./PROJECT_HISTORY_25.md) — 2026-11-11: Super-admin SA-02 Accounts & Security Monitoring, migration 0063, bounded source-attributed telemetry, correction/review cycle, final PASS и merge #319.
 26. [`PROJECT_HISTORY_26.md`](./PROJECT_HISTORY_26.md) — 2026-11-11: Super-admin SA-03 canonical unified user profile, migration 0064, Admin/Owner composition, identity-boundary corrections, final PASS и merge #324.
 27. [`PROJECT_HISTORY_27.md`](./PROJECT_HISTORY_27.md) — 2026-11-11 — 2026-11-16: Super-admin SA-04 A–S, AccountState migration 0065, neutral public identity и lifecycle enforcement, corrections/review, final connected acceptance и merge #327–#335 (с пропуском #331 — служебный PR).
-28. [`PROJECT_HISTORY_28.md`](./PROJECT_HISTORY_28.md) — 2026-11-16 — 2026-11-17: Super-admin SA-05–SA-08, canonical Owner деактивация, десять native/operational Monitoring областей, final 13-area Overview/History, corrections, whole-SA08 reviews, exact-head CI и merge #337–#340.
+28. [`PROJECT_HISTORY_28.md`](./PROJECT_HISTORY_28.md) — 2026-11-16 — 2026-11-17: Super-admin SA-05–SA-08, canonical Owner деактивация, девять дополнительных native/operational Monitoring областей, final 13-area Overview/History, corrections, whole-SA08 reviews, exact-head CI и merge #337–#340.
 
 ## Архивные снимки
 
