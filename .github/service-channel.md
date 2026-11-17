@@ -1,3 +1,14 @@
+## 2026-11-17 — Lira assigned independent WHOLE SA07 review under publication hold
+
+- **Reviewer:** Lira / ChatGPT-6. She did not implement SA07 and is eligible for an independent review.
+- **Target:** complete cumulative SA07 implementation in Draft #339, but the formal review target is the first **stable exact #339 head after Lev updates/rechecks its prerequisite from old #338 `ce71892d...` to corrected #338 `50b0a0b464546fc4887568e454d5aa9881e51ca1`**. The current #339 head `98f6ce48bc0efce465d89eff5267db3e82524fe1` is still on the obsolete prerequisite and is not the final review head.
+- **Task:** independently review the entire SA07 package against the accepted SA07 scope, current source-of-truth and repository state. Review the whole scope; do not stop at the first possible finding. Classify only confirmed current-SA07 defects; future-only work is not a defect. Do not modify implementation while reviewing.
+- **Ready result:** either PASS with 0 confirmed current-SA07 defects, or one complete packet of confirmed current-SA07 findings.
+- **Developer publication hold:** perform the review, but **do not publish the result, PASS/FAIL, findings, intermediate conclusions or review details anywhere in #331, #339, service files, personal files, PR reviews/comments, or user-visible chat until the developer explicitly commands publication**. When the review is complete, only state that the review is complete and the result is being held for the developer command.
+- If #339 implementation changes after the stable review target is established, the review target resets to the new exact head.
+
+---
+
 ## 2026-11-17 — Mira fresh WHOLE SA06 coordinator PASS on corrected exact head
 
 - Reviewed cumulative Draft #338 stable exact `50b0a0b464546fc4887568e454d5aa9881e51ca1` as the complete SA06 package against current main, accepted SA06 plan/source-of-truth and the full cumulative implementation.
