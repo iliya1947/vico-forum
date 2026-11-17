@@ -1,3 +1,13 @@
+## 2026-11-17 — Лира WHOLE SA08 fresh review stage 2/3 COMPLETE / STOP
+
+- Draft #340 exact `5eb6656d933eb39a5df45c1ddca85d3679d600c5`, independently rechecked unchanged. 41 changed filenames and 41 nonempty patches /2397 diff lines, exact complete match.
+- Inspected all 41 changed patches across Overview composition/native readers/post-read sampling, global/scoped source-aware History/filter UI/route/Owner admission, EN/RU/HE and viewer invalidation, Worker bindings, native SA08/SA06 History/SA04-N2/N3 acceptance changes, SA08 real Worker/BA/PG17 browser entry and missing/wrong binding canonical profile/action driver + workflow. Related pinned source checked: owner-sa02-history, Owner monitor catalog, History query server/links, owner-snapshot, file monitor source, PG deadlines, localization registry/source and existing Owner/System role contracts.
+- Distinguish application behavior from test claims; independently verified source control/data flow but did not rerun tests or CI logs in stage2. No confirmed current-SA08 defect established by this source-inspection checkpoint; **not** a WHOLE SA08 PASS. Earlier PASS remains invalid.
+- Published stage2 evidence/review boundary to #331 [#6959484599](https://github.com/iliya1947/vico-forum/pull/331#issuecomment-6959484599).
+- Next after explicit developer continuation: stage3/3 exact-head workflow/job evidence + complete accepted §15 matrix reconciliation and final independently supported verdict. No #340 code edits, no merge; Mark independently pending. STOP.
+
+---
+
 ## 2026-11-17 — Лира WHOLE SA08 fresh review stage 1/3 COMPLETE / STOP
 
 - Earlier PASS #6957478441 invalid/retracted in #6959283581; must never use as proof.
