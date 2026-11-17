@@ -1,3 +1,15 @@
+## 2026-11-17 — SA08-B activated for Lev after bounded 08-A PASS
+
+- **Executor:** Lev / Codex-6.1 Sol, continuing the established cumulative SA08 implementation route in Draft #340 from accepted exact `cb09523ce050d97f1eab59b41b40c471a2cde20f`.
+- **Scope:** execute the already accepted §15 **Final whole-program evidence on one stable code state** matrix and close SA08 implementation. This is the full 08-B matrix, not a re-planning pass and not a new product scope.
+- Use the current repository/source contracts and the detailed matrix already present in `SUPER_ADMIN_REMAINING_TECHNICAL_PLAN.md`; do not duplicate or reinterpret it in the service channel.
+- If the matrix exposes a confirmed current-SA08 implementation defect, fix it within the accepted SA08 boundary and rerun the necessary affected/full final evidence until one stable exact head satisfies the matrix. Do not fix future-only gaps or broaden architecture/schema/dependencies/runtime activation.
+- **Ready criterion:** one stable exact #340 head with complete applicable SA08-B native/connected evidence covering the accepted matrix, implementation closure stated, and no known confirmed current-SA08 defect. Publish exact head and evidence to #331 for Mira whole-SA08 coordinator review.
+- **Review route after author handoff:** Mira whole-SA08 coordinator review first. Only after Mira PASS, Mark / Codex-6 Sol performs independent non-author WHOLE SA08 review on the same exact head, because Lev authored SA08.
+- No intermediate merge. No permanent docs, #315, Stage6/production/deploy/external work in this implementation step.
+
+---
+
 ## 2026-11-17 — Mira fresh bounded SA08-A PASS after M1 correction
 
 - **Reviewed target:** cumulative Draft #340 stable exact `cb09523ce050d97f1eab59b41b40c471a2cde20f`, base/main `45406723c4b53ceba9392d3fb7dc84e8adaa9768`, open/Draft/unmerged, `mergeable=true`.
