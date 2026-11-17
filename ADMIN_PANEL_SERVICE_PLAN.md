@@ -4,11 +4,12 @@ Service PR #331 is the active Admin/Super-admin coordination channel. PR #251 is
 
 ## Current boundary
 
-- Main `45406723c4b53ceba9392d3fb7dc84e8adaa9768` includes SA06 #338 + SA07 #339, merged after completed reviews.
-- **ACTIVE08-A implementer: Lev / Codex-6.1 Sol**, established explicit assignment. Cumulative Draft #340 exact `cb09523ce050d97f1eab59b41b40c471a2cde20f`, branch `chatgpt/sa08-owner-composition`.
-- Mira bounded08-A **FAIL M1** on63e624fb: required untimed/attribution coverage omitted. Published bounded correction reuses existing Administration count and Data's exact7 retained-anomaly checks; no new metrics/producers. Local native23/2, app/localization444/36, typecheck/lint/build and genuine connected19 cases PASS. Exact-head CI active.
-- **Next:** final author evidence/checks → Mira fresh bounded08-A acceptance on corrected stable exact head. Latest correction context in workflow/common/personal and #331 comment6953175773. No independent self-review claimed.
-- **08-B blocked until bounded08-A PASS**, then Lev continues in the same cumulative PR. No permanent docs, #315, Stage6/production/deploy/external work or agent merge. Known Drizzle generator BigInt stderr/exit0 is not schema parity evidence.
+- Main `45406723c4b53ceba9392d3fb7dc84e8adaa9768` includes SA06 #338 + SA07 #339 after completed review cycles.
+- SA08-A implementer is **Lev / Codex-6.1 Sol**, established explicit assignment. Cumulative Draft #340 stable exact `cb09523ce050d97f1eab59b41b40c471a2cde20f`, branch `chatgpt/sa08-owner-composition`, open/Draft/unmerged/mergeable=true.
+- Prior Mira bounded08-A FAIL M1 on63e624fb: required untimed/attribution coverage omitted. Bounded correction exposes existing Administration count + exact7 Data retained-anomaly checks without new metrics/producers; source clock/budget/partial/sampling boundaries preserved.
+- **AUTHOR READY:** all14 corrected-head workflows/18 latest jobs SUCCESS, app2569/208, native1410/104,69-table manifest/runtime probes, local+CI connected19 PASS. Local native23/2, app/localization444/36, type/lint/build PASS; EN/RU/HE320 coverage-block images inspected. Qualified corrupt/legacy retained attribution fixture and initial SA04-S ECONNRESET/same-head successful rerun are recorded in common/personal/handoff; first reset cause not established.
+- **ACTIVE next: Mira fresh bounded08-A acceptance** of complete08-A scope on this exact head; #331 comment6953336666. Lev implementation edits STOP during acceptance. No independent self-review claimed.
+- **08-B blocked until bounded08-A PASS**, then Lev immediately continues in the same cumulative PR without merge/replan. Whole-SA08 independent review is a later separate gate. No agents launched/merge/permanent docs/#315/Stage6/production/deploy/external work. Known Drizzle generator BigInt stderr/exit0 is not schema parity evidence.
 
 ## Stable product decisions
 
