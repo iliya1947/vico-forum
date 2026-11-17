@@ -4,7 +4,7 @@
 - SA05 #337, SA06 #338, SA07 #339 and SA08 #340 are delivered in repository/local-CI scope.
 - Final SA08 implementation head `5eb6656d933eb39a5df45c1ddca85d3679d600c5` passed Mira coordinator, Lira independent and Mark independent whole-SA08 review with 0 confirmed current-SA08 defects before merge.
 - Visual/UI polish is a later separate UI/UX pass by explicit Developer correction; it is not part of this post-merge closeout.
-- **Active block:** separate documentation-only closeout PR from current main. Reconcile permanent/current-state docs with delivered SA05–SA08 and add a compact project-history snapshot. No implementation/code/schema/dependency change.
+- **Active next:** documentation-only closeout PR [#341](https://github.com/iliya1947/vico-forum/pull/341) has Lira's 8-file factual author work COMPLETE at exact `c90b027586ddf4be728a3bed9e9d32da25d3e257`; [handoff #6962122915](https://github.com/iliya1947/vico-forum/pull/331#issuecomment-6962122915). Mira whole-PR review is next after required checks; #341 is Draft/unmerged. No implementation/code/schema/dependency change.
 - Stage6/deployed/production acceptance remains outside this task.
 
 ## Stable product decisions
