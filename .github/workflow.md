@@ -1,12 +1,12 @@
 # Admin panel — current workflow
 
 - **Service PR:** #331 coordination-only, never merge.
-- **Current main:** `45406723c4b53ceba9392d3fb7dc84e8adaa9768`; SA07 #339 merged by Developer.
-- **SA08 package:** two accepted bounded slices: **08-A → 08-B**.
-- **ACTIVE 08-A IMPLEMENTER:** Lev / Codex-6.1 Sol, continuing the active implementation route from SA07.
-- **Implementation:** Draft #340, branch `chatgpt/sa08-owner-composition`, base main45406723; exact `4558d05a98e3925ca53299ce31b295ef7d24c15d` (36 paths). Source implemented; current author acceptance ACTIVE: new Overview9 + related reader regressions100 total native PASS, app75/5/type/build/lint PASS. Genuine connected and exact CI ACTIVE; not AUTHOR READY yet.
-- **08-A scope:** complete 13-area Overview (12 measured + Infrastructure placeholder), final History filter/pagination presentation across areas, common action/history presentation and partial-availability composition according to the accepted plan.
-- **Lira:** not assigned as 08-A implementer; prior assignment superseded.
-- **08-A ready gate:** implementation PR on current main + applicable checks/acceptance + stable exact head → Mira bounded acceptance.
-- **08-B remains queued:** full connected/native whole-program matrix and implementation closure on one exact accepted code state. Do not start until 08-A bounded acceptance.
-- **Boundary:** no permanent docs, #315, Stage6/production/deploy/external work. Owner remains merge authority.
+- **Current main:** `45406723c4b53ceba9392d3fb7dc84e8adaa9768`; SA06 #338 + SA07 #339 merged by Developer.
+- **SA08 implementation:** Draft #340, branch `chatgpt/sa08-owner-composition`, base current main, stable exact `63e624fb7fed86cd3c10dcd49d1df63f43543273`, open/Draft/unmerged/mergeable=true.
+- **08-A author:** Lev / Codex-6.1 Sol — AUTHOR READY; implementation edits STOP for bounded acceptance.
+- **08-A evidence:** all14 workflows/18jobs SUCCESS; app2565/208,native1409/104,69-table manifest/runtime probes; real Worker/BA/PG17 connected15 PASS locally and in CI. Zero local pageErrors/external requests/teardown warnings; EN/RU/HE320 Overview and filter forms inspected.
+- **ACTIVE next reviewer:** Mira / ChatGPT-5.6 Sol — bounded acceptance of the complete08-A delta on the same exact head. Full assignment/evidence in #331 comment6951666899 and common channel.
+- **08-A scope:** all13-area Overview (12 measured + Infrastructure placeholder), shared-source bounded snapshot/partial-availability composition/post-read sampling, final closed History controls/UTC exact timestamps/filter-preserving keyset presentation/common typed navigation.
+- **08-B queued:** full-program connected/native matrix and implementation closure. After bounded08-A PASS, Lev immediately continues08-B in the same cumulative SA08 PR; no intermediate merge or new planning gate. Independent whole-SA08 review remains later and separate.
+- **Current defect route:** one complete confirmed current08-A packet through #331; no implementation changes during Mira acceptance.
+- **Boundary:** no08-B before bounded PASS, permanent docs, #315, Stage6/production/deploy/external work or agent merge. Owner remains merge authority.
