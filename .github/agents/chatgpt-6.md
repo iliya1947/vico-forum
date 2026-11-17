@@ -1,5 +1,14 @@
 # ChatGPT-6 — personal log
 
+## 2026-11-17 — Stage 3/4 AP-10 native effective counters: implementation + PG17 PASS
+
+- **Cumulative Draft #338 exact working head:** `ce71892dc30d8e9ef03833031c29e8519ca7627d` (base main `7e7a803876422c2f40faaf720b59027d468e99dc`, unmerged). Read live main AGENTS, main PROJECT/PROJECT_STATE, applicable AP-10 contract and accepted plan §8/11. Kept stage2 History complete and unchanged; corrected only native `administration.measures` + focused PG17 test.
+- `db/owner-native-current.ts` now matches `db/user-measure-policy.ts` raw AP-10 hierarchy. Builds exact target raw permission set from effective assigned/default role grants UNION allow override EXCEPT deny; level2 `admin.users.blocks.managePrivileged`, level1 any actual administrative-family permission, exact Owner exempt, admin child applies only if issuer floor > target raw level. Participation restrictions are unaffected; effective distinct measure count and per-key admin breakdown correct. Uses existing AP10 family constants; no schema/grants/writer changes.
+- `tests/database/sa06-native-monitoring.test.ts` new actual PG17 test proves canonical writer creates stored floor2 admin-only and mixed measures; native Monitor values compared against authoritative policy at raw levels0/1/2; role assignment/grants, permit/deny overrides, lifting, and participation behavior. Stage3 new test passed, SA06 file 18/18.
+- CI exact head [#43984956444](https://github.com/iliya1947/vico-forum/actions/runs/43984956444) **SUCCESS** (latest checks and DB job after failed-only same-head DB retry): **2510/2510 application, 1336/1336 PG17**, 69-table manifest, local Worker smoke. 12 exact-head workflow runs SUCCESS including [SA06 connected Chromium #43984956396](https://github.com/iliya1947/vico-forum/actions/runs/43984956396). Initial DB attempt had 1336 passing tests but `sa04-complaints-n1` N4.2 `reported revision changed` unhandled rejection; no code change and successful same-head retry. Do not assert its underlying cause. Only GitHub CI checked; no local independent run or deployed Owner acceptance claimed.
+- **Stage 3/4 PASS / STOP.** Next only on developer `...`: stage 4/4 final cumulative source/acceptance check, stable whole-SA06 AUTHOR READY handoff and bounded stop. Current latest developer override retains Lev technical whole-#338 verification and dependent SA07 only **after** author-ready; do not trigger agents/SA07 here.
+
+---
 ## 2026-11-17 — History corrective stage 2/4 completed / exact-head PASS
 
 - Completed History-only corrective stage on Draft #338 exact `17b3330133327b6b9d6ab62c379fa50599fec474` (still open/unmerged; no AP10 changes). Live `AGENTS.md` main reread in current turn. Confirmed new developer overnight override recorded in #331: after Lira's future **whole-SA06 AUTHOR READY**, Lev performs technical whole-#338 verification and may start dependent SA07 before merge; this does not activate during stage 2.
