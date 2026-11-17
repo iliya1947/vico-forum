@@ -79,7 +79,7 @@ export async function readNativeHistoryCoverage(db:Pick<Pool,"query">,person?:st
   if(!enabled)return [];
   const row=(await db.query<{count:string}>(`select count(*)::text count from user_measure_appeals a join user_measures m on m.id=a.measure_id
     where a.status='moot' and (a.resolved_at is null or not isfinite(a.resolved_at) or a.resolved_at<a.created_at)
-    and ($1::text is null or a.subject_user_id=$1 or (m.lifted_at is not null and isfinite(m.lifted_at) and m.lifted_at>=m.created_at and m.lifted_at>=a.created_at and m.lifted_by_user_id=$1))`,[person??null])).rows[0];
+    and ($1::text is null or a.subject_user_id=$1)`,[person??null])).rows[0];
   if(!row||!/^\d+$/.test(row.count))throw new Error("Invalid terminal coverage count");
   return [{reason:"moot-terminal-time-unproven",count:row.count}];
 }
