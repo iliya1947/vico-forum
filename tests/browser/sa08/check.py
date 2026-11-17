@@ -1,4 +1,4 @@
-"""SA08-A actual Worker/Better Auth/PG17 Overview and final History controls; no 08-B full-program activation."""
+"""SA08 actual Worker/Better Auth/PG17 Overview, History controls and whole-program entry sweep."""
 import argparse,json,os,re,select,shutil,subprocess
 from pathlib import Path
 from uuid import uuid4
@@ -72,6 +72,21 @@ try:
      pathname,_,query=path.partition('?');private(ctx.request.get(base+pathname+suffix+('?' +query if query else '')),status)
   assert not sql('select id from owner_monitor_observations')
   record('Owner-admission-before-Overview-source-and-History-filter-work')
+  # SA08-B: one catalog-driven sweep across the entire delivered Owner surface.
+  catalog=rpc({'operation':'catalog'})
+  surfaces=[root,root+'/monitoring',events,root+'/infrastructure']
+  surfaces += [root+'/monitoring/'+area for area in catalog]
+  surfaces += [root+'/monitoring/'+area+'/'+key+'/history' for area,keys in catalog.items() for key in keys]
+  for path in surfaces:
+   for ctx,status in [(guest,401),(ac,403),(mc,403)]:
+    private(ctx.request.get(base+path),status)
+    private(ctx.request.get(base+path+'.data',headers={'Purpose':'prefetch','Sec-Purpose':'prefetch'}),status)
+    # These read-only routes expose no action: Router rejects POST405
+    # before a loader can read private state, regardless of the session.
+    private(ctx.request.post(base+path,headers={'Origin':base},data={}),405)
+   private(oc.request.get(base+path),200)
+   private(oc.request.get(base+path+'.data',headers={'Purpose':'prefetch','Sec-Purpose':'prefetch'}),200)
+  record('whole-program-catalog-all12-current-every-History-entry-document-data-prefetch-action-Owner-Admin-member-guest',surfaces=len(surfaces),histories=sum(len(keys) for keys in catalog.values()))
   for locale in ['en','ru','he']:
    for width in [1280,768,320]:
     page.set_viewport_size({'width':width,'height':900});visit(page,f'/{locale}/super-admin')
@@ -213,10 +228,10 @@ try:
   page.wait_for_timeout(250);expect(page.locator('[data-owner-overview]')).to_have_count(0)
   assert not errors,errors;assert not external,external
   record('known-signout-and-late-Overview-response-cannot-restore-private-summary')
-  record('SA08-A-connected-pass');browser.close()
+  record('SA08-connected-pass');browser.close()
 finally:
  if pg:
   pg.stdin.close()
   try:pg.wait(timeout=8)
   except subprocess.TimeoutExpired:pg.terminate();pg.wait(timeout=5)
- (a.output/'results.json').write_text(json.dumps({'head':os.environ.get('IMPLEMENTATION_SHA'),'scope':'SA08-A Overview and final History filters; actual Worker/BA/PG17; no08B full-program activation','cases':records,'pageErrors':errors,'external':external},ensure_ascii=False,indent=2))
+ (a.output/'results.json').write_text(json.dumps({'head':os.environ.get('IMPLEMENTATION_SHA'),'scope':'SA08 Overview/final History controls and whole-program catalog entry sweep; actual Worker/BA/PG17. Other final program chains use their dedicated native/connected suites on the same head.','cases':records,'pageErrors':errors,'external':external},ensure_ascii=False,indent=2))

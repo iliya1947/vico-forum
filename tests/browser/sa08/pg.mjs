@@ -4,6 +4,7 @@ import crypto from 'node:crypto';import pg from 'pg';import {drizzle} from 'driz
 import {DrizzleTranslationTaskStore} from '../../../db/translation-task-store.ts';
 import {PostgresOwnerOperationalFactSink} from '../../../db/owner-operational-facts.ts';
 import {uiTranslationJobIdentity} from '../../../app/localization/ui-translation-service.ts';
+import {OWNER_MONITORS} from '../../../db/owner-monitor-catalog.ts';
 import {DrizzleForumRepository} from '../../../db/forum-repository.ts';
 import {DrizzleContentTranslationStore} from '../../../db/content-translation-store.ts';
 import {DrizzleContentTranslationRequestBudgetStore} from '../../../db/content-request-budget-store.ts';
@@ -21,7 +22,8 @@ const c=new pg.Client({connectionString:url}),pool=new pg.Pool({connectionString
 const tasks=new DrizzleTranslationTaskStore(drizzle(c),new PostgresOwnerOperationalFactSink(pool));console.log('READY');
 try{for await(const line of readline.createInterface({input:process.stdin,crlfDelay:Infinity}))try{
   const x=JSON.parse(line);let result;
-  if(x.operation==='sql'){const reply=await c.query(x.sql,x.params??[]);result=Array.isArray(reply)?reply.flatMap(p=>p.rows??[]):reply.rows;}
+  if(x.operation==='catalog')result=OWNER_MONITORS;
+  else if(x.operation==='sql'){const reply=await c.query(x.sql,x.params??[]);result=Array.isArray(reply)?reply.flatMap(p=>p.rows??[]):reply.rows;}
   else if(x.operation==='integrationSeed'){
     const id=crypto.randomUUID(),database=drizzle(c),captured=[];
     await database.insert(account).values({id,userId:x.member,accountId:'SA07_I_PRIVATE_EXTERNAL_ACCOUNT',providerId:'google'});

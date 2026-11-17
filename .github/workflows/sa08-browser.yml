@@ -1,4 +1,4 @@
-name: SA08-A Overview and History connected Chromium acceptance
+name: SA08 Overview and whole-program entry connected Chromium acceptance
 
 on:
   pull_request:
@@ -101,32 +101,60 @@ jobs:
             'GOOGLE_CLIENT_SECRET=SA08_I_PRIVATE_GOOGLE_SECRET' \
             'VICO_OWNER_USER_ID=sa08-synthetic-owner' > .dev.vars
           pnpm build
-      - name: Real Overview composition, final filters, partial availability and viewer isolation
+      - name: Real whole-program entry, Overview, filters, partial availability and viewer isolation
         run: |
-          pnpm exec vite preview --host 127.0.0.1 --port 4238 --strictPort > "$RUNNER_TEMP/sa08-preview.log" 2>&1 &
-          preview_pid=$!
-          trap 'kill "$preview_pid" 2>/dev/null || true; rm -f .dev.vars' EXIT
-          ready=false
-          for attempt in $(seq 1 90); do
-            if curl --silent --show-error --fail --max-time 2 http://127.0.0.1:4238/he/ > /dev/null 2>&1; then
-              ready=true
-              break
+          preview_pid=""
+          stop_preview() {
+            if [ -n "$preview_pid" ]; then
+              kill "$preview_pid" 2>/dev/null || true
+              wait "$preview_pid" 2>/dev/null || true
+              preview_pid=""
             fi
-            if ! kill -0 "$preview_pid" 2>/dev/null; then
+          }
+          trap 'stop_preview; rm -f .dev.vars build/server/.dev.vars' EXIT
+          start_preview() {
+            node node_modules/vite/bin/vite.js preview --host 127.0.0.1 --port 4238 --strictPort > "$RUNNER_TEMP/sa08-preview.log" 2>&1 &
+            preview_pid=$!
+            ready=false
+            for attempt in $(seq 1 90); do
+              if curl --silent --show-error --fail --max-time 2 http://127.0.0.1:4238/he/ > /dev/null 2>&1; then
+                ready=true
+                break
+              fi
+              if ! kill -0 "$preview_pid" 2>/dev/null; then break; fi
+              sleep 1
+            done
+            if [ "$ready" != true ]; then
               tail -n 100 "$RUNNER_TEMP/sa08-preview.log"
               exit 1
             fi
-            sleep 1
-          done
-          if [ "$ready" != true ]; then
-            tail -n 100 "$RUNNER_TEMP/sa08-preview.log"
-            exit 1
-          fi
+          }
+          start_preview
           "$RUNNER_TEMP/sa08-playwright/bin/python" tests/browser/sa08/check.py \
             --url http://127.0.0.1:4238 --output "$RUNNER_TEMP/sa08-evidence" || {
               tail -n 100 "$RUNNER_TEMP/sa08-preview.log"
               exit 1
             }
+          stop_preview
+          for binding in missing wrong; do
+            # Preview reads the build-copied synthetic vars, not the source file.
+            # Product Wrangler remains untouched.
+            python3 - "$binding" <<'PYVARS'
+          import sys
+          from pathlib import Path
+          p=Path('build/server/.dev.vars')
+          lines=[line for line in p.read_text().splitlines() if not line.startswith('VICO_OWNER_USER_ID=')]
+          if sys.argv[1]=='wrong':lines.append('VICO_OWNER_USER_ID=sa08-wrong-synthetic-owner')
+          p.write_text('\n'.join(lines)+'\n')
+          PYVARS
+            start_preview
+            "$RUNNER_TEMP/sa08-playwright/bin/python" tests/browser/sa08/binding-check.py \
+              --url http://127.0.0.1:4238 --mode "$binding" --output "$RUNNER_TEMP/sa08-evidence/binding-$binding" || {
+                tail -n 100 "$RUNNER_TEMP/sa08-preview.log"
+                exit 1
+              }
+            stop_preview
+          done
       - name: Preserve SA08 synthetic connected evidence
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
