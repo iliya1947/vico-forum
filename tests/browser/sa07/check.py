@@ -16,8 +16,6 @@ def sql(statement,params=None):return rpc({'operation':'sql','sql':statement,'pa
 def private(response,status):
  assert response.status==status,(response.status,status)
  assert {'private','no-store'}<={x.strip() for x in response.headers.get('cache-control','').split(',')}
- # Page responses are reported at headers; wait for actual completion before CDP body inspection.
- if hasattr(response,'finished'):assert response.finished() is None
  body=response.text();assert 'SA07_PRIVATE' not in body;assert 'SA07_L_PRIVATE' not in body;return response
 
 def visit(page,path):private(page.goto(base+path,wait_until='networkidle'),200)
@@ -67,8 +65,8 @@ try:
    record('localized-responsive-Background-readonly-current-and-disabled-unwired-runtime',locale=locale)
   page.set_viewport_size({'width':1280,'height':900});visit(page,current)
   sample=sql("select id,value from owner_monitor_observations where monitor_key='background.translation'")
-  with page.expect_response(lambda r:r.request.method=='GET' and '/monitoring/background.data' in r.url) as response:page.locator('[data-monitor-key="background.translation"] nav a').nth(1).click()
-  private(response.value,200);assert sql("select id,value from owner_monitor_observations where monitor_key='background.translation'")==sample
+  with page.expect_request_finished(lambda r:r.method=='GET' and '/monitoring/background.data' in r.url,timeout=15000) as completed:page.locator('[data-monitor-key="background.translation"] nav a').nth(1).click()
+  private(completed.value.response(),200);assert sql("select id,value from owner_monitor_observations where monitor_key='background.translation'")==sample
   record('real-GET-refresh-keeps-fifteen-minute-sample-gate')
   for path in [history,'/en/super-admin/events?origin=operational-event&kind=task.planned']:
    assert fixture['event'] in collect(page,path)
@@ -120,8 +118,8 @@ try:
    record('localized-responsive-four-Localization-monitors-actual-sources-bundles-disabled-runtime',locale=locale)
   page.set_viewport_size({'width':1280,'height':900});visit(page,local_current)
   samples=sql("select id from owner_monitor_observations where monitor_key like 'localization.%' order by id")
-  with page.expect_response(lambda r:r.request.method=='GET' and '/monitoring/localization.data' in r.url) as refreshed:page.locator('[data-monitor-key="localization.registry"] nav a').nth(1).click()
-  private(refreshed.value,200);assert sql("select id from owner_monitor_observations where monitor_key like 'localization.%' order by id")==samples
+  with page.expect_request_finished(lambda r:r.method=='GET' and '/monitoring/localization.data' in r.url,timeout=15000) as completed:page.locator('[data-monitor-key="localization.registry"] nav a').nth(1).click()
+  private(completed.value.response(),200);assert sql("select id from owner_monitor_observations where monitor_key like 'localization.%' order by id")==samples
   for key in keys:
    sample=sql('select id from owner_monitor_observations where monitor_key=$1',[key])[0]['id'];assert sample in collect(page,local_current+'/'+key+'/history')
   assert fixture['event'] in collect(page,local_current+'/localization.ui/history?origin=operational-event&kind=task.planned')
