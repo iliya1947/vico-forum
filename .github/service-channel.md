@@ -1,3 +1,14 @@
+## 2026-11-17 — Developer override: Lira + Mark parallel independent WHOLE SA08 review
+
+- Developer explicitly requires **both Lira / ChatGPT-6 and Mark / Codex-6 Sol** as independent reviewers after Mira coordinator PASS.
+- Target for both: Draft #340 stable exact `5eb6656d933eb39a5df45c1ddca85d3679d600c5`; review the complete cumulative SA08 against accepted §7/§11/§15 and current source-of-truth, not only M1.
+- Lev authored SA08. Lira and Mark did not author this SA08 implementation and are eligible independent reviewers.
+- Reviews run independently and may proceed in parallel. Each must return either WHOLE SA08 PASS /0 confirmed current-SA08 defects or one complete current-SA08 finding packet.
+- No implementation edits during review; any implementation change resets the exact-head cycle.
+- No merge/permanent docs/#315/Stage6/production/deploy/external work.
+
+---
+
 ## 2026-11-17 — Mira WHOLE SA08 coordinator PASS; Mark independent review next
 
 - **Reviewed target:** cumulative Draft #340 stable exact `5eb6656d933eb39a5df45c1ddca85d3679d600c5`, base/main45406723, open/Draft/unmerged/mergeable=true.
