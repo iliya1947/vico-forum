@@ -193,6 +193,9 @@ describe("SA04-N3 native Complaint participant and Appeal reviewer lifecycle", (
         const pending = kind === "appeal"
           ? repo(writer).appeal(actualActor, command as AppealComplaint)
           : repo(writer).resolveAppeal(actualActor, command as ResolveComplaintAppeal);
+        // The expected denial can arrive before the other client's COMMIT ACK.
+        // Observe it now; the typed rejection and unchanged-facts assertions remain.
+        void pending.catch(() => undefined);
         try { await waitForBlock(writerPid, statePid); } finally { await state.query("commit"); }
         await expect(pending).rejects.toBeInstanceOf(AccountInactiveError);
         expect(await facts()).toEqual(before);
