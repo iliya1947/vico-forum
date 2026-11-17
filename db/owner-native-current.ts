@@ -1,3 +1,4 @@
+import {recordOwnerMonitorSnapshot} from "./owner-monitor-observations";
 import type { Pool, PoolClient } from "pg";
 import { NATIVE_MONITORS, type NativeMonitorArea, type NativeMonitorKey } from "./owner-monitor-catalog";
 import { HELP_SOLUTIONS_SERVICE_SECTION_ID } from "./forum-identifiers";
@@ -141,20 +142,6 @@ function checkedValues(key: NativeMonitorKey, value: Record<string, NativeMonito
   if(new TextEncoder().encode(JSON.stringify(value)).length>8192)throw new Error("Oversized Owner snapshot");
 }
 
-async function record(pool:Pool,key:NativeMonitorKey,values:Record<string,NativeMonitorScalar>){
-  const json=JSON.stringify(Object.fromEntries(Object.entries(values).sort(([a],[b])=>a.localeCompare(b))));
-  const bytes=await crypto.subtle.digest("SHA-256",new TextEncoder().encode(JSON.stringify([key,"global","database",1,"measured",JSON.parse(json)])));
-  const fingerprint=Array.from(new Uint8Array(bytes),b=>b.toString(16).padStart(2,"0")).join("");
-  const c=await pool.connect();let begun=false;
-  try{
-    await c.query("begin");begun=true;await c.query("set local statement_timeout='1500ms';set local lock_timeout='500ms'");
-    await c.query("select pg_advisory_xact_lock(1447641936,hashtext($1))",[key+":global"]);
-    const recent=(await c.query<{fresh:boolean}>("select observed_at>=clock_timestamp()-interval '15 minutes' fresh from owner_monitor_observations where monitor_key=$1 and resource_scope='global' order by observed_at desc,id desc limit 1",[key])).rows[0];
-    if(!recent?.fresh)await c.query("insert into owner_monitor_observations(id,monitor_key,resource_scope,source,schema_version,quality,value,fingerprint) values($1,$2,'global','database',1,'measured',$3::jsonb,$4)",[crypto.randomUUID(),key,json,fingerprint]);
-    await c.query("commit");begun=false;
-  }catch(error){if(begun)try{await c.query("rollback");}catch{/* preserve cause */}throw error;}finally{c.release();}
-}
-
 /** One area's fixed sources, one DB clock/snapshot; observation writes follow COMMIT. */
 export class PostgresOwnerNativeCurrent {
   constructor(private readonly pool:Pool,private readonly ownerUserId:string){}
@@ -176,7 +163,7 @@ export class PostgresOwnerNativeCurrent {
     let recording:NativeCurrentState["recording"]="available";const monitors:NativeCurrentMonitor[]=[];
     for(const item of measured){
       let itemRecording:NativeCurrentMonitor["recording"]="available",first:string|null=null,last:string|null=null;
-      try{await record(this.pool,item.key,item.values);}catch{itemRecording="unavailable";}
+      try{await recordOwnerMonitorSnapshot(this.pool,item.key,item.values);}catch{itemRecording="unavailable";}
       try{
         const row=(await this.pool.query<{first:Date|null;last:Date|null}>(nativeHistoryCoverageSql(item.key),[item.key])).rows[0];
         first=row.first?.toISOString()??null;last=row.last?.toISOString()??null;

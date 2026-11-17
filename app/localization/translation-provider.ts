@@ -136,21 +136,22 @@ export class TranslationProviderRouter {
   async translateWithProvider(
     providerId: string,
     request: MachineTranslationRequest,
+    observe?: <T>(work:()=>Promise<T>)=>Promise<T>,
   ): Promise<MachineTranslationResult> {
     assertOperationMatchesMessageKind(request);
     const adapter = this.adapterForProvider(providerId);
     if (!adapter || !adapter.supports(machineTranslationCapability(request))) {
       throw new UnsupportedTranslationProviderError(request);
     }
-    return adapter.translate(request);
+    return observe?observe(()=>adapter.translate(request)):adapter.translate(request);
   }
 
-  async translate(request: MachineTranslationRequest): Promise<MachineTranslationResult> {
+  async translate(request: MachineTranslationRequest,observe?:<T>(work:()=>Promise<T>)=>Promise<T>): Promise<MachineTranslationResult> {
     assertOperationMatchesMessageKind(request);
     const capability = machineTranslationCapability(request);
     const adapter = this.adapters.find((candidate) => candidate.supports(capability));
     if (!adapter) throw new UnsupportedTranslationProviderError(request);
-    return adapter.translate(request);
+    return observe?observe(()=>adapter.translate(request)):adapter.translate(request);
   }
 
   private adapterForProvider(providerId: string): MachineTranslationProviderAdapter | undefined {

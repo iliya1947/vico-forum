@@ -1,3 +1,5 @@
+import { withOperationalFacts,type OwnerOperationalFactSink } from "../app/observability/operational-facts";
+import { operationalTaskColumns } from "./owner-operational-facts";
 import { and, eq, sql } from "drizzle-orm";
 import type { NodePgDatabase } from "drizzle-orm/node-postgres";
 import { assertActiveAccountForDrizzleMutation } from "./account-state";
@@ -51,7 +53,7 @@ class ContentTopicTitlePlanningNoWorkRollback extends Error {
 }
 
 export class DrizzleContentTopicTitlePlanningStore implements ContentTopicTitlePlanningStore {
-  constructor(private readonly database: NodePgDatabase) {}
+  constructor(private readonly database: NodePgDatabase,private readonly operational?:OwnerOperationalFactSink) {}
 
   async readCurrentRevision(topicId: string): Promise<ContentTranslationRevision | undefined> {
     requireNonBlank(topicId, "topic id");
@@ -91,6 +93,7 @@ export class DrizzleContentTopicTitlePlanningStore implements ContentTopicTitleP
     requestBudgetAdmission: ContentTranslationRequestBudgetAdmission,
     actorId: string,
   ): Promise<ContentTopicTitleTaskUpsertResult> {
+    return withOperationalFacts(this.operational, async facts => {
     requireNonBlank(actorId, "actorId");
     validateContentTopicTitleTranslationTaskSpecification(specification);
     await assertStableIdentity(specification);
@@ -266,7 +269,8 @@ export class DrizzleContentTopicTitlePlanningStore implements ContentTopicTitleP
               eq(translationTasks.status, existingRows[0].status),
               eq(translationTasks.generation, existingRows[0].generation),
             ))
-            .returning();
+            .returning(operationalTaskColumns);
+          facts.captureTask("task.planned",reactivated[0],"",actorId);
           const reactivatedTask = requiredTaskRow(reactivated[0]);
 
           if (generation !== currentGeneration) {
@@ -314,7 +318,8 @@ export class DrizzleContentTopicTitlePlanningStore implements ContentTopicTitleP
             attemptCount: 0,
             maxAttempts: DEFAULT_TRANSLATION_TASK_MAX_ATTEMPTS,
           })
-          .returning();
+          .returning(operationalTaskColumns);
+        facts.captureTask("task.planned",inserted[0],"",actorId);
         const taskRow = requiredTaskRow(inserted[0]);
 
         const metadataRows = await transaction
@@ -370,6 +375,8 @@ export class DrizzleContentTopicTitlePlanningStore implements ContentTopicTitleP
       }
       throw error;
     }
+
+    });
   }
 }
 

@@ -4,11 +4,13 @@ import type { OwnerHistoryEntry, OwnerHistoryOrigin, OwnerHistoryValue } from ".
 import type { OwnerTimelineEntry } from "../../db/owner-system-monitoring";
 import { nativeLabels } from "./native-labels";
 import { actionLabels } from "../admin/history-labels";
+import {taskLabels} from "./task-labels";
 
 type HistoryItem = OwnerHistoryEntry | OwnerTimelineEntry;
 type Label = UiKey<"common">;
 
 const origins: Record<OwnerHistoryOrigin,Label> = {
+  "operational-event":"sa07OperationalOrigin",
   "forum-title-revision":"sa06NativeRevision", "forum-post-revision":"sa06NativeRevision",
   "complaint-event":"sa06NativeComplaint", "help-signal-created":"sa06NativeCreated",
   "duplicate-appeal-created":"sa06NativeCreated", "measure-appeal-created":"sa06NativeCreated",
@@ -42,6 +44,7 @@ const fields:Record<string,Label> = {
   actorUserId:"superAdminHistoryActor",
   retainAtLeastUntil:"superAdminHistoryRetainUntil",
   operationId:"superAdminHistoryOperationId",
+  runId:"superAdminHistoryOperationId",
   activeUsers:"superAdminActiveUsers",
   deactivatedUsers:"superAdminDeactivatedUsers",
   retentionPendingUsers:"superAdminRetentionPendingUsers",
@@ -98,7 +101,7 @@ const fields:Record<string,Label> = {
   hourlyCapacityPerPool:"superAdminSa02Capacity",
 };
 const timestampFields=new Set(["recordingEpochStart","firstOccurredAt","lastOccurredAt",
-  "updatedAt","lastEventAt","lastSeenAt","retainAtLeastUntil"]);
+  "updatedAt","lastEventAt","lastSeenAt","retainAtLeastUntil","sourceTransitionAt"]);
 const numericFields=new Set([
   "total","created24h","passwordUsers","googleUsers","bothUsers","active",
   "expiredRetained","attributedAttempts","rateLimitedAttempts","retainedPatterns",
@@ -151,7 +154,7 @@ export function HistoryEntry({entry,locale}: {entry:HistoryItem;locale:string}){
     observed?"superAdminObservedAt":"superAdminHistoryOccurredAt";
   const monitors="monitorKeys" in entry?entry.monitorKeys:
     entry.monitorKey?[entry.monitorKey]:[];
-  const label=kinds[entry.kind]??nativeLabels[entry.kind]??actionLabels[entry.kind as keyof typeof actionLabels];
+  const label=kinds[entry.kind]??nativeLabels[entry.kind]??taskLabels[entry.kind]??actionLabels[entry.kind as keyof typeof actionLabels];
   return <li data-history-origin={entry.origin} data-history-kind={entry.kind}>
     <h3>{label?t(label):<bdi>{entry.kind}</bdi>}</h3>
     <p>{t(origins[entry.origin])} · {t("superAdminHistorySource")}: <bdi>{entry.source}</bdi></p>
@@ -167,13 +170,16 @@ export function HistoryEntry({entry,locale}: {entry:HistoryItem;locale:string}){
       {entry.quality ? <div><dt>{t("superAdminQuality")}</dt>
         <dd>{entry.quality==="measured"?t("superAdminQualityMeasured")
           :entry.quality==="coalesced"?t("superAdminHistoryCoalescedQuality")
+          :entry.quality==="best-effort"?t("sa07BestEffort")
           :<bdi>{entry.quality}</bdi>}</dd></div> : null}
     </dl>
     {grouped ? <p className="super-admin-history-note">{t("superAdminHistoryGroupNote")}</p> : null}
     {entry.origin==="attachment-evidence" ? <p className="super-admin-history-note">
       {t("superAdminHistoryEvidenceNote")}</p> : null}
     <dl>{Object.entries(entry.values).map(([name,value])=>{
-      const label=fieldLabel(entry,name)??nativeLabels[name];
+      const taskEntry=entry.origin==="operational-event"||observed&&monitors.includes("background.translation");
+      const label=entry.kind==="integration.translationCall"&&name==="failed"?taskLabels.failedCalls:
+        taskEntry?taskLabels[name]??fieldLabel(entry,name)??nativeLabels[name]:fieldLabel(entry,name)??nativeLabels[name]??taskLabels[name];
       return <div key={name}>
         <dt>{label ? t(label) : <bdi>{name}</bdi>}</dt>
         <dd><Value name={name} value={value} locale={locale}/></dd>

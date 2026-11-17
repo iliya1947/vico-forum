@@ -10,7 +10,8 @@ export const NATIVE_MONITORS = {
 } as const;
 export type NativeMonitorArea = keyof typeof NATIVE_MONITORS;
 export type NativeMonitorKey = (typeof NATIVE_MONITORS)[NativeMonitorArea][number];
-export const OWNER_MONITORS = { system: SYSTEM_MONITORS, ...SA02_MONITORS, ...NATIVE_MONITORS } as const;
+export const OPERATIONAL_MONITORS={background:["background.translation"],integrations:["integrations.translation"]} as const;
+export const OWNER_MONITORS = { system: SYSTEM_MONITORS, ...SA02_MONITORS, ...NATIVE_MONITORS,...OPERATIONAL_MONITORS } as const;
 export type OwnerMonitorArea = keyof typeof OWNER_MONITORS;
 export type OwnerMonitorKey = (typeof OWNER_MONITORS)[OwnerMonitorArea][number];
 export const NATIVE_AREAS = Object.keys(NATIVE_MONITORS) as NativeMonitorArea[];

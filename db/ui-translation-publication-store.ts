@@ -1,3 +1,5 @@
+import { withOperationalFacts,type OwnerOperationalFactSink } from "../app/observability/operational-facts";
+import { operationalTaskColumns } from "./owner-operational-facts";
 import { and, asc, eq, sql } from "drizzle-orm";
 import type { NodePgDatabase } from "drizzle-orm/node-postgres";
 import {
@@ -37,9 +39,11 @@ export class DrizzleUiTranslationPublicationStore implements UiTranslationPublic
   constructor(
     private readonly database: NodePgDatabase,
     private readonly compileBundle: PublicationBundleCompiler = compilePublicationBundle,
+    private readonly operational?:OwnerOperationalFactSink,
   ) {}
 
   async publishClaimedMachineResult(publication: MachineUiTranslationPublication): Promise<boolean> {
+    return withOperationalFacts(this.operational, async facts => {
     return this.database.transaction(async (transaction) => {
       const databaseNow = sql`statement_timestamp()`;
       // Lock the whole existing namespace head set in deterministic order. Every publishable
@@ -80,7 +84,7 @@ export class DrizzleUiTranslationPublicationStore implements UiTranslationPublic
           eq(translationTasks.targetLocale, publication.task.targetLocale),
           eq(translationTasks.generationPolicyVersion, publication.task.generationPolicyVersion),
         ))
-        .returning({ id: translationTasks.id });
+        .returning(operationalTaskColumns);
 
       if (!completed[0]) return false;
 
@@ -162,7 +166,10 @@ export class DrizzleUiTranslationPublicationStore implements UiTranslationPublic
           },
         });
 
+      facts.captureTask("task.completed",completed[0],publication.task.claimToken);
       return true;
+    });
+
     });
   }
 }

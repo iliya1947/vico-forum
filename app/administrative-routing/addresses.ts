@@ -7,6 +7,8 @@ export type SuperAdminMonitorScope =
   | { area:"system"; monitorKey:SystemMonitorKey }
   | { area:"accounts"; monitorKey:(typeof SA02_MONITORS.accounts)[number] }
   | { area:"security"; monitorKey:(typeof SA02_MONITORS.security)[number] }
+  | { area:"background";monitorKey:"background.translation" }
+  | { area:"integrations";monitorKey:"integrations.translation" }
   | { [A in NativeMonitorArea]: { area:A; monitorKey:(typeof NATIVE_MONITORS)[A][number] } }[NativeMonitorArea];
 
 /** Pure outgoing addresses only: not a React Router registration table or an authority mechanism. */
@@ -29,6 +31,7 @@ export interface SuperAdminAddressFamily {
   system(locale: string): string;
   accounts(locale: string): string;
   security(locale: string): string;
+  background(locale:string):string;
   nativeArea(locale: string, area: NativeMonitorArea): string;
   monitorHistory(locale: string, key: SystemMonitorKey, before?: string): string;
   monitorAreaHistory(locale: string, scope: SuperAdminMonitorScope, before?: string): string;
@@ -74,6 +77,7 @@ export function createAdministrativeRouting(
     system: locale => `${superAdminBase(locale)}/monitoring/system`,
     accounts: locale => `${superAdminBase(locale)}/monitoring/accounts`,
     security: locale => `${superAdminBase(locale)}/monitoring/security`,
+    background: locale => `${superAdminBase(locale)}/monitoring/background`,
     nativeArea: (locale, area) => `${superAdminBase(locale)}/monitoring/${area}`,
     monitorHistory: (locale, key, before) =>
       `${superAdminBase(locale)}/monitoring/system/${encoded(key)}/history` +

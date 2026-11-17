@@ -1,3 +1,4 @@
+import {TASK_TRANSITION_KINDS} from "../app/observability/operational-facts";
 import type { Pool } from "pg";
 import { SA02_FACT_MONITORS } from "./owner-sa02-catalog";
 import { OWNER_MONITORS, ADMIN_MONITOR_SCOPES_SQL, type OwnerMonitorArea, type OwnerMonitorKey } from "./owner-monitor-catalog";
@@ -11,10 +12,10 @@ export type OwnerHistoryArea = OwnerMonitorArea;
 export type OwnerHistoryMonitor = OwnerMonitorKey;
 export type OwnerHistoryOrigin =
   | "system-event" | "auth-event" | "account-event" | "system-observation" | "admin-history"
-  | "attachment-evidence" | "attempt-pattern" | "attempt-state" | NativeHistoryOrigin;
+  | "attachment-evidence" | "attempt-pattern" | "attempt-state" | "operational-event" | NativeHistoryOrigin;
 const ORIGINS: readonly string[] = [
   "system-event", "auth-event", "account-event", "system-observation", "admin-history",
-  "attachment-evidence", "attempt-pattern", "attempt-state", ...NATIVE_HISTORY_ORIGINS,
+  "attachment-evidence", "attempt-pattern", "attempt-state", "operational-event", ...NATIVE_HISTORY_ORIGINS,
 ];
 const ADMIN_ACTION_KINDS = [
   "settings.registrationChanged","role.created","role.renamed","role.deleted","role.grantsChanged",
@@ -47,6 +48,7 @@ export interface OwnerHistoryOptions {
 }
 const ORIGIN_SCOPES: Record<OwnerHistoryOrigin,readonly string[]> = {
   ...NATIVE_ORIGIN_MONITORS,
+  "operational-event":["background.translation","integrations.translation"],
   "system-event": SYSTEM_MONITORS,
   "auth-event": ["accounts.users","accounts.methods","accounts.sessions","security.auth"],
   "account-event": ["accounts.users"],
@@ -57,6 +59,7 @@ const ORIGIN_SCOPES: Record<OwnerHistoryOrigin,readonly string[]> = {
   "attempt-state": ["security.auth","security.access"],
 };
 const KINDS_BY_ORIGIN: Record<OwnerHistoryOrigin,readonly string[]> = {
+  "operational-event":[...TASK_TRANSITION_KINDS,"task.reconciliationPass","integration.translationCall"],
   "system-event":["system.dependencyUnavailable","system.requestFailed"],
   "auth-event":Object.keys(SA02_FACT_MONITORS),
   "account-event":["account.deactivated"],
@@ -85,6 +88,7 @@ function compatibleOrigin(origin:OwnerHistoryOrigin,scope:Scope):boolean {
 /** Source-kind/monitor compatibility comes from the existing closed native actions. */
 function compatibleKind(origin:OwnerHistoryOrigin,kind:string,scope:Scope):boolean {
   let allowed:readonly string[]=ORIGIN_SCOPES[origin];
+  if(origin==="operational-event")allowed=kind==="integration.translationCall"?["background.translation","integrations.translation"]:["background.translation"];
   if(origin==="auth-event")allowed=SA02_FACT_MONITORS[kind as keyof typeof SA02_FACT_MONITORS]??[];
   if(origin==="system-event")allowed=kind==="system.requestFailed"?["system.requests"]:["system.dependencies"];
   if(origin==="admin-history"){
@@ -220,7 +224,7 @@ export function parseOwnerHistoryCursor(value:string|undefined,options:OwnerHist
     const decoded=fromBase64url(raw);
     if(base64url(decoded)!==raw) throw new Error("Noncanonical cursor");
     const cursor=checkedCursorShape(JSON.parse(decoded),scope);
-    if((NATIVE_HISTORY_ORIGINS as readonly string[]).includes(cursor.origin))throw new Error("Legacy cursor incompatible with native source");
+    if(cursor.origin==="operational-event"||(NATIVE_HISTORY_ORIGINS as readonly string[]).includes(cursor.origin))throw new Error("Legacy cursor incompatible with native source");
     return cursor;
   }catch{
     throw new Error("Invalid Owner History cursor");
@@ -231,7 +235,7 @@ function encodeCursor(row:HistoryRow,filters:ReturnType<typeof checkedFilters>,l
   const result:Cursor={v:1,at:row.exact_at,origin:row.origin,id:row.source_id,
     area:scope.area,monitor:scope.monitor};
   if(filters.origin!==null||filters.kind!==null||filters.from!==null||filters.until!==null||
-      (NATIVE_HISTORY_ORIGINS as readonly string[]).includes(row.origin)||
+      row.origin==="operational-event"||(NATIVE_HISTORY_ORIGINS as readonly string[]).includes(row.origin)||
       (scope.area!==null&&!["system","accounts","security"].includes(scope.area))){
     const text=JSON.stringify({...result,v:2,filters:{area:scope.area,monitor:scope.monitor,
       origin:filters.origin,kind:filters.kind,from:filters.from,until:filters.until,pageSize:limit}});
@@ -243,7 +247,7 @@ function encodeCursor(row:HistoryRow,filters:ReturnType<typeof checkedFilters>,l
 }
 type HistoryRow = {
   origin:OwnerHistoryOrigin;source_id:string;at:Date;exact_at:string;
-  recorded_at:Date|null;scopes:OwnerHistoryMonitor[];kind:string;
+  recorded_at:Date|null;exact_recorded_at:string|null;scopes:OwnerHistoryMonitor[];kind:string;
   source:string;quality:string|null;details:OwnerHistoryPayload;
 };
 function readRow(row:HistoryRow):OwnerHistoryEntry {
@@ -256,8 +260,10 @@ function readRow(row:HistoryRow):OwnerHistoryEntry {
   if(!row.details || typeof row.details!=="object" || Array.isArray(row.details))
     throw new Error("Owner History source payload invariant failed");
   const native=(NATIVE_HISTORY_ORIGINS as readonly string[]).includes(row.origin);
+  const operational=row.origin==="operational-event";
+  if(operational&&row.exact_recorded_at!==null&&!checkExactAt(row.exact_recorded_at))throw new Error("Invalid operational recording time");
   return {origin:row.origin,id:row.source_id,
-    occurredAt:native?row.exact_at:row.at.toISOString(),recordedAt:native?row.exact_at:row.recorded_at?.toISOString()??null,
+    occurredAt:native||operational?row.exact_at:row.at.toISOString(),recordedAt:operational?row.exact_recorded_at:native?row.exact_at:row.recorded_at?.toISOString()??null,
     monitorKeys:row.scopes,kind:row.kind,source:row.source,quality:row.quality,
     values:row.details};
 }
@@ -354,6 +360,15 @@ const LEGACY_SOURCE_SQL = [
   " to_char(s.last_occurred_at at time zone 'UTC','YYYY-MM-DD\"T\"HH24:MI:SS.US\"Z\"') end,",
   " 'count',s.count::text,'saturated',s.saturated_count)",
   " from owner_attempt_telemetry_state s where s.slot not like 'quota.%'",
+  "union all",
+  "select 'operational-event'::text,e.id::text,e.occurred_at,e.recorded_at,",
+  "ARRAY['background.translation']::text[],",
+  "e.kind,e.source,'best-effort'::text,e.payload||jsonb_build_object(case when e.kind='task.reconciliationPass' then 'runId' else 'taskId' end,e.entity_id,'actorUserId',e.actor_user_id)",
+  "from owner_events e where e.source='operation' and e.monitor_key='background.translation' and e.kind like 'task.%'",
+  "union all",
+  "select 'operational-event'::text,e.id::text,e.occurred_at,e.recorded_at,ARRAY['integrations.translation','background.translation']::text[],",
+  "e.kind,e.source,'best-effort'::text,e.payload||jsonb_build_object('taskId',e.entity_id,'actorUserId',e.actor_user_id)",
+  "from owner_events e where e.source='operation' and e.monitor_key='integrations.translation' and e.kind='integration.translationCall'",
 ].join("\n");
 
 function timelineSql(filterOrigin:OwnerHistoryOrigin|null=null,scope:Scope={area:null,monitor:null},
@@ -363,7 +378,7 @@ function timelineSql(filterOrigin:OwnerHistoryOrigin|null=null,scope:Scope={area
     (filterKind===null||(KINDS_BY_ORIGIN[origin as OwnerHistoryOrigin].includes(filterKind)&&
       compatibleKind(origin as OwnerHistoryOrigin,filterKind,scope))));
   const predicates = "($1::text is null or $1=any(scopes)) and ($2::text is null or exists(select 1 from unnest(scopes) m where m like ($2||'.%'))) and ($3::timestamptz is null or (at,origin,source_id)<($3::timestamptz,$4::text,$5::text)) and ($7::text is null or kind=$7::text) and ($8::timestamptz is null or at>=$8::timestamptz) and ($9::timestamptz is null or at<$9::timestamptz)";
-  const legacyOrigins:OwnerHistoryOrigin[]=["system-event","auth-event","account-event","system-observation","admin-history","attachment-evidence","attempt-pattern","attempt-state"];
+  const legacyOrigins:OwnerHistoryOrigin[]=["system-event","auth-event","account-event","system-observation","admin-history","attachment-evidence","attempt-pattern","attempt-state","operational-event","operational-event"];
   const legacy=LEGACY_SOURCE_SQL.split("\nunion all\n").flatMap((sql,index)=>{
     if(!allowedOrigins.includes(legacyOrigins[index]))return [];
     // Preserve direct equality prefixes for scoped chronological indexes.
@@ -373,7 +388,7 @@ function timelineSql(filterOrigin:OwnerHistoryOrigin|null=null,scope:Scope={area
   const native=nativeHistoryBranches({monitor:"$1",area:"$2",at:"$3",origin:"$4",id:"$5",limit:"$6",
     filterOrigin,allowedOrigins,filterArea:scope.area,filterMonitor:scope.monitor,
     kind:"$7",from:"$8",until:"$9"});
-  return `with candidates as (${[...legacy,...native].join(" union all ")}) select ${HISTORY_COLUMNS},to_char(at at time zone 'UTC','YYYY-MM-DD"T"HH24:MI:SS.US"Z"') exact_at from candidates order by at desc nulls last,origin desc nulls last,source_id desc nulls last limit $6`;
+  return `with candidates as (${[...legacy,...native].join(" union all ")}) select ${HISTORY_COLUMNS},to_char(at at time zone 'UTC','YYYY-MM-DD"T"HH24:MI:SS.US"Z"') exact_at,to_char(recorded_at at time zone 'UTC','YYYY-MM-DD"T"HH24:MI:SS.US"Z"') exact_recorded_at from candidates order by at desc nulls last,origin desc nulls last,source_id desc nulls last limit $6`;
 }
 const TIMELINE_SQL=timelineSql();
 

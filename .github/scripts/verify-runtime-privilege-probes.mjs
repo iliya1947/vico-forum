@@ -206,8 +206,8 @@ try {
   );
   await expectInsufficientPrivilege(
     webRole,
-    "SELECT 1 FROM public.translation_tasks LIMIT 0",
-    "web translation-task read",
+    "SELECT 1 FROM public.translation_task_generation_heads LIMIT 0",
+    "web generation-head read",
   );
   await expectInsufficientPrivilege(
     webRole,
@@ -224,6 +224,10 @@ try {
     "CREATE TABLE public.vico_forbidden_web_probe(id integer)",
     "web DDL",
   );
+
+  for (const verb of ["INSERT INTO public.translation_tasks(id) SELECT gen_random_uuid() WHERE false",
+    "UPDATE public.translation_tasks SET status=status WHERE false","DELETE FROM public.translation_tasks WHERE false"])
+    await expectInsufficientPrivilege(webRole,verb,"web translation-task mutation");
 
   globalThis.console.log("Runtime privilege positive and negative PostgreSQL 17 probes passed.");
 } finally {

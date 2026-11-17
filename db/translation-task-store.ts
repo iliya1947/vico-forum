@@ -1,3 +1,5 @@
+import { withOperationalFacts,type OwnerOperationalFactSink } from "../app/observability/operational-facts";
+import { operationalTaskColumns } from "./owner-operational-facts";
 import { and, eq, gte, lt, lte, or, sql } from "drizzle-orm";
 import type { NodePgDatabase } from "drizzle-orm/node-postgres";
 import {
@@ -80,7 +82,7 @@ export class DrizzleTranslationTaskStore implements
   TranslationTaskFailureStore,
   TranslationTaskReconciliationStore,
   ContentProviderAllowanceStore {
-  constructor(private readonly database: NodePgDatabase) {}
+  constructor(private readonly database: NodePgDatabase,private readonly operational?:OwnerOperationalFactSink) {}
 
   async findKind(id: string): Promise<string | undefined> {
     if (!isUuid(id)) throw new TypeError("translation task id must be a UUID");
@@ -96,6 +98,7 @@ export class DrizzleTranslationTaskStore implements
     id: string,
     leaseDurationMs: number,
   ): Promise<ContentProviderAllowanceAcquireResult> {
+    return withOperationalFacts(this.operational, async facts => {
     if (!isUuid(id)) throw new TypeError("translation task id must be a UUID");
     if (!Number.isSafeInteger(leaseDurationMs) || leaseDurationMs <= 0) {
       throw new TypeError("provider allowance lease duration must be a positive integer");
@@ -151,7 +154,8 @@ export class DrizzleTranslationTaskStore implements
         throw new TranslationTaskIntegrityError("provider allowance task kind changed unexpectedly");
       }
       if (row.generation !== currentGeneration) {
-        await markRowStaleWithoutAttempt(transaction, row.id);
+        const changed = await markRowStaleWithoutAttempt(transaction, row.id);
+        if(changed && row.status!=="stale")facts.captureTask("task.stale",changed,row.claimToken??row.allowanceClaimToken??"");
         return { outcome: "terminal" as const };
       }
       if (row.status === "stale" || row.status === "completed" || row.status === "failed") {
@@ -257,6 +261,8 @@ export class DrizzleTranslationTaskStore implements
         admissionToken,
       };
     });
+
+    });
   }
 
   async persistContentProviderAllowanceAdmission(
@@ -266,6 +272,7 @@ export class DrizzleTranslationTaskStore implements
     provider: string,
     reservationReference?: string,
   ): Promise<boolean> {
+    return withOperationalFacts(this.operational, async facts => {
     if (!isUuid(id) || !isUuid(admissionToken)) {
       throw new TypeError("provider allowance admission identifiers must be UUIDs");
     }
@@ -309,8 +316,11 @@ export class DrizzleTranslationTaskStore implements
           eq(translationTasks.allowanceAttempt, occurrence.attempt),
           eq(translationTasks.allowanceClaimToken, admissionToken),
         ))
-        .returning({ id: translationTasks.id });
+        .returning(operationalTaskColumns);
+      if(rows[0])facts.captureTask("task.allowanceAdmitted",rows[0],admissionToken);
       return rows.length === 1;
+    });
+
     });
   }
 
@@ -321,6 +331,7 @@ export class DrizzleTranslationTaskStore implements
     retryNotBefore: Date,
     reason: string,
   ): Promise<Date | undefined> {
+    return withOperationalFacts(this.operational, async facts => {
     if (!isUuid(id) || !isUuid(admissionToken)) {
       throw new TypeError("provider allowance deferral identifiers must be UUIDs");
     }
@@ -366,8 +377,11 @@ export class DrizzleTranslationTaskStore implements
           eq(translationTasks.allowanceAttempt, occurrence.attempt),
           eq(translationTasks.allowanceClaimToken, admissionToken),
         ))
-        .returning({ retryNotBefore: translationTasks.allowanceRetryNotBefore });
+        .returning({...operationalTaskColumns,retryNotBefore:translationTasks.allowanceRetryNotBefore});
+      if(rows[0])facts.captureTask("task.allowanceDeferred",rows[0],admissionToken);
       return rows[0]?.retryNotBefore ?? undefined;
+    });
+
     });
   }
 
@@ -404,6 +418,7 @@ export class DrizzleTranslationTaskStore implements
     id: string,
     admissionToken: string,
   ): Promise<boolean> {
+    return withOperationalFacts(this.operational, async facts => {
     if (!isUuid(id) || !isUuid(admissionToken)) {
       throw new TypeError("provider allowance stale transition identifiers must be UUIDs");
     }
@@ -428,11 +443,15 @@ export class DrizzleTranslationTaskStore implements
         eq(translationTasks.allowanceState, "leasing"),
         eq(translationTasks.allowanceClaimToken, admissionToken),
       ))
-      .returning({ id: translationTasks.id });
+      .returning(operationalTaskColumns);
+    if(rows[0])facts.captureTask("task.stale",rows[0],admissionToken);
     return rows.length === 1;
+
+    });
   }
 
   async upsertPending(specification: UiTranslationJobSpecification, options?: { readonly freshPlanning: boolean }): Promise<TranslationTask> {
+    return withOperationalFacts(this.operational, async facts => {
     validateUiTranslationJobSpecification(specification);
     await assertStableIdentity(specification);
     return this.database.transaction(async (transaction) => {
@@ -487,7 +506,7 @@ export class DrizzleTranslationTaskStore implements
           failedAt: null,
           updatedAt: databaseNow,
         }).where(and(eq(translationTasks.id, existing.id), eq(translationTasks.status, existing.status),
-          eq(translationTasks.generation, existing.generation))).returning();
+          eq(translationTasks.generation, existing.generation))).returning(operationalTaskColumns);
 
         if (generation !== currentGeneration) {
           await transaction.update(translationTaskGenerationHeads).set({
@@ -495,6 +514,7 @@ export class DrizzleTranslationTaskStore implements
             updatedAt: databaseNow,
           }).where(unitCondition(unit));
         }
+        facts.captureTask("task.planned",reactivated[0]);
         return parseTaskRow(requiredRow(reactivated[0]));
       }
 
@@ -513,7 +533,7 @@ export class DrizzleTranslationTaskStore implements
         status: "pending",
         attemptCount: 0,
         maxAttempts: DEFAULT_TRANSLATION_TASK_MAX_ATTEMPTS,
-      }).returning();
+      }).returning(operationalTaskColumns);
       if (generation !== currentGeneration) {
         await transaction.update(translationTaskGenerationHeads).set({
           currentGeneration: generation,
@@ -521,9 +541,12 @@ export class DrizzleTranslationTaskStore implements
         }).where(unitCondition(unit));
       }
 
+      facts.captureTask("task.planned",rows[0]);
       const task = await parseTaskRow(requiredRow(rows[0]));
       assertMatchesSpecification(task, specification);
       return task;
+    });
+
     });
   }
 
@@ -883,10 +906,14 @@ export class DrizzleTranslationTaskStore implements
   }
 
   async claim(id: string, leaseDurationMs: number): Promise<TranslationTaskClaimResult> {
+    return withOperationalFacts(this.operational, async facts => {
     return this.database.transaction(async (tx) => {
       const claimed = await this.claimByKind(tx, id, leaseDurationMs, "ui");
       if (claimed.outcome !== "claimed") return claimed;
+      facts.captureTask("task.claimed",claimed.row,claimed.row.claimToken??"",null,{attemptStarted:claimed.attemptStarted});
       return claimedUiResult(claimed.row, claimed.attemptStarted);
+    });
+
     });
   }
 
@@ -894,9 +921,11 @@ export class DrizzleTranslationTaskStore implements
     id: string,
     leaseDurationMs: number,
   ): Promise<ContentTopicTitleTranslationTaskClaimResult> {
+    return withOperationalFacts(this.operational, async facts => {
     return this.database.transaction(async (tx) => {
       const claimed = await this.claimByKind(tx, id, leaseDurationMs, "content-topic-title");
       if (claimed.outcome !== "claimed") return claimed;
+      facts.captureTask("task.claimed",claimed.row,claimed.row.claimToken??"",null,{attemptStarted:claimed.attemptStarted});
 
       const [metadata] = await tx
         .select()
@@ -920,15 +949,19 @@ export class DrizzleTranslationTaskStore implements
         attemptStarted: claimed.attemptStarted,
       };
     });
+
+    });
   }
 
   async claimContentPostBody(
     id: string,
     leaseDurationMs: number,
   ): Promise<ContentPostBodyTranslationTaskClaimResult> {
+    return withOperationalFacts(this.operational, async facts => {
     return this.database.transaction(async (tx) => {
       const claimed = await this.claimByKind(tx, id, leaseDurationMs, "content-post-body");
       if (claimed.outcome !== "claimed") return claimed;
+      facts.captureTask("task.claimed",claimed.row,claimed.row.claimToken??"",null,{attemptStarted:claimed.attemptStarted});
 
       const [metadata] = await tx
         .select()
@@ -951,6 +984,8 @@ export class DrizzleTranslationTaskStore implements
         task: { ...task, status: "processing", claimToken: task.claimToken },
         attemptStarted: claimed.attemptStarted,
       };
+    });
+
     });
   }
 
@@ -1000,7 +1035,7 @@ export class DrizzleTranslationTaskStore implements
         lt(translationTasks.attemptCount, translationTasks.maxAttempts),
         allowanceCondition,
       ))
-      .returning();
+      .returning(operationalTaskColumns);
     if (rows[0]) {
       return { outcome: "claimed", row: rows[0], attemptStarted: true };
     }
@@ -1026,7 +1061,7 @@ export class DrizzleTranslationTaskStore implements
         lte(translationTasks.leaseExpiresAt, databaseNow),
         gte(translationTasks.attemptCount, translationTasks.maxAttempts),
       ))
-      .returning();
+      .returning(operationalTaskColumns);
     if (exhausted[0]) {
       return { outcome: "claimed", row: exhausted[0], attemptStarted: false };
     }
@@ -1058,6 +1093,7 @@ export class DrizzleTranslationTaskStore implements
     claimToken: string,
     failure: TranslationFailureRecord,
   ): Promise<TranslationTaskFailureResult> {
+    return withOperationalFacts(this.operational, async facts => {
     if (!isUuid(id) || !isUuid(claimToken)) {
       throw new TypeError("translation task failure transition requires valid identifiers");
     }
@@ -1091,11 +1127,9 @@ export class DrizzleTranslationTaskStore implements
         updatedAt: databaseNow,
       })
       .where(terminalCondition)
-      .returning({
-        attemptCount: translationTasks.attemptCount,
-        maxAttempts: translationTasks.maxAttempts,
-      });
+      .returning(operationalTaskColumns);
     if (failed[0]) {
+      facts.captureTask("task.failed",failed[0],claimToken);
       return {
         outcome: "terminal",
         attemptCount: failed[0].attemptCount,
@@ -1122,11 +1156,9 @@ export class DrizzleTranslationTaskStore implements
           updatedAt: databaseNow,
         })
         .where(and(currentClaim, lt(translationTasks.attemptCount, translationTasks.maxAttempts)))
-        .returning({
-          attemptCount: translationTasks.attemptCount,
-          maxAttempts: translationTasks.maxAttempts,
-        });
+        .returning(operationalTaskColumns);
       if (pending[0]) {
+        facts.captureTask("task.retryReleased",pending[0],claimToken);
         return {
           outcome: "retry",
           attemptCount: pending[0].attemptCount,
@@ -1136,9 +1168,12 @@ export class DrizzleTranslationTaskStore implements
     }
 
     return { outcome: "claim-lost" };
+
+    });
   }
 
   async markStale(id: string, claimToken: string): Promise<boolean> {
+    return withOperationalFacts(this.operational, async facts => {
     if (!isUuid(id) || !isUuid(claimToken)) {
       throw new TypeError("translation task stale transition requires valid identifiers");
     }
@@ -1162,8 +1197,11 @@ export class DrizzleTranslationTaskStore implements
         eq(translationTasks.status, "processing"),
         eq(translationTasks.claimToken, claimToken),
       ))
-      .returning({ id: translationTasks.id });
+      .returning(operationalTaskColumns);
+    if(rows[0])facts.captureTask("task.stale",rows[0],claimToken);
     return rows.length === 1;
+
+    });
   }
 
   async isCurrentGeneration(task: TranslationTask): Promise<boolean> {
@@ -1266,9 +1304,9 @@ function validateAllowanceOccurrence(
 async function markRowStaleWithoutAttempt(
   transaction: TranslationTaskTransaction,
   id: string,
-): Promise<void> {
+): Promise<(TranslationTaskRow & {operationAt:string})|undefined> {
   const databaseNow = sql`statement_timestamp()`;
-  await transaction
+  const changed = await transaction
     .update(translationTasks)
     .set({
       status: "stale",
@@ -1283,7 +1321,8 @@ async function markRowStaleWithoutAttempt(
       ...clearAllowanceState(),
       updatedAt: databaseNow,
     })
-    .where(eq(translationTasks.id, id));
+    .where(eq(translationTasks.id, id)).returning(operationalTaskColumns);
+  return changed[0];
 }
 
 async function parseContentTaskForAllowance(
@@ -1322,7 +1361,7 @@ async function parseContentTaskForAllowance(
 type RawTranslationTaskClaimResult =
   | {
       readonly outcome: "claimed";
-      readonly row: TranslationTaskRow;
+      readonly row: TranslationTaskRow & {operationAt:string};
       readonly attemptStarted: boolean;
     }
   | { readonly outcome: "not-found" | "already-claimed" | "terminal" };

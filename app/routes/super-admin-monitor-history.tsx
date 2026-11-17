@@ -44,9 +44,11 @@ export default function SuperAdminMonitorHistoryRoute(){
   const {t}=useTranslation("common");
   const currentArea=area==="system" ? routing.superAdmin.system(locale)
     : area==="accounts" ? routing.superAdmin.accounts(locale) : area==="security" ? routing.superAdmin.security(locale)
-    : routing.superAdmin.nativeArea(locale,area);
+    : area==="background"?routing.superAdmin.background(locale)
+    : area==="integrations"?routing.superAdmin.monitoring(locale):routing.superAdmin.nativeArea(locale,area);
   const currentAreaLabel=area==="system" ? t("superAdminSystem")
     : area==="accounts" ? t("superAdminAreaAccounts") : area==="security" ? t("superAdminAreaSecurity")
+    : area==="background"?t("superAdminAreaBackground"):area==="integrations"?t("superAdminMonitoring")
     : t(({forum:"superAdminAreaForum",administration:"superAdminAreaAdministration",moderation:"superAdminAreaModeration",notifications:"superAdminAreaNotifications"} as const)[area]);
   return <SuperAdminShell locale={locale} current="monitoring">
     <p><Link to={currentArea}>{currentAreaLabel}</Link></p>

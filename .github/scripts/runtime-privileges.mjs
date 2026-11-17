@@ -10,6 +10,7 @@ export const runtimeCapabilityContracts = Object.freeze({
   }),
   web: Object.freeze({
     relations: Object.freeze({
+      translation_tasks: Object.freeze(["SELECT"]),
       admin_history: Object.freeze(["INSERT", "SELECT"]),
       owner_attempt_patterns: Object.freeze(["INSERT", "SELECT", "UPDATE"]),
       owner_attempt_telemetry_state: Object.freeze(["INSERT", "SELECT", "UPDATE"]),
