@@ -4,6 +4,7 @@ import crypto from 'node:crypto';import pg from 'pg';import {drizzle} from 'driz
 import {DrizzleTranslationTaskStore} from '../../../db/translation-task-store.ts';
 import {PostgresOwnerOperationalFactSink} from '../../../db/owner-operational-facts.ts';
 import {uiTranslationJobIdentity} from '../../../app/localization/ui-translation-service.ts';
+import {PostgresOwnerUserProfile} from '../../../db/owner-user-profile.ts';
 import {OWNER_MONITORS} from '../../../db/owner-monitor-catalog.ts';
 import {DrizzleForumRepository} from '../../../db/forum-repository.ts';
 import {DrizzleContentTranslationStore} from '../../../db/content-translation-store.ts';
@@ -23,6 +24,12 @@ const tasks=new DrizzleTranslationTaskStore(drizzle(c),new PostgresOwnerOperatio
 try{for await(const line of readline.createInterface({input:process.stdin,crlfDelay:Infinity}))try{
   const x=JSON.parse(line);let result;
   if(x.operation==='catalog')result=OWNER_MONITORS;
+  else if(x.operation==='privateProfileInvariantProbe'){
+    // Execute the real native reader once to prove the retained-session fault
+    // would fail if the rejected HTTP profile ever entered its Owner branch.
+    try{await new PostgresOwnerUserProfile(pool).readTarget(x.query);result={rejected:false};}
+    catch(error){result={rejected:error?.message==='Owner profile session row invariant failed'};}
+  }
   else if(x.operation==='sql'){const reply=await c.query(x.sql,x.params??[]);result=Array.isArray(reply)?reply.flatMap(p=>p.rows??[]):reply.rows;}
   else if(x.operation==='integrationSeed'){
     const id=crypto.randomUUID(),database=drizzle(c),captured=[];
