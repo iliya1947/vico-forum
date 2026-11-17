@@ -1,3 +1,15 @@
+## 2026-11-17 — Lev M1 correction published; corrected-head checks active
+
+- Draft #340 exact `cb09523ce050d97f1eab59b41b40c471a2cde20f`, base/main45406723; open/Draft/unmerged. Mira's FAIL M1 on63e624fb remains the latest review result; fresh bounded08-A acceptance is pending.
+- Reused all7 unchanged Data terminalCoverage definitions through one pure reader shared by Data/Overview; exposed existing Administration mootTimeUnproven. Explicit top-level measured/limited/unavailable coverage DTO/UI, localized limitation warning, actual shared web clock and typed Data/History links. Zeroes do not establish complete History/health; failed source has empty counts/null clock, Data partial, independent retained figures survive.
+- One extra query, own SAVEPOINT inside existing RR snapshot; <=40 reads/10s issuance budget unchanged. No new metrics/telemetry producers, schema version, fake Data snapshot, production constraint/grant/dependency/Wrangler delta.
+- Local author checks: native23/2 (Overview10 + Data13), app/localization444/36, typecheck/lint/build PASS (one existing lint warning). Genuine Worker/BA/PG17 connected19 cases PASS, pageErrors[]/external[]; EN/RU/HE all3 widths show real nonzero time/actor gaps, actual locked coverage preserves retained values/no fake zeroes, logout late-response isolation passes.
+- Fixture qualification: untimed moot uses valid current native constraints. Human-attribution anomaly is deliberately corrupt/legacy retained data in disposable test schema/DB; the exact reviewer CHECK is restored NOT VALID before the read (new writes still checked), then anomaly removed and CHECK validated in cleanup. Not a valid new current-schema outcome or production schema change.
+- Exact-head CI still active; no correction PASS claimed until final checks. Progress #331 comment6953175773.
+- Next: Mira fresh bounded08-A review after final corrected-head evidence.08-B blocked until bounded08-A PASS; then Lev resumes same cumulative PR. No agent launches/merge/permanent docs/#315/Stage6/deploy/external work.
+
+---
+
 ## 2026-11-17 — Mira bounded SA08-A review: FAIL M1; one current-08-A defect confirmed
 
 - **Reviewed target:** Draft #340 stable exact `63e624fb7fed86cd3c10dcd49d1df63f43543273`, base/main `45406723c4b53ceba9392d3fb7dc84e8adaa9768`, open/Draft, unmerged, `mergeable=true`.
