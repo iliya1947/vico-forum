@@ -97,7 +97,7 @@ describe("SA02 native source-aware Owner History projection",()=>{
     expect(new Set(identities).size).toBe(identities.length);
     expect(global.next).toBeNull();
     expect(global.entries.find(e=>e.id===M)).toMatchObject({
-      origin:"auth-event",monitorKeys:["accounts.methods","security.auth"],
+      origin:"auth-event",monitorKeys:["accounts.methods","security.auth","integrations.authentication"],
     });
     const methods=await reader.readTimeline({area:"accounts",monitorKey:"accounts.methods"});
     const auth=await reader.readTimeline({area:"security",monitorKey:"security.auth"});

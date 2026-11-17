@@ -1,3 +1,5 @@
+import { withOperationalFacts,type OwnerOperationalFactSink,type OperationalFactBuffer } from "../app/observability/operational-facts";
+import { operationalTaskColumns } from "./owner-operational-facts";
 import { and, eq, sql } from "drizzle-orm";
 import type { NodePgDatabase } from "drizzle-orm/node-postgres";
 
@@ -37,7 +39,7 @@ export class ContentTopicTitlePublicationIntegrityError extends Error {
 
 export class DrizzleContentTopicTitleExecutionStore
   implements ContentTopicTitleRevisionReader, ContentTopicTitlePublicationStore {
-  constructor(private readonly database: NodePgDatabase) {}
+  constructor(private readonly database: NodePgDatabase,private readonly operational?:OwnerOperationalFactSink) {}
 
   async readCurrentRevision(topicId: string): Promise<ContentTranslationRevision | undefined> {
     try {
@@ -76,6 +78,7 @@ export class DrizzleContentTopicTitleExecutionStore
   async publishClaimedMachineResult(
     publication: MachineContentTopicTitlePublication,
   ): Promise<ContentTopicTitlePublicationResult> {
+    return withOperationalFacts(this.operational, async facts => {
     try {
       return await this.database.transaction(async (tx) => {
         // Keep the shared planning/publication lock order stable:
@@ -106,7 +109,7 @@ export class DrizzleContentTopicTitleExecutionStore
         assertTaskMatchesPublication(task, publication);
 
         if (!head || head.currentGeneration !== publication.task.generation) {
-          return markClaimStale(tx, publication, "generation-superseded");
+          return markClaimStale(tx, publication, "generation-superseded",facts);
         }
 
         const [topic] = await tx
@@ -118,7 +121,7 @@ export class DrizzleContentTopicTitleExecutionStore
           !topic
           || topic.currentTitleRevisionId !== publication.task.sourceIdentity.revisionId
         ) {
-          return markClaimStale(tx, publication, "revision-not-current");
+          return markClaimStale(tx, publication, "revision-not-current",facts);
         }
 
         const [metadata] = await tx
@@ -137,7 +140,7 @@ export class DrizzleContentTopicTitleExecutionStore
           task.generationPolicyVersion !== publication.generationPolicyVersion
           || publication.task.generationPolicyVersion !== publication.generationPolicyVersion
         ) {
-          return markClaimStale(tx, publication, "policy-changed");
+          return markClaimStale(tx, publication, "policy-changed",facts);
         }
 
         const [revision] = await tx
@@ -152,14 +155,14 @@ export class DrizzleContentTopicTitleExecutionStore
           ))
           .for("share");
         if (!revision) {
-          return markClaimStale(tx, publication, "revision-not-current");
+          return markClaimStale(tx, publication, "revision-not-current",facts);
         }
         if (
           revision.sourceLocale !== publication.task.revisionSourceLocale
           || publication.revision.sourceLocale !== publication.task.revisionSourceLocale
           || revision.originalContent !== publication.revision.originalContent
         ) {
-          return markClaimStale(tx, publication, "source-changed");
+          return markClaimStale(tx, publication, "source-changed",facts);
         }
 
         const [existing] = await tx
@@ -172,7 +175,7 @@ export class DrizzleContentTopicTitleExecutionStore
           ))
           .for("update");
         if (existing) {
-          return markClaimStale(tx, publication, "translation-current");
+          return markClaimStale(tx, publication, "translation-current",facts);
         }
 
         const machineTranslation: StoredContentTranslation = {
@@ -197,13 +200,13 @@ export class DrizzleContentTopicTitleExecutionStore
           stored = await writeTopicTitleTranslationWithTrust(tx, machineTranslation);
         } catch (error) {
           if (error instanceof ContentTranslationConflictError) {
-            return markClaimStale(tx, publication, "translation-current");
+            return markClaimStale(tx, publication, "translation-current",facts);
           }
           throw error;
         }
 
         if (stored.provenance.origin !== "machine") {
-          return markClaimStale(tx, publication, "translation-current");
+          return markClaimStale(tx, publication, "translation-current",facts);
         }
 
         const databaseNow = sql`statement_timestamp()`;
@@ -233,18 +236,21 @@ export class DrizzleContentTopicTitleExecutionStore
             eq(translationTasks.generationPolicyVersion, publication.generationPolicyVersion),
             eq(translationTasks.generation, publication.task.generation),
           ))
-          .returning({ id: translationTasks.id });
+          .returning(operationalTaskColumns);
 
         if (!completed[0]) {
           throw new ContentTopicTitlePublicationIntegrityError(
             "locked content task claim changed during publication",
           );
         }
+        facts.captureTask("task.completed",completed[0],publication.task.claimToken);
         return { outcome: "published" };
       });
     } catch (error) {
       throw classifyDependencyFailure(error);
     }
+
+    });
   }
 }
 
@@ -252,6 +258,7 @@ async function markClaimStale(
   tx: ContentPublicationTransaction,
   publication: MachineContentTopicTitlePublication,
   reason: Extract<ContentTopicTitlePublicationResult, { outcome: "stale" }>["reason"],
+  facts:OperationalFactBuffer,
 ): Promise<ContentTopicTitlePublicationResult> {
   const databaseNow = sql`statement_timestamp()`;
   const rows = await tx
@@ -272,7 +279,8 @@ async function markClaimStale(
       eq(translationTasks.status, "processing"),
       eq(translationTasks.claimToken, publication.task.claimToken),
     ))
-    .returning({ id: translationTasks.id });
+    .returning(operationalTaskColumns);
+  if(rows[0])facts.captureTask("task.stale",rows[0],publication.task.claimToken);
   return rows[0]
     ? { outcome: "stale", reason }
     : { outcome: "claim-lost" };

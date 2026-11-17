@@ -1,5 +1,5 @@
 import type { Pool } from "pg";
-import { ADMIN_MONITOR_SCOPES_SQL } from "./owner-monitor-catalog";
+import { ADMIN_MONITOR_SCOPES_SQL,TASK_FACT_MONITOR_SCOPES_SQL } from "./owner-monitor-catalog";
 import { NATIVE_HISTORY_ORIGINS, nativeHistoryBranches, HISTORY_COLUMNS, readNativeHistoryCoverage, type NativeHistoryOrigin, type OwnerSourceCoverage } from "./owner-native-history";
 import { ACCOUNT_HISTORY_SELECT_SQL } from "./owner-account-history";
 import type { OwnerHistoryEntry, OwnerHistoryMonitor, OwnerHistoryOrigin,
@@ -7,7 +7,7 @@ import type { OwnerHistoryEntry, OwnerHistoryMonitor, OwnerHistoryOrigin,
 
 /** Fixed target-specific projection of only sources with persisted person attribution. */
 export type OwnerUserHistoryOrigin =
-  Extract<OwnerHistoryOrigin, "auth-event" | "account-event" | "admin-history" | "attachment-evidence" | "attempt-pattern"> | NativeHistoryOrigin;
+  Extract<OwnerHistoryOrigin, "auth-event" | "account-event" | "admin-history" | "attachment-evidence" | "attempt-pattern" | "operational-event"> | NativeHistoryOrigin;
 export interface OwnerUserHistoryPage {
   readonly entries: readonly OwnerHistoryEntry[];
   readonly next: string | null;
@@ -24,7 +24,7 @@ export class InvalidOwnerUserHistoryCursorError extends Error {
 }
 
 const RESOURCE = "profile-history";
-const ORIGINS: readonly string[] = ["auth-event", "account-event", "admin-history", "attachment-evidence", "attempt-pattern", ...NATIVE_HISTORY_ORIGINS];
+const ORIGINS: readonly string[] = ["auth-event", "account-event", "admin-history", "attachment-evidence", "attempt-pattern", "operational-event", ...NATIVE_HISTORY_ORIGINS];
 const PAGE_SIZE = 25;
 const EXACT = /^([1-9][0-9]{3})-(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01])T([01][0-9]|2[0-3]):([0-5][0-9]):([0-5][0-9])\.([0-9]{6})Z$/;
 type Cursor = {
@@ -112,11 +112,11 @@ function project(row: Row): OwnerHistoryEntry {
 const LEGACY_PERSON_SQL = [
   "select 'auth-event'::text origin,e.id::text source_id,e.occurred_at at,",
   " e.recorded_at recorded_at, case e.kind",
-  " when 'account.created' then ARRAY['accounts.users']::text[]",
-  " when 'auth.methodLinked' then ARRAY['accounts.methods','security.auth']::text[]",
-  " when 'auth.passwordChanged' then ARRAY['accounts.methods','security.auth']::text[]",
-  " when 'auth.sessionCreated' then ARRAY['accounts.sessions','security.auth']::text[]",
-  " when 'auth.sessionDeleted' then ARRAY['accounts.sessions','security.auth']::text[]",
+  " when 'account.created' then ARRAY['accounts.users','integrations.authentication']::text[]",
+  " when 'auth.methodLinked' then ARRAY['accounts.methods','security.auth','integrations.authentication']::text[]",
+  " when 'auth.passwordChanged' then ARRAY['accounts.methods','security.auth','integrations.authentication']::text[]",
+  " when 'auth.sessionCreated' then ARRAY['accounts.sessions','security.auth','integrations.authentication']::text[]",
+  " when 'auth.sessionDeleted' then ARRAY['accounts.sessions','security.auth','integrations.authentication']::text[]",
   " else ARRAY[]::text[] end scopes,",
   " e.kind,e.source,null::text quality,",
   " e.payload || jsonb_build_object(",
@@ -132,8 +132,8 @@ const LEGACY_PERSON_SQL = [
   "union all",
   "select 'attempt-pattern'::text,p.id::text,p.admitted_at,p.admitted_at,",
   " case when p.surface='auth' and p.operation='registration-admission'",
-  " then ARRAY['security.auth','accounts.registration']::text[]",
-  " when p.surface='auth' then ARRAY['security.auth']::text[]",
+  " then ARRAY['security.auth','accounts.registration','integrations.authentication']::text[]",
+  " when p.surface='auth' then ARRAY['security.auth','integrations.authentication']::text[]",
   " else ARRAY['security.access']::text[] end,",
   " 'attempt.coalesced'::text,p.surface::text,'coalesced'::text,",
   " jsonb_build_object(",
@@ -150,11 +150,19 @@ const LEGACY_PERSON_SQL = [
   " from owner_attempt_patterns p where p.actor_user_id=$1",
   "union all",
   "select 'attachment-evidence'::text,f.id::text,f.created_at,f.created_at,",
-  " ARRAY['security.attachments']::text[],'attachment.securityEvidence'::text,",
+  " ARRAY['security.attachments','files.assets']::text[],'attachment.securityEvidence'::text,",
   " 'forum_attachment_security_events'::text,null::text,",
   " jsonb_build_object('uploadId',f.upload_id,'uploadedByUserId',f.uploaded_by_user_id,",
   " 'detectedType',f.detected_type,'reason',f.reason,'declaredByteSize',f.declared_byte_size)",
   " from forum_attachment_security_events f where f.uploaded_by_user_id=$1",
+  "union all",
+  "select 'operational-event'::text,e.id::text,e.occurred_at,e.recorded_at,"+TASK_FACT_MONITOR_SCOPES_SQL+",",
+  "e.kind,e.source,'best-effort'::text,e.payload||jsonb_build_object(case when e.kind='task.reconciliationPass' then 'runId' else 'taskId' end,e.entity_id,'actorUserId',e.actor_user_id)",
+  "from owner_events e where e.source='operation' and e.monitor_key='background.translation' and e.kind like 'task.%' and e.actor_user_id=$1",
+  "union all",
+  "select 'operational-event'::text,e.id::text,e.occurred_at,e.recorded_at,ARRAY['files.assets','files.operations']::text[],",
+  "e.kind,e.source,'best-effort'::text,e.payload||jsonb_build_object(case when e.kind='file.referencesChanged' then 'operationId' else 'attachmentId' end,e.entity_id,'actorUserId',e.actor_user_id)",
+  "from owner_events e where e.source='operation' and e.monitor_key in ('files.assets','files.operations') and e.kind in ('file.accepted','file.published','file.unpublished','file.referencesChanged') and e.actor_user_id=$1",
   "union all",
   "select 'admin-history'::text,a.id::text,a.occurred_at,a.occurred_at,",
   ADMIN_MONITOR_SCOPES_SQL+",",

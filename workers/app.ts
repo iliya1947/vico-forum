@@ -1,3 +1,11 @@
+import {createHyperdriveOwnerIntegrations} from "../db/hyperdrive-owner-integrations";
+import {ownerIntegrationsMonitoringContext} from "../app/super-admin/request-context";
+import {observeRequiredLocalizationRead,googleParametersPresent} from "../app/observability/integration-runtime";
+import {createHyperdriveOwnerData} from "../db/hyperdrive-owner-data";
+import {ownerDataMonitoringContext} from "../app/super-admin/request-context";
+import {createHyperdriveOperationalRecording} from "../db/hyperdrive-operational-recording";
+import {createHyperdriveOwnerFiles} from "../db/hyperdrive-owner-files";
+import {ownerFilesMonitoringContext} from "../app/super-admin/request-context";
 import { RouterContextProvider, createRequestHandler } from "react-router";
 import { forumReaderContext, forumWriterContext } from "../app/forum/request-context";
 import { forumAttachmentStoreContext, privateAttachmentBucketContext } from "../app/forum/attachment-request-context";
@@ -57,6 +65,8 @@ import {createHyperdriveComplaintAppeal} from "../db/hyperdrive-complaint-appeal
 import { resolveRuntimeDatabaseConnectionStrings } from "./database-bindings";
 import { ownerSystemMonitoringContext, ownerSa02MonitoringContext, ownerNativeMonitoringContext } from "../app/super-admin/request-context";
 import { createHyperdriveOwnerSystem } from "../db/hyperdrive-owner-system";
+import {createHyperdriveOwnerLocalization} from "../db/hyperdrive-owner-localization";
+import {ownerLocalizationMonitoringContext} from "../app/super-admin/request-context";
 import { ownerAccountLifecycleContext, ownerProfileContext } from "../app/profile/request-context";
 import { createHyperdriveOwnerProfile } from "../db/hyperdrive-owner-profile";
 import { createHyperdriveOwnerAccountLifecycle } from "../db/hyperdrive-owner-account-lifecycle";
@@ -71,6 +81,7 @@ async function applicationFetch(request: Request, env: Env, executionContext?: E
     const requestStarted = performance.now();
     const context = new RouterContextProvider();
     const { localizationConnectionString, webConnectionString } = resolveRuntimeDatabaseConnectionStrings(env);
+    const operational=createHyperdriveOperationalRecording(webConnectionString);
     const collector = new RequestAttemptCollector(captureAttemptIngressSource(request),
       () => createHyperdriveAttemptTelemetry(webConnectionString));
     context.set(requestAttemptCollectorContext, collector);
@@ -99,11 +110,12 @@ async function applicationFetch(request: Request, env: Env, executionContext?: E
     const ownerUserId = validOwnerUserId((env as Env & { VICO_OWNER_USER_ID?: string }).VICO_OWNER_USER_ID);
     const measureAdmission = withOwnerUserMeasureAdmission(ownerUserId);
     context.set(forumReaderContext, createHyperdriveForumReader(webConnectionString));
-    context.set(forumWriterContext, createHyperdriveForumWriter(webConnectionString, undefined, undefined, measureAdmission));
-    context.set(forumAttachmentStoreContext, createHyperdriveForumAttachmentStore(webConnectionString, undefined, measureAdmission));
+    context.set(forumWriterContext, createHyperdriveForumWriter(webConnectionString, undefined, undefined, measureAdmission,operational.sink));
+    context.set(forumAttachmentStoreContext, createHyperdriveForumAttachmentStore(webConnectionString, undefined, measureAdmission,operational.sink));
     const attachmentBucket = (env as Env & { ATTACHMENT_R2?: R2Bucket }).ATTACHMENT_R2;
-    context.set(privateAttachmentBucketContext, attachmentBucket ? privateAttachmentBucket(attachmentBucket) : null);
-    context.set(registryLoaderContext, createHyperdriveRegistryLoader(localizationConnectionString));
+    context.set(privateAttachmentBucketContext, attachmentBucket ? privateAttachmentBucket(attachmentBucket,operational.storageCapture) : null);
+    const requiredLocalization=observeRequiredLocalizationRead(createHyperdriveRegistryLoader(localizationConnectionString));
+    context.set(registryLoaderContext,requiredLocalization.load);
     context.set(uiTranslationStoreContext, createHyperdriveUiTranslationStore(localizationConnectionString));
     context.set(
       contentTranslationPresentationContext,
@@ -122,6 +134,9 @@ async function applicationFetch(request: Request, env: Env, executionContext?: E
     context.set(ownerSystemMonitoringContext, ownerMonitoring);
     context.set(ownerSa02MonitoringContext, ownerMonitoring);
     context.set(ownerNativeMonitoringContext, ownerMonitoring);
+    context.set(ownerDataMonitoringContext,createHyperdriveOwnerData(webConnectionString,localizationConnectionString,ownerUserId));
+    context.set(ownerFilesMonitoringContext,createHyperdriveOwnerFiles(webConnectionString,!!attachmentBucket,ownerUserId));
+    context.set(ownerLocalizationMonitoringContext,createHyperdriveOwnerLocalization(webConnectionString,localizationConnectionString,ownerUserId));
     context.set(ownerProfileContext, createHyperdriveOwnerProfile(webConnectionString));
     context.set(ownerAccountLifecycleContext, createHyperdriveOwnerAccountLifecycle(webConnectionString, ownerUserId));
     const authorization = createHyperdriveAuthorization(webConnectionString, undefined, ownerUserId);
@@ -136,6 +151,10 @@ async function applicationFetch(request: Request, env: Env, executionContext?: E
     context.set(complaintAppealContext,createHyperdriveComplaintAppeal(webConnectionString,effectiveAuthorization,undefined,ownerUserId));
     context.set(contentGenerationAdmissionContext, createHyperdriveContentGenerationAdmission(webConnectionString, undefined, ownerUserId));
     context.set(contentGenerationActionContext, DISABLED_CONTENT_GENERATION_ACTION_RUNTIME);
+    context.set(ownerIntegrationsMonitoringContext,createHyperdriveOwnerIntegrations(webConnectionString,ownerUserId,()=>ownerMonitoring.readSystem(),{
+      webBindingPresent:!!webConnectionString,localizationBindingPresent:!!localizationConnectionString,googleParametersPresent:googleParametersPresent(env as Env & BetterAuthEnvironment),bucketBound:!!attachmentBucket,
+      generationEnabled:context.get(contentGenerationActionContext).enabled,generationAdmissionWired:context.get(contentGenerationAdmissionContext)!==null,providerWired:false,enqueuerWired:false,consumerWired:false,
+    },requiredLocalization.current));
     const response = await requestHandler(request, context);
     const finalResponse = protectFrameworkFailure(request, response);
     // Record actual 5xx response outcomes only; never request URLs, bodies or credentials.
@@ -150,7 +169,8 @@ async function applicationFetch(request: Request, env: Env, executionContext?: E
       // replace the original HTTP response/exception with telemetry failure.
       const task = facts.flush()
         .catch(() => collector.recordGap("auth"))
-        .then(() => collector.flush().catch(() => undefined));
+        .then(() => collector.flush().catch(() => undefined))
+        .then(()=>operational.flush().catch(()=>undefined));
       if (executionContext?.waitUntil) executionContext.waitUntil(task);
       else await task;
     }

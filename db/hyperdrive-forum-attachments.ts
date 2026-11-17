@@ -1,3 +1,4 @@
+import type {OwnerOperationalFactSink} from "../app/observability/operational-facts";
 import { drizzle } from "drizzle-orm/node-postgres";
 import { AccountStateUnavailableError } from "./account-state";
 import { assertNoActiveUserMeasureRestriction } from "./user-measure-policy";
@@ -63,12 +64,13 @@ export function createHyperdriveForumAttachmentStore(
   connectionString: string,
   clientFactory: () => Client = () => createWebClient(connectionString),
   measureAdmission: typeof assertNoActiveUserMeasureRestriction = assertNoActiveUserMeasureRestriction,
+  operational?:OwnerOperationalFactSink,
 ): ForumAttachmentStore {
   async function apply<T>(operation: (store: DrizzleForumAttachments) => Promise<T>): Promise<T> {
     const client = clientFactory();
     try {
       await client.connect();
-      return await operation(new DrizzleForumAttachments(drizzle(client), measureAdmission));
+      return await operation(new DrizzleForumAttachments(drizzle(client), measureAdmission,operational));
     } catch (error) {
       if (isAttachmentStorageAvailabilityFailure(error)) {
         throw new ForumAttachmentStorageUnavailableError({ cause: error });

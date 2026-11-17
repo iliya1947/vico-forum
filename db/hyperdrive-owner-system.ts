@@ -9,6 +9,7 @@ import {
 } from "./owner-system-monitoring";
 import { PostgresOwnerNativeCurrent, type NativeCurrentState } from "./owner-native-current";
 import type { NativeMonitorArea } from "./owner-monitor-catalog";
+import {PostgresOwnerTaskMonitoring,type OwnerTaskCurrent} from "./owner-task-monitoring";
 
 export class OwnerSystemUnavailableError extends Error {}
 
@@ -19,6 +20,7 @@ export interface OwnerSa02Monitoring {
 }
 export interface OwnerNativeMonitoring {
   readNativeCurrent(area: NativeMonitorArea): Promise<NativeCurrentState>;
+  readTaskCurrent():Promise<OwnerTaskCurrent>;
 }
 
 function isStorageUnavailable(error: unknown): boolean {
@@ -55,6 +57,10 @@ export function createHyperdriveOwnerSystem(connectionString: string, mode: stri
     readNativeCurrent: area => {
       if (!ownerUserId) throw new Error("Owner monitoring binding missing");
       return run(pool => new PostgresOwnerNativeCurrent(pool, ownerUserId).readCurrent(area));
+    },
+    readTaskCurrent:()=>{
+      if(!ownerUserId)throw new Error("Owner monitoring binding missing");
+      return run(pool=>new PostgresOwnerTaskMonitoring(pool).readCurrent());
     },
   };
 }

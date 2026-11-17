@@ -1,3 +1,4 @@
+import {withOperationalFacts,type OwnerOperationalFactSink,type FileReferenceTransition} from "../app/observability/operational-facts";
 import { projectPublicAccountIdentity, PublicIdentityInvariantError } from "./public-identity";
 import { activeAccountPredicate, AccountInactiveError, assertActiveAccountForDrizzleMutation, type AccountState } from "./account-state";
 import {appendForumHistory} from "./forum-history";
@@ -576,6 +577,7 @@ export class DrizzleForumRepository {
     private readonly database: NodePgDatabase,
     private readonly writePolicy: ForumWritePolicy = forumWritePolicy,
     private readonly measureAdmission: typeof assertNoActiveUserMeasureRestriction = assertNoActiveUserMeasureRestriction,
+    private readonly operational?:OwnerOperationalFactSink,
   ) {}
 
   async searchMentionableUsers(query: string): Promise<Array<{ id: string; name: string }>> {
@@ -741,7 +743,8 @@ export class DrizzleForumRepository {
         tags: (input.tags ?? []).map((tag) => [tag.key, tag.name]),
         attachmentIds: [...(input.publishedDraft.attachmentIds ?? [])].sort(),
           }) : null;
-    return this.database.transaction(async (tx) => {
+    return withOperationalFacts(this.operational,facts=>this.database.transaction(async (tx) => {
+      const changes:{added:FileReferenceTransition[];removed:FileReferenceTransition[]}={added:[],removed:[]};
       if (input.publishedDraft) {
         await lockAttachmentDraftScope(tx, input.authorId, input.publishedDraft.contextKey);
         const existing = await this.publicationReceipt(tx, input.authorId, input.publishedDraft, fingerprint);
@@ -810,9 +813,10 @@ export class DrizzleForumRepository {
         })));
       }
       if (input.publishedDraft) {
-        await this.finishPublishedDraft(tx, input.authorId, input.publishedDraft, input.initialPost.id);
+        await this.finishPublishedDraft(tx, input.authorId, input.publishedDraft, input.initialPost.id,changes);
         await this.recordPublicationReceipt(tx, input.authorId, input.publishedDraft, fingerprint, input.id, input.initialPost.id);
       }
+      facts.captureFileReferences(input.initialPost.id,input.authorId,changes);
       return {
         topic: {
           id: input.id,
@@ -835,7 +839,7 @@ export class DrizzleForumRepository {
           body: input.initialPost.bodyRevision,
         },
       };
-    });
+    }));
   }
 
   async createPost(input: CreatePostInput): Promise<ForumPost> {
@@ -845,7 +849,8 @@ export class DrizzleForumRepository {
         body: input.bodyRevision.originalContent, bodyLocale: input.bodyRevision.sourceLocale,
         attachmentIds: [...(input.publishedDraft.attachmentIds ?? [])].sort(),
           }) : null;
-    return this.database.transaction(async (tx) => {
+    return withOperationalFacts(this.operational,facts=>this.database.transaction(async (tx) => {
+      const changes:{added:FileReferenceTransition[];removed:FileReferenceTransition[]}={added:[],removed:[]};
       if (input.publishedDraft) {
         await lockAttachmentDraftScope(tx, input.authorId, input.publishedDraft.contextKey);
         const existing = await this.publicationReceipt(tx, input.authorId, input.publishedDraft, fingerprint);
@@ -919,9 +924,10 @@ export class DrizzleForumRepository {
       });
 
       if (input.publishedDraft) {
-        await this.finishPublishedDraft(tx, input.authorId, input.publishedDraft, input.id);
+        await this.finishPublishedDraft(tx, input.authorId, input.publishedDraft, input.id,changes);
         await this.recordPublicationReceipt(tx, input.authorId, input.publishedDraft, fingerprint, input.topicId, input.id);
       }
+      facts.captureFileReferences(input.id,input.authorId,changes);
       return {
         id: input.id,
         topicId: input.topicId,
@@ -932,7 +938,7 @@ export class DrizzleForumRepository {
         solutionOutdatedReasonKind: null,
         body: input.bodyRevision,
       };
-    });
+    }));
   }
 
   private async recordPublishedMentions(
@@ -989,6 +995,7 @@ export class DrizzleForumRepository {
   private async finishPublishedDraft(
     tx: Parameters<Parameters<NodePgDatabase["transaction"]>[0]>[0], ownerId: string,
     operation: { contextKey: string; draftId?: string; attachmentIds?: readonly string[] }, postId: string,
+    changes:{added:FileReferenceTransition[];removed:FileReferenceTransition[]},
   ) {
     const selected = operation.attachmentIds ?? [];
     if (!operation.draftId) {
@@ -1011,7 +1018,10 @@ export class DrizzleForumRepository {
     const ids = selected.map((id) => id.toLowerCase());
     if (ids.some((id) => !refs.some((ref) => ref.id === id && ref.verification === "type-checked" && ref.cleanup === "active")))
       throw new ForumStateConflictError("selected attachments are unavailable");
-    if (ids.length) await tx.insert(forumPostAttachments).values(ids.map((attachmentId) => ({postId, attachmentId, createdAt: new Date()})));
+    if (ids.length) changes.added.push(...await tx.insert(forumPostAttachments).values(ids.map((attachmentId) => ({postId, attachmentId, createdAt: new Date()})))
+      .returning({attachmentId:forumPostAttachments.attachmentId,
+        referenceCreatedAt:sql<string>`to_char(${forumPostAttachments.createdAt} at time zone 'UTC','YYYY-MM-DD"T"HH24:MI:SS.US"Z"')`,
+        operationAt:sql<string>`to_char(${forumPostAttachments.createdAt} at time zone 'UTC','YYYY-MM-DD"T"HH24:MI:SS.US"Z"')`}));
     await retireAttachmentDraftGeneration(tx, ownerId, operation.contextKey, generation);
     await tx.delete(forumAttachmentDraftRefs).where(and(eq(forumAttachmentDraftRefs.ownerId, ownerId),
       eq(forumAttachmentDraftRefs.contextKey, operation.contextKey), eq(forumAttachmentDraftRefs.draftId, generation)));
@@ -4375,7 +4385,8 @@ export class DrizzleForumRepository {
       attachmentIds: [...input.attachmentIds].sort(),
       ...(input.retainedAttachmentIds === undefined ? {} : { retainedAttachmentIds: [...input.retainedAttachmentIds].sort() }),
     });
-    return this.database.transaction(async (tx) => {
+    return withOperationalFacts(this.operational,facts=>this.database.transaction(async (tx) => {
+      const changes:{added:FileReferenceTransition[];removed:FileReferenceTransition[]}={added:[],removed:[]};
       await lockAttachmentDraftScope(tx, input.actorId, contextKey);
       const replay = await this.publicationReceipt(tx, input.actorId, draft, fingerprint);
       if (replay) {
@@ -4412,9 +4423,11 @@ export class DrizzleForumRepository {
       if (!input.body.trim() && input.attachmentIds.length === 0 && retained.length === 0)
         throw new ForumStateConflictError("post requires body or attachments");
       const removed = existing.filter((item) => !retained.includes(item.id)).map((item) => item.id);
-      if (removed.length) await tx.delete(forumPostAttachments).where(and(
+      if (removed.length) changes.removed.push(...await tx.delete(forumPostAttachments).where(and(
         eq(forumPostAttachments.postId, input.postId), inArray(forumPostAttachments.attachmentId, removed),
-      ));
+      )).returning({attachmentId:forumPostAttachments.attachmentId,
+        referenceCreatedAt:sql<string>`to_char(${forumPostAttachments.createdAt} at time zone 'UTC','YYYY-MM-DD"T"HH24:MI:SS.US"Z"')`,
+        operationAt:sql<string>`to_char(statement_timestamp() at time zone 'UTC','YYYY-MM-DD"T"HH24:MI:SS.US"Z"')`}));
       const now = new Date();
       const revisionId = crypto.randomUUID();
       await tx.insert(forumPostRevisions).values({
@@ -4430,9 +4443,10 @@ export class DrizzleForumRepository {
         actorId: input.actorId, topicId: input.topicId, postId: input.postId,
         body: input.body, createdAt: now,
       });
-      await this.finishPublishedDraft(tx, input.actorId, draft, input.postId);
+      await this.finishPublishedDraft(tx, input.actorId, draft, input.postId,changes);
       await this.recordPublicationReceipt(tx, input.actorId, draft, fingerprint, input.topicId, input.postId);
-    });
+      facts.captureFileReferences(input.postId,input.actorId,changes);
+    }));
   }
 
   async readHierarchy(categoryId: string): Promise<ForumHierarchy | undefined> {

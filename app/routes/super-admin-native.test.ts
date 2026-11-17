@@ -16,7 +16,7 @@ function setup(actor:string|null="owner",binding:string|undefined="owner"){
   const context=new RouterContextProvider();context.set(authSessionContext,actor?{user:{id:actor,name:"Fixture",email:"PRIVATE_EMAIL"}} as never:null);context.set(authorizationOwnerContext,binding);
   const readNativeCurrent=vi.fn(async()=>({observedAt:"2026-11-16T00:00:00Z",recording:"available" as const,monitors:[]}));
   const readSa02History=vi.fn(async()=>({entries:[],next:null}));
-  context.set(ownerNativeMonitoringContext,{readNativeCurrent});context.set(ownerSa02MonitoringContext,{readSa02History,readSa02Current:vi.fn()});
+  context.set(ownerNativeMonitoringContext,{readNativeCurrent,readTaskCurrent:vi.fn()});context.set(ownerSa02MonitoringContext,{readSa02History,readSa02Current:vi.fn()});
   return {context,readNativeCurrent,readSa02History,request:new Request("https://vico.test/en/super-admin/monitoring/forum"),params:{locale:"en"}};
 }
 it.each(NATIVE_AREAS)("%s refuses guest/Admin/wrong binding before input parsing or reading",async area=>{

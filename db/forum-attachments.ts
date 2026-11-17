@@ -1,7 +1,8 @@
+import {withOperationalFacts,type OwnerOperationalFactSink} from "../app/observability/operational-facts";
 import { isFencedAttachmentKey } from "../app/forum/attachment-storage-protocol";
 import { assertActiveAccountForDrizzleMutation } from "./account-state";
 import { assertNoActiveUserMeasureRestriction } from "./user-measure-policy";
-import { and, asc, desc, eq, isNull } from "drizzle-orm";
+import { and, asc, desc, eq, isNull,sql,getTableColumns } from "drizzle-orm";
 import type { NodePgDatabase } from "drizzle-orm/node-postgres";
 import {
   forumAttachmentDraftRefs,
@@ -137,6 +138,7 @@ export class DrizzleForumAttachments {
   constructor(
     private readonly db: NodePgDatabase,
     private readonly measureAdmission: typeof assertNoActiveUserMeasureRestriction = assertNoActiveUserMeasureRestriction,
+    private readonly operational?:OwnerOperationalFactSink,
   ) {}
 
   /** Exact committed upload replay is checked before restricting new uploads. */
@@ -202,7 +204,7 @@ export class DrizzleForumAttachments {
   async createDraftAttachment(input: CreateDraftAttachmentInput): Promise<ForumAttachmentMetadata> {
     if (!validInput(input)) throw new InvalidForumAttachmentError();
     const createdAt = new Date();
-    return this.db.transaction(async (tx) => {
+    return withOperationalFacts(this.operational,facts=>this.db.transaction(async (tx) => {
       await lockAttachmentDraftScope(tx, input.ownerId, input.contextKey);
       const draftId = await resolveAttachmentDraftGeneration(tx, input.ownerId, input.contextKey, input.draftId);
       if (input.requireUploadRecord || isFencedAttachmentKey(input.objectKey)) {
@@ -243,7 +245,7 @@ export class DrizzleForumAttachments {
         createdAt,
       }).onConflictDoNothing({
         target: forumAttachments.id,
-      }).returning();
+      }).returning({...getTableColumns(forumAttachments),operationAt:sql<string>`to_char(${forumAttachments.createdAt} at time zone 'UTC','YYYY-MM-DD"T"HH24:MI:SS.US"Z"')`});
 
       if (created) {
         await tx.insert(forumAttachmentDraftRefs).values({
@@ -253,6 +255,7 @@ export class DrizzleForumAttachments {
           draftId,
           createdAt,
         });
+        facts.captureFileAccepted(created);
         return toMetadata(created);
       }
 
@@ -277,7 +280,7 @@ export class DrizzleForumAttachments {
         .limit(1);
       if (!reference) throw new InvalidForumAttachmentError();
       return toMetadata(existing);
-    });
+    }));
   }
 
   async readPublishedAttachment(postId: string, attachmentId: string): Promise<ForumAttachmentMetadata | null> {
