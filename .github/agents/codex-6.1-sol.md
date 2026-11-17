@@ -1,5 +1,16 @@
 # Codex-6.1 Sol — personal log
 
+## 2026-11-17 — Lev SA07 Files source checkpoint published; acceptance ACTIVE
+
+- Cumulative dependent Draft #339 exact `0d0559d6489efa649213ab757ba43f3d64334c4b`; base #338 remains `ce71892d`, open/unmerged. This is implementation progress, not whole-SA07 AUTHOR READY.
+-07-F source now includes after-outer-COMMIT file metadata/publication/ref-removal facts, actual cleanup pass counts separating R2 ACK from token-guarded DB deletion, Files/Background current/History/Owner UI, and fixed13 sampled storage outcomes at the actual private bucket adapter. Durable rolling15min admission, signed sorted advisory locks, shared32-candidate bound, original sample identity across Files/Integrations. Added only SELECT sweep with its reader; no DDL/runtime activation.
+- Full local native PG17 **1375/101 files PASS**, including14 F native cases; storage seams11/2 and earlier app85/10 PASS. Lint0errors/1baselinewarning, current build/typecheck, runtime privileges+contract23 PASS. Full application run2545 PASS/1 stale source-composition string expectation; updated for the optional sink and focused8 PASS. New exact CI ACTIVE, not yet accepted.
+- Genuine connected F acceptance ACTIVE. Actual Worker upload201, publication/replay302, public download200 already proved. New harness mistakes corrected: canonical suspicious rejection is422 and evidence upload_id is a native attachment-v1 digest, so resolve its original row by real user/draft operation. One unchanged L Refresh retry timed out on requestfinished despite Worker200; cause unverified, no app workaround. Earlier attempts retained; current clean own-DB retry running.
+- Latest Mira SA06 M2 FAIL is acknowledged; Lira owns that #338 correction. This does not stop dependent SA07 under the override. Update/recheck #339 after prerequisite changes; no self-independent review, merge, SA08+, permanent docs/#315/Stage6/production/deploy/external work.
+- Continue F acceptance then accepted07-D/I in this same cumulative PR; no intermediate review/merge gate.
+
+---
+
 ## 2026-11-17 — 07-L source/author checkpoint complete;07-F ACTIVE
 
 - Cumulative dependent Draft #339 exact `2fb4c7bc5d41d6bfea021f9c891d4a1600953830`,3commits/59paths; prerequisite338 ce71892d unchanged/unmerged. Whole SA07 not AUTHOR READY.
