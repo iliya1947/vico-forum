@@ -387,3 +387,13 @@ E2 принят: существующее user-measure restriction `posts.edit` 
 7. Не расширять задачу в admin edit, source-locale correction, другие user actions, UI/UX pass, Stage 6 или external integration.
 
 План принят для реализации с указанными overrides scope/fit review Миры. Следующий этап — Лира реализует bounded scope в отдельном implementation PR от актуального `main`.
+
+
+## Переназначение исполнителя владельцем — 2026-11-18
+
+Прямым решением владельца реализация этой задачи передана Лёве / Codex-6.1 Sol вместо Лиры.
+Это конкретное назначение текущей задачи имеет приоритет над стандартным распределением ролей.
+
+Принятый технический scope не меняется. Лёва реализует утверждённый plan + scope/fit overrides Миры в отдельном implementation PR от актуального `main`.
+
+Поскольку Лёва участвует в реализации, он не выполняет независимый технический review собственной работы. После coordinator PASS Миры независимым Codex-reviewer назначается Марк / Codex-6 Sol на том же stable exact head.
