@@ -188,8 +188,10 @@ try:
    return mc.request.post(base+'/api/attachments',headers={'Origin':base,'Content-Type':'text/plain','X-Vico-Attachment-Id':attachment,'X-Vico-Attachment-Name':quote(name,safe=''),'X-Vico-Attachment-Size':str(len(body)),'X-Vico-Editor-Context':quote('topic:'+local_fixture['topic']+':reply',safe=''),'X-Vico-Operation-Id':op},data=body)
   unused=str(uuid4());unused_op=str(uuid4());assert upload_bytes(unused,unused_op,b'An abandoned private upload').status==201
   unused_key=sql('select object_key from forum_attachments where id=$1',[unused])[0]['object_key']
-  rejected=str(uuid4());refused=upload_bytes(rejected,str(uuid4()),b'MZ'+b'0'*50,'sa07-suspicious.exe');assert refused.status==422,(refused.status,refused.text())
-  evidence=sql('select id from forum_attachment_security_events where upload_id=$1',[rejected])[0]['id']
+  rejected=str(uuid4());rejected_op=str(uuid4());refused=upload_bytes(rejected,rejected_op,b'MZ'+b'0'*50,'sa07-suspicious.exe');assert refused.status==422,(refused.status,refused.text())
+  assert refused.json()['suspicious'] is True
+  evidence=sql('select id from forum_attachment_security_events where uploaded_by_user_id=$1 and draft_id=$2',[member,rejected_op])[0]['id']
+  assert not sql('select id from forum_attachments where id=$1',[rejected])
   for _ in range(100):
    facts=sql("select kind,entity_id from owner_events where source='operation' and entity_id=$1",[asset])
    if len(facts)==2:break
