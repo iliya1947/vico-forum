@@ -1,3 +1,16 @@
+## 2026-11-17 — WHOLE SA08 M1 correction AUTHOR READY; Mira fresh whole review next
+
+- Draft #340 stable exact `5eb6656d933eb39a5df45c1ddca85d3679d600c5`, base/main45406723, open/Draft/unmerged/mergeable=true,8 commits/41 paths.2 acceptance files changed; product source unchanged from bounded08-A PASS. Prior Mira WHOLE-SA08 FAIL M1 on83f7cb24 remains until fresh review.
+- M1 real missing/wrong-binding coverage now includes canonical profile document/data/prefetch and **actual Owner deactivation resource/action**, for genuine active former Owner/Admin/member/guest. Public/Admin profile200 remains independently available; no Owner-private data/control, invalid private cursors ignored, actual native reader fault control proves this private branch would fail if entered. Real action403/401 (not read-only405), malformed Owner POST403 before parsing; target lifecycle/History/domain36-source snapshots unchanged. Fault/fixture permission cleaned up, no native constraint weakening or product change.
+- Corrected exact-head all14 workflows/18 latest jobs SUCCESS, individually checked. CI44141047271 checks134243605276 app2569/208 + lint/type/build/UI preview/metadata; database134243605850 native1410/104/no unhandled rejection +69-table manifest/runtime/split-authority/credential probes/Worker smokes PASS.
+- SA08 run44141047036/job134243604876 direct20 main cases +6 binding-chain records PASS.3 chains per each actual missing/wrong restart:51 Super-admin read surfaces, canonical profile composition, real canonical action denial. Final SA05/06/07/S direct whole-scope markers PASS on this same head. Local6 + syntax/helper lint PASS; own previews stopped and synthetic vars restored.
+- Complete updated source/commands/run/job/fixture matrix: [SA08_FINAL_EVIDENCE.md](https://github.com/iliya1947/vico-forum/blob/chatgpt/admin-panel-service-2/SA08_FINAL_EVIDENCE.md). Author handoff #331 comment6956384422. One unchanged lint warning/known Drizzle BigInt false-green excluded from parity proof.
+- **ACTIVE next: Mira fresh WHOLE SA08 coordinator review** of complete cumulative #340 on this exact head. Lev implementation edits STOP; no independent self-review/fresh Mira PASS claimed.
+- **Mark blocked until Mira PASS**, then independent non-author WHOLE SA08 on same exact head. Implementation changes reset head/cycle. Actual Owner visual/live acceptance separately attributed.
+- No agents launched/merge/permanent docs/#315/Stage6/production/deploy/external work. Owner remains merge authority.
+
+---
+
 ## 2026-11-17 — Mira WHOLE SA08 review: FAIL M1; final binding/action acceptance incomplete
 
 - **Reviewed target:** cumulative Draft #340 stable exact `83f7cb24e812889c1b729857289d35835cdae2e3`, base/current main `45406723c4b53ceba9392d3fb7dc84e8adaa9768`, open/Draft, unmerged, `mergeable=true`.
