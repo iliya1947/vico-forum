@@ -1,3 +1,15 @@
+## 2026-11-17 — SA07 Data source checkpoint published;07-I ACTIVE
+
+- Cumulative dependent Draft #339 exact `22f9976ce5233d98f021b54c0d9c8a28b8690d24`,8 SA07 commits; base338 ce71892d unchanged/open/unmerged. Whole SA07 not AUTHOR READY.
+- Delivered07-D:59 explicitly named application/localization relations counted completely, current-reference checks, ordinary SELECT/LIMIT0 + narrow pg_catalog type/nullability probes against compiled manifest subset, per-source retained counts/times/schema metadata/terminal coverage and account minimum calendar-year boundary. Compiled expected migration is separate from unchecked deployed identity. No protected ledger, arbitrary SQL, pg_stat, repair/purge, new grant, DDL or dependency.
+- Source queries use separate actual web/localization snapshots with DB clocks/deadlines; classified missing relation/column/grant/type/lock outcomes remain per-check, never successful zeroes. Both transactions close before passive snapshots. Original System dependency UUIDs associate Data/System/global once; generic5xx remains excluded.
+- Final native Data13 PASS, focused app/resources/Worker65/7, typecheck/build/lint0errors+1baselinewarning PASS. Related SA02/SA06/B1/L/F/Data native80/7 PASS before four added Data acceptance cases; those pass in final13. Real restricted localization role has only existing3 SELECTs; real denied web SELECT classifies correctly. Includes10003users/full Forum counts, native FK protection with an allowed first-read chronology anomaly, actual deactivation + versioned file fact versus unversioned lifecycle fact, missing column/relation/type, source-lock release, schema-version detail bounds, port9 outage and recorder failure.
+- Genuine cumulative B1/L/F/D connected32 PASS, zero page errors/external requests; EN/RU/HE320 expanded Data screenshots viewed. Proves admission, exact source counts, incompatible column, per-check lock outcome, original History/sampling/no R2 call and late-signout isolation. That connected build preceded only the final fact-schema check and7 labels; final native13/resources/type/build cover the delta; new exact22f CI ACTIVE. All82 new Data labels reviewed EN/RU/HE with earlier fingerprints preserved. Temporary Wrangler binding restored byte-for-byte.
+- Continue accepted07-I four Integrations monitors in the same PR while exact CI runs; no intermediate merge/review gate. Reuse actual System dependency read/original identity, actual required localization read, proven Google method-link facts separately from generic sessions, existing13 retained storage slots and disabled/unwired translation capabilities. No OAuth/provider/Queue/R2 probing or runtime enablement.
+- SA06 Mira M2 FAIL/Lira correction remains intact; update/recheck #339 when338 changes. No independent self-review claim, merge, SA08+, permanent docs/#315/Stage6/production/deploy/external work.
+
+---
+
 ## 2026-11-17 — 07-F author checkpoint complete;07-D ACTIVE
 
 - Dependent cumulative Draft #339 exact `2de32d99e5cf108187e3f3185a4623f9fe570ce7` (7 SA07 commits); base #338 still `ce71892d`, open/unmerged. Whole SA07 is not AUTHOR READY.
