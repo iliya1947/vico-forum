@@ -1,3 +1,5 @@
+import {createHyperdriveOwnerOverview} from "../db/hyperdrive-owner-overview";
+import {ownerOverviewMonitoringContext} from "../app/super-admin/request-context";
 import {createHyperdriveOwnerIntegrations} from "../db/hyperdrive-owner-integrations";
 import {ownerIntegrationsMonitoringContext} from "../app/super-admin/request-context";
 import {observeRequiredLocalizationRead,googleParametersPresent} from "../app/observability/integration-runtime";
@@ -151,10 +153,12 @@ async function applicationFetch(request: Request, env: Env, executionContext?: E
     context.set(complaintAppealContext,createHyperdriveComplaintAppeal(webConnectionString,effectiveAuthorization,undefined,ownerUserId));
     context.set(contentGenerationAdmissionContext, createHyperdriveContentGenerationAdmission(webConnectionString, undefined, ownerUserId));
     context.set(contentGenerationActionContext, DISABLED_CONTENT_GENERATION_ACTION_RUNTIME);
-    context.set(ownerIntegrationsMonitoringContext,createHyperdriveOwnerIntegrations(webConnectionString,ownerUserId,()=>ownerMonitoring.readSystem(),{
+    const integrationRuntimeFacts={
       webBindingPresent:!!webConnectionString,localizationBindingPresent:!!localizationConnectionString,googleParametersPresent:googleParametersPresent(env as Env & BetterAuthEnvironment),bucketBound:!!attachmentBucket,
       generationEnabled:context.get(contentGenerationActionContext).enabled,generationAdmissionWired:context.get(contentGenerationAdmissionContext)!==null,providerWired:false,enqueuerWired:false,consumerWired:false,
-    },requiredLocalization.current));
+    };
+    context.set(ownerIntegrationsMonitoringContext,createHyperdriveOwnerIntegrations(webConnectionString,ownerUserId,()=>ownerMonitoring.readSystem(),integrationRuntimeFacts,requiredLocalization.current));
+    context.set(ownerOverviewMonitoringContext,createHyperdriveOwnerOverview(webConnectionString,localizationConnectionString,ownerUserId,import.meta.env.MODE,integrationRuntimeFacts,requiredLocalization.current));
     const response = await requestHandler(request, context);
     const finalResponse = protectFrameworkFailure(request, response);
     // Record actual 5xx response outcomes only; never request URLs, bodies or credentials.

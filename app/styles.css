@@ -10237,3 +10237,9 @@ a.topic-tag:focus-visible {
  .super-admin-monitor { padding: .75rem; }
  .super-admin-timeline li { padding: .7rem; }
 }
+
+.super-admin-history-filters fieldset { display: grid; gap: .75rem; grid-template-columns: repeat(auto-fit, minmax(min(100%, 15rem), 1fr)); min-width: 0; margin-block: 1rem; }
+.super-admin-history-filters label { display: grid; gap: .3rem; min-width: 0; }
+.super-admin-history-filters input, .super-admin-history-filters select { box-sizing: border-box; width: 100%; min-width: 0; max-width: 100%; }
+.super-admin-history-filters p { grid-column: 1 / -1; }
+[data-owner-overview] details, [data-owner-overview] bdi, .super-admin-history-filters { overflow-wrap: anywhere; }

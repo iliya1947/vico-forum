@@ -1,3 +1,4 @@
+import {historyFilterCatalog} from "../super-admin/history-filters.server";
 import "@testing-library/jest-dom/vitest";
 import { cleanup, render, screen, waitFor } from "@testing-library/react";
 import { createInstance } from "i18next";
@@ -9,7 +10,7 @@ import { createAdministrativeRouting, type AdministrativeRouting } from "../admi
 import { HeaderAuthProvider } from "../auth/auth-controls";
 import { canonicalEnglishCatalog } from "../localization/catalog";
 import { hebrewCommonValues, russianCommonValues } from "../localization/manual-values";
-import type { OwnerHistoryPage } from "../../db/owner-sa02-history";
+import type { OwnerHistoryOptions, OwnerHistoryPage } from "../../db/owner-sa02-history";
 import SuperAdminEventsRoute from "./super-admin-events";
 import SuperAdminMonitorHistoryRoute from "./super-admin-monitor-history";
 
@@ -89,7 +90,7 @@ function mount(locale:"en"|"ru"|"he",area:"events"|"history",routing?:Administra
   const path=area==="events"?`/${locale}/super-admin/events`
     :`/${locale}/super-admin/monitoring/${scope.area}/${scope.monitorKey}/history`;
   router=createMemoryRouter([{path,loader:()=>({
-    locale,area:scope.area,monitorKey:scope.monitorKey,page:sourcePage,filters:{},
+    locale,area:scope.area,monitorKey:scope.monitorKey,page:sourcePage,filters:{},filterCatalog:historyFilterCatalog(area==="events"?{}:scope as OwnerHistoryOptions),
   }),element:area==="events"?<SuperAdminEventsRoute/>:<SuperAdminMonitorHistoryRoute/>}],
   {initialEntries:[path]});
   return render(<I18nextProvider i18n={i18n}>

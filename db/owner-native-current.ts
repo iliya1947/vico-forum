@@ -155,7 +155,7 @@ export class PostgresOwnerNativeCurrent {
       now=(await c.query<{at:Date}>("select transaction_timestamp() at")).rows[0]?.at;
       if(!(now instanceof Date)||!Number.isFinite(now.getTime()))throw new Error("Missing database clock");
       for(const key of NATIVE_MONITORS[area]){
-        const values=await this.read(c,key,now);
+        const values=await readNativeMonitor(c,key,now,this.ownerUserId);
         checkedValues(key,values);measured.push({key,values});
       }
       await c.query("commit");begun=false;
@@ -173,11 +173,13 @@ export class PostgresOwnerNativeCurrent {
     }
     return {observedAt:now!.toISOString(),recording,monitors};
   }
-  private async read(c:PoolClient,key:NativeMonitorKey,now:Date){
-    const values=(await c.query<Record<string,NativeMonitorScalar>>(`with clock as(select $1::timestamptz at,$2::text owner_id) select ${select(FIELDS[key])}`,[now,this.ownerUserId])).rows[0];
+}
+
+export async function readNativeMonitor(c:Pick<PoolClient,"query">,key:NativeMonitorKey,now:Date,ownerUserId:string){
+    const values=(await c.query<Record<string,NativeMonitorScalar>>(`with clock as(select $1::timestamptz at,$2::text owner_id) select ${select(FIELDS[key])}`,[now,ownerUserId])).rows[0];
     if(!values)throw new Error("Missing aggregate snapshot");
     if(key==="administration.authorization")values.catalogPermissions=String(PERMISSION_CATALOG.length);
     if(key==="notifications.inbox")values.missingTargets=(BigInt(values.total as string)-BigInt(values.validTargets as string)).toString();
+    checkedValues(key,values);
     return values;
   }
-}

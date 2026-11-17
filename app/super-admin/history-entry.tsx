@@ -166,9 +166,9 @@ export function HistoryEntry({entry,locale}: {entry:HistoryItem;locale:string}){
       <div><dt>{t("superAdminHistoryIdentity")}</dt>
         <dd><bdi>{entry.origin}</bdi> / <bdi>{entry.id}</bdi></dd></div>
       <div><dt>{t(timeKey)}</dt>
-        <dd><time dateTime={entry.occurredAt}>{readableTime(entry.occurredAt,locale)}</time></dd></div>
+        <dd><time dateTime={entry.occurredAt}>{readableTime(entry.occurredAt,locale)}</time> · <bdi>{entry.occurredAt}</bdi></dd></div>
       {entry.recordedAt ? <div><dt>{t("superAdminHistoryRecordedAt")}</dt>
-        <dd><time dateTime={entry.recordedAt}>{readableTime(entry.recordedAt,locale)}</time></dd></div> : null}
+        <dd><time dateTime={entry.recordedAt}>{readableTime(entry.recordedAt,locale)}</time> · <bdi>{entry.recordedAt}</bdi></dd></div> : null}
       {monitors.length ? <div><dt>{t("superAdminHistoryMonitors")}</dt>
         <dd>{monitors.map((key,i)=><span key={key}>{i>0?", ":null}<bdi>{key}</bdi></span>)}</dd></div> : null}
       {entry.quality ? <div><dt>{t("superAdminQuality")}</dt>

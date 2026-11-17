@@ -73,7 +73,7 @@ async function readSources(c:PoolClient){
       taskOutcome:await lastOperational(c,'background.translation',TASK_TRANSITION_KINDS),
       providerExecution:await lastOperational(c,'integrations.translation',['integration.translationCall'])}};
 }
-function configuration(config:IntegrationRuntimeFacts,local:RequiredLocalizationRead|null):Record<IntegrationMonitorKey,IntegrationValues>{
+export function integrationConfiguration(config:IntegrationRuntimeFacts,local:RequiredLocalizationRead|null):Record<IntegrationMonitorKey,IntegrationValues>{
   // Select individual trusted booleans. Never spread an environment or serialize credentials.
   return {
     'integrations.database':{webBindingPresent:config.webBindingPresent,localizationBindingPresent:config.localizationBindingPresent,webRoutingRole:'web',localizationRoutingRole:'localization-read',
@@ -98,7 +98,7 @@ export class PostgresOwnerIntegrationMonitoring {
       source=await readSources(c);await c.query('commit');begun=false;
     }catch(error){if(begun)try{await c.query('rollback');}catch{/* Preserve source failure. */}throw error;}
     finally{c.release();}
-    const local=this.requiredLocalizationRead(),values=configuration(this.runtime,local),monitors:IntegrationCurrentMonitor[]=[];
+    const local=this.requiredLocalizationRead(),values=integrationConfiguration(this.runtime,local),monitors:IntegrationCurrentMonitor[]=[];
     for(const key of INTEGRATION_MONITOR_KEYS){
       let recording:IntegrationCurrentMonitor['recording']='available',coverageFrom:string|null=null,lastObservedAt:string|null=null;
       // Only configuration/request-load provenance is sampled here. Native web DB,

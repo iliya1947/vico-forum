@@ -62,7 +62,7 @@ const RETAINED_SOURCES={
   measureAppeals:{table:"user_measure_appeals",time:"created_at"},
   notifications:{table:"forum_reply_notifications",time:"created_at"},
 } as const;
-async function retained(c:ClientBase,table:string,time:string):Promise<DataValues>{
+export async function readDataRetained(c:Pick<ClientBase,"query">,table:string,time:string):Promise<DataValues>{
   const row=(await c.query<{rows:string;first:string|null;last:string|null;unprovenTime:string}>(`select count(*)::text rows,
     ${instant(`min(${time}) filter(where isfinite(${time}))`)} first,${instant(`max(${time}) filter(where isfinite(${time}))`)} last,
     count(*) filter(where ${time} is null or not isfinite(${time}))::text "unprovenTime" from ${table}`)).rows[0];
@@ -113,7 +113,7 @@ async function readSource(c:ClientBase,localization:boolean):Promise<SourceRead>
     }
     if(compatibilityChecks[0].values.supportedMajor===false){compatibilityChecks[0].status='incompatible';compatibilityChecks[0].code='type-mismatch';}
     if(!localization){
-      for(const [id,{table,time}]of Object.entries(RETAINED_SOURCES))retention.push(await checked(c,id,source,at,false,()=>retained(c,table,time)));
+      for(const [id,{table,time}]of Object.entries(RETAINED_SOURCES))retention.push(await checked(c,id,source,at,false,()=>readDataRetained(c,table,time)));
       retention.push(await checked(c,'terminalCoverage',source,at,false,()=>fields(c,TERMINAL_ANOMALIES)));
       retention.push(await checked(c,'sampleSchemas',source,at,false,async()=>{
         const row=(await c.query<{distinctVersions:string;versions:number[]}>(`select count(distinct schema_version)::text "distinctVersions",

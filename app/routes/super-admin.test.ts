@@ -2,7 +2,7 @@ import { RouterContextProvider } from "react-router";
 import { describe, expect, it, vi } from "vitest";
 import { authSessionContext } from "../auth/request-context";
 import { authorizationOwnerContext } from "../authorization/request-context";
-import { ownerSystemMonitoringContext, ownerSa02MonitoringContext } from "../super-admin/request-context";
+import { ownerSystemMonitoringContext, ownerSa02MonitoringContext, ownerOverviewMonitoringContext } from "../super-admin/request-context";
 import { OwnerSystemUnavailableError } from "../../db/hyperdrive-owner-system";
 import type { OwnerSystemMonitoring } from "../../db/owner-system-monitoring";
 import type { OwnerSa02Monitoring } from "../../db/hyperdrive-owner-system";
@@ -53,8 +53,10 @@ function setup(actor: string|null="owner", bound:string|undefined="owner") {
   const readSa02Current = vi.fn(async()=>sa02);
   context.set(ownerSystemMonitoringContext, {readSystem,readTimeline,recordRequestFailure:vi.fn()} as unknown as OwnerSystemMonitoring);
   context.set(ownerSa02MonitoringContext, {readSa02History,readSa02Current} as unknown as OwnerSa02Monitoring);
+  const readOverview=vi.fn(async()=>({areas:[],recent:timeline,recording:"available"}));
+  context.set(ownerOverviewMonitoringContext,{readCurrent:readOverview} as never);
   const args = {context,params:{locale:"en"},request:new Request("https://vico.test/en/super-admin")};
-  return {context,args,readSystem,readTimeline,readSa02History,readSa02Current};
+  return {context,args,readSystem,readTimeline,readSa02History,readSa02Current,readOverview};
 }
 const checks = [
   ["Overview", (x:ReturnType<typeof setup>)=>overview(x.args)],
@@ -69,6 +71,7 @@ describe("SA-01 independent exact-Owner access to each Super-admin endpoint",()=
   it.each(checks)("blocks Guest before any private read: %s",async (_label,call)=>{
     const x=setup(null);await expect(async()=>call(x)).rejects.toMatchObject({status:401});
     expect(x.readSystem).not.toHaveBeenCalled();
+    expect(x.readOverview).not.toHaveBeenCalled();
       expect(x.readSa02History).not.toHaveBeenCalled();
       expect(x.readSa02Current).not.toHaveBeenCalled();
   });
@@ -77,6 +80,7 @@ describe("SA-01 independent exact-Owner access to each Super-admin endpoint",()=
       const x=setup("admin",binding);
       await expect(async()=>call(x)).rejects.toMatchObject({status:403});
       expect(x.readSystem).not.toHaveBeenCalled();
+    expect(x.readOverview).not.toHaveBeenCalled();
       expect(x.readSa02History).not.toHaveBeenCalled();
       expect(x.readSa02Current).not.toHaveBeenCalled();
     }
@@ -87,23 +91,18 @@ describe("SA-01 independent exact-Owner access to each Super-admin endpoint",()=
     expect(result.init?.headers).toEqual({"Cache-Control":"private, no-store"});
     expect(JSON.stringify(result.data)).not.toContain("private@test.invalid");
   });
-  it("reads one SA02 current snapshot plus existing System/recent History for Overview",async()=>{
-    const x=setup();
-    const result=await overview(x.args);
-    expect(x.readSystem).toHaveBeenCalledOnce();
-    expect(x.readSa02History).toHaveBeenCalledOnce();
-    expect(x.readSa02History).toHaveBeenCalledWith({limit:5});
-    expect(x.readSa02Current).toHaveBeenCalledOnce();
-    expect(result.data.sa02).toEqual(sa02);
-    expect(result.init?.headers).toEqual({"Cache-Control":"private, no-store"});
+  it("uses one bounded Overview capability without public reader fan-out",async()=>{
+    const x=setup();const result=await overview(x.args);
+    expect(x.readOverview).toHaveBeenCalledOnce();expect(x.readSystem).not.toHaveBeenCalled();
+    expect(x.readSa02History).not.toHaveBeenCalled();expect(x.readSa02Current).not.toHaveBeenCalled();
+    expect(result.data.viewerId).toBe("owner");expect(result.init?.headers).toEqual({"Cache-Control":"private, no-store"});
   });
-  it("maps only SA02 storage outages to private 503 and propagates other errors",async()=>{
-    const x=setup();
-    x.readSa02Current.mockRejectedValueOnce(new OwnerSystemUnavailableError());
-    await expect(overview(x.args)).rejects.toMatchObject({status:503,headers:expect.any(Headers)});
-    const error=new TypeError("Unexpected SA02 current data");
-    x.readSa02Current.mockRejectedValueOnce(error);
-    await expect(overview(x.args)).rejects.toBe(error);
+  it("propagates an unexpected composition invariant and rejects unknown query before reading",async()=>{
+    const x=setup();const failure=new TypeError("Unexpected current data");x.readOverview.mockRejectedValueOnce(failure);
+    await expect(overview(x.args)).rejects.toBe(failure);
+    x.readOverview.mockClear();
+    await expect(overview({...x.args,request:new Request("https://vico.test/en/super-admin?probe=true")})).rejects.toMatchObject({status:400});
+    expect(x.readOverview).not.toHaveBeenCalled();
   });
   it("does not let invalid History filters or cursors reach owner timeline query",async()=>{
     const x=setup("owner");
@@ -149,10 +148,10 @@ describe("SA-01 independent exact-Owner access to each Super-admin endpoint",()=
     expect(x.readSa02History).toHaveBeenNthCalledWith(2,{area:"system",monitorKey:"system.runtime",before:valid});
   });
   it("re-checks Owner binding on every read, independently of navigation",async()=>{
-    const x=setup("owner"); await overview(x.args);expect(x.readSystem).toHaveBeenCalledOnce();
+    const x=setup("owner"); await overview(x.args);expect(x.readOverview).toHaveBeenCalledOnce();
     x.context.set(authorizationOwnerContext,"different-owner");
     await expect(events(x.args)).rejects.toMatchObject({status:403});
-    expect(x.readSa02History).toHaveBeenCalledOnce();
+    expect(x.readSa02History).not.toHaveBeenCalled();
   });
   it("passes validated monitor scope into the shared owner timeline, without a second history writer",async()=>{
     const x=setup("owner");const before="2026-11-09T18:00:00.000Z~system-event~123e4567-e89b-42d3-a456-426614174000";
@@ -163,7 +162,7 @@ describe("SA-01 independent exact-Owner access to each Super-admin endpoint",()=
   });
   it("maps only classified storage outages to controlled 503; unexpected errors propagate",async()=>{
     const x=setup("owner");
-    x.readSystem.mockRejectedValueOnce(new OwnerSystemUnavailableError());
+    x.readOverview.mockRejectedValueOnce(new OwnerSystemUnavailableError());
     await expect(overview(x.args)).rejects.toMatchObject({status:503,headers:expect.any(Headers)});
     const fault=new TypeError("unexpected mapper bug");
     x.readSa02History.mockRejectedValueOnce(fault);

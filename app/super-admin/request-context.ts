@@ -1,3 +1,4 @@
+import type {OwnerOverviewMonitoring} from "../../db/hyperdrive-owner-overview";
 import type {OwnerIntegrationsMonitoring} from "../../db/hyperdrive-owner-integrations";
 export const ownerIntegrationsMonitoringContext=createContext<OwnerIntegrationsMonitoring>();
 import type {OwnerDataMonitoring} from "../../db/hyperdrive-owner-data";
@@ -25,3 +26,5 @@ export const ownerNativeMonitoringContext = createContext<OwnerNativeMonitoring>
 export function ownerNativeMonitoringForRequest(context: RouterContextProvider): OwnerNativeMonitoring {
   return context.get(ownerNativeMonitoringContext);
 }
+
+export const ownerOverviewMonitoringContext=createContext<OwnerOverviewMonitoring>();
