@@ -198,6 +198,36 @@ export async function topicAction({ request, params, context }: {
   let formData: FormData;
   try { formData = await request.formData(); } catch { return mutationFailure("invalid", 400); }
   const intent = requiredFormText(formData, "intent") ?? "reply";
+  if (formData.getAll("intent").includes("editTopicTitle")) {
+    if (["intent", "title", "expectedRevisionId", "editorActorId"].some(
+      (field) => formData.getAll(field).length !== 1,
+    ) || ["operationScope", "sourceLocale", "inlineQuickAction"].some((field) => formData.has(field)))
+      return mutationFailure("invalid", 400);
+    const title = requiredFormText(formData, "title");
+    const expectedRevisionId = requiredFormText(formData, "expectedRevisionId");
+    const actorExpectation = requiredFormText(formData, "editorActorId");
+    if (intent !== "editTopicTitle" || !title || title.includes("\u0000") || !expectedRevisionId || !actorExpectation)
+      return mutationFailure("invalid", 400);
+    const changedIdentity = editorIdentityGuard(formData, context);
+    if (changedIdentity) return changedIdentity;
+    const forbidden = await requireForumPermission(context, "forum.topic.title.editOwn");
+    if (forbidden) return forbidden;
+    return runForumMutation(request, context, async (writer, actorId) => {
+      try {
+        const revision = await writer.editOwnTopicTitle({ topicId, actorId, expectedRevisionId, title });
+        return data({ operation: "topicTitleEdit" as const, ok: true as const, revisionId: revision.id },
+          { headers: { "Cache-Control": "private, no-store" } });
+      } catch (error) {
+        if (!(error instanceof ForumStateConflictError) && !(error instanceof ConcurrentRevisionError)) throw error;
+        const current = await forumReaderForRequest(context).readTopicPage(topicId);
+        if (!current) return mutationFailure("notFound", 404);
+        if (current.authorId !== actorId) return mutationFailure("forbidden", 403);
+        return data({ operation: "topicTitleEdit" as const, error: "conflict" as const,
+          currentTitle: { id: current.title.id, originalContent: current.title.originalContent } },
+        { status: 409, headers: { "Cache-Control": "private, no-store" } });
+      }
+    });
+  }
   const isClosureAction = intent === "closeTopic" || intent === "reopenTopic";
   // An ambiguous form cannot hide a closure command behind another first intent.
   if (formData.getAll("intent").some((value) => value === "closeTopic" || value === "reopenTopic")

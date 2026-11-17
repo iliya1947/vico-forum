@@ -4675,8 +4675,16 @@ p {
 }
 
 .topic-question-heading-main {
+  min-inline-size: 0;
   min-width: 0;
 }
+
+.topic-title-editor { margin-block: 0.65rem; }
+.topic-title-editor form { display: grid; gap: 0.65rem; }
+.topic-title-editor label { display: grid; gap: 0.35rem; }
+.topic-title-editor input[name="title"] { inline-size: 100%; min-inline-size: 0; }
+.topic-title-editor p { overflow-wrap: anywhere; }
+.topic-title-editor-actions { display: flex; flex-wrap: wrap; gap: 0.5rem; }
 
 .topic-question-heading h1 {
   margin: 0;

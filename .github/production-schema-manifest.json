@@ -1,7 +1,7 @@
 {
   "version": 1,
   "schema": "public",
-  "targetMigration": "0066_sa06_native_monitor_indexes",
+  "targetMigration": "0067_topic_title_edit_own",
   "tables": {
     "account": {
       "columns": [
@@ -394,7 +394,7 @@
           "columns": [
             "key"
           ],
-          "definitionSha256": "33d905f654dfdcef87b5b5f5282d62795a8fa59537bd544d2518016b847aee07"
+          "definitionSha256": "ae0d36b2a23ceb4594d7f64bfe6b1bf0a8ace0a1d20955ca4c8a7037a82211d2"
         }
       ],
       "indexes": []

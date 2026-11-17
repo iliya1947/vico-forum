@@ -4,6 +4,7 @@ import type { ComplaintResolvedHistoryPage } from "../../db/complaint-history-re
 import { ComplaintResolvedHistoryList } from "../complaints/history-view";
 import type { ForumNotificationSummary } from "../../db/forum-repository";
 import {TopicQuickActions} from "../admin/quick-actions";
+import { TopicTitleEditor } from "./topic-title-editor";
 import {MessageQuickActions} from "../admin/message-quick-actions";
 import { ForumAttachmentDisplay } from "./attachment-presentation";
 import { ComplaintSubmissionForm } from "../complaints/submission-form";
@@ -2172,6 +2173,7 @@ export function TopicView({
   canUploadAttachments = true,
   editablePostIds = [],
   canReadPostHistory = false,
+  canEditOwnTitle = false,
   canSubmitComplaint = false,
   canManageSolution,
   canConfirmOwnSolution = false,
@@ -2198,6 +2200,7 @@ export function TopicView({
   canUploadAttachments?: boolean;
   editablePostIds?: readonly string[];
   canReadPostHistory?: boolean;
+  canEditOwnTitle?: boolean;
   canSubmitComplaint?: boolean;
   canManageSolution: boolean;
   canConfirmOwnSolution?: boolean;
@@ -2858,6 +2861,11 @@ export function TopicView({
                       <div className="topic-question-heading">
                         <div className="topic-question-heading-main">
                           <TopicTitlePresentation presentation={titlePresentation} />
+                          {headerActorId && <TopicTitleEditor
+                            key={JSON.stringify([topic.id, headerActorId])}
+                            topicId={topic.id} actorId={headerActorId} locale={locale}
+                            title={topic.title} canEdit={canEditOwnTitle}
+                          />}
                           {titleGenerationUnit && (
                             <div className="topic-generation-status">
                               <ContentGenerationUnitStatus unit={titleGenerationUnit} />
