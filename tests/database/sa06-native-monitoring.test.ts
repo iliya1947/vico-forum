@@ -172,6 +172,40 @@ it("actual parent lift makes a proven timed moot fact with parent actor, while m
   expect((await people.readHistory(await person())).coverage).toEqual([{reason:"moot-terminal-time-unproven",count:"0"}]);
   expect((await current.readCurrent("administration")).monitors.find(m=>m.key==="administration.measures")!.values.mootTimeUnproven).toBe("1");
 });
+it.each([
+  ["NULL resolved_at",true],
+  ["resolved_at earlier than created_at",false],
+] as const)("unproven moot terminal %s belongs only to the appeal subject in person coverage",async(_case,isNull)=>{
+  const actor=await person(true),subject=await person(),unrelated=await person(),measureId=uuid();
+  await measures().create({id:measureId,actorId:actor,targetUserId:subject,
+    reason:"SA06_PRIVATE_REASON",restrictions:["replies.create"],expiresAt:null});
+  const appeal=await measures().submitAppeal({id:uuid(),measureId,actorId:subject,body:"SA06_PRIVATE_APPEAL"});
+  await measures().lift({measureId,actorId:actor,operationId:uuid(),expectedVersion:1,reason:"Lift"});
+
+  // The same parent lift legitimately attributes a proven timed terminal to the lift actor.
+  expect((await allPerson(actor)).some(e=>e.origin==="measure-appeal-moot"&&e.id===appeal.id)).toBe(true);
+  await c.query(isNull
+    ?"update user_measure_appeals set resolved_at=null where id=$1"
+    :"update user_measure_appeals set resolved_at=created_at - interval '1 second' where id=$1",[appeal.id]);
+
+  const global=await history.readTimeline({});
+  const scoped=await history.readTimeline({area:"administration",monitorKey:"administration.measures"});
+  const expected=[{reason:"moot-terminal-time-unproven",count:"1"}];
+  expect(global.coverage).toEqual(expected);
+  expect(scoped.coverage).toEqual(expected);
+  expect(global.entries.some(e=>e.origin==="measure-appeal-moot"&&e.id===appeal.id)).toBe(false);
+  expect(scoped.entries.some(e=>e.origin==="measure-appeal-moot"&&e.id===appeal.id)).toBe(false);
+
+  const subjectHistory=await people.readHistory(subject);
+  const actorHistory=await people.readHistory(actor);
+  const unrelatedHistory=await people.readHistory(unrelated);
+  expect(subjectHistory.coverage).toEqual(expected);
+  expect(actorHistory.coverage).toEqual([{reason:"moot-terminal-time-unproven",count:"0"}]);
+  expect(unrelatedHistory.coverage).toEqual([{reason:"moot-terminal-time-unproven",count:"0"}]);
+  expect(subjectHistory.entries.some(e=>e.origin==="measure-appeal-moot"&&e.id===appeal.id)).toBe(false);
+  expect(actorHistory.entries.some(e=>e.origin==="measure-appeal-moot"&&e.id===appeal.id)).toBe(false);
+});
+
 it("actual reply notifications and both own readers preserve one original first-read time and recipient-only attribution",async()=>{
   const recipient=await person(),actor=await person(),x=await topic(recipient);const reply=uuid();
   await forum().createPost({id:reply,topicId:x.id,authorId:actor,bodyRevision:{id:uuid(),sourceLocale:"en",originalContent:"SA06_PRIVATE_REPLY"}});
