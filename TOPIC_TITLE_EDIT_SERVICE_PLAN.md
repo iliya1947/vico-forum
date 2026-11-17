@@ -368,3 +368,22 @@ Pages/owner visual acceptance выполняются при применимос
 Мира рекомендует первый вариант: он соответствует смыслу группы Own content и не создаёт новый restriction key/UI/schema. Но это меняет семантику действующего административного ограничения, поэтому выбор принадлежит владельцу и не фиксируется молча.
 
 До решения E2 Лиру не активировать. После решения Мира обновляет accepted plan и передаёт Лире bounded implementation.
+
+
+## Решение владельца по E2 — 2026-11-18
+
+E2 принят: существующее user-measure restriction `posts.edit` блокирует также редактирование заголовка собственной темы.
+
+Это считается тем же ограничением группы Own content; новый restriction key не создаётся. Реализация должна применять restriction и в UI capability, и на authoritative server-side write boundary. Existing Owner immunity сохраняется по текущему контракту.
+
+Итоговый accepted scope перед реализацией:
+
+1. Добавить отдельную capability `forum.topic.title.editOwn` с forward catalog migration/default grants по принятому E1.
+2. Разрешать изменение только автору темы; guest/non-author не получают mutation.
+3. Использовать immutable new title revision + CAS по current expected revision; новый изменённый текст получает `sourceLocale: "und"`.
+4. Сохранить revision-bound translation semantics; старые translations не становятся current для новой revision.
+5. Применять существующее `posts.edit` restriction к title edit; нового restriction key не добавлять.
+6. Не вводить отдельный title-edit cooldown, drafts/receipts/autosave или новую recovery subsystem.
+7. Не расширять задачу в admin edit, source-locale correction, другие user actions, UI/UX pass, Stage 6 или external integration.
+
+План принят для реализации с указанными overrides scope/fit review Миры. Следующий этап — Лира реализует bounded scope в отдельном implementation PR от актуального `main`.
