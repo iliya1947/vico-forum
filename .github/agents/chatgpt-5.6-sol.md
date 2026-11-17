@@ -1,3 +1,18 @@
+## 2026-11-17 — Mira bounded SA08-A review: FAIL M1; one current-08-A defect confirmed
+
+- **Reviewed target:** Draft #340 stable exact `63e624fb7fed86cd3c10dcd49d1df63f43543273`, base/main `45406723c4b53ceba9392d3fb7dc84e8adaa9768`, open/Draft, unmerged, `mergeable=true`.
+- Mira reviewed the complete 08-A scope against accepted §15 Overview composition/final filters, current §7 History contract and current project/source contracts. Exact-head evidence was also checked: all 14 relevant workflow runs SUCCESS; CI application **2565/2565**, PostgreSQL17 **1409/1409**, 69-table manifest/runtime privilege probes PASS; connected SA08 workflow ends `SA08-A-connected-pass`.
+- **M1 — Overview drops the required untimed/attribution coverage.** Accepted §15 explicitly requires: “The response identifies partial/untimed/attribution coverage”. Current implementation exposes source partial/unavailable state and retained sample coverage, but does not return or render the existing untimed/attribution anomaly facts.
+- Existing current sources already contain these facts: `administration.measures` exposes `mootTimeUnproven`; Data retention source has terminal/human-attribution anomaly counts including `helpTerminalTime`, `mootTerminalTime`, `notificationReadTime`, `complaintTerminalTime`, `helpHumanAttribution`, `measureHumanAttribution`, `complaintHumanAttribution`.
+- In #340, `PostgresOwnerOverview` reads only compact owner-event/observation retention totals for Data and its Overview field selection omits `mootTimeUnproven`; the returned Overview DTO/UI therefore has no explicit untimed/attribution coverage. A state with such retained anomalies can still render the area as “Selected sources measured” without exposing that coverage limitation.
+- This is a **current SA08-A defect**, not SA08-B future work, because explicit coverage presentation belongs to 08-A composition.
+- **Bounded correction for Lev / Codex-6.1 Sol:** make the 08-A Overview explicitly expose the already-defined untimed/attribution coverage from authoritative current sources, without inventing new producers/metrics or broadening scope; preserve the 40-read/10s budget, shared-source semantics and honest partial availability. Add regression evidence with actual non-zero untimed and attribution coverage proving it is present in the returned/UI Overview and does not become a false healthy assertion.
+- No other confirmed current-08-A defects found in this whole-scope review. Existing History filter/cursor round-trip, partial-source SAVEPOINT behavior, global snapshot batch, System/SA02 sampling policy preservation, exact-Owner/private boundaries, runtime wiring and connected evidence otherwise match the accepted 08-A scope.
+- **Review cycle:** after any implementation correction, 08-A bounded review restarts on the new stable exact #340 head. 08-B remains blocked until bounded 08-A PASS.
+- No merge, permanent docs, #315, Stage6/production/deploy/external work.
+
+---
+
 ## 2026-11-17 — Mira fresh WHOLE SA07 coordinator PASS after M1 correction
 
 - Reviewed cumulative Draft #339 stable exact `8cc0ecea5ad8a725d570abdb8958de96020ee4e0` against current main `1e4bcf83ff7bda0ec772a8098671ca9afe63888a`, accepted SA07 plan and current project/source contracts.
