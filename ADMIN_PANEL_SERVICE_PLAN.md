@@ -4,11 +4,11 @@ Service PR #331 is the active Admin/Super-admin coordination channel. PR #251 is
 
 ## Current boundary
 
-- Main `45406723c4b53ceba9392d3fb7dc84e8adaa9768` includes SA06 #338 and SA07 #339. Both package review cycles closed before Developer merge; SA07 final reviewed head8cc0ecea had Mira coordinator + Mark independent PASS.
-- **ACTIVE08-A implementer: Lev / Codex-6.1 Sol**, per corrected assignment preserving the established implementation route. Draft #340, branch `chatgpt/sa08-owner-composition`, exact `63e624fb7fed86cd3c10dcd49d1df63f43543273`.
--08-A source covers13-area Overview through shared native readers/bounded snapshots/partial availability/post-read sampling, and final closed History controls/UTC timestamps/filter-preserving pagination/common typed navigation. No new metrics source or mutation backend.
-- **08-A AUTHOR READY:** all14 exact workflows/18jobs SUCCESS, app2565/208,native1409/104,69-table manifest/runtime probes, local+CI connected15 PASS. No local pageErrors/external requests/teardown warnings; EN/RU/HE320 Overview and filter forms inspected. **Next: Mira bounded08-A acceptance** on exact63e624fb; Lev implementation STOP during that acceptance. Handoff #331 comment6951666899. No independent self-review claimed.
-- **08-B remains queued until08-A bounded acceptance**, in this same cumulative SA08 delivery. No permanent docs, #315, Stage6/production/deploy/external work or agent merge. Known Drizzle generator BigInt stderr/exit0 is not schema parity evidence.
+- Main `45406723c4b53ceba9392d3fb7dc84e8adaa9768` includes SA06 #338 + SA07 #339, merged after completed reviews.
+- **ACTIVE08-A implementer: Lev / Codex-6.1 Sol**, established explicit assignment. Cumulative Draft #340 exact `cb09523ce050d97f1eab59b41b40c471a2cde20f`, branch `chatgpt/sa08-owner-composition`.
+- Mira bounded08-A **FAIL M1** on63e624fb: required untimed/attribution coverage omitted. Published bounded correction reuses existing Administration count and Data's exact7 retained-anomaly checks; no new metrics/producers. Local native23/2, app/localization444/36, typecheck/lint/build and genuine connected19 cases PASS. Exact-head CI active.
+- **Next:** final author evidence/checks → Mira fresh bounded08-A acceptance on corrected stable exact head. Latest correction context in workflow/common/personal and #331 comment6953175773. No independent self-review claimed.
+- **08-B blocked until bounded08-A PASS**, then Lev continues in the same cumulative PR. No permanent docs, #315, Stage6/production/deploy/external work or agent merge. Known Drizzle generator BigInt stderr/exit0 is not schema parity evidence.
 
 ## Stable product decisions
 
