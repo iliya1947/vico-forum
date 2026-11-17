@@ -1,3 +1,13 @@
+## 2026-11-17 — Mira: SA08 merged; post-merge docs closeout routed
+
+- Verified current main `2ed977604ae0e6a3c0c2650112f65b42fc7eb77a`; #340 merged at 2026-11-17T21:27:19Z.
+- Final reviewed head `5eb6656d933eb39a5df45c1ddca85d3679d600c5` had Mira/Lira/Mark PASS and 0 confirmed current-SA08 defects.
+- Current permanent docs are stale at SA01–SA04. Next bounded task is documentation-only closeout in a separate PR.
+- Confirmed stale factual surfaces: PROJECT, PROJECT_STATE, ROADMAP, SUPER_ADMIN, ADMIN_PANEL, UI_UX_PASS, plus PROJECT_HISTORY index/new snapshot.
+- No implementation changes, Stage6, deployment or visual-pass work in this block.
+
+---
+
 ## 2026-11-17 — Mira WHOLE SA08 coordinator PASS on corrected exact head
 
 - Reviewed cumulative Draft #340 exact `5eb6656d933eb39a5df45c1ddca85d3679d600c5` against accepted §7/§11/§15 and current source contracts.
