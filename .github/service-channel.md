@@ -1,3 +1,15 @@
+## 2026-11-17 — #340 merged; documentation closeout is next
+
+- Developer merged SA08 implementation PR #340. Current `main` is `2ed977604ae0e6a3c0c2650112f65b42fc7eb77a`.
+- Reviewed implementation head was `5eb6656d933eb39a5df45c1ddca85d3679d600c5`; Mira coordinator + Lira independent + Mark independent all PASS with 0 confirmed current-SA08 defects before merge.
+- The implementation chain SA05–SA08 is therefore delivered in repository/local-CI scope.
+- Current permanent docs are factually stale: they still describe Super-admin as only SA01–SA04 delivered and SA05+ future.
+- **Next bounded block:** create a separate documentation-only PR from current main and reconcile current-state/permanent docs to the merged facts. No product/code/schema/dependency changes.
+- Confirmed stale surfaces from current-main search: `PROJECT.md`, `PROJECT_STATE.md`, `ROADMAP.md`, `docs/SUPER_ADMIN.md`, `docs/ADMIN_PANEL.md`, `docs/UI_UX_PASS.md`; project history also requires a new SA05–SA08 snapshot + index entry.
+- Preserve external boundary: repository/local-CI completion does not claim Stage6, deployed Google/Owner binding, production rollout or Infrastructure live integration. Visual polish remains the later UI/UX pass.
+
+---
+
 ## 2026-11-17 — Developer correction: visual/UI pass is later, not a #340 merge gate
 
 - The prior coordinator statement making Owner visual acceptance the active pre-merge gate for #340 was incorrect and is superseded.
