@@ -4,12 +4,11 @@ Service PR #331 is the active Admin/Super-admin coordination channel. PR #251 is
 
 ## Current boundary
 
-- SA05 #337 developer-merged; current main `7e7a803876422c2f40faaf720b59027d468e99dc`.
-- Prerequisite Draft #338 exact `ce71892dc30d8e9ef03833031c29e8519ca7627d` remains open/unmerged. Lira WHOLE SA06 AUTHOR READY; Lev completed whole cumulative technical author verification with0confirmed current-SA06 defects, not independent review. [Result](https://github.com/iliya1947/vico-forum/pull/331#issuecomment-6933791252).
-- Latest explicit overnight override activates immediate separate dependent SA07 without prerequisite merge. Lev implements cumulative [Draft #339](https://github.com/iliya1947/vico-forum/pull/339), branch `chatgpt/sa07-native-operations`, base `chatgpt/sa06-native-monitoring`, current exact head `9e55922585951fda5349949cea4b72862efcaadd`.
-- 07-B1 Background source and author checks completed: real passive transitions/provider/pass facts, current/History/Owner UI, one reader-paired SELECT; native13/app29/local Chromium and exact CI app2522/native1349/8runs12jobs PASS. Known Drizzle BigInt/exit0 remains non-proof; actual migrated69-table manifest/role probes separately PASS. Runtime remains disabled/unwired; no DDL or task writes granted.
-- **ACTIVE next07-L Localization**, then07-F/D/I in the same cumulative PR. Whole-SA07 AUTHOR READY not declared; internal checkpoints are not independent review/merge gates. Recheck/update SA07 if prerequisite338 changes.
-- No SA08+, #315, permanent docs, Stage6/production/deploy/external work or merge. Author browser evidence is not developer visual/deployed approval.
+- Current main7e7a8038; prerequisite Draft338 ce71892d open/unmerged, whole SA06 author verification clean (not independent).
+- Explicit overnight override activates dependent cumulative [Draft #339](https://github.com/iliya1947/vico-forum/pull/339), branch `chatgpt/sa07-native-operations`, base `chatgpt/sa06-native-monitoring`; current exact `2fb4c7bc5d41d6bfea021f9c891d4a1600953830`.
+-07-B1+07-L source/author checkpoints complete: real Background/task facts and four Localization readers/History/Owner UI, five total reader-paired SELECT additions, no DDL or task writes. Runtime disabled/unwired. Native43/app42/local connected18 PASS;2f9d6e01 exact CI13runs17jobs/app2533/native1361/manifest69 PASS. Current harness-only completion correction exact CI ACTIVE. Known Drizzle BigInt/exit0 is not parity proof.
+- **ACTIVE07-F Files/cleanup/fixed13 R2 observations**, then07-D/I in the same cumulativePR. Whole SA07 not AUTHOR READY; internal checkpoints are not independent review/merge gates. Update/recheck SA07 if338 changes.
+- No SA08+, #315, permanent docs, Stage6/production/deploy/external work or merge. Author browser checks do not establish developer visual/deployed approval.
 
 ## Stable product decisions
 
