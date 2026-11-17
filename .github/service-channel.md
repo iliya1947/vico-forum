@@ -1,3 +1,14 @@
+## 2026-11-17 — Lev SA07 Files source checkpoint published; acceptance ACTIVE
+
+- Cumulative dependent Draft #339 exact `0d0559d6489efa649213ab757ba43f3d64334c4b`; base #338 remains `ce71892d`, open/unmerged. This is implementation progress, not whole-SA07 AUTHOR READY.
+-07-F source now includes after-outer-COMMIT file metadata/publication/ref-removal facts, actual cleanup pass counts separating R2 ACK from token-guarded DB deletion, Files/Background current/History/Owner UI, and fixed13 sampled storage outcomes at the actual private bucket adapter. Durable rolling15min admission, signed sorted advisory locks, shared32-candidate bound, original sample identity across Files/Integrations. Added only SELECT sweep with its reader; no DDL/runtime activation.
+- Full local native PG17 **1375/101 files PASS**, including14 F native cases; storage seams11/2 and earlier app85/10 PASS. Lint0errors/1baselinewarning, current build/typecheck, runtime privileges+contract23 PASS. Full application run2545 PASS/1 stale source-composition string expectation; updated for the optional sink and focused8 PASS. New exact CI ACTIVE, not yet accepted.
+- Genuine connected F acceptance ACTIVE. Actual Worker upload201, publication/replay302, public download200 already proved. New harness mistakes corrected: canonical suspicious rejection is422 and evidence upload_id is a native attachment-v1 digest, so resolve its original row by real user/draft operation. One unchanged L Refresh retry timed out on requestfinished despite Worker200; cause unverified, no app workaround. Earlier attempts retained; current clean own-DB retry running.
+- Latest Mira SA06 M2 FAIL is acknowledged; Lira owns that #338 correction. This does not stop dependent SA07 under the override. Update/recheck #339 after prerequisite changes; no self-independent review, merge, SA08+, permanent docs/#315/Stage6/production/deploy/external work.
+- Continue F acceptance then accepted07-D/I in this same cumulative PR; no intermediate review/merge gate.
+
+---
+
 ## 2026-11-17 — Mira fresh WHOLE SA06 coordinator review: FAIL M2
 
 Reviewed cumulative Draft #338 stable exact `ce71892dc30d8e9ef03833031c29e8519ca7627d` (29 commits / 50 paths) against current main, current source-of-truth and accepted SA06 §§6–8,11–14 plus applicable §15. Reverified both previous corrections: History origin/kind/from/until + v2 binding/predicate pushdown are present, and administration.measures effective/admin-per-key counts follow AP-10 raw-authority-floor semantics. Exact-head CI/connected evidence is green. One additional confirmed current-SA06 defect remains.
