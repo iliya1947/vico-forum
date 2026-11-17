@@ -106,18 +106,7 @@ export class PostgresOwnerSystemMonitoring implements OwnerSystemMonitoring {
   constructor(private readonly pool: Pool, private readonly mode: string) {}
 
   async readSystem(): Promise<SystemOverview> {
-    // All measurements come from this actual request and current PostgreSQL state.
-    const result = await this.pool.query<{
-      version: string; observed_at: Date; failures: string;
-    }>(`select current_setting('server_version') as version, clock_timestamp() as observed_at,
-        (select count(*)::text from owner_events where kind='system.requestFailed') as failures`);
-    const state = result.rows[0];
-    if (!state) throw new Error("System state query returned no result");
-    const values: Array<{ key: SystemMonitorKey; source: "application" | "database"; values: SafePayload }> = [
-      { key: "system.runtime", source: "application", values: { component: "worker", state: "serving", build: this.mode } },
-      { key: "system.dependencies", source: "database", values: { component: "postgresql", state: "available", version: state.version } },
-      { key: "system.requests", source: "application", values: { component: "failed-responses-only", count: Number(state.failures), state: "limited-coverage" } },
-    ];
+    const snapshot=await readSystemSnapshot(this.pool,this.mode),values=snapshot.monitors;
     const repository = new PostgresOwnerSystemHistory(this.pool);
     let recording: "available" | "unavailable" = "available";
     const monitors: SystemMonitorState[] = [];
@@ -153,7 +142,7 @@ export class PostgresOwnerSystemMonitoring implements OwnerSystemMonitoring {
         coverageFrom, lastObservedAt,
       });
     }
-    return { monitors, observedAt: state.observed_at.toISOString(), recording };
+    return { monitors, observedAt: snapshot.observedAt.toISOString(), recording };
   }
 
   async readTimeline(options: { monitorKey?: SystemMonitorKey; before?: string; limit?: number } = {}):
@@ -184,4 +173,20 @@ export class PostgresOwnerSystemMonitoring implements OwnerSystemMonitoring {
       },
     });
   }
+}
+
+export async function readSystemSnapshot(c:Pick<Pool,"query">,mode:string,now?:Date){
+    // All measurements come from this actual request and current PostgreSQL state.
+    const result = await c.query<{
+      version: string; observed_at: Date; failures: string;
+    }>(`select current_setting('server_version') as version, coalesce($1::timestamptz,clock_timestamp()) as observed_at,
+        (select count(*)::text from owner_events where kind='system.requestFailed') as failures`,[now??null]);
+    const state = result.rows[0];
+    if (!state) throw new Error("System state query returned no result");
+    const values: Array<{ key: SystemMonitorKey; source: "application" | "database"; values: SafePayload }> = [
+      { key: "system.runtime", source: "application", values: { component: "worker", state: "serving", build: mode } },
+      { key: "system.dependencies", source: "database", values: { component: "postgresql", state: "available", version: state.version } },
+      { key: "system.requests", source: "application", values: { component: "failed-responses-only", count: Number(state.failures), state: "limited-coverage" } },
+    ];
+  return {observedAt:state.observed_at,monitors:values};
 }

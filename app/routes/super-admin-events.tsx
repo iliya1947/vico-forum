@@ -1,3 +1,5 @@
+import {HistoryFilters} from "../super-admin/history-filters";
+import {historyFilterCatalog} from "../super-admin/history-filters.server";
 import { useAdministrativeRouting } from "../administrative-routing/provider";
 import { data, useLoaderData, type RouterContextProvider } from "react-router";
 import { requireSuperAdmin, superAdminPrivateHeaders } from "../super-admin/access.server";
@@ -16,16 +18,17 @@ export async function loader({request,params,context}:{request:Request;params:{l
   catch {throw new Response("Invalid history filter",{status:400,headers:superAdminPrivateHeaders});}
   try {
     const page=await ownerSa02MonitoringForRequest(context).readSa02History(filters);
-    return data({locale:params.locale??"en",page,viewerId,filters},{headers:superAdminPrivateHeaders});
+    return data({locale:params.locale??"en",page,viewerId,filters,filterCatalog:historyFilterCatalog()},{headers:superAdminPrivateHeaders});
   } catch(error) {
     if(error instanceof OwnerSystemUnavailableError) throw new Response("Unavailable",{status:503,headers:superAdminPrivateHeaders});
     throw error;
   }
 }
 export default function SuperAdminEventsRoute() {
-  const {locale,page,viewerId,filters}=useLoaderData<typeof loader>();
+  const {locale,page,viewerId,filters,filterCatalog}=useLoaderData<typeof loader>();
   const routing = useAdministrativeRouting();
   return <SuperAdminShell locale={locale} current="events">
+    <HistoryFilters key={JSON.stringify(filters)} path={routing.superAdmin.events(locale)} filters={filters} catalog={filterCatalog}/>
     <Timeline page={page} locale={locale} viewerId={viewerId} path={before=>withOwnerHistoryFilters(superAdminEventLogPath(locale,before,routing),filters)}/>
   </SuperAdminShell>;
 }

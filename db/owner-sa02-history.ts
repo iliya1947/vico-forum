@@ -424,3 +424,12 @@ export class PostgresOwnerSa02History {
         (filters.kind===null||filters.kind==="measure.appealMoot"))};
   }
 }
+
+/** UI choices use the exact same compatibility predicate as validation and SQL. */
+export function ownerHistoryFilterOptions(options:OwnerHistoryOptions={}){
+  const scope=checkedScope(options);
+  return ORIGINS.filter(origin=>compatibleOrigin(origin as OwnerHistoryOrigin,scope)).map(origin=>({
+    origin:origin as OwnerHistoryOrigin,
+    kinds:KINDS_BY_ORIGIN[origin as OwnerHistoryOrigin].filter(kind=>compatibleKind(origin as OwnerHistoryOrigin,kind,scope)),
+  })).filter(choice=>choice.kinds.length>0);
+}

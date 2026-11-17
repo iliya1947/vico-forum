@@ -199,19 +199,7 @@ export async function readLocalizationWeb(c:Reader,active:readonly string[],unti
   }
   if(taskRows.some(r=>!["ui","content-topic-title","content-post-body"].includes(r.kind)))throw new Error("Invalid generation kind");
   deadlineCheck(until);
-  const budget=(await c.query<Record<string,string>>(`select count(*)::text as "budgetCounters",coalesce(sum(used_units),0)::text as "usedUnits",
-    coalesce(sum(used_units) filter(where expires_at>transaction_timestamp()),0)::text as "activeUsedUnits",
-    coalesce(sum(used_units) filter(where expires_at<=transaction_timestamp()),0)::text as "expiredUsedUnits",
-    count(*) filter(where subject_key='_global')::text as "globalCounters",count(*) filter(where subject_key<>'_global')::text as "requesterCounters",
-    count(distinct scope)::text as "scopeGroups",count(distinct(scope,window_start,expires_at,subject_key='_global'))::text as "windowGroups"
-    from content_translation_request_budget_counters`)).rows[0];
-  if(!budget||Object.values(budget).some(v=>!/^\d+$/.test(v)))throw new Error("Invalid budget aggregate");
-  deadlineCheck(until);
-  const windows=(await c.query<OwnerLocalizationCurrent["budgetWindows"][number]>(`select scope,case when subject_key='_global' then 'global' else 'requester' end pool,
-    to_char(window_start at time zone 'UTC','YYYY-MM-DD"T"HH24:MI:SS.US"Z"') as "windowStart",
-    to_char(expires_at at time zone 'UTC','YYYY-MM-DD"T"HH24:MI:SS.US"Z"') as "expiresAt",sum(used_units)::text as "usedUnits",count(*)::text as "counterCount"
-    from content_translation_request_budget_counters group by scope,subject_key='_global',window_start,expires_at order by window_start desc,scope,pool,expires_at limit 20`)).rows;
-  for(const w of windows)if(!/^[A-Za-z0-9][A-Za-z0-9._:-]{0,63}@[A-Za-z0-9][A-Za-z0-9._-]{0,63}$/.test(w.scope)||!["global","requester"].includes(w.pool)||!/^\d+$/.test(w.usedUnits)||!/^\d+$/.test(w.counterCount)||!Number.isFinite(Date.parse(w.windowStart))||!Number.isFinite(Date.parse(w.expiresAt)))throw new Error("Invalid budget window");
+  const {budget,windows}=await readLocalizationBudget(c,until);
   return {observedAt,contentValues:{...strings(v),...taskValues,runtimeEnabled:false,runtimeWired:false,providerCapabilityMeasured:false} satisfies Values,
     budgetValues:{...budget,windowsShown:String(windows.length),windowsTruncated:BigInt(budget.windowGroups)>BigInt(windows.length),limitsConfigured:false} satisfies Values,windows};
 }
@@ -257,4 +245,21 @@ export class PostgresOwnerLocalizationMonitoring {
     }
     return {monitors,locales:local.active,bundles:local.bundles,budgetWindows:native.windows};
   }
+}
+
+export async function readLocalizationBudget(c:Reader,until:number){
+  const budget=(await c.query<Record<string,string>>(`select count(*)::text as "budgetCounters",coalesce(sum(used_units),0)::text as "usedUnits",
+    coalesce(sum(used_units) filter(where expires_at>transaction_timestamp()),0)::text as "activeUsedUnits",
+    coalesce(sum(used_units) filter(where expires_at<=transaction_timestamp()),0)::text as "expiredUsedUnits",
+    count(*) filter(where subject_key='_global')::text as "globalCounters",count(*) filter(where subject_key<>'_global')::text as "requesterCounters",
+    count(distinct scope)::text as "scopeGroups",count(distinct(scope,window_start,expires_at,subject_key='_global'))::text as "windowGroups"
+    from content_translation_request_budget_counters`)).rows[0];
+  if(!budget||Object.values(budget).some(v=>!/^\d+$/.test(v)))throw new Error("Invalid budget aggregate");
+  deadlineCheck(until);
+  const windows=(await c.query<OwnerLocalizationCurrent["budgetWindows"][number]>(`select scope,case when subject_key='_global' then 'global' else 'requester' end pool,
+    to_char(window_start at time zone 'UTC','YYYY-MM-DD"T"HH24:MI:SS.US"Z"') as "windowStart",
+    to_char(expires_at at time zone 'UTC','YYYY-MM-DD"T"HH24:MI:SS.US"Z"') as "expiresAt",sum(used_units)::text as "usedUnits",count(*)::text as "counterCount"
+    from content_translation_request_budget_counters group by scope,subject_key='_global',window_start,expires_at order by window_start desc,scope,pool,expires_at limit 20`)).rows;
+  for(const w of windows)if(!/^[A-Za-z0-9][A-Za-z0-9._:-]{0,63}@[A-Za-z0-9][A-Za-z0-9._-]{0,63}$/.test(w.scope)||!["global","requester"].includes(w.pool)||!/^\d+$/.test(w.usedUnits)||!/^\d+$/.test(w.counterCount)||!Number.isFinite(Date.parse(w.windowStart))||!Number.isFinite(Date.parse(w.expiresAt)))throw new Error("Invalid budget window");
+  return {budget,windows};
 }

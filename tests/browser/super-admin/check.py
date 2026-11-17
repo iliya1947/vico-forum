@@ -368,12 +368,12 @@ try:
         record("both-owner-entry-links-same-canonical-route")
 
         get(owner, "/en/super-admin")
-        expect(owner.locator(".super-admin-monitor")).to_have_count(3)
-        assert owner.locator(".super-admin-monitors").get_attribute("data-monitor-count") == "3"
+        expect(owner.locator("[data-overview-area]")).to_have_count(13)
+        expect(owner.locator('[data-overview-area="infrastructure"]')).to_have_attribute("data-status","placeholder")
         assert "PostgreSQL" in owner.content() or "postgresql" in owner.content()
-        expect(owner.locator(".super-admin-summary")).to_have_count(2)
-        expect(owner.locator('[data-sa02-summary="accounts"] a[href="/en/super-admin/monitoring/accounts"]')).to_have_count(1)
-        expect(owner.locator('[data-sa02-summary="security"] a[href="/en/super-admin/monitoring/security"]')).to_have_count(1)
+        expect(owner.locator("[data-overview-area]")).to_have_count(13)
+        expect(owner.locator('[data-overview-area="accounts"] h3 a[href="/en/super-admin/monitoring/accounts"]')).to_have_count(1)
+        expect(owner.locator('[data-overview-area="security"] h3 a[href="/en/super-admin/monitoring/security"]')).to_have_count(1)
         expected_version = sql("select current_setting('server_version') as version")[0]["version"]
         assert expected_version in owner.content(), "System monitor must display real PG17 version"
         observed = sql("select id,monitor_key,source,quality from owner_monitor_observations "
@@ -458,7 +458,7 @@ try:
                 assert owner.locator("html").get_attribute("lang") == locale
                 current, total = owner.evaluate("[innerWidth, document.documentElement.scrollWidth]")
                 assert total <= current + 1, (locale, width, total)
-                expect(owner.locator(".super-admin-summary")).to_have_count(2)
+                expect(owner.locator("[data-overview-area]")).to_have_count(13)
                 if width in (320, 1280):
                     owner.screenshot(path=str(args.output / (locale + "-" + str(width) + ".png")),
                                      full_page=True)
@@ -472,7 +472,7 @@ try:
             record("localized-responsive-overview-and-sa02-current", locale=locale, direction=direction)
         owner.set_viewport_size({"width": 1280, "height": 900})
         get(owner, "/en/super-admin")
-        account_summary = owner.locator('[data-sa02-summary="accounts"] a')
+        account_summary = owner.locator('[data-overview-area="accounts"] h3 a')
         account_summary.focus()
         owner.keyboard.press("Enter")
         expect(owner).to_have_url(base + "/en/super-admin/monitoring/accounts")

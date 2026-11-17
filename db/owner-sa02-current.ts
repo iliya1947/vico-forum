@@ -4,7 +4,7 @@ import { ATTEMPT_GROUPS_PER_HOUR_PER_POOL } from "./owner-attempt-telemetry";
 
 type SafeValue = string | number | boolean | null;
 type Values = Record<string, SafeValue>;
-type Measured = { key: Sa02MonitorKey; values: Values; first: Date | null };
+export type Sa02Measured = { key: Sa02MonitorKey; values: Values; first: Date | null };
 export interface Sa02CurrentMonitor {
   key: Sa02MonitorKey; values: Values;
   source: "database"; quality: "measured";
@@ -32,7 +32,7 @@ const iso = (value: Date | null | undefined): string | null => value?.toISOStrin
 const earlier = (a: Date | null, b: Date | null): Date | null =>
   a === null ? b : b === null ? a : a < b ? a : b;
 
-function safeSample(item: Measured): string {
+function safeSample(item: Sa02Measured): string {
   if (!IDS.includes(item.key)) throw new Error("Unknown SA02 monitor");
   const names=Object.keys(item.values);
   if (names.length!==FIELD_NAMES[item.key].length ||
@@ -50,7 +50,7 @@ function safeSample(item: Measured): string {
 }
 
 /** One 15-minute sample per monitor even if a counter changes sooner. */
-async function recordSample(pool: Pool, item: Measured): Promise<void> {
+async function recordSample(pool: Pool, item: Sa02Measured): Promise<void> {
   const json=safeSample(item);
   const schemaVersion=item.key==="accounts.users" ? 2 : 1;
   const bytes=await crypto.subtle.digest("SHA-256",
@@ -89,7 +89,9 @@ type AttemptRow={attributed:string;rate_limited:string;patterns:string;unknown:s
   overflow:string;gaps:string;first:Date|null;last:Date|null;
   authenticated_used:string;anonymous_used:string};
 
-async function readSnapshot(client:PoolClient,now:Date):Promise<Measured[]> {
+export async function readSa02Snapshot(client:Pick<PoolClient,"query">,now:Date,area?:"accounts"|"security"):Promise<Sa02Measured[]> {
+  const items:Sa02Measured[]=[];
+  if(area!=="security"){
   const u=(await client.query<UserRow>(
     // Count complete tuples, never infer activity from a retained session or
     // classify a partial lifecycle tuple as an active/deactivated account.
@@ -137,12 +139,7 @@ async function readSnapshot(client:PoolClient,now:Date):Promise<Measured[]> {
      !(regs[0].updated_at instanceof Date))
     throw new Error("SA02 registration settings invariant failed");
   const r=regs[0];
-  const e=(await client.query<EvidenceRow>(
-    "select count(*)::text total, count(*) filter(where created_at between "+
-    "$1::timestamptz-interval '24 hours' and $1::timestamptz)::text recent,"+
-    "min(created_at) first,max(created_at) last "+
-    "from forum_attachment_security_events",[now])).rows[0];
-  const items:Measured[]=[
+  items.push(
     {key:"accounts.users",values:{total:u.total,created24h:u.recent,activeUsers:u.active,
       deactivatedUsers:u.deactivated,retentionPendingUsers:u.pending},first:u.first},
     {key:"accounts.methods",values:{passwordUsers:m.password_users,googleUsers:m.google_users,
@@ -151,7 +148,14 @@ async function readSnapshot(client:PoolClient,now:Date):Promise<Measured[]> {
     {key:"accounts.registration",values:{googleEnabled:r.google_registration_enabled,
       emailEnabled:r.email_registration_enabled,version:r.version,
       updatedAt:r.updated_at.toISOString()},first:r.updated_at},
-  ];
+  );
+  }
+  if(area!=="accounts"){
+  const e=(await client.query<EvidenceRow>(
+    "select count(*)::text total, count(*) filter(where created_at between "+
+    "$1::timestamptz-interval '24 hours' and $1::timestamptz)::text recent,"+
+    "min(created_at) first,max(created_at) last "+
+    "from forum_attachment_security_events",[now])).rows[0];
   for(const surface of ["auth","access"] as const){
     const a=(await client.query<AttemptRow>(
       "with patterns as (select count(*)::text patterns, "+
@@ -189,6 +193,7 @@ async function readSnapshot(client:PoolClient,now:Date):Promise<Measured[]> {
   }
   items.push({key:"security.attachments",values:{
     total:e.total,evidence24h:e.recent,lastEventAt:iso(e.last)},first:e.first});
+  }
   return items;
 }
 
@@ -199,13 +204,13 @@ export class PostgresOwnerSa02Current {
     const client=await this.pool.connect();
     let started=false;
     let now:Date;
-    let measured:Measured[];
+    let measured:Sa02Measured[];
     try {
       await client.query("begin transaction isolation level repeatable read read only");started=true;
       now=(await client.query<{time:Date}>("select transaction_timestamp() time")).rows[0]?.time;
       if(!(now instanceof Date) || !Number.isFinite(now.getTime()))
         throw new Error("SA02 PostgreSQL read clock unavailable");
-      measured=await readSnapshot(client,now);
+      measured=await readSa02Snapshot(client,now);
       await client.query("commit");started=false;
     }catch(error){
       if(started) try{await client.query("rollback");}catch{/* preserve original */}

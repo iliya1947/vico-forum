@@ -1,3 +1,6 @@
+import {ownerAreaLabels,ownerAreaPath} from "../super-admin/area-navigation";
+import {HistoryFilters} from "../super-admin/history-filters";
+import {historyFilterCatalog} from "../super-admin/history-filters.server";
 import { useAdministrativeRouting } from "../administrative-routing/provider";
 import { data, Link, useLoaderData, type RouterContextProvider } from "react-router";
 import { requireSuperAdmin, superAdminPrivateHeaders } from "../super-admin/access.server";
@@ -30,7 +33,7 @@ export async function loader({request,params,context}:{
   catch {throw new Response("Invalid history filter",{status:400,headers:superAdminPrivateHeaders});}
   try {
     const page=await ownerSa02MonitoringForRequest(context).readSa02History(filters);
-    return data({locale:params.locale??"en",area:options.area!,monitorKey:options.monitorKey!,page,viewerId,filters},
+    return data({locale:params.locale??"en",area:options.area!,monitorKey:options.monitorKey!,page,viewerId,filters,filterCatalog:historyFilterCatalog(options)},
       {headers:superAdminPrivateHeaders});
   }catch(error){
     if(error instanceof OwnerSystemUnavailableError)
@@ -39,25 +42,13 @@ export async function loader({request,params,context}:{
   }
 }
 export default function SuperAdminMonitorHistoryRoute(){
-  const {locale,area,monitorKey,page,viewerId,filters}=useLoaderData<typeof loader>();
+  const {locale,area,monitorKey,page,viewerId,filters,filterCatalog}=useLoaderData<typeof loader>();
   const routing=useAdministrativeRouting();
   const {t}=useTranslation("common");
-  const currentArea=area==="system" ? routing.superAdmin.system(locale)
-    : area==="accounts" ? routing.superAdmin.accounts(locale) : area==="security" ? routing.superAdmin.security(locale)
-    : area==="data"?routing.superAdmin.data(locale)
-    : area==="files"?routing.superAdmin.files(locale)
-    : area==="localization"?routing.superAdmin.localization(locale)
-    : area==="background"?routing.superAdmin.background(locale)
-    : area==="integrations"?routing.superAdmin.integrations(locale):routing.superAdmin.nativeArea(locale,area);
-  const currentAreaLabel=area==="system" ? t("superAdminSystem")
-    : area==="accounts" ? t("superAdminAreaAccounts") : area==="security" ? t("superAdminAreaSecurity")
-    : area==="data"?t("superAdminAreaData")
-    : area==="files"?t("superAdminAreaFiles")
-    : area==="localization"?t("superAdminAreaLocalization")
-    : area==="background"?t("superAdminAreaBackground"):area==="integrations"?t("superAdminAreaIntegrations")
-    : t(({forum:"superAdminAreaForum",administration:"superAdminAreaAdministration",moderation:"superAdminAreaModeration",notifications:"superAdminAreaNotifications"} as const)[area]);
+  const currentArea=ownerAreaPath(routing,locale,area),currentAreaLabel=t(ownerAreaLabels[area]);
   return <SuperAdminShell locale={locale} current="monitoring">
     <p><Link to={currentArea}>{currentAreaLabel}</Link></p>
+    <HistoryFilters key={JSON.stringify(filters)} path={superAdminAreaMonitorHistoryPath(locale,{area,monitorKey} as SuperAdminMonitorScope,undefined,routing)} filters={filters} catalog={filterCatalog} scoped/>
     <Timeline page={page} locale={locale} viewerId={viewerId}
       path={before=>withOwnerHistoryFilters(superAdminAreaMonitorHistoryPath(locale,
         {area,monitorKey} as SuperAdminMonitorScope,before,routing),

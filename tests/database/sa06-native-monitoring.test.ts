@@ -288,11 +288,20 @@ it("SA06 History origin/kind/time filters paginate across more than one page wit
   const first=await history.readTimeline(filter);
   expect(first.entries).toHaveLength(25);
   expect(first.next?.startsWith("v2.")).toBe(true);
+  const originalIds=(await c.query<{id:string}>("select id from forum_topic_title_revisions order by id")).rows.map(r=>r.id);
+  // SA08-B: an actual independent producer commits while this filtered
+  // multi-page traversal is in progress. Newer rows belong to a fresh read,
+  // never shift/repeat/skip the older rows behind the already issued cursor.
+  const inserted=await topic(author);
   const second=await history.readTimeline({...filter,before:first.next!});
   expect(second.entries).toHaveLength(6);
   expect(second.next).toBeNull();
   const rows=[...first.entries,...second.entries];
   expect(new Set(rows.map(e=>e.origin+":"+e.id)).size).toBe(31);
+  expect(rows.map(e=>e.id).sort()).toEqual(originalIds);
+  expect(rows.some(e=>e.id===inserted.title)).toBe(false);
+  expect((await history.readTimeline(filter)).entries[0].id).toBe(inserted.title);
+  expect((await c.query("select count(*)::int n from forum_topic_title_revisions")).rows[0].n).toBe(32);
   expect(rows.every(e=>e.origin==="forum-title-revision"&&e.kind==="forum.titleRevisionCreated")).toBe(true);
   const byKind=await history.readTimeline({area:"forum",monitorKey:"forum.content",kind:"forum.postRevisionCreated"});
   expect(byKind.entries).toHaveLength(25);

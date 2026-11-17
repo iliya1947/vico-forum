@@ -247,6 +247,9 @@ describe("SA04-N2 native Complaint manager actor admission", () => {
         + "retain_at_least_until=now()+interval '2 years' where id=$1", [actor]);
       const pending = repo(writer).savePrioritySettings(actor, { expectedVersion: settings.version,
         weights: { ...DEFAULT_COMPLAINT_REASON_PRIORITY } });
+      // The writer may reject before the COMMIT client's acknowledgement arrives.
+      // Attach a handler now; the exact rejection assertion below remains required.
+      void pending.catch(() => undefined);
       try {
         let blocked = false;
         for (let i = 0; i < 200; i++) {
@@ -280,6 +283,9 @@ describe("SA04-N2 native Complaint manager actor admission", () => {
         await state.query('update "user" set deactivated_at=now(),deactivated_by_user_id=$1,'
           + "retain_at_least_until=now()+interval '2 years' where id=$1", [actor]);
         pending = executeN2(kind, actor, caseId, expected, operationId, writer);
+        // Match the other state-first tests: expected denial may precede COMMIT ACK.
+        // Keep the original exact rejection and physical-state checks below.
+        void pending.catch(() => undefined);
         try { await observeBlock(writerPid, statePid); }
         finally { await state.query("commit"); }
         await expect(pending).rejects.toBeInstanceOf(AccountInactiveError);

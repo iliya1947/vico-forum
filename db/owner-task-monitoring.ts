@@ -49,6 +49,24 @@ export class PostgresOwnerTaskMonitoring {
       await c.query("begin isolation level repeatable read read only");begun=true;
       await c.query("set local statement_timeout='1500ms';set local lock_timeout='500ms'");
       observedAt=(await c.query<{at:string}>(`select to_char(transaction_timestamp() at time zone 'UTC','YYYY-MM-DD"T"HH24:MI:SS.US"Z"') at`)).rows[0].at;
+      values=await readTaskSource(c,observedAt);
+      await c.query("commit");begun=false;
+    }catch(error){if(begun)try{await c.query("rollback");}catch{/* Preserve source failure. */}throw error;}
+    finally{c.release();}
+    let recording:OwnerTaskCurrent["recording"]="available",coverageFrom:string|null=null,lastObservedAt:string|null=null;
+    try{await recordOwnerMonitorSnapshot(this.pool,"background.translation",values!);}catch{recording="unavailable";}
+    try{
+      const row=(await this.pool.query<{first:Date|null;last:Date|null}>(`select min(at) first,max(at) filter(where sampled) last from(
+        select min(occurred_at) at,false sampled from owner_events where source='operation' and monitor_key in ('background.translation','integrations.translation')
+        union all select min(observed_at),true from owner_monitor_observations where monitor_key='background.translation' and resource_scope='global'
+        union all select max(observed_at),true from owner_monitor_observations where monitor_key='background.translation' and resource_scope='global') facts`)).rows[0];
+      coverageFrom=row.first?.toISOString()??null;lastObservedAt=row.last?.toISOString()??null;
+    }catch{recording="unavailable";}
+    return {monitorKey:"background.translation",schemaVersion:1,source:"database",quality:"measured",observedAt:observedAt!,values:values!,recording,coverageFrom,lastObservedAt};
+  }
+}
+
+export async function readTaskSource(c:Pick<import("pg").PoolClient,"query">,observedAt:string){
       const row=(await c.query<Record<string,string|null>>(`with clock as(select $1::timestamptz at)
         select ${Object.entries(fields).map(([name,value])=>`${value} as "${name}"`).join(",")}
         from translation_tasks cross join clock`,[observedAt])).rows[0];
@@ -60,7 +78,7 @@ export class PostgresOwnerTaskMonitoring {
       }
       if(row.invalidSourceRows!=="0")throw new Error("Invalid native task state");
       const {invalidSourceRows:verified,...current}=row;void verified;
-      values={...current,hooksImplemented:true,runtimeWired:false,runtimeEnabled:false,bestEffort:true};
+      const values:Record<string,string|boolean|null>={...current,hooksImplemented:true,runtimeWired:false,runtimeEnabled:false,bestEffort:true};
       const failures=(await c.query<{code:string;disposition:string;count:string}>(`select
         case when last_failure_code in (${safeCodes}) then last_failure_code else 'other' end code,
         failure_disposition disposition,count(*)::text count from translation_tasks where status='failed'
@@ -81,18 +99,5 @@ export class PostgresOwnerTaskMonitoring {
       values.reasonGroupsShown=String(reasons.length);values.reasonGroupsTruncated=BigInt(row.allowanceReasonGroupCount!)>BigInt(reasons.length);
       values.unrecognizedCodesGrouped=true;
       if(new TextEncoder().encode(JSON.stringify(values)).length>8192)throw new Error("Oversized task snapshot");
-      await c.query("commit");begun=false;
-    }catch(error){if(begun)try{await c.query("rollback");}catch{/* Preserve source failure. */}throw error;}
-    finally{c.release();}
-    let recording:OwnerTaskCurrent["recording"]="available",coverageFrom:string|null=null,lastObservedAt:string|null=null;
-    try{await recordOwnerMonitorSnapshot(this.pool,"background.translation",values!);}catch{recording="unavailable";}
-    try{
-      const row=(await this.pool.query<{first:Date|null;last:Date|null}>(`select min(at) first,max(at) filter(where sampled) last from(
-        select min(occurred_at) at,false sampled from owner_events where source='operation' and monitor_key in ('background.translation','integrations.translation')
-        union all select min(observed_at),true from owner_monitor_observations where monitor_key='background.translation' and resource_scope='global'
-        union all select max(observed_at),true from owner_monitor_observations where monitor_key='background.translation' and resource_scope='global') facts`)).rows[0];
-      coverageFrom=row.first?.toISOString()??null;lastObservedAt=row.last?.toISOString()??null;
-    }catch{recording="unavailable";}
-    return {monitorKey:"background.translation",schemaVersion:1,source:"database",quality:"measured",observedAt:observedAt!,values:values!,recording,coverageFrom,lastObservedAt};
-  }
+  return values;
 }
