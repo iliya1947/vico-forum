@@ -145,6 +145,28 @@ it("actual reconciler reservation and accepted enqueue yield one run summary and
   expect((await new PostgresOwnerTaskMonitoring(pool).readCurrent()).values).toMatchObject({pending:"2",reconciliationAttempted:"2"});
 });
 
+it("keeps actual reconciliationPass visible and kind-filterable in Integrations scoped History with one source identity",async()=>{
+  await tasks.upsertPending(await job("reconcile-history",false),{freshPlanning:true});
+  const result=await new TranslationTaskReconciler(tasks,{enqueue:async()=>{}},sink).reconcile({limit:1,pendingOlderThanMs:0});
+  expect(result).toMatchObject({selected:1,enqueued:1,enqueueFailures:0,outcome:"complete"});
+  expect((await events()).filter(event=>event.kind==="task.reconciliationPass")).toHaveLength(1);
+
+  const reader=new PostgresOwnerSa02History(pool);
+  const scope={area:"integrations" as const,monitorKey:"integrations.translation" as const,origin:"operational-event" as const};
+  const unfiltered=await reader.readTimeline(scope);
+  const filtered=await reader.readTimeline({...scope,kind:"task.reconciliationPass"});
+  expect(filtered.entries).toHaveLength(1);
+  expect(filtered.entries[0]).toMatchObject({
+    origin:"operational-event",kind:"task.reconciliationPass",
+    monitorKeys:expect.arrayContaining(["background.translation","integrations.translation"]),
+  });
+  const originalId=filtered.entries[0].id;
+  expect(unfiltered.entries.filter(entry=>entry.kind==="task.reconciliationPass").map(entry=>entry.id)).toEqual([originalId]);
+  expect((await reader.readTimeline({area:"integrations",monitorKey:"integrations.translation",kind:"task.reconciliationPass"})).entries.map(entry=>entry.id)).toEqual([originalId]);
+  expect((await reader.readTimeline({area:"background",monitorKey:"background.translation",origin:"operational-event",kind:"task.reconciliationPass"})).entries.map(entry=>entry.id)).toEqual([originalId]);
+  expect((await reader.readTimeline({origin:"operational-event",kind:"task.reconciliationPass"})).entries.map(entry=>entry.id)).toEqual([originalId]);
+});
+
 it.each(["topic-title","post-body"] as const)("real %s planning/allowance/claim/publication continues after actual Owner deactivation without invented person/provider events",async kind=>{
   const actor=crypto.randomUUID(),owner=crypto.randomUUID(),topic=crypto.randomUUID(),post=crypto.randomUUID();
   await c.query('insert into "user"(id,name,email) values($1,$1,$1||\'@test.invalid\'),($2,$2,$2||\'@test.invalid\')',[actor,owner]);
