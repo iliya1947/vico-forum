@@ -4,11 +4,11 @@ Service PR #331 is the active Admin/Super-admin coordination channel. PR #251 is
 
 ## Current boundary
 
-- Main `1e4bcf83ff7bda0ec772a8098671ca9afe63888a` now includes the accepted SA06 #338; its review cycle closed with Mira coordinator PASS and Mark independent PASS before Developer merge.
-- **SA07:** dependent cumulative [Draft #339](https://github.com/iliya1947/vico-forum/pull/339) on branch `chatgpt/sa07-native-operations` now targets main; Lira reconciled the post-merge source conflict without SA07 redesign, exact head `4d29735f915adb69cbe641c95d259c904e7114cd`, GitHub mergeable=true, 102 changed SA07 paths. Previous author evidence at `98f6ce48...`: 13 workflow PASS, application 2568/208, native PG17 1397/103, connected 40; previous-head evidence alone is not the new-head acceptance.
-- **ACTIVE:** per direct Developer override, Lira performs applicable recheck on new exact head, then cumulative whole-SA07 review; since she changed implementation, her review is an author/self review, not independent. Review outcome, findings and intermediate conclusions remain under Developer publication hold.
-- Known Drizzle generator BigInt stderr/exit0 remains outside independent schema-parity proof. No deployed provider/Owner visual acceptance claim.
-- No SA08+, #315, permanent docs, Stage6/production/deploy/external work or implementation merge by agents.
+- Main `45406723c4b53ceba9392d3fb7dc84e8adaa9768` includes SA06 #338 and SA07 #339. Both package review cycles closed before Developer merge; SA07 final reviewed head8cc0ecea had Mira coordinator + Mark independent PASS.
+- **ACTIVE08-A implementer: Lev / Codex-6.1 Sol**, per corrected assignment preserving the established implementation route. Draft #340, branch `chatgpt/sa08-owner-composition`, exact `63e624fb7fed86cd3c10dcd49d1df63f43543273`.
+-08-A source covers13-area Overview through shared native readers/bounded snapshots/partial availability/post-read sampling, and final closed History controls/UTC timestamps/filter-preserving pagination/common typed navigation. No new metrics source or mutation backend.
+- Native source acceptance100 + focused app75/5/type/build/lint PASS; local final actual Worker/BA/PG17 connected15 PASS with no pageErrors/external requests or delayed-route teardown warnings. Final exact CI is active; database job now SUCCESS. Review handoff is prepared for Mira bounded08-A acceptance once the stable-head gates are reconciled.
+- **08-B remains queued until08-A bounded acceptance**, in this same cumulative SA08 delivery. No permanent docs, #315, Stage6/production/deploy/external work or agent merge. Known Drizzle generator BigInt stderr/exit0 is not schema parity evidence.
 
 ## Stable product decisions
 
