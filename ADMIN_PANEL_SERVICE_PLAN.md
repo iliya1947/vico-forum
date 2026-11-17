@@ -1,17 +1,11 @@
-# Admin / Super-admin — active service plan
-
-Service PR #331 is the active Admin/Super-admin coordination channel. PR #251 is archive/history only and retains the accepted SA-04 planning comments referenced below.
-
 ## Current boundary
 
-- Main `45406723c4b53ceba9392d3fb7dc84e8adaa9768` includes SA06 #338 + SA07 #339 after completed reviews.
-- Cumulative Draft #340 stable exact `5eb6656d933eb39a5df45c1ddca85d3679d600c5`, open/Draft/unmerged/mergeable=true,8 commits/41 paths; Lev authored SA08.
-- SA08-A bounded PASS remains valid. Final M1 correction is2 acceptance files only; product source remains unchanged from the accepted product head.
-- **Mira WHOLE SA08 COORDINATOR PASS:** M1 real missing/wrong-binding canonical profile/action acceptance is CLOSED; full cumulative SA08 review found0 confirmed current-SA08 defects. Exact head has all14 workflows SUCCESS, app2569/208, native1410/104,69-table manifest/runtime/split-authority/credential probes PASS, and SA08 main +6 corrected binding-chain records PASS.
-- Full evidence matrix: [SA08_FINAL_EVIDENCE.md](SA08_FINAL_EVIDENCE.md). Coordinator handoff: #331 comment6957009585. Actual Owner visual/live acceptance remains separately attributed.
-- **Independent review gates CLOSED on unchanged exact head:** Mira coordinator PASS /0 current-SA08 defects; Lira NEW independent PASS /0 current-SA08 defects [#6960310054](https://github.com/iliya1947/vico-forum/pull/331#issuecomment-6960310054); Mark independent PASS /0 current-SA08 defects [#6960406898](https://github.com/iliya1947/vico-forum/pull/331#issuecomment-6960406898). Lira's earlier withdrawn PASS remains invalid. CI synthetic merge tree was independently confirmed identical to exact HEAD. Any implementation change resets the review cycle.
-- **Merge readiness:** no further SA08 review gate remains on exact `5eb6656d933eb39a5df45c1ddca85d3679d600c5`. Per Developer correction, visual/UI acceptance belongs to the later separate UI/UX pass and does **not** block #340. Owner alone decides merge.
-- No agents launched, intermediate merge, permanent docs, #315, Stage6/production/deploy/external work; Owner remains merge authority. Known Drizzle generator BigInt false-green excluded from schema parity proof.
+- Current `main`: `2ed977604ae0e6a3c0c2650112f65b42fc7eb77a`; SA08 #340 merged.
+- SA05 #337, SA06 #338, SA07 #339 and SA08 #340 are delivered in repository/local-CI scope.
+- Final SA08 implementation head `5eb6656d933eb39a5df45c1ddca85d3679d600c5` passed Mira coordinator, Lira independent and Mark independent whole-SA08 review with 0 confirmed current-SA08 defects before merge.
+- Visual/UI polish is a later separate UI/UX pass by explicit Developer correction; it is not part of this post-merge closeout.
+- **Active block:** separate documentation-only closeout PR from current main. Reconcile permanent/current-state docs with delivered SA05–SA08 and add a compact project-history snapshot. No implementation/code/schema/dependency change.
+- Stage6/deployed/production acceptance remains outside this task.
 
 ## Stable product decisions
 
