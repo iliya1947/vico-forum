@@ -397,3 +397,45 @@ E2 принят: существующее user-measure restriction `posts.edit` 
 Принятый технический scope не меняется. Лёва реализует утверждённый plan + scope/fit overrides Миры в отдельном implementation PR от актуального `main`.
 
 Поскольку Лёва участвует в реализации, он не выполняет независимый технический review собственной работы. После coordinator PASS Миры независимым Codex-reviewer назначается Марк / Codex-6 Sol на том же stable exact head.
+
+## Реализация Лёвы — 2026-11-18
+
+Implementation PR: [#343](https://github.com/iliya1947/vico-forum/pull/343).
+Stable implementation head: `10321fdae762004ac2d55e9618a89c6c41e0d2ac`.
+Base main: `906d15d896cc3a4f3b7dc9a03f46acd883925d1d`.
+
+Доставлен принятый scope с overrides Миры и E2 владельца:
+
+- `forum.topic.title.editOwn`, catalog CHECK/default grants и forward migration `0067_topic_title_edit_own`;
+- canonical topic action `editTopicTitle`, session/origin/permission/stale-account validation;
+- узкая own-title команда с authoritative ownership, expected revision, active-account и `posts.edit` admission в одной transaction;
+- новая immutable title revision с `und`, pointer CAS, unchanged-title no-op после admission;
+- изолированная локализованная текстовая форма, сохранение ввода при отказе/конфликте и явное принятие нового baseline;
+- revision-bound translations без изменения существующего translation pipeline;
+- route/component/DB проверки и новый connected Chromium/Worker/Better Auth/PostgreSQL workflow.
+
+Отдельного edit cooldown, drafts/receipts/autosave, admin edit-any, нового restriction key,
+source-correction redesign, Stage 6 или внешнего rollout нет.
+
+Подтверждённые проверки на Node 24.21.0 / pnpm 12.3.4:
+
+| Проверка | Результат |
+| --- | --- |
+| Application/unit | 209 файлов, 2594 теста PASS |
+| PostgreSQL 17 full suite, UTC | 105 файлов, 1417 тестов PASS |
+| lint / typecheck | PASS; один существующий eslint warning в `app/forum/ui.test.tsx` |
+| Production Worker / UI-preview build | PASS |
+| Migration history / metadata | 1 forward migration, accepted history неизменна; PASS |
+| Full-schema manifest | PASS, 69 public tables; изменён только catalog CHECK hash/target migration |
+| Runtime privilege / split-authority provisioning probes | PASS |
+| CI script contracts | 156 тестов PASS |
+| Connected local browser | ordinary/Help author save, guest401/non-author403, reload/list/search, two-tab stale409, retained text/explicit rebase, narrow RTL PASS; page errors/external calls отсутствуют |
+| GitHub workflows | 13 из 13 workflows PASS на head `10321fdae762004ac2d55e9618a89c6c41e0d2ac` (общий CI run 44201847789; title browser run 44201847917) |
+
+Отдельный browser workflow: https://github.com/iliya1947/vico-forum/actions/runs/44201847917.
+Общий CI: https://github.com/iliya1947/vico-forum/actions/runs/44201847789.
+Подробные ограничения генератора Drizzle и локальной тестовой среды — в личном файле Лёвы.
+
+Следующий этап: coordinator whole-PR review Миры на указанном head; после PASS — независимый
+review Марка того же head. Permanent authorization/AP-10 documentation и PROJECT_STATE.md
+обновляются отдельным заключительным docs PR после review/merge. Служебный PR #342 не merge.

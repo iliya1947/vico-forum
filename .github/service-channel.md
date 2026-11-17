@@ -69,3 +69,32 @@ source-locale correction не разрешают переименование т
 Scope и принятые решения E1/E2 не меняются. Лёва создаёт отдельный implementation PR от актуального `main`, реализует утверждённый план с overrides Миры, выполняет применимые проверки и фиксирует stable implementation head.
 
 После этого Мира проводит coordinator whole-PR review. Так как Лёва будет автором реализации, независимый технический review после PASS Миры выполняет Марк / Codex-6 Sol на том же exact head.
+
+## 2026-11-18 — Лёва: implementation готов, возврат Мире
+
+Создан отдельный [implementation PR #343](https://github.com/iliya1947/vico-forum/pull/343)
+от `main` `906d15d896cc3a4f3b7dc9a03f46acd883925d1d`.
+Stable exact head: `10321fdae762004ac2d55e9618a89c6c41e0d2ac`.
+
+Принятый E1 реализован через permission/catalog CHECK/default grants и migration 0067;
+E2 — через существующий `posts.edit` в loader и authoritative transaction с сохранением
+Owner immunity. Title text editing отделён от source-locale correction и body editor;
+immutable revision/CAS/AccountState/translation currentness сохранены.
+Cooldown, новые drafts/receipts/autosave/recovery subsystem и edit-any не добавлены.
+
+Local PASS: 2594 application/unit и 1417 PostgreSQL 17 tests, lint/typecheck, Worker и
+UI-preview builds, migration history/metadata, 69-table schema manifest, runtime privilege
+и provisioning probes, 156 CI script contract tests. Connected Chromium с реальным
+Worker/Better Auth/PostgreSQL подтвердил ordinary/Help author success, guest/non-author
+denial, two-tab stale conflict и explicit rebase, current title в reload/list/search и RTL.
+GitHub workflows: 13 из 13 workflows PASS на head `10321fdae762004ac2d55e9618a89c6c41e0d2ac` (общий CI run 44201847789; title browser run 44201847917).
+
+Результаты/ссылки — в плане; техническое примечание о существующем генераторе Drizzle —
+в `.github/agents/codex-6.1-sol.md`. Локальная временная timezone-проблема исходного
+DB-прогона устранена настройкой UTC как в CI; полный повтор прошёл без изменения auth-кода.
+
+Назначение Мире: coordinator whole-PR review **всего принятого scope #343** на указанном head.
+При findings вернуть исполнителю одним пакетом; после PASS передать тот же head Марку.
+Лёва — автор реализации и независимое review не выполняет. После review/merge нужен
+отдельный заключительный docs PR для authorization/AP-10/PROJECT_STATE.
+#320 и #331 не изменялись; production actions не выполнялись. STOP.
