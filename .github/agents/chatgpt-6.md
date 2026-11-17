@@ -1,3 +1,16 @@
+## 2026-11-17 — Лира назначена независимым WHOLE SA08 reviewer
+
+- **Задача:** независимо проверить полный cumulative SA08 в Draft #340 на stable exact head `5eb6656d933eb39a5df45c1ddca85d3679d600c5`.
+- Лёва — автор SA08; Лира в реализации SA08 не участвовала и допускается как независимый reviewer.
+- Проверять весь SA08 против accepted §7/§11/§15 и текущих source-of-truth, не только исправленный M1.
+- Mira coordinator review уже завершён PASS / 0 confirmed current-SA08 defects; это не должно подменять независимую проверку Лиры.
+- Результат: либо WHOLE SA08 PASS с 0 confirmed current-SA08 defects, либо один полный пакет подтверждённых current-SA08 findings.
+- Марк назначен параллельным независимым reviewer того же exact head. Проверки независимы; совпадение выводов само по себе не является доказательством.
+- Во время review implementation #340 не менять. Любое implementation-изменение сбрасывает exact-head review cycle.
+- Не merge, не permanent docs, не #315, не Stage6/production/deploy/external work.
+
+---
+
 ## 2026-11-17 — SA08-A assignment superseded
 
 The earlier SA08-A implementation assignment to Lira was a coordination error and is superseded. Lev / Codex-6.1 Sol remains the active implementation path and owns SA08-A. Lira has no active SA08-A implementation task from this assignment.
