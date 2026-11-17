@@ -5,11 +5,12 @@ Service PR #331 is the active Admin/Super-admin coordination channel. PR #251 is
 ## Current boundary
 
 - Main `45406723c4b53ceba9392d3fb7dc84e8adaa9768` includes SA06 #338 + SA07 #339 after completed review cycles.
-- SA08-A implementer is **Lev / Codex-6.1 Sol**, established explicit assignment. Cumulative Draft #340 stable exact `cb09523ce050d97f1eab59b41b40c471a2cde20f`, branch `chatgpt/sa08-owner-composition`, open/Draft/unmerged/mergeable=true.
-- Prior Mira bounded08-A FAIL M1 on63e624fb: required untimed/attribution coverage omitted. Bounded correction exposes existing Administration count + exact7 Data retained-anomaly checks without new metrics/producers; source clock/budget/partial/sampling boundaries preserved.
-- **AUTHOR READY:** all14 corrected-head workflows/18 latest jobs SUCCESS, app2569/208, native1410/104,69-table manifest/runtime probes, local+CI connected19 PASS. Local native23/2, app/localization444/36, type/lint/build PASS; EN/RU/HE320 coverage-block images inspected. Qualified corrupt/legacy retained attribution fixture and initial SA04-S ECONNRESET/same-head successful rerun are recorded in common/personal/handoff; first reset cause not established.
-- **ACTIVE next: Mira fresh bounded08-A acceptance** of complete08-A scope on this exact head; #331 comment6953336666. Lev implementation edits STOP during acceptance. No independent self-review claimed.
-- **08-B blocked until bounded08-A PASS**, then Lev immediately continues in the same cumulative PR without merge/replan. Whole-SA08 independent review is a later separate gate. No agents launched/merge/permanent docs/#315/Stage6/production/deploy/external work. Known Drizzle generator BigInt stderr/exit0 is not schema parity evidence.
+- Cumulative SA08 Draft #340 stable exact `83f7cb24e812889c1b729857289d35835cdae2e3`, base main, open/Draft/unmerged/mergeable=true,7 commits/41 paths. Lev / Codex-6.1 Sol authored the implementation.
+- Mira bounded08-A PASS oncb09523c;08-B changes only final acceptance/workflow evidence and expected-rejection lifetime in existing tests, no product/domain behavior.
+- **SA08 implementation CLOSED / AUTHOR READY:** complete applicable accepted§15 whole-program matrix executed on final exact head; all14 workflows/18 latest jobs SUCCESS, app2569/208, native1410/104/no unhandled rejection,69-table manifest/runtime/split-authority/credential probes and real Worker/R2 chains PASS. SA08 main20 +2 real binding variants/all51 surfaces/35 Histories PASS.
+- Detailed accepted-row/source/commands/run/job/fixture traceability is in [SA08_FINAL_EVIDENCE.md](SA08_FINAL_EVIDENCE.md); author handoff #331 comment6955292158. No known confirmed current-SA08 defect remains; no independent self-review or actual Owner visual/live acceptance claimed.
+- **ACTIVE next: Mira WHOLE SA08 coordinator review** on this stable exact head; Lev implementation edits STOP during review. **Only after Mira PASS**, Mark / Codex-6 Sol performs independent non-author WHOLE SA08 review on same exact head. Any implementation change resets head/cycle.
+- No agents launched, intermediate merge, permanent docs, #315, Stage6/production/deploy/external work; Owner remains merge authority. Known Drizzle generator BigInt stderr/exit0 is excluded from schema parity evidence.
 
 ## Stable product decisions
 
