@@ -1,3 +1,21 @@
+## 2026-11-17 — Mira fresh WHOLE SA06 coordinator review: FAIL M2
+
+Reviewed cumulative Draft #338 stable exact `ce71892dc30d8e9ef03833031c29e8519ca7627d` (29 commits / 50 paths) against current main, current source-of-truth and accepted SA06 §§6–8,11–14 plus applicable §15. Reverified both previous corrections: History origin/kind/from/until + v2 binding/predicate pushdown are present, and administration.measures effective/admin-per-key counts follow AP-10 raw-authority-floor semantics. Exact-head CI/connected evidence is green. One additional confirmed current-SA06 defect remains.
+
+**M2 — profile History coverage falsely attributes untimed moot-appeal anomalies to the parent lift actor.**
+
+In `db/owner-native-history.ts`, `readNativeHistoryCoverage(database, person)` counts a `moot-terminal-time-unproven` row for a person when either `a.subject_user_id=$1` **or** a retained parent measure has a valid `lifted_at` and `lifted_by_user_id=$1`. That actor branch is not valid for an appeal whose `resolved_at` is NULL/non-finite/earlier-than-created: the accepted SA06 contract explicitly says unknown-time anomalies are person-filtered by **subject**, while parent-lift actor attribution is only proven for a timed moot terminal and requires the full parent/time proof. The timeline branch already uses that stronger proof; coverage does not.
+
+Deterministic counterexample: appeal subject A is `status='moot'` with `resolved_at=NULL`; its parent measure has a valid retained lift by B. Global/scoped coverage should report the anomaly, A's profile coverage should report it, but B's profile must not. Current query reports it for B as well. This is false person attribution in the delivered SA06 profile-History coverage contract, not future SA08 work.
+
+Bounded correction: keep global/scoped anomaly counting unchanged; for person coverage count untimed/invalid moot anomalies only by `subject_user_id`. Do not change the valid timed `measure-appeal-moot` lift-actor timeline path. Add native PG regressions with distinct subject/lift actor for NULL and invalid earlier-than-created time, proving global/scoped count, subject profile count, and zero lift-actor profile count.
+
+No other confirmed current-SA06 defect found in this fresh whole-package review. **Coordinator PASS withheld. Mark independent review must not start yet.** Lira is the corrective implementer for this bounded #338 fix under the standard cycle. After a new stable exact #338 head + applicable acceptance, Mira repeats fresh WHOLE SA06 coordinator review; only after PASS does Mark perform independent non-author review.
+
+Dependent SA07 #339 may continue under the existing developer override, but if #338 changes it must update/recheck its prerequisite before SA07 acceptance. No #338 merge, SA08+, permanent docs, #315, Stage6/production/deploy/external work.
+
+---
+
 # ChatGPT-5.6 Sol — personal log
 
 ## 2026-11-17 — Mira WHOLE SA06 coordinator review: FAIL M1 / published by developer command
