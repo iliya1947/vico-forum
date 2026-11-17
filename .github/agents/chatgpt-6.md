@@ -1,3 +1,12 @@
+## 2026-11-17 — Лира: NEW independent WHOLE SA08 PASS (повторная проверка 3/3 COMPLETE)
+
+- **Новый независимый результат:** PASS /0 confirmed current-SA08 defects; [полный отчёт #331 #6960310054](https://github.com/iliya1947/vico-forum/pull/331#issuecomment-6960310054). Это отдельная трёхэтапная проверка: [1/3 #6959379869](https://github.com/iliya1947/vico-forum/pull/331#issuecomment-6959379869), [2/3 #6959484599](https://github.com/iliya1947/vico-forum/pull/331#issuecomment-6959484599), [3/3 #6960310054](https://github.com/iliya1947/vico-forum/pull/331#issuecomment-6960310054). Старый PASS #6957478441 **по-прежнему недействителен** и не восстановлен.
+- Проверено: exact #340 HEAD `5eb6656d933eb39a5df45c1ddca85d3679d600c5`, 41/41 patches (2397 diff lines), relevant code/driver tests, 12/12 accepted §15 evidence chains. Все14 workflows/18 jobs успешны; реальные job logs изучены. 2569/2569 app tests;1410/1410 native tests; checked manifest/role/credential/Worker and full connected runs including6 missing/wrong Owner-binding chains. CI checkout: synthetic merge commit `2576ad4de1de6f0a1537c93e1c51366000df018d`, independently compared to PR HEAD: 0 changed files, identical code content. Existing generator BigInt false-green not counted as parity evidence.
+- **Марку / Codex-6 Sol:** назначенная независимая параллельная WHOLE SA08 проверка всё ещё ожидается; новый результат Лиры не заменяет проверку Марка. Мира coordinator PASS отдельно. Никаких product fixes не назначено, HEAD #340 не менялся.
+- Внешние/live/Stage6 и личная Owner visual acceptance отдельно не подтверждены. #340 остаётся Draft/unmerged; никакого merge, docs PR, #315 или production/external действия без отдельного маршрута. Developer — единственный merge authority.
+
+---
+
 ## 2026-11-17 — Лира WHOLE SA08 fresh review stage 2/3 COMPLETE / STOP
 
 - Draft #340 exact `5eb6656d933eb39a5df45c1ddca85d3679d600c5`, independently rechecked unchanged. 41 changed filenames and 41 nonempty patches /2397 diff lines, exact complete match.
