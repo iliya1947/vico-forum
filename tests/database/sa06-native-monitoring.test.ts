@@ -11,6 +11,7 @@ import { HELP_SOLUTIONS_SERVICE_SECTION_ID } from "../../db/forum-identifiers";
 import { NATIVE_AREAS } from "../../db/owner-monitor-catalog";
 import { DrizzleComplaintsRepository } from "../../db/complaints-repository";
 import { parseOwnerHistoryCursor } from "../../db/owner-sa02-history";
+import { assertNoActiveUserMeasureRestrictionPg, UserMeasureRestrictedError } from "../../db/user-measure-policy";
 
 const url=process.env.DATABASE_URL;
 if(!url||!["localhost","127.0.0.1"].includes(new URL(url).hostname)||!new URL(url).pathname.endsWith("_test"))throw new Error("Disposable loopback *_test required");
@@ -50,6 +51,63 @@ it("reads full counts over page bounds without multiplying joins; refresh observ
   expect(fresh.filter(x=>x.origin==="forum-post-revision")).toHaveLength(32);
   expect(JSON.stringify(fresh)).not.toContain("SA06_PRIVATE");
 });
+
+it("AP-10 floor applicability tracks raw role grants and allow/deny overrides for mixed measures",async()=>{
+  const actor=await person(true),target=await person();
+  await c.query("insert into authz_user_permission_overrides(user_id,permission_key,effect) values($1,'admin.users.blocks.managePrivileged','allow')",[actor]);
+  const onlyAdmin=uuid(),mixed=uuid();
+  await measures().create({id:onlyAdmin,actorId:actor,targetUserId:target,
+    reason:"SA06 private admin-only measure",restrictions:["admin.forum"],expiresAt:null});
+  await measures().create({id:mixed,actorId:actor,targetUserId:target,
+    reason:"SA06 private mixed measure",restrictions:["admin.complaints","replies.create"],expiresAt:null});
+  expect((await c.query("select issuer_authority_floor from user_measures where id=any($1::uuid[])",[[onlyAdmin,mixed]])).rows)
+    .toEqual([{issuer_authority_floor:2},{issuer_authority_floor:2}]);
+  const snapshot=async()=> (await current.readCurrent("administration")).monitors
+    .find(m=>m.key==="administration.measures")!.values;
+  const counts=async()=> {
+    const state=await snapshot();
+    return [state.total,state.active,state.effective,state.restriction1,state.restriction8,state.restriction9];
+  };
+  const denied=async(restriction:"admin.forum"|"admin.complaints"|"replies.create")=>
+    expect(assertNoActiveUserMeasureRestrictionPg(c,target,restriction,owner))
+      .rejects.toBeInstanceOf(UserMeasureRestrictedError);
+  const permitted=async(restriction:"admin.forum"|"admin.complaints")=>
+    expect(assertNoActiveUserMeasureRestrictionPg(c,target,restriction,owner)).resolves.toBeUndefined();
+
+  expect(await counts()).toEqual(["2","2","2","1","1","1"]);
+  await denied("admin.forum");await denied("admin.complaints");await denied("replies.create");
+  // A family grant raises raw target rank from 0 to 1, still below stored floor 2.
+  await c.query("insert into authz_user_permission_overrides(user_id,permission_key,effect) values($1,'forum.topic.pin','allow')",[target]);
+  expect(await counts()).toEqual(["2","2","2","1","1","1"]);
+  // A later Owner-granted privileged override makes admin-only measure ineffective.
+  await c.query("insert into authz_user_permission_overrides(user_id,permission_key,effect) values($1,'admin.users.blocks.managePrivileged','allow')",[target]);
+  expect(await counts()).toEqual(["2","2","1","1","0","0"]);
+  await permitted("admin.forum");await permitted("admin.complaints");await denied("replies.create");
+
+  // A deny override beats a role grant; removing it exposes the same role grant.
+  const roleId="sa06-role-"+uuid(),slug="sa06-"+uuid().replaceAll("-","");
+  await c.query("insert into authz_roles(id,slug,display_name) values($1,$2,'SA06 raw role fixture')",[roleId,slug]);
+  await c.query("insert into authz_role_permissions(role_id,permission_key) values($1,'admin.users.blocks.managePrivileged')",[roleId]);
+  await c.query("insert into authz_user_roles(user_id,role_id) values($1,$2)",[target,roleId]);
+  await c.query("update authz_user_permission_overrides set effect='deny' where user_id=$1 and permission_key='admin.users.blocks.managePrivileged'",[target]);
+  expect(await counts()).toEqual(["2","2","2","1","1","1"]);
+  await denied("admin.forum");
+  await c.query("delete from authz_user_permission_overrides where user_id=$1 and permission_key='admin.users.blocks.managePrivileged'",[target]);
+  expect(await counts()).toEqual(["2","2","1","1","0","0"]);
+  await permitted("admin.forum");
+  // Role grant withdrawal restores floor applicability, without changing stored measures.
+  await c.query("delete from authz_role_permissions where role_id=$1",[roleId]);
+  expect(await counts()).toEqual(["2","2","2","1","1","1"]);
+  await denied("admin.forum");
+
+  // Lift terminates only one measure; the other effective participation/admin children persist.
+  await measures().lift({measureId:onlyAdmin,actorId:actor,operationId:uuid(),expectedVersion:1,reason:"SA06 private lift"});
+  expect(await counts()).toEqual(["2","1","1","1","0","1"]);
+  await permitted("admin.forum");await denied("admin.complaints");await denied("replies.create");
+  await c.query("delete from authz_user_roles where user_id=$1",[target]);
+  await c.query("delete from authz_roles where id=$1",[roleId]);
+});
+
 it("concurrent current readers/prefetch cannot bypass one sample per key/15-minute gate",async()=>{
   await Promise.all(Array.from({length:5},()=>current.readCurrent("forum")));
   expect((await c.query("select monitor_key,count(*)::int n from owner_monitor_observations group by monitor_key order by monitor_key")).rows).toEqual(["forum.content","forum.presence","forum.state","forum.structure"].map(monitor_key=>({monitor_key,n:1})));
