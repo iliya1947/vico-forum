@@ -13,12 +13,27 @@ def record(case,**fields):records.append({'case':case,**fields});print('SA07_CON
 def rpc(value):
  pg.stdin.write(json.dumps(value)+'\n');pg.stdin.flush();assert select.select([pg.stdout],[],[],60)[0],'fixture timeout';reply=json.loads(pg.stdout.readline());assert 'error' not in reply,reply;return reply['result']
 def sql(statement,params=None):return rpc({'operation':'sql','sql':statement,'params':params or []})
-def private(response,status):
+def private_headers(response,status):
  assert response.status==status,(response.status,status)
  assert {'private','no-store'}<={x.strip() for x in response.headers.get('cache-control','').split(',')}
+def private(response,status):
+ private_headers(response,status)
  body=response.text();assert 'SA07_PRIVATE' not in body;assert 'SA07_L_PRIVATE' not in body;assert 'SA07_F_PRIVATE' not in body;assert 'private/fenced-v1/' not in body;return response
 
 def visit(page,path):private(page.goto(base+path,wait_until='networkidle'),200)
+def refresh(page,path,monitor):
+ # A React Router data response may be cancelled by Chromium after its decoded
+ # state has reached the DOM. Network requestfinished is not UI completion.
+ clock=page.locator('[data-monitor-key="'+monitor+'"] time').first
+ previous=clock.get_attribute('datetime')
+ with page.expect_response(lambda r:r.request.method=='GET' and path+'.data' in r.url,timeout=15000) as loaded:
+  page.locator('[data-monitor-key="'+monitor+'"] nav a').nth(1).click()
+ private_headers(loaded.value,200)
+ expect(clock).not_to_have_attribute('datetime',previous,timeout=15000)
+ # Independently inspect the complete real route DTO; no mocked response or
+ # extra bucket call is introduced by this ordinary read.
+ private(page.context.request.get(base+path+'.data'),200)
+ assert 'SA07_F_PRIVATE' not in page.locator('body').inner_text()
 def local_r2(action,key=None,batch=None):
  command={'action':action}
  if key is not None:command['key']=key
@@ -73,8 +88,7 @@ try:
    record('localized-responsive-Background-readonly-current-and-disabled-unwired-runtime',locale=locale)
   page.set_viewport_size({'width':1280,'height':900});visit(page,current)
   sample=sql("select id,value from owner_monitor_observations where monitor_key='background.translation'")
-  with page.expect_request_finished(lambda r:r.method=='GET' and '/monitoring/background.data' in r.url,timeout=15000) as completed:page.locator('[data-monitor-key="background.translation"] nav a').nth(1).click()
-  private(completed.value.response(),200);assert sql("select id,value from owner_monitor_observations where monitor_key='background.translation'")==sample
+  refresh(page,current,'background.translation');assert sql("select id,value from owner_monitor_observations where monitor_key='background.translation'")==sample
   record('real-GET-refresh-keeps-fifteen-minute-sample-gate')
   for path in [history,'/en/super-admin/events?origin=operational-event&kind=task.planned']:
    assert fixture['event'] in collect(page,path)
@@ -126,8 +140,7 @@ try:
    record('localized-responsive-four-Localization-monitors-actual-sources-bundles-disabled-runtime',locale=locale)
   page.set_viewport_size({'width':1280,'height':900});visit(page,local_current)
   samples=sql("select id from owner_monitor_observations where monitor_key like 'localization.%' order by id")
-  with page.expect_request_finished(lambda r:r.method=='GET' and '/monitoring/localization.data' in r.url,timeout=15000) as completed:page.locator('[data-monitor-key="localization.registry"] nav a').nth(1).click()
-  private(completed.value.response(),200);assert sql("select id from owner_monitor_observations where monitor_key like 'localization.%' order by id")==samples
+  refresh(page,local_current,'localization.registry');assert sql("select id from owner_monitor_observations where monitor_key like 'localization.%' order by id")==samples
   for key in keys:
    sample=sql('select id from owner_monitor_observations where monitor_key=$1',[key])[0]['id'];assert sample in collect(page,local_current+'/'+key+'/history')
   assert fixture['event'] in collect(page,local_current+'/localization.ui/history?origin=operational-event&kind=task.planned')
@@ -227,8 +240,7 @@ try:
      page.locator('[data-storage-slot="storage:get:returned"] summary').click();assert page.evaluate('document.documentElement.scrollWidth<=innerWidth+1');page.screenshot(path=str(a.output/(locale+'-files-320.png')),full_page=True)
    record('localized-responsive-Files-original-samples-and-unmeasured-slots',locale=locale)
   page.set_viewport_size({'width':1280,'height':900});visit(page,file_current)
-  with page.expect_request_finished(lambda r:r.method=='GET' and '/monitoring/files.data' in r.url,timeout=15000) as done:page.locator('[data-monitor-key="files.assets"] nav a').nth(1).click()
-  private(done.value.response(),200)
+  refresh(page,file_current,'files.assets')
   assert sql("select id,value from owner_monitor_observations where resource_scope like 'storage:%' order by id")==slots
   assert evidence in collect(page,file_current+'/files.assets/history?origin=attachment-evidence')
   assert evidence in collect(page,'/en/super-admin/monitoring/security/security.attachments/history?origin=attachment-evidence')
