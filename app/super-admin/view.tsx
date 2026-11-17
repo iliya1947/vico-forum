@@ -22,9 +22,6 @@ const keys: Record<SystemMonitorKey, "superAdminRuntime" | "superAdminDatabase" 
   "system.dependencies": "superAdminDatabase",
   "system.requests": "superAdminRequests",
 };
-const monitoringAreas = [
- "superAdminAreaIntegrations"
-] as const;
 
 /** One Owner-only shell, reused across routes; a visible link never grants access. */
 export function SuperAdminShell({ locale, current, children }: {
@@ -203,12 +200,12 @@ export function SuperAdminMonitoringIndex({locale}: {locale:string}) {
       <Link className="admin-destination" to={superAdminSecurityPath(locale,routing)}>{t("superAdminAreaSecurity")}</Link>
       <Link className="admin-destination" to={routing.superAdmin.background(locale)}>{t("superAdminAreaBackground")}</Link>
       <Link className="admin-destination" to={routing.superAdmin.localization(locale)}>{t("superAdminAreaLocalization")}</Link>
+      <Link className="admin-destination" to={routing.superAdmin.integrations(locale)}>{t("superAdminAreaIntegrations")}</Link>
       <Link className="admin-destination" to={routing.superAdmin.data(locale)}>{t("superAdminAreaData")}</Link>
       <Link className="admin-destination" to={routing.superAdmin.files(locale)}>{t("superAdminAreaFiles")}</Link>
       {NATIVE_AREAS.map(area=><Link key={area} className="admin-destination" to={routing.superAdmin.nativeArea(locale,area)}>{t(nativeAreaLabels[area])}</Link>)}
-      <p>{t("superAdminAreasLater")}</p>
+      <p>{t("sa07IInfrastructureNote")}</p>
       <ul className="super-admin-pending-areas">
-        {monitoringAreas.map(area=><li key={area}><bdi>{t(area)}</bdi> <span>{t("adminInDevelopment")}</span></li>)}
         <li><bdi>{t("superAdminInfrastructure")}</bdi> <span>{t("superAdminStage6")}</span></li>
       </ul>
     </section>

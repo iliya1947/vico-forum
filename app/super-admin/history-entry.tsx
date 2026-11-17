@@ -1,3 +1,4 @@
+import {integrationLabels} from "./integration-labels";
 import {dataLabels} from "./data-labels";
 import { useTranslation } from "react-i18next";
 import type { UiKey } from "../localization/catalog";
@@ -181,7 +182,7 @@ export function HistoryEntry({entry,locale}: {entry:HistoryItem;locale:string}){
       {t("superAdminHistoryEvidenceNote")}</p> : null}
     <dl>{Object.entries(entry.values).map(([name,value])=>{
       const taskEntry=entry.origin==="operational-event"||observed&&monitors.includes("background.translation");
-      const label=observed&&monitors.some(key=>key.startsWith("data."))?dataLabels[name]??fieldLabel(entry,name)??nativeLabels[name]:entry.kind.startsWith("file.")||observed&&monitors.some(key=>key.startsWith("files.")||key==="background.attachments"||key==="integrations.storage")?fileLabels[name]??fieldLabel(entry,name)??taskLabels[name]:observed&&monitors.some(key=>key.startsWith("localization."))?localizationLabels[name]??fieldLabel(entry,name):entry.kind==="integration.translationCall"&&name==="failed"?taskLabels.failedCalls:
+      const label=observed&&monitors.some(key=>key.startsWith("integrations."))?integrationLabels[name]??fieldLabel(entry,name)??fileLabels[name]??taskLabels[name]:observed&&monitors.some(key=>key.startsWith("data."))?dataLabels[name]??fieldLabel(entry,name)??nativeLabels[name]:entry.kind.startsWith("file.")||observed&&monitors.some(key=>key.startsWith("files.")||key==="background.attachments"||key==="integrations.storage")?fileLabels[name]??fieldLabel(entry,name)??taskLabels[name]:observed&&monitors.some(key=>key.startsWith("localization."))?localizationLabels[name]??fieldLabel(entry,name):entry.kind==="integration.translationCall"&&name==="failed"?taskLabels.failedCalls:
         taskEntry?taskLabels[name]??fieldLabel(entry,name)??nativeLabels[name]:fieldLabel(entry,name)??nativeLabels[name]??taskLabels[name];
       return <div key={name}>
         <dt>{label ? t(label) : <bdi>{name}</bdi>}</dt>

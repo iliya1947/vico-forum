@@ -1,4 +1,4 @@
-"""Genuine BA/Worker/PG17 Background, Localization, Files and Data acceptance. Code-only fixture invocation does not enable job runtime."""
+"""Genuine BA/Worker/PG17 Background, Localization, Files, Data and Integrations acceptance. Code-only fixture invocation does not enable job runtime."""
 import argparse,json,os,select,shutil,subprocess
 from pathlib import Path
 from uuid import uuid4
@@ -18,7 +18,7 @@ def private_headers(response,status):
  assert {'private','no-store'}<={x.strip() for x in response.headers.get('cache-control','').split(',')}
 def private(response,status):
  private_headers(response,status)
- body=response.text();assert 'SA07_PRIVATE' not in body;assert 'SA07_L_PRIVATE' not in body;assert 'SA07_F_PRIVATE' not in body;assert 'SA07_D_PRIVATE' not in body;assert 'private/fenced-v1/' not in body;return response
+ body=response.text();assert 'SA07_PRIVATE' not in body;assert 'SA07_L_PRIVATE' not in body;assert 'SA07_F_PRIVATE' not in body;assert 'SA07_D_PRIVATE' not in body;assert 'SA07_I_PRIVATE' not in body;assert 'private/fenced-v1/' not in body;return response
 
 def visit(page,path):private(page.goto(base+path,wait_until='networkidle'),200)
 def refresh(page,path,monitor):
@@ -274,7 +274,7 @@ try:
   record('SA07-B1-L-F-connected-pass')
   assert oc.request.post(base+'/api/auth/sign-in/email',headers={'Origin':base},data={'email':email,'password':password}).status==200
   assert sql('update "session" set user_id=$1 where user_id=$2 returning id',[owner,issued])
-  dc,data_member,_,_=account('data-member')
+  dc,data_member,data_email,data_password=account('data-member')
   data_current='/en/super-admin/monitoring/data';data_keys=['data.application','data.compatibility','data.retention']
   before=sql("select id from owner_monitor_observations where monitor_key like 'data.%' order by id")
   for ctx,status in [(guest,401),(ac,403),(dc,403)]:
@@ -336,10 +336,93 @@ try:
    except Exception:pass
   page.wait_for_timeout(250);expect(page.locator('[data-data-current]')).to_have_count(0);page.unroute('**/super-admin/monitoring/data.data*')
   record('Data-known-signout-and-late-Owner-response-do-not-restore-private-counts')
-  assert not errors,errors;assert not external,external;record('SA07-B1-L-F-D-connected-pass');browser.close()
+  record('SA07-B1-L-F-D-connected-pass')
+  assert oc.request.post(base+'/api/auth/sign-in/email',headers={'Origin':base},data={'email':email,'password':password}).status==200
+  assert sql('update "session" set user_id=$1 where user_id=$2 returning id',[owner,issued])
+  integration_current='/en/super-admin/monitoring/integrations'
+  integration_keys=['integrations.database','integrations.authentication','integrations.storage','integrations.translation']
+  before=sql("select id from owner_monitor_observations where monitor_key like 'integrations.%' and resource_scope='global' order by id")
+  for ctx,status in [(guest,401),(ac,403),(dc,403)]:
+   for path in [integration_current]+[integration_current+'/'+key+'/history' for key in integration_keys]:
+    for suffix in ['', '.data']:private(ctx.request.get(base+path+suffix),status)
+  assert sql("select id from owner_monitor_observations where monitor_key like 'integrations.%' and resource_scope='global' order by id")==before
+  record('Integrations-genuine-Owner-admission-before-private-source-reads-and-samples')
+  linked=rpc({'operation':'integrationSeed','member':data_member})['googleFact']
+  links=sql("select id from owner_events where source='auth' and kind='auth.methodLinked' and payload->>'method'='google' order by id")
+  previous_sessions=sql("select id from owner_events where source='auth' and target_id=$1 and kind='auth.sessionCreated'",[data_member])
+  previous_session_ids={row['id'] for row in previous_sessions}
+  assert dc.request.post(base+'/api/auth/sign-out',headers={'Origin':base},data={}).status==200
+  assert dc.request.post(base+'/api/auth/sign-in/email',headers={'Origin':base},data={'email':data_email,'password':data_password}).status==200
+  for _ in range(100):
+   sessions=sql("select id from owner_events where source='auth' and target_id=$1 and kind='auth.sessionCreated' order by occurred_at desc,id desc limit 1",[data_member])
+   if sessions and sessions[0]['id'] not in previous_session_ids:break
+   page.wait_for_timeout(25)
+  assert sessions and sessions[0]['id'] not in previous_session_ids
+  assert sql("select id from owner_events where source='auth' and kind='auth.methodLinked' and payload->>'method'='google' order by id")==links
+  native_session=sessions[0]['id']
+  storage_before=sql("select id,value from owner_monitor_observations where resource_scope like 'storage:%' order by id")
+  for locale in ['en','ru','he']:
+   for width in [1280,768,320]:
+    page.set_viewport_size({'width':width,'height':900});visit(page,f'/{locale}/super-admin/monitoring/integrations')
+    expect(page.locator('[data-integration-current]')).to_have_count(1);expect(page.locator('[data-storage-slot]')).to_have_count(13)
+    for key in integration_keys:
+     article=page.locator('[data-monitor-key="'+key+'"]');expect(article).to_have_count(1);expect(article.locator('form')).to_have_count(0)
+    assert page.locator('html').get_attribute('dir')==('rtl' if locale=='he' else 'ltr')
+    assert page.evaluate('document.documentElement.scrollWidth<=innerWidth+1')
+    expect(page.locator('[data-integration-fact="auth.methodLinked"]')).to_contain_text(linked)
+    expect(page.locator('[data-integration-fact="auth.sessionCreated"]')).to_contain_text(native_session)
+    if width==320:
+     page.locator('[data-storage-slot="storage:get:returned"] summary').click()
+     assert page.evaluate('document.documentElement.scrollWidth<=innerWidth+1')
+     page.screenshot(path=str(a.output/(locale+'-integrations-320.png')),full_page=True)
+   record('localized-responsive-Integrations-config-separate-from-native-sources-and-generic-password-session',locale=locale)
+  page.set_viewport_size({'width':1280,'height':900});visit(page,integration_current)
+  dto=private(oc.request.get(base+integration_current+'.data'),200).text()
+  assert 'valid-registry-returned' in dto and 'existing-system-dependency-reader' in dto
+  assert 'googleCallbackCoverageMeasured' in dto and 'genericSessionProviderKnown' in dto
+  assert 'SA07_I_PRIVATE' not in page.locator('body').inner_text()
+  samples=sql("select id from owner_monitor_observations where monitor_key like 'integrations.%' and resource_scope='global' order by id")
+  assert len(samples)==4
+  refresh(page,integration_current,'integrations.database')
+  assert sql("select id from owner_monitor_observations where monitor_key like 'integrations.%' and resource_scope='global' order by id")==samples
+  assert sql("select id,value from owner_monitor_observations where resource_scope like 'storage:%' order by id")==storage_before
+  assert dependency in collect(page,integration_current+'/integrations.database/history?origin=system-observation')
+  assert linked in collect(page,integration_current+'/integrations.authentication/history?origin=auth-event')
+  assert native_session in collect(page,integration_current+'/integrations.authentication/history?origin=auth-event')
+  assert fixture['event'] in collect(page,integration_current+'/integrations.translation/history?origin=operational-event&kind=task.planned')
+  storage_history=collect(page,integration_current+'/integrations.storage/history?origin=system-observation')
+  for sample in storage_before:assert sample['id'] in storage_history
+  global_auth=collect(page,'/en/super-admin/events?origin=auth-event')
+  assert global_auth.count(linked)==1
+  record('Integrations-original-System-auth-task-and-storage-identities-no-new-probes-or-Google-login-inference')
+  sql("delete from owner_monitor_observations where monitor_key like 'integrations.%' and resource_scope='global'")
+  sql("create function sa07_i_sample_fault() returns trigger language plpgsql as $$begin raise exception 'SA07_I_PRIVATE_SQL';end$$;create trigger sa07_i_sample_fault before insert on owner_monitor_observations for each row execute function sa07_i_sample_fault()")
+  try:
+   dto=private(oc.request.get(base+integration_current+'.data'),200).text()
+   assert 'unavailable' in dto and 'existing-system-dependency-reader' in dto
+  finally:sql('drop trigger sa07_i_sample_fault on owner_monitor_observations;drop function sa07_i_sample_fault()')
+  with hold('lock table forum_registration_settings in access exclusive mode'):
+   for path in [integration_current+'.data','/en/SUPER-ADMIN/monitoring/INTEGRATIONS.data']:
+    private(oc.request.get(base+path,timeout=15000),503)
+   private(guest.request.get(base+integration_current+'.data'),401)
+  private(oc.request.get(base+integration_current+'?probe=forbidden'),400)
+  record('Integrations-recorder-failure-preserves-actual-read-source-lock-private503-no-fabricated-failure')
+  visit(page,integration_current);held=[];page.route('**/super-admin/monitoring/integrations.data*',delayed);page.locator('[data-monitor-key="integrations.database"] nav a').nth(1).click()
+  for _ in range(100):
+   if held:break
+   page.wait_for_timeout(20)
+  assert held
+  with page.expect_response(lambda r:r.request.method=='POST' and '/api/auth/sign-out' in r.url) as signed:page.locator('.auth-sign-out').click()
+  assert signed.value.status==200;expect(page.locator('.auth-controls[data-state=guest]')).to_have_count(1);expect(page.locator('[data-integration-current]')).to_have_count(0)
+  for route,response in held:
+   try:route.fulfill(response=response)
+   except Exception:pass
+  page.wait_for_timeout(250);expect(page.locator('[data-integration-current]')).to_have_count(0);page.unroute('**/super-admin/monitoring/integrations.data*')
+  record('Integrations-known-signout-and-late-response-do-not-restore-private-state')
+  assert not errors,errors;assert not external,external;record('SA07-B1-L-F-D-I-connected-pass');browser.close()
 finally:
  if pg:
   pg.stdin.close()
   try:pg.wait(timeout=8)
   except subprocess.TimeoutExpired:pg.terminate();pg.wait(timeout=5)
- (a.output/'results.json').write_text(json.dumps({'head':os.environ.get('IMPLEMENTATION_SHA'),'scope':'SA07-B1/L/F/D; actual Worker/BA/PG17/local private R2; cleanup code-only pass, no scheduler/runtime activation','cases':records,'pageErrors':errors,'external':external},ensure_ascii=False,indent=2))
+ (a.output/'results.json').write_text(json.dumps({'head':os.environ.get('IMPLEMENTATION_SHA'),'scope':'SA07-B1/L/F/D/I; actual Worker/BA/PG17/local private R2; cleanup code-only pass, no scheduler/runtime activation','cases':records,'pageErrors':errors,'external':external},ensure_ascii=False,indent=2))

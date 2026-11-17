@@ -1,4 +1,4 @@
-name: SA07 Background Localization Files and Data connected Chromium acceptance
+name: SA07 Background Localization Files Data and Integrations connected Chromium acceptance
 
 on:
   pull_request:
@@ -7,6 +7,7 @@ on:
       - "tests/browser/sa07/**"
       - ".github/scripts/runtime-privileges.*"
       - ".github/scripts/verify-runtime-privilege-probes.mjs"
+      - "app/observability/integration-runtime*"
       - "app/observability/operational-facts*"
       - "app/observability/storage-observations*"
       - "app/localization/*execution.ts"
@@ -95,8 +96,8 @@ jobs:
           printf '%s\n' \
             'BETTER_AUTH_SECRET=sa07-browser-only-secret-0123456789abcdef0123456789abcdef' \
             'BETTER_AUTH_URL=http://127.0.0.1:4237' \
-            'GOOGLE_CLIENT_ID=local-test-unused' \
-            'GOOGLE_CLIENT_SECRET=local-test-unused' \
+            'GOOGLE_CLIENT_ID=SA07_I_PRIVATE_GOOGLE_ID' \
+            'GOOGLE_CLIENT_SECRET=SA07_I_PRIVATE_GOOGLE_SECRET' \
             'VICO_OWNER_USER_ID=sa07-synthetic-owner' > .dev.vars
           node --input-type=module -e '
             import {readFileSync,writeFileSync} from "node:fs";
@@ -105,7 +106,7 @@ jobs:
             writeFileSync(path,JSON.stringify(config,null,2));
           '
           pnpm build
-      - name: Real Background/Localization/Files/Data sources, local R2, History, privacy and late-response acceptance
+      - name: Real Background/Localization/Files/Data/Integrations sources, local R2, History, privacy and late-response acceptance
         run: |
           pnpm exec vite preview --host 127.0.0.1 --port 4237 --strictPort > "$RUNNER_TEMP/sa07-preview.log" 2>&1 &
           preview_pid=$!

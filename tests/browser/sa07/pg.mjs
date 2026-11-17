@@ -12,6 +12,9 @@ import {canonicalEnglishCatalog} from '../../../app/localization/catalog.ts';
 import {sourceFingerprint} from '../../../app/localization/fingerprint.ts';
 import {compileNamespaceBundle} from '../../../app/localization/bundles.ts';
 import {DrizzleUiTranslationBundleStore} from '../../../db/ui-translation-bundle-store.ts';
+import {account} from '../../../db/schema.ts';
+import {AuthCreationEvidence} from '../../../app/auth/auth-creation-evidence.ts';
+import {PostgresAuthFactWriter} from '../../../db/owner-auth-facts.ts';
 const url=process.env.DATABASE_URL,target=new URL(url??'http://invalid');
 if(process.env.CI!=='true'||!['127.0.0.1','localhost'].includes(target.hostname)||target.pathname!=='/vico_sa07_browser_test')throw Error('Own disposable SA07 database required');
 const c=new pg.Client({connectionString:url}),pool=new pg.Pool({connectionString:url,max:1});await c.connect();
@@ -19,6 +22,18 @@ const tasks=new DrizzleTranslationTaskStore(drizzle(c),new PostgresOwnerOperatio
 try{for await(const line of readline.createInterface({input:process.stdin,crlfDelay:Infinity}))try{
   const x=JSON.parse(line);let result;
   if(x.operation==='sql'){const reply=await c.query(x.sql,x.params??[]);result=Array.isArray(reply)?reply.flatMap(p=>p.rows??[]):reply.rows;}
+  else if(x.operation==='integrationSeed'){
+    const id=crypto.randomUUID(),database=drizzle(c),captured=[];
+    await database.insert(account).values({id,userId:x.member,accountId:'SA07_I_PRIVATE_EXTERNAL_ACCOUNT',providerId:'google'});
+    const capture=(fact,at=new Date())=>captured.push({fact,at});
+    const proof=new AuthCreationEvidence(database,capture,()=>null,()=>undefined);
+    proof.noteAdapterCreate({model:'account'},{id,userId:x.member,providerId:'google'});
+    await proof.flush();const writer=new PostgresAuthFactWriter(pool);
+    for(const {fact,at} of captured)await writer.append(fact,at);
+    const rows=(await c.query("select id from owner_events where source='auth' and target_id=$1 and kind='auth.methodLinked' and payload->>'method'='google' order by occurred_at desc,id desc limit 1",[x.member])).rows;
+    if(rows.length!==1)throw Error('Confirmed native Google method-link fact required');
+    result={googleFact:rows[0].id};
+  }
   else if(x.operation==='localizationSeed'){
     const database=drizzle(c);
     for(const tag of ['fr','de'])await c.query("insert into locales(tag,translation_status,publication_status,direction,fallback_chain,aliases,match_tags,native_name,presentation_metadata) values($1,'draft','active','ltr','{en}','{}','{}',$1,'{}') on conflict(tag) do nothing",[tag]);

@@ -49,14 +49,14 @@ export interface OwnerHistoryOptions {
 const ORIGIN_SCOPES: Record<OwnerHistoryOrigin,readonly string[]> = {
   ...NATIVE_ORIGIN_MONITORS,
   "operational-event":["background.translation","integrations.translation","localization.ui","localization.content","localization.budget","background.attachments","files.assets","files.operations"],
-  "system-event": [...SYSTEM_MONITORS,"data.compatibility"],
-  "auth-event": ["accounts.users","accounts.methods","accounts.sessions","security.auth"],
+  "system-event": [...SYSTEM_MONITORS,"data.compatibility","integrations.database"],
+  "auth-event": ["accounts.users","accounts.methods","accounts.sessions","security.auth","integrations.authentication"],
   "account-event": ["accounts.users"],
   "system-observation": Object.values(OWNER_MONITORS).flat(),
-  "admin-history": ["accounts.registration","administration.registration","administration.authorization","administration.measures","forum.content","localization.content","forum.state","moderation.help"],
+  "admin-history": ["accounts.registration","administration.registration","administration.authorization","administration.measures","forum.content","localization.content","forum.state","moderation.help","integrations.authentication"],
   "attachment-evidence": ["security.attachments","files.assets"],
-  "attempt-pattern": ["accounts.registration","security.auth","security.access"],
-  "attempt-state": ["security.auth","security.access"],
+  "attempt-pattern": ["accounts.registration","security.auth","security.access","integrations.authentication"],
+  "attempt-state": ["security.auth","security.access","integrations.authentication"],
 };
 const KINDS_BY_ORIGIN: Record<OwnerHistoryOrigin,readonly string[]> = {
   "operational-event":[...TASK_TRANSITION_KINDS,...FILE_TRANSITION_KINDS,"task.reconciliationPass","integration.translationCall"],
@@ -89,10 +89,11 @@ function compatibleOrigin(origin:OwnerHistoryOrigin,scope:Scope):boolean {
 function compatibleKind(origin:OwnerHistoryOrigin,kind:string,scope:Scope):boolean {
   let allowed:readonly string[]=ORIGIN_SCOPES[origin];
   if(origin==="operational-event")allowed=kind==="file.cleanupPass"?["background.attachments","files.operations"]:kind.startsWith("file.")?["files.assets","files.operations"]:kind==="integration.translationCall"?["background.translation","integrations.translation"]:kind==="task.reconciliationPass"?["background.translation"]:kind==="task.allowanceAdmitted"||kind==="task.allowanceDeferred"?["background.translation","localization.ui","localization.content","localization.budget"]:["background.translation","localization.ui","localization.content"];
-  if(origin==="auth-event")allowed=SA02_FACT_MONITORS[kind as keyof typeof SA02_FACT_MONITORS]??[];
-  if(origin==="system-event")allowed=kind==="system.requestFailed"?["system.requests"]:["system.dependencies","data.compatibility"];
+  if(origin==="auth-event")allowed=[...(SA02_FACT_MONITORS[kind as keyof typeof SA02_FACT_MONITORS]??[]),"integrations.authentication"];
+  if(origin==="operational-event"&&(TASK_TRANSITION_KINDS as readonly string[]).includes(kind))allowed=[...allowed,"integrations.translation"];
+  if(origin==="system-event")allowed=kind==="system.requestFailed"?["system.requests"]:["system.dependencies","data.compatibility","integrations.database"];
   if(origin==="admin-history"){
-    if(kind==="settings.registrationChanged")allowed=["accounts.registration","administration.registration"];
+    if(kind==="settings.registrationChanged")allowed=["accounts.registration","administration.registration","integrations.authentication"];
     else if(kind.startsWith("role.")||kind==="user.roleAssigned"||kind==="user.overrideChanged")allowed=["administration.authorization"];
     else if(kind.startsWith("measure."))allowed=["administration.measures"];
     else if(kind==="topic.sourceLocaleCorrected"||kind==="post.sourceLocaleCorrected")allowed=["forum.content","localization.content"];
@@ -277,11 +278,11 @@ const LEGACY_SOURCE_SQL = [
   "union all",
   "select 'auth-event'::text,e.id::text,e.occurred_at,e.recorded_at,",
   " case e.kind",
-  " when 'account.created' then ARRAY['accounts.users']::text[]",
-  " when 'auth.methodLinked' then ARRAY['accounts.methods','security.auth']::text[]",
-  " when 'auth.passwordChanged' then ARRAY['accounts.methods','security.auth']::text[]",
-  " when 'auth.sessionCreated' then ARRAY['accounts.sessions','security.auth']::text[]",
-  " when 'auth.sessionDeleted' then ARRAY['accounts.sessions','security.auth']::text[]",
+  " when 'account.created' then ARRAY['accounts.users','integrations.authentication']::text[]",
+  " when 'auth.methodLinked' then ARRAY['accounts.methods','security.auth','integrations.authentication']::text[]",
+  " when 'auth.passwordChanged' then ARRAY['accounts.methods','security.auth','integrations.authentication']::text[]",
+  " when 'auth.sessionCreated' then ARRAY['accounts.sessions','security.auth','integrations.authentication']::text[]",
+  " when 'auth.sessionDeleted' then ARRAY['accounts.sessions','security.auth','integrations.authentication']::text[]",
   " else ARRAY[]::text[] end,",
   " e.kind,e.source,null::text,",
   " e.payload || jsonb_build_object(",
@@ -326,8 +327,8 @@ const LEGACY_SOURCE_SQL = [
   "union all",
   "select 'attempt-pattern'::text,p.id::text,p.admitted_at,p.admitted_at,",
   " case when p.surface='auth' and p.operation='registration-admission'",
-  " then ARRAY['security.auth','accounts.registration']::text[]",
-  " when p.surface='auth' then ARRAY['security.auth']::text[]",
+  " then ARRAY['security.auth','accounts.registration','integrations.authentication']::text[]",
+  " when p.surface='auth' then ARRAY['security.auth','integrations.authentication']::text[]",
   " else ARRAY['security.access']::text[] end,",
   " 'attempt.coalesced'::text,p.surface::text,'coalesced'::text,",
   " jsonb_build_object(",
@@ -347,7 +348,7 @@ const LEGACY_SOURCE_SQL = [
   " (to_char(s.recording_epoch_start at time zone 'UTC',",
   " 'YYYY-MM-DD\"T\"HH24:MI:SS.US\"Z\"')||'/'||s.slot)::text,",
   " s.admitted_at,s.admitted_at,",
-  " case when right(s.slot,5)='.auth' then ARRAY['security.auth']::text[]",
+  " case when right(s.slot,5)='.auth' then ARRAY['security.auth','integrations.authentication']::text[]",
   " else ARRAY['security.access']::text[] end,",
   " 'attempt.'||split_part(s.slot,'.',1),",
   " 'attempt_state'::text,'coalesced'::text,",
@@ -390,7 +391,7 @@ function timelineSql(filterOrigin:OwnerHistoryOrigin|null=null,scope:Scope={area
   const legacy=LEGACY_SOURCE_SQL.split("\nunion all\n").flatMap((sql,index)=>{
     if(!allowedOrigins.includes(legacyOrigins[index]))return [];
     // Preserve direct equality prefixes for scoped chronological indexes.
-    const direct=index===0?" and ($1::text is null or e.monitor_key=$1 or ($1::text='data.compatibility' and e.monitor_key='system.dependencies' and e.kind='system.dependencyUnavailable'))":index===3?" and ($1::text is null or o.monitor_key=$1 or ($1::text='data.compatibility' and o.monitor_key='system.dependencies' and o.resource_scope='global') or ($1::text='files.operations' and ("+STORAGE_OBSERVATION_PREDICATE_SQL+")))":"";
+    const direct=index===0?" and ($1::text is null or e.monitor_key=$1 or ($1::text in ('data.compatibility','integrations.database') and e.monitor_key='system.dependencies' and e.kind='system.dependencyUnavailable'))":index===3?" and ($1::text is null or o.monitor_key=$1 or ($1::text in ('data.compatibility','integrations.database') and o.monitor_key='system.dependencies' and o.resource_scope='global') or ($1::text='files.operations' and ("+STORAGE_OBSERVATION_PREDICATE_SQL+")))":"";
     return [`(select ${HISTORY_COLUMNS} from (${sql+direct}) facts(${HISTORY_COLUMNS}) where ${predicates} order by at desc nulls last,origin desc nulls last,source_id desc nulls last limit $6)`];
   });
   const native=nativeHistoryBranches({monitor:"$1",area:"$2",at:"$3",origin:"$4",id:"$5",limit:"$6",

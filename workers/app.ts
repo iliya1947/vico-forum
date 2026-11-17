@@ -1,3 +1,6 @@
+import {createHyperdriveOwnerIntegrations} from "../db/hyperdrive-owner-integrations";
+import {ownerIntegrationsMonitoringContext} from "../app/super-admin/request-context";
+import {observeRequiredLocalizationRead,googleParametersPresent} from "../app/observability/integration-runtime";
 import {createHyperdriveOwnerData} from "../db/hyperdrive-owner-data";
 import {ownerDataMonitoringContext} from "../app/super-admin/request-context";
 import {createHyperdriveOperationalRecording} from "../db/hyperdrive-operational-recording";
@@ -111,7 +114,8 @@ async function applicationFetch(request: Request, env: Env, executionContext?: E
     context.set(forumAttachmentStoreContext, createHyperdriveForumAttachmentStore(webConnectionString, undefined, measureAdmission,operational.sink));
     const attachmentBucket = (env as Env & { ATTACHMENT_R2?: R2Bucket }).ATTACHMENT_R2;
     context.set(privateAttachmentBucketContext, attachmentBucket ? privateAttachmentBucket(attachmentBucket,operational.storageCapture) : null);
-    context.set(registryLoaderContext, createHyperdriveRegistryLoader(localizationConnectionString));
+    const requiredLocalization=observeRequiredLocalizationRead(createHyperdriveRegistryLoader(localizationConnectionString));
+    context.set(registryLoaderContext,requiredLocalization.load);
     context.set(uiTranslationStoreContext, createHyperdriveUiTranslationStore(localizationConnectionString));
     context.set(
       contentTranslationPresentationContext,
@@ -147,6 +151,10 @@ async function applicationFetch(request: Request, env: Env, executionContext?: E
     context.set(complaintAppealContext,createHyperdriveComplaintAppeal(webConnectionString,effectiveAuthorization,undefined,ownerUserId));
     context.set(contentGenerationAdmissionContext, createHyperdriveContentGenerationAdmission(webConnectionString, undefined, ownerUserId));
     context.set(contentGenerationActionContext, DISABLED_CONTENT_GENERATION_ACTION_RUNTIME);
+    context.set(ownerIntegrationsMonitoringContext,createHyperdriveOwnerIntegrations(webConnectionString,ownerUserId,()=>ownerMonitoring.readSystem(),{
+      webBindingPresent:!!webConnectionString,localizationBindingPresent:!!localizationConnectionString,googleParametersPresent:googleParametersPresent(env as Env & BetterAuthEnvironment),bucketBound:!!attachmentBucket,
+      generationEnabled:context.get(contentGenerationActionContext).enabled,generationAdmissionWired:context.get(contentGenerationAdmissionContext)!==null,providerWired:false,enqueuerWired:false,consumerWired:false,
+    },requiredLocalization.current));
     const response = await requestHandler(request, context);
     const finalResponse = protectFrameworkFailure(request, response);
     // Record actual 5xx response outcomes only; never request URLs, bodies or credentials.
