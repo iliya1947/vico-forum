@@ -1,3 +1,18 @@
+## 2026-11-17 — WHOLE SA08 AUTHOR READY; Mira coordinator review active next
+
+- Draft #340 stable exact `83f7cb24e812889c1b729857289d35835cdae2e3`, base/main45406723, open/Draft/unmerged/mergeable=true,7 commits/41 paths. Mira bounded08-A PASS oncb09523c; product source unchanged in08-B.
+- **SA08 implementation CLOSED / AUTHOR READY** after complete applicable accepted§15 whole-program native/connected matrix. No known confirmed current-SA08 defect remains. This is author acceptance, not independent review.
+- Complete12-row execution/source/evidence traceability, exact run/job IDs/commands/runtime/physical assertions/qualified fixtures: [SA08_FINAL_EVIDENCE.md](../SA08_FINAL_EVIDENCE.md). Author handoff #331 comment6955292158.
+- All14 exact workflows/18 latest jobs SUCCESS, individually checked. CI44132995182 checks134214862962 app2569/208 + type/lint/build/UI preview/metadata; database134214862172 native1410/104, no unhandled rejection,69-table manifest/runtime privilege/split-authority/credential probes/Worker smokes PASS. One unchanged lint warning; Drizzle BigInt false-green is not parity evidence.
+- SA08 run44132995075/job134214863305 direct20 connected cases +2 real binding modes PASS. All51 Owner surfaces/12 current areas/35 Histories, genuine Owner/Admin/member/guest, document/data/prefetch/read-onlyPOST405; active genuine Owner session with actual missing/wrong runtime binding403/no private samples. Local main20+2variants passed with pageErrors[]/external[]; no product UI change means earlier inspected EN/RU/HE mobile images remain applicable author evidence.
+- Final native additions prove populated prepared-query plans for every promised legacy/native person role with default planner/1.5s limits, exact full counts/overlap dedup and bounded visited paths; native source COMMIT between filtered pages preserves31 original IDs/25+6/physical32, fresh read sees new fact. Actual SA05 command50 writer-case variants×3orders plus Owner-only cases/full old two-session/local-R2 chains are in final suites.
+- Corrected existing expected-denial lifetime at two remaining N2/N3 state-first test sites after578851ec's1410 assertions passed but N3 emitted unhandled AccountInactiveError. Early handler preserves exact typed rejection/physical-state assertions; local32 and finalfull1410 clean. No production/domain change.
+- **ACTIVE next: Mira WHOLE SA08 coordinator review** of entire cumulative #340 on this exact head. Lev implementation edits STOP during review. Return complete confirmed current-SA08 packet or PASS.
+- **Only after Mira PASS:** Mark / Codex-6 Sol independent non-author WHOLE SA08 review on same exact head. Any implementation change resets head/cycle. Actual Owner visual/live acceptance remains separately attributed.
+- No agents launched/merge/permanent docs/#315/Stage6/production/deploy/external work. Own previews stopped/vars restored; source Wrangler unchanged.
+
+---
+
 ## 2026-11-17 — SA08-B activated for Lev after bounded 08-A PASS
 
 - **Executor:** Lev / Codex-6.1 Sol, continuing the established cumulative SA08 implementation route in Draft #340 from accepted exact `cb09523ce050d97f1eab59b41b40c471a2cde20f`.
