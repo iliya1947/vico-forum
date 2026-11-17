@@ -2,8 +2,9 @@
 
 - **Service PR:** #331 coordination-only, never merge.
 - **Current main:** `7e7a803876422c2f40faaf720b59027d468e99dc`.
-- **Prerequisite SA06:** Draft #338 exact `ce71892dc30d8e9ef03833031c29e8519ca7627d`, open/unmerged. Lira WHOLE SA06 AUTHOR READY; Lev completed technical verification of the entire cumulative50-path package with0confirmed current-SA06 defects. Author verification, not independent review. [Evidence/result](https://github.com/iliya1947/vico-forum/pull/331#issuecomment-6933791252).
-- **ACTIVE:** Lev implements accepted SA07, 07-F Files/cleanup/fixed13 R2 observations after07-L source/author checkpoint.
-- **SA07 branch/base:** separate dependent `chatgpt/sa07-native-operations` from exact SA06 head above. [Draft #339](https://github.com/iliya1947/vico-forum/pull/339), current head `2fb4c7bc5d41d6bfea021f9c891d4a1600953830`;07-B1+L native43/app42/local connected18 PASS; prior source head2f9d6e01 CI13runs17jobs/app2533/native1361 PASS, current harness-only head exact CI ACTIVE. Continue07-F→D→I; whole SA07 not AUTHOR READY. No prerequisite merge wait under the explicit overnight override.
-- **Dependency:** rebase/update and recheck SA07 if #338 changes before acceptance. Coordinator/independent review may occur later; Owner alone merges.
-- **Boundary:** no SA08+, permanent docs, #315, Stage6/production/deploy/external work, enabling background runtime, or #338 merge. Local code-only acceptance does not claim deployed/Owner visual acceptance.
+- **SA06 implementation:** Draft #338 exact `ce71892dc30d8e9ef03833031c29e8519ca7627d`, open/unmerged.
+- **Fresh Mira WHOLE SA06 coordinator review:** **FAIL M2 — 1 confirmed current-SA06 defect.** Profile History `moot-terminal-time-unproven` coverage incorrectly attributes untimed/invalid moot appeal anomalies to a parent `lifted_by_user_id`; accepted contract permits person-filtered unknown-time coverage only for the appeal subject. Previous History-filter and AP-10 counter corrections are independently reverified closed on this head.
+- **ACTIVE SA06 correction:** Lira / ChatGPT-6 applies one bounded #338 fix: person coverage counts untimed/invalid moot anomalies only by subject; preserve global/scoped coverage and valid timed lift-actor timeline attribution; add PG regressions for NULL + earlier-than-created time with distinct subject/lift actor. Then publish new stable exact #338 head + AUTHOR READY.
+- **Review gate after correction:** Mira fresh WHOLE SA06 coordinator review → only after PASS, Mark / Codex-6 Sol independent non-author whole-SA06 review. Mark is not active yet.
+- **SA07:** Lev / Codex-6.1 Sol may continue dependent Draft #339 under the existing developer override. Current #339 base is #338 exact `ce71892d...`; if #338 changes, #339 must update/recheck the prerequisite before SA07 acceptance.
+- **Boundary:** no #338 merge, SA08+, permanent docs, #315, Stage6/production/deploy/external work. Owner remains merge authority.
