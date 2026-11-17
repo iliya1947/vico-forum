@@ -1,3 +1,14 @@
+## 2026-11-17 — Correction: SA08-A executor is Lev, not Lira
+
+- The prior SA08-A assignment to Lira was a coordination error: it reverted to the default role map instead of preserving the active implementation route.
+- **Established active route:** Lev / Codex-6.1 Sol implemented the cumulative SA07 package (07-B1/L/F/D/I) and carried its author acceptance; Lira was used for bounded corrections/review work.
+- **Corrected executor:** Lev / Codex-6.1 Sol continues into SA08-A from current main `45406723c4b53ceba9392d3fb7dc84e8adaa9768`.
+- **SA08-A scope remains unchanged:** complete Overview across all 13 areas (12 measured + Infrastructure placeholder), final cross-area/source/kind/time History controls and round-trip pagination/filter presentation, common action/history presentation, and partial-availability composition exactly within the accepted SA08-A plan.
+- **Lira is not the 08-A implementer.** Her previous SA08-A assignment is superseded.
+- **Boundary:** 08-A only. 08-B full-program acceptance/closure remains queued until 08-A bounded acceptance. No permanent docs, #315, Stage6/production/deploy/external work.
+
+---
+
 ## 2026-11-17 — SA07 merged; SA08-A assigned to Lira
 
 - Developer merged #339. Current `main` is `45406723c4b53ceba9392d3fb7dc84e8adaa9768`.
