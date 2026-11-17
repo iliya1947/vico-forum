@@ -1,6 +1,6 @@
 # PROJECT_STATE.md
 
-Последнее обновление: 2026-11-16
+Последнее обновление: 2026-11-17
 
 ## Назначение
 
@@ -30,7 +30,7 @@ Vico Forum находится в pre-release разработке.
 
 - Stage 0–5 завершены в repository/local-CI path.
 - Текущий standalone product priority по `ROADMAP.md` — UI/UX product pass.
-- Ordinary Admin Panel AP-01–AP-11, owner/authorization redesign Stage 1–2, Settings SET-01–SET-06 и Super-admin SA-01–SA-04 реализованы в repository/local-CI. SA-04 поставил AccountState foundation и enforcement; Owner-команда деактивации/UI остаётся SA-05 и не реализована. Complaints ведутся отдельно.
+- Ordinary Admin Panel AP-01–AP-11, owner/authorization redesign Stage 1–2, Settings SET-01–SET-06 и Super-admin SA-01–SA-08 реализованы в repository/local-CI. Super-admin включает AccountState enforcement, exact-Owner деактивацию аккаунта, все 12 измеряемых Monitoring-областей, общий source-aware History/Event log и финальный Overview; Infrastructure остаётся Stage-6 placeholder. Complaints ведутся отдельно.
 - Stage 6 external integration поставлен владельцем на паузу и не продолжается без отдельного указания.
 - Публичный production release не выполнен.
 
@@ -45,7 +45,7 @@ Vico Forum находится в pre-release разработке.
 - PostgreSQL 17 + Drizzle ORM `0.45.2`;
 - Better Auth `1.7.7` + PostgreSQL Drizzle adapter;
 - generic `/:locale/*`, runtime `LocaleRegistry`, BCP-47, LTR/RTL и request-scoped i18next;
-- repository migration history: `0000`–`0065`;
+- repository migration history: `0000`–`0066`;
 - externally accepted migration evidence: `0000`–`0020`.
 
 ## Реализованный продукт
@@ -149,72 +149,45 @@ application-реализация для bootstrap identity не требуетс
 и `docs/ADMIN_PANEL.md`. Реальная Google-настройка, binding и deployed acceptance
 остаются Stage 6.
 
-### Super-admin SA-01–SA-04
+### Super-admin SA-01–SA-08
 
-В `main` реализованы bounded **SA-01–SA-04** по `docs/SUPER_ADMIN.md`.
-SA-01 доставил отдельный `/:locale/super-admin` только для exact server-bound Owner,
-два Owner entry point, минимальный Overview, **System Monitoring** (Worker runtime,
-PostgreSQL dependency/version и записанные 5xx), смежную History каждого System monitor,
-общий source-aware Event log foundation и Stage-6 Infrastructure placeholder.
+В `main` реализованы bounded **SA-01–SA-08** по `docs/SUPER_ADMIN.md` в repository/local-CI path.
 
-SA-02 добавил две live Monitoring-области:
+SA-01–SA-04 доставили exact-Owner shell, System / Accounts & authentication / Security Monitoring,
+source-aware adjacent/global History, canonical unified profile с независимыми public/Admin/Owner
+секциями и AccountState/lifecycle enforcement. Миграции `0062`–`0065` добавили Owner
+events/observations, bounded attempt telemetry, target-profile indexes и AccountState foundation.
 
-- **Accounts & authentication**: `accounts.users`, `accounts.methods`,
-  `accounts.sessions`, `accounts.registration`;
-- **Security**: `security.auth`, `security.access`, `security.attachments`.
+SA-05 добавил каноническую exact-Owner-only деактивацию аккаунта в unified profile.
+Команда атомарно меняет AccountState, сохраняет опубликованный контент и защищённые retained-данные,
+нейтрализует публичную identity как **Deleted user**, не позволяет bound Owner деактивировать себя
+и сохраняет минимальный retention не менее одного UTC-календарного года. Реактивация, физическое
+удаление, retention-end action, принудительное завершение чужих сессий и foreign
+credential/provider mutations не добавлены.
 
-Current state использует реальные PostgreSQL aggregates/settings/evidence и честно показывает
-coverage/recording state. Overview получил компактные Accounts/Security summaries. Для каждого
-из семи SA-02 monitor доступна adjacent History, а общий Event log проецирует те же исходные
-identity из auth facts, monitor observations, registration Admin History, attachment evidence
-и coalesced attempt telemetry без создания копий исходных событий.
+SA-06 добавил native Monitoring для **Forum**, **Administration**, **Moderation** и
+**Notifications** с исходными domain facts, scoped/global History и person-attribution там,
+где источник это доказывает. Миграция `0066_sa06_native_monitor_indexes` добавила необходимые
+индексы для bounded History/person queries.
 
-Миграция `0062` добавила append-only Owner events/observations foundation. Миграция
-`0063` добавила `owner_attempt_patterns` и `owner_attempt_telemetry_state`: новые
-attributed source-patterns допускаются отдельно для authenticated и anonymous-known-network
-пулов максимум по 256 на UTC recording hour; повторы coalesce в существующую группу, а
-unknown/overflow/gap состояния сохраняются bounded slots. Старые recording epochs не
-удаляются при renewal. Точные auth facts фиксируют только доказанные persisted transitions
-`account.created`, `auth.methodLinked`, `auth.passwordChanged`,
-`auth.sessionCreated` и `auth.sessionDeleted`; refused/failed attempts остаются
-отдельной attempt telemetry.
+SA-07 добавил **Localization & translations**, **Files & attachments**,
+**Background processes**, **Data** и **Integrations**. Текущие значения читаются из существующих
+авторитетных источников; operational/storage facts записываются bounded и best-effort там,
+где это предусмотрено. Monitoring не активирует translation providers, background workers,
+R2 операции или внешние интеграции и не превращает retained samples в выдуманный полный аудит.
 
-Exact-Owner admission выполняется до private reads/input parsing; document/data и controlled
-error responses остаются private/no-store. SA-02 не добавляет второй RBAC, дублирующий
-mutation backend или управление чужими credentials/sessions.
+SA-08 завершил композицию Super-admin: Overview учитывает все **13** утверждённых областей —
+12 измеряемых плюс честный **Infrastructure** placeholder — и переиспользует те же source/read
+границы без дублирующих probes. Global/scoped History поддерживает закрытые area/source/kind/date
+filters и bound keyset pagination; canonical actions ведут в существующие authoritative
+Admin/Settings/Attention/profile boundaries, а не создают второй mutation backend.
 
-SA-03 сделал canonical `/:locale/users/:userId` единственной актуальной user-detail page.
-Публичная profile projection сохраняется для Guest/User. Независимые server-side admissions
-добавляют существующие AP-10 measures при `admin.users.blocks.manage`, targeted authorization
-state при `access.authorization.manage` и exact-Owner private account projection: email/
-verification, linked password/Google methods, active/expired retained session counts, bounded
-safe session/device/IP data и target-scoped retained History. History сохраняет original source
-identity и ограничен атрибутируемыми auth events, coalesced attempt patterns,
-attachment-security evidence и ordinary Admin History; arbitrary global observations/gap rows
-не превращаются в per-user activity. Legacy `/:locale/admin/users/:userId` после своего
-`admin.users.read` guard только перенаправляет на canonical profile. Migration
-`0064_sa03_profile_history_indexes` добавляет шесть target-chronological indexes без новых
-tables, grants, writers или domain state.
-
-SA-03 не реализует Owner-команду деактивации, foreign credential/session mutations,
-новые Monitoring areas или полный Owner audit/backfill.
-
-SA-04 добавил AccountState/lifecycle foundation миграцией
-`0065_sa04_account_state_foundation` и серверное enforcement активности
-учётной записи в существующих аутентификационных, административных,
-форумных, Settings и translation writer boundaries. Для неактивной учётной
-записи публичная identity-проекция нейтральна; опубликованные сообщения,
-ревизии и вложения остаются, а приватные retained-данные сохраняются под
-прежними ограничениями доступа. Проверены атомарные отказы без новых
-domain effects и связанные PostgreSQL 17 / Worker / Better Auth / Chromium
-сценарии в repository/local-CI. **SA-04 не добавляет Owner-команду/UI
-деактивации, реактивацию или физическое удаление** — production state writer
-и управление деактивацией относятся к SA-05.
-
-Остальные десять Monitoring областей и следующие SA-пакеты не реализованы.
-Реальные Google/Owner binding, отдельный Owner Worker/Access/auth/session/DB
-boundary, production rollout и deployed acceptance остаются Stage 6;
-visual polish — отдельный UI/UX этап.
+Финальный repository/local-CI acceptance SA-08 свёл delivered SA04–SA08 в один стабильный
+кодовый срез с PostgreSQL 17, built Worker, Better Auth, Chromium и локальными transport fixtures
+там, где нужны внешние seams. Это **не** production/deployed acceptance и не подтверждение
+реальных Google OAuth, `VICO_OWNER_USER_ID`, Neon/Hyperdrive/R2/Queue/provider configuration.
+Infrastructure, отдельный Owner runtime isolation и production rollout остаются Stage 6;
+visual polish остаётся отдельным UI/UX этапом.
 
 ### Admin/Super-admin outgoing routing foundation
 
@@ -293,7 +266,8 @@ External topology является mutable state и должна перепро�
 ## Актуальные незавершённые продуктовые границы
 
 - UI/UX product pass ещё требует финального closeout и обязательной real-runtime product/visual acceptance по `docs/UI_UX_PASS.md`.
-- В `main` ordinary Admin Panel AP-01–AP-11, owner/authorization redesign Stage 1–2, Settings SET-01–SET-06 и Super-admin SA-01–SA-04 реализованы в repository/local-CI. Live Monitoring охватывает System, Accounts & authentication и Security; SA-03 добавил canonical unified profile, SA-04 — AccountState/lifecycle enforcement без новой Monitoring area. Остальные десять Monitoring областей, Owner-команда/UI деактивации (SA-05) и следующие SA-пакеты не доставлены. Реальные Google/Owner binding и production acceptance остаются Stage 6.
+- В `main` ordinary Admin Panel AP-01–AP-11, owner/authorization redesign Stage 1–2, Settings SET-01–SET-06 и Super-admin SA-01–SA-08 реализованы в repository/local-CI. Все 12 измеряемых Super-admin Monitoring-областей доставлены; Infrastructure остаётся честным Stage-6 placeholder. Реальные Google/Owner binding, production runtime и external integrations не подтверждены.
+- Super-admin не добавляет reactivation, physical delete/retention-end action, forced foreign-session termination, foreign credential/provider mutation, второго Owner или recovery/transfer model.
 - Complaints integration/closeout покрыт repository/local-CI проверками; external/deployed acceptance Complaints не выполнялась.
 - Email verification/password recovery остаются отложенными.
 - Editor drafts/autosave остаются отложенными.
@@ -301,8 +275,7 @@ External topology является mutable state и должна перепро�
 
 ## Ближайший маршрут
 
-1. Технический план SA-05–SA-08 уже принят; следующий функциональный пакет SA-05 начинать только по отдельному назначению после сверки с актуальным `main`, без превращения обычных PR в external rollout.
-2. Сохранить реализованные Settings SET-01–SET-06 и Owner-only authorization/registration mutation policy; завершение repository/local-CI не считать deployed acceptance. Реальную Google/Owner binding acceptance оставить Stage 6. Complaints продолжать по его профильному контракту/служебному каналу.
-3. Довести UI/UX product pass до финальной real-runtime acceptance.
-4. Возобновлять Stage 6 external integration только по отдельному указанию владельца и по `docs/database/*`.
-5. После завершения pre-release product и external gates перейти к финальному общепроектному refinement и Stage 7 production release по `ROADMAP.md`.
+1. Довести отдельный UI/UX product pass до финальной real-runtime acceptance; repository/local-CI завершение Super-admin не заменяет эту визуальную/продуктовую приёмку.
+2. Сохранить реализованные Settings и Super-admin boundaries без расширения production authority; реальную Google OAuth / exact Owner binding acceptance оставить Stage 6.
+3. Возобновлять Stage 6 external integration только по отдельному указанию владельца и по `docs/database/*`: pending migrations/runtime grants, Hyperdrive, Google/Owner binding, Queue/providers, preview isolation, deployed smoke и backup/restore.
+4. После завершения pre-release product и external gates перейти к финальному общепроектному refinement и Stage 7 production release по `ROADMAP.md`.

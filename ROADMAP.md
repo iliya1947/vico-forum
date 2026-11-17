@@ -11,7 +11,7 @@ Source of truth:
 - текущее фактическое состояние — `PROJECT_STATE.md`;
 - application authorization — `docs/auth/AUTHORIZATION.md`;
 - обычная админ-панель и её bounded delivery contract — `docs/ADMIN_PANEL.md`;
-- отдельный exact-Owner-only Super-admin и границы SA-01–SA-04 — `docs/SUPER_ADMIN.md`;
+- отдельный exact-Owner-only Super-admin и реализованные SA-01–SA-08 — `docs/SUPER_ADMIN.md`;
 - Settings product/runtime contract — `docs/SETTINGS.md`;
 - мультиязычность и переводы — `TRANSLATION_ARCHITECTURE.md` и `docs/translation/*`;
 - database rollout/operations — `docs/database/*`;
@@ -150,28 +150,32 @@ account-wide «Show me online», по умолчанию ON, и серверны
 Текущий Settings contract — `docs/SETTINGS.md`. Реальная Google/Owner
 binding и external acceptance остаются Stage 6.
 
-**Super-admin SA-01–SA-04 реализованы и merged в repository/local-CI** после Settings.
-SA-01 доставил exact-Owner-only shell с двумя входами, System Monitoring с adjacent History,
-общий Event log foundation, retained Owner events/observations (migration `0062`),
-безопасную best-effort 5xx telemetry и честный Infrastructure / Stage-6 placeholder.
-SA-02 добавил live Accounts & authentication и Security Monitoring (7 monitors),
-точные persisted auth-transition facts, bounded source-attributed attempt telemetry
-(migration `0063`), source-aware adjacent/global History и компактные Overview summaries.
-SA-03 доставил canonical unified user profile: public baseline плюс independently authorized
-existing Admin measures/authorization sections и exact-Owner private account/session/
-target-scoped retained History projection. Migration `0064` добавляет только шесть
-target-chronological indexes. Legacy Admin user-detail стал guarded compatibility redirect.
-SA-04 доставил AccountState/lifecycle foundation (`0065`) и обязательные серверные
-проверки активности в существующих actor-owned операциях без нового RBAC,
-Monitoring area или UI деактивации. Публичная identity неактивного аккаунта
-нейтральна; опубликованный контент и защищённые retained-данные сохраняются.
-Утверждённая структура всех 13 Monitoring областей и contextual
-state → History → applicable actions закреплена в `docs/SUPER_ADMIN.md`.
-Остальные десять Monitoring областей, Owner-команда/UI деактивации (SA-05)
-и последующие SA-пакеты ещё не доставлены. Технический план SA-05–SA-08
-уже принят; до начала SA-05 нужны отдельное назначение и сверка актуального `main`.
-Visual polish и real Google/Owner binding, infrastructure/production
-acceptance не подтверждены этими merge; Stage 6 остаётся paused.
+**Super-admin SA-01–SA-08 реализованы и merged в repository/local-CI** после Settings.
+SA-01–SA-02 поставили exact-Owner shell, System/Accounts/Security Monitoring, source-aware
+adjacent/global History, retained facts/observations и bounded attempt telemetry (миграции
+`0062`–`0063`). SA-03 доставил canonical unified user profile с independently
+authorized public/Admin/Owner sections и target-attributed History (индексы `0064`);
+SA-04 добавил AccountState, нейтральную публичную identity и authoritative
+active-account checks (миграция `0065`) без команды деактивации в самом SA-04.
+
+SA-05 затем доставил **canonical exact-Owner-only деактивацию** с атомарным
+lifecycle/retention и original event, сохранением опубликованного контента и
+без самодеактивации Owner. SA-06 реализовал **Forum, Administration, Moderation,
+Notifications** native Monitoring/History (индексы `0066`). SA-07 доставил
+**Background processes, Localization & translations, Files & attachments, Data,
+Integrations** поверх реальных retained/current источников, без запуска внешних
+интеграций мониторингом. SA-08 завершил общий **Overview** всех 13 областей
+(12 измеряемых + честный Infrastructure placeholder), закрытую фильтрацию
+глобальной и смежной History и маршруты к каноническим действиям.
+
+Измеряемые области не означают полный непрерывный audit: coverage, attribution,
+best-effort recording, disabled/unwired capabilities и неизвестное состояние явно
+разграничены. Reactivation, physical purge/end-of-retention actions, foreign
+credential/provider mutation, forced foreign-session termination и второй Owner
+не включены в эти пакеты. Реальные Google OAuth/Owner binding, отдельная
+Owner runtime isolation, infrastructure/deployment, external/production
+acceptance остаются **Stage 6** (paused). Финальная визуальная/продуктовая
+приёмка остаётся в отдельном UI/UX pass и не являлась gate merge SA-08.
 
 Владелец отдельно утвердил target-product подход: UI проектируется как целевой Vico Forum, а не
 только как косметика поверх текущего MVP. Небольшое self-contained frontend behavior может
@@ -499,8 +503,8 @@ infrastructure diagnostics в production прекращаются; рисков�
   reply/quote relationships без tree layout и полноценный editor/code presentation;
 - целевой Light/Dark UX с first-use system preference и persisted manual choice.
 
-Reputation, полный owner-only audit **за пределами доставленных SA-01–SA-03
-Monitoring/Event-log и target-profile History возможностей**, social-network profile mechanics и другие
+Reputation, полный owner-only audit **за пределами доставленных SA-01–SA-08
+source-aware Monitoring/Event-log и target-profile History возможностей**, social-network profile mechanics и другие
 возможности, которые владелец отдельно не утвердил, не входят в обязательный объём без нового
 продуктового решения. Система жалоб утверждена отдельно и ведётся по собственному плану; ordinary-admin
 scope, включая временные/постоянные administrative measures и историю значимых административных действий, зафиксирован в

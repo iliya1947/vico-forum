@@ -38,7 +38,7 @@ Related sources of truth:
 - [PROJECT.md](../PROJECT.md) — product and architecture baseline;
 - [AUTHORIZATION.md](auth/AUTHORIZATION.md) — authoritative application authorization;
 - [SETTINGS.md](SETTINGS.md) — Settings surfaces, Owner-only Forum & roles and registration policy;
-- [SUPER_ADMIN.md](SUPER_ADMIN.md) — separate exact-Owner-only Super-admin and delivered SA-01–SA-04 boundaries;
+- [SUPER_ADMIN.md](SUPER_ADMIN.md) — separate exact-Owner-only Super-admin and delivered SA-01–SA-08 boundaries;
 - [UI_UX_PASS.md](UI_UX_PASS.md) — shared presentation, localization and acceptance;
 - [PROJECT_STATE.md](../PROJECT_STATE.md) — factual implementation state;
 - [ROADMAP.md](../ROADMAP.md) — development and release boundaries.
@@ -100,15 +100,15 @@ Three boundaries remain distinct:
   private explanations into the global panel.
 - **Contextual administration** exposes applicable Quick actions near an object. It shares
   authoritative operations with the global panel, not a second administration backend.
-- **Super-admin** is a separate exact server-bound Owner-only surface. SA-01–SA-04 are
-  implemented in the repository: System, Accounts & authentication and Security Monitoring,
-  adjacent per-monitor History, a source-aware global Event log, the canonical unified user
-  profile with an exact-Owner private section, an inert Stage-6 Infrastructure placeholder,
-  and SA-04 AccountState/active-account enforcement across existing domains.
-  **Owner deactivation command/UI remains unimplemented SA-05**; the ten remaining
-  Monitoring areas are also not delivered. Live infrastructure, deployments, secrets
-  and providers remain Stage-6 work. Ordinary Admin permissions never grant
-  access to exact-Owner sections.
+- **Super-admin** is a separate exact server-bound Owner-only surface. **SA-01–SA-08**
+  are delivered in repository/local-CI: all twelve measured Monitoring areas,
+  adjacent/global original-source History and finished Overview; canonical
+  public/Admin/Owner unified profile; SA-04 lifecycle enforcement and SA-05
+  canonical Owner-only account deactivation. **Infrastructure** remains an inert
+  Stage-6 placeholder. This does not add a second Admin mutation backend or
+  let ordinary Admin permissions grant Owner access. Real Google/Owner binding,
+  deployed infrastructure, providers, credentials and external acceptance
+  remain Stage 6; final visual/product polish is in the separate UI/UX pass.
 
 Reserved Help & solutions category/service-section identities retain their existing rules.
 Administrative browsing must not turn the internal service section into an ordinary public
@@ -440,8 +440,9 @@ nor the topic view offers them an own solved-confirmation.
 Ordinary History answers who acted, what changed, which object was affected, when, the
 applicable reason and minimal useful change context. It is distinct from post revisions,
 security-upload events, notification inboxes and the separate Owner-only
-Monitoring/Event log: SA-01–SA-02 provide the delivered System/Accounts/Security monitors
-and their source-aware projections, not a complete cross-domain full audit.
+Monitoring/Event log: SA-01–SA-08 provide the delivered twelve-area source-aware
+current/History projections with truthful source coverage, **not** a complete
+continuous cross-domain full audit.
 
 The following matrix defines coverage to connect with the relevant implementation packages.
 AP-03 records the authorization-management rows. AP-05 connects the existing topic/Help
@@ -619,8 +620,9 @@ authorization-user subset, and permission-dependent success redirects are privat
 Users is no longer listed as unfinished. AP-09 itself did not implement blocking, account deletion,
 general edit-any user operations, Settings, a second RBAC or production rollout. SA-03 later
 composed the existing measures/authorization capabilities into the canonical profile and added
-exact-Owner read-only account/session/history projections; it still does not add deactivation,
-foreign credential/session mutation or a second administration writer.
+exact-Owner read-only account/session/history projections. SA-03 itself did not add
+deactivation; **SA-05 subsequently delivered the canonical Owner-only command**.
+Neither package adds foreign credential/session mutation or a second administration writer.
 
 ## User administrative measures and appeals (AP-10)
 
