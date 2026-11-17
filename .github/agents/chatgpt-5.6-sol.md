@@ -1,3 +1,17 @@
+## 2026-11-17 — Mira fresh bounded SA08-A PASS after M1 correction
+
+- **Reviewed target:** cumulative Draft #340 stable exact `cb09523ce050d97f1eab59b41b40c471a2cde20f`, base/main `45406723c4b53ceba9392d3fb7dc84e8adaa9768`, open/Draft/unmerged, `mergeable=true`.
+- Fresh review covered the complete accepted 08-A scope against §15 Overview composition/final filters plus existing History/source contracts; the correction delta from prior reviewed `63e624fb...` is one implementation commit across 10 files.
+- **M1 closed:** Overview now exposes the existing authoritative terminal-time/human-attribution coverage via the same Data helper, including `administration.measures.mootTimeUnproven` and seven existing terminal coverage counters. Non-zero gaps are explicitly `limited`; zeroes are explicitly not presented as proof of complete History/service health; source failure is `unavailable` with no forged zeroes.
+- The coverage read remains one fixed read inside the existing shared web repeatable-read snapshot/clock, isolated by SAVEPOINT and within the accepted <=40 read / 10s budget. It creates no new telemetry producer/sample schema and does not alter System/SA02 sampling policy.
+- Rechecked unchanged 08-A boundaries: 13-area Overview with Infrastructure placeholder, shared source reads, partial availability, retained R2-only monitoring, post-read snapshot batch, History filter/cursor round-trip, exact UTC presentation, exact-Owner/private no-store boundaries and late-viewer invalidation. No additional confirmed current-08-A defect found.
+- Exact-head evidence independently checked: all **14/14** workflow runs SUCCESS; CI application **2569/2569**; PostgreSQL17 **1410/1410**; production schema manifest **69 tables**; runtime privilege probes PASS; SA08 connected job reports `SA08-A-connected-pass`.
+- **BOUNDED SA08-A PASS — 0 confirmed current-08-A defects.**
+- Per staged task decomposition, **08-B remains queued and is not activated in this step**. The next explicit continuation may activate Lev / Codex-6.1 Sol for the accepted 08-B final whole-program matrix/implementation closure in the same cumulative #340.
+- No merge, permanent docs, #315, Stage6/production/deploy/external work.
+
+---
+
 ## 2026-11-17 — Mira bounded SA08-A review: FAIL M1; one current-08-A defect confirmed
 
 - **Reviewed target:** Draft #340 stable exact `63e624fb7fed86cd3c10dcd49d1df63f43543273`, base/main `45406723c4b53ceba9392d3fb7dc84e8adaa9768`, open/Draft, unmerged, `mergeable=true`.
