@@ -3,6 +3,8 @@ import { NATIVE_MONITORS, type NativeMonitorArea, type NativeMonitorKey } from "
 import { HELP_SOLUTIONS_SERVICE_SECTION_ID } from "./forum-identifiers";
 import { PERMISSION_CATALOG } from "../app/authorization/catalog";
 import { nativeHistoryCoverageSql } from "./owner-native-history";
+import { USER_MEASURE_ADMIN_PERMISSION_FAMILIES, USER_MEASURE_ADMIN_RESTRICTIONS } from "../app/admin/user-measure-restrictions";
+import { BLOCK_MANAGE_PRIVILEGED_PERMISSION } from "./user-measure-authority";
 
 export type NativeMonitorScalar = string | number | boolean | null;
 export interface NativeCurrentMonitor {
@@ -15,7 +17,38 @@ export interface NativeCurrentState {
 }
 const at = "(select at from clock)", owner = "(select owner_id from clock)";
 const activeMeasure = `m.lifted_at is null and (m.expires_at is null or m.expires_at>${at})`;
-const effectiveMeasure = `${activeMeasure} and m.target_user_id<>${owner} and exists(select 1 from user_measure_restrictions r where r.measure_id=m.id and r.enabled)`;
+// Same raw-role/grant/allow-minus-deny hierarchy as AP-10's authoritative
+// user-measure-policy query. Deliberately excludes sanction-filtered permissions.
+const rawAdminPermissions = [...new Set(Object.values(USER_MEASURE_ADMIN_PERMISSION_FAMILIES).flat())];
+const sqlKey = (value:string) => "'" + value.replaceAll("'", "''") + "'";
+const rawTargetAuthority = `(
+  with raw_permissions as (
+    select rp.permission_key
+    from "user" u
+    left join authz_user_roles ur on ur.user_id=u.id
+    join authz_roles role on role.id=coalesce(ur.role_id,(select id from authz_roles where slug='user'))
+    join authz_role_permissions rp on rp.role_id=role.id
+    where u.id=m.target_user_id
+    union
+    select o.permission_key from authz_user_permission_overrides o
+    where o.user_id=m.target_user_id and o.effect='allow'
+    except
+    select o.permission_key from authz_user_permission_overrides o
+    where o.user_id=m.target_user_id and o.effect='deny'
+  )
+  select case
+    when m.target_user_id=${owner} then 3
+    when exists(select 1 from raw_permissions where permission_key=${sqlKey(BLOCK_MANAGE_PRIVILEGED_PERMISSION)}) then 2
+    when exists(select 1 from raw_permissions where permission_key in (${rawAdminPermissions.map(sqlKey).join(",")})) then 1
+    else 0
+  end
+)`;
+const adminFloorApplies = `m.issuer_authority_floor>${rawTargetAuthority}`;
+const adminKeySql = USER_MEASURE_ADMIN_RESTRICTIONS.map(sqlKey).join(",");
+const restrictionApplies = `(r.restriction_key not in (${adminKeySql}) or ${adminFloorApplies})`;
+const effectiveMeasure = `${activeMeasure} and m.target_user_id<>${owner}
+  and exists(select 1 from user_measure_restrictions r where r.measure_id=m.id
+    and r.enabled and ${restrictionApplies})`;
 const count = (table: string, where = "true") => `(select count(*)::text from ${table} where ${where})`;
 const select = (fields: Record<string, string>) => Object.entries(fields).map(([key, sql]) => `${sql} as "${key}"`).join(",\n");
 const RESTRICTIONS = ["topics.create","replies.create","attachments.upload","posts.edit","profile.edit","complaints.submit","helpSignals.submit","translations.generate","admin.forum","admin.complaints","admin.security","admin.usersAccess"] as const;
@@ -58,7 +91,7 @@ const FIELDS: Record<NativeMonitorKey, Record<string, string>> = {
   "administration.measures": {
     total: count("user_measures"), active: count("user_measures m", activeMeasure), effective: count("user_measures m", effectiveMeasure),
     expired: count("user_measures m", `m.lifted_at is null and m.expires_at<=${at}`), lifted: count("user_measures", "lifted_at is not null"),
-    ...Object.fromEntries(RESTRICTIONS.map((key, i) => [`restriction${i}`, count("user_measures m join user_measure_restrictions r on r.measure_id=m.id", `${effectiveMeasure} and r.enabled and r.restriction_key='${key}'`)])),
+    ...Object.fromEntries(RESTRICTIONS.map((key, i) => [`restriction${i}`, count("user_measures m join user_measure_restrictions r on r.measure_id=m.id", `${activeMeasure} and m.target_user_id<>${owner} and r.enabled and r.restriction_key='${key}'${(USER_MEASURE_ADMIN_RESTRICTIONS as readonly string[]).includes(key)?` and ${adminFloorApplies}`:""}`)])),
     ...Object.fromEntries(["pending","accepted","rejected","moot"].map(status => [`appeals${status[0].toUpperCase()+status.slice(1)}`, count("user_measure_appeals", `status='${status}'`)])),
     mootTimeUnproven: count("user_measure_appeals a", missingMootTime),
   },
