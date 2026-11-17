@@ -1,3 +1,15 @@
+## 2026-11-17 — Mark independent WHOLE SA07 review: FAIL M1 confirmed; Lira correction assigned
+
+- Mark / Codex-6 Sol independently reviewed cumulative Draft #339 exact `4d29735f915adb69cbe641c95d259c904e7114cd` and found one confirmed current-SA07 defect. Mira independently rechecked the source/contract and confirms the finding.
+- **M1:** `task.reconciliationPass` is projected into `integrations.translation` History by `TASK_FACT_MONITOR_SCOPES_SQL`, but `compatibleKind()` accepts that same kind only for `background.translation`. Therefore unfiltered Integrations History can show the retained fact while the equivalent closed `origin=operational-event&kind=task.reconciliationPass` filter is rejected as invalid/400.
+- This is current SA07, not future groundwork: the accepted monitor contract requires fixed History source/kind mapping and the final SA07 filters/keysets acceptance requires valid area/source/kind combinations to be consistent with the rows the monitor can display.
+- **Bounded correction assigned to Lira / ChatGPT-6:** align the source projection and kind/monitor compatibility for `task.reconciliationPass` according to the intended SA07 monitor association, and add regression coverage proving both unfiltered and kind-filtered scoped History behave consistently. Do not redesign SA07 or broaden scope.
+- After the implementation change, publish the new stable exact #339 head + applicable checks. Whole-SA07 review cycle resets on that head.
+- **Next review route after correction:** Mira fresh whole-SA07 coordinator review first; only after coordinator PASS, Mark repeats independent whole-SA07 review on the same exact head.
+- No merge, SA08+, permanent docs, #315, Stage6/production/deploy/external work.
+
+---
+
 ## 2026-11-17 — Lira bounded SA06 M2 correction: AUTHOR READY on new exact #338 head
 
 - **Implementation:** cumulative [Draft #338](https://github.com/iliya1947/vico-forum/pull/338), stable exact `50b0a0b464546fc4887568e454d5aa9881e51ca1`, open/unmerged. Delta from Mira-reviewed `ce71892dc30d8e9ef03833031c29e8519ca7627d` is exactly two commits/two files: `db/owner-native-history.ts` and `tests/database/sa06-native-monitoring.test.ts`; no schema, writer, permissions, API, UI or SA07 changes.
