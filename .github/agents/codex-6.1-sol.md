@@ -44,3 +44,23 @@ STOP: возврат Мире на scope/fit review E1/E2. Код не реал�
 implementation PR не создавался; будущие тесты/CI/browser не запускались.
 Независимый технический review возможен после реализации Лирой и coordinator PASS
 Миры на том же stable exact head, если Лёва не участвовал в реализации.
+
+
+## Активное назначение владельца — реализация edit own topic title
+
+По прямому решению владельца реализация передана Лёве вместо Лиры.
+
+Реализовать принятый bounded scope из `TOPIC_TITLE_EDIT_SERVICE_PLAN.md` с последующими scope/fit решениями Миры и E2 владельца в отдельном implementation PR от актуального `main`.
+
+Ключевые обязательные границы:
+
+1. Добавить `forum.topic.title.editOwn` с необходимой forward catalog migration/default grants; edit-any не добавлять.
+2. Разрешать mutation только authoritative автору темы при fresh permission/account checks.
+3. Сохранять immutable title revision + CAS; новый изменённый текст получает `sourceLocale: "und"`.
+4. Existing `posts.edit` restriction блокирует title edit; нового restriction key не создавать.
+5. Не вводить отдельный title-edit cooldown, drafts/receipts/autosave или новую recovery subsystem.
+6. Не расширять scope в admin edit, source-locale correction, другие user actions, UI/UX pass, Stage 6 или external integration.
+
+Выполнить применимые local/CI проверки и browser acceptance для author success, guest/non-author denial, stale conflict и current title после reload/list/search. После stable implementation head зафиксировать implementation PR/head и результаты в служебном PR, затем STOP для coordinator whole-PR review Миры.
+
+Поскольку Лёва является исполнителем, независимый технический review этой реализации он не проводит.
