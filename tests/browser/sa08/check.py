@@ -1,5 +1,5 @@
 """SA08-A actual Worker/Better Auth/PG17 Overview and final History controls; no 08-B full-program activation."""
-import argparse,json,os,select,shutil,subprocess
+import argparse,json,os,re,select,shutil,subprocess
 from pathlib import Path
 from uuid import uuid4
 from urllib.parse import urlparse,quote
@@ -92,7 +92,9 @@ try:
    record('all13-localized-responsive-areas-shared-source-clocks-disabled-runtime',locale=locale)
   page.set_viewport_size({'width':1280,'height':900});visit(page,root)
   before=sql("select id,monitor_key from owner_monitor_observations where resource_scope='global' and monitor_key not like 'system.%' order by id")
-  page.locator('[data-overview-refresh]').click();page.wait_for_load_state('networkidle')
+  clock=page.locator('[data-overview-source="system"] time').first;previous=clock.get_attribute('datetime')
+  with page.expect_response(lambda r:r.request.method=='GET' and root+'.data' in r.url) as refreshed:page.locator('[data-overview-refresh]').click()
+  private_headers(refreshed.value,200);expect(clock).not_to_have_attribute('datetime',previous,timeout=15000)
   assert sql("select id,monitor_key from owner_monitor_observations where resource_scope='global' and monitor_key not like 'system.%' order by id")==before
   assert not sql("select id from owner_monitor_observations where resource_scope like 'storage:%'")
   assert not sql("select id from owner_events where source='operation' and kind like 'file.%'")
@@ -103,7 +105,7 @@ try:
   form.locator('[name="origin"]').select_option('operational-event');form.locator('[name="kind"]').select_option('task.planned')
   from_time='2026-01-01T00:00:00.000001Z';until_time='2027-01-01T00:00:00.000002Z'
   form.locator('[name="from"]').fill(from_time);form.locator('[name="until"]').fill(until_time)
-  form.locator('button[type=submit]').focus();page.keyboard.press('Enter');page.wait_for_load_state('networkidle')
+  form.locator('button[type=submit]').focus();page.keyboard.press('Enter');page.wait_for_url(re.compile(r'.*[?&]kind=task[.]planned.*'),timeout=15000)
   expected={'area':'integrations','monitor':'integrations.translation','origin':'operational-event','kind':'task.planned','from':from_time,'until':until_time}
   from urllib.parse import parse_qs
   assert parse_qs(urlparse(page.url).query)=={k:[v] for k,v in expected.items()}
@@ -125,7 +127,7 @@ try:
   form=page.locator('[data-history-filters]');expect(form.locator('[name="area"]')).to_have_count(0);expect(form.locator('[name="monitor"]')).to_have_count(0)
   form.locator('[name="origin"]').select_option('operational-event')
   assert 'task.reconciliationPass' in form.locator('[name="kind"] option').evaluate_all('(nodes)=>nodes.map(n=>n.value)')
-  form.locator('[name="kind"]').select_option('task.planned');form.locator('button[type=submit]').click();page.wait_for_load_state('networkidle')
+  form.locator('[name="kind"]').select_option('task.planned');form.locator('button[type=submit]').click();page.wait_for_url(re.compile(r'.*[?&]kind=task[.]planned.*'),timeout=15000)
   expect(page.locator('[data-history-kind="task.planned"]')).to_have_count(25)
   oldest=page.locator('.admin-history-paging a[href*="before="]').get_attribute('href')
   assert parse_qs(urlparse(oldest).query)['kind']==['task.planned'];assert '/integrations/integrations.translation/history' in oldest
