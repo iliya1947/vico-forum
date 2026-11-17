@@ -1,3 +1,16 @@
+## 2026-11-17 — 07-F author checkpoint complete;07-D ACTIVE
+
+- Dependent cumulative Draft #339 exact `2de32d99e5cf108187e3f3185a4623f9fe570ce7` (7 SA07 commits); base #338 still `ce71892d`, open/unmerged. Whole SA07 is not AUTHOR READY.
+- Files/cleanup/13-slot R2 source delivered with original after-COMMIT facts, exact native current state, Owner-only UI/History, one paired sweep SELECT; no DDL, scheduler, cleanup control or runtime enablement. Scope and detailed progress remain in prior checkpoint.
+- Exact product-source head80b4a57c: all13 workflows SUCCESS; direct logs confirm app2546/203, PG17 1375/101, native69-table manifest, SA07 connected24 PASS, existing K5 connected33 PASS and full SA05 connected PASS including no false file.accepted after the held-PUT deactivation boundary. Latest2de differs only the diagnosed UI completion assertion; all13 exact-head workflows now SUCCESS (detailed final logs being reconciled).
+- Local final full B1/L/F connected24 PASS, zero pageErrors/external requests; genuine Worker/BetterAuth/PG17/local private R2. Viewed EN/RU/HE320 Files screenshots with expanded retained sample, RTL and no horizontal overflow. Native14 F, full1375/101, storage seams11/2, earlier focusedapp85/10 and runtimeprivilege/contract23 PASS. Fullapp stale source-signature expectation was updated/focused8PASS, exact CI proves full2546PASS.
+- Diagnostics retained: standalone bridge needed both already-CI-provided local Hyperdrive envs; test required canonical422 and original digest-based evidence lookup by native operation; real bounded LIST may need subsequent cursor passes. Repeats now reset own DB+Worker isolate+R2 together, preserving old evidence. CDP proved intermittent Refresh net::ERR_ABORTED after200 on both Chromium154 and matching151; refreshed native DOM time and direct complete DTO succeed. Narrow harness checks actual UI200/private headers + changed DOM observation time, separately complete actual DTO/privacy and unchanged DB sample gate. Exact internal cancellation mechanism remains unverified; no application workaround. Initial failures remain recorded.
+- Temporary Wrangler R2 binding restored byte-for-byte; no config change ships. Permanent docs remain deferred per override. This is author acceptance, not independent review/developer visual approval.
+- ACTIVE accepted07-D: fixed named full counts/relationship checks, ordinary-access/type/nullability probes using compiled manifest expectation, per-source retained facts/schemas/terminal coverage and genuine account minimum boundary; separate localization/web snapshots. Source is WIP, not yet published. Then07-I in this same PR, without intermediate merge/review gate.
+- Mira's SA06 M2 FAIL/Lira corrective assignment remains intact; #339 must update/recheck when #338 changes. No merge, SA08+, permanent docs/#315/Stage6/production/deploy/external work.
+
+---
+
 ## 2026-11-17 — Lev SA07 Files source checkpoint published; acceptance ACTIVE
 
 - Cumulative dependent Draft #339 exact `0d0559d6489efa649213ab757ba43f3d64334c4b`; base #338 remains `ce71892d`, open/unmerged. This is implementation progress, not whole-SA07 AUTHOR READY.
