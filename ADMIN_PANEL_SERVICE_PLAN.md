@@ -4,11 +4,11 @@ Service PR #331 is the active Admin/Super-admin coordination channel. PR #251 is
 
 ## Current boundary
 
-- Current main7e7a8038; prerequisite Draft338 stable exact 50b0a0b4 open/unmerged, Lira M2 subject-only person-coverage correction AUTHOR READY with 12/12 exact-head workflows SUCCESS; Mira fresh whole-SA06 coordinator review NEXT, Mark independent review only after PASS. Earlier Lev author verification was not independent.
-- Explicit overnight override activates dependent cumulative [Draft #339](https://github.com/iliya1947/vico-forum/pull/339), branch `chatgpt/sa07-native-operations`, base `chatgpt/sa06-native-monitoring`; current exact `98f6ce48bc0efce465d89eff5267db3e82524fe1`.
--07-B1/L/F/D predecessor22f all13 exact workflows SUCCESS: app2555/205,native1388/102,manifest69,cumulative connected32. Source-specific details remain in the common/personal logs. Known Drizzle BigInt/exit0 is not parity proof.
-- **07-B1/L/F/D/I code and prior-base author acceptance complete** in the same cumulative PR. Exact98f6 all13 workflows/17jobs SUCCESS: app2568/208,native1397/103,manifest69,connected40; local actual connected40 with zero pageErrors/external requests and EN/RU/HE320 screenshots inspected. Local native large-catalog deadline did not recur in unchanged isolated12/12 or full exact CI; no assertion/deadline change. No independent self-review/final cumulative acceptance claimed. **Next: Lev updates/rechecks dependent339 against newly corrected338 head 50b0a0b4; Mira repeats fresh whole-SA06 coordinator review, then Mark only after PASS.** No internal merge gate.
-- No SA08+, #315, permanent docs, Stage6/production/deploy/external work or merge. Author browser checks do not establish developer visual/deployed approval.
+- Main `1e4bcf83ff7bda0ec772a8098671ca9afe63888a` now includes the accepted SA06 #338; its review cycle closed with Mira coordinator PASS and Mark independent PASS before Developer merge.
+- **SA07:** dependent cumulative [Draft #339](https://github.com/iliya1947/vico-forum/pull/339) on branch `chatgpt/sa07-native-operations` now targets main; Lira reconciled the post-merge source conflict without SA07 redesign, exact head `4d29735f915adb69cbe641c95d259c904e7114cd`, GitHub mergeable=true, 102 changed SA07 paths. Previous author evidence at `98f6ce48...`: 13 workflow PASS, application 2568/208, native PG17 1397/103, connected 40; previous-head evidence alone is not the new-head acceptance.
+- **ACTIVE:** per direct Developer override, Lira performs applicable recheck on new exact head, then cumulative whole-SA07 review; since she changed implementation, her review is an author/self review, not independent. Review outcome, findings and intermediate conclusions remain under Developer publication hold.
+- Known Drizzle generator BigInt stderr/exit0 remains outside independent schema-parity proof. No deployed provider/Owner visual acceptance claim.
+- No SA08+, #315, permanent docs, Stage6/production/deploy/external work or implementation merge by agents.
 
 ## Stable product decisions
 
