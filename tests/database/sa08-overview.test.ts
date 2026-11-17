@@ -2,6 +2,7 @@ import {readFile,readdir} from "node:fs/promises";
 import {Client,Pool} from "pg";
 import {beforeAll,beforeEach,afterAll,it,expect,vi} from "vitest";
 import {PostgresOwnerOverview} from "../../db/owner-overview-monitoring";
+import {readDataTerminalCoverage} from "../../db/owner-data-monitoring";
 import {recordOwnerSnapshotBatch,type OwnerSnapshotCandidate} from "../../db/owner-overview-observations";
 import {DrizzleForumRepository} from "../../db/forum-repository";
 import {drizzle} from "drizzle-orm/node-postgres";
@@ -52,6 +53,9 @@ it("composes all13 areas from native sources once, sharing clocks and registrati
  const state=await read();
  expect(state.areas).toHaveLength(13);expect(state.areas.filter(a=>a.status==="measured")).toHaveLength(12);expect(area(state,"infrastructure")).toMatchObject({status:"placeholder",figures:[],sources:[]});
  expect(figure(state,"accounts","total")).toBe("10003");expect(figure(state,"forum","topics")).toBe("1");
+ expect(state.terminalCoverage).toMatchObject({status:"measured",values:{mootTerminalTime:"0",measureHumanAttribution:"0"}});
+ expect(state.terminalCoverage.observedAt).toBe(area(state,"system").sources[0].observedAt);
+ expect(statements.filter(s=>s.sql.includes('as "helpHumanAttribution"'))).toHaveLength(1);
  expect(state.readStatements).toBeLessThanOrEqual(40);expect(state.recording).toBe("available");expect(writeWhileReading).toBe(false);expect(readTransactions).toBe(0);
  expect(new Set(state.areas.flatMap(a=>a.sources).filter(s=>s.connection==="web-database"&&s.status==="measured").map(s=>s.observedAt)).size).toBe(1);
  expect(statements.filter(s=>s.sql.includes("current_setting('server_version')"))).toHaveLength(1);
@@ -128,6 +132,39 @@ it("classifies a real locked independent source without green zeroes or poisoned
  try{
  const state=await read();expect(area(state,"notifications")).toMatchObject({status:"unavailable",figures:[]});
  expect(area(state,"notifications").sources[0].code).toBe("deadline");expect(area(state,"forum").status).toBe("measured");
- expect(area(state,"data").status).toBe("measured");expect(state.readStatements).toBeLessThanOrEqual(40);
+ expect(area(state,"data").status).toBe("partial");expect(state.terminalCoverage).toEqual({status:"unavailable",observedAt:null,values:{}});
+ expect(figure(state,"data","retainedOwnerEvents")).toBe("0");expect(state.readStatements).toBeLessThanOrEqual(40);
  }finally{await held.query("rollback");await held.end();}
+});
+
+it("exposes actual untimed native tuples and retained legacy actor gaps using Data's unchanged definitions",async()=>{
+ const measure=crypto.randomUUID(),moot=crypto.randomUUID(),legacy=crypto.randomUUID();
+ await c.query("insert into user_measures(id,target_user_id,issuer_user_id,issuer_authority_floor,create_fingerprint,initial_reason) values($1,'owner','owner',3,repeat('a',64),'SA08_PRIVATE_REASON')",[measure]);
+ // A native moot tuple can have no proven terminal time under today's constraints.
+ await c.query("insert into user_measure_appeals(id,measure_id,subject_user_id,ordinal,body,status) values($1,$2,'owner',1,'SA08_PRIVATE_BODY','moot')",[moot,measure]);
+ // Current constraints reject missing reviewers. Simulate one pre-existing corrupt
+ // row in this disposable schema, then reinstall the EXACT constraint NOT VALID:
+ // new writes remain checked, and only this retained row is deliberately invalid.
+ const definition=(await c.query("select pg_get_constraintdef(oid) definition from pg_constraint where conrelid='user_measure_appeals'::regclass and conname='user_measure_appeals_resolution_check'")).rows[0].definition;
+ await c.query("begin");
+ try{
+  await c.query("alter table user_measure_appeals drop constraint user_measure_appeals_resolution_check");
+  await c.query("insert into user_measure_appeals(id,measure_id,subject_user_id,ordinal,body,status,resolved_at,reviewer_explanation) values($1,$2,'owner',2,'SA08_PRIVATE_BODY','rejected',clock_timestamp(),'SA08_PRIVATE_EXPLANATION')",[legacy,measure]);
+  await c.query("alter table user_measure_appeals add constraint user_measure_appeals_resolution_check "+definition+" not valid");
+  await c.query("commit");
+ }catch(error){await c.query("rollback");throw error;}
+ try{
+  const canonical=await readDataTerminalCoverage(c),state=await read();
+  expect(canonical).toMatchObject({mootTerminalTime:"1",measureHumanAttribution:"1"});
+  expect(state.terminalCoverage).toEqual({status:"limited",observedAt:area(state,"system").sources[0].observedAt,values:canonical});
+  expect(figure(state,"administration","mootTimeUnproven")).toBe("1");
+  expect(state.readStatements).toBeLessThanOrEqual(40);expect(area(state,"data").status).toBe("measured");
+  expect((await c.query("select count(*)::int n from owner_events")).rows[0].n).toBe(0);
+  expect((await c.query("select count(*)::int n from owner_monitor_observations where monitor_key='data.retention'")).rows[0].n).toBe(0);
+  expect(JSON.stringify(state)).not.toContain("SA08_PRIVATE");
+  await expect(c.query("update user_measure_appeals set body='another' where id=$1",[legacy])).rejects.toMatchObject({code:"23514"});
+ }finally{
+  await c.query("delete from user_measure_appeals where id=$1",[legacy]);
+  await c.query("alter table user_measure_appeals validate constraint user_measure_appeals_resolution_check");
+ }
 });

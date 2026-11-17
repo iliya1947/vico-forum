@@ -11,7 +11,11 @@ export interface OverviewArea {
   area:OwnerMonitorArea|"infrastructure";status:"measured"|"partial"|"unavailable"|"placeholder";
   sources:OverviewSource[];figures:OverviewFigure[];
 }
+export type OverviewTerminalCoverage=
+  | {status:"measured"|"limited";observedAt:string;values:Record<string,string>}
+  | {status:"unavailable";observedAt:null;values:Record<string,never>};
 export interface OwnerOverview {
+  terminalCoverage:OverviewTerminalCoverage;
   areas:OverviewArea[];recent:OwnerHistoryPage|null;recentUnavailable:boolean;
   samples:Array<{key:OwnerMonitorKey;first:string|null;last:string|null}>;
   sampleCoverageUnavailable:boolean;recording:"available"|"unavailable";readStatements:number;

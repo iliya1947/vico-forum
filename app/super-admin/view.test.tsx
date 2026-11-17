@@ -58,6 +58,7 @@ const titles = {
 };
 
 const overviewState:OwnerOverview={
+ terminalCoverage:{status:"measured",observedAt:data.observedAt,values:{mootTerminalTime:"0",measureHumanAttribution:"0"}},
  areas:[...Object.keys(OWNER_MONITORS).map(name=>({
   area:name as keyof typeof OWNER_MONITORS,status:"measured" as const,sources:[{id:name,connection:"web-database" as const,status:"measured" as const,code:"none" as const,observedAt:data.observedAt}],
   figures:name==="system"?data.monitors.map(m=>({monitorKey:m.key,field:m.key==="system.requests"?"count":"state",value:m.values[m.key==="system.requests"?"count":"state"]})):
@@ -75,6 +76,26 @@ describe("Owner-only UI/locale navigation and SA08 composition", () => {
     expect(container.querySelector('[data-overview-area="infrastructure"] a[href*="history"]')).toBeNull();
     expect(container.querySelectorAll('a[href*="/monitoring/system/"][href$="/history"]')).toHaveLength(3);
     expect(container.querySelector('[data-overview-area="accounts"]')?.textContent).toContain(new Intl.NumberFormat(locale).format(9007199254740993n));
+   }finally{router.dispose();}
+  });
+  it.each(["en","ru","he"] as const)("discloses nonzero retained time/actor gaps without asserting health in %s",locale=>{
+   const {container,router}=mount(locale,<SuperAdminOverview locale={locale} state={{...overviewState,terminalCoverage:{status:"limited",observedAt:data.observedAt,values:{helpTerminalTime:"1",mootTerminalTime:"2",notificationReadTime:"3",complaintTerminalTime:"4",helpHumanAttribution:"5",measureHumanAttribution:"6",complaintHumanAttribution:"9007199254740993"}}}} viewerId="owner"/>);
+   try{
+    const coverage=container.querySelector('[data-overview-terminal-coverage]')!;
+    expect(coverage).toHaveAttribute("data-status","limited");expect(coverage.querySelector('[role="status"]')).toBeInTheDocument();
+    expect(coverage.querySelectorAll('[data-overview-coverage-field]')).toHaveLength(7);
+    expect(coverage.querySelector('[data-overview-coverage-field="complaintHumanAttribution"] dd')?.textContent).toBe(new Intl.NumberFormat(locale).format(9007199254740993n));
+    expect(coverage.querySelector('time')).toHaveAttribute("datetime",data.observedAt);
+    expect(coverage.querySelector('a[href$="/monitoring/data/data.retention/history"]')).toBeInTheDocument();
+    expect(coverage.textContent).not.toContain("sa08Terminal");
+   }finally{router.dispose();}
+  });
+  it("does not replace unavailable terminal coverage with zeroes",()=>{
+   const {container,router}=mount("en",<SuperAdminOverview locale="en" state={{...overviewState,terminalCoverage:{status:"unavailable",observedAt:null,values:{}}}} viewerId="owner"/>);
+   try{
+    const coverage=container.querySelector('[data-overview-terminal-coverage]')!;
+    expect(coverage).toHaveAttribute("data-status","unavailable");expect(coverage.querySelectorAll('dd,time')).toHaveLength(0);
+    expect(coverage.querySelector('[role="status"]')).toHaveTextContent("Source unavailable");
    }finally{router.dispose();}
   });
   it("keeps actual measurements and unavailable History distinct when recording fails",()=>{

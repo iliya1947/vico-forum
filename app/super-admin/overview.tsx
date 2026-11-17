@@ -9,6 +9,7 @@ import {useOwnerSnapshot} from "./owner-snapshot";
 import {SuperAdminShell,Timeline,formatTime} from "./view";
 import {ownerAreaLabels,ownerAreaPath} from "./area-navigation";
 import {withOwnerHistoryFilters} from "./history-query-links";
+import {dataLabels} from "./data-labels";
 import {nativeLabels} from "./native-labels";
 import {taskLabels} from "./task-labels";
 import {fileLabels} from "./file-labels";
@@ -32,6 +33,17 @@ export function SuperAdminOverview({locale,state,viewerId}:{locale:string;state:
   return <SuperAdminShell locale={locale} current="overview"><section className="admin-overview" data-owner-overview aria-labelledby="owner-overview-heading">
     <h2 id="owner-overview-heading">{t("superAdminOverview")}</h2><p>{t("sa08Note")}</p><p>{t("sa08SampleNote")}</p><p><Link data-overview-refresh to={routing.superAdmin.overview(locale)}>{t("superAdminRefresh")}</Link></p>
     {state.recording==="unavailable"?<p role="status">{t("superAdminRecordingUnavailable")}</p>:null}
+    <section data-overview-terminal-coverage data-status={state.terminalCoverage.status} aria-labelledby="overview-terminal-coverage">
+      <h3 id="overview-terminal-coverage">{t("sa07DTerminalCoverage")}</h3>
+      <p>{t("sa08TerminalCoverageNote")}</p>
+      {state.terminalCoverage.status==="unavailable"?<p role="status">{t("sa08Unavailable")}</p>:<>
+        {state.terminalCoverage.status==="limited"?<p role="status">{t("sa08TerminalCoverageLimited")}</p>:null}
+        <p><bdi>web-database</bdi>: <time dateTime={state.terminalCoverage.observedAt}>{formatTime(state.terminalCoverage.observedAt,locale)} · <bdi>{state.terminalCoverage.observedAt}</bdi></time></p>
+        <dl>{Object.entries(state.terminalCoverage.values).map(([field,value])=><div key={field} data-overview-coverage-field={field}><dt>{t(dataLabels[field])}</dt><dd><bdi>{new Intl.NumberFormat(locale).format(BigInt(value))}</bdi></dd></div>)}</dl>
+      </>}
+      <Link to={ownerAreaPath(routing,locale,"data")}>{t("superAdminOverviewDetails")}</Link>{" · "}
+      <Link to={routing.superAdmin.monitorAreaHistory(locale,{area:"data",monitorKey:"data.retention"})}>{t("superAdminHistory")}</Link>
+    </section>
     <div className="super-admin-monitors">{state.areas.map(area=><article className="super-admin-monitor" key={area.area} data-overview-area={area.area} data-status={area.status}>
       <h3><Link to={ownerAreaPath(routing,locale,area.area)}>{t(ownerAreaLabels[area.area])}</Link></h3>
       <p>{t(area.status==="placeholder"?"superAdminStage6":area.status==="measured"?"sa08Measured":area.status==="partial"?"sa08Partial":"sa08Unavailable")}</p>

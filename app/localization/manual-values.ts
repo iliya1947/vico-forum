@@ -4,6 +4,9 @@ import type { ProviderTranslationValue } from "./translation-validation";
 type CommonTranslationValues = Readonly<Record<UiKey<"common">, ProviderTranslationValue>>;
 
 export const russianCommonValues = {
+  sa08TerminalCoverageNote: "Эти существующие проверки считают сохранённые записи без корректного времени завершения или атрибуции человеку. Нулевые значения не подтверждают полноту Истории или общую исправность сервисов.",
+  sa08TerminalCoverageLimited: "В сохранённых записях есть пробелы времени или атрибуции человеку.",
+
   sa08Note: "Выбранные текущие показатели используют исходные источники. Измерения, конфигурация и сохранённое покрытие показаны отдельно; обзор не утверждает общую исправность сервисов.",
   sa08Partial: "Частично доступно",
   sa08Measured: "Выбранные источники измерены",
@@ -1788,6 +1791,9 @@ export const russianCommonValues = {
 } as const satisfies CommonTranslationValues;
 
 export const hebrewCommonValues = {
+  sa08TerminalCoverageNote: "הבדיקות הקיימות סופרות רשומות שמורות עם מועדי סיום חסרים או לא תקינים, או ללא ייחוס לאדם. ערכי אפס אינם מעידים על היסטוריה מלאה או על תקינות כוללת.",
+  sa08TerminalCoverageLimited: "ברשומות השמורות קיימים פערי זמן או ייחוס לאדם.",
+
   sa08Note: "הנתונים הנבחרים משתמשים בקוראי המקור הקיימים. מדידות, תצורה וכיסוי שמור מוצגים בנפרד; הסקירה אינה קביעה על תקינות כוללת.",
   sa08Partial: "זמין חלקית",
   sa08Measured: "המקורות הנבחרים נמדדו",

@@ -6,7 +6,7 @@ import {readNativeMonitor} from "./owner-native-current";
 import {readTaskSource} from "./owner-task-monitoring";
 import {readFileSource,readRetainedStorageSamples} from "./owner-file-monitoring";
 import {readLocalizationSource,readLocalizationBudget,OwnerLocalizationUnavailableError} from "./owner-localization-monitoring";
-import {readDataRetained} from "./owner-data-monitoring";
+import {readDataRetained,readDataTerminalCoverage} from "./owner-data-monitoring";
 import {integrationConfiguration} from "./owner-integration-monitoring";
 import {PostgresOwnerSa02History} from "./owner-sa02-history";
 import {NATIVE_MONITORS,OWNER_MONITORS,type OwnerMonitorKey,type OwnerMonitorArea} from "./owner-monitor-catalog";
@@ -39,7 +39,7 @@ const fields:Partial<Record<OwnerMonitorKey,readonly string[]>>={
   "accounts.users":["total","deactivatedUsers","retentionPendingUsers"],"accounts.methods":["googleUsers"],"accounts.sessions":["active"],
   "security.auth":["attributedAttempts","gapAttempts"],"security.access":["attributedAttempts","gapAttempts"],"security.attachments":["total"],
   "forum.structure":["topics","posts"],"forum.content":["missingCurrentTitles","missingCurrentBodies"],
-  "administration.authorization":["roles"],"administration.measures":["effective","appealsPending"],"administration.registration":["googleEnabled","emailEnabled"],
+  "administration.authorization":["roles"],"administration.measures":["effective","appealsPending","mootTimeUnproven"],"administration.registration":["googleEnabled","emailEnabled"],
   "moderation.complaints":["open","pendingAppeals"],"moderation.help":["pending"],
   "notifications.inbox":["unread","missingTargets"],
   "background.translation":["pending","processingExpired","failed","runtimeEnabled"],"background.attachments":["eligibleUnreferenced","cleanupClaimsExpired","schedulerEnabled"],
@@ -55,7 +55,7 @@ const areaSources:Record<OwnerMonitorArea,readonly string[]>={
   system:["system"],accounts:["accounts"],security:["security"],forum:["forum"],
   administration:["administration","accounts"],moderation:["moderation"],notifications:["notifications"],
   background:["tasks","files"],files:["files"],localization:["localization","budget"],
-  data:["data","accounts"],integrations:["configuration","system","accounts","storage","localization","tasks"],
+  data:["data","accounts","terminal-coverage"],integrations:["configuration","system","accounts","storage","localization","tasks"],
 };
 /** Shared read snapshots, pure existing source functions, no public endpoint fan-out. */
 export class PostgresOwnerOverview {
@@ -66,6 +66,7 @@ export class PostgresOwnerOverview {
     const until=performance.now()+10000,budget={reads:0};
     const values:ValueMap={},sources=new Map<string,OverviewSource>(),candidates:OwnerSnapshotCandidate[]=[];
     let recent:OwnerOverview["recent"]=null,samples:OwnerOverview["samples"]=[],coverageUnavailable=false;
+    let terminalCoverage:OwnerOverview["terminalCoverage"]={status:"unavailable",observedAt:null,values:{}};
     let retainedSlots:string|undefined;
     let webReadable=false,recording:OwnerOverview["recording"]="available";
     let system:Awaited<ReturnType<typeof readSystemSnapshot>>|undefined;
@@ -125,6 +126,8 @@ export class PostgresOwnerOverview {
       // Compact retained figures reuse Data's source reader. They are not a full
       // data.retention schema1 snapshot and must never overwrite that observation.
       if(retained)values["data.retention"]={retainedOwnerEvents:retained.events.rows,retainedObservations:retained.observations.rows,minimumBoundaryFuture:values["accounts.users"]?.retentionPendingUsers??null};
+      const terminal=await group("terminal-coverage",()=>readDataTerminalCoverage(read));
+      if(terminal)terminalCoverage={status:Object.values(terminal).some(n=>BigInt(n)>0n)?"limited":"measured",observedAt:at,values:terminal};
       const slots=await group("storage",()=>readRetainedStorageSamples(read,at));
       if(slots)retainedSlots=String(slots.filter(s=>s.sample!==null).length);
       const history=await group("recent",()=>new PostgresOwnerSa02History(read).readTimeline({limit:5}));if(history)recent=history;
@@ -135,7 +138,7 @@ export class PostgresOwnerOverview {
       if(begun)try{await c?.query("rollback");}catch{/* Preserve source cause. */}
       const code=unavailable(error);if(!code)throw error;
       // A failed shared transaction cannot supply a partial successful snapshot.
-      for(const key of Object.keys(values))delete values[key as OwnerMonitorKey];candidates.length=0;system=undefined;recent=null;samples=[];coverageUnavailable=true;
+      for(const key of Object.keys(values))delete values[key as OwnerMonitorKey];candidates.length=0;terminalCoverage={status:"unavailable",observedAt:null,values:{}};system=undefined;recent=null;samples=[];coverageUnavailable=true;
       for(const id of new Set(Object.values(areaSources).flat().filter(id=>!["localization","configuration"].includes(id))))failed(id,"web-database",code);
     }finally{c?.release();}
     let local:Reader|undefined,localBegun=false;
@@ -182,6 +185,6 @@ export class PostgresOwnerOverview {
       return {area,status:successful===parts.length?"measured":successful?"partial":"unavailable",sources:parts,figures};
     });
     areas.push({area:"infrastructure",status:"placeholder",sources:[],figures:[]});
-    return {areas,recent,recentUnavailable:recent===null,samples,sampleCoverageUnavailable:coverageUnavailable,recording,readStatements:budget.reads};
+    return {terminalCoverage,areas,recent,recentUnavailable:recent===null,samples,sampleCoverageUnavailable:coverageUnavailable,recording,readStatements:budget.reads};
   }
 }

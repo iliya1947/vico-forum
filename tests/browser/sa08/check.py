@@ -146,11 +146,50 @@ try:
    private(guest.request.get(base+root+'.data'),401)
   finally:sql('alter table sa08_hidden_sweep rename to forum_attachment_sweep')
   record('actual-independent-source-failure-200-partial-no-fake-zero-and-successful-adjacent-values')
+  # Native untimed moot + one deliberately corrupt retained legacy actor tuple.
+  # Current-schema writes reject missing reviewers; reinstall the original CHECK
+  # NOT VALID before reading, so this isolated fault never disables new writes.
+  measure,moot,legacy=str(uuid4()),str(uuid4()),str(uuid4())
+  sql("insert into user_measures(id,target_user_id,issuer_user_id,issuer_authority_floor,create_fingerprint,initial_reason) values($1,$2,$2,3,repeat('a',64),'SA08_PRIVATE_REASON')",[measure,owner])
+  sql("insert into user_measure_appeals(id,measure_id,subject_user_id,ordinal,body,status) values($1,$2,$3,1,'SA08_PRIVATE_BODY','moot')",[moot,measure,owner])
+  definition=sql("select pg_get_constraintdef(oid) definition from pg_constraint where conrelid='user_measure_appeals'::regclass and conname='user_measure_appeals_resolution_check'")[0]['definition']
+  sql('begin')
+  try:
+   sql('alter table user_measure_appeals drop constraint user_measure_appeals_resolution_check')
+   sql("insert into user_measure_appeals(id,measure_id,subject_user_id,ordinal,body,status,resolved_at,reviewer_explanation) values($1,$2,$3,2,'SA08_PRIVATE_BODY','rejected',clock_timestamp(),'SA08_PRIVATE_EXPLANATION')",[legacy,measure,owner])
+   sql('alter table user_measure_appeals add constraint user_measure_appeals_resolution_check '+definition+' not valid')
+   sql('commit')
+  except:
+   sql('rollback');raise
+  try:
+   for locale in ['en','ru','he']:
+    for width in [1280,768,320]:
+     page.set_viewport_size({'width':width,'height':1100});visit(page,'/'+locale+'/super-admin')
+     coverage=page.locator('[data-overview-terminal-coverage]');expect(coverage).to_have_attribute('data-status','limited')
+     expect(coverage.locator('[data-overview-coverage-field]')).to_have_count(7)
+     for field in ['mootTerminalTime','measureHumanAttribution']:
+      expect(coverage.locator('[data-overview-coverage-field="'+field+'"] dd')).to_have_text('1')
+     expect(coverage.locator('[role="status"]')).to_have_count(1)
+     expect(page.locator('[data-overview-field="administration.measures:mootTimeUnproven"] dd')).to_have_text('1')
+     assert coverage.locator('time').get_attribute('datetime')==page.locator('[data-overview-source="system"] time').first.get_attribute('datetime')
+     assert page.evaluate('document.documentElement.scrollWidth<=innerWidth+1')
+     assert 'SA08_PRIVATE' not in page.locator('body').inner_text()
+     if width==320:page.screenshot(path=str(a.output/(locale+'-coverage-320.png')))
+    record('real-retained-untimed-and-legacy-human-attribution-gaps-visible',locale=locale)
+   with hold('lock table forum_reply_notifications in access exclusive mode'):
+    visit(page,root);coverage=page.locator('[data-overview-terminal-coverage]')
+    expect(coverage).to_have_attribute('data-status','unavailable');expect(coverage.locator('dd,time')).to_have_count(0)
+    expect(page.locator('[data-overview-area="data"]')).to_have_attribute('data-status','partial')
+    expect(page.locator('[data-overview-field="data.retention:retainedOwnerEvents"]')).to_have_count(1)
+   record('real-coverage-source-lock-keeps-retained-counts-and-does-not-forge-zero')
+  finally:
+   sql('delete from user_measure_appeals where id=$1',[legacy])
+   sql('alter table user_measure_appeals validate constraint user_measure_appeals_resolution_check')
   sql("delete from owner_monitor_observations where resource_scope='global' and monitor_key not like 'system.%'")
   sql("create function sa08_sample_fault() returns trigger language plpgsql as $$begin raise exception 'SA08_PRIVATE_SQL';end$$;create trigger sa08_sample_fault before insert on owner_monitor_observations for each row execute function sa08_sample_fault()")
   try:
    visit(page,root);expect(page.locator('[data-overview-area="accounts"]')).to_have_attribute('data-status','measured')
-   assert 'recording is unavailable' in page.locator('[role="status"]').all_text_contents()[0]
+   assert any('recording is unavailable' in text for text in page.locator('[role="status"]').all_text_contents())
    assert 'SA08_PRIVATE' not in page.locator('body').inner_text()
   finally:sql('drop trigger sa08_sample_fault on owner_monitor_observations;drop function sa08_sample_fault()')
   record('actual-atomic-batch-recorder-failure-does-not-erase-current-measurements')

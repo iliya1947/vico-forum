@@ -16,6 +16,8 @@ export interface UiMessageDescriptor {
 
 export const canonicalEnglishCatalog = {
   common: {
+    sa08TerminalCoverageNote: message("sa08TerminalCoverageNote", "These existing checks count retained records with missing or invalid terminal times or missing human attribution. Zero counts do not establish complete History or overall service health.", "SA08 Overview disclosure of existing retained terminal-time and human-attribution coverage."),
+    sa08TerminalCoverageLimited: message("sa08TerminalCoverageLimited", "Retained records have time or human attribution gaps.", "SA08 Overview disclosure of existing retained terminal-time and human-attribution coverage."),
     sa08Note: message("sa08Note", "Selected current figures share their original source readers. Measurements, configuration and retained coverage are separate; this overview does not assert overall service health.", "SA08 compact Overview composition and final original-source History controls."),
     sa08Partial: message("sa08Partial", "Partially available", "SA08 compact Overview composition and final original-source History controls."),
     sa08Measured: message("sa08Measured", "Selected sources measured", "SA08 compact Overview composition and final original-source History controls."),

@@ -43,7 +43,7 @@ const ANOMALIES:Record<string,string>={
   attachmentDraft:count("forum_attachment_draft_refs r","not exists(select 1 from forum_attachments a where a.id=r.attachment_id and a.owner_id=r.owner_id)"),
   attachmentEvidence:count("forum_complaint_evidence_attachments r","not exists(select 1 from forum_attachments a where a.id=r.attachment_id) or not exists(select 1 from forum_complaint_targets t where t.id=r.target_id)"),
 };
-async function fields(c:ClientBase,expressions:Record<string,string>):Promise<DataValues>{
+async function fields(c:Pick<ClientBase,"query">,expressions:Record<string,string>):Promise<Record<string,string>>{
   const row=(await c.query<Record<string,string>>('select '+Object.entries(expressions).map(([key,expression])=>expression+' as '+identifier(key)).join(','))).rows[0];
   if(!row)throw new Error("Missing Data aggregate");
   return Object.fromEntries(Object.keys(expressions).map(key=>[key,exact(row[key])]));
@@ -79,6 +79,8 @@ const TERMINAL_ANOMALIES={
   measureHumanAttribution:count("user_measure_appeals a","a.status in ('accepted','rejected') and a.reviewer_user_id is null"),
   complaintHumanAttribution:count("forum_complaint_appeals a","a.status<>'pending' and a.reviewer_user_id is null"),
 };
+/** The same retained time/actor gap definitions used by Data and Overview. */
+export const readDataTerminalCoverage=(c:Pick<ClientBase,"query">)=>fields(c,TERMINAL_ANOMALIES);
 type ManifestTable=keyof typeof expectedManifest.tables;
 async function compatibility(c:ClientBase,table:string,columns:readonly string[]):Promise<DataValues>{
   // Probe ordinary access before catalog inspection; pg_catalog visibility alone
@@ -114,7 +116,7 @@ async function readSource(c:ClientBase,localization:boolean):Promise<SourceRead>
     if(compatibilityChecks[0].values.supportedMajor===false){compatibilityChecks[0].status='incompatible';compatibilityChecks[0].code='type-mismatch';}
     if(!localization){
       for(const [id,{table,time}]of Object.entries(RETAINED_SOURCES))retention.push(await checked(c,id,source,at,false,()=>readDataRetained(c,table,time)));
-      retention.push(await checked(c,'terminalCoverage',source,at,false,()=>fields(c,TERMINAL_ANOMALIES)));
+      retention.push(await checked(c,'terminalCoverage',source,at,false,()=>readDataTerminalCoverage(c)));
       retention.push(await checked(c,'sampleSchemas',source,at,false,async()=>{
         const row=(await c.query<{distinctVersions:string;versions:number[]}>(`select count(distinct schema_version)::text "distinctVersions",
           array(select distinct schema_version from owner_monitor_observations order by schema_version limit 32) versions from owner_monitor_observations`)).rows[0];
