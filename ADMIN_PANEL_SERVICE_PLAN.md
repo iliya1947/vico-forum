@@ -4,10 +4,10 @@ Service PR #331 is the active Admin/Super-admin coordination channel. PR #251 is
 
 ## Current boundary
 
-- Current main7e7a8038; prerequisite Draft338 ce71892d open/unmerged, whole SA06 author verification clean (not independent).
-- Explicit overnight override activates dependent cumulative [Draft #339](https://github.com/iliya1947/vico-forum/pull/339), branch `chatgpt/sa07-native-operations`, base `chatgpt/sa06-native-monitoring`; current exact `2fb4c7bc5d41d6bfea021f9c891d4a1600953830`.
+- Current main7e7a8038; prerequisite Draft338 ce71892d open/unmerged, Mira fresh whole-SA06 M2 FAIL; Lira corrects false person coverage attribution. Earlier Lev author verification was not independent.
+- Explicit overnight override activates dependent cumulative [Draft #339](https://github.com/iliya1947/vico-forum/pull/339), branch `chatgpt/sa07-native-operations`, base `chatgpt/sa06-native-monitoring`; current exact `0d0559d6489efa649213ab757ba43f3d64334c4b`.
 -07-B1+07-L source/author checkpoints complete: real Background/task facts and four Localization readers/History/Owner UI, five total reader-paired SELECT additions, no DDL or task writes. Runtime disabled/unwired. Native43/app42/local connected18 PASS;2f9d6e01 exact CI13runs17jobs/app2533/native1361/manifest69 PASS. Current harness-only completion correction exact CI ACTIVE. Known Drizzle BigInt/exit0 is not parity proof.
-- **ACTIVE07-F Files/cleanup/fixed13 R2 observations**, then07-D/I in the same cumulativePR. Whole SA07 not AUTHOR READY; internal checkpoints are not independent review/merge gates. Update/recheck SA07 if338 changes.
+- **ACTIVE07-F acceptance after source checkpoint publication: full local native1375/101PASS; app2545PASS/1stale expectation fixed/focused8PASS; connected/new exactCI ACTIVE. Files/cleanup/fixed13 R2 observations source delivered**, then07-D/I in the same cumulativePR. Whole SA07 not AUTHOR READY; internal checkpoints are not independent review/merge gates. Update/recheck SA07 if338 changes.
 - No SA08+, #315, permanent docs, Stage6/production/deploy/external work or merge. Author browser checks do not establish developer visual/deployed approval.
 
 ## Stable product decisions
