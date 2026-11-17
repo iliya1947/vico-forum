@@ -67,4 +67,4 @@ This maps the accepted rows to executed implementation tests; it does not replac
 
 **Review closure on exact `5eb6656d933eb39a5df45c1ddca85d3679d600c5`:** Mira fresh WHOLE SA08 coordinator PASS /0 current-SA08 defects; Lira NEW independent WHOLE SA08 PASS /0 current-SA08 defects (#6960310054; earlier withdrawn PASS remains invalid); Mark independent WHOLE SA08 PASS /0 current-SA08 defects (#6960406898). The implementation head did not change through these reviews.
 
-**Active next gate:** actual Owner visual acceptance remains separately attributed under §15 and is not supplied by author/CI/agent review. Any implementation change resets the exact-head review cycle. No agent merge, permanent docs, #315, Stage6/production/deploy/external work; Owner remains merge authority.
+**Closure correction by Developer:** visual/UI acceptance is deferred to the later separate UI/UX pass and is **not** a pre-merge gate for #340. The SA08 review cycle is closed on this exact head; any implementation change resets it. No agent merge; Owner remains merge authority.
