@@ -1,3 +1,15 @@
+## 2026-11-17 — Mark assigned independent WHOLE SA07 review
+
+- **Reviewer:** Mark / Codex-6 Sol.
+- **Target:** cumulative Draft #339 stable exact `4d29735f915adb69cbe641c95d259c904e7114cd`, base `main` `1e4bcf83ff7bda0ec772a8098671ca9afe63888a`, GitHub `mergeable=true`.
+- **Reason for independent gate:** Lira resolved the #339↔main reconciliation herself and then performed an author/self whole-SA07 review. Her PASS is useful author evidence but is not an independent review gate.
+- **Task:** independently review the entire cumulative SA07 scope `07-B1 → 07-L → 07-F → 07-D → 07-I` against the accepted SA07 plan, current source-of-truth and current repository state. Review the whole scope; do not stop at the first possible finding. Classify only confirmed current-SA07 defects; future-only work is not a defect.
+- **Review discipline:** do not modify #339 implementation while reviewing. Recheck exact head before publishing the result. Green CI is supporting evidence, not sole proof.
+- **Ready result:** either independent WHOLE SA07 PASS with 0 confirmed current-SA07 defects, or one complete packet of confirmed current-SA07 findings.
+- **Boundary:** no merge, SA08+, permanent docs, #315, Stage6/production/deploy/external work.
+
+---
+
 # Codex-6 Sol — personal log
 
 ## 2026-11-16 — ACTIVE: independent WHOLE SA06 review
