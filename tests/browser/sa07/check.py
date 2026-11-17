@@ -1,4 +1,4 @@
-"""Genuine BA/Worker/PG17 Background acceptance. Code-only fixture invocation does not enable job runtime."""
+"""Genuine BA/Worker/PG17 Background and Localization acceptance. Code-only fixture invocation does not enable job runtime."""
 import argparse,json,os,select,shutil,subprocess
 from pathlib import Path
 from uuid import uuid4
@@ -14,7 +14,12 @@ def rpc(value):
  pg.stdin.write(json.dumps(value)+'\n');pg.stdin.flush();assert select.select([pg.stdout],[],[],60)[0],'fixture timeout';reply=json.loads(pg.stdout.readline());assert 'error' not in reply,reply;return reply['result']
 def sql(statement,params=None):return rpc({'operation':'sql','sql':statement,'params':params or []})
 def private(response,status):
- assert response.status==status,(response.status,status,response.text()[:160]);assert {'private','no-store'}<={x.strip() for x in response.headers.get('cache-control','').split(',')};assert 'SA07_PRIVATE' not in response.text();return response
+ assert response.status==status,(response.status,status)
+ assert {'private','no-store'}<={x.strip() for x in response.headers.get('cache-control','').split(',')}
+ # Page responses are reported at headers; wait for actual completion before CDP body inspection.
+ if hasattr(response,'finished'):assert response.finished() is None
+ body=response.text();assert 'SA07_PRIVATE' not in body;assert 'SA07_L_PRIVATE' not in body;return response
+
 def visit(page,path):private(page.goto(base+path,wait_until='networkidle'),200)
 @contextmanager
 def hold(statement):
@@ -57,7 +62,7 @@ try:
    for width in [1280,768,320]:
     page.set_viewport_size({'width':width,'height':900});visit(page,f'/{locale}/super-admin/monitoring/background')
     expect(page.locator('[data-task-current]')).to_have_count(1);assert page.locator('html').get_attribute('dir')==('rtl' if locale=='he' else 'ltr');assert page.evaluate('document.documentElement.scrollWidth<=innerWidth+1')
-    expect(page.locator('[data-monitor-key="background.translation"] form')).to_have_count(0);expect(page.locator('[data-monitor-key="background.translation"] nav a')).to_have_count(3)
+    expect(page.locator('[data-monitor-key="background.translation"] form')).to_have_count(0);expect(page.locator('[data-monitor-key="background.translation"] nav a')).to_have_count(4)
     if width==320:page.screenshot(path=str(a.output/(locale+'-background-320.png')),full_page=True)
    record('localized-responsive-Background-readonly-current-and-disabled-unwired-runtime',locale=locale)
   page.set_viewport_size({'width':1280,'height':900});visit(page,current)
@@ -94,10 +99,59 @@ try:
   page.wait_for_timeout(250);expect(page.locator('[data-task-current]')).to_have_count(0);page.unroute('**/super-admin/monitoring/background.data*')
   assert oc.request.post(base+'/api/auth/sign-in/email',headers={'Origin':base},data={'email':email,'password':password}).status==200;assert sql('update "session" set user_id=$1 where user_id=$2 returning id',[owner,issued]);visit(page,current);expect(page.locator('[data-task-current]')).to_have_count(1)
   record('known-signout-and-held-old-Owner-response-do-not-restore-private-task-DOM')
-  assert not errors,errors;assert not external,external;record('SA07-B1-connected-pass');browser.close()
+  record('SA07-B1-connected-pass')
+  local_fixture=rpc({'operation':'localizationSeed','owner':owner});local_current='/en/super-admin/monitoring/localization'
+  keys=['localization.registry','localization.ui','localization.content','localization.budget']
+  for ctx,status in [(guest,401),(ac,403),(mc,403)]:
+   for path in [local_current]+[local_current+'/'+key+'/history' for key in keys]:
+    for suffix in ['', '.data']:private(ctx.request.get(base+path+suffix),status)
+  assert sql("select count(*)::int n from owner_monitor_observations where monitor_key like 'localization.%'")==[{'n':0}]
+  record('Localization-genuine-Owner-admission-before-private-source-reads-and-samples')
+  sql("create function sa07_l_sample_fault() returns trigger language plpgsql as $$begin raise exception 'SA07_L_PRIVATE_SQL';end$$;create trigger sa07_l_sample_fault before insert on owner_monitor_observations for each row execute function sa07_l_sample_fault()")
+  try:assert 'unavailable' in private(oc.request.get(base+local_current+'.data'),200).text()
+  finally:sql('drop trigger sa07_l_sample_fault on owner_monitor_observations;drop function sa07_l_sample_fault()')
+  for locale in ['en','ru','he']:
+   for width in [1280,768,320]:
+    page.set_viewport_size({'width':width,'height':900});visit(page,f'/{locale}/super-admin/monitoring/localization')
+    expect(page.locator('[data-localization-current]')).to_have_count(1);assert page.locator('html').get_attribute('dir')==('rtl' if locale=='he' else 'ltr');assert page.evaluate('document.documentElement.scrollWidth<=innerWidth+1')
+    for key in keys:
+     article=page.locator('[data-monitor-key="'+key+'"]');expect(article).to_have_count(1);expect(article.locator('form')).to_have_count(0);expect(article.locator('nav a')).to_have_count(3)
+    if width==320:page.screenshot(path=str(a.output/(locale+'-localization-320.png')),full_page=True)
+   record('localized-responsive-four-Localization-monitors-actual-sources-bundles-disabled-runtime',locale=locale)
+  page.set_viewport_size({'width':1280,'height':900});visit(page,local_current)
+  samples=sql("select id from owner_monitor_observations where monitor_key like 'localization.%' order by id")
+  with page.expect_response(lambda r:r.request.method=='GET' and '/monitoring/localization.data' in r.url) as refreshed:page.locator('[data-monitor-key="localization.registry"] nav a').nth(1).click()
+  private(refreshed.value,200);assert sql("select id from owner_monitor_observations where monitor_key like 'localization.%' order by id")==samples
+  for key in keys:
+   sample=sql('select id from owner_monitor_observations where monitor_key=$1',[key])[0]['id'];assert sample in collect(page,local_current+'/'+key+'/history')
+  assert fixture['event'] in collect(page,local_current+'/localization.ui/history?origin=operational-event&kind=task.planned')
+  assert local_fixture['title'] in collect(page,local_current+'/localization.content/history?kind=forum.titleRevisionCreated')
+  visit(page,local_current);link=page.locator('[data-monitor-key="localization.budget"] nav a').first;link.focus();page.keyboard.press('Enter');expect(page).to_have_url(base+local_current+'/localization.budget/history')
+  record('Localization-adjacent-working-original-source-History-and-GET-sample-gate')
+  sql('alter table locales rename to sa07_l_hidden_locales')
+  try:
+   for path in [local_current+'.data','/en/SUPER-ADMIN/monitoring/LOCALIZATION.data','/en/%73uper-admin/monitoring/localization///']:private(oc.request.get(base+path),503)
+  finally:sql('alter table sa07_l_hidden_locales rename to locales')
+  with hold('lock table content_translation_request_budget_counters in access exclusive mode'):private(oc.request.get(base+local_current+'.data',timeout=15000),503)
+  private(oc.request.get(base+local_current+'?sql=forbidden'),400)
+  record('Localization-separate-connection-source-outage-lock-and-private-aliases')
+  visit(page,local_current);held=[]
+  page.route('**/super-admin/monitoring/localization.data*',delayed);page.locator('[data-monitor-key="localization.registry"] nav a').nth(1).click()
+  for _ in range(100):
+   if held:break
+   page.wait_for_timeout(20)
+  assert held
+  with page.expect_response(lambda r:r.request.method=='POST' and '/api/auth/sign-out' in r.url) as signed:page.locator('.auth-sign-out').click()
+  assert signed.value.status==200;expect(page.locator('.auth-controls[data-state=guest]')).to_have_count(1);expect(page.locator('[data-localization-current]')).to_have_count(0)
+  for route,response in held:
+   try:route.fulfill(response=response)
+   except Exception:pass
+  page.wait_for_timeout(250);expect(page.locator('[data-localization-current]')).to_have_count(0);page.unroute('**/super-admin/monitoring/localization.data*')
+  record('Localization-known-signout-and-late-Owner-response-do-not-restore-private-DOM')
+  assert not errors,errors;assert not external,external;record('SA07-B1-L-connected-pass');browser.close()
 finally:
  if pg:
   pg.stdin.close()
   try:pg.wait(timeout=8)
   except subprocess.TimeoutExpired:pg.terminate();pg.wait(timeout=5)
- (a.output/'results.json').write_text(json.dumps({'head':os.environ.get('IMPLEMENTATION_SHA'),'scope':'SA07-B1 only; code-only real task-store fixtures; runtime stays disabled/unwired','cases':records,'pageErrors':errors,'external':external},ensure_ascii=False,indent=2))
+ (a.output/'results.json').write_text(json.dumps({'head':os.environ.get('IMPLEMENTATION_SHA'),'scope':'SA07-B1 and07-L only; actual stores/registry/UI/content/budget; runtime stays disabled/unwired','cases':records,'pageErrors':errors,'external':external},ensure_ascii=False,indent=2))

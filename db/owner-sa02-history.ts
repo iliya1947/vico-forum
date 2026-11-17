@@ -1,7 +1,7 @@
 import {TASK_TRANSITION_KINDS} from "../app/observability/operational-facts";
 import type { Pool } from "pg";
 import { SA02_FACT_MONITORS } from "./owner-sa02-catalog";
-import { OWNER_MONITORS, ADMIN_MONITOR_SCOPES_SQL, type OwnerMonitorArea, type OwnerMonitorKey } from "./owner-monitor-catalog";
+import { OWNER_MONITORS, ADMIN_MONITOR_SCOPES_SQL, TASK_FACT_MONITOR_SCOPES_SQL, type OwnerMonitorArea, type OwnerMonitorKey } from "./owner-monitor-catalog";
 import { nativeHistoryBranches, NATIVE_HISTORY_ORIGINS, NATIVE_ORIGIN_MONITORS, HISTORY_COLUMNS, readNativeHistoryCoverage, type NativeHistoryOrigin, type OwnerSourceCoverage } from "./owner-native-history";
 import { SYSTEM_MONITORS } from "./owner-system-history";
 import { parseOwnerTimelineCursor } from "./owner-system-monitoring";
@@ -48,12 +48,12 @@ export interface OwnerHistoryOptions {
 }
 const ORIGIN_SCOPES: Record<OwnerHistoryOrigin,readonly string[]> = {
   ...NATIVE_ORIGIN_MONITORS,
-  "operational-event":["background.translation","integrations.translation"],
+  "operational-event":["background.translation","integrations.translation","localization.ui","localization.content","localization.budget"],
   "system-event": SYSTEM_MONITORS,
   "auth-event": ["accounts.users","accounts.methods","accounts.sessions","security.auth"],
   "account-event": ["accounts.users"],
   "system-observation": Object.values(OWNER_MONITORS).flat(),
-  "admin-history": ["accounts.registration","administration.registration","administration.authorization","administration.measures","forum.content","forum.state","moderation.help"],
+  "admin-history": ["accounts.registration","administration.registration","administration.authorization","administration.measures","forum.content","localization.content","forum.state","moderation.help"],
   "attachment-evidence": ["security.attachments"],
   "attempt-pattern": ["accounts.registration","security.auth","security.access"],
   "attempt-state": ["security.auth","security.access"],
@@ -88,14 +88,14 @@ function compatibleOrigin(origin:OwnerHistoryOrigin,scope:Scope):boolean {
 /** Source-kind/monitor compatibility comes from the existing closed native actions. */
 function compatibleKind(origin:OwnerHistoryOrigin,kind:string,scope:Scope):boolean {
   let allowed:readonly string[]=ORIGIN_SCOPES[origin];
-  if(origin==="operational-event")allowed=kind==="integration.translationCall"?["background.translation","integrations.translation"]:["background.translation"];
+  if(origin==="operational-event")allowed=kind==="integration.translationCall"?["background.translation","integrations.translation"]:kind==="task.reconciliationPass"?["background.translation"]:kind==="task.allowanceAdmitted"||kind==="task.allowanceDeferred"?["background.translation","localization.ui","localization.content","localization.budget"]:["background.translation","localization.ui","localization.content"];
   if(origin==="auth-event")allowed=SA02_FACT_MONITORS[kind as keyof typeof SA02_FACT_MONITORS]??[];
   if(origin==="system-event")allowed=kind==="system.requestFailed"?["system.requests"]:["system.dependencies"];
   if(origin==="admin-history"){
     if(kind==="settings.registrationChanged")allowed=["accounts.registration","administration.registration"];
     else if(kind.startsWith("role.")||kind==="user.roleAssigned"||kind==="user.overrideChanged")allowed=["administration.authorization"];
     else if(kind.startsWith("measure."))allowed=["administration.measures"];
-    else if(kind==="topic.sourceLocaleCorrected"||kind==="post.sourceLocaleCorrected")allowed=["forum.content"];
+    else if(kind==="topic.sourceLocaleCorrected"||kind==="post.sourceLocaleCorrected")allowed=["forum.content","localization.content"];
     else if(kind.startsWith("help.")||kind==="topic.solved"||kind==="topic.bestAnswerChanged")allowed=["moderation.help","forum.state"];
     else if(["topic.pinned","topic.unpinned","topic.closed","topic.reopened"].includes(kind))allowed=["forum.state"];
     else allowed=[];
@@ -362,7 +362,7 @@ const LEGACY_SOURCE_SQL = [
   " from owner_attempt_telemetry_state s where s.slot not like 'quota.%'",
   "union all",
   "select 'operational-event'::text,e.id::text,e.occurred_at,e.recorded_at,",
-  "ARRAY['background.translation']::text[],",
+  TASK_FACT_MONITOR_SCOPES_SQL+",",
   "e.kind,e.source,'best-effort'::text,e.payload||jsonb_build_object(case when e.kind='task.reconciliationPass' then 'runId' else 'taskId' end,e.entity_id,'actorUserId',e.actor_user_id)",
   "from owner_events e where e.source='operation' and e.monitor_key='background.translation' and e.kind like 'task.%'",
   "union all",

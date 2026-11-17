@@ -10,8 +10,9 @@ export const NATIVE_MONITORS = {
 } as const;
 export type NativeMonitorArea = keyof typeof NATIVE_MONITORS;
 export type NativeMonitorKey = (typeof NATIVE_MONITORS)[NativeMonitorArea][number];
+export const LOCALIZATION_MONITORS={localization:["localization.registry","localization.ui","localization.content","localization.budget"]} as const;
 export const OPERATIONAL_MONITORS={background:["background.translation"],integrations:["integrations.translation"]} as const;
-export const OWNER_MONITORS = { system: SYSTEM_MONITORS, ...SA02_MONITORS, ...NATIVE_MONITORS,...OPERATIONAL_MONITORS } as const;
+export const OWNER_MONITORS = { system: SYSTEM_MONITORS, ...SA02_MONITORS, ...NATIVE_MONITORS,...OPERATIONAL_MONITORS,...LOCALIZATION_MONITORS } as const;
 export type OwnerMonitorArea = keyof typeof OWNER_MONITORS;
 export type OwnerMonitorKey = (typeof OWNER_MONITORS)[OwnerMonitorArea][number];
 export const NATIVE_AREAS = Object.keys(NATIVE_MONITORS) as NativeMonitorArea[];
@@ -29,12 +30,18 @@ export const NATIVE_MONITOR_ACTIONS = {
   "moderation.complaints": "complaints", "notifications.inbox": "inbox",
 } as const satisfies Record<NativeMonitorKey, OwnerMonitorAction | null>;
 
+/** Association only: original operational fact identity and canonical key remain unchanged. */
+export const TASK_FACT_MONITOR_SCOPES_SQL=`ARRAY['background.translation']::text[] ||
+  case when e.payload->>'taskKind'='ui' then ARRAY['localization.ui']::text[]
+    when e.payload->>'taskKind' in ('content-topic-title','content-post-body') then ARRAY['localization.content']::text[] else ARRAY[]::text[] end ||
+  case when e.kind in ('task.allowanceAdmitted','task.allowanceDeferred') then ARRAY['localization.budget']::text[] else ARRAY[]::text[] end`;
+
 /** Same native Admin fact may belong to several monitors, but has one identity. */
 export const ADMIN_MONITOR_SCOPES_SQL = `case
   when a.action='settings.registrationChanged' then ARRAY['accounts.registration','administration.registration']::text[]
   when a.action in ('role.created','role.deleted','role.renamed','role.grantsChanged','user.roleAssigned','user.overrideChanged') then ARRAY['administration.authorization']::text[]
   when a.action in ('measure.created','measure.changed','measure.lifted','measure.appealResolved') then ARRAY['administration.measures']::text[]
   when a.action like 'help.%' or a.action in ('topic.solved','topic.bestAnswerChanged') then ARRAY['moderation.help','forum.state']::text[]
-  when a.action in ('topic.sourceLocaleCorrected','post.sourceLocaleCorrected') then ARRAY['forum.content']::text[]
+  when a.action in ('topic.sourceLocaleCorrected','post.sourceLocaleCorrected') then ARRAY['forum.content','localization.content']::text[]
   when a.action in ('topic.pinned','topic.unpinned','topic.closed','topic.reopened') then ARRAY['forum.state']::text[]
   else ARRAY[]::text[] end`;

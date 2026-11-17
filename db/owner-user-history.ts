@@ -1,5 +1,5 @@
 import type { Pool } from "pg";
-import { ADMIN_MONITOR_SCOPES_SQL } from "./owner-monitor-catalog";
+import { ADMIN_MONITOR_SCOPES_SQL,TASK_FACT_MONITOR_SCOPES_SQL } from "./owner-monitor-catalog";
 import { NATIVE_HISTORY_ORIGINS, nativeHistoryBranches, HISTORY_COLUMNS, readNativeHistoryCoverage, type NativeHistoryOrigin, type OwnerSourceCoverage } from "./owner-native-history";
 import { ACCOUNT_HISTORY_SELECT_SQL } from "./owner-account-history";
 import type { OwnerHistoryEntry, OwnerHistoryMonitor, OwnerHistoryOrigin,
@@ -156,7 +156,7 @@ const LEGACY_PERSON_SQL = [
   " 'detectedType',f.detected_type,'reason',f.reason,'declaredByteSize',f.declared_byte_size)",
   " from forum_attachment_security_events f where f.uploaded_by_user_id=$1",
   "union all",
-  "select 'operational-event'::text,e.id::text,e.occurred_at,e.recorded_at,ARRAY['background.translation']::text[],",
+  "select 'operational-event'::text,e.id::text,e.occurred_at,e.recorded_at,"+TASK_FACT_MONITOR_SCOPES_SQL+",",
   "e.kind,e.source,'best-effort'::text,e.payload||jsonb_build_object(case when e.kind='task.reconciliationPass' then 'runId' else 'taskId' end,e.entity_id,'actorUserId',e.actor_user_id)",
   "from owner_events e where e.source='operation' and e.monitor_key='background.translation' and e.kind like 'task.%' and e.actor_user_id=$1",
   "union all",

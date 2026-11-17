@@ -7,6 +7,7 @@ export type SuperAdminMonitorScope =
   | { area:"system"; monitorKey:SystemMonitorKey }
   | { area:"accounts"; monitorKey:(typeof SA02_MONITORS.accounts)[number] }
   | { area:"security"; monitorKey:(typeof SA02_MONITORS.security)[number] }
+  | { area:"localization";monitorKey:"localization.registry"|"localization.ui"|"localization.content"|"localization.budget" }
   | { area:"background";monitorKey:"background.translation" }
   | { area:"integrations";monitorKey:"integrations.translation" }
   | { [A in NativeMonitorArea]: { area:A; monitorKey:(typeof NATIVE_MONITORS)[A][number] } }[NativeMonitorArea];
@@ -32,6 +33,7 @@ export interface SuperAdminAddressFamily {
   accounts(locale: string): string;
   security(locale: string): string;
   background(locale:string):string;
+  localization(locale:string):string;
   nativeArea(locale: string, area: NativeMonitorArea): string;
   monitorHistory(locale: string, key: SystemMonitorKey, before?: string): string;
   monitorAreaHistory(locale: string, scope: SuperAdminMonitorScope, before?: string): string;
@@ -77,6 +79,7 @@ export function createAdministrativeRouting(
     system: locale => `${superAdminBase(locale)}/monitoring/system`,
     accounts: locale => `${superAdminBase(locale)}/monitoring/accounts`,
     security: locale => `${superAdminBase(locale)}/monitoring/security`,
+    localization: locale => `${superAdminBase(locale)}/monitoring/localization`,
     background: locale => `${superAdminBase(locale)}/monitoring/background`,
     nativeArea: (locale, area) => `${superAdminBase(locale)}/monitoring/${area}`,
     monitorHistory: (locale, key, before) =>

@@ -438,7 +438,8 @@ function postRow(row: TranslationRow & { postId: string }): StoredContentTransla
   return storedRow("post-body", row.postId, row);
 }
 
-function storedRow(
+/** Canonical persisted-row validation, also used by the Owner's read-only coverage reader. */
+export function storedRow(
   contentType: StoredContentTranslation["contentType"],
   contentId: string,
   row: TranslationRow,

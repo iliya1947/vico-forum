@@ -1,4 +1,4 @@
-name: SA07 Background task connected Chromium acceptance
+name: SA07 Background and Localization connected Chromium acceptance
 
 on:
   pull_request:
@@ -92,7 +92,7 @@ jobs:
             'GOOGLE_CLIENT_SECRET=local-test-unused' \
             'VICO_OWNER_USER_ID=sa07-synthetic-owner' > .dev.vars
           pnpm build
-      - name: Real native monitors, source identity, canonical actions, privacy and late-response acceptance
+      - name: Real Background/Localization sources, History, privacy and late-response acceptance
         run: |
           pnpm exec vite preview --host 127.0.0.1 --port 4237 --strictPort > "$RUNNER_TEMP/sa07-preview.log" 2>&1 &
           preview_pid=$!

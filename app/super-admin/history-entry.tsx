@@ -5,6 +5,7 @@ import type { OwnerTimelineEntry } from "../../db/owner-system-monitoring";
 import { nativeLabels } from "./native-labels";
 import { actionLabels } from "../admin/history-labels";
 import {taskLabels} from "./task-labels";
+import {localizationLabels} from "./localization-labels";
 
 type HistoryItem = OwnerHistoryEntry | OwnerTimelineEntry;
 type Label = UiKey<"common">;
@@ -178,7 +179,7 @@ export function HistoryEntry({entry,locale}: {entry:HistoryItem;locale:string}){
       {t("superAdminHistoryEvidenceNote")}</p> : null}
     <dl>{Object.entries(entry.values).map(([name,value])=>{
       const taskEntry=entry.origin==="operational-event"||observed&&monitors.includes("background.translation");
-      const label=entry.kind==="integration.translationCall"&&name==="failed"?taskLabels.failedCalls:
+      const label=observed&&monitors.some(key=>key.startsWith("localization."))?localizationLabels[name]??fieldLabel(entry,name):entry.kind==="integration.translationCall"&&name==="failed"?taskLabels.failedCalls:
         taskEntry?taskLabels[name]??fieldLabel(entry,name)??nativeLabels[name]:fieldLabel(entry,name)??nativeLabels[name]??taskLabels[name];
       return <div key={name}>
         <dt>{label ? t(label) : <bdi>{name}</bdi>}</dt>

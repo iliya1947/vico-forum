@@ -57,6 +57,8 @@ import {createHyperdriveComplaintAppeal} from "../db/hyperdrive-complaint-appeal
 import { resolveRuntimeDatabaseConnectionStrings } from "./database-bindings";
 import { ownerSystemMonitoringContext, ownerSa02MonitoringContext, ownerNativeMonitoringContext } from "../app/super-admin/request-context";
 import { createHyperdriveOwnerSystem } from "../db/hyperdrive-owner-system";
+import {createHyperdriveOwnerLocalization} from "../db/hyperdrive-owner-localization";
+import {ownerLocalizationMonitoringContext} from "../app/super-admin/request-context";
 import { ownerAccountLifecycleContext, ownerProfileContext } from "../app/profile/request-context";
 import { createHyperdriveOwnerProfile } from "../db/hyperdrive-owner-profile";
 import { createHyperdriveOwnerAccountLifecycle } from "../db/hyperdrive-owner-account-lifecycle";
@@ -122,6 +124,7 @@ async function applicationFetch(request: Request, env: Env, executionContext?: E
     context.set(ownerSystemMonitoringContext, ownerMonitoring);
     context.set(ownerSa02MonitoringContext, ownerMonitoring);
     context.set(ownerNativeMonitoringContext, ownerMonitoring);
+    context.set(ownerLocalizationMonitoringContext,createHyperdriveOwnerLocalization(webConnectionString,localizationConnectionString,ownerUserId));
     context.set(ownerProfileContext, createHyperdriveOwnerProfile(webConnectionString));
     context.set(ownerAccountLifecycleContext, createHyperdriveOwnerAccountLifecycle(webConnectionString, ownerUserId));
     const authorization = createHyperdriveAuthorization(webConnectionString, undefined, ownerUserId);

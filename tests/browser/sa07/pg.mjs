@@ -1,9 +1,17 @@
 /** Own synthetic task producers and inspection; no HTTP listener or authoritative substitute. */
 import process from 'node:process';import console from 'node:console';import readline from 'node:readline';import {URL} from 'node:url';
-import pg from 'pg';import {drizzle} from 'drizzle-orm/node-postgres';
+import crypto from 'node:crypto';import pg from 'pg';import {drizzle} from 'drizzle-orm/node-postgres';
 import {DrizzleTranslationTaskStore} from '../../../db/translation-task-store.ts';
 import {PostgresOwnerOperationalFactSink} from '../../../db/owner-operational-facts.ts';
 import {uiTranslationJobIdentity} from '../../../app/localization/ui-translation-service.ts';
+import {DrizzleForumRepository} from '../../../db/forum-repository.ts';
+import {DrizzleContentTranslationStore} from '../../../db/content-translation-store.ts';
+import {DrizzleContentTranslationRequestBudgetStore} from '../../../db/content-request-budget-store.ts';
+import {HELP_SOLUTIONS_SERVICE_SECTION_ID} from '../../../db/forum-identifiers.ts';
+import {canonicalEnglishCatalog} from '../../../app/localization/catalog.ts';
+import {sourceFingerprint} from '../../../app/localization/fingerprint.ts';
+import {compileNamespaceBundle} from '../../../app/localization/bundles.ts';
+import {DrizzleUiTranslationBundleStore} from '../../../db/ui-translation-bundle-store.ts';
 const url=process.env.DATABASE_URL,target=new URL(url??'http://invalid');
 if(process.env.CI!=='true'||!['127.0.0.1','localhost'].includes(target.hostname)||target.pathname!=='/vico_sa07_browser_test')throw Error('Own disposable SA07 database required');
 const c=new pg.Client({connectionString:url}),pool=new pg.Pool({connectionString:url,max:1});await c.connect();
@@ -11,6 +19,18 @@ const tasks=new DrizzleTranslationTaskStore(drizzle(c),new PostgresOwnerOperatio
 try{for await(const line of readline.createInterface({input:process.stdin,crlfDelay:Infinity}))try{
   const x=JSON.parse(line);let result;
   if(x.operation==='sql'){const reply=await c.query(x.sql,x.params??[]);result=Array.isArray(reply)?reply.flatMap(p=>p.rows??[]):reply.rows;}
+  else if(x.operation==='localizationSeed'){
+    const database=drizzle(c);
+    for(const tag of ['fr','de'])await c.query("insert into locales(tag,translation_status,publication_status,direction,fallback_chain,aliases,match_tags,native_name,presentation_metadata) values($1,'draft','active','ltr','{en}','{}','{}',$1,'{}') on conflict(tag) do nothing",[tag]);
+    await c.query("insert into ui_translations(locale,namespace,key,origin,status,source_fingerprint,translated_payload) values('fr','common','heading','persistent_manual','approved',$1,$2::jsonb)",[await sourceFingerprint(canonicalEnglishCatalog.common.heading),JSON.stringify('SA07_L_PRIVATE_TRANSLATION')]);
+    await new DrizzleUiTranslationBundleStore(database).put(await compileNamespaceBundle('fr','common',{}));
+    await c.query("insert into ui_translation_bundles(locale,namespace,bundle_version,resources) values('de','common',$1,$2::jsonb)",['a'.repeat(64),JSON.stringify({'SA07_L_PRIVATE_UNKNOWN':'SA07_L_PRIVATE_TEXT'})]);
+    const topic=crypto.randomUUID(),post=crypto.randomUUID(),title=crypto.randomUUID(),body=crypto.randomUUID();
+    await new DrizzleForumRepository(database,{cooldownMs:0,now:()=>new Date()}).createTopicWithInitialPost({id:topic,sectionId:HELP_SOLUTIONS_SERVICE_SECTION_ID,authorId:x.owner,titleRevision:{id:title,sourceLocale:'fr',originalContent:'SA07_L_PRIVATE_TITLE'},initialPost:{id:post,topicId:topic,authorId:x.owner,bodyRevision:{id:body,sourceLocale:'fr',originalContent:'A private natural language message. SA07_L_PRIVATE_BODY'}}});
+    await new DrizzleContentTranslationStore(database).write({contentType:'topic-title',contentId:topic,revisionId:title,targetLocale:'de',sourceLocale:'fr',translatedContent:'SA07_L_PRIVATE_TRANSLATED_TITLE',provenance:{origin:'persistent_manual'}});
+    await new DrizzleContentTranslationRequestBudgetStore(database).consume({subjectKey:'A'.repeat(43),cost:7,windowSeconds:3600,global:{name:'title-global',version:'v1',limit:100},requester:{name:'title-requester',version:'v1',limit:100}});
+    result={topic,title,post,body};
+  }
   else if(x.operation==='seed'){
     let first;
     for(let n=0;n<55;n++){

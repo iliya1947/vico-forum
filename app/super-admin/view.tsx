@@ -23,7 +23,7 @@ const keys: Record<SystemMonitorKey, "superAdminRuntime" | "superAdminDatabase" 
   "system.requests": "superAdminRequests",
 };
 const monitoringAreas = [
-  "superAdminAreaLocalization", "superAdminAreaFiles", "superAdminAreaData", "superAdminAreaIntegrations"
+ "superAdminAreaFiles", "superAdminAreaData", "superAdminAreaIntegrations"
 ] as const;
 
 /** One Owner-only shell, reused across routes; a visible link never grants access. */
@@ -202,6 +202,7 @@ export function SuperAdminMonitoringIndex({locale}: {locale:string}) {
       <Link className="admin-destination" to={superAdminAccountsPath(locale,routing)}>{t("superAdminAreaAccounts")}</Link>
       <Link className="admin-destination" to={superAdminSecurityPath(locale,routing)}>{t("superAdminAreaSecurity")}</Link>
       <Link className="admin-destination" to={routing.superAdmin.background(locale)}>{t("superAdminAreaBackground")}</Link>
+      <Link className="admin-destination" to={routing.superAdmin.localization(locale)}>{t("superAdminAreaLocalization")}</Link>
       {NATIVE_AREAS.map(area=><Link key={area} className="admin-destination" to={routing.superAdmin.nativeArea(locale,area)}>{t(nativeAreaLabels[area])}</Link>)}
       <p>{t("superAdminAreasLater")}</p>
       <ul className="super-admin-pending-areas">

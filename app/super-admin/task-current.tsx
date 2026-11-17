@@ -26,6 +26,7 @@ export function SuperAdminBackground({locale,state,viewerId}:{locale:string;stat
       <nav aria-label={t("superAdminMonitorActions")}>
         <Link to={routing.superAdmin.monitorAreaHistory(locale,{area:"background",monitorKey:"background.translation"})}>{t("superAdminHistory")}</Link>
         {" · "}<Link to={routing.superAdmin.background(locale)}>{t("superAdminRefresh")}</Link>
+        {" · "}<Link to={routing.superAdmin.localization(locale)}>{t("superAdminAreaLocalization")}</Link>
         {" · "}<Link to={routing.superAdmin.monitoring(locale)}>{t("superAdminMonitoring")}</Link>
       </nav>
     </article>
