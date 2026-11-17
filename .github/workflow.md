@@ -8,3 +8,5 @@
 - **Authors/ineligibility:** Lira and Lev participated in SA06 implementation; neither is independent whole-SA06 reviewer.
 - **SA07 dependency:** dependent Draft #339 exact `98f6ce48bc0efce465d89eff5267db3e82524fe1` still points to obsolete #338 prerequisite `ce71892d...`. Lev must update/recheck #339 against corrected #338 `50b0a0b...` before SA07 final acceptance; this does not require #338 merge.
 - **Boundary:** no #338 merge until required review gate completes; no SA08+, permanent docs, #315, Stage6/production/deploy/external work. Owner remains merge authority.
+
+- **QUEUED SA07 independent review:** Lira / ChatGPT-6 is assigned WHOLE SA07 review under developer publication hold. Formal target activates only on the first stable exact #339 head after Lev updates/rechecks the prerequisite to corrected #338 `50b0a0b...`. Review result/findings must not be published anywhere until explicit developer command; on completion only report that the review is complete and held.
