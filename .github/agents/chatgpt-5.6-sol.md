@@ -1,3 +1,17 @@
+## 2026-11-17 — Mira fresh WHOLE SA07 coordinator PASS after M1 correction
+
+- Reviewed cumulative Draft #339 stable exact `8cc0ecea5ad8a725d570abdb8958de96020ee4e0` against current main `1e4bcf83ff7bda0ec772a8098671ca9afe63888a`, accepted SA07 plan and current project/source contracts.
+- Fresh delta from prior reviewed `4d29735f...` is exactly two commits/two files: `db/owner-sa02-history.ts` and `tests/database/sa07-task-monitoring.test.ts`.
+- **M1 closed:** `task.reconciliationPass` kind compatibility now includes `integrations.translation`, matching the existing retained task-event projection. New real reconciler/PG17 regression proves the same original source ID in unfiltered and kind-filtered Integrations History, Background History and global History.
+- Rechecked whole `07-B1 → 07-L → 07-F → 07-D → 07-I` scope: Background task state/passive facts; Localization fixed readers and separate localization/web provenance; Files/cleanup and 13-slot bounded retained R2 sampling; Data fixed count/compatibility/retention readers; Integrations DB/auth/translation/storage provenance; normalized global/scoped/person History; exact-Owner admission/private no-store boundaries; runtime wiring and least-privilege role separation. No additional confirmed current-SA07 defect found.
+- Exact-head evidence checked: #339 remains open/Draft, `mergeable=true`, base unchanged; **13/13** relevant workflow runs SUCCESS. CI rerun on the same head gives application **2568/2568**, PostgreSQL17 **1400/1400**, updated SA07 task suite **14/14**, production schema manifest parity **69 tables**, runtime privilege probes PASS; SA07 connected workflow reports `SA07-B1-L-F-D-I-connected-pass`.
+- One initial CI checks attempt on the same head failed in untouched `app/settings/shell.test.tsx` SET-02 coverage; unchanged rerun passed the complete suite. The cause of that isolated first-attempt failure is not established and is not classified as a current-SA07 defect.
+- **WHOLE SA07 COORDINATOR PASS — 0 confirmed current-SA07 defects.**
+- **NEXT:** Mark / Codex-6 Sol repeats independent non-author WHOLE SA07 review of this same exact `8cc0ecea5ad8a725d570abdb8958de96020ee4e0`. No implementation edits during review. PASS requires 0 confirmed current-SA07 defects; otherwise one complete finding packet.
+- No merge, SA08+, permanent docs, #315, Stage6/production/deploy/external work.
+
+---
+
 ## 2026-11-17 — Mira fresh WHOLE SA06 coordinator PASS on corrected exact head
 
 - Reviewed cumulative Draft #338 stable exact `50b0a0b464546fc4887568e454d5aa9881e51ca1` as the complete SA06 package against current main, accepted SA06 plan/source-of-truth and the full cumulative implementation.
