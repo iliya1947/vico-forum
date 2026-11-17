@@ -1,5 +1,14 @@
 # ChatGPT-6 — personal log
 
+## 2026-11-17 — History corrective stage 2/4 completed / exact-head PASS
+
+- Completed History-only corrective stage on Draft #338 exact `17b3330133327b6b9d6ab62c379fa50599fec474` (still open/unmerged; no AP10 changes). Live `AGENTS.md` main reread in current turn. Confirmed new developer overnight override recorded in #331: after Lira's future **whole-SA06 AUTHOR READY**, Lev performs technical whole-#338 verification and may start dependent SA07 before merge; this does not activate during stage 2.
+- Diagnosed intermediate CI: SA05 writer closure 30s timeout and SA04 Complaints unhandled rejected promise on earlier DB attempts; initial final-head checks failed one existing SET-02 Settings delayed UI message. Did not modify these unrelated components or assert underlying cause. Additional 15 History view failures on earlier commit confirmed mock loader omitted new `filters` payload; updated test fixture `app/routes/super-admin-history-view.test.tsx`. Previous server/client module boundary issues already fixed in stage2 implementation.
+- Final exact-head results: CI #43983103623 `checks` final successful retry (**2510/2510 application tests, 194 files**) and `database` (**1335/1335 PostgreSQL17, 98 files**, manifest69 tables, Worker smoke) SUCCESS; connected SA06 Chromium #43983103811 SUCCESS; 12/12 exact-head GitHub workflow runs SUCCESS. Reviewed authoritative job logs. No local parallel reproduction, production/deployed Owner binding or owner visual approval claimed.
+- All stage2 files: `db/owner-sa02-history.ts`, `db/owner-native-history.ts`, `app/super-admin/history-query.server.ts`, `app/super-admin/history-query-links.ts`, `app/routes/super-admin-events.tsx`, `app/routes/super-admin-monitor-history.tsx`; regressions `app/routes/super-admin-native.test.ts`, `app/routes/super-admin-history-view.test.tsx`, `tests/database/sa06-native-monitoring.test.ts`. No new schema/grants/dependency or SA08 controls.
+- **STOP** after stage 2/4 per developer project decomposition; only on next explicit developer `...` begin bounded stage 3/4: AP-10 raw RBAC hierarchy floor applicability in `administration.measures` effective/per-restriction counters, focused PG17 actual writer/role/override scenarios, no whole-SA06 AUTHOR READY until stage4.
+
+---
 ## 2026-11-17 — SA06 corrective stage 2/4: History code published, CI pending
 
 - Active corrective implementation of accepted two current-SA06 defects; **only History stage 2** touched. Interim #338 head `9d8fc0bb6ba5ab5d403734b1c692859b2fc3b530`, still Draft/unmerged. AP-10 fix untouched.
