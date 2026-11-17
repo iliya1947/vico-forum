@@ -6,7 +6,7 @@ Target: cumulative Draft #340 exact `5eb6656d933eb39a5df45c1ddca85d3679d600c5`; 
 
 ## Final head execution
 
-Corrected whole-SA08 M1 target: `5eb6656d933eb39a5df45c1ddca85d3679d600c5`,8 commits/41 paths, open/Draft/unmerged/mergeable=true. Prior Mira FAIL M1 on83f7cb24 is preserved until fresh WHOLE-SA08 review; this is author evidence for the correction.
+Corrected whole-SA08 M1 target: `5eb6656d933eb39a5df45c1ddca85d3679d600c5`,8 commits/41 paths, open/Draft/unmerged/mergeable=true. This remains the author execution record; Mira subsequently completed fresh WHOLE-SA08 coordinator review with PASS /0 confirmed current-SA08 defects in #331 comment6957009585. Independent Mark review remains separate.
 
 All **14/14 exact workflow runs and18/18 latest jobs SUCCESS**, individually fetched. CI44141047271: checks134243605276 **2569 tests/208 files**, lint/typecheck/build/UI preview/migration metadata; database134243605850 **1410 tests/104 files**, **no unhandled rejection**,69-table manifest parity, actual runtime/split-authority/credential probes and Worker smokes PASS. One unchanged lint warning; known Drizzle generate BigInt false-green is excluded from parity evidence.
 
