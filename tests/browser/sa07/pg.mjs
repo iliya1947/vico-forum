@@ -30,7 +30,7 @@ try{for await(const line of readline.createInterface({input:process.stdin,crlfDe
     proof.noteAdapterCreate({model:'account'},{id,userId:x.member,providerId:'google'});
     await proof.flush();const writer=new PostgresAuthFactWriter(pool);
     for(const {fact,at} of captured)await writer.append(fact,at);
-    const rows=(await c.query("select id from owner_events where source='auth' and target_id=$1 and kind='auth.methodLinked' and payload->>'method'='google' order by occurred_at desc,id desc limit 1",[x.member])).rows;
+    const rows=(await c.query("select id from owner_events where source='auth' and target_user_id=$1 and kind='auth.methodLinked' and payload->>'method'='google' order by occurred_at desc,id desc limit 1",[x.member])).rows;
     if(rows.length!==1)throw Error('Confirmed native Google method-link fact required');
     result={googleFact:rows[0].id};
   }

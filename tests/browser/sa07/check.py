@@ -349,12 +349,12 @@ try:
   record('Integrations-genuine-Owner-admission-before-private-source-reads-and-samples')
   linked=rpc({'operation':'integrationSeed','member':data_member})['googleFact']
   links=sql("select id from owner_events where source='auth' and kind='auth.methodLinked' and payload->>'method'='google' order by id")
-  previous_sessions=sql("select id from owner_events where source='auth' and target_id=$1 and kind='auth.sessionCreated'",[data_member])
+  previous_sessions=sql("select id from owner_events where source='auth' and target_user_id=$1 and kind='auth.sessionCreated'",[data_member])
   previous_session_ids={row['id'] for row in previous_sessions}
   assert dc.request.post(base+'/api/auth/sign-out',headers={'Origin':base},data={}).status==200
   assert dc.request.post(base+'/api/auth/sign-in/email',headers={'Origin':base},data={'email':data_email,'password':data_password}).status==200
   for _ in range(100):
-   sessions=sql("select id from owner_events where source='auth' and target_id=$1 and kind='auth.sessionCreated' order by occurred_at desc,id desc limit 1",[data_member])
+   sessions=sql("select id from owner_events where source='auth' and target_user_id=$1 and kind='auth.sessionCreated' order by occurred_at desc,id desc limit 1",[data_member])
    if sessions and sessions[0]['id'] not in previous_session_ids:break
    page.wait_for_timeout(25)
   assert sessions and sessions[0]['id'] not in previous_session_ids
