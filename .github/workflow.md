@@ -3,11 +3,12 @@
 ## Текущее состояние
 
 - Задача: редактирование заголовка собственной темы.
-- Этап: технический план принят; реализация передана Лире.
+- Этап: технический план принят; реализация передана Лёве прямым решением владельца.
 - Координатор: Мира / ChatGPT-5.6 Sol.
 - Технический планировщик: Лёва / Codex-6.1 Sol; план завершён.
-- Исполнитель / следующий участник: Лира / ChatGPT-6.
-- Независимый reviewer после coordinator PASS: Лёва, если не участвует в реализации.
+- Исполнитель / следующий участник: Лёва / Codex-6.1 Sol.
+- Лира / ChatGPT-6: снята с реализации этой задачи.
+- Независимый reviewer после coordinator PASS: Марк / Codex-6 Sol, так как Лёва участвует в реализации.
 - Implementation PR: ещё не создан.
 - Stable implementation head: отсутствует.
 
@@ -22,6 +23,6 @@
 
 ## Следующий шаг
 
-Лира создаёт отдельный implementation PR от актуального `main` и реализует только принятый bounded scope. Готовность: применимые тесты/CI и browser acceptance для author success, guest/non-author denial, stale conflict и current title после reload/list/search. После stable implementation head Лира фиксирует результат в служебном PR и STOP; далее whole-PR review Миры.
+Лёва создаёт отдельный implementation PR от актуального `main` и реализует только принятый bounded scope. Готовность: применимые local/CI проверки и browser acceptance для author success, guest/non-author denial, stale conflict и current title после reload/list/search. После stable implementation head Лёва фиксирует implementation PR/head и результаты в служебном PR и STOP; далее whole-PR review Миры.
 
 Служебный PR #342 не merge в main.
