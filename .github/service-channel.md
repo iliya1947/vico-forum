@@ -1,3 +1,14 @@
+## 2026-11-17 — SA07 merged; SA08-A assigned to Lira
+
+- Developer merged #339. Current `main` is `45406723c4b53ceba9392d3fb7dc84e8adaa9768`.
+- **Next upper-level package:** SA08. Accepted plan already defines two bounded slices: 08-A then 08-B; no new architectural planning pass is required before 08-A.
+- **Executor:** Lira / ChatGPT-6.
+- **SA08-A scope:** implement the accepted final Super-admin composition layer: complete Overview across all 13 areas (12 measured + Infrastructure placeholder), final cross-area/source/kind/time History controls and round-trip pagination/filter presentation, common action/history presentation, and partial-availability composition exactly within the accepted SA08-A plan.
+- **Boundary:** 08-A only. Do not start 08-B full-program acceptance/closure, permanent docs, #315, Stage6/production/deploy/external work.
+- **Ready criterion:** implementation PR based on current main, applicable 08-A checks/acceptance green, stable exact head published to #331 with evidence sufficient for Mira bounded acceptance. Do not broaden architecture/schema/dependencies/public contracts unless the accepted 08-A scope actually requires it.
+
+---
+
 ## 2026-11-17 — Mark independent WHOLE SA07 PASS; SA07 review cycle complete
 
 - Mark / Codex-6 Sol independently reviewed cumulative Draft #339 stable exact `8cc0ecea5ad8a725d570abdb8958de96020ee4e0` against current main `1e4bcf83ff7bda0ec772a8098671ca9afe63888a`.
