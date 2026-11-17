@@ -1,3 +1,13 @@
+## 2026-11-17 — Developer correction: visual/UI pass is later, not a #340 merge gate
+
+- The prior coordinator statement making Owner visual acceptance the active pre-merge gate for #340 was incorrect and is superseded.
+- Developer confirms the visual/UI acceptance belongs to the later separate UI/UX pass.
+- #340 exact `5eb6656d933eb39a5df45c1ddca85d3679d600c5` already has Mira coordinator PASS + Lira independent PASS + Mark independent PASS, with 0 confirmed current-SA08 defects.
+- Therefore no additional SA08 visual gate blocks #340. Next decision is Developer merge authority.
+- Any implementation change still resets the exact-head review cycle.
+
+---
+
 ## 2026-11-17 — WHOLE SA08 review gate CLOSED; Owner visual acceptance next
 
 - Draft #340 remains unchanged at stable exact `5eb6656d933eb39a5df45c1ddca85d3679d600c5`, open/Draft/unmerged/mergeable=true.
