@@ -111,7 +111,8 @@
     "app/complaints/review-context.ts",
     "app/complaints/appeal-context.ts",
     "app/complaints/response.ts",
-    "app/routes/complaint-submit.ts"
+    "app/routes/complaint-submit.ts",
+    ".github/production-schema-manifest.json"
   ],
   "compilerOptions": {
     "composite": true,
@@ -123,6 +124,7 @@
     ],
     "target": "ES2022",
     "module": "ES2022",
-    "moduleResolution": "bundler"
+    "moduleResolution": "bundler",
+    "resolveJsonModule": true
   }
 }

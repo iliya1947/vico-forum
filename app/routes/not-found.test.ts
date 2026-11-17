@@ -63,6 +63,7 @@ describe("localized route shape", () => {
       expect.objectContaining({ path: "super-admin/monitoring/forum", file: "routes/super-admin-forum.tsx" }),
       expect.objectContaining({ path: "super-admin/monitoring/background", file: "routes/super-admin-background.tsx" }),
       expect.objectContaining({ path: "super-admin/monitoring/localization", file: "routes/super-admin-localization.tsx" }),
+      expect.objectContaining({ path: "super-admin/monitoring/data", file: "routes/super-admin-data.tsx" }),
       expect.objectContaining({ path: "super-admin/monitoring/files", file: "routes/super-admin-files.tsx" }),
       expect.objectContaining({ path: "super-admin/monitoring/administration", file: "routes/super-admin-administration.tsx" }),
       expect.objectContaining({ path: "super-admin/monitoring/moderation", file: "routes/super-admin-moderation.tsx" }),

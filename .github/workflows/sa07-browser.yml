@@ -1,4 +1,4 @@
-name: SA07 Background Localization and Files connected Chromium acceptance
+name: SA07 Background Localization Files and Data connected Chromium acceptance
 
 on:
   pull_request:
@@ -105,7 +105,7 @@ jobs:
             writeFileSync(path,JSON.stringify(config,null,2));
           '
           pnpm build
-      - name: Real Background/Localization/Files sources, local R2, History, privacy and late-response acceptance
+      - name: Real Background/Localization/Files/Data sources, local R2, History, privacy and late-response acceptance
         run: |
           pnpm exec vite preview --host 127.0.0.1 --port 4237 --strictPort > "$RUNNER_TEMP/sa07-preview.log" 2>&1 &
           preview_pid=$!

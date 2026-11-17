@@ -1,7 +1,7 @@
 import {TASK_TRANSITION_KINDS,FILE_TRANSITION_KINDS} from "../app/observability/operational-facts";
 import type { Pool } from "pg";
 import { SA02_FACT_MONITORS } from "./owner-sa02-catalog";
-import { OWNER_MONITORS, ADMIN_MONITOR_SCOPES_SQL, TASK_FACT_MONITOR_SCOPES_SQL,STORAGE_OBSERVATION_PREDICATE_SQL,STORAGE_OBSERVATION_SCOPES_SQL, type OwnerMonitorArea, type OwnerMonitorKey } from "./owner-monitor-catalog";
+import { OWNER_MONITORS, ADMIN_MONITOR_SCOPES_SQL, TASK_FACT_MONITOR_SCOPES_SQL,STORAGE_OBSERVATION_PREDICATE_SQL,STORAGE_OBSERVATION_SCOPES_SQL,SYSTEM_EVENT_MONITOR_SCOPES_SQL, type OwnerMonitorArea, type OwnerMonitorKey } from "./owner-monitor-catalog";
 import { nativeHistoryBranches, NATIVE_HISTORY_ORIGINS, NATIVE_ORIGIN_MONITORS, HISTORY_COLUMNS, readNativeHistoryCoverage, type NativeHistoryOrigin, type OwnerSourceCoverage } from "./owner-native-history";
 import { SYSTEM_MONITORS } from "./owner-system-history";
 import { parseOwnerTimelineCursor } from "./owner-system-monitoring";
@@ -49,7 +49,7 @@ export interface OwnerHistoryOptions {
 const ORIGIN_SCOPES: Record<OwnerHistoryOrigin,readonly string[]> = {
   ...NATIVE_ORIGIN_MONITORS,
   "operational-event":["background.translation","integrations.translation","localization.ui","localization.content","localization.budget","background.attachments","files.assets","files.operations"],
-  "system-event": SYSTEM_MONITORS,
+  "system-event": [...SYSTEM_MONITORS,"data.compatibility"],
   "auth-event": ["accounts.users","accounts.methods","accounts.sessions","security.auth"],
   "account-event": ["accounts.users"],
   "system-observation": Object.values(OWNER_MONITORS).flat(),
@@ -90,7 +90,7 @@ function compatibleKind(origin:OwnerHistoryOrigin,kind:string,scope:Scope):boole
   let allowed:readonly string[]=ORIGIN_SCOPES[origin];
   if(origin==="operational-event")allowed=kind==="file.cleanupPass"?["background.attachments","files.operations"]:kind.startsWith("file.")?["files.assets","files.operations"]:kind==="integration.translationCall"?["background.translation","integrations.translation"]:kind==="task.reconciliationPass"?["background.translation"]:kind==="task.allowanceAdmitted"||kind==="task.allowanceDeferred"?["background.translation","localization.ui","localization.content","localization.budget"]:["background.translation","localization.ui","localization.content"];
   if(origin==="auth-event")allowed=SA02_FACT_MONITORS[kind as keyof typeof SA02_FACT_MONITORS]??[];
-  if(origin==="system-event")allowed=kind==="system.requestFailed"?["system.requests"]:["system.dependencies"];
+  if(origin==="system-event")allowed=kind==="system.requestFailed"?["system.requests"]:["system.dependencies","data.compatibility"];
   if(origin==="admin-history"){
     if(kind==="settings.registrationChanged")allowed=["accounts.registration","administration.registration"];
     else if(kind.startsWith("role.")||kind==="user.roleAssigned"||kind==="user.overrideChanged")allowed=["administration.authorization"];
@@ -271,7 +271,7 @@ function readRow(row:HistoryRow):OwnerHistoryEntry {
 /** The source identities and immutable ordering timestamps are never copied or updated. */
 const LEGACY_SOURCE_SQL = [
   "select 'system-event'::text origin,e.id::text source_id,e.occurred_at at,",
-  " e.recorded_at recorded_at, ARRAY[e.monitor_key]::text[] scopes,",
+  " e.recorded_at recorded_at, "+SYSTEM_EVENT_MONITOR_SCOPES_SQL+" scopes,",
   " e.kind,e.source,null::text quality,e.payload details",
   " from owner_events e where e.source='system'",
   "union all",
@@ -390,7 +390,7 @@ function timelineSql(filterOrigin:OwnerHistoryOrigin|null=null,scope:Scope={area
   const legacy=LEGACY_SOURCE_SQL.split("\nunion all\n").flatMap((sql,index)=>{
     if(!allowedOrigins.includes(legacyOrigins[index]))return [];
     // Preserve direct equality prefixes for scoped chronological indexes.
-    const direct=index===0?" and ($1::text is null or e.monitor_key=$1)":index===3?" and ($1::text is null or o.monitor_key=$1 or ($1::text='files.operations' and ("+STORAGE_OBSERVATION_PREDICATE_SQL+")))":"";
+    const direct=index===0?" and ($1::text is null or e.monitor_key=$1 or ($1::text='data.compatibility' and e.monitor_key='system.dependencies' and e.kind='system.dependencyUnavailable'))":index===3?" and ($1::text is null or o.monitor_key=$1 or ($1::text='data.compatibility' and o.monitor_key='system.dependencies' and o.resource_scope='global') or ($1::text='files.operations' and ("+STORAGE_OBSERVATION_PREDICATE_SQL+")))":"";
     return [`(select ${HISTORY_COLUMNS} from (${sql+direct}) facts(${HISTORY_COLUMNS}) where ${predicates} order by at desc nulls last,origin desc nulls last,source_id desc nulls last limit $6)`];
   });
   const native=nativeHistoryBranches({monitor:"$1",area:"$2",at:"$3",origin:"$4",id:"$5",limit:"$6",

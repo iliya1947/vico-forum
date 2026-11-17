@@ -64,6 +64,7 @@ export default [
     route("super-admin/monitoring/forum", "routes/super-admin-forum.tsx"),
     route("super-admin/monitoring/background", "routes/super-admin-background.tsx"),
     route("super-admin/monitoring/localization", "routes/super-admin-localization.tsx"),
+    route("super-admin/monitoring/data", "routes/super-admin-data.tsx"),
     route("super-admin/monitoring/files", "routes/super-admin-files.tsx"),
     route("super-admin/monitoring/administration", "routes/super-admin-administration.tsx"),
     route("super-admin/monitoring/moderation", "routes/super-admin-moderation.tsx"),

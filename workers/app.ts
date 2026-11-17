@@ -1,3 +1,5 @@
+import {createHyperdriveOwnerData} from "../db/hyperdrive-owner-data";
+import {ownerDataMonitoringContext} from "../app/super-admin/request-context";
 import {createHyperdriveOperationalRecording} from "../db/hyperdrive-operational-recording";
 import {createHyperdriveOwnerFiles} from "../db/hyperdrive-owner-files";
 import {ownerFilesMonitoringContext} from "../app/super-admin/request-context";
@@ -128,6 +130,7 @@ async function applicationFetch(request: Request, env: Env, executionContext?: E
     context.set(ownerSystemMonitoringContext, ownerMonitoring);
     context.set(ownerSa02MonitoringContext, ownerMonitoring);
     context.set(ownerNativeMonitoringContext, ownerMonitoring);
+    context.set(ownerDataMonitoringContext,createHyperdriveOwnerData(webConnectionString,localizationConnectionString,ownerUserId));
     context.set(ownerFilesMonitoringContext,createHyperdriveOwnerFiles(webConnectionString,!!attachmentBucket,ownerUserId));
     context.set(ownerLocalizationMonitoringContext,createHyperdriveOwnerLocalization(webConnectionString,localizationConnectionString,ownerUserId));
     context.set(ownerProfileContext, createHyperdriveOwnerProfile(webConnectionString));

@@ -1,3 +1,5 @@
+import type {OwnerDataMonitoring} from "../../db/hyperdrive-owner-data";
+export const ownerDataMonitoringContext=createContext<OwnerDataMonitoring>();
 import type {OwnerFilesMonitoring} from "../../db/hyperdrive-owner-files";
 export const ownerFilesMonitoringContext=createContext<OwnerFilesMonitoring>();
 import { createContext, type RouterContextProvider } from "react-router";

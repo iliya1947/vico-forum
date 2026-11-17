@@ -1,4 +1,4 @@
-"""Genuine BA/Worker/PG17 Background, Localization and Files acceptance. Code-only fixture invocation does not enable job runtime."""
+"""Genuine BA/Worker/PG17 Background, Localization, Files and Data acceptance. Code-only fixture invocation does not enable job runtime."""
 import argparse,json,os,select,shutil,subprocess
 from pathlib import Path
 from uuid import uuid4
@@ -18,7 +18,7 @@ def private_headers(response,status):
  assert {'private','no-store'}<={x.strip() for x in response.headers.get('cache-control','').split(',')}
 def private(response,status):
  private_headers(response,status)
- body=response.text();assert 'SA07_PRIVATE' not in body;assert 'SA07_L_PRIVATE' not in body;assert 'SA07_F_PRIVATE' not in body;assert 'private/fenced-v1/' not in body;return response
+ body=response.text();assert 'SA07_PRIVATE' not in body;assert 'SA07_L_PRIVATE' not in body;assert 'SA07_F_PRIVATE' not in body;assert 'SA07_D_PRIVATE' not in body;assert 'private/fenced-v1/' not in body;return response
 
 def visit(page,path):private(page.goto(base+path,wait_until='networkidle'),200)
 def refresh(page,path,monitor):
@@ -271,10 +271,75 @@ try:
    try:route.fulfill(response=response)
    except Exception:pass
   page.wait_for_timeout(250);expect(page.locator('[data-file-current]')).to_have_count(0);page.unroute('**/super-admin/monitoring/files.data*')
-  assert not errors,errors;assert not external,external;record('SA07-B1-L-F-connected-pass');browser.close()
+  record('SA07-B1-L-F-connected-pass')
+  assert oc.request.post(base+'/api/auth/sign-in/email',headers={'Origin':base},data={'email':email,'password':password}).status==200
+  assert sql('update "session" set user_id=$1 where user_id=$2 returning id',[owner,issued])
+  dc,data_member,_,_=account('data-member')
+  data_current='/en/super-admin/monitoring/data';data_keys=['data.application','data.compatibility','data.retention']
+  before=sql("select id from owner_monitor_observations where monitor_key like 'data.%' order by id")
+  for ctx,status in [(guest,401),(ac,403),(dc,403)]:
+   for path in [data_current]+[data_current+'/'+key+'/history' for key in data_keys]:
+    for suffix in ['', '.data']:private(ctx.request.get(base+path+suffix),status)
+  assert sql("select id from owner_monitor_observations where monitor_key like 'data.%' order by id")==before
+  record('Data-genuine-Owner-admission-before-counts-compatibility-and-samples')
+  user_count=sql('select count(*)::text n from "user"')[0]['n']
+  storage_before=sql("select id,value from owner_monitor_observations where resource_scope like 'storage:%' order by id")
+  for locale in ['en','ru','he']:
+   for width in [1280,768,320]:
+    page.set_viewport_size({'width':width,'height':900});visit(page,f'/{locale}/super-admin/monitoring/data')
+    expect(page.locator('[data-data-current]')).to_have_count(1)
+    for key in data_keys:
+     article=page.locator('[data-monitor-key="'+key+'"]');expect(article).to_have_count(1);expect(article.locator('form')).to_have_count(0)
+    assert page.locator('html').get_attribute('dir')==('rtl' if locale=='he' else 'ltr')
+    assert page.evaluate('document.documentElement.scrollWidth<=innerWidth+1')
+    if width==320:
+     account_check=page.locator('[data-data-check="counts.accounts"]');account_check.locator('summary').click()
+     assert account_check.locator('dt bdi:text-is("user")').locator('..').locator('..').locator('dd').inner_text()==user_count
+     assert page.evaluate('document.documentElement.scrollWidth<=innerWidth+1')
+     page.screenshot(path=str(a.output/(locale+'-data-320.png')),full_page=True)
+   record('localized-responsive-Data-complete-counts-compatibility-unchecked-migration-retention',locale=locale)
+  page.set_viewport_size({'width':1280,'height':900});visit(page,data_current)
+  samples=sql("select id from owner_monitor_observations where monitor_key like 'data.%' order by id")
+  refresh(page,data_current,'data.application')
+  assert sql("select id from owner_monitor_observations where monitor_key like 'data.%' order by id")==samples
+  assert sql("select id,value from owner_monitor_observations where resource_scope like 'storage:%' order by id")==storage_before
+  for key in data_keys:
+   sample=sql('select id from owner_monitor_observations where monitor_key=$1',[key])[0]['id']
+   assert sample in collect(page,data_current+'/'+key+'/history')
+  private(oc.request.get(base+'/en/super-admin/monitoring/system.data'),200)
+  dependency=sql("select id from owner_monitor_observations where monitor_key='system.dependencies' and resource_scope='global' order by observed_at desc limit 1")[0]['id']
+  assert dependency in collect(page,data_current+'/data.compatibility/history?origin=system-observation')
+  expect(page.locator('[data-history-kind="system.requestFailed"]')).to_have_count(0)
+  record('Data-original-System-dependency-and-own-samples-GET-gate-no-R2-call-no-generic5xx-attribution')
+  sql('alter table forum_profiles rename column bio to "SA07_D_PRIVATE_BIO"')
+  try:
+   visit(page,data_current);expect(page.locator('[data-data-check="forum_profiles"]')).to_have_attribute('data-status','incompatible')
+   for path in [data_current+'.data','/en/SUPER-ADMIN/monitoring/DATA.data','/en/%73uper-admin/monitoring/data///']:private(oc.request.get(base+path),200)
+   private(guest.request.get(base+data_current+'.data'),401)
+   assert 'SA07_D_PRIVATE' not in page.locator('body').inner_text()
+  finally:sql('alter table forum_profiles rename column "SA07_D_PRIVATE_BIO" to bio')
+  with hold('lock table forum_profiles in access exclusive mode'):
+   visit(page,data_current)
+   expect(page.locator('[data-data-check="forum_profiles"]')).to_have_attribute('data-status','unavailable')
+   expect(page.locator('[data-data-check="counts.forum"]')).to_have_attribute('data-status','unavailable')
+  private(oc.request.get(base+data_current+'?sql=forbidden'),400)
+  record('Data-actual-missing-column-and-source-lock-classified-per-check-no-zero-no-private-SQL')
+  visit(page,data_current);held=[];page.route('**/super-admin/monitoring/data.data*',delayed);page.locator('[data-monitor-key="data.application"] nav a').nth(1).click()
+  for _ in range(100):
+   if held:break
+   page.wait_for_timeout(20)
+  assert held
+  with page.expect_response(lambda r:r.request.method=='POST' and '/api/auth/sign-out' in r.url) as signed:page.locator('.auth-sign-out').click()
+  assert signed.value.status==200;expect(page.locator('.auth-controls[data-state=guest]')).to_have_count(1);expect(page.locator('[data-data-current]')).to_have_count(0)
+  for route,response in held:
+   try:route.fulfill(response=response)
+   except Exception:pass
+  page.wait_for_timeout(250);expect(page.locator('[data-data-current]')).to_have_count(0);page.unroute('**/super-admin/monitoring/data.data*')
+  record('Data-known-signout-and-late-Owner-response-do-not-restore-private-counts')
+  assert not errors,errors;assert not external,external;record('SA07-B1-L-F-D-connected-pass');browser.close()
 finally:
  if pg:
   pg.stdin.close()
   try:pg.wait(timeout=8)
   except subprocess.TimeoutExpired:pg.terminate();pg.wait(timeout=5)
- (a.output/'results.json').write_text(json.dumps({'head':os.environ.get('IMPLEMENTATION_SHA'),'scope':'SA07-B1/L/F; actual Worker/BA/PG17/local private R2; cleanup code-only pass, no scheduler/runtime activation','cases':records,'pageErrors':errors,'external':external},ensure_ascii=False,indent=2))
+ (a.output/'results.json').write_text(json.dumps({'head':os.environ.get('IMPLEMENTATION_SHA'),'scope':'SA07-B1/L/F/D; actual Worker/BA/PG17/local private R2; cleanup code-only pass, no scheduler/runtime activation','cases':records,'pageErrors':errors,'external':external},ensure_ascii=False,indent=2))
