@@ -1,3 +1,13 @@
+## 2026-11-17 — docs closeout PR #341 opened
+
+- Draft documentation-only PR **#341** created from current main `2ed977604ae0e6a3c0c2650112f65b42fc7eb77a`.
+- Branch: `docs/super-admin-sa05-sa08-closeout`.
+- First factual anchor commit updates `PROJECT_STATE.md` through merged SA05–SA08 and migration history `0000–0066`.
+- Current PR file inventory verified: only `PROJECT_STATE.md`; no application/code/schema/runtime files.
+- Remaining closeout scope stays the previously confirmed permanent docs + compact project-history snapshot.
+
+---
+
 ## 2026-11-17 — #340 merged; documentation closeout is next
 
 - Developer merged SA08 implementation PR #340. Current `main` is `2ed977604ae0e6a3c0c2650112f65b42fc7eb77a`.
