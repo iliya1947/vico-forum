@@ -1,3 +1,14 @@
+## 2026-11-17 — Developer override: Lira owns SA07 reconciliation + review
+
+- Direct developer override supersedes the prior independence-preservation route.
+- **Lira / ChatGPT-6 owns the next SA07 sequence end-to-end:** resolve the current #339↔main conflict, preserving merged SA06 behavior and accepted SA07 scope; run the applicable recheck; then review the entire cumulative SA07 package on the resulting stable exact head.
+- This means Lira's review is **not independent** if she changes implementation while resolving the conflict. That is explicitly accepted by the developer for this route. Do not spend Lev quota on this reconciliation.
+- Current #339 before reconciliation: head `98f6ce48bc0efce465d89eff5267db3e82524fe1`, base main `1e4bcf83ff7bda0ec772a8098671ca9afe63888a`, GitHub `mergeable=false`.
+- **Publication hold remains unchanged:** Lira must not publish PASS/FAIL, findings, intermediate conclusions or review details anywhere until the developer explicitly commands publication. After completion she may only report that the work/review is complete and the result is being held.
+- If conflict resolution requires substantive technical redesign outside accepted SA07 scope, stop and report only that escalation is required; do not publish hidden review findings.
+
+---
+
 ## 2026-11-17 — SA07 dependency update diagnosis after #338 merge
 
 - Developer merged #338. Current main is `1e4bcf83ff7bda0ec772a8098671ca9afe63888a`; GitHub automatically retargeted Draft #339 to `main`.
