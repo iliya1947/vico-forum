@@ -5,9 +5,9 @@ Service PR #331 is the active Admin/Super-admin coordination channel. PR #251 is
 ## Current boundary
 
 - Current main7e7a8038; prerequisite Draft338 ce71892d open/unmerged, Mira fresh whole-SA06 M2 FAIL; Lira corrects false person coverage attribution. Earlier Lev author verification was not independent.
-- Explicit overnight override activates dependent cumulative [Draft #339](https://github.com/iliya1947/vico-forum/pull/339), branch `chatgpt/sa07-native-operations`, base `chatgpt/sa06-native-monitoring`; current exact `22f9976ce5233d98f021b54c0d9c8a28b8690d24`.
--07-B1+07-L source/author checkpoints complete: real Background/task facts and four Localization readers/History/Owner UI, five total reader-paired SELECT additions, no DDL or task writes. Runtime disabled/unwired. Native43/app42/local connected18 PASS;2f9d6e01 exact CI13runs17jobs/app2533/native1361/manifest69 PASS. Current harness-only completion correction exact CI ACTIVE. Known Drizzle BigInt/exit0 is not parity proof.
-- **07-B1/L/F/D source checkpoints delivered; ACTIVE07-I Integrations** in the same cumulative PR. Data final native13/app65/type/build/lint PASS, local connected32 PASS before final fact-schema/7label delta; final native/resources cover delta and exact22fCI ACTIVE. Whole SA07 not AUTHOR READY; no internal review/merge gate. Update/recheck dependency when338 changes.
+- Explicit overnight override activates dependent cumulative [Draft #339](https://github.com/iliya1947/vico-forum/pull/339), branch `chatgpt/sa07-native-operations`, base `chatgpt/sa06-native-monitoring`; current exact `1afb8954e435eeb2edb098ff77a8dd56035927fe`.
+-07-B1/L/F/D predecessor22f all13 exact workflows SUCCESS: app2555/205,native1388/102,manifest69,cumulative connected32. Source-specific details remain in the common/personal logs. Known Drizzle BigInt/exit0 is not parity proof.
+- **07-B1/L/F/D/I source delivered; final whole-SA07 author acceptance ACTIVE** in the same cumulative PR. New Integrations native9/focusedapp69/8/History7/type/build/lint PASS. Full local/connected and new exact CI ACTIVE; one large-catalog Localization native deadline needs reconciliation. Whole SA07 not AUTHOR READY; no internal review/merge gate. Update/recheck dependency when338 changes; SA06 M2 remains assigned to Lira.
 - No SA08+, #315, permanent docs, Stage6/production/deploy/external work or merge. Author browser checks do not establish developer visual/deployed approval.
 
 ## Stable product decisions
