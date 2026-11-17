@@ -1,3 +1,19 @@
+## 2026-11-17 — Mira WHOLE SA08 review: FAIL M1; final binding/action acceptance incomplete
+
+- **Reviewed target:** cumulative Draft #340 stable exact `83f7cb24e812889c1b729857289d35835cdae2e3`, base/current main `45406723c4b53ceba9392d3fb7dc84e8adaa9768`, open/Draft, unmerged, `mergeable=true`.
+- Mira reviewed the cumulative SA08 implementation and final matrix against accepted §7, §11 and §15 plus current project/source contracts. Product source after bounded 08-A PASS is unchanged; 08-B adds final acceptance/workflow tests.
+- Independently checked exact-head evidence: all **14/14** workflows SUCCESS; application **2569/2569**; PostgreSQL17 **1410/1410**; production schema manifest **69 tables**; runtime privilege probes PASS; SA05/SA06/SA07/SA04-S and SA08 connected workflows report their whole-scope PASS markers. SA08 connected catalog sweep covers 51 Super-admin read surfaces / 35 adjacent Histories and real missing/wrong-binding restarts for those read surfaces.
+- **M1 — accepted §15 missing/wrong-binding Owner-entry acceptance is incomplete.** §15 requires direct document/`.data`/prefetch/**action** access across the Owner entry surfaces, explicitly including canonical profile public/Admin/Owner composition, under genuine Owner/admin/member/guest and missing/wrong binding.
+- The final real missing/wrong-binding driver `tests/browser/sa08/binding-check.py` covers only the 51 read-only `/:locale/super-admin...` surfaces. Its POST probes terminate as Router `405` because those routes have no action. It does **not** exercise the canonical `/:locale/users/:userId` profile under missing/wrong Owner binding and does **not** execute the real canonical `/:locale/users/:userId/owner/deactivate` action under those runtime binding states.
+- Existing unit coverage correctly proves server-side profile admission and deactivation reject missing/invalid bindings, and SA05 connected acceptance proves the real deactivation action with a valid binding plus stale account-switch denial. Those are useful but do not satisfy the explicitly required **real built Worker missing/wrong-binding** profile/action acceptance in §15.
+- This is a **current SA08-B acceptance-harness defect**, not a product defect and not future groundwork. No production-code failure has been established.
+- **Bounded correction for Lev / Codex-6.1 Sol:** complete the final connected acceptance for canonical profile document/data/prefetch and the real Owner deactivation action under missing and wrong server Owner binding, using a genuine active Better Auth session. Prove private denial before Owner-private reads/command effects and unchanged target lifecycle/history/domain state. Do not change product code unless the real acceptance exposes an actual product defect.
+- No other confirmed current-SA08 defect found in the whole review. Existing Overview/resource bounds, History filters/keysets/source identity, lifecycle/concurrency, monitoring, hot R2/auth provenance, canonical action contracts, fault/privacy/cache and schema/runtime evidence otherwise match the accepted SA08 scope.
+- **Review cycle:** after this correction, publish a new stable exact #340 head with applicable exact-head evidence; Mira repeats WHOLE SA08 coordinator review. Mark remains blocked until Mira PASS.
+- No merge, permanent docs, #315, Stage6/production/deploy/external work.
+
+---
+
 ## 2026-11-17 — WHOLE SA08 AUTHOR READY; Mira coordinator review active next
 
 - Draft #340 stable exact `83f7cb24e812889c1b729857289d35835cdae2e3`, base/main45406723, open/Draft/unmerged/mergeable=true,7 commits/41 paths. Mira bounded08-A PASS oncb09523c; product source unchanged in08-B.
