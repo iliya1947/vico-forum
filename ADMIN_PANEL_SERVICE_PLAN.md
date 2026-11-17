@@ -4,12 +4,12 @@ Service PR #331 is the active Admin/Super-admin coordination channel. PR #251 is
 
 ## Current boundary
 
-- SA05 #337 is developer-merged; current main/base `7e7a803876422c2f40faaf720b59027d468e99dc`.
-- **Whole SA06 AUTHOR READY:** cumulative Draft #338, stable exact `522951ec164fda237b52e9777de846e32e86d47d`,2commits/47paths. Lev completed all `06-0 → 06-F → 06-A → 06-M → 06-N` and records AUTHOR STOP.
-- **Mira coordinator whole-SA06 review ACTIVE NEXT** on that same head; after coordinator PASS, assigned independent non-author reviewers. Internal slices are not review/merge gates. [Complete task and evidence](https://github.com/iliya1947/vico-forum/pull/331#issuecomment-6925817870).
-- Four areas/ten real native monitors, original global/scoped/person facts and terminal coverage, canonical controls/navigation/viewer isolation, and accepted27 indexes in0066. No new passive producer port or widened grants.
-- Local+exact CI app2507/194files/native1334/98files PASS; all16jobs/12runs SUCCESS, including genuine SA06 Worker/BA/PG17/Chromium. Initial unchanged navigation-test failure recovered via same-head job retry; cause unknown. Known Drizzle generator BigInt/exit0 remains non-proof; actual migrated69-table manifest/expression/index plans separately verify structure.
-- No SA07+, #315, permanent docs, Stage6/production/deploy/external work or merge. Author browser evidence does not claim developer visual/deployed acceptance.
+- SA05 #337 developer-merged; current main `7e7a803876422c2f40faaf720b59027d468e99dc`.
+- Prerequisite Draft #338 exact `ce71892dc30d8e9ef03833031c29e8519ca7627d` remains open/unmerged. Lira WHOLE SA06 AUTHOR READY; Lev completed whole cumulative technical author verification with0confirmed current-SA06 defects, not independent review. [Result](https://github.com/iliya1947/vico-forum/pull/331#issuecomment-6933791252).
+- Latest explicit overnight override activates immediate separate dependent SA07 without prerequisite merge. Lev implements cumulative [Draft #339](https://github.com/iliya1947/vico-forum/pull/339), branch `chatgpt/sa07-native-operations`, base `chatgpt/sa06-native-monitoring`, current exact head `9e55922585951fda5349949cea4b72862efcaadd`.
+- 07-B1 Background source and author checks completed: real passive transitions/provider/pass facts, current/History/Owner UI, one reader-paired SELECT; native13/app29/local Chromium and exact CI app2522/native1349/8runs12jobs PASS. Known Drizzle BigInt/exit0 remains non-proof; actual migrated69-table manifest/role probes separately PASS. Runtime remains disabled/unwired; no DDL or task writes granted.
+- **ACTIVE next07-L Localization**, then07-F/D/I in the same cumulative PR. Whole-SA07 AUTHOR READY not declared; internal checkpoints are not independent review/merge gates. Recheck/update SA07 if prerequisite338 changes.
+- No SA08+, #315, permanent docs, Stage6/production/deploy/external work or merge. Author browser evidence is not developer visual/deployed approval.
 
 ## Stable product decisions
 
