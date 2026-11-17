@@ -1,3 +1,14 @@
+## 2026-11-18 — Admin / Super-admin task COMPLETE
+
+- Documentation-only PR #341 merged at 2026-11-17T22:15:07Z, merge commit `906d15d896cc3a4f3b7dc9a03f46acd883925d1d`.
+- This closes the implementation + permanent documentation cycle for the current Admin/Super-admin task.
+- #340 implementation and #341 documentation are both in `main`.
+- No confirmed current-scope defects remain from the completed review cycles.
+- Visual/UI product pass and Stage6/external integration remain separate later work.
+- #331 remains open only as the never-merged service record.
+
+---
+
 ## 2026-11-17 — Correction: no Lev gate for docs-only #341
 
 - Previous assignment of Lev / Codex-6.1 Sol to review #341 is withdrawn.
