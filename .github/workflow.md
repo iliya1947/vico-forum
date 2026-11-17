@@ -10,4 +10,4 @@
 - Documentation closeout must preserve the boundary: repository/local-CI completion is not Stage6/deployed/production acceptance; Infrastructure remains Stage6-only; later UI/UX visual pass remains separate.
 - #331 remains coordination-only and must never be merged.
 
-- **Executor:** Lira / ChatGPT-6 author COMPLETE. **Mira:** coordinator whole-PR PASS. **ACTIVE NEXT reviewer:** Lev / Codex-6.1 Sol technical review of the same stable exact #341 head `c90b027586ddf4be728a3bed9e9d32da25d3e257`. Developer alone performs merge.
+- **Executor:** Lira / ChatGPT-6 author COMPLETE. **Mira:** coordinator whole-PR PASS. **Documentation closeout review is complete; no Codex technical gate is required for this docs-only PR.** Developer alone performs merge.
