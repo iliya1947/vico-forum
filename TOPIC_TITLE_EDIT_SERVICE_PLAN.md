@@ -333,3 +333,38 @@ Pages/owner visual acceptance выполняются при применимос
 Затем coordinator whole-PR review Миры и, после coordinator PASS,
 независимая техническая проверка Лёвы того же stable exact head.
 Агенты друг друга не запускают. Этот служебный PR не merge в main.
+
+
+## Scope/fit review Миры — 2026-11-18
+
+### Решение по E1 — ACCEPT
+
+Новый code-backed permission `forum.topic.title.editOwn` является текущей частью задачи, а не заделом на будущее.
+Причина: `docs/auth/AUTHORIZATION.md` требует отдельный catalog key при появлении новой защищённой capability; существующий `forum.post.editOwn` относится к сообщениям, а source-locale permissions не дают права менять текст заголовка. Закрытый `authz_permissions_catalog_check` означает, что корректное добавление capability требует forward migration и seed/default grants.
+
+Принять границу Лёвы: initial grant для built-in `user`, `moderator`, `admin`; custom roles/overrides не переписывать; Owner получает capability через существующую catalog-wide projection, но ownership темы остаётся обязательным. Не добавлять edit-any.
+
+### Решение по cooldown — REJECT
+
+Отдельный 5-секундный cooldown для редактирования заголовка не входит в задачу и не следует из существующего аналога. Текущий `editPublishedPost` не вводит отдельный edit cooldown; создание новой политики для title revisions было бы расширением поведения без подтверждённой необходимости.
+
+Следствие: убрать 429/cooldown из контракта этой функции и из обязательной test matrix. Существующие общие request/security limits не ослабляются и не меняются.
+
+### Упрощение реализации и acceptance
+
+1. Сохранить обязательные инварианты: server-side session/permission/ownership, same-origin, active-account admission, immutable new title revision, CAS по expected revision, новый текст получает `sourceLocale: "und"`, старые translations остаются revision-bound и не становятся current.
+2. Не строить отдельную recovery-подсистему для короткого title editor. Достаточно существующих route/fetcher patterns: при 409 сохранить введённый текст и показать конфликт; дальнейшее действие пользователя работает от заново полученного current baseline. Специальные drafts/receipts/autosave/idempotency subsystem не добавлять.
+3. Новый own-edit command должен быть узким и не выставлять низкоуровневый `reviseTopicTitle` напрямую. Ownership и expected revision проверяются authoritative внутри write boundary/transaction.
+4. Проверки гонок/translation/lifecycle добавлять только там, где новая команда создаёт новый путь или меняет lock/admission composition. Уже доказанные неизменённые внутренние механизмы не дублировать целиком ради этой функции.
+5. Обязательный browser acceptance: автор может изменить title; guest/non-author не могут; stale revision конфликтует; после reload/list/search отображается current title; LTR/RTL и безопасный вывод сохраняются. Это не общий UI/UX pass.
+
+### E2 — требуется решение владельца
+
+Текущий permanent contract описывает user-measure restriction `posts.edit` как запрет собственного редактирования опубликованных сообщений. Технически допустимы как минимум два варианта для новой title-edit capability:
+
+- распространить существующий `posts.edit` на редактирование заголовка собственной темы как на часть группы Own content;
+- не применять `posts.edit` к title edit и позже при реальной необходимости отдельно спроектировать restriction policy.
+
+Мира рекомендует первый вариант: он соответствует смыслу группы Own content и не создаёт новый restriction key/UI/schema. Но это меняет семантику действующего административного ограничения, поэтому выбор принадлежит владельцу и не фиксируется молча.
+
+До решения E2 Лиру не активировать. После решения Мира обновляет accepted plan и передаёт Лире bounded implementation.
