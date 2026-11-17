@@ -1,3 +1,13 @@
+## 2026-11-17 — Correction: no Lev gate for docs-only #341
+
+- Previous assignment of Lev / Codex-6.1 Sol to review #341 is withdrawn.
+- Reason: #341 is the separate documentation closeout PR required after completed implementation; it contains no implementation/code/schema/runtime changes. The standard bounded implementation cycle was applied too mechanically.
+- Lira author work is complete and Mira has already completed the whole-PR documentation review on exact `c90b027586ddf4be728a3bed9e9d32da25d3e257`: PASS / 0 confirmed current-doc-scope defects.
+- CI `44184700540` is SUCCESS.
+- #341 therefore has no remaining agent review gate. Developer remains sole merge authority.
+
+---
+
 ## 2026-11-17 — Mira coordinator whole-PR docs review PASS; Lev next
 
 - Target: Draft #341 stable exact `c90b027586ddf4be728a3bed9e9d32da25d3e257`, base/main `2ed977604ae0e6a3c0c2650112f65b42fc7eb77a`, 8 documentation files only, open/Draft/unmerged/mergeable=true.
