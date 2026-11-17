@@ -247,6 +247,9 @@ describe("SA04-N2 native Complaint manager actor admission", () => {
         + "retain_at_least_until=now()+interval '2 years' where id=$1", [actor]);
       const pending = repo(writer).savePrioritySettings(actor, { expectedVersion: settings.version,
         weights: { ...DEFAULT_COMPLAINT_REASON_PRIORITY } });
+      // The writer may reject before the COMMIT client's acknowledgement arrives.
+      // Attach a handler now; the exact rejection assertion below remains required.
+      void pending.catch(() => undefined);
       try {
         let blocked = false;
         for (let i = 0; i < 200; i++) {

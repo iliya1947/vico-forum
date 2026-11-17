@@ -154,9 +154,11 @@ try:
    assert 'SA08_PRIVATE' not in page.locator('body').inner_text()
   finally:sql('drop trigger sa08_sample_fault on owner_monitor_observations;drop function sa08_sample_fault()')
   record('actual-atomic-batch-recorder-failure-does-not-erase-current-measurements')
-  visit(page,root);held=[]
+  visit(page,root);held=[];route_state={'holding':True}
   def delayed(route):
-   response=route.fetch(timeout=15000);held.append((route,response))
+   response=route.fetch(timeout=15000)
+   if route_state['holding']:held.append((route,response))
+   else:route.fulfill(response=response)
   page.route('**/super-admin.data*',delayed);page.locator('[data-overview-refresh]').click()
   for _ in range(100):
    if held:break
@@ -164,9 +166,11 @@ try:
   assert held
   with page.expect_response(lambda r:r.request.method=='POST' and '/api/auth/sign-out' in r.url) as signed:page.locator('.auth-sign-out').click()
   assert signed.value.status==200;expect(page.locator('.auth-controls[data-state=guest]')).to_have_count(1);expect(page.locator('[data-owner-overview]')).to_have_count(0)
+  route_state["holding"]=False
   for route,response in held:
    try:route.fulfill(response=response)
    except Exception:pass
+  page.unroute_all(behavior='wait')
   page.wait_for_timeout(250);expect(page.locator('[data-owner-overview]')).to_have_count(0)
   assert not errors,errors;assert not external,external
   record('known-signout-and-late-Overview-response-cannot-restore-private-summary')
