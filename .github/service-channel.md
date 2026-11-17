@@ -42,3 +42,12 @@ source-locale correction не разрешают переименование т
 Следующее назначение: Мира проводит scope/fit review и фиксирует решения по E1/E2;
 до этого Лира не активируется. После принятия — отдельный implementation PR.
 #320 и #331 не изменялись.
+
+
+## 2026-11-18 — Мира: scope/fit review технического плана
+
+- E1 ACCEPT: новый `forum.topic.title.editOwn` + forward migration для catalog CHECK/default grants — необходимая текущая часть функции, не future groundwork.
+- Отдельный 5s title-edit cooldown REJECT: существующий published-post edit не имеет такого edit cooldown; новая политика не обоснована текущей задачей.
+- Recovery/test scope сокращён до необходимых инвариантов: permission/ownership, immutable revision + CAS, translation currentness, relevant changed-path races и реальный browser flow; отдельная title recovery/idempotency subsystem не нужна.
+- E2 остаётся единственным owner decision: применять ли существующий user-measure restriction `posts.edit` к редактированию заголовка своей темы. Рекомендация Миры — да, как часть Own content, без нового restriction key.
+- Лира не активирована до решения E2.
