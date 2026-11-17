@@ -1,5 +1,15 @@
 # Codex-6.1 Sol — personal log
 
+## 2026-11-17 — 07-L source/author checkpoint complete;07-F ACTIVE
+
+- Cumulative dependent Draft #339 exact `2fb4c7bc5d41d6bfea021f9c891d4a1600953830`,3commits/59paths; prerequisite338 ce71892d unchanged/unmerged. Whole SA07 not AUTHOR READY.
+- Localization4 monitors delivered: real registry/UI canonical bundles/current content+typed generation/exact budget, separate localization/web source times, original task/revision/source-locale History, Owner/viewer isolation,82 reviewed EN/RU/HE labels and four paired SELECT-only grants.
+- Native43/3 (L12+B1/13+SA06/18), app42/6, typecheck/build/lint0errors+1baselinewarning, privilege probes/contract23 PASS. Source head2f9d6e01 exact CI13runs17jobs allSUCCESS, app2533/200/native1361/100/manifest69 and genuine connected18 PASS. Current head differs only bounded browser completion synchronization; new exact CI13runs ACTIVE.
+- Local final connected18 PASS with real Worker/BA/PG17/Chromium, expanded bundle/window+keyboard320 EN/RU/HE supplemental3 PASS. Initial local Chrome body protocol failure and second run stuck in Response.finished are retained; official pinned implementation leaves an unbounded completion wait/background target-close task. Narrow harness correction uses requestfinished(timeout15s) before body inspection; no product workaround. First original protocol cause remains unverified; no claim all retries were clean.
+- Continue accepted07-F Files/cleanup/fixed13 R2 sample slots in the same PR, then07-D/I. No intermediate review/merge gate; no SA08+, docs/#315/Stage6/production/deploy/external work or merge. Author checks are not independent review or developer visual approval.
+
+---
+
 ## 2026-11-17 — SA07 Background checkpoint PASS; Localization ACTIVE
 
 ## 2026-11-17 — SA06 technical author verification complete; dependent SA07 ACTIVE in Draft #339
