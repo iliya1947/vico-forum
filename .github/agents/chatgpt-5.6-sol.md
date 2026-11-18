@@ -3,11 +3,11 @@
 ## Текущая задача
 
 1. Служебный PR: **#315**.
-2. Моя текущая работа: coordination; audit A–L закрыт, current remediation decomposition подготовлен, implementation не начата.
-3. Текущий этап: **R01 technical planning handoff.** `SECURITY_REMEDIATION_PLAN.md` содержит 19 bounded packages для всех 34 current findings; Лёва назначен technical planner только R01. Stage 6 paused.
+2. Моя текущая работа: coordination context only; audit A–L закрыт, remediation decomposition подготовлен, security remediation paused owner'ом.
+3. Текущий этап: **PAUSED до завершения оставшихся продуктовых механик.** `SECURITY_REMEDIATION_PLAN.md` сохраняет 19 bounded packages для всех 34 current findings. Security должен завершиться перед Stage 6; его место относительно UI/UX pass пока не определено.
 4. Technical audit target B–D: `e279cb6c032a489a9044ca1191407df887c364b4`.
 5. Current `main` — `9c4639d23ca075c8bb92fbb909b96593d7bee127`. После Block K main продвинулся Watch #345 (`0068_topic_watch`); Block L стартует на этом current main.
-6. Лёва назначен только technical planner R01; Лира и Марк не назначены.
+6. Лёва, Лира и Марк по #315 сейчас не назначены.
 
 ## Где читать состояние
 
@@ -477,6 +477,6 @@
 
 ## Следующий шаг
 
-1. Ожидается technical plan Лёвы для **R01 — `REPO-MAIN-GATE-01` only**.
-2. После плана Мира проверяет его scope/Stage границы и только затем готовит implementation handoff; implementation заранее не начинать.
-3. Stage 6 остаётся paused; deferred blockers активируются только на соответствующих external boundaries.
+1. Продолжаются оставшиеся продуктовые механики вне #315.
+2. #315 не возобновлять без явного решения владельца после завершения этих механик.
+3. При возобновлении сначала перепроверить current main/findings и затем заново активировать первый актуальный remediation package; Stage 6 до завершения security не начинать.
