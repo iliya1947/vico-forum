@@ -253,3 +253,14 @@ queries-with, explicit-locking references проверены.
 Feature tests/CI/browser не запускались, implementation PR не создавался.
 Лёва STOP для scope/fit Миры; Watch остаётся Лире, будущие Bookmarks/Mute-block
 implementation планированием не активированы.
+
+
+## 2026-11-18 — активное назначение: advance plan модерации видимости контента
+
+Продолжить опережающее планирование задач из общей карты #300 **в текущем service PR #342**. Новый service PR не открывать.
+
+Текущий planning-slice: скрытие и восстановление опубликованных сообщений и тем.
+
+Исследовать актуальный main и подготовить полный технический план: authoritative state/persistence, permissions/resource conditions, History/audit, route/UI, public/protected projections, влияние на replies/quotes/mentions/search/unread/Watch/Bookmarks/translations/attachments/solutions/Complaints/read-state, lifecycle/concurrency/failure/cache/privacy и acceptance. Если семантика «скрытия» имеет реальные продуктовые развилки — вернуть их Мире явно.
+
+Не реализовывать код и не менять implementation-order. После полного плана записать его в `USER_ACTIONS_SERVICE_PLAN.md` и этот личный файл, затем STOP. Следующий planning-slice структуры форума не начинать без отдельной команды владельца.
