@@ -384,7 +384,8 @@ describe("embedded preview routing", () => {
 
     expect(await screen.findByRole("heading", { level: 2, name: "Alex Rivera" })).toBeInTheDocument();
     expect(screen.getByRole("heading", { level: 2, name: "Measure details" })).toBeInTheDocument();
-    expect(screen.getByText("Temporary preview restriction.")).toBeInTheDocument();
+    const measureInfo = document.querySelector("[aria-labelledby='measure-info-title']") as HTMLElement;
+    expect(within(measureInfo).getByText("Temporary preview restriction.")).toBeInTheDocument();
   });
 
   it("changes an Admin measure and records the new version", async () => {
@@ -626,8 +627,9 @@ describe("embedded preview routing", () => {
     });
     await user.click(within(measures).getByRole("link", { name: "User measures" }));
 
-    expect(await screen.findByRole("heading", { level: 2, name: "User measures" })).toBeInTheDocument();
-    expect(screen.getByLabelText("Exact user ID")).toHaveValue("alex");
+    const targetInput = await screen.findByLabelText("Exact user ID");
+    expect(targetInput).toHaveValue("alex");
+    expect(screen.getByRole("heading", { level: 2, name: "User measures" })).toBeInTheDocument();
     expect(screen.getByRole("heading", { level: 3, name: "Alex Rivera" })).toBeInTheDocument();
   });
 
