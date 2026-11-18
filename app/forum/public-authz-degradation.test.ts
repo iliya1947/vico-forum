@@ -99,6 +99,8 @@ const reader: ForumReader = {
   readUnreadForUser: async () => [],
   readTopicReadState: async () => undefined,
   readTopicWatch: async () => false,
+  readTopicBookmark: async () => false,
+  readTopicBookmarks: async () => ({ items: [], next: null }),
   readNotifications: async (_userId, page) => ({items:[],total:0,page,hasMore:false}),
   countUnreadNotifications: async () => 0,
   readReplyNotifications: async () => [],
@@ -250,6 +252,39 @@ describe("public forum authorization degradation", () => {
       ...reader, readTopicWatch: async () => { throw unexpected; },
     });
     await expect(rawTopicLoader({ params: { locale: "en", topicId: topic.id }, context: broken })).rejects.toBe(unexpected);
+  });
+
+  it("keeps optional Bookmark state actor-scoped, private and independent from Watch", async () => {
+    const ctx = contextWithPermissions("viewer-b", []);
+    const ownRead = vi.fn(async () => true);
+    ctx.set(forumReaderContext, { ...reader, readTopicBookmark: ownRead });
+    const result = await rawTopicLoader({ params: { locale: "en", topicId: topic.id }, context: ctx });
+    expect(result).toHaveProperty("data.topicBookmarkState", "on");
+    expect(result).toHaveProperty("data.bookmarkActorId", "viewer-b");
+    expect(result).toHaveProperty("data.topicWatchState", "off");
+    expect(result).toMatchObject({ init: { headers: { "Cache-Control": "private, no-store" } } });
+    expect(ownRead).toHaveBeenCalledWith("viewer-b", topic.id);
+
+    const guest = guestContext();
+    const guestRead = vi.fn(async () => true);
+    guest.set(forumReaderContext, { ...reader, readTopicBookmark: guestRead });
+    const anon = await rawTopicLoader({ params: { locale: "en", topicId: topic.id }, context: guest });
+    expect(anon).toHaveProperty("topicBookmarkState", null);
+    expect(anon).toHaveProperty("bookmarkActorId", null);
+    expect(guestRead).not.toHaveBeenCalled();
+
+    const offline = contextWithPermissions("viewer-b", []);
+    offline.set(forumReaderContext, { ...reader,
+      readTopicBookmark: async () => { throw new ForumStorageUnavailableError(); },
+    });
+    const unknown = await rawTopicLoader({ params: { locale: "en", topicId: topic.id }, context: offline });
+    expect(unknown).toHaveProperty("data.topicBookmarkState", "unavailable");
+
+    const broken = contextWithPermissions("viewer-b", []);
+    const bug = new TypeError("bookmark read projection bug");
+    broken.set(forumReaderContext, { ...reader, readTopicBookmark: async () => { throw bug; } });
+    await expect(rawTopicLoader({ params: { locale: "en", topicId: topic.id }, context: broken }))
+      .rejects.toBe(bug);
   });
 
   it("offers title editing only for the owner with its independent capability and no posts.edit restriction", async () => {

@@ -484,6 +484,13 @@
       "when": 1795008000000,
       "tag": "0068_topic_watch",
       "breakpoints": true
+    },
+    {
+      "idx": 69,
+      "version": "7",
+      "when": 1795020000000,
+      "tag": "0069_topic_bookmarks",
+      "breakpoints": true
     }
   ]
 }

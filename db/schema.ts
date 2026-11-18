@@ -1282,6 +1282,21 @@ export const forumTopicReadStates = pgTable(
   ],
 );
 
+export const forumTopicBookmarks = pgTable(
+  "forum_topic_bookmarks",
+  {
+    userId: text("user_id").notNull().references(() => user.id, { onDelete: "cascade" }),
+    topicId: text("topic_id").notNull().references(() => forumTopics.id, { onDelete: "cascade" }),
+    savedAt: timestamp("saved_at", { withTimezone: true, precision: 3 })
+      .notNull().default(sql`clock_timestamp()`),
+  },
+  (table) => [
+    primaryKey({ name: "forum_topic_bookmarks_pk", columns: [table.userId, table.topicId] }),
+    index("forum_topic_bookmarks_user_saved_topic_idx").on(table.userId, table.savedAt.desc(), table.topicId.desc()),
+    index("forum_topic_bookmarks_topic_idx").on(table.topicId),
+  ],
+);
+
 export const forumTopicWatches = pgTable(
   "forum_topic_watches",
   {

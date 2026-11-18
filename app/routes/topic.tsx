@@ -120,7 +120,14 @@ export const loader = forumReadLoader(async function loader({ params, context }:
   let canUploadAttachments = false;
   let topicReadState: ForumTopicReadState | null = null;
   let topicWatchState: TopicWatchState | null = null;
+  let topicBookmarkState: TopicWatchState | null = null;
   if (session) {
+    try {
+      topicBookmarkState = await forumReaderForRequest(context).readTopicBookmark(session.user.id, topic.id) ? "on" : "off";
+    } catch (error) {
+      if (!(error instanceof ForumStorageUnavailableError)) throw error;
+      topicBookmarkState = "unavailable";
+    }
     try {
       topicWatchState = await forumReaderForRequest(context).readTopicWatch(session.user.id, topic.id) ? "on" : "off";
     } catch (error) {
@@ -236,6 +243,8 @@ export const loader = forumReadLoader(async function loader({ params, context }:
     locale: resolvedLocale.translationLocale,
     watchActorId: session?.user.id ?? null,
     topicWatchState,
+    bookmarkActorId: session?.user.id ?? null,
+    topicBookmarkState,
     topic: !canManageHelpDuplicate && topic.duplicateRelationshipId
       ? { ...topic, duplicateRelationshipId: null }
       : topic,

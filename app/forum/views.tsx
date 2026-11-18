@@ -6,6 +6,7 @@ import type { ForumNotificationSummary } from "../../db/forum-repository";
 import {TopicQuickActions} from "../admin/quick-actions";
 import { TopicTitleEditor } from "./topic-title-editor";
 import { TopicWatchControl, type TopicWatchState } from "./topic-watch-control";
+import { TopicBookmarkControl, type TopicBookmarkState } from "./topic-bookmark-control";
 import {MessageQuickActions} from "../admin/message-quick-actions";
 import { ForumAttachmentDisplay } from "./attachment-presentation";
 import { ComplaintSubmissionForm } from "../complaints/submission-form";
@@ -2177,6 +2178,8 @@ export function TopicView({
   canEditOwnTitle = false,
   watchActorId = null,
   topicWatchState = null,
+  bookmarkActorId = null,
+  topicBookmarkState = null,
   canSubmitComplaint = false,
   canManageSolution,
   canConfirmOwnSolution = false,
@@ -2206,6 +2209,8 @@ export function TopicView({
   canEditOwnTitle?: boolean;
   watchActorId?: string | null;
   topicWatchState?: TopicWatchState | null;
+  bookmarkActorId?: string | null;
+  topicBookmarkState?: TopicBookmarkState | null;
   canSubmitComplaint?: boolean;
   canManageSolution: boolean;
   canConfirmOwnSolution?: boolean;
@@ -2869,6 +2874,9 @@ export function TopicView({
                           {headerActorId && headerActorId === watchActorId && topicWatchState &&
                             <TopicWatchControl key={JSON.stringify([topic.id, headerActorId])}
                               topicId={topic.id} actorId={headerActorId} locale={locale} state={topicWatchState} />}
+                          {headerActorId && headerActorId === bookmarkActorId && topicBookmarkState &&
+                            <TopicBookmarkControl key={JSON.stringify([topic.id, headerActorId])}
+                              topicId={topic.id} actorId={headerActorId} locale={locale} state={topicBookmarkState} />}
                           {headerActorId && <TopicTitleEditor
                             key={JSON.stringify([topic.id, headerActorId])}
                             topicId={topic.id} actorId={headerActorId} locale={locale}

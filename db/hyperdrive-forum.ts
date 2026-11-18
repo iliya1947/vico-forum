@@ -25,6 +25,7 @@ import { assertNoActiveUserMeasureRestriction } from "./user-measure-policy";
 
 export interface ForumWriter {
   setTopicWatch(input: { topicId: string; actorId: string; watching: boolean }): Promise<boolean>;
+  setTopicBookmark(input: { topicId: string; actorId: string; bookmarked: boolean }): Promise<boolean>;
   editOwnTopicTitle(input: {
     topicId: string; actorId: string; expectedRevisionId: string; title: string;
   }): Promise<import("./forum-repository").ForumRevisionContent>;
@@ -103,6 +104,8 @@ export function createHyperdriveForumReader(
     readUnreadForUser: (userId) => read((repository) => repository.readUnreadForUser(userId)),
     readTopicReadState: (userId, topicId) => read((repository) => repository.readTopicReadState(userId, topicId)),
     readTopicWatch: (userId, topicId) => read((repository) => repository.readTopicWatch(userId, topicId)),
+    readTopicBookmark: (userId, topicId) => read((repository) => repository.readTopicBookmark(userId, topicId)),
+    readTopicBookmarks: (userId, before) => read((repository) => repository.readTopicBookmarks(userId, before)),
     readNotifications:(userId,page)=>read(repo=>repo.readNotifications(userId,page)),
     countUnreadNotifications:userId=>read(repo=>repo.countUnreadNotifications(userId)),
     readReplyNotifications: (userId, limit) => read((repository) => repository.readReplyNotifications(userId, limit)),
@@ -176,6 +179,7 @@ export function createHyperdriveForumWriter(
     },
     editOwnTopicTitle: (input) => writeCorrection((forum) => forum.editOwnTopicTitle(input)),
     setTopicWatch: (input) => write((forum) => forum.setTopicWatch(input)),
+    setTopicBookmark: (input) => write((forum) => forum.setTopicBookmark(input)),
     updateProfile: async ({ actorId, fields }) => {
       const client = clientFactory();
       try {

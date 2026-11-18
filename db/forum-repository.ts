@@ -6,7 +6,7 @@ import { lockPrivacySubject } from "./user-privacy";
 import type {HelpSignalHistoryEffect} from "./admin-history";
 import { validateProfileFields, type ForumProfile, type ProfileFields } from "../app/forum/profile";
 import { publishedMentionRecipients } from "../app/forum/mentions";
-import { and, asc, count, desc, eq, gt, gte, inArray, min, isNotNull, isNull, lte, ne, or, sql } from "drizzle-orm";
+import { and, asc, count, desc, eq, gt, gte, lt, inArray, min, isNotNull, isNull, lte, ne, or, sql } from "drizzle-orm";
 import type { NodePgDatabase } from "drizzle-orm/node-postgres";
 import { alias } from "drizzle-orm/pg-core";
 import {
@@ -29,6 +29,7 @@ import {
   forumSections,
   forumTags,
   forumTopicReadStates,
+  forumTopicBookmarks,
   forumTopicWatches,
   forumTopicPins,
   forumTopicTags,
@@ -139,6 +140,26 @@ export interface ForumTopicReadState {
   lastReadPostId: string | null;
   firstUnreadPostId: string | null;
   latestPostId: string | null;
+}
+
+export interface ForumTopicBookmarkSummary {
+  id: string;
+  title: string;
+  authorName: string;
+  authorIdentityKind?: "deleted";
+  savedAt: Date;
+  section: { id: string; name: string } | null;
+  category: { id: string; name: string };
+}
+
+export interface ForumTopicBookmarkCursor {
+  savedAt: Date;
+  topicId: string;
+}
+
+export interface ForumTopicBookmarksPage {
+  items: ForumTopicBookmarkSummary[];
+  next: ForumTopicBookmarkCursor | null;
 }
 
 export interface ForumUnreadTopicSummary {
@@ -472,6 +493,8 @@ export interface ForumReader {
   readUnreadForUser(userId: string): Promise<ForumUnreadTopicSummary[]>;
   readTopicReadState(userId: string, topicId: string): Promise<ForumTopicReadState | undefined>;
   readTopicWatch(userId: string, topicId: string): Promise<boolean>;
+  readTopicBookmark(userId: string, topicId: string): Promise<boolean>;
+  readTopicBookmarks(userId: string, before?: ForumTopicBookmarkCursor): Promise<ForumTopicBookmarksPage>;
   readNotifications(userId:string,page:number):Promise<ForumNotificationPage>;
   countUnreadNotifications(userId:string):Promise<number>;
   readReplyNotifications(userId: string, limit?: number): Promise<ForumReplyNotificationSummary[]>;
@@ -842,6 +865,25 @@ export class DrizzleForumRepository {
         },
       };
     }));
+  }
+
+  async setTopicBookmark(input: { topicId: string; actorId: string; bookmarked: boolean }): Promise<boolean> {
+    return this.database.transaction(async (tx) => {
+      // Preserve FK target first, then take the same actor mutex as account lifecycle.
+      const [topic] = await tx.select({ id: forumTopics.id }).from(forumTopics)
+        .where(eq(forumTopics.id, input.topicId)).for("key share");
+      if (!topic) throw new ForumEntityNotFoundError("topic does not exist");
+      await assertActiveAccountForDrizzleMutation(tx, input.actorId);
+      if (input.bookmarked) {
+        await tx.insert(forumTopicBookmarks).values({ userId: input.actorId, topicId: input.topicId })
+          .onConflictDoNothing();
+      } else {
+        await tx.delete(forumTopicBookmarks).where(and(
+          eq(forumTopicBookmarks.userId, input.actorId), eq(forumTopicBookmarks.topicId, input.topicId),
+        ));
+      }
+      return input.bookmarked;
+    });
   }
 
   async setTopicWatch(input: { topicId: string; actorId: string; watching: boolean }): Promise<boolean> {
@@ -1512,6 +1554,63 @@ export class DrizzleForumRepository {
         ...publicDiscoveryLocation(row),
       };
     });
+  }
+
+  async readTopicBookmark(userId: string, topicId: string): Promise<boolean> {
+    const rows = await this.database.select({ userId: forumTopicBookmarks.userId })
+      .from(forumTopicBookmarks)
+      .where(and(eq(forumTopicBookmarks.userId, userId), eq(forumTopicBookmarks.topicId, topicId)))
+      .limit(1);
+    return rows.length > 0;
+  }
+
+  async readTopicBookmarks(userId: string, before?: ForumTopicBookmarkCursor): Promise<ForumTopicBookmarksPage> {
+    const rows = await this.database.select({
+      id: forumTopicBookmarks.topicId,
+      savedAt: forumTopicBookmarks.savedAt,
+      title: forumTopicTitleRevisions.originalContent,
+      authorId: forumTopics.authorId,
+      authorName: user.name,
+      authorDeactivatedAt: user.deactivatedAt,
+      authorDeactivatedByUserId: user.deactivatedByUserId,
+      authorRetainAtLeastUntil: user.retainAtLeastUntil,
+      sectionId: forumSections.id,
+      sectionName: forumSections.name,
+      categoryId: forumCategories.id,
+      categoryName: forumCategories.name,
+    }).from(forumTopicBookmarks)
+      .innerJoin(forumTopics, eq(forumTopics.id, forumTopicBookmarks.topicId))
+      .innerJoin(forumTopicTitleRevisions, and(
+        eq(forumTopicTitleRevisions.topicId, forumTopics.id),
+        eq(forumTopicTitleRevisions.id, forumTopics.currentTitleRevisionId),
+      ))
+      .innerJoin(user, eq(user.id, forumTopics.authorId))
+      .innerJoin(forumSections, eq(forumSections.id, forumTopics.sectionId))
+      .innerJoin(forumCategories, eq(forumCategories.id, forumSections.categoryId))
+      .where(and(
+        eq(forumTopicBookmarks.userId, userId),
+        before ? or(
+          lt(forumTopicBookmarks.savedAt, before.savedAt),
+          and(eq(forumTopicBookmarks.savedAt, before.savedAt),
+            lt(forumTopicBookmarks.topicId, before.topicId)),
+        ) : undefined,
+      ))
+      .orderBy(desc(forumTopicBookmarks.savedAt), desc(forumTopicBookmarks.topicId))
+      .limit(51);
+
+    const pageRows = rows.slice(0, 50);
+    const items = pageRows.map((row) => {
+      const author = projectForumPublicAuthor(row);
+      return {
+        id: row.id, title: row.title, savedAt: row.savedAt,
+        authorName: author.name,
+        ...(author.kind === "deleted" ? { authorIdentityKind: "deleted" as const } : {}),
+        ...publicDiscoveryLocation(row),
+      };
+    });
+    const last = pageRows.at(-1);
+    return { items, next: rows.length > 50 && last
+      ? { savedAt: last.savedAt, topicId: last.id } : null };
   }
 
   async readTopicWatch(userId: string, topicId: string): Promise<boolean> {

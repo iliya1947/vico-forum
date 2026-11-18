@@ -182,6 +182,7 @@ function writer() {
     editPublishedPost: vi.fn(async () => undefined),
     editOwnTopicTitle: vi.fn(async () => ({ id: "title-r2", originalContent: "New title", sourceLocale: "und" })),
     setTopicWatch: vi.fn(async (input: { watching: boolean }) => input.watching),
+    setTopicBookmark: vi.fn(async (input: { bookmarked: boolean }) => input.bookmarked),
     markTopicSolved: vi.fn(async () => undefined),
     selectBestAnswer: vi.fn(async () => ({ topicAuthorId: "session-user", isSolved: false })),
     setHelpSolutionModeration: vi.fn(async () => undefined),

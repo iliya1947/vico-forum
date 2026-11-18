@@ -219,7 +219,7 @@ describe("SA03 exact-target Owner History, authoritative sources only", () => {
     const tables=(await client.query<{n:string}>(
       "select count(*)::int n from information_schema.tables "+
       "where table_schema=$1 and table_type='BASE TABLE'",[schema])).rows[0]?.n;
-    expect(tables).toBe(70);
+    expect(tables).toBe(71);
     await client.query("set enable_seqscan=off");
     try {
       const cases = [
