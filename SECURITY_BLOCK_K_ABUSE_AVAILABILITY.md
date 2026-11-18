@@ -8,9 +8,10 @@
 4. **K2 — Authentication brute-force / rate-limit bypass завершён: PASS, 0 новых current-scope findings и 0 deferred blockers.**
 5. **K3 — Forum write spam & cross-endpoint concurrency завершён: 1 новый current-scope finding — `FORUM-EDIT-SPAM-01 Moderate/P2`; 0 deferred blockers.**
 6. **K4 — Public expensive reads / query amplification завершён: 1 новый current-scope finding — `PUBLIC-READ-COST-01 Moderate/P2`; 0 deferred blockers.**
-7. Overall #315 становится **30 current findings + 4 deferred Stage-6 blockers**.
-8. Мира — auditor/coordinator. Remediation, technical planner и implementer не назначены.
-9. Production/Cloudflare/Neon/GitHub/provider settings mutation, load testing и внешние destructive/fault-injection действия не разрешены и не выполнялись.
+7. **K5 — Request body / attachments / storage exhaustion завершён: 1 новый current-scope finding — `ATTACH-SECURITY-EVENT-SPAM-01 Moderate/P2`; 0 deferred blockers.**
+8. Overall #315 становится **31 current findings + 4 deferred Stage-6 blockers**.
+9. Мира — auditor/coordinator. Remediation, technical planner и implementer не назначены.
+10. Production/Cloudflare/Neon/GitHub/provider settings mutation, load testing и внешние destructive/fault-injection действия не разрешены и не выполнялись.
 
 ## Цель
 
@@ -178,6 +179,34 @@
 
 **Boundary:** this finding does not claim that every public query is expensive, does not duplicate `DISCOVERY-BOUNDS-01`/`FORUM-READ-BOUNDS-01`, and does not depend on unverified production WAF/cache behavior.
 
+## K5 — результат
+
+1. Audit target: current `main` `7cc23edede57994cdedab49c1556ddb55034dd29`.
+2. Verdict: **1 новый current-scope finding — `ATTACH-SECURITY-EVENT-SPAM-01 Moderate/P2`; 0 deferred blockers.**
+3. Block-E/F dedup: generic unbounded `request.formData()` remains `FORM-BODY-BOUNDS-01`; attachment type/content-tail integrity remains `ATTACH-TEXT-TAIL-01`. K5 does not duplicate either root cause.
+4. Direct attachment upload itself is stream-bounded: `X-Vico-Attachment-Size` must be a safe integer, the default per-object ceiling is 50,000,000 bytes, oversize/empty metadata is rejected before R2 write, and the stream enforces both declared length and maxBytes without whole-object buffering.
+5. Accepted-object cleanup is bounded and replay-safe: cleanup batch max is 20, stale draft refs expire after 24h of inactivity, orphan candidates use one-hour grace plus durable claims/leases, and reservation sweep is separately budgeted. Real scheduler/R2 activation remains Stage 6 acceptance by source-of-truth.
+6. The owner-approved Editor contract explicitly says **do not introduce arbitrary per-user quotas on total file count or aggregate storage at this stage**. Therefore the absence of a general per-user file quota is not classified as a current defect.
+7. **Independent K5 root cause:** suspicious rejected upload attempts are durably inserted into `forum_attachment_security_events`, but this write path has no cooldown/request budget and no event-retention cleanup in current repository code.
+8. A cheap concrete chain exists without storing an attachment object: an authenticated actor with a valid editor upload context sends a fresh random attachment ID, declared size `1`, one-byte body and a forbidden filename such as `x.exe`. The stream reads only that one byte; `inspectAttachment()` reaches `forbidden-extension`, marks it `suspicious: true`, performs no R2 object write, and the route calls `recordSecurityEvent()`.
+9. `securityEventKey()` includes the caller-controlled fresh `attachmentId`; therefore changing only that UUID produces a different SHA-256 event identity. `recordSecurityEvent()` uses `ON CONFLICT DO NOTHING` only on this derived upload ID, so random IDs bypass dedup while preserving all authorization checks.
+10. `recordSecurityEvent()` persists a new row directly and does not call `measureAdmission()` or another rate limiter. Repository search found no delete/retention path for `forum_attachment_security_events`; monitoring readers page the accumulated table.
+11. Result: one ordinary authenticated account that is allowed to upload attachments can generate unbounded durable security-event rows with tiny requests, consuming PostgreSQL/index space and polluting the security-monitoring signal stream. This is materially cheaper than actual 50 MB storage abuse and is independent of the intentionally unbounded per-user file quota policy.
+12. Severity: **Moderate/P2** — authenticated-only and no authority bypass/data disclosure, but low-cost unbounded durable DB/log growth plus monitoring-noise amplification is a practical current availability/operational-security defect.
+13. No additional K5 finding: normal attachment byte ingestion is hard-bounded; cleanup passes are bounded; missing live cleanup scheduling/R2 configuration is explicitly Stage-6 acceptance rather than a current repository defect.
+14. Exact deployed R2 limits/costs/scheduler state are **Информация не проверена** and were not used to establish the finding.
+15. No upload attack, object write, cleanup run, production DB query, R2 request or external setting mutation was performed.
+16. #315 aggregate becomes **31 current findings + 4 deferred Stage-6 blockers**. Current severity becomes **12 Moderate/P2 + 19 Low/P3**; deferred remains **2 Moderate/P2 + 2 Low/P3**.
+17. Next bounded slice: **K6 — Background / translation / notification amplification**.
+
+### `ATTACH-SECURITY-EVENT-SPAM-01` — Moderate/P2 — current
+
+**Root cause:** suspicious rejected attachment attempts write one durable security-event row per derived upload identity, while the event-write path has no cooldown/budget/retention cleanup; the identity includes caller-chosen fresh attachment UUID.
+
+**Current impact:** an authenticated attachment-capable user can use tiny forbidden-file requests to create unbounded PostgreSQL security-event/index growth and monitoring noise without ever storing a real attachment object.
+
+**Boundary:** ordinary attachment content validation, 50 MB streaming bound and cleanup correctness remain Block F/current attachment controls; lack of general per-user file/storage quota is an explicit current product decision and is not this finding.
+
 ## Finding criteria
 
 1. Concrete current/prepared request or background path.
@@ -196,5 +225,5 @@
 
 ## Следующий шаг
 
-1. После продолжения владельца выполнить **K5 — Request body / attachments / storage exhaustion** на current main и остановиться после результата.
+1. После продолжения владельца выполнить **K6 — Background / translation / notification amplification** на current main и остановиться после результата.
 2. Remediation существующих findings/blockers Blocks B–K не начинать без отдельного назначения.
