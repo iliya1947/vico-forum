@@ -2,6 +2,7 @@ import { readFile } from "node:fs/promises";
 import { drizzle } from "drizzle-orm/node-postgres";
 import { Client } from "pg";
 import { ForumAttachmentStorageUnavailableError, createHyperdriveForumAttachmentStore } from "../../db/hyperdrive-forum-attachments";
+import { AccountInactiveError, AccountStateUnavailableError, AccountStateUnexpectedError } from "../../db/account-state";
 import { ATTACHMENT_UPLOAD_PREFIX, ATTACHMENT_RESERVATION_KIND } from "../../app/forum/attachment-storage-protocol";
 import type { PrivateAttachmentBucket } from "../../app/forum/attachment-r2";
 import { RouterContextProvider } from "react-router";
@@ -51,6 +52,7 @@ const migrations = [
   "0053_complaint_priority_settings",
   "0054_complaint_history_notifications",
   "0055_complaint_appeal_notifications",
+  "0065_sa04_account_state_foundation",
 ];
 
 const ownerId = "attachment-owner";
@@ -163,8 +165,8 @@ function uploadContext(storage:PrivateAttachmentBucket, overrides:Record<string,
   context.set(forumAttachmentStoreContext,{
     admitUpload:(ownerId:string,contextKey:string,draftId:string,attachmentId:string)=>
       store.admitUpload(ownerId,contextKey,draftId,attachmentId),
-    recordUploadObject:(key:string)=>store.recordUploadObject(key),
-    activateUploadObject:(key:string,etag:string)=>store.activateUploadObject(key,etag),
+    recordUploadObject:(actor:string,key:string)=>store.recordUploadObject(actor,key),
+    activateUploadObject:(actor:string,key:string,etag:string)=>store.activateUploadObject(actor,key,etag),
     createDraftAttachment:(input:CreateDraftAttachmentInput)=>store.createDraftAttachment(input),...overrides,
   }as never);return context;
 }
@@ -193,7 +195,7 @@ describe('v2 upload writer fencing with actual PostgreSQL',()=>{
  it.each(['rejected','short','read']as const)('retires terminal %s without a post-write settlement operation',async fault=>{
   const {storage,objects,control}=memoryStorage();control.rejectPayload=fault==='rejected';let pulls=0;
   const body=fault==='read'?new ReadableStream<Uint8Array>({pull(c){if(pulls++===0)c.enqueue(new TextEncoder().encode('x'.repeat(4096)));else c.error(new Error('upstream failed'));}}):'x'.repeat(5000);
-  let key='';const response=await send(storage,{body,size:fault==='rejected'?5000:10000,overrides:{recordUploadObject:async(k:string)=>{key=k;await store.recordUploadObject(k);}}});
+  let key='';const response=await send(storage,{body,size:fault==='rejected'?5000:10000,overrides:{recordUploadObject:async(actor:string,k:string)=>{key=k;await store.recordUploadObject(actor,k);}}});
   expect(response.status).toBe(fault==='rejected'?503:400);expect(key).not.toBe('');await age(key);await sweepAll(storage);
   expect(await journal(key)).toBeUndefined();expect(objects.has(key)).toBe(false);
  });
@@ -203,20 +205,20 @@ describe('v2 upload writer fencing with actual PostgreSQL',()=>{
    create trigger delay_activation before update of reservation_etag on forum_attachment_upload_objects for each row execute function delay_activation()`);
   const adapter=createHyperdriveForumAttachmentStore(databaseUrl!,()=>new Client({connectionString:databaseUrl,options:`-c search_path=${schema} -c statement_timeout=50`}));
   let key='';try{
-   const response=await send(storage,{overrides:{recordUploadObject:async(k:string)=>{key=k;await store.recordUploadObject(k);},activateUploadObject:(k:string,e:string)=>adapter.activateUploadObject(k,e)}});
+   const response=await send(storage,{overrides:{recordUploadObject:async(actor:string,k:string)=>{key=k;await store.recordUploadObject(actor,k);},activateUploadObject:(actor:string,k:string,e:string)=>adapter.activateUploadObject(actor,k,e)}});
    expect(response.status).toBe(503);expect(control.latePayload).toBeNull();expect((await journal(key)).reservation_etag).toBeNull();
   }finally{await client.query('drop trigger delay_activation on forum_attachment_upload_objects;drop function delay_activation()');}
   await age(key);await sweepAll(storage);expect(await journal(key)).toBeUndefined();expect(objects.size).toBe(0);
  });
  it.each([false,true])('cleans a post-PUT DB failure, while protecting a committed metadata ACK loss=%s',async committed=>{
   const {storage,objects}=memoryStorage();let key='';
-  const response=await send(storage,{overrides:{recordUploadObject:async(k:string)=>{key=k;await store.recordUploadObject(k);},
+  const response=await send(storage,{overrides:{recordUploadObject:async(actor:string,k:string)=>{key=k;await store.recordUploadObject(actor,k);},
    createDraftAttachment:async(input:CreateDraftAttachmentInput)=>{if(committed)await store.createDraftAttachment(input);throw new ForumAttachmentStorageUnavailableError();}}});
   expect(response.status).toBe(503);await age(key);await sweepAll(storage);expect(await journal(key)).toBeUndefined();expect(objects.has(key)).toBe(committed);
  });
  it.each(['before','after']as const)('revokes an unknown full-body PUT whose commit is %s cleanup',async order=>{
   const {storage,objects,control}=memoryStorage();control.unknownPayload=true;control.deleteFails=true;let key='';
-  expect((await send(storage,{overrides:{recordUploadObject:async(k:string)=>{key=k;await store.recordUploadObject(k);}}})).status).toBe(503);
+  expect((await send(storage,{overrides:{recordUploadObject:async(actor:string,k:string)=>{key=k;await store.recordUploadObject(actor,k);}}})).status).toBe(503);
   control.deleteFails=false;if(order==='before')expect(control.latePayload!()).not.toBeNull();
   await age(key);await sweepAll(storage);
   if(order==='after')expect(control.latePayload!()).toBeNull();
@@ -224,14 +226,14 @@ describe('v2 upload writer fencing with actual PostgreSQL',()=>{
  });
  it('claims READY while an actual request is waiting before payload commit; metadata cannot resurrect it',async()=>{
   const {storage,objects,control}=memoryStorage();control.payloadGate=gate();let key='';
-  const pending=send(storage,{overrides:{recordUploadObject:async(k:string)=>{key=k;await store.recordUploadObject(k);}}});
+  const pending=send(storage,{overrides:{recordUploadObject:async(actor:string,k:string)=>{key=k;await store.recordUploadObject(actor,k);}}});
   await control.payloadEntered.promise;await age(key);await new ForumAttachmentCleanup(drizzle(client),storage).runOnce();
   expect(await journal(key)).toBeUndefined();control.payloadGate.resolve();expect((await pending).status).toBe(503);expect(objects.has(key)).toBe(false);
  });
  it.each([false,true])('reclaims late PREPARING initialization with lost ACK=%s; no old key is recreated',async lost=>{
   const {storage,objects,control}=memoryStorage();control.reserveGate=gate();control.reserveLostAck=lost;
   let key='',activations=0;const payload=vi.spyOn(storage,'put'),reserve=vi.spyOn(storage,'reserve');
-  const pending=send(storage,{overrides:{recordUploadObject:async(k:string)=>{key=k;await store.recordUploadObject(k);},activateUploadObject:async(k:string,e:string)=>{activations++;await store.activateUploadObject(k,e);}}});
+  const pending=send(storage,{overrides:{recordUploadObject:async(actor:string,k:string)=>{key=k;await store.recordUploadObject(actor,k);},activateUploadObject:async(actor:string,k:string,e:string)=>{activations++;await store.activateUploadObject(actor,k,e);}}});
   await control.reservationEntered.promise;await age(key);await new ForumAttachmentCleanup(drizzle(client),storage).runOnce();expect(await journal(key)).toBeUndefined();
   // A cleanup round was allowed to finish before initialization actually commits.
   control.deleteFails=true;control.reserveGate.resolve();expect([400,503]).toContain((await pending).status);expect(payload).not.toHaveBeenCalled();expect(reserve).toHaveBeenCalledOnce();expect(activations).toBe(lost?0:1);
@@ -239,16 +241,16 @@ describe('v2 upload writer fencing with actual PostgreSQL',()=>{
   control.deleteFails=false;await sweepAll(storage);expect(objects.has(key)).toBe(false);
  });
  it('refuses activation after a durable claim, including expired leases',async()=>{
-  const key=ATTACHMENT_UPLOAD_PREFIX+crypto.randomUUID();await store.recordUploadObject(key);
+  const key=ATTACHMENT_UPLOAD_PREFIX+crypto.randomUUID();await store.recordUploadObject(ownerId,key);
   await client.query("update forum_attachment_upload_objects set claim_token=$2,claimed_at=now()-interval '1 hour' where object_key=$1",[key,crypto.randomUUID()]);
-  await expect(store.activateUploadObject(key,'guard')).rejects.toBeInstanceOf(InvalidForumAttachmentError);
+  await expect(store.activateUploadObject(ownerId,key,'guard')).rejects.toBeInstanceOf(InvalidForumAttachmentError);
   await age(key);await sweepAll(memoryStorage().storage);expect(await journal(key)).toBeUndefined();
  });
  it('cannot admit fenced metadata without a READY unclaimed journal even if requireUploadRecord is omitted',async()=>{
   const input=upload('section:attachment-section:new',crypto.randomUUID());input.objectKey=ATTACHMENT_UPLOAD_PREFIX+crypto.randomUUID();
   await expect(store.createDraftAttachment(input)).rejects.toBeInstanceOf(InvalidForumAttachmentError);
-  await store.recordUploadObject(input.objectKey);await expect(store.createDraftAttachment(input)).rejects.toBeInstanceOf(InvalidForumAttachmentError);
-  await store.activateUploadObject(input.objectKey,'guard');expect(await store.createDraftAttachment(input)).toMatchObject({objectKey:input.objectKey});
+  await store.recordUploadObject(ownerId,input.objectKey);await expect(store.createDraftAttachment(input)).rejects.toBeInstanceOf(InvalidForumAttachmentError);
+  await store.activateUploadObject(ownerId,input.objectKey,'guard');expect(await store.createDraftAttachment(input)).toMatchObject({objectKey:input.objectKey});
  });
  it('keeps marker pagination bounded and durable across fresh cleanup instances',async()=>{
   const {storage,objects,control}=memoryStorage();const keys=Array.from({length:13},()=>ATTACHMENT_UPLOAD_PREFIX+crypto.randomUUID());
@@ -278,14 +280,14 @@ describe('v2 upload writer fencing with actual PostgreSQL',()=>{
    create trigger delay_metadata before insert on forum_attachments for each row execute function delay_metadata()`);
   const adapter=createHyperdriveForumAttachmentStore(databaseUrl!,()=>new Client({connectionString:databaseUrl,options:`-c search_path=${schema} -c statement_timeout=50`}),historicalForumMeasureAdmission);
   try{
-   const response=await send(storage,{overrides:{recordUploadObject:async(k:string)=>{key=k;await store.recordUploadObject(k);},createDraftAttachment:(input:CreateDraftAttachmentInput)=>adapter.createDraftAttachment(input)}});
+   const response=await send(storage,{overrides:{recordUploadObject:async(actor:string,k:string)=>{key=k;await store.recordUploadObject(actor,k);},createDraftAttachment:(input:CreateDraftAttachmentInput)=>adapter.createDraftAttachment(input)}});
    expect(response.status).toBe(503);expect(objects.get(key)?.kind).toBe('data');
   }finally{await client.query('drop trigger delay_metadata on forum_attachments;drop function delay_metadata()');}
   await age(key);await sweepAll(storage);expect(await journal(key)).toBeUndefined();expect(objects.has(key)).toBe(false);
  });
  it('fences overlapping and expired journal cleanup claims before a delayed payload',async()=>{
   const {storage,objects,control}=memoryStorage();control.payloadGate=gate();let key='';
-  const pending=send(storage,{overrides:{recordUploadObject:async(k:string)=>{key=k;await store.recordUploadObject(k);}}});
+  const pending=send(storage,{overrides:{recordUploadObject:async(actor:string,k:string)=>{key=k;await store.recordUploadObject(actor,k);}}});
   await control.payloadEntered.promise;await age(key);
   const entered=gate(),release=gate(),original=storage.delete;let deletes=0;
   storage.delete=async(k)=>{if(++deletes===1){entered.resolve();await release.promise;}await original(k);};
@@ -304,6 +306,62 @@ describe('v2 upload writer fencing with actual PostgreSQL',()=>{
   await new ForumAttachmentCleanup(drizzle(client),storage,()=>new Date(Date.now()+6*60_000)).runOnce();expect(calls).toBe(2);
   release.resolve();await first;expect((await client.query('select cursor from forum_attachment_sweep')).rows[0].cursor).toBe('fresh');
   await client.query('update forum_attachment_sweep set cursor=null');
+ });
+
+ it('K1 denies inactive upload decision before private object reservation, including stable replay',async()=>{
+  const committed=upload('section:attachment-section:new',crypto.randomUUID());
+  await store.createDraftAttachment(committed);
+  const before=await client.query('select count(*)::int n from forum_attachment_draft_refs where attachment_id=$1',[committed.id]);
+  const {storage,objects}=memoryStorage();
+  await client.query('update "user" set deactivated_at=now(),deactivated_by_user_id=$1,retain_at_least_until=now()+interval \'2 years\' where id=$1',[ownerId]);
+  try{
+   const denied=await send(storage);expect(denied.status).toBe(401);
+   expect(denied.headers.get('cache-control')).toContain('no-store');
+   expect(await denied.json()).toEqual({error:'unauthenticated'});
+   expect(objects.size).toBe(0);
+   await expect(store.admitUpload(ownerId,committed.contextKey,committed.draftId,committed.id))
+    .rejects.toBeInstanceOf(AccountInactiveError);
+   const after=await client.query('select count(*)::int n from forum_attachment_draft_refs where attachment_id=$1',[committed.id]);
+   expect(after.rows).toEqual(before.rows);
+  }finally{
+   await client.query('update "user" set deactivated_at=null,deactivated_by_user_id=null,retain_at_least_until=null where id=$1',[ownerId]);
+  }
+ });
+ it('K1 late deactivation after settled R2 payload denies final metadata and deletes only fresh key',async()=>{
+  const {storage,objects,control}=memoryStorage();
+  let attemptedKey='';
+  try{
+   const response=await send(storage,{overrides:{
+    createDraftAttachment:async(input:CreateDraftAttachmentInput)=>{
+      attemptedKey=input.objectKey;
+      await client.query('update "user" set deactivated_at=now(),deactivated_by_user_id=$1,retain_at_least_until=now()+interval \'2 years\' where id=$1',[ownerId]);
+      return store.createDraftAttachment(input);
+    },
+   }});
+   expect(response.status).toBe(401);
+   expect(response.headers.get('cache-control')).toContain('no-store');
+   expect(await response.json()).toEqual({error:'unauthenticated'});
+   expect(control.deletes).toContain(attemptedKey);
+   expect(objects.has(attemptedKey)).toBe(false);
+   expect((await client.query('select id from forum_attachments where object_key=$1',[attemptedKey])).rowCount).toBe(0);
+   expect((await client.query('select attachment_id from forum_attachment_draft_refs where attachment_id in (select id from forum_attachments where object_key=$1)',[attemptedKey])).rowCount).toBe(0);
+  }finally{
+   await client.query('update "user" set deactivated_at=null,deactivated_by_user_id=null,retain_at_least_until=null where id=$1',[ownerId]);
+  }
+ });
+ it('K1 returns typed AccountState unavailable as private 503 without starting R2; unexpected still propagates',async()=>{
+  const {storage,objects}=memoryStorage();
+  const unavailable=await send(storage,{overrides:{
+    admitUpload:async()=>{throw new AccountStateUnavailableError();},
+  }});
+  expect(unavailable.status).toBe(503);
+  expect(unavailable.headers.get('cache-control')).toContain('no-store');
+  expect(await unavailable.json()).toEqual({error:'unavailable'});
+  expect(objects.size).toBe(0);
+  await expect(send(storage,{overrides:{
+    admitUpload:async()=>{throw new AccountStateUnexpectedError();},
+  }})).rejects.toBeInstanceOf(AccountStateUnexpectedError);
+  expect(objects.size).toBe(0);
  });
 
 });

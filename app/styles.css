@@ -4675,8 +4675,16 @@ p {
 }
 
 .topic-question-heading-main {
+  min-inline-size: 0;
   min-width: 0;
 }
+
+.topic-title-editor { margin-block: 0.65rem; }
+.topic-title-editor form { display: grid; gap: 0.65rem; }
+.topic-title-editor label { display: grid; gap: 0.35rem; }
+.topic-title-editor input[name="title"] { inline-size: 100%; min-inline-size: 0; }
+.topic-title-editor p { overflow-wrap: anywhere; }
+.topic-title-editor-actions { display: flex; flex-wrap: wrap; gap: 0.5rem; }
 
 .topic-question-heading h1 {
   margin: 0;
@@ -9177,6 +9185,8 @@ a.topic-tag:focus-visible {
 .profile-breadcrumb { margin-block: 1.25rem; color: var(--color-text-muted); }
 .profile-breadcrumb a { color: var(--color-accent-hover); }
 .profile-card { padding: clamp(1rem, 3vw, 2rem); background: var(--color-surface); border: 1px solid var(--color-border); border-inline-start: .3rem solid var(--color-accent); border-radius: .7rem; box-shadow: var(--shadow-panel); }
+/* SA-03: literal internal IDs and retained History values must wrap, not widen mobile layouts. */
+#owner-account, #owner-history { min-inline-size: 0; overflow-wrap: anywhere; }
 .profile-identity { display: flex; gap: 1.25rem; align-items: center; flex-wrap: wrap; }
 .profile-avatar { display: grid; place-items: center; flex: 0 0 5rem; inline-size: 5rem; block-size: 5rem; border-radius: 50%; background: var(--color-accent-soft); color: var(--color-accent-hover); font-size: 2rem; font-weight: 700; overflow: hidden; }
 .profile-identity-copy { flex: 1; min-inline-size: min(12rem, 100%); overflow-wrap: anywhere; }
@@ -9201,6 +9211,12 @@ a.topic-tag:focus-visible {
 .profile-form textarea { resize: vertical; }
 .profile-feedback { border-inline-start: .2rem solid var(--color-accent); padding: .75rem; background: var(--color-accent-soft); }
 .profile-feedback.is-error { color: var(--color-danger); border-color: var(--color-danger); }
+.owner-lifecycle-control { margin-block: 1.5rem; }
+.owner-deactivate-button { background: var(--color-surface); border-color: var(--color-danger); color: var(--color-danger); }
+.owner-deactivate-button:hover { background: color-mix(in srgb, var(--color-danger) 10%, var(--color-surface)); }
+.owner-deactivation-dialog { box-sizing: border-box; inline-size: min(34rem, calc(100vw - 2rem)); max-block-size: calc(100dvh - 2rem); overflow: auto; padding: clamp(1rem, 3vw, 2rem); border: 1px solid var(--color-border); border-radius: .7rem; color: var(--color-text); background: var(--color-surface); overflow-wrap: anywhere; }
+.owner-deactivation-dialog::backdrop { background: rgb(0 0 0 / .55); }
+.owner-deactivation-dialog :is(button, a):focus-visible { outline: 2px solid var(--color-focus); outline-offset: 3px; }
 .profile-card :is(a, button, input, textarea):focus-visible, .topic-message-profile-link:focus-visible { outline: 2px solid var(--color-focus); outline-offset: 3px; }
 @media (max-width: 30rem) {
   .profile-statistics { grid-template-columns: 1fr; gap: .8rem; }
@@ -10202,6 +10218,13 @@ a.topic-tag:focus-visible {
 
 /* SA-01: Super-admin uses logical spacing and the existing forum/admin shell for RTL. */
 .super-admin-panel .admin-overview { padding-block: 1rem; }
+.super-admin-summaries { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 20rem), 1fr)); gap: 1rem; margin-block: 1rem 1.5rem; }
+.super-admin-summary { min-width: 0; overflow-wrap: anywhere; border: 1px solid var(--color-border); border-radius: .65rem; padding: 1rem; background: var(--color-surface); }
+.super-admin-summary h3 { margin-block: 0 .75rem; }
+.super-admin-summary dl { display: grid; gap: .5rem; margin-block: 0 .75rem; }
+.super-admin-summary dl > div { display: flex; flex-wrap: wrap; justify-content: space-between; gap: .25rem 1rem; }
+.super-admin-summary dt { color: var(--color-text-muted); }
+.super-admin-summary dd { margin: 0; }
 .super-admin-monitors { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 16rem), 1fr)); gap: 1rem; margin-block: 1.25rem; }
 .super-admin-monitor { border: 1px solid var(--color-border); border-radius: .65rem; padding: 1rem; background: var(--color-surface); min-width: 0; }
 .super-admin-monitor h3 { margin-block: 0 1rem; }
@@ -10222,3 +10245,9 @@ a.topic-tag:focus-visible {
  .super-admin-monitor { padding: .75rem; }
  .super-admin-timeline li { padding: .7rem; }
 }
+
+.super-admin-history-filters fieldset { display: grid; gap: .75rem; grid-template-columns: repeat(auto-fit, minmax(min(100%, 15rem), 1fr)); min-width: 0; margin-block: 1rem; }
+.super-admin-history-filters label { display: grid; gap: .3rem; min-width: 0; }
+.super-admin-history-filters input, .super-admin-history-filters select { box-sizing: border-box; width: 100%; min-width: 0; max-width: 100%; }
+.super-admin-history-filters p { grid-column: 1 / -1; }
+[data-owner-overview] details, [data-owner-overview] bdi, .super-admin-history-filters { overflow-wrap: anywhere; }

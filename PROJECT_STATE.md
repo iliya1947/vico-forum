@@ -1,6 +1,6 @@
 # PROJECT_STATE.md
 
-Последнее обновление: 2026-11-10
+Последнее обновление: 2026-11-18
 
 ## Назначение
 
@@ -30,7 +30,7 @@ Vico Forum находится в pre-release разработке.
 
 - Stage 0–5 завершены в repository/local-CI path.
 - Текущий standalone product priority по `ROADMAP.md` — UI/UX product pass.
-- Ordinary Admin Panel AP-01–AP-11, owner/authorization redesign Stage 1–2, Settings SET-01–SET-06 и Super-admin SA-01 реализованы в repository/local-CI. Следующие SA-пакеты не реализованы. Complaints ведутся отдельно.
+- Ordinary Admin Panel AP-01–AP-11, owner/authorization redesign Stage 1–2, Settings SET-01–SET-06 и Super-admin SA-01–SA-08 реализованы в repository/local-CI. Super-admin включает AccountState enforcement, exact-Owner деактивацию аккаунта, все 12 измеряемых Monitoring-областей, общий source-aware History/Event log и финальный Overview; Infrastructure остаётся Stage-6 placeholder. Complaints ведутся отдельно.
 - Stage 6 external integration поставлен владельцем на паузу и не продолжается без отдельного указания.
 - Публичный production release не выполнен.
 
@@ -45,7 +45,7 @@ Vico Forum находится в pre-release разработке.
 - PostgreSQL 17 + Drizzle ORM `0.45.2`;
 - Better Auth `1.7.7` + PostgreSQL Drizzle adapter;
 - generic `/:locale/*`, runtime `LocaleRegistry`, BCP-47, LTR/RTL и request-scoped i18next;
-- repository migration history: `0000`–`0062`;
+- repository migration history: `0000`–`0067`;
 - externally accepted migration evidence: `0000`–`0020`.
 
 ## Реализованный продукт
@@ -62,6 +62,7 @@ Vico Forum находится в pre-release разработке.
 - transactional anti-spam cooldown;
 - solved topics и best answer;
 - immutable topic-title/post-body revisions с независимым source locale;
+- редактирование заголовка своей темы через отдельный `forum.topic.title.editOwn`: authoritative ownership/AccountState, immutable revision + current-revision CAS, `sourceLocale: "und"` для изменённого текста, revision-bound translations и AP-10 restriction `posts.edit`;
 - dynamic PostgreSQL-backed roles, permissions и per-user overrides;
 - единый server-side `PermissionResolver`, snapshot-consistent authorization reads, fresh protected-request checks и serialized authorization mutations;
 - public discovery и participation surfaces, включая Popular, Unanswered, Tags, Search, permanent message links и Reply/Quote;
@@ -100,7 +101,7 @@ Stage 5 завершён в repository/local-CI path.
 - AP-06 — защищённый Forum index и отдельные страницы категорий и разделов с поиском и реальной статистикой;
 - AP-07 — отдельная административная страница темы, ограниченный поиск тем раздела и общие действия над сообщениями (source locale и защищённая история ревизий);
 - AP-08 — close/reopen тем: независимое разрешение `forum.topic.close`, persisted closed/version с атомарной History, запрет новых ответов без исключения для ролей, общий public/admin Quick actions и сохранение уже открытого reply editor при закрытии. Matching committed publication receipt сохраняет idempotent replay после closure.
-- AP-09 — защищённый Users index/detail с независимым `admin.users.read`, поиском/пагинацией по публичной identity-проекции и точечным authorization snapshot при `access.authorization.manage`; assignment/override forms доступны только server-bound Owner;
+- AP-09 — защищённый Users index с независимым `admin.users.read`, поиском/пагинацией по публичной identity-проекции и точечным authorization snapshot при `access.authorization.manage`; после SA-03 legacy `/:locale/admin/users/:userId` остаётся guarded compatibility redirect на canonical profile, а private profile sections имеют собственные независимые admission checks; assignment/override forms доступны только server-bound Owner;
 - AP-10 — configurable temporary/permanent administrative measures с независимыми restrictions/expiry, exact-measure appeals, authority/issuer-floor hierarchy, request-scoped enforcement обычных и административных действий, приватными own/admin surfaces и атомарной History;
 - AP-11 — integration/factual closeout delivered AP-01–AP-10: connected Users authorization/History recovery, Forum closure × administrative-measure admission, protected cache/privacy boundaries и bounded EN/RU/HE responsive browser verification.
 
@@ -149,26 +150,45 @@ application-реализация для bootstrap identity не требуетс
 и `docs/ADMIN_PANEL.md`. Реальная Google-настройка, binding и deployed acceptance
 остаются Stage 6.
 
-### Super-admin SA-01
+### Super-admin SA-01–SA-08
 
-В `main` реализован bounded **SA-01** по `docs/SUPER_ADMIN.md`: отдельный
-`/:locale/super-admin` только для exact server-bound Owner, входы из обычной
-административной области и Owner profile/account navigation, минимальный
-Overview на реальных данных, **System Monitoring** (Worker runtime, PostgreSQL
-dependency/version и только записанные 5xx), смежная History каждого System
-monitor и общий source-aware Event log из retained System событий/наблюдений
-и существующего Admin History без дублирования исходных записей.
+В `main` реализованы bounded **SA-01–SA-08** по `docs/SUPER_ADMIN.md` в repository/local-CI path.
 
-Миграция `0062` добавила append-only таблицы Owner events и monitor
-observations; web-runtime имеет ограниченные SELECT/INSERT grants. Безопасная
-best-effort 5xx telemetry, bounded observations, авторизация и History
-проверены в repository/local-CI на PostgreSQL 17 и built Worker/Chromium.
-Инфраструктурный раздел пока только **Under development / Stage 6**.
-Остальные Monitoring области из утверждённой структуры, единый профиль с
-Admin/Owner разделами, деактивация, новые contextual actions и SA-02+
-**не реализованы**. Отдельный Owner role/permission/RBAC не добавлен.
-Реальная Google/Owner binding, production rollout и deployed acceptance
-не выполнялись; visual polish остаётся отдельным UI/UX этапом.
+SA-01–SA-04 доставили exact-Owner shell, System / Accounts & authentication / Security Monitoring,
+source-aware adjacent/global History, canonical unified profile с независимыми public/Admin/Owner
+секциями и AccountState/lifecycle enforcement. Миграции `0062`–`0065` добавили Owner
+events/observations, bounded attempt telemetry, target-profile indexes и AccountState foundation.
+
+SA-05 добавил каноническую exact-Owner-only деактивацию аккаунта в unified profile.
+Команда атомарно меняет AccountState, сохраняет опубликованный контент и защищённые retained-данные,
+нейтрализует публичную identity как **Deleted user**, не позволяет bound Owner деактивировать себя
+и сохраняет минимальный retention не менее одного UTC-календарного года. Реактивация, физическое
+удаление, retention-end action, принудительное завершение чужих сессий и foreign
+credential/provider mutations не добавлены.
+
+SA-06 добавил native Monitoring для **Forum**, **Administration**, **Moderation** и
+**Notifications** с исходными domain facts, scoped/global History и person-attribution там,
+где источник это доказывает. Миграция `0066_sa06_native_monitor_indexes` добавила необходимые
+индексы для bounded History/person queries.
+
+SA-07 добавил **Localization & translations**, **Files & attachments**,
+**Background processes**, **Data** и **Integrations**. Текущие значения читаются из существующих
+авторитетных источников; operational/storage facts записываются bounded и best-effort там,
+где это предусмотрено. Monitoring не активирует translation providers, background workers,
+R2 операции или внешние интеграции и не превращает retained samples в выдуманный полный аудит.
+
+SA-08 завершил композицию Super-admin: Overview учитывает все **13** утверждённых областей —
+12 измеряемых плюс честный **Infrastructure** placeholder — и переиспользует те же source/read
+границы без дублирующих probes. Global/scoped History поддерживает закрытые area/source/kind/date
+filters и bound keyset pagination; canonical actions ведут в существующие authoritative
+Admin/Settings/Attention/profile boundaries, а не создают второй mutation backend.
+
+Финальный repository/local-CI acceptance SA-08 свёл delivered SA04–SA08 в один стабильный
+кодовый срез с PostgreSQL 17, built Worker, Better Auth, Chromium и локальными transport fixtures
+там, где нужны внешние seams. Это **не** production/deployed acceptance и не подтверждение
+реальных Google OAuth, `VICO_OWNER_USER_ID`, Neon/Hyperdrive/R2/Queue/provider configuration.
+Infrastructure, отдельный Owner runtime isolation и production rollout остаются Stage 6;
+visual polish остаётся отдельным UI/UX этапом.
 
 ### Admin/Super-admin outgoing routing foundation
 
@@ -247,7 +267,8 @@ External topology является mutable state и должна перепро�
 ## Актуальные незавершённые продуктовые границы
 
 - UI/UX product pass ещё требует финального closeout и обязательной real-runtime product/visual acceptance по `docs/UI_UX_PASS.md`.
-- В `main` ordinary Admin Panel AP-01–AP-11, owner/authorization redesign Stage 1–2, Settings SET-01–SET-06 и Super-admin SA-01 реализованы в repository/local-CI. Остальные SA-пакеты и Monitoring области ещё не доставлены. Реальные Google/Owner binding и production acceptance остаются Stage 6.
+- В `main` ordinary Admin Panel AP-01–AP-11, owner/authorization redesign Stage 1–2, Settings SET-01–SET-06 и Super-admin SA-01–SA-08 реализованы в repository/local-CI. Все 12 измеряемых Super-admin Monitoring-областей доставлены; Infrastructure остаётся честным Stage-6 placeholder. Реальные Google/Owner binding, production runtime и external integrations не подтверждены.
+- Super-admin не добавляет reactivation, physical delete/retention-end action, forced foreign-session termination, foreign credential/provider mutation, второго Owner или recovery/transfer model.
 - Complaints integration/closeout покрыт repository/local-CI проверками; external/deployed acceptance Complaints не выполнялась.
 - Email verification/password recovery остаются отложенными.
 - Editor drafts/autosave остаются отложенными.
@@ -255,8 +276,7 @@ External topology является mutable state и должна перепро�
 
 ## Ближайший маршрут
 
-1. Продолжать утверждённую bounded product-разработку, включая дальнейшие SA-пакеты только по отдельному назначению после factual SA-01 closeout, без превращения обычных PR в external rollout.
-2. Сохранить реализованные Settings SET-01–SET-06 и Owner-only authorization/registration mutation policy; завершение repository/local-CI не считать deployed acceptance. Реальную Google/Owner binding acceptance оставить Stage 6. Complaints продолжать по его профильному контракту/служебному каналу.
-3. Довести UI/UX product pass до финальной real-runtime acceptance.
-4. Возобновлять Stage 6 external integration только по отдельному указанию владельца и по `docs/database/*`.
-5. После завершения pre-release product и external gates перейти к финальному общепроектному refinement и Stage 7 production release по `ROADMAP.md`.
+1. Довести отдельный UI/UX product pass до финальной real-runtime acceptance; repository/local-CI завершение Super-admin не заменяет эту визуальную/продуктовую приёмку.
+2. Сохранить реализованные Settings и Super-admin boundaries без расширения production authority; реальную Google OAuth / exact Owner binding acceptance оставить Stage 6.
+3. Возобновлять Stage 6 external integration только по отдельному указанию владельца и по `docs/database/*`: pending migrations/runtime grants, Hyperdrive, Google/Owner binding, Queue/providers, preview isolation, deployed smoke и backup/restore.
+4. После завершения pre-release product и external gates перейти к финальному общепроектному refinement и Stage 7 production release по `ROADMAP.md`.

@@ -4,6 +4,7 @@ import { requireSameOrigin } from "../forum/mutations.server";
 import { forumWriterForRequest } from "../forum/request-context";
 import { ForumStorageUnavailableError } from "../../db/hyperdrive-forum";
 import { UserPrivacyAccountMissingError } from "../../db/user-privacy";
+import { AccountInactiveError } from "../../db/account-state";
 
 export const presencePrivateHeaders = { "Cache-Control": "no-store" } as const;
 export function headers() { return presencePrivateHeaders; }
@@ -27,7 +28,7 @@ export async function action({ request, context }: { request: Request; context: 
     await forumWriterForRequest(context).recordOnlinePresence(session.user.id);
     return new Response(null, { status: 204, headers: { "Cache-Control": "no-store" } });
   } catch (error) {
-    if (error instanceof UserPrivacyAccountMissingError) throw new Response("Conflict", { status: 409, headers: { "Cache-Control": "no-store" } });
+    if (error instanceof UserPrivacyAccountMissingError || error instanceof AccountInactiveError) throw new Response("Conflict", { status: 409, headers: presencePrivateHeaders });
     if (error instanceof ForumStorageUnavailableError) throw new Response("Unavailable", { status: 503, headers: presencePrivateHeaders });
     throw error;
   }

@@ -63,6 +63,7 @@ beforeAll(async () => {
     "drizzle/0017_content_translation_request_budget.sql",
 
     "drizzle/0019_content_provider_allowance_admission.sql",
+    "drizzle/0065_sa04_account_state_foundation.sql",
   ]) {
     const sql = (await readFile(migration, "utf8"))
       .replaceAll('"public".', `"${schemaName}".`);
@@ -108,7 +109,7 @@ describe("content topic-title durable planning", () => {
       revisionId: "title-a-r1",
       originalContent: "caller value is intentionally ignored",
       sourceLocale: "und",
-    }, "en", budgetAdmission());
+    }, "en", budgetAdmission(), "author-a");
 
     expect(result).toMatchObject({
       kind: "queued",
@@ -155,7 +156,7 @@ describe("content topic-title durable planning", () => {
     });
 
     await expect(
-      createPlanner(client).planAndDispatch(requestRevision(), "he", budgetAdmission()),
+      createPlanner(client).planAndDispatch(requestRevision(), "he", budgetAdmission(), "author-a"),
     ).resolves.toMatchObject({
       kind: "original",
       reason: "translation-current",
@@ -199,7 +200,7 @@ describe("content topic-title durable planning", () => {
     });
 
     await expect(
-      store.upsertPending(specification, revision, budgetAdmission()),
+      store.upsertPending(specification, revision, budgetAdmission(), "author-a"),
     ).resolves.toEqual({ outcome: "translation-current" });
 
     const [counters, heads, tasks] = await Promise.all([
@@ -226,8 +227,8 @@ describe("content topic-title durable planning", () => {
       const firstEnqueuer = new FakeTranslationTaskEnqueuer();
       const secondEnqueuer = new FakeTranslationTaskEnqueuer();
       const [first, duplicate] = await Promise.all([
-        createPlanner(client, firstEnqueuer).planAndDispatch(requestRevision(), "he", budgetAdmission()),
-        createPlanner(second, secondEnqueuer).planAndDispatch(requestRevision(), "he", budgetAdmission()),
+        createPlanner(client, firstEnqueuer).planAndDispatch(requestRevision(), "he", budgetAdmission(), "author-a"),
+        createPlanner(second, secondEnqueuer).planAndDispatch(requestRevision(), "he", budgetAdmission(), "author-a"),
       ]);
 
       expect([first, duplicate]).toEqual(expect.arrayContaining([
@@ -274,12 +275,12 @@ describe("content topic-title durable planning", () => {
         createPlanner(client, firstEnqueuer).planAndDispatch(
           requestRevision(),
           "he",
-          admission,
+          admission, "author-a",
         ),
         createPlanner(second, secondEnqueuer).planAndDispatch(
           requestRevision(),
           "he",
-          admission,
+          admission, "author-a",
         ),
       ]);
 
@@ -319,14 +320,14 @@ describe("content topic-title durable planning", () => {
     const first = await createPlanner(client).planAndDispatch(
       requestRevision(),
       "he",
-      constrained,
+      constrained, "author-a",
     );
     if (first.kind !== "queued") throw new Error("expected first title request to queue");
 
     const denied = await createPlanner(client).planAndDispatch(
       requestRevision(),
       "he",
-      constrained,
+      constrained, "author-a",
     );
     expect(denied).toMatchObject({
       kind: "original",
@@ -364,7 +365,7 @@ describe("content topic-title durable planning", () => {
     const first = await createPlanner(client).planAndDispatch(
       requestRevision(),
       "he",
-      budgetAdmission(),
+      budgetAdmission(), "author-a",
     );
     if (first.kind !== "queued") throw new Error("expected queued title fixture");
 
@@ -383,7 +384,7 @@ describe("content topic-title durable planning", () => {
     const duplicate = await createPlanner(client).planAndDispatch(
       requestRevision(),
       "he",
-      budgetAdmission(),
+      budgetAdmission(), "author-a",
     );
     expect(duplicate).toMatchObject({
       kind: "queued",
@@ -425,7 +426,7 @@ describe("content topic-title durable planning", () => {
     const first = await createPlanner(client).planAndDispatch(
       requestRevision(),
       "he",
-      budgetAdmission(),
+      budgetAdmission(), "author-a",
     );
     if (first.kind !== "queued") throw new Error("expected queued title fixture");
 
@@ -451,7 +452,7 @@ describe("content topic-title durable planning", () => {
       createPlanner(client, enqueuer).planAndDispatch(
         requestRevision(),
         "he",
-        budgetAdmission(),
+        budgetAdmission(), "author-a",
       ),
     ).resolves.toMatchObject({
       kind: "original",
@@ -467,7 +468,7 @@ describe("content topic-title durable planning", () => {
   });
 
   it("gives a new current title revision a distinct task identity and monotonic generation", async () => {
-    const first = await createPlanner(client).planAndDispatch(requestRevision(), "he", budgetAdmission());
+    const first = await createPlanner(client).planAndDispatch(requestRevision(), "he", budgetAdmission(), "author-a");
     expect(first).toMatchObject({ kind: "queued", task: { generation: 1 } });
 
     await client.query("begin");
@@ -490,7 +491,7 @@ describe("content topic-title durable planning", () => {
       ...requestRevision(),
       revisionId: "title-a-r2",
       originalContent: "caller value remains irrelevant",
-    }, "he", budgetAdmission());
+    }, "he", budgetAdmission(), "author-a");
 
     expect(second).toMatchObject({
       kind: "queued",
@@ -523,7 +524,7 @@ describe("content topic-title durable planning", () => {
     if (!authoritative) throw new Error("missing fixture revision");
 
     const planner = createPlanner(client);
-    const planned = await planner.planAndDispatch(requestRevision(), "he", budgetAdmission());
+    const planned = await planner.planAndDispatch(requestRevision(), "he", budgetAdmission(), "author-a");
     if (planned.kind !== "queued") throw new Error("expected queued fixture task");
 
     await client.query(`
@@ -536,7 +537,7 @@ describe("content topic-title durable planning", () => {
     `);
 
     await expect(
-      store.upsertPending(planned.task, authoritative, budgetAdmission()),
+      store.upsertPending(planned.task, authoritative, budgetAdmission(), "author-a"),
     ).resolves.toEqual({ outcome: "revision-changed" });
 
     const budget = await client.query<{ used: number }>(`
@@ -555,7 +556,7 @@ describe("content topic-title durable planning", () => {
     });
 
     await expect(
-      createPlanner(client, enqueuer).planAndDispatch(requestRevision(), "he", budgetAdmission()),
+      createPlanner(client, enqueuer).planAndDispatch(requestRevision(), "he", budgetAdmission(), "author-a"),
     ).rejects.toBe(failure);
 
     const rows = await client.query<{ status: string; count: number }>(`
@@ -591,7 +592,7 @@ describe("content topic-title durable planning", () => {
 
     try {
       await expect(
-        createPlanner(client).planAndDispatch(requestRevision(), "he", budgetAdmission()),
+        createPlanner(client).planAndDispatch(requestRevision(), "he", budgetAdmission(), "author-a"),
       ).rejects.toBeInstanceOf(Error);
 
       const [counters, tasks, heads] = await Promise.all([
@@ -627,7 +628,7 @@ describe("content topic-title durable planning", () => {
       )
     `), "23514");
 
-    const created = await createPlanner(client).planAndDispatch(requestRevision(), "he", budgetAdmission());
+    const created = await createPlanner(client).planAndDispatch(requestRevision(), "he", budgetAdmission(), "author-a");
     if (created.kind !== "queued") throw new Error("expected queued fixture task");
 
     await expectDatabaseCode(client.query(`

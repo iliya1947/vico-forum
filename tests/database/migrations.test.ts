@@ -2,6 +2,7 @@ import { drizzle } from "drizzle-orm/node-postgres";
 import { migrate } from "drizzle-orm/node-postgres/migrator";
 import { Client, Pool, type ClientBase, type DatabaseError } from "pg";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { betterAuthUserAdditionalFields } from "../../db/schema";
 import { loadPersistentRegistry } from "../../app/localization/persistent-registry";
 import { parseLocaleCandidate } from "../../app/localization/locale";
 import { AmbiguousCommitOutcomeError, ControlledLocaleWriter, DrizzleLocaleRepository } from "../../db/locale-repository";
@@ -21,6 +22,7 @@ import { createHyperdriveForumWriter } from "../../db/hyperdrive-forum";
 import { FORUM_WRITE_COOLDOWN_MS, ForumWriteRateLimitError } from "../../db/forum-write-policy";
 import { PERMISSION_CATALOG, INITIAL_ROLE_GRANTS } from "../../app/authorization/catalog";
 import { AuthorizationService, InvalidAuthorizationInputError } from "../../db/authorization-service";
+import { AccountMissingError } from "../../db/account-state";
 import {
   AuthorizationForbiddenError,
   AuthorizationNotFoundError,
@@ -79,7 +81,7 @@ describe("PostgreSQL 17 locale migrations", () => {
     const applied = await client.query<{ count: string }>(
       'select count(*)::text as count from drizzle."__drizzle_migrations"',
     );
-    expect(applied.rows[0]?.count).toBe("63");
+    expect(applied.rows[0]?.count).toBe("68");
     // The AP-08 manifest hashes are computed from PostgreSQL 17 catalog expressions,
     // rather than assumed from SQL formatting or hand-entered normalized forms.
     const definitions = await client.query<{ key: string; definition: string }>(`
@@ -121,6 +123,72 @@ describe("PostgreSQL 17 locale migrations", () => {
       "default:forum_topics.closure_version": versionHash,
     });
 
+  });
+
+  it("SA-02 hourly attempt tables retain source identity and separate per-epoch quota", async () => {
+    const epoch = (await client.query<{ epoch: Date }>(
+      "select date_trunc('hour', transaction_timestamp(), 'UTC') as epoch",
+    )).rows[0]?.epoch;
+    expect(epoch).toBeInstanceOf(Date);
+    const current = epoch as Date;
+    const previous = new Date(current.getTime() - 3600000);
+    const firstId = "00000000-0000-4000-8000-000000000063";
+    const secondId = "00000000-0000-4000-8000-000000000064";
+    const original = [firstId, current, "authenticated", "sa02-account", "2001:db8::1", "trusted",
+      "auth", "sign-in", "denied", 401, current, current];
+    const sql = `insert into owner_attempt_patterns
+      (id,recording_epoch_start,pool,actor_user_id,network_ip,network_quality,
+       surface,operation,outcome,http_status,first_occurred_at,last_occurred_at)
+      values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12)`;
+    const epochSlotSql = `insert into owner_attempt_telemetry_state
+      (recording_epoch_start,slot,capacity) values ($1,'quota.authenticated',256)`;
+    try {
+      await client.query(sql, original);
+      await expectDatabaseCode(client.query(sql, [secondId, ...original.slice(1)]), "23505");
+      await client.query(sql, [secondId, previous, ...original.slice(2)]);
+      const distinctEpochs = await client.query<{ count: string }>(
+        "select count(*)::text from owner_attempt_patterns where id=any($1::uuid[])",
+        [[firstId, secondId]],
+      );
+      expect(distinctEpochs.rows[0]?.count).toBe("2");
+
+      await client.query(epochSlotSql, [current]);
+      await client.query(epochSlotSql, [previous]);
+      await expectDatabaseCode(client.query(epochSlotSql, [current]), "23505");
+      await expectDatabaseCode(client.query(`update owner_attempt_telemetry_state
+        set used=257 where recording_epoch_start=$1 and slot='quota.authenticated'`,
+        [current]), "23514");
+      const slots = await client.query<{ recording_epoch_start: Date; used: number; capacity: number }>(
+        `select recording_epoch_start,used,capacity from owner_attempt_telemetry_state
+        where slot='quota.authenticated' and recording_epoch_start=any($1::timestamptz[])
+        order by recording_epoch_start`, [[previous, current]],
+      );
+      expect(slots.rows).toHaveLength(2);
+      expect(slots.rows.every(row => row.used === 0 && row.capacity === 256)).toBe(true);
+
+      await expectDatabaseCode(client.query(sql, [
+        "00000000-0000-4000-8000-000000000065",
+        new Date(current.getTime() + 60000), ...original.slice(2),
+      ]), "23514");
+      await expectDatabaseCode(client.query(sql, [
+        "00000000-0000-4000-8000-000000000066",
+        current, "anonymous", null, null, "unknown",
+        "auth", "sign-in", "denied", 401, current, current,
+      ]), "23514");
+      await expectDatabaseCode(client.query(sql, [
+        "00000000-0000-4000-8000-000000000067",
+        current, "anonymous", null, "203.0.113.0/24", "trusted",
+        "auth", "sign-in", "denied", 401, current, current,
+      ]), "23514");
+      await expectDatabaseCode(client.query(`insert into owner_attempt_telemetry_state
+        (recording_epoch_start,slot,capacity) values ($1,'new-unbounded-slot',null)`,
+        [current]), "23514");
+    } finally {
+      await client.query("delete from owner_attempt_patterns where id=any($1::uuid[])", [[firstId, secondId]]);
+      await client.query(`delete from owner_attempt_telemetry_state
+        where recording_epoch_start=any($1::timestamptz[]) and slot='quota.authenticated'`,
+        [[previous, current]]);
+    }
   });
 
   it("SET-06 preference schema defaults to ON, saves OFF and cascades with its user", async () => {
@@ -1913,7 +1981,7 @@ describe("PostgreSQL 17 locale migrations", () => {
           "access.authorization.manage",
         ]);
         await expect(service.createCustomRole("missing-authz-actor", { slug: "intruder", displayName: "Intruder" }))
-          .rejects.toBeInstanceOf(AuthorizationForbiddenError);
+          .rejects.toBeInstanceOf(AccountMissingError);
         expect((await service.listRoles()).some((role) => role.slug === "intruder")).toBe(false);
       } finally {
         await service.replaceRoleGrants("authz-admin", "builtin-user", defaultUserGrants);
@@ -2906,10 +2974,14 @@ describe("PostgreSQL 17 locale migrations", () => {
     const bothAuthorLocks = new Promise<void>((resolve) => { release = resolve; });
     const gateAuthorLock = (connection: Client) => {
       const query = connection.query.bind(connection);
+      let acquired = false;
       connection.query = (async (...args: unknown[]) => {
         const result: unknown = await Reflect.apply(query, connection, args);
         const statement = typeof args[0] === "string" ? args[0] : String((args[0] as { text?: unknown })?.text ?? "");
-        if (/from\s+"user"[\s\S]+for\s+(?:no\s+key\s+)?update/iu.test(statement)) {
+        if (!acquired && /from\s+"user"[\s\S]+for\s+(?:no\s+key\s+)?update/iu.test(statement)) {
+          // J2's final lifecycle admission acquires the first mutex; the existing
+          // cooldown safely reacquires it on the SAME transaction.
+          acquired = true;
           synchronized += 1;
           if (synchronized === 2) release();
           await bothAuthorLocks;
@@ -3283,6 +3355,68 @@ describe("PostgreSQL 17 locale migrations", () => {
     }
   });
 
+
+  it("SA-04 A1 keeps active users unchanged and enforces UTC one-calendar-year account state", async () => {
+    expect(Object.keys(betterAuthUserAdditionalFields)).toEqual(["locale"]);
+    await client.query("begin");
+    try {
+      await client.query("set local time zone 'America/New_York'");
+      const id = "sa04-a1-account";
+      await client.query(
+        'insert into "user" (id, name, email) values ($1, $2, $3)',
+        [id, "Active account", "sa04-a1@example.invalid"],
+      );
+      const read = () => client.query<{
+        deactivated_at: Date | null; deactivated_by_user_id: string | null;
+        retain_at_least_until: Date | null;
+      }>('select deactivated_at, deactivated_by_user_id, retain_at_least_until from "user" where id = $1', [id]);
+      expect((await read()).rows[0]).toEqual({
+        deactivated_at: null, deactivated_by_user_id: null, retain_at_least_until: null,
+      });
+
+      const update = (at: string | null, by: string | null, until: string | null) =>
+        client.query(
+          'update "user" set deactivated_at = $2::timestamptz, deactivated_by_user_id = $3, retain_at_least_until = $4::timestamptz where id = $1',
+          [id, at, by, until],
+        );
+      const rejected = async (at: string | null, by: string | null, until: string | null) => {
+        await client.query("savepoint sa04_bad_state");
+        try {
+          await expectDatabaseCheck(update(at, by, until));
+        } finally {
+          await client.query("rollback to savepoint sa04_bad_state");
+          await client.query("release savepoint sa04_bad_state");
+        }
+      };
+
+      const leapStart = "2024-02-29T12:34:56+00";
+      const leapBoundary = "2025-02-28T12:34:56+00";
+      await rejected(leapStart, null, leapBoundary);
+      await rejected(null, "bound-owner", leapBoundary);
+      await rejected(leapStart, "bound-owner", null);
+      await rejected(leapStart, "", leapBoundary);
+      await rejected(leapStart, "   ", leapBoundary);
+      await rejected(leapStart, "\t\n", leapBoundary);
+      await rejected(leapStart, "bound-owner", "2025-02-28T12:34:55+00");
+      await update(leapStart, "bound-owner", leapBoundary);
+      expect((await read()).rows[0]).toMatchObject({ deactivated_by_user_id: "bound-owner" });
+
+      // On the DST crossover, local-calendar arithmetic would allow this one-hour-short
+      // retention; the UTC-calendar check must reject it regardless of session TimeZone.
+      await rejected("2025-03-09T06:30:00+00", "bound-owner", "2026-03-09T06:29:59+00");
+      await update("2025-03-09T06:30:00+00", "bound-owner", "2026-03-09T06:30:00+00");
+      expect((await read()).rows[0]?.retain_at_least_until?.toISOString())
+        .toBe("2026-03-09T06:30:00.000Z");
+
+      await update(null, null, null);
+      expect((await read()).rows[0]).toEqual({
+        deactivated_at: null, deactivated_by_user_id: null, retain_at_least_until: null,
+      });
+    } finally {
+      await client.query("rollback");
+    }
+  });
+
   it("creates the exact Better Auth 1.7.4 PostgreSQL foundation", async () => {
     const columns = await client.query<{
       column_name: string;
@@ -3313,7 +3447,10 @@ describe("PostgreSQL 17 locale migrations", () => {
       ...authColumns("user", [["id", "text", "NO"], ["name", "text", "NO"], ["email", "text", "NO"],
         ["email_verified", "boolean", "NO"], ["image", "text", "YES"],
         ["created_at", "timestamp without time zone", "NO"], ["updated_at", "timestamp without time zone", "NO"],
-        ["locale", "text", "YES"]]),
+        ["locale", "text", "YES"],
+        ["deactivated_at", "timestamp with time zone", "YES"],
+        ["deactivated_by_user_id", "text", "YES"],
+        ["retain_at_least_until", "timestamp with time zone", "YES"]]),
       ...authColumns("verification", [["id", "text", "NO"], ["identifier", "text", "NO"],
         ["value", "text", "NO"], ["expires_at", "timestamp without time zone", "NO"],
         ["created_at", "timestamp without time zone", "NO"], ["updated_at", "timestamp without time zone", "NO"]]),

@@ -1,3 +1,4 @@
+import { withProviderCallEvidence,type OwnerOperationalFactSink } from "../observability/operational-facts";
 import type { LocaleRulesProvider } from "./locale-rules";
 import {
   TranslationExecutionFailure,
@@ -51,6 +52,7 @@ export type UiTranslationTaskExecutionResult =
     };
 
 export interface UiTranslationTaskExecutorDependencies {
+  readonly operational?:OwnerOperationalFactSink;
   readonly consumer: Pick<UiTranslationTaskConsumer, "consume">;
   readonly providerRouter: Pick<TranslationProviderRouter, "translate">;
   readonly publisher: Pick<UiTranslationResultPublisher, "publish">;
@@ -66,6 +68,7 @@ export class UiTranslationTaskExecutor {
   constructor(private readonly dependencies: UiTranslationTaskExecutorDependencies) {}
 
   async execute(message: TranslationTaskMessage): Promise<UiTranslationTaskExecutionResult> {
+    return withProviderCallEvidence(this.dependencies.operational,async calls => {
     let consumed: TranslationTaskConsumerResult;
     try {
       consumed = await this.dependencies.consumer.consume(message);
@@ -79,6 +82,7 @@ export class UiTranslationTaskExecutor {
       throw error;
     }
     if (consumed.outcome !== "eligible") return acknowledge(consumed);
+    calls.configure(consumed.context.task);
 
     if (!consumed.context.attemptStarted) {
       return this.persistFailure(consumed.context, {
@@ -89,13 +93,15 @@ export class UiTranslationTaskExecutor {
 
     try {
       const request = providerRequest(consumed.context, this.dependencies.localeRules);
-      const result = await this.dependencies.providerRouter.translate(request);
+      const result = await this.dependencies.providerRouter.translate(request,...(this.dependencies.operational?[calls.observe] as const:[] as const));
       return acknowledge(await this.dependencies.publisher.publish(consumed.context, result));
     } catch (error) {
       const failure = classifyTranslationExecutionFailure(error);
       if (!failure) throw error;
       return this.persistFailure(consumed.context, failure);
     }
+
+    });
   }
 
   private async persistFailure(

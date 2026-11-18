@@ -2,8 +2,9 @@ import { readFile } from "node:fs/promises";
 import { Client } from "pg";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import {
-  createHyperdriveUserLocale, UserLocaleAccountMissingError, UserLocaleUnavailableError,
+  createHyperdriveUserLocale, UserLocaleUnavailableError,
 } from "../../db/hyperdrive-user-locale";
+import { AccountMissingError } from "../../db/account-state";
 
 const url = process.env.DATABASE_URL;
 if (!url || !["127.0.0.1", "localhost"].includes(new URL(url).hostname)
@@ -22,6 +23,7 @@ beforeAll(async () => {
     .replaceAll('"public".', `"${schema}".`)
     .replaceAll("--> statement-breakpoint", "");
   await client.query(migration);
+  await client.query(await readFile("drizzle/0065_sa04_account_state_foundation.sql", "utf8"));
   await client.query(`insert into "user"(id, name, email) values
     ('locale-owner', 'Owner', 'locale-owner@test.invalid'),
     ('locale-other', 'Other', 'locale-other@test.invalid')`);
@@ -50,7 +52,7 @@ describe("SET-03 own account locale, native PostgreSQL", () => {
   });
 
   it("rejects a deleted/stale account without inserting or changing another user", async () => {
-    await expect(writer.save("not-an-account", "ru")).rejects.toBeInstanceOf(UserLocaleAccountMissingError);
+    await expect(writer.save("not-an-account", "ru")).rejects.toBeInstanceOf(AccountMissingError);
     const count = await client.query<{ count: number }>(`select count(*)::int as count from "user"`);
     expect(count.rows[0]?.count).toBe(2);
     expect((await client.query(`select locale from "user" where id='locale-other'`)).rows[0]?.locale).toBe("he");

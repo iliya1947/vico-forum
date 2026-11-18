@@ -1,4 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
+import { AccountInactiveError, AccountMissingError, AccountStateUnavailableError, AccountStateUnexpectedError } from "../../db/account-state";
 
 import {
   ContentGenerationPlanningUnavailableError,
@@ -42,7 +43,12 @@ function harness(options: {
   bodyResult?: unknown;
   titleError?: unknown;
   bodyError?: unknown;
+  admissionError?: unknown;
 } = {}) {
+  const assertAllowed = vi.fn(async (_actorId: string) => {
+    void _actorId;
+    if (options.admissionError) throw options.admissionError;
+  });
   const pseudonymize = vi.fn(async () => ({
     actorKind: "authenticated" as const,
     keyVersion: "test-v1",
@@ -69,10 +75,12 @@ function harness(options: {
     }),
   };
   return {
+    assertAllowed,
     pseudonymize,
     titlePlanner,
     postBodyPlanner,
     capability: new DefaultContentGenerationActionCapability({
+      admission: { assertAllowed },
       pseudonymizer: { pseudonymize },
       titlePolicy: policy,
       postBodyPolicy: { ...policy, global: { ...policy.global, name: "body-global" } },
@@ -83,7 +91,7 @@ function harness(options: {
 }
 
 describe("content generation action capability", () => {
-  it("pseudonymizes the authenticated actor and passes only server-owned budget admission to title planning", async () => {
+  it("passes transient trusted actor separately from the pseudonymous persisted budget subject", async () => {
     const { capability, pseudonymize, titlePlanner } = harness();
 
     await expect(capability.generateTopicTitle({
@@ -106,11 +114,13 @@ describe("content generation action capability", () => {
         global: { name: "generation-global", version: "test-v1", limit: 100 },
         requester: { name: "generation-requester", version: "test-v1", limit: 10 },
       },
+      "user-123",
     );
-    expect(JSON.stringify(titlePlanner.planAndDispatch.mock.calls)).not.toContain("user-123");
+    expect(JSON.stringify((titlePlanner.planAndDispatch.mock.calls as unknown[][])[0]?.slice(0, 3)))
+      .not.toContain("user-123");
   });
 
-  it("enforces the automatic body threshold before pseudonymization or planner admission", async () => {
+  it("enforces the automatic body threshold after lifecycle admission but before pseudonymization/planning", async () => {
     const atLimit = harness();
     const exact = "а".repeat(MAX_AUTOMATIC_POST_TRANSLATION_SEMANTIC_CHARACTERS);
     await expect(atLimit.capability.generateAutomaticPostBody({
@@ -128,6 +138,7 @@ describe("content generation action capability", () => {
       revision: postRevision(tooLong),
       targetLocale: "he",
     })).resolves.toEqual({ outcome: "explicit-required" });
+    expect(overLimit.assertAllowed).toHaveBeenCalledExactlyOnceWith("user-123");
     expect(overLimit.pseudonymize).not.toHaveBeenCalled();
     expect(overLimit.postBodyPlanner.planAndDispatch).not.toHaveBeenCalled();
   });
@@ -155,6 +166,7 @@ describe("content generation action capability", () => {
         cost: policy.cost,
         windowSeconds: policy.windowSeconds,
       }),
+      "user-123",
     );
   });
 
@@ -223,5 +235,26 @@ describe("content generation action capability", () => {
       revision: titleRevision(),
       targetLocale: "he",
     })).rejects.toBe(unexpected);
+  });
+
+  it("requires admission and denies all three direct methods before hashing, planning or explicit-required", async () => {
+    expect(() => new DefaultContentGenerationActionCapability({} as never))
+      .toThrow(ContentGenerationPlanningUnavailableError);
+    for (const error of [new AccountInactiveError(), new AccountMissingError(), new AccountStateUnexpectedError()]) {
+      const h = harness({ admissionError: error });
+      await expect(h.capability.generateTopicTitle({actorId:"actor",revision:titleRevision(),targetLocale:"he"})).rejects.toBe(error);
+      const input = {actorId:"actor",revision:postRevision("a".repeat(3001)),targetLocale:"he"};
+      await expect(h.capability.generateAutomaticPostBody(input)).rejects.toBe(error);
+      await expect(h.capability.generateExplicitPostBody(input)).rejects.toBe(error);
+      expect(h.assertAllowed).toHaveBeenCalledTimes(3);
+      expect(h.pseudonymize).not.toHaveBeenCalled();
+      expect(h.titlePlanner.planAndDispatch).not.toHaveBeenCalled();
+      expect(h.postBodyPlanner.planAndDispatch).not.toHaveBeenCalled();
+    }
+    for (const error of [new AccountStateUnavailableError(),new Error("wrapped",{cause:new AccountStateUnavailableError()})]) {
+      const h = harness({admissionError:error});
+      await expect(h.capability.generateAutomaticPostBody({actorId:"actor",revision:postRevision("a".repeat(3001)),targetLocale:"he"}))
+        .rejects.toMatchObject({name:"ContentGenerationPlanningUnavailableError",cause:error});
+    }
   });
 });

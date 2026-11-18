@@ -6,6 +6,7 @@ import {readComplaintReview,readComplaintContextPost,readComplaintEvidenceObject
 import type {ReviewPages,ReviewCase} from "../app/complaints/review-contract";
 import { createHash, randomUUID } from "node:crypto";
 import { sql } from "drizzle-orm";
+import { assertActiveAccountForDrizzleMutation } from "./account-state";
 import { assertNoActiveUserMeasureRestriction } from "./user-measure-policy";
 import type { NodePgDatabase } from "drizzle-orm/node-postgres";
 import { readComplaintQueue } from "./complaint-queue-read";
@@ -69,9 +70,7 @@ export class DrizzleComplaintsRepository {
   }
 
   private async actorMutex(tx: Tx, actorId: string) {
-    // Compatible with FK KEY SHARE; never use FOR UPDATE on this user mutex.
-    const r = await tx.execute(sql`select id from "user" where id=${actorId} for no key update`);
-    if (!r.rows.length) throw new ComplaintForbiddenError("authenticated actor required");
+    await assertActiveAccountForDrizzleMutation(tx, actorId);
   }
 
   private async replay(tx: Tx, actorId: string, operationId: string, fingerprint: string) {
@@ -109,6 +108,7 @@ export class DrizzleComplaintsRepository {
   async savePrioritySettings(actorId: string, input: ComplaintPrioritySettingsCommand) {
     // One atomic full-map CAS; a newly restricted manager cannot commit a change.
     await this.database.transaction(async tx => {
+      await this.actorMutex(tx, actorId);
       await this.measureAdmission(tx, actorId, "admin.complaints");
       const result = await tx.execute(sql`update forum_complaint_priority_settings
         set weights=${JSON.stringify(input.weights)}::jsonb,version=version+1
@@ -173,6 +173,12 @@ export class DrizzleComplaintsRepository {
     return this.database.transaction(async tx => {
       const t = input.target;
       // Lock authoritative current content before actor/target/case, matching forum lock order.
+      // The post's topic FK is a content dependency: lock it before post/actor.
+      // Otherwise a same-actor title report can hold topic FOR UPDATE while
+      // waiting on actor, and the post report can deadlock on the topic FK.
+      if (t.kind === "post") {
+        await tx.execute(sql`select id from forum_topics where id=${t.topicId} for key share`);
+      }
       const content = t.kind === "post"
         ? await tx.execute<{ revisionId: string; authorId: string }>(sql`select current_revision_id as "revisionId", author_id as "authorId"
             from forum_posts where id=${t.postId} and topic_id=${t.topicId} for update`)

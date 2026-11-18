@@ -1,3 +1,4 @@
+import { withProviderCallEvidence,type OwnerOperationalFactSink } from "../observability/operational-facts";
 import type { ContentTopicTitleAllowanceGate } from "./content-provider-allowance";
 import {
   ClaimedContentTopicTitleDependencyError,
@@ -56,6 +57,7 @@ export type ContentTopicTitleTaskExecutionResult =
     };
 
 export interface ContentTopicTitleTaskExecutorDependencies {
+  readonly operational?:OwnerOperationalFactSink;
   readonly allowance: Pick<ContentTopicTitleAllowanceGate, "admit">;
   readonly consumer: Pick<ContentTopicTitleTaskConsumer, "consume">;
   readonly providerRouter: Pick<TranslationProviderRouter, "translateWithProvider">;
@@ -67,6 +69,7 @@ export class ContentTopicTitleTaskExecutor {
   constructor(private readonly dependencies: ContentTopicTitleTaskExecutorDependencies) {}
 
   async execute(message: TranslationTaskMessage): Promise<ContentTopicTitleTaskExecutionResult> {
+    return withProviderCallEvidence(this.dependencies.operational,async calls => {
     const admission = await this.dependencies.allowance.admit(message);
     if (admission.outcome === "admission-in-progress" || admission.outcome === "execution-in-progress") {
       return { outcome: admission.outcome, delivery: "ack" };
@@ -100,6 +103,7 @@ export class ContentTopicTitleTaskExecutor {
     }
 
     if (consumed.outcome !== "eligible") return acknowledge(consumed);
+    calls.configure(consumed.context.task);
 
     if (!consumed.context.attemptStarted) {
       return this.persistFailure(consumed.context, {
@@ -114,7 +118,7 @@ export class ContentTopicTitleTaskExecutor {
       }
       const result = await this.dependencies.providerRouter.translateWithProvider(
         admittedProvider,
-        providerRequest(consumed.context),
+        providerRequest(consumed.context),...(this.dependencies.operational?[calls.observe] as const:[] as const),
       );
       return acknowledge(await this.dependencies.publisher.publish(consumed.context, result));
     } catch (error) {
@@ -122,6 +126,8 @@ export class ContentTopicTitleTaskExecutor {
       if (!failure) throw error;
       return this.persistFailure(consumed.context, failure);
     }
+
+    });
   }
 
   private async persistFailure(

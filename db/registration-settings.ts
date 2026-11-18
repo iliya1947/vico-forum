@@ -1,6 +1,7 @@
 import type { Pool, PoolClient } from "pg";
 import { isBoundOwner } from "../app/authorization/owner";
 import { appendRegistrationSettingsHistory } from "./admin-history";
+import { assertActiveAccountForMutation } from "./account-state";
 
 export interface RegistrationFlags {
   googleRegistrationEnabled: boolean;
@@ -66,8 +67,7 @@ export class PostgresRegistrationSettingsRepository {
     const client: PoolClient = await this.database.connect();
     try {
       await client.query("begin");
-      const user = await client.query('select id from "user" where id = $1', [actorId]);
-      if (user.rowCount !== 1) throw new RegistrationSettingsForbiddenError("Owner account does not exist");
+      await assertActiveAccountForMutation(client, actorId);
       const locked = await client.query<RegistrationRow>(settingsSelect + " for update");
       const before = parseRegistrationSettings(locked.rows);
       if (before.version !== input.expectedVersion) throw new RegistrationSettingsConflictError("Stale registration settings version");

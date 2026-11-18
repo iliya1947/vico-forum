@@ -11,6 +11,7 @@ import {
 import { InvalidForumContentError } from "../../db/forum-service";
 import { ForumWriteRateLimitError } from "../../db/forum-write-policy";
 import { UserMeasureRestrictedError } from "../../db/user-measure-policy";
+import { AccountInactiveError, AccountMissingError } from "../../db/account-state";
 import { ForumStorageUnavailableError } from "../../db/hyperdrive-forum";
 import { forumWriterForRequest } from "./request-context";
 import { authorizationForRequest } from "../authorization/request-context";
@@ -18,6 +19,13 @@ import type { PermissionKey } from "../authorization/catalog";
 import { AuthorizationUnavailableError } from "../../db/authorization-service";
 
 export interface ForumMutationError { intent?: "editPost"; error: "invalid" | "unauthenticated" | "origin" | "forbidden" | "notFound" | "conflict" | "topicClosed" | "rateLimited" | "unavailable" | "unexpected" }
+
+export type TopicTitleEditResult = {
+  operation: "topicTitleEdit";
+} & ({ ok: true; revisionId: string } | {
+  error: "conflict";
+  currentTitle: { id: string; originalContent: string };
+});
 
 export interface HelpQuestionDraft {
   title: string;
@@ -109,6 +117,9 @@ export async function runForumMutation<T>(
   try {
     return await operation(forumWriterForRequest(context), session.user.id);
   } catch (error) {
+    // A persisted lifecycle change can win after the authenticated request preflight.
+    if (error instanceof AccountInactiveError || error instanceof AccountMissingError)
+      return mutationFailure("unauthenticated", 401);
     if (error instanceof InvalidForumContentError) return mutationFailure("invalid", 400);
     if (error instanceof ForumEntityNotFoundError) return mutationFailure("notFound", 404);
     if (error instanceof ForumAuthorizationError || error instanceof UserMeasureRestrictedError) return mutationFailure("forbidden", 403);
@@ -136,6 +147,8 @@ export async function runSourceLocaleCorrection<T>(
   try {
     return await operation(forumWriterForRequest(context), session.user.id);
   } catch (error) {
+    if (error instanceof AccountInactiveError || error instanceof AccountMissingError)
+      return sourceLocaleCorrectionFailure("unauthenticated", 401);
     if (error instanceof InvalidForumContentError) return sourceLocaleCorrectionFailure("invalid", 400);
     if (error instanceof ForumEntityNotFoundError) return sourceLocaleCorrectionFailure("notFound", 404);
     if (error instanceof ForumAuthorizationError || error instanceof UserMeasureRestrictedError) return sourceLocaleCorrectionFailure("forbidden", 403);

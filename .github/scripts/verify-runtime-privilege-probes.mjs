@@ -206,11 +206,6 @@ try {
   );
   await expectInsufficientPrivilege(
     webRole,
-    "SELECT 1 FROM public.translation_tasks LIMIT 0",
-    "web translation-task read",
-  );
-  await expectInsufficientPrivilege(
-    webRole,
     "DELETE FROM public.forum_topics WHERE false",
     "web forum topic delete",
   );
@@ -224,6 +219,17 @@ try {
     "CREATE TABLE public.vico_forbidden_web_probe(id integer)",
     "web DDL",
   );
+
+  for (const verb of ["INSERT INTO public.translation_tasks(id) SELECT gen_random_uuid() WHERE false",
+    "UPDATE public.translation_tasks SET status=status WHERE false","DELETE FROM public.translation_tasks WHERE false"])
+    await expectInsufficientPrivilege(webRole,verb,"web translation-task mutation");
+
+  for (const table of ["translation_task_generation_heads","content_topic_title_translation_tasks","content_post_body_translation_tasks","content_translation_request_budget_counters"])
+    for (const verb of [`INSERT INTO public.${table} SELECT * FROM public.${table} WHERE false`,`UPDATE public.${table} SET ${table==='content_translation_request_budget_counters'?'used_units=used_units':table==='translation_task_generation_heads'?'current_generation=current_generation':'task_id=task_id'} WHERE false`,`DELETE FROM public.${table} WHERE false`])
+      await expectInsufficientPrivilege(webRole,verb,"web translation read-only capability");
+
+  for (const verb of ["INSERT INTO public.forum_attachment_sweep(id) SELECT 'forbidden' WHERE false","UPDATE public.forum_attachment_sweep SET cursor=cursor WHERE false","DELETE FROM public.forum_attachment_sweep WHERE false"])
+    await expectInsufficientPrivilege(webRole,verb,"web read-only sweep capability");
 
   globalThis.console.log("Runtime privilege positive and negative PostgreSQL 17 probes passed.");
 } finally {

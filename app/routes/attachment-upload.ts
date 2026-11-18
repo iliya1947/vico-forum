@@ -1,4 +1,5 @@
 import type { RouterContextProvider } from "react-router";
+import { AccountInactiveError, AccountMissingError, AccountStateUnavailableError } from "../../db/account-state";
 import { authSessionForRequest } from "../auth/request-context";
 import {
   AttachmentBucketUnavailableError,
@@ -125,12 +126,17 @@ async function requestScope(
 }
 
 function attachmentStoreFailure(error: unknown): Response | null {
+  if (error instanceof AccountInactiveError || error instanceof AccountMissingError) {
+    return json({ error: "unauthenticated" }, 401);
+  }
   if (error instanceof ForumAttachmentDraftConflictError) {
     return json({ error: error.reason }, error.reason === "gone" ? 410 : 409);
   }
   if (error instanceof InvalidForumAttachmentError) return json({ error: "invalid" }, 400);
   if (error instanceof UserMeasureRestrictedError) return json({ error: "forbidden" }, 403);
-  if (error instanceof ForumAttachmentStorageUnavailableError) return json({ error: "unavailable" }, 503);
+  if (error instanceof AccountStateUnavailableError || error instanceof ForumAttachmentStorageUnavailableError) {
+    return json({ error: "unavailable" }, 503);
+  }
   return null;
 }
 
@@ -201,8 +207,8 @@ export async function action({ request, context }: { request: Request; context: 
   try {
     result = await storePrivateAttachmentStream(bucket, {
       fileName, declaredMime, size, body: request.body,
-    }, undefined, (objectKey) => store.recordUploadObject(objectKey),
-    (objectKey, etag) => store.activateUploadObject(objectKey, etag));
+    }, undefined, (objectKey) => store.recordUploadObject(scope.userId, objectKey),
+    (objectKey, etag) => store.activateUploadObject(scope.userId, objectKey, etag));
   } catch (error) {
     if (error instanceof AttachmentLengthMismatchError || error instanceof AttachmentUploadReadError) {
       return json({ error: "invalid" }, 400);
@@ -268,7 +274,10 @@ export async function action({ request, context }: { request: Request; context: 
     // A lost COMMIT acknowledgement can leave an authoritative asset using this
     // object. Retain it until ownership is known; a stable-ID retry converges on
     // that asset. Logical rejection establishes that no new ref was committed.
-    if (error instanceof InvalidForumAttachmentError || error instanceof ForumAttachmentDraftConflictError) {
+    if (error instanceof InvalidForumAttachmentError || error instanceof ForumAttachmentDraftConflictError
+      || error instanceof AccountInactiveError || error instanceof AccountMissingError) {
+      // A settled, fresh physical attempt may be discarded on a known logical
+      // denial. Unknown metadata/COMMIT outcome still uses reference-aware cleanup.
       await bucket.delete(result.objectKey).catch(() => {});
     }
     const response = attachmentStoreFailure(error);

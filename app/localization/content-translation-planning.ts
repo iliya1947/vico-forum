@@ -81,6 +81,7 @@ export interface ContentTopicTitlePlanningStore {
     specification: ContentTopicTitleTranslationTaskSpecification,
     expectedRevision: ContentTranslationRevision,
     requestBudgetAdmission: ContentTranslationRequestBudgetAdmission,
+    actorId: string,
   ): Promise<ContentTopicTitleTaskUpsertResult>;
 }
 
@@ -103,7 +104,9 @@ export class ContentTopicTitleTranslationPlanner {
     requestedRevision: ContentTranslationRevision,
     targetLocaleInput: string,
     requestBudgetAdmission: ContentTranslationRequestBudgetAdmission,
+    actorId: string,
   ): Promise<ContentTopicTitlePlanningResult> {
+    requireNonBlank(actorId, "actorId");
     if (requestedRevision.contentType !== "topic-title") {
       throw new TypeError("topic-title translation planning requires a topic-title revision");
     }
@@ -165,6 +168,7 @@ export class ContentTopicTitleTranslationPlanner {
       specification,
       authoritativeRevision,
       requestBudgetAdmission,
+      actorId,
     );
     if (upserted.outcome === "revision-changed") {
       return original(targetLocale, "revision-not-current");

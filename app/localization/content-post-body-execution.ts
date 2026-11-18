@@ -1,3 +1,4 @@
+import { withProviderCallEvidence,type OwnerOperationalFactSink } from "../observability/operational-facts";
 import type { ContentPostBodyAllowanceGate } from "./content-provider-allowance";
 import {
   MarkdownTranslationValidationError,
@@ -74,6 +75,7 @@ export type ContentPostBodyTaskExecutionResult =
     };
 
 export interface ContentPostBodyTaskExecutorDependencies {
+  readonly operational?:OwnerOperationalFactSink;
   readonly allowance: Pick<ContentPostBodyAllowanceGate, "admit">;
   readonly consumer: Pick<ContentPostBodyTaskConsumer, "consume">;
   readonly providerRouter: Pick<TranslationProviderRouter, "supportsProvider" | "translateWithProvider">;
@@ -88,6 +90,7 @@ export class ContentPostBodyTaskExecutor {
   }
 
   async execute(message: TranslationTaskMessage): Promise<ContentPostBodyTaskExecutionResult> {
+    return withProviderCallEvidence(this.dependencies.operational,async calls => {
     const admission = await this.dependencies.allowance.admit(message);
     if (admission.outcome === "admission-in-progress" || admission.outcome === "execution-in-progress") {
       return { outcome: admission.outcome, delivery: "ack" };
@@ -121,6 +124,7 @@ export class ContentPostBodyTaskExecutor {
     }
 
     if (consumed.outcome !== "eligible") return acknowledge(consumed);
+    calls.configure(consumed.context.task);
 
     if (!consumed.context.attemptStarted) {
       return this.persistFailure(consumed.context, {
@@ -168,7 +172,7 @@ export class ContentPostBodyTaskExecutor {
             sourceLocale: consumed.context.task.resolvedSourceLocale,
             targetLocale: consumed.context.task.targetLocale,
             source: segment.text,
-          }),
+          }),...(this.dependencies.operational?[calls.observe] as const:[] as const),
         );
         const validated = validateSegmentResult(result);
         if (provenance && !sameProvenance(provenance, validated.provenance)) {
@@ -200,6 +204,8 @@ export class ContentPostBodyTaskExecutor {
       if (!failure) throw error;
       return this.persistFailure(consumed.context, failure);
     }
+
+    });
   }
 
   private async persistFailure(

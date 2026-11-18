@@ -1,4 +1,5 @@
 import { forumReadLoader } from "../forum/read-availability.server";
+import { DELETED_USER_NAME } from "../../db/public-identity";
 import { useLoaderData, type RouterContextProvider } from "react-router";
 
 import { forumReaderForRequest } from "../forum/request-context";
@@ -15,7 +16,20 @@ export const loader = forumReadLoader(async function loader({ params, context }:
 }) {
   const page = await forumReaderForRequest(context).readTag(params.tagKey ?? "");
   if (!page) throw new Response("Not Found", { status: 404 });
-  return { locale: params.locale ?? "en", page };
+  return {
+    locale: params.locale ?? "en",
+    page: {
+      tag: page.tag,
+      topics: page.topics.map(({
+        id, title, authorName, authorIdentityKind, postCount, createdAt, section, category, tags,
+      }) => ({
+        id, title,
+        authorName: authorIdentityKind === "deleted" ? DELETED_USER_NAME : authorName,
+        ...(authorIdentityKind === "deleted" ? { authorIdentityKind } : {}),
+        postCount, createdAt, section, category, tags,
+      })),
+    },
+  };
 });
 
 export default function TagRoute() {

@@ -16,7 +16,8 @@ interface MessageQuickActionsProps {
   actorId?: string | null;
 }
 type HistoryResponse = { operation: "postHistory"; postId: string; revisions: Array<{
-  id: string; authorName: string; originalContent: string; sourceLocale: string; createdAt: string;
+  id: string; authorId: string; authorName: string; authorIdentityKind?: "deleted";
+  originalContent: string; sourceLocale: string; createdAt: string;
 }> } | { error: string };
 type CorrectionResponse = { ok?: boolean; error?: SourceLocaleCorrectionMutationError["error"] };
 
@@ -104,7 +105,7 @@ function MessageActionsForActor(props: MessageQuickActionsProps & { actorId: str
             : historyResult && "operation" in historyResult && historyResult.operation === "postHistory"
               && historyResult.postId === postId
               ? <ol>{historyResult.revisions.map((rev) => <li key={rev.id}>
-                  <strong>{t("postRevisionBy", { author: rev.authorName,
+                  <strong>{t("postRevisionBy", { author: rev.authorIdentityKind === "deleted" ? t("deletedUser") : rev.authorName,
                     date: new Date(rev.createdAt).toLocaleString(locale, { timeZone: "UTC", timeZoneName: "short" }) })}</strong>
                   <pre className="message-history-source" lang={rev.sourceLocale === "und" ? undefined : rev.sourceLocale}
                     dir="auto">{rev.originalContent}</pre>

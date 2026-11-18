@@ -1,5 +1,6 @@
 import { forumReadLoader } from "../forum/read-availability.server";
-import { useActionData, useLoaderData, type RouterContextProvider } from "react-router";
+import { DELETED_USER_NAME } from "../../db/public-identity";
+import { useActionData, useLoaderData, type RouterContextProvider, type HeadersArgs } from "react-router";
 import { authSessionForRequest } from "../auth/request-context";
 import { measureRestrictionsForPresentation } from "../measures/presentation.server";
 import { authorizationForRequest } from "../authorization/request-context";
@@ -12,13 +13,30 @@ import { ForumRouteError } from "../forum/ui";
 import { SectionView } from "../forum/views";
 
 export { sectionAction as action } from "../forum/actions.server";
+/** Forward controlled action privacy/retry headers without privatizing public GET. */
+export function headers({ parentHeaders, loaderHeaders, actionHeaders, errorHeaders }: HeadersArgs): Headers {
+  const result = new Headers(parentHeaders);
+  for (const name of ["Cache-Control", "Retry-After"] as const) {
+    const value = errorHeaders?.get(name) ?? actionHeaders.get(name) ?? loaderHeaders.get(name);
+    if (value !== null) result.set(name, value);
+  }
+  return result;
+}
+
 
 export const loader = forumReadLoader(async function loader({ params, context }: {
   params: { locale?: string; sectionId?: string };
   context: RouterContextProvider;
 }) {
-  const section = await forumReaderForRequest(context).readSection(params.sectionId ?? "");
-  if (!section) throw new Response("Not Found", { status: 404 });
+  const loadedSection = await forumReaderForRequest(context).readSection(params.sectionId ?? "");
+  if (!loadedSection) throw new Response("Not Found", { status: 404 });
+  const section = loadedSection.topics.some((topic) => topic.authorIdentityKind === "deleted")
+    ? {
+        ...loadedSection,
+        topics: loadedSection.topics.map((topic) => topic.authorIdentityKind === "deleted"
+          ? { ...topic, authorName: DELETED_USER_NAME } : topic),
+      }
+    : loadedSection;
   const session = authSessionForRequest(context);
   let canCreateTopic = false;
   let canUploadAttachments = false;

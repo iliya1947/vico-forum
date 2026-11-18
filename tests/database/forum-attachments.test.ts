@@ -1,4 +1,5 @@
 import { ForumAttachmentStorageUnavailableError } from "../../db/hyperdrive-forum-attachments";
+import { AccountMissingError } from "../../db/account-state";
 import { readFile } from "node:fs/promises";
 import { drizzle } from "drizzle-orm/node-postgres";
 import { Client, Pool, type DatabaseError } from "pg";
@@ -61,6 +62,7 @@ const migrations = [
   "0054_complaint_history_notifications",
   "0055_complaint_appeal_notifications",
   "0056_topic_closure",
+  "0065_sa04_account_state_foundation",
 ];
 
 const ownerId = "attachment-owner";
@@ -241,7 +243,7 @@ describe("forum attachment lifecycle foundation", () => {
       responseMime: "text/plain; charset=utf-8",
       byteSize: 1,
       verificationStatus: "type-checked",
-    })).rejects.toMatchObject({ cause: { code: "23503" } });
+    })).rejects.toBeInstanceOf(AccountMissingError);
     const rows = await client.query("select id from forum_attachments where id = $1", [id]);
     expect(rows.rowCount).toBe(0);
   });

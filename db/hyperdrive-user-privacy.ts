@@ -5,6 +5,7 @@ import {
   bestEffortDiscardClient, createWebClient, isPostgresConnectionTimeout, isPostgresQueryTimeout,
 } from "./postgres-deadlines";
 import { DrizzleUserPrivacyRepository } from "./user-privacy";
+import { AccountStateUnavailableError } from "./account-state";
 
 export class UserPrivacyUnavailableError extends Error {
   constructor(options?: ErrorOptions) {
@@ -50,7 +51,7 @@ function isUserPrivacyAvailabilityFailure(error: unknown): boolean {
   let current = error;
   while (current && (typeof current === "object" || typeof current === "function") && !seen.has(current)) {
     seen.add(current);
-    if (isPostgresAvailabilityFailure(current) || isPostgresConnectionTimeout(current)
+    if (current instanceof AccountStateUnavailableError || isPostgresAvailabilityFailure(current) || isPostgresConnectionTimeout(current)
       || isPostgresQueryTimeout(current)) return true;
     current = (current as { cause?: unknown }).cause;
   }

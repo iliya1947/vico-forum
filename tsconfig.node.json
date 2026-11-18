@@ -9,9 +9,19 @@
     "vitest.config.ts",
     "vitest.database.config.ts",
     "app/auth/auth.server.ts",
+    "app/auth/session-write-guard.ts",
+    "app/auth/session-label.ts",
+    "app/auth/session-deletion-evidence.ts",
+    "app/auth/auth-creation-evidence.ts",
     "app/auth/registration-admission.ts",
     "app/auth/request-context.ts",
     "app/auth/session-context.ts",
+    "app/observability/attempt-source.ts",
+    "app/observability/attempt-collector.server.ts",
+    "app/observability/auth-fact-collector.server.ts",
+    "app/observability/operational-facts.ts",
+    "app/observability/storage-observations.ts",
+    "app/observability/integration-runtime.ts",
     "app/authorization/catalog.ts",
     "app/authorization/owner.ts",
     "app/administrative-routing/addresses.ts",
@@ -24,6 +34,8 @@
     "app/admin/forum-paths.ts",
     "app/admin/history-path.ts",
     "app/authorization/request-context.ts",
+    "app/profile/request-context.ts",
+    "app/super-admin/access.server.ts",
     "app/forum/actions.server.ts",
     "app/forum/attachment-request-context.ts",
     "app/forum/attachment-r2.ts",
@@ -35,6 +47,7 @@
     "app/forum/editor-permission.server.ts",
     "app/routes/attachment-upload.ts",
     "app/routes/attachment-download.ts",
+    "app/routes/owner-deactivate.ts",
     "app/forum/mutations.server.ts",
     "app/forum/paths.ts",
     "app/forum/quote-markdown.ts",
@@ -99,7 +112,8 @@
     "app/complaints/review-context.ts",
     "app/complaints/appeal-context.ts",
     "app/complaints/response.ts",
-    "app/routes/complaint-submit.ts"
+    "app/routes/complaint-submit.ts",
+    ".github/production-schema-manifest.json"
   ],
   "compilerOptions": {
     "composite": true,
@@ -111,6 +125,7 @@
     ],
     "target": "ES2022",
     "module": "ES2022",
-    "moduleResolution": "bundler"
+    "moduleResolution": "bundler",
+    "resolveJsonModule": true
   }
 }

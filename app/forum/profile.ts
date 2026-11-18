@@ -11,6 +11,8 @@ export interface ForumProfile extends ProfileFields {
   id: string;
   name: string;
   image: string | null;
+  /** Present only for a neutralized, deactivated public identity. */
+  identityKind?: "deleted";
   joinedAt: Date;
   role: { slug: string; displayName: string; isSystem: boolean };
   messageCount: number;

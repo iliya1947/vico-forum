@@ -16,6 +16,7 @@ import { action as sectionAction } from "../routes/section";
 import { action as topicAction } from "../routes/topic";
 import { ForumWriteRateLimitError } from "../../db/forum-write-policy";
 import { UserMeasureRestrictedError } from "../../db/user-measure-policy";
+import { AccountInactiveError, AccountMissingError } from "../../db/account-state";
 import { ForumAuthorizationError, ForumEntityNotFoundError, ForumStateConflictError } from "../../db/forum-repository";
 import {
   contentGenerationActionContext,
@@ -179,6 +180,7 @@ function writer() {
     createTopic: vi.fn(async () => ({ topicId: "server-topic" })),
     createReply: vi.fn(async () => ({ postId: "server-post" })),
     editPublishedPost: vi.fn(async () => undefined),
+    editOwnTopicTitle: vi.fn(async () => ({ id: "title-r2", originalContent: "New title", sourceLocale: "und" })),
     markTopicSolved: vi.fn(async () => undefined),
     selectBestAnswer: vi.fn(async () => ({ topicAuthorId: "session-user", isSolved: false })),
     setHelpSolutionModeration: vi.fn(async () => undefined),
@@ -201,6 +203,85 @@ function writer() {
     })),
   } satisfies ForumWriter;
 }
+
+describe("own topic title action", () => {
+  const fields = { intent: "editTopicTitle", title: " New <title> שלום ",
+    expectedRevisionId: "title-r1", editorActorId: "session-user" };
+  const permission = ["forum.topic.title.editOwn"] as const;
+  const submit = (database: ForumWriter, values = fields, permissions: readonly PermissionKey[] = permission,
+    authenticated = true, origin = "https://forum.example") => topicAction({
+    request: request("/en/topics/topic-1", values, origin), params: { locale: "en", topicId: "topic-1" },
+    context: context(database, authenticated, permissions),
+  });
+
+  it("uses the session actor and route target, preserving title text and private response", async () => {
+    const database = writer();
+    const result = await submit(database);
+    expect(database.editOwnTopicTitle).toHaveBeenCalledWith({
+      topicId: "topic-1", actorId: "session-user", expectedRevisionId: "title-r1", title: "New <title> שלום",
+    });
+    expect(result).toMatchObject({ data: { operation: "topicTitleEdit", ok: true, revisionId: "title-r2" },
+      init: { headers: { "Cache-Control": "private, no-store" } } });
+  });
+
+  it.each([
+    [false, permission, "https://forum.example", 401],
+    [true, permission, "https://evil.example", 403],
+    [true, ["forum.post.editOwn", "forum.sourceLocale.correctAny", "forum.topic.create"], "https://forum.example", 403],
+  ] as const)("denies guest/origin/unrelated capabilities (%s)", async (authenticated, permissions, origin, status) => {
+    const database = writer();
+    expect(await submit(database, fields, permissions, authenticated, origin)).toMatchObject({ init: { status } });
+    expect(database.editOwnTopicTitle).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    [{ ...fields, title: "   " }, 400], [{ ...fields, title: "a\u0000b" }, 400],
+    [{ ...fields, expectedRevisionId: "" }, 400], [{ ...fields, editorActorId: "" }, 400],
+    [{ ...fields, editorActorId: "other-account" }, 409],
+    [{ ...fields, operationScope: "any" }, 400], [{ ...fields, sourceLocale: "en" }, 400],
+  ])("rejects invalid or stale input before writing", async (values, status) => {
+    const database = writer();
+    expect(await submit(database, values)).toMatchObject({ init: { status } });
+    expect(database.editOwnTopicTitle).not.toHaveBeenCalled();
+  });
+
+  it.each(["intent", "title", "expectedRevisionId", "editorActorId"])("rejects duplicate %s, including a hidden second intent", async (field) => {
+    const database = writer();
+    const form = new FormData();
+    Object.entries(fields).forEach(([key, value]) => form.append(key, value));
+    form.append(field, field === "intent" ? "reply" : "ambiguous");
+    const result = await topicAction({ request: new Request("https://forum.example/en/topics/topic-1", {
+      method: "POST", headers: { Origin: "https://forum.example" }, body: form,
+    }), params: { locale: "en", topicId: "topic-1" }, context: context(database, true, permission) });
+    expect(result).toMatchObject({ init: { status: 400 } });
+    expect(database.editOwnTopicTitle).not.toHaveBeenCalled();
+    expect(database.createReply).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    [new ForumAuthorizationError(), 403], [new UserMeasureRestrictedError("posts.edit"), 403],
+    [new AccountInactiveError(), 401], [new ForumEntityNotFoundError(), 404],
+    [new ForumStorageUnavailableError(), 503],
+  ])("maps authoritative writer failures without success", async (error, status) => {
+    const database = writer();
+    database.editOwnTopicTitle.mockRejectedValueOnce(error);
+    expect(await submit(database)).toMatchObject({ init: { status } });
+  });
+
+  it("returns the current original title for a stale revision, without retrying", async () => {
+    const database = writer();
+    database.editOwnTopicTitle.mockRejectedValueOnce(new ForumStateConflictError());
+    const value = context(database, true, permission);
+    value.set(forumReaderContext, { readTopicPage: async () => ({
+      ...generationTopic, authorId: "session-user", title: { id: "current-r3", originalContent: "Current title", sourceLocale: "en" },
+    }) } as never);
+    const result = await topicAction({ request: request("/en/topics/topic-1", fields),
+      params: { locale: "en", topicId: "topic-1" }, context: value });
+    expect(result).toMatchObject({ data: { operation: "topicTitleEdit", error: "conflict",
+      currentTitle: { id: "current-r3", originalContent: "Current title" } }, init: { status: 409 } });
+    expect(database.editOwnTopicTitle).toHaveBeenCalledTimes(1);
+  });
+});
 
 describe("lossless initial publication bodies", () => {
   it.each(["section", "help", "reply"])("preserves Markdown source through the %s action", async (kind) => {
@@ -367,6 +448,29 @@ describe("forum write route actions", () => {
     expect(crossOrigin.pinTopic).not.toHaveBeenCalled();
   });
 
+  it("maps late pin/unpin lifecycle rejection to private 401 without success redirect", async () => {
+    for (const intent of ["pinTopic", "unpinTopic"] as const) {
+      for (const error of [new AccountInactiveError(), new AccountMissingError()]) {
+        const w = writer();
+        vi.mocked(w[intent]).mockRejectedValueOnce(error);
+        const result = await topicAction({
+          request: request("/en/topics/t", { intent }),
+          params: { locale: "en", topicId: "t" },
+          context: context(w, true, ["forum.topic.pin"]),
+        });
+        expect(result).toMatchObject({
+          data: { error: "unauthenticated" },
+          init: { status: 401, headers: { "Cache-Control": "private, no-store" } },
+        });
+        expect(result).not.toBeInstanceOf(Response);
+        expect(JSON.stringify(result)).not.toMatch(/AccountInactive|AccountMissing|deactivated|Location/);
+        expect(w[intent]).toHaveBeenCalledExactlyOnceWith({
+          topicId: "t", actorId: "session-user",
+        });
+      }
+    }
+  });
+
   it("advances only the authenticated user's topic read state", async () => {
     const forumWriter = writer();
     await topicAction({
@@ -378,6 +482,27 @@ describe("forum write route actions", () => {
       userId: "session-user",
       topicId: "t",
       postId: "post-3",
+    });
+  });
+
+  it("maps late markTopicRead inactive/missing admission to private 401 without ok success", async () => {
+    const forumWriter = writer();
+    for (const error of [new AccountInactiveError(), new AccountMissingError()]) {
+      vi.mocked(forumWriter.advanceTopicReadState).mockRejectedValueOnce(error);
+      const response = await topicAction({
+        request: request("/en/topics/t", { intent: "markTopicRead", postId: "post-3" }),
+        params: { locale: "en", topicId: "t" },
+        context: context(forumWriter),
+      });
+      expect(response).toMatchObject({
+        data: { error: "unauthenticated" },
+        init: { status: 401, headers: { "Cache-Control": "private, no-store" } },
+      });
+      expect(JSON.stringify(response)).not.toMatch(/"ok":true|AccountInactive|AccountMissing|deactivated/);
+    }
+    expect(forumWriter.advanceTopicReadState).toHaveBeenCalledTimes(2);
+    expect(forumWriter.advanceTopicReadState).toHaveBeenLastCalledWith({
+      userId: "session-user", topicId: "t", postId: "post-3",
     });
   });
 
@@ -707,6 +832,34 @@ describe("forum write route actions", () => {
     expect(JSON.stringify(response)).not.toContain("forum write cooldown is active");
   });
 
+  it("keeps canonical solution Own/Any late lifecycle denial private, with no false confirmation redirect", async () => {
+    for (const intent of ["markSolved", "selectBestAnswer"] as const) {
+      for (const scope of ["own", "any"] as const) {
+        for (const error of [new AccountInactiveError(), new AccountMissingError()]) {
+          const w = writer();
+          const fn = intent === "markSolved" ? w.markTopicSolved : w.selectBestAnswer;
+          fn.mockRejectedValueOnce(error);
+          const result = await topicAction({
+            request: request("/en/topics/topic-1", {
+              intent, postId: "post-2", operationScope: scope, actorId: "forged",
+            }),
+            params: { locale: "en", topicId: "topic-1" },
+            context: context(w, true, ["forum.solution.manageOwn", "forum.solution.manageAny"]),
+          });
+          expect(result).toMatchObject({
+            data: { error: "unauthenticated" },
+            init: { status: 401, headers: { "Cache-Control": "private, no-store" } },
+          });
+          expect(result).not.toBeInstanceOf(Response);
+          expect(JSON.stringify(result)).not.toMatch(/AccountInactive|AccountMissing|deactivated|solutionPrompt|Location|ok.true/);
+          expect(fn).toHaveBeenCalledWith(expect.objectContaining({
+            topicId: "topic-1", actorId: "session-user", scope,
+          }));
+        }
+      }
+    }
+  });
+
   it("derives solution scope from server permissions and ignores forged authorization fields", async () => {
     const ownWriter = writer();
     await topicAction({
@@ -815,6 +968,108 @@ describe("forum write route actions", () => {
     });
     expect(invalid).toMatchObject({ data: { error: "invalid" }, init: { status: 400 } });
     expect(missingReason.setHelpSolutionModeration).not.toHaveBeenCalled();
+  });
+
+  it("maps all five duplicate/appeal intents to private late lifecycle 401 for the trusted actor", async () => {
+    const commands = [
+      { intent: "confirmHelpDuplicate", method: "confirmHelpDuplicate", fields: { originalTopicId: "help-original" } },
+      { intent: "removeHelpDuplicate", method: "removeHelpDuplicate", fields: { expectedRelationshipId: "rel-1" } },
+      { intent: "appealHelpDuplicate", method: "appealHelpDuplicate", fields: { expectedRelationshipId: "rel-1", explanation: "Not a duplicate" } },
+      { intent: "acceptHelpDuplicateAppeal", method: "resolveHelpDuplicateAppeal", fields: { expectedAppealId: "appeal-1" } },
+      { intent: "rejectHelpDuplicateAppeal", method: "resolveHelpDuplicateAppeal", fields: { expectedAppealId: "appeal-1" } },
+    ] as const;
+    for (const command of commands) {
+      for (const error of [new AccountInactiveError(), new AccountMissingError()]) {
+        const w = writer();
+        w[command.method].mockRejectedValueOnce(error);
+        const result = await topicAction({
+          request: request("/en/topics/help-duplicate", {
+            intent: command.intent, ...command.fields, actorId: "forged",
+          }),
+          params: { locale: "en", topicId: "help-duplicate" },
+          context: context(w, true, command.intent === "appealHelpDuplicate"
+            ? [] : ["forum.helpDuplicate.manage"]),
+        });
+        expect(result).toMatchObject({
+          data: { error: "unauthenticated" },
+          init: { status: 401, headers: { "Cache-Control": "private, no-store" } },
+        });
+        expect(result).not.toBeInstanceOf(Response);
+        expect(JSON.stringify(result)).not.toMatch(/AccountInactive|AccountMissing|deactivated|Location|ok.true/);
+        expect(w[command.method]).toHaveBeenCalledWith(expect.objectContaining({
+          actorId: "session-user",
+        }));
+      }
+    }
+  });
+
+  it("maps all three Help moderation late AccountState denials to private 401", async () => {
+    for (const intent of ["markSolutionNeedsReview", "markSolutionOutdated", "clearSolutionModeration"] as const) {
+      for (const error of [new AccountInactiveError(), new AccountMissingError()]) {
+        const w = writer();
+        w.setHelpSolutionModeration.mockRejectedValueOnce(error);
+        const result = await topicAction({
+          request: request("/en/topics/help-question", {
+            intent, expectedBestAnswerPostId: "answer-1",
+            ...(intent === "markSolutionOutdated" ? { outdatedReason: "No longer safe" } : {}),
+            actorId: "forged",
+          }),
+          params: { locale: "en", topicId: "help-question" },
+          context: context(w, true, ["forum.solution.manageAny"]),
+        });
+        expect(result).toMatchObject({
+          data: { error: "unauthenticated" },
+          init: { status: 401, headers: { "Cache-Control": "private, no-store" } },
+        });
+        expect(result).not.toBeInstanceOf(Response);
+        expect(JSON.stringify(result)).not.toMatch(/AccountInactive|AccountMissing|deactivated|Location|ok.true/);
+        expect(w.setHelpSolutionModeration).toHaveBeenCalledWith(expect.objectContaining({
+          actorId: "session-user", expectedBestAnswerPostId: "answer-1",
+        }));
+      }
+    }
+  });
+
+  it("maps all four late Help signal AccountState denials to private 401 without false redirect", async () => {
+    for (const intent of ["submitHelpSignal", "withdrawHelpSignal", "acceptHelpSignal", "rejectHelpSignal"] as const) {
+      for (const error of [new AccountInactiveError(), new AccountMissingError()]) {
+        const w = writer();
+        const method = intent === "submitHelpSignal"
+          ? w.createHelpSignal
+          : intent === "withdrawHelpSignal"
+            ? w.withdrawHelpSignal : w.resolveHelpSignal;
+        method.mockRejectedValueOnce(error);
+        const ctx = context(w, true, ["forum.helpSignal.create", "forum.helpNeedsDetails.manage"]);
+        if (intent === "acceptHelpSignal" || intent === "rejectHelpSignal") {
+          ctx.set(forumReaderContext, {
+            readHelpSignal: vi.fn(async () => ({
+              id: "signal-1", kind: "needs-details", topicId: "help-question",
+              targetPostId: null, proposedOriginalTopicId: null,
+              submittedByUserId: "other-user", explanation: "Explain this",
+              status: "pending", createdAt: new Date(),
+              resolvedByUserId: null, resolvedAt: null,
+            })),
+          } as never);
+        }
+        const result = await topicAction({
+          request: request("/en/topics/help-question", {
+            intent, kind: "needs-details", explanation: "Missing details",
+            signalId: "signal-1", actorId: "forged",
+          }),
+          params: { locale: "en", topicId: "help-question" },
+          context: ctx,
+        });
+        expect(result).toMatchObject({
+          data: { error: "unauthenticated" },
+          init: { status: 401, headers: { "Cache-Control": "private, no-store" } },
+        });
+        expect(result).not.toBeInstanceOf(Response);
+        expect(JSON.stringify(result)).not.toMatch(/AccountInactive|AccountMissing|deactivated|Location|ok.true/);
+        expect(method).toHaveBeenCalledWith(expect.objectContaining({
+          actorId: "session-user",
+        }));
+      }
+    }
   });
 
   it("routes Help signals through their exact server permissions", async () => {
@@ -1545,6 +1800,7 @@ describe("forum write route actions", () => {
       requester: { name: "body-requester", version: "v1", limit: 20 },
     };
     const capability = new DefaultContentGenerationActionCapability({
+      admission: { assertAllowed: vi.fn(async () => {}) },
       pseudonymizer: { pseudonymize: vi.fn(async () => ({
         actorKind: "authenticated" as const,
         keyVersion: "v1",

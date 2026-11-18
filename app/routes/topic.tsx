@@ -29,6 +29,7 @@ import { TopicView } from "../forum/views";
 import { ForumStorageUnavailableError } from "../../db/hyperdrive-forum";
 import type { ForumTopicReadState } from "../../db/forum-repository";
 import { HELP_SOLUTIONS_SERVICE_SECTION_ID } from "../../db/forum-identifiers";
+import { DELETED_USER_NAME } from "../../db/public-identity";
 
 export { topicAction as action } from "../forum/actions.server";
 
@@ -49,8 +50,18 @@ export const loader = forumReadLoader(async function loader({ params, context }:
   params: { locale?: string; topicId?: string };
   context: RouterContextProvider;
 }) {
-  const topic = await forumReaderForRequest(context).readTopicPage(params.topicId ?? "");
-  if (!topic) throw new Response("Not Found", { status: 404 });
+  const loaded = await forumReaderForRequest(context).readTopicPage(params.topicId ?? "");
+  if (!loaded) throw new Response("Not Found", { status: 404 });
+  // The repository already projects deleted authors; mask again at the public route boundary.
+  const topic = loaded.authorIdentityKind === "deleted"
+    || loaded.posts.some((post) => post.authorIdentityKind === "deleted")
+    ? {
+        ...loaded,
+        authorName: loaded.authorIdentityKind === "deleted" ? DELETED_USER_NAME : loaded.authorName,
+        posts: loaded.posts.map((post) => post.authorIdentityKind === "deleted"
+          ? { ...post, authorName: DELETED_USER_NAME, authorImage: null } : post),
+      }
+    : loaded;
 
   const resolvedLocale = context.get(localeContext);
   const loadedRegistry = await registryForRequest(context);
@@ -103,6 +114,7 @@ export const loader = forumReadLoader(async function loader({ params, context }:
   let correctablePostIds: string[] = [];
   let editablePostIds: string[] = [];
   let canReadPostHistory = false;
+  let canEditOwnTitle = false;
   let canSubmitComplaint = false;
   let canUploadAttachments = false;
   let topicReadState: ForumTopicReadState | null = null;
@@ -115,7 +127,7 @@ export const loader = forumReadLoader(async function loader({ params, context }:
 
     try {
       const resolver = authorizationForRequest(context).forUser(session.user.id);
-      const [reply, solutionAny, solutionOwn, duplicateManage, sourceAny, sourceOwn, generate, pin, closure, editOwn, historyRead, complaintCreate] = await Promise.all([
+      const [reply, solutionAny, solutionOwn, duplicateManage, sourceAny, sourceOwn, generate, pin, closure, editOwn, historyRead, complaintCreate, titleEditOwn] = await Promise.all([
         resolver.has("forum.reply.create"),
         resolver.has("forum.solution.manageAny"),
         resolver.has("forum.solution.manageOwn"),
@@ -128,8 +140,10 @@ export const loader = forumReadLoader(async function loader({ params, context }:
         resolver.has("forum.post.editOwn"),
         resolver.has("forum.post.history.read"),
         resolver.has("forum.complaint.create"),
+        resolver.has("forum.topic.title.editOwn"),
       ]);
       canReply = reply;
+      canEditOwnTitle = titleEditOwn && topic.authorId === session.user.id;
       editablePostIds = editOwn ? topic.posts.filter((post) => post.authorId === session.user.id).map((post) => post.id) : [];
       canReadPostHistory = historyRead;
       canSubmitComplaint = complaintCreate;
@@ -158,6 +172,7 @@ export const loader = forumReadLoader(async function loader({ params, context }:
     canSubmitComplaint=canSubmitComplaint && !restricted.has("complaints.submit");
     canGenerateTranslations=canGenerateTranslations && !restricted.has("translations.generate");
     if(restricted.has("posts.edit"))editablePostIds=[];
+    if (restricted.has("posts.edit")) canEditOwnTitle = false;
     canUploadAttachments=!restricted.has("attachments.upload");
   }
 
@@ -234,6 +249,7 @@ export const loader = forumReadLoader(async function loader({ params, context }:
     canUseAdminPanel,
     correctablePostIds,
     editablePostIds,
+    canEditOwnTitle,
     canReadPostHistory,
     canSubmitComplaint,
     topicReadState,

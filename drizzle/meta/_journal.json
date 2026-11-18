@@ -442,6 +442,41 @@
       "when": 1794240000000,
       "tag": "0062_owner_monitoring_foundation",
       "breakpoints": true
+    },
+    {
+      "idx": 63,
+      "version": "7",
+      "when": 1794326400000,
+      "tag": "0063_owner_attempt_telemetry",
+      "breakpoints": true
+    },
+    {
+      "idx": 64,
+      "version": "7",
+      "when": 1794403200000,
+      "tag": "0064_sa03_profile_history_indexes",
+      "breakpoints": true
+    },
+    {
+      "idx": 65,
+      "version": "7",
+      "when": 1794429000000,
+      "tag": "0065_sa04_account_state_foundation",
+      "breakpoints": true
+    },
+    {
+      "idx": 66,
+      "version": "7",
+      "when": 1794830400000,
+      "tag": "0066_sa06_native_monitor_indexes",
+      "breakpoints": true
+    },
+    {
+      "idx": 67,
+      "version": "7",
+      "when": 1794958021719,
+      "tag": "0067_topic_title_edit_own",
+      "breakpoints": true
     }
   ]
 }

@@ -5,6 +5,7 @@ import { forumWriterContext } from "../forum/request-context";
 import { ForumStorageUnavailableError, type ForumWriter } from "../../db/hyperdrive-forum";
 import { action, loader, headers } from "./presence";
 import { UserPrivacyAccountMissingError } from "../../db/user-privacy";
+import { AccountInactiveError } from "../../db/account-state";
 
 function setup(userId: string | null = "owner") {
   const context = new RouterContextProvider();
@@ -67,6 +68,21 @@ describe("authenticated online presence heartbeat", () => {
     const env = setup();
     env.recordOnlinePresence.mockRejectedValueOnce(new UserPrivacyAccountMissingError("stale"));
     await expect(action({ request: ping(), context: env.context })).rejects.toMatchObject({ status: 409 });
+  });
+  it("rejects an inactive session actor with a private generic conflict and no lifecycle disclosure", async () => {
+    const env = setup("inactive-user");
+    env.recordOnlinePresence.mockRejectedValueOnce(new AccountInactiveError());
+    try {
+      await action({ request: ping(), context: env.context });
+      throw new Error("Expected rejection");
+    } catch (error) {
+      expect(error).toBeInstanceOf(Response);
+      const response = error as Response;
+      expect(response.status).toBe(409);
+      expect(response.headers.get("Cache-Control")).toBe("no-store");
+      expect(await response.text()).toBe("Conflict");
+      expect(env.recordOnlinePresence).toHaveBeenCalledExactlyOnceWith("inactive-user");
+    }
   });
   it("classifies storage outages but preserves unexpected defects", async () => {
     const env = setup();

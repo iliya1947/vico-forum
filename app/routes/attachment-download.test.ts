@@ -3,6 +3,8 @@ import { describe, expect, it, vi } from "vitest";
 import { authSessionContext, type AuthSession } from "../auth/request-context";
 import { forumAttachmentStoreContext, privateAttachmentBucketContext } from "../forum/attachment-request-context";
 import type { ForumAttachmentMetadata } from "../../db/forum-attachments";
+import { AccountInactiveError, AccountMissingError, AccountStateUnavailableError } from "../../db/account-state";
+import { ForumAttachmentStorageUnavailableError } from "../../db/hyperdrive-forum-attachments";
 import { loader } from "./attachment-download";
 import routes from "../routes";
 
@@ -88,6 +90,53 @@ describe("controlled attachment read", () => {
     const owner = setup("alice");
     expect((await run(owner.context, `/api/attachments/file/${attachmentId}?operation=${draftId}&context=help%3Anew`)).status).toBe(200);
     expect(owner.readDraftAttachment).toHaveBeenCalledWith("alice", "help:new", draftId, attachmentId);
+  });
+
+  it.each([AccountInactiveError, AccountMissingError])(
+    "denies private file access with no-store 401 before any bucket GET (%s)",
+    async ErrorClass => {
+      const env = setup("alice");
+      env.readDraftAttachment.mockRejectedValueOnce(new ErrorClass());
+      const result = await run(env.context,
+        `/api/attachments/file/${attachmentId}?operation=${draftId}&context=help%3Anew`);
+      expect(result.status).toBe(401);
+      expect(result.headers.get("Cache-Control")).toBe("private, no-store");
+      expect(result.headers.get("X-Content-Type-Options")).toBe("nosniff");
+      expect(await result.text()).toBe("");
+      expect(env.get).not.toHaveBeenCalled();
+      expect(env.readPublishedAttachment).not.toHaveBeenCalled();
+    },
+  );
+
+  it.each([AccountStateUnavailableError, ForumAttachmentStorageUnavailableError])(
+    "classifies private read unavailability as a safe no-store 503 (%s)",
+    async ErrorClass => {
+      const env = setup("alice");
+      env.readDraftAttachment.mockRejectedValueOnce(new ErrorClass());
+      const result = await run(env.context,
+        `/api/attachments/file/${attachmentId}?operation=${draftId}&context=help%3Anew`);
+      expect(result.status).toBe(503);
+      expect(result.headers.get("Cache-Control")).toBe("private, no-store");
+      expect(await result.text()).toBe("");
+      expect(env.get).not.toHaveBeenCalled();
+    },
+  );
+
+  it("propagates unexpected private read failures without storage access; public post branch remains independent", async () => {
+    const privateEnv = setup("alice");
+    privateEnv.readDraftAttachment.mockRejectedValueOnce(new Error("unexpected private read"));
+    await expect(run(privateEnv.context,
+      `/api/attachments/file/${attachmentId}?operation=${draftId}&context=help%3Anew`))
+      .rejects.toThrow("unexpected private read");
+    expect(privateEnv.get).not.toHaveBeenCalled();
+
+    const publicEnv = setup();
+    publicEnv.readDraftAttachment.mockRejectedValueOnce(new AccountInactiveError());
+    const result = await run(publicEnv.context, `/api/attachments/file/${attachmentId}?post=${postId}`);
+    expect(result.status).toBe(200);
+    expect(publicEnv.readPublishedAttachment).toHaveBeenCalledOnce();
+    expect(publicEnv.readDraftAttachment).not.toHaveBeenCalled();
+    expect(publicEnv.get).toHaveBeenCalledOnce();
   });
 
   it("returns not-found for revoked references and unavailable for missing storage, without success-shaped bytes", async () => {

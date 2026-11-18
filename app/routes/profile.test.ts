@@ -3,10 +3,12 @@ import { RouterContextProvider } from "react-router";
 import { describe, expect, it, vi } from "vitest";
 import { authSessionContext, type AuthSession } from "../auth/request-context";
 import { forumReaderContext, forumWriterContext } from "../forum/request-context";
-import type { ForumReader } from "../../db/forum-repository";
+import { ForumEntityNotFoundError, type ForumReader } from "../../db/forum-repository";
 import { ForumStorageUnavailableError, type ForumWriter } from "../../db/hyperdrive-forum";
 import { UserMeasureRestrictedError } from "../../db/user-measure-policy";
+import { AccountInactiveError, AccountMissingError } from "../../db/account-state";
 import { userMeasureContext } from "../measures/request-context";
+import { authorizationContext, authorizationOwnerContext } from "../authorization/request-context";
 import { action, loader } from "./profile";
 
 const profile = { id: "owner", name: "Owner", image: null, joinedAt: new Date("2026-09-01"), bio: "", githubUrl: null, websiteUrl: null,
@@ -19,6 +21,8 @@ function setup(userId: string | null = "owner") {
   context.set(forumReaderContext, { readProfile } as unknown as ForumReader);
   context.set(forumWriterContext, { updateProfile } as unknown as ForumWriter);
   context.set(userMeasureContext, {activeRestrictions:async()=>[]} as never);
+  context.set(authorizationOwnerContext, undefined);
+  context.set(authorizationContext, {forUser: () => ({has: async () => false})} as never);
   return { context, readProfile, updateProfile };
 }
 function request(fields: Record<string, string> = {}, origin: string | null = "https://forum.test") {
@@ -35,10 +39,40 @@ describe("profile route", () => {
       const env = setup(userId);
       env.readProfile.mockResolvedValue({ ...profile, email: "private@example.test", permissions: ["private"] } as typeof profile);
       const result = await loader({ params, request: new Request("https://forum.test/en/users/owner?edit=1"), context: env.context });
-      expect(result.editing).toBe(userId === "owner");
-      expect(result.profile.joinedAt).toBe("2026-09-01T00:00:00.000Z");
-      expect(JSON.stringify(result)).not.toContain("private");
+      expect(result.data.editing).toBe(userId === "owner");
+      expect(result.data.profile.joinedAt).toBe("2026-09-01T00:00:00.000Z");
+      expect(JSON.stringify(result.data)).not.toContain("private");
+      expect(result.data.privileged).toEqual({});
+      expect(result.init?.headers).toMatchObject({"Cache-Control":"private, no-store"});
     }
+  });
+  it("serializes only neutralized inactive public profile fields, preserving canonical ID and statistics", async () => {
+    const env = setup(null);
+    env.readProfile.mockResolvedValue({
+      ...profile, identityKind: "deleted", name: "Deleted user",
+      image: null, bio: "", githubUrl: null, websiteUrl: null,
+      messageCount: 9, bestAnswerCount: 3,
+      deactivatedByUserId: "PRIVATE_DEACTIVATION_ACTOR",
+      email: "PRIVATE_USER_EMAIL",
+      originalName: "PRIVATE_ORIGINAL_NAME",
+      originalImage: "PRIVATE_ORIGINAL_AVATAR",
+      originalBio: "PRIVATE_ORIGINAL_BIO",
+      originalGithubUrl: "PRIVATE_ORIGINAL_GITHUB",
+      originalWebsiteUrl: "PRIVATE_ORIGINAL_WEBSITE",
+    } as typeof profile);
+    const result = await loader({
+      params, request: new Request("https://forum.test/en/users/owner"), context: env.context,
+    });
+    expect(env.readProfile).toHaveBeenCalledExactlyOnceWith("owner");
+    expect(result.data.profile).toEqual({
+      id: "owner", identityKind: "deleted", name: "Deleted user",
+      image: null, bio: "", githubUrl: null, websiteUrl: null,
+      joinedAt: "2026-09-01T00:00:00.000Z",
+      role: profile.role, messageCount: 9, bestAnswerCount: 3,
+    });
+    expect(result.data.privileged).toEqual({});
+    expect(result.init?.headers).toMatchObject({ "Cache-Control": "private, no-store" });
+    expect(JSON.stringify(result.data)).not.toMatch(/PRIVATE_DEACTIVATION_ACTOR|PRIVATE_USER_EMAIL|PRIVATE_ORIGINAL_/);
   });
   it("suppresses public profile editing on an active measure but retains private own status access",async()=>{
     const env=setup("owner");
@@ -46,8 +80,8 @@ describe("profile route", () => {
     const result=await loader({
       params,request:new Request("https://forum.test/en/users/owner?edit=1"),context:env.context,
     });
-    expect(result).toMatchObject({isOwner:true,canEditProfile:false,editing:false});
-    expect(JSON.stringify(result)).not.toContain("profile.edit");
+    expect(result.data).toMatchObject({isSelf:true,canEditProfile:false,editing:false});
+    expect(JSON.stringify(result.data)).not.toContain("profile.edit");
   });
   it("returns 404 for missing users, 503 for availability, and preserves unexpected errors", async () => {
     const env = setup();
@@ -86,7 +120,23 @@ describe("profile route", () => {
       request: new Request("https://forum.test/en/users/owner"),
       params, context: setup(null).context,
     });
-    expect(publicPage.profile.bio).toBe("");
+    expect(publicPage.data.profile.bio).toBe("");
+  });
+  it("returns generic private 401 for late inactive/missing actors without false saved redirect or lifecycle details", async () => {
+    const env = setup();
+    for (const error of [new AccountInactiveError(), new AccountMissingError()]) {
+      env.updateProfile.mockRejectedValueOnce(error);
+      const response = await action({ request: request({ bio: "PRIVATE_NEW_PROFILE_BIO" }), params, context: env.context });
+      expect(response).not.toBeInstanceOf(Response);
+      expect(response).toMatchObject({
+        data: { error: "unauthenticated" },
+        init: { status: 401, headers: { "Cache-Control": "private, no-store" } },
+      });
+      expect(JSON.stringify(response)).not.toMatch(/PRIVATE_NEW_PROFILE_BIO|AccountInactive|AccountMissing|deactivated|saved=1/);
+    }
+    expect(env.updateProfile).toHaveBeenCalledTimes(2);
+    env.updateProfile.mockRejectedValueOnce(new ForumEntityNotFoundError("user does not exist"));
+    expect(status(await action({ request: request(), params, context: env.context }))).toBe(404);
   });
   it("preserves draft on invalid input and transient storage failures; rethrows bugs", async () => {
     const env = setup();

@@ -3,6 +3,7 @@ import { AUTHORIZATION_MANAGE_PERMISSION, isPermissionKey, type PermissionKey } 
 import { canMutateAuthorization, isBoundOwner, ownerAwareEffectivePermissions, validOwnerUserId } from "../app/authorization/owner";
 import { BLOCK_MANAGE_PRIVILEGED_PERMISSION } from "./user-measure-authority";
 import { assertNoActiveUserMeasureRestrictionPg } from "./user-measure-policy";
+import { assertActiveAccountForMutation } from "./account-state";
 
 import { appendAuthorizationHistory, historyLabel, type AuthorizationHistoryChange, type HistoryRole } from "./admin-history";
 
@@ -360,6 +361,9 @@ export class PostgresAuthorizationRepository {
         "select id from authz_mutation_lock where id = 1 for update",
       );
       if (!lock.rows[0]) throw new AuthorizationNotFoundError("authorization mutation lock is missing");
+      // The shared authz mutex must precede the actor row lock. This same
+      // transaction retains both locks through the operation and History COMMIT.
+      await assertActiveAccountForMutation(client, actorId);
       if (!(await effectivePermission(client, actorId, AUTHORIZATION_MANAGE_PERMISSION, this.ownerUserId))) {
         throw new AuthorizationForbiddenError("actor cannot manage authorization");
       }

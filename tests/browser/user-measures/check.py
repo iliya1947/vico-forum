@@ -229,14 +229,14 @@ try:
 
         # AP-11 connected Users detail -> Owner canonical inline mutations -> History.
         # The manager's permitted targeted management snapshot remains read-only.
-        user_path = "/en/admin/users/" + quote(other_id, safe="")
-        document(other, user_path, 403)
+        legacy_user_path = "/en/admin/users/" + quote(other_id, safe="")
+        user_path = "/en/users/" + quote(other_id, safe="")
+        document(other, legacy_user_path, 403)
         set_manager_authz("deny")
-        document(manager, user_path)
+        document(manager, legacy_user_path)
+        assert manager.url.endswith(user_path), ("legacy canonical redirect", manager.url)
         expect(manager.locator("#authorization")).to_have_count(0)
-        expect(manager.locator("#admin-user-detail-heading")).to_have_count(1)
-        manager.locator(".profile-identity .admin-technical-details button").click()
-        assert other_id in manager.locator("main").inner_text()
+        expect(manager.locator("#profile-name")).to_have_count(1)
         document(manager, "/en/admin/authorization", 403)
         record("ap11-users-readonly-independent-of-authz-management")
 
@@ -1009,27 +1009,20 @@ try:
                     (subject, "/" + locale + "/account/measures", "own-list"),
                     (subject, "/" + locale + "/account/measures/" + first_id, "own-detail"),
                     (manager, "/" + locale + "/admin/measures/" + first_id, "admin-detail"),
-                    (manager, "/" + locale + "/admin/users/" + quote(other_id, safe=""), "users-detail"),
+                    (manager, "/" + locale + "/users/" + quote(other_id, safe=""), "users-detail"),
                     (manager, "/" + locale + "/admin/forum/topics/" + quote(topic_id, safe=""), "admin-topic"),
                 ):
                     document(page, path)
                     assert page.locator("html").get_attribute("dir") == direction
                     assert page.locator("html").get_attribute("lang") == locale
                     if name == "users-detail":
-                        heading = {
-                            "en": "User details",
-                            "ru": "Информация о пользователе",
-                            "he": "פרטי משתמש",
-                        }[locale]
-                        expect(page.locator("#admin-user-detail-heading")).to_have_text(heading)
+                        expect(page.locator("#profile-name")).to_have_count(1)
                         expect(page.locator("#authorization")).to_have_count(1)
                         expect(page.locator("#authorization form.admin-role-assignment")).to_have_count(0)
                         expect(page.locator("#authorization")).to_contain_text("User")
-                        expect(page.locator('.admin-forum-trail a[href="/' +
-                            locale + '/admin/users"]')).to_have_count(1)
-                        page.locator(".profile-identity .admin-technical-details button").click()
-                        assert other_id in page.locator(".profile-identity").inner_text()
-                        # Public identity is permitted, email and global authz directory are not.
+                        expect(page.locator(".profile-breadcrumb")).to_have_count(1)
+                        # Canonical public identity and permitted inline authorization are shown,
+                        # but private email and full authorization directory are not.
                         assert prefix + "-other@test.invalid" not in page.content()
                     if name == "admin-topic":
                         expect(page.locator("#admin-topic-heading h2")).to_have_text("AP10 acceptance topic")

@@ -1,7 +1,7 @@
 {
   "version": 1,
   "schema": "public",
-  "targetMigration": "0062_owner_monitoring_foundation",
+  "targetMigration": "0067_topic_title_edit_own",
   "tables": {
     "account": {
       "columns": [
@@ -238,6 +238,29 @@
       ],
       "indexes": [
         {
+          "name": "admin_history_actor_occurred_idx",
+          "unique": false,
+          "method": "btree",
+          "columns": [
+            {
+              "name": "actor_id",
+              "order": "asc",
+              "nulls": "last"
+            },
+            {
+              "name": "occurred_at",
+              "order": "desc",
+              "nulls": "last"
+            },
+            {
+              "name": "id",
+              "order": "desc",
+              "nulls": "last"
+            }
+          ],
+          "predicateSha256": null
+        },
+        {
           "name": "admin_history_order_idx",
           "unique": true,
           "method": "btree",
@@ -246,6 +269,70 @@
               "name": "position",
               "nulls": "last",
               "order": "desc"
+            }
+          ],
+          "predicateSha256": null
+        },
+        {
+          "name": "admin_history_signal_direct_review_idx",
+          "unique": false,
+          "method": "btree",
+          "columns": [
+            {
+              "name": null,
+              "nulls": "last",
+              "order": "asc"
+            },
+            {
+              "name": "target_id",
+              "nulls": "last",
+              "order": "asc"
+            }
+          ],
+          "predicateSha256": "661dbc7eaa4de4fcf11f2b226016301c4f2bd16949a25af7183f2c22fdbb1a0d"
+        },
+        {
+          "name": "admin_history_target_occurred_idx",
+          "unique": false,
+          "method": "btree",
+          "columns": [
+            {
+              "name": "target_type",
+              "order": "asc",
+              "nulls": "last"
+            },
+            {
+              "name": "target_id",
+              "order": "asc",
+              "nulls": "last"
+            },
+            {
+              "name": "occurred_at",
+              "order": "desc",
+              "nulls": "last"
+            },
+            {
+              "name": "id",
+              "order": "desc",
+              "nulls": "last"
+            }
+          ],
+          "predicateSha256": null
+        },
+        {
+          "name": "admin_history_timeline_idx",
+          "unique": false,
+          "method": "btree",
+          "columns": [
+            {
+              "name": "occurred_at",
+              "order": "desc",
+              "nulls": "last"
+            },
+            {
+              "name": "id",
+              "order": "desc",
+              "nulls": "last"
             }
           ],
           "predicateSha256": null
@@ -307,7 +394,7 @@
           "columns": [
             "key"
           ],
-          "definitionSha256": "33d905f654dfdcef87b5b5f5282d62795a8fa59537bd544d2518016b847aee07"
+          "definitionSha256": "ae0d36b2a23ceb4594d7f64bfe6b1bf0a8ace0a1d20955ca4c8a7037a82211d2"
         }
       ],
       "indexes": []
@@ -1544,6 +1631,29 @@
               "nulls": "last"
             }
           ]
+        },
+        {
+          "name": "forum_attachment_security_events_uploader_created_idx",
+          "unique": false,
+          "method": "btree",
+          "columns": [
+            {
+              "name": "uploaded_by_user_id",
+              "order": "asc",
+              "nulls": "last"
+            },
+            {
+              "name": "created_at",
+              "order": "desc",
+              "nulls": "last"
+            },
+            {
+              "name": "id",
+              "order": "desc",
+              "nulls": "last"
+            }
+          ],
+          "predicateSha256": null
         }
       ]
     },
@@ -2432,6 +2542,24 @@
             }
           ],
           "predicateSha256": "e3d203fa955b9b9a7b4e08203d6b02a137caca414badad096e5468f8e8cee9cc"
+        },
+        {
+          "name": "complaint_cases_target_all_idx",
+          "unique": false,
+          "method": "btree",
+          "columns": [
+            {
+              "name": "target_id",
+              "nulls": "last",
+              "order": "asc"
+            },
+            {
+              "name": "id",
+              "nulls": "last",
+              "order": "asc"
+            }
+          ],
+          "predicateSha256": null
         }
       ]
     },
@@ -2783,6 +2911,47 @@
               "name": "id",
               "nulls": "last",
               "order": "asc"
+            }
+          ],
+          "predicateSha256": null
+        },
+        {
+          "name": "complaint_events_actor_time_idx",
+          "unique": false,
+          "method": "btree",
+          "columns": [
+            {
+              "name": "actor_user_id",
+              "nulls": "last",
+              "order": "asc"
+            },
+            {
+              "name": "created_at",
+              "nulls": "last",
+              "order": "desc"
+            },
+            {
+              "name": "id",
+              "nulls": "last",
+              "order": "desc"
+            }
+          ],
+          "predicateSha256": null
+        },
+        {
+          "name": "complaint_events_time_idx",
+          "unique": false,
+          "method": "btree",
+          "columns": [
+            {
+              "name": "created_at",
+              "nulls": "last",
+              "order": "desc"
+            },
+            {
+              "name": "id",
+              "nulls": "last",
+              "order": "desc"
             }
           ],
           "predicateSha256": null
@@ -3219,6 +3388,24 @@
             }
           ],
           "predicateSha256": "d1c64e4b3f1c26a438f8363f0f7afe6caf0214549f847455c0d1a91bb43e3a8f"
+        },
+        {
+          "name": "complaint_targets_affected_idx",
+          "unique": false,
+          "method": "btree",
+          "columns": [
+            {
+              "name": "affected_author_id",
+              "nulls": "last",
+              "order": "asc"
+            },
+            {
+              "name": "id",
+              "nulls": "last",
+              "order": "asc"
+            }
+          ],
+          "predicateSha256": null
         }
       ]
     },
@@ -3620,6 +3807,47 @@
         }
       ],
       "indexes": [
+        {
+          "name": "duplicate_appeals_appellant_time_idx",
+          "unique": false,
+          "method": "btree",
+          "columns": [
+            {
+              "name": "appellant_user_id",
+              "nulls": "last",
+              "order": "asc"
+            },
+            {
+              "name": "created_at",
+              "nulls": "last",
+              "order": "desc"
+            },
+            {
+              "name": "id",
+              "nulls": "last",
+              "order": "desc"
+            }
+          ],
+          "predicateSha256": null
+        },
+        {
+          "name": "duplicate_appeals_time_idx",
+          "unique": false,
+          "method": "btree",
+          "columns": [
+            {
+              "name": "created_at",
+              "nulls": "last",
+              "order": "desc"
+            },
+            {
+              "name": "id",
+              "nulls": "last",
+              "order": "desc"
+            }
+          ],
+          "predicateSha256": null
+        },
         {
           "name": "forum_help_duplicate_appeals_pending_relationship_idx",
           "unique": true,
@@ -4135,6 +4363,88 @@
               "nulls": "last"
             }
           ]
+        },
+        {
+          "name": "help_signals_terminal_resolver_time_idx",
+          "unique": false,
+          "method": "btree",
+          "columns": [
+            {
+              "name": "resolved_by_user_id",
+              "nulls": "last",
+              "order": "asc"
+            },
+            {
+              "name": "resolved_at",
+              "nulls": "last",
+              "order": "desc"
+            },
+            {
+              "name": "id",
+              "nulls": "last",
+              "order": "desc"
+            }
+          ],
+          "predicateSha256": "6964339841fc70e86fd7d6453063737d37af904ec69c14d829526af7a34b816f"
+        },
+        {
+          "name": "help_signals_terminal_submitter_time_idx",
+          "unique": false,
+          "method": "btree",
+          "columns": [
+            {
+              "name": "submitted_by_user_id",
+              "nulls": "last",
+              "order": "asc"
+            },
+            {
+              "name": "resolved_at",
+              "nulls": "last",
+              "order": "desc"
+            },
+            {
+              "name": "id",
+              "nulls": "last",
+              "order": "desc"
+            }
+          ],
+          "predicateSha256": "6964339841fc70e86fd7d6453063737d37af904ec69c14d829526af7a34b816f"
+        },
+        {
+          "name": "help_signals_terminal_time_idx",
+          "unique": false,
+          "method": "btree",
+          "columns": [
+            {
+              "name": "resolved_at",
+              "nulls": "last",
+              "order": "desc"
+            },
+            {
+              "name": "id",
+              "nulls": "last",
+              "order": "desc"
+            }
+          ],
+          "predicateSha256": "6964339841fc70e86fd7d6453063737d37af904ec69c14d829526af7a34b816f"
+        },
+        {
+          "name": "help_signals_time_idx",
+          "unique": false,
+          "method": "btree",
+          "columns": [
+            {
+              "name": "created_at",
+              "nulls": "last",
+              "order": "desc"
+            },
+            {
+              "name": "id",
+              "nulls": "last",
+              "order": "desc"
+            }
+          ],
+          "predicateSha256": null
         }
       ]
     },
@@ -4532,7 +4842,49 @@
           "definitionSha256": "034bbcef06f90892ac7f451e98de55526605c5914cfe0e9e51ca0a95b2ac85fc"
         }
       ],
-      "indexes": []
+      "indexes": [
+        {
+          "name": "forum_post_revisions_author_time_idx",
+          "unique": false,
+          "method": "btree",
+          "columns": [
+            {
+              "name": "author_id",
+              "nulls": "last",
+              "order": "asc"
+            },
+            {
+              "name": "created_at",
+              "nulls": "last",
+              "order": "desc"
+            },
+            {
+              "name": "id",
+              "nulls": "last",
+              "order": "desc"
+            }
+          ],
+          "predicateSha256": null
+        },
+        {
+          "name": "forum_post_revisions_time_idx",
+          "unique": false,
+          "method": "btree",
+          "columns": [
+            {
+              "name": "created_at",
+              "nulls": "last",
+              "order": "desc"
+            },
+            {
+              "name": "id",
+              "nulls": "last",
+              "order": "desc"
+            }
+          ],
+          "predicateSha256": null
+        }
+      ]
     },
     "forum_posts": {
       "columns": [
@@ -5206,6 +5558,88 @@
               "nulls": "last"
             }
           ]
+        },
+        {
+          "name": "notification_actor_time_idx",
+          "unique": false,
+          "method": "btree",
+          "columns": [
+            {
+              "name": "actor_user_id",
+              "nulls": "last",
+              "order": "asc"
+            },
+            {
+              "name": "created_at",
+              "nulls": "last",
+              "order": "desc"
+            },
+            {
+              "name": "id",
+              "nulls": "last",
+              "order": "desc"
+            }
+          ],
+          "predicateSha256": "8daca4371ac07f746ff139f7743c6b5dee6d56c96516e767139ae0046cd2d55a"
+        },
+        {
+          "name": "notification_created_time_idx",
+          "unique": false,
+          "method": "btree",
+          "columns": [
+            {
+              "name": "created_at",
+              "nulls": "last",
+              "order": "desc"
+            },
+            {
+              "name": "id",
+              "nulls": "last",
+              "order": "desc"
+            }
+          ],
+          "predicateSha256": null
+        },
+        {
+          "name": "notification_read_time_idx",
+          "unique": false,
+          "method": "btree",
+          "columns": [
+            {
+              "name": "read_at",
+              "nulls": "last",
+              "order": "desc"
+            },
+            {
+              "name": "id",
+              "nulls": "last",
+              "order": "desc"
+            }
+          ],
+          "predicateSha256": "a86d061f482e230051b0366652a05c7854633134c5d6050a5c9c1f0f9a68a558"
+        },
+        {
+          "name": "notification_recipient_read_time_idx",
+          "unique": false,
+          "method": "btree",
+          "columns": [
+            {
+              "name": "recipient_user_id",
+              "nulls": "last",
+              "order": "asc"
+            },
+            {
+              "name": "read_at",
+              "nulls": "last",
+              "order": "desc"
+            },
+            {
+              "name": "id",
+              "nulls": "last",
+              "order": "desc"
+            }
+          ],
+          "predicateSha256": "a86d061f482e230051b0366652a05c7854633134c5d6050a5c9c1f0f9a68a558"
         }
       ]
     },
@@ -5684,7 +6118,49 @@
           "definitionSha256": "034bbcef06f90892ac7f451e98de55526605c5914cfe0e9e51ca0a95b2ac85fc"
         }
       ],
-      "indexes": []
+      "indexes": [
+        {
+          "name": "forum_topic_title_revisions_author_time_idx",
+          "unique": false,
+          "method": "btree",
+          "columns": [
+            {
+              "name": "author_id",
+              "nulls": "last",
+              "order": "asc"
+            },
+            {
+              "name": "created_at",
+              "nulls": "last",
+              "order": "desc"
+            },
+            {
+              "name": "id",
+              "nulls": "last",
+              "order": "desc"
+            }
+          ],
+          "predicateSha256": null
+        },
+        {
+          "name": "forum_topic_title_revisions_time_idx",
+          "unique": false,
+          "method": "btree",
+          "columns": [
+            {
+              "name": "created_at",
+              "nulls": "last",
+              "order": "desc"
+            },
+            {
+              "name": "id",
+              "nulls": "last",
+              "order": "desc"
+            }
+          ],
+          "predicateSha256": null
+        }
+      ]
     },
     "forum_topic_title_translations": {
       "columns": [
@@ -6158,6 +6634,363 @@
       ],
       "indexes": []
     },
+    "owner_attempt_patterns": {
+      "columns": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "nullable": false,
+          "defaultSha256": null
+        },
+        {
+          "name": "recording_epoch_start",
+          "type": "timestamp(3) with time zone",
+          "nullable": false,
+          "defaultSha256": null
+        },
+        {
+          "name": "admitted_at",
+          "type": "timestamp(3) with time zone",
+          "nullable": false,
+          "defaultSha256": "4b1d66350efe3913ebc4851cda50bbd44dd30a5f59bafb1c24c2edec4301816e"
+        },
+        {
+          "name": "pool",
+          "type": "text",
+          "nullable": false,
+          "defaultSha256": null
+        },
+        {
+          "name": "actor_user_id",
+          "type": "text",
+          "nullable": true,
+          "defaultSha256": null
+        },
+        {
+          "name": "network_ip",
+          "type": "inet",
+          "nullable": true,
+          "defaultSha256": null
+        },
+        {
+          "name": "network_quality",
+          "type": "text",
+          "nullable": false,
+          "defaultSha256": null
+        },
+        {
+          "name": "surface",
+          "type": "text",
+          "nullable": false,
+          "defaultSha256": null
+        },
+        {
+          "name": "operation",
+          "type": "text",
+          "nullable": false,
+          "defaultSha256": null
+        },
+        {
+          "name": "outcome",
+          "type": "text",
+          "nullable": false,
+          "defaultSha256": null
+        },
+        {
+          "name": "http_status",
+          "type": "integer",
+          "nullable": true,
+          "defaultSha256": null
+        },
+        {
+          "name": "direct_code",
+          "type": "text",
+          "nullable": true,
+          "defaultSha256": null
+        },
+        {
+          "name": "first_occurred_at",
+          "type": "timestamp(3) with time zone",
+          "nullable": false,
+          "defaultSha256": null
+        },
+        {
+          "name": "last_occurred_at",
+          "type": "timestamp(3) with time zone",
+          "nullable": false,
+          "defaultSha256": null
+        },
+        {
+          "name": "count",
+          "type": "bigint",
+          "nullable": false,
+          "defaultSha256": "6b86b273ff34fce19d6b804eff5a3f5747ada4eaa22f1d49c01e52ddb7875b4b"
+        },
+        {
+          "name": "saturated_count",
+          "type": "boolean",
+          "nullable": false,
+          "defaultSha256": "fcbcf165908dd18a9e49f7ff27810176db8e9f63b4352213741664245224f8aa"
+        }
+      ],
+      "primaryKeys": [
+        {
+          "name": "owner_attempt_patterns_pkey",
+          "columns": [
+            "id"
+          ]
+        }
+      ],
+      "uniqueConstraints": [
+        {
+          "name": "owner_attempt_patterns_epoch_identity_unique",
+          "columns": [
+            "recording_epoch_start",
+            "pool",
+            "actor_user_id",
+            "network_ip",
+            "network_quality",
+            "surface",
+            "operation",
+            "outcome",
+            "http_status",
+            "direct_code"
+          ],
+          "nullsNotDistinct": true
+        }
+      ],
+      "foreignKeys": [],
+      "checks": [
+        {
+          "name": "owner_attempt_patterns_counter_check",
+          "columns": [
+            "count",
+            "first_occurred_at",
+            "last_occurred_at"
+          ],
+          "definitionSha256": "7b7036eb972f9078b11b4e84984ae08c0a614a16a5078559a9eff62ef71d1ef7"
+        },
+        {
+          "name": "owner_attempt_patterns_epoch_check",
+          "columns": [
+            "recording_epoch_start"
+          ],
+          "definitionSha256": "5364eb5506eae157ed3cbbf85bef1413a282eabc333a1b71a8c79430bbaaf233"
+        },
+        {
+          "name": "owner_attempt_patterns_kind_check",
+          "columns": [
+            "direct_code",
+            "http_status",
+            "operation",
+            "outcome",
+            "surface"
+          ],
+          "definitionSha256": "a46dfc8a9e8e55b153718d5e5a800b8c73050f43559d3c046d9ccca45f880077"
+        },
+        {
+          "name": "owner_attempt_patterns_network_check",
+          "columns": [
+            "network_ip",
+            "network_quality"
+          ],
+          "definitionSha256": "c0d15cdba7bc7b9c5bf36f23d6b291126562be371424d1c0493839f050d7e12f"
+        },
+        {
+          "name": "owner_attempt_patterns_source_check",
+          "columns": [
+            "actor_user_id",
+            "network_ip",
+            "pool"
+          ],
+          "definitionSha256": "2e8eae2a9a07231c5568f0e18c8cb7801ba3bd7981244ea6d08eff3553a89882"
+        }
+      ],
+      "indexes": [
+        {
+          "name": "owner_attempt_patterns_actor_admitted_idx",
+          "unique": false,
+          "method": "btree",
+          "columns": [
+            {
+              "name": "actor_user_id",
+              "order": "asc",
+              "nulls": "last"
+            },
+            {
+              "name": "admitted_at",
+              "order": "desc",
+              "nulls": "last"
+            },
+            {
+              "name": "id",
+              "order": "desc",
+              "nulls": "last"
+            }
+          ],
+          "predicateSha256": null
+        },
+        {
+          "name": "owner_attempt_patterns_epoch_idx",
+          "unique": false,
+          "method": "btree",
+          "columns": [
+            {
+              "name": "recording_epoch_start",
+              "order": "asc",
+              "nulls": "last"
+            },
+            {
+              "name": "pool",
+              "order": "asc",
+              "nulls": "last"
+            }
+          ],
+          "predicateSha256": null
+        },
+        {
+          "name": "owner_attempt_patterns_timeline_idx",
+          "unique": false,
+          "method": "btree",
+          "columns": [
+            {
+              "name": "admitted_at",
+              "order": "desc",
+              "nulls": "last"
+            },
+            {
+              "name": "id",
+              "order": "desc",
+              "nulls": "last"
+            }
+          ],
+          "predicateSha256": null
+        }
+      ]
+    },
+    "owner_attempt_telemetry_state": {
+      "columns": [
+        {
+          "name": "recording_epoch_start",
+          "type": "timestamp(3) with time zone",
+          "nullable": false,
+          "defaultSha256": null
+        },
+        {
+          "name": "slot",
+          "type": "text",
+          "nullable": false,
+          "defaultSha256": null
+        },
+        {
+          "name": "admitted_at",
+          "type": "timestamp(3) with time zone",
+          "nullable": false,
+          "defaultSha256": "4b1d66350efe3913ebc4851cda50bbd44dd30a5f59bafb1c24c2edec4301816e"
+        },
+        {
+          "name": "used",
+          "type": "integer",
+          "nullable": false,
+          "defaultSha256": "5feceb66ffc86f38d952786c6d696c79c2dbc239dd4e91b46729d73a27fb57e9"
+        },
+        {
+          "name": "capacity",
+          "type": "integer",
+          "nullable": true,
+          "defaultSha256": null
+        },
+        {
+          "name": "first_occurred_at",
+          "type": "timestamp(3) with time zone",
+          "nullable": true,
+          "defaultSha256": null
+        },
+        {
+          "name": "last_occurred_at",
+          "type": "timestamp(3) with time zone",
+          "nullable": true,
+          "defaultSha256": null
+        },
+        {
+          "name": "count",
+          "type": "bigint",
+          "nullable": false,
+          "defaultSha256": "5feceb66ffc86f38d952786c6d696c79c2dbc239dd4e91b46729d73a27fb57e9"
+        },
+        {
+          "name": "saturated_count",
+          "type": "boolean",
+          "nullable": false,
+          "defaultSha256": "fcbcf165908dd18a9e49f7ff27810176db8e9f63b4352213741664245224f8aa"
+        }
+      ],
+      "primaryKeys": [
+        {
+          "name": "owner_attempt_telemetry_state_pk",
+          "columns": [
+            "recording_epoch_start",
+            "slot"
+          ]
+        }
+      ],
+      "uniqueConstraints": [],
+      "foreignKeys": [],
+      "checks": [
+        {
+          "name": "owner_attempt_telemetry_state_counter_check",
+          "columns": [
+            "count",
+            "first_occurred_at",
+            "last_occurred_at"
+          ],
+          "definitionSha256": "968f74a5dc797be4394080895fee27a896cc2fc2bfd1fc7a52413e5a5e1d69fa"
+        },
+        {
+          "name": "owner_attempt_telemetry_state_epoch_check",
+          "columns": [
+            "recording_epoch_start"
+          ],
+          "definitionSha256": "5364eb5506eae157ed3cbbf85bef1413a282eabc333a1b71a8c79430bbaaf233"
+        },
+        {
+          "name": "owner_attempt_telemetry_state_quota_check",
+          "columns": [
+            "capacity",
+            "slot",
+            "used"
+          ],
+          "definitionSha256": "02ecc91ed8391f8b6085d2b739dea730189949287f432a9d696c754a0118b5d0"
+        },
+        {
+          "name": "owner_attempt_telemetry_state_slot_check",
+          "columns": [
+            "slot"
+          ],
+          "definitionSha256": "7439e95936dd2aa2f868a3ff3678048f50debde48b2b869c36732535dc3f1348"
+        }
+      ],
+      "indexes": [
+        {
+          "name": "owner_attempt_telemetry_state_timeline_idx",
+          "unique": false,
+          "method": "btree",
+          "columns": [
+            {
+              "name": "admitted_at",
+              "order": "desc",
+              "nulls": "last"
+            },
+            {
+              "name": "slot",
+              "order": "asc",
+              "nulls": "last"
+            }
+          ],
+          "predicateSha256": null
+        }
+      ]
+    },
     "owner_events": {
       "columns": [
         {
@@ -6276,6 +7109,29 @@
           "predicateSha256": null
         },
         {
+          "name": "owner_events_actor_occurred_idx",
+          "unique": false,
+          "method": "btree",
+          "columns": [
+            {
+              "name": "actor_user_id",
+              "order": "asc",
+              "nulls": "last"
+            },
+            {
+              "name": "occurred_at",
+              "order": "desc",
+              "nulls": "last"
+            },
+            {
+              "name": "id",
+              "order": "desc",
+              "nulls": "last"
+            }
+          ],
+          "predicateSha256": null
+        },
+        {
           "name": "owner_events_entity_idx",
           "unique": false,
           "method": "btree",
@@ -6366,6 +7222,29 @@
           "predicateSha256": null
         },
         {
+          "name": "owner_events_scope_time_idx",
+          "unique": false,
+          "method": "btree",
+          "columns": [
+            {
+              "name": "monitor_key",
+              "nulls": "last",
+              "order": "asc"
+            },
+            {
+              "name": "occurred_at",
+              "nulls": "last",
+              "order": "desc"
+            },
+            {
+              "name": "id",
+              "nulls": "last",
+              "order": "desc"
+            }
+          ],
+          "predicateSha256": null
+        },
+        {
           "name": "owner_events_target_idx",
           "unique": false,
           "method": "btree",
@@ -6377,6 +7256,47 @@
             },
             {
               "name": "position",
+              "order": "desc",
+              "nulls": "last"
+            }
+          ],
+          "predicateSha256": null
+        },
+        {
+          "name": "owner_events_target_occurred_idx",
+          "unique": false,
+          "method": "btree",
+          "columns": [
+            {
+              "name": "target_user_id",
+              "order": "asc",
+              "nulls": "last"
+            },
+            {
+              "name": "occurred_at",
+              "order": "desc",
+              "nulls": "last"
+            },
+            {
+              "name": "id",
+              "order": "desc",
+              "nulls": "last"
+            }
+          ],
+          "predicateSha256": null
+        },
+        {
+          "name": "owner_events_timeline_idx",
+          "unique": false,
+          "method": "btree",
+          "columns": [
+            {
+              "name": "occurred_at",
+              "order": "desc",
+              "nulls": "last"
+            },
+            {
+              "name": "id",
               "order": "desc",
               "nulls": "last"
             }
@@ -6492,6 +7412,52 @@
               "name": "position",
               "order": "desc",
               "nulls": "last"
+            }
+          ],
+          "predicateSha256": null
+        },
+        {
+          "name": "owner_monitor_observations_timeline_idx",
+          "unique": false,
+          "method": "btree",
+          "columns": [
+            {
+              "name": "observed_at",
+              "order": "desc",
+              "nulls": "last"
+            },
+            {
+              "name": "id",
+              "order": "desc",
+              "nulls": "last"
+            }
+          ],
+          "predicateSha256": null
+        },
+        {
+          "name": "owner_observations_scope_time_idx",
+          "unique": false,
+          "method": "btree",
+          "columns": [
+            {
+              "name": "monitor_key",
+              "nulls": "last",
+              "order": "asc"
+            },
+            {
+              "name": "resource_scope",
+              "nulls": "last",
+              "order": "asc"
+            },
+            {
+              "name": "observed_at",
+              "nulls": "last",
+              "order": "desc"
+            },
+            {
+              "name": "id",
+              "nulls": "last",
+              "order": "desc"
             }
           ],
           "predicateSha256": null
@@ -7552,6 +8518,24 @@
           "type": "text",
           "nullable": true,
           "defaultSha256": null
+        },
+        {
+          "name": "deactivated_at",
+          "type": "timestamp with time zone",
+          "nullable": true,
+          "defaultSha256": null
+        },
+        {
+          "name": "deactivated_by_user_id",
+          "type": "text",
+          "nullable": true,
+          "defaultSha256": null
+        },
+        {
+          "name": "retain_at_least_until",
+          "type": "timestamp with time zone",
+          "nullable": true,
+          "defaultSha256": null
         }
       ],
       "primaryKeys": [
@@ -7572,7 +8556,17 @@
         }
       ],
       "foreignKeys": [],
-      "checks": [],
+      "checks": [
+        {
+          "name": "user_deactivation_state_check",
+          "columns": [
+            "deactivated_at",
+            "deactivated_by_user_id",
+            "retain_at_least_until"
+          ],
+          "definitionSha256": "a4f4c052ca3f6bcbeab2d64069c0cf611c0de75aeea74a8d27ec45cd097ce891"
+        }
+      ],
       "indexes": []
     },
     "user_measure_appeals": {
@@ -7755,6 +8749,111 @@
         }
       ],
       "indexes": [
+        {
+          "name": "measure_appeals_moot_measure_time_idx",
+          "unique": false,
+          "method": "btree",
+          "columns": [
+            {
+              "name": "measure_id",
+              "nulls": "last",
+              "order": "asc"
+            },
+            {
+              "name": "resolved_at",
+              "nulls": "last",
+              "order": "desc"
+            },
+            {
+              "name": "id",
+              "nulls": "last",
+              "order": "desc"
+            }
+          ],
+          "predicateSha256": "617975cebd5166d4275294a27e64fa9462bec9c264cff9b9a7947377393e9177"
+        },
+        {
+          "name": "measure_appeals_moot_subject_time_idx",
+          "unique": false,
+          "method": "btree",
+          "columns": [
+            {
+              "name": "subject_user_id",
+              "nulls": "last",
+              "order": "asc"
+            },
+            {
+              "name": "resolved_at",
+              "nulls": "last",
+              "order": "desc"
+            },
+            {
+              "name": "id",
+              "nulls": "last",
+              "order": "desc"
+            }
+          ],
+          "predicateSha256": "617975cebd5166d4275294a27e64fa9462bec9c264cff9b9a7947377393e9177"
+        },
+        {
+          "name": "measure_appeals_moot_time_idx",
+          "unique": false,
+          "method": "btree",
+          "columns": [
+            {
+              "name": "resolved_at",
+              "nulls": "last",
+              "order": "desc"
+            },
+            {
+              "name": "id",
+              "nulls": "last",
+              "order": "desc"
+            }
+          ],
+          "predicateSha256": "617975cebd5166d4275294a27e64fa9462bec9c264cff9b9a7947377393e9177"
+        },
+        {
+          "name": "measure_appeals_subject_time_idx",
+          "unique": false,
+          "method": "btree",
+          "columns": [
+            {
+              "name": "subject_user_id",
+              "nulls": "last",
+              "order": "asc"
+            },
+            {
+              "name": "created_at",
+              "nulls": "last",
+              "order": "desc"
+            },
+            {
+              "name": "id",
+              "nulls": "last",
+              "order": "desc"
+            }
+          ],
+          "predicateSha256": null
+        },
+        {
+          "name": "measure_appeals_time_idx",
+          "unique": false,
+          "method": "btree",
+          "columns": [
+            {
+              "name": "created_at",
+              "nulls": "last",
+              "order": "desc"
+            },
+            {
+              "name": "id",
+              "nulls": "last",
+              "order": "desc"
+            }
+          ],
+          "predicateSha256": null
+        },
         {
           "name": "user_measure_appeals_measure_created_idx",
           "unique": false,
@@ -8039,6 +9138,24 @@
         }
       ],
       "indexes": [
+        {
+          "name": "user_measures_lift_actor_idx",
+          "unique": false,
+          "method": "btree",
+          "columns": [
+            {
+              "name": "lifted_by_user_id",
+              "nulls": "last",
+              "order": "asc"
+            },
+            {
+              "name": "id",
+              "nulls": "last",
+              "order": "asc"
+            }
+          ],
+          "predicateSha256": "c245177452174e8f8d3cd07ad0393811dc0bd13ee42b47674e52f912c71566bd"
+        },
         {
           "name": "user_measures_target_created_idx",
           "unique": false,

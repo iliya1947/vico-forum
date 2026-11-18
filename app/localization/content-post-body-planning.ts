@@ -90,6 +90,7 @@ export interface ContentPostBodyPlanningStore {
     specification: ContentPostBodyTranslationTaskSpecification,
     expectedRevision: ContentTranslationRevision,
     requestBudgetAdmission: ContentTranslationRequestBudgetAdmission,
+    actorId: string,
   ): Promise<ContentPostBodyTaskUpsertResult>;
 }
 
@@ -112,7 +113,9 @@ export class ContentPostBodyTranslationPlanner {
     requestedRevision: ContentTranslationRevision,
     targetLocaleInput: string,
     requestBudgetAdmission: ContentTranslationRequestBudgetAdmission,
+    actorId: string,
   ): Promise<ContentPostBodyPlanningResult> {
+    requireNonBlank(actorId, "actorId");
     if (requestedRevision.contentType !== "post-body") {
       throw new TypeError("post-body translation planning requires a post-body revision");
     }
@@ -183,6 +186,7 @@ export class ContentPostBodyTranslationPlanner {
       specification,
       authoritativeRevision,
       requestBudgetAdmission,
+      actorId,
     );
     if (upserted.outcome === "revision-changed") {
       return original(targetLocale, "revision-not-current");

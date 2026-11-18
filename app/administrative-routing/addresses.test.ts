@@ -9,7 +9,8 @@ import { adminMeasuresPath, adminMeasurePath } from "../measures/paths";
 import { canonicalAuthorizationPath } from "../settings/paths";
 import { adminEntryPath } from "../settings/workspace-access";
 import { superAdminPath, superAdminMonitoringPath, superAdminSystemPath,
-  superAdminEventLogPath, superAdminMonitorHistoryPath, superAdminInfrastructurePath } from "../super-admin/paths";
+  superAdminEventLogPath, superAdminMonitorHistoryPath, superAdminInfrastructurePath,
+  superAdminAccountsPath, superAdminSecurityPath, superAdminAreaMonitorHistoryPath } from "../super-admin/paths";
 import { loader as underDevelopmentLoader } from "../routes/under-development";
 
 const alternate = createAdministrativeRouting(
@@ -67,6 +68,11 @@ describe("independent typed administrative destination families", () => {
     expect(superAdminInfrastructurePath("en")).toBe("/en/super-admin/infrastructure");
     expect(superAdminMonitoringPath("ru")).toBe("/ru/super-admin/monitoring");
     expect(superAdminSystemPath("ru")).toBe("/ru/super-admin/monitoring/system");
+    expect(superAdminAccountsPath("ru")).toBe("/ru/super-admin/monitoring/accounts");
+    expect(superAdminSecurityPath("he")).toBe("/he/super-admin/monitoring/security");
+    expect(superAdminAreaMonitorHistoryPath("he",
+      {area:"accounts",monitorKey:"accounts.sessions"},"v1.test")).toBe(
+      "/he/super-admin/monitoring/accounts/accounts.sessions/history?before=v1.test");
     expect(superAdminPath("en")).toBe("/en/super-admin");
   });
 
@@ -82,6 +88,11 @@ describe("independent typed administrative destination families", () => {
       .toBe("https://owner.invalid/en/control/monitoring/system/system.dependencies/history?before=cursor");
     expect(superAdminEventLogPath("en","cursor",alternate))
       .toBe("https://owner.invalid/en/control/events?before=cursor");
+    expect(superAdminAccountsPath("en",alternate)).toBe("https://owner.invalid/en/control/monitoring/accounts");
+    expect(superAdminSecurityPath("en",alternate)).toBe("https://owner.invalid/en/control/monitoring/security");
+    expect(superAdminAreaMonitorHistoryPath("en",
+      {area:"security",monitorKey:"security.attachments"},"v1.safe",alternate)).toBe(
+      "https://owner.invalid/en/control/monitoring/security/security.attachments/history?before=v1.safe");
   });
 
   it("uses request-scoped server routing and retains the static default in another request", () => {

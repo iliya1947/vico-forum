@@ -61,9 +61,10 @@ describe("ContentPostBodyTranslationPlanner", () => {
         sourceLocale: "en",
       }),
       "he",
-      budgetAdmission(),
+      budgetAdmission(), "planning-actor",
     );
 
+    expect(tasks.actors).toEqual(["planning-actor"]);
     expect(result).toMatchObject({
       kind: "queued",
       taskCreated: true,
@@ -100,7 +101,7 @@ describe("ContentPostBodyTranslationPlanner", () => {
       })),
     });
 
-    const result = await planner.planAndDispatch(bodyRevision({ sourceLocale: "und" }), "he", budgetAdmission());
+    const result = await planner.planAndDispatch(bodyRevision({ sourceLocale: "und" }), "he", budgetAdmission(), "planning-actor");
 
     expect(result).toMatchObject({
       kind: "queued",
@@ -132,7 +133,7 @@ describe("ContentPostBodyTranslationPlanner", () => {
         }),
     });
 
-    await expect(planner.planAndDispatch(revision, target, budgetAdmission())).resolves.toMatchObject({
+    await expect(planner.planAndDispatch(revision, target, budgetAdmission(), "planning-actor")).resolves.toMatchObject({
       kind: "original",
       taskCreated: false,
       reason,
@@ -159,7 +160,7 @@ describe("ContentPostBodyTranslationPlanner", () => {
     await expect(planner.planAndDispatch(
       bodyRevision({ originalContent: "forged prose must not be used", sourceLocale: "en" }),
       "he",
-      budgetAdmission(),
+      budgetAdmission(), "planning-actor",
     )).resolves.toEqual({
       kind: "original",
       taskCreated: false,
@@ -195,7 +196,7 @@ describe("ContentPostBodyTranslationPlanner", () => {
       providerCapability: new RoutedContentPostBodyProviderCapability(
         new TranslationProviderRouter([adapter]),
       ),
-    }).planAndDispatch(bodyRevision(), "he", budgetAdmission());
+    }).planAndDispatch(bodyRevision(), "he", budgetAdmission(), "planning-actor");
 
     expect(result.kind).toBe("queued");
     expect(supports).toHaveBeenCalled();
@@ -219,7 +220,7 @@ describe("ContentPostBodyTranslationPlanner", () => {
       tasks,
       enqueuer,
       providerCapability: { supports: () => false },
-    }).planAndDispatch(bodyRevision(), "he", budgetAdmission());
+    }).planAndDispatch(bodyRevision(), "he", budgetAdmission(), "planning-actor");
 
     expect(result).toMatchObject({ kind: "original", reason: "target-unsupported" });
     expect(tasks.specifications).toHaveLength(0);
@@ -243,7 +244,7 @@ describe("ContentPostBodyTranslationPlanner", () => {
     const enqueuer = new FakeTranslationTaskEnqueuer();
 
     const result = await plannerWith({ tasks, enqueuer })
-      .planAndDispatch(bodyRevision(), "he", budgetAdmission());
+      .planAndDispatch(bodyRevision(), "he", budgetAdmission(), "planning-actor");
 
     expect(result).toEqual({
       kind: "original",
@@ -274,7 +275,7 @@ describe("ContentPostBodyTranslationPlanner", () => {
     }]);
     const enqueuer = new FakeTranslationTaskEnqueuer();
     const result = await plannerWith({ tasks, translations: translation, enqueuer })
-      .planAndDispatch(revision, "he", budgetAdmission());
+      .planAndDispatch(revision, "he", budgetAdmission(), "planning-actor");
     expect(result.kind).toBe("queued");
     expect(tasks.specifications).toHaveLength(1);
     expect(enqueuer.messages).toHaveLength(1);
@@ -294,7 +295,7 @@ describe("ContentPostBodyTranslationPlanner", () => {
     }]);
 
     const result = await plannerWith({ tasks, translations })
-      .planAndDispatch(revision, "he", budgetAdmission());
+      .planAndDispatch(revision, "he", budgetAdmission(), "planning-actor");
 
     expect(result).toMatchObject({ kind: "original", reason: "translation-current" });
     expect(tasks.specifications).toHaveLength(0);
@@ -306,14 +307,14 @@ describe("ContentPostBodyTranslationPlanner", () => {
     await expect(
       plannerWith({
         tasks: new FakePostBodyPlanningStore(revision, unavailable),
-      }).planAndDispatch(revision, "he", budgetAdmission()),
+      }).planAndDispatch(revision, "he", budgetAdmission(), "planning-actor"),
     ).rejects.toBe(unavailable);
 
     const unexpected = new Error("programming failure");
     await expect(
       plannerWith({
         tasks: new FakePostBodyPlanningStore(revision, unexpected),
-      }).planAndDispatch(revision, "he", budgetAdmission()),
+      }).planAndDispatch(revision, "he", budgetAdmission(), "planning-actor"),
     ).rejects.toBe(unexpected);
   });
 
@@ -321,7 +322,7 @@ describe("ContentPostBodyTranslationPlanner", () => {
     const tasks = new FakePostBodyPlanningStore(bodyRevision({ revisionId: "post-a-r2" }));
 
     await expect(
-      plannerWith({ tasks }).planAndDispatch(bodyRevision(), "he", budgetAdmission()),
+      plannerWith({ tasks }).planAndDispatch(bodyRevision(), "he", budgetAdmission(), "planning-actor"),
     ).resolves.toMatchObject({
       kind: "original",
       reason: "revision-not-current",
@@ -337,7 +338,7 @@ describe("ContentPostBodyTranslationPlanner", () => {
     });
 
     await expect(
-      plannerWith({ tasks, enqueuer }).planAndDispatch(bodyRevision(), "he", budgetAdmission()),
+      plannerWith({ tasks, enqueuer }).planAndDispatch(bodyRevision(), "he", budgetAdmission(), "planning-actor"),
     ).rejects.toBe(failure);
     expect(tasks.specifications).toHaveLength(1);
   });
@@ -448,6 +449,7 @@ function bodyRevision(
 class FakePostBodyPlanningStore implements ContentPostBodyPlanningStore {
   readonly specifications: ContentPostBodyTranslationTaskSpecification[] = [];
   readonly admissions: ContentTranslationRequestBudgetAdmission[] = [];
+  readonly actors: string[] = [];
   private task?: ContentPostBodyTranslationTask;
 
   constructor(
@@ -463,9 +465,11 @@ class FakePostBodyPlanningStore implements ContentPostBodyPlanningStore {
     specification: ContentPostBodyTranslationTaskSpecification,
     _expectedRevision: ContentTranslationRevision,
     requestBudgetAdmission: ContentTranslationRequestBudgetAdmission,
+    actorId: string,
   ): Promise<ContentPostBodyTaskUpsertResult> {
     this.specifications.push(specification);
     this.admissions.push(requestBudgetAdmission);
+    this.actors.push(actorId);
     if (this.forcedResult instanceof Error) throw this.forcedResult;
     if (this.forcedResult) return this.forcedResult;
     if (!this.task) {

@@ -1,6 +1,7 @@
 import type { Pool, PoolClient } from "pg";
 import { describe, expect, it, vi } from "vitest";
 import { AuthorizationUnavailableError } from "./authorization-service";
+import { AccountStateUnavailableError, AccountStateUnexpectedError } from "./account-state";
 import { createHyperdriveAuthorization } from "./hyperdrive-authorization";
 
 const BEGIN_READ_SNAPSHOT = "BEGIN TRANSACTION ISOLATION LEVEL REPEATABLE READ READ ONLY";
@@ -142,5 +143,59 @@ describe("Hyperdrive authorization availability boundary", () => {
       effectivePermissions: ["forum.topic.create"],
     });
     expect(factory).toHaveBeenCalledTimes(2);
+  });
+
+  it("classifies bare and wrapped typed AccountState storage outage across every management writer", async () => {
+    const failures = [
+      new AccountStateUnavailableError(),
+      new Error("wrapper", { cause: new AccountStateUnavailableError() }),
+      new AccountStateUnavailableError({ cause: new Error("synthetic transport") }),
+    ];
+    for (const failure of failures) {
+      const capability = createHyperdriveAuthorization("postgresql://example.invalid/db", () =>
+        failure.message === "wrapper" ? rejectingConnectPool(failure) : poolWithClient(sql => {
+          if (sql === "begin" || sql === "rollback") return { rows: [], rowCount: 0 };
+          if (sql.startsWith("select id from authz_mutation_lock")) return { rows: [{ id: 1 }], rowCount: 1 };
+          throw failure;
+        }));
+      const operations = [
+        () => capability.createCustomRole("owner", { slug: "role", displayName: "Role" }),
+        () => capability.renameCustomRole("owner", "role-id", { displayName: "Role" }),
+        () => capability.replaceRoleGrants("owner", "role-id", []),
+        () => capability.deleteCustomRole("owner", "role-id"),
+        () => capability.assignUserRole("owner", "target", "role-id"),
+        () => capability.setUserOverride("owner", "target", "forum.topic.pin", "deny"),
+      ];
+      for (const operation of operations) {
+        await expect(operation()).rejects.toMatchObject({
+          name: "AuthorizationUnavailableError", cause: failure,
+        });
+      }
+    }
+  });
+
+  it("never converts unexpected lifecycle schema/tuple/programming faults into unavailable", async () => {
+    for (const failure of [
+      new AccountStateUnexpectedError(),
+      new Error("wrapper", { cause: new AccountStateUnexpectedError() }),
+      Object.assign(new Error("missing relation"), { code: "42P01" }),
+    ]) {
+      const capability = createHyperdriveAuthorization("postgresql://example.invalid/db", () =>
+        failure.message === "wrapper" ? rejectingConnectPool(failure) : poolWithClient(sql => {
+          if (sql === "begin" || sql === "rollback") return { rows: [], rowCount: 0 };
+          if (sql.startsWith("select id from authz_mutation_lock")) return { rows: [{ id: 1 }], rowCount: 1 };
+          throw failure;
+        }));
+      const result = capability.createCustomRole("owner", { slug: "role", displayName: "Role" });
+      if ("code" in failure && failure.code === "42P01") {
+        // The native AccountState boundary wraps an unknown SQL failure without
+        // reclassifying it as availability; the original SQL error stays in cause.
+        await expect(result).rejects.toMatchObject({
+          name: "AccountStateUnexpectedError", cause: failure,
+        });
+      } else {
+        await expect(result).rejects.toBe(failure);
+      }
+    }
   });
 });

@@ -5,19 +5,21 @@ import { useTranslation } from "react-i18next";
 import { ForumShell, Breadcrumbs } from "../forum/ui";
 import {
   superAdminPath, superAdminMonitoringPath, superAdminSystemPath, superAdminEventLogPath,
-  superAdminInfrastructurePath, superAdminMonitorHistoryPath,
+  superAdminInfrastructurePath, superAdminMonitorHistoryPath, superAdminAccountsPath, superAdminSecurityPath,
 } from "./paths";
-import type { SystemOverview, SystemMonitorState, OwnerTimelinePage, OwnerTimelineEntry } from "../../db/owner-system-monitoring";
+import type { SystemOverview, SystemMonitorState, OwnerTimelinePage } from "../../db/owner-system-monitoring";
 import type { SystemMonitorKey } from "../../db/owner-system-history";
+import type { OwnerHistoryPage } from "../../db/owner-sa02-history";
+import { HistoryEntry } from "./history-entry";
+import { useOwnerSnapshot } from "./owner-snapshot";
+import { NATIVE_AREAS } from "../../db/owner-monitor-catalog";
+import { nativeAreaLabels } from "./native-labels";
 
 const keys: Record<SystemMonitorKey, "superAdminRuntime" | "superAdminDatabase" | "superAdminRequests"> = {
   "system.runtime": "superAdminRuntime",
   "system.dependencies": "superAdminDatabase",
   "system.requests": "superAdminRequests",
 };
-const monitoringAreas = [
-  "superAdminAreaAccounts", "superAdminAreaSecurity", "superAdminAreaForum", "superAdminAreaLocalization", "superAdminAreaNotifications", "superAdminAreaFiles", "superAdminAreaAdministration", "superAdminAreaModeration", "superAdminAreaBackground", "superAdminAreaData", "superAdminAreaIntegrations"
-] as const;
 
 /** One Owner-only shell, reused across routes; a visible link never grants access. */
 export function SuperAdminShell({ locale, current, children }: {
@@ -91,51 +93,22 @@ export function SystemMonitorCards({locale,system}: {locale:string;system:System
 export function formatTime(value: string,locale:string) {
   return new Intl.DateTimeFormat(locale,{dateStyle:"medium",timeStyle:"medium",timeZone:"UTC"}).format(new Date(value));
 }
-export function Timeline({ page, locale, path }: {page:OwnerTimelinePage;locale:string;path:(before?:string)=>string}) {
+export function Timeline({ page, locale, path,viewerId }: {page:OwnerTimelinePage|OwnerHistoryPage;locale:string;path:(before?:string)=>string;viewerId?:string}) {
   const {t} = useTranslation("common");
+  const visible=useOwnerSnapshot(page,viewerId);
+  if(!visible)return null;
   return <section aria-labelledby="super-admin-timeline-heading">
     <h2 id="super-admin-timeline-heading">{t("superAdminHistory")}</h2>
-    <p>{t("superAdminTimelineCoverage")}</p>
+    <p>{t("superAdminTimelineCoverage")}</p><p>{t("sa08Utc")}</p>
+    {"coverage" in page?page.coverage?.filter(c=>BigInt(c.count)>0n).map(c=><p role="status" key={c.reason}>{t("sa06CoverageWarning")} <bdi>{new Intl.NumberFormat(locale).format(BigInt(c.count))}</bdi></p>):null}
     {page.entries.length === 0 ? <p className="empty-state">{t("superAdminNoHistory")}</p>
-      : <ol className="super-admin-timeline">{page.entries.map(entry=><li key={entry.origin+entry.id}>
-        <h3 dir="auto">{eventLabel(entry,t)}</h3>
-        <p><time dateTime={entry.occurredAt}>{formatTime(entry.occurredAt,locale)}</time>
-          <span> · </span><span dir="auto">{entry.source}</span>
-        </p>
-        {entry.quality ? <p>{t("superAdminQuality")}: <bdi>{entry.quality==="measured" ? t("superAdminQualityMeasured") : entry.quality}</bdi></p> : null}
-        <dl>{Object.entries(entry.values).map(([name,value])=><div key={name}>
-          <dt dir="auto">{name}</dt><dd dir="auto">{String(value)}</dd>
-        </div>)}</dl>
-      </li>)}</ol>}
+      : <ol className="super-admin-timeline">{page.entries.map(entry=>
+        <HistoryEntry key={entry.origin+":"+entry.id} entry={entry} locale={locale}/>)}</ol>}
     <nav aria-label={t("historyPaging")} className="admin-history-paging">
       <Link to={path()}>{t("historyNewest")}</Link>
       {page.next ? <Link to={path(page.next)}>{t("historyOlder")}</Link> : null}
     </nav>
   </section>;
-}
-function eventLabel(entry:OwnerTimelineEntry,t:(key:string)=>string) {
-  if(entry.origin==="system-observation") return t("superAdminObservedEvent");
-  if(entry.origin==="admin-history") return t("superAdminAdminEvent") + ": " + entry.kind;
-  return entry.kind;
-}
-export function SuperAdminOverview({locale,system,recent}: {locale:string;system:SystemOverview;recent:OwnerTimelinePage}) {
-  const {t}=useTranslation("common");
-  const routing = useAdministrativeRouting();
-  return <SuperAdminShell locale={locale} current="overview">
-    <section aria-labelledby="super-admin-overview-heading" className="admin-overview">
-      <h2 id="super-admin-overview-heading">{t("superAdminOverview")}</h2>
-      <p>{t("superAdminIntro")}</p>
-      {system.recording==="unavailable" ? <p role="status">{t("superAdminRecordingUnavailable")}</p> : null}
-      <SystemMonitorCards locale={locale} system={system}/>
-      <p><Link to={superAdminSystemPath(locale,routing)}>{t("superAdminAllMonitors")}</Link></p>
-      <h2>{t("superAdminEvents")}</h2>
-      <ul className="super-admin-recent">{recent.entries.map(event=><li key={event.origin+event.id}>
-        <bdi>{event.kind}</bdi> — <time dateTime={event.occurredAt}>{formatTime(event.occurredAt,locale)}</time>
-      </li>)}</ul>
-      {recent.entries.length===0 ? <p>{t("superAdminNoHistory")}</p>:null}
-      <Link to={superAdminEventLogPath(locale,undefined,routing)}>{t("superAdminAllEvents")}</Link>
-    </section>
-  </SuperAdminShell>;
 }
 export function SuperAdminMonitoringIndex({locale}: {locale:string}) {
   const {t}=useTranslation("common");
@@ -144,9 +117,16 @@ export function SuperAdminMonitoringIndex({locale}: {locale:string}) {
     <section aria-labelledby="super-admin-monitoring-heading" className="admin-overview">
       <h2 id="super-admin-monitoring-heading">{t("superAdminMonitoring")}</h2>
       <Link className="admin-destination" to={superAdminSystemPath(locale,routing)}>{t("superAdminSystem")}</Link>
-      <p>{t("superAdminAreasLater")}</p>
+      <Link className="admin-destination" to={superAdminAccountsPath(locale,routing)}>{t("superAdminAreaAccounts")}</Link>
+      <Link className="admin-destination" to={superAdminSecurityPath(locale,routing)}>{t("superAdminAreaSecurity")}</Link>
+      <Link className="admin-destination" to={routing.superAdmin.background(locale)}>{t("superAdminAreaBackground")}</Link>
+      <Link className="admin-destination" to={routing.superAdmin.localization(locale)}>{t("superAdminAreaLocalization")}</Link>
+      <Link className="admin-destination" to={routing.superAdmin.integrations(locale)}>{t("superAdminAreaIntegrations")}</Link>
+      <Link className="admin-destination" to={routing.superAdmin.data(locale)}>{t("superAdminAreaData")}</Link>
+      <Link className="admin-destination" to={routing.superAdmin.files(locale)}>{t("superAdminAreaFiles")}</Link>
+      {NATIVE_AREAS.map(area=><Link key={area} className="admin-destination" to={routing.superAdmin.nativeArea(locale,area)}>{t(nativeAreaLabels[area])}</Link>)}
+      <p>{t("sa07IInfrastructureNote")}</p>
       <ul className="super-admin-pending-areas">
-        {monitoringAreas.map(area=><li key={area}><bdi>{t(area)}</bdi> <span>{t("adminInDevelopment")}</span></li>)}
         <li><bdi>{t("superAdminInfrastructure")}</bdi> <span>{t("superAdminStage6")}</span></li>
       </ul>
     </section>

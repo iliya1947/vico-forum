@@ -88,7 +88,8 @@ def actor(browser, name, signup=True, password=old_password):
     # sign-ins into one IP rate-limit bucket. Production rate limiting stays enabled.
     ip_octets = {"alice": 41, "alice-2": 42, "alice-3": 43,
                  "alice-4": 44, "bob": 45, "google-only": 46,
-                 "throttle": 47, "throttle-2": 48}
+                 "throttle": 47, "throttle-2": 48,
+                 "lifecycle": 49, "lifecycle-2": 50, "lifecycle-control": 51}
     client_ip = "203.0.113." + str(ip_octets[name])
     ctx = browser.new_context(
         viewport={"width": 1280, "height": 900},
@@ -97,7 +98,8 @@ def actor(browser, name, signup=True, password=old_password):
     )
     guarded(ctx)
     account_name = "alice" if name in ("alice-2", "alice-3", "alice-4") else (
-        "throttle" if name == "throttle-2" else name)
+        "throttle" if name == "throttle-2" else (
+        "lifecycle" if name == "lifecycle-2" else name))
     email = prefix + "-" + account_name + "@test.invalid"
     fields = {"email": email, "password": password}
     if signup:
@@ -362,11 +364,129 @@ try:
         assert allowed.status == 200, (allowed.status, allowed.text()[:140])
         record("shared-canonical-and-settings-password-rate-limit-retry-and-client-isolation")
 
+        # SA04-I5d: actual built Worker + BA 1.7.7 + PG17 + Chromium lifecycle
+        # acceptance. The deactivation is fixture-only, not an SA05 UI/action.
+        lifecycle_ctx, lifecycle, lifecycle_id, _ = actor(browser, "lifecycle")
+        second_ctx, second, second_id, _ = actor(
+            browser, "lifecycle-2", signup=False)
+        control_ctx, control, control_id, _ = actor(browser, "lifecycle-control")
+        assert lifecycle_id == second_id and control_id != lifecycle_id
+        lifecycle_sid = session_id(lifecycle_id, "lifecycle")
+        second_sid = session_id(lifecycle_id, "lifecycle-2")
+        still_signed_in(lifecycle)
+        still_signed_in(second)
+        still_signed_in(control)
+        expect(lifecycle.locator(".settings-account-sessions li")).to_have_count(2)
+        expect(second.locator(".settings-account-sessions li")).to_have_count(2)
+        expect(second.locator(".auth-sign-out")).to_have_count(1)
+        expect(lifecycle.locator(".settings-account-form")).to_have_count(1)
+        original_sessions = sql(
+            'select id, token, expires_at, updated_at from "session" '
+            'where user_id=$1 order by id', [lifecycle_id])
+        assert {row["id"] for row in original_sessions} == {
+            lifecycle_sid, second_sid}
+        original_accounts = sql(
+            "select id, password, access_token, refresh_token, id_token "
+            "from account where user_id=$1 order by id", [lifecycle_id])
+        secrets = [value for row in original_sessions + original_accounts
+                   for key, value in row.items()
+                   if key in ("token", "password", "access_token",
+                              "refresh_token", "id_token") and value]
+        record("lifecycle-two-real-mounted-sessions-and-unrelated-active-account")
+
+        changed = sql(
+            'update "user" set deactivated_at=now(), '
+            'deactivated_by_user_id=$2, '
+            'retain_at_least_until=now() + interval \'2 years\' '
+            'where id=$1 and deactivated_at is null returning id',
+            [lifecycle_id, control_id])
+        assert changed == [{"id": lifecycle_id}], changed
+
+        # An already-mounted page is deliberately kept stale. New document and
+        # framework data requests independently re-enter the server auth gate.
+        for label, ctx in (("first", lifecycle_ctx), ("second", second_ctx)):
+            for suffix in ("", ".data"):
+                response = ctx.request.get(
+                    base + "/en/settings/account" + suffix, max_redirects=0)
+                assert response.status == 401, (label, suffix, response.status)
+                directives = {item.strip().lower() for item in
+                              response.headers.get("cache-control", "").split(",")}
+                assert {"private", "no-store"} <= directives, (
+                    label, suffix, response.headers)
+                body = response.text()
+                assert "settings-account-form" not in body, (label, suffix)
+                assert "settings-account-sessions" not in body, (label, suffix)
+                assert all(secret not in body for secret in secrets), (label, suffix)
+        assert sql(
+            'select id, token, expires_at, updated_at from "session" '
+            'where user_id=$1 order by id', [lifecycle_id]) == original_sessions
+        assert sql(
+            "select id, password, access_token, refresh_token, id_token "
+            "from account where user_id=$1 order by id",
+            [lifecycle_id]) == original_accounts
+        still_signed_in(control)
+        record("lifecycle-both-retained-cookies-denied-document-data-private-and-no-store")
+
+        # Submit the password form that was mounted before deactivation through
+        # React Router, not a synthetic direct call or reconstructed form body.
+        lifecycle.locator("#settings-current-password").fill(old_password)
+        lifecycle.locator("#settings-new-password").fill(new_password)
+        with lifecycle.expect_response(
+            lambda response: response.request.method == "POST"
+            and "/en/settings/account" in response.url
+        ) as submitted:
+            lifecycle.get_by_role("button", name="Change password").click()
+        refused = submitted.value
+        assert refused.status == 401, (refused.status, refused.url)
+        assert {"private", "no-store"} <= {
+            item.strip().lower() for item in
+            refused.headers.get("cache-control", "").split(",")
+        }
+        assert all(secret not in refused.text() for secret in secrets)
+        assert sql(
+            "select id, password, access_token, refresh_token, id_token "
+            "from account where user_id=$1 order by id",
+            [lifecycle_id]) == original_accounts
+        assert sql(
+            'select id, token, expires_at, updated_at from "session" '
+            'where user_id=$1 order by id', [lifecycle_id]) == original_sessions
+        still_signed_in(control)
+        record("lifecycle-mounted-password-form-denied-without-protected-mutation")
+
+        # The other stale tab still has its real header Sign out control.
+        # Accepted inactive cleanup deletes only its own signed current session.
+        assert second_ctx.cookies()
+        with second.expect_response(
+            lambda response: response.request.method == "POST"
+            and "/api/auth/sign-out" in response.url
+        ) as signout:
+            second.locator(".auth-sign-out").click()
+        signed_out = signout.value
+        assert signed_out.status == 200, (signed_out.status, signed_out.url)
+        assert not [cookie for cookie in second_ctx.cookies()
+                    if "session_token" in cookie["name"]]
+        retained = sql('select id from "session" where user_id=$1',
+                       [lifecycle_id])
+        assert retained == [{"id": lifecycle_sid}], retained
+        remaining = lifecycle_ctx.request.get(
+            base + "/en/settings/account", max_redirects=0)
+        assert remaining.status == 401 and all(
+            secret not in remaining.text() for secret in secrets)
+        assert {"private", "no-store"} <= {
+            item.strip().lower() for item in
+            remaining.headers.get("cache-control", "").split(",")
+        }
+        public = lifecycle_ctx.request.get(base + "/en", max_redirects=0)
+        assert public.status == 200, (public.status, public.text()[:120])
+        still_signed_in(control)
+        record("lifecycle-stale-ui-own-signout-only-other-retained-denied-public-read")
+
         assert not page_errors, page_errors
         assert not external, external
         record("no-browser-errors-and-no-external-requests")
         for ctx in (guest_context, alice_ctx, a2_ctx, a3_ctx, a4_ctx,
-                    bob_ctx, google_ctx, throttle_ctx, other_ctx):
+                    bob_ctx, google_ctx, throttle_ctx, other_ctx,
+                    lifecycle_ctx, second_ctx, control_ctx):
             ctx.close()
         browser.close()
 finally:

@@ -1,3 +1,4 @@
+import { withOperationalFacts,type OwnerOperationalFactSink } from "../observability/operational-facts";
 import type {
   TranslationTaskEnqueuer,
   TranslationTaskFailureDisposition,
@@ -92,11 +93,14 @@ export class TranslationTaskReconciler {
   constructor(
     private readonly tasks: TranslationTaskReconciliationStore,
     private readonly enqueuer: TranslationTaskEnqueuer,
+    private readonly operational?:OwnerOperationalFactSink,
   ) {}
 
   async reconcile(
     query: TranslationTaskReconciliationQuery,
   ): Promise<TranslationTaskReconciliationResult> {
+    return withOperationalFacts(this.operational, async facts => {
+    const runId=crypto.randomUUID();
     validateTranslationTaskReconciliationQuery(query);
     const candidates = await this.tasks.reserveReconciliationCandidates(query);
 
@@ -117,7 +121,7 @@ export class TranslationTaskReconciler {
       }
     }
 
-    return {
+    const result:TranslationTaskReconciliationResult = {
       outcome: enqueueFailures === 0 ? "complete" : "partial-failure",
       selected: candidates.length,
       enqueued,
@@ -125,6 +129,9 @@ export class TranslationTaskReconciler {
       pending,
       expiredProcessing,
     };
+    facts.capturePass(runId,new Date().toISOString().replace("Z","000Z"),result);
+    return result;
+    });
   }
 
   observe(): Promise<TranslationTaskObservabilitySnapshot> {

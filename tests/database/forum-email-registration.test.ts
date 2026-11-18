@@ -44,6 +44,9 @@ beforeAll(async () => {
   await migrator.connect();
   try {
     await migrator.query(sql);
+    const stateMigration = (await readFile("drizzle/0065_sa04_account_state_foundation.sql", "utf8"))
+      .replaceAll("--> statement-breakpoint", "");
+    await migrator.query(stateMigration);
     await installRegistrationPolicyFixture(migrator);
   } finally { await migrator.end(); }
 });

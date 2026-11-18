@@ -10,6 +10,7 @@ import { ComplaintConflictError, ComplaintForbiddenError, ComplaintInputError, C
 import { complaintId, complaintReason } from "../../db/complaints-domain";
 import { ComplaintStorageUnavailableError } from "../../db/hyperdrive-complaints";
 import { UserMeasureRestrictedError } from "../../db/user-measure-policy";
+import { AccountInactiveError, AccountMissingError } from "../../db/account-state";
 
 const privateHeaders = { "Cache-Control": "private, no-store" };
 export function headers({ actionHeaders }: { actionHeaders: Headers }): Headers {
@@ -71,6 +72,7 @@ export async function action({ request, params, context }: {
     });
     return data<ComplaintSubmissionResponse>({ ok:true, operationId }, { headers:privateHeaders });
   } catch (error) {
+    if (error instanceof AccountInactiveError || error instanceof AccountMissingError) return failure("unauthenticated",401);
     if (error instanceof ComplaintInputError) return failure("invalid",400);
     if (error instanceof ComplaintForbiddenError || error instanceof UserMeasureRestrictedError) return failure("forbidden",403);
     if (error instanceof ComplaintNotFoundError) return failure("notFound",404);

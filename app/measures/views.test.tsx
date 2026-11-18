@@ -14,7 +14,7 @@ import {
 } from "../settings/administrator-preferences";
 import type { UserMeasureDetail, UserMeasureSummary } from "../../db/user-measure-read";
 import { AdminMeasuresIndex, AdminMeasureDetail, OwnMeasuresIndex, OwnMeasureDetail,
-  selectedMeasureExpiry } from "./views";
+  GroupedMeasures, selectedMeasureExpiry } from "./views";
 import { measureShouldRevalidate } from "./revalidation";
 
 const id="10000000-0000-4000-8000-000000000001";
@@ -100,6 +100,15 @@ describe("AP-10 private measure views and administrative choices",()=>{
     expect(sections.every(node=>node.querySelector("h2")?.textContent?.includes("(1)"))).toBe(true);
     expect(root.textContent).not.toContain("measuresStatusActive");
     expect(root.querySelector('bdi[dir="auto"]')?.textContent).toContain("Reason");
+  });
+
+  it.each(["en","ru","he"])("SA03-MIRA-01 keeps Admin heading layout but routes Owner-self detail to own page in %s",locale=>{
+    const root=mount(locale,<GroupedMeasures measures={[base]} locale={locale} admin detailRoute="own"/>);
+    expect(root.querySelector("section h4")).not.toBeNull();
+    expect(root.querySelector("section h2")).toBeNull();
+    expect(root.querySelector("section ol a")).toHaveAttribute(
+      "href","/"+locale+"/account/measures/"+id);
+    expect(root.querySelector('a[href*="/admin/measures/"]')).toBeNull();
   });
 
   it.each(["en","ru","he"])("uses tri-state localized group controls without sending parent keys in %s",locale=>{

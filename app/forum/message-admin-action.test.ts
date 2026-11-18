@@ -137,6 +137,64 @@ describe("AP-07 canonical message action transport", () => {
     });
   });
 
+  it("SA04-H allowlists history .data and masks malformed deleted author without losing revision content", async () => {
+    const denied = makeEnv([]);
+    const deniedRead = denied.readPostHistory;
+    expect(await run(denied, request(history))).toMatchObject({
+      init: { status: 403, headers: privateHeaders },
+    });
+    expect(deniedRead).not.toHaveBeenCalled();
+
+    const e = makeEnv(["forum.post.history.read"]);
+    e.readPostHistory.mockResolvedValueOnce([
+      {
+        id: "old", authorId: "retained-author", authorName: "SECRET_RETAINED_HISTORY_NAME",
+        authorIdentityKind: "deleted", originalContent: "Unmodified **private**\\nשלום", sourceLocale: "he",
+        createdAt: new Date("2026-10-03T03:04:05Z"),
+        email: "SECRET_EMAIL", image: "SECRET_IMAGE", deactivatedAt: "SECRET_LIFECYCLE",
+        deactivatedByUserId: "SECRET_DEACTIVATOR", retainAtLeastUntil: "SECRET_RETENTION",
+        extra: "SECRET_UNEXPECTED",
+      },
+      {
+        id: "new", authorId: "active-author", authorName: "Active editor",
+        originalContent: "Active source", sourceLocale: "en",
+        createdAt: new Date("2026-10-04T03:04:05Z"),
+      },
+    ] as never);
+    const response = await run(e, request(history));
+    expect(response).toMatchObject({
+      init: { status: 200, headers: privateHeaders },
+      data: {
+        operation: "postHistory", postId: "post/עברית",
+        revisions: [
+          { id: "old", authorId: "retained-author", authorName: "Deleted user",
+            authorIdentityKind: "deleted", originalContent: "Unmodified **private**\\nשלום",
+            sourceLocale: "he", createdAt: "2026-10-03T03:04:05.000Z" },
+          { id: "new", authorId: "active-author", authorName: "Active editor",
+            originalContent: "Active source", sourceLocale: "en",
+            createdAt: "2026-10-04T03:04:05.000Z" },
+        ],
+      },
+    });
+    const actual = (response as { data: { revisions: unknown[] } }).data.revisions;
+    expect(actual[0]).toEqual({
+      id: "old", authorId: "retained-author", authorName: "Deleted user",
+      authorIdentityKind: "deleted", originalContent: "Unmodified **private**\\nשלום",
+      sourceLocale: "he", createdAt: "2026-10-03T03:04:05.000Z",
+    });
+    expect(actual[1]).toEqual({
+      id: "new", authorId: "active-author", authorName: "Active editor",
+      originalContent: "Active source", sourceLocale: "en",
+      createdAt: "2026-10-04T03:04:05.000Z",
+    });
+    const serialized = JSON.stringify(response);
+    for (const secret of ["SECRET_RETAINED_HISTORY_NAME", "SECRET_EMAIL", "SECRET_IMAGE",
+      "SECRET_LIFECYCLE", "SECRET_DEACTIVATOR", "SECRET_RETENTION", "SECRET_UNEXPECTED"]) {
+      expect(serialized).not.toContain(secret);
+    }
+    expect(e.readPostHistory).toHaveBeenCalledExactlyOnceWith("post/עברית", "topic/עברית");
+  });
+
   it("rejects stale actor, cross-origin and typed history reader outages without sending revision bodies", async () => {
     const e = makeEnv(["forum.post.history.read"]);
     for (const req of [

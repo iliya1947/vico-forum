@@ -1,4 +1,6 @@
 import { isPostgresQueryTimeout } from "../../db/postgres-deadlines";
+import { AccountStateUnavailableError } from "../../db/account-state";
+import type { ContentGenerationAdmission } from "./request-context";
 import {
   ContentTranslationRequestBudgetStorageUnavailableError,
   validateContentTranslationRequestBudgetAdmission,
@@ -68,6 +70,7 @@ export interface ContentGenerationActionCapability {
 }
 
 interface ContentGenerationActionDependencies {
+  readonly admission: ContentGenerationAdmission;
   readonly pseudonymizer: ContentTranslationRequesterPseudonymizer;
   readonly titlePolicy: ContentGenerationRequestBudgetPolicy;
   readonly postBodyPolicy: ContentGenerationRequestBudgetPolicy;
@@ -77,6 +80,9 @@ interface ContentGenerationActionDependencies {
 
 export class DefaultContentGenerationActionCapability implements ContentGenerationActionCapability {
   constructor(private readonly dependencies: ContentGenerationActionDependencies) {
+    if (!dependencies.admission || typeof dependencies.admission.assertAllowed !== "function") {
+      throw new ContentGenerationPlanningUnavailableError();
+    }
     validatePolicy(dependencies.titlePolicy);
     validatePolicy(dependencies.postBodyPolicy);
   }
@@ -89,12 +95,14 @@ export class DefaultContentGenerationActionCapability implements ContentGenerati
     if (input.revision.contentType !== "topic-title") {
       throw new TypeError("topic-title generation requires a topic-title revision");
     }
+    await this.assertAllowed(input.actorId);
     const admission = await this.requestBudgetAdmission(input.actorId, this.dependencies.titlePolicy);
     return this.runPlanner(() =>
       this.dependencies.titlePlanner.planAndDispatch(
         input.revision,
         input.targetLocale,
         admission,
+        input.actorId,
       )
     );
   }
@@ -105,6 +113,7 @@ export class DefaultContentGenerationActionCapability implements ContentGenerati
     readonly targetLocale: string;
   }): Promise<ContentGenerationActionResult> {
     this.assertPostBody(input.revision);
+    await this.assertAllowed(input.actorId);
     if (
       countMarkdownTranslationSemanticCharacters(input.revision.originalContent)
       > MAX_AUTOMATIC_POST_TRANSLATION_SEMANTIC_CHARACTERS
@@ -120,6 +129,7 @@ export class DefaultContentGenerationActionCapability implements ContentGenerati
     readonly targetLocale: string;
   }): Promise<ContentGenerationActionResult> {
     this.assertPostBody(input.revision);
+    await this.assertAllowed(input.actorId);
     return this.generatePostBody(input);
   }
 
@@ -134,6 +144,7 @@ export class DefaultContentGenerationActionCapability implements ContentGenerati
         input.revision,
         input.targetLocale,
         admission,
+        input.actorId,
       )
     );
   }
@@ -141,6 +152,15 @@ export class DefaultContentGenerationActionCapability implements ContentGenerati
   private assertPostBody(revision: ContentTranslationRevision): void {
     if (revision.contentType !== "post-body") {
       throw new TypeError("post-body generation requires a post-body revision");
+    }
+  }
+
+  private async assertAllowed(actorId: string): Promise<void> {
+    if (typeof actorId !== "string" || !actorId.trim()) throw new TypeError("generation actor is missing");
+    try {
+      await this.dependencies.admission.assertAllowed(actorId);
+    } catch (error) {
+      planningFailure(error);
     }
   }
 
@@ -177,16 +197,17 @@ export class DefaultContentGenerationActionCapability implements ContentGenerati
       }
       return { outcome: "no-op", reason: result.reason };
     } catch (error) {
-      if (
-        error instanceof ContentTranslationRequestBudgetStorageUnavailableError
-        || isPostgresQueryTimeout(error)
-        || hasPostgresAvailabilityFailure(error)
-      ) {
-        throw new ContentGenerationPlanningUnavailableError({ cause: error });
-      }
-      throw error;
+      return planningFailure(error);
     }
   }
+}
+
+function planningFailure(error: unknown): never {
+  if (error instanceof ContentTranslationRequestBudgetStorageUnavailableError
+    || isPostgresQueryTimeout(error) || hasPostgresAvailabilityFailure(error)) {
+    throw new ContentGenerationPlanningUnavailableError({ cause: error });
+  }
+  throw error;
 }
 
 function validatePolicy(policy: ContentGenerationRequestBudgetPolicy): void {
@@ -215,7 +236,7 @@ function hasPostgresAvailabilityFailure(error: unknown): boolean {
     && !seen.has(current)
   ) {
     seen.add(current);
-    if (isPostgresAvailabilityFailure(current)) return true;
+    if (current instanceof AccountStateUnavailableError || isPostgresAvailabilityFailure(current)) return true;
     current = (current as { cause?: unknown }).cause;
   }
   return false;

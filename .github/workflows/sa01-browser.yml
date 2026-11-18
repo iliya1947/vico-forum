@@ -3,9 +3,21 @@ name: SA-01 Super-admin connected Chromium acceptance
 on:
   pull_request:
     paths:
+      - "tests/browser/sa04-completion/**"
       - ".github/workflows/sa01-browser.yml"
       - "tests/browser/super-admin/**"
       - "app/super-admin/**"
+      - "app/administrative-routing/**"
+      - "app/observability/**"
+      - "app/auth/**"
+      - "app/settings/**"
+      - "app/routes/settings-*.tsx"
+      - "db/owner-sa02-*.ts"
+      - "db/owner-attempt-*.ts"
+      - "db/owner-auth-*.ts"
+      - "db/hyperdrive-attempt-*.ts"
+      - "db/hyperdrive-auth-*.ts"
+      - "drizzle/0063_*.sql"
       - "app/routes/super-admin*.tsx"
       - "app/auth/auth-controls.tsx"
       - "app/admin/shell.tsx"

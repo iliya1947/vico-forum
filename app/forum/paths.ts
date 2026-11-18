@@ -9,6 +9,10 @@ export function forumProfilePath(locale: string, userId: string) {
   return `/${encodeURIComponent(locale)}/users/${encodeURIComponent(userId)}`;
 }
 
+export function forumOwnerDeactivationPath(locale: string, userId: string) {
+  return `${forumProfilePath(locale, userId)}/owner/deactivate`;
+}
+
 export function forumIndexPath(locale: string) {
   return generatePath("/:locale", { locale });
 }

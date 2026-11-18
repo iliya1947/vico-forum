@@ -1,4 +1,6 @@
+import type {OwnerOperationalFactSink} from "../app/observability/operational-facts";
 import { drizzle } from "drizzle-orm/node-postgres";
+import { AccountStateUnavailableError } from "./account-state";
 import { assertNoActiveUserMeasureRestriction } from "./user-measure-policy";
 import type { Client } from "pg";
 import { isPostgresAvailabilityFailure } from "../app/localization/persistent-registry";
@@ -18,8 +20,8 @@ import {
 
 export interface ForumAttachmentStore {
   admitUpload(ownerId: string, contextKey: string, draftId: string, attachmentId: string): Promise<ForumAttachmentMetadata | null>;
-  recordUploadObject(objectKey: string): Promise<void>;
-  activateUploadObject(objectKey: string, reservationEtag: string): Promise<void>;
+  recordUploadObject(actorId: string, objectKey: string): Promise<void>;
+  activateUploadObject(actorId: string, objectKey: string, reservationEtag: string): Promise<void>;
   cancelOperation(ownerId: string, contextKey: string, operationId: string): Promise<void>;
   createDraftAttachment(input: CreateDraftAttachmentInput): Promise<ForumAttachmentMetadata>;
   readPublishedAttachment(postId: string, attachmentId: string): Promise<ForumAttachmentMetadata | null>;
@@ -46,7 +48,8 @@ function isAttachmentStorageAvailabilityFailure(error: unknown): boolean {
   ) {
     seen.add(current);
     if (
-      isPostgresAvailabilityFailure(current)
+      current instanceof AccountStateUnavailableError
+      || isPostgresAvailabilityFailure(current)
       || isPostgresConnectionTimeout(current)
       || isPostgresQueryTimeout(current)
     ) {
@@ -61,12 +64,13 @@ export function createHyperdriveForumAttachmentStore(
   connectionString: string,
   clientFactory: () => Client = () => createWebClient(connectionString),
   measureAdmission: typeof assertNoActiveUserMeasureRestriction = assertNoActiveUserMeasureRestriction,
+  operational?:OwnerOperationalFactSink,
 ): ForumAttachmentStore {
   async function apply<T>(operation: (store: DrizzleForumAttachments) => Promise<T>): Promise<T> {
     const client = clientFactory();
     try {
       await client.connect();
-      return await operation(new DrizzleForumAttachments(drizzle(client), measureAdmission));
+      return await operation(new DrizzleForumAttachments(drizzle(client), measureAdmission,operational));
     } catch (error) {
       if (isAttachmentStorageAvailabilityFailure(error)) {
         throw new ForumAttachmentStorageUnavailableError({ cause: error });
@@ -80,8 +84,8 @@ export function createHyperdriveForumAttachmentStore(
   return {
     admitUpload: (ownerId, contextKey, draftId, attachmentId) =>
       apply((store) => store.admitUpload(ownerId, contextKey, draftId, attachmentId)),
-    recordUploadObject: (key) => apply((store) => store.recordUploadObject(key)),
-    activateUploadObject: (key, etag) => apply((store) => store.activateUploadObject(key, etag)),
+    recordUploadObject: (actorId, key) => apply((store) => store.recordUploadObject(actorId, key)),
+    activateUploadObject: (actorId, key, etag) => apply((store) => store.activateUploadObject(actorId, key, etag)),
     cancelOperation: (ownerId, contextKey, operationId) => apply((store) => store.cancelOperation(ownerId, contextKey, operationId)),
     createDraftAttachment: (input) => apply((store) => store.createDraftAttachment(input)),
     readPublishedAttachment: (postId, attachmentId) => apply((store) => store.readPublishedAttachment(postId, attachmentId)),

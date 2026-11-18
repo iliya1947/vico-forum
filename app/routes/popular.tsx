@@ -1,4 +1,5 @@
 import { forumReadLoader } from "../forum/read-availability.server";
+import { DELETED_USER_NAME } from "../../db/public-identity";
 import { useLoaderData, type RouterContextProvider } from "react-router";
 
 import { forumReaderForRequest } from "../forum/request-context";
@@ -18,8 +19,14 @@ export const loader = forumReadLoader(async function loader({ params, context }:
     id,
     title,
     authorName,
+    authorIdentityKind,
     activityCount,
-  }) => ({ id, title, authorName, activityCount }));
+  }) => ({
+    id, title,
+    authorName: authorIdentityKind === "deleted" ? DELETED_USER_NAME : authorName,
+    ...(authorIdentityKind === "deleted" ? { authorIdentityKind } : {}),
+    activityCount,
+  }));
 
   return {
     locale: params.locale ?? "en",

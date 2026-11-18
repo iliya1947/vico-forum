@@ -1,3 +1,4 @@
+import type {OwnerOperationalFactSink} from "../app/observability/operational-facts";
 import { drizzle } from "drizzle-orm/node-postgres";
 import type { Client } from "pg";
 import { isPostgresAvailabilityFailure } from "../app/localization/persistent-registry";
@@ -23,6 +24,9 @@ import { forumWritePolicy, type ForumWritePolicy } from "./forum-write-policy";
 import { assertNoActiveUserMeasureRestriction } from "./user-measure-policy";
 
 export interface ForumWriter {
+  editOwnTopicTitle(input: {
+    topicId: string; actorId: string; expectedRevisionId: string; title: string;
+  }): Promise<import("./forum-repository").ForumRevisionContent>;
   updateProfile(input: { actorId: string; fields: ProfileFields }): Promise<void>;
   recordOnlinePresence(userId: string): Promise<void>;
   createTopic(input: { sectionId: string; authorId: string; title: string; body: string; tags?: string[]; draftId?: string; attachmentIds?: string[] }): Promise<{ topicId: string }>;
@@ -129,12 +133,13 @@ export function createHyperdriveForumWriter(
   clientFactory: ClientFactory = () => createWebClient(connectionString),
   writePolicy: ForumWritePolicy = forumWritePolicy,
   measureAdmission: typeof assertNoActiveUserMeasureRestriction = assertNoActiveUserMeasureRestriction,
+  operational?:OwnerOperationalFactSink,
 ): ForumWriter {
   async function write<T>(operation: (service: ForumService) => Promise<T>): Promise<T> {
     const client = clientFactory();
     try {
       await client.connect();
-      return await operation(new ForumService(new DrizzleForumRepository(drizzle(client), writePolicy, measureAdmission)));
+      return await operation(new ForumService(new DrizzleForumRepository(drizzle(client), writePolicy, measureAdmission,operational)));
     } catch (error) {
       if (isForumStorageAvailabilityFailure(error)) throw new ForumStorageUnavailableError({ cause: error });
       throw error;
@@ -167,6 +172,7 @@ export function createHyperdriveForumWriter(
         throw error;
       } finally { bestEffortDiscardClient(client); }
     },
+    editOwnTopicTitle: (input) => writeCorrection((forum) => forum.editOwnTopicTitle(input)),
     updateProfile: async ({ actorId, fields }) => {
       const client = clientFactory();
       try {

@@ -1,3 +1,5 @@
+import { withOperationalFacts,type OwnerOperationalFactSink,type OperationalFactBuffer } from "../app/observability/operational-facts";
+import { operationalTaskColumns } from "./owner-operational-facts";
 import { and, eq, sql } from "drizzle-orm";
 import type { NodePgDatabase } from "drizzle-orm/node-postgres";
 
@@ -45,7 +47,7 @@ class ContentPostBodyPublicationClaimLostRollback extends Error {
 
 export class DrizzleContentPostBodyExecutionStore
   implements ContentPostBodyRevisionReader, ContentPostBodyPublicationStore {
-  constructor(private readonly database: NodePgDatabase) {}
+  constructor(private readonly database: NodePgDatabase,private readonly operational?:OwnerOperationalFactSink) {}
 
   async readCurrentRevision(postId: string): Promise<ContentTranslationRevision | undefined> {
     try {
@@ -84,6 +86,7 @@ export class DrizzleContentPostBodyExecutionStore
   async publishClaimedMachineResult(
     publication: MachineContentPostBodyPublication,
   ): Promise<ContentPostBodyPublicationResult> {
+    return withOperationalFacts(this.operational, async facts => {
     try {
       return await this.database.transaction(async (tx) => {
         // Shared planning/publication lock order:
@@ -114,7 +117,7 @@ export class DrizzleContentPostBodyExecutionStore
         assertTaskMatchesPublication(task, publication);
 
         if (!head || head.currentGeneration !== publication.task.generation) {
-          return markClaimStale(tx, publication, "generation-superseded");
+          return markClaimStale(tx, publication, "generation-superseded",facts);
         }
 
         const [post] = await tx
@@ -126,7 +129,7 @@ export class DrizzleContentPostBodyExecutionStore
           !post
           || post.currentRevisionId !== publication.task.sourceIdentity.revisionId
         ) {
-          return markClaimStale(tx, publication, "revision-not-current");
+          return markClaimStale(tx, publication, "revision-not-current",facts);
         }
 
         const [metadata] = await tx
@@ -145,13 +148,13 @@ export class DrizzleContentPostBodyExecutionStore
           task.generationPolicyVersion !== publication.generationPolicyVersion
           || publication.task.generationPolicyVersion !== publication.generationPolicyVersion
         ) {
-          return markClaimStale(tx, publication, "policy-changed");
+          return markClaimStale(tx, publication, "policy-changed",facts);
         }
         if (
           metadata.protectedContentPolicyVersion !== publication.protectedContentPolicyVersion
           || publication.task.protectedContentPolicyVersion !== publication.protectedContentPolicyVersion
         ) {
-          return markClaimStale(tx, publication, "protected-policy-changed");
+          return markClaimStale(tx, publication, "protected-policy-changed",facts);
         }
 
         const [revision] = await tx
@@ -166,14 +169,14 @@ export class DrizzleContentPostBodyExecutionStore
           ))
           .for("share");
         if (!revision) {
-          return markClaimStale(tx, publication, "revision-not-current");
+          return markClaimStale(tx, publication, "revision-not-current",facts);
         }
         if (
           revision.sourceLocale !== publication.task.revisionSourceLocale
           || publication.revision.sourceLocale !== publication.task.revisionSourceLocale
           || revision.originalContent !== publication.revision.originalContent
         ) {
-          return markClaimStale(tx, publication, "source-changed");
+          return markClaimStale(tx, publication, "source-changed",facts);
         }
 
         const identity = {
@@ -188,7 +191,7 @@ export class DrizzleContentPostBodyExecutionStore
           originalContent: revision.originalContent,
           sourceLocale: revision.sourceLocale,
         }, identity.targetLocale, existing).selected === "translation") {
-          return markClaimStale(tx, publication, "translation-current");
+          return markClaimStale(tx, publication, "translation-current",facts);
         }
         // An older same-revision translation whose quote source metadata was
         // changed is not valid current content. Replace it atomically at the
@@ -223,13 +226,13 @@ export class DrizzleContentPostBodyExecutionStore
           stored = await writePostBodyTranslationWithTrust(tx, machineTranslation);
         } catch (error) {
           if (error instanceof ContentTranslationConflictError) {
-            return markClaimStale(tx, publication, "translation-current");
+            return markClaimStale(tx, publication, "translation-current",facts);
           }
           throw error;
         }
 
         if (stored.provenance.origin !== "machine") {
-          return markClaimStale(tx, publication, "translation-current");
+          return markClaimStale(tx, publication, "translation-current",facts);
         }
 
         const databaseNow = sql`statement_timestamp()`;
@@ -259,11 +262,12 @@ export class DrizzleContentPostBodyExecutionStore
             eq(translationTasks.generationPolicyVersion, publication.generationPolicyVersion),
             eq(translationTasks.generation, publication.task.generation),
           ))
-          .returning({ id: translationTasks.id });
+          .returning(operationalTaskColumns);
 
         if (!completed[0]) {
           throw new ContentPostBodyPublicationClaimLostRollback();
         }
+        facts.captureTask("task.completed",completed[0],publication.task.claimToken);
         return { outcome: "published" };
       });
     } catch (error) {
@@ -272,6 +276,8 @@ export class DrizzleContentPostBodyExecutionStore
       }
       throw classifyDependencyFailure(error);
     }
+
+    });
   }
 }
 
@@ -279,6 +285,7 @@ async function markClaimStale(
   tx: ContentPublicationTransaction,
   publication: MachineContentPostBodyPublication,
   reason: Extract<ContentPostBodyPublicationResult, { outcome: "stale" }>["reason"],
+  facts:OperationalFactBuffer,
 ): Promise<ContentPostBodyPublicationResult> {
   const databaseNow = sql`statement_timestamp()`;
   const rows = await tx
@@ -299,7 +306,8 @@ async function markClaimStale(
       eq(translationTasks.status, "processing"),
       eq(translationTasks.claimToken, publication.task.claimToken),
     ))
-    .returning({ id: translationTasks.id });
+    .returning(operationalTaskColumns);
+  if(rows[0])facts.captureTask("task.stale",rows[0],publication.task.claimToken);
   return rows[0]
     ? { outcome: "stale", reason }
     : { outcome: "claim-lost" };

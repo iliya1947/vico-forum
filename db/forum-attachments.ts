@@ -1,6 +1,8 @@
+import {withOperationalFacts,type OwnerOperationalFactSink} from "../app/observability/operational-facts";
 import { isFencedAttachmentKey } from "../app/forum/attachment-storage-protocol";
+import { assertActiveAccountForDrizzleMutation } from "./account-state";
 import { assertNoActiveUserMeasureRestriction } from "./user-measure-policy";
-import { and, asc, desc, eq, isNull } from "drizzle-orm";
+import { and, asc, desc, eq, isNull,sql,getTableColumns } from "drizzle-orm";
 import type { NodePgDatabase } from "drizzle-orm/node-postgres";
 import {
   forumAttachmentDraftRefs,
@@ -136,6 +138,7 @@ export class DrizzleForumAttachments {
   constructor(
     private readonly db: NodePgDatabase,
     private readonly measureAdmission: typeof assertNoActiveUserMeasureRestriction = assertNoActiveUserMeasureRestriction,
+    private readonly operational?:OwnerOperationalFactSink,
   ) {}
 
   /** Exact committed upload replay is checked before restricting new uploads. */
@@ -148,6 +151,7 @@ export class DrizzleForumAttachments {
     }
     return this.db.transaction(async (tx) => {
       await lockAttachmentDraftScope(tx, ownerId, contextKey);
+      await assertActiveAccountForDrizzleMutation(tx, ownerId);
       const generation = await resolveAttachmentDraftGeneration(tx, ownerId, contextKey, draftId);
       const [committed] = await tx.select({ attachment: forumAttachments }).from(forumAttachmentDraftRefs)
         .innerJoin(forumAttachments, eq(forumAttachments.id, forumAttachmentDraftRefs.attachmentId))
@@ -164,29 +168,43 @@ export class DrizzleForumAttachments {
     });
   }
 
-  async recordUploadObject(objectKey: string): Promise<void> {
-    if (!isFencedAttachmentKey(objectKey)) throw new InvalidForumAttachmentError();
-    // Unknown commit outcome is safe: the caller must not PUT until this succeeds.
-    await this.db.insert(forumAttachmentUploadObjects).values({ objectKey });
+  async recordUploadObject(actorId: string, objectKey: string): Promise<void> {
+    if (!actorId || !isFencedAttachmentKey(objectKey)) throw new InvalidForumAttachmentError();
+    // A fresh physical key has no existing journal dependency. Authorize before
+    // creating PREPARING and commit it before the caller can reserve R2 bytes.
+    await this.db.transaction(async (tx) => {
+      await assertActiveAccountForDrizzleMutation(tx, actorId);
+      await tx.insert(forumAttachmentUploadObjects).values({ objectKey });
+    });
   }
 
-  async activateUploadObject(objectKey: string, reservationEtag: string): Promise<void> {
-    if (!isFencedAttachmentKey(objectKey) || !reservationEtag.trim() || reservationEtag.length > 1024) {
+  async activateUploadObject(actorId: string, objectKey: string, reservationEtag: string): Promise<void> {
+    if (!actorId || !isFencedAttachmentKey(objectKey) || !reservationEtag.trim() || reservationEtag.length > 1024) {
       throw new InvalidForumAttachmentError();
     }
-    // A claim is irreversible. Lease recovery must never restore writer permission.
-    const updated = await this.db.update(forumAttachmentUploadObjects)
-      .set({ reservationEtag })
-      .where(and(eq(forumAttachmentUploadObjects.objectKey, objectKey),
-        isNull(forumAttachmentUploadObjects.claimToken), isNull(forumAttachmentUploadObjects.reservationEtag)))
-      .returning({ key: forumAttachmentUploadObjects.objectKey });
-    if (!updated.length) throw new InvalidForumAttachmentError();
+    await this.db.transaction(async (tx) => {
+      // Keep the existing journal mutex BEFORE the actor mutex: metadata
+      // finalization also takes journal FOR UPDATE before AccountState.
+      const [record] = await tx.select().from(forumAttachmentUploadObjects)
+        .where(eq(forumAttachmentUploadObjects.objectKey, objectKey)).for("update");
+      if (!record || record.claimToken !== null || record.reservationEtag !== null) {
+        throw new InvalidForumAttachmentError();
+      }
+      await assertActiveAccountForDrizzleMutation(tx, actorId);
+      // A claim is irreversible. Lease recovery must never restore writer permission.
+      const updated = await tx.update(forumAttachmentUploadObjects)
+        .set({ reservationEtag })
+        .where(and(eq(forumAttachmentUploadObjects.objectKey, objectKey),
+          isNull(forumAttachmentUploadObjects.claimToken), isNull(forumAttachmentUploadObjects.reservationEtag)))
+        .returning({ key: forumAttachmentUploadObjects.objectKey });
+      if (!updated.length) throw new InvalidForumAttachmentError();
+    });
   }
 
   async createDraftAttachment(input: CreateDraftAttachmentInput): Promise<ForumAttachmentMetadata> {
     if (!validInput(input)) throw new InvalidForumAttachmentError();
     const createdAt = new Date();
-    return this.db.transaction(async (tx) => {
+    return withOperationalFacts(this.operational,facts=>this.db.transaction(async (tx) => {
       await lockAttachmentDraftScope(tx, input.ownerId, input.contextKey);
       const draftId = await resolveAttachmentDraftGeneration(tx, input.ownerId, input.contextKey, input.draftId);
       if (input.requireUploadRecord || isFencedAttachmentKey(input.objectKey)) {
@@ -194,6 +212,9 @@ export class DrizzleForumAttachments {
           .where(eq(forumAttachmentUploadObjects.objectKey, input.objectKey)).for("update");
         if (!record || !record.reservationEtag || record.claimToken !== null) throw new InvalidForumAttachmentError();
       }
+      // The existing journal row lock must precede the actor mutex; both stay
+      // on this transaction through metadata/ref writes and committed replays.
+      await assertActiveAccountForDrizzleMutation(tx, input.ownerId);
       // Stable-ID retries preserve an already committed private asset even after a
       // measure begins. A new asset must pass the fresh in-transaction policy.
       const [committed] = await tx.select().from(forumAttachments)
@@ -224,7 +245,7 @@ export class DrizzleForumAttachments {
         createdAt,
       }).onConflictDoNothing({
         target: forumAttachments.id,
-      }).returning();
+      }).returning({...getTableColumns(forumAttachments),operationAt:sql<string>`to_char(${forumAttachments.createdAt} at time zone 'UTC','YYYY-MM-DD"T"HH24:MI:SS.US"Z"')`});
 
       if (created) {
         await tx.insert(forumAttachmentDraftRefs).values({
@@ -234,6 +255,7 @@ export class DrizzleForumAttachments {
           draftId,
           createdAt,
         });
+        facts.captureFileAccepted(created);
         return toMetadata(created);
       }
 
@@ -258,7 +280,7 @@ export class DrizzleForumAttachments {
         .limit(1);
       if (!reference) throw new InvalidForumAttachmentError();
       return toMetadata(existing);
-    });
+    }));
   }
 
   async readPublishedAttachment(postId: string, attachmentId: string): Promise<ForumAttachmentMetadata | null> {
@@ -279,6 +301,7 @@ export class DrizzleForumAttachments {
       || !isForumAttachmentUuid(draftId) || !isForumAttachmentUuid(attachmentId)) throw new InvalidForumAttachmentError();
     return this.db.transaction(async (tx) => {
       await lockAttachmentDraftScope(tx, ownerId, contextKey);
+      await assertActiveAccountForDrizzleMutation(tx, ownerId);
       const current = await resolveAttachmentDraftGeneration(tx, ownerId, contextKey, draftId);
       // A direct file request must honor the authoritative 30-day text-draft TTL
       // even when no metadata/get request has run cleanup yet. This is read-only:
@@ -330,6 +353,7 @@ export class DrizzleForumAttachments {
     if (!ownerId || !isEditorDraftContextKey(contextKey) || !isForumAttachmentUuid(draftId)) throw new InvalidForumAttachmentError();
     return this.db.transaction(async (tx) => {
       await lockAttachmentDraftScope(tx, ownerId, contextKey);
+      await assertActiveAccountForDrizzleMutation(tx, ownerId);
       const generation = await resolveAttachmentDraftGeneration(tx, ownerId, contextKey, draftId);
       const rows = await tx.select({ attachment: forumAttachments }).from(forumAttachmentDraftRefs)
         .innerJoin(forumAttachments, eq(forumAttachments.id, forumAttachmentDraftRefs.attachmentId))
@@ -343,6 +367,9 @@ export class DrizzleForumAttachments {
     if (!ownerId || !isEditorDraftContextKey(contextKey) || !isForumAttachmentUuid(draftId)) throw new InvalidForumAttachmentError();
     await this.db.transaction(async (tx) => {
       await lockAttachmentDraftScope(tx, ownerId, contextKey);
+      // Even an idempotent/empty Cancel must prove a live actor before it can
+      // acknowledge completion or remove the operation's temporary references.
+      await assertActiveAccountForDrizzleMutation(tx, ownerId);
       await retireAttachmentDraftGeneration(tx, ownerId, contextKey, draftId);
       await tx.delete(forumAttachmentDraftRefs).where(and(eq(forumAttachmentDraftRefs.ownerId, ownerId),
         eq(forumAttachmentDraftRefs.contextKey, contextKey), eq(forumAttachmentDraftRefs.draftId, draftId)));

@@ -38,7 +38,7 @@ Related sources of truth:
 - [PROJECT.md](../PROJECT.md) — product and architecture baseline;
 - [AUTHORIZATION.md](auth/AUTHORIZATION.md) — authoritative application authorization;
 - [SETTINGS.md](SETTINGS.md) — Settings surfaces, Owner-only Forum & roles and registration policy;
-- [SUPER_ADMIN.md](SUPER_ADMIN.md) — separate exact-Owner-only Super-admin and delivered SA-01 boundaries;
+- [SUPER_ADMIN.md](SUPER_ADMIN.md) — separate exact-Owner-only Super-admin and delivered SA-01–SA-08 boundaries;
 - [UI_UX_PASS.md](UI_UX_PASS.md) — shared presentation, localization and acceptance;
 - [PROJECT_STATE.md](../PROJECT_STATE.md) — factual implementation state;
 - [ROADMAP.md](../ROADMAP.md) — development and release boundaries.
@@ -81,9 +81,11 @@ Statistics must not be reconstructed from truncated lists. Missing or unavailabl
 reported truthfully; synthetic recent actions are not a runtime substitute for History.
 
 Forum follows `category → section → topic → messages`. Categories, sections and topics each
-have an administrative object page. Users have a searchable/listable index, list quick
-actions and a dedicated administrative user page. Messages are administered inside topic
-context and through Quick actions; they do not get a separate administrative page.
+have an administrative object page. Users have a searchable/listable Admin index; user detail
+is the canonical `/:locale/users/:userId` profile with independently authorized sections.
+The legacy `/:locale/admin/users/:userId` entry remains only a guarded compatibility redirect.
+Messages are administered inside topic context and through Quick actions; they do not get a
+separate administrative page.
 
 An object page does not authorize unspecified create, rename, move, delete, bulk or edit-any
 operations. Each new operation needs concrete behavior, an authoritative backend contract,
@@ -98,12 +100,15 @@ Three boundaries remain distinct:
   private explanations into the global panel.
 - **Contextual administration** exposes applicable Quick actions near an object. It shares
   authoritative operations with the global panel, not a second administration backend.
-- **Super-admin** is a separate exact server-bound Owner-only surface. SA-01 is already
-  implemented in the repository: System Monitoring, adjacent per-monitor History, a
-  source-aware global Event log foundation, and an inert Stage-6 Infrastructure placeholder.
-  The unified privileged profile and account deactivation are **not delivered** in SA-01;
-  live infrastructure, deployments, secrets and providers remain Stage-6 work. Ordinary
-  Admin permissions never grant access to this separate Owner surface.
+- **Super-admin** is a separate exact server-bound Owner-only surface. **SA-01–SA-08**
+  are delivered in repository/local-CI: all twelve measured Monitoring areas,
+  adjacent/global original-source History and finished Overview; canonical
+  public/Admin/Owner unified profile; SA-04 lifecycle enforcement and SA-05
+  canonical Owner-only account deactivation. **Infrastructure** remains an inert
+  Stage-6 placeholder. This does not add a second Admin mutation backend or
+  let ordinary Admin permissions grant Owner access. Real Google/Owner binding,
+  deployed infrastructure, providers, credentials and external acceptance
+  remain Stage 6; final visual/product polish is in the separate UI/UX pass.
 
 Reserved Help & solutions category/service-section identities retain their existing rules.
 Administrative browsing must not turn the internal service section into an ordinary public
@@ -225,7 +230,7 @@ grant global admission either. Each section and action independently checks its 
 | Overview / shell | Authenticated actor with at least one applicable implemented section capability | Navigation is not mutation authority; only public aggregate statistics and permitted destinations are exposed |
 | Forum / category, section, topic pages | At least one of `forum.topic.pin`, `forum.solution.manageAny`, `forum.helpDuplicate.manage`, `forum.sourceLocale.correctAny`, `forum.post.history.read`, `forum.topic.close` | Exact operation permission and authoritative object/resource conditions, as below |
 | Roles & permissions | `access.authorization.manage` for protected reads | Exact server-bound Owner only for all role/grant/user authorization mutations; existing validation, shared mutex and fresh permission/admission checks |
-| Users / measures | `admin.users.read` for general index/detail; `access.authorization.manage` for the existing authorization subset; `admin.users.blocks.manage` for exact target/measures lookup | Authorization assignment/override writes require exact bound Owner (non-Owner read-only); measure create/change/lift and appeal review retain fresh `admin.users.blocks.manage` plus target/issuer hierarchy (and `admin.users.blocks.managePrivileged` for privileged targets) |
+| Users / canonical profile / measures | Public canonical profile baseline; `admin.users.read` only for the Users index and guarded legacy detail redirect; `access.authorization.manage` for the targeted authorization section; `admin.users.blocks.manage` for exact target/measures lookup under AP-10; exact bound Owner for the private account/session/history section | Authorization assignment/override writes require exact bound Owner (non-Owner read-only); measure create/change/lift and appeal review retain fresh `admin.users.blocks.manage` plus target/issuer hierarchy (and `admin.users.blocks.managePrivileged` for privileged targets) |
 | History / Overview recent actions | `admin.history.read` | History-read does not authorize recorded operations; actors do not need history-read merely to perform an otherwise permitted operation |
 | Settings entry / implemented surfaces | Authenticated session for `/:locale/settings`, `/:locale/settings/user`, `/:locale/settings/account` and `/:locale/settings/privacy`; exact bound Owner for `/:locale/settings/forum`; current effective Admin-or-Attention access for `/:locale/settings/administrator` | Forum & roles reuses canonical Owner-only authorization writer and independent registration flags; personal preferences, Account & security and Privacy follow their independent contracts in `SETTINGS.md` |
 
@@ -256,6 +261,7 @@ reused without creating a second identity store.
 | Pin/unpin topic | `forum.topic.pin` | Target topic exists; authorship alone is insufficient |
 | Mark solved / select best answer administratively | `forum.solution.manageAny` | Existing topic/post identity and solution/duplicate state rules |
 | Own-topic solution controls | `forum.solution.manageOwn` | Authoritative topic author is the actor; does not independently admit the global panel |
+| Edit own topic title | `forum.topic.title.editOwn` | Authoritative topic author is the actor; fresh permission, active account, current title-revision CAS and AP-10 `posts.edit` admission are required; no edit-any or source-locale authority |
 | Set Help solution review/outdated state | `forum.solution.manageAny` | Applicable solved Help question and expected current best answer; existing reason validation |
 | Confirm/remove Help duplicate; resolve duplicate appeal | `forum.helpDuplicate.manage` | Existing Help-only relationship, canonical-original, expected relationship/appeal and solution-state invariants |
 | Review Help signal in its existing workflow | `forum.helpNeedsDetails.manage` for needs-details; `forum.helpDuplicate.manage` for duplicate; `forum.solution.manageAny` for solution kinds | Persisted signal kind selects permission; current case/target identity and applicability are rechecked |
@@ -435,8 +441,9 @@ nor the topic view offers them an own solved-confirmation.
 Ordinary History answers who acted, what changed, which object was affected, when, the
 applicable reason and minimal useful change context. It is distinct from post revisions,
 security-upload events, notification inboxes and the separate Owner-only
-Monitoring/Event log: SA-01 provides its System and native-Admin-History projection
-foundation, not a complete cross-domain full audit.
+Monitoring/Event log: SA-01–SA-08 provide the delivered twelve-area source-aware
+current/History projections with truthful source coverage, **not** a complete
+continuous cross-domain full audit.
 
 The following matrix defines coverage to connect with the relevant implementation packages.
 AP-03 records the authorization-management rows. AP-05 connects the existing topic/Help
@@ -564,30 +571,35 @@ These are repository/local-CI implementation contracts, not evidence of
 production deployment, independent review, real-browser acceptance or owner
 visual approval.
 
-## Users index, detail and existing authorization controls (AP-09)
+## Users index, canonical profile and existing authorization controls (AP-09 / SA-03)
 
-`/:locale/admin/users` and `/:locale/admin/users/:userId` independently require the
-effective `admin.users.read` capability before query/target validation and protected reads.
-The initial grant is built-in admin only; custom roles and per-user allow/deny/inherit remain
-dynamic. This permission admits the Users section but grants no authorization-management
-mutation or private authorization snapshot. Conversely, `access.authorization.manage`
-continues to expose its existing authorization-user subset without implicitly granting the
-general Users directory.
+`/:locale/admin/users` requires effective `admin.users.read` before query validation and
+protected directory reads. The initial grant is built-in admin only; custom roles and per-user
+allow/deny/inherit remain dynamic. After SA-03, `/:locale/admin/users/:userId` is only a
+guarded compatibility entry: it independently requires `admin.users.read`, validates the
+target through the public profile reader, then returns a private/no-store redirect to canonical
+`/:locale/users/:userId`. Directory permission does not authorize any private canonical-profile
+section. Conversely, `access.authorization.manage` continues to expose its existing
+authorization-user subset without implicitly granting the general Users directory.
 
 The Users index is read-only and projects only public identity fields needed by the page:
 user ID, display name, image and joined timestamp. Search is literal case-insensitive name/ID
 search, filtered in PostgreSQL before LIMIT; email is neither selected nor searchable. Results
 use stable ID keyset paging with 25 items plus lookahead and an independent matching total.
-The detail page reuses the existing public profile reader but explicitly projects only public
-profile fields, role display and public statistics. Success and controlled protected failures
-remain private/no-store.
+The canonical profile keeps its public identity/profile fields, role display and public
+statistics as the baseline. Private sections are selected only by current server-side authority:
+`admin.users.blocks.manage` can admit the existing targeted measures section subject to AP-10
+target/hierarchy rules, while `access.authorization.manage` independently admits the targeted
+authorization section. Exact Owner receives its separate private account/session/history section.
+A missing permission means that section is not read or serialized; classified dependency failure
+is represented as that protected section being unavailable. Canonical profile document/data and
+controlled errors are private/no-store.
 
-When the same actor also has `access.authorization.manage`, the detail page may additionally
-load a targeted management snapshot for that one selected user: role options plus the target
-user's assignment, grants, overrides and effective permissions under the existing consistent
-authorization-read contract. It does not load the full authorization-management user list or
-other users' state. Without the management permission, none of that management payload or UI is
-rendered.
+When the actor has `access.authorization.manage`, the canonical profile may load a targeted
+management snapshot for that one selected user: role options plus the target user's assignment,
+grants, overrides and effective permissions under the existing consistent authorization-read
+contract. It does not load the full authorization-management user list or other users' state.
+Without the management permission, none of that management payload or UI is rendered.
 
 The selected user's authorization details remain visible to actors with
 `access.authorization.manage`, but **only the exact bound Owner** sees assignment
@@ -596,17 +608,22 @@ and per-permission override Forms. Those Owner forms reuse the existing canonica
 AP-09 adds no second writer, mutation protocol, actor authority field,
 authorization-serialization model or History event kind. The session remains actor
 authority; the canonical action rechecks fresh `access.authorization.manage` and the
-Owner-only write policy. On success, inline Users detail revalidates; on fresh
-403 with `admin.users.read` still effective, it performs at most one same-URL
-GET recovery without replay. Without Users-read, denial remains fail-closed.
-A later independent permission change can recover the protected read view,
-but never confers write authority on a non-Owner.
+Owner-only write policy. On success, the canonical profile revalidates. Fresh
+401/403 recovery is bounded to one same-URL GET/revalidation and never replays
+the rejected write; it is not conditioned on `admin.users.read`. Each protected
+canonical-profile section reappears only when its own admission remains effective.
+A later independent permission change can recover the corresponding protected read
+view, but never confers write authority on a non-Owner.
 
 The old `under-development?feature=admin-users` URL remains only as a compatibility redirect:
 Users-read actors go to the real Users index, management-only actors go to the existing
 authorization-user subset, and permission-dependent success redirects are private/no-store.
-Users is no longer listed as unfinished. AP-09 does not implement blocking, account deletion,
-general edit-any user operations, Settings, a second RBAC or production rollout.
+Users is no longer listed as unfinished. AP-09 itself did not implement blocking, account deletion,
+general edit-any user operations, Settings, a second RBAC or production rollout. SA-03 later
+composed the existing measures/authorization capabilities into the canonical profile and added
+exact-Owner read-only account/session/history projections. SA-03 itself did not add
+deactivation; **SA-05 subsequently delivered the canonical Owner-only command**.
+Neither package adds foreign credential/session mutation or a second administration writer.
 
 ## User administrative measures and appeals (AP-10)
 
@@ -627,7 +644,7 @@ a presentation shortcut and not a policy key. Expiry and restrictions are indepe
 | Group | Exact child restriction keys | Fresh operation affected |
 | --- | --- | --- |
 | Publication | `topics.create`, `replies.create`, `attachments.upload` | New ordinary/Help topics, replies, attachments |
-| Own content | `posts.edit`, `profile.edit` | Own published-post editing, public profile edits |
+| Own content | `posts.edit`, `profile.edit` | Own published-post editing, own topic-title editing, public profile edits |
 | Submissions | `complaints.submit`, `helpSignals.submit` | New Complaint reports, Help signals |
 | Translation | `translations.generate` | New title, automatic/explicit body translation generation |
 | Administration | `admin.forum`, `admin.complaints`, `admin.security`, `admin.usersAccess` | Effective administrative permission families listed below |
@@ -704,10 +721,11 @@ it as moot in the same transaction. Existing committed publication receipts and 
 committed Complaint results remain replayable; changed/new operations are subject to fresh
 restriction admission before new side effects. Necessary cancel/cleanup continues to work;
 fresh denied writes produce no partial effect. If a new
-restriction arrives while Create Topic, Help Question or own published-post Edit is already
-mounted, that same editor operation retains its text/history and selected or in-flight
-attachments plus explicit Cancel/cleanup, while Publish/Save and keyboard submission are
-disabled. Fresh denied editors/actions are not offered, and revalidation never replays a POST.
+restriction arrives while Create Topic, Help Question, own published-post Edit or own
+topic-title Edit is already mounted, the current editor keeps its local input and explicit
+Cancel/cleanup; published-post editors additionally retain their existing history/attachment
+state. Publish/Save and keyboard submission are disabled while restricted. Fresh denied
+editors/actions are not offered, and revalidation never replays a POST.
 
 **Appeals** target an exact measure, never a Complaint Case or Complaint Appeal.
 The punished user may submit at most **three sequential appeals per measure**,
@@ -749,9 +767,11 @@ in the repository. Repository merge does not imply production/deployed rollout;
 
 AP-11 adds no new domain capability, schema, permission or grant. It closes the delivered
 AP-01–AP-10 scope by exercising existing boundaries together in a real local runtime:
-Users detail + canonical authorization mutation + History + same-session revoke/recovery,
+Admin Users detail + canonical authorization mutation + History + same-session revoke/recovery,
 Forum hierarchy/topic close/reopen + mounted reply editor + AP-10 reply restrictions, and
 protected response/privacy plus EN/RU/HE responsive behavior on the connected admin surfaces.
+SA-03 later replaced the standalone Admin Users detail with the canonical profile composition
+and guarded legacy redirect; that later migration is not part of AP-11 acceptance evidence.
 
 The connected admission constraints remain independent: topic closure does not replace or lift
 an active reply restriction, and lifting the measure does not reopen a closed topic. A stale

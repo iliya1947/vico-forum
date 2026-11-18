@@ -6,6 +6,7 @@ import {
   check,
   foreignKey,
   index,
+  inet,
   jsonb,
   integer,
   pgTable,
@@ -481,7 +482,23 @@ export const user = pgTable("user", {
     .$onUpdate(() => new Date())
     .notNull(),
   locale: text("locale"),
-});
+  // SA-04: server-owned account state; not registered in Better Auth additionalFields.
+  deactivatedAt: timestamp("deactivated_at", { withTimezone: true }),
+  deactivatedByUserId: text("deactivated_by_user_id"),
+  retainAtLeastUntil: timestamp("retain_at_least_until", { withTimezone: true }),
+}, (table) => [
+  check("user_deactivation_state_check", sql`(
+    (${table.deactivatedAt} is null and ${table.deactivatedByUserId} is null
+      and ${table.retainAtLeastUntil} is null)
+    or (
+      ${table.deactivatedAt} is not null and ${table.deactivatedByUserId} is not null
+      and btrim(${table.deactivatedByUserId}, chr(32) || chr(9) || chr(10) || chr(13) || chr(12) || chr(11)) <> ''
+      and ${table.retainAtLeastUntil} is not null
+      and (${table.retainAtLeastUntil} at time zone 'UTC') >=
+        ((${table.deactivatedAt} at time zone 'UTC') + interval '1 year')
+    )
+  )`),
+]);
 
 export const forumProfiles = pgTable("forum_profiles", {
   userId: text("user_id").primaryKey().references(() => user.id, { onDelete: "cascade" }),
@@ -631,7 +648,7 @@ export const authzRoles = pgTable("authz_roles", {
 export const authzPermissions = pgTable("authz_permissions", {
   key: text("key").primaryKey(),
 }, (table) => [check("authz_permissions_catalog_check", sql`${table.key} in (
-  'forum.topic.create', 'forum.reply.create', 'forum.topic.pin', 'forum.topic.close', 'forum.solution.manageOwn',
+  'forum.topic.create', 'forum.topic.title.editOwn', 'forum.reply.create', 'forum.topic.pin', 'forum.topic.close', 'forum.solution.manageOwn',
   'forum.solution.manageAny', 'forum.helpSignal.create', 'forum.helpNeedsDetails.manage',
   'forum.helpDuplicate.manage', 'forum.attachmentSecurity.read', 'forum.sourceLocale.correctOwn', 'forum.sourceLocale.correctAny',
   'forum.translation.generate', 'forum.post.editOwn', 'forum.post.history.read',
@@ -810,6 +827,8 @@ export const forumHelpDuplicateAppeals = pgTable(
     resolvedAt: timestamp("resolved_at", { withTimezone: true }),
   },
   (table) => [
+  index("duplicate_appeals_appellant_time_idx").on(table.appellantUserId, table.createdAt.desc().nullsLast(), table.id.desc().nullsLast()),
+  index("duplicate_appeals_time_idx").on(table.createdAt.desc().nullsLast(), table.id.desc().nullsLast()),
     uniqueIndex("forum_help_duplicate_appeals_pending_relationship_idx")
       .on(table.relationshipId)
       .where(sql`${table.status} = 'pending'`),
@@ -851,6 +870,8 @@ export const forumTopicTitleRevisions = pgTable(
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (table) => [
+  index("forum_topic_title_revisions_author_time_idx").on(table.authorId, table.createdAt.desc().nullsLast(), table.id.desc().nullsLast()),
+  index("forum_topic_title_revisions_time_idx").on(table.createdAt.desc().nullsLast(), table.id.desc().nullsLast()),
     unique("forum_topic_title_revisions_topic_id_id_unique").on(table.topicId, table.id),
     unique("forum_topic_title_revisions_owner_source_unique").on(table.topicId, table.id, table.sourceLocale),
     foreignKey({
@@ -1142,6 +1163,8 @@ export const forumAttachmentSecurityEvents = pgTable(
   (table) => [
     unique("forum_attachment_security_events_upload_id_unique").on(table.uploadId),
     index("forum_attachment_security_events_created_idx").on(table.createdAt, table.id),
+    index("forum_attachment_security_events_uploader_created_idx")
+      .on(table.uploadedByUserId, table.createdAt.desc(), table.id.desc()),
   ],
 );
 
@@ -1167,6 +1190,10 @@ export const forumHelpSignals = pgTable(
     resolvedAt: timestamp("resolved_at", { withTimezone: true }),
   },
   (table) => [
+  index("help_signals_terminal_submitter_time_idx").on(table.submittedByUserId, table.resolvedAt.desc().nullsLast(), table.id.desc().nullsLast()).where(sql`${table.status} IN ('withdrawn','superseded') AND ${table.resolvedAt} IS NOT NULL`),
+  index("help_signals_terminal_resolver_time_idx").on(table.resolvedByUserId, table.resolvedAt.desc().nullsLast(), table.id.desc().nullsLast()).where(sql`${table.status} IN ('withdrawn','superseded') AND ${table.resolvedAt} IS NOT NULL`),
+  index("help_signals_terminal_time_idx").on(table.resolvedAt.desc().nullsLast(), table.id.desc().nullsLast()).where(sql`${table.status} IN ('withdrawn','superseded') AND ${table.resolvedAt} IS NOT NULL`),
+  index("help_signals_time_idx").on(table.createdAt.desc().nullsLast(), table.id.desc().nullsLast()),
     uniqueIndex("forum_help_signals_pending_needs_details_submitter_idx")
       .on(table.topicId, table.submittedByUserId)
       .where(sql`${table.status} = 'pending' and ${table.kind} = 'needs-details'`),
@@ -1274,6 +1301,10 @@ export const forumReplyNotifications = pgTable(
     readAt: timestamp("read_at", { withTimezone: true }),
   },
   (table) => [
+  index("notification_recipient_read_time_idx").on(table.recipientUserId, table.readAt.desc().nullsLast(), table.id.desc().nullsLast()).where(sql`${table.readAt} IS NOT NULL`),
+  index("notification_actor_time_idx").on(table.actorUserId, table.createdAt.desc().nullsLast(), table.id.desc().nullsLast()).where(sql`${table.actorUserId} IS NOT NULL`),
+  index("notification_read_time_idx").on(table.readAt.desc().nullsLast(), table.id.desc().nullsLast()).where(sql`${table.readAt} IS NOT NULL`),
+  index("notification_created_time_idx").on(table.createdAt.desc().nullsLast(), table.id.desc().nullsLast()),
     check("forum_reply_notifications_kind_check", sql`(${table.kind} in ('reply','mention') and ${table.actorUserId} is not null and ${table.topicId} is not null and ${table.postId} is not null and ${table.complaintDecisionId} is null and ${table.complaintAppealId} is null) or (${table.kind} = 'complaint-decision' and ${table.complaintDecisionId} is not null and ${table.complaintAppealId} is null and ${table.actorUserId} is null and ${table.topicId} is null and ${table.postId} is null) or (${table.kind} = 'complaint-appeal-result' and ${table.complaintAppealId} is not null and ${table.complaintDecisionId} is null and ${table.actorUserId} is null and ${table.topicId} is null and ${table.postId} is null)`),
     unique("forum_reply_notifications_recipient_decision_unique").on(table.recipientUserId, table.complaintDecisionId),
     unique("forum_reply_notifications_recipient_appeal_unique").on(table.recipientUserId,table.complaintAppealId),
@@ -1307,6 +1338,8 @@ export const forumPostRevisions = pgTable(
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (table) => [
+  index("forum_post_revisions_author_time_idx").on(table.authorId, table.createdAt.desc().nullsLast(), table.id.desc().nullsLast()),
+  index("forum_post_revisions_time_idx").on(table.createdAt.desc().nullsLast(), table.id.desc().nullsLast()),
     unique("forum_post_revisions_post_id_id_unique").on(table.postId, table.id),
     unique("forum_post_revisions_owner_source_unique").on(table.postId, table.id, table.sourceLocale),
     foreignKey({
@@ -1631,6 +1664,7 @@ export const forumComplaintTargets = pgTable("forum_complaint_targets", {
   titleRevisionId: text("title_revision_id"),
   affectedAuthorId: text("affected_author_id").notNull().references(() => user.id, { onDelete: "restrict" }),
 }, t => [
+  index("complaint_targets_affected_idx").on(t.affectedAuthorId, t.id),
   check("complaint_target_shape", sql`(${t.kind} = 'post' and ${t.postId} is not null and ${t.postRevisionId} is not null and ${t.titleRevisionId} is null) or (${t.kind} = 'topic-title' and ${t.postId} is null and ${t.postRevisionId} is null and ${t.titleRevisionId} is not null)`),
   foreignKey({ name: "complaint_target_post_topic_fk", columns: [t.topicId, t.postId], foreignColumns: [forumPosts.topicId, forumPosts.id] }).onDelete("restrict"),
   foreignKey({ name: "complaint_target_post_revision_fk", columns: [t.postId, t.postRevisionId], foreignColumns: [forumPostRevisions.postId, forumPostRevisions.id] }).onDelete("restrict"),
@@ -1650,6 +1684,7 @@ export const forumComplaintCases = pgTable("forum_complaint_cases", {
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   resolvedAt: timestamp("resolved_at", { withTimezone: true }),
 }, t => [
+  index("complaint_cases_target_all_idx").on(t.targetId, t.id),
   unique("complaint_case_target_unique").on(t.id, t.targetId),
   foreignKey({ name: "complaint_case_previous_fk", columns: [t.previousCaseId], foreignColumns: [t.id] }).onDelete("restrict"),
   check("complaint_case_previous_not_self", sql`${t.previousCaseId} is null or ${t.previousCaseId} <> ${t.id}`),
@@ -1745,6 +1780,8 @@ export const forumComplaintEvents = pgTable("forum_complaint_events", {
   appealId: text("appeal_id"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 }, t => [
+  index("complaint_events_actor_time_idx").on(t.actorUserId, t.createdAt.desc().nullsLast(), t.id.desc().nullsLast()),
+  index("complaint_events_time_idx").on(t.createdAt.desc().nullsLast(), t.id.desc().nullsLast()),
   unique("complaint_event_operation_unique").on(t.actorUserId, t.operationId),
   index("complaint_event_case_created_idx").on(t.caseId, t.createdAt, t.id),
   foreignKey({ name: "complaint_event_report_fk", columns: [t.caseId,t.complaintId], foreignColumns: [forumComplaints.caseId,forumComplaints.id] }).onDelete("restrict"),
@@ -1791,7 +1828,12 @@ export const adminHistory = pgTable("admin_history", {
   context: jsonb("context").notNull(),
   reason: text("reason"),
 }, table => [
+  index("admin_history_signal_direct_review_idx").on(sql`(${table.context} ->> 'signalId')`, table.targetId).where(sql`${table.action}='help.signalReviewed' AND ${table.targetType}='topic'`),
   uniqueIndex("admin_history_order_idx").on(table.position.desc()),
+  index("admin_history_timeline_idx").on(table.occurredAt.desc(), table.id.desc()),
+   index("admin_history_actor_occurred_idx").on(table.actorId, table.occurredAt.desc(), table.id.desc()),
+   index("admin_history_target_occurred_idx").on(table.targetType, table.targetId,
+     table.occurredAt.desc(), table.id.desc()),
   check("admin_history_action_target_check", sql`(
     ${table.action} in ('role.created', 'role.renamed', 'role.deleted', 'role.grantsChanged') and ${table.targetType} = 'role'
   ) or (${table.action} in ('user.roleAssigned', 'user.overrideChanged') and ${table.targetType} = 'user')
@@ -1826,6 +1868,7 @@ export const ownerEvents = pgTable("owner_events", {
   correlationId: text("correlation_id"),
   payload: jsonb("payload").notNull(),
 }, t => [
+  index("owner_events_scope_time_idx").on(t.monitorKey, t.occurredAt.desc().nullsLast(), t.id.desc().nullsLast()),
   uniqueIndex("owner_events_position_idx").on(t.position.desc()),
   uniqueIndex("owner_events_occurrence_idx").on(t.source, t.occurrenceKey),
   index("owner_events_monitor_idx").on(t.monitorKey, t.position.desc()),
@@ -1833,6 +1876,9 @@ export const ownerEvents = pgTable("owner_events", {
   index("owner_events_entity_idx").on(t.entityType, t.entityId, t.position.desc()),
   index("owner_events_actor_idx").on(t.actorUserId, t.position.desc()),
   index("owner_events_target_idx").on(t.targetUserId, t.position.desc()),
+  index("owner_events_timeline_idx").on(t.occurredAt.desc(), t.id.desc()),
+   index("owner_events_actor_occurred_idx").on(t.actorUserId, t.occurredAt.desc(), t.id.desc()),
+   index("owner_events_target_occurred_idx").on(t.targetUserId, t.occurredAt.desc(), t.id.desc()),
 ]);
 
 /** Retained measured states are samples, never reconstructed domain events. */
@@ -1848,8 +1894,102 @@ export const ownerMonitorObservations = pgTable("owner_monitor_observations", {
   value: jsonb("value").notNull(),
   fingerprint: text("fingerprint").notNull(),
 }, t => [
+  index("owner_observations_scope_time_idx").on(t.monitorKey, t.resourceScope, t.observedAt.desc().nullsLast(), t.id.desc().nullsLast()),
   uniqueIndex("owner_monitor_observations_position_idx").on(t.position.desc()),
   index("owner_monitor_observations_scope_idx").on(t.monitorKey, t.resourceScope, t.position.desc()),
+  index("owner_monitor_observations_timeline_idx").on(t.observedAt.desc(), t.id.desc()),
+]);
+
+/** SA-02: attributed attempts coalesce within a DB-chosen UTC recording hour.
+ * Mutable counts never alter the immutable admittedAt pagination key.
+ * Epoch admission and per-pool quota are enforced by the transactional writer.
+ */
+export const ownerAttemptPatterns = pgTable("owner_attempt_patterns", {
+  id: uuid("id").primaryKey(),
+  recordingEpochStart: timestamp("recording_epoch_start", { withTimezone: true, precision: 3 }).notNull(),
+  admittedAt: timestamp("admitted_at", { withTimezone: true, precision: 3 }).notNull()
+    .default(sql`clock_timestamp()`),
+  pool: text("pool").notNull(),
+  actorUserId: text("actor_user_id"),
+  networkIp: inet("network_ip"),
+  networkQuality: text("network_quality").notNull(),
+  surface: text("surface").notNull(),
+  operation: text("operation").notNull(),
+  outcome: text("outcome").notNull(),
+  httpStatus: integer("http_status"),
+  directCode: text("direct_code"),
+  firstOccurredAt: timestamp("first_occurred_at", { withTimezone: true, precision: 3 }).notNull(),
+  lastOccurredAt: timestamp("last_occurred_at", { withTimezone: true, precision: 3 }).notNull(),
+  count: bigint("count", { mode: "bigint" }).notNull().default(1n),
+  saturatedCount: boolean("saturated_count").notNull().default(false),
+}, t => [
+  unique("owner_attempt_patterns_epoch_identity_unique").on(
+    t.recordingEpochStart, t.pool, t.actorUserId, t.networkIp, t.networkQuality,
+    t.surface, t.operation, t.outcome, t.httpStatus, t.directCode,
+  ).nullsNotDistinct(),
+  index("owner_attempt_patterns_timeline_idx").on(t.admittedAt.desc(), t.id.desc()),
+   index("owner_attempt_patterns_actor_admitted_idx").on(t.actorUserId, t.admittedAt.desc(), t.id.desc()),
+  index("owner_attempt_patterns_epoch_idx").on(t.recordingEpochStart, t.pool),
+  check("owner_attempt_patterns_epoch_check",
+    sql`${t.recordingEpochStart} = date_trunc('hour', ${t.recordingEpochStart}, 'UTC')`),
+  check("owner_attempt_patterns_source_check",
+    sql`(${t.pool} = 'authenticated' and ${t.actorUserId} is not null)
+      or (${t.pool} = 'anonymous' and ${t.actorUserId} is null and ${t.networkIp} is not null)`),
+  check("owner_attempt_patterns_network_check",
+    sql`${t.networkQuality} in ('trusted', 'qualified', 'unknown')
+      and (${t.networkIp} is not null or ${t.networkQuality} = 'unknown')
+      and (${t.networkIp} is null or masklen(${t.networkIp}) =
+        case family(${t.networkIp}) when 4 then 32 else 128 end)`),
+  check("owner_attempt_patterns_kind_check",
+    sql`${t.surface} in ('auth', 'access')
+      and ${t.operation} in (
+        'sign-up', 'sign-in', 'method-link', 'password-change',
+        'session-revoke', 'session-revoke-all', 'sign-out',
+        'registration-admission', 'owner-guard'
+      )
+      and ${t.outcome} in ('denied', 'failed', 'rate-limited', 'unavailable')
+      and ((${t.httpStatus} between 400 and 599 and ${t.directCode} is null)
+        or (${t.httpStatus} is null and ${t.directCode} in (
+          'unauthorized', 'forbidden', 'invalid', 'rate-limited', 'unavailable'
+        )))`),
+  check("owner_attempt_patterns_counter_check",
+    sql`${t.count} > 0 and ${t.firstOccurredAt} <= ${t.lastOccurredAt}`),
+]);
+
+/** Bounded fixed slots per recording hour, including quotas and missing-coverage states. */
+export const ownerAttemptTelemetryState = pgTable("owner_attempt_telemetry_state", {
+  recordingEpochStart: timestamp("recording_epoch_start", { withTimezone: true, precision: 3 }).notNull(),
+  slot: text("slot").notNull(),
+  admittedAt: timestamp("admitted_at", { withTimezone: true, precision: 3 }).notNull()
+    .default(sql`clock_timestamp()`),
+  used: integer("used").notNull().default(0),
+  capacity: integer("capacity"),
+  firstOccurredAt: timestamp("first_occurred_at", { withTimezone: true, precision: 3 }),
+  lastOccurredAt: timestamp("last_occurred_at", { withTimezone: true, precision: 3 }),
+  count: bigint("count", { mode: "bigint" }).notNull().default(0n),
+  saturatedCount: boolean("saturated_count").notNull().default(false),
+}, t => [
+  primaryKey({ name: "owner_attempt_telemetry_state_pk", columns: [t.recordingEpochStart, t.slot] }),
+  index("owner_attempt_telemetry_state_timeline_idx").on(t.admittedAt.desc(), t.slot),
+  check("owner_attempt_telemetry_state_epoch_check",
+    sql`${t.recordingEpochStart} = date_trunc('hour', ${t.recordingEpochStart}, 'UTC')`),
+  check("owner_attempt_telemetry_state_slot_check", sql`${t.slot} in (
+    'quota.authenticated', 'quota.anonymous',
+    'unknown.auth', 'unknown.access',
+    'overflow.authenticated.auth', 'overflow.authenticated.access',
+    'overflow.anonymous.auth', 'overflow.anonymous.access',
+    'gap.auth', 'gap.access'
+  )`),
+  check("owner_attempt_telemetry_state_quota_check",
+    sql`(${t.slot} in ('quota.authenticated', 'quota.anonymous')
+      and ${t.capacity} = 256 and ${t.used} between 0 and ${t.capacity})
+      or (${t.slot} not in ('quota.authenticated', 'quota.anonymous')
+        and ${t.capacity} is null and ${t.used} = 0)`),
+  check("owner_attempt_telemetry_state_counter_check",
+    sql`${t.count} >= 0 and
+      ((${t.firstOccurredAt} is null and ${t.lastOccurredAt} is null and ${t.count} = 0)
+        or (${t.firstOccurredAt} is not null and ${t.lastOccurredAt} is not null
+          and ${t.firstOccurredAt} <= ${t.lastOccurredAt} and ${t.count} > 0))`),
 ]);
 
 export const forumComplaintActivity = pgTable("forum_complaint_activity", {
@@ -1900,6 +2040,7 @@ export const userMeasures = pgTable("user_measures", {
   liftedByUserId: text("lifted_by_user_id").references(() => user.id, { onDelete: "restrict" }),
   liftReason: text("lift_reason"),
 }, t => [
+  index("user_measures_lift_actor_idx").on(t.liftedByUserId, t.id).where(sql`${t.liftedAt} IS NOT NULL`),
   index("user_measures_target_created_idx").on(t.targetUserId, t.createdAt, t.id),
   check("user_measures_issuer_floor_check", sql`${t.issuerAuthorityFloor} between 1 and 3`),
   check("user_measures_version_check", sql`${t.version} > 0`),
@@ -1943,6 +2084,11 @@ export const userMeasureAppeals = pgTable("user_measure_appeals", {
   reviewerExplanation: text("reviewer_explanation"),
   remedy: text("remedy"),
 }, t => [
+  index("measure_appeals_moot_measure_time_idx").on(t.measureId, t.resolvedAt.desc().nullsLast(), t.id.desc().nullsLast()).where(sql`${t.status}='moot' AND ${t.resolvedAt} IS NOT NULL`),
+  index("measure_appeals_moot_subject_time_idx").on(t.subjectUserId, t.resolvedAt.desc().nullsLast(), t.id.desc().nullsLast()).where(sql`${t.status}='moot' AND ${t.resolvedAt} IS NOT NULL`),
+  index("measure_appeals_moot_time_idx").on(t.resolvedAt.desc().nullsLast(), t.id.desc().nullsLast()).where(sql`${t.status}='moot' AND ${t.resolvedAt} IS NOT NULL`),
+  index("measure_appeals_subject_time_idx").on(t.subjectUserId, t.createdAt.desc().nullsLast(), t.id.desc().nullsLast()),
+  index("measure_appeals_time_idx").on(t.createdAt.desc().nullsLast(), t.id.desc().nullsLast()),
   unique("user_measure_appeals_measure_ordinal_unique").on(t.measureId, t.ordinal),
   uniqueIndex("user_measure_appeals_one_pending_idx").on(t.measureId).where(sql`${t.status} = 'pending'`),
   index("user_measure_appeals_measure_created_idx").on(t.measureId, t.createdAt, t.id),

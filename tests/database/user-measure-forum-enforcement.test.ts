@@ -1386,8 +1386,8 @@ describe("AP-10 private attachment upload admission under active measures", () =
     ctx.set(forumAttachmentStoreContext, {
       admitUpload: (owner: string, key: string, draft: string, id: string) =>
         attachments.admitUpload(owner, key, draft, id),
-      recordUploadObject: (key: string) => attachments.recordUploadObject(key),
-      activateUploadObject: (key: string, etag: string) => attachments.activateUploadObject(key, etag),
+      recordUploadObject: (actor: string, key: string) => attachments.recordUploadObject(actor, key),
+      activateUploadObject: (actor: string, key: string, etag: string) => attachments.activateUploadObject(actor, key, etag),
       createDraftAttachment: async (input: Parameters<typeof attachments.createDraftAttachment>[0]) => {
         await createMeasure("attachments.upload");
         return attachments.createDraftAttachment(input);

@@ -4,6 +4,8 @@ import { describe, expect, it, vi } from "vitest";
 import { authSessionContext, type AuthSession } from "../auth/request-context";
 import { forumReaderContext, forumWriterContext } from "../forum/request-context";
 import { ForumEntityNotFoundError } from "../../db/forum-repository";
+import { AccountInactiveError, AccountMissingError } from "../../db/account-state";
+import { ForumStorageUnavailableError } from "../../db/hyperdrive-forum";
 import { action, loader } from "./notifications";
 
 const session = {
@@ -91,6 +93,45 @@ describe("notifications route", () => {
         readAt: null,
       }],
     });
+  });
+
+  it("allowlists notifications and masks a malformed deleted actor before .data serialization",async()=>{
+    const value=context();
+    const secret="SECRET_RETAINED_NOTIFICATION_ACTOR";
+    const readNotifications=vi.fn(async()=>({
+      page:0,total:3,hasMore:false,items:[
+        {id:"n-deleted",kind:"mention" as const,actorName:secret,actorIdentityKind:"deleted" as const,
+          topicId:"topic-a",topicTitle:"Safe title",postId:"post-a",caseId:null,appealId:null,
+          createdAt:new Date("2026-10-03T10:00:00Z"),readAt:null,
+          deactivatedAt:"SECRET_LIFECYCLE",deactivatedByUserId:"SECRET_ACTOR",
+          image:"SECRET_IMAGE",email:"SECRET_EMAIL",unexpected:"SECRET_EXTRA"},
+        {id:"n-active",kind:"reply" as const,actorName:"Visible actor",
+          topicId:"topic-b",topicTitle:"Active title",postId:"post-b",caseId:null,
+          createdAt:new Date("2026-10-03T11:00:00Z"),readAt:new Date("2026-10-04T10:00:00Z")},
+        {id:"n-system",kind:"complaint-decision" as const,actorName:secret,
+          topicId:null,topicTitle:null,postId:null,caseId:"case-c",appealId:null,
+          createdAt:new Date("2026-10-03T12:00:00Z"),readAt:null,
+          deactivatedAt:"SECRET_LIFECYCLE"},
+      ],
+    }));
+    value.set(forumReaderContext,{readNotifications} as never);
+    const result=await loader({params:{locale:"he"},context:value});
+    expect(result).toEqual({locale:"he",page:0,total:3,hasMore:false,notifications:[
+      {id:"n-deleted",kind:"mention",actorName:"Deleted user",actorIdentityKind:"deleted",
+        topicId:"topic-a",topicTitle:"Safe title",postId:"post-a",caseId:null,appealId:null,
+        createdAt:"2026-10-03T10:00:00.000Z",readAt:null},
+      {id:"n-active",kind:"reply",actorName:"Visible actor",
+        topicId:"topic-b",topicTitle:"Active title",postId:"post-b",caseId:null,
+        createdAt:"2026-10-03T11:00:00.000Z",readAt:"2026-10-04T10:00:00.000Z"},
+      {id:"n-system",kind:"complaint-decision",actorName:null,
+        topicId:null,topicTitle:null,postId:null,caseId:"case-c",appealId:null,
+        createdAt:"2026-10-03T12:00:00.000Z",readAt:null},
+    ]});
+    const serialized=JSON.stringify(result);
+    for(const marker of [secret,"SECRET_LIFECYCLE","SECRET_ACTOR","SECRET_IMAGE","SECRET_EMAIL","SECRET_EXTRA"]){
+      expect(serialized).not.toContain(marker);
+    }
+    expect(readNotifications).toHaveBeenCalledExactlyOnceWith("user-1",0);
   });
 
   it("rejects duplicate, unknown, oversized and invalid notification POST before mutation",async()=>{
@@ -182,6 +223,41 @@ describe("notifications route", () => {
       userId: "user-1",
       notificationId: "missing-notification",
     });
+  });
+
+  it("maps late inactive/missing lifecycle denial to generic private 401 with no redirect", async () => {
+    const value = context();
+    const markNotificationRead = vi.fn();
+    value.set(forumWriterContext, { markNotificationRead } as never);
+    for (const error of [new AccountInactiveError(), new AccountMissingError()]) {
+      markNotificationRead.mockRejectedValueOnce(error);
+      const result = await action({
+        request: openRequest(), params: { locale: "en" }, context: value,
+      });
+      expect(result).not.toBeInstanceOf(Response);
+      expect(result).toMatchObject({
+        data: { error: "unauthenticated" },
+        init: { status: 401, headers: { "Cache-Control": "private, no-store" } },
+      });
+      expect(JSON.stringify(result)).not.toMatch(/AccountInactive|AccountMissing|deactivated|Location/);
+    }
+    expect(markNotificationRead).toHaveBeenCalledTimes(2);
+    expect(markNotificationRead).toHaveBeenLastCalledWith({
+      userId: "user-1", notificationId: "notification-1",
+    });
+    markNotificationRead.mockRejectedValueOnce(new ForumStorageUnavailableError());
+    const unavailable = await action({
+      request: openRequest(), params: { locale: "en" }, context: value,
+    });
+    expect(unavailable).toMatchObject({
+      data: { error: "unavailable" },
+      init: { status: 503, headers: { "Cache-Control": "private, no-store" } },
+    });
+    const bug = new Error("unexpected notification failure");
+    markNotificationRead.mockRejectedValueOnce(bug);
+    await expect(action({
+      request: openRequest(), params: { locale: "en" }, context: value,
+    })).rejects.toBe(bug);
   });
 
   it("marks the selected notification read and redirects to its reply", async () => {

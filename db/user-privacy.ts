@@ -1,6 +1,7 @@
 import { eq, sql } from "drizzle-orm";
 import type { NodePgDatabase } from "drizzle-orm/node-postgres";
 import { forumOnlinePresence, user, userPrivacyPreferences } from "./schema";
+import { AccountMissingError, assertActiveAccountForDrizzleMutation } from "./account-state";
 
 export class UserPrivacyAccountMissingError extends Error {
   constructor(message = "Authenticated account no longer exists") {
@@ -12,10 +13,12 @@ export class UserPrivacyAccountMissingError extends Error {
 type PrivacyTransaction = Parameters<Parameters<NodePgDatabase["transaction"]>[0]>[0];
 
 /** Serialize a subject's preference mutation and heartbeat without a global lock. */
-export async function lockPrivacySubject(tx: PrivacyTransaction, actorId: string): Promise<void> {
-  const [account] = await tx.select({ id: user.id }).from(user)
+export async function lockPrivacySubject(tx: PrivacyTransaction, actorId: string): Promise<Date | null> {
+  const [account] = await tx.select({ id: user.id, deactivatedAt: user.deactivatedAt }).from(user)
     .where(eq(user.id, actorId)).for("update");
   if (!account) throw new UserPrivacyAccountMissingError();
+  // Return the authoritative lifecycle value under the same row lock.
+  return account.deactivatedAt;
 }
 
 export class DrizzleUserPrivacyRepository {
@@ -34,7 +37,15 @@ export class DrizzleUserPrivacyRepository {
 
   async save(actorId: string, showOnline: boolean): Promise<void> {
     await this.database.transaction(async (tx) => {
-      await lockPrivacySubject(tx, actorId);
+      try {
+        await lockPrivacySubject(tx, actorId);
+      } catch (error) {
+        // Writer admission differs from the existing read-only missing-account contract.
+        if (error instanceof UserPrivacyAccountMissingError) throw new AccountMissingError();
+        throw error;
+      }
+      // Reuse the stronger subject lock held above, before ON/OFF/repeated effects.
+      await assertActiveAccountForDrizzleMutation(tx, actorId);
       await tx.insert(userPrivacyPreferences).values({ userId: actorId, showOnline })
         .onConflictDoUpdate({
           target: userPrivacyPreferences.userId,
