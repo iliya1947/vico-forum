@@ -29,3 +29,10 @@ E2 вынесена владельцу: распространять ли сущ
 Проверены: E1 permission/catalog/migration/default grants; E2 `posts.edit` в loader и authoritative transaction; ownership/AccountState/CAS/no-op; `sourceLocale: und`; revision-bound translations; route validation и 409 current-original flow; UI buffer/rebase isolation; schema snapshot/manifest; изменённые tests/workflow. GitHub exact-head checks — success.
 
 Formal PASS пока удержан только до owner visual acceptance, требуемого текущим AGENTS.md для UI-изменения. Implementation head менять не требуется по результатам технического review.
+
+
+## 2026-11-18 — formal coordinator PASS
+
+Уточнение владельца: visual acceptance для этой функции отложен в отдельный UI/UX pass и не блокирует текущий bounded-цикл. Предыдущее удержание PASS по visual gate было ошибочным применением общего правила без учёта конкретного решения владельца.
+
+Coordinator review #343 на exact head `10321fdae762004ac2d55e9618a89c6c41e0d2ac`: PASS. Current-scope defects не найдены. Следующий reviewer — Марк / Codex-6 Sol.
