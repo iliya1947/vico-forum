@@ -7,9 +7,10 @@
 3. **L1 — Monitoring/incident-response inventory & ownership boundaries завершён: PASS, 0 новых current-scope findings и 0 deferred blockers.**
 4. **L2 — Security source attribution / telemetry admission завершён: 1 новый current-scope finding — `MON-AUTH-OUTCOME-01 Low/P3`; 0 deferred blockers.**
 5. **L3 — Retention / coalescing / privacy завершён: PASS, 0 новых current-scope findings и 0 deferred blockers.**
-6. Overall #315 остаётся **34 current findings + 4 deferred Stage-6 blockers**.
-7. Мира — auditor/coordinator. Remediation, technical planner и implementer не назначены.
-8. Production/Cloudflare/Neon/GitHub/provider mutation, external incident drill и destructive/fault-injection действия не разрешены и не выполнялись.
+6. **L4 — Alertability / failure signals завершён: PASS, 0 новых current-scope findings и 0 deferred blockers.**
+7. Overall #315 остаётся **34 current findings + 4 deferred Stage-6 blockers**.
+8. Мира — auditor/coordinator. Remediation, technical planner и implementer не назначены.
+9. Production/Cloudflare/Neon/GitHub/provider mutation, external incident drill и destructive/fault-injection действия не разрешены и не выполнялись.
 
 ## Цель
 
@@ -161,6 +162,25 @@
 17. #315 aggregate remains **34 current findings + 4 deferred Stage-6 blockers**. Current severity remains **13 Moderate/P2 + 21 Low/P3**; deferred remains **2 Moderate/P2 + 2 Low/P3**.
 18. Next bounded slice: **L4 — Alertability / failure signals**.
 
+## L4 — результат
+
+1. Audit target: current `main` `9c4639d23ca075c8bb92fbb909b96593d7bee127`.
+2. Verdict: **PASS — 0 новых current-scope findings, 0 deferred blockers.**
+3. System dependency/current-read failure is not converted into false health. A classified monitoring-storage/DB outage produces protected `503`/unavailable behavior; SA-08 partial-source composition keeps neighboring measured areas while marking failed sources partial/unavailable and does not synthesize zeroes.
+4. Observation persistence failure is separately visible as `recording="unavailable"` on System/Accounts/Security current-state surfaces. A successful current read therefore remains usable while the operator is told its retained observation could not be recorded.
+5. Security auth/access monitoring exposes retained attributed attempts, rate-limited attempts, unknown source counts, capacity overflow, explicit recording gaps, last-seen time and current-hour pool usage. The UI explicitly states that telemetry is coalesced/best-effort, that it is not a complete security audit or exact 24-hour count, and that zero does not prove absence of attacks.
+6. Attachment security evidence has a current signal path: exact Owner Security Monitoring exposes total / previous-24-hour / latest-event time and links to the existing permission-gated Needs attention → Security → Attachments queue. Ordinary actors with `forum.attachmentSecurity.read` receive the same canonical queue entry through current Attention navigation; no duplicate security mutation/action backend is needed.
+7. System request-failure monitoring is deliberately narrow and truthfully labeled. The backend stores only successfully recorded 5xx response events, the current page says “recorded 5xx responses; not continuous uptime or provider monitoring”, and History says only retained events/observations are shown. This does not claim a complete error-rate monitor.
+8. A candidate gap was checked end-to-end: an exception thrown out of `applicationFetch()` on an Owner-only path can be converted by the outer protected failure wrapper into a safe 500/503 after the inner `recordRequestFailure()` hook has been bypassed. This is **not counted as an L4 finding** because the approved/current `system.requests` contract is explicitly best-effort recorded failures only, not all emitted 5xx outcomes; the UI exposes that limited coverage rather than asserting completeness.
+9. The same distinction prevents an alerting false-negative from being presented as healthy state: System current UI has a page-level coverage disclaimer; attempt telemetry has explicit gap/overflow counters; Overview source status distinguishes measured/partial/unavailable/placeholder; History coverage warnings remain separate from zero-valued current counters.
+10. Current contextual action discoverability is sufficient for the pre-release contract: Monitoring cards link to their adjacent History and canonical action destinations where such actions actually exist. Read-only monitors are not required to invent mutations, acknowledgement states or incident tickets.
+11. No outbound pager/email/SMS/SIEM/on-call alert delivery is implemented or claimed. Its absence alone is not a current finding because Vico remains pre-release, Stage 6 is paused, Infrastructure is explicitly a Stage-6 placeholder, and ROADMAP Stage 6 separately requires deployed logs/observability/external-failure-path acceptance.
+12. Before public release, deployed Stage-6/Stage-7 acceptance must re-evaluate real runtime logs/observability and whether operational alert delivery/thresholds are required for the production environment. This is an acceptance gate, not a new repository defect established by L4.
+13. Exact deployed Cloudflare logging/alerting, WAF/Bot signals, Neon/Hyperdrive provider dashboards and external on-call integrations are **Информация не проверена**; they were not required to classify current repository behavior and were not mutated.
+14. No external alert delivery, production probe, fault injection, provider call, deployment or settings mutation was performed. Existing repository/browser acceptance evidence was inspected; tests were not executed during L4.
+15. #315 aggregate remains **34 current findings + 4 deferred Stage-6 blockers**. Current severity remains **13 Moderate/P2 + 21 Low/P3**; deferred remains **2 Moderate/P2 + 2 Low/P3**.
+16. Next bounded slice: **L5 — Audit / History integrity**.
+
 ## Finding criteria
 
 1. Concrete current/prepared monitoring or incident-response path.
@@ -179,5 +199,5 @@
 
 ## Следующий шаг
 
-1. После продолжения владельца выполнить **L4 — Alertability / failure signals** на current main и остановиться после результата.
+1. После продолжения владельца выполнить **L5 — Audit / History integrity** на current main и остановиться после результата.
 2. Remediation существующих findings/blockers Blocks B–L не начинать без отдельного назначения.
