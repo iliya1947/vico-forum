@@ -139,3 +139,12 @@ PR #343 на exact head `10321fdae762004ac2d55e9618a89c6c41e0d2ac`: **PASS**. П
 PR #343 проверен на неизменившемся exact head `10321fdae762004ac2d55e9618a89c6c41e0d2ac` против принятого scope и текущего `main`. Подтверждённых current-scope дефектов не найдено. Проверены permission/ownership/measure/AccountState, immutable revision/CAS, translation currentness, UI stale/conflict/rebase, migration/schema и относящиеся route/DB/browser tests. GitHub API: 17/17 checks success на том же head; самостоятельного повторного запуска тестов не было. Подробности и границы проверки — `.github/agents/chatgpt-6.md`.
 
 Независимый результат Лиры: PASS; следующий участник — Мира, сопоставление проверок и closeout. Реализация #343 не изменялась; служебный #342 не merge.
+
+
+## 2026-11-18 — Мира: независимые reviews сопоставлены, implementation готов к merge
+
+Лира и Марк независимо проверили один и тот же stable exact head `10321fdae762004ac2d55e9618a89c6c41e0d2ac` и оба дали PASS без подтверждённых current-scope findings. Их проверки согласуются с coordinator review Миры по фактическим границам: permission/catalog/migration, authoritative ownership/AccountState/`posts.edit`, immutable revision/CAS/no-op, revision-bound translations, route/UI conflict flow и отсутствие scope expansion.
+
+Совпадение выводов не использовано как самостоятельное доказательство: каждый review содержит собственную проверку цепочек и границ. Implementation PR #343 остаётся на том же exact head, base/main не изменился на момент closeout-проверки, PR mergeable.
+
+**Implementation #343 готов к merge владельцем.** После фактического merge следующий отдельный этап — заключительный docs PR: обновить authorization catalog/default grants, AP-10 `posts.edit` applicability и фактический PROJECT_STATE/migration state. До merge документация не должна заявлять функцию как состояние `main`.
