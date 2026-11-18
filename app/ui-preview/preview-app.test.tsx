@@ -1325,6 +1325,43 @@ describe("interactive Pages preview", () => {
     expect(screen.getByLabelText("Website")).toHaveValue("https://vico.example/");
   });
 
+  it("requires sign-in for guest direct access to Notifications", async () => {
+    render(<EmbeddedPreview scenarioId="notifications-guest-unauthenticated" />);
+
+    const unauthenticated = await screen.findByRole("alert");
+    expect(within(unauthenticated).getByRole("heading", { level: 1, name: "Sign in required" })).toBeInTheDocument();
+    expect(within(unauthenticated).getByText("Sign in to access this page.")).toBeInTheDocument();
+    expect(document.querySelector(".notifications-heading")).toBeNull();
+  });
+
+  it("requires sign-in for guest direct access to Unread", async () => {
+    render(<EmbeddedPreview scenarioId="unread-guest-unauthenticated" />);
+
+    const unauthenticated = await screen.findByRole("alert");
+    expect(within(unauthenticated).getByRole("heading", { level: 1, name: "Sign in required" })).toBeInTheDocument();
+    expect(within(unauthenticated).getByText("Sign in to access this page.")).toBeInTheDocument();
+    expect(document.querySelector(".unread-topic-groups")).toBeNull();
+    expect(document.querySelector(".unanswered-heading")).toBeNull();
+  });
+
+  it("requires sign-in for guest direct access to Needs attention", async () => {
+    render(<EmbeddedPreview scenarioId="attention-guest-unauthenticated" />);
+
+    const unauthenticated = await screen.findByRole("alert");
+    expect(within(unauthenticated).getByRole("heading", { level: 1, name: "Sign in required" })).toBeInTheDocument();
+    expect(within(unauthenticated).getByText("Sign in to access this page.")).toBeInTheDocument();
+    expect(document.querySelector(".attention-center-page")).toBeNull();
+  });
+
+  it("denies ordinary user direct access to Needs attention", async () => {
+    render(<EmbeddedPreview scenarioId="attention-user-forbidden" />);
+
+    const forbidden = await screen.findByRole("alert");
+    expect(within(forbidden).getByRole("heading", { level: 1, name: "Access denied" })).toBeInTheDocument();
+    expect(within(forbidden).getByText("You do not have permission to open this page.")).toBeInTheDocument();
+    expect(document.querySelector(".attention-center-page")).toBeNull();
+  });
+
   it("opens a notification, marks it read, and follows the referenced message", async () => {
     const user = userEvent.setup();
     render(<EmbeddedPreview scenarioId="notifications-user" identity="user" />);
