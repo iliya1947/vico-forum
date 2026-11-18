@@ -2,15 +2,16 @@
 
 ## Статус
 
-1. Scope создан 2026-11-18; current J2 audit target — `main` `7cc23edede57994cdedab49c1556ddb55034dd29`.
+1. Scope создан 2026-11-18; current J3 audit target — `main` `7cc23edede57994cdedab49c1556ddb55034dd29`.
 2. Blocks A–I уже закрыты как audit blocks; их findings в J не дублируются.
 3. **J1 — Current integration inventory & activation boundaries завершён: PASS, 0 новых current-scope findings и 0 deferred blockers.**
 4. **J2 — Google OAuth external-provider boundary завершён: 0 новых current-scope findings + 1 deferred Stage-6 blocker — `GOOGLE-OAUTH-SCOPE-01 Low/P3`.** Exact provider identity/state/PKCE/callback/origin/account-selection paths PASS apart from already-owned Block-B findings; prepared direct OAuth surface accepts caller-selected additional Google scopes beyond Vico's authentication-only product need.
-5. Current repository имеет Google OAuth foundation и translation provider/Queue abstractions, но source-of-truth и runtime wiring подтверждают отсутствие live Google OAuth acceptance и отсутствие active translation provider/Queue execution.
-6. Resend/Brevo/email-delivery integration в current `main` отсутствует; email verification/password recovery намеренно не реализованы.
-7. Следующий bounded slice после продолжения владельца — **J3: Email provider boundary**.
-8. Мира — auditor/coordinator. Remediation, technical planner и implementer не назначены.
-9. Production/provider/Cloudflare/GitHub settings mutation, OAuth client creation, Queue/provider activation и external calls не разрешены и не выполнялись.
+5. **J3 — Email provider boundary завершён: PASS, 0 новых current-scope findings и 0 deferred blockers.** Sender/verification/recovery implementation отсутствует; Better Auth 1.7.7 send/reset endpoints fail closed when sender callbacks are not configured.
+6. Current repository имеет Google OAuth foundation и translation provider/Queue abstractions, но source-of-truth и runtime wiring подтверждают отсутствие live Google OAuth acceptance и отсутствие active translation provider/Queue execution.
+7. Resend/Brevo/email-delivery integration в current `main` отсутствует; email verification/password recovery намеренно не реализованы.
+8. Следующий bounded slice после продолжения владельца — **J4: Translation provider data egress**.
+9. Мира — auditor/coordinator. Remediation, technical planner и implementer не назначены.
+10. Production/provider/Cloudflare/GitHub settings mutation, OAuth client creation, email account/provider activation, Queue/provider activation и external calls не разрешены и не выполнялись.
 
 ## J1 — результат
 
@@ -62,6 +63,27 @@
 **Prepared Stage-6 impact:** after user consent, Vico can acquire, persist and expose an own-account Google bearer token with authority unrelated to Vico's product needs, increasing provider abuse/reputation surface and blast radius of a later Vico compromise.
 
 **Boundary:** no live Google OAuth acceptance exists, Stage 6 is paused, Google consent is required, and cross-user token selection/takeover was not established. Therefore this is a deferred Low/P3 correction gate, not a current-stage finding.
+
+## J3 — результат
+
+1. Audit target: current `main` `7cc23edede57994cdedab49c1556ddb55034dd29`, installed `better-auth@1.7.7`.
+2. Verdict: **PASS — 0 новых current-scope findings, 0 deferred blockers.**
+3. Current product/source-of-truth is explicit: email/password sign-up/sign-in are active, but email verification, transactional email sender and password recovery remain intentionally deferred. First production release does not require verification/recovery.
+4. Repository search found **no Resend, Brevo, SMTP, Nodemailer, Mailgun, Postmark, SendGrid or generic `sendEmail` integration**, no email-provider SDK dependency, no sender module, no provider API endpoint, no provider webhook/bounce receiver and no corresponding API-key/runtime env field.
+5. Current `BetterAuthEnvironment` contains only Better Auth + Google OAuth values. `package.json` has no email-provider dependency and `wrangler.jsonc` has no email-provider binding/configuration.
+6. Exact Vico Better Auth config uses `emailAndPassword.enabled=true`, `requireEmailVerification=false`, password length limits only; it does **not** set `emailAndPassword.sendResetPassword` and does **not** configure `emailVerification.sendVerificationEmail`.
+7. Exact Better Auth `v1.7.7` source confirms `POST /request-password-reset` checks `sendResetPassword` first and returns `RESET_PASSWORD_DISABLED` before looking up the user, creating a reset verification row or calling any external sender.
+8. Exact Better Auth `v1.7.7` source confirms `POST /send-verification-email` checks `emailVerification.sendVerificationEmail` first and returns `VERIFICATION_EMAIL_NOT_ENABLED`; no email is sent without the callback.
+9. Current Vico sign-up does not manufacture verification flow: Better Auth computes `shouldSendVerificationEmail` from `sendOnSignUp ?? requireEmailVerification`; with current Vico `requireEmailVerification=false` and no `sendOnSignUp`, the branch is false.
+10. Current Vico client/UI exposes only email sign-up, email sign-in and Google auth. There is no password-recovery/forgot-password control, verification-email action or locale route implementing reset UI.
+11. Canonical wildcard `/api/auth/*` still exposes Better Auth's built-in reset/verification route family, but without sender callbacks the initiation endpoints are disabled. Random direct `/reset-password` tokens have no creation path from current Vico email flow. No active external-email trust/data-egress boundary is therefore present.
+12. There is no provider credential to audit, no bounce/webhook input, no sender-authentication configuration and no provider-side retained payload in current repository/runtime. Those checks become applicable only when an email provider is actually integrated.
+13. Enumeration findings from ordinary email sign-up/auth remain owned by **Block B**; J3 does not duplicate `AUTH-ENUM-01`. Provider-specific email enumeration cannot exist without a current sender/provider path.
+14. Future nuance, **not a finding now**: Better Auth 1.7.7 reset-password can create a credential account when a valid reset token belongs to a user without one. If Vico later implements recovery, Google-only-account password creation must be checked against the then-approved product contract. J3 plan explicitly says absent sender/recovery is closed as not-active rather than treated as a future defect.
+15. Resend/Brevo provider choice, sender-domain authentication, API-key scope, bounce/webhook verification, reset-token delivery, callback presentation and data minimization are **Информация не проверена** because no concrete provider integration exists to inspect. This is not a blocker for current Stage or Stage 6 as presently defined.
+16. No email account, API key, sender domain, webhook, external provider call, package install, deployment or setting mutation was created/performed.
+17. #315 aggregate remains **28 current findings + 4 deferred Stage-6 blockers**.
+18. Next bounded slice: **J4 — Translation provider data egress**.
 
 ## Цель
 
@@ -169,5 +191,5 @@
 
 ## Следующий шаг
 
-1. После продолжения владельца выполнить **J3 — Email provider boundary** на current main и остановиться после результата.
-2. `AUTH-LINK-01`, `AUTH-OAUTH-01` и `GOOGLE-OAUTH-SCOPE-01` не дублировать. Remediation существующих findings/blockers не начинать без отдельного назначения.
+1. После продолжения владельца выполнить **J4 — Translation provider data egress** на current main и остановиться после результата.
+2. `AUTH-ENUM-01`, `AUTH-LINK-01`, `AUTH-OAUTH-01` и `GOOGLE-OAUTH-SCOPE-01` не дублировать. Remediation существующих findings/blockers не начинать без отдельного назначения.
