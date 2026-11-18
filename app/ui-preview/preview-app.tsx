@@ -9,6 +9,7 @@ import {
 } from "../auth/auth-controls";
 import { PERMISSION_CATALOG, type PermissionKey } from "../authorization/catalog";
 import { CredentialView } from "../auth/credential-view";
+import { credentialReturnPath } from "../auth/credential-path";
 import type { EmailAuthActions, AuthClientActions } from "../auth/auth-client";
 import { AuthorizationAdminView } from "../authorization/admin-view";
 import { AdminTopicView } from "../admin/topic";
@@ -111,7 +112,10 @@ interface Scenario {
 
 export const scenarios: readonly Scenario[] = [
   { id: "credentials-sign-in", label: "Email sign-in", locale: "en", direction: "ltr", identity: "guest", path: "/en/sign-in", view: "credentials", allowedIdentities: ["guest"] },
+  { id: "credentials-sign-in-authenticated", label: "Email sign-in · authenticated redirect", locale: "en", direction: "ltr", identity: "user", path: "/en/sign-in", view: "credentials", allowedIdentities: ["user", "manager", "owner"] },
+  { id: "credentials-sign-in-return-to", label: "Email sign-in · return destination", locale: "en", direction: "ltr", identity: "guest", path: "/en/sign-in?returnTo=%2Fen%2Ftopics%2Ftyped-api%23post-answer", view: "credentials", allowedIdentities: ["guest"] },
   { id: "credentials-register", label: "Registration", locale: "en", direction: "ltr", identity: "guest", path: "/en/sign-up", view: "credentials", allowedIdentities: ["guest"] },
+  { id: "credentials-register-authenticated", label: "Registration · authenticated redirect", locale: "en", direction: "ltr", identity: "user", path: "/en/sign-up", view: "credentials", allowedIdentities: ["user", "manager", "owner"] },
   { id: "profile-public", label: "Profile", locale: "en", direction: "ltr", identity: "guest", path: "/en/users/maya", view: "profile" },
   { id: "profile-own", label: "Profile · own", locale: "en", direction: "ltr", identity: "user", path: "/en/users/alex", view: "profile", allowedIdentities: ["user", "manager"] },
   { id: "profile-edit", label: "Profile · edit", locale: "en", direction: "ltr", identity: "user", path: "/en/users/alex?edit=1", view: "profile", allowedIdentities: ["user", "manager"] },
@@ -1343,12 +1347,22 @@ function PreviewCredentialRoute({ scenario, interactions, mode }: {
   interactions: PreviewInteractionState;
   mode: "sign-in" | "sign-up";
 }) {
-  return <CredentialView locale={scenario.locale} mode={mode} returnTo={`/${scenario.locale}`}
+  const { returnTo } = useLoaderData() as { returnTo: string };
+  return <CredentialView locale={scenario.locale} mode={mode} returnTo={returnTo}
     registrationFlags={mode === "sign-up" ? {
       googleRegistrationEnabled: interactions.registrationGoogleEnabled,
       emailRegistrationEnabled: interactions.registrationEmailEnabled,
     } : undefined}
     emailActions={previewEmailActions} googleActions={previewGoogleActions} />;
+}
+
+function previewCredentialData(scenario: Scenario, request: Request) {
+  const returnTo = credentialReturnPath(
+    scenario.locale,
+    new URL(request.url).searchParams.get("returnTo"),
+  );
+  if (previewUser(scenario)) throw redirect(returnTo);
+  return { returnTo };
 }
 
 function previewRouter(
@@ -1383,8 +1397,16 @@ function previewRouter(
       path: "/:locale",
       element: <PreviewHomeRoute scenario={scenario} interactions={interactions} />,
     },
-    { path: "/:locale/sign-in", element: <PreviewCredentialRoute scenario={scenario} interactions={interactions} mode="sign-in" /> },
-    { path: "/:locale/sign-up", element: <PreviewCredentialRoute scenario={scenario} interactions={interactions} mode="sign-up" /> },
+    {
+      path: "/:locale/sign-in",
+      element: <PreviewCredentialRoute scenario={scenario} interactions={interactions} mode="sign-in" />,
+      loader: ({ request }) => previewCredentialData(scenario, request),
+    },
+    {
+      path: "/:locale/sign-up",
+      element: <PreviewCredentialRoute scenario={scenario} interactions={interactions} mode="sign-up" />,
+      loader: ({ request }) => previewCredentialData(scenario, request),
+    },
     {
       path: "/:locale/attention",
       element: <PreviewAttentionRoute scenario={scenario} interactions={interactions} />,
