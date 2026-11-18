@@ -239,3 +239,18 @@ the existing product/technical baseline.
 Returned one bounded correction to Lira: add concise permanent Watch contract to PROJECT.md
 (product semantics only; no implementation/CI/PR details). New head requires new coordinator
 docs cycle before independent review.
+
+
+## 2026-11-19 — Watch docs #349 re-review after WATCH-DOC-1: PASS
+
+Exact head `aa6584c6d600d807ebed9171adbde365b918b290`, main
+`34ddf42985f6dc348e77d0dcc90e0aecc37fd15e`.
+
+Confirmed correction diff from prior reviewed head is only PROJECT.md (+17/-0).
+Permanent Watch contract accurately reflects accepted/implemented semantics and contains
+no SQL/CI/history details. Whole docs PR re-reviewed: PROJECT_STATE current facts/0069 ceiling,
+history snapshot/index, Stage6 evidence through 0020 and deferred owner visual boundaries all
+remain correct.
+
+Exact docs CI 2/2 success; main unchanged. Coordinator PASS, current-doc defects 0.
+Next independent reviewer: Lev on same exact head; no changes allowed before his result.
