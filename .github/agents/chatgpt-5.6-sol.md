@@ -75,3 +75,14 @@ Coordinator review #343 на exact head `10321fdae762004ac2d55e9618a89c6c41e0d2a
 Список хранит ссылку, не content snapshot; показывает current title/public identity/location. Ordering — savedAt desc + topic id tie-break, bounded keyset pagination. Bookmarks остаются независимы от Watch/read-state/inbox и не создают notification semantics.
 
 Перед implementation обязательна только сверка плана с merged Watch/current main; перепроектирование без нового конфликта не требуется. Реализация Bookmarks пока не активирована.
+
+
+## 2026-11-18 — scope/fit review Mute/block
+
+План Лёвы проверен целиком. Реальные продуктовые forks сведены к M1/M2 и оставлены владельцу: семантика Mute и сила Block. Предыдущего утверждённого контракта этих названий в проекте/предыдущих решениях не найдено.
+
+Рекомендации: Mute конкретной темы подавляет все ordinary reply/mention notices из темы без изменения Watch; Block — directional user filter, подавляющий ordinary notices от target actor и сворачивающий его posts только для blocker, без publication ban/public-content privacy.
+
+Технически приняты под эту рекомендуемую модель: prospective no-backfill + separate suppression receipt для old-mention edit case; отдельные personal stores/self-state без RBAC; canonical topic/profile actions; private `/filters` undo list; no-store/private boundary; preservation of anchors/read-state/moderation/Complaint kinds; independence from Watch/Bookmarks.
+
+Mute/block implementation не активирован до решения владельца M1/M2.
