@@ -466,3 +466,10 @@ main/service refs и свежий owner scope. Feature tests/CI/browser для �
 **Лёва STOP после последнего плана из шести задач перед #320; следующий — Мира
 для whole-plan scope/fit.** Email/password lifecycle, UI/UX, Stage 6, release и
 прочий backlog этим назначением не открыты. Implementation-order сохранён.
+
+
+## 2026-11-18 — активное назначение: Bookmarks implementation #346
+
+По прямому уточнению владельца **реализовать Bookmarks в Draft PR #346**. Предыдущее назначение Лиры отменено. Использовать принятый Bookmarks plan B1/B2/B3/B5 из `USER_ACTIONS_SERVICE_PLAN.md`, сверив его с актуальным main после merged Watch и фактическим текущим состоянием #346. Не расширять реализацию в Mute/block, visibility, structure, #320 или Stage 6.
+
+Требуемый результат: законченный bounded Bookmarks slice с применимыми repository/DB/route/browser/CI проверками. После полной реализации зафиксировать stable exact head и результаты в #342, затем **STOP** для coordinator whole-PR review Миры. Так как Лёва является автором реализации, независимый review после PASS Миры выполняет Марк / Codex-6 Sol.
