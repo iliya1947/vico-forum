@@ -85,7 +85,8 @@ type PreviewVariant =
   | "settings-account-not-fresh"
   | "settings-account-google-only"
   | "settings-account-invalid-password"
-  | "settings-account-rate-limited";
+  | "settings-account-rate-limited"
+  | "settings-account-session-not-found";
 
 interface Scenario {
   id: string;
@@ -160,6 +161,7 @@ export const scenarios: readonly Scenario[] = [
   { id: "settings-account-google-only", label: "Settings · Account · Google only", locale: "en", direction: "ltr", identity: "user", path: "/en/settings/account", view: "section", variant: "settings-account-google-only", allowedIdentities: ["user", "manager", "owner"] },
   { id: "settings-account-invalid-password", label: "Settings · Account · wrong password", locale: "en", direction: "ltr", identity: "user", path: "/en/settings/account", view: "section", variant: "settings-account-invalid-password", allowedIdentities: ["user", "manager", "owner"] },
   { id: "settings-account-rate-limited", label: "Settings · Account · rate limited", locale: "en", direction: "ltr", identity: "user", path: "/en/settings/account", view: "section", variant: "settings-account-rate-limited", allowedIdentities: ["user", "manager", "owner"] },
+  { id: "settings-account-session-not-found", label: "Settings · Account · session no longer active", locale: "en", direction: "ltr", identity: "user", path: "/en/settings/account", view: "section", variant: "settings-account-session-not-found", allowedIdentities: ["user", "manager", "owner"] },
   { id: "editor-create-topic", label: "Editor · Create topic", locale: "en", direction: "ltr", identity: "user", path: "/en/sections/typescript", view: "section", allowedIdentities: ["user", "manager"] },
   { id: "section-form-error", label: "Create topic error", locale: "en", direction: "ltr", identity: "user", path: "/en/sections/typescript", view: "section", variant: "section-form-error", allowedIdentities: ["user", "manager"] },
   { id: "topic-solved-user", label: "Solved topic", locale: "en", direction: "ltr", identity: "user", path: "/en/topics/typed-api", view: "topic" },
@@ -1544,6 +1546,11 @@ async function previewSettingsAccountAction(
   const sessionId = String(form.get("sessionId") ?? "");
   if (!["preview-mobile-session", "preview-tablet-session"].includes(sessionId)
     || interactions.revokedAccountSessionIds.has(sessionId)) {
+    return { error: "session-not-found" as const };
+  }
+  if (scenario.variant === "settings-account-session-not-found"
+    && sessionId === "preview-mobile-session") {
+    interactions.revokedAccountSessionIds.add(sessionId);
     return { error: "session-not-found" as const };
   }
 
