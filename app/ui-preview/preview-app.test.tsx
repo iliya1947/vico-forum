@@ -164,7 +164,7 @@ describe("interactive Pages preview", () => {
     expect(await screen.findByRole("status")).toBeInTheDocument();
   });
 
-  it("signs out one other active session without enabling broader account mutations", async () => {
+  it("signs out one other active session without enabling credential mutations", async () => {
     const user = userEvent.setup();
     render(<EmbeddedPreview scenarioId="section-user" identity="user" />);
 
@@ -180,17 +180,47 @@ describe("interactive Pages preview", () => {
     const sessionsHeading = screen.getByRole("heading", { level: 3, name: "Active sessions" });
     const sessions = sessionsHeading.parentElement as HTMLElement;
     expect(within(sessions).getByText("Chrome on Windows")).toBeInTheDocument();
-    expect(within(sessions).getByText("Safari on iPhone")).toBeInTheDocument();
+    const safari = within(sessions).getByText("Safari on iPhone").closest("li") as HTMLElement;
+    expect(within(sessions).getByText("Firefox on Android tablet")).toBeInTheDocument();
     expect(within(sessions).getByText("This session")).toBeInTheDocument();
 
-    await user.click(within(sessions).getByRole("button", { name: "Sign out this other session" }));
+    await user.click(within(safari).getByRole("button", { name: "Sign out this other session" }));
     expect(await screen.findByRole("status")).toHaveTextContent("Other sessions signed out.");
     await waitFor(() => expect(within(sessions).queryByText("Safari on iPhone")).not.toBeInTheDocument());
+    expect(within(sessions).getByText("Firefox on Android tablet")).toBeInTheDocument();
     expect(within(sessions).getByText("Chrome on Windows")).toBeInTheDocument();
+    expect(within(sessions).getByRole("button", { name: "Sign out all other sessions" })).toBeInTheDocument();
 
     expect(screen.queryByRole("button", { name: "Connect Google" })).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Change password" })).not.toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: "Sign out all other sessions" })).not.toBeInTheDocument();
+  });
+
+  it("signs out all other active sessions while preserving the current session", async () => {
+    const user = userEvent.setup();
+    render(<EmbeddedPreview scenarioId="section-user" identity="user" />);
+
+    await user.click(screen.getByRole("link", { name: "Settings" }));
+    const settingsOverview = document.querySelector(".settings-overview") as HTMLElement;
+    await user.click(within(settingsOverview).getByRole("link", { name: "Account & security" }));
+
+    const sessionsHeading = await screen.findByRole("heading", { level: 3, name: "Active sessions" });
+    const sessions = sessionsHeading.parentElement as HTMLElement;
+    expect(within(sessions).getByText("Safari on iPhone")).toBeInTheDocument();
+    expect(within(sessions).getByText("Firefox on Android tablet")).toBeInTheDocument();
+
+    await user.click(within(sessions).getByRole("button", { name: "Sign out all other sessions" }));
+    expect(await screen.findByRole("status")).toHaveTextContent("Other sessions signed out.");
+
+    await waitFor(() => {
+      expect(within(sessions).queryByText("Safari on iPhone")).not.toBeInTheDocument();
+      expect(within(sessions).queryByText("Firefox on Android tablet")).not.toBeInTheDocument();
+    });
+    expect(within(sessions).getByText("Chrome on Windows")).toBeInTheDocument();
+    expect(within(sessions).getByText("This session")).toBeInTheDocument();
+    expect(within(sessions).queryByRole("button", { name: "Sign out all other sessions" })).not.toBeInTheDocument();
+
+    expect(screen.queryByRole("button", { name: "Connect Google" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Change password" })).not.toBeInTheDocument();
   });
 
   it("saves online visibility in Privacy settings and updates the local home presence", async () => {
