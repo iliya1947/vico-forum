@@ -1458,7 +1458,9 @@ function previewSettingsAdministratorData(scenario: Scenario) {
     locale: scenario.locale,
     accountId: actor?.id ?? "",
     canViewForum: scenario.identity === "owner",
-    admin: [] as const,
+    admin: scenario.identity === "owner"
+      ? (["overview", "roles"] as const)
+      : ([] as const),
     attention: {
       signals: ["needs-details"] as const,
       complaints: [] as const,
