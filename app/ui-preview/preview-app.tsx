@@ -250,6 +250,7 @@ type PreviewInteractionState = {
   preferredLocale: PreviewLocale | null;
   localeSaved: boolean;
   showOnline: boolean;
+  revokedAccountSessionIds: Set<string>;
   authorization: PreviewAuthorizationState;
 };
 
@@ -267,6 +268,7 @@ function createPreviewInteractionState(): PreviewInteractionState {
     preferredLocale: null,
     localeSaved: false,
     showOnline: true,
+    revokedAccountSessionIds: new Set(),
     authorization: createPreviewAuthorizationState(),
   };
 }
@@ -1180,6 +1182,7 @@ export function EmbeddedPreview({ scenarioId, identity }: { scenarioId: string; 
         || (intent === "open" && form.classList.contains("notification-form"))
         || (intent === "save-locale" && form.classList.contains("settings-locale-form"))
         || (intent === "save-online-visibility" && form.classList.contains("settings-privacy-form"))
+        || (intent === "revoke-one" && form.classList.contains("settings-account-revoke-form"))
         || ((intent === "pinTopic"
           || intent === "unpinTopic"
           || intent === "closeTopic"
@@ -1371,8 +1374,9 @@ function previewRouter(
     },
     {
       path: "/:locale/settings/account",
-      element: <SettingsAccountRoute readOnly />,
-      loader: () => previewSettingsAccountData(scenario),
+      element: <SettingsAccountRoute mutationMode="revoke-one" />,
+      loader: () => previewSettingsAccountData(scenario, interactions),
+      action: ({ request }) => previewSettingsAccountAction(scenario, interactions, request),
     },
     {
       path: "/:locale/tags",
@@ -1414,8 +1418,28 @@ function previewOnlinePresence(
   return { count: members.length, members };
 }
 
-function previewSettingsAccountData(scenario: Scenario) {
+function previewSettingsAccountData(
+  scenario: Scenario,
+  interactions: PreviewInteractionState,
+) {
   const actor = previewUser(scenario);
+  const sessions = [
+    {
+      id: "preview-current-session",
+      createdAt: "2026-11-18T07:15:00.000Z",
+      expiresAt: "2026-12-18T07:15:00.000Z",
+      current: true,
+      deviceLabel: "Chrome on Windows",
+    },
+    {
+      id: "preview-mobile-session",
+      createdAt: "2026-11-14T19:40:00.000Z",
+      expiresAt: "2026-12-14T19:40:00.000Z",
+      current: false,
+      deviceLabel: "Safari on iPhone",
+    },
+  ].filter((session) => !interactions.revokedAccountSessionIds.has(session.id));
+
   return {
     locale: scenario.locale,
     accountId: actor?.id ?? "",
@@ -1424,23 +1448,41 @@ function previewSettingsAccountData(scenario: Scenario) {
     linkedMethods: ["password", "google"] as ("password" | "google")[],
     hasPassword: true,
     sessionAccess: "ready" as const,
-    sessions: [
-      {
-        id: "preview-current-session",
-        createdAt: "2026-11-18T07:15:00.000Z",
-        expiresAt: "2026-12-18T07:15:00.000Z",
-        current: true,
-        deviceLabel: "Chrome on Windows",
-      },
-      {
-        id: "preview-mobile-session",
-        createdAt: "2026-11-14T19:40:00.000Z",
-        expiresAt: "2026-12-14T19:40:00.000Z",
-        current: false,
-        deviceLabel: "Safari on iPhone",
-      },
-    ],
+    sessions,
   };
+}
+
+async function previewSettingsAccountAction(
+  scenario: Scenario,
+  interactions: PreviewInteractionState,
+  request: Request,
+) {
+  const actor = previewUser(scenario);
+  if (!actor) return { error: "unauthenticated" as const };
+
+  const form = await request.formData();
+  const intent = String(form.get("intent") ?? "");
+  if (intent !== "revoke-one") return { error: "invalid" as const };
+
+  const allowedFields = new Set(["intent", "expectedUserId", "expectedSessionId", "sessionId"]);
+  if ([...form.keys()].some((key) => !allowedFields.has(key))) {
+    return { error: "invalid" as const };
+  }
+
+  const expectedUserId = String(form.get("expectedUserId") ?? "");
+  const expectedSessionId = String(form.get("expectedSessionId") ?? "");
+  if (expectedUserId !== actor.id || expectedSessionId !== "preview-current-session") {
+    return { error: "account-changed" as const };
+  }
+
+  const sessionId = String(form.get("sessionId") ?? "");
+  if (sessionId !== "preview-mobile-session"
+    || interactions.revokedAccountSessionIds.has(sessionId)) {
+    return { error: "session-not-found" as const };
+  }
+
+  interactions.revokedAccountSessionIds.add(sessionId);
+  return { saved: "revoke-one" as const };
 }
 
 function previewSettingsPrivacyData(
