@@ -144,10 +144,10 @@ export const scenarios: readonly Scenario[] = [
   { id: "help-solutions-needs-help-empty", label: "Help & solutions · Needs help · empty", locale: "en", direction: "ltr", identity: "guest", path: "/en/categories/help-solutions?mode=open", view: "category", variant: "help-solutions-open-empty" },
   { id: "help-solutions-want", label: "Help & solutions · Want to help", locale: "en", direction: "ltr", identity: "user", path: "/en/categories/help-solutions?mode=help", view: "category", allowedIdentities: ["user", "manager"] },
   { id: "help-solutions-want-empty", label: "Help & solutions · Want to help · empty", locale: "en", direction: "ltr", identity: "user", path: "/en/categories/help-solutions?mode=help", view: "category", variant: "help-solutions-want-empty", allowedIdentities: ["user", "manager"] },
-  { id: "help-solutions-want-guest", label: "Help & solutions · Want to help · unauthenticated", locale: "en", direction: "ltr", identity: "guest", path: "/en/categories/help-solutions?mode=help", view: "not-found", variant: "route-401", allowedIdentities: ["guest"] },
+  { id: "help-solutions-want-guest", label: "Help & solutions · Want to help · unauthenticated", locale: "en", direction: "ltr", identity: "guest", path: "/en/categories/help-solutions?mode=help", view: "category", allowedIdentities: ["guest"] },
   { id: "help-solutions-for-me", label: "Help & solutions · For me", locale: "en", direction: "ltr", identity: "user", path: "/en/categories/help-solutions?mode=for-me", view: "category", allowedIdentities: ["user", "manager"] },
   { id: "help-solutions-for-me-empty", label: "Help & solutions · For me · empty", locale: "en", direction: "ltr", identity: "user", path: "/en/categories/help-solutions?mode=for-me", view: "category", variant: "help-solutions-for-me-empty", allowedIdentities: ["user", "manager"] },
-  { id: "help-solutions-for-me-guest", label: "Help & solutions · For me · unauthenticated", locale: "en", direction: "ltr", identity: "guest", path: "/en/categories/help-solutions?mode=for-me", view: "not-found", variant: "route-401", allowedIdentities: ["guest"] },
+  { id: "help-solutions-for-me-guest", label: "Help & solutions · For me · unauthenticated", locale: "en", direction: "ltr", identity: "guest", path: "/en/categories/help-solutions?mode=for-me", view: "category", allowedIdentities: ["guest"] },
   { id: "help-solutions-active", label: "Help & solutions · Active", locale: "en", direction: "ltr", identity: "guest", path: "/en/categories/help-solutions?mode=active", view: "category" },
   { id: "help-solutions-active-empty", label: "Help & solutions · Active · empty", locale: "en", direction: "ltr", identity: "guest", path: "/en/categories/help-solutions?mode=active", view: "category", variant: "help-solutions-active-empty" },
   { id: "attention-signals", label: "Moderation · Signals", locale: "en", direction: "ltr", identity: "manager", path: "/en/attention?mode=signals", view: "attention", allowedIdentities: ["manager"] },
@@ -165,7 +165,7 @@ export const scenarios: readonly Scenario[] = [
   { id: "help-solution-outdated", label: "Help solution · outdated", locale: "en", direction: "ltr", identity: "manager", path: "/en/topics/help-postgres-timeout", view: "topic", variant: "help-solution-outdated", allowedIdentities: ["guest", "user", "manager"] },
   { id: "help-solutions-mine", label: "Help & solutions · My questions", locale: "en", direction: "ltr", identity: "user", path: "/en/categories/help-solutions?mode=mine", view: "category", allowedIdentities: ["user", "manager"] },
   { id: "help-solutions-mine-empty", label: "Help & solutions · My questions · empty", locale: "en", direction: "ltr", identity: "user", path: "/en/categories/help-solutions?mode=mine", view: "category", variant: "help-solutions-mine-empty", allowedIdentities: ["user", "manager"] },
-  { id: "help-solutions-mine-guest", label: "Help & solutions · My questions · unauthenticated", locale: "en", direction: "ltr", identity: "guest", path: "/en/categories/help-solutions?mode=mine", view: "not-found", variant: "route-401", allowedIdentities: ["guest"] },
+  { id: "help-solutions-mine-guest", label: "Help & solutions · My questions · unauthenticated", locale: "en", direction: "ltr", identity: "guest", path: "/en/categories/help-solutions?mode=mine", view: "category", allowedIdentities: ["guest"] },
   { id: "category-guest", label: "Category", locale: "en", direction: "ltr", identity: "guest", path: "/en/categories/development", view: "category" },
   { id: "category-no-pins", label: "Category · no pins", locale: "en", direction: "ltr", identity: "guest", path: "/en/categories/development", view: "category", variant: "category-no-pins" },
   { id: "section-user", label: "Section", locale: "en", direction: "ltr", identity: "user", path: "/en/sections/typescript", view: "section" },
@@ -1393,9 +1393,13 @@ function previewRouter(
     {
       path: "/:locale/categories/:categoryId",
       element: <PreviewCategoryRoute scenario={scenario} interactions={interactions} />,
+      loader: ({ request, params }) => previewCategoryAccessData(
+        scenario, request, params.categoryId,
+      ),
       action: ({ request, params }) => previewCategoryAction(
         scenario, interactions, request, params.locale, params.categoryId,
       ),
+      ErrorBoundary: ForumRouteError,
     },
     {
       path: "/:locale/sections/:sectionId",
@@ -2478,6 +2482,19 @@ function PreviewAttentionRoute({ scenario, interactions }: {
     canReviewComplaints={scenario.identity === "manager" || scenario.identity === "owner"}
     referenceTime={previewReferenceTime}
   />;
+}
+
+function previewCategoryAccessData(
+  scenario: Scenario,
+  request: Request,
+  routeCategoryId?: string,
+) {
+  if (routeCategoryId !== HELP_SOLUTIONS_CATEGORY_ID) return null;
+  const mode = new URL(request.url).searchParams.get("mode");
+  if ((mode === "mine" || mode === "help" || mode === "for-me") && !previewUser(scenario)) {
+    throw new Response("Unauthenticated", { status: 401 });
+  }
+  return null;
 }
 
 function PreviewCategoryRoute({ scenario, interactions }: {
