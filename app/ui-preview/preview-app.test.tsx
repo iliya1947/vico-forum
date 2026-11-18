@@ -25,6 +25,18 @@ async function openSettings(user: ReturnType<typeof userEvent.setup>) {
   });
 }
 
+async function reopenForumSettingsFromBreadcrumbs(user: ReturnType<typeof userEvent.setup>) {
+  const breadcrumbs = document.querySelector(".breadcrumbs") as HTMLElement;
+  await user.click(within(breadcrumbs).getByRole("link", { name: "Settings" }));
+  const settingsOverview = await waitFor(() => {
+    const overview = document.querySelector(".settings-overview") as HTMLElement | null;
+    expect(overview).not.toBeNull();
+    return overview as HTMLElement;
+  });
+  await user.click(within(settingsOverview).getByRole("link", { name: "Forum & roles" }));
+  expect(await screen.findByRole("heading", { level: 2, name: "Registration" })).toBeInTheDocument();
+}
+
 async function findAlexMeasures(user: ReturnType<typeof userEvent.setup>) {
   const nav = document.querySelector(".admin-panel-nav") as HTMLElement;
   await user.click(within(nav).getByRole("link", { name: "User measures" }));
@@ -643,7 +655,7 @@ describe("embedded preview routing", () => {
     await user.selectOptions(within(roleForm).getByLabelText("Assigned role"), "role-moderator");
     await user.click(within(roleForm).getByRole("button", { name: "Save" }));
 
-    expect(await screen.findByRole("status")).toHaveTextContent("Authorization saved.");
+    expect(await screen.findByRole("status")).toHaveTextContent("Authorization was updated.");
     expect(document.querySelector(".profile-role")).toHaveTextContent("Moderator");
     const refreshedRoleForm = document.querySelector("#authorization .admin-role-assignment") as HTMLElement;
     expect(within(refreshedRoleForm).getByLabelText("Assigned role")).toHaveValue("role-moderator");
@@ -981,10 +993,7 @@ describe("interactive Pages preview", () => {
       "Registration settings are temporarily unavailable.",
     );
 
-    const breadcrumbs = document.querySelector(".breadcrumbs") as HTMLElement;
-    await user.click(within(breadcrumbs).getByRole("link", { name: "Settings" }));
-    const settingsOverview = document.querySelector(".settings-overview") as HTMLElement;
-    await user.click(within(settingsOverview).getByRole("link", { name: "Forum & roles" }));
+    await reopenForumSettingsFromBreadcrumbs(user);
 
     await waitFor(() => {
       expect(screen.getByRole("checkbox", { name: "Allow new accounts through Google" })).toBeChecked();
@@ -1006,10 +1015,7 @@ describe("interactive Pages preview", () => {
 
     expect(await screen.findByRole("alert")).toHaveTextContent("Invalid registration settings.");
 
-    const breadcrumbs = document.querySelector(".breadcrumbs") as HTMLElement;
-    await user.click(within(breadcrumbs).getByRole("link", { name: "Settings" }));
-    const settingsOverview = document.querySelector(".settings-overview") as HTMLElement;
-    await user.click(within(settingsOverview).getByRole("link", { name: "Forum & roles" }));
+    await reopenForumSettingsFromBreadcrumbs(user);
 
     await waitFor(() => {
       expect(screen.getByRole("checkbox", { name: "Allow new accounts through Google" })).toBeChecked();
@@ -1033,10 +1039,7 @@ describe("interactive Pages preview", () => {
       "Only the Owner can change registration settings.",
     );
 
-    const breadcrumbs = document.querySelector(".breadcrumbs") as HTMLElement;
-    await user.click(within(breadcrumbs).getByRole("link", { name: "Settings" }));
-    const settingsOverview = document.querySelector(".settings-overview") as HTMLElement;
-    await user.click(within(settingsOverview).getByRole("link", { name: "Forum & roles" }));
+    await reopenForumSettingsFromBreadcrumbs(user);
 
     await waitFor(() => {
       expect(screen.getByRole("checkbox", { name: "Allow new accounts through Google" })).toBeChecked();
@@ -1141,7 +1144,7 @@ describe("interactive Pages preview", () => {
     await renderEmbeddedPreview(<EmbeddedPreview scenarioId="credentials-sign-in" identity="guest" />);
 
     expect(await screen.findByRole("heading", { level: 1, name: "Sign in to Vico Forum" })).toBeInTheDocument();
-    expect(screen.getByRole("textbox", { name: "Email address" })).toBeInTheDocument();
+    expect(screen.getByRole("textbox", { name: "Email" })).toBeInTheDocument();
     expect(screen.getByLabelText("Password")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Sign in" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Continue with Google" })).toBeInTheDocument();
