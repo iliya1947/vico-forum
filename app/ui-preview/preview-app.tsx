@@ -122,6 +122,7 @@ export const scenarios: readonly Scenario[] = [
   { id: "profile-error", label: "Profile · validation error", locale: "en", direction: "ltr", identity: "user", path: "/en/users/alex?edit=1", view: "profile", variant: "profile-error", allowedIdentities: ["user", "manager"] },
   { id: "profile-long", label: "Profile · long text", locale: "en", direction: "ltr", identity: "guest", path: "/en/users/maya", view: "profile", variant: "profile-long" },
   { id: "profile-empty", label: "Profile · empty", locale: "en", direction: "ltr", identity: "guest", path: "/en/users/sam", view: "profile", variant: "profile-empty" },
+  { id: "profile-missing", label: "Profile · missing", locale: "en", direction: "ltr", identity: "guest", path: "/en/users/missing-user", view: "profile", allowedIdentities: ["guest"] },
   { id: "home-guest", label: "Home", locale: "en", direction: "ltr", identity: "guest", path: "/en", view: "home" },
   { id: "auth-pending", label: "Authentication · pending", locale: "en", direction: "ltr", identity: "guest", path: "/en", view: "home", authPresentationState: "pending", allowedIdentities: ["guest"] },
   { id: "auth-error", label: "Authentication · failed", locale: "en", direction: "ltr", identity: "guest", path: "/en", view: "home", authPresentationState: "error", allowedIdentities: ["guest"] },
@@ -1517,9 +1518,11 @@ function previewRouter(
     {
       path: "/:locale/users/:userId",
       element: <PreviewProfileRoute scenario={scenario} interactions={interactions} />,
+      loader: ({ params }) => previewProfileAccessData(scenario, params.userId),
       action: ({ request, params }) => previewProfileAction(
         scenario, interactions, request, params.locale, params.userId,
       ),
+      ErrorBoundary: ForumRouteError,
     },
     {
       path: "/:locale/notifications",
@@ -3162,7 +3165,9 @@ function PreviewTopicRoute({ scenario, interactions }: {
       return {
         id,
         topicId: helpQuestion.id,
-        authorId: index === 0 ? "help-author" : `help-replier-${index}`,
+        authorId: previewProfileIdForName(
+          index === 0 ? helpQuestion.authorName : ["Sam Chen", "Maya Cohen", "Noa Levi"][index % 3]!,
+        ),
         authorName: index === 0 ? helpQuestion.authorName : ["Sam Chen", "Maya Cohen", "Noa Levi"][index % 3]!,
         parentPostId: index === 0 ? null : `${helpQuestion.id}-post-1`,
         solutionModerationStatus: isBestAnswer ? helpQuestion.solutionModerationStatus : null,
@@ -3298,7 +3303,9 @@ function PreviewTopicRoute({ scenario, interactions }: {
       ? matchedTopic.targetPostId
       : `${matchedTopic.id}-post-${index + 1}`,
     topicId: matched.topic.id,
-    authorId: index === 0 ? "alex" : `preview-reply-${index}`,
+    authorId: index === 0
+      ? previewProfileIdForName(matched.topic.authorName)
+      : previewProfileIdForName(replyAuthors[(index - 1) % replyAuthors.length]!),
     authorName: index === 0
       ? matched.topic.authorName
       : replyAuthors[(index - 1) % replyAuthors.length]!,
@@ -3388,6 +3395,41 @@ function PreviewTopicRoute({ scenario, interactions }: {
   );
 }
 
+const previewProfileNames: Readonly<Record<string, string>> = {
+  alex: "Alex Rivera",
+  maya: "Maya Cohen",
+  sam: "Sam Chen",
+  noa: "Noa Levi",
+  owner: "Forum Owner",
+  "vico-team": "Vico Team",
+  reporter: "Alex Rivera",
+  reviewer: "Sam Lee",
+  author: "Jordan Chen",
+  "preview-member": "Forum member",
+};
+
+function previewProfileIdForName(name: string): string {
+  if (name === "Alex Rivera" || name === "אלכס ריברה") return "alex";
+  if (name === "Maya Cohen") return "maya";
+  if (name === "Sam Chen" || name === "סם צ'ן") return "sam";
+  if (name === "Noa Levi" || name === "נועה לוי") return "noa";
+  if (name === "Vico Team") return "vico-team";
+  return "preview-member";
+}
+
+function previewProfileAccessData(scenario: Scenario, routeUserId?: string) {
+  const actor = previewUser(scenario);
+  const effectiveUserId = scenario.id.startsWith("profile-")
+    && scenario.allowedIdentities
+    && routeUserId === "alex"
+    ? actor?.id ?? routeUserId
+    : routeUserId;
+  if (!effectiveUserId || !previewProfileNames[effectiveUserId]) {
+    throw new Response("Not Found", { status: 404 });
+  }
+  return null;
+}
+
 function PreviewProfileRoute({ scenario, interactions }: {
   scenario: Scenario;
   interactions: PreviewInteractionState;
@@ -3400,7 +3442,9 @@ function PreviewProfileRoute({ scenario, interactions }: {
   const id = scenario.id.startsWith("profile-") && scenario.allowedIdentities && userId === "alex"
     ? identity?.id ?? userId : userId;
   const empty = scenario.variant === "profile-empty" || id === "sam";
-  const name = scenario.variant === "profile-long" ? "Maya Cohen · מפתחת קהילה · DeveloperWithALongUnbrokenDisplayNameForReflowVerification" : id === "maya" ? "Maya Cohen" : id === "alex" ? "Alex Rivera" : id === "sam" ? "Sam Chen" : "Forum member";
+  const name = scenario.variant === "profile-long"
+    ? "Maya Cohen · מפתחת קהילה · DeveloperWithALongUnbrokenDisplayNameForReflowVerification"
+    : previewProfileNames[id] ?? "Forum member";
   const bio = scenario.locale === "ru" ? "Создаю веб-приложения с AI-инструментами. Помогаю разбирать TypeScript и API.\nУчусь вместе с форумом." : scenario.locale === "he" ? "בונה יישומי אינטרנט בעזרת כלי AI. משתף ידע על TypeScript ו־API.\nלומד יחד עם חברי הפורום." : "Building web apps with AI tools. Sharing practical TypeScript and API answers.\nLearning with the forum.";
   const stored = interactions.profileOverrides.get(id);
   const fields = stored ?? {
