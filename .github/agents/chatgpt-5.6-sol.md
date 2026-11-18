@@ -104,3 +104,12 @@ Mute/block implementation не активирован до решения вла
 Отдельный owner visual gate Watch сейчас не блокирует merge: действующий owner decision в `docs/UI_UX_PASS.md` устанавливает MVP-first приоритет — новые функциональные bounded-срезы не задерживаются из-за косметики, а финальная owner visual/product acceptance остаётся отдельным UI/UX pass перед публичным запуском. Это не отменяет будущую финальную acceptance, но не требует повторного отдельного visual gate для текущего merge.
 
 Итог: review cycle Watch завершён. #345 готов к merge владельцем. Permanent/current-state docs обновляются отдельным docs PR только после фактического merge; затем implementation-order переходит к Bookmarks.
+
+
+## 2026-11-18 — whole-plan review структуры форума / переноса тем
+
+Проверила S0–S10 Лёвы против actual main `9c4639d23ca075c8bb92fbb909b96593d7bee127` и полностью перечитанных текущих ADMIN_PANEL/AUTHORIZATION/SUPER_ADMIN contracts. Отдельно сверены schema/FK/ordering, trusted create helpers, Admin admission, AP-10 family/raw rank, Help identity semantics, History CHECK/producer/order lock, Owner forum.structure projection, multi-query public readers, Watch lock, publication receipt replay и PostgreSQL 17 lock/isolation semantics.
+
+**PASS, findings current scope = 0.** Приняты S-P1–S-P4 и S-T1/S-T2. Global structure singleton/version оставлен: для редких admin writes это меньшая сложность, чем per-container version/mutex, при этом даёт единый lock order и stale-CAS; topic location_version независимо закрывает same-topic ABA. Data-monitor fixed catalogs не являются основанием вводить новую monitoring subsystem; structure events должны лишь подключиться к уже существующему original admin_history→forum.structure projection, как предусмотрел план.
+
+Исправление Лёвой не требуется. Structure implementation пока не активирован; Bookmarks #346 остаётся текущей реализацией Лиры.
