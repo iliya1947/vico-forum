@@ -639,3 +639,19 @@ metadata/full structural manifest/runtime privilege/provisioning probes и CI/br
 Код/implementation PR не создавались; feature tests/CI/browser не запускались.
 Watch implementation остаётся за Лирой. Лёва **STOP после Bookmarks**;
 Mute/block — только после отдельной команды владельца, в этом плане не исследован.
+
+
+## Scope/fit review Bookmarks — Мира, 2026-11-18
+
+Полный опережающий Bookmarks plan Лёвы проверен. Приняты решения B1/B2/B3/B5; реализация Bookmarks остаётся неактивной до завершения Watch и отдельного implementation handoff.
+
+1. **B1 ACCEPT — bookmark target = topic.** Первый bounded-этап сохраняет существующие темы и даёт приватный список сохранённых тем. Post-level bookmarks не входят в текущий scope: permanent post anchors уже существуют, но добавление отдельного post target потребовало бы второго target/data/UI contract без необходимости для законченного минимального bookmark-цикла.
+2. **B2 ACCEPT — отдельная минимальная persistence.** Принять `forum_topic_bookmarks` как own-pair store с `saved_at`, composite PK/FKs, индексом пользовательского списка и отдельным topic-side FK-support index; точный номер migration определяется только после фактического Watch merge/main. Никакого backfill, shared state с Watch/read/inbox или live provisioning.
+3. **B3 ACCEPT — authenticated personal self-state, без нового RBAC key.** Session identity выбирает только собственную bookmark pair; active AccountState, same-origin, stale identity и authoritative topic existence обязательны. Reply/edit/admin permissions и AP-10 restrictions к save/remove не применяются.
+4. **B5 ACCEPT — private own list + canonical topic mutation.** Локализованный authenticated `/:locale/bookmarks` показывает только собственные сохранённые темы. Add/Remove использует один canonical topic POST intent `setTopicBookmark`; actor только из session, topic только из route. Отдельного writer на list route, public bookmark counts/lists или profile exposure нет.
+
+Порядок списка принимается по `saved_at DESC, topic_id DESC` с bounded keyset pagination; повторный Add не меняет позицию, Remove+Add создаёт новую дату. Bookmark хранит ссылку на тему, а не snapshot: список показывает текущий title/public identity/location. Bookmarks не меняют Watch, read-state, notifications, topic/post/title state и не получают fanout.
+
+Перед будущей реализацией план нужно сверить с уже merged Watch: итоговые route/fetcher/headers helpers, migration ceiling, runtime privilege manifest и изменённые seams. Это сверка актуального main, а не повторное проектирование с нуля.
+
+План Bookmarks принят для будущей реализации. Mute/block в рамках этого review не исследуется.
