@@ -4,7 +4,7 @@
 
 1. Служебный PR: **#315**.
 2. Моя текущая работа: audit/coordination only; remediation и implementation не назначены.
-3. Текущий этап: **Block L active. L1 PASS; L2 = `MON-AUTH-OUTCOME-01 Low/P3`; L3–L7 PASS, 0 additional after L2; следующий bounded slice — L8 Cross-chain closeout.** Overall #315 = 34 current findings + 4 deferred Stage-6 blockers. Stage 6 paused.
+3. Текущий этап: **audit areas A–L complete. Block L final = `MON-AUTH-OUTCOME-01 Low/P3`; L8 PASS, 0 additional.** Overall #315 = 34 current findings + 4 deferred Stage-6 blockers. Stage 6 paused; remediation не начата.
 4. Technical audit target B–D: `e279cb6c032a489a9044ca1191407df887c364b4`.
 5. Current `main` — `9c4639d23ca075c8bb92fbb909b96593d7bee127`. После Block K main продвинулся Watch #345 (`0068_topic_watch`); Block L стартует на этом current main.
 6. Лира, Марк и Лёва по #315 сейчас не назначены.
@@ -458,6 +458,14 @@
 410. Production Worker rollout does not itself query logs, but it also does not claim Stage6 completion; ROADMAP keeps logs/observability/external-failure acceptance separate. Backup/restore is truthfully unfinished. Existing DB-RUNTIME-EVIDENCE / Worker Version URL / rollback-finalizer / Google-scope and REPO-MAIN-GATE ownership is preserved, no duplicate L blocker.
 411. Aggregate remains 34 current +4 deferred; severity 13 Moderate +21 Low current. No tests/external probes/mutations performed. Next L8 cross-chain closeout.
 
+412. L8 target current main `9c4639d23ca075c8bb92fbb909b96593d7bee127`: **PASS, 0 new current findings / 0 deferred blockers; Block L complete**.
+413. Cross-chain source→evidence→Monitor/History→operator PASS outside the existing L2 outcome-label defect. Auth exact facts, bounded/coalesced attempts, attachment evidence, System degraded state and native domain History preserve their declared quality/identity semantics.
+414. Dedup A–K PASS: `MON-AUTH-OUTCOME-01` remains L-only monitoring semantics; B owns link denial correctness, K owns attachment evidence growth, H/G/I/J own runtime/deploy/provider activation roots.
+415. Final L = 1 Low/P3 current +0 deferred. Overall mechanically rechecked = 34 current (13 Moderate/P2 +21 Low/P3) +4 deferred (2 Moderate/P2 +2 Low/P3), no current P0/P1.
+416. Stage6 inherited correction gates preserved: REPO-MAIN-GATE before secret-bearing dispatch; DB runtime evidence before schema-dependent rollout; Version URL before private/write-capable upload; rollback finalizer before promotion; Google OAuth scope before real Google activation. Live observability/failure evidence, topology, provider/Queue config and backup/restore remain acceptance, not new findings.
+417. Audit areas A–L are complete. Release pentesting remains later whole-product work after applicable remediation/external acceptance. No tests or external mutations executed in L8.
+418. Next after developer continuation: bounded remediation decomposition/priorities and handoff to technical planner; implementation remains separate.
+
 ## Ограничения
 
 1. Stage 6 external activation остаётся paused.
@@ -468,5 +476,6 @@
 
 ## Следующий шаг
 
-1. После продолжения владельца выполнить **L8 — Cross-chain closeout** на current main и остановиться после результата.
-2. Remediation findings/blockers Blocks B–L не начинать без отдельного назначения.
+1. После продолжения владельца подготовить **bounded remediation decomposition / приоритеты подтверждённых current findings** и handoff техническому планировщику; implementation не начинать в этом шаге.
+2. Stage 6 остаётся paused; deferred blockers активируются только на соответствующих external boundaries.
+3. Release pentesting оставить на период после remediation и external acceptance.
