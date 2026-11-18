@@ -358,3 +358,8 @@ Draft implementation #345 current interim head `72e9b8d15ee515af1c5dab309cc66ea9
 ## 2026-11-18 — Watch UI/loader subtask STOP (Лира)
 
 В рамках отдельной подзадачи проверены уже существующие `app/routes/topic.tsx` private personalized Watch loader, `topic-watch-control.tsx` actor/topic scoped UI и RU/HE localization на #345 interim head `19a5015c0d2b9ff7ccfe57cd03e64b64e0a8e191`. GitHub exact-head `checks` job `134798391182`: lint/typecheck/unit/build/preview/metadata/schema parity PASS; database PASS. Но `watch_browser` job **FAIL**, без диагностики в этой подзадаче; общий CI ещё не PASS, head не stable, PR Draft. Код UI уже есть — коммит не нужен. По прямой просьбе разработчика STOP после одной подзадачи. Следующие отдельные итерации: unit/route/component test audit → PG/concurrency tests → Chromium failure/acceptance; переходы только по отдельной команде.
+
+
+## 2026-11-18 — Watch unit/route/component tests checkpoint (Лира)
+
+В #345 `ffb96ad59646abd15001d6be5879d8b848f4f26b` добавлены только interactive control tests `app/forum/topic-watch-control.test.tsx` (ON/OFF desired state, pending lock, uncertain response refresh/no auto retry, stale topic response). Existing strict route + private loader tests проверены и сохранены; DB/browser production code не изменялся. GitHub `checks` job `134806758552` запущен, **не объявлять PASS до фактического завершения**. PR Draft, stable head ещё нет. STOP; следующий отдельный slice — real PG concurrency/lifecycle testing, затем Chromium/Worker acceptance.
