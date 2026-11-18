@@ -563,6 +563,30 @@ describe("interactive Pages preview", () => {
     expect(screen.queryByRole("heading", { level: 2, name: "Registration" })).not.toBeInTheDocument();
   });
 
+  it("shows Administrator preferences to Manager in Settings and opens it from navigation", async () => {
+    const user = userEvent.setup();
+    render(<EmbeddedPreview scenarioId="section-user" identity="manager" />);
+
+    await user.click(screen.getByRole("link", { name: "Settings" }));
+
+    const settingsOverview = document.querySelector(".settings-overview") as HTMLElement;
+    let settingsNavigation = document.querySelector(".settings-panel-nav") as HTMLElement;
+    expect(within(settingsOverview).getByRole("link", { name: "Administrator preferences" })).toHaveAttribute(
+      "href",
+      "/en/settings/administrator",
+    );
+    const administratorLink = within(settingsNavigation).getByRole("link", { name: "Administrator preferences" });
+    expect(administratorLink).toHaveAttribute("href", "/en/settings/administrator");
+    await user.click(administratorLink);
+
+    expect(await screen.findByRole("heading", { level: 2, name: "Administrator preferences" })).toBeInTheDocument();
+    settingsNavigation = document.querySelector(".settings-panel-nav") as HTMLElement;
+    expect(within(settingsNavigation).getByRole("link", { name: "Administrator preferences" })).toHaveAttribute(
+      "aria-current",
+      "page",
+    );
+  });
+
   it("keeps Forum & roles owner-only for managers in Settings", async () => {
     const user = userEvent.setup();
     render(<EmbeddedPreview scenarioId="section-user" identity="manager" />);
