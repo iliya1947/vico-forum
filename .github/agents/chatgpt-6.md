@@ -53,3 +53,14 @@ Target: exact head `cd72e8696167d71c8e93e7ab63ff8e86342af4c3`, base/main пос�
 **Отдельное подтверждённое несоответствие PR metadata (не docs diff):** текущее описание PR #344 по-прежнему предписывает Лире исполнять/редактировать документацию, хотя последнее прямое назначение владельца в #342 — только независимый review готового diff Миры. Требуется синхронизировать описание PR с действующим assignment перед closeout. Это не дефект проверенных пяти документационных файлов, не основание переписывать docs или сбрасывать exact-head review.
 
 Передача Мире: учесть PASS, привести PR #344 description в соответствие с прямым назначением, определить готовность docs PR к merge владельцем. STOP.
+
+
+## 2026-11-18 — активное назначение: реализация Watch
+
+Реализовать принятый bounded Watch scope из `USER_ACTIONS_SERVICE_PLAN.md` после scope/fit решений Миры W1–W3, в отдельном implementation PR от актуального main.
+
+Требуемый результат: authenticated пользователь может Watch/Unwatch конкретную тему; состояние persist между сессиями; будущий reply другого пользователя в watched topic попадает в существующий notification inbox; Unwatch прекращает только watch-derived будущие notices; существующие author/parent/mention semantics, read-state и старые notifications не меняются.
+
+Границы: минимальная watch persistence + forward migration/runtime ACL; **без нового RBAC permission**; canonical topic route с narrow `setTopicWatch`; actor только из session, topic только из route; active AccountState/same-origin/stale actor; существующий reply-kind/inbox/dedupe. Не добавлять auto-watch, bookmarks/saved list, watcher list/count, email/push/digest, Admin/Super-admin, #320, UI/UX refinement или Stage 6.
+
+Самостоятельно выбрать корректную реализацию внутри принятого технического плана. Выполнить применимые unit/route/component, PostgreSQL concurrency/lifecycle, migration/manifest/privilege, build/CI и connected real Worker + Better Auth + PostgreSQL 17 + Chromium проверки для Watch. После stable exact implementation head зафиксировать PR/head/evidence в #342 и STOP для coordinator whole-PR review Миры.
