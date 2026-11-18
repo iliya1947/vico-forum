@@ -297,3 +297,12 @@ Bookmarks остаётся только заранее подготовленн�
 ## 2026-11-18 — Watch CI corrections after backend stage
 
 PR #345 backend/schema interim head updated to `bacaadfed1d2494380956c278aab7b0b1bbbd862`. GitHub first-run TypeScript and DB fixture failures confirmed via job logs and locally scoped corrections committed: typed response init/mocks, historical isolated watch table migration, dynamic current schema/migration expectations. On corrected head **GitHub database CI PASS**; full CI/browser remain in progress at the time of this entry. Drizzle snapshot + structural manifest old tables unchanged; new Watch relation only. PR stays Draft and not review-ready. Next Lira UI/private loader/tests/browser after owner's continuation; bookmarks planning remains separate.
+
+
+## 2026-11-18 — активирован опережающий план Mute/block
+
+После принятого Bookmarks plan по прямому решению владельца Лёва / Codex-6.1 Sol назначен на последний advance-planning slice: Mute/block. Реализация не начинается.
+
+Лёва должен сначала определить фактические semantics и границы по актуальному main, не предполагая заранее user/content/notification effects. Реальные продуктовые развилки возвращаются Мире. После полного плана — STOP.
+
+Лира параллельно продолжает Watch implementation #345; Bookmarks остаётся принятым будущим plan-only этапом.
