@@ -172,6 +172,7 @@ export const scenarios: readonly Scenario[] = [
   { id: "settings-account-session-not-found", label: "Settings · Account · session no longer active", locale: "en", direction: "ltr", identity: "user", path: "/en/settings/account", view: "section", variant: "settings-account-session-not-found", allowedIdentities: ["user", "manager", "owner"] },
   { id: "settings-account-unavailable", label: "Settings · Account · temporarily unavailable", locale: "en", direction: "ltr", identity: "user", path: "/en/settings/account", view: "section", variant: "settings-account-unavailable", allowedIdentities: ["user", "manager", "owner"] },
   { id: "settings-account-stale", label: "Settings · Account · stale account/session", locale: "en", direction: "ltr", identity: "user", path: "/en/settings/account", view: "section", variant: "settings-account-stale", allowedIdentities: ["user", "manager", "owner"] },
+  { id: "settings-administrator-user-forbidden", label: "Settings · Administrator preferences · user forbidden", locale: "en", direction: "ltr", identity: "user", path: "/en/settings/administrator", view: "section", allowedIdentities: ["user"] },
   { id: "settings-forum-guest-unauthenticated", label: "Settings · Forum & roles · guest unauthenticated", locale: "en", direction: "ltr", identity: "guest", path: "/en/settings/forum", view: "section", allowedIdentities: ["guest"] },
   { id: "settings-forum-user-forbidden", label: "Settings · Forum & roles · user forbidden", locale: "en", direction: "ltr", identity: "user", path: "/en/settings/forum", view: "section", allowedIdentities: ["user"] },
   { id: "settings-forum-manager-forbidden", label: "Settings · Forum & roles · manager forbidden", locale: "en", direction: "ltr", identity: "manager", path: "/en/settings/forum", view: "section", allowedIdentities: ["manager"] },
@@ -1454,6 +1455,7 @@ function previewRouter(
       path: "/:locale/settings/administrator",
       element: <SettingsAdministratorRoute />,
       loader: () => previewSettingsAdministratorData(scenario),
+      ErrorBoundary: ForumRouteError,
     },
     {
       path: "/:locale/settings/forum",
@@ -1595,6 +1597,12 @@ async function previewSettingsForumAction(
 
 function previewSettingsAdministratorData(scenario: Scenario) {
   const actor = previewUser(scenario);
+  if (!actor) {
+    throw new Response("Unauthenticated", { status: 401 });
+  }
+  if (scenario.identity !== "owner" && scenario.identity !== "manager") {
+    throw new Response("Forbidden", { status: 403 });
+  }
   return {
     locale: scenario.locale,
     accountId: actor?.id ?? "",
