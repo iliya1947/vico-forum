@@ -115,7 +115,7 @@ try:
             private(watcher.request.post(base + path, headers={"Origin": base},
                 form={"intent": "setTopicWatch", "editorActorId": watcher_id,
                       "watching": "YES"}), 400)
-            record("guest401, stale-actor409, same-origin403 and strict-boolean400")
+            record("guest401, stale-actor409, origin rejected 400/403, strict-boolean400")
 
             with page.expect_response(lambda response: response.request.method == "POST"
                 and "/topics/" in response.url) as result:
