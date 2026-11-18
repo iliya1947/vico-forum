@@ -195,15 +195,11 @@ export async function topicAction({ request, params, context }: {
   const locale = typeof params.locale === "string" && params.locale.trim() ? params.locale : undefined;
   if (!topicId || !locale) return mutationFailure("invalid", 400);
   const denied = forumMutationGuard(request, context);
+  if (denied) return denied;
   let formData: FormData;
-  try { formData = await request.formData(); } catch { return denied ?? mutationFailure("invalid", 400); }
+  try { formData = await request.formData(); } catch { return mutationFailure("invalid", 400); }
   const intent = requiredFormText(formData, "intent") ?? "reply";
   const watchIntent = formData.getAll("intent").includes("setTopicWatch") || formData.has("watching");
-  if (denied) {
-    return watchIntent
-      ? data<TopicWatchActionResult>({ operation: "topicWatch", error: denied.data.error }, denied.init ?? undefined)
-      : denied;
-  }
   if (watchIntent) {
     const fields = ["intent", "editorActorId", "watching"];
     if (intent !== "setTopicWatch" || fields.some(field => formData.getAll(field).length !== 1)

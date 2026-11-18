@@ -7,7 +7,12 @@ import { AuthorizationUnavailableError } from "../../db/authorization-service";
 import type { ForumReader } from "../../db/forum-repository";
 import { forumReaderContext } from "./request-context";
 import { loader as sectionLoader } from "../routes/section";
-import { loader as topicLoader } from "../routes/topic";
+import { loader as rawTopicLoader } from "../routes/topic";
+async function topicLoader(args: Parameters<typeof rawTopicLoader>[0]) {
+  const result = await rawTopicLoader(args);
+  return "data" in result && "init" in result ? result.data : result;
+}
+
 import { ContentTranslationPresentationService } from "../localization/content-translation-presentation";
 import { ContentTranslationStorageUnavailableError, type StoredContentTranslation } from "../localization/content-translation";
 import { ContentGenerationStatusStorageUnavailableError } from "../localization/content-generation-status";

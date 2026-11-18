@@ -39,7 +39,12 @@ import UnansweredRoute, { loader as unansweredLoader } from "../routes/unanswere
 import UnreadRoute, { loader as unreadLoader } from "../routes/unread";
 import { ErrorBoundary as NotFoundErrorBoundary, loader as notFoundLoader } from "../routes/not-found";
 import SectionRoute, { loader as sectionLoader } from "../routes/section";
-import TopicRoute, { loader as topicLoader } from "../routes/topic";
+import TopicRoute, { loader as rawTopicLoader } from "../routes/topic";
+async function topicLoader(args: Parameters<typeof rawTopicLoader>[0]) {
+  const result = await rawTopicLoader(args);
+  return "data" in result && "init" in result ? result.data : result;
+}
+
 import { forumCategoryPath, forumPopularPath, forumSearchPath, forumSectionPath, forumTagPath, forumTagsPath, forumTopicPath, forumUnansweredPath } from "./paths";
 import { forumReaderContext, forumWriterContext } from "./request-context";
 import { forumAttachmentStoreContext } from "./attachment-request-context";
