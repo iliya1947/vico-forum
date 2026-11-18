@@ -1,7 +1,7 @@
 {
   "version": 1,
   "schema": "public",
-  "targetMigration": "0068_topic_watch",
+  "targetMigration": "0069_topic_bookmarks",
   "tables": {
     "account": {
       "columns": [
@@ -5768,6 +5768,105 @@
       ],
       "indexes": []
     },
+    "forum_topic_bookmarks": {
+      "columns": [
+        {
+          "name": "user_id",
+          "type": "text",
+          "nullable": false,
+          "defaultSha256": null
+        },
+        {
+          "name": "topic_id",
+          "type": "text",
+          "nullable": false,
+          "defaultSha256": null
+        },
+        {
+          "name": "saved_at",
+          "type": "timestamp(3) with time zone",
+          "nullable": false,
+          "defaultSha256": "4b1d66350efe3913ebc4851cda50bbd44dd30a5f59bafb1c24c2edec4301816e"
+        }
+      ],
+      "primaryKeys": [
+        {
+          "name": "forum_topic_bookmarks_pk",
+          "columns": [
+            "user_id",
+            "topic_id"
+          ]
+        }
+      ],
+      "uniqueConstraints": [],
+      "foreignKeys": [
+        {
+          "name": "forum_topic_bookmarks_topic_id_forum_topics_id_fk",
+          "columns": [
+            "topic_id"
+          ],
+          "referencedTable": "forum_topics",
+          "referencedColumns": [
+            "id"
+          ],
+          "onDelete": "CASCADE",
+          "onUpdate": "NO ACTION",
+          "deferrable": false,
+          "initiallyDeferred": false
+        },
+        {
+          "name": "forum_topic_bookmarks_user_id_user_id_fk",
+          "columns": [
+            "user_id"
+          ],
+          "referencedTable": "user",
+          "referencedColumns": [
+            "id"
+          ],
+          "onDelete": "CASCADE",
+          "onUpdate": "NO ACTION",
+          "deferrable": false,
+          "initiallyDeferred": false
+        }
+      ],
+      "checks": [],
+      "indexes": [
+        {
+          "name": "forum_topic_bookmarks_topic_idx",
+          "unique": false,
+          "method": "btree",
+          "columns": [
+            {
+              "name": "topic_id",
+              "order": "asc",
+              "nulls": "last"
+            }
+          ]
+        },
+        {
+          "name": "forum_topic_bookmarks_user_saved_topic_idx",
+          "unique": false,
+          "method": "btree",
+          "columns": [
+            {
+              "name": "user_id",
+              "order": "asc",
+              "nulls": "last"
+            },
+            {
+              "name": "saved_at",
+              "order": "desc",
+              "nulls": "first"
+            },
+            {
+              "name": "topic_id",
+              "order": "desc",
+              "nulls": "first"
+            }
+          ]
+        }
+      ]
+    },
     "forum_topic_pins": {
       "columns": [
         {
@@ -5934,82 +6033,6 @@
       ],
       "checks": [],
       "indexes": []
-    },
-    "forum_topic_watches": {
-      "columns": [
-        {
-          "name": "user_id",
-          "type": "text",
-          "nullable": false,
-          "defaultSha256": null
-        },
-        {
-          "name": "topic_id",
-          "type": "text",
-          "nullable": false,
-          "defaultSha256": null
-        }
-      ],
-      "primaryKeys": [
-        {
-          "name": "forum_topic_watches_pk",
-          "columns": [
-            "user_id",
-            "topic_id"
-          ]
-        }
-      ],
-      "uniqueConstraints": [],
-      "foreignKeys": [
-        {
-          "name": "forum_topic_watches_topic_id_forum_topics_id_fk",
-          "columns": [
-            "topic_id"
-          ],
-          "referencedTable": "forum_topics",
-          "referencedColumns": [
-            "id"
-          ],
-          "onDelete": "CASCADE",
-          "onUpdate": "NO ACTION",
-          "deferrable": false,
-          "initiallyDeferred": false
-        },
-        {
-          "name": "forum_topic_watches_user_id_user_id_fk",
-          "columns": [
-            "user_id"
-          ],
-          "referencedTable": "user",
-          "referencedColumns": [
-            "id"
-          ],
-          "onDelete": "CASCADE",
-          "onUpdate": "NO ACTION",
-          "deferrable": false,
-          "initiallyDeferred": false
-        }
-      ],
-      "checks": [],
-      "indexes": [
-        {
-          "name": "forum_topic_watches_topic_user_idx",
-          "unique": false,
-          "method": "btree",
-          "columns": [
-            {
-              "name": "topic_id",
-              "order": "asc",
-              "nulls": "last"
-            },
-            {
-              "name": "user_id",
-              "order": "asc",
-              "nulls": "last"
-            }
-          ]
-        }
-      ]
     },
     "forum_topic_tags": {
       "columns": [
@@ -6393,6 +6416,82 @@
         }
       ],
       "indexes": []
+    },
+    "forum_topic_watches": {
+      "columns": [
+        {
+          "name": "user_id",
+          "type": "text",
+          "nullable": false,
+          "defaultSha256": null
+        },
+        {
+          "name": "topic_id",
+          "type": "text",
+          "nullable": false,
+          "defaultSha256": null
+        }
+      ],
+      "primaryKeys": [
+        {
+          "name": "forum_topic_watches_pk",
+          "columns": [
+            "user_id",
+            "topic_id"
+          ]
+        }
+      ],
+      "uniqueConstraints": [],
+      "foreignKeys": [
+        {
+          "name": "forum_topic_watches_topic_id_forum_topics_id_fk",
+          "columns": [
+            "topic_id"
+          ],
+          "referencedTable": "forum_topics",
+          "referencedColumns": [
+            "id"
+          ],
+          "onDelete": "CASCADE",
+          "onUpdate": "NO ACTION",
+          "deferrable": false,
+          "initiallyDeferred": false
+        },
+        {
+          "name": "forum_topic_watches_user_id_user_id_fk",
+          "columns": [
+            "user_id"
+          ],
+          "referencedTable": "user",
+          "referencedColumns": [
+            "id"
+          ],
+          "onDelete": "CASCADE",
+          "onUpdate": "NO ACTION",
+          "deferrable": false,
+          "initiallyDeferred": false
+        }
+      ],
+      "checks": [],
+      "indexes": [
+        {
+          "name": "forum_topic_watches_topic_user_idx",
+          "unique": false,
+          "method": "btree",
+          "columns": [
+            {
+              "name": "topic_id",
+              "order": "asc",
+              "nulls": "last"
+            },
+            {
+              "name": "user_id",
+              "order": "asc",
+              "nulls": "last"
+            }
+          ]
+        }
+      ]
     },
     "forum_topics": {
       "columns": [
