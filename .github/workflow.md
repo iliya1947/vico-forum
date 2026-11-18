@@ -3,10 +3,10 @@
 ## Текущее состояние
 
 - Задача: редактирование заголовка собственной темы.
-- Этап: coordinator PASS Миры; ожидается независимый технический review Марка.
+- Этап: coordinator PASS Миры; ожидаются две независимые проверки.
 - Координатор: Мира / ChatGPT-5.6 Sol — PASS.
 - Технический планировщик и исполнитель: Лёва / Codex-6.1 Sol.
-- Независимый reviewer / следующий участник: Марк / Codex-6 Sol.
+- Независимые reviewers / следующие участники: Лира / ChatGPT-6 и Марк / Codex-6 Sol.
 - Implementation PR: #343 — https://github.com/iliya1947/vico-forum/pull/343.
 - Stable implementation head: `10321fdae762004ac2d55e9618a89c6c41e0d2ac`.
 - Current main/base: `906d15d896cc3a4f3b7dc9a03f46acd883925d1d`.
@@ -24,6 +24,6 @@
 
 ## Следующий шаг
 
-Марк проверяет весь принятый scope PR #343 на exact head `10321fdae762004ac2d55e9618a89c6c41e0d2ac`. Проверка независимая, без исправлений во время review. При PASS задача переходит к merge/documentation closeout; при подтверждённых current-scope findings — возврат Лёве одним пакетом через Миру.
+Лира и Марк независимо проверяют весь принятый scope PR #343 на exact head `10321fdae762004ac2d55e9618a89c6c41e0d2ac`, не используя выводы друг друга как основание. Во время review реализацию не исправляют. После обеих проверок Мира сопоставляет результаты: при PASS обоих — closeout/merge/docs; при подтверждённых current-scope findings — один согласованный пакет возвращается Лёве.
 
 Служебный PR #342 не merge в main.
