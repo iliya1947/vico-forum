@@ -428,6 +428,18 @@ describe("interactive Pages preview", () => {
       "aria-current",
       "page",
     );
+
+    const breadcrumbs = screen.getByRole("navigation", { name: "Breadcrumbs" });
+    const settingsBreadcrumb = within(breadcrumbs).getByRole("link", { name: "Settings" });
+    expect(settingsBreadcrumb).toHaveAttribute("href", "/en/settings");
+    await user.click(settingsBreadcrumb);
+
+    const returnedSettingsOverview = await waitFor(() => {
+      const overview = document.querySelector(".settings-overview") as HTMLElement | null;
+      expect(overview).not.toBeNull();
+      return overview as HTMLElement;
+    });
+    expect(within(returnedSettingsOverview).getByRole("link", { name: "Forum & roles" })).toBeInTheDocument();
   });
 
   it("hides Forum & roles from ordinary user Settings navigation", async () => {
