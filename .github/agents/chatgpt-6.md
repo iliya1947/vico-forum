@@ -64,3 +64,16 @@ Target: exact head `cd72e8696167d71c8e93e7ab63ff8e86342af4c3`, base/main пос�
 Границы: минимальная watch persistence + forward migration/runtime ACL; **без нового RBAC permission**; canonical topic route с narrow `setTopicWatch`; actor только из session, topic только из route; active AccountState/same-origin/stale actor; существующий reply-kind/inbox/dedupe. Не добавлять auto-watch, bookmarks/saved list, watcher list/count, email/push/digest, Admin/Super-admin, #320, UI/UX refinement или Stage 6.
 
 Самостоятельно выбрать корректную реализацию внутри принятого технического плана. Выполнить применимые unit/route/component, PostgreSQL concurrency/lifecycle, migration/manifest/privilege, build/CI и connected real Worker + Better Auth + PostgreSQL 17 + Chromium проверки для Watch. После stable exact implementation head зафиксировать PR/head/evidence в #342 и STOP для coordinator whole-PR review Миры.
+
+
+## 2026-11-18 — Watch implementation, этап 2: сервер и БД
+
+Проверены текущий `AGENTS.md`, принятый Watch plan, решения W1–W3, основной `main` `7cc23edede57994cdedab49c1556ddb55034dd29` и изменяемые source seams. Подтверждены lock graph публикации, существующий общий inbox/recipient uniqueness, PostgreSQL 17 row-lock compatibility и built-in `gen_random_uuid()`.
+
+Создана отдельная ветка `feature/topic-watch` и **Draft implementation PR #345**: https://github.com/iliya1947/vico-forum/pull/345 . Текущий **промежуточный** head `6cede3af5fe2d096cf01be676050a662b2d9f91b`, **не stable review head**.
+
+Изменены 11 файлов: Drizzle schema с `forum_topic_watches` (FK cascade, composite PK, fanout index), forward migration `0068_topic_watch`, journal/snapshot, full production schema manifest, только web-runtime SELECT/INSERT/DELETE ACL; repository/service/Hyperdrive own-state read + transactional desired-state Watch/Unwatch with topic `FOR NO KEY UPDATE` и persisted active actor admission; reply publication set-based union author/parent/watcher с `gen_random_uuid()`, self exclusion и existing recipient/post ON CONFLICT; strict authenticated same-origin canonical `setTopicWatch` intent с actor expectation, boolean и operation result/errors. Нет RBAC key, другого inbox, auto-watch, backfill или Stage-6 действий.
+
+Выполнена GitHub compare base...head: branch ahead by 2 commits, ровно 11 изменённых файлов в принятом backend/schema scope. На момент проверки GitHub CI запущен, часть jobs queued/in_progress; **тесты не объявлены PASS**, локальный PostgreSQL/browser запуск не выполнялся. UI/loader private watch presentation, focused tests, real DB concurrency и browser acceptance остаются этапом 3. PR Draft, к review/merge не готов.
+
+STOP после завершения серверного/DB этапа согласно декомпозиции. Следующая задача при явном продолжении владельца: Watch UI, тесты и browser acceptance; затем stable exact head и coordinator handoff Мире.
