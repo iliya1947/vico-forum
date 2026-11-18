@@ -56,6 +56,18 @@ async function openAlexAdminUserItem(user: ReturnType<typeof userEvent.setup>) {
   return alexLink.closest("li") as HTMLElement;
 }
 
+async function openAlexProfileAuthorization(user: ReturnType<typeof userEvent.setup>) {
+  const alexItem = await openAlexAdminUserItem(user);
+  await user.click(within(alexItem).getByRole("link", { name: "Authorization" }));
+  expect(await screen.findByRole("heading", { level: 1, name: "Alex Rivera" })).toBeInTheDocument();
+
+  return waitFor(() => {
+    const authorization = document.querySelector("#authorization") as HTMLElement | null;
+    expect(authorization).not.toBeNull();
+    return authorization as HTMLElement;
+  });
+}
+
 describe("UI preview state catalog", () => {
   it("keeps locale and direction out of State options", () => {
     expect(scenarios.length).toBeGreaterThan(0);
@@ -589,15 +601,12 @@ describe("embedded preview routing", () => {
     const user = userEvent.setup();
     await renderEmbeddedPreview(<EmbeddedPreview scenarioId="admin-topic" identity="manager" />);
 
-    const alexItem = await openAlexAdminUserItem(user);
-    await user.click(within(alexItem).getByRole("link", { name: "Authorization" }));
+    const authorization = await openAlexProfileAuthorization(user);
 
-    expect(await screen.findByRole("heading", { level: 1, name: "Alex Rivera" })).toBeInTheDocument();
-    expect(screen.getByRole("heading", {
+    expect(within(authorization).getByRole("heading", {
       level: 3,
       name: "Authorization management",
     })).toBeInTheDocument();
-    expect(document.querySelector("#authorization")).not.toBeNull();
     expect(screen.getByRole("heading", { level: 2, name: "User measures" })).toBeInTheDocument();
     expect(screen.getByText(
       "Repeated off-topic promotional posts after a moderator warning.",
@@ -608,10 +617,13 @@ describe("embedded preview routing", () => {
     const user = userEvent.setup();
     await renderEmbeddedPreview(<EmbeddedPreview scenarioId="admin-topic" identity="manager" />);
 
-    const alexItem = await openAlexAdminUserItem(user);
-    await user.click(within(alexItem).getByRole("link", { name: "Authorization" }));
+    await openAlexProfileAuthorization(user);
 
-    const measures = document.querySelector("#measures") as HTMLElement;
+    const measures = await waitFor(() => {
+      const section = document.querySelector("#measures") as HTMLElement | null;
+      expect(section).not.toBeNull();
+      return section as HTMLElement;
+    });
     await user.click(within(measures).getByRole("link", { name: "User measures" }));
 
     expect(await screen.findByRole("heading", { level: 2, name: "User measures" })).toBeInTheDocument();
@@ -623,10 +635,9 @@ describe("embedded preview routing", () => {
     const user = userEvent.setup();
     await renderEmbeddedPreview(<EmbeddedPreview scenarioId="admin-topic" identity="owner" />);
 
-    const alexItem = await openAlexAdminUserItem(user);
-    await user.click(within(alexItem).getByRole("link", { name: "Authorization" }));
+    const authorization = await openAlexProfileAuthorization(user);
 
-    const roleForm = document.querySelector("#authorization .admin-role-assignment") as HTMLElement;
+    const roleForm = authorization.querySelector(".admin-role-assignment") as HTMLElement;
     await user.selectOptions(within(roleForm).getByLabelText("Assigned role"), "role-moderator");
     await user.click(within(roleForm).getByRole("button", { name: "Save" }));
 
