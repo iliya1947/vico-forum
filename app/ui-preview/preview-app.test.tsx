@@ -181,6 +181,22 @@ describe("interactive Pages preview", () => {
     expect(within(sessions).queryByRole("button", { name: "Sign out all other sessions" })).not.toBeInTheDocument();
   });
 
+  it("shows a Google-only account without offering password change", async () => {
+    render(<EmbeddedPreview scenarioId="settings-account-google-only" identity="user" />);
+
+    expect(await screen.findByRole("heading", { level: 2, name: "Account & security" })).toBeInTheDocument();
+
+    const methods = document.querySelector("#settings-account-methods")?.parentElement as HTMLElement;
+    expect(within(methods).getByText("Google")).toBeInTheDocument();
+    expect(within(methods).queryByText("Email and password")).not.toBeInTheDocument();
+    expect(within(methods).getByText(
+      "This account has no password credential. Adding a password is not available here.",
+    )).toBeInTheDocument();
+    expect(within(methods).queryByRole("button", { name: "Connect Google" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("heading", { level: 3, name: "Change password" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Change password" })).not.toBeInTheDocument();
+  });
+
   it("links Google locally from Account & security without invoking real OAuth", async () => {
     const user = userEvent.setup();
     render(<EmbeddedPreview scenarioId="section-user" identity="user" />);
