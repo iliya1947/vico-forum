@@ -2,7 +2,7 @@
 
 ## Статус
 
-1. Scope подготовлен 2026-11-12; current I6 audit target — `main` `7cc23edede57994cdedab49c1556ddb55034dd29`.
+1. Scope подготовлен 2026-11-12; current I7 audit target — `main` `7cc23edede57994cdedab49c1556ddb55034dd29`.
 2. Block H закрыт; его deferred blockers в I не дублируются.
 3. **I1 — Repository authority & main provenance завершён: 1 current-scope finding — `REPO-MAIN-GATE-01 Moderate/P2`.**
 4. **I2 — Workflow events, tokens & write authority завершён: PASS, 0 новых current-scope findings.**
@@ -10,9 +10,10 @@
 6. **I4 — Secret custody & leakage завершён: PASS, 0 новых current-scope findings и 0 новых deferred blockers.** Current tree / production Actions logs / production artifacts / exact current-main Pages artifact не подтвердили secret leakage; live `vico_forum_web` остаётся LOGIN-role без password expiry, но единственный current Neon project member — Owner/Admin, поэтому plaintext SQL-Editor-history risk не образует proven less-trusted access path.
 7. **I5 — Dependency & install provenance завершён: 1 current-scope finding — `CI-PYPI-PROVENANCE-01 Low/P3`; 0 новых deferred blockers.** Node/pnpm dependency chain PASS; Python browser acceptance installs exact Playwright but resolves unhashed floating transitives online on every run.
 8. **I6 — Actions, tools & container provenance завершён: 1 current-scope finding — `CI-POSTGRES-IMAGE-PROVENANCE-01 Low/P3`; 0 новых deferred blockers.** GitHub Actions refs/transitive composite action refs PASS; единственный external service image `postgres:17` остаётся mutable tag и разрешается в digest только во время run.
-9. Следующий bounded slice после продолжения владельца — **I7: Release/artifact supply-chain provenance**.
-10. Мира — auditor/coordinator. Remediation, technical planner и implementer не назначены.
-11. Production/Cloudflare/Neon/GitHub settings mutation, secret rotation и workflow dispatch не разрешены и не выполнялись.
+9. **I7 — Release/artifact supply-chain cross-check завершён: 1 current-scope finding — `PAGES-ACCEPTANCE-PROVENANCE-01 Low/P3`; 0 новых deferred blockers.** GitHub Pages artifact внутри exact workflow run PASS, но общий canonical Pages URL реально перезаписывается любым разрешённым `chatgpt/ui-*` deployment и потому не доказывает stable exact head для Pages/owner visual acceptance. Production DB/Worker cross-chain новых root cause не дал; `REPO-MAIN-GATE-01` получает explicit pre-Stage-6 correction gate.
+10. Следующий bounded slice после продолжения владельца — **I8: Cross-chain closeout**.
+11. Мира — auditor/coordinator. Remediation, technical planner и implementer не назначены.
+12. Production/Cloudflare/Neon/GitHub settings mutation, secret rotation и workflow dispatch не разрешены и не выполнялись.
 
 ## I1 — результат
 
@@ -158,6 +159,37 @@
 **Current impact:** changed or compromised image content can alter PostgreSQL/service behavior used by current CI and connected-browser acceptance, weakening the provenance of acceptance evidence.
 
 **Boundary:** inspected service containers do not receive repository/production secrets or a workspace mount; affected PR/browser jobs have read-only repository authority. No direct repository-write, production-mutation or secret-exfiltration path is proven. Stage-6 Worker verify uses the same root cause but remains paused.
+
+## I7 — результат
+
+1. Audit target: current `main` `7cc23edede57994cdedab49c1556ddb55034dd29`. Verdict: **1 новый current-scope finding — `PAGES-ACCEPTANCE-PROVENANCE-01 Low/P3`; 0 новых deferred technical blockers.**
+2. Current repository имеет **0 GitHub Releases**. Trusted external-output paths в current scope therefore сводятся к public UI-preview Pages и prepared/manual production DB/Worker workflows; Stage 7 release artifact path ещё не существует.
+3. Pages artifact integrity внутри одного run PASS. Exact current-main Pages run `44286477786` uploaded `github-pages` artifact ID `14420170192` with SHA-256 digest `a736eb3863be9c7fab1c7d43cad82914376e61380b2d829e3e3aecf574288403`. Its deploy job explicitly logged `Fetching artifact metadata ... in this workflow run`, found one artifact, then created Pages deployment using that exact artifact ID for SHA `7cc23edede57994cdedab49c1556ddb55034dd29`.
+4. Current GitHub Pages documentation matches this build→artifact→deploy design: deploy job must depend on the build job and deploys the Pages artifact produced by the workflow. Repository has no `actions/download-artifact` consumer and no privileged workflow consumes browser evidence artifacts. No cross-workflow artifact substitution path was found.
+5. **Separate current acceptance-provenance defect exists at the deployment alias.** `ui-preview-pages.yml` deploys to one `github-pages` Environment / canonical URL from pushes to `main`, every `chatgpt/ui-*` branch except `chatgpt/ui-ux-product-pass`, and manual `workflow_dispatch`. The workflow uses one global concurrency group `ui-preview-pages` with `cancel-in-progress: true`, so the latest eligible run replaces/cancels another preview run rather than preserving an immutable exact-head preview endpoint.
+6. Current repository branch search found **28** `chatgpt/ui-*` branches; 27 satisfy the workflow push pattern after the one explicit exclusion. This is not merely a theoretical branch pattern.
+7. Current Actions evidence proves real replacement: successful UI-branch run `44298738205` from `chatgpt/ui-preview-interactions` SHA `4b3e5f3de1ba9f5de0d4755339751e17aa07f00a` deployed artifact ID `14424697488` and evaluated the Environment URL as the same canonical `https://iliya1947.github.io/vico-forum/`. Later eligible branch pushes are already queued/cancelled in the same global concurrency group.
+8. `AGENTS.md` requires applicable Pages/browser review and owner visual acceptance for the **stable exact head** before whole-PR review. Opening the canonical Pages URL therefore does not itself prove which head is being accepted: a concurrent eligible UI branch can replace the rendered artifact without changing the stable head under review.
+9. Observable current impact: owner/agent visual acceptance can be performed against a different UI branch than the head recorded for review, producing false PASS or false rejection of the target implementation. This weakens a current review gate but does not alter repository code, obtain secrets or mutate production. Severity is **Low/P3**.
+10. This finding is distinct from `REPO-MAIN-GATE-01`. Main protection would not solve the shared Pages alias: allowed non-main `chatgpt/ui-*` deployments would still replace it. Conversely, the Pages artifact itself is correctly bound to its workflow run/SHA, so the defect is not artifact corruption; it is mutable acceptance-target provenance.
+11. Production DB cross-check PASS apart from existing findings. Production DB/credential workflows are manual, main-only at protected work and independently checkout exact `github.sha`; they do not consume build artifacts from other workflows. Runtime migration evidence binds an actual successful production migration run ID/path/event/main/head SHA plus exact journal SHA and ancestor history. Existing `DB-RUNTIME-EVIDENCE-01` remains the separate coverage defect and is not duplicated.
+12. Worker rollout cross-check likewise found no separate artifact-substitution root cause. Guard requires exact `expected_sha == GITHUB_SHA`; verify and rollout independently checkout and verify that SHA. Rollout re-installs from the frozen/integrity-checked Node chain, verifies pinned Wrangler, builds from the exact source, uploads one Worker Version, parses exactly one returned Version ID, verifies that ID exists, pre-traffic-smokes its exact Version URL, and promotion accepts only that same Version ID. Cloudflare current docs define a Worker Version as an immutable snapshot with a unique ID.
+13. The verify job and rollout job rebuild rather than transfer one binary artifact, but no independent current provenance gap was established: both bind the same exact source revision and pinned Node dependency chain, and the **actual uploaded version** is itself identified and pre-traffic-smoked. The mutable `postgres:17` used by pre-Cloudflare verification is already owned by `CI-POSTGRES-IMAGE-PROVENANCE-01`; Version-URL and rollback/finalizer defects remain Block-H deferred blockers.
+14. Production trust cross-check strengthens, but does not duplicate, `REPO-MAIN-GATE-01`: exact-SHA checkout proves which bytes from `main` are executed, not that those bytes passed PR/check review. A delegated Contents-writer can modify ordinary main files such as `.github/scripts/*`, `package.json`, Worker source or migration code without touching workflow YAML. Future authorized production jobs then execute repository-controlled scripts with DB/Cloudflare Environment credentials.
+15. GitHub Environment protection gates actor/ref/secret admission; it is not a substitute for source-review provenance. Even if exact Environment policy is strong, a later authorized dispatch from an already-compromised unprotected `main` would execute the compromised exact SHA. Therefore **`REPO-MAIN-GATE-01` is an explicit correction gate before any future Stage-6 production secret-bearing DB/credential/Worker dispatch**.
+16. No extra Stage-6 blocker is created for item 15 because root cause is exactly the already-current `REPO-MAIN-GATE-01`, which already has observable current Pages impact. Stage 6 remains paused; aggregate dedup is preserved.
+17. Exact mutable Environment policy/secret inventory, repository Actions actor-policy and complete Secret Scanning state remain **Информация не проверена**. These unknowns do not invalidate the Pages finding or the I1 correction gate.
+18. No workflow dispatch, Pages deployment, production action, settings mutation or remediation was performed by this audit. Existing repository state and Actions metadata/logs were read only.
+19. #315 aggregate becomes **28 current findings + 3 deferred Stage-6 blockers**.
+20. Next bounded slice after owner continuation: **I8 — Cross-chain closeout**.
+
+### `PAGES-ACCEPTANCE-PROVENANCE-01` — Low/P3
+
+**Root cause:** one mutable GitHub Pages deployment target / canonical URL is shared by `main`, a broad `chatgpt/ui-*` branch set and manual dispatch, while project review requires Pages/owner visual acceptance for a stable exact head.
+
+**Current impact:** a concurrent eligible Pages deployment can replace the public preview between head selection and visual acceptance, so the page being accepted may not correspond to the implementation head recorded for review.
+
+**Boundary:** each individual Pages artifact is correctly tied to its own workflow run/SHA; no repository-code mutation, production mutation or secret exposure is caused by this defect. The weakness is acceptance-target provenance, so severity is Low/P3.
 
 ## Цель
 
