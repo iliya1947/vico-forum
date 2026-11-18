@@ -89,6 +89,16 @@ describe("embedded preview routing", () => {
     expect(document.querySelector(".section-heading")).toBeNull();
   });
 
+  it("returns the shared 404 state for a missing topic", async () => {
+    render(<EmbeddedPreview scenarioId="topic-missing" />);
+
+    const missing = await screen.findByRole("alert");
+    expect(missing).toHaveAttribute("data-status", "404");
+    expect(within(missing).getByRole("heading", { level: 1, name: "Forum page not found" })).toBeInTheDocument();
+    expect(within(missing).getByText("The category, section, or topic does not exist.")).toBeInTheDocument();
+    expect(document.querySelector(".topic-page")).toBeNull();
+  });
+
   it("returns the shared 404 state for an unknown preview route", async () => {
     render(<EmbeddedPreview scenarioId="route-real-404" />);
 
