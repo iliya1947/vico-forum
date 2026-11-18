@@ -105,9 +105,13 @@ try:
                 private(viewer.request.post(base + path, headers={"Origin": base},
                     form={"intent": "setTopicWatch", "editorActorId": proposed_id,
                           "watching": "true"}), status)
-            private(watcher.request.post(base + path, headers={"Origin": "https://invalid.example"},
+            cross_origin = watcher.request.post(base + path, headers={"Origin": "https://invalid.example"},
                 form={"intent": "setTopicWatch", "editorActorId": watcher_id,
-                      "watching": "true"}), 403)
+                      "watching": "true"})
+            # RR/Worker may reject the request before route admission with 400 rather than route-level 403.
+            assert cross_origin.status in (400, 403), cross_origin.status
+            assert sql("select user_id from forum_topic_watches where topic_id=$1 and user_id=$2",
+                [current["topicId"], watcher_id]) == []
             private(watcher.request.post(base + path, headers={"Origin": base},
                 form={"intent": "setTopicWatch", "editorActorId": watcher_id,
                       "watching": "YES"}), 400)
