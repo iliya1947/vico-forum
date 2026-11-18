@@ -36,3 +36,20 @@ Target: exact head `cd72e8696167d71c8e93e7ab63ff8e86342af4c3`, base/main пос�
 Мира является автором docs diff. Не переписывать документацию и не начинать новый авторский этап. Независимо проверить весь diff #344 против фактически merged поведения #343, актуального main и относящихся source-of-truth документов. Проверить фактическую точность, полноту необходимого docs closeout, отсутствие лишних/исторических утверждений в current-state документах и сохранение Stage-6/UI-acceptance границ.
 
 Во время review #344 не изменять. Возможные findings сначала подтвердить как реальные current-doc-scope defects. Результат: PASS либо один полный пакет подтверждённых findings. После этого STOP и возврат Мире.
+
+
+## 2026-11-18 — независимый whole-PR review docs #344 — PASS
+
+Проверен **весь docs diff PR #344** на stable exact head `cd72e8696167d71c8e93e7ab63ff8e86342af4c3` относительно `main` / merged #343 `d8667f630450f702783bbbdb9a3ec14432e75660`. Самостоятельно сопоставлены пять изменённых файлов: `PROJECT_STATE.md`, `docs/auth/AUTHORIZATION.md`, `docs/ADMIN_PANEL.md`, `docs/PROJECT_HISTORY/PROJECT_HISTORY.md` и `docs/PROJECT_HISTORY/PROJECT_HISTORY_29.md` — с реальными repository/route/UI/authorization/migration boundaries и принятыми product/translation/Stage-6 решениями.
+
+- `PROJECT_STATE.md`: корректно отражает новую реализованную own-title функцию и migration ceiling `0067`, не приписывает external rollout или визуальную приёмку.
+- `AUTHORIZATION.md`: code-backed `forum.topic.title.editOwn`, отдельная resource ownership и no edit-any, grants user/moderator/admin, fresh permission, AccountState/measure, immutable revision/CAS/no-op соответствуют merged code.
+- `ADMIN_PANEL.md`: объектная матрица и применение AP-10 `posts.edit` к own-topic title отражают owner decision E2, сохраняют separate Own/Admin capabilities и действующие UX restrictions.
+- Исторический индекс и snapshot `PROJECT_HISTORY_29.md`: ссылки/даты/implementation exact head и merge commit, 17 успешных exact-head checks и пределы connected Worker/Chromium совпадают с GitHub и service evidence. History остаётся отдельно от current source of truth.
+- Docs PR содержит только эти пять documentation files. Все 4 exact-head GitHub checks завершились `success`. Отдельный локальный тестовый прогон не выполнялся; для docs-only diff это не требуется.
+
+**Подтверждённых дефектов current docs scope нет. Документационный diff: PASS.** Review осуществлён без изменения #344.
+
+**Отдельное подтверждённое несоответствие PR metadata (не docs diff):** текущее описание PR #344 по-прежнему предписывает Лире исполнять/редактировать документацию, хотя последнее прямое назначение владельца в #342 — только независимый review готового diff Миры. Требуется синхронизировать описание PR с действующим assignment перед closeout. Это не дефект проверенных пяти документационных файлов, не основание переписывать docs или сбрасывать exact-head review.
+
+Передача Мире: учесть PASS, привести PR #344 description в соответствие с прямым назначением, определить готовность docs PR к merge владельцем. STOP.
