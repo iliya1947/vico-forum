@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { I18nextProvider } from "react-i18next";
+import { I18nextProvider, useTranslation } from "react-i18next";
 import { RouterProvider, createMemoryRouter, redirect, useActionData, useLoaderData, useParams, useSearchParams } from "react-router";
 
 import {
@@ -16,6 +16,9 @@ import { AdminTopicView } from "../admin/topic";
 import { AdminCategoryView, AdminForumView, AdminSectionView } from "../admin/forum";
 import { AdminOverview } from "../admin/overview";
 import { AdminUsersIndex } from "../admin/users";
+import { AdminShell } from "../admin/shell";
+import { HistoryEvents } from "../admin/history";
+import type { AdminHistoryChange, AdminHistoryEvent } from "../../db/admin-history";
 import { projectAdminTopic } from "../admin/topic-model";
 import type { ForumHelpSolutionsFilters, ForumPopularPage } from "../../db/forum-repository";
 import {
@@ -326,6 +329,7 @@ type PreviewInteractionState = {
   registrationVersion: number;
   revokedAccountSessionIds: Set<string>;
   measureAppealBody: string | null;
+  adminHistoryEvents: AdminHistoryEvent[];
   authorization: PreviewAuthorizationState;
 };
 
@@ -381,6 +385,7 @@ function createPreviewInteractionState(): PreviewInteractionState {
     registrationVersion: registration?.version ?? 1,
     revokedAccountSessionIds: new Set(),
     measureAppealBody: null,
+    adminHistoryEvents: [],
     authorization: createPreviewAuthorizationState(),
   };
 }
@@ -1500,6 +1505,12 @@ function previewRouter(
       ErrorBoundary: ForumRouteError,
     },
     {
+      path: "/:locale/admin/history",
+      element: <PreviewAdminHistoryRoute scenario={scenario} interactions={interactions} />,
+      loader: () => previewAdminSurfaceAccessData(scenario),
+      ErrorBoundary: ForumRouteError,
+    },
+    {
       path: "/:locale/admin/users",
       element: <PreviewAdminUsersRoute />,
       loader: ({ request }) => {
@@ -1774,10 +1785,29 @@ async function previewSettingsForumAction(
   const emailRegistrationEnabled = form.get("emailRegistrationEnabled") === "on";
   if (googleRegistrationEnabled !== interactions.registrationGoogleEnabled
     || emailRegistrationEnabled !== interactions.registrationEmailEnabled) {
+    const before = {
+      googleRegistrationEnabled: interactions.registrationGoogleEnabled,
+      emailRegistrationEnabled: interactions.registrationEmailEnabled,
+      version: interactions.registrationVersion,
+    };
     interactions.registrationGoogleEnabled = googleRegistrationEnabled;
     interactions.registrationEmailEnabled = emailRegistrationEnabled;
     interactions.registrationVersion += 1;
     writePreviewRegistrationPolicy(interactions);
+    previewAppendAdminHistory(scenario, interactions, {
+      action: "settings.registrationChanged",
+      targetType: "forum-settings",
+      targetId: "registration",
+      targetLabel: "Registration settings",
+      context: {
+        before,
+        after: {
+          googleRegistrationEnabled: interactions.registrationGoogleEnabled,
+          emailRegistrationEnabled: interactions.registrationEmailEnabled,
+          version: interactions.registrationVersion,
+        },
+      },
+    });
   }
   return { ok: true as const };
 }
@@ -2584,6 +2614,19 @@ async function previewAttentionAction(
   if (!validIntent) return null;
 
   interactions.resolvedAttentionCases.add(caseId);
+  if (item.type === "signal") {
+    previewAppendAdminHistory(scenario, interactions, {
+      action: "help.signalReviewed",
+      targetType: "topic",
+      targetId: item.topicId,
+      targetLabel: item.topicTitle,
+      context: {
+        signalId: item.id,
+        kind: item.kind,
+        resolution: intent === "acceptHelpSignal" ? "accepted" : "rejected",
+      },
+    });
+  }
   const url = new URL(request.url);
   return redirect(url.pathname + url.search);
 }
@@ -2987,6 +3030,39 @@ function previewAdminFilter<T extends { id: string; name?: string; title?: strin
   );
 }
 
+function previewAppendAdminHistory(
+  scenario: Scenario,
+  interactions: PreviewInteractionState,
+  change: AdminHistoryChange,
+  reason?: string | null,
+) {
+  const actor = previewUser(scenario);
+  if (!actor) return;
+  const sequence = ++interactions.sequence;
+  interactions.adminHistoryEvents.unshift({
+    id: `preview-history-${sequence}`,
+    at: new Date(Date.UTC(2026, 10, 18, 20, 0, Math.min(sequence, 59))).toISOString(),
+    actorId: actor.id,
+    actorLabel: actor.name,
+    change,
+    ...(reason ? { reason } : {}),
+  });
+}
+
+function PreviewAdminHistoryRoute({ scenario, interactions }: {
+  scenario: Scenario;
+  interactions: PreviewInteractionState;
+}) {
+  const { t } = useTranslation("common");
+  return <AdminShell locale={scenario.locale} access={previewAdminAccess} current="history">
+    <section aria-labelledby="admin-history-heading">
+      <h2 id="admin-history-heading">{t("adminHistory")}</h2>
+      <p>{t("historyCoverage")}</p>
+      <HistoryEvents events={interactions.adminHistoryEvents} locale={scenario.locale} />
+    </section>
+  </AdminShell>;
+}
+
 function previewAdminOverviewData(scenario: Scenario) {
   const categories = homepageCategories(scenario.locale);
   return {
@@ -3155,12 +3231,20 @@ async function previewAuthorizationAction(
     const displayName = String(form.get("displayName") ?? "").trim();
     if (!/^[a-z][a-z0-9-]{0,62}$/u.test(slug) || !displayName) return { error: "invalid" as const };
     if (state.roles.some((role) => role.slug === slug)) return { error: "invalid" as const };
+    const roleId = `preview-role-${++state.sequence}`;
     state.roles.push({
-      id: `preview-role-${++state.sequence}`,
+      id: roleId,
       slug,
       displayName,
       isSystem: false,
       grants: [],
+    });
+    previewAppendAdminHistory(scenario, interactions, {
+      action: "role.created",
+      targetType: "role",
+      targetId: roleId,
+      targetLabel: displayName,
+      context: { slug },
     });
     return { ok: true as const };
   }
