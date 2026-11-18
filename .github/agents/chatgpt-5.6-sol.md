@@ -113,3 +113,10 @@ Mute/block implementation не активирован до решения вла
 **PASS, findings current scope = 0.** Приняты S-P1–S-P4 и S-T1/S-T2. Global structure singleton/version оставлен: для редких admin writes это меньшая сложность, чем per-container version/mutex, при этом даёт единый lock order и stale-CAS; topic location_version независимо закрывает same-topic ABA. Data-monitor fixed catalogs не являются основанием вводить новую monitoring subsystem; structure events должны лишь подключиться к уже существующему original admin_history→forum.structure projection, как предусмотрел план.
 
 Исправление Лёвой не требуется. Structure implementation пока не активирован; Bookmarks #346 остаётся текущей реализацией Лиры.
+
+
+## 2026-11-18 — Bookmarks #346 coordinator whole-PR review
+
+Проверен exact head `8f24bd98fb2548bc9ec4b6f3433f40c1e72c7d65` против принятого B1–B7 и main `9c4639d23ca075c8bb92fbb909b96593d7bee127`. Основные implementation seams проходят: 0069/schema/manifest, web SELECT/INSERT/DELETE only, KEY SHARE→active actor writer, own-filtered keyset list, strict mixed-intent rejection, private/no-store, unavailable≠OFF, actor/topic-scoped controls, safe current title/location/deleted-author projection, 57-row connected keyset and real Worker/Better Auth/PG17/Chromium flow. React Router v8 normalized loader `url` usage соответствует фактическому framework loader contract и не является finding.
+
+**PASS withheld: one current-scope acceptance defect.** B6 требует real-PG concurrency/lifecycle доказательства; текущая feature DB suite их не содержит. Нужны two-connection Add×Add/Add×Remove commit orders, writer×deactivation both orders, rollback/no partial effect, topic-delete FK cleanup/lock-order coverage with actual acquired-lock synchronization. Кодовый race defect пока не установлен; исправление должно прежде всего закрыть обязательный evidence gap и менять implementation только если race test обнаружит реальный defect.
