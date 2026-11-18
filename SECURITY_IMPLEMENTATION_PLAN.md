@@ -57,6 +57,7 @@
 8. [Block H — Cloudflare / Workers / runtime security audit](./SECURITY_BLOCK_H_CLOUDFLARE_WORKERS_RUNTIME.md)
 9. [Block I — Secrets & supply chain security audit](./SECURITY_BLOCK_I_SECRETS_SUPPLY_CHAIN.md)
 10. [Block J — External integrations security audit](./SECURITY_BLOCK_J_EXTERNAL_INTEGRATIONS.md)
+11. [Block K — Abuse & availability security audit](./SECURITY_BLOCK_K_ABUSE_AVAILABILITY.md)
 
 Каждый следующий bounded security-блок оформляется отдельным файлом; этот файл остаётся общей картой направления и маршрутом между блоками.
 
