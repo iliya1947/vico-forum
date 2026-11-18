@@ -129,3 +129,21 @@ Mute/block implementation не активирован до решения вла
 Whole accepted B1–B7 seams остаются валидны с предыдущего review, поскольку feature production diff не изменился. GitHub API подтверждает 18 check-runs на exact head и все conclusion=success. Первый database attempt SA07 failure диагностирован по job logs: Bookmarks suite PASS 10/10 в 20:12:58, SA07 упал в своём `lock table forum_posts,locales ... nowait` около 20:13:46; same-head rerun database PASS. Bookmarks как причина не подтверждён.
 
 **Coordinator PASS, current-scope defects = 0.** Следующий reviewer — Лёва / Codex-6.1 Sol на неизменном exact head #346.
+
+
+## 2026-11-18 — независимая проверка B5-R1
+
+На exact head #346 `477ad6b1e5cf51bf94b3830e9ea4ea85d4e4fae5`
+finding Лёвы проверен самостоятельно и подтверждён как current-scope P2.
+
+Loader применяет cursor из URL к текущему session actor, BookmarksView не сбрасывает
+older-page при изменении actorId, а credential return path сохраняет query string.
+Следовательно A→logout/sign-in B с older Bookmarks URL может загрузить B по cursor A
+вместо first page B. Утечки A rows нет благодаря server-side own filtering, поэтому
+scope исправления — только identity-transition reset. B4 foreign-cursor initial deep
+link сохраняется допустимым.
+
+Лире передан один bounded correction package: reset старых before* только при
+фактическом actor transition, regression A older page → B newest collection,
+без auto-POST replay и без изменения B1–B7/B6. После нового stable head — новый
+coordinator whole-PR cycle.
