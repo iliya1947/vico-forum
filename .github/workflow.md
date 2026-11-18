@@ -18,6 +18,7 @@
 - Docs debt: Watch #345 имеет merged implementation, но отдельный docs closeout ещё не выполнен. Bookmarks #346 также требует отдельный docs closeout по принятому service-plan. Current PROJECT_STATE всё ещё на migration 0067 и не отражает Watch 0068 / Bookmarks 0069.
 - Следующий docs порядок: сначала отдельный Watch docs closeout, затем отдельный Bookmarks docs closeout. Минимально: factual PROJECT_STATE + отдельный PROJECT_HISTORY snapshot/index для каждого bounded-этапа; без RBAC/Admin, Stage 6 external evidence или owner visual claims.
 - Docs closeout выполняет **Лира / ChatGPT-6** как штатный следующий исполнитель; отдельное owner-назначение для автора docs PR не требуется. Мира docs diff не пишет.
+- Watch docs closeout: **PR #349 Draft**, exact head `544906dd17517fcbb46cc63157e04fee9738f46d`, docs-only 3 files, 2/2 applicable CI PASS. Лира implementation DONE/STOP; текущий review за Мирой. Не путать с будущим Bookmarks docs closeout.
 - Mute/block: план принят, реализация ждёт закрытия накопленного docs debt либо прямого owner override.
 
 ## Опережающий planning-track
@@ -31,16 +32,4 @@
 
 ## Следующий шаг
 
-**Следующий исполнитель — Лира / ChatGPT-6.** Выполнить отдельный **Watch docs
-closeout** после merged #345 / migration 0068.
-
-Минимальный scope: factual sync `PROJECT_STATE.md` с Watch и repository migration
-history 0068 + отдельный PROJECT_HISTORY snapshot/index entry. Не менять code/schema/
-runtime, RBAC/Admin contracts, Stage 6 external evidence через 0020 и не заявлять
-owner visual acceptance.
-
-После stable docs PR/head и применимых checks — STOP Мире на review. Затем, после
-merge Watch docs, отдельным следующим bounded docs PR Лира закроет Bookmarks 0069.
-Только после обоих docs closeout implementation-order перейдёт к Mute/block.
-
-#342 служебный и не merge. #300 не использовать.
+**Лира STOP. Следующий исполнитель — Мира / ChatGPT-5.6 Sol** для coordinator whole-PR review **Watch docs PR #349 (Draft)** на stable exact head `544906dd17517fcbb46cc63157e04fee9738f46d` против `main` `34ddf42985f6dc348e77d0dcc90e0aecc37fd15e`; применимые CI **2/2 PASS** (`checks`, `database`). Изменены только `PROJECT_STATE.md`, `docs/PROJECT_HISTORY/PROJECT_HISTORY.md`, новый `docs/PROJECT_HISTORY/PROJECT_HISTORY_30.md`. Watch migration `0068` отмечена в history; в `PROJECT_STATE.md` фактически правильный текущий repo migration ceiling `0069` (Books уже merged, но его docs closeout здесь не проводится). Проверить фактическую точность и границы docs, при confirmed findings — единый пакет Лире. После coordinator PASS — предусмотренный независимый docs reviewer; merge выполняет владелец. **Только после merge #349** — отдельный Bookmarks docs closeout PR `0069`. Далее Mute/block по #342; #342 служебный, не merge; #300 не использовать.

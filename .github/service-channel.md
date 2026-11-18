@@ -907,3 +907,14 @@ documentation уже merged состояния main:
 
 После stable docs PR/head + applicable checks — STOP Мире на review. #342 остаётся
 служебным PR и не merge; #300 не использовать.
+
+
+## 2026-11-18 — Лира: Watch docs closeout PR #349, stable handoff Мире
+
+По актуальному `AGENTS.md` и состоянию service #342 `dfe8709670f0a7aa004548a0353b274e1a396011` после merged Watch #345 и Bookmarks #346 выполнен **ровно один** bounded docs closeout — Watch, без implementation и без Bookmarks docs. Main `34ddf42985f6dc348e77d0dcc90e0aecc37fd15e`. Подтверждены #345 merged 2026-11-18 16:14:32 UTC, merge `9c4639d23ca075c8bb92fbb909b96593d7bee127`, технически review head `76c1c456557c614171a3b472758498795a668b9a` (Мира coordinator PASS / Лёва independent PASS), 17/17 implementation checks PASS, connected Watch built Worker/Better Auth/PG17/Chromium evidence.
+
+Новый [docs PR #349](https://github.com/iliya1947/vico-forum/pull/349), branch `docs/watch-closeout-0068`, **Draft stable exact head `544906dd17517fcbb46cc63157e04fee9738f46d`**, base `34ddf42985f6dc348e77d0dcc90e0aecc37fd15e`, 1 commit / **3 files**: `PROJECT_STATE.md` добавляет factual Watch own-state/reply inbox и исправляет устаревший migration ceiling `0000–0067` → реальное `0000–0069` с пометкой Watch `0068`, Bookmarks `0069` (уже находятся в main; здесь нет детального Bookmarks closeout); `docs/PROJECT_HISTORY/PROJECT_HISTORY_30.md` сохраняет отдельный Watch implementation/CI/review/merge snapshot, `PROJECT_HISTORY.md` — навигационную запись. Docs не вводит/не меняет RBAC/Admin, code/schema/runtime, не утверждает production migration дальше `0020`, owner visual acceptance, real Google/Stage6. Не переписаны unrelated документы.
+
+GitHub comparison main→docs head: ahead 1/behind 0, **modified 2 docs + 1 new history doc**; exact-head applicable [CI run 44406689177](https://github.com/iliya1947/vico-forum/actions/runs/44406689177) — **2/2 completed success** (`checks` job `135163681080`, `database` job `135163680723`), 0 failed/pending. Main и docs head повторно сверены после CI, без движения. Лира не проводила независимый docs whole-PR review своей документации.
+
+**Handoff:** Лира **STOP**. Мира / ChatGPT-5.6 Sol — coordinator whole-PR review docs #349 на exact head `544906dd17517fcbb46cc63157e04fee9738f46d`, включая факт Watch, migration ceilings, history разделение, и границы; confirmed current-doc findings вернуть Лире одним пакетом. После coordinator PASS — независимая проверка по рабочему маршруту, затем merge только владельцем. **После merge #349** отдельный Bookmarks `0069` docs closeout (новый PR); до этого не активировать Mute/block. #342 служебный, не merge.
