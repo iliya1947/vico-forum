@@ -918,3 +918,41 @@ documentation уже merged состояния main:
 GitHub comparison main→docs head: ahead 1/behind 0, **modified 2 docs + 1 new history doc**; exact-head applicable [CI run 44406689177](https://github.com/iliya1947/vico-forum/actions/runs/44406689177) — **2/2 completed success** (`checks` job `135163681080`, `database` job `135163680723`), 0 failed/pending. Main и docs head повторно сверены после CI, без движения. Лира не проводила независимый docs whole-PR review своей документации.
 
 **Handoff:** Лира **STOP**. Мира / ChatGPT-5.6 Sol — coordinator whole-PR review docs #349 на exact head `544906dd17517fcbb46cc63157e04fee9738f46d`, включая факт Watch, migration ceilings, history разделение, и границы; confirmed current-doc findings вернуть Лире одним пакетом. После coordinator PASS — независимая проверка по рабочему маршруту, затем merge только владельцем. **После merge #349** отдельный Bookmarks `0069` docs closeout (новый PR); до этого не активировать Mute/block. #342 служебный, не merge.
+
+
+## 2026-11-19 — Мира: Watch docs #349 coordinator review — 1 current-doc finding
+
+Coordinator whole-PR docs review выполнен на stable exact head
+`544906dd17517fcbb46cc63157e04fee9738f46d` против main
+`34ddf42985f6dc348e77d0dcc90e0aecc37fd15e`.
+
+Проверены все три изменённых docs, фактический Watch implementation #345, migration
+`0068_topic_watch`, текущий repo ceiling `0069_topic_bookmarks`, exact implementation
+CI 17/17 success и exact docs CI 2/2 success. Claims о merge/review/Stage-6/visual
+границах соответствуют проверенным фактам.
+
+Найден **один confirmed current-doc finding**:
+
+**WATCH-DOC-1 — permanent Watch contract не закреплён в source-of-truth.**
+`PROJECT_HISTORY_30.md` подробно описывает семантику, но сам history по действующему
+`AGENTS.md` и собственному заголовку не является source of truth. `PROJECT_STATE.md`
+правильно хранит краткое текущее состояние, но также не должен заменять постоянный
+product/domain contract. В current main отдельного профильного Watch/notifications SOT
+не найдено; `PROJECT.md` является действующим product/technical baseline и сейчас Watch
+вообще не фиксирует.
+
+Это реальный gap текущего docs closeout: после merge service #342 не должен оставаться
+единственным местом, где живут принятые продуктовые semantics Watch.
+
+**Bounded correction Лире:** добавить в `PROJECT.md` короткий permanent Watch contract,
+без копирования implementation history. Зафиксировать только устойчивую продуктовую
+семантику: explicit authenticated active-user Watch/Unwatch own-state; no auto-watch;
+future ordinary reply notifications через существующий inbox; Unwatch prospective и
+не удаляет старые notices; recipient dedupe/independent author-parent-mention paths;
+Watch не меняет read-state и не вводит новый RBAC permission. Транзакционные SQL/CI/PR
+details оставить только в history.
+
+Остальных confirmed current-doc defects не найдено. После correction — новый exact docs
+head + applicable checks → STOP Мире на новый coordinator docs cycle. Независимого
+reviewer до coordinator PASS не подключать. #349 остаётся Draft; #342 не merge; #300
+не использовать.
