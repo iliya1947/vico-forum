@@ -256,3 +256,12 @@ migration/runtime privileges; **W2** classification личной подписк�
 Владелец поручил Лёве заранее подготовить планы остальных функций до #320, но не одним большим пакетом. Planning идёт последовательно: Bookmarks → STOP; после отдельной команды владельца Mute/block → STOP.
 
 Это отдельный planning-track: Лира остаётся исполнителем текущего Watch implementation. Лёва сейчас назначен только на полный Bookmarks plan; реализация Bookmarks не активирована.
+
+
+## 2026-11-18 — Лира: Watch backend/schema stage checkpoint
+
+От принятого `main` `7cc23edede57994cdedab49c1556ddb55034dd29` Лира создала **Draft implementation PR #345** (`feature/topic-watch`), interim head `6cede3af5fe2d096cf01be676050a662b2d9f91b`. Реализованы schema/forward migration 0068, journal/snapshot/structural manifest, web-runtime ACL, persisted personal watch read/transactional desired-state write, set-based reply notifications в прежнем inbox и strict canonical route `setTopicWatch`. Подтверждено сравнение 11 changed files. Нет RBAC extension и внескоповых функций.
+
+**Не завершено:** watch presentation/UI, connected/focused tests и browser acceptance. GitHub Actions на interim head только запущены, результатов PASS пока нет. PR Draft и **не готов к review**. Подробности — `.github/agents/chatgpt-6.md`.
+
+Следующий шаг Лиры после продолжения владельца — UI и tests/browsers, затем final stable exact head, PASS проверок и handoff Мире на coordinator whole-PR review. Служебный PR #342 остаётся open и не merge. Опережающее планирование Bookmarks Лёвой — отдельная параллельная planning-track.
