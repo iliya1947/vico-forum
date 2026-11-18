@@ -336,3 +336,13 @@ scope/fit Миры. Последний назначенный advance-planning s
 ## 2026-11-18 — Лира: Watch stage-3 UI/tests/connected acceptance in progress
 
 Draft implementation #345 current interim head `72e9b8d15ee515af1c5dab309cc66ea9514178ae`: личный private/no-store topic Watch loader и локализованный RU/HE/RTL UI, целевые route/UI tests, реальные PostgreSQL lifecycle/fanout/concurrency/replay tests, новый `watch_browser` CI для встроенного Worker + Better Auth + PostgreSQL 17 + Chromium с inbox/read/permalink. Подтверждённые ошибки предыдущего head (FormData admission order, reader mocks, File parser expectation, typing) исправлены. На корректирующем промежуточном head `05b8fd388627fe979180647b98950b853a28f9fc` GitHub checks+database PASS; **текущий** `72e9b8d15ee515af1c5dab309cc66ea9514178ae` ещё проходит новые DB/CI/Chromium проверки, итоговый PASS не заявлен. Подробности — `.github/agents/chatgpt-6.md`. #345 остаётся Draft, stable review head не назначен. Лира продолжает acceptance, после него передача Мире; #342 не merge.
+
+
+## 2026-11-18 — Mute/block plan reviewed; owner decisions M1/M2 pending
+
+Лёва завершил полный Mute/block plan; Мира провела scope/fit review. Технические M3/M4/M6 приняты условно. Остались только две реальные product forks владельца:
+
+- M1 recommendation: topic Mute suppresses all ordinary reply/mention notices from that topic, preserves Watch/content.
+- M2 recommendation: directional user Block suppresses ordinary notices from target actor and collapses their ordinary TopicView posts for blocker; no publication/read ban.
+
+До выбора M1/M2 Mute/block implementation не активируется. Watch #345 остаётся текущей реализацией Лиры; Bookmarks остаётся заранее принятым будущим этапом.
