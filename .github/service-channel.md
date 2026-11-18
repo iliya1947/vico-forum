@@ -413,3 +413,8 @@ metadata с прямым решением владельца о едином #34
 
 В `feature/topic-watch` commit `2b84f5eb91d161ac4aba2311335195d46f07693b` изменён **только** `tests/database/topic-watch.test.ts`: общий row-lock gate для topic/actor; новый реальный двухсоединительный тест actor-lock-first с доказательством ожидания UPDATE до Watch commit и запретом следующего OFF; отдельный DB тест пассивного fanout для deactivated watcher и отсутствия read-state изменения. Нет изменений production source/schema/browser. На момент записи новый job `database` ID `134865906627` выполняет clean PG17 migrations/integration; PASS/FAIL нового head пока не установлены. PR #345 Draft, не stable. Следующий самостоятельный slice — Chromium/Worker connected failure diagnosis, **только после отдельной команды**. Не смешивать с PG slice.
 
+
+
+## 2026-11-18 — Watch PostgreSQL concurrency/lifecycle PASS (Лира)
+
+On #345 interim commit `2b84f5eb91d161ac4aba2311335195d46f07693b`, two new real PostgreSQL Watch lifecycle cases added. Initial database job `134865906627`: 15 Watch tests PASSED, 106 files / 1432 database tests passed, but job failed on an **unhandled rejection from the unrelated existing Complaints concurrency test**. Same-head isolated rerun database job `134868877271` **PASS**, including PG17 clean migration/integration, schema manifest, runtime grants, Worker/Hyperdrive and Complaints HTTP smoke. No implementation change or unrelated fixes. Full PR is still Draft; `watch_browser` remains FAIL and is a separate next subtask. This PostgreSQL slice STOP per developer's decomposition.
