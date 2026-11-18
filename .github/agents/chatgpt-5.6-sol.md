@@ -4,7 +4,7 @@
 
 1. Служебный PR: **#315**.
 2. Моя текущая работа: audit/coordination only; remediation и implementation не назначены.
-3. Текущий этап: **Block J active. J1 PASS; J2 = deferred `GOOGLE-OAUTH-SCOPE-01 Low/P3`; J3–J5 PASS; следующий bounded slice — J6 External callback/webhook/outgoing seams.** Overall #315 = 28 current findings + 4 deferred Stage-6 blockers. Stage 6 paused; provider/Queue activation не выполнялась.
+3. Текущий этап: **Block J active. J1 PASS; J2 = deferred `GOOGLE-OAUTH-SCOPE-01 Low/P3`; J3–J6 PASS; следующий bounded slice — J7 Failure/data-retention/cross-provider boundary.** Overall #315 = 28 current findings + 4 deferred Stage-6 blockers. Stage 6 paused; provider/Queue activation не выполнялась.
 4. Technical audit target B–D: `e279cb6c032a489a9044ca1191407df887c364b4`.
 5. Current `main` — `7cc23edede57994cdedab49c1556ddb55034dd29`. Delta от I1 target включает SA-04/SA-05–SA-08 и topic-title work; I2 отдельно re-read current workflows and source-of-truth.
 6. Лира, Марк и Лёва по #315 сейчас не назначены.
@@ -325,6 +325,12 @@
 295. Stage6 exact Queue adapter ack/retry mapping, malformed message terminalization, producer/consumer bindings, queue jurisdiction/retention, max_retries/retry delay/DLQ, permissions and actual reconciliation scheduler = `Информация не проверена`; these are activation gates, not findings because no concrete transport exists.
 296. J5 performed no Queue send/consume/provider call/binding/DLQ/scheduler/install/deploy/settings mutation. Aggregate stays 28 current + 4 deferred. Next J6 external callback/webhook/outgoing seams.
 
+297. J6 target current main `7cc23edede57994cdedab49c1556ddb55034dd29`: **PASS, 0 new current findings / 0 deferred blockers**.
+298. Repository search found 0 non-OAuth webhook receivers. Email provider, live Queue adapter and provider callback transport remain absent; OAuth callback semantics stay owned by J2/Block B.
+299. No server-side request-controlled outbound HTTP path was found: no `await fetch` in `db/` or `workers/`; the only app occurrence is client-side exact-Owner deactivation to a code-built same-origin path with redirect:error.
+300. AdministrativeRouting defaults relative same-origin; Worker runtime never sets administrativeRoutingContext and no source call supplies external bases. Future cross-origin producer remains Stage-6 design/acceptance, not a current/deferred finding.
+301. J6 performed no external call/webhook/Queue/deploy/settings mutation. Aggregate remains 28 current + 4 deferred. Next J7 failure/data-retention/cross-provider boundary.
+
 ## Ограничения
 
 1. Stage 6 external activation остаётся paused.
@@ -335,5 +341,5 @@
 
 ## Следующий шаг
 
-1. После продолжения владельца выполнить **J6 — External callback/webhook/outgoing seams** на current main и остановиться после результата.
+1. После продолжения владельца выполнить **J7 — Failure/data-retention/cross-provider boundary** на current main и остановиться после результата.
 2. Remediation findings/blockers Blocks B–J не начинать без отдельного назначения.
