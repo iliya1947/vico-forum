@@ -194,3 +194,12 @@ Docs PR #344 восстановлен в open и помечен **deferred**. О
 Лира завершила независимый whole-PR docs review #344 на exact head `cd72e8696167d71c8e93e7ab63ff8e86342af4c3`: PASS, 0 confirmed current-doc-scope defects. Exact-head GitHub checks: 4/4 success.
 
 Мира исправила только устаревшее PR metadata, не изменяя docs diff, и сняла Draft. #344 остаётся на том же exact head, open, mergeable и готов к merge владельцем.
+
+
+## 2026-11-18 — docs merged; bounded-задача закрыта
+
+Владелец смержил docs PR #344. Merge commit: `7cc23edede57994cdedab49c1556ddb55034dd29`; проверенный docs head `cd72e8696167d71c8e93e7ab63ff8e86342af4c3` не менялся перед merge.
+
+Редактирование заголовка собственной темы теперь полностью закрыто: implementation #343 merged, docs #344 merged, implementation и docs reviews PASS, подтверждённых current-scope дефектов нет. Owner visual acceptance остаётся намеренно отложен в отдельный UI/UX pass по прямому решению владельца.
+
+Служебный PR #342 закрывается без merge. Следующий отдельный продуктовый блок по принятой последовательности — Watch, в новом служебном PR.
