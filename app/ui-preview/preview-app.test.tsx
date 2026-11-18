@@ -595,6 +595,17 @@ describe("interactive Pages preview", () => {
     expect(screen.queryByRole("heading", { level: 2, name: "Registration" })).not.toBeInTheDocument();
   });
 
+  it("opens Administrator preferences directly for Manager with active navigation", async () => {
+    render(<EmbeddedPreview scenarioId="settings-administrator-manager" />);
+
+    expect(await screen.findByRole("heading", { level: 2, name: "Administrator preferences" })).toBeInTheDocument();
+    const settingsNavigation = document.querySelector(".settings-panel-nav") as HTMLElement;
+    expect(within(settingsNavigation).getByRole("link", { name: "Administrator preferences" })).toHaveAttribute(
+      "aria-current",
+      "page",
+    );
+  });
+
   it("shows Administrator preferences to Manager in Settings and opens it from navigation", async () => {
     const user = userEvent.setup();
     render(<EmbeddedPreview scenarioId="section-user" identity="manager" />);
