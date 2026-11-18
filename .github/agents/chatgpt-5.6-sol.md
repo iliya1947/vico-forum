@@ -4,7 +4,7 @@
 
 1. Служебный PR: **#315**.
 2. Моя текущая работа: audit/coordination only; remediation и implementation не назначены.
-3. Текущий этап: **Block I I1 = `REPO-MAIN-GATE-01 Moderate/P2`; I2 PASS; I3 PASS; I4 PASS, 0 additional / 0 new deferred; следующий bounded slice — I5 Dependency & install provenance.** Exact mutable Environment secret inventory и complete Secret Scanning alert state — `Информация не проверена`. Block H закрыт с 0 current findings + 2 deferred Stage-6 blockers; Block G закрыт с 3 current findings + deferred `DB-RUNTIME-EVIDENCE-01`.
+3. Текущий этап: **Block I I1 = `REPO-MAIN-GATE-01 Moderate/P2`; I2 PASS; I3 PASS; I4 PASS; I5 = `CI-PYPI-PROVENANCE-01 Low/P3`, 0 new deferred; следующий bounded slice — I6 Actions, tools & container provenance.** Exact mutable Environment secret inventory и complete Secret Scanning alert state — `Информация не проверена`. Block H закрыт с 0 current findings + 2 deferred Stage-6 blockers; Block G закрыт с 3 current findings + deferred `DB-RUNTIME-EVIDENCE-01`.
 4. Technical audit target B–D: `e279cb6c032a489a9044ca1191407df887c364b4`.
 5. Current `main` — `7cc23edede57994cdedab49c1556ddb55034dd29`. Delta от I1 target включает SA-04/SA-05–SA-08 и topic-title work; I2 отдельно re-read current workflows and source-of-truth.
 6. Лира, Марк и Лёва по #315 сейчас не назначены.
@@ -225,6 +225,17 @@
 196. Current Neon project member query returned one effective Admin member only. Recorded plaintext SQL Editor history therefore has no proven less-trusted Neon reader; abstract Owner-account compromise is outside finding criteria. No rotation finding created.
 197. Exact current GitHub Environment secret inventory/location, consumed-temp-secret existence and complete Secret Scanning open-alert/history state remain **Информация не проверена**; unknown state is not leak evidence.
 198. I4 no dispatch/settings/rotation/production write. Neon reads only. Aggregate remains 25 current findings + 3 deferred blockers.
+199. I5: **`CI-PYPI-PROVENANCE-01 Low/P3`, 0 new deferred blockers** on current main `7cc23edede57994cdedab49c1556ddb55034dd29`.
+200. Node/pnpm dependency chain PASS: package.json direct versions/packageManager exact; workflows use `pnpm install --frozen-lockfile`; pnpm lock has 9 package-manager + 544 app registry entries, all with sha512 integrity; no VCS/tarball/file/link/workspace dependencies.
+201. No `.npmrc`, pnpmfile hook or repository registry override found. `pnpm-workspace.yaml` allows dependency builds only for `esbuild` and `workerd`. pnpm 12 current defaults retain 1-day minimumReleaseAge/blockExoticSubdeps supply-chain controls.
+202. Exact Pages run 44286477786 log: `Verifying lockfile against supply-chain policies (544 entries)` -> PASS; lockfile up-to-date; resolution skipped. No Node dependency finding.
+203. 14 PR browser workflow files run fresh venv `pip install playwright==1.62.0` without repository Python lock/hashes or `--require-hashes`; they have contents:read only, no production Environment/secrets and synthetic/local resources.
+204. Current successful SA08 run 44295360463 actually resolved/downloaded `pyee 13.0.1`, `greenlet 3.5.6`, `typing-extensions 4.16.0` online. PyPI Playwright 1.62.0 metadata permits `pyee<14,>=13` and `greenlet<4.0.0,>=3.1.1`; full installed set is therefore not repository-fixed.
+205. Official pip secure-install contract says default pip does not protect against remote tampering and hash-checking requires hashes for all dependencies plus pinned requirements. Current Python browser install lacks that boundary.
+206. Exact Playwright 1.62.0 release is old/fixed and has PyPI wheel hashes; finding does not claim same-version wheel replacement. Current risk is fresh compatible transitive resolution without repository hash verification.
+207. Impact is acceptance-evidence integrity: changed/malicious compatible dependency code executes before browser acceptance and can distort/falsify its result. No repo-write, production mutation or secret exfiltration proven, so Low/P3.
+208. Distinct from I1 direct-main authority and I2 token/secret privilege chain. Lack of Dependabot/SBOM/trustPolicy is not separately classified.
+209. I5 no package/workflow/settings mutation and no install was initiated by audit; only current repository and existing workflow logs were read. Aggregate now 26 current findings + 3 deferred blockers.
 
 ## Ограничения
 
@@ -236,5 +247,5 @@
 
 ## Следующий шаг
 
-1. После продолжения владельца выполнить **I5 — Dependency & install provenance** на current main и остановиться после результата.
-2. `REPO-MAIN-GATE-01` не дублировать. Remediation не начинать.
+1. После продолжения владельца выполнить **I6 — Actions, tools & container provenance** на current main и остановиться после результата.
+2. `REPO-MAIN-GATE-01` и `CI-PYPI-PROVENANCE-01` не дублировать. Remediation не начинать.
