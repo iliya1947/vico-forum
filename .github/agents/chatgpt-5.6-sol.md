@@ -86,3 +86,10 @@ Coordinator review #343 на exact head `10321fdae762004ac2d55e9618a89c6c41e0d2a
 Технически приняты под эту рекомендуемую модель: prospective no-backfill + separate suppression receipt для old-mention edit case; отдельные personal stores/self-state без RBAC; canonical topic/profile actions; private `/filters` undo list; no-store/private boundary; preservation of anchors/read-state/moderation/Complaint kinds; independence from Watch/Bookmarks.
 
 Mute/block implementation не активирован до решения владельца M1/M2.
+
+
+## 2026-11-18 — owner accepted M1/M2
+
+Владелец принял обе рекомендованные модели без изменений. M1: topic Mute подавляет все будущие ordinary reply/mention notices из этой темы, не меняя Watch/content. M2: directional user Block подавляет будущие ordinary notices от target actor и сворачивает его ordinary TopicView posts для blocker, без publication/read ban и без превращения в moderation sanction.
+
+Ранее условно принятые M3/M4/M6 теперь окончательны. Advance-planning всех оставшихся функций до #320 завершён: Watch, Bookmarks и Mute/block имеют принятые технические планы. Текущая реализация остаётся Watch #345.
