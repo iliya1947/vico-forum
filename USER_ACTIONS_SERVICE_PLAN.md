@@ -339,3 +339,18 @@ W3 (узкий route/result contract). После принятия зафикс�
 
 Код, implementation PR, feature CI и browser acceptance отсутствуют. Техническое
 планирование завершено; Лёва STOP до следующего назначения.
+
+
+## Scope/fit review Watch — Мира, 2026-11-18
+
+Технический план Лёвы проверен целиком. Подтверждённых scope-конфликтов нет. Решения W1–W3:
+
+1. **W1 ACCEPT — отдельная persistence table.** Watch требует собственного account↔topic состояния; read-state и notification rows не являются его source of truth. Разрешена минимальная `forum_topic_watches` с forward migration, нужным fanout index и только необходимыми runtime privileges. Без history/version/timestamps/backfill и без live provisioning.
+2. **W2 ACCEPT — authenticated personal self-state, без нового RBAC key.** Watch не даёт authority над чужим или общим ресурсом: текущая session identity выбирает только собственную пару user/topic. Это соответствует уже реализованным personal Settings / own-session / notification self-state boundaries, которые требуют authentication и authoritative identity, но не отдельного application permission. Поэтому `forum.topic.watch` не добавлять; custom-role grants/overrides не должны случайно определять доступ к личной подписке. Active AccountState, same-origin, stale-actor и server-side target validation остаются обязательными.
+3. **W3 ACCEPT — existing canonical topic route + narrow `setTopicWatch`.** Использовать отдельный intent на `/:locale/topics/:topicId`, desired boolean state и существующую stale-actor expectation convention. Actor берётся только из session, topic — только из route params. Второй endpoint, watcher list/count и новый notification kind не нужны.
+
+Дополнительно подтверждено по текущему inbox: `kind=reply` отображается нейтрально как «Reply from {{actor}}», поэтому использование существующего reply-kind для watch-derived recipient не создаёт ложной формулировки. Existing recipient+post uniqueness и reply-before-mention порядок сохраняют один notice при пересечении источников.
+
+Concurrency boundary из плана допустим: PostgreSQL 17 документирует, что `FOR NO KEY UPDATE` не блокирует `FOR KEY SHARE`; менять существующий lock class на более сильный не требуется. Реализация должна подтвердить нужные Watch×reply/Unwatch×reply гонки реальными отдельными соединениями, но не расширять scope в общий lock refactor.
+
+План принят для implementation. Не расширять задачу в notification preferences/muting, bookmarks, auto-watch, watcher lists, email/push/digest, Admin/Super-admin, #320 или Stage 6.
