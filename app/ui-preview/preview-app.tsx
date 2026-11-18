@@ -82,7 +82,8 @@ type PreviewVariant =
   | "profile-empty"
   | "profile-error"
   | "profile-long"
-  | "settings-account-not-fresh";
+  | "settings-account-not-fresh"
+  | "settings-account-google-only";
 
 interface Scenario {
   id: string;
@@ -154,6 +155,7 @@ export const scenarios: readonly Scenario[] = [
   { id: "category-no-pins", label: "Category · no pins", locale: "en", direction: "ltr", identity: "guest", path: "/en/categories/development", view: "category", variant: "category-no-pins" },
   { id: "section-user", label: "Section", locale: "en", direction: "ltr", identity: "user", path: "/en/sections/typescript", view: "section" },
   { id: "settings-account-not-fresh", label: "Settings · Account · session not fresh", locale: "en", direction: "ltr", identity: "user", path: "/en/settings/account", view: "section", variant: "settings-account-not-fresh", allowedIdentities: ["user", "manager", "owner"] },
+  { id: "settings-account-google-only", label: "Settings · Account · Google only", locale: "en", direction: "ltr", identity: "user", path: "/en/settings/account", view: "section", variant: "settings-account-google-only", allowedIdentities: ["user", "manager", "owner"] },
   { id: "editor-create-topic", label: "Editor · Create topic", locale: "en", direction: "ltr", identity: "user", path: "/en/sections/typescript", view: "section", allowedIdentities: ["user", "manager"] },
   { id: "section-form-error", label: "Create topic error", locale: "en", direction: "ltr", identity: "user", path: "/en/sections/typescript", view: "section", variant: "section-form-error", allowedIdentities: ["user", "manager"] },
   { id: "topic-solved-user", label: "Solved topic", locale: "en", direction: "ltr", identity: "user", path: "/en/topics/typed-api", view: "topic" },
@@ -1466,16 +1468,19 @@ function previewSettingsAccountData(
     },
   ].filter((session) => !interactions.revokedAccountSessionIds.has(session.id));
 
+  const googleOnly = scenario.variant === "settings-account-google-only";
   return {
     locale: scenario.locale,
     accountId: actor?.id ?? "",
     sessionId: "preview-current-session",
     canViewForum: scenario.identity === "owner",
-    linkedMethods: [
-      "password",
-      ...(interactions.googleLinked ? ["google" as const] : []),
-    ] as ("password" | "google")[],
-    hasPassword: true,
+    linkedMethods: googleOnly
+      ? ["google"] as ("password" | "google")[]
+      : [
+        "password",
+        ...(interactions.googleLinked ? ["google" as const] : []),
+      ] as ("password" | "google")[],
+    hasPassword: !googleOnly,
     sessionAccess,
     sessions,
   };
