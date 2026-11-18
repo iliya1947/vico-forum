@@ -5,8 +5,8 @@
 1. Security audit areas A–L завершены на current `main` `9c4639d23ca075c8bb92fbb909b96593d7bee127`.
 2. Подтверждено **34 current findings: 13 Moderate/P2 + 21 Low/P3; current P0/P1 нет**.
 3. Отдельно сохранены **4 deferred Stage-6 blockers: 2 Moderate/P2 + 2 Low/P3**. Они не входят в current-remediation очередь и активируются только на соответствующих external boundaries.
-4. Этот файл задаёт bounded decomposition и порядок remediation. Конкретный технический способ реализации каждого пакета определяет Лёва на его technical-planning шаге.
-5. Implementation не начинается, пока для текущего пакета не завершён technical plan и не выполнен обычный bounded handoff.
+4. **Owner decision 2026-11-18: current security remediation поставлен на паузу до завершения оставшихся продуктовых механик.** Security должен быть финальным security-этапом перед Stage 6; его точное положение относительно UI/UX product pass пока не определено.
+5. Этот файл сохраняет подготовленную bounded decomposition; technical planning и implementation пакетов R01–R19 не начинать до явного возобновления security owner'ом.
 
 ## Принцип декомпозиции
 
@@ -209,8 +209,9 @@
 
 Эти четыре blockers не должны быть «заодно» исправлены current-remediation package. При возобновлении Stage 6 для них формируется отдельная bounded sequence с актуальным external-state recheck.
 
-## Handoff — первый пакет
+## Возобновление remediation
 
-Следующий bounded technical-planning шаг: **R01 — Repository main trust gate**.
-
-Лёва должен подготовить технический план закрытия только `REPO-MAIN-GATE-01` против актуального `main` и текущего GitHub repository/ruleset state. Нужный результат — enforceable PR/check gate для release-authoritative `main` без нарушения обычного developer merge path. На planning-шаге не выполнять repository settings mutation, implementation или Stage-6 действия. План должен определить проверяемый end-state и необходимые owner-controlled действия; после этого остановиться.
+1. Current security remediation **paused** до завершения оставшихся продуктовых механик.
+2. При явном возобновлении security первым снова сверить current `main`, актуальные findings и external mutable state; подготовленная очередь R01–R19 является стартовой decomposition, а не разрешением выполнять устаревший план вслепую.
+3. Security должен завершиться до Stage 6. Решение, выполнять его до или после UI/UX product pass, остаётся за владельцем и пока не зафиксировано.
+4. Лёва, Лира и Марк не имеют активного remediation assignment по #315.
