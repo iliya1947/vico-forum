@@ -214,6 +214,43 @@ function guestContext(translations: readonly StoredContentTranslation[] = []) {
 }
 
 describe("public forum authorization degradation", () => {
+
+  it("keeps authenticated Watch state private, independent of permission grants and status", async () => {
+    const ctx = contextWithPermissions("viewer-1", []);
+    const personal = vi.fn(async () => true);
+    ctx.set(forumReaderContext, { ...reader, readTopicWatch: personal });
+    const response = await rawTopicLoader({ params: { locale: "en", topicId: topic.id }, context: ctx });
+    expect(response).toHaveProperty("data.topicWatchState", "on");
+    expect(response).toHaveProperty("data.watchActorId", "viewer-1");
+    expect(response).toMatchObject({ init: { headers: { "Cache-Control": "private, no-store" } } });
+    expect(personal).toHaveBeenCalledWith("viewer-1", topic.id);
+  });
+
+  it("has no personal Watch read for guests and does not infer off on dependency failure", async () => {
+    const guest = guestContext();
+    const privateRead = vi.fn(async () => true);
+    guest.set(forumReaderContext, { ...reader, readTopicWatch: privateRead });
+    const guestResult = await rawTopicLoader({ params: { locale: "en", topicId: topic.id }, context: guest });
+    expect(guestResult).toHaveProperty("topicWatchState", null);
+    expect(guestResult).toHaveProperty("watchActorId", null);
+    expect(privateRead).not.toHaveBeenCalled();
+
+    const degraded = contextWithPermissions("viewer-1", []);
+    degraded.set(forumReaderContext, {
+      ...reader, readTopicWatch: async () => { throw new ForumStorageUnavailableError(); },
+    });
+    const unavailable = await rawTopicLoader({ params: { locale: "en", topicId: topic.id }, context: degraded });
+    expect(unavailable).toHaveProperty("data.topicWatchState", "unavailable");
+    expect(unavailable).toMatchObject({ init: { headers: { "Cache-Control": "private, no-store" } } });
+
+    const broken = contextWithPermissions("viewer-1", []);
+    const unexpected = new TypeError("bad Watch projection");
+    broken.set(forumReaderContext, {
+      ...reader, readTopicWatch: async () => { throw unexpected; },
+    });
+    await expect(rawTopicLoader({ params: { locale: "en", topicId: topic.id }, context: broken })).rejects.toBe(unexpected);
+  });
+
   it("offers title editing only for the owner with its independent capability and no posts.edit restriction", async () => {
     for (const [userId, permissions, expected] of [
       [topic.authorId, ["forum.topic.title.editOwn"], true],

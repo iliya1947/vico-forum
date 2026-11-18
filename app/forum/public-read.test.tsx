@@ -2565,6 +2565,43 @@ describe("content translation presentation", () => {
   });
 });
 
+
+describe("personal Watch presentation", () => {
+  const watcher = { id: "watcher-1", name: "Watch user" };
+  it("renders only the current authenticated actor and does not require reply permission", async () => {
+    renderRoute(TopicRoute, topicRenderData(topic, {
+      watchActorId: watcher.id, topicWatchState: "off", canReply: false,
+    }), "/en/topics/typed-api", "en", "ltr", watcher);
+    const watch = await screen.findByRole("button", { name: "Watch topic" });
+    expect(watch).toHaveAttribute("aria-pressed", "false");
+    expect(document.querySelector(".topic-watch-status")).toHaveTextContent("Not watching this topic");
+  });
+
+  it("distinguishes on from unavailable without silently showing an Off action", async () => {
+    renderRoute(TopicRoute, topicRenderData(topic, {
+      watchActorId: watcher.id, topicWatchState: "on",
+    }), "/he/topics/typed-api", "he", "rtl", watcher);
+    expect(await screen.findByRole("button", { name: "Stop watching" })).toHaveAttribute("aria-pressed", "true");
+  });
+
+  it("hides the old actor's state after an account switch", async () => {
+    renderRoute(TopicRoute, topicRenderData(topic, {
+      watchActorId: "previous-actor", topicWatchState: "on",
+    }), "/en/topics/typed-api", "en", "ltr", watcher);
+    expect(screen.queryByRole("button", { name: "Stop watching" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Watch topic" })).not.toBeInTheDocument();
+  });
+
+  it("does not convert unknown storage state into a false Off state", async () => {
+    renderRoute(TopicRoute, topicRenderData(topic, {
+      watchActorId: watcher.id, topicWatchState: "unavailable",
+    }), "/en/topics/typed-api", "en", "ltr", watcher);
+    expect(await screen.findByText("Watch status is unavailable.")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Refresh watch status" })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Watch topic" })).not.toBeInTheDocument();
+  });
+});
+
 describe("section topic count presentation", () => {
   it("keeps localized message count semantics inside compact topic rows", async () => {
     const data = {
