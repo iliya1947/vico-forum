@@ -1346,6 +1346,30 @@ describe("interactive Pages preview", () => {
     expect(within(card).getByRole("link", { name: "Maya Cohen" })).toBeInTheDocument();
   });
 
+  it("redirects an authenticated user away from Sign in", async () => {
+    render(<EmbeddedPreview scenarioId="credentials-sign-in-authenticated" />);
+
+    expect(await screen.findByRole("link", { name: /TypeScript & architecture/ })).toBeInTheDocument();
+    expect(document.querySelector(".credential-page")).toBeNull();
+  });
+
+  it("redirects an authenticated user away from Sign up", async () => {
+    render(<EmbeddedPreview scenarioId="credentials-register-authenticated" />);
+
+    expect(await screen.findByRole("link", { name: /TypeScript & architecture/ })).toBeInTheDocument();
+    expect(document.querySelector(".credential-page")).toBeNull();
+  });
+
+  it("preserves a safe return destination across the guest credential switch", async () => {
+    render(<EmbeddedPreview scenarioId="credentials-sign-in-return-to" />);
+
+    expect(await screen.findByRole("heading", { level: 1, name: "Sign in to Vico Forum" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Need an account? Sign up" })).toHaveAttribute(
+      "href",
+      "/en/sign-up?returnTo=%2Fen%2Ftopics%2Ftyped-api%23post-answer",
+    );
+  });
+
   it("edits the signed-in user's profile and keeps the saved preview data", async () => {
     const user = userEvent.setup();
     render(<EmbeddedPreview scenarioId="profile-edit" identity="user" />);
