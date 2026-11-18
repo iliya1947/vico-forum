@@ -52,8 +52,8 @@ async function deactivate(id: string) {
     + " retain_at_least_until=now()+interval '2 years' where id=$1", [id]);
 }
 
-/** Suspend a real PG write after its topic FOR NO KEY UPDATE has acquired the lock. */
-function pauseAfterTopicLock(client: Client) {
+/** Suspend a real PG write after its requested row mutex has been acquired. */
+function pauseAfterRowLock(client: Client, relation: "forum_topics" | '"user"') {
   const original = client.query.bind(client);
   let seen = false, reached!: () => void, release!: () => void;
   const locked = new Promise<void>(resolve => { reached = resolve; });
@@ -64,7 +64,7 @@ function pauseAfterTopicLock(client: Client) {
       : command && typeof command === "object" && "text" in command && typeof command.text === "string"
         ? command.text : "";
     const result = Reflect.apply(original, client, args) as Promise<unknown>;
-    if (!seen && query.toLowerCase().includes("for no key update") && query.includes("forum_topics")) {
+    if (!seen && query.toLowerCase().includes("for no key update") && query.includes(relation)) {
       seen = true;
       return result.then(async value => { reached(); await unblocked; return value; });
     }
@@ -218,7 +218,7 @@ describe("Watch real PostgreSQL persistence, fanout and ordering", () => {
     const left = new Client({ connectionString: databaseUrl, options });
     const right = new Client({ connectionString: databaseUrl, options });
     await Promise.all([left.connect(), right.connect()]);
-    const gate = pauseAfterTopicLock(left);
+    const gate = pauseAfterRowLock(left, "forum_topics");
     let posted: string | null = null;
     const launch = (operation: "watch" | "unwatch" | "reply", writer: DrizzleForumRepository) => {
       if (operation !== "reply")
@@ -255,7 +255,7 @@ describe("Watch real PostgreSQL persistence, fanout and ordering", () => {
     const left = new Client({ connectionString: databaseUrl, options });
     const right = new Client({ connectionString: databaseUrl, options });
     await Promise.all([left.connect(), right.connect()]);
-    const gate = pauseAfterTopicLock(left);
+    const gate = pauseAfterRowLock(left, "forum_topics");
     try {
       const first = repository(left).setTopicWatch({ topicId: x.topicId, actorId: watcher, watching: firstOn });
       await Promise.race([gate.locked,
@@ -269,6 +269,53 @@ describe("Watch real PostgreSQL persistence, fanout and ordering", () => {
       await Promise.all([left.end(), right.end()]);
     }
   }, 15_000);
+
+  it("lets Watch commit before concurrent deactivation when its actor mutex was acquired first", async () => {
+    const author = await person(), watcher = await person(), x = await topic(author);
+    const writerClient = new Client({ connectionString: databaseUrl, options });
+    const lifecycleClient = new Client({ connectionString: databaseUrl, options });
+    await Promise.all([writerClient.connect(), lifecycleClient.connect()]);
+    const gate = pauseAfterRowLock(writerClient, '"user"');
+    try {
+      const writing = repository(writerClient).setTopicWatch({
+        topicId: x.topicId, actorId: watcher, watching: true,
+      });
+      await Promise.race([gate.locked,
+        new Promise<never>((_, reject) => setTimeout(() => reject(new Error("Actor lock not observed")), 5000))]);
+      let lifecycleFinished = false;
+      const deactivating = lifecycleClient.query(
+        'update "user" set deactivated_at=now(),deactivated_by_user_id=$1,'
+          + "retain_at_least_until=now()+interval '2 years' where id=$1", [watcher],
+      );
+      void deactivating.then(() => { lifecycleFinished = true; }, () => { lifecycleFinished = true; });
+      await new Promise(resolve => setTimeout(resolve, 40));
+      expect(lifecycleFinished).toBe(false);
+      gate.release();
+      expect(await writing).toBe(true);
+      await deactivating;
+      expect(await forum.readTopicWatch(watcher, x.topicId)).toBe(true);
+      await expect(forum.setTopicWatch({ topicId: x.topicId, actorId: watcher, watching: false }))
+        .rejects.toBeInstanceOf(AccountInactiveError);
+    } finally {
+      gate.release(); gate.restore();
+      await Promise.all([writerClient.end(), lifecycleClient.end()]);
+    }
+  }, 15_000);
+
+  it("retains a deactivated watcher's subscription and passive future reply notices", async () => {
+    const author = await person(), replyer = await person(), watcher = await person();
+    const x = await topic(author);
+    await forum.setTopicWatch({ topicId: x.topicId, actorId: watcher, watching: true });
+    await deactivate(watcher);
+    expect(await forum.readTopicWatch(watcher, x.topicId)).toBe(true);
+    const published = await reply(x.topicId, replyer);
+    expect((await notices(published)).map(row => row.recipient_user_id))
+      .toEqual([author, watcher].sort());
+    expect((await notices(published)).every(row => row.kind === "reply" && row.read_at === null))
+      .toBe(true);
+    expect((await fixture.query("select count(*)::int n from forum_topic_read_states where topic_id=$1",
+      [x.topicId])).rows[0]?.n).toBe(0);
+  });
 
   it("rejects Watch when account deactivation commits ahead of persisted admission", async () => {
     const author = await person(), watcher = await person(), x = await topic(author);
