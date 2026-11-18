@@ -367,7 +367,7 @@ describe("embedded preview routing", () => {
 
     const measures = await findAlexMeasures(user);
     const createForm = measures.querySelector("#measure-create-reason")?.closest("form") as HTMLElement;
-    await user.type(within(createForm).getByLabelText("Reason"), "Temporary preview restriction.");
+    await user.type(within(createForm).getByLabelText("Original reason"), "Temporary preview restriction.");
     await user.click(within(createForm).getByRole("button", { name: "Create measure" }));
 
     expect(await screen.findByRole("heading", { level: 2, name: "Alex Rivera" })).toBeInTheDocument();
@@ -406,7 +406,8 @@ describe("embedded preview routing", () => {
     expect(await screen.findByRole("status")).toHaveTextContent("Change saved.");
     expect(screen.getByText("Status: Lifted")).toBeInTheDocument();
 
-    await user.click(screen.getByRole("link", { name: "User measures" }));
+    const measuresNav = document.querySelector(".admin-panel-nav") as HTMLElement;
+    await user.click(within(measuresNav).getByRole("link", { name: "User measures" }));
     expect(await screen.findByText("No pending measure appeals available.")).toBeInTheDocument();
   });
 
@@ -451,6 +452,7 @@ describe("embedded preview routing", () => {
 
     const nav = document.querySelector(".admin-panel-nav") as HTMLElement;
     await user.click(within(nav).getByRole("link", { name: "History" }));
+    expect(await screen.findByRole("heading", { level: 2, name: "History" })).toBeInTheDocument();
 
     const historyHeading = await screen.findByRole("heading", {
       level: 3,
@@ -486,6 +488,7 @@ describe("embedded preview routing", () => {
 
     const nav = document.querySelector(".admin-panel-nav") as HTMLElement;
     await user.click(within(nav).getByRole("link", { name: "History" }));
+    expect(await screen.findByRole("heading", { level: 2, name: "History" })).toBeInTheDocument();
 
     const historyHeading = await screen.findByRole("heading", {
       level: 3,
