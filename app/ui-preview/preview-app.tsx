@@ -26,6 +26,7 @@ import { forumProfilePath, forumTopicPath } from "../forum/paths";
 import { ForumRouteError } from "../forum/ui";
 import SettingsRoute from "../routes/settings";
 import SettingsAccountRoute from "../routes/settings-account";
+import SettingsAdministratorRoute from "../routes/settings-administrator";
 import SettingsPrivacyRoute from "../routes/settings-privacy";
 import SettingsUserRoute from "../routes/settings-user";
 import {
@@ -1389,6 +1390,11 @@ function previewRouter(
       ),
     },
     {
+      path: "/:locale/settings/administrator",
+      element: <SettingsAdministratorRoute />,
+      loader: () => previewSettingsAdministratorData(scenario),
+    },
+    {
       path: "/:locale/settings/privacy",
       element: <SettingsPrivacyRoute />,
       loader: () => previewSettingsPrivacyData(scenario, interactions),
@@ -1444,6 +1450,21 @@ function previewOnlinePresence(
     { id: "maya", name: "Maya Cohen", image: null },
   ].filter((member) => interactions.showOnline || member.id !== actor?.id);
   return { count: members.length, members };
+}
+
+function previewSettingsAdministratorData(scenario: Scenario) {
+  const actor = previewUser(scenario);
+  return {
+    locale: scenario.locale,
+    accountId: actor?.id ?? "",
+    canViewForum: scenario.identity === "owner",
+    admin: [] as const,
+    attention: {
+      signals: ["needs-details"] as const,
+      complaints: [] as const,
+      security: [] as const,
+    },
+  };
 }
 
 function previewSettingsAccountData(
