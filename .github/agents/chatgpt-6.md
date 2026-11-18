@@ -165,3 +165,8 @@ STOP at this subtask. No merge/production/deployment or metadata transition of #
 Источник scope: принятый Bookmarks plan и scope/fit B1/B2/B3/B5 в `USER_ACTIONS_SERVICE_PLAN.md`. Перед изменениями сверить его с актуальным main после merge Watch (`9c4639d23ca075c8bb92fbb909b96593d7bee127`) и использовать фактические merged seams/migration ceiling. Требуемый результат — законченный bounded Bookmarks slice по принятому scope с применимыми repository/DB/route/browser/CI проверками. Не расширять реализацию в Mute/block, visibility, structure, #320 или Stage 6.
 
 После полной реализации зафиксировать stable exact head #346 и результаты проверок в #342, затем **STOP** для coordinator whole-PR review Миры.
+
+
+## 2026-11-18 — correction: Bookmarks assignment cancelled
+
+Владелец уточнил исполнителя: предыдущее назначение на Bookmarks #346 отменено. **Лира не реализует Bookmarks** и не изменяет #346 по этому назначению. Исполнитель — Лёва / Codex-6.1 Sol.
