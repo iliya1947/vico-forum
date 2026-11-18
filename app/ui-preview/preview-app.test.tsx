@@ -335,6 +335,78 @@ describe("embedded preview routing", () => {
     expect(screen.getByText("Temporary preview restriction.")).toBeInTheDocument();
   });
 
+  it("changes an Admin measure and records the new version", async () => {
+    const user = userEvent.setup();
+    render(<EmbeddedPreview scenarioId="admin-topic" identity="manager" />);
+
+    const nav = document.querySelector(".admin-panel-nav") as HTMLElement;
+    await user.click(within(nav).getByRole("link", { name: "User measures" }));
+    await user.type(await screen.findByLabelText("Exact user ID"), "alex");
+    await user.click(screen.getByRole("button", { name: "Find user" }));
+
+    const reason = screen.getByText("Repeated off-topic promotional posts after a moderator warning.");
+    const item = reason.closest("li") as HTMLElement;
+    await user.click(within(item).getByRole("link"));
+
+    const changeHeading = await screen.findByRole("heading", { level: 3, name: "Change measure" });
+    const changeForm = changeHeading.closest("form") as HTMLElement;
+    await user.type(within(changeForm).getByLabelText("Explanation"), "Updated preview restriction scope.");
+    await user.click(within(changeForm).getByRole("button", { name: "Change measure" }));
+
+    expect(await screen.findByRole("status")).toHaveTextContent("Change saved.");
+    expect(screen.getByText("Updated preview restriction scope.")).toBeInTheDocument();
+    expect(screen.getByText("Version: 2")).toBeInTheDocument();
+  });
+
+  it("lifts an Admin measure and removes its pending appeal from the index", async () => {
+    const user = userEvent.setup();
+    render(<EmbeddedPreview scenarioId="admin-topic" identity="manager" />);
+
+    const nav = document.querySelector(".admin-panel-nav") as HTMLElement;
+    await user.click(within(nav).getByRole("link", { name: "User measures" }));
+    await user.type(await screen.findByLabelText("Exact user ID"), "alex");
+    await user.click(screen.getByRole("button", { name: "Find user" }));
+
+    const reason = screen.getByText("Repeated off-topic promotional posts after a moderator warning.");
+    const item = reason.closest("li") as HTMLElement;
+    await user.click(within(item).getByRole("link"));
+
+    const liftHeading = await screen.findByRole("heading", { level: 3, name: "Lift measure" });
+    const liftForm = liftHeading.closest("form") as HTMLElement;
+    await user.type(within(liftForm).getByLabelText("Explanation"), "Restriction no longer needed.");
+    await user.click(within(liftForm).getByRole("button", { name: "Lift measure" }));
+
+    expect(await screen.findByRole("status")).toHaveTextContent("Change saved.");
+    expect(screen.getByText("Status: Lifted")).toBeInTheDocument();
+
+    await user.click(screen.getByRole("link", { name: "User measures" }));
+    expect(await screen.findByText("No pending measure appeals available.")).toBeInTheDocument();
+  });
+
+  it("reviews a pending Admin measure appeal and persists the decision", async () => {
+    const user = userEvent.setup();
+    render(<EmbeddedPreview scenarioId="admin-topic" identity="manager" />);
+
+    const nav = document.querySelector(".admin-panel-nav") as HTMLElement;
+    await user.click(within(nav).getByRole("link", { name: "User measures" }));
+    await user.type(await screen.findByLabelText("Exact user ID"), "alex");
+    await user.click(screen.getByRole("button", { name: "Find user" }));
+
+    const reason = screen.getByText("Repeated off-topic promotional posts after a moderator warning.");
+    const item = reason.closest("li") as HTMLElement;
+    await user.click(within(item).getByRole("link"));
+
+    const reviewHeading = await screen.findByRole("heading", { level: 3, name: "Review appeal #1" });
+    const reviewForm = reviewHeading.closest("form") as HTMLElement;
+    await user.type(within(reviewForm).getByLabelText("Explanation"), "The appeal does not change the original facts.");
+    await user.click(within(reviewForm).getByRole("button", { name: "Review appeal" }));
+
+    expect(await screen.findByRole("status")).toHaveTextContent("Change saved.");
+    expect(screen.getByRole("heading", { level: 3, name: "1. Rejected" })).toBeInTheDocument();
+    expect(screen.getByText("The appeal does not change the original facts.")).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Review appeal" })).not.toBeInTheDocument();
+  });
+
   it("opens Admin Overview from the Admin shell navigation", async () => {
     const user = userEvent.setup();
     render(<EmbeddedPreview scenarioId="admin-topic" identity="manager" />);
