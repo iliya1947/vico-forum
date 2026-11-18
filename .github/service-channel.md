@@ -285,3 +285,10 @@ scope/fit; перед будущей реализацией план сверя�
 отсутствуют, Bookmarks implementation не активирован. Лира остаётся исполнителем
 Watch. Лёва **STOP после полного Bookmarks plan**; следующий Mute/block slice
 возможен только после отдельной команды владельца. #342 остаётся open, не merge.
+
+
+## 2026-11-18 — Bookmarks plan accepted
+
+Мира завершила scope/fit review опережающего плана Bookmarks. Принято: bookmark target = topic; приватный список собственных сохранённых тем; отдельная минимальная persistence; authenticated self-state без RBAC; canonical topic Add/Remove и отдельный authenticated list route. Post-level bookmarks не входят в первый bounded-этап.
+
+Bookmarks остаётся только заранее подготовленным планом и не конкурирует с текущей реализацией Watch. Перед будущим implementation handoff — сверка с merged Watch/current main. Следующий planning slice Mute/block пока не активирован; Лёва остаётся STOP.
