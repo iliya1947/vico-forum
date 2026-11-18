@@ -4,7 +4,7 @@
 
 1. Служебный PR: **#315**.
 2. Моя текущая работа: audit/coordination only; remediation и implementation не назначены.
-3. Текущий этап: **Block K active. K1–K2 PASS; K3 = `FORUM-EDIT-SPAM-01 Moderate/P2`; K4 = `PUBLIC-READ-COST-01 Moderate/P2`; следующий bounded slice — K5 Request body / attachments / storage exhaustion.** Overall #315 = 30 current findings + 4 deferred Stage-6 blockers. Stage 6 paused.
+3. Текущий этап: **Block K active. K1–K2 PASS; K3 = `FORUM-EDIT-SPAM-01 Moderate/P2`; K4 = `PUBLIC-READ-COST-01 Moderate/P2`; K5 = `ATTACH-SECURITY-EVENT-SPAM-01 Moderate/P2`; следующий bounded slice — K6 Background / translation / notification amplification.** Overall #315 = 31 current findings + 4 deferred Stage-6 blockers. Stage 6 paused.
 4. Technical audit target B–D: `e279cb6c032a489a9044ca1191407df887c364b4`.
 5. Current `main` — `7cc23edede57994cdedab49c1556ddb55034dd29`. Delta от I1 target включает SA-04/SA-05–SA-08 и topic-title work; I2 отдельно re-read current workflows and source-of-truth.
 6. Лира, Марк и Лёва по #315 сейчас не назначены.
@@ -377,6 +377,14 @@
 340. Public unauthenticated repetition therefore re-triggers corpus-proportional PostgreSQL/Worker work. Exact deployed WAF/cache settings are Информация не проверена and cannot serve as repository mitigation.
 341. Severity Moderate/P2; no production EXPLAIN/load/flood was run. Aggregate now 30 current + 4 deferred; current severity 11 Moderate + 19 Low. Next K5.
 
+342. K5 target current main `7cc23edede57994cdedab49c1556ddb55034dd29`: **1 new current finding — ATTACH-SECURITY-EVENT-SPAM-01 Moderate/P2; 0 deferred blockers**.
+343. Upload byte path PASS: declared safe integer, 50,000,000-byte max, oversize rejected before object write, stream enforces declared/max length without whole buffering. Cleanup run max20 plus separately bounded reservation sweep; stale refs 24h and object grace/lease are bounded.
+344. Owner contract explicitly rejects arbitrary per-user total-file/count/storage quotas at this stage, so absence of such quota is not a finding.
+345. Independent chain: authenticated valid editor context + random attachment UUID + size1 + one-byte body + forbidden filename (e.g. x.exe) → suspicious forbidden-extension rejection → no R2 object write → durable recordSecurityEvent.
+346. securityEventKey includes caller fresh attachmentId; random UUID yields new event hash. recordSecurityEvent has ON CONFLICT only on derived uploadId, no measure/rate admission, and no repository delete/retention path for forum_attachment_security_events was found.
+347. Impact: tiny requests can create unbounded DB/index security-event growth and monitoring noise. Moderate/P2; independent of FORM-BODY-BOUNDS-01, ATTACH-TEXT-TAIL-01 and intentional no-file-quota policy.
+348. Exact deployed R2/scheduler/cost state is Информация не проверена; real schedule/R2 remains Stage6 acceptance. No external upload/load test performed. Aggregate 31 current +4 deferred; current severity 12 Moderate +19 Low. Next K6.
+
 ## Ограничения
 
 1. Stage 6 external activation остаётся paused.
@@ -387,5 +395,5 @@
 
 ## Следующий шаг
 
-1. После продолжения владельца выполнить **K5 — Request body / attachments / storage exhaustion** на current main и остановиться после результата.
+1. После продолжения владельца выполнить **K6 — Background / translation / notification amplification** на current main и остановиться после результата.
 2. Remediation findings/blockers Blocks B–K не начинать без отдельного назначения.
