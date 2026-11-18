@@ -166,6 +166,8 @@ export const scenarios: readonly Scenario[] = [
   { id: "category-no-pins", label: "Category · no pins", locale: "en", direction: "ltr", identity: "guest", path: "/en/categories/development", view: "category", variant: "category-no-pins" },
   { id: "section-user", label: "Section", locale: "en", direction: "ltr", identity: "user", path: "/en/sections/typescript", view: "section" },
   { id: "settings-overview-guest-unauthenticated", label: "Settings · guest unauthenticated", locale: "en", direction: "ltr", identity: "guest", path: "/en/settings", view: "section", allowedIdentities: ["guest"] },
+  { id: "settings-account-guest-unauthenticated", label: "Settings · Account & security · guest unauthenticated", locale: "en", direction: "ltr", identity: "guest", path: "/en/settings/account", view: "section", allowedIdentities: ["guest"] },
+  { id: "settings-privacy-guest-unauthenticated", label: "Settings · Privacy · guest unauthenticated", locale: "en", direction: "ltr", identity: "guest", path: "/en/settings/privacy", view: "section", allowedIdentities: ["guest"] },
   { id: "settings-user-guest-unauthenticated", label: "Settings · User preferences · guest unauthenticated", locale: "en", direction: "ltr", identity: "guest", path: "/en/settings/user", view: "section", allowedIdentities: ["guest"] },
   { id: "settings-account-not-fresh", label: "Settings · Account · session not fresh", locale: "en", direction: "ltr", identity: "user", path: "/en/settings/account", view: "section", variant: "settings-account-not-fresh", allowedIdentities: ["user", "manager", "owner"] },
   { id: "settings-account-google-only", label: "Settings · Account · Google only", locale: "en", direction: "ltr", identity: "user", path: "/en/settings/account", view: "section", variant: "settings-account-google-only", allowedIdentities: ["user", "manager", "owner"] },
@@ -1476,6 +1478,7 @@ function previewRouter(
       element: <SettingsPrivacyRoute />,
       loader: () => previewSettingsPrivacyData(scenario, interactions),
       action: ({ request }) => previewSettingsPrivacyAction(scenario, interactions, request),
+      ErrorBoundary: ForumRouteError,
     },
     {
       path: "/:locale/settings/account",
@@ -1488,6 +1491,7 @@ function previewRouter(
         }} />,
       loader: () => previewSettingsAccountData(scenario, interactions),
       action: ({ request }) => previewSettingsAccountAction(scenario, interactions, request),
+      ErrorBoundary: ForumRouteError,
     },
     {
       path: "/:locale/tags",
@@ -1630,6 +1634,9 @@ function previewSettingsAccountData(
   interactions: PreviewInteractionState,
 ) {
   const actor = previewUser(scenario);
+  if (!actor) {
+    throw new Response("Unauthenticated", { status: 401 });
+  }
   const sessionAccess = scenario.variant === "settings-account-not-fresh"
     ? "not-fresh" as const
     : "ready" as const;
@@ -1751,6 +1758,9 @@ function previewSettingsPrivacyData(
   interactions: PreviewInteractionState,
 ) {
   const actor = previewUser(scenario);
+  if (!actor) {
+    throw new Response("Unauthenticated", { status: 401 });
+  }
   return {
     locale: scenario.locale,
     accountId: actor?.id ?? "",
