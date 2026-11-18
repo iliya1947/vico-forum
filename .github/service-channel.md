@@ -331,3 +331,8 @@ strict return barrier. Complaint notices/old inbox/read-state/Watch/Bookmarks
 scope/fit Миры. Последний назначенный advance-planning slice завершён; Лира
 продолжает Watch, будущие Bookmarks/Mute-block implementation не активированы.
 #342 остаётся open service PR и не merge.
+
+
+## 2026-11-18 — Лира: Watch stage-3 UI/tests/connected acceptance in progress
+
+Draft implementation #345 current interim head `72e9b8d15ee515af1c5dab309cc66ea9514178ae`: личный private/no-store topic Watch loader и локализованный RU/HE/RTL UI, целевые route/UI tests, реальные PostgreSQL lifecycle/fanout/concurrency/replay tests, новый `watch_browser` CI для встроенного Worker + Better Auth + PostgreSQL 17 + Chromium с inbox/read/permalink. Подтверждённые ошибки предыдущего head (FormData admission order, reader mocks, File parser expectation, typing) исправлены. На корректирующем промежуточном head `05b8fd388627fe979180647b98950b853a28f9fc` GitHub checks+database PASS; **текущий** `72e9b8d15ee515af1c5dab309cc66ea9514178ae` ещё проходит новые DB/CI/Chromium проверки, итоговый PASS не заявлен. Подробности — `.github/agents/chatgpt-6.md`. #345 остаётся Draft, stable review head не назначен. Лира продолжает acceptance, после него передача Мире; #342 не merge.
