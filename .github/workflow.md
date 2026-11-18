@@ -3,10 +3,10 @@
 ## Текущее состояние
 
 - Задача: редактирование заголовка собственной темы.
-- Этап: coordinator PASS Миры; независимый review Марка — PASS, ожидается результат Лиры.
+- Этап: coordinator PASS Миры; независимые whole-PR reviews Лиры и Марка — PASS; ожидается сопоставление результатов и closeout координатором.
 - Координатор: Мира / ChatGPT-5.6 Sol — PASS.
 - Технический планировщик и исполнитель: Лёва / Codex-6.1 Sol.
-- Независимые reviewers / следующие участники: Лира / ChatGPT-6 и Марк / Codex-6 Sol.
+- Независимые reviewers: Лира / ChatGPT-6 — PASS; Марк / Codex-6 Sol — PASS. Следующий участник: Мира / ChatGPT-5.6 Sol.
 - Implementation PR: #343 — https://github.com/iliya1947/vico-forum/pull/343.
 - Stable implementation head: `10321fdae762004ac2d55e9618a89c6c41e0d2ac`.
 - Current main/base: `906d15d896cc3a4f3b7dc9a03f46acd883925d1d`.
@@ -24,6 +24,6 @@
 
 ## Следующий шаг
 
-Лира независимо проверяет весь принятый scope PR #343 на exact head `10321fdae762004ac2d55e9618a89c6c41e0d2ac`. После её результата Мира сопоставляет обе проверки: при PASS обоих — closeout/merge/docs; при подтверждённых current-scope findings — один согласованный пакет возвращается Лёве.
+Оба независимых reviews PR #343 на exact head `10321fdae762004ac2d55e9618a89c6c41e0d2ac` завершены с PASS, подтверждённых current-scope дефектов нет. Мира сопоставляет самостоятельные результаты, определяет closeout и маршрут merge implementation #343 / отдельного docs PR. Owner visual acceptance остаётся в отдельном UI/UX pass.
 
 Служебный PR #342 не merge в main.
