@@ -98,6 +98,16 @@ describe("embedded preview routing", () => {
     expect(document.querySelector(".tags-heading")).toBeNull();
   });
 
+  it("returns the shared 404 state for a missing profile", async () => {
+    render(<EmbeddedPreview scenarioId="profile-missing" />);
+
+    const missing = await screen.findByRole("alert");
+    expect(missing).toHaveAttribute("data-status", "404");
+    expect(within(missing).getByRole("heading", { level: 1, name: "Forum page not found" })).toBeInTheDocument();
+    expect(within(missing).getByText("The category, section, or topic does not exist.")).toBeInTheDocument();
+    expect(document.querySelector(".profile-card")).toBeNull();
+  });
+
   it("returns the shared 404 state for a missing category", async () => {
     render(<EmbeddedPreview scenarioId="category-missing" />);
 
@@ -228,6 +238,29 @@ describe("embedded preview routing", () => {
       level: 1,
       name: "Latest question in General",
     })).toBeInTheDocument();
+  });
+
+  it("opens the generated topic author's matching profile", async () => {
+    render(<EmbeddedPreview scenarioId="tag-typescript-guest" />);
+
+    await userEvent.click(await screen.findByRole("link", { name: /Mixed RTL content with code blocks/ }));
+    expect(await screen.findByRole("heading", { level: 1, name: "Mixed RTL content with code blocks" })).toBeInTheDocument();
+
+    const authorLinks = await screen.findAllByRole("link", { name: "Noa Levi" });
+    await userEvent.click(authorLinks[0]!);
+
+    expect(await screen.findByRole("heading", { level: 1, name: "Noa Levi" })).toBeInTheDocument();
+    expect(document.querySelector(".profile-card")).not.toBeNull();
+  });
+
+  it("opens the Attention reporter's matching profile", async () => {
+    render(<EmbeddedPreview scenarioId="attention-signals" identity="manager" />);
+    await userEvent.click(await screen.findByRole("link", { name: "Appeals (1)" }));
+
+    await userEvent.click(await screen.findByRole("link", { name: "Jordan Chen" }));
+
+    expect(await screen.findByRole("heading", { level: 1, name: "Jordan Chen" })).toBeInTheDocument();
+    expect(document.querySelector(".profile-card")).not.toBeNull();
   });
 
   it("opens the selected Popular topic instead of the primary fallback topic", async () => {
