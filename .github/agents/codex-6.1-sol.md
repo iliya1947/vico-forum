@@ -124,3 +124,35 @@ STOP для coordinator whole-PR review Миры. После её PASS неза�
 Не расширять Watch в bookmarks/saved-topic list, auto-watch, section/category/tag subscriptions, email/push/digest, Admin/Super-admin, #320, UI/UX refinement или Stage 6. Если требуются schema/public-contract/authorization решения, явно вернуть их Мире как технические развилки, не принимать скрыто.
 
 После полного плана зафиксировать результат в `USER_ACTIONS_SERVICE_PLAN.md` и своём личном файле, затем STOP для scope/fit review Миры.
+
+## 2026-11-18 — технический план Watch завершён
+
+Исследован main `7cc23edede57994cdedab49c1556ddb55034dd29`; полный предлагаемый
+план записан в `USER_ACTIONS_SERVICE_PLAN.md`, технические §1–9.
+
+Подтверждено: отдельного Watch state нет; existing notification unique recipient/post
+и reply-before-mention priority позволяют расширить текущую publication transaction.
+Topic FOR NO KEY UPDATE уже сериализует replies; та же блокировка Watch/Unwatch
+задаёт границу будущих событий без timestamps/backfill/новой очереди. Сохраняются
+parent KEY SHARE → actor NO KEY UPDATE admission и atomic attachments/receipt.
+Matching receipt replay и post/title edit не получают Watch fanout. Unwatch не
+подавляет author/direct-parent/mention paths и не меняет read marker/read_at.
+
+В план включены set-based fanout, own-pair desired-state command, strict expected
+actor/boolean parsing, private no-store document/data, unavailable≠OFF, actor/topic
+isolated nonoptimistic fetcher, preserved editor buffers и реальная DB/browser
+матрица. Recipient lifecycle сохраняет действующую passive receipt policy без
+нового account filtering/purge; каждый writer/no-op требует active actor.
+Официально проверена PostgreSQL 17 совместимость NO KEY UPDATE с FK KEY SHARE:
+https://www.postgresql.org/docs/17/explicit-locking.html .
+
+Мире возвращены W1 — необходимая новая persistence table/forward migration/ACL;
+W2 — явное разрешение конфликта general new-permission rule и существующих
+self-state precedents (рекомендация: own-state без нового RBAC key; bounded
+catalog альтернатива описана); W3 — narrow topic route/result contract.
+Это proposals для scope/fit, не самостоятельно принятые schema/auth/API решения.
+
+Проверены актуальные source docs и фактические repository/schema/route/UI/test
+seams; нового кода нет. Feature tests/CI/browser acceptance не запускались.
+Служебная запись содержит только план и проверенные основания, не feature PASS.
+STOP: следующий участник — Мира; implementation остаётся неактивированным.

@@ -217,3 +217,28 @@ Docs PR #344 восстановлен в open и помечен **deferred**. О
 По прямому указанию владельца #342 остаётся единым service PR для четырёх последовательных пользовательских действий до #320: edit own topic title (завершён) → Watch → bookmarks → mute/block.
 
 Watch scope зафиксирован в `USER_ACTIONS_SERVICE_PLAN.md`. Текущий этап передан Лёве / Codex-6.1 Sol только на техническое планирование по актуальному main. Implementation ещё не начат; после плана Лёва STOP и возвращает этап Мире.
+
+## 2026-11-18 — Лёва: полный технический план Watch готов
+
+Исследован актуальный main `7cc23edede57994cdedab49c1556ddb55034dd29`.
+План в `USER_ACTIONS_SERVICE_PLAN.md`, технические §1–9: own-pair persistence,
+desired-state write с persisted active-actor admission, topic-lock ordering с reply,
+set-based fanout в existing inbox, сохранение reply/mention dedupe/priority,
+receipt/attachment atomicity, strict route и private loader/cache, изолированный
+UI control, lifecycle/failures и real PostgreSQL/browser acceptance matrix.
+
+Существенные подтверждённые границы: Unwatch не удаляет старые notices и не
+подавляет author/parent/mention; edit/replay не получают watch-derived fanout;
+сам reply actor исключён; read markers независимы. Текущая passive-recipient
+lifecycle policy сохраняется, новый purge/filtering не вводится.
+
+Для scope/fit Мире явно возвращены: **W1** необходимая Watch table + forward
+migration/runtime privileges; **W2** classification личной подписки без RBAC key
+либо отдельный `forum.topic.watch` по general catalog rule; **W3** узкий
+`setTopicWatch` route/result contract. Рекомендация W2 и обе фактические основы
+описаны в плане; исполнитель не должен разрешать это противоречие молчаливо.
+
+Код не реализован, implementation PR отсутствует, feature tests/CI/browser не
+запускались. Лёва **STOP**. Следующий шаг — Мира: whole-plan scope/fit review,
+решения W1–W3 и определение готовности к передаче исполнителю. Лира ещё не активна;
+#342 остаётся open service PR и не merge.

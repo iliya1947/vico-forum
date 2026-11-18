@@ -19,6 +19,7 @@
 - Scope: явный Watch/Unwatch конкретной темы для будущих reply-notifications через существующий inbox.
 - Текущий main/base: `7cc23edede57994cdedab49c1556ddb55034dd29`.
 - Технический планировщик: Лёва / Codex-6.1 Sol.
+- Технический план: готов в `USER_ACTIONS_SERVICE_PLAN.md`, §1–9; ожидает scope/fit review Миры и решений W1–W3.
 - Исполнитель: не активирован; по стандартному циклу после принятия плана — Лира / ChatGPT-6.
 - Implementation PR/head: отсутствует.
 - Reviewers: Мира coordinator; Лёва technical reviewer только если не участвует в реализации.
@@ -26,4 +27,4 @@
 
 ## Следующий шаг
 
-Лёва исследует Watch по актуальному main и фиксирует полный технический план в `USER_ACTIONS_SERVICE_PLAN.md`: persistence/state, authoritative actor/topic boundary, существующий reply/mention notification fanout и dedupe, route/UI, lifecycle/failure/concurrency и применимые проверки. Код не реализует. После плана — STOP и возврат Мире на scope/fit review.
+Мира проверяет полный технический план Watch и фиксирует решения W1 (новая Watch table/migration/runtime privileges), W2 (own-state authorization classification либо отдельный catalog key), W3 (topic route/result contract). Затем определяет готовность bounded implementation и активирует исполнителя. Лёва завершил планирование и STOP; Лира ещё не активирована. Implementation PR/head отсутствует, feature tests/CI/browser не запускались.
