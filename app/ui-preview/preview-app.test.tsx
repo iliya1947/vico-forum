@@ -395,6 +395,16 @@ describe("interactive Pages preview", () => {
     )).not.toBeInTheDocument();
   });
 
+  it("requires sign-in for guest access to Forum & roles", async () => {
+    render(<EmbeddedPreview scenarioId="settings-forum-guest-unauthenticated" />);
+
+    const unauthenticated = await screen.findByRole("alert");
+    expect(within(unauthenticated).getByRole("heading", { level: 1, name: "Sign in required" })).toBeInTheDocument();
+    expect(within(unauthenticated).getByText("Sign in to access this page.")).toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: "Authorization management" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("heading", { level: 2, name: "Registration" })).not.toBeInTheDocument();
+  });
+
   it("keeps Forum & roles owner-only for managers in Settings", async () => {
     const user = userEvent.setup();
     render(<EmbeddedPreview scenarioId="section-user" identity="manager" />);
