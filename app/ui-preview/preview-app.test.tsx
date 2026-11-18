@@ -164,6 +164,24 @@ describe("interactive Pages preview", () => {
     expect(await screen.findByRole("status")).toBeInTheDocument();
   });
 
+  it("links Google locally from Account & security without invoking real OAuth", async () => {
+    const user = userEvent.setup();
+    render(<EmbeddedPreview scenarioId="section-user" identity="user" />);
+
+    await user.click(screen.getByRole("link", { name: "Settings" }));
+    const settingsOverview = document.querySelector(".settings-overview") as HTMLElement;
+    await user.click(within(settingsOverview).getByRole("link", { name: "Account & security" }));
+
+    const methods = document.querySelector("#settings-account-methods")?.parentElement as HTMLElement;
+    expect(within(methods).getByText("Email and password")).toBeInTheDocument();
+    expect(within(methods).queryByText("Google")).not.toBeInTheDocument();
+
+    await user.click(within(methods).getByRole("button", { name: "Connect Google" }));
+
+    expect(await within(methods).findByText("Google")).toBeInTheDocument();
+    expect(within(methods).queryByRole("button", { name: "Connect Google" })).not.toBeInTheDocument();
+  });
+
   it("signs out one other active session while preserving the remaining sessions", async () => {
     const user = userEvent.setup();
     render(<EmbeddedPreview scenarioId="section-user" identity="user" />);
@@ -173,9 +191,6 @@ describe("interactive Pages preview", () => {
     await user.click(within(settingsOverview).getByRole("link", { name: "Account & security" }));
 
     expect(await screen.findByRole("heading", { level: 3, name: "Linked sign-in methods" })).toBeInTheDocument();
-    const methods = document.querySelector("#settings-account-methods")?.parentElement as HTMLElement;
-    expect(within(methods).getByText("Email and password")).toBeInTheDocument();
-    expect(within(methods).getByText("Google")).toBeInTheDocument();
 
     const sessionsHeading = screen.getByRole("heading", { level: 3, name: "Active sessions" });
     const sessions = sessionsHeading.parentElement as HTMLElement;
@@ -190,8 +205,6 @@ describe("interactive Pages preview", () => {
     expect(within(sessions).getByText("Firefox on Android tablet")).toBeInTheDocument();
     expect(within(sessions).getByText("Chrome on Windows")).toBeInTheDocument();
     expect(within(sessions).getByRole("button", { name: "Sign out all other sessions" })).toBeInTheDocument();
-
-    expect(screen.queryByRole("button", { name: "Connect Google" })).not.toBeInTheDocument();
   });
 
   it("changes the representative password without revoking other sessions", async () => {
@@ -213,8 +226,6 @@ describe("interactive Pages preview", () => {
     expect(within(sessions).getByText("Chrome on Windows")).toBeInTheDocument();
     expect(within(sessions).getByText("Safari on iPhone")).toBeInTheDocument();
     expect(within(sessions).getByText("Firefox on Android tablet")).toBeInTheDocument();
-
-    expect(screen.queryByRole("button", { name: "Connect Google" })).not.toBeInTheDocument();
   });
 
   it("signs out all other active sessions while preserving the current session", async () => {
@@ -241,7 +252,6 @@ describe("interactive Pages preview", () => {
     expect(within(sessions).getByText("This session")).toBeInTheDocument();
     expect(within(sessions).queryByRole("button", { name: "Sign out all other sessions" })).not.toBeInTheDocument();
 
-    expect(screen.queryByRole("button", { name: "Connect Google" })).not.toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Change password" })).toBeInTheDocument();
   });
 
