@@ -4,7 +4,7 @@
 
 1. Служебный PR: **#315**.
 2. Моя текущая работа: audit/coordination only; remediation и implementation не назначены.
-3. Текущий этап: **Block K active. K1–K2 PASS; K3 = `FORUM-EDIT-SPAM-01 Moderate/P2`; K4 = `PUBLIC-READ-COST-01 Moderate/P2`; K5 = `ATTACH-SECURITY-EVENT-SPAM-01 Moderate/P2`; K6 = `MENTION-FANOUT-01 Moderate/P2`; следующий bounded slice — K7 Dependency failure / backpressure.** Overall #315 = 32 current findings + 4 deferred Stage-6 blockers. Stage 6 paused.
+3. Текущий этап: **Block K active. K1–K2 PASS; K3 = `FORUM-EDIT-SPAM-01 Moderate/P2`; K4 = `PUBLIC-READ-COST-01 Moderate/P2`; K5 = `ATTACH-SECURITY-EVENT-SPAM-01 Moderate/P2`; K6 = `MENTION-FANOUT-01 Moderate/P2`; K7 = `DB-CLEANUP-FLOAT-01 Low/P3`; следующий bounded slice — K8 Cross-chain closeout.** Overall #315 = 33 current findings + 4 deferred Stage-6 blockers. Stage 6 paused.
 4. Technical audit target B–D: `e279cb6c032a489a9044ca1191407df887c364b4`.
 5. Current `main` — `7cc23edede57994cdedab49c1556ddb55034dd29`. Delta от I1 target включает SA-04/SA-05–SA-08 и topic-title work; I2 отдельно re-read current workflows and source-of-truth.
 6. Лира, Марк и Лёва по #315 сейчас не назначены.
@@ -394,6 +394,13 @@
 355. Impact: one ordinary authenticated successful publication can create recipient-proportional durable inbox rows and DB work. Severity Moderate/P2; no authority/confidentiality bypass.
 356. Complaint-result fan-out is privileged/domain-bound and did not produce another finding. No generation/Queue/provider/flood test executed. Aggregate 32 current +4 deferred; current severity 13 Moderate +19 Low. Next K7.
 
+357. K7 target current main `7cc23edede57994cdedab49c1556ddb55034dd29`: **1 current finding — `DB-CLEANUP-FLOAT-01 Low/P3`; 0 deferred blockers**.
+358. DB/authz/forum/storage outage paths use 3s connection / 7s query caller deadlines, typed unavailable errors and fail-closed 503 handling; no generic request/DB retry loop was established.
+359. Empty request telemetry collectors short-circuit and do not independently reopen DB on every failed request; recorded telemetry is bounded/best-effort.
+360. Shared `bestEffortDiscardClient` calls async client/pool `end()` but drops its Promise. Cloudflare current official lifecycle docs state non-awaited/non-waitUntil async work can be canceled at invocation end; pg API documents end as async shutdown. Current tests prove invocation, not settlement.
+361. Impact is a missing request-scoped cleanup guarantee across auth/forum/authz/admin/complaints/etc.; no live connection exhaustion was measured, so Low/P3. Exact deployed Hyperdrive teardown behavior is **Информация не проверена**.
+362. No fault injection/load/Hyperdrive/external mutation performed. Aggregate 33 current +4 deferred; current severity 13 Moderate +20 Low. Next K8 cross-chain closeout.
+
 ## Ограничения
 
 1. Stage 6 external activation остаётся paused.
@@ -404,5 +411,5 @@
 
 ## Следующий шаг
 
-1. После продолжения владельца выполнить **K7 — Dependency failure / backpressure** на current main и остановиться после результата.
+1. После продолжения владельца выполнить **K8 — Cross-chain closeout** на current main и остановиться после результата.
 2. Remediation findings/blockers Blocks B–K не начинать без отдельного назначения.
