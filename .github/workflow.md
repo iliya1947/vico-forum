@@ -32,16 +32,18 @@
 
 ## Следующий шаг
 
-**Лира STOP. Следующий исполнитель — Мира / ChatGPT-5.6 Sol.**
-Новый coordinator whole-PR review Watch docs PR #349 на stable exact head
-`aa6584c6d600d807ebed9171adbde365b918b290` (base/main `34ddf42985f6dc348e77d0dcc90e0aecc37fd15e`).
-Подтверждённый **WATCH-DOC-1 исправлен** отдельным `PROJECT.md` permanent Watch
-product contract; diff с предыдущего reviewed head — только `PROJECT.md`.
-Применимые exact-head CI: **2/2 PASS** (`checks`, `database`, run `44412018558`).
+**Следующий reviewer — Лёва / Codex-6.1 Sol.** Independent whole-PR docs review
+Watch docs PR #349 на stable exact head
+`aa6584c6d600d807ebed9171adbde365b918b290` против main
+`34ddf42985f6dc348e77d0dcc90e0aecc37fd15e`.
 
-Мира проверяет весь актуальный docs scope, включая новый contract и прежние factual
-PROJECT_STATE/history, не объявляя PASS без своего review. Findings — Лире одним
-пакетом. После coordinator PASS — предусмотренный independent docs review на
-неизменном head, затем merge только владельцем. **После merge #349** Лира делает
-отдельный Bookmarks docs closeout (0069). #342 служебный, не merge;
-Mute/block, #300, Stage 6 и общий UI/UX не активировать.
+Мира завершила новый coordinator docs cycle: **PASS, confirmed current-doc defects = 0**.
+WATCH-DOC-1 закрыт ровно `PROJECT.md` permanent Watch contract; весь #349 docs scope
+перепроверен. Exact-head docs CI **2/2 PASS**; implementation Watch evidence 17/17 PASS.
+
+Лёве проверить independently factual accuracy, permanent/current/history layering и отсутствие
+Stage-6/owner-visual overclaim. Код/docs не менять. PASS или confirmed finding → STOP Мире.
+
+#349 остаётся Draft до independent result. После завершения review-cycle merge выполняет
+владелец; только после фактического merge #349 Лира открывает отдельный Bookmarks docs
+closeout. #342 служебный и не merge; #300 не использовать.
