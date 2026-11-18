@@ -114,6 +114,7 @@ export const loader = forumReadLoader(async function loader({ params, context }:
   let correctablePostIds: string[] = [];
   let editablePostIds: string[] = [];
   let canReadPostHistory = false;
+  let canEditOwnTitle = false;
   let canSubmitComplaint = false;
   let canUploadAttachments = false;
   let topicReadState: ForumTopicReadState | null = null;
@@ -126,7 +127,7 @@ export const loader = forumReadLoader(async function loader({ params, context }:
 
     try {
       const resolver = authorizationForRequest(context).forUser(session.user.id);
-      const [reply, solutionAny, solutionOwn, duplicateManage, sourceAny, sourceOwn, generate, pin, closure, editOwn, historyRead, complaintCreate] = await Promise.all([
+      const [reply, solutionAny, solutionOwn, duplicateManage, sourceAny, sourceOwn, generate, pin, closure, editOwn, historyRead, complaintCreate, titleEditOwn] = await Promise.all([
         resolver.has("forum.reply.create"),
         resolver.has("forum.solution.manageAny"),
         resolver.has("forum.solution.manageOwn"),
@@ -139,8 +140,10 @@ export const loader = forumReadLoader(async function loader({ params, context }:
         resolver.has("forum.post.editOwn"),
         resolver.has("forum.post.history.read"),
         resolver.has("forum.complaint.create"),
+        resolver.has("forum.topic.title.editOwn"),
       ]);
       canReply = reply;
+      canEditOwnTitle = titleEditOwn && topic.authorId === session.user.id;
       editablePostIds = editOwn ? topic.posts.filter((post) => post.authorId === session.user.id).map((post) => post.id) : [];
       canReadPostHistory = historyRead;
       canSubmitComplaint = complaintCreate;
@@ -169,6 +172,7 @@ export const loader = forumReadLoader(async function loader({ params, context }:
     canSubmitComplaint=canSubmitComplaint && !restricted.has("complaints.submit");
     canGenerateTranslations=canGenerateTranslations && !restricted.has("translations.generate");
     if(restricted.has("posts.edit"))editablePostIds=[];
+    if (restricted.has("posts.edit")) canEditOwnTitle = false;
     canUploadAttachments=!restricted.has("attachments.upload");
   }
 
@@ -245,6 +249,7 @@ export const loader = forumReadLoader(async function loader({ params, context }:
     canUseAdminPanel,
     correctablePostIds,
     editablePostIds,
+    canEditOwnTitle,
     canReadPostHistory,
     canSubmitComplaint,
     topicReadState,

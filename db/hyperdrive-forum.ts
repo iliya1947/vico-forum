@@ -24,6 +24,9 @@ import { forumWritePolicy, type ForumWritePolicy } from "./forum-write-policy";
 import { assertNoActiveUserMeasureRestriction } from "./user-measure-policy";
 
 export interface ForumWriter {
+  editOwnTopicTitle(input: {
+    topicId: string; actorId: string; expectedRevisionId: string; title: string;
+  }): Promise<import("./forum-repository").ForumRevisionContent>;
   updateProfile(input: { actorId: string; fields: ProfileFields }): Promise<void>;
   recordOnlinePresence(userId: string): Promise<void>;
   createTopic(input: { sectionId: string; authorId: string; title: string; body: string; tags?: string[]; draftId?: string; attachmentIds?: string[] }): Promise<{ topicId: string }>;
@@ -169,6 +172,7 @@ export function createHyperdriveForumWriter(
         throw error;
       } finally { bestEffortDiscardClient(client); }
     },
+    editOwnTopicTitle: (input) => writeCorrection((forum) => forum.editOwnTopicTitle(input)),
     updateProfile: async ({ actorId, fields }) => {
       const client = clientFactory();
       try {

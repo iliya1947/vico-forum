@@ -1,5 +1,6 @@
 export const PERMISSION_CATALOG = [
   "forum.topic.create",
+  "forum.topic.title.editOwn",
   "forum.reply.create",
   "forum.post.editOwn",
   "forum.post.history.read",
@@ -37,6 +38,7 @@ export function isPermissionKey(value: unknown): value is PermissionKey {
 export const INITIAL_ROLE_GRANTS = {
   user: [
     "forum.topic.create",
+    "forum.topic.title.editOwn",
     "forum.reply.create",
     "forum.post.editOwn",
     "forum.solution.manageOwn",
@@ -47,6 +49,7 @@ export const INITIAL_ROLE_GRANTS = {
   ],
   moderator: [
     "forum.topic.create",
+    "forum.topic.title.editOwn",
     "forum.post.editOwn",
     "forum.post.history.read",
     "forum.reply.create",

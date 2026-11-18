@@ -208,6 +208,18 @@ function guestContext(translations: readonly StoredContentTranslation[] = []) {
 }
 
 describe("public forum authorization degradation", () => {
+  it("offers title editing only for the owner with its independent capability and no posts.edit restriction", async () => {
+    for (const [userId, permissions, expected] of [
+      [topic.authorId, ["forum.topic.title.editOwn"], true],
+      ["other", ["forum.topic.title.editOwn"], false],
+      [topic.authorId, ["forum.sourceLocale.correctAny", "forum.post.editOwn"], false],
+    ] as const) {
+      const context = contextWithPermissions(userId, permissions);
+      expect(await topicLoader({ params: { locale: "en", topicId: topic.id }, context })).toHaveProperty("canEditOwnTitle", expected);
+      context.set(userMeasureContext, { activeRestrictions: async () => ["posts.edit"] } as never);
+      expect(await topicLoader({ params: { locale: "en", topicId: topic.id }, context })).toHaveProperty("canEditOwnTitle", false);
+    }
+  });
   it("keeps authenticated public reads available for classified authorization outages", async () => {
     const failure = new AuthorizationUnavailableError();
 

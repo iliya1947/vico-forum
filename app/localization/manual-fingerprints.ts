@@ -8,6 +8,9 @@ import type { UiKey } from "./catalog";
  * translation stale until that translation is reviewed again.
  */
 export const reviewedCommonFingerprints = {
+  topicTitleEdit: "b6e685b3f33f8cf7ea7690918342b24c9d2b8e455f150631634e4b384de8c75d",
+  topicTitleEditConflict: "e6b59306b03de0caec99989bc2aea0bc155b2752556bfe395c6bcaafb49b1c1f",
+  topicTitleEditUseCurrent: "c2cd9ce439690e38b0ff503dbebbcf3c365d5892307eb74ff4994ab582cd10cc",
   sa08TerminalCoverageNote: "ed68a1ee5a27abc1aaae48b690e2ca5c69ba12ced5277b7594ccedccdbf293a5",
   sa08TerminalCoverageLimited: "fd1e2dff44bcddb6635dc236fb6bf53fd5e2ea4c3b74f1ff61e1776c21d0a71a",
 
@@ -889,7 +892,7 @@ export const reviewedCommonFingerprints = {
   measuresRestrictionTopics: "71b692d85839775b8750fc6ca9c36617d1d9adf0eb38664a7b0722ad44e8a840",
   measuresRestrictionReplies: "8559c9cddea1673cd84b89f04d583d8994169d9ff016caf941edbcab1197cb7c",
   measuresRestrictionAttachments: "b9749e7b98ac48489b7c251458df12648a5dc721f988ec6c32c14759a0c009b8",
-  measuresRestrictionPosts: "edfa8cff613d2daffc0ce298d05e264151a44fb9cd2279b40303853a45f1dc0a",
+  measuresRestrictionPosts: "e5e2916901e9471800f726dadf71161143acd04461cfb731c8f8b98d6bf1090b",
   measuresRestrictionProfile: "10e52e382e1cff87c36f290a54b3a04174a078be46fb673af2a784d6e9ac1eb6",
   measuresRestrictionComplaints: "934db4d7436496ae85ffe91b26ebaa7f7a415bff32bd7454f0f38db8ae6dacc9",
   measuresRestrictionHelp: "9c233d42c72f0c57e453ded39b8a4e9c790530f3c3329742aabc3b89d733e93d",

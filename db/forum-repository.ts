@@ -4330,6 +4330,38 @@ export class DrizzleForumRepository {
     });
   }
 
+  async editOwnTopicTitle(input: {
+    topicId: string; actorId: string; expectedRevisionId: string; title: string;
+  }): Promise<ForumRevisionContent> {
+    return this.database.transaction(async (tx) => {
+      const [topic] = await tx.select({
+        authorId: forumTopics.authorId, revisionId: forumTopics.currentTitleRevisionId,
+      }).from(forumTopics).where(eq(forumTopics.id, input.topicId)).for("no key update");
+      if (!topic) throw new ForumEntityNotFoundError("topic does not exist");
+      if (topic.authorId !== input.actorId) throw new ForumAuthorizationError("only author can edit topic title");
+      if (topic.revisionId !== input.expectedRevisionId)
+        throw new ForumStateConflictError("topic title current revision changed");
+      await assertActiveAccountForDrizzleMutation(tx, input.actorId);
+      await this.measureAdmission(tx, input.actorId, "posts.edit");
+      const [current] = await tx.select({
+        id: forumTopicTitleRevisions.id, originalContent: forumTopicTitleRevisions.originalContent,
+        sourceLocale: forumTopicTitleRevisions.sourceLocale,
+      }).from(forumTopicTitleRevisions).where(and(
+        eq(forumTopicTitleRevisions.topicId, input.topicId),
+        eq(forumTopicTitleRevisions.id, topic.revisionId),
+      ));
+      if (!current) throw new ForumEntityNotFoundError("current title revision does not exist");
+      if (current.originalContent === input.title) return current;
+      const revision = { id: crypto.randomUUID(), originalContent: input.title, sourceLocale: "und" };
+      await tx.insert(forumTopicTitleRevisions).values({ ...revision, topicId: input.topicId, authorId: input.actorId });
+      const updated = await tx.update(forumTopics).set({ currentTitleRevisionId: revision.id })
+        .where(and(eq(forumTopics.id, input.topicId), eq(forumTopics.currentTitleRevisionId, input.expectedRevisionId)))
+        .returning({ id: forumTopics.id });
+      if (!updated.length) throw new ForumStateConflictError("topic title current revision changed");
+      return revision;
+    });
+  }
+
   async reviseTopicTitle(topicId: string, expectedRevisionId: string, revision: ForumRevisionContent, authorId: string, correctionScope?: "own" | "any") {
     return this.database.transaction(async (tx) => {
       await tx.select({ id: forumTopics.id }).from(forumTopics)

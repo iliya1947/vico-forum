@@ -84,6 +84,16 @@ export class ForumService {
     return this.repository.reviseTopicTitle(topicId, expectedRevisionId, normalizeRevision(revision), authorId);
   }
 
+  editOwnTopicTitle(input: {
+    topicId: string; actorId: string; expectedRevisionId: string; title: string;
+  }) {
+    validateEntity(input.topicId, input.actorId);
+    requireText(input.expectedRevisionId, "expected revision id");
+    requireText(input.title, "title");
+    if (input.title.includes("\u0000")) throw new InvalidForumContentError("title contains NUL");
+    return this.repository.editOwnTopicTitle({ ...input, title: input.title.trim() });
+  }
+
   editPublishedPost(input: {
     topicId: string; postId: string; actorId: string;
     expectedRevisionId: string; body: string;

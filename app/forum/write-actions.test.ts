@@ -180,6 +180,7 @@ function writer() {
     createTopic: vi.fn(async () => ({ topicId: "server-topic" })),
     createReply: vi.fn(async () => ({ postId: "server-post" })),
     editPublishedPost: vi.fn(async () => undefined),
+    editOwnTopicTitle: vi.fn(async () => ({ id: "title-r2", originalContent: "New title", sourceLocale: "und" })),
     markTopicSolved: vi.fn(async () => undefined),
     selectBestAnswer: vi.fn(async () => ({ topicAuthorId: "session-user", isSolved: false })),
     setHelpSolutionModeration: vi.fn(async () => undefined),
@@ -202,6 +203,85 @@ function writer() {
     })),
   } satisfies ForumWriter;
 }
+
+describe("own topic title action", () => {
+  const fields = { intent: "editTopicTitle", title: " New <title> שלום ",
+    expectedRevisionId: "title-r1", editorActorId: "session-user" };
+  const permission = ["forum.topic.title.editOwn"] as const;
+  const submit = (database: ForumWriter, values = fields, permissions: readonly PermissionKey[] = permission,
+    authenticated = true, origin = "https://forum.example") => topicAction({
+    request: request("/en/topics/topic-1", values, origin), params: { locale: "en", topicId: "topic-1" },
+    context: context(database, authenticated, permissions),
+  });
+
+  it("uses the session actor and route target, preserving title text and private response", async () => {
+    const database = writer();
+    const result = await submit(database);
+    expect(database.editOwnTopicTitle).toHaveBeenCalledWith({
+      topicId: "topic-1", actorId: "session-user", expectedRevisionId: "title-r1", title: "New <title> שלום",
+    });
+    expect(result).toMatchObject({ data: { operation: "topicTitleEdit", ok: true, revisionId: "title-r2" },
+      init: { headers: { "Cache-Control": "private, no-store" } } });
+  });
+
+  it.each([
+    [false, permission, "https://forum.example", 401],
+    [true, permission, "https://evil.example", 403],
+    [true, ["forum.post.editOwn", "forum.sourceLocale.correctAny", "forum.topic.create"], "https://forum.example", 403],
+  ] as const)("denies guest/origin/unrelated capabilities (%s)", async (authenticated, permissions, origin, status) => {
+    const database = writer();
+    expect(await submit(database, fields, permissions, authenticated, origin)).toMatchObject({ init: { status } });
+    expect(database.editOwnTopicTitle).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    [{ ...fields, title: "   " }, 400], [{ ...fields, title: "a\u0000b" }, 400],
+    [{ ...fields, expectedRevisionId: "" }, 400], [{ ...fields, editorActorId: "" }, 400],
+    [{ ...fields, editorActorId: "other-account" }, 409],
+    [{ ...fields, operationScope: "any" }, 400], [{ ...fields, sourceLocale: "en" }, 400],
+  ])("rejects invalid or stale input before writing", async (values, status) => {
+    const database = writer();
+    expect(await submit(database, values)).toMatchObject({ init: { status } });
+    expect(database.editOwnTopicTitle).not.toHaveBeenCalled();
+  });
+
+  it.each(["intent", "title", "expectedRevisionId", "editorActorId"])("rejects duplicate %s, including a hidden second intent", async (field) => {
+    const database = writer();
+    const form = new FormData();
+    Object.entries(fields).forEach(([key, value]) => form.append(key, value));
+    form.append(field, field === "intent" ? "reply" : "ambiguous");
+    const result = await topicAction({ request: new Request("https://forum.example/en/topics/topic-1", {
+      method: "POST", headers: { Origin: "https://forum.example" }, body: form,
+    }), params: { locale: "en", topicId: "topic-1" }, context: context(database, true, permission) });
+    expect(result).toMatchObject({ init: { status: 400 } });
+    expect(database.editOwnTopicTitle).not.toHaveBeenCalled();
+    expect(database.createReply).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    [new ForumAuthorizationError(), 403], [new UserMeasureRestrictedError("posts.edit"), 403],
+    [new AccountInactiveError(), 401], [new ForumEntityNotFoundError(), 404],
+    [new ForumStorageUnavailableError(), 503],
+  ])("maps authoritative writer failures without success", async (error, status) => {
+    const database = writer();
+    database.editOwnTopicTitle.mockRejectedValueOnce(error);
+    expect(await submit(database)).toMatchObject({ init: { status } });
+  });
+
+  it("returns the current original title for a stale revision, without retrying", async () => {
+    const database = writer();
+    database.editOwnTopicTitle.mockRejectedValueOnce(new ForumStateConflictError());
+    const value = context(database, true, permission);
+    value.set(forumReaderContext, { readTopicPage: async () => ({
+      ...generationTopic, authorId: "session-user", title: { id: "current-r3", originalContent: "Current title", sourceLocale: "en" },
+    }) } as never);
+    const result = await topicAction({ request: request("/en/topics/topic-1", fields),
+      params: { locale: "en", topicId: "topic-1" }, context: value });
+    expect(result).toMatchObject({ data: { operation: "topicTitleEdit", error: "conflict",
+      currentTitle: { id: "current-r3", originalContent: "Current title" } }, init: { status: 409 } });
+    expect(database.editOwnTopicTitle).toHaveBeenCalledTimes(1);
+  });
+});
 
 describe("lossless initial publication bodies", () => {
   it.each(["section", "help", "reply"])("preserves Markdown source through the %s action", async (kind) => {

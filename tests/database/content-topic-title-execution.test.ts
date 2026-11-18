@@ -1,6 +1,8 @@
 import { readFile } from "node:fs/promises";
 
 import { drizzle } from "drizzle-orm/node-postgres";
+import { DrizzleForumRepository } from "../../db/forum-repository";
+import { historicalForumMeasureAdmission } from "./historical-forum-measure-admission";
 import { Client } from "pg";
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -414,22 +416,9 @@ describe("content topic-title execution and publication", () => {
       const execution = dispatcher.execute(enqueuer.messages[0]!);
       await started.promise;
 
-      await second.query("begin");
-      try {
-        await second.query(`
-          insert into forum_topic_title_revisions
-            (id, topic_id, author_id, original_content, source_locale)
-          values ('title-a-r2', 'topic-a', 'author-a', 'Новый заголовок', 'ru')
-        `);
-        await second.query(`
-          update forum_topics set current_title_revision_id = 'title-a-r2'
-           where id = 'topic-a'
-        `);
-        await second.query("commit");
-      } catch (error) {
-        await second.query("rollback");
-        throw error;
-      }
+      await new DrizzleForumRepository(drizzle(second), undefined, historicalForumMeasureAdmission).editOwnTopicTitle({
+        topicId: "topic-a", actorId: "author-a", expectedRevisionId: "title-a-r1", title: "Новый заголовок",
+      });
 
       release.resolve();
       await expect(execution).resolves.toEqual({

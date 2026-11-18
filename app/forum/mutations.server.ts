@@ -20,6 +20,13 @@ import { AuthorizationUnavailableError } from "../../db/authorization-service";
 
 export interface ForumMutationError { intent?: "editPost"; error: "invalid" | "unauthenticated" | "origin" | "forbidden" | "notFound" | "conflict" | "topicClosed" | "rateLimited" | "unavailable" | "unexpected" }
 
+export type TopicTitleEditResult = {
+  operation: "topicTitleEdit";
+} & ({ ok: true; revisionId: string } | {
+  error: "conflict";
+  currentTitle: { id: string; originalContent: string };
+});
+
 export interface HelpQuestionDraft {
   title: string;
   body: string;
