@@ -20,3 +20,12 @@
 Независимо сопоставлены JSON Drizzle snapshots 0066/0067: изменения ограничены `id`, `prevId` и расширением catalog CHECK. Проверены тестовые сценарии route/component/PostgreSQL/translation/browser workflow. GitHub API подтверждает **17/17 completed success check-runs**, включая CI/DB и отдельный connected Chromium workflow, на exact head. Локальные тесты/браузер лично не запускала; их результаты приняты как CI evidence, не как самостоятельно воспроизведённый прогон. Owner visual acceptance отложен по прямому решению владельца.
 
 **Результат: PASS.** Следующий этап — Мира сопоставляет независимые результаты, принимает closeout-решение; при отсутствии current-scope дефектов — merge implementation #343 и отдельный заключительный docs PR. Служебный #342 не merge. STOP.
+
+
+## 2026-11-18 — активное назначение: docs closeout #344
+
+После merge implementation #343 выполнить отдельный documentation closeout в Draft PR #344.
+
+Важно: текущий diff #344 первоначально подготовлен Мирой ошибочно. Не принимать его как готовое решение. Самостоятельно прочитать актуальный `main` и относящиеся source-of-truth документы, проверить необходимость каждой документационной правки и оставить, переписать либо удалить её.
+
+Scope: только документация уже merged функции редактирования заголовка собственной темы; без code/schema/runtime changes и без расширения продуктового scope. После готового stable docs head зафиксировать результат в служебном PR и STOP для coordinator review Миры.
