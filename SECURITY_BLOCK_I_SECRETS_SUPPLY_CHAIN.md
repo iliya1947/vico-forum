@@ -2,15 +2,16 @@
 
 ## Статус
 
-1. Scope подготовлен 2026-11-12; current I4 audit target — `main` `7cc23edede57994cdedab49c1556ddb55034dd29`.
+1. Scope подготовлен 2026-11-12; current I5 audit target — `main` `7cc23edede57994cdedab49c1556ddb55034dd29`.
 2. Block H закрыт; его deferred blockers в I не дублируются.
 3. **I1 — Repository authority & main provenance завершён: 1 current-scope finding — `REPO-MAIN-GATE-01 Moderate/P2`.**
 4. **I2 — Workflow events, tokens & write authority завершён: PASS, 0 новых current-scope findings.**
 5. **I3 — Production Environments & secret admission завершён: PASS по repository-side chain, 0 новых current-scope findings; exact mutable GitHub Environment policy и secret inventory/location — `Информация не проверена`.**
 6. **I4 — Secret custody & leakage завершён: PASS, 0 новых current-scope findings и 0 новых deferred blockers.** Current tree / production Actions logs / production artifacts / exact current-main Pages artifact не подтвердили secret leakage; live `vico_forum_web` остаётся LOGIN-role без password expiry, но единственный current Neon project member — Owner/Admin, поэтому plaintext SQL-Editor-history risk не образует proven less-trusted access path.
-7. Следующий bounded slice после продолжения владельца — **I5: Dependency & install provenance**.
-7. Мира — auditor/coordinator. Remediation, technical planner и implementer не назначены.
-8. Production/Cloudflare/Neon/GitHub settings mutation, secret rotation и workflow dispatch не разрешены и не выполнялись.
+7. **I5 — Dependency & install provenance завершён: 1 current-scope finding — `CI-PYPI-PROVENANCE-01 Low/P3`; 0 новых deferred blockers.** Node/pnpm dependency chain PASS; Python browser acceptance installs exact Playwright but resolves unhashed floating transitives online on every run.
+8. Следующий bounded slice после продолжения владельца — **I6: Actions, tools & container provenance**.
+9. Мира — auditor/coordinator. Remediation, technical planner и implementer не назначены.
+10. Production/Cloudflare/Neon/GitHub settings mutation, secret rotation и workflow dispatch не разрешены и не выполнялись.
 
 ## I1 — результат
 
@@ -101,6 +102,34 @@
 12. Secret values were not deliberately read or copied into audit files. No workflow dispatch, secret rotation, settings mutation, production write, Cloudflare mutation or Neon data mutation was performed; Neon checks were read-only metadata/catalog reads.
 13. Existing `REPO-MAIN-GATE-01` remains the only Block-I finding so far. I4 does not duplicate I1/I3 or Block-H Version URL/rollback findings. #315 aggregate remains **25 current findings + 3 deferred Stage-6 blockers**.
 14. Next bounded slice after owner continuation: **I5 — Dependency & install provenance**. Remediation remains separate.
+
+## I5 — результат
+
+1. Audit target: current `main` `7cc23edede57994cdedab49c1556ddb55034dd29`. Verdict: **1 новый current-scope finding — `CI-PYPI-PROVENANCE-01 Low/P3`; 0 новых deferred technical blockers.**
+2. Node/pnpm dependency path PASS. `package.json` pins every direct dependency/devDependency and `packageManager` to exact versions; active workflows use `pnpm install --frozen-lockfile`.
+3. Current `pnpm-lock.yaml` was read and parsed as both YAML documents. Package-manager bootstrap has 9 package entries and application lock has 544; **all 553 registry package entries carry sha512 integrity**. Git/VCS, direct tarball, `file:`, `link:` and workspace package sources are absent.
+4. Project has no `.npmrc`, pnpmfile hook or repository registry override. Search found no `NPM_CONFIG_REGISTRY` / `pnpm_config_*` override path and no dynamic `pnpm add` / equivalent dependency mutation in current workflows.
+5. `pnpm-workspace.yaml` permits dependency build scripts only for `esbuild` and `workerd` via `allowBuilds`. Current pnpm 12 inherits pnpm 11+ supply-chain defaults including a 1-day `minimumReleaseAge` and blocking exotic subdependencies; absence of an explicit `minimumReleaseAge` is therefore not a disabled control.
+6. Exact current-main Pages run `44286477786` provides runtime evidence: pnpm reported `Verifying lockfile against supply-chain policies (544 entries)`, PASSed that check, declared the lockfile up-to-date and skipped resolution before build. No Node dependency finding is created.
+7. Lack of Dependabot/Renovate, SBOM, CODEOWNERS or `trustPolicy` is not independently classified: no additional concrete current authority/installation path requiring those controls was established.
+8. Separate Python browser path is materially different. Fourteen current PR browser workflow files create a fresh venv and execute `pip install playwright==1.62.0`; they do not consume a repository requirements/lock file, local hashes or `--require-hashes`.
+9. A successful current browser run was inspected directly: SA08 run `44295360463` installed `playwright==1.62.0` but online resolution selected `pyee 13.0.1`, `greenlet 3.5.6` and `typing-extensions 4.16.0`. Those transitive versions are not fixed in repository state.
+10. PyPI metadata for Playwright 1.62.0 defines transitive requirements `pyee<14,>=13` and `greenlet<4.0.0,>=3.1.1`; pyee in turn brings unconstrained `typing-extensions` in the observed environment. Thus unchanged repository code can execute a different newly compatible transitive package on a later browser run.
+11. Current pip security documentation explicitly states that default pip installation does not protect against remote tampering and executes arbitrary code from distributions; its supported strict mode requires locally specified hashes for **all** dependencies and pinned requirements. Current Vico Python install does not meet that boundary.
+12. Playwright 1.62.0 itself is an old fixed PyPI release (2026-07-31) with published wheel hashes, so the finding is not based on speculative replacement of that exact wheel. Root cause is Vico's unpinned/unhashed online Python dependency set; current release metadata also records no provenance for 1.62.0.
+13. All affected browser workflows are `pull_request` jobs with explicit `contents: read`, no production Environment/secrets and disposable/local synthetic DB/auth/R2 resources. Therefore a compromised/newly malicious compatible Python dependency could alter code executed in browser acceptance and falsify or distort acceptance evidence, but no direct repository write, production mutation or secret compromise is proven. Severity remains **Low/P3**.
+14. This is distinct from `REPO-MAIN-GATE-01`: I1 covers direct write authority to unprotected `main`; I5 covers mutable external code executing inside acceptance jobs. It also does not duplicate I2 because no privileged token/secret escalation is claimed.
+15. No remediation was started. No dependency update, workflow run, package installation, secret/settings change or production mutation was performed by this audit. Existing workflow logs were read only.
+16. #315 aggregate becomes **26 current findings + 3 deferred Stage-6 blockers**.
+17. Next bounded slice after owner continuation: **I6 — Actions, tools & container provenance**.
+
+### `CI-PYPI-PROVENANCE-01` — Low/P3
+
+**Root cause:** current browser acceptance workflows install only top-level `playwright==1.62.0` from PyPI without a repository-owned fully pinned/hash-checked Python dependency set, so compatible transitives are freshly resolved from the external index on each run.
+
+**Current impact:** unchanged repository/workflow code can execute changed external Python dependency code inside browser acceptance runners, allowing a compromised or malicious compatible transitive release to alter/falsify acceptance evidence.
+
+**Boundary:** affected jobs have `contents: read` only, no production secrets/Environment and disposable/synthetic resources; no repository-write, production-mutation or secret-exfiltration path is established.
 
 ## Цель
 
