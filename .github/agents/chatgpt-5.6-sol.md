@@ -4,7 +4,7 @@
 
 1. Служебный PR: **#315**.
 2. Моя текущая работа: audit/coordination only; remediation и implementation не назначены.
-3. Текущий этап: **Block L active. L1 Monitoring/incident-response inventory & ownership PASS, 0 new findings / 0 deferred blockers; следующий bounded slice — L2 Security source attribution / telemetry admission.** Overall #315 = 33 current findings + 4 deferred Stage-6 blockers. Stage 6 paused.
+3. Текущий этап: **Block L active. L1 PASS; L2 = `MON-AUTH-OUTCOME-01 Low/P3`; следующий bounded slice — L3 Retention / coalescing / privacy.** Overall #315 = 34 current findings + 4 deferred Stage-6 blockers. Stage 6 paused.
 4. Technical audit target B–D: `e279cb6c032a489a9044ca1191407df887c364b4`.
 5. Current `main` — `9c4639d23ca075c8bb92fbb909b96593d7bee127`. После Block K main продвинулся Watch #345 (`0068_topic_watch`); Block L стартует на этом current main.
 6. Лира, Марк и Лёва по #315 сейчас не назначены.
@@ -416,6 +416,13 @@
 374. Watch #345 delta reuses forum_reply_notifications, already the notifications.inbox current/History source; no new L-owned journal/source class. PROJECT_STATE still says repository migrations through 0067 while main has 0068 — factual docs drift outside L, not an L security finding.
 375. No external incident drill/alert delivery/provider/R2/background mutation performed. Next L2 source attribution/telemetry admission.
 
+376. L2 target current main `9c4639d23ca075c8bb92fbb909b96593d7bee127`: **1 current finding — `MON-AUTH-OUTCOME-01 Low/P3`; 0 deferred blockers**.
+377. Network attribution PASS: requires Worker cf.colo evidence, rejects browser-forged/subrequest/ambiguous sources, labels usable IP only qualified. Actor attribution PASS: only resolved authoritative session actor is retained.
+378. Exact auth facts, per-request max4 attempt buffer + gap conversion, max256 new attributed groups/hour/pool, repeat coalescing and unknown/overflow/gap slots PASS.
+379. Finding: generic HTTP auth mapping treats 409 as failed. Current /link-social stale/mismatched profile expectation is explicitly a 409 rejection before OAuth state/write, while direct account-security 409 conflicts are classified denied. History persists/renders outcome, so operator evidence is mislabeled.
+380. Aggregate security counters do not split denied vs failed; severity Low/P3 and scope is monitoring semantics only, not Block-B auth/link correctness. Aggregate = 34 current +4 deferred; current severity 13 Moderate +21 Low.
+381. No external OAuth/auth attempt/production telemetry mutation performed. Next L3 retention/coalescing/privacy.
+
 ## Ограничения
 
 1. Stage 6 external activation остаётся paused.
@@ -426,5 +433,5 @@
 
 ## Следующий шаг
 
-1. После продолжения владельца выполнить **L2 — Security source attribution / telemetry admission** на current main и остановиться после результата.
+1. После продолжения владельца выполнить **L3 — Retention / coalescing / privacy** на current main и остановиться после результата.
 2. Remediation findings/blockers Blocks B–K не начинать без отдельного назначения.
