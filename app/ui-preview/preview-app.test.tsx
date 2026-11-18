@@ -1452,6 +1452,32 @@ describe("interactive Pages preview", () => {
     expect(document.querySelector(".help-solutions-page")).toBeNull();
   });
 
+  it("requires sign-in for guest direct access to the Needs review filter", async () => {
+    render(<EmbeddedPreview scenarioId="help-solutions-filters-needs-review-guest" />);
+
+    const unauthenticated = await screen.findByRole("alert");
+    expect(within(unauthenticated).getByRole("heading", { level: 1, name: "Sign in required" })).toBeInTheDocument();
+    expect(within(unauthenticated).getByText("Sign in to access this page.")).toBeInTheDocument();
+    expect(document.querySelector(".help-solutions-page")).toBeNull();
+  });
+
+  it("denies ordinary user direct access to the Needs review filter", async () => {
+    render(<EmbeddedPreview scenarioId="help-solutions-filters-needs-review-user" />);
+
+    const forbidden = await screen.findByRole("alert");
+    expect(within(forbidden).getByRole("heading", { level: 1, name: "Access denied" })).toBeInTheDocument();
+    expect(within(forbidden).getByText("You do not have permission to open this page.")).toBeInTheDocument();
+    expect(document.querySelector(".help-solutions-page")).toBeNull();
+  });
+
+  it("keeps the Needs review filter available to Manager", async () => {
+    render(<EmbeddedPreview scenarioId="help-solutions-filters-manager" />);
+
+    expect(await screen.findByRole("heading", { level: 1, name: "Help & solutions" })).toBeInTheDocument();
+    expect(screen.getByRole("combobox", { name: "Solution" })).toHaveValue("needs-review");
+    expect(screen.getByRole("option", { name: "Needs review" })).toBeInTheDocument();
+  });
+
   it("checks similar Help questions and publishes a new Help question", async () => {
     const user = userEvent.setup();
     render(<EmbeddedPreview scenarioId="help-solutions-ask" identity="user" />);
