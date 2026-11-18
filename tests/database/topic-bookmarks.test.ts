@@ -317,7 +317,7 @@ describe("Bookmarks B6: acquired PostgreSQL locks, lifecycle and rollback", () =
         await paused.observed; // PostgreSQL INSERT/DELETE has run, COMMIT not sent
         expect(await stored(actorId, target.id)).toEqual(before); // uncommitted facts invisible
         paused.resume();
-        await expect(pending).rejects.toThrow("forced pre-COMMIT failure");
+        await expect(pending).rejects.toThrow("Failed query: commit");
         expect(await stored(actorId, target.id)).toEqual(before); // transaction ROLLBACK
       } finally {
         paused.resume();
