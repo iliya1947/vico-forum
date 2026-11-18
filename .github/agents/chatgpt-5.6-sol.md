@@ -4,7 +4,7 @@
 
 1. Служебный PR: **#315**.
 2. Моя текущая работа: audit/coordination only; remediation и implementation не назначены.
-3. Текущий этап: **Block I I1 = `REPO-MAIN-GATE-01 Moderate/P2`; I2 PASS; I3 PASS; I4 PASS; I5 = `CI-PYPI-PROVENANCE-01 Low/P3`, 0 new deferred; следующий bounded slice — I6 Actions, tools & container provenance.** Exact mutable Environment secret inventory и complete Secret Scanning alert state — `Информация не проверена`. Block H закрыт с 0 current findings + 2 deferred Stage-6 blockers; Block G закрыт с 3 current findings + deferred `DB-RUNTIME-EVIDENCE-01`.
+3. Текущий этап: **Block I I1 = `REPO-MAIN-GATE-01 Moderate/P2`; I2 PASS; I3 PASS; I4 PASS; I5 = `CI-PYPI-PROVENANCE-01 Low/P3`; I6 = `CI-POSTGRES-IMAGE-PROVENANCE-01 Low/P3`, 0 new deferred; следующий bounded slice — I7 Release/artifact supply-chain provenance.** Exact mutable Environment secret inventory и complete Secret Scanning alert state — `Информация не проверена`. Block H закрыт с 0 current findings + 2 deferred Stage-6 blockers; Block G закрыт с 3 current findings + deferred `DB-RUNTIME-EVIDENCE-01`.
 4. Technical audit target B–D: `e279cb6c032a489a9044ca1191407df887c364b4`.
 5. Current `main` — `7cc23edede57994cdedab49c1556ddb55034dd29`. Delta от I1 target включает SA-04/SA-05–SA-08 и topic-title work; I2 отдельно re-read current workflows and source-of-truth.
 6. Лира, Марк и Лёва по #315 сейчас не назначены.
@@ -236,6 +236,17 @@
 207. Impact is acceptance-evidence integrity: changed/malicious compatible dependency code executes before browser acceptance and can distort/falsify its result. No repo-write, production mutation or secret exfiltration proven, so Low/P3.
 208. Distinct from I1 direct-main authority and I2 token/secret privilege chain. Lack of Dependabot/SBOM/trustPolicy is not separately classified.
 209. I5 no package/workflow/settings mutation and no install was initiated by audit; only current repository and existing workflow logs were read. Aggregate now 26 current findings + 3 deferred blockers.
+210. I6: **`CI-POSTGRES-IMAGE-PROVENANCE-01 Low/P3`, 0 new deferred blockers** on current main `7cc23edede57994cdedab49c1556ddb55034dd29`.
+211. All 28 current workflow files checked for Action/container/tool provenance. Seven unique external Actions are used; every top-level ref is a full 40-hex commit SHA.
+212. Exact pinned action.yml files checked for all seven. checkout/action-setup/setup-node/upload-artifact/configure-pages/deploy-pages have no nested uses; upload-pages-artifact composite pins its sole nested upload-artifact dependency to full SHA `ea165f8d…`. No mutable Action ref found.
+213. Current remote tool path has no wget/git clone/npx/apt-get/docker-run code retrieval; curl is local/production smoke or GitHub API JSON. GitHub-hosted runner software updates weekly but remains the selected GitHub CI trust root; no separate less-trusted execution path proven.
+214. The only external service image is `postgres:17`, used by 19 service jobs across 16 workflow files. Current SA08 run 44295360463 executed `docker pull postgres:17` and resolved digest `sha256:0d938e975177bef9f1f61f3f9dbcf2e0aa0a139568f66d3415ed8892eb97f6ac` at runtime.
+215. Docker current docs confirm tags are mutable and digest references immutable. Repository therefore does not review/authorize the exact PostgreSQL image bytes that current CI/browser acceptance executes.
+216. Current database CI/browser acceptance depends on that service for migrations/SQL/runtime behavior; changed/compromised same-tag image can alter acceptance evidence without repository change.
+217. Inspected service docker-create command receives synthetic POSTGRES_*, GITHUB_ACTIONS/CI only; no repository token, production secret or workspace mount. PR/browser jobs remain contents:read/no production Environment. Impact bounded to acceptance integrity -> Low/P3.
+218. production-worker verify also uses same mutable tag, but Stage 6 is paused. Same root cause should be corrected before Stage-6 verification resumes; no duplicate deferred blocker and no severity increase from future path.
+219. No separate finding for missing workflow dependency lockfile, exact runner image snapshot or action allowlist: current Action refs/transitive ref are exact SHAs and no independent exploit chain was proven.
+220. I6 no workflow/image pull/settings/production mutation; existing files/logs read only. Aggregate now 27 current findings + 3 deferred blockers.
 
 ## Ограничения
 
@@ -247,5 +258,5 @@
 
 ## Следующий шаг
 
-1. После продолжения владельца выполнить **I6 — Actions, tools & container provenance** на current main и остановиться после результата.
-2. `REPO-MAIN-GATE-01` и `CI-PYPI-PROVENANCE-01` не дублировать. Remediation не начинать.
+1. После продолжения владельца выполнить **I7 — Release/artifact supply-chain provenance** на current main и остановиться после результата.
+2. `REPO-MAIN-GATE-01`, `CI-PYPI-PROVENANCE-01` и `CI-POSTGRES-IMAGE-PROVENANCE-01` не дублировать. Remediation не начинать.
