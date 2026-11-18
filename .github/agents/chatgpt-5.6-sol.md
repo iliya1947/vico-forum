@@ -4,7 +4,7 @@
 
 1. Служебный PR: **#315**.
 2. Моя текущая работа: audit/coordination only; remediation и implementation не назначены.
-3. Текущий этап: **Block K active. K1 inventory/ownership PASS, 0 new findings / 0 deferred blockers; следующий bounded slice — K2 Authentication brute-force / rate-limit bypass.** Overall #315 = 28 current findings + 4 deferred Stage-6 blockers. Stage 6 paused.
+3. Текущий этап: **Block K active. K1–K2 PASS, 0 new findings / 0 deferred blockers; следующий bounded slice — K3 Forum write spam & cross-endpoint concurrency.** Overall #315 = 28 current findings + 4 deferred Stage-6 blockers. Stage 6 paused.
 4. Technical audit target B–D: `e279cb6c032a489a9044ca1191407df887c364b4`.
 5. Current `main` — `7cc23edede57994cdedab49c1556ddb55034dd29`. Delta от I1 target включает SA-04/SA-05–SA-08 и topic-title work; I2 отдельно re-read current workflows and source-of-truth.
 6. Лира, Марк и Лёва по #315 сейчас не назначены.
@@ -352,6 +352,14 @@
 318. Existing root-cause ownership preserved: E owns unbounded public reads/form bodies/forum publication bounds; F owns attachment validation; J owns provider/Queue amplification. No duplicate K IDs.
 319. K1 performed no load/flood/brute-force/external request, production query, deploy or settings mutation. Next K2 auth brute-force/rate-limit bypass.
 
+320. K2 target current main `7cc23edede57994cdedab49c1556ddb55034dd29`: **PASS, 0 new current findings / 0 deferred blockers**.
+321. Vico pins better-auth + drizzle-adapter 1.7.7, explicitly enables DB rate limiting and trusts only cf-connecting-ip.
+322. Exact Better Auth v1.7.7 source: sign-in/sign-up/change-password/change-email special rule 3/10s per IP+path; reset/verification 3/60s; missing trusted IP fails closed into a shared per-path bucket.
+323. GHSA-44jh-23m7-hpcf affects >=1.6.17,<1.7.7 and is patched by 1.7.7. Vico also has a real PostgreSQL row-contention regression test proving configured concurrent admission/count behavior; inspected, not executed in K2.
+324. Public auth route always enters auth.handler. Direct auth.api bypasses request-phase limiter in principle, but Vico exposes no direct guest sign-in/sign-up path; Settings changePassword explicitly routes through `/api/auth/change-password` to retain limiter.
+325. Cloudflare current docs confirm normal visitor `CF-Connecting-IP` boundary; exact deployed WAF/Transform settings remain **Информация не проверена** and are Stage-6 operations, not a K2 finding.
+326. Distributed rotating-IP resistance is beyond current basic anti-abuse contract; no separate account/global limiter requirement is established. AUTH-ENUM-01 remains Block B. Aggregate unchanged; next K3.
+
 ## Ограничения
 
 1. Stage 6 external activation остаётся paused.
@@ -362,5 +370,5 @@
 
 ## Следующий шаг
 
-1. После продолжения владельца выполнить **K2 — Authentication brute-force / rate-limit bypass** на current main и остановиться после результата.
+1. После продолжения владельца выполнить **K3 — Forum write spam & cross-endpoint concurrency** на current main и остановиться после результата.
 2. Remediation findings/blockers Blocks B–K не начинать без отдельного назначения.
