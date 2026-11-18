@@ -417,9 +417,16 @@ describe("interactive Pages preview", () => {
       "href",
       "/en/settings/forum",
     );
-    expect(within(settingsNavigation).getByRole("link", { name: "Forum & roles" })).toHaveAttribute(
-      "href",
-      "/en/settings/forum",
+    const forumNavigationLink = within(settingsNavigation).getByRole("link", { name: "Forum & roles" });
+    expect(forumNavigationLink).toHaveAttribute("href", "/en/settings/forum");
+
+    await user.click(forumNavigationLink);
+
+    expect(await screen.findByRole("heading", { level: 2, name: "Registration" })).toBeInTheDocument();
+    const activeSettingsNavigation = document.querySelector(".settings-panel-nav") as HTMLElement;
+    expect(within(activeSettingsNavigation).getByRole("link", { name: "Forum & roles" })).toHaveAttribute(
+      "aria-current",
+      "page",
     );
   });
 
