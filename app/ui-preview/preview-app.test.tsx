@@ -519,6 +519,63 @@ describe("embedded preview routing", () => {
     expect(screen.getByRole("link", { name: "Alex Rivera" })).toBeInTheDocument();
   });
 
+  it("shows Owner-self private account information without self-deactivation", async () => {
+    render(<EmbeddedPreview scenarioId="profile-owner-self" identity="owner" />);
+
+    expect(await screen.findByRole("heading", { level: 1, name: "Forum Owner" })).toBeInTheDocument();
+    const account = document.querySelector("#owner-account") as HTMLElement;
+    expect(within(account).getByRole("heading", {
+      level: 2,
+      name: "Private account information",
+    })).toBeInTheDocument();
+    expect(within(account).getByText("owner@example.test")).toBeInTheDocument();
+    expect(within(account).getByText("Password")).toBeInTheDocument();
+    expect(within(account).getByText("Google")).toBeInTheDocument();
+    expect(document.querySelector(".owner-deactivate-button")).toBeNull();
+  });
+
+  it("shows Owner-self active and retained session details", async () => {
+    render(<EmbeddedPreview scenarioId="profile-owner-self" identity="owner" />);
+
+    const sessions = document.querySelector("#owner-sessions") as HTMLElement;
+    expect(await within(sessions).findByRole("heading", {
+      level: 3,
+      name: "Active sessions",
+    })).toBeInTheDocument();
+    expect(within(sessions).getByText(/preview-owner-current-session/)).toBeInTheDocument();
+    expect(within(sessions).getByText(/Current session/)).toBeInTheDocument();
+    expect(within(sessions).getByText(/preview-owner-expired-session/)).toBeInTheDocument();
+    expect(within(sessions).getByText("Chrome on Windows")).toBeInTheDocument();
+    expect(within(sessions).getByText("Firefox on Linux")).toBeInTheDocument();
+  });
+
+  it("shows retained Owner-self personal History but hides it from Manager", async () => {
+    const { unmount } = render(<EmbeddedPreview scenarioId="profile-owner-self" identity="owner" />);
+
+    const history = document.querySelector("#owner-history") as HTMLElement;
+    expect(await within(history).findByRole("heading", {
+      level: 2,
+      name: "History",
+    })).toBeInTheDocument();
+    expect(within(history).getByRole("heading", {
+      level: 3,
+      name: "Account created",
+    })).toBeInTheDocument();
+    expect(within(history).getByText("preview-account-created-owner")).toBeInTheDocument();
+
+    unmount();
+    render(<EmbeddedPreview scenarioId="admin-topic" identity="manager" />);
+    const user = userEvent.setup();
+    const nav = document.querySelector(".admin-panel-nav") as HTMLElement;
+    await user.click(within(nav).getByRole("link", { name: "Users" }));
+    const ownerLink = await screen.findByRole("link", { name: "Forum Owner" });
+    await user.click(ownerLink);
+
+    expect(await screen.findByRole("heading", { level: 1, name: "Forum Owner" })).toBeInTheDocument();
+    expect(document.querySelector("#owner-account")).toBeNull();
+    expect(document.querySelector("#owner-history")).toBeNull();
+  });
+
   it("opens the privileged Authorization section from Admin Users", async () => {
     const user = userEvent.setup();
     render(<EmbeddedPreview scenarioId="admin-topic" identity="manager" />);
