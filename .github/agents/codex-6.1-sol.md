@@ -597,3 +597,73 @@ cursor, private doc/data и RU/HE narrow. Green CI не закрывает B5-R1
 service workflow/channel/мой файл сохраняют finding и handoff. **Лёва STOP Мире**:
 проверить B5-R1, передать bounded correction Лире, затем новый stable head и
 coordinator cycle. #346 не готов к merge; service #342 не merge.
+
+## 2026-11-18 — Bookmarks whole-PR re-review after B5-R1: PASS
+
+Назначение обновлено в #342 comment `6991888557`, service head `c3f970b`:
+Мира coordinator PASS нового exact head, затем независимый whole-PR review B1–B7.
+Reviewed head **`a3e6c0e63c99078ece89303592e1f24b2fe440fb`**; actual main
+`808c2b782952e13254cab8e2129dca07ca945e6f`, runtime не менялся после base9c4639d
+(только AGENTS.md). Новый регламент уже полностью прочитан в предыдущем review,
+его источник не менялся. Мой прежний полный review `477ad6b` и B5-R1 preserved.
+
+**Новый whole-PR verdict: PASS, confirmed current-scope defects = 0. B5-R1 closed.**
+Это не принятие coordinator вывода без проверки. Самостоятельно сопоставлены
+accepted B1–B7, предыдущие проверенные seams, полный correction diff/его последствия,
+новый exact-head CI, actual browser/DB logs и собственное воспроизведение.
+
+Diff `477ad6b..a3e6c0e`: только BookmarksView (+21 lines), component regressions
+и connected browser scenario. Подтверждён **нулевой diff** db/drizzle/schema/
+manifest/runtime ACL/adapters/actions/list loader. Поэтому прежние независимые
+проверки metadata, own-pair persistence, millisecond keyset/neutral identity/Help
+projection, active-account admission, topic KEY SHARE→actor NO KEY UPDATE,
+strict canonical mutation, no notification/read/Watch effects и B6 не повторялись
+без причины; checked exact-head CI отдельно подтверждает их на новом SHA.
+
+Correction: tab-local `vico:bookmarks:actor` stores только public actor ID как
+presentation history, не saved-topic rows, credential или authority. Server-side
+session/SQL user filter остаются независимыми. First/no-transition cursor не
+сбрасывается; known actor change на older page replace-навигацией убирает before*.
+Новый marker записывается для B, поэтому subsequent manual foreign/deleted cursor
+у B остаётся B4 list position. Нет client owner/query trust или auto-POST replay.
+UseEffect ограничен actor/locale/page/navigation context; stable row keys по
+actor/topic и соседние editor fetchers/буферы correction не меняет.
+
+Независимая local проверка нового exact head, pinned Node24.21.0:
+
+```sh
+node node_modules/vitest/vitest.mjs run \
+  app/forum/topic-bookmark-action.test.ts app/forum/topic-bookmark-control.test.tsx \
+  app/forum/bookmarks-view.test.tsx app/routes/bookmarks.test.ts \
+  app/forum/public-authz-degradation.test.ts app/forum/edit-recovery.test.tsx \
+  app/routes/topic-headers.test.ts --maxWorkers=1
+# 7 suites / 89 tests PASS
+node node_modules/vitest/vitest.mjs run \
+  --config /workspace/work/bookmarks-diagnostics/vitest.config.mjs --maxWorkers=1
+# original independent B5-R1 reproduction now PASS
+```
+
+Original diagnostic использует production BookmarksRoute/loader/BookmarksView и
+React Router/context, меняет session A→B на older cursor. На старом head assertion
+first-page reset падал. На новом сначала тот же assertion PASS; затем diagnostic
+дополнен обратной проверкой B4: B вручную открывает прежний A cursor, URL остаётся,
+owner остаётся B и чужих A rows нет. Оба перехода PASS. Harness вне implementation
+worktree, продуктовые source/tests не изменены. Нового локального Worker/Chromium
+или повторного PG запуска для неизменного writer не делал.
+
+GitHub API independently: 18/18 check-runs completed success точного SHA.
+Прочитан full bookmarks_browser job135134839582: 11 connected checkpoints,
+реальный built Worker/Better Auth/PG17/Chromium, новый credential sign-out A и
+sign-in B через old returnTo→canonical first page с B own collection, затем manual
+old cursor permitted. Artifact14471182990. Это CI evidence, не мой browser run.
+Прочитан database job135134837753: topic-bookmarks.test.ts 10/10 PASS, весь
+suite107 files PASS и P7 local Worker/session/authorization/PG HTTP smoke PASS.
+B6 ранее independently local10/10 с server-observed blocker PID, source не менялся;
+новых оснований его переоткрывать не найдено. Негативные SQL/credential probes в
+DB service log не трактуются как suite failure: actual test/job результаты success.
+
+Проверены diff/whitespace и exact head/main refs. Служебный workflow приведён к
+текущему operative состоянию, historical B5/B6 результаты остаются в channel/моём
+файле. Код/schema/runtime не менялись, merge/deploy не выполнялись.
+**Лёва STOP Мире** для synthesis/merge readiness одного reviewed head; отдельный
+docs closeout после фактического merge, implementation-order сохранён, #342 не merge.

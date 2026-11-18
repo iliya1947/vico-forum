@@ -773,3 +773,40 @@ Watch/read/inbox independence не изменялись этой correction и �
 того же exact head `a3e6c0e63c99078ece89303592e1f24b2fe440fb`, код не менять.
 PASS или confirmed finding → STOP Мире. #346 остаётся Draft до independent result;
 #342 — служебный PR, не merge.
+
+## 2026-11-18 — Лёва: Bookmarks #346 independent whole-PR re-review PASS
+
+Новое независимое заключение по всему B1–B7 scope на exact head
+`a3e6c0e63c99078ece89303592e1f24b2fe440fb` против actual main
+`808c2b782952e13254cab8e2129dca07ca945e6f`: **PASS; confirmed current-scope
+defects = 0. B5-R1 закрыт.** Реализацию не менял.
+
+Независимо проверена causal correction, не только её описание Мирой: diff с
+прежде полностью проверенного `477ad6b` — ровно три заявленных view/test/browser
+файла; marker tab-local и presentation-only, authoritative session actor,
+SQL own filter, strict topic action, schema и ACL не менялись. При известном
+A→B на older page replace переходит на canonical first page; тот же actor затем
+может вручную открыть старый cursor, он остаётся обычной позицией с own rows.
+
+Локально новый exact head: **89/89** выбранных component/route/read/recovery/header
+tests PASS. Прежний независимый diagnostic harness с реальными BookmarksRoute/
+loader/BookmarksView, падавший на `477ad6b`, теперь **PASS**; дополнительно проверен
+manual old cursor уже для B — query сохраняется, A rows не появляются.
+Diagnostic находится вне implementation worktree.
+
+GitHub API проверен независимо: **18/18 exact-head checks success**. Прочитаны
+новые logs: bookmarks_browser `135134839582` — **11/11 BOOKMARKS_CONNECTED**,
+включая actual Worker/Better Auth credential A older→sign-out/sign-in B→B own
+first page и subsequent manual cursor; artifact `14471182990`. Database
+`135134837753` — Bookmarks **10/10**, полный suite **107 files PASS**, Worker HTTP
+smoke PASS. Это проверенное CI evidence, не новый локальный Chromium/PG run.
+
+B6/metadata/schema/ACL/domain-writer результаты предыдущего независимого review
+сохранены на основании нулевого diff этих звеньев и unchanged main runtime;
+новых оснований переоткрывать их нет. Проверены affected navigation/revalidation,
+actor/topic keys, private/no-store и отсутствие автоматического mutation replay.
+Head/main повторно сверены, docs-only review diff/whitespace PASS.
+
+**Лёва STOP Мире:** сопоставить оба PASS одного head и зафиксировать merge readiness
+владельцу, затем отдельный docs closeout после фактического merge. #346 ещё Draft,
+merge/deploy не выполнялись; #342 служебный, не merge. Порядок реализации не меняется.
