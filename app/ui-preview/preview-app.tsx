@@ -1183,6 +1183,7 @@ export function EmbeddedPreview({ scenarioId, identity }: { scenarioId: string; 
         || (intent === "save-locale" && form.classList.contains("settings-locale-form"))
         || (intent === "save-online-visibility" && form.classList.contains("settings-privacy-form"))
         || (intent === "revoke-one" && form.classList.contains("settings-account-revoke-form"))
+        || (intent === "revoke-others" && form.classList.contains("settings-account-revoke-all"))
         || ((intent === "pinTopic"
           || intent === "unpinTopic"
           || intent === "closeTopic"
@@ -1374,7 +1375,7 @@ function previewRouter(
     },
     {
       path: "/:locale/settings/account",
-      element: <SettingsAccountRoute mutationMode="revoke-one" />,
+      element: <SettingsAccountRoute mutationMode="sessions" />,
       loader: () => previewSettingsAccountData(scenario, interactions),
       action: ({ request }) => previewSettingsAccountAction(scenario, interactions, request),
     },
@@ -1438,6 +1439,13 @@ function previewSettingsAccountData(
       current: false,
       deviceLabel: "Safari on iPhone",
     },
+    {
+      id: "preview-tablet-session",
+      createdAt: "2026-11-10T16:25:00.000Z",
+      expiresAt: "2026-12-10T16:25:00.000Z",
+      current: false,
+      deviceLabel: "Firefox on Android tablet",
+    },
   ].filter((session) => !interactions.revokedAccountSessionIds.has(session.id));
 
   return {
@@ -1462,9 +1470,13 @@ async function previewSettingsAccountAction(
 
   const form = await request.formData();
   const intent = String(form.get("intent") ?? "");
-  if (intent !== "revoke-one") return { error: "invalid" as const };
+  if (intent !== "revoke-one" && intent !== "revoke-others") {
+    return { error: "invalid" as const };
+  }
 
-  const allowedFields = new Set(["intent", "expectedUserId", "expectedSessionId", "sessionId"]);
+  const allowedFields = new Set(intent === "revoke-one"
+    ? ["intent", "expectedUserId", "expectedSessionId", "sessionId"]
+    : ["intent", "expectedUserId", "expectedSessionId"]);
   if ([...form.keys()].some((key) => !allowedFields.has(key))) {
     return { error: "invalid" as const };
   }
@@ -1475,8 +1487,14 @@ async function previewSettingsAccountAction(
     return { error: "account-changed" as const };
   }
 
+  if (intent === "revoke-others") {
+    interactions.revokedAccountSessionIds.add("preview-mobile-session");
+    interactions.revokedAccountSessionIds.add("preview-tablet-session");
+    return { saved: "revoke-others" as const };
+  }
+
   const sessionId = String(form.get("sessionId") ?? "");
-  if (sessionId !== "preview-mobile-session"
+  if (!["preview-mobile-session", "preview-tablet-session"].includes(sessionId)
     || interactions.revokedAccountSessionIds.has(sessionId)) {
     return { error: "session-not-found" as const };
   }
