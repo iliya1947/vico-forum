@@ -3,28 +3,19 @@
 ## Текущее состояние
 
 - Задача: редактирование заголовка собственной темы.
-- Этап: implementation review cycle завершён; PR #343 готов к merge владельцем.
-- Координатор: Мира / ChatGPT-5.6 Sol — PASS.
-- Технический планировщик и исполнитель: Лёва / Codex-6.1 Sol.
-- Независимые reviewers: Лира / ChatGPT-6 — PASS; Марк / Codex-6 Sol — PASS.
-- Implementation PR: #343 — https://github.com/iliya1947/vico-forum/pull/343.
-- Stable implementation head: `10321fdae762004ac2d55e9618a89c6c41e0d2ac`.
-- Base/current main на closeout-проверке: `906d15d896cc3a4f3b7dc9a03f46acd883925d1d`.
+- Implementation PR #343: merged.
+- Merge commit в `main`: `d8667f630450f702783bbbdb9a3ec14432e75660`.
+- Coordinator review Миры: PASS.
+- Независимые reviews Лиры и Марка: PASS.
 - Confirmed current-scope defects: отсутствуют.
-- GitHub checks: 17 check-runs success на exact head.
 - Owner visual acceptance: отложен в отдельный UI/UX pass по прямому решению владельца.
-
-## Принятый scope
-
-- Новый permission `forum.topic.title.editOwn` + forward catalog migration/default grants.
-- Server-side session/permission/ownership, active-account admission, immutable revision и CAS обязательны.
-- Новый изменённый title получает `sourceLocale: "und"`; старые translations остаются revision-bound.
-- Existing user-measure restriction `posts.edit` блокирует и title edit; нового restriction key нет.
-- Отдельный title-edit cooldown не добавляется.
-- Отдельные drafts/receipts/autosave/recovery subsystem не добавляются.
+- Заключительный docs PR: #344 — https://github.com/iliya1947/vico-forum/pull/344.
+- Docs head: `cd72e8696167d71c8e93e7ab63ff8e86342af4c3`.
+- Docs scope: только permanent/current-state/history документация; code/schema/runtime не меняются.
+- Docs CI на момент фиксации: `checks` и `database` queued.
 
 ## Следующий шаг
 
-Владелец merge implementation PR #343. После фактического merge Мира открывает отдельный заключительный docs PR и приводит permanent/current-state документацию к уже merged состоянию: `docs/auth/AUTHORIZATION.md`, `docs/ADMIN_PANEL.md`, `PROJECT_STATE.md` и необходимую history/navigation запись по действующим правилам.
+Дождаться завершения применимых checks PR #344. При PASS docs PR готов к merge владельцем. После merge #344 задача закрывается в служебном канале; #342 сам не merge в main.
 
 Служебный PR #342 не merge в main.
