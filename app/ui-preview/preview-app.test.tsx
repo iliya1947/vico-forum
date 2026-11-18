@@ -164,6 +164,23 @@ describe("interactive Pages preview", () => {
     expect(await screen.findByRole("status")).toBeInTheDocument();
   });
 
+  it("changes administrator workspace density through the real local preference control", async () => {
+    window.localStorage.removeItem("vico:administrator-workspace:v1:maya");
+    const user = userEvent.setup();
+    render(<EmbeddedPreview scenarioId="section-user" identity="manager" />);
+
+    await user.click(screen.getByRole("link", { name: "Settings" }));
+    const settingsOverview = document.querySelector(".settings-overview") as HTMLElement;
+    await user.click(within(settingsOverview).getByRole("link", { name: "Administrator preferences" }));
+
+    expect(await screen.findByRole("heading", { level: 2, name: "Administrator preferences" })).toBeInTheDocument();
+    const density = screen.getByRole("combobox", { name: "Density" });
+    expect(density).toHaveValue("comfortable");
+
+    await user.selectOptions(density, "compact");
+    expect(screen.getByRole("combobox", { name: "Density" })).toHaveValue("compact");
+  });
+
   it("shows the non-fresh session state without exposing session controls", async () => {
     render(<EmbeddedPreview scenarioId="settings-account-not-fresh" identity="user" />);
 
