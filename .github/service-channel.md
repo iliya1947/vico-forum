@@ -1,6 +1,6 @@
 # Безопасность Vico Forum — communication
 
-Служебный PR: #315. Оперативное состояние: [workflow.md](./workflow.md). Общая карта: [SECURITY_IMPLEMENTATION_PLAN.md](../SECURITY_IMPLEMENTATION_PLAN.md).
+Служебный PR: #315. Оперативное состояние: [workflow.md](./workflow.md). Общая карта: [SECURITY_IMPLEMENTATION_PLAN.md](../SECURITY_IMPLEMENTATION_PLAN.md). Current remediation: [SECURITY_REMEDIATION_PLAN.md](../SECURITY_REMEDIATION_PLAN.md).
 
 ## Назначение
 
@@ -41,7 +41,7 @@
 13. **Block K — Abuse & availability ЗАВЕРШЁН. Final: 5 current findings — `FORUM-EDIT-SPAM-01 Moderate/P2`, `PUBLIC-READ-COST-01 Moderate/P2`, `ATTACH-SECURITY-EVENT-SPAM-01 Moderate/P2`, `MENTION-FANOUT-01 Moderate/P2`, `DB-CLEANUP-FLOAT-01 Low/P3`; 0 deferred blockers.** K8 cross-chain PASS, 0 additional; B/E/F/H/J ownership remains intact and generic monitoring/incident-response policy remains Block L.
 14. **Block L — Security monitoring & incident response ЗАВЕРШЁН. Final: 1 current finding — `MON-AUTH-OUTCOME-01 Low/P3`; 0 deferred blockers.** L8 cross-chain PASS, 0 additional: source/evidence/History/operator chains remain truthful outside the already-recorded 409 outcome-label defect; degraded in-app telemetry and external observability boundaries are explicitly limited rather than presented as complete audit. A–K ownership remains intact.
 15. Aggregate #315: **34 current-scope findings + 4 deferred Stage-6 blockers**. Severity current: **13 Moderate/P2 + 21 Low/P3; current P0/P1 нет**. Deferred: **2 Moderate/P2 + 2 Low/P3**.
-16. Implementation PR, technical planner и implementer для remediation сейчас не назначены.
+16. Current remediation decomposition зафиксирован в `SECURITY_REMEDIATION_PLAN.md`: **19 bounded packages покрывают все 34 current findings ровно по одному разу**. Technical planner для первого package **R01 — Лёва**; implementer/implementation PR ещё не назначены.
 17. Cloudflare/Neon/production/GitHub-settings/provider mutation по #315 не разрешена и не выполнялась.
 
 ## Индекс подтверждённых current-scope findings
@@ -105,8 +105,9 @@
 5. **Block I закрыт:** 4 current findings, 0 собственных deferred blockers; I8 дал 0 additional. Final mutable recheck: `main.protected=false`, `Protect main.enforcement=disabled`. Current-stage acceptance gates остаются `CI-PYPI-PROVENANCE-01` и `PAGES-ACCEPTANCE-PROVENANCE-01`; `CI-POSTGRES-IMAGE-PROVENANCE-01` также используется future Worker verify. `REPO-MAIN-GATE-01` обязательно закрыть до любого Stage-6 DB/credential/Worker dispatch.
 6. **Block J J1–J8 ЗАВЕРШЁН:** J1 PASS; J2 добавил только deferred `GOOGLE-OAUTH-SCOPE-01 Low/P3`; J3–J8 PASS. J8 подтвердил отсутствие новой external-integration cross-chain root cause и сохранил dedup с B/H/I. Final J = 0 current + 1 deferred.
 7. **Block K K1–K8 ЗАВЕРШЁН:** K1–K2 PASS; K3–K7 дали 5 current findings; K8 cross-chain PASS, 0 additional. Final K = 4 Moderate/P2 + 1 Low/P3, 0 deferred blockers.
-8. **Block L L1–L8 ЗАВЕРШЁН:** L1 PASS; L2 = `MON-AUTH-OUTCOME-01 Low/P3`; L3–L8 PASS, 0 additional / 0 deferred blockers. L8 cross-chain preserved A–K ownership and confirmed no new monitoring/incident-response root cause. Final L = 1 Low/P3 current, 0 deferred. **Audit areas A–L complete.** Aggregate #315 = 34 current + 4 deferred. Next after developer continuation — bounded remediation decomposition/prioritization; implementation remains separate.
-9. Exact `pg@8.23.0` query-timeout semantics и exact `drizzle-orm 0.45.2` transaction wrapper подтверждают, что lost/late COMMIT ACK возможен; current writers не auto-retry его. Locale отдельно reconciles; measures/Complaints/publication используют replay/CAS/idempotency.
-10. `AuthorizationRepository.mutate()` rollback-error preservation слабее новых helpers, но current fail-open/security impact не доказан — finding не создаётся.
-11. Advisory-lock compatibility с будущим real web Hyperdrive остаётся Stage-6 acceptance boundary; production web binding сейчас inactive/paused, поэтому это не current G5 finding.
-12. Лира, Лёва и Марк сейчас не имеют активного назначения по #315.
+8. **Block L L1–L8 ЗАВЕРШЁН:** L1 PASS; L2 = `MON-AUTH-OUTCOME-01 Low/P3`; L3–L8 PASS, 0 additional / 0 deferred blockers. L8 cross-chain preserved A–K ownership and confirmed no new monitoring/incident-response root cause. Final L = 1 Low/P3 current, 0 deferred. **Audit areas A–L complete.** Aggregate #315 = 34 current + 4 deferred.
+9. **Current remediation route prepared:** 19 bounded packages in `SECURITY_REMEDIATION_PLAN.md`; R01 closes only `REPO-MAIN-GATE-01 Moderate/P2` and is now handed to Лёва for technical planning. No implementation/settings mutation has started.
+10. Exact `pg@8.23.0` query-timeout semantics и exact `drizzle-orm 0.45.2` transaction wrapper подтверждают, что lost/late COMMIT ACK возможен; current writers не auto-retry его. Locale отдельно reconciles; measures/Complaints/publication используют replay/CAS/idempotency.
+11. `AuthorizationRepository.mutate()` rollback-error preservation слабее новых helpers, но current fail-open/security impact не доказан — finding не создаётся.
+12. Advisory-lock compatibility с будущим real web Hyperdrive остаётся Stage-6 acceptance boundary; production web binding сейчас inactive/paused, поэтому это не current G5 finding.
+13. Лира, Мира и Марк не имеют implementation assignment; **Лёва имеет только technical-planning assignment R01**.
