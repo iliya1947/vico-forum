@@ -111,3 +111,16 @@ GitHub общий результат: 13 из 13 workflows PASS на head `10321
 
 STOP для coordinator whole-PR review Миры. После её PASS независимый технический review
 выполняет Марк на том же exact head. Permanent docs/current state — отдельным final docs PR.
+
+
+## 2026-11-18 — активное назначение: технический план Watch
+
+Подготовить полный технический план bounded-этапа Watch по актуальному `main` и `USER_ACTIONS_SERVICE_PLAN.md`.
+
+Цель продукта уже зафиксирована: явный Watch/Unwatch конкретной темы для будущих reply-notifications через существующий inbox. Не реализовывать код.
+
+Самостоятельно исследовать фактические persistence/read/write seams, authoritative actor/topic boundary, существующий reply/mention notification fanout и dedupe, UI/route state, AccountState/lifecycle, concurrency/failure semantics и необходимые проверки. Определить минимальный корректный implementation scope и критерии acceptance.
+
+Не расширять Watch в bookmarks/saved-topic list, auto-watch, section/category/tag subscriptions, email/push/digest, Admin/Super-admin, #320, UI/UX refinement или Stage 6. Если требуются schema/public-contract/authorization решения, явно вернуть их Мире как технические развилки, не принимать скрыто.
+
+После полного плана зафиксировать результат в `USER_ACTIONS_SERVICE_PLAN.md` и своём личном файле, затем STOP для scope/fit review Миры.
