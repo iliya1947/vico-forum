@@ -1,24 +1,29 @@
-# Workflow — edit own topic title
+# Workflow — пользовательские действия перед #320
 
-## Текущее состояние
+## Общий канал
 
-- Задача: редактирование заголовка собственной темы — завершена.
-- Implementation PR #343: merged.
-- Implementation merge commit: `d8667f630450f702783bbbdb9a3ec14432e75660`.
-- Coordinator implementation review Миры: PASS.
-- Независимые implementation reviews Лиры и Марка: PASS.
-- Confirmed implementation current-scope defects: 0.
-- Owner visual acceptance: отложен в отдельный UI/UX pass по прямому решению владельца.
-- Docs PR #344: merged.
-- Docs merge commit: `7cc23edede57994cdedab49c1556ddb55034dd29`.
-- Docs exact reviewed head: `cd72e8696167d71c8e93e7ab63ff8e86342af4c3`.
-- Автор docs diff: Мира / ChatGPT-5.6 Sol.
-- Независимый docs reviewer: Лира / ChatGPT-6 — PASS.
-- Confirmed current-doc-scope defects: 0.
-- Служебный PR #342 остаётся open; его lifecycle не меняется Мирой без прямого решения владельца.
+- Service PR: #342.
+- Последовательность: edit own topic title → Watch → bookmarks → mute/block → #320.
+- Service PR #342 остаётся общим каналом всей этой последовательности и не merge в main.
+
+## Завершённый этап 1 — edit own topic title
+
+- Implementation PR #343: merged, merge commit `d8667f630450f702783bbbdb9a3ec14432e75660`.
+- Docs PR #344: merged, merge commit `7cc23edede57994cdedab49c1556ddb55034dd29`.
+- Implementation/docs reviews: PASS.
+- Confirmed current-scope defects: 0.
+- Owner visual acceptance: отложен в общий UI/UX pass по прямому решению владельца.
+
+## Активный этап 2 — Watch
+
+- Scope: явный Watch/Unwatch конкретной темы для будущих reply-notifications через существующий inbox.
+- Текущий main/base: `7cc23edede57994cdedab49c1556ddb55034dd29`.
+- Технический планировщик: Лёва / Codex-6.1 Sol.
+- Исполнитель: не активирован; по стандартному циклу после принятия плана — Лира / ChatGPT-6.
+- Implementation PR/head: отсутствует.
+- Reviewers: Мира coordinator; Лёва technical reviewer только если не участвует в реализации.
+- Реализация Watch ещё не начата.
 
 ## Следующий шаг
 
-Текущая bounded-задача полностью закрыта в repository/main. Следующий отдельный продуктовый блок по принятой последовательности — Watch; он должен начаться как новая задача со своим служебным PR.
-
-Служебный PR #342 не merge в main и остаётся open до решения владельца.
+Лёва исследует Watch по актуальному main и фиксирует полный технический план в `USER_ACTIONS_SERVICE_PLAN.md`: persistence/state, authoritative actor/topic boundary, существующий reply/mention notification fanout и dedupe, route/UI, lifecycle/failure/concurrency и применимые проверки. Код не реализует. После плана — STOP и возврат Мире на scope/fit review.
