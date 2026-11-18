@@ -2,12 +2,13 @@
 
 ## Статус
 
-1. Scope подготовлен 2026-11-12; current I3 audit target — `main` `7cc23edede57994cdedab49c1556ddb55034dd29`.
+1. Scope подготовлен 2026-11-12; current I4 audit target — `main` `7cc23edede57994cdedab49c1556ddb55034dd29`.
 2. Block H закрыт; его deferred blockers в I не дублируются.
 3. **I1 — Repository authority & main provenance завершён: 1 current-scope finding — `REPO-MAIN-GATE-01 Moderate/P2`.**
 4. **I2 — Workflow events, tokens & write authority завершён: PASS, 0 новых current-scope findings.**
 5. **I3 — Production Environments & secret admission завершён: PASS по repository-side chain, 0 новых current-scope findings; exact mutable GitHub Environment policy и secret inventory/location — `Информация не проверена`.**
-6. Следующий bounded slice после продолжения владельца — **I4: Secret custody & leakage**.
+6. **I4 — Secret custody & leakage завершён: PASS, 0 новых current-scope findings и 0 новых deferred blockers.** Current tree / production Actions logs / production artifacts / exact current-main Pages artifact не подтвердили secret leakage; live `vico_forum_web` остаётся LOGIN-role без password expiry, но единственный current Neon project member — Owner/Admin, поэтому plaintext SQL-Editor-history risk не образует proven less-trusted access path.
+7. Следующий bounded slice после продолжения владельца — **I5: Dependency & install provenance**.
 7. Мира — auditor/coordinator. Remediation, technical planner и implementer не назначены.
 8. Production/Cloudflare/Neon/GitHub settings mutation, secret rotation и workflow dispatch не разрешены и не выполнялись.
 
@@ -83,6 +84,23 @@
 9. Secret values were not read. No workflow dispatch, approval, GitHub setting mutation, Cloudflare/Neon action or production operation was performed.
 10. Unknown external Environment policy is not classified as a current defect by itself. Stage 6 remains paused; exact Environment policy/secret placement must be re-read immediately before any future production dispatch that depends on those controls.
 11. I3 therefore adds no finding and does not change #315 aggregate. Next bounded slice after owner continuation is I4; remediation remains separate.
+
+## I4 — результат
+
+1. Audit target: current `main` `7cc23edede57994cdedab49c1556ddb55034dd29`. Verdict: **PASS, 0 новых current-scope findings, 0 новых deferred technical blockers.**
+2. Current-tree scan по production secret names / credential-like patterns не подтвердил committed real credentials. `.env.example` содержит пустые secret placeholders; `.gitignore` исключает `.env*` и `.dev.vars*`, кроме `.env.example`. Найденные hard-coded auth/DB values относятся к synthetic/local/example test fixtures.
+3. Production credential scripts используют secrets через environment, не argv, и deliberately map raw failures to bounded stage/reason/compensation codes. Raw URL/password/SCRAM verifier/exception text в их CLI output не выводятся.
+4. Historical current production workflow jobs были проверены по доступным GitHub Actions logs: bootstrap, diagnostics, recovery, recovery-v2, Worker rollout, production migration success/failure. В проверенных logs не найдено PostgreSQL URI или SCRAM verifier; GitHub-secret values представлены mask'ами, а Vico-owned output остаётся bounded.
+5. Для проверенных production runs GitHub Actions API возвращает **0 uploaded artifacts**. Production migration summary содержит только run/SHA/journal evidence; Worker summary — revision/version/traffic metadata без secret values.
+6. Worker rollout создаёт temporary secrets JSON только в `$RUNNER_TEMP`, с `umask 077` / mode 0600 и EXIT cleanup. Current GitHub contract дополнительно очищает `RUNNER_TEMP` в начале/конце job, а `ubuntu-latest` job работает на fresh hosted VM, decommissioned after completion. Concrete persistence/exfiltration path для этого temp file не подтверждён.
+7. Exact successful GitHub Pages run для audited main SHA `7cc23ede…` был скачан и распакован. Artifact содержит только static preview files; credential values, PostgreSQL URL, SCRAM verifier, Owner binding или other production secret values не найдены. Bundled JS содержит строковое **имя** `BETTER_AUTH_SECRET` из dependency code, но не значение.
+8. Pages workflow не получает production secrets и builds isolated `app/ui-preview`. Current Vite contract exposes client env automatically only for configured prefix (default `VITE_`); preview config does not customize envPrefix and audited artifact contains no `VITE_*` secret values.
+9. Current Neon read-only recheck: `vico_forum_web` exists as non-superuser LOGIN role; `rolvaliduntil = NULL`, which PostgreSQL 17 defines as no password expiration. This confirms current credential lifetime is not bounded by `VALID UNTIL`.
+10. Repository source-of-truth records that accepted web credential was once entered as plaintext in Neon SQL Editor history. Current Neon project-members query returns one current member with effective Admin access. Therefore no less-trusted Neon principal with access to that history was established; abstract compromise of the Owner/Neon account is outside I finding criteria. No rotation finding is created from history presence alone.
+11. Exact current GitHub Environment secret inventory/location and whether consumed temporary secret entries still exist remain **Информация не проверена** because the connector does not expose those settings. GitHub Secret Scanning open-alert state / complete historical repository scan is likewise **Информация не проверена**. Neither unknown state is evidence of an active leak.
+12. Secret values were not deliberately read or copied into audit files. No workflow dispatch, secret rotation, settings mutation, production write, Cloudflare mutation or Neon data mutation was performed; Neon checks were read-only metadata/catalog reads.
+13. Existing `REPO-MAIN-GATE-01` remains the only Block-I finding so far. I4 does not duplicate I1/I3 or Block-H Version URL/rollback findings. #315 aggregate remains **25 current findings + 3 deferred Stage-6 blockers**.
+14. Next bounded slice after owner continuation: **I5 — Dependency & install provenance**. Remediation remains separate.
 
 ## Цель
 
