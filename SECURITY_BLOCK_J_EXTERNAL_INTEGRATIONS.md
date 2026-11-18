@@ -2,17 +2,18 @@
 
 ## Статус
 
-1. Scope создан 2026-11-18; current J4 audit target — `main` `7cc23edede57994cdedab49c1556ddb55034dd29`.
+1. Scope создан 2026-11-18; current J5 audit target — `main` `7cc23edede57994cdedab49c1556ddb55034dd29`.
 2. Blocks A–I уже закрыты как audit blocks; их findings в J не дублируются.
 3. **J1 — Current integration inventory & activation boundaries завершён: PASS, 0 новых current-scope findings и 0 deferred blockers.**
 4. **J2 — Google OAuth external-provider boundary завершён: 0 новых current-scope findings + 1 deferred Stage-6 blocker — `GOOGLE-OAUTH-SCOPE-01 Low/P3`.** Exact provider identity/state/PKCE/callback/origin/account-selection paths PASS apart from already-owned Block-B findings; prepared direct OAuth surface accepts caller-selected additional Google scopes beyond Vico's authentication-only product need.
 5. **J3 — Email provider boundary завершён: PASS, 0 новых current-scope findings и 0 deferred blockers.** Sender/verification/recovery implementation отсутствует; Better Auth 1.7.7 send/reset endpoints fail closed when sender callbacks are not configured.
 6. **J4 — Translation provider data egress завершён: PASS, 0 новых current-scope findings и 0 deferred blockers.** Current Worker provider execution выключен; prepared content path выполняет metadata-only selection, explicit data-policy/allowance admission и actual-request support recheck до raw egress; provider output/provenance валидируются до publication.
-7. Current repository имеет Google OAuth foundation и translation provider/Queue abstractions, но source-of-truth и runtime wiring подтверждают отсутствие live Google OAuth acceptance и отсутствие active translation provider/Queue execution.
-8. Resend/Brevo/email-delivery integration в current `main` отсутствует; email verification/password recovery намеренно не реализованы.
-9. Следующий bounded slice после продолжения владельца — **J5: Queue/provider execution lifecycle**.
-10. Мира — auditor/coordinator. Remediation, technical planner и implementer не назначены.
-11. Production/provider/Cloudflare/GitHub settings mutation, OAuth client creation, email account/provider activation, Queue/provider activation и external calls не разрешены и не выполнялись.
+7. **J5 — Queue/provider execution lifecycle завершён: PASS, 0 новых current-scope findings и 0 deferred blockers.** Durable task commit предшествует enqueue; Queue message содержит только durable task id; claim/lease/current-generation/stale fences и max-attempt budget ограничивают duplicate/replay provider work; reconciliation восстанавливает pending/expired work и deferred allowance; terminal failures остаются observable durable state.
+8. Current repository имеет Google OAuth foundation и translation provider/Queue abstractions, но source-of-truth и runtime wiring подтверждают отсутствие live Google OAuth acceptance и отсутствие active translation provider/Queue execution.
+9. Resend/Brevo/email-delivery integration в current `main` отсутствует; email verification/password recovery намеренно не реализованы.
+10. Следующий bounded slice после продолжения владельца — **J6: External callback/webhook/outgoing seams**.
+11. Мира — auditor/coordinator. Remediation, technical planner и implementer не назначены.
+12. Production/provider/Cloudflare/GitHub settings mutation, OAuth client creation, email account/provider activation, Queue/provider activation и external calls не разрешены и не выполнялись.
 
 ## J1 — результат
 
@@ -114,6 +115,37 @@
 24. No provider call, Queue dispatch, Workers AI binding, AI Gateway, package install, deployment, external account or setting mutation was performed by J4.
 25. #315 aggregate remains **28 current findings + 4 deferred Stage-6 blockers**.
 26. Next bounded slice: **J5 — Queue/provider execution lifecycle**.
+
+## J5 — результат
+
+1. Audit target: current `main` `7cc23edede57994cdedab49c1556ddb55034dd29`.
+2. Verdict: **PASS — 0 новых current-scope findings, 0 deferred blockers.**
+3. Current normal runtime still has no Cloudflare Queue producer/consumer, Workers AI binding or translation executor wiring. `wrangler.jsonc` contains only Hyperdrive bindings, and repository search found no `queues.producers`, `queues.consumers`, `Queue<...>`, `MessageBatch`, Queue `ack()`/`retry()` adapter or normal-runtime `TranslationTaskReconciler` construction. Therefore no live external Queue attack surface exists now.
+4. Prepared JOB-01 ordering is correct: UI dispatcher and both content planners persist/upsert the durable task first and call `enqueuer.enqueue({ translationTaskId: task.id })` only after the database operation has returned/committed. Existing repository tests explicitly cover enqueue-failure/unknown-outcome leaving a durable `pending` row visible to a fresh DB reader; J5 inspected but did not execute those tests.
+5. Queue message authority is narrow: `TranslationTaskMessage` carries only `translationTaskId`. Kind, source identity, source fingerprint, target locale, generation policy, provider identity and raw content are reloaded from durable state. `TranslationTaskExecutorDispatcher` resolves the persisted kind before a kind-specific consumer can claim.
+6. Durable stable identities bind UI source fingerprint/policy/locale and content revision/source-resolution/policy metadata. A Queue message cannot choose a provider, source text, target locale or translation kind by supplying extra fields to the domain dispatcher.
+7. Consumer claim is DB-atomic and lease-based. Concurrent duplicate delivery can create only one live claim; a second delivery returns `already-claimed`. Expired leases are reclaimable under a fresh claim token; stale/old claim tokens cannot publish stale/failure transitions.
+8. Before provider execution, UI/content consumers revalidate current source/revision, generation policy, current generation, target-locale eligibility and existing higher-priority/current translation. Post-body also revalidates protected-content policy/fingerprint. Stale work terminalizes without provider call.
+9. Publication remains claim/current-generation fenced after provider response, so a source/policy/generation change during the provider call cannot publish the old result as current. This is the same root boundary already checked in J4 and is not duplicated as a J5 finding.
+10. Provider-call exactly-once is intentionally **not** claimed. A crash after external provider success but before durable publication can cause the provider call to repeat after lease expiry. This is explicitly documented and bounded rather than hidden.
+11. Every real execution claim increments durable `attemptCount`; `DEFAULT_TRANSLATION_TASK_MAX_ATTEMPTS = 3`. Retryable failures release the task back to `pending` only while attempts remain. The third retryable failure becomes durable `failed / retry-exhausted`.
+12. A crash during the final already-consumed attempt does not create a fourth provider attempt: expired final work is reclaimed with `attemptStarted=false` only so the executor can persist `attempt-budget-exhausted` terminal state without another provider call.
+13. Post-body partial external work is also bounded by the same attempt budget plus configured `maxSegments` / `maxTotalSegmentCharacters`. A later retry may repeat already-successful earlier segments after a later segment failed; code explicitly acknowledges this. No unbounded provider loop was found.
+14. Content provider allowance is occurrence-bound to `task id + generation + attempt`. One admitted provider identity is persisted before execution; duplicate delivery reuses the same admitted occurrence. Allowance lease/deferred state is DB-fenced and revalidated against current content before persistence.
+15. Deferred allowance does not busy-loop provider execution: `allowanceRetryNotBefore` is durable. Reconciliation selects it only once retry time is reached. Expired allowance leases can be retried; the deterministic occurrence key provides an idempotency handle for a future external allowance implementation.
+16. Reconciliation is durable and bounded: max batch 100; `FOR UPDATE SKIP LOCKED` gives concurrent reconcilers disjoint work; `reconciliationAttemptedAt` prevents immediate reselection for 60 seconds; each candidate enqueue is isolated so one failure does not abort the rest of the bounded batch.
+17. Reconciliation recovers: old `pending` after enqueue failure/unknown result, retry-released `pending`, expired `processing`, expired allowance lease and allowance-deferred work whose retry time has arrived. It does not select live processing, stale, completed or failed tasks.
+18. Terminal provider/output failures and retry exhaustion persist in the DB as an observable DLQ-equivalent terminal state with bounded grouped failure/allowance observability. Source-of-truth permits a DLQ **or equivalent observable terminal-failure path**; current durable failed-state implementation satisfies the domain side of that requirement.
+19. Current Cloudflare Queues documentation rechecked 2026-11-18: delivery is at-least-once and duplicates are possible; Cloudflare recommends an application idempotency key for duplicate-sensitive work. Explicit per-message `ack()` / `retry()` is supported, retry delays can be applied, default delivery failure retries are three unless configured otherwise, and exhausted messages are deleted unless a DLQ is configured.
+20. Current Cloudflare limits rechecked 2026-11-18: message size is 128 KB, configurable retry maximum is 100, batch size maximum is 100 and message retention is configurable up to 14 days. Vico's planned message is only one UUID-like task id and is far below the platform payload limit.
+21. Current Cloudflare DLQ documentation rechecked 2026-11-18: after configured `max_retries`, a message goes to the configured DLQ; without DLQ it is deleted. Vico's durable task state means queue-message deletion does not erase task truth, but recovery still requires the Stage-6 reconciliation runner to be actually wired.
+22. **Stage-6 activation gate, not a finding:** the concrete Queue consumer adapter must map Vico `delivery=ack|retry|terminal` correctly to per-message Queue acknowledgement/retry semantics, apply finite retry/backoff policy, and prove malformed/untrusted message handling cannot create a retry storm. The actual adapter does not yet exist, so its behavior is **Информация не проверена**.
+23. **Stage-6 activation gate, not a finding:** real Queue producer/consumer bindings, Queue names/jurisdiction/retention, consumer `max_retries`/retry delay, optional Cloudflare DLQ, Queue permissions, actual reconciliation scheduler/trigger and deployed reconciliation acceptance are **Информация не проверена**. They must be checked when Queue integration is implemented/activated.
+24. Queue/provider credential custody remains Block I/J4 boundary. Current repository has no Queue/provider credential or binding to expose. Future provider/Queue secret placement is **Информация не проверена** until Stage 6 configuration exists.
+25. No distinct J5 root cause was established. The known unavoidable duplicate-provider-call crash window is finite and explicitly modeled; generic abuse/rate-limit questions remain Block K unless a provider-specific amplification path is proven.
+26. No Queue send/consume, provider call, binding, DLQ, scheduler, package install, deployment or external setting mutation was performed by J5.
+27. #315 aggregate remains **28 current findings + 4 deferred Stage-6 blockers**.
+28. Next bounded slice: **J6 — External callback/webhook/outgoing seams**.
 
 ## Цель
 
@@ -221,5 +253,5 @@
 
 ## Следующий шаг
 
-1. После продолжения владельца выполнить **J5 — Queue/provider execution lifecycle** на current main и остановиться после результата.
-2. J5 не дублирует J4 data-egress admission/validation и существующие Blocks G/I/K findings. Remediation существующих findings/blockers не начинать без отдельного назначения.
+1. После продолжения владельца выполнить **J6 — External callback/webhook/outgoing seams** на current main и остановиться после результата.
+2. J6 не дублирует Better Auth OAuth callback semantics из J2/Block B и не превращает отсутствующие future webhooks в findings. Remediation существующих findings/blockers не начинать без отдельного назначения.
