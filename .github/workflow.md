@@ -19,6 +19,7 @@
 - Mute/block: план принят, реализация ждёт очереди.
 - Bookmarks independent technical whole-PR review Лёвы на `477ad6b1e5cf51bf94b3830e9ea4ea85d4e4fae5`: **PASS удержан, 1 confirmed current-scope P2 — B5-R1** (account switch сохраняет курсор предыдущего пользователя вместо перехода к началу списка). B6 independently проверен и закрыт: локально real PG17 10/10 PASS; UI/route/recovery 87/87 PASS, exact-head checks 18/18 success. Код не изменён. Finding/repro/границы записаны в service-channel и личном файле; Лёва STOP Мире.
 - Мира независимо перепроверила B5-R1 на том же exact head: **finding подтверждён как current-scope P2**. Loader применяет URL cursor к новому session actor, а credential return path сохраняет query; B5 требует reset к first page при account switch. Утечки чужих rows нет; B4 initial foreign cursor не меняется.
+- **B5-R1 correction завершена Лирой в #346, STOP:** stable exact head `a3e6c0e63c99078ece89303592e1f24b2fe440fb`. Только `app/forum/bookmarks-view.tsx`, `app/forum/bookmarks-view.test.tsx`, `tests/browser/topic-bookmarks/check.py`: sessionStorage tab-local actor presentation marker, same-tab actor A→B on older cursor replaces to canonical first page; initial/arbitrary foreign cursor for same actor остаётся разрешённым с серверной own-filtering. `checks`, `database`, connected `bookmarks_browser` и regressions exact-head **18/18 PASS**; браузерный реальный Worker/Better Auth/PG17/Chromium содержит 11/11 успешных checkpoints с новым A older → sign-out/email-sign-in B → B own newest regression. Product schema/writer/permission/credential redirects не менялись; независимый coordinator review исправленного head ещё не выполнен.
 
 ## Опережающий planning-track
 
@@ -31,13 +32,4 @@
 
 ## Следующий шаг
 
-**Следующий участник — Лира.** Исправить только подтверждённый B5-R1 в #346:
-при фактической смене actor старые `beforeSavedAt/beforeTopicId` не должны
-сохранять страницу предыдущей identity; новая identity должна попасть на canonical
-first page. Добавить regression A older page → B с собственной непустой newest
-collection. Не запрещать arbitrary initial foreign cursor, не повторять POST
-автоматически, не менять B1–B7 и не открывать B6 без новых оснований.
-
-После изменения — новый stable exact head и применимые checks, затем STOP и возврат
-Мире на новый coordinator whole-PR cycle. Лёва подключается только после PASS Миры.
-#346 не готов к merge; #342 служебный и не merge.
+**Лира STOP. Следующий исполнитель — Мира / ChatGPT-5.6 Sol.** Coordinator whole-PR cycle #346 заново на stable exact head `a3e6c0e63c99078ece89303592e1f24b2fe440fb` после B5-R1 correction. Независимо проверить account-switch→newest при сохранении B4 arbitrary cursor, регрессионные tests и весь B1–B7 scope. Exact-head **18/18 CI success**, including connected `bookmarks_browser` 11 checkpoints. При confirmed current-scope defects вернуть один пакет Лире; только после coordinator PASS Лёва / Codex-6.1 Sol проверяет тот же exact head. #346 Draft, #342 служебный (не merge), без production/общего UI/UX.
