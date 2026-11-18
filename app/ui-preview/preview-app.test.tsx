@@ -215,6 +215,51 @@ describe("interactive Pages preview", () => {
     });
   });
 
+  it("uses the last visited Needs attention group when that opening behavior is selected", async () => {
+    const key = "vico:administrator-workspace:v1:maya";
+    window.localStorage.removeItem(key);
+    const user = userEvent.setup();
+    render(<EmbeddedPreview scenarioId="section-user" identity="manager" />);
+
+    await user.click(screen.getByRole("link", { name: "Settings" }));
+    let settingsOverview = document.querySelector(".settings-overview") as HTMLElement;
+    await user.click(within(settingsOverview).getByRole("link", { name: "Administrator preferences" }));
+
+    const behavior = await screen.findByRole("combobox", { name: "Open behavior" });
+    const group = screen.getByRole("combobox", { name: "Default group" });
+    expect(behavior).toHaveValue("default");
+    expect(group).toHaveValue("needs-details");
+
+    await user.selectOptions(group, "needs-review");
+    await user.click(screen.getByRole("link", { name: "Open Needs attention" }));
+
+    await waitFor(() => {
+      expect(JSON.parse(window.localStorage.getItem(key) ?? "{}")).toMatchObject({
+        attentionLastMode: "signals",
+        attentionLastGroup: "needs-review",
+      });
+    });
+
+    await user.click(screen.getByRole("link", { name: "Settings" }));
+    settingsOverview = document.querySelector(".settings-overview") as HTMLElement;
+    await user.click(within(settingsOverview).getByRole("link", { name: "Administrator preferences" }));
+
+    await user.selectOptions(screen.getByRole("combobox", { name: "Default group" }), "needs-details");
+    await user.selectOptions(screen.getByRole("combobox", { name: "Open behavior" }), "last");
+
+    expect(screen.getByRole("link", { name: "Open Needs attention" })).toHaveAttribute(
+      "href",
+      "/en/attention?mode=signals&group=needs-review",
+    );
+    expect(JSON.parse(window.localStorage.getItem(key) ?? "{}")).toMatchObject({
+      attentionEntry: "last",
+      attentionDefaultMode: "signals",
+      attentionDefaultGroup: "needs-details",
+      attentionLastMode: "signals",
+      attentionLastGroup: "needs-review",
+    });
+  });
+
   it("persists the administrator technical-details default for the current account", async () => {
     const key = "vico:administrator-workspace:v1:maya";
     window.localStorage.removeItem(key);
