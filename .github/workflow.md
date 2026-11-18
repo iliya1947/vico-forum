@@ -14,7 +14,7 @@
 - Watch independent technical review: **Лёва PASS** всего принятого scope на том же exact head `76c1c456557c614171a3b472758498795a668b9a` против main `7cc23edede57994cdedab49c1556ddb55034dd29`; подтверждённых current-scope findings нет. Код не изменён; Лёва STOP.
 - Review synthesis: оба review совпали на неизменном exact head, расхождений и подтверждённых current-scope defects нет. По действующему owner decision из `docs/UI_UX_PASS.md` функциональные bounded-срезы не задерживаются из-за косметики; финальная owner visual/product acceptance остаётся отдельным UI/UX pass перед публичным запуском. Поэтому отдельный Watch visual gate сейчас merge не блокирует.
 - Watch implementation review cycle завершён, #345 merged. Permanent/current-state docs closeout остаётся отдельным PR после implementation merge; это planning-задание не заменяет его.
-- Bookmarks: план принят, реализация ждёт очереди.
+- Bookmarks: **реализация активирована владельцем**. Лира / ChatGPT-6 реализует принятый Bookmarks scope прямо в Draft PR #346, который очищен от старого visibility-контекста и подготовлен как implementation PR от актуального `main` `9c4639d23ca075c8bb92fbb909b96593d7bee127`.
 - Mute/block: план принят, реализация ждёт очереди.
 
 ## Опережающий planning-track
@@ -28,4 +28,4 @@
 
 ## Следующий шаг
 
-Мира проводит whole-plan scope/fit последнего плана структуры форума / переноса тем S0–S10: фиксирует S-P1–S-P4 (набор операций, Help boundary, authority/grants, state/reasons) и S-T1/S-T2 (schema/CAS/ACL/History и lock graph), при необходимости возвращает конкретные product forks владельцу. Лёва STOP. Watch #345 уже merged; отдельный docs closeout и последующий implementation-order сохраняются. Других planning-slice не назначено; служебный #342 не merge.
+Лира реализует **Bookmarks** в PR #346 по уже принятому плану Bookmarks из `USER_ACTIONS_SERVICE_PLAN.md`, предварительно сверив его с актуальным `main` после merge Watch. После полной реализации, применимых проверок и stable exact head — **STOP и возврат Мире** на coordinator whole-PR review. План структуры форума S0–S10 остаётся готовым к отдельному scope/fit; его реализация сейчас не активирована. Служебный #342 не merge.
