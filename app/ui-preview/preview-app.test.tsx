@@ -1840,6 +1840,65 @@ describe("Preview confirmation and attention fixtures", () => {
     expect(document.querySelector(".best-answer-label")).toBeNull();
   });
 
+  it("opens the Attention topic target instead of the primary fallback topic", async () => {
+    render(<EmbeddedPreview scenarioId="attention-signals" identity="manager" />);
+
+    await userEvent.click(await screen.findByRole("link", {
+      name: "Why does my Worker lose the session after redirect?",
+    }));
+
+    expect(await screen.findByRole("heading", {
+      level: 1,
+      name: "Why does my Worker lose the session after redirect?",
+    })).toBeInTheDocument();
+    expect(screen.queryByRole("heading", {
+      level: 1,
+      name: "How should I structure a typed API client?",
+    })).not.toBeInTheDocument();
+  });
+
+  it("opens both the disputed Attention topic and its canonical original", async () => {
+    render(<EmbeddedPreview scenarioId="attention-signals" identity="manager" />);
+    await userEvent.click(await screen.findByRole("link", { name: "Appeals (1)" }));
+
+    await userEvent.click(await screen.findByRole("link", {
+      name: "Why doesn't my database reconnect?",
+    }));
+    expect(await screen.findByRole("heading", {
+      level: 1,
+      name: "Why doesn't my database reconnect?",
+    })).toBeInTheDocument();
+
+    cleanup();
+    render(<EmbeddedPreview scenarioId="attention-signals" identity="manager" />);
+    await userEvent.click(await screen.findByRole("link", { name: "Appeals (1)" }));
+    await userEvent.click(await screen.findByRole("link", {
+      name: "Configuring sessions in Cloudflare Workers",
+    }));
+
+    expect(await screen.findByRole("heading", {
+      level: 1,
+      name: "Configuring sessions in Cloudflare Workers",
+    })).toBeInTheDocument();
+  });
+
+  it("opens the reported best answer on the solved Attention topic", async () => {
+    render(<EmbeddedPreview scenarioId="attention-signals" identity="manager" />);
+    await userEvent.click(await screen.findByRole("link", { name: "Needs review (2)" }));
+
+    const signalId = await screen.findByText("#signal-144");
+    const signal = within(signalId.closest("article")!);
+    await userEvent.click(signal.getByRole("link", { name: "View reported answer" }));
+
+    expect(await screen.findByRole("heading", {
+      level: 1,
+      name: "How to deploy a React Router app?",
+    })).toBeInTheDocument();
+    expect(document.querySelector("#post-best-answer")).not.toBeNull();
+    expect(document.querySelector(".solved-badge")).not.toBeNull();
+    expect(document.querySelector(".best-answer-label")).not.toBeNull();
+  });
+
   it("shows the advertised appeal card after actual group navigation", async () => {
     render(<EmbeddedPreview scenarioId="attention-signals" identity="manager" />);
     const appeals = await screen.findByRole("link", { name: "Appeals (1)" });
