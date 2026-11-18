@@ -519,6 +519,28 @@ describe("interactive Pages preview", () => {
     );
   });
 
+  it("moves Owner from Forum & roles to Administrator preferences through Settings navigation", async () => {
+    const user = userEvent.setup();
+    render(<EmbeddedPreview scenarioId="section-user" identity="owner" />);
+
+    await user.click(screen.getByRole("link", { name: "Settings" }));
+    let settingsNavigation = document.querySelector(".settings-panel-nav") as HTMLElement;
+    await user.click(within(settingsNavigation).getByRole("link", { name: "Forum & roles" }));
+
+    expect(await screen.findByRole("heading", { level: 2, name: "Registration" })).toBeInTheDocument();
+    settingsNavigation = document.querySelector(".settings-panel-nav") as HTMLElement;
+    const administratorLink = within(settingsNavigation).getByRole("link", { name: "Administrator preferences" });
+    expect(administratorLink).toHaveAttribute("href", "/en/settings/administrator");
+    await user.click(administratorLink);
+
+    expect(await screen.findByRole("heading", { level: 2, name: "Administrator preferences" })).toBeInTheDocument();
+    settingsNavigation = document.querySelector(".settings-panel-nav") as HTMLElement;
+    expect(within(settingsNavigation).getByRole("link", { name: "Administrator preferences" })).toHaveAttribute(
+      "aria-current",
+      "page",
+    );
+  });
+
   it("hides Forum & roles from ordinary user Settings navigation", async () => {
     const user = userEvent.setup();
     render(<EmbeddedPreview scenarioId="section-user" identity="user" />);
