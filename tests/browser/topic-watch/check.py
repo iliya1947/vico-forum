@@ -79,13 +79,14 @@ try:
 
         author, author_id = account("Watch topic author")
         watcher, watcher_id = account("Watch subscriber")
-        publisher, publisher_id = account("Watch publisher")
         guest = context()
         topics = rpc({"operation": "seed", "author": author_id, "prefix": "watch-" + uuid4().hex})
         page = watcher.new_page()
         page.on("pageerror", lambda error: page_errors.append(str(error)))
 
         for current in topics:
+            # A fresh publishing actor per reply avoids the real 5-second write cooldown.
+            publisher, publisher_id = account("Watch publisher")
             path = "/en/topics/" + current["topicId"]
             first = page.goto(base + path, wait_until="networkidle")
             private(first)
@@ -151,7 +152,8 @@ try:
                 page.get_by_role("button", name="Stop watching", exact=True).click()
             private(removed.value)
             expect(page.get_by_role("button", name="Watch topic", exact=True)).to_be_visible()
-            second = reply(publisher, path, "After Unwatch " + uuid4().hex)
+            follow_up_publisher, _ = account("Watch follow-up publisher")
+            second = reply(follow_up_publisher, path, "After Unwatch " + uuid4().hex)
             remaining = sql("select recipient_user_id from forum_reply_notifications where post_id=$1", [second])
             assert remaining == [{"recipient_user_id": author_id}], remaining
             assert sql("select id from forum_reply_notifications where recipient_user_id=$1 and post_id=$2",
