@@ -306,3 +306,28 @@ PR #345 backend/schema interim head updated to `bacaadfed1d2494380956c278aab7b0b
 Лёва должен сначала определить фактические semantics и границы по актуальному main, не предполагая заранее user/content/notification effects. Реальные продуктовые развилки возвращаются Мире. После полного плана — STOP.
 
 Лира параллельно продолжает Watch implementation #345; Bookmarks остаётся принятым будущим plan-only этапом.
+
+## 2026-11-18 — Лёва: полный Mute/block plan готов, STOP
+
+Main `7cc23edede57994cdedab49c1556ddb55034dd29`; план M0–M8 сохранён в
+`USER_ACTIONS_SERVICE_PLAN.md`. Проверены profile/content/mention/notification/
+read-state/Complaints/AP-10/lifecycle seams. Personal Mute/block contract в main
+отсутствует; admin blocks не используются как личные preferences.
+
+Мире возвращены M1 target/effect Mute, M2 target/effect/охват Block,
+M3 history/consumption/concurrency, M4 schema/ACL/admission и M6 route/private
+undo list/presentation/availability. Рекомендованы topic Mute ordinary notices
+и directional user incoming filter+topic collapse; запрета публиковать/читать
+public content или скрытого moderation ban нет. Это предложения, не принятые
+вместо владельца продуктовые решения.
+
+Current edit-mention dedupe зависит от inbox row: dropped notice без receipt
+может появиться по старому @ после отмены фильтра. В плане suppression receipt
+и альтернативы, а также READ COMMITTED snapshot race boundary без обещания
+strict return barrier. Complaint notices/old inbox/read-state/Watch/Bookmarks
+сохраняют свои отдельные контракты.
+
+Код/implementation PR/feature tests/CI/browser отсутствуют. Лёва **STOP** для
+scope/fit Миры. Последний назначенный advance-planning slice завершён; Лира
+продолжает Watch, будущие Bookmarks/Mute-block implementation не активированы.
+#342 остаётся open service PR и не merge.

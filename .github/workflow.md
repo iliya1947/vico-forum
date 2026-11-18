@@ -26,9 +26,10 @@
 - Bookmarks implementation не активирован до завершения Watch и отдельного handoff.
 - **Mute/block: текущий planning slice.**
 - Технический планировщик: Лёва / Codex-6.1 Sol.
+- Mute/block plan: **готов**, M0–M8 в `USER_ACTIONS_SERVICE_PLAN.md`; ожидает scope/fit решений Миры по M1/M2/M3/M4/M6.
 - Mute/block implementation не активирован.
 
 ## Следующие параллельные шаги
 
 1. Лира продолжает Watch до stable exact head и STOP для coordinator whole-PR review Миры.
-2. Лёва исследует актуальный main и готовит полный технический план Mute/block, затем STOP для scope/fit review Миры.
+2. Лёва завершил полный Mute/block plan и **STOP**. Мира проверяет весь план и фиксирует M1/M2 (product targets/effects), M3 (history/consumption/races), M4 (schema/ACL/admission), M6 (route/list/UI/availability). Будущая реализация не активируется этим планированием.

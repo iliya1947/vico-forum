@@ -666,3 +666,345 @@ Mute/block — только после отдельной команды вла�
 Задача planning-slice: самостоятельно установить фактические текущие seams и предложить минимальный продуктовый и технический контракт Mute/block для обычного authenticated пользователя, сохранив классический форум и не превращая функцию в социальную сеть. Реальные продуктовые развилки вернуть Мире явно, не выбирать молчаливо.
 
 Планирование не разрешает implementation. После полного плана Лёва STOP; дальнейший scope/fit review выполняет Мира. Реализация Watch остаётся текущей активной реализацией Лиры, Bookmarks остаётся заранее принятым будущим планом.
+
+## Опережающий технический план Mute/block — Лёва, 2026-11-18
+
+Статус: **полный предлагаемый план готов; STOP для scope/fit review**.
+Исследован main `7cc23edede57994cdedab49c1556ddb55034dd29`, назначение service
+head `3ec3c0cfa45a833c3234dc4f8d4a59602bdd549b`. Watch #345 ещё Draft, Bookmarks
+принят как будущий topic/private-list этап; оба не считаются уже merged runtime.
+Ниже не утверждается заранее принятое продуктовое значение слов Mute/Block.
+
+### M0. Фактические основания
+
+1. Personal mute/block/ignore persistence, команды или permanent contract в main
+   не найдены. `admin.users.blocks.manage*`, user measures и `UserMeasureRestrictedError`
+   относятся к административным санкциям, authority hierarchy и AP-10. Их нельзя
+   использовать как персональный Block или выдавать обычному пользователю.
+2. Форум публично читаемый: profile/topic/post/attachments имеют existing public
+   paths. Личная настройка не может обещать запрет другому человеку читать public
+   content, в том числе без входа. Сервиса личных сообщений в исследованных
+   app/db/routes нет; его ограничения не проектируются как существующая функция.
+3. `createPost` отправляет reply автору темы/direct-parent author; принятое Watch
+   добавляет subscribers. `recordPublishedMentions` вызывается при create topic,
+   reply и edit published post; AST profile-link recipients, self exclusion,
+   reply-before-mention и unique recipient/post определяют delivery/dedupe.
+4. Mentions при edit выделяются из **всего текущего body**; отдельного persistent
+   набора «когда-либо встречавшиеся mentions» нет. Фактический dedupe — inbox row.
+   Это существенно для suppressed events (§M3), а не существующий дефект main.
+5. Inbox содержит также complaint-decision/complaint-appeal-result. Их producers
+   в `db/forum-notifications.ts` выбирают actual Case participants; recipients и
+   private result admission определены `docs/moderation/COMPLAINTS.md`.
+6. `TopicView` сохраняет post ids, permanent numbers, parent/direct-reply и
+   best-answer links; quote/mention Markdown может содержать чужой текст. Read
+   marker продвигается к последнему **доставленному**, а не обязательно прочитанному
+   глазами post. Topic, list/search и protected moderation projections различны.
+7. Public profile route имеет независимые privileged sections. Его save-profile
+   POST разрешён только самому пользователю; новый personal target-action нельзя
+   провести через этот own-profile guard.
+
+### M1. Product fork: что именно означает Mute
+
+**На решение Мире/владельцу:** рекомендован **Mute темы** — не создавать для actor
+новые обычные reply/mention notices из этой темы. Включить author, direct-parent
+и Watch paths; иначе mute собственной темы/явного @ не даёт тишины. Unmute
+возвращает обычный выбор recipients для следующих событий. Watch-state сохраняется:
+Mute не делает Unwatch, Unmute не делает Watch.
+
+Альтернативы, требующие явного выбора:
+
+- Только watch-derived notices: author/parent/mention продолжают приходить;
+  другое обещание и source-aware фильтр до объединения recipient paths.
+- Mute пользователя: тишина от автора во всех темах; меняются target/UI/storage
+  и пересечение с Block.
+
+Название блока и existing Watch не выбирают вариант. Runtime plan ниже условен
+на принятии рекомендуемого topic Mute.
+
+### M2. Product fork: что именно означает Block
+
+Рекомендация — **односторонний персональный фильтр пользователя**: A блокирует B
+→ A не получает новых обычных reply/mention notices, чей publication actor B,
+и сообщения B в обычном topic view A свёрнуты с явным «Показать». B не получает
+нового запрета публиковать, отвечать, упоминать A или читать public content.
+Ответ C в теме B — событие C; Block B не превращается в Mute всех тем B.
+Обратная пара B→A независима; собственной пары A→A быть не может.
+
+**Это proposal, не незаметное переопределение слова Block.** Альтернатива —
+server-side запрет адресных replies/mentions между парами. Тогда надо утвердить
+направление, direct-parent vs обычный reply в теме, новые/edit mentions,
+цитирование, stale content и допустимое раскрытие факта блокировки. Потребуется
+publication admission; текущий план не разрешает исполнителю добавить этот запрет.
+Двустороннее закрытие public профилей/контента этим этапом не предлагается.
+
+Для рекомендуемого варианта граница отображения явная:
+
+| Surface/effect | Topic Mute | User Block (рекомендация) |
+| --- | --- | --- |
+| Новые ordinary reply/mention notices | Все из выбранной темы | От выбранного publication actor во всех темах |
+| Уже сохранённые inbox rows/read_at | Без изменений | Без изменений |
+| Сообщения в обычном topic view | Не скрывает | Свёрнуты для блокирующего; reveal не делает Unblock |
+| Public lists/search/profile/online/mention suggestions | Без изменений | Без фильтрации; профиль доступен для Unblock |
+| Чужие цитаты/pasted text/title/сообщения другого автора | Не переписываются | Без recursive filtering чужого Markdown |
+| Guest/другой viewer | Без изменений | Без изменений |
+| Publication/direct replies/mentions/attachments | Прежний admission | Прежний admission; не персональный бан |
+| Read-state/Watch/Bookmarks | Отдельные stores/writers | Отдельные stores/writers |
+| Complaint outcomes/review/evidence/Admin/Owner | Не фильтруются | Не фильтруются, нет rank/permission override |
+
+Если нужно скрывать автора также из Search/Unread/discovery/profile либо удалять
+его текст из DTO, это существенное расширение M2: viewer-aware projections,
+до-limit counts/order/cache для каждого surface. Не обещать это на основании
+collapse только в TopicView. UI объясняет конкретные эффекты и не обещает
+privacy/access protection публичного контента.
+
+### M3. История, suppressed mentions и concurrency boundary
+
+Рекомендация: filters действуют **prospectively при выборе нового recipient**,
+не удаляют старый inbox и не меняют его count/open/read semantics. После отмены
+нет backfill ранее подавленных post-notifications, включая обычную правку старого
+сообщения. Complaint kinds вообще не участвуют в personal policy.
+
+**Подтверждённая причина дополнительного решения:** если просто не вставить notice,
+`recordPublishedMentions` при следующем edit снова извлечёт то же @. После
+Unmute/Unblock unique recipient/post пуст, и notice будет вставлен. Даже прежнее
+неизменённое упоминание может появиться позднее. Одного WHERE NOT EXISTS mute
+на notification INSERT недостаточно для рекомендуемого no-backfill contract.
+
+**На решение M3:** считать первую подавленную eligible post-recipient пару уже
+обработанной. Минимальный suppression receipt (§M4) сохраняет факт, не создавая
+видимого inbox row/нового kind. Получатель, ещё ни разу не выбранный для post,
+может получить notice при новом mention после отмены. Ранее подавленный по этому
+post — не получает даже при remove/re-add mention; новые posts уведомляют нормально.
+
+Альтернативы:
+
+- Без suppression receipt явно разрешить позднее уведомление старого @ при edit.
+  Это нельзя назвать гарантией «подавленное не возвращается».
+- Suppressed flag в inbox: менять mixed/legacy readers, totals/unread count,
+  mark/open, indexes и consumers. Отдельный receipt рекомендован ради сохранения
+  existing visible-inbox contract.
+- Только read-time filtering: после отмены возвращаются старые notices;
+  это ретроспективная видимость, другое продуктовое поведение.
+
+Рекомендуемая граница гонок — **READ COMMITTED snapshot SQL statement**, который
+впервые обрабатывает candidate. Настройка, committed до начала statement,
+учитывается; уже начавшийся statement может использовать прежнее состояние и
+закоммитить notice после ответа на Mute/Block. Не обещать более сильное «после
+ответа ни один in-flight notice не появится» без другой синхронизации.
+Unmute/Unblock не переигрывает consumed пару.
+
+Не переносить сюда Watch topic-lock ordering: у Block scope межтематический,
+а edit mentions использует topic KEY SHARE. Блокировки recipient accounts или
+global mutex меняют existing lock graph. Если нужен строгий commit-order/return
+barrier, вернуть требование Лёве на локальное перепланирование до реализации.
+
+### M4. Schema и admission для рекомендуемой модели
+
+**На scope/fit:** typed relations, одна forward migration на фактическом main
+после Watch/Bookmarks (номер сейчас не назначается):
+
+- `forum_topic_mutes`: user_id/topic_id NOT NULL, PK(user_id,topic_id), user/topic
+  FK CASCADE, created_at timestamptz(3) server clock; user/time/topic list index
+  и topic-side FK-support index.
+- `forum_user_blocks`: user_id/blocked_user_id NOT NULL, directional PK,
+  оба user FK CASCADE, CHECK user_id<>blocked_user_id, created_at timestamptz(3),
+  user/time/target list index и target-side FK-support index.
+- При принятии M3 `forum_post_notification_suppressions`: только
+  recipient_user_id/post_id NOT NULL, PK пары, user/post FK CASCADE,
+  post-side support index. Actor/topic/reason/history/timestamps не нужны:
+  факт используется как consumed receipt, не как аудит.
+
+Presence=ON, отсутствие=OFF только после успешного read. ON INSERT ON CONFLICT
+DO NOTHING сохраняет дату, OFF DELETE exact own pair; OFF→ON создаёт новую дату.
+Receipts не удаляются при Unmute/Unblock. Нет backfill, общего social graph/JSON,
+counters, role flags, personal History producer или providers.
+
+Web ACL: SELECT/INSERT/DELETE для двух preference relations; SELECT/INSERT для
+receipt без UPDATE/DELETE API. Localization-read role новых прав не получает.
+FK cascade не создаёт purge job. Обновить schema/journal/snapshot/full structural
+manifest и repository runtime privilege/provisioning/probe contracts; без live
+GRANT/migration/rollout. Параметры даты для списков — как принятый Bookmarks.
+
+Authorization recommendation — self-state без нового RBAC key, как W2/B3;
+**Мира подтверждает применение к этой модели**, это не глобальное исключение.
+Новый Block не получает admin.users.blocks.manage, не меняет grants/AP-10/
+AccountState target и не даёт Owner читать чужой private graph. Reply/edit
+restrictions не препятствуют ON/OFF; нового restriction/cooldown нет.
+
+Mute writer: topic KEY SHARE existence → actor active-account NO KEY UPDATE →
+own INSERT/DELETE в одном READ COMMITTED tx. Без author/canReply/open-state gate;
+closed/solved/duplicate/Help/своя тема допустимы. Block writer: existing target
+user KEY SHARE → actor active-account NO KEY UPDATE → own directional write.
+Self invalid, missing target notFound. Inactive target допустим как retained
+public identity: меняется собственный фильтр, не target account; Unblock доступен.
+Каждый ON/OFF/no-op требует active actor на том же tx до commit.
+
+Target FK dependency перед actor сохраняет lock graph. Встречные A→B/B→A
+KEY SHARE совместимы с NO KEY UPDATE; не усиливать до FOR UPDATE. Actor mutex
+сериализует desired-state commands, last serialized state wins; нет blind toggle,
+CAS/automatic retry. Deactivation, выигравшая admission, запрещает запись; writer,
+выигравший actor mutex, заканчивается раньше lifecycle change. Existing pairs/
+receipts retained, но inactive actor не читает private surfaces через старый auth.
+Новых reactivation/physical-delete workflows нет.
+
+### M5. Fanout integration
+
+После Watch merge расширить existing set-based reply candidates и
+`recordPublishedMentions` общей **SQL decision boundary**:
+
+1. Сохранить server-derived topic/parent/watch/AST mention candidates; исключить
+   self/nonexistent mention users. Source — publication actor из writer, не
+   quoted author/mention label/client flags.
+2. В одном snapshot вычислить suppression: EXISTS own topic mute OR EXISTS own
+   block of actor, плюс прежний committed/own-tx suppression receipt. Existing
+   delivered notice не обновлять/не удалять/не сбрасывать read_at.
+3. Впервые suppressed пару записать receipt ON CONFLICT DO NOTHING; для разрешённых
+   и не consumed — existing inbox INSERT с unique recipient/post DO NOTHING.
+   Receipt/notice в той же publication tx, что revisions/attachments/publication receipt.
+4. Reply остаётся раньше mention. Suppressed reply не обходит запрет как mention
+   позже в том же tx даже при Unmute между statements: own-tx receipt уже виден.
+   Mention-only recipient впервые оценивается в mention statement. Разрешённый
+   reply path сохраняет приоритет kind=reply и ровно один видимый notice.
+
+Допустим DML CTE с общим candidate/decision набором и RETURNING. **Нельзя**
+ожидать, что sibling SELECT увидит новую suppression строку в table через тот
+же statement snapshot: использовать computed decision/RETURNING. Не собирать
+всех watchers в JS, не делать per-recipient SQL. Existing post write locks
+сериализуют create/edit post; дополнительных recipient/advisory locks не вводить.
+
+Покрыть initial topic mentions, reply+mentions и published-post edit mentions;
+source-locale correction сохраняет свой прежний контракт. Matching publication
+replay не запускает новый fanout/receipt. SQL decision/receipt/notification error
+откатывает целую publication; нельзя продолжить с нефильтрованной рассылкой при
+outage. Complaint producers не вызывают personal helper.
+
+Visible inbox, badge, mixed/legacy count/read/open остаются над прежними notice
+rows: suppression receipts туда не попадают. Старый notice достижим после фильтра
+с обычным recipient admission. Нет второго inbox, kind, queue/provider или
+обратного сообщения «вас заблокировали».
+
+### M6. Route/UI, чтение, privacy и failures
+
+**На scope/fit M6:** canonical topic POST `intent=setTopicMute`, expected
+`editorActorId`, `muted=true|false`; canonical profile POST
+`intent=setUserBlock`, expected `editorActorId`, `blocked=true|false`. Actor только
+session, target только route params. Profile action выделяет strict personal
+branch до own-profile save guard; save-profile authority не ослабляется.
+`profile.edit` restriction не применяется к own filter pair.
+
+Ровно один allowlisted scalar intent/actor/boolean; duplicate/missing/File/extra/
+mixed intent отвергаются независимо от первого FormData value. POST/same-origin;
+success discriminators topicMute/userBlock с actor/target/state, ошибки также
+свои. Guest/inactive actor401, origin403, invalid/self400, missing target404,
+stale actor409, classified storage503; unsupported method не мутирует.
+Unexpected не становится OFF/empty/обычным отказом.
+
+Private authenticated `/:locale/filters`: muted topics и blocked users отдельными
+режимами, current actor SQL predicate до LIMIT, 50+lookahead keyset по created_at/
+target id, strict normalized query/duplicate checks и одинаковая DB/ISO precision.
+Предлагаемые application keys: `tab=topics|users` (default topics), optional
+`beforeCreatedAt` + `beforeTargetId` только вместе. Каждый key unique, остальные
+отвергаются после отделения framework transport metadata. Cursor date — valid
+canonical UTC ISO milliseconds; target — bounded text по реальному ID contract,
+без UUID-only ограничения существующих text IDs. Cursor выбирает только позицию,
+не владельца списка, и не требует существования anchor row.
+Список позволяет самостоятельно отменить фильтр; Remove идёт на те же canonical
+actions. Нет второго writer, arbitrary returnTo, public graph/counts или query
+ownerId. Current title/Deleted user/Help public location без старых names/private
+lifecycle fields. Query encoding можно повторить по merged Bookmarks contract,
+без общего framework refactor. Entry использует существующий ForumShell/navigation.
+
+Topic loader читает own mute-state и block matches **для авторов этой темы**
+одним set-based query/join, не весь graph/per-post SQL. TopicView не выбрасывает
+posts: ids/numbers/parent/best-answer/hash anchors остаются. Blocked post имеет
+placeholder и explicit reveal; body/media/attachments внутри свёрнутой части
+не монтируются до reveal. Reveal keyed actor/topic/post, не persisted Unblock;
+direct hash ведёт к placeholder, не раскрывает молча. Собственные posts не
+блокируются. Это presentation, не redaction public DTO/истории; существующий
+translation persistence/generation contract не меняется.
+
+Public profile остаётся читаемым; Block/Unblock control только viewer≠target.
+Bio/Owner/private sections не скрывать по personal graph; permissions остаются
+независимыми. Complaint review/context/history/evidence и Admin readers не
+используют collapse. Report affordance доступен без предварительного Unblock.
+
+Own pairs/matches/list/results/errors — `private, no-store` на document **и**
+.data через headers. Target не получает reverse graph «кто заблокировал меня»;
+publication не отклоняется специфично для blocked sender. Guest DTO не получает
+private preference fields. Late response другого actor/target не меняет control;
+pending disables duplicate submit, nonoptimistic confirmation, explicit refresh
+при неизвестном commit, без POST replay. Watch/Bookmarks/editor fetchers отдельно;
+revalidation не сбрасывает buffers/revision expectations.
+
+**Availability decision M6:** если authenticated topic loader не прочитал block
+matches, не показывать bodies будто блокировок нет: controlled private503, не
+silent fallback. Guest public access остаётся прежним. Optional mute/profile
+state outage может оставить unknown/disabled control при доступном public content;
+private list outage не становится empty. Для mandatory fanout policy outage —
+rollback publication, не bypass. Unexpected propagates. Эти конкретные failure
+choices требуют scope/fit принятия вместе с route/product contract. Existing
+generic `forumReadLoader` даёт только no-store: для private failures явно сохранить
+private policy в loader error и route headers export, не полагаться на parent.
+
+Mute/Block command, list GET и reveal не пишут read marker/read_at. Existing topic
+page-view auto-read по delivered latest post продолжает работу, включая collapsed
+posts; режим «прочитано только после reveal» не вводится. Unread/discovery и
+Bookmarks сохраняют темы, даже если их автор blocked или тема muted.
+
+### M7. Acceptance и последовательность реализации
+
+Это **план**, feature tests/CI/browser не запускались.
+
+| Граница | Существенные проверки |
+| --- | --- |
+| Persistence/admission | Own ON/OFF/no-op/reload/new session; actor isolation; self Block invalid; missing/inactive actor; inactive target removable; target missing; PK/FK/check/ACL |
+| Mute | Author/parent/Watch/mention в muted topic suppressed; другая тема unaffected; Unmute не меняет Watch и не backfill; closed/solved/duplicate/Help |
+| Block direction/source | A→B не B→A; reply/topic-create/edit mention от B suppressed; C в теме B allowed; self excluded; ordinary role/Owner не дают graph authority |
+| Consumption/dedupe | Suppressed old @ + unrelated edit после отмены; remove/re-add; reply→mention обход; never-selected new mention после отмены; old delivered row без изменений; новые posts снова уведомляют |
+| Existing domains | Complaint Decision/Appeal доставляются; membership/review/evidence неизменны; AP-10/grants/AccountState/Help/history не мутируют; Watch/Bookmarks/read markers независимы |
+| Concurrency | Реальные PG connections: setting commit до decision snapshot и наоборот; ON↔OFF; initial/reply/edit paths; A→B/B→A; writer×deactivation; duplicates/rollback; без recipient/global lock cycle |
+| Atomicity | Receipt/notice failure откатывает post/revision/attachments/publication receipt; matching replay не fanout; failed preference write не влияет на policy |
+| Presentation | Blocked root/best answer/parent/direct child сохраняет anchor/number/relations; explicit reveal/Unblock; quotes не переписываются; public search/profile и protected contexts не фильтруются |
+| Privacy/errors | Только own flags/list, no reverse graph; strict form/query/mixed intent; guest без graph; no-store document/data; unavailable≠OFF/empty; block-read failure не раскрывает body fallback; unexpected сохраняется |
+| UI | Topic/profile controls и undo из paged list; pending/failure/unknown commit; account switch/late response; editor buffers/discriminators; EN/RU/HE, keyboard, narrow RTL |
+
+Образцы: mentions/semantic-markdown tests, `app/routes/profile.test.ts` и
+privileged profile tests, `app/routes/topic-headers.test.ts`, profile-view tests,
+`tests/database/forum-markdown-publication.test.ts`, notification/read-state/
+publication lifecycle suites и будущие merged Watch/Bookmarks tests. Новые races
+проверять deterministic PG barriers, не JS promise ordering. Suppressed mention
+case проходит настоящий editPublishedPost/replay/attachments boundary.
+
+Connected acceptance: real Worker/Better Auth/PG17/Chromium. A Watches тему,
+Mute→B reply/@→нет нового notice; Unmute→новый post notice есть, старый edit не
+оживляет suppression. Block B→B post collapsed/no new notice; C reply allowed;
+reveal не Unblock; undo из списка/reload; B/guest не видят graph. Проверить root/
+best-answer anchors, topic-create/edit mentions, Complaint outcomes, actor switch
+и narrow RTL. Marker/inbox snapshots брать после отдельного page-view auto-read.
+
+После явных M1–M4/M6 решений и завершения Watch→Bookmarks: сверить main, route/
+helpers, migration ceiling/manifest. Отдельный implementation PR: schema+own
+writers → common ordinary decision/receipt → private reads/list/actions → isolated
+UI → focused tests/connected acceptance → применимые lint/typecheck/unit/PG/build/
+preview/history/metadata/full manifest/runtime privilege/provisioning/CI checks.
+Known drizzle-kit baseline здесь не исправлять. Stable head → Мира whole-PR →
+независимый review по workflow; permanent/current-state docs отдельным closeout PR.
+
+### M8. Handoff и границы результата
+
+Мире: весь план и явные решения **M1** target/effect Mute, **M2** target/effect/
+охват Block, **M3** history/consumption/snapshot races, **M4** schema/ACL/self-state,
+**M6** actions/private undo list/presentation/cache/availability. Если product
+выбор остаётся за владельцем, передать ему конкретные альтернативы, не отправлять
+исполнителю противоречивое «Block как обычно».
+
+Проверены source-of-truth и реальные producer/reader/UI seams. В частности,
+`docs/moderation/COMPLAINTS.md` прочитан полностью; Editor §7, SA-04, AP-10 и
+Settings сопоставлены с кодом. Официальные PG17 основания:
+https://www.postgresql.org/docs/17/transaction-iso.html ,
+https://www.postgresql.org/docs/17/queries-with.html и
+https://www.postgresql.org/docs/17/explicit-locking.html .
+
+Код/implementation PR не создавались. Последний назначенный advance-planning
+slice завершён; Лёва **STOP**. Watch остаётся Лире, будущие Bookmarks/Mute-block
+implementation не активированы. #342 остаётся open, не merge.

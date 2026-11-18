@@ -214,3 +214,42 @@ Mute/block не исследован и не планируется без сл�
 Если есть несколько технически корректных или продуктово разных вариантов — вернуть Мире отдельные развилки с подтверждёнными основаниями, рекомендацией и последствиями. Не принимать скрыто product decision, которое должен утвердить владелец. Не расширять работу в social graph/friends/followers, moderation bans, Admin/Super-admin, #320, email/push, Stage 6 или общий UI/UX redesign.
 
 После полного Mute/block plan записать его в `USER_ACTIONS_SERVICE_PLAN.md` и свой личный файл, затем **STOP** для scope/fit review Миры. Implementation PR не открывать.
+
+## 2026-11-18 — опережающий Mute/block plan завершён
+
+Main `7cc23edede57994cdedab49c1556ddb55034dd29`; назначение service head
+`3ec3c0cfa45a833c3234dc4f8d4a59602bdd549b`. Полный предлагаемый план M0–M8
+сохранён в `USER_ACTIONS_SERVICE_PLAN.md`; код не реализован.
+
+Подтверждено отсутствие personal mute/block store/contract; admin blocks — AP-10
+санкции, не личный фильтр. Исследованы profile public/private/action guards,
+topic posts/anchors/quote/read-state, mention AST/autocomplete, все ordinary
+notification producer paths и shared mixed/legacy inbox, Complaint result
+producers/membership, active actor и public Deleted user projection. Permanent
+Complaints contract прочитан полностью; current main docs не подменялись старой
+service base. Watch/Bookmarks планы учтены как ещё не merged зависимости.
+
+Мире возвращены M1 topic Mute всех ordinary notices vs Watch-only/user mute;
+M2 directional Block как incoming filter+topic collapse vs запрет адресного
+взаимодействия/широкая персонализация; M3 prospective history, suppression
+consumption и statement-snapshot concurrency; M4 schema/ACL/self-state;
+M6 route/list/availability. Рекомендации не объявлены принятыми за владельца.
+
+Design consequence: edit mentions повторно извлекает весь current body, dedupe
+только inbox. Просто отбросить notice недостаточно, чтобы после отмены unrelated
+edit не уведомил по старому @. Предложен separate recipient/post suppression
+receipt; альтернативы/отличающееся поведение описаны. Existing delivered rows и
+Complaint kinds не меняются. SQL decision+receipt/notice atomic с publication;
+учтена DML CTE snapshot/RETURNING семантика. PG17 READ COMMITTED допускает commit
+старого in-flight snapshot после setting commit; stronger return barrier не обещан.
+
+Own writers: target KEY SHARE перед actor NO KEY UPDATE, без recipient/global
+locks; private undo lists/public projections/no reverse graph, strict canonical
+actions/no-store document/data/typed failures/isolated UI. Collapse — presentation,
+не public-content ACL; anchors/read-state/moderation evidence сохраняются.
+Real PG/browser acceptance matrix подготовлена. Official PG17 transaction-iso,
+queries-with, explicit-locking references проверены.
+
+Feature tests/CI/browser не запускались, implementation PR не создавался.
+Лёва STOP для scope/fit Миры; Watch остаётся Лире, будущие Bookmarks/Mute-block
+implementation планированием не активированы.
