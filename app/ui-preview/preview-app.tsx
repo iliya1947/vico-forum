@@ -3099,7 +3099,7 @@ function previewAdminMeasuresForTarget(
   interactions: PreviewInteractionState,
   targetId: string,
 ) {
-  const base = targetId === "alex"
+  const base = targetId === "alex" && !interactions.adminCreatedMeasures.has(PREVIEW_OWN_MEASURE_ID)
     ? [previewAdminMeasureById(interactions, PREVIEW_OWN_MEASURE_ID)!]
     : [];
   return [
@@ -3123,14 +3123,18 @@ function previewAdminMeasuresData(
       locale: scenario.locale,
       target: null,
       pendingAppeals: {
-        appeals: [{
-          id: "66666666-6666-4666-8666-666666666666",
-          measureId: PREVIEW_OWN_MEASURE_ID,
-          targetUserId: "alex",
-          targetName: "Alex Rivera",
-          ordinal: 1,
-          submittedAt: "2026-11-17T18:00:00.000Z",
-        }],
+        appeals: (() => {
+          const measure = previewAdminMeasureById(interactions, PREVIEW_OWN_MEASURE_ID);
+          const appeal = measure?.appeals.find((candidate) => candidate.status === "pending");
+          return appeal ? [{
+            id: appeal.id,
+            measureId: PREVIEW_OWN_MEASURE_ID,
+            targetUserId: "alex",
+            targetName: "Alex Rivera",
+            ordinal: appeal.ordinal,
+            submittedAt: appeal.createdAt,
+          }] : [];
+        })(),
         nextPage: null,
       },
       requestedTarget: "",
