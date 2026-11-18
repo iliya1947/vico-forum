@@ -4,7 +4,7 @@
 
 1. Служебный PR: **#315**.
 2. Моя текущая работа: audit/coordination only; remediation и implementation не назначены.
-3. Текущий этап: **Block L active. L1 PASS; L2 = `MON-AUTH-OUTCOME-01 Low/P3`; L3 PASS, 0 additional; следующий bounded slice — L4 Alertability / failure signals.** Overall #315 = 34 current findings + 4 deferred Stage-6 blockers. Stage 6 paused.
+3. Текущий этап: **Block L active. L1 PASS; L2 = `MON-AUTH-OUTCOME-01 Low/P3`; L3–L4 PASS, 0 additional; следующий bounded slice — L5 Audit / History integrity.** Overall #315 = 34 current findings + 4 deferred Stage-6 blockers. Stage 6 paused.
 4. Technical audit target B–D: `e279cb6c032a489a9044ca1191407df887c364b4`.
 5. Current `main` — `9c4639d23ca075c8bb92fbb909b96593d7bee127`. После Block K main продвинулся Watch #345 (`0068_topic_watch`); Block L стартует на этом current main.
 6. Лира, Марк и Лёва по #315 сейчас не назначены.
@@ -430,6 +430,13 @@
 386. System observation writer is fingerprint-aware and records meaningful changes within 15m; SA08 Overview separately reuses that writer for System after generic sampled candidates. Other snapshots are explicitly sampled/non-exhaustive with native History for exact transitions.
 387. Aggregate remains 34 current +4 deferred; severity 13 Moderate +21 Low current. No external/data deletion/tests executed. Next L4 alertability/failure signals.
 
+388. L4 target current main `9c4639d23ca075c8bb92fbb909b96593d7bee127`: **PASS, 0 new current findings / 0 deferred blockers**.
+389. Classified current-read outages remain 503/unavailable/partial instead of healthy zero; observation writer failure is separately surfaced as recording unavailable. Auth/access unknown/overflow/gap counters and explicit best-effort disclaimer prevent zero from meaning “no attacks”.
+390. Attachment evidence has total/24h/latest signal plus canonical Needs attention → Security → Attachments action path; no duplicate incident mutation needed.
+391. Checked outer Owner failure wrapper: thrown application exception can become protected 500/503 after the inner system.requestFailed hook. Not a finding because the approved/current request monitor is explicitly recorded-5xx-only/best-effort and UI states it is not continuous uptime/error-rate monitoring.
+392. No external pager/SIEM/on-call is claimed. Stage6 ROADMAP already owns deployed logs/observability/external failure acceptance; exact live settings are **Информация не проверена**. No external probes/mutations performed.
+393. Aggregate remains 34 current +4 deferred; severity 13 Moderate +21 Low current. Next L5 Audit / History integrity.
+
 ## Ограничения
 
 1. Stage 6 external activation остаётся paused.
@@ -440,5 +447,5 @@
 
 ## Следующий шаг
 
-1. После продолжения владельца выполнить **L4 — Alertability / failure signals** на current main и остановиться после результата.
+1. После продолжения владельца выполнить **L5 — Audit / History integrity** на current main и остановиться после результата.
 2. Remediation findings/blockers Blocks B–K не начинать без отдельного назначения.
