@@ -137,6 +137,8 @@ export const scenarios: readonly Scenario[] = [
   { id: "unread-guest-unauthenticated", label: "Unread · guest unauthenticated", locale: "en", direction: "ltr", identity: "guest", path: "/en/unread", view: "unread", allowedIdentities: ["guest"] },
   { id: "tags-guest", label: "Tags", locale: "en", direction: "ltr", identity: "guest", path: "/en/tags", view: "tags" },
   { id: "tag-typescript-guest", label: "Tag · TypeScript", locale: "en", direction: "ltr", identity: "guest", path: "/en/tags/typescript", view: "tag" },
+  { id: "tag-cloudflare-guest", label: "Tag · Cloudflare", locale: "en", direction: "ltr", identity: "guest", path: "/en/tags/cloudflare", view: "tag", allowedIdentities: ["guest"] },
+  { id: "tag-missing", label: "Tag · missing", locale: "en", direction: "ltr", identity: "guest", path: "/en/tags/missing-tag", view: "tag", allowedIdentities: ["guest"] },
   { id: "help-solutions-all", label: "Help & solutions · All", locale: "en", direction: "ltr", identity: "guest", path: "/en/categories/help-solutions", view: "category" },
   { id: "help-solutions-ask", label: "Help & solutions · Ask", locale: "en", direction: "ltr", identity: "user", path: "/en/categories/help-solutions", view: "category", allowedIdentities: ["user", "manager"] },
   { id: "editor-help-draft", label: "Editor · Help question draft", locale: "en", direction: "ltr", identity: "user", path: "/en/categories/help-solutions", view: "category", variant: "help-solutions-similar-results", allowedIdentities: ["user", "manager"] },
@@ -1044,43 +1046,69 @@ function previewSearchResults(locale: PreviewLocale) {
   ];
 }
 
-function previewTags() {
-  return [
-    { key: "typescript", name: "TypeScript", topicCount: 2 },
-    { key: "cloudflare", name: "Cloudflare", topicCount: 1 },
-    { key: "postgresql", name: "PostgreSQL", topicCount: 1 },
-    { key: "rtl", name: "RTL", topicCount: 1 },
-  ];
+const previewTagDefinitions = [
+  { key: "typescript", name: "TypeScript" },
+  { key: "cloudflare", name: "Cloudflare" },
+  { key: "postgresql", name: "PostgreSQL" },
+  { key: "rtl", name: "RTL" },
+] as const;
+
+function previewTagTopics(locale: PreviewLocale) {
+  const primarySection = previewSection(locale, sectionId);
+  const regularTopics = primarySection.topics.map((topic) => ({
+    id: topic.id,
+    title: topic.title.originalContent,
+    authorName: topic.authorName,
+    postCount: topic.postCount,
+    createdAt: topic.createdAt,
+    category: primarySection.category,
+    section: { id: primarySection.id, name: primarySection.name },
+    tags: topic.tags,
+  }));
+
+  const help = previewHelpSolutions(locale);
+  const helpTopics = help.questions.map((question) => ({
+    id: question.id,
+    title: question.title,
+    authorName: question.authorName,
+    postCount: question.replyCount + 1,
+    createdAt: new Date(question.createdAt),
+    category: { id: HELP_SOLUTIONS_CATEGORY_ID, name: help.name },
+    section: { id: HELP_SOLUTIONS_SERVICE_SECTION_ID, name: "Questions" },
+    tags: question.tags,
+  }));
+
+  return [...regularTopics, ...helpTopics];
 }
 
-function previewTagPage(locale: PreviewLocale) {
-  const rtl = locale === "he";
-  const russian = locale === "ru";
+function previewTags(locale: PreviewLocale) {
+  const topics = previewTagTopics(locale);
+  return previewTagDefinitions.map((tag) => ({
+    ...tag,
+    topicCount: topics.filter((topic) => topic.tags.some((candidate) => candidate.key === tag.key)).length,
+  }));
+}
+
+function previewTagPage(locale: PreviewLocale, tagKey: string | undefined) {
+  const tag = previewTagDefinitions.find((candidate) => candidate.key === tagKey);
+  if (!tag) return null;
   return {
-    tag: { key: "typescript", name: "TypeScript" },
-    topics: [
-      {
-        id: "typed-api",
-        title: rtl ? "איך כדאי לבנות לקוח API עם טיפוסים?" : russian ? "Как лучше построить типизированный API-клиент?" : "How should I structure a typed API client?",
-        authorName: rtl ? "אלכס ריברה" : "Alex Rivera",
-        postCount: 3,
-        createdAt: new Date("2026-09-27T10:00:00Z"),
-        category: { id: "development", name: rtl ? "פיתוח" : russian ? "Разработка" : "Development" },
-        section: { id: "typescript", name: rtl ? "TypeScript וארכיטקטורה" : russian ? "TypeScript и архитектура" : "TypeScript & architecture" },
-        tags: [{ key: "typescript", name: "TypeScript" }, { key: "api", name: "API" }],
-      },
-      {
-        id: "rtl-markdown",
-        title: rtl ? "תוכן RTL מעורב עם בלוקי קוד" : russian ? "Смешанный RTL-контент с блоками кода" : "Mixed RTL content with code blocks",
-        authorName: rtl ? "נועה לוי" : "Noa Levi",
-        postCount: 4,
-        createdAt: new Date("2026-09-27T12:00:00Z"),
-        category: { id: "development", name: rtl ? "פיתוח" : russian ? "Разработка" : "Development" },
-        section: { id: "typescript", name: rtl ? "TypeScript וארכיטקטורה" : russian ? "TypeScript и архитектура" : "TypeScript & architecture" },
-        tags: [{ key: "typescript", name: "TypeScript" }, { key: "rtl", name: "RTL" }],
-      },
-    ],
+    tag,
+    topics: previewTagTopics(locale).filter((topic) =>
+      topic.tags.some((candidate) => candidate.key === tag.key)
+    ),
   };
+}
+
+function previewTagData(locale: PreviewLocale, tagKey: string | undefined) {
+  const page = previewTagPage(locale, tagKey);
+  if (!page) throw new Response("Not Found", { status: 404 });
+  return page;
+}
+
+function PreviewTagRoute({ scenario }: { scenario: Scenario }) {
+  const page = useLoaderData() as NonNullable<ReturnType<typeof previewTagPage>>;
+  return <TagView locale={scenario.locale} page={page} />;
 }
 
 function previewUser(scenario: Scenario): HeaderAuthUser | null {
@@ -1552,11 +1580,13 @@ function previewRouter(
     },
     {
       path: "/:locale/tags",
-      element: <TagsView locale={scenario.locale} tags={previewTags()} />,
+      element: <TagsView locale={scenario.locale} tags={previewTags(scenario.locale)} />,
     },
     {
       path: "/:locale/tags/:tagKey",
-      element: <TagView locale={scenario.locale} page={previewTagPage(scenario.locale)} />,
+      element: <PreviewTagRoute scenario={scenario} />,
+      loader: ({ params }) => previewTagData(scenario.locale, params.tagKey),
+      ErrorBoundary: ForumRouteError,
     },
     {
       path: "*",
@@ -3431,9 +3461,13 @@ function previewElement(scenario: Scenario) {
       return <NotificationsView locale={scenario.locale}
         notifications={scenario.variant === "notifications-empty" ? [] : previewNotifications(scenario.locale)} />;
     case "tags":
-      return <TagsView locale={scenario.locale} tags={previewTags()} />;
-    case "tag":
-      return <TagView locale={scenario.locale} page={previewTagPage(scenario.locale)} />;
+      return <TagsView locale={scenario.locale} tags={previewTags(scenario.locale)} />;
+    case "tag": {
+      const tagKey = scenario.path.split("/tags/")[1]?.split(/[?#]/u)[0];
+      const page = previewTagPage(scenario.locale, tagKey);
+      if (!page) throw new Error("tag fixture must reference a known preview tag");
+      return <TagView locale={scenario.locale} page={page} />;
+    }
     case "under-development":
       return <PreviewUnderDevelopment locale={scenario.locale} />;
     case "category":
