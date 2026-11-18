@@ -4,7 +4,7 @@
 
 1. Служебный PR: **#315**.
 2. Моя текущая работа: audit/coordination only; remediation и implementation не назначены.
-3. Текущий этап: **Block I I1 = `REPO-MAIN-GATE-01 Moderate/P2`; I2 PASS; I3 PASS; I4 PASS; I5 = `CI-PYPI-PROVENANCE-01 Low/P3`; I6 = `CI-POSTGRES-IMAGE-PROVENANCE-01 Low/P3`; I7 = `PAGES-ACCEPTANCE-PROVENANCE-01 Low/P3`, 0 new deferred; следующий bounded slice — I8 Cross-chain closeout.** `REPO-MAIN-GATE-01` также explicit gate before future Stage-6 production secret-bearing dispatch. Exact mutable Environment secret inventory и complete Secret Scanning alert state — `Информация не проверена`. Block H закрыт с 0 current findings + 2 deferred Stage-6 blockers; Block G закрыт с 3 current findings + deferred `DB-RUNTIME-EVIDENCE-01`.
+3. Текущий этап: **Block I ЗАВЕРШЁН: 4 current findings — `REPO-MAIN-GATE-01 Moderate/P2`, `CI-PYPI-PROVENANCE-01 Low/P3`, `CI-POSTGRES-IMAGE-PROVENANCE-01 Low/P3`, `PAGES-ACCEPTANCE-PROVENANCE-01 Low/P3`; I8 PASS, 0 additional / 0 Block-I deferred blockers.** Overall #315 = 28 current findings + 3 deferred Stage-6 blockers. Следующий security-блок по общей карте — Block J External integrations. Exact mutable Environment secret inventory/policy и complete Secret Scanning state — `Информация не проверена`.
 4. Technical audit target B–D: `e279cb6c032a489a9044ca1191407df887c364b4`.
 5. Current `main` — `7cc23edede57994cdedab49c1556ddb55034dd29`. Delta от I1 target включает SA-04/SA-05–SA-08 и topic-title work; I2 отдельно re-read current workflows and source-of-truth.
 6. Лира, Марк и Лёва по #315 сейчас не назначены.
@@ -259,6 +259,16 @@
 230. Cross-chain impact of REPO-MAIN-GATE-01 strengthened: exact SHA proves selected main content, not reviewed provenance. Delegated Contents writer can alter ordinary `.github/scripts/*`, package.json, Worker or migration code; future authorized Environment jobs execute repository-controlled code with DB/Cloudflare credentials. Environment admission cannot replace source review.
 231. Therefore REPO-MAIN-GATE-01 is an explicit correction gate before any future Stage-6 production DB/credential/Worker dispatch. No duplicate deferred blocker: same root cause already current and already counted.
 232. Exact mutable Environment policy/secret inventory, Actions actor policy and complete Secret Scanning state remain `Информация не проверена`. I7 performed no dispatch/deploy/settings/production mutation. Aggregate now 28 current findings + 3 deferred blockers.
+233. I8: **PASS, 0 new current findings, 0 new deferred blockers; Block I complete** on current main `7cc23edede57994cdedab49c1556ddb55034dd29`.
+234. Final mutable repository recheck immediately before closeout: main `protected=false`; `Protect main` ruleset still `enforcement=disabled`, targeting default branch with configured PR requirement, deletion/non-fast-forward protection and strict required checks `checks` + `database`. REPO-MAIN-GATE-01 remains live.
+235. Cross-chain source→install→CI→acceptance→secret admission→external mutation produced no fifth I root cause. Node/pnpm and full-SHA Actions paths remain PASS; Python transitives, postgres image and shared Pages alias remain the three Low/P3 provenance defects alongside Moderate/P2 main authority defect.
+236. I2–I4 remain PASS: no privileged PR token chain, no observed secret leakage, repository-side Environment admission structure remains main/manual/named-Environment. Exact mutable Environment reviewers/ref policy/admin bypass/secret inventory and complete Secret Scanning state remain unverified.
+237. Production DB/Worker exact-SHA/version identity does not duplicate I1 and does not compensate for it. REPO-MAIN-GATE-01 is mandatory before any future Stage-6 secret-bearing DB/credential/Worker dispatch.
+238. Worker verify also depends on mutable postgres:17; current CI-POSTGRES-IMAGE-PROVENANCE-01 must be closed before Stage-6 relies on that verify job. No duplicate deferred blocker.
+239. Existing deferred correction order retained: REPO-MAIN-GATE-01 → DB-RUNTIME-EVIDENCE-01 → CI-POSTGRES-IMAGE-PROVENANCE-01 → WORKER-VERSION-URL-01 → WORKER-ROLLBACK-FINALIZER-01, with live Environment/topology recheck immediately before external action.
+240. Dedup A–H/J/L PASS: no finding moved or duplicated. Provider/callback semantics remain future Block J; monitoring/incident response remains later scope unless actual secret exposure is found.
+241. Final Block I = 4 current findings, 0 I deferred blockers. Overall #315 = 28 current + 3 deferred; severity current 9 Moderate/P2 + 19 Low/P3, no P0/P1; deferred 2 Moderate/P2 + 1 Low/P3.
+242. I8 performed no dispatch/install/image pull/settings/ruleset/secret/production mutation. Remediation remains unassigned.
 
 ## Ограничения
 
@@ -270,5 +280,5 @@
 
 ## Следующий шаг
 
-1. После продолжения владельца выполнить **I8 — Cross-chain closeout** на current main и остановиться после результата.
-2. `REPO-MAIN-GATE-01`, `CI-PYPI-PROVENANCE-01`, `CI-POSTGRES-IMAGE-PROVENANCE-01` и `PAGES-ACCEPTANCE-PROVENANCE-01` не дублировать. Remediation не начинать.
+1. После продолжения владельца подготовить и начать **Block J — External integrations** по общей security map и остановиться после первого bounded результата.
+2. Remediation findings Blocks B–I не начинать без отдельного назначения.
