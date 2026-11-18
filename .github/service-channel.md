@@ -533,3 +533,8 @@ refs. **Лёва STOP после последнего плана из шести
 По прямой команде владельца ошибочный прежний #346 не закрывается: его ветка очищена от старого visibility service-контекста, сброшена на актуальный main после merge Watch и PR переоформлен под **Bookmarks implementation**. Служебным каналом остаётся только #342.
 
 Лира / ChatGPT-6 назначена реализовать уже принятый Bookmarks scope **прямо в PR #346**. Перед кодом сверить принятый Bookmarks plan с актуальным main `9c4639d23ca075c8bb92fbb909b96593d7bee127` и merged Watch seams; перепроектирование без реального конфликта не требуется. После полной реализации и применимых checks — зафиксировать stable exact head и STOP для coordinator whole-PR review Миры. Mute/block, visibility и structure implementation этим handoff не активируются.
+
+
+## 2026-11-18 — owner correction: Bookmarks исполнитель Лёва
+
+Предыдущее назначение Лиры отменено. По прямому уточнению владельца **Bookmarks в #346 реализует Лёва / Codex-6.1 Sol**. Scope и PR не меняются: принятый Bookmarks plan, implementation PR #346, служебный канал #342. После полной реализации и stable exact head Лёва STOP и возвращает результат Мире на coordinator whole-PR review. Так как Лёва участвует в реализации, независимый review после PASS Миры выполняет Марк / Codex-6 Sol. Лира в Bookmarks implementation не назначена.
