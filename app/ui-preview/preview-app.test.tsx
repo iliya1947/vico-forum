@@ -69,6 +69,35 @@ describe("UI preview state catalog", () => {
 
 
 describe("embedded preview routing", () => {
+  it("returns the shared 404 state for a missing category", async () => {
+    render(<EmbeddedPreview scenarioId="category-missing" />);
+
+    const missing = await screen.findByRole("alert");
+    expect(missing).toHaveAttribute("data-status", "404");
+    expect(within(missing).getByRole("heading", { level: 1, name: "Forum page not found" })).toBeInTheDocument();
+    expect(within(missing).getByText("The category, section, or topic does not exist.")).toBeInTheDocument();
+    expect(document.querySelector(".category-page")).toBeNull();
+  });
+
+  it("returns the shared 404 state for a missing section", async () => {
+    render(<EmbeddedPreview scenarioId="section-missing" />);
+
+    const missing = await screen.findByRole("alert");
+    expect(missing).toHaveAttribute("data-status", "404");
+    expect(within(missing).getByRole("heading", { level: 1, name: "Forum page not found" })).toBeInTheDocument();
+    expect(within(missing).getByText("The category, section, or topic does not exist.")).toBeInTheDocument();
+    expect(document.querySelector(".section-page")).toBeNull();
+  });
+
+  it("returns the shared 404 state for an unknown preview route", async () => {
+    render(<EmbeddedPreview scenarioId="route-real-404" />);
+
+    const missing = await screen.findByRole("alert");
+    expect(missing).toHaveAttribute("data-status", "404");
+    expect(within(missing).getByRole("heading", { level: 1, name: "Forum page not found" })).toBeInTheDocument();
+    expect(within(missing).getByText("The category, section, or topic does not exist.")).toBeInTheDocument();
+  });
+
   it("requires sign-in for guest direct access to Authorization", async () => {
     render(<EmbeddedPreview scenarioId="admin-guest-unauthenticated" />);
 
