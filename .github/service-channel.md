@@ -430,3 +430,50 @@ PR #345 exact interim head `76c1c456557c614171a3b472758498795a668b9a`. Прич�
 Implementation Draft PR #345 `feature/topic-watch` exact head `76c1c456557c614171a3b472758498795a668b9a`, unchanged relative to previous Chromium slice, base `main` `7cc23edede57994cdedab49c1556ddb55034dd29`; 20 ahead / 0 behind, GitHub mergeable, 35 changed files. **17/17 GitHub check-runs completed success** on exact head; `checks`, `database` and `watch_browser` PASS, all applicable browser regression jobs PASS. Real Chromium/Worker/Better Auth/PG17 Watch evidence: https://github.com/iliya1947/vico-forum/actions/runs/44324798071; artifact `topic-watch-connected` ID `14436671855`. No new changes to implementation. Technical CI head stable.
 
 **Unclosed formal review prerequisite:** owner visual acceptance of Watch is **not recorded** in #345 or #342. `AGENTS.md` requires this before coordinator review; owner exception previously applied to own-topic-title #343 cannot be presumed to cover Watch. Therefore #345 stays **Draft/not yet review-ready**, no Mira coordinator review or Leva technical review requested or declared. Next owner decision: accept visual Watch state on provided connected evidence or explicitly defer this acceptance; only after that record/decision hand off unchanged exact head to **Мира** for coordinator whole-PR review, and after PASS to **Лёва** independent review. Docs closeout remains separate post-merge. Лира STOP per bounded decomposition.
+
+## 2026-11-18 — Лёва: independent technical review Watch PASS
+
+Актуальное прямое назначение владельца:
+https://github.com/iliya1947/vico-forum/pull/342#issuecomment-6983159716.
+Оно назначило независимый review сейчас, заменив прежний следующий шаг из
+workflow; owner visual acceptance/coordinator PASS этим не объявлены.
+
+Проверен **весь принятый Watch scope** PR #345 на stable exact head
+`76c1c456557c614171a3b472758498795a668b9a` против actual main
+`7cc23edede57994cdedab49c1556ddb55034dd29` и текущего плана #342.
+**Результат: technical PASS; подтверждённых current-scope findings нет.**
+
+- Own account/topic persistence, idempotent ON/OFF, active actor admission,
+  отсутствие auto-watch/backfill/read-state side effects соответствуют плану.
+- Reply fanout set-based, транзакционный и использует прежний inbox; сохранены
+  self-exclusion, recipient/post dedupe, reply-before-mention, independent
+  author/parent/mention paths после Unwatch и passive inactive-recipient policy.
+- Topic mutex общий с reply; проверены оба порядка ON/OFF, четыре порядка
+  Watch/Unwatch × reply, actor-first/deactivation-first, rollback и receipt replay.
+- Canonical action использует session actor и узкий exact boolean payload;
+  guest/origin/stale actor/лишние и повторные поля/error responses проверены.
+  Own state не требует нового RBAC/AP-10; authenticated document/data private
+  no-store, guest own-state не читает, unavailable не превращается в Off.
+- UI ждёт подтверждения сервера, изолирован actor/topic, не повторяет
+  неоднозначную запись автоматически; есть явный refresh, pending lock,
+  RU/HE и RTL. Соседние edit-recovery сценарии прошли.
+- Migration 0068, schema/snapshot/journal, structural manifest и web ACL
+  согласованы. Старые таблицы snapshot/manifest семантически не изменены.
+
+Независимо выполнено локально на exact head: **259/259** тестов в шести
+UI/route/read/edit-recovery/header suites и **15/15** real PostgreSQL 17 Watch
+tests, включая concurrency/lifecycle; `git diff --check` PASS. Первое локальное
+включение тестов не дошло до assertions из-за ENOSPC; после очистки собственных
+package caches повторный запуск прошёл. Это ограничение среды, не feature failure.
+
+GitHub API независимо подтвердил **17/17 exact-head checks success**. Прочитан
+журнал `watch_browser` job `134873103841`: 11 connected evidence steps для
+ordinary/Help, Worker/Better Auth/PG17/Chromium, inbox/permalink/read, Unwatch,
+Hebrew RTL/narrow. Это проверенное CI evidence, не новый локальный browser run:
+https://github.com/iliya1947/vico-forum/actions/runs/44324798071.
+
+Implementation head и main повторно сверены после проверок и не изменились.
+Код/тесты/схема реализации не менялись. **Лёва STOP, следующий агент — Мира:**
+принять technical review и зафиксировать оставшийся coordinator/acceptance/docs
+маршрут. Этот результат не разрешает merge/deploy; следующие planning-slice
+не продолжались. Подробности и команды — в личном файле Лёвы.

@@ -311,3 +311,89 @@ sentinel leakage assertions и deterministic concurrency, без новых test
 отсутствуют. Проверены docs-only diff/whitespace и актуальность main/service refs.
 Лёва STOP для whole-plan scope/fit Миры. Структура форума/перенос тем не начаты;
 Watch остаётся текущей реализацией Лиры.
+
+## 2026-11-18 — независимый технический review Watch #345: PASS
+
+Прямое назначение владельца из последнего комментария #342
+`6983159716` (2026-11-18 15:31:41 UTC): проверить весь принятый Watch scope
+на exact head `76c1c456557c614171a3b472758498795a668b9a`, не изменять код,
+после review STOP и вернуть результат Мире; следующие planning-slice не продолжать.
+Это конкретное назначение заменило устаревший следующий шаг workflow.
+Не трактовал отсутствие нового назначения в файлах как отсутствие задачи:
+сначала проверил свежие комментарии #342.
+
+Actual main/base `7cc23edede57994cdedab49c1556ddb55034dd29`. Весь production diff
+35-file PR и относящиеся тесты/CI сверены с принятым Watch plan W1/W2/W3,
+действующими account lifecycle, notification, cache/privacy и migration contracts.
+Лира — автор реализации; моя прежняя работа в этом этапе была планированием.
+**Technical PASS. Подтверждённых current-scope defects нет.**
+
+Проверенные звенья:
+
+1. `forum_topic_watches`: own user/topic PK, обе cascade FK, topic/user index;
+   ON conflict no-op и точный OFF; actor admission даже OFF/no-op. Closed/solved/
+   duplicate и inactive topic author не ограничивают Watch; собственный inactive
+   actor отвергается в transaction. Нет auto-watch, backfill, cooldown/нового RBAC.
+2. `createPost`: один INSERT SELECT UNION author/parent/watchers; self excluded;
+   recipient/post conflict boundary и reply-before-mention сохраняются. Нет
+   per-watcher JS/query loop, новых consumers/kinds, recipient active-filter/locks.
+   Watch-derived notices не добавлены в edits/create-topic/receipt replay.
+3. Watch и reply сериализуются одним topic FOR NO KEY UPDATE; actor lock и
+   parent/FK locks сохраняют существующий порядок. Проверены реальный rollback
+   fanout, attachment-only reply/replay, оба ON/OFF, четыре Watch/Unwatch × reply,
+   оба lifecycle admission orders и passive fanout deactivated watcher.
+4. Route guard до formData; session actor authoritative, editorActorId только
+   expected identity; exact desired boolean, allowlist/single-value fields;
+   typed success/errors, unexpected failures propagate. Account mismatch не
+   переназначает write. Own-state не зависит от reply/moderation permission.
+5. Authenticated loader и mutation private/no-store, guest readTopicWatch не
+   вызывает; typed storage unavailable даёт unknown, неожиданный сбой не скрыт.
+   Actor/topic-scoped nonoptimistic fetcher, disabled pending, matching confirmed
+   response, uncertain-write refresh без auto retry; account/topic changes не
+   переносят старый personal state. Existing composer/edit recovery сохранён.
+6. RU/HE/catalog fingerprints, aria state/status, flex wrap/RTL/narrow; проверены
+   authenticated ON/OFF/unknown presentations без canReply и wrong-account state.
+7. Migration SQL0068, Drizzle schema/journal/snapshot, structural manifest и
+   runtime grants согласованы. Python semantic comparison: snapshot и manifest
+   добавляют только новую таблицу, существующие table entries не изменены;
+   snapshot prevId и journal sequence корректны. Web grants новой таблицы только
+   SELECT/INSERT/DELETE, localization grant не добавлен.
+
+Независимые локальные проверки, exact head, Node 24.21.0:
+
+```sh
+node node_modules/vitest/vitest.mjs run \
+  app/forum/topic-watch-control.test.tsx app/forum/write-actions.test.ts \
+  app/forum/public-read.test.tsx app/forum/public-authz-degradation.test.ts \
+  app/forum/edit-recovery.test.tsx app/routes/topic-headers.test.ts --maxWorkers=1
+# 6 suites / 259 tests PASS
+
+DATABASE_URL=<disposable-loopback-vico_watch_review_test> \
+  node node_modules/vitest/vitest.mjs run --config vitest.database.config.ts \
+  tests/database/topic-watch.test.ts --maxWorkers=1
+# PostgreSQL 17, clean forward migrations, 1 suite / 15 tests PASS
+
+git diff --check 7cc23edede57994cdedab49c1556ddb55034dd29..HEAD
+# PASS
+```
+
+Первый запуск был заблокирован ENOSPC до collection/assertions (Cloudflare Vite
+tempdirs); новый PG container также не создавался. Освободил только собственные
+downloadable package caches, использовал существующий disposable PG17 container
+и отдельную новую *_test DB. Успешный повтор выполнен прямым pinned Node/Vitest
+без повторной установки пакетов. Environmental bootstrap failure не finding.
+
+Отдельно независимо проверено GitHub API: 17/17 check-runs exact head completed
+success, включая checks/database/watch_browser и все browser regressions.
+Прочитан полный log watch_browser job134873103841: 11 WATCH_CONNECTED checkpoints
+ordinary+Help с реальными Worker/Better Auth/PG17/Chromium, private state/reload,
+identity/origin/boolean denials, watcher inbox/permalink/read, old notice retained
+после Unwatch и Hebrew RTL narrow. CI run44324798071, artifact topic-watch-connected
+14436671855. Новый локальный Chromium run не выполнял; evidence не приписываю себе.
+
+После review GitHub PR info и refs повторно подтвердили неизменные head/base.
+Tracked implementation files не изменены; исправления не выполнялись.
+Обновлены только service workflow/channel/мой файл. Technical PASS не подменяет
+owner visual acceptance/coordinator PASS/docs closeout или merge/deploy approval.
+**Лёва STOP; результат возвращён Мире в #342.** Visibility plan по-прежнему готов
+к её scope/fit; структура форума/перенос тем и прочие planning-slice не начаты.
