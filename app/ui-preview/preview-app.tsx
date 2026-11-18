@@ -3194,7 +3194,9 @@ function PreviewTopicRoute({ scenario, interactions }: {
     const helpTopic = {
       id: helpQuestion.id,
       sectionId: HELP_SOLUTIONS_SERVICE_SECTION_ID,
-      authorId: scenario.identity === "user" ? "preview-user" : "help-author",
+      authorId: previewProfileIdForName(
+        scenario.identity === "user" ? "Alex Rivera" : helpQuestion.authorName,
+      ),
       authorName: scenario.identity === "user" ? "Alex Rivera" : helpQuestion.authorName,
       createdAt: new Date(helpQuestion.createdAt),
       isPinned: false,
