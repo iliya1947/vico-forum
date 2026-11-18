@@ -442,6 +442,28 @@ describe("interactive Pages preview", () => {
     expect(within(returnedSettingsOverview).getByRole("link", { name: "Forum & roles" })).toBeInTheDocument();
   });
 
+  it("moves Owner from Forum & roles to User preferences through Settings navigation", async () => {
+    const user = userEvent.setup();
+    render(<EmbeddedPreview scenarioId="section-user" identity="owner" />);
+
+    await user.click(screen.getByRole("link", { name: "Settings" }));
+    let settingsNavigation = document.querySelector(".settings-panel-nav") as HTMLElement;
+    await user.click(within(settingsNavigation).getByRole("link", { name: "Forum & roles" }));
+
+    expect(await screen.findByRole("heading", { level: 2, name: "Registration" })).toBeInTheDocument();
+    settingsNavigation = document.querySelector(".settings-panel-nav") as HTMLElement;
+    const userPreferencesLink = within(settingsNavigation).getByRole("link", { name: "User preferences" });
+    expect(userPreferencesLink).toHaveAttribute("href", "/en/settings/user");
+    await user.click(userPreferencesLink);
+
+    expect(await screen.findByRole("heading", { level: 2, name: "User preferences" })).toBeInTheDocument();
+    settingsNavigation = document.querySelector(".settings-panel-nav") as HTMLElement;
+    expect(within(settingsNavigation).getByRole("link", { name: "User preferences" })).toHaveAttribute(
+      "aria-current",
+      "page",
+    );
+  });
+
   it("hides Forum & roles from ordinary user Settings navigation", async () => {
     const user = userEvent.setup();
     render(<EmbeddedPreview scenarioId="section-user" identity="user" />);
