@@ -245,6 +245,7 @@ const reader: ForumReader = {
     section: { id: topic.section.id, name: topic.section.name },
     category: topic.section.category,
   }],
+  readTopicWatch: async () => false,
   readTopicReadState: async (_userId, id) => id === topic.id ? {
     topicId: topic.id,
     state: "new" as const,

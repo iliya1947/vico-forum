@@ -92,6 +92,7 @@ const reader: ForumReader = {
   search: async () => [],
   readUnreadForUser: async () => [],
   readTopicReadState: async () => undefined,
+  readTopicWatch: async () => false,
   readNotifications: async (_userId, page) => ({items:[],total:0,page,hasMore:false}),
   countUnreadNotifications: async () => 0,
   readReplyNotifications: async () => [],

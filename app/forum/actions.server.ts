@@ -201,7 +201,7 @@ export async function topicAction({ request, params, context }: {
   const watchIntent = formData.getAll("intent").includes("setTopicWatch") || formData.has("watching");
   if (denied) {
     return watchIntent
-      ? data<TopicWatchActionResult>({ operation: "topicWatch", error: denied.data.error }, denied.init)
+      ? data<TopicWatchActionResult>({ operation: "topicWatch", error: denied.data.error }, denied.init ?? undefined)
       : denied;
   }
   if (watchIntent) {
@@ -218,7 +218,7 @@ export async function topicAction({ request, params, context }: {
         { status: 400, headers: { "Cache-Control": "private, no-store" } });
     const changedIdentity = editorIdentityGuard(formData, context);
     if (changedIdentity)
-      return data<TopicWatchActionResult>({ operation: "topicWatch", error: "conflict" }, changedIdentity.init);
+      return data<TopicWatchActionResult>({ operation: "topicWatch", error: "conflict" }, changedIdentity.init ?? undefined);
     const watching = requested === "true";
     const result = await runForumMutation(request, context, async (writer, actorId) => {
       const confirmed = await writer.setTopicWatch({ topicId, actorId, watching });
@@ -228,7 +228,7 @@ export async function topicAction({ request, params, context }: {
       );
     });
     if ("error" in result.data)
-      return data<TopicWatchActionResult>({ operation: "topicWatch", error: result.data.error }, result.init);
+      return data<TopicWatchActionResult>({ operation: "topicWatch", error: result.data.error }, result.init ?? undefined);
     return result;
   }
   if (formData.getAll("intent").includes("editTopicTitle")) {
