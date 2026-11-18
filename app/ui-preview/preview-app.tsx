@@ -1519,7 +1519,7 @@ function previewRouter(
     },
     {
       path: "/:locale/admin/measures",
-      element: <PreviewAdminMeasuresRoute scenario={scenario} interactions={interactions} />,
+      element: <PreviewAdminMeasuresRoute />,
       loader: ({ request }) => {
         previewAdminSurfaceAccessData(scenario);
         return previewAdminMeasuresData(scenario, interactions, request);
@@ -3165,10 +3165,7 @@ function previewAdminMeasuresData(
   };
 }
 
-function PreviewAdminMeasuresRoute({ scenario, interactions }: {
-  scenario: Scenario;
-  interactions: PreviewInteractionState;
-}) {
+function PreviewAdminMeasuresRoute() {
   const data = useLoaderData() as ReturnType<typeof previewAdminMeasuresData>;
   const feedback = useActionData() as { error?: "invalid" | "notFound" } | undefined;
   return <AdminMeasuresIndex {...data} feedback={feedback} />;
@@ -4657,126 +4654,6 @@ function PreviewUnderDevelopment({ locale }: { locale: PreviewLocale }) {
   );
 }
 
-function previewElement(scenario: Scenario) {
-  switch (scenario.view) {
-    case "credentials":
-      return previewCredential(scenario.locale, scenario.path.includes("sign-up") ? "sign-up" : "sign-in");
-    case "profile":
-      return <PreviewProfileRoute scenario={scenario} interactions={createPreviewInteractionState()} />;
-    case "home":
-      return (
-        <HomeView
-          locale={scenario.locale}
-          categories={homepageCategories(scenario.locale)}
-          onlinePresence={{ count: 2, members: [
-            { id: "alex", name: "Alex", image: null },
-            { id: "maya", name: "Maya Cohen", image: null },
-          ] }}
-        />
-      );
-    case "search":
-      return (
-        <SearchView
-          locale={scenario.locale}
-          query={scenario.variant === "search-no-results" ? "WebAssembly" : "TypeScript"}
-          results={scenario.variant === "search-no-results" ? [] : previewSearchResults(scenario.locale)}
-        />
-      );
-    case "popular":
-      return <PopularView locale={scenario.locale} periods={popularPeriods(scenario.locale)} />;
-    case "unanswered":
-      return <UnansweredView locale={scenario.locale} topics={unansweredTopics(scenario.locale)} />;
-    case "unread":
-      return <UnreadView locale={scenario.locale} topics={unreadTopics(scenario.locale)} />;
-    case "notifications":
-      return <NotificationsView locale={scenario.locale}
-        notifications={scenario.variant === "notifications-empty" ? [] : previewNotifications(scenario.locale)} />;
-    case "tags":
-      return <TagsView locale={scenario.locale} tags={previewTags(scenario.locale)} />;
-    case "tag": {
-      const tagKey = scenario.path.split("/tags/")[1]?.split(/[?#]/u)[0];
-      const page = previewTagPage(scenario.locale, tagKey);
-      if (!page) throw new Error("tag fixture must reference a known preview tag");
-      return <TagView locale={scenario.locale} page={page} />;
-    }
-    case "under-development":
-      return <PreviewUnderDevelopment locale={scenario.locale} />;
-    case "category":
-      return (
-        <CategoryView
-          locale={scenario.locale}
-          category={previewCategory(scenario.locale, categoryId)}
-          referenceTime={previewReferenceTime}
-        />
-      );
-    case "section":
-      return (
-        <SectionView
-          locale={scenario.locale}
-          section={scenario.locale === "ru" ? sectionRu : scenario.direction === "rtl" ? sectionRtl : section}
-          canCreateTopic
-          topicReadStates={Object.fromEntries(
-            (scenario.locale === "ru" ? sectionRu : scenario.direction === "rtl" ? sectionRtl : section).topics.map((topic, index) => [
-              topic.id,
-              (["new", "unread", "read"] as const)[index % 3],
-            ]),
-          )}
-          actionData={scenario.variant === "section-form-error" ? { error: "rateLimited" } : undefined}
-        />
-      );
-    case "empty":
-      return (
-        <SectionView
-          locale={scenario.locale}
-          section={{
-            id: "empty",
-            name: scenario.locale === "ru"
-              ? "Новый раздел сообщества"
-              : scenario.locale === "he"
-                ? "מדור קהילה חדש"
-                : "New community section",
-            category: {
-              id: categoryId,
-              name: scenario.locale === "ru"
-                ? "Разработка"
-                : scenario.locale === "he"
-                  ? "פיתוח"
-                  : "Development",
-            },
-            topics: [],
-          }}
-          canCreateTopic={false}
-          topicReadStates={null}
-        />
-      );
-    case "topic":
-      return <TopicView {...primaryTopicScenarioData(scenario)} />;
-    case "admin-topic": {
-      const data = primaryTopicScenarioData(scenario);
-      return <AdminTopicView locale={scenario.locale}
-        access={{canEnter:true,canReadForum:true,canManageAuthorization:true,canReadHistory:true}}
-        topic={projectAdminTopic(data.topic, false)}
-        titlePresentation={data.titlePresentation}
-        postPresentations={data.postPresentations}
-        actorId="maya"
-        canManagePin canManageAnySolution canCorrectAnySourceLocale canReadPostHistory
-        canManageHelpDuplicate={false} canModerateHelpSolution={false}
-        pendingDuplicateAppeal={null}/>;
-    }
-    case "admin": {
-      const data = authorizationData(scenario.locale);
-      const result = scenario.variant === "admin-success"
-        ? { ok: true as const }
-        : scenario.variant === "admin-conflict"
-          ? { error: "conflict" as const }
-          : undefined;
-      return <AuthorizationAdminView {...data} access={{canEnter:true,canManageAuthorization:true,canReadForum:true,canReadHistory:true}} canMutateAuthorization={true} result={result} />;
-    }
-    case "not-found":
-      throw new Error("not-found is handled by previewRouter");
-  }
-}
-
 // Matched routes and the fallback must describe the same primary-topic fixture.
 function primaryTopicScenarioData(scenario: Scenario) {
   const isTopicScenario = scenario.view === "topic";
@@ -4956,10 +4833,6 @@ function previewAuthorizationData(locale: string, state: PreviewAuthorizationSta
     }];
   });
   return { locale, permissions: PERMISSION_CATALOG, roles, users };
-}
-
-function authorizationData(locale: string) {
-  return previewAuthorizationData(locale, createPreviewAuthorizationState());
 }
 
 function topicTitlePresentation(rtl: boolean): ContentTranslationPresentation {
