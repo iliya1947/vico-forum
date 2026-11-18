@@ -91,3 +91,18 @@ Initial PR #345 interim head `6cede3af5fe2d096cf01be676050a662b2d9f91b` had CI f
 Диагностика промежуточных CI: head `e5caefedd14e8be0190310e5b1ec3a4955195591` дал database PASS, но checks FAIL по 16 unit tests — 14 edit-recovery из-за отсутствующего mock reader, 1 File multipart parser case и 1 каскадный Settings test; источник установлен по job logs и целевые исправления внесены. На head `05b8fd388627fe979180647b98950b853a28f9fc` GitHub **checks PASS и database PASS** (до нового file-only DB теста). На текущем промежуточном head `72e9b8d15ee515af1c5dab309cc66ea9514178ae` GitHub CI и новый watch_browser запущены, окончательные результаты ещё не установлены, stable review head ещё НЕ зафиксирован. No production/external action. Проектная документация остаётся для отдельного PR.
 
 Реализация остаётся у Лиры, PR Draft и не готов к coordinator review. Следующий шаг — завершить CI/connected acceptance на current head, исправить только реальные дефекты, затем зафиксировать stable head и STOP для Миры.
+
+
+## 2026-11-18 — Watch: завершение отдельной подзадачи UI + loader
+
+После прямого указания разработчика дробить этап на более мелкие части выполнена **только сверка UI + loader + typecheck**; к unit-test extension, real PG concurrency и Chromium remediation перехода нет.
+
+В Draft #345 на точном промежуточном head `19a5015c0d2b9ff7ccfe57cd03e64b64e0a8e191` подтверждена имеющаяся реализация:
+- `app/routes/topic.tsx`: личный own-pair read для authenticated actor, состояния on/off/unavailable с classified outage, guest без собственного состояния, `Cache-Control: private, no-store` с прокидыванием через route headers;
+- `app/forum/topic-watch-control.tsx` + `views.tsx`: actor/topic scoped fetcher, явный desired-state ON/OFF, pending lock, подтверждение только по совпадающему server result, unknown/error state без auto retry, refresh control, независимость от reply/title editor;
+- `app/localization/catalog.ts`, `manual-values.ts`, `manual-fingerprints.ts`, `app/styles.css`: английский canonical + RU/HE translations и UI styles;
+- `app/forum/actions.server.ts`: сохранён guard перед formData parsing.
+
+GitHub **checks job** exact head, job `134798391182`: lint PASS, typecheck PASS, Test PASS, build PASS, UI preview PASS, migration metadata и schema parity PASS. Отдельный `database` job PASS. **Не объявляется общий CI PASS**: отдельный `watch_browser` на этом head завершился FAILURE; расследование в рамках ограниченной UI/loader подзадачи не проводилось. Head остаётся interim и PR Draft. В implementation branch по этой подзадаче новые коммиты не нужны, код уже присутствует.
+
+STOP. Следующее явное продолжение владельца — **отдельная подзадача unit/route/component tests**; затем отдельно real PostgreSQL concurrency, затем Chromium failed job diagnosis/acceptance. Не смешивать эти этапы.
