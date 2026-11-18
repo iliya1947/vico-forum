@@ -9,9 +9,10 @@
 5. **K3 — Forum write spam & cross-endpoint concurrency завершён: 1 новый current-scope finding — `FORUM-EDIT-SPAM-01 Moderate/P2`; 0 deferred blockers.**
 6. **K4 — Public expensive reads / query amplification завершён: 1 новый current-scope finding — `PUBLIC-READ-COST-01 Moderate/P2`; 0 deferred blockers.**
 7. **K5 — Request body / attachments / storage exhaustion завершён: 1 новый current-scope finding — `ATTACH-SECURITY-EVENT-SPAM-01 Moderate/P2`; 0 deferred blockers.**
-8. Overall #315 становится **31 current findings + 4 deferred Stage-6 blockers**.
-9. Мира — auditor/coordinator. Remediation, technical planner и implementer не назначены.
-10. Production/Cloudflare/Neon/GitHub/provider settings mutation, load testing и внешние destructive/fault-injection действия не разрешены и не выполнялись.
+8. **K6 — Background / translation / notification amplification завершён: 1 новый current-scope finding — `MENTION-FANOUT-01 Moderate/P2`; 0 deferred blockers.**
+9. Overall #315 становится **32 current findings + 4 deferred Stage-6 blockers**.
+10. Мира — auditor/coordinator. Remediation, technical planner и implementer не назначены.
+11. Production/Cloudflare/Neon/GitHub/provider settings mutation, load testing и внешние destructive/fault-injection действия не разрешены и не выполнялись.
 
 ## Цель
 
@@ -132,7 +133,7 @@
 3. Topic/reply publication share the same 5-second per-author cooldown because both persist a `forum_posts.created_at` row and call `enforceForumWriteCooldown()` while holding the authoritative actor mutex. Concurrent same-author creates are serialized; the second request sees the first committed post timestamp before admission.
 4. Help-signal submission has an independent 5-second cooldown under the same actor mutex. Complaints use an independent stronger domain budget: 10 reports / 10 minutes and 50 / 24 hours, with actor serialization and exact replay/lifetime-duplicate handling before budget spending.
 5. Replay/idempotency on initial topic/reply/edit publication is bounded by operation/draft receipts. Exact committed replay returns the prior entity instead of creating another post/revision; changed payload reuse conflicts. This prevents transport retries from multiplying a single committed publication.
-6. Reply notification fan-out is bounded per successful post by direct topic/parent recipients plus parsed mention recipients, and DB uniqueness `(recipient_user_id, post_id)` prevents repeated edit/retry notifications to the same recipient for the same post. This does not remove the edit-storage problem below.
+6. Direct reply notification fan-out is bounded to topic/parent recipients, and DB uniqueness `(recipient_user_id, post_id)` prevents repeated edit/retry notifications to the same recipient for the same post. Parsed mention-recipient fan-out was left for K6; K6 later confirmed that it does not have its own recipient-count ceiling. This does not change the K3 edit-storage finding.
 7. **Root cause:** `editOwnTopicTitle()` and `editPublishedPost()` perform authenticated persistent edits without calling `enforceForumWriteCooldown()` or any other request-count/quota policy. `assertActiveAccountForDrizzleMutation()` only serializes actor state with a row lock; it imposes no time floor and no per-account revision budget.
 8. `editOwnTopicTitle()` is the simplest concrete abuse chain: after owning one topic, the caller submits a short changed title with the current `expectedRevisionId`; success inserts a fresh immutable `forum_topic_title_revisions` row, CAS-updates `current_title_revision_id`, and the HTTP action returns the newly created `revisionId`. The caller can immediately use that ID for the next edit and repeat indefinitely.
 9. This chain does not depend on the existing `FORM-BODY-BOUNDS-01` or `FORUM-PUB-01`: alternating tiny valid titles are enough. Fixing request-byte/content ceilings alone would not bound the number of persistent rows created.
@@ -207,6 +208,35 @@
 
 **Boundary:** ordinary attachment content validation, 50 MB streaming bound and cleanup correctness remain Block F/current attachment controls; lack of general per-user file/storage quota is an explicit current product decision and is not this finding.
 
+## K6 — результат
+
+1. Audit target: current `main` `7cc23edede57994cdedab49c1556ddb55034dd29`.
+2. Verdict: **1 новый current-scope finding — `MENTION-FANOUT-01 Moderate/P2`; 0 deferred blockers.**
+3. Translation/background dedup first: provider/Queue-specific retries, external cost and provider failure lifecycle remain Block J. Current Worker keeps content generation disabled through `DISABLED_CONTENT_GENERATION_ACTION_RUNTIME`; provider, enqueuer and consumer are not wired in the current runtime.
+4. Prepared content-generation admission is fail-closed and actor-bound: current permission is checked at the route, active-account/measure admission is checked server-side, and the action capability rechecks admission before planning.
+5. Request-budget foundation is bounded: requester identity is pseudonymized, planning carries both global and requester fixed-window budgets, and the task stores consume those counters inside the same PostgreSQL transaction that creates/reactivates work. Budget denial rolls back provisional task/head mutations.
+6. Duplicate/current-work behavior is bounded: current translation and completed task states return without creating new work; duplicate pending/processing planning does not create a second logical task. Translation task execution has a durable default maximum of 3 attempts.
+7. Budget cleanup and reconciliation are bounded: expired budget cleanup accepts at most 1,000 rows per call; task reconciliation accepts at most 100 candidates per run and durably imposes a 60-second per-task reconciliation retry floor. A failed enqueue is counted and the bounded pass continues rather than recursively retrying inside the same run.
+8. **Independent K6 root cause:** published mention extraction returns every distinct valid profile recipient found in the accepted Markdown, with no server-side maximum recipient count.
+9. The publication transaction then resolves the complete recipient set against `user` and inserts one durable `forum_reply_notifications` row per matching recipient. The uniqueness constraint prevents duplicate recipient/post notifications, but it does not cap the number of different recipients in one successful publication.
+10. The direct reply side of the same transaction is bounded to topic author and optional parent author; therefore this finding is specifically the mention-recipient fan-out, correcting the broader K3 wording rather than adding a second reply-notification root cause.
+11. Editor autocomplete returns a small suggestion page, but that is presentation only. The authoritative publication parser accepts valid profile links from the submitted Markdown and does not require that each mention came from a particular UI suggestion interaction.
+12. This is independent from `FORUM-PUB-01`: that finding concerns the byte/character size of authored content. Here the missing boundary is semantic fan-out — one accepted publication has no independent ceiling on durable notification recipients. A future body-size ceiling does not by itself define an acceptable mention-recipient budget.
+13. Impact: one ordinary authenticated publisher can make a single successful forum write perform recipient-proportional user lookup and durable inbox insertion, creating notification spam and transaction/DB amplification proportional to the selected audience. The 5-second create/reply cooldown limits publication frequency but not recipients per publication; post-edit notification uniqueness prevents repeat notification to the same recipient/post but does not establish a general fan-out ceiling.
+14. Complaint decision/appeal notification fan-out did not produce an additional K6 finding: it is tied to privileged terminal moderation actions and an already rate-limited complaint domain, not an ordinary member-controlled broadcast surface.
+15. Severity: **Moderate/P2** — authenticated-only and no confidentiality/authority bypass, but the current member-facing mention feature provides an unbounded durable notification fan-out within one successful write.
+16. No production notification flood, generation call, Queue/provider call, cleanup/reconciliation run or external mutation was performed. Tests and current code were inspected; they were not executed during K6.
+17. #315 aggregate becomes **32 current findings + 4 deferred Stage-6 blockers**. Current severity becomes **13 Moderate/P2 + 19 Low/P3**; deferred remains **2 Moderate/P2 + 2 Low/P3**.
+18. Next bounded slice: **K7 — Dependency failure / backpressure**.
+
+### `MENTION-FANOUT-01` — Moderate/P2 — current
+
+**Root cause:** server-side published-mention extraction and notification persistence have no independent maximum for distinct recipients in one accepted publication; recipient/post uniqueness only deduplicates repeats.
+
+**Current impact:** an authenticated publisher can make one successful write create recipient-proportional durable inbox rows and associated DB work, producing notification spam and resource amplification.
+
+**Boundary:** direct reply recipients remain bounded; authored-content size remains `FORUM-PUB-01`; post-edit repeated revision growth remains `FORUM-EDIT-SPAM-01`; provider/Queue amplification remains Block J.
+
 ## Finding criteria
 
 1. Concrete current/prepared request or background path.
@@ -225,5 +255,5 @@
 
 ## Следующий шаг
 
-1. После продолжения владельца выполнить **K6 — Background / translation / notification amplification** на current main и остановиться после результата.
+1. После продолжения владельца выполнить **K7 — Dependency failure / backpressure** на current main и остановиться после результата.
 2. Remediation существующих findings/blockers Blocks B–K не начинать без отдельного назначения.
