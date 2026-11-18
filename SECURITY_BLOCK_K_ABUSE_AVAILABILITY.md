@@ -5,9 +5,10 @@
 1. Scope создан 2026-11-18; current K1 audit target — `main` `7cc23edede57994cdedab49c1556ddb55034dd29`.
 2. Blocks A–J закрыты как audit blocks; их findings в K не дублируются.
 3. **K1 — Abuse/availability inventory & ownership boundaries завершён: PASS, 0 новых current-scope findings и 0 deferred blockers.**
-4. Overall #315 остаётся **28 current findings + 4 deferred Stage-6 blockers**.
-5. Мира — auditor/coordinator. Remediation, technical planner и implementer не назначены.
-6. Production/Cloudflare/Neon/GitHub/provider settings mutation, load testing и внешние destructive/fault-injection действия не разрешены и не выполнялись.
+4. **K2 — Authentication brute-force / rate-limit bypass завершён: PASS, 0 новых current-scope findings и 0 deferred blockers.**
+5. Overall #315 остаётся **28 current findings + 4 deferred Stage-6 blockers**.
+6. Мира — auditor/coordinator. Remediation, technical planner и implementer не назначены.
+7. Production/Cloudflare/Neon/GitHub/provider settings mutation, load testing и внешние destructive/fault-injection действия не разрешены и не выполнялись.
 
 ## Цель
 
@@ -101,6 +102,26 @@
 13. No load test, brute-force attempt, external request flood, production query, deployment or settings mutation was performed.
 14. Next bounded slice: **K2 — Authentication brute-force / rate-limit bypass**.
 
+## K2 — результат
+
+1. Audit target: current `main` `7cc23edede57994cdedab49c1556ddb55034dd29`.
+2. Verdict: **PASS — 0 новых current-scope findings, 0 deferred blockers.**
+3. Canonical Vico auth config pins `better-auth@1.7.7` and `@better-auth/drizzle-adapter@1.7.7`, enables rate limiting explicitly, stores counters in PostgreSQL and uses only `cf-connecting-ip` as the Better Auth client-IP header.
+4. Exact Better Auth `v1.7.7` source was rechecked. Built-in special rules limit `/sign-in*`, `/sign-up*`, `/change-password*` and `/change-email*` to **3 requests / 10 seconds per client-IP+path**; reset/verification families use **3 / 60 seconds**. Other HTTP auth routes use the configured global default.
+5. The known PostgreSQL concurrency advisory `GHSA-44jh-23m7-hpcf` affects Drizzle/Better Auth versions `>=1.6.17,<1.7.7`; **1.7.7 is the patched version**. Exact v1.7.7 database limiter uses guarded atomic `incrementOne` admission so concurrent requests cannot all pass a stale counter read.
+6. Vico has its own PostgreSQL contention regression test `tests/database/auth-rate-limit-concurrency.test.ts`: it blocks the authoritative rate-limit row, launches concurrent real SQL requests, then asserts exactly the configured number are admitted, the rest receive 429, the persisted count remains capped and a different client-IP bucket remains independent. K2 inspected this test; it was not executed during this audit slice.
+7. Better Auth official rate-limit guidance requires trusting only a proxy-controlled client-IP header. Current Cloudflare documentation confirms `CF-Connecting-IP` is supplied by Cloudflare for ordinary visitor traffic to the origin/Worker boundary; Vico config lists only this header rather than caller-controlled `X-Forwarded-For`.
+8. No missing-IP bypass was established in the pinned Better Auth implementation: v1.7.7 falls back to one shared per-path `no-trusted-ip` bucket rather than skipping rate limiting when no trusted IP can be resolved.
+9. Public `/api/auth/*` requests go through `authRuntime.handle(request)` → canonical `auth.handler(request)`, so HTTP sign-in/sign-up/change-password requests traverse the request-phase limiter before auth endpoint execution.
+10. Direct `auth.api.*` calls do not automatically pass the HTTP request-phase limiter, but Vico does not expose a server-only direct API for guest email/password sign-in or sign-up. The one password-guessing-sensitive internal Settings operation (`changePassword`) deliberately re-enters the canonical `/api/auth/change-password` handler specifically to share the DB-backed rate-limit bucket.
+11. Other current direct `auth.api.*` uses are authenticated session/account operations (`getSession`, list/revoke sessions/accounts) and do not create an alternate unauthenticated password-guessing route. No direct-API brute-force bypass was established.
+12. Per-IP rate limiting is intentionally IP-scoped in Better Auth. Rotating attacker source IPs can obtain separate buckets, but current project requirement is **basic anti-abuse/rate limiting**; repository scope does not establish an account-identity/global brute-force policy that this violates. Treating distributed-IP resistance as a new current defect would overstate the current contract. Stage-6 upstream WAF/account-level controls may be considered later if operational risk justifies them.
+13. Existing `AUTH-ENUM-01` remains Block B and is not duplicated: K2 evaluated attempt throttling, not response-based account enumeration.
+14. Exact deployed Cloudflare Transform Rules/WAF/Bot settings are **Информация не проверена** and are not required to prove the current repository rate-limit path; Stage 6 remains paused.
+15. No brute-force traffic, load test, production request, credential attempt, external mutation or Cloudflare setting change was performed.
+16. #315 aggregate remains **28 current findings + 4 deferred Stage-6 blockers**.
+17. Next bounded slice: **K3 — Forum write spam & cross-endpoint concurrency**.
+
 ## Finding criteria
 
 1. Concrete current/prepared request or background path.
@@ -119,5 +140,5 @@
 
 ## Следующий шаг
 
-1. После продолжения владельца выполнить **K2 — Authentication brute-force / rate-limit bypass** на current main и остановиться после результата.
+1. После продолжения владельца выполнить **K3 — Forum write spam & cross-endpoint concurrency** на current main и остановиться после результата.
 2. Remediation существующих findings/blockers Blocks B–K не начинать без отдельного назначения.
