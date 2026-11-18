@@ -292,3 +292,8 @@ Watch. Лёва **STOP после полного Bookmarks plan**; следую�
 Мира завершила scope/fit review опережающего плана Bookmarks. Принято: bookmark target = topic; приватный список собственных сохранённых тем; отдельная минимальная persistence; authenticated self-state без RBAC; canonical topic Add/Remove и отдельный authenticated list route. Post-level bookmarks не входят в первый bounded-этап.
 
 Bookmarks остаётся только заранее подготовленным планом и не конкурирует с текущей реализацией Watch. Перед будущим implementation handoff — сверка с merged Watch/current main. Следующий planning slice Mute/block пока не активирован; Лёва остаётся STOP.
+
+
+## 2026-11-18 — Watch CI corrections after backend stage
+
+PR #345 backend/schema interim head updated to `bacaadfed1d2494380956c278aab7b0b1bbbd862`. GitHub first-run TypeScript and DB fixture failures confirmed via job logs and locally scoped corrections committed: typed response init/mocks, historical isolated watch table migration, dynamic current schema/migration expectations. On corrected head **GitHub database CI PASS**; full CI/browser remain in progress at the time of this entry. Drizzle snapshot + structural manifest old tables unchanged; new Watch relation only. PR stays Draft and not review-ready. Next Lira UI/private loader/tests/browser after owner's continuation; bookmarks planning remains separate.
