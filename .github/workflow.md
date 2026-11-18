@@ -15,7 +15,7 @@
 - Исполнитель: Лира / ChatGPT-6.
 - Draft implementation PR #345; stable review head ещё не объявлен.
 - Interim head `19a5015c0d2b9ff7ccfe57cd03e64b64e0a8e191`; UI/private loader сверены, exact-head checks job lint/typecheck/tests/build PASS, database PASS; `watch_browser` FAIL, общий CI не PASS.
-- Декомпозиция по запросу разработчика: UI/loader — STOP; unit/route/component test audit — добавлены interactive tests в interim head `ffb96ad59646abd15001d6be5879d8b848f4f26b`, `checks` job `134806758552` запущен, PASS пока неизвестен. Следующие отдельные шаги PG concurrency → Chromium acceptance; каждое продолжение только по команде.
+- Декомпозиция по запросу разработчика: UI/loader — STOP; unit/route/component test audit — добавлены interactive tests, exact-head `ffb96ad59646abd15001d6be5879d8b848f4f26b`, `checks` job `134806758552` **PASS** (lint/typecheck/unit/build/UI preview/metadata/schema parity). Следующий отдельный срез real PG concurrency/lifecycle, затем Chromium acceptance; каждый — только по команде.
 - Лира продолжает UI/tests/connected acceptance и после stable exact head возвращает работу Мире.
 
 ## Опережающий planning-track — завершён
