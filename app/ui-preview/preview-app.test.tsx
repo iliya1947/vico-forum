@@ -164,7 +164,7 @@ describe("interactive Pages preview", () => {
     expect(await screen.findByRole("status")).toBeInTheDocument();
   });
 
-  it("shows linked sign-in methods and active sessions without enabling account mutations", async () => {
+  it("signs out one other active session without enabling broader account mutations", async () => {
     const user = userEvent.setup();
     render(<EmbeddedPreview scenarioId="section-user" identity="user" />);
 
@@ -183,9 +183,13 @@ describe("interactive Pages preview", () => {
     expect(within(sessions).getByText("Safari on iPhone")).toBeInTheDocument();
     expect(within(sessions).getByText("This session")).toBeInTheDocument();
 
+    await user.click(within(sessions).getByRole("button", { name: "Sign out this other session" }));
+    expect(await screen.findByRole("status")).toHaveTextContent("Other sessions signed out.");
+    await waitFor(() => expect(within(sessions).queryByText("Safari on iPhone")).not.toBeInTheDocument());
+    expect(within(sessions).getByText("Chrome on Windows")).toBeInTheDocument();
+
     expect(screen.queryByRole("button", { name: "Connect Google" })).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Change password" })).not.toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: "Sign out this other session" })).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Sign out all other sessions" })).not.toBeInTheDocument();
   });
 
