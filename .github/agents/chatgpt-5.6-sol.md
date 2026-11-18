@@ -4,7 +4,7 @@
 
 1. Служебный PR: **#315**.
 2. Моя текущая работа: audit/coordination only; remediation и implementation не назначены.
-3. Текущий этап: **Block J complete. J1 PASS; J2 = deferred `GOOGLE-OAUTH-SCOPE-01 Low/P3`; J3–J8 PASS. Final J = 0 current findings + 1 deferred Stage-6 blocker.** Overall #315 = 28 current findings + 4 deferred Stage-6 blockers. Stage 6 paused; provider/Queue activation не выполнялась.
+3. Текущий этап: **Block K active. K1 inventory/ownership PASS, 0 new findings / 0 deferred blockers; следующий bounded slice — K2 Authentication brute-force / rate-limit bypass.** Overall #315 = 28 current findings + 4 deferred Stage-6 blockers. Stage 6 paused.
 4. Technical audit target B–D: `e279cb6c032a489a9044ca1191407df887c364b4`.
 5. Current `main` — `7cc23edede57994cdedab49c1556ddb55034dd29`. Delta от I1 target включает SA-04/SA-05–SA-08 и topic-title work; I2 отдельно re-read current workflows and source-of-truth.
 6. Лира, Марк и Лёва по #315 сейчас не назначены.
@@ -346,6 +346,12 @@
 313. Stage-6 gates: REPO-MAIN-GATE-01 before secret-bearing dispatch; applicable G/H/I rollout gates; GOOGLE-OAUTH-SCOPE-01 before real Google activation; then exact deployed OAuth/Queue/provider retention/log/cache/failure-path acceptance.
 314. Final Block J = 0 current + 1 deferred. Overall #315 unchanged at 28 current + 4 deferred. No external mutation/probe performed. Next security area after developer continuation: Block K generic abuse/availability.
 
+315. Block K created as `SECURITY_BLOCK_K_ABUSE_AVAILABILITY.md` on current main `7cc23edede57994cdedab49c1556ddb55034dd29`.
+316. K1 inventory/ownership: **PASS, 0 new current findings / 0 deferred blockers**.
+317. Current controls inventoried: canonical Better Auth DB rate limiting with cf-connecting-ip; transaction-serialized 5s topic/reply cooldown; independent Help-signal cooldown; complaint 32 KiB body + domain rate limiting; translation global/requester DB budgets; attachment 50 MB per-object ceiling; presence heartbeat DB-write throttle.
+318. Existing root-cause ownership preserved: E owns unbounded public reads/form bodies/forum publication bounds; F owns attachment validation; J owns provider/Queue amplification. No duplicate K IDs.
+319. K1 performed no load/flood/brute-force/external request, production query, deploy or settings mutation. Next K2 auth brute-force/rate-limit bypass.
+
 ## Ограничения
 
 1. Stage 6 external activation остаётся paused.
@@ -356,5 +362,5 @@
 
 ## Следующий шаг
 
-1. **Block J завершён.** После продолжения владельца начать **Block K — generic abuse / availability** отдельным bounded scope/file и остановиться после bounded step.
-2. Remediation findings/blockers Blocks B–J не начинать без отдельного назначения.
+1. После продолжения владельца выполнить **K2 — Authentication brute-force / rate-limit bypass** на current main и остановиться после результата.
+2. Remediation findings/blockers Blocks B–K не начинать без отдельного назначения.
