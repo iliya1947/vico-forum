@@ -76,7 +76,7 @@ describe("embedded preview routing", () => {
     expect(missing).toHaveAttribute("data-status", "404");
     expect(within(missing).getByRole("heading", { level: 1, name: "Forum page not found" })).toBeInTheDocument();
     expect(within(missing).getByText("The category, section, or topic does not exist.")).toBeInTheDocument();
-    expect(document.querySelector(".category-page")).toBeNull();
+    expect(document.querySelector(".category-heading")).toBeNull();
   });
 
   it("returns the shared 404 state for a missing section", async () => {
@@ -86,7 +86,7 @@ describe("embedded preview routing", () => {
     expect(missing).toHaveAttribute("data-status", "404");
     expect(within(missing).getByRole("heading", { level: 1, name: "Forum page not found" })).toBeInTheDocument();
     expect(within(missing).getByText("The category, section, or topic does not exist.")).toBeInTheDocument();
-    expect(document.querySelector(".section-page")).toBeNull();
+    expect(document.querySelector(".section-heading")).toBeNull();
   });
 
   it("returns the shared 404 state for an unknown preview route", async () => {
