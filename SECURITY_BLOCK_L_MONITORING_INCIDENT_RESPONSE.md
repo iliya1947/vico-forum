@@ -11,9 +11,11 @@
 7. **L5 — Audit / History integrity завершён: PASS, 0 новых current-scope findings и 0 deferred blockers.**
 8. **L6 — Revocation / containment / recovery actions завершён: PASS, 0 новых current-scope findings и 0 deferred blockers.**
 9. **L7 — Incident-response degraded operation / Stage-6 gates завершён: PASS, 0 новых current-scope findings и 0 deferred blockers.**
-10. Overall #315 остаётся **34 current findings + 4 deferred Stage-6 blockers**.
-11. Мира — auditor/coordinator. Remediation, technical planner и implementer не назначены.
-12. Production/Cloudflare/Neon/GitHub/provider mutation, external incident drill и destructive/fault-injection действия не разрешены и не выполнялись.
+10. **L8 — Cross-chain closeout завершён: PASS, 0 новых current-scope findings и 0 deferred blockers; Block L закрыт.**
+11. Final Block L: **1 current finding — `MON-AUTH-OUTCOME-01 Low/P3`; 0 deferred blockers.**
+12. Overall #315 остаётся **34 current findings + 4 deferred Stage-6 blockers**.
+13. Мира — auditor/coordinator. Remediation, technical planner и implementer не назначены.
+14. Production/Cloudflare/Neon/GitHub/provider mutation, external incident drill и destructive/fault-injection действия не разрешены и не выполнялись.
 
 ## Цель
 
@@ -248,6 +250,24 @@ Current official references:
 - https://developers.cloudflare.com/workers/observability/logs/workers-logs/
 - https://developers.cloudflare.com/workers/wrangler/configuration/
 
+## L8 — результат
+
+1. Audit target: current `main` `9c4639d23ca075c8bb92fbb909b96593d7bee127`.
+2. Verdict: **PASS — 0 новых current-scope findings, 0 deferred blockers; Block L завершён.**
+3. Cross-chain exact-auth path closes as intended except for the already-recorded L2 semantic defect: persisted auth transitions retain exact native facts, denied/rate-limited/unavailable attempts use the bounded attempt source, and Owner History preserves source identity/quality. The one confirmed break is `MON-AUTH-OUTCOME-01`: the stale-identity `/link-social` 409 is correctly denied by auth but retained as outcome `failed`. No second authentication finding is created because Block B owns the denial correctness and L owns only the monitoring label.
+4. Coalesced auth/access telemetry remains truthful end-to-end: trusted request/session attribution feeds bounded per-request collection, durable hourly admission/coalescing, explicit unknown/overflow/gap state, Security Monitoring and source-aware History. Coalescing/count mutation is disclosed as retained grouped state rather than immutable per-request audit.
+5. Attachment-security evidence closes from native `forum_attachment_security_events` through Owner Security Monitoring/History to the canonical Needs attention → Security → Attachments operator surface. Its storage-growth abuse is already `ATTACH-SECURITY-EVENT-SPAM-01` in Block K; L adds no duplicate retention/incident finding.
+6. System/dependency failure chain remains honest: current reads distinguish measured/unavailable, observation persistence can independently report recording unavailable, and `system.requests` is explicitly recorded-5xx/limited coverage rather than continuous uptime. A web-DB outage may suppress the in-app evidence sink; repository-prepared Workers Logs are the independent Stage-6 observability seam, whose deployed state/evidence remains **Информация не проверена** until external acceptance.
+7. Native Admin/Complaints/Help/Notifications/forum revision evidence retains original source identity into scoped/global/target History. Mandatory evidence is transactional where its domain requires it; sampled/coalesced/best-effort sources are not promoted into mandatory audit. L5 found no generic application rewrite/delete path for retained mandatory journals.
+8. Operator action closes through existing authoritative domains rather than Monitoring mutations: exact-Owner account deactivation, own-session controls, authorization changes, measures, Settings/Admin/Attention/profile actions and rollout/recovery workflows retain their own fresh auth/authz/state checks. Monitoring links do not create emergency bypass authority.
+9. Cross-block dedup PASS. Authentication/session correctness remains B; Admin/moderation privacy D; attachment integrity F; DB/migration rollout G; Worker topology/version H; source/secrets/provenance I; external provider/Queue lifecycle J; generic abuse/availability K. L contributes only `MON-AUTH-OUTCOME-01`.
+10. Final Block L = **1 current Low/P3 + 0 deferred blockers**. Overall #315 mechanically rechecked = **34 current findings: 13 Moderate/P2 + 21 Low/P3; 4 deferred Stage-6 blockers: 2 Moderate/P2 + 2 Low/P3; no current P0/P1**.
+11. Release boundary: the A–L audit is complete, but it is not a final public-release security PASS while confirmed current findings remain unresolved. Remediation/regression is a separate task; the plan's **Release pentesting** area remains a later whole-product pass before public release, after applicable remediation and external acceptance.
+12. Stage-6 correction gates remain inherited rather than duplicated: `REPO-MAIN-GATE-01` before secret-bearing production dispatch; `DB-RUNTIME-EVIDENCE-01` before schema-dependent Worker rollout; `WORKER-VERSION-URL-01` before private/write-capable Worker upload; `WORKER-ROLLBACK-FINALIZER-01` before production traffic promotion; `GOOGLE-OAUTH-SCOPE-01` before real Google OAuth activation. Current supply-chain acceptance findings such as the mutable PostgreSQL image must also be closed where their evidence is used by the Stage-6 verify chain.
+13. Non-finding Stage-6 acceptance remains mandatory at activation: re-read mutable Worker/Preview/binding topology; prove real Workers Logs/observability and external failure evidence; verify exact Google/provider/Queue configuration and failure/retry/data-handling paths; complete backup/restore acceptance; verify exact Owner binding and deployed product smoke. Their current external state is not inferred from repository preparation.
+14. No tests, production probes, external incident drill, Cloudflare/Neon/GitHub/provider mutation, backup/restore or deployment were executed during L8.
+15. Security audit areas **A–L are now closed as audit blocks**. Remediation has not started and remains unassigned.
+
 ## Finding criteria
 
 1. Concrete current/prepared monitoring or incident-response path.
@@ -266,5 +286,6 @@ Current official references:
 
 ## Следующий шаг
 
-1. После продолжения владельца выполнить **L8 — Cross-chain closeout** на current main и остановиться после результата.
-2. Remediation существующих findings/blockers Blocks B–L не начинать без отдельного назначения.
+1. После продолжения владельца подготовить **bounded remediation decomposition / приоритеты для подтверждённых current findings** и handoff техническому планировщику; implementation не начинать в этом шаге.
+2. Stage-6 deferred blockers остаются correction gates на своих внешних границах; Stage 6 не возобновлять без отдельного решения владельца.
+3. Release pentesting не начинать до соответствующего remediation/external acceptance.
