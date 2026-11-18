@@ -395,7 +395,7 @@ describe("interactive Pages preview", () => {
     )).not.toBeInTheDocument();
   });
 
-  it("creates, renames, and updates permissions for a custom role from the embedded Forum & roles authorization controls", async () => {
+  it("creates, configures, and assigns a custom role from the embedded Forum & roles authorization controls", async () => {
     const user = userEvent.setup();
     render(<EmbeddedPreview scenarioId="section-user" identity="owner" />);
 
@@ -435,6 +435,19 @@ describe("interactive Pages preview", () => {
     const updatedCard = updatedHeading.closest(".admin-role-card") as HTMLElement;
     expect(within(updatedCard).getByLabelText(/^Permissions: 1\//)).toBeInTheDocument();
     expect(within(updatedCard).getByLabelText("forum.topic.pin")).toBeChecked();
+
+    const alexHeading = screen.getByRole("heading", { name: "Alex Rivera" });
+    const alexCard = alexHeading.closest(".admin-user-card") as HTMLElement;
+    const assignmentForm = alexCard.querySelector(".admin-role-assignment") as HTMLElement;
+    await user.selectOptions(
+      within(assignmentForm).getByLabelText("Assigned role"),
+      "Settings helper renamed",
+    );
+    await user.click(within(assignmentForm).getByRole("button", { name: "Save" }));
+
+    const refreshedAlex = screen.getByRole("heading", { name: "Alex Rivera" })
+      .closest(".admin-user-card") as HTMLElement;
+    expect(within(refreshedAlex).getByText("Settings helper renamed")).toBeInTheDocument();
   });
 
   it("keeps the registration version unchanged on a no-op save", async () => {
