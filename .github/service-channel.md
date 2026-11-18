@@ -363,3 +363,8 @@ Draft implementation #345 current interim head `72e9b8d15ee515af1c5dab309cc66ea9
 ## 2026-11-18 — Watch unit/route/component tests checkpoint (Лира)
 
 В #345 `ffb96ad59646abd15001d6be5879d8b848f4f26b` добавлены только interactive control tests `app/forum/topic-watch-control.test.tsx` (ON/OFF desired state, pending lock, uncertain response refresh/no auto retry, stale topic response). Existing strict route + private loader tests проверены и сохранены; DB/browser production code не изменялся. GitHub `checks` job `134806758552` запущен, **не объявлять PASS до фактического завершения**. PR Draft, stable head ещё нет. STOP; следующий отдельный slice — real PG concurrency/lifecycle testing, затем Chromium/Worker acceptance.
+
+
+## 2026-11-18 — Watch component checks PASS (Лира)
+
+Exact-head `ffb96ad59646abd15001d6be5879d8b848f4f26b`, GitHub job `checks` `134806758552` **success**: lint/typecheck/unit/build/UI preview/metadata/schema parity passed, включая новые интерактивные Watch tests. В этой подзадаче дополнительных кодовых изменений нет. `watch_browser` и `attachments_browser` на том же head — failure; `database` на момент проверки ещё выполнялся. Draft #345, stable review head ещё не объявлен. STOP по декомпозиции; отдельно следующим шагом — real PG tests.
