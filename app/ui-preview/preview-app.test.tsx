@@ -181,6 +181,40 @@ describe("interactive Pages preview", () => {
     expect(screen.getByRole("combobox", { name: "Density" })).toHaveValue("compact");
   });
 
+  it("uses the last visited Admin destination when that opening behavior is selected", async () => {
+    const key = "vico:administrator-workspace:v1:owner";
+    window.localStorage.removeItem(key);
+    const user = userEvent.setup();
+    render(<EmbeddedPreview scenarioId="section-user" identity="owner" />);
+
+    await user.click(screen.getByRole("link", { name: "Settings" }));
+    let settingsOverview = document.querySelector(".settings-overview") as HTMLElement;
+    await user.click(within(settingsOverview).getByRole("link", { name: "Administrator preferences" }));
+
+    const behavior = await screen.findByRole("combobox", { name: "Open behavior" });
+    const destination = screen.getByRole("combobox", { name: "Default destination" });
+    expect(behavior).toHaveValue("default");
+    expect(destination).toHaveValue("overview");
+
+    await user.selectOptions(destination, "roles");
+    await user.click(screen.getByRole("link", { name: "Open Admin" }));
+    expect(await screen.findByRole("heading", { level: 2, name: "Roles & permissions" })).toBeInTheDocument();
+
+    await user.click(screen.getByRole("link", { name: "Settings" }));
+    settingsOverview = document.querySelector(".settings-overview") as HTMLElement;
+    await user.click(within(settingsOverview).getByRole("link", { name: "Administrator preferences" }));
+
+    await user.selectOptions(screen.getByRole("combobox", { name: "Default destination" }), "overview");
+    await user.selectOptions(screen.getByRole("combobox", { name: "Open behavior" }), "last");
+
+    expect(screen.getByRole("link", { name: "Open Admin" })).toHaveAttribute("href", "/en/admin/authorization");
+    expect(JSON.parse(window.localStorage.getItem(key) ?? "{}")).toMatchObject({
+      adminEntry: "last",
+      adminDefault: "overview",
+      adminLast: "roles",
+    });
+  });
+
   it("persists the administrator technical-details default for the current account", async () => {
     const key = "vico:administrator-workspace:v1:maya";
     window.localStorage.removeItem(key);
