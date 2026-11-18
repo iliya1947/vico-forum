@@ -220,3 +220,22 @@ correction при #344. Мира docs diff не создаёт.
 Workflow исправлен: следующий исполнитель Лира, текущий bounded task — Watch docs
 closeout (PROJECT_STATE factual sync до 0068 + отдельный PROJECT_HISTORY snapshot/index),
 после него отдельный Bookmarks docs closeout до 0069. Мира docs diff не пишет.
+
+
+## 2026-11-19 — Watch docs #349 coordinator review: WATCH-DOC-1
+
+Reviewed exact head `544906dd17517fcbb46cc63157e04fee9738f46d`, main
+`34ddf42985f6dc348e77d0dcc90e0aecc37fd15e`.
+
+Verified: docs-only 3 files, factual migration ceiling 0069, Watch 0068/history facts,
+implementation exact-head 17/17 success, docs head 2/2 success, no Stage-6 or owner visual
+overclaim. No factual defect in existing three-file diff.
+
+One current-doc completeness defect: permanent Watch product semantics are only in
+PROJECT_HISTORY/service plan; history explicitly is not source of truth, PROJECT_STATE is
+current-state only, and no narrower Watch/notifications permanent SOT exists. PROJECT.md is
+the existing product/technical baseline.
+
+Returned one bounded correction to Lira: add concise permanent Watch contract to PROJECT.md
+(product semantics only; no implementation/CI/PR details). New head requires new coordinator
+docs cycle before independent review.
