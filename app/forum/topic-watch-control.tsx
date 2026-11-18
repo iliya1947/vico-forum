@@ -42,7 +42,8 @@ export function TopicWatchControl({ topicId, actorId, locale, state }: {
     } else {
       // An error response may follow a committed write with a lost acknowledgement.
       // Preserve the previous state without claiming it is the new server state.
-      setError("error" in result ? result.error : "unexpected");
+      setError("error" in result && typeof result.error === "string"
+        ? result.error as ForumMutationError["error"] : "unexpected");
       setRequiresRefresh(true);
     }
   }, [pending, fetcher.data, actorId, topicId]);
@@ -76,7 +77,7 @@ export function TopicWatchControl({ topicId, actorId, locale, state }: {
       {confirmed === "unavailable" ? t("topicWatchUnavailable")
         : t(isWatching ? "topicWatchOn" : "topicWatchOff")}
     </span>
-    {error && <p role="alert">{t("forumWriteError_" + error)} {t("topicWatchVerify")}</p>}
+    {error && <p role="alert">{t(`forumWriteError_${error}`)} {t("topicWatchVerify")}</p>}
     {(requiresRefresh || confirmed === "unavailable") &&
       <button type="button" onClick={refresh} disabled={pending || refreshing}>
         {t(refreshing ? "topicWatchUpdating" : "topicWatchRefresh")}
