@@ -32,4 +32,18 @@
 
 ## Следующий шаг
 
-**Лира STOP. Следующий исполнитель — Мира / ChatGPT-5.6 Sol** для coordinator whole-PR review **Watch docs PR #349 (Draft)** на stable exact head `544906dd17517fcbb46cc63157e04fee9738f46d` против `main` `34ddf42985f6dc348e77d0dcc90e0aecc37fd15e`; применимые CI **2/2 PASS** (`checks`, `database`). Изменены только `PROJECT_STATE.md`, `docs/PROJECT_HISTORY/PROJECT_HISTORY.md`, новый `docs/PROJECT_HISTORY/PROJECT_HISTORY_30.md`. Watch migration `0068` отмечена в history; в `PROJECT_STATE.md` фактически правильный текущий repo migration ceiling `0069` (Books уже merged, но его docs closeout здесь не проводится). Проверить фактическую точность и границы docs, при confirmed findings — единый пакет Лире. После coordinator PASS — предусмотренный независимый docs reviewer; merge выполняет владелец. **Только после merge #349** — отдельный Bookmarks docs closeout PR `0069`. Далее Mute/block по #342; #342 служебный, не merge; #300 не использовать.
+**Следующий исполнитель — Лира / ChatGPT-6.** Watch docs PR #349 coordinator review
+на exact head `544906dd17517fcbb46cc63157e04fee9738f46d` нашёл один confirmed
+current-doc finding **WATCH-DOC-1**: permanent Watch semantics находятся только в
+history/service material, но не в permanent source-of-truth.
+
+Bounded correction: добавить в `PROJECT.md` краткий permanent Watch product contract:
+explicit authenticated active-user Watch/Unwatch own-state; no auto-watch; future ordinary
+reply notifications через существующий inbox; Unwatch prospective без удаления старых
+notices; dedupe с author/parent/mention paths; отсутствие read-state coupling и нового
+RBAC permission. Не переносить в PROJECT.md SQL locks, CI/PR/history details.
+
+Текущие PROJECT_STATE migration ceiling 0069, PROJECT_HISTORY_30 facts и Stage-6/visual
+boundaries признаны корректными. После correction — новый stable docs head + applicable
+checks → STOP Мире на новый coordinator docs cycle. До PASS independent reviewer не
+подключать. #349 Draft; #342 служебный и не merge; #300 не использовать.
