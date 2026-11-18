@@ -170,3 +170,10 @@ STOP at this subtask. No merge/production/deployment or metadata transition of #
 ## 2026-11-18 — correction: Bookmarks assignment cancelled
 
 Владелец уточнил исполнителя: предыдущее назначение на Bookmarks #346 отменено. **Лира не реализует Bookmarks** и не изменяет #346 по этому назначению. Исполнитель — Лёва / Codex-6.1 Sol.
+
+
+## 2026-11-18 — correction: Bookmarks implementation remains assigned to Lira
+
+Уточнение владельца: «Лёва» означало, что Лёва завершил planning, а не смену исполнителя. Предыдущее сообщение об отмене назначения Лиры было ошибочным.
+
+**Актуально:** Лира продолжает реализацию Bookmarks в Draft PR #346 по принятому Bookmarks plan. После полной реализации и stable exact head — STOP и возврат Мире на coordinator whole-PR review. Лёва после PASS Миры выполняет независимый technical review; он не является implementer этого этапа.
