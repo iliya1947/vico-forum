@@ -1462,7 +1462,7 @@ function previewSettingsAdministratorData(scenario: Scenario) {
       ? (["overview", "roles"] as const)
       : ([] as const),
     attention: {
-      signals: ["needs-details"] as const,
+      signals: ["needs-details", "needs-review"] as const,
       complaints: [] as const,
       security: [] as const,
     },
@@ -2263,7 +2263,7 @@ function PreviewAttentionRoute({ scenario, interactions }: {
       (group === "appeals" && item.type === "appeal") ||
       (group === "needs-review" && item.type === "review-status"));
   return <AttentionCenterView
-    locale={scenario.locale} mode={mode} group={group}
+    locale={scenario.locale} accountId={previewUser(scenario)?.id ?? null} mode={mode} group={group}
     queue={mode === "signals"
       ? { cases: selectedCases, hasMore: false, page: 0 }
       : null}
