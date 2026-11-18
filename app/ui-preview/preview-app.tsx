@@ -27,6 +27,7 @@ import { ForumRouteError } from "../forum/ui";
 import SettingsRoute from "../routes/settings";
 import SettingsAccountRoute from "../routes/settings-account";
 import SettingsAdministratorRoute from "../routes/settings-administrator";
+import SettingsForumRoute from "../routes/settings-forum";
 import SettingsPrivacyRoute from "../routes/settings-privacy";
 import SettingsUserRoute from "../routes/settings-user";
 import {
@@ -266,6 +267,9 @@ type PreviewInteractionState = {
   localeSaved: boolean;
   showOnline: boolean;
   googleLinked: boolean;
+  registrationGoogleEnabled: boolean;
+  registrationEmailEnabled: boolean;
+  registrationVersion: number;
   revokedAccountSessionIds: Set<string>;
   authorization: PreviewAuthorizationState;
 };
@@ -285,6 +289,9 @@ function createPreviewInteractionState(): PreviewInteractionState {
     localeSaved: false,
     showOnline: true,
     googleLinked: false,
+    registrationGoogleEnabled: true,
+    registrationEmailEnabled: true,
+    registrationVersion: 1,
     revokedAccountSessionIds: new Set(),
     authorization: createPreviewAuthorizationState(),
   };
@@ -1199,6 +1206,7 @@ export function EmbeddedPreview({ scenarioId, identity }: { scenarioId: string; 
         || (intent === "open" && form.classList.contains("notification-form"))
         || (intent === "save-locale" && form.classList.contains("settings-locale-form"))
         || (intent === "save-online-visibility" && form.classList.contains("settings-privacy-form"))
+        || (!intent && form.classList.contains("settings-registration-form"))
         || (intent === "change-password" && form.classList.contains("settings-account-form"))
         || (intent === "revoke-one" && form.classList.contains("settings-account-revoke-form"))
         || (intent === "revoke-others" && form.classList.contains("settings-account-revoke-all"))
@@ -1395,6 +1403,12 @@ function previewRouter(
       loader: () => previewSettingsAdministratorData(scenario),
     },
     {
+      path: "/:locale/settings/forum",
+      element: <SettingsForumRoute />,
+      loader: () => previewSettingsForumData(scenario, interactions),
+      action: ({ request }) => previewSettingsForumAction(scenario, interactions, request),
+    },
+    {
       path: "/:locale/settings/privacy",
       element: <SettingsPrivacyRoute />,
       loader: () => previewSettingsPrivacyData(scenario, interactions),
@@ -1450,6 +1464,51 @@ function previewOnlinePresence(
     { id: "maya", name: "Maya Cohen", image: null },
   ].filter((member) => interactions.showOnline || member.id !== actor?.id);
   return { count: members.length, members };
+}
+
+function previewSettingsForumData(
+  scenario: Scenario,
+  interactions: PreviewInteractionState,
+) {
+  const actor = previewUser(scenario);
+  return {
+    ...previewAuthorizationData(scenario.locale, interactions.authorization),
+    canManageElevated: scenario.identity === "owner",
+    canMutateAuthorization: scenario.identity === "owner",
+    access: {
+      actorId: actor?.id ?? "",
+      canEnter: true,
+      canManageAuthorization: true,
+      canReadForum: true,
+      canReadHistory: true,
+    },
+    registration: {
+      googleRegistrationEnabled: interactions.registrationGoogleEnabled,
+      emailRegistrationEnabled: interactions.registrationEmailEnabled,
+      version: interactions.registrationVersion,
+    },
+  };
+}
+
+async function previewSettingsForumAction(
+  scenario: Scenario,
+  interactions: PreviewInteractionState,
+  request: Request,
+) {
+  if (scenario.identity !== "owner") return { ok: false as const, error: "forbidden" as const };
+  const form = await request.formData();
+  const allowed = new Set(["expectedVersion", "googleRegistrationEnabled", "emailRegistrationEnabled"]);
+  if ([...form.keys()].some((key) => !allowed.has(key))) {
+    return { ok: false as const, error: "invalid" as const };
+  }
+  const expectedVersion = Number(String(form.get("expectedVersion") ?? ""));
+  if (!Number.isInteger(expectedVersion) || expectedVersion !== interactions.registrationVersion) {
+    return { ok: false as const, error: "conflict" as const };
+  }
+  interactions.registrationGoogleEnabled = form.get("googleRegistrationEnabled") === "on";
+  interactions.registrationEmailEnabled = form.get("emailRegistrationEnabled") === "on";
+  interactions.registrationVersion += 1;
+  return { ok: true as const };
 }
 
 function previewSettingsAdministratorData(scenario: Scenario) {
