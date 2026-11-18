@@ -117,3 +117,8 @@ STOP. Следующее явное продолжение владельца �
 В `feature/topic-watch` commit `ffb96ad59646abd15001d6be5879d8b848f4f26b` добавлен только `app/forum/topic-watch-control.test.tsx` (четыре параметризованные/отдельные React Router memory router + React Testing Library test cases) для названных сценариев. Production source/schema/PG/browser не менялись. На момент записи exact-head GitHub `checks` job `134806758552` **queued**, PASS не установлен. Общий PR #345 остаётся Draft, stable review head не назначен; отдельный `watch_browser` fail предыдущего head не диагностировался.
 
 STOP в рамках детальной декомпозиции. Отдельный следующий срез после проверки unit job — реальные PostgreSQL concurrency/lifecycle cases, затем отдельно connected Chromium/Worker failure acceptance. Не объединять эти срезы.
+
+
+### 2026-11-18 — Watch unit/route/component CI verification, STOP
+
+Проверен GitHub exact commit `ffb96ad59646abd15001d6be5879d8b848f4f26b` реализации #345. Job `checks` ID `134806758552` завершился **success**: lint, typecheck, unit tests (включая новый `app/forum/topic-watch-control.test.tsx`), build, UI preview, migration metadata и Drizzle schema parity — PASS. Unit/route/component subtask закрыт. В рамках этого среза не менялись код или БД. Отдельно на этом head: `watch_browser` и `attachments_browser` — failure; database job ещё running на момент проверки. Эти jobs не объявляются PASS. PR #345 Draft, head не stable. STOP. Следующий срез по отдельной команде — real PG concurrency/lifecycle tests.
