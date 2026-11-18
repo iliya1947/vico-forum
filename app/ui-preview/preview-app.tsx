@@ -8,6 +8,8 @@ import {
   type HeaderAuthUser,
 } from "../auth/auth-controls";
 import { PERMISSION_CATALOG, type PermissionKey } from "../authorization/catalog";
+import { BLOCK_MANAGE_PRIVILEGED_PERMISSION } from "../../db/user-measure-authority";
+import type { ProfilePrivilegedSections } from "../profile/sections";
 import { CredentialView } from "../auth/credential-view";
 import { credentialReturnPath } from "../auth/credential-path";
 import type { EmailAuthActions, AuthClientActions } from "../auth/auth-client";
@@ -4498,6 +4500,47 @@ function previewProfileAccessData(scenario: Scenario, routeUserId?: string) {
   return null;
 }
 
+function previewProfilePrivilegedSections(
+  scenario: Scenario,
+  interactions: PreviewInteractionState,
+  targetId: string,
+): ProfilePrivilegedSections {
+  const actor = previewUser(scenario);
+  if (!actor || (scenario.identity !== "manager" && scenario.identity !== "owner")) return {};
+
+  const authorization = previewAuthorizationData(scenario.locale, interactions.authorization);
+  const target = authorization.users.find((user) => user.id === targetId);
+  const elevatedRoleIds = authorization.roles
+    .filter((role) => role.grants.includes(BLOCK_MANAGE_PRIVILEGED_PERMISSION))
+    .map((role) => role.id);
+
+  const sections: ProfilePrivilegedSections = {
+    viewerId: actor.id,
+    measures: {
+      status: "ready",
+      value: previewAdminMeasuresForTarget(interactions, targetId),
+    },
+  };
+  if (target) {
+    sections.authorization = {
+      status: "ready",
+      value: {
+        actorId: actor.id,
+        management: {
+          userId: target.id,
+          roles: authorization.roles,
+          authorization: target.authorization,
+          elevatedRoleIds,
+        },
+        permissions: PERMISSION_CATALOG,
+        canManageElevated: scenario.identity === "owner",
+        canMutateAuthorization: scenario.identity === "owner",
+      },
+    };
+  }
+  return sections;
+}
+
 function PreviewProfileRoute({ scenario, interactions }: {
   scenario: Scenario;
   interactions: PreviewInteractionState;
@@ -4522,6 +4565,7 @@ function PreviewProfileRoute({ scenario, interactions }: {
   };
   return <ProfileView locale={scenario.locale} isSelf={identity?.id === id}
     editing={query.get("edit") === "1"} saved={query.get("saved") === "1"}
+    privileged={previewProfilePrivilegedSections(scenario, interactions, id)}
     profile={{ id, name, image: null, joinedAt: "2026-09-01T00:00:00.000Z", ...fields,
       role: { slug: id === "maya" ? "admin" : "user", displayName: id === "maya" ? "Administrator" : "User", isSystem: true },
       messageCount: empty ? 0 : 128, bestAnswerCount: empty ? 0 : 17 }}
@@ -4799,6 +4843,7 @@ function createPreviewAuthorizationState(): PreviewAuthorizationState {
       { id: "maya", name: "Maya Cohen", email: "maya@example.test", roleId: "role-admin", explicitAssignment: true, overrides: {} },
       { id: "alex", name: "Alex Rivera", email: "alex@example.test", roleId: "role-user", explicitAssignment: false,
         overrides: { "forum.translation.generate": "allow" } },
+      { id: "sam", name: "Sam Chen", email: "sam@example.test", roleId: "role-user", explicitAssignment: false, overrides: {} },
       { id: "noa", name: "Noa Levi", email: "noa@example.test", roleId: "role-reviewer", explicitAssignment: true,
         overrides: { "forum.reply.create": "deny" } },
     ],
