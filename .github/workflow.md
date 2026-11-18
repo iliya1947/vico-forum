@@ -18,7 +18,8 @@
 - Технический план Лёвы: завершён и принят Мирой.
 - W1/W2/W3: приняты; детали — `USER_ACTIONS_SERVICE_PLAN.md`.
 - Исполнитель: Лира / ChatGPT-6.
-- Implementation PR/head: ещё отсутствует.
+- Implementation PR #345: Draft, branch `feature/topic-watch`, промежуточный head `6cede3af5fe2d096cf01be676050a662b2d9f91b` (ещё не stable review head).
+- Backend/schema/route реализованы; UI/loader и относящиеся tests/CI/browser acceptance ещё не завершены.
 - После реализации: Мира coordinator review → Лёва technical review, если не участвовал в реализации.
 
 ## Опережающий planning-track
@@ -30,5 +31,5 @@
 
 ## Следующие параллельные шаги
 
-1. Лира реализует Watch в отдельном implementation PR и после stable head STOP возвращает Мире.
+1. Лира после продолжения владельца завершает Watch UI/private loader и focused/real-DB/browser проверки в #345; после stable exact head STOP возвращает Мире на coordinator review. До этого #345 Draft.
 2. Лёва исследует актуальный main и готовит полный технический план Bookmarks в `USER_ACTIONS_SERVICE_PLAN.md`, затем STOP.
