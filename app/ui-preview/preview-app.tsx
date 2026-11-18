@@ -2989,6 +2989,41 @@ function previewCategoryCardTopic(
   return null;
 }
 
+function previewAttentionTopic(
+  locale: PreviewLocale,
+  routeTopicId: string,
+) {
+  const samples = previewAttentionSamples();
+  const topicSample = samples.find((item) => item.topicId === routeTopicId);
+  const original = samples
+    .map((item) => item.original)
+    .find((candidate) => candidate?.id === routeTopicId);
+  const title = topicSample?.topicTitle ?? original?.title;
+  if (!title) return null;
+
+  const targetPostId = topicSample?.targetPostId ?? null;
+  const solved = routeTopicId === "solved-help";
+  return {
+    section: previewSectionPresentation(locale, HELP_SOLUTIONS_SERVICE_SECTION_ID),
+    topic: {
+      id: routeTopicId,
+      authorName: topicSample?.submittedByName ?? "Vico Forum member",
+      postCount: targetPostId ? 2 : 1,
+      createdAt: new Date(topicSample?.createdAt ?? "2026-10-10T09:00:00.000Z"),
+      isPinned: false,
+      tags: [],
+      isSolved: solved,
+      bestAnswerPostId: solved ? targetPostId : null,
+      targetPostId,
+      title: {
+        id: `${routeTopicId}-title-preview`,
+        originalContent: title,
+        sourceLocale: locale,
+      },
+    },
+  };
+}
+
 function previewDiscoveryTopic(
   locale: PreviewLocale,
   routeTopicId: string,
@@ -3040,7 +3075,8 @@ function previewDiscoveryTopic(
     };
   }
 
-  return previewCategoryCardTopic(locale, routeTopicId);
+  return previewAttentionTopic(locale, routeTopicId)
+    ?? previewCategoryCardTopic(locale, routeTopicId);
 }
 
 function PreviewTopicRoute({ scenario, interactions }: {
@@ -3202,9 +3238,16 @@ function PreviewTopicRoute({ scenario, interactions }: {
   }
 
   const replyAuthors = ["Maya Cohen", "Sam Chen", "Noa Levi"];
-  const messageCount = Math.max(1, matched.topic.postCount);
+  const matchedTopic = matched.topic as typeof matched.topic & {
+    isSolved?: boolean;
+    bestAnswerPostId?: string | null;
+    targetPostId?: string | null;
+  };
+  const messageCount = Math.max(1, matchedTopic.postCount);
   const posts = Array.from({ length: messageCount }, (_, index) => ({
-    id: `${matched.topic.id}-post-${index + 1}`,
+    id: matchedTopic.targetPostId && index === messageCount - 1
+      ? matchedTopic.targetPostId
+      : `${matchedTopic.id}-post-${index + 1}`,
     topicId: matched.topic.id,
     authorId: index === 0 ? "alex" : `preview-reply-${index}`,
     authorName: index === 0
@@ -3233,26 +3276,26 @@ function PreviewTopicRoute({ scenario, interactions }: {
   }));
 
   const previewTopic = {
-    id: matched.topic.id,
+    id: matchedTopic.id,
     sectionId: matched.section.id,
     authorId: "alex",
-    authorName: matched.topic.authorName,
-    createdAt: matched.topic.createdAt,
-    isPinned: matched.topic.isPinned,
-    isSolved: false,
+    authorName: matchedTopic.authorName,
+    createdAt: matchedTopic.createdAt,
+    isPinned: matchedTopic.isPinned,
+    isSolved: matchedTopic.isSolved ?? false,
     isClosed: false,
     closureVersion: 0,
-    bestAnswerPostId: null,
+    bestAnswerPostId: matchedTopic.bestAnswerPostId ?? null,
     needsDetails: false,
     duplicateOf: null,
     duplicateDisputed: false,
-    title: matched.topic.title,
+    title: matchedTopic.title,
     section: {
       id: matched.section.id,
       name: matched.section.name,
       category: matched.section.category,
     },
-    tags: matched.topic.tags,
+    tags: matchedTopic.tags,
     posts,
   };
 
