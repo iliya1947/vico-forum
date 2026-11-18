@@ -346,3 +346,10 @@ Draft implementation #345 current interim head `72e9b8d15ee515af1c5dab309cc66ea9
 - M2 recommendation: directional user Block suppresses ordinary notices from target actor and collapses their ordinary TopicView posts for blocker; no publication/read ban.
 
 До выбора M1/M2 Mute/block implementation не активируется. Watch #345 остаётся текущей реализацией Лиры; Bookmarks остаётся заранее принятым будущим этапом.
+
+
+## 2026-11-18 — owner accepted M1/M2; advance planning complete
+
+Владелец принял рекомендованные M1 и M2 без изменений. Mute = topic-level suppression всех будущих ordinary reply/mention notices без Unwatch/content hiding. Block = directional user filter: ordinary notices from target actor suppressed, target actor posts collapsed for blocker with explicit reveal; no publication/read ban.
+
+Таким образом Mute/block scope полностью принят, а весь advance-planning перед #320 завершён. Watch #345 остаётся текущим implementation-этапом; Bookmarks и затем Mute/block ждут своей очереди.
