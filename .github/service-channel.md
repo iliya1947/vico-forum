@@ -731,3 +731,45 @@ PASS не подключается. #342 остаётся служебным PR 
 **CI:** exact SHA `a3e6c0e63c99078ece89303592e1f24b2fe440fb` — **18/18 check-runs completed/success**, 0 failed/pending; includes `checks` (lint/typecheck/unit/build/preview/schema), `database` PG17, `bookmarks_browser` Worker/Better Auth/PG17/Chromium и regression browsers. Implementation PR #346 open Draft, mergeable=true. No B6 rewrite, no product scope expansion, no merge/deploy/docs closeout. Лира не проводила whole-PR self-review.
 
 **Handoff:** следующий участник — **Мира / ChatGPT-5.6 Sol** для нового coordinator whole-PR review exact head `a3e6c0e63c99078ece89303592e1f24b2fe440fb`; independently verify B5-R1 and B1–B7. При подтверждённых current-scope findings единый пакет Лире. Только после coordinator PASS — Лёва / Codex-6.1 Sol independent technical review на том же head. #342 служебный, не merge. **Лира STOP.**
+
+
+## 2026-11-18 — Мира: Bookmarks #346 coordinator re-review после B5-R1 — PASS
+
+Новый whole-PR coordinator cycle выполнен на неизменном stable exact head
+`a3e6c0e63c99078ece89303592e1f24b2fe440fb` против принятого B1–B7 и
+актуального `main` `808c2b782952e13254cab8e2129dca07ca945e6f`.
+Между implementation base `9c4639d...` и текущим main изменён только `AGENTS.md`;
+feature/runtime/schema код main не расходится с reviewed base.
+
+B5-R1 correction проверена независимо. Diff от предыдущего coordinator-reviewed
+head `477ad6b...` ограничен тремя файлами:
+`app/forum/bookmarks-view.tsx`, `app/forum/bookmarks-view.test.tsx`,
+`tests/browser/topic-bookmarks/check.py`. Tab-local actor marker используется
+только как presentation history: server-side actor/own-row filtering остаются
+authoritative. При известном A→B transition на older-page выполняется replace
+на canonical `/:locale/bookmarks`; при первом/обычном deep link без actor
+transition cursor остаётся позицией, а не authority. Mutation writer, loader SQL,
+schema/ACL и credential redirect не менялись; auto-POST replay не добавлен.
+
+Регрессии прочитаны: component test отдельно сохраняет initial foreign cursor и
+проверяет A older→B с непустой newest collection; connected Chromium сценарий
+проверяет реальный Worker + Better Auth credential sign-out/sign-in с сохранённым
+`returnTo`, после чего B получает собственную first page, а ручной старый cursor
+остаётся допустимым и возвращает только own rows. Job log `135134839582`
+содержит **11/11 BOOKMARKS_CONNECTED** checkpoints без failure.
+
+Exact-head GitHub состояния проверены Мирой: **18 jobs / 18 success**, включая
+`checks`, PostgreSQL 17 `database`, `bookmarks_browser` и regression browsers.
+В `checks` отдельно SUCCESS lint, typecheck, tests, production build, UI preview,
+migration/schema validation; database job полностью SUCCESS.
+
+Whole B1–B7 seams пересобраны с предыдущими coordinator review: persistence/schema,
+runtime ACL, personal self-state admission, own-filtered keyset list, canonical
+topic writer, strict errors/cache boundaries, B6 real-PG concurrency/lifecycle и
+Watch/read/inbox independence не изменялись этой correction и не получили нового
+конфликта. **Coordinator PASS; confirmed current-scope defects = 0.**
+
+Следующий reviewer — **Лёва / Codex-6.1 Sol**, independent technical whole-PR review
+того же exact head `a3e6c0e63c99078ece89303592e1f24b2fe440fb`, код не менять.
+PASS или confirmed finding → STOP Мире. #346 остаётся Draft до independent result;
+#342 — служебный PR, не merge.
