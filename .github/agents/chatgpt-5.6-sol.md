@@ -4,7 +4,7 @@
 
 1. Служебный PR: **#315**.
 2. Моя текущая работа: audit/coordination only; remediation и implementation не назначены.
-3. Текущий этап: **Block J active. J1 PASS; J2 = deferred `GOOGLE-OAUTH-SCOPE-01 Low/P3`; J3 PASS; J4 Translation provider data egress PASS, 0 new findings / 0 deferred blockers; следующий bounded slice — J5 Queue/provider execution lifecycle.** Overall #315 = 28 current findings + 4 deferred Stage-6 blockers. Stage 6 paused; provider activation не выполнялась.
+3. Текущий этап: **Block J active. J1 PASS; J2 = deferred `GOOGLE-OAUTH-SCOPE-01 Low/P3`; J3–J5 PASS; следующий bounded slice — J6 External callback/webhook/outgoing seams.** Overall #315 = 28 current findings + 4 deferred Stage-6 blockers. Stage 6 paused; provider/Queue activation не выполнялась.
 4. Technical audit target B–D: `e279cb6c032a489a9044ca1191407df887c364b4`.
 5. Current `main` — `7cc23edede57994cdedab49c1556ddb55034dd29`. Delta от I1 target включает SA-04/SA-05–SA-08 и topic-title work; I2 отдельно re-read current workflows and source-of-truth.
 6. Лира, Марк и Лёва по #315 сейчас не назначены.
@@ -311,6 +311,19 @@
 281. Current Cloudflare docs rechecked 2026-11-18: `@cf/meta/m2m100-1.2b` accepts text/source_lang/target_lang, supports Batch and is marked Zero data retention; Workers AI standard inference does not retain Customer Content after delivery and does not train on it, subject to documented stateful/logging/legal exceptions.
 282. Future exact Stage6 provider/account/binding, AI Gateway logging/cache/stateful settings, provider terms, actual allowance values and live egress acceptance = `Информация не проверена`; absence now is not finding. Current missing M2M100 post-body capability is functionality gap, not security defect.
 283. J4 made no provider call/Queue dispatch/binding/AI Gateway/install/deploy/settings mutation. Aggregate stays 28 current + 4 deferred. Next J5 Queue/provider execution lifecycle.
+284. J5 target current main `7cc23edede57994cdedab49c1556ddb55034dd29`. Verdict: **PASS, 0 new current findings / 0 deferred blockers**.
+285. Current runtime has no Cloudflare Queue producer/consumer, Queue binding, MessageBatch ack/retry adapter or normal-runtime TranslationTaskReconciler construction; wrangler still has only Hyperdrive bindings.
+286. Prepared lifecycle persist-before-enqueue PASS for UI/title/body: durable task transaction completes before enqueuer gets `{translationTaskId}`. Queue message carries no source/provider/locale/kind authority; dispatcher reloads persisted kind and consumers reload authoritative state.
+287. Atomic claim + DB lease + claim token fences duplicates. Live duplicate gets already-claimed; expired lease may reclaim; stale claim token cannot persist stale/failure/publication.
+288. Consumers preflight source/revision, generation policy, current generation, target eligibility and existing translation before provider work. Post-body also validates protected policy/fingerprint. Publication repeats currentness/claim fences after provider response.
+289. Exactly-once external provider call is not claimed. Crash after provider success before commit can repeat, but every real execution claim consumes durable attemptCount; default maxAttempts=3. Final expired attempt reclaims with attemptStarted=false solely to persist retry-exhaustion without fourth provider call.
+290. Post-body partial retry can repeat earlier successful segments, but total provider work is bounded by maxAttempts plus configured per-attempt segment/character limits; no infinite provider loop established.
+291. Content allowance is occurrence-bound to task id/generation/attempt; admitted provider is durable, duplicate delivery reuses it. Deferred allowance retains retryNotBefore; reconciliation waits until ready. Deterministic occurrenceKey is available for future external allowance idempotency.
+292. Reconciliation max batch=100, uses SKIP LOCKED and 60s durable reservation progress, recovers old pending/enqueue-unknown, retry-released pending, expired processing, expired allowance leases and ready deferred allowance; it excludes live/terminal work.
+293. Failed/retry-exhausted durable DB state is observable DLQ-equivalent per project contract. Repository tests for these properties were inspected, not executed by J5.
+294. Cloudflare Queues current docs rechecked 2026-11-18: at-least-once/duplicate delivery, explicit per-message ack/retry/delay, default 3 delivery retries, DLQ after configured retry limit else deletion; limits include 128KB messages, max batch 100, max retry config 100, retention up to 14 days.
+295. Stage6 exact Queue adapter ack/retry mapping, malformed message terminalization, producer/consumer bindings, queue jurisdiction/retention, max_retries/retry delay/DLQ, permissions and actual reconciliation scheduler = `Информация не проверена`; these are activation gates, not findings because no concrete transport exists.
+296. J5 performed no Queue send/consume/provider call/binding/DLQ/scheduler/install/deploy/settings mutation. Aggregate stays 28 current + 4 deferred. Next J6 external callback/webhook/outgoing seams.
 
 ## Ограничения
 
@@ -322,5 +335,5 @@
 
 ## Следующий шаг
 
-1. После продолжения владельца выполнить **J5 — Queue/provider execution lifecycle** на current main и остановиться после результата.
+1. После продолжения владельца выполнить **J6 — External callback/webhook/outgoing seams** на current main и остановиться после результата.
 2. Remediation findings/blockers Blocks B–J не начинать без отдельного назначения.
