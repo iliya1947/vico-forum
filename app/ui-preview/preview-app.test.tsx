@@ -1616,6 +1616,49 @@ describe("interactive Pages preview", () => {
     expect(screen.getByLabelText("Website")).toHaveValue("https://vico.example/");
   });
 
+  it("opens My measures from the signed-in profile and reaches measure detail", async () => {
+    const user = userEvent.setup();
+    render(<EmbeddedPreview scenarioId="profile-own" identity="user" />);
+
+    await user.click(await screen.findByRole("link", { name: "My measures" }));
+    expect(await screen.findByRole("heading", { level: 1, name: "My measures" })).toBeInTheDocument();
+
+    const measureLink = document.querySelector(".admin-forum-objects a");
+    expect(measureLink).not.toBeNull();
+    await user.click(measureLink!);
+
+    expect(await screen.findByRole("heading", { level: 1, name: "Measure details" })).toBeInTheDocument();
+    expect(screen.getByText("Repeated off-topic promotional posts after a moderator warning.")).toBeInTheDocument();
+  });
+
+  it("submits an appeal and keeps the pending measure state in preview", async () => {
+    const user = userEvent.setup();
+    render(<EmbeddedPreview scenarioId="account-measure-detail" identity="user" />);
+
+    await user.type(
+      await screen.findByLabelText("Appeal explanation"),
+      "The restriction no longer matches my current forum activity.",
+    );
+    await user.click(screen.getByRole("button", { name: "Submit appeal" }));
+
+    expect(await screen.findByRole("status")).toHaveTextContent("Change saved.");
+    expect(screen.getByText("The restriction no longer matches my current forum activity.")).toBeInTheDocument();
+    expect(screen.getByText("1. Pending")).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Submit appeal" })).not.toBeInTheDocument();
+  });
+
+  it("requires sign-in for guest direct access to My measures", async () => {
+    render(<EmbeddedPreview scenarioId="account-measures-guest" />);
+
+    const unauthenticated = await screen.findByRole("alert");
+    expect(unauthenticated).toHaveAttribute("data-status", "401");
+    expect(within(unauthenticated).getByRole("heading", {
+      level: 1,
+      name: "Sign in required",
+    })).toBeInTheDocument();
+    expect(document.querySelector(".profile-card")).toBeNull();
+  });
+
   it("requires sign-in for guest direct access to Notifications", async () => {
     render(<EmbeddedPreview scenarioId="notifications-guest-unauthenticated" />);
 
