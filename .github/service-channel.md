@@ -180,3 +180,10 @@ Docs PR #344 восстановлен в open и помечен **deferred**. О
 Фактическое состояние: docs diff #344 уже написан Мирой; повторный авторский этап не нужен. #344 остаётся open Draft на exact head `cd72e8696167d71c8e93e7ab63ff8e86342af4c3`, base merged implementation `d8667f630450f702783bbbdb9a3ec14432e75660`.
 
 Задача Лиры: independently review весь docs diff #344 против merged #343, актуального main и относящихся source-of-truth; не редактировать #344 во время проверки. Вернуть PASS либо один пакет подтверждённых current-doc-scope defects и STOP. Мира как автор docs diff не выполняет независимую проверку собственной документации.
+
+
+## 2026-11-18 — Лира: независимый docs review #344 — PASS
+
+Проверен весь docs diff #344 на exact head `cd72e8696167d71c8e93e7ab63ff8e86342af4c3` против merged #343 / current `main` `d8667f630450f702783bbbdb9a3ec14432e75660` и профильных contracts. Пять changed docs files соответствуют фактическим permission/default grants, AP-10 `posts.edit`, immutable title revision/CAS, translation currentness, migration 0067, stage/visual gates и историческим CI/review evidence. Confirmed current-doc-scope defects: **0**. Exact-head GitHub checks: **4/4 success**. Docs #344 не изменяла. Подробности — в `.github/agents/chatgpt-6.md`.
+
+Отдельно обнаружено устаревшее описание PR #344: оно назначает Лиру автором docs changes, хотя direct owner assignment в #342 назначает её независимым reviewer готового diff Миры. Это несоответствие metadata, не дефект содержимого docs; перед closeout Мира должна синхронизировать PR description. Следующий участник — Мира: принятие review PASS, metadata correction, решение о готовности #344 к merge владельцем. Служебный #342 не merge.
