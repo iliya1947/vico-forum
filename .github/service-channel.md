@@ -150,10 +150,8 @@ PR #343 проверен на неизменившемся exact head `10321fdae
 **Implementation #343 готов к merge владельцем.** После фактического merge следующий отдельный этап — заключительный docs PR: обновить authorization catalog/default grants, AP-10 `posts.edit` applicability и фактический PROJECT_STATE/migration state. До merge документация не должна заявлять функцию как состояние `main`.
 
 
-## 2026-11-18 — implementation merged; docs closeout открыт
+## 2026-11-18 — implementation merged; bounded-задача завершена
 
 Implementation PR #343 merged в `main` 2026-11-18 08:14 UTC, merge commit `d8667f630450f702783bbbdb9a3ec14432e75660`.
 
-Открыт отдельный docs PR #344 от этого exact main. Head: `cd72e8696167d71c8e93e7ab63ff8e86342af4c3`. Он меняет только пять документационных файлов: `PROJECT_STATE.md`, `docs/auth/AUTHORIZATION.md`, `docs/ADMIN_PANEL.md`, history index и новый `PROJECT_HISTORY_29.md`.
-
-Документы фиксируют уже merged capability `forum.topic.title.editOwn`, initial grants, применение AP-10 `posts.edit`, migration history через `0067` и bounded historical snapshot. Product/runtime code и schema в #344 не меняются. На момент фиксации docs CI `checks` и `database` queued.
+Ошибочно открытый docs PR #344 закрыт без merge. Документационный closeout не является активной частью текущего маршрута. Следующий отдельный продуктовый блок после этой задачи — Watch.
