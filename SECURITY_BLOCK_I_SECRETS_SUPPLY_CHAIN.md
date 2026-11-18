@@ -2,16 +2,17 @@
 
 ## Статус
 
-1. Scope подготовлен 2026-11-12; current I5 audit target — `main` `7cc23edede57994cdedab49c1556ddb55034dd29`.
+1. Scope подготовлен 2026-11-12; current I6 audit target — `main` `7cc23edede57994cdedab49c1556ddb55034dd29`.
 2. Block H закрыт; его deferred blockers в I не дублируются.
 3. **I1 — Repository authority & main provenance завершён: 1 current-scope finding — `REPO-MAIN-GATE-01 Moderate/P2`.**
 4. **I2 — Workflow events, tokens & write authority завершён: PASS, 0 новых current-scope findings.**
 5. **I3 — Production Environments & secret admission завершён: PASS по repository-side chain, 0 новых current-scope findings; exact mutable GitHub Environment policy и secret inventory/location — `Информация не проверена`.**
 6. **I4 — Secret custody & leakage завершён: PASS, 0 новых current-scope findings и 0 новых deferred blockers.** Current tree / production Actions logs / production artifacts / exact current-main Pages artifact не подтвердили secret leakage; live `vico_forum_web` остаётся LOGIN-role без password expiry, но единственный current Neon project member — Owner/Admin, поэтому plaintext SQL-Editor-history risk не образует proven less-trusted access path.
 7. **I5 — Dependency & install provenance завершён: 1 current-scope finding — `CI-PYPI-PROVENANCE-01 Low/P3`; 0 новых deferred blockers.** Node/pnpm dependency chain PASS; Python browser acceptance installs exact Playwright but resolves unhashed floating transitives online on every run.
-8. Следующий bounded slice после продолжения владельца — **I6: Actions, tools & container provenance**.
-9. Мира — auditor/coordinator. Remediation, technical planner и implementer не назначены.
-10. Production/Cloudflare/Neon/GitHub settings mutation, secret rotation и workflow dispatch не разрешены и не выполнялись.
+8. **I6 — Actions, tools & container provenance завершён: 1 current-scope finding — `CI-POSTGRES-IMAGE-PROVENANCE-01 Low/P3`; 0 новых deferred blockers.** GitHub Actions refs/transitive composite action refs PASS; единственный external service image `postgres:17` остаётся mutable tag и разрешается в digest только во время run.
+9. Следующий bounded slice после продолжения владельца — **I7: Release/artifact supply-chain provenance**.
+10. Мира — auditor/coordinator. Remediation, technical planner и implementer не назначены.
+11. Production/Cloudflare/Neon/GitHub settings mutation, secret rotation и workflow dispatch не разрешены и не выполнялись.
 
 ## I1 — результат
 
@@ -130,6 +131,33 @@
 **Current impact:** unchanged repository/workflow code can execute changed external Python dependency code inside browser acceptance runners, allowing a compromised or malicious compatible transitive release to alter/falsify acceptance evidence.
 
 **Boundary:** affected jobs have `contents: read` only, no production secrets/Environment and disposable/synthetic resources; no repository-write, production-mutation or secret-exfiltration path is established.
+
+## I6 — результат
+
+1. Audit target: current `main` `7cc23edede57994cdedab49c1556ddb55034dd29`. Verdict: **1 новый current-scope finding — `CI-POSTGRES-IMAGE-PROVENANCE-01 Low/P3`; 0 новых deferred technical blockers.**
+2. Все 28 current workflow files были перечитаны по `uses:`, `image:` и runner/tool entrypoints. Current repository использует семь уникальных external GitHub Actions: `actions/checkout`, `pnpm/action-setup`, `actions/setup-node`, `actions/upload-artifact`, `actions/configure-pages`, `actions/upload-pages-artifact`, `actions/deploy-pages`.
+3. Every current external Action reference is pinned to a full 40-hex commit SHA. Current GitHub secure-use guidance recognizes full-length commit SHA pinning as the accepted fallback when a workflow dependency lockfile is not used.
+4. Exact pinned `action.yml` revisions were read for all seven actions. Six are Node actions with no nested `uses:`; `actions/upload-pages-artifact` is composite and its only nested action is `actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02`, also a full SHA. No mutable transitive Action ref was found.
+5. No independent remote executable download/install path was found in current workflow/scripts beyond dependency managers already covered by I5. Repository search found no `wget`, `git clone`, `npx`, `apt-get` or `docker run`; current `curl` use is local/production HTTP smoke or GitHub API JSON retrieval, not downloaded code execution.
+6. `ubuntu-latest` and `ubuntu-24.04` are GitHub-hosted runner labels. Current GitHub docs confirm GitHub maintains and updates their preinstalled software weekly. This is treated as the chosen CI platform trust root; no separate less-trusted publisher/code path or concrete current compromise chain was established, so runner-image mutability alone is not classified as a finding.
+7. External container inventory has one image only: `postgres:17`, referenced by **19 service jobs across 16 workflow files** (ordinary database CI, browser acceptance, and the paused Stage-6 Worker verification job).
+8. Current successful SA08 browser run `44295360463` proves the runtime resolution path: runner executed `docker pull postgres:17`, then resolved digest `sha256:0d938e975177bef9f1f61f3f9dbcf2e0aa0a139568f66d3415ed8892eb97f6ac`. The repository itself records only the tag and therefore does not authorize/review that digest as code state.
+9. Current Docker documentation explicitly states image tags are mutable and a later pull can resolve different content; digest references are immutable and identify one exact image.
+10. Current CI/database and connected-browser acceptance execute application migrations/tests against that service. Therefore an updated or compromised compatible `postgres:17` publication can change executable database/service behavior used to decide CI/browser acceptance **without any repository change or review**.
+11. Impact boundary is bounded. The inspected service-container creation receives synthetic `POSTGRES_*`, `GITHUB_ACTIONS=true` and `CI=true`; no repository token, production secret or workspace mount is present. Current PR/browser jobs also remain `contents: read` with no production Environment. Thus direct repository write, production secret exfiltration or production mutation is not proven; severity is **Low/P3**.
+12. `production-worker-rollout.yml` uses the same mutable `postgres:17` in its pre-Cloudflare verify job. Stage 6 is explicitly paused, so this future execution path does not create a second/deferred finding or raise current severity. The same root cause must nevertheless be included when `CI-POSTGRES-IMAGE-PROVENANCE-01` is remediated before Stage-6 verification resumes.
+13. No separate finding is created for lack of a GitHub workflow dependency lockfile, runner-image exact snapshot pinning or action allowlist enforcement: all observed action refs/transitive refs are exact SHAs, and no independent current exploit path from those missing hardening controls was established.
+14. No workflow run, package/image pull, settings mutation, production action or remediation was initiated by this audit. Existing repository files and existing Actions logs were read only.
+15. #315 aggregate becomes **27 current findings + 3 deferred Stage-6 blockers**.
+16. Next bounded slice after owner continuation: **I7 — Release/artifact supply-chain provenance**.
+
+### `CI-POSTGRES-IMAGE-PROVENANCE-01` — Low/P3
+
+**Root cause:** CI and browser acceptance execute the external Docker service image by mutable tag `postgres:17` rather than an immutable digest, so the executable image can change without a repository change.
+
+**Current impact:** changed or compromised image content can alter PostgreSQL/service behavior used by current CI and connected-browser acceptance, weakening the provenance of acceptance evidence.
+
+**Boundary:** inspected service containers do not receive repository/production secrets or a workspace mount; affected PR/browser jobs have read-only repository authority. No direct repository-write, production-mutation or secret-exfiltration path is proven. Stage-6 Worker verify uses the same root cause but remains paused.
 
 ## Цель
 
