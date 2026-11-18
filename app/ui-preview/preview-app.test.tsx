@@ -164,7 +164,7 @@ describe("interactive Pages preview", () => {
     expect(await screen.findByRole("status")).toBeInTheDocument();
   });
 
-  it("shows linked sign-in methods in Account & security without enabling account mutations", async () => {
+  it("shows linked sign-in methods and active sessions without enabling account mutations", async () => {
     const user = userEvent.setup();
     render(<EmbeddedPreview scenarioId="section-user" identity="user" />);
 
@@ -176,7 +176,17 @@ describe("interactive Pages preview", () => {
     const methods = document.querySelector("#settings-account-methods")?.parentElement as HTMLElement;
     expect(within(methods).getByText("Email and password")).toBeInTheDocument();
     expect(within(methods).getByText("Google")).toBeInTheDocument();
+
+    const sessionsHeading = screen.getByRole("heading", { level: 3, name: "Active sessions" });
+    const sessions = sessionsHeading.parentElement as HTMLElement;
+    expect(within(sessions).getByText("Chrome on Windows")).toBeInTheDocument();
+    expect(within(sessions).getByText("Safari on iPhone")).toBeInTheDocument();
+    expect(within(sessions).getByText("This session")).toBeInTheDocument();
+
     expect(screen.queryByRole("button", { name: "Connect Google" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Change password" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Sign out this other session" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Sign out all other sessions" })).not.toBeInTheDocument();
   });
 
   it("saves online visibility in Privacy settings and updates the local home presence", async () => {
