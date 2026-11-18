@@ -220,6 +220,7 @@ export const scenarios: readonly Scenario[] = [
   { id: "route-403", label: "System · 403", locale: "en", direction: "ltr", identity: "user", path: "/en/admin/authorization", view: "not-found", variant: "route-403", allowedIdentities: ["user"] },
   { id: "not-found", label: "System · 404", locale: "en", direction: "ltr", identity: "guest", path: "/en/missing", view: "not-found" },
   { id: "route-real-404", label: "System · real route 404", locale: "en", direction: "ltr", identity: "guest", path: "/en/missing-real-route", view: "home", allowedIdentities: ["guest"] },
+  { id: "topic-missing", label: "Topic · missing", locale: "en", direction: "ltr", identity: "guest", path: "/en/topics/missing-topic", view: "topic", allowedIdentities: ["guest"] },
   { id: "route-503", label: "System · 503", locale: "en", direction: "ltr", identity: "manager", path: "/en/admin/authorization", view: "not-found", variant: "route-503", allowedIdentities: ["manager"] },
   { id: "route-500", label: "System · unexpected", locale: "en", direction: "ltr", identity: "guest", path: "/en/topics/typed-api", view: "not-found", variant: "route-500" },
 ] as const;
@@ -1441,9 +1442,11 @@ function previewRouter(
     {
       path: "/:locale/topics/:topicId",
       element: <PreviewTopicRoute scenario={scenario} interactions={interactions} />,
+      loader: ({ params }) => previewTopicAccessData(scenario, interactions, params.topicId),
       action: ({ request, params }) => previewTopicAction(
         scenario, interactions, request, params.locale, params.topicId,
       ),
+      ErrorBoundary: ForumRouteError,
     },
     {
       path: "/:locale/admin/forum/topics/:topicId",
@@ -3079,6 +3082,32 @@ function previewDiscoveryTopic(
     ?? previewCategoryCardTopic(locale, routeTopicId);
 }
 
+function previewTopicAccessData(
+  scenario: Scenario,
+  interactions: PreviewInteractionState,
+  routeTopicId?: string,
+) {
+  if (!routeTopicId) {
+    throw new Response("Not Found", { status: 404 });
+  }
+  if (interactions.createdTopics.has(routeTopicId)) return null;
+  if (routeTopicId === topicId) return null;
+  if (previewHelpSolutions(scenario.locale).questions.some((question) => question.id === routeTopicId)) {
+    return null;
+  }
+
+  const knownSectionTopic = homepageCategories(scenario.locale)
+    .flatMap((overview) =>
+      previewCategory(scenario.locale, overview.id).sections.flatMap((candidateSection) =>
+        previewSection(scenario.locale, candidateSection.id).topics
+      )
+    )
+    .some((candidateTopic) => candidateTopic.id === routeTopicId);
+  if (knownSectionTopic || previewDiscoveryTopic(scenario.locale, routeTopicId)) return null;
+
+  throw new Response("Not Found", { status: 404 });
+}
+
 function PreviewTopicRoute({ scenario, interactions }: {
   scenario: Scenario;
   interactions: PreviewInteractionState;
@@ -3224,17 +3253,7 @@ function PreviewTopicRoute({ scenario, interactions }: {
     ?? previewDiscoveryTopic(scenario.locale, routeTopicId);
 
   if (!matched) {
-    return (
-      <TopicView
-        {...topicData(
-          scenario.locale,
-          scenario.direction,
-          scenario.identity,
-          true,
-          false,
-        )}
-      />
-    );
+    throw new Response("Not Found", { status: 404 });
   }
 
   const replyAuthors = ["Maya Cohen", "Sam Chen", "Noa Levi"];
