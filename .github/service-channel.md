@@ -20,6 +20,7 @@
 7. [G — Database & migrations](../SECURITY_BLOCK_G_DATABASE_MIGRATIONS.md)
 8. [H — Cloudflare / Workers / runtime](../SECURITY_BLOCK_H_CLOUDFLARE_WORKERS_RUNTIME.md)
 9. [I — Secrets & supply chain](../SECURITY_BLOCK_I_SECRETS_SUPPLY_CHAIN.md)
+10. [J — External integrations](../SECURITY_BLOCK_J_EXTERNAL_INTEGRATIONS.md)
 
 ## Текущее подтверждённое состояние
 
@@ -34,7 +35,8 @@
 9. **Block G — Database & migrations ЗАВЕРШЁН. Final current-scope: 3 findings — `DB-SEARCHPATH-01 Low/P3`, `DB-ACL-USER-DELETE-01 Low/P3`, `DB-TEST-TARGET-01 Low/P3`.** G8 дал 0 новых findings и исправил Stage-классификацию `DB-RUNTIME-EVIDENCE-01 Low/P3`: технический defect подтверждён, но это **Stage-6 blocker, не current-scope**, пока external integration paused. Descendant delta до current `main` `5992885e78b1642e41c9805116fcc256002b649c` (SA-03 #324, index-only migration `0064`) перепроверен и итог не изменил.
 10. **Block H — Cloudflare / Workers / runtime ЗАВЕРШЁН** на current `main` `593a03964b8407b249f7c9f5eb117ddb8b07736d`. Final: **0 current-scope findings; 2 deferred Stage-6 blockers — `WORKER-VERSION-URL-01 Moderate/P2`, `WORKER-ROLLBACK-FINALIZER-01 Moderate/P2`**. H8 cross-chain дал 0 additional findings и подтвердил отсутствие дублей с A–G.
 11. **Block I — Secrets & supply chain ЗАВЕРШЁН.** Final: **4 current findings — `REPO-MAIN-GATE-01 Moderate/P2`, `CI-PYPI-PROVENANCE-01 Low/P3`, `CI-POSTGRES-IMAGE-PROVENANCE-01 Low/P3`, `PAGES-ACCEPTANCE-PROVENANCE-01 Low/P3`; 0 Block-I deferred blockers.** I8 cross-chain PASS, 0 additional. `REPO-MAIN-GATE-01` — обязательный gate перед любым будущим Stage-6 production DB/credential/Worker dispatch; `CI-POSTGRES-IMAGE-PROVENANCE-01` — до доверия Worker verify. Exact mutable GitHub Environment secret inventory/policy и complete Secret Scanning state — **Информация не проверена**.
-12. Aggregate #315: **28 current-scope findings + 3 deferred Stage-6 blockers**. Severity: **9 Moderate/P2 + 19 Low/P3; current P0/P1 нет**. Deferred: **2 Moderate/P2 + 1 Low/P3**.
+12. **Block J — External integrations НАЧАТ. J1 PASS, 0 новых findings / 0 deferred blockers.** Google OAuth repository foundation существует, но live Google configuration/smoke не выполнены; Resend/Brevo/email sender отсутствуют; translation provider/Queue abstractions существуют, но current Worker explicitly имеет generation disabled и `providerWired=false`, `enqueuerWired=false`, `consumerWired=false`; real provider/Queue activation остаётся Stage 6.
+13. Aggregate #315: **28 current-scope findings + 3 deferred Stage-6 blockers**. Severity: **9 Moderate/P2 + 19 Low/P3; current P0/P1 нет**. Deferred: **2 Moderate/P2 + 1 Low/P3**.
 13. Implementation PR, technical planner и implementer для remediation сейчас не назначены.
 14. Cloudflare/Neon/production/GitHub-settings mutation по #315 не разрешена и не выполнялась.
 
@@ -90,7 +92,7 @@
 3. Current H closeout target: **`593a03964b8407b249f7c9f5eb117ddb8b07736d`**. Delta `ce62e783… → 593a0396…` — SA-04 A1 #327 migration/schema/tests only; H runtime/topology code unchanged. Source-of-truth docs пока всё ещё фиксируют `0064`/SA-04+ not implemented; это отдельный documentation drift вне H.
 4. **Block H закрыт:** 0 current-scope findings; 2 deferred Stage-6 blockers; H8 0 additional and no A–G duplicates.
 5. **Block I закрыт:** 4 current findings, 0 собственных deferred blockers; I8 дал 0 additional. Final mutable recheck: `main.protected=false`, `Protect main.enforcement=disabled`. Current-stage acceptance gates остаются `CI-PYPI-PROVENANCE-01` и `PAGES-ACCEPTANCE-PROVENANCE-01`; `CI-POSTGRES-IMAGE-PROVENANCE-01` также используется future Worker verify. `REPO-MAIN-GATE-01` обязательно закрыть до любого Stage-6 DB/credential/Worker dispatch.
-6. Следующий bounded security-блок по общей карте после продолжения владельца — **Block J: External integrations**. I8 его не начинал.
+6. **Block J J1 закрыт PASS:** current external integration inventory зафиксирован в `SECURITY_BLOCK_J_EXTERNAL_INTEGRATIONS.md`; новых findings/blockers нет. Следующий bounded step — **J2: Google OAuth external-provider boundary**.
 7. Exact `pg@8.23.0` query-timeout semantics и exact `drizzle-orm 0.45.2` transaction wrapper подтверждают, что lost/late COMMIT ACK возможен; current writers не auto-retry его. Locale отдельно reconciles; measures/Complaints/publication используют replay/CAS/idempotency.
 8. `AuthorizationRepository.mutate()` rollback-error preservation слабее новых helpers, но current fail-open/security impact не доказан — finding не создаётся.
 9. Advisory-lock compatibility с будущим real web Hyperdrive остаётся Stage-6 acceptance boundary; production web binding сейчас inactive/paused, поэтому это не current G5 finding.
