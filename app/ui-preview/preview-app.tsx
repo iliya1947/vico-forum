@@ -1528,9 +1528,14 @@ async function previewSettingsForumAction(
   if (scenario.variant === "settings-forum-registration-unavailable") {
     return { ok: false as const, error: "unavailable" as const };
   }
-  interactions.registrationGoogleEnabled = form.get("googleRegistrationEnabled") === "on";
-  interactions.registrationEmailEnabled = form.get("emailRegistrationEnabled") === "on";
-  interactions.registrationVersion += 1;
+  const googleRegistrationEnabled = form.get("googleRegistrationEnabled") === "on";
+  const emailRegistrationEnabled = form.get("emailRegistrationEnabled") === "on";
+  if (googleRegistrationEnabled !== interactions.registrationGoogleEnabled
+    || emailRegistrationEnabled !== interactions.registrationEmailEnabled) {
+    interactions.registrationGoogleEnabled = googleRegistrationEnabled;
+    interactions.registrationEmailEnabled = emailRegistrationEnabled;
+    interactions.registrationVersion += 1;
+  }
   return { ok: true as const };
 }
 
