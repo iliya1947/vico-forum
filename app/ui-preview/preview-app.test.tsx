@@ -226,9 +226,11 @@ describe("embedded preview routing", () => {
     const user = userEvent.setup();
     render(<EmbeddedPreview scenarioId="admin" identity="owner" />);
 
-    await user.type(await screen.findByLabelText("Role slug"), "preview-reviewer");
-    await user.type(screen.getByLabelText("Display name"), "Preview Reviewer");
-    await user.click(screen.getByRole("button", { name: "Create custom role" }));
+    await screen.findByRole("heading", { name: "Authorization management" });
+    const createRole = document.querySelector(".admin-create-role") as HTMLElement;
+    await user.type(within(createRole).getByLabelText("Role slug"), "preview-reviewer");
+    await user.type(within(createRole).getByLabelText("Display name"), "Preview Reviewer");
+    await user.click(within(createRole).getByRole("button", { name: "Create custom role" }));
 
     expect(await screen.findByRole("status")).toBeInTheDocument();
     const nav = document.querySelector(".admin-panel-nav") as HTMLElement;
