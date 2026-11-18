@@ -15,8 +15,8 @@
 - Review synthesis: оба review совпали на неизменном exact head, расхождений и подтверждённых current-scope defects нет. По действующему owner decision из `docs/UI_UX_PASS.md` функциональные bounded-срезы не задерживаются из-за косметики; финальная owner visual/product acceptance остаётся отдельным UI/UX pass перед публичным запуском. Поэтому отдельный Watch visual gate сейчас merge не блокирует.
 - Watch implementation review cycle завершён, #345 merged. Permanent/current-state docs closeout остаётся отдельным PR после implementation merge; это planning-задание не заменяет его.
 - Bookmarks: implementation Лиры в Draft PR #346, stable exact head **`a3e6c0e63c99078ece89303592e1f24b2fe440fb`**, актуальный main `808c2b782952e13254cab8e2129dca07ca945e6f`.
-- Bookmarks coordinator whole-PR review Миры и independent technical whole-PR review Лёвы на этом head: **оба PASS; confirmed current-scope defects = 0**. B5-R1 закрыт; B4 initial/manual cursor с server own filtering сохранён; B6 остаётся подтверждённым. Exact-head checks 18/18 success. Подробные независимые результаты — в service-channel и личном файле Лёвы.
-- Лёва код не менял, **STOP Мире** для synthesis/merge readiness. #346 ещё Draft/не merged; current-state docs closeout — отдельным PR после фактического implementation merge.
+- Bookmarks coordinator whole-PR review Миры и independent technical whole-PR review Лёвы на stable exact head **`a3e6c0e63c99078ece89303592e1f24b2fe440fb`**: **оба PASS; confirmed current-scope defects = 0**. B5-R1 закрыт; B4 cursor semantics сохранены; B6 остаётся подтверждённым. Exact-head GitHub 18/18 jobs success; connected Bookmarks 11/11 checkpoints. Лёва дополнительно повторил исходный B5 diagnostic и selected tests — PASS. Код в independent review не менялся.
+- Review synthesis Миры завершён: оба независимых результата согласуются, head не изменился. #346 переведён из Draft в Ready for review и **готов к merge владельцем**. После фактического merge — отдельный docs closeout; permanent/current-state docs до merge не обновлять.
 - Mute/block: план принят, реализация ждёт очереди.
 
 ## Опережающий planning-track
@@ -30,7 +30,11 @@
 
 ## Следующий шаг
 
-**Следующий участник — Мира.** Сопоставить coordinator и independent PASS Bookmarks
-#346 на `a3e6c0e63c99078ece89303592e1f24b2fe440fb`, зафиксировать готовность exact
-head к merge владельцем и последующий отдельный docs closeout. Лёва STOP;
-implementation-order не меняется. #342 служебный и не merge, #300 не использовать.
+**Следующее действие — владелец merge Bookmarks implementation PR #346** на exact
+head `a3e6c0e63c99078ece89303592e1f24b2fe440fb`. Review cycle завершён:
+Мира PASS + Лёва independent PASS, confirmed current-scope defects = 0,
+18/18 exact-head jobs success. PR Ready for review, mergeable=true.
+
+После фактического merge следующий bounded этап здесь — отдельный docs closeout
+Bookmarks/current-state; только затем implementation-order продолжается дальше.
+#342 служебный и не merge. #300 не использовать.
