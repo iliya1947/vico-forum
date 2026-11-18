@@ -18,6 +18,7 @@
 - Bookmarks #346: B6 finding закрыт Лирой только тестами. Новый stable exact head **`477ad6b1e5cf51bf94b3830e9ea4ea85d4e4fae5`**. Мира заново провела coordinator whole-PR review всего принятого B1–B7 scope: **PASS, current-scope defects = 0.** Независимо подтверждено, что B6 использует real PostgreSQL 17 connections и фактический lock graph через `pg_blocking_pids()`; Add×Add/Add×Remove order, writer×deactivation both orders, rollback/no partial effect, topic-delete FK cleanup и lock-order boundary закрыты. Production/schema/UI diff относительно предыдущего reviewed head отсутствует; изменён только `tests/database/topic-bookmarks.test.ts`. Exact-head GitHub checks: **18/18 completed success**, включая `checks`, rerun `database` и `bookmarks_browser`. Первый database attempt упал только в отдельном SA07 lock-тесте после завершения Bookmarks suite и прошёл без code change на same-head rerun; Bookmarks test не является установленной причиной.
 - Mute/block: план принят, реализация ждёт очереди.
 - Bookmarks independent technical whole-PR review Лёвы на `477ad6b1e5cf51bf94b3830e9ea4ea85d4e4fae5`: **PASS удержан, 1 confirmed current-scope P2 — B5-R1** (account switch сохраняет курсор предыдущего пользователя вместо перехода к началу списка). B6 independently проверен и закрыт: локально real PG17 10/10 PASS; UI/route/recovery 87/87 PASS, exact-head checks 18/18 success. Код не изменён. Finding/repro/границы записаны в service-channel и личном файле; Лёва STOP Мире.
+- Мира независимо перепроверила B5-R1 на том же exact head: **finding подтверждён как current-scope P2**. Loader применяет URL cursor к новому session actor, а credential return path сохраняет query; B5 требует reset к first page при account switch. Утечки чужих rows нет; B4 initial foreign cursor не меняется.
 
 ## Опережающий planning-track
 
@@ -30,4 +31,13 @@
 
 ## Следующий шаг
 
-**Следующий участник — Мира.** Принять independent review Лёвы и проверить один подтверждённый finding B5-R1 на `477ad6b1e5cf51bf94b3830e9ea4ea85d4e4fae5`; передать Лире bounded correction account-switch pagination и regression coverage. Принятый B5 contract не менять, B6 заново не открывать без новых оснований. После изменения реализации — новый stable head и coordinator whole-PR cycle до следующего independent review. Лёва STOP, #346 не готов к merge; служебный #342 не merge.
+**Следующий участник — Лира.** Исправить только подтверждённый B5-R1 в #346:
+при фактической смене actor старые `beforeSavedAt/beforeTopicId` не должны
+сохранять страницу предыдущей identity; новая identity должна попасть на canonical
+first page. Добавить regression A older page → B с собственной непустой newest
+collection. Не запрещать arbitrary initial foreign cursor, не повторять POST
+автоматически, не менять B1–B7 и не открывать B6 без новых оснований.
+
+После изменения — новый stable exact head и применимые checks, затем STOP и возврат
+Мире на новый coordinator whole-PR cycle. Лёва подключается только после PASS Миры.
+#346 не готов к merge; #342 служебный и не merge.
