@@ -526,3 +526,10 @@ S-T1 (schema/catalog/ACL/History), S-T2 (CAS/locks) и resource/privacy contract
 создавались и не запускались. Проверены docs-only diff/whitespace и актуальность
 refs. **Лёва STOP после последнего плана из шести задач перед #320.**
 Следующий агент — Мира; implementation-order не меняется, остальной backlog не открыт.
+
+
+## 2026-11-18 — owner handoff: Bookmarks implementation в #346
+
+По прямой команде владельца ошибочный прежний #346 не закрывается: его ветка очищена от старого visibility service-контекста, сброшена на актуальный main после merge Watch и PR переоформлен под **Bookmarks implementation**. Служебным каналом остаётся только #342.
+
+Лира / ChatGPT-6 назначена реализовать уже принятый Bookmarks scope **прямо в PR #346**. Перед кодом сверить принятый Bookmarks plan с актуальным main `9c4639d23ca075c8bb92fbb909b96593d7bee127` и merged Watch seams; перепроектирование без реального конфликта не требуется. После полной реализации и применимых checks — зафиксировать stable exact head и STOP для coordinator whole-PR review Миры. Mute/block, visibility и structure implementation этим handoff не активируются.
