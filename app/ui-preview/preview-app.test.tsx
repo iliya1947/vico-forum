@@ -395,6 +395,24 @@ describe("interactive Pages preview", () => {
     )).not.toBeInTheDocument();
   });
 
+  it("keeps Forum & roles owner-only for managers in Settings", async () => {
+    const user = userEvent.setup();
+    render(<EmbeddedPreview scenarioId="section-user" identity="manager" />);
+
+    await user.click(screen.getByRole("link", { name: "Settings" }));
+    const settingsOverview = document.querySelector(".settings-overview") as HTMLElement;
+    expect(within(settingsOverview).queryByRole("link", { name: "Forum & roles" })).not.toBeInTheDocument();
+
+    cleanup();
+    render(<EmbeddedPreview scenarioId="settings-forum-manager-forbidden" />);
+
+    const forbidden = await screen.findByRole("alert");
+    expect(within(forbidden).getByRole("heading", { level: 1, name: "Access denied" })).toBeInTheDocument();
+    expect(within(forbidden).getByText("You do not have permission to open this page.")).toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: "Authorization management" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("heading", { level: 2, name: "Registration" })).not.toBeInTheDocument();
+  });
+
   it("creates, configures, assigns, overrides, protects, then deletes an unassigned custom role in Forum & roles", async () => {
     const user = userEvent.setup();
     render(<EmbeddedPreview scenarioId="section-user" identity="owner" />);
