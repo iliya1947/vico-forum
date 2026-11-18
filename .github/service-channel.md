@@ -368,3 +368,10 @@ Draft implementation #345 current interim head `72e9b8d15ee515af1c5dab309cc66ea9
 ## 2026-11-18 — Watch component checks PASS (Лира)
 
 Exact-head `ffb96ad59646abd15001d6be5879d8b848f4f26b`, GitHub job `checks` `134806758552` **success**: lint/typecheck/unit/build/UI preview/metadata/schema parity passed, включая новые интерактивные Watch tests. В этой подзадаче дополнительных кодовых изменений нет. `watch_browser` и `attachments_browser` на том же head — failure; `database` на момент проверки ещё выполнялся. Draft #345, stable review head ещё не объявлен. STOP по декомпозиции; отдельно следующим шагом — real PG tests.
+
+
+## 2026-11-18 — correction: planning continues in #342
+
+По уточнению владельца #300 используется как общая карта оставшихся задач, но рабочий planning-channel не переносится туда и новый service PR не создаётся. #342 остаётся открытым; текущий planning-stage переключён на модерацию видимости опубликованного контента.
+
+Лёва назначен только на полный технический план скрытия/восстановления сообщений и тем. После плана — STOP. Структура форума/перенос тем будет следующим planning-slice по отдельной команде.
