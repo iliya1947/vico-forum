@@ -519,6 +519,69 @@ describe("embedded preview routing", () => {
     expect(screen.getByRole("link", { name: "Alex Rivera" })).toBeInTheDocument();
   });
 
+  it("opens the privileged Authorization section from Admin Users", async () => {
+    const user = userEvent.setup();
+    render(<EmbeddedPreview scenarioId="admin-topic" identity="manager" />);
+
+    let nav = document.querySelector(".admin-panel-nav") as HTMLElement;
+    await user.click(within(nav).getByRole("link", { name: "Users" }));
+
+    const alexLink = await screen.findByRole("link", { name: "Alex Rivera" });
+    const alexItem = alexLink.closest("li") as HTMLElement;
+    await user.click(within(alexItem).getByRole("link", { name: "Authorization" }));
+
+    expect(await screen.findByRole("heading", { level: 1, name: "Alex Rivera" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", {
+      level: 3,
+      name: "Authorization management",
+    })).toBeInTheDocument();
+    expect(document.querySelector("#authorization")).not.toBeNull();
+    expect(screen.getByRole("heading", { level: 2, name: "User measures" })).toBeInTheDocument();
+    expect(screen.getByText(
+      "Repeated off-topic promotional posts after a moderator warning.",
+    )).toBeInTheDocument();
+  });
+
+  it("opens the exact target Admin measures list from the privileged profile section", async () => {
+    const user = userEvent.setup();
+    render(<EmbeddedPreview scenarioId="admin-topic" identity="manager" />);
+
+    let nav = document.querySelector(".admin-panel-nav") as HTMLElement;
+    await user.click(within(nav).getByRole("link", { name: "Users" }));
+
+    const alexLink = await screen.findByRole("link", { name: "Alex Rivera" });
+    const alexItem = alexLink.closest("li") as HTMLElement;
+    await user.click(within(alexItem).getByRole("link", { name: "Authorization" }));
+
+    const measures = document.querySelector("#measures") as HTMLElement;
+    await user.click(within(measures).getByRole("link", { name: "User measures" }));
+
+    expect(await screen.findByRole("heading", { level: 2, name: "User measures" })).toBeInTheDocument();
+    expect(screen.getByLabelText("Exact user ID")).toHaveValue("alex");
+    expect(screen.getByRole("heading", { level: 3, name: "Alex Rivera" })).toBeInTheDocument();
+  });
+
+  it("updates inline profile authorization through the canonical Owner writer", async () => {
+    const user = userEvent.setup();
+    render(<EmbeddedPreview scenarioId="admin-topic" identity="owner" />);
+
+    let nav = document.querySelector(".admin-panel-nav") as HTMLElement;
+    await user.click(within(nav).getByRole("link", { name: "Users" }));
+
+    const alexLink = await screen.findByRole("link", { name: "Alex Rivera" });
+    const alexItem = alexLink.closest("li") as HTMLElement;
+    await user.click(within(alexItem).getByRole("link", { name: "Authorization" }));
+
+    const roleForm = document.querySelector("#authorization .admin-role-assignment") as HTMLElement;
+    await user.selectOptions(within(roleForm).getByLabelText("Assigned role"), "role-moderator");
+    await user.click(within(roleForm).getByRole("button", { name: "Save" }));
+
+    expect(await screen.findByRole("status")).toHaveTextContent("Authorization saved.");
+    expect(document.querySelector(".profile-role")).toHaveTextContent("Moderator");
+    const refreshedRoleForm = document.querySelector("#authorization .admin-role-assignment") as HTMLElement;
+    expect(within(refreshedRoleForm).getByLabelText("Assigned role")).toHaveValue("role-moderator");
+  });
+
   it("filters the Admin Users directory through its GET search", async () => {
     const user = userEvent.setup();
     render(<EmbeddedPreview scenarioId="admin-topic" identity="manager" />);
