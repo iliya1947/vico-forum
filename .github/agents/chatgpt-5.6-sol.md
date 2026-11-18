@@ -147,3 +147,26 @@ link сохраняется допустимым.
 фактическом actor transition, regression A older page → B newest collection,
 без auto-POST replay и без изменения B1–B7/B6. После нового stable head — новый
 coordinator whole-PR cycle.
+
+
+## 2026-11-18 — Bookmarks #346 coordinator re-review после B5-R1
+
+Whole-PR cycle на exact head `a3e6c0e63c99078ece89303592e1f24b2fe440fb`
+завершён: **PASS, confirmed current-scope defects = 0**.
+
+Correction относительно `477ad6b...` только в Bookmarks view и двух regression
+files. Проверено, что actor marker не является authority: server own filtering,
+canonical writer и loader SQL не изменены. A→B на older cursor reset к first page
+работает; initial foreign cursor без transition и ручной cursor текущего actor
+остаются допустимыми. Auto-POST replay отсутствует.
+
+GitHub exact-head проверен напрямую: 18/18 jobs success. Connected Bookmarks job
+`135134839582` прочитан: 11/11 BOOKMARKS_CONNECTED checkpoints, включая реальный
+credential A older → B newest reset и последующий manual old cursor только с own rows.
+
+Текущий main `808c2b782952e13254cab8e2129dca07ca945e6f` расходится с implementation
+base после Watch только изменениями `AGENTS.md`, поэтому нового feature conflict
+нет. B1–B7 пересобраны с предыдущим review; B6 остаётся закрытым.
+
+Следующий независимый reviewer — Лёва / Codex-6.1 Sol на том же exact head; код не
+менять, результат PASS/finding вернуть Мире.
