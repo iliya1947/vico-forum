@@ -3,18 +3,19 @@
 ## Текущая задача
 
 1. Служебный PR: **#315**.
-2. Моя текущая работа: audit/coordination only; remediation и implementation не назначены.
-3. Текущий этап: **audit areas A–L complete. Block L final = `MON-AUTH-OUTCOME-01 Low/P3`; L8 PASS, 0 additional.** Overall #315 = 34 current findings + 4 deferred Stage-6 blockers. Stage 6 paused; remediation не начата.
+2. Моя текущая работа: coordination; audit A–L закрыт, current remediation decomposition подготовлен, implementation не начата.
+3. Текущий этап: **R01 technical planning handoff.** `SECURITY_REMEDIATION_PLAN.md` содержит 19 bounded packages для всех 34 current findings; Лёва назначен technical planner только R01. Stage 6 paused.
 4. Technical audit target B–D: `e279cb6c032a489a9044ca1191407df887c364b4`.
 5. Current `main` — `9c4639d23ca075c8bb92fbb909b96593d7bee127`. После Block K main продвинулся Watch #345 (`0068_topic_watch`); Block L стартует на этом current main.
-6. Лира, Марк и Лёва по #315 сейчас не назначены.
+6. Лёва назначен только technical planner R01; Лира и Марк не назначены.
 
 ## Где читать состояние
 
 1. Общая карта: [SECURITY_IMPLEMENTATION_PLAN.md](../../SECURITY_IMPLEMENTATION_PLAN.md).
 2. Актуальные подтверждённые результаты и findings: [service-channel.md](../service-channel.md).
 3. Только текущий operational state: [workflow.md](../workflow.md).
-4. Детали блоков:
+4. Current remediation decomposition: [SECURITY_REMEDIATION_PLAN.md](../../SECURITY_REMEDIATION_PLAN.md).
+5. Детали блоков:
    - [Block A — Super-admin / Owner control plane](../../SECURITY_BLOCK_A_SUPER_ADMIN.md)
    - [Block B — Authentication & sessions](../../SECURITY_BLOCK_B_AUTH_SESSIONS.md)
    - [Block C — Authorization & privilege escalation](../../SECURITY_BLOCK_C_AUTHORIZATION.md)
@@ -476,6 +477,6 @@
 
 ## Следующий шаг
 
-1. После продолжения владельца подготовить **bounded remediation decomposition / приоритеты подтверждённых current findings** и handoff техническому планировщику; implementation не начинать в этом шаге.
-2. Stage 6 остаётся paused; deferred blockers активируются только на соответствующих external boundaries.
-3. Release pentesting оставить на период после remediation и external acceptance.
+1. Ожидается technical plan Лёвы для **R01 — `REPO-MAIN-GATE-01` only**.
+2. После плана Мира проверяет его scope/Stage границы и только затем готовит implementation handoff; implementation заранее не начинать.
+3. Stage 6 остаётся paused; deferred blockers активируются только на соответствующих external boundaries.
