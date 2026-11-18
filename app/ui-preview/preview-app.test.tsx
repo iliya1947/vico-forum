@@ -240,6 +240,25 @@ describe("interactive Pages preview", () => {
     expect(within(sessions).getByRole("button", { name: "Sign out all other sessions" })).toBeInTheDocument();
   });
 
+  it("reports an already inactive other session and refreshes the list", async () => {
+    const user = userEvent.setup();
+    render(<EmbeddedPreview scenarioId="settings-account-session-not-found" identity="user" />);
+
+    const sessionsHeading = await screen.findByRole("heading", { level: 3, name: "Active sessions" });
+    const sessions = sessionsHeading.parentElement as HTMLElement;
+    const safari = within(sessions).getByText("Safari on iPhone").closest("li") as HTMLElement;
+
+    await user.click(within(safari).getByRole("button", { name: "Sign out this other session" }));
+
+    expect(await screen.findByRole("alert")).toHaveTextContent(
+      "This session is no longer active. Refresh the list.",
+    );
+    await waitFor(() => expect(within(sessions).queryByText("Safari on iPhone")).not.toBeInTheDocument());
+    expect(within(sessions).getByText("Firefox on Android tablet")).toBeInTheDocument();
+    expect(within(sessions).getByText("Chrome on Windows")).toBeInTheDocument();
+    expect(within(sessions).getByText("This session")).toBeInTheDocument();
+  });
+
   it("shows a controlled invalid-password error without changing sessions", async () => {
     const user = userEvent.setup();
     render(<EmbeddedPreview scenarioId="settings-account-invalid-password" identity="user" />);
