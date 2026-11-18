@@ -215,6 +215,33 @@ describe("interactive Pages preview", () => {
     });
   });
 
+  it("opens the selected default Needs attention mode", async () => {
+    const key = "vico:administrator-workspace:v1:maya";
+    window.localStorage.removeItem(key);
+    const user = userEvent.setup();
+    render(<EmbeddedPreview scenarioId="section-user" identity="manager" />);
+
+    await user.click(screen.getByRole("link", { name: "Settings" }));
+    const settingsOverview = document.querySelector(".settings-overview") as HTMLElement;
+    await user.click(within(settingsOverview).getByRole("link", { name: "Administrator preferences" }));
+
+    const mode = await screen.findByRole("combobox", { name: "Default mode" });
+    expect(mode).toHaveValue("signals");
+
+    await user.selectOptions(mode, "complaints");
+
+    const openAttention = screen.getByRole("link", { name: "Open Needs attention" });
+    expect(openAttention).toHaveAttribute("href", "/en/attention?mode=complaints&group=group1");
+    expect(JSON.parse(window.localStorage.getItem(key) ?? "{}")).toMatchObject({
+      attentionEntry: "default",
+      attentionDefaultMode: "complaints",
+      attentionDefaultGroup: "group1",
+    });
+
+    await user.click(openAttention);
+    expect(await screen.findByRole("heading", { level: 2, name: "Queue" })).toBeInTheDocument();
+  });
+
   it("uses the last visited Needs attention group when that opening behavior is selected", async () => {
     const key = "vico:administrator-workspace:v1:maya";
     window.localStorage.removeItem(key);
