@@ -159,6 +159,8 @@ export const scenarios: readonly Scenario[] = [
   { id: "help-solutions-solutions", label: "Help & solutions · Solutions", locale: "en", direction: "ltr", identity: "guest", path: "/en/categories/help-solutions?mode=solutions", view: "category" },
   { id: "help-solutions-filters", label: "Help & solutions · Combined filters", locale: "en", direction: "ltr", identity: "guest", path: "/en/categories/help-solutions?mode=active&solution=outdated&answers=has&quality=normal&relation=standalone", view: "category" },
   { id: "help-solutions-filters-needs-details", label: "Help & solutions · Needs details filter", locale: "en", direction: "ltr", identity: "guest", path: "/en/categories/help-solutions?answers=has&quality=needs-details&relation=standalone", view: "category" },
+  { id: "help-solutions-filters-needs-review-guest", label: "Help & solutions · Needs review filter · guest unauthenticated", locale: "en", direction: "ltr", identity: "guest", path: "/en/categories/help-solutions?solution=needs-review", view: "category", allowedIdentities: ["guest"] },
+  { id: "help-solutions-filters-needs-review-user", label: "Help & solutions · Needs review filter · ordinary user forbidden", locale: "en", direction: "ltr", identity: "user", path: "/en/categories/help-solutions?solution=needs-review", view: "category", allowedIdentities: ["user"] },
   { id: "help-solutions-filters-manager", label: "Help & solutions · Needs review filter", locale: "en", direction: "ltr", identity: "manager", path: "/en/categories/help-solutions?solution=needs-review&answers=has&quality=normal&relation=standalone", view: "category", allowedIdentities: ["manager"] },
   { id: "help-solution-current", label: "Help solution · current", locale: "en", direction: "ltr", identity: "manager", path: "/en/topics/help-cloudflare-cache", view: "topic", allowedIdentities: ["guest", "user", "manager"] },
   { id: "help-solution-needs-review", label: "Help solution · needs review", locale: "en", direction: "ltr", identity: "manager", path: "/en/topics/help-neon-pooling", view: "topic", allowedIdentities: ["guest", "user", "manager"] },
@@ -2490,9 +2492,14 @@ function previewCategoryAccessData(
   routeCategoryId?: string,
 ) {
   if (routeCategoryId !== HELP_SOLUTIONS_CATEGORY_ID) return null;
-  const mode = new URL(request.url).searchParams.get("mode");
-  if ((mode === "mine" || mode === "help" || mode === "for-me") && !previewUser(scenario)) {
+  const searchParams = new URL(request.url).searchParams;
+  const mode = searchParams.get("mode");
+  const needsReview = searchParams.get("solution") === "needs-review";
+  if ((mode === "mine" || mode === "help" || mode === "for-me" || needsReview) && !previewUser(scenario)) {
     throw new Response("Unauthenticated", { status: 401 });
+  }
+  if (needsReview && scenario.identity !== "manager" && scenario.identity !== "owner") {
+    throw new Response("Forbidden", { status: 403 });
   }
   return null;
 }
