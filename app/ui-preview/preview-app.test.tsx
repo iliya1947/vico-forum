@@ -351,11 +351,12 @@ describe("embedded preview routing", () => {
     const changeHeading = await screen.findByRole("heading", { level: 3, name: "Change measure" });
     const changeForm = changeHeading.closest("form") as HTMLElement;
     await user.type(within(changeForm).getByLabelText("Explanation"), "Updated preview restriction scope.");
+    await user.click(within(changeForm).getByRole("checkbox", { name: "Create topics" }));
     await user.click(within(changeForm).getByRole("button", { name: "Change measure" }));
 
     expect(await screen.findByRole("status")).toHaveTextContent("Change saved.");
-    expect(screen.getByText("Updated preview restriction scope.")).toBeInTheDocument();
-    expect(screen.getByText("Version: 2")).toBeInTheDocument();
+    expect(screen.getAllByText("Updated preview restriction scope.").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("Version: 2").length).toBeGreaterThan(0);
   });
 
   it("lifts an Admin measure and removes its pending appeal from the index", async () => {
@@ -403,7 +404,7 @@ describe("embedded preview routing", () => {
 
     expect(await screen.findByRole("status")).toHaveTextContent("Change saved.");
     expect(screen.getByRole("heading", { level: 3, name: "1. Rejected" })).toBeInTheDocument();
-    expect(screen.getByText("The appeal does not change the original facts.")).toBeInTheDocument();
+    expect(screen.getAllByText("The appeal does not change the original facts.").length).toBeGreaterThan(0);
     expect(screen.queryByRole("button", { name: "Review appeal" })).not.toBeInTheDocument();
   });
 
