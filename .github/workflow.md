@@ -16,16 +16,15 @@
 - Draft implementation PR #345; stable review head ещё не объявлен.
 - Лира продолжает UI/tests/connected acceptance и после stable exact head возвращает работу Мире.
 
-## Опережающий planning-track
+## Опережающий planning-track — завершён
 
-- Bookmarks: полный план завершён и принят; implementation не активирован.
-- Mute/block: полный план Лёвы завершён; scope/fit Миры выполнен частично.
-- M3/M4/M6 и технические границы приняты условно.
-- Блокер Mute/block planning closeout: owner product decisions M1/M2.
+- Watch: технический план принят; implementation активен.
+- Bookmarks: полный план принят; implementation ждёт завершения Watch.
+- Mute/block: полный план принят полностью после owner decisions M1/M2.
+- M1: topic Mute suppresses all future ordinary reply/mention notices from that topic; Watch/content unchanged.
+- M2: directional user Block suppresses future ordinary notices from blocked actor and collapses that actor's ordinary TopicView posts for blocker; no publication/read ban.
+- M3/M4/M6: окончательно приняты вместе с M1/M2.
 
-## Требуемое решение владельца
+## Следующий шаг
 
-1. M1: принять рекомендованный **Mute темы = подавлять все ordinary reply/mention notices из этой темы**, не меняя Watch и контент; либо выбрать альтернативу.
-2. M2: принять рекомендованный **Block пользователя = directional notification filter + collapsed posts для blocker**, без запрета публикации/чтения; либо выбрать более сильный publication block.
-
-После M1/M2 Мира фиксирует окончательный Mute/block scope. Реализация Mute/block всё равно ждёт своей очереди после Watch → Bookmarks.
+Лира завершает Watch #345 до stable exact head и STOP для coordinator whole-PR review Миры. После полного closeout Watch следующий implementation bounded-этап — Bookmarks; отдельного повторного архитектурного планирования не требуется, только сверка уже принятого плана с актуальным main.
