@@ -188,10 +188,10 @@
 5. Accepted-object cleanup is bounded and replay-safe: cleanup batch max is 20, stale draft refs expire after 24h of inactivity, orphan candidates use one-hour grace plus durable claims/leases, and reservation sweep is separately budgeted. Real scheduler/R2 activation remains Stage 6 acceptance by source-of-truth.
 6. The owner-approved Editor contract explicitly says **do not introduce arbitrary per-user quotas on total file count or aggregate storage at this stage**. Therefore the absence of a general per-user file quota is not classified as a current defect.
 7. **Independent K5 root cause:** suspicious rejected upload attempts are durably inserted into `forum_attachment_security_events`, but this write path has no cooldown/request budget and no event-retention cleanup in current repository code.
-8. A cheap concrete chain exists without storing an attachment object: an authenticated actor with a valid editor upload context sends a fresh random attachment ID, declared size `1`, one-byte body and a forbidden filename such as `x.exe`. The stream reads only that one byte; `inspectAttachment()` reaches `forbidden-extension`, marks it `suspicious: true`, performs no R2 object write, and the route calls `recordSecurityEvent()`.
-9. `securityEventKey()` includes the caller-controlled fresh `attachmentId`; therefore changing only that UUID produces a different SHA-256 event identity. `recordSecurityEvent()` uses `ON CONFLICT DO NOTHING` only on this derived upload ID, so random IDs bypass dedup while preserving all authorization checks.
+8. Static request→storage analysis shows that a suspicious rejection can reach `recordSecurityEvent()` after normal authenticated editor admission without producing an accepted attachment object. The event identity is derived from upload metadata including the attachment identity, so distinct upload attempts are not coalesced into one durable event.
+9. `recordSecurityEvent()` uses `ON CONFLICT DO NOTHING` only for an identical derived event identity. That provides exact-event deduplication but does not impose a per-actor budget, cooldown or cross-attempt coalescing boundary.
 10. `recordSecurityEvent()` persists a new row directly and does not call `measureAdmission()` or another rate limiter. Repository search found no delete/retention path for `forum_attachment_security_events`; monitoring readers page the accumulated table.
-11. Result: one ordinary authenticated account that is allowed to upload attachments can generate unbounded durable security-event rows with tiny requests, consuming PostgreSQL/index space and polluting the security-monitoring signal stream. This is materially cheaper than actual 50 MB storage abuse and is independent of the intentionally unbounded per-user file quota policy.
+11. Result: one ordinary authenticated account with attachment-upload permission can repeatedly create distinct rejected security events and grow PostgreSQL/index state plus monitoring noise independently of accepted-object storage. This is separate from the intentionally absent general per-user file quota.
 12. Severity: **Moderate/P2** — authenticated-only and no authority bypass/data disclosure, but low-cost unbounded durable DB/log growth plus monitoring-noise amplification is a practical current availability/operational-security defect.
 13. No additional K5 finding: normal attachment byte ingestion is hard-bounded; cleanup passes are bounded; missing live cleanup scheduling/R2 configuration is explicitly Stage-6 acceptance rather than a current repository defect.
 14. Exact deployed R2 limits/costs/scheduler state are **Информация не проверена** and were not used to establish the finding.
@@ -201,9 +201,9 @@
 
 ### `ATTACH-SECURITY-EVENT-SPAM-01` — Moderate/P2 — current
 
-**Root cause:** suspicious rejected attachment attempts write one durable security-event row per derived upload identity, while the event-write path has no cooldown/budget/retention cleanup; the identity includes caller-chosen fresh attachment UUID.
+**Root cause:** suspicious rejected attachment attempts can produce distinct durable security-event rows, while the event-write path has only exact-event deduplication and no cooldown/budget/retention cleanup.
 
-**Current impact:** an authenticated attachment-capable user can use tiny forbidden-file requests to create unbounded PostgreSQL security-event/index growth and monitoring noise without ever storing a real attachment object.
+**Current impact:** an authenticated attachment-capable user can repeatedly grow PostgreSQL security-event/index state and monitoring noise through rejected upload attempts, independently of accepted-object storage.
 
 **Boundary:** ordinary attachment content validation, 50 MB streaming bound and cleanup correctness remain Block F/current attachment controls; lack of general per-user file/storage quota is an explicit current product decision and is not this finding.
 
