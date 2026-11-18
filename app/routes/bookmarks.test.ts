@@ -36,9 +36,10 @@ function load(context: RouterContextProvider, query = "") {
 describe("private Bookmarks list loader and cursor", () => {
   it("rejects guest before personal reads, with no-store on all route responses", async () => {
     const { context, readTopicBookmarks } = setup(false);
-    await expect(load(context)).rejects.toMatchObject({
-      status: 401, headers: new Headers({ "Cache-Control": "private, no-store" }),
-    });
+    const denied = await load(context).then(() => null, error => error);
+    expect(denied).toBeInstanceOf(Response);
+    expect((denied as Response).status).toBe(401);
+    expect((denied as Response).headers.get("Cache-Control")).toBe("private, no-store");
     expect(readTopicBookmarks).not.toHaveBeenCalled();
     const actual = headers({ parentHeaders: new Headers({
       "Cache-Control": "public,max-age=300", "Set-Cookie": "locale=ru; Path=/",
