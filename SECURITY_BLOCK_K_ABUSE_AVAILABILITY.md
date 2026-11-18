@@ -7,9 +7,10 @@
 3. **K1 — Abuse/availability inventory & ownership boundaries завершён: PASS, 0 новых current-scope findings и 0 deferred blockers.**
 4. **K2 — Authentication brute-force / rate-limit bypass завершён: PASS, 0 новых current-scope findings и 0 deferred blockers.**
 5. **K3 — Forum write spam & cross-endpoint concurrency завершён: 1 новый current-scope finding — `FORUM-EDIT-SPAM-01 Moderate/P2`; 0 deferred blockers.**
-6. Overall #315 становится **29 current findings + 4 deferred Stage-6 blockers**.
-7. Мира — auditor/coordinator. Remediation, technical planner и implementer не назначены.
-8. Production/Cloudflare/Neon/GitHub/provider settings mutation, load testing и внешние destructive/fault-injection действия не разрешены и не выполнялись.
+6. **K4 — Public expensive reads / query amplification завершён: 1 новый current-scope finding — `PUBLIC-READ-COST-01 Moderate/P2`; 0 deferred blockers.**
+7. Overall #315 становится **30 current findings + 4 deferred Stage-6 blockers**.
+8. Мира — auditor/coordinator. Remediation, technical planner и implementer не назначены.
+9. Production/Cloudflare/Neon/GitHub/provider settings mutation, load testing и внешние destructive/fault-injection действия не разрешены и не выполнялись.
 
 ## Цель
 
@@ -151,6 +152,32 @@
 
 **Boundary:** exact replays and concurrent stale baselines are fenced, and create/reply/signal/complaint paths have their own controls. The defect is specifically repeated successful sequential edits. It is independent of existing Block-E request-size/content-bound findings.
 
+## K4 — результат
+
+1. Audit target: current `main` `7cc23edede57994cdedab49c1556ddb55034dd29`.
+2. Verdict: **1 новый current-scope finding — `PUBLIC-READ-COST-01 Moderate/P2`; 0 deferred blockers.**
+3. Block-E dedup was rechecked first. `DISCOVERY-BOUNDS-01` owns unbounded Unanswered/Tags/Tag/Unread result sets; `FORUM-READ-BOUNDS-01` owns unbounded canonical section/topic snapshots. K4 does not duplicate those response-size/read-set defects.
+4. **Homepage:** unauthenticated `/[:locale]/` calls `readHomepage()` on every request. The repository performs two aggregate join queries over categories/sections/topics/posts with `count(distinct ...)`; response cardinality is relatively small, but aggregate work grows with total forum content. The route is explicitly `private, no-store` because online presence is user/privacy-sensitive, so this path has no shared document/data cache relief.
+5. **Popular:** unauthenticated `/[:locale]/popular` calls `readPopular()` on every request. SQL aggregates every post from the last 30 days grouped by topic, returns one row per active topic to application memory, then JavaScript sorts the full row set three times before slicing each period to at most 20 results. Therefore the response is bounded while DB + Worker work is not bounded by the requested output size.
+6. **Search:** unauthenticated `/[:locale]/search` limits output to 50 by default / 100 maximum, but the SQL joins current topic titles, current post revisions and tags, evaluates leading-and-trailing wildcard `ILIKE '%query%'`, groups by topic, orders matches and only then applies `LIMIT`. Repository search found no `pg_trgm` extension or GIN/GiST content index for these searchable text fields, so the current design has no repository-level index strategy that bounds arbitrary substring-search work as the corpus grows.
+7. Search query length <=200 and SQL parameterization remain valid controls but do not cap dataset scan/join/aggregate cost. `SEARCH-CONTROL-01` remains separate and only owns malformed NUL handling.
+8. Repeated public requests can therefore re-trigger corpus-proportional DB work without authentication or application-level per-client admission. This is distinct from generic Internet-scale DDoS: the application itself exposes requests whose backend cost grows materially with normal accumulated forum data even though response size is bounded.
+9. Existing public section/topic/unanswered/tag issues are not counted again. Their backend cost is already inseparable from the same unbounded result sets documented in Block E; K4's new finding is limited to bounded-output but corpus-proportional computation where response pagination alone would not solve the root cause.
+10. **Impact:** an unauthenticated client can repeatedly consume PostgreSQL CPU/I/O and Worker CPU on homepage/popular/search; cost grows with forum activity/content. The same expensive path is available to ordinary legitimate traffic, making availability degradation plausible before any external flood protection becomes relevant.
+11. Severity: **Moderate/P2** — public unauthenticated trigger and persistent corpus-proportional computation; no data disclosure or authority bypass, and no production load measurement was performed.
+12. Exact deployed Cloudflare cache/WAF/rate-limit behavior is **Информация не проверена** and cannot be relied upon as a repository mitigation. Stage 6 remains paused.
+13. No load test, EXPLAIN on production data, external flood, production DB query or Cloudflare mutation was performed. Finding is established from current request→repository query shape and absence of a repository search-index/cache/admission bound.
+14. #315 aggregate becomes **30 current findings + 4 deferred Stage-6 blockers**. Current severity becomes **11 Moderate/P2 + 19 Low/P3**; deferred remains **2 Moderate/P2 + 2 Low/P3**.
+15. Next bounded slice: **K5 — Request body / attachments / storage exhaustion**.
+
+### `PUBLIC-READ-COST-01` — Moderate/P2 — current
+
+**Root cause:** several unauthenticated public readers have bounded output but corpus-proportional backend work and no application-level cache/admission mechanism that bounds repeated execution: homepage full aggregates, Popular 30-day aggregate + full in-memory ranking, and substring Search across joined current content/tags without a repository text-search index.
+
+**Current impact:** repeated public GETs can amplify PostgreSQL/Worker resource use as the forum corpus grows, independent of the already-recorded unbounded response/result-set findings.
+
+**Boundary:** this finding does not claim that every public query is expensive, does not duplicate `DISCOVERY-BOUNDS-01`/`FORUM-READ-BOUNDS-01`, and does not depend on unverified production WAF/cache behavior.
+
 ## Finding criteria
 
 1. Concrete current/prepared request or background path.
@@ -169,5 +196,5 @@
 
 ## Следующий шаг
 
-1. После продолжения владельца выполнить **K4 — Public expensive reads / query amplification** на current main и остановиться после результата.
+1. После продолжения владельца выполнить **K5 — Request body / attachments / storage exhaustion** на current main и остановиться после результата.
 2. Remediation существующих findings/blockers Blocks B–K не начинать без отдельного назначения.
