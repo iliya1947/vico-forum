@@ -580,7 +580,7 @@ describe("embedded preview routing", () => {
     const user = userEvent.setup();
     render(<EmbeddedPreview scenarioId="admin-topic" identity="manager" />);
 
-    let nav = document.querySelector(".admin-panel-nav") as HTMLElement;
+    const nav = document.querySelector(".admin-panel-nav") as HTMLElement;
     await user.click(within(nav).getByRole("link", { name: "Users" }));
 
     const alexLink = await screen.findByRole("link", { name: "Alex Rivera" });
@@ -603,7 +603,7 @@ describe("embedded preview routing", () => {
     const user = userEvent.setup();
     render(<EmbeddedPreview scenarioId="admin-topic" identity="manager" />);
 
-    let nav = document.querySelector(".admin-panel-nav") as HTMLElement;
+    const nav = document.querySelector(".admin-panel-nav") as HTMLElement;
     await user.click(within(nav).getByRole("link", { name: "Users" }));
 
     const alexLink = await screen.findByRole("link", { name: "Alex Rivera" });
@@ -622,7 +622,7 @@ describe("embedded preview routing", () => {
     const user = userEvent.setup();
     render(<EmbeddedPreview scenarioId="admin-topic" identity="owner" />);
 
-    let nav = document.querySelector(".admin-panel-nav") as HTMLElement;
+    const nav = document.querySelector(".admin-panel-nav") as HTMLElement;
     await user.click(within(nav).getByRole("link", { name: "Users" }));
 
     const alexLink = await screen.findByRole("link", { name: "Alex Rivera" });
