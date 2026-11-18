@@ -21,6 +21,8 @@
 - Мира независимо перепроверила B5-R1 на том же exact head: **finding подтверждён как current-scope P2**. Loader применяет URL cursor к новому session actor, а credential return path сохраняет query; B5 требует reset к first page при account switch. Утечки чужих rows нет; B4 initial foreign cursor не меняется.
 - **B5-R1 correction завершена Лирой в #346, STOP:** stable exact head `a3e6c0e63c99078ece89303592e1f24b2fe440fb`. Только `app/forum/bookmarks-view.tsx`, `app/forum/bookmarks-view.test.tsx`, `tests/browser/topic-bookmarks/check.py`: sessionStorage tab-local actor presentation marker, same-tab actor A→B on older cursor replaces to canonical first page; initial/arbitrary foreign cursor for same actor остаётся разрешённым с серверной own-filtering. `checks`, `database`, connected `bookmarks_browser` и regressions exact-head **18/18 PASS**; браузерный реальный Worker/Better Auth/PG17/Chromium содержит 11/11 успешных checkpoints с новым A older → sign-out/email-sign-in B → B own newest regression. Product schema/writer/permission/credential redirects не менялись; независимый coordinator review исправленного head ещё не выполнен.
 
+- Мира завершила новый coordinator whole-PR review исправленного Bookmarks head **`a3e6c0e63c99078ece89303592e1f24b2fe440fb`: PASS, confirmed current-scope defects = 0.** B5-R1 независимо проверен: известный A→B transition на older cursor заменяется canonical first page; initial/arbitrary cursor без transition остаётся допустимой позицией при own-row filtering. Correction затронула только Bookmarks view + component/browser regressions; schema/writer/loader SQL/auth redirect не менялись. Exact-head GitHub: **18/18 jobs success**, connected bookmarks browser **11/11 checkpoints**.
+
 ## Опережающий planning-track
 
 - Watch / Bookmarks / Mute-block: спланированы.
@@ -32,4 +34,11 @@
 
 ## Следующий шаг
 
-**Лира STOP. Следующий исполнитель — Мира / ChatGPT-5.6 Sol.** Coordinator whole-PR cycle #346 заново на stable exact head `a3e6c0e63c99078ece89303592e1f24b2fe440fb` после B5-R1 correction. Независимо проверить account-switch→newest при сохранении B4 arbitrary cursor, регрессионные tests и весь B1–B7 scope. Exact-head **18/18 CI success**, including connected `bookmarks_browser` 11 checkpoints. При confirmed current-scope defects вернуть один пакет Лире; только после coordinator PASS Лёва / Codex-6.1 Sol проверяет тот же exact head. #346 Draft, #342 служебный (не merge), без production/общего UI/UX.
+**Следующий участник — Лёва / Codex-6.1 Sol.** Independent technical whole-PR review
+Bookmarks #346 на stable exact head `a3e6c0e63c99078ece89303592e1f24b2fe440fb`
+против принятого B1–B7 и актуального main. Код не менять. Отдельно перепроверить
+B5 account-switch reset / B4 cursor boundary и убедиться, что correction не внесла
+новый current-scope defect; B6 не переоткрывать без нового основания.
+
+Результат: PASS либо подтверждённый finding → STOP Мире. #346 Draft и до independent
+result не готов к merge; #342 служебный и не merge. #300 не использовать.
