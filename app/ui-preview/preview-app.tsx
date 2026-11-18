@@ -81,7 +81,8 @@ type PreviewVariant =
   | "category-no-pins"
   | "profile-empty"
   | "profile-error"
-  | "profile-long";
+  | "profile-long"
+  | "settings-account-not-fresh";
 
 interface Scenario {
   id: string;
@@ -152,6 +153,7 @@ export const scenarios: readonly Scenario[] = [
   { id: "category-guest", label: "Category", locale: "en", direction: "ltr", identity: "guest", path: "/en/categories/development", view: "category" },
   { id: "category-no-pins", label: "Category · no pins", locale: "en", direction: "ltr", identity: "guest", path: "/en/categories/development", view: "category", variant: "category-no-pins" },
   { id: "section-user", label: "Section", locale: "en", direction: "ltr", identity: "user", path: "/en/sections/typescript", view: "section" },
+  { id: "settings-account-not-fresh", label: "Settings · Account · session not fresh", locale: "en", direction: "ltr", identity: "user", path: "/en/settings/account", view: "section", variant: "settings-account-not-fresh", allowedIdentities: ["user", "manager", "owner"] },
   { id: "editor-create-topic", label: "Editor · Create topic", locale: "en", direction: "ltr", identity: "user", path: "/en/sections/typescript", view: "section", allowedIdentities: ["user", "manager"] },
   { id: "section-form-error", label: "Create topic error", locale: "en", direction: "ltr", identity: "user", path: "/en/sections/typescript", view: "section", variant: "section-form-error", allowedIdentities: ["user", "manager"] },
   { id: "topic-solved-user", label: "Solved topic", locale: "en", direction: "ltr", identity: "user", path: "/en/topics/typed-api", view: "topic" },
@@ -1437,7 +1439,10 @@ function previewSettingsAccountData(
   interactions: PreviewInteractionState,
 ) {
   const actor = previewUser(scenario);
-  const sessions = [
+  const sessionAccess = scenario.variant === "settings-account-not-fresh"
+    ? "not-fresh" as const
+    : "ready" as const;
+  const sessions = sessionAccess === "not-fresh" ? [] : [
     {
       id: "preview-current-session",
       createdAt: "2026-11-18T07:15:00.000Z",
@@ -1471,7 +1476,7 @@ function previewSettingsAccountData(
       ...(interactions.googleLinked ? ["google" as const] : []),
     ] as ("password" | "google")[],
     hasPassword: true,
-    sessionAccess: "ready" as const,
+    sessionAccess,
     sessions,
   };
 }
