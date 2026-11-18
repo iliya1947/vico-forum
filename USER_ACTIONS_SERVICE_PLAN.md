@@ -1030,3 +1030,13 @@ implementation не активированы. #342 остаётся open, не m
 5. **Independence ACCEPT.** Mute/block не объединяются с Watch/Bookmarks/read-state и не меняют их stores/writers. Complaint outcomes, Admin/Super-admin, moderation sanctions, public profile availability и Stage 6 не входят в personal filters.
 
 До выбора M1/M2 Mute/block implementation не активируется. После выбора владельца Мира фиксирует окончательный scope; перед будущей реализацией план сверяется с merged Watch/Bookmarks и фактическим main, без перепроектирования с нуля.
+
+
+## Owner decisions M1/M2 — 2026-11-18
+
+Владелец принял обе рекомендованные продуктовые модели без изменений.
+
+1. **M1 ACCEPT — Mute конкретной темы.** Для текущего authenticated пользователя Mute темы подавляет все новые ordinary reply/mention notifications из этой темы независимо от recipient source (topic author, direct-parent author, Watch, mention). Mute не скрывает контент, не делает Unwatch и не меняет Watch-state. Unmute действует только на будущие события; backfill подавленных уведомлений не выполняется.
+2. **M2 ACCEPT — directional personal Block пользователя.** Если A блокирует B, A не получает новые ordinary reply/mention notifications, где publication actor = B, а сообщения B в ordinary TopicView для A сворачиваются с явным reveal. B по-прежнему может читать публичный форум, публиковать, отвечать и упоминать A. Block не является moderation ban, не скрывает публичный профиль/поиск/discovery и не меняет authority. Обратная пара B→A независима.
+
+С принятием M1/M2 ранее условно принятые M3/M4/M6 становятся окончательным bounded scope Mute/block. Последний advance-planning slice завершён. Implementation Mute/block остаётся неактивированным до своей очереди после Watch → Bookmarks.
