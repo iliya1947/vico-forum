@@ -1008,3 +1008,25 @@ https://www.postgresql.org/docs/17/explicit-locking.html .
 Код/implementation PR не создавались. Последний назначенный advance-planning
 slice завершён; Лёва **STOP**. Watch остаётся Лире, будущие Bookmarks/Mute-block
 implementation не активированы. #342 остаётся open, не merge.
+
+
+## Scope/fit review Mute/block — Мира, 2026-11-18
+
+Полный опережающий план Лёвы проверен. Два пункта остаются реальными продуктовыми решениями владельца; остальные технические границы можно принять условно под выбранную семантику.
+
+### Решения владельца, которые ещё требуются
+
+1. **M1 — Mute target/effect.** Рекомендация: Mute конкретной темы подавляет для текущего пользователя все новые ordinary reply/mention notifications из этой темы, независимо от того, пришёл бы recipient через author/direct-parent/Watch/mention. Mute не скрывает контент и не меняет Watch. Альтернативы: подавлять только Watch-derived notices либо делать Mute пользователя во всех темах.
+2. **M2 — Block target/effect.** Рекомендация: directional personal user filter. A blocks B → A не получает новые ordinary reply/mention notices, где publication actor=B, а сообщения B в обычном TopicView A видит свёрнутыми с явным reveal. B по-прежнему может читать публичный контент, публиковать, отвечать и упоминать A; Block не является moderation ban и не скрывает B из public search/profile/discovery. Альтернатива — server-side запрет адресных replies/mentions, что уже меняет publication authority и требует отдельного продуктового контракта.
+
+Предыдущих прямых решений владельца о семантике Mute/Block не найдено; эти значения нельзя считать уже утверждёнными только по названию блока.
+
+### Технические решения, принятые Мирой условно под рекомендуемые M1/M2
+
+1. **M3 ACCEPT — prospective suppression без backfill.** Старые видимые inbox rows не удаляются; Unmute/Unblock не создаёт задним числом ранее подавленные уведомления. Для post-recipient пары, впервые подавленной personal policy, использовать отдельный private suppression receipt, чтобы последующее редактирование старого @ не «оживило» уведомление после снятия фильтра. Complaint Decision/Appeal kinds не фильтруются.
+2. **M4 ACCEPT — отдельные typed own-state stores и self-state admission без RBAC.** Topic mute и directional user block — authenticated personal state; session actor authoritative, active AccountState обязателен, admin measure permissions/AP-10 не переиспользуются. Suppression receipt — отдельный технический store, не inbox kind/history/social graph.
+3. **M6 ACCEPT — canonical actions + private undo surface.** Topic mute меняется через canonical topic action; user block — через canonical public profile action с отдельной strict branch, не ослабляющей own-profile edit guard. Private `/:locale/filters` даёт собственные списки muted topics/blocked users и undo; no reverse graph/public counts. Authenticated private state/errors — private/no-store.
+4. **Presentation boundary ACCEPT.** При рекомендуемом Block ordinary TopicView сохраняет post id/number/relations/anchors; body/media/attachments blocked author сворачиваются, reveal не делает Unblock. Это viewer-only presentation, не redaction публичного контента и не изменение moderation/complaints evidence.
+5. **Independence ACCEPT.** Mute/block не объединяются с Watch/Bookmarks/read-state и не меняют их stores/writers. Complaint outcomes, Admin/Super-admin, moderation sanctions, public profile availability и Stage 6 не входят в personal filters.
+
+До выбора M1/M2 Mute/block implementation не активируется. После выбора владельца Мира фиксирует окончательный scope; перед будущей реализацией план сверяется с merged Watch/Bookmarks и фактическим main, без перепроектирования с нуля.
