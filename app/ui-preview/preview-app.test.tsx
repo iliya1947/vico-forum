@@ -69,6 +69,35 @@ describe("UI preview state catalog", () => {
 
 
 describe("embedded preview routing", () => {
+  it("keeps tag index counts aligned with the preview tag pages", async () => {
+    render(<EmbeddedPreview scenarioId="tags-guest" />);
+
+    const cloudflare = await screen.findByRole("link", { name: /#Cloudflare/ });
+    expect(cloudflare).toHaveTextContent("3");
+    const postgresql = screen.getByRole("link", { name: /#PostgreSQL/ });
+    expect(postgresql).toHaveTextContent("2");
+  });
+
+  it("opens the requested non-TypeScript tag instead of the TypeScript fixture", async () => {
+    render(<EmbeddedPreview scenarioId="tag-cloudflare-guest" />);
+
+    expect(await screen.findByRole("heading", { level: 1, name: "#Cloudflare" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /Worker auth: session boundary vs permissions/ })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /Why does my Worker lose the session after redirect\?/ })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /How should Cache-Control be configured on Cloudflare\?/ })).toBeInTheDocument();
+    expect(screen.queryByRole("heading", { level: 1, name: "#TypeScript" })).not.toBeInTheDocument();
+  });
+
+  it("returns the shared 404 state for a missing tag", async () => {
+    render(<EmbeddedPreview scenarioId="tag-missing" />);
+
+    const missing = await screen.findByRole("alert");
+    expect(missing).toHaveAttribute("data-status", "404");
+    expect(within(missing).getByRole("heading", { level: 1, name: "Forum page not found" })).toBeInTheDocument();
+    expect(within(missing).getByText("The category, section, or topic does not exist.")).toBeInTheDocument();
+    expect(document.querySelector(".tags-heading")).toBeNull();
+  });
+
   it("returns the shared 404 state for a missing category", async () => {
     render(<EmbeddedPreview scenarioId="category-missing" />);
 
