@@ -257,6 +257,25 @@ describe("interactive Pages preview", () => {
     expect(within(sessions).getByText("Firefox on Android tablet")).toBeInTheDocument();
   });
 
+  it("shows the password rate-limit state without changing sessions", async () => {
+    const user = userEvent.setup();
+    render(<EmbeddedPreview scenarioId="settings-account-rate-limited" identity="user" />);
+
+    await user.type(screen.getByLabelText("Current password"), "preview-current-password");
+    await user.type(screen.getByLabelText("New password"), "preview-new-password");
+    await user.click(screen.getByRole("button", { name: "Change password" }));
+
+    expect(await screen.findByRole("alert")).toHaveTextContent(
+      "Too many password change attempts. Try again shortly.",
+    );
+
+    const sessionsHeading = screen.getByRole("heading", { level: 3, name: "Active sessions" });
+    const sessions = sessionsHeading.parentElement as HTMLElement;
+    expect(within(sessions).getByText("Chrome on Windows")).toBeInTheDocument();
+    expect(within(sessions).getByText("Safari on iPhone")).toBeInTheDocument();
+    expect(within(sessions).getByText("Firefox on Android tablet")).toBeInTheDocument();
+  });
+
   it("changes the representative password without revoking other sessions", async () => {
     const user = userEvent.setup();
     render(<EmbeddedPreview scenarioId="section-user" identity="user" />);
