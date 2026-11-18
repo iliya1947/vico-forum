@@ -1532,6 +1532,9 @@ function previewRouter(
         }
         return null;
       },
+      action: ({ request, params }) => previewAdminMeasureAction(
+        scenario, interactions, request, params.measureId,
+      ),
       ErrorBoundary: ForumRouteError,
     },
     {
@@ -3070,11 +3073,25 @@ function previewAdminMeasureById(
   const created = interactions.adminCreatedMeasures.get(measureId);
   if (created) return created;
   if (measureId !== PREVIEW_OWN_MEASURE_ID) return null;
+  const own = previewOwnMeasureDetail(interactions);
+  const adminAppeals = own.appeals.length ? own.appeals : [{
+    id: "66666666-6666-4666-8666-666666666666",
+    ordinal: 1,
+    body: "Please review this restriction; the original context has changed.",
+    status: "pending" as const,
+    createdAt: "2026-11-17T18:00:00.000Z",
+    resolvedAt: null,
+    explanation: null,
+    remedy: null,
+  }];
   return {
-    ...previewOwnMeasureDetail(interactions),
+    ...own,
+    usedAppeals: Math.max(1, own.usedAppeals),
+    pendingAppeal: adminAppeals.some((appeal) => appeal.status === "pending"),
+    appeals: adminAppeals,
     targetUserId: "alex",
     targetName: "Alex Rivera",
-    canMutate: false,
+    canMutate: true,
   };
 }
 
@@ -3105,7 +3122,17 @@ function previewAdminMeasuresData(
     return {
       locale: scenario.locale,
       target: null,
-      pendingAppeals: { appeals: [], nextPage: null },
+      pendingAppeals: {
+        appeals: [{
+          id: "66666666-6666-4666-8666-666666666666",
+          measureId: PREVIEW_OWN_MEASURE_ID,
+          targetUserId: "alex",
+          targetName: "Alex Rivera",
+          ordinal: 1,
+          submittedAt: "2026-11-17T18:00:00.000Z",
+        }],
+        nextPage: null,
+      },
       requestedTarget: "",
       createId: PREVIEW_ADMIN_CREATE_ID,
       access: previewAdminAccess,
@@ -3144,16 +3171,20 @@ function PreviewAdminMeasureRoute({ scenario, interactions }: {
 }) {
   const { measureId } = useParams();
   const measure = previewAdminMeasureById(interactions, measureId);
+  const feedback = useActionData() as { ok?: boolean; error?: "invalid" | "conflict" } | undefined;
   if (!measure) throw new Response("Not Found", { status: 404 });
   return <AdminMeasureDetail
     locale={scenario.locale}
     measure={measure}
     changeId="44444444-4444-4444-8444-444444444444"
     liftId="55555555-5555-4555-8555-555555555555"
-    reviewIds={[]}
+    reviewIds={measure.appeals.map((appeal) => ({
+      appealId: appeal.id,
+      operationId: `review-${appeal.id}`,
+    }))}
     access={previewAdminAccess}
     maySelectAdministrativeRestrictions={scenario.identity === "owner"}
-    feedback={undefined}
+    feedback={feedback}
   />;
 }
 
@@ -3183,7 +3214,7 @@ async function previewAdminMeasuresAction(
     id: measureId,
     targetUserId,
     targetName,
-    canMutate: false,
+    canMutate: true,
     createdAt: "2026-11-18T20:30:00.000Z",
     expiresAt,
     liftedAt: null,
@@ -3219,6 +3250,216 @@ async function previewAdminMeasuresAction(
     },
   }, reason);
   return redirect(`/${encodeURIComponent(scenario.locale)}/admin/measures/${encodeURIComponent(measure.id)}`);
+}
+
+async function previewAdminMeasureAction(
+  scenario: Scenario,
+  interactions: PreviewInteractionState,
+  request: Request,
+  routeMeasureId?: string,
+) {
+  const measure = previewAdminMeasureById(interactions, routeMeasureId);
+  if (!measure || !routeMeasureId || !measure.canMutate) {
+    return { error: "invalid" as const };
+  }
+  const form = await request.formData();
+  const intent = String(form.get("intent") ?? "");
+  const expectedVersion = Number(String(form.get("expectedVersion") ?? ""));
+  if (!Number.isInteger(expectedVersion) || expectedVersion !== measure.version) {
+    return { error: "conflict" as const };
+  }
+
+  const before = {
+    version: measure.version,
+    restrictions: [...measure.restrictions],
+    expiresAt: measure.expiresAt,
+    lifted: measure.status === "lifted",
+  };
+
+  if (intent === "change") {
+    const reason = String(form.get("reason") ?? "").trim();
+    if (!reason) return { error: "invalid" as const };
+    const restrictions = form.getAll("restriction").map(String).filter((value) =>
+      ["topics.create","replies.create","attachments.upload","posts.edit","profile.edit",
+        "complaints.submit","helpSignals.submit","translations.generate","admin.forum",
+        "admin.complaints","admin.security","admin.usersAccess"].includes(value)
+    ) as PreviewAdminMeasure["restrictions"];
+    const expiresAtRaw = String(form.get("expiresAt") ?? "").trim();
+    const expiresAt = expiresAtRaw ? new Date(expiresAtRaw).toISOString() : null;
+    const next: PreviewAdminMeasure = {
+      ...measure,
+      version: measure.version + 1,
+      latestChangeReason: reason,
+      restrictions,
+      expiresAt,
+      timeline: [...measure.timeline, {
+        action: "measure.changed",
+        occurredAt: "2026-11-18T20:40:00.000Z",
+        reason,
+        before,
+        after: {
+          version: measure.version + 1,
+          restrictions,
+          expiresAt,
+          lifted: false,
+        },
+        outcome: null,
+        remedy: null,
+      }],
+    };
+    interactions.adminCreatedMeasures.set(routeMeasureId, next);
+    previewAppendAdminHistory(scenario, interactions, {
+      action: "measure.changed",
+      targetType: "user-measure",
+      targetId: routeMeasureId,
+      targetLabel: measure.targetName,
+      reason,
+      context: {
+        targetUserId: measure.targetUserId,
+        before,
+        after: {
+          version: next.version,
+          restrictions,
+          expiresAt,
+          lifted: false,
+        },
+      },
+    }, reason);
+    return { ok: true as const };
+  }
+
+  if (intent === "lift") {
+    const reason = String(form.get("reason") ?? "").trim();
+    if (!reason) return { error: "invalid" as const };
+    const next: PreviewAdminMeasure = {
+      ...measure,
+      version: measure.version + 1,
+      liftedAt: "2026-11-18T20:45:00.000Z",
+      status: "lifted",
+      latestChangeReason: reason,
+      pendingAppeal: false,
+      appeals: measure.appeals.map((appeal) =>
+        appeal.status === "pending" ? { ...appeal, status: "moot" as const } : appeal
+      ),
+      timeline: [...measure.timeline, {
+        action: "measure.lifted",
+        occurredAt: "2026-11-18T20:45:00.000Z",
+        reason,
+        before,
+        after: {
+          version: measure.version + 1,
+          restrictions: [...measure.restrictions],
+          expiresAt: measure.expiresAt,
+          lifted: true,
+        },
+        outcome: null,
+        remedy: null,
+      }],
+    };
+    interactions.adminCreatedMeasures.set(routeMeasureId, next);
+    previewAppendAdminHistory(scenario, interactions, {
+      action: "measure.lifted",
+      targetType: "user-measure",
+      targetId: routeMeasureId,
+      targetLabel: measure.targetName,
+      reason,
+      context: {
+        targetUserId: measure.targetUserId,
+        before,
+        after: {
+          version: next.version,
+          restrictions: [...measure.restrictions],
+          expiresAt: measure.expiresAt,
+          lifted: true,
+        },
+      },
+    }, reason);
+    return { ok: true as const };
+  }
+
+  if (intent === "review") {
+    const appealId = String(form.get("appealId") ?? "");
+    const appeal = measure.appeals.find((candidate) =>
+      candidate.id === appealId && candidate.status === "pending"
+    );
+    const outcome = String(form.get("outcome") ?? "");
+    const explanation = String(form.get("explanation") ?? "").trim();
+    const remedy = String(form.get("remedy") ?? "");
+    if (!appeal || !explanation || (outcome !== "accepted" && outcome !== "rejected")
+      || (outcome === "accepted" && remedy !== "change" && remedy !== "lift")) {
+      return { error: "invalid" as const };
+    }
+
+    const accepting = outcome === "accepted";
+    const lifting = accepting && remedy === "lift";
+    const changing = accepting && remedy === "change";
+    const restrictions = changing
+      ? form.getAll("restriction").map(String).filter((value) =>
+          ["topics.create","replies.create","attachments.upload","posts.edit","profile.edit",
+            "complaints.submit","helpSignals.submit","translations.generate","admin.forum",
+            "admin.complaints","admin.security","admin.usersAccess"].includes(value)
+        ) as PreviewAdminMeasure["restrictions"]
+      : [...measure.restrictions];
+    const expiresAtRaw = changing ? String(form.get("expiresAt") ?? "").trim() : "";
+    const expiresAt = changing
+      ? (expiresAtRaw ? new Date(expiresAtRaw).toISOString() : null)
+      : measure.expiresAt;
+    const nextVersion = measure.version + 1;
+    const next: PreviewAdminMeasure = {
+      ...measure,
+      version: nextVersion,
+      restrictions,
+      expiresAt,
+      liftedAt: lifting ? "2026-11-18T20:50:00.000Z" : measure.liftedAt,
+      status: lifting ? "lifted" : measure.status,
+      pendingAppeal: false,
+      appeals: measure.appeals.map((candidate) => candidate.id === appealId ? {
+        ...candidate,
+        status: outcome as "accepted" | "rejected",
+        resolvedAt: "2026-11-18T20:50:00.000Z",
+        explanation,
+        remedy: accepting ? remedy as "change" | "lift" : null,
+      } : candidate),
+      timeline: [...measure.timeline, {
+        action: "measure.appealResolved",
+        occurredAt: "2026-11-18T20:50:00.000Z",
+        reason: explanation,
+        before,
+        after: {
+          version: nextVersion,
+          restrictions,
+          expiresAt,
+          lifted: lifting,
+        },
+        outcome: outcome as "accepted" | "rejected",
+        remedy: accepting ? remedy as "change" | "lift" : null,
+      }],
+    };
+    interactions.adminCreatedMeasures.set(routeMeasureId, next);
+    previewAppendAdminHistory(scenario, interactions, {
+      action: "measure.appealResolved",
+      targetType: "user-measure",
+      targetId: routeMeasureId,
+      targetLabel: measure.targetName,
+      reason: explanation,
+      context: {
+        targetUserId: measure.targetUserId,
+        before,
+        after: {
+          version: next.version,
+          restrictions,
+          expiresAt,
+          lifted: lifting,
+        },
+        appealId,
+        outcome: outcome as "accepted" | "rejected",
+        remedy: accepting ? remedy as "change" | "lift" : undefined,
+      },
+    }, explanation);
+    return { ok: true as const };
+  }
+
+  return { error: "invalid" as const };
 }
 
 function previewAppendAdminHistory(
