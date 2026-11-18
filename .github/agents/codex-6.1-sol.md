@@ -167,3 +167,37 @@ STOP: следующий участник — Мира; implementation оста�
 Если обнаружатся реальные продуктовые или технические развилки, вернуть их Мире явно, с подтверждёнными основаниями и альтернативами. Не реализовывать код, не открывать implementation PR и не начинать Mute/block.
 
 После полного Bookmarks plan записать его в `USER_ACTIONS_SERVICE_PLAN.md` и свой личный файл, затем **STOP**. Следующий planning slice Mute/block — только после отдельной команды владельца.
+
+## 2026-11-18 — опережающий Bookmarks plan завершён
+
+Main `7cc23edede57994cdedab49c1556ddb55034dd29`, исходный service head
+`1e6f13b2e6a9996a2418fb83b4d6defbd0c46273`. Полный предлагаемый план записан
+в `USER_ACTIONS_SERVICE_PLAN.md`, раздел Bookmarks B1–B7.
+
+Bookmark persistence/operation/route/UI и permanent target-контракт в main не
+найдены. Реальная продуктовая развилка B1: тема либо отдельное сообщение, для
+которого уже есть permalink. Рекомендован минимальный topic + private list цикл;
+это proposal для Миры, не принятие scope вместо владельца. Для post-варианта
+обозначены необходимые target/FK/control/link изменения до implementation handoff.
+
+Исследованы own read-state, current-title/public author/location projection,
+ForumReader/Writer/service/Hyperdrive, topic action/header/cache, personal Settings,
+notification/unread lists, keyset History paging и authenticated navigation.
+Main SOT использован из отдельного worktree, а не из исторической service base.
+`docs/SETTINGS.md` прочитан полностью; SA-04 lifecycle и официальный PostgreSQL 17
+lock/time contract сверены для предлагаемых решений. Предлагается topic KEY SHARE
+до actor NO KEY UPDATE, без Watch-specific reply serialization; unique own-pair
+desired-state write; savedAt(3) и bounded keyset list без unbounded load/offset;
+private no-store document/data, active admission, strict actor/query/form,
+late-response/editor isolation и независимость Watch/read-state/notifications.
+
+Мире возвращены B1 target/product contract, B2 новая schema/runtime ACL,
+B3 self-state authorization classification по принятому Watch precedent и B5
+узкий list/query/topic-action/UI contract. Номер migration и итоговые seams
+пересверить после Watch merge перед отдельной реализацией. Official PG references:
+https://www.postgresql.org/docs/17/explicit-locking.html и
+https://www.postgresql.org/docs/17/functions-datetime.html .
+
+Код не реализован, implementation PR и feature tests/CI/browser отсутствуют.
+Лира продолжает Watch; Bookmarks implementation не активирован. Лёва STOP;
+Mute/block не исследован и не планируется без следующей команды владельца.

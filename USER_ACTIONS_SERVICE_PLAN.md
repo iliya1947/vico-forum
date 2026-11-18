@@ -364,3 +364,278 @@ Concurrency boundary из плана допустим: PostgreSQL 17 докум�
 2. После отдельной команды владельца — Mute/block.
 
 Это опережающее планирование не меняет порядок реализации: Watch остаётся текущим implementation-этапом Лиры; Bookmarks и Mute/block не реализуются раньше своей очереди. Предварительный план каждого будущего этапа перед фактической реализацией должен быть сверён с актуальным к тому моменту `main` и при необходимости локально скорректирован, а не перепридуман с нуля.
+
+## Опережающий технический план Bookmarks — Лёва, 2026-11-18
+
+Статус: **полный предлагаемый план готов; STOP**. Исследован актуальный `main`
+`7cc23edede57994cdedab49c1556ddb55034dd29` и service head
+`1e6f13b2e6a9996a2418fb83b4d6defbd0c46273`. Watch принят для реализации Лирой,
+но в исследованном main его ещё нет. Перед сохранением плана синхронизирован
+checkpoint Лиры: Draft #345, промежуточный head
+`6cede3af5fe2d096cf01be676050a662b2d9f91b`, backend/schema stage, UI/tests/browser
+ещё не завершены. Это не review #345. Не смерженные таблица и UI/helpers Watch
+не считаются существующей зависимостью Bookmarks.
+
+### B1. Продуктовая развилка и предлагаемый bounded contract
+
+В main не найдены bookmark persistence, domain operations, route или UI. Поиск
+`bookmark` / `заклад` / `saved topic/post` по app/db/tests и permanent/current docs
+не выявил принятого bookmark-контракта. Слово «закладки» само по себе не определяет
+target: в проекте существуют и темы, и permanent links к отдельным сообщениям.
+Предыдущее исключение saved-topic list из Watch не утверждает target Bookmarks.
+
+**Мире на scope/fit: выбрать target и подтвердить полезный пользовательский цикл.**
+Рекомендуемый минимальный вариант — сохранять **темы** и возвращаться к ним через
+собственный приватный список. Альтернатива — сохранять **сообщения** с переходом
+к точному post anchor: подходит для отдельных ответов, но требует post-level
+target/FK, controls и списка с контекстом сообщения. Одновременная поддержка обоих
+targets не требуется для первого bounded-этапа и не принимается молчаливо.
+
+Ниже дан полный implementation plan рекомендуемого topic-варианта, **условный до
+принятия B1**. Если выбран post-вариант, до handoff корректируются именно target,
+schema/route/control/link и acceptance; нельзя реализовать topic-вариант только
+потому, что он описан подробнее.
+
+Предлагаемое поведение topic-варианта:
+
+1. Активный authenticated actor явно добавляет/удаляет свою закладку любой
+   существующей публично читаемой темы. Guest не меняет state и не читает список.
+2. Закладки account-wide, persisted между сессиями/устройствами; создание темы,
+   ответ, Watch, mention или открытие темы не создают закладку автоматически.
+3. Есть отдельный приватный список своих сохранённых тем и понятный вход в него.
+   Add/remove доступны в теме; удаление также доступно из списка.
+4. Порядок списка: более позднее сохранение выше, tie-break по topic id.
+   Повторное Add — no-op, сохраняет исходный savedAt/позицию; Remove+новое Add
+   создают новую дату сохранения. Ответы и редактирование заголовка порядок не меняют.
+5. Закладка хранит ссылку на тему, не snapshot текста/ревизии. Список показывает
+   **текущий** заголовок и ведёт в начало canonical topic, не в first unread.
+6. Remove затрагивает только собственную закладку; не удаляет тему, Watch,
+   notifications или read-state. У закладок нет notification fanout/unread count.
+7. Нет folders/tags/notes/reminders, public/shared lists, saved posts одновременно
+   с темами, full-text search/filter/export, reorder/pin, offline/cache sync,
+   email/push, Admin/Super-admin и Mute/block. Общий UI/UX pass и #320 не включены.
+
+### B2. Подтверждённые seams и необходимая persistence
+
+- `db/forum-repository.ts`: ForumReader, DrizzleForumRepository, current title
+  join, `publicDiscoveryLocation`, `projectForumPublicAuthor` и own read-state
+  предоставляют существующие образцы. `readUnreadForUser` не является bookmark
+  reader: он фильтрует по непрочитанному и activity; смешивать эти смыслы нельзя.
+- `db/forum-service.ts`, `db/hyperdrive-forum.ts`, request contexts уже проводят
+  forum reader/writer через один request-local runtime. Добавить narrow own-state
+  read, desired-state write и paged list, без новой платформы предпочтений.
+- `app/routes/unread.tsx`/`notifications.tsx` и views дают list/error/shell
+  conventions; `app/routes/admin-history.tsx` показывает keyset Older/Newest
+  navigation. History cursor/domain/RBAC не переносятся в Bookmarks.
+- `app/routes.ts`, `app/forum/paths.ts`, `app/forum/ui.tsx` содержат locale-aware
+  routing и signed-in navigation; отдельной «My content» route в main нет.
+- Settings privacy и принятое W2 Watch дают основания для personal self-state
+  admission; опубликованный контент имеет собственные permissions/restrictions.
+
+**Мире на scope/fit B2: новая таблица и узкий runtime contract необходимы.**
+Для topic-варианта: `forum_topic_bookmarks` с NOT NULL `user_id`, `topic_id`,
+`saved_at timestamptz(3)`; PK `(user_id, topic_id)`, FK user/topic ON DELETE CASCADE;
+индекс `(user_id, saved_at DESC, topic_id DESC)` для списка. Отдельный индекс
+`topic_id` нужен для обратного FK cleanup без полного сканирования private store;
+его не следует путать с Watch recipient fanout index. Других полей, surrogate id,
+boolean OFF-строк, history/version/CAS или receipt не требуется.
+
+Наличие строки означает saved, отсутствие — unsaved. `saved_at` задаётся серверной
+БД при фактическом INSERT (`clock_timestamp()`); точность 3 соответствует JS Date
+и cursor ISO milliseconds, такой timestamp уже используется в main schema.
+ON CONFLICT DO NOTHING не обновляет дату. Внешнее client time не принимается.
+Таблица нужна именно для отдельного persisted списка: Watch/read-state/inbox rows
+не являются источником закладок, browser localStorage не даёт account-wide durability.
+
+Одна новая forward migration + schema/journal/snapshot/full structural manifest;
+номер выбирается **после Watch по фактическому main**, не фиксируется сейчас как
+0068. Web runtime: только SELECT/INSERT/DELETE на bookmarks через существующие
+runtime capability/provisioning/probe contracts; localization role новых прав
+не получает. Ни UPDATE, ни sequence privileges для предлагаемой schema не нужны.
+Никакого backfill или копирования Watch/read/notification данных. Live migrations,
+grants, production evidence и Stage 6 rollout не выполняются этим этапом.
+
+### B3. Authoritative identity, own-state writer и concurrency
+
+**Мире на scope/fit B3:** рекомендован authenticated private self-state без нового
+RBAC key, по той же границе, которую Мира явно приняла для Watch. Закладка не даёт
+authority над общей темой/чужой записью; current session выбирает только свою пару.
+Применимость этой классификации к Bookmarks надо подтвердить, а не объявлять
+новым глобальным исключением из `AUTHORIZATION.md`. Наличие/отсутствие custom-role
+reply/edit/admin grants не должно выбирать доступ к личным закладкам. AP-10
+`posts.edit`/`replies.create` не относятся к save/remove; новый restriction/cooldown
+не предлагается. Если Мира решает иначе — явно определить независимую capability
+и её catalog/migration/default grants до реализации, не переиспользовать чужое право.
+
+Минимальная команда `setTopicBookmark({ actorId, topicId, bookmarked })` через
+ForumWriter → service/repository; read own-pair возвращает boolean только после
+успешного чтения. Типизированная ошибка storage не равна отсутствию строки.
+
+Write в одной READ COMMITTED transaction:
+
+1. Найти topic под **FOR KEY SHARE** (как existing `advanceTopicReadState` перед
+   actor admission): защищает FK target от удаления/key change, совместим с
+   non-key title/state/reply writers. Missing topic → 404. Существующая closed,
+   solved/duplicate тема и inactive topic author не запрещают сохранение ссылки.
+2. `assertActiveAccountForDrizzleMutation` для authoritative session actor на том
+   же tx: user FOR NO KEY UPDATE до commit. Проверка обязательна для Add, Remove
+   и no-op. Предварительный session check её не заменяет.
+3. Add INSERT exact own pair ON CONFLICT DO NOTHING; Remove DELETE exact own
+   pair. После admission последняя сериализованная desired-state команда actor
+   определяет итог. Повтор Add не меняет savedAt; повтор Remove не создаёт запись.
+4. Вернуть authoritative state этой команды; никаких сторонних domain effects.
+
+Watch берёт topic NO KEY UPDATE для упорядочивания fanout. **Копировать это
+сериализующее требование в Bookmarks не нужно**: save не участвует в reply
+delivery. Topic KEY SHARE → actor NO KEY UPDATE сохраняет FK-before-actor order,
+не требует upgrade и не блокирует чужую публикацию на topic row. Общий actor
+mutex уже упорядочивает конкурирующие личные записи; не вводить global mutex
+или блокировки всех подписчиков/авторов. Не брать actor первым и topic позже.
+
+При deactivation, выигравшей actor admission, запись/no-op отвергается; если
+writer получил actor mutex первым, принятая запись коммитится до lifecycle change.
+Закладки остаются retained private state после деактивации, но inactive account
+не получает личного чтения/записи через старую session. Автоматический purge,
+reactivation или новый Owner просмотр чужих закладок не вводятся. Фактическое
+удаление topic/user очищает пары по FK; отдельного удаления контента здесь нет.
+
+### B4. Private list, ordering и pagination
+
+Предлагаемый read `readTopicBookmarks(actorId, before?)` всегда фильтрует
+`user_id = current actor` в SQL **до** order/limit. Join с current topic title
+revision по topic id + current pointer, category/section и public author projection;
+не грузить весь thread/body/attachments и не выполнять запрос на каждую строку.
+Для Help сохранять public category и `section=null`, как `publicDiscoveryLocation`,
+не выдавать ссылку на внутренний service section. Inactive author — существующий
+нейтральный Deleted user, без старого имени/image/private lifecycle tuple в DTO.
+
+Минимальный DTO: topic id/current title, public author identity, public location,
+savedAt. Не добавлять Watch status, unread counters, old content snapshots и
+private account fields. Список показывает original current title так же, как
+existing Unread/Notifications discovery; не запускает translation generation,
+не создаёт content revision и не возвращает перевод от старой revision.
+
+Предлагается keyset pagination: 50 строк + одна для определения `next`;
+`ORDER BY saved_at DESC, topic_id DESC`, следующий запрос строго ниже последней
+выданной пары. Один SELECT даёт согласованную страницу; total count не нужен.
+UI предлагает «Более ранние» и «К началу». Это избегает тихого first-50 cutoff,
+глубокого OFFSET и смещения страницы при удалении более новой закладки.
+
+Узкий query contract для B5: обе optional keys `beforeSavedAt` и `beforeTopicId`
+либо отсутствуют, либо присутствуют вместе ровно по одному. Дата — canonical
+valid UTC ISO с milliseconds, id — непустой bounded scalar по фактическому ID
+contract проекта; запросы параметризованы. Исполнитель обязан проверить предел
+id по реальным persisted/создаваемым IDs, не вводить UUID-only validation поверх
+text IDs. Не принимать ownerId/targetUserId, limit/sort/returnTo из query. Перед
+DB read — session и строгая валидация application query из normalized router URL
+без `.data/_routes` transport metadata. Некорректный cursor → private 400.
+
+Cursor — позиция, **не authority**: чужая/удалённая anchor row не нужна для
+сравнения; выбор actor всё равно серверный. Не делать unscoped lookup по cursor
+и не подписывать его как новую auth subsystem. Точность timestamp в DB, DTO и
+predicate должна совпадать; равные savedAt разбираются по id той же SQL сортировкой.
+При remove/readd закладка появляется в начале; live pagination не обещает snapshot
+между запросами. Refresh/«К началу» показывает новое состояние. Если старый cursor
+дал пустую страницу, показать это честно и оставить путь к началу списка.
+
+### B5. Предлагаемый route/UI contract и ошибки
+
+**Мире на scope/fit B5:** locale-aware GET `/:locale/bookmarks` + path helper и
+authenticated entry в существующей общей navigation (доступен с любой forum page,
+без переделки header). Страница в ForumShell, не в Admin или public profile.
+Её loader сам требует session и own-pair/list reader, не полагаясь на parent UI.
+
+Одна mutation authority — canonical `/:locale/topics/:topicId` POST с отдельным
+`intent=setTopicBookmark`, `editorActorId` как expected identity и
+`bookmarked=true|false`. Из списка Remove отправляет fetcher на эту же topic
+action; второго bookmark writer на list route не создавать. Topic — из route,
+actor — из session; submitted actor никогда не выбирает владельца записи.
+Разрешены ровно по одному scalar field; missing/duplicate/File/ambiguous mixed
+intent/extra field отвергаются. Нельзя спрятать другой intent первым FormData value.
+
+Успех: `{ operation: "topicBookmark", ok: true, topicId, actorId, bookmarked }`;
+ошибки этого intent также discriminated. Guest/inactive/missing actor → 401,
+same-origin denial → 403, malformed → 400, missing topic → 404, stale expected
+actor → 409, classified storage outage → 503. Неподдерживаемые методы не мутируют.
+Unexpected/configuration/schema ошибки идут штатным error path, не превращаются
+в OFF/пустой список/обычный отказ. Сбой транспорта после возможного commit —
+неопределённый результат: refresh own state, без автоматического POST replay.
+
+Все bookmark list document/data, private state/results/route-owned errors —
+`Cache-Control: private, no-store`. Topic loader сохраняет публичное чтение при
+typed outage optional bookmark lookup: control unknown/unavailable, **не unsaved**.
+Authenticated topic state использует private/no-store и существующий headers
+export (включая single-fetch .data); перед реализацией учесть headers из Watch.
+Guest не получает чужие saved ids/state; список не появляется в public profile,
+public counts, shared cache или unauthenticated HTML/data. Account switch очищает
+старую private presentation и переводит list на начальную страницу новой identity.
+
+Topic control рядом с независимыми personal controls, не за canReply/title-owner/
+Admin flags. Каждый bookmark fetcher scoped к actor+topic, отдельно от Watch и
+editor fetchers. Disabled пока pending; никакого optimistic success. Подтверждённый
+Add/Remove меняет UI после ответа и revalidation; список удаляет строку после
+успеха, при отказе сохраняет её/показывает ошибку. Late result другого actor/topic
+не применяется. Успех одной операции не считается успехом Watch/editor intent.
+
+Revalidation не размонтирует/не публикует открытые reply/post/title buffers и
+не меняет их revision expectation. Открытие bookmark list само не вызывает
+markTopicRead/markNotificationRead. Переход в тему может вызвать **существующий**
+topic page-view auto-read; это не side effect save/remove. Keyboard/focus,
+pending/status/error labels, EN/RU/HE и narrow RTL — по текущим conventions
+`catalog.ts`/manual packs/UI, без отдельного visual redesign.
+
+### B6. Проверки и критерии acceptance
+
+Ниже **план будущих проверок**, не выполненные feature tests:
+
+| Граница | Обязательные случаи |
+| --- | --- |
+| Persistence | Add/reload/new session; Remove; repeat Add с прежним savedAt; repeat Remove; Remove+Add; пары actor/topic изолированы; нет auto-save/backfill |
+| List | Saved прочитанная тема не исчезает из-за read-state; current title после edit; ordinary/Help locations; inactive author projection; literal unsafe-looking title остаётся текстом |
+| Paging | Более 50 rows достижимы; равные savedAt без пропусков/дублей на неизменяемом наборе; SQL/ISO precision; remove anchor/newer item; remove+readd; empty older page + first-page link; cursor от чужого списка всё ещё возвращает только own rows |
+| Route/admission | Guest/origin/inactive/missing actor; stale actor409; repeated/no-op admitted; malformed/duplicate/File/mixed intent/extra fields; missing topic; same user без reply/edit/admin grants сохраняет ссылку |
+| Private/cache | List/topic document и .data no-store; guest denial без bookmark payload; logout/account switch/late response; optional unavailable не превращается в unsaved; list outage не становится empty; unexpected не скрывается |
+| Concurrency | Реальные PG connections Add×Add, Add×Remove в обоих порядках; writer×deactivation; rollback; topic deletion FK на fixture; отсутствие lock upgrade/FK deadlock с topic state/title/reply writers |
+| Independence | Save/Remove/List не меняют watches, inbox/badge/read_at, topic read marker, topic/body/title revisions/status; Watch/Unwatch/reply/mention не создают/удаляют bookmarks; повтор publication receipt не создаёт bookmarks |
+| UI | Add/Remove в теме, signed-in entry, own list, remove row через тот же topic action, pending/failure/refresh, сохранение editor buffers, keyboard и narrow RTL |
+| Schema/runtime | Clean forward migrations и прошлые данные, PK/FKs/indexes, journal/snapshot/full manifest/history, ровно нужные web ACL/probes и отсутствие новых localization grants |
+
+Подходящие существующие образцы: `app/routes/unread.test.ts`,
+`app/routes/notifications.test.ts`, `app/routes/topic-headers.test.ts`,
+`app/forum/notifications-layout.test.tsx`, Settings privacy tests,
+`tests/database/sa04-forum-readstate-lifecycle.test.ts` и notification lifecycle
+tests. Новые focused bookmark repository/route/component/browser tests проверяют
+новый domain contract; не копировать unrelated suites или mocked races.
+
+Connected browser acceptance: настоящий Worker/Better Auth/PostgreSQL 17/Chromium;
+A сохраняет тему B → reload/новая сессия → собственный список → canonical topic;
+C не видит A rows → A удаляет из списка → reload подтверждает удаление.
+Проверить guest/stale actor, closed/solved/duplicate и Help, pagination и совместную
+работу с уже merged Watch. Состояния read-state/inbox фиксировать после завершения
+независимого обычного page-view auto-read, чтобы не приписать его Bookmarks.
+
+Обычные применимые lint/typecheck/unit/real DB/build/preview, migration history,
+metadata/full structural manifest/runtime privilege/provisioning probes и CI/browser
+на stable exact head. Known drizzle-kit BigInt/partial-index baseline из Watch
+плана остаётся ограничением tooling: не расширять Bookmarks в unrelated generator
+или index refactor и не выдавать exit 0 за schema parity.
+
+### B7. Последовательность и handoff
+
+1. Мира делает scope/fit review и разрешает B1 (topic vs post и минимальный цикл),
+   B2 (schema/ACL), B3 (personal self-state admission), B5 (list/query/action/UI
+   contract). Предварительные рекомендации не объявляются утверждённым scope.
+2. После завершения Watch и отдельного implementation handoff сверить план с
+   актуальным main: итоговый Watch route/fetcher/headers, migration number,
+   runtime manifest/probes и любые изменённые title/lifecycle seams. Повторно
+   использовать совместимые принятые helpers, но не объединять Watch/bookmark state.
+3. Отдельный implementation PR: persistence/read/write → list/query + strict topic
+   action → isolated UI/navigation/localization → focused real DB/route/browser
+   checks → stable exact head → Мира whole-PR → независимый review по workflow.
+4. Permanent contract/current state — отдельный docs PR после implementation
+   merge; конкретное место bookmark SOT закрепить при docs closeout. Ни current
+   main, ни permanent docs сейчас не объявляют Bookmarks реализованными.
+
+Код/implementation PR не создавались; feature tests/CI/browser не запускались.
+Watch implementation остаётся за Лирой. Лёва **STOP после Bookmarks**;
+Mute/block — только после отдельной команды владельца, в этом плане не исследован.

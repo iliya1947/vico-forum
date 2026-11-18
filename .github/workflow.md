@@ -26,10 +26,11 @@
 
 - Лёва / Codex-6.1 Sol заранее планирует оставшиеся функции **по одной**.
 - Текущий planning slice: **Bookmarks**.
+- Bookmarks plan: **готов**, B1–B7 в `USER_ACTIONS_SERVICE_PLAN.md`; ожидает scope/fit решений Миры по target/product contract, schema/ACL, self-state admission и route/list/UI.
 - После полного Bookmarks plan: Лёва STOP; Mute/block не планирует до следующей команды владельца.
 - Предварительное планирование не разрешает реализацию Bookmarks до завершения Watch и отдельного handoff.
 
 ## Следующие параллельные шаги
 
 1. Лира после продолжения владельца завершает Watch UI/private loader и focused/real-DB/browser проверки в #345; после stable exact head STOP возвращает Мире на coordinator review. До этого #345 Draft.
-2. Лёва исследует актуальный main и готовит полный технический план Bookmarks в `USER_ACTIONS_SERVICE_PLAN.md`, затем STOP.
+2. Лёва завершил полный Bookmarks plan и **STOP**. Мира может проверить план и зафиксировать B1/B2/B3/B5; реализация Bookmarks не активируется до завершения Watch и отдельного handoff. Mute/block — только после следующей команды владельца.

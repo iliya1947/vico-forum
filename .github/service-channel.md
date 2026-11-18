@@ -265,3 +265,23 @@ migration/runtime privileges; **W2** classification личной подписк�
 **Не завершено:** watch presentation/UI, connected/focused tests и browser acceptance. GitHub Actions на interim head только запущены, результатов PASS пока нет. PR Draft и **не готов к review**. Подробности — `.github/agents/chatgpt-6.md`.
 
 Следующий шаг Лиры после продолжения владельца — UI и tests/browsers, затем final stable exact head, PASS проверок и handoff Мире на coordinator whole-PR review. Служебный PR #342 остаётся open и не merge. Опережающее планирование Bookmarks Лёвой — отдельная параллельная planning-track.
+
+## 2026-11-18 — Лёва: опережающий Bookmarks plan готов, STOP
+
+Исследован main `7cc23edede57994cdedab49c1556ddb55034dd29`; план Bookmarks B1–B7
+сохранён в `USER_ACTIONS_SERVICE_PLAN.md`. Проверены фактические domain/list/UI/
+identity/lifecycle seams. Target «закладки» в permanent contract ещё не определён:
+Мире возвращены темы с private list (рекомендация) и отдельные сообщения с permalink
+(альтернатива), без скрытого выбора и без одновременного добавления обоих targets.
+
+Для рекомендуемого topic-варианта полностью описаны минимальная persisted own-pair
+schema/ACL, идемпотентный desired-state writer, topic KEY SHARE → active actor
+NO KEY UPDATE, current-title/public-identity/Help projection, private keyset list,
+strict own-state route/cache/fetcher, lifecycle/failures и real DB/browser matrix.
+Закладки независимы от Watch/read markers/inbox. B1/B2/B3/B5 возвращены Мире на
+scope/fit; перед будущей реализацией план сверяется с итоговым Watch и новым main.
+
+Это только опережающее планирование: код/implementation PR/feature tests/CI/browser
+отсутствуют, Bookmarks implementation не активирован. Лира остаётся исполнителем
+Watch. Лёва **STOP после полного Bookmarks plan**; следующий Mute/block slice
+возможен только после отдельной команды владельца. #342 остаётся open, не merge.
