@@ -9,6 +9,14 @@ afterEach(() => {
   window.sessionStorage.clear();
 });
 
+async function renderEmbeddedPreview(ui: Parameters<typeof render>[0]) {
+  const result = render(ui);
+  await waitFor(() => {
+    expect(result.container.textContent?.trim().length ?? 0).toBeGreaterThan(0);
+  });
+  return result;
+}
+
 describe("UI preview state catalog", () => {
   it("keeps locale and direction out of State options", () => {
     expect(scenarios.length).toBeGreaterThan(0);
@@ -70,7 +78,7 @@ describe("UI preview state catalog", () => {
 
 describe("embedded preview routing", () => {
   it("keeps tag index counts aligned with the preview tag pages", async () => {
-    render(<EmbeddedPreview scenarioId="tags-guest" />);
+    await renderEmbeddedPreview(<EmbeddedPreview scenarioId="tags-guest" />);
 
     const cloudflare = await screen.findByRole("link", { name: /#Cloudflare/ });
     expect(cloudflare).toHaveTextContent("3");
@@ -79,7 +87,7 @@ describe("embedded preview routing", () => {
   });
 
   it("opens the requested non-TypeScript tag instead of the TypeScript fixture", async () => {
-    render(<EmbeddedPreview scenarioId="tag-cloudflare-guest" />);
+    await renderEmbeddedPreview(<EmbeddedPreview scenarioId="tag-cloudflare-guest" />);
 
     expect(await screen.findByRole("heading", { level: 1, name: "#Cloudflare" })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: /Worker auth: session boundary vs permissions/ })).toBeInTheDocument();
@@ -89,7 +97,7 @@ describe("embedded preview routing", () => {
   });
 
   it("returns the shared 404 state for a missing tag", async () => {
-    render(<EmbeddedPreview scenarioId="tag-missing" />);
+    await renderEmbeddedPreview(<EmbeddedPreview scenarioId="tag-missing" />);
 
     const missing = await screen.findByRole("alert");
     expect(missing).toHaveAttribute("data-status", "404");
@@ -99,7 +107,7 @@ describe("embedded preview routing", () => {
   });
 
   it("returns the shared 404 state for a missing profile", async () => {
-    render(<EmbeddedPreview scenarioId="profile-missing" />);
+    await renderEmbeddedPreview(<EmbeddedPreview scenarioId="profile-missing" />);
 
     const missing = await screen.findByRole("alert");
     expect(missing).toHaveAttribute("data-status", "404");
@@ -109,7 +117,7 @@ describe("embedded preview routing", () => {
   });
 
   it("returns the shared 404 state for a missing category", async () => {
-    render(<EmbeddedPreview scenarioId="category-missing" />);
+    await renderEmbeddedPreview(<EmbeddedPreview scenarioId="category-missing" />);
 
     const missing = await screen.findByRole("alert");
     expect(missing).toHaveAttribute("data-status", "404");
@@ -119,7 +127,7 @@ describe("embedded preview routing", () => {
   });
 
   it("returns the shared 404 state for a missing section", async () => {
-    render(<EmbeddedPreview scenarioId="section-missing" />);
+    await renderEmbeddedPreview(<EmbeddedPreview scenarioId="section-missing" />);
 
     const missing = await screen.findByRole("alert");
     expect(missing).toHaveAttribute("data-status", "404");
@@ -129,7 +137,7 @@ describe("embedded preview routing", () => {
   });
 
   it("returns the shared 404 state for a missing topic", async () => {
-    render(<EmbeddedPreview scenarioId="topic-missing" />);
+    await renderEmbeddedPreview(<EmbeddedPreview scenarioId="topic-missing" />);
 
     const missing = await screen.findByRole("alert");
     expect(missing).toHaveAttribute("data-status", "404");
@@ -139,7 +147,7 @@ describe("embedded preview routing", () => {
   });
 
   it("returns the shared 404 state for an unknown preview route", async () => {
-    render(<EmbeddedPreview scenarioId="route-real-404" />);
+    await renderEmbeddedPreview(<EmbeddedPreview scenarioId="route-real-404" />);
 
     const missing = await screen.findByRole("alert");
     expect(missing).toHaveAttribute("data-status", "404");
@@ -148,7 +156,7 @@ describe("embedded preview routing", () => {
   });
 
   it("requires sign-in for guest direct access to Authorization", async () => {
-    render(<EmbeddedPreview scenarioId="admin-guest-unauthenticated" />);
+    await renderEmbeddedPreview(<EmbeddedPreview scenarioId="admin-guest-unauthenticated" />);
 
     const unauthenticated = await screen.findByRole("alert");
     expect(within(unauthenticated).getByRole("heading", { level: 1, name: "Sign in required" })).toBeInTheDocument();
@@ -157,7 +165,7 @@ describe("embedded preview routing", () => {
   });
 
   it("denies ordinary user direct access to Authorization", async () => {
-    render(<EmbeddedPreview scenarioId="admin-user-forbidden" />);
+    await renderEmbeddedPreview(<EmbeddedPreview scenarioId="admin-user-forbidden" />);
 
     const forbidden = await screen.findByRole("alert");
     expect(within(forbidden).getByRole("heading", { level: 1, name: "Access denied" })).toBeInTheDocument();
@@ -166,7 +174,7 @@ describe("embedded preview routing", () => {
   });
 
   it("requires sign-in for guest direct access to Admin topic", async () => {
-    render(<EmbeddedPreview scenarioId="admin-topic-guest-unauthenticated" />);
+    await renderEmbeddedPreview(<EmbeddedPreview scenarioId="admin-topic-guest-unauthenticated" />);
 
     const unauthenticated = await screen.findByRole("alert");
     expect(within(unauthenticated).getByRole("heading", { level: 1, name: "Sign in required" })).toBeInTheDocument();
@@ -175,7 +183,7 @@ describe("embedded preview routing", () => {
   });
 
   it("denies ordinary user direct access to Admin topic", async () => {
-    render(<EmbeddedPreview scenarioId="admin-topic-user-forbidden" />);
+    await renderEmbeddedPreview(<EmbeddedPreview scenarioId="admin-topic-user-forbidden" />);
 
     const forbidden = await screen.findByRole("alert");
     expect(within(forbidden).getByRole("heading", { level: 1, name: "Access denied" })).toBeInTheDocument();
@@ -184,7 +192,7 @@ describe("embedded preview routing", () => {
   });
 
   it("opens the requested non-primary Admin topic instead of the typed-api fixture", async () => {
-    render(<EmbeddedPreview scenarioId="admin-topic-worker-auth" identity="manager" />);
+    await renderEmbeddedPreview(<EmbeddedPreview scenarioId="admin-topic-worker-auth" identity="manager" />);
 
     expect(await screen.findByRole("heading", {
       level: 2,
@@ -199,7 +207,7 @@ describe("embedded preview routing", () => {
   });
 
   it("returns 404 for a missing Admin topic after Manager admission", async () => {
-    render(<EmbeddedPreview scenarioId="admin-topic-missing" identity="manager" />);
+    await renderEmbeddedPreview(<EmbeddedPreview scenarioId="admin-topic-missing" identity="manager" />);
 
     const missing = await screen.findByRole("alert");
     expect(missing).toHaveAttribute("data-status", "404");
@@ -211,7 +219,7 @@ describe("embedded preview routing", () => {
   });
 
   it("keeps Admin admission ahead of target lookup for a guest missing topic", async () => {
-    render(<EmbeddedPreview scenarioId="admin-topic-missing-guest" />);
+    await renderEmbeddedPreview(<EmbeddedPreview scenarioId="admin-topic-missing-guest" />);
 
     const unauthenticated = await screen.findByRole("alert");
     expect(unauthenticated).toHaveAttribute("data-status", "401");
@@ -224,7 +232,7 @@ describe("embedded preview routing", () => {
 
   it("records a created role in live Admin History", async () => {
     const user = userEvent.setup();
-    render(<EmbeddedPreview scenarioId="admin" identity="owner" />);
+    await renderEmbeddedPreview(<EmbeddedPreview scenarioId="admin" identity="owner" />);
 
     await screen.findByRole("heading", { name: "Authorization management" });
     const createRole = document.querySelector(".admin-create-role") as HTMLElement;
@@ -243,7 +251,7 @@ describe("embedded preview routing", () => {
 
   it("records a registration-policy change in live Admin History", async () => {
     const user = userEvent.setup();
-    render(<EmbeddedPreview scenarioId="section-user" identity="owner" />);
+    await renderEmbeddedPreview(<EmbeddedPreview scenarioId="section-user" identity="owner" />);
 
     await user.click(screen.getByRole("link", { name: "Settings" }));
     const settingsOverview = document.querySelector(".settings-overview") as HTMLElement;
@@ -267,7 +275,7 @@ describe("embedded preview routing", () => {
 
   it("records an accepted Help signal in live Admin History", async () => {
     const user = userEvent.setup();
-    render(<EmbeddedPreview scenarioId="attention-signals" identity="manager" />);
+    await renderEmbeddedPreview(<EmbeddedPreview scenarioId="attention-signals" identity="manager" />);
 
     await user.click(screen.getByRole("button", { name: "Accept signal" }));
     await waitFor(() => expect(screen.queryByText("#signal-142")).not.toBeInTheDocument());
@@ -286,7 +294,7 @@ describe("embedded preview routing", () => {
 
   it("opens User measures from the Admin shell navigation", async () => {
     const user = userEvent.setup();
-    render(<EmbeddedPreview scenarioId="admin-topic" identity="manager" />);
+    await renderEmbeddedPreview(<EmbeddedPreview scenarioId="admin-topic" identity="manager" />);
 
     const nav = document.querySelector(".admin-panel-nav") as HTMLElement;
     await user.click(within(nav).getByRole("link", { name: "User measures" }));
@@ -298,7 +306,7 @@ describe("embedded preview routing", () => {
 
   it("finds Alex by exact ID and opens the existing Admin measure detail", async () => {
     const user = userEvent.setup();
-    render(<EmbeddedPreview scenarioId="admin-topic" identity="manager" />);
+    await renderEmbeddedPreview(<EmbeddedPreview scenarioId="admin-topic" identity="manager" />);
 
     const nav = document.querySelector(".admin-panel-nav") as HTMLElement;
     await user.click(within(nav).getByRole("link", { name: "User measures" }));
@@ -318,7 +326,7 @@ describe("embedded preview routing", () => {
 
   it("creates an Admin measure and opens its detail page", async () => {
     const user = userEvent.setup();
-    render(<EmbeddedPreview scenarioId="admin-topic" identity="manager" />);
+    await renderEmbeddedPreview(<EmbeddedPreview scenarioId="admin-topic" identity="manager" />);
 
     const nav = document.querySelector(".admin-panel-nav") as HTMLElement;
     await user.click(within(nav).getByRole("link", { name: "User measures" }));
@@ -337,7 +345,7 @@ describe("embedded preview routing", () => {
 
   it("changes an Admin measure and records the new version", async () => {
     const user = userEvent.setup();
-    render(<EmbeddedPreview scenarioId="admin-topic" identity="manager" />);
+    await renderEmbeddedPreview(<EmbeddedPreview scenarioId="admin-topic" identity="manager" />);
 
     const nav = document.querySelector(".admin-panel-nav") as HTMLElement;
     await user.click(within(nav).getByRole("link", { name: "User measures" }));
@@ -361,7 +369,7 @@ describe("embedded preview routing", () => {
 
   it("lifts an Admin measure and removes its pending appeal from the index", async () => {
     const user = userEvent.setup();
-    render(<EmbeddedPreview scenarioId="admin-topic" identity="manager" />);
+    await renderEmbeddedPreview(<EmbeddedPreview scenarioId="admin-topic" identity="manager" />);
 
     const nav = document.querySelector(".admin-panel-nav") as HTMLElement;
     await user.click(within(nav).getByRole("link", { name: "User measures" }));
@@ -386,7 +394,7 @@ describe("embedded preview routing", () => {
 
   it("reviews a pending Admin measure appeal and persists the decision", async () => {
     const user = userEvent.setup();
-    render(<EmbeddedPreview scenarioId="admin-topic" identity="manager" />);
+    await renderEmbeddedPreview(<EmbeddedPreview scenarioId="admin-topic" identity="manager" />);
 
     const nav = document.querySelector(".admin-panel-nav") as HTMLElement;
     await user.click(within(nav).getByRole("link", { name: "User measures" }));
@@ -410,7 +418,7 @@ describe("embedded preview routing", () => {
 
   it("accepts an Admin measure appeal with a change remedy and records it in History", async () => {
     const user = userEvent.setup();
-    render(<EmbeddedPreview scenarioId="admin-topic" identity="manager" />);
+    await renderEmbeddedPreview(<EmbeddedPreview scenarioId="admin-topic" identity="manager" />);
 
     let nav = document.querySelector(".admin-panel-nav") as HTMLElement;
     await user.click(within(nav).getByRole("link", { name: "User measures" }));
@@ -453,7 +461,7 @@ describe("embedded preview routing", () => {
 
   it("accepts an Admin measure appeal with a lift remedy and records it in History", async () => {
     const user = userEvent.setup();
-    render(<EmbeddedPreview scenarioId="admin-topic" identity="manager" />);
+    await renderEmbeddedPreview(<EmbeddedPreview scenarioId="admin-topic" identity="manager" />);
 
     let nav = document.querySelector(".admin-panel-nav") as HTMLElement;
     await user.click(within(nav).getByRole("link", { name: "User measures" }));
@@ -496,7 +504,7 @@ describe("embedded preview routing", () => {
 
   it("opens Admin Overview from the Admin shell navigation", async () => {
     const user = userEvent.setup();
-    render(<EmbeddedPreview scenarioId="admin-topic" identity="manager" />);
+    await renderEmbeddedPreview(<EmbeddedPreview scenarioId="admin-topic" identity="manager" />);
 
     const nav = document.querySelector(".admin-panel-nav") as HTMLElement;
     await user.click(within(nav).getByRole("link", { name: "Overview" }));
@@ -509,7 +517,7 @@ describe("embedded preview routing", () => {
 
   it("opens Users from the Admin shell navigation", async () => {
     const user = userEvent.setup();
-    render(<EmbeddedPreview scenarioId="admin-topic" identity="manager" />);
+    await renderEmbeddedPreview(<EmbeddedPreview scenarioId="admin-topic" identity="manager" />);
 
     const nav = document.querySelector(".admin-panel-nav") as HTMLElement;
     await user.click(within(nav).getByRole("link", { name: "Users" }));
@@ -520,7 +528,7 @@ describe("embedded preview routing", () => {
   });
 
   it("shows Owner-self private account information without self-deactivation", async () => {
-    render(<EmbeddedPreview scenarioId="profile-owner-self" identity="owner" />);
+    await renderEmbeddedPreview(<EmbeddedPreview scenarioId="profile-owner-self" identity="owner" />);
 
     expect(await screen.findByRole("heading", { level: 1, name: "Forum Owner" })).toBeInTheDocument();
     const account = document.querySelector("#owner-account") as HTMLElement;
@@ -535,7 +543,7 @@ describe("embedded preview routing", () => {
   });
 
   it("shows Owner-self active and retained session details", async () => {
-    render(<EmbeddedPreview scenarioId="profile-owner-self" identity="owner" />);
+    await renderEmbeddedPreview(<EmbeddedPreview scenarioId="profile-owner-self" identity="owner" />);
 
     const sessions = document.querySelector("#owner-sessions") as HTMLElement;
     expect(await within(sessions).findByRole("heading", {
@@ -550,7 +558,7 @@ describe("embedded preview routing", () => {
   });
 
   it("shows retained Owner-self personal History but hides it from Manager", async () => {
-    const { unmount } = render(<EmbeddedPreview scenarioId="profile-owner-self" identity="owner" />);
+    const { unmount } = await renderEmbeddedPreview(<EmbeddedPreview scenarioId="profile-owner-self" identity="owner" />);
 
     const history = document.querySelector("#owner-history") as HTMLElement;
     expect(await within(history).findByRole("heading", {
@@ -564,7 +572,7 @@ describe("embedded preview routing", () => {
     expect(within(history).getByText("preview-account-created-owner")).toBeInTheDocument();
 
     unmount();
-    render(<EmbeddedPreview scenarioId="admin-topic" identity="manager" />);
+    await renderEmbeddedPreview(<EmbeddedPreview scenarioId="admin-topic" identity="manager" />);
     const user = userEvent.setup();
     const nav = document.querySelector(".admin-panel-nav") as HTMLElement;
     await user.click(within(nav).getByRole("link", { name: "Users" }));
@@ -578,7 +586,7 @@ describe("embedded preview routing", () => {
 
   it("opens the privileged Authorization section from Admin Users", async () => {
     const user = userEvent.setup();
-    render(<EmbeddedPreview scenarioId="admin-topic" identity="manager" />);
+    await renderEmbeddedPreview(<EmbeddedPreview scenarioId="admin-topic" identity="manager" />);
 
     const nav = document.querySelector(".admin-panel-nav") as HTMLElement;
     await user.click(within(nav).getByRole("link", { name: "Users" }));
@@ -601,7 +609,7 @@ describe("embedded preview routing", () => {
 
   it("opens the exact target Admin measures list from the privileged profile section", async () => {
     const user = userEvent.setup();
-    render(<EmbeddedPreview scenarioId="admin-topic" identity="manager" />);
+    await renderEmbeddedPreview(<EmbeddedPreview scenarioId="admin-topic" identity="manager" />);
 
     const nav = document.querySelector(".admin-panel-nav") as HTMLElement;
     await user.click(within(nav).getByRole("link", { name: "Users" }));
@@ -620,7 +628,7 @@ describe("embedded preview routing", () => {
 
   it("updates inline profile authorization through the canonical Owner writer", async () => {
     const user = userEvent.setup();
-    render(<EmbeddedPreview scenarioId="admin-topic" identity="owner" />);
+    await renderEmbeddedPreview(<EmbeddedPreview scenarioId="admin-topic" identity="owner" />);
 
     const nav = document.querySelector(".admin-panel-nav") as HTMLElement;
     await user.click(within(nav).getByRole("link", { name: "Users" }));
@@ -641,7 +649,7 @@ describe("embedded preview routing", () => {
 
   it("filters the Admin Users directory through its GET search", async () => {
     const user = userEvent.setup();
-    render(<EmbeddedPreview scenarioId="admin-topic" identity="manager" />);
+    await renderEmbeddedPreview(<EmbeddedPreview scenarioId="admin-topic" identity="manager" />);
 
     const nav = document.querySelector(".admin-panel-nav") as HTMLElement;
     await user.click(within(nav).getByRole("link", { name: "Users" }));
@@ -657,7 +665,7 @@ describe("embedded preview routing", () => {
 
   it("opens Admin forum from the Admin topic breadcrumb", async () => {
     const user = userEvent.setup();
-    render(<EmbeddedPreview scenarioId="admin-topic" identity="manager" />);
+    await renderEmbeddedPreview(<EmbeddedPreview scenarioId="admin-topic" identity="manager" />);
 
     const trail = document.querySelector(".admin-forum-trail") as HTMLElement;
     await user.click(within(trail).getByRole("link", { name: "Forum" }));
@@ -669,7 +677,7 @@ describe("embedded preview routing", () => {
 
   it("opens the Admin category from the Admin topic breadcrumb", async () => {
     const user = userEvent.setup();
-    render(<EmbeddedPreview scenarioId="admin-topic" identity="manager" />);
+    await renderEmbeddedPreview(<EmbeddedPreview scenarioId="admin-topic" identity="manager" />);
 
     const trail = document.querySelector(".admin-forum-trail") as HTMLElement;
     await user.click(within(trail).getByRole("link", { name: "Development" }));
@@ -681,7 +689,7 @@ describe("embedded preview routing", () => {
 
   it("opens the Admin section from the Admin topic breadcrumb", async () => {
     const user = userEvent.setup();
-    render(<EmbeddedPreview scenarioId="admin-topic" identity="manager" />);
+    await renderEmbeddedPreview(<EmbeddedPreview scenarioId="admin-topic" identity="manager" />);
 
     const trail = document.querySelector(".admin-forum-trail") as HTMLElement;
     await user.click(within(trail).getByRole("link", { name: "TypeScript & architecture" }));
@@ -696,14 +704,14 @@ describe("embedded preview routing", () => {
   });
 
   it("opens the Admin topic fixture for Owner as well as Manager", async () => {
-    render(<EmbeddedPreview scenarioId="admin-topic" identity="owner" />);
+    await renderEmbeddedPreview(<EmbeddedPreview scenarioId="admin-topic" identity="owner" />);
 
     expect(await screen.findByRole("heading", { name: "Admin panel" })).toBeInTheDocument();
     expect(document.querySelector(".admin-topic")).not.toBeNull();
   });
 
   it("renders one admin shell with topic and message Quick actions in the AP-07 fixture", async () => {
-    render(<EmbeddedPreview scenarioId="admin-topic" />);
+    await renderEmbeddedPreview(<EmbeddedPreview scenarioId="admin-topic" />);
     expect(await screen.findByRole("heading", { name: "Admin panel" })).toBeInTheDocument();
     expect(document.querySelectorAll("main")).toHaveLength(1);
     expect(document.querySelectorAll(".admin-topic .topic-message").length).toBeGreaterThan(0);
@@ -711,7 +719,7 @@ describe("embedded preview routing", () => {
   });
 
   it("opens a pinned category-card topic instead of the primary fallback topic", async () => {
-    render(<EmbeddedPreview scenarioId="category-guest" />);
+    await renderEmbeddedPreview(<EmbeddedPreview scenarioId="category-guest" />);
 
     const pinned = await screen.findAllByRole("link", { name: "Section guide and useful resources" });
     await userEvent.click(pinned[0]!);
@@ -727,7 +735,7 @@ describe("embedded preview routing", () => {
   });
 
   it("opens a latest category-card topic instead of the primary fallback topic", async () => {
-    render(<EmbeddedPreview scenarioId="category-guest" />);
+    await renderEmbeddedPreview(<EmbeddedPreview scenarioId="category-guest" />);
 
     await userEvent.click(await screen.findByRole("link", {
       name: "A practical example from this section",
@@ -740,7 +748,7 @@ describe("embedded preview routing", () => {
   });
 
   it("resolves category-card topics outside Development", async () => {
-    render(<EmbeddedPreview scenarioId="category-vibe-ai-guest" />);
+    await renderEmbeddedPreview(<EmbeddedPreview scenarioId="category-vibe-ai-guest" />);
 
     await userEvent.click(await screen.findByRole("link", {
       name: "Latest question in General",
@@ -753,7 +761,7 @@ describe("embedded preview routing", () => {
   });
 
   it("opens the generated topic author's matching profile", async () => {
-    render(<EmbeddedPreview scenarioId="tag-typescript-guest" />);
+    await renderEmbeddedPreview(<EmbeddedPreview scenarioId="tag-typescript-guest" />);
 
     await userEvent.click(await screen.findByRole("link", { name: /Mixed RTL content with code blocks/ }));
     expect(await screen.findByRole("heading", { level: 1, name: "Mixed RTL content with code blocks" })).toBeInTheDocument();
@@ -766,7 +774,7 @@ describe("embedded preview routing", () => {
   });
 
   it("opens the Attention reporter's matching profile", async () => {
-    render(<EmbeddedPreview scenarioId="attention-signals" identity="manager" />);
+    await renderEmbeddedPreview(<EmbeddedPreview scenarioId="attention-signals" identity="manager" />);
     await userEvent.click(await screen.findByRole("link", { name: "Appeals (1)" }));
 
     await userEvent.click(await screen.findByRole("link", { name: "Jordan Chen" }));
@@ -776,7 +784,7 @@ describe("embedded preview routing", () => {
   });
 
   it("opens the selected Popular topic instead of the primary fallback topic", async () => {
-    render(<EmbeddedPreview scenarioId="popular-guest" />);
+    await renderEmbeddedPreview(<EmbeddedPreview scenarioId="popular-guest" />);
 
     const links = await screen.findAllByRole("link", { name: /How do I design a job queue without overcomplicating it\?/ });
     await userEvent.click(links[0]!);
@@ -792,7 +800,7 @@ describe("embedded preview routing", () => {
   });
 
   it("opens the selected Unanswered topic instead of the primary fallback topic", async () => {
-    render(<EmbeddedPreview scenarioId="unanswered-guest" />);
+    await renderEmbeddedPreview(<EmbeddedPreview scenarioId="unanswered-guest" />);
 
     await userEvent.click(await screen.findByRole("link", {
       name: /How should context be passed between several AI agents\?/,
@@ -805,7 +813,7 @@ describe("embedded preview routing", () => {
   });
 
   it("opens the selected Unread topic instead of the primary fallback topic", async () => {
-    render(<EmbeddedPreview scenarioId="unread-user" />);
+    await renderEmbeddedPreview(<EmbeddedPreview scenarioId="unread-user" />);
 
     await userEvent.click(await screen.findByRole("link", {
       name: /How should context be passed between several AI agents\?/,
@@ -818,7 +826,7 @@ describe("embedded preview routing", () => {
   });
 
   it("opens the real section view directly from the homepage category map", async () => {
-    render(<EmbeddedPreview scenarioId="home-guest" />);
+    await renderEmbeddedPreview(<EmbeddedPreview scenarioId="home-guest" />);
 
     const sectionLink = await screen.findByRole("link", { name: /TypeScript & architecture/ });
     expect(sectionLink).toBeInTheDocument();
@@ -840,7 +848,7 @@ describe("embedded preview routing", () => {
 describe("interactive Pages preview", () => {
   it("runs the global search form instead of blocking GET submissions", async () => {
     const user = userEvent.setup();
-    render(<EmbeddedPreview scenarioId="home-guest" />);
+    await renderEmbeddedPreview(<EmbeddedPreview scenarioId="home-guest" />);
 
     await user.click(screen.getByRole("link", { name: "Search the forum" }));
     expect(await screen.findByRole("heading", { level: 1, name: "Search" })).toBeInTheDocument();
@@ -855,7 +863,7 @@ describe("interactive Pages preview", () => {
 
   it("creates a topic, posts a reply, selects it as best answer, and marks the topic solved", async () => {
     const user = userEvent.setup();
-    render(<EmbeddedPreview scenarioId="section-user" identity="user" />);
+    await renderEmbeddedPreview(<EmbeddedPreview scenarioId="section-user" identity="user" />);
 
     await user.type(screen.getByRole("textbox", { name: "Topic title" }), "Interactive preview topic");
     await user.type(screen.getByLabelText("First message"), "This topic was created inside the Pages preview.");
@@ -887,7 +895,7 @@ describe("interactive Pages preview", () => {
 
   it("saves the preferred language from Settings and switches the preview locale", async () => {
     const user = userEvent.setup();
-    render(<EmbeddedPreview scenarioId="section-user" identity="user" />);
+    await renderEmbeddedPreview(<EmbeddedPreview scenarioId="section-user" identity="user" />);
 
     await user.click(screen.getByRole("link", { name: "Settings" }));
     expect(await screen.findByRole("heading", { level: 1, name: "Settings" })).toBeInTheDocument();
@@ -906,7 +914,7 @@ describe("interactive Pages preview", () => {
 
   it("updates the owner Google registration flag in Forum & roles", async () => {
     const user = userEvent.setup();
-    render(<EmbeddedPreview scenarioId="section-user" identity="owner" />);
+    await renderEmbeddedPreview(<EmbeddedPreview scenarioId="section-user" identity="owner" />);
 
     await user.click(screen.getByRole("link", { name: "Settings" }));
     const settingsOverview = document.querySelector(".settings-overview") as HTMLElement;
@@ -930,7 +938,7 @@ describe("interactive Pages preview", () => {
 
   it("shows a registration conflict and revalidates to the current policy", async () => {
     const user = userEvent.setup();
-    render(<EmbeddedPreview scenarioId="settings-forum-registration-conflict" identity="owner" />);
+    await renderEmbeddedPreview(<EmbeddedPreview scenarioId="settings-forum-registration-conflict" identity="owner" />);
 
     const google = await screen.findByRole("checkbox", { name: "Allow new accounts through Google" });
     const email = screen.getByRole("checkbox", { name: "Allow new accounts through email and password" });
@@ -952,7 +960,7 @@ describe("interactive Pages preview", () => {
 
   it("shows unavailable registration feedback without changing the saved policy", async () => {
     const user = userEvent.setup();
-    render(<EmbeddedPreview scenarioId="settings-forum-registration-unavailable" identity="owner" />);
+    await renderEmbeddedPreview(<EmbeddedPreview scenarioId="settings-forum-registration-unavailable" identity="owner" />);
 
     const google = await screen.findByRole("checkbox", { name: "Allow new accounts through Google" });
     const email = screen.getByRole("checkbox", { name: "Allow new accounts through email and password" });
@@ -978,7 +986,7 @@ describe("interactive Pages preview", () => {
 
   it("shows invalid registration feedback without changing the saved policy", async () => {
     const user = userEvent.setup();
-    render(<EmbeddedPreview scenarioId="settings-forum-registration-invalid" identity="owner" />);
+    await renderEmbeddedPreview(<EmbeddedPreview scenarioId="settings-forum-registration-invalid" identity="owner" />);
 
     const google = await screen.findByRole("checkbox", { name: "Allow new accounts through Google" });
     const email = screen.getByRole("checkbox", { name: "Allow new accounts through email and password" });
@@ -1002,7 +1010,7 @@ describe("interactive Pages preview", () => {
 
   it("shows forbidden registration feedback without changing the saved policy", async () => {
     const user = userEvent.setup();
-    render(<EmbeddedPreview scenarioId="settings-forum-registration-forbidden" identity="owner" />);
+    await renderEmbeddedPreview(<EmbeddedPreview scenarioId="settings-forum-registration-forbidden" identity="owner" />);
 
     const google = await screen.findByRole("checkbox", { name: "Allow new accounts through Google" });
     const email = screen.getByRole("checkbox", { name: "Allow new accounts through email and password" });
@@ -1028,7 +1036,7 @@ describe("interactive Pages preview", () => {
 
   it("applies the owner registration policy to a new Sign up preview", async () => {
     const user = userEvent.setup();
-    render(<EmbeddedPreview scenarioId="section-user" identity="owner" />);
+    await renderEmbeddedPreview(<EmbeddedPreview scenarioId="section-user" identity="owner" />);
 
     await user.click(screen.getByRole("link", { name: "Settings" }));
     const settingsOverview = document.querySelector(".settings-overview") as HTMLElement;
@@ -1040,7 +1048,7 @@ describe("interactive Pages preview", () => {
     expect(await screen.findByRole("status")).toHaveTextContent("Registration settings updated.");
 
     cleanup();
-    render(<EmbeddedPreview scenarioId="credentials-register" identity="guest" />);
+    await renderEmbeddedPreview(<EmbeddedPreview scenarioId="credentials-register" identity="guest" />);
 
     expect(await screen.findByRole("heading", { level: 1, name: "Create your account" })).toBeInTheDocument();
     expect(screen.getByText(
@@ -1052,7 +1060,7 @@ describe("interactive Pages preview", () => {
 
   it("keeps Google sign-up available when email registration is closed", async () => {
     const user = userEvent.setup();
-    render(<EmbeddedPreview scenarioId="section-user" identity="owner" />);
+    await renderEmbeddedPreview(<EmbeddedPreview scenarioId="section-user" identity="owner" />);
 
     await user.click(screen.getByRole("link", { name: "Settings" }));
     const settingsOverview = document.querySelector(".settings-overview") as HTMLElement;
@@ -1064,7 +1072,7 @@ describe("interactive Pages preview", () => {
     expect(await screen.findByRole("status")).toHaveTextContent("Registration settings updated.");
 
     cleanup();
-    render(<EmbeddedPreview scenarioId="credentials-register" identity="guest" />);
+    await renderEmbeddedPreview(<EmbeddedPreview scenarioId="credentials-register" identity="guest" />);
 
     expect(await screen.findByRole("heading", { level: 1, name: "Create your account" })).toBeInTheDocument();
     expect(screen.getByText(
@@ -1076,7 +1084,7 @@ describe("interactive Pages preview", () => {
 
   it("removes both registration methods when the owner closes both", async () => {
     const user = userEvent.setup();
-    render(<EmbeddedPreview scenarioId="section-user" identity="owner" />);
+    await renderEmbeddedPreview(<EmbeddedPreview scenarioId="section-user" identity="owner" />);
 
     await user.click(screen.getByRole("link", { name: "Settings" }));
     const settingsOverview = document.querySelector(".settings-overview") as HTMLElement;
@@ -1090,7 +1098,7 @@ describe("interactive Pages preview", () => {
     expect(await screen.findByRole("status")).toHaveTextContent("Registration settings updated.");
 
     cleanup();
-    render(<EmbeddedPreview scenarioId="credentials-register" identity="guest" />);
+    await renderEmbeddedPreview(<EmbeddedPreview scenarioId="credentials-register" identity="guest" />);
 
     expect(await screen.findByRole("heading", { level: 1, name: "Create your account" })).toBeInTheDocument();
     expect(screen.getByText(
@@ -1106,7 +1114,7 @@ describe("interactive Pages preview", () => {
 
   it("keeps existing email and Google sign-in available when registration is fully closed", async () => {
     const user = userEvent.setup();
-    render(<EmbeddedPreview scenarioId="section-user" identity="owner" />);
+    await renderEmbeddedPreview(<EmbeddedPreview scenarioId="section-user" identity="owner" />);
 
     await user.click(screen.getByRole("link", { name: "Settings" }));
     const settingsOverview = document.querySelector(".settings-overview") as HTMLElement;
@@ -1120,7 +1128,7 @@ describe("interactive Pages preview", () => {
     expect(await screen.findByRole("status")).toHaveTextContent("Registration settings updated.");
 
     cleanup();
-    render(<EmbeddedPreview scenarioId="credentials-sign-in" identity="guest" />);
+    await renderEmbeddedPreview(<EmbeddedPreview scenarioId="credentials-sign-in" identity="guest" />);
 
     expect(await screen.findByRole("heading", { level: 1, name: "Sign in to Vico Forum" })).toBeInTheDocument();
     expect(screen.getByRole("textbox", { name: "Email address" })).toBeInTheDocument();
@@ -1136,7 +1144,7 @@ describe("interactive Pages preview", () => {
   });
 
   it("requires sign-in for guest access to Forum & roles", async () => {
-    render(<EmbeddedPreview scenarioId="settings-forum-guest-unauthenticated" />);
+    await renderEmbeddedPreview(<EmbeddedPreview scenarioId="settings-forum-guest-unauthenticated" />);
 
     const unauthenticated = await screen.findByRole("alert");
     expect(within(unauthenticated).getByRole("heading", { level: 1, name: "Sign in required" })).toBeInTheDocument();
@@ -1147,7 +1155,7 @@ describe("interactive Pages preview", () => {
 
   it("shows Forum & roles to Owner in Settings overview and navigation", async () => {
     const user = userEvent.setup();
-    render(<EmbeddedPreview scenarioId="section-user" identity="owner" />);
+    await renderEmbeddedPreview(<EmbeddedPreview scenarioId="section-user" identity="owner" />);
 
     await user.click(screen.getByRole("link", { name: "Settings" }));
 
@@ -1184,7 +1192,7 @@ describe("interactive Pages preview", () => {
 
   it("moves Owner from Forum & roles to User preferences through Settings navigation", async () => {
     const user = userEvent.setup();
-    render(<EmbeddedPreview scenarioId="section-user" identity="owner" />);
+    await renderEmbeddedPreview(<EmbeddedPreview scenarioId="section-user" identity="owner" />);
 
     await user.click(screen.getByRole("link", { name: "Settings" }));
     let settingsNavigation = document.querySelector(".settings-panel-nav") as HTMLElement;
@@ -1217,7 +1225,7 @@ describe("interactive Pages preview", () => {
 
   it("moves Owner from Forum & roles to Account & security through Settings navigation", async () => {
     const user = userEvent.setup();
-    render(<EmbeddedPreview scenarioId="section-user" identity="owner" />);
+    await renderEmbeddedPreview(<EmbeddedPreview scenarioId="section-user" identity="owner" />);
 
     await user.click(screen.getByRole("link", { name: "Settings" }));
     let settingsNavigation = document.querySelector(".settings-panel-nav") as HTMLElement;
@@ -1239,7 +1247,7 @@ describe("interactive Pages preview", () => {
 
   it("moves Owner from Forum & roles to Privacy through Settings navigation", async () => {
     const user = userEvent.setup();
-    render(<EmbeddedPreview scenarioId="section-user" identity="owner" />);
+    await renderEmbeddedPreview(<EmbeddedPreview scenarioId="section-user" identity="owner" />);
 
     await user.click(screen.getByRole("link", { name: "Settings" }));
     let settingsNavigation = document.querySelector(".settings-panel-nav") as HTMLElement;
@@ -1261,7 +1269,7 @@ describe("interactive Pages preview", () => {
 
   it("moves Owner from Forum & roles to Administrator preferences through Settings navigation", async () => {
     const user = userEvent.setup();
-    render(<EmbeddedPreview scenarioId="section-user" identity="owner" />);
+    await renderEmbeddedPreview(<EmbeddedPreview scenarioId="section-user" identity="owner" />);
 
     await user.click(screen.getByRole("link", { name: "Settings" }));
     let settingsNavigation = document.querySelector(".settings-panel-nav") as HTMLElement;
@@ -1283,7 +1291,7 @@ describe("interactive Pages preview", () => {
 
   it("hides Forum & roles from ordinary user Settings navigation", async () => {
     const user = userEvent.setup();
-    render(<EmbeddedPreview scenarioId="section-user" identity="user" />);
+    await renderEmbeddedPreview(<EmbeddedPreview scenarioId="section-user" identity="user" />);
 
     await user.click(screen.getByRole("link", { name: "Settings" }));
 
@@ -1295,7 +1303,7 @@ describe("interactive Pages preview", () => {
 
   it("hides Administrator preferences from ordinary user Settings navigation", async () => {
     const user = userEvent.setup();
-    render(<EmbeddedPreview scenarioId="section-user" identity="user" />);
+    await renderEmbeddedPreview(<EmbeddedPreview scenarioId="section-user" identity="user" />);
 
     await user.click(screen.getByRole("link", { name: "Settings" }));
 
@@ -1306,7 +1314,7 @@ describe("interactive Pages preview", () => {
   });
 
   it("requires sign-in for guest direct access to Settings overview", async () => {
-    render(<EmbeddedPreview scenarioId="settings-overview-guest-unauthenticated" />);
+    await renderEmbeddedPreview(<EmbeddedPreview scenarioId="settings-overview-guest-unauthenticated" />);
 
     const unauthenticated = await screen.findByRole("alert");
     expect(within(unauthenticated).getByRole("heading", { level: 1, name: "Sign in required" })).toBeInTheDocument();
@@ -1316,7 +1324,7 @@ describe("interactive Pages preview", () => {
   });
 
   it("requires sign-in for guest direct access to User preferences", async () => {
-    render(<EmbeddedPreview scenarioId="settings-user-guest-unauthenticated" />);
+    await renderEmbeddedPreview(<EmbeddedPreview scenarioId="settings-user-guest-unauthenticated" />);
 
     const unauthenticated = await screen.findByRole("alert");
     expect(within(unauthenticated).getByRole("heading", { level: 1, name: "Sign in required" })).toBeInTheDocument();
@@ -1326,7 +1334,7 @@ describe("interactive Pages preview", () => {
   });
 
   it("requires sign-in for guest direct access to Account & security", async () => {
-    render(<EmbeddedPreview scenarioId="settings-account-guest-unauthenticated" />);
+    await renderEmbeddedPreview(<EmbeddedPreview scenarioId="settings-account-guest-unauthenticated" />);
 
     const unauthenticated = await screen.findByRole("alert");
     expect(within(unauthenticated).getByRole("heading", { level: 1, name: "Sign in required" })).toBeInTheDocument();
@@ -1336,7 +1344,7 @@ describe("interactive Pages preview", () => {
   });
 
   it("requires sign-in for guest direct access to Privacy", async () => {
-    render(<EmbeddedPreview scenarioId="settings-privacy-guest-unauthenticated" />);
+    await renderEmbeddedPreview(<EmbeddedPreview scenarioId="settings-privacy-guest-unauthenticated" />);
 
     const unauthenticated = await screen.findByRole("alert");
     expect(within(unauthenticated).getByRole("heading", { level: 1, name: "Sign in required" })).toBeInTheDocument();
@@ -1346,7 +1354,7 @@ describe("interactive Pages preview", () => {
   });
 
   it("requires sign-in for guest direct access to Administrator preferences", async () => {
-    render(<EmbeddedPreview scenarioId="settings-administrator-guest-unauthenticated" />);
+    await renderEmbeddedPreview(<EmbeddedPreview scenarioId="settings-administrator-guest-unauthenticated" />);
 
     const unauthenticated = await screen.findByRole("alert");
     expect(within(unauthenticated).getByRole("heading", { level: 1, name: "Sign in required" })).toBeInTheDocument();
@@ -1356,7 +1364,7 @@ describe("interactive Pages preview", () => {
   });
 
   it("denies ordinary user direct access to Administrator preferences", async () => {
-    render(<EmbeddedPreview scenarioId="settings-administrator-user-forbidden" />);
+    await renderEmbeddedPreview(<EmbeddedPreview scenarioId="settings-administrator-user-forbidden" />);
 
     const forbidden = await screen.findByRole("alert");
     expect(within(forbidden).getByRole("heading", { level: 1, name: "Access denied" })).toBeInTheDocument();
@@ -1366,7 +1374,7 @@ describe("interactive Pages preview", () => {
   });
 
   it("denies ordinary user access to Forum & roles", async () => {
-    render(<EmbeddedPreview scenarioId="settings-forum-user-forbidden" />);
+    await renderEmbeddedPreview(<EmbeddedPreview scenarioId="settings-forum-user-forbidden" />);
 
     const forbidden = await screen.findByRole("alert");
     expect(within(forbidden).getByRole("heading", { level: 1, name: "Access denied" })).toBeInTheDocument();
@@ -1376,7 +1384,7 @@ describe("interactive Pages preview", () => {
   });
 
   it("opens Administrator preferences directly for Manager with active navigation", async () => {
-    render(<EmbeddedPreview scenarioId="settings-administrator-manager" />);
+    await renderEmbeddedPreview(<EmbeddedPreview scenarioId="settings-administrator-manager" />);
 
     expect(await screen.findByRole("heading", { level: 2, name: "Administrator preferences" })).toBeInTheDocument();
     const settingsNavigation = document.querySelector(".settings-panel-nav") as HTMLElement;
@@ -1387,7 +1395,7 @@ describe("interactive Pages preview", () => {
   });
 
   it("opens Administrator preferences directly for Owner with Forum & roles still available", async () => {
-    render(<EmbeddedPreview scenarioId="settings-administrator-owner" />);
+    await renderEmbeddedPreview(<EmbeddedPreview scenarioId="settings-administrator-owner" />);
 
     expect(await screen.findByRole("heading", { level: 2, name: "Administrator preferences" })).toBeInTheDocument();
     const settingsNavigation = document.querySelector(".settings-panel-nav") as HTMLElement;
@@ -1403,7 +1411,7 @@ describe("interactive Pages preview", () => {
 
   it("shows Administrator preferences to Manager in Settings and opens it from navigation", async () => {
     const user = userEvent.setup();
-    render(<EmbeddedPreview scenarioId="section-user" identity="manager" />);
+    await renderEmbeddedPreview(<EmbeddedPreview scenarioId="section-user" identity="manager" />);
 
     await user.click(screen.getByRole("link", { name: "Settings" }));
 
@@ -1427,7 +1435,7 @@ describe("interactive Pages preview", () => {
 
   it("keeps Forum & roles owner-only for managers in Settings", async () => {
     const user = userEvent.setup();
-    render(<EmbeddedPreview scenarioId="section-user" identity="manager" />);
+    await renderEmbeddedPreview(<EmbeddedPreview scenarioId="section-user" identity="manager" />);
 
     await user.click(screen.getByRole("link", { name: "Settings" }));
     const settingsOverview = document.querySelector(".settings-overview") as HTMLElement;
@@ -1436,7 +1444,7 @@ describe("interactive Pages preview", () => {
     expect(within(settingsNavigation).queryByRole("link", { name: "Forum & roles" })).not.toBeInTheDocument();
 
     cleanup();
-    render(<EmbeddedPreview scenarioId="settings-forum-manager-forbidden" />);
+    await renderEmbeddedPreview(<EmbeddedPreview scenarioId="settings-forum-manager-forbidden" />);
 
     const forbidden = await screen.findByRole("alert");
     expect(within(forbidden).getByRole("heading", { level: 1, name: "Access denied" })).toBeInTheDocument();
@@ -1447,7 +1455,7 @@ describe("interactive Pages preview", () => {
 
   it("creates, configures, assigns, overrides, protects, then deletes an unassigned custom role in Forum & roles", async () => {
     const user = userEvent.setup();
-    render(<EmbeddedPreview scenarioId="section-user" identity="owner" />);
+    await renderEmbeddedPreview(<EmbeddedPreview scenarioId="section-user" identity="owner" />);
 
     await user.click(screen.getByRole("link", { name: "Settings" }));
     const settingsOverview = document.querySelector(".settings-overview") as HTMLElement;
@@ -1550,7 +1558,7 @@ describe("interactive Pages preview", () => {
 
   it("blocks an invalid custom role slug in Forum & roles before submission", async () => {
     const user = userEvent.setup();
-    render(<EmbeddedPreview scenarioId="section-user" identity="owner" />);
+    await renderEmbeddedPreview(<EmbeddedPreview scenarioId="section-user" identity="owner" />);
 
     await user.click(screen.getByRole("link", { name: "Settings" }));
     const settingsOverview = document.querySelector(".settings-overview") as HTMLElement;
@@ -1575,7 +1583,7 @@ describe("interactive Pages preview", () => {
 
   it("blocks an empty custom role display name in Forum & roles before submission", async () => {
     const user = userEvent.setup();
-    render(<EmbeddedPreview scenarioId="section-user" identity="owner" />);
+    await renderEmbeddedPreview(<EmbeddedPreview scenarioId="section-user" identity="owner" />);
 
     await user.click(screen.getByRole("link", { name: "Settings" }));
     const settingsOverview = document.querySelector(".settings-overview") as HTMLElement;
@@ -1598,7 +1606,7 @@ describe("interactive Pages preview", () => {
 
   it("keeps the registration version unchanged on a no-op save", async () => {
     const user = userEvent.setup();
-    render(<EmbeddedPreview scenarioId="section-user" identity="owner" />);
+    await renderEmbeddedPreview(<EmbeddedPreview scenarioId="section-user" identity="owner" />);
 
     await user.click(screen.getByRole("link", { name: "Settings" }));
     const settingsOverview = document.querySelector(".settings-overview") as HTMLElement;
@@ -1621,7 +1629,7 @@ describe("interactive Pages preview", () => {
 
   it("updates the owner email registration flag independently from Google", async () => {
     const user = userEvent.setup();
-    render(<EmbeddedPreview scenarioId="section-user" identity="owner" />);
+    await renderEmbeddedPreview(<EmbeddedPreview scenarioId="section-user" identity="owner" />);
 
     await user.click(screen.getByRole("link", { name: "Settings" }));
     const settingsOverview = document.querySelector(".settings-overview") as HTMLElement;
@@ -1646,7 +1654,7 @@ describe("interactive Pages preview", () => {
   it("changes administrator workspace density through the real local preference control", async () => {
     window.localStorage.removeItem("vico:administrator-workspace:v1:maya");
     const user = userEvent.setup();
-    render(<EmbeddedPreview scenarioId="section-user" identity="manager" />);
+    await renderEmbeddedPreview(<EmbeddedPreview scenarioId="section-user" identity="manager" />);
 
     await user.click(screen.getByRole("link", { name: "Settings" }));
     const settingsOverview = document.querySelector(".settings-overview") as HTMLElement;
@@ -1664,7 +1672,7 @@ describe("interactive Pages preview", () => {
     const key = "vico:administrator-workspace:v1:owner";
     window.localStorage.removeItem(key);
     const user = userEvent.setup();
-    render(<EmbeddedPreview scenarioId="section-user" identity="owner" />);
+    await renderEmbeddedPreview(<EmbeddedPreview scenarioId="section-user" identity="owner" />);
 
     await user.click(screen.getByRole("link", { name: "Settings" }));
     let settingsOverview = document.querySelector(".settings-overview") as HTMLElement;
@@ -1698,7 +1706,7 @@ describe("interactive Pages preview", () => {
     const key = "vico:administrator-workspace:v1:maya";
     window.localStorage.removeItem(key);
     const user = userEvent.setup();
-    render(<EmbeddedPreview scenarioId="section-user" identity="manager" />);
+    await renderEmbeddedPreview(<EmbeddedPreview scenarioId="section-user" identity="manager" />);
 
     await user.click(screen.getByRole("link", { name: "Settings" }));
     const settingsOverview = document.querySelector(".settings-overview") as HTMLElement;
@@ -1725,7 +1733,7 @@ describe("interactive Pages preview", () => {
     const key = "vico:administrator-workspace:v1:maya";
     window.localStorage.removeItem(key);
     const user = userEvent.setup();
-    render(<EmbeddedPreview scenarioId="section-user" identity="manager" />);
+    await renderEmbeddedPreview(<EmbeddedPreview scenarioId="section-user" identity="manager" />);
 
     await user.click(screen.getByRole("link", { name: "Settings" }));
     let settingsOverview = document.querySelector(".settings-overview") as HTMLElement;
@@ -1770,7 +1778,7 @@ describe("interactive Pages preview", () => {
     const key = "vico:administrator-workspace:v1:maya";
     window.localStorage.removeItem(key);
     const user = userEvent.setup();
-    render(<EmbeddedPreview scenarioId="section-user" identity="manager" />);
+    await renderEmbeddedPreview(<EmbeddedPreview scenarioId="section-user" identity="manager" />);
 
     await user.click(screen.getByRole("link", { name: "Settings" }));
     let settingsOverview = document.querySelector(".settings-overview") as HTMLElement;
@@ -1788,7 +1796,7 @@ describe("interactive Pages preview", () => {
     });
 
     cleanup();
-    render(<EmbeddedPreview scenarioId="section-user" identity="manager" />);
+    await renderEmbeddedPreview(<EmbeddedPreview scenarioId="section-user" identity="manager" />);
     const secondUser = userEvent.setup();
 
     await secondUser.click(screen.getByRole("link", { name: "Settings" }));
@@ -1801,7 +1809,7 @@ describe("interactive Pages preview", () => {
   });
 
   it("shows the non-fresh session state without exposing session controls", async () => {
-    render(<EmbeddedPreview scenarioId="settings-account-not-fresh" identity="user" />);
+    await renderEmbeddedPreview(<EmbeddedPreview scenarioId="settings-account-not-fresh" identity="user" />);
 
     expect(await screen.findByRole("heading", { level: 2, name: "Account & security" })).toBeInTheDocument();
 
@@ -1818,7 +1826,7 @@ describe("interactive Pages preview", () => {
   });
 
   it("shows a Google-only account without offering password change", async () => {
-    render(<EmbeddedPreview scenarioId="settings-account-google-only" identity="user" />);
+    await renderEmbeddedPreview(<EmbeddedPreview scenarioId="settings-account-google-only" identity="user" />);
 
     expect(await screen.findByRole("heading", { level: 2, name: "Account & security" })).toBeInTheDocument();
 
@@ -1835,7 +1843,7 @@ describe("interactive Pages preview", () => {
 
   it("links Google locally from Account & security without invoking real OAuth", async () => {
     const user = userEvent.setup();
-    render(<EmbeddedPreview scenarioId="section-user" identity="user" />);
+    await renderEmbeddedPreview(<EmbeddedPreview scenarioId="section-user" identity="user" />);
 
     await user.click(screen.getByRole("link", { name: "Settings" }));
     const settingsOverview = document.querySelector(".settings-overview") as HTMLElement;
@@ -1853,7 +1861,7 @@ describe("interactive Pages preview", () => {
 
   it("signs out one other active session while preserving the remaining sessions", async () => {
     const user = userEvent.setup();
-    render(<EmbeddedPreview scenarioId="section-user" identity="user" />);
+    await renderEmbeddedPreview(<EmbeddedPreview scenarioId="section-user" identity="user" />);
 
     await user.click(screen.getByRole("link", { name: "Settings" }));
     const settingsOverview = document.querySelector(".settings-overview") as HTMLElement;
@@ -1878,7 +1886,7 @@ describe("interactive Pages preview", () => {
 
   it("reports an already inactive other session and refreshes the list", async () => {
     const user = userEvent.setup();
-    render(<EmbeddedPreview scenarioId="settings-account-session-not-found" identity="user" />);
+    await renderEmbeddedPreview(<EmbeddedPreview scenarioId="settings-account-session-not-found" identity="user" />);
 
     const sessionsHeading = await screen.findByRole("heading", { level: 3, name: "Active sessions" });
     const sessions = sessionsHeading.parentElement as HTMLElement;
@@ -1897,7 +1905,7 @@ describe("interactive Pages preview", () => {
 
   it("shows a controlled unavailable error without changing sessions", async () => {
     const user = userEvent.setup();
-    render(<EmbeddedPreview scenarioId="settings-account-unavailable" identity="user" />);
+    await renderEmbeddedPreview(<EmbeddedPreview scenarioId="settings-account-unavailable" identity="user" />);
 
     await user.type(screen.getByLabelText("Current password"), "preview-current-password");
     await user.type(screen.getByLabelText("New password"), "preview-new-password");
@@ -1916,7 +1924,7 @@ describe("interactive Pages preview", () => {
 
   it("shows a stale account-session conflict without changing data", async () => {
     const user = userEvent.setup();
-    render(<EmbeddedPreview scenarioId="settings-account-stale" identity="user" />);
+    await renderEmbeddedPreview(<EmbeddedPreview scenarioId="settings-account-stale" identity="user" />);
 
     await user.type(screen.getByLabelText("Current password"), "preview-current-password");
     await user.type(screen.getByLabelText("New password"), "preview-new-password");
@@ -1935,7 +1943,7 @@ describe("interactive Pages preview", () => {
 
   it("shows a controlled invalid-password error without changing sessions", async () => {
     const user = userEvent.setup();
-    render(<EmbeddedPreview scenarioId="settings-account-invalid-password" identity="user" />);
+    await renderEmbeddedPreview(<EmbeddedPreview scenarioId="settings-account-invalid-password" identity="user" />);
 
     await user.type(screen.getByLabelText("Current password"), "wrong-current-password");
     await user.type(screen.getByLabelText("New password"), "preview-new-password");
@@ -1952,7 +1960,7 @@ describe("interactive Pages preview", () => {
 
   it("shows the password rate-limit state without changing sessions", async () => {
     const user = userEvent.setup();
-    render(<EmbeddedPreview scenarioId="settings-account-rate-limited" identity="user" />);
+    await renderEmbeddedPreview(<EmbeddedPreview scenarioId="settings-account-rate-limited" identity="user" />);
 
     await user.type(screen.getByLabelText("Current password"), "preview-current-password");
     await user.type(screen.getByLabelText("New password"), "preview-new-password");
@@ -1971,7 +1979,7 @@ describe("interactive Pages preview", () => {
 
   it("changes the representative password without revoking other sessions", async () => {
     const user = userEvent.setup();
-    render(<EmbeddedPreview scenarioId="section-user" identity="user" />);
+    await renderEmbeddedPreview(<EmbeddedPreview scenarioId="section-user" identity="user" />);
 
     await user.click(screen.getByRole("link", { name: "Settings" }));
     const settingsOverview = document.querySelector(".settings-overview") as HTMLElement;
@@ -1992,7 +2000,7 @@ describe("interactive Pages preview", () => {
 
   it("signs out all other active sessions while preserving the current session", async () => {
     const user = userEvent.setup();
-    render(<EmbeddedPreview scenarioId="section-user" identity="user" />);
+    await renderEmbeddedPreview(<EmbeddedPreview scenarioId="section-user" identity="user" />);
 
     await user.click(screen.getByRole("link", { name: "Settings" }));
     const settingsOverview = document.querySelector(".settings-overview") as HTMLElement;
@@ -2019,7 +2027,7 @@ describe("interactive Pages preview", () => {
 
   it("saves online visibility in Privacy settings and updates the local home presence", async () => {
     const user = userEvent.setup();
-    render(<EmbeddedPreview scenarioId="section-user" identity="user" />);
+    await renderEmbeddedPreview(<EmbeddedPreview scenarioId="section-user" identity="user" />);
 
     await user.click(screen.getByRole("link", { name: "Settings" }));
     const settingsOverview = document.querySelector(".settings-overview") as HTMLElement;
@@ -2044,21 +2052,21 @@ describe("interactive Pages preview", () => {
   });
 
   it("redirects an authenticated user away from Sign in", async () => {
-    render(<EmbeddedPreview scenarioId="credentials-sign-in-authenticated" />);
+    await renderEmbeddedPreview(<EmbeddedPreview scenarioId="credentials-sign-in-authenticated" />);
 
     expect(await screen.findByRole("link", { name: /TypeScript & architecture/ })).toBeInTheDocument();
     expect(document.querySelector(".credential-page")).toBeNull();
   });
 
   it("redirects an authenticated user away from Sign up", async () => {
-    render(<EmbeddedPreview scenarioId="credentials-register-authenticated" />);
+    await renderEmbeddedPreview(<EmbeddedPreview scenarioId="credentials-register-authenticated" />);
 
     expect(await screen.findByRole("link", { name: /TypeScript & architecture/ })).toBeInTheDocument();
     expect(document.querySelector(".credential-page")).toBeNull();
   });
 
   it("preserves a safe return destination across the guest credential switch", async () => {
-    render(<EmbeddedPreview scenarioId="credentials-sign-in-return-to" />);
+    await renderEmbeddedPreview(<EmbeddedPreview scenarioId="credentials-sign-in-return-to" />);
 
     expect(await screen.findByRole("heading", { level: 1, name: "Sign in to Vico Forum" })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Need an account? Sign up" })).toHaveAttribute(
@@ -2069,7 +2077,7 @@ describe("interactive Pages preview", () => {
 
   it("edits the signed-in user's profile and keeps the saved preview data", async () => {
     const user = userEvent.setup();
-    render(<EmbeddedPreview scenarioId="profile-edit" identity="user" />);
+    await renderEmbeddedPreview(<EmbeddedPreview scenarioId="profile-edit" identity="user" />);
 
     const bio = screen.getByLabelText("About");
     await user.clear(bio);
@@ -2091,7 +2099,7 @@ describe("interactive Pages preview", () => {
 
   it("opens My measures from the signed-in profile and reaches measure detail", async () => {
     const user = userEvent.setup();
-    render(<EmbeddedPreview scenarioId="profile-own" identity="user" />);
+    await renderEmbeddedPreview(<EmbeddedPreview scenarioId="profile-own" identity="user" />);
 
     await user.click(await screen.findByRole("link", { name: "My measures" }));
     expect(await screen.findByRole("heading", { level: 1, name: "My measures" })).toBeInTheDocument();
@@ -2106,7 +2114,7 @@ describe("interactive Pages preview", () => {
 
   it("submits an appeal and keeps the pending measure state in preview", async () => {
     const user = userEvent.setup();
-    render(<EmbeddedPreview scenarioId="account-measure-detail" identity="user" />);
+    await renderEmbeddedPreview(<EmbeddedPreview scenarioId="account-measure-detail" identity="user" />);
 
     await user.type(
       await screen.findByLabelText("Appeal explanation"),
@@ -2121,7 +2129,7 @@ describe("interactive Pages preview", () => {
   });
 
   it("requires sign-in for guest direct access to My measures", async () => {
-    render(<EmbeddedPreview scenarioId="account-measures-guest" />);
+    await renderEmbeddedPreview(<EmbeddedPreview scenarioId="account-measures-guest" />);
 
     const unauthenticated = await screen.findByRole("alert");
     expect(unauthenticated).toHaveAttribute("data-status", "401");
@@ -2133,7 +2141,7 @@ describe("interactive Pages preview", () => {
   });
 
   it("requires sign-in for guest direct access to Notifications", async () => {
-    render(<EmbeddedPreview scenarioId="notifications-guest-unauthenticated" />);
+    await renderEmbeddedPreview(<EmbeddedPreview scenarioId="notifications-guest-unauthenticated" />);
 
     const unauthenticated = await screen.findByRole("alert");
     expect(within(unauthenticated).getByRole("heading", { level: 1, name: "Sign in required" })).toBeInTheDocument();
@@ -2142,7 +2150,7 @@ describe("interactive Pages preview", () => {
   });
 
   it("requires sign-in for guest direct access to Unread", async () => {
-    render(<EmbeddedPreview scenarioId="unread-guest-unauthenticated" />);
+    await renderEmbeddedPreview(<EmbeddedPreview scenarioId="unread-guest-unauthenticated" />);
 
     const unauthenticated = await screen.findByRole("alert");
     expect(within(unauthenticated).getByRole("heading", { level: 1, name: "Sign in required" })).toBeInTheDocument();
@@ -2152,7 +2160,7 @@ describe("interactive Pages preview", () => {
   });
 
   it("requires sign-in for guest direct access to Needs attention", async () => {
-    render(<EmbeddedPreview scenarioId="attention-guest-unauthenticated" />);
+    await renderEmbeddedPreview(<EmbeddedPreview scenarioId="attention-guest-unauthenticated" />);
 
     const unauthenticated = await screen.findByRole("alert");
     expect(within(unauthenticated).getByRole("heading", { level: 1, name: "Sign in required" })).toBeInTheDocument();
@@ -2161,7 +2169,7 @@ describe("interactive Pages preview", () => {
   });
 
   it("denies ordinary user direct access to Needs attention", async () => {
-    render(<EmbeddedPreview scenarioId="attention-user-forbidden" />);
+    await renderEmbeddedPreview(<EmbeddedPreview scenarioId="attention-user-forbidden" />);
 
     const forbidden = await screen.findByRole("alert");
     expect(within(forbidden).getByRole("heading", { level: 1, name: "Access denied" })).toBeInTheDocument();
@@ -2171,7 +2179,7 @@ describe("interactive Pages preview", () => {
 
   it("opens a notification, marks it read, and follows the referenced message", async () => {
     const user = userEvent.setup();
-    render(<EmbeddedPreview scenarioId="notifications-user" identity="user" />);
+    await renderEmbeddedPreview(<EmbeddedPreview scenarioId="notifications-user" identity="user" />);
 
     const notification = screen.getByRole("button", {
       name: /Open reply: How should I structure a typed API client\?/,
@@ -2190,7 +2198,7 @@ describe("interactive Pages preview", () => {
   });
 
   it("requires sign-in for guest direct access to My questions", async () => {
-    render(<EmbeddedPreview scenarioId="help-solutions-mine-guest" />);
+    await renderEmbeddedPreview(<EmbeddedPreview scenarioId="help-solutions-mine-guest" />);
 
     const unauthenticated = await screen.findByRole("alert");
     expect(within(unauthenticated).getByRole("heading", { level: 1, name: "Sign in required" })).toBeInTheDocument();
@@ -2199,7 +2207,7 @@ describe("interactive Pages preview", () => {
   });
 
   it("requires sign-in for guest direct access to Want to help", async () => {
-    render(<EmbeddedPreview scenarioId="help-solutions-want-guest" />);
+    await renderEmbeddedPreview(<EmbeddedPreview scenarioId="help-solutions-want-guest" />);
 
     const unauthenticated = await screen.findByRole("alert");
     expect(within(unauthenticated).getByRole("heading", { level: 1, name: "Sign in required" })).toBeInTheDocument();
@@ -2208,7 +2216,7 @@ describe("interactive Pages preview", () => {
   });
 
   it("requires sign-in for guest direct access to For me", async () => {
-    render(<EmbeddedPreview scenarioId="help-solutions-for-me-guest" />);
+    await renderEmbeddedPreview(<EmbeddedPreview scenarioId="help-solutions-for-me-guest" />);
 
     const unauthenticated = await screen.findByRole("alert");
     expect(within(unauthenticated).getByRole("heading", { level: 1, name: "Sign in required" })).toBeInTheDocument();
@@ -2217,7 +2225,7 @@ describe("interactive Pages preview", () => {
   });
 
   it("requires sign-in for guest direct access to the Needs review filter", async () => {
-    render(<EmbeddedPreview scenarioId="help-solutions-filters-needs-review-guest" />);
+    await renderEmbeddedPreview(<EmbeddedPreview scenarioId="help-solutions-filters-needs-review-guest" />);
 
     const unauthenticated = await screen.findByRole("alert");
     expect(within(unauthenticated).getByRole("heading", { level: 1, name: "Sign in required" })).toBeInTheDocument();
@@ -2226,7 +2234,7 @@ describe("interactive Pages preview", () => {
   });
 
   it("denies ordinary user direct access to the Needs review filter", async () => {
-    render(<EmbeddedPreview scenarioId="help-solutions-filters-needs-review-user" />);
+    await renderEmbeddedPreview(<EmbeddedPreview scenarioId="help-solutions-filters-needs-review-user" />);
 
     const forbidden = await screen.findByRole("alert");
     expect(within(forbidden).getByRole("heading", { level: 1, name: "Access denied" })).toBeInTheDocument();
@@ -2235,7 +2243,7 @@ describe("interactive Pages preview", () => {
   });
 
   it("keeps the Needs review filter available to Manager", async () => {
-    render(<EmbeddedPreview scenarioId="help-solutions-filters-manager" />);
+    await renderEmbeddedPreview(<EmbeddedPreview scenarioId="help-solutions-filters-manager" />);
 
     expect(await screen.findByRole("heading", { level: 1, name: "Help & solutions" })).toBeInTheDocument();
     expect(screen.getByRole("combobox", { name: "Solution" })).toHaveValue("needs-review");
@@ -2244,7 +2252,7 @@ describe("interactive Pages preview", () => {
 
   it("checks similar Help questions and publishes a new Help question", async () => {
     const user = userEvent.setup();
-    render(<EmbeddedPreview scenarioId="help-solutions-ask" identity="user" />);
+    await renderEmbeddedPreview(<EmbeddedPreview scenarioId="help-solutions-ask" identity="user" />);
 
     await user.click(screen.getByRole("button", { name: "Ask a question" }));
     const form = document.getElementById("help-question-create-form") as HTMLFormElement;
@@ -2270,7 +2278,7 @@ describe("interactive Pages preview", () => {
 
   it("resolves moderation signals and duplicate appeals inside the preview queue", async () => {
     const user = userEvent.setup();
-    render(<EmbeddedPreview scenarioId="attention-signals" identity="manager" />);
+    await renderEmbeddedPreview(<EmbeddedPreview scenarioId="attention-signals" identity="manager" />);
 
     expect(screen.getByRole("link", { name: "Needs details (1)" })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Mixed (1)" })).toBeInTheDocument();
@@ -2293,7 +2301,7 @@ describe("interactive Pages preview", () => {
 
   it("runs admin topic quick actions and keeps their local state", async () => {
     const user = userEvent.setup();
-    render(<EmbeddedPreview scenarioId="admin-topic" identity="manager" />);
+    await renderEmbeddedPreview(<EmbeddedPreview scenarioId="admin-topic" identity="manager" />);
 
     expect(screen.getByText("Pinned")).toBeInTheDocument();
     expect(screen.queryByText("Closed")).not.toBeInTheDocument();
@@ -2326,7 +2334,7 @@ describe("interactive Pages preview", () => {
 
   it("opens message history and corrects source language in the admin preview", async () => {
     const user = userEvent.setup();
-    render(<EmbeddedPreview scenarioId="admin-topic" identity="manager" />);
+    await renderEmbeddedPreview(<EmbeddedPreview scenarioId="admin-topic" identity="manager" />);
 
     const question = document.querySelector("#post-question");
     expect(question).not.toBeNull();
@@ -2353,12 +2361,12 @@ describe("interactive Pages preview", () => {
 
   it("keeps manager authorization read-only and runs Owner authorization mutations", async () => {
     const user = userEvent.setup();
-    const view = render(<EmbeddedPreview scenarioId="admin" identity="manager" />);
+    const view = await renderEmbeddedPreview(<EmbeddedPreview scenarioId="admin" identity="manager" />);
 
     expect(await screen.findByRole("heading", { name: "Authorization management" })).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Create custom role" })).not.toBeInTheDocument();
 
-    view.rerender(<EmbeddedPreview scenarioId="admin" identity="owner" />);
+    view.reawait renderEmbeddedPreview(<EmbeddedPreview scenarioId="admin" identity="owner" />);
     expect(await screen.findByRole("button", { name: "Create custom role" })).toBeInTheDocument();
 
     const createRoleForm = document.querySelector(".admin-create-role") as HTMLElement;
@@ -2416,7 +2424,7 @@ describe("interactive Pages preview", () => {
 
 describe("Preview confirmation and attention fixtures", () => {
   it("opens confirmation on the matched topic route and dismisses without solving", async () => {
-    render(<EmbeddedPreview scenarioId="topic-best-answer-unsolved" identity="user" />);
+    await renderEmbeddedPreview(<EmbeddedPreview scenarioId="topic-best-answer-unsolved" identity="user" />);
     const prompt = await screen.findByRole("region", { name: "Problem solved?" });
     expect(within(prompt).getByRole("button", { name: "Yes, mark as solved" })).toBeInTheDocument();
     expect(screen.getByText("Best answer")).toBeInTheDocument();
@@ -2430,7 +2438,7 @@ describe("Preview confirmation and attention fixtures", () => {
   });
 
   it.each(["ru", "he"])("retains confirmation query and answer through locale change to %s", async (locale) => {
-    render(<EmbeddedPreview scenarioId="topic-best-answer-unsolved" identity="user" />);
+    await renderEmbeddedPreview(<EmbeddedPreview scenarioId="topic-best-answer-unsolved" identity="user" />);
     await screen.findByRole("region", { name: "Problem solved?" });
     const language = document.querySelector(".site-header select")!;
     await userEvent.selectOptions(language, locale);
@@ -2448,7 +2456,7 @@ describe("Preview confirmation and attention fixtures", () => {
     ["editor-reply", false, false],
     ["topic-reply-error", false, false],
   ] as const)("preserves ordinary topic state %s", async (scenarioId, solved, bestAnswer) => {
-    render(<EmbeddedPreview scenarioId={scenarioId} />);
+    await renderEmbeddedPreview(<EmbeddedPreview scenarioId={scenarioId} />);
     await screen.findByRole("heading", { level: 1, name: "How should I structure a typed API client?" });
     expect(document.querySelector("#solution-confirmation")).toBeNull();
     expect(Boolean(document.querySelector(".solved-badge"))).toBe(solved);
@@ -2457,7 +2465,7 @@ describe("Preview confirmation and attention fixtures", () => {
   });
 
   it("does not apply the confirmation fixture to another navigated topic", async () => {
-    render(<EmbeddedPreview scenarioId="topic-best-answer-unsolved" identity="user" />);
+    await renderEmbeddedPreview(<EmbeddedPreview scenarioId="topic-best-answer-unsolved" identity="user" />);
     await screen.findByRole("region", { name: "Problem solved?" });
     await userEvent.click(screen.getByRole("link", { name: "TypeScript & architecture" }));
     const otherTopic = await screen.findByRole("link", { name: /Mixed RTL content with code blocks/u });
@@ -2468,7 +2476,7 @@ describe("Preview confirmation and attention fixtures", () => {
   });
 
   it("opens the Attention topic target instead of the primary fallback topic", async () => {
-    render(<EmbeddedPreview scenarioId="attention-signals" identity="manager" />);
+    await renderEmbeddedPreview(<EmbeddedPreview scenarioId="attention-signals" identity="manager" />);
 
     await userEvent.click(await screen.findByRole("link", {
       name: "Why does my Worker lose the session after redirect?",
@@ -2485,7 +2493,7 @@ describe("Preview confirmation and attention fixtures", () => {
   });
 
   it("opens both the disputed Attention topic and its canonical original", async () => {
-    render(<EmbeddedPreview scenarioId="attention-signals" identity="manager" />);
+    await renderEmbeddedPreview(<EmbeddedPreview scenarioId="attention-signals" identity="manager" />);
     await userEvent.click(await screen.findByRole("link", { name: "Appeals (1)" }));
 
     await userEvent.click(await screen.findByRole("link", {
@@ -2497,7 +2505,7 @@ describe("Preview confirmation and attention fixtures", () => {
     })).toBeInTheDocument();
 
     cleanup();
-    render(<EmbeddedPreview scenarioId="attention-signals" identity="manager" />);
+    await renderEmbeddedPreview(<EmbeddedPreview scenarioId="attention-signals" identity="manager" />);
     await userEvent.click(await screen.findByRole("link", { name: "Appeals (1)" }));
     await userEvent.click(await screen.findByRole("link", {
       name: "Configuring sessions in Cloudflare Workers",
@@ -2510,7 +2518,7 @@ describe("Preview confirmation and attention fixtures", () => {
   });
 
   it("opens the reported best answer on the solved Attention topic", async () => {
-    render(<EmbeddedPreview scenarioId="attention-signals" identity="manager" />);
+    await renderEmbeddedPreview(<EmbeddedPreview scenarioId="attention-signals" identity="manager" />);
     await userEvent.click(await screen.findByRole("link", { name: "Needs review (2)" }));
 
     const signalId = await screen.findByText("#signal-144");
@@ -2527,7 +2535,7 @@ describe("Preview confirmation and attention fixtures", () => {
   });
 
   it("shows the advertised appeal card after actual group navigation", async () => {
-    render(<EmbeddedPreview scenarioId="attention-signals" identity="manager" />);
+    await renderEmbeddedPreview(<EmbeddedPreview scenarioId="attention-signals" identity="manager" />);
     const appeals = await screen.findByRole("link", { name: "Appeals (1)" });
     await userEvent.click(appeals);
     expect(appeals).toHaveAttribute("aria-current", "page");
@@ -2544,7 +2552,7 @@ describe("Preview confirmation and attention fixtures", () => {
   });
 
   it("keeps signal, review-status and mixed topic-count controls", async () => {
-    render(<EmbeddedPreview scenarioId="attention-signals" identity="manager" />);
+    await renderEmbeddedPreview(<EmbeddedPreview scenarioId="attention-signals" identity="manager" />);
     for (const [label, ids] of [
       ["Needs details (1)", ["#signal-142"]],
       ["Needs review (2)", ["#signal-144", "#best-answer"]],
@@ -2558,7 +2566,7 @@ describe("Preview confirmation and attention fixtures", () => {
   });
 
   it("preserves the explicit empty attention fixture", async () => {
-    render(<EmbeddedPreview scenarioId="attention-empty" identity="manager" />);
+    await renderEmbeddedPreview(<EmbeddedPreview scenarioId="attention-empty" identity="manager" />);
     await userEvent.click(await screen.findByRole("link", { name: "Appeals (1)" }));
     expect(await screen.findByRole("heading", { level: 2, name: "Appeals" })).toBeInTheDocument();
     expect(document.querySelectorAll(".attention-case")).toHaveLength(0);
