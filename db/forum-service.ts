@@ -84,6 +84,12 @@ export class ForumService {
     return this.repository.reviseTopicTitle(topicId, expectedRevisionId, normalizeRevision(revision), authorId);
   }
 
+  setTopicBookmark(input: { topicId: string; actorId: string; bookmarked: boolean }) {
+    validateEntity(input.topicId, input.actorId);
+    if (typeof input.bookmarked !== "boolean") throw new InvalidForumContentError("invalid bookmark state");
+    return this.repository.setTopicBookmark(input);
+  }
+
   setTopicWatch(input: { topicId: string; actorId: string; watching: boolean }) {
     validateEntity(input.topicId, input.actorId);
     if (typeof input.watching !== "boolean") throw new InvalidForumContentError("invalid watch state");
@@ -205,6 +211,19 @@ export class ForumService {
   readUnreadForUser(userId: string) {
     requireText(userId, "user id");
     return this.repository.readUnreadForUser(userId);
+  }
+
+  readTopicBookmark(userId: string, topicId: string) {
+    requireText(userId, "user id");
+    requireText(topicId, "topic id");
+    return this.repository.readTopicBookmark(userId, topicId);
+  }
+
+  readTopicBookmarks(userId: string, before?: import("./forum-repository").ForumTopicBookmarkCursor) {
+    requireText(userId, "user id");
+    if (before && (!(before.savedAt instanceof Date) || !Number.isFinite(before.savedAt.getTime())
+      || !before.topicId?.trim())) throw new InvalidForumContentError("invalid bookmark cursor");
+    return this.repository.readTopicBookmarks(userId, before);
   }
 
   readTopicWatch(userId: string, topicId: string) {
