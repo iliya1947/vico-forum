@@ -4,7 +4,7 @@
 
 1. Служебный PR: **#315**.
 2. Моя текущая работа: audit/coordination only; remediation и implementation не назначены.
-3. Текущий этап: **Block J active. J1 PASS; J2 = deferred `GOOGLE-OAUTH-SCOPE-01 Low/P3`; J3 Email provider boundary PASS, 0 new findings / 0 deferred blockers; следующий bounded slice — J4 Translation provider data egress.** Overall #315 = 28 current findings + 4 deferred Stage-6 blockers. Stage 6 paused; provider activation не выполнялась.
+3. Текущий этап: **Block J active. J1 PASS; J2 = deferred `GOOGLE-OAUTH-SCOPE-01 Low/P3`; J3 PASS; J4 Translation provider data egress PASS, 0 new findings / 0 deferred blockers; следующий bounded slice — J5 Queue/provider execution lifecycle.** Overall #315 = 28 current findings + 4 deferred Stage-6 blockers. Stage 6 paused; provider activation не выполнялась.
 4. Technical audit target B–D: `e279cb6c032a489a9044ca1191407df887c364b4`.
 5. Current `main` — `7cc23edede57994cdedab49c1556ddb55034dd29`. Delta от I1 target включает SA-04/SA-05–SA-08 и topic-title work; I2 отдельно re-read current workflows and source-of-truth.
 6. Лира, Марк и Лёва по #315 сейчас не назначены.
@@ -300,6 +300,17 @@
 270. AUTH-ENUM-01 remains Block B; no provider-specific duplicate. Future Better Auth reset can create credential account for a Google-only user, but sender/recovery is absent and explicitly deferred, so this is a recheck item for future recovery implementation, not current/deferred finding.
 271. Resend/Brevo provider choice, sender-domain auth, API-key scope, bounce/webhook verification, token delivery/callback and data minimization remain `Информация не проверена` because no concrete integration exists. No current/Stage6 blocker follows.
 272. J3 performed no account/key/domain/webhook/provider call/install/deploy/settings mutation. Aggregate stays 28 current + 4 deferred. Next J4 translation provider data egress.
+273. J4 target current main `7cc23edede57994cdedab49c1556ddb55034dd29`. Verdict: **PASS, 0 new current findings / 0 deferred blockers**.
+274. Current Worker has no translation egress: contentGenerationActionRuntime disabled and integration facts generationEnabled/providerWired/enqueuerWired/consumerWired all false; wrangler has no Workers AI/Queue binding; no normal-runtime provider/router/executor construction found.
+275. TranslationProviderRouter selects on metadata only and content allowance binds one stable provider. translateWithProvider rechecks exact adapter supports(machineTranslationCapability(actualRequest)) before raw source reaches adapter.
+276. Cloudflare M2M100 content data policy defaults DENY_ALL. Only explicit repository opt-in policy class permits exact provider/model/canonical locale pair + public topic title + plain operation; current adapter itself rejects post-body/non-public classifications.
+277. M2M100 adapter max source 2,000 chars/call, max translated result 10,000 chars, explicit locale-code map, same-locale/unsupported pair fail closed; runner receives text/source_lang/target_lang only.
+278. Post-body prepared path parses Markdown, translates semantic text-node segments only, protects technical fragments and structure, excludes code/inline-code from semantic segments, enforces segment/total bounds and one admitted provider for all segments, then validates exact segment/token/structure restoration.
+279. Topic-title and UI output/provenance publication are validated before conditional current write; UI checks bounded size, markup, placeholders, controlled tokens, protected terms and plural branches. UI/content stores persist provider/model/attribution provenance.
+280. No synchronous public provider proxy: public/request runtime reads stored translations/original fallback; even enabled local generation action only admits/budgets/plans durable tasks, not provider inference inline.
+281. Current Cloudflare docs rechecked 2026-11-18: `@cf/meta/m2m100-1.2b` accepts text/source_lang/target_lang, supports Batch and is marked Zero data retention; Workers AI standard inference does not retain Customer Content after delivery and does not train on it, subject to documented stateful/logging/legal exceptions.
+282. Future exact Stage6 provider/account/binding, AI Gateway logging/cache/stateful settings, provider terms, actual allowance values and live egress acceptance = `Информация не проверена`; absence now is not finding. Current missing M2M100 post-body capability is functionality gap, not security defect.
+283. J4 made no provider call/Queue dispatch/binding/AI Gateway/install/deploy/settings mutation. Aggregate stays 28 current + 4 deferred. Next J5 Queue/provider execution lifecycle.
 
 ## Ограничения
 
@@ -311,5 +322,5 @@
 
 ## Следующий шаг
 
-1. После продолжения владельца выполнить **J4 — Translation provider data egress** на current main и остановиться после результата.
+1. После продолжения владельца выполнить **J5 — Queue/provider execution lifecycle** на current main и остановиться после результата.
 2. Remediation findings/blockers Blocks B–J не начинать без отдельного назначения.
