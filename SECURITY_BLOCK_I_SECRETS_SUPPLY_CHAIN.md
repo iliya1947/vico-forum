@@ -2,12 +2,12 @@
 
 ## Статус
 
-1. Scope подготовлен 2026-11-12; current I2 audit target — `main` `7cc23edede57994cdedab49c1556ddb55034dd29`.
+1. Scope подготовлен 2026-11-12; current I3 audit target — `main` `7cc23edede57994cdedab49c1556ddb55034dd29`.
 2. Block H закрыт; его deferred blockers в I не дублируются.
 3. **I1 — Repository authority & main provenance завершён: 1 current-scope finding — `REPO-MAIN-GATE-01 Moderate/P2`.**
 4. **I2 — Workflow events, tokens & write authority завершён: PASS, 0 новых current-scope findings.**
-5. **I3–I8 ещё не выполнялись.**
-6. Следующий bounded slice после продолжения владельца — **I3: Production Environments & secret admission**.
+5. **I3 — Production Environments & secret admission завершён: PASS по repository-side chain, 0 новых current-scope findings; exact mutable GitHub Environment policy и secret inventory/location — `Информация не проверена`.**
+6. Следующий bounded slice после продолжения владельца — **I4: Secret custody & leakage**.
 7. Мира — auditor/coordinator. Remediation, technical planner и implementer не назначены.
 8. Production/Cloudflare/Neon/GitHub settings mutation, secret rotation и workflow dispatch не разрешены и не выполнялись.
 
@@ -69,6 +69,20 @@
 19. Current repository Actions-global settings (default token policy / fork approval policy) were not required to establish I2 verdict because every sensitive current workflow declares explicit token permissions; mutable settings not exposed by available connector remain **Информация не проверена**.
 20. No workflow dispatch, comment event, Pages deployment, production job or settings mutation was executed. Tests were read, not run.
 21. Следующий bounded slice — I3 Production Environments & secret admission. Existing `REPO-MAIN-GATE-01` remains one root cause and must not be duplicated.
+
+## I3 — результат
+
+1. Audit target: current `main` `7cc23edede57994cdedab49c1556ddb55034dd29`; I2 workflow inventory reread and all 11 current `production-*.yml` workflows with production Environment/secret use were checked end-to-end.
+2. Verdict: **PASS по repository-side admission chain, 0 новых current-scope findings, 0 новых deferred technical blockers.** Existing `REPO-MAIN-GATE-01 Moderate/P2` remains I1 root cause and is not duplicated.
+3. Все production workflows, которые получают production secret/variable inputs, запускаются только через `workflow_dispatch`; current GitHub documentation requires repository write access to manually run such workflow and allows selecting a ref for the dispatch.
+4. Every secret-consuming production job independently rejects non-`main` execution before protected work: direct jobs use `if: github.ref == 'refs/heads/main'`; one-shot credential paths add pre-Environment guard jobs; Worker rollout uses separate guard + repository verification jobs before the `production-worker` job.
+5. `production-db` secret-consuming jobs cover migration/identity/runtime privilege/provisioning and credential diagnostic/bootstrap/recovery paths. `production-worker` secret-consuming work is isolated to the rollout job after exact-main/SHA/confirmation and local verification gates.
+6. Pre-Environment guard jobs do not receive production secrets. Bootstrap/recovery/recovery-v2/rollback paths additionally enforce first-run/attempt where their one-shot contract requires it; recovery-v2 verifies same-main validation evidence before Environment access.
+7. Current GitHub documentation confirms that configured Environment protection rules must pass before a job referencing the Environment is sent to a runner; Environment secrets become available only after that admission boundary.
+8. Exact mutable settings for `production-db` and `production-worker` could not be read through the available GitHub connector, and Browser connector access was unavailable in the current originating context. Therefore required reviewers, prevent-self-review, deployment branch/tag policy, administrator bypass, custom protection rules and exact secret inventory/location are **Информация не проверена**.
+9. Secret values were not read. No workflow dispatch, approval, GitHub setting mutation, Cloudflare/Neon action or production operation was performed.
+10. Unknown external Environment policy is not classified as a current defect by itself. Stage 6 remains paused; exact Environment policy/secret placement must be re-read immediately before any future production dispatch that depends on those controls.
+11. I3 therefore adds no finding and does not change #315 aggregate. Next bounded slice after owner continuation is I4; remediation remains separate.
 
 ## Цель
 
