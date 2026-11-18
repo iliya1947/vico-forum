@@ -186,3 +186,27 @@ Confirmed current-scope defects = 0; implementation head после reviews не
 Review cycle закрыт. #346 переведён из Draft в Ready for review и готов к merge
 владельцем. После merge требуется отдельный docs closeout прежде чем переходить
 к следующему implementation bounded-блоку.
+
+
+## 2026-11-18 — #346 merged; docs-closeout boundary
+
+Подтверждён фактический merge Bookmarks #346: main
+`34ddf42985f6dc348e77d0dcc90e0aecc37fd15e`.
+
+При сверке service-plan обнаружен накопленный docs debt: Watch #345 уже merged,
+но его отдельный docs closeout не выполнен. Current PROJECT_STATE остаётся на
+repository migration 0067, тогда как main теперь содержит Watch 0068 и Bookmarks
+0069.
+
+Принятый USER_ACTIONS_SERVICE_PLAN прямо задаёт отдельные implementation/docs PR
+для каждого bounded-этапа. Поэтому следующий порядок: Watch docs closeout, затем
+Bookmarks docs closeout; после них Mute/block.
+
+Минимальный docs scope определён: factual PROJECT_STATE + отдельный history
+snapshot/index для каждого этапа. Authorization/Admin docs не меняются (оба —
+personal self-state без нового RBAC); Stage 6 external evidence остаётся через 0020;
+owner visual acceptance не заявляется. MIGRATIONS.md менять только ради 0068/0069
+не требуется.
+
+Автор docs автоматически не назначен — согласно уже зафиксированной owner
+correction при #344. Мира docs diff не создаёт.
