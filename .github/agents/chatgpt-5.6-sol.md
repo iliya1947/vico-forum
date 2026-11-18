@@ -4,7 +4,7 @@
 
 1. Служебный PR: **#315**.
 2. Моя текущая работа: audit/coordination only; remediation и implementation не назначены.
-3. Текущий этап: **Block I I1 = `REPO-MAIN-GATE-01 Moderate/P2`; I2 PASS; I3 PASS; I4 PASS; I5 = `CI-PYPI-PROVENANCE-01 Low/P3`; I6 = `CI-POSTGRES-IMAGE-PROVENANCE-01 Low/P3`, 0 new deferred; следующий bounded slice — I7 Release/artifact supply-chain provenance.** Exact mutable Environment secret inventory и complete Secret Scanning alert state — `Информация не проверена`. Block H закрыт с 0 current findings + 2 deferred Stage-6 blockers; Block G закрыт с 3 current findings + deferred `DB-RUNTIME-EVIDENCE-01`.
+3. Текущий этап: **Block I I1 = `REPO-MAIN-GATE-01 Moderate/P2`; I2 PASS; I3 PASS; I4 PASS; I5 = `CI-PYPI-PROVENANCE-01 Low/P3`; I6 = `CI-POSTGRES-IMAGE-PROVENANCE-01 Low/P3`; I7 = `PAGES-ACCEPTANCE-PROVENANCE-01 Low/P3`, 0 new deferred; следующий bounded slice — I8 Cross-chain closeout.** `REPO-MAIN-GATE-01` также explicit gate before future Stage-6 production secret-bearing dispatch. Exact mutable Environment secret inventory и complete Secret Scanning alert state — `Информация не проверена`. Block H закрыт с 0 current findings + 2 deferred Stage-6 blockers; Block G закрыт с 3 current findings + deferred `DB-RUNTIME-EVIDENCE-01`.
 4. Technical audit target B–D: `e279cb6c032a489a9044ca1191407df887c364b4`.
 5. Current `main` — `7cc23edede57994cdedab49c1556ddb55034dd29`. Delta от I1 target включает SA-04/SA-05–SA-08 и topic-title work; I2 отдельно re-read current workflows and source-of-truth.
 6. Лира, Марк и Лёва по #315 сейчас не назначены.
@@ -247,6 +247,18 @@
 218. production-worker verify also uses same mutable tag, but Stage 6 is paused. Same root cause should be corrected before Stage-6 verification resumes; no duplicate deferred blocker and no severity increase from future path.
 219. No separate finding for missing workflow dependency lockfile, exact runner image snapshot or action allowlist: current Action refs/transitive ref are exact SHAs and no independent exploit chain was proven.
 220. I6 no workflow/image pull/settings/production mutation; existing files/logs read only. Aggregate now 27 current findings + 3 deferred blockers.
+221. I7: **`PAGES-ACCEPTANCE-PROVENANCE-01 Low/P3`, 0 new deferred blockers** on current main `7cc23edede57994cdedab49c1556ddb55034dd29`.
+222. Repository has 0 GitHub Releases. Current release/deployment cross-check therefore covers Pages preview plus prepared/manual production DB/Worker chains.
+223. Exact main Pages run 44286477786 uploaded artifact ID 14420170192 with SHA-256 `a736eb3863be9c7fab1c7d43cad82914376e61380b2d829e3e3aecf574288403`; deploy job fetched artifact metadata **in this workflow run**, found one artifact and deployed that exact ID for main SHA 7cc23ede. Per-run Pages artifact integrity PASS.
+224. Workflow deploys one canonical `github-pages` target from `main`, every `chatgpt/ui-*` except `chatgpt/ui-ux-product-pass`, and manual dispatch; global concurrency group cancels/replaces in-flight preview runs. Branch search currently returns 28 matching UI branches, 27 eligible after exclusion.
+225. Real branch run 44298738205 from `chatgpt/ui-preview-interactions` SHA `4b3e5f3de1ba9f5de0d4755339751e17aa07f00a` deployed artifact ID 14424697488 to the same `https://iliya1947.github.io/vico-forum/` URL. Later UI-branch runs were queued/cancelled in same group. Canonical URL therefore does not identify stable exact head.
+226. AGENTS requires applicable Pages/browser + owner visual acceptance for stable exact head before whole-PR review. Shared mutable Pages alias can therefore make acceptance observe a different branch than the recorded implementation head. Current impact is acceptance-evidence integrity only -> Low/P3.
+227. This is not REPO-MAIN-GATE-01: even protected main would not stop allowed non-main UI branch deployments. Individual artifact/run/SHA binding itself is correct; defect is mutable acceptance-target provenance.
+228. Production DB chain PASS apart from existing findings: exact github.sha checkout, no cross-workflow artifacts; runtime migration evidence binds actual successful workflow run path/event/main/head SHA plus journal hash/ancestor. DB-RUNTIME-EVIDENCE-01 remains coverage-only and is not duplicated.
+229. Worker chain PASS apart from existing findings: expected_sha==GITHUB_SHA, independent exact checkouts, pinned/frozen Node chain, unique returned Worker Version ID, existence check, exact Version URL smoke and promotion of same ID. Rebuild between verify/rollout did not yield independent artifact substitution because actual uploaded version is directly identified/smoked. I6 postgres tag and H Version-URL/finalizer blockers remain separate.
+230. Cross-chain impact of REPO-MAIN-GATE-01 strengthened: exact SHA proves selected main content, not reviewed provenance. Delegated Contents writer can alter ordinary `.github/scripts/*`, package.json, Worker or migration code; future authorized Environment jobs execute repository-controlled code with DB/Cloudflare credentials. Environment admission cannot replace source review.
+231. Therefore REPO-MAIN-GATE-01 is an explicit correction gate before any future Stage-6 production DB/credential/Worker dispatch. No duplicate deferred blocker: same root cause already current and already counted.
+232. Exact mutable Environment policy/secret inventory, Actions actor policy and complete Secret Scanning state remain `Информация не проверена`. I7 performed no dispatch/deploy/settings/production mutation. Aggregate now 28 current findings + 3 deferred blockers.
 
 ## Ограничения
 
@@ -258,5 +270,5 @@
 
 ## Следующий шаг
 
-1. После продолжения владельца выполнить **I7 — Release/artifact supply-chain provenance** на current main и остановиться после результата.
-2. `REPO-MAIN-GATE-01`, `CI-PYPI-PROVENANCE-01` и `CI-POSTGRES-IMAGE-PROVENANCE-01` не дублировать. Remediation не начинать.
+1. После продолжения владельца выполнить **I8 — Cross-chain closeout** на current main и остановиться после результата.
+2. `REPO-MAIN-GATE-01`, `CI-PYPI-PROVENANCE-01`, `CI-POSTGRES-IMAGE-PROVENANCE-01` и `PAGES-ACCEPTANCE-PROVENANCE-01` не дублировать. Remediation не начинать.
