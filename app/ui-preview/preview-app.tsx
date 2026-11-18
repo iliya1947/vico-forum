@@ -172,6 +172,7 @@ export const scenarios: readonly Scenario[] = [
   { id: "settings-account-session-not-found", label: "Settings · Account · session no longer active", locale: "en", direction: "ltr", identity: "user", path: "/en/settings/account", view: "section", variant: "settings-account-session-not-found", allowedIdentities: ["user", "manager", "owner"] },
   { id: "settings-account-unavailable", label: "Settings · Account · temporarily unavailable", locale: "en", direction: "ltr", identity: "user", path: "/en/settings/account", view: "section", variant: "settings-account-unavailable", allowedIdentities: ["user", "manager", "owner"] },
   { id: "settings-account-stale", label: "Settings · Account · stale account/session", locale: "en", direction: "ltr", identity: "user", path: "/en/settings/account", view: "section", variant: "settings-account-stale", allowedIdentities: ["user", "manager", "owner"] },
+  { id: "settings-forum-manager-forbidden", label: "Settings · Forum & roles · manager forbidden", locale: "en", direction: "ltr", identity: "manager", path: "/en/settings/forum", view: "section", allowedIdentities: ["manager"] },
   { id: "settings-forum-registration-conflict", label: "Settings · Forum & roles · registration conflict", locale: "en", direction: "ltr", identity: "owner", path: "/en/settings/forum", view: "section", variant: "settings-forum-registration-conflict", allowedIdentities: ["owner"] },
   { id: "settings-forum-registration-unavailable", label: "Settings · Forum & roles · registration unavailable", locale: "en", direction: "ltr", identity: "owner", path: "/en/settings/forum", view: "section", variant: "settings-forum-registration-unavailable", allowedIdentities: ["owner"] },
   { id: "settings-forum-registration-invalid", label: "Settings · Forum & roles · invalid registration request", locale: "en", direction: "ltr", identity: "owner", path: "/en/settings/forum", view: "section", variant: "settings-forum-registration-invalid", allowedIdentities: ["owner"] },
@@ -1457,6 +1458,7 @@ function previewRouter(
       element: <SettingsForumRoute />,
       loader: () => previewSettingsForumData(scenario, interactions),
       action: ({ request }) => previewSettingsForumAction(scenario, interactions, request),
+      ErrorBoundary: ForumRouteError,
     },
     {
       path: "/:locale/settings/privacy",
@@ -1520,6 +1522,9 @@ function previewSettingsForumData(
   scenario: Scenario,
   interactions: PreviewInteractionState,
 ) {
+  if (scenario.identity !== "owner") {
+    throw new Response("Forbidden", { status: 403 });
+  }
   const actor = previewUser(scenario);
   return {
     ...previewAuthorizationData(scenario.locale, interactions.authorization),
