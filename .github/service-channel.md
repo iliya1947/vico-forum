@@ -810,3 +810,32 @@ Head/main повторно сверены, docs-only review diff/whitespace PASS
 **Лёва STOP Мире:** сопоставить оба PASS одного head и зафиксировать merge readiness
 владельцу, затем отдельный docs closeout после фактического merge. #346 ещё Draft,
 merge/deploy не выполнялись; #342 служебный, не merge. Порядок реализации не меняется.
+
+
+## 2026-11-18 — Мира: Bookmarks #346 review synthesis, ready to merge
+
+Independent technical whole-PR review Лёвы на exact head
+`a3e6c0e63c99078ece89303592e1f24b2fe440fb` сопоставлен с coordinator
+whole-PR PASS Миры на том же head.
+
+Результаты согласуются по проверенным границам и получены независимо:
+- Мира independently verified B5-R1 correction, B4 cursor semantics и весь B1–B7;
+- Лёва повторил исходный failing B5 diagnostic на новом head — PASS, отдельно
+  проверил subsequent manual old cursor у B и отсутствие A rows;
+- оба review подтвердили unchanged server authority/schema/writer/loader SQL
+  и отсутствие новых оснований переоткрывать B6;
+- exact-head GitHub 18/18 jobs success; connected Bookmarks 11/11 checkpoints;
+  Лёва дополнительно подтвердил 89/89 selected tests и прочитал database/browser logs.
+
+Совпадение PASS не используется как отдельное доказательство: оба reviewer имеют
+собственные независимые проверки. Implementation exact head после reviews не
+изменился. **Review cycle Bookmarks #346 завершён: confirmed current-scope defects = 0.**
+
+PR #346 переведён из Draft в Ready for review без изменения head.
+**#346 готов к merge владельцем** на exact head
+`a3e6c0e63c99078ece89303592e1f24b2fe440fb`.
+
+После фактического merge — отдельный docs closeout по Bookmarks/current-state;
+до merge документация не должна заявлять feature как состояние main. #342 остаётся
+служебным PR и не merge; implementation-order после docs closeout продолжится
+следующим утверждённым bounded-блоком.
