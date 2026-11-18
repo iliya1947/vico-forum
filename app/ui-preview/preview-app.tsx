@@ -63,6 +63,7 @@ import type { ContentGenerationUnitView } from "../localization/content-generati
 import { isPreviewLocale, previewTranslationRuntime, type PreviewLocale } from "./preview-i18n";
 import { LocaleNavigationProvider } from "../localization/locale-navigation";
 import { localeRegistry } from "../localization/registry";
+import { settingsUserPath } from "../settings/paths";
 
 type Direction = "ltr" | "rtl";
 export const previewIdentities = ["guest", "user", "manager", "owner"] as const;
@@ -1277,9 +1278,13 @@ export function EmbeddedPreview({ scenarioId, identity }: { scenarioId: string; 
   const scenario = scenarios.find((candidate) => candidate.id === scenarioId) ?? scenarios[0]!;
   const activeIdentity = identity && supportsPreviewIdentity(scenario, identity) ? identity : scenario.identity;
   const [previewLocale, setPreviewLocale] = useState<PreviewLocale>(initialPreviewLocale);
+  const [previewPath, setPreviewPath] = useState(scenario.path);
+  useEffect(() => {
+    setPreviewPath(scenario.path);
+  }, [scenario.id, scenario.path]);
   const activeScenario = useMemo(
-    () => scenarioForLocale({ ...scenario, identity: activeIdentity }, previewLocale),
-    [scenario, activeIdentity, previewLocale],
+    () => scenarioForLocale({ ...scenario, identity: activeIdentity, path: previewPath }, previewLocale),
+    [scenario, activeIdentity, previewLocale, previewPath],
   );
   const runtime = useMemo(
     () => previewTranslationRuntime(activeScenario.locale, activeScenario.direction),
@@ -1289,7 +1294,8 @@ export function EmbeddedPreview({ scenarioId, identity }: { scenarioId: string; 
     () => createPreviewInteractionState(),
     [scenario.id, activeIdentity],
   );
-  const changePreviewLocale = useCallback((locale: PreviewLocale) => {
+  const changePreviewLocale = useCallback((locale: PreviewLocale, nextPath?: string) => {
+    if (nextPath) setPreviewPath(nextPath);
     setPreviewLocale(locale);
     try {
       window.sessionStorage.setItem(PREVIEW_LOCALE_STORAGE_KEY, locale);
@@ -1439,7 +1445,7 @@ function previewCredentialData(scenario: Scenario, request: Request) {
 function previewRouter(
   scenario: Scenario,
   interactions: PreviewInteractionState,
-  onLocaleChange: (locale: PreviewLocale) => void,
+  onLocaleChange: (locale: PreviewLocale, nextPath?: string) => void,
 ) {
   if (scenario.view === "not-found") {
     return createMemoryRouter([{
@@ -2073,7 +2079,7 @@ async function previewSettingsUserAction(
   scenario: Scenario,
   interactions: PreviewInteractionState,
   request: Request,
-  onLocaleChange: (locale: PreviewLocale) => void,
+  onLocaleChange: (locale: PreviewLocale, nextPath?: string) => void,
 ) {
   const actor = previewUser(scenario);
   if (!actor) return { error: "conflict" as const };
@@ -2085,7 +2091,7 @@ async function previewSettingsUserAction(
 
   interactions.preferredLocale = locale;
   interactions.localeSaved = true;
-  onLocaleChange(locale);
+  onLocaleChange(locale, `${settingsUserPath(locale)}?localeSaved=1`);
   return null;
 }
 
