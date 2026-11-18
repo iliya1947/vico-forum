@@ -380,9 +380,9 @@
 342. K5 target current main `7cc23edede57994cdedab49c1556ddb55034dd29`: **1 new current finding — ATTACH-SECURITY-EVENT-SPAM-01 Moderate/P2; 0 deferred blockers**.
 343. Upload byte path PASS: declared safe integer, 50,000,000-byte max, oversize rejected before object write, stream enforces declared/max length without whole buffering. Cleanup run max20 plus separately bounded reservation sweep; stale refs 24h and object grace/lease are bounded.
 344. Owner contract explicitly rejects arbitrary per-user total-file/count/storage quotas at this stage, so absence of such quota is not a finding.
-345. Independent chain: authenticated valid editor context + random attachment UUID + size1 + one-byte body + forbidden filename (e.g. x.exe) → suspicious forbidden-extension rejection → no R2 object write → durable recordSecurityEvent.
-346. securityEventKey includes caller fresh attachmentId; random UUID yields new event hash. recordSecurityEvent has ON CONFLICT only on derived uploadId, no measure/rate admission, and no repository delete/retention path for forum_attachment_security_events was found.
-347. Impact: tiny requests can create unbounded DB/index security-event growth and monitoring noise. Moderate/P2; independent of FORM-BODY-BOUNDS-01, ATTACH-TEXT-TAIL-01 and intentional no-file-quota policy.
+345. Static chain: authenticated editor upload admission can end in a suspicious rejection before accepted-object persistence and then durably call recordSecurityEvent.
+346. Event identity is derived per upload attempt; exact ON CONFLICT dedup does not provide cross-attempt/per-actor admission. recordSecurityEvent has no measure/rate admission, and no repository delete/retention path for forum_attachment_security_events was found.
+347. Impact: repeated distinct rejected events can create unbounded DB/index security-event growth and monitoring noise. Moderate/P2; independent of FORM-BODY-BOUNDS-01, ATTACH-TEXT-TAIL-01 and intentional no-file-quota policy.
 348. Exact deployed R2/scheduler/cost state is Информация не проверена; real schedule/R2 remains Stage6 acceptance. No external upload/load test performed. Aggregate 31 current +4 deferred; current severity 12 Moderate +19 Low. Next K6.
 
 ## Ограничения
