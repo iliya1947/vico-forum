@@ -120,3 +120,12 @@ Mute/block implementation не активирован до решения вла
 Проверен exact head `8f24bd98fb2548bc9ec4b6f3433f40c1e72c7d65` против принятого B1–B7 и main `9c4639d23ca075c8bb92fbb909b96593d7bee127`. Основные implementation seams проходят: 0069/schema/manifest, web SELECT/INSERT/DELETE only, KEY SHARE→active actor writer, own-filtered keyset list, strict mixed-intent rejection, private/no-store, unavailable≠OFF, actor/topic-scoped controls, safe current title/location/deleted-author projection, 57-row connected keyset and real Worker/Better Auth/PG17/Chromium flow. React Router v8 normalized loader `url` usage соответствует фактическому framework loader contract и не является finding.
 
 **PASS withheld: one current-scope acceptance defect.** B6 требует real-PG concurrency/lifecycle доказательства; текущая feature DB suite их не содержит. Нужны two-connection Add×Add/Add×Remove commit orders, writer×deactivation both orders, rollback/no partial effect, topic-delete FK cleanup/lock-order coverage with actual acquired-lock synchronization. Кодовый race defect пока не установлен; исправление должно прежде всего закрыть обязательный evidence gap и менять implementation только если race test обнаружит реальный defect.
+
+
+## 2026-11-18 — Bookmarks #346 coordinator re-review PASS
+
+Повторный whole-PR review exact head `477ad6b1e5cf51bf94b3830e9ea4ea85d4e4fae5` после B6 fix завершён. Compare с прежним reviewed head `8f24bd98...`: 2 commits, только `tests/database/topic-bookmarks.test.ts`, production/schema/UI unchanged. B6 real-lock tests прочитаны полностью и сопоставлены с фактическим repository lock graph. `pg_blocking_pids()` подтверждает реального blocker; polling sleep используется только как rendezvous. Writer×deactivation оба порядка, rollback и FK delete корректно проверяют committed state.
+
+Whole accepted B1–B7 seams остаются валидны с предыдущего review, поскольку feature production diff не изменился. GitHub API подтверждает 18 check-runs на exact head и все conclusion=success. Первый database attempt SA07 failure диагностирован по job logs: Bookmarks suite PASS 10/10 в 20:12:58, SA07 упал в своём `lock table forum_posts,locales ... nowait` около 20:13:46; same-head rerun database PASS. Bookmarks как причина не подтверждён.
+
+**Coordinator PASS, current-scope defects = 0.** Следующий reviewer — Лёва / Codex-6.1 Sol на неизменном exact head #346.
