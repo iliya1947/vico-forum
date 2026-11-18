@@ -2,13 +2,14 @@
 
 ## Статус
 
-1. Scope подготовлен 2026-11-12 против current `main` `593a03964b8407b249f7c9f5eb117ddb8b07736d`.
+1. Scope подготовлен 2026-11-12; current I2 audit target — `main` `7cc23edede57994cdedab49c1556ddb55034dd29`.
 2. Block H закрыт; его deferred blockers в I не дублируются.
 3. **I1 — Repository authority & main provenance завершён: 1 current-scope finding — `REPO-MAIN-GATE-01 Moderate/P2`.**
-4. **I2–I8 ещё не выполнялись.**
-5. Следующий bounded slice после продолжения владельца — **I2: Workflow events, tokens & write authority**.
-6. Мира — auditor/coordinator. Remediation, technical planner и implementer не назначены.
-7. Production/Cloudflare/Neon/GitHub settings mutation, secret rotation и workflow dispatch не разрешены и не выполнялись.
+4. **I2 — Workflow events, tokens & write authority завершён: PASS, 0 новых current-scope findings.**
+5. **I3–I8 ещё не выполнялись.**
+6. Следующий bounded slice после продолжения владельца — **I3: Production Environments & secret admission**.
+7. Мира — auditor/coordinator. Remediation, technical planner и implementer не назначены.
+8. Production/Cloudflare/Neon/GitHub settings mutation, secret rotation и workflow dispatch не разрешены и не выполнялись.
 
 ## I1 — результат
 
@@ -44,6 +45,30 @@
 - disabled rulesets do not enforce their configured rules;
 - REST Create/Update Contents accepts GitHub App installation/user tokens with Contents(write), and omitted `branch` defaults to the repository default branch;
 - rulesets apply to REST content/Git reference updates when enforced.
+
+## I2 — результат
+
+1. Audit target обновлён до current `main` `7cc23edede57994cdedab49c1556ddb55034dd29`. Delta от I1 target содержит 15 merged commits, включая новые browser/local-CI workflows, но production manual workflow authority и Pages/Codex bridge contracts не были заменены.
+2. Verdict: **PASS, 0 новых current-scope findings**. Existing `REPO-MAIN-GATE-01 Moderate/P2` остаётся действующим: current main по-прежнему `protected=false`, ruleset `Protect main` по-прежнему `enforcement=disabled`.
+3. Current workflow inventory повторно проверен. Repository не использует `pull_request_target`, `workflow_run` или `repository_dispatch`; privileged cross-event checkout chain не найден.
+4. Ordinary CI и все current browser acceptance workflows используют `pull_request` и explicit top-level `permissions: contents: read`. Production secrets/Environment vars в этих PR workflows не используются.
+5. GitHub current permission semantics: если workflow явно задаёт один или несколько `permissions`, неуказанные `GITHUB_TOKEN` scopes становятся `none`. Следовательно browser/CI jobs не получают repository write, Pages, OIDC, Actions-write или deployment authority через default token.
+6. PR/browser jobs исполняют branch-controlled code (install/build/tests), но только с read-only repository token, disposable PostgreSQL/local synthetic auth/R2 fixtures and no production secrets. No privileged follow-up workflow consumes their uploaded artifacts. Поэтому current untrusted-PR → privileged-token/secret chain не подтверждён.
+7. Browser workflows, где используется `github.event.pull_request.head.sha`, передают его через job `env`, а не интерполируют untrusted PR-controlled text напрямую в shell source. Он используется как data/diagnostic identity; independent shell injection root cause не найден.
+8. `codex-service-channel-bridge.yml` — единственный current workflow с `contents: write`. Trigger — `issue_comment: created`; GitHub current event contract исполняет `issue_comment` workflow из default branch context, не из PR code.
+9. Bridge допускает job только для exact PR #147, open pull request and exact GitHub account `chatgpt-codex-connector[bot]`. Comment body, URL/time/id передаются в shell через intermediate environment variables. GitHub current secure-use guidance прямо рекомендует такой pattern для untrusted context вместо direct ${{ }} substitution в `run`.
+10. В bridge body выводится только через quoted `printf '%s\n' "$COMMENT_BODY"`; branch/file/commit target hard-coded to `chatgpt/ui-ux-product-pass` / `.github/ui-ux-service-channel.md`. Workflow не исполняет checked-out branch code, package scripts or comment-derived command/filename/ref. Current comment → shell execution / arbitrary-ref push chain не подтверждён.
+11. Bridge write capability не создаёт второй I1 finding: он сам не targeting `main`; риск того, что любой delegated Contents writer может писать в unprotected main, уже полностью owned by `REPO-MAIN-GATE-01`.
+12. `ui-preview-pages.yml` intentionally grants `contents: read`, `pages: write`, `id-token: write` and deploys artifact from `main`, `chatgpt/ui-*` pushes (except service branch) or manual dispatch. No repository/provider secret is referenced.
+13. GitHub current OIDC contract confirms `id-token: write` only enables requesting an OIDC JWT; by itself it does not grant write access to external resources. No current external cloud trust consuming this Pages OIDC identity was established.
+14. Pages build job executes branch-controlled package/build code while workflow-level Pages/OIDC permissions are present. This is broader authority than strict job-level least privilege, but no independent security impact beyond the workflow's explicitly intended public Pages deployment was proven: no production secret, no repository contents-write, and no demonstrated external OIDC trust. **Finding не создаётся**; I7 may re-evaluate only if a later trusted release chain consumes this artifact/identity.
+15. `workflow_dispatch` current GitHub contract requires repository write access and can target a selected branch/tag. Every production DB/credential/Worker workflow additionally gates protected job execution to `refs/heads/main`; Worker rollout also binds authorized `expected_sha == GITHUB_SHA`, while credential one-shot paths have run/attempt guards where required.
+16. Production workflows explicitly restrict `GITHUB_TOKEN` to `contents: read` or `actions: read + contents: read`. User-provided confirmation/run inputs are placed in environment variables before shell validation rather than directly substituted into executable shell source.
+17. Production secrets appear only in jobs declaring named `production-db` / `production-worker` Environments. Whether Environment reviewers/ref restrictions/admin bypass actually prevent an arbitrary repository writer from reaching those secrets/mutations is **not an I2 assumption** and is the dedicated I3 question.
+18. Current exact Environment policies/authorized reviewers/secret inventory were not read in I2: **Информация не проверена**.
+19. Current repository Actions-global settings (default token policy / fork approval policy) were not required to establish I2 verdict because every sensitive current workflow declares explicit token permissions; mutable settings not exposed by available connector remain **Информация не проверена**.
+20. No workflow dispatch, comment event, Pages deployment, production job or settings mutation was executed. Tests were read, not run.
+21. Следующий bounded slice — I3 Production Environments & secret admission. Existing `REPO-MAIN-GATE-01` remains one root cause and must not be duplicated.
 
 ## Цель
 
