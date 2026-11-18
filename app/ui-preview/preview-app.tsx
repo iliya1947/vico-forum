@@ -31,7 +31,7 @@ import { ProfileView } from "../forum/profile-view";
 import { InvalidProfileError, validateProfileFields, type ProfileFields } from "../forum/profile";
 import { forumProfilePath, forumTopicPath } from "../forum/paths";
 import { ForumRouteError } from "../forum/ui";
-import { OwnMeasureDetail, OwnMeasuresIndex } from "../measures/views";
+import { AdminMeasureDetail, AdminMeasuresIndex, OwnMeasureDetail, OwnMeasuresIndex } from "../measures/views";
 import type { UserMeasureDetail } from "../../db/user-measure-read";
 import SettingsRoute from "../routes/settings";
 import SettingsAccountRoute from "../routes/settings-account";
@@ -310,6 +310,12 @@ type PreviewAuthorizationState = {
   users: PreviewAuthorizationUserState[];
 };
 
+type PreviewAdminMeasure = UserMeasureDetail & {
+  targetUserId: string;
+  targetName: string;
+  canMutate: boolean;
+};
+
 type PreviewInteractionState = {
   sequence: number;
   createdTopics: Map<string, PreviewCreatedTopic>;
@@ -330,6 +336,7 @@ type PreviewInteractionState = {
   revokedAccountSessionIds: Set<string>;
   measureAppealBody: string | null;
   adminHistoryEvents: AdminHistoryEvent[];
+  adminCreatedMeasures: Map<string, PreviewAdminMeasure>;
   authorization: PreviewAuthorizationState;
 };
 
@@ -386,6 +393,7 @@ function createPreviewInteractionState(): PreviewInteractionState {
     revokedAccountSessionIds: new Set(),
     measureAppealBody: null,
     adminHistoryEvents: [],
+    adminCreatedMeasures: new Map(),
     authorization: createPreviewAuthorizationState(),
   };
 }
@@ -1501,6 +1509,28 @@ function previewRouter(
       loader: () => {
         previewAdminSurfaceAccessData(scenario);
         return previewAdminOverviewData(scenario);
+      },
+      ErrorBoundary: ForumRouteError,
+    },
+    {
+      path: "/:locale/admin/measures",
+      element: <PreviewAdminMeasuresRoute scenario={scenario} interactions={interactions} />,
+      loader: ({ request }) => {
+        previewAdminSurfaceAccessData(scenario);
+        return previewAdminMeasuresData(scenario, interactions, request);
+      },
+      action: ({ request }) => previewAdminMeasuresAction(scenario, interactions, request),
+      ErrorBoundary: ForumRouteError,
+    },
+    {
+      path: "/:locale/admin/measures/:measureId",
+      element: <PreviewAdminMeasureRoute scenario={scenario} interactions={interactions} />,
+      loader: ({ params }) => {
+        previewAdminSurfaceAccessData(scenario);
+        if (!previewAdminMeasureById(interactions, params.measureId)) {
+          throw new Response("Not Found", { status: 404 });
+        }
+        return null;
       },
       ErrorBoundary: ForumRouteError,
     },
@@ -3028,6 +3058,167 @@ function previewAdminFilter<T extends { id: string; name?: string; title?: strin
     || item.name?.toLocaleLowerCase("en").includes(needle)
     || item.title?.toLocaleLowerCase("en").includes(needle)
   );
+}
+
+const PREVIEW_ADMIN_CREATE_ID = "33333333-3333-4333-8333-333333333333";
+
+function previewAdminMeasureById(
+  interactions: PreviewInteractionState,
+  measureId?: string,
+): PreviewAdminMeasure | null {
+  if (!measureId) return null;
+  const created = interactions.adminCreatedMeasures.get(measureId);
+  if (created) return created;
+  if (measureId !== PREVIEW_OWN_MEASURE_ID) return null;
+  return {
+    ...previewOwnMeasureDetail(interactions),
+    targetUserId: "alex",
+    targetName: "Alex Rivera",
+    canMutate: false,
+  };
+}
+
+function previewAdminMeasuresForTarget(
+  interactions: PreviewInteractionState,
+  targetId: string,
+) {
+  const base = targetId === "alex"
+    ? [previewAdminMeasureById(interactions, PREVIEW_OWN_MEASURE_ID)!]
+    : [];
+  return [
+    ...interactions.adminCreatedMeasures.values(),
+    ...base,
+  ].filter((measure) => measure.targetUserId === targetId);
+}
+
+function previewAdminMeasuresData(
+  scenario: Scenario,
+  interactions: PreviewInteractionState,
+  request: Request,
+) {
+  const query = new URL(request.url).searchParams;
+  if ([...query.keys()].some((key) => key !== "target") || query.getAll("target").length > 1) {
+    throw new Response("Invalid query", { status: 400 });
+  }
+  const targetId = query.get("target")?.trim() ?? "";
+  if (!targetId) {
+    return {
+      locale: scenario.locale,
+      target: null,
+      pendingAppeals: { appeals: [], nextPage: null },
+      requestedTarget: "",
+      createId: PREVIEW_ADMIN_CREATE_ID,
+      access: previewAdminAccess,
+      maySelectAdministrativeRestrictions: scenario.identity === "owner",
+    };
+  }
+  const targetName = previewProfileNames[targetId];
+  if (!targetName) throw new Response("Not Found", { status: 404 });
+  return {
+    locale: scenario.locale,
+    target: {
+      id: targetId,
+      name: targetName,
+      measures: previewAdminMeasuresForTarget(interactions, targetId),
+    },
+    pendingAppeals: null,
+    requestedTarget: targetId,
+    createId: PREVIEW_ADMIN_CREATE_ID,
+    access: previewAdminAccess,
+    maySelectAdministrativeRestrictions: scenario.identity === "owner",
+  };
+}
+
+function PreviewAdminMeasuresRoute({ scenario, interactions }: {
+  scenario: Scenario;
+  interactions: PreviewInteractionState;
+}) {
+  const data = useLoaderData() as ReturnType<typeof previewAdminMeasuresData>;
+  const feedback = useActionData() as { error?: "invalid" | "notFound" } | undefined;
+  return <AdminMeasuresIndex {...data} feedback={feedback} />;
+}
+
+function PreviewAdminMeasureRoute({ scenario, interactions }: {
+  scenario: Scenario;
+  interactions: PreviewInteractionState;
+}) {
+  const { measureId } = useParams();
+  const measure = previewAdminMeasureById(interactions, measureId);
+  if (!measure) throw new Response("Not Found", { status: 404 });
+  return <AdminMeasureDetail
+    locale={scenario.locale}
+    measure={measure}
+    changeId="44444444-4444-4444-8444-444444444444"
+    liftId="55555555-5555-4555-8555-555555555555"
+    reviewIds={[]}
+    access={previewAdminAccess}
+    maySelectAdministrativeRestrictions={scenario.identity === "owner"}
+    feedback={undefined}
+  />;
+}
+
+async function previewAdminMeasuresAction(
+  scenario: Scenario,
+  interactions: PreviewInteractionState,
+  request: Request,
+) {
+  const form = await request.formData();
+  if (String(form.get("intent") ?? "") !== "create") return { error: "invalid" as const };
+  const measureId = String(form.get("measureId") ?? "");
+  const targetUserId = String(form.get("targetId") ?? "");
+  const reason = String(form.get("reason") ?? "").trim();
+  const targetName = previewProfileNames[targetUserId];
+  if (measureId !== PREVIEW_ADMIN_CREATE_ID || !targetName || !reason
+    || interactions.adminCreatedMeasures.has(measureId)) {
+    return { error: "invalid" as const };
+  }
+  const restrictions = form.getAll("restriction").map(String).filter((value) =>
+    ["topics.create","replies.create","attachments.upload","posts.edit","profile.edit",
+      "complaints.submit","helpSignals.submit","translations.generate","admin.forum",
+      "admin.complaints","admin.security","admin.usersAccess"].includes(value)
+  ) as PreviewAdminMeasure["restrictions"];
+  const expiresAtRaw = String(form.get("expiresAt") ?? "").trim();
+  const expiresAt = expiresAtRaw ? new Date(expiresAtRaw).toISOString() : null;
+  const measure: PreviewAdminMeasure = {
+    id: measureId,
+    targetUserId,
+    targetName,
+    canMutate: false,
+    createdAt: "2026-11-18T20:30:00.000Z",
+    expiresAt,
+    liftedAt: null,
+    version: 1,
+    initialReason: reason,
+    latestChangeReason: null,
+    status: "active",
+    restrictions,
+    usedAppeals: 0,
+    pendingAppeal: false,
+    appeals: [],
+    timeline: [{
+      action: "measure.created",
+      occurredAt: "2026-11-18T20:30:00.000Z",
+      reason,
+      before: null,
+      after: { version: 1, restrictions, expiresAt, lifted: false },
+      outcome: null,
+      remedy: null,
+    }],
+  };
+  interactions.adminCreatedMeasures.set(measure.id, measure);
+  previewAppendAdminHistory(scenario, interactions, {
+    action: "measure.created",
+    targetType: "user-measure",
+    targetId: measure.id,
+    targetLabel: targetName,
+    reason,
+    context: {
+      targetUserId,
+      before: null,
+      after: { version: 1, restrictions, expiresAt, lifted: false },
+    },
+  }, reason);
+  return redirect(`/${encodeURIComponent(scenario.locale)}/admin/measures/${encodeURIComponent(measure.id)}`);
 }
 
 function previewAppendAdminHistory(
