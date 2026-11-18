@@ -432,7 +432,6 @@ describe("embedded preview routing", () => {
     await renderEmbeddedPreview(<EmbeddedPreview scenarioId="admin-topic" identity="manager" />);
 
     await openExistingAlexMeasure(user);
-    let nav = document.querySelector(".admin-panel-nav") as HTMLElement;
 
     const reviewHeading = await screen.findByRole("heading", { level: 3, name: "Review appeal #1" });
     const reviewForm = reviewHeading.closest("form") as HTMLElement;
@@ -450,7 +449,7 @@ describe("embedded preview routing", () => {
     expect(screen.getAllByText("Version: 2").length).toBeGreaterThan(0);
     expect(screen.queryByRole("button", { name: "Review appeal" })).not.toBeInTheDocument();
 
-    nav = document.querySelector(".admin-panel-nav") as HTMLElement;
+    const nav = document.querySelector(".admin-panel-nav") as HTMLElement;
     await user.click(within(nav).getByRole("link", { name: "History" }));
 
     const historyHeading = await screen.findByRole("heading", {
@@ -469,7 +468,6 @@ describe("embedded preview routing", () => {
     await renderEmbeddedPreview(<EmbeddedPreview scenarioId="admin-topic" identity="manager" />);
 
     await openExistingAlexMeasure(user);
-    let nav = document.querySelector(".admin-panel-nav") as HTMLElement;
 
     const reviewHeading = await screen.findByRole("heading", { level: 3, name: "Review appeal #1" });
     const reviewForm = reviewHeading.closest("form") as HTMLElement;
@@ -486,7 +484,7 @@ describe("embedded preview routing", () => {
     expect(screen.getByRole("heading", { level: 3, name: "1. Accepted" })).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Review appeal" })).not.toBeInTheDocument();
 
-    nav = document.querySelector(".admin-panel-nav") as HTMLElement;
+    const nav = document.querySelector(".admin-panel-nav") as HTMLElement;
     await user.click(within(nav).getByRole("link", { name: "History" }));
 
     const historyHeading = await screen.findByRole("heading", {
