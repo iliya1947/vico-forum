@@ -395,7 +395,7 @@ describe("interactive Pages preview", () => {
     )).not.toBeInTheDocument();
   });
 
-  it("creates, configures, assigns, overrides, and protects an assigned custom role from deletion in Forum & roles", async () => {
+  it("creates, configures, assigns, overrides, protects, then deletes an unassigned custom role in Forum & roles", async () => {
     const user = userEvent.setup();
     render(<EmbeddedPreview scenarioId="section-user" identity="owner" />);
 
@@ -470,6 +470,21 @@ describe("interactive Pages preview", () => {
     const stillAssignedAlex = screen.getByRole("heading", { name: "Alex Rivera" })
       .closest(".admin-user-card") as HTMLElement;
     expect(within(stillAssignedAlex).getByText("Settings helper renamed")).toBeInTheDocument();
+
+    const resetAssignment = stillAssignedAlex.querySelector(".admin-role-assignment") as HTMLElement;
+    await user.selectOptions(within(resetAssignment).getByLabelText("Assigned role"), "User");
+    await user.click(within(resetAssignment).getByRole("button", { name: "Save" }));
+
+    const resetAlex = screen.getByRole("heading", { name: "Alex Rivera" })
+      .closest(".admin-user-card") as HTMLElement;
+    expect(within(resetAlex).getByText("User")).toBeInTheDocument();
+
+    const deletableRoleHeading = screen.getByRole("heading", { name: "Settings helper renamed" });
+    const deletableRoleCard = deletableRoleHeading.closest(".admin-role-card") as HTMLElement;
+    await user.click(within(deletableRoleCard).getByRole("button", { name: "Delete role" }));
+
+    expect(await screen.findByRole("status")).toHaveTextContent("Authorization settings saved.");
+    expect(screen.queryByRole("heading", { name: "Settings helper renamed" })).not.toBeInTheDocument();
   });
 
   it("keeps the registration version unchanged on a no-op save", async () => {
