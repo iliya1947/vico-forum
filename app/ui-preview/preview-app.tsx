@@ -165,6 +165,7 @@ export const scenarios: readonly Scenario[] = [
   { id: "category-guest", label: "Category", locale: "en", direction: "ltr", identity: "guest", path: "/en/categories/development", view: "category" },
   { id: "category-no-pins", label: "Category · no pins", locale: "en", direction: "ltr", identity: "guest", path: "/en/categories/development", view: "category", variant: "category-no-pins" },
   { id: "section-user", label: "Section", locale: "en", direction: "ltr", identity: "user", path: "/en/sections/typescript", view: "section" },
+  { id: "settings-overview-guest-unauthenticated", label: "Settings · guest unauthenticated", locale: "en", direction: "ltr", identity: "guest", path: "/en/settings", view: "section", allowedIdentities: ["guest"] },
   { id: "settings-account-not-fresh", label: "Settings · Account · session not fresh", locale: "en", direction: "ltr", identity: "user", path: "/en/settings/account", view: "section", variant: "settings-account-not-fresh", allowedIdentities: ["user", "manager", "owner"] },
   { id: "settings-account-google-only", label: "Settings · Account · Google only", locale: "en", direction: "ltr", identity: "user", path: "/en/settings/account", view: "section", variant: "settings-account-google-only", allowedIdentities: ["user", "manager", "owner"] },
   { id: "settings-account-invalid-password", label: "Settings · Account · wrong password", locale: "en", direction: "ltr", identity: "user", path: "/en/settings/account", view: "section", variant: "settings-account-invalid-password", allowedIdentities: ["user", "manager", "owner"] },
@@ -1445,6 +1446,7 @@ function previewRouter(
       path: "/:locale/settings",
       element: <SettingsRoute />,
       loader: () => previewSettingsOverviewData(scenario),
+      ErrorBoundary: ForumRouteError,
     },
     {
       path: "/:locale/settings/user",
@@ -1777,6 +1779,9 @@ async function previewSettingsPrivacyAction(
 }
 
 function previewSettingsOverviewData(scenario: Scenario) {
+  if (!previewUser(scenario)) {
+    throw new Response("Unauthenticated", { status: 401 });
+  }
   return {
     locale: scenario.locale,
     canViewForum: scenario.identity === "owner",
