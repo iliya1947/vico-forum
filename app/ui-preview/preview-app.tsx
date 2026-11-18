@@ -123,12 +123,14 @@ export const scenarios: readonly Scenario[] = [
   { id: "auth-error", label: "Authentication · failed", locale: "en", direction: "ltr", identity: "guest", path: "/en", view: "home", authPresentationState: "error", allowedIdentities: ["guest"] },
   { id: "under-development-search", label: "Under development · search", locale: "en", direction: "ltr", identity: "guest", path: "/en/under-development?feature=search", view: "under-development" },
   { id: "notifications-user", label: "Notifications · mixed", locale: "en", direction: "ltr", identity: "user", path: "/en/notifications", view: "notifications", allowedIdentities: ["user", "manager"] },
+  { id: "notifications-guest-unauthenticated", label: "Notifications · guest unauthenticated", locale: "en", direction: "ltr", identity: "guest", path: "/en/notifications", view: "notifications", allowedIdentities: ["guest"] },
   { id: "notifications-empty", label: "Notifications · empty", locale: "en", direction: "ltr", identity: "user", path: "/en/notifications", view: "notifications", variant: "notifications-empty", allowedIdentities: ["user", "manager"] },
   { id: "search-results-guest", label: "Search · results", locale: "en", direction: "ltr", identity: "guest", path: "/en/search?q=TypeScript", view: "search" },
   { id: "search-no-results-guest", label: "Search · no results", locale: "en", direction: "ltr", identity: "guest", path: "/en/search?q=WebAssembly", view: "search", variant: "search-no-results" },
   { id: "popular-guest", label: "Popular", locale: "en", direction: "ltr", identity: "guest", path: "/en/popular", view: "popular" },
   { id: "unanswered-guest", label: "Unanswered", locale: "en", direction: "ltr", identity: "guest", path: "/en/unanswered", view: "unanswered" },
   { id: "unread-user", label: "Unread", locale: "en", direction: "ltr", identity: "user", path: "/en/unread", view: "unread", allowedIdentities: ["user", "manager"] },
+  { id: "unread-guest-unauthenticated", label: "Unread · guest unauthenticated", locale: "en", direction: "ltr", identity: "guest", path: "/en/unread", view: "unread", allowedIdentities: ["guest"] },
   { id: "tags-guest", label: "Tags", locale: "en", direction: "ltr", identity: "guest", path: "/en/tags", view: "tags" },
   { id: "tag-typescript-guest", label: "Tag · TypeScript", locale: "en", direction: "ltr", identity: "guest", path: "/en/tags/typescript", view: "tag" },
   { id: "help-solutions-all", label: "Help & solutions · All", locale: "en", direction: "ltr", identity: "guest", path: "/en/categories/help-solutions", view: "category" },
@@ -149,6 +151,8 @@ export const scenarios: readonly Scenario[] = [
   { id: "help-solutions-active", label: "Help & solutions · Active", locale: "en", direction: "ltr", identity: "guest", path: "/en/categories/help-solutions?mode=active", view: "category" },
   { id: "help-solutions-active-empty", label: "Help & solutions · Active · empty", locale: "en", direction: "ltr", identity: "guest", path: "/en/categories/help-solutions?mode=active", view: "category", variant: "help-solutions-active-empty" },
   { id: "attention-signals", label: "Moderation · Signals", locale: "en", direction: "ltr", identity: "manager", path: "/en/attention?mode=signals", view: "attention", allowedIdentities: ["manager"] },
+  { id: "attention-guest-unauthenticated", label: "Moderation · guest unauthenticated", locale: "en", direction: "ltr", identity: "guest", path: "/en/attention?mode=signals", view: "attention", allowedIdentities: ["guest"] },
+  { id: "attention-user-forbidden", label: "Moderation · ordinary user forbidden", locale: "en", direction: "ltr", identity: "user", path: "/en/attention?mode=signals", view: "attention", allowedIdentities: ["user"] },
   { id: "attention-complaints", label: "Moderation · Complaints placeholder", locale: "en", direction: "ltr", identity: "manager", path: "/en/attention?mode=complaints", view: "attention", allowedIdentities: ["manager"] },
   { id: "attention-security", label: "Moderation · Security placeholder", locale: "en", direction: "ltr", identity: "manager", path: "/en/attention?mode=security", view: "attention", allowedIdentities: ["manager"] },
   { id: "attention-empty", label: "Moderation · Signals · empty", locale: "en", direction: "ltr", identity: "manager", path: "/en/attention?mode=signals", view: "attention", variant: "attention-empty", allowedIdentities: ["manager"] },
@@ -1378,7 +1382,9 @@ function previewRouter(
     {
       path: "/:locale/attention",
       element: <PreviewAttentionRoute scenario={scenario} interactions={interactions} />,
+      loader: () => previewAttentionAccessData(scenario),
       action: ({ request }) => previewAttentionAction(scenario, interactions, request),
+      ErrorBoundary: ForumRouteError,
     },
     {
       path: "/:locale/categories/:categoryId",
@@ -1430,6 +1436,8 @@ function previewRouter(
     {
       path: "/:locale/unread",
       element: <UnreadView locale={scenario.locale} topics={unreadTopics(scenario.locale)} />,
+      loader: () => previewAuthenticatedRouteData(scenario),
+      ErrorBoundary: ForumRouteError,
     },
     {
       path: "/:locale/users/:userId",
@@ -1441,9 +1449,11 @@ function previewRouter(
     {
       path: "/:locale/notifications",
       element: <PreviewNotificationsRoute scenario={scenario} interactions={interactions} />,
+      loader: () => previewAuthenticatedRouteData(scenario),
       action: ({ request, params }) => previewNotificationsAction(
         scenario, interactions, request, params.locale,
       ),
+      ErrorBoundary: ForumRouteError,
     },
     {
       path: "/:locale/settings",
@@ -2410,6 +2420,21 @@ async function previewAttentionAction(
   interactions.resolvedAttentionCases.add(caseId);
   const url = new URL(request.url);
   return redirect(url.pathname + url.search);
+}
+
+function previewAuthenticatedRouteData(scenario: Scenario) {
+  if (!previewUser(scenario)) {
+    throw new Response("Unauthenticated", { status: 401 });
+  }
+  return null;
+}
+
+function previewAttentionAccessData(scenario: Scenario) {
+  previewAuthenticatedRouteData(scenario);
+  if (scenario.identity !== "manager" && scenario.identity !== "owner") {
+    throw new Response("Forbidden", { status: 403 });
+  }
+  return null;
 }
 
 function PreviewAttentionRoute({ scenario, interactions }: {
