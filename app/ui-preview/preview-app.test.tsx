@@ -395,7 +395,7 @@ describe("interactive Pages preview", () => {
     )).not.toBeInTheDocument();
   });
 
-  it("creates, configures, and assigns a custom role from the embedded Forum & roles authorization controls", async () => {
+  it("creates, configures, assigns, and overrides a custom role from the embedded Forum & roles authorization controls", async () => {
     const user = userEvent.setup();
     render(<EmbeddedPreview scenarioId="section-user" identity="owner" />);
 
@@ -448,6 +448,16 @@ describe("interactive Pages preview", () => {
     const refreshedAlex = screen.getByRole("heading", { name: "Alex Rivera" })
       .closest(".admin-user-card") as HTMLElement;
     expect(within(refreshedAlex).getByText("Settings helper renamed")).toBeInTheDocument();
+
+    const override = within(refreshedAlex).getByLabelText("forum.topic.pin: Permissions");
+    await user.selectOptions(override, "deny");
+    await user.click(within(override.closest("form") as HTMLElement).getByRole("button", { name: "Save" }));
+
+    const overriddenAlex = screen.getByRole("heading", { name: "Alex Rivera" })
+      .closest(".admin-user-card") as HTMLElement;
+    expect(within(overriddenAlex).getByLabelText("forum.topic.pin: Permissions")).toHaveValue("deny");
+    const effectivePermissions = overriddenAlex.querySelector(".admin-effective-permissions") as HTMLElement;
+    expect(within(effectivePermissions).queryByText("forum.topic.pin")).not.toBeInTheDocument();
   });
 
   it("keeps the registration version unchanged on a no-op save", async () => {
