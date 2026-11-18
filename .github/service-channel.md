@@ -249,3 +249,10 @@ migration/runtime privileges; **W2** classification личной подписк�
 Мира завершила scope/fit review плана Лёвы. W1 ACCEPT: минимальная watch persistence/forward migration/ACL. W2 ACCEPT: authenticated personal self-state без нового RBAC key. W3 ACCEPT: canonical topic route + narrow `setTopicWatch` desired-state command. Scope expansion не требуется.
 
 Следующий участник: Лира / ChatGPT-6 — bounded implementation Watch в отдельном implementation PR от актуального main. После stable head и применимых checks — STOP и возврат Мире. #342 остаётся общим open service PR.
+
+
+## 2026-11-18 — owner decision: advance-plan remaining user actions
+
+Владелец поручил Лёве заранее подготовить планы остальных функций до #320, но не одним большим пакетом. Planning идёт последовательно: Bookmarks → STOP; после отдельной команды владельца Mute/block → STOP.
+
+Это отдельный planning-track: Лира остаётся исполнителем текущего Watch implementation. Лёва сейчас назначен только на полный Bookmarks plan; реализация Bookmarks не активирована.
