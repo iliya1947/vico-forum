@@ -11,9 +11,10 @@
 7. **K5 — Request body / attachments / storage exhaustion завершён: 1 новый current-scope finding — `ATTACH-SECURITY-EVENT-SPAM-01 Moderate/P2`; 0 deferred blockers.**
 8. **K6 — Background / translation / notification amplification завершён: 1 новый current-scope finding — `MENTION-FANOUT-01 Moderate/P2`; 0 deferred blockers.**
 9. **K7 — Dependency failure / backpressure завершён: 1 новый current-scope finding — `DB-CLEANUP-FLOAT-01 Low/P3`; 0 deferred blockers.**
-10. Overall #315 становится **33 current findings + 4 deferred Stage-6 blockers**.
-11. Мира — auditor/coordinator. Remediation, technical planner и implementer не назначены.
-12. Production/Cloudflare/Neon/GitHub/provider settings mutation, load testing и внешние destructive/fault-injection действия не разрешены и не выполнялись.
+10. **K8 — Cross-chain closeout завершён: PASS, 0 дополнительных current findings и 0 deferred blockers. Block K завершён.**
+11. Final Block K: **5 current findings — 4 Moderate/P2 + 1 Low/P3; 0 deferred blockers.** Overall #315 = **33 current findings + 4 deferred Stage-6 blockers**.
+12. Мира — auditor/coordinator. Remediation, technical planner и implementer не назначены.
+13. Production/Cloudflare/Neon/GitHub/provider settings mutation, load testing и внешние destructive/fault-injection действия не разрешены и не выполнялись.
 
 ## Цель
 
@@ -265,6 +266,25 @@
 
 **Boundary:** request operations themselves have caller deadlines and fail closed; no production connection exhaustion was demonstrated. Provider/Queue retries remain Block J and external WAF/platform throttling remains Stage 6.
 
+## K8 — результат
+
+1. Audit target: current `main` `7cc23edede57994cdedab49c1556ddb55034dd29`.
+2. Verdict: **PASS — 0 дополнительных current-scope findings, 0 deferred blockers; Block K завершён.**
+3. End-to-end composition rechecked across current request admission → DB/runtime work → durable/fan-out side effects. The five K findings remain distinct root causes rather than one duplicated chain: edit revision growth, bounded-output public read cost, security-event growth, mention-recipient fan-out and asynchronous DB teardown completion.
+4. K3/K6 composition does not create a new finding: repeated edit publication can interact with mention delivery, but the missing edit admission and missing recipient ceiling are already independently captured. Correcting both boundaries is sufficient for the current root causes; no additional authority bypass or separate persistence primitive was established.
+5. K4 remains independent from Block E. E owns unbounded result/read-set size (`DISCOVERY-BOUNDS-01`, `FORUM-READ-BOUNDS-01`); K4 owns public readers whose output is bounded/small while backend work still grows with corpus size. No duplicate finding is created.
+6. K5 remains independent from Block F and future Block L. F owns attachment content-validation integrity; K5 owns unbounded durable event creation under repeated rejected uploads. Block L may later audit event usefulness, alertability, retention policy and incident workflow, but must not duplicate K5's resource-growth root cause.
+7. K7 remains K-owned generic backpressure/resource-lifecycle behavior rather than Block H topology or Block G database-role/migration scope. Current request operations have caller deadlines and fail-closed unavailable handling; the finding is only the missing guarantee that asynchronous DB teardown settles within Worker lifetime.
+8. Block B auth/session findings, Block J provider/Queue retry/cost findings and Block H runtime/version blockers remain unchanged. K2 did not establish a second auth brute-force defect, and K6 did not establish a second provider-specific amplification defect.
+9. Stage classification revalidated against current `PROJECT_STATE.md` / `ROADMAP.md`: Stage 6 is paused, but all five K findings are already reachable in repository/current product paths and therefore remain **current**, not deferred Stage-6 work.
+10. Release correction gate: before public Stage 7 release, all five Block-K current findings require bounded remediation plus regression coverage appropriate to their root cause. This is an audit gate only; remediation is not started here.
+11. Stage-6 acceptance remains separate: when external runtime resumes, recheck actual Cloudflare/Hyperdrive/R2/Queue/provider traffic/resource settings, authoritative translation budget values, cleanup scheduling and upstream throttling. Absence of those mutable settings in current pre-release repository is not converted into a new K blocker.
+12. Exact deployed WAF/Bot/rate-limit rules, Hyperdrive connection behavior, live R2 cleanup schedule/costs and production translation allowance values are **Информация не проверена**. None is required to classify the five current repository findings.
+13. No external request flood, production load/fault injection, provider/Queue call, R2 mutation, Hyperdrive probe, deploy or settings change was performed in K8.
+14. Final Block K = **5 current findings: `FORUM-EDIT-SPAM-01 Moderate/P2`, `PUBLIC-READ-COST-01 Moderate/P2`, `ATTACH-SECURITY-EVENT-SPAM-01 Moderate/P2`, `MENTION-FANOUT-01 Moderate/P2`, `DB-CLEANUP-FLOAT-01 Low/P3`; 0 deferred blockers.**
+15. Overall #315 remains **33 current findings + 4 deferred Stage-6 blockers**. Current severity remains **13 Moderate/P2 + 20 Low/P3**; deferred remains **2 Moderate/P2 + 2 Low/P3**.
+16. Next security area after developer continuation: **Block L — Security monitoring & incident response**. It must be created as a separate bounded file; it is not started by K8.
+
 ## Finding criteria
 
 1. Concrete current/prepared request or background path.
@@ -283,5 +303,5 @@
 
 ## Следующий шаг
 
-1. После продолжения владельца выполнить **K8 — Cross-chain closeout** на current main и остановиться после результата.
+1. После продолжения владельца начать **Block L — Security monitoring & incident response** отдельным bounded-файлом и выполнить его первый этап.
 2. Remediation существующих findings/blockers Blocks B–K не начинать без отдельного назначения.
