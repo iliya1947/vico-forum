@@ -17,6 +17,14 @@ async function renderEmbeddedPreview(ui: Parameters<typeof render>[0]) {
   return result;
 }
 
+async function openSettings(user: ReturnType<typeof userEvent.setup>) {
+  await user.click(screen.getByRole("link", { name: "Settings" }));
+  expect(await screen.findByRole("heading", { level: 1, name: "Settings" })).toBeInTheDocument();
+  await waitFor(() => {
+    expect(document.querySelector(".settings-overview")).not.toBeNull();
+  });
+}
+
 describe("UI preview state catalog", () => {
   it("keeps locale and direction out of State options", () => {
     expect(scenarios.length).toBeGreaterThan(0);
@@ -253,7 +261,7 @@ describe("embedded preview routing", () => {
     const user = userEvent.setup();
     await renderEmbeddedPreview(<EmbeddedPreview scenarioId="section-user" identity="owner" />);
 
-    await user.click(screen.getByRole("link", { name: "Settings" }));
+    await openSettings(user);
     const settingsOverview = document.querySelector(".settings-overview") as HTMLElement;
     await user.click(within(settingsOverview).getByRole("link", { name: "Forum & roles" }));
 
@@ -263,6 +271,7 @@ describe("embedded preview routing", () => {
     expect(await screen.findByRole("status")).toHaveTextContent("Registration settings updated.");
 
     await user.click(screen.getByRole("link", { name: "Admin panel" }));
+    expect(await screen.findByRole("heading", { level: 2, name: "Overview" })).toBeInTheDocument();
     const nav = document.querySelector(".admin-panel-nav") as HTMLElement;
     await user.click(within(nav).getByRole("link", { name: "History" }));
 
@@ -281,15 +290,17 @@ describe("embedded preview routing", () => {
     await waitFor(() => expect(screen.queryByText("#signal-142")).not.toBeInTheDocument());
 
     await user.click(screen.getByRole("link", { name: "Admin panel" }));
+    expect(await screen.findByRole("heading", { level: 2, name: "Overview" })).toBeInTheDocument();
     const nav = document.querySelector(".admin-panel-nav") as HTMLElement;
     await user.click(within(nav).getByRole("link", { name: "History" }));
 
-    expect(await screen.findByRole("heading", {
+    const historyHeading = await screen.findByRole("heading", {
       level: 3,
       name: "Help signal reviewed",
-    })).toBeInTheDocument();
-    expect(screen.getByText("signal-142")).toBeInTheDocument();
-    expect(screen.getByText("Accepted")).toBeInTheDocument();
+    });
+    const historyEvent = historyHeading.closest("li") as HTMLElement;
+    expect(within(historyEvent).getByText("signal-142")).toBeInTheDocument();
+    expect(historyEvent).toHaveTextContent("Accepted");
   });
 
   it("opens User measures from the Admin shell navigation", async () => {
@@ -742,7 +753,12 @@ describe("embedded preview routing", () => {
   it("opens a latest category-card topic instead of the primary fallback topic", async () => {
     await renderEmbeddedPreview(<EmbeddedPreview scenarioId="category-guest" />);
 
-    await userEvent.click(await screen.findByRole("link", {
+    const primary = await screen.findByRole("link", {
+      name: "How should I structure a typed API client?",
+    });
+    const sectionCard = primary.closest("article") as HTMLElement;
+    await userEvent.click(within(sectionCard).getByRole("button", { name: "Show more topics" }));
+    await userEvent.click(await within(sectionCard).findByRole("link", {
       name: "A practical example from this section",
     }));
 
@@ -902,7 +918,7 @@ describe("interactive Pages preview", () => {
     const user = userEvent.setup();
     await renderEmbeddedPreview(<EmbeddedPreview scenarioId="section-user" identity="user" />);
 
-    await user.click(screen.getByRole("link", { name: "Settings" }));
+    await openSettings(user);
     expect(await screen.findByRole("heading", { level: 1, name: "Settings" })).toBeInTheDocument();
 
     const settingsOverview = document.querySelector(".settings-overview") as HTMLElement;
@@ -921,7 +937,7 @@ describe("interactive Pages preview", () => {
     const user = userEvent.setup();
     await renderEmbeddedPreview(<EmbeddedPreview scenarioId="section-user" identity="owner" />);
 
-    await user.click(screen.getByRole("link", { name: "Settings" }));
+    await openSettings(user);
     const settingsOverview = document.querySelector(".settings-overview") as HTMLElement;
     await user.click(within(settingsOverview).getByRole("link", { name: "Forum & roles" }));
 
@@ -1046,7 +1062,7 @@ describe("interactive Pages preview", () => {
     const user = userEvent.setup();
     await renderEmbeddedPreview(<EmbeddedPreview scenarioId="section-user" identity="owner" />);
 
-    await user.click(screen.getByRole("link", { name: "Settings" }));
+    await openSettings(user);
     const settingsOverview = document.querySelector(".settings-overview") as HTMLElement;
     await user.click(within(settingsOverview).getByRole("link", { name: "Forum & roles" }));
 
@@ -1070,7 +1086,7 @@ describe("interactive Pages preview", () => {
     const user = userEvent.setup();
     await renderEmbeddedPreview(<EmbeddedPreview scenarioId="section-user" identity="owner" />);
 
-    await user.click(screen.getByRole("link", { name: "Settings" }));
+    await openSettings(user);
     const settingsOverview = document.querySelector(".settings-overview") as HTMLElement;
     await user.click(within(settingsOverview).getByRole("link", { name: "Forum & roles" }));
 
@@ -1094,7 +1110,7 @@ describe("interactive Pages preview", () => {
     const user = userEvent.setup();
     await renderEmbeddedPreview(<EmbeddedPreview scenarioId="section-user" identity="owner" />);
 
-    await user.click(screen.getByRole("link", { name: "Settings" }));
+    await openSettings(user);
     const settingsOverview = document.querySelector(".settings-overview") as HTMLElement;
     await user.click(within(settingsOverview).getByRole("link", { name: "Forum & roles" }));
 
@@ -1124,7 +1140,7 @@ describe("interactive Pages preview", () => {
     const user = userEvent.setup();
     await renderEmbeddedPreview(<EmbeddedPreview scenarioId="section-user" identity="owner" />);
 
-    await user.click(screen.getByRole("link", { name: "Settings" }));
+    await openSettings(user);
     const settingsOverview = document.querySelector(".settings-overview") as HTMLElement;
     await user.click(within(settingsOverview).getByRole("link", { name: "Forum & roles" }));
 
@@ -1165,7 +1181,7 @@ describe("interactive Pages preview", () => {
     const user = userEvent.setup();
     await renderEmbeddedPreview(<EmbeddedPreview scenarioId="section-user" identity="owner" />);
 
-    await user.click(screen.getByRole("link", { name: "Settings" }));
+    await openSettings(user);
 
     const settingsOverview = document.querySelector(".settings-overview") as HTMLElement;
     const settingsNavigation = document.querySelector(".settings-panel-nav") as HTMLElement;
@@ -1202,7 +1218,7 @@ describe("interactive Pages preview", () => {
     const user = userEvent.setup();
     await renderEmbeddedPreview(<EmbeddedPreview scenarioId="section-user" identity="owner" />);
 
-    await user.click(screen.getByRole("link", { name: "Settings" }));
+    await openSettings(user);
     let settingsNavigation = document.querySelector(".settings-panel-nav") as HTMLElement;
     await user.click(within(settingsNavigation).getByRole("link", { name: "Forum & roles" }));
 
@@ -1235,7 +1251,7 @@ describe("interactive Pages preview", () => {
     const user = userEvent.setup();
     await renderEmbeddedPreview(<EmbeddedPreview scenarioId="section-user" identity="owner" />);
 
-    await user.click(screen.getByRole("link", { name: "Settings" }));
+    await openSettings(user);
     let settingsNavigation = document.querySelector(".settings-panel-nav") as HTMLElement;
     await user.click(within(settingsNavigation).getByRole("link", { name: "Forum & roles" }));
 
@@ -1257,7 +1273,7 @@ describe("interactive Pages preview", () => {
     const user = userEvent.setup();
     await renderEmbeddedPreview(<EmbeddedPreview scenarioId="section-user" identity="owner" />);
 
-    await user.click(screen.getByRole("link", { name: "Settings" }));
+    await openSettings(user);
     let settingsNavigation = document.querySelector(".settings-panel-nav") as HTMLElement;
     await user.click(within(settingsNavigation).getByRole("link", { name: "Forum & roles" }));
 
@@ -1279,7 +1295,7 @@ describe("interactive Pages preview", () => {
     const user = userEvent.setup();
     await renderEmbeddedPreview(<EmbeddedPreview scenarioId="section-user" identity="owner" />);
 
-    await user.click(screen.getByRole("link", { name: "Settings" }));
+    await openSettings(user);
     let settingsNavigation = document.querySelector(".settings-panel-nav") as HTMLElement;
     await user.click(within(settingsNavigation).getByRole("link", { name: "Forum & roles" }));
 
@@ -1301,7 +1317,7 @@ describe("interactive Pages preview", () => {
     const user = userEvent.setup();
     await renderEmbeddedPreview(<EmbeddedPreview scenarioId="section-user" identity="user" />);
 
-    await user.click(screen.getByRole("link", { name: "Settings" }));
+    await openSettings(user);
 
     const settingsOverview = document.querySelector(".settings-overview") as HTMLElement;
     const settingsNavigation = document.querySelector(".settings-panel-nav") as HTMLElement;
@@ -1313,7 +1329,7 @@ describe("interactive Pages preview", () => {
     const user = userEvent.setup();
     await renderEmbeddedPreview(<EmbeddedPreview scenarioId="section-user" identity="user" />);
 
-    await user.click(screen.getByRole("link", { name: "Settings" }));
+    await openSettings(user);
 
     const settingsOverview = document.querySelector(".settings-overview") as HTMLElement;
     const settingsNavigation = document.querySelector(".settings-panel-nav") as HTMLElement;
@@ -1421,7 +1437,7 @@ describe("interactive Pages preview", () => {
     const user = userEvent.setup();
     await renderEmbeddedPreview(<EmbeddedPreview scenarioId="section-user" identity="manager" />);
 
-    await user.click(screen.getByRole("link", { name: "Settings" }));
+    await openSettings(user);
 
     const settingsOverview = document.querySelector(".settings-overview") as HTMLElement;
     let settingsNavigation = document.querySelector(".settings-panel-nav") as HTMLElement;
@@ -1445,7 +1461,7 @@ describe("interactive Pages preview", () => {
     const user = userEvent.setup();
     await renderEmbeddedPreview(<EmbeddedPreview scenarioId="section-user" identity="manager" />);
 
-    await user.click(screen.getByRole("link", { name: "Settings" }));
+    await openSettings(user);
     const settingsOverview = document.querySelector(".settings-overview") as HTMLElement;
     const settingsNavigation = document.querySelector(".settings-panel-nav") as HTMLElement;
     expect(within(settingsOverview).queryByRole("link", { name: "Forum & roles" })).not.toBeInTheDocument();
@@ -1465,7 +1481,7 @@ describe("interactive Pages preview", () => {
     const user = userEvent.setup();
     await renderEmbeddedPreview(<EmbeddedPreview scenarioId="section-user" identity="owner" />);
 
-    await user.click(screen.getByRole("link", { name: "Settings" }));
+    await openSettings(user);
     const settingsOverview = document.querySelector(".settings-overview") as HTMLElement;
     await user.click(within(settingsOverview).getByRole("link", { name: "Forum & roles" }));
 
@@ -1568,7 +1584,7 @@ describe("interactive Pages preview", () => {
     const user = userEvent.setup();
     await renderEmbeddedPreview(<EmbeddedPreview scenarioId="section-user" identity="owner" />);
 
-    await user.click(screen.getByRole("link", { name: "Settings" }));
+    await openSettings(user);
     const settingsOverview = document.querySelector(".settings-overview") as HTMLElement;
     await user.click(within(settingsOverview).getByRole("link", { name: "Forum & roles" }));
 
@@ -1593,7 +1609,7 @@ describe("interactive Pages preview", () => {
     const user = userEvent.setup();
     await renderEmbeddedPreview(<EmbeddedPreview scenarioId="section-user" identity="owner" />);
 
-    await user.click(screen.getByRole("link", { name: "Settings" }));
+    await openSettings(user);
     const settingsOverview = document.querySelector(".settings-overview") as HTMLElement;
     await user.click(within(settingsOverview).getByRole("link", { name: "Forum & roles" }));
 
@@ -1616,7 +1632,7 @@ describe("interactive Pages preview", () => {
     const user = userEvent.setup();
     await renderEmbeddedPreview(<EmbeddedPreview scenarioId="section-user" identity="owner" />);
 
-    await user.click(screen.getByRole("link", { name: "Settings" }));
+    await openSettings(user);
     const settingsOverview = document.querySelector(".settings-overview") as HTMLElement;
     await user.click(within(settingsOverview).getByRole("link", { name: "Forum & roles" }));
 
@@ -1639,7 +1655,7 @@ describe("interactive Pages preview", () => {
     const user = userEvent.setup();
     await renderEmbeddedPreview(<EmbeddedPreview scenarioId="section-user" identity="owner" />);
 
-    await user.click(screen.getByRole("link", { name: "Settings" }));
+    await openSettings(user);
     const settingsOverview = document.querySelector(".settings-overview") as HTMLElement;
     await user.click(within(settingsOverview).getByRole("link", { name: "Forum & roles" }));
 
@@ -1664,7 +1680,7 @@ describe("interactive Pages preview", () => {
     const user = userEvent.setup();
     await renderEmbeddedPreview(<EmbeddedPreview scenarioId="section-user" identity="manager" />);
 
-    await user.click(screen.getByRole("link", { name: "Settings" }));
+    await openSettings(user);
     const settingsOverview = document.querySelector(".settings-overview") as HTMLElement;
     await user.click(within(settingsOverview).getByRole("link", { name: "Administrator preferences" }));
 
@@ -1682,7 +1698,7 @@ describe("interactive Pages preview", () => {
     const user = userEvent.setup();
     await renderEmbeddedPreview(<EmbeddedPreview scenarioId="section-user" identity="owner" />);
 
-    await user.click(screen.getByRole("link", { name: "Settings" }));
+    await openSettings(user);
     let settingsOverview = document.querySelector(".settings-overview") as HTMLElement;
     await user.click(within(settingsOverview).getByRole("link", { name: "Administrator preferences" }));
 
@@ -1695,7 +1711,7 @@ describe("interactive Pages preview", () => {
     await user.click(screen.getByRole("link", { name: "Open Admin" }));
     expect(await screen.findByRole("heading", { level: 2, name: "Roles & permissions" })).toBeInTheDocument();
 
-    await user.click(screen.getByRole("link", { name: "Settings" }));
+    await openSettings(user);
     settingsOverview = document.querySelector(".settings-overview") as HTMLElement;
     await user.click(within(settingsOverview).getByRole("link", { name: "Administrator preferences" }));
 
@@ -1716,7 +1732,7 @@ describe("interactive Pages preview", () => {
     const user = userEvent.setup();
     await renderEmbeddedPreview(<EmbeddedPreview scenarioId="section-user" identity="manager" />);
 
-    await user.click(screen.getByRole("link", { name: "Settings" }));
+    await openSettings(user);
     const settingsOverview = document.querySelector(".settings-overview") as HTMLElement;
     await user.click(within(settingsOverview).getByRole("link", { name: "Administrator preferences" }));
 
@@ -1743,7 +1759,7 @@ describe("interactive Pages preview", () => {
     const user = userEvent.setup();
     await renderEmbeddedPreview(<EmbeddedPreview scenarioId="section-user" identity="manager" />);
 
-    await user.click(screen.getByRole("link", { name: "Settings" }));
+    await openSettings(user);
     let settingsOverview = document.querySelector(".settings-overview") as HTMLElement;
     await user.click(within(settingsOverview).getByRole("link", { name: "Administrator preferences" }));
 
@@ -1762,7 +1778,7 @@ describe("interactive Pages preview", () => {
       });
     });
 
-    await user.click(screen.getByRole("link", { name: "Settings" }));
+    await openSettings(user);
     settingsOverview = document.querySelector(".settings-overview") as HTMLElement;
     await user.click(within(settingsOverview).getByRole("link", { name: "Administrator preferences" }));
 
@@ -1788,7 +1804,7 @@ describe("interactive Pages preview", () => {
     const user = userEvent.setup();
     await renderEmbeddedPreview(<EmbeddedPreview scenarioId="section-user" identity="manager" />);
 
-    await user.click(screen.getByRole("link", { name: "Settings" }));
+    await openSettings(user);
     let settingsOverview = document.querySelector(".settings-overview") as HTMLElement;
     await user.click(within(settingsOverview).getByRole("link", { name: "Administrator preferences" }));
 
@@ -1853,7 +1869,7 @@ describe("interactive Pages preview", () => {
     const user = userEvent.setup();
     await renderEmbeddedPreview(<EmbeddedPreview scenarioId="section-user" identity="user" />);
 
-    await user.click(screen.getByRole("link", { name: "Settings" }));
+    await openSettings(user);
     const settingsOverview = document.querySelector(".settings-overview") as HTMLElement;
     await user.click(within(settingsOverview).getByRole("link", { name: "Account & security" }));
 
@@ -1871,7 +1887,7 @@ describe("interactive Pages preview", () => {
     const user = userEvent.setup();
     await renderEmbeddedPreview(<EmbeddedPreview scenarioId="section-user" identity="user" />);
 
-    await user.click(screen.getByRole("link", { name: "Settings" }));
+    await openSettings(user);
     const settingsOverview = document.querySelector(".settings-overview") as HTMLElement;
     await user.click(within(settingsOverview).getByRole("link", { name: "Account & security" }));
 
@@ -1989,7 +2005,7 @@ describe("interactive Pages preview", () => {
     const user = userEvent.setup();
     await renderEmbeddedPreview(<EmbeddedPreview scenarioId="section-user" identity="user" />);
 
-    await user.click(screen.getByRole("link", { name: "Settings" }));
+    await openSettings(user);
     const settingsOverview = document.querySelector(".settings-overview") as HTMLElement;
     await user.click(within(settingsOverview).getByRole("link", { name: "Account & security" }));
 
@@ -2010,7 +2026,7 @@ describe("interactive Pages preview", () => {
     const user = userEvent.setup();
     await renderEmbeddedPreview(<EmbeddedPreview scenarioId="section-user" identity="user" />);
 
-    await user.click(screen.getByRole("link", { name: "Settings" }));
+    await openSettings(user);
     const settingsOverview = document.querySelector(".settings-overview") as HTMLElement;
     await user.click(within(settingsOverview).getByRole("link", { name: "Account & security" }));
 
@@ -2037,7 +2053,7 @@ describe("interactive Pages preview", () => {
     const user = userEvent.setup();
     await renderEmbeddedPreview(<EmbeddedPreview scenarioId="section-user" identity="user" />);
 
-    await user.click(screen.getByRole("link", { name: "Settings" }));
+    await openSettings(user);
     const settingsOverview = document.querySelector(".settings-overview") as HTMLElement;
     await user.click(within(settingsOverview).getByRole("link", { name: "Privacy" }));
 
