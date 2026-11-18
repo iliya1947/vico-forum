@@ -66,3 +66,12 @@ Coordinator review #343 на exact head `10321fdae762004ac2d55e9618a89c6c41e0d2a
 Проверено, что существующий inbox для kind=reply использует нейтральную формулировку «Reply from actor», поэтому watch-derived reply recipient не требует нового notification kind только ради presentation. PostgreSQL 17 official locking docs подтверждают совместимость NO KEY UPDATE с KEY SHARE, на которой основан существующий lock graph.
 
 Следующий исполнитель по стандартному циклу — Лира. Реализация ещё не начата.
+
+
+## 2026-11-18 — scope/fit review Bookmarks
+
+Опережающий Bookmarks plan Лёвы принят. B1: target — topic, с приватным own list; post-level bookmark исключён из первого bounded-этапа. B2: отдельная минимальная `forum_topic_bookmarks` persistence + runtime ACL после фактического Watch migration ceiling. B3: authenticated personal self-state без нового RBAC key. B5: authenticated `/:locale/bookmarks` + один canonical topic `setTopicBookmark` writer.
+
+Список хранит ссылку, не content snapshot; показывает current title/public identity/location. Ordering — savedAt desc + topic id tie-break, bounded keyset pagination. Bookmarks остаются независимы от Watch/read-state/inbox и не создают notification semantics.
+
+Перед implementation обязательна только сверка плана с merged Watch/current main; перепроектирование без нового конфликта не требуется. Реализация Bookmarks пока не активирована.
