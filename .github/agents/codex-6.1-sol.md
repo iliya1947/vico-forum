@@ -201,3 +201,16 @@ https://www.postgresql.org/docs/17/functions-datetime.html .
 Код не реализован, implementation PR и feature tests/CI/browser отсутствуют.
 Лира продолжает Watch; Bookmarks implementation не активирован. Лёва STOP;
 Mute/block не исследован и не планируется без следующей команды владельца.
+
+
+## 2026-11-18 — активное назначение: опережающий технический план Mute/block
+
+Подготовить полный технический план последнего оставшегося пользовательского блока перед #320 — **Mute/block** — по актуальному `main` и текущему состоянию #342. Это только planning; код не реализовывать.
+
+Не навязывать заранее смысл названия. Самостоятельно исследовать фактические user/profile/content/notification/mention/reply/read-state/moderation/AccountState seams и определить, какие минимальные пользовательские semantics для Mute и Block нужны именно Vico Forum. Отдельно установить target scope (например, user/content/topic — только если это следует из продукта и repository evidence), эффекты на чтение, публикацию, mentions/replies, notifications и public/private presentation, а также что **не** должно меняться.
+
+Определить минимальную persistence/admission/authorization модель, route/UI contract, lifecycle/deactivation, concurrency/failure/cache/privacy boundaries и acceptance matrix. Сопоставить с уже принятыми Watch и Bookmarks, но не объединять их state или writers без подтверждённой необходимости.
+
+Если есть несколько технически корректных или продуктово разных вариантов — вернуть Мире отдельные развилки с подтверждёнными основаниями, рекомендацией и последствиями. Не принимать скрыто product decision, которое должен утвердить владелец. Не расширять работу в social graph/friends/followers, moderation bans, Admin/Super-admin, #320, email/push, Stage 6 или общий UI/UX redesign.
+
+После полного Mute/block plan записать его в `USER_ACTIONS_SERVICE_PLAN.md` и свой личный файл, затем **STOP** для scope/fit review Миры. Implementation PR не открывать.
