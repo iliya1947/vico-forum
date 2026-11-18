@@ -15,6 +15,7 @@ import {
   type PostEditConflictData,
   type HelpSimilarQuestionsActionData,
   type TopicWatchActionResult,
+  type TopicBookmarkActionResult,
 } from "./mutations.server";
 import { forumTopicPath } from "./paths";
 import { isForumAttachmentUuid } from "../../db/forum-attachments";
@@ -199,6 +200,37 @@ export async function topicAction({ request, params, context }: {
   let formData: FormData;
   try { formData = await request.formData(); } catch { return mutationFailure("invalid", 400); }
   const intent = requiredFormText(formData, "intent") ?? "reply";
+  // Recognize a Bookmark intent anywhere in FormData; an earlier unrelated intent
+  // must never turn a mixed payload into another valid domain write.
+  const bookmarkIntent = formData.getAll("intent").includes("setTopicBookmark") || formData.has("bookmarked");
+  if (bookmarkIntent) {
+    const fields = ["intent", "editorActorId", "bookmarked"];
+    const invalid = () => data<TopicBookmarkActionResult>({ operation: "topicBookmark", error: "invalid" },
+      { status: 400, headers: { "Cache-Control": "private, no-store" } });
+    if (request.method !== "POST" || intent !== "setTopicBookmark"
+      || fields.some(field => formData.getAll(field).length !== 1)
+      || [...formData.keys()].some(key => !fields.includes(key))) return invalid();
+    const expectedActor = formData.get("editorActorId");
+    const desired = formData.get("bookmarked");
+    if (typeof expectedActor !== "string" || !expectedActor.trim()
+      || (desired !== "true" && desired !== "false")) return invalid();
+    const changedIdentity = editorIdentityGuard(formData, context);
+    if (changedIdentity)
+      return data<TopicBookmarkActionResult>({ operation: "topicBookmark", error: "conflict" },
+        changedIdentity.init ?? undefined);
+    const result = await runForumMutation(request, context, async (writer, actorId) => {
+      const confirmed = await writer.setTopicBookmark({
+        topicId, actorId, bookmarked: desired === "true",
+      });
+      return data<TopicBookmarkActionResult>({
+        operation: "topicBookmark", ok: true, topicId, actorId, bookmarked: confirmed,
+      }, { headers: { "Cache-Control": "private, no-store" } });
+    });
+    if ("error" in result.data)
+      return data<TopicBookmarkActionResult>({ operation: "topicBookmark", error: result.data.error },
+        result.init ?? undefined);
+    return result;
+  }
   const watchIntent = formData.getAll("intent").includes("setTopicWatch") || formData.has("watching");
   if (watchIntent) {
     const fields = ["intent", "editorActorId", "watching"];

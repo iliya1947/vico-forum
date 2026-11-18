@@ -45,6 +45,10 @@ export function forumUnreadPath(locale: string) {
   return generatePath("/:locale/unread", { locale });
 }
 
+export function forumBookmarksPath(locale: string) {
+  return generatePath("/:locale/bookmarks", { locale });
+}
+
 export function forumAttentionPath(locale: string) {
   return generatePath("/:locale/attention", { locale });
 }
