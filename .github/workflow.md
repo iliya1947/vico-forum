@@ -9,7 +9,7 @@
 
 - Edit own topic title: завершён.
 - Watch: текущая активная реализация Лиры в #345.
-- Лира: отдельный PostgreSQL concurrency/lifecycle slice, interim head `2b84f5eb91d161ac4aba2311335195d46f07693b`; 2 new PG lifecycle tests, database job `134865906627` in progress; STOP after this slice.
+- Лира: PostgreSQL concurrency/lifecycle slice **STOP/PASS**; interim head `2b84f5eb91d161ac4aba2311335195d46f07693b`, +2 real PG lifecycle tests; initial `database` job unhandled rejection in existing Complaints test (all Watch tests PASS); same-exact-head rerun database job `134868877271` **PASS**. Следующая самостоятельная подзадача — connected Chromium/Worker Watch acceptance (`watch_browser` FAIL), только по команде разработчика.
 - Bookmarks: план принят, реализация ждёт очереди.
 - Mute/block: план принят, реализация ждёт очереди.
 
