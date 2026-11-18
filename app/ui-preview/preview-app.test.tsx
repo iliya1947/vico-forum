@@ -565,6 +565,16 @@ describe("interactive Pages preview", () => {
     expect(within(settingsNavigation).queryByRole("link", { name: "Administrator preferences" })).not.toBeInTheDocument();
   });
 
+  it("denies ordinary user direct access to Administrator preferences", async () => {
+    render(<EmbeddedPreview scenarioId="settings-administrator-user-forbidden" />);
+
+    const forbidden = await screen.findByRole("alert");
+    expect(within(forbidden).getByRole("heading", { level: 1, name: "Access denied" })).toBeInTheDocument();
+    expect(within(forbidden).getByText("You do not have permission to open this page.")).toBeInTheDocument();
+    expect(screen.queryByRole("heading", { level: 2, name: "Administrator preferences" })).not.toBeInTheDocument();
+    expect(screen.queryByText("Admin entry")).not.toBeInTheDocument();
+  });
+
   it("denies ordinary user access to Forum & roles", async () => {
     render(<EmbeddedPreview scenarioId="settings-forum-user-forbidden" />);
 
