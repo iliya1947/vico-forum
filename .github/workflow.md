@@ -3,7 +3,7 @@
 ## Общий канал
 
 - Service PR: #342.
-- Последовательность: edit own topic title → Watch → bookmarks → mute/block → #320.
+- Последовательность реализации: edit own topic title → Watch → bookmarks → mute/block → #320.
 - Service PR #342 остаётся общим каналом всей этой последовательности и не merge в main.
 
 ## Завершённый этап 1 — edit own topic title
@@ -13,17 +13,22 @@
 - Reviews: PASS; confirmed current-scope defects: 0.
 - Owner visual acceptance: отложен в общий UI/UX pass по прямому решению владельца.
 
-## Активный этап 2 — Watch
+## Активный implementation-этап 2 — Watch
 
-- Base/current main для принятого плана: `7cc23edede57994cdedab49c1556ddb55034dd29`.
 - Технический план Лёвы: завершён и принят Мирой.
-- W1: новая минимальная watch persistence + forward migration/ACL — ACCEPT.
-- W2: authenticated personal self-state, **без нового RBAC permission** — ACCEPT.
-- W3: canonical topic route + narrow `setTopicWatch` desired-state command — ACCEPT.
+- W1/W2/W3: приняты; детали — `USER_ACTIONS_SERVICE_PLAN.md`.
 - Исполнитель: Лира / ChatGPT-6.
 - Implementation PR/head: ещё отсутствует.
-- Review после реализации: Мира coordinator; затем Лёва technical reviewer на том же stable head.
+- После реализации: Мира coordinator review → Лёва technical review, если не участвовал в реализации.
 
-## Следующий шаг
+## Опережающий planning-track
 
-Лира реализует принятый bounded Watch scope в отдельном implementation PR от актуального main, выполняет применимые проверки и browser acceptance, фиксирует stable exact head и STOP для coordinator whole-PR review Миры. #342 остаётся open service PR.
+- Лёва / Codex-6.1 Sol заранее планирует оставшиеся функции **по одной**.
+- Текущий planning slice: **Bookmarks**.
+- После полного Bookmarks plan: Лёва STOP; Mute/block не планирует до следующей команды владельца.
+- Предварительное планирование не разрешает реализацию Bookmarks до завершения Watch и отдельного handoff.
+
+## Следующие параллельные шаги
+
+1. Лира реализует Watch в отдельном implementation PR и после stable head STOP возвращает Мире.
+2. Лёва исследует актуальный main и готовит полный технический план Bookmarks в `USER_ACTIONS_SERVICE_PLAN.md`, затем STOP.
