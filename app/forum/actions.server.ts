@@ -14,6 +14,7 @@ import {
   type HelpQuestionDraft,
   type PostEditConflictData,
   type HelpSimilarQuestionsActionData,
+  type TopicWatchActionResult,
 } from "./mutations.server";
 import { forumTopicPath } from "./paths";
 import { isForumAttachmentUuid } from "../../db/forum-attachments";
@@ -198,6 +199,34 @@ export async function topicAction({ request, params, context }: {
   let formData: FormData;
   try { formData = await request.formData(); } catch { return mutationFailure("invalid", 400); }
   const intent = requiredFormText(formData, "intent") ?? "reply";
+  const watchIntent = formData.getAll("intent").includes("setTopicWatch") || formData.has("watching");
+  if (watchIntent) {
+    const fields = ["intent", "editorActorId", "watching"];
+    if (intent !== "setTopicWatch" || fields.some(field => formData.getAll(field).length !== 1)
+      || [...formData.keys()].some(key => !fields.includes(key)))
+      return data<TopicWatchActionResult>({ operation: "topicWatch", error: "invalid" },
+        { status: 400, headers: { "Cache-Control": "private, no-store" } });
+    const actorExpectation = formData.get("editorActorId");
+    const requested = formData.get("watching");
+    if (typeof actorExpectation !== "string" || !actorExpectation.trim()
+      || (requested !== "true" && requested !== "false"))
+      return data<TopicWatchActionResult>({ operation: "topicWatch", error: "invalid" },
+        { status: 400, headers: { "Cache-Control": "private, no-store" } });
+    const changedIdentity = editorIdentityGuard(formData, context);
+    if (changedIdentity)
+      return data<TopicWatchActionResult>({ operation: "topicWatch", error: "conflict" }, changedIdentity.init ?? undefined);
+    const watching = requested === "true";
+    const result = await runForumMutation(request, context, async (writer, actorId) => {
+      const confirmed = await writer.setTopicWatch({ topicId, actorId, watching });
+      return data<TopicWatchActionResult>(
+        { operation: "topicWatch", ok: true, topicId, actorId, watching: confirmed },
+        { headers: { "Cache-Control": "private, no-store" } },
+      );
+    });
+    if ("error" in result.data)
+      return data<TopicWatchActionResult>({ operation: "topicWatch", error: result.data.error }, result.init ?? undefined);
+    return result;
+  }
   if (formData.getAll("intent").includes("editTopicTitle")) {
     if (["intent", "title", "expectedRevisionId", "editorActorId"].some(
       (field) => formData.getAll(field).length !== 1,

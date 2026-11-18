@@ -20,6 +20,11 @@ import { AuthorizationUnavailableError } from "../../db/authorization-service";
 
 export interface ForumMutationError { intent?: "editPost"; error: "invalid" | "unauthenticated" | "origin" | "forbidden" | "notFound" | "conflict" | "topicClosed" | "rateLimited" | "unavailable" | "unexpected" }
 
+export type TopicWatchActionResult = { operation: "topicWatch" } & (
+  | { ok: true; topicId: string; actorId: string; watching: boolean }
+  | { error: ForumMutationError["error"] }
+);
+
 export type TopicTitleEditResult = {
   operation: "topicTitleEdit";
 } & ({ ok: true; revisionId: string } | {

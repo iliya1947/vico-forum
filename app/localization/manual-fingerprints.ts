@@ -8,6 +8,14 @@ import type { UiKey } from "./catalog";
  * translation stale until that translation is reviewed again.
  */
 export const reviewedCommonFingerprints = {
+  topicWatch: "b8399061bc4a62812b1c5ce21e7ab262834794328b76d8b45163ebc7cb83bd43",
+  topicUnwatch: "4ff7e3cb65162b43997eb49ba00283ba1d04afa6cadb5ef58ec9ef54847ee652",
+  topicWatchUpdating: "0798478080be3aa12ccaf8797ccb1c21fbd688f2101d806118dc01391e2a54c1",
+  topicWatchUnavailable: "2960ae7a8d6cd44ead059bc855f8ee112def573b22da38c68c3b882bb5dffaa7",
+  topicWatchRefresh: "f166a0547834ee4528d7e2b519cf132ea4e9c7500d870b0d7f59a399419e3cfe",
+  topicWatchVerify: "37a18adb63acc77e17d1bcc1e9e3eadf918592024678c5ac185f3263302d12c3",
+  topicWatchOn: "0834bdc57fb5dbe3381ae911b26ef382e4160a1336cc5e219a760df27f1ebb0d",
+  topicWatchOff: "58ccc9a0e74e36218cb9f7a743a94e12aa04f99005af07b77b2eb3d186006a4f",
   topicTitleEdit: "b6e685b3f33f8cf7ea7690918342b24c9d2b8e455f150631634e4b384de8c75d",
   topicTitleEditConflict: "e6b59306b03de0caec99989bc2aea0bc155b2752556bfe395c6bcaafb49b1c1f",
   topicTitleEditUseCurrent: "c2cd9ce439690e38b0ff503dbebbcf3c365d5892307eb74ff4994ab582cd10cc",

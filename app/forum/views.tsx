@@ -5,6 +5,7 @@ import { ComplaintResolvedHistoryList } from "../complaints/history-view";
 import type { ForumNotificationSummary } from "../../db/forum-repository";
 import {TopicQuickActions} from "../admin/quick-actions";
 import { TopicTitleEditor } from "./topic-title-editor";
+import { TopicWatchControl, type TopicWatchState } from "./topic-watch-control";
 import {MessageQuickActions} from "../admin/message-quick-actions";
 import { ForumAttachmentDisplay } from "./attachment-presentation";
 import { ComplaintSubmissionForm } from "../complaints/submission-form";
@@ -2174,6 +2175,8 @@ export function TopicView({
   editablePostIds = [],
   canReadPostHistory = false,
   canEditOwnTitle = false,
+  watchActorId = null,
+  topicWatchState = null,
   canSubmitComplaint = false,
   canManageSolution,
   canConfirmOwnSolution = false,
@@ -2201,6 +2204,8 @@ export function TopicView({
   editablePostIds?: readonly string[];
   canReadPostHistory?: boolean;
   canEditOwnTitle?: boolean;
+  watchActorId?: string | null;
+  topicWatchState?: TopicWatchState | null;
   canSubmitComplaint?: boolean;
   canManageSolution: boolean;
   canConfirmOwnSolution?: boolean;
@@ -2861,6 +2866,9 @@ export function TopicView({
                       <div className="topic-question-heading">
                         <div className="topic-question-heading-main">
                           <TopicTitlePresentation presentation={titlePresentation} />
+                          {headerActorId && headerActorId === watchActorId && topicWatchState &&
+                            <TopicWatchControl key={JSON.stringify([topic.id, headerActorId])}
+                              topicId={topic.id} actorId={headerActorId} locale={locale} state={topicWatchState} />}
                           {headerActorId && <TopicTitleEditor
                             key={JSON.stringify([topic.id, headerActorId])}
                             topicId={topic.id} actorId={headerActorId} locale={locale}

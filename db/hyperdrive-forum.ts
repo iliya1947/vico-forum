@@ -24,6 +24,7 @@ import { forumWritePolicy, type ForumWritePolicy } from "./forum-write-policy";
 import { assertNoActiveUserMeasureRestriction } from "./user-measure-policy";
 
 export interface ForumWriter {
+  setTopicWatch(input: { topicId: string; actorId: string; watching: boolean }): Promise<boolean>;
   editOwnTopicTitle(input: {
     topicId: string; actorId: string; expectedRevisionId: string; title: string;
   }): Promise<import("./forum-repository").ForumRevisionContent>;
@@ -101,6 +102,7 @@ export function createHyperdriveForumReader(
     search: (query, limit) => read((repository) => repository.search(query, limit)),
     readUnreadForUser: (userId) => read((repository) => repository.readUnreadForUser(userId)),
     readTopicReadState: (userId, topicId) => read((repository) => repository.readTopicReadState(userId, topicId)),
+    readTopicWatch: (userId, topicId) => read((repository) => repository.readTopicWatch(userId, topicId)),
     readNotifications:(userId,page)=>read(repo=>repo.readNotifications(userId,page)),
     countUnreadNotifications:userId=>read(repo=>repo.countUnreadNotifications(userId)),
     readReplyNotifications: (userId, limit) => read((repository) => repository.readReplyNotifications(userId, limit)),
@@ -173,6 +175,7 @@ export function createHyperdriveForumWriter(
       } finally { bestEffortDiscardClient(client); }
     },
     editOwnTopicTitle: (input) => writeCorrection((forum) => forum.editOwnTopicTitle(input)),
+    setTopicWatch: (input) => write((forum) => forum.setTopicWatch(input)),
     updateProfile: async ({ actorId, fields }) => {
       const client = clientFactory();
       try {

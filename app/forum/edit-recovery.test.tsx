@@ -66,7 +66,8 @@ function setup() {
   const editPublishedPost = vi.fn<(_input: { body: string; expectedRevisionId: string; draftId: string }) => Promise<void>>(async () => {});
   const markTopicSolved = vi.fn(async () => { throw new ForumStateConflictError(); });
   const createReply = vi.fn(async () => ({ postId: "new" }));
-  context.set(forumReaderContext, { readTopicPage, readTopicReadState: async () => null } as never);
+  context.set(forumReaderContext, { readTopicPage, readTopicReadState: async () => null,
+    readTopicWatch: async () => false } as never);
   context.set(authorizationContext, { forUser: () => ({ has }) } as never);
   context.set(forumWriterContext, { editPublishedPost, createReply, markTopicSolved } as never);
   vi.stubGlobal("fetch", vi.fn(async () => new Response(JSON.stringify({ attachments: [] }), { headers: { "Content-Type": "application/json" } })));

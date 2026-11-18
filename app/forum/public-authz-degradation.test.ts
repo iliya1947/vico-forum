@@ -4,10 +4,16 @@ import { authSessionContext, type AuthSession } from "../auth/request-context";
 import { authorizationContext } from "../authorization/request-context";
 import { userMeasureContext } from "../measures/request-context";
 import { AuthorizationUnavailableError } from "../../db/authorization-service";
+import { ForumStorageUnavailableError } from "../../db/hyperdrive-forum";
 import type { ForumReader } from "../../db/forum-repository";
 import { forumReaderContext } from "./request-context";
 import { loader as sectionLoader } from "../routes/section";
-import { loader as topicLoader } from "../routes/topic";
+import { loader as rawTopicLoader } from "../routes/topic";
+async function topicLoader(args: Parameters<typeof rawTopicLoader>[0]) {
+  const result = await rawTopicLoader(args);
+  return "data" in result && "init" in result ? result.data : result;
+}
+
 import { ContentTranslationPresentationService } from "../localization/content-translation-presentation";
 import { ContentTranslationStorageUnavailableError, type StoredContentTranslation } from "../localization/content-translation";
 import { ContentGenerationStatusStorageUnavailableError } from "../localization/content-generation-status";
@@ -92,6 +98,7 @@ const reader: ForumReader = {
   search: async () => [],
   readUnreadForUser: async () => [],
   readTopicReadState: async () => undefined,
+  readTopicWatch: async () => false,
   readNotifications: async (_userId, page) => ({items:[],total:0,page,hasMore:false}),
   countUnreadNotifications: async () => 0,
   readReplyNotifications: async () => [],
@@ -208,6 +215,43 @@ function guestContext(translations: readonly StoredContentTranslation[] = []) {
 }
 
 describe("public forum authorization degradation", () => {
+
+  it("keeps authenticated Watch state private, independent of permission grants and status", async () => {
+    const ctx = contextWithPermissions("viewer-1", []);
+    const personal = vi.fn(async () => true);
+    ctx.set(forumReaderContext, { ...reader, readTopicWatch: personal });
+    const response = await rawTopicLoader({ params: { locale: "en", topicId: topic.id }, context: ctx });
+    expect(response).toHaveProperty("data.topicWatchState", "on");
+    expect(response).toHaveProperty("data.watchActorId", "viewer-1");
+    expect(response).toMatchObject({ init: { headers: { "Cache-Control": "private, no-store" } } });
+    expect(personal).toHaveBeenCalledWith("viewer-1", topic.id);
+  });
+
+  it("has no personal Watch read for guests and does not infer off on dependency failure", async () => {
+    const guest = guestContext();
+    const privateRead = vi.fn(async () => true);
+    guest.set(forumReaderContext, { ...reader, readTopicWatch: privateRead });
+    const guestResult = await rawTopicLoader({ params: { locale: "en", topicId: topic.id }, context: guest });
+    expect(guestResult).toHaveProperty("topicWatchState", null);
+    expect(guestResult).toHaveProperty("watchActorId", null);
+    expect(privateRead).not.toHaveBeenCalled();
+
+    const degraded = contextWithPermissions("viewer-1", []);
+    degraded.set(forumReaderContext, {
+      ...reader, readTopicWatch: async () => { throw new ForumStorageUnavailableError(); },
+    });
+    const unavailable = await rawTopicLoader({ params: { locale: "en", topicId: topic.id }, context: degraded });
+    expect(unavailable).toHaveProperty("data.topicWatchState", "unavailable");
+    expect(unavailable).toMatchObject({ init: { headers: { "Cache-Control": "private, no-store" } } });
+
+    const broken = contextWithPermissions("viewer-1", []);
+    const unexpected = new TypeError("bad Watch projection");
+    broken.set(forumReaderContext, {
+      ...reader, readTopicWatch: async () => { throw unexpected; },
+    });
+    await expect(rawTopicLoader({ params: { locale: "en", topicId: topic.id }, context: broken })).rejects.toBe(unexpected);
+  });
+
   it("offers title editing only for the owner with its independent capability and no posts.edit restriction", async () => {
     for (const [userId, permissions, expected] of [
       [topic.authorId, ["forum.topic.title.editOwn"], true],

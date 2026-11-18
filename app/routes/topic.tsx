@@ -1,5 +1,5 @@
 import { forumReadLoader } from "../forum/read-availability.server";
-import { useActionData, useLoaderData, type RouterContextProvider, type HeadersArgs } from "react-router";
+import { data, useActionData, useLoaderData, type RouterContextProvider, type HeadersArgs } from "react-router";
 import { authSessionForRequest } from "../auth/request-context";
 import { measureRestrictionsForPresentation } from "../measures/presentation.server";
 import { authorizationForRequest } from "../authorization/request-context";
@@ -28,6 +28,7 @@ import { ForumRouteError } from "../forum/ui";
 import { TopicView } from "../forum/views";
 import { ForumStorageUnavailableError } from "../../db/hyperdrive-forum";
 import type { ForumTopicReadState } from "../../db/forum-repository";
+import type { TopicWatchState } from "../forum/topic-watch-control";
 import { HELP_SOLUTIONS_SERVICE_SECTION_ID } from "../../db/forum-identifiers";
 import { DELETED_USER_NAME } from "../../db/public-identity";
 
@@ -118,7 +119,15 @@ export const loader = forumReadLoader(async function loader({ params, context }:
   let canSubmitComplaint = false;
   let canUploadAttachments = false;
   let topicReadState: ForumTopicReadState | null = null;
+  let topicWatchState: TopicWatchState | null = null;
   if (session) {
+    try {
+      topicWatchState = await forumReaderForRequest(context).readTopicWatch(session.user.id, topic.id) ? "on" : "off";
+    } catch (error) {
+      if (!(error instanceof ForumStorageUnavailableError)) throw error;
+      topicWatchState = "unavailable";
+    }
+
     try {
       topicReadState = await forumReaderForRequest(context).readTopicReadState(session.user.id, topic.id) ?? null;
     } catch (error) {
@@ -223,8 +232,10 @@ export const loader = forumReadLoader(async function loader({ params, context }:
     }
   }
 
-  return {
+  const page = {
     locale: resolvedLocale.translationLocale,
+    watchActorId: session?.user.id ?? null,
+    topicWatchState,
     topic: !canManageHelpDuplicate && topic.duplicateRelationshipId
       ? { ...topic, duplicateRelationshipId: null }
       : topic,
@@ -254,6 +265,7 @@ export const loader = forumReadLoader(async function loader({ params, context }:
     canSubmitComplaint,
     topicReadState,
   };
+  return session ? data(page, { headers: { "Cache-Control": "private, no-store" } }) : page;
 });
 
 export default function TopicRoute() {

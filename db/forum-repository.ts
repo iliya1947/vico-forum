@@ -29,6 +29,7 @@ import {
   forumSections,
   forumTags,
   forumTopicReadStates,
+  forumTopicWatches,
   forumTopicPins,
   forumTopicTags,
   forumTopicTitleRevisions,
@@ -470,6 +471,7 @@ export interface ForumReader {
   search(query: string, limit?: number): Promise<ForumSearchResult[]>;
   readUnreadForUser(userId: string): Promise<ForumUnreadTopicSummary[]>;
   readTopicReadState(userId: string, topicId: string): Promise<ForumTopicReadState | undefined>;
+  readTopicWatch(userId: string, topicId: string): Promise<boolean>;
   readNotifications(userId:string,page:number):Promise<ForumNotificationPage>;
   countUnreadNotifications(userId:string):Promise<number>;
   readReplyNotifications(userId: string, limit?: number): Promise<ForumReplyNotificationSummary[]>;
@@ -842,6 +844,25 @@ export class DrizzleForumRepository {
     }));
   }
 
+  async setTopicWatch(input: { topicId: string; actorId: string; watching: boolean }): Promise<boolean> {
+    return this.database.transaction(async (tx) => {
+      // Matches reply publication's topic mutex, so state changes and fanout are serialized.
+      const [topic] = await tx.select({ id: forumTopics.id }).from(forumTopics)
+        .where(eq(forumTopics.id, input.topicId)).for("no key update");
+      if (!topic) throw new ForumEntityNotFoundError("topic does not exist");
+      await assertActiveAccountForDrizzleMutation(tx, input.actorId);
+      if (input.watching) {
+        await tx.insert(forumTopicWatches).values({ userId: input.actorId, topicId: input.topicId })
+          .onConflictDoNothing();
+      } else {
+        await tx.delete(forumTopicWatches).where(and(
+          eq(forumTopicWatches.userId, input.actorId), eq(forumTopicWatches.topicId, input.topicId),
+        ));
+      }
+      return input.watching;
+    });
+  }
+
   async createPost(input: CreatePostInput): Promise<ForumPost> {
     const fingerprint = input.publishedDraft?.draftId
       ? await publicationFingerprint({
@@ -908,15 +929,21 @@ export class DrizzleForumRepository {
         authorId: input.authorId,
       });
 
-      const recipients = new Set<string>();
-      if (topic.authorId !== input.authorId) recipients.add(topic.authorId);
-      if (parentAuthorId && parentAuthorId !== input.authorId) recipients.add(parentAuthorId);
-      if (recipients.size > 0) {
-        await tx.execute(sql`insert into forum_reply_notifications
-          (id,recipient_user_id,actor_user_id,topic_id,post_id,created_at)
-          values ${sql.join([...recipients].map(recipient=>sql`(${crypto.randomUUID()},${recipient},${input.authorId},${input.topicId},${input.id},${createdAt})`),sql`,`)}
-          on conflict(recipient_user_id,post_id) do nothing`);
-      }
+      // Read watchers only after the topic mutex: Watch/Unwatch and reply agree on commit order.
+      // A set-based statement avoids per-watcher queries and parameter growth.
+      await tx.execute(sql`insert into forum_reply_notifications
+        (id,recipient_user_id,actor_user_id,topic_id,post_id,kind,created_at)
+        select gen_random_uuid()::text, recipients.user_id, ${input.authorId}, ${input.topicId}, ${input.id}, 'reply', ${createdAt}
+        from (
+          select ${topic.authorId}::text as user_id
+          union
+          select ${parentAuthorId}::text
+          union
+          select ${forumTopicWatches.userId} from ${forumTopicWatches}
+          where ${forumTopicWatches.topicId} = ${input.topicId}
+        ) recipients
+        where recipients.user_id is not null and recipients.user_id <> ${input.authorId}
+        on conflict(recipient_user_id,post_id) do nothing`);
 
       await this.recordPublishedMentions(tx, {
         actorId: input.authorId, topicId: input.topicId, postId: input.id,
@@ -1485,6 +1512,13 @@ export class DrizzleForumRepository {
         ...publicDiscoveryLocation(row),
       };
     });
+  }
+
+  async readTopicWatch(userId: string, topicId: string): Promise<boolean> {
+    const rows = await this.database.select({ userId: forumTopicWatches.userId })
+      .from(forumTopicWatches).where(and(eq(forumTopicWatches.userId, userId), eq(forumTopicWatches.topicId, topicId)))
+      .limit(1);
+    return rows.length > 0;
   }
 
   async readTopicReadState(userId: string, topicId: string): Promise<ForumTopicReadState | undefined> {

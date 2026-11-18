@@ -63,6 +63,7 @@ const migrations = [
   "0055_complaint_appeal_notifications",
   "0056_topic_closure",
   "0065_sa04_account_state_foundation",
+  "0068_topic_watch",
 ];
 
 const ownerId = "attachment-owner";

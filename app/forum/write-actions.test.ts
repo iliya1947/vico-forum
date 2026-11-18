@@ -181,6 +181,7 @@ function writer() {
     createReply: vi.fn(async () => ({ postId: "server-post" })),
     editPublishedPost: vi.fn(async () => undefined),
     editOwnTopicTitle: vi.fn(async () => ({ id: "title-r2", originalContent: "New title", sourceLocale: "und" })),
+    setTopicWatch: vi.fn(async (input: { watching: boolean }) => input.watching),
     markTopicSolved: vi.fn(async () => undefined),
     selectBestAnswer: vi.fn(async () => ({ topicAuthorId: "session-user", isSolved: false })),
     setHelpSolutionModeration: vi.fn(async () => undefined),
@@ -203,6 +204,117 @@ function writer() {
     })),
   } satisfies ForumWriter;
 }
+
+
+describe("personal topic Watch route", () => {
+  const fields = { intent: "setTopicWatch", editorActorId: "session-user", watching: "true" };
+  const submit = (database: ForumWriter, values: Record<string, string> = fields,
+    authenticated = true, origin = "https://forum.example") => topicAction({
+    request: request("/en/topics/topic-1", values, origin),
+    params: { locale: "en", topicId: "topic-1" },
+    context: context(database, authenticated, []),
+  });
+
+  it("uses only session actor/route topic, with no RBAC permission", async () => {
+    const database = writer();
+    expect(await submit(database)).toMatchObject({
+      data: { operation: "topicWatch", ok: true, actorId: "session-user",
+        topicId: "topic-1", watching: true },
+      init: { headers: { "Cache-Control": "private, no-store" } },
+    });
+    expect(database.setTopicWatch).toHaveBeenCalledWith({
+      topicId: "topic-1", actorId: "session-user", watching: true,
+    });
+    expect(await submit(database, { ...fields, watching: "false" })).toMatchObject({
+      data: { operation: "topicWatch", ok: true, watching: false },
+    });
+  });
+
+  it.each([
+    [false, "https://forum.example", 401],
+    [true, "https://evil.example", 403],
+  ] as const)("rejects unauthenticated/cross-origin before FormData parsing", async (authenticated, origin, status) => {
+    const database = writer();
+    const guarded = request("/en/topics/topic-1", fields, origin);
+    const parse = vi.spyOn(guarded, "formData");
+    const response = await topicAction({ request: guarded, params: { locale: "en", topicId: "topic-1" },
+      context: context(database, authenticated, []) });
+    expect(response).toMatchObject({ init: { status } });
+    expect(parse).not.toHaveBeenCalled();
+    expect(database.setTopicWatch).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    [{ ...fields, watching: "TRUE" }, 400],
+    [{ ...fields, watching: "1" }, 400],
+    [{ ...fields, watching: "" }, 400],
+    [{ intent: "setTopicWatch", editorActorId: "session-user" }, 400],
+    [{ ...fields, editorActorId: "" }, 400],
+    [{ ...fields, editorActorId: "other-actor" }, 409],
+    [{ ...fields, topicId: "forged-topic" }, 400],
+    [{ ...fields, authorId: "forged-actor" }, 400],
+    [{ ...fields, postId: "forged-post" }, 400],
+    [{ ...fields, title: "ignored" }, 400],
+    [{ ...fields, intent: "reply" }, 400],
+  ] as const)("rejects malformed, stale and cross-intent payloads", async (values, status) => {
+    const database = writer();
+    expect(await submit(database, values)).toMatchObject({
+      data: { operation: "topicWatch" }, init: { status },
+    });
+    expect(database.setTopicWatch).not.toHaveBeenCalled();
+  });
+
+  it.each(["intent", "editorActorId", "watching"])("rejects repeated %s", async (field) => {
+    const database = writer();
+    const body = new FormData();
+    for (const [key, value] of Object.entries(fields)) body.set(key, value);
+    body.append(field, field === "intent" ? "reply" : "different");
+    const result = await topicAction({
+      request: new Request("https://forum.example/en/topics/topic-1", {
+        method: "POST", headers: { Origin: "https://forum.example" }, body }),
+      params: { locale: "en", topicId: "topic-1" }, context: context(database, true, []),
+    });
+    expect(result).toMatchObject({ data: { operation: "topicWatch", error: "invalid" }, init: { status: 400 } });
+    expect(database.setTopicWatch).not.toHaveBeenCalled();
+  });
+
+  it("rejects File values, including in a field that otherwise looks valid", async () => {
+    const database = writer();
+    const body = new FormData();
+    Object.entries(fields).forEach(([key,value]) => body.set(key,value));
+    body.set("watching", new File(["true"], "state.txt"));
+    const result = await topicAction({
+      request: new Request("https://forum.example/en/topics/topic-1", {
+        method: "POST", headers: { Origin: "https://forum.example" }, body,
+      }),
+      params: { locale: "en", topicId: "topic-1" }, context: context(database, true, []),
+    });
+    // jsdom File may fail at the Request multipart parser before the intent is available.
+    expect(result).toMatchObject({ data: { error: "invalid" }, init: { status: 400 } });
+    expect(database.setTopicWatch).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    [new AccountInactiveError(), 401, "unauthenticated"],
+    [new AccountMissingError(), 401, "unauthenticated"],
+    [new ForumEntityNotFoundError(), 404, "notFound"],
+    [new ForumStorageUnavailableError(), 503, "unavailable"],
+    [new ForumStateConflictError(), 409, "conflict"],
+  ] as const)("maps authoritative persistence failures without success", async (error, status, code) => {
+    const database = writer();
+    database.setTopicWatch.mockRejectedValueOnce(error);
+    expect(await submit(database)).toMatchObject({
+      data: { operation: "topicWatch", error: code }, init: { status },
+    });
+  });
+
+  it("propagates programming errors instead of treating them as unavailable", async () => {
+    const database = writer();
+    const fault = new TypeError("unexpected SQL programming failure");
+    database.setTopicWatch.mockRejectedValueOnce(fault);
+    await expect(submit(database)).rejects.toBe(fault);
+  });
+});
 
 describe("own topic title action", () => {
   const fields = { intent: "editTopicTitle", title: " New <title> שלום ",

@@ -39,7 +39,12 @@ import UnansweredRoute, { loader as unansweredLoader } from "../routes/unanswere
 import UnreadRoute, { loader as unreadLoader } from "../routes/unread";
 import { ErrorBoundary as NotFoundErrorBoundary, loader as notFoundLoader } from "../routes/not-found";
 import SectionRoute, { loader as sectionLoader } from "../routes/section";
-import TopicRoute, { loader as topicLoader } from "../routes/topic";
+import TopicRoute, { loader as rawTopicLoader } from "../routes/topic";
+async function topicLoader(args: Parameters<typeof rawTopicLoader>[0]) {
+  const result = await rawTopicLoader(args);
+  return "data" in result && "init" in result ? result.data : result;
+}
+
 import { forumCategoryPath, forumPopularPath, forumSearchPath, forumSectionPath, forumTagPath, forumTagsPath, forumTopicPath, forumUnansweredPath } from "./paths";
 import { forumReaderContext, forumWriterContext } from "./request-context";
 import { forumAttachmentStoreContext } from "./attachment-request-context";
@@ -245,6 +250,7 @@ const reader: ForumReader = {
     section: { id: topic.section.id, name: topic.section.name },
     category: topic.section.category,
   }],
+  readTopicWatch: async () => false,
   readTopicReadState: async (_userId, id) => id === topic.id ? {
     topicId: topic.id,
     state: "new" as const,
@@ -2556,6 +2562,43 @@ describe("content translation presentation", () => {
     expect(document.querySelector("script")).toBeNull();
     expect(screen.getByRole("link", { name: "Example" })).toHaveAttribute("rel", "nofollow noopener noreferrer ugc");
     expect(screen.getByRole("link", { name: "Example" })).toHaveAttribute("target", "_blank");
+  });
+});
+
+
+describe("personal Watch presentation", () => {
+  const watcher = { id: "watcher-1", name: "Watch user" };
+  it("renders only the current authenticated actor and does not require reply permission", async () => {
+    renderRoute(TopicRoute, topicRenderData(topic, {
+      watchActorId: watcher.id, topicWatchState: "off", canReply: false,
+    }), "/en/topics/typed-api", "en", "ltr", watcher);
+    const watch = await screen.findByRole("button", { name: "Watch topic" });
+    expect(watch).toHaveAttribute("aria-pressed", "false");
+    expect(document.querySelector(".topic-watch-status")).toHaveTextContent("Not watching this topic");
+  });
+
+  it("distinguishes on from unavailable without silently showing an Off action", async () => {
+    renderRoute(TopicRoute, topicRenderData(topic, {
+      watchActorId: watcher.id, topicWatchState: "on",
+    }), "/he/topics/typed-api", "he", "rtl", watcher);
+    expect(await screen.findByRole("button", { name: "Stop watching" })).toHaveAttribute("aria-pressed", "true");
+  });
+
+  it("hides the old actor's state after an account switch", async () => {
+    renderRoute(TopicRoute, topicRenderData(topic, {
+      watchActorId: "previous-actor", topicWatchState: "on",
+    }), "/en/topics/typed-api", "en", "ltr", watcher);
+    expect(screen.queryByRole("button", { name: "Stop watching" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Watch topic" })).not.toBeInTheDocument();
+  });
+
+  it("does not convert unknown storage state into a false Off state", async () => {
+    renderRoute(TopicRoute, topicRenderData(topic, {
+      watchActorId: watcher.id, topicWatchState: "unavailable",
+    }), "/en/topics/typed-api", "en", "ltr", watcher);
+    expect(await screen.findByText("Watch status is unavailable.")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Refresh watch status" })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Watch topic" })).not.toBeInTheDocument();
   });
 });
 
