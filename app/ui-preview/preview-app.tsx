@@ -14,6 +14,8 @@ import type { EmailAuthActions, AuthClientActions } from "../auth/auth-client";
 import { AuthorizationAdminView } from "../authorization/admin-view";
 import { AdminTopicView } from "../admin/topic";
 import { AdminCategoryView, AdminForumView, AdminSectionView } from "../admin/forum";
+import { AdminOverview } from "../admin/overview";
+import { AdminUsersIndex } from "../admin/users";
 import { projectAdminTopic } from "../admin/topic-model";
 import type { ForumHelpSolutionsFilters, ForumPopularPage } from "../../db/forum-repository";
 import {
@@ -1486,6 +1488,24 @@ function previewRouter(
       action: ({ request, params }) => previewTopicAction(
         scenario, interactions, request, params.locale, params.topicId,
       ),
+      ErrorBoundary: ForumRouteError,
+    },
+    {
+      path: "/:locale/admin",
+      element: <PreviewAdminOverviewRoute />,
+      loader: () => {
+        previewAdminSurfaceAccessData(scenario);
+        return previewAdminOverviewData(scenario);
+      },
+      ErrorBoundary: ForumRouteError,
+    },
+    {
+      path: "/:locale/admin/users",
+      element: <PreviewAdminUsersRoute />,
+      loader: ({ request }) => {
+        previewAdminSurfaceAccessData(scenario);
+        return previewAdminUsersData(scenario, request);
+      },
       ErrorBoundary: ForumRouteError,
     },
     {
@@ -2965,6 +2985,47 @@ function previewAdminFilter<T extends { id: string; name?: string; title?: strin
     || item.name?.toLocaleLowerCase("en").includes(needle)
     || item.title?.toLocaleLowerCase("en").includes(needle)
   );
+}
+
+function previewAdminOverviewData(scenario: Scenario) {
+  const categories = homepageCategories(scenario.locale);
+  return {
+    locale: scenario.locale,
+    access: previewAdminAccess,
+    counts: {
+      categories: categories.length,
+      sections: categories.reduce((sum, category) => sum + category.sectionCount, 0),
+      topics: categories.reduce((sum, category) => sum + category.topicCount, 0),
+      posts: categories.reduce((sum, category) => sum + category.messageCount, 0),
+    },
+    recent: null,
+  };
+}
+
+function previewAdminUsersData(scenario: Scenario, request: Request) {
+  const query = previewAdminBrowseQuery(request);
+  const users = [
+    { id: "owner", name: "Forum Owner", image: null, joinedAt: "2026-08-15T00:00:00.000Z" },
+    { id: "maya", name: "Maya Cohen", image: null, joinedAt: "2026-08-20T00:00:00.000Z" },
+    { id: "alex", name: "Alex Rivera", image: null, joinedAt: "2026-09-01T00:00:00.000Z" },
+    { id: "sam", name: "Sam Chen", image: null, joinedAt: "2026-09-04T00:00:00.000Z" },
+    { id: "noa", name: "Noa Levi", image: null, joinedAt: "2026-09-07T00:00:00.000Z" },
+  ];
+  const items = previewAdminFilter(users, query.search);
+  return {
+    locale: scenario.locale,
+    access: previewAdminAccess,
+    query,
+    page: { items, total: items.length, next: null },
+  };
+}
+
+function PreviewAdminOverviewRoute() {
+  return <AdminOverview {...useLoaderData() as ReturnType<typeof previewAdminOverviewData>} />;
+}
+
+function PreviewAdminUsersRoute() {
+  return <AdminUsersIndex {...useLoaderData() as ReturnType<typeof previewAdminUsersData>} />;
 }
 
 function previewAdminForumData(scenario: Scenario, request: Request) {
