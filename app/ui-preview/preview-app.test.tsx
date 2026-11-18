@@ -181,6 +181,40 @@ describe("interactive Pages preview", () => {
     expect(screen.getByRole("combobox", { name: "Density" })).toHaveValue("compact");
   });
 
+  it("persists the administrator technical-details default for the current account", async () => {
+    const key = "vico:administrator-workspace:v1:maya";
+    window.localStorage.removeItem(key);
+    const user = userEvent.setup();
+    render(<EmbeddedPreview scenarioId="section-user" identity="manager" />);
+
+    await user.click(screen.getByRole("link", { name: "Settings" }));
+    let settingsOverview = document.querySelector(".settings-overview") as HTMLElement;
+    await user.click(within(settingsOverview).getByRole("link", { name: "Administrator preferences" }));
+
+    const technicalDetails = await screen.findByRole("checkbox", {
+      name: "Expand secondary technical details by default",
+    });
+    expect(technicalDetails).not.toBeChecked();
+
+    await user.click(technicalDetails);
+    expect(technicalDetails).toBeChecked();
+    expect(JSON.parse(window.localStorage.getItem(key) ?? "{}")).toMatchObject({
+      technicalDetailsExpanded: true,
+    });
+
+    cleanup();
+    render(<EmbeddedPreview scenarioId="section-user" identity="manager" />);
+    const secondUser = userEvent.setup();
+
+    await secondUser.click(screen.getByRole("link", { name: "Settings" }));
+    settingsOverview = document.querySelector(".settings-overview") as HTMLElement;
+    await secondUser.click(within(settingsOverview).getByRole("link", { name: "Administrator preferences" }));
+
+    expect(await screen.findByRole("checkbox", {
+      name: "Expand secondary technical details by default",
+    })).toBeChecked();
+  });
+
   it("shows the non-fresh session state without exposing session controls", async () => {
     render(<EmbeddedPreview scenarioId="settings-account-not-fresh" identity="user" />);
 
