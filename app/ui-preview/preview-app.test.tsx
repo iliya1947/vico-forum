@@ -222,6 +222,46 @@ describe("embedded preview routing", () => {
     expect(document.querySelector(".admin-topic")).toBeNull();
   });
 
+  it("opens Admin Overview from the Admin shell navigation", async () => {
+    const user = userEvent.setup();
+    render(<EmbeddedPreview scenarioId="admin-topic" identity="manager" />);
+
+    const nav = document.querySelector(".admin-panel-nav") as HTMLElement;
+    await user.click(within(nav).getByRole("link", { name: "Overview" }));
+
+    expect(await screen.findByRole("heading", { level: 2, name: "Overview" })).toBeInTheDocument();
+    expect(document.querySelector(".admin-overview-stats")).not.toBeNull();
+    expect(screen.getByRole("link", { name: "Forum" })).toBeInTheDocument();
+  });
+
+  it("opens Users from the Admin shell navigation", async () => {
+    const user = userEvent.setup();
+    render(<EmbeddedPreview scenarioId="admin-topic" identity="manager" />);
+
+    const nav = document.querySelector(".admin-panel-nav") as HTMLElement;
+    await user.click(within(nav).getByRole("link", { name: "Users" }));
+
+    expect(await screen.findByRole("heading", { level: 2, name: "Users" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Maya Cohen" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Alex Rivera" })).toBeInTheDocument();
+  });
+
+  it("filters the Admin Users directory through its GET search", async () => {
+    const user = userEvent.setup();
+    render(<EmbeddedPreview scenarioId="admin-topic" identity="manager" />);
+
+    const nav = document.querySelector(".admin-panel-nav") as HTMLElement;
+    await user.click(within(nav).getByRole("link", { name: "Users" }));
+
+    const query = await screen.findByLabelText("Search users by name or ID");
+    await user.type(query, "noa");
+    await user.click(screen.getByRole("button", { name: "Search" }));
+
+    expect(await screen.findByRole("link", { name: "Noa Levi" })).toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: "Alex Rivera" })).not.toBeInTheDocument();
+    expect(screen.getByText(/Matches: 1/)).toBeInTheDocument();
+  });
+
   it("opens Admin forum from the Admin topic breadcrumb", async () => {
     const user = userEvent.setup();
     render(<EmbeddedPreview scenarioId="admin-topic" identity="manager" />);
