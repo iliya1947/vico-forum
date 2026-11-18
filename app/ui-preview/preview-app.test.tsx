@@ -405,6 +405,18 @@ describe("interactive Pages preview", () => {
     expect(screen.queryByRole("heading", { level: 2, name: "Registration" })).not.toBeInTheDocument();
   });
 
+  it("hides Forum & roles from ordinary user Settings navigation", async () => {
+    const user = userEvent.setup();
+    render(<EmbeddedPreview scenarioId="section-user" identity="user" />);
+
+    await user.click(screen.getByRole("link", { name: "Settings" }));
+
+    const settingsOverview = document.querySelector(".settings-overview") as HTMLElement;
+    const settingsNavigation = document.querySelector(".settings-panel-nav") as HTMLElement;
+    expect(within(settingsOverview).queryByRole("link", { name: "Forum & roles" })).not.toBeInTheDocument();
+    expect(within(settingsNavigation).queryByRole("link", { name: "Forum & roles" })).not.toBeInTheDocument();
+  });
+
   it("denies ordinary user access to Forum & roles", async () => {
     render(<EmbeddedPreview scenarioId="settings-forum-user-forbidden" />);
 
