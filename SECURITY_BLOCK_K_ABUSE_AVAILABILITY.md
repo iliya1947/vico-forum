@@ -10,9 +10,10 @@
 6. **K4 — Public expensive reads / query amplification завершён: 1 новый current-scope finding — `PUBLIC-READ-COST-01 Moderate/P2`; 0 deferred blockers.**
 7. **K5 — Request body / attachments / storage exhaustion завершён: 1 новый current-scope finding — `ATTACH-SECURITY-EVENT-SPAM-01 Moderate/P2`; 0 deferred blockers.**
 8. **K6 — Background / translation / notification amplification завершён: 1 новый current-scope finding — `MENTION-FANOUT-01 Moderate/P2`; 0 deferred blockers.**
-9. Overall #315 становится **32 current findings + 4 deferred Stage-6 blockers**.
-10. Мира — auditor/coordinator. Remediation, technical planner и implementer не назначены.
-11. Production/Cloudflare/Neon/GitHub/provider settings mutation, load testing и внешние destructive/fault-injection действия не разрешены и не выполнялись.
+9. **K7 — Dependency failure / backpressure завершён: 1 новый current-scope finding — `DB-CLEANUP-FLOAT-01 Low/P3`; 0 deferred blockers.**
+10. Overall #315 становится **33 current findings + 4 deferred Stage-6 blockers**.
+11. Мира — auditor/coordinator. Remediation, technical planner и implementer не назначены.
+12. Production/Cloudflare/Neon/GitHub/provider settings mutation, load testing и внешние destructive/fault-injection действия не разрешены и не выполнялись.
 
 ## Цель
 
@@ -237,6 +238,33 @@
 
 **Boundary:** direct reply recipients remain bounded; authored-content size remains `FORUM-PUB-01`; post-edit repeated revision growth remains `FORUM-EDIT-SPAM-01`; provider/Queue amplification remains Block J.
 
+## K7 — результат
+
+1. Audit target: current `main` `7cc23edede57994cdedab49c1556ddb55034dd29`.
+2. Verdict: **1 новый current-scope finding — `DB-CLEANUP-FLOAT-01 Low/P3`; 0 deferred blockers.**
+3. Core PostgreSQL failure classification is bounded: web clients/pools use 3-second connection and 7-second query caller deadlines; known transport/timeout failures are translated to typed unavailable errors and normal forum/authz/member routes fail closed rather than continuing a protected mutation.
+4. No generic automatic HTTP/database retry loop was found on current request paths. Forum/auth/authz wrappers propagate the classified failure, and current browser/server paths do not automatically replay failed protected mutations. Translation provider/Queue retry ownership remains Block J.
+5. Request-local authorization resolution caches one same-user promise, so repeated permission checks inside one request do not create parallel duplicate DB resolution work. Auth/session and forum wrappers also own and discard their request-local clients in `finally` blocks.
+6. Passive telemetry does not create an independent outage storm on an empty failed request: auth-fact and attempt collectors short-circuit when they have no pending records/gaps; operational recording similarly avoids opening a pool when no facts/storage observations were captured. Recorded telemetry is bounded and best-effort.
+7. **Independent K7 root cause:** `bestEffortDiscardClient()` invokes `client.end()` / `pool.end()` and intentionally drops the returned Promise instead of awaiting it or registering it with the Worker execution context. This helper is reused by auth, forum, authorization, complaints, admin/settings, attachment and other web DB capabilities.
+8. Current Cloudflare Workers lifecycle documentation explicitly states that async work which is neither awaited nor passed to `waitUntil()` can be canceled when an invocation ends. Current node-postgres API documentation defines `client.end()` / `pool.end()` as async shutdown operations intended to be awaited. Therefore Vico currently proves only that teardown was initiated, not that request-scoped database cleanup completed before the Worker invocation can finish.
+9. Repository tests confirm the same boundary: cleanup tests assert that `end()` is called and that cleanup failures do not replace the domain result, but they do not require the returned cleanup Promise to settle before the request operation resolves.
+10. Impact is bounded but current: under normal traffic and especially dependency degradation, incomplete teardown can leave connection/pool lifecycle cleanup to runtime cancellation/transport cleanup rather than application-controlled completion, weakening backpressure and resource-release guarantees across many request paths.
+11. Severity: **Low/P3** — the cleanup guarantee is concretely missing in current Cloudflare Worker code, but no live connection exhaustion, leaked production session or sustained outage amplification was measured. The finding therefore remains hardening/availability rather than Moderate/P2.
+12. No second K7 finding: classified DB/authz/storage outages fail closed; caller deadlines bound individual DB waits; no unbounded request retry loop was established; Stage-6 WAF/platform throttling remains future acceptance.
+13. Exact deployed connection behavior under current production Hyperdrive is **Информация не проверена** and is not required to establish the missing Worker-lifecycle guarantee. Stage 6 remains paused.
+14. No production fault injection, connection saturation, Hyperdrive probe, load test or external mutation was performed.
+15. #315 aggregate becomes **33 current findings + 4 deferred Stage-6 blockers**. Current severity becomes **13 Moderate/P2 + 20 Low/P3**; deferred remains **2 Moderate/P2 + 2 Low/P3**.
+16. Next bounded slice: **K8 — Cross-chain closeout**.
+
+### `DB-CLEANUP-FLOAT-01` — Low/P3 — current
+
+**Root cause:** shared request-scoped PostgreSQL cleanup starts asynchronous client/pool `end()` work but does not await it or attach it to the Cloudflare Worker execution lifetime.
+
+**Current impact:** Vico cannot guarantee completion of DB connection/pool teardown before invocation termination, weakening resource-release/backpressure behavior across current request paths, especially during dependency degradation.
+
+**Boundary:** request operations themselves have caller deadlines and fail closed; no production connection exhaustion was demonstrated. Provider/Queue retries remain Block J and external WAF/platform throttling remains Stage 6.
+
 ## Finding criteria
 
 1. Concrete current/prepared request or background path.
@@ -255,5 +283,5 @@
 
 ## Следующий шаг
 
-1. После продолжения владельца выполнить **K7 — Dependency failure / backpressure** на current main и остановиться после результата.
+1. После продолжения владельца выполнить **K8 — Cross-chain closeout** на current main и остановиться после результата.
 2. Remediation существующих findings/blockers Blocks B–K не начинать без отдельного назначения.
