@@ -8,9 +8,10 @@
 4. **L2 — Security source attribution / telemetry admission завершён: 1 новый current-scope finding — `MON-AUTH-OUTCOME-01 Low/P3`; 0 deferred blockers.**
 5. **L3 — Retention / coalescing / privacy завершён: PASS, 0 новых current-scope findings и 0 deferred blockers.**
 6. **L4 — Alertability / failure signals завершён: PASS, 0 новых current-scope findings и 0 deferred blockers.**
-7. Overall #315 остаётся **34 current findings + 4 deferred Stage-6 blockers**.
-8. Мира — auditor/coordinator. Remediation, technical planner и implementer не назначены.
-9. Production/Cloudflare/Neon/GitHub/provider mutation, external incident drill и destructive/fault-injection действия не разрешены и не выполнялись.
+7. **L5 — Audit / History integrity завершён: PASS, 0 новых current-scope findings и 0 deferred blockers.**
+8. Overall #315 остаётся **34 current findings + 4 deferred Stage-6 blockers**.
+9. Мира — auditor/coordinator. Remediation, technical planner и implementer не назначены.
+10. Production/Cloudflare/Neon/GitHub/provider mutation, external incident drill и destructive/fault-injection действия не разрешены и не выполнялись.
 
 ## Цель
 
@@ -181,6 +182,28 @@
 15. #315 aggregate remains **34 current findings + 4 deferred Stage-6 blockers**. Current severity remains **13 Moderate/P2 + 21 Low/P3**; deferred remains **2 Moderate/P2 + 2 Low/P3**.
 16. Next bounded slice: **L5 — Audit / History integrity**.
 
+## L5 — результат
+
+1. Audit target: current `main` `9c4639d23ca075c8bb92fbb909b96593d7bee127`.
+2. Verdict: **PASS — 0 новых current-scope findings, 0 deferred blockers.**
+3. Global/scoped/target Owner History preserves original source identity instead of copying facts into a second journal. Ordering identity is the original `(origin, source_id)` plus authoritative source time; one source fact may belong to several monitor scopes without becoming several global facts.
+4. Current global/scoped pagination uses exact six-digit PostgreSQL timestamps plus origin/source-id tie-breakers. Filters are closed allowlists, validated before private SQL and bound into v2 cursors together with scope/time/kind/page-size; a cursor from another filter/scope is rejected rather than silently reused.
+5. Exact microsecond native-source pagination is covered by the current implementation path. A potential legacy-cursor precision defect was separately checked and rejected: the original SA-01 `owner_events`, `owner_monitor_observations` and ordinary `admin_history` timestamps are physically `timestamp(3)`, so the accepted historical three-part cursor did not discard hidden source microseconds. New native sources use the exact microsecond cursor format.
+6. Target-person History applies person attribution before branch-local LIMIT. Multi-role cases where the same source row proves more than one relation to the same person are deduplicated by the same original `(origin, source_id)`; unattributed observations/gap slots remain excluded.
+7. Mandatory administrative evidence is not confused with best-effort telemetry. Ordinary `admin_history` writes are in the same authoritative mutation transaction as authorization/forum/measure/settings changes, and failure rolls back the mutation. SA-05 deactivation appends its original `account.deactivated` Owner event in the same lifecycle transaction. Complaint lifecycle events are inserted transactionally with the domain command.
+8. Forum title/post revision History uses the immutable revision rows themselves as native source facts. Web runtime privileges are INSERT/SELECT only on those revision tables; complaint events and ordinary Admin History are likewise INSERT/SELECT-only for the web capability.
+9. Owner `owner_events` and `owner_monitor_observations` are append-only for the web runtime (SELECT/INSERT, no UPDATE/DELETE). Their identity sequences are not exposed as a mutation surface. This preserves retained event/observation provenance after insertion.
+10. Attempt-pattern/state rows are intentionally mutable because coalescing increments retained counters/last-seen state. History labels them as coalesced state rather than immutable individual events and orders them by immutable admission identity, so later count growth does not reposition the retained fact.
+11. Notification first-read History is derived from the native notification row. The only normal read mutation uses `read_at=coalesce(read_at, statement_timestamp())`, so repeated reads cannot rewrite the first-read time. Creation and first-read deliberately use separate origins while retaining the same notification ID.
+12. Help-signal terminal and measure-appeal-moot projections come from mutable domain rows because those domains require UPDATE. Current application writers move only pending rows into terminal states and reject later normal re-resolution; accepted/rejected administrative review also has its mandatory `admin_history` event. No generic client-controlled History rewrite/delete route was found.
+13. Legacy/unproven measure-appeal terminal time is not fabricated: invalid/missing terminal chronology appears as coverage metadata (`moot-terminal-time-unproven`) instead of a chronological event with guessed time/actor.
+14. Current runtime ACL intentionally does not make every domain source table append-only; that is necessary for the domain lifecycle and is not itself an L5 defect. L5 found no current application path that can rewrite/delete already-retained mandatory journals or silently re-key History identity.
+15. Best-effort monitoring facts remain explicitly marked as such: sampled observations, coalesced attempts and operational facts are not presented as complete mandatory audit evidence. This distinction is preserved in History source/quality/coverage presentation.
+16. The existing factual documentation drift remains outside L: `PROJECT_STATE.md` still says repository migrations through `0067` while current `main` contains `0068_topic_watch`. It does not affect the L5 History-integrity verdict.
+17. No production History mutation, destructive DB test, migration, deployment or external incident action was performed. Existing repository/database/browser tests and source contracts were inspected; tests were not executed during L5.
+18. #315 aggregate remains **34 current findings + 4 deferred Stage-6 blockers**. Current severity remains **13 Moderate/P2 + 21 Low/P3**; deferred remains **2 Moderate/P2 + 2 Low/P3**.
+19. Next bounded slice: **L6 — Revocation / containment / recovery actions**.
+
 ## Finding criteria
 
 1. Concrete current/prepared monitoring or incident-response path.
@@ -199,5 +222,5 @@
 
 ## Следующий шаг
 
-1. После продолжения владельца выполнить **L5 — Audit / History integrity** на current main и остановиться после результата.
+1. После продолжения владельца выполнить **L6 — Revocation / containment / recovery actions** на current main и остановиться после результата.
 2. Remediation существующих findings/blockers Blocks B–L не начинать без отдельного назначения.
