@@ -1425,6 +1425,33 @@ describe("interactive Pages preview", () => {
     expect(within(reopened).getByText("Read")).toBeInTheDocument();
   });
 
+  it("requires sign-in for guest direct access to My questions", async () => {
+    render(<EmbeddedPreview scenarioId="help-solutions-mine-guest" />);
+
+    const unauthenticated = await screen.findByRole("alert");
+    expect(within(unauthenticated).getByRole("heading", { level: 1, name: "Sign in required" })).toBeInTheDocument();
+    expect(within(unauthenticated).getByText("Sign in to access this page.")).toBeInTheDocument();
+    expect(document.querySelector(".help-solutions-page")).toBeNull();
+  });
+
+  it("requires sign-in for guest direct access to Want to help", async () => {
+    render(<EmbeddedPreview scenarioId="help-solutions-want-guest" />);
+
+    const unauthenticated = await screen.findByRole("alert");
+    expect(within(unauthenticated).getByRole("heading", { level: 1, name: "Sign in required" })).toBeInTheDocument();
+    expect(within(unauthenticated).getByText("Sign in to access this page.")).toBeInTheDocument();
+    expect(document.querySelector(".help-solutions-page")).toBeNull();
+  });
+
+  it("requires sign-in for guest direct access to For me", async () => {
+    render(<EmbeddedPreview scenarioId="help-solutions-for-me-guest" />);
+
+    const unauthenticated = await screen.findByRole("alert");
+    expect(within(unauthenticated).getByRole("heading", { level: 1, name: "Sign in required" })).toBeInTheDocument();
+    expect(within(unauthenticated).getByText("Sign in to access this page.")).toBeInTheDocument();
+    expect(document.querySelector(".help-solutions-page")).toBeNull();
+  });
+
   it("checks similar Help questions and publishes a new Help question", async () => {
     const user = userEvent.setup();
     render(<EmbeddedPreview scenarioId="help-solutions-ask" identity="user" />);
