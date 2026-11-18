@@ -545,3 +545,17 @@ refs. **Лёва STOP после последнего плана из шести
 Уточнение владельца: слово «Лёва» относилось к тому, что **Лёва уже закончил планирование оставшихся задач**, а не к смене исполнителя Bookmarks. Предыдущее переназначение Лёвы на implementation было ошибкой Миры и отменено.
 
 Актуальное назначение: **Лира / ChatGPT-6 реализует Bookmarks в PR #346** по принятому плану. Лёва implementation не выполняет; после coordinator PASS Миры он возвращается в стандартную роль независимого technical reviewer того же stable exact head. Текущий код #346 не откатывается и не переписывается из-за этой процессной коррекции.
+
+
+## 2026-11-18 — Лира: Bookmarks backend slice, Draft #346
+
+По прямой команде владельца актуальный исполнитель — **Лира**, а не Лёва; назначение уже исправлено в workflow. Планы B1/B2/B3/B5 применены к merged Watch/main `9c4639d23ca075c8bb92fbb909b96593d7bee127`.
+
+В #346 после schema-only `0069` добавлены:
+- `79bf23ef549191298dd4a96f9523a42e45487180`: `db/forum-repository.ts`, `db/forum-service.ts`, `db/hyperdrive-forum.ts`. `setTopicBookmark`: topic `FOR KEY SHARE` → active actor `FOR NO KEY UPDATE`, READ COMMITTED Add/Remove desired-state; `readTopicBookmark` own scalar; `readTopicBookmarks` own SQL-filtered keyset 50+1 by `saved_at DESC,topic_id DESC` with current title/public projected author, public ordinary/Help location. Typed reader/writer and request-local Hyperdrive adapters.
+- `d80981dc7f30fd84c20d5cb7a062a0b10c6757b8`: 4 focused real PostgreSQL tests `tests/database/topic-bookmarks.test.ts`: isolated persistence and no-op timestamps, Help/current title/deactivated author, 52-row tied saved-at page, missing/inactive admission.
+- `4a614183b41eda66e5a95a25aaaa5b4ad1669e1c`: extend three existing `ForumReader/ForumWriter` test doubles for new interface methods; prior-head TypeScript identified missing members, now exact-head `Typecheck` SUCCESS.
+
+**Exact #346 head `4a614183b41eda66e5a95a25aaaa5b4ad1669e1c`**: GitHub `database` job ID `134970762262` **SUCCESS** (clean PG17 DB suite including new Bookmarks tests); `checks` job ID `134970762774` migration-history, lint, typecheck steps SUCCESS; full `Test` step still in progress at checkpoint, so whole `checks` success **NOT asserted**. Existing connected browser regression jobs on this head already passing; no current failures observed.
+
+**STOP after bounded backend slice.** No Bookmarks route, strict form action, list loader, UI, translations or new browser acceptance yet; they are distinct next slices. `main` untouched, #346 Draft, #342 service-only never merge, no production actions.
