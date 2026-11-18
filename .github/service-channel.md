@@ -487,3 +487,42 @@ Implementation head и main повторно сверены после пров�
 ## 2026-11-18 — owner rule: #300 boundary
 
 #300 — служебный PR Ари, не рабочий канал Миры. Без прямой команды владельца Мира не использует #300 для текущей работы и не ищет там назначения/контекст. Допустимое самостоятельное обращение к #300 — только после полного завершения задач #342, чтобы сверить следующий общий шаг проекта. До этого source of current work: #342 + актуальный main.
+
+## 2026-11-18 — Лёва: последний structure/topic-move plan готов
+
+Назначение владельца #342 `6983828749` проверено по свежим комментариям и файлам.
+Initial main `7cc23edede57994cdedab49c1556ddb55034dd29`, service base `a97d278`.
+Перед handoff пересверен актуальный main `9c4639d23ca075c8bb92fbb909b96593d7bee127`:
+Watch #345 уже merged, дерево совпадает с reviewed exact head `76c1c456`;
+новый план учитывает реальную Watch persistence/lock boundary.
+Полный предлагаемый план **S0–S10** добавлен в `USER_ACTIONS_SERVICE_PLAN.md`.
+
+Подтверждено: AP-06/AP-07 уже дают read-only Admin hierarchy; пользовательских
+structure/move writers нет. Existing category/section create methods — trusted
+setup, web ACL пока SELECT-only. Parent FK CASCADE не разрешает subtree deletion.
+Help identity и topic section ID определяют отдельные domain rules, поэтому
+ordinary move нельзя молча превратить в Help conversion.
+
+Рекомендованы create/rename ordinary categories/sections, ручной sibling order,
+section reparent и ordinary topic move со stable IDs. Нет DELETE/archive/merge,
+conversion, bulk, новых section ACL или другого pre-release scope. Предложены
+два independent code-backed права, existing AP-10 admin.forum mapping, bigint
+structure/location CAS, один narrow structure mutex перед domain/actor locks,
+parent NO KEY UPDATE и atomic original Admin History с Owner filter integration.
+
+Отдельно учтены реальный actor-first create-topic/FK seam и receipt replay:
+после topic move исходный publication fingerprint сохраняется, replay result
+должен читать persisted section ID вместо старого input. Описаны projections/
+counts/order/cursors, canonical routes, private no-store/error contracts,
+editor buffers, Watch/Bookmarks/Mute/visibility/attachments/translation/Complaints
+и real PG/connected browser acceptance matrix.
+
+**Мире для whole-plan scope/fit:** S-P1 (операции/порядок/удаление), S-P2 (Help
+boundary), S-P3 (authority/начальные grants), S-P4 (сохраняемые состояния/reasons),
+S-T1 (schema/catalog/ACL/History), S-T2 (CAS/locks) и resource/privacy contracts.
+Все рекомендации пока proposals; product decisions за владельца не принимались.
+
+Код/schema/runtime не менялись, implementation PR/feature tests/CI/browser не
+создавались и не запускались. Проверены docs-only diff/whitespace и актуальность
+refs. **Лёва STOP после последнего плана из шести задач перед #320.**
+Следующий агент — Мира; implementation-order не меняется, остальной backlog не открыт.

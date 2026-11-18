@@ -2,7 +2,7 @@
 
 ## Цель служебного PR
 
-Этот служебный PR ведёт последовательный блок небольших действий обычного авторизованного пользователя, которые нужно завершить до #320. Для каждого bounded-этапа используются отдельные implementation/docs PR, но общий рабочий канал остаётся #342.
+Этот служебный PR ведёт шесть последовательных пользовательских и административных задач перед #320. Для каждого bounded-этапа используются отдельные implementation/docs PR, но общий рабочий канал остаётся #342.
 
 Утверждённая последовательность шести задач перед #320:
 
@@ -1500,3 +1500,425 @@ translation/Case/UI seams. Официальные PG17 locking/isolation осн�
 CI/browser не запускались. Лёва **STOP после полного visibility плана**. Структура
 форума/перенос тем не планировались; это следующий slice только по отдельной команде.
 Текущий implementation-order и работа Лиры над Watch не меняются.
+
+## Опережающий технический план: структура форума / перенос тем — Лёва, 2026-11-18
+
+Статус: **полный предлагаемый план готов; STOP для scope/fit Миры**.
+Назначение владельца: #342, комментарий `6983828749`, уточнённый в 16:01:31 UTC.
+Исследование начато на main `7cc23edede57994cdedab49c1556ddb55034dd29`; перед
+handoff пересверен актуальный main `9c4639d23ca075c8bb92fbb909b96593d7bee127`:
+Watch #345 уже merged, дерево совпадает с проверенным exact head `76c1c456`.
+Service base на старте `a97d27845d9273138136e3e723fd66d17c17e1c9`.
+Это последний ещё не спланированный
+блок **ровно шести задач перед #320**, не назначение на остальной backlog #300.
+Ни рекомендации ниже, ни новый schema/catalog contract не объявлены принятыми.
+
+### S0. Подтверждённые seams и граница задачи
+
+- `forum_categories(id,name,created_at)` → `forum_sections(id,category_id,name,
+  created_at)` → `forum_topics(section_id)`. Names nonblank, но нет persisted
+  display order, structure versions или location version темы. Parent FK имеют
+  ON DELETE CASCADE: удаление контейнера сейчас способно удалить весь subtree.
+- `DrizzleForumRepository.createCategory/createSection` и соответствующие методы
+  service используются trusted setup/fixtures. Они не имеют actor, permission,
+  lifecycle, CAS или History. Подключить их напрямую к новой форме нельзя.
+- AP-06/AP-07: `db/admin-forum.ts`, `app/admin/forum*.ts*`, flat routes
+  `admin-forum/category/section/topic` уже дают защищённые object pages,
+  literal name/ID search, независимые counts и bounded ID-keyset lists.
+  Это browsing, не structural mutation authority.
+- Public `readHomepage/readCategory/readSection/readTopicPage`, discovery readers
+  и `publicDiscoveryLocation` строят location из live section/category joins.
+  Homepage/category section order сейчас `(created_at,id)`, Help category первая;
+  Admin browse сортирует по ID. Topic URLs не содержат category/section/name.
+- Reserved `help-solutions` и internal `help-solutions-questions` — code-backed
+  identities. Public Help location имеет `section:null`; service section URL
+  недоступен. Section ID определяет Help-only duplicates/signals/solution rules,
+  а category route выбирает специальный Help reader/action.
+- В catalog нет structure/move permissions. `ADMIN_FORUM_PERMISSIONS`, AP-10
+  family maps и raw authority rank требуют подключения реальных новых ключей.
+  Текущий web ACL для categories/sections — только SELECT; topics уже UPDATE.
+- В актуальном main Watch уже persisted в `forum_topic_watches(user_id,topic_id)`;
+  setTopicWatch и reply используют общий topic NO KEY UPDATE. Структурный перенос
+  сохраняет эти rows и lock order. Bookmarks/Mute-block/visibility остаются планами.
+- `appendForumHistory` предполагает topic/post target и сам читает topic title.
+  Category/section нельзя передать ему как существующий topic. History CHECK,
+  typed changes/UI, Owner kind/scope filters пока новых действий не знают.
+- В `createTopicWithInitialPost` matching receipt возвращает `sectionId` из
+  старого input, хотя тему после публикации можно будет перенести. Fingerprint
+  исходной публикации включает исходный section ID; его менять при переносе нельзя.
+
+### S1. Рекомендуемый продуктовый контракт и реальные развилки
+
+Рекомендуется законченный bounded набор:
+
+| Объект | Операции | Сохраняемые ограничения |
+| --- | --- | --- |
+| Ordinary category | Создать; изменить имя; поднять/опустить в публичном порядке | Stable ID, без вложенных категорий |
+| Ordinary section | Создать в ordinary category; изменить имя; перенести в другую ordinary category; поднять/опустить среди sibling sections | ID и все topics сохраняются; ровно один category parent |
+| Existing ordinary topic | Перенести в другой ordinary section, включая другую ordinary category | ID/posts/permalinks/revisions/domain state сохраняются |
+| Reserved Help category/service section | Только существующее чтение | Нельзя переименовать, переставить, переподчинить, удалить или добавить обычный раздел внутрь Help |
+
+Имена — plain Unicode text, после trim 1–200 code points, не более 800 UTF-8 bytes;
+NUL/управляющие символы/переводы строк отвергаются. Совпадающие display names
+разрешены: identity — ID, selector показывает полный category/section context.
+Не вводятся editable slug/URL, description/icon/color, locale-specific name store,
+section ACL, private sections, archive, merge/split или bulk migration.
+Публичная иерархия остаётся category → section → topic → messages.
+
+**Реальные product forks Мире, с рекомендациями:**
+
+- **S-P1 — состав управления структурой.** Рекомендация: таблица выше, включая
+  ручной порядок и section reparent. Delete/archive/merge/bulk не включать.
+  Альтернатива без ручного порядка дешевле и сохраняет created_at ordering, но
+  не даёт администратору управлять расположением. Если требуется удаление хотя
+  бы пустых containers — принять это отдельно: нужны новая операция, проверка
+  пустоты при конкурентном create и пересмотр FK/lock graph; cascade не является
+  продуктовым разрешением. Не подменять удаление скрытым автоматическим переносом.
+- **S-P2 — перенос через Help boundary.** Рекомендация: только ordinary ↔ ordinary;
+  Help question ↔ ordinary topic запрещены, как и reparent service section.
+  Альтернатива — явная conversion feature: придётся определить судьбу duplicates,
+  appeals, signals, needs-details и solution moderation. Простое изменение FK
+  не является корректной конверсией; авторские права её тоже не предоставляют.
+- **S-P3 — authority и стартовые grants.** Рекомендация: отдельные
+  `forum.structure.manage` и `forum.topic.move`; первый initially built-in admin,
+  второй moderator/admin. Custom roles/overrides остаются явными; Owner получает
+  оба через существующий code-backed projection. Возможны более узкие grants
+  или Owner-only структура, но это отдельное решение, не вывод из имени роли.
+- **S-P4 — состояния и причины переноса.** Рекомендация: сохранять pin, closure,
+  solved/best answer, visibility и personal state; closed/solved/pinned и inactive
+  author не препятствуют обычному переносу. Новая обязательная reason policy и
+  уведомления автору не вводятся: History фиксирует точный before/after location.
+  Если нужен required move reason либо unpin при переносе — выбрать явно, поскольку
+  это меняет форму, transaction effect, History и acceptance.
+
+План S2–S9 полон для рекомендуемой модели. Более широкие варианты не активированы.
+
+### S2. Authority, lifecycle и protected read contract
+
+1. Добавить только принятые реальные permission keys в code catalog, DB catalog
+   CHECK/seed, локализацию и tests. Structure permission не заменяет topic.move;
+   move не разрешает создавать/переименовывать контейнеры. Own-topic author не
+   имеет неявного права переноса; reply/create/close/visibility grants недостаточны.
+2. Оба ключа включить в обычный Forum/shell admission и Settings Administrator
+   preferences presentation через существующие helpers. Action независимо
+   проверяет **точный** ключ; один canReadForum не разрешает все операции.
+3. Обе capability отнести к существующему AP-10 `admin.forum` в
+   `app/admin/user-measure-restrictions.ts` и `db/user-measure-admin-forum.ts`.
+   Raw administrative-rank projection также должна учитывать новые ключи через
+   общую family model. Сохранить issuer-floor, Owner immunity и fresh request
+   checks; не создавать новые restriction keys, RBAC или authz mutex semantics.
+4. Better Auth session supplies actor. `editorActorId` — обязательное stale-account
+   expectation, не authority. Active actor проверяется в authoritative transaction
+   под существующим user NO KEY UPDATE, включая no-op. Inactive/missing actor
+   отклоняется; inactive content author не изменяется и не блокирует управление.
+5. Guarded destination picker — bounded literal name/ID search по обычным
+   categories/sections, без user data/content/History. Move-only actor может читать
+   эти structural metadata в Forum по новой admission, но не чужие permissions,
+   hidden bodies, Cases или History. Отдельного super-admin mutation backend нет.
+6. После visibility stage generic Admin admission не даёт hidden-content access.
+   Hidden topic move controls/command требуют также принятой visibility-management
+   authority; без неё действует установленный visibility absence/denial contract.
+   Move не раскрывает, не восстанавливает hidden topic/post и не обходит private
+   inspector. Конкретный ключ/predicate взять из принятого V-плана при реализации,
+   не закреплять сейчас неподтверждённый будущий identifier.
+
+Capability resolution остаётся current request-scoped policy существующих actions.
+Не обещается новый revocation-vs-in-flight commit barrier. После изменения grants/
+AP-10 следующий защищённый request проверяет новое состояние. Account lifecycle
+имеет отдельную строгую transaction-admission serialization, как текущие writers.
+
+### S3. Schema/order/CAS — техническое согласование S-T1
+
+Предлагается минимальная явная persistence для принятого ручного порядка:
+
+- `forum_categories.sort_position bigint NOT NULL DEFAULT 0 CHECK >=0`;
+- `forum_sections.sort_position bigint NOT NULL DEFAULT 0 CHECK >=0`;
+- singleton `forum_structure_state(id=1, version bigint NOT NULL DEFAULT 0 CHECK >=0)`;
+- `forum_topics.location_version bigint NOT NULL DEFAULT 0 CHECK >=0`.
+
+Global structure version изменяется один раз на каждую actual category/section
+create/rename/reparent/reorder. Это один coherent CAS для структуры, не версии
+topic content/closure/visibility. Любое чужое изменение структуры может сделать
+форму stale, даже если оно относится к другому контейнеру; для редких admin writes
+это сознательно простой contract. Нет per-category version одновременно с ним.
+Topic move проверяет current structure version, но не меняет её; он увеличивает
+только собственную location_version и проверяет expected current section ID.
+Таким образом два move одной темы и A→B→A обнаруживаются независимо от title edits.
+Version overflow возвращает controlled conflict без частичного изменения.
+Все bigint в HTTP/DTO/cursors — canonical decimal strings, не JavaScript Number.
+
+Public order categories: reserved Help first, затем `(sort_position,id COLLATE C)`;
+sections — `(sort_position,id COLLATE C)` внутри ordinary category, service excluded.
+Backfill сохраняет legacy ordinary order `(created_at,id)` и существующее Help-first
+поведение; section positions вычисляются отдельно по каждому parent. No content
+timestamps/revisions/IDs изменять не нужно. Нет History backfill для migration.
+
+Создание и section reparent добавляют объект в конец целевой ordinary sibling
+группы (`max(position)+1`, empty→0). Перестановка — **up/down по соседу в полном
+актуальном sibling order**, не в обрезанном search result: SQL находит одного
+соседа, затем меняет местами две позиции. Нет полного client-supplied tree/list,
+unbounded renumber, floating ranks или drag-only обязательного UX. На границе
+up/down — валидированный no-op. Большие позиции/overflow не переполнять молча.
+При reparent holes в исходной группе допустимы. Nonunique positions + ID tie-break
+достаточны; swap не должен требовать transient unique-constraint tricks.
+
+Индексы — ordered category `(sort_position,id)` и section
+`(category_id,sort_position,id)` с согласованной collation. Существующий
+topic.section_id index остаётся пригоден. Имена таблиц/columns/indexes и точный
+next migration number сверить с фактическим main после предыдущих этапов;
+`0068` уже занята Watch, номер сейчас не резервировать.
+
+Forward SQL, Drizzle schema/snapshot/journal, structural manifest и integration
+fixtures обновляются вместе, accepted history не переписывается. Web capability:
+categories/sections SELECT+INSERT+UPDATE, structure_state SELECT+UPDATE; singleton
+seed только migration, не web INSERT. Topics UPDATE уже есть. Нет DELETE, DDL,
+sequence, localization-runtime или content-generation grants. Проверить реальные
+row locks и INSERT под exact web role, а также отрицательные DELETE/DDL probes.
+
+### S4. Authoritative команды и lock graph — техническое согласование S-T2
+
+Новые typed server operations с actor, expectedStructureVersion и узкими payload:
+
+- createCategory(name); renameCategory(categoryId,name);
+- createSection(categoryId,name); renameSection(sectionId,name);
+- moveSection(sectionId,expectedCategoryId,targetCategoryId);
+- reorderCategory(categoryId,direction); reorderSection(sectionId,direction);
+- moveTopic(topicId,expectedSectionId,targetSectionId,expectedLocationVersion).
+
+Target контейнер берётся из canonical route, target topic — из topic route;
+destination ID выбирает существующий объект, но не его client-provided parent/type.
+Новые create IDs генерирует сервер; existing ID никогда не переименовывается.
+Все команды запрещают reserved identities и нежелательные Help relationships
+server-side, включая forged direct request и no-op.
+
+Единый **порядок новых commands** в одной READ COMMITTED transaction:
+
+1. `forum_structure_state` row FOR UPDATE, прочитать/сравнить expected version.
+   Этот mutex берут category/section commands **и topic moves**, чтобы reparent и
+   destination validation имели однозначный порядок. Он не берётся publication,
+   Watch, reads или unrelated topic actions. Для редких административных перемещений
+   serialization всех moves допустима; не строить заранее distributed lock service.
+2. Для moveTopic — target topic FOR NO KEY UPDATE; затем нужные category/section
+   rows и reorder neighbor в детерминированном порядке. Для structure commands —
+   только нужные container rows. Existing parent/container locks **NO KEY UPDATE**,
+   не FOR UPDATE: не изменяются их PK/unique keys и не вводится FK lock inversion.
+   Reserved flags определять по authoritative stable IDs, не client labels.
+3. Проверить existence, current parent/type, topic expected section/location CAS,
+   visibility applicability, selected destination и границы операции. Active actor
+   NO KEY UPDATE до no-op/effect; точный permission уже проверен canonical action.
+   Typed writer доступен только через server capability, не публичный raw endpoint.
+4. Actual UPDATE/INSERT и appropriate version increment, затем **последним** atomic
+   History append под existing `ADMIN_HISTORY_ORDER_LOCK_SQL`, COMMIT. После History
+   order lock не брать domain locks и не вызывать другую command transaction.
+
+Topic move меняет только section_id/location_version, не переписывает posts и не
+берёт attachment draft, translation head/task, notification/recipient или author
+account locks. Старые input/version должны конфликтовать даже при уже желаемом
+destination; no-op допустим только после всех guards с current expectations.
+Denied/stale/no-op/rollback не создают event и не двигают version.
+
+Почему не усиливаем parent locks: текущий create-topic берёт actor до section FK
+проверки. Его FK KEY SHARE совместим с новым parent NO KEY UPDATE; FOR UPDATE
+создал бы риск parent→actor против actor→parent. Новые writers не меняют PK и
+не делают DELETE, поэтому усиление не требуется. Все новые команды начинают с
+structure mutex, никто не должен получать его из уже идущего topic/actor/history
+write. Применять SQL CAS/RETURNING, не считать предварительный loader проверкой.
+
+Move и reply/Watch/close/hide/title edit конкурируют на существующем topic mutex:
+первый заканчивает свой effect, следующий читает актуальную row. Reply допускается
+по прежним closure/duplicate/visibility rules; move не создаёт reply и не меняет
+fanout. Existing draft→topic→post→actor и translation head/task-first orders
+сохраняются: move не получает draft/head/task locks в обратном направлении.
+Section reparent/create-topic обе валидны для ordinary category; section ID не
+меняется, поэтому публикация остаётся в том же разделе с актуальным parent.
+
+Это проверяемый предлагаемый graph, не уже выполненное доказательство. Реальные
+два PG connection и gate после фактического row-lock обязательны (§S9).
+
+### S5. History, original-source Owner projections и privacy
+
+Actual events: `category.created`, `category.renamed`, `category.reordered`;
+`section.created`, `section.renamed`, `section.moved`, `section.reordered`;
+`topic.moved`. Target types category/section/topic; typed context хранит bounded
+before/after name/parent/position, affected neighbor ID для swap, previous/new
+structure либо location versions и current bounded target label. Для move topic
+достаточны old/new section/category IDs и короткие labels, не body/revision text.
+Один reorder = одно событие на значимое действие с двумя затронутыми IDs,
+а не два выдуманных независимых actor actions. IDs/labels сохраняют смысл после
+позднейшего rename; label limit200, context16KiB, reason только по принятому S-P4.
+
+Расширить `AdminHistoryChange`, schema/migration action-target CHECK, private
+History rendering/EN/RU/HE, target links и tests. Category/section producer должен
+использовать тот же transaction/order-lock contract с явным target label;
+существующий appendForumHistory нельзя вызвать с category ID вместо topic ID.
+Для topic.moved остаётся topic target. History append failure откатывает location,
+positions и версии. Повтор/no-op/denial/rollback не порождает event.
+
+Подключить existing Owner source projection без дублирования owner_events:
+`db/owner-monitor-catalog.ts` ADMIN_MONITOR_SCOPES_SQL → `forum.structure`;
+`db/owner-sa02-history.ts` ADMIN_ACTION_KINDS, admin-history ORIGIN_SCOPES и
+compatibleKind; `db/owner-native-history.ts` coverage whitelist. Общие/scoped/
+target-person readers и filters должны согласованно принимать новые kind/scope;
+ordinary Admin History и Owner History показывают один original admin_history
+event с одной identity. Current structure Monitoring counts используют live DB,
+не синтетическую «историю» старых seeded objects. Новые публичные audit feeds не нужны.
+
+Ни структура-read, ни управление не дают admin.history.read или Owner authority.
+Public pages не получают actor identity, причины/контекст, версии глобального
+admin state, unfiltered private History или hidden-topic title через move feedback.
+
+### S6. Public projections, links и связанные состояния
+
+| Область | Обязательное поведение после commit |
+| --- | --- |
+| Homepage/category | Новый name/order/section parent, truthful counts и first-three-section selection; Help first/service excluded сохраняются |
+| Section/topic/Admin breadcrumbs | Актуальная цепочка category→section; один section/topic ID не дублируется в старом и новом parent |
+| Search/Popular/Unanswered/Tags/Unread/Help/Similar | Existing SQL joins/filters/counts/ranking применяют actual location; старый category filter не удерживает moved object; Help domain не меняется |
+| Canonical category/section/topic, post permalinks/anchors, replies/quotes | IDs/адреса сохраняются, redirect aliases и копии не создаются; post parent/order/number неизменны |
+| Pin/closed/solved/best answer | Сохраняются; pinned topic появляется в target section/category по прежнему pin contract, без reset timestamps или искусственной активности |
+| Read markers/inbox | Не переписываются и не отмечаются прочитанными от move; notices не создаются и не удаляются; ссылки по topic/post продолжают работать |
+| Watch/Bookmarks/Mute/Block | Rows keyed by user/topic или user/user остаются; topic Mute следует за той же темой, Block — за actor; не превращать их в section preferences |
+| Visibility | Topic/post flags и version не меняются; hidden target отсутствует в public lists/counts/assets по принятому V contract, move не даёт reveal |
+| Content/translation | Title/body revision IDs, source locales, current translations, accepted task payload/currentness сохраняются; category/section names не становятся новым translation generation service |
+| Published/draft/evidence attachments | Post/asset/receipt membership и visibility access сохраняются, R2 copy/delete и draft rebind не выполняются |
+| Complaints/Help retained state/History | Target IDs и immutable evidence не переписываются; fresh context использует current location, retained snapshot остаётся snapshot; никаких synthetic decision/action links |
+
+Public hierarchy multi-query reads, отдающие parent/list/counts одним DTO, должны
+использовать согласованный snapshot: локальный read-only REPEATABLE READ либо один
+statement в affected readers. Reuse уже принятого visibility snapshot seam, если
+он будет merged; не строить новый framework. Нельзя прочитать old parent, затем
+new child list и объявить это одной согласованной hierarchy. Не держать locks
+через SSR, браузер или asset streaming. Live paginated lists не обещают snapshot
+на несколько HTTP requests: при reorder/move возможны изменения страницы, есть First.
+
+**Receipt integration:** original create-topic fingerprint остаётся связан с
+исходным section ID/input. Matching receipt не превращается в new publication,
+не возвращает тему назад и не производит вторую History/attachments/notifications.
+В существующем replay branch `createTopicWithInitialPost` добавить persisted
+section_id к уже читаемой topic row и возвращать actual location вместо
+input.sectionId. Не переписывать сохранённый receipt/fingerprint и не расширять
+эту локальную коррекцию в общий publication refactor. Reply replay topic ID
+сохраняется; остальные replay/lifecycle/visibility guards предыдущих этапов остаются.
+
+### S7. Canonical routes, private errors и клиентский state
+
+- Category create POST в existing Admin forum index; category rename/reorder и
+  section create — в existing Admin category route; section rename/reparent/reorder
+  — в existing Admin section route. Через AdministrativeRouting.admin helpers,
+  без hard-coded Owner URLs/cross-origin transport. По одному authoritative writer,
+  не копии операций в разных public/Admin endpoints.
+- Topic move — узкий новый `moveTopic` intent existing canonical public topic POST,
+  который вызывают общий topic Quick action и Admin topic page. Move destination
+  picker остаётся protected bounded read, а не новый public full-tree API.
+- Session/origin/method guard до formData; после узкого intent dispatch — точный
+  permission до target/private reads и writer. Allowlist полей
+  для каждого intent, ровно один text value на поле, reject File/duplicates/unknown
+  fields/cross-intent payload, bounded IDs≤2048 UTF-8 bytes без NUL; old existing IDs
+  не ограничивать только UUID. Expected versions — canonical bigint decimal;
+  direction exact up/down; никаких client actor/author/role/type/name authority.
+- Нельзя добавить admin rename/move к нынешнему public sectionAction так, чтобы
+  он по умолчанию трактовал payload как createTopic. Если handlers co-located,
+  dispatch должен быть явным и узким, существующие publish intents не менять.
+- Typed operation result содержит operation, current actor/object, committed
+  new versions/state; 400 malformed, 401 missing/inactive actor, 403 permission/
+  origin, 404 absent/protected target, 409 stale/unsupported reserved or Help
+  transition, 503 только classified storage/auth unavailability. Exact visibility
+  denial follows V contract. Никаких raw SQL, hidden title/body или full tree в errors.
+- Protected loaders/actions/errors/redirects **document и data** private no-store;
+  mutation result не следует из старого public cache. Guest public readers сохраняют
+  public DTO, auth optional controls fail closed только для typed dependency failure.
+  Wiring использует current WEB_HYPERDRIVE cache-disabled capability; stale long-lived
+  hierarchy/permission cache не вводится. Реальный production rollout не нужен.
+
+Admin list search/page bounds сохраняются (25+lookahead, q≤200 code points,
+independent matching total). Для display-order paging новый bounded versioned
+cursor несёт exact position/id и parent/filter context; seek/order используют
+одинаковую collation. Не сортировать уже обрезанные 25 rows в React. Existing raw
+ID cursor нельзя молча интерпретировать как position; malformed/old cursor →
+controlled400 с возможностью начать First. Topic lists сохраняют свой ID cursor,
+поскольку presentation order containers не является topic activity ordering.
+
+UI forms изолированы actor/object/operation и expected versions, pending блокирует
+повтор. Без optimistic rename/reparent/move; после server-confirmed success
+revalidation и canonical target link. При stale/error сохранить набранное имя/
+destination, показать fresh location/version, требовать осознанный повтор; никогда
+не заменять expectation и не пересылать POST автоматически. При неоднозначном
+transport failure — явный refresh/проверка состояния, не новый create с новой
+версией. Старый create request с прежней structure version не создаёт второй объект.
+Не добавлять отдельную durable receipt subsystem только ради structural forms.
+
+Move response/loader update не размонтирует соседние reply/title/post editors:
+их key остаётся actor/topic/post/revision, а не section/category/global version.
+Текст, undo/redo и выбранные/in-flight attachments сохраняются; публикация и
+cleanup используют прежние IDs и свои gates. Account/grant/target changes изолируют
+старые fetcher/picker ответы, отказ не переключает silently account/destination.
+English canonical catalog + RU/HE, bdi/dir auto для names, logical CSS, labels,
+keyboard select/search и доступные Up/Down вместо обязательного drag-and-drop.
+Косметика не превращается в отдельный преждевременный UI/UX pass.
+
+### S8. Порядок будущей реализации и docs boundary
+
+1. Мира whole-plan scope/fit S-P1–S-P4, S-T1/S-T2 и resource/privacy contracts;
+   продуктовые отличия при необходимости выбирает владелец, не реализатор.
+2. После очереди предыдущих задач сверить фактический main и принятые Watch,
+   Bookmarks, Mute/block, visibility writer/DTO/History/locks. Ничего не строить
+   поверх непроверенного interim branch как будто это уже main.
+3. Отдельный implementation PR: forward schema/catalog/ACL → same-transaction
+   commands/CAS/History → public/admin readers/order/picker → shared UI/canonical
+   actions → receipt/editor/Owner-history integration → полный scoped acceptance.
+   Dependent commits внутри этого блока не объявлять самостоятельной законченной
+   feature до собранной вертикали. Не менять implementation-order #342.
+4. Применимые lint/typecheck/unit/build/UI preview, metadata/history/manifest,
+   exact runtime ACL и real PG/browser checks; стабильный head → coordinator
+   whole-PR Миры → независимый technical review по актуальному назначению.
+5. Только после фактического implementation merge — отдельный docs closeout:
+   ADMIN_PANEL/AUTHORIZATION (actions/admission/reasons/AP-10), профильные новые
+   contracts, PROJECT_STATE factual state и history/index. Planning в #342 не
+   утверждает, что эта функциональность существует в main.
+
+### S9. Acceptance matrix — что должно быть доказано реализацией
+
+| Проверка | Наблюдаемый результат |
+| --- | --- |
+| Migration upgrade from actual main и clean PG17 | Legacy order/content/IDs preserved, versions seeded, manifest/schema/journal/ACL parity; accepted SQL/snapshots unchanged |
+| New rights independently granted/revoked/denied, Owner/raw role/custom role | Только exact operation allowed; next request fresh; Forum admission without accidental other capabilities; AP-10 admin.forum и rank/Owner immunity корректны |
+| Guest/origin/account switch, malformed/duplicate/File/oversize/forged fields | Controlled refusal до writes; ни actor spoof, ни cross-intent publication; private document/data/error headers |
+| Create/rename, Unicode/duplicate names, empty names, actual no-op | Truthful stored names/IDs/version/event; current no-op без History/version; stale no-op409 |
+| Category/section Up/Down, large siblings и filtered/paged Admin list | Глобальный sibling neighbor, не сосед поисковой страницы; bounded queries, stable tie-break/cursor; Help always first/service never public |
+| Section reparent, destination nonexistent/reserved, empty category | Полный subtree следует тому же section ID, counts/links correct; запреты проверены backend, нет cascade/DELETE |
+| Topic move within/cross category, closed/solved/pinned/inactive author | Один unchanged topic/post set; правильные old/new lists/counts/breadcrumbs, state preserved; Help conversion blocked |
+| Две PG connections: rename/reorder/reparent/create, одинаковая structure version | Один valid serialized effect, второй stale409, без lost update/ABA/version overflow; mutex acquired до object/actor locks |
+| Два moves одной темы, A→B→A, move×section reparent в обоих порядках | Точный CAS/location version, согласованный destination parent, no-op только с current expectations; одна History на effect |
+| Move×reply/Watch/close/hide/title/post edit/translation admission | Нет deadlock или обхода existing resource gate; no lost state/fanout duplication; draft/head/task lock order сохранён |
+| Structure command×topic create одной учётной записи | Parent NO KEY UPDATE совместим с FK KEY SHARE; ни actor→parent inversion, ни stray/orphan publication |
+| Actor deactivation first / writer admission first | Первый запрещает write/no-op; второй удерживает actor до commit и deactivation ждёт; следующий command запрещён |
+| Forced History INSERT failure/transaction rollback | Parent/location/positions/versions и events полностью откатываются; нет partial success |
+| Publish→move→matching old create receipt replay | Один topic/post/asset set, прежний fingerprint, актуальный persisted location в replay result, без move-back/новых notices/events |
+| Existing Watch/Bookmark/Mute/Block/read/inbox + move/reparent | Все rows/прочтения и canonical links сохранены; будущий reply obeys existing fanout/suppression; нет backfill |
+| Hidden topic/posts/attachments и retained Complaint evidence | Move не раскрывает public source, не restore; private rights независимы; immutable evidence/accepted tasks не переписаны |
+| Admin/Owner History global/scoped/kind/person filters | Один original event, новые kinds доступны в forum.structure, truthful coverage/UTC/cursors; private data не уходит в public DTO |
+| Connected Worker+Better Auth+PG17+Chromium | Через реальные формы create/rename/reparent/reorder/move, public old/new locations и retained links; same-session revoke/AP-10, stale two-tab409, uncertain response explicit refresh; DOM не optimistic |
+| Mounted reply/title/post editors, RU/HE RTL+narrow, keyboard | Input/undo/uploads survive move/revalidation; late actor/topic response не применяется; no horizontal overflow, usable labels/status/focus |
+
+Concurrency fixtures должны ждать реального acquired row lock на отдельных PG
+connections, затем проверять blocking и committed state в обоих порядках; один
+mock или произвольный sleep не доказывает graph. Fixtures только disposable
+loopback *_test database; least-privilege web-role probes и browser идут по
+authoritative operations, SQL seeding не заменяет проверяемую команду.
+
+### S10. Handoff и проверенные границы результата
+
+Мире возвращён полный план и конкретные **S-P1–S-P4**, **S-T1/S-T2**.
+Нужны scope/fit и фиксация принятых вариантов; не скрытое решение реализатора.
+Сверены current AGENTS/PROJECT/PROJECT_STATE, ordinary Admin/authorization,
+migration и ранее прочитанные Editor/translation/Complaints/Settings contracts,
+реальные schema/repository/route/UI/History/AP-10/Owner projection/ACL seams и
+предыдущие четыре плана #342. Официальные PG17 explicit-locking и transaction-iso
+перепроверены для parent FK/row-lock compatibility и snapshot boundary.
+
+Код/schema/runtime не менялись; implementation PR не создавался; feature tests,
+CI и browser acceptance для этой ещё не реализованной функции не запускались.
+Проверки текущего результата — docs-only diff/whitespace, согласованность ссылок,
+назначения и actual main/service refs. **Лёва STOP после полного последнего плана
+из шести задач перед #320.** Дальнейший pre-release planning этим не открыт;
+Email/password, UI/UX, Stage 6, release и прочий backlog не планировались.

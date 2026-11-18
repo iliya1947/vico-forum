@@ -397,3 +397,72 @@ Tracked implementation files не изменены; исправления не 
 owner visual acceptance/coordinator PASS/docs closeout или merge/deploy approval.
 **Лёва STOP; результат возвращён Мире в #342.** Visibility plan по-прежнему готов
 к её scope/fit; структура форума/перенос тем и прочие planning-slice не начаты.
+
+## 2026-11-18 — полный план структуры форума / переноса тем готов
+
+Новое прямое назначение владельца из #342 `6983828749`, уточнённое в
+2026-11-18 16:01:31 UTC: **только последний ещё не спланированный блок из шести
+задач перед #320**. Не продолжение всего pre-release backlog #300. Прочитал
+свежие комментарии, workflow/channel/план; service head на старте `a97d278`.
+Исследование начато на main `7cc23edede57994cdedab49c1556ddb55034dd29`.
+При финальной проверке main обновился до `9c4639d23ca075c8bb92fbb909b96593d7bee127`
+(merged Watch #345). Пересверены diff и актуальные publication/Watch seams:
+дерево main совпадает с previously reviewed head `76c1c456`; новых отличий
+реализации нет. S-план и operative workflow учитывают уже merged Watch.
+
+Полный предлагаемый план **S0–S10** записан в `USER_ACTIONS_SERVICE_PLAN.md`.
+Исследованы schema/FK и реальные callers createCategory/createSection, AP-06/AP-07
+reader/route/views/path helpers, public hierarchy/discovery/location projection,
+publication/receipt/reply/editor boundaries, permission catalog/admission,
+request-scoped AP-10 family maps/raw authority rank, active-account locks,
+Admin History producer/schema/types и source-aware Owner History scopes/kinds/
+coverage, exact web ACL и migration contracts. Watch учтён как уже merged
+реализация, Bookmarks/Mute-block/visibility — как предыдущие планы ещё не merged
+dependencies; их окончательные seams требуется пересверить при реализации этого блока.
+
+Подтверждённые основания:
+
+- Categories/sections имеют только id/name/parent/createdAt, нет order/CAS;
+  topics.location_version отсутствует. FK CASCADE опасен для generic deletion.
+  Public structural order createdAt/id с Help-first, Admin pages ID-keyset.
+- Existing create methods нужны trusted setup и tests, не actor-aware writer.
+  Runtime web categories/sections SELECT-only; новый INSERT/UPDATE ACL необходим,
+  DELETE не предлагается. Полноценной runtime capability structure/move пока нет.
+- Help category/service section зарезервированы; section ID определяет Help
+  domain rules. Ordinary topic move не должен скрыто конвертировать вопрос.
+- New topic creation держит actor до section FK; новый parent FOR UPDATE мог
+  бы создать inversion. Рекомендован NO KEY UPDATE совместимый с KEY SHARE,
+  structure mutex первым, target topic перед actor, History order lock последним.
+- Create-topic committed receipt хранит fingerprint исходного section, но replay
+  result использует старый input.sectionId. Нужна только локальная projection
+  коррекция к persisted section ID, не изменение receipt/fingerprint или move-back.
+- appendForumHistory предполагает topic/post; новые category/section events
+  требуют явного typed producer/check contract. Owner closed kind/scope и
+  coverage whitelists нужно подключить к forum.structure, без duplicate owner event.
+
+Рекомендован законченный scope create/rename categories/sections, sibling Up/Down,
+section reparent и ordinary topic move с сохранением stable IDs/content/personal
+state. Предложены independent forum.structure.manage/forum.topic.move, admin.forum
+mapping, bigint global structure CAS + per-topic location CAS, private bounded
+picker/ordered cursor, same-origin canonical routes и fail-closed typed errors.
+Код/DDL не написаны; эти предложения не приняты мной за владельца.
+
+Мире явно возвращены **S-P1** scope/order/delete, **S-P2** Help conversion boundary,
+**S-P3** authority/seed grants, **S-P4** state/pin/reasons; **S-T1** schema/order/
+CAS/ACL/catalog/History и **S-T2** writer/lock graph. В плане есть public/private
+snapshot/cache contract, все related state/links/search/personal filters/assets/
+translation/Case seams, actor lifecycle/no-op/rollback/ABA/receipt semantics,
+сохранение editor buffers и deterministic real PG + connected browser matrix.
+
+Официальная PG17 документация explicit-locking и transaction-iso перепроверена;
+в частности KEY SHARE не блокирует NO KEY UPDATE и новые commands не меняют PK
+или unique key containers. Реальное PG доказательство graph — требование будущего
+implementation acceptance, не результат этого planning-only задания.
+
+Проверки результата: docs-only paths, whitespace, section/reference consistency,
+main/service refs и свежий owner scope. Feature tests/CI/browser для этой функции
+не запускались, implementation PR не создавался, source/schema/runtime не менялись.
+Обновлены план, мой файл, общий канал и workflow в #342.
+**Лёва STOP после последнего плана из шести задач перед #320; следующий — Мира
+для whole-plan scope/fit.** Email/password lifecycle, UI/UX, Stage 6, release и
+прочий backlog этим назначением не открыты. Implementation-order сохранён.

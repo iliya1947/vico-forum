@@ -9,11 +9,11 @@
 ## Реализация
 
 - Edit own topic title: завершён.
-- Watch: implementation Лиры в Draft PR #345; **CI-stable technical head** `76c1c456557c614171a3b472758498795a668b9a`, base main `7cc23edede57994cdedab49c1556ddb55034dd29`, 17/17 exact-head GitHub checks PASS, включая database и connected watch_browser; GitHub mergeable, no changes since browser PASS.
+- Watch: **implementation #345 merged** в main `9c4639d23ca075c8bb92fbb909b96593d7bee127`; дерево совпадает с проверенным technical head `76c1c456557c614171a3b472758498795a668b9a` (review base `7cc23edede57994cdedab49c1556ddb55034dd29`, 17/17 exact-head checks PASS, включая database и connected watch_browser).
 - Watch coordinator whole-PR review: **Мира PASS** на exact head `76c1c456557c614171a3b472758498795a668b9a`; подтверждённых current-scope findings нет.
 - Watch independent technical review: **Лёва PASS** всего принятого scope на том же exact head `76c1c456557c614171a3b472758498795a668b9a` против main `7cc23edede57994cdedab49c1556ddb55034dd29`; подтверждённых current-scope findings нет. Код не изменён; Лёва STOP.
 - Review synthesis: оба review совпали на неизменном exact head, расхождений и подтверждённых current-scope defects нет. По действующему owner decision из `docs/UI_UX_PASS.md` функциональные bounded-срезы не задерживаются из-за косметики; финальная owner visual/product acceptance остаётся отдельным UI/UX pass перед публичным запуском. Поэтому отдельный Watch visual gate сейчас merge не блокирует.
-- Watch implementation review cycle завершён; #345 готов к merge владельцем. Permanent/current-state docs closeout выполняется отдельным PR только после фактического merge.
+- Watch implementation review cycle завершён, #345 merged. Permanent/current-state docs closeout остаётся отдельным PR после implementation merge; это planning-задание не заменяет его.
 - Bookmarks: план принят, реализация ждёт очереди.
 - Mute/block: план принят, реализация ждёт очереди.
 
@@ -23,9 +23,9 @@
 - Watch / Bookmarks / Mute-block и модерация видимости опубликованного контента уже имеют технические планы.
 - По уточнению владельца planning-track относится **только к шести задачам, которые стоят перед #320**; это не назначение на остальной pre-release backlog из #300.
 - Из этих шести Watch / Bookmarks / Mute-block и модерация видимости уже спланированы; редактирование заголовка завершено.
-- Единственный ещё не спланированный slice из этих шести: **управление структурой форума / перенос тем** — категории, разделы, изменение структуры и перенос тем.
-- После полного плана этого slice Лёва записывает результат в план/свой файл и **STOP** для scope/fit Миры. Email-auth, UI/UX, Stage 6, release и прочий backlog сейчас не планировать.
+- Управление структурой форума / перенос тем: **полный предлагаемый план S0–S10 готов** в `USER_ACTIONS_SERVICE_PLAN.md`; Мире возвращены S-P1–S-P4 и S-T1/S-T2 для whole-plan scope/fit. Категории/разделы, порядок/reparent, topic move, authority/History/locks, public/private projections и acceptance разобраны; код не реализован.
+- Все шесть задач перед #320 теперь имеют завершённую реализацию первого блока либо технические планы остальных. Это не утверждение принятия новых proposals или завершения их реализации. **Лёва STOP**; email-auth, UI/UX, Stage 6, release и прочий backlog этим назначением не открыты.
 
 ## Следующий шаг
 
-Параллельно с ожидающим owner merge Watch #345 Лёва планирует **последний ещё не спланированный блок из шести задач перед #320**: управление структурой форума / перенос тем. Реализацию не начинать и implementation-order не менять. После полного плана — STOP и возврат Мире. Никакого дальнейшего pre-release planning вне этих шести задач этим назначением не открывается. Служебный #342 не merge.
+Мира проводит whole-plan scope/fit последнего плана структуры форума / переноса тем S0–S10: фиксирует S-P1–S-P4 (набор операций, Help boundary, authority/grants, state/reasons) и S-T1/S-T2 (schema/CAS/ACL/History и lock graph), при необходимости возвращает конкретные product forks владельцу. Лёва STOP. Watch #345 уже merged; отдельный docs closeout и последующий implementation-order сохраняются. Других planning-slice не назначено; служебный #342 не merge.
