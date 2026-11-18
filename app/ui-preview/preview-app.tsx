@@ -2794,7 +2794,7 @@ function PreviewProfileRoute({ scenario, interactions }: {
     githubUrl: empty ? null : "https://github.com/octocat",
     websiteUrl: empty ? null : "https://example.com/",
   };
-  return <ProfileView locale={scenario.locale} isOwner={identity?.id === id}
+  return <ProfileView locale={scenario.locale} isSelf={identity?.id === id}
     editing={query.get("edit") === "1"} saved={query.get("saved") === "1"}
     profile={{ id, name, image: null, joinedAt: "2026-09-01T00:00:00.000Z", ...fields,
       role: { slug: id === "maya" ? "admin" : "user", displayName: id === "maya" ? "Administrator" : "User", isSystem: true },
