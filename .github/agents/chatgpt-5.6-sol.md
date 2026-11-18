@@ -43,3 +43,8 @@ Coordinator review #343 на exact head `10321fdae762004ac2d55e9618a89c6c41e0d2a
 Сопоставлены независимые PASS Лиры и Марка с coordinator review. Расхождений и подтверждённых current-scope findings нет. PR #343 остаётся на stable exact head `10321fdae762004ac2d55e9618a89c6c41e0d2ac`, review cycle завершён.
 
 Решение: implementation готов к merge владельцем. Permanent/current-state docs обновляются только после фактического merge отдельным docs PR, чтобы не заявлять незавершённое состояние как факт.
+
+
+## 2026-11-18 — docs closeout
+
+После фактического merge #343 открыт отдельный docs PR #344 на base `d8667f630450f702783bbbdb9a3ec14432e75660`, head `cd72e8696167d71c8e93e7ab63ff8e86342af4c3`. Проверен состав: ровно пять documentation files, без code/schema/runtime changes. На момент записи применимые GitHub checks queued.
