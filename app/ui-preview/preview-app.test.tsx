@@ -575,6 +575,16 @@ describe("interactive Pages preview", () => {
     expect(document.querySelector(".settings-overview")).toBeNull();
   });
 
+  it("requires sign-in for guest direct access to User preferences", async () => {
+    render(<EmbeddedPreview scenarioId="settings-user-guest-unauthenticated" />);
+
+    const unauthenticated = await screen.findByRole("alert");
+    expect(within(unauthenticated).getByRole("heading", { level: 1, name: "Sign in required" })).toBeInTheDocument();
+    expect(within(unauthenticated).getByText("Sign in to access this page.")).toBeInTheDocument();
+    expect(screen.queryByRole("heading", { level: 2, name: "User preferences" })).not.toBeInTheDocument();
+    expect(document.querySelector(".settings-overview")).toBeNull();
+  });
+
   it("requires sign-in for guest direct access to Administrator preferences", async () => {
     render(<EmbeddedPreview scenarioId="settings-administrator-guest-unauthenticated" />);
 
