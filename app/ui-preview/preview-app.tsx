@@ -214,6 +214,9 @@ export const scenarios: readonly Scenario[] = [
   { id: "admin-guest-unauthenticated", label: "Authorization · guest unauthenticated", locale: "en", direction: "ltr", identity: "guest", path: "/en/admin/authorization", view: "admin", allowedIdentities: ["guest"] },
   { id: "admin-user-forbidden", label: "Authorization · ordinary user forbidden", locale: "en", direction: "ltr", identity: "user", path: "/en/admin/authorization", view: "admin", allowedIdentities: ["user"] },
   { id: "admin-topic", label: "Admin topic & messages", locale: "en", direction: "ltr", identity: "manager", path: "/en/admin/forum/topics/typed-api", view: "admin-topic", allowedIdentities: ["manager", "owner"] },
+  { id: "admin-topic-worker-auth", label: "Admin topic & messages · Worker auth", locale: "en", direction: "ltr", identity: "manager", path: "/en/admin/forum/topics/worker-auth", view: "admin-topic", allowedIdentities: ["manager", "owner"] },
+  { id: "admin-topic-missing", label: "Admin topic & messages · missing", locale: "en", direction: "ltr", identity: "manager", path: "/en/admin/forum/topics/missing-topic", view: "admin-topic", allowedIdentities: ["manager", "owner"] },
+  { id: "admin-topic-missing-guest", label: "Admin topic & messages · missing · guest", locale: "en", direction: "ltr", identity: "guest", path: "/en/admin/forum/topics/missing-topic", view: "admin-topic", allowedIdentities: ["guest"] },
   { id: "admin-topic-guest-unauthenticated", label: "Admin topic & messages · guest unauthenticated", locale: "en", direction: "ltr", identity: "guest", path: "/en/admin/forum/topics/typed-api", view: "admin-topic", allowedIdentities: ["guest"] },
   { id: "admin-topic-user-forbidden", label: "Admin topic & messages · ordinary user forbidden", locale: "en", direction: "ltr", identity: "user", path: "/en/admin/forum/topics/typed-api", view: "admin-topic", allowedIdentities: ["user"] },
   { id: "admin-success", label: "Authorization · saved", locale: "en", direction: "ltr", identity: "owner", path: "/en/admin/authorization", view: "admin", variant: "admin-success", allowedIdentities: ["owner"] },
@@ -1480,7 +1483,11 @@ function previewRouter(
     {
       path: "/:locale/admin/forum/topics/:topicId",
       element: <PreviewAdminTopicRoute scenario={scenario} interactions={interactions} />,
-      loader: () => previewAdminSurfaceAccessData(scenario),
+      loader: ({ params }) => {
+        previewAdminSurfaceAccessData(scenario);
+        previewTopicAccessData(scenario, interactions, params.topicId);
+        return null;
+      },
       ErrorBoundary: ForumRouteError,
     },
     {
@@ -2966,29 +2973,231 @@ async function previewAuthorizationAction(
   return { error: "invalid" as const };
 }
 
+function previewAdminTopicData(
+  scenario: Scenario,
+  interactions: PreviewInteractionState,
+  routeTopicId: string | undefined,
+) {
+  if (!routeTopicId) return null;
+
+  const created = interactions.createdTopics.get(routeTopicId);
+  if (created) {
+    const data = previewCreatedTopicData(scenario, created, interactions);
+    return {
+      topic: data.topic,
+      titlePresentation: data.titlePresentation,
+      postPresentations: data.postPresentations,
+      canManageHelpDuplicate: created.sectionId === HELP_SOLUTIONS_SERVICE_SECTION_ID,
+      pendingDuplicateAppeal: null,
+    };
+  }
+
+  if (routeTopicId === topicId) {
+    const data = primaryTopicScenarioData(scenario);
+    const topic = previewApplyTopicState(data.topic, interactions);
+    return {
+      topic,
+      titlePresentation: data.titlePresentation,
+      postPresentations: previewPresentationsForTopic(data.postPresentations, topic),
+      canManageHelpDuplicate: false,
+      pendingDuplicateAppeal: null,
+    };
+  }
+
+  const helpQuestion = previewHelpSolutions(scenario.locale).questions
+    .find((question) => question.id === routeTopicId);
+  if (helpQuestion) {
+    const postCount = Math.max(1, helpQuestion.replyCount + 1);
+    const bestAnswerPostId = helpQuestion.hasBestAnswer && postCount > 1
+      ? `${helpQuestion.id}-post-${Math.min(5, postCount)}`
+      : null;
+    const posts = Array.from({ length: postCount }, (_, index) => {
+      const id = `${helpQuestion.id}-post-${index + 1}`;
+      const authorName = index === 0
+        ? helpQuestion.authorName
+        : ["Sam Chen", "Maya Cohen", "Noa Levi"][index % 3]!;
+      return {
+        id,
+        topicId: helpQuestion.id,
+        authorId: previewProfileIdForName(authorName),
+        authorName,
+        parentPostId: index === 0 ? null : `${helpQuestion.id}-post-1`,
+        solutionModerationStatus: id === bestAnswerPostId ? helpQuestion.solutionModerationStatus : null,
+        solutionOutdatedReason: id === bestAnswerPostId ? helpQuestion.solutionOutdatedReason : null,
+        solutionOutdatedReasonKind: id === bestAnswerPostId ? helpQuestion.solutionOutdatedReasonKind : null,
+        createdAt: new Date(`2026-09-${28 + Math.min(index, 2)}T${10 + index}:00:00Z`),
+        body: {
+          id: `${helpQuestion.id}-body-${index + 1}`,
+          originalContent: index === 0
+            ? "Representative technical question from Help & solutions."
+            : `Representative answer #${index}.`,
+          sourceLocale: scenario.locale,
+        },
+      };
+    });
+    const baseTopic: PreviewTopicPage = {
+      id: helpQuestion.id,
+      sectionId: HELP_SOLUTIONS_SERVICE_SECTION_ID,
+      authorId: previewProfileIdForName(helpQuestion.authorName),
+      authorName: helpQuestion.authorName,
+      createdAt: new Date(helpQuestion.createdAt),
+      isPinned: false,
+      isSolved: helpQuestion.isSolved,
+      isClosed: false,
+      closureVersion: 0,
+      bestAnswerPostId,
+      needsDetails: helpQuestion.needsDetails,
+      duplicateOf: helpQuestion.duplicateOf,
+      duplicateDisputed: helpQuestion.duplicateDisputed,
+      title: {
+        id: `${helpQuestion.id}-title`,
+        originalContent: helpQuestion.title,
+        sourceLocale: scenario.locale,
+      },
+      section: {
+        id: HELP_SOLUTIONS_SERVICE_SECTION_ID,
+        name: "Questions",
+        category: {
+          id: HELP_SOLUTIONS_CATEGORY_ID,
+          name: previewHelpSolutions(scenario.locale).name,
+        },
+      },
+      tags: helpQuestion.tags,
+      posts,
+    };
+    const topic = previewApplyTopicState(baseTopic, interactions);
+    return {
+      topic,
+      titlePresentation: originalPresentation(
+        "topic-title", topic.id, topic.title.id, topic.title.originalContent,
+        scenario.locale, scenario.direction,
+      ),
+      postPresentations: previewPresentationsForTopic(
+        posts.map((post) => originalPresentation(
+          "post-body", post.id, post.body.id, post.body.originalContent,
+          scenario.locale, scenario.direction,
+        )),
+        topic,
+      ),
+      canManageHelpDuplicate: true,
+      pendingDuplicateAppeal: helpQuestion.duplicateDisputed
+        ? { id: `${helpQuestion.id}-appeal` }
+        : null,
+    };
+  }
+
+  const candidateSections = homepageCategories(scenario.locale)
+    .flatMap((overview) =>
+      previewCategory(scenario.locale, overview.id).sections.map((candidateSection) =>
+        previewSection(scenario.locale, candidateSection.id)
+      )
+    );
+  const matched = candidateSections
+    .flatMap((candidateSection) =>
+      candidateSection.topics.map((candidateTopic) => ({
+        section: candidateSection,
+        topic: candidateTopic,
+      }))
+    )
+    .find(({ topic: candidateTopic }) => candidateTopic.id === routeTopicId)
+    ?? previewDiscoveryTopic(scenario.locale, routeTopicId);
+  if (!matched) return null;
+
+  const matchedTopic = matched.topic as typeof matched.topic & {
+    isSolved?: boolean;
+    bestAnswerPostId?: string | null;
+    targetPostId?: string | null;
+  };
+  const replyAuthors = ["Maya Cohen", "Sam Chen", "Noa Levi"];
+  const messageCount = Math.max(1, matchedTopic.postCount);
+  const posts = Array.from({ length: messageCount }, (_, index) => ({
+    id: matchedTopic.targetPostId && index === messageCount - 1
+      ? matchedTopic.targetPostId
+      : `${matchedTopic.id}-post-${index + 1}`,
+    topicId: matchedTopic.id,
+    authorId: index === 0
+      ? previewProfileIdForName(matchedTopic.authorName)
+      : previewProfileIdForName(replyAuthors[(index - 1) % replyAuthors.length]!),
+    authorName: index === 0
+      ? matchedTopic.authorName
+      : replyAuthors[(index - 1) % replyAuthors.length]!,
+    parentPostId: index === 0 ? null : `${matchedTopic.id}-post-1`,
+    solutionModerationStatus: null,
+    solutionOutdatedReason: null,
+    solutionOutdatedReasonKind: null,
+    createdAt: new Date(`2026-09-${27 + Math.min(index, 3)}T${10 + (index % 8)}:00:00Z`),
+    body: {
+      id: `${matchedTopic.id}-body-${index + 1}`,
+      originalContent: index === 0
+        ? "Representative question for checking the topic page in Pages preview."
+        : `Representative reply #${index}.`,
+      sourceLocale: scenario.locale,
+    },
+  }));
+  const baseTopic: PreviewTopicPage = {
+    id: matchedTopic.id,
+    sectionId: matched.section.id,
+    authorId: previewProfileIdForName(matchedTopic.authorName),
+    authorName: matchedTopic.authorName,
+    createdAt: matchedTopic.createdAt,
+    isPinned: matchedTopic.isPinned,
+    isSolved: matchedTopic.isSolved ?? false,
+    isClosed: false,
+    closureVersion: 0,
+    bestAnswerPostId: matchedTopic.bestAnswerPostId ?? null,
+    needsDetails: false,
+    duplicateOf: null,
+    duplicateDisputed: false,
+    title: matchedTopic.title,
+    section: {
+      id: matched.section.id,
+      name: matched.section.name,
+      category: matched.section.category,
+    },
+    tags: matchedTopic.tags,
+    posts,
+  };
+  const topic = previewApplyTopicState(baseTopic, interactions);
+  return {
+    topic,
+    titlePresentation: originalPresentation(
+      "topic-title", topic.id, topic.title.id, topic.title.originalContent,
+      scenario.locale, scenario.direction,
+    ),
+    postPresentations: previewPresentationsForTopic(
+      posts.map((post) => originalPresentation(
+        "post-body", post.id, post.body.id, post.body.originalContent,
+        scenario.locale, scenario.direction,
+      )),
+      topic,
+    ),
+    canManageHelpDuplicate: matched.section.id === HELP_SOLUTIONS_SERVICE_SECTION_ID,
+    pendingDuplicateAppeal: null,
+  };
+}
+
 function PreviewAdminTopicRoute({ scenario, interactions }: {
   scenario: Scenario;
   interactions: PreviewInteractionState;
 }) {
   const { topicId: routeTopicId } = useParams();
-  const data = primaryTopicScenarioData(scenario);
-  const baseTopic = routeTopicId === data.topic.id ? data.topic : data.topic;
-  const interactiveTopic = previewApplyTopicState(baseTopic, interactions);
+  const data = previewAdminTopicData(scenario, interactions, routeTopicId);
+  if (!data) throw new Response("Not Found", { status: 404 });
   return <AdminTopicView
     locale={scenario.locale}
     access={{canEnter:true,canReadForum:true,canManageAuthorization:true,canReadHistory:true}}
-    topic={projectAdminTopic(interactiveTopic, false)}
+    topic={projectAdminTopic(data.topic, data.canManageHelpDuplicate)}
     titlePresentation={data.titlePresentation}
-    postPresentations={previewPresentationsForTopic(data.postPresentations, interactiveTopic)}
-    actorId="maya"
+    postPresentations={data.postPresentations}
+    actorId={previewUser(scenario)?.id ?? "maya"}
     canManagePin
     canManageClosure
     canManageAnySolution
     canCorrectAnySourceLocale
     canReadPostHistory
-    canManageHelpDuplicate={false}
-    canModerateHelpSolution={false}
-    pendingDuplicateAppeal={null}
+    canManageHelpDuplicate={data.canManageHelpDuplicate}
+    canModerateHelpSolution={data.canManageHelpDuplicate}
+    pendingDuplicateAppeal={data.pendingDuplicateAppeal}
   />;
 }
 
