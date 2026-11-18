@@ -4,7 +4,7 @@
 
 1. Служебный PR: **#315**.
 2. Моя текущая работа: audit/coordination only; remediation и implementation не назначены.
-3. Текущий этап: **Block J active. J1 PASS; J2 = deferred `GOOGLE-OAUTH-SCOPE-01 Low/P3`; J3–J6 PASS; следующий bounded slice — J7 Failure/data-retention/cross-provider boundary.** Overall #315 = 28 current findings + 4 deferred Stage-6 blockers. Stage 6 paused; provider/Queue activation не выполнялась.
+3. Текущий этап: **Block J active. J1 PASS; J2 = deferred `GOOGLE-OAUTH-SCOPE-01 Low/P3`; J3–J7 PASS; следующий bounded slice — J8 Cross-chain closeout.** Overall #315 = 28 current findings + 4 deferred Stage-6 blockers. Stage 6 paused; provider/Queue activation не выполнялась.
 4. Technical audit target B–D: `e279cb6c032a489a9044ca1191407df887c364b4`.
 5. Current `main` — `7cc23edede57994cdedab49c1556ddb55034dd29`. Delta от I1 target включает SA-04/SA-05–SA-08 и topic-title work; I2 отдельно re-read current workflows and source-of-truth.
 6. Лира, Марк и Лёва по #315 сейчас не назначены.
@@ -331,6 +331,13 @@
 300. AdministrativeRouting defaults relative same-origin; Worker runtime never sets administrativeRoutingContext and no source call supplies external bases. Future cross-origin producer remains Stage-6 design/acceptance, not a current/deferred finding.
 301. J6 performed no external call/webhook/Queue/deploy/settings mutation. Aggregate remains 28 current + 4 deferred. Next J7 failure/data-retention/cross-provider boundary.
 
+302. J7 target current main `7cc23edede57994cdedab49c1556ddb55034dd29`: **PASS, 0 new current findings / 0 deferred blockers**.
+303. Translation failures and operational provider-call facts persist only bounded codes/counts/durations; no raw provider error, source content or credential is intentionally copied into durable observability.
+304. Content execution is bound to one admitted provider and `translateWithProvider`; UI router selects one supporting adapter and does not fall through after failure. No weaker-policy cross-provider fallback path established.
+305. Content storage failure/invalidity degrades to immutable original; UI machine rows require exact approved/current fingerprint/policy and invalid/stale rows are skipped.
+306. Better Auth owned account unlink deletes the selected account row, but exact future Google provider token revocation/retention remains **Информация не проверена** until Stage 6. Current Cloudflare Workers AI standard inference remains documented ZDR; future Gateway/log/cache settings likewise require Stage-6 recheck.
+307. J7 performed no external call/token mutation/provider/Queue/deploy/settings mutation. Aggregate remains 28 current + 4 deferred. Next J8 cross-chain closeout.
+
 ## Ограничения
 
 1. Stage 6 external activation остаётся paused.
@@ -341,5 +348,5 @@
 
 ## Следующий шаг
 
-1. После продолжения владельца выполнить **J7 — Failure/data-retention/cross-provider boundary** на current main и остановиться после результата.
+1. После продолжения владельца выполнить **J8 — Cross-chain closeout** на current main и остановиться после результата.
 2. Remediation findings/blockers Blocks B–J не начинать без отдельного назначения.
