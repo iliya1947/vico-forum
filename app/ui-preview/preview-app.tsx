@@ -173,6 +173,7 @@ export const scenarios: readonly Scenario[] = [
   { id: "help-solutions-mine-empty", label: "Help & solutions · My questions · empty", locale: "en", direction: "ltr", identity: "user", path: "/en/categories/help-solutions?mode=mine", view: "category", variant: "help-solutions-mine-empty", allowedIdentities: ["user", "manager"] },
   { id: "help-solutions-mine-guest", label: "Help & solutions · My questions · unauthenticated", locale: "en", direction: "ltr", identity: "guest", path: "/en/categories/help-solutions?mode=mine", view: "category", allowedIdentities: ["guest"] },
   { id: "category-guest", label: "Category", locale: "en", direction: "ltr", identity: "guest", path: "/en/categories/development", view: "category" },
+  { id: "category-vibe-ai-guest", label: "Category · Vibe Coding & AI tools", locale: "en", direction: "ltr", identity: "guest", path: "/en/categories/vibe-ai-tools", view: "category", allowedIdentities: ["guest"] },
   { id: "category-missing", label: "Category · missing", locale: "en", direction: "ltr", identity: "guest", path: "/en/categories/missing-category", view: "category", allowedIdentities: ["guest"] },
   { id: "category-no-pins", label: "Category · no pins", locale: "en", direction: "ltr", identity: "guest", path: "/en/categories/development", view: "category", variant: "category-no-pins" },
   { id: "section-user", label: "Section", locale: "en", direction: "ltr", identity: "user", path: "/en/sections/typescript", view: "section" },
@@ -2955,6 +2956,39 @@ function PreviewAdminTopicRoute({ scenario, interactions }: {
   />;
 }
 
+function previewCategoryCardTopic(
+  locale: PreviewLocale,
+  routeTopicId: string,
+) {
+  for (const category of homepageCategories(locale)) {
+    for (const sectionSummary of category.sections) {
+      const cards = previewCategoryTopics(locale, sectionSummary.id, sectionSummary.name);
+      const pinned = cards.pinnedTopics.find((topic) => topic.id === routeTopicId);
+      const latest = cards.latestTopics.find((topic) => topic.id === routeTopicId);
+      const matched = pinned ?? latest;
+      if (!matched) continue;
+
+      return {
+        section: previewSection(locale, sectionSummary.id),
+        topic: {
+          id: matched.id,
+          authorName: matched.authorName,
+          postCount: 1,
+          createdAt: new Date(matched.activityAt),
+          isPinned: Boolean(pinned),
+          tags: [],
+          title: {
+            id: `${matched.id}-title-preview`,
+            originalContent: matched.title,
+            sourceLocale: locale,
+          },
+        },
+      };
+    }
+  }
+  return null;
+}
+
 function previewDiscoveryTopic(
   locale: PreviewLocale,
   routeTopicId: string,
@@ -3006,7 +3040,7 @@ function previewDiscoveryTopic(
     };
   }
 
-  return null;
+  return previewCategoryCardTopic(locale, routeTopicId);
 }
 
 function PreviewTopicRoute({ scenario, interactions }: {
