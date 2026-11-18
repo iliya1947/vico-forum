@@ -416,6 +416,17 @@ describe("interactive Pages preview", () => {
     expect(roleCard).not.toBeNull();
     expect(within(roleCard).getByText("Role slug: settings-helper")).toBeInTheDocument();
 
+    const duplicateRoleForm = document.querySelector(".admin-create-role") as HTMLElement;
+    await user.clear(within(duplicateRoleForm).getByLabelText("Role slug"));
+    await user.type(within(duplicateRoleForm).getByLabelText("Role slug"), "settings-helper");
+    await user.clear(within(duplicateRoleForm).getByLabelText("Display name"));
+    await user.type(within(duplicateRoleForm).getByLabelText("Display name"), "Duplicate settings helper");
+    await user.click(within(duplicateRoleForm).getByRole("button", { name: "Create custom role" }));
+
+    expect(await screen.findByRole("alert")).toHaveTextContent("Check the submitted values.");
+    expect(screen.queryByRole("heading", { name: "Duplicate settings helper" })).not.toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Settings helper" })).toBeInTheDocument();
+
     const renameForm = roleCard.querySelector(".admin-rename-role") as HTMLElement;
     const displayName = within(renameForm).getByLabelText("Display name");
     await user.clear(displayName);
