@@ -14,7 +14,7 @@
 - Watch independent technical review: **Лёва PASS** всего принятого scope на том же exact head `76c1c456557c614171a3b472758498795a668b9a` против main `7cc23edede57994cdedab49c1556ddb55034dd29`; подтверждённых current-scope findings нет. Код не изменён; Лёва STOP.
 - Review synthesis: оба review совпали на неизменном exact head, расхождений и подтверждённых current-scope defects нет. По действующему owner decision из `docs/UI_UX_PASS.md` функциональные bounded-срезы не задерживаются из-за косметики; финальная owner visual/product acceptance остаётся отдельным UI/UX pass перед публичным запуском. Поэтому отдельный Watch visual gate сейчас merge не блокирует.
 - Watch implementation review cycle завершён, #345 merged. Permanent/current-state docs closeout остаётся отдельным PR после implementation merge; это planning-задание не заменяет его.
-- Bookmarks: **реализация активирована владельцем**. Лёва / Codex-6.1 Sol реализует принятый Bookmarks scope прямо в Draft PR #346 от актуального `main` после merged Watch. Поскольку Лёва — исполнитель, независимый review после coordinator PASS Миры выполняет Марк / Codex-6 Sol.
+- Bookmarks: **реализация активирована владельцем**. Лира / ChatGPT-6 реализует принятый Bookmarks scope прямо в Draft PR #346 от актуального `main` после merged Watch. Лёва завершил planning всех шести задач перед #320 и к реализации Bookmarks не назначен; после coordinator PASS Миры он выполняет независимый technical review.
 - Mute/block: план принят, реализация ждёт очереди.
 
 ## Опережающий planning-track
@@ -28,4 +28,4 @@
 
 ## Следующий шаг
 
-Лёва реализует **Bookmarks** в PR #346 по уже принятому плану Bookmarks из `USER_ACTIONS_SERVICE_PLAN.md`, сверив его с актуальным `main` после merged Watch. После полной реализации, применимых проверок и stable exact head — **STOP и возврат Мире** на coordinator whole-PR review. После PASS Миры независимый review того же stable exact head выполняет Марк / Codex-6 Sol. План структуры форума S0–S10 остаётся готовым к отдельному scope/fit; его реализация сейчас не активирована. Служебный #342 не merge.
+Лира реализует **Bookmarks** в PR #346 по уже принятому плану Bookmarks из `USER_ACTIONS_SERVICE_PLAN.md`, сверив его с актуальным `main` после merged Watch. После полной реализации, применимых проверок и stable exact head — **STOP и возврат Мире** на coordinator whole-PR review. После PASS Миры независимый technical review того же stable exact head выполняет Лёва / Codex-6.1 Sol. План структуры форума S0–S10 уже завершён Лёвой и остаётся готовым к отдельному scope/fit; его реализация сейчас не активирована. Служебный #342 не merge.
