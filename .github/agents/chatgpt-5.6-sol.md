@@ -4,7 +4,7 @@
 
 1. Служебный PR: **#315**.
 2. Моя текущая работа: audit/coordination only; remediation и implementation не назначены.
-3. Текущий этап: **Block I I1 = `REPO-MAIN-GATE-01 Moderate/P2`; I2 PASS; I3 repository-side PASS, 0 additional; следующий bounded slice — I4 Secret custody & leakage.** Exact mutable Environment policy/secret inventory — `Информация не проверена`. Block H закрыт с 0 current findings + 2 deferred Stage-6 blockers; Block G закрыт с 3 current findings + deferred `DB-RUNTIME-EVIDENCE-01`.
+3. Текущий этап: **Block I I1 = `REPO-MAIN-GATE-01 Moderate/P2`; I2 PASS; I3 PASS; I4 PASS, 0 additional / 0 new deferred; следующий bounded slice — I5 Dependency & install provenance.** Exact mutable Environment secret inventory и complete Secret Scanning alert state — `Информация не проверена`. Block H закрыт с 0 current findings + 2 deferred Stage-6 blockers; Block G закрыт с 3 current findings + deferred `DB-RUNTIME-EVIDENCE-01`.
 4. Technical audit target B–D: `e279cb6c032a489a9044ca1191407df887c364b4`.
 5. Current `main` — `7cc23edede57994cdedab49c1556ddb55034dd29`. Delta от I1 target включает SA-04/SA-05–SA-08 и topic-title work; I2 отдельно re-read current workflows and source-of-truth.
 6. Лира, Марк и Лёва по #315 сейчас не назначены.
@@ -215,6 +215,16 @@
 186. No secret values read; no dispatch, approval, GitHub setting, Cloudflare, Neon or production mutation performed.
 187. Unknown mutable Environment policy is not a finding by itself while Stage 6 is paused; it is a mandatory recheck immediately before any future production dispatch.
 188. I3 does not duplicate `REPO-MAIN-GATE-01`; aggregate remains 25 current findings + 3 deferred blockers.
+189. I4: **PASS, 0 new current findings, 0 new deferred blockers** on `7cc23edede57994cdedab49c1556ddb55034dd29`.
+190. Current-tree secret scan found empty placeholders plus synthetic/local/example fixtures only; no committed real credential established. `.env*` / `.dev.vars*` are ignored except `.env.example`.
+191. Historical production bootstrap/diagnostic/recovery/recovery-v2/Worker/migration job logs were read: no PostgreSQL URI or SCRAM verifier; GitHub secrets masked; Vico output bounded. Checked production runs expose no uploaded artifacts.
+192. Worker secrets file uses `$RUNNER_TEMP`, `umask 077`, mode 0600 and EXIT cleanup. GitHub current docs confirm temp cleanup and fresh hosted VM/decommission lifecycle; no concrete temp persistence path.
+193. Exact successful Pages artifact for current main `7cc23ede…` was downloaded/unpacked and scanned: no credential value, DB URL, SCRAM verifier, Owner binding or production secret. Only dependency code string-name `BETTER_AUTH_SECRET` appears, without value.
+194. Vite current docs confirm default client env exposure only for `VITE_` prefix; UI-preview config does not widen envPrefix and audited artifact contains no `VITE_*` secret material.
+195. Live Neon read-only recheck: `vico_forum_web` is LOGIN, non-superuser/non-CREATEDB/non-CREATEROLE/non-replication/non-BYPASSRLS, and `rolvaliduntil=NULL` = no password expiration under PostgreSQL 17 semantics.
+196. Current Neon project member query returned one effective Admin member only. Recorded plaintext SQL Editor history therefore has no proven less-trusted Neon reader; abstract Owner-account compromise is outside finding criteria. No rotation finding created.
+197. Exact current GitHub Environment secret inventory/location, consumed-temp-secret existence and complete Secret Scanning open-alert/history state remain **Информация не проверена**; unknown state is not leak evidence.
+198. I4 no dispatch/settings/rotation/production write. Neon reads only. Aggregate remains 25 current findings + 3 deferred blockers.
 
 ## Ограничения
 
@@ -226,5 +236,5 @@
 
 ## Следующий шаг
 
-1. После продолжения владельца выполнить **I4 — Secret custody & leakage** на current main и остановиться после результата.
+1. После продолжения владельца выполнить **I5 — Dependency & install provenance** на current main и остановиться после результата.
 2. `REPO-MAIN-GATE-01` не дублировать. Remediation не начинать.
