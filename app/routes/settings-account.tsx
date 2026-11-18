@@ -1,4 +1,12 @@
-import { data, Form, useActionData, useLoaderData, useNavigation, type RouterContextProvider } from "react-router";
+import {
+  data,
+  Form,
+  useActionData,
+  useLoaderData,
+  useNavigation,
+  useRevalidator,
+  type RouterContextProvider,
+} from "react-router";
 import { useTranslation } from "react-i18next";
 import type { UiKey } from "../localization/catalog";
 import { GoogleAccountLink } from "../auth/google-account-link";
@@ -145,17 +153,24 @@ const errorKeys: Record<ActionError, UiKey<"common">> = {
   unavailable: "settingsSecurityUnavailable",
 };
 
-export default function SettingsAccountRoute({ mutationMode = "all" }: {
+export default function SettingsAccountRoute({ mutationMode = "all", googleLink }: {
   mutationMode?: "all" | "sessions" | "revoke-one" | "none";
+  googleLink?: (callbackURL: string, expectedUserId: string) => Promise<boolean>;
 } = {}) {
   const state = useLoaderData<typeof loader>();
   const result = useActionData<typeof action>();
   const navigation = useNavigation();
+  const revalidator = useRevalidator();
   const { t } = useTranslation("common");
   const header = useHeaderAuthUser();
   const currentAccount = header?.id === state.accountId;
   const busy = navigation.state !== "idle";
   const otherSessions = state.sessions.filter(session => !session.current);
+  const previewGoogleLink = googleLink ? async (callbackURL: string, expectedUserId: string) => {
+    const linked = await googleLink(callbackURL, expectedUserId);
+    if (linked) await revalidator.revalidate();
+    return linked;
+  } : undefined;
   const identityFields = <>
     <input type="hidden" name="expectedUserId" value={state.accountId} />
     <input type="hidden" name="expectedSessionId" value={state.sessionId} />
@@ -176,7 +191,8 @@ export default function SettingsAccountRoute({ mutationMode = "all" }: {
           <ul>{state.linkedMethods.map(method =>
             <li key={method}>{method === "password" ? t("settingsSecurityPasswordMethod") : "Google"}</li>)}</ul>
           {mutationMode === "all" && !state.linkedMethods.includes("google")
-            ? <GoogleAccountLink callbackURL={settingsAccountPath(state.locale)} expectedUserId={state.accountId} />
+            ? <GoogleAccountLink callbackURL={settingsAccountPath(state.locale)}
+              expectedUserId={state.accountId} link={previewGoogleLink} />
             : null}
           {!state.hasPassword ? <p>{t("settingsSecurityNoPassword")}</p> : null}
         </section>
