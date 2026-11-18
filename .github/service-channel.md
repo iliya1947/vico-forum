@@ -353,3 +353,8 @@ Draft implementation #345 current interim head `72e9b8d15ee515af1c5dab309cc66ea9
 Владелец принял рекомендованные M1 и M2 без изменений. Mute = topic-level suppression всех будущих ordinary reply/mention notices без Unwatch/content hiding. Block = directional user filter: ordinary notices from target actor suppressed, target actor posts collapsed for blocker with explicit reveal; no publication/read ban.
 
 Таким образом Mute/block scope полностью принят, а весь advance-planning перед #320 завершён. Watch #345 остаётся текущим implementation-этапом; Bookmarks и затем Mute/block ждут своей очереди.
+
+
+## 2026-11-18 — Watch UI/loader subtask STOP (Лира)
+
+В рамках отдельной подзадачи проверены уже существующие `app/routes/topic.tsx` private personalized Watch loader, `topic-watch-control.tsx` actor/topic scoped UI и RU/HE localization на #345 interim head `19a5015c0d2b9ff7ccfe57cd03e64b64e0a8e191`. GitHub exact-head `checks` job `134798391182`: lint/typecheck/unit/build/preview/metadata/schema parity PASS; database PASS. Но `watch_browser` job **FAIL**, без диагностики в этой подзадаче; общий CI ещё не PASS, head не stable, PR Draft. Код UI уже есть — коммит не нужен. По прямой просьбе разработчика STOP после одной подзадачи. Следующие отдельные итерации: unit/route/component test audit → PG/concurrency tests → Chromium failure/acceptance; переходы только по отдельной команде.
