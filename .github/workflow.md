@@ -9,8 +9,10 @@
 
 - Edit own topic title: завершён.
 - Watch: implementation Лиры в Draft PR #345; **CI-stable technical head** `76c1c456557c614171a3b472758498795a668b9a`, base main `7cc23edede57994cdedab49c1556ddb55034dd29`, 17/17 exact-head GitHub checks PASS, включая database и connected watch_browser; GitHub mergeable, no changes since browser PASS.
-- Watch independent technical review: **Лёва PASS** всего принятого scope на том же exact head `76c1c456557c614171a3b472758498795a668b9a` против main `7cc23edede57994cdedab49c1556ddb55034dd29`; подтверждённых current-scope findings нет. Выполнено по прямому назначению владельца в комментарии #342 `6983159716`, которое заменило прежний следующий шаг. Код не изменён; Лёва STOP, результат возвращён Мире в service-channel и личном файле.
-- Review status boundary: этот technical PASS не означает owner visual acceptance, coordinator PASS, завершённый docs closeout или разрешение merge/deploy. #345 остаётся Draft; оставшийся процесс ведёт Мира.
+- Watch coordinator whole-PR review: **Мира PASS** на exact head `76c1c456557c614171a3b472758498795a668b9a`; подтверждённых current-scope findings нет.
+- Watch independent technical review: **Лёва PASS** всего принятого scope на том же exact head `76c1c456557c614171a3b472758498795a668b9a` против main `7cc23edede57994cdedab49c1556ddb55034dd29`; подтверждённых current-scope findings нет. Код не изменён; Лёва STOP.
+- Review synthesis: оба review совпали на неизменном exact head, расхождений и подтверждённых current-scope defects нет. По действующему owner decision из `docs/UI_UX_PASS.md` функциональные bounded-срезы не задерживаются из-за косметики; финальная owner visual/product acceptance остаётся отдельным UI/UX pass перед публичным запуском. Поэтому отдельный Watch visual gate сейчас merge не блокирует.
+- Watch implementation review cycle завершён; #345 готов к merge владельцем. Permanent/current-state docs closeout выполняется отдельным PR только после фактического merge.
 - Bookmarks: план принят, реализация ждёт очереди.
 - Mute/block: план принят, реализация ждёт очереди.
 
@@ -24,4 +26,4 @@
 
 ## Следующий шаг
 
-Мира принимает результат независимого технического review Watch #345 на `76c1c456557c614171a3b472758498795a668b9a` и фиксирует дальнейший coordinator/acceptance/docs маршрут; служебный #342 не merge. Лёва STOP. Новые planning-slice, включая структуру форума/перенос тем, не начаты и требуют отдельной команды владельца. Visibility plan остаётся готовым к scope/fit Миры; metadata #346/#342 требуют прежней синхронизации. Implementation-order не меняется.
+Владелец merge Watch implementation PR #345 на reviewed exact head `76c1c456557c614171a3b472758498795a668b9a`. После фактического merge — отдельный docs closeout PR, затем переход implementation-order к Bookmarks. Служебный #342 не merge. Лёва STOP. Visibility plan остаётся отдельным опережающим планом; структура форума/перенос тем не начинается без отдельной команды владельца.
