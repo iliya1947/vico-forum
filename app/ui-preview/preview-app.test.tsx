@@ -260,6 +260,32 @@ describe("interactive Pages preview", () => {
     });
   });
 
+  it("shows forbidden registration feedback without changing the saved policy", async () => {
+    const user = userEvent.setup();
+    render(<EmbeddedPreview scenarioId="settings-forum-registration-forbidden" identity="owner" />);
+
+    const google = await screen.findByRole("checkbox", { name: "Allow new accounts through Google" });
+    const email = screen.getByRole("checkbox", { name: "Allow new accounts through email and password" });
+    expect(google).toBeChecked();
+    expect(email).toBeChecked();
+
+    await user.click(google);
+    await user.click(screen.getByRole("button", { name: "Save registration settings" }));
+
+    expect(await screen.findByRole("alert")).toHaveTextContent(
+      "Only the Owner can change registration settings.",
+    );
+
+    await user.click(screen.getByRole("link", { name: "Settings" }));
+    const settingsOverview = document.querySelector(".settings-overview") as HTMLElement;
+    await user.click(within(settingsOverview).getByRole("link", { name: "Forum & roles" }));
+
+    await waitFor(() => {
+      expect(screen.getByRole("checkbox", { name: "Allow new accounts through Google" })).toBeChecked();
+      expect(screen.getByRole("checkbox", { name: "Allow new accounts through email and password" })).toBeChecked();
+    });
+  });
+
   it("updates the owner email registration flag independently from Google", async () => {
     const user = userEvent.setup();
     render(<EmbeddedPreview scenarioId="section-user" identity="owner" />);
