@@ -523,6 +523,29 @@ describe("interactive Pages preview", () => {
     expect(screen.queryByRole("alert")).not.toBeInTheDocument();
   });
 
+  it("blocks an empty custom role display name in Forum & roles before submission", async () => {
+    const user = userEvent.setup();
+    render(<EmbeddedPreview scenarioId="section-user" identity="owner" />);
+
+    await user.click(screen.getByRole("link", { name: "Settings" }));
+    const settingsOverview = document.querySelector(".settings-overview") as HTMLElement;
+    await user.click(within(settingsOverview).getByRole("link", { name: "Forum & roles" }));
+
+    expect(await screen.findByRole("heading", { level: 2, name: "Registration" })).toBeInTheDocument();
+    const createRoleForm = document.querySelector(".admin-create-role") as HTMLElement;
+    const roleCountBefore = document.querySelectorAll(".admin-role-card").length;
+    const displayName = within(createRoleForm).getByLabelText("Display name");
+
+    await user.type(within(createRoleForm).getByLabelText("Role slug"), "empty-name");
+    expect(displayName).toBeInvalid();
+    await user.click(within(createRoleForm).getByRole("button", { name: "Create custom role" }));
+
+    expect(displayName).toBeInvalid();
+    expect(document.querySelectorAll(".admin-role-card")).toHaveLength(roleCountBefore);
+    expect(screen.queryByText("Role slug: empty-name")).not.toBeInTheDocument();
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+  });
+
   it("keeps the registration version unchanged on a no-op save", async () => {
     const user = userEvent.setup();
     render(<EmbeddedPreview scenarioId="section-user" identity="owner" />);
