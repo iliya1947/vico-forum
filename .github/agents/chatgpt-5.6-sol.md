@@ -4,7 +4,7 @@
 
 1. Служебный PR: **#315**.
 2. Моя текущая работа: audit/coordination only; remediation и implementation не назначены.
-3. Текущий этап: **Block K active. K1–K2 PASS; K3 = `FORUM-EDIT-SPAM-01 Moderate/P2`; K4 = `PUBLIC-READ-COST-01 Moderate/P2`; K5 = `ATTACH-SECURITY-EVENT-SPAM-01 Moderate/P2`; следующий bounded slice — K6 Background / translation / notification amplification.** Overall #315 = 31 current findings + 4 deferred Stage-6 blockers. Stage 6 paused.
+3. Текущий этап: **Block K active. K1–K2 PASS; K3 = `FORUM-EDIT-SPAM-01 Moderate/P2`; K4 = `PUBLIC-READ-COST-01 Moderate/P2`; K5 = `ATTACH-SECURITY-EVENT-SPAM-01 Moderate/P2`; K6 = `MENTION-FANOUT-01 Moderate/P2`; следующий bounded slice — K7 Dependency failure / backpressure.** Overall #315 = 32 current findings + 4 deferred Stage-6 blockers. Stage 6 paused.
 4. Technical audit target B–D: `e279cb6c032a489a9044ca1191407df887c364b4`.
 5. Current `main` — `7cc23edede57994cdedab49c1556ddb55034dd29`. Delta от I1 target включает SA-04/SA-05–SA-08 и topic-title work; I2 отдельно re-read current workflows and source-of-truth.
 6. Лира, Марк и Лёва по #315 сейчас не назначены.
@@ -385,6 +385,15 @@
 347. Impact: repeated distinct rejected events can create unbounded DB/index security-event growth and monitoring noise. Moderate/P2; independent of FORM-BODY-BOUNDS-01, ATTACH-TEXT-TAIL-01 and intentional no-file-quota policy.
 348. Exact deployed R2/scheduler/cost state is Информация не проверена; real schedule/R2 remains Stage6 acceptance. No external upload/load test performed. Aggregate 31 current +4 deferred; current severity 12 Moderate +19 Low. Next K6.
 
+349. K6 target current main `7cc23edede57994cdedab49c1556ddb55034dd29`: **1 new current finding — MENTION-FANOUT-01 Moderate/P2; 0 deferred blockers**.
+350. Translation/background PASS for generic amplification: current Worker keeps generation disabled; prepared actor admission is fail-closed; global+requester request budgets are consumed atomically with task planning; default task attempt budget is 3; budget cleanup max=1000; reconciliation max=100 with durable 60s per-task retry floor.
+351. Provider/Queue-specific retry/cost remains Block J. No current K6 defect is created from unwired provider/enqueuer/consumer or unknown future production budget values.
+352. K3 wording corrected: direct reply recipients are bounded to topic/parent recipients, but parsed mentions were not actually bounded. K6 owns that distinct fan-out root cause.
+353. MENTION-FANOUT-01: publishedMentionRecipients returns every distinct valid profile recipient in accepted Markdown; recordPublishedMentions resolves the full set and inserts one durable notification per matching recipient. recipient+post uniqueness deduplicates repeats but does not cap different recipients.
+354. This is independent of FORUM-PUB-01 content-size admission: the missing boundary is a semantic recipient ceiling. Autocomplete page size is presentation only and is not server admission.
+355. Impact: one ordinary authenticated successful publication can create recipient-proportional durable inbox rows and DB work. Severity Moderate/P2; no authority/confidentiality bypass.
+356. Complaint-result fan-out is privileged/domain-bound and did not produce another finding. No generation/Queue/provider/flood test executed. Aggregate 32 current +4 deferred; current severity 13 Moderate +19 Low. Next K7.
+
 ## Ограничения
 
 1. Stage 6 external activation остаётся paused.
@@ -395,5 +404,5 @@
 
 ## Следующий шаг
 
-1. После продолжения владельца выполнить **K6 — Background / translation / notification amplification** на current main и остановиться после результата.
+1. После продолжения владельца выполнить **K7 — Dependency failure / backpressure** на current main и остановиться после результата.
 2. Remediation findings/blockers Blocks B–K не начинать без отдельного назначения.
