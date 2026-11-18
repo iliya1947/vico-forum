@@ -4,9 +4,9 @@
 
 1. Служебный PR: **#315**.
 2. Моя текущая работа: audit/coordination only; remediation и implementation не назначены.
-3. Текущий этап: **Block K complete. K8 cross-chain PASS, 0 additional; final K = 5 current findings (4 Moderate/P2 + 1 Low/P3), 0 deferred blockers. Следующая security area — Block L Security monitoring & incident response.** Overall #315 = 33 current findings + 4 deferred Stage-6 blockers. Stage 6 paused.
+3. Текущий этап: **Block L active. L1 Monitoring/incident-response inventory & ownership PASS, 0 new findings / 0 deferred blockers; следующий bounded slice — L2 Security source attribution / telemetry admission.** Overall #315 = 33 current findings + 4 deferred Stage-6 blockers. Stage 6 paused.
 4. Technical audit target B–D: `e279cb6c032a489a9044ca1191407df887c364b4`.
-5. Current `main` — `7cc23edede57994cdedab49c1556ddb55034dd29`. Delta от I1 target включает SA-04/SA-05–SA-08 и topic-title work; I2 отдельно re-read current workflows and source-of-truth.
+5. Current `main` — `9c4639d23ca075c8bb92fbb909b96593d7bee127`. После Block K main продвинулся Watch #345 (`0068_topic_watch`); Block L стартует на этом current main.
 6. Лира, Марк и Лёва по #315 сейчас не назначены.
 
 ## Где читать состояние
@@ -408,6 +408,14 @@
 367. Release gate: all five K current findings require bounded remediation + regression coverage before public Stage7 release. K8 starts no remediation.
 368. Final K = 5 current (4 Moderate/P2 +1 Low/P3), 0 deferred. Overall #315 remains 33 current +4 deferred; current severity 13 Moderate +20 Low. Next security area after developer continuation: Block L Security monitoring & incident response, separate file.
 
+369. Block L создан как `SECURITY_BLOCK_L_MONITORING_INCIDENT_RESPONSE.md` на current main `9c4639d23ca075c8bb92fbb909b96593d7bee127`.
+370. L1 inventory/ownership: **PASS, 0 new current findings / 0 deferred blockers**.
+371. Evidence classes mapped: exact auth facts in owner_events; bounded/coalesced auth/access attempts; native attachment-security evidence; System request/dependency facts + sampled monitor observations; native domain History; bounded best-effort operational facts.
+372. Attempt telemetry admits max256 new attributed groups/hour/pool; repeats coalesce; unknown/overflow/gap use bounded slots. Monitor snapshots use bounded sampling/dedup and expose degraded/unavailable recording rather than false healthy zeroes.
+373. Global/scoped History preserves original source identity; target History includes only persisted person-attributed sources. Current retention is indefinite by approved Owner policy; L3 will audit consistency rather than treating policy itself as a defect.
+374. Watch #345 delta reuses forum_reply_notifications, already the notifications.inbox current/History source; no new L-owned journal/source class. PROJECT_STATE still says repository migrations through 0067 while main has 0068 — factual docs drift outside L, not an L security finding.
+375. No external incident drill/alert delivery/provider/R2/background mutation performed. Next L2 source attribution/telemetry admission.
+
 ## Ограничения
 
 1. Stage 6 external activation остаётся paused.
@@ -418,5 +426,5 @@
 
 ## Следующий шаг
 
-1. После продолжения владельца создать отдельный **Block L — Security monitoring & incident response** и выполнить его первый bounded slice.
+1. После продолжения владельца выполнить **L2 — Security source attribution / telemetry admission** на current main и остановиться после результата.
 2. Remediation findings/blockers Blocks B–K не начинать без отдельного назначения.
