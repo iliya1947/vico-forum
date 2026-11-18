@@ -210,3 +210,13 @@ owner visual acceptance не заявляется. MIGRATIONS.md менять т
 
 Автор docs автоматически не назначен — согласно уже зафиксированной owner
 correction при #344. Мира docs diff не создаёт.
+
+
+## 2026-11-18 — correction owner: docs author = Лира
+
+Моя предыдущая трактовка о необходимости отдельного owner-назначения автора docs PR
+была неверной. Владелец уточнил: docs closeout должна выполнять Лира.
+
+Workflow исправлен: следующий исполнитель Лира, текущий bounded task — Watch docs
+closeout (PROJECT_STATE factual sync до 0068 + отдельный PROJECT_HISTORY snapshot/index),
+после него отдельный Bookmarks docs closeout до 0069. Мира docs diff не пишет.
