@@ -4,7 +4,7 @@
 
 1. Служебный PR: **#315**.
 2. Моя текущая работа: audit/coordination only; remediation и implementation не назначены.
-3. Текущий этап: **Block J НАЧАТ. J1 Current integration inventory & activation boundaries = PASS, 0 new current findings / 0 deferred blockers; следующий bounded slice — J2 Google OAuth external-provider boundary.** Overall #315 остаётся 28 current findings + 3 deferred Stage-6 blockers. Stage 6 paused; provider activation не выполнялась.
+3. Текущий этап: **Block J active. J1 PASS; J2 = 0 new current findings + deferred `GOOGLE-OAUTH-SCOPE-01 Low/P3`; следующий bounded slice — J3 Email provider boundary.** Overall #315 = 28 current findings + 4 deferred Stage-6 blockers. Stage 6 paused; provider activation не выполнялась.
 4. Technical audit target B–D: `e279cb6c032a489a9044ca1191407df887c364b4`.
 5. Current `main` — `7cc23edede57994cdedab49c1556ddb55034dd29`. Delta от I1 target включает SA-04/SA-05–SA-08 и topic-title work; I2 отдельно re-read current workflows and source-of-truth.
 6. Лира, Марк и Лёва по #315 сейчас не назначены.
@@ -277,6 +277,19 @@
 247. Current Queue transport is not active; durable task model remains PostgreSQL/domain foundation. Real Queue/provider credentials/calls/acceptance remain Stage 6.
 248. AdministrativeRouting defaults same-origin and no external producer is wired; prior #317 review already leaves cross-origin activation as future Stage-6 acceptance, no duplicate J finding.
 249. J1 performed repository/source-of-truth inspection only: no OAuth client/provider account, external call, Queue dispatch, deploy or setting mutation. Next J2 audits Google provider trust/callback/configuration/data-exchange without duplicating Block B internal auth/session findings.
+250. J2 target current main `7cc23edede57994cdedab49c1556ddb55034dd29`, installed Better Auth 1.7.7; exact upstream tag v1.7.7 commit `db02f233918ad1233bf0753e437e1c0da353273d` checked.
+251. J2 verdict: **0 new current findings + deferred `GOOGLE-OAUTH-SCOPE-01 Low/P3`**.
+252. Exact Better Auth state/PKCE PASS: DB verification state + signed browser cookie, bounded expiry, one-time deletion, callback/error URL trust validation; Vico does not disable origin/CSRF/state cookie checks.
+253. Google provider identity PASS: fixed Google endpoints/default openid-email-profile scopes; provider account subject derives from raw Google `sub`; direct id-token path verifies signature/issuer/audience/max age.
+254. Explicit link provider boundary PASS apart from existing Block B AUTH-LINK-01: Vico disableImplicitLinking; trustedProviders defaults empty; verified provider email + same-email required; provider account owned by another Vico user rejected; x-vico-link-user only stale expectation against authoritative session.
+255. AUTH-OAUTH-01 remains Block B: provider error_description is forwarded to validated same-origin error URL but Vico UI renders generic error only. No duplicate J finding.
+256. Own-account token APIs PASS against cross-user IDOR: session user wins over supplied userId and account rows are resolved only within that user. getAccessToken/refreshToken/accountInfo do not select foreign provider accounts.
+257. Deferred root cause: Better Auth sign-in/social and link-social accept caller-selected `scopes[]`; Vico wildcard /api/auth/* forwards canonical endpoints and has no application allowlist because its UI itself requests no extra scopes. Google docs/Better Auth docs confirm incremental authorization and Google provider default includeGrantedScopes=true.
+258. After explicit consent, Better Auth persists provider token/scope and own-account getAccessToken can return bearer authority. Vico currently does not set encryptOAuthTokens; this is not separately classified because no DB-only/cross-user exploit is proven.
+259. Product only needs Google authentication/linking. Allowing direct HTTP to turn Vico OAuth client into arbitrary Google scope authorization unnecessarily expands provider authority and later compromise blast radius. Google consent required; no silent grant/takeover; real Google is not deployed -> deferred Low/P3.
+260. J2 correction gate: constrain effective Google OAuth capability to product-approved authentication scope before Stage6 real Google activation. Exact implementation (scope allowlist, endpoint filtering, includeGrantedScopes policy, token storage hardening) deferred to remediation design.
+261. Production Google client/config remains `Информация не проверена`; before activation verify exact BETTER_AUTH_URL, Web OAuth client, exact production `/api/auth/callback/google` redirect, secret placement and deployed OAuth/session/logout smoke. Absence now is not a finding.
+262. J2 made no client/credential/provider call/login smoke/dispatch/deploy/settings mutation. Overall #315 now 28 current + 4 deferred. Next J3 email provider boundary.
 
 ## Ограничения
 
@@ -288,5 +301,5 @@
 
 ## Следующий шаг
 
-1. После продолжения владельца выполнить **J2 — Google OAuth external-provider boundary** на current main и остановиться после результата.
-2. Remediation findings Blocks B–J не начинать без отдельного назначения.
+1. После продолжения владельца выполнить **J3 — Email provider boundary** на current main и остановиться после результата.
+2. Remediation findings/blockers Blocks B–J не начинать без отдельного назначения.
