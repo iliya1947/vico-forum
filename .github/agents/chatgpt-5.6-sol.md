@@ -4,7 +4,7 @@
 
 1. Служебный PR: **#315**.
 2. Моя текущая работа: audit/coordination only; remediation и implementation не назначены.
-3. Текущий этап: **Block I I1 = `REPO-MAIN-GATE-01 Moderate/P2`; I2 PASS, 0 additional; следующий bounded slice — I3 Production Environments & secret admission.** Block H закрыт с 0 current findings + 2 deferred Stage-6 blockers; Block G закрыт с 3 current findings + deferred `DB-RUNTIME-EVIDENCE-01`.
+3. Текущий этап: **Block I I1 = `REPO-MAIN-GATE-01 Moderate/P2`; I2 PASS; I3 repository-side PASS, 0 additional; следующий bounded slice — I4 Secret custody & leakage.** Exact mutable Environment policy/secret inventory — `Информация не проверена`. Block H закрыт с 0 current findings + 2 deferred Stage-6 blockers; Block G закрыт с 3 current findings + deferred `DB-RUNTIME-EVIDENCE-01`.
 4. Technical audit target B–D: `e279cb6c032a489a9044ca1191407df887c364b4`.
 5. Current `main` — `7cc23edede57994cdedab49c1556ddb55034dd29`. Delta от I1 target включает SA-04/SA-05–SA-08 и topic-title work; I2 отдельно re-read current workflows and source-of-truth.
 6. Лира, Марк и Лёва по #315 сейчас не назначены.
@@ -207,6 +207,14 @@
 178. All current production secrets references are in jobs with named production-db/production-worker Environments. Exact Environment reviewers/ref rules/admin bypass are **Информация не проверена** and are I3 scope.
 179. Actions-global default/fork policy was not needed for I2 verdict because sensitive workflows explicitly declare permissions. No dispatch/deploy/event/settings mutation performed; tests read, not run.
 180. REPO-MAIN-GATE-01 persists on 7cc23ede: main protected=false and Protect main enforcement disabled. Aggregate stays 25 current findings + 3 deferred blockers.
+181. I3: **PASS по repository-side Environment admission chain, 0 new current findings, 0 new deferred technical blockers** on `7cc23edede57994cdedab49c1556ddb55034dd29`.
+182. All production secret jobs are `workflow_dispatch`, main-gated and bound to `production-db` or `production-worker`; pre-Environment one-shot/Worker guards do not receive production secrets.
+183. Current GitHub docs confirm manual dispatch requires repository write access; selected refs are possible, but Vico jobs independently reject non-main before protected work.
+184. Current GitHub docs confirm Environment protection rules pass before runner admission and Environment secrets are available only after that gate.
+185. Exact `production-db` / `production-worker` reviewers, prevent-self-review, deployment ref policy, admin bypass, custom protection rules and secret inventory/location are **Информация не проверена**: connector endpoint unavailable and Browser connector had no originating browser context.
+186. No secret values read; no dispatch, approval, GitHub setting, Cloudflare, Neon or production mutation performed.
+187. Unknown mutable Environment policy is not a finding by itself while Stage 6 is paused; it is a mandatory recheck immediately before any future production dispatch.
+188. I3 does not duplicate `REPO-MAIN-GATE-01`; aggregate remains 25 current findings + 3 deferred blockers.
 
 ## Ограничения
 
@@ -218,5 +226,5 @@
 
 ## Следующий шаг
 
-1. После продолжения владельца выполнить **I3 — Production Environments & secret admission** на current main и остановиться после результата.
-2. Читать только policy/metadata без secret values; `REPO-MAIN-GATE-01` не дублировать. Remediation не начинать.
+1. После продолжения владельца выполнить **I4 — Secret custody & leakage** на current main и остановиться после результата.
+2. `REPO-MAIN-GATE-01` не дублировать. Remediation не начинать.
