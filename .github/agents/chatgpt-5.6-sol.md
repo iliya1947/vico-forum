@@ -4,7 +4,7 @@
 
 1. Служебный PR: **#315**.
 2. Моя текущая работа: audit/coordination only; remediation и implementation не назначены.
-3. Текущий этап: **Block K active. K1–K2 PASS, 0 new findings / 0 deferred blockers; следующий bounded slice — K3 Forum write spam & cross-endpoint concurrency.** Overall #315 = 28 current findings + 4 deferred Stage-6 blockers. Stage 6 paused.
+3. Текущий этап: **Block K active. K1–K2 PASS; K3 = `FORUM-EDIT-SPAM-01 Moderate/P2`; следующий bounded slice — K4 Public expensive reads / query amplification.** Overall #315 = 29 current findings + 4 deferred Stage-6 blockers. Stage 6 paused.
 4. Technical audit target B–D: `e279cb6c032a489a9044ca1191407df887c364b4`.
 5. Current `main` — `7cc23edede57994cdedab49c1556ddb55034dd29`. Delta от I1 target включает SA-04/SA-05–SA-08 и topic-title work; I2 отдельно re-read current workflows and source-of-truth.
 6. Лира, Марк и Лёва по #315 сейчас не назначены.
@@ -360,6 +360,15 @@
 325. Cloudflare current docs confirm normal visitor `CF-Connecting-IP` boundary; exact deployed WAF/Transform settings remain **Информация не проверена** and are Stage-6 operations, not a K2 finding.
 326. Distributed rotating-IP resistance is beyond current basic anti-abuse contract; no separate account/global limiter requirement is established. AUTH-ENUM-01 remains Block B. Aggregate unchanged; next K3.
 
+327. K3 target current main `7cc23edede57994cdedab49c1556ddb55034dd29`: **1 new current finding — FORUM-EDIT-SPAM-01 Moderate/P2; 0 deferred blockers**.
+328. Create topic/reply share the same 5s per-author post cooldown under actor-row serialization. Help signals use an independent 5s cooldown; Complaints use 10/10min + 50/day and actor serialization. No bypass found there.
+329. Exact publication replay is receipt/fingerprint-idempotent; concurrent stale edit baselines are fenced by row locks/CAS. These correctness controls do not rate-limit successful sequential edits.
+330. Root cause: editOwnTopicTitle and editPublishedPost persist fresh immutable revision rows but do not call enforceForumWriteCooldown or another quota. The account-state mutex serializes only; it has no delay/count ceiling.
+331. Concrete minimal chain: own one topic → POST short changed title with current expectedRevisionId → server inserts revision and returns new revisionId → alternate short title using returned ID → repeat indefinitely. Tiny requests prove independence from FORM-BODY-BOUNDS-01/FORUM-PUB-01.
+332. Post edits have the same revision-growth gap. Notification uniqueness bounds duplicate recipient/post notifications, so K3 does not add a separate notification-fanout finding.
+333. No generic Worker/application POST throttle found that closes forum edits. Current contract requires basic anti-spam/rate limiting on writes; classification current Moderate/P2. Aggregate = 29 current + 4 deferred; severity current 10 Moderate + 19 Low.
+334. No load/flood/production mutation performed. Next K4 public expensive reads/query amplification.
+
 ## Ограничения
 
 1. Stage 6 external activation остаётся paused.
@@ -370,5 +379,5 @@
 
 ## Следующий шаг
 
-1. После продолжения владельца выполнить **K3 — Forum write spam & cross-endpoint concurrency** на current main и остановиться после результата.
+1. После продолжения владельца выполнить **K4 — Public expensive reads / query amplification** на current main и остановиться после результата.
 2. Remediation findings/blockers Blocks B–K не начинать без отдельного назначения.
