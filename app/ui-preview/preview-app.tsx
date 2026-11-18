@@ -92,7 +92,8 @@ type PreviewVariant =
   | "settings-account-unavailable"
   | "settings-account-stale"
   | "settings-forum-registration-conflict"
-  | "settings-forum-registration-unavailable";
+  | "settings-forum-registration-unavailable"
+  | "settings-forum-registration-invalid";
 
 interface Scenario {
   id: string;
@@ -172,6 +173,7 @@ export const scenarios: readonly Scenario[] = [
   { id: "settings-account-stale", label: "Settings · Account · stale account/session", locale: "en", direction: "ltr", identity: "user", path: "/en/settings/account", view: "section", variant: "settings-account-stale", allowedIdentities: ["user", "manager", "owner"] },
   { id: "settings-forum-registration-conflict", label: "Settings · Forum & roles · registration conflict", locale: "en", direction: "ltr", identity: "owner", path: "/en/settings/forum", view: "section", variant: "settings-forum-registration-conflict", allowedIdentities: ["owner"] },
   { id: "settings-forum-registration-unavailable", label: "Settings · Forum & roles · registration unavailable", locale: "en", direction: "ltr", identity: "owner", path: "/en/settings/forum", view: "section", variant: "settings-forum-registration-unavailable", allowedIdentities: ["owner"] },
+  { id: "settings-forum-registration-invalid", label: "Settings · Forum & roles · invalid registration request", locale: "en", direction: "ltr", identity: "owner", path: "/en/settings/forum", view: "section", variant: "settings-forum-registration-invalid", allowedIdentities: ["owner"] },
   { id: "editor-create-topic", label: "Editor · Create topic", locale: "en", direction: "ltr", identity: "user", path: "/en/sections/typescript", view: "section", allowedIdentities: ["user", "manager"] },
   { id: "section-form-error", label: "Create topic error", locale: "en", direction: "ltr", identity: "user", path: "/en/sections/typescript", view: "section", variant: "section-form-error", allowedIdentities: ["user", "manager"] },
   { id: "topic-solved-user", label: "Solved topic", locale: "en", direction: "ltr", identity: "user", path: "/en/topics/typed-api", view: "topic" },
@@ -1514,6 +1516,9 @@ async function previewSettingsForumAction(
   }
   if (!Number.isInteger(expectedVersion) || expectedVersion !== interactions.registrationVersion) {
     return { ok: false as const, error: "conflict" as const };
+  }
+  if (scenario.variant === "settings-forum-registration-invalid") {
+    return { ok: false as const, error: "invalid" as const };
   }
   if (scenario.variant === "settings-forum-registration-unavailable") {
     return { ok: false as const, error: "unavailable" as const };
