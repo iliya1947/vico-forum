@@ -405,6 +405,16 @@ describe("interactive Pages preview", () => {
     expect(screen.queryByRole("heading", { level: 2, name: "Registration" })).not.toBeInTheDocument();
   });
 
+  it("denies ordinary user access to Forum & roles", async () => {
+    render(<EmbeddedPreview scenarioId="settings-forum-user-forbidden" />);
+
+    const forbidden = await screen.findByRole("alert");
+    expect(within(forbidden).getByRole("heading", { level: 1, name: "Access denied" })).toBeInTheDocument();
+    expect(within(forbidden).getByText("You do not have permission to open this page.")).toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: "Authorization management" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("heading", { level: 2, name: "Registration" })).not.toBeInTheDocument();
+  });
+
   it("keeps Forum & roles owner-only for managers in Settings", async () => {
     const user = userEvent.setup();
     render(<EmbeddedPreview scenarioId="section-user" identity="manager" />);
