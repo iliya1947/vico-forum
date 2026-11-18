@@ -2,6 +2,7 @@
 import argparse
 import json
 import os
+import re
 import select
 import shutil
 import subprocess
@@ -92,7 +93,10 @@ try:
             expect(page.locator(".topic-watch-control button[type=submit]")).to_have_attribute("aria-pressed", "false")
             expect(page.locator(".topic-watch-status")).to_have_text("Not watching this topic.")
             assert sql("select user_id from forum_topic_watches where topic_id=$1", [current["topicId"]]) == []
-            assert not guest.new_page().goto(base + path).status >= 400
+            guest_page = guest.new_page()
+            guest_response = guest_page.goto(base + path)
+            assert guest_response.status == 200, guest_response.status
+            guest_page.close()
             record("public guest read; authenticated own Off; no auto-watch")
 
             private(watcher.request.get(base + path + ".data"))
@@ -132,7 +136,7 @@ try:
             expect(page.locator(".notification-card.is-unread").first).to_be_visible()
             assert page.get_by_text("Reply from Watch publisher").count() >= 1
             page.locator(".notification-card.is-unread").first.click()
-            expect(page).to_have_url(lambda url: url.endswith("#post-" + post_id))
+            expect(page).to_have_url(re.compile(r"#post-" + re.escape(post_id) + r"$"))
             assert sql("select read_at is not null as read from forum_reply_notifications"
                 + " where recipient_user_id=$1 and post_id=$2", [watcher_id, post_id]) == [{"read": True}]
             record("Worker reply -> watcher inbox badge -> precise post permalink -> first read")
