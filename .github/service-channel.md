@@ -559,3 +559,10 @@ refs. **Лёва STOP после последнего плана из шести
 **Exact #346 head `4a614183b41eda66e5a95a25aaaa5b4ad1669e1c`**: GitHub `database` job ID `134970762262` **SUCCESS** (clean PG17 DB suite including new Bookmarks tests); `checks` job ID `134970762774` migration-history, lint, typecheck steps SUCCESS; whole `checks` job ID `134970762774` **SUCCESS**, including migration-history, lint, typecheck, unit Test, build/preview and validation; `database` ID `134970762262` **SUCCESS**. All **15/15** GitHub check-runs on exact #346 head completed successfully, including existing browser regressions. This is backend/CI acceptance only; Bookmarks route/UI/browser acceptance not yet implemented.
 
 **STOP after bounded backend slice.** No Bookmarks route, strict form action, list loader, UI, translations or new browser acceptance yet; they are distinct next slices. `main` untouched, #346 Draft, #342 service-only never merge, no production actions.
+
+
+## 2026-11-18 — Мира: review structure/topic-move plan PASS
+
+Полный план Лёвы S0–S10 проверен против main `9c4639d23ca075c8bb92fbb909b96593d7bee127`, Admin/Authorization/Super-admin contracts и фактических schema/repository/History/AP-10/Help/Watch seams. **PASS; подтверждённых current-scope defects = 0.** Приняты S-P1–S-P4 и S-T1/S-T2: bounded create/rename/order/reparent/move без delete/archive/merge/bulk; Help conversion запрещён; structure=admin, topic move=moderator/admin; state preserved без новой reason/notification policy; singleton structure CAS/mutex + per-topic location CAS; atomic Admin History и Owner `forum.structure` projection; receipt replay/current-location fix и consistent affected hierarchy reads.
+
+Лёве исправления плана не требуются. Planning всех шести задач перед #320 завершён и принят. Structure implementation не активирован; текущая реализация остаётся Bookmarks #346 у Лиры.
