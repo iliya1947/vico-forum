@@ -408,6 +408,92 @@ describe("embedded preview routing", () => {
     expect(screen.queryByRole("button", { name: "Review appeal" })).not.toBeInTheDocument();
   });
 
+  it("accepts an Admin measure appeal with a change remedy and records it in History", async () => {
+    const user = userEvent.setup();
+    render(<EmbeddedPreview scenarioId="admin-topic" identity="manager" />);
+
+    let nav = document.querySelector(".admin-panel-nav") as HTMLElement;
+    await user.click(within(nav).getByRole("link", { name: "User measures" }));
+    await user.type(await screen.findByLabelText("Exact user ID"), "alex");
+    await user.click(screen.getByRole("button", { name: "Find user" }));
+
+    const reason = screen.getByText("Repeated off-topic promotional posts after a moderator warning.");
+    const item = reason.closest("li") as HTMLElement;
+    await user.click(within(item).getByRole("link"));
+
+    const reviewHeading = await screen.findByRole("heading", { level: 3, name: "Review appeal #1" });
+    const reviewForm = reviewHeading.closest("form") as HTMLElement;
+    await user.selectOptions(within(reviewForm).getByLabelText("Outcome"), "accepted");
+    await user.selectOptions(within(reviewForm).getByLabelText("Decision remedy"), "change");
+    await user.type(
+      within(reviewForm).getByLabelText("Explanation"),
+      "Keep the measure but broaden the restricted actions.",
+    );
+    await user.click(within(reviewForm).getByRole("checkbox", { name: "Create topics" }));
+    await user.click(within(reviewForm).getByRole("button", { name: "Review appeal" }));
+
+    expect(await screen.findByRole("status")).toHaveTextContent("Change saved.");
+    expect(screen.getByRole("heading", { level: 3, name: "1. Accepted" })).toBeInTheDocument();
+    expect(screen.getAllByText("Version: 2").length).toBeGreaterThan(0);
+    expect(screen.queryByRole("button", { name: "Review appeal" })).not.toBeInTheDocument();
+
+    nav = document.querySelector(".admin-panel-nav") as HTMLElement;
+    await user.click(within(nav).getByRole("link", { name: "History" }));
+
+    const historyHeading = await screen.findByRole("heading", {
+      level: 3,
+      name: "User measure appeal resolved",
+    });
+    const historyEvent = historyHeading.closest("li") as HTMLElement;
+    expect(historyEvent).toHaveTextContent("Accepted");
+    expect(historyEvent).toHaveTextContent("Decision remedy: Change measure");
+    expect(historyEvent).toHaveTextContent("Keep the measure but broaden the restricted actions.");
+    expect(within(historyEvent).getByText("topics.create")).toBeInTheDocument();
+  });
+
+  it("accepts an Admin measure appeal with a lift remedy and records it in History", async () => {
+    const user = userEvent.setup();
+    render(<EmbeddedPreview scenarioId="admin-topic" identity="manager" />);
+
+    let nav = document.querySelector(".admin-panel-nav") as HTMLElement;
+    await user.click(within(nav).getByRole("link", { name: "User measures" }));
+    await user.type(await screen.findByLabelText("Exact user ID"), "alex");
+    await user.click(screen.getByRole("button", { name: "Find user" }));
+
+    const reason = screen.getByText("Repeated off-topic promotional posts after a moderator warning.");
+    const item = reason.closest("li") as HTMLElement;
+    await user.click(within(item).getByRole("link"));
+
+    const reviewHeading = await screen.findByRole("heading", { level: 3, name: "Review appeal #1" });
+    const reviewForm = reviewHeading.closest("form") as HTMLElement;
+    await user.selectOptions(within(reviewForm).getByLabelText("Outcome"), "accepted");
+    await user.selectOptions(within(reviewForm).getByLabelText("Decision remedy"), "lift");
+    await user.type(
+      within(reviewForm).getByLabelText("Explanation"),
+      "The appeal justifies ending the restriction.",
+    );
+    await user.click(within(reviewForm).getByRole("button", { name: "Review appeal" }));
+
+    expect(await screen.findByRole("status")).toHaveTextContent("Change saved.");
+    expect(screen.getByText("Status: Lifted")).toBeInTheDocument();
+    expect(screen.getByRole("heading", { level: 3, name: "1. Accepted" })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Review appeal" })).not.toBeInTheDocument();
+
+    nav = document.querySelector(".admin-panel-nav") as HTMLElement;
+    await user.click(within(nav).getByRole("link", { name: "History" }));
+
+    const historyHeading = await screen.findByRole("heading", {
+      level: 3,
+      name: "User measure appeal resolved",
+    });
+    const historyEvent = historyHeading.closest("li") as HTMLElement;
+    expect(historyEvent).toHaveTextContent("Accepted");
+    expect(historyEvent).toHaveTextContent("Decision remedy: Lift measure");
+    expect(historyEvent).toHaveTextContent("Active");
+    expect(historyEvent).toHaveTextContent("Lifted");
+    expect(historyEvent).toHaveTextContent("The appeal justifies ending the restriction.");
+  });
+
   it("opens Admin Overview from the Admin shell navigation", async () => {
     const user = userEvent.setup();
     render(<EmbeddedPreview scenarioId="admin-topic" identity="manager" />);
