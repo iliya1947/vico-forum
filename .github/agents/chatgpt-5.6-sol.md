@@ -93,3 +93,14 @@ Mute/block implementation не активирован до решения вла
 Владелец принял обе рекомендованные модели без изменений. M1: topic Mute подавляет все будущие ordinary reply/mention notices из этой темы, не меняя Watch/content. M2: directional user Block подавляет будущие ordinary notices от target actor и сворачивает его ordinary TopicView posts для blocker, без publication/read ban и без превращения в moderation sanction.
 
 Ранее условно принятые M3/M4/M6 теперь окончательны. Advance-planning всех оставшихся функций до #320 завершён: Watch, Bookmarks и Mute/block имеют принятые технические планы. Текущая реализация остаётся Watch #345.
+
+
+## 2026-11-18 — Watch coordinator review synthesis
+
+Проверен stable exact head `76c1c456557c614171a3b472758498795a668b9a` PR #345 целиком против принятого Watch scope и актуального main `7cc23edede57994cdedab49c1556ddb55034dd29`. Мой coordinator whole-PR review: **PASS**, подтверждённых current-scope implementation defects нет.
+
+Лёва независимо проверил тот же exact head и вернул **Technical PASS**, также без current-scope findings. Расхождений между review нет; head после проверок не изменился. GitHub exact-head checks и connected Watch acceptance остаются PASS.
+
+Отдельный owner visual gate Watch сейчас не блокирует merge: действующий owner decision в `docs/UI_UX_PASS.md` устанавливает MVP-first приоритет — новые функциональные bounded-срезы не задерживаются из-за косметики, а финальная owner visual/product acceptance остаётся отдельным UI/UX pass перед публичным запуском. Это не отменяет будущую финальную acceptance, но не требует повторного отдельного visual gate для текущего merge.
+
+Итог: review cycle Watch завершён. #345 готов к merge владельцем. Permanent/current-state docs обновляются отдельным docs PR только после фактического merge; затем implementation-order переходит к Bookmarks.
