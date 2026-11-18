@@ -6,9 +6,10 @@
 2. Blocks A–K закрыты как audit blocks; их root causes в L не дублируются.
 3. **L1 — Monitoring/incident-response inventory & ownership boundaries завершён: PASS, 0 новых current-scope findings и 0 deferred blockers.**
 4. **L2 — Security source attribution / telemetry admission завершён: 1 новый current-scope finding — `MON-AUTH-OUTCOME-01 Low/P3`; 0 deferred blockers.**
-5. Overall #315 становится **34 current findings + 4 deferred Stage-6 blockers**.
-6. Мира — auditor/coordinator. Remediation, technical planner и implementer не назначены.
-7. Production/Cloudflare/Neon/GitHub/provider mutation, external incident drill и destructive/fault-injection действия не разрешены и не выполнялись.
+5. **L3 — Retention / coalescing / privacy завершён: PASS, 0 новых current-scope findings и 0 deferred blockers.**
+6. Overall #315 остаётся **34 current findings + 4 deferred Stage-6 blockers**.
+7. Мира — auditor/coordinator. Remediation, technical planner и implementer не назначены.
+8. Production/Cloudflare/Neon/GitHub/provider mutation, external incident drill и destructive/fault-injection действия не разрешены и не выполнялись.
 
 ## Цель
 
@@ -139,6 +140,27 @@
 
 **Boundary:** auth/link correctness remains Block B; aggregate Security counters do not currently split denied vs failed, so the defect is History/telemetry semantics only.
 
+## L3 — результат
+
+1. Audit target: current `main` `9c4639d23ca075c8bb92fbb909b96593d7bee127`.
+2. Verdict: **PASS — 0 новых current-scope findings, 0 deferred blockers.**
+3. Retention policy is explicit rather than accidental: the Owner Monitoring/History contract retains monitoring/event history indefinitely until an explicit Owner policy change and exposes no ordinary deletion UI. The current repository correspondingly has no application cleanup/delete path for `owner_events`, monitor observations or attempt telemetry.
+4. This approved indefinite-retention policy is not reclassified as a security defect by itself. Block L only requires a finding where retained data exceeds the approved evidence purpose, leaks across an authorization boundary, or coalescing materially falsifies operator evidence.
+5. Exact Owner auth/system/operational facts remain bounded/minimized at write time: event kinds and payload fields are closed, safe scalar fields are length/size bounded, raw passwords/hashes/tokens/cookies/request bodies/SQL/exception text are not persisted by these producers, and occurrence identity prevents duplicate exact facts from becoming multiple journal entries.
+6. Attempt telemetry coalescing remains semantically bounded: the DB-owned UTC hour + actor/network/source/operation/outcome/status identity is unique, mutable counts preserve immutable admission/pagination identity, overflow/unknown/gap use fixed slots, and the retained pattern exposes first/last/count rather than pretending each coalesced request is an exact individual event.
+7. Person-target History privacy — PASS: only sources with persisted person attribution are eligible; unattributed global observations and gap/overflow state do not join a user. Attributed attempt patterns may include the recorded qualified network IP, but this projection is exact-Owner-only and is explicitly part of the approved retained security evidence model.
+8. Attachment evidence is deliberately split by audience. Exact Owner global/target History projects only upload identity/uploader/detected type/reason/declared size. More operational fields such as filename, declared MIME, editor context and draft identity remain on the native Security/Attachments queue, which independently requires the code-backed `forum.attachmentSecurity.read` permission before reading the source table.
+9. The Security/Attachments queue uses private/no-store responses and current effective authorization. Initial moderator/admin grants are an explicit current product decision, so the presence of operational evidence there is not an unintended Owner-History privacy expansion.
+10. The absence of cleanup for `forum_attachment_security_events` is **not duplicated in L3**: unbounded durable security-event growth under repeated rejected uploads is already owned by Block K as `ATTACH-SECURITY-EVENT-SPAM-01`. L3 found no separate confidentiality or attribution defect caused by retention itself.
+11. System observation change semantics were rechecked. The original System writer compares the current fingerprint and suppresses only an unchanged fresh sample; a changed System state is inserted even within the 15-minute window. Therefore the documented SA-01 “meaningful changes remain available” contract is preserved.
+12. Other Monitoring snapshots use an explicit 15-minute sampling gate and are documented as sampled/non-exhaustive evidence. Where exact domain transitions matter, adjacent/global History projects their native source facts instead of relying on snapshots. This is intentional coverage semantics, not silent event loss.
+13. SA-08 Overview does not weaken System semantics: it uses the general batch sampler for non-System candidates but records System monitors afterward through `PostgresOwnerSystemHistory.recordObservation()`, preserving the fingerprint-aware System rule.
+14. No new privacy leak was established from Watch #345: watcher-driven notifications remain in the existing notification source and do not add new retained security identity fields.
+15. The existing factual documentation drift remains outside L: `PROJECT_STATE.md` says repository migrations through `0067` while current `main` contains `0068_topic_watch`. It does not affect the L3 security verdict.
+16. No production data inspection, retention deletion, external incident drill, provider call, deployment or settings mutation was performed. Tests were inspected, not executed during L3.
+17. #315 aggregate remains **34 current findings + 4 deferred Stage-6 blockers**. Current severity remains **13 Moderate/P2 + 21 Low/P3**; deferred remains **2 Moderate/P2 + 2 Low/P3**.
+18. Next bounded slice: **L4 — Alertability / failure signals**.
+
 ## Finding criteria
 
 1. Concrete current/prepared monitoring or incident-response path.
@@ -157,5 +179,5 @@
 
 ## Следующий шаг
 
-1. После продолжения владельца выполнить **L3 — Retention / coalescing / privacy** на current main и остановиться после результата.
+1. После продолжения владельца выполнить **L4 — Alertability / failure signals** на current main и остановиться после результата.
 2. Remediation существующих findings/blockers Blocks B–L не начинать без отдельного назначения.
