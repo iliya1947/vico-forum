@@ -59,6 +59,9 @@
 10. [Block J — External integrations security audit](./SECURITY_BLOCK_J_EXTERNAL_INTEGRATIONS.md)
 11. [Block K — Abuse & availability security audit](./SECURITY_BLOCK_K_ABUSE_AVAILABILITY.md)
 12. [Block L — Security monitoring & incident response audit](./SECURITY_BLOCK_L_MONITORING_INCIDENT_RESPONSE.md)
+13. [Current remediation decomposition](./SECURITY_REMEDIATION_PLAN.md)
+
+Audit areas A–L завершены. Current remediation ведётся по отдельному bounded decomposition; deferred Stage-6 blockers остаются внешними correction gates и не смешиваются с current packages.
 
 Каждый следующий bounded security-блок оформляется отдельным файлом; этот файл остаётся общей картой направления и маршрутом между блоками.
 
