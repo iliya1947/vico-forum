@@ -289,13 +289,14 @@ function readPreviewRegistrationPolicy() {
     const raw = window.sessionStorage.getItem(PREVIEW_REGISTRATION_STORAGE_KEY);
     if (!raw) return null;
     const value = JSON.parse(raw) as Record<string, unknown>;
+    const version = value.version;
     if (typeof value.googleRegistrationEnabled !== "boolean"
       || typeof value.emailRegistrationEnabled !== "boolean"
-      || !Number.isInteger(value.version) || Number(value.version) < 1) return null;
+      || typeof version !== "number" || !Number.isInteger(version) || version < 1) return null;
     return {
       googleRegistrationEnabled: value.googleRegistrationEnabled,
       emailRegistrationEnabled: value.emailRegistrationEnabled,
-      version: Number(value.version),
+      version,
     };
   } catch {
     return null;
