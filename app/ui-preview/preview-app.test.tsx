@@ -22,10 +22,10 @@ describe("UI preview state catalog", () => {
     }
   });
 
-  it("includes the protected AP-07 topic page as a manager-only visual fixture", () => {
+  it("includes the protected AP-07 topic page for Manager and Owner", () => {
     expect(scenarios).toContainEqual(expect.objectContaining({
       id: "admin-topic", view: "admin-topic",
-      allowedIdentities: ["manager"],
+      allowedIdentities: ["manager", "owner"],
     }));
   });
 
@@ -69,6 +69,49 @@ describe("UI preview state catalog", () => {
 
 
 describe("embedded preview routing", () => {
+  it("requires sign-in for guest direct access to Authorization", async () => {
+    render(<EmbeddedPreview scenarioId="admin-guest-unauthenticated" />);
+
+    const unauthenticated = await screen.findByRole("alert");
+    expect(within(unauthenticated).getByRole("heading", { level: 1, name: "Sign in required" })).toBeInTheDocument();
+    expect(within(unauthenticated).getByText("Sign in to access this page.")).toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: "Authorization management" })).not.toBeInTheDocument();
+  });
+
+  it("denies ordinary user direct access to Authorization", async () => {
+    render(<EmbeddedPreview scenarioId="admin-user-forbidden" />);
+
+    const forbidden = await screen.findByRole("alert");
+    expect(within(forbidden).getByRole("heading", { level: 1, name: "Access denied" })).toBeInTheDocument();
+    expect(within(forbidden).getByText("You do not have permission to open this page.")).toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: "Authorization management" })).not.toBeInTheDocument();
+  });
+
+  it("requires sign-in for guest direct access to Admin topic", async () => {
+    render(<EmbeddedPreview scenarioId="admin-topic-guest-unauthenticated" />);
+
+    const unauthenticated = await screen.findByRole("alert");
+    expect(within(unauthenticated).getByRole("heading", { level: 1, name: "Sign in required" })).toBeInTheDocument();
+    expect(within(unauthenticated).getByText("Sign in to access this page.")).toBeInTheDocument();
+    expect(document.querySelector(".admin-topic")).toBeNull();
+  });
+
+  it("denies ordinary user direct access to Admin topic", async () => {
+    render(<EmbeddedPreview scenarioId="admin-topic-user-forbidden" />);
+
+    const forbidden = await screen.findByRole("alert");
+    expect(within(forbidden).getByRole("heading", { level: 1, name: "Access denied" })).toBeInTheDocument();
+    expect(within(forbidden).getByText("You do not have permission to open this page.")).toBeInTheDocument();
+    expect(document.querySelector(".admin-topic")).toBeNull();
+  });
+
+  it("opens the Admin topic fixture for Owner as well as Manager", async () => {
+    render(<EmbeddedPreview scenarioId="admin-topic" identity="owner" />);
+
+    expect(await screen.findByRole("heading", { name: "Admin panel" })).toBeInTheDocument();
+    expect(document.querySelector(".admin-topic")).not.toBeNull();
+  });
+
   it("renders one admin shell with topic and message Quick actions in the AP-07 fixture", async () => {
     render(<EmbeddedPreview scenarioId="admin-topic" />);
     expect(await screen.findByRole("heading", { name: "Admin panel" })).toBeInTheDocument();
