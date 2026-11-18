@@ -1463,7 +1463,7 @@ function previewSettingsAdministratorData(scenario: Scenario) {
       : ([] as const),
     attention: {
       signals: ["needs-details", "needs-review"] as const,
-      complaints: [] as const,
+      complaints: ["group1"] as const,
       security: [] as const,
     },
   };
@@ -2268,6 +2268,7 @@ function PreviewAttentionRoute({ scenario, interactions }: {
       ? { cases: selectedCases, hasMore: false, page: 0 }
       : null}
     counts={mode === "signals" ? counts : null}
+    canReviewComplaints={scenario.identity === "manager" || scenario.identity === "owner"}
     referenceTime={previewReferenceTime}
   />;
 }
