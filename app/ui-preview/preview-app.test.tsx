@@ -149,6 +149,48 @@ describe("embedded preview routing", () => {
     expect(document.querySelector(".message-admin-tools")).not.toBeNull();
   });
 
+  it("opens the selected Popular topic instead of the primary fallback topic", async () => {
+    render(<EmbeddedPreview scenarioId="popular-guest" />);
+
+    const links = await screen.findAllByRole("link", { name: /How do I design a job queue without overcomplicating it\?/ });
+    await userEvent.click(links[0]!);
+
+    expect(await screen.findByRole("heading", {
+      level: 1,
+      name: "How do I design a job queue without overcomplicating it?",
+    })).toBeInTheDocument();
+    expect(screen.queryByRole("heading", {
+      level: 1,
+      name: "How should I structure a typed API client?",
+    })).not.toBeInTheDocument();
+  });
+
+  it("opens the selected Unanswered topic instead of the primary fallback topic", async () => {
+    render(<EmbeddedPreview scenarioId="unanswered-guest" />);
+
+    await userEvent.click(await screen.findByRole("link", {
+      name: /How should context be passed between several AI agents\?/,
+    }));
+
+    expect(await screen.findByRole("heading", {
+      level: 1,
+      name: "How should context be passed between several AI agents?",
+    })).toBeInTheDocument();
+  });
+
+  it("opens the selected Unread topic instead of the primary fallback topic", async () => {
+    render(<EmbeddedPreview scenarioId="unread-user" />);
+
+    await userEvent.click(await screen.findByRole("link", {
+      name: /How should context be passed between several AI agents\?/,
+    }));
+
+    expect(await screen.findByRole("heading", {
+      level: 1,
+      name: "How should context be passed between several AI agents?",
+    })).toBeInTheDocument();
+  });
+
   it("opens the real section view directly from the homepage category map", async () => {
     render(<EmbeddedPreview scenarioId="home-guest" />);
 
