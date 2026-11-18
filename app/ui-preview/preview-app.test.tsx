@@ -606,6 +606,21 @@ describe("interactive Pages preview", () => {
     );
   });
 
+  it("opens Administrator preferences directly for Owner with Forum & roles still available", async () => {
+    render(<EmbeddedPreview scenarioId="settings-administrator-owner" />);
+
+    expect(await screen.findByRole("heading", { level: 2, name: "Administrator preferences" })).toBeInTheDocument();
+    const settingsNavigation = document.querySelector(".settings-panel-nav") as HTMLElement;
+    expect(within(settingsNavigation).getByRole("link", { name: "Administrator preferences" })).toHaveAttribute(
+      "aria-current",
+      "page",
+    );
+    expect(within(settingsNavigation).getByRole("link", { name: "Forum & roles" })).toHaveAttribute(
+      "href",
+      "/en/settings/forum",
+    );
+  });
+
   it("shows Administrator preferences to Manager in Settings and opens it from navigation", async () => {
     const user = userEvent.setup();
     render(<EmbeddedPreview scenarioId="section-user" identity="manager" />);
