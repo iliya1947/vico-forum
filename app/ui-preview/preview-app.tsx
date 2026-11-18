@@ -2955,6 +2955,60 @@ function PreviewAdminTopicRoute({ scenario, interactions }: {
   />;
 }
 
+function previewDiscoveryTopic(
+  locale: PreviewLocale,
+  routeTopicId: string,
+) {
+  const unanswered = unansweredTopics(locale).find((topic) => topic.id === routeTopicId);
+  if (unanswered && routeTopicId !== "worker-auth") {
+    const sectionRouteId = routeTopicId === "agent-context"
+      ? "vibe-ai-tools-preview-4"
+      : unanswered.section?.id ?? sectionId;
+    const resolvedSection = previewSection(locale, sectionRouteId);
+    const unread = unreadTopics(locale).find((topic) => topic.id === routeTopicId);
+    return {
+      section: resolvedSection,
+      topic: {
+        id: unanswered.id,
+        authorName: unanswered.authorName,
+        postCount: unread ? 3 : 1,
+        createdAt: new Date("2026-09-29T10:00:00Z"),
+        isPinned: false,
+        tags: [],
+        title: {
+          id: `${unanswered.id}-title-preview`,
+          originalContent: unanswered.title,
+          sourceLocale: locale,
+        },
+      },
+    };
+  }
+
+  const popular = Object.values(popularPeriods(locale))
+    .flat()
+    .find((topic) => topic.id === routeTopicId);
+  if (popular && routeTopicId === "database-queues") {
+    return {
+      section: previewSection(locale, sectionId),
+      topic: {
+        id: popular.id,
+        authorName: popular.authorName,
+        postCount: 1,
+        createdAt: popular.latestActivityAt,
+        isPinned: false,
+        tags: [],
+        title: {
+          id: `${popular.id}-title-preview`,
+          originalContent: popular.title,
+          sourceLocale: locale,
+        },
+      },
+    };
+  }
+
+  return null;
+}
+
 function PreviewTopicRoute({ scenario, interactions }: {
   scenario: Scenario;
   interactions: PreviewInteractionState;
@@ -3096,7 +3150,8 @@ function PreviewTopicRoute({ scenario, interactions }: {
         topic: candidateTopic,
       }))
     )
-    .find(({ topic: candidateTopic }) => candidateTopic.id === routeTopicId);
+    .find(({ topic: candidateTopic }) => candidateTopic.id === routeTopicId)
+    ?? previewDiscoveryTopic(scenario.locale, routeTopicId);
 
   if (!matched) {
     return (
