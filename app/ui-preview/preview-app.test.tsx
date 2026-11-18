@@ -183,6 +183,45 @@ describe("embedded preview routing", () => {
     expect(document.querySelector(".admin-topic")).toBeNull();
   });
 
+  it("opens the requested non-primary Admin topic instead of the typed-api fixture", async () => {
+    render(<EmbeddedPreview scenarioId="admin-topic-worker-auth" identity="manager" />);
+
+    expect(await screen.findByRole("heading", {
+      level: 2,
+      name: "Worker auth: session boundary vs permissions",
+    })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Topic" }))
+      .toHaveAttribute("href", "/en/topics/worker-auth");
+    expect(screen.queryByRole("heading", {
+      level: 2,
+      name: "How should I structure a typed API client?",
+    })).not.toBeInTheDocument();
+  });
+
+  it("returns 404 for a missing Admin topic after Manager admission", async () => {
+    render(<EmbeddedPreview scenarioId="admin-topic-missing" identity="manager" />);
+
+    const missing = await screen.findByRole("alert");
+    expect(missing).toHaveAttribute("data-status", "404");
+    expect(within(missing).getByRole("heading", {
+      level: 1,
+      name: "Forum page not found",
+    })).toBeInTheDocument();
+    expect(document.querySelector(".admin-topic")).toBeNull();
+  });
+
+  it("keeps Admin admission ahead of target lookup for a guest missing topic", async () => {
+    render(<EmbeddedPreview scenarioId="admin-topic-missing-guest" />);
+
+    const unauthenticated = await screen.findByRole("alert");
+    expect(unauthenticated).toHaveAttribute("data-status", "401");
+    expect(within(unauthenticated).getByRole("heading", {
+      level: 1,
+      name: "Sign in required",
+    })).toBeInTheDocument();
+    expect(document.querySelector(".admin-topic")).toBeNull();
+  });
+
   it("opens the Admin topic fixture for Owner as well as Manager", async () => {
     render(<EmbeddedPreview scenarioId="admin-topic" identity="owner" />);
 
