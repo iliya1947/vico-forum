@@ -5,6 +5,7 @@ import { ForumStorageUnavailableError } from "../../db/hyperdrive-forum";
 import { DELETED_USER_NAME } from "../../db/public-identity";
 import type { ForumTopicBookmarkCursor } from "../../db/forum-repository";
 import { ForumRouteError } from "../forum/ui";
+import { BookmarksView } from "../forum/bookmarks-view";
 
 const PRIVATE_CACHE = "private, no-store";
 const UTC_MILLIS = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/u;
@@ -75,10 +76,9 @@ export async function loader({ params, context, url }: {
   }
 }
 
-// The list presentation is built in the next isolated UI/localization slice.
 export default function BookmarksRoute() {
-  useLoaderData<typeof loader>();
-  return null;
+  const page = useLoaderData<typeof loader>();
+  return <BookmarksView {...page} />;
 }
 
 export const ErrorBoundary = ForumRouteError;
