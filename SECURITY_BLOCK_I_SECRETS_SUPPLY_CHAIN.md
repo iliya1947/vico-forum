@@ -2,7 +2,7 @@
 
 ## Статус
 
-1. Scope подготовлен 2026-11-12; current I7 audit target — `main` `7cc23edede57994cdedab49c1556ddb55034dd29`.
+1. Scope подготовлен 2026-11-12; final I8 audit target — `main` `7cc23edede57994cdedab49c1556ddb55034dd29`.
 2. Block H закрыт; его deferred blockers в I не дублируются.
 3. **I1 — Repository authority & main provenance завершён: 1 current-scope finding — `REPO-MAIN-GATE-01 Moderate/P2`.**
 4. **I2 — Workflow events, tokens & write authority завершён: PASS, 0 новых current-scope findings.**
@@ -11,9 +11,10 @@
 7. **I5 — Dependency & install provenance завершён: 1 current-scope finding — `CI-PYPI-PROVENANCE-01 Low/P3`; 0 новых deferred blockers.** Node/pnpm dependency chain PASS; Python browser acceptance installs exact Playwright but resolves unhashed floating transitives online on every run.
 8. **I6 — Actions, tools & container provenance завершён: 1 current-scope finding — `CI-POSTGRES-IMAGE-PROVENANCE-01 Low/P3`; 0 новых deferred blockers.** GitHub Actions refs/transitive composite action refs PASS; единственный external service image `postgres:17` остаётся mutable tag и разрешается в digest только во время run.
 9. **I7 — Release/artifact supply-chain cross-check завершён: 1 current-scope finding — `PAGES-ACCEPTANCE-PROVENANCE-01 Low/P3`; 0 новых deferred blockers.** GitHub Pages artifact внутри exact workflow run PASS, но общий canonical Pages URL реально перезаписывается любым разрешённым `chatgpt/ui-*` deployment и потому не доказывает stable exact head для Pages/owner visual acceptance. Production DB/Worker cross-chain новых root cause не дал; `REPO-MAIN-GATE-01` получает explicit pre-Stage-6 correction gate.
-10. Следующий bounded slice после продолжения владельца — **I8: Cross-chain closeout**.
-11. Мира — auditor/coordinator. Remediation, technical planner и implementer не назначены.
-12. Production/Cloudflare/Neon/GitHub settings mutation, secret rotation и workflow dispatch не разрешены и не выполнялись.
+10. **I8 — Cross-chain closeout завершён: PASS, 0 новых current-scope findings и 0 новых deferred blockers. Block I ЗАВЕРШЁН.** Final I total: 4 current findings — `REPO-MAIN-GATE-01 Moderate/P2`, `CI-PYPI-PROVENANCE-01 Low/P3`, `CI-POSTGRES-IMAGE-PROVENANCE-01 Low/P3`, `PAGES-ACCEPTANCE-PROVENANCE-01 Low/P3`; собственных deferred blockers Block I не добавил.
+11. Следующий security-блок по общей карте — **External integrations (Block J)**; в I8 он не начинался.
+12. Мира — auditor/coordinator. Remediation, technical planner и implementer не назначены.
+13. Production/Cloudflare/Neon/GitHub settings mutation, secret rotation и workflow dispatch не разрешены и не выполнялись.
 
 ## I1 — результат
 
@@ -190,6 +191,49 @@
 **Current impact:** a concurrent eligible Pages deployment can replace the public preview between head selection and visual acceptance, so the page being accepted may not correspond to the implementation head recorded for review.
 
 **Boundary:** each individual Pages artifact is correctly tied to its own workflow run/SHA; no repository-code mutation, production mutation or secret exposure is caused by this defect. The weakness is acceptance-target provenance, so severity is Low/P3.
+
+## I8 — результат
+
+1. Audit target: current `main` `7cc23edede57994cdedab49c1556ddb55034dd29`. Verdict: **PASS — 0 новых current-scope findings, 0 новых deferred technical blockers. Block I завершён.**
+2. Final source→install→CI→acceptance→secret-admission→external-mutation chain был повторно сведён как единая trust chain, а не как сумма независимых checklist items.
+3. **Source authority:** `REPO-MAIN-GATE-01 Moderate/P2` остаётся подтверждённым root cause. Final mutable-state recheck непосредственно перед closeout: `main.protected=false`; repository ruleset `Protect main` targets default branch, но `enforcement=disabled`. Его intended rules по-прежнему содержат PR requirement, non-fast-forward/deletion protection и strict required checks `checks` + `database`, но они не enforce'ятся.
+4. **Install/dependency provenance:** Node/pnpm chain остаётся PASS (exact direct versions, frozen lockfile, integrity, no exotic sources, bounded dependency builds). Единственный Python provenance defect остаётся `CI-PYPI-PROVENANCE-01 Low/P3`: browser acceptance online-resolves unhashed compatible transitives.
+5. **Actions/tools/container provenance:** all current GitHub Action refs and observed composite transitive action refs remain exact full SHAs. Remote executable-download path не установлен. `CI-POSTGRES-IMAGE-PROVENANCE-01 Low/P3` остаётся единственным container provenance defect: `postgres:17` mutable tag определяет actual digest только во время CI run.
+6. **CI event/token boundary:** I2 remains PASS. PR/browser jobs execute untrusted branch code only with explicit `contents: read`, synthetic/local resources and no production secrets; no `pull_request_target`, `workflow_run` or privileged artifact-consumer chain exists. Codex service bridge remains a fixed service-branch write path and does not create a second main-authority root cause.
+7. **Acceptance provenance:** per-run Pages artifact SHA/run binding remains PASS; `PAGES-ACCEPTANCE-PROVENANCE-01 Low/P3` remains because the canonical Pages deployment target is mutable across main and broad `chatgpt/ui-*` branches, while project review requires stable-exact-head visual acceptance.
+8. **Secret admission/custody:** I3/I4 remain PASS on repository-side and observed custody paths. Production secret jobs remain manual/main-gated/named-Environment jobs, pre-Environment guards do not receive secrets, checked logs/artifacts/current tree/Pages artifact showed no secret leak, and no current less-trusted Neon reader of recorded SQL-Editor history was established.
+9. Exact mutable `production-db` / `production-worker` Environment reviewers, ref restrictions, prevent-self-review, admin bypass, custom protection rules and exact secret inventory/location remain **Информация не проверена**. Complete GitHub Secret Scanning current/history state likewise remains **Информация не проверена**. These unknowns are mandatory live rechecks before future production use but are not evidence of a defect by themselves.
+10. **Production DB chain:** exact `github.sha` checkout and migration evidence bind repository revision to actual successful migration workflow evidence. No I-level artifact substitution path was found. `DB-RUNTIME-EVIDENCE-01 Low/P3` remains a Block-G Stage-6 coverage blocker, not an I duplicate.
+11. **Worker chain:** exact expected SHA, independent checkout verification, frozen/pinned install chain, exact Wrangler check and unique uploaded Cloudflare Version ID provide source/version identity after admission. No independent I artifact-substitution root cause was found. `WORKER-VERSION-URL-01` and `WORKER-ROLLBACK-FINALIZER-01` remain Block-H Stage-6 deployment/runtime blockers and are not duplicated.
+12. I7's production cross-check is retained as an explicit correction gate: exact-SHA execution does not compensate for an unreviewed trusted branch. **`REPO-MAIN-GATE-01` must be closed before any future Stage-6 production DB/credential/Worker dispatch**, because those jobs execute repository-controlled code/scripts with protected credentials after Environment admission.
+13. The same Stage-6 Worker verification path also consumes `postgres:17`; therefore current `CI-POSTGRES-IMAGE-PROVENANCE-01` must be remediated before relying on that verification in resumed Stage 6. This is the same current finding, not a fourth deferred blocker.
+14. Existing deferred Stage-6 correction ordering remains:
+    - source provenance: close `REPO-MAIN-GATE-01` before any secret-bearing DB/credential/Worker dispatch;
+    - schema evidence: close `DB-RUNTIME-EVIDENCE-01` before schema-dependent Worker rollout;
+    - verification provenance: close `CI-POSTGRES-IMAGE-PROVENANCE-01` before relying on Worker verification;
+    - ingress exposure: close `WORKER-VERSION-URL-01` before any write/private-capable Worker upload;
+    - reconciliation: close `WORKER-ROLLBACK-FINALIZER-01` before any production traffic promotion;
+    - immediately before external action, re-read exact Environment policy/secret placement and mutable Cloudflare topology as already required by source-of-truth.
+15. Current acceptance/release gates outside Stage 6 remain: `CI-PYPI-PROVENANCE-01` affects browser acceptance evidence, and `PAGES-ACCEPTANCE-PROVENANCE-01` affects stable-exact-head visual acceptance. Neither is reclassified as a Stage-6-only blocker because both affect the current repository/local-CI workflow now.
+16. Dedup A–H/J/L PASS:
+    - A Owner/Access/runtime isolation remains Stage-6 control-plane scope, not secret provenance;
+    - B auth/session findings remain application auth semantics, not credential custody;
+    - C authorization remains application permission semantics;
+    - D admin/moderation privacy remains application data exposure;
+    - E public forum bounds/cache/input findings remain request/application behavior;
+    - F attachment content validation remains upload/publication behavior;
+    - G migration/DB privilege correctness remains database semantics; only its evidence blocker interfaces with I and stays owned by G;
+    - H Worker exposure/reconciliation remains deployment/runtime mechanics;
+    - future J owns provider credential/callback/runtime semantics after external integration scope starts;
+    - future L owns monitoring/incident response unless a root cause is actual secret exposure. I8 found no reason to move or duplicate any finding.
+17. Final **Block I total = 4 current findings, 0 Block-I deferred blockers**:
+    1. `REPO-MAIN-GATE-01 Moderate/P2`;
+    2. `CI-PYPI-PROVENANCE-01 Low/P3`;
+    3. `CI-POSTGRES-IMAGE-PROVENANCE-01 Low/P3`;
+    4. `PAGES-ACCEPTANCE-PROVENANCE-01 Low/P3`.
+18. Overall #315 aggregate remains **28 current-scope findings + 3 deferred Stage-6 blockers**. Current severity distribution: **9 Moderate/P2 + 19 Low/P3; no current P0/P1**. Deferred blockers: **2 Moderate/P2 + 1 Low/P3**.
+19. Remediation remains separate and was not started. No workflow dispatch, dependency install, image pull, secret rotation, Environment/ruleset setting mutation, production/Cloudflare/Neon mutation or Pages deployment was performed in I8.
+20. Next bounded security area from the approved map is **External integrations (Block J)**. I8 does not create its plan/file or begin that audit.
 
 ## Цель
 
