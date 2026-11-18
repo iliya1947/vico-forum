@@ -188,6 +188,30 @@ describe("interactive Pages preview", () => {
     });
   });
 
+  it("updates the owner email registration flag independently from Google", async () => {
+    const user = userEvent.setup();
+    render(<EmbeddedPreview scenarioId="section-user" identity="owner" />);
+
+    await user.click(screen.getByRole("link", { name: "Settings" }));
+    const settingsOverview = document.querySelector(".settings-overview") as HTMLElement;
+    await user.click(within(settingsOverview).getByRole("link", { name: "Forum & roles" }));
+
+    expect(await screen.findByRole("heading", { level: 2, name: "Registration" })).toBeInTheDocument();
+    const google = screen.getByRole("checkbox", { name: "Allow new accounts through Google" });
+    const email = screen.getByRole("checkbox", { name: "Allow new accounts through email and password" });
+    expect(google).toBeChecked();
+    expect(email).toBeChecked();
+
+    await user.click(email);
+    await user.click(screen.getByRole("button", { name: "Save registration settings" }));
+
+    expect(await screen.findByRole("status")).toHaveTextContent("Registration settings updated.");
+    await waitFor(() => {
+      expect(screen.getByRole("checkbox", { name: "Allow new accounts through Google" })).toBeChecked();
+      expect(screen.getByRole("checkbox", { name: "Allow new accounts through email and password" })).not.toBeChecked();
+    });
+  });
+
   it("changes administrator workspace density through the real local preference control", async () => {
     window.localStorage.removeItem("vico:administrator-workspace:v1:maya");
     const user = userEvent.setup();
