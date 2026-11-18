@@ -150,8 +150,10 @@ PR #343 проверен на неизменившемся exact head `10321fdae
 **Implementation #343 готов к merge владельцем.** После фактического merge следующий отдельный этап — заключительный docs PR: обновить authorization catalog/default grants, AP-10 `posts.edit` applicability и фактический PROJECT_STATE/migration state. До merge документация не должна заявлять функцию как состояние `main`.
 
 
-## 2026-11-18 — implementation merged; bounded-задача завершена
+## 2026-11-18 — implementation merged; docs сохранены deferred
 
 Implementation PR #343 merged в `main` 2026-11-18 08:14 UTC, merge commit `d8667f630450f702783bbbdb9a3ec14432e75660`.
 
-Ошибочно открытый docs PR #344 закрыт без merge. Документационный closeout не является активной частью текущего маршрута. Следующий отдельный продуктовый блок после этой задачи — Watch.
+Docs PR #344 восстановлен в open и помечен **deferred**. Он сохраняет уже подготовленную документационную синхронизацию, но не является текущей активной работой и не блокирует следующий продуктовый блок.
+
+Следующий отдельный продуктовый блок — Watch.
