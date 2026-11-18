@@ -10,9 +10,10 @@
 6. **L4 — Alertability / failure signals завершён: PASS, 0 новых current-scope findings и 0 deferred blockers.**
 7. **L5 — Audit / History integrity завершён: PASS, 0 новых current-scope findings и 0 deferred blockers.**
 8. **L6 — Revocation / containment / recovery actions завершён: PASS, 0 новых current-scope findings и 0 deferred blockers.**
-9. Overall #315 остаётся **34 current findings + 4 deferred Stage-6 blockers**.
-10. Мира — auditor/coordinator. Remediation, technical planner и implementer не назначены.
-11. Production/Cloudflare/Neon/GitHub/provider mutation, external incident drill и destructive/fault-injection действия не разрешены и не выполнялись.
+9. **L7 — Incident-response degraded operation / Stage-6 gates завершён: PASS, 0 новых current-scope findings и 0 deferred blockers.**
+10. Overall #315 остаётся **34 current findings + 4 deferred Stage-6 blockers**.
+11. Мира — auditor/coordinator. Remediation, technical planner и implementer не назначены.
+12. Production/Cloudflare/Neon/GitHub/provider mutation, external incident drill и destructive/fault-injection действия не разрешены и не выполнялись.
 
 ## Цель
 
@@ -223,6 +224,30 @@
 14. #315 aggregate remains **34 current findings + 4 deferred Stage-6 blockers**. Current severity remains **13 Moderate/P2 + 21 Low/P3**; deferred remains **2 Moderate/P2 + 2 Low/P3**.
 15. Next bounded slice: **L7 — Incident-response degraded operation / Stage-6 gates**.
 
+## L7 — результат
+
+1. Audit target: current `main` `9c4639d23ca075c8bb92fbb909b96593d7bee127`.
+2. Verdict: **PASS — 0 новых current-scope findings, 0 deferred blockers.**
+3. Degraded request behavior remains fail closed. A classified auth/session PostgreSQL outage becomes a generic no-store `503` before Router dispatch; classified Owner-monitoring storage failure becomes unavailable/503 rather than an authorization fallback or healthy zero. Unexpected schema/config/programming failures remain unexpected failures instead of being silently rewritten as a normal denial.
+4. Successful current-state reads are separated from evidence persistence. System/Accounts/Security observation-write failure marks recording unavailable while preserving the valid measured current result. Mandatory domain History remains transactional with its mutation where the domain contract requires it; best-effort request/auth/operational telemetry is not promoted into lossless audit evidence.
+5. A concrete outage-evidence candidate was rechecked end-to-end. An early auth/session storage `503` is returned before `recordRequestFailure()`, and the request-local auth/attempt/operational collectors use the same web PostgreSQL capability, so a web-DB outage can also prevent those in-app telemetry writes. This limitation is real but already truthfully represented: `system.requests` is explicitly recorded-5xx/limited coverage, and recording gaps/unavailability are not presented as complete evidence.
+6. The independent external observability boundary is prepared in repository configuration: `wrangler.jsonc` has Workers observability enabled, `head_sampling_rate: 1` and query-string redaction. Current Cloudflare Workers Logs documentation confirms that enabled Workers Logs persist invocation logs/errors/uncaught exceptions, invocation logs contain request/response metadata, and sampling `1` selects 100% of request contexts. This can supply incident evidence even when the application PostgreSQL evidence sink is unavailable.
+7. Exact **deployed** Workers Logs state, dashboard access, retained outage evidence, account-level overrides and any external alert/Issues configuration are **Информация не проверена**. Stage 6 is paused, and L7 did not access or mutate Cloudflare observability. Therefore repository configuration alone is not accepted as deployed incident-response evidence.
+8. The prepared `production-worker-rollout.yml` does not itself query Workers Logs or prove an external 5xx/outage record before/after promotion. This is **not classified as a new defect** because the rollout workflow does not claim to complete Stage 6: ROADMAP separately requires logs/observability and external-failure-path acceptance, and the workflow itself already leaves interactive post-deploy acceptance outside the automated promotion step. Before Stage-6 completion, the operator must prove that real deployed logs are readable and capture representative runtime/5xx/dependency-failure evidence.
+9. Worker deployment failure/recovery remains owned by Block H. The prepared rollout has exact-baseline precheck, smoke, status verification and ordinary rollback, while `WORKER-ROLLBACK-FINALIZER-01` already owns the runner-loss/cancellation gap and `WORKER-VERSION-URL-01` owns the production-resource Version URL exposure. L7 does not duplicate either root cause.
+10. Database rollout/recovery remains owned by Block G/Stage 6. The repository has schema-first migration verification and an explicit forward-repair/restore policy; migration/admin credentials are not available to the Worker for in-band repair. Current `PROJECT_STATE.md` truthfully marks backup/restore acceptance as **not completed**. There is no repository-backed tested backup/restore runbook yet, but because Stage 6 is paused and backup/restore is an explicit Stage-6 completion gate, its unfinished state is future acceptance work rather than a current L defect.
+11. The existing `DB-RUNTIME-EVIDENCE-01` blocker remains the schema/runtime activation defect: the prepared Worker evidence gate is stale relative to later current migrations. L7 does not relabel that as an incident-response issue. Likewise `REPO-MAIN-GATE-01` remains the required source-control gate before secret-bearing Stage-6 dispatch, and `GOOGLE-OAUTH-SCOPE-01` remains the external-provider activation gate.
+12. Current operator actions that are actually implemented remain in canonical domains: account deactivation, own-session revocation/password change, authorization/measure containment, migration/runtime verification workflows and bounded Worker smoke/rollback. Monitoring does not create an emergency bypass, migration/admin credential path or second mutation backend when dependencies are degraded.
+13. Stage-6 incident-response acceptance must therefore include, without creating new product scope: re-read mutable Worker/Preview/binding topology; verify final Workers Logs/observability state after rollout/rollback; exercise safe external failure-path diagnostics; close the already-recorded G/H/I/J activation blockers; and complete tested backup/restore before declaring the external candidate ready. Alerting/paging remains a separate operational choice unless real deployment risk establishes it as necessary.
+14. Official current Cloudflare sources rechecked 2026-11-18: Workers Logs documentation and Wrangler observability configuration. They confirm persisted invocation logging when enabled, default invocation logs, 0–1 sampling semantics, and current queryable Workers Logs behavior. No live Cloudflare account state was inferred from those docs.
+15. No production probe, fault injection, Worker upload/promotion, database recovery, backup/restore, OAuth/provider call or external setting mutation was performed. Repository tests and workflows were inspected; tests were not executed during L7.
+16. #315 aggregate remains **34 current findings + 4 deferred Stage-6 blockers**. Current severity remains **13 Moderate/P2 + 21 Low/P3**; deferred remains **2 Moderate/P2 + 2 Low/P3**.
+17. Next bounded slice: **L8 — Cross-chain closeout**.
+
+Current official references:
+- https://developers.cloudflare.com/workers/observability/logs/workers-logs/
+- https://developers.cloudflare.com/workers/wrangler/configuration/
+
 ## Finding criteria
 
 1. Concrete current/prepared monitoring or incident-response path.
@@ -241,5 +266,5 @@
 
 ## Следующий шаг
 
-1. После продолжения владельца выполнить **L7 — Incident-response degraded operation / Stage-6 gates** на current main и остановиться после результата.
+1. После продолжения владельца выполнить **L8 — Cross-chain closeout** на current main и остановиться после результата.
 2. Remediation существующих findings/blockers Blocks B–L не начинать без отдельного назначения.
