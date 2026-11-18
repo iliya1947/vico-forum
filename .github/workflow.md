@@ -9,6 +9,7 @@
 
 - Edit own topic title: завершён.
 - Watch: текущая активная реализация Лиры в #345.
+- Лира: отдельный PostgreSQL concurrency/lifecycle slice, interim head `2b84f5eb91d161ac4aba2311335195d46f07693b`; 2 new PG lifecycle tests, database job `134865906627` in progress; STOP after this slice.
 - Bookmarks: план принят, реализация ждёт очереди.
 - Mute/block: план принят, реализация ждёт очереди.
 
