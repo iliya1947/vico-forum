@@ -497,6 +497,28 @@ describe("interactive Pages preview", () => {
     );
   });
 
+  it("moves Owner from Forum & roles to Privacy through Settings navigation", async () => {
+    const user = userEvent.setup();
+    render(<EmbeddedPreview scenarioId="section-user" identity="owner" />);
+
+    await user.click(screen.getByRole("link", { name: "Settings" }));
+    let settingsNavigation = document.querySelector(".settings-panel-nav") as HTMLElement;
+    await user.click(within(settingsNavigation).getByRole("link", { name: "Forum & roles" }));
+
+    expect(await screen.findByRole("heading", { level: 2, name: "Registration" })).toBeInTheDocument();
+    settingsNavigation = document.querySelector(".settings-panel-nav") as HTMLElement;
+    const privacyLink = within(settingsNavigation).getByRole("link", { name: "Privacy" });
+    expect(privacyLink).toHaveAttribute("href", "/en/settings/privacy");
+    await user.click(privacyLink);
+
+    expect(await screen.findByRole("heading", { level: 2, name: "Privacy" })).toBeInTheDocument();
+    settingsNavigation = document.querySelector(".settings-panel-nav") as HTMLElement;
+    expect(within(settingsNavigation).getByRole("link", { name: "Privacy" })).toHaveAttribute(
+      "aria-current",
+      "page",
+    );
+  });
+
   it("hides Forum & roles from ordinary user Settings navigation", async () => {
     const user = userEvent.setup();
     render(<EmbeddedPreview scenarioId="section-user" identity="user" />);
