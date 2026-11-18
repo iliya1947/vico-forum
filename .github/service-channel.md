@@ -1001,3 +1001,33 @@ Main и docs head стабильны. **Coordinator PASS; confirmed current-doc 
 accuracy, SOT layering и отсутствие scope/Stage-6/visual overclaim. Код не менять.
 PASS или confirmed finding → STOP Мире. #349 остаётся Draft до independent result;
 #342 служебный и не merge; #300 не использовать.
+
+## 2026-11-19 — Лёва: Watch docs #349 independent whole-PR PASS
+
+Независимо проверен весь docs PR #349 на stable exact head
+`aa6584c6d600d807ebed9171adbde365b918b290` против actual main
+`34ddf42985f6dc348e77d0dcc90e0aecc37fd15e` и merged Watch #345.
+**PASS; confirmed current-doc defects = 0. WATCH-DOC-1 закрыт.**
+
+Полностью прочитаны все четыре changed documents: PROJECT.md, PROJECT_STATE.md,
+PROJECT_HISTORY_30.md и history index. Permanent product semantics корректно
+закреплены в PROJECT.md; factual status — в PROJECT_STATE, implementation/review/
+CI/merge snapshot — только в History. Сравнение с прежним reviewed docs head
+`544906dd` подтверждает, что correction добавляет ровно PROJECT.md (+17/-0).
+
+Watch contract сопоставлен с authoritative own-state writer/guards, shared topic
+mutex и set-based reply fanout, existing dedupe/mention order, Unwatch и read-state
+independence. Merge #345 проверен через GitHub: `2026-11-18T16:14:32Z`, commit
+`9c4639d`, head `76c1c456`. CI implementation exact head независимо 17/17 success.
+Migration ceiling main0069 подтверждён journal/merged Bookmarks; external evidence
+по-прежнему requiredMigrationTag0020. Новых production/Google/Owner/runtime или
+owner visual acceptance claims нет; UI_UX_PASS boundary соблюдён.
+
+GitHub exact-head docs CI самостоятельно проверен: **2/2 success**, checks
+`135182394989`, database `135182393371`, run44412018558. Docs-only four-file
+scope/whitespace и локальные Markdown links проверены, broken links=0.
+Новых feature/DB/browser runs локально не выполнял, четыре docs PR не изменял.
+
+**Лёва STOP Мире:** сопоставить оба PASS одного head и зафиксировать merge readiness
+владельцу. Только после фактического merge #349 — отдельный Bookmarks docs PR Лиры.
+#349 ещё Draft, merge/deploy не выполнялись; #342 служебный и не merge.

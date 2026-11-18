@@ -667,3 +667,63 @@ DB service log не трактуются как suite failure: actual test/job �
 файле. Код/schema/runtime не менялись, merge/deploy не выполнялись.
 **Лёва STOP Мире** для synthesis/merge readiness одного reviewed head; отдельный
 docs closeout после фактического merge, implementation-order сохранён, #342 не merge.
+
+## 2026-11-19 — независимый whole-PR docs review Watch #349: PASS
+
+Актуальное назначение из #342 установлено по всем свежим комментариям и
+workflow/channel/моему файлу, service head `e55acd5`. В комментарии `6991888557`
+Мира обновила handoff после coordinator PASS corrected Watch docs head.
+Проверяемый exact head `aa6584c6d600d807ebed9171adbde365b918b290`, actual main
+`34ddf42985f6dc348e77d0dcc90e0aecc37fd15e`. Лира — автор docs; проверяемые
+документы во время review не изменял. **PASS, confirmed current-doc defects = 0.**
+
+Полностью прочитаны до конца все changed documents (587 lines в сумме):
+PROJECT.md174, PROJECT_STATE.md283, PROJECT_HISTORY index48 и новый
+PROJECT_HISTORY_30.md82. Это whole-PR docs review указанного scope, не полный
+аудит остальных документов/архивов проекта. Прочитан весь diff с actual main.
+WATCH-DOC-1 independently validated: diff544906dd→aa6584c только PROJECT.md17
+added lines, остальные три первоначальные docs не менялись correction.
+
+Постоянный контракт в PROJECT.md самодостаточен и соответствует merged writer:
+явная личная подписка на тему с active authenticated actor, отсутствие
+auto-watch/new RBAC; future replies других участников через existing inbox,
+recipient/post dedupe при author/parent/mention overlap; Unwatch prospective,
+old notices и independent recipient paths сохраняются; read-state и Bookmarks
+независимы. В permanent section нет SQL, review/CI/PR history или external claims.
+
+PROJECT_STATE обновляет фактический repository state (Watch присутствует,
+migration history0000–0069), сохраняя externally accepted0020. Теги0068_watch и
+0069_bookmarks сверены с current main journal/schema; Bookmarks уже merged #346,
+поэтому ceiling69 правдив даже при отдельном будущем functional docs closeout.
+Эта ограниченная factual запись не подменяет следующий Bookmarks docs этап.
+В state не внесены agent discussion/CI snapshots или развёрнутый permanent contract.
+
+Новый History snapshot82 lines хранит ровно исторический delivery/review/CI/merge
+контекст. GitHub REST #345 независимо подтвердил merged_at2026-11-18T16:14:32Z,
+exact head76c1c456557c614171a3b472758498795a668b9a и merge9c4639d. Две независимые
+PASS на этом head подтверждены service records и собственной прежней technical
+проверкой; реализацией занималась Лира, моя предыдущая роль — planning/review.
+Code-backed claims заново сопоставлены с setTopicWatch/admission, canonical
+action и createPost UNION recipients→reply-before-mentions, миграцией0068.
+Existing original independent PG/UI проверки не запускались повторно без причины.
+
+Index link на PROJECT_HISTORY_30 существует, локальные relative links во всех
+четырёх документах проверены скриптом: broken0. Historical implementation check
+claim также independently checked GitHub API: ровно17/17 success на76c1c456.
+External evidence file requiredMigrationTag0020 не менялся; новые production
+0068/0069 rollout, bindings/provider/R2/Queue/Google/exact-Owner или final owner
+visual acceptance не утверждаются. UI_UX_PASS owner MVP-first priority и поздний
+final visual/runtime boundary согласованы с формулировками docs.
+
+Exact docs SHA independently checked GitHub API: два check-runs completed success,
+checks135182394989 и database135182393371 в CI44412018558. Не называю это своим
+локальным CI/DB/browser run: docs-only review проверял чтение, факты, scope,
+ссылки и whitespace, не запускал feature tests без runtime changes.
+`git diff --check origin/main..HEAD` PASS; diff только четыре Markdown files,
+нет implementation/schema/runtime/RBAC/Admin изменений. Head/main проверены refs.
+
+Обновлены только мои service results, channel и operative workflow #342.
+**Лёва STOP Мире** для synthesis обоих docs PASS и merge readiness владельцу.
+Implementation/docs не merge и не deploy; Bookmarks docs Лира начинает отдельным
+PR только после фактического merge #349. Остальные шесть-задачные границы и запрет
+использовать #300 как текущий рабочий канал сохранены.

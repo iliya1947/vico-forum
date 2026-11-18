@@ -18,7 +18,7 @@
 - Docs debt: Watch #345 имеет merged implementation, но отдельный docs closeout ещё не выполнен. Bookmarks #346 также требует отдельный docs closeout по принятому service-plan. Current PROJECT_STATE всё ещё на migration 0067 и не отражает Watch 0068 / Bookmarks 0069.
 - Следующий docs порядок: сначала отдельный Watch docs closeout, затем отдельный Bookmarks docs closeout. Минимально: factual PROJECT_STATE + отдельный PROJECT_HISTORY snapshot/index для каждого bounded-этапа; без RBAC/Admin, Stage 6 external evidence или owner visual claims.
 - Docs closeout выполняет **Лира / ChatGPT-6** как штатный следующий исполнитель; отдельное owner-назначение для автора docs PR не требуется. Мира docs diff не пишет.
-- Watch docs closeout: **PR #349 Draft**. Первый review Миры выявил WATCH-DOC-1 — отсутствие permanent SOT; Лира закрыла его в `PROJECT.md`. Новый stable exact head `aa6584c6d600d807ebed9171adbde365b918b290`, всего 4 docs files, latest exact-head CI 2/2 PASS. Лира STOP; новый coordinator docs review за Мирой. Bookmarks docs closeout — отдельно после merge #349.
+- Watch docs closeout: **PR #349 Draft**, stable exact head `aa6584c6d600d807ebed9171adbde365b918b290`, main `34ddf42985f6dc348e77d0dcc90e0aecc37fd15e`. Coordinator Миры и independent whole-PR docs review Лёвы: **оба PASS; confirmed current-doc defects = 0**. WATCH-DOC-1 закрыт permanent Watch contract в `PROJECT.md`; все 4 docs прочитаны/проверены, exact-head CI 2/2 success. Лёва STOP Мире для synthesis/merge readiness. Bookmarks docs closeout — отдельно после фактического merge #349.
 - Mute/block: план принят, реализация ждёт закрытия накопленного docs debt либо прямого owner override.
 
 ## Опережающий planning-track
@@ -32,18 +32,8 @@
 
 ## Следующий шаг
 
-**Следующий reviewer — Лёва / Codex-6.1 Sol.** Independent whole-PR docs review
-Watch docs PR #349 на stable exact head
-`aa6584c6d600d807ebed9171adbde365b918b290` против main
-`34ddf42985f6dc348e77d0dcc90e0aecc37fd15e`.
-
-Мира завершила новый coordinator docs cycle: **PASS, confirmed current-doc defects = 0**.
-WATCH-DOC-1 закрыт ровно `PROJECT.md` permanent Watch contract; весь #349 docs scope
-перепроверен. Exact-head docs CI **2/2 PASS**; implementation Watch evidence 17/17 PASS.
-
-Лёве проверить independently factual accuracy, permanent/current/history layering и отсутствие
-Stage-6/owner-visual overclaim. Код/docs не менять. PASS или confirmed finding → STOP Мире.
-
-#349 остаётся Draft до independent result. После завершения review-cycle merge выполняет
-владелец; только после фактического merge #349 Лира открывает отдельный Bookmarks docs
-closeout. #342 служебный и не merge; #300 не использовать.
+**Следующий участник — Мира.** Сопоставить оба docs PASS #349 на
+`aa6584c6d600d807ebed9171adbde365b918b290` и зафиксировать готовность exact head
+к merge владельцем. Лёва STOP. После фактического merge #349 Лира выполняет
+отдельный Bookmarks docs closeout; раньше этот следующий PR не открывать.
+Merge/deploy не выполнялись. #342 служебный и не merge; #300 не использовать.
