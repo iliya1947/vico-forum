@@ -4,6 +4,7 @@ import { authSessionContext, type AuthSession } from "../auth/request-context";
 import { authorizationContext } from "../authorization/request-context";
 import { userMeasureContext } from "../measures/request-context";
 import { AuthorizationUnavailableError } from "../../db/authorization-service";
+import { ForumStorageUnavailableError } from "../../db/hyperdrive-forum";
 import type { ForumReader } from "../../db/forum-repository";
 import { forumReaderContext } from "./request-context";
 import { loader as sectionLoader } from "../routes/section";
