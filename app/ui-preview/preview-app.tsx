@@ -87,7 +87,8 @@ type PreviewVariant =
   | "settings-account-invalid-password"
   | "settings-account-rate-limited"
   | "settings-account-session-not-found"
-  | "settings-account-unavailable";
+  | "settings-account-unavailable"
+  | "settings-account-stale";
 
 interface Scenario {
   id: string;
@@ -164,6 +165,7 @@ export const scenarios: readonly Scenario[] = [
   { id: "settings-account-rate-limited", label: "Settings · Account · rate limited", locale: "en", direction: "ltr", identity: "user", path: "/en/settings/account", view: "section", variant: "settings-account-rate-limited", allowedIdentities: ["user", "manager", "owner"] },
   { id: "settings-account-session-not-found", label: "Settings · Account · session no longer active", locale: "en", direction: "ltr", identity: "user", path: "/en/settings/account", view: "section", variant: "settings-account-session-not-found", allowedIdentities: ["user", "manager", "owner"] },
   { id: "settings-account-unavailable", label: "Settings · Account · temporarily unavailable", locale: "en", direction: "ltr", identity: "user", path: "/en/settings/account", view: "section", variant: "settings-account-unavailable", allowedIdentities: ["user", "manager", "owner"] },
+  { id: "settings-account-stale", label: "Settings · Account · stale account/session", locale: "en", direction: "ltr", identity: "user", path: "/en/settings/account", view: "section", variant: "settings-account-stale", allowedIdentities: ["user", "manager", "owner"] },
   { id: "editor-create-topic", label: "Editor · Create topic", locale: "en", direction: "ltr", identity: "user", path: "/en/sections/typescript", view: "section", allowedIdentities: ["user", "manager"] },
   { id: "section-form-error", label: "Create topic error", locale: "en", direction: "ltr", identity: "user", path: "/en/sections/typescript", view: "section", variant: "section-form-error", allowedIdentities: ["user", "manager"] },
   { id: "topic-solved-user", label: "Solved topic", locale: "en", direction: "ltr", identity: "user", path: "/en/topics/typed-api", view: "topic" },
@@ -1480,7 +1482,9 @@ function previewSettingsAccountData(
   return {
     locale: scenario.locale,
     accountId: actor?.id ?? "",
-    sessionId: "preview-current-session",
+    sessionId: scenario.variant === "settings-account-stale"
+      ? "preview-stale-session"
+      : "preview-current-session",
     canViewForum: scenario.identity === "owner",
     linkedMethods: googleOnly
       ? ["google"] as ("password" | "google")[]
