@@ -164,6 +164,23 @@ describe("interactive Pages preview", () => {
     expect(await screen.findByRole("status")).toBeInTheDocument();
   });
 
+  it("shows the non-fresh session state without exposing session controls", async () => {
+    render(<EmbeddedPreview scenarioId="settings-account-not-fresh" identity="user" />);
+
+    expect(await screen.findByRole("heading", { level: 2, name: "Account & security" })).toBeInTheDocument();
+
+    const sessionsHeading = screen.getByRole("heading", { level: 3, name: "Active sessions" });
+    const sessions = sessionsHeading.parentElement as HTMLElement;
+    expect(within(sessions).getByRole("status")).toHaveTextContent(
+      "To view and manage sessions, sign out and sign in again to create a fresh session.",
+    );
+    expect(within(sessions).queryByText("Chrome on Windows")).not.toBeInTheDocument();
+    expect(within(sessions).queryByText("Safari on iPhone")).not.toBeInTheDocument();
+    expect(within(sessions).queryByText("Firefox on Android tablet")).not.toBeInTheDocument();
+    expect(within(sessions).queryByRole("button", { name: "Sign out this other session" })).not.toBeInTheDocument();
+    expect(within(sessions).queryByRole("button", { name: "Sign out all other sessions" })).not.toBeInTheDocument();
+  });
+
   it("links Google locally from Account & security without invoking real OAuth", async () => {
     const user = userEvent.setup();
     render(<EmbeddedPreview scenarioId="section-user" identity="user" />);
