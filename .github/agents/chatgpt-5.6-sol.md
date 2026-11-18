@@ -4,7 +4,7 @@
 
 1. Служебный PR: **#315**.
 2. Моя текущая работа: audit/coordination only; remediation и implementation не назначены.
-3. Текущий этап: **Block I ЗАВЕРШЁН: 4 current findings — `REPO-MAIN-GATE-01 Moderate/P2`, `CI-PYPI-PROVENANCE-01 Low/P3`, `CI-POSTGRES-IMAGE-PROVENANCE-01 Low/P3`, `PAGES-ACCEPTANCE-PROVENANCE-01 Low/P3`; I8 PASS, 0 additional / 0 Block-I deferred blockers.** Overall #315 = 28 current findings + 3 deferred Stage-6 blockers. Следующий security-блок по общей карте — Block J External integrations. Exact mutable Environment secret inventory/policy и complete Secret Scanning state — `Информация не проверена`.
+3. Текущий этап: **Block J НАЧАТ. J1 Current integration inventory & activation boundaries = PASS, 0 new current findings / 0 deferred blockers; следующий bounded slice — J2 Google OAuth external-provider boundary.** Overall #315 остаётся 28 current findings + 3 deferred Stage-6 blockers. Stage 6 paused; provider activation не выполнялась.
 4. Technical audit target B–D: `e279cb6c032a489a9044ca1191407df887c364b4`.
 5. Current `main` — `7cc23edede57994cdedab49c1556ddb55034dd29`. Delta от I1 target включает SA-04/SA-05–SA-08 и topic-title work; I2 отдельно re-read current workflows and source-of-truth.
 6. Лира, Марк и Лёва по #315 сейчас не назначены.
@@ -24,6 +24,7 @@
    - [Block G — Database & migrations](../../SECURITY_BLOCK_G_DATABASE_MIGRATIONS.md)
    - [Block H — Cloudflare / Workers / runtime](../../SECURITY_BLOCK_H_CLOUDFLARE_WORKERS_RUNTIME.md)
    - [Block I — Secrets & supply chain](../../SECURITY_BLOCK_I_SECRETS_SUPPLY_CHAIN.md)
+   - [Block J — External integrations](../../SECURITY_BLOCK_J_EXTERNAL_INTEGRATIONS.md)
 
 ## Актуальные выводы Миры
 
@@ -269,6 +270,13 @@
 240. Dedup A–H/J/L PASS: no finding moved or duplicated. Provider/callback semantics remain future Block J; monitoring/incident response remains later scope unless actual secret exposure is found.
 241. Final Block I = 4 current findings, 0 I deferred blockers. Overall #315 = 28 current + 3 deferred; severity current 9 Moderate/P2 + 19 Low/P3, no P0/P1; deferred 2 Moderate/P2 + 1 Low/P3.
 242. I8 performed no dispatch/install/image pull/settings/ruleset/secret/production mutation. Remediation remains unassigned.
+243. Block J created on current main `7cc23edede57994cdedab49c1556ddb55034dd29`; J1 **PASS, 0 new findings / 0 deferred blockers**.
+244. J1 inventory: Better Auth Google provider foundation exists with server-side GOOGLE_CLIENT_ID/GOOGLE_CLIENT_SECRET, but PROJECT_STATE/ROADMAP say real Google OAuth configuration + interactive smoke remain Stage 6 and production Worker rollout with real auth is not complete.
+245. Resend/Brevo/sendEmail/forgotPassword/resetPassword implementation is absent from current main; email/password registration/sign-in exists with requireEmailVerification=false and Settings explicitly excludes password recovery.
+246. Translation provider abstraction and Cloudflare M2M100 local/CI adapter exist, but current Worker uses DISABLED_CONTENT_GENERATION_ACTION_RUNTIME and publishes providerWired=false/enqueuerWired=false/consumerWired=false; wrangler has no Workers AI or Queue binding.
+247. Current Queue transport is not active; durable task model remains PostgreSQL/domain foundation. Real Queue/provider credentials/calls/acceptance remain Stage 6.
+248. AdministrativeRouting defaults same-origin and no external producer is wired; prior #317 review already leaves cross-origin activation as future Stage-6 acceptance, no duplicate J finding.
+249. J1 performed repository/source-of-truth inspection only: no OAuth client/provider account, external call, Queue dispatch, deploy or setting mutation. Next J2 audits Google provider trust/callback/configuration/data-exchange without duplicating Block B internal auth/session findings.
 
 ## Ограничения
 
@@ -280,5 +288,5 @@
 
 ## Следующий шаг
 
-1. После продолжения владельца подготовить и начать **Block J — External integrations** по общей security map и остановиться после первого bounded результата.
-2. Remediation findings Blocks B–I не начинать без отдельного назначения.
+1. После продолжения владельца выполнить **J2 — Google OAuth external-provider boundary** на current main и остановиться после результата.
+2. Remediation findings Blocks B–J не начинать без отдельного назначения.
