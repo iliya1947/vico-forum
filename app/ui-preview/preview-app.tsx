@@ -13,6 +13,7 @@ import { credentialReturnPath } from "../auth/credential-path";
 import type { EmailAuthActions, AuthClientActions } from "../auth/auth-client";
 import { AuthorizationAdminView } from "../authorization/admin-view";
 import { AdminTopicView } from "../admin/topic";
+import { AdminCategoryView, AdminForumView, AdminSectionView } from "../admin/forum";
 import { projectAdminTopic } from "../admin/topic-model";
 import type { ForumHelpSolutionsFilters, ForumPopularPage } from "../../db/forum-repository";
 import {
@@ -1488,6 +1489,33 @@ function previewRouter(
       ErrorBoundary: ForumRouteError,
     },
     {
+      path: "/:locale/admin/forum",
+      element: <PreviewAdminForumRoute />,
+      loader: ({ request }) => {
+        previewAdminSurfaceAccessData(scenario);
+        return previewAdminForumData(scenario, request);
+      },
+      ErrorBoundary: ForumRouteError,
+    },
+    {
+      path: "/:locale/admin/forum/categories/:categoryId",
+      element: <PreviewAdminCategoryRoute />,
+      loader: ({ request, params }) => {
+        previewAdminSurfaceAccessData(scenario);
+        return previewAdminCategoryData(scenario, request, params.categoryId);
+      },
+      ErrorBoundary: ForumRouteError,
+    },
+    {
+      path: "/:locale/admin/forum/sections/:sectionId",
+      element: <PreviewAdminSectionRoute />,
+      loader: ({ request, params }) => {
+        previewAdminSurfaceAccessData(scenario);
+        return previewAdminSectionData(scenario, request, params.sectionId);
+      },
+      ErrorBoundary: ForumRouteError,
+    },
+    {
       path: "/:locale/admin/forum/topics/:topicId",
       element: <PreviewAdminTopicRoute scenario={scenario} interactions={interactions} />,
       loader: ({ params }) => {
@@ -2889,6 +2917,130 @@ function PreviewSectionRoute({ scenario, interactions }: {
   );
 }
 
+const previewAdminAccess = {
+  actorId: "maya",
+  canEnter: true,
+  canManageAuthorization: true,
+  canReadForum: true,
+  canReadUsers: true,
+  canReadHistory: true,
+  canManageMeasures: true,
+} as const;
+
+function previewAdminBrowseQuery(request: Request) {
+  return { search: new URL(request.url).searchParams.get("q")?.trim() ?? "" };
+}
+
+function previewAdminCategories(locale: PreviewLocale) {
+  return homepageCategories(locale).map((category) => ({
+    id: category.id,
+    name: category.name,
+    sectionCount: category.sectionCount,
+    topicCount: category.topicCount,
+    postCount: category.messageCount,
+    reserved: category.id === HELP_SOLUTIONS_CATEGORY_ID,
+  }));
+}
+
+function previewAdminSections(locale: PreviewLocale, categoryId: string) {
+  const category = previewCategory(locale, categoryId);
+  return category.sections.map((section) => ({
+    id: section.id,
+    name: section.name,
+    category: { id: category.id, name: category.name },
+    topicCount: section.topicCount,
+    postCount: section.postCount,
+    service: section.id === HELP_SOLUTIONS_SERVICE_SECTION_ID,
+  }));
+}
+
+function previewAdminFilter<T extends { id: string; name?: string; title?: string }>(
+  items: readonly T[],
+  search: string,
+) {
+  if (!search) return [...items];
+  const needle = search.toLocaleLowerCase("en");
+  return items.filter((item) =>
+    item.id.toLocaleLowerCase("en").includes(needle)
+    || item.name?.toLocaleLowerCase("en").includes(needle)
+    || item.title?.toLocaleLowerCase("en").includes(needle)
+  );
+}
+
+function previewAdminForumData(scenario: Scenario, request: Request) {
+  const query = previewAdminBrowseQuery(request);
+  const items = previewAdminFilter(previewAdminCategories(scenario.locale), query.search);
+  return {
+    locale: scenario.locale,
+    access: previewAdminAccess,
+    page: { items, total: items.length, next: null },
+    query,
+  };
+}
+
+function previewAdminCategoryData(
+  scenario: Scenario,
+  request: Request,
+  routeCategoryId?: string,
+) {
+  const category = previewAdminCategories(scenario.locale)
+    .find((candidate) => candidate.id === routeCategoryId);
+  if (!category) throw new Response("Not Found", { status: 404 });
+  const query = previewAdminBrowseQuery(request);
+  const items = previewAdminFilter(
+    previewAdminSections(scenario.locale, category.id),
+    query.search,
+  );
+  return {
+    locale: scenario.locale,
+    access: previewAdminAccess,
+    category,
+    sections: { items, total: items.length, next: null },
+    query,
+  };
+}
+
+function previewAdminSectionData(
+  scenario: Scenario,
+  request: Request,
+  routeSectionId?: string,
+) {
+  const category = homepageCategories(scenario.locale)
+    .find((candidate) => candidate.sections.some((section) => section.id === routeSectionId));
+  if (!category || !routeSectionId) throw new Response("Not Found", { status: 404 });
+  const section = previewAdminSections(scenario.locale, category.id)
+    .find((candidate) => candidate.id === routeSectionId);
+  if (!section) throw new Response("Not Found", { status: 404 });
+  const query = previewAdminBrowseQuery(request);
+  const topics = previewSection(scenario.locale, section.id).topics.map((topic) => ({
+    id: topic.id,
+    title: topic.title.originalContent,
+    sourceLocale: topic.title.sourceLocale,
+    postCount: topic.postCount,
+    isSolved: false,
+  }));
+  const items = previewAdminFilter(topics, query.search);
+  return {
+    locale: scenario.locale,
+    access: previewAdminAccess,
+    section,
+    topics: { items, total: items.length, next: null },
+    query,
+  };
+}
+
+function PreviewAdminForumRoute() {
+  return <AdminForumView {...useLoaderData() as ReturnType<typeof previewAdminForumData>} />;
+}
+
+function PreviewAdminCategoryRoute() {
+  return <AdminCategoryView {...useLoaderData() as ReturnType<typeof previewAdminCategoryData>} />;
+}
+
+function PreviewAdminSectionRoute() {
+  return <AdminSectionView {...useLoaderData() as ReturnType<typeof previewAdminSectionData>} />;
+}
+
 function previewAdminSurfaceAccessData(scenario: Scenario) {
   if (!previewUser(scenario)) {
     throw new Response("Unauthenticated", { status: 401 });
@@ -3213,7 +3365,7 @@ function PreviewAdminTopicRoute({ scenario, interactions }: {
   if (!data) throw new Response("Not Found", { status: 404 });
   return <AdminTopicView
     locale={scenario.locale}
-    access={{canEnter:true,canReadForum:true,canManageAuthorization:true,canReadHistory:true}}
+    access={previewAdminAccess}
     topic={projectAdminTopic(data.topic, data.canManageHelpDuplicate)}
     titlePresentation={data.titlePresentation}
     postPresentations={data.postPresentations}
