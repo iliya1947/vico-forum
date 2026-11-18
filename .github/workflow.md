@@ -15,8 +15,8 @@
 
 - Технический план: завершён и принят.
 - Исполнитель: Лира / ChatGPT-6.
-- Draft implementation PR #345, current interim head `bacaadfed1d2494380956c278aab7b0b1bbbd862`.
-- Backend/schema stage выполнен; CI corrections продолжаются; UI/tests/browser acceptance ещё не завершены.
+- Draft implementation PR #345; current interim head `72e9b8d15ee515af1c5dab309cc66ea9514178ae` (not stable review head).
+- Backend/schema/route и UI/loader/locales внедрены; route/UI+real PG тесты и connected Chromium workflow добавлены; CI/browser acceptance ещё не завершён.
 - PR #345 не готов к review.
 
 ## Опережающий planning-track
