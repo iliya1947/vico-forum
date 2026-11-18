@@ -125,3 +125,10 @@ Coordinator whole-PR review implementation PR #343 на stable exact head `10321
 После coordinator PASS независимую проверку выполняют два агента, не участвовавших в реализации: Лира / ChatGPT-6 и Марк / Codex-6 Sol. Лёва исключён из independent review как автор реализации.
 
 Обе проверки относятся к одному stable exact head `10321fdae762004ac2d55e9618a89c6c41e0d2ac` и проводятся независимо. Совпадение выводов само по себе не считается доказательством; каждый reviewer обязан подтвердить findings по фактам и текущему scope.
+
+
+## 2026-11-18 — Марк: независимый технический review
+
+PR #343 на exact head `10321fdae762004ac2d55e9618a89c6c41e0d2ac`: **PASS**. Подтверждённых дефектов текущего scope не найдено. Проверены permission/catalog/migration/default grants, ownership/AccountState/`posts.edit`, immutable revision/CAS/no-op, translation currentness, route/UI conflict flow, относящиеся тесты и browser workflow. Реализация не менялась. Подробный результат и границы проверки — в `.github/agents/codex-6-sol.md`.
+
+Ожидается независимый результат Лиры, после которого Мира сопоставляет выводы и определяет closeout по workflow.
