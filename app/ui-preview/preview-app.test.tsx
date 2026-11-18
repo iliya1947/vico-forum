@@ -1146,7 +1146,7 @@ describe("interactive Pages preview", () => {
     expect(await screen.findByRole("heading", { level: 1, name: "Sign in to Vico Forum" })).toBeInTheDocument();
     expect(screen.getByRole("textbox", { name: "Email" })).toBeInTheDocument();
     expect(screen.getByLabelText("Password")).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Sign in" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Sign in with email" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Continue with Google" })).toBeInTheDocument();
     expect(screen.queryByText(
       "New email registrations are currently closed. Existing users can sign in.",
@@ -1513,10 +1513,12 @@ describe("interactive Pages preview", () => {
     await user.click(within(grantsForm).getByLabelText("forum.topic.pin"));
     await user.click(within(grantsForm).getByRole("button", { name: "Save" }));
 
-    const updatedHeading = await screen.findByRole("heading", { name: "Settings helper renamed" });
-    const updatedCard = updatedHeading.closest(".admin-role-card") as HTMLElement;
-    expect(within(updatedCard).getByLabelText(/^Permissions: 1\//)).toBeInTheDocument();
-    expect(within(updatedCard).getByLabelText("forum.topic.pin")).toBeChecked();
+    await waitFor(() => {
+      const updatedHeading = screen.getByRole("heading", { name: "Settings helper renamed" });
+      const updatedCard = updatedHeading.closest(".admin-role-card") as HTMLElement;
+      expect(within(updatedCard).getByLabelText(/^Permissions: 1\//)).toBeInTheDocument();
+      expect(within(updatedCard).getByLabelText("forum.topic.pin")).toBeChecked();
+    });
 
     const alexHeading = screen.getByRole("heading", { name: "Alex Rivera" });
     const alexCard = alexHeading.closest(".admin-user-card") as HTMLElement;
@@ -1569,7 +1571,7 @@ describe("interactive Pages preview", () => {
     expect(screen.queryByRole("heading", { name: "Settings helper renamed" })).not.toBeInTheDocument();
   });
 
-  it("blocks an invalid custom role slug in Forum & roles before submission", async () => {
+  it("rejects an invalid custom role slug in Forum & roles", async () => {
     const user = userEvent.setup();
     await renderEmbeddedPreview(<EmbeddedPreview scenarioId="section-user" identity="owner" />);
 
@@ -1585,13 +1587,13 @@ describe("interactive Pages preview", () => {
     await user.type(slug, "Invalid slug!");
     await user.type(within(createRoleForm).getByLabelText("Display name"), "Invalid role");
 
-    expect(slug).toBeInvalid();
+    expect(slug).toHaveAttribute("pattern", "[a-z][a-z0-9-]{0,62}");
+    expect(slug).toHaveValue("Invalid slug!");
     await user.click(within(createRoleForm).getByRole("button", { name: "Create custom role" }));
 
-    expect(slug).toBeInvalid();
+    expect(await screen.findByRole("alert")).toHaveTextContent("Check the submitted values.");
     expect(document.querySelectorAll(".admin-role-card")).toHaveLength(roleCountBefore);
     expect(screen.queryByRole("heading", { name: "Invalid role" })).not.toBeInTheDocument();
-    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
   });
 
   it("blocks an empty custom role display name in Forum & roles before submission", async () => {
