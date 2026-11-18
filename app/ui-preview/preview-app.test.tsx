@@ -462,6 +462,17 @@ describe("interactive Pages preview", () => {
       "aria-current",
       "page",
     );
+
+    const forumRolesLink = within(settingsNavigation).getByRole("link", { name: "Forum & roles" });
+    expect(forumRolesLink).toHaveAttribute("href", "/en/settings/forum");
+    await user.click(forumRolesLink);
+
+    expect(await screen.findByRole("heading", { level: 2, name: "Registration" })).toBeInTheDocument();
+    settingsNavigation = document.querySelector(".settings-panel-nav") as HTMLElement;
+    expect(within(settingsNavigation).getByRole("link", { name: "Forum & roles" })).toHaveAttribute(
+      "aria-current",
+      "page",
+    );
   });
 
   it("hides Forum & roles from ordinary user Settings navigation", async () => {
