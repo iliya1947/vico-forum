@@ -25,6 +25,8 @@ import { ProfileView } from "../forum/profile-view";
 import { InvalidProfileError, validateProfileFields, type ProfileFields } from "../forum/profile";
 import { forumProfilePath, forumTopicPath } from "../forum/paths";
 import { ForumRouteError } from "../forum/ui";
+import { OwnMeasureDetail, OwnMeasuresIndex } from "../measures/views";
+import type { UserMeasureDetail } from "../../db/user-measure-read";
 import SettingsRoute from "../routes/settings";
 import SettingsAccountRoute from "../routes/settings-account";
 import SettingsAdministratorRoute from "../routes/settings-administrator";
@@ -123,6 +125,9 @@ export const scenarios: readonly Scenario[] = [
   { id: "profile-long", label: "Profile · long text", locale: "en", direction: "ltr", identity: "guest", path: "/en/users/maya", view: "profile", variant: "profile-long" },
   { id: "profile-empty", label: "Profile · empty", locale: "en", direction: "ltr", identity: "guest", path: "/en/users/sam", view: "profile", variant: "profile-empty" },
   { id: "profile-missing", label: "Profile · missing", locale: "en", direction: "ltr", identity: "guest", path: "/en/users/missing-user", view: "profile", allowedIdentities: ["guest"] },
+  { id: "account-measures-user", label: "My measures", locale: "en", direction: "ltr", identity: "user", path: "/en/account/measures", view: "profile", allowedIdentities: ["user", "manager", "owner"] },
+  { id: "account-measures-guest", label: "My measures · guest unauthenticated", locale: "en", direction: "ltr", identity: "guest", path: "/en/account/measures", view: "profile", allowedIdentities: ["guest"] },
+  { id: "account-measure-detail", label: "My measures · detail", locale: "en", direction: "ltr", identity: "user", path: "/en/account/measures/11111111-1111-4111-8111-111111111111", view: "profile", allowedIdentities: ["user", "manager", "owner"] },
   { id: "home-guest", label: "Home", locale: "en", direction: "ltr", identity: "guest", path: "/en", view: "home" },
   { id: "auth-pending", label: "Authentication · pending", locale: "en", direction: "ltr", identity: "guest", path: "/en", view: "home", authPresentationState: "pending", allowedIdentities: ["guest"] },
   { id: "auth-error", label: "Authentication · failed", locale: "en", direction: "ltr", identity: "guest", path: "/en", view: "home", authPresentationState: "error", allowedIdentities: ["guest"] },
@@ -317,6 +322,7 @@ type PreviewInteractionState = {
   registrationEmailEnabled: boolean;
   registrationVersion: number;
   revokedAccountSessionIds: Set<string>;
+  measureAppealBody: string | null;
   authorization: PreviewAuthorizationState;
 };
 
@@ -371,6 +377,7 @@ function createPreviewInteractionState(): PreviewInteractionState {
     registrationEmailEnabled: registration?.emailRegistrationEnabled ?? true,
     registrationVersion: registration?.version ?? 1,
     revokedAccountSessionIds: new Set(),
+    measureAppealBody: null,
     authorization: createPreviewAuthorizationState(),
   };
 }
@@ -1528,6 +1535,27 @@ function previewRouter(
       loader: ({ params }) => previewProfileAccessData(scenario, params.userId),
       action: ({ request, params }) => previewProfileAction(
         scenario, interactions, request, params.locale, params.userId,
+      ),
+      ErrorBoundary: ForumRouteError,
+    },
+    {
+      path: "/:locale/account/measures",
+      element: <PreviewOwnMeasuresRoute scenario={scenario} interactions={interactions} />,
+      loader: () => previewAuthenticatedRouteData(scenario),
+      ErrorBoundary: ForumRouteError,
+    },
+    {
+      path: "/:locale/account/measures/:measureId",
+      element: <PreviewOwnMeasureRoute scenario={scenario} interactions={interactions} />,
+      loader: ({ params }) => {
+        previewAuthenticatedRouteData(scenario);
+        if (params.measureId !== PREVIEW_OWN_MEASURE_ID) {
+          throw new Response("Not Found", { status: 404 });
+        }
+        return null;
+      },
+      action: ({ request, params }) => previewOwnMeasureAction(
+        scenario, interactions, request, params.measureId,
       ),
       ErrorBoundary: ForumRouteError,
     },
@@ -3604,6 +3632,90 @@ function PreviewTopicRoute({ scenario, interactions }: {
       topicReadState={null}
     />
   );
+}
+
+const PREVIEW_OWN_MEASURE_ID = "11111111-1111-4111-8111-111111111111";
+
+function previewOwnMeasureDetail(interactions: PreviewInteractionState): UserMeasureDetail {
+  const appealBody = interactions.measureAppealBody;
+  return {
+    id: PREVIEW_OWN_MEASURE_ID,
+    createdAt: "2026-11-10T08:00:00.000Z",
+    expiresAt: "2026-12-10T08:00:00.000Z",
+    liftedAt: null,
+    version: 1,
+    initialReason: "Repeated off-topic promotional posts after a moderator warning.",
+    latestChangeReason: null,
+    status: "active",
+    restrictions: ["replies.create", "attachments.upload"],
+    usedAppeals: appealBody ? 1 : 0,
+    pendingAppeal: Boolean(appealBody),
+    appeals: appealBody ? [{
+      id: "22222222-2222-4222-8222-222222222222",
+      ordinal: 1,
+      body: appealBody,
+      status: "pending",
+      createdAt: "2026-11-18T20:00:00.000Z",
+      resolvedAt: null,
+      explanation: null,
+      remedy: null,
+    }] : [],
+    timeline: [{
+      action: "measure.created",
+      occurredAt: "2026-11-10T08:00:00.000Z",
+      reason: "Repeated off-topic promotional posts after a moderator warning.",
+      before: null,
+      after: {
+        version: 1,
+        restrictions: ["replies.create", "attachments.upload"],
+        expiresAt: "2026-12-10T08:00:00.000Z",
+        lifted: false,
+      },
+      outcome: null,
+      remedy: null,
+    }],
+  };
+}
+
+function PreviewOwnMeasuresRoute({ scenario, interactions }: {
+  scenario: Scenario;
+  interactions: PreviewInteractionState;
+}) {
+  const measure = previewOwnMeasureDetail(interactions);
+  return <OwnMeasuresIndex locale={scenario.locale} measures={[measure]} />;
+}
+
+function PreviewOwnMeasureRoute({ scenario, interactions }: {
+  scenario: Scenario;
+  interactions: PreviewInteractionState;
+}) {
+  const feedback = useActionData() as { ok?: boolean; error?: "invalid"; ordinal?: number } | undefined;
+  return <OwnMeasureDetail
+    locale={scenario.locale}
+    measure={previewOwnMeasureDetail(interactions)}
+    appealId="22222222-2222-4222-8222-222222222222"
+    feedback={feedback}
+  />;
+}
+
+async function previewOwnMeasureAction(
+  scenario: Scenario,
+  interactions: PreviewInteractionState,
+  request: Request,
+  routeMeasureId?: string,
+) {
+  if (!previewUser(scenario)) return { error: "unauthenticated" as const };
+  if (routeMeasureId !== PREVIEW_OWN_MEASURE_ID) return { error: "notFound" as const };
+  const form = await request.formData();
+  if (String(form.get("intent") ?? "") !== "appeal") return { error: "invalid" as const };
+  const appealId = String(form.get("appealId") ?? "");
+  const body = String(form.get("body") ?? "").trim();
+  if (appealId !== "22222222-2222-4222-8222-222222222222"
+    || !body || body.length > 2000 || interactions.measureAppealBody) {
+    return { error: "invalid" as const };
+  }
+  interactions.measureAppealBody = body;
+  return { ok: true as const, ordinal: 1 };
 }
 
 const previewProfileNames: Readonly<Record<string, string>> = {
