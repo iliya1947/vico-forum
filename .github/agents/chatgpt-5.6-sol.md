@@ -57,3 +57,12 @@ Coordinator review #343 на exact head `10321fdae762004ac2d55e9618a89c6c41e0d2a
 По актуальному main подтверждено: отдельного Watch-state нет; есть persisted topic read-state и единый notification inbox. Reply publication уже атомарно fanout'ит уведомления автору темы/direct-parent author, mention использует тот же inbox, а recipient+post uniqueness предотвращает дубль.
 
 Зафиксирован продуктовый scope Watch: explicit Watch/Unwatch конкретной темы, будущие reply-notifications в существующем inbox, без auto-watch, saved-topics/bookmarks, email/push/digest и без изменения read-state. Следующий участник — Лёва на полный технический план. Реализация не начата.
+
+
+## 2026-11-18 — scope/fit review Watch
+
+Полный технический план Лёвы принят. W1: минимальная watch table + forward migration/runtime ACL — да. W2: Watch классифицирован как authenticated personal self-state без нового RBAC key; session actor/AccountState/origin/stale-identity остаются authoritative. W3: отдельный `setTopicWatch` intent на canonical topic route — да.
+
+Проверено, что существующий inbox для kind=reply использует нейтральную формулировку «Reply from actor», поэтому watch-derived reply recipient не требует нового notification kind только ради presentation. PostgreSQL 17 official locking docs подтверждают совместимость NO KEY UPDATE с KEY SHARE, на которой основан существующий lock graph.
+
+Следующий исполнитель по стандартному циклу — Лира. Реализация ещё не начата.
