@@ -1926,3 +1926,21 @@ CI и browser acceptance для этой ещё не реализованной 
 назначения и actual main/service refs. **Лёва STOP после полного последнего плана
 из шести задач перед #320.** Дальнейший pre-release planning этим не открыт;
 Email/password, UI/UX, Stage 6, release и прочий backlog не планировались.
+
+
+## Scope/fit review структуры форума / переноса тем — Мира, 2026-11-18
+
+План Лёвы S0–S10 проверен против актуального main `9c4639d23ca075c8bb92fbb909b96593d7bee127`, действующих Admin/Authorization/Super-admin contracts и реальных repository/History/AP-10/Help seams. **PASS: подтверждённых current-scope дефектов в плане нет.**
+
+Приняты S-P1–S-P4 без расширения scope:
+
+1. **S-P1 ACCEPT:** create/rename ordinary categories и sections, sibling Up/Down, section reparent, ordinary topic move; delete/archive/merge/bulk исключены. Это соответствует исходному блоку «создание/редактирование категорий, управление разделами/структурой, перенос тем» и не активирует опасный FK-cascade delete.
+2. **S-P2 ACCEPT:** ordinary ↔ Help conversion запрещён. Help category/service-section IDs фактически являются domain discriminators для Help routes, signals, duplicates и solution rules; простая смена FK была бы некорректной conversion feature.
+3. **S-P3 ACCEPT:** отдельные `forum.structure.manage` (initial admin) и `forum.topic.move` (initial moderator/admin), custom grants/overrides explicit, Owner через существующую catalog-wide projection. Оба ключа входят в Admin Forum admission и существующую AP-10 family `admin.forum`; новый RBAC/restriction не нужен.
+4. **S-P4 ACCEPT:** move/reparent сохраняет существующие topic/domain/personal states; обязательная reason policy, author notification и auto-unpin не вводятся. History хранит фактический before/after structural effect.
+
+S-T1/S-T2 также **ACCEPT**. Один `forum_structure_state` singleton + global structure version сознательно выбран как простой pre-release mutex/CAS для редких structural writes; отдельные per-container version/mutex layers не нужны. `forum_topics.location_version` остаётся узким CAS для ABA/stale move той же темы. Parent `FOR NO KEY UPDATE` совместим с existing FK `FOR KEY SHARE`, а единый structure→target/parent→actor→History order не создаёт найденной lock inversion с текущими publication/Watch paths.
+
+Дополнительно подтверждены обязательные current-scope integrations: новый Admin History producer/check/types для category/section и `topic.moved`; projection тех же original `admin_history` facts в Owner `forum.structure` без второго journal; локальная коррекция committed create-topic receipt replay к persisted current section без изменения fingerprint; consistent-snapshot read boundary для затронутых multi-query hierarchy projections; runtime ACL/manifest/migration parity и real PG/browser concurrency acceptance. Новую Super-admin/Data подсистему или отдельный monitoring store добавлять не требуется.
+
+Итог: structure/topic-move planning завершён и принят. Код по этому плану сейчас не активирован; перед будущей реализацией требуется только обычная сверка с фактическим main после предыдущих задач, без повторного проектирования при отсутствии нового конфликта.
