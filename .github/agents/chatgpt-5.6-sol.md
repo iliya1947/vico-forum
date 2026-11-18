@@ -4,7 +4,7 @@
 
 1. Служебный PR: **#315**.
 2. Моя текущая работа: audit/coordination only; remediation и implementation не назначены.
-3. Текущий этап: **Block K active. K1–K2 PASS; K3 = `FORUM-EDIT-SPAM-01 Moderate/P2`; следующий bounded slice — K4 Public expensive reads / query amplification.** Overall #315 = 29 current findings + 4 deferred Stage-6 blockers. Stage 6 paused.
+3. Текущий этап: **Block K active. K1–K2 PASS; K3 = `FORUM-EDIT-SPAM-01 Moderate/P2`; K4 = `PUBLIC-READ-COST-01 Moderate/P2`; следующий bounded slice — K5 Request body / attachments / storage exhaustion.** Overall #315 = 30 current findings + 4 deferred Stage-6 blockers. Stage 6 paused.
 4. Technical audit target B–D: `e279cb6c032a489a9044ca1191407df887c364b4`.
 5. Current `main` — `7cc23edede57994cdedab49c1556ddb55034dd29`. Delta от I1 target включает SA-04/SA-05–SA-08 и topic-title work; I2 отдельно re-read current workflows and source-of-truth.
 6. Лира, Марк и Лёва по #315 сейчас не назначены.
@@ -369,6 +369,14 @@
 333. No generic Worker/application POST throttle found that closes forum edits. Current contract requires basic anti-spam/rate limiting on writes; classification current Moderate/P2. Aggregate = 29 current + 4 deferred; severity current 10 Moderate + 19 Low.
 334. No load/flood/production mutation performed. Next K4 public expensive reads/query amplification.
 
+335. K4 target current main `7cc23edede57994cdedab49c1556ddb55034dd29`: **1 new current finding — PUBLIC-READ-COST-01 Moderate/P2; 0 deferred blockers**.
+336. Dedup: DISCOVERY-BOUNDS-01 owns unbounded Unanswered/Tags/Tag/Unread result sets; FORUM-READ-BOUNDS-01 owns section/topic full snapshots. K4 only owns bounded-output but corpus-proportional work.
+337. Homepage performs two public full aggregate joins/count(distinct) over forum content per request; route is private,no-store because presence makes shared caching unsuitable in current shape.
+338. Popular scans/aggregates 30 days of posts, materializes one row per active topic, then JS-sorts full rows three times before output slice <=20/period.
+339. Search output is limited but query joins current titles/posts/tags, evaluates `%query%` ILIKE, groups/orders before LIMIT. No pg_trgm or GIN/GiST text-search index found in repository.
+340. Public unauthenticated repetition therefore re-triggers corpus-proportional PostgreSQL/Worker work. Exact deployed WAF/cache settings are Информация не проверена and cannot serve as repository mitigation.
+341. Severity Moderate/P2; no production EXPLAIN/load/flood was run. Aggregate now 30 current + 4 deferred; current severity 11 Moderate + 19 Low. Next K5.
+
 ## Ограничения
 
 1. Stage 6 external activation остаётся paused.
@@ -379,5 +387,5 @@
 
 ## Следующий шаг
 
-1. После продолжения владельца выполнить **K4 — Public expensive reads / query amplification** на current main и остановиться после результата.
+1. После продолжения владельца выполнить **K5 — Request body / attachments / storage exhaustion** на current main и остановиться после результата.
 2. Remediation findings/blockers Blocks B–K не начинать без отдельного назначения.
