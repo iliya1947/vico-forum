@@ -11,9 +11,10 @@
 7. **J5 — Queue/provider execution lifecycle завершён: PASS, 0 новых current-scope findings и 0 deferred blockers.** Durable task commit предшествует enqueue; Queue message содержит только durable task id; claim/lease/current-generation/stale fences и max-attempt budget ограничивают duplicate/replay provider work; reconciliation восстанавливает pending/expired work и deferred allowance; terminal failures остаются observable durable state.
 8. Current repository имеет Google OAuth foundation и translation provider/Queue abstractions, но source-of-truth и runtime wiring подтверждают отсутствие live Google OAuth acceptance и отсутствие active translation provider/Queue execution.
 9. Resend/Brevo/email-delivery integration в current `main` отсутствует; email verification/password recovery намеренно не реализованы.
-10. Следующий bounded slice после продолжения владельца — **J6: External callback/webhook/outgoing seams**.
-11. Мира — auditor/coordinator. Remediation, technical planner и implementer не назначены.
-12. Production/provider/Cloudflare/GitHub settings mutation, OAuth client creation, email account/provider activation, Queue/provider activation и external calls не разрешены и не выполнялись.
+10. **J6 — External callback/webhook/outgoing seams завершён: PASS, 0 новых current-scope findings и 0 deferred blockers.** В current `main` нет webhook receiver вне уже проверенного Better Auth OAuth; server runtime не содержит request-controlled outbound HTTP fetch; AdministrativeRouting остаётся same-origin default и не получает external/request-controlled bases в Worker runtime.
+11. Следующий bounded slice после продолжения владельца — **J7: Failure/data-retention/cross-provider boundary**.
+12. Мира — auditor/coordinator. Remediation, technical planner и implementer не назначены.
+13. Production/provider/Cloudflare/GitHub settings mutation, OAuth client creation, email account/provider activation, Queue/provider activation и external calls не разрешены и не выполнялись.
 
 ## J1 — результат
 
@@ -147,6 +148,23 @@
 27. #315 aggregate remains **28 current findings + 4 deferred Stage-6 blockers**.
 28. Next bounded slice: **J6 — External callback/webhook/outgoing seams**.
 
+## J6 — результат
+
+1. Audit target: current `main` `7cc23edede57994cdedab49c1556ddb55034dd29`.
+2. Verdict: **PASS — 0 новых current-scope findings, 0 deferred blockers.**
+3. Repository-wide code search по `webhook` вернул 0 совпадений. Concrete third-party webhook receiver вне Better Auth OAuth route family в current `main` не найден.
+4. OAuth callback/state/redirect semantics уже принадлежат J2/Block B и в J6 не дублируются.
+5. Email sender/provider integration отсутствует по J3; следовательно bounce/provider webhook, signature verification и provider callback admission сейчас неприменимы.
+6. Cloudflare Queue producer/consumer adapter и live provider transport отсутствуют по J5; untrusted Queue transport input, external ack callback или provider webhook path в normal runtime не существует.
+7. Server-side outbound HTTP surface проверен отдельно: code search не нашёл `await fetch(...)` в `db/` или `workers/`; в `app/` единственный такой вызов находится в client `OwnerLifecycleControl` и отправляет POST на code-built same-origin `forumOwnerDeactivationPath(...)` с `credentials:"same-origin"` и `redirect:"error"`. Это не SSRF/external integration seam.
+8. `AdministrativeRouting` допускает future trusted bases/origins как foundation, но current defaults строят только relative same-origin `/:locale/admin/*` и `/:locale/super-admin/*` addresses. Production Worker не устанавливает `administrativeRoutingContext`; repository search показывает runtime reference только в declaration, а custom `createAdministrativeRouting(...)` используется вне source лишь в tests.
+9. Поэтому request/user-controlled URL не может в current runtime выбрать admin/super-admin origin, backend destination или privileged external target. Concrete SSRF, open-redirect или confused-deputy chain через AdministrativeRouting не установлен.
+10. Future cross-origin AdministrativeRouting producer остаётся Stage-6 design/acceptance boundary, уже отмеченной review #317. Пока producer отсутствует, превращать потенциальную неправильную будущую конфигурацию в finding/blocker оснований нет.
+11. Signature/origin/nonce/replay verification для non-OAuth webhook сейчас **неприменима**, потому что concrete receiver отсутствует. При появлении provider webhook эта проверка становится обязательной на фактическом integration path.
+12. No provider call, webhook registration, external request, Queue dispatch, deployment, binding or settings mutation was performed by J6.
+13. #315 aggregate остаётся **28 current findings + 4 deferred Stage-6 blockers**.
+14. Следующий bounded slice: **J7 — Failure/data-retention/cross-provider boundary**.
+
 ## Цель
 
 Проверить external provider/integration boundaries Vico Forum так, чтобы:
@@ -253,5 +271,5 @@
 
 ## Следующий шаг
 
-1. После продолжения владельца выполнить **J6 — External callback/webhook/outgoing seams** на current main и остановиться после результата.
-2. J6 не дублирует Better Auth OAuth callback semantics из J2/Block B и не превращает отсутствующие future webhooks в findings. Remediation существующих findings/blockers не начинать без отдельного назначения.
+1. После продолжения владельца выполнить **J7 — Failure/data-retention/cross-provider boundary** на current main и остановиться после результата.
+2. Remediation существующих findings/blockers не начинать без отдельного назначения.
