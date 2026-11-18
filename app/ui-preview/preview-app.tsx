@@ -86,7 +86,8 @@ type PreviewVariant =
   | "settings-account-google-only"
   | "settings-account-invalid-password"
   | "settings-account-rate-limited"
-  | "settings-account-session-not-found";
+  | "settings-account-session-not-found"
+  | "settings-account-unavailable";
 
 interface Scenario {
   id: string;
@@ -162,6 +163,7 @@ export const scenarios: readonly Scenario[] = [
   { id: "settings-account-invalid-password", label: "Settings · Account · wrong password", locale: "en", direction: "ltr", identity: "user", path: "/en/settings/account", view: "section", variant: "settings-account-invalid-password", allowedIdentities: ["user", "manager", "owner"] },
   { id: "settings-account-rate-limited", label: "Settings · Account · rate limited", locale: "en", direction: "ltr", identity: "user", path: "/en/settings/account", view: "section", variant: "settings-account-rate-limited", allowedIdentities: ["user", "manager", "owner"] },
   { id: "settings-account-session-not-found", label: "Settings · Account · session no longer active", locale: "en", direction: "ltr", identity: "user", path: "/en/settings/account", view: "section", variant: "settings-account-session-not-found", allowedIdentities: ["user", "manager", "owner"] },
+  { id: "settings-account-unavailable", label: "Settings · Account · temporarily unavailable", locale: "en", direction: "ltr", identity: "user", path: "/en/settings/account", view: "section", variant: "settings-account-unavailable", allowedIdentities: ["user", "manager", "owner"] },
   { id: "editor-create-topic", label: "Editor · Create topic", locale: "en", direction: "ltr", identity: "user", path: "/en/sections/typescript", view: "section", allowedIdentities: ["user", "manager"] },
   { id: "section-form-error", label: "Create topic error", locale: "en", direction: "ltr", identity: "user", path: "/en/sections/typescript", view: "section", variant: "section-form-error", allowedIdentities: ["user", "manager"] },
   { id: "topic-solved-user", label: "Solved topic", locale: "en", direction: "ltr", identity: "user", path: "/en/topics/typed-api", view: "topic" },
@@ -1533,6 +1535,9 @@ async function previewSettingsAccountAction(
     }
     if (scenario.variant === "settings-account-rate-limited") {
       return { error: "rate-limited" as const };
+    }
+    if (scenario.variant === "settings-account-unavailable") {
+      return { error: "unavailable" as const };
     }
     return { saved: "change-password" as const };
   }
