@@ -146,7 +146,7 @@ const errorKeys: Record<ActionError, UiKey<"common">> = {
 };
 
 export default function SettingsAccountRoute({ mutationMode = "all" }: {
-  mutationMode?: "all" | "revoke-one" | "none";
+  mutationMode?: "all" | "sessions" | "revoke-one" | "none";
 } = {}) {
   const state = useLoaderData<typeof loader>();
   const result = useActionData<typeof action>();
@@ -216,7 +216,8 @@ export default function SettingsAccountRoute({ mutationMode = "all" }: {
                   </Form> : null}
                 </li>)}
               </ul>
-              {mutationMode === "all" && otherSessions.length ? <Form method="post" className="settings-account-revoke-all">
+              {(mutationMode === "all" || mutationMode === "sessions") && otherSessions.length
+                ? <Form method="post" className="settings-account-revoke-all">
                 {identityFields}
                 <input type="hidden" name="intent" value="revoke-others" />
                 <button type="submit" disabled={busy}>{t("settingsSecurityRevokeOthers")}</button>
