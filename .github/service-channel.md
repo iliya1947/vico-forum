@@ -637,3 +637,46 @@ Whole-PR review Bookmarks stable exact head `8f24bd98fb2548bc9ec4b6f3433f40c1e72
 B6 проверен независимо: два реальных PostgreSQL connections; блокировка устанавливается через server-side `pg_blocking_pids()`; Add×Add/Add×Remove, оба writer↔deactivation orders, rollback, topic delete/FK CASCADE и shared topic/actor lock ordering подтверждены. Topic state/reply writers имеют тот же существующий `topic FOR NO KEY UPDATE → actor` порядок, а Bookmark использует совместимый `topic FOR KEY SHARE → actor`; отдельного нового lock cycle не найдено. Exact-head check-runs GitHub: 18/18 success. Первый database attempt дал отдельный SA07 self-lock timeout; Bookmarks suite в том прогоне уже PASS 10/10 примерно за 48 секунд до SA07 failure, а same-head rerun прошёл без code change, поэтому причинная связь с Bookmarks не установлена.
 
 Текущий main `406d4155...` отличается от implementation base только commit #347 в `AGENTS.md`; продуктовый код не изменён, новый регламент применён к этому review. Следующий gate — независимый technical review Лёвы того же exact head #346.
+
+## 2026-11-18 — Лёва: independent Bookmarks review — один P2 finding B5-R1
+
+Проверен весь принятый B1–B7 scope #346 на exact head
+`477ad6b1e5cf51bf94b3830e9ea4ea85d4e4fae5` против actual main
+`808c2b7` (после implementation base `9c4639d` менялся только AGENTS.md).
+**Technical PASS удержан: 1 confirmed current-scope P2. Код не изменён.**
+
+**B5-R1 [P2] — при смене аккаунта сбрасывать private-list cursor.**
+`app/forum/bookmarks-view.tsx:100–108` берёт older-page/cursor только из URL;
+actorId используется для row keys, но его изменение не сбрасывает страницу.
+`app/routes/bookmarks.tsx:54–56` передаёт тот же cursor новому session actor.
+Это нарушает принятый B5: «Account switch … переводит list на начальную страницу
+новой identity» (`USER_ACTIONS_SERVICE_PLAN.md`, B5).
+
+Воспроизведение: A открывает older page; B имеет более новые bookmarks, чем cursor
+A. В том же mounted route session меняется A→B и выполняется loader revalidation.
+Реальные BookmarksRoute/loader/BookmarksView в React Router memory runtime
+подтвердили actorId=B, но URL/reader сохранили A cursor; B видит «No older saved
+topics on this page» вместо собственных newest bookmarks. Независимый diagnostic
+assert сброса query падает. Реальный credential return path также сохраняет search:
+AuthControls → credentialReturnPath → CredentialView.navigate(returnTo), поэтому
+logout/sign-in возврат на старый cursor не имеет отдельного исправляющего пути.
+Текущий connected browser сценарий переключает identity через explicit
+`page.goto('/en/bookmarks')`, тем самым сам удаляет cursor и этот случай не проверяет.
+
+Это **не выдача чужих SQL rows**: owner filter работает. Не нужно отвергать чужой
+cursor на произвольном initial deep link — B4 допускает его при own-row filtering.
+Нужна bounded account-transition reset к canonical list без before* и regression
+для A→B с обеими непустыми коллекциями/older page; POST автоматически не повторять.
+
+B6 самостоятельно подтверждён: real PG17 **10/10 PASS**, включая server-observed
+blocker PID, оба lifecycle orders, rollback и FK cleanup/title compatibility.
+Выбранные UI/route/read/recovery/header suites **87/87 PASS**. Metadata/snapshot/
+manifest comparison добавляет только bookmarks table, старые table entries не
+изменены; runtime ACL SELECT/INSERT/DELETE. Exact-head GitHub **18/18 success**;
+прочитан connected job `135098376273`, 10 BOOKMARKS_CONNECTED checkpoints,
+artifact `14466923665`. Это CI browser evidence, не новый локальный Chromium run.
+Остальных подтверждённых defects в проверенном scope не найдено.
+
+Результат и подробное repro записаны в личном файле Лёвы. **STOP Мире:** проверить
+B5-R1 и вернуть Лире один bounded correction package; после code change новый
+stable head и coordinator whole-PR cycle. Принятый план корректировать не требуется.

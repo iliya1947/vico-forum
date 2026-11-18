@@ -487,3 +487,113 @@ main/service refs и свежий owner scope. Feature tests/CI/browser для �
 Мира дала coordinator PASS Bookmarks implementation PR #346 на stable exact head `477ad6b1e5cf51bf94b3830e9ea4ea85d4e4fae5`, current-scope defects = 0. По стандартному workflow теперь **независимо проверить тот же exact head** против принятого Bookmarks B1–B7 и актуального main; вывод Миры не принимать как факт.
 
 Особо самостоятельно проверить B6 real-PG race evidence: реальность acquired lock proof, Add×Add/Add×Remove ordering, lifecycle admission vs deactivation, rollback, topic FK deletion и совместимость lock graph с существующими topic/title/reply writers. Затем проверить существенные schema/migration/manifest/runtime ACL, personal self-state admission, strict canonical action, private keyset list/cache/privacy, actor/topic UI isolation и connected acceptance. Код #346 не менять. При finding — конкретный current-scope defect в #342 и STOP. При defects=0 — PASS exact head и STOP Мире.
+
+## 2026-11-18 — independent technical whole-PR Bookmarks review: B5-R1 [P2]
+
+Назначение проверено по свежим #342 comments (последний `6989828461`), workflow,
+channel, принятому B1–B7 и моему файлу. Ошибочное промежуточное назначение на
+implementation было отменено; в Bookmarks implementation я не участвовал.
+Лира — реализатор. Review exact head `477ad6b1e5cf51bf94b3830e9ea4ea85d4e4fae5`.
+Actual main `808c2b7`; после base `9c4639d` — только AGENTS.md changes, актуальный
+регламент прочитан. Local merge-tree с actual main clean; реализацию не merge.
+
+Проверен весь diff 39 files / B1–B7: schema/migration/snapshot/journal/manifest,
+least-privilege web ACL; own-state service/repository/read/list/adapters; strict
+canonical action/session/origin/method/identity/error handling; private topic/list
+headers и normalized URL cursor; actor/topic fetchers, list remove/navigation,
+EN/RU/HE/RTL и editor integration; focused tests, B6 native-PG evidence,
+connected Worker/Better Auth/Chromium workflow/script/fixture и GitHub results.
+
+**Результат: PASS удержан; один confirmed current-scope defect B5-R1, priority P2.**
+
+Finding: [head source BookmarksView lines100–108](https://github.com/iliya1947/vico-forum/blob/477ad6b1e5cf51bf94b3830e9ea4ea85d4e4fae5/app/forum/bookmarks-view.tsx#L100)
+не имеет account-transition handling: current actor только меняет row keys,
+older-page URL остаётся. [List loader lines54–56](https://github.com/iliya1947/vico-forum/blob/477ad6b1e5cf51bf94b3830e9ea4ea85d4e4fae5/app/routes/bookmarks.tsx#L54)
+использует этот же cursor с новым session user. Принятый B5 явно требует:
+«Account switch очищает старую private presentation и переводит list на начальную
+страницу новой identity». Изменение child keys это требование не реализует.
+
+Минимальное воспроизведение с реальными BookmarksRoute/loader/BookmarksView:
+
+1. Mounted route A на `/en/bookmarks?beforeSavedAt=2026-11-17T12%3A00%3A00.000Z&beforeTopicId=a-anchor`.
+   A имеет older row; B имеет newest row, savedAt `2026-11-18T20:00:00.000Z`.
+2. Поменять авторитетную session A→B и выполнить router.revalidate() (та же
+   observable смена, что возвращает следующий protected request после cookie switch).
+3. Root/header и list loader уже B, A row удалён. Но URL не меняется, own reader
+   получает B **со старым A cursor**; newer B row не попадает в выборку. UI честно
+   показывает empty older page, вместо обещанного перехода к newest B page.
+
+Независимый diagnostic harness вне implementation worktree:
+`/workspace/work/bookmarks-diagnostics/account-switch.test.tsx`, config рядом.
+Он использует настоящие production loader/component и React Router, fixture
+session/reader (не новый Worker/browser run); изменяемая session моделируется
+через RouterContextProvider так же, как в существующих route tests.
+
+```text
+DIAGNOSTIC {"actor":"actor-b", "url":"/en/bookmarks?beforeSavedAt=2026-11-17T12%3A00%3A00.000Z&beforeTopicId=a-anchor",
+"lastReaderArgs":["actor-b",{"savedAt":"2026-11-17T12:00:00.000Z","topicId":"a-anchor"}],"body":true}
+AssertionError: new account must not inherit old-account page cursor
+expected location.search == ''; received old beforeSavedAt/beforeTopicId
+```
+
+Нормальный credential-return path проверен отдельно по source: AuthControls
+передаёт pathname/search в safeForumReturnPath, credentialReturnPath сохраняет
+этот query, CredentialView после sign-in navigate(returnTo). То есть стандартный
+logout/sign-in return с older page тоже не содержит bookmark-specific reset.
+В existing connected test identity switch проверяется только с новым явным
+`page.goto('/en/bookmarks')`, который сам обнуляет search; независимый переход
+аккаунта на старой странице этим не покрыт.
+
+Scope/impact: P2 functional account-context defect, **не SQL privacy leak**.
+SQL owner filter и новые per-actor row keys корректны; B4 разрешает foreign
+cursor при initial deep link с фильтрацией own rows. Не предлагать signed cursor,
+новое RBAC/DB state или запрет всякого чужого cursor. Лире достаточно корректного
+account-transition reset/return-path handling и regression: A older page → B
+(у B есть newest rows) → canonical first page/newest B rows, без mutation replay.
+Это исправление реализации принятого плана, не дефект B1–B7 или новый продуктовый fork.
+
+Независимые положительные проверки на exact head:
+
+```sh
+node node_modules/vitest/vitest.mjs run \
+  app/forum/topic-bookmark-action.test.ts app/forum/topic-bookmark-control.test.tsx \
+  app/forum/bookmarks-view.test.tsx app/routes/bookmarks.test.ts \
+  app/forum/public-authz-degradation.test.ts app/forum/edit-recovery.test.tsx \
+  app/routes/topic-headers.test.ts --maxWorkers=1
+# 7 suites / 87 tests PASS
+DATABASE_URL=<own-loopback-vico_bookmarks_review_test> \
+  node node_modules/vitest/vitest.mjs run --config vitest.database.config.ts \
+  tests/database/topic-bookmarks.test.ts --maxWorkers=1
+# PostgreSQL17, clean forward migrations, 10/10 PASS
+```
+
+Первый DB startup был до готовности старого stopped disposable container:
+createdb не подключился и suite не дошёл до feature assertions. После pg_isready,
+создания отдельной *_test DB повторный запуск полностью PASS. Это local setup,
+не feature failure. Pinned Node24.21.0, прямой Vitest без package install.
+B6 реально вызывает repository в двух native PG clients, gate до COMMIT после
+mutation; pg_stat_activity.wait_event_type=Lock и pg_blocking_pids проверяют
+нужный blocker PID. Проверены Add×Add/Add×Remove, savedAt no-op, оба lifecycle
+orders, rollback INSERT/DELETE, delete waiting/FK CASCADE и title writer orders.
+KEY SHARE topic → actor NO KEY UPDATE не требует topic upgrade; existing reply/
+state/Watch mutex совместим, отдельного нового deadlock cycle не установлено.
+
+Python semantic comparison: snapshot0069 и manifest меняют только добавление
+forum_topic_bookmarks и свои chain/target roots, old table entries неизменны,
+prevId корректен. New PK/FKs/indexes и millisecond server savedAt согласованы;
+web SELECT/INSERT/DELETE, без UPDATE/sequence/localization grants. List SQL always
+own-user before seek/order/limit51; current title join и neutral deleted author,
+Help section:null, bounded cursor без UUID-only restriction, typed unavailable
+не подменяется пустым списком/Off. No auto-save/read/Watch/notice side effects.
+
+GitHub API независимо подтвердил 18/18 latest exact-head checks success. Полный
+bookmarks_browser log job135098376273 прочитан: 10 BOOKMARKS_CONNECTED steps,
+artifact14466923665; это проверенное CI evidence, не мой локальный Chromium run.
+Existing browser exercises 57 rows/tied times/removed anchor/re-add/foreign
+cursor, private doc/data и RU/HE narrow. Green CI не закрывает B5-R1 выше.
+Остальных подтверждённых current-scope defects не обнаружено.
+
+Код/тесты/схема implementation PR не менялись. Diagnostic files вне worktree;
+service workflow/channel/мой файл сохраняют finding и handoff. **Лёва STOP Мире**:
+проверить B5-R1, передать bounded correction Лире, затем новый stable head и
+coordinator cycle. #346 не готов к merge; service #342 не merge.
