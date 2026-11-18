@@ -4,7 +4,7 @@
 
 1. Служебный PR: **#315**.
 2. Моя текущая работа: audit/coordination only; remediation и implementation не назначены.
-3. Текущий этап: **Block J active. J1 PASS; J2 = 0 new current findings + deferred `GOOGLE-OAUTH-SCOPE-01 Low/P3`; следующий bounded slice — J3 Email provider boundary.** Overall #315 = 28 current findings + 4 deferred Stage-6 blockers. Stage 6 paused; provider activation не выполнялась.
+3. Текущий этап: **Block J active. J1 PASS; J2 = deferred `GOOGLE-OAUTH-SCOPE-01 Low/P3`; J3 Email provider boundary PASS, 0 new findings / 0 deferred blockers; следующий bounded slice — J4 Translation provider data egress.** Overall #315 = 28 current findings + 4 deferred Stage-6 blockers. Stage 6 paused; provider activation не выполнялась.
 4. Technical audit target B–D: `e279cb6c032a489a9044ca1191407df887c364b4`.
 5. Current `main` — `7cc23edede57994cdedab49c1556ddb55034dd29`. Delta от I1 target включает SA-04/SA-05–SA-08 и topic-title work; I2 отдельно re-read current workflows and source-of-truth.
 6. Лира, Марк и Лёва по #315 сейчас не назначены.
@@ -290,6 +290,16 @@
 260. J2 correction gate: constrain effective Google OAuth capability to product-approved authentication scope before Stage6 real Google activation. Exact implementation (scope allowlist, endpoint filtering, includeGrantedScopes policy, token storage hardening) deferred to remediation design.
 261. Production Google client/config remains `Информация не проверена`; before activation verify exact BETTER_AUTH_URL, Web OAuth client, exact production `/api/auth/callback/google` redirect, secret placement and deployed OAuth/session/logout smoke. Absence now is not a finding.
 262. J2 made no client/credential/provider call/login smoke/dispatch/deploy/settings mutation. Overall #315 now 28 current + 4 deferred. Next J3 email provider boundary.
+263. J3 target current main `7cc23edede57994cdedab49c1556ddb55034dd29`, installed Better Auth 1.7.7. Verdict: **PASS, 0 new current findings / 0 deferred blockers**.
+264. Current product/source-of-truth intentionally defers email verification, transactional sender and password recovery; first release requires email/password sign-up/sign-in only.
+265. Repository search found no Resend/Brevo/SMTP/Nodemailer/Mailgun/Postmark/SendGrid/generic sendEmail integration, no email-provider dependency, sender module, provider API env, bounce/webhook receiver or sender credential.
+266. Vico Better Auth config sets emailAndPassword enabled + requireEmailVerification=false + password length only; no sendResetPassword and no emailVerification.sendVerificationEmail.
+267. Exact Better Auth v1.7.7 source: request-password-reset fails RESET_PASSWORD_DISABLED before user lookup/reset-token creation when sendResetPassword is absent; send-verification-email fails VERIFICATION_EMAIL_NOT_ENABLED when verification callback absent.
+268. Current sign-up does not enter verification branch: Better Auth uses sendOnSignUp ?? requireEmailVerification, both false/undefined in Vico. Client/UI exposes sign-up/sign-in/Google only; no forgot/reset/verification route/control.
+269. Wildcard /api/auth/* exposes built-in route family, but initiation endpoints are disabled and current flow creates no usable reset token. No external email trust/data-egress boundary exists.
+270. AUTH-ENUM-01 remains Block B; no provider-specific duplicate. Future Better Auth reset can create credential account for a Google-only user, but sender/recovery is absent and explicitly deferred, so this is a recheck item for future recovery implementation, not current/deferred finding.
+271. Resend/Brevo provider choice, sender-domain auth, API-key scope, bounce/webhook verification, token delivery/callback and data minimization remain `Информация не проверена` because no concrete integration exists. No current/Stage6 blocker follows.
+272. J3 performed no account/key/domain/webhook/provider call/install/deploy/settings mutation. Aggregate stays 28 current + 4 deferred. Next J4 translation provider data egress.
 
 ## Ограничения
 
@@ -301,5 +311,5 @@
 
 ## Следующий шаг
 
-1. После продолжения владельца выполнить **J3 — Email provider boundary** на current main и остановиться после результата.
+1. После продолжения владельца выполнить **J4 — Translation provider data egress** на current main и остановиться после результата.
 2. Remediation findings/blockers Blocks B–J не начинать без отдельного назначения.
