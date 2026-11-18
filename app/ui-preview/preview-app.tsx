@@ -3290,6 +3290,11 @@ async function previewAdminMeasureAction(
     ) as PreviewAdminMeasure["restrictions"];
     const expiresAtRaw = String(form.get("expiresAt") ?? "").trim();
     const expiresAt = expiresAtRaw ? new Date(expiresAtRaw).toISOString() : null;
+    if (restrictions.length === measure.restrictions.length
+      && restrictions.every((value, index) => value === measure.restrictions[index])
+      && expiresAt === measure.expiresAt) {
+      return { ok: true as const };
+    }
     const next: PreviewAdminMeasure = {
       ...measure,
       version: measure.version + 1,
@@ -3408,7 +3413,13 @@ async function previewAdminMeasureAction(
     const expiresAt = changing
       ? (expiresAtRaw ? new Date(expiresAtRaw).toISOString() : null)
       : measure.expiresAt;
-    const nextVersion = measure.version + 1;
+    if (changing
+      && restrictions.length === measure.restrictions.length
+      && restrictions.every((value, index) => value === measure.restrictions[index])
+      && expiresAt === measure.expiresAt) {
+      return { error: "conflict" as const };
+    }
+    const nextVersion = accepting ? measure.version + 1 : measure.version;
     const next: PreviewAdminMeasure = {
       ...measure,
       version: nextVersion,
@@ -3416,6 +3427,7 @@ async function previewAdminMeasureAction(
       expiresAt,
       liftedAt: lifting ? "2026-11-18T20:50:00.000Z" : measure.liftedAt,
       status: lifting ? "lifted" : measure.status,
+      latestChangeReason: accepting ? explanation : measure.latestChangeReason,
       pendingAppeal: false,
       appeals: measure.appeals.map((candidate) => candidate.id === appealId ? {
         ...candidate,
