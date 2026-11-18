@@ -4,7 +4,7 @@
 
 1. Служебный PR: **#315**.
 2. Моя текущая работа: audit/coordination only; remediation и implementation не назначены.
-3. Текущий этап: **Block L active. L1 PASS; L2 = `MON-AUTH-OUTCOME-01 Low/P3`; L3–L4 PASS, 0 additional; следующий bounded slice — L5 Audit / History integrity.** Overall #315 = 34 current findings + 4 deferred Stage-6 blockers. Stage 6 paused.
+3. Текущий этап: **Block L active. L1 PASS; L2 = `MON-AUTH-OUTCOME-01 Low/P3`; L3–L5 PASS, 0 additional; следующий bounded slice — L6 Revocation / containment / recovery actions.** Overall #315 = 34 current findings + 4 deferred Stage-6 blockers. Stage 6 paused.
 4. Technical audit target B–D: `e279cb6c032a489a9044ca1191407df887c364b4`.
 5. Current `main` — `9c4639d23ca075c8bb92fbb909b96593d7bee127`. После Block K main продвинулся Watch #345 (`0068_topic_watch`); Block L стартует на этом current main.
 6. Лира, Марк и Лёва по #315 сейчас не назначены.
@@ -437,6 +437,13 @@
 392. No external pager/SIEM/on-call is claimed. Stage6 ROADMAP already owns deployed logs/observability/external failure acceptance; exact live settings are **Информация не проверена**. No external probes/mutations performed.
 393. Aggregate remains 34 current +4 deferred; severity 13 Moderate +21 Low current. Next L5 Audit / History integrity.
 
+394. L5 target current main `9c4639d23ca075c8bb92fbb909b96593d7bee127`: **PASS, 0 new current findings / 0 deferred blockers**.
+395. Global/scoped/target History preserves original (origin,sourceId), exact-time keyset ordering and closed scope/filter semantics. v2 cursors bind filters/page size; person attribution is applied before branch LIMIT and duplicate relation paths collapse to one source identity.
+396. Legacy SA01 cursor precision candidate rejected: original owner_events/owner_monitor_observations/admin_history use timestamp(3), so accepted old millisecond cursors lose no hidden source microseconds. New native History uses exact six-digit timestamp cursors.
+397. Mandatory evidence: admin_history mutation records, SA05 account.deactivated event and complaint events are transactional with domain commands; true journals/revisions have INSERT/SELECT-only web ACL. Failure of mandatory History rolls back its mutation where required.
+398. Coalesced attempt rows intentionally UPDATE counts/last-seen but retain immutable admission ordering and are labeled coalesced; notification first-read uses coalesce(read_at,...). Mutable Help/measure source rows use one-way normal terminal writers, while mandatory admin review remains in admin_history.
+399. No generic client History rewrite/delete path found. Sampled/best-effort sources remain distinct from mandatory audit. Aggregate stays 34 current +4 deferred; severity 13 Moderate +21 Low. Next L6 revocation/containment/recovery.
+
 ## Ограничения
 
 1. Stage 6 external activation остаётся paused.
@@ -447,5 +454,5 @@
 
 ## Следующий шаг
 
-1. После продолжения владельца выполнить **L5 — Audit / History integrity** на current main и остановиться после результата.
+1. После продолжения владельца выполнить **L6 — Revocation / containment / recovery actions** на current main и остановиться после результата.
 2. Remediation findings/blockers Blocks B–K не начинать без отдельного назначения.
