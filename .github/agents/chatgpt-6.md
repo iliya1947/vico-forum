@@ -156,3 +156,12 @@ GitHub rerun job `134868877271`, workflow run `44322784813`, attempt 2: **databa
 PR #345 discussion/reviews: no comments and no submitted reviews. #342 communication/PR comments checked: no Watch owner visual acceptance recorded. `AGENTS.md` requires **owner visual acceptance before formal whole-PR review**; earlier explicit exception for own-topic-title #343 (deferred to later UI/UX pass) was for that feature, not automatically Watch. No such exception established for Watch. Accordingly `76c1c456557c614171a3b472758498795a668b9a` is **CI-stable technical implementation head**, but **not yet formally review-ready**; PR remains Draft, no coordinator review started or approval claimed. The owner can review connected Watch visual evidence at https://github.com/iliya1947/vico-forum/actions/runs/44324798071 (artifact `topic-watch-connected` contains narrow Hebrew RTL screenshot and evidence), and may record Watch visual acceptance or expressly defer it as a scope decision. Only after that gate should Мира conduct coordinator whole-PR review on this exact head; after PASS — Лёва independent technical review same head. Any implementation code change requires new exact-head CI/review cycle. Permanent/current state docs are a **separate later docs PR after implementation merge** under service workflow.
 
 STOP at this subtask. No merge/production/deployment or metadata transition of #345 to ready was done. Next action: developer owner visual decision for Watch, then separately activate Мира coordinator review through #342.
+
+
+## 2026-11-18 — активное назначение: Bookmarks implementation #346
+
+По прямой команде владельца реализовать следующую задачу текущего блока — **topic Bookmarks / избранное** — прямо в Draft PR #346. #342 остаётся служебным каналом; #346 — implementation PR.
+
+Источник scope: принятый Bookmarks plan и scope/fit B1/B2/B3/B5 в `USER_ACTIONS_SERVICE_PLAN.md`. Перед изменениями сверить его с актуальным main после merge Watch (`9c4639d23ca075c8bb92fbb909b96593d7bee127`) и использовать фактические merged seams/migration ceiling. Требуемый результат — законченный bounded Bookmarks slice по принятому scope с применимыми repository/DB/route/browser/CI проверками. Не расширять реализацию в Mute/block, visibility, structure, #320 или Stage 6.
+
+После полной реализации зафиксировать stable exact head #346 и результаты проверок в #342, затем **STOP** для coordinator whole-PR review Миры.
