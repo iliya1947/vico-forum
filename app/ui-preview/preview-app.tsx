@@ -4558,6 +4558,13 @@ function PreviewProfileRoute({ scenario, interactions }: {
     : previewProfileNames[id] ?? "Forum member";
   const bio = scenario.locale === "ru" ? "Создаю веб-приложения с AI-инструментами. Помогаю разбирать TypeScript и API.\nУчусь вместе с форумом." : scenario.locale === "he" ? "בונה יישומי אינטרנט בעזרת כלי AI. משתף ידע על TypeScript ו־API.\nלומד יחד עם חברי הפורום." : "Building web apps with AI tools. Sharing practical TypeScript and API answers.\nLearning with the forum.";
   const stored = interactions.profileOverrides.get(id);
+  const authorizationUser = previewAuthorizationData(scenario.locale, interactions.authorization)
+    .users.find((user) => user.id === id);
+  const profileRole = authorizationUser?.role ?? {
+    slug: id === "maya" ? "admin" : "user",
+    displayName: id === "maya" ? "Administrator" : "User",
+    isSystem: true,
+  };
   const fields = stored ?? {
     bio: empty ? "" : scenario.variant === "profile-long" ? `${bio}\n${"TypeScript_שלום_".repeat(16)}` : bio,
     githubUrl: empty ? null : "https://github.com/octocat",
@@ -4567,7 +4574,7 @@ function PreviewProfileRoute({ scenario, interactions }: {
     editing={query.get("edit") === "1"} saved={query.get("saved") === "1"}
     privileged={previewProfilePrivilegedSections(scenario, interactions, id)}
     profile={{ id, name, image: null, joinedAt: "2026-09-01T00:00:00.000Z", ...fields,
-      role: { slug: id === "maya" ? "admin" : "user", displayName: id === "maya" ? "Administrator" : "User", isSystem: true },
+      role: { slug: profileRole.slug, displayName: profileRole.displayName, isSystem: profileRole.isSystem },
       messageCount: empty ? 0 : 128, bestAnswerCount: empty ? 0 : 17 }}
     feedback={actionData ?? (scenario.variant === "profile-error" ? { error: "invalid", draft: { bio, githubUrl: "https://github.com/octocat/repo", websiteUrl: "https://example.com/" } } : undefined)} />;
 }
