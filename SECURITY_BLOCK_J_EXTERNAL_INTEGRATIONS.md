@@ -12,9 +12,10 @@
 8. Current repository имеет Google OAuth foundation и translation provider/Queue abstractions, но source-of-truth и runtime wiring подтверждают отсутствие live Google OAuth acceptance и отсутствие active translation provider/Queue execution.
 9. Resend/Brevo/email-delivery integration в current `main` отсутствует; email verification/password recovery намеренно не реализованы.
 10. **J6 — External callback/webhook/outgoing seams завершён: PASS, 0 новых current-scope findings и 0 deferred blockers.** В current `main` нет webhook receiver вне уже проверенного Better Auth OAuth; server runtime не содержит request-controlled outbound HTTP fetch; AdministrativeRouting остаётся same-origin default и не получает external/request-controlled bases в Worker runtime.
-11. Следующий bounded slice после продолжения владельца — **J7: Failure/data-retention/cross-provider boundary**.
-12. Мира — auditor/coordinator. Remediation, technical planner и implementer не назначены.
-13. Production/provider/Cloudflare/GitHub settings mutation, OAuth client creation, email account/provider activation, Queue/provider activation и external calls не разрешены и не выполнялись.
+11. **J7 — Failure/data-retention/cross-provider boundary завершён: PASS, 0 новых current-scope findings и 0 deferred blockers.** Provider failures persist only bounded codes/counts; current translation execution does not fall back across providers after an admitted/selected provider fails; stored translation provenance is bounded metadata, while provider-side mutable retention/config remains Stage-6 acceptance.
+12. Следующий bounded slice после продолжения владельца — **J8: Cross-chain closeout**.
+13. Мира — auditor/coordinator. Remediation, technical planner и implementer не назначены.
+14. Production/provider/Cloudflare/GitHub settings mutation, OAuth client creation, email account/provider activation, Queue/provider activation и external calls не разрешены и не выполнялись.
 
 ## J1 — результат
 
@@ -165,6 +166,26 @@
 13. #315 aggregate остаётся **28 current findings + 4 deferred Stage-6 blockers**.
 14. Следующий bounded slice: **J7 — Failure/data-retention/cross-provider boundary**.
 
+## J7 — результат
+
+1. Audit target: current `main` `7cc23edede57994cdedab49c1556ddb55034dd29`.
+2. Verdict: **PASS — 0 новых current-scope findings, 0 deferred blockers.**
+3. Provider failure path is fail-closed/bounded. `TranslationExecutionFailure` exposes only a closed disposition/code set; task failure persistence stores the bounded code/disposition rather than raw provider exception, response body, source text or credentials.
+4. Operational provider-call evidence is also metadata-only: task kind/generation/attempt, call/success/failure counts and duration. It deliberately does not record source text, requester capabilities or raw provider errors.
+5. Current Cloudflare adapter maps known HTTP/provider failure metadata into bounded `provider-rate-limited`, `provider-temporary`, `provider-unsupported` or `provider-terminal` classifications. Provider response content becomes publishable only after structural/value validation already covered by J4.
+6. Content execution does **not** weaken policy through cross-provider fallback. Allowance selects and persists one stable provider identity for the exact task generation/attempt; executor then calls `translateWithProvider(admittedProvider,...)`, which resolves only that provider and rechecks actual-request support. Failure does not select a second provider.
+7. UI execution also has no failure-triggered provider cascade: generic `TranslationProviderRouter.translate()` selects the first supporting adapter once and awaits only that adapter. If it fails, execution records/retries/terminalizes that failure; it does not fall through to another adapter with a different policy.
+8. Content presentation failure is original-safe: missing/invalid/unavailable translation storage returns the immutable current original with an explicit fallback reason. It does not source a translation from another provider, stale revision or unrelated locale.
+9. Persistent UI rows are admitted only for exact locale/namespace/key, approved status, current source fingerprint and current generation-policy version; invalid/stale machine rows are skipped rather than trusted as a degraded fallback.
+10. Stored translation provenance is bounded application metadata: machine origin plus provider/model and optional attribution. Current operational facts retain only bounded task/call metadata. No source text, provider response payload or credential is intentionally copied into those observability records.
+11. OAuth token persistence itself remains the J2/Better Auth account boundary: Better Auth stores provider access/refresh/id tokens in the account record and its account-unlink path deletes the selected owned account row. Vico's current product does not expose cross-user token selection. J7 found no separate current exploit chain beyond existing deferred `GOOGLE-OAUTH-SCOPE-01`.
+12. Current Better Auth documentation confirms account unlinking deletes the selected owned account and prevents unlinking the only account by default. This does not prove production Google token revocation at the provider; exact provider revocation/retention behavior at Stage-6 activation is **Информация не проверена** and must be checked then.
+13. Current Cloudflare Workers AI documentation (rechecked 2026-11-18) states standard inference Customer Content is zero-data-retention after request processing/delivery and is not used for training; stateful features, AI Gateway logging/caching, application logs or other selected storage can change retention. Vico currently has no live Workers AI/AI Gateway binding, so exact Stage-6 account/logging/cache/retention settings are **Информация не проверена**, not a current finding.
+14. Cross-provider provider/account failover policy does not exist in current runtime. If Stage 6 later introduces multiple providers, fallback must repeat capability/data-policy/admission for the newly selected provider rather than reuse prior-provider authority. This is an activation requirement, not a defect in the current single-provider prepared path.
+15. No provider call, token revocation, account unlink, Queue dispatch, binding, deployment or external settings mutation was performed by J7.
+16. #315 aggregate remains **28 current findings + 4 deferred Stage-6 blockers**.
+17. Next bounded slice: **J8 — Cross-chain closeout**.
+
 ## Цель
 
 Проверить external provider/integration boundaries Vico Forum так, чтобы:
@@ -271,5 +292,5 @@
 
 ## Следующий шаг
 
-1. После продолжения владельца выполнить **J7 — Failure/data-retention/cross-provider boundary** на current main и остановиться после результата.
+1. После продолжения владельца выполнить **J8 — Cross-chain closeout** на current main и остановиться после результата.
 2. Remediation существующих findings/blockers не начинать без отдельного назначения.
