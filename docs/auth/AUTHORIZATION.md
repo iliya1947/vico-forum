@@ -83,6 +83,7 @@ Permission key означает существующую capability прилож
 Текущий code-backed catalog:
 
 - `forum.topic.create`;
+- `forum.topic.title.editOwn`;
 - `forum.reply.create`;
 - `forum.post.editOwn`;
 - `forum.post.history.read`;
@@ -109,6 +110,8 @@ Permission key означает существующую capability прилож
 - `forum.complaint.priority.manage`.
 
 `forum.post.editOwn` применяется только к сообщениям с authoritative `author_id`, совпадающим с пользователем; `forum.post.history.read` открывает историю ревизий любому сообщению при наличии effective permission и не предоставляет права редактирования. По умолчанию editOwn получают все built-in роли, history.read — moderator/admin; изменяемые grants и overrides остаются authoritative.
+
+`forum.topic.title.editOwn` — отдельная own-capability для изменения текста заголовка только своей темы. Route проверяет fresh effective permission, а authoritative transaction повторно проверяет topic ownership, активность аккаунта, ожидаемую текущую revision и применимость AP-10 restriction `posts.edit`. Реальное изменение создаёт новую immutable title revision с `sourceLocale: "und"` и CAS-переключением current revision; no-op не создаёт новую revision. Stale revision возвращает conflict без автоматического повтора. Capability не даёт edit-any и не заменяет отдельные `forum.sourceLocale.correctOwn` / `forum.sourceLocale.correctAny`.
 
 При появлении новой защищённой функции код добавляет новый permission key в централизованный
 catalog, после чего он становится доступен role/user configuration UI.
@@ -174,6 +177,7 @@ retain their own permissions and do not follow from complaint review.
 
 - `forum.post.editOwn`;
 - `forum.topic.create`;
+- `forum.topic.title.editOwn`;
 - `forum.reply.create`;
 - `forum.solution.manageOwn`;
 - `forum.helpSignal.create`;
@@ -189,6 +193,7 @@ retain their own permissions and do not follow from complaint review.
 - `forum.complaint.review`;
 - `forum.complaint.appeal.review`;
 - `forum.topic.create`;
+- `forum.topic.title.editOwn`;
 - `forum.reply.create`;
 - `forum.topic.pin`;
 - `forum.topic.close`;
@@ -211,6 +216,7 @@ retain their own permissions and do not follow from complaint review.
 - `forum.complaint.appeal.review`;
 - `forum.complaint.priority.manage`;
 - `forum.topic.create`;
+- `forum.topic.title.editOwn`;
 - `forum.reply.create`;
 - `forum.topic.pin`;
 - `forum.topic.close`;
