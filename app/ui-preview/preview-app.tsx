@@ -173,8 +173,10 @@ export const scenarios: readonly Scenario[] = [
   { id: "help-solutions-mine-empty", label: "Help & solutions · My questions · empty", locale: "en", direction: "ltr", identity: "user", path: "/en/categories/help-solutions?mode=mine", view: "category", variant: "help-solutions-mine-empty", allowedIdentities: ["user", "manager"] },
   { id: "help-solutions-mine-guest", label: "Help & solutions · My questions · unauthenticated", locale: "en", direction: "ltr", identity: "guest", path: "/en/categories/help-solutions?mode=mine", view: "category", allowedIdentities: ["guest"] },
   { id: "category-guest", label: "Category", locale: "en", direction: "ltr", identity: "guest", path: "/en/categories/development", view: "category" },
+  { id: "category-missing", label: "Category · missing", locale: "en", direction: "ltr", identity: "guest", path: "/en/categories/missing-category", view: "category", allowedIdentities: ["guest"] },
   { id: "category-no-pins", label: "Category · no pins", locale: "en", direction: "ltr", identity: "guest", path: "/en/categories/development", view: "category", variant: "category-no-pins" },
   { id: "section-user", label: "Section", locale: "en", direction: "ltr", identity: "user", path: "/en/sections/typescript", view: "section" },
+  { id: "section-missing", label: "Section · missing", locale: "en", direction: "ltr", identity: "guest", path: "/en/sections/missing-section", view: "section", allowedIdentities: ["guest"] },
   { id: "settings-overview-guest-unauthenticated", label: "Settings · guest unauthenticated", locale: "en", direction: "ltr", identity: "guest", path: "/en/settings", view: "section", allowedIdentities: ["guest"] },
   { id: "settings-account-guest-unauthenticated", label: "Settings · Account & security · guest unauthenticated", locale: "en", direction: "ltr", identity: "guest", path: "/en/settings/account", view: "section", allowedIdentities: ["guest"] },
   { id: "settings-privacy-guest-unauthenticated", label: "Settings · Privacy · guest unauthenticated", locale: "en", direction: "ltr", identity: "guest", path: "/en/settings/privacy", view: "section", allowedIdentities: ["guest"] },
@@ -216,6 +218,7 @@ export const scenarios: readonly Scenario[] = [
   { id: "route-401", label: "System · 401", locale: "en", direction: "ltr", identity: "guest", path: "/en/admin/authorization", view: "not-found", variant: "route-401", allowedIdentities: ["guest"] },
   { id: "route-403", label: "System · 403", locale: "en", direction: "ltr", identity: "user", path: "/en/admin/authorization", view: "not-found", variant: "route-403", allowedIdentities: ["user"] },
   { id: "not-found", label: "System · 404", locale: "en", direction: "ltr", identity: "guest", path: "/en/missing", view: "not-found" },
+  { id: "route-real-404", label: "System · real route 404", locale: "en", direction: "ltr", identity: "guest", path: "/en/missing-real-route", view: "home", allowedIdentities: ["guest"] },
   { id: "route-503", label: "System · 503", locale: "en", direction: "ltr", identity: "manager", path: "/en/admin/authorization", view: "not-found", variant: "route-503", allowedIdentities: ["manager"] },
   { id: "route-500", label: "System · unexpected", locale: "en", direction: "ltr", identity: "guest", path: "/en/topics/typed-api", view: "not-found", variant: "route-500" },
 ] as const;
@@ -1428,9 +1431,11 @@ function previewRouter(
     {
       path: "/:locale/sections/:sectionId",
       element: <PreviewSectionRoute scenario={scenario} interactions={interactions} />,
+      loader: ({ params }) => previewSectionAccessData(scenario, params.sectionId),
       action: ({ request, params }) => previewSectionAction(
         scenario, interactions, request, params.locale, params.sectionId,
       ),
+      ErrorBoundary: ForumRouteError,
     },
     {
       path: "/:locale/topics/:topicId",
@@ -1551,7 +1556,10 @@ function previewRouter(
     },
     {
       path: "*",
-      element: previewElement(scenario),
+      loader: () => {
+        throw new Response("Not Found", { status: 404 });
+      },
+      ErrorBoundary: ForumRouteError,
     },
   ], { initialEntries: [scenario.path] });
 }
@@ -2513,6 +2521,9 @@ function previewCategoryAccessData(
   request: Request,
   routeCategoryId?: string,
 ) {
+  if (!routeCategoryId || !homepageCategories(scenario.locale).some((category) => category.id === routeCategoryId)) {
+    throw new Response("Not Found", { status: 404 });
+  }
   if (routeCategoryId !== HELP_SOLUTIONS_CATEGORY_ID) return null;
   const searchParams = new URL(request.url).searchParams;
   const mode = searchParams.get("mode");
@@ -2769,6 +2780,17 @@ function previewSection(locale: PreviewLocale, routeSectionId: string | undefine
       },
     })),
   };
+}
+
+function previewSectionAccessData(scenario: Scenario, routeSectionId?: string) {
+  if (routeSectionId === "empty") return null;
+  const exists = homepageCategories(scenario.locale).some((category) =>
+    category.sections.some((section) => section.id === routeSectionId)
+  );
+  if (!routeSectionId || !exists) {
+    throw new Response("Not Found", { status: 404 });
+  }
+  return null;
 }
 
 function PreviewSectionRoute({ scenario, interactions }: {
