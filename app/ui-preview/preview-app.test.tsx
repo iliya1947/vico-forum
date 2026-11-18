@@ -433,7 +433,9 @@ describe("interactive Pages preview", () => {
 
     await user.click(screen.getByRole("link", { name: "Settings" }));
     const settingsOverview = document.querySelector(".settings-overview") as HTMLElement;
+    const settingsNavigation = document.querySelector(".settings-panel-nav") as HTMLElement;
     expect(within(settingsOverview).queryByRole("link", { name: "Forum & roles" })).not.toBeInTheDocument();
+    expect(within(settingsNavigation).queryByRole("link", { name: "Forum & roles" })).not.toBeInTheDocument();
 
     cleanup();
     render(<EmbeddedPreview scenarioId="settings-forum-manager-forbidden" />);
