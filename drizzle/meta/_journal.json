@@ -477,6 +477,13 @@
       "when": 1794958021719,
       "tag": "0067_topic_title_edit_own",
       "breakpoints": true
+    },
+    {
+      "idx": 68,
+      "version": "7",
+      "when": 1795008000000,
+      "tag": "0068_topic_watch",
+      "breakpoints": true
     }
   ]
 }

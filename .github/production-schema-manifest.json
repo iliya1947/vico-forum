@@ -1,7 +1,7 @@
 {
   "version": 1,
   "schema": "public",
-  "targetMigration": "0067_topic_title_edit_own",
+  "targetMigration": "0068_topic_watch",
   "tables": {
     "account": {
       "columns": [
@@ -5934,6 +5934,82 @@
       ],
       "checks": [],
       "indexes": []
+    },
+    "forum_topic_watches": {
+      "columns": [
+        {
+          "name": "user_id",
+          "type": "text",
+          "nullable": false,
+          "defaultSha256": null
+        },
+        {
+          "name": "topic_id",
+          "type": "text",
+          "nullable": false,
+          "defaultSha256": null
+        }
+      ],
+      "primaryKeys": [
+        {
+          "name": "forum_topic_watches_pk",
+          "columns": [
+            "user_id",
+            "topic_id"
+          ]
+        }
+      ],
+      "uniqueConstraints": [],
+      "foreignKeys": [
+        {
+          "name": "forum_topic_watches_topic_id_forum_topics_id_fk",
+          "columns": [
+            "topic_id"
+          ],
+          "referencedTable": "forum_topics",
+          "referencedColumns": [
+            "id"
+          ],
+          "onDelete": "CASCADE",
+          "onUpdate": "NO ACTION",
+          "deferrable": false,
+          "initiallyDeferred": false
+        },
+        {
+          "name": "forum_topic_watches_user_id_user_id_fk",
+          "columns": [
+            "user_id"
+          ],
+          "referencedTable": "user",
+          "referencedColumns": [
+            "id"
+          ],
+          "onDelete": "CASCADE",
+          "onUpdate": "NO ACTION",
+          "deferrable": false,
+          "initiallyDeferred": false
+        }
+      ],
+      "checks": [],
+      "indexes": [
+        {
+          "name": "forum_topic_watches_topic_user_idx",
+          "unique": false,
+          "method": "btree",
+          "columns": [
+            {
+              "name": "topic_id",
+              "order": "asc",
+              "nulls": "last"
+            },
+            {
+              "name": "user_id",
+              "order": "asc",
+              "nulls": "last"
+            }
+          ]
+        }
+      ]
     },
     "forum_topic_tags": {
       "columns": [

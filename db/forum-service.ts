@@ -84,6 +84,12 @@ export class ForumService {
     return this.repository.reviseTopicTitle(topicId, expectedRevisionId, normalizeRevision(revision), authorId);
   }
 
+  setTopicWatch(input: { topicId: string; actorId: string; watching: boolean }) {
+    validateEntity(input.topicId, input.actorId);
+    if (typeof input.watching !== "boolean") throw new InvalidForumContentError("invalid watch state");
+    return this.repository.setTopicWatch(input);
+  }
+
   editOwnTopicTitle(input: {
     topicId: string; actorId: string; expectedRevisionId: string; title: string;
   }) {
@@ -199,6 +205,12 @@ export class ForumService {
   readUnreadForUser(userId: string) {
     requireText(userId, "user id");
     return this.repository.readUnreadForUser(userId);
+  }
+
+  readTopicWatch(userId: string, topicId: string) {
+    requireText(userId, "user id");
+    requireText(topicId, "topic id");
+    return this.repository.readTopicWatch(userId, topicId);
   }
 
   readTopicReadState(userId: string, topicId: string) {

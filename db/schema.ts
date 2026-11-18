@@ -1282,6 +1282,17 @@ export const forumTopicReadStates = pgTable(
   ],
 );
 
+export const forumTopicWatches = pgTable(
+  "forum_topic_watches",
+  {
+    userId: text("user_id").notNull().references(() => user.id, { onDelete: "cascade" }),
+    topicId: text("topic_id").notNull().references(() => forumTopics.id, { onDelete: "cascade" }),
+  },
+  (table) => [
+    primaryKey({ name: "forum_topic_watches_pk", columns: [table.userId, table.topicId] }),
+    index("forum_topic_watches_topic_user_idx").on(table.topicId, table.userId),
+  ],
+);
 export const forumReplyNotifications = pgTable(
   "forum_reply_notifications",
   {
