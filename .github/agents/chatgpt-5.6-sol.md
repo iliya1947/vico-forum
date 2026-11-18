@@ -48,3 +48,12 @@ Coordinator review #343 на exact head `10321fdae762004ac2d55e9618a89c6c41e0d2a
 ## 2026-11-18 — docs closeout
 
 После фактического merge #343 открыт отдельный docs PR #344 на base `d8667f630450f702783bbbdb9a3ec14432e75660`, head `cd72e8696167d71c8e93e7ab63ff8e86342af4c3`. Проверен состав: ровно пять documentation files, без code/schema/runtime changes. На момент записи применимые GitHub checks queued.
+
+
+## 2026-11-18 — переход #342 к bounded-этапу Watch
+
+Установлена правильная граница service PR: #342 ведёт общий последовательный блок edit title → Watch → bookmarks → mute/block перед #320. Отдельный service PR для Watch не создаётся.
+
+По актуальному main подтверждено: отдельного Watch-state нет; есть persisted topic read-state и единый notification inbox. Reply publication уже атомарно fanout'ит уведомления автору темы/direct-parent author, mention использует тот же inbox, а recipient+post uniqueness предотвращает дубль.
+
+Зафиксирован продуктовый scope Watch: explicit Watch/Unwatch конкретной темы, будущие reply-notifications в существующем inbox, без auto-watch, saved-topics/bookmarks, email/push/digest и без изменения read-state. Следующий участник — Лёва на полный технический план. Реализация не начата.
