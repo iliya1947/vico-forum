@@ -286,6 +286,29 @@ describe("interactive Pages preview", () => {
     });
   });
 
+  it("keeps the registration version unchanged on a no-op save", async () => {
+    const user = userEvent.setup();
+    render(<EmbeddedPreview scenarioId="section-user" identity="owner" />);
+
+    await user.click(screen.getByRole("link", { name: "Settings" }));
+    const settingsOverview = document.querySelector(".settings-overview") as HTMLElement;
+    await user.click(within(settingsOverview).getByRole("link", { name: "Forum & roles" }));
+
+    expect(await screen.findByRole("heading", { level: 2, name: "Registration" })).toBeInTheDocument();
+    const versionBefore = document.querySelector('input[name="expectedVersion"]') as HTMLInputElement | null;
+    expect(versionBefore?.value).toBe("1");
+
+    await user.click(screen.getByRole("button", { name: "Save registration settings" }));
+
+    expect(await screen.findByRole("status")).toHaveTextContent("Registration settings updated.");
+    await waitFor(() => {
+      const versionAfter = document.querySelector('input[name="expectedVersion"]') as HTMLInputElement | null;
+      expect(versionAfter?.value).toBe("1");
+      expect(screen.getByRole("checkbox", { name: "Allow new accounts through Google" })).toBeChecked();
+      expect(screen.getByRole("checkbox", { name: "Allow new accounts through email and password" })).toBeChecked();
+    });
+  });
+
   it("updates the owner email registration flag independently from Google", async () => {
     const user = userEvent.setup();
     render(<EmbeddedPreview scenarioId="section-user" identity="owner" />);
