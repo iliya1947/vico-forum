@@ -2,14 +2,15 @@
 
 ## Статус
 
-1. Scope создан 2026-11-18; current J1 audit target — `main` `7cc23edede57994cdedab49c1556ddb55034dd29`.
+1. Scope создан 2026-11-18; current J2 audit target — `main` `7cc23edede57994cdedab49c1556ddb55034dd29`.
 2. Blocks A–I уже закрыты как audit blocks; их findings в J не дублируются.
 3. **J1 — Current integration inventory & activation boundaries завершён: PASS, 0 новых current-scope findings и 0 deferred blockers.**
-4. Current repository имеет Google OAuth foundation и translation provider/Queue abstractions, но source-of-truth и runtime wiring подтверждают отсутствие live Google OAuth acceptance и отсутствие active translation provider/Queue execution.
-5. Resend/Brevo/email-delivery integration в current `main` отсутствует; email verification/password recovery намеренно не реализованы.
-6. Следующий bounded slice после продолжения владельца — **J2: Google OAuth external-provider boundary**.
-7. Мира — auditor/coordinator. Remediation, technical planner и implementer не назначены.
-8. Production/provider/Cloudflare/GitHub settings mutation, OAuth client creation, Queue/provider activation и external calls не разрешены и не выполнялись.
+4. **J2 — Google OAuth external-provider boundary завершён: 0 новых current-scope findings + 1 deferred Stage-6 blocker — `GOOGLE-OAUTH-SCOPE-01 Low/P3`.** Exact provider identity/state/PKCE/callback/origin/account-selection paths PASS apart from already-owned Block-B findings; prepared direct OAuth surface accepts caller-selected additional Google scopes beyond Vico's authentication-only product need.
+5. Current repository имеет Google OAuth foundation и translation provider/Queue abstractions, но source-of-truth и runtime wiring подтверждают отсутствие live Google OAuth acceptance и отсутствие active translation provider/Queue execution.
+6. Resend/Brevo/email-delivery integration в current `main` отсутствует; email verification/password recovery намеренно не реализованы.
+7. Следующий bounded slice после продолжения владельца — **J3: Email provider boundary**.
+8. Мира — auditor/coordinator. Remediation, technical planner и implementer не назначены.
+9. Production/provider/Cloudflare/GitHub settings mutation, OAuth client creation, Queue/provider activation и external calls не разрешены и не выполнялись.
 
 ## J1 — результат
 
@@ -28,6 +29,39 @@
 13. Отсутствие live external integration само по себе не finding. Concrete repository foundation defect считается current только если уже влияет на current Stage; prepared Stage-6 defect — deferred blocker только при доказанной causal path.
 14. #315 aggregate остаётся **28 current findings + 3 deferred Stage-6 blockers**.
 15. Следующий bounded slice: **J2 — Google OAuth external-provider boundary**. Не дублировать Block B internal authentication/session findings и Block I secret custody; J2 проверяет provider trust/callback/configuration/data-exchange boundary.
+
+## J2 — результат
+
+1. Audit target: current `main` `7cc23edede57994cdedab49c1556ddb55034dd29`, installed `better-auth@1.7.7` / `@better-auth/drizzle-adapter@1.7.7`. Exact upstream source was checked at Better Auth tag `v1.7.7` commit `db02f233918ad1233bf0753e437e1c0da353273d`.
+2. Verdict: **0 новых current-scope findings + 1 deferred Stage-6 blocker — `GOOGLE-OAUTH-SCOPE-01 Low/P3`.**
+3. Product boundary is authentication/linking only. PROJECT/ROADMAP require Google OAuth as a sign-in method; no current Vico feature requires Google Drive/Gmail/Calendar or another Google API capability.
+4. Vico config correctly keeps `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` server-side, sets Better Auth `baseURL`, configures one Google provider and leaves origin/CSRF/state checks enabled. No custom authorization/token endpoint override exists.
+5. Exact Better Auth redirect flow uses a random state plus PKCE code verifier. With Vico's stateful DB adapter, state is stored in verification storage and correlated with a signed browser cookie; callback consumes/deletes the verification record and rejects missing/mismatched/expired state.
+6. Caller-provided `callbackURL`, `errorCallbackURL` and `newUserCallbackURL` are checked by Better Auth against trusted origins before state generation. Vico additionally supplies only forum-local locale-bounded relative destinations from its own client. No external open-redirect path was established.
+7. Google's exact built-in provider uses Google's fixed authorization/token endpoints, default `openid email profile` scopes and stable raw Google `sub` as provider account subject. Direct client-supplied Google ID-token sign-in is verified through provider JWKS / issuer / audience / max-token-age before user info is trusted.
+8. Explicit linking remains provider-bound: Vico disables implicit linking; Better Auth's `trustedProviders` defaults empty; link requires provider-verified email for an untrusted provider, same email unless explicitly configured otherwise, and refuses a provider account already owned by another user. Vico's request hook additionally checks authoritative current session against `x-vico-link-user` before link state is minted.
+9. The known callback-after-session-revocation weakness remains **`AUTH-LINK-01 Moderate/P2` owned by Block B**. J2 does not duplicate it.
+10. Better Auth callback forwarding of provider `error_description` to the validated same-origin error URL remains **`AUTH-OAUTH-01 Low/P3` owned by Block B**. Vico's credential loaders render only generic/local allowlisted error states; J2 does not duplicate it.
+11. Own-account token selection PASS: exact Better Auth `/get-access-token`, `/refresh-token` and `/account-info` resolve the current session user first and search only that user's account rows. Supplying another `userId` with a session does not select another user. No cross-account provider-token IDOR was established.
+12. **Prepared scope boundary is broader than Vico's product contract.** Exact Better Auth `/sign-in/social` and authenticated `/link-social` schemas accept caller-supplied `scopes: string[]`; those scopes are forwarded to Google's authorization URL. Vico exposes the canonical `/api/auth/*` handler wholesale and has no application-level allowlist restricting those request scopes to the identity-only set. Vico's own UI currently sends no extra scopes, but direct HTTP can.
+13. Better Auth's Google provider also defaults `include_granted_scopes=true`. Google documents that this enables incremental authorization and can cause newly issued access tokens to cover previously granted scopes in addition to the current request. Google recommends requesting the smallest scopes needed for the specific application task.
+14. After explicit Google consent, Better Auth persists the returned provider token/scopes in the account row and provides an authenticated own-account `getAccessToken` API. Current Vico does not enable `account.encryptOAuthTokens`; Better Auth documents its default as false. This storage detail is **not** a separate finding here because no DB-only exploit or cross-user token read is proven, and baseline identity scopes mostly duplicate data Vico already retains.
+15. The concrete J2 risk is therefore capability expansion: once real Google OAuth is activated, a user can use Vico's OAuth client to request Google API scopes unrelated to Vico authentication, then let Vico retain/return the resulting own-account bearer capability. That unnecessarily enlarges the authority attached to a Vico integration and the blast radius of a later Vico client/runtime/DB compromise.
+16. No silent grant or victim-account takeover is proven: Google consent remains required for additional scopes, current account selection is own-user-only, and no live Google OAuth acceptance exists today. Stage 6 is paused, so this is **deferred Low/P3**, not a current finding.
+17. **Correction gate:** before real Google OAuth activation, the effective Vico OAuth surface must be constrained to the provider capabilities actually required by the product. At minimum, the direct request path must not be able to expand Google scopes beyond the approved authentication set merely because Better Auth supports generic incremental authorization. Whether unused token-return endpoints are disabled/filtered and whether `includeGrantedScopes` is kept or disabled is an implementation decision for a later remediation plan, not prescribed by this audit.
+18. Production Google client configuration remains **Информация не проверена** because Stage 6 has not configured/accepted it. Before activation, exact `BETTER_AUTH_URL`, Google Web OAuth client type, authorized redirect URI `https://<production-origin>/api/auth/callback/google`, client/secret placement and deployed OAuth/session/logout smoke must be checked. Absence of that future configuration is not itself a finding.
+19. Google email authority nuance was reviewed: Google warns that `email_verified` on non-Gmail/non-Workspace addresses does not make Google permanently authoritative for the third-party mailbox. Vico does not use Google email to appoint Owner and disables implicit same-email linking; explicit linking additionally requires the already-authenticated local account. No separate takeover path was established.
+20. No OAuth client, credential, provider call, login/callback smoke, production dispatch or setting mutation was performed. J2 was source/configuration analysis only.
+21. #315 aggregate becomes **28 current findings + 4 deferred Stage-6 blockers**.
+22. Next bounded slice: **J3 — Email provider boundary**.
+
+### `GOOGLE-OAUTH-SCOPE-01` — Low/P3 — deferred Stage 6
+
+**Root cause:** Vico exposes Better Auth's generic social OAuth request surface without an application-level Google-scope allowlist, so direct callers can add arbitrary provider scopes even though Vico's approved Google integration is authentication/linking only.
+
+**Prepared Stage-6 impact:** after user consent, Vico can acquire, persist and expose an own-account Google bearer token with authority unrelated to Vico's product needs, increasing provider abuse/reputation surface and blast radius of a later Vico compromise.
+
+**Boundary:** no live Google OAuth acceptance exists, Stage 6 is paused, Google consent is required, and cross-user token selection/takeover was not established. Therefore this is a deferred Low/P3 correction gate, not a current-stage finding.
 
 ## Цель
 
@@ -135,5 +169,5 @@
 
 ## Следующий шаг
 
-1. После продолжения владельца выполнить **J2 — Google OAuth external-provider boundary** на current main и остановиться после результата.
-2. Remediation существующих findings не начинать без отдельного назначения.
+1. После продолжения владельца выполнить **J3 — Email provider boundary** на current main и остановиться после результата.
+2. `AUTH-LINK-01`, `AUTH-OAUTH-01` и `GOOGLE-OAUTH-SCOPE-01` не дублировать. Remediation существующих findings/blockers не начинать без отдельного назначения.
