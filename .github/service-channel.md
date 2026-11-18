@@ -879,3 +879,31 @@ bounded-этапа отдельные implementation/docs PR. Поэтому д�
 Следующая работа в implementation-order (Mute/block) не активируется до закрытия
 обоих накопленных docs closeout, если владелец прямо не изменит эту границу.
 #342 остаётся служебным PR и не merge; #300 не использовать.
+
+
+## 2026-11-18 — Correction владельца: docs closeout выполняет Лира
+
+Предыдущая трактовка Миры, что для автора docs PR требуется отдельное назначение
+владельца, **неверна и отменена** прямым уточнением владельца.
+
+Для текущего цикла #342 docs closeout после merged bounded implementation выполняет
+**Лира / ChatGPT-6** как штатный следующий исполнитель. Отдельное owner-назначение
+на сам факт docs closeout не требуется.
+
+Порядок сохраняется:
+1. сначала закрыть пропущенный Watch docs closeout после #345 / migration 0068;
+2. после его завершения и merge — отдельный Bookmarks docs closeout после #346 /
+   migration 0069;
+3. затем перейти к Mute/block implementation.
+
+Текущий bounded docs task Лиры: **Watch docs closeout**. Scope только factual
+documentation уже merged состояния main:
+- синхронизировать `PROJECT_STATE.md` с Watch и repository migration history 0068;
+- добавить отдельный `PROJECT_HISTORY` snapshot и index entry для Watch;
+- не менять application code/schema/runtime behavior;
+- не добавлять новый RBAC/Admin contract;
+- не менять Stage 6 external migration evidence через 0020;
+- не заявлять owner visual acceptance.
+
+После stable docs PR/head + applicable checks — STOP Мире на review. #342 остаётся
+служебным PR и не merge; #300 не использовать.
