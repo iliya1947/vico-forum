@@ -1522,10 +1522,13 @@ function previewSettingsForumData(
   scenario: Scenario,
   interactions: PreviewInteractionState,
 ) {
+  const actor = previewUser(scenario);
+  if (!actor) {
+    throw new Response("Unauthenticated", { status: 401 });
+  }
   if (scenario.identity !== "owner") {
     throw new Response("Forbidden", { status: 403 });
   }
-  const actor = previewUser(scenario);
   return {
     ...previewAuthorizationData(scenario.locale, interactions.authorization),
     canManageElevated: scenario.identity === "owner",
