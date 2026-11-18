@@ -77,3 +77,8 @@ Target: exact head `cd72e8696167d71c8e93e7ab63ff8e86342af4c3`, base/main пос�
 Выполнена GitHub compare base...head: branch ahead by 2 commits, ровно 11 изменённых файлов в принятом backend/schema scope. На момент проверки GitHub CI запущен, часть jobs queued/in_progress; **тесты не объявлены PASS**, локальный PostgreSQL/browser запуск не выполнялся. UI/loader private watch presentation, focused tests, real DB concurrency и browser acceptance остаются этапом 3. PR Draft, к review/merge не готов.
 
 STOP после завершения серверного/DB этапа согласно декомпозиции. Следующая задача при явном продолжении владельца: Watch UI, тесты и browser acceptance; затем stable exact head и coordinator handoff Мире.
+
+
+### 2026-11-18 — Watch CI correction checkpoint
+
+Initial PR #345 interim head `6cede3af5fe2d096cf01be676050a662b2d9f91b` had CI failures: TypeScript nullable response init and new Reader/Writer mocks; native DB historical subset fixtures lacked `forum_topic_watches` when executing current reply fanout; migration/table counts and monitoring expected tag were stale. Confirmed from exact GitHub job logs. Targeted corrections pushed to current interim head `bacaadfed1d2494380956c278aab7b0b1bbbd862`. Checked Drizzle snapshots 0067→0068: only new table, id, prevId; full manifest adds only the table and target migration 0068. Fresh `database` GitHub job **PASS** on corrected head; remaining CI/browser jobs may still be running. PR #345 remains Draft / not ready for whole-PR review. Work has not moved into UI stage.
