@@ -242,3 +242,10 @@ migration/runtime privileges; **W2** classification личной подписк�
 запускались. Лёва **STOP**. Следующий шаг — Мира: whole-plan scope/fit review,
 решения W1–W3 и определение готовности к передаче исполнителю. Лира ещё не активна;
 #342 остаётся open service PR и не merge.
+
+
+## 2026-11-18 — Watch plan accepted; handoff to Lira
+
+Мира завершила scope/fit review плана Лёвы. W1 ACCEPT: минимальная watch persistence/forward migration/ACL. W2 ACCEPT: authenticated personal self-state без нового RBAC key. W3 ACCEPT: canonical topic route + narrow `setTopicWatch` desired-state command. Scope expansion не требуется.
+
+Следующий участник: Лира / ChatGPT-6 — bounded implementation Watch в отдельном implementation PR от актуального main. После stable head и применимых checks — STOP и возврат Мире. #342 остаётся общим open service PR.
