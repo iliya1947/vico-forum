@@ -210,8 +210,8 @@ export const scenarios: readonly Scenario[] = [
   { id: "settings-account-stale", label: "Settings · Account · stale account/session", locale: "en", direction: "ltr", identity: "user", path: "/en/settings/account", view: "section", variant: "settings-account-stale", allowedIdentities: ["user", "manager", "owner"] },
   { id: "settings-administrator-guest-unauthenticated", label: "Settings · Administrator preferences · guest unauthenticated", locale: "en", direction: "ltr", identity: "guest", path: "/en/settings/administrator", view: "section", allowedIdentities: ["guest"] },
   { id: "settings-administrator-user-forbidden", label: "Settings · Administrator preferences · user forbidden", locale: "en", direction: "ltr", identity: "user", path: "/en/settings/administrator", view: "section", allowedIdentities: ["user"] },
-  { id: "settings-administrator-manager", label: "Settings · Administrator preferences · manager", locale: "en", direction: "ltr", identity: "manager", path: "/en/settings/administrator", view: "section", allowedIdentities: ["manager"] },
-  { id: "settings-administrator-owner", label: "Settings · Administrator preferences · owner", locale: "en", direction: "ltr", identity: "owner", path: "/en/settings/administrator", view: "section", allowedIdentities: ["owner"] },
+  { id: "settings-administrator-manager", label: "Settings · Administrator preferences · standard access", locale: "en", direction: "ltr", identity: "manager", path: "/en/settings/administrator", view: "section", allowedIdentities: ["manager"] },
+  { id: "settings-administrator-owner", label: "Settings · Administrator preferences · elevated access", locale: "en", direction: "ltr", identity: "owner", path: "/en/settings/administrator", view: "section", allowedIdentities: ["owner"] },
   { id: "settings-forum-guest-unauthenticated", label: "Settings · Forum & roles · guest unauthenticated", locale: "en", direction: "ltr", identity: "guest", path: "/en/settings/forum", view: "section", allowedIdentities: ["guest"] },
   { id: "settings-forum-user-forbidden", label: "Settings · Forum & roles · user forbidden", locale: "en", direction: "ltr", identity: "user", path: "/en/settings/forum", view: "section", allowedIdentities: ["user"] },
   { id: "settings-forum-manager-forbidden", label: "Settings · Forum & roles · manager forbidden", locale: "en", direction: "ltr", identity: "manager", path: "/en/settings/forum", view: "section", allowedIdentities: ["manager"] },
@@ -232,7 +232,7 @@ export const scenarios: readonly Scenario[] = [
   { id: "admin-topic", label: "Admin topic & messages", locale: "en", direction: "ltr", identity: "manager", path: "/en/admin/forum/topics/typed-api", view: "admin-topic", allowedIdentities: ["manager", "owner"] },
   { id: "admin-topic-worker-auth", label: "Admin topic & messages · Worker auth", locale: "en", direction: "ltr", identity: "manager", path: "/en/admin/forum/topics/worker-auth", view: "admin-topic", allowedIdentities: ["manager", "owner"] },
   { id: "admin-topic-missing", label: "Admin topic & messages · missing", locale: "en", direction: "ltr", identity: "manager", path: "/en/admin/forum/topics/missing-topic", view: "admin-topic", allowedIdentities: ["manager", "owner"] },
-  { id: "admin-topic-missing-guest", label: "Admin topic & messages · missing · guest", locale: "en", direction: "ltr", identity: "guest", path: "/en/admin/forum/topics/missing-topic", view: "admin-topic", allowedIdentities: ["guest"] },
+  { id: "admin-topic-missing-guest", label: "Admin topic & messages · missing · unauthenticated", locale: "en", direction: "ltr", identity: "guest", path: "/en/admin/forum/topics/missing-topic", view: "admin-topic", allowedIdentities: ["guest"] },
   { id: "admin-topic-guest-unauthenticated", label: "Admin topic & messages · guest unauthenticated", locale: "en", direction: "ltr", identity: "guest", path: "/en/admin/forum/topics/typed-api", view: "admin-topic", allowedIdentities: ["guest"] },
   { id: "admin-topic-user-forbidden", label: "Admin topic & messages · ordinary user forbidden", locale: "en", direction: "ltr", identity: "user", path: "/en/admin/forum/topics/typed-api", view: "admin-topic", allowedIdentities: ["user"] },
   { id: "admin-success", label: "Authorization · saved", locale: "en", direction: "ltr", identity: "owner", path: "/en/admin/authorization", view: "admin", variant: "admin-success", allowedIdentities: ["owner"] },
@@ -1355,7 +1355,13 @@ export function EmbeddedPreview({ scenarioId, identity }: { scenarioId: string; 
           || intent === "rejectHelpSignal"
           || intent === "acceptHelpDuplicateAppeal"
           || intent === "rejectHelpDuplicateAppeal")
-          && form.classList.contains("attention-case-actions"));
+          && form.classList.contains("attention-case-actions"))
+        || ((intent === "create" || intent === "change" || intent === "lift" || intent === "review")
+          && form.classList.contains("profile-form")
+          && Boolean(form.closest(".admin-forum")))
+        || (intent === "appeal"
+          && form.classList.contains("profile-form")
+          && Boolean(form.closest(".profile-card")));
       if (allowed) return;
       event.preventDefault();
       event.stopPropagation();
