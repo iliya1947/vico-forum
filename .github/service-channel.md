@@ -109,3 +109,12 @@ DB-прогона устранена настройкой UTC как в CI; по
 GitHub на exact head показывает 17 check-runs, все с conclusion=success; schema snapshot 0067 отличается от 0066 только новым snapshot id/prevId и расширенным `authz_permissions_catalog_check`.
 
 Формальный coordinator PASS/APPROVE пока не зафиксирован только из-за обязательного owner visual acceptance для UI-изменения по текущему AGENTS.md. Browser evidence Лёвы не заменяет решение владельца. После owner visual acceptance, если implementation head не изменится, Мира фиксирует PASS и передаёт exact head Марку.
+
+
+## 2026-11-18 — Мира: coordinator PASS
+
+По прямому уточнению владельца visual acceptance этой функции не является gate текущего bounded-цикла: визуальная приёмка выполняется позже в отдельном UI/UX pass. Это конкретное решение владельца имеет приоритет над общим gate из AGENTS.md для этой задачи.
+
+Coordinator whole-PR review implementation PR #343 на stable exact head `10321fdae762004ac2d55e9618a89c6c41e0d2ac` завершён: **PASS**, подтверждённых current-scope дефектов нет.
+
+Следующий участник: Марк / Codex-6 Sol — независимый технический review того же exact head. Лёва как автор реализации собственную независимую проверку не выполняет.
