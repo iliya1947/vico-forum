@@ -6,9 +6,10 @@
 2. Blocks A–J закрыты как audit blocks; их findings в K не дублируются.
 3. **K1 — Abuse/availability inventory & ownership boundaries завершён: PASS, 0 новых current-scope findings и 0 deferred blockers.**
 4. **K2 — Authentication brute-force / rate-limit bypass завершён: PASS, 0 новых current-scope findings и 0 deferred blockers.**
-5. Overall #315 остаётся **28 current findings + 4 deferred Stage-6 blockers**.
-6. Мира — auditor/coordinator. Remediation, technical planner и implementer не назначены.
-7. Production/Cloudflare/Neon/GitHub/provider settings mutation, load testing и внешние destructive/fault-injection действия не разрешены и не выполнялись.
+5. **K3 — Forum write spam & cross-endpoint concurrency завершён: 1 новый current-scope finding — `FORUM-EDIT-SPAM-01 Moderate/P2`; 0 deferred blockers.**
+6. Overall #315 становится **29 current findings + 4 deferred Stage-6 blockers**.
+7. Мира — auditor/coordinator. Remediation, technical planner и implementer не назначены.
+8. Production/Cloudflare/Neon/GitHub/provider settings mutation, load testing и внешние destructive/fault-injection действия не разрешены и не выполнялись.
 
 ## Цель
 
@@ -122,6 +123,34 @@
 16. #315 aggregate remains **28 current findings + 4 deferred Stage-6 blockers**.
 17. Next bounded slice: **K3 — Forum write spam & cross-endpoint concurrency**.
 
+## K3 — результат
+
+1. Audit target: current `main` `7cc23edede57994cdedab49c1556ddb55034dd29`.
+2. Verdict: **1 новый current-scope finding — `FORUM-EDIT-SPAM-01 Moderate/P2`; 0 deferred blockers.**
+3. Topic/reply publication share the same 5-second per-author cooldown because both persist a `forum_posts.created_at` row and call `enforceForumWriteCooldown()` while holding the authoritative actor mutex. Concurrent same-author creates are serialized; the second request sees the first committed post timestamp before admission.
+4. Help-signal submission has an independent 5-second cooldown under the same actor mutex. Complaints use an independent stronger domain budget: 10 reports / 10 minutes and 50 / 24 hours, with actor serialization and exact replay/lifetime-duplicate handling before budget spending.
+5. Replay/idempotency on initial topic/reply/edit publication is bounded by operation/draft receipts. Exact committed replay returns the prior entity instead of creating another post/revision; changed payload reuse conflicts. This prevents transport retries from multiplying a single committed publication.
+6. Reply notification fan-out is bounded per successful post by direct topic/parent recipients plus parsed mention recipients, and DB uniqueness `(recipient_user_id, post_id)` prevents repeated edit/retry notifications to the same recipient for the same post. This does not remove the edit-storage problem below.
+7. **Root cause:** `editOwnTopicTitle()` and `editPublishedPost()` perform authenticated persistent edits without calling `enforceForumWriteCooldown()` or any other request-count/quota policy. `assertActiveAccountForDrizzleMutation()` only serializes actor state with a row lock; it imposes no time floor and no per-account revision budget.
+8. `editOwnTopicTitle()` is the simplest concrete abuse chain: after owning one topic, the caller submits a short changed title with the current `expectedRevisionId`; success inserts a fresh immutable `forum_topic_title_revisions` row, CAS-updates `current_title_revision_id`, and the HTTP action returns the newly created `revisionId`. The caller can immediately use that ID for the next edit and repeat indefinitely.
+9. This chain does not depend on the existing `FORM-BODY-BOUNDS-01` or `FORUM-PUB-01`: alternating tiny valid titles are enough. Fixing request-byte/content ceilings alone would not bound the number of persistent rows created.
+10. `editPublishedPost()` has the same missing anti-spam admission for immutable `forum_post_revisions`. Its CAS/post lock prevents conflicting simultaneous edits of one baseline, and publication receipts prevent exact replay duplication, but a sequential actor can continually obtain a new baseline and persist more revisions without cooldown.
+11. There is no generic Worker/application POST throttle covering these forum edit routes. Repository search found rate-limit handling only in Better Auth, complaints and the forum create/signal-specific `ForumWriteRateLimitError` path; no global Worker rate limit closes the edit path.
+12. **Impact:** one ordinary authenticated account can generate unbounded durable revision growth at application/request speed, increasing PostgreSQL storage/index/history-read work and creating a practical persistent resource-exhaustion/spam primitive. Because the product explicitly requires basic anti-spam/rate limiting on write boundaries and the edit capability is already current repository functionality, this is current-stage, not future hardening.
+13. Severity: **Moderate/P2** — authenticated-only and serialized, with no demonstrated immediate takeover/data disclosure, but persistent unbounded DB growth is a meaningful abuse/availability defect rather than cosmetic hardening.
+14. No additional K3 finding: topic/reply create concurrency is properly serialized; Help signals and Complaints have separate bounded policies; exact replay paths do not multiply writes.
+15. No load/flood test, production write, external request or settings mutation was performed.
+16. #315 aggregate becomes **29 current findings + 4 deferred Stage-6 blockers**. Current severity becomes **10 Moderate/P2 + 19 Low/P3**; deferred remains **2 Moderate/P2 + 2 Low/P3**.
+17. Next bounded slice: **K4 — Public expensive reads / query amplification**.
+
+### `FORUM-EDIT-SPAM-01` — Moderate/P2 — current
+
+**Root cause:** authenticated own-topic-title and own-post edit paths persist a new immutable revision per successful changed edit but have no cooldown, quota or generic request-rate admission; actor/CAS locks serialize correctness only.
+
+**Current impact:** one authenticated account can repeatedly alternate small valid edits and grow revision tables/indexes/history without a time or count bound, causing persistent database/storage/query amplification.
+
+**Boundary:** exact replays and concurrent stale baselines are fenced, and create/reply/signal/complaint paths have their own controls. The defect is specifically repeated successful sequential edits. It is independent of existing Block-E request-size/content-bound findings.
+
 ## Finding criteria
 
 1. Concrete current/prepared request or background path.
@@ -140,5 +169,5 @@
 
 ## Следующий шаг
 
-1. После продолжения владельца выполнить **K3 — Forum write spam & cross-endpoint concurrency** на current main и остановиться после результата.
+1. После продолжения владельца выполнить **K4 — Public expensive reads / query amplification** на current main и остановиться после результата.
 2. Remediation существующих findings/blockers Blocks B–K не начинать без отдельного назначения.
