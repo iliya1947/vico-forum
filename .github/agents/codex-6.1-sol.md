@@ -480,3 +480,10 @@ main/service refs и свежий owner scope. Feature tests/CI/browser для �
 Уточнение владельца: «Лёва» относилось к факту, что **planning всех шести задач перед #320 завершён**. Предыдущее назначение на реализацию Bookmarks #346 было ошибочным и отменено.
 
 Лёва не изменяет #346 как implementer. Актуальная роль: planning завершён, STOP до будущего независимого technical review Bookmarks после coordinator PASS Миры. Реализацию #346 ведёт Лира / ChatGPT-6.
+
+
+## 2026-11-18 — active assignment: independent Bookmarks #346 review
+
+Мира дала coordinator PASS Bookmarks implementation PR #346 на stable exact head `477ad6b1e5cf51bf94b3830e9ea4ea85d4e4fae5`, current-scope defects = 0. По стандартному workflow теперь **независимо проверить тот же exact head** против принятого Bookmarks B1–B7 и актуального main; вывод Миры не принимать как факт.
+
+Особо самостоятельно проверить B6 real-PG race evidence: реальность acquired lock proof, Add×Add/Add×Remove ordering, lifecycle admission vs deactivation, rollback, topic FK deletion и совместимость lock graph с существующими topic/title/reply writers. Затем проверить существенные schema/migration/manifest/runtime ACL, personal self-state admission, strict canonical action, private keyset list/cache/privacy, actor/topic UI isolation и connected acceptance. Код #346 не менять. При finding — конкретный current-scope defect в #342 и STOP. При defects=0 — PASS exact head и STOP Мире.
