@@ -289,7 +289,8 @@ describe("personal topic Watch route", () => {
       }),
       params: { locale: "en", topicId: "topic-1" }, context: context(database, true, []),
     });
-    expect(result).toMatchObject({ data: { operation: "topicWatch", error: "invalid" }, init: { status: 400 } });
+    // jsdom File may fail at the Request multipart parser before the intent is available.
+    expect(result).toMatchObject({ data: { error: "invalid" }, init: { status: 400 } });
     expect(database.setTopicWatch).not.toHaveBeenCalled();
   });
 
