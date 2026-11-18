@@ -231,7 +231,8 @@ describe("embedded preview routing", () => {
 
     expect(await screen.findByRole("heading", { level: 2, name: "Overview" })).toBeInTheDocument();
     expect(document.querySelector(".admin-overview-stats")).not.toBeNull();
-    expect(screen.getByRole("link", { name: "Forum" })).toBeInTheDocument();
+    const destinations = document.querySelector(".admin-destinations") as HTMLElement;
+    expect(within(destinations).getByRole("link", { name: "Forum" })).toBeInTheDocument();
   });
 
   it("opens Users from the Admin shell navigation", async () => {
@@ -259,7 +260,7 @@ describe("embedded preview routing", () => {
 
     expect(await screen.findByRole("link", { name: "Noa Levi" })).toBeInTheDocument();
     expect(screen.queryByRole("link", { name: "Alex Rivera" })).not.toBeInTheDocument();
-    expect(screen.getByText(/Matches: 1/)).toBeInTheDocument();
+    expect(screen.getByText("Matching users: 1")).toBeInTheDocument();
   });
 
   it("opens Admin forum from the Admin topic breadcrumb", async () => {
