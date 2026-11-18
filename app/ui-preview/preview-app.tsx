@@ -1371,7 +1371,7 @@ function previewRouter(
     },
     {
       path: "/:locale/settings/account",
-      element: <SettingsAccountRoute />,
+      element: <SettingsAccountRoute readOnly />,
       loader: () => previewSettingsAccountData(scenario),
     },
     {
@@ -1423,8 +1423,23 @@ function previewSettingsAccountData(scenario: Scenario) {
     canViewForum: scenario.identity === "owner",
     linkedMethods: ["password", "google"] as ("password" | "google")[],
     hasPassword: true,
-    sessionAccess: "not-fresh" as const,
-    sessions: [],
+    sessionAccess: "ready" as const,
+    sessions: [
+      {
+        id: "preview-current-session",
+        createdAt: "2026-11-18T07:15:00.000Z",
+        expiresAt: "2026-12-18T07:15:00.000Z",
+        current: true,
+        deviceLabel: "Chrome on Windows",
+      },
+      {
+        id: "preview-mobile-session",
+        createdAt: "2026-11-14T19:40:00.000Z",
+        expiresAt: "2026-12-14T19:40:00.000Z",
+        current: false,
+        deviceLabel: "Safari on iPhone",
+      },
+    ],
   };
 }
 
