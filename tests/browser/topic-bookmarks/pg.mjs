@@ -1,6 +1,8 @@
 /** Disposable fixture/inspection process for connected Bookmarks acceptance. */
 import process from "node:process";
 import readline from "node:readline";
+import console from "node:console";
+import { URL } from "node:url";
 import crypto from "node:crypto";
 import pg from "pg";
 import { drizzle } from "drizzle-orm/node-postgres";
