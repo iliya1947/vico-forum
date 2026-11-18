@@ -2366,7 +2366,7 @@ describe("interactive Pages preview", () => {
     expect(await screen.findByRole("heading", { name: "Authorization management" })).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Create custom role" })).not.toBeInTheDocument();
 
-    view.reawait renderEmbeddedPreview(<EmbeddedPreview scenarioId="admin" identity="owner" />);
+    view.rerender(<EmbeddedPreview scenarioId="admin" identity="owner" />);
     expect(await screen.findByRole("button", { name: "Create custom role" })).toBeInTheDocument();
 
     const createRoleForm = document.querySelector(".admin-create-role") as HTMLElement;
