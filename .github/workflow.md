@@ -17,7 +17,7 @@
 - Bookmarks #346 **merged** в main `34ddf42985f6dc348e77d0dcc90e0aecc37fd15e` 2026-11-18 21:43:51 UTC. Reviewed exact head `a3e6c0e63c99078ece89303592e1f24b2fe440fb`; Мира coordinator PASS + Лёва independent PASS; confirmed current-scope defects = 0; exact-head 18/18 jobs success.
 - Docs debt: Watch #345 имеет merged implementation, но отдельный docs closeout ещё не выполнен. Bookmarks #346 также требует отдельный docs closeout по принятому service-plan. Current PROJECT_STATE всё ещё на migration 0067 и не отражает Watch 0068 / Bookmarks 0069.
 - Следующий docs порядок: сначала отдельный Watch docs closeout, затем отдельный Bookmarks docs closeout. Минимально: factual PROJECT_STATE + отдельный PROJECT_HISTORY snapshot/index для каждого bounded-этапа; без RBAC/Admin, Stage 6 external evidence или owner visual claims.
-- Исполнитель docs closeout **не назначен автоматически**; это требует явного назначения владельца. Мира docs diff не пишет.
+- Docs closeout выполняет **Лира / ChatGPT-6** как штатный следующий исполнитель; отдельное owner-назначение для автора docs PR не требуется. Мира docs diff не пишет.
 - Mute/block: план принят, реализация ждёт закрытия накопленного docs debt либо прямого owner override.
 
 ## Опережающий planning-track
@@ -31,15 +31,16 @@
 
 ## Следующий шаг
 
-**Требуется назначение владельца на docs closeout.** По принятому #342 plan сначала
-закрывается пропущенный отдельный docs PR Watch (#345 / migration 0068), затем
-отдельный docs PR Bookmarks (#346 / migration 0069). Author автоматически не
-назначен; предыдущая owner correction по #344 прямо запрещает считать Лиру
-назначенной без явного решения.
+**Следующий исполнитель — Лира / ChatGPT-6.** Выполнить отдельный **Watch docs
+closeout** после merged #345 / migration 0068.
 
-Минимальная цель docs: синхронизировать factual `PROJECT_STATE.md` и отдельные
-PROJECT_HISTORY snapshot/index entries только с уже merged main; не менять
-RBAC/Admin contracts, Stage 6 external evidence или owner visual acceptance.
+Минимальный scope: factual sync `PROJECT_STATE.md` с Watch и repository migration
+history 0068 + отдельный PROJECT_HISTORY snapshot/index entry. Не менять code/schema/
+runtime, RBAC/Admin contracts, Stage 6 external evidence через 0020 и не заявлять
+owner visual acceptance.
 
-После обоих docs closeout implementation-order перейдёт к Mute/block.
+После stable docs PR/head и применимых checks — STOP Мире на review. Затем, после
+merge Watch docs, отдельным следующим bounded docs PR Лира закроет Bookmarks 0069.
+Только после обоих docs closeout implementation-order перейдёт к Mute/block.
+
 #342 служебный и не merge. #300 не использовать.
