@@ -1051,3 +1051,450 @@ implementation не активированы. #342 остаётся open, не m
 После полного плана Лёва STOP. Следующий отдельный planning-slice после команды владельца: **управление структурой форума — категории, разделы и перенос тем**.
 
 Это только advance planning. Реализация этих направлений не активируется и место относительно #320 этим не меняется.
+
+## Опережающий технический план: модерация видимости — Лёва, 2026-11-18
+
+Статус: **полный предлагаемый план готов; STOP для scope/fit Миры**.
+Исследован main `7cc23edede57994cdedab49c1556ddb55034dd29`; назначение восстановлено
+в #342 на service head `80655c66436c867b6bc20d31af22b4873a2e71d3`.
+#300 — общая карта; рабочий канал — только #342. Проверен также ошибочно открытый
+#346: дополнительных принятых product decisions там нет, его исходный scope — тот
+же полный блок hide/restore posts/topics. Новый service/implementation PR не создаётся.
+
+### V1. Факты main и продуктовые развилки
+
+В `forum_topics`/`forum_posts` нет persisted visibility state и hide/restore
+команд. `is_closed` запрещает новые replies, но не скрывает контент. Personal
+Mute/Block, AP-10 sanctions и AccountState не заменяют visibility модерацию.
+Watch ещё реализуется в #345; Bookmarks/Mute-block приняты как будущие планы.
+Их итоговые seams перед реализацией этого блока потребуется пересверить.
+
+**Рекомендуемая модель для scope/fit, не утверждённое за владельца решение:**
+
+1. Обратимое административное исключение из публичного чтения, без DELETE,
+   source-content edit или уничтожения revisions/translations/attachments/evidence.
+2. Hidden topic отсутствует в публичных списках/поиске; прямой public topic
+   document/data запрос — обычный 404 без заголовка, author/body или hidden reason.
+3. Hidden post в видимой теме — нейтральный tombstone со стабильным id/номером/
+   позицией и связями, **без body/original/translation/revision id/attachments**.
+   Это server-side redaction public DTO, не CSS collapse с кнопкой reveal.
+4. Topic hide делает все его posts эффективно недоступными, но не переписывает
+   собственные post flags. Topic restore сохраняет individually hidden posts.
+   Post restore внутри hidden topic не открывает тему и не делает post публичным.
+5. Обычный автор не получает специального права видеть/редактировать скрытое;
+   модератор смотрит его через отдельно guarded private moderation surface.
+   В публичном topic UI нет bypass по query/includeHidden/role/client flag.
+6. Hide/restore — один bounded moderation блок с единой законченной цепочкой,
+   не четыре независимо выпущенные команды без закрытия путей чтения.
+
+Мире явно возвращены реальные **product forks**:
+
+- **V-P1 — смысл публичного скрытия и восстановления.** Принять модель выше либо
+  другую явно: topic tombstone вместо 404; author-only доступ к hidden content;
+  запрет отдельного hide первого post; другой уровень раскрытия metadata/reason.
+  Эти варианты меняют authorization/DTO/UI/acceptance, их нельзя вывести из слова
+  «скрыть». Рекомендация допускает hide root и best answer без implicit topic hide.
+- **V-P2 — authority и reason.** Рекомендованы отдельная management capability,
+  начальные grants moderator/admin, без author-only hide; обязательная непустая
+  причина для hide и restore. Target author role/Owner не создаёт иммунитета
+  контента: AP-10 Owner immunity относится к санкциям, не переносится молча сюда.
+  Если нужна другая политика grants/target hierarchy/reasons — принять её явно.
+- **V-P3 — связанное состояние и retained данные.** Рекомендация: сохранить domain
+  solution/duplicate/read/inbox/own-preference state, показывая недоступный target
+  безопасной проекцией (§V5–V6). Не делать automatic unsolve/unpin/unwatch,
+  рассылку о модерации или ретроспективную очистку чужих цитат. Более сильная модель
+  требует отдельного выбора, а не скрытого расширения visibility writer.
+
+План ниже полон для рекомендуемой модели; до принятия V-P1–V-P3 это proposals.
+Он не обещает отозвать уже доставленные клиенту bytes, начатый download или
+скопированный текст. Новые запросы после commit обязаны соблюдать persisted state.
+
+### V2. Где именно проходит граница публичного чтения
+
+Подтверждённые seams, которые меняются совместно:
+
+| Seam main | Обязательное изменение |
+| --- | --- |
+| `db/forum-repository.ts`: `readTopicPage` | Public-only typed projection; hidden topic absent, hidden post stub; проверка до serializing/translation/attachment lookup |
+| Homepage/category/section, Popular, Unanswered, Tags/Tag, Search, Help/Similar, Unread | Visibility predicates в SQL до matching/ranking/counts/order/LIMIT; не фильтровать готовую страницу в React |
+| `readHelpDuplicatePresentations` | Не отдавать current title скрытого original через видимую duplicate тему |
+| `readProfile` | Публичные message/best-answer counts считают эффективно видимый контент; AccountState identity projection сохраняется |
+| `readPostLocation`, `readPostHistory`, `/posts/:postId/edit`, edit conflict/recovery | Не обходить hidden state через старый URL, history или current-source error payload |
+| `app/routes/topic.tsx`, `actions.server.ts`, content presentation/status | Hidden units не входят в public title/body original/translation DTO, generation/status inputs или ошибки |
+| `readPublishedAttachment`, `/api/attachments/file/:id?post=...` | Точная membership + topic/post visibility до обращения к bucket, для всех download/inline/text режимов |
+| Mixed/legacy inbox/read/open и будущие own lists | Retained own row не раскрывает hidden title/body/context; unavailable target остаётся управляемым |
+| `db/admin-forum.ts`, admin-topic loader/model | Current generic Admin admission не разрешает hidden-body чтение; нужен новый явный guarded seam |
+| Complaint queue/review/context/evidence и Admin/Owner History | Сохраняются explicit protected-domain contracts, не заменяются public reader и не открываются public callers |
+
+Raw `readTopic/readPost/readHierarchy` используются trusted service/fixture paths,
+а не отдельным публичным API. Их наличие не означает, что надо расширить public
+ForumReader. Проверить все реальные callers при реализации; не экспортировать raw
+variant или `includeHidden` в общий request capability для удобства UI.
+
+Общие alias-safe SQL predicates: public topic = not hidden; public content post =
+public topic AND not hidden post. Reuse в Drizzle/native readers без нового RLS/
+authorization framework. Public reader остаётся public по умолчанию. Для moderation
+полного source — отдельный server-guarded метод/capability, не URL boolean.
+
+Public topic multi-query projection должна быть согласованной: read-only
+REPEATABLE READ transaction либо эквивалентный единый statement с теми же predicates.
+Не проверить topic один раз, а затем безусловно загрузить raw posts/attachments.
+Tombstones не должны содержать скрытый source даже во временном loader result.
+Snapshot запроса, начатого до Hide, может завершиться после него; новые snapshots
+после commit не раскрывают target. Не удерживать DB locks на время SSR/R2 streaming.
+
+### V3. State, permission и History — техническое согласование V-T1
+
+В каждой из `forum_topics`, `forum_posts` добавить минимальное current state:
+
+- `is_hidden boolean NOT NULL DEFAULT false`;
+- `visibility_version integer NOT NULL DEFAULT 0`, CHECK неотрицательности;
+- `visibility_changed_at timestamptz(3) NULL`, устанавливается DB clock при реальном
+  переходе; initial version=0 означает visible/NULL, version>0 требует timestamp.
+
+Cross-field CHECK связывает эти initial/changed tuples, не только отдельные типы.
+
+Индекс hidden queue по changed_at DESC/id DESC с predicate is_hidden — на каждой
+таблице; global hidden posts queue также join topic для контекста. Не вводить
+отдельную копию контента/архивную таблицу, JSON moderation state, удаление FK refs,
+version content revision или user-measure запись. Номер forward migration определяется
+по фактическому main к началу реализации, не резервируется сейчас.
+
+Предлагаемый key **`forum.content.visibility.manage`**: hide/restore topics/posts
+и private inspection для этой функции. Это code-backed capability, не роль и не
+следствие forum.topic.close / forum.post.history.read / complaint.review.
+Начальные grants moderator/admin; custom roles/overrides остаются explicit;
+обычный user её не получает. Альтернатива — отдельные topic/post/read capabilities,
+если разделение authority действительно требуется продуктом; не добавлять их заранее.
+Current hidden source inspection не даёт всю revision history: для history hidden
+post нужны одновременно прежний `forum.post.history.read` и новая visibility
+capability; protected Complaint evidence сохраняет свою отдельную authority.
+
+Обновить centralized catalog, DB catalog CHECK/default grants, Admin Forum admission,
+header/workspace access projection и **`admin.forum` AP-10 permission family**.
+Fresh permission в каждом private loader/action; persisted active actor и
+admin.forum measure admission в mutation tx, включая no-op. Старые session/role
+claims, авторство или canEnter Admin не заменяют эти проверки. Bound Owner следует
+существующему effective-permission/measure policy, не новому hardcoded bypass.
+
+History: расширить typed `ForumHistoryChange` и action/target DB CHECK действиями
+`topic.hidden`, `topic.restored`, `post.hidden`, `post.restored`. Обязательная причина
+предлагается до 2000 Unicode code points, trimmed nonblank, без NUL, теми же правилами
+на server/service boundary и условным SQL CHECK для новых event actions.
+Context: exact target/topic id, before/after hidden,
+old/new visibility version и observed current revision id; actor/time — existing
+History producer. Body, translation, attachment keys в audit не копировать.
+Для новых visibility events предпочтителен нейтральный target label по id;
+existing `appendForumHistory` сейчас всегда копирует topic title — учесть это явно.
+
+Один реальный переход = один atomic History event, no-op = без version/time/event
+изменений, но со всеми admission/CAS checks. History failure откатывает state.
+Старые immutable History записи не переписываются; защищённые bounded labels/reasons
+по-прежнему доступны `admin.history.read` по существующему audit contract.
+Это исключение retained audit, не public disclosure и не право читать hidden body.
+
+Private inspector может прочитать **последнее visibility событие своего target**
+(reason/actor/time/version) по новой capability, не получая общий admin History.
+Узкий reader выбирает только четыре новых actions и exact target/version;
+существующий target/time index подходит. Для version>0 отсутствие matching event
+— invariant error, не вымышленная причина; initial version0 event не требует.
+Так не приходится дублировать reason/actor на content rows или выдавать
+moderator общий `admin.history.read` ради объяснения одного скрытия.
+
+Schema/journal/snapshot/full structural manifest + migration history tests обязательны.
+Текущий web ACL уже имеет SELECT/INSERT/UPDATE на topics/posts и INSERT/SELECT на
+admin_history: новых широких DB grants, DELETE/TRUNCATE или R2 write rights не нужно.
+Проверить существующие privilege/provisioning probes на новой schema. Без live
+migrations/grants, нового provider, production evidence или Stage-6 rollout.
+
+### V4. Команды, CAS и lock graph — техническое согласование V-T2
+
+Две desired-state команды, не blind toggle:
+
+- `setTopicVisibility(topicId, actorId, hidden, expectedVisibilityVersion,
+  expectedRevisionId, reason)`;
+- `setPostVisibility(topicId, postId, actorId, hidden, expectedVisibilityVersion,
+  expectedRevisionId, reason)`.
+
+Topic/actor server-derived; post проверяется принадлежащим route topic. Expected
+revision — current title для topic, current body для post; она заморожена при
+открытии формы. Topic command не утверждает, что одновременно заморожены все
+дочерние posts. Stale version/revision — 409 без автоматического применения к
+новому тексту. Changed state увеличивает visibility version, не content revision.
+Проверить integer exhaustion. Повтор запроса с прежней version после commit —
+conflict; fresh unchanged desired-state — admitted no-op. Общая receipt/retry
+subsystem для этой административной команды не требуется.
+
+Write tx: topic **FOR NO KEY UPDATE** → нужный post в этой теме **FOR NO KEY UPDATE**
+→ active actor **FOR NO KEY UPDATE** → admin.forum admission → CAS/current state
+update → History append/order lock последним → COMMIT. Topic command не блокирует
+все дочерние posts и не меняет их flags. Не усиливать topic/actor до FOR UPDATE:
+FK KEY SHARE должен оставаться совместимым. Для multi-topic existing actions
+сохранять их stable sorted topic order.
+
+Существенная локальная адаптация existing writers, а не общий lock refactor:
+
+- Reply уже держит topic NO KEY UPDATE; под ним проверяет topic visible и direct
+  parent visible. Generic reply в видимой теме допустим, direct reply к hidden
+  post — нет. Hide первым → новая публикация отклонена; writer первым → его
+  commit предшествует Hide. Это не удаляет уже созданные notices.
+- Published-post edit сейчас берёт draft → topic KEY SHARE → post FOR UPDATE →
+  actor. Для effective-topic visibility admission нужна локальная topic NO KEY
+  UPDATE перед post, иначе topic hide с KEY SHARE не сериализуется. Сохранять
+  draft-first/target-before-actor order. Аналогично проверить own title edit и
+  source-locale/Help/topic-state writers, не доверять route preflight.
+- Post-body translation planning сейчас lock'ит head/task → post/revision → actor,
+  без topic. Для новых plans добавить authoritative parent topic visibility/lock
+  **до post lock**, сохранив head/task-first order. Title planner уже lock'ит
+  topic; добавить predicate туда. Не добавлять topic после post/actor.
+- Hide/restore не берёт translation head/task, notification rows или recipient
+  accounts. Existing accepted-task execution сохраняется (§V6), поэтому новый
+  visibility gate не должен случайно создавать обратный task/content lock order.
+
+Это изменения реальных transaction seams; они должны быть проверены отдельными
+PG connections, особенно Hide×edit/translation/Complaint, а не объявлены безопасными
+только по green mocked tests. Actor deactivation до admission запрещает mutation;
+writer, удержавший actor mutex первым, заканчивается до lifecycle change. Inactive
+content author не мешает модерации retained content; author account не изменяется.
+
+### V5. Public projection и связанное domain state
+
+**Сообщения/ссылки/цитаты.** Вычислять permanent numbers по всем persisted posts
+перед projection; hidden row остаётся stub в прежней позиции. Не renumber и не
+ломать #post anchors, parent/direct-reply navigation. Hidden root допускается
+как stub, title остаётся public пока topic visible. Не отдавать у stub original,
+translation, source revision, author-private данные или attachment metadata.
+Quote/reply/source/history controls для него не предлагаются. Скопированная ранее
+цитата в другом visible post — самостоятельный опубликованный source, не изменяется
+этой командой; recursive rewrite/добавление новых revisions вне scope.
+
+**Search/discovery/counts.** Исключать hidden topic до группировок, hidden body —
+до post match/rank/activity. При title/tag match сохранить видимую тему даже без
+visible posts: фильтр posts в join/subquery, не случайный inner-filter после LEFT JOIN.
+List counts/latest activity и profile message/answer counts — по effectively visible
+content; Hide/Restore не производит новую activity. Tags/Similar/Help duplicate
+suggestions не выдают скрытый title/body. Static category/section identities не
+скрываются этим блоком; структура форума — следующий отдельный planning slice.
+
+**Unanswered.** Текущий main использует count(posts)=1. После post hide нельзя
+подставить просто count(visible)=1: hidden root и один visible reply иначе станут
+ложно «без ответа». Выделять исходный post по полному порядку и считать visible
+non-root replies; topic должен быть visible и domain isSolved=false.
+
+**Solutions/Help/duplicates — рекомендация V-P3.** Retain isSolved, bestAnswer FK,
+pin/closed/needsDetails/solution statuses, signals, duplicate relationships/appeals.
+Не делать automatic unsolve/unpin, удаления Signals или переписывания решений.
+Hidden best answer отображается как недоступное решение без текста, не как новый
+доступный ответ; restore возвращает ту же выбранную связь. Новый best answer/новую
+duplicate relation нельзя выбирать на hidden topic/post. Видимая duplicate с hidden
+original сохраняет relationship semantics, но не его title/link preview: generic
+«исходная тема недоступна», без снятия существующего reply restriction.
+
+Новые own/admin content edits, title/source corrections и ordinary Help/state
+mutations не обходят effective hide: требуют доступный topic/target под lock;
+visibility manager сам по себе не получает edit-any. Private inspection — чтение,
+не новый редактор hidden content. После restore действуют прежние closed/duplicate/
+permissions/measure ограничения; restore не означает reopen.
+
+**Read-state.** Не удалять/reset/переставлять markers. Сравнение chronology по
+persisted post сохраняет marker даже если его row hidden. Unread first/counts
+считают visible posts; public delivered stubs позволяют сохранить существующий
+auto-read по delivered latest position. Hide/restore не manufacture unread и не
+перематывает marker; восстановленный старый post до marker может остаться read.
+
+**Own preferences — явное уточнение V-P3.** Watch/Bookmarks/Mute/Block rows не
+удаляются и не смешиваются с moderation flags. Новые ON/save для hidden topic
+ordinary actor получают 404. Собственный OFF/remove/undo разрешён без раскрытия
+hidden target: точечный DELETE своей пары, active actor, тот же target-before-actor
+order когда target существует, generic desired OFF success также для отсутствующего
+target. Это локальное новое исключение для безопасного own-state удаления;
+не использовать его для ON/чужих пар/чтения hidden metadata. Watch OFF сохраняет
+existing topic mutex для fanout. Принятые прежние missing-target contracts явно
+уточняются этим visibility этапом, не меняются скрыто.
+В собственном Bookmarks/filters list retained pair показывается нейтральной
+unavailable строкой без hidden title/author/location, с возможностью удалить.
+Видимый topic с hidden root всё ещё можно Watch/save; Block не даёт reveal hidden
+moderation source. Personal collapse применяется только к уже разрешённому content.
+
+### V6. Notifications, translations, attachments и Complaints
+
+**Notifications.** Существующие rows и read_at остаются. Hidden post/topic не
+должен раскрыться через current title join mixed/legacy inbox: unavailable DTO
+сохраняет own notification id/kind/time/read status, но не hidden target content,
+title/preview. Новый DTO discriminant `targetAvailable`/эквивалент, не DB kind.
+Counts/badge продолжают считать retained notices, включая unavailable; пользователь
+может отметить такой notice прочитанным без открытия hidden topic. Open action
+возвращает в inbox/к нейтральной карточке, не раскрывает hidden link/title. Restore
+делает старую ссылку доступной, не создаёт notice и не сбрасывает read_at.
+
+В notification mark/open tx не вводить topic lock после actor/notification lock:
+visibility выбирается read snapshot без нового обратного lock order. Новые replies/
+edits после hide не admitted, restore сам не вызывает fanout. Matching committed
+publication receipt может подтвердить прежнюю own публикацию opaque ids без новых
+effects, но conflict/recovery DTO не должен выдавать текущий hidden body/title.
+Mute/block suppression receipts сохраняются; restore не backfill suppressed events.
+Новое уведомление «скрыто/восстановлено» не предлагается без отдельного product решения.
+
+**Translations.** Hidden title/body не передавать в public `readCurrent`, Original
+Disclosure, generation units/status/automatic/explicit generation. Проверить не
+только выбранный translation, но и serialized originalContent. New plans повторно
+проверяют effective visibility в authoritative tx (§V4), не только route read.
+Существующие accepted tasks могут закончить revision-bound работу и сохранение
+в private persistence: hide не меняет source/current pointer, не cancel и не refund
+tasks. Публичное отображение всё равно gated. Restore использует ту же current
+revision и подходящий существующий перевод; не создаёт revision/provider вызов
+или generation job сам. Если нужна отмена уже accepted задач — отдельная fork,
+не скрытый lifecycle rewrite. Provider data recall/Stage-6 integration вне scope.
+
+**Attachments.** Published download reader сейчас проверяет membership/status,
+но не visibility. Добавить exact post→topic visibility в SQL, включая inline/text
+режимы; denied404 до bucket.get. Нельзя разрешить `view=...` или old attachment id
+обойти эту проверку. Hidden metadata/URLs не входят в public thread DTO.
+Самих bytes/refs не удалять: cleanup и Complaint retention продолжают видеть refs.
+Один asset, независимо связанный с другим visible post, доступен через ту valid
+membership; private draft owner ref сохраняет свою отдельную authority.
+
+Для moderator inspection hidden attachments нужен отдельный private guarded
+resource с новой management capability и exact topic/post/attachment membership,
+private/no-store + те же safe content/disposition/nosniff правила. Не добавлять
+includeHidden в public download и не подменять Complaint evidence membership.
+Existing Complaint evidence route по Case/asset остаётся самостоятельным доступом.
+
+**Complaints/retained moderation.** Hide/restore не является Case Decision,
+не запускает sanction, не удаляет reports/notes/evidence и не закрывает Appeals.
+Existing reviewer/Appeal-review/retained-context/evidence и participant result
+membership остаются authoritative; protected readers могут читать reported/current
+context hidden source по своим существующим domain contracts. Не направлять их
+через новый public reader, который теряет evidence. Уже отправленные report/appeal
+forms и lifetime/exact replay сохраняют собственную eligibility независимо от hide;
+submission не раскрывает hidden source в ответе. Право создавать report само по
+себе не даёт читать hidden body. Pending own Help withdrawal/duplicate appeal и
+Complaints appeals не превращаются в запрещённый content edit из-за hide.
+
+Обычные Help attention/public presentation не получают новое право читать hidden
+source по наличию навигационной ссылки; для live excerpts использовать public
+projection либо новый explicit guarded visibility inspection. Защищённые Complaint
+contexts и immutable Admin/Owner retained History — перечисленные исключения,
+не blanket bypass для любого admin reader. AccountState/public Deleted user
+projection применяется к authors/actors как прежде, без утечки старых names.
+
+### V7. Route/UI/private recovery и cache
+
+Предлагаемые canonical topic POST intents `setTopicVisibility` и
+`setPostVisibility`. Fields: exact intent, editorActorId expectation, hidden boolean,
+expectedVisibilityVersion, expectedRevisionId, reason; postId только post intent.
+Actor только session, topic только path, post membership из БД. Ровно один scalar
+для каждого поля, allowlist/method/same-origin, canonical nonnegative int в пределах
+DB integer, boolean true|false, bounded reason/id. Duplicate/File/extra/mixed intents
+отвергаются независимо от первого FormData value. Нельзя ослабить другие handlers.
+
+Guest/inactive401, capability/measure403, invalid400, missing404, stale409,
+classified dependencies503, unexpected штатным error path. Private errors не
+содержат hidden current-source snippets; capability denial предшествует inspection.
+Result operation discriminator + target/visibility/version/changed; no optimistic
+success, no automatic stale rebase/write retry. При unknown commit — explicit GET
+для нового состояния. Existing typed availability не становится visible-by-default.
+
+Private restoration surface: `/:locale/admin/forum/content` с independently checked
+new capability, `kind=topic|post`, 25+lookahead keyset по changed_at/id; optional
+`beforeChangedAt`+`beforeId` вместе, strict normalized query keys. Только скрытые
+targets выбранного kind; partial index/valid ms cursor, без unbounded list и без
+нового search framework. Hidden posts под hidden topic сохраняют собственный flag
+и показывают effective-parent status. Full inspection — existing private admin
+topic route с новым guarded reader, source/attachments и restore controls.
+Другие holders Admin Forum видят только public-safe projection, не raw hidden body.
+
+Shared QuickActions на public topic/admin/Complaint могут показать hide/restore
+только по новой server-resolved capability; каждый POST всё равно fresh-check'ит
+право. Нет automatic hide из Complaint confirmed. Hide topic success переводит
+управляющего в private inspection, не оставляет открытый public source после
+revalidation. Restore возвращает normal target при сохранении других state flags.
+Form замораживает observed revision/version до явного reload после409. Отдельные
+actor/topic/post keys/fetchers; stale results/revoked private access не сохраняют
+hidden source в UI другого actor. У соседних reply/title/editor buffers не менять
+revision expectation и не делать autosubmit; target editor, потерявший доступ,
+не может продолжать Save через старый loader. Общая recovery subsystem не нужна.
+
+**Cache contract.** Content-bearing public pages/data/search/counts/negative target
+responses используют no-store; personalized/private inspection/list/action/errors
+— private, no-store. Проверить document и React Router single-fetch .data через
+route headers; текущие category/section headers были рассчитаны на другой GET policy.
+Attachment download уже private/no-store. Static application assets не меняются.
+HTTP no-store не заменяет свежую БД: использовать существующий web connection
+path/cache-disabled `WEB_HYPERDRIVE`, не localization-read query cache. Не добавлять
+долгоживущий visibility cache в Worker. Repository wiring проверяется локально;
+состояние deployed binding не объявляется проверенным без отдельного external gate.
+Не полагаться на Vary:Cookie, отсутствие кнопки или старый parent loader. Уже
+открытая вкладка обновляется обычной navigation/revalidation; push/realtime purge,
+внешний CDN rollout и удаление уже сохранённых клиентом данных вне этого блока.
+Typed visibility storage failure не разрешает raw read; private permission outage503,
+optional public controls могут исчезнуть только на уже безопасном public content.
+
+### V8. Acceptance matrix и последовательность будущей реализации
+
+Это **план проверок**, не выполненный acceptance. Основные fixtures содержат unique
+sentinel strings/filenames в hidden title/body/translation, чтобы искать утечки
+в JSON/HTML/error/meta/presentation, а не проверять только невидимую кнопку.
+
+| Граница | Обязательные случаи |
+| --- | --- |
+| State/restore | Topic/post hide/restore, root/best answer, individual post flags под parent hide, repeat/no-op/CAS/overflow, нет content revision/state cascade |
+| Authority | Guest/ordinary author/custom role; independent new grant/override/revoke/next request; admin/history/Complaint permission не proxy; active actor/no-op/admin.forum restriction; inactive content author |
+| History/schema | One real transition→one event/reason; rollback при event failure; stale/denied/no-op без event; forward migration old rows visible, CHECK/catalog/grants/manifest/ACL/history parity |
+| Public reads | Direct topic404, post tombstone без secret source; stable numbers/anchors/parents; no original/translated content/attachment metadata во всём loader/HTML/.data; old edit/history/recovery URL denial |
+| Discovery | Unique hidden body/title не матчат Search/Similar; скрытый original не утекает через duplicate; category/section/tags/popular/unread/profile counts/rank/page boundary после SQL filtering; visible title с нулём visible bodies остаётся находимым |
+| Domain state | Hidden best-answer safe unavailable, no auto-unsolve/unpin/reopen; duplicate relation сохраняется; restore не создаёт activity/notice/unread и не снимает unrelated restrictions |
+| Own state/inbox | Watch/save ON denied hidden; own OFF/undo без hidden metadata и existence oracle; unavailable own rows управляемы; inbox current-title masked, generic mark-read, old row/read_at preserved, restore без fanout/backfill |
+| Writes | Fresh reply/parent reply/edit/title/source/generation к hidden denied в tx; generic reply в видимой теме допустим; stale observed revision/version409; matching committed replay ack без новых effects/hidden recovery leak |
+| Assets/translations | Old file URL download/inline/text404 до bucket; private inspector membership/permission; shared visible ref и own draft корректны; refs/bytes/evidence retained; new plans denied, accepted tasks остаются revision-bound |
+| Retained domains | Complaint submit/replay/Decision/Appeal/evidence/context/result по прежним правам; private source не попадает в public reader; no sanction/decision/appeal side effects; audit exceptions explicit |
+| Real concurrency | Hide/Restore×reply/edit/title/parent/solution/duplicate/new plan/accepted execution/Complaint submission; оба lock orders, two moderators, actor deactivation, FK compatibility, History rollback, no task/content/actor/History-order cycle |
+| Cache/UI | EN/RU/HE keyboard/narrow RTL; private queue/inspection/restore; action discriminator/pending/stale/account switch; no-store document/data/404; retained buffers без autosave; outage/unexpected не дают public bypass |
+
+Базовые места для расширения: `db/forum-repository.ts` readers/writers и их
+database suites; closure/source-locale/title/publication/read-state/notification
+lifecycle tests; content title/post planning/execution race suites;
+`app/forum/public-read.test.tsx`, `write-actions.test.ts`, edit-recovery tests,
+admin topic/QuickActions/access tests, attachment-download/real attachment tests,
+Complaints connected lifecycle/evidence/privacy suites. Точные new tests группировать
+по изменённому seam; не копировать все существующие tests и не моделировать race
+одними JS promises.
+
+Connected local acceptance: actual built Worker + genuine Better Auth + PG17 +
+Chromium/R2 test binding. До Hide guest видит source/file, после Hide fresh
+document/data/search/inbox/old-file URLs не раскрывают sentinel; moderator может
+найти/просмотреть/restore через private surface; actor без новой capability не
+может. Existing Complaint evidence остаётся доступным только permitted reviewer.
+После restore source/current revision/file доступны как прежде, individual hidden
+posts остаются hidden, old notifications/read-state не переписаны. При отсутствии
+реального bucket успешный download не объявлять проверенным по одному503.
+
+Будущая реализация после scope/fit и отдельного handoff: сверить main и merged
+Watch/Bookmarks/Mute-block → state/catalog/History/migration → authoritative
+commands/locks → все public/private projections и assets → controlled UI/queue →
+интеграционная/PG/browser матрица → применимые lint/typecheck/unit/DB/build/preview,
+migration history/metadata/full manifest/runtime privilege/provisioning/CI checks.
+Все public-read boundaries закрываются **до** stable review head; backend-only
+hide flag с ещё открытыми readers не считается законченной feature.
+Known drizzle-kit BigInt/partial-index baseline не чинить unrelated refactor'ом.
+Stable head → Мира whole-PR → независимый technical review по workflow;
+permanent contracts/current state отдельным docs closeout после merge.
+
+### V9. Handoff и что сейчас не выполнялось
+
+Мире: whole-plan scope/fit **V-P1/V-P2/V-P3** (продуктовые модели и последствия),
+**V-T1** (schema/catalog/grants/History), **V-T2** (локальные writer/lock изменения),
+public/private projection, own-undo/inbox/cache/translation contracts (§V5–V7).
+При необходимости решения владельца передать конкретную fork с рекомендацией,
+а не неопределённое «скрытие как обычно». До решения код не начинать.
+
+Источники: актуальные AGENTS/PROJECT/PROJECT_STATE/ROADMAP, профильные
+ADMIN_PANEL/AUTHORIZATION/EDITOR/COMPLAINTS, translation contracts и MIGRATIONS
+(main остаётся тем же исследованным commit), фактические repository/admin/asset/
+translation/Case/UI seams. Официальные PG17 locking/isolation основания сверены
+ранее в этой же сессии: explicit-locking и transaction-iso documentation.
+
+Код/schema/runtime не менялись, implementation PR не создавался, feature tests/
+CI/browser не запускались. Лёва **STOP после полного visibility плана**. Структура
+форума/перенос тем не планировались; это следующий slice только по отдельной команде.
+Текущий implementation-order и работа Лиры над Watch не меняются.

@@ -375,3 +375,32 @@ Exact-head `ffb96ad59646abd15001d6be5879d8b848f4f26b`, GitHub job `checks` `1348
 По уточнению владельца #300 используется как общая карта оставшихся задач, но рабочий planning-channel не переносится туда и новый service PR не создаётся. #342 остаётся открытым; текущий planning-stage переключён на модерацию видимости опубликованного контента.
 
 Лёва назначен только на полный технический план скрытия/восстановления сообщений и тем. После плана — STOP. Структура форума/перенос тем будет следующим planning-slice по отдельной команде.
+
+## 2026-11-18 — Лёва: полный visibility plan готов в #342
+
+Main `7cc23edede57994cdedab49c1556ddb55034dd29`; план V1–V9 в
+`USER_ACTIONS_SERVICE_PLAN.md`. Исследованы authoritative state/read/write,
+permissions/AP-10/lifecycle, History, public/private projections, search/counts/
+unread, reply/quote/mentions, Watch/Bookmarks/Mute, translations/status/tasks,
+published/draft/evidence attachments, solutions/duplicates и Complaints.
+
+Предлагаются server-side topic404/post tombstones, независимые state flags с
+visibility version, новая management capability, CAS+observed revision+atomic
+History, private inspector/restore queue и закрытие всех публичных путей чтения
+до готового implementation head. Существующие Case evidence/appeals, retained
+History и accepted translation execution имеют явно описанные отдельные boundaries.
+Unanswered с hidden root, hidden best answer, unavailable inbox/own undo и
+original-vs-translation payload разобраны отдельно. Подготовлена PG/browser матрица.
+
+Мире на whole-plan scope/fit: V-P1/V-P2/V-P3 (реальные product forks), V-T1/V-T2
+(schema/catalog/audit и локальные lock changes), resource/cache contracts V5–V7.
+Код не реализован, implementation PR/feature tests/CI/browser отсутствуют.
+Лёва STOP; структура форума/перенос тем не начаты, порядок реализации не меняется.
+
+**Оставшееся process/metadata несоответствие:** проверены #300/#342/#346 и git refs.
+#342 содержит правильное восстановленное назначение. Однако #346 на head
+`301187891bfafe62f16a73906ef38e9ae567d8fe` всё ещё open и в описании называет себя
+отдельным активным service каналом этой же задачи. Описание #342, в свою очередь,
+всё ещё говорит о Watch planning до реализации. Мире нужно синхронизировать эти
+metadata с прямым решением владельца о едином #342; никакого нового назначения
+или второго рабочего канала из #346 не следует. Лёва чужой PR не закрывал/не merge.

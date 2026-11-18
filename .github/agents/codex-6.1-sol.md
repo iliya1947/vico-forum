@@ -264,3 +264,50 @@ implementation планированием не активированы.
 Исследовать актуальный main и подготовить полный технический план: authoritative state/persistence, permissions/resource conditions, History/audit, route/UI, public/protected projections, влияние на replies/quotes/mentions/search/unread/Watch/Bookmarks/translations/attachments/solutions/Complaints/read-state, lifecycle/concurrency/failure/cache/privacy и acceptance. Если семантика «скрытия» имеет реальные продуктовые развилки — вернуть их Мире явно.
 
 Не реализовывать код и не менять implementation-order. После полного плана записать его в `USER_ACTIONS_SERVICE_PLAN.md` и этот личный файл, затем STOP. Следующий planning-slice структуры форума не начинать без отдельной команды владельца.
+
+## 2026-11-18 — полный visibility plan завершён в #342
+
+Исследован actual main `7cc23edede57994cdedab49c1556ddb55034dd29`; назначение
+восстановлено в service head `80655c66436c867b6bc20d31af22b4873a2e71d3`.
+Полный предлагаемый план V1–V9 записан в `USER_ACTIONS_SERVICE_PLAN.md`.
+
+Проверены общая карта #300 и ошибочный service #346: его исходный scope не
+содержит дополнительных принятых product decisions. Рабочий канал только #342.
+На момент сверки #346 всё ещё open с описанием активного назначения; это
+подтверждённый оставшийся metadata conflict, передан Мире в общем канале.
+Старое описание #342 также отражает прежнее Watch planning вместо текущего stage.
+Lifecycle чужого PR самостоятельно не менял.
+
+Факты: visibility state/commands отсутствуют; readTopicPage/raw admin topic,
+search/discovery/counts, duplicate title projection, public history/edit recovery,
+notification current-title join и published attachment reader требуют единой
+границы. Attachment download проверяет membership, но не visibility. Public
+presentation содержит и translated, и original content. Post generation planner
+lock'ит post без parent topic; published edit сейчас использует topic KEY SHARE.
+Эти пересечения отражены в явных локальных transaction/DTO изменениях, не скрыты
+за frontend hide. Existing web ACL достаточен; WEB_HYPERDRIVE/cache-disabled path
+проверен по runtime wiring и профильному cache contract, не по deployed state.
+
+Рекомендация: topic public404, post server-redacted tombstone со стабильной
+позицией, independent topic/post flags, сохранение revisions/assets/evidence,
+новый visibility-management key и private inspector/restore queue, visibility CAS
++ observed revision + atomic reasoned History. Current hidden inspection не
+подменяет revision-history/Complaint permissions. Уточнены counts/unanswered с
+hidden root, hidden best answer/duplicate, read marker, own undo, unavailable inbox,
+generation admission vs accepted execution, all file modes и no-store document/data.
+
+Мире возвращены V-P1 (public/author presentation), V-P2 (authority/grants/reason),
+V-P3 (related/retained state), V-T1 (schema/catalog/History) и V-T2 (lock graph),
+плюс конкретные resource/cache contracts V5–V7. Это proposals, не самостоятельно
+принятые product/schema/API решения. Есть real PG/browser acceptance matrix с
+sentinel leakage assertions и deterministic concurrency, без новых test claims.
+
+Сохраняю указание владельца: если ожидаемое назначение отсутствует в текущих
+файлах, проверять также связанные/недавно созданные service PR и карту #300,
+искать ошибочный перенос канала и сообщать о конкретном расхождении. Не заменять
+эту проверку уверенным «задачи нет» или самоназначением на работу другого агента.
+
+Код/schema/runtime не менялись; implementation PR, feature tests/CI/browser
+отсутствуют. Проверены docs-only diff/whitespace и актуальность main/service refs.
+Лёва STOP для whole-plan scope/fit Миры. Структура форума/перенос тем не начаты;
+Watch остаётся текущей реализацией Лиры.
