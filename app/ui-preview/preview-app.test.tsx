@@ -222,6 +222,46 @@ describe("embedded preview routing", () => {
     expect(document.querySelector(".admin-topic")).toBeNull();
   });
 
+  it("opens Admin forum from the Admin topic breadcrumb", async () => {
+    const user = userEvent.setup();
+    render(<EmbeddedPreview scenarioId="admin-topic" identity="manager" />);
+
+    const trail = document.querySelector(".admin-forum-trail") as HTMLElement;
+    await user.click(within(trail).getByRole("link", { name: "Forum" }));
+
+    expect(await screen.findByRole("heading", { level: 2, name: "Forum" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { level: 3, name: "Categories" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Development" })).toBeInTheDocument();
+  });
+
+  it("opens the Admin category from the Admin topic breadcrumb", async () => {
+    const user = userEvent.setup();
+    render(<EmbeddedPreview scenarioId="admin-topic" identity="manager" />);
+
+    const trail = document.querySelector(".admin-forum-trail") as HTMLElement;
+    await user.click(within(trail).getByRole("link", { name: "Development" }));
+
+    expect(await screen.findByRole("heading", { level: 2, name: "Development" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { level: 3, name: "Sections" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "TypeScript & architecture" })).toBeInTheDocument();
+  });
+
+  it("opens the Admin section from the Admin topic breadcrumb", async () => {
+    const user = userEvent.setup();
+    render(<EmbeddedPreview scenarioId="admin-topic" identity="manager" />);
+
+    const trail = document.querySelector(".admin-forum-trail") as HTMLElement;
+    await user.click(within(trail).getByRole("link", { name: "TypeScript & architecture" }));
+
+    expect(await screen.findByRole("heading", {
+      level: 2,
+      name: "TypeScript & architecture",
+    })).toBeInTheDocument();
+    expect(screen.getByRole("link", {
+      name: "How should I structure a typed API client?",
+    })).toBeInTheDocument();
+  });
+
   it("opens the Admin topic fixture for Owner as well as Manager", async () => {
     render(<EmbeddedPreview scenarioId="admin-topic" identity="owner" />);
 
