@@ -2715,7 +2715,7 @@ async function previewAuthorizationAction(
     const slug = String(form.get("slug") ?? "").trim();
     const displayName = String(form.get("displayName") ?? "").trim();
     if (!/^[a-z][a-z0-9-]{0,62}$/u.test(slug) || !displayName) return { error: "invalid" as const };
-    if (state.roles.some((role) => role.slug === slug)) return { error: "conflict" as const };
+    if (state.roles.some((role) => role.slug === slug)) return { error: "invalid" as const };
     state.roles.push({
       id: `preview-role-${++state.sequence}`,
       slug,
