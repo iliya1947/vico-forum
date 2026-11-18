@@ -395,6 +395,28 @@ describe("interactive Pages preview", () => {
     )).not.toBeInTheDocument();
   });
 
+  it("creates a custom role from the embedded Forum & roles authorization controls", async () => {
+    const user = userEvent.setup();
+    render(<EmbeddedPreview scenarioId="section-user" identity="owner" />);
+
+    await user.click(screen.getByRole("link", { name: "Settings" }));
+    const settingsOverview = document.querySelector(".settings-overview") as HTMLElement;
+    await user.click(within(settingsOverview).getByRole("link", { name: "Forum & roles" }));
+
+    expect(await screen.findByRole("heading", { level: 2, name: "Registration" })).toBeInTheDocument();
+    const createRoleForm = document.querySelector(".admin-create-role") as HTMLElement;
+    expect(createRoleForm).not.toBeNull();
+
+    await user.type(within(createRoleForm).getByLabelText("Role slug"), "settings-helper");
+    await user.type(within(createRoleForm).getByLabelText("Display name"), "Settings helper");
+    await user.click(within(createRoleForm).getByRole("button", { name: "Create custom role" }));
+
+    const createdHeading = await screen.findByRole("heading", { name: "Settings helper" });
+    const roleCard = createdHeading.closest(".admin-role-card") as HTMLElement;
+    expect(roleCard).not.toBeNull();
+    expect(within(roleCard).getByText("Role slug: settings-helper")).toBeInTheDocument();
+  });
+
   it("keeps the registration version unchanged on a no-op save", async () => {
     const user = userEvent.setup();
     render(<EmbeddedPreview scenarioId="section-user" identity="owner" />);
