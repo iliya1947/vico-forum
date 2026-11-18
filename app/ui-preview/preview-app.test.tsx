@@ -310,6 +310,30 @@ describe("interactive Pages preview", () => {
     expect(screen.getByRole("button", { name: "Create account" })).toBeInTheDocument();
   });
 
+  it("keeps Google sign-up available when email registration is closed", async () => {
+    const user = userEvent.setup();
+    render(<EmbeddedPreview scenarioId="section-user" identity="owner" />);
+
+    await user.click(screen.getByRole("link", { name: "Settings" }));
+    const settingsOverview = document.querySelector(".settings-overview") as HTMLElement;
+    await user.click(within(settingsOverview).getByRole("link", { name: "Forum & roles" }));
+
+    const email = await screen.findByRole("checkbox", { name: "Allow new accounts through email and password" });
+    await user.click(email);
+    await user.click(screen.getByRole("button", { name: "Save registration settings" }));
+    expect(await screen.findByRole("status")).toHaveTextContent("Registration settings updated.");
+
+    cleanup();
+    render(<EmbeddedPreview scenarioId="credentials-register" identity="guest" />);
+
+    expect(await screen.findByRole("heading", { level: 1, name: "Create your account" })).toBeInTheDocument();
+    expect(screen.getByText(
+      "New email registrations are currently closed. Existing users can sign in.",
+    )).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Create account" })).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Continue with Google" })).toBeInTheDocument();
+  });
+
   it("keeps the registration version unchanged on a no-op save", async () => {
     const user = userEvent.setup();
     render(<EmbeddedPreview scenarioId="section-user" identity="owner" />);
