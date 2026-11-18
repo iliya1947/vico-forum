@@ -18,7 +18,7 @@
 - Docs debt: Watch #345 имеет merged implementation, но отдельный docs closeout ещё не выполнен. Bookmarks #346 также требует отдельный docs closeout по принятому service-plan. Current PROJECT_STATE всё ещё на migration 0067 и не отражает Watch 0068 / Bookmarks 0069.
 - Следующий docs порядок: сначала отдельный Watch docs closeout, затем отдельный Bookmarks docs closeout. Минимально: factual PROJECT_STATE + отдельный PROJECT_HISTORY snapshot/index для каждого bounded-этапа; без RBAC/Admin, Stage 6 external evidence или owner visual claims.
 - Docs closeout выполняет **Лира / ChatGPT-6** как штатный следующий исполнитель; отдельное owner-назначение для автора docs PR не требуется. Мира docs diff не пишет.
-- Watch docs closeout: **PR #349 Draft**, exact head `544906dd17517fcbb46cc63157e04fee9738f46d`, docs-only 3 files, 2/2 applicable CI PASS. Лира implementation DONE/STOP; текущий review за Мирой. Не путать с будущим Bookmarks docs closeout.
+- Watch docs closeout: **PR #349 Draft**. Первый review Миры выявил WATCH-DOC-1 — отсутствие permanent SOT; Лира закрыла его в `PROJECT.md`. Новый stable exact head `aa6584c6d600d807ebed9171adbde365b918b290`, всего 4 docs files, latest exact-head CI 2/2 PASS. Лира STOP; новый coordinator docs review за Мирой. Bookmarks docs closeout — отдельно после merge #349.
 - Mute/block: план принят, реализация ждёт закрытия накопленного docs debt либо прямого owner override.
 
 ## Опережающий planning-track
@@ -32,18 +32,16 @@
 
 ## Следующий шаг
 
-**Следующий исполнитель — Лира / ChatGPT-6.** Watch docs PR #349 coordinator review
-на exact head `544906dd17517fcbb46cc63157e04fee9738f46d` нашёл один confirmed
-current-doc finding **WATCH-DOC-1**: permanent Watch semantics находятся только в
-history/service material, но не в permanent source-of-truth.
+**Лира STOP. Следующий исполнитель — Мира / ChatGPT-5.6 Sol.**
+Новый coordinator whole-PR review Watch docs PR #349 на stable exact head
+`aa6584c6d600d807ebed9171adbde365b918b290` (base/main `34ddf42985f6dc348e77d0dcc90e0aecc37fd15e`).
+Подтверждённый **WATCH-DOC-1 исправлен** отдельным `PROJECT.md` permanent Watch
+product contract; diff с предыдущего reviewed head — только `PROJECT.md`.
+Применимые exact-head CI: **2/2 PASS** (`checks`, `database`, run `44412018558`).
 
-Bounded correction: добавить в `PROJECT.md` краткий permanent Watch product contract:
-explicit authenticated active-user Watch/Unwatch own-state; no auto-watch; future ordinary
-reply notifications через существующий inbox; Unwatch prospective без удаления старых
-notices; dedupe с author/parent/mention paths; отсутствие read-state coupling и нового
-RBAC permission. Не переносить в PROJECT.md SQL locks, CI/PR/history details.
-
-Текущие PROJECT_STATE migration ceiling 0069, PROJECT_HISTORY_30 facts и Stage-6/visual
-boundaries признаны корректными. После correction — новый stable docs head + applicable
-checks → STOP Мире на новый coordinator docs cycle. До PASS independent reviewer не
-подключать. #349 Draft; #342 служебный и не merge; #300 не использовать.
+Мира проверяет весь актуальный docs scope, включая новый contract и прежние factual
+PROJECT_STATE/history, не объявляя PASS без своего review. Findings — Лире одним
+пакетом. После coordinator PASS — предусмотренный independent docs review на
+неизменном head, затем merge только владельцем. **После merge #349** Лира делает
+отдельный Bookmarks docs closeout (0069). #342 служебный, не merge;
+Mute/block, #300, Stage 6 и общий UI/UX не активировать.
