@@ -222,6 +222,66 @@ describe("embedded preview routing", () => {
     expect(document.querySelector(".admin-topic")).toBeNull();
   });
 
+  it("records a created role in live Admin History", async () => {
+    const user = userEvent.setup();
+    render(<EmbeddedPreview scenarioId="admin" identity="owner" />);
+
+    await user.type(await screen.findByLabelText("Role slug"), "preview-reviewer");
+    await user.type(screen.getByLabelText("Display name"), "Preview Reviewer");
+    await user.click(screen.getByRole("button", { name: "Create custom role" }));
+
+    expect(await screen.findByRole("status")).toBeInTheDocument();
+    const nav = document.querySelector(".admin-panel-nav") as HTMLElement;
+    await user.click(within(nav).getByRole("link", { name: "History" }));
+
+    expect(await screen.findByRole("heading", { level: 2, name: "History" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { level: 3, name: "Role created" })).toBeInTheDocument();
+    expect(screen.getByText("preview-reviewer")).toBeInTheDocument();
+  });
+
+  it("records a registration-policy change in live Admin History", async () => {
+    const user = userEvent.setup();
+    render(<EmbeddedPreview scenarioId="section-user" identity="owner" />);
+
+    await user.click(screen.getByRole("link", { name: "Settings" }));
+    const settingsOverview = document.querySelector(".settings-overview") as HTMLElement;
+    await user.click(within(settingsOverview).getByRole("link", { name: "Forum & roles" }));
+
+    const google = await screen.findByRole("checkbox", { name: "Allow new accounts through Google" });
+    await user.click(google);
+    await user.click(screen.getByRole("button", { name: "Save registration settings" }));
+    expect(await screen.findByRole("status")).toHaveTextContent("Registration settings updated.");
+
+    await user.click(screen.getByRole("link", { name: "Admin panel" }));
+    const nav = document.querySelector(".admin-panel-nav") as HTMLElement;
+    await user.click(within(nav).getByRole("link", { name: "History" }));
+
+    expect(await screen.findByRole("heading", {
+      level: 3,
+      name: "Registration settings changed",
+    })).toBeInTheDocument();
+    expect(screen.getByText("Google registration")).toBeInTheDocument();
+  });
+
+  it("records an accepted Help signal in live Admin History", async () => {
+    const user = userEvent.setup();
+    render(<EmbeddedPreview scenarioId="attention-signals" identity="manager" />);
+
+    await user.click(screen.getByRole("button", { name: "Accept signal" }));
+    await waitFor(() => expect(screen.queryByText("#signal-142")).not.toBeInTheDocument());
+
+    await user.click(screen.getByRole("link", { name: "Admin panel" }));
+    const nav = document.querySelector(".admin-panel-nav") as HTMLElement;
+    await user.click(within(nav).getByRole("link", { name: "History" }));
+
+    expect(await screen.findByRole("heading", {
+      level: 3,
+      name: "Help signal reviewed",
+    })).toBeInTheDocument();
+    expect(screen.getByText("signal-142")).toBeInTheDocument();
+    expect(screen.getByText("Accepted")).toBeInTheDocument();
+  });
+
   it("opens Admin Overview from the Admin shell navigation", async () => {
     const user = userEvent.setup();
     render(<EmbeddedPreview scenarioId="admin-topic" identity="manager" />);
