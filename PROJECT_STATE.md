@@ -1,6 +1,6 @@
 # PROJECT_STATE.md
 
-Последнее обновление: 2026-11-17
+Последнее обновление: 2026-11-18
 
 ## Назначение
 
@@ -45,7 +45,7 @@ Vico Forum находится в pre-release разработке.
 - PostgreSQL 17 + Drizzle ORM `0.45.2`;
 - Better Auth `1.7.7` + PostgreSQL Drizzle adapter;
 - generic `/:locale/*`, runtime `LocaleRegistry`, BCP-47, LTR/RTL и request-scoped i18next;
-- repository migration history: `0000`–`0066`;
+- repository migration history: `0000`–`0067`;
 - externally accepted migration evidence: `0000`–`0020`.
 
 ## Реализованный продукт
@@ -62,6 +62,7 @@ Vico Forum находится в pre-release разработке.
 - transactional anti-spam cooldown;
 - solved topics и best answer;
 - immutable topic-title/post-body revisions с независимым source locale;
+- редактирование заголовка своей темы через отдельный `forum.topic.title.editOwn`: authoritative ownership/AccountState, immutable revision + current-revision CAS, `sourceLocale: "und"` для изменённого текста, revision-bound translations и AP-10 restriction `posts.edit`;
 - dynamic PostgreSQL-backed roles, permissions и per-user overrides;
 - единый server-side `PermissionResolver`, snapshot-consistent authorization reads, fresh protected-request checks и serialized authorization mutations;
 - public discovery и participation surfaces, включая Popular, Unanswered, Tags, Search, permanent message links и Reply/Quote;

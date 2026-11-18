@@ -261,6 +261,7 @@ reused without creating a second identity store.
 | Pin/unpin topic | `forum.topic.pin` | Target topic exists; authorship alone is insufficient |
 | Mark solved / select best answer administratively | `forum.solution.manageAny` | Existing topic/post identity and solution/duplicate state rules |
 | Own-topic solution controls | `forum.solution.manageOwn` | Authoritative topic author is the actor; does not independently admit the global panel |
+| Edit own topic title | `forum.topic.title.editOwn` | Authoritative topic author is the actor; fresh permission, active account, current title-revision CAS and AP-10 `posts.edit` admission are required; no edit-any or source-locale authority |
 | Set Help solution review/outdated state | `forum.solution.manageAny` | Applicable solved Help question and expected current best answer; existing reason validation |
 | Confirm/remove Help duplicate; resolve duplicate appeal | `forum.helpDuplicate.manage` | Existing Help-only relationship, canonical-original, expected relationship/appeal and solution-state invariants |
 | Review Help signal in its existing workflow | `forum.helpNeedsDetails.manage` for needs-details; `forum.helpDuplicate.manage` for duplicate; `forum.solution.manageAny` for solution kinds | Persisted signal kind selects permission; current case/target identity and applicability are rechecked |
@@ -643,7 +644,7 @@ a presentation shortcut and not a policy key. Expiry and restrictions are indepe
 | Group | Exact child restriction keys | Fresh operation affected |
 | --- | --- | --- |
 | Publication | `topics.create`, `replies.create`, `attachments.upload` | New ordinary/Help topics, replies, attachments |
-| Own content | `posts.edit`, `profile.edit` | Own published-post editing, public profile edits |
+| Own content | `posts.edit`, `profile.edit` | Own published-post editing, own topic-title editing, public profile edits |
 | Submissions | `complaints.submit`, `helpSignals.submit` | New Complaint reports, Help signals |
 | Translation | `translations.generate` | New title, automatic/explicit body translation generation |
 | Administration | `admin.forum`, `admin.complaints`, `admin.security`, `admin.usersAccess` | Effective administrative permission families listed below |
@@ -720,10 +721,11 @@ it as moot in the same transaction. Existing committed publication receipts and 
 committed Complaint results remain replayable; changed/new operations are subject to fresh
 restriction admission before new side effects. Necessary cancel/cleanup continues to work;
 fresh denied writes produce no partial effect. If a new
-restriction arrives while Create Topic, Help Question or own published-post Edit is already
-mounted, that same editor operation retains its text/history and selected or in-flight
-attachments plus explicit Cancel/cleanup, while Publish/Save and keyboard submission are
-disabled. Fresh denied editors/actions are not offered, and revalidation never replays a POST.
+restriction arrives while Create Topic, Help Question, own published-post Edit or own
+topic-title Edit is already mounted, the current editor keeps its local input and explicit
+Cancel/cleanup; published-post editors additionally retain their existing history/attachment
+state. Publish/Save and keyboard submission are disabled while restricted. Fresh denied
+editors/actions are not offered, and revalidation never replays a POST.
 
 **Appeals** target an exact measure, never a Complaint Case or Complaint Appeal.
 The punished user may submit at most **three sequential appeals per measure**,
