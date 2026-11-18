@@ -145,7 +145,7 @@ const errorKeys: Record<ActionError, UiKey<"common">> = {
   unavailable: "settingsSecurityUnavailable",
 };
 
-export default function SettingsAccountRoute() {
+export default function SettingsAccountRoute({ readOnly = false }: { readOnly?: boolean } = {}) {
   const state = useLoaderData<typeof loader>();
   const result = useActionData<typeof action>();
   const navigation = useNavigation();
@@ -173,12 +173,12 @@ export default function SettingsAccountRoute() {
           <h3 id="settings-account-methods">{t("settingsSecurityMethods")}</h3>
           <ul>{state.linkedMethods.map(method =>
             <li key={method}>{method === "password" ? t("settingsSecurityPasswordMethod") : "Google"}</li>)}</ul>
-          {!state.linkedMethods.includes("google")
+          {!readOnly && !state.linkedMethods.includes("google")
             ? <GoogleAccountLink callbackURL={settingsAccountPath(state.locale)} expectedUserId={state.accountId} />
             : null}
           {!state.hasPassword ? <p>{t("settingsSecurityNoPassword")}</p> : null}
         </section>
-        {state.hasPassword ? <section className="settings-account-section" aria-labelledby="settings-account-password">
+        {state.hasPassword && !readOnly ? <section className="settings-account-section" aria-labelledby="settings-account-password">
           <h3 id="settings-account-password">{t("settingsSecurityPasswordHeading")}</h3>
           <Form method="post" className="settings-account-form" aria-busy={busy || undefined}>
             {identityFields}
@@ -206,7 +206,7 @@ export default function SettingsAccountRoute() {
                     <span>{t("settingsSecuritySessionExpires")}: <time dateTime={session.expiresAt}>
                       {formatDate(session.expiresAt)}</time></span>
                   </div>
-                  {!session.current ? <Form method="post" className="settings-account-revoke-form">
+                  {!readOnly && !session.current ? <Form method="post" className="settings-account-revoke-form">
                     {identityFields}
                     <input type="hidden" name="intent" value="revoke-one" />
                     <input type="hidden" name="sessionId" value={session.id} />
@@ -214,7 +214,7 @@ export default function SettingsAccountRoute() {
                   </Form> : null}
                 </li>)}
               </ul>
-              {otherSessions.length ? <Form method="post" className="settings-account-revoke-all">
+              {!readOnly && otherSessions.length ? <Form method="post" className="settings-account-revoke-all">
                 {identityFields}
                 <input type="hidden" name="intent" value="revoke-others" />
                 <button type="submit" disabled={busy}>{t("settingsSecurityRevokeOthers")}</button>
