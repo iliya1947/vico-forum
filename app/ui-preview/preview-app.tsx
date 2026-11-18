@@ -250,6 +250,7 @@ type PreviewInteractionState = {
   preferredLocale: PreviewLocale | null;
   localeSaved: boolean;
   showOnline: boolean;
+  googleLinked: boolean;
   revokedAccountSessionIds: Set<string>;
   authorization: PreviewAuthorizationState;
 };
@@ -268,6 +269,7 @@ function createPreviewInteractionState(): PreviewInteractionState {
     preferredLocale: null,
     localeSaved: false,
     showOnline: true,
+    googleLinked: false,
     revokedAccountSessionIds: new Set(),
     authorization: createPreviewAuthorizationState(),
   };
@@ -1204,7 +1206,11 @@ export function EmbeddedPreview({ scenarioId, identity }: { scenarioId: string; 
       event.stopPropagation();
     };
     const stopAuth = (event: MouseEvent) => {
-      if ((event.target as Element | null)?.closest(".auth-controls button, .auth-google-link")) {
+      const target = event.target as Element | null;
+      const blockedAuth = target?.closest(".auth-controls button");
+      const blockedGoogleLink = target?.closest(".auth-google-link")
+        && !target.closest(".settings-account");
+      if (blockedAuth || blockedGoogleLink) {
         event.preventDefault();
         event.stopPropagation();
       }
@@ -1376,7 +1382,13 @@ function previewRouter(
     },
     {
       path: "/:locale/settings/account",
-      element: <SettingsAccountRoute mutationMode="all" />,
+      element: <SettingsAccountRoute mutationMode="all"
+        googleLink={async (_callbackURL, expectedUserId) => {
+          const actor = previewUser(scenario);
+          if (!actor || expectedUserId !== actor.id) return false;
+          interactions.googleLinked = true;
+          return true;
+        }} />,
       loader: () => previewSettingsAccountData(scenario, interactions),
       action: ({ request }) => previewSettingsAccountAction(scenario, interactions, request),
     },
@@ -1454,7 +1466,10 @@ function previewSettingsAccountData(
     accountId: actor?.id ?? "",
     sessionId: "preview-current-session",
     canViewForum: scenario.identity === "owner",
-    linkedMethods: ["password", "google"] as ("password" | "google")[],
+    linkedMethods: [
+      "password",
+      ...(interactions.googleLinked ? ["google" as const] : []),
+    ] as ("password" | "google")[],
     hasPassword: true,
     sessionAccess: "ready" as const,
     sessions,
