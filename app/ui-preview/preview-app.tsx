@@ -1182,6 +1182,7 @@ export function EmbeddedPreview({ scenarioId, identity }: { scenarioId: string; 
         || (intent === "open" && form.classList.contains("notification-form"))
         || (intent === "save-locale" && form.classList.contains("settings-locale-form"))
         || (intent === "save-online-visibility" && form.classList.contains("settings-privacy-form"))
+        || (intent === "change-password" && form.classList.contains("settings-account-form"))
         || (intent === "revoke-one" && form.classList.contains("settings-account-revoke-form"))
         || (intent === "revoke-others" && form.classList.contains("settings-account-revoke-all"))
         || ((intent === "pinTopic"
@@ -1375,7 +1376,7 @@ function previewRouter(
     },
     {
       path: "/:locale/settings/account",
-      element: <SettingsAccountRoute mutationMode="sessions" />,
+      element: <SettingsAccountRoute mutationMode="all" />,
       loader: () => previewSettingsAccountData(scenario, interactions),
       action: ({ request }) => previewSettingsAccountAction(scenario, interactions, request),
     },
@@ -1470,13 +1471,15 @@ async function previewSettingsAccountAction(
 
   const form = await request.formData();
   const intent = String(form.get("intent") ?? "");
-  if (intent !== "revoke-one" && intent !== "revoke-others") {
+  if (!["change-password", "revoke-one", "revoke-others"].includes(intent)) {
     return { error: "invalid" as const };
   }
 
-  const allowedFields = new Set(intent === "revoke-one"
-    ? ["intent", "expectedUserId", "expectedSessionId", "sessionId"]
-    : ["intent", "expectedUserId", "expectedSessionId"]);
+  const allowedFields = new Set(intent === "change-password"
+    ? ["intent", "expectedUserId", "expectedSessionId", "currentPassword", "newPassword"]
+    : intent === "revoke-one"
+      ? ["intent", "expectedUserId", "expectedSessionId", "sessionId"]
+      : ["intent", "expectedUserId", "expectedSessionId"]);
   if ([...form.keys()].some((key) => !allowedFields.has(key))) {
     return { error: "invalid" as const };
   }
@@ -1485,6 +1488,16 @@ async function previewSettingsAccountAction(
   const expectedSessionId = String(form.get("expectedSessionId") ?? "");
   if (expectedUserId !== actor.id || expectedSessionId !== "preview-current-session") {
     return { error: "account-changed" as const };
+  }
+
+  if (intent === "change-password") {
+    const currentPassword = String(form.get("currentPassword") ?? "");
+    const newPassword = String(form.get("newPassword") ?? "");
+    if (!currentPassword || currentPassword.length > 128
+      || newPassword.length < 8 || newPassword.length > 128) {
+      return { error: "invalid" as const };
+    }
+    return { saved: "change-password" as const };
   }
 
   if (intent === "revoke-others") {
