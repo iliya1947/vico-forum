@@ -255,6 +255,8 @@ type PreviewAuthorizationUserState = {
   owner?: boolean;
 };
 
+const PREVIEW_REGISTRATION_STORAGE_KEY = "vico:ui-preview:registration-policy:v1";
+
 type PreviewAuthorizationState = {
   sequence: number;
   roles: PreviewAuthorizationRoleState[];
@@ -282,7 +284,38 @@ type PreviewInteractionState = {
   authorization: PreviewAuthorizationState;
 };
 
+function readPreviewRegistrationPolicy() {
+  try {
+    const raw = window.sessionStorage.getItem(PREVIEW_REGISTRATION_STORAGE_KEY);
+    if (!raw) return null;
+    const value = JSON.parse(raw) as Record<string, unknown>;
+    if (typeof value.googleRegistrationEnabled !== "boolean"
+      || typeof value.emailRegistrationEnabled !== "boolean"
+      || !Number.isInteger(value.version) || Number(value.version) < 1) return null;
+    return {
+      googleRegistrationEnabled: value.googleRegistrationEnabled,
+      emailRegistrationEnabled: value.emailRegistrationEnabled,
+      version: Number(value.version),
+    };
+  } catch {
+    return null;
+  }
+}
+
+function writePreviewRegistrationPolicy(interactions: PreviewInteractionState) {
+  try {
+    window.sessionStorage.setItem(PREVIEW_REGISTRATION_STORAGE_KEY, JSON.stringify({
+      googleRegistrationEnabled: interactions.registrationGoogleEnabled,
+      emailRegistrationEnabled: interactions.registrationEmailEnabled,
+      version: interactions.registrationVersion,
+    }));
+  } catch {
+    // Preview persistence is best-effort; the current iframe keeps its in-memory policy.
+  }
+}
+
 function createPreviewInteractionState(): PreviewInteractionState {
+  const registration = typeof window === "undefined" ? null : readPreviewRegistrationPolicy();
   return {
     sequence: 0,
     createdTopics: new Map(),
@@ -297,9 +330,9 @@ function createPreviewInteractionState(): PreviewInteractionState {
     localeSaved: false,
     showOnline: true,
     googleLinked: false,
-    registrationGoogleEnabled: true,
-    registrationEmailEnabled: true,
-    registrationVersion: 1,
+    registrationGoogleEnabled: registration?.googleRegistrationEnabled ?? true,
+    registrationEmailEnabled: registration?.emailRegistrationEnabled ?? true,
+    registrationVersion: registration?.version ?? 1,
     revokedAccountSessionIds: new Set(),
     authorization: createPreviewAuthorizationState(),
   };
@@ -1283,8 +1316,16 @@ const previewGoogleActions: AuthClientActions = {
   signOut: async () => undefined,
 };
 
-function previewCredential(locale: PreviewLocale, mode: "sign-in" | "sign-up") {
-  return <CredentialView locale={locale} mode={mode} returnTo={`/${locale}`}
+function PreviewCredentialRoute({ scenario, interactions, mode }: {
+  scenario: Scenario;
+  interactions: PreviewInteractionState;
+  mode: "sign-in" | "sign-up";
+}) {
+  return <CredentialView locale={scenario.locale} mode={mode} returnTo={`/${scenario.locale}`}
+    registrationFlags={mode === "sign-up" ? {
+      googleRegistrationEnabled: interactions.registrationGoogleEnabled,
+      emailRegistrationEnabled: interactions.registrationEmailEnabled,
+    } : undefined}
     emailActions={previewEmailActions} googleActions={previewGoogleActions} />;
 }
 
@@ -1320,8 +1361,8 @@ function previewRouter(
       path: "/:locale",
       element: <PreviewHomeRoute scenario={scenario} interactions={interactions} />,
     },
-    { path: "/:locale/sign-in", element: previewCredential(scenario.locale, "sign-in") },
-    { path: "/:locale/sign-up", element: previewCredential(scenario.locale, "sign-up") },
+    { path: "/:locale/sign-in", element: <PreviewCredentialRoute scenario={scenario} interactions={interactions} mode="sign-in" /> },
+    { path: "/:locale/sign-up", element: <PreviewCredentialRoute scenario={scenario} interactions={interactions} mode="sign-up" /> },
     {
       path: "/:locale/attention",
       element: <PreviewAttentionRoute scenario={scenario} interactions={interactions} />,
@@ -1515,6 +1556,7 @@ async function previewSettingsForumAction(
     interactions.registrationGoogleEnabled = true;
     interactions.registrationEmailEnabled = false;
     interactions.registrationVersion = 2;
+    writePreviewRegistrationPolicy(interactions);
   }
   if (!Number.isInteger(expectedVersion) || expectedVersion !== interactions.registrationVersion) {
     return { ok: false as const, error: "conflict" as const };
@@ -1535,6 +1577,7 @@ async function previewSettingsForumAction(
     interactions.registrationGoogleEnabled = googleRegistrationEnabled;
     interactions.registrationEmailEnabled = emailRegistrationEnabled;
     interactions.registrationVersion += 1;
+    writePreviewRegistrationPolicy(interactions);
   }
   return { ok: true as const };
 }
