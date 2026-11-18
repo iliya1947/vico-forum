@@ -34,7 +34,7 @@ export function bookmarkListCursor(params: URLSearchParams): ForumTopicBookmarkC
   if (!UTC_MILLIS.test(rawDate) || !Number.isFinite(savedAt.getTime())
     || savedAt.toISOString() !== rawDate
     || !topicId.trim() || topicId !== topicId.trim() || topicId.length > 256
-    || /[\u0000-\u001f\u007f]/u.test(topicId)) {
+    || [...topicId].some(char => char.charCodeAt(0) < 32 || char.charCodeAt(0) === 127)) {
     throw new Response("Invalid bookmark cursor", { status: 400,
       headers: { "Cache-Control": PRIVATE_CACHE } });
   }
