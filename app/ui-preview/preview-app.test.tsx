@@ -300,7 +300,8 @@ describe("embedded preview routing", () => {
     await user.click(within(nav).getByRole("link", { name: "User measures" }));
 
     expect(await screen.findByRole("heading", { level: 2, name: "User measures" })).toBeInTheDocument();
-    expect(screen.getByText("No pending measure appeals available.")).toBeInTheDocument();
+    expect(screen.getByRole("heading", { level: 3, name: "Pending measure appeals" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Review appeal #1" })).toBeInTheDocument();
     expect(screen.getByLabelText("Exact user ID")).toBeInTheDocument();
   });
 
