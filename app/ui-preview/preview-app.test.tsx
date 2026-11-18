@@ -25,6 +25,37 @@ async function openSettings(user: ReturnType<typeof userEvent.setup>) {
   });
 }
 
+async function findAlexMeasures(user: ReturnType<typeof userEvent.setup>) {
+  const nav = document.querySelector(".admin-panel-nav") as HTMLElement;
+  await user.click(within(nav).getByRole("link", { name: "User measures" }));
+  await user.type(await screen.findByLabelText("Exact user ID"), "alex");
+  await user.click(screen.getByRole("button", { name: "Find user" }));
+
+  const targetHeading = await screen.findByRole("heading", { level: 3, name: "Alex Rivera" });
+  return targetHeading.closest(".admin-forum") as HTMLElement;
+}
+
+async function openExistingAlexMeasure(user: ReturnType<typeof userEvent.setup>) {
+  const measures = await findAlexMeasures(user);
+  const list = measures.querySelector(".admin-forum-objects") as HTMLElement;
+  const reason = within(list).getByText(
+    "Repeated off-topic promotional posts after a moderator warning.",
+  );
+  const item = reason.closest("li") as HTMLElement;
+  await user.click(within(item).getByRole("link"));
+  await screen.findByRole("heading", { level: 2, name: "Measure details" });
+}
+
+async function openAlexAdminUserItem(user: ReturnType<typeof userEvent.setup>) {
+  const nav = document.querySelector(".admin-panel-nav") as HTMLElement;
+  await user.click(within(nav).getByRole("link", { name: "Users" }));
+  expect(await screen.findByRole("heading", { level: 2, name: "Users" })).toBeInTheDocument();
+
+  const users = document.querySelector(".admin-forum") as HTMLElement;
+  const alexLink = within(users).getByRole("link", { name: "Alex Rivera" });
+  return alexLink.closest("li") as HTMLElement;
+}
+
 describe("UI preview state catalog", () => {
   it("keeps locale and direction out of State options", () => {
     expect(scenarios.length).toBeGreaterThan(0);
@@ -320,36 +351,22 @@ describe("embedded preview routing", () => {
     const user = userEvent.setup();
     await renderEmbeddedPreview(<EmbeddedPreview scenarioId="admin-topic" identity="manager" />);
 
-    const nav = document.querySelector(".admin-panel-nav") as HTMLElement;
-    await user.click(within(nav).getByRole("link", { name: "User measures" }));
-
-    await user.type(await screen.findByLabelText("Exact user ID"), "alex");
-    await user.click(screen.getByRole("button", { name: "Find user" }));
-
-    expect(await screen.findByRole("heading", { level: 3, name: "Alex Rivera" })).toBeInTheDocument();
-    const measuresList = document.querySelector(".admin-forum-objects") as HTMLElement;
-    const reason = within(measuresList).getByText(
-      "Repeated off-topic promotional posts after a moderator warning.",
-    );
-    const item = reason.closest("li") as HTMLElement;
-    await user.click(within(item).getByRole("link"));
+    await openExistingAlexMeasure(user);
 
     expect(await screen.findByRole("heading", { level: 2, name: "Alex Rivera" })).toBeInTheDocument();
     expect(screen.getByRole("heading", { level: 2, name: "Measure details" })).toBeInTheDocument();
-    expect(screen.getByText("Repeated off-topic promotional posts after a moderator warning.")).toBeInTheDocument();
+    const measureInfo = document.querySelector("[aria-labelledby='measure-info-title']") as HTMLElement;
+    expect(within(measureInfo).getByText(
+      "Repeated off-topic promotional posts after a moderator warning.",
+    )).toBeInTheDocument();
   });
 
   it("creates an Admin measure and opens its detail page", async () => {
     const user = userEvent.setup();
     await renderEmbeddedPreview(<EmbeddedPreview scenarioId="admin-topic" identity="manager" />);
 
-    const nav = document.querySelector(".admin-panel-nav") as HTMLElement;
-    await user.click(within(nav).getByRole("link", { name: "User measures" }));
-
-    await user.type(await screen.findByLabelText("Exact user ID"), "alex");
-    await user.click(screen.getByRole("button", { name: "Find user" }));
-
-    const createForm = document.querySelector("#measure-create-reason")?.closest("form") as HTMLElement;
+    const measures = await findAlexMeasures(user);
+    const createForm = measures.querySelector("#measure-create-reason")?.closest("form") as HTMLElement;
     await user.type(within(createForm).getByLabelText("Reason"), "Temporary preview restriction.");
     await user.click(within(createForm).getByRole("button", { name: "Create measure" }));
 
@@ -362,14 +379,7 @@ describe("embedded preview routing", () => {
     const user = userEvent.setup();
     await renderEmbeddedPreview(<EmbeddedPreview scenarioId="admin-topic" identity="manager" />);
 
-    const nav = document.querySelector(".admin-panel-nav") as HTMLElement;
-    await user.click(within(nav).getByRole("link", { name: "User measures" }));
-    await user.type(await screen.findByLabelText("Exact user ID"), "alex");
-    await user.click(screen.getByRole("button", { name: "Find user" }));
-
-    const reason = screen.getByText("Repeated off-topic promotional posts after a moderator warning.");
-    const item = reason.closest("li") as HTMLElement;
-    await user.click(within(item).getByRole("link"));
+    await openExistingAlexMeasure(user);
 
     const changeHeading = await screen.findByRole("heading", { level: 3, name: "Change measure" });
     const changeForm = changeHeading.closest("form") as HTMLElement;
@@ -386,14 +396,7 @@ describe("embedded preview routing", () => {
     const user = userEvent.setup();
     await renderEmbeddedPreview(<EmbeddedPreview scenarioId="admin-topic" identity="manager" />);
 
-    const nav = document.querySelector(".admin-panel-nav") as HTMLElement;
-    await user.click(within(nav).getByRole("link", { name: "User measures" }));
-    await user.type(await screen.findByLabelText("Exact user ID"), "alex");
-    await user.click(screen.getByRole("button", { name: "Find user" }));
-
-    const reason = screen.getByText("Repeated off-topic promotional posts after a moderator warning.");
-    const item = reason.closest("li") as HTMLElement;
-    await user.click(within(item).getByRole("link"));
+    await openExistingAlexMeasure(user);
 
     const liftHeading = await screen.findByRole("heading", { level: 3, name: "Lift measure" });
     const liftForm = liftHeading.closest("form") as HTMLElement;
@@ -411,14 +414,7 @@ describe("embedded preview routing", () => {
     const user = userEvent.setup();
     await renderEmbeddedPreview(<EmbeddedPreview scenarioId="admin-topic" identity="manager" />);
 
-    const nav = document.querySelector(".admin-panel-nav") as HTMLElement;
-    await user.click(within(nav).getByRole("link", { name: "User measures" }));
-    await user.type(await screen.findByLabelText("Exact user ID"), "alex");
-    await user.click(screen.getByRole("button", { name: "Find user" }));
-
-    const reason = screen.getByText("Repeated off-topic promotional posts after a moderator warning.");
-    const item = reason.closest("li") as HTMLElement;
-    await user.click(within(item).getByRole("link"));
+    await openExistingAlexMeasure(user);
 
     const reviewHeading = await screen.findByRole("heading", { level: 3, name: "Review appeal #1" });
     const reviewForm = reviewHeading.closest("form") as HTMLElement;
@@ -435,14 +431,8 @@ describe("embedded preview routing", () => {
     const user = userEvent.setup();
     await renderEmbeddedPreview(<EmbeddedPreview scenarioId="admin-topic" identity="manager" />);
 
+    await openExistingAlexMeasure(user);
     let nav = document.querySelector(".admin-panel-nav") as HTMLElement;
-    await user.click(within(nav).getByRole("link", { name: "User measures" }));
-    await user.type(await screen.findByLabelText("Exact user ID"), "alex");
-    await user.click(screen.getByRole("button", { name: "Find user" }));
-
-    const reason = screen.getByText("Repeated off-topic promotional posts after a moderator warning.");
-    const item = reason.closest("li") as HTMLElement;
-    await user.click(within(item).getByRole("link"));
 
     const reviewHeading = await screen.findByRole("heading", { level: 3, name: "Review appeal #1" });
     const reviewForm = reviewHeading.closest("form") as HTMLElement;
@@ -478,14 +468,8 @@ describe("embedded preview routing", () => {
     const user = userEvent.setup();
     await renderEmbeddedPreview(<EmbeddedPreview scenarioId="admin-topic" identity="manager" />);
 
+    await openExistingAlexMeasure(user);
     let nav = document.querySelector(".admin-panel-nav") as HTMLElement;
-    await user.click(within(nav).getByRole("link", { name: "User measures" }));
-    await user.type(await screen.findByLabelText("Exact user ID"), "alex");
-    await user.click(screen.getByRole("button", { name: "Find user" }));
-
-    const reason = screen.getByText("Repeated off-topic promotional posts after a moderator warning.");
-    const item = reason.closest("li") as HTMLElement;
-    await user.click(within(item).getByRole("link"));
 
     const reviewHeading = await screen.findByRole("heading", { level: 3, name: "Review appeal #1" });
     const reviewForm = reviewHeading.closest("form") as HTMLElement;
@@ -604,11 +588,7 @@ describe("embedded preview routing", () => {
     const user = userEvent.setup();
     await renderEmbeddedPreview(<EmbeddedPreview scenarioId="admin-topic" identity="manager" />);
 
-    const nav = document.querySelector(".admin-panel-nav") as HTMLElement;
-    await user.click(within(nav).getByRole("link", { name: "Users" }));
-
-    const alexLink = await screen.findByRole("link", { name: "Alex Rivera" });
-    const alexItem = alexLink.closest("li") as HTMLElement;
+    const alexItem = await openAlexAdminUserItem(user);
     await user.click(within(alexItem).getByRole("link", { name: "Authorization" }));
 
     expect(await screen.findByRole("heading", { level: 1, name: "Alex Rivera" })).toBeInTheDocument();
@@ -627,11 +607,7 @@ describe("embedded preview routing", () => {
     const user = userEvent.setup();
     await renderEmbeddedPreview(<EmbeddedPreview scenarioId="admin-topic" identity="manager" />);
 
-    const nav = document.querySelector(".admin-panel-nav") as HTMLElement;
-    await user.click(within(nav).getByRole("link", { name: "Users" }));
-
-    const alexLink = await screen.findByRole("link", { name: "Alex Rivera" });
-    const alexItem = alexLink.closest("li") as HTMLElement;
+    const alexItem = await openAlexAdminUserItem(user);
     await user.click(within(alexItem).getByRole("link", { name: "Authorization" }));
 
     const measures = document.querySelector("#measures") as HTMLElement;
@@ -646,11 +622,7 @@ describe("embedded preview routing", () => {
     const user = userEvent.setup();
     await renderEmbeddedPreview(<EmbeddedPreview scenarioId="admin-topic" identity="owner" />);
 
-    const nav = document.querySelector(".admin-panel-nav") as HTMLElement;
-    await user.click(within(nav).getByRole("link", { name: "Users" }));
-
-    const alexLink = await screen.findByRole("link", { name: "Alex Rivera" });
-    const alexItem = alexLink.closest("li") as HTMLElement;
+    const alexItem = await openAlexAdminUserItem(user);
     await user.click(within(alexItem).getByRole("link", { name: "Authorization" }));
 
     const roleForm = document.querySelector("#authorization .admin-role-assignment") as HTMLElement;
