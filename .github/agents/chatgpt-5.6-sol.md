@@ -4,9 +4,9 @@
 
 1. Служебный PR: **#315**.
 2. Моя текущая работа: audit/coordination only; remediation и implementation не назначены.
-3. Текущий этап: **Block I I1 завершён: 1 current-scope finding — `REPO-MAIN-GATE-01 Moderate/P2`; следующий bounded slice — I2 Workflow events, tokens & write authority.** Block H закрыт с 0 current findings + 2 deferred Stage-6 blockers; Block G закрыт с 3 current findings + deferred `DB-RUNTIME-EVIDENCE-01`.
+3. Текущий этап: **Block I I1 = `REPO-MAIN-GATE-01 Moderate/P2`; I2 PASS, 0 additional; следующий bounded slice — I3 Production Environments & secret admission.** Block H закрыт с 0 current findings + 2 deferred Stage-6 blockers; Block G закрыт с 3 current findings + deferred `DB-RUNTIME-EVIDENCE-01`.
 4. Technical audit target B–D: `e279cb6c032a489a9044ca1191407df887c364b4`.
-5. Current `main` — `593a03964b8407b249f7c9f5eb117ddb8b07736d`. Delta `ce62e783… → 593a0396…` — SA-04 A1 #327 migration/schema/tests only; H runtime/topology code unchanged.
+5. Current `main` — `7cc23edede57994cdedab49c1556ddb55034dd29`. Delta от I1 target включает SA-04/SA-05–SA-08 и topic-title work; I2 отдельно re-read current workflows and source-of-truth.
 6. Лира, Марк и Лёва по #315 сейчас не назначены.
 
 ## Где читать состояние
@@ -195,6 +195,18 @@
 166. Exact human collaborator roster could not be enumerated with available connector surface. Owner permission admin; chatgpt-codex-connector[bot] user permission none. **Информация не проверена** for other human collaborators; finding does not depend on them because delegated write path is independently confirmed.
 167. No separate findings for CODEOWNERS, review count, signed-commit policy or verified-commit absence; one root cause only.
 168. I1 remediation not started. I2 must test workflow-event/token write paths and reference REPO-MAIN-GATE-01 instead of duplicating generic main protection.
+169. I2: **PASS, 0 new current-scope findings** on current main `7cc23edede57994cdedab49c1556ddb55034dd29`.
+170. Current workflows have no pull_request_target, workflow_run or repository_dispatch. PR/browser workflows explicitly set contents:read and use only disposable/local synthetic resources; no production secrets.
+171. GitHub current permissions semantics rechecked: explicit permissions make unspecified GITHUB_TOKEN scopes none. PR code therefore has no repo write/Pages/OIDC/Actions-write authority through current workflow token declarations.
+172. github.event.pull_request.head.sha in browser jobs is passed via env, not direct shell source interpolation; no script-injection root cause.
+173. Codex bridge issue_comment event runs from default-branch workflow context. Job filters exact PR #147/open PR/exact bot login; comment body/metadata are intermediate env vars and quoted printf data; fixed service branch/file only, no branch code/package execution. No comment→shell/arbitrary-ref path.
+174. Bridge contents:write is not a second REPO-MAIN-GATE-01: current script only pushes service branch. Generic delegated writer→unprotected main remains I1 root cause.
+175. Pages workflow has contents:read/pages:write/id-token:write and runs branch-controlled build for main/chatgpt-ui branches/manual dispatch. OIDC current docs: id-token write only permits JWT request, not external resource write by itself. No production secret or external OIDC trust was established; no separate finding.
+176. Pages workflow-level permission is broader than strict per-job least privilege, but current proven impact is only its intended public Pages deployment. I7 may revisit only if a trusted release/external identity chain consumes it.
+177. workflow_dispatch requires write access and can select refs; production workflows additionally require main and use contents:read or actions:read+contents:read. Inputs are environment variables before shell validation.
+178. All current production secrets references are in jobs with named production-db/production-worker Environments. Exact Environment reviewers/ref rules/admin bypass are **Информация не проверена** and are I3 scope.
+179. Actions-global default/fork policy was not needed for I2 verdict because sensitive workflows explicitly declare permissions. No dispatch/deploy/event/settings mutation performed; tests read, not run.
+180. REPO-MAIN-GATE-01 persists on 7cc23ede: main protected=false and Protect main enforcement disabled. Aggregate stays 25 current findings + 3 deferred blockers.
 
 ## Ограничения
 
@@ -206,5 +218,5 @@
 
 ## Следующий шаг
 
-1. После продолжения владельца выполнить **I2 — Workflow events, tokens & write authority** на current main и остановиться после результата.
-2. `REPO-MAIN-GATE-01` не дублировать; новые findings только по independent workflow/token root cause. Remediation не начинать.
+1. После продолжения владельца выполнить **I3 — Production Environments & secret admission** на current main и остановиться после результата.
+2. Читать только policy/metadata без secret values; `REPO-MAIN-GATE-01` не дублировать. Remediation не начинать.
