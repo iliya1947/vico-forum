@@ -9,9 +9,10 @@
 5. **L3 — Retention / coalescing / privacy завершён: PASS, 0 новых current-scope findings и 0 deferred blockers.**
 6. **L4 — Alertability / failure signals завершён: PASS, 0 новых current-scope findings и 0 deferred blockers.**
 7. **L5 — Audit / History integrity завершён: PASS, 0 новых current-scope findings и 0 deferred blockers.**
-8. Overall #315 остаётся **34 current findings + 4 deferred Stage-6 blockers**.
-9. Мира — auditor/coordinator. Remediation, technical planner и implementer не назначены.
-10. Production/Cloudflare/Neon/GitHub/provider mutation, external incident drill и destructive/fault-injection действия не разрешены и не выполнялись.
+8. **L6 — Revocation / containment / recovery actions завершён: PASS, 0 новых current-scope findings и 0 deferred blockers.**
+9. Overall #315 остаётся **34 current findings + 4 deferred Stage-6 blockers**.
+10. Мира — auditor/coordinator. Remediation, technical planner и implementer не назначены.
+11. Production/Cloudflare/Neon/GitHub/provider mutation, external incident drill и destructive/fault-injection действия не разрешены и не выполнялись.
 
 ## Цель
 
@@ -204,6 +205,24 @@
 18. #315 aggregate remains **34 current findings + 4 deferred Stage-6 blockers**. Current severity remains **13 Moderate/P2 + 21 Low/P3**; deferred remains **2 Moderate/P2 + 2 Low/P3**.
 19. Next bounded slice: **L6 — Revocation / containment / recovery actions**.
 
+## L6 — результат
+
+1. Audit target: current `main` `9c4639d23ca075c8bb92fbb909b96593d7bee127`.
+2. Verdict: **PASS — 0 новых current-scope findings, 0 deferred blockers.**
+3. Exact-Owner account deactivation is the current full-account containment path for a non-Owner target. The command rechecks the bound Owner and active actor, forbids self-targeting, locks the target lifecycle row, atomically persists the deactivated tuple, removes online presence and appends the mandatory `account.deactivated` event. Commit-uncertain acknowledgement is returned as 503 and is not automatically retried; explicit same-operation replay is idempotent.
+4. Persisted session rows are deliberately **not** deleted by deactivation, but they cease to be forum authority. Pre-routing session resolution requires current AccountState, actor-protected Better Auth endpoints recheck the active account, session create/update/delete paths hold the authoritative account-state boundary, and a deactivated account is admitted only to the narrow own `/sign-out` cleanup exception. Existing cookies therefore do not restore active forum access after deactivation.
+5. A candidate false-containment signal was rejected. Owner Monitoring and the exact-Owner profile count those retained rows by expiry, but the UI calls them **Unexpired sessions**, not active authorization; the profile independently shows the lifecycle as **Deactivated**, and the deactivation confirmation explicitly states that the account loses active forum access. Residual rows therefore are not presented as proof that containment failed.
+6. Authenticated self-service session containment is current and scoped to the caller: Account & security verifies the authoritative current user/session, requires Better Auth freshness before session management, resolves a selected session server-side from the caller's own list, rejects the current/foreign session for single revoke, and supports revoking all other sessions while preserving the current one. Existing tests also cover stale/expired/deactivated caller denial and isolation from another account.
+7. Password change is intentionally a separate action from session revocation: Vico calls the canonical Better Auth change-password path with `revokeOtherSessions: false`. The UI only reports **Password changed** and exposes a separate **Sign out all other sessions** control; it does not claim that a password rotation invalidated existing sessions. This separation is therefore not a false recovery guarantee.
+8. Authorization containment remains request-fresh rather than session-claim based. Role/grant/override changes go through the canonical Owner-only authorization writer; subsequent operations resolve current persisted authorization, so revocation takes effect on the next request without requiring session deletion. The server-bound Owner deliberately retains effective Owner authority regardless of stored role/deny state; that is the approved single-Owner trust model, not a failed ordinary revocation path.
+9. Administrative measures are narrower containment, not an account ban. Active restrictions are checked from current persisted measure state inside affected operation transactions, expiry/lift restores only otherwise-authorized capabilities, and target/issuer hierarchy prevents self/Owner targeting. Owner immunity and the fact that login/public reading are outside the measure catalog are explicit product semantics; full non-Owner account containment is provided by deactivation instead.
+10. Registration flags are also correctly limited: disabling Google/email registration contains **new account creation** only and does not claim to revoke existing sign-in or linked methods. No second incident mutation backend is hidden inside Monitoring; action links reuse canonical Settings/Admin/Attention/profile boundaries.
+11. Explicitly absent recovery features were reclassified against the current Stage rather than treated as defects: reactivation, hard delete, forced foreign-session termination, foreign credential/provider mutation, password reset/recovery, a second/transferred Owner and Owner recovery-to-another-person are not implemented by current product decision. None is required to make the existing current containment actions truthful or authoritative, so L6 creates no finding solely for those omissions.
+12. Broader Owner/provider recovery becomes relevant only when real Google/Owner binding and external providers are activated in Stage 6. Current ROADMAP already keeps that activation paused and states that a broader recovery model requires a separate Owner decision. Exact deployed provider/account-recovery controls are **Информация не проверена** and are not promoted into a current repository finding.
+13. No production account/session/authorization/measure mutation, external provider call, incident drill, deployment or settings change was performed. Current source, repository tests and product contracts were inspected; tests were not executed during L6.
+14. #315 aggregate remains **34 current findings + 4 deferred Stage-6 blockers**. Current severity remains **13 Moderate/P2 + 21 Low/P3**; deferred remains **2 Moderate/P2 + 2 Low/P3**.
+15. Next bounded slice: **L7 — Incident-response degraded operation / Stage-6 gates**.
+
 ## Finding criteria
 
 1. Concrete current/prepared monitoring or incident-response path.
@@ -222,5 +241,5 @@
 
 ## Следующий шаг
 
-1. После продолжения владельца выполнить **L6 — Revocation / containment / recovery actions** на current main и остановиться после результата.
+1. После продолжения владельца выполнить **L7 — Incident-response degraded operation / Stage-6 gates** на current main и остановиться после результата.
 2. Remediation существующих findings/blockers Blocks B–L не начинать без отдельного назначения.
