@@ -2,16 +2,17 @@
 
 ## Статус
 
-1. Scope создан 2026-11-18; current J3 audit target — `main` `7cc23edede57994cdedab49c1556ddb55034dd29`.
+1. Scope создан 2026-11-18; current J4 audit target — `main` `7cc23edede57994cdedab49c1556ddb55034dd29`.
 2. Blocks A–I уже закрыты как audit blocks; их findings в J не дублируются.
 3. **J1 — Current integration inventory & activation boundaries завершён: PASS, 0 новых current-scope findings и 0 deferred blockers.**
 4. **J2 — Google OAuth external-provider boundary завершён: 0 новых current-scope findings + 1 deferred Stage-6 blocker — `GOOGLE-OAUTH-SCOPE-01 Low/P3`.** Exact provider identity/state/PKCE/callback/origin/account-selection paths PASS apart from already-owned Block-B findings; prepared direct OAuth surface accepts caller-selected additional Google scopes beyond Vico's authentication-only product need.
 5. **J3 — Email provider boundary завершён: PASS, 0 новых current-scope findings и 0 deferred blockers.** Sender/verification/recovery implementation отсутствует; Better Auth 1.7.7 send/reset endpoints fail closed when sender callbacks are not configured.
-6. Current repository имеет Google OAuth foundation и translation provider/Queue abstractions, но source-of-truth и runtime wiring подтверждают отсутствие live Google OAuth acceptance и отсутствие active translation provider/Queue execution.
-7. Resend/Brevo/email-delivery integration в current `main` отсутствует; email verification/password recovery намеренно не реализованы.
-8. Следующий bounded slice после продолжения владельца — **J4: Translation provider data egress**.
-9. Мира — auditor/coordinator. Remediation, technical planner и implementer не назначены.
-10. Production/provider/Cloudflare/GitHub settings mutation, OAuth client creation, email account/provider activation, Queue/provider activation и external calls не разрешены и не выполнялись.
+6. **J4 — Translation provider data egress завершён: PASS, 0 новых current-scope findings и 0 deferred blockers.** Current Worker provider execution выключен; prepared content path выполняет metadata-only selection, explicit data-policy/allowance admission и actual-request support recheck до raw egress; provider output/provenance валидируются до publication.
+7. Current repository имеет Google OAuth foundation и translation provider/Queue abstractions, но source-of-truth и runtime wiring подтверждают отсутствие live Google OAuth acceptance и отсутствие active translation provider/Queue execution.
+8. Resend/Brevo/email-delivery integration в current `main` отсутствует; email verification/password recovery намеренно не реализованы.
+9. Следующий bounded slice после продолжения владельца — **J5: Queue/provider execution lifecycle**.
+10. Мира — auditor/coordinator. Remediation, technical planner и implementer не назначены.
+11. Production/provider/Cloudflare/GitHub settings mutation, OAuth client creation, email account/provider activation, Queue/provider activation и external calls не разрешены и не выполнялись.
 
 ## J1 — результат
 
@@ -84,6 +85,35 @@
 16. No email account, API key, sender domain, webhook, external provider call, package install, deployment or setting mutation was created/performed.
 17. #315 aggregate remains **28 current findings + 4 deferred Stage-6 blockers**.
 18. Next bounded slice: **J4 — Translation provider data egress**.
+
+## J4 — результат
+
+1. Audit target: current `main` `7cc23edede57994cdedab49c1556ddb55034dd29`.
+2. Verdict: **PASS — 0 новых current-scope findings, 0 deferred blockers.**
+3. Source-of-truth requires provider selection/data policy before raw content egress, semantic Markdown segmentation, response validation/provenance and no provider call in SSR/public request path. Current implementation matches that prepared boundary.
+4. **Current normal Worker has no translation-provider egress.** `workers/app.ts` installs `DISABLED_CONTENT_GENERATION_ACTION_RUNTIME` and reports `generationEnabled=false`, `providerWired=false`, `enqueuerWired=false`, `consumerWired=false`. `wrangler.jsonc` has no Workers AI or Queue binding.
+5. Repository search outside tests found no normal-runtime construction of `CloudflareM2m100TranslationProvider`, `TranslationProviderRouter`, `UiTranslationTaskExecutor`, `ContentTopicTitleTaskExecutor` or `ContentPostBodyTaskExecutor`. Provider execution remains local/CI foundation, not active runtime.
+6. Even when generation action is enabled in synthetic/local acceptance, `DefaultContentGenerationActionCapability` performs actor admission + request-budget admission + durable planning/dispatch only; it does not synchronously call a provider.
+7. `TranslationProviderRouter` capability selection receives metadata only: domain/classification, source/target locale, operation/message kind and source-character count. Raw source enters only the selected adapter after admission.
+8. Content execution is provider-bound: allowance persists one admitted provider identity; `translateWithProvider(providerId,...)` resolves that exact adapter and re-runs `supports(machineTranslationCapability(actualRequest))` before `adapter.translate()`. A stale/forged admission-time size cannot bypass actual-request capability checks.
+9. Content data policy is fail-closed by default: `CloudflareM2m100TranslationProvider` defaults to `DENY_ALL_TRANSLATION_PROVIDER_DATA_POLICY`. The only concrete repository opt-in policy class is deliberately narrow: exact provider/model, exact canonical non-`und` locale pair, `public-forum-topic-title`, plain operation.
+10. The current Cloudflare adapter additionally hard-rejects every content classification except `public-forum-topic-title`. Therefore current prepared M2M100 adapter cannot send post-body or `non-public-content` data even if generic plumbing exists.
+11. UI generation does not use the content data-policy because its source is code-owned canonical English UI copy, not user/private content. UI still passes adapter capability checks and output validation.
+12. Current M2M100 adapter supports only plain non-empty source, refuses same-locale/unsupported provider locale pairs, caps one source call at 2,000 characters and accepts only a nonblank translated string up to 10,000 characters. Provider locale mapping is explicit; unsupported BCP-47/script/region variants fail capability rather than broadening silently.
+13. Provider request body from that adapter contains only `text`, `source_lang`, `target_lang`; no Vico user ID, session, permission, DB identifier, request IP, provider credential or forum metadata is added to translation payload.
+14. **Post-body egress is semantic, not raw Markdown.** `ProtectedMarkdownTranslationDocument` parses the forum Markdown representation, emits only human-language text-node segments and protects technical fragments with opaque markers. Code/inline-code structure is not a text segment; URLs, mailto/email/path/identifier/version/CLI-like fragments are protected; attributed quote labels are excluded.
+15. Before provider calls, post-body allowance/capability uses exact protected-segment counts. Execution enforces configured max segment count and max total semantic characters, requires every segment to be supported by the same admitted provider, then sends each protected semantic segment separately.
+16. Returned post-body segments must have valid/coherent provider provenance. Restore requires exact segment IDs, exact protected-token sequence, bounded/nonblank/control-safe values and reparsed Markdown structural equivalence. Invalid provider output cannot become a translated current body.
+17. Topic-title output requires machine provenance, plain nonblank text and nonblank attribution when supplied; current M2M100 adapter already applies its 10,000-character response bound. Publication repeats stale/current revision preflight before durable write.
+18. UI publication validates provider/model/origin, max output size, forbidden markup, placeholders, controlled i18next/component tokens, protected terms and exact target plural branches before conditional current publication.
+19. Machine provenance is persisted: UI rows keep provider/model/provenance metadata; content translation rows keep origin/provider/provider-model/attribution. Presentation keeps translation provenance rather than presenting provider output as an unlabelled source value.
+20. No synchronous public-provider proxy was found: ordinary public reads consume stored translations/original fallback; current generation runtime is disabled; the prepared generation action only plans durable work and does not execute provider inference inline.
+21. Current Cloudflare documentation rechecked 2026-11-18 confirms model `@cf/meta/m2m100-1.2b` accepts `text`, `source_lang`, `target_lang`, supports Batch and is marked **Zero data retention**. Cloudflare's Workers AI data-usage contract says standard inference Customer Content is not retained after request processing/delivery and is not used for model training, subject to documented stateful/logging/legal exceptions.
+22. **Информация не проверена:** future Stage-6 exact Workers AI account/binding, selected production provider(s), any AI Gateway/logging/caching/stateful settings, provider terms at activation time, actual allowance values and live data-egress acceptance. These mutable external choices must be rechecked when Stage 6 resumes; their current absence is not a finding.
+23. Missing current M2M100 post-body support is a future provider-capability gap, not a security defect: no post-body external call can currently occur. Any later provider/data-policy that enables it must preserve the J4 admission/protection/validation boundary.
+24. No provider call, Queue dispatch, Workers AI binding, AI Gateway, package install, deployment, external account or setting mutation was performed by J4.
+25. #315 aggregate remains **28 current findings + 4 deferred Stage-6 blockers**.
+26. Next bounded slice: **J5 — Queue/provider execution lifecycle**.
 
 ## Цель
 
@@ -191,5 +221,5 @@
 
 ## Следующий шаг
 
-1. После продолжения владельца выполнить **J4 — Translation provider data egress** на current main и остановиться после результата.
-2. `AUTH-ENUM-01`, `AUTH-LINK-01`, `AUTH-OAUTH-01` и `GOOGLE-OAUTH-SCOPE-01` не дублировать. Remediation существующих findings/blockers не начинать без отдельного назначения.
+1. После продолжения владельца выполнить **J5 — Queue/provider execution lifecycle** на current main и остановиться после результата.
+2. J5 не дублирует J4 data-egress admission/validation и существующие Blocks G/I/K findings. Remediation существующих findings/blockers не начинать без отдельного назначения.
