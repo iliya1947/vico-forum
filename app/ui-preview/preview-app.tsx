@@ -199,7 +199,11 @@ export const scenarios: readonly Scenario[] = [
   { id: "topic-reply-error", label: "Reply error", locale: "en", direction: "ltr", identity: "user", path: "/en/topics/typed-api", view: "topic", variant: "topic-reply-error", allowedIdentities: ["user", "manager"] },
   { id: "topic-unsolved", label: "Unsolved topic", locale: "en", direction: "ltr", identity: "guest", path: "/en/topics/typed-api", view: "topic", variant: "topic-unsolved" },
   { id: "admin", label: "Authorization", locale: "en", direction: "ltr", identity: "owner", path: "/en/admin/authorization", view: "admin", allowedIdentities: ["manager", "owner"] },
-  { id: "admin-topic", label: "Admin topic & messages", locale: "en", direction: "ltr", identity: "manager", path: "/en/admin/forum/topics/typed-api", view: "admin-topic", allowedIdentities: ["manager"] },
+  { id: "admin-guest-unauthenticated", label: "Authorization · guest unauthenticated", locale: "en", direction: "ltr", identity: "guest", path: "/en/admin/authorization", view: "admin", allowedIdentities: ["guest"] },
+  { id: "admin-user-forbidden", label: "Authorization · ordinary user forbidden", locale: "en", direction: "ltr", identity: "user", path: "/en/admin/authorization", view: "admin", allowedIdentities: ["user"] },
+  { id: "admin-topic", label: "Admin topic & messages", locale: "en", direction: "ltr", identity: "manager", path: "/en/admin/forum/topics/typed-api", view: "admin-topic", allowedIdentities: ["manager", "owner"] },
+  { id: "admin-topic-guest-unauthenticated", label: "Admin topic & messages · guest unauthenticated", locale: "en", direction: "ltr", identity: "guest", path: "/en/admin/forum/topics/typed-api", view: "admin-topic", allowedIdentities: ["guest"] },
+  { id: "admin-topic-user-forbidden", label: "Admin topic & messages · ordinary user forbidden", locale: "en", direction: "ltr", identity: "user", path: "/en/admin/forum/topics/typed-api", view: "admin-topic", allowedIdentities: ["user"] },
   { id: "admin-success", label: "Authorization · saved", locale: "en", direction: "ltr", identity: "owner", path: "/en/admin/authorization", view: "admin", variant: "admin-success", allowedIdentities: ["owner"] },
   { id: "admin-conflict", label: "Authorization · conflict", locale: "en", direction: "ltr", identity: "owner", path: "/en/admin/authorization", view: "admin", variant: "admin-conflict", allowedIdentities: ["owner"] },
   { id: "empty-section", label: "Empty section", locale: "en", direction: "ltr", identity: "guest", path: "/en/sections/empty", view: "empty" },
@@ -1410,12 +1414,18 @@ function previewRouter(
     {
       path: "/:locale/admin/forum/topics/:topicId",
       element: <PreviewAdminTopicRoute scenario={scenario} interactions={interactions} />,
+      loader: () => previewAdminSurfaceAccessData(scenario),
+      ErrorBoundary: ForumRouteError,
     },
     {
       path: "/:locale/admin/authorization",
       element: <PreviewAuthorizationRoute scenario={scenario} />,
-      loader: () => previewAuthorizationData(scenario.locale, interactions.authorization),
+      loader: () => {
+        previewAdminSurfaceAccessData(scenario);
+        return previewAuthorizationData(scenario.locale, interactions.authorization);
+      },
       action: ({ request }) => previewAuthorizationAction(scenario, interactions, request),
+      ErrorBoundary: ForumRouteError,
     },
     {
       path: "/:locale/under-development",
@@ -2737,6 +2747,16 @@ function PreviewSectionRoute({ scenario, interactions }: {
         : undefined}
     />
   );
+}
+
+function previewAdminSurfaceAccessData(scenario: Scenario) {
+  if (!previewUser(scenario)) {
+    throw new Response("Unauthenticated", { status: 401 });
+  }
+  if (scenario.identity !== "manager" && scenario.identity !== "owner") {
+    throw new Response("Forbidden", { status: 403 });
+  }
+  return null;
 }
 
 function PreviewAuthorizationRoute({ scenario }: {
