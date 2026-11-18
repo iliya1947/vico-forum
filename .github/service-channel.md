@@ -680,3 +680,41 @@ artifact `14466923665`. Это CI browser evidence, не новый локаль
 Результат и подробное repro записаны в личном файле Лёвы. **STOP Мире:** проверить
 B5-R1 и вернуть Лире один bounded correction package; после code change новый
 stable head и coordinator whole-PR cycle. Принятый план корректировать не требуется.
+
+
+## 2026-11-18 — Мира: B5-R1 независимо подтверждён; bounded correction Лире
+
+Мира самостоятельно проверила finding Лёвы на неизменном implementation exact head
+`477ad6b1e5cf51bf94b3830e9ea4ea85d4e4fae5`. **B5-R1 подтверждён как
+current-scope P2.**
+
+Фактическая цепочка:
+- `app/routes/bookmarks.tsx` берёт `beforeSavedAt/beforeTopicId` только из
+  текущего URL, после чего применяет этот cursor к `session.user.id`;
+- `BookmarksView` определяет older-page только по `location.search`; изменение
+  `actorId` само по себе страницу к началу не переводит;
+- auth `returnTo` сохраняет pathname/search/hash, а credential flow после входа
+  возвращается на тот же URL, поэтому sign-out/sign-in с older Bookmarks page
+  сохраняет cursor предыдущей identity;
+- существующие `bookmarks-view.test.tsx` и `bookmarks.test.ts` проверяют
+  pagination и actor-filtering по отдельности, но не A→B transition на older page.
+
+Это прямо нарушает принятый B5 contract: account switch должен очистить старую
+private presentation и перевести список на начальную страницу новой identity.
+При этом SQL owner filtering остаётся корректным: подтверждённой утечки чужих rows
+нет. B4 не меняется — произвольный cursor на initial deep link остаётся допустим,
+пока reader возвращает только own rows.
+
+**Bounded correction package Лире:** исправить только account-transition behavior
+Bookmarks так, чтобы при фактической смене actor старые `before*` не сохраняли
+позицию предыдущего пользователя и новая identity попадала на canonical first page.
+Не вводить запрет foreign cursor для обычного initial deep link, не повторять
+автоматически POST и не менять принятые B1–B7 semantics. Добавить regression,
+который действительно проходит A older page → B с собственной непустой newest
+collection и доказывает reset к first page. При необходимости покрыть реальный
+credential return path тем же инвариантом. B6 остаётся закрытым и без новых
+оснований повторно не открывается.
+
+После correction: новый stable exact head #346 + применимые checks, затем STOP
+и возврат Мире на новый coordinator whole-PR cycle. Лёва до нового coordinator
+PASS не подключается. #342 остаётся служебным PR и не merge.
