@@ -149,6 +149,48 @@ describe("embedded preview routing", () => {
     expect(document.querySelector(".message-admin-tools")).not.toBeNull();
   });
 
+  it("opens a pinned category-card topic instead of the primary fallback topic", async () => {
+    render(<EmbeddedPreview scenarioId="category-guest" />);
+
+    const pinned = await screen.findAllByRole("link", { name: "Section guide and useful resources" });
+    await userEvent.click(pinned[0]!);
+
+    expect(await screen.findByRole("heading", {
+      level: 1,
+      name: "Section guide and useful resources",
+    })).toBeInTheDocument();
+    expect(screen.queryByRole("heading", {
+      level: 1,
+      name: "How should I structure a typed API client?",
+    })).not.toBeInTheDocument();
+  });
+
+  it("opens a latest category-card topic instead of the primary fallback topic", async () => {
+    render(<EmbeddedPreview scenarioId="category-guest" />);
+
+    await userEvent.click(await screen.findByRole("link", {
+      name: "A practical example from this section",
+    }));
+
+    expect(await screen.findByRole("heading", {
+      level: 1,
+      name: "A practical example from this section",
+    })).toBeInTheDocument();
+  });
+
+  it("resolves category-card topics outside Development", async () => {
+    render(<EmbeddedPreview scenarioId="category-vibe-ai-guest" />);
+
+    await userEvent.click(await screen.findByRole("link", {
+      name: "Latest question in General",
+    }));
+
+    expect(await screen.findByRole("heading", {
+      level: 1,
+      name: "Latest question in General",
+    })).toBeInTheDocument();
+  });
+
   it("opens the selected Popular topic instead of the primary fallback topic", async () => {
     render(<EmbeddedPreview scenarioId="popular-guest" />);
 
