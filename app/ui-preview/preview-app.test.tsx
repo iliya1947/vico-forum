@@ -284,6 +284,57 @@ describe("embedded preview routing", () => {
     expect(screen.getByText("Accepted")).toBeInTheDocument();
   });
 
+  it("opens User measures from the Admin shell navigation", async () => {
+    const user = userEvent.setup();
+    render(<EmbeddedPreview scenarioId="admin-topic" identity="manager" />);
+
+    const nav = document.querySelector(".admin-panel-nav") as HTMLElement;
+    await user.click(within(nav).getByRole("link", { name: "User measures" }));
+
+    expect(await screen.findByRole("heading", { level: 2, name: "User measures" })).toBeInTheDocument();
+    expect(screen.getByText("No pending measure appeals available.")).toBeInTheDocument();
+    expect(screen.getByLabelText("Exact user ID")).toBeInTheDocument();
+  });
+
+  it("finds Alex by exact ID and opens the existing Admin measure detail", async () => {
+    const user = userEvent.setup();
+    render(<EmbeddedPreview scenarioId="admin-topic" identity="manager" />);
+
+    const nav = document.querySelector(".admin-panel-nav") as HTMLElement;
+    await user.click(within(nav).getByRole("link", { name: "User measures" }));
+
+    await user.type(await screen.findByLabelText("Exact user ID"), "alex");
+    await user.click(screen.getByRole("button", { name: "Find user" }));
+
+    expect(await screen.findByRole("heading", { level: 3, name: "Alex Rivera" })).toBeInTheDocument();
+    const reason = screen.getByText("Repeated off-topic promotional posts after a moderator warning.");
+    const item = reason.closest("li") as HTMLElement;
+    await user.click(within(item).getByRole("link"));
+
+    expect(await screen.findByRole("heading", { level: 2, name: "Alex Rivera" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { level: 2, name: "Measure details" })).toBeInTheDocument();
+    expect(screen.getByText("Repeated off-topic promotional posts after a moderator warning.")).toBeInTheDocument();
+  });
+
+  it("creates an Admin measure and opens its detail page", async () => {
+    const user = userEvent.setup();
+    render(<EmbeddedPreview scenarioId="admin-topic" identity="manager" />);
+
+    const nav = document.querySelector(".admin-panel-nav") as HTMLElement;
+    await user.click(within(nav).getByRole("link", { name: "User measures" }));
+
+    await user.type(await screen.findByLabelText("Exact user ID"), "alex");
+    await user.click(screen.getByRole("button", { name: "Find user" }));
+
+    const createForm = document.querySelector("#measure-create-reason")?.closest("form") as HTMLElement;
+    await user.type(within(createForm).getByLabelText("Reason"), "Temporary preview restriction.");
+    await user.click(within(createForm).getByRole("button", { name: "Create measure" }));
+
+    expect(await screen.findByRole("heading", { level: 2, name: "Alex Rivera" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { level: 2, name: "Measure details" })).toBeInTheDocument();
+    expect(screen.getByText("Temporary preview restriction.")).toBeInTheDocument();
+  });
+
   it("opens Admin Overview from the Admin shell navigation", async () => {
     const user = userEvent.setup();
     render(<EmbeddedPreview scenarioId="admin-topic" identity="manager" />);
