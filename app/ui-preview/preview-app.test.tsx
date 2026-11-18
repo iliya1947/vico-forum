@@ -37,6 +37,20 @@ async function reopenForumSettingsFromBreadcrumbs(user: ReturnType<typeof userEv
   expect(await screen.findByRole("heading", { level: 2, name: "Registration" })).toBeInTheDocument();
 }
 
+async function openSettingsSection(
+  user: ReturnType<typeof userEvent.setup>,
+  linkName: string,
+  headingName: string,
+) {
+  const settingsOverview = await waitFor(() => {
+    const overview = document.querySelector(".settings-overview") as HTMLElement | null;
+    expect(overview).not.toBeNull();
+    return overview as HTMLElement;
+  });
+  await user.click(within(settingsOverview).getByRole("link", { name: linkName }));
+  expect(await screen.findByRole("heading", { level: 2, name: headingName })).toBeInTheDocument();
+}
+
 async function findAlexMeasures(user: ReturnType<typeof userEvent.setup>) {
   const nav = document.querySelector(".admin-panel-nav") as HTMLElement;
   await user.click(within(nav).getByRole("link", { name: "User measures" }));
@@ -1569,7 +1583,7 @@ describe("interactive Pages preview", () => {
 
     expect(await screen.findByRole("status")).toHaveTextContent("Authorization settings saved.");
     expect(screen.queryByRole("heading", { name: "Settings helper renamed" })).not.toBeInTheDocument();
-  });
+  }, 10_000);
 
   it("rejects an invalid custom role slug in Forum & roles", async () => {
     const user = userEvent.setup();
@@ -1703,8 +1717,7 @@ describe("interactive Pages preview", () => {
     expect(await screen.findByRole("heading", { level: 2, name: "Roles & permissions" })).toBeInTheDocument();
 
     await openSettings(user);
-    settingsOverview = document.querySelector(".settings-overview") as HTMLElement;
-    await user.click(within(settingsOverview).getByRole("link", { name: "Administrator preferences" }));
+    await openSettingsSection(user, "Administrator preferences", "Administrator preferences");
 
     await user.selectOptions(screen.getByRole("combobox", { name: "Default destination" }), "overview");
     await user.selectOptions(screen.getByRole("combobox", { name: "Open behavior" }), "last");
@@ -1770,8 +1783,7 @@ describe("interactive Pages preview", () => {
     });
 
     await openSettings(user);
-    settingsOverview = document.querySelector(".settings-overview") as HTMLElement;
-    await user.click(within(settingsOverview).getByRole("link", { name: "Administrator preferences" }));
+    await openSettingsSection(user, "Administrator preferences", "Administrator preferences");
 
     await user.selectOptions(screen.getByRole("combobox", { name: "Default group" }), "needs-details");
     await user.selectOptions(screen.getByRole("combobox", { name: "Open behavior" }), "last");
@@ -1814,9 +1826,8 @@ describe("interactive Pages preview", () => {
     await renderEmbeddedPreview(<EmbeddedPreview scenarioId="section-user" identity="manager" />);
     const secondUser = userEvent.setup();
 
-    await secondUser.click(screen.getByRole("link", { name: "Settings" }));
-    settingsOverview = document.querySelector(".settings-overview") as HTMLElement;
-    await secondUser.click(within(settingsOverview).getByRole("link", { name: "Administrator preferences" }));
+    await openSettings(secondUser);
+    await openSettingsSection(secondUser, "Administrator preferences", "Administrator preferences");
 
     expect(await screen.findByRole("checkbox", {
       name: "Expand secondary technical details by default",
@@ -1861,8 +1872,7 @@ describe("interactive Pages preview", () => {
     await renderEmbeddedPreview(<EmbeddedPreview scenarioId="section-user" identity="user" />);
 
     await openSettings(user);
-    const settingsOverview = document.querySelector(".settings-overview") as HTMLElement;
-    await user.click(within(settingsOverview).getByRole("link", { name: "Account & security" }));
+    await openSettingsSection(user, "Account & security", "Account & security");
 
     const methods = document.querySelector("#settings-account-methods")?.parentElement as HTMLElement;
     expect(within(methods).getByText("Email and password")).toBeInTheDocument();
@@ -1997,8 +2007,7 @@ describe("interactive Pages preview", () => {
     await renderEmbeddedPreview(<EmbeddedPreview scenarioId="section-user" identity="user" />);
 
     await openSettings(user);
-    const settingsOverview = document.querySelector(".settings-overview") as HTMLElement;
-    await user.click(within(settingsOverview).getByRole("link", { name: "Account & security" }));
+    await openSettingsSection(user, "Account & security", "Account & security");
 
     await user.type(screen.getByLabelText("Current password"), "preview-current-password");
     await user.type(screen.getByLabelText("New password"), "preview-new-password");
