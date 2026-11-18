@@ -4,7 +4,7 @@
 
 1. Служебный PR: **#315**.
 2. Моя текущая работа: audit/coordination only; remediation и implementation не назначены.
-3. Текущий этап: **Block L active. L1 PASS; L2 = `MON-AUTH-OUTCOME-01 Low/P3`; следующий bounded slice — L3 Retention / coalescing / privacy.** Overall #315 = 34 current findings + 4 deferred Stage-6 blockers. Stage 6 paused.
+3. Текущий этап: **Block L active. L1 PASS; L2 = `MON-AUTH-OUTCOME-01 Low/P3`; L3 PASS, 0 additional; следующий bounded slice — L4 Alertability / failure signals.** Overall #315 = 34 current findings + 4 deferred Stage-6 blockers. Stage 6 paused.
 4. Technical audit target B–D: `e279cb6c032a489a9044ca1191407df887c364b4`.
 5. Current `main` — `9c4639d23ca075c8bb92fbb909b96593d7bee127`. После Block K main продвинулся Watch #345 (`0068_topic_watch`); Block L стартует на этом current main.
 6. Лира, Марк и Лёва по #315 сейчас не назначены.
@@ -423,6 +423,13 @@
 380. Aggregate security counters do not split denied vs failed; severity Low/P3 and scope is monitoring semantics only, not Block-B auth/link correctness. Aggregate = 34 current +4 deferred; current severity 13 Moderate +21 Low.
 381. No external OAuth/auth attempt/production telemetry mutation performed. Next L3 retention/coalescing/privacy.
 
+382. L3 target current main `9c4639d23ca075c8bb92fbb909b96593d7bee127`: **PASS, 0 new current findings / 0 deferred blockers**.
+383. Owner monitoring/event retention is explicitly indefinite by current contract; no ordinary deletion/cleanup is expected. Exact facts/payloads are closed/bounded and exclude credential/request secrets.
+384. Attempt telemetry coalescing uses DB-hour + fixed identity, immutable admittedAt, first/last/count, bounded overflow/unknown/gap slots. Person History only joins persisted attribution; qualified IP appears only in exact-Owner History.
+385. Attachment Owner History intentionally projects a minimized subset; filename/MIME/context/draft details remain only in permission-gated private Security/Attachments. K5 already owns unbounded attachment-security-event storage growth, so no duplicate L finding.
+386. System observation writer is fingerprint-aware and records meaningful changes within 15m; SA08 Overview separately reuses that writer for System after generic sampled candidates. Other snapshots are explicitly sampled/non-exhaustive with native History for exact transitions.
+387. Aggregate remains 34 current +4 deferred; severity 13 Moderate +21 Low current. No external/data deletion/tests executed. Next L4 alertability/failure signals.
+
 ## Ограничения
 
 1. Stage 6 external activation остаётся paused.
@@ -433,5 +440,5 @@
 
 ## Следующий шаг
 
-1. После продолжения владельца выполнить **L3 — Retention / coalescing / privacy** на current main и остановиться после результата.
+1. После продолжения владельца выполнить **L4 — Alertability / failure signals** на current main и остановиться после результата.
 2. Remediation findings/blockers Blocks B–K не начинать без отдельного назначения.
