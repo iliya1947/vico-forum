@@ -839,3 +839,43 @@ PR #346 переведён из Draft в Ready for review без изменен�
 до merge документация не должна заявлять feature как состояние main. #342 остаётся
 служебным PR и не merge; implementation-order после docs closeout продолжится
 следующим утверждённым bounded-блоком.
+
+
+## 2026-11-18 — Мира: #346 merged; docs debt установлен до следующей реализации
+
+Implementation PR #346 фактически merged в `main` 2026-11-18 21:43:51 UTC,
+merge commit `34ddf42985f6dc348e77d0dcc90e0aecc37fd15e`. Reviewed implementation
+head `a3e6c0e63c99078ece89303592e1f24b2fe440fb` был смержен после завершённого
+coordinator + independent review cycle; confirmed current-scope defects = 0.
+
+После merge повторно сверены текущий `AGENTS.md`, принятый
+`USER_ACTIONS_SERVICE_PLAN.md` и actual main. План #342 явно требует для каждого
+bounded-этапа отдельные implementation/docs PR. Поэтому документационный closeout
+нельзя считать завершённым только из факта merge implementation.
+
+Дополнительно обнаружен незакрытый docs debt предыдущего bounded-этапа Watch:
+#345 merged, но отдельный Watch docs closeout не был выполнен. Текущий
+`PROJECT_STATE.md` на main всё ещё фиксирует repository migration history только
+до `0067` и не отражает ни Watch (`0068`), ни Bookmarks (`0069`). Это уже
+фактическое рассогласование current-state docs с main.
+
+Минимальный установленный docs scope:
+1. Watch closeout: factual current-state sync Watch + migration `0068` и отдельный
+   history snapshot/index entry.
+2. Bookmarks closeout после него: factual current-state sync Bookmarks + migration
+   `0069` и отдельный history snapshot/index entry.
+3. Не менять authorization/Admin contracts: Watch и Bookmarks приняты как
+   authenticated personal self-state без новых RBAC keys.
+4. Не менять Stage 6 external evidence: production schema evidence остаётся через
+   `0020`; repository merge `0068/0069` не является production rollout.
+5. Не заявлять owner visual acceptance: она остаётся в отдельном UI/UX pass.
+6. `docs/database/MIGRATIONS.md` не требует изменения только ради новых repository
+   migrations: его external evidence contract остаётся истинным.
+
+Конкретный автор docs closeout автоматически не назначается: это уже было отдельно
+исправлено владельцем в этом же #342 при #344. Поэтому Мира не создаёт docs diff
+сама и не назначает Лиру без решения владельца.
+
+Следующая работа в implementation-order (Mute/block) не активируется до закрытия
+обоих накопленных docs closeout, если владелец прямо не изменит эту границу.
+#342 остаётся служебным PR и не merge; #300 не использовать.
