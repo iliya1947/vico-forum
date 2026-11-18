@@ -4,7 +4,7 @@
 
 1. Служебный PR: **#315**.
 2. Моя текущая работа: audit/coordination only; remediation и implementation не назначены.
-3. Текущий этап: **Block J active. J1 PASS; J2 = deferred `GOOGLE-OAUTH-SCOPE-01 Low/P3`; J3–J7 PASS; следующий bounded slice — J8 Cross-chain closeout.** Overall #315 = 28 current findings + 4 deferred Stage-6 blockers. Stage 6 paused; provider/Queue activation не выполнялась.
+3. Текущий этап: **Block J complete. J1 PASS; J2 = deferred `GOOGLE-OAUTH-SCOPE-01 Low/P3`; J3–J8 PASS. Final J = 0 current findings + 1 deferred Stage-6 blocker.** Overall #315 = 28 current findings + 4 deferred Stage-6 blockers. Stage 6 paused; provider/Queue activation не выполнялась.
 4. Technical audit target B–D: `e279cb6c032a489a9044ca1191407df887c364b4`.
 5. Current `main` — `7cc23edede57994cdedab49c1556ddb55034dd29`. Delta от I1 target включает SA-04/SA-05–SA-08 и topic-title work; I2 отдельно re-read current workflows and source-of-truth.
 6. Лира, Марк и Лёва по #315 сейчас не назначены.
@@ -338,6 +338,14 @@
 306. Better Auth owned account unlink deletes the selected account row, but exact future Google provider token revocation/retention remains **Информация не проверена** until Stage 6. Current Cloudflare Workers AI standard inference remains documented ZDR; future Gateway/log/cache settings likewise require Stage-6 recheck.
 307. J7 performed no external call/token mutation/provider/Queue/deploy/settings mutation. Aggregate remains 28 current + 4 deferred. Next J8 cross-chain closeout.
 
+308. J8 target current main `7cc23edede57994cdedab49c1556ddb55034dd29`: **PASS, 0 new current findings / 0 deferred blockers; Block J complete**.
+309. Google request→provider→callback→durable account chain leaves only J-owned deferred `GOOGLE-OAUTH-SCOPE-01 Low/P3`; AUTH-LINK-01/AUTH-OAUTH-01 remain Block B and are not duplicated.
+310. Translation durable-task→admission→single provider→validated publication→original fallback chain composes without cross-provider/data-policy bypass; runtime provider/Queue remains disabled/unwired.
+311. Dedup PASS: B auth/session/link; H Worker/version; I secret/source/dependency; K generic abuse/availability; L generic monitoring/incident response.
+312. Current Stage revalidated from current PROJECT_STATE/ROADMAP: Stage 6 paused, so Google/provider/Queue mutable external settings remain future acceptance; exact console state is **Информация не проверена** until activation.
+313. Stage-6 gates: REPO-MAIN-GATE-01 before secret-bearing dispatch; applicable G/H/I rollout gates; GOOGLE-OAUTH-SCOPE-01 before real Google activation; then exact deployed OAuth/Queue/provider retention/log/cache/failure-path acceptance.
+314. Final Block J = 0 current + 1 deferred. Overall #315 unchanged at 28 current + 4 deferred. No external mutation/probe performed. Next security area after developer continuation: Block K generic abuse/availability.
+
 ## Ограничения
 
 1. Stage 6 external activation остаётся paused.
@@ -348,5 +356,5 @@
 
 ## Следующий шаг
 
-1. После продолжения владельца выполнить **J8 — Cross-chain closeout** на current main и остановиться после результата.
+1. **Block J завершён.** После продолжения владельца начать **Block K — generic abuse / availability** отдельным bounded scope/file и остановиться после bounded step.
 2. Remediation findings/blockers Blocks B–J не начинать без отдельного назначения.
