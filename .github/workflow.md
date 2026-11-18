@@ -14,10 +14,11 @@
 - Watch independent technical review: **Лёва PASS** всего принятого scope на том же exact head `76c1c456557c614171a3b472758498795a668b9a` против main `7cc23edede57994cdedab49c1556ddb55034dd29`; подтверждённых current-scope findings нет. Код не изменён; Лёва STOP.
 - Review synthesis: оба review совпали на неизменном exact head, расхождений и подтверждённых current-scope defects нет. По действующему owner decision из `docs/UI_UX_PASS.md` функциональные bounded-срезы не задерживаются из-за косметики; финальная owner visual/product acceptance остаётся отдельным UI/UX pass перед публичным запуском. Поэтому отдельный Watch visual gate сейчас merge не блокирует.
 - Watch implementation review cycle завершён, #345 merged. Permanent/current-state docs closeout остаётся отдельным PR после implementation merge; это planning-задание не заменяет его.
-- Bookmarks: implementation Лиры в Draft PR #346, stable exact head **`a3e6c0e63c99078ece89303592e1f24b2fe440fb`**, актуальный main `808c2b782952e13254cab8e2129dca07ca945e6f`.
-- Bookmarks coordinator whole-PR review Миры и independent technical whole-PR review Лёвы на stable exact head **`a3e6c0e63c99078ece89303592e1f24b2fe440fb`**: **оба PASS; confirmed current-scope defects = 0**. B5-R1 закрыт; B4 cursor semantics сохранены; B6 остаётся подтверждённым. Exact-head GitHub 18/18 jobs success; connected Bookmarks 11/11 checkpoints. Лёва дополнительно повторил исходный B5 diagnostic и selected tests — PASS. Код в independent review не менялся.
-- Review synthesis Миры завершён: оба независимых результата согласуются, head не изменился. #346 переведён из Draft в Ready for review и **готов к merge владельцем**. После фактического merge — отдельный docs closeout; permanent/current-state docs до merge не обновлять.
-- Mute/block: план принят, реализация ждёт очереди.
+- Bookmarks #346 **merged** в main `34ddf42985f6dc348e77d0dcc90e0aecc37fd15e` 2026-11-18 21:43:51 UTC. Reviewed exact head `a3e6c0e63c99078ece89303592e1f24b2fe440fb`; Мира coordinator PASS + Лёва independent PASS; confirmed current-scope defects = 0; exact-head 18/18 jobs success.
+- Docs debt: Watch #345 имеет merged implementation, но отдельный docs closeout ещё не выполнен. Bookmarks #346 также требует отдельный docs closeout по принятому service-plan. Current PROJECT_STATE всё ещё на migration 0067 и не отражает Watch 0068 / Bookmarks 0069.
+- Следующий docs порядок: сначала отдельный Watch docs closeout, затем отдельный Bookmarks docs closeout. Минимально: factual PROJECT_STATE + отдельный PROJECT_HISTORY snapshot/index для каждого bounded-этапа; без RBAC/Admin, Stage 6 external evidence или owner visual claims.
+- Исполнитель docs closeout **не назначен автоматически**; это требует явного назначения владельца. Мира docs diff не пишет.
+- Mute/block: план принят, реализация ждёт закрытия накопленного docs debt либо прямого owner override.
 
 ## Опережающий planning-track
 
@@ -30,11 +31,15 @@
 
 ## Следующий шаг
 
-**Следующее действие — владелец merge Bookmarks implementation PR #346** на exact
-head `a3e6c0e63c99078ece89303592e1f24b2fe440fb`. Review cycle завершён:
-Мира PASS + Лёва independent PASS, confirmed current-scope defects = 0,
-18/18 exact-head jobs success. PR Ready for review, mergeable=true.
+**Требуется назначение владельца на docs closeout.** По принятому #342 plan сначала
+закрывается пропущенный отдельный docs PR Watch (#345 / migration 0068), затем
+отдельный docs PR Bookmarks (#346 / migration 0069). Author автоматически не
+назначен; предыдущая owner correction по #344 прямо запрещает считать Лиру
+назначенной без явного решения.
 
-После фактического merge следующий bounded этап здесь — отдельный docs closeout
-Bookmarks/current-state; только затем implementation-order продолжается дальше.
+Минимальная цель docs: синхронизировать factual `PROJECT_STATE.md` и отдельные
+PROJECT_HISTORY snapshot/index entries только с уже merged main; не менять
+RBAC/Admin contracts, Stage 6 external evidence или owner visual acceptance.
+
+После обоих docs closeout implementation-order перейдёт к Mute/block.
 #342 служебный и не merge. #300 не использовать.
