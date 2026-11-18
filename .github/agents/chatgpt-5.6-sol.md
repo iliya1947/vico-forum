@@ -4,7 +4,7 @@
 
 1. Служебный PR: **#315**.
 2. Моя текущая работа: audit/coordination only; remediation и implementation не назначены.
-3. Текущий этап: **Block L active. L1 PASS; L2 = `MON-AUTH-OUTCOME-01 Low/P3`; L3–L6 PASS, 0 additional after L2; следующий bounded slice — L7 Incident-response degraded operation / Stage-6 gates.** Overall #315 = 34 current findings + 4 deferred Stage-6 blockers. Stage 6 paused.
+3. Текущий этап: **Block L active. L1 PASS; L2 = `MON-AUTH-OUTCOME-01 Low/P3`; L3–L7 PASS, 0 additional after L2; следующий bounded slice — L8 Cross-chain closeout.** Overall #315 = 34 current findings + 4 deferred Stage-6 blockers. Stage 6 paused.
 4. Technical audit target B–D: `e279cb6c032a489a9044ca1191407df887c364b4`.
 5. Current `main` — `9c4639d23ca075c8bb92fbb909b96593d7bee127`. После Block K main продвинулся Watch #345 (`0068_topic_watch`); Block L стартует на этом current main.
 6. Лира, Марк и Лёва по #315 сейчас не назначены.
@@ -451,6 +451,13 @@
 404. Missing reactivation/hard-delete/foreign-session/foreign-credential/password-reset/Owner-transfer recovery is explicit current product scope, not a current L6 defect. Real Google/Owner/provider recovery remains Stage6/Owner-decision territory; exact deployed controls are **Информация не проверена**.
 405. Aggregate remains 34 current +4 deferred; severity 13 Moderate +21 Low current. No mutations/tests/external incident drill performed. Next L7 degraded operation / Stage6 gates.
 
+406. L7 target current main `9c4639d23ca075c8bb92fbb909b96593d7bee127`: **PASS, 0 new current findings / 0 deferred blockers**.
+407. Auth/session/Owner-monitoring dependency outages remain fail-closed 503/unavailable; successful current reads survive best-effort observation-write failure with explicit recording-unavailable state. Mandatory domain History remains transactional where required.
+408. Concrete DB-outage evidence candidate checked: early auth 503 bypasses system.requestFailed and request-local telemetry uses the same web DB, so in-app evidence can be absent during that outage. Not a finding because the current monitor is explicitly limited/best-effort and never claims lossless incident logging.
+409. Repository `wrangler.jsonc` prepares independent Workers Logs observability with enabled=true, sampling=1 and query redaction. Current Cloudflare docs rechecked 2026-11-18 confirm persisted invocation/error logs and 100% sampling semantics. Exact deployed logs/dashboard/account overrides remain **Информация не проверена** and must be proven at Stage6.
+410. Production Worker rollout does not itself query logs, but it also does not claim Stage6 completion; ROADMAP keeps logs/observability/external-failure acceptance separate. Backup/restore is truthfully unfinished. Existing DB-RUNTIME-EVIDENCE / Worker Version URL / rollback-finalizer / Google-scope and REPO-MAIN-GATE ownership is preserved, no duplicate L blocker.
+411. Aggregate remains 34 current +4 deferred; severity 13 Moderate +21 Low current. No tests/external probes/mutations performed. Next L8 cross-chain closeout.
+
 ## Ограничения
 
 1. Stage 6 external activation остаётся paused.
@@ -461,5 +468,5 @@
 
 ## Следующий шаг
 
-1. После продолжения владельца выполнить **L7 — Incident-response degraded operation / Stage-6 gates** на current main и остановиться после результата.
+1. После продолжения владельца выполнить **L8 — Cross-chain closeout** на current main и остановиться после результата.
 2. Remediation findings/blockers Blocks B–L не начинать без отдельного назначения.
