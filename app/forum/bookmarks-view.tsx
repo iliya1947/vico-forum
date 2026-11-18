@@ -1,9 +1,12 @@
 import { useEffect, useRef, useState } from "react";
-import { Link, useFetcher, useLocation, useRevalidator } from "react-router";
+import { Link, useFetcher, useLocation, useNavigate, useRevalidator } from "react-router";
 import { useTranslation } from "react-i18next";
 import type { ForumMutationError, TopicBookmarkActionResult } from "./mutations.server";
 import { forumBookmarksPath, forumTopicPath } from "./paths";
 import { Breadcrumbs, EmptyState, ForumShell } from "./ui";
+
+/** Tab-local presentation history, never a bookmark authorization or cursor authority. */
+const BOOKMARKS_ACTOR_TAB_KEY = "vico:bookmarks:actor";
 
 export interface BookmarkItemPresentation {
   id: string;
@@ -99,7 +102,23 @@ export function BookmarksView({ locale, actorId, items, next }: {
 }) {
   const { t } = useTranslation("common");
   const location = useLocation();
+  const navigate = useNavigate();
   const olderPage = new URLSearchParams(location.search).has("beforeSavedAt");
+
+  useEffect(() => {
+    // The URL can survive sign-out/sign-in through credential returnTo. Reset only
+    // on a real actor transition; an initial foreign/deleted cursor remains valid
+    // and is always filtered by the server for the authenticated actor.
+    try {
+      const previousActor = window.sessionStorage.getItem(BOOKMARKS_ACTOR_TAB_KEY);
+      window.sessionStorage.setItem(BOOKMARKS_ACTOR_TAB_KEY, actorId);
+      if (previousActor !== null && previousActor !== actorId && olderPage) {
+        void navigate(forumBookmarksPath(locale), { replace: true });
+      }
+    } catch {
+      // Blocked tab storage cannot grant access or alter server-side own filtering.
+    }
+  }, [actorId, locale, olderPage, navigate]);
   const formatDate = new Intl.DateTimeFormat(locale, {
     dateStyle: "medium", timeStyle: "short", timeZone: "UTC",
   });

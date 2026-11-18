@@ -322,6 +322,34 @@ try:
         expect(second.get_by_role("button", name="Удалить закладку").first).to_be_visible()
         second.screenshot(path=str(args.output / "bookmarks-ru-desktop.png"), full_page=False)
         record("localized RU and narrow Hebrew RTL topic/list, focusable controls and no horizontal overflow")
+
+        # Real A older list -> sign out -> Better Auth credential sign-in as B
+        # returns through the same cursor URL. B must see its own newest page.
+        b_saved = [ordinary[0]["id"], help_topics[1]["id"]]
+        for topic_id in b_saved:
+            bookmark(other, topic_id, other_id, True)
+        private(second.goto(base + older_href, wait_until="networkidle"))
+        expect(second.get_by_role("link", name="Newest bookmarks")).to_be_visible()
+        assert len(rows(second)) > 0
+        second.get_by_role("button", name="Sign out").click()
+        expect(second.get_by_role("link", name="Sign in", exact=True)).to_be_visible()
+        second.get_by_role("link", name="Sign in", exact=True).click()
+        expect(second.locator(".credential-form")).to_be_visible()
+        assert "returnTo=" in second.url and "beforeSavedAt" in second.url, second.url
+        second.locator('.credential-form input[name="email"]').fill(other_email)
+        second.locator('.credential-form input[name="password"]').fill(password)
+        second.locator(".credential-submit").click()
+        expect(second).to_have_url(base + "/en/bookmarks")
+        expect(second.locator(".bookmarks-topic-link")).to_have_count(2)
+        assert set(rows(second)) == set(b_saved), rows(second)
+        second.screenshot(path=str(args.output / "bookmarks-account-switch-first-page.png"), full_page=False)
+
+        # The prior actor's cursor remains an ordinary, safe initial/deep link:
+        # server own-row filtering still returns B's empty older page.
+        private(second.goto(base + older_href, wait_until="networkidle"))
+        expect(second.get_by_text("No older saved topics on this page.")).to_be_visible()
+        assert "beforeSavedAt=" in second.url, second.url
+        record("real credential A older -> B newest reset, B owns rows; manual foreign cursor still permitted")
         assert not page_errors, page_errors
         assert not external, external
         browser.close()

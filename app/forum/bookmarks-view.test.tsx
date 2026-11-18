@@ -2,13 +2,13 @@ import "@testing-library/jest-dom/vitest";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { I18nextProvider } from "react-i18next";
-import { createMemoryRouter, data, RouterProvider } from "react-router";
+import { createMemoryRouter, data, RouterProvider, useLoaderData } from "react-router";
 import { canonicalEnglishCatalog } from "../localization/catalog";
 import { createTranslationRuntime } from "../localization/runtime";
 import { HeaderAuthProvider } from "../auth/auth-controls";
 import { BookmarksView } from "./bookmarks-view";
 
-afterEach(() => { cleanup(); vi.restoreAllMocks(); });
+afterEach(() => { cleanup(); window.sessionStorage.clear(); vi.restoreAllMocks(); });
 
 function runtime() {
   const common = Object.fromEntries(Object.entries(canonicalEnglishCatalog.common)
@@ -87,6 +87,53 @@ describe("private Bookmarks presentation", () => {
       intent: "setTopicBookmark", editorActorId: "actor-a", bookmarked: "false",
     });
     await waitFor(() => expect(screen.queryByRole("link", { name: /literal title/i })).not.toBeInTheDocument());
+  });
+
+  it("does not reject an initial foreign keyset deep link without an actor transition", async () => {
+    const cursor = "?beforeSavedAt=2026-11-17T01%3A02%3A03.456Z&beforeTopicId=other-topic";
+    const { router } = setup(async () => null, "/en/bookmarks" + cursor);
+    await screen.findByRole("heading", { name: "Saved topics" });
+    await waitFor(() => expect(window.sessionStorage.getItem("vico:bookmarks:actor")).toBe("actor-a"));
+    expect(router.state.location.search).toBe(cursor);
+  });
+
+  it("resets an A older page to B's nonempty first page after the actor changes", async () => {
+    const cursor = "?beforeSavedAt=2026-11-17T01%3A02%3A03.456Z&beforeTopicId=topic-0";
+    const identity = { id: "actor-a" };
+    const newestB = {
+      id: "b-newest", title: "B newest saved topic", authorName: "B author",
+      category: { name: "Forum" }, section: { name: "General" },
+      savedAt: "2026-11-18T10:00:00.000Z",
+    };
+    const loader = vi.fn(({ request }: { request: Request }) => ({
+      actorId: identity.id,
+      items: identity.id === "actor-a" ? items
+        : new URL(request.url).searchParams.has("beforeSavedAt") ? [] : [newestB],
+      next: null,
+    }));
+    const router = createMemoryRouter([{
+      path: "/en/bookmarks",
+      loader,
+      Component() {
+        const page = useLoaderData<typeof loader>();
+        return <BookmarksView locale="en" {...page} />;
+      },
+    }], { initialEntries: ["/en/bookmarks" + cursor] });
+    render(<I18nextProvider i18n={runtime()}>
+      <HeaderAuthProvider initialUser={{ id: "actor-a", name: "Ada" }}>
+        <RouterProvider router={router} />
+      </HeaderAuthProvider>
+    </I18nextProvider>);
+    expect(await screen.findByRole("link", { name: /literal title/i })).toBeInTheDocument();
+    await waitFor(() => expect(window.sessionStorage.getItem("vico:bookmarks:actor")).toBe("actor-a"));
+    identity.id = "actor-b";
+    await router.revalidate();
+    await waitFor(() => expect(router.state.location.search).toBe(""));
+    expect(router.state.location.pathname).toBe("/en/bookmarks");
+    expect(await screen.findByRole("link", { name: /B newest saved topic/i })).toBeInTheDocument();
+    expect(screen.queryByText("No older saved topics on this page.")).not.toBeInTheDocument();
+    expect(loader.mock.calls.some(([args]) => new URL(args.request.url).search === ""))
+      .toBe(true);
   });
 
   it("shows no personal Bookmarks navigation for a guest", async () => {
