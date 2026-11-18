@@ -4,6 +4,7 @@ import { Client, Pool } from "pg";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { AccountInactiveError, AccountMissingError } from "../../db/account-state";
 import { DrizzleForumRepository, ForumEntityNotFoundError } from "../../db/forum-repository";
+import { DrizzleForumAttachments } from "../../db/forum-attachments";
 
 const databaseUrl = process.env.DATABASE_URL;
 if (!databaseUrl || !["127.0.0.1", "localhost"].includes(new URL(databaseUrl).hostname)
@@ -156,6 +157,36 @@ describe("Watch real PostgreSQL persistence, fanout and ordering", () => {
     expect(await forum.readTopicWatch(watcher, x.topicId)).toBe(true);
   });
 
+  it("fanout includes a verified attachment-only reply exactly once; receipt replay after Unwatch is inert", async () => {
+    const author = await person(), replyer = await person(), watcher = await person();
+    const x = await topic(author);
+    await forum.setTopicWatch({ topicId: x.topicId, actorId: watcher, watching: true });
+    const attachments = new DrizzleForumAttachments(drizzle(pool));
+    const draftId = uuid(), attachmentId = uuid(), contextKey = "topic:" + x.topicId + ":reply";
+    await attachments.createDraftAttachment({
+      id: attachmentId, ownerId: replyer, contextKey, draftId,
+      objectKey: "private/" + uuid(), fileName: "watch-file.txt",
+      declaredMime: "text/plain", detectedType: "text",
+      responseMime: "text/plain; charset=utf-8", byteSize: 10, verificationStatus: "type-checked",
+    });
+    const request = { id: uuid(), topicId: x.topicId, authorId: replyer,
+      bodyRevision: { id: uuid(), originalContent: "", sourceLocale: "und" },
+      publishedDraft: { contextKey, draftId, attachmentIds: [attachmentId] },
+    };
+    const first = await forum.createPost(request);
+    expect((await notices(first.id)).map(row => row.recipient_user_id)).toEqual([author, watcher].sort());
+    await forum.setTopicWatch({ topicId: x.topicId, actorId: watcher, watching: false });
+    const replay = await forum.createPost({ ...request, id: uuid(),
+      bodyRevision: { ...request.bodyRevision, id: uuid() } });
+    expect(replay.id).toBe(first.id);
+    expect((await notices(first.id)).map(row => row.recipient_user_id)).toEqual([author, watcher].sort());
+    expect((await fixture.query("select count(*)::int n from forum_reply_notifications where post_id=$1",
+      [first.id])).rows[0]?.n).toBe(2);
+    expect((await fixture.query("select count(*)::int n from forum_post_attachments where post_id=$1",
+      [first.id])).rows[0]?.n).toBe(1);
+    expect((await fixture.query("select count(*)::int n from forum_publication_receipts where post_id=$1",
+      [first.id])).rows[0]?.n).toBe(1);
+  });
   it("rolls back reply post/revision/notifications when the fanout insert fails", async () => {
     const author = await person(), replyer = await person(), watcher = await person(), x = await topic(author);
     await forum.setTopicWatch({ topicId: x.topicId, actorId: watcher, watching: true });
