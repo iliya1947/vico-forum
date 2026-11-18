@@ -5,9 +5,10 @@
 1. Scope создан 2026-11-18; current L1 audit target — `main` `9c4639d23ca075c8bb92fbb909b96593d7bee127`.
 2. Blocks A–K закрыты как audit blocks; их root causes в L не дублируются.
 3. **L1 — Monitoring/incident-response inventory & ownership boundaries завершён: PASS, 0 новых current-scope findings и 0 deferred blockers.**
-4. Overall #315 остаётся **33 current findings + 4 deferred Stage-6 blockers**.
-5. Мира — auditor/coordinator. Remediation, technical planner и implementer не назначены.
-6. Production/Cloudflare/Neon/GitHub/provider mutation, external incident drill и destructive/fault-injection действия не разрешены и не выполнялись.
+4. **L2 — Security source attribution / telemetry admission завершён: 1 новый current-scope finding — `MON-AUTH-OUTCOME-01 Low/P3`; 0 deferred blockers.**
+5. Overall #315 становится **34 current findings + 4 deferred Stage-6 blockers**.
+6. Мира — auditor/coordinator. Remediation, technical planner и implementer не назначены.
+7. Production/Cloudflare/Neon/GitHub/provider mutation, external incident drill и destructive/fault-injection действия не разрешены и не выполнялись.
 
 ## Цель
 
@@ -111,6 +112,33 @@
 16. No monitoring GET triggered provider/R2/background work during this audit; no external incident drill, production query, alert delivery, deployment or settings mutation was performed.
 17. Next bounded slice: **L2 — Security source attribution / telemetry admission**.
 
+## L2 — результат
+
+1. Audit target: current `main` `9c4639d23ca075c8bb92fbb909b96593d7bee127`.
+2. Verdict: **1 новый current-scope finding — `MON-AUTH-OUTCOME-01 Low/P3`; 0 deferred blockers.**
+3. Network attribution — PASS: `captureAttemptIngressSource()` accepts a source only when Cloudflare Worker `request.cf.colo` evidence is present, rejects browser-only forged CF/XFF/real-IP inputs, rejects Worker/subrequest indicators and ambiguous IP forms, and labels accepted network identity only as `qualified`, not proven person identity.
+4. Actor attribution — PASS: `RequestAttemptCollector.setResolvedActor()` receives only the authoritative session user resolved before Router dispatch. Guest Owner-guard denials remain actorless; authenticated non-Owner denials retain the resolved actor. Client expectations do not select telemetry actor identity.
+5. Exact auth facts — PASS: native Better Auth persistence callbacks enqueue only the five approved persisted transition kinds. Success without proven persistence is not promoted into an exact fact; uncertain/missed recording is represented as a gap rather than an invented success.
+6. Cardinality/admission — PASS: at most four attempt records are buffered per request before excess is converted into a bounded gap count; durable attributed patterns are capped at 256 new groups/hour/pool, repeats coalesce, and unknown/overflow/gap use fixed slots. Writer validation closes arbitrary operation/outcome/source/status values and uses database-owned recording hour.
+7. **Independent L2 root cause:** HTTP auth attempt classification maps only 400/401/403 to `denied`; other non-429/non-503 4xx statuses become `failed`. The current canonical `/api/auth/link-social` path deliberately returns **409** when the authenticated session does not match the stale displayed-profile expectation, and the authorization source-of-truth explicitly describes this as a rejected/denied link initiation before OAuth state or account write.
+8. The same semantic class is already treated differently on direct account-security paths: `recordDirectFailure()` maps `account-changed`, `no-password`, `session-not-found` and `current-session` 409 results to outcome `denied`. The HTTP path therefore has an internal attribution inconsistency rather than a general product decision that 409 means failure.
+9. Retained effect is real: attempt History stores `operation`, `outcome`, `httpStatus` and related source fields and the Owner History UI renders the retained `outcome`. A stale link denial is therefore preserved as `failed` instead of `denied` for operator inspection.
+10. Current Security aggregate counters are not materially corrupted by this classification: `security.auth` currently totals attributed attempts/rate-limited attempts/patterns/gaps and does not separately aggregate denied-vs-failed counts. The defect is retained incident interpretation/History semantics, not authentication correctness or rate limiting.
+11. Severity: **Low/P3** — the request is correctly denied and no authority, confidentiality or availability boundary is bypassed; however a concrete security-relevant retained event is mislabeled in the Owner incident evidence, which violates L's truthful attribution requirement.
+12. This is not a duplicate of Block B link correctness: Block B owns the stale-identity protection itself; L2 owns only the incorrect monitoring outcome assigned after that protection correctly rejects the request.
+13. No second L2 finding: network source quality, resolved-actor attribution, exact-fact admission, bounded per-request buffering, hourly cardinality admission and gap/overflow representation were consistent with the current contract.
+14. No external auth attempt, Google OAuth call, production telemetry write, incident drill or settings mutation was performed. Tests were inspected, not executed during L2.
+15. #315 aggregate becomes **34 current findings + 4 deferred Stage-6 blockers**. Current severity becomes **13 Moderate/P2 + 21 Low/P3**; deferred remains **2 Moderate/P2 + 2 Low/P3**.
+16. Next bounded slice: **L3 — Retention / coalescing / privacy**.
+
+### `MON-AUTH-OUTCOME-01` — Low/P3 — current
+
+**Root cause:** generic HTTP auth-attempt status mapping classifies the canonical stale-identity `/link-social` 409 rejection as `failed`, while the same class of direct 409 security conflicts is classified as `denied`.
+
+**Current impact:** retained Owner Security History presents a real denied link attempt with the wrong outcome category, weakening incident interpretation without changing the underlying denial or authorization result.
+
+**Boundary:** auth/link correctness remains Block B; aggregate Security counters do not currently split denied vs failed, so the defect is History/telemetry semantics only.
+
 ## Finding criteria
 
 1. Concrete current/prepared monitoring or incident-response path.
@@ -129,5 +157,5 @@
 
 ## Следующий шаг
 
-1. После продолжения владельца выполнить **L2 — Security source attribution / telemetry admission** на current main и остановиться после результата.
+1. После продолжения владельца выполнить **L3 — Retention / coalescing / privacy** на current main и остановиться после результата.
 2. Remediation существующих findings/blockers Blocks B–L не начинать без отдельного назначения.
