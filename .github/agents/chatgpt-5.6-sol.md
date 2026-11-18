@@ -4,7 +4,7 @@
 
 1. Служебный PR: **#315**.
 2. Моя текущая работа: audit/coordination only; remediation и implementation не назначены.
-3. Текущий этап: **Block K active. K1–K2 PASS; K3 = `FORUM-EDIT-SPAM-01 Moderate/P2`; K4 = `PUBLIC-READ-COST-01 Moderate/P2`; K5 = `ATTACH-SECURITY-EVENT-SPAM-01 Moderate/P2`; K6 = `MENTION-FANOUT-01 Moderate/P2`; K7 = `DB-CLEANUP-FLOAT-01 Low/P3`; следующий bounded slice — K8 Cross-chain closeout.** Overall #315 = 33 current findings + 4 deferred Stage-6 blockers. Stage 6 paused.
+3. Текущий этап: **Block K complete. K8 cross-chain PASS, 0 additional; final K = 5 current findings (4 Moderate/P2 + 1 Low/P3), 0 deferred blockers. Следующая security area — Block L Security monitoring & incident response.** Overall #315 = 33 current findings + 4 deferred Stage-6 blockers. Stage 6 paused.
 4. Technical audit target B–D: `e279cb6c032a489a9044ca1191407df887c364b4`.
 5. Current `main` — `7cc23edede57994cdedab49c1556ddb55034dd29`. Delta от I1 target включает SA-04/SA-05–SA-08 и topic-title work; I2 отдельно re-read current workflows and source-of-truth.
 6. Лира, Марк и Лёва по #315 сейчас не назначены.
@@ -401,6 +401,13 @@
 361. Impact is a missing request-scoped cleanup guarantee across auth/forum/authz/admin/complaints/etc.; no live connection exhaustion was measured, so Low/P3. Exact deployed Hyperdrive teardown behavior is **Информация не проверена**.
 362. No fault injection/load/Hyperdrive/external mutation performed. Aggregate 33 current +4 deferred; current severity 13 Moderate +20 Low. Next K8 cross-chain closeout.
 
+363. K8 target current main `7cc23edede57994cdedab49c1556ddb55034dd29`: **PASS, 0 additional current findings / 0 deferred blockers; Block K complete**.
+364. Cross-chain dedup PASS: K3 edit-growth, K4 bounded-output public-read cost, K5 security-event growth, K6 mention fan-out and K7 DB teardown are distinct roots; composition adds no sixth finding.
+365. Ownership preserved: B auth/session; E unbounded result/read sets/content/form bounds; F attachment content integrity; H Worker topology/version; J provider/Queue retry/cost; L generic monitoring/incident response.
+366. Current-vs-future revalidated: all five K findings are current repository/product paths despite Stage6 pause. Mutable external WAF/Hyperdrive/R2/Queue/provider settings remain future acceptance and are **Информация не проверена** where not externally rechecked.
+367. Release gate: all five K current findings require bounded remediation + regression coverage before public Stage7 release. K8 starts no remediation.
+368. Final K = 5 current (4 Moderate/P2 +1 Low/P3), 0 deferred. Overall #315 remains 33 current +4 deferred; current severity 13 Moderate +20 Low. Next security area after developer continuation: Block L Security monitoring & incident response, separate file.
+
 ## Ограничения
 
 1. Stage 6 external activation остаётся paused.
@@ -411,5 +418,5 @@
 
 ## Следующий шаг
 
-1. После продолжения владельца выполнить **K8 — Cross-chain closeout** на current main и остановиться после результата.
+1. После продолжения владельца создать отдельный **Block L — Security monitoring & incident response** и выполнить его первый bounded slice.
 2. Remediation findings/blockers Blocks B–K не начинать без отдельного назначения.
