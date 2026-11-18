@@ -967,3 +967,37 @@ reviewer до coordinator PASS не подключать. #349 остаётся 
 **Evidence:** GitHub сравнение первого reviewed head `544906dd...` → нового `aa6584c6d600d807ebed9171adbde365b918b290` = 1 commit, only `PROJECT.md`; docs PR #349 содержит всего 4 документа, base/main `34ddf42985f6dc348e77d0dcc90e0aecc37fd15e` unchanged. Exact-head [CI run 44412018558](https://github.com/iliya1947/vico-forum/actions/runs/44412018558): **2/2 completed success** `checks` job `135182394989` (lint/typecheck/unit/build etc.) и PostgreSQL `database` job `135182393371`; 0 failed/pending. PR #349 по-прежнему Draft/open, merge не выполнялся.
 
 **STOP Лиры**. Следующий исполнитель **Мира / ChatGPT-5.6 Sol**: новый coordinator whole-PR review Watch docs #349 на `aa6584c6d600d807ebed9171adbde365b918b290`; подтвердить WATCH-DOC-1 и весь docs scope, при confirmed defects вернуть Лире единым пакетом. До coordinator PASS независимый reviewer не подключается; после review cycle merge — только владелец. Далее отдельный Bookmarks docs closeout 0069, затем Mute/block. Служебный #342 не merge; #300 не использовать.
+
+
+## 2026-11-19 — Мира: Watch docs #349 coordinator re-review — PASS
+
+Новый coordinator whole-PR docs cycle выполнен на stable exact head
+`aa6584c6d600d807ebed9171adbde365b918b290` против неизменного main
+`34ddf42985f6dc348e77d0dcc90e0aecc37fd15e`.
+
+WATCH-DOC-1 закрыт корректно. Compare с предыдущего reviewed head
+`544906dd17517fcbb46cc63157e04fee9738f46d` показывает ровно один изменённый
+файл — `PROJECT.md` (+17/-0). Новый раздел Watch закрепляет постоянную продуктовую
+семантику без implementation/CI/PR history: explicit own Watch/Unwatch активного
+authenticated пользователя, no auto-watch/no new RBAC, future reply notices через
+existing inbox, prospective Unwatch, recipient dedupe/independent author-parent-mention
+paths и независимость read-state/bookmarks.
+
+Весь #349 re-reviewed как единый docs scope:
+- `PROJECT.md` теперь содержит permanent Watch contract;
+- `PROJECT_STATE.md` кратко отражает фактический Watch и реальный repo migration
+  ceiling `0000–0069`, не выдавая Bookmarks functional docs closeout за завершённый;
+- `PROJECT_HISTORY_30.md` сохраняет implementation/review/CI snapshot, не являясь SOT;
+- history index корректно добавляет entry 30;
+- внешняя принятая migration evidence остаётся через `0020`;
+- production/deployed и owner visual acceptance не заявлены.
+
+Проверено напрямую: implementation Watch exact head имел 17/17 jobs success; corrected
+docs exact head имеет 2/2 jobs success (`checks`, `database`, run 44412018558).
+Main и docs head стабильны. **Coordinator PASS; confirmed current-doc defects = 0.**
+
+Следующий reviewer — **Лёва / Codex-6.1 Sol**: independent whole-PR docs review
+того же exact head `aa6584c6d600d807ebed9171adbde365b918b290`. Проверить factual
+accuracy, SOT layering и отсутствие scope/Stage-6/visual overclaim. Код не менять.
+PASS или confirmed finding → STOP Мире. #349 остаётся Draft до independent result;
+#342 служебный и не merge; #300 не использовать.
