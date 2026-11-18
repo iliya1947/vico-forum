@@ -10,6 +10,8 @@ import {
 import { PERMISSION_CATALOG, type PermissionKey } from "../authorization/catalog";
 import { BLOCK_MANAGE_PRIVILEGED_PERMISSION } from "../../db/user-measure-authority";
 import type { ProfilePrivilegedSections } from "../profile/sections";
+import type { OwnerUserProfileSnapshot } from "../../db/owner-user-profile";
+import type { OwnerHistoryEntry } from "../../db/owner-sa02-history";
 import { CredentialView } from "../auth/credential-view";
 import { credentialReturnPath } from "../auth/credential-path";
 import type { EmailAuthActions, AuthClientActions } from "../auth/auth-client";
@@ -128,6 +130,7 @@ export const scenarios: readonly Scenario[] = [
   { id: "credentials-register-authenticated", label: "Registration · authenticated redirect", locale: "en", direction: "ltr", identity: "user", path: "/en/sign-up", view: "credentials", allowedIdentities: ["user", "manager", "owner"] },
   { id: "profile-public", label: "Profile", locale: "en", direction: "ltr", identity: "guest", path: "/en/users/maya", view: "profile" },
   { id: "profile-own", label: "Profile · own", locale: "en", direction: "ltr", identity: "user", path: "/en/users/alex", view: "profile", allowedIdentities: ["user", "manager"] },
+  { id: "profile-owner-self", label: "Profile · Owner self", locale: "en", direction: "ltr", identity: "owner", path: "/en/users/owner", view: "profile", allowedIdentities: ["owner"] },
   { id: "profile-edit", label: "Profile · edit", locale: "en", direction: "ltr", identity: "user", path: "/en/users/alex?edit=1", view: "profile", allowedIdentities: ["user", "manager"] },
   { id: "profile-error", label: "Profile · validation error", locale: "en", direction: "ltr", identity: "user", path: "/en/users/alex?edit=1", view: "profile", variant: "profile-error", allowedIdentities: ["user", "manager"] },
   { id: "profile-long", label: "Profile · long text", locale: "en", direction: "ltr", identity: "guest", path: "/en/users/maya", view: "profile", variant: "profile-long" },
@@ -4500,6 +4503,61 @@ function previewProfileAccessData(scenario: Scenario, routeUserId?: string) {
   return null;
 }
 
+function previewOwnerAccountSnapshot(targetId: string): OwnerUserProfileSnapshot {
+  return {
+    targetUserId: targetId,
+    lifecycle: { status: "active" },
+    email: targetId === "owner" ? "owner@example.test" : `${targetId}@example.test`,
+    emailVerified: true,
+    createdAt: "2026-08-15T09:00:00.000Z",
+    updatedAt: "2026-11-18T19:30:00.000Z",
+    linkedMethods: ["password", "google"],
+    hasPassword: true,
+    observedAt: "2026-11-18T20:00:00.000Z",
+    sessionCounts: { active: "1", expiredRetained: "1" },
+    sessions: [
+      {
+        id: "preview-owner-current-session",
+        createdAt: "2026-11-18T18:30:00.000000Z",
+        expiresAt: "2026-11-25T18:30:00.000000Z",
+        status: "active",
+        current: true,
+        deviceLabel: "Chrome on Windows",
+        recordedIp: "203.0.113.10",
+      },
+      {
+        id: "preview-owner-expired-session",
+        createdAt: "2026-10-15T08:00:00.000000Z",
+        expiresAt: "2026-10-22T08:00:00.000000Z",
+        status: "expired-retained",
+        current: false,
+        deviceLabel: "Firefox on Linux",
+        recordedIp: null,
+      },
+    ],
+    nextSessionsCursor: null,
+  };
+}
+
+function previewOwnerHistory(targetId: string): readonly OwnerHistoryEntry[] {
+  return [{
+    origin: "auth-event",
+    id: `preview-account-created-${targetId}`,
+    occurredAt: "2026-08-15T09:00:00.000Z",
+    recordedAt: "2026-08-15T09:00:00.000Z",
+    monitorKeys: ["accounts.users", "integrations.authentication"],
+    kind: "account.created",
+    source: "auth",
+    quality: null,
+    values: {
+      actorUserId: targetId,
+      targetUserId: targetId,
+      entityType: "user",
+      entityId: targetId,
+    },
+  }];
+}
+
 function previewProfilePrivilegedSections(
   scenario: Scenario,
   interactions: PreviewInteractionState,
@@ -4535,6 +4593,16 @@ function previewProfilePrivilegedSections(
         permissions: PERMISSION_CATALOG,
         canManageElevated: scenario.identity === "owner",
         canMutateAuthorization: scenario.identity === "owner",
+      },
+    };
+  }
+  if (scenario.identity === "owner" && targetId === actor.id) {
+    sections.owner = {
+      viewerId: actor.id,
+      account: { status: "ready", value: previewOwnerAccountSnapshot(targetId) },
+      history: {
+        status: "ready",
+        value: { entries: previewOwnerHistory(targetId), next: null },
       },
     };
   }
