@@ -130,7 +130,7 @@ export const scenarios: readonly Scenario[] = [
   { id: "credentials-register-authenticated", label: "Registration · authenticated redirect", locale: "en", direction: "ltr", identity: "user", path: "/en/sign-up", view: "credentials", allowedIdentities: ["user", "manager", "owner"] },
   { id: "profile-public", label: "Profile", locale: "en", direction: "ltr", identity: "guest", path: "/en/users/maya", view: "profile" },
   { id: "profile-own", label: "Profile · own", locale: "en", direction: "ltr", identity: "user", path: "/en/users/alex", view: "profile", allowedIdentities: ["user", "manager"] },
-  { id: "profile-owner-self", label: "Profile · Owner self", locale: "en", direction: "ltr", identity: "owner", path: "/en/users/owner", view: "profile", allowedIdentities: ["owner"] },
+  { id: "profile-owner-self", label: "Profile · private self", locale: "en", direction: "ltr", identity: "owner", path: "/en/users/owner", view: "profile", allowedIdentities: ["owner"] },
   { id: "profile-edit", label: "Profile · edit", locale: "en", direction: "ltr", identity: "user", path: "/en/users/alex?edit=1", view: "profile", allowedIdentities: ["user", "manager"] },
   { id: "profile-error", label: "Profile · validation error", locale: "en", direction: "ltr", identity: "user", path: "/en/users/alex?edit=1", view: "profile", variant: "profile-error", allowedIdentities: ["user", "manager"] },
   { id: "profile-long", label: "Profile · long text", locale: "en", direction: "ltr", identity: "guest", path: "/en/users/maya", view: "profile", variant: "profile-long" },
