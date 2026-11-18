@@ -4,7 +4,7 @@
 
 1. Служебный PR: **#315**.
 2. Моя текущая работа: audit/coordination only; remediation и implementation не назначены.
-3. Текущий этап: **Block L active. L1 PASS; L2 = `MON-AUTH-OUTCOME-01 Low/P3`; L3–L5 PASS, 0 additional; следующий bounded slice — L6 Revocation / containment / recovery actions.** Overall #315 = 34 current findings + 4 deferred Stage-6 blockers. Stage 6 paused.
+3. Текущий этап: **Block L active. L1 PASS; L2 = `MON-AUTH-OUTCOME-01 Low/P3`; L3–L6 PASS, 0 additional after L2; следующий bounded slice — L7 Incident-response degraded operation / Stage-6 gates.** Overall #315 = 34 current findings + 4 deferred Stage-6 blockers. Stage 6 paused.
 4. Technical audit target B–D: `e279cb6c032a489a9044ca1191407df887c364b4`.
 5. Current `main` — `9c4639d23ca075c8bb92fbb909b96593d7bee127`. После Block K main продвинулся Watch #345 (`0068_topic_watch`); Block L стартует на этом current main.
 6. Лира, Марк и Лёва по #315 сейчас не назначены.
@@ -444,6 +444,13 @@
 398. Coalesced attempt rows intentionally UPDATE counts/last-seen but retain immutable admission ordering and are labeled coalesced; notification first-read uses coalesce(read_at,...). Mutable Help/measure source rows use one-way normal terminal writers, while mandatory admin review remains in admin_history.
 399. No generic client History rewrite/delete path found. Sampled/best-effort sources remain distinct from mandatory audit. Aggregate stays 34 current +4 deferred; severity 13 Moderate +21 Low. Next L6 revocation/containment/recovery.
 
+400. L6 target current main `9c4639d23ca075c8bb92fbb909b96593d7bee127`: **PASS, 0 new current findings / 0 deferred blockers**.
+401. Exact-Owner deactivation is current full non-Owner account containment: active Owner is rechecked, self-target is forbidden, lifecycle/presence/event commit atomically, and existing cookies lose forum/actor-protected Better Auth authority through AccountState. Inactive own sign-out remains cleanup only.
+402. Residual session candidate rejected: SA02/profile deliberately label rows by expiry as **Unexpired sessions**, while lifecycle separately says **Deactivated** and deactivation UI states active forum access is lost. Retained rows therefore do not claim active authority.
+403. SET05 own revoke-one/revoke-others uses current identity, fresh-session list and server-resolved same-user session; password change intentionally preserves sessions and makes no contrary UI claim. Authorization revoke is next-request fresh; AP10 measures are narrower containment and exact Owner is intentionally immune.
+404. Missing reactivation/hard-delete/foreign-session/foreign-credential/password-reset/Owner-transfer recovery is explicit current product scope, not a current L6 defect. Real Google/Owner/provider recovery remains Stage6/Owner-decision territory; exact deployed controls are **Информация не проверена**.
+405. Aggregate remains 34 current +4 deferred; severity 13 Moderate +21 Low current. No mutations/tests/external incident drill performed. Next L7 degraded operation / Stage6 gates.
+
 ## Ограничения
 
 1. Stage 6 external activation остаётся paused.
@@ -454,5 +461,5 @@
 
 ## Следующий шаг
 
-1. После продолжения владельца выполнить **L6 — Revocation / containment / recovery actions** на current main и остановиться после результата.
-2. Remediation findings/blockers Blocks B–K не начинать без отдельного назначения.
+1. После продолжения владельца выполнить **L7 — Incident-response degraded operation / Stage-6 gates** на current main и остановиться после результата.
+2. Remediation findings/blockers Blocks B–L не начинать без отдельного назначения.
