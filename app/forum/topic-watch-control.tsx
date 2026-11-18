@@ -44,6 +44,7 @@ export function TopicWatchControl({ topicId, actorId, locale, state }: {
       // Preserve the previous state without claiming it is the new server state.
       setError("error" in result && typeof result.error === "string"
         ? result.error as ForumMutationError["error"] : "unexpected");
+      setConfirmed("unavailable");
       setRequiresRefresh(true);
     }
   }, [pending, fetcher.data, actorId, topicId]);
