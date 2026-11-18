@@ -2,7 +2,7 @@
 
 ## Статус
 
-1. Scope создан 2026-11-18; current J5 audit target — `main` `7cc23edede57994cdedab49c1556ddb55034dd29`.
+1. Scope создан 2026-11-18; final J8 audit target — `main` `7cc23edede57994cdedab49c1556ddb55034dd29`.
 2. Blocks A–I уже закрыты как audit blocks; их findings в J не дублируются.
 3. **J1 — Current integration inventory & activation boundaries завершён: PASS, 0 новых current-scope findings и 0 deferred blockers.**
 4. **J2 — Google OAuth external-provider boundary завершён: 0 новых current-scope findings + 1 deferred Stage-6 blocker — `GOOGLE-OAUTH-SCOPE-01 Low/P3`.** Exact provider identity/state/PKCE/callback/origin/account-selection paths PASS apart from already-owned Block-B findings; prepared direct OAuth surface accepts caller-selected additional Google scopes beyond Vico's authentication-only product need.
@@ -13,9 +13,10 @@
 9. Resend/Brevo/email-delivery integration в current `main` отсутствует; email verification/password recovery намеренно не реализованы.
 10. **J6 — External callback/webhook/outgoing seams завершён: PASS, 0 новых current-scope findings и 0 deferred blockers.** В current `main` нет webhook receiver вне уже проверенного Better Auth OAuth; server runtime не содержит request-controlled outbound HTTP fetch; AdministrativeRouting остаётся same-origin default и не получает external/request-controlled bases в Worker runtime.
 11. **J7 — Failure/data-retention/cross-provider boundary завершён: PASS, 0 новых current-scope findings и 0 deferred blockers.** Provider failures persist only bounded codes/counts; current translation execution does not fall back across providers after an admitted/selected provider fails; stored translation provenance is bounded metadata, while provider-side mutable retention/config remains Stage-6 acceptance.
-12. Следующий bounded slice после продолжения владельца — **J8: Cross-chain closeout**.
-13. Мира — auditor/coordinator. Remediation, technical planner и implementer не назначены.
-14. Production/provider/Cloudflare/GitHub settings mutation, OAuth client creation, email account/provider activation, Queue/provider activation и external calls не разрешены и не выполнялись.
+12. **J8 — Cross-chain closeout завершён: PASS, 0 новых current-scope findings и 0 deferred blockers. Block J завершён.** Final Block J = 0 current findings + 1 deferred Stage-6 blocker `GOOGLE-OAUTH-SCOPE-01 Low/P3`.
+13. Overall #315 после Block J остаётся **28 current findings + 4 deferred Stage-6 blockers**.
+14. Мира — auditor/coordinator. Remediation, technical planner и implementer не назначены.
+15. Production/provider/Cloudflare/GitHub settings mutation, OAuth client creation, email account/provider activation, Queue/provider activation и external calls не разрешены и не выполнялись.
 
 ## J1 — результат
 
@@ -186,6 +187,24 @@
 16. #315 aggregate remains **28 current findings + 4 deferred Stage-6 blockers**.
 17. Next bounded slice: **J8 — Cross-chain closeout**.
 
+## J8 — результат
+
+1. Audit target: current `main` `7cc23edede57994cdedab49c1556ddb55034dd29`.
+2. Verdict: **PASS — 0 новых current-scope findings, 0 deferred blockers; Block J завершён.**
+3. End-to-end Google chain reviewed as external request → Google authorization/token boundary → Better Auth callback → owned account durable state. The only J-specific defect remains deferred `GOOGLE-OAUTH-SCOPE-01 Low/P3`: direct callers can request provider scopes broader than Vico's authentication/linking product need, but real Google OAuth is not activated and additional authority still requires Google consent.
+4. Known callback/session weaknesses do not create a second J root cause: callback-after-session-revocation remains `AUTH-LINK-01` and provider error projection remains `AUTH-OAUTH-01`, both owned by Block B.
+5. Translation chain reviewed as durable task/admission → one selected provider → validated response/provenance → conditional durable publication → original-safe read fallback. J4/J5/J7 controls compose without a policy bypass: raw content egress follows data-policy/allowance, retries remain bounded, and provider failure does not switch to a less trusted provider.
+6. Current runtime still does not activate translation provider/Queue execution: Worker uses the disabled content-generation runtime, integration state reports provider/enqueuer/consumer unwired, and current `wrangler.jsonc` has no Queue or Workers AI binding. Therefore provider/Queue external behavior remains Stage-6 acceptance, not current attack surface.
+7. Repository search still finds no Vico application-side Google `scopes` allowlist under `app/auth`; this preserves the J2 correction gate rather than creating a new finding.
+8. External callback/outgoing chain remains closed beyond Better Auth OAuth: no non-OAuth webhook receiver and no request-controlled server outbound HTTP/active external AdministrativeRouting producer was established in J6.
+9. Cross-block dedup PASS. Generic authentication/session/account-link semantics stay Block B; production Worker/version mechanics stay H; secret/source/dependency trust stays I; generic abuse/availability belongs K; generic monitoring/incident response belongs L.
+10. Current-vs-Stage-6 classification revalidated against current `PROJECT_STATE.md` / `ROADMAP.md`: Vico remains pre-release, Stage 6 external integration is paused, real Google OAuth/provider/Queue rollout is incomplete. `GOOGLE-OAUTH-SCOPE-01` therefore remains deferred Low/P3, not current.
+11. Stage-6 activation gates recorded without duplicating findings: (a) close `REPO-MAIN-GATE-01` before secret-bearing external dispatch; (b) satisfy applicable G/H/I rollout gates before production Worker/DB/provider activation; (c) close `GOOGLE-OAUTH-SCOPE-01` before real Google OAuth activation; (d) at activation recheck exact Google client/redirect/secret placement, Queue ack/retry/DLQ/reconciliation mapping, provider/account data-retention/log/cache settings, provider credentials/least privilege and deployed failure paths. Items in (d) are acceptance checks, not present findings.
+12. Exact future provider/account settings in mutable external consoles remain **Информация не проверена** until Stage 6 because those integrations are not active and J8 performed no external mutation/probe.
+13. Final Block J: **0 current findings + 1 deferred Stage-6 blocker (`GOOGLE-OAUTH-SCOPE-01 Low/P3`)**. Overall #315 remains **28 current findings + 4 deferred Stage-6 blockers**; current severity remains 9 Moderate/P2 + 19 Low/P3, deferred remains 2 Moderate/P2 + 2 Low/P3.
+14. J8 performed no OAuth login/callback, provider call, Queue dispatch, token mutation, binding, deployment or GitHub/Cloudflare/provider settings mutation.
+15. Remediation remains a separate task. Next security audit area after developer continuation is **Block K — generic abuse / availability**, per the existing anti-duplication map; Block K is not started by J8.
+
 ## Цель
 
 Проверить external provider/integration boundaries Vico Forum так, чтобы:
@@ -292,5 +311,5 @@
 
 ## Следующий шаг
 
-1. После продолжения владельца выполнить **J8 — Cross-chain closeout** на current main и остановиться после результата.
-2. Remediation существующих findings/blockers не начинать без отдельного назначения.
+1. **Block J завершён.** После продолжения владельца перейти к следующему security block по общей карте — **Block K: generic abuse / availability** — отдельным bounded scope/file.
+2. Remediation существующих findings/blockers Blocks B–J не начинать без отдельного назначения.
