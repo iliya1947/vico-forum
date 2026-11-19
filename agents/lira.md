@@ -22,10 +22,9 @@
 
 - TITLE-AUDIT-1 **bounded PASS** на exact `01cecb91090a2f29f90b7c6ae4a83db77a0f4910`. В `TopicTitleEditor` Save и Cancel выставляют short-lived focus request, post-commit React effect фокусирует реально видимый Edit opener только после `draft=null` DOM update; нет initial autofocus и изменений revision/CAS/conflict/rebase. Два component focus cases: оба PASS (`topic-title-editor.test.tsx` 5/5). Dedicated Chromium `44614815034` job `135880535874` SUCCESS 9/9 markers, включая реальный Save/Cancel focus для обычной и Help темы. Первый intermediate head `a897ddbd...` browser run `44614452020` failed из-за неоднозначного тестового locator `Cancel` (попал также в reply form), **не из-за product behavior**; на final head locator локально scoped к `.topic-title-editor`, unchanged product code, full browser PASS. Final exact-head CI `44614815069` checks `135880534110` SUCCESS 2751/2751 в 218 файлах, database `135880534476` SUCCESS 1476/1476 в 109 файлах. Все 7/7 current-head associated workflows SUCCESS; нет pending/fail. Первый intermediate head также имел unrelated unhandled rejection из Complaints PG test после 1476/1476, но final exact head PG job PASS; не расширяли correction scope.
 
-## Осталось в этом же #354
+## Финальный author self-check — PASS / STOP
 
-1. Следующая отдельная `...` — финальная author self-check **всего** consolidated PR на exact head и подготовка полного handoff Мире.
-2. После self-check STOP; независимый Mira coordinator whole-PR review должен проверить весь 4-finding scope, а не только title delta.
-3. Только после Mira PASS — Лёва independent review на том же exact head; merge выполняет владелец.
-
-Лёву не подключать самостоятельно и не готовить ему отдельный slice handoff: сначала fresh whole-PR PASS Миры всего #354.
+- Проверен весь PR #354 на exact `01cecb91090a2f29f90b7c6ae4a83db77a0f4910` против base `a645fbe21110e77429025c428e498194b9a92ca2` и текущего main `bb3d44f940f44a4f08c4a501d9d0b3deaa50eb02`. Main продвинулся изменениями только служебного регламента `AGENTS.md`, `SERVICE_PR_RULES.md`, `SERVICE_PR_STRUCTURE.md`, а не кода продукта.
+- GitHub compare: ровно девять файлов четырёх audit findings; никакого backend/DB/RBAC/schema/dependencies/продуктового scope. Все четыре целевых механизма и регрессионные сценарии сверены с active `stages/corrections/PLAN.md`, current `PROJECT.md` и `PROJECT_STATE.md`; confirmed current-scope blockers не обнаружены.
+- Не запускала дополнительные проверки: уже состоявшиеся exact-head CI `44614815069` 2751/2751 unit (218 файлов), PG17 1476/1476 (109 файлов), dedicated Watch `44614815299` 11/11, Bookmarks `44614815043` 11/11 и Title `44614815034` 9/9; 7/7 workflows SUCCESS, нет fail/pending.
+- Следующая задача **Миры** — независимый coordinator whole-PR review `#354` всех четырёх corrections на `01cecb91090a2f29f90b7c6ae4a83db77a0f4910`. Если она подтверждает current-scope defect, вернуть Лире; если PASS — Лёва independent whole-PR review этого SHA; merge только владелец. **Лира STOP**. #342 service-only/no merge; moderation visibility и Stage 6 не активированы.
