@@ -115,6 +115,10 @@ describe("UI preview state catalog", () => {
     }
   });
 
+  it("does not expose the implemented Search as an under-development state", () => {
+    expect(scenarios.some((scenario) => scenario.id === "under-development-search")).toBe(false);
+  });
+
   it("includes the protected AP-07 topic page for Manager and Owner", () => {
     expect(scenarios).toContainEqual(expect.objectContaining({
       id: "admin-topic", view: "admin-topic",
