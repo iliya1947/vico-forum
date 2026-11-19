@@ -25,6 +25,16 @@ export type TopicBookmarkActionResult = { operation: "topicBookmark" } & (
   | { error: ForumMutationError["error"] }
 );
 
+export type TopicMuteActionResult = { operation: "topicMute" } & (
+  | { ok: true; topicId: string; actorId: string; muted: boolean }
+  | { error: ForumMutationError["error"] }
+);
+
+export type UserBlockActionResult = { operation: "userBlock" } & (
+  | { ok: true; targetId: string; actorId: string; blocked: boolean }
+  | { error: ForumMutationError["error"] }
+);
+
 export type TopicWatchActionResult = { operation: "topicWatch" } & (
   | { ok: true; topicId: string; actorId: string; watching: boolean }
   | { error: ForumMutationError["error"] }

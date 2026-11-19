@@ -165,6 +165,22 @@ export interface ForumTopicBookmarksPage {
   next: ForumTopicBookmarkCursor | null;
 }
 
+/** Strict two-field private keyset cursor; actor is always a separate server argument. */
+export interface ForumPersonalFilterCursor { createdAt: Date; targetId: string; }
+export interface ForumMutedTopicSummary {
+  id: string; title: string; mutedAt: Date;
+  authorName: string; authorIdentityKind?: "deleted";
+  section: { id: string; name: string } | null;
+  category: { id: string; name: string };
+}
+export interface ForumBlockedUserSummary {
+  id: string; name: string; blockedAt: Date; identityKind?: "deleted";
+}
+export interface ForumPersonalPage<T> {
+  items: T[];
+  next: ForumPersonalFilterCursor | null;
+}
+
 export interface ForumUnreadTopicSummary {
   authorIdentityKind?: "deleted";
   id: string;
@@ -497,6 +513,8 @@ export interface ForumReader {
   readTopicReadState(userId: string, topicId: string): Promise<ForumTopicReadState | undefined>;
   readTopicWatch(userId: string, topicId: string): Promise<boolean>;
   readTopicMute(userId: string, topicId: string): Promise<boolean>;
+  readMutedTopics(userId: string, before?: ForumPersonalFilterCursor): Promise<ForumPersonalPage<ForumMutedTopicSummary>>;
+  readBlockedUsers(userId: string, before?: ForumPersonalFilterCursor): Promise<ForumPersonalPage<ForumBlockedUserSummary>>;
   readUserBlock(userId: string, blockedUserId: string): Promise<boolean>;
   readTopicBlockedAuthors(userId: string, topicId: string): Promise<string[]>;
   readTopicBookmark(userId: string, topicId: string): Promise<boolean>;
@@ -1593,6 +1611,74 @@ export class DrizzleForumRepository {
         ...publicDiscoveryLocation(row),
       };
     });
+  }
+
+  async readMutedTopics(userId: string, before?: ForumPersonalFilterCursor): Promise<ForumPersonalPage<ForumMutedTopicSummary>> {
+    const rows = await this.database.select({
+      id: forumTopicMutes.topicId, createdAt: forumTopicMutes.createdAt,
+      title: forumTopicTitleRevisions.originalContent,
+      authorId: forumTopics.authorId, authorName: user.name,
+      authorDeactivatedAt: user.deactivatedAt,
+      authorDeactivatedByUserId: user.deactivatedByUserId,
+      authorRetainAtLeastUntil: user.retainAtLeastUntil,
+      sectionId: forumSections.id, sectionName: forumSections.name,
+      categoryId: forumCategories.id, categoryName: forumCategories.name,
+    }).from(forumTopicMutes)
+      .innerJoin(forumTopics, eq(forumTopics.id, forumTopicMutes.topicId))
+      .innerJoin(forumTopicTitleRevisions, and(
+        eq(forumTopicTitleRevisions.topicId, forumTopics.id),
+        eq(forumTopicTitleRevisions.id, forumTopics.currentTitleRevisionId),
+      ))
+      .innerJoin(user, eq(user.id, forumTopics.authorId))
+      .innerJoin(forumSections, eq(forumSections.id, forumTopics.sectionId))
+      .innerJoin(forumCategories, eq(forumCategories.id, forumSections.categoryId))
+      .where(and(
+        eq(forumTopicMutes.userId, userId),
+        before ? or(lt(forumTopicMutes.createdAt, before.createdAt),
+          and(eq(forumTopicMutes.createdAt, before.createdAt),
+            lt(forumTopicMutes.topicId, before.targetId))) : undefined,
+      ))
+      .orderBy(desc(forumTopicMutes.createdAt), desc(forumTopicMutes.topicId))
+      .limit(51);
+    const pageRows = rows.slice(0, 50);
+    const items = pageRows.map(row => {
+      const author = projectForumPublicAuthor(row);
+      return {
+        id: row.id, title: row.title, mutedAt: row.createdAt,
+        authorName: author.name,
+        ...(author.kind === "deleted" ? { authorIdentityKind: "deleted" as const } : {}),
+        ...publicDiscoveryLocation(row),
+      };
+    });
+    const last = pageRows.at(-1);
+    return { items, next: rows.length > 50 && last
+      ? { createdAt: last.createdAt, targetId: last.id } : null };
+  }
+
+  async readBlockedUsers(userId: string, before?: ForumPersonalFilterCursor): Promise<ForumPersonalPage<ForumBlockedUserSummary>> {
+    const rows = await this.database.select({
+      id: forumUserBlocks.blockedUserId, createdAt: forumUserBlocks.createdAt,
+      authorId: user.id, authorName: user.name,
+      authorDeactivatedAt: user.deactivatedAt,
+      authorDeactivatedByUserId: user.deactivatedByUserId,
+      authorRetainAtLeastUntil: user.retainAtLeastUntil,
+    }).from(forumUserBlocks)
+      .innerJoin(user, eq(user.id, forumUserBlocks.blockedUserId))
+      .where(and(eq(forumUserBlocks.userId, userId),
+        before ? or(lt(forumUserBlocks.createdAt, before.createdAt),
+          and(eq(forumUserBlocks.createdAt, before.createdAt),
+            lt(forumUserBlocks.blockedUserId, before.targetId))) : undefined))
+      .orderBy(desc(forumUserBlocks.createdAt), desc(forumUserBlocks.blockedUserId))
+      .limit(51);
+    const pageRows = rows.slice(0, 50);
+    const items = pageRows.map(row => {
+      const projected = projectForumPublicAuthor(row);
+      return { id: row.id, name: projected.name, blockedAt: row.createdAt,
+        ...(projected.kind === "deleted" ? { identityKind: "deleted" as const } : {}) };
+    });
+    const last = pageRows.at(-1);
+    return { items, next: rows.length > 50 && last
+      ? { createdAt: last.createdAt, targetId: last.id } : null };
   }
 
   async readTopicMute(userId: string, topicId: string): Promise<boolean> {
