@@ -33,20 +33,18 @@
 
 ## Следующий шаг
 
-**Лира STOP. Следующий исполнитель — Мира / ChatGPT-5.6 Sol.**
-Coordinator whole-PR docs review **Bookmarks Draft #350** на stable exact head
-`446e4cc893160efc30392bfa43f03f5882823021` против `main` `405ab97116c5be750fb9c1d447431988802bdbb5`.
-Применимые exact-head **2/2 CI PASS** (`checks`, `database`,
-[run 44482643570](https://github.com/iliya1947/vico-forum/actions/runs/44482643570)).
+**Следующий reviewer — Лёва / Codex-6.1 Sol.** Independent whole-PR docs review
+Bookmarks docs PR #350 на stable exact head
+`446e4cc893160efc30392bfa43f03f5882823021` против main
+`405ab97116c5be750fb9c1d447431988802bdbb5`.
 
-Diff — только `PROJECT.md` (постоянный Bookmarks contract),
-`PROJECT_STATE.md` (короткий фактический статус), новый
-`docs/PROJECT_HISTORY/PROJECT_HISTORY_31.md` (implementation/review/CI/merge)
-и index `docs/PROJECT_HISTORY/PROJECT_HISTORY.md`. Миграции repo через `0069`,
-external evidence через `0020`; code/schema/RBAC/production/visual не менялись.
+Мира завершила coordinator docs review: **PASS, confirmed current-doc defects = 0**.
+Проверены все 4 Markdown files, permanent/current/history layering, merged #346 semantics,
+migration 0069, implementation exact-head 18/18 success и docs exact-head 2/2 success.
 
-Мира проверяет полный docs scope и factual согласованность с merged #346 и
-принятым B1–B7, формулирует PASS либо один пакет confirmed current-doc findings
-Лире. **Только после coordinator PASS** — независимый docs review того же head,
-затем merge владельцем. Mute/block не активировать до фактического merge #350.
-Служебный #342 не merge; #300 не использовать.
+Лёве независимо проверить factual accuracy, B1–B7 semantics, SOT layering и отсутствие
+Stage-6/owner-visual overclaim. Код/docs не менять. PASS или confirmed finding → STOP Мире.
+
+#350 остаётся Draft до independent result. После завершения review-cycle merge выполняет
+владелец; только после фактического merge #350 активируется Mute/block implementation.
+#342 служебный и не merge; #300 не использовать.
