@@ -14,7 +14,7 @@
 - Watch первоначальный independent technical review: **Лёва PASS** на exact head `76c1c456557c614171a3b472758498795a668b9a` против main `7cc23edede57994cdedab49c1556ddb55034dd29`. Позднейший отдельный owner audit выявил **открытый WATCH-AUDIT-1 [P2]**; актуальные evidence/маршрут — в отдельном разделе ниже. Production в аудите не менялся.
 - Review synthesis: оба review совпали на неизменном exact head, расхождений и подтверждённых current-scope defects нет. По действующему owner decision из `docs/UI_UX_PASS.md` функциональные bounded-срезы не задерживаются из-за косметики; финальная owner visual/product acceptance остаётся отдельным UI/UX pass перед публичным запуском. Поэтому отдельный Watch visual gate сейчас merge не блокирует.
 - Watch implementation review cycle завершён, #345 merged. Permanent/current-state docs closeout остаётся отдельным PR после implementation merge; это planning-задание не заменяет его.
-- Bookmarks #346 **merged** в main `34ddf42985f6dc348e77d0dcc90e0aecc37fd15e` 2026-11-18 21:43:51 UTC. Reviewed exact head `a3e6c0e63c99078ece89303592e1f24b2fe440fb`; Мира coordinator PASS + Лёва independent PASS; confirmed current-scope defects = 0; exact-head 18/18 jobs success.
+- Bookmarks #346 **merged** в main `34ddf42985f6dc348e77d0dcc90e0aecc37fd15e` 2026-11-18 21:43:51 UTC. Reviewed exact head `a3e6c0e63c99078ece89303592e1f24b2fe440fb`; первоначальные Мира coordinator PASS + Лёва independent PASS; тогда confirmed current-scope defects = 0; exact-head 18/18 jobs success. Позднейший owner audit подтвердил открытые **BOOKMARKS-AUDIT-1/2 [P2]**; актуальные результаты ниже, исправления отложены владельцем.
 - Docs closeout: Watch #349 **merged** в main `405ab97116c5be750fb9c1d447431988802bdbb5`; Bookmarks #346 остаётся единственным текущим docs debt этого участка.
 - Следующий docs этап: отдельный Bookmarks docs closeout. Нужны permanent SOT + factual PROJECT_STATE + отдельный PROJECT_HISTORY snapshot/index; без RBAC/Admin, Stage 6 external evidence или owner visual claims.
 - Docs closeout выполняет **Лира / ChatGPT-6** как штатный следующий исполнитель; отдельное owner-назначение для автора docs PR не требуется. Мира docs diff не пишет.
@@ -64,5 +64,23 @@ Watch #345** на необходимость механизмов/обходны
 Подробности/границы — в channel и файле Лёвы. Production не менялся, Лёва STOP.
 **Новое прямое решение владельца:** сначала закончить проверки остальных реализаций,
 только потом выбирать исправления. WATCH-AUDIT-1 открыт, correction сейчас не
-активировать. Лёва отдельно проверяет Bookmarks; production не меняет.
+активировать. Отдельный аудит Bookmarks завершён ниже; production не менялся.
 Текущее назначение Лиры #351 этим аудитом не выполнялось и не переназначалось.
+
+## Отдельная проверка владельца — Bookmarks, одна реализация
+
+По уточнению «сначала проверь остальное, а потом уже будем исправлять» Лёва
+проверил только merged Bookmarks #346 в main `9eae385`. Подтверждены два P2:
+**BOOKMARKS-AUDIT-1** — локальный confirmed в topic control перекрывает свежий
+loader старым ACK; **BOOKMARKS-AUDIT-2** — removed latch скрывает заново сохранённую
+строку вопреки свежему списку. Real PG17 + production React/Router: обе стороны
+control и Remove→Add list race воспроизведены; повторная revalidation не помогает.
+Изолированный prototype без этих зеркал: 5 real-PG/UI + 10 UI regressions PASS.
+
+Tab actor marker в sessionStorage обоснован credential-route remount: current
+вариант 3/3, memory-only comparison 2/3, теряет actor history при remount. Остальные
+проверенные Bookmarks механизмы обоснованы текущим контрактом; подробности в channel
+и личном файле Лёвы. Production/schema/tests не менялись; corrective PR не открыт.
+**WATCH-AUDIT-1 и BOOKMARKS-AUDIT-1/2 остаются открытыми и отложенными: сначала
+проверки, потом исправления. Лёва STOP после одного Bookmarks.** Дальнейший аудит
+оставшихся реализаций — отдельно, по одной; #351/4b.2 этим аудитом не выполнялся.

@@ -827,3 +827,124 @@ Implementation/schema/tests не менял. Изменены только revie
 **STOP после одного Watch.** Мире — отдельный bounded correction route от main,
 не менять назначение/декомпозицию Лиры #351 этим сообщением. Bookmarks audit не
 начат и не выполнен; нужен отдельный следующий шаг владельца.
+
+## 2026-11-19 — Bookmarks necessity audit: два P2, без production correction
+
+Владелец отменил немедленный corrective route после Watch: «Не, сначала проверь
+остальное, а потом уже будем исправлять...». Это решение отражено отдельным
+service commit9c29c5e и имеет приоритет над прежней рекомендацией исправлять Watch.
+В этой итерации только Bookmarks #346, main `9eae385571bf99e073df46f8541f7514c9626a29`.
+Main runtime совпадает с reviewed a3e6c0e, проверены merge34dd diff и текущие callers.
+Текущий #351 успел перейти на e93e64a/4b.1 smoke PASS; его workflow сохранён,
+следующий Mute/block микрошаг остаётся 4b.2, не выполнен этим audit.
+
+### Подтверждённые дефекты
+
+1. **BOOKMARKS-AUDIT-1 [P2] — topic control confirmed mirror**, source
+   `app/forum/topic-bookmark-control.tsx:16,24–42`. Тот же effect-order mechanism,
+   что в Watch, проверен отдельно настоящим Bookmarks writer/read, не выведен
+   только из сходства кода. Submitted ref блокирует sync effect свежего loader;
+   ACK effect очищает ref и записывает старое desired state. При неизменном после
+   revalidation primitive loader-value sync effect не перезапускается.
+2. **BOOKMARKS-AUDIT-2 [P2] — list removed latch**, source
+   `app/forum/bookmarks-view.tsx:34,48,63`. Remove COMMIT→другой own Add COMMIT→
+   старый Remove ACK; свежий list содержит тему, stable [actorId,item.id] key
+   сохраняет row component, а removed=true прячет её навсегда до remount.
+
+Обе проблемы UI source of truth. Данные в PG правильные, backend serialization
+не нарушена. Не требуется немедленная cross-tab доставка: эта же вкладка уже
+получила новые server данные и не применяет их. Дополнительное штатное чтение
+также не исправляет UI.
+
+### Воспроизведение и более простая альтернатива
+
+Harness вне git worktrees: `/workspace/work/bookmarks-audit-diagnostics/`.
+`bookmarks-state.test.tsx` использует production DrizzleForumRepository,
+TopicBookmarkControl/BookmarksView, настоящий React Router и PostgreSQL17.
+Собственная loopback DB vico_bookmarks_audit_test, полный clean forward migration
+chain current main в schema bookmark_ui_audit; после suite schema удаляется.
+Транспорт удерживает только ACK после COMMIT, второй write тоже настоящий COMMIT.
+
+```text
+Control initial OFF: [loader false, first COMMIT true, second COMMIT false,
+                     loader false, loader false]
+DB=false; loader=off; UI aria-pressed=true
+Control initial ON: [loader true, first COMMIT false, second COMMIT true,
+                    loader true, loader true]
+DB=true; loader=on; UI aria-pressed=false
+List: [loader row true, Remove COMMIT false, Add COMMIT true,
+       loader row true, loader row true]
+DB=true; loaderHasRow=true; shown=false
+Original: 2 normal baselines PASS / 3 freshness assertions FAIL.
+```
+
+Исследован только local reduction вне production: candidate-control.tsx удаляет
+confirmed useState/sync effect/ACK setters, берёт requiresRefresh ? unavailable :
+state; candidate-view.tsx удаляет removed/setRemoved/return-null. Pending,
+requiresRefresh, failed, refreshing и response guards сохранены. Полный протокол,
+версии/CAS, общий store, cache, timers и retry не требуются для доказанных случаев.
+
+`candidate.test.tsx` (те же5 real-PG/UI) + `control-regressions.test.tsx` (4 existing
+transient tests) — **9/9 PASS**. Отдельно `view-regressions.test.tsx` — **6/6 PASS**
+(failure/explicit refresh без write replay, normal remove, deleted author/text
+safety/navigation, initial cursor, mounted actor switch, guest navigation).
+В диагностических happy fixtures loader обновлён при commit, как в реальности:
+оригинальные tests оставляют initial topic state/list замороженными при успешном
+изменении ACK, тем самым поощряя ошибочное зеркало. Production tests не менялись.
+Первые диагностические label-опечатки исправлены до итогового original прогона;
+они не являлись продуктовой ошибкой. Эксперимент не означает готовый PR/полный CI.
+
+```sh
+DATABASE_URL=<own-loopback-vico_bookmarks_audit_test> node node_modules/vitest/vitest.mjs \
+  run --config /workspace/work/bookmarks-audit-diagnostics/vitest.config.mjs --maxWorkers=1
+# 2 PASS / 3 FAIL
+DATABASE_URL=<same-own-disposable-db> node node_modules/vitest/vitest.mjs \
+  run --config /workspace/work/bookmarks-audit-diagnostics/candidate.config.mjs --maxWorkers=1
+# 9/9 PASS
+node node_modules/vitest/vitest.mjs run \
+  --config /workspace/work/bookmarks-audit-diagnostics/view.config.mjs --maxWorkers=1
+# 6/6 PASS
+```
+
+### Проверка необходимости остальных механизмов
+
+**Tab actor marker:** текущий credential path сохраняет pathname/search/hash в
+returnTo (`auth-controls.tsx`, `credential-path.ts`, `credential-view.tsx`). List
+реально unmount при переходе к credentials и возвращается с новым actor на старый
+URL. Cursor — timestamp/topic id, без originating actor; foreign initial cursor
+по B4 легален. Безусловный reset ломает этот контракт, ref-only теряет историю.
+`actor-history.test.tsx` сравнивает production view и memory-only-view.tsx по трём
+одинаковым требованиям: initial/same-actor cursor, mounted A→B, credential-route
+unmount→B return. **Current3/3 PASS; ref-only2/3**, последний остаётся на foreign
+cursor. Это компонентный router test, не новый real-auth/browser acceptance.
+Реальный credential scenario уже есть в merged connected suite; повторно его
+не запускал. MDN sessionStorage 2026-11-19 проверен: page session живёт в пределах
+вкладки, переживает reload/restore. URL:
+https://developer.mozilla.org/en-US/docs/Web/API/Window/sessionStorage .
+Marker обоснован как маленькая presentation history; не единственный мыслимый
+вариант, но более широкая auth/server cursor переделка сейчас не обоснована.
+Storage-blocked/privacy modes новым экспериментом не покрыты; marker не даёт
+доступа, actual rows фильтруются session actor в SQL.
+
+Другие механизмы сверены против принятого B1–B7 и permanent Bookmarks contract:
+- Pair table отдельно от Watch/read/inbox нужна durable account-wide коллекции.
+  PK(user,topic) даёт idempotence; DB clock/saved_at(3) — canonical ms seek;
+  user/saved/topic index обслуживает list, topic index — FK cleanup.
+- KEY SHARE topic защищает existence/FK без unnecessary exclusive Watch mutex;
+  active actor admission сериализует lifecycle даже для no-op Add/Remove.
+- SQL own filter применяется до seek/order/limit51, current-title/public-author/
+  location joins не хранят второй snapshot, no fanout/background queue.
+- Один canonical topic POST обслуживает оба UI, strict fields/expected actor
+  отделяют намерения и stale identity, session определяет authority. Новый RBAC,
+  отдельный list writer и editor/reply restrictions не нужны и не добавлены.
+- Private no-store/typed unavailable и независимый actor/topic fetcher нужны
+  privacy/failure semantics; error/explicit refresh не равны успешному OFF.
+- Existing connected fixture cooldown0 действует только на подготовку тем в
+  guarded disposable DB, не отменяет tested HTTP policy. Test workflow строит
+  actual Worker/Better Auth path, не подменяет runtime bookmark endpoints.
+
+Дополнительных подтверждённых необоснованных mechanisms в Bookmarks scope нет.
+Оба P2 были пропущены моим предыдущим review. **Исправления WATCH-AUDIT-1 и
+BOOKMARKS-AUDIT-1/2 отложены владельцем до окончания проверок.** Production/schema/
+tests не менял, corrective PR не открывал. Дальнейший аудит оставшихся реализаций
+только отдельно, по одной. **STOP после Bookmarks**, текущий #351 route сохранён.

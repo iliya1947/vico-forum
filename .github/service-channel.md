@@ -1396,3 +1396,58 @@ implementation сейчас **не активировать**. Лёва прод
 **Evidence:** `Personal Mute/Block connected acceptance` run `44529730188`, job `135579549049` concluded **SUCCESS** at exact `e93e64a55095b1d56eb65aa9c11ffd314f4b07e9`. Job log contains all 4 `FILTERS_CONNECTED` smoke markers. https://github.com/iliya1947/vico-forum/actions/runs/44529730188 . No production/schema/UI changes for 4b.1; other existing CI runs were still executing at checkpoint, do NOT claim full exact-head green. Dedicated Mute/Block end-to-end functionality and M7 matrix remain 4b.2–4b.11.
 
 **Лира STOP после 4b.1.** Following explicit `...`: **only 4b.2** — Topic Mute/Unmute + ordinary notification paths (Watch/author/parent/mention) using this harness, measured via real Worker and PG; checkpoint and STOP. No 4b.3/4c/review/merge. An independent Watch audit has separate workstream and is not modified here.
+
+## 2026-11-19 — Лёва: отдельный аудит Bookmarks; исправления отложены
+
+Прямое уточнение владельца: «Не, сначала проверь остальное, а потом уже будем
+исправлять...». В этой итерации проверен **только merged Bookmarks #346** в main
+`9eae385571bf99e073df46f8541f7514c9626a29`. Проверенные production файлы совпадают
+с reviewed `a3e6c0e63c99078ece89303592e1f24b2fe440fb`; исходный merge34dd также
+сопоставлен с предыдущим main. Production/schema/tests не менялись.
+
+**BOOKMARKS-AUDIT-1 [P2], `app/forum/topic-bookmark-control.tsx:16,24–42`:**
+локальный confirmed дублирует loader state и после revalidation получает более
+старый mutation ACK. Реальные два последовательных COMMIT одного actor/topic
+до доставки первого ACK: OFF→ON→OFF даёт DB/loader OFF, UI true; ON→OFF→ON даёт
+DB/loader ON, UI false. Дополнительная revalidation читает верную БД, но UI остаётся
+ложным: первый effect пропускает loader, пока submitted.current ещё не очищен,
+а следующий записывает ACK; зависимости sync effect затем не изменяются.
+
+**BOOKMARKS-AUDIT-2 [P2], `app/forum/bookmarks-view.tsx:34,48,63`:** после Remove
+COMMIT и нового Add COMMIT до доставки Remove ACK свежий list loader уже содержит
+заново сохранённую тему. Однако старый ACK устанавливает removed=true, а постоянный
+actor/topic key сохраняет этот latch; строка скрыта даже после ещё одной revalidation.
+БД и оба свежих list reads содержат тему; это потеря актуальной presentation,
+не удаление записи, не backend race и не требование live cross-tab push.
+
+Проверки production компонентов/React Router с настоящим PostgreSQL17 и repository:
+**2 нормальных baselines PASS, 3 freshness assertions FAIL** (оба control order +
+list Remove→Add). SQL/admission/COMMIT не mocked, задержан только ответ после
+first COMMIT. Изолированный диагностический вариант вне git worktree без confirmed
+mirror и removed latch: **5/5 real-PG/UI + 10/10 transient/presentation UI PASS**.
+Штатные pending/error/refresh/actor-topic guards сохранены. Happy fixtures приведены
+к реальному post-commit loader state; прежние fixtures держат initial state/list
+неизменными и ожидают локального ACK-driven success, поэтому маскируют дефекты.
+Это эксперимент, не shipped correction и не замена CI будущего PR.
+
+**sessionStorage actor marker обоснован**, а не автоматически признан костылём.
+Существующий credential returnTo сохраняет cursor URL. На current view проверены:
+initial/same-actor foreign cursor сохраняется; mounted A→B сбрасывает cursor;
+A→credential-route unmount→B remount сбрасывает cursor — **3/3 PASS**. Простое
+memory-only useRef сравнение проходит первые два, но теряет A на remount (**2/3**).
+Безусловное удаление cursor нарушило бы принятый B4 deep-link contract; server
+cursor не содержит identity. Marker хранит только tab-local actor history, не
+bookmark rows/credentials/authority; SQL own filtering остаётся серверным.
+Запрет storage/все browser privacy modes новым экспериментом не проверялись.
+
+Отдельная минимальная pair table, saved_at(3), PK/FKs и два access-path indexes,
+set-based own-filtered 50+lookahead list/current title joins, topic KEY SHARE→active
+actor mutex, canonical topic POST/strict form/expected actor, private no-store,
+typed unavailable и независимые fetchers обоснованы действующим Bookmarks контрактом.
+Дополнительных подтверждённых необоснованных механизмов в этом scope не найдено.
+
+Оба дефекта пропущены моим предыдущим техническим review; прежний PASS не отменяет
+новые evidence. **WATCH-AUDIT-1 и BOOKMARKS-AUDIT-1/2 открыты, но исправления сейчас
+не активировать.** Не открывать corrective PR до окончания оставшихся проверок и
+выбора следующего этапа владельцем. **Лёва STOP после одного Bookmarks.** Текущее
+назначение Лиры #351/4b.2 сохранено, его реализация этим аудитом не проверялась.
