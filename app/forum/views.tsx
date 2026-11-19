@@ -7,6 +7,7 @@ import {TopicQuickActions} from "../admin/quick-actions";
 import { TopicTitleEditor } from "./topic-title-editor";
 import { TopicWatchControl, type TopicWatchState } from "./topic-watch-control";
 import { TopicBookmarkControl, type TopicBookmarkState } from "./topic-bookmark-control";
+import { PersonalFilterControl, type PersonalFilterState } from "./personal-filter-control";
 import {MessageQuickActions} from "../admin/message-quick-actions";
 import { ForumAttachmentDisplay } from "./attachment-presentation";
 import { ComplaintSubmissionForm } from "../complaints/submission-form";
@@ -2180,6 +2181,8 @@ export function TopicView({
   topicWatchState = null,
   bookmarkActorId = null,
   topicBookmarkState = null,
+  muteActorId = null,
+  topicMuteState = null,
   blockedActorId,
   blockedAuthorIds,
   canSubmitComplaint = false,
@@ -2213,6 +2216,8 @@ export function TopicView({
   topicWatchState?: TopicWatchState | null;
   bookmarkActorId?: string | null;
   topicBookmarkState?: TopicBookmarkState | null;
+  muteActorId?: string | null;
+  topicMuteState?: PersonalFilterState | null;
   blockedActorId?: string | null;
   blockedAuthorIds?: readonly string[];
   canSubmitComplaint?: boolean;
@@ -2896,6 +2901,9 @@ export function TopicView({
                           {headerActorId && headerActorId === bookmarkActorId && topicBookmarkState &&
                             <TopicBookmarkControl key={JSON.stringify([topic.id, headerActorId])}
                               topicId={topic.id} actorId={headerActorId} locale={locale} state={topicBookmarkState} />}
+                          {headerActorId && headerActorId === muteActorId && topicMuteState &&
+                            <PersonalFilterControl key={JSON.stringify(["topic", topic.id, headerActorId])}
+                              kind="topic" targetId={topic.id} actorId={headerActorId} locale={locale} state={topicMuteState} />}
                           {headerActorId && <TopicTitleEditor
                             key={JSON.stringify([topic.id, headerActorId])}
                             topicId={topic.id} actorId={headerActorId} locale={locale}

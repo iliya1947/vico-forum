@@ -29,6 +29,7 @@ export default [
     route("unanswered", "routes/unanswered.tsx"),
     route("unread", "routes/unread.tsx"),
     route("bookmarks", "routes/bookmarks.tsx"),
+    route("filters", "routes/filters.tsx"),
     route("users/:userId", "routes/profile.tsx"),
     route("users/:userId/owner/deactivate", "routes/owner-deactivate.ts"),
     route("account/measures", "routes/account-measures.tsx"),
