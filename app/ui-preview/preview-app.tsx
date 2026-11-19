@@ -16,6 +16,7 @@ import type { OwnerHistoryEntry, OwnerHistoryOptions } from "../../db/owner-sa02
 import type { ComplaintPriority, ComplaintQueueCase, ComplaintQueuePage } from "../complaints/queue-contract";
 import type { ReviewCase } from "../complaints/review-contract";
 import type { AppealReviewPage, PendingAppealsPage } from "../../db/complaint-appeal-read";
+import type { ComplaintResolvedHistoryPage, ComplaintTimelineEvent, ComplaintTimelinePage } from "../../db/complaint-history-read";
 import { CredentialView } from "../auth/credential-view";
 import { credentialReturnPath } from "../auth/credential-path";
 import type { EmailAuthActions, AuthClientActions } from "../auth/auth-client";
@@ -29,6 +30,7 @@ import { HistoryEvents } from "../admin/history";
 import { ComplaintReviewView } from "../complaints/review-view";
 import { ComplaintTriageView } from "../complaints/queue-view";
 import { ComplaintAppealReviewView } from "../complaints/appeal-review-view";
+import { ComplaintTimelineView } from "../complaints/history-view";
 import { SuperAdminOverview } from "../super-admin/overview";
 import { SuperAdminSa02Current } from "../super-admin/current-route";
 import { SuperAdminBackground } from "../super-admin/task-current";
@@ -2541,14 +2543,29 @@ function previewRouter(
       ErrorBoundary: ForumRouteError,
     },
     {
+      path: "/:locale/attention/complaints/:caseId/history",
+      element: <PreviewComplaintHistoryRoute />,
+      loader: ({ params }) => {
+        previewAttentionAccessData(scenario);
+        return {
+          locale: scenario.locale,
+          timeline: previewComplaintTimeline(interactions, params.caseId),
+        };
+      },
+      ErrorBoundary: ForumRouteError,
+    },
+    {
       path: "/:locale/attention/complaints/:caseId/review",
       element: <PreviewComplaintReviewRoute />,
       loader: ({ params }) => {
         previewAttentionAccessData(scenario);
-        if (params.caseId !== PREVIEW_COMPLAINT_CASE_ID) {
-          throw new Response("Not Found", { status: 404 });
-        }
-        return { locale: scenario.locale, item: previewComplaintReview(interactions) };
+        const item = params.caseId === PREVIEW_COMPLAINT_CASE_ID
+          ? previewComplaintReview(interactions)
+          : params.caseId === PREVIEW_COMPLAINT_APPEAL_CASE_ID
+            ? previewComplaintAppealReview(interactions).caseReview
+            : null;
+        if (!item) throw new Response("Not Found", { status: 404 });
+        return { locale: scenario.locale, item };
       },
       action: ({ request, params }) =>
         previewComplaintReviewAction(scenario, interactions, request, params.caseId),
@@ -4149,6 +4166,153 @@ function PreviewComplaintAppealReviewRoute() {
   return <ComplaintAppealReviewView locale={locale} result={result} />;
 }
 
+function previewComplaintHistory(interactions: PreviewInteractionState): ComplaintResolvedHistoryPage {
+  const cases: ComplaintResolvedHistoryPage["cases"] = [{
+    id: PREVIEW_COMPLAINT_APPEAL_CASE_ID,
+    kind: "post",
+    text: "Use a typed boundary at the HTTP edge, then keep domain code independent.",
+    sourceLocale: "en",
+    resolvedAt: new Date("2026-11-18T20:30:00.000Z"),
+    outcome: "confirmed",
+    independentReporterCount: 1,
+  }];
+  if (interactions.complaintDecision) {
+    cases.push({
+      id: PREVIEW_COMPLAINT_CASE_ID,
+      kind: "post",
+      text: "Use a typed boundary at the HTTP edge, then keep domain code independent.",
+      sourceLocale: "en",
+      resolvedAt: new Date(interactions.complaintDecision.createdAt),
+      outcome: interactions.complaintDecision.outcome,
+      independentReporterCount: 2,
+    });
+  }
+  return { cases, total: cases.length, page: 0, hasMore: false };
+}
+
+function previewComplaintTimelineEvent(
+  event: Pick<ComplaintTimelineEvent, "id" | "kind" | "createdAt">
+    & Partial<Omit<ComplaintTimelineEvent, "id" | "kind" | "createdAt">>,
+): ComplaintTimelineEvent {
+  return {
+    moderatorName: null,
+    reason: null,
+    explanation: null,
+    noteBody: null,
+    decisionOutcome: null,
+    reasoning: null,
+    priorityOverride: null,
+    appealArgument: null,
+    appealSide: null,
+    appealOrdinal: null,
+    appealOutcome: null,
+    appealReasoning: null,
+    reporterName: null,
+    reporterId: null,
+    appellantName: null,
+    appellantId: null,
+    ...event,
+  };
+}
+
+function previewComplaintTimeline(
+  interactions: PreviewInteractionState,
+  caseId?: string,
+): ComplaintTimelinePage {
+  if (caseId === PREVIEW_COMPLAINT_CASE_ID && interactions.complaintDecision) {
+    const events: ComplaintTimelineEvent[] = [
+      previewComplaintTimelineEvent({
+        id: "preview-history-submitted",
+        kind: "submitted",
+        createdAt: new Date("2026-11-18T09:42:00.000Z"),
+        reason: "harassment",
+        explanation: "Representative complaint report for Pages preview.",
+      }),
+      ...interactions.complaintNotes.map((note) => previewComplaintTimelineEvent({
+        id: `preview-history-${note.id}`,
+        kind: "noted",
+        createdAt: new Date(note.createdAt),
+        moderatorName: note.author.name,
+        noteBody: note.body,
+      })),
+      previewComplaintTimelineEvent({
+        id: "preview-history-decision",
+        kind: "decided",
+        createdAt: new Date(interactions.complaintDecision.createdAt),
+        moderatorName: interactions.complaintDecision.reviewerName,
+        decisionOutcome: interactions.complaintDecision.outcome,
+        reasoning: interactions.complaintDecision.reasoning,
+      }),
+    ];
+    return {
+      caseId,
+      outcome: interactions.complaintDecision.outcome,
+      resolvedAt: new Date(interactions.complaintDecision.createdAt),
+      events,
+      page: 0,
+      total: events.length,
+      hasMore: false,
+    };
+  }
+
+  if (caseId === PREVIEW_COMPLAINT_APPEAL_CASE_ID) {
+    const events: ComplaintTimelineEvent[] = [
+      previewComplaintTimelineEvent({
+        id: "preview-appeal-history-submitted",
+        kind: "submitted",
+        createdAt: new Date("2026-11-18T19:45:00.000Z"),
+        reason: "harassment",
+        explanation: "The answer targeted the author instead of the technical issue.",
+      }),
+      previewComplaintTimelineEvent({
+        id: "preview-appeal-history-decision",
+        kind: "decided",
+        createdAt: new Date("2026-11-18T20:30:00.000Z"),
+        moderatorName: "Maya Cohen",
+        decisionOutcome: "confirmed",
+        reasoning: "The reported message crossed the forum conduct boundary.",
+      }),
+      previewComplaintTimelineEvent({
+        id: "preview-appeal-history-submitted-appeal",
+        kind: "appealed",
+        createdAt: new Date("2026-11-18T21:00:00.000Z"),
+        appealArgument: "The answer was technical criticism, not a personal attack.",
+        appealSide: "author",
+        appealOrdinal: 1,
+      }),
+    ];
+    if (interactions.complaintAppealResolution) {
+      events.push(previewComplaintTimelineEvent({
+        id: "preview-appeal-history-resolution",
+        kind: "appeal-resolved",
+        createdAt: new Date("2026-11-18T21:15:00.000Z"),
+        moderatorName: "Maya Cohen",
+        appealArgument: "The answer was technical criticism, not a personal attack.",
+        appealSide: "author",
+        appealOrdinal: 1,
+        appealOutcome: interactions.complaintAppealResolution.outcome,
+        appealReasoning: interactions.complaintAppealResolution.reasoning,
+      }));
+    }
+    return {
+      caseId,
+      outcome: "confirmed",
+      resolvedAt: new Date("2026-11-18T20:30:00.000Z"),
+      events,
+      page: 0,
+      total: events.length,
+      hasMore: false,
+    };
+  }
+
+  throw new Response("Not Found", { status: 404 });
+}
+
+function PreviewComplaintHistoryRoute() {
+  const { locale, timeline } = useLoaderData() as { locale: string; timeline: ComplaintTimelinePage };
+  return <ComplaintTimelineView locale={locale} timeline={timeline} />;
+}
+
 async function previewComplaintReviewAction(
   scenario: Scenario,
   interactions: PreviewInteractionState,
@@ -4156,7 +4320,9 @@ async function previewComplaintReviewAction(
   caseId?: string,
 ) {
   previewAttentionAccessData(scenario);
-  if (caseId !== PREVIEW_COMPLAINT_CASE_ID) return { error: "notFound" as const };
+  if (caseId !== PREVIEW_COMPLAINT_CASE_ID && caseId !== PREVIEW_COMPLAINT_APPEAL_CASE_ID) {
+    return { error: "notFound" as const };
+  }
   const actor = previewUser(scenario)!;
   const form = await request.formData();
   const intent = String(form.get("intent") ?? "");
@@ -4176,7 +4342,9 @@ async function previewComplaintReviewAction(
   }
 
   if (intent === "decision") {
-    if (interactions.complaintDecision) return { error: "conflict" as const };
+    if (caseId !== PREVIEW_COMPLAINT_CASE_ID || interactions.complaintDecision) {
+      return { error: "conflict" as const };
+    }
     const expectedVersion = Number(form.get("expectedVersion"));
     const outcome = String(form.get("outcome") ?? "");
     const reasoning = String(form.get("reasoning") ?? "").trim();
@@ -4234,6 +4402,9 @@ function PreviewAttentionRoute({ scenario, interactions }: {
       : null}
     complaintAppeals={mode === "complaints" && group === "group2"
       ? previewComplaintAppeals(interactions)
+      : null}
+    complaintHistory={mode === "complaints" && group === "group3"
+      ? previewComplaintHistory(interactions)
       : null}
     canReviewComplaints={scenario.identity === "manager" || scenario.identity === "owner"}
     canReviewAppeals={scenario.identity === "manager" || scenario.identity === "owner"}
