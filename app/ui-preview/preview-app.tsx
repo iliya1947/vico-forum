@@ -368,6 +368,7 @@ type PreviewInteractionState = {
   replies: Map<string, PreviewReply[]>;
   topicOverrides: Map<string, PreviewTopicOverride>;
   topicTitleEdits: Map<string, { id: string; originalContent: string; sourceLocale: string }>;
+  topicWatches: Set<string>;
   topicTitleSourceLocales: Map<string, string>;
   postSourceLocales: Map<string, string>;
   profileOverrides: Map<string, ProfileFields>;
@@ -431,6 +432,7 @@ function createPreviewInteractionState(): PreviewInteractionState {
     replies: new Map(),
     topicOverrides: new Map(),
     topicTitleEdits: new Map(),
+    topicWatches: new Set(),
     topicTitleSourceLocales: new Map(),
     postSourceLocales: new Map(),
     profileOverrides: new Map(),
@@ -1195,6 +1197,25 @@ function previewTagData(locale: PreviewLocale, tagKey: string | undefined) {
 function PreviewTagRoute({ scenario }: { scenario: Scenario }) {
   const page = useLoaderData() as NonNullable<ReturnType<typeof previewTagPage>>;
   return <TagView locale={scenario.locale} page={page} />;
+}
+
+function previewTopicWatchKey(actorId: string, routeTopicId: string) {
+  return JSON.stringify([actorId, routeTopicId]);
+}
+
+function previewTopicWatchProps(
+  scenario: Scenario,
+  interactions: PreviewInteractionState,
+  routeTopicId: string,
+) {
+  const actor = previewUser(scenario);
+  if (!actor) return { watchActorId: null, topicWatchState: null };
+  return {
+    watchActorId: actor.id,
+    topicWatchState: interactions.topicWatches.has(previewTopicWatchKey(actor.id, routeTopicId))
+      ? "on" as const
+      : "off" as const,
+  };
 }
 
 function previewUser(scenario: Scenario): HeaderAuthUser | null {
@@ -3569,6 +3590,28 @@ async function previewTopicAction(
   const form = await request.formData();
   const intent = String(form.get("intent") ?? "");
 
+  if (intent === "setTopicWatch") {
+    const editorActorId = String(form.get("editorActorId") ?? "").trim();
+    const requested = String(form.get("watching") ?? "");
+    if (!editorActorId || (requested !== "true" && requested !== "false")) {
+      return { operation: "topicWatch" as const, error: "invalid" as const };
+    }
+    if (editorActorId !== actor.id) {
+      return { operation: "topicWatch" as const, error: "conflict" as const };
+    }
+    const key = previewTopicWatchKey(actor.id, routeTopicId);
+    const watching = requested === "true";
+    if (watching) interactions.topicWatches.add(key);
+    else interactions.topicWatches.delete(key);
+    return {
+      operation: "topicWatch" as const,
+      ok: true as const,
+      topicId: routeTopicId,
+      actorId: actor.id,
+      watching,
+    };
+  }
+
   if (intent === "reply") {
     const body = String(form.get("body") ?? "").trim();
     if (!body) return null;
@@ -3791,6 +3834,7 @@ function previewCreatedTopicData(
     canManageSolution: scenario.identity !== "guest",
     canConfirmOwnSolution: scenario.identity !== "guest",
     canEditOwnTitle: previewUser(scenario)?.id === topic.authorId,
+    ...previewTopicWatchProps(scenario, interactions, topic.id),
     canManageAnySolution: false,
     canModerateHelpSolution: false,
     isTopicAuthor: scenario.identity !== "guest",
@@ -5966,6 +6010,7 @@ function PreviewTopicRoute({ scenario, interactions }: {
       <TopicView
         locale={scenario.locale}
         canUploadAttachments={false}
+        {...previewTopicWatchProps(scenario, interactions, interactiveHelpTopic.id)}
         topic={interactiveHelpTopic}
         titlePresentation={originalPresentation(
           "topic-title", interactiveHelpTopic.id, interactiveHelpTopic.title.id, interactiveHelpTopic.title.originalContent,
@@ -6011,6 +6056,7 @@ function PreviewTopicRoute({ scenario, interactions }: {
     return <TopicView
       {...data}
       canUploadAttachments={false}
+      {...previewTopicWatchProps(scenario, interactions, interactiveTopic.id)}
       topic={interactiveTopic}
       titlePresentation={interactions.topicTitleEdits.has(interactiveTopic.id)
         ? originalPresentation(
@@ -6115,6 +6161,7 @@ function PreviewTopicRoute({ scenario, interactions }: {
     <TopicView
       locale={scenario.locale}
       canUploadAttachments={false}
+      {...previewTopicWatchProps(scenario, interactions, interactiveTopic.id)}
       topic={interactiveTopic}
       titlePresentation={originalPresentation(
         "topic-title",
