@@ -38,3 +38,15 @@ Reviewed stable exact head `01cecb91090a2f29f90b7c6ae4a83db77a0f4910` against cu
 One confirmed current-scope finding: **TITLE-AUDIT-1-R1 [P3]**. `restoreOpenerFocus.current` remains true when closing a draft while `canEdit=false`, because the component returns null and focus effect cannot consume/clear the request. A later same-key permission restoration makes opener appear and consumes that stale request, causing delayed unexpected focus steal. Return only this narrow correction to Lira. No other current-scope findings confirmed.
 
 Exact-head workflows independently checked: 7/7 SUCCESS; CI checks/database SUCCESS; Watch, Bookmarks and Title connected jobs SUCCESS. Green checks do not override R1. Any implementation change resets whole-PR review.
+
+
+## 2026-11-19 — #354 fresh coordinator whole-PR review after R1: PASS
+
+Reviewed stable exact head `b67e14d81cd20f2e42264e3d25d336ee19db626b` against current main, TASK and corrections plan. Current main remained `bb3d44f...`; only service-regulation docs differ from PR base.
+
+Previous reviewed head `01cecb91...` had one finding, TITLE-AUDIT-1-R1. New implementation delta is limited to `topic-title-editor.tsx` and its component test. The correction consumes the pending focus request before checking whether the opener is available, so a close under `canEdit=false` cannot leave a request that later steals focus when permission returns. Regression exercises the same mounted actor/topic permission-loss → Cancel → focus elsewhere → permission restore sequence.
+
+Unchanged Watch/Bookmark/list corrections were already independently checked on the prior whole-PR cycle and remain byte-unchanged; final PR scope remains exactly 9 files. Final exact-head 7/7 workflows SUCCESS; no review threads/comments introduced new findings.
+
+**Coordinator result: PASS. Confirmed current-scope defects = 0.**
+Next reviewer: Leva / Codex-6.1 Sol, independent whole-PR review of the same exact SHA. Any implementation-head change invalidates this final PASS.
