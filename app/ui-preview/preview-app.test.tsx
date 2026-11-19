@@ -567,9 +567,11 @@ describe("embedded preview routing", { timeout: 10_000 }, () => {
     expect(runtimeHistory).not.toBeNull();
     await user.click(runtimeHistory!);
 
-    expect(await waitFor(() =>
-      document.querySelector('[data-monitor-history-key="system.runtime"]'),
-    )).not.toBeNull();
+    expect(await waitFor(() => {
+      const current = document.querySelector('[data-monitor-history-key="system.runtime"]');
+      expect(current).not.toBeNull();
+      return current;
+    })).not.toBeNull();
     expect(document.querySelector('[data-history-kind="monitor.observed"]')).not.toBeNull();
     expect(document.querySelector("[data-history-filters]")).not.toBeNull();
 
@@ -1247,7 +1249,11 @@ describe("interactive Pages preview", { timeout: 10_000 }, () => {
     expect(openCase).not.toBeNull();
     await user.click(openCase!);
 
-    expect(await waitFor(() => document.querySelector(".complaint-review"))).not.toBeNull();
+    expect(await waitFor(() => {
+      const current = document.querySelector(".complaint-review");
+      expect(current).not.toBeNull();
+      return current;
+    })).not.toBeNull();
 
     const note = document.querySelector('textarea[name="body"]');
     expect(note).not.toBeNull();
