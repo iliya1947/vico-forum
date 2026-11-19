@@ -322,7 +322,8 @@ describe("embedded preview routing", { timeout: 10_000 }, () => {
     expect(await screen.findByRole("heading", { level: 2, name: "Monitoring" })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "System" })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Accounts & authentication" })).toBeInTheDocument();
-    expect(screen.getByText("Infrastructure")).toBeInTheDocument();
+    const pending = document.querySelector(".super-admin-pending-areas") as HTMLElement;
+    expect(within(pending).getByText("Infrastructure")).toBeInTheDocument();
   });
 
   it("requires sign-in for guest direct access to Admin topic", async () => {
