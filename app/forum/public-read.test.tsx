@@ -5062,3 +5062,29 @@ describe.each([
     malformedView.unmount();
   });
 });
+
+
+describe("personal Block presentation in ordinary TopicView", () => {
+  it("keeps post relationships and anchors while withholding blocked body until reveal", async () => {
+    const blocked = { ...helpTopic, posts: helpTopic.posts.map(post => post.id === "help-answer"
+      ? { ...post, body: { ...post.body, originalContent: "A message hidden by personal Block." },
+        attachments: [{ id: "block-attachment", fileName: "hidden.txt", byteSize: 4, detectedType: "text" }] }
+      : post) };
+    renderRoute(TopicRoute, topicRenderData(blocked, {
+      blockedActorId: "viewer-a", blockedAuthorIds: ["lin"], canReply: true,
+    }), "/en/topics/help-question", "en", "ltr", { id: "viewer-a", name: "Viewer" });
+
+    expect(await screen.findByText("Message from a blocked author is hidden.")).toBeInTheDocument();
+    expect(screen.queryByText("A message hidden by personal Block.")).not.toBeInTheDocument();
+    expect(screen.queryByText("hidden.txt")).not.toBeInTheDocument();
+    expect(document.querySelector("#post-help-answer [data-message-body]")).toBeNull();
+    expect(document.getElementById("post-help-answer")).toBeInTheDocument();
+    expect(document.querySelector('#post-help-answer a[href="#post-help-answer"]')).not.toBeNull();
+    expect(screen.getByText("The session disappears after redirect.")).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "Show message" }));
+    expect(await screen.findByText("A message hidden by personal Block.")).toBeInTheDocument();
+    expect(document.querySelector("#post-help-answer [data-message-body]")).not.toBeNull();
+    expect(document.getElementById("post-help-answer")).toBeInTheDocument();
+  });
+});

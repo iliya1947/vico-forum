@@ -201,9 +201,21 @@ describe("Personal Mute/Block: ordinary publication policy", () => {
     // Editing existing post mentions must not reissue an already consumed pair.
     const revision = (await fixture.query<{ current_revision_id: string }>(
       "select current_revision_id from forum_posts where id=$1", [oldPost])).rows[0]!.current_revision_id;
-    // Keep this through the same authoritative published-edit boundary; full replay and
-    // attachment failure acceptance is part of the final integration slice.
-    expect(revision).toBeTruthy();
+    await repository.editPublishedPost({
+      postId: oldPost, topicId: x, actorId: actor, expectedRevisionId: revision,
+      body: "Unrelated edit " + mention(target), draftId: uuid(),
+      attachmentIds: [], retainedAttachmentIds: [],
+    });
+    expect((await visible(oldPost)).some(row => row.recipient_user_id === target)).toBe(false);
+    expect(await receipts(oldPost)).toEqual([target]);
+    const next = (await fixture.query<{ current_revision_id: string }>(
+      "select current_revision_id from forum_posts where id=$1", [oldPost])).rows[0]!.current_revision_id;
+    await repository.editPublishedPost({
+      postId: oldPost, topicId: x, actorId: actor, expectedRevisionId: next,
+      body: "Re-added " + mention(target), draftId: uuid(),
+      attachmentIds: [], retainedAttachmentIds: [],
+    });
+    expect((await visible(oldPost)).some(row => row.recipient_user_id === target)).toBe(false);
     const freshPost = await reply(x, actor, mention(target));
     expect((await visible(freshPost)).some(row => row.recipient_user_id === target)).toBe(true);
   });
