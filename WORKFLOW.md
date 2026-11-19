@@ -22,15 +22,21 @@ Moderation visibility — **scope/fit gate** перед implementation.
 - **V-T2**: отдельный глобальный lock не требуется. Existing row-lock convention подходит: topic mutation locks topic; post mutation следует существующему stable order topic → post; History append last in same transaction. Public filtering должно происходить в SQL до rank/count/LIMIT. Architecture rewrite не требуется.
 - При реализации новые History actions также должны быть добавлены в schema constraint, labels и Owner/Super-admin monitoring classification; это integration requirement, не отдельный product fork.
 
-### Product forks — owner decision required
+### Product scope — уже принят ранее
 
-Явного старого принятия в #342/новом workspace не найдено.
+Повторное согласование не требуется. После owner correction и восстановления прежнего обсуждения от 18 ноября фиксируем ранее пройденные границы:
 
-1. **V-P1 — public model. Recommendation:** hidden topic = neutral public 404 без metadata/source; hidden post in visible topic = stable tombstone retaining id/number/relations, но без body/original/translation/revision/attachments.
-2. **V-P2 — authority/reason. Recommendation:** dedicated `forum.content.visibility.manage`; initial moderator+admin; AP-10 `admin.forum` suppresses it; nonblank reason required for each real Hide **and Restore** transition; no-op/stale/denied produce no History.
-3. **V-P3 — retained state. Recommendation:** Hide/Restore меняет только visibility. Preserve solution/duplicate/read/notifications/Watch/Bookmarks/Mute/Block and retained translation/attachment/revision data; no auto-unsolve/unpin/reopen/backfill. While hidden, public/current projections become unavailable-safe; protected Complaints/Admin evidence remains under its existing private authority.
+1. **V-P1 — public model: ACCEPTED.** Hidden topic = neutral public 404 без metadata/source; hidden post in visible topic = stable tombstone с сохранением id/номера/relations, но без body/original/translation/revision/attachments.
+2. **V-P2 — authority/reason: ACCEPTED.** Dedicated `forum.content.visibility.manage`; initial moderator+admin; AP-10 `admin.forum` suppresses capability; nonblank reason обязателен для каждого реального Hide и Restore; no-op/stale/denied не создают History.
+3. **V-P3 — retained state: ACCEPTED.** Hide/Restore меняет только visibility. Solution/duplicate/read/notifications/Watch/Bookmarks/Mute/Block и retained translation/attachment/revision data сохраняются; нет auto-unsolve/unpin/reopen/backfill. Public/current projections становятся unavailable-safe; protected Complaints/Admin evidence остаётся под существующей private authority.
 
-Implementation PR не открывать до owner решения V-P1–V-P3. После принятия Leva сверяет/финализирует full technical plan against current main, затем Lira начинает bounded implementation.
+Ошибка предыдущего coordinator шага состояла в том, что отсутствие отдельной записи после migration было ошибочно принято за отсутствие принятого решения.
+
+## Назначение и следующий шаг
+
+**Лёва / Codex-6.1 Sol** — сверить уже принятый V1–V9 план с current main `6fa2a43b02c55515bbd46a0d74fe6cc0d4424caf`, внести только необходимые адаптации к фактическому main и разложить implementation на bounded-этапы/критерии готовности. Не переоткрывать V-P1/V-P2/V-P3 и не перепроектировать принятые границы без нового реального конфликта.
+
+После Leva plan checkpoint — STOP Мире/владельцу; затем Лира начинает первый bounded implementation PR.
 
 ## Дальше
 
