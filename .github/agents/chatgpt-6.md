@@ -405,3 +405,17 @@ Deliverables: forward migration `0070_personal_filters` с `forum_topic_mutes` o
 No unrelated Watch audit corrections or production work in this step. Do not infer 4b.3 Block, 4b.4 collapse/reveal, 4b.5 initial-topic/edit replay, 4b.6 private list/pagination, 4b.7 privacy, 4b.8 complaints, 4b.9 RTL from this PASS. Other current-head workflows were still pending at checkpoint; this microstep asserts only dedicated job PASS.
 
 **Лира STOP после 4b.2.** Next separate `...` = **4b.3 directional Block ordinary notification acceptance** only, service checkpoint and STOP; no 4b.4/4c/review/merge. Watch/Bookmarks audit workstream unchanged.
+
+## 2026-11-19 — Лира: 4b.3 directional Block ordinary notifications PASS, STOP
+
+**Scope:** только 4b.3 real Worker + Better Auth + PostgreSQL 17 + Chromium. Implementation Draft PR #351 exact head `15e6d82efd6523292af75c520db2f8b6acb761a9`. Изменён только `tests/browser/personal-filters/check.py`, production/schema/Watch/Bookmarks/UI не менялись.
+
+**Dedicated evidence:** [Personal Mute/Block connected acceptance run 44535910727](https://github.com/iliya1947/vico-forum/actions/runs/44535910727), job `135601125254` **completed SUCCESS**. Лог подтверждает 12/12 `FILTERS_CONNECTED` markers: прежние 4b.1/4b.2 восемь и четыре новых 4b.3:
+1. Chromium A blocks B from canonical public profile: A→B row persisted, B→A remains absent.
+2. A's ordinary reply in B's topic still notifies B even though A blocks B (direction not reversed).
+3. B's real reply under A plus explicit @A is suppressed for A; PG17 records one suppression receipt, no visible notice.
+4. Independent C reply in B's topic delivers ordinary notices to A and B; original Watch subscriptions remain.
+
+No need for production correction established in this bounded test. This is **not** 4b.4 blocked-message collapse/reveal, 4b.5 topic-create/edit mention consumption, 4b.6–4b.11, 4c or PR review/merge. Full exact-head workflows are not asserted complete; dedicated job is the verified gate.
+
+**Лира STOP после 4b.3.** Следующее отдельное `...` активирует **только 4b.4 — viewer-only Block TopicView collapse/reveal и anchors/root/parent/best answer**, затем checkpoint STOP перед 4b.5. #351 Draft, #342 service-only/no merge. Отложенные WATCH-AUDIT-1 и BOOKMARKS-AUDIT-1/2 не затронуты.
