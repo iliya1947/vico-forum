@@ -2099,3 +2099,12 @@ Merge commit = current main:
 Следующий owner-ordered corrective block после этого:
 `WATCH-AUDIT-1` → `BOOKMARKS-AUDIT-1` → `BOOKMARKS-AUDIT-2`.
 `TITLE-AUDIT-1` остаётся для applicable UI/UX.
+
+
+## 2026-11-19 — Лира: Mute/block docs closeout slice 1 — permanent contract + current state in Draft #353
+
+Current service workflow changed during the earlier #351 review cycle: Mira second coordinator whole-PR PASS and Leva independent PASS on stable implementation `0fc239a554c8df562e97bc600f59b6b7b06d36ab`; owner merged #351 into current main `b87a6702b4f97634ee21426f95ece38f53c672ed` at 19:38:41Z. Therefore old handoff task to Mira for #351 is already complete and must not be repeated. New assigned scope is docs-only closeout, with no code/schema edits.
+
+Created branch `docs/personal-filters-closeout` from exact merged main and Draft [PR #353](https://github.com/iliya1947/vico-forum/pull/353), head `167a338ee545a632b4aff8e0d4eb2ba6d75e9be4`. First bounded docs slice committed **only** `PROJECT.md` (permanent user-facing Topic Mute/directional Block contract, no backfill, own private list, existing domain/authority independence) and `PROJECT_STATE.md` (repo/local Mute/Block implementation state, repository migration ceiling `0070_personal_filters`, external migration evidence remains through `0020`). Compare with merged main shows exactly two markdown files, +29/-2 lines; no tests/runtime/schema/ACL changes. Draft is NOT ready for review/merge.
+
+**Лира STOP after docs slice 1.** Next separate user `...` activates slice 2: create `docs/PROJECT_HISTORY/PROJECT_HISTORY_32.md` recording exact-head implementation/correction/coordinator+independent review and verified evidence boundaries, then add navigation entry to `docs/PROJECT_HISTORY/PROJECT_HISTORY.md`, only in #353. After slice 2 separate docs CI and Mira whole-docs review handoff; no Leva review required for docs-only PR. Deferred WATCH-AUDIT-1 → BOOKMARKS-AUDIT-1/2 only after docs closeout merge. #342 service-only/no merge, Stage 6 and TITLE UI/UX not activated.
