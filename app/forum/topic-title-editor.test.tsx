@@ -37,6 +37,26 @@ function setup() {
 }
 
 describe("topic title form", () => {
+  it.each(["Save changes", "Cancel"] as const)("restores focus only after the Edit-title opener is visible again (%s)", async actionLabel => {
+    const { action } = setup();
+    const opener = await screen.findByRole("button", { name: "Edit topic title" });
+    expect(opener).not.toHaveFocus(); // Initial render does not autofocus the editor.
+    fireEvent.click(opener);
+    const input = screen.getByRole("textbox");
+    input.focus();
+    expect(input).toHaveFocus();
+    if (actionLabel === "Save changes") {
+      fireEvent.change(input, { target: { value: "Updated original title" } });
+    }
+    fireEvent.click(screen.getByRole("button", { name: actionLabel }));
+    await waitFor(() => {
+      expect(opener).toBeVisible();
+      expect(opener).toHaveFocus();
+      expect(screen.queryByRole("textbox")).not.toBeInTheDocument();
+    });
+    expect(action).toHaveBeenCalledTimes(actionLabel === "Save changes" ? 1 : 0);
+  });
+
   it("edits original text, keeps its frozen revision across revalidation, and rebases only explicitly", async () => {
     const { router, action, update } = setup();
     fireEvent.click(await screen.findByRole("button", { name: "Edit topic title" }));
