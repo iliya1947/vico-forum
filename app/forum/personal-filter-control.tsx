@@ -75,7 +75,7 @@ export function PersonalFilterControl({ kind, targetId, actorId, locale, state }
           kind === "topic" ? (enabled ? "topicUnmute" : "topicMute") : (enabled ? "userUnblock" : "userBlock"))}
       </button>
     </fetcher.Form>}
-    <span role="status" aria-live="polite" className="topic-watch-status">
+    <span role="status" aria-live="polite" className="personal-filter-status">
       {t(kind === "topic"
         ? confirmed === "unavailable" ? "topicMuteUnavailable" : enabled ? "topicMuteOn" : "topicMuteOff"
         : confirmed === "unavailable" ? "userBlockUnavailable" : enabled ? "userBlockOn" : "userBlockOff")}
