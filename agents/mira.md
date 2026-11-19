@@ -62,3 +62,8 @@ Visibility V1–V9 proposal checked against current PROJECT/PROJECT_STATE, AUTHO
 ## Correction — visibility acceptance was already established
 
 My prior scope/fit step incorrectly treated missing migrated acceptance metadata as an open owner decision. Recovered prior discussion from 18 Nov matches V-P1/V-P2/V-P3 exactly, and owner explicitly corrected that this had already been passed. These product decisions are now recorded as accepted in DECISIONS/visibility plan. Do not ask owner to reconfirm them. Next step is Leva plan finalization against current main only.
+
+
+## 2026-11-20 — moderation visibility plan review: HOLD
+
+Leva completed current-main adaptation of V1–V9. Product/technical content review found no new scope conflict, but one blocking process defect: V8 defines one Draft implementation PR containing B1–B9 while also treating them as bounded checkpoints with STOP after each. Current AGENTS.md requires a separate implementation PR and review cycle for every completed bounded stage; there is no owner exception for visibility. Finding: VIS-PLAN-R1. Return only delivery/checkpoint topology to Leva; do not reopen accepted V-P decisions or technical design. Lira remains unassigned until corrected plan passes.
