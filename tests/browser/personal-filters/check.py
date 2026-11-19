@@ -760,7 +760,7 @@ try:
 
         private(domain_page.goto(base + "/en/bookmarks", wait_until="networkidle"))
         expect(domain_page.locator('ul.bookmarks-list a[href="' + topic_path + '"]')).to_have_count(1)
-        private(domain_page.goto(base + "/en/unread", wait_until="networkidle"))
+        assert domain_page.goto(base + "/en/unread", wait_until="networkidle").status == 200
         expect(domain_page.locator('a.unread-topic-card[href^="' + topic_path + '"]')).to_have_count(1)
         assert domain_page.locator('a.unread-topic-card[href^="' + topic_path + '"]').inner_text()
         assert sql("select count(*)::int as n from forum_topic_read_states "
@@ -768,7 +768,7 @@ try:
         record("muted and blocked topic still appears in own Bookmarks and new/unread discovery")
 
         public_query = "/en/search?q=Personal+filters+smoke"
-        private(domain_page.goto(base + public_query, wait_until="networkidle"))
+        assert domain_page.goto(base + public_query, wait_until="networkidle").status == 200
         expect(domain_page.locator('a.search-result-card[href="' + topic_path + '"]')).to_have_count(1)
         assert guest.request.get(base + public_query).status == 200
         expect(domain_page.get_by_text("Personal filters smoke", exact=True)).to_be_visible()
