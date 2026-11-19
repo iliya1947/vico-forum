@@ -524,8 +524,9 @@ describe("embedded preview routing", { timeout: 10_000 }, () => {
       identity="owner"
     />);
 
-    const shellNav = document.querySelector(".super-admin-panel .admin-panel-nav") as HTMLElement;
-    await user.click(within(shellNav).getByRole("link", { name: "Events" }));
+    const eventsLink = document.querySelector('a[href="/en/super-admin/events"]');
+    expect(eventsLink).not.toBeNull();
+    await user.click(eventsLink!);
 
     const filters = await waitFor(() => {
       const current = document.querySelector("[data-history-filters]") as HTMLElement | null;
