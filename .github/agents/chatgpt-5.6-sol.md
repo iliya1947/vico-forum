@@ -315,3 +315,17 @@ Current AGENTS.md review section explicitly scopes coordinator → independent r
 implementation PRs. #350 is docs-only, authored by Lira; my completed whole-PR docs review
 PASS + applicable CI is sufficient for merge readiness. Previous “Next: Lev independent docs
 review” line is superseded.
+
+
+## 2026-11-19 — #350 merged; Mute/block implementation activated
+
+Verified #350 merged=true at 2026-11-19T08:01:56Z. Current main is
+`9eae385571bf99e073df46f8541f7514c9626a29`.
+
+Re-read current PROJECT.md, PROJECT_STATE.md, AUTHORIZATION.md and COMPLAINTS.md and
+rechecked accepted Mute/block plan. No open Mute/block implementation PR exists.
+
+Owner already accepted M1/M2 exactly as recommended; M3/M4/M6 are therefore final.
+No new product decision is needed before implementation. Lira is the standard implementer.
+Handoff requires one separate implementation PR from current main, full accepted M1–M7 scope,
+real-PG/connected-browser evidence and stable exact head, then coordinator review by Mira.
