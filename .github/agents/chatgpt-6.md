@@ -604,3 +604,10 @@ Implementation Draft #351 remains at **`7bdf468fed9bebb74adf421cb5e231ba14218c8a
 On old `dac264877fd1969e1fd683cc731a8852e2848a16`, `checks` failed one new `filters-view.test.tsx` Block case (2742/2743). Detailed GitHub test DOM includes a correctly re-added user link `/en/users/user-1`, accessible name `Deleted userAdded ...`, while exact string expectation required only `Deleted user`. Code/DOM evidence confirms test assertion mismatch; no missing-row production regression shown. The unit failed before late ACK release. Dedicated browser connected and database PASS at old head.
 
 New test-only `37b7c8e991865a0352562fecbedf74d6f5aeeb53` uses regex `/Deleted user/i` for the user link; new timestamp, delayed-ACK visibility, single POST assertions unchanged. Exact compare one-line change in one test. New CI `44587038549` and dedicated browser `44587038774` in progress, not yet claimed PASS. Continue PF-REVIEW-2 verification only, then STOP before PF-REVIEW-3; #351 Draft, #342 service-only.
+
+
+## 2026-11-19 — Лира: PF-REVIEW-2 corrected exact-head acceptance PASS; STOP
+
+PR #351 exact head `37b7c8e991865a0352562fecbedf74d6f5aeeb53` unchanged after one-line test-only fix (user deleted label accessible name includes Added timestamp). GitHub `checks` run `44587038549` job `135782670721` SUCCESS: 2743/2743 unit tests, 218 files; `app/forum/filters-view.test.tsx` 6/6 (both regression cases). Same CI `database` job `135782669976` SUCCESS. Dedicated Mute/Block `44587038774` job `135782671192` SUCCESS, 48/48 markers with real Worker/Better Auth/PG17/Chromium, artifact `14561498649`. Remaining workflows completed: **16/16 exact-head success**, zero pending/failed. PF-REVIEW-2 bounded PASS, no production code modified in this verification step. Not a Mira review.
+
+STOP before PF-REVIEW-3. Only next separate user `...` authorizes PF-REVIEW-3; no automatic onward transition or Leva until fresh Mira whole-PR PASS. #342 service/no merge; #351 Draft.
