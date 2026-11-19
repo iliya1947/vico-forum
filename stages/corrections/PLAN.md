@@ -29,7 +29,7 @@
 
 Статус на migration head `79066ada...`: implementation и tests уже присутствуют в diff; final author checkpoint ещё не зафиксирован.
 
-## C3 — BOOKMARKS-AUDIT-2 [P2]
+## C3 — BOOKMARKS-AUDIT-2 [P2] — COMPLETE
 
 Причина: Bookmarks list после Remove ACK устанавливает local removed latch. Если до доставки ACK тема уже заново сохранена и fresh loader list снова содержит row, latch продолжает скрывать её, даже после revalidation.
 
@@ -41,7 +41,9 @@
 - не ломать accepted B5 pagination/cursor/account-switch/sessionStorage actor-marker semantics;
 - не вводить global store/version/cache/automatic retry.
 
-## C4 — TITLE-AUDIT-1 [P3]
+Статус: bounded PASS на exact head `6dd9c66c2d22158f41e76089436399082b6553c5`; local `removed` latch удалён, fresh loader authoritative, causal regression и обычное удаление покрыты, 7/7 exact-head workflows SUCCESS.
+
+## C4 — TITLE-AUDIT-1 [P3] — ACTIVE
 
 Причина: title editor вызывает focus на opener до `setDraft(null)` DOM commit, когда opener ещё hidden; Chromium после Save/Cancel остаётся на BODY.
 
