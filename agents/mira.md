@@ -9,7 +9,7 @@
 - Owner объединил WATCH-AUDIT-1, BOOKMARKS-AUDIT-1, BOOKMARKS-AUDIT-2 и TITLE-AUDIT-1 в один Draft #354.
 - Watch-only срез на head `afe23e08f0e54cafbfc2d803fe9f1cee59b2bbbf` был проверен Мирой PASS.
 - Этот PASS не финальный после расширения scope.
-- На момент migration #354 head = `79066adade6a01a1b723d9d2127632182307ed3c`; diff содержит Watch + Bookmark control corrections.
+- #354 head `79066adade6a01a1b723d9d2127632182307ed3c`: WATCH-AUDIT-1 и BOOKMARKS-AUDIT-1 закрыты bounded implementation+evidence; Bookmarks control loader-authoritative, stale successful ACK не является вторым owner state. Следующий bounded-шаг — BOOKMARKS-AUDIT-2.
 - После author self-check всего пакета Мира обязана заново проверить **весь #354**, а не только delta от Watch PASS.
 - Только после fresh Mira PASS Лёва получает один independent review того же exact head.
 
