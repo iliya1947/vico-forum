@@ -28,3 +28,8 @@ Feature implementation/tests/CI/browser visibility acceptance не выполн�
 
 - Moderation visibility: current V1–V9/B1–B9 готов к plan checkpoint; implementation не активен.
 - Forum structure/topic move: S0–S10 plan принят Мирой; implementation не активен.
+
+
+## 2026-11-20 — stacked delivery adopted
+
+Owner decision: moderation visibility и будущие подходящие составные задачи использовать stacked bounded PR ladder. Для task5: B1 from main, B2 from B1 head … B9 from B8 head; после B9 final head folded into B1, B2–B9 closed superseded, final B1 → Mira whole-feature → Leva independent whole-feature → owner merge. AGENTS.md должен быть отдельно обновлён после текущей задачи, чтобы закрепить этот workflow глобально.
