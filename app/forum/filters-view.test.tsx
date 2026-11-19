@@ -122,7 +122,7 @@ describe("personal Filters list presentation", () => {
         () => stored ? [stored] : []);
       fireEvent.click(await screen.findByRole("button", { name: undoName }));
       await waitFor(() => expect(action).toHaveBeenCalledTimes(1));
-      expect(screen.getByRole("button", { name: "Removing filter…" })).toBeDisabled();
+      expect(screen.getByRole("button", { name: "Removing…" })).toBeDisabled();
 
       // Another session re-adds the same actor + target before old ACK settles.
       // The row's React key stays identical; only its authoritative creation changes.
