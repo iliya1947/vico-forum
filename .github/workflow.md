@@ -33,34 +33,23 @@
 
 ## Следующий шаг
 
-**4a полностью закрыт.** Exact implementation head:
-`83b32eb364d74a2fd85377dbc907f7723254edf4`.
+**Mute/block: 4a.1–4a.9 завершены; Лира STOP после 4a.9.** Implementation Draft PR #351: exact head `83b32eb364d74a2fd85377dbc907f7723254edf4`, base `9eae385571bf99e073df46f8541f7514c9626a29`. Service PR #342 — рабочий канал, не merge.
 
-Подтверждённое 4a evidence:
-- PostgreSQL 17 full suite: 109/109 files, 1476/1476 tests PASS;
-- targeted personal-filters concurrency/lifecycle: 27/27 PASS;
-- Watch early-rejection timing regression устранён только в test harness;
-- SA07 transient failure независимо диагностирован Мирой и не признан current-scope regression;
-- тот же SA07 на том же exact head повторно SUCCESS без code changes;
-- текущий exact-head workflow set: **19/19 SUCCESS**.
+**Verified 4a:** real PostgreSQL 17 **27/27 targeted concurrency/atomicity tests** и full **1476/1476 tests, 109/109 files PASS**. `CI` jobs `database` и `checks` SUCCESS (run `44522424656`). **15/15 workflow SUCCESS после отдельного повторного SA07 job `135564876373` на том же head**, без code changes. Первый SA07 job `135554174007` FAIL: `/en/super-admin/monitoring/integrations.data` ответил 503 вместо 200. Точная первопричина **не установлена**; не подтверждена Mute/block regression. В 4a изменены только `tests/database/personal-filters-concurrency.test.ts` и `tests/database/topic-watch.test.ts` (timing rejection assertion), production/schema/UI без изменений.
 
-**Следующий bounded implementation/acceptance этап — 4b, исполнитель Лира / ChatGPT-6.**
-Выполнить dedicated connected Worker + Better Auth + PostgreSQL 17 + Chromium acceptance
-для personal Mute/block на существующем #351 без изменения принятого product scope.
+**Следующая команда `...` — ТОЛЬКО 4b.1:** на текущем main изучить существующие connected harness/CI, создать минимальный dedicated Worker + Better Auth + PostgreSQL 17 + Chromium Mute/block test harness и подтверждённый smoke. Зафиксировать результат в #342 и **STOP**; не переходить к 4b.2.
 
-4b должен доказать через реальный connected path как минимум:
-- authenticated topic Mute ON/OFF и prospective notification suppression без backfill;
-- directional Block A→B suppression ordinary notifications;
-- viewer-only collapse/reveal постов B для A и отсутствие publication/read ban;
-- private `/:locale/filters` own-state и account isolation;
-- lifecycle/account-switch/private-cache boundaries;
-- независимость Watch/Bookmarks/read-state и отсутствие нового RBAC.
+**4b разбита на отдельные микрошаги. Каждый начинается только по отдельной явной команде и заканчивается собственным checkpoint + STOP:**
+1. **4b.1** — dedicated connected harness и изолированный smoke.
+2. **4b.2** — Topic Mute/Unmute: Watch/author/parent/mention notification paths.
+3. **4b.3** — directional Block A→B: ordinary notifications от B, независимость B→A, разрешённые события C.
+4. **4b.4** — Block TopicView: collapsed bodies/attachments, reveal, anchors/root/parent/best answer.
+5. **4b.5** — prospective suppression: initial-topic/edit mentions, old receipt/no-backfill, replay/new posts.
+6. **4b.6** — private `/:locale/filters`: own lists, pagination, undo/reload, topic/profile controls.
+7. **4b.7** — privacy/errors: guest, actor switch, no reverse graph, no-store, 503, late responses.
+8. **4b.8** — independence: complaints/Owner/evidence, Watch/Bookmarks/read markers, public profile/search.
+9. **4b.9** — EN/RU/HE, keyboard и narrow RTL Chromium.
+10. **4b.10** — отдельный full dedicated Mute/block connected acceptance и исправления только подтверждённых current-scope defects.
+11. **4b.11** — отдельный exact-head CI/regressions, evidence/4b closeout, STOP.
 
-Если connected acceptance выявит подтверждённый implementation defect — исправить локально в #351,
-добавить regression evidence и завершить новый stable exact head. Если defect не подтверждён —
-production код не трогать.
-
-После завершения 4b — отдельный checkpoint и **STOP**. Финальный 4c exact-head CI/ACL/manifest/
-handoff выполняется только после следующей команды владельца.
-
-#351 Draft/no merge; #342 service-only/no merge; #300 не использовать.
+Ранние existing Chromium regressions **не заменяют** dedicated Mute/block acceptance. **4c** final exact-head CI/ACL/manifest/self-check и handoff выполняется только после завершения 4b и новой команды; review Мира → Лёва только после 4c. Не начинать 4b в текущем 4a.9. No merge, Stage6, moderation visibility, overall UI/UX или #300.

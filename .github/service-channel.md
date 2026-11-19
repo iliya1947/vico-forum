@@ -1314,3 +1314,14 @@ Exact implementation head остаётся
 подтверждённом defect из connected path.
 
 После 4b checkpoint → STOP; 4c отдельно.
+
+
+## 2026-11-19 — Лира: 4a.9 route clarification, factual corrections и микроэтапы 4b — STOP
+
+Мира уже зафиксировала закрытие 4a.9 в service branch. По прямому текущему `...` выполнена только проверка/уточнение handoff; код PR #351 не менялся, 4b не начата.
+
+**Уточнение evidence:** GitHub exact-head API показывает **15/15 workflow SUCCESS**, а не 19/19. В `CI` отдельно два SUCCESS jobs — `checks`/`database`. Достоверно: 27/27 новых PostgreSQL races и 1476/1476 full PG tests PASS; первый SA07 job дал classified 503 на Integrations data, повтор на том же head SUCCESS без code changes. **Первопричина исходного 503 не проверена**; timeout/availability классификация route не доказывает точный источник отказа. Это не подтверждённый current-scope Mute/block defect. В permanent/common state не записывать «19/19» или доказанный timeout.
+
+**Декомпозиция для следующего исполнителя (Лира):** 4b разделена на **4b.1–4b.11** по M7 (harness; Mute fanout; Block direction; collapse/reveal; no-backfill; own filters; privacy/actor/errors; independence; RTL/a11y; focused browser acceptance; final CI/handoff). Каждый микрошаг — отдельная команда `...`, проверяемый результат, запись в #342 и STOP. Первым разрешён только **4b.1: isolated real Worker/Better Auth/PG17/Chromium harness + minimal smoke**. Ни 4b.2, ни 4c, ни reviews автоматически не запускать. Точный operational контракт — `.github/workflow.md`.
+
+**Лира STOP после 4a.9**; #351 остаётся Draft на `83b32eb364d74a2fd85377dbc907f7723254edf4` без изменений, #342 служебный/no merge.
