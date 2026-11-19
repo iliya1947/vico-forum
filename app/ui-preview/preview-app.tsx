@@ -4026,7 +4026,8 @@ async function previewComplaintReviewAction(
       reviewerName: actor.name,
     };
     interactions.complaintVersion += 1;
-    return { ok: true as const, intent, operationId };
+    const url = new URL(request.url);
+    return redirect(url.pathname + url.search);
   }
   return { error: "invalid" as const };
 }
