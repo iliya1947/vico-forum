@@ -631,3 +631,21 @@ Compare old→new подтверждает ровно 1 Markdown path, +1/-1; о
 не изменились. Предыдущий whole-docs review установил, что иных findings нет.
 Автоматический CI нового exact head на момент записи ещё не появился в GitHub workflow list,
 поэтому финальный docs PASS/Ready не заявлен до проверки CI.
+
+
+## 2026-11-19 — Мира: #353 docs PASS after owner-directed one-line correction
+
+Owner correctly challenged the unnecessary wait for a new full CI after DOC-PF-1.
+The correction from reviewed docs head `f81fc478...` to
+`709940dfe8e0c091c4c981b9bce1a412e3c7fd13` changes only one Markdown line in
+`PROJECT_STATE.md` (+1/-1), replacing inaccurate wording about “saved suppressed
+notifications” with factual “suppressed recipient–post pairs”.
+
+The previous whole-docs review had no other findings. This micro-edit does not touch
+code, schema, runtime, config, tests or executable contract, so waiting for another
+full technical CI as a substantive docs-review gate is not justified. The automatically
+triggered CI may run independently, but docs acceptance does not depend on it for this
+one-line wording correction.
+
+#353 is now **Ready for review**. Whole-docs result: **PASS**.
+Owner may merge #353 if GitHub permits; no Leva docs review is required.
