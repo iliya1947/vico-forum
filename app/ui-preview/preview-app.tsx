@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { I18nextProvider, useTranslation } from "react-i18next";
-import { RouterProvider, createMemoryRouter, redirect, useActionData, useLoaderData, useParams, useSearchParams } from "react-router";
+import { Link, RouterProvider, createMemoryRouter, redirect, useActionData, useLoaderData, useParams, useSearchParams } from "react-router";
 
 import {
   HeaderAuthProvider,
@@ -25,6 +25,7 @@ import { HistoryEvents } from "../admin/history";
 import { SuperAdminOverview } from "../super-admin/overview";
 import { SuperAdminSa02Current } from "../super-admin/current-route";
 import { SuperAdminMonitoringIndex, SuperAdminShell, SystemMonitorCards } from "../super-admin/view";
+import { superAdminMonitoringPath } from "../super-admin/paths";
 import type { AdminHistoryChange, AdminHistoryEvent } from "../../db/admin-history";
 import { projectAdminTopic } from "../admin/topic-model";
 import type { ForumHelpSolutionsFilters, ForumPopularPage } from "../../db/forum-repository";
@@ -1649,7 +1650,7 @@ function PreviewSuperAdminSystemRoute() {
       <h2 id="super-admin-system-heading">{t("superAdminSystem")}</h2>
       <p>{t("superAdminSystemCoverage")}</p>
       <SystemMonitorCards locale={locale} system={system} />
-      <p><a href={`/${locale}/super-admin/monitoring`}>{t("superAdminMonitoring")}</a></p>
+      <p><Link to={superAdminMonitoringPath(locale)}>{t("superAdminMonitoring")}</Link></p>
     </section>
   </SuperAdminShell>;
 }
