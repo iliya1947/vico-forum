@@ -326,9 +326,12 @@ describe("Watch real PostgreSQL persistence, fanout and ordering", () => {
       await blocker.query('update "user" set deactivated_at=now(),deactivated_by_user_id=$1,'
         + "retain_at_least_until=now()+interval '2 years' where id=$1", [watcher]);
       const pending = forum.setTopicWatch({ topicId: x.topicId, actorId: watcher, watching: true });
+      // Attach the rejection assertion before COMMIT; under load the rejected
+      // actor-admission promise can settle before a post-COMMIT await attaches.
+      const rejected = expect(pending).rejects.toBeInstanceOf(AccountInactiveError);
       await new Promise(resolve => setTimeout(resolve, 30));
       await blocker.query("commit");
-      await expect(pending).rejects.toBeInstanceOf(AccountInactiveError);
+      await rejected;
       expect(await forum.readTopicWatch(watcher, x.topicId)).toBe(false);
     } finally {
       await blocker.query("rollback").catch(() => {});
