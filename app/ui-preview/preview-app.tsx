@@ -4609,6 +4609,7 @@ function PreviewCategoryRoute({ scenario, interactions }: {
     return (
       <HelpSolutionsView
         locale={scenario.locale}
+        canUploadAttachments={false}
         mode={mode}
         filters={filters}
         page={combinedFilteredPage}
@@ -4721,6 +4722,7 @@ function PreviewSectionRoute({ scenario, interactions }: {
   return (
     <SectionView
       locale={scenario.locale}
+      canUploadAttachments={false}
       section={page}
       canCreateTopic={scenario.identity !== "guest"}
       topicReadStates={scenario.identity === "guest" ? null : Object.fromEntries(
@@ -5851,7 +5853,7 @@ function PreviewTopicRoute({ scenario, interactions }: {
 
   const createdTopic = routeTopicId ? interactions.createdTopics.get(routeTopicId) : undefined;
   if (createdTopic) {
-    return <TopicView {...previewCreatedTopicData(scenario, createdTopic, interactions)} />;
+    return <TopicView {...previewCreatedTopicData(scenario, createdTopic, interactions)} canUploadAttachments={false} />;
   }
 
   const helpQuestion = previewHelpSolutions(scenario.locale).questions
@@ -5926,6 +5928,7 @@ function PreviewTopicRoute({ scenario, interactions }: {
     return (
       <TopicView
         locale={scenario.locale}
+        canUploadAttachments={false}
         topic={interactiveHelpTopic}
         titlePresentation={originalPresentation(
           "topic-title", interactiveHelpTopic.id, interactiveHelpTopic.title.id, interactiveHelpTopic.title.originalContent,
@@ -5970,6 +5973,7 @@ function PreviewTopicRoute({ scenario, interactions }: {
     const interactiveTopic = previewApplyTopicState(data.topic, interactions);
     return <TopicView
       {...data}
+      canUploadAttachments={false}
       topic={interactiveTopic}
       postPresentations={previewPresentationsForTopic(data.postPresentations, interactiveTopic)}
     />;
@@ -6063,6 +6067,7 @@ function PreviewTopicRoute({ scenario, interactions }: {
   return (
     <TopicView
       locale={scenario.locale}
+      canUploadAttachments={false}
       topic={interactiveTopic}
       titlePresentation={originalPresentation(
         "topic-title",
