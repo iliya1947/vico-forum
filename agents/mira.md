@@ -67,3 +67,8 @@ My prior scope/fit step incorrectly treated missing migrated acceptance metadata
 ## 2026-11-20 — moderation visibility plan review: HOLD
 
 Leva completed current-main adaptation of V1–V9. Product/technical content review found no new scope conflict, but one blocking process defect: V8 defines one Draft implementation PR containing B1–B9 while also treating them as bounded checkpoints with STOP after each. Current AGENTS.md requires a separate implementation PR and review cycle for every completed bounded stage; there is no owner exception for visibility. Finding: VIS-PLAN-R1. Return only delivery/checkpoint topology to Leva; do not reopen accepted V-P decisions or technical design. Lira remains unassigned until corrected plan passes.
+
+
+## Correction — VIS-PLAN-R1 was process, not technical
+
+The one-PR B1–B9 topology mismatch was incorrectly classified as a technical plan finding and returned to Leva. This was wrong: AGENTS conformance is Mira's workflow responsibility. I corrected the service plan directly without changing V1–V9 technical content. Plan review is PASS; Lira is assigned B1 only, in its own implementation PR.
