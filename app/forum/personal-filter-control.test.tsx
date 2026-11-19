@@ -19,16 +19,16 @@ function runtime() {
   });
 }
 function Page() {
-  const { kind, targetId } = useParams();
+  const { kind, targetId, viewerId } = useParams();
   const { state } = useLoaderData() as { state: PersonalFilterState };
-  return <PersonalFilterControl key={JSON.stringify([kind, targetId])}
+  return <PersonalFilterControl key={JSON.stringify([kind, targetId, viewerId ?? "actor-a"])}
     kind={kind as "topic" | "user"} targetId={targetId!}
-    actorId="actor-a" locale="en" state={state} />;
+    actorId={viewerId ?? "actor-a"} locale="en" state={state} />;
 }
 function setup(kind: "topic" | "user", action: ({ request }: { request: Request }) => Promise<unknown>,
   snapshot: () => PersonalFilterState = () => "off") {
   const router = createMemoryRouter([{
-    path: "/en/test/:kind/:targetId", Component: Page, loader: () => ({ state: snapshot() }),
+    path: "/en/test/:kind/:targetId/:viewerId?", Component: Page, loader: () => ({ state: snapshot() }),
   }, {
     path: "/en/topics/:topicId", action,
   }, {
@@ -95,4 +95,36 @@ describe("Personal Mute/Block controls", () => {
     }));
     expect(screen.getByRole("button", { name: "Mute topic" })).toHaveAttribute("aria-pressed", "false");
   });
+
+  it.each(["topic", "user"] as const)("isolates a late %s success from a different signed-in actor", async kind => {
+    let finish!: (response: unknown) => void;
+    const delayed = new Promise<unknown>(resolve => { finish = resolve; });
+    const action = vi.fn(async () => delayed);
+    const router = setup(kind, action);
+    fireEvent.click(await screen.findByRole("button", { name: kind === "topic" ? "Mute topic" : "Block user" }));
+    await waitFor(() => expect(action).toHaveBeenCalledTimes(1));
+    await act(async () => { await router.navigate("/en/test/" + kind + "/item-1/actor-b"); });
+    const next = await screen.findByRole("button", { name: kind === "topic" ? "Mute topic" : "Block user" });
+    expect(next).toHaveAttribute("aria-pressed", "false");
+    await act(async () => finish(kind === "topic"
+      ? { operation: "topicMute", ok: true, actorId: "actor-a", topicId: "item-1", muted: true }
+      : { operation: "userBlock", ok: true, actorId: "actor-a", targetId: "item-1", blocked: true }));
+    expect(next).toHaveAttribute("aria-pressed", "false");
+    expect(action).toHaveBeenCalledTimes(1);
+  });
+
+  it("treats a typed Block 503 as unknown, never OFF, and refreshes without replaying POST", async () => {
+    let value: PersonalFilterState = "off";
+    const action = vi.fn(async () => data({ operation: "userBlock", error: "unavailable" }, { status: 503 }));
+    setup("user", action, () => value);
+    fireEvent.click(await screen.findByRole("button", { name: "Block user" }));
+    expect(await screen.findByText("Block status is unavailable.")).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Block user" })).not.toBeInTheDocument();
+    value = "on";
+    fireEvent.click(screen.getByRole("button", { name: "Refresh filter status" }));
+    expect(await screen.findByRole("button", { name: "Unblock user" }))
+      .toHaveAttribute("aria-pressed", "true");
+    expect(action).toHaveBeenCalledTimes(1);
+  });
+
 });
