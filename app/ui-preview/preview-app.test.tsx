@@ -1313,6 +1313,29 @@ describe("interactive Pages preview", { timeout: 10_000 }, () => {
     expect(screen.getByRole("combobox", { name: "Processing priority" })).toHaveValue("3");
   });
 
+  it("opens and resolves a complaint appeal", async () => {
+    const user = userEvent.setup();
+    await renderEmbeddedPreview(<EmbeddedPreview
+      scenarioId="attention-complaints"
+      identity="manager"
+    />);
+
+    const groupNav = document.querySelector(".attention-group-nav") as HTMLElement;
+    await user.click(within(groupNav).getByRole("link", { name: "Appeals" }));
+    expect(await screen.findByText("Pending appeals: 1")).toBeInTheDocument();
+    await user.click(screen.getByRole("link", { name: "Open appeal" }));
+
+    expect(await screen.findByRole("heading", { level: 1, name: "Appeal review" })).toBeInTheDocument();
+    await user.selectOptions(screen.getByRole("combobox", { name: "Appeal outcome" }), "overturned");
+    const reasoning = document.querySelector('textarea[name="reasoning"]');
+    expect(reasoning).not.toBeNull();
+    await user.type(reasoning!, "Preview appeal resolution");
+    await user.click(screen.getByRole("button", { name: "Record appeal result" }));
+
+    expect(await screen.findByText("Preview appeal resolution")).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Record appeal result" })).not.toBeInTheDocument();
+  });
+
   it("runs the global search form instead of blocking GET submissions", async () => {
     const user = userEvent.setup();
     await renderEmbeddedPreview(<EmbeddedPreview scenarioId="home-guest" />);
