@@ -14,7 +14,7 @@ Baseline: `6fa2a43b02c55515bbd46a0d74fe6cc0d4424caf` после #354. Repository
 4. Допускается hide root и best answer без implicit topic hide. Topic hide делает все posts effectively unavailable, не меняя individual flags; topic restore не раскрывает individually hidden posts. Post restore под hidden parent не делает тему публичной.
 5. Обычный автор не имеет hidden-source bypass. Private inspection требует отдельной fresh capability, а не isAdmin/canReply/author/query flag.
 6. Решения V-P2/V-P3: `forum.content.visibility.manage`, initial moderator/admin, AP-10 `admin.forum`; непустая причина для каждого реального Hide и Restore. Retain solution/duplicate/read/inbox/Watch/Bookmarks/Mute/Block, revisions/translations/attachments/evidence; никаких automatic unsolve/unpin/reopen/backfill.
-7. Один законченный bounded продуктовый этап включает **обе сущности и все read/write/asset paths** в одном implementation PR. Внутренние checkpoints B1–B9 ниже не являются отдельно выпускаемыми feature PR. Backend-only hide с открытыми readers не review-ready.
+7. Один законченный продуктовый результат включает **обе сущности и все read/write/asset paths**, но реализуется stacked bounded PR-лестницей B1→B9. Каждый B — отдельный implementation PR относительно предыдущей ступени; промежуточные ступени не merge в main. После B9 весь итоговый head сворачивается в B1, и B1 становится единым feature PR для финального review/merge. Backend-only hide с открытыми readers не review-ready.
 
 ## V2. Текущие seams и адаптации после прежнего плана
 
@@ -122,7 +122,7 @@ Complaint evidence/context/review, immutable Admin/Owner retained History и и�
 
 ## V8. Последовательность реализации и критерии готовности
 
-**Каждый B1–B9 является отдельным bounded-этапом и выполняется в отдельном implementation PR** от актуального main в соответствии с действующим `AGENTS.md`. После завершения каждого этапа: author self-check → Mira whole-PR review stable exact head → Leva independent review того же head → owner merge → только затем следующий bounded-этап. Промежуточный зелёный CI не подтверждает готовность всей visibility feature. Backend commands не выставлять пользовательскому route до готовности соответствующих read/asset/projection gates.
+**B1–B9 реализуются как stacked bounded PR-лестница.** B1 base = `main`; каждый следующий B base = head-ветка предыдущего. Каждый PR изолирует локальный bounded diff, но промежуточные ступени не merge в `main`. После B9 итоговый head всей цепочки переносится/fast-forward'ится в ветку B1; B2–B9 закрываются как superseded. Собранный B1 проходит final stable-head author self-check → Mira whole-feature review → Leva independent whole-feature review того же head → owner merge. Если нижняя ступень изменена, верхние ступени синхронизируются до продолжения. Промежуточный зелёный CI не подтверждает готовность всей visibility feature. Backend commands не выставлять пользовательскому route до готовности соответствующих read/asset/projection gates.
 
 | Checkpoint | Результат и обязательная проверка до STOP |
 | --- | --- |
@@ -136,7 +136,7 @@ Complaint evidence/context/review, immutable Admin/Owner retained History и и�
 | **B8 — complete PG/connected acceptance** | Весь matrix ниже через real PG connections и actual Worker/Better Auth/Chromium/local R2 binding. Все public/private/old aliases и sentinel scans закрыты; local fault injection подтверждает fail-closed/atomicity. Не подменять разрешённый asset download ответом503. |
 | **B9 — exact-head closeout/handoff** | Author self-check всего PR; final lint/typecheck/unit/full PG/build/preview/history/metadata/manifest/privilege/provisioning + dedicated connected CI. Stable SHA, весь scope Мира→Лёва→owner merge; затем отдельный docs closeout. |
 
-First authorized implementation stage после plan handoff — **только B1** в отдельном implementation PR. Следующие B2–B9 открываются последовательно после полного review+merge предыдущего bounded-этапа. Точный номер implementation PR выбирается при открытии; в текущем planning-turn PR/code не создаются.
+First authorized implementation stage после plan handoff — **только B1** в отдельном PR от `main`. B2 открывается поверх head-ветки B1, затем аналогично B3…B9. До финальной сборки ни одна промежуточная ступень не merge в `main`.
 
 ### Полная acceptance matrix
 
@@ -157,8 +157,8 @@ First authorized implementation stage после plan handoff — **только
 
 ## V9. Handoff и границы текущего результата
 
-**Мире:** проверить полноту этой адаптации и dependency mapping, затем назначить Лире B1 в отдельном implementation PR. V-P1/V-P2/V-P3 уже приняты, не запрашивать их заново. V-T1/V-T2 совместимы с baseline; если появится реальный новый технический конфликт, локально скорректировать его до реализации, не переоткрывая весь scope.
+**Мире:** plan review PASS; вести stacked bounded PR workflow, проверять checkpoint каждого B на отсутствие блокирующего дефекта перед построением следующей ступени и после B9 собрать весь стек в B1 для formal whole-feature review. V-P1/V-P2/V-P3 уже приняты, не запрашивать их заново. V-T1/V-T2 совместимы с baseline; если появится реальный новый технический конфликт, локально скорректировать его до реализации, не переоткрывая весь scope.
 
-**Лире:** перед B1 перечитать current main/ceiling и актуальное назначение, выполнить только B1 и STOP. Не называть foundation завершённой visibility feature. Stable review возможен только после B2–B9 и закрытия всех public leaks. #342 не merge; implementation merge — владелец. Permanent contract/factual PROJECT_STATE/history — отдельным docs PR после фактического merge.
+**Лире:** перед B1 перечитать current main/ceiling и актуальное назначение, выполнить только B1 и STOP. Следующий B создавать поверх head-ветки предыдущего только после coordinator checkpoint. Не называть промежуточную ступень завершённой visibility feature. После B9 весь стек будет собран в B1 и только собранный B1 пойдёт в formal whole-feature review. #342 не merge; финальный feature merge — владелец. Permanent contract/factual PROJECT_STATE/history — отдельным docs PR после фактического merge.
 
 Код/schema/runtime не менялись. Feature tests/CI/browser visibility acceptance **не выполнялись**: это план будущих проверок. Current full V1–V9 основан на восстановленном принятом плане и проверенных source seams, не новая архитектура. Stage6/deployed bindings/providers/production grants, removal уже доставленных bytes и общий UI/UX/refinement вне scope. Сохраняется известное Drizzle generator limitation; unrelated generator/index refactor не добавлять.
