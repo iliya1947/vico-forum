@@ -727,6 +727,160 @@ try:
         expect(page.get_by_text("You have not blocked any users.")).to_be_visible()
         record("real Better Auth actor switch in same Chromium context cannot reuse A's cursor/list")
 
+        # 4b.8: permissions, Watch, Bookmarks, read markers, public search
+        # and protected Complaint evidence must not inherit personal filters.
+        domain, domain_id = account("Filters domain independence viewer")
+        domain_page = domain.new_page()
+        domain_page.on("pageerror", lambda error: errors.append(str(error)))
+        assert sql("select topic_id from forum_topic_read_states where user_id=$1",
+                   [domain_id]) == []
+        watch(domain, domain_id, topic_path)
+        bookmark_response = domain.request.post(
+            base + topic_path, headers={"Origin": base},
+            form={"intent": "setTopicBookmark", "editorActorId": domain_id,
+                  "bookmarked": "true"})
+        private(bookmark_response)
+        mute(domain, domain_id, topic_path, True)
+        domain_block = domain.request.post(
+            base + profile_path, headers={"Origin": base},
+            form={"intent": "setUserBlock", "editorActorId": domain_id, "blocked": "true"})
+        private(domain_block)
+        for table, key in (("forum_topic_watches", "topic_id"),
+                           ("forum_topic_bookmarks", "topic_id"),
+                           ("forum_topic_mutes", "topic_id")):
+            assert sql("select " + key + " from " + table
+                       + " where user_id=$1 and topic_id=$2",
+                       [domain_id, seeded["topicId"]]) == [{key: seeded["topicId"]}]
+        assert sql("select blocked_user_id from forum_user_blocks "
+                   "where user_id=$1 and blocked_user_id=$2",
+                   [domain_id, author_id]) == [{"blocked_user_id": author_id}]
+        assert sql("select count(*)::int as n from forum_topic_read_states "
+                   "where user_id=$1", [domain_id]) == [{"n": 0}]
+        record("real Mute+Block preserve distinct Watch and Bookmark rows and do not create read markers")
+
+        private(domain_page.goto(base + "/en/bookmarks", wait_until="networkidle"))
+        expect(domain_page.locator('ul.bookmarks-list a[href="' + topic_path + '"]')).to_have_count(1)
+        private(domain_page.goto(base + "/en/unread", wait_until="networkidle"))
+        expect(domain_page.locator('a.unread-topic-card[href^="' + topic_path + '"]')).to_have_count(1)
+        assert domain_page.locator('a.unread-topic-card[href^="' + topic_path + '"]').inner_text()
+        assert sql("select count(*)::int as n from forum_topic_read_states "
+                   "where user_id=$1", [domain_id]) == [{"n": 0}]
+        record("muted and blocked topic still appears in own Bookmarks and new/unread discovery")
+
+        public_query = "/en/search?q=Personal+filters+smoke"
+        private(domain_page.goto(base + public_query, wait_until="networkidle"))
+        expect(domain_page.locator('a.search-result-card[href="' + topic_path + '"]')).to_have_count(1)
+        assert guest.request.get(base + public_query).status == 200
+        expect(domain_page.get_by_text("Personal filters smoke", exact=True)).to_be_visible()
+        private(domain_page.goto(base + profile_path, wait_until="networkidle"))
+        expect(domain_page.locator("#profile-name")).to_contain_text("Filters author")
+        expect(domain_page.get_by_role("button", name="Unblock user", exact=True)).to_be_visible()
+        assert sql("select count(*)::int as n from forum_topic_read_states "
+                   "where user_id=$1", [domain_id]) == [{"n": 0}]
+        record("public Search and blocked author's Profile remain visible; discovery creates no read marker")
+
+        # Authenticated topic page-view marks the latest delivered post even
+        # if its author is blocked. Revealing a collapsed post does not mark anew.
+        private(domain_page.goto(base + topic_path, wait_until="networkidle"))
+        collapsed = domain_page.locator("#post-" + b_post)
+        expect(collapsed.locator("[data-filtered-post]")).to_have_count(1)
+        expect(domain_page.locator(".topic-watch-control button[aria-pressed=true]")).to_have_count(1)
+        expect(domain_page.locator(".topic-bookmark-control button[aria-pressed=true]")).to_have_count(1)
+        expect(domain_page.locator(".personal-filter-control button[aria-pressed=true]")).to_have_count(1)
+        read_before_reveal = sql(
+            "select last_read_post_id,updated_at from forum_topic_read_states "
+            "where user_id=$1 and topic_id=$2", [domain_id, seeded["topicId"]])
+        assert len(read_before_reveal) == 1, read_before_reveal
+        latest = sql("select id from forum_posts where topic_id=$1 "
+                     "order by created_at desc,id desc limit 1", [seeded["topicId"]])[0]["id"]
+        assert read_before_reveal[0]["last_read_post_id"] == latest, (
+            read_before_reveal, latest)
+        collapsed.get_by_role("button", name="Show message").click()
+        expect(collapsed.locator("[data-message-body]")).to_contain_text("Blocked B to A")
+        assert sql("select last_read_post_id,updated_at from forum_topic_read_states "
+                   "where user_id=$1 and topic_id=$2",
+                   [domain_id, seeded["topicId"]]) == read_before_reveal
+        assert sql("select count(*)::int as n from forum_topic_watches "
+                   "where user_id=$1 and topic_id=$2",
+                   [domain_id, seeded["topicId"]]) == [{"n": 1}]
+        assert sql("select count(*)::int as n from forum_topic_bookmarks "
+                   "where user_id=$1 and topic_id=$2",
+                   [domain_id, seeded["topicId"]]) == [{"n": 1}]
+        record("blocked body Reveal does not advance read marker; normal topic view still marks latest post")
+
+        # The Complaint Report affordance must remain available on a still
+        # collapsed B-authored root, and the immutable target evidence must be
+        # readable by a permitted reviewer who also blocks that author.
+        root_reporting = domain_page.locator("#post-" + root_post)
+        expect(root_reporting.locator("[data-filtered-post]")).to_have_count(1)
+        expect(root_reporting.locator(".complaint-open")).to_have_count(1)
+        root_reporting.locator(".complaint-open").click()
+        report_form = root_reporting.locator(".complaint-form")
+        expect(report_form).to_be_visible()
+        report_form.locator('textarea[name="explanation"]').fill(
+            "Independent complaint context survives Mute/Block " + uuid4().hex)
+        with domain_page.expect_response(
+            lambda r: r.request.method == "POST"
+            and "/topics/" + seeded["topicId"] + "/complaints" in r.url
+        ) as reported:
+            report_form.locator('button[type="submit"]').click()
+        private(reported.value)
+        expect(root_reporting.locator(".complaint-confirmation")).to_have_count(1)
+        submitted_case = sql(
+            "select c.id as case_id,t.post_id,t.post_revision_id,"
+            "r.reporter_user_id from forum_complaint_cases c "
+            "join forum_complaint_targets t on t.id=c.target_id "
+            "join forum_complaints r on r.case_id=c.id "
+            "where r.reporter_user_id=$1 and t.post_id=$2",
+            [domain_id, root_post])
+        assert len(submitted_case) == 1, submitted_case
+        root_revision = sql("select current_revision_id from forum_posts where id=$1",
+                            [root_post])[0]["current_revision_id"]
+        assert submitted_case[0]["post_revision_id"] == root_revision
+        assert submitted_case[0]["post_id"] == root_post
+        assert sql("select last_read_post_id,updated_at from forum_topic_read_states "
+                   "where user_id=$1 and topic_id=$2",
+                   [domain_id, seeded["topicId"]]) == read_before_reveal
+        record("report action on still-collapsed blocked original captures immutable Complaint post revision")
+
+        reviewer, reviewer_id = account("Filters independent complaint reviewer")
+        sql("insert into authz_user_permission_overrides(user_id,permission_key,effect) "
+            "values($1,'forum.complaint.review','allow')", [reviewer_id])
+        reviewer_grant = sql(
+            "select permission_key,effect from authz_user_permission_overrides "
+            "where user_id=$1", [reviewer_id])
+        assert reviewer_grant == [{"permission_key": "forum.complaint.review",
+                                   "effect": "allow"}]
+        owner_denied_before = reviewer.request.get(base + "/en/super-admin")
+        private(owner_denied_before, 403)
+        mute(reviewer, reviewer_id, topic_path, True)
+        reviewer_block = reviewer.request.post(
+            base + profile_path, headers={"Origin": base},
+            form={"intent": "setUserBlock", "editorActorId": reviewer_id,
+                  "blocked": "true"})
+        private(reviewer_block)
+        assert sql("select permission_key,effect from authz_user_permission_overrides "
+                   "where user_id=$1", [reviewer_id]) == reviewer_grant
+        owner_denied_after = reviewer.request.get(base + "/en/super-admin")
+        private(owner_denied_after, 403)
+        review_url = "/en/attention/complaints/" + submitted_case[0]["case_id"] + "/review"
+        reviewer_page = reviewer.new_page()
+        reviewer_page.on("pageerror", lambda error: errors.append(str(error)))
+        private(reviewer_page.goto(base + review_url, wait_until="networkidle"))
+        expect(reviewer_page.locator(".complaint-review-source pre").first).to_contain_text(
+            "Public original post")
+        reviewer_context = "/en/attention/complaints/" + submitted_case[0]["case_id"]
+        # Reviewer-only context is a protected distinct loader, not TopicView.
+        context_response = reviewer.request.get(base + reviewer_context + "/context/" + root_post)
+        private(context_response)
+        assert "Public original post" in context_response.text()
+        assert sql("select count(*)::int as n from forum_complaint_cases c "
+                   "join forum_complaint_targets t on t.id=c.target_id "
+                   "where c.id=$1 and t.post_revision_id=$2",
+                   [submitted_case[0]["case_id"], root_revision]) == [{"n": 1}]
+        record("reviewer who Mutes and Blocks still reads protected Complaint revision and context")
+        record("Mute/Block preserve reviewer grant; non-Owner Super-admin guard stays 403")
+
         assert not errors, errors
         assert not external, external
         browser.close()
