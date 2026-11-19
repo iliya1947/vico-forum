@@ -1404,6 +1404,12 @@ describe("interactive Pages preview", { timeout: 10_000 }, () => {
     expect(screen.getByRole("link", { name: /Mixed RTL content with code blocks/ })).toBeInTheDocument();
   });
 
+  it("keeps attachment upload disabled in the static Pages authoring preview", async () => {
+    await renderEmbeddedPreview(<EmbeddedPreview scenarioId="section-user" identity="user" />);
+
+    expect(screen.getByLabelText("Attach")).toBeDisabled();
+  });
+
   it("creates a topic, posts a reply, selects it as best answer, and marks the topic solved", async () => {
     const user = userEvent.setup();
     await renderEmbeddedPreview(<EmbeddedPreview scenarioId="section-user" identity="user" />);
