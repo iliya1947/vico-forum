@@ -2202,3 +2202,12 @@ one-line wording correction.
 
 #353 is now **Ready for review**. Whole-docs result: **PASS**.
 Owner may merge #353 if GitHub permits; no Leva docs review is required.
+
+
+## 2026-11-19 — Мира: WATCH-AUDIT-1 correction activated after #353 merge
+
+Mute/Block docs #353 merged; current main = `a645fbe21110e77429025c428e498194b9a92ca2`. Corrective order owner decision now activates only **WATCH-AUDIT-1 [P2]**; Bookmarks findings remain next and title-focus remains deferred to applicable UI/UX.
+
+Current-main recheck confirms the audited defect is still present: `TopicWatchControl` keeps local `confirmed` as a second owner of loader/server state, and current repository component tests still lack the stale successful ACK after a fresher revalidation regression. No relevant Watch implementation change landed in #351/#353, so Leva's prior root-cause analysis and prototype remain applicable; no new planning cycle is needed.
+
+**Next executor — Лира / ChatGPT-6.** Create a separate bounded implementation PR from current main and correct only WATCH-AUDIT-1. Required result: a fresh authoritative loader snapshot cannot be overwritten by an older successful Watch/Unwatch ACK. Preserve pending/error/explicit refresh, actor/topic response isolation and no automatic POST retry. Do not introduce CAS/version/timestamp/client cache/global store or change backend/schema/RBAC/product semantics. Add deterministic regressions for both state directions and a realistic normal-success loader snapshot, then applicable checks and STOP Mira for coordinator whole-PR review. After Mira PASS, Leva performs independent review on the same exact head.
