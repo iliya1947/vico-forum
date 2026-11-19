@@ -72,3 +72,8 @@ Leva completed current-main adaptation of V1–V9. Product/technical content rev
 ## Correction — VIS-PLAN-R1 was process, not technical
 
 The one-PR B1–B9 topology mismatch was incorrectly classified as a technical plan finding and returned to Leva. This was wrong: AGENTS conformance is Mira's workflow responsibility. I corrected the service plan directly without changing V1–V9 technical content. Plan review is PASS; Lira is assigned B1 only, in its own implementation PR.
+
+
+## 2026-11-20 — owner adopted stacked bounded PR workflow
+
+Previous correction to force per-stage merge was superseded by owner process decision. New default pattern for suitable composite vertical work: stack bounded PRs, keep intermediate stages out of main, fold final stack into the first PR, close upper steps superseded, then perform one final whole-feature Mira→Leva review and owner merge. For visibility: B1→B9. Track mandatory follow-up after #342: update AGENTS.md to encode this workflow generally.
