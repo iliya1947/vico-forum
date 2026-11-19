@@ -1442,6 +1442,22 @@ describe("interactive Pages preview", { timeout: 10_000 }, () => {
     expect(screen.getByText("This topic is not saved.")).toBeInTheDocument();
   });
 
+  it("toggles topic Mute in the static Pages preview", async () => {
+    const user = userEvent.setup();
+    await renderEmbeddedPreview(<EmbeddedPreview scenarioId="topic-solved-user" identity="user" />);
+
+    expect(await screen.findByRole("button", { name: "Mute topic" })).toHaveAttribute("aria-pressed", "false");
+    expect(screen.getByText("Notifications from this topic are not muted.")).toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: "Mute topic" }));
+    expect(await screen.findByRole("button", { name: "Unmute topic" })).toHaveAttribute("aria-pressed", "true");
+    expect(screen.getByText("Notifications from this topic are muted.")).toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: "Unmute topic" }));
+    expect(await screen.findByRole("button", { name: "Mute topic" })).toHaveAttribute("aria-pressed", "false");
+    expect(screen.getByText("Notifications from this topic are not muted.")).toBeInTheDocument();
+  });
+
   it("edits the authenticated author's own topic title in the preview", async () => {
     const user = userEvent.setup();
     await renderEmbeddedPreview(<EmbeddedPreview scenarioId="topic-solved-user" identity="user" />);
