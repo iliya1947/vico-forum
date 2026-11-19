@@ -1550,3 +1550,21 @@ implementation/review route; #351/4b.4 этим audit не переназнач�
 5. Per-post Reveal restores B bodies and attachment links independently, without Unblock; reload collapses again, PG directional Block row retained.
 
 **4b.4 COMPLETE; Лира STOP.** Next separate `...` = **ONLY 4b.5** prospective suppression (initial-topic/edit mentions, old receipt/no-backfill, replay/new posts), checkpoint STOP before 4b.6. Dedicated connected gate PASS; full exact-head CI workflows not declared complete. 4c, review and merge not activated. #351 Draft; #342 service-only/no merge. Independent audit/corrective workstream untouched.
+
+
+## 2026-11-19 — owner decision: corrections only after current Mute/block task
+
+Владелец подтвердил порядок: **Лира сначала полностью завершает текущую задачу
+Mute/block в Draft PR #351. Только после её завершения активируется отдельный
+corrective-блок по findings аудита завершённых функций.**
+
+После #351:
+1. исправить **WATCH-AUDIT-1 [P2]**;
+2. исправить **BOOKMARKS-AUDIT-1 [P2]**;
+3. исправить **BOOKMARKS-AUDIT-2 [P2]**.
+
+До завершения #351 эти corrections не активировать и не смешивать с Mute/block.
+**TITLE-AUDIT-1 [P3]** в этот corrective-блок не входит; оставить отдельно для
+применимого UI/UX этапа, если владелец не изменит решение.
+
+Текущий маршрут Лиры по #351 не меняется.
