@@ -382,7 +382,9 @@ try:
         block_result = actor.request.post(base + new_profile_path, headers={"Origin": base},
                                           form=block_form)
         private(block_result)
-        assert block_result.json()["blocked"] is True
+        assert sql("select blocked_user_id from forum_user_blocks "
+                   "where user_id=$1 and blocked_user_id=$2",
+                   [actor_id, new_author_id]) == [{"blocked_user_id": new_author_id}]
         section_id = sql("select section_id from forum_topics where id=$1",
                          [seeded["topicId"]])[0]["section_id"]
         create_form = {
@@ -419,7 +421,7 @@ try:
         unblock_result = actor.request.post(base + new_profile_path,
                                             headers={"Origin": base}, form=unblock_form)
         private(unblock_result)
-        assert unblock_result.json()["blocked"] is False
+        # The canonical document action may return HTML; the persisted own pair is authoritative.
         assert sql("select blocked_user_id from forum_user_blocks "
                    "where user_id=$1 and blocked_user_id=$2",
                    [actor_id, new_author_id]) == []
