@@ -1696,3 +1696,91 @@ First run `44549323905` failed after first 4b.8 marker because the test imposed 
 **Handoff to next agent (not launched): Мира / ChatGPT-5.6 Sol** shall perform the first **coordinator technical whole-PR review** of #351 on stable exact head above, independently comparing all implementation changes with the accepted Mute/block scope in `USER_ACTIONS_SERVICE_PLAN.md` M1–M7, applicable current main and authorizations, including transaction/rollback/notification lifecycle and all relevant route/UI privacy boundaries. Classify actual current-scope defects vs deferred work. If a current-scope blocker is confirmed, return it to Лира before Codex review; implementation fixes change head and require new coordinator cycle. Only after Mira PASS is independent technical review by **Лёва / Codex-6.1 Sol** on the same head appropriate. Merged implementation then separate documentation closeout; #342 service-only, never merge. Do not conflate coordinator review with this 4c self-check.
 
 **Лира STOP после 4c.** Next developer action: attach Мира to service PR #342 for coordinator review of Draft PR #351, without automatic Stage 6/merge/review by Лёва.
+
+
+## 2026-11-19 — Мира: coordinator whole-PR review #351 — HOLD, 3 current-scope P2
+
+Проведён первый coordinator technical whole-PR review Draft #351 на стабильном exact head
+`0a2243339775dd1a5e55898ced6e553f77051d4e` против base/main
+`9eae385571bf99e073df46f8541f7514c9626a29` и принятого M1–M7.
+
+Independently проверены migration/schema/manifest/runtime ACL, repository/service/adapters,
+ordinary notification decision+receipt transaction, initial/reply/edit mention paths,
+real-PG concurrency/lifecycle/rollback evidence, strict topic/profile/list actions,
+private/no-store boundaries, list keysets, TopicView collapse/reveal, complaints/read-state/
+Watch/Bookmarks independence, localization/RTL wiring и exact-head GitHub evidence.
+Exact head остался неизменным. GitHub: **16/16 workflows / 20/20 jobs SUCCESS**;
+CI PG17 **1476/1476 tests in 109 files**, dedicated connected Mute/Block **48/48 markers**.
+
+Backend/schema/fanout/concurrency/ACL: confirmed current-scope defects = 0.
+Но coordinator PASS **не дан** из-за трёх presentation/state-isolation defects:
+
+### PF-REVIEW-1 [P2] — PersonalFilterControl stale ACK может перекрыть свежий loader state
+
+`app/forum/personal-filter-control.tsx` хранит loader `state` во втором локальном
+server-state mirror `confirmed`. Пока `submitted.current` выставлен, sync effect
+игнорирует свежий loader snapshot; затем старый successful ACK очищает submitted и
+записывает своё desired значение в `confirmed`. Если тем временем тот же actor/target
+уже был изменён обратно другим реальным writer и route получил свежий snapshot,
+старый ACK снова показывает устаревшее состояние. Если loader primitive совпадает с
+предыдущим значением, следующий sync effect не обязан запускаться и stale UI сохраняется.
+
+Это тот же causal class, который уже независимо подтверждён в merged Watch/Bookmarks audit,
+но здесь он находится в **новом shared Mute/Block control**, поэтому является current #351 issue.
+Текущие component/connected tests проверяют normal ACK, uncertain refresh, late other-target/
+other-actor, но не newer same actor+target commit before older ACK.
+
+Correction criterion: после fresh authoritative loader snapshot старый ACK не может стать
+новым owner состояния. Сохранить pending, unknown-commit/explicit refresh, strict response
+actor/target guards и отсутствие automatic POST retry. Не добавлять cache/version/global store
+или compensating subsystem. Добавить deterministic regression для обеих направлений state
+и подтвердить shared Mute/Block surface.
+
+### PF-REVIEW-2 [P2] — Filters list successful Undo latch может скрыть уже re-added row
+
+`app/forum/filters-view.tsx` / `FilterRow`: successful old Undo ACK делает
+`removed=true`, после чего component неизменно `return null`. Если после Remove commit
+тот же pair уже снова создан, а fresh loader снова содержит row, стабильный
+actor/kind/target key сохраняет тот же component и `removed` не сбрасывается. Последующие
+fresh reads могут содержать правильную строку, но UI продолжает её скрывать.
+
+Это current #351 analogue подтверждённого BOOKMARKS-AUDIT-2, а не deferred Bookmarks fix.
+4b.10 speculative test не доказал обратного: он был удалён как некорректный harness и
+не проверил указанную deterministic state ordering.
+
+Correction criterion: fresh loader presence должна снова отображать реально существующую
+pair; старый Undo ACK не должен иметь постоянный приоритет над более новым loader snapshot.
+Uncertain failure продолжает сохранять row и требовать refresh без write replay.
+Добавить regression Remove commit → re-add → fresh loader → delayed old ACK для private list
+surface (оба filter modes либо общий shared path с доказанной применимостью).
+
+### PF-REVIEW-3 [P2 privacy] — A→guest sign-out применяет private Block snapshot A до revalidation
+
+`TopicView` вычисляет:
+`blockSnapshotIsStale = Boolean(headerActorId && hasBlockSnapshot && headerActorId !== blockedActorId)`.
+При authenticated A snapshot (`blockedActorId=A`, private `blockedAuthorIds`) успешный
+sign-out в `AuthControls` сначала делает `setUser(null)`, затем await
+`revalidator.revalidate()`. В промежутке `headerActorId=null`, поэтому stale check = false,
+и старый private Block graph A продолжает определять, чьи публичные posts collapsed.
+Это раскрывает account-specific presentation после перехода в guest state и противоречит
+M6/M7: guest без private graph, account-switch/late-response isolation.
+
+A→B уже fail-closed, fresh guest loader также корректен; дефект именно transition A→guest
+до нового loader snapshot. Existing connected test использует отдельный fresh guest context,
+не этот transition.
+
+Correction criterion: private Block snapshot предыдущего actor не применяется, когда current
+header identity уже guest/null; fresh guest после revalidation видит обычный public TopicView.
+Не ломать fresh guest case (null/null) и existing A→B fail-closed behavior. Добавить
+deterministic transition regression; connected Better Auth sign-out coverage желательна для
+реального boundary.
+
+### Handoff
+
+Следующий исполнитель — **Лира / ChatGPT-6**, один bounded correction package только
+PF-REVIEW-1/2/3 в существующем #351. Не трогать deferred WATCH-AUDIT-1,
+BOOKMARKS-AUDIT-1/2 или TITLE-AUDIT-1; не расширять product scope.
+
+После corrections: новый stable exact head, focused regressions + применимые full CI и
+dedicated connected acceptance, затем **STOP Мире на новый whole-PR coordinator cycle**.
+До нового Mira PASS Лёву не подключать. #351 остаётся Draft; #342 service-only/no merge.
