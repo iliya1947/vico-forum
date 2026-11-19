@@ -648,7 +648,7 @@ export const authzRoles = pgTable("authz_roles", {
 export const authzPermissions = pgTable("authz_permissions", {
   key: text("key").primaryKey(),
 }, (table) => [check("authz_permissions_catalog_check", sql`${table.key} in (
-  'forum.topic.create', 'forum.topic.title.editOwn', 'forum.reply.create', 'forum.topic.pin', 'forum.topic.close', 'forum.solution.manageOwn',
+  'forum.topic.create', 'forum.topic.title.editOwn', 'forum.reply.create', 'forum.topic.pin', 'forum.topic.close', 'forum.content.visibility.manage', 'forum.solution.manageOwn',
   'forum.solution.manageAny', 'forum.helpSignal.create', 'forum.helpNeedsDetails.manage',
   'forum.helpDuplicate.manage', 'forum.attachmentSecurity.read', 'forum.sourceLocale.correctOwn', 'forum.sourceLocale.correctAny',
   'forum.translation.generate', 'forum.post.editOwn', 'forum.post.history.read',
@@ -725,6 +725,9 @@ export const forumTopics = pgTable(
     isSolved: boolean("is_solved").notNull().default(false),
     isClosed: boolean("is_closed").notNull().default(false),
     closureVersion: integer("closure_version").notNull().default(0),
+    isHidden: boolean("is_hidden").notNull().default(false),
+    visibilityVersion: integer("visibility_version").notNull().default(0),
+    visibilityChangedAt: timestamp("visibility_changed_at", { withTimezone: true, precision: 3 }),
     bestAnswerPostId: text("best_answer_post_id"),
     needsDetails: boolean("needs_details").notNull().default(false),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
@@ -732,7 +735,13 @@ export const forumTopics = pgTable(
   (table) => [
     index("forum_topics_section_id_idx").on(table.sectionId),
     index("forum_topics_author_id_idx").on(table.authorId),
+    index("forum_topics_hidden_queue_idx").on(table.visibilityChangedAt.desc().nullsLast(), table.id.desc().nullsLast())
+      .where(sql`${table.isHidden}`),
     check("forum_topics_closure_version_check", sql`${table.closureVersion} >= 0`),
+    check("forum_topics_visibility_state_check", sql`${table.visibilityVersion} >= 0 and (
+      (${table.visibilityVersion} = 0 and ${table.isHidden} = false and ${table.visibilityChangedAt} is null)
+      or (${table.visibilityVersion} > 0 and ${table.visibilityChangedAt} is not null)
+    )`),
   ],
 );
 
@@ -897,6 +906,9 @@ export const forumPosts = pgTable(
     // The migration adds a deferred owner-matching FK to (post_id, revision_id).
     currentRevisionId: text("current_revision_id").notNull(),
     parentPostId: text("parent_post_id"),
+    isHidden: boolean("is_hidden").notNull().default(false),
+    visibilityVersion: integer("visibility_version").notNull().default(0),
+    visibilityChangedAt: timestamp("visibility_changed_at", { withTimezone: true, precision: 3 }),
     solutionModerationStatus: text("solution_moderation_status"),
     solutionOutdatedReason: text("solution_outdated_reason"),
     solutionOutdatedReasonKind: text("solution_outdated_reason_kind"),
@@ -907,6 +919,12 @@ export const forumPosts = pgTable(
     index("forum_posts_topic_id_idx").on(table.topicId),
     index("forum_posts_author_id_idx").on(table.authorId),
     index("forum_posts_parent_post_id_idx").on(table.parentPostId),
+    index("forum_posts_hidden_queue_idx").on(table.visibilityChangedAt.desc().nullsLast(), table.id.desc().nullsLast())
+      .where(sql`${table.isHidden}`),
+    check("forum_posts_visibility_state_check", sql`${table.visibilityVersion} >= 0 and (
+      (${table.visibilityVersion} = 0 and ${table.isHidden} = false and ${table.visibilityChangedAt} is null)
+      or (${table.visibilityVersion} > 0 and ${table.visibilityChangedAt} is not null)
+    )`),
     unique("forum_posts_topic_id_id_unique").on(table.topicId, table.id),
     foreignKey({
       name: "forum_posts_parent_topic_fk",
@@ -1909,14 +1927,18 @@ export const adminHistory = pgTable("admin_history", {
   or (${table.action} in ('topic.pinned', 'topic.unpinned', 'topic.solved', 'topic.bestAnswerChanged',
     'help.solutionModerationChanged', 'help.duplicateConfirmed', 'help.duplicateRemoved',
     'help.duplicateAppealResolved', 'help.signalReviewed', 'topic.sourceLocaleCorrected',
-    'topic.closed', 'topic.reopened') and ${table.targetType} = 'topic')
-  or (${table.action} = 'post.sourceLocaleCorrected' and ${table.targetType} = 'post')
+    'topic.closed', 'topic.reopened', 'topic.hidden', 'topic.restored') and ${table.targetType} = 'topic')
+  or (${table.action} in ('post.sourceLocaleCorrected', 'post.hidden', 'post.restored') and ${table.targetType} = 'post')
   or (${table.action} in ('measure.created', 'measure.changed', 'measure.lifted', 'measure.appealResolved')
     and ${table.targetType} = 'user-measure')
   or (${table.action} = 'settings.registrationChanged' and ${table.targetType} = 'forum-settings')`),
   check("admin_history_context_check", sql`jsonb_typeof(${table.context}) = 'object' and octet_length(${table.context}::text) <= 16384`),
   check("admin_history_labels_check", sql`char_length(${table.actorLabel}) <= 200 and char_length(${table.targetLabel}) <= 200`),
   check("admin_history_reason_check", sql`${table.reason} is null or (char_length(${table.reason}) <= 2000 and btrim(${table.reason}) <> '')`),
+  check("admin_history_visibility_reason_check", sql`${table.action} not in (
+    'topic.hidden', 'topic.restored', 'post.hidden', 'post.restored'
+  ) or (${table.reason} is not null and btrim(${table.reason}) <> ''
+    and char_length(${table.reason}) <= 2000)`),
 ]);
 
 

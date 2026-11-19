@@ -21,6 +21,7 @@ const ADMIN_ACTION_KINDS = [
   "settings.registrationChanged","role.created","role.renamed","role.deleted","role.grantsChanged",
   "user.roleAssigned","user.overrideChanged","help.signalReviewed",
   "topic.pinned","topic.unpinned","topic.solved","topic.closed","topic.reopened",
+  "topic.hidden","topic.restored","post.hidden","post.restored",
   "topic.bestAnswerChanged","help.solutionModerationChanged","help.duplicateConfirmed",
   "help.duplicateRemoved","help.duplicateAppealResolved","topic.sourceLocaleCorrected",
   "post.sourceLocaleCorrected","measure.created","measure.changed","measure.lifted",
@@ -97,6 +98,7 @@ function compatibleKind(origin:OwnerHistoryOrigin,kind:string,scope:Scope):boole
     else if(kind.startsWith("role.")||kind==="user.roleAssigned"||kind==="user.overrideChanged")allowed=["administration.authorization"];
     else if(kind.startsWith("measure."))allowed=["administration.measures"];
     else if(kind==="topic.sourceLocaleCorrected"||kind==="post.sourceLocaleCorrected")allowed=["forum.content","localization.content"];
+    else if(["topic.hidden","topic.restored","post.hidden","post.restored"].includes(kind))allowed=["forum.content","forum.state"];
     else if(kind.startsWith("help.")||kind==="topic.solved"||kind==="topic.bestAnswerChanged")allowed=["moderation.help","forum.state"];
     else if(["topic.pinned","topic.unpinned","topic.closed","topic.reopened"].includes(kind))allowed=["forum.state"];
     else allowed=[];
