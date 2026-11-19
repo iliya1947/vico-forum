@@ -1152,3 +1152,20 @@ B1–B7 semantics, SOT layering и отсутствие Stage-6/owner-visual ove
 
 #350 остаётся Draft до independent result; Mute/block не активировать до фактического
 merge docs. #342 служебный и не merge; #300 не использовать.
+
+
+## 2026-11-19 — correction: Лёва не нужен для Bookmarks docs #350
+
+Предыдущее назначение Лёвы на independent docs review было ошибкой Миры и отменено
+прямым уточнением владельца.
+
+Проверено по актуальному `AGENTS.md`: обязательный coordinator → independent reviewer
+цикл в разделе `Проверка PR` относится к **implementation PR завершённого bounded-этапа**.
+Отдельного обязательного Codex whole-PR review для docs-only PR регламент не требует.
+
+#350 — docs-only PR Лиры, 4 Markdown files, stable exact head
+`446e4cc893160efc30392bfa43f03f5882823021`; Мира уже выполнила whole-PR docs review
+и дала PASS, confirmed current-doc defects = 0; exact-head CI 2/2 success.
+
+Следовательно docs review cycle для #350 завершён без Лёвы. Следующее действие —
+готовность #350 к merge владельцем. После фактического merge — Mute/block implementation.
