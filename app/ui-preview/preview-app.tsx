@@ -13,7 +13,7 @@ import { BLOCK_MANAGE_PRIVILEGED_PERMISSION } from "../../db/user-measure-author
 import type { ProfilePrivilegedSections } from "../profile/sections";
 import type { OwnerUserProfileSnapshot } from "../../db/owner-user-profile";
 import type { OwnerHistoryEntry, OwnerHistoryOptions } from "../../db/owner-sa02-history";
-import type { ComplaintQueuePage } from "../complaints/queue-contract";
+import type { ComplaintPriority, ComplaintQueueCase, ComplaintQueuePage } from "../complaints/queue-contract";
 import type { ReviewCase } from "../complaints/review-contract";
 import { CredentialView } from "../auth/credential-view";
 import { credentialReturnPath } from "../auth/credential-path";
@@ -26,6 +26,7 @@ import { AdminUsersIndex } from "../admin/users";
 import { AdminShell } from "../admin/shell";
 import { HistoryEvents } from "../admin/history";
 import { ComplaintReviewView } from "../complaints/review-view";
+import { ComplaintTriageView } from "../complaints/queue-view";
 import { SuperAdminOverview } from "../super-admin/overview";
 import { SuperAdminSa02Current } from "../super-admin/current-route";
 import { SuperAdminBackground } from "../super-admin/task-current";
@@ -370,6 +371,7 @@ type PreviewInteractionState = {
   resolvedAttentionCases: Set<string>;
   complaintNotes: ReviewCase["notes"]["items"];
   complaintDecision: ReviewCase["decision"];
+  complaintPriorityOverride: ComplaintPriority | null;
   complaintVersion: number;
   preferredLocale: PreviewLocale | null;
   localeSaved: boolean;
@@ -430,6 +432,7 @@ function createPreviewInteractionState(): PreviewInteractionState {
     resolvedAttentionCases: new Set(),
     complaintNotes: [],
     complaintDecision: null,
+    complaintPriorityOverride: null,
     complaintVersion: 1,
     preferredLocale: null,
     localeSaved: false,
@@ -1389,6 +1392,7 @@ export function EmbeddedPreview({ scenarioId, identity }: { scenarioId: string; 
         || (intent === "save-locale" && form.classList.contains("settings-locale-form"))
         || (intent === "save-online-visibility" && form.classList.contains("settings-privacy-form"))
         || (!intent && form.classList.contains("settings-registration-form"))
+        || (!intent && form.classList.contains("complaint-priority-form"))
         || (intent === "change-password" && form.classList.contains("settings-account-form"))
         || (intent === "revoke-one" && form.classList.contains("settings-account-revoke-form"))
         || (intent === "revoke-others" && form.classList.contains("settings-account-revoke-all"))
@@ -2501,6 +2505,20 @@ function previewRouter(
       element: <PreviewAttentionRoute scenario={scenario} interactions={interactions} />,
       loader: () => previewAttentionAccessData(scenario),
       action: ({ request }) => previewAttentionAction(scenario, interactions, request),
+      ErrorBoundary: ForumRouteError,
+    },
+    {
+      path: "/:locale/attention/complaints/:caseId",
+      element: <PreviewComplaintTriageRoute />,
+      loader: ({ params }) => {
+        previewAttentionAccessData(scenario);
+        if (params.caseId !== PREVIEW_COMPLAINT_CASE_ID || interactions.complaintDecision) {
+          throw new Response("Not Found", { status: 404 });
+        }
+        return { locale: scenario.locale, item: previewComplaintTriage(interactions) };
+      },
+      action: ({ request, params }) =>
+        previewComplaintTriageAction(scenario, interactions, request, params.caseId),
       ErrorBoundary: ForumRouteError,
     },
     {
@@ -3894,8 +3912,8 @@ function previewComplaintQueue(interactions: PreviewInteractionState): Complaint
       firstReportedAt: "2026-11-18T09:10:00.000Z",
       lastReportedAt: "2026-11-18T09:42:00.000Z",
       automaticPriority: 2,
-      priorityOverride: null,
-      priority: 2,
+      priorityOverride: interactions.complaintPriorityOverride,
+      priority: interactions.complaintPriorityOverride ?? 2,
       activeElsewhere: false,
     }],
     total: 1,
@@ -3934,8 +3952,8 @@ function previewComplaintReview(interactions: PreviewInteractionState): ReviewCa
     currentTopicTitle: topicTitle,
     targetPresent: true,
     automaticPriority: 2,
-    priorityOverride: null,
-    priority: 2,
+    priorityOverride: interactions.complaintPriorityOverride,
+    priority: interactions.complaintPriorityOverride ?? 2,
     reports: {
       items: [{
         id: "preview-report-1",
@@ -3984,6 +4002,43 @@ function previewComplaintReview(interactions: PreviewInteractionState): ReviewCa
       identity: false,
     },
   };
+}
+
+function previewComplaintTriage(interactions: PreviewInteractionState): ComplaintQueueCase {
+  const item = previewComplaintQueue(interactions).cases[0];
+  if (!item) throw new Response("Not Found", { status: 404 });
+  return item;
+}
+
+async function previewComplaintTriageAction(
+  scenario: Scenario,
+  interactions: PreviewInteractionState,
+  request: Request,
+  caseId?: string,
+) {
+  previewAttentionAccessData(scenario);
+  if (caseId !== PREVIEW_COMPLAINT_CASE_ID || interactions.complaintDecision) {
+    return { error: "notFound" as const };
+  }
+  const form = await request.formData();
+  const operationId = String(form.get("operationId") ?? "");
+  const expectedVersion = Number(form.get("expectedVersion"));
+  const rawPriority = String(form.get("priority") ?? "");
+  if (!operationId || !Number.isInteger(expectedVersion)) return { error: "invalid" as const };
+  if (expectedVersion !== interactions.complaintVersion) return { error: "conflict" as const };
+  if (rawPriority !== "auto" && rawPriority !== "1" && rawPriority !== "2" && rawPriority !== "3") {
+    return { error: "invalid" as const };
+  }
+  interactions.complaintPriorityOverride = rawPriority === "auto"
+    ? null
+    : Number(rawPriority) as ComplaintPriority;
+  interactions.complaintVersion += 1;
+  return { ok: true as const };
+}
+
+function PreviewComplaintTriageRoute() {
+  const { locale, item } = useLoaderData() as { locale: string; item: ComplaintQueueCase };
+  return <ComplaintTriageView locale={locale} item={item} />;
 }
 
 async function previewComplaintReviewAction(
