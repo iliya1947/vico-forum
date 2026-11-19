@@ -1325,3 +1325,52 @@ Exact implementation head остаётся
 **Декомпозиция для следующего исполнителя (Лира):** 4b разделена на **4b.1–4b.11** по M7 (harness; Mute fanout; Block direction; collapse/reveal; no-backfill; own filters; privacy/actor/errors; independence; RTL/a11y; focused browser acceptance; final CI/handoff). Каждый микрошаг — отдельная команда `...`, проверяемый результат, запись в #342 и STOP. Первым разрешён только **4b.1: isolated real Worker/Better Auth/PG17/Chromium harness + minimal smoke**. Ни 4b.2, ни 4c, ни reviews автоматически не запускать. Точный operational контракт — `.github/workflow.md`.
 
 **Лира STOP после 4a.9**; #351 остаётся Draft на `83b32eb364d74a2fd85377dbc907f7723254edf4` без изменений, #342 служебный/no merge.
+
+## 2026-11-19 — Лёва: отдельный аудит Watch на необоснованные механизмы
+
+Прямой запрос владельца: «Ну проверь тогда... Только по одному...». В этой
+итерации проверен **только Watch #345** в current main
+`9eae385571bf99e073df46f8541f7514c9626a29`. Watch control с merge9c4639d не менялся.
+Bookmarks и in-progress Mute/block этим аудитом не проверялись/не изменялись.
+
+**Один подтверждённый P2 WATCH-AUDIT-1: лишняя локальная копия server state
+в `app/forum/topic-watch-control.tsx:16,24–39` даёт устойчиво ложный статус.**
+
+`confirmed` дублирует state из loader. После mutation automatic revalidation
+первый effect пропускает новую snapshot, пока submitted.current не очищен;
+следующий effect записывает старый action ACK. Если loader value вернулся к
+прежнему primitive (OFF→ON→OFF либо ON→OFF→ON), синхронизирующий effect больше
+не запускается даже после ещё одного чтения того же свежего значения.
+
+Реальное воспроизведение PostgreSQL17 + production TopicWatchControl/React Router:
+first write COMMIT ON → second own write COMMIT OFF до доставки первого ACK →
+loader читает OFF → дополнительная revalidation снова OFF, но UI aria-pressed=true.
+Обратный порядок тоже воспроизведён: DB/loader ON, UI false. SQL/writes не mocked;
+удерживался только ответ после уже завершённого first COMMIT. Baseline без
+второго write PASS, оба freshness assertions FAIL. Это UI source-of-truth defect,
+не backend race и не требование мгновенного cross-tab push.
+
+Проверена более простая альтернатива вне implementation worktree: убрать
+`useState(confirmed)`/его синхронизирующий effect/ACK setters, выводить
+`requiresRefresh ? unavailable : loaderState`; сохранить pending, error,
+explicit refresh и actor/topic response guards. **7/7 diagnostic checks PASS**:
+3 real-PG+UI cases и 4 UI regressions с реалистичной server snapshot после commit.
+В нынешнем production happy-test fixture snapshot заморожена на initial state,
+хотя ACK меняет state: это маскирует неверный приоритет ACK над свежим loader.
+Эксперимент — доказательство локального пути, не готовый shipped fix/полный CI.
+
+Остальные проверенные механизмы обоснованы текущей семантикой: отдельная pair table
+не смешивает read-state/inbox с подпиской; reverse index нужен topic fanout;
+set-based SQL/unique boundary сохраняют atomic existing inbox без per-watcher
+queries/очереди; общий topic mutex нужен future-reply ordering, actor admission —
+lifecycle; canonical action/strict fields/identity expectation/private no-store
+дают existing session/privacy boundary. Для них обходные хранилища/новый backend
+не обнаружены. Fresh publisher в browser fixture соблюдает реальный cooldown,
+не отключает его в tested HTTP path.
+
+Мире: зафиксировать отдельный bounded Watch UI corrective package от main,
+с freshness regression в обоих направлениях; не лечить это добавлением version,
+timestamp/cache/store или retry. Main implementation в аудите не менялся.
+**Лёва STOP после одного Watch.** Текущую задачу Лиры #351 и очередность не меняю;
+аудит Bookmarks — только отдельным следующим шагом. Это дефект, пропущенный моим
+предыдущим техническим review; прежний PASS не служит возражением новым фактам.

@@ -727,3 +727,103 @@ checks135182394989 и database135182393371 в CI44412018558. Не называю
 Implementation/docs не merge и не deploy; Bookmarks docs Лира начинает отдельным
 PR только после фактического merge #349. Остальные шесть-задачные границы и запрет
 использовать #300 как текущий рабочий канал сохранены.
+
+## 2026-11-19 — owner audit «на костыли», только Watch: WATCH-AUDIT-1 [P2]
+
+Владелец после уточнения границ прежнего PASS прямо назначил проверку предыдущих
+реализаций на необоснованные механизмы, **по одной**. Начал с Watch #345,
+проверен current main `9eae385571bf99e073df46f8541f7514c9626a29`. Service сначала
+6e8791c, синхронизирован до5c657a3 с новыми checkpoint Лиры. Runtime Watch control
+не менялся после merged9c4639d. Это отдельный owner audit, не premature #351 review.
+Bookmarks не проверял; in-progress Mute/block код в main не присутствует.
+
+Проверял necessity/alternatives, а не только соответствие собственному плану:
+
+| Механизм | Почему нужен / более простой путь |
+| --- | --- |
+| forum_topic_watches pair + reverse topic/user index | Read marker/notifications не выражают подписку независимо; минимальные два поля, без clock/history/receipt/version; PK/FK и fanout index имеют реальную роль |
+| One set-based inbox INSERT + recipient/post conflict | Reuse existing inbox/mention order и publication transaction; JS per-watcher list/queries или separate queue хуже и не нужны |
+| Existing topic NO KEY UPDATE + actor admission | Общая сериализация Watch/reply обеспечивает prospective semantics; active actor включая no-op; дополнительных recipient/global mutex нет |
+| Session self-state/no new RBAC | Принятая narrow personal-state authority, не обход управления чужим content; expected actor не выбирает authority |
+| Canonical topic action + exact fields | Один writer, нет второго admin API; forged/mixed intent не попадает в unrelated publication |
+| Private no-store/typed unavailable | Не раскрывает private own state; unknown не подменяется false; отдельный client cache не нужен |
+| Independent keyed fetcher/pending/error/explicit refresh | Сохраняет редакторы и исключает повтор неопределённой записи; это реальные contract requirements |
+| Local confirmed state + synchronization effect + ACK setter | **Необоснованный второй server-state owner; подтверждённый дефект ниже. Более простой вариант experimentally работает** |
+
+**WATCH-AUDIT-1 [P2]: старый ACK перекрывает уже прочитанную свежую DB snapshot.**
+Source current main: topic-watch-control.tsx16,24–39. На завершении fetcher loading
+effect1 видит submitted.current и не принимает loader snapshot; effect2 очищает
+ref и устанавливает confirmed из action ACK. Когда loader primitive совпал с
+initial state, его deps не меняются от setConfirmed. Последующие GET с тем же
+актуальным значением не запускают effect1. UI остаётся в обратном состоянии
+при корректной DB и корректном loader. Полный reload remount устраняет симптом,
+обычная revalidation того же state — нет. Это не задержка cross-tab push:
+свежие данные уже получены этим control и затем проигнорированы.
+
+Проверка выполнена отдельным harness **вне git worktree**:
+`/workspace/work/watch-audit-diagnostics/watch-state.test.tsx` + vitest.config.mjs.
+Реальные PostgreSQL17 Pool/DrizzleForumRepository, полный clean migration chain
+current main в собственной loopback DB `vico_watch_audit_test`, production
+TopicWatchControl и React Router. First setTopicWatch полностью COMMIT'ится;
+тест задерживает только ACK, пока второй actual setTopicWatch также COMMIT'ится.
+Loader вызывает настоящий readTopicWatch, затем ещё раз explicit revalidation.
+База/SQL/admission/writes не замоканы; это deterministic transport ordering.
+
+```text
+initial OFF:
+trace = [loader PG false, first COMMIT true, second COMMIT false,
+         loader PG false, loader PG false]
+stored=false; loaderState=off; shown aria-pressed=true
+initial ON:
+trace = [loader PG true, first COMMIT false, second COMMIT true,
+         loader PG true, loader PG true]
+stored=true; loaderState=on; shown aria-pressed=false
+baseline normal write/read: PASS
+original control: 1 PASS / 2 FAIL (freshness assertions)
+```
+
+Малый external prototype candidate-control.tsx удаляет mirror useState,
+первый sync effect и оба setConfirmed. Вместо них display value вычисляется
+`requiresRefresh ? "unavailable" : state`; остальные pending/error/refresh/
+response-context guards сохранены. Новый store/version/refetch subsystem или
+mutation protocol не требуется. Candidate80 lines вместо original87.
+Это experimental alternative, не изменение production и не готовый PR.
+
+Candidate прогнан тем же real-PG harness (baseline+оба order), затем копией четырёх
+existing UI regressions (pending/desired states, uncertainty/explicit refresh,
+late other-topic response). В happy-fixture server snapshot обновлена при commit,
+а не оставлена искусственно initial как в текущем test: старый fixture ожидает
+ACK вместо более свежей snapshot и маскирует эту ошибку. Temporary test-copy typo
+в одном case исправлен до итогового прогона; он не был продуктовым defect.
+**Итог candidate: 7/7 PASS.** Source/production tests не изменялись.
+
+```sh
+DATABASE_URL=<own-loopback-vico_watch_audit_test> node node_modules/vitest/vitest.mjs \
+  run --config /workspace/work/watch-audit-diagnostics/vitest.config.mjs --maxWorkers=1
+# original: baseline PASS, 2 freshness FAIL
+DATABASE_URL=<same-own-disposable-db> node node_modules/vitest/vitest.mjs \
+  run --config /workspace/work/watch-audit-diagnostics/candidate.config.mjs --maxWorkers=1
+# candidate: 2 suites / 7 tests PASS
+```
+
+Рекомендация bounded correction: один owner серверного состояния после revalidation
+(loader), ACK — результат выполненной команды, error/pending — отдельная transient
+UI state. Добавить regression реального повторного ON/OFF между commit и ACK в обоих
+направлениях и realistic happy snapshot. Не добавлять CAS/version/timestamp/общий
+store/auto retry ради сохранения ошибочного зеркала. Нужны обычные affected checks
+и review будущего corrective PR; экспериментальные7/7 их не заменяют.
+
+Дополнительно сверены исходный #345 diff и base7cc23ed, current-main caller/keys/
+loader privacy, original Watch unit tests, browser test change fresh publishing
+actors. Fresh actor per reply соблюдает штатный cooldown HTTP boundary; не маскирует
+Watch bug и не требует менять production policy. Официальный React Router
+state-management guide подтверждает loader/server-state как штатную основу;
+вывод о дефекте опирается на реальный trace, не на общий совет документации.
+
+Это один confirmed current Watch defect и ненужный compensating state layer,
+пропущенный моим прежним review. Остальных подтверждённых необоснованных механизмов
+в проверенном Watch scope не найдено; это не оправдание будущего generic refactor.
+Implementation/schema/tests не менял. Изменены только review service records.
+**STOP после одного Watch.** Мире — отдельный bounded correction route от main,
+не менять назначение/декомпозицию Лиры #351 этим сообщением. Bookmarks audit не
+начат и не выполнен; нужен отдельный следующий шаг владельца.

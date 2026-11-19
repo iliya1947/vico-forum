@@ -11,7 +11,7 @@
 - Edit own topic title: завершён.
 - Watch: **implementation #345 merged** в main `9c4639d23ca075c8bb92fbb909b96593d7bee127`; дерево совпадает с проверенным technical head `76c1c456557c614171a3b472758498795a668b9a` (review base `7cc23edede57994cdedab49c1556ddb55034dd29`, 17/17 exact-head checks PASS, включая database и connected watch_browser).
 - Watch coordinator whole-PR review: **Мира PASS** на exact head `76c1c456557c614171a3b472758498795a668b9a`; подтверждённых current-scope findings нет.
-- Watch independent technical review: **Лёва PASS** всего принятого scope на том же exact head `76c1c456557c614171a3b472758498795a668b9a` против main `7cc23edede57994cdedab49c1556ddb55034dd29`; подтверждённых current-scope findings нет. Код не изменён; Лёва STOP.
+- Watch первоначальный independent technical review: **Лёва PASS** на exact head `76c1c456557c614171a3b472758498795a668b9a` против main `7cc23edede57994cdedab49c1556ddb55034dd29`. Позднейший отдельный owner audit выявил **открытый WATCH-AUDIT-1 [P2]**; актуальные evidence/маршрут — в отдельном разделе ниже. Production в аудите не менялся.
 - Review synthesis: оба review совпали на неизменном exact head, расхождений и подтверждённых current-scope defects нет. По действующему owner decision из `docs/UI_UX_PASS.md` функциональные bounded-срезы не задерживаются из-за косметики; финальная owner visual/product acceptance остаётся отдельным UI/UX pass перед публичным запуском. Поэтому отдельный Watch visual gate сейчас merge не блокирует.
 - Watch implementation review cycle завершён, #345 merged. Permanent/current-state docs closeout остаётся отдельным PR после implementation merge; это planning-задание не заменяет его.
 - Bookmarks #346 **merged** в main `34ddf42985f6dc348e77d0dcc90e0aecc37fd15e` 2026-11-18 21:43:51 UTC. Reviewed exact head `a3e6c0e63c99078ece89303592e1f24b2fe440fb`; Мира coordinator PASS + Лёва independent PASS; confirmed current-scope defects = 0; exact-head 18/18 jobs success.
@@ -53,3 +53,14 @@
 11. **4b.11** — отдельный exact-head CI/regressions, evidence/4b closeout, STOP.
 
 Ранние existing Chromium regressions **не заменяют** dedicated Mute/block acceptance. **4c** final exact-head CI/ACL/manifest/self-check и handoff выполняется только после завершения 4b и новой команды; review Мира → Лёва только после 4c. Не начинать 4b в текущем 4a.9. No merge, Stage6, moderation visibility, overall UI/UX или #300.
+
+## Отдельная проверка владельца — Watch, одна реализация
+
+По прямой команде «проверь … только по одному» Лёва проверил **только merged
+Watch #345** на необходимость механизмов/обходные решения в main `9eae385`.
+**Выявлен один P2 WATCH-AUDIT-1:** локальное зеркало Watch-state перекрывает
+более свежий loader старым ACK. Воспроизведены оба направления с real PG17;
+более простой isolated prototype без зеркала прошёл 7/7 targeted checks.
+Подробности/границы — в channel и файле Лёвы. Production не менялся, Лёва STOP.
+Мире — отдельный bounded Watch UI correction route; текущее назначение Лиры #351
+этим аудитом не выполнялось и не переназначалось. Bookmarks в этом аудите не проверен.
