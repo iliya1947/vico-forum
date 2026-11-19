@@ -718,7 +718,9 @@ try:
         private(page.goto(old_cursor_url, wait_until="networkidle"))
         expect(page.locator(".auth-user")).to_have_attribute("href", "/en/users/" + author_id)
         expect(page.locator("ul.bookmarks-list > li")).to_have_count(0)
-        expect(page.get_by_role("link", name="Newest filters")).to_be_visible()
+        # The own-list UI deliberately resets an old actor's cursor on switch.
+        expect(page).to_have_url(base + "/en/filters?tab=users")
+        expect(page.get_by_text("You have not blocked any users.")).to_be_visible()
         page.reload(wait_until="networkidle")
         expect(page.locator("ul.bookmarks-list > li")).to_have_count(0)
         private(page.goto(base + "/en/filters?tab=users", wait_until="networkidle"))
