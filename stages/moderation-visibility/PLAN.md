@@ -1,6 +1,10 @@
 # stages/moderation-visibility/PLAN.md — перенесённый технический план hide/restore опубликованного контента
 
-Статус: full plan V1–V9 подготовлен Лёвой; implementation не активирован. Перед стартом нужно сверить actual main и явно зафиксировать scope/fit по оставшимся product/technical forks, если соответствующее принятие не найдено в новом рабочем контексте.
+Статус: full plan V1–V9 подготовлен Лёвой; implementation не активирован. Scope/fit сверка выполнена Мирой на current main `6fa2a43b02c55515bbd46a0d74fe6cc0d4424caf`.
+
+- V-T1/V-T2: **technical fit PASS**; proposal совместим с current schema/CAS/permission/AP-10/History seams, architecture rewrite не нужен.
+- V-P1/V-P2/V-P3: явного принятого owner record не найдено; до implementation требуется owner decision. Рекомендованные значения перечислены в `WORKFLOW.md`.
+- После owner decision Лёва финализирует plan against current main, затем bounded implementation начинает Лира.
 
 ## Product model proposal
 
@@ -63,3 +67,24 @@ Protected Complaints evidence/context and immutable retained Admin/Owner History
 Real PG concurrency + rollback; authority/grants/revoke/AP-10; public sentinel leak searches in HTML/JSON/errors/search; hidden attachment URL; translation/original; retained Complaint evidence; own-state/inbox unavailable projections; Worker + Better Auth + PG17 + Chromium; EN/RU/HE/RTL/narrow/keyboard. Stable head only после закрытия всех public read leaks.
 
 После implementation: Mira whole-PR → Leva independent review → owner merge → docs closeout при фактической необходимости.
+
+
+## Scope/fit notes — current main 6fa2a43
+
+### V-T1 accepted as technically fitting
+
+Current main has no visibility fields yet; topic closure already demonstrates independent boolean+version CAS and atomic Admin History. Admin History already supports bounded `reason`, topic/post targets and an append-last transaction pattern. The permission catalog/initial grants and AP-10 administration family are explicit lists, so a dedicated visibility permission integrates without a new RBAC model. A forward migration after 0070 is required.
+
+### V-T2 accepted as technically fitting
+
+Existing writers use topic row locks as the shared topic serialization seam and use topic→post ordering where both resources participate. Visibility can use those local locks and independent visibility versions; no global cache/version/store or new cross-domain mutex is justified. Public filtering remains SQL-side before ranking/count/LIMIT.
+
+### Integration obligations, not forks
+
+New visibility History kinds must be wired through the admin_history action/target constraint, typed History union, localized labels and Owner/Super-admin native monitoring classification. AP-10 `admin.forum` must include the new capability if V-P2 is accepted as recommended.
+
+### Pending owner product decisions
+
+- V-P1 recommendation: topic neutral 404; post stable sanitized tombstone.
+- V-P2 recommendation: dedicated capability; moderator/admin initial grants; mandatory reason on real Hide and Restore; AP-10 admin.forum applies.
+- V-P3 recommendation: retain all orthogonal state/data; only visibility projections change; no automatic state rewrites/backfills.
