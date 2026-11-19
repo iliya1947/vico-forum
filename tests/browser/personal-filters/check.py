@@ -55,6 +55,46 @@ def record(case):
     print("FILTERS_CONNECTED " + case, flush=True)
 
 
+def reply(ctx, path, body, parent=None):
+    fields = {"intent": "reply", "body": body}
+    if parent:
+        fields["parentPostId"] = parent
+    response = ctx.request.post(base + path, headers={"Origin": base},
+                                form=fields, max_redirects=0)
+    assert response.status in (302, 303), (response.status, response.text()[:300])
+    target = response.headers.get("location", "")
+    assert "#post-" in target, target
+    return target.rsplit("#post-", 1)[1]
+
+
+def watch(ctx, actor_id, path):
+    response = ctx.request.post(base + path, headers={"Origin": base},
+                                form={"intent": "setTopicWatch", "editorActorId": actor_id,
+                                      "watching": "true"})
+    private(response)
+
+
+def mute(ctx, actor_id, path, desired):
+    response = ctx.request.post(base + path, headers={"Origin": base},
+                                form={"intent": "setTopicMute", "editorActorId": actor_id,
+                                      "muted": str(desired).lower()})
+    private(response)
+
+
+def notices(post_id):
+    return {row["recipient_user_id"]: row["kind"] for row in sql(
+        "select recipient_user_id,kind from forum_reply_notifications where post_id=$1",
+        [post_id],
+    )}
+
+
+def suppression(post_id):
+    return {row["recipient_user_id"] for row in sql(
+        "select recipient_user_id from forum_post_notification_suppressions where post_id=$1",
+        [post_id],
+    )}
+
+
 try:
     with sync_playwright() as pw:
         browser = pw.chromium.launch(
@@ -120,6 +160,81 @@ try:
         assert sql("select user_id from forum_topic_mutes where user_id=$1", [actor_id]) == []
         assert sql("select user_id from forum_user_blocks where user_id=$1", [actor_id]) == []
         record("guest public read and zero implicit personal writes")
+
+        # 4b.2: exercise each ordinary recipient source through actual Worker writes.
+        parent, parent_id = account("Filters parent author")
+        mentioned, mentioned_id = account("Filters mention recipient")
+        before_sender, _ = account("Filters before-Mute sender")
+        while_sender, _ = account("Filters muted sender")
+        other_sender, _ = account("Filters other-topic sender")
+        after_sender, _ = account("Filters after-Unmute sender")
+        other_topic_path = "/en/topics/" + seeded["otherTopicId"]
+        parent_post = reply(parent, topic_path, "Parent reply " + uuid4().hex)
+        watch(actor, actor_id, topic_path)
+        watch(actor, actor_id, other_topic_path)
+        assert {row["topic_id"] for row in sql(
+            "select topic_id from forum_topic_watches where user_id=$1", [actor_id],
+        )} == {seeded["topicId"], seeded["otherTopicId"]}
+        recipients = {author_id: "reply", parent_id: "reply", actor_id: "reply",
+                      mentioned_id: "mention"}
+        mention = "[mentioned person](/en/users/" + mentioned_id + ")"
+        before_post = reply(before_sender, topic_path, "Baseline " + mention, parent_post)
+        assert notices(before_post) == recipients, (notices(before_post), recipients)
+        assert suppression(before_post) == set()
+        record("pre-Mute real topic-author, parent-author, Watch and explicit-mention delivery")
+
+        # Viewer toggles Mute using the actual Chromium fetcher control.
+        private(page.goto(base + topic_path, wait_until="networkidle"))
+        expect(page.get_by_role("button", name="Mute topic", exact=True)).to_be_visible()
+        with page.expect_response(lambda r: r.request.method == "POST"
+                                  and "/topics/" in r.url) as muted:
+            page.get_by_role("button", name="Mute topic", exact=True).click()
+        private(muted.value)
+        expect(page.get_by_role("button", name="Unmute topic", exact=True)).to_be_visible()
+        for ctx, uid in [(author, author_id), (parent, parent_id),
+                         (mentioned, mentioned_id)]:
+            mute(ctx, uid, topic_path, True)
+        actual_mutes = {row["user_id"] for row in sql(
+            "select user_id from forum_topic_mutes where topic_id=$1", [seeded["topicId"]],
+        )}
+        assert actual_mutes == set(recipients), (actual_mutes, recipients)
+        assert {row["topic_id"] for row in sql(
+            "select topic_id from forum_topic_watches where user_id=$1", [actor_id],
+        )} == {seeded["topicId"], seeded["otherTopicId"]}
+        record("Chromium-confirmed Mute ON for Watch viewer; four own SQL pairs, Watch retained")
+
+        during_post = reply(while_sender, topic_path, "Muted " + mention, parent_post)
+        assert notices(during_post) == {}, notices(during_post)
+        assert suppression(during_post) == set(recipients), suppression(during_post)
+        other_post = reply(other_sender, other_topic_path,
+                           "Unmuted other topic " + mention)
+        other_expected = {author_id: "reply", actor_id: "reply", mentioned_id: "mention"}
+        assert notices(other_post) == other_expected, (notices(other_post), other_expected)
+        assert suppression(other_post) == set()
+        record("Mute suppresses all four ordinary sources, but another watched topic still notifies")
+
+        with page.expect_response(lambda r: r.request.method == "POST"
+                                  and "/topics/" in r.url) as unmuted:
+            page.get_by_role("button", name="Unmute topic", exact=True).click()
+        private(unmuted.value)
+        expect(page.get_by_role("button", name="Mute topic", exact=True)).to_be_visible()
+        for ctx, uid in [(author, author_id), (parent, parent_id),
+                         (mentioned, mentioned_id)]:
+            mute(ctx, uid, topic_path, False)
+        assert sql("select user_id from forum_topic_mutes where topic_id=$1",
+                   [seeded["topicId"]]) == []
+        after_post = reply(after_sender, topic_path, "After Unmute " + mention, parent_post)
+        assert notices(after_post) == recipients, (notices(after_post), recipients)
+        assert suppression(after_post) == set()
+        assert notices(before_post) == recipients
+        assert notices(during_post) == {}
+        assert suppression(during_post) == set(recipients)
+        assert {row["topic_id"] for row in sql(
+            "select topic_id from forum_topic_watches where user_id=$1", [actor_id],
+        )} == {seeded["topicId"], seeded["otherTopicId"]}
+        page.reload(wait_until="networkidle")
+        expect(page.get_by_role("button", name="Mute topic", exact=True)).to_be_visible()
+        record("Unmute restores only new ordinary fanout, no backfill, prior notices and Watch intact")
         assert not errors, errors
         assert not external, external
         browser.close()

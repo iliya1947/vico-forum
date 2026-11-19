@@ -34,7 +34,14 @@ try {
           initialPost: { id: crypto.randomUUID(), topicId, authorId: input.author,
             bodyRevision: { id: crypto.randomUUID(), originalContent: "Public original post", sourceLocale: "en" } },
         });
-        result = { topicId, authorId: input.author };
+        const otherTopicId = crypto.randomUUID();
+        await forum.createTopicWithInitialPost({
+          id: otherTopicId, sectionId, authorId: input.author,
+          titleRevision: { id: crypto.randomUUID(), originalContent: "Unmuted comparison topic", sourceLocale: "en" },
+          initialPost: { id: crypto.randomUUID(), topicId: otherTopicId, authorId: input.author,
+            bodyRevision: { id: crypto.randomUUID(), originalContent: "Other public original", sourceLocale: "en" } },
+        });
+        result = { topicId, otherTopicId, authorId: input.author };
       } else {
         throw new Error("Unknown Mute/Block fixture operation");
       }
