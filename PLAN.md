@@ -9,29 +9,17 @@
 
 Постоянные продуктовые контракты этих функций уже находятся в main; здесь не дублируются.
 
-## 2. Текущий этап — consolidated audit corrections
+## 2. Завершённый consolidated corrective block
 
-Используется один Draft implementation PR #354. Подробный active-plan: `stages/corrections/PLAN.md`.
+#354 merged в main `6fa2a43b02c55515bbd46a0d74fe6cc0d4424caf` после Mira и Leva PASS одного final SHA. Четыре audit finding и TITLE-AUDIT-1-R1 CLOSED; evidence — `stages/corrections/REVIEW.md`. Без нового факта к этому gate не возвращаться.
 
-Все четыре corrections и TITLE-AUDIT-1-R1 завершены. Мира и Лёва дали whole-PR PASS на одном final exact head `b67e14d81cd20f2e42264e3d25d336ee19db626b`; детали — `stages/corrections/REVIEW.md`.
+## 3. Текущий этап — moderation visibility
 
-Остался owner Ready→merge #354 при неизменном head. Промежуточные review старых SHA не используются как final gate. Новое изменение implementation требует нового coordinator→independent review cycle.
+V-P1/V-P2/V-P3 **ACCEPTED**, V-T1/V-T2 technical fit **PASS**. Полный план V1–V9 восстановлен из Git и адаптирован к main6fa2a43: `stages/moderation-visibility/PLAN.md`.
 
-## 3. Следующий продуктовый этап — moderation visibility
+Один bounded visibility implementation PR охватывает темы и сообщения, public/private reads, assets, translations, own-state/inbox и atomic moderation. B1–B9 — внутренние проверяемые checkpoints; номера/границы/готовность описаны в stage plan, здесь не дублируются.
 
-Полный технический план V1–V9 был подготовлен Лёвой. Компактный перенос: `stages/moderation-visibility/PLAN.md`.
-
-Scope/fit на актуальном main выполнен. V-T1/V-T2 технически совместимы с current architecture; V-P1/V-P2/V-P3 уже были приняты ранее и восстановлены в DECISIONS/visibility plan после owner correction. Повторное согласование не требуется. Не перепроектировать принятые границы без нового реального конфликта.
-
-Следующий маршрут:
-1. Лёва финализирует existing V1–V9 plan против current main и фиксирует bounded stages;
-2. отдельный implementation PR для первого bounded-этапа;
-3. schema/catalog/History + authoritative commands/locks;
-4. public/private projections, assets/translations/inbox/own-state boundaries;
-5. protected UI/restore surface;
-6. real PG + connected Worker/Better Auth/Chromium acceptance и применимый CI;
-7. Mira whole-PR → Leva independent review → owner merge;
-8. отдельный docs closeout только если фактическое состояние/SOT изменилось.
+Следующий checkpoint — Мира проверяет полноту адаптации и передаёт Лире **только B1**. Нового product re-approval не требуется. Код ещё не начат. Whole-PR Mira→Leva review и owner merge только после полного вертикального среза; затем отдельный docs closeout.
 
 ## 4. Последний продуктовый этап — forum structure/topic move
 

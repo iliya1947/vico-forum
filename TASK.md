@@ -14,9 +14,9 @@
 6. Управление структурой форума — категории, разделы, структура и перенос тем.
 7. После завершения всех шести задач — переход к #320.
 
-## Текущая дополнительная граница
+## Завершённый corrective block
 
-После owner-аудита завершённых задач подтверждены четыре дефекта presentation/state. По прямому решению владельца они закрываются одним consolidated corrective implementation PR #354 до перехода к задачам 5–6:
+После owner-аудита четыре дефекта presentation/state закрыты одним consolidated corrective implementation PR #354 (merged в main6fa2a43) до перехода к задачам 5–6:
 
 - WATCH-AUDIT-1 [P2];
 - BOOKMARKS-AUDIT-1 [P2];

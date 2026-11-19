@@ -18,9 +18,13 @@
 
 ## Текущий этап
 
-Moderation visibility scope/fit. Technical forks V-T1/V-T2 совместимы с current main и не требуют architecture rewrite. Product forks V-P1/V-P2/V-P3 не имеют найденного owner acceptance record; рекомендации и текущий gate находятся в `WORKFLOW.md` и `stages/moderation-visibility/PLAN.md`.
+Продуктовые V-P1/V-P2/V-P3 уже ACCEPTED (D-08); их нельзя повторно открывать из-за утраты записи при migration. V-T1/V-T2 technical fit PASS. Лёва завершил адаптацию полного V1–V9 к main6fa2a43 и разложил один visibility PR на checkpoints B1–B9: `stages/moderation-visibility/PLAN.md`.
+
+Действующие важные адаптации: current Watch/Bookmarks/Mute/Block и unavailable own/inbox projections; новая visibility capability в existing AP-10/admin/History/Owner classification; atomic publication/recovery guards; parent-topic lock для новых body translation plans; public asset gate до bucket. Эти детали уже входят в stage plan и не являются новыми product forks.
+
+Feature implementation/tests/CI/browser visibility acceptance не выполнялись. Следующий шаг — checkpoint Миры на полноту плана, затем Лира только B1; current assignment не запускает implementation автоматически.
 
 ## Дальнейшие планы
 
-- Moderation visibility: полный V1–V9 plan существует; implementation не активен.
+- Moderation visibility: current V1–V9/B1–B9 готов к plan checkpoint; implementation не активен.
 - Forum structure/topic move: S0–S10 plan принят Мирой; implementation не активен.
