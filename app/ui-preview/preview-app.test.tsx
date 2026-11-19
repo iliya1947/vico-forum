@@ -1268,7 +1268,8 @@ describe("interactive Pages preview", { timeout: 10_000 }, () => {
     const noteSubmit = noteForm!.querySelector('button[type="submit"]');
     expect(noteSubmit).not.toBeNull();
     await user.click(noteSubmit!);
-    expect(await screen.findByText("Preview moderator note")).toBeInTheDocument();
+    await waitFor(() => expect(note).toHaveValue(""), { timeout: 3_000 });
+    expect(screen.getByText("Preview moderator note")).toBeInTheDocument();
 
     const reasoning = document.querySelector('textarea[name="reasoning"]');
     expect(reasoning).not.toBeNull();
@@ -2522,7 +2523,10 @@ describe("interactive Pages preview", { timeout: 10_000 }, () => {
     const user = userEvent.setup();
     await renderEmbeddedPreview(<EmbeddedPreview scenarioId="profile-edit" identity="user" />);
 
-    const bio = screen.getByLabelText("About");
+    const bio = await waitFor(
+      () => screen.getByLabelText("About"),
+      { timeout: 3_000 },
+    );
     await user.clear(bio);
     await user.type(bio, "Updated locally in the functional Pages preview.");
 
@@ -2536,7 +2540,11 @@ describe("interactive Pages preview", { timeout: 10_000 }, () => {
     expect(screen.getByText("Updated locally in the functional Pages preview.")).toBeInTheDocument();
 
     await user.click(screen.getByRole("link", { name: "Edit profile" }));
-    expect(screen.getByLabelText("About")).toHaveValue("Updated locally in the functional Pages preview.");
+    const reopenedBio = await waitFor(
+      () => screen.getByLabelText("About"),
+      { timeout: 3_000 },
+    );
+    expect(reopenedBio).toHaveValue("Updated locally in the functional Pages preview.");
     expect(screen.getByLabelText("Website")).toHaveValue("https://vico.example/");
   });
 
