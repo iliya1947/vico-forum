@@ -260,3 +260,57 @@ Implementation Draft #351 remains at **`7bdf468fed9bebb74adf421cb5e231ba14218c8a
 ## 2026-11-19 — Лира: PF-REVIEW-2 corrected exact-head CI PASS; STOP before PF-REVIEW-3
 
 Draft #351 stable exact head `37b7c8e991865a0352562fecbedf74d6f5aeeb53`. Old test-only assertion mismatch from `dac264877fd1969e1fd683cc731a8852e2848a16` corrected with one-line matcher change in `app/forum/filters-view.test.tsx`; production unchanged. CI `44587038549`: `checks` (job `135782670721`) SUCCESS, 2743/2743 unit tests / 218 files, `filters-view.test.tsx` 6/6 including both Mute/Block re-add+delayed Undo ACK; `database` (job `135782669976`) SUCCESS. Dedicated Mute/Block Chromium `44587038774` (job `135782671192`) SUCCESS, 48/48 `FILTERS_CONNECTED` markers. **All 16/16 exact-head GitHub workflows completed SUCCESS, no failed/pending.** PF-REVIEW-2 bounded correction PASS, not a new Mira whole-PR review. Next separate `...` = ONLY PF-REVIEW-3; after all three corrections new full whole-PR cycle starts with Mira, Leva only after Mira PASS. #342 service-only; #351 Draft; no merge/Stage6/deferred audits.
+
+
+## 2026-11-19 — Мира: second coordinator whole-PR review #351 — PASS
+
+Повторный coordinator technical whole-PR review Draft #351 выполнен на стабильном exact head
+`0fc239a554c8df562e97bc600f59b6b7b06d36ab` против неизменного base/main
+`9eae385571bf99e073df46f8541f7514c9626a29`.
+
+Полный implementation scope M1–M7 снова сопоставлен с current PR tree. Compare первого
+review head `0a2243339775dd1a5e55898ced6e553f77051d4e` → текущего head показывает ровно
+7 correction/test files; backend/schema/migration/notification/concurrency/ACL tree,
+ранее проверенный whole-PR циклом, не изменён. Три coordinator finding перепроверены
+независимо:
+
+1. **PF-REVIEW-1 CLOSED.** `PersonalFilterControl` больше не хранит local successful-ACK
+   mirror как competing authority; current loader state управляет presentation. Deterministic
+   topic/user × ON/OFF regression подтверждает: fresh same-pair loader snapshot остаётся
+   authoritative после delayed older ACK; pending/unknown explicit refresh/actor-target guards/
+   no POST replay сохранены.
+2. **PF-REVIEW-2 CLOSED.** `FilterRow` больше не имеет permanent `removed` latch. Row
+   видим только из authoritative private-list loader data. Deterministic Mute и Block cases
+   подтверждают Remove commit → re-add same pair → fresh loader → delayed old Undo ACK:
+   re-added row остаётся видимой; uncertain path сохраняет row + explicit refresh/no replay.
+3. **PF-REVIEW-3 CLOSED.** TopicView stale Block snapshot теперь определяется сравнением
+   current header identity с snapshot actor и для A→guest тоже fail-closed до нового loader.
+   Fresh guest null/null остаётся public; A→B остаётся fail-closed. Unit test удерживает
+   old A loader during sign-out и проверяет no private graph application/reveal; connected
+   real Better Auth same-mounted-topic sign-out подтверждает после revalidation public guest
+   bodies и отсутствие personal control при сохранённой A own Block pair.
+
+Exact-head evidence independently checked:
+- **16/16 workflows completed SUCCESS; 20/20 jobs SUCCESS**;
+- CI checks: **2744/2744 tests, 218/218 files**, lint/typecheck/build;
+- CI database: **1476/1476 tests, 109/109 files**, PG17, migration/schema/runtime privilege/
+  provisioning/Worker probes PASS;
+- dedicated Mute/Block Worker + Better Auth + PostgreSQL17 + Chromium:
+  **49/49 FILTERS_CONNECTED** markers, включая same-topic sign-out transition.
+
+Stable head повторно подтверждён после review. Confirmed current-scope defects = **0**.
+Coordinator whole-PR result: **PASS**.
+
+### Handoff
+
+Следующий исполнитель — **Лёва / Codex-6.1 Sol**: независимый technical whole-PR review
+того же exact head `0fc239a554c8df562e97bc600f59b6b7b06d36ab` против base/main
+`9eae385571bf99e073df46f8541f7514c9626a29`, без участия в authoring corrections.
+Проверить весь M1–M7 scope, не только PF-REVIEW-1/2/3, и независимо классифицировать
+только реальные current-stage defects. Если head изменится — этот PASS больше не является
+final review для нового head и нужен новый coordinator cycle.
+
+Не трогать deferred WATCH-AUDIT-1, BOOKMARKS-AUDIT-1/2, TITLE-AUDIT-1, moderation visibility,
+structure/topic move, #320, Stage6 или general UI/UX. #351 Draft/open; #342 service-only,
+never merge. После independent PASS владельцу будет доступен merge implementation #351;
+после фактического merge отдельный docs closeout выполняет Лира.
