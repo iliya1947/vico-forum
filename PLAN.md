@@ -21,16 +21,17 @@
 
 Полный технический план V1–V9 был подготовлен Лёвой. Компактный перенос: `stages/moderation-visibility/PLAN.md`.
 
-До implementation необходимо на актуальном main подтвердить/зафиксировать scope/fit по продуктовым fork V-P1/V-P2/V-P3 и техническим V-T1/V-T2, если в новом рабочем контексте нет явного принятого решения. Не перепроектировать остальное без нового конфликта.
+Scope/fit на актуальном main выполнен. V-T1/V-T2 технически совместимы с current architecture; V-P1/V-P2/V-P3 уже были приняты ранее и восстановлены в DECISIONS/visibility plan после owner correction. Повторное согласование не требуется. Не перепроектировать принятые границы без нового реального конфликта.
 
-После принятия:
-1. отдельный implementation PR;
-2. schema/catalog/History + authoritative commands/locks;
-3. public/private projections, assets/translations/inbox/own-state boundaries;
-4. protected UI/restore surface;
-5. real PG + connected Worker/Better Auth/Chromium acceptance и применимый CI;
-6. Mira whole-PR → Leva independent review → owner merge;
-7. отдельный docs closeout только если фактическое состояние/SOT изменилось.
+Следующий маршрут:
+1. Лёва финализирует existing V1–V9 plan против current main и фиксирует bounded stages;
+2. отдельный implementation PR для первого bounded-этапа;
+3. schema/catalog/History + authoritative commands/locks;
+4. public/private projections, assets/translations/inbox/own-state boundaries;
+5. protected UI/restore surface;
+6. real PG + connected Worker/Better Auth/Chromium acceptance и применимый CI;
+7. Mira whole-PR → Leva independent review → owner merge;
+8. отдельный docs closeout только если фактическое состояние/SOT изменилось.
 
 ## 4. Последний продуктовый этап — forum structure/topic move
 
