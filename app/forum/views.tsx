@@ -7,6 +7,7 @@ import {TopicQuickActions} from "../admin/quick-actions";
 import { TopicTitleEditor } from "./topic-title-editor";
 import { TopicWatchControl, type TopicWatchState } from "./topic-watch-control";
 import { TopicBookmarkControl, type TopicBookmarkState } from "./topic-bookmark-control";
+import { PersonalFilterControl, type PersonalFilterState } from "./personal-filter-control";
 import {MessageQuickActions} from "../admin/message-quick-actions";
 import { ForumAttachmentDisplay } from "./attachment-presentation";
 import { ComplaintSubmissionForm } from "../complaints/submission-form";
@@ -2180,6 +2181,10 @@ export function TopicView({
   topicWatchState = null,
   bookmarkActorId = null,
   topicBookmarkState = null,
+  muteActorId = null,
+  topicMuteState = null,
+  blockedActorId,
+  blockedAuthorIds,
   canSubmitComplaint = false,
   canManageSolution,
   canConfirmOwnSolution = false,
@@ -2211,6 +2216,10 @@ export function TopicView({
   topicWatchState?: TopicWatchState | null;
   bookmarkActorId?: string | null;
   topicBookmarkState?: TopicBookmarkState | null;
+  muteActorId?: string | null;
+  topicMuteState?: PersonalFilterState | null;
+  blockedActorId?: string | null;
+  blockedAuthorIds?: readonly string[];
   canSubmitComplaint?: boolean;
   canManageSolution: boolean;
   canConfirmOwnSolution?: boolean;
@@ -2301,6 +2310,15 @@ export function TopicView({
   const navigate = useNavigate();
   const revalidator = useRevalidator();
   const headerActorId = useHeaderAuthUser()?.id ?? null;
+  // Canonical loaders supply an explicit private snapshot even for guests.
+  // Legacy view-only test stubs without filter metadata do not represent a stale actor.
+  // Guest->authenticated, A->B, and A->guest must not use a prior actor's graph.
+  const hasBlockSnapshot = blockedAuthorIds !== undefined;
+  const blockSnapshotIsStale = hasBlockSnapshot && headerActorId !== (blockedActorId ?? null);
+  const blockedAuthorSet = new Set(blockedAuthorIds ?? []);
+  const blockScope = JSON.stringify([headerActorId ?? blockedActorId, topic.id, [...(blockedAuthorIds ?? [])].sort()]);
+  const [revealedBlockedPosts, setRevealedBlockedPosts] = useState<{ scope: string; ids: string[] }>({ scope: "", ids: [] });
+  useEffect(() => { setRevealedBlockedPosts({ scope: blockScope, ids: [] }); }, [blockScope]);
   const replyScope = JSON.stringify([topic.id, headerActorId]);
   // Keep only an already-mounted composer across closure/revalidation, never across actor/topic.
   const [retainedReplyScope, setRetainedReplyScope] = useState<string | null>(canParticipate ? replyScope : null);
@@ -2745,6 +2763,10 @@ export function TopicView({
                 post.parentPostId ? messageNumberById.get(post.parentPostId) : undefined;
               const directReplyIds = directRepliesByParent.get(post.id) ?? [];
               const postPresentation = presentedPosts.get(post.id)!;
+              const isBlockedAuthor = blockedAuthorSet.has(post.authorId);
+              const isRevealed = !blockSnapshotIsStale && revealedBlockedPosts.scope === blockScope
+                && revealedBlockedPosts.ids.includes(post.id);
+              const postCollapsed = blockSnapshotIsStale || (isBlockedAuthor && !isRevealed);
               const outdatedReason = post.solutionModerationStatus === "outdated"
                 ? post.solutionOutdatedReasonKind === "best-answer-replaced"
                   ? t("helpSolutionOutdatedReasonBestAnswerReplaced")
@@ -2828,12 +2850,12 @@ export function TopicView({
                                 {t("replyToMessage")}
                               </button>
                             )}
-                            {canParticipate && (
+                            {canParticipate && !postCollapsed && (
                               <button type="button" onClick={() => quoteWholeMessage(post.id)}>
                                 {t("quoteWholeMessage")}
                               </button>
                             )}
-                            {canParticipate && (
+                            {canParticipate && !postCollapsed && (
                               <button type="button" onClick={() => quoteSelectedText(post.id)}>
                                 {t("quoteSelectedText")}
                               </button>
@@ -2877,6 +2899,9 @@ export function TopicView({
                           {headerActorId && headerActorId === bookmarkActorId && topicBookmarkState &&
                             <TopicBookmarkControl key={JSON.stringify([topic.id, headerActorId])}
                               topicId={topic.id} actorId={headerActorId} locale={locale} state={topicBookmarkState} />}
+                          {headerActorId && headerActorId === muteActorId && topicMuteState &&
+                            <PersonalFilterControl key={JSON.stringify(["topic", topic.id, headerActorId])}
+                              kind="topic" targetId={topic.id} actorId={headerActorId} locale={locale} state={topicMuteState} />}
                           {headerActorId && <TopicTitleEditor
                             key={JSON.stringify([topic.id, headerActorId])}
                             topicId={topic.id} actorId={headerActorId} locale={locale}
@@ -2904,6 +2929,16 @@ export function TopicView({
                       </div>
                     ) : null}
 
+                    {postCollapsed ? (
+                      <div className="topic-message-body topic-message-filtered" role="note" data-filtered-post>
+                        <p>{t(blockSnapshotIsStale ? "personalFiltersRefreshing" : "blockedPostNotice")}</p>
+                        {!blockSnapshotIsStale && (
+                          <button type="button" onClick={() => setRevealedBlockedPosts(current => ({
+                            scope: blockScope, ids: [...(current.scope === blockScope ? current.ids : []), post.id],
+                          }))}>{t("blockedPostReveal")}</button>
+                        )}
+                      </div>
+                    ) : (
                     <div
                       data-message-body
                       className={postPresentation.selected === "translation"
@@ -2923,14 +2958,15 @@ export function TopicView({
                         } : postPresentation} />
                       </ForumInlineAttachmentProvider>
                     </div>
+                    )}
 
-                    {post.editedAt ? (
+                    {!postCollapsed && post.editedAt ? (
                       <small className="topic-message-edited">
                         {t("postEditedAt", { date: new Date(post.editedAt).toLocaleString(locale) })}
                       </small>
                     ) : null}
 
-                    {editingPostId === post.id && editingPostScope === editScope ? (
+                    {!postCollapsed && editingPostId === post.id && editingPostScope === editScope ? (
                       <Form method="post" className="forum-write-form topic-post-edit-form"
                         onSubmit={event => { if (!editablePostIds.includes(post.id)) event.preventDefault(); }}
                         aria-label={t("postEditHeading")} aria-busy={isEditSubmitting}>
@@ -2977,7 +3013,7 @@ export function TopicView({
                       </Form>
                     ) : null}
 
-                    {post.attachments && post.attachments.length > 0 ? (
+                    {!postCollapsed && post.attachments && post.attachments.length > 0 ? (
                       <div className="topic-message-attachments" aria-label={t("editorAttachments")}>
                         {post.attachments.map((attachment) => (
                           <ForumAttachmentDisplay key={attachment.id} attachment={attachment}
@@ -2986,7 +3022,7 @@ export function TopicView({
                       </div>
                     ) : null}
 
-                    {generationUnit && (
+                    {!postCollapsed && generationUnit && (
                       <div className="message-generation-status">
                         <ContentGenerationUnitStatus unit={generationUnit} />
                       </div>
@@ -3022,7 +3058,7 @@ export function TopicView({
                         )}
                       </div>
 
-                      <PostBodyTranslationControls presentation={postPresentation} />
+                      {!postCollapsed && <PostBodyTranslationControls presentation={postPresentation} />}
                       <MessageQuickActions locale={locale} topicId={topic.id} postId={post.id}
                         revisionId={post.body.id} sourceLocale={post.body.sourceLocale}
                         canCorrectAnySourceLocale={canCorrectAnySourceLocale}
@@ -3042,12 +3078,16 @@ export function TopicView({
                         {canParticipate && (
                           <div className="topic-message-participation">
                             <div className="topic-message-participation-actions">
-                              <button type="button" onClick={() => quoteWholeMessage(post.id)}>
-                                {t("quoteWholeMessage")}
-                              </button>
-                              <button type="button" onClick={() => quoteSelectedText(post.id)}>
-                                {t("quoteSelectedText")}
-                              </button>
+                              {!postCollapsed && (
+                                <>
+                                  <button type="button" onClick={() => quoteWholeMessage(post.id)}>
+                                    {t("quoteWholeMessage")}
+                                  </button>
+                                  <button type="button" onClick={() => quoteSelectedText(post.id)}>
+                                    {t("quoteSelectedText")}
+                                  </button>
+                                </>
+                              )}
                               <button type="button" onClick={() => targetReply(post.id)}>
                                 {t("replyToMessage")}
                               </button>

@@ -99,6 +99,11 @@ const reader: ForumReader = {
   readUnreadForUser: async () => [],
   readTopicReadState: async () => undefined,
   readTopicWatch: async () => false,
+  readTopicMute: async () => false,
+  readMutedTopics: async () => ({ items: [], next: null }),
+  readBlockedUsers: async () => ({ items: [], next: null }),
+  readUserBlock: async () => false,
+  readTopicBlockedAuthors: async () => [],
   readTopicBookmark: async () => false,
   readTopicBookmarks: async () => ({ items: [], next: null }),
   readNotifications: async (_userId, page) => ({items:[],total:0,page,hasMore:false}),
@@ -218,6 +223,26 @@ function guestContext(translations: readonly StoredContentTranslation[] = []) {
 
 describe("public forum authorization degradation", () => {
 
+  it("fails closed on unavailable mandatory Block matches instead of showing post bodies", async () => {
+    const ctx = contextWithPermissions("viewer-1", []);
+    ctx.set(forumReaderContext, {
+      ...reader, readTopicBlockedAuthors: async () => { throw new ForumStorageUnavailableError(); },
+    });
+    try {
+      await rawTopicLoader({ params: { locale: "en", topicId: topic.id }, context: ctx });
+      throw new Error("Expected unavailable private Block state");
+    } catch (error) {
+      expect(error).toBeInstanceOf(Response);
+      expect(error).toMatchObject({ status: 503 });
+      expect((error as Response).headers.get("Cache-Control")).toBe("private, no-store");
+    }
+    const guest = guestContext();
+    const unexpectedRead = vi.fn(async () => { throw new Error("guest should not read private Block"); });
+    guest.set(forumReaderContext, { ...reader, readTopicBlockedAuthors: unexpectedRead });
+    const result = await rawTopicLoader({ params: { locale: "en", topicId: topic.id }, context: guest });
+    expect(result).toHaveProperty("blockedAuthorIds");
+    expect(unexpectedRead).not.toHaveBeenCalled();
+  });
   it("keeps authenticated Watch state private, independent of permission grants and status", async () => {
     const ctx = contextWithPermissions("viewer-1", []);
     const personal = vi.fn(async () => true);

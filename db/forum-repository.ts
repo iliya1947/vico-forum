@@ -6,6 +6,7 @@ import { lockPrivacySubject } from "./user-privacy";
 import type {HelpSignalHistoryEffect} from "./admin-history";
 import { validateProfileFields, type ForumProfile, type ProfileFields } from "../app/forum/profile";
 import { publishedMentionRecipients } from "../app/forum/mentions";
+import { recordOrdinaryPostNotifications } from "./personal-notification-policy";
 import { and, asc, count, desc, eq, gt, gte, lt, inArray, min, isNotNull, isNull, lte, ne, or, sql } from "drizzle-orm";
 import type { NodePgDatabase } from "drizzle-orm/node-postgres";
 import { alias } from "drizzle-orm/pg-core";
@@ -30,6 +31,8 @@ import {
   forumTags,
   forumTopicReadStates,
   forumTopicBookmarks,
+  forumTopicMutes,
+  forumUserBlocks,
   forumTopicWatches,
   forumTopicPins,
   forumTopicTags,
@@ -160,6 +163,22 @@ export interface ForumTopicBookmarkCursor {
 export interface ForumTopicBookmarksPage {
   items: ForumTopicBookmarkSummary[];
   next: ForumTopicBookmarkCursor | null;
+}
+
+/** Strict two-field private keyset cursor; actor is always a separate server argument. */
+export interface ForumPersonalFilterCursor { createdAt: Date; targetId: string; }
+export interface ForumMutedTopicSummary {
+  id: string; title: string; mutedAt: Date;
+  authorName: string; authorIdentityKind?: "deleted";
+  section: { id: string; name: string } | null;
+  category: { id: string; name: string };
+}
+export interface ForumBlockedUserSummary {
+  id: string; name: string; blockedAt: Date; identityKind?: "deleted";
+}
+export interface ForumPersonalPage<T> {
+  items: T[];
+  next: ForumPersonalFilterCursor | null;
 }
 
 export interface ForumUnreadTopicSummary {
@@ -493,6 +512,11 @@ export interface ForumReader {
   readUnreadForUser(userId: string): Promise<ForumUnreadTopicSummary[]>;
   readTopicReadState(userId: string, topicId: string): Promise<ForumTopicReadState | undefined>;
   readTopicWatch(userId: string, topicId: string): Promise<boolean>;
+  readTopicMute(userId: string, topicId: string): Promise<boolean>;
+  readMutedTopics(userId: string, before?: ForumPersonalFilterCursor): Promise<ForumPersonalPage<ForumMutedTopicSummary>>;
+  readBlockedUsers(userId: string, before?: ForumPersonalFilterCursor): Promise<ForumPersonalPage<ForumBlockedUserSummary>>;
+  readUserBlock(userId: string, blockedUserId: string): Promise<boolean>;
+  readTopicBlockedAuthors(userId: string, topicId: string): Promise<string[]>;
   readTopicBookmark(userId: string, topicId: string): Promise<boolean>;
   readTopicBookmarks(userId: string, before?: ForumTopicBookmarkCursor): Promise<ForumTopicBookmarksPage>;
   readNotifications(userId:string,page:number):Promise<ForumNotificationPage>;
@@ -867,6 +891,44 @@ export class DrizzleForumRepository {
     }));
   }
 
+  async setTopicMute(input: { topicId: string; actorId: string; muted: boolean }): Promise<boolean> {
+    return this.database.transaction(async (tx) => {
+      // Preserve target FK, then admit active actor on this same transaction.
+      const [topic] = await tx.select({ id: forumTopics.id }).from(forumTopics)
+        .where(eq(forumTopics.id, input.topicId)).for("key share");
+      if (!topic) throw new ForumEntityNotFoundError("topic does not exist");
+      await assertActiveAccountForDrizzleMutation(tx, input.actorId);
+      if (input.muted) {
+        await tx.insert(forumTopicMutes).values({ userId: input.actorId, topicId: input.topicId })
+          .onConflictDoNothing();
+      } else {
+        await tx.delete(forumTopicMutes).where(and(
+          eq(forumTopicMutes.userId, input.actorId), eq(forumTopicMutes.topicId, input.topicId),
+        ));
+      }
+      return input.muted;
+    });
+  }
+
+  async setUserBlock(input: { actorId: string; blockedUserId: string; blocked: boolean }): Promise<boolean> {
+    if (input.actorId === input.blockedUserId) throw new Error("cannot block self");
+    return this.database.transaction(async (tx) => {
+      const [target] = await tx.select({ id: user.id }).from(user)
+        .where(eq(user.id, input.blockedUserId)).for("key share");
+      if (!target) throw new ForumEntityNotFoundError("user does not exist");
+      await assertActiveAccountForDrizzleMutation(tx, input.actorId);
+      if (input.blocked) {
+        await tx.insert(forumUserBlocks).values({ userId: input.actorId, blockedUserId: input.blockedUserId })
+          .onConflictDoNothing();
+      } else {
+        await tx.delete(forumUserBlocks).where(and(
+          eq(forumUserBlocks.userId, input.actorId), eq(forumUserBlocks.blockedUserId, input.blockedUserId),
+        ));
+      }
+      return input.blocked;
+    });
+  }
+
   async setTopicBookmark(input: { topicId: string; actorId: string; bookmarked: boolean }): Promise<boolean> {
     return this.database.transaction(async (tx) => {
       // Preserve FK target first, then take the same actor mutex as account lifecycle.
@@ -971,21 +1033,15 @@ export class DrizzleForumRepository {
         authorId: input.authorId,
       });
 
-      // Read watchers only after the topic mutex: Watch/Unwatch and reply agree on commit order.
-      // A set-based statement avoids per-watcher queries and parameter growth.
-      await tx.execute(sql`insert into forum_reply_notifications
-        (id,recipient_user_id,actor_user_id,topic_id,post_id,kind,created_at)
-        select gen_random_uuid()::text, recipients.user_id, ${input.authorId}, ${input.topicId}, ${input.id}, 'reply', ${createdAt}
-        from (
-          select ${topic.authorId}::text as user_id
-          union
-          select ${parentAuthorId}::text
-          union
-          select ${forumTopicWatches.userId} from ${forumTopicWatches}
-          where ${forumTopicWatches.topicId} = ${input.topicId}
-        ) recipients
-        where recipients.user_id is not null and recipients.user_id <> ${input.authorId}
-        on conflict(recipient_user_id,post_id) do nothing`);
+      // Watch candidates remain set-based and are decided after the topic mutex.
+      await recordOrdinaryPostNotifications(tx, {
+        actorId: input.authorId, topicId: input.topicId, postId: input.id,
+        createdAt, kind: "reply",
+        candidates: sql`select ${topic.authorId}::text as user_id
+          union select ${parentAuthorId}::text
+          union select ${forumTopicWatches.userId} from ${forumTopicWatches}
+          where ${forumTopicWatches.topicId} = ${input.topicId}`,
+      });
 
       await this.recordPublishedMentions(tx, {
         actorId: input.authorId, topicId: input.topicId, postId: input.id,
@@ -1018,10 +1074,11 @@ export class DrizzleForumRepository {
     if (!identifiers.length) return;
     const existing = await tx.select({ id: user.id }).from(user).where(inArray(user.id, identifiers));
     if (!existing.length) return;
-    await tx.execute(sql`insert into forum_reply_notifications
-      (id,recipient_user_id,actor_user_id,topic_id,post_id,kind,created_at)
-      values ${sql.join(existing.map(({id})=>sql`(${crypto.randomUUID()},${id},${input.actorId},${input.topicId},${input.postId},'mention',${input.createdAt})`),sql`,`)}
-      on conflict(recipient_user_id,post_id) do nothing`);
+    await recordOrdinaryPostNotifications(tx, {
+      ...input, kind: "mention",
+      candidates: sql`select mentions.user_id from
+        (values ${sql.join(existing.map(({id})=>sql`(${id}::text)`), sql`,`)}) as mentions(user_id)`,
+    });
   }
 
   private async publicationReceipt(
@@ -1554,6 +1611,96 @@ export class DrizzleForumRepository {
         ...publicDiscoveryLocation(row),
       };
     });
+  }
+
+  async readMutedTopics(userId: string, before?: ForumPersonalFilterCursor): Promise<ForumPersonalPage<ForumMutedTopicSummary>> {
+    const rows = await this.database.select({
+      id: forumTopicMutes.topicId, createdAt: forumTopicMutes.createdAt,
+      title: forumTopicTitleRevisions.originalContent,
+      authorId: forumTopics.authorId, authorName: user.name,
+      authorDeactivatedAt: user.deactivatedAt,
+      authorDeactivatedByUserId: user.deactivatedByUserId,
+      authorRetainAtLeastUntil: user.retainAtLeastUntil,
+      sectionId: forumSections.id, sectionName: forumSections.name,
+      categoryId: forumCategories.id, categoryName: forumCategories.name,
+    }).from(forumTopicMutes)
+      .innerJoin(forumTopics, eq(forumTopics.id, forumTopicMutes.topicId))
+      .innerJoin(forumTopicTitleRevisions, and(
+        eq(forumTopicTitleRevisions.topicId, forumTopics.id),
+        eq(forumTopicTitleRevisions.id, forumTopics.currentTitleRevisionId),
+      ))
+      .innerJoin(user, eq(user.id, forumTopics.authorId))
+      .innerJoin(forumSections, eq(forumSections.id, forumTopics.sectionId))
+      .innerJoin(forumCategories, eq(forumCategories.id, forumSections.categoryId))
+      .where(and(
+        eq(forumTopicMutes.userId, userId),
+        before ? or(lt(forumTopicMutes.createdAt, before.createdAt),
+          and(eq(forumTopicMutes.createdAt, before.createdAt),
+            lt(forumTopicMutes.topicId, before.targetId))) : undefined,
+      ))
+      .orderBy(desc(forumTopicMutes.createdAt), desc(forumTopicMutes.topicId))
+      .limit(51);
+    const pageRows = rows.slice(0, 50);
+    const items = pageRows.map(row => {
+      const author = projectForumPublicAuthor(row);
+      return {
+        id: row.id, title: row.title, mutedAt: row.createdAt,
+        authorName: author.name,
+        ...(author.kind === "deleted" ? { authorIdentityKind: "deleted" as const } : {}),
+        ...publicDiscoveryLocation(row),
+      };
+    });
+    const last = pageRows.at(-1);
+    return { items, next: rows.length > 50 && last
+      ? { createdAt: last.createdAt, targetId: last.id } : null };
+  }
+
+  async readBlockedUsers(userId: string, before?: ForumPersonalFilterCursor): Promise<ForumPersonalPage<ForumBlockedUserSummary>> {
+    const rows = await this.database.select({
+      id: forumUserBlocks.blockedUserId, createdAt: forumUserBlocks.createdAt,
+      authorId: user.id, authorName: user.name,
+      authorDeactivatedAt: user.deactivatedAt,
+      authorDeactivatedByUserId: user.deactivatedByUserId,
+      authorRetainAtLeastUntil: user.retainAtLeastUntil,
+    }).from(forumUserBlocks)
+      .innerJoin(user, eq(user.id, forumUserBlocks.blockedUserId))
+      .where(and(eq(forumUserBlocks.userId, userId),
+        before ? or(lt(forumUserBlocks.createdAt, before.createdAt),
+          and(eq(forumUserBlocks.createdAt, before.createdAt),
+            lt(forumUserBlocks.blockedUserId, before.targetId))) : undefined))
+      .orderBy(desc(forumUserBlocks.createdAt), desc(forumUserBlocks.blockedUserId))
+      .limit(51);
+    const pageRows = rows.slice(0, 50);
+    const items = pageRows.map(row => {
+      const projected = projectForumPublicAuthor(row);
+      return { id: row.id, name: projected.name, blockedAt: row.createdAt,
+        ...(projected.kind === "deleted" ? { identityKind: "deleted" as const } : {}) };
+    });
+    const last = pageRows.at(-1);
+    return { items, next: rows.length > 50 && last
+      ? { createdAt: last.createdAt, targetId: last.id } : null };
+  }
+
+  async readTopicMute(userId: string, topicId: string): Promise<boolean> {
+    const rows = await this.database.select({ id: forumTopicMutes.topicId }).from(forumTopicMutes)
+      .where(and(eq(forumTopicMutes.userId, userId), eq(forumTopicMutes.topicId, topicId))).limit(1);
+    return rows.length > 0;
+  }
+
+  async readUserBlock(userId: string, blockedUserId: string): Promise<boolean> {
+    const rows = await this.database.select({ id: forumUserBlocks.blockedUserId }).from(forumUserBlocks)
+      .where(and(eq(forumUserBlocks.userId, userId), eq(forumUserBlocks.blockedUserId, blockedUserId))).limit(1);
+    return rows.length > 0;
+  }
+
+  /** Only block matches among this topic's authors; never load a user's full block graph. */
+  async readTopicBlockedAuthors(userId: string, topicId: string): Promise<string[]> {
+    const rows = await this.database.select({ id: forumUserBlocks.blockedUserId })
+      .from(forumUserBlocks)
+      .innerJoin(forumPosts, eq(forumPosts.authorId, forumUserBlocks.blockedUserId))
+      .where(and(eq(forumUserBlocks.userId, userId), eq(forumPosts.topicId, topicId)))
+      .groupBy(forumUserBlocks.blockedUserId);
+    return rows.map(row => row.id);
   }
 
   async readTopicBookmark(userId: string, topicId: string): Promise<boolean> {

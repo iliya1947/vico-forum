@@ -12,6 +12,7 @@ import {
 } from "../../db/forum-identifiers";
 import { authSessionContext } from "../auth/request-context";
 import { HeaderAuthProvider, type HeaderAuthUser } from "../auth/auth-controls";
+import { authClientActions } from "../auth/auth-client";
 import { complaintQueueContext } from "../complaints/queue-context";
 import {complaintAppealContext} from "../complaints/appeal-context";
 import { authorizationContext } from "../authorization/request-context";
@@ -251,6 +252,11 @@ const reader: ForumReader = {
     category: topic.section.category,
   }],
   readTopicWatch: async () => false,
+  readTopicMute: async () => false,
+  readMutedTopics: async () => ({ items: [], next: null }),
+  readBlockedUsers: async () => ({ items: [], next: null }),
+  readUserBlock: async () => false,
+  readTopicBlockedAuthors: async () => [],
   readTopicBookmark: async () => false,
   readTopicBookmarks: async () => ({ items: [], next: null }),
   readTopicReadState: async (_userId, id) => id === topic.id ? {
@@ -2830,7 +2836,8 @@ describe("published edit revision fence", () => {
     expect(readBatch.mock.calls[0]?.[0]).not.toEqual(expect.arrayContaining([expect.objectContaining({ contentId: emptyPost.id })]));
     expect(readStatuses.mock.calls[0]?.[0]).not.toEqual(expect.arrayContaining([expect.objectContaining({ contentId: emptyPost.id })]));
     expect(loaded.generationUnits.some((unit) => unit.contentId === emptyPost.id)).toBe(false);
-    renderRoute(TopicRoute, loaded, "/he/topics/typed-api", "he", "rtl");
+    renderRoute(TopicRoute, loaded, "/he/topics/typed-api", "he", "rtl",
+      { id: "translation-capable-author", name: "Translation author" });
     expect(await screen.findByText("only-file.txt")).toBeInTheDocument();
     expect(screen.getByText("Adjacent translation")).toBeInTheDocument();
   });
@@ -5057,5 +5064,79 @@ describe.each([
     expect(await screen.findByRole("link", { name: /C3d2 inactive author question/u })).toBeVisible();
     expect(malformedView.container.innerHTML).not.toContain("SECRET_C3D2_");
     malformedView.unmount();
+  });
+});
+
+
+describe("personal Block presentation in ordinary TopicView", () => {
+  it("keeps post relationships and anchors while withholding blocked body until reveal", async () => {
+    const blocked = { ...helpTopic, posts: helpTopic.posts.map(post => post.id === "help-answer"
+      ? { ...post, body: { ...post.body, originalContent: "A message hidden by personal Block." },
+        attachments: [{ id: "block-attachment", fileName: "hidden.txt", byteSize: 4, detectedType: "text" }] }
+      : post) };
+    renderRoute(TopicRoute, topicRenderData(blocked, {
+      blockedActorId: "viewer-a", blockedAuthorIds: ["lin"], canReply: true,
+    }), "/en/topics/help-question", "en", "ltr", { id: "viewer-a", name: "Viewer" });
+
+    expect(await screen.findByText("Message from a blocked author is hidden.")).toBeInTheDocument();
+    expect(screen.queryByText("A message hidden by personal Block.")).not.toBeInTheDocument();
+    expect(screen.queryByText("hidden.txt")).not.toBeInTheDocument();
+    expect(document.querySelector("#post-help-answer [data-message-body]")).toBeNull();
+    expect(document.getElementById("post-help-answer")).toBeInTheDocument();
+    expect(document.querySelector('#post-help-answer a[href="#post-help-answer"]')).not.toBeNull();
+    expect(screen.getByText("The session disappears after redirect.")).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "Show message" }));
+    expect(await screen.findByText("A message hidden by personal Block.")).toBeInTheDocument();
+    expect(document.querySelector("#post-help-answer [data-message-body]")).not.toBeNull();
+    expect(document.getElementById("post-help-answer")).toBeInTheDocument();
+  });
+
+  it("fails closed on A to guest sign-out until a fresh guest loader replaces A's Block graph", async () => {
+    const blocked = { ...helpTopic, posts: helpTopic.posts.map(post => post.id === "help-answer"
+      ? { ...post, body: { ...post.body, originalContent: "Private Block test body." } }
+      : post) };
+    const actorSnapshot = topicRenderData(blocked, {
+      blockedActorId: "viewer-a", blockedAuthorIds: ["lin"],
+    });
+    const guestSnapshot = topicRenderData(blocked, {
+      blockedActorId: null, blockedAuthorIds: [],
+    });
+    let releaseGuest!: (value: typeof guestSnapshot) => void;
+    const pendingGuestLoader = new Promise<typeof guestSnapshot>(resolve => { releaseGuest = resolve; });
+    let reads = 0;
+    const router = createMemoryRouter([{
+      id: "page", path: "/en/topics/:topicId", Component: TopicRoute,
+      loader: () => ++reads === 1 ? actorSnapshot : pendingGuestLoader,
+    }], { initialEntries: ["/en/topics/help-question"] });
+    const signOut = vi.spyOn(authClientActions, "signOut").mockImplementation(async handlers => {
+      handlers.onSuccess();
+    });
+    render(<I18nextProvider i18n={runtime("en", "ltr")}>
+      <HeaderAuthProvider initialUser={{ id: "viewer-a", name: "Viewer" }}>
+        <RouterProvider router={router} />
+      </HeaderAuthProvider>
+    </I18nextProvider>);
+
+    expect(await screen.findByText("Message from a blocked author is hidden.")).toBeInTheDocument();
+    expect(screen.queryByText("Private Block test body.")).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Sign out" }));
+    await waitFor(() => expect(signOut).toHaveBeenCalledTimes(1));
+    await waitFor(() => expect(document.querySelector('.auth-controls[data-state="guest"]')).not.toBeNull());
+    // Auth has changed immediately, but the old actor-A loader is still on screen.
+    expect(document.querySelector("#post-help-answer [data-filtered-post]")).not.toBeNull();
+    expect(document.querySelector("#post-help-question-post [data-filtered-post]")).not.toBeNull();
+    expect(document.querySelector("#post-help-answer [data-message-body]")).toBeNull();
+    expect(screen.queryByText("Private Block test body.")).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Show message" })).not.toBeInTheDocument();
+    expect(screen.getAllByText("Personal filters are refreshing.").length).toBeGreaterThan(0);
+    expect(document.getElementById("post-help-answer")).toBeInTheDocument();
+
+    await act(async () => { releaseGuest(guestSnapshot); await pendingGuestLoader; });
+    await waitFor(() => expect(screen.getByText("Private Block test body.")).toBeInTheDocument());
+    expect(document.querySelectorAll("[data-filtered-post]")).toHaveLength(0);
+    expect(document.querySelector("#post-help-answer [data-message-body]")).not.toBeNull();
+    expect(document.querySelector("#post-help-question-post [data-message-body]")).not.toBeNull();
+    expect(document.getElementById("post-help-answer")).toBeInTheDocument();
   });
 });

@@ -326,7 +326,7 @@ describe("SA04-J3b authoritative account admission for published edit", () => {
         ? pauseQuery(submitter, text => /from "user"/i.test(text) && /for no key update/i.test(text))
         // Edit has already taken topic/post and actor locks, revised post and reached
         // the real mention INSERT when Complaint tries to lock the title topic.
-        : pauseQuery(editor, text => /insert into forum_reply_notifications/i.test(text));
+        : pauseQuery(editor, text => /insert into\s+"?forum_reply_notifications"?/i.test(text));
       const complaintInput = {
         operationId: uuid(),
         target: { kind: "topic-title" as const, topicId: item.topicId, revisionId: item.titleRevisionId },

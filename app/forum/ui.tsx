@@ -1,7 +1,7 @@
 import type { ReactNode } from "react";
 import { Link, isRouteErrorResponse, useLocation, useNavigate, useParams, useRouteError } from "react-router";
 import { useTranslation } from "react-i18next";
-import { forumAttentionPath, forumBookmarksPath, forumIndexPath, forumNotificationsPath, forumPopularPath, forumSearchPath, forumTagsPath, forumUnansweredPath, forumUnreadPath, underDevelopmentPath } from "./paths";
+import { forumAttentionPath, forumBookmarksPath, forumFiltersPath, forumIndexPath, forumNotificationsPath, forumPopularPath, forumSearchPath, forumTagsPath, forumUnansweredPath, forumUnreadPath, underDevelopmentPath } from "./paths";
 import { AuthControls, useHeaderAuthUser } from "../auth/auth-controls";
 import { useAdministratorPreferences, selectAttentionEntry } from "../settings/administrator-preferences";
 import { useThemePreference } from "../theme-preference";
@@ -286,6 +286,13 @@ export function ForumShell({
                   >
                     <DiscoveryIcon kind="unread" />
                     <span>{t("unreadNav")}</span>
+                  </Link>
+                ) : null}
+                {authUser ? (
+                  <Link className="home-discovery-link" to={forumFiltersPath(locale)}
+                    aria-label={t("personalFiltersNav")} title={t("personalFiltersNav")}>
+                    <span aria-hidden="true">◉</span>
+                    <span>{t("personalFiltersNav")}</span>
                   </Link>
                 ) : null}
                 {authUser ? (

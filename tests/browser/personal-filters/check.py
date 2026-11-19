@@ -1,0 +1,1103 @@
+"""4b.1: real Chromium -> built Worker -> Better Auth -> disposable PG17 smoke only."""
+import argparse
+import json
+import os
+import select
+import shutil
+import subprocess
+from pathlib import Path
+from urllib.parse import urlparse
+from uuid import uuid4
+
+from playwright.sync_api import sync_playwright, expect
+
+parser = argparse.ArgumentParser()
+parser.add_argument("--url", default="http://127.0.0.1:4242")
+parser.add_argument("--output", type=Path, required=True)
+args = parser.parse_args()
+base = args.url.rstrip("/")
+database = urlparse(os.environ["DATABASE_URL"])
+assert os.environ.get("CI") == "true"
+assert urlparse(base).hostname in ("localhost", "127.0.0.1")
+assert database.hostname in ("localhost", "127.0.0.1")
+assert database.path == "/vico_filters_browser_test"
+repo = Path(__file__).resolve().parents[3]
+args.output.mkdir(parents=True, exist_ok=True)
+fixture = subprocess.Popen(
+    [shutil.which("node"), "--import", "tsx", str(Path(__file__).with_name("pg.mjs"))],
+    cwd=repo, stdin=subprocess.PIPE, stdout=subprocess.PIPE, text=True, bufsize=1,
+)
+assert fixture.stdout.readline().strip() == "READY"
+cases, errors, external = [], [], []
+
+
+def rpc(value):
+    fixture.stdin.write(json.dumps(value) + "\n")
+    fixture.stdin.flush()
+    assert select.select([fixture.stdout], [], [], 30)[0], "Mute/Block fixture timeout"
+    answer = json.loads(fixture.stdout.readline())
+    assert "error" not in answer, answer
+    return answer["result"]
+
+
+def sql(statement, params=None):
+    return rpc({"operation": "sql", "sql": statement, "params": params or []})
+
+
+def private(response, status=200):
+    assert response.status == status, (response.status, status, response.text()[:200])
+    cache = {part.strip() for part in response.headers.get("cache-control", "").split(",")}
+    assert {"private", "no-store"} <= cache, response.headers
+
+
+def record(case):
+    cases.append(case)
+    print("FILTERS_CONNECTED " + case, flush=True)
+
+
+def reply(ctx, path, body, parent=None):
+    fields = {"intent": "reply", "body": body}
+    if parent:
+        fields["parentPostId"] = parent
+    response = ctx.request.post(base + path, headers={"Origin": base},
+                                form=fields, max_redirects=0)
+    assert response.status in (302, 303), (response.status, response.text()[:300])
+    target = response.headers.get("location", "")
+    assert "#post-" in target, target
+    return target.rsplit("#post-", 1)[1]
+
+
+def watch(ctx, actor_id, path):
+    response = ctx.request.post(base + path, headers={"Origin": base},
+                                form={"intent": "setTopicWatch", "editorActorId": actor_id,
+                                      "watching": "true"})
+    private(response)
+
+
+def mute(ctx, actor_id, path, desired):
+    response = ctx.request.post(base + path, headers={"Origin": base},
+                                form={"intent": "setTopicMute", "editorActorId": actor_id,
+                                      "muted": str(desired).lower()})
+    private(response)
+
+
+def notices(post_id):
+    return {row["recipient_user_id"]: row["kind"] for row in sql(
+        "select recipient_user_id,kind from forum_reply_notifications where post_id=$1",
+        [post_id],
+    )}
+
+
+def suppression(post_id):
+    return {row["recipient_user_id"] for row in sql(
+        "select recipient_user_id from forum_post_notification_suppressions where post_id=$1",
+        [post_id],
+    )}
+
+
+def attach_metadata(post_id, owner_id, file_name):
+    """Metadata-only disposable PG attachment fixture; no R2 object/download claim."""
+    attachment_id = str(uuid4())
+    sql(
+        "insert into forum_attachments "
+        "(id,owner_id,object_key,file_name,declared_mime,detected_type,response_mime,"
+        "byte_size,verification_status,created_at) "
+        "values ($1,$2,$3,$4,'text/plain','text','text/plain; charset=utf-8',"
+        "12,'type-checked',now())",
+        [attachment_id, owner_id, "private/filters-" + uuid4().hex, file_name],
+    )
+    sql(
+        "insert into forum_post_attachments (post_id,attachment_id,created_at) "
+        "values ($1,$2,now())",
+        [post_id, attachment_id],
+    )
+    return attachment_id
+
+
+try:
+    with sync_playwright() as pw:
+        browser = pw.chromium.launch(
+            headless=True, executable_path=os.environ.get("PLAYWRIGHT_EXECUTABLE") or None,
+            channel=None if os.environ.get("PLAYWRIGHT_EXECUTABLE") else "chrome",
+            args=["--no-sandbox"],
+        )
+        contexts = []
+
+        def context():
+            ctx = browser.new_context(
+                viewport={"width": 1280, "height": 900}, service_workers="block",
+                extra_http_headers={"cf-connecting-ip": "192.0.2." + str(120 + len(contexts))},
+            )
+            contexts.append(ctx)
+            ctx.route("**/*", lambda route: route.continue_()
+                      if route.request.url.startswith(base + "/")
+                      else (external.append(route.request.url), route.abort())[-1])
+            return ctx
+
+        def account(label):
+            ctx = context()
+            response = ctx.request.post(
+                base + "/api/auth/sign-up/email", headers={"Origin": base},
+                data={"name": label, "email": uuid4().hex + "@filters.test.invalid",
+                      "password": "Filters-local-password-123456"},
+            )
+            assert response.status == 200, (response.status, response.text()[:300])
+            return ctx, response.json()["user"]["id"]
+
+        author, author_id = account("Filters author")
+        actor, actor_id = account("Filters viewer")
+        guest = context()
+        seeded = rpc({"operation": "seed", "author": author_id, "prefix": "filters-" + uuid4().hex})
+        topic_path = "/en/topics/" + seeded["topicId"]
+        profile_path = "/en/users/" + author_id
+
+        private(guest.request.get(base + "/en/filters.data"), 401)
+        private(actor.request.get(base + "/en/filters.data"))
+        assert sql("select user_id from forum_topic_mutes where user_id=$1", [actor_id]) == []
+        assert sql("select user_id from forum_user_blocks where user_id=$1", [actor_id]) == []
+        record("real Better Auth sign-up, isolated PG17 and private filters loader")
+
+        page = actor.new_page()
+        page.on("pageerror", lambda error: errors.append(str(error)))
+        private(page.goto(base + "/en/filters", wait_until="networkidle"))
+        expect(page.get_by_role("heading", name="Personal filters")).to_be_visible()
+        expect(page.get_by_role("link", name="Muted topics")).to_be_visible()
+        expect(page.get_by_role("link", name="Blocked users")).to_be_visible()
+        record("private filters document renders for own actor")
+
+        private(page.goto(base + topic_path, wait_until="networkidle"))
+        expect(page.get_by_role("button", name="Mute topic", exact=True)).to_be_visible()
+        expect(page.locator(".personal-filter-control button[aria-pressed=false]")).to_have_count(1)
+        private(page.goto(base + profile_path, wait_until="networkidle"))
+        expect(page.get_by_role("button", name="Block user", exact=True)).to_be_visible()
+        expect(page.locator(".personal-filter-control button[aria-pressed=false]")).to_have_count(1)
+        record("public topic and other-user profile expose independent Off controls")
+
+        guest_page = guest.new_page()
+        assert guest_page.goto(base + topic_path).status == 200
+        expect(guest_page.locator(".personal-filter-control")).to_have_count(0)
+        assert sql("select user_id from forum_topic_mutes where user_id=$1", [actor_id]) == []
+        assert sql("select user_id from forum_user_blocks where user_id=$1", [actor_id]) == []
+        record("guest public read and zero implicit personal writes")
+
+        # 4b.2: exercise each ordinary recipient source through actual Worker writes.
+        parent, parent_id = account("Filters parent author")
+        mentioned, mentioned_id = account("Filters mention recipient")
+        before_sender, _ = account("Filters before-Mute sender")
+        while_sender, _ = account("Filters muted sender")
+        other_sender, _ = account("Filters other-topic sender")
+        after_sender, _ = account("Filters after-Unmute sender")
+        other_topic_path = "/en/topics/" + seeded["otherTopicId"]
+        parent_post = reply(parent, topic_path, "Parent reply " + uuid4().hex)
+        watch(actor, actor_id, topic_path)
+        watch(actor, actor_id, other_topic_path)
+        assert {row["topic_id"] for row in sql(
+            "select topic_id from forum_topic_watches where user_id=$1", [actor_id],
+        )} == {seeded["topicId"], seeded["otherTopicId"]}
+        recipients = {author_id: "reply", parent_id: "reply", actor_id: "reply",
+                      mentioned_id: "mention"}
+        mention = "[mentioned person](/en/users/" + mentioned_id + ")"
+        before_post = reply(before_sender, topic_path, "Baseline " + mention, parent_post)
+        assert notices(before_post) == recipients, (notices(before_post), recipients)
+        assert suppression(before_post) == set()
+        record("pre-Mute real topic-author, parent-author, Watch and explicit-mention delivery")
+
+        # Viewer toggles Mute using the actual Chromium fetcher control.
+        private(page.goto(base + topic_path, wait_until="networkidle"))
+        expect(page.get_by_role("button", name="Mute topic", exact=True)).to_be_visible()
+        with page.expect_response(lambda r: r.request.method == "POST"
+                                  and "/topics/" in r.url) as muted:
+            page.get_by_role("button", name="Mute topic", exact=True).click()
+        private(muted.value)
+        expect(page.get_by_role("button", name="Unmute topic", exact=True)).to_be_visible()
+        for ctx, uid in [(author, author_id), (parent, parent_id),
+                         (mentioned, mentioned_id)]:
+            mute(ctx, uid, topic_path, True)
+        actual_mutes = {row["user_id"] for row in sql(
+            "select user_id from forum_topic_mutes where topic_id=$1", [seeded["topicId"]],
+        )}
+        assert actual_mutes == set(recipients), (actual_mutes, recipients)
+        assert {row["topic_id"] for row in sql(
+            "select topic_id from forum_topic_watches where user_id=$1", [actor_id],
+        )} == {seeded["topicId"], seeded["otherTopicId"]}
+        record("Chromium-confirmed Mute ON for Watch viewer; four own SQL pairs, Watch retained")
+
+        during_post = reply(while_sender, topic_path, "Muted " + mention, parent_post)
+        assert notices(during_post) == {}, notices(during_post)
+        assert suppression(during_post) == set(recipients), suppression(during_post)
+        other_post = reply(other_sender, other_topic_path,
+                           "Unmuted other topic " + mention)
+        other_expected = {author_id: "reply", actor_id: "reply", mentioned_id: "mention"}
+        assert notices(other_post) == other_expected, (notices(other_post), other_expected)
+        assert suppression(other_post) == set()
+        record("Mute suppresses all four ordinary sources, but another watched topic still notifies")
+
+        with page.expect_response(lambda r: r.request.method == "POST"
+                                  and "/topics/" in r.url) as unmuted:
+            page.get_by_role("button", name="Unmute topic", exact=True).click()
+        private(unmuted.value)
+        expect(page.get_by_role("button", name="Mute topic", exact=True)).to_be_visible()
+        for ctx, uid in [(author, author_id), (parent, parent_id),
+                         (mentioned, mentioned_id)]:
+            mute(ctx, uid, topic_path, False)
+        assert sql("select user_id from forum_topic_mutes where topic_id=$1",
+                   [seeded["topicId"]]) == []
+        after_post = reply(after_sender, topic_path, "After Unmute " + mention, parent_post)
+        assert notices(after_post) == recipients, (notices(after_post), recipients)
+        assert suppression(after_post) == set()
+        assert notices(before_post) == recipients
+        assert notices(during_post) == {}
+        assert suppression(during_post) == set(recipients)
+        assert {row["topic_id"] for row in sql(
+            "select topic_id from forum_topic_watches where user_id=$1", [actor_id],
+        )} == {seeded["topicId"], seeded["otherTopicId"]}
+        page.reload(wait_until="networkidle")
+        expect(page.get_by_role("button", name="Mute topic", exact=True)).to_be_visible()
+        record("Unmute restores only new ordinary fanout, no backfill, prior notices and Watch intact")
+        # 4b.3: Block is directional and keyed to the actual publication actor.
+        # A is the Watch subscriber, B owns the topic; both Mute states are OFF.
+        private(page.goto(base + profile_path, wait_until="networkidle"))
+        expect(page.get_by_role("button", name="Block user", exact=True)).to_be_visible()
+        with page.expect_response(lambda r: r.request.method == "POST"
+                                  and "/users/" + author_id in r.url) as blocked:
+            page.get_by_role("button", name="Block user", exact=True).click()
+        private(blocked.value)
+        expect(page.get_by_role("button", name="Unblock user", exact=True)).to_be_visible()
+        assert sql("select blocked_user_id from forum_user_blocks where user_id=$1",
+                   [actor_id]) == [{"blocked_user_id": author_id}]
+        assert sql("select blocked_user_id from forum_user_blocks where user_id=$1",
+                   [author_id]) == []
+        record("A blocks B through Chromium; the reverse B-to-A pair remains OFF")
+
+        # A's publication is still delivered to B, who has not blocked A.
+        a_post = reply(actor, topic_path, "A to B while A blocks B " + uuid4().hex)
+        assert notices(a_post) == {author_id: "reply"}, notices(a_post)
+        assert suppression(a_post) == set()
+        record("A-to-B Block does not suppress ordinary notifications delivered from A to B")
+
+        # B can publish and explicitly mention A; A's parent/Watch/mention
+        # sources all collapse to one suppressed pair, not a visible notice.
+        b_mentions_a = "[watching A](/en/users/" + actor_id + ")"
+        b_post = reply(author, topic_path, "Blocked B to A " + b_mentions_a, a_post)
+        assert notices(b_post) == {}, notices(b_post)
+        assert suppression(b_post) == {actor_id}, suppression(b_post)
+        assert sql("select blocked_user_id from forum_user_blocks where user_id=$1",
+                   [author_id]) == []
+        record("B's actual reply and mention to A are suppressed, with one PG receipt")
+
+        # Another publication actor C in B's own topic is still eligible for
+        # A via Watch/mention and for B via ordinary topic/parent authorship.
+        third_party, _ = account("Filters independent C publisher")
+        c_post = reply(third_party, topic_path, "C reply in B topic " + b_mentions_a, b_post)
+        expected_c = {actor_id: "reply", author_id: "reply"}
+        assert notices(c_post) == expected_c, (notices(c_post), expected_c)
+        assert suppression(c_post) == set()
+        assert sql("select blocked_user_id from forum_user_blocks where user_id=$1",
+                   [actor_id]) == [{"blocked_user_id": author_id}]
+        assert {row["topic_id"] for row in sql(
+            "select topic_id from forum_topic_watches where user_id=$1", [actor_id],
+        )} == {seeded["topicId"], seeded["otherTopicId"]}
+        record("C's ordinary reply still notifies A and B in B's topic, Watch unchanged")
+        # 4b.4: public root and a best answer authored by blocked B stay
+        # navigable, while A sees no B-authored body or attachment presentation.
+        root_post = sql(
+            "select id from forum_posts where topic_id=$1 "
+            "order by created_at,id limit 1", [seeded["topicId"]],
+        )[0]["id"]
+        root_file = "blocked-root-" + uuid4().hex + ".txt"
+        best_file = "blocked-best-" + uuid4().hex + ".txt"
+        attach_metadata(root_post, author_id, root_file)
+        attach_metadata(b_post, author_id, best_file)
+        answer = author.request.post(
+            base + topic_path, headers={"Origin": base},
+            form={"intent": "selectBestAnswer", "operationScope": "own", "postId": b_post},
+            max_redirects=0,
+        )
+        assert answer.status in (302, 303), (answer.status, answer.text()[:300])
+        assert sql("select best_answer_post_id from forum_topics where id=$1",
+                   [seeded["topicId"]]) == [{"best_answer_post_id": b_post}]
+        record("B selects own reply as best answer; two real PG attachment references exist")
+
+        private(page.goto(base + topic_path, wait_until="networkidle"))
+        root_node = page.locator("#post-" + root_post)
+        best_node = page.locator("#post-" + b_post)
+        child_node = page.locator("#post-" + c_post)
+        expect(root_node).to_have_class(__import__("re").compile(r".*original-question.*"))
+        expect(best_node).to_have_class(__import__("re").compile(r".*best-answer.*"))
+        for node in (root_node, best_node):
+            expect(node.locator("[data-filtered-post]")).to_have_count(1)
+            expect(node.locator("[data-message-body]")).to_have_count(0)
+            expect(node.locator(".topic-message-attachments")).to_have_count(0)
+            expect(node.get_by_role("button", name="Show message")).to_be_visible()
+        assert root_file not in root_node.inner_text()
+        assert best_file not in best_node.inner_text()
+        expect(page.locator("#post-" + a_post + " [data-message-body]")).to_have_count(1)
+        expect(child_node.locator("[data-message-body]")).to_have_count(1)
+        record("A sees blocked B root and best answer collapsed; visible A/C remain intact")
+
+        # Post anchors, the solution jump, and reply graph must survive collapse.
+        expect(root_node.locator('a.topic-message-anchor[href="#post-' + root_post + '"]')).to_have_count(1)
+        expect(best_node.locator('a.topic-message-anchor[href="#post-' + b_post + '"]')).to_have_count(1)
+        expect(root_node.locator('a.topic-solution-link[href="#post-' + b_post + '"]')).to_have_count(1)
+        expect(best_node.locator('a.topic-message-parent-link[href="#post-' + a_post + '"]')).to_have_count(1)
+        expect(child_node.locator('a.topic-message-parent-link[href="#post-' + b_post + '"]')).to_have_count(1)
+        expect(best_node.locator('nav.topic-message-direct-replies a[href="#post-' + c_post + '"]')).to_have_count(1)
+        child_node.locator('a.topic-message-parent-link[href="#post-' + b_post + '"]').click()
+        assert page.url.endswith("#post-" + b_post), page.url
+        expect(best_node.locator("[data-filtered-post]")).to_have_count(1)
+        record("collapsed root/best/parent/child preserve stable post anchors and relationships")
+
+        # Guest remains public and sees both exact bodies and attachment links.
+        assert guest_page.goto(base + topic_path, wait_until="networkidle").status == 200
+        guest_root = guest_page.locator("#post-" + root_post)
+        guest_best = guest_page.locator("#post-" + b_post)
+        expect(guest_root.locator("[data-message-body]")).to_contain_text("Public original post")
+        expect(guest_best.locator("[data-message-body]")).to_contain_text("Blocked B to A")
+        expect(guest_root.locator(".topic-message-attachments")).to_contain_text(root_file)
+        expect(guest_best.locator(".topic-message-attachments")).to_contain_text(best_file)
+        expect(guest_page.locator("[data-filtered-post]")).to_have_count(0)
+        record("guest still reads B's public root, answer, and attachment links")
+
+        # Revealing is post-local and presentation-only, never an implicit Unblock.
+        root_node.get_by_role("button", name="Show message").click()
+        expect(root_node.locator("[data-message-body]")).to_contain_text("Public original post")
+        expect(root_node.locator(".topic-message-attachments")).to_contain_text(root_file)
+        expect(best_node.locator("[data-filtered-post]")).to_have_count(1)
+        best_node.get_by_role("button", name="Show message").click()
+        expect(best_node.locator("[data-message-body]")).to_contain_text("Blocked B to A")
+        expect(best_node.locator(".topic-message-attachments")).to_contain_text(best_file)
+        assert sql("select blocked_user_id from forum_user_blocks where user_id=$1",
+                   [actor_id]) == [{"blocked_user_id": author_id}]
+        page.reload(wait_until="networkidle")
+        expect(page.locator("#post-" + root_post + " [data-filtered-post]")).to_have_count(1)
+        expect(page.locator("#post-" + b_post + " [data-filtered-post]")).to_have_count(1)
+        assert sql("select blocked_user_id from forum_user_blocks where user_id=$1",
+                   [actor_id]) == [{"blocked_user_id": author_id}]
+        record("independent per-post Reveal shows body/attachment metadata; reload collapses and Block persists")
+        # 4b.5: real initial-topic mention is suppressed for a blocking viewer.
+        # Publication receipt replay is checked before and after Unblock.
+        new_author, new_author_id = account("Filters initial-topic sender")
+        new_profile_path = "/en/users/" + new_author_id
+        block_form = {"intent": "setUserBlock", "editorActorId": actor_id, "blocked": "true"}
+        block_result = actor.request.post(base + new_profile_path, headers={"Origin": base},
+                                          form=block_form)
+        private(block_result)
+        assert sql("select blocked_user_id from forum_user_blocks "
+                   "where user_id=$1 and blocked_user_id=$2",
+                   [actor_id, new_author_id]) == [{"blocked_user_id": new_author_id}]
+        section_id = sql("select section_id from forum_topics where id=$1",
+                         [seeded["topicId"]])[0]["section_id"]
+        create_form = {
+            "title": "Blocked initial mention " + uuid4().hex,
+            "body": "Initial mention " + b_mentions_a,
+            "editorOperationId": str(uuid4()), "editorAttachmentIds": "[]",
+        }
+        create_path = "/en/sections/" + section_id
+        first_create = new_author.request.post(base + create_path, headers={"Origin": base},
+                                               form=create_form, max_redirects=0)
+        assert first_create.status in (302, 303), (first_create.status, first_create.text()[:250])
+        created_location = first_create.headers["location"]
+        created_topic_id = urlparse(created_location).path.rstrip("/").rsplit("/", 1)[-1]
+        created_topic_path = "/en/topics/" + created_topic_id
+        initial_post = sql("select id from forum_posts where topic_id=$1",
+                           [created_topic_id])[0]["id"]
+        created_at = __import__("time").monotonic()
+        assert notices(initial_post) == {}, notices(initial_post)
+        assert suppression(initial_post) == {actor_id}, suppression(initial_post)
+        assert sql("select count(*)::int as n from forum_posts where topic_id=$1",
+                   [created_topic_id]) == [{"n": 1}]
+        record("Block suppresses initial-topic mention through real HTTP and persists one receipt")
+
+        repeat_create = new_author.request.post(base + create_path, headers={"Origin": base},
+                                                form=create_form, max_redirects=0)
+        assert repeat_create.status in (302, 303)
+        assert repeat_create.headers["location"] == created_location
+        assert sql("select count(*)::int as n from forum_posts where topic_id=$1",
+                   [created_topic_id]) == [{"n": 1}]
+        assert suppression(initial_post) == {actor_id}
+        record("identical initial-topic publication replay creates no extra post or notice")
+
+        unblock_form = {**block_form, "blocked": "false"}
+        unblock_result = actor.request.post(base + new_profile_path,
+                                            headers={"Origin": base}, form=unblock_form)
+        private(unblock_result)
+        # The canonical document action may return HTML; the persisted own pair is authoritative.
+        assert sql("select blocked_user_id from forum_user_blocks "
+                   "where user_id=$1 and blocked_user_id=$2",
+                   [actor_id, new_author_id]) == []
+        again_create = new_author.request.post(base + create_path, headers={"Origin": base},
+                                               form=create_form, max_redirects=0)
+        assert again_create.status in (302, 303)
+        assert again_create.headers["location"] == created_location
+        assert notices(initial_post) == {}
+        assert suppression(initial_post) == {actor_id}
+
+        def revision(post_id):
+            return sql("select current_revision_id from forum_posts where id=$1",
+                       [post_id])[0]["current_revision_id"]
+
+        def edit(ctx, path, post_id, body, form=None):
+            fields = form if form is not None else {
+                "intent": "editPost", "postId": post_id,
+                "expectedRevisionId": revision(post_id), "body": body,
+                "editorOperationId": str(uuid4()),
+                "editorAttachmentIds": "[]", "editorRetainedAttachmentIds": "[]",
+            }
+            result = ctx.request.post(base + path, headers={"Origin": base},
+                                      form=fields, max_redirects=0)
+            assert result.status in (302, 303), (result.status, result.text()[:300])
+            return fields
+
+        edit(new_author, created_topic_path, initial_post,
+             "Edited original, same recipient " + b_mentions_a)
+        edit(new_author, created_topic_path, initial_post, "Removed original mention")
+        edit(new_author, created_topic_path, initial_post,
+             "Reintroduced original mention " + b_mentions_a)
+        assert notices(initial_post) == {}
+        assert suppression(initial_post) == {actor_id}
+        record("Unblock and edit/remove/re-add initial mention cannot backfill consumed pair")
+
+        # Mute receipts from 4b.2 survive Unmute and published-post edits, while
+        # a new mention on that same post can notify a never-selected recipient.
+        assert sql("select user_id from forum_topic_mutes where topic_id=$1",
+                   [seeded["topicId"]]) == []
+        unseen, unseen_id = account("Filters newly mentioned on edited post")
+        edit(while_sender, topic_path, during_post, "Unrelated edit keeps " + mention)
+        assert notices(during_post) == {}, notices(during_post)
+        assert suppression(during_post) == set(recipients)
+        record("Unmute plus unrelated published edit does not revive old suppressed mentions")
+
+        edit(while_sender, topic_path, during_post, "Temporarily without mention")
+        unseen_link = "[first-time recipient](/en/users/" + unseen_id + ")"
+        final_edit = edit(while_sender, topic_path, during_post,
+                          "Re-added consumed mention " + mention + " " + unseen_link)
+        assert notices(during_post) == {unseen_id: "mention"}, notices(during_post)
+        assert suppression(during_post) == set(recipients)
+        assert notices(before_post) == recipients
+        record("remove/re-add leaves receipts; first-time mention after Unmute notifies only new recipient")
+
+        after_revision = revision(during_post)
+        before_revision_count = sql(
+            "select count(*)::int as n from forum_post_revisions where post_id=$1",
+            [during_post],
+        )
+        edit(while_sender, topic_path, during_post, final_edit["body"], final_edit)
+        assert revision(during_post) == after_revision
+        assert sql("select count(*)::int as n from forum_post_revisions where post_id=$1",
+                   [during_post]) == before_revision_count
+        assert notices(during_post) == {unseen_id: "mention"}
+        assert suppression(during_post) == set(recipients)
+        record("matching published-edit replay writes no revision, notice or new receipt")
+
+        later_sender, _ = account("Filters prospective unmuted reply")
+        after_filter_post = reply(later_sender, topic_path,
+                                  "Fresh post after Unmute " + mention, parent_post)
+        assert notices(after_filter_post) == recipients, notices(after_filter_post)
+        assert suppression(after_filter_post) == set()
+        assert notices(after_post) == recipients
+        assert notices(before_post) == recipients
+        record("fresh ordinary publication after Unmute notifies all four, prior inbox intact")
+
+        # Respect the real Worker write cooldown, not the PG fixture's zero
+        # cooldown: the same previously blocked topic author now publishes again.
+        elapsed = __import__("time").monotonic() - created_at
+        if elapsed < 5.2:
+            __import__("time").sleep(5.2 - elapsed)
+        next_block_post = reply(new_author, created_topic_path,
+                                "Fresh post from formerly blocked author " + b_mentions_a)
+        assert notices(next_block_post) == {actor_id: "mention"}, notices(next_block_post)
+        assert suppression(next_block_post) == set()
+        assert notices(initial_post) == {}
+        assert suppression(initial_post) == {actor_id}
+        record("new post after Unblock delivers to A; old Block suppression stays consumed")
+        # 4b.6: both canonical controls write to one own private list, with
+        # independent tabs, undo and persisted state after reload.
+        private(page.goto(base + other_topic_path, wait_until="networkidle"))
+        expect(page.get_by_role("button", name="Mute topic", exact=True)).to_be_visible()
+        with page.expect_response(lambda r: r.request.method == "POST"
+                                  and "/topics/" + seeded["otherTopicId"] in r.url) as ui_mute:
+            page.get_by_role("button", name="Mute topic", exact=True).click()
+        private(ui_mute.value)
+        expect(page.get_by_role("button", name="Unmute topic", exact=True)).to_be_visible()
+        assert sql("select topic_id from forum_topic_mutes where user_id=$1",
+                   [actor_id]) == [{"topic_id": seeded["otherTopicId"]}]
+
+        private(page.goto(base + new_profile_path, wait_until="networkidle"))
+        expect(page.get_by_role("button", name="Block user", exact=True)).to_be_visible()
+        with page.expect_response(lambda r: r.request.method == "POST"
+                                  and "/users/" + new_author_id in r.url) as ui_block:
+            page.get_by_role("button", name="Block user", exact=True).click()
+        private(ui_block.value)
+        expect(page.get_by_role("button", name="Unblock user", exact=True)).to_be_visible()
+        assert sql("select blocked_user_id from forum_user_blocks "
+                   "where user_id=$1 and blocked_user_id=$2",
+                   [actor_id, new_author_id]) == [{"blocked_user_id": new_author_id}]
+
+        private(page.goto(base + "/en/filters", wait_until="networkidle"))
+        expect(page.get_by_role("heading", name="Personal filters")).to_be_visible()
+        expect(page.get_by_role("link", name="Muted topics")).to_have_attribute("aria-current", "page")
+        expect(page.get_by_role("link", name="Unmuted comparison topic")).to_be_visible()
+        assert page.locator("ul.bookmarks-list > li").count() == 1
+        private(page.goto(base + "/en/filters?tab=users", wait_until="networkidle"))
+        expect(page.get_by_role("link", name="Blocked users")).to_have_attribute("aria-current", "page")
+        expect(page.get_by_role("link", name="Filters initial-topic sender")).to_be_visible()
+        expect(page.get_by_role("link", name="Filters author")).to_be_visible()
+        assert page.locator("ul.bookmarks-list > li").count() == 2
+        record("Chromium topic/profile controls persist own Mute and Block in separate private list tabs")
+
+        unblocking_row = page.locator(".bookmarks-list-row").filter(
+            has=page.get_by_role("link", name="Filters initial-topic sender"))
+        with page.expect_response(lambda r: r.request.method == "POST"
+                                  and "/users/" + new_author_id in r.url) as list_unblock:
+            unblocking_row.get_by_role("button", name="Unblock user").click()
+        private(list_unblock.value)
+        expect(page.get_by_role("link", name="Filters initial-topic sender")).to_have_count(0)
+        assert sql("select blocked_user_id from forum_user_blocks "
+                   "where user_id=$1 and blocked_user_id=$2",
+                   [actor_id, new_author_id]) == []
+        page.reload(wait_until="networkidle")
+        expect(page.get_by_role("link", name="Filters initial-topic sender")).to_have_count(0)
+        expect(page.get_by_role("link", name="Filters author")).to_be_visible()
+        private(page.goto(base + new_profile_path, wait_until="networkidle"))
+        expect(page.get_by_role("button", name="Block user", exact=True)).to_be_visible()
+
+        private(page.goto(base + "/en/filters", wait_until="networkidle"))
+        unmuting_row = page.locator(".bookmarks-list-row").filter(
+            has=page.get_by_role("link", name="Unmuted comparison topic"))
+        with page.expect_response(lambda r: r.request.method == "POST"
+                                  and "/topics/" + seeded["otherTopicId"] in r.url) as list_unmute:
+            unmuting_row.get_by_role("button", name="Unmute topic").click()
+        private(list_unmute.value)
+        expect(page.get_by_role("link", name="Unmuted comparison topic")).to_have_count(0)
+        assert sql("select topic_id from forum_topic_mutes where user_id=$1",
+                   [actor_id]) == []
+        page.reload(wait_until="networkidle")
+        expect(page.get_by_text("You have not muted any topics.")).to_be_visible()
+        private(page.goto(base + other_topic_path, wait_until="networkidle"))
+        expect(page.get_by_role("button", name="Mute topic", exact=True)).to_be_visible()
+        record("both private-list undo actions persist through reload and update canonical controls")
+
+        # Re-add via canonical controls to exercise persisted lists including
+        # user-authored test fixture pairs; source of each mutation is HTTP.
+        with page.expect_response(lambda r: r.request.method == "POST"
+                                  and "/topics/" + seeded["otherTopicId"] in r.url) as ui_re_mute:
+            page.get_by_role("button", name="Mute topic", exact=True).click()
+        private(ui_re_mute.value)
+        expect(page.get_by_role("button", name="Unmute topic", exact=True)).to_be_visible()
+
+        # SQL-only pagination fixture supplies 50 additional existing topics and
+        # people. The original real-HTTP own pair makes 51 in each tab; no
+        # fixture creates an alternative application command or cache.
+        seeded_pages = rpc({
+            "operation": "seedFilterPages", "count": 50, "actor": actor_id,
+            "author": author_id, "sectionId": section_id, "prefix": uuid4().hex,
+        })
+        assert sql("select count(*)::int as n from forum_topic_mutes where user_id=$1",
+                   [actor_id]) == [{"n": 51}]
+        assert sql("select count(*)::int as n from forum_user_blocks where user_id=$1",
+                   [actor_id]) == [{"n": 51}]
+        record("disposable PG17 supplies 50+1 Mute and Block own pairs for real list keysets")
+
+        def list_names():
+            return [value.strip() for value in page.locator(
+                "ul.bookmarks-list > li .bookmarks-topic-link strong").all_text_contents()]
+
+        private(page.goto(base + "/en/filters", wait_until="networkidle"))
+        expect(page.locator("ul.bookmarks-list > li")).to_have_count(50)
+        first_topics = list_names()
+        assert len(set(first_topics)) == 50
+        page.get_by_role("link", name="Older filters").click()
+        expect(page.get_by_role("link", name="Newest filters")).to_be_visible()
+        expect(page.locator("ul.bookmarks-list > li")).to_have_count(1)
+        older_topics = list_names()
+        assert set(first_topics + older_topics) == set(
+            seeded_pages["topicNames"] + ["Unmuted comparison topic"])
+        assert not set(first_topics).intersection(older_topics)
+        page.get_by_role("link", name="Newest filters").click()
+        expect(page.locator("ul.bookmarks-list > li")).to_have_count(50)
+        assert set(list_names()) == set(first_topics)
+        record("muted topic keyset: exactly 50+1 distinct own rows, Older and Newest round trip")
+
+        private(page.goto(base + "/en/filters?tab=users", wait_until="networkidle"))
+        expect(page.locator("ul.bookmarks-list > li")).to_have_count(50)
+        first_users = list_names()
+        assert len(set(first_users)) == 50
+        page.get_by_role("link", name="Older filters").click()
+        expect(page.get_by_role("link", name="Newest filters")).to_be_visible()
+        expect(page.locator("ul.bookmarks-list > li")).to_have_count(1)
+        assert "tab=users" in page.url
+        older_users = list_names()
+        assert set(first_users + older_users) == set(
+            seeded_pages["userNames"] + ["Filters author"])
+        assert not set(first_users).intersection(older_users)
+        page.get_by_role("link", name="Newest filters").click()
+        expect(page.locator("ul.bookmarks-list > li")).to_have_count(50)
+        assert set(list_names()) == set(first_users)
+        record("blocked users keyset: exactly 50+1 distinct own rows, tab and cursor preserved")
+
+        other_viewer = author.new_page()
+        private(other_viewer.goto(base + "/en/filters", wait_until="networkidle"))
+        expect(other_viewer.get_by_text("You have not muted any topics.")).to_be_visible()
+        private(other_viewer.goto(base + "/en/filters?tab=users", wait_until="networkidle"))
+        expect(other_viewer.get_by_text("You have not blocked any users.")).to_be_visible()
+        expect(other_viewer.locator("ul.bookmarks-list > li")).to_have_count(0)
+        record("same list routes expose no actor-A filter pairs to independently signed-in B")
+        # 4b.7: real HTTP privacy boundaries and browser actor change.
+        # Guest gets an explicit private 401, never empty state or private graph.
+        private(guest.request.get(base + "/en/filters"), 401)
+        private(guest.request.get(base + "/en/filters?tab=users"), 401)
+        private(guest.request.get(base + "/en/filters.data?tab=users"), 401)
+        assert guest.request.get(base + topic_path).status == 200
+        assert guest.request.get(base + profile_path).status == 200
+        expect(guest_page.locator(".personal-filter-control")).to_have_count(0)
+        guest_mute = guest.request.post(base + topic_path, headers={"Origin": base},
+                                       form={"intent": "setTopicMute",
+                                             "editorActorId": actor_id, "muted": "true"})
+        private(guest_mute, 401)
+        guest_block = guest.request.post(base + profile_path, headers={"Origin": base},
+                                        form={"intent": "setUserBlock",
+                                              "editorActorId": actor_id, "blocked": "true"})
+        private(guest_block, 401)
+        assert sql("select count(*)::int as n from forum_topic_mutes where user_id=$1",
+                   [actor_id]) == [{"n": 51}]
+        assert sql("select count(*)::int as n from forum_user_blocks where user_id=$1",
+                   [actor_id]) == [{"n": 51}]
+        record("guest private list 401, public topic/profile intact; guest Mute/Block POST 401 without writes")
+
+        for route in ("/en/filters", "/en/filters?tab=users",
+                      "/en/filters.data", "/en/filters.data?tab=users",
+                      topic_path, topic_path + ".data",
+                      profile_path, profile_path + ".data"):
+            private(actor.request.get(base + route))
+        for invalid_query in ("?ownerId=" + author_id,
+                              "?tab=users&tab=topics",
+                              "?beforeTargetId=" + seeded["topicId"]):
+            private(actor.request.get(base + "/en/filters" + invalid_query), 400)
+            private(actor.request.get(base + "/en/filters.data" + invalid_query), 400)
+        stale_topic = actor.request.post(
+            base + other_topic_path, headers={"Origin": base},
+            form={"intent": "setTopicMute", "editorActorId": author_id, "muted": "false"})
+        private(stale_topic, 409)
+        stale_block = actor.request.post(
+            base + profile_path, headers={"Origin": base},
+            form={"intent": "setUserBlock", "editorActorId": author_id, "blocked": "false"})
+        private(stale_block, 409)
+        assert sql("select topic_id from forum_topic_mutes where user_id=$1 "
+                   "and topic_id=$2", [actor_id, seeded["otherTopicId"]]) == [
+                       {"topic_id": seeded["otherTopicId"]}]
+        assert sql("select blocked_user_id from forum_user_blocks where user_id=$1 "
+                   "and blocked_user_id=$2", [actor_id, author_id]) == [
+                       {"blocked_user_id": author_id}]
+        record("private document/data no-store, invalid/foreign queries 400 and stale actor POST 409")
+
+        # B can read own empty lists but cannot read who blocked B.
+        private(author.request.get(base + "/en/filters?tab=users"))
+        b_profile_of_a = author.request.get(base + "/en/users/" + actor_id + ".data")
+        private(b_profile_of_a)
+        b_profile_data = b_profile_of_a.text()
+        assert 'blockedAuthorIds' not in b_profile_data
+        assert 'forum_user_blocks' not in b_profile_data
+        assert 'blockState' in b_profile_data, b_profile_data[:400]
+        b_list = author.request.get(base + "/en/filters.data?tab=users")
+        private(b_list)
+        # React Router single-fetch serializes this as a positional value array.
+        assert '"items",[]' in b_list.text(), b_list.text()[:500]
+        record("blocked target B reads no reverse Block graph via own list or A public profile")
+
+        # One browser context really changes from A's Better Auth cookie to B.
+        # An older cursor from A's list is not an authorization token.
+        private(page.goto(base + "/en/filters?tab=users", wait_until="networkidle"))
+        assert page.locator("ul.bookmarks-list > li").count() == 50
+        page.get_by_role("link", name="Older filters").click()
+        expect(page.locator("ul.bookmarks-list > li")).to_have_count(1)
+        old_cursor_url = page.url
+        cookies_b = author.storage_state()["cookies"]
+        assert cookies_b
+        actor.clear_cookies()
+        actor.add_cookies(cookies_b)
+        private(page.goto(old_cursor_url, wait_until="networkidle"))
+        expect(page.locator(".auth-user")).to_have_attribute("href", "/en/users/" + author_id)
+        expect(page.locator("ul.bookmarks-list > li")).to_have_count(0)
+        # The own-list UI deliberately resets an old actor's cursor on switch.
+        expect(page).to_have_url(base + "/en/filters?tab=users")
+        expect(page.get_by_text("You have not blocked any users.")).to_be_visible()
+        page.reload(wait_until="networkidle")
+        expect(page.locator("ul.bookmarks-list > li")).to_have_count(0)
+        private(page.goto(base + "/en/filters?tab=users", wait_until="networkidle"))
+        expect(page.get_by_text("You have not blocked any users.")).to_be_visible()
+        record("real Better Auth actor switch in same Chromium context cannot reuse A's cursor/list")
+
+        # 4b.8: permissions, Watch, Bookmarks, read markers, public search
+        # and protected Complaint evidence must not inherit personal filters.
+        domain, domain_id = account("Filters domain independence viewer")
+        domain_page = domain.new_page()
+        domain_page.on("pageerror", lambda error: errors.append(str(error)))
+        assert sql("select topic_id from forum_topic_read_states where user_id=$1",
+                   [domain_id]) == []
+        watch(domain, domain_id, topic_path)
+        bookmark_response = domain.request.post(
+            base + topic_path, headers={"Origin": base},
+            form={"intent": "setTopicBookmark", "editorActorId": domain_id,
+                  "bookmarked": "true"})
+        private(bookmark_response)
+        mute(domain, domain_id, topic_path, True)
+        domain_block = domain.request.post(
+            base + profile_path, headers={"Origin": base},
+            form={"intent": "setUserBlock", "editorActorId": domain_id, "blocked": "true"})
+        private(domain_block)
+        for table, key in (("forum_topic_watches", "topic_id"),
+                           ("forum_topic_bookmarks", "topic_id"),
+                           ("forum_topic_mutes", "topic_id")):
+            assert sql("select " + key + " from " + table
+                       + " where user_id=$1 and topic_id=$2",
+                       [domain_id, seeded["topicId"]]) == [{key: seeded["topicId"]}]
+        assert sql("select blocked_user_id from forum_user_blocks "
+                   "where user_id=$1 and blocked_user_id=$2",
+                   [domain_id, author_id]) == [{"blocked_user_id": author_id}]
+        assert sql("select count(*)::int as n from forum_topic_read_states "
+                   "where user_id=$1", [domain_id]) == [{"n": 0}]
+        record("real Mute+Block preserve distinct Watch and Bookmark rows and do not create read markers")
+
+        private(domain_page.goto(base + "/en/bookmarks", wait_until="networkidle"))
+        expect(domain_page.locator('ul.bookmarks-list a[href="' + topic_path + '"]')).to_have_count(1)
+        assert domain_page.goto(base + "/en/unread", wait_until="networkidle").status == 200
+        expect(domain_page.locator('a.unread-topic-card[href^="' + topic_path + '"]')).to_have_count(1)
+        assert domain_page.locator('a.unread-topic-card[href^="' + topic_path + '"]').inner_text()
+        assert sql("select count(*)::int as n from forum_topic_read_states "
+                   "where user_id=$1", [domain_id]) == [{"n": 0}]
+        record("muted and blocked topic still appears in own Bookmarks and new/unread discovery")
+
+        public_query = "/en/search?q=Personal+filters+smoke"
+        assert domain_page.goto(base + public_query, wait_until="networkidle").status == 200
+        expect(domain_page.locator('a.search-result-card[href="' + topic_path + '"]')).to_have_count(1)
+        assert guest.request.get(base + public_query).status == 200
+        expect(domain_page.get_by_text("Personal filters smoke", exact=True)).to_be_visible()
+        private(domain_page.goto(base + profile_path, wait_until="networkidle"))
+        expect(domain_page.locator("#profile-name")).to_contain_text("Filters author")
+        expect(domain_page.get_by_role("button", name="Unblock user", exact=True)).to_be_visible()
+        assert sql("select count(*)::int as n from forum_topic_read_states "
+                   "where user_id=$1", [domain_id]) == [{"n": 0}]
+        record("public Search and blocked author's Profile remain visible; discovery creates no read marker")
+
+        # Authenticated topic page-view marks the latest delivered post even
+        # if its author is blocked. Revealing a collapsed post does not mark anew.
+        private(domain_page.goto(base + topic_path, wait_until="networkidle"))
+        collapsed = domain_page.locator("#post-" + b_post)
+        expect(collapsed.locator("[data-filtered-post]")).to_have_count(1)
+        expect(domain_page.locator(".topic-watch-control button[aria-pressed=true]")).to_have_count(1)
+        expect(domain_page.locator(".topic-bookmark-control button[aria-pressed=true]")).to_have_count(1)
+        expect(domain_page.locator(".personal-filter-control button[aria-pressed=true]")).to_have_count(1)
+        read_before_reveal = sql(
+            "select last_read_post_id,updated_at from forum_topic_read_states "
+            "where user_id=$1 and topic_id=$2", [domain_id, seeded["topicId"]])
+        assert len(read_before_reveal) == 1, read_before_reveal
+        latest = sql("select id from forum_posts where topic_id=$1 "
+                     "order by created_at desc,id desc limit 1", [seeded["topicId"]])[0]["id"]
+        assert read_before_reveal[0]["last_read_post_id"] == latest, (
+            read_before_reveal, latest)
+        collapsed.get_by_role("button", name="Show message").click()
+        expect(collapsed.locator("[data-message-body]")).to_contain_text("Blocked B to A")
+        assert sql("select last_read_post_id,updated_at from forum_topic_read_states "
+                   "where user_id=$1 and topic_id=$2",
+                   [domain_id, seeded["topicId"]]) == read_before_reveal
+        assert sql("select count(*)::int as n from forum_topic_watches "
+                   "where user_id=$1 and topic_id=$2",
+                   [domain_id, seeded["topicId"]]) == [{"n": 1}]
+        assert sql("select count(*)::int as n from forum_topic_bookmarks "
+                   "where user_id=$1 and topic_id=$2",
+                   [domain_id, seeded["topicId"]]) == [{"n": 1}]
+        record("blocked body Reveal does not advance read marker; normal topic view still marks latest post")
+
+        # The Complaint Report affordance must remain available on a still
+        # collapsed B-authored root, and the immutable target evidence must be
+        # readable by a permitted reviewer who also blocks that author.
+        root_reporting = domain_page.locator("#post-" + root_post)
+        expect(root_reporting.locator("[data-filtered-post]")).to_have_count(1)
+        expect(root_reporting.locator(".complaint-open")).to_have_count(1)
+        root_reporting.locator(".complaint-open").click()
+        report_form = root_reporting.locator(".complaint-form")
+        expect(report_form).to_be_visible()
+        report_form.locator('textarea[name="explanation"]').fill(
+            "Independent complaint context survives Mute/Block " + uuid4().hex)
+        with domain_page.expect_response(
+            lambda r: r.request.method == "POST"
+            and "/topics/" + seeded["topicId"] + "/complaints" in r.url
+        ) as reported:
+            report_form.locator('button[type="submit"]').click()
+        private(reported.value)
+        expect(root_reporting.locator(".complaint-confirmation")).to_have_count(1)
+        submitted_case = sql(
+            "select c.id as case_id,t.post_id,t.post_revision_id,"
+            "r.reporter_user_id from forum_complaint_cases c "
+            "join forum_complaint_targets t on t.id=c.target_id "
+            "join forum_complaints r on r.case_id=c.id "
+            "where r.reporter_user_id=$1 and t.post_id=$2",
+            [domain_id, root_post])
+        assert len(submitted_case) == 1, submitted_case
+        root_revision = sql("select current_revision_id from forum_posts where id=$1",
+                            [root_post])[0]["current_revision_id"]
+        assert submitted_case[0]["post_revision_id"] == root_revision
+        assert submitted_case[0]["post_id"] == root_post
+        assert sql("select last_read_post_id,updated_at from forum_topic_read_states "
+                   "where user_id=$1 and topic_id=$2",
+                   [domain_id, seeded["topicId"]]) == read_before_reveal
+        record("report action on still-collapsed blocked original captures immutable Complaint post revision")
+
+        reviewer, reviewer_id = account("Filters independent complaint reviewer")
+        sql("insert into authz_user_permission_overrides(user_id,permission_key,effect) "
+            "values($1,'forum.complaint.review','allow')", [reviewer_id])
+        reviewer_grant = sql(
+            "select permission_key,effect from authz_user_permission_overrides "
+            "where user_id=$1", [reviewer_id])
+        assert reviewer_grant == [{"permission_key": "forum.complaint.review",
+                                   "effect": "allow"}]
+        owner_denied_before = reviewer.request.get(base + "/en/super-admin")
+        private(owner_denied_before, 403)
+        mute(reviewer, reviewer_id, topic_path, True)
+        reviewer_block = reviewer.request.post(
+            base + profile_path, headers={"Origin": base},
+            form={"intent": "setUserBlock", "editorActorId": reviewer_id,
+                  "blocked": "true"})
+        private(reviewer_block)
+        assert sql("select permission_key,effect from authz_user_permission_overrides "
+                   "where user_id=$1", [reviewer_id]) == reviewer_grant
+        owner_denied_after = reviewer.request.get(base + "/en/super-admin")
+        private(owner_denied_after, 403)
+        review_url = "/en/attention/complaints/" + submitted_case[0]["case_id"] + "/review"
+        reviewer_page = reviewer.new_page()
+        reviewer_page.on("pageerror", lambda error: errors.append(str(error)))
+        private(reviewer_page.goto(base + review_url, wait_until="networkidle"))
+        expect(reviewer_page.locator(".complaint-review-source pre").first).to_contain_text(
+            "Public original post")
+        reviewer_context = "/en/attention/complaints/" + submitted_case[0]["case_id"]
+        # Reviewer-only context is a protected distinct loader, not TopicView.
+        context_response = reviewer.request.get(base + reviewer_context + "/context/" + root_post)
+        private(context_response)
+        assert "Public original post" in context_response.text()
+        assert sql("select count(*)::int as n from forum_complaint_cases c "
+                   "join forum_complaint_targets t on t.id=c.target_id "
+                   "where c.id=$1 and t.post_revision_id=$2",
+                   [submitted_case[0]["case_id"], root_revision]) == [{"n": 1}]
+        record("reviewer who Mutes and Blocks still reads protected Complaint revision and context")
+        record("Mute/Block preserve reviewer grant; non-Owner Super-admin guard stays 403")
+
+        # 4b.9: actual localized Chromium controls and native keyboard input,
+        # including a 360px right-to-left layout. This actor is isolated from
+        # the prior 4b.1-4b.8 accounts and their notification/read fixtures.
+        translated, translated_id = account("Filters localization keyboard viewer")
+        translated_page = translated.new_page()
+        translated_page.on("pageerror", lambda error: errors.append(str(error)))
+
+        private(translated_page.goto(base + topic_path, wait_until="networkidle"))
+        assert translated_page.locator("html").get_attribute("lang") == "en"
+        assert translated_page.locator("html").get_attribute("dir") == "ltr"
+        en_mute = translated_page.get_by_role("button", name="Mute topic", exact=True)
+        expect(en_mute).to_have_attribute("aria-pressed", "false")
+        en_mute.focus()
+        assert en_mute.evaluate("(node) => document.activeElement === node")
+        with translated_page.expect_response(
+            lambda r: r.request.method == "POST" and topic_path in r.url
+        ) as en_muted:
+            translated_page.keyboard.press("Enter")
+        private(en_muted.value)
+        expect(translated_page.get_by_role("button", name="Unmute topic", exact=True)
+               ).to_have_attribute("aria-pressed", "true")
+        assert sql("select topic_id from forum_topic_mutes where user_id=$1",
+                   [translated_id]) == [{"topic_id": seeded["topicId"]}]
+        private(translated_page.goto(base + "/en/filters", wait_until="networkidle"))
+        expect(translated_page.get_by_role("heading", name="Personal filters")).to_be_visible()
+        expect(translated_page.get_by_role("link", name="Muted topics")).to_have_attribute(
+            "aria-current", "page")
+        expect(translated_page.get_by_role("button", name="Unmute topic")).to_be_visible()
+        record("EN native keyboard Enter mutes topic; private list and ARIA pressed/current localized")
+
+        ru_topic = "/ru/topics/" + seeded["topicId"]
+        ru_profile = "/ru/users/" + author_id
+        private(translated_page.goto(base + ru_topic, wait_until="networkidle"))
+        assert translated_page.locator("html").get_attribute("lang") == "ru"
+        assert translated_page.locator("html").get_attribute("dir") == "ltr"
+        expect(translated_page.get_by_role(
+            "button", name="Включить уведомления темы", exact=True)).to_have_attribute(
+            "aria-pressed", "true")
+        private(translated_page.goto(base + ru_profile, wait_until="networkidle"))
+        ru_block = translated_page.get_by_role(
+            "button", name="Заблокировать пользователя", exact=True)
+        expect(ru_block).to_have_attribute("aria-pressed", "false")
+        ru_block.focus()
+        assert ru_block.evaluate("(node) => document.activeElement === node")
+        with translated_page.expect_response(
+            lambda r: r.request.method == "POST" and ru_profile in r.url
+        ) as ru_blocked:
+            translated_page.keyboard.press("Space")
+        private(ru_blocked.value)
+        expect(translated_page.get_by_role(
+            "button", name="Разблокировать пользователя", exact=True)
+        ).to_have_attribute("aria-pressed", "true")
+        assert sql("select blocked_user_id from forum_user_blocks "
+                   "where user_id=$1", [translated_id]) == [
+                       {"blocked_user_id": author_id}]
+        private(translated_page.goto(base + "/ru/filters?tab=users",
+                                     wait_until="networkidle"))
+        expect(translated_page.get_by_role("heading", name="Личные фильтры")).to_be_visible()
+        expect(translated_page.get_by_role(
+            "link", name="Заблокированные пользователи")).to_have_attribute(
+                "aria-current", "page")
+        expect(translated_page.get_by_role("button", name="Разблокировать")).to_be_visible()
+        record("RU translated Mute/Block controls, Space activation, list tabs and ARIA state")
+
+        translated_page.set_viewport_size({"width": 360, "height": 780})
+        private(translated_page.goto(base + "/he/filters", wait_until="networkidle"))
+        assert translated_page.locator("html").get_attribute("lang") == "he"
+        assert translated_page.locator("html").get_attribute("dir") == "rtl"
+        expect(translated_page.get_by_role("heading", name="סינון אישי")).to_be_visible()
+        expect(translated_page.get_by_role("link", name="נושאים מושתקים")
+               ).to_have_attribute("aria-current", "page")
+        expect(translated_page.get_by_role("link", name="משתמשים חסומים")).to_be_visible()
+        he_unmute = translated_page.get_by_role(
+            "button", name="ביטול השתקת הנושא", exact=True)
+        expect(he_unmute).to_be_enabled()
+
+        def narrow_rtl(*controls, min_button_height=24):
+            geometry = translated_page.evaluate("""() => ({
+                viewport: window.innerWidth,
+                documentWidth: document.documentElement.scrollWidth,
+                direction: document.documentElement.dir,
+            })""")
+            assert geometry["viewport"] == 360, geometry
+            assert geometry["direction"] == "rtl", geometry
+            assert geometry["documentWidth"] <= 362, geometry
+            for element in controls:
+                frame = element.bounding_box()
+                assert frame and frame["width"] > 0 and frame["height"] > 0, frame
+                if element.evaluate("(node) => node.tagName === 'BUTTON'"):
+                    assert frame["width"] >= 24 and frame["height"] >= min_button_height, frame
+                assert frame["x"] >= -2 and frame["x"] + frame["width"] <= 362, (
+                    frame, geometry)
+
+        narrow_rtl(he_unmute,
+                   translated_page.get_by_role("link", name="נושאים מושתקים"),
+                   translated_page.get_by_role("link", name="משתמשים חסומים"))
+        he_unmute.focus()
+        translated_page.keyboard.press("Shift+Tab")
+        translated_page.keyboard.press("Tab")
+        assert he_unmute.evaluate("(node) => document.activeElement === node")
+        assert he_unmute.evaluate("(node) => node.matches(':focus-visible')")
+        record("HE 360px RTL private topics tab: labels, focus-visible, Tab order, no horizontal overflow")
+
+        he_blocked_tab = translated_page.get_by_role("link", name="משתמשים חסומים")
+        he_blocked_tab.focus()
+        with translated_page.expect_navigation(wait_until="networkidle"):
+            translated_page.keyboard.press("Enter")
+        expect(translated_page.get_by_role("link", name="משתמשים חסומים")
+               ).to_have_attribute("aria-current", "page")
+        he_unblock = translated_page.get_by_role(
+            "button", name="ביטול חסימת משתמש", exact=True)
+        narrow_rtl(he_unblock)
+        record("HE RTL keyboard tab navigation keeps private Block row and action on screen")
+
+        he_topic = "/he/topics/" + seeded["topicId"]
+        private(translated_page.goto(base + he_topic, wait_until="networkidle"))
+        assert translated_page.locator("html").get_attribute("dir") == "rtl"
+        he_collapsed = translated_page.locator("#post-" + root_post)
+        expect(he_collapsed.locator("[data-filtered-post]")).to_have_count(1)
+        expect(he_collapsed.get_by_text(
+            "ההודעה של משתמש חסום מוסתרת.")).to_be_visible()
+        he_reveal = he_collapsed.get_by_role("button", name="הצגת ההודעה")
+        narrow_rtl(he_reveal, min_button_height=18)
+        he_reveal.focus()
+        assert he_reveal.evaluate("(node) => document.activeElement === node")
+        translated_page.keyboard.press("Enter")
+        expect(he_collapsed.locator("[data-message-body]")).to_contain_text(
+            "Public original post")
+        expect(translated_page.get_by_role(
+            "button", name="ביטול השתקת נושא", exact=True)
+        ).to_have_attribute("aria-pressed", "true")
+        assert sql("select blocked_user_id from forum_user_blocks "
+                   "where user_id=$1", [translated_id]) == [
+                       {"blocked_user_id": author_id}]
+        record("HE RTL blocked original remains collapsed until keyboard Reveal; Block and Mute persist")
+
+        # Undo in RTL using native buttons, with confirmation on the corresponding
+        # canonical controls in an alternate locale after reload.
+        private(translated_page.goto(base + "/he/filters?tab=users",
+                                     wait_until="networkidle"))
+        he_unblock = translated_page.get_by_role(
+            "button", name="ביטול חסימת משתמש", exact=True)
+        he_unblock.focus()
+        with translated_page.expect_response(
+            lambda r: r.request.method == "POST"
+            and "/he/users/" + author_id in r.url
+        ) as undone_block:
+            translated_page.keyboard.press("Enter")
+        private(undone_block.value)
+        expect(he_unblock).to_have_count(0)
+        assert sql("select blocked_user_id from forum_user_blocks "
+                   "where user_id=$1", [translated_id]) == []
+
+        private(translated_page.goto(base + "/he/filters", wait_until="networkidle"))
+        he_unmute = translated_page.get_by_role(
+            "button", name="ביטול השתקת הנושא", exact=True)
+        he_unmute.focus()
+        with translated_page.expect_response(
+            lambda r: r.request.method == "POST" and "/he/topics/" + seeded["topicId"] in r.url
+        ) as undone_mute:
+            translated_page.keyboard.press("Space")
+        private(undone_mute.value)
+        expect(he_unmute).to_have_count(0)
+        assert sql("select topic_id from forum_topic_mutes where user_id=$1",
+                   [translated_id]) == []
+
+        private(translated_page.goto(base + "/en/topics/" + seeded["topicId"],
+                                     wait_until="networkidle"))
+        expect(translated_page.get_by_role("button", name="Mute topic", exact=True)
+               ).to_have_attribute("aria-pressed", "false")
+        private(translated_page.goto(base + "/ru/users/" + author_id,
+                                     wait_until="networkidle"))
+        expect(translated_page.get_by_role(
+            "button", name="Заблокировать пользователя", exact=True)
+        ).to_have_attribute("aria-pressed", "false")
+        record("HE narrow keyboard Undo Block/Mute persists; EN/RU controls confirm OFF on reload")
+
+        # PF-REVIEW-3: sign out in the SAME mounted topic view, not a fresh
+        # guest browser. Better Auth clears the session; A's persisted Block
+        # pair must not govern guest presentation after route revalidation.
+        signout_viewer, signout_id = account("Filters sign-out transition viewer")
+        signout_block = signout_viewer.request.post(
+            base + profile_path, headers={"Origin": base},
+            form={"intent": "setUserBlock", "editorActorId": signout_id, "blocked": "true"},
+        )
+        private(signout_block)
+        assert sql("select blocked_user_id from forum_user_blocks where user_id=$1",
+                   [signout_id]) == [{"blocked_user_id": author_id}]
+        signout_page = signout_viewer.new_page()
+        signout_page.on("pageerror", lambda error: errors.append(str(error)))
+        private(signout_page.goto(base + topic_path, wait_until="networkidle"))
+        expect(signout_page.locator("#post-" + root_post + " [data-filtered-post]")).to_have_count(1)
+        expect(signout_page.locator("#post-" + root_post + " [data-message-body]")).to_have_count(0)
+        with signout_page.expect_response(
+            lambda response: response.request.method == "POST"
+            and "/api/auth/sign-out" in response.url
+        ) as signout_response:
+            signout_page.get_by_role("button", name="Sign out").click()
+        assert signout_response.value.status == 200, signout_response.value.status
+        expect(signout_page.locator('.auth-controls[data-state="guest"]')).to_have_count(1)
+        expect(signout_page.locator("#post-" + root_post + " [data-message-body]")).to_contain_text(
+            "Public original post")
+        expect(signout_page.locator("#post-" + b_post + " [data-message-body]")).to_contain_text(
+            "Blocked B to A")
+        expect(signout_page.locator("[data-filtered-post]")).to_have_count(0)
+        expect(signout_page.locator(".personal-filter-control")).to_have_count(0)
+        assert signout_viewer.request.get(base + "/en/filters.data").status == 401
+        assert sql("select blocked_user_id from forum_user_blocks where user_id=$1",
+                   [signout_id]) == [{"blocked_user_id": author_id}]
+        record("real Better Auth same-topic sign-out clears A Block collapse for guest while preserving A own pair")
+
+        assert not errors, errors
+        assert not external, external
+        browser.close()
+finally:
+    fixture.stdin.close()
+    fixture.wait(timeout=15)
+    (args.output / "results.json").write_text(
+        json.dumps({"cases": cases, "pageErrors": errors, "external": external}, indent=2),
+    )
