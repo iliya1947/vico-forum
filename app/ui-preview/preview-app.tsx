@@ -370,6 +370,7 @@ type PreviewInteractionState = {
   topicTitleEdits: Map<string, { id: string; originalContent: string; sourceLocale: string }>;
   topicWatches: Set<string>;
   topicBookmarks: Set<string>;
+  topicMutes: Set<string>;
   topicTitleSourceLocales: Map<string, string>;
   postSourceLocales: Map<string, string>;
   profileOverrides: Map<string, ProfileFields>;
@@ -435,6 +436,7 @@ function createPreviewInteractionState(): PreviewInteractionState {
     topicTitleEdits: new Map(),
     topicWatches: new Set(),
     topicBookmarks: new Set(),
+    topicMutes: new Set(),
     topicTitleSourceLocales: new Map(),
     postSourceLocales: new Map(),
     profileOverrides: new Map(),
@@ -1239,6 +1241,25 @@ function previewTopicBookmarkProps(
   };
 }
 
+function previewTopicMuteKey(actorId: string, routeTopicId: string) {
+  return JSON.stringify([actorId, routeTopicId]);
+}
+
+function previewTopicMuteProps(
+  scenario: Scenario,
+  interactions: PreviewInteractionState,
+  routeTopicId: string,
+) {
+  const actor = previewUser(scenario);
+  if (!actor) return { muteActorId: null, topicMuteState: null };
+  return {
+    muteActorId: actor.id,
+    topicMuteState: interactions.topicMutes.has(previewTopicMuteKey(actor.id, routeTopicId))
+      ? "on" as const
+      : "off" as const,
+  };
+}
+
 function previewUser(scenario: Scenario): HeaderAuthUser | null {
   if (scenario.identity === "guest") return null;
   const unreadNotificationCount = scenario.variant === "notifications-empty" ? 0 : 3;
@@ -1423,6 +1444,7 @@ export function EmbeddedPreview({ scenarioId, identity }: { scenarioId: string; 
         || (intent === "editTopicTitle" && Boolean(form.closest(".topic-title-editor")))
         || (intent === "setTopicWatch" && Boolean(form.closest(".topic-watch-control")))
         || (intent === "setTopicBookmark" && Boolean(form.closest(".topic-bookmark-control")))
+        || (intent === "setTopicMute" && Boolean(form.closest(".personal-filter-control")))
         || (intent === "selectBestAnswer"
           && (form.classList.contains("topic-best-answer-form") || form.classList.contains("topic-admin-form")))
         || (intent === "markSolved"
@@ -3613,6 +3635,28 @@ async function previewTopicAction(
   const form = await request.formData();
   const intent = String(form.get("intent") ?? "");
 
+  if (intent === "setTopicMute") {
+    const editorActorId = String(form.get("editorActorId") ?? "").trim();
+    const requested = String(form.get("muted") ?? "");
+    if (!editorActorId || (requested !== "true" && requested !== "false")) {
+      return { operation: "topicMute" as const, error: "invalid" as const };
+    }
+    if (editorActorId !== actor.id) {
+      return { operation: "topicMute" as const, error: "conflict" as const };
+    }
+    const key = previewTopicMuteKey(actor.id, routeTopicId);
+    const muted = requested === "true";
+    if (muted) interactions.topicMutes.add(key);
+    else interactions.topicMutes.delete(key);
+    return {
+      operation: "topicMute" as const,
+      ok: true as const,
+      topicId: routeTopicId,
+      actorId: actor.id,
+      muted,
+    };
+  }
+
   if (intent === "setTopicBookmark") {
     const editorActorId = String(form.get("editorActorId") ?? "").trim();
     const requested = String(form.get("bookmarked") ?? "");
@@ -3881,6 +3925,7 @@ function previewCreatedTopicData(
     canEditOwnTitle: previewUser(scenario)?.id === topic.authorId,
     ...previewTopicWatchProps(scenario, interactions, topic.id),
     ...previewTopicBookmarkProps(scenario, interactions, topic.id),
+    ...previewTopicMuteProps(scenario, interactions, topic.id),
     canManageAnySolution: false,
     canModerateHelpSolution: false,
     isTopicAuthor: scenario.identity !== "guest",
@@ -6060,6 +6105,7 @@ function PreviewTopicRoute({ scenario, interactions }: {
         canUploadAttachments={false}
         {...previewTopicWatchProps(scenario, interactions, interactiveHelpTopic.id)}
         {...previewTopicBookmarkProps(scenario, interactions, interactiveHelpTopic.id)}
+        {...previewTopicMuteProps(scenario, interactions, interactiveHelpTopic.id)}
         topic={interactiveHelpTopic}
         titlePresentation={originalPresentation(
           "topic-title", interactiveHelpTopic.id, interactiveHelpTopic.title.id, interactiveHelpTopic.title.originalContent,
@@ -6107,6 +6153,7 @@ function PreviewTopicRoute({ scenario, interactions }: {
       canUploadAttachments={false}
       {...previewTopicWatchProps(scenario, interactions, interactiveTopic.id)}
       {...previewTopicBookmarkProps(scenario, interactions, interactiveTopic.id)}
+      {...previewTopicMuteProps(scenario, interactions, interactiveTopic.id)}
       topic={interactiveTopic}
       titlePresentation={interactions.topicTitleEdits.has(interactiveTopic.id)
         ? originalPresentation(
@@ -6213,6 +6260,7 @@ function PreviewTopicRoute({ scenario, interactions }: {
       canUploadAttachments={false}
       {...previewTopicWatchProps(scenario, interactions, interactiveTopic.id)}
       {...previewTopicBookmarkProps(scenario, interactions, interactiveTopic.id)}
+      {...previewTopicMuteProps(scenario, interactions, interactiveTopic.id)}
       topic={interactiveTopic}
       titlePresentation={originalPresentation(
         "topic-title",
