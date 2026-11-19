@@ -2,44 +2,20 @@
 
 ## Активный этап
 
-Consolidated corrective implementation PR #354 — **Mira whole-PR review HOLD** на stable exact head `01cecb91090a2f29f90b7c6ae4a83db77a0f4910`.
+Consolidated audit corrections в [Draft PR #354](https://github.com/iliya1947/vico-forum/pull/354). **TITLE-AUDIT-1-R1 исправлен Лирой; author self-check PASS. Следующий исполнитель — Мира / ChatGPT-5.6 Sol, новый coordinator whole-PR review.**
 
 ## Текущее состояние
 
-- Draft #354 открыт, не merged. Base `a645fbe21110e77429025c428e498194b9a92ca2`.
-- Current GitHub main `bb3d44f940f44a4f08c4a501d9d0b3deaa50eb02`; отличие от PR base только service-workspace docs/regulation, продуктовый код не менялся.
-- Diff #354: ровно 9 файлов — Watch control+tests, Bookmark control+tests, Bookmarks list+tests, Title editor+tests и Title connected browser test.
-- WATCH-AUDIT-1, BOOKMARKS-AUDIT-1 и BOOKMARKS-AUDIT-2 подтверждены Мирой как корректно закрытые на этом exact head.
-- TITLE-AUDIT-1 основная Save/Cancel post-DOM focus correction работает и покрыта component + real Chromium.
-- Exact-head 7/7 workflows SUCCESS; CI checks/database SUCCESS; dedicated Watch, Bookmarks и Title connected SUCCESS.
-
-## Coordinator finding
-
-**TITLE-AUDIT-1-R1 [P3] — pending focus request переживает отсутствие opener после permission loss.**
-
-Подтверждённая causal sequence в текущем production component:
-
-1. Same actor/topic открывает title editor.
-2. Loader revalidation меняет `canEdit` на false при сохранённом draft — этот permission-loss path уже существует и тестируется.
-3. Пользователь нажимает Cancel: `restoreOpenerFocus.current = true`, затем `draft = null`.
-4. Компонент остаётся смонтирован под тем же actor/topic key, но возвращает `null` из-за `!canEdit && !draft`; opener отсутствует, focus effect возвращается **без очистки** `restoreOpenerFocus.current`.
-5. Если позже тот же mounted component получает `canEdit=true` при новой revalidation, opener снова появляется; dependency `canEdit` запускает effect и старый focus request неожиданно фокусирует Edit-title кнопку спустя время после Cancel, потенциально отбирая текущий фокус у пользователя.
-
-Это текущий scope TITLE-AUDIT-1, не будущая feature: correction сама вводит short-lived focus request и должна гарантировать, что request не переживает невозможность immediate restoration.
+- Stable exact implementation head: `b67e14d81cd20f2e42264e3d25d336ee19db626b` (Draft/open, без merge); base `a645fbe21110e77429025c428e498194b9a92ca2`. Current main `bb3d44f940f44a4f08c4a501d9d0b3deaa50eb02` продвинулся только сервисным регламентом, без продуктового кода.
+- Diff относительно base: **ровно 9 файлов**: Watch control + test, Bookmark control + test, Bookmarks list + test, Title editor + test, dedicated Title Chromium test. Ни backend, ни schema/DB, ни RBAC, ни зависимости/продуктовые контракты не изменены.
+- WATCH-AUDIT-1, BOOKMARKS-AUDIT-1, BOOKMARKS-AUDIT-2 реализованы и имеют deterministic regressions. Fresh loader/list остаётся единственным confirmed source.
+- TITLE-AUDIT-1: Save/Cancel возвращают focus видимой кнопке Edit title после DOM commit.
+- **Mira coordinator HOLD предыдущего SHA `01cecb91090a2f29f90b7c6ae4a83db77a0f4910`: TITLE-AUDIT-1-R1 [P3]** — старый focus request переживал Cancel без opener при потере `canEdit` и крал фокус, когда право возвращалось. **Лира исправила**: при закрытии draft фокусный request одноразово погашается **до** проверки opener; если кнопка недоступна, позднее повторное появление уже не инициирует focus. Регрессия: same mounted actor/topic, permission lost while draft open → Cancel without opener → focus to other button → permission restored/revalidation → opener returns, other button retains focus. Normal Save/Cancel tests/real browser остаются.
+- На `b67e14d81cd20f2e42264e3d25d336ee19db626b`: **7/7 GitHub Actions workflows SUCCESS**; [CI 44622509204](https://github.com/iliya1947/vico-forum/actions/runs/44622509204) checks **2752/2752** unit/route tests в 218 files, Title editor **6/6**, database **1476/1476** PostgreSQL17 tests в 109 files; [dedicated Title Chromium 44622509311](https://github.com/iliya1947/vico-forum/actions/runs/44622509311) **9/9 connected markers**. Watch/Bookmarks/Mute/Block и прочие associated workflows также SUCCESS. Не запускать дублирующий CI без основания.
+- **Авторская самопроверка Лиры PASS**, новых current-scope blockers по исправленному R1 не выявлено. **Это не Mira independent whole-PR PASS**; после изменения implementation head reviewer cycle повторяется.
 
 ## Назначение и следующий шаг
 
-**Лира / ChatGPT-6** — один узкий correction TITLE-AUDIT-1-R1 в том же #354:
+**Мира / ChatGPT-5.6 Sol** сейчас выполняет новый coordinator **whole-PR review всех четырёх original findings + TITLE-AUDIT-1-R1** на exact `b67e14d81cd20f2e42264e3d25d336ee19db626b` против `TASK.md`, `stages/corrections/PLAN.md`, current `main` и source-of-truth. Подтверждённые текущие blockers передать Лире в #342; при PASS — **Лёва / Codex-6.1 Sol** independent whole-PR review того же exact head. Merge — исключительно владелец. **Лира STOP**.
 
-1. не позволять focus request переживать close transition, если opener после него недоступен/невидим;
-2. нормальный Save/Cancel при доступном opener по-прежнему возвращает focus после DOM commit;
-3. не менять title write/CAS/conflict/rebase/permission semantics;
-4. добавить regression: permission loss с открытым draft → Cancel/close без opener → focus переносится/остаётся на другом доступном элементе → permission возвращается при revalidation → Edit-title появляется, но старый request не крадёт focus;
-5. применимые focused checks + stable exact head + author self-check;
-6. STOP Мире.
-
-После изменения implementation head coordinator whole-PR cycle начинается заново. Лёву до свежего Mira PASS не подключать.
-
-## После #354
-
-Moderation visibility → forum structure/topic move → затем #320. #300/Stage6/general UI/UX не активированы.
+#342 service-only, никогда не merge. После #354 по owner order: moderation visibility → forum structure/topic move → затем #320. #300/Stage6/general UI/UX не активированы.
