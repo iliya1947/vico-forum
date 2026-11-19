@@ -369,6 +369,7 @@ type PreviewInteractionState = {
   topicOverrides: Map<string, PreviewTopicOverride>;
   topicTitleEdits: Map<string, { id: string; originalContent: string; sourceLocale: string }>;
   topicWatches: Set<string>;
+  topicBookmarks: Set<string>;
   topicTitleSourceLocales: Map<string, string>;
   postSourceLocales: Map<string, string>;
   profileOverrides: Map<string, ProfileFields>;
@@ -433,6 +434,7 @@ function createPreviewInteractionState(): PreviewInteractionState {
     topicOverrides: new Map(),
     topicTitleEdits: new Map(),
     topicWatches: new Set(),
+    topicBookmarks: new Set(),
     topicTitleSourceLocales: new Map(),
     postSourceLocales: new Map(),
     profileOverrides: new Map(),
@@ -1218,6 +1220,25 @@ function previewTopicWatchProps(
   };
 }
 
+function previewTopicBookmarkKey(actorId: string, routeTopicId: string) {
+  return JSON.stringify([actorId, routeTopicId]);
+}
+
+function previewTopicBookmarkProps(
+  scenario: Scenario,
+  interactions: PreviewInteractionState,
+  routeTopicId: string,
+) {
+  const actor = previewUser(scenario);
+  if (!actor) return { bookmarkActorId: null, topicBookmarkState: null };
+  return {
+    bookmarkActorId: actor.id,
+    topicBookmarkState: interactions.topicBookmarks.has(previewTopicBookmarkKey(actor.id, routeTopicId))
+      ? "on" as const
+      : "off" as const,
+  };
+}
+
 function previewUser(scenario: Scenario): HeaderAuthUser | null {
   if (scenario.identity === "guest") return null;
   const unreadNotificationCount = scenario.variant === "notifications-empty" ? 0 : 3;
@@ -1401,6 +1422,7 @@ export function EmbeddedPreview({ scenarioId, identity }: { scenarioId: string; 
         || (intent === "reply" && form.classList.contains("topic-reply-form"))
         || (intent === "editTopicTitle" && Boolean(form.closest(".topic-title-editor")))
         || (intent === "setTopicWatch" && Boolean(form.closest(".topic-watch-control")))
+        || (intent === "setTopicBookmark" && Boolean(form.closest(".topic-bookmark-control")))
         || (intent === "selectBestAnswer"
           && (form.classList.contains("topic-best-answer-form") || form.classList.contains("topic-admin-form")))
         || (intent === "markSolved"
@@ -3591,6 +3613,28 @@ async function previewTopicAction(
   const form = await request.formData();
   const intent = String(form.get("intent") ?? "");
 
+  if (intent === "setTopicBookmark") {
+    const editorActorId = String(form.get("editorActorId") ?? "").trim();
+    const requested = String(form.get("bookmarked") ?? "");
+    if (!editorActorId || (requested !== "true" && requested !== "false")) {
+      return { operation: "topicBookmark" as const, error: "invalid" as const };
+    }
+    if (editorActorId !== actor.id) {
+      return { operation: "topicBookmark" as const, error: "conflict" as const };
+    }
+    const key = previewTopicBookmarkKey(actor.id, routeTopicId);
+    const bookmarked = requested === "true";
+    if (bookmarked) interactions.topicBookmarks.add(key);
+    else interactions.topicBookmarks.delete(key);
+    return {
+      operation: "topicBookmark" as const,
+      ok: true as const,
+      topicId: routeTopicId,
+      actorId: actor.id,
+      bookmarked,
+    };
+  }
+
   if (intent === "setTopicWatch") {
     const editorActorId = String(form.get("editorActorId") ?? "").trim();
     const requested = String(form.get("watching") ?? "");
@@ -3836,6 +3880,7 @@ function previewCreatedTopicData(
     canConfirmOwnSolution: scenario.identity !== "guest",
     canEditOwnTitle: previewUser(scenario)?.id === topic.authorId,
     ...previewTopicWatchProps(scenario, interactions, topic.id),
+    ...previewTopicBookmarkProps(scenario, interactions, topic.id),
     canManageAnySolution: false,
     canModerateHelpSolution: false,
     isTopicAuthor: scenario.identity !== "guest",
@@ -6014,6 +6059,7 @@ function PreviewTopicRoute({ scenario, interactions }: {
         locale={scenario.locale}
         canUploadAttachments={false}
         {...previewTopicWatchProps(scenario, interactions, interactiveHelpTopic.id)}
+        {...previewTopicBookmarkProps(scenario, interactions, interactiveHelpTopic.id)}
         topic={interactiveHelpTopic}
         titlePresentation={originalPresentation(
           "topic-title", interactiveHelpTopic.id, interactiveHelpTopic.title.id, interactiveHelpTopic.title.originalContent,
@@ -6060,6 +6106,7 @@ function PreviewTopicRoute({ scenario, interactions }: {
       {...data}
       canUploadAttachments={false}
       {...previewTopicWatchProps(scenario, interactions, interactiveTopic.id)}
+      {...previewTopicBookmarkProps(scenario, interactions, interactiveTopic.id)}
       topic={interactiveTopic}
       titlePresentation={interactions.topicTitleEdits.has(interactiveTopic.id)
         ? originalPresentation(
@@ -6165,6 +6212,7 @@ function PreviewTopicRoute({ scenario, interactions }: {
       locale={scenario.locale}
       canUploadAttachments={false}
       {...previewTopicWatchProps(scenario, interactions, interactiveTopic.id)}
+      {...previewTopicBookmarkProps(scenario, interactions, interactiveTopic.id)}
       topic={interactiveTopic}
       titlePresentation={originalPresentation(
         "topic-title",
