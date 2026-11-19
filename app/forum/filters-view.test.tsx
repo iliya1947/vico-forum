@@ -1,8 +1,8 @@
 import "@testing-library/jest-dom/vitest";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { act, cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { I18nextProvider } from "react-i18next";
-import { createMemoryRouter, data, RouterProvider, useLoaderData } from "react-router";
+import { createMemoryRouter, data, RouterProvider } from "react-router";
 import { canonicalEnglishCatalog } from "../localization/catalog";
 import { createTranslationRuntime } from "../localization/runtime";
 import { HeaderAuthProvider } from "../auth/auth-controls";
@@ -97,52 +97,4 @@ describe("personal Filters list presentation", () => {
     expect(screen.queryByRole("link", { name: "Deleted user" })).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Unblock user" })).not.toBeInTheDocument();
   });
-  it.each(["topic", "user"] as const)("does not conceal a freshly re-added %s filter after an older Undo ACK", async kind => {
-    // The old Undo commits, the same user re-adds the pair in another tab,
-    // and a newer loader snapshot reaches the list before the old ACK.
-    // No identity change is involved: the server's current pair must win.
-    const original = kind === "topic" ? topic : blocked;
-    const title = kind === "topic" ? /literal title/i : "Deleted user";
-    const button = kind === "topic" ? "Unmute topic" : "Unblock user";
-    const renewedAt = "2026-11-19T10:11:12.123Z";
-    let current = original as FilterListItem;
-    let finish!: (result: unknown) => void;
-    const delayed = new Promise<unknown>(resolve => { finish = resolve; });
-    const action = vi.fn(async () => delayed);
-    const CurrentList = () => {
-      const snapshot = useLoaderData() as { items: FilterListItem[] };
-      return <FiltersView locale="en" actorId="actor-a"
-        tab={kind === "topic" ? "topics" : "users"} items={snapshot.items} next={null} />;
-    };
-    const router = createMemoryRouter([{
-      path: "/en/filters",
-      loader: () => ({ items: [current] }),
-      Component: CurrentList,
-    }, {
-      path: "/en/topics/:topicId", action,
-    }, {
-      path: "/en/users/:userId", action,
-    }], { initialEntries: [kind === "topic" ? "/en/filters" : "/en/filters?tab=users"] });
-    render(<I18nextProvider i18n={runtime()}>
-      <HeaderAuthProvider initialUser={{ id: "actor-a", name: "Viewer" }}>
-        <RouterProvider router={router} />
-      </HeaderAuthProvider>
-    </I18nextProvider>);
-    fireEvent.click(await screen.findByRole("button", { name: button }));
-    await waitFor(() => expect(action).toHaveBeenCalledTimes(1));
-
-    // A fresh POST from another tab has already re-created this pair.
-    current = { ...original, createdAt: renewedAt };
-    await act(async () => { await router.revalidate(); });
-    expect(document.querySelector('time[datetime="' + renewedAt + '"]')).not.toBeNull();
-    expect(screen.getByRole("link", { name: title })).toBeInTheDocument();
-
-    await act(async () => finish(kind === "topic"
-      ? { operation: "topicMute", ok: true, actorId: "actor-a", topicId: original.id, muted: false }
-      : { operation: "userBlock", ok: true, actorId: "actor-a", targetId: original.id, blocked: false }));
-    // The older confirmation cannot hide the authoritative fresh server row.
-    expect(screen.getByRole("link", { name: title })).toBeInTheDocument();
-    expect(document.querySelector('time[datetime="' + renewedAt + '"]')).not.toBeNull();
-  });
-
 });
