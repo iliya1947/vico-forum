@@ -1617,3 +1617,22 @@ Dedicated 4b.6 gate verified; no claim all exact-head workflows complete. No sco
 **Exact-head CI:** [run 44545029770](https://github.com/iliya1947/vico-forum/actions/runs/44545029770), `database` job `135633192599` and `checks` job `135633192066` **SUCCESS**, including lint, typecheck, tests, build. Other PR workflows are not asserted complete. PG fixture previously introduced in 4b.1 had ESLint10 complaints about global `URL`/`console`; corrected explicitly with `node:url` and `process.stdout`. Earlier failed dedicated jobs `44543915219` and `44544469672` were harness assertion mistakes (React Router positional single-fetch serialization; intended keyset reset on actor switch), not confirmed production defects. Final exact-head retest PASS.
 
 **Лира STOP после 4b.7.** Next distinct `...` = **ONLY 4b.8 — existing domain independence: complaints/Owner/evidence, Watch/Bookmarks/read markers and public profile/search**. Checkpoint and STOP before 4b.9. No 4c/review/merge; #351 Draft, #342 service-only/no merge. Owner-ordered WATCH/BOOKMARKS corrections remain deferred until #351 completed.
+
+## 2026-11-19 — Лира: 4b.8 domain independence connected PASS; STOP
+
+**Bounded scope:** real Worker/Better Auth/PostgreSQL 17/Chromium test of separate Watch/Bookmarks/read markers, private discovery and public search/profile, Complaint from a collapsed blocked post, protected reviewer evidence/context and unchanged permissions. PR #351 Draft exact head `d02d79c11c0bcde4e1afdf1a73723f0319756988`. Only `tests/browser/personal-filters/check.py` was changed (commits `208b3b95bb32e6c26025aac00b6036439f1e5ea1`, `d02d79c11c0bcde4e1afdf1a73723f0319756988`). No production/schema/UI changes.
+
+**Connected gate:** [run 44549801360](https://github.com/iliya1947/vico-forum/actions/runs/44549801360), job `135650161363` **completed SUCCESS**, all **42/42 `FILTERS_CONNECTED` markers**, 35 prior + seven 4b.8:
+1. Independent fresh actor's Watch and Bookmark rows persist after canonical Mute ON / Block ON; none of these four writes creates a read marker.
+2. Muted/blocked topic remains in authenticated Bookmarks and new/unread discovery, without read-state creation.
+3. Public Search still finds B's topic, B's profile remains publicly readable even by blocker.
+4. Normal authenticated TopicView reads latest delivered post even if B's body is collapsed; explicit per-post Reveal doesn't modify `last_read_post_id` or `updated_at`, Watch/Bookmark persist.
+5. Separate authenticated actor submits real Complaint on B's still-collapsed original post; Complaint case persists immutable original post-revision target, no Unblock needed.
+6. A reviewer with `forum.complaint.review` grant, and independent Mute+Block ON, can read the original reported evidence and protected Complaint context through reviewer-only route; no TopicView collapse on protected review.
+7. Reviewer grant remains stable; unbound non-Owner still gets private 403 for `/en/super-admin` before/after filters. This is not a positive bound-Owner workflow or actual R2 attachment download acceptance; existing Owner workflows remain separately scoped.
+
+First run `44549323905` failed after first 4b.8 marker because the test imposed `private,no-store` on unrelated Unread GET (its route has no such header). Corrected test assertion to status200 for Unread and public Search, **no** production change. Final dedicated SUCCESS.
+
+**Exact-head CI:** [run 44549801846](https://github.com/iliya1947/vico-forum/actions/runs/44549801846), `database` job `135650164194` and `checks` job `135650164392` **completed SUCCESS**, including lint/typecheck/tests/build. Other 14 workflows not claimed all done.
+
+**Лира STOP после 4b.8.** Next distinct `...` = **ONLY 4b.9 — EN/RU/HE, keyboard and narrow RTL Chromium**, then checkpoint STOP before 4b.10. No 4c, coordinator/independent whole-PR review, merge, WATCH/BOOKMARKS corrections or Stage 6. PR #342 service-only/no merge; PR #351 Draft.
