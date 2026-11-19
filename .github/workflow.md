@@ -33,7 +33,7 @@
 
 ## Следующий шаг
 
-**Mute/block: Мира coordinator HOLD; PF-REVIEW-1 PASS; PF-REVIEW-2 bounded correction + exact-head verification PASS (16/16 workflows). Лира STOP before PF-REVIEW-3.** Implementation Draft PR #351: current head `37b7c8e991865a0352562fecbedf74d6f5aeeb53` (base `9eae385571bf99e073df46f8541f7514c9626a29`). Service PR #342 — рабочий канал, не merge.
+**Mute/block: Мира coordinator HOLD; PF-REVIEW-1/2 PASS; PF-REVIEW-3 local code + deterministic and connected regressions COMMITTED / exact-head CI QUEUED (not PASS). Лира verifying PF-REVIEW-3.** Implementation Draft PR #351: current head `91b473a8035a6fdb9df40a8bedf1579d8884493c` (base `9eae385571bf99e073df46f8541f7514c9626a29`). Service PR #342 — рабочий канал, не merge.
 
 **Verified 4a:** real PostgreSQL 17 **27/27 targeted concurrency/atomicity tests** и full **1476/1476 tests, 109/109 files PASS**. `CI` jobs `database` и `checks` SUCCESS (run `44522424656`). **15/15 workflow SUCCESS после отдельного повторного SA07 job `135564876373` на том же head**, без code changes. Первый SA07 job `135554174007` FAIL: `/en/super-admin/monitoring/integrations.data` ответил 503 вместо 200. Точная первопричина **не установлена**; не подтверждена Mute/block regression. В 4a изменены только `tests/database/personal-filters-concurrency.test.ts` и `tests/database/topic-watch.test.ts` (timing rejection assertion), production/schema/UI без изменений.
 
