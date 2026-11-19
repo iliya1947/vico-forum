@@ -3116,7 +3116,7 @@ describe("Preview confirmation and attention fixtures", () => {
     await renderEmbeddedPreview(<EmbeddedPreview scenarioId="attention-signals" identity="manager" />);
     const appeals = await screen.findByRole("link", { name: "Appeals (1)" });
     await userEvent.click(appeals);
-    expect(appeals).toHaveAttribute("aria-current", "page");
+    expect(await screen.findByRole("link", { name: "Appeals (1)" })).toHaveAttribute("aria-current", "page");
     const id = await screen.findByText("#appeal-146");
     const card = within(id.closest("article")!);
     expect(card.getByRole("link", { name: "Jordan Chen" })).toBeInTheDocument();
