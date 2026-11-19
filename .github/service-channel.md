@@ -1907,3 +1907,72 @@ final review для нового head и нужен новый coordinator cycle
 structure/topic move, #320, Stage6 или general UI/UX. #351 Draft/open; #342 service-only,
 never merge. После independent PASS владельцу будет доступен merge implementation #351;
 после фактического merge отдельный docs closeout выполняет Лира.
+
+## 2026-11-19 — Лёва: #351 independent technical whole-PR review — PASS
+
+По текущей `...` перечитаны свежие service files и latest edited comment
+`6991888557` (updated18:57:15Z): назначение — независимый review всего M1–M7
+после coordinator PASS Миры, а не отложенные Watch corrections. Проверен stable
+exact head **`0fc239a554c8df562e97bc600f59b6b7b06d36ab`** против неизменного
+base/main **`9eae385571bf99e073df46f8541f7514c9626a29`**. PR Draft/open.
+
+**Результат — PASS, confirmed current-scope defects = 0.** Implementation не менялся;
+review не ограничивался тремя coordinator corrections и не объявляет внешнюю
+production/deployed/Owner/R2 acceptance.
+
+Проверен полный source diff (52 files, metadata отдельно) против принятых M1–M7:
+- own Topic Mute и directional User Block, no self, active actor/no-op admission,
+  inactive target retention/removal и target KEY SHARE→actor NO KEY UPDATE;
+- common set-based ordinary reply/mention decision для initial/reply/edit,
+  first candidate READ COMMITTED statement snapshot, отдельный consumed receipt;
+  reply priority/unique recipient-post, no backfill, replay и atomic rollback;
+- private SQL list/read own predicates, bounded50+1 keyset/current public identity,
+  canonical topic/profile actions без ослабления save-profile ownership;
+- mandatory Block matches fail closed, optional Mute/Block unknown≠OFF,
+  private no-store document/data/errors, no reverse graph;
+- collapse/reveal не удаляет anchors/root/best/parent/child, не монтирует body/
+  attachment controls до reveal; complaint/protected contexts и read-state/Watch/
+  Bookmarks/permissions остаются независимыми;
+- schema0070/PK/FK/check/indexes, narrow web ACL и отсутствие localization grants.
+  Snapshot diff только3 новых tables+id/prevId, accepted migrations не переписаны.
+
+**PF-REVIEW-1/2/3 независимо CLOSED:** controls не имеют ACK mirror; FilterRow
+не имеет permanent removed latch; stale Block snapshot сравнивается с актуальным
+header actor также при A→guest, fresh guest null/null остаётся public. Current
+loader paths всегда передают snapshot metadata; actor/target fetcher keys и
+scope reveal препятствуют переносу старого ответа/раскрытия на новую identity.
+
+**GitHub exact-head evidence проверен непосредственно:** все16 workflow SUCCESS,
+все20 jobs SUCCESS. CI run44590976935: checks135796577758 — unit2744/2744,
+218/218 files, lint/typecheck/Worker+preview builds; database135796578071 —
+PG1476/1476,109/109 files, actual74-table manifest parity, runtime positive/negative
+ACL +split provisioning probes и Worker/session/storage failure smokes PASS.
+Dedicated run44590977494/job135796579822: **49/49 FILTERS_CONNECTED** от реальных
+Worker/Better Auth/PG17/Chromium, включая same-topic sign-out; изучены job log и
+существенные assertions/harness. Новый connected rerun review не запускал.
+
+**Локальная независимая проверка:** 8 focused UI/route suites **202/202 PASS**;
+personal-filters +concurrency suites на PG17 **34/34 PASS**, включая27 targeted
+race/rollback cases. Дополнительный harness вне git worktree использует production
+components/Router и реальные repo/PG writes: topic/user ×initialON/OFF с first
+COMMIT→second opposite COMMIT→fresh loader→old ACK→ещё один fresh read; ещё два
+list Remove→re-add→fresh loader→old Undo ACK cases. **6/6 PASS**, mutation calls
+ровно1, UI/list совпадают с БД; это не mocked SQL/race. Итого local242/242 PASS.
+
+Границы evidence сохранены: нет injected real PG outage через браузер, actual R2
+download или deployed OAuth/Owner acceptance. Это не current-scope defects:
+typed failures/atomic rollback и независимые privileged guards проверены на своих
+границах; production/external Stage6 остаётся отдельно. Новые runtime костыли,
+global/recipient locks/cache/version/retry не добавлялись в review.
+
+Также устранена служебная несогласованность: верхний workflow ещё говорил HOLD,
+part4 pending, а описание PR — «4/4 NOT STARTED», вопреки фактическим evidence и
+Mira PASS. Обновлены **только status/service records и PR description**; head/source
+остались прежними. Draft status специально не менялся, merge не выполнялся.
+
+**Следующий шаг владельца — Ready for review → merge #351 при неизменном head.**
+После фактического merge Лира выполняет отдельный docs PR: permanent Mute/block
+contract + factual PROJECT_STATE migration0070 + separate history, только по
+реальному merged состоянию. До полного завершения Mute/block deferred owner order
+не меняется: затем WATCH-AUDIT-1 →BOOKMARKS-AUDIT-1 →BOOKMARKS-AUDIT-2, TITLE-AUDIT-1
+в applicable UI/UX. #342 никогда не merge. **Лёва STOP после independent PASS.**

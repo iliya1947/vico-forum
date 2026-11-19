@@ -1085,3 +1085,124 @@ Production/schema/tests не менялись. Все три завершённ�
 coordinator handoff Мире записан; текущий audit corrections не запускает.
 #351/4b.4 оставлен Лире, не проверялся/не переназначался мной.
 **STOP после title audit; не объявлять аудитом всех прежних функций проекта.**
+
+## 2026-11-19 — #351 independent whole-PR technical review PASS
+
+Актуальный handoff изменился за время работы других участников: source service
+head41b8341/latest edited6991888557 назначают Лёву после второго Mira PASS, entire
+M1–M7 на **0fc239a554c8df562e97bc600f59b6b7b06d36ab**, base/main9eae385.
+Owner meanwhile explicitly deferred old Watch/Bookmarks corrections until current
+Mute/block task fully finishes; title P3 reserved for UI/UX. Свежие назначения
+имеют приоритет над моим предыдущим предложением начать Watch correction.
+
+Отдельный clean detached worktree `/workspace/work/personal-filters-review` на этом
+head. Я не писал implementation/corrections #351; planning и external diagnostic
+tests не являются authoring проверяемой implementation. Source/schema/tests в
+worktree не изменены. Temporary node_modules symlink — только tooling, снимается
+после проверок. Все диагностические scripts/logs — вне worktree.
+
+### Whole-scope conclusions
+
+**PASS; confirmed current-scope findings=0.** Проверен main→head whole diff,
+52 changed files, source+adapters/actions/readers/UI/policy/schema/migration/ACL,
+affected tests/CI/harness и accepted plan M1–M7/owner M1M2. Ни старый coordinator
+PASS, ни green CI отдельно не использовались как доказательство корректности.
+
+M1/M2: Topic Mute suppresses own future ordinary candidates across author/parent/
+Watch/mention; Block is directional recipient→publication actor. Self rejected
+service/DB, inactive retained target allowed, own active AccountState required
+for ON/OFF/no-op, no reply/admin/RBAC/AP10 gates on personal preferences.
+
+M3/M5: materialized candidate/decision SQL is set-based, actual decision snapshot
+at READ COMMITTED statement. DML consumed CTE executes even though its RETURNING
+is not referenced; visible insert separately excludes computed suppressed=true,
+so it does not rely on seeing new sibling writes in the shared snapshot. Earlier
+own-transaction receipt is visible to later mention statement; otherwise receipt
+prevents post-recipient backfill after Unmute/Unblock. Existing delivered notices
+are not rewritten/consumed, reply before mention preserves kind priority. Initial,
+reply and published-edit mentions use same helper inside existing publication tx;
+matching publication replay exits before fanout. Complaint producers do not use
+helper (only ordinary repo call sites), existing result/member guards unchanged.
+
+M4: target KEY SHARE then active actor NO KEY UPDATE avoids reciprocal A↔B lock
+upgrade; no new recipient/global mutex. FK cascades/PK/directional CHECK and
+created_at(3) match model, OFF doesn't remove receipts. Schema snapshot recursively
+differs0069→0070 only by new3 table entries plus id/prevId, no historical drift.
+Web preferences SELECT/INSERT/DELETE, suppressions SELECT/INSERT, localization
+none. Existing runtime provisioning/manifest contracts include these exact relations.
+
+M6: SQL own predicate precedes seek/order/limit51; target id text bounded cursor,
+canonical ISOms, same ordering, not owner authority. Server current-title/public
+identity projection neutralizes inactive names. Strict canonical topic/profile POST
+uses session actor/route target; Block branch precedes own-profile edit guard while
+save-profile remains own-only. Profile/AP10/admin privileged projections unchanged.
+Mandatory block-match outage returns private503, optional state unknown, unexpected
+propagates. Own flags/list/results/errors no-store; guest no graph. Header mismatch
+hides old control/list, TopicView fails closed until new actor snapshot. Guest null/
+null remains public; reveal scoped to identity/topic/block-set and never persists
+Unblock. Body and inline/attached files/quote controls not mounted while collapsed;
+post anchors/numbers/relations/root/best and complaint affordance retained. Source
+view-only fixtures without snapshot metadata are not production canonical loader.
+
+PF-REVIEW-1/2 fixes independently match loader-owned state/membership (no mirror,
+no removed latch). PF-REVIEW-3 explicit A→guest hardening correct for headernull vs
+old actorA; loaded guest defaults explicit []/null. Existing replay, read markers,
+Watch/Bookmarks and role boundaries not repurposed by preferences/reveal.
+
+### Evidence actually checked/run
+
+Direct GitHub API confirms16/16 pull-request workflows SUCCESS and20/20 latest
+attempt jobs SUCCESS at exact0fc239a, no pending/failed. Read actual logs:
+- CI44590976935 checks135796577758:2744/2744 unit,218/218files; lint/typecheck,
+  Worker+preview build, migration history guard1new/no accepted rewrite PASS.
+- database135796578071:1476/1476 tests,109/109files; production-schema full parity
+  74 public tables, runtime privilege positive/negative, split provisioning probes,
+  actual Worker+BetterAuth/PG HTTP and storage/unexpected guard smokes PASS.
+- dedicated44590977494 job135796579822:49 FILTERS_CONNECTED marker lines, zero
+  fatal failure; examined actual harness safety guards/real actions/SQL inspection,
+  sign-out latest case, no-pageErrors/external assertions. These are CI connected
+  results, not a newly executed local full Worker/Chromium acceptance.
+
+Local pinned Node24.21/pnpm12.3 toolchain, own loopback disposable
+`vico_personal_filters_review_test`, actual PG17 full clean migration chains:
+- 8 suites UI/routes: **202/202 PASS** (personal-filter-control, filters-view,
+  filters route/actions, public-read/authz degradation, profile/privileged).
+- personal-filters +personal-filters-concurrency: **34/34 PASS**; concurrency
+  includes27 current tests: real SQL pre/post snapshot barriers, reciprocal
+  Block/same-actor serialization, writer/deactivation, receipt/notice/attachment/
+  publication completion rollback, initial/edit replay/no-backfill. Barriers use
+  actual PG execution/pg_blocking_pids; no mocked SQL decisions.
+- New external `/workspace/work/pf-review-diagnostics/state.test.tsx`: **6/6 PASS**
+  with production components/Router/repo and real own writes/reads. For each kind
+  and initial ON/OFF, first actual COMMIT acknowledgement delayed; second actual
+  write restores initial; current loader revalidates while pending, old ACK then
+  arrives, another fresh read. DB/loader/UI agree, action called once. Both list
+  kinds also survive actual Remove→re-add same pair before delayed old Undo ACK,
+  fresh membership/DOM row agree, no implicit retry. Independent stronger evidence
+  than only inspecting new mocked-loader regressions. Fixture initially lacked
+  external node_modules symlink (no tests executed); dependency resolution fixed
+  before final6/6, not a product defect.
+
+**Local242/242 PASS**, git diff check clean. Full CI not rerun locally because
+same-head successful complete CI/logs already verified; focused local executions
+plus fresh integrated experiments address review concerns without claiming reruns.
+No unsupported actual browser PG outage/R2 file reads/positive bound Owner lifecycle
+or production rollout claims. Such external/unrelated checks do not expand scope.
+
+Official PG17 queries-with/transaction-iso/explicit-locking docs checked again
+2026-11-19, especially single shared CTE snapshot and data-modifying CTE execution
+to completion even when RETURNING unused. Accepted snapshot semantics permits
+already-started fanout after preference response; not a promised commit barrier.
+
+### Service/metadata and handoff
+
+Found stale status in top workflow (HOLD/part4pending) and PR body (NOT STARTED4/4),
+despite same-head Mira PASS/latest handoff. Corrected operational status and PR
+description only; no source change/new head. Draft remains Draft for owner action.
+
+Both reviews PASS same stable head; owner next **Ready→merge #351** if head still
+unchanged. No agent merge. Then Лира separate docs closeout from actual merged
+main (permanent contract/current factual state/history, no staged production claims).
+Deferred owner order unchanged: after full current task WatchP2, BookmarkP2/1 then
+BookmarkP2/2; titleP3 only later applicable UI/UX. #342 service-only never merge.
+**Лёва STOP после whole-PR PASS.**

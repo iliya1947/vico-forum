@@ -20,7 +20,7 @@
 - Docs closeout выполняет **Лира / ChatGPT-6** как штатный следующий исполнитель; отдельное owner-назначение для автора docs PR не требуется. Мира docs diff не пишет.
 - Watch docs closeout: **PR #349 merged** в main `405ab97116c5be750fb9c1d447431988802bdbb5`; reviewed docs head `aa6584c6d600d807ebed9171adbde365b918b290`, Мира coordinator PASS + Лёва independent PASS, defects = 0. Permanent/current/history Watch docs теперь в main.
 - Bookmarks docs closeout: **PR #350 merged** в main `9eae385571bf99e073df46f8541f7514c9626a29`; reviewed docs head `446e4cc893160efc30392bfa43f03f5882823021`, Мира docs PASS, defects = 0. Permanent/current/history Bookmarks docs теперь в main.
-- Mute/block: **Draft implementation PR #351 part 3/4 завершена; part 4/4 идёт по микрошагам (4b.3 PASS)**, stable exact head `a2b077fd2059d9e6c189b35d008d81d23ed6d4ba` (base `9eae385571bf99e073df46f8541f7514c9626a29`). Parts 1/4, 2/4 ранее выполнены. Part 3 разбита постфактум на проверяемые blocks: **3a** M6 SQL private list readers (actor-scoped, 50+lookahead) и canonical topic/profile personal POST branches; **3b** actor-scoped controls в TopicView/public profile; **3c** private `/:locale/filters` с tabs/keyset/undo/navigation и EN/RU/HE; **3d** scoped route/component/unit regressions и исправление CI regressions (strict form mocks, route catalogue, profile privileged reader mocks, отдельно изолированные Watch CSS selectors); **3e** final exact-head CI. Подтверждены **15/15 GitHub workflows SUCCESS** на `a2b077fd2059d9e6c189b35d008d81d23ed6d4ba`, включая `checks`/`database`, PostgreSQL 17/Worker smokes и все существующие connected Chromium suites. Dedicated Mute/block connected browser acceptance выполняется по микрошагам 4b.1–4b.11: 4b.1–4b.3 PASS, 4b.4–4b.11 pending. #351 Draft / not review-ready.
+- Mute/block #351: **M1–M7 implementation/acceptance завершены; PF-REVIEW-1/2/3 CLOSED; Мира coordinator PASS + Лёва independent whole-PR PASS** на exact head `0fc239a554c8df562e97bc600f59b6b7b06d36ab`, base/main `9eae385571bf99e073df46f8541f7514c9626a29`. 16/16 exact-head workflows, 20/20 jobs SUCCESS; 2744 unit + 1476 PG tests, 49/49 connected markers. Confirmed current-scope defects = 0. PR пока Draft/open, merge выполняет владелец; после фактического merge отдельный docs closeout Лиры. Implementation в review не менялся.
 
 ## Опережающий planning-track
 
@@ -33,7 +33,7 @@
 
 ## Следующий шаг
 
-**Mute/block: PF-REVIEW-1/2/3 bounded corrections PASS; corrected stable implementation head with 16/16 exact-head workflows SUCCESS. Coordinator whole-PR review still HOLD, not yet repeated. Лира STOP before final whole-PR verification/handoff to Mira.** Implementation Draft PR #351: current head `0fc239a554c8df562e97bc600f59b6b7b06d36ab` (base `9eae385571bf99e073df46f8541f7514c9626a29`). Service PR #342 — рабочий канал, не merge.
+**#351 independent whole-PR review — Лёва PASS**, вместе с coordinator PASS Миры на том же exact head `0fc239a554c8df562e97bc600f59b6b7b06d36ab` против base/main `9eae385571bf99e073df46f8541f7514c9626a29`. Подтверждённых current-scope defects = 0. **Следующий шаг владельца: перевести Draft #351 в Ready и merge при неизменном head.** После фактического merge Лира делает отдельный docs closeout; только после завершения текущей Mute/block задачи — отложенные corrections по owner order. Лёва STOP; #342 service-only/no merge.
 
 **Verified 4a:** real PostgreSQL 17 **27/27 targeted concurrency/atomicity tests** и full **1476/1476 tests, 109/109 files PASS**. `CI` jobs `database` и `checks` SUCCESS (run `44522424656`). **15/15 workflow SUCCESS после отдельного повторного SA07 job `135564876373` на том же head**, без code changes. Первый SA07 job `135554174007` FAIL: `/en/super-admin/monitoring/integrations.data` ответил 503 вместо 200. Точная первопричина **не установлена**; не подтверждена Mute/block regression. В 4a изменены только `tests/database/personal-filters-concurrency.test.ts` и `tests/database/topic-watch.test.ts` (timing rejection assertion), production/schema/UI без изменений.
 
@@ -314,3 +314,20 @@ final review для нового head и нужен новый coordinator cycle
 structure/topic move, #320, Stage6 или general UI/UX. #351 Draft/open; #342 service-only,
 never merge. После independent PASS владельцу будет доступен merge implementation #351;
 после фактического merge отдельный docs closeout выполняет Лира.
+
+## 2026-11-19 — Лёва: independent technical whole-PR review #351 — PASS
+
+Проверен **весь M1–M7 scope**, не только исправления, на stable exact head
+`0fc239a554c8df562e97bc600f59b6b7b06d36ab` против base/main `9eae385`.
+Новых подтверждённых дефектов текущей задачи нет. PF-REVIEW-1/2/3 CLOSED.
+Независимо подтверждены 16/16 workflows, 20/20 jobs SUCCESS, full unit2744/2744,
+PG1476/1476, dedicated actual Worker/Better Auth/PG17/Chromium49/49 markers.
+Локально повторены 202 UI/route +34 PG checks; ещё6 независимых real-PG+Router
+cases подтвердили актуальность controls/rows после delayed older ACK. Всё PASS.
+Scope/causal coverage/evidence limits — в channel и файле Лёвы.
+
+Устаревшие active HOLD/not-review-ready пункты workflow и описание #351 приведены
+к текущему результату; implementation/head не изменены. #351 остаётся Draft/open.
+**Владелец: Ready → merge #351 при неизменном head; затем Лира — отдельный docs
+closeout по фактическому merged main.** Deferred audits и owner order после #351
+сохранены; TITLE-AUDIT-1 только applicable UI/UX. **Лёва STOP.**
