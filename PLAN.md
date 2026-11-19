@@ -17,9 +17,9 @@
 
 V-P1/V-P2/V-P3 **ACCEPTED**, V-T1/V-T2 technical fit **PASS**. Полный план V1–V9 восстановлен из Git и адаптирован к main6fa2a43: `stages/moderation-visibility/PLAN.md`.
 
-Один bounded visibility implementation PR охватывает темы и сообщения, public/private reads, assets, translations, own-state/inbox и atomic moderation. B1–B9 — внутренние проверяемые checkpoints; номера/границы/готовность описаны в stage plan, здесь не дублируются.
+Moderation visibility реализуется stacked-лестницей B1→B9. B1 открывается от `main`, каждый следующий bounded PR — от head-ветки предыдущего. Промежуточные PR не merge в `main`. После B9 итоговый head всей лестницы переносится в ветку B1; B2–B9 закрываются как superseded. Собранный B1 становится единым feature PR и проходит final author self-check → Mira whole-feature review → Leva independent review того же exact head → owner merge; затем отдельный docs closeout.
 
-Следующий checkpoint — Мира проверяет полноту адаптации и передаёт Лире **только B1**. Нового product re-approval не требуется. Код ещё не начат. Whole-PR Mira→Leva review и owner merge только после полного вертикального среза; затем отдельный docs closeout.
+Следующий checkpoint — Лира реализует **только B1**. Нового product re-approval не требуется. Код task5 ещё не начат.
 
 ## 4. Последний продуктовый этап — forum structure/topic move
 
