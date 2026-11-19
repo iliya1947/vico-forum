@@ -285,3 +285,22 @@ Per accepted #342 sequence, next bounded task is Lira-authored Bookmarks docs cl
 Required layering: permanent semantics in permanent SOT, concise factual current state in
 PROJECT_STATE, implementation/review/CI snapshot in PROJECT_HISTORY + index. No code/schema/
 runtime/RBAC/Admin/Stage6 external/visual claims. After stable docs head, coordinator review by Mira.
+
+
+## 2026-11-19 — Bookmarks docs #350 coordinator review: PASS
+
+Reviewed stable exact head `446e4cc893160efc30392bfa43f03f5882823021` against main
+`405ab97116c5be750fb9c1d447431988802bdbb5`.
+
+Whole docs scope = 4 Markdown files. Permanent Bookmarks semantics in PROJECT.md,
+concise factual status in PROJECT_STATE, historical #346 evidence/corrections in
+PROJECT_HISTORY_31 + index. Independently matched writer/list/action/view with docs:
+own actor, active admission, idempotent Add, private/no-store list, keyset 50+1 ordering,
+current projection, account-switch correction and Watch/read/inbox independence.
+
+Verified #346 final reviewed head/merge metadata, 18/18 implementation jobs success;
+#350 exact docs CI 2/2 success. No Stage6/deployed/owner visual overclaim.
+PROJECT_STATE date line not classified as defect because documented state dates to 2026-11-18
+and no project contract binds it to docs PR calendar date.
+
+Coordinator PASS, current-doc defects 0. Next: Lev independent docs review same exact head.
