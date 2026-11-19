@@ -881,6 +881,181 @@ try:
         record("reviewer who Mutes and Blocks still reads protected Complaint revision and context")
         record("Mute/Block preserve reviewer grant; non-Owner Super-admin guard stays 403")
 
+        # 4b.9: actual localized Chromium controls and native keyboard input,
+        # including a 360px right-to-left layout. This actor is isolated from
+        # the prior 4b.1-4b.8 accounts and their notification/read fixtures.
+        translated, translated_id = account("Filters localization keyboard viewer")
+        translated_page = translated.new_page()
+        translated_page.on("pageerror", lambda error: errors.append(str(error)))
+
+        private(translated_page.goto(base + topic_path, wait_until="networkidle"))
+        assert translated_page.locator("html").get_attribute("lang") == "en"
+        assert translated_page.locator("html").get_attribute("dir") == "ltr"
+        en_mute = translated_page.get_by_role("button", name="Mute topic", exact=True)
+        expect(en_mute).to_have_attribute("aria-pressed", "false")
+        en_mute.focus()
+        assert en_mute.evaluate("(node) => document.activeElement === node")
+        with translated_page.expect_response(
+            lambda r: r.request.method == "POST" and topic_path in r.url
+        ) as en_muted:
+            translated_page.keyboard.press("Enter")
+        private(en_muted.value)
+        expect(translated_page.get_by_role("button", name="Unmute topic", exact=True)
+               ).to_have_attribute("aria-pressed", "true")
+        assert sql("select topic_id from forum_topic_mutes where user_id=$1",
+                   [translated_id]) == [{"topic_id": seeded["topicId"]}]
+        private(translated_page.goto(base + "/en/filters", wait_until="networkidle"))
+        expect(translated_page.get_by_role("heading", name="Personal filters")).to_be_visible()
+        expect(translated_page.get_by_role("link", name="Muted topics")).to_have_attribute(
+            "aria-current", "page")
+        expect(translated_page.get_by_role("button", name="Unmute topic")).to_be_visible()
+        record("EN native keyboard Enter mutes topic; private list and ARIA pressed/current localized")
+
+        ru_topic = "/ru/topics/" + seeded["topicId"]
+        ru_profile = "/ru/users/" + author_id
+        private(translated_page.goto(base + ru_topic, wait_until="networkidle"))
+        assert translated_page.locator("html").get_attribute("lang") == "ru"
+        assert translated_page.locator("html").get_attribute("dir") == "ltr"
+        expect(translated_page.get_by_role(
+            "button", name="Включить уведомления темы", exact=True)).to_have_attribute(
+            "aria-pressed", "true")
+        private(translated_page.goto(base + ru_profile, wait_until="networkidle"))
+        ru_block = translated_page.get_by_role(
+            "button", name="Заблокировать пользователя", exact=True)
+        expect(ru_block).to_have_attribute("aria-pressed", "false")
+        ru_block.focus()
+        assert ru_block.evaluate("(node) => document.activeElement === node")
+        with translated_page.expect_response(
+            lambda r: r.request.method == "POST" and ru_profile in r.url
+        ) as ru_blocked:
+            translated_page.keyboard.press("Space")
+        private(ru_blocked.value)
+        expect(translated_page.get_by_role(
+            "button", name="Разблокировать пользователя", exact=True)
+        ).to_have_attribute("aria-pressed", "true")
+        assert sql("select blocked_user_id from forum_user_blocks "
+                   "where user_id=$1", [translated_id]) == [
+                       {"blocked_user_id": author_id}]
+        private(translated_page.goto(base + "/ru/filters?tab=users",
+                                     wait_until="networkidle"))
+        expect(translated_page.get_by_role("heading", name="Личные фильтры")).to_be_visible()
+        expect(translated_page.get_by_role(
+            "link", name="Заблокированные пользователи")).to_have_attribute(
+                "aria-current", "page")
+        expect(translated_page.get_by_role("button", name="Разблокировать")).to_be_visible()
+        record("RU translated Mute/Block controls, Space activation, list tabs and ARIA state")
+
+        translated_page.set_viewport_size({"width": 360, "height": 780})
+        private(translated_page.goto(base + "/he/filters", wait_until="networkidle"))
+        assert translated_page.locator("html").get_attribute("lang") == "he"
+        assert translated_page.locator("html").get_attribute("dir") == "rtl"
+        expect(translated_page.get_by_role("heading", name="סינון אישי")).to_be_visible()
+        expect(translated_page.get_by_role("link", name="נושאים מושתקים")
+               ).to_have_attribute("aria-current", "page")
+        expect(translated_page.get_by_role("link", name="משתמשים חסומים")).to_be_visible()
+        he_unmute = translated_page.get_by_role(
+            "button", name="ביטול השתקת הנושא", exact=True)
+        expect(he_unmute).to_be_enabled()
+
+        def narrow_rtl(*controls):
+            geometry = translated_page.evaluate("""() => ({
+                viewport: window.innerWidth,
+                documentWidth: document.documentElement.scrollWidth,
+                direction: document.documentElement.dir,
+            })""")
+            assert geometry["viewport"] == 360, geometry
+            assert geometry["direction"] == "rtl", geometry
+            assert geometry["documentWidth"] <= 362, geometry
+            for element in controls:
+                frame = element.bounding_box()
+                assert frame and frame["width"] >= 24 and frame["height"] >= 24, frame
+                assert frame["x"] >= -2 and frame["x"] + frame["width"] <= 362, (
+                    frame, geometry)
+
+        narrow_rtl(he_unmute,
+                   translated_page.get_by_role("link", name="נושאים מושתקים"),
+                   translated_page.get_by_role("link", name="משתמשים חסומים"))
+        he_unmute.focus()
+        translated_page.keyboard.press("Shift+Tab")
+        translated_page.keyboard.press("Tab")
+        assert he_unmute.evaluate("(node) => document.activeElement === node")
+        assert he_unmute.evaluate("(node) => node.matches(':focus-visible')")
+        record("HE 360px RTL private topics tab: labels, focus-visible, Tab order, no horizontal overflow")
+
+        he_blocked_tab = translated_page.get_by_role("link", name="משתמשים חסומים")
+        he_blocked_tab.focus()
+        with translated_page.expect_navigation(wait_until="networkidle"):
+            translated_page.keyboard.press("Enter")
+        expect(translated_page.get_by_role("link", name="משתמשים חסומים")
+               ).to_have_attribute("aria-current", "page")
+        he_unblock = translated_page.get_by_role(
+            "button", name="ביטול חסימת משתמש", exact=True)
+        narrow_rtl(he_unblock)
+        record("HE RTL keyboard tab navigation keeps private Block row and action on screen")
+
+        he_topic = "/he/topics/" + seeded["topicId"]
+        private(translated_page.goto(base + he_topic, wait_until="networkidle"))
+        assert translated_page.locator("html").get_attribute("dir") == "rtl"
+        he_collapsed = translated_page.locator("#post-" + root_post)
+        expect(he_collapsed.locator("[data-filtered-post]")).to_have_count(1)
+        expect(he_collapsed.get_by_text(
+            "ההודעה של משתמש חסום מוסתרת.")).to_be_visible()
+        he_reveal = he_collapsed.get_by_role("button", name="הצגת ההודעה")
+        narrow_rtl(he_reveal)
+        he_reveal.focus()
+        assert he_reveal.evaluate("(node) => document.activeElement === node")
+        translated_page.keyboard.press("Enter")
+        expect(he_collapsed.locator("[data-message-body]")).to_contain_text(
+            "Public original post")
+        expect(translated_page.get_by_role(
+            "button", name="ביטול השתקת נושא", exact=True)
+        ).to_have_attribute("aria-pressed", "true")
+        assert sql("select blocked_user_id from forum_user_blocks "
+                   "where user_id=$1", [translated_id]) == [
+                       {"blocked_user_id": author_id}]
+        record("HE RTL blocked original remains collapsed until keyboard Reveal; Block and Mute persist")
+
+        # Undo in RTL using native buttons, with confirmation on the corresponding
+        # canonical controls in an alternate locale after reload.
+        private(translated_page.goto(base + "/he/filters?tab=users",
+                                     wait_until="networkidle"))
+        he_unblock = translated_page.get_by_role(
+            "button", name="ביטול חסימת משתמש", exact=True)
+        he_unblock.focus()
+        with translated_page.expect_response(
+            lambda r: r.request.method == "POST"
+            and "/he/users/" + author_id in r.url
+        ) as undone_block:
+            translated_page.keyboard.press("Enter")
+        private(undone_block.value)
+        expect(he_unblock).to_have_count(0)
+        assert sql("select blocked_user_id from forum_user_blocks "
+                   "where user_id=$1", [translated_id]) == []
+
+        private(translated_page.goto(base + "/he/filters", wait_until="networkidle"))
+        he_unmute = translated_page.get_by_role(
+            "button", name="ביטול השתקת הנושא", exact=True)
+        he_unmute.focus()
+        with translated_page.expect_response(
+            lambda r: r.request.method == "POST" and "/he/topics/" + seeded["topicId"] in r.url
+        ) as undone_mute:
+            translated_page.keyboard.press("Space")
+        private(undone_mute.value)
+        expect(he_unmute).to_have_count(0)
+        assert sql("select topic_id from forum_topic_mutes where user_id=$1",
+                   [translated_id]) == []
+
+        private(translated_page.goto(base + "/en/topics/" + seeded["topicId"],
+                                     wait_until="networkidle"))
+        expect(translated_page.get_by_role("button", name="Mute topic", exact=True)
+               ).to_have_attribute("aria-pressed", "false")
+        private(translated_page.goto(base + "/ru/users/" + author_id,
+                                     wait_until="networkidle"))
+        expect(translated_page.get_by_role(
+            "button", name="Заблокировать пользователя", exact=True)
+        ).to_have_attribute("aria-pressed", "false")
+        record("HE narrow keyboard Undo Block/Mute persists; EN/RU controls confirm OFF on reload")
+
         assert not errors, errors
         assert not external, external
         browser.close()
