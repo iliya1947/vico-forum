@@ -12,6 +12,7 @@ import {
 } from "../../db/forum-identifiers";
 import { authSessionContext } from "../auth/request-context";
 import { HeaderAuthProvider, type HeaderAuthUser } from "../auth/auth-controls";
+import { authClientActions } from "../auth/auth-client";
 import { complaintQueueContext } from "../complaints/queue-context";
 import {complaintAppealContext} from "../complaints/appeal-context";
 import { authorizationContext } from "../authorization/request-context";
@@ -5087,6 +5088,54 @@ describe("personal Block presentation in ordinary TopicView", () => {
     fireEvent.click(screen.getByRole("button", { name: "Show message" }));
     expect(await screen.findByText("A message hidden by personal Block.")).toBeInTheDocument();
     expect(document.querySelector("#post-help-answer [data-message-body]")).not.toBeNull();
+    expect(document.getElementById("post-help-answer")).toBeInTheDocument();
+  });
+
+  it("fails closed on A to guest sign-out until a fresh guest loader replaces A's Block graph", async () => {
+    const blocked = { ...helpTopic, posts: helpTopic.posts.map(post => post.id === "help-answer"
+      ? { ...post, body: { ...post.body, originalContent: "Private Block test body." } }
+      : post) };
+    const actorSnapshot = topicRenderData(blocked, {
+      blockedActorId: "viewer-a", blockedAuthorIds: ["lin"],
+    });
+    const guestSnapshot = topicRenderData(blocked, {
+      blockedActorId: null, blockedAuthorIds: [],
+    });
+    let releaseGuest!: (value: typeof guestSnapshot) => void;
+    const pendingGuestLoader = new Promise<typeof guestSnapshot>(resolve => { releaseGuest = resolve; });
+    let reads = 0;
+    const router = createMemoryRouter([{
+      id: "page", path: "/en/topics/:topicId", Component: TopicRoute,
+      loader: () => ++reads === 1 ? actorSnapshot : pendingGuestLoader,
+    }], { initialEntries: ["/en/topics/help-question"] });
+    const signOut = vi.spyOn(authClientActions, "signOut").mockImplementation(async handlers => {
+      handlers.onSuccess();
+    });
+    render(<I18nextProvider i18n={runtime("en", "ltr")}>
+      <HeaderAuthProvider initialUser={{ id: "viewer-a", name: "Viewer" }}>
+        <RouterProvider router={router} />
+      </HeaderAuthProvider>
+    </I18nextProvider>);
+
+    expect(await screen.findByText("Message from a blocked author is hidden.")).toBeInTheDocument();
+    expect(screen.queryByText("Private Block test body.")).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Sign out" }));
+    await waitFor(() => expect(signOut).toHaveBeenCalledTimes(1));
+    await waitFor(() => expect(document.querySelector('.auth-controls[data-state="guest"]')).not.toBeNull());
+    // Auth has changed immediately, but the old actor-A loader is still on screen.
+    expect(document.querySelector("#post-help-answer [data-filtered-post]")).not.toBeNull();
+    expect(document.querySelector("#post-help-question-post [data-filtered-post]")).not.toBeNull();
+    expect(document.querySelector("#post-help-answer [data-message-body]")).toBeNull();
+    expect(screen.queryByText("Private Block test body.")).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Show message" })).not.toBeInTheDocument();
+    expect(screen.getAllByText("Personal filters are refreshing.").length).toBeGreaterThan(0);
+    expect(document.getElementById("post-help-answer")).toBeInTheDocument();
+
+    await act(async () => { releaseGuest(guestSnapshot); await pendingGuestLoader; });
+    await waitFor(() => expect(screen.getByText("Private Block test body.")).toBeInTheDocument());
+    expect(document.querySelectorAll("[data-filtered-post]")).toHaveLength(0);
+    expect(document.querySelector("#post-help-answer [data-message-body]")).not.toBeNull();
+    expect(document.querySelector("#post-help-question-post [data-message-body]")).not.toBeNull();
     expect(document.getElementById("post-help-answer")).toBeInTheDocument();
   });
 });
