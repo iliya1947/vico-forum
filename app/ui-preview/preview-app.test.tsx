@@ -1575,7 +1575,7 @@ describe("interactive Pages preview", () => {
     expect(screen.getByRole("heading", { name: "Settings helper renamed" })).toBeInTheDocument();
     const stillAssignedAlex = screen.getByRole("heading", { name: "Alex Rivera" })
       .closest(".admin-user-card") as HTMLElement;
-    expect(within(stillAssignedAlex).getByText("Settings helper renamed")).toBeInTheDocument();
+    expect(within(stillAssignedAlex).getByLabelText("Assigned role")).toHaveDisplayValue("Settings helper renamed");
 
     const resetAssignment = stillAssignedAlex.querySelector(".admin-role-assignment") as HTMLElement;
     await user.selectOptions(within(resetAssignment).getByLabelText("Assigned role"), "User");
@@ -1714,7 +1714,7 @@ describe("interactive Pages preview", () => {
     await openSettings(user);
     await openSettingsSection(user, "Administrator preferences", "Administrator preferences");
 
-    const behavior = await screen.findByRole("combobox", { name: "On entry, open" });
+    const behavior = await screen.findByLabelText("On entry, open", { selector: "#settings-admin-entry" });
     const destination = screen.getByRole("combobox", { name: "Default destination" });
     expect(behavior).toHaveValue("default");
     expect(destination).toHaveValue("overview");
@@ -1727,7 +1727,7 @@ describe("interactive Pages preview", () => {
     await openSettingsSection(user, "Administrator preferences", "Administrator preferences");
 
     await user.selectOptions(screen.getByRole("combobox", { name: "Default destination" }), "overview");
-    await user.selectOptions(screen.getByRole("combobox", { name: "On entry, open" }), "last");
+    await user.selectOptions(screen.getByLabelText("On entry, open", { selector: "#settings-admin-entry" }), "last");
 
     expect(screen.getByRole("link", { name: "Open Admin" })).toHaveAttribute("href", "/en/admin/authorization");
     expect(JSON.parse(window.localStorage.getItem(key) ?? "{}")).toMatchObject({
