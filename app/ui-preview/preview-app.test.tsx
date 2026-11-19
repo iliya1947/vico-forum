@@ -1439,7 +1439,7 @@ describe("interactive Pages preview", { timeout: 10_000 }, () => {
     await user.click(screen.getByRole("button", { name: "Save changes" }));
 
     expect(await screen.findByRole("heading", { level: 1, name: "Edited preview topic title" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Edit topic title" })).toBeInTheDocument();
+    expect(await screen.findByRole("button", { name: "Edit topic title" })).toBeInTheDocument();
   });
 
   it("creates a topic, posts a reply, selects it as best answer, and marks the topic solved", async () => {
