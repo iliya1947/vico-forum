@@ -23,7 +23,8 @@ import { AdminUsersIndex } from "../admin/users";
 import { AdminShell } from "../admin/shell";
 import { HistoryEvents } from "../admin/history";
 import { SuperAdminOverview } from "../super-admin/overview";
-import { SuperAdminMonitoringIndex } from "../super-admin/view";
+import { SuperAdminSa02Current } from "../super-admin/current-route";
+import { SuperAdminMonitoringIndex, SuperAdminShell, SystemMonitorCards } from "../super-admin/view";
 import type { AdminHistoryChange, AdminHistoryEvent } from "../../db/admin-history";
 import { projectAdminTopic } from "../admin/topic-model";
 import type { ForumHelpSolutionsFilters, ForumPopularPage } from "../../db/forum-repository";
@@ -231,6 +232,9 @@ export const scenarios: readonly Scenario[] = [
   { id: "topic-unsolved", label: "Unsolved topic", locale: "en", direction: "ltr", identity: "guest", path: "/en/topics/typed-api", view: "topic", variant: "topic-unsolved" },
   { id: "super-admin-overview-owner", label: "Super-admin · Overview", locale: "en", direction: "ltr", identity: "owner", path: "/en/super-admin", view: "super-admin", allowedIdentities: ["owner"] },
   { id: "super-admin-monitoring-owner", label: "Super-admin · Monitoring", locale: "en", direction: "ltr", identity: "owner", path: "/en/super-admin/monitoring", view: "super-admin", allowedIdentities: ["owner"] },
+  { id: "super-admin-system-owner", label: "Super-admin · System", locale: "en", direction: "ltr", identity: "owner", path: "/en/super-admin/monitoring/system", view: "super-admin", allowedIdentities: ["owner"] },
+  { id: "super-admin-accounts-owner", label: "Super-admin · Accounts", locale: "en", direction: "ltr", identity: "owner", path: "/en/super-admin/monitoring/accounts", view: "super-admin", allowedIdentities: ["owner"] },
+  { id: "super-admin-security-owner", label: "Super-admin · Security", locale: "en", direction: "ltr", identity: "owner", path: "/en/super-admin/monitoring/security", view: "super-admin", allowedIdentities: ["owner"] },
   { id: "super-admin-guest-unauthenticated", label: "Super-admin · guest unauthenticated", locale: "en", direction: "ltr", identity: "guest", path: "/en/super-admin", view: "super-admin", allowedIdentities: ["guest"] },
   { id: "super-admin-manager-forbidden", label: "Super-admin · manager forbidden", locale: "en", direction: "ltr", identity: "manager", path: "/en/super-admin", view: "super-admin", allowedIdentities: ["manager"] },
   { id: "admin", label: "Authorization", locale: "en", direction: "ltr", identity: "owner", path: "/en/admin/authorization", view: "admin", allowedIdentities: ["manager", "owner"] },
@@ -1521,6 +1525,143 @@ function PreviewSuperAdminMonitoringRoute() {
   return <SuperAdminMonitoringIndex locale={locale} />;
 }
 
+type PreviewSystemOverview = Parameters<typeof SystemMonitorCards>[0]["system"];
+type PreviewSa02State = Parameters<typeof SuperAdminSa02Current>[0]["state"];
+
+function previewSystemState(): PreviewSystemOverview {
+  const observedAt = "2026-11-18T14:20:00.000Z";
+  return {
+    observedAt,
+    recording: "available",
+    monitors: [
+      {
+        key: "system.runtime",
+        quality: "measured",
+        source: "application",
+        values: { component: "worker", state: "serving", build: "preview" },
+        coverageFrom: "2026-11-01T09:00:00.000Z",
+        lastObservedAt: observedAt,
+      },
+      {
+        key: "system.dependencies",
+        quality: "measured",
+        source: "database",
+        values: { component: "postgresql", state: "available", version: "17.6" },
+        coverageFrom: "2026-11-01T09:00:00.000Z",
+        lastObservedAt: observedAt,
+      },
+      {
+        key: "system.requests",
+        quality: "measured",
+        source: "application",
+        values: { component: "failed-responses-only", count: 2, state: "limited-coverage" },
+        coverageFrom: "2026-11-10T12:00:00.000Z",
+        lastObservedAt: observedAt,
+      },
+    ],
+  };
+}
+
+function previewSa02State(area: "accounts" | "security"): PreviewSa02State {
+  const observedAt = "2026-11-18T14:20:00.000Z";
+  const common = {
+    source: "database" as const,
+    quality: "measured" as const,
+    coverageFrom: "2026-11-01T09:00:00.000Z",
+    lastObservedAt: observedAt,
+  };
+  return {
+    observedAt,
+    recording: "available",
+    monitors: area === "accounts" ? [
+      {
+        ...common,
+        key: "accounts.users",
+        values: { total: "128", created24h: "4", activeUsers: "125", deactivatedUsers: "3", retentionPendingUsers: "2" },
+      },
+      {
+        ...common,
+        key: "accounts.methods",
+        values: { passwordUsers: "91", googleUsers: "64", bothUsers: "27" },
+      },
+      {
+        ...common,
+        key: "accounts.sessions",
+        values: { active: "142", expiredRetained: "18" },
+      },
+      {
+        ...common,
+        key: "accounts.registration",
+        values: {
+          googleEnabled: true,
+          emailEnabled: true,
+          version: 3,
+          updatedAt: "2026-11-17T16:30:00.000Z",
+        },
+      },
+    ] : [
+      {
+        ...common,
+        key: "security.auth",
+        values: {
+          attributedAttempts: "37",
+          rateLimitedAttempts: "2",
+          retainedPatterns: "14",
+          unknownAttempts: "1",
+          overflowAttempts: "0",
+          gapAttempts: "0",
+          lastSeenAt: "2026-11-18T14:18:00.000Z",
+          currentHourAuthenticatedUsed: "8",
+          currentHourAnonymousUsed: "11",
+          hourlyCapacityPerPool: 500,
+        },
+      },
+      {
+        ...common,
+        key: "security.access",
+        values: {
+          attributedAttempts: "21",
+          rateLimitedAttempts: "1",
+          retainedPatterns: "9",
+          unknownAttempts: "0",
+          overflowAttempts: "0",
+          gapAttempts: "0",
+          lastSeenAt: "2026-11-18T14:17:00.000Z",
+          currentHourAuthenticatedUsed: "5",
+          currentHourAnonymousUsed: "3",
+          hourlyCapacityPerPool: 500,
+        },
+      },
+      {
+        ...common,
+        key: "security.attachments",
+        values: { total: "6", evidence24h: "1", lastEventAt: "2026-11-18T13:40:00.000Z" },
+      },
+    ],
+  };
+}
+
+function PreviewSuperAdminSystemRoute() {
+  const { locale, system } = useLoaderData() as { locale: string; system: PreviewSystemOverview };
+  const { t } = useTranslation("common");
+  return <SuperAdminShell locale={locale} current="monitoring">
+    <section className="admin-overview" aria-labelledby="super-admin-system-heading">
+      <h2 id="super-admin-system-heading">{t("superAdminSystem")}</h2>
+      <p>{t("superAdminSystemCoverage")}</p>
+      <SystemMonitorCards locale={locale} system={system} />
+      <p><a href={`/${locale}/super-admin/monitoring`}>{t("superAdminMonitoring")}</a></p>
+    </section>
+  </SuperAdminShell>;
+}
+
+function PreviewSuperAdminSa02Route({ area }: { area: "accounts" | "security" }) {
+  const { locale, state } = useLoaderData() as {
+    locale: string;
+    state: PreviewSa02State;
+  };
+  return <SuperAdminSa02Current locale={locale} area={area} state={state} />;
+}
+
 function previewCredentialData(scenario: Scenario, request: Request) {
   const returnTo = credentialReturnPath(
     scenario.locale,
@@ -1623,6 +1764,33 @@ function previewRouter(
       loader: () => {
         previewSuperAdminAccessData(scenario);
         return { locale: scenario.locale };
+      },
+      ErrorBoundary: ForumRouteError,
+    },
+    {
+      path: "/:locale/super-admin/monitoring/system",
+      element: <PreviewSuperAdminSystemRoute />,
+      loader: () => {
+        previewSuperAdminAccessData(scenario);
+        return { locale: scenario.locale, system: previewSystemState() };
+      },
+      ErrorBoundary: ForumRouteError,
+    },
+    {
+      path: "/:locale/super-admin/monitoring/accounts",
+      element: <PreviewSuperAdminSa02Route area="accounts" />,
+      loader: () => {
+        previewSuperAdminAccessData(scenario);
+        return { locale: scenario.locale, state: previewSa02State("accounts") };
+      },
+      ErrorBoundary: ForumRouteError,
+    },
+    {
+      path: "/:locale/super-admin/monitoring/security",
+      element: <PreviewSuperAdminSa02Route area="security" />,
+      loader: () => {
+        previewSuperAdminAccessData(scenario);
+        return { locale: scenario.locale, state: previewSa02State("security") };
       },
       ErrorBoundary: ForumRouteError,
     },
