@@ -714,6 +714,20 @@ describe("embedded preview routing", { timeout: 10_000 }, () => {
     expect(screen.getByText("Google registration")).toBeInTheDocument();
   });
 
+  it("shows the implemented Security attachments queue instead of a placeholder", async () => {
+    await renderEmbeddedPreview(<EmbeddedPreview scenarioId="attention-security" identity="manager" />);
+
+    const event = await waitFor(() => {
+      const current = document.querySelector(".attention-security-attachment-event") as HTMLElement | null;
+      expect(current).not.toBeNull();
+      return current!;
+    });
+    expect(event).toHaveTextContent("diagnostics.zip");
+    expect(event).toHaveTextContent("executable-signature");
+    expect(event).toHaveTextContent("application/zip");
+    expect(event).toHaveTextContent("application/x-dosexec");
+  });
+
   it("records an accepted Help signal in live Admin History", async () => {
     const user = userEvent.setup();
     await renderEmbeddedPreview(<EmbeddedPreview scenarioId="attention-signals" identity="manager" />);
