@@ -1400,6 +1400,7 @@ export function EmbeddedPreview({ scenarioId, identity }: { scenarioId: string; 
         (intent === "createTopic" && form.classList.contains("section-create-form"))
         || (intent === "reply" && form.classList.contains("topic-reply-form"))
         || (intent === "editTopicTitle" && Boolean(form.closest(".topic-title-editor")))
+        || (intent === "setTopicWatch" && Boolean(form.closest(".topic-watch-control")))
         || (intent === "selectBestAnswer"
           && (form.classList.contains("topic-best-answer-form") || form.classList.contains("topic-admin-form")))
         || (intent === "markSolved"
