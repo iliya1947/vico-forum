@@ -2124,3 +2124,45 @@ Draft [docs PR #353](https://github.com/iliya1947/vico-forum/pull/353) remains a
 The repository **automatically** ran CI for this docs-only head; [run 44602703247](https://github.com/iliya1947/vico-forum/actions/runs/44602703247) finished **SUCCESS** in both `checks` and `database`. No manually triggered run, new tests, or separate mandatory full CI gate is needed for pure docs. The prior proposal to defer automatic CI verification as a separate docs task was unnecessary. This is the **author's completed docs self-check**, not Mira's independent review.
 
 **Handoff / next agent: Мира (ChatGPT-5.6 Sol).** Perform whole-docs review of all four paths in #353 on exact head `f81fc47811cace99c97b1fbacea321d3881961d9` against actual merged main #351 and service scope. Check product contract correctness, factual state vs history separation, migration/external-evidence boundaries, historical citations and no accidental scope expansion. Record findings/PASS in #342; if confirmed docs correction needed return to Лира, otherwise mark docs PASS and allow owner merge #353. Docs-only independent Leva review not required by current assignment. **Лира STOP; #353 remains Draft, #342 never merge**, deferred WATCH/BOOKMARKS/TITLE audits and Stage6 not activated.
+
+
+## 2026-11-19 — Мира: #353 whole-docs review HOLD — 1 wording correction
+
+Whole-docs review выполнен на stable exact head
+`f81fc47811cace99c97b1fbacea321d3881961d9` против merged main
+`b87a6702b4f97634ee21426f95ece38f53c672ed`.
+
+Проверены все 4 Markdown path:
+- `PROJECT.md`;
+- `PROJECT_STATE.md`;
+- `docs/PROJECT_HISTORY/PROJECT_HISTORY_32.md`;
+- `docs/PROJECT_HISTORY/PROJECT_HISTORY.md`.
+
+Подтверждено:
+- permanent Mute/Block contract соответствует merged #351;
+- migration ceiling repository = `0000–0070`, external accepted evidence = `0000–0020`;
+- review/correction/CI details находятся в history, не в current state;
+- history #32 корректно отражает #351 merge, PF-REVIEW-1/2/3, Mira/Leva PASS,
+  exact-head 16/16 workflows, 20/20 jobs, 2744/2744 unit, 1476/1476 PG17,
+  49/49 connected markers и unmerged optional PF-SIMPLIFY-1;
+- docs-only CI run `44602703247`: checks + database SUCCESS;
+- code/schema/runtime/ACL/tests не менялись.
+
+**DOC-PF-1 [P3 factual wording]**:
+в `PROJECT_STATE.md` Forum core сейчас написано
+«... приватные списки `/:locale/filters` и **сохранение подавленных уведомлений
+без backfill** ...».
+
+Это неточно: подавленные ordinary notification rows не сохраняются как inbox
+notifications. Реализация сохраняет private suppression receipts / suppressed
+recipient–post pairs, чтобы old edit/replay после Unmute/Unblock не создавал
+уведомление задним числом.
+
+Correction criterion: заменить только эту формулировку на factual wording вроде
+«учёт подавленных пар получатель–сообщение без backfill» или эквивалентное,
+не расширяя PROJECT_STATE implementation details. Остальные docs не менять без
+новой причины.
+
+Следующий исполнитель — **Лира / ChatGPT-6**: только DOC-PF-1 в #353, затем
+applicable docs CI / stable exact head и STOP Мире для повторного docs review.
+Лёва для docs-only review не нужен. #353 остаётся Draft; #342 service-only/no merge.
