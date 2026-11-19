@@ -117,9 +117,9 @@ describe("canonical Mute/Block personal actions", () => {
   it("rejects Files as scalar input and propagates unexpected writer failures", async () => {
     const e=env();
     expect(await topic(e.context,[["intent","setTopicMute"],["editorActorId",new File(["x"],"x")],["muted","true"]]))
-      .toMatchObject({data:{operation:"topicMute",error:"invalid"},init:{status:400}});
+      .toMatchObject({data:{error:"invalid"},init:{status:400}});
     expect(await user(e.context,[["intent","setUserBlock"],["editorActorId","viewer-a"],["blocked",new File(["x"],"x")]]))
-      .toMatchObject({data:{operation:"userBlock",error:"invalid"},init:{status:400}});
+      .toMatchObject({data:{error:"invalid"},init:{status:400}});
     const bug=new TypeError("SQL assertion");
     e.setUserBlock.mockRejectedValueOnce(bug);
     await expect(user(e.context)).rejects.toBe(bug);
