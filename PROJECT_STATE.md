@@ -64,6 +64,7 @@ Vico Forum находится в pre-release разработке.
 - immutable topic-title/post-body revisions с независимым source locale;
 - редактирование заголовка своей темы через отдельный `forum.topic.title.editOwn`: authoritative ownership/AccountState, immutable revision + current-revision CAS, `sourceLocale: "und"` для изменённого текста, revision-bound translations и AP-10 restriction `posts.edit`;
 - личное Watch/Unwatch темы для авторизованного активного пользователя, с сохранением own-подписки между сессиями и получением уведомлений о будущих ответах в существующем inbox; без auto-watch, отдельного inbox, изменения read-state или нового RBAC permission;
+- личные Bookmarks существующих тем: явные Add/Remove для активного пользователя, сохраняемый между сессиями приватный список `/:locale/bookmarks` с постраничным просмотром, актуальными заголовками и переходом к теме; независимы от Watch, уведомлений и read-state, без нового RBAC permission;
 - dynamic PostgreSQL-backed roles, permissions и per-user overrides;
 - единый server-side `PermissionResolver`, snapshot-consistent authorization reads, fresh protected-request checks и serialized authorization mutations;
 - public discovery и participation surfaces, включая Popular, Unanswered, Tags, Search, permanent message links и Reply/Quote;
