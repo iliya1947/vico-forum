@@ -53,7 +53,7 @@
 - не менять write/revision/CAS/conflict/rebase semantics;
 - component/browser regression для обоих случаев.
 
-Статус: bounded PASS; post-commit focus Save/Cancel, React Router и реальный Chromium 9/9, immutable-title/CAS/rebase не менялись. Итоговый exact head `01cecb91090a2f29f90b7c6ae4a83db77a0f4910`.
+Статус: post-commit focus Save/Cancel и реальный Chromium 9/9 PASS. В whole-PR review Миры предыдущего head `01cecb9...` найден P3 **TITLE-AUDIT-1-R1**: focus request оставался живым, когда Cancel происходил после потери permission и opener исчезал. Лира исправила: запрос теперь погашается при close, даже если opener недоступен, и не крадёт фокус при позднем восстановлении permission. Добавлена regression same mounted actor/topic + other focused action. Author checks на `b67e14d81cd20f2e42264e3d25d336ee19db626b`: 7/7 workflows SUCCESS, 2752/2752 unit (Title 6/6), PG17 1476/1476, Title Chromium 9/9. **Новый whole-PR Mira PASS ещё не получен.**
 
 ## Final gate
 
