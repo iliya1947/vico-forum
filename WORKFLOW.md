@@ -28,10 +28,10 @@ Consolidated audit corrections в Draft implementation PR #354.
 
 Лира продолжает **в том же #354**, не открывая новый corrective PR:
 
-1. исправить BOOKMARKS-AUDIT-2, затем bounded checkpoint + STOP;
-2. исправить TITLE-AUDIT-1, затем bounded checkpoint + STOP;
-3. выполнить self-check и применимые exact-head checks всего consolidated PR;
-4. STOP Мире.
+1. **Активный bounded-шаг: BOOKMARKS-AUDIT-2 [P2]** — исправить stale Remove ACK/local removed latch, затем bounded checkpoint + STOP;
+2. затем TITLE-AUDIT-1, bounded checkpoint + STOP;
+3. после этого выполнить self-check и применимые exact-head checks всего consolidated PR;
+4. STOP Мире на fresh whole-PR review.
 
 Лёву до свежего whole-PR PASS Миры не подключать.
 
