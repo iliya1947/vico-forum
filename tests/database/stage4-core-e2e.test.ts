@@ -102,6 +102,15 @@ beforeAll(async () => {
     const sql = (await readFile(`drizzle/${file}`, "utf8")).replaceAll('"public".', `"${schemaName}".`);
     await client.query(sql);
   }
+  // Historical migration subsets predate B1; the current Drizzle writer still emits these columns.
+  await client.query(`alter table forum_topics
+    add column is_hidden boolean not null default false,
+    add column visibility_version integer not null default 0,
+    add column visibility_changed_at timestamptz(3);
+    alter table forum_posts
+    add column is_hidden boolean not null default false,
+    add column visibility_version integer not null default 0,
+    add column visibility_changed_at timestamptz(3)`);
 });
 
 afterAll(async () => {

@@ -62,6 +62,15 @@ beforeAll(async () => {
   // Historical fixtures use current Drizzle topic writes while selecting old migration subsets.
   // Supply only AP-08 columns here without changing the historical migration sequence.
   await client.query("alter table forum_topics add column is_closed boolean not null default false, add column closure_version integer not null default 0");
+  // Historical migration subsets predate B1; the current Drizzle writer still emits these columns.
+  await client.query(`alter table forum_topics
+    add column is_hidden boolean not null default false,
+    add column visibility_version integer not null default 0,
+    add column visibility_changed_at timestamptz(3);
+    alter table forum_posts
+    add column is_hidden boolean not null default false,
+    add column visibility_version integer not null default 0,
+    add column visibility_changed_at timestamptz(3)`);
   for (const id of ["author", "reporter", "manager"]) {
     await client.query(
       `insert into "user" (id, name, email, email_verified, created_at, updated_at)
