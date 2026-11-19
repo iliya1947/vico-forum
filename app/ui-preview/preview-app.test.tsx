@@ -140,6 +140,8 @@ describe("UI preview state catalog", () => {
       expect.objectContaining({ id: "super-admin-background-owner", allowedIdentities: ["owner"] }),
       expect.objectContaining({ id: "super-admin-localization-owner", allowedIdentities: ["owner"] }),
       expect.objectContaining({ id: "super-admin-integrations-owner", allowedIdentities: ["owner"] }),
+      expect.objectContaining({ id: "super-admin-data-owner", allowedIdentities: ["owner"] }),
+      expect.objectContaining({ id: "super-admin-files-owner", allowedIdentities: ["owner"] }),
       expect.objectContaining({
         id: "super-admin-guest-unauthenticated",
         allowedIdentities: ["guest"],
@@ -410,6 +412,47 @@ describe("embedded preview routing", { timeout: 10_000 }, () => {
     })).toBeInTheDocument();
     expect(document.querySelector('[data-monitor-key="integrations.database"]')).not.toBeNull();
     expect(document.querySelector('[data-monitor-key="integrations.translation"]')).not.toBeNull();
+  });
+
+  it("opens Data and Files from Super-admin Monitoring", async () => {
+    const user = userEvent.setup();
+    await renderEmbeddedPreview(<EmbeddedPreview
+      scenarioId="super-admin-monitoring-owner"
+      identity="owner"
+    />);
+
+    const dataLink = document.querySelector(
+      'a[href="/en/super-admin/monitoring/data"]',
+    ) as HTMLElement;
+    await user.click(dataLink);
+    expect(await waitFor(() => {
+      const current = document.querySelector("[data-data-current]") as HTMLElement | null;
+      expect(current).not.toBeNull();
+      return current as HTMLElement;
+    })).toBeInTheDocument();
+    expect(document.querySelector('[data-monitor-key="data.application"]')).not.toBeNull();
+    expect(document.querySelector('[data-monitor-key="data.compatibility"]')).not.toBeNull();
+    expect(document.querySelector('[data-monitor-key="data.retention"]')).not.toBeNull();
+
+    const shellNav = document.querySelector(".super-admin-panel .admin-panel-nav") as HTMLElement;
+    await user.click(within(shellNav).getByRole("link", { name: "Monitoring" }));
+
+    const filesLink = await waitFor(() => {
+      const link = document.querySelector(
+        'a[href="/en/super-admin/monitoring/files"]',
+      ) as HTMLElement | null;
+      expect(link).not.toBeNull();
+      return link as HTMLElement;
+    });
+    await user.click(filesLink);
+    expect(await waitFor(() => {
+      const current = document.querySelector("[data-file-current]") as HTMLElement | null;
+      expect(current).not.toBeNull();
+      return current as HTMLElement;
+    })).toBeInTheDocument();
+    expect(document.querySelector('[data-monitor-key="files.assets"]')).not.toBeNull();
+    expect(document.querySelector('[data-monitor-key="files.operations"]')).not.toBeNull();
+    expect(document.querySelector('[data-monitor-key="background.attachments"]')).toBeNull();
   });
 
   it("requires sign-in for guest direct access to Admin topic", async () => {
