@@ -15,7 +15,7 @@
 - no automatic mutation replay;
 - regressions OFF→ON→OFF и ON→OFF→ON.
 
-Статус: implementation присутствует в #354.
+Статус: bounded PASS в #354; финальный exact head `01cecb91090a2f29f90b7c6ae4a83db77a0f4910` подтверждён CI и connected Watch 11/11.
 
 ## C2 — BOOKMARKS-AUDIT-1 [P2]
 
@@ -27,7 +27,7 @@
 - preserve pending/error/explicit refresh/actor-topic response guards;
 - regressions обоих направлений и realistic normal-success fixture.
 
-Статус на migration head `79066ada...`: implementation и tests уже присутствуют в diff; final author checkpoint ещё не зафиксирован.
+Статус: bounded PASS; loader-authoritative correction и обе регрессии, итоговый exact head `01cecb91090a2f29f90b7c6ae4a83db77a0f4910` зелёный.
 
 ## C3 — BOOKMARKS-AUDIT-2 [P2] — COMPLETE
 
@@ -43,7 +43,7 @@
 
 Статус: bounded PASS на exact head `6dd9c66c2d22158f41e76089436399082b6553c5`; local `removed` latch удалён, fresh loader authoritative, causal regression и обычное удаление покрыты, 7/7 exact-head workflows SUCCESS.
 
-## C4 — TITLE-AUDIT-1 [P3] — ACTIVE
+## C4 — TITLE-AUDIT-1 [P3] — COMPLETE
 
 Причина: title editor вызывает focus на opener до `setDraft(null)` DOM commit, когда opener ещё hidden; Chromium после Save/Cancel остаётся на BODY.
 
@@ -52,6 +52,8 @@
 - не добавлять initial autofocus без требования;
 - не менять write/revision/CAS/conflict/rebase semantics;
 - component/browser regression для обоих случаев.
+
+Статус: bounded PASS; post-commit focus Save/Cancel, React Router и реальный Chromium 9/9, immutable-title/CAS/rebase не менялись. Итоговый exact head `01cecb91090a2f29f90b7c6ae4a83db77a0f4910`.
 
 ## Final gate
 
