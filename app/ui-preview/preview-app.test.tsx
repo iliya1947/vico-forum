@@ -510,8 +510,9 @@ describe("embedded preview routing", { timeout: 10_000 }, () => {
       expect(current).not.toBeNull();
       return current as HTMLElement;
     })).toBeInTheDocument();
-    expect(document.querySelector('[data-monitor-key="notifications.inbox"]')).not.toBeNull();
-    expect(screen.getByText("9", { selector: "bdi" })).toBeInTheDocument();
+    const inbox = document.querySelector('[data-monitor-key="notifications.inbox"]') as HTMLElement;
+    expect(inbox).not.toBeNull();
+    expect(inbox.querySelector('a[href="/en/notifications"]')).not.toBeNull();
   });
 
   it("requires sign-in for guest direct access to Admin topic", async () => {
