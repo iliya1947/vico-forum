@@ -36,3 +36,11 @@
 
 - #352 merged в main как общепроектный контракт структуры/правил service PR.
 - По прямому owner route #342 мигрируется из старой .github/service-* структуры в локальные STRUCTURE/RULES/TASK/PLAN/WORKFLOW/... файлы.
+
+
+## 2026-11-20 — consolidated corrective #354 closed
+
+- Final implementation exact head `b67e14d81cd20f2e42264e3d25d336ee19db626b` прошёл Mira coordinator whole-PR PASS и Leva independent whole-PR PASS.
+- WATCH-AUDIT-1, BOOKMARKS-AUDIT-1/2, TITLE-AUDIT-1 и TITLE-AUDIT-1-R1 закрыты; confirmed current-scope defects = 0.
+- Owner merged #354; merge commit/current main `6fa2a43b02c55515bbd46a0d74fe6cc0d4424caf`.
+- #342 перешёл к moderation visibility scope/fit gate.
