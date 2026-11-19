@@ -419,3 +419,16 @@ No unrelated Watch audit corrections or production work in this step. Do not inf
 No need for production correction established in this bounded test. This is **not** 4b.4 blocked-message collapse/reveal, 4b.5 topic-create/edit mention consumption, 4b.6–4b.11, 4c or PR review/merge. Full exact-head workflows are not asserted complete; dedicated job is the verified gate.
 
 **Лира STOP после 4b.3.** Следующее отдельное `...` активирует **только 4b.4 — viewer-only Block TopicView collapse/reveal и anchors/root/parent/best answer**, затем checkpoint STOP перед 4b.5. #351 Draft, #342 service-only/no merge. Отложенные WATCH-AUDIT-1 и BOOKMARKS-AUDIT-1/2 не затронуты.
+
+## 2026-11-19 — Лира: 4b.4 connected Block TopicView collapse/reveal PASS; STOP
+
+**Scope:** viewer-only Block presentation for root, best answer, parent/child relationships, stable anchors and attachments. Draft implementation #351 exact head `691749a575b8d41ddc508644e31768c9162a860d` (one test-only commit; only `tests/browser/personal-filters/check.py` changed). No production/schema/locale/Watch/Bookmarks changes.
+
+**Dedicated evidence:** [Personal Mute/Block connected acceptance run 44538241728](https://github.com/iliya1947/vico-forum/actions/runs/44538241728), job `135609317404` **completed SUCCESS**. Job logs show **17/17 `FILTERS_CONNECTED` markers**, 12 retained 4b.1–4b.3 and five new 4b.4:
+1. B selects an actual B reply as best answer through Worker HTTP; two attachment *metadata-only* references inserted into disposable PostgreSQL 17 for B root and best answer. No R2 object or file-download verification is claimed.
+2. A (blocks B) sees B root and best answer with collapsed body and no attachments; A and independent C messages remain visible.
+3. Anchors and original/best/parent/child relations survive collapse, including best-answer jump, parents and direct child permalink; Chromium anchor navigation works while collapsed.
+4. Guest sees B original root/reply bodies and attachment links; Block does not redact public content.
+5. Per-post Reveal restores B bodies and attachment links independently, without Unblock; reload collapses again, PG directional Block row retained.
+
+**4b.4 COMPLETE; Лира STOP.** Next separate `...` = **ONLY 4b.5** prospective suppression (initial-topic/edit mentions, old receipt/no-backfill, replay/new posts), checkpoint STOP before 4b.6. Dedicated connected gate PASS; full exact-head CI workflows not declared complete. 4c, review and merge not activated. #351 Draft; #342 service-only/no merge. Independent audit/corrective workstream untouched.
