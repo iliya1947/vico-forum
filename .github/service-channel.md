@@ -1292,3 +1292,25 @@ Exact implementation head остаётся
 
 Следующий шаг по принятой декомпозиции — только 4a.9 после следующего `...`:
 закрыть 4a evidence/handoff и STOP перед 4b.
+
+
+## 2026-11-19 — Мира: 4a.9 закрыт; 4a complete, handoff → 4b
+
+Коррекция маршрута: 4a.9 является служебной фиксацией evidence/handoff и не требует
+отдельной команды разработчика или подключения Лиры. Мира закрыла его сразу после 4a.8.
+
+Итог 4a на implementation exact head
+`83b32eb364d74a2fd85377dbc907f7723254edf4`:
+- PG17 full suite 109/109 files, 1476/1476 tests PASS;
+- targeted Mute/block concurrency/lifecycle 27/27 PASS;
+- Watch test timing correction не меняет production semantics;
+- SA07 first failure = transient classified PostgreSQL availability/query-timeout;
+- same-head SA07 rerun SUCCESS без code changes;
+- полный current workflow set 19/19 SUCCESS;
+- подтверждённых current-scope regressions после 4a = 0.
+
+Следующий исполнитель — Лира / ChatGPT-6, только **4b dedicated connected acceptance**
+в #351. Product scope M1–M7 не переоткрывать. Production changes допустимы только при
+подтверждённом defect из connected path.
+
+После 4b checkpoint → STOP; 4c отдельно.
