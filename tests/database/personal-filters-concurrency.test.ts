@@ -23,7 +23,7 @@ const mention = (id: string) => "[recipient](/en/users/" + encodeURIComponent(id
 
 async function person() {
   const id = "filter-race-" + uuid();
-  await fixture.query('insert into "user"(id,name,email) values($1,$1,$2)', [id, id, id + "@example.test"]);
+  await fixture.query('insert into "user"(id,name,email) values($1,$2,$3)', [id, id, id + "@example.test"]);
   return id;
 }
 async function topic(authorId: string) {
