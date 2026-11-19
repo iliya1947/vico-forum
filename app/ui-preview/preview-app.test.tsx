@@ -1704,7 +1704,7 @@ describe("interactive Pages preview", () => {
     await renderEmbeddedPreview(<EmbeddedPreview scenarioId="section-user" identity="owner" />);
 
     await openSettings(user);
-    let settingsOverview = document.querySelector(".settings-overview") as HTMLElement;
+    const settingsOverview = document.querySelector(".settings-overview") as HTMLElement;
     await user.click(within(settingsOverview).getByRole("link", { name: "Administrator preferences" }));
 
     const behavior = await screen.findByRole("combobox", { name: "Open behavior" });
@@ -1764,7 +1764,7 @@ describe("interactive Pages preview", () => {
     await renderEmbeddedPreview(<EmbeddedPreview scenarioId="section-user" identity="manager" />);
 
     await openSettings(user);
-    let settingsOverview = document.querySelector(".settings-overview") as HTMLElement;
+    const settingsOverview = document.querySelector(".settings-overview") as HTMLElement;
     await user.click(within(settingsOverview).getByRole("link", { name: "Administrator preferences" }));
 
     const behavior = await screen.findByRole("combobox", { name: "Open behavior" });
@@ -1808,7 +1808,7 @@ describe("interactive Pages preview", () => {
     await renderEmbeddedPreview(<EmbeddedPreview scenarioId="section-user" identity="manager" />);
 
     await openSettings(user);
-    let settingsOverview = document.querySelector(".settings-overview") as HTMLElement;
+    const settingsOverview = document.querySelector(".settings-overview") as HTMLElement;
     await user.click(within(settingsOverview).getByRole("link", { name: "Administrator preferences" }));
 
     const technicalDetails = await screen.findByRole("checkbox", {
