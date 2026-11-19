@@ -1287,6 +1287,11 @@ describe("interactive Pages preview", { timeout: 10_000 }, () => {
       { timeout: 3_000 },
     );
     expect(screen.getByText("Preview moderator decision")).toBeInTheDocument();
+
+    await user.click(screen.getByRole("link", { name: "Queue" }));
+    const groupNav = document.querySelector(".attention-group-nav") as HTMLElement;
+    await user.click(within(groupNav).getByRole("link", { name: "History" }));
+    expect(await screen.findByText("Resolved cases: 2")).toBeInTheDocument();
   });
 
   it("opens complaint priority triage and saves an override", async () => {
