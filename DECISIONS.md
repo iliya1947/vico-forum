@@ -40,3 +40,14 @@ V-P1/V-P2/V-P3 не являются открытыми owner forks. Они бы
 - V-P3: visibility transition не удаляет и не переписывает orthogonal state/data; related state сохраняется, public/current projections становятся unavailable-safe, без automatic backfill/state rewrites.
 
 Отсутствие отдельной migrated acceptance-записи не является основанием повторно открывать эти решения.
+
+
+## D-09 — stacked bounded PR workflow
+
+Владелец утвердил stacked PR delivery как рабочий паттерн, а не разовое исключение.
+
+Для составной вертикальной задачи bounded-этапы могут идти лестницей: первый PR от `main`, каждый следующий PR от head-ветки предыдущего. Промежуточные PR не merge в `main`. После последнего этапа итоговый head всей цепочки сворачивается в ветку первого PR; остальные ступени закрываются как superseded. Первый PR становится полным feature PR и только он проходит финальный stable-head Mira → Leva review и owner merge в `main`.
+
+Если меняется нижняя ступень, все зависимые верхние ступени синхронизируются до продолжения.
+
+Это решение владельца имеет приоритет над текущей формулировкой `AGENTS.md`. После завершения текущей задачи необходимо отдельным process PR обновить `AGENTS.md`, чтобы сделать stacked bounded PR workflow штатным правилом для подходящих составных задач.
