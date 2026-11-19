@@ -13,7 +13,7 @@ export function TopicBookmarkControl({ topicId, actorId, locale, state }: {
   const { t } = useTranslation("common");
   const fetcher = useFetcher<TopicBookmarkActionResult | ForumMutationError>();
   const revalidator = useRevalidator();
-  const [confirmed, setConfirmed] = useState<TopicBookmarkState>(state);
+  // The route loader owns confirmed Bookmark state; ACK is not a second authority.
   const [requiresRefresh, setRequiresRefresh] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [failed, setFailed] = useState(false);
@@ -21,9 +21,7 @@ export function TopicBookmarkControl({ topicId, actorId, locale, state }: {
   const handledResponse = useRef<unknown>(null);
   const pending = fetcher.state !== "idle";
 
-  useEffect(() => {
-    if (!pending && !submitted.current && !requiresRefresh && !refreshing) setConfirmed(state);
-  }, [state, pending, requiresRefresh, refreshing]);
+  const displayState: TopicBookmarkState = requiresRefresh ? "unavailable" : state;
 
   useEffect(() => {
     if (pending || !submitted.current || !fetcher.data || handledResponse.current === fetcher.data) return;
@@ -35,11 +33,9 @@ export function TopicBookmarkControl({ topicId, actorId, locale, state }: {
       && result.topicId === expected.topicId && result.actorId === expected.actorId
       && result.bookmarked === expected.bookmarked
       && expected.topicId === topicId && expected.actorId === actorId) {
-      setConfirmed(result.bookmarked ? "on" : "off");
       setRequiresRefresh(false);
       setFailed(false);
     } else {
-      setConfirmed("unavailable");
       setRequiresRefresh(true);
       setFailed(true);
     }
@@ -53,12 +49,12 @@ export function TopicBookmarkControl({ topicId, actorId, locale, state }: {
       .catch(() => setFailed(true))
       .finally(() => setRefreshing(false));
   };
-  const isSaved = confirmed === "on";
-  const blocked = pending || refreshing || requiresRefresh || confirmed === "unavailable";
+  const isSaved = displayState === "on";
+  const blocked = pending || refreshing || requiresRefresh || displayState === "unavailable";
   const next = !isSaved;
 
   return <div className="topic-bookmark-control" aria-busy={pending || refreshing}>
-    {confirmed !== "unavailable" && <fetcher.Form method="post" action={forumTopicPath(locale, topicId)}
+    {displayState !== "unavailable" && <fetcher.Form method="post" action={forumTopicPath(locale, topicId)}
       onSubmit={event => {
         if (blocked) { event.preventDefault(); return; }
         submitted.current = { topicId, actorId, bookmarked: next };
@@ -71,11 +67,11 @@ export function TopicBookmarkControl({ topicId, actorId, locale, state }: {
       </button>
     </fetcher.Form>}
     <span className="topic-bookmark-status" role="status" aria-live="polite">
-      {confirmed === "unavailable" ? t("topicBookmarkUnavailable")
+      {displayState === "unavailable" ? t("topicBookmarkUnavailable")
         : t(isSaved ? "topicBookmarkOn" : "topicBookmarkOff")}
     </span>
     {failed && <p role="alert">{t("topicBookmarkVerify")}</p>}
-    {(requiresRefresh || confirmed === "unavailable") &&
+    {(requiresRefresh || displayState === "unavailable") &&
       <button type="button" onClick={refresh} disabled={pending || refreshing}>
         {t(refreshing ? "topicBookmarkUpdating" : "topicBookmarkRefresh")}
       </button>}

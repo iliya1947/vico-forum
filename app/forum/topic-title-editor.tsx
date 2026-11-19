@@ -15,6 +15,7 @@ export function TopicTitleEditor({ topicId, actorId, locale, title, canEdit }: {
   const [draft, setDraft] = useState<{ text: string; revisionId: string } | null>(null);
   const submitted = useRef(false);
   const opener = useRef<HTMLButtonElement>(null);
+  const restoreOpenerFocus = useRef(false);
   const pending = fetcher.state !== "idle";
   const error = fetcher.data && "error" in fetcher.data ? fetcher.data.error : null;
   const conflict = fetcher.data && "currentTitle" in fetcher.data ? fetcher.data.currentTitle : null;
@@ -23,12 +24,19 @@ export function TopicTitleEditor({ topicId, actorId, locale, title, canEdit }: {
     if (fetcher.state !== "idle" || !submitted.current || !fetcher.data) return;
     submitted.current = false;
     if ("ok" in fetcher.data && fetcher.data.ok) {
+      restoreOpenerFocus.current = true;
       setDraft(null);
-      opener.current?.focus();
     } else if ("error" in fetcher.data && ["conflict", "unauthenticated", "forbidden"].includes(fetcher.data.error)) {
       revalidator.revalidate();
     }
   }, [fetcher.state, fetcher.data, revalidator]);
+
+  useEffect(() => {
+    if (draft !== null || !restoreOpenerFocus.current) return;
+    // A close can leave no opener (permission lost); consume the request anyway.
+    restoreOpenerFocus.current = false;
+    if (canEdit && opener.current && !opener.current.hidden) opener.current.focus();
+  }, [draft, canEdit]);
 
   if (!canEdit && !draft) return null;
   return <div className="topic-title-editor">
@@ -62,9 +70,9 @@ export function TopicTitleEditor({ topicId, actorId, locale, title, canEdit }: {
           {t("postEditSave")}
         </button>
         <button type="button" disabled={pending} onClick={() => {
+          restoreOpenerFocus.current = true;
           setDraft(null);
           fetcher.reset();
-          opener.current?.focus();
         }}>{t("postEditCancel")}</button>
       </div>
     </fetcher.Form>}

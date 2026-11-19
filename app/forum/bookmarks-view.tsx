@@ -31,7 +31,6 @@ function BookmarkListRow({ item, actorId, locale, formatDate }: {
   const { t } = useTranslation("common");
   const fetcher = useFetcher<TopicBookmarkActionResult | ForumMutationError>();
   const revalidator = useRevalidator();
-  const [removed, setRemoved] = useState(false);
   const [requiresRefresh, setRequiresRefresh] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const submitted = useRef(false);
@@ -45,7 +44,6 @@ function BookmarkListRow({ item, actorId, locale, formatDate }: {
     const result = fetcher.data;
     if ("operation" in result && result.operation === "topicBookmark" && "ok" in result && result.ok
       && result.topicId === item.id && result.actorId === actorId && result.bookmarked === false) {
-      setRemoved(true);
       setRequiresRefresh(false);
     } else {
       setRequiresRefresh(true);
@@ -60,7 +58,6 @@ function BookmarkListRow({ item, actorId, locale, formatDate }: {
       .catch(() => setRequiresRefresh(true))
       .finally(() => setRefreshing(false));
   };
-  if (removed) return null;
 
   return <li className="bookmarks-list-row" aria-busy={pending || refreshing}>
     <Link className="bookmarks-topic-link" to={forumTopicPath(locale, item.id)}>
