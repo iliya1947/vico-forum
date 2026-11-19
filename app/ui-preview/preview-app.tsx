@@ -27,6 +27,8 @@ import { SuperAdminSa02Current } from "../super-admin/current-route";
 import { SuperAdminBackground } from "../super-admin/task-current";
 import { SuperAdminLocalization } from "../super-admin/localization-current";
 import { SuperAdminIntegrations } from "../super-admin/integration-current";
+import { SuperAdminData } from "../super-admin/data-current";
+import { SuperAdminFiles } from "../super-admin/file-current";
 import { SuperAdminMonitoringIndex, SuperAdminShell, SystemMonitorCards } from "../super-admin/view";
 import { superAdminMonitoringPath } from "../super-admin/paths";
 import type { AdminHistoryChange, AdminHistoryEvent } from "../../db/admin-history";
@@ -242,6 +244,8 @@ export const scenarios: readonly Scenario[] = [
   { id: "super-admin-background-owner", label: "Super-admin · Background processes", locale: "en", direction: "ltr", identity: "owner", path: "/en/super-admin/monitoring/background", view: "super-admin", allowedIdentities: ["owner"] },
   { id: "super-admin-localization-owner", label: "Super-admin · Localization", locale: "en", direction: "ltr", identity: "owner", path: "/en/super-admin/monitoring/localization", view: "super-admin", allowedIdentities: ["owner"] },
   { id: "super-admin-integrations-owner", label: "Super-admin · Integrations", locale: "en", direction: "ltr", identity: "owner", path: "/en/super-admin/monitoring/integrations", view: "super-admin", allowedIdentities: ["owner"] },
+  { id: "super-admin-data-owner", label: "Super-admin · Data", locale: "en", direction: "ltr", identity: "owner", path: "/en/super-admin/monitoring/data", view: "super-admin", allowedIdentities: ["owner"] },
+  { id: "super-admin-files-owner", label: "Super-admin · Files", locale: "en", direction: "ltr", identity: "owner", path: "/en/super-admin/monitoring/files", view: "super-admin", allowedIdentities: ["owner"] },
   { id: "super-admin-guest-unauthenticated", label: "Super-admin · guest unauthenticated", locale: "en", direction: "ltr", identity: "guest", path: "/en/super-admin", view: "super-admin", allowedIdentities: ["guest"] },
   { id: "super-admin-manager-forbidden", label: "Super-admin · manager forbidden", locale: "en", direction: "ltr", identity: "manager", path: "/en/super-admin", view: "super-admin", allowedIdentities: ["manager"] },
   { id: "admin", label: "Authorization", locale: "en", direction: "ltr", identity: "owner", path: "/en/admin/authorization", view: "admin", allowedIdentities: ["manager", "owner"] },
@@ -1854,6 +1858,171 @@ function PreviewSuperAdminIntegrationsRoute() {
   return <SuperAdminIntegrations locale={locale} state={state} viewerId={viewerId} />;
 }
 
+type PreviewDataState = Parameters<typeof SuperAdminData>[0]["state"];
+type PreviewFilesState = Parameters<typeof SuperAdminFiles>[0]["state"];
+
+function previewDataState(): PreviewDataState {
+  const observedAt = "2026-11-18T14:20:00.000Z";
+  const check = (
+    id: string,
+    source: "web-database" | "localization-database",
+    values: Record<string, string | number | boolean | null>,
+  ) => ({
+    id,
+    source,
+    observedAt,
+    status: "compatible" as const,
+    code: "none" as const,
+    values,
+  });
+  const monitor = (
+    key: PreviewDataState["monitors"][number]["key"],
+    checks: PreviewDataState["monitors"][number]["checks"],
+  ): PreviewDataState["monitors"][number] => ({
+    key,
+    schemaVersion: 1,
+    source: "database",
+    quality: "measured",
+    observedAt,
+    values: {
+      checks: String(checks.length),
+      successful: String(checks.length),
+      incompatible: "0",
+      unavailable: "0",
+    },
+    checks,
+    recording: "available",
+    coverageFrom: "2026-11-02T08:00:00.000Z",
+    lastObservedAt: "2026-11-18T14:15:00.000Z",
+  });
+  return {
+    monitors: [
+      monitor("data.application", [
+        check("counts.accounts", "web-database", { rows: "128" }),
+        check("counts.forum", "web-database", { rows: "642" }),
+        check("counts.localization", "localization-database", { rows: "37" }),
+      ]),
+      monitor("data.compatibility", [
+        check("server", "web-database", {
+          serverVersion: "17.6",
+          requiredMajor: "17",
+          supportedMajor: true,
+        }),
+        check("columnsChecked", "web-database", {
+          columnsChecked: "42",
+          mismatchedColumns: "0",
+        }),
+      ]),
+      monitor("data.retention", [
+        check("terminalCoverage", "web-database", {
+          helpTerminalTime: true,
+          mootTerminalTime: true,
+          notificationReadTime: true,
+          complaintTerminalTime: true,
+        }),
+        check("lifecycle", "web-database", {
+          deactivated: "3",
+          invalidTuple: "0",
+        }),
+      ]),
+    ],
+    compiledExpectedMigration: "0067",
+    deployedMigration: "unchecked",
+  };
+}
+
+function previewFilesState(): PreviewFilesState {
+  const observedAt = "2026-11-18T14:20:00.000Z";
+  const common = {
+    schemaVersion: 1 as const,
+    source: "database" as const,
+    quality: "measured" as const,
+    observedAt,
+    recording: "available" as const,
+    coverageFrom: "2026-11-02T08:00:00.000Z",
+    lastObservedAt: "2026-11-18T14:15:00.000Z",
+  };
+  return {
+    monitors: [
+      {
+        ...common,
+        key: "files.assets",
+        values: {
+          assets: "31",
+          assetBytes: "8421376",
+          activeAssets: "30",
+          deletingAssets: "1",
+          publishedAssets: "19",
+          draftAssets: "7",
+          evidenceAssets: "5",
+          unreferencedAssets: "0",
+        },
+      },
+      {
+        ...common,
+        key: "files.operations",
+        values: {
+          uploadJournal: "4",
+          uploadPreparing: "1",
+          uploadReady: "2",
+          uploadClaimed: "1",
+          oldestUploadAgeMs: "180000",
+          draftOperationsActive: "3",
+          draftOperationsStale: "1",
+          draftRefsActive: "9",
+          draftRefsStale: "2",
+          retainedDraftContexts: "4",
+          publicationReferences: "19",
+          evidenceReferences: "5",
+          recordingBestEffort: true,
+        },
+      },
+      {
+        ...common,
+        key: "background.attachments",
+        values: {
+          cleanupClaims: "1",
+          cleanupClaimsLive: "1",
+          cleanupClaimsExpired: "0",
+          eligibleUnreferenced: "0",
+          deletingReferenced: "0",
+          oldestCleanupClaimAgeMs: "42000",
+          eligibleUploadJournal: "0",
+          sweepCursorPresent: true,
+          sweepClaimed: false,
+          sweepClaimLive: false,
+          sweepClaimExpired: false,
+          sweepClaimAgeMs: null,
+          codeAvailable: true,
+          schedulerWired: false,
+          schedulerEnabled: false,
+          recordingBestEffort: true,
+        },
+      },
+    ],
+    storageSamples: [],
+    bucketBound: false,
+  };
+}
+
+function PreviewSuperAdminDataRoute() {
+  const { locale, state, viewerId } = useLoaderData() as {
+    locale: string;
+    state: PreviewDataState;
+    viewerId: string;
+  };
+  return <SuperAdminData locale={locale} state={state} viewerId={viewerId} />;
+}
+
+function PreviewSuperAdminFilesRoute() {
+  const { locale, state, viewerId } = useLoaderData() as {
+    locale: string;
+    state: PreviewFilesState;
+    viewerId: string;
+  };
+  return <SuperAdminFiles locale={locale} state={state} viewerId={viewerId} />;
+}
+
 function previewCredentialData(scenario: Scenario, request: Request) {
   const returnTo = credentialReturnPath(
     scenario.locale,
@@ -2010,6 +2179,24 @@ function previewRouter(
       loader: () => {
         const actor = previewSuperAdminAccessData(scenario);
         return { locale: scenario.locale, state: previewIntegrationsState(), viewerId: actor.id };
+      },
+      ErrorBoundary: ForumRouteError,
+    },
+    {
+      path: "/:locale/super-admin/monitoring/data",
+      element: <PreviewSuperAdminDataRoute />,
+      loader: () => {
+        const actor = previewSuperAdminAccessData(scenario);
+        return { locale: scenario.locale, state: previewDataState(), viewerId: actor.id };
+      },
+      ErrorBoundary: ForumRouteError,
+    },
+    {
+      path: "/:locale/super-admin/monitoring/files",
+      element: <PreviewSuperAdminFilesRoute />,
+      loader: () => {
+        const actor = previewSuperAdminAccessData(scenario);
+        return { locale: scenario.locale, state: previewFilesState(), viewerId: actor.id };
       },
       ErrorBoundary: ForumRouteError,
     },
