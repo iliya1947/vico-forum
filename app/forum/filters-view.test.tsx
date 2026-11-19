@@ -1,8 +1,8 @@
 import "@testing-library/jest-dom/vitest";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { I18nextProvider } from "react-i18next";
-import { createMemoryRouter, data, RouterProvider } from "react-router";
+import { createMemoryRouter, data, RouterProvider, useLoaderData } from "react-router";
 import { canonicalEnglishCatalog } from "../localization/catalog";
 import { createTranslationRuntime } from "../localization/runtime";
 import { HeaderAuthProvider } from "../auth/auth-controls";
@@ -30,13 +30,17 @@ const blocked: FilterListItem = {
 };
 function setup(tab: "topics" | "users", action: ({ request }: { request: Request }) => Promise<unknown>,
   actor = "actor-a", viewer: string | null = "actor-a",
-  next: { beforeCreatedAt: string; beforeTargetId: string } | null = null) {
+  next: { beforeCreatedAt: string; beforeTargetId: string } | null = null,
+  readItems: () => FilterListItem[] = () => tab === "topics" ? [topic] : [blocked]) {
   Object.defineProperty(window, "matchMedia", { configurable: true, value: vi.fn(() => ({
     matches: false, addEventListener() {}, removeEventListener() {},
   })) });
+  function ListRoute() {
+    const snapshot = useLoaderData() as { items: FilterListItem[] };
+    return <FiltersView locale="en" actorId={actor} tab={tab} items={snapshot.items} next={next} />;
+  }
   const router = createMemoryRouter([{
-    path: "/en/filters", element: <FiltersView locale="en" actorId={actor}
-      tab={tab} items={tab === "topics" ? [topic] : [blocked]} next={next} />,
+    path: "/en/filters", loader: () => ({ items: readItems() }), Component: ListRoute,
   }, {
     path: "/en/topics/:topicId", action, element: <div>Public topic</div>,
   }, {
@@ -65,13 +69,15 @@ describe("personal Filters list presentation", () => {
       .toContain("beforeTargetId=topic-0");
   });
 
-  it("requires a confirmed Block undo before hiding the list row", async () => {
+  it("requires a confirmed Block undo and authoritative list absence before hiding the row", async () => {
+    let blockedInStore = true;
     const submissions: Record<string, FormDataEntryValue>[] = [];
     const action = vi.fn(async ({ request }: { request: Request }) => {
       submissions.push(Object.fromEntries((await request.formData()).entries()));
+      blockedInStore = false;
       return { operation: "userBlock", ok: true, targetId: "user-1", actorId: "actor-a", blocked: false };
     });
-    setup("users", action);
+    setup("users", action, "actor-a", "actor-a", null, () => blockedInStore ? [blocked] : []);
     fireEvent.click(await screen.findByRole("button", { name: "Unblock user" }));
     await waitFor(() => expect(action).toHaveBeenCalledTimes(1));
     expect(submissions[0]).toEqual({
@@ -97,4 +103,42 @@ describe("personal Filters list presentation", () => {
     expect(screen.queryByRole("link", { name: "Deleted user" })).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Unblock user" })).not.toBeInTheDocument();
   });
+
+  it.each(["topics", "users"] as const)(
+    "shows a freshly re-added %s row when an older Undo ACK arrives after a fresh loader snapshot",
+    async tab => {
+      const original: FilterListItem = tab === "topics" ? topic : blocked;
+      const newCreatedAt = "2026-11-19T17:45:13.327Z";
+      const linkName = tab === "topics" ? /literal title/i : "Deleted user";
+      const undoName = tab === "topics" ? "Unmute topic" : "Unblock user";
+      let stored: FilterListItem | null = original;
+      let release!: (value: unknown) => void;
+      const ack = new Promise<unknown>(resolve => { release = resolve; });
+      const action = vi.fn(async () => {
+        stored = null; // the old canonical Remove has committed on the server
+        return ack; // its network response is delayed
+      });
+      const { router } = setup(tab, action, "actor-a", "actor-a", null,
+        () => stored ? [stored] : []);
+      fireEvent.click(await screen.findByRole("button", { name: undoName }));
+      await waitFor(() => expect(action).toHaveBeenCalledTimes(1));
+      expect(screen.getByRole("button", { name: "Removing filter…" })).toBeDisabled();
+
+      // Another session re-adds the same actor + target before old ACK settles.
+      // The row's React key stays identical; only its authoritative creation changes.
+      stored = { ...original, createdAt: newCreatedAt };
+      await act(async () => { await router.revalidate(); });
+      expect(screen.getByRole("link", { name: linkName })).toBeInTheDocument();
+      expect(document.querySelector('time[datetime="' + newCreatedAt + '"]')).not.toBeNull();
+
+      await act(async () => release(tab === "topics"
+        ? { operation: "topicMute", ok: true, actorId: "actor-a", topicId: original.id, muted: false }
+        : { operation: "userBlock", ok: true, actorId: "actor-a", targetId: original.id, blocked: false }));
+      await waitFor(() => expect(screen.getByRole("button", { name: undoName })).toBeEnabled());
+      expect(screen.getByRole("link", { name: linkName })).toBeInTheDocument();
+      expect(document.querySelector('time[datetime="' + newCreatedAt + '"]')).not.toBeNull();
+      expect(action).toHaveBeenCalledTimes(1);
+    },
+  );
+
 });
