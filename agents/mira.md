@@ -77,3 +77,8 @@ The one-PR B1–B9 topology mismatch was incorrectly classified as a technical p
 ## 2026-11-20 — owner adopted stacked bounded PR workflow
 
 Previous correction to force per-stage merge was superseded by owner process decision. New default pattern for suitable composite vertical work: stack bounded PRs, keep intermediate stages out of main, fold final stack into the first PR, close upper steps superseded, then perform one final whole-feature Mira→Leva review and owner merge. For visibility: B1→B9. Track mandatory follow-up after #342: update AGENTS.md to encode this workflow generally.
+
+
+## 2026-11-20 — proactive tooling rule
+
+Owner requires proactive discovery of useful GitHub/tool capabilities. I must not wait for the developer to discover workflow features accidentally. When a native tool capability materially simplifies or improves current work, I should identify it, check constraints, and propose it before cementing a worse process. Mandatory AGENTS.md follow-up after #342 together with stacked PR workflow.
