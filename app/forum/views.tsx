@@ -2894,16 +2894,16 @@ export function TopicView({
                         <div className="topic-question-heading-main">
                           <TopicTitlePresentation presentation={titlePresentation} />
                           {headerActorId && headerActorId === watchActorId && topicWatchState &&
-                            <TopicWatchControl key={JSON.stringify([topic.id, headerActorId])}
+                            <TopicWatchControl key={JSON.stringify(["watch", topic.id, headerActorId])}
                               topicId={topic.id} actorId={headerActorId} locale={locale} state={topicWatchState} />}
                           {headerActorId && headerActorId === bookmarkActorId && topicBookmarkState &&
-                            <TopicBookmarkControl key={JSON.stringify([topic.id, headerActorId])}
+                            <TopicBookmarkControl key={JSON.stringify(["bookmark", topic.id, headerActorId])}
                               topicId={topic.id} actorId={headerActorId} locale={locale} state={topicBookmarkState} />}
                           {headerActorId && headerActorId === muteActorId && topicMuteState &&
                             <PersonalFilterControl key={JSON.stringify(["topic", topic.id, headerActorId])}
                               kind="topic" targetId={topic.id} actorId={headerActorId} locale={locale} state={topicMuteState} />}
                           {headerActorId && <TopicTitleEditor
-                            key={JSON.stringify([topic.id, headerActorId])}
+                            key={JSON.stringify(["title", topic.id, headerActorId])}
                             topicId={topic.id} actorId={headerActorId} locale={locale}
                             title={topic.title} canEdit={canEditOwnTitle}
                           />}
