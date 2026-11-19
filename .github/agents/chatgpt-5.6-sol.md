@@ -329,3 +329,18 @@ Owner already accepted M1/M2 exactly as recommended; M3/M4/M6 are therefore fina
 No new product decision is needed before implementation. Lira is the standard implementer.
 Handoff requires one separate implementation PR from current main, full accepted M1–M7 scope,
 real-PG/connected-browser evidence and stable exact head, then coordinator review by Mira.
+
+
+## 2026-11-19 — 4a.8 SA07 diagnosis
+
+Investigated failed SA07 on #351 exact `83b32eb364d74a2fd85377dbc907f7723254edf4`.
+
+Failure was a private Integrations .data request returning classified 503 after ~8.25s
+at sa07/check.py:380. No Mute/block production code changed since the prior fully-green
+`a2b077fd...`; only new PG concurrency tests plus Watch test rejection timing changed.
+
+Same SA07 workflow/job path reran on the same exact implementation head and passed without
+code changes (new job 135564876373). Current exact-head workflows are 19/19 success.
+
+Conclusion: transient SA07/PostgreSQL availability timeout, not a confirmed current-scope
+product defect. No production or test workaround warranted. 4a.8 complete.
