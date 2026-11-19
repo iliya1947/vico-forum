@@ -19,7 +19,6 @@ function FilterRow({ item, actorId, locale, formatDate }: {
   const { t } = useTranslation("common");
   const fetcher = useFetcher<TopicMuteActionResult | UserBlockActionResult>();
   const revalidator = useRevalidator();
-  const [removed, setRemoved] = useState(false);
   const [uncertain, setUncertain] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const submitted = useRef(false);
@@ -37,7 +36,9 @@ function FilterRow({ item, actorId, locale, formatDate }: {
         && value.actorId === actorId && value.topicId === item.id && value.muted === false
       : value.operation === "userBlock" && "ok" in value && value.ok
         && value.actorId === actorId && value.targetId === item.id && value.blocked === false;
-    if (valid) { setRemoved(true); setUncertain(false); }
+    // Router revalidates the authoritative own-list after an action.
+    // An older ACK must not conceal a pair already re-added by another writer.
+    if (valid) setUncertain(false);
     else setUncertain(true);
   }, [pending, fetcher.data, actorId, item.id, isTopic]);
 
@@ -49,7 +50,6 @@ function FilterRow({ item, actorId, locale, formatDate }: {
       .catch(() => setUncertain(true))
       .finally(() => setRefreshing(false));
   };
-  if (removed) return null;
   const destination = isTopic ? forumTopicPath(locale, item.id) : forumProfilePath(locale, item.id);
   return <li className="bookmarks-list-row" aria-busy={pending || refreshing}>
     <Link className="bookmarks-topic-link" to={destination}>
