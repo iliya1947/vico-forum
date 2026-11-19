@@ -24,7 +24,9 @@ async function renderEmbeddedPreview(ui: Parameters<typeof render>[0]) {
 }
 
 async function openSettings(user: ReturnType<typeof userEvent.setup>) {
-  await user.click(screen.getByRole("link", { name: "Settings" }));
+  const settingsLink = document.querySelector(".auth-settings-link") as HTMLElement | null;
+  expect(settingsLink).not.toBeNull();
+  await user.click(settingsLink as HTMLElement);
   expect(await screen.findByRole("heading", { level: 1, name: "Settings" })).toBeInTheDocument();
   await waitFor(() => {
     expect(document.querySelector(".settings-overview")).not.toBeNull();
