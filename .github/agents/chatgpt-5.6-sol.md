@@ -269,3 +269,19 @@ CI 2/2, links/whitespace и Stage6/visual boundaries. Его выводы сов
 Confirmed current-doc defects = 0; review cycle завершён. #349 переведён из Draft в
 Ready for review и готов к merge владельцем. После фактического merge следующий
 bounded docs этап — Bookmarks closeout Лиры.
+
+
+## 2026-11-19 — #349 merged; Bookmarks docs activated
+
+Verified #349 merged=true at 2026-11-19T07:43:44Z. Reviewed head aa6584c6... merged
+as current main `405ab97116c5be750fb9c1d447431988802bdbb5`.
+
+Fully re-read current main AGENTS.md, PROJECT.md and PROJECT_STATE.md. Watch docs closeout
+is now factual main state. PROJECT_STATE has migration ceiling 0069 and Watch feature, but
+does not yet describe Bookmarks functionality; PROJECT.md has Watch permanent contract but
+no Bookmarks permanent contract.
+
+Per accepted #342 sequence, next bounded task is Lira-authored Bookmarks docs closeout.
+Required layering: permanent semantics in permanent SOT, concise factual current state in
+PROJECT_STATE, implementation/review/CI snapshot in PROJECT_HISTORY + index. No code/schema/
+runtime/RBAC/Admin/Stage6 external/visual claims. After stable docs head, coordinator review by Mira.
