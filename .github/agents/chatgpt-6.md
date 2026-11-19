@@ -597,3 +597,10 @@ Implementation Draft #351 remains at **`7bdf468fed9bebb74adf421cb5e231ba14218c8a
 **Verification boundary:** The new exact-head GitHub CI [run 44577496670](https://github.com/iliya1947/vico-forum/actions/runs/44577496670) `checks`/`database` and dedicated [run 44577496424](https://github.com/iliya1947/vico-forum/actions/runs/44577496424) are **QUEUED at last check**. NO PASS claim for the new tests/commit. Code was committed and source/diff reviewed, but runtime regression acceptance **not yet established**. Do not infer success from prior PF-REVIEW-1 CI. Neither PF-REVIEW-3 nor deferred Watch/Bookmarks corrections changed.
 
 **Лира STOP after PF-REVIEW-2 code/tests checkpoint.** Next distinct explicit `...` = **ONLY PF-REVIEW-2 exact-head CI verification** and, if required, diagnosis/local correction of *confirmed* failure; checkpoint and STOP before PF-REVIEW-3. Then separate `...` for PF-REVIEW-3. After all three correction steps, final exact-head full CI + Mira whole-PR coordinator review; Leva only after Mira PASS. #342 service-only/no merge; #351 remains Draft.
+
+
+## 2026-11-19 — Лира: PF-REVIEW-2 new exact-head assertion correction / CI pending
+
+On old `dac264877fd1969e1fd683cc731a8852e2848a16`, `checks` failed one new `filters-view.test.tsx` Block case (2742/2743). Detailed GitHub test DOM includes a correctly re-added user link `/en/users/user-1`, accessible name `Deleted userAdded ...`, while exact string expectation required only `Deleted user`. Code/DOM evidence confirms test assertion mismatch; no missing-row production regression shown. The unit failed before late ACK release. Dedicated browser connected and database PASS at old head.
+
+New test-only `37b7c8e991865a0352562fecbedf74d6f5aeeb53` uses regex `/Deleted user/i` for the user link; new timestamp, delayed-ACK visibility, single POST assertions unchanged. Exact compare one-line change in one test. New CI `44587038549` and dedicated browser `44587038774` in progress, not yet claimed PASS. Continue PF-REVIEW-2 verification only, then STOP before PF-REVIEW-3; #351 Draft, #342 service-only.
