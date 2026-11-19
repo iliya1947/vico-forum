@@ -1382,3 +1382,17 @@ timestamp/cache/store или retry. Main implementation в аудите не м�
 implementation сейчас **не активировать**. Лёва продолжает проверку по одной
 реализации: следующая — Bookmarks. Watch/Bookmarks production не меняется.
 Назначение Лиры #351 и его декомпозиция этим уточнением не переназначаются.
+
+
+## 2026-11-19 — Лира: 4b.1 dedicated connected harness + minimal smoke PASS, STOP
+
+**Scope exact:** собственный изолированный Mute/Block Worker/Better Auth/PostgreSQL 17/Chromium harness; никаких fanout, Mute/Unmute write, Block/Unblock write, no-backfill, collapse/reveal и pagination/a11y acceptance пока не утверждать.
+
+**Implementation** Draft PR #351, exact head `e93e64a55095b1d56eb65aa9c11ffd314f4b07e9`. Три добавленных test-only files:
+- `.github/workflows/personal-filters-browser.yml`: самодостаточный pull_request workflow, disposable `vico_filters_browser_test` в PostgreSQL 17, Drizzle migrations, pnpm build, actual Worker preview `127.0.0.1:4242`, Better Auth local .dev.vars и pinned Playwright Chromium, cleanup + JSON artifact.
+- `tests/browser/personal-filters/pg.mjs`: CI/loopback/exact-db guard, dedicated PG fixture/SQL inspection process and one ordinary published topic.
+- `tests/browser/personal-filters/check.py`: real Better Auth sign-ups for distinct author/viewer, guest, private `/en/filters` and `.data` statuses/no-store, Chromium page + Mute Off/topic + Block Off/public profile, guest public topic, no implicit filter rows or browser console/external requests.
+
+**Evidence:** `Personal Mute/Block connected acceptance` run `44529730188`, job `135579549049` concluded **SUCCESS** at exact `e93e64a55095b1d56eb65aa9c11ffd314f4b07e9`. Job log contains all 4 `FILTERS_CONNECTED` smoke markers. https://github.com/iliya1947/vico-forum/actions/runs/44529730188 . No production/schema/UI changes for 4b.1; other existing CI runs were still executing at checkpoint, do NOT claim full exact-head green. Dedicated Mute/Block end-to-end functionality and M7 matrix remain 4b.2–4b.11.
+
+**Лира STOP после 4b.1.** Following explicit `...`: **only 4b.2** — Topic Mute/Unmute + ordinary notification paths (Watch/author/parent/mention) using this harness, measured via real Worker and PG; checkpoint and STOP. No 4b.3/4c/review/merge. An independent Watch audit has separate workstream and is not modified here.
