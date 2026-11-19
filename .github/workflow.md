@@ -33,7 +33,7 @@
 
 ## Следующий шаг
 
-**Mute/block: 4a и 4b.1–4b.11 PASS; 4c SELF-CHECK PASS. Лира STOP после 4c; следующий исполнитель — Мира, coordinator whole-PR review (только по отдельному подключению владельца).** Implementation Draft PR #351: stable exact head `0a2243339775dd1a5e55898ced6e553f77051d4e` (base `9eae385571bf99e073df46f8541f7514c9626a29`). Service PR #342 — рабочий канал, не merge.
+**Mute/block: Мира coordinator HOLD по PF-REVIEW-1/2/3; Лира выполняет bounded corrections. PF-REVIEW-1 код и 4 регрессионных сценария внесены, CI QUEUED (PASS не заявлен); Лира STOP перед проверкой результата и перед PF-REVIEW-2/3.** Implementation Draft PR #351: current head `7bdf468fed9bebb74adf421cb5e231ba14218c8a` (base `9eae385571bf99e073df46f8541f7514c9626a29`). Service PR #342 — рабочий канал, не merge.
 
 **Verified 4a:** real PostgreSQL 17 **27/27 targeted concurrency/atomicity tests** и full **1476/1476 tests, 109/109 files PASS**. `CI` jobs `database` и `checks` SUCCESS (run `44522424656`). **15/15 workflow SUCCESS после отдельного повторного SA07 job `135564876373` на том же head**, без code changes. Первый SA07 job `135554174007` FAIL: `/en/super-admin/monitoring/integrations.data` ответил 503 вместо 200. Точная первопричина **не установлена**; не подтверждена Mute/block regression. В 4a изменены только `tests/database/personal-filters-concurrency.test.ts` и `tests/database/topic-watch.test.ts` (timing rejection assertion), production/schema/UI без изменений.
 
@@ -215,3 +215,16 @@ BOOKMARKS-AUDIT-1/2 или TITLE-AUDIT-1; не расширять product scope.
 После corrections: новый stable exact head, focused regressions + применимые full CI и
 dedicated connected acceptance, затем **STOP Мире на новый whole-PR coordinator cycle**.
 До нового Mira PASS Лёву не подключать. #351 остаётся Draft; #342 service-only/no merge.
+
+
+## 2026-11-19 — Лира: PF-REVIEW-1 correction code/tests checkpoint; verification PENDING / STOP
+
+Mira completed coordinator whole-PR review of #351 at head `0a2243339775dd1a5e55898ced6e553f77051d4e`, **HOLD** for current-scope PF-REVIEW-1/2/3. This correction turn addresses **only PF-REVIEW-1**, not the other two defects or deferred Watch/Bookmarks issues.
+
+**Implementation Draft #351 current head:** `7bdf468fed9bebb74adf421cb5e231ba14218c8a`; test/code commits: `caabdf9614f3564814aa1dc727b9a07b0e2e0721` (control code), `448325d1d17bcca4477ddc40827b69b683586215` (four regressions), `7bdf468fed9bebb74adf421cb5e231ba14218c8a` (canonical pending label). Only `app/forum/personal-filter-control.tsx` and `app/forum/personal-filter-control.test.tsx` changed.
+
+**PF-REVIEW-1 targeted correction:** Removed local `confirmed` mirror as a competing source of server state. `PersonalFilterControl` renders current loader `state` unless an unconfirmed/error action requires an explicit refresh. A matching ACK no longer writes a local on/off value that can supersede a newer same actor/target loader snapshot. Pending disable, typed unknown/unavailable, explicit GET refresh, actor/target ACK guards and no automatic POST retry remain. Four new deterministic React Router tests exercise Topic Mute and User Block in both state directions: first writer commits, ACK held, second writer restores pair, fresh route loader revalidates, late matching old ACK delivered; loader must remain authoritative. Existing ordinary success test fixture now actually updates server-side loader snapshot before ACK.
+
+**Evidence boundary:** source and regression code committed, but **NOT YET VERIFIED / NOT PASS**. On the exact new commit, CI [run 44573742574](https://github.com/iliya1947/vico-forum/actions/runs/44573742574) jobs `checks` `135735501620` and `database` `135735500995`, plus connected [run 44573743073](https://github.com/iliya1947/vico-forum/actions/runs/44573743073) job `personal_filters_browser` `135735503028`, were still **queued** at last checked time. Do not claim focused tests PASS until their actual result is inspected; no CI runner polling loop. Production and other PF issues unchanged.
+
+**Лира STOP on this implementation microstep**. Next explicit `...` should **verify current head's completed CI, diagnose/fix PF-REVIEW-1 test-only/actual failure if any and checkpoint PASS only if evidenced**; then STOP before **PF-REVIEW-2**. PF-REVIEW-2/3 must be separate next authorized microsteps. Only after all 3 corrections should a stable exact-head full CI + dedicated acceptance and a fresh Mira coordinator whole-PR cycle be prepared. #342 service-only/no merge; #351 remains Draft.
