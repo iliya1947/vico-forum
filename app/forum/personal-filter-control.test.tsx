@@ -46,12 +46,15 @@ describe("Personal Mute/Block controls", () => {
   ) => {
     let finish!: (response: unknown) => void;
     const response = new Promise<unknown>(resolve => { finish = resolve; });
+    let current: PersonalFilterState = "off";
     const submits: Record<string, FormDataEntryValue>[] = [];
     const action = vi.fn(async ({ request }: { request: Request }) => {
       submits.push(Object.fromEntries((await request.formData()).entries()));
-      return response;
+      const result = await response;
+      current = "on"; // the real server commits before Router revalidates the loader
+      return result;
     });
-    setup(kind, action);
+    setup(kind, action, () => current);
     const button = await screen.findByRole("button", { name: startLabel });
     fireEvent.click(button);
     await waitFor(() => expect(action).toHaveBeenCalledTimes(1));
@@ -125,6 +128,47 @@ describe("Personal Mute/Block controls", () => {
     expect(await screen.findByRole("button", { name: "Unblock user" }))
       .toHaveAttribute("aria-pressed", "true");
     expect(action).toHaveBeenCalledTimes(1);
+  });
+
+
+  it.each([
+    ["topic", "off", "Mute topic", true],
+    ["topic", "on", "Unmute topic", false],
+    ["user", "off", "Block user", true],
+    ["user", "on", "Unblock user", false],
+  ] as const)("keeps newer loader authoritative over delayed %s ACK (%s)", async (
+    kind, initial, label, desired,
+  ) => {
+    let current: PersonalFilterState = initial;
+    let release!: () => void;
+    const delayedAck = new Promise<void>(resolve => { release = resolve; });
+    const loader = vi.fn(() => current);
+    const action = vi.fn(async () => {
+      // First writer commits the requested state; its HTTP ACK is held.
+      current = desired ? "on" : "off";
+      await delayedAck;
+      return kind === "topic"
+        ? { operation: "topicMute", ok: true, actorId: "actor-a", topicId: "item-1", muted: desired }
+        : { operation: "userBlock", ok: true, actorId: "actor-a", targetId: "item-1", blocked: desired };
+    });
+    const router = setup(kind, action, loader);
+    fireEvent.click(await screen.findByRole("button", { name: label }));
+    await waitFor(() => expect(action).toHaveBeenCalledTimes(1));
+    expect(screen.getByRole("button", { name: "Updating…" })).toBeDisabled();
+
+    // Another legitimate same-pair writer restores the initial state,
+    // then this route sees the newer authoritative GET while old ACK is pending.
+    current = initial;
+    const before = loader.mock.calls.length;
+    await act(async () => { await router.revalidate(); });
+    expect(loader.mock.calls.length).toBeGreaterThan(before);
+    expect(screen.getByRole("button", { name: "Updating…" }))
+      .toHaveAttribute("aria-pressed", String(initial === "on"));
+
+    await act(async () => { release(); });
+    expect(await screen.findByRole("button", { name: label }))
+      .toHaveAttribute("aria-pressed", String(initial === "on"));
+    expect(action).toHaveBeenCalledTimes(1); // no implicit retry
   });
 
 });
