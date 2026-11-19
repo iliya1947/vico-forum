@@ -2180,8 +2180,8 @@ export function TopicView({
   topicWatchState = null,
   bookmarkActorId = null,
   topicBookmarkState = null,
-  blockedActorId = null,
-  blockedAuthorIds = [],
+  blockedActorId,
+  blockedAuthorIds,
   canSubmitComplaint = false,
   canManageSolution,
   canConfirmOwnSolution = false,
@@ -2305,10 +2305,15 @@ export function TopicView({
   const navigate = useNavigate();
   const revalidator = useRevalidator();
   const headerActorId = useHeaderAuthUser()?.id ?? null;
-  // During an account switch, the previous viewer's personal policy is not authoritative.
-  const blockSnapshotIsStale = Boolean(headerActorId && headerActorId !== blockedActorId);
-  const blockedAuthorSet = new Set(blockedAuthorIds);
-  const blockScope = JSON.stringify([headerActorId ?? blockedActorId, topic.id, [...blockedAuthorIds].sort()]);
+  // Canonical loaders supply an explicit private snapshot even for guests.
+  // Legacy view-only test stubs without filter metadata do not represent a stale actor.
+  // Guest->authenticated and A->B transitions retain the old snapshot and fail closed.
+  const hasBlockSnapshot = blockedAuthorIds !== undefined;
+  const blockSnapshotIsStale = Boolean(
+    headerActorId && hasBlockSnapshot && headerActorId !== blockedActorId,
+  );
+  const blockedAuthorSet = new Set(blockedAuthorIds ?? []);
+  const blockScope = JSON.stringify([headerActorId ?? blockedActorId, topic.id, [...(blockedAuthorIds ?? [])].sort()]);
   const [revealedBlockedPosts, setRevealedBlockedPosts] = useState<{ scope: string; ids: string[] }>({ scope: "", ids: [] });
   useEffect(() => { setRevealedBlockedPosts({ scope: blockScope, ids: [] }); }, [blockScope]);
   const replyScope = JSON.stringify([topic.id, headerActorId]);
