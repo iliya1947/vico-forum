@@ -13,20 +13,17 @@ export function PersonalFilterControl({ kind, targetId, actorId, locale, state }
   const { t } = useTranslation("common");
   const fetcher = useFetcher<TopicMuteActionResult | UserBlockActionResult>();
   const revalidator = useRevalidator();
-  const [confirmed, setConfirmed] = useState<PersonalFilterState>(state);
   const [needsRefresh, setNeedsRefresh] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [failed, setFailed] = useState(false);
   const submitted = useRef<{ actorId: string; targetId: string; desired: boolean } | null>(null);
   const processed = useRef<unknown>(null);
   const pending = fetcher.state !== "idle";
-  const enabled = confirmed === "on";
-  const locked = pending || refreshing || needsRefresh || confirmed === "unavailable";
+  // The loader is authoritative: never mirror its value into local success state.
+  const displayState: PersonalFilterState = needsRefresh ? "unavailable" : state;
+  const enabled = displayState === "on";
+  const locked = pending || refreshing || needsRefresh || displayState === "unavailable";
   const desired = !enabled;
-
-  useEffect(() => {
-    if (!pending && !submitted.current && !needsRefresh && !refreshing) setConfirmed(state);
-  }, [state, pending, needsRefresh, refreshing]);
 
   useEffect(() => {
     if (pending || !submitted.current || !fetcher.data || processed.current === fetcher.data) return;
@@ -40,11 +37,9 @@ export function PersonalFilterControl({ kind, targetId, actorId, locale, state }
       : value.operation === "userBlock" && "ok" in value && value.ok
         && value.actorId === request.actorId && value.targetId === request.targetId && value.blocked === request.desired;
     if (matched && actorId === request.actorId && targetId === request.targetId) {
-      setConfirmed(request.desired ? "on" : "off");
       setNeedsRefresh(false);
       setFailed(false);
     } else {
-      setConfirmed("unavailable");
       setNeedsRefresh(true);
       setFailed(true);
     }
@@ -62,7 +57,7 @@ export function PersonalFilterControl({ kind, targetId, actorId, locale, state }
   const intent = kind === "topic" ? "setTopicMute" : "setUserBlock";
   const field = kind === "topic" ? "muted" : "blocked";
   return <div className="personal-filter-control" aria-busy={pending || refreshing}>
-    {confirmed !== "unavailable" && <fetcher.Form method="post" action={action}
+    {displayState !== "unavailable" && <fetcher.Form method="post" action={action}
       onSubmit={event => {
         if (locked) { event.preventDefault(); return; }
         submitted.current = { actorId, targetId, desired };
@@ -77,11 +72,11 @@ export function PersonalFilterControl({ kind, targetId, actorId, locale, state }
     </fetcher.Form>}
     <span role="status" aria-live="polite" className="personal-filter-status">
       {t(kind === "topic"
-        ? confirmed === "unavailable" ? "topicMuteUnavailable" : enabled ? "topicMuteOn" : "topicMuteOff"
-        : confirmed === "unavailable" ? "userBlockUnavailable" : enabled ? "userBlockOn" : "userBlockOff")}
+        ? displayState === "unavailable" ? "topicMuteUnavailable" : enabled ? "topicMuteOn" : "topicMuteOff"
+        : displayState === "unavailable" ? "userBlockUnavailable" : enabled ? "userBlockOn" : "userBlockOff")}
     </span>
     {failed && <p role="alert">{t("personalFilterVerify")}</p>}
-    {(needsRefresh || confirmed === "unavailable") && <button type="button"
+    {(needsRefresh || displayState === "unavailable") && <button type="button"
       disabled={pending || refreshing} onClick={refresh}>
       {t(refreshing ? "personalFilterUpdating" : "personalFilterRefresh")}
     </button>}
