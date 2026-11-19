@@ -700,7 +700,8 @@ try:
         assert 'blockState' in b_profile_data, b_profile_data[:400]
         b_list = author.request.get(base + "/en/filters.data?tab=users")
         private(b_list)
-        assert '"items":[]' in b_list.text().replace(" ", ""), b_list.text()[:500]
+        # React Router single-fetch serializes this as a positional value array.
+        assert '"items",[]' in b_list.text(), b_list.text()[:500]
         record("blocked target B reads no reverse Block graph via own list or A public profile")
 
         # One browser context really changes from A's Better Auth cookie to B.
