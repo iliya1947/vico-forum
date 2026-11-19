@@ -18,12 +18,14 @@ function setup(userId: string | null = "owner") {
   context.set(authSessionContext, userId ? { user: { id: userId } } as AuthSession : null);
   const readProfile = vi.fn(async () => profile);
   const updateProfile = vi.fn(async () => undefined);
-  context.set(forumReaderContext, { readProfile } as unknown as ForumReader);
-  context.set(forumWriterContext, { updateProfile } as unknown as ForumWriter);
+  const readUserBlock = vi.fn(async () => false);
+  const setUserBlock = vi.fn(async ({ blocked }: { blocked: boolean }) => blocked);
+  context.set(forumReaderContext, { readProfile, readUserBlock } as unknown as ForumReader);
+  context.set(forumWriterContext, { updateProfile, setUserBlock } as unknown as ForumWriter);
   context.set(userMeasureContext, {activeRestrictions:async()=>[]} as never);
   context.set(authorizationOwnerContext, undefined);
   context.set(authorizationContext, {forUser: () => ({has: async () => false})} as never);
-  return { context, readProfile, updateProfile };
+  return { context, readProfile, updateProfile, readUserBlock, setUserBlock };
 }
 function request(fields: Record<string, string> = {}, origin: string | null = "https://forum.test") {
   const body = new FormData();

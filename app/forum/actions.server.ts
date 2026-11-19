@@ -17,6 +17,7 @@ import {
   type TopicWatchActionResult,
   type TopicBookmarkActionResult,
   type TopicMuteActionResult,
+  type ForumMutationError,
 } from "./mutations.server";
 import { forumTopicPath } from "./paths";
 import { isForumAttachmentUuid } from "../../db/forum-attachments";

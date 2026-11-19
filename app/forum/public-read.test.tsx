@@ -252,6 +252,8 @@ const reader: ForumReader = {
   }],
   readTopicWatch: async () => false,
   readTopicMute: async () => false,
+  readMutedTopics: async () => ({ items: [], next: null }),
+  readBlockedUsers: async () => ({ items: [], next: null }),
   readUserBlock: async () => false,
   readTopicBlockedAuthors: async () => [],
   readTopicBookmark: async () => false,

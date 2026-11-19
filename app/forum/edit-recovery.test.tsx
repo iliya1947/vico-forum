@@ -68,7 +68,7 @@ function setup() {
   const createReply = vi.fn(async () => ({ postId: "new" }));
   context.set(forumReaderContext, { readTopicPage, readTopicReadState: async () => null,
     readTopicWatch: async () => false, readTopicBookmark: async () => false,
-    readTopicBlockedAuthors: async () => [] } as never);
+    readTopicBlockedAuthors: async () => [], readTopicMute: async () => false } as never);
   context.set(authorizationContext, { forUser: () => ({ has }) } as never);
   context.set(forumWriterContext, { editPublishedPost, createReply, markTopicSolved } as never);
   vi.stubGlobal("fetch", vi.fn(async () => new Response(JSON.stringify({ attachments: [] }), { headers: { "Content-Type": "application/json" } })));
