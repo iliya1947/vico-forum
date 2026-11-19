@@ -90,9 +90,7 @@ async function reached(promise: Promise<void>) {
     })]);
   } finally { if (timer) clearTimeout(timer); }
 }
-async function blocked(waiter: Client, blocker: Client) {
-  const waiterPid = (await waiter.query<{ pid: number }>("select pg_backend_pid() pid")).rows[0]!.pid;
-  const blockerPid = (await blocker.query<{ pid: number }>("select pg_backend_pid() pid")).rows[0]!.pid;
+async function blocked(waiterPid: number, blockerPid: number) {
   for (let i = 0; i < 120; i++) {
     if ((await fixture.query<{ blocked: boolean }>(
       "select $2::int = any(pg_blocking_pids($1::int)) blocked", [waiterPid, blockerPid])).rows[0]?.blocked) return;
@@ -152,7 +150,8 @@ describe("Mute/Block M3: real READ COMMITTED candidate decision snapshots", () =
       expectedRevisionId = (await fixture.query<{ current_revision_id: string }>(
         "select current_revision_id from forum_posts where id=$1", [postId])).rows[0]!.current_revision_id;
     }
-    const [client] = await twoClients();
+    const client = new Client({ connectionString: url, options: options + " -c lock_timeout=7s" });
+    await client.connect();
     const gate = pauseSql(client, query => /with candidate_users as materialized/iu.test(query), phase);
     let pending: Promise<unknown> | undefined;
     try {
@@ -261,12 +260,14 @@ describe("Mute/Block M4: real actor mutex, reciprocal Block and AccountState rac
         : db.setUserBlock({ actorId: actor, blockedUserId: target, blocked: on });
     const [left, right] = await twoClients();
     const gate = pauseSql(left, text => /from "user"/iu.test(text) && /for no key update/iu.test(text), "after");
+    const leftPid = (await left.query<{ pid: number }>("select pg_backend_pid() pid")).rows[0]!.pid;
+    const rightPid = (await right.query<{ pid: number }>("select pg_backend_pid() pid")).rows[0]!.pid;
     let first: Promise<boolean> | undefined, second: Promise<boolean> | undefined;
     try {
       first = mutate(writer(left), firstOn);
       await reached(gate.observed);
       second = mutate(writer(right), !firstOn);
-      await blocked(right, left);
+      await blocked(rightPid, leftPid);
       gate.resume();
       await Promise.all([first, second]);
       const actual = kind === "mute" ? await forum.readTopicMute(actor, x) : await forum.readUserBlock(actor, target);
