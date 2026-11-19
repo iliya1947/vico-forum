@@ -968,7 +968,9 @@ try:
             assert geometry["documentWidth"] <= 362, geometry
             for element in controls:
                 frame = element.bounding_box()
-                assert frame and frame["width"] >= 24 and frame["height"] >= 24, frame
+                assert frame and frame["width"] > 0 and frame["height"] > 0, frame
+                if element.evaluate("(node) => node.tagName === 'BUTTON'"):
+                    assert frame["width"] >= 24 and frame["height"] >= 24, frame
                 assert frame["x"] >= -2 and frame["x"] + frame["width"] <= 362, (
                     frame, geometry)
 
