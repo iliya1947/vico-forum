@@ -80,7 +80,7 @@ describe("canonical Mute/Block personal actions", () => {
     [...topicValid(),["ownerId","viewer-b"]],
     topicValid().filter(([key])=>key!=="editorActorId"),
     [["intent","setTopicMute"],["editorActorId","viewer-a"],["muted","TRUE"]],
-  ] as [string,string][][])("rejects ambiguous or forged topic Mute forms", async pairs => {
+  ] as [string,string][][])("rejects ambiguous or forged topic Mute forms", async (...pairs) => {
     const e=env();expect(await topic(e.context,pairs)).toMatchObject({
       data:{operation:"topicMute",error:"invalid"},init:{status:400},
     });expect(e.setTopicMute).not.toHaveBeenCalled();
@@ -95,7 +95,7 @@ describe("canonical Mute/Block personal actions", () => {
     [...userValid(),["returnTo","/admin"]],
     userValid().filter(([key])=>key!=="editorActorId"),
     [["intent","setUserBlock"],["editorActorId","viewer-a"],["blocked","TRUE"]],
-  ] as [string,string][][])("rejects ambiguous or forged public profile Block forms", async pairs => {
+  ] as [string,string][][])("rejects ambiguous or forged public profile Block forms", async (...pairs) => {
     const e=env();expect(await user(e.context,pairs)).toMatchObject({
       data:{operation:"userBlock",error:"invalid"},init:{status:400},
     });expect(e.setUserBlock).not.toHaveBeenCalled();expect(e.updateProfile).not.toHaveBeenCalled();
