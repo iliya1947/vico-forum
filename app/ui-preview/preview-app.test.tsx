@@ -146,6 +146,8 @@ describe("UI preview state catalog", () => {
       expect.objectContaining({ id: "super-admin-administration-owner", allowedIdentities: ["owner"] }),
       expect.objectContaining({ id: "super-admin-moderation-owner", allowedIdentities: ["owner"] }),
       expect.objectContaining({ id: "super-admin-notifications-owner", allowedIdentities: ["owner"] }),
+      expect.objectContaining({ id: "super-admin-events-owner", allowedIdentities: ["owner"] }),
+      expect.objectContaining({ id: "super-admin-infrastructure-owner", allowedIdentities: ["owner"] }),
       expect.objectContaining({
         id: "super-admin-guest-unauthenticated",
         allowedIdentities: ["guest"],
@@ -513,6 +515,38 @@ describe("embedded preview routing", { timeout: 10_000 }, () => {
     const inbox = document.querySelector('[data-monitor-key="notifications.inbox"]') as HTMLElement;
     expect(inbox).not.toBeNull();
     expect(inbox.querySelector('a[href="/en/notifications"]')).not.toBeNull();
+  });
+
+  it("opens and filters Super-admin Events, then shows the Stage 6 Infrastructure placeholder", async () => {
+    const user = userEvent.setup();
+    await renderEmbeddedPreview(<EmbeddedPreview
+      scenarioId="super-admin-overview-owner"
+      identity="owner"
+    />);
+
+    const shellNav = document.querySelector(".super-admin-panel .admin-panel-nav") as HTMLElement;
+    await user.click(within(shellNav).getByRole("link", { name: "Events" }));
+
+    const filters = await waitFor(() => {
+      const current = document.querySelector("[data-history-filters]") as HTMLElement | null;
+      expect(current).not.toBeNull();
+      return current as HTMLElement;
+    });
+    expect(document.querySelectorAll(".super-admin-timeline > li")).toHaveLength(4);
+
+    const area = filters.querySelector('select[name="area"]') as HTMLSelectElement;
+    await user.selectOptions(area, "notifications");
+    await user.click(filters.querySelector('button[type="submit"]') as HTMLButtonElement);
+
+    await waitFor(() => expect(document.querySelectorAll(".super-admin-timeline > li")).toHaveLength(1));
+    expect(document.querySelector('[data-history-kind="notification.created"]')).not.toBeNull();
+
+    const refreshedNav = document.querySelector(".super-admin-panel .admin-panel-nav") as HTMLElement;
+    await user.click(within(refreshedNav).getByRole("link", { name: "Infrastructure" }));
+
+    expect(await screen.findByRole("heading", { level: 2, name: "Infrastructure" })).toBeInTheDocument();
+    expect(document.querySelector(".super-admin-placeholder")).toBeInTheDocument();
+    expect(document.querySelector("[data-monitor-key]")).toBeNull();
   });
 
   it("requires sign-in for guest direct access to Admin topic", async () => {
