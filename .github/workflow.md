@@ -32,8 +32,15 @@
 
 ## Следующий шаг
 
-**Следующий участник — Мира.** Сопоставить оба docs PASS #349 на
-`aa6584c6d600d807ebed9171adbde365b918b290` и зафиксировать готовность exact head
-к merge владельцем. Лёва STOP. После фактического merge #349 Лира выполняет
-отдельный Bookmarks docs closeout; раньше этот следующий PR не открывать.
-Merge/deploy не выполнялись. #342 служебный и не merge; #300 не использовать.
+**Следующее действие — владелец merge Watch docs PR #349** на exact head
+`aa6584c6d600d807ebed9171adbde365b918b290`.
+
+Review cycle завершён: Мира coordinator PASS + Лёва independent whole-PR docs PASS,
+confirmed current-doc defects = 0. WATCH-DOC-1 закрыт; docs CI 2/2 success.
+#349 переведён из Draft в **Ready for review**, mergeable=true.
+
+**Только после фактического merge #349** следующий bounded этап — Лира открывает
+отдельный Bookmarks docs closeout (0069). Затем после его closeout/merge
+implementation-order переходит к Mute/block.
+
+#342 служебный и не merge; #300 не использовать.
