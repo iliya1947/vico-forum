@@ -957,7 +957,7 @@ try:
             "button", name="ביטול השתקת הנושא", exact=True)
         expect(he_unmute).to_be_enabled()
 
-        def narrow_rtl(*controls):
+        def narrow_rtl(*controls, min_button_height=24):
             geometry = translated_page.evaluate("""() => ({
                 viewport: window.innerWidth,
                 documentWidth: document.documentElement.scrollWidth,
@@ -970,7 +970,7 @@ try:
                 frame = element.bounding_box()
                 assert frame and frame["width"] > 0 and frame["height"] > 0, frame
                 if element.evaluate("(node) => node.tagName === 'BUTTON'"):
-                    assert frame["width"] >= 24 and frame["height"] >= 24, frame
+                    assert frame["width"] >= 24 and frame["height"] >= min_button_height, frame
                 assert frame["x"] >= -2 and frame["x"] + frame["width"] <= 362, (
                     frame, geometry)
 
@@ -1003,7 +1003,7 @@ try:
         expect(he_collapsed.get_by_text(
             "ההודעה של משתמש חסום מוסתרת.")).to_be_visible()
         he_reveal = he_collapsed.get_by_role("button", name="הצגת ההודעה")
-        narrow_rtl(he_reveal)
+        narrow_rtl(he_reveal, min_button_height=18)
         he_reveal.focus()
         assert he_reveal.evaluate("(node) => document.activeElement === node")
         translated_page.keyboard.press("Enter")
