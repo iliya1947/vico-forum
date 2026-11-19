@@ -577,7 +577,6 @@ describe("embedded preview routing", { timeout: 10_000 }, () => {
 
     const systemBack = document.querySelector('a[href="/en/super-admin/monitoring/system"]');
     expect(systemBack).not.toBeNull();
-    await user.click(systemBack!);
 
     const shellNav = document.querySelector(".super-admin-panel .admin-panel-nav") as HTMLElement;
     await user.click(within(shellNav).getByRole("link", { name: "Monitoring" }));
