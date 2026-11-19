@@ -22,6 +22,8 @@ import { AdminOverview } from "../admin/overview";
 import { AdminUsersIndex } from "../admin/users";
 import { AdminShell } from "../admin/shell";
 import { HistoryEvents } from "../admin/history";
+import { SuperAdminOverview } from "../super-admin/overview";
+import { SuperAdminMonitoringIndex } from "../super-admin/view";
 import type { AdminHistoryChange, AdminHistoryEvent } from "../../db/admin-history";
 import { projectAdminTopic } from "../admin/topic-model";
 import type { ForumHelpSolutionsFilters, ForumPopularPage } from "../../db/forum-repository";
@@ -68,7 +70,7 @@ import { settingsUserPath } from "../settings/paths";
 type Direction = "ltr" | "rtl";
 export const previewIdentities = ["guest", "user", "manager", "owner"] as const;
 export type PreviewIdentity = typeof previewIdentities[number];
-type PreviewView = "attention" | "credentials" | "profile" | "home" | "search" | "popular" | "unanswered" | "unread" | "notifications" | "tags" | "tag" | "category" | "section" | "topic" | "admin" | "admin-topic" | "empty" | "under-development" | "not-found";
+type PreviewView = "attention" | "credentials" | "profile" | "home" | "search" | "popular" | "unanswered" | "unread" | "notifications" | "tags" | "tag" | "category" | "section" | "topic" | "admin" | "admin-topic" | "super-admin" | "empty" | "under-development" | "not-found";
 
 type PreviewVariant =
   | "section-form-error"
@@ -227,6 +229,10 @@ export const scenarios: readonly Scenario[] = [
   { id: "topic-best-answer-unsolved", label: "Best answer · confirmation", locale: "en", direction: "ltr", identity: "user", path: "/en/topics/typed-api?solutionPrompt=answer#solution-confirmation", view: "topic", variant: "topic-best-answer-unsolved", allowedIdentities: ["user"] },
   { id: "topic-reply-error", label: "Reply error", locale: "en", direction: "ltr", identity: "user", path: "/en/topics/typed-api", view: "topic", variant: "topic-reply-error", allowedIdentities: ["user", "manager"] },
   { id: "topic-unsolved", label: "Unsolved topic", locale: "en", direction: "ltr", identity: "guest", path: "/en/topics/typed-api", view: "topic", variant: "topic-unsolved" },
+  { id: "super-admin-overview-owner", label: "Super-admin · Overview", locale: "en", direction: "ltr", identity: "owner", path: "/en/super-admin", view: "super-admin", allowedIdentities: ["owner"] },
+  { id: "super-admin-monitoring-owner", label: "Super-admin · Monitoring", locale: "en", direction: "ltr", identity: "owner", path: "/en/super-admin/monitoring", view: "super-admin", allowedIdentities: ["owner"] },
+  { id: "super-admin-guest-unauthenticated", label: "Super-admin · guest unauthenticated", locale: "en", direction: "ltr", identity: "guest", path: "/en/super-admin", view: "super-admin", allowedIdentities: ["guest"] },
+  { id: "super-admin-manager-forbidden", label: "Super-admin · manager forbidden", locale: "en", direction: "ltr", identity: "manager", path: "/en/super-admin", view: "super-admin", allowedIdentities: ["manager"] },
   { id: "admin", label: "Authorization", locale: "en", direction: "ltr", identity: "owner", path: "/en/admin/authorization", view: "admin", allowedIdentities: ["manager", "owner"] },
   { id: "admin-guest-unauthenticated", label: "Authorization · guest unauthenticated", locale: "en", direction: "ltr", identity: "guest", path: "/en/admin/authorization", view: "admin", allowedIdentities: ["guest"] },
   { id: "admin-user-forbidden", label: "Authorization · ordinary user forbidden", locale: "en", direction: "ltr", identity: "user", path: "/en/admin/authorization", view: "admin", allowedIdentities: ["user"] },
@@ -1435,6 +1441,86 @@ function PreviewCredentialRoute({ scenario, interactions, mode }: {
     emailActions={previewEmailActions} googleActions={previewGoogleActions} />;
 }
 
+
+type PreviewOwnerOverview = Parameters<typeof SuperAdminOverview>[0]["state"];
+
+function previewSuperAdminAccessData(scenario: Scenario) {
+  const actor = previewUser(scenario);
+  if (!actor) throw new Response("Unauthenticated", { status: 401 });
+  if (scenario.identity !== "owner") throw new Response("Forbidden", { status: 403 });
+  return actor;
+}
+
+function previewSuperAdminOverviewState(): PreviewOwnerOverview {
+  const observedAt = "2026-11-18T14:20:00.000Z";
+  const source = (id: string) => [{
+    id,
+    connection: "application" as const,
+    status: "measured" as const,
+    observedAt,
+    code: "none" as const,
+  }];
+
+  return {
+    terminalCoverage: { status: "measured", observedAt, values: {} },
+    areas: [
+      {
+        area: "system",
+        status: "measured",
+        sources: source("preview-system"),
+        figures: [{ monitorKey: "system.runtime", field: "state", value: "serving" }],
+      },
+      {
+        area: "accounts",
+        status: "measured",
+        sources: source("preview-accounts"),
+        figures: [{ monitorKey: "accounts.users", field: "total", value: "128" }],
+      },
+      {
+        area: "security",
+        status: "measured",
+        sources: source("preview-security"),
+        figures: [{ monitorKey: "security.auth", field: "attributedAttempts", value: "12" }],
+      },
+      {
+        area: "forum",
+        status: "measured",
+        sources: source("preview-forum"),
+        figures: [{ monitorKey: "forum.structure", field: "topics", value: "84" }],
+      },
+      { area: "administration", status: "measured", sources: source("preview-administration"), figures: [] },
+      { area: "moderation", status: "measured", sources: source("preview-moderation"), figures: [] },
+      { area: "notifications", status: "measured", sources: source("preview-notifications"), figures: [] },
+      { area: "background", status: "measured", sources: source("preview-background"), figures: [] },
+      { area: "files", status: "measured", sources: source("preview-files"), figures: [] },
+      { area: "integrations", status: "partial", sources: source("preview-integrations"), figures: [] },
+      { area: "localization", status: "measured", sources: source("preview-localization"), figures: [] },
+      { area: "data", status: "measured", sources: source("preview-data"), figures: [] },
+      { area: "infrastructure", status: "placeholder", sources: [], figures: [] },
+    ],
+    recent: { entries: [], next: null, coverage: [] },
+    recentUnavailable: false,
+    samples: [],
+    sampleCoverageUnavailable: false,
+    recording: "available",
+    readStatements: 13,
+  };
+}
+
+function PreviewSuperAdminOverviewRoute() {
+  const { locale, state, viewerId } = useLoaderData() as {
+    locale: string;
+    state: PreviewOwnerOverview;
+    viewerId: string;
+  };
+  return <SuperAdminOverview locale={locale} state={state} viewerId={viewerId} />;
+}
+
+function PreviewSuperAdminMonitoringRoute() {
+  const { locale } = useLoaderData() as { locale: string };
+  return <SuperAdminMonitoringIndex locale={locale} />;
+}
+
 function previewCredentialData(scenario: Scenario, request: Request) {
   const returnTo = credentialReturnPath(
     scenario.locale,
@@ -1520,6 +1606,24 @@ function previewRouter(
       action: ({ request, params }) => previewTopicAction(
         scenario, interactions, request, params.locale, params.topicId,
       ),
+      ErrorBoundary: ForumRouteError,
+    },
+    {
+      path: "/:locale/super-admin",
+      element: <PreviewSuperAdminOverviewRoute />,
+      loader: () => {
+        const actor = previewSuperAdminAccessData(scenario);
+        return { locale: scenario.locale, state: previewSuperAdminOverviewState(), viewerId: actor.id };
+      },
+      ErrorBoundary: ForumRouteError,
+    },
+    {
+      path: "/:locale/super-admin/monitoring",
+      element: <PreviewSuperAdminMonitoringRoute />,
+      loader: () => {
+        previewSuperAdminAccessData(scenario);
+        return { locale: scenario.locale };
+      },
       ErrorBoundary: ForumRouteError,
     },
     {
