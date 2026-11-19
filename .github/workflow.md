@@ -19,7 +19,7 @@
 - Следующий docs этап: отдельный Bookmarks docs closeout. Нужны permanent SOT + factual PROJECT_STATE + отдельный PROJECT_HISTORY snapshot/index; без RBAC/Admin, Stage 6 external evidence или owner visual claims.
 - Docs closeout выполняет **Лира / ChatGPT-6** как штатный следующий исполнитель; отдельное owner-назначение для автора docs PR не требуется. Мира docs diff не пишет.
 - Watch docs closeout: **PR #349 merged** в main `405ab97116c5be750fb9c1d447431988802bdbb5`; reviewed docs head `aa6584c6d600d807ebed9171adbde365b918b290`, Мира coordinator PASS + Лёва independent PASS, defects = 0. Permanent/current/history Watch docs теперь в main.
-- Bookmarks docs closeout: **текущий bounded этап**, исполнитель Лира / ChatGPT-6; отдельный docs PR от current main.
+- Bookmarks docs closeout: **Draft PR #350** от main `405ab97116c5be750fb9c1d447431988802bdbb5`, stable exact head `446e4cc893160efc30392bfa43f03f5882823021`; **4 docs files**, latest applicable CI **2/2 PASS**. Лира завершила docs implementation и STOP; current coordinator review за Мирой.
 - Mute/block: план принят, реализация ждёт закрытия накопленного docs debt либо прямого owner override.
 
 ## Опережающий planning-track
@@ -33,22 +33,20 @@
 
 ## Следующий шаг
 
-**Следующий исполнитель — Лира / ChatGPT-6.** Выполнить отдельный **Bookmarks docs closeout**
-после уже merged implementation #346 на current main
-`405ab97116c5be750fb9c1d447431988802bdbb5`.
+**Лира STOP. Следующий исполнитель — Мира / ChatGPT-5.6 Sol.**
+Coordinator whole-PR docs review **Bookmarks Draft #350** на stable exact head
+`446e4cc893160efc30392bfa43f03f5882823021` против `main` `405ab97116c5be750fb9c1d447431988802bdbb5`.
+Применимые exact-head **2/2 CI PASS** (`checks`, `database`,
+[run 44482643570](https://github.com/iliya1947/vico-forum/actions/runs/44482643570)).
 
-Требуемый результат:
-- закрепить устойчивую Bookmarks product/domain semantics в permanent source-of-truth
-  (если более узкого профильного SOT по факту нет — использовать `PROJECT.md`);
-- кратко синхронизировать `PROJECT_STATE.md` с фактически реализованными Bookmarks;
-- добавить отдельный PROJECT_HISTORY snapshot + index entry по #346;
-- сохранить repository migration ceiling `0069` как уже корректный факт;
-- не менять code/schema/runtime, RBAC/Admin contracts и Stage 6 external evidence через `0020`;
-- не заявлять owner visual/deployed acceptance.
+Diff — только `PROJECT.md` (постоянный Bookmarks contract),
+`PROJECT_STATE.md` (короткий фактический статус), новый
+`docs/PROJECT_HISTORY/PROJECT_HISTORY_31.md` (implementation/review/CI/merge)
+и index `docs/PROJECT_HISTORY/PROJECT_HISTORY.md`. Миграции repo через `0069`,
+external evidence через `0020`; code/schema/RBAC/production/visual не менялись.
 
-Лира сверяет формулировки с merged #346 и принятым B1–B7, открывает отдельный docs PR,
-выполняет применимые checks и после stable exact head **STOP Мире** на coordinator
-whole-PR docs review.
-
-Mute/block не активировать до фактического merge Bookmarks docs.
-#342 служебный и не merge; #300 не использовать.
+Мира проверяет полный docs scope и factual согласованность с merged #346 и
+принятым B1–B7, формулирует PASS либо один пакет confirmed current-doc findings
+Лире. **Только после coordinator PASS** — независимый docs review того же head,
+затем merge владельцем. Mute/block не активировать до фактического merge #350.
+Служебный #342 не merge; #300 не использовать.
