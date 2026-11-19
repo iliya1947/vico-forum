@@ -432,3 +432,21 @@ No need for production correction established in this bounded test. This is **no
 5. Per-post Reveal restores B bodies and attachment links independently, without Unblock; reload collapses again, PG directional Block row retained.
 
 **4b.4 COMPLETE; Лира STOP.** Next separate `...` = **ONLY 4b.5** prospective suppression (initial-topic/edit mentions, old receipt/no-backfill, replay/new posts), checkpoint STOP before 4b.6. Dedicated connected gate PASS; full exact-head CI workflows not declared complete. 4c, review and merge not activated. #351 Draft; #342 service-only/no merge. Independent audit/corrective workstream untouched.
+
+## 2026-11-19 — Лира: 4b.5 prospective suppression and publication replay PASS, STOP
+
+**Bounded scope:** real Worker/Better Auth/PostgreSQL 17/Chromium acceptance of first-processed post–recipient suppression, initial-topic/edit mentions, no backfill after Unmute/Unblock, matching replay and fresh publications. Draft implementation #351 stable exact head `929d839439298c6870bef6a29a924784ed38e7de`. Only `tests/browser/personal-filters/check.py` changed (two test-only commits `087456dc6f8e18c5f8e7f209e405d4ab03e81076` and `929d839439298c6870bef6a29a924784ed38e7de`); no production/schema/UI changes.
+
+**Final exact-head dedicated gate:** [run 44540202818](https://github.com/iliya1947/vico-forum/actions/runs/44540202818), job `135616158626` **completed SUCCESS**, 25/25 `FILTERS_CONNECTED` markers (17 prior + 8 new). Verified:
+1. A blocks new publication actor; real section HTTP creates topic whose initial @A is suppressed and exactly one receipt exists; identical publication replay returns original topic without new post/notice.
+2. A Unblocks actor. Replaying old create and editing initial post with unchanged / removed / re-added @A never backfills consumed pair.
+3. Previously muted ordinary reply remains suppressed after Unmute and unrelated published edit; removing and re-adding old mention does not revive it.
+4. A never-selected mention recipient added in a later edit receives exactly one new mention while old suppressed pairs retain receipts and existing visible rows remain intact.
+5. Matching edit operation replay creates no new revision/notice/receipt.
+6. Fresh reply after Unmute again delivers all four ordinary sources, and a fresh post from formerly blocked actor after Unblock notifies A without reviving the old suppressed notice.
+
+**Classified first-run test harness failure:** run `44539874421`, job `135615022366` failed *before* new publication assertions because test called `.json()` on the valid ordinary profile POST HTML response. Removed response-shape assumption; confirmed persisted own Block pair in real PG. This was a test assertion error; no evidence of production defect. Retest on fresh exact head SUCCESS.
+
+Dedicated 4b.5 acceptance verified; no claim that all other exact-head workflows completed. Do not enter 4b.6–4b.11, 4c or review/merge now. Separate owner-ordered WATCH/BOOKMARKS corrections remain deferred until after Mute/block.
+
+**Лира STOP после 4b.5.** Next distinct `...` = **ONLY 4b.6 — private `/:locale/filters`: own list, pagination, undo/reload, topic/profile controls**, then checkpoint and STOP before 4b.7. #351 Draft; #342 service-only/no merge.
