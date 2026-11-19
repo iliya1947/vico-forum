@@ -419,3 +419,45 @@ Merge commit = current main:
 Следующий owner-ordered corrective block после этого:
 `WATCH-AUDIT-1` → `BOOKMARKS-AUDIT-1` → `BOOKMARKS-AUDIT-2`.
 `TITLE-AUDIT-1` остаётся для applicable UI/UX.
+
+
+## 2026-11-19 — Мира: #353 whole-docs review HOLD — 1 wording correction
+
+Whole-docs review выполнен на stable exact head
+`f81fc47811cace99c97b1fbacea321d3881961d9` против merged main
+`b87a6702b4f97634ee21426f95ece38f53c672ed`.
+
+Проверены все 4 Markdown path:
+- `PROJECT.md`;
+- `PROJECT_STATE.md`;
+- `docs/PROJECT_HISTORY/PROJECT_HISTORY_32.md`;
+- `docs/PROJECT_HISTORY/PROJECT_HISTORY.md`.
+
+Подтверждено:
+- permanent Mute/Block contract соответствует merged #351;
+- migration ceiling repository = `0000–0070`, external accepted evidence = `0000–0020`;
+- review/correction/CI details находятся в history, не в current state;
+- history #32 корректно отражает #351 merge, PF-REVIEW-1/2/3, Mira/Leva PASS,
+  exact-head 16/16 workflows, 20/20 jobs, 2744/2744 unit, 1476/1476 PG17,
+  49/49 connected markers и unmerged optional PF-SIMPLIFY-1;
+- docs-only CI run `44602703247`: checks + database SUCCESS;
+- code/schema/runtime/ACL/tests не менялись.
+
+**DOC-PF-1 [P3 factual wording]**:
+в `PROJECT_STATE.md` Forum core сейчас написано
+«... приватные списки `/:locale/filters` и **сохранение подавленных уведомлений
+без backfill** ...».
+
+Это неточно: подавленные ordinary notification rows не сохраняются как inbox
+notifications. Реализация сохраняет private suppression receipts / suppressed
+recipient–post pairs, чтобы old edit/replay после Unmute/Unblock не создавал
+уведомление задним числом.
+
+Correction criterion: заменить только эту формулировку на factual wording вроде
+«учёт подавленных пар получатель–сообщение без backfill» или эквивалентное,
+не расширяя PROJECT_STATE implementation details. Остальные docs не менять без
+новой причины.
+
+Следующий исполнитель — **Лира / ChatGPT-6**: только DOC-PF-1 в #353, затем
+applicable docs CI / stable exact head и STOP Мире для повторного docs review.
+Лёва для docs-only review не нужен. #353 остаётся Draft; #342 service-only/no merge.
