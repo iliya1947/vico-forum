@@ -1,6 +1,6 @@
 import "@testing-library/jest-dom/vitest";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { I18nextProvider } from "react-i18next";
 import { createMemoryRouter, data, RouterProvider, useLoaderData } from "react-router";
 import { canonicalEnglishCatalog } from "../localization/catalog";
@@ -29,13 +29,17 @@ const items = [{
 
 function setup(action: ({ request }: { request: Request }) => Promise<unknown>,
   initialPath = "/en/bookmarks", next: { beforeSavedAt: string; beforeTopicId: string } | null = null,
-  authenticated = true) {
+  authenticated = true, snapshot: () => typeof items = () => items) {
   Object.defineProperty(window, "matchMedia", { configurable: true, value: vi.fn(() => ({
     matches: false, addEventListener() {}, removeEventListener() {},
   })) });
+  const loader = () => ({ items: snapshot() });
   const router = createMemoryRouter([{
-    path: "/en/bookmarks",
-    element: <BookmarksView locale="en" actorId="actor-a" items={items} next={next} />,
+    path: "/en/bookmarks", loader,
+    Component() {
+      const page = useLoaderData<typeof loader>();
+      return <BookmarksView locale="en" actorId="actor-a" items={page.items} next={next} />;
+    },
   }, {
     path: "/en/topics/:topicId", element: <div>Opened topic</div>, action,
   }], { initialEntries: [initialPath] });
@@ -73,20 +77,59 @@ describe("private Bookmarks presentation", () => {
     await waitFor(() => expect(action).toHaveBeenCalledTimes(1));
   });
 
-  it("removes the row only after the exact actor, topic and desired OFF are confirmed", async () => {
+  it("removes the row only when the server loader confirms committed removal", async () => {
+    let saved = true;
     const submissions: Record<string, FormDataEntryValue>[] = [];
     const action = vi.fn(async ({ request }: { request: Request }) => {
       submissions.push(Object.fromEntries((await request.formData()).entries()));
+      saved = false;
       return { operation: "topicBookmark", ok: true, topicId: "topic-1",
         actorId: "actor-a", bookmarked: false };
     });
-    setup(action);
+    setup(action, "/en/bookmarks", null, true, () => saved ? items : []);
     fireEvent.click(await screen.findByRole("button", { name: "Remove bookmark" }));
     await waitFor(() => expect(action).toHaveBeenCalledTimes(1));
     expect(submissions[0]).toEqual({
       intent: "setTopicBookmark", editorActorId: "actor-a", bookmarked: "false",
     });
     await waitFor(() => expect(screen.queryByRole("link", { name: /literal title/i })).not.toBeInTheDocument());
+  });
+
+  it("retains a re-added row after fresh loader revalidation and a delayed old Remove ACK", async () => {
+    let currentItems = items;
+    let release!: () => void;
+    const delayedAck = new Promise<void>(resolve => { release = resolve; });
+    const loader = vi.fn(() => currentItems);
+    const action = vi.fn(async () => {
+      currentItems = []; // First Remove commits, but its acknowledgement is delayed.
+      await delayedAck;
+      return {
+        operation: "topicBookmark", ok: true, topicId: "topic-1",
+        actorId: "actor-a", bookmarked: false,
+      };
+    });
+    const { router } = setup(action, "/en/bookmarks", null, true, loader);
+    fireEvent.click(await screen.findByRole("button", { name: "Remove bookmark" }));
+    await waitFor(() => expect(action).toHaveBeenCalledTimes(1));
+
+    // Another legitimate Add commits before the old Remove ACK reaches this tab.
+    // A new loader response contains the same actor/topic row with a fresh savedAt.
+    const newerSavedAt = "2026-11-19T10:11:12.345Z";
+    currentItems = [{ ...items[0], savedAt: newerSavedAt }];
+    const readsBefore = loader.mock.calls.length;
+    await act(async () => { await router.revalidate(); });
+    expect(loader.mock.calls.length).toBeGreaterThan(readsBefore);
+    expect(screen.getByRole("link", { name: /literal title/i })).toBeInTheDocument();
+    expect(document.querySelector(".bookmarks-list-row time"))
+      .toHaveAttribute("datetime", newerSavedAt);
+
+    await act(async () => { release(); });
+    expect(await screen.findByRole("button", { name: "Remove bookmark" })).toBeEnabled();
+    expect(screen.getByRole("link", { name: /literal title/i })).toBeInTheDocument();
+
+    await act(async () => { await router.revalidate(); });
+    expect(screen.getByRole("link", { name: /literal title/i })).toBeInTheDocument();
+    expect(action).toHaveBeenCalledTimes(1); // Old ACK never causes a mutation replay.
   });
 
   it("does not reject an initial foreign keyset deep link without an actor transition", async () => {

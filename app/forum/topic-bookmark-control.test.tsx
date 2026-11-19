@@ -46,12 +46,15 @@ describe("personal Bookmark topic fetcher", () => {
   ) => {
     let finish!: (value: unknown) => void;
     const response = new Promise<unknown>(resolve => { finish = resolve; });
+    let current: TopicBookmarkState = initial;
     const inputs: Record<string, FormDataEntryValue>[] = [];
     const action = vi.fn(async ({ request }: { request: Request }) => {
       inputs.push(Object.fromEntries((await request.formData()).entries()));
-      return response;
+      const result = await response;
+      current = desired === "true" ? "on" : "off"; // committed state reaches the loader
+      return result;
     });
-    setup(action, () => initial);
+    setup(action, () => current);
     const button = await screen.findByRole("button", { name: startLabel });
     fireEvent.click(button);
     await waitFor(() => expect(action).toHaveBeenCalledTimes(1));
@@ -67,6 +70,47 @@ describe("personal Bookmark topic fetcher", () => {
     }));
     expect(await screen.findByRole("button", { name: completedLabel }))
       .toHaveAttribute("aria-pressed", desired);
+  });
+
+  it.each([
+    ["off", "Save topic", true],
+    ["on", "Remove bookmark", false],
+  ] as const)("keeps newer Bookmark loader state over delayed old successful ACK (%s)", async (
+    initial, startLabel, desired,
+  ) => {
+    let current: TopicBookmarkState = initial;
+    let release!: () => void;
+    const delayedAck = new Promise<void>(resolve => { release = resolve; });
+    const loader = vi.fn(() => current);
+    const action = vi.fn(async () => {
+      // First writer commits, but its HTTP ACK is held until after a newer own read.
+      current = desired ? "on" : "off";
+      await delayedAck;
+      return {
+        operation: "topicBookmark", ok: true, actorId: "actor-a",
+        topicId: "topic-1", bookmarked: desired,
+      };
+    });
+    const router = setup(action, loader);
+    fireEvent.click(await screen.findByRole("button", { name: startLabel }));
+    await waitFor(() => expect(action).toHaveBeenCalledTimes(1));
+    const pendingButton = document.querySelector<HTMLButtonElement>(
+      ".topic-bookmark-control button[type='submit']",
+    );
+    expect(pendingButton).toBeDisabled();
+
+    // A second legitimate writer restores the initial pair state.
+    // The newer loader GET completes while the first writer's ACK is still pending.
+    current = initial;
+    const readsBefore = loader.mock.calls.length;
+    await act(async () => { await router.revalidate(); });
+    expect(loader.mock.calls.length).toBeGreaterThan(readsBefore);
+    expect(pendingButton).toHaveAttribute("aria-pressed", String(initial === "on"));
+
+    await act(async () => { release(); });
+    expect(await screen.findByRole("button", { name: startLabel }))
+      .toHaveAttribute("aria-pressed", String(initial === "on"));
+    expect(action).toHaveBeenCalledTimes(1); // No implicit write replay.
   });
 
   it("does not interpret an uncertain 503 as unsaved; refresh only rereads state", async () => {

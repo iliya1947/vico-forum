@@ -48,13 +48,16 @@ describe("personal Watch fetcher control", () => {
   ) => {
     let finish!: (value: unknown) => void;
     const deferred = new Promise<unknown>(resolve => { finish = resolve; });
+    let current: TopicWatchState = initial;
     const submits: Record<string, FormDataEntryValue>[] = [];
     const action = vi.fn(async ({ request }: { request: Request }) => {
       const form = await request.formData();
       submits.push(Object.fromEntries(form.entries()));
-      return deferred;
+      const response = await deferred;
+      current = desired === "true" ? "on" : "off"; // committed state reaches the loader
+      return response;
     });
-    setup(action, () => initial);
+    setup(action, () => current);
     const button = await screen.findByRole("button", { name: startLabel });
     fireEvent.click(button);
     await waitFor(() => expect(action).toHaveBeenCalledTimes(1));
@@ -70,6 +73,47 @@ describe("personal Watch fetcher control", () => {
     }));
     expect(await screen.findByRole("button", { name: completedLabel }))
       .toHaveAttribute("aria-pressed", desired);
+  });
+
+  it.each([
+    ["off", "Watch topic", true],
+    ["on", "Stop watching", false],
+  ] as const)("keeps a newer loader snapshot after an old successful Watch ACK (%s)", async (
+    initial, startLabel, desired,
+  ) => {
+    let current: TopicWatchState = initial;
+    let release!: () => void;
+    const delayedAck = new Promise<void>(resolve => { release = resolve; });
+    const loader = vi.fn(() => current);
+    const action = vi.fn(async () => {
+      // Writer 1 commits, but its HTTP acknowledgement is delayed.
+      current = desired ? "on" : "off";
+      await delayedAck;
+      return {
+        operation: "topicWatch", ok: true, actorId: "watcher-1",
+        topicId: "topic-1", watching: desired,
+      };
+    });
+    const router = setup(action, loader);
+    fireEvent.click(await screen.findByRole("button", { name: startLabel }));
+    await waitFor(() => expect(action).toHaveBeenCalledTimes(1));
+    const pendingButton = document.querySelector<HTMLButtonElement>(
+      ".topic-watch-control button[type='submit']",
+    );
+    expect(pendingButton).toBeDisabled();
+
+    // Another legitimate writer restores the pair, and Router reads that
+    // authoritative value before the older acknowledgement reaches the UI.
+    current = initial;
+    const readsBefore = loader.mock.calls.length;
+    await act(async () => { await router.revalidate(); });
+    expect(loader.mock.calls.length).toBeGreaterThan(readsBefore);
+    expect(pendingButton).toHaveAttribute("aria-pressed", String(initial === "on"));
+
+    await act(async () => { release(); });
+    expect(await screen.findByRole("button", { name: startLabel }))
+      .toHaveAttribute("aria-pressed", String(initial === "on"));
+    expect(action).toHaveBeenCalledTimes(1); // No implicit mutation replay.
   });
 
   it("withholds success after an uncertain failure and recovers only from a fresh loader read", async () => {
