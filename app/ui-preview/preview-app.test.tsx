@@ -1410,6 +1410,22 @@ describe("interactive Pages preview", { timeout: 10_000 }, () => {
     expect(screen.getByLabelText("Attach")).toBeDisabled();
   });
 
+  it("toggles topic Watch in the static Pages preview", async () => {
+    const user = userEvent.setup();
+    await renderEmbeddedPreview(<EmbeddedPreview scenarioId="topic-solved-user" identity="user" />);
+
+    expect(await screen.findByRole("button", { name: "Watch topic" })).toHaveAttribute("aria-pressed", "false");
+    expect(screen.getByText("Not watching this topic.")).toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: "Watch topic" }));
+    expect(await screen.findByRole("button", { name: "Stop watching" })).toHaveAttribute("aria-pressed", "true");
+    expect(screen.getByText("Watching this topic.")).toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: "Stop watching" }));
+    expect(await screen.findByRole("button", { name: "Watch topic" })).toHaveAttribute("aria-pressed", "false");
+    expect(screen.getByText("Not watching this topic.")).toBeInTheDocument();
+  });
+
   it("edits the authenticated author's own topic title in the preview", async () => {
     const user = userEvent.setup();
     await renderEmbeddedPreview(<EmbeddedPreview scenarioId="topic-solved-user" identity="user" />);
