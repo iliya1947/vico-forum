@@ -500,8 +500,8 @@ describe("Mute/Block M5: receipt/notice publication atomicity", () => {
       + " where owner_id=$1 and context_key=$2 and draft_id=$3",
       [actor, contextKey, draftId],
     );
-    await fixture.query("create function filter_race_publication_fault() returns trigger language plpgsql as $"
-      + " begin raise exception 'forced publication receipt failure'; end; $");
+    await fixture.query("create function filter_race_publication_fault() returns trigger language plpgsql as $$"
+      + " begin raise exception 'forced publication receipt failure'; end; $$");
     await fixture.query("create trigger filter_race_publication_fault before insert"
       + " on forum_publication_receipts for each row execute function filter_race_publication_fault()");
     try {
