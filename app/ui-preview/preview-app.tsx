@@ -199,7 +199,7 @@ export const scenarios: readonly Scenario[] = [
   { id: "attention-guest-unauthenticated", label: "Moderation · guest unauthenticated", locale: "en", direction: "ltr", identity: "guest", path: "/en/attention?mode=signals", view: "attention", allowedIdentities: ["guest"] },
   { id: "attention-user-forbidden", label: "Moderation · ordinary user forbidden", locale: "en", direction: "ltr", identity: "user", path: "/en/attention?mode=signals", view: "attention", allowedIdentities: ["user"] },
   { id: "attention-complaints", label: "Moderation · Complaints queue", locale: "en", direction: "ltr", identity: "manager", path: "/en/attention?mode=complaints", view: "attention", allowedIdentities: ["manager"] },
-  { id: "attention-security", label: "Moderation · Security placeholder", locale: "en", direction: "ltr", identity: "manager", path: "/en/attention?mode=security", view: "attention", allowedIdentities: ["manager"] },
+  { id: "attention-security", label: "Moderation · Security attachments", locale: "en", direction: "ltr", identity: "manager", path: "/en/attention?mode=security", view: "attention", allowedIdentities: ["manager"] },
   { id: "attention-empty", label: "Moderation · Signals · empty", locale: "en", direction: "ltr", identity: "manager", path: "/en/attention?mode=signals", view: "attention", variant: "attention-empty", allowedIdentities: ["manager"] },
   { id: "help-solutions-solutions", label: "Help & solutions · Solutions", locale: "en", direction: "ltr", identity: "guest", path: "/en/categories/help-solutions?mode=solutions", view: "category" },
   { id: "help-solutions-filters", label: "Help & solutions · Combined filters", locale: "en", direction: "ltr", identity: "guest", path: "/en/categories/help-solutions?mode=active&solution=outdated&answers=has&quality=normal&relation=standalone", view: "category" },
@@ -3868,6 +3868,26 @@ function previewAttentionState(interactions: PreviewInteractionState) {
   };
 }
 
+function previewSecurityAttachmentQueue() {
+  return {
+    events: [{
+      id: "security-attachment-1",
+      uploadId: "upload-security-1",
+      uploadedByUserId: "alex",
+      contextKey: "reply:typed-api",
+      draftId: "operation-security-1",
+      fileName: "diagnostics.zip",
+      declaredMime: "application/zip",
+      detectedType: "application/x-dosexec",
+      reason: "executable-signature",
+      declaredByteSize: 4096,
+      createdAt: "2026-11-18T11:20:00.000Z",
+    }],
+    hasMore: false,
+    page: 0,
+  };
+}
+
 async function previewAttentionAction(
   scenario: Scenario,
   interactions: PreviewInteractionState,
@@ -4396,6 +4416,9 @@ function PreviewAttentionRoute({ scenario, interactions }: {
       ? { cases: selectedCases, hasMore: false, page: 0 }
       : null}
     counts={mode === "signals" ? counts : null}
+    securityQueue={mode === "security" && group === "attachments"
+      ? previewSecurityAttachmentQueue()
+      : null}
     complaintQueue={mode === "complaints" && group === "group1"
       ? previewComplaintQueue(interactions)
       : null}
@@ -4405,6 +4428,7 @@ function PreviewAttentionRoute({ scenario, interactions }: {
     complaintHistory={mode === "complaints" && group === "group3"
       ? previewComplaintHistory(interactions)
       : null}
+    canReadSecurityAttachments={scenario.identity === "manager" || scenario.identity === "owner"}
     canReviewComplaints={scenario.identity === "manager" || scenario.identity === "owner"}
     canReviewAppeals={scenario.identity === "manager" || scenario.identity === "owner"}
     referenceTime={previewReferenceTime}
