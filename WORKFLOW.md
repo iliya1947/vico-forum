@@ -14,7 +14,7 @@ Consolidated audit corrections в Draft implementation PR #354.
 - WATCH-AUDIT-1 уже исправлен.
 - BOOKMARKS-AUDIT-1 implementation уже присутствует в текущем diff, но author checkpoint/final acceptance этого расширенного head ещё не зафиксирован.
 - BOOKMARKS-AUDIT-2 и TITLE-AUDIT-1 на текущем head ещё не реализованы.
-- GitHub workflows на `79066ada...` в момент миграции в основном выполняются; Own topic title connected acceptance уже SUCCESS. Финальный exact-head PASS не заявлен.
+- Exact-head GitHub workflows на `79066ada...`: 7/7 completed SUCCESS, включая общий CI, Topic Watch, Topic Bookmarks, Own topic title и regression connected jobs. Это подтверждает текущий Watch+Bookmark-control slice, но не является final gate всего #354, потому что BOOKMARKS-AUDIT-2 и TITLE-AUDIT-1 ещё не реализованы.
 
 ## Назначение
 
