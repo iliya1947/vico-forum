@@ -12,22 +12,25 @@ Moderation visibility — **plan review PASS**. Следующий bounded-эт�
 - V-T1/V-T2 — technical fit PASS на current main.
 - Лёва завершил адаптацию V1–V9 к current main и разложил delivery на B1–B9.
 
-## Mira plan review
+## Owner process decision — stacked bounded PR delivery
 
-Технических дефектов плана не подтверждено.
+Владелец утвердил новый рабочий паттерн, который применяется здесь и берётся на вооружение для последующих подходящих задач:
 
-Ранее отмеченный `VIS-PLAN-R1` был ошибочно классифицирован как технический finding. Фактически это было несоответствие delivery topology действующему `AGENTS.md`, то есть процессный вопрос в зоне ответственности Миры.
+1. B1 открывается от `main`.
+2. B2 открывается с base = head-ветка B1; B3 — с base = head-ветка B2; далее лестницей до последнего bounded-этапа.
+3. Каждый PR остаётся отдельным bounded implementation PR и показывает свой локальный diff относительно предыдущей ступени.
+4. Промежуточные ступени не merge в `main`.
+5. После завершения последней ступени итоговый head всей лестницы переносится/fast-forward'ится в ветку первого PR, чтобы первый PR против `main` содержал весь законченный вертикальный срез.
+6. Промежуточные B2…Bn закрываются как superseded, а не merge.
+7. Собранный первый PR проходит final stable exact-head author self-check → Mira whole-feature review → Leva independent whole-feature review того же head → owner merge в `main`.
+8. Если нижняя ступень требует изменения до финальной сборки, зависимые верхние ступени должны быть синхронизированы с изменившимся основанием до продолжения.
+9. Этот owner decision имеет приоритет над текущей формулировкой `AGENTS.md`. После текущей задачи требуется отдельное process изменение `AGENTS.md`, чтобы закрепить stacked bounded PR delivery как общий штатный маршрут там, где bounded-этапы составляют одну неделимую вертикальную feature.
 
-Мира самостоятельно исправила service plan:
-- B1–B9 остаются теми же техническими bounded-этапами;
-- каждый B-stage выполняется в отдельном implementation PR;
-- каждый этап проходит author self-check → Mira whole-PR → Leva independent review → owner merge;
-- только после merge предыдущего этапа начинается следующий;
-- техническое содержание V1–V9 и принятые продуктовые решения не изменены.
+## Moderation visibility delivery
 
-## Следующий этап
+Для task5 используется стек B1→B9 по правилам выше.
 
-**Лира / ChatGPT-6** — реализовать только **B1 — schema/catalog/History foundation** в отдельном implementation PR от актуального main.
+Следующий исполнитель: **Лира / ChatGPT-6**, только B1 — schema/catalog/History foundation.
 
 B1 scope:
 - forward migration;
@@ -38,7 +41,11 @@ B1 scope:
 - clean migration/default-visible/catalog/constraint/snapshot/manifest/ACL checks;
 - никаких route-exposed Hide/Restore и никакой реализации B2+.
 
-После B1 author self-check и applicable checks — STOP Мире для whole-PR review.
+После B1 Лира выполняет self-check/applicable checks и STOP. B2 открывается как следующий stacked PR поверх head-ветки B1 только после coordinator checkpoint и отсутствия блокирующего дефекта B1.
+
+## Process follow-up
+
+После завершения текущей задачи #342 подготовить отдельное изменение `AGENTS.md`: заменить обязательную схему «bounded PR → review → merge → следующий bounded PR» на штатный stacked bounded PR workflow для тех задач, где несколько bounded-этапов образуют один вертикальный результат и промежуточный merge в main нежелателен.
 
 ## После moderation visibility
 
