@@ -1285,10 +1285,9 @@ Exact implementation head остаётся
   `tests/database/topic-watch.test.ts`; production/schema/UI changes = 0;
 - тот же SA07 workflow на том же exact head повторно завершился SUCCESS,
   job `135564876373`, без code changes;
-- полный current exact-head workflow set теперь **19/19 SUCCESS**, pending/failure = 0.
+- полный current exact-head workflow set теперь **15/15 workflow SUCCESS**, pending/failure = 0.
 
-Вывод: первый SA07 failure — transient SA07/PostgreSQL availability timeout,
-не подтверждённая Mute/block regression и не основание менять production-код или
+Вывод: первый SA07 failure не воспроизвёлся при повторе. Route classified 503 совместим с PostgreSQL availability/query timeout, но точная первопричина не проверена; это не подтверждённая Mute/block regression и не основание менять production-код или
 строить workaround. 4a.8 закрыт без implementation changes.
 
 Следующий шаг по принятой декомпозиции — только 4a.9 после следующего `...`:

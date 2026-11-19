@@ -354,3 +354,14 @@ Deliverables: forward migration `0070_personal_filters` с `forum_topic_mutes` o
 Проверен текущий exact head Draft implementation #351 `83b32eb364d74a2fd85377dbc907f7723254edf4`, CI https://github.com/iliya1947/vico-forum/actions/runs/44522424656, job `database` id `135554174396`, **completed SUCCESS**. Лог Vitest: **109/109 files, 1476/1476 tests PASS**, в том числе `tests/database/personal-filters-concurrency.test.ts` **27/27 PASS** (READ COMMITTED snapshot order/actor mutex/deactivation/receipt and attachment rollback). Unhandled Errors/Unhandled Rejection **отсутствуют**. Ранее flaking Watch race test не оставил необработанного отклонения, production/schema/UI files не изменялись, новых commits в 4a.7 нет.
 
 **4a.7 закрыта; STOP.** Полный CI и aggregate workflows **не** объявляются зелёными: `SA07 Background Localization Files Data and Integrations connected Chromium acceptance` на том же head завершился **failure**, фактическая причина не изучалась в узком scope 4a.7. Следующий отдельный шаг **4a.8 по `...`** — проверить `checks`, SA07 и остальные existing regressions на exact head, определить relevance/реальную причину SA07 и при необходимости исправить только подтверждённую current-scope причину, затем STOP. Потом только по новой команде **4a.9** — служебный closeout/4b handoff, STOP. Нет перехода к 4b/4c.
+
+
+## 2026-11-19 — Лира: 4a.8 CI/regression verification, STOP
+
+- PR #351 stable exact head `83b32eb364d74a2fd85377dbc907f7723254edf4` не изменялся в 4a.8. Сравнение с предыдущим зелёным `a2b077fd2059d9e6c189b35d008d81d23ed6d4ba` затрагивает только новый PostgreSQL concurrency test и существующий Watch race test.
+- GitHub run `44522424656`: `checks` job `135554174824` SUCCESS, `database` job `135554174396` SUCCESS (109/109 PG files, 1476/1476 tests, 27/27 new focused, no unhandled errors).
+- SA07 first job `135554174007` FAILED: after successful document/locale tests one Integrations `.data` GET returned 503 after ~8.25 s, expected 200. Exact underlying PostgreSQL/availability cause unverified.
+- Re-ran only SA07 failed job at same exact head; new job `135564876373` SUCCESS, `SA07-B1-L-F-D-I-connected-pass` in full log. Current GitHub workflow set: **15/15 workflow SUCCESS after retry**; production/SA07 code not modified or tests weakened. Initial failure not erased from history.
+- No confirmed Mute/block current-scope defect from SA07. Dedicated Mute/block browser acceptance is still part 4b; it has not been run.
+
+**Лира STOP после 4a.8.** Следующий только после отдельного `...`: 4a.9 service evidence/handoff. Никакого автоматического 4b/4c/review/merge.
