@@ -154,7 +154,7 @@ describe("Personal Mute/Block controls", () => {
     const router = setup(kind, action, loader);
     fireEvent.click(await screen.findByRole("button", { name: label }));
     await waitFor(() => expect(action).toHaveBeenCalledTimes(1));
-    expect(screen.getByRole("button", { name: "Updating…" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Updating filter…" })).toBeDisabled();
 
     // Another legitimate same-pair writer restores the initial state,
     // then this route sees the newer authoritative GET while old ACK is pending.
@@ -162,7 +162,7 @@ describe("Personal Mute/Block controls", () => {
     const before = loader.mock.calls.length;
     await act(async () => { await router.revalidate(); });
     expect(loader.mock.calls.length).toBeGreaterThan(before);
-    expect(screen.getByRole("button", { name: "Updating…" }))
+    expect(screen.getByRole("button", { name: "Updating filter…" }))
       .toHaveAttribute("aria-pressed", String(initial === "on"));
 
     await act(async () => { release(); });
