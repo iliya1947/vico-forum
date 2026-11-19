@@ -44,6 +44,7 @@
 AGENTS.md
 → RULES.md
 → TASK.md
+→ PLAN.md
 → WORKFLOW.md
 → свой личный файл
 → материалы активной работы
