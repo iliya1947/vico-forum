@@ -84,6 +84,19 @@ export class ForumService {
     return this.repository.reviseTopicTitle(topicId, expectedRevisionId, normalizeRevision(revision), authorId);
   }
 
+  setTopicMute(input: { topicId: string; actorId: string; muted: boolean }) {
+    validateEntity(input.topicId, input.actorId);
+    if (typeof input.muted !== "boolean") throw new InvalidForumContentError("invalid mute state");
+    return this.repository.setTopicMute(input);
+  }
+
+  setUserBlock(input: { actorId: string; blockedUserId: string; blocked: boolean }) {
+    validateEntity(input.actorId, input.blockedUserId);
+    if (input.actorId === input.blockedUserId) throw new InvalidForumContentError("cannot block self");
+    if (typeof input.blocked !== "boolean") throw new InvalidForumContentError("invalid block state");
+    return this.repository.setUserBlock(input);
+  }
+
   setTopicBookmark(input: { topicId: string; actorId: string; bookmarked: boolean }) {
     validateEntity(input.topicId, input.actorId);
     if (typeof input.bookmarked !== "boolean") throw new InvalidForumContentError("invalid bookmark state");

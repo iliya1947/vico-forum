@@ -30,6 +30,8 @@ import {
   forumTags,
   forumTopicReadStates,
   forumTopicBookmarks,
+  forumTopicMutes,
+  forumUserBlocks,
   forumTopicWatches,
   forumTopicPins,
   forumTopicTags,
@@ -493,6 +495,8 @@ export interface ForumReader {
   readUnreadForUser(userId: string): Promise<ForumUnreadTopicSummary[]>;
   readTopicReadState(userId: string, topicId: string): Promise<ForumTopicReadState | undefined>;
   readTopicWatch(userId: string, topicId: string): Promise<boolean>;
+  readTopicMute(userId: string, topicId: string): Promise<boolean>;
+  readUserBlock(userId: string, blockedUserId: string): Promise<boolean>;
   readTopicBookmark(userId: string, topicId: string): Promise<boolean>;
   readTopicBookmarks(userId: string, before?: ForumTopicBookmarkCursor): Promise<ForumTopicBookmarksPage>;
   readNotifications(userId:string,page:number):Promise<ForumNotificationPage>;
@@ -865,6 +869,44 @@ export class DrizzleForumRepository {
         },
       };
     }));
+  }
+
+  async setTopicMute(input: { topicId: string; actorId: string; muted: boolean }): Promise<boolean> {
+    return this.database.transaction(async (tx) => {
+      // Preserve target FK, then admit active actor on this same transaction.
+      const [topic] = await tx.select({ id: forumTopics.id }).from(forumTopics)
+        .where(eq(forumTopics.id, input.topicId)).for("key share");
+      if (!topic) throw new ForumEntityNotFoundError("topic does not exist");
+      await assertActiveAccountForDrizzleMutation(tx, input.actorId);
+      if (input.muted) {
+        await tx.insert(forumTopicMutes).values({ userId: input.actorId, topicId: input.topicId })
+          .onConflictDoNothing();
+      } else {
+        await tx.delete(forumTopicMutes).where(and(
+          eq(forumTopicMutes.userId, input.actorId), eq(forumTopicMutes.topicId, input.topicId),
+        ));
+      }
+      return input.muted;
+    });
+  }
+
+  async setUserBlock(input: { actorId: string; blockedUserId: string; blocked: boolean }): Promise<boolean> {
+    if (input.actorId === input.blockedUserId) throw new Error("cannot block self");
+    return this.database.transaction(async (tx) => {
+      const [target] = await tx.select({ id: user.id }).from(user)
+        .where(eq(user.id, input.blockedUserId)).for("key share");
+      if (!target) throw new ForumEntityNotFoundError("user does not exist");
+      await assertActiveAccountForDrizzleMutation(tx, input.actorId);
+      if (input.blocked) {
+        await tx.insert(forumUserBlocks).values({ userId: input.actorId, blockedUserId: input.blockedUserId })
+          .onConflictDoNothing();
+      } else {
+        await tx.delete(forumUserBlocks).where(and(
+          eq(forumUserBlocks.userId, input.actorId), eq(forumUserBlocks.blockedUserId, input.blockedUserId),
+        ));
+      }
+      return input.blocked;
+    });
   }
 
   async setTopicBookmark(input: { topicId: string; actorId: string; bookmarked: boolean }): Promise<boolean> {
@@ -1554,6 +1596,18 @@ export class DrizzleForumRepository {
         ...publicDiscoveryLocation(row),
       };
     });
+  }
+
+  async readTopicMute(userId: string, topicId: string): Promise<boolean> {
+    const rows = await this.database.select({ id: forumTopicMutes.topicId }).from(forumTopicMutes)
+      .where(and(eq(forumTopicMutes.userId, userId), eq(forumTopicMutes.topicId, topicId))).limit(1);
+    return rows.length > 0;
+  }
+
+  async readUserBlock(userId: string, blockedUserId: string): Promise<boolean> {
+    const rows = await this.database.select({ id: forumUserBlocks.blockedUserId }).from(forumUserBlocks)
+      .where(and(eq(forumUserBlocks.userId, userId), eq(forumUserBlocks.blockedUserId, blockedUserId))).limit(1);
+    return rows.length > 0;
   }
 
   async readTopicBookmark(userId: string, topicId: string): Promise<boolean> {

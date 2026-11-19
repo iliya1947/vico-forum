@@ -1282,6 +1282,49 @@ export const forumTopicReadStates = pgTable(
   ],
 );
 
+export const forumTopicMutes = pgTable(
+  "forum_topic_mutes",
+  {
+    userId: text("user_id").notNull().references(() => user.id, { onDelete: "cascade" }),
+    topicId: text("topic_id").notNull().references(() => forumTopics.id, { onDelete: "cascade" }),
+    createdAt: timestamp("created_at", { withTimezone: true, precision: 3 })
+      .notNull().default(sql`clock_timestamp()`),
+  },
+  (table) => [
+    primaryKey({ name: "forum_topic_mutes_pk", columns: [table.userId, table.topicId] }),
+    index("forum_topic_mutes_user_created_topic_idx").on(table.userId, table.createdAt.desc(), table.topicId.desc()),
+    index("forum_topic_mutes_topic_idx").on(table.topicId),
+  ],
+);
+
+export const forumUserBlocks = pgTable(
+  "forum_user_blocks",
+  {
+    userId: text("user_id").notNull().references(() => user.id, { onDelete: "cascade" }),
+    blockedUserId: text("blocked_user_id").notNull().references(() => user.id, { onDelete: "cascade" }),
+    createdAt: timestamp("created_at", { withTimezone: true, precision: 3 })
+      .notNull().default(sql`clock_timestamp()`),
+  },
+  (table) => [
+    primaryKey({ name: "forum_user_blocks_pk", columns: [table.userId, table.blockedUserId] }),
+    check("forum_user_blocks_not_self_check", sql`${table.userId} <> ${table.blockedUserId}`),
+    index("forum_user_blocks_user_created_target_idx").on(table.userId, table.createdAt.desc(), table.blockedUserId.desc()),
+    index("forum_user_blocks_target_idx").on(table.blockedUserId),
+  ],
+);
+
+export const forumPostNotificationSuppressions = pgTable(
+  "forum_post_notification_suppressions",
+  {
+    recipientUserId: text("recipient_user_id").notNull().references(() => user.id, { onDelete: "cascade" }),
+    postId: text("post_id").notNull().references(() => forumPosts.id, { onDelete: "cascade" }),
+  },
+  (table) => [
+    primaryKey({ name: "forum_post_notification_suppressions_pk", columns: [table.recipientUserId, table.postId] }),
+    index("forum_post_notification_suppressions_post_idx").on(table.postId),
+  ],
+);
+
 export const forumTopicBookmarks = pgTable(
   "forum_topic_bookmarks",
   {

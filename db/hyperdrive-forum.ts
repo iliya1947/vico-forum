@@ -25,6 +25,8 @@ import { assertNoActiveUserMeasureRestriction } from "./user-measure-policy";
 
 export interface ForumWriter {
   setTopicWatch(input: { topicId: string; actorId: string; watching: boolean }): Promise<boolean>;
+  setTopicMute(input: { topicId: string; actorId: string; muted: boolean }): Promise<boolean>;
+  setUserBlock(input: { actorId: string; blockedUserId: string; blocked: boolean }): Promise<boolean>;
   setTopicBookmark(input: { topicId: string; actorId: string; bookmarked: boolean }): Promise<boolean>;
   editOwnTopicTitle(input: {
     topicId: string; actorId: string; expectedRevisionId: string; title: string;
@@ -104,6 +106,8 @@ export function createHyperdriveForumReader(
     readUnreadForUser: (userId) => read((repository) => repository.readUnreadForUser(userId)),
     readTopicReadState: (userId, topicId) => read((repository) => repository.readTopicReadState(userId, topicId)),
     readTopicWatch: (userId, topicId) => read((repository) => repository.readTopicWatch(userId, topicId)),
+    readTopicMute: (userId, topicId) => read((repository) => repository.readTopicMute(userId, topicId)),
+    readUserBlock: (userId, blockedUserId) => read((repository) => repository.readUserBlock(userId, blockedUserId)),
     readTopicBookmark: (userId, topicId) => read((repository) => repository.readTopicBookmark(userId, topicId)),
     readTopicBookmarks: (userId, before) => read((repository) => repository.readTopicBookmarks(userId, before)),
     readNotifications:(userId,page)=>read(repo=>repo.readNotifications(userId,page)),
@@ -179,6 +183,8 @@ export function createHyperdriveForumWriter(
     },
     editOwnTopicTitle: (input) => writeCorrection((forum) => forum.editOwnTopicTitle(input)),
     setTopicWatch: (input) => write((forum) => forum.setTopicWatch(input)),
+    setTopicMute: (input) => write((forum) => forum.setTopicMute(input)),
+    setUserBlock: (input) => write((forum) => forum.setUserBlock(input)),
     setTopicBookmark: (input) => write((forum) => forum.setTopicBookmark(input)),
     updateProfile: async ({ actorId, fields }) => {
       const client = clientFactory();
