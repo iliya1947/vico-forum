@@ -500,3 +500,21 @@ First run `44549323905` failed after first 4b.8 marker because the test imposed 
 **Exact-head CI:** [run 44549801846](https://github.com/iliya1947/vico-forum/actions/runs/44549801846), `database` job `135650164194` and `checks` job `135650164392` **completed SUCCESS**, including lint/typecheck/tests/build. Other 14 workflows not claimed all done.
 
 **Лира STOP после 4b.8.** Next distinct `...` = **ONLY 4b.9 — EN/RU/HE, keyboard and narrow RTL Chromium**, then checkpoint STOP before 4b.10. No 4c, coordinator/independent whole-PR review, merge, WATCH/BOOKMARKS corrections or Stage 6. PR #342 service-only/no merge; PR #351 Draft.
+
+## 2026-11-19 — Лира: 4b.9 localized keyboard and narrow HE RTL PASS; STOP
+
+**Bounded scope:** real Worker/Better Auth/PostgreSQL 17/Chromium acceptance for EN/RU/HE Mute/Block, keyboard focus/actions, private-list navigation and Undo, 360px RTL and collapsed-post Reveal. Draft #351 exact head `0fd73ffb86303e3c13887a3054b3b8b2b265568a`. Only `tests/browser/personal-filters/check.py` changed (test-only commits `2878312d9a619a3b22f5d64edfda316217e31333`, `6236e8ce18d03c6381e61073e96481f073741a7c`, `0fd73ffb86303e3c13887a3054b3b8b2b265568a`); no production/schema/locale/CSS modifications.
+
+**Connected dedicated gate:** [run 44554597322](https://github.com/iliya1947/vico-forum/actions/runs/44554597322), job `135667126908` **completed SUCCESS**, **48/48 `FILTERS_CONNECTED` markers** (42 previous + six 4b.9):
+1. English topic Mute via real keyboard Enter persists own pair; private list labels and `aria-pressed` / `aria-current` reflect confirmed state.
+2. Russian Mute-on label and Block via Space on profile; translated private users tab and block-state ARIA.
+3. Hebrew `lang=he`, `dir=rtl`, 360px viewport: topics tab labels, focus-visible, keyboard Tab order, filter action button geometry and no horizontal document overflow.
+4. Hebrew keyboard Enter navigates to blocked-users tab; row/undo control remains on screen and state stays private.
+5. Hebrew blocked B original is collapsed with translated notice, keyboard Enter reveals body; persisted Block/Mute unaffected.
+6. Hebrew keyboard Undo Block (Enter) and Mute (Space) removes own PG pairs; English and Russian source controls confirm OFF after navigation/reload.
+
+**Early harness-only failures:** run `44553087081` incorrectly asserted text tab link height >=24px (actual 19px), run `44553677254` similarly asserted filtered-post Reveal button >=24px (actual 21px). These do not establish a current-scope functional or keyboard defect; no CSS change was justified. Final test differentiates button/text link geometry and checks actual RTL accessibility and keyboard behavior.
+
+**Exact-head CI:** [run 44554597626](https://github.com/iliya1947/vico-forum/actions/runs/44554597626) **completed SUCCESS**, `checks` job `135667127646` (lint/typecheck/tests/build) and `database` job `135667128461` (PostgreSQL17/Worker). Does not claim all other 14 PR workflows complete.
+
+**Лира STOP после 4b.9.** Next separate `...` activates **ONLY 4b.10 — full dedicated connected Mute/block acceptance and scoped fixes to verified current-scope defects**, followed by checkpoint STOP before 4b.11. No 4c, Mira/Leva whole-PR review, merge, future Stage, general UI/UX or deferred WATCH/BOOKMARKS correction. #351 Draft; #342 service-only/no merge.
