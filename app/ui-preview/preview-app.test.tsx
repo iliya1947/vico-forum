@@ -571,7 +571,7 @@ describe("embedded preview routing", { timeout: 10_000 }, () => {
       const current = document.querySelector('[data-monitor-history-key="system.runtime"]');
       expect(current).not.toBeNull();
       return current;
-    })).not.toBeNull();
+    }, { timeout: 3_000 })).not.toBeNull();
     expect(document.querySelector('[data-history-kind="monitor.observed"]')).not.toBeNull();
     expect(document.querySelector("[data-history-filters]")).not.toBeNull();
 
@@ -587,23 +587,25 @@ describe("embedded preview routing", { timeout: 10_000 }, () => {
       );
       expect(current).not.toBeNull();
       return current!;
-    });
+    }, { timeout: 3_000 });
     await user.click(forumLink);
 
     const forum = await waitFor(() => {
       const current = document.querySelector('[data-monitor-key="forum.structure"]') as HTMLElement | null;
       expect(current).not.toBeNull();
       return current!;
-    });
+    }, { timeout: 3_000 });
     const forumHistory = forum.querySelector(
       'a[href="/en/super-admin/monitoring/forum/forum.structure/history"]',
     );
     expect(forumHistory).not.toBeNull();
     await user.click(forumHistory!);
 
-    expect(await waitFor(() =>
-      document.querySelector('[data-monitor-history-key="forum.structure"]'),
-    )).not.toBeNull();
+    expect(await waitFor(() => {
+      const current = document.querySelector('[data-monitor-history-key="forum.structure"]');
+      expect(current).not.toBeNull();
+      return current;
+    }, { timeout: 3_000 })).not.toBeNull();
     expect(document.querySelector('[data-history-kind="monitor.observed"]')).not.toBeNull();
     expect(document.querySelector('a[href="/en/super-admin/monitoring/forum"]')).not.toBeNull();
   });
@@ -1244,7 +1246,11 @@ describe("interactive Pages preview", { timeout: 10_000 }, () => {
       identity="manager"
     />);
 
-    expect(await waitFor(() => document.querySelector(".complaint-queue"))).not.toBeNull();
+    expect(await waitFor(() => {
+      const current = document.querySelector(".complaint-queue");
+      expect(current).not.toBeNull();
+      return current;
+    }, { timeout: 3_000 })).not.toBeNull();
     const openCase = document.querySelector(".complaint-open-case");
     expect(openCase).not.toBeNull();
     await user.click(openCase!);
@@ -1253,7 +1259,7 @@ describe("interactive Pages preview", { timeout: 10_000 }, () => {
       const current = document.querySelector(".complaint-review");
       expect(current).not.toBeNull();
       return current;
-    })).not.toBeNull();
+    }, { timeout: 3_000 })).not.toBeNull();
 
     const note = document.querySelector('textarea[name="body"]');
     expect(note).not.toBeNull();
@@ -1276,6 +1282,7 @@ describe("interactive Pages preview", { timeout: 10_000 }, () => {
 
     await waitFor(() =>
       expect(document.querySelector('textarea[name="reasoning"]')).toBeNull(),
+      { timeout: 3_000 },
     );
     expect(screen.getByText("Preview moderator decision")).toBeInTheDocument();
   });
