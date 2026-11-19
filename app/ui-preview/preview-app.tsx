@@ -29,6 +29,7 @@ import { SuperAdminLocalization } from "../super-admin/localization-current";
 import { SuperAdminIntegrations } from "../super-admin/integration-current";
 import { SuperAdminData } from "../super-admin/data-current";
 import { SuperAdminFiles } from "../super-admin/file-current";
+import { SuperAdminNativeCurrent } from "../super-admin/native-current";
 import { SuperAdminMonitoringIndex, SuperAdminShell, SystemMonitorCards } from "../super-admin/view";
 import { superAdminMonitoringPath } from "../super-admin/paths";
 import type { AdminHistoryChange, AdminHistoryEvent } from "../../db/admin-history";
@@ -246,6 +247,9 @@ export const scenarios: readonly Scenario[] = [
   { id: "super-admin-integrations-owner", label: "Super-admin · Integrations", locale: "en", direction: "ltr", identity: "owner", path: "/en/super-admin/monitoring/integrations", view: "super-admin", allowedIdentities: ["owner"] },
   { id: "super-admin-data-owner", label: "Super-admin · Data", locale: "en", direction: "ltr", identity: "owner", path: "/en/super-admin/monitoring/data", view: "super-admin", allowedIdentities: ["owner"] },
   { id: "super-admin-files-owner", label: "Super-admin · Files", locale: "en", direction: "ltr", identity: "owner", path: "/en/super-admin/monitoring/files", view: "super-admin", allowedIdentities: ["owner"] },
+  { id: "super-admin-forum-owner", label: "Super-admin · Forum", locale: "en", direction: "ltr", identity: "owner", path: "/en/super-admin/monitoring/forum", view: "super-admin", allowedIdentities: ["owner"] },
+  { id: "super-admin-administration-owner", label: "Super-admin · Administration", locale: "en", direction: "ltr", identity: "owner", path: "/en/super-admin/monitoring/administration", view: "super-admin", allowedIdentities: ["owner"] },
+  { id: "super-admin-moderation-owner", label: "Super-admin · Moderation", locale: "en", direction: "ltr", identity: "owner", path: "/en/super-admin/monitoring/moderation", view: "super-admin", allowedIdentities: ["owner"] },
   { id: "super-admin-guest-unauthenticated", label: "Super-admin · guest unauthenticated", locale: "en", direction: "ltr", identity: "guest", path: "/en/super-admin", view: "super-admin", allowedIdentities: ["guest"] },
   { id: "super-admin-manager-forbidden", label: "Super-admin · manager forbidden", locale: "en", direction: "ltr", identity: "manager", path: "/en/super-admin", view: "super-admin", allowedIdentities: ["manager"] },
   { id: "admin", label: "Authorization", locale: "en", direction: "ltr", identity: "owner", path: "/en/admin/authorization", view: "admin", allowedIdentities: ["manager", "owner"] },
@@ -2023,6 +2027,142 @@ function PreviewSuperAdminFilesRoute() {
   return <SuperAdminFiles locale={locale} state={state} viewerId={viewerId} />;
 }
 
+type PreviewNativeState = Parameters<typeof SuperAdminNativeCurrent>[0]["state"];
+type PreviewNativeArea = Parameters<typeof SuperAdminNativeCurrent>[0]["area"];
+
+function previewNativeState(area: PreviewNativeArea): PreviewNativeState {
+  const observedAt = "2026-11-18T14:20:00.000Z";
+  const common = {
+    schemaVersion: 1 as const,
+    source: "database" as const,
+    quality: "measured" as const,
+    capability: "available" as const,
+    enabled: true as const,
+    recording: "available" as const,
+    coverageFrom: "2026-11-02T08:00:00.000Z",
+    lastObservedAt: "2026-11-18T14:15:00.000Z",
+  };
+  const monitors: Record<PreviewNativeArea, PreviewNativeState["monitors"]> = {
+    forum: [
+      {
+        ...common,
+        key: "forum.structure",
+        values: { categories: "4", sections: "12", topics: "84", posts: "326", tags: "18", tagLinks: "147" },
+      },
+      {
+        ...common,
+        key: "forum.state",
+        values: { openTopics: "76", closedTopics: "8", pins: "3", helpSolved: "11", helpBestAnswers: "9", activeDuplicates: "2" },
+      },
+      {
+        ...common,
+        key: "forum.content",
+        values: {
+          currentTitles: "84",
+          currentBodies: "326",
+          titleRevisions: "96",
+          bodyRevisions: "391",
+          titleRevisions24h: "5",
+          bodyRevisions24h: "18",
+          missingCurrentTitles: "0",
+          missingCurrentBodies: "0",
+        },
+      },
+      {
+        ...common,
+        key: "forum.presence",
+        values: { visible: "12", staleRetained: "8", excludedRetained: "3" },
+      },
+    ],
+    administration: [
+      {
+        ...common,
+        key: "administration.authorization",
+        values: {
+          roles: "5",
+          roleGrants: "42",
+          assignments: "17",
+          allowOverrides: "4",
+          denyOverrides: "2",
+          catalogPermissions: "31",
+        },
+      },
+      {
+        ...common,
+        key: "administration.measures",
+        values: {
+          total: "14",
+          active: "5",
+          effective: "4",
+          expired: "2",
+          lifted: "7",
+          appealsPending: "1",
+          appealsAccepted: "2",
+          appealsRejected: "1",
+          appealsMoot: "0",
+          mootTimeUnproven: "0",
+        },
+      },
+      {
+        ...common,
+        key: "administration.registration",
+        values: {
+          googleEnabled: true,
+          emailEnabled: true,
+          version: 3,
+          updatedAt: "2026-11-17T16:30:00.000Z",
+        },
+      },
+    ],
+    moderation: [
+      {
+        ...common,
+        key: "moderation.help",
+        values: {
+          signals: "19",
+          pending: "4",
+          accepted: "8",
+          rejected: "3",
+          withdrawn: "2",
+          superseded: "2",
+          actionableSignals: "3",
+          pendingDuplicateAppeals: "1",
+          retainedDuplicateAppeals: "4",
+          activeDuplicates: "2",
+        },
+      },
+      {
+        ...common,
+        key: "moderation.complaints",
+        values: {
+          cases: "23",
+          open: "6",
+          resolved: "17",
+          reports: "31",
+          pendingAppeals: "2",
+          liveReviewers: "2",
+          expiredReviewers: "1",
+          settingsVersion: 4,
+          priority1: "1",
+          priority2: "3",
+          priority3: "2",
+        },
+      },
+    ],
+    notifications: [],
+  };
+  return { observedAt, recording: "available", monitors: monitors[area] };
+}
+
+function PreviewSuperAdminNativeRoute({ area }: { area: PreviewNativeArea }) {
+  const { locale, state, viewerId } = useLoaderData() as {
+    locale: string;
+    state: PreviewNativeState;
+    viewerId: string;
+  };
+  return <SuperAdminNativeCurrent locale={locale} area={area} state={state} viewerId={viewerId} />;
+}
+
 function previewCredentialData(scenario: Scenario, request: Request) {
   const returnTo = credentialReturnPath(
     scenario.locale,
@@ -2197,6 +2337,33 @@ function previewRouter(
       loader: () => {
         const actor = previewSuperAdminAccessData(scenario);
         return { locale: scenario.locale, state: previewFilesState(), viewerId: actor.id };
+      },
+      ErrorBoundary: ForumRouteError,
+    },
+    {
+      path: "/:locale/super-admin/monitoring/forum",
+      element: <PreviewSuperAdminNativeRoute area="forum" />,
+      loader: () => {
+        const actor = previewSuperAdminAccessData(scenario);
+        return { locale: scenario.locale, state: previewNativeState("forum"), viewerId: actor.id };
+      },
+      ErrorBoundary: ForumRouteError,
+    },
+    {
+      path: "/:locale/super-admin/monitoring/administration",
+      element: <PreviewSuperAdminNativeRoute area="administration" />,
+      loader: () => {
+        const actor = previewSuperAdminAccessData(scenario);
+        return { locale: scenario.locale, state: previewNativeState("administration"), viewerId: actor.id };
+      },
+      ErrorBoundary: ForumRouteError,
+    },
+    {
+      path: "/:locale/super-admin/monitoring/moderation",
+      element: <PreviewSuperAdminNativeRoute area="moderation" />,
+      loader: () => {
+        const actor = previewSuperAdminAccessData(scenario);
+        return { locale: scenario.locale, state: previewNativeState("moderation"), viewerId: actor.id };
       },
       ErrorBoundary: ForumRouteError,
     },
