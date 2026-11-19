@@ -1601,3 +1601,19 @@ Dedicated 4b.5 acceptance verified; no claim that all other exact-head workflows
 Dedicated 4b.6 gate verified; no claim all exact-head workflows complete. No scope extension to 4b.7–4b.11, 4c, whole-PR review, merge or owner-ordered WATCH/BOOKMARKS corrections.
 
 **Лира STOP после 4b.6.** Next separate `...` = **ONLY 4b.7 — privacy/errors: guest, actor switch, no reverse graph, no-store, unavailable and late responses**, then checkpoint STOP before 4b.8. #351 Draft; #342 service-only/no merge.
+
+## 2026-11-19 — Лира: 4b.7 privacy/errors PASS; STOP
+
+**Scope:** real Worker/Better Auth/PG17/Chromium for guest/no-store/strict query/stale actor/reverse Block graph/same-browser account switch. Draft PR #351 exact head `04514f993b63c8eba9dc5e1439c9df5f238f408a`. Only test files `tests/browser/personal-filters/{check.py,pg.mjs}` and `app/forum/personal-filter-control.test.tsx` changed; production/schema/UI untouched.
+
+**Dedicated:** [run 44545030002](https://github.com/iliya1947/vico-forum/actions/runs/44545030002), job `135633196353` **SUCCESS**, **35/35 `FILTERS_CONNECTED` markers** (31 prior + four new):
+1. Guest private document and .data list 401; guest Mute/Block POST 401/no writes, public topic and profile remain 200.
+2. Authenticated private list/topic/profile document and .data `private,no-store`; invalid/foreign query 400 and stale actor POST 409/no state mutation.
+3. Blocked B cannot learn reverse A→B graph via own private list or A's public profile single-fetch.
+4. Same Chromium BrowserContext real Better Auth cookie switch A→B resets old cursor to B's first own page; A rows remain invisible across reload.
+
+**Typed 503/late ACK:** current focused route tests cover private 503 vs empty state; updated personal-filter-control unit cases cover Block typed503 as unknown, explicit GET refresh without POST replay, and late A response not transferring to B for Mute or Block. No actual PostgreSQL outage was injected in connected run; distinguish this limitation from runtime evidence.
+
+**Exact-head CI:** [run 44545029770](https://github.com/iliya1947/vico-forum/actions/runs/44545029770), `database` job `135633192599` and `checks` job `135633192066` **SUCCESS**, including lint, typecheck, tests, build. Other PR workflows are not asserted complete. PG fixture previously introduced in 4b.1 had ESLint10 complaints about global `URL`/`console`; corrected explicitly with `node:url` and `process.stdout`. Earlier failed dedicated jobs `44543915219` and `44544469672` were harness assertion mistakes (React Router positional single-fetch serialization; intended keyset reset on actor switch), not confirmed production defects. Final exact-head retest PASS.
+
+**Лира STOP после 4b.7.** Next distinct `...` = **ONLY 4b.8 — existing domain independence: complaints/Owner/evidence, Watch/Bookmarks/read markers and public profile/search**. Checkpoint and STOP before 4b.9. No 4c/review/merge; #351 Draft, #342 service-only/no merge. Owner-ordered WATCH/BOOKMARKS corrections remain deferred until #351 completed.
