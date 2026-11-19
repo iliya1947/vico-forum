@@ -3,6 +3,7 @@ import { drizzle } from "drizzle-orm/node-postgres";
 import { Client, Pool } from "pg";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { AccountInactiveError } from "../../db/account-state";
+import { DrizzleForumAttachments } from "../../db/forum-attachments";
 import { DrizzleForumRepository } from "../../db/forum-repository";
 
 const url = process.env.DATABASE_URL;
@@ -17,6 +18,7 @@ const pool = new Pool({ connectionString: url, options, max: 4 });
 const policy = { cooldownMs: 0, now: () => new Date() };
 const noMeasures = async () => {};
 const forum = new DrizzleForumRepository(drizzle(pool), policy, noMeasures);
+const attachments = new DrizzleForumAttachments(drizzle(pool));
 const writer = (client: Client) => new DrizzleForumRepository(drizzle(client), policy, noMeasures);
 const uuid = () => crypto.randomUUID();
 const mention = (id: string) => "[recipient](/en/users/" + encodeURIComponent(id) + ")";
@@ -208,6 +210,50 @@ describe("Mute/Block M3: real READ COMMITTED candidate decision snapshots", () =
       await client.end();
     }
   }, 25_000);
+
+
+  it("a reply suppressed before Unmute cannot escape through the later mention statement", async () => {
+    const recipient = await person(), actor = await person(), x = await topic(recipient);
+    await forum.setTopicMute({ actorId: recipient, topicId: x, muted: true });
+    const input = replyInput(x, actor, mention(recipient));
+    const client = new Client({ connectionString: url, options: options + " -c lock_timeout=7s" });
+    await client.connect();
+    const gate = pauseSql(client, query => /as mentions\(user_id\)/iu.test(query), "before");
+    let pending: Promise<unknown> | undefined;
+    try {
+      pending = writer(client).createPost(input);
+      await reached(gate.observed);
+      // Reply candidate SQL has already inserted an own-transaction suppression receipt.
+      await forum.setTopicMute({ actorId: recipient, topicId: x, muted: false });
+      gate.resume();
+      await pending;
+      expect(await notifications(input.id)).toEqual([]);
+      expect(await receipts(input.id)).toEqual([recipient]);
+      const fresh = await forum.createPost(replyInput(x, actor, mention(recipient)));
+      expect((await notifications(fresh.id)).map(row => row.recipient_user_id)).toContain(recipient);
+    } finally {
+      gate.resume(); gate.restore();
+      await Promise.allSettled(pending ? [pending] : []);
+      await client.end();
+    }
+  }, 20_000);
+
+  it("an unconsumed mention added to an old post after Unmute can notify normally", async () => {
+    const recipient = await person(), actor = await person(), author = await person();
+    const x = await topic(author);
+    await forum.setTopicMute({ actorId: recipient, topicId: x, muted: true });
+    const old = await forum.createPost(replyInput(x, actor, "No previous mention"));
+    expect(await receipts(old.id)).toEqual([]);
+    await forum.setTopicMute({ actorId: recipient, topicId: x, muted: false });
+    await forum.editPublishedPost({
+      postId: old.id, topicId: x, actorId: actor, expectedRevisionId: old.body.id,
+      body: "New mention " + mention(recipient), draftId: uuid(),
+      attachmentIds: [], retainedAttachmentIds: [],
+    });
+    expect((await notifications(old.id)).filter(row => row.recipient_user_id === recipient))
+      .toEqual([expect.objectContaining({ kind: "mention" })]);
+    expect(await receipts(old.id)).toEqual([]);
+  });
 
   it("initial-topic Block consumption stays consumed after Unblock and old mention edit", async () => {
     const author = await person(), recipient = await person();
@@ -428,6 +474,59 @@ describe("Mute/Block M5: receipt/notice publication atomicity", () => {
       .toBe(after);
     expect(await notifications(first.id)).not.toContainEqual(expect.objectContaining({ recipient_user_id: recipient }));
     expect(await receipts(first.id)).toEqual([recipient]);
+  });
+
+
+  it("late publication receipt failure rolls back suppression, attached file binding and draft completion", async () => {
+    const recipient = await person(), actor = await person(), x = await topic(recipient);
+    await forum.setTopicMute({ actorId: recipient, topicId: x, muted: true });
+    const contextKey = "topic:" + x + ":reply", draftId = uuid(), attachmentId = uuid();
+    await attachments.createDraftAttachment({
+      id: attachmentId, ownerId: actor, contextKey, draftId, objectKey: "private/" + uuid(),
+      fileName: "transactional.txt", declaredMime: "text/plain",
+      detectedType: "text", responseMime: "text/plain; charset=utf-8",
+      byteSize: 9, verificationStatus: "type-checked",
+    });
+    const request = { ...replyInput(x, actor, "Attached reply"), publishedDraft: {
+      contextKey, draftId, attachmentIds: [attachmentId],
+    } };
+    const draftRefs = () => count(
+      "select count(*)::int n from forum_attachment_draft_refs"
+      + " where owner_id=$1 and context_key=$2 and draft_id=$3",
+      [actor, contextKey, draftId],
+    );
+    const completed = () => count(
+      "select count(*)::int n from forum_attachment_draft_generations"
+      + " where owner_id=$1 and context_key=$2 and draft_id=$3",
+      [actor, contextKey, draftId],
+    );
+    await fixture.query("create function filter_race_publication_fault() returns trigger language plpgsql as $"
+      + " begin raise exception 'forced publication receipt failure'; end; $");
+    await fixture.query("create trigger filter_race_publication_fault before insert"
+      + " on forum_publication_receipts for each row execute function filter_race_publication_fault()");
+    try {
+      await expectDatabaseFailure(forum.createPost(request), "forced publication receipt failure");
+    } finally {
+      await fixture.query("drop trigger filter_race_publication_fault on forum_publication_receipts");
+      await fixture.query("drop function filter_race_publication_fault()");
+    }
+    expect(await count("select count(*)::int n from forum_posts where id=$1", [request.id])).toBe(0);
+    expect(await count("select count(*)::int n from forum_post_revisions where id=$1", [request.bodyRevision.id])).toBe(0);
+    expect(await count("select count(*)::int n from forum_post_attachments where post_id=$1", [request.id])).toBe(0);
+    expect(await count("select count(*)::int n from forum_publication_receipts"
+      + " where owner_id=$1 and context_key=$2 and draft_id=$3", [actor, contextKey, draftId])).toBe(0);
+    expect(await receipts(request.id)).toEqual([]);
+    expect(await notifications(request.id)).toEqual([]);
+    expect(await draftRefs()).toBe(1);
+    expect(await completed()).toBe(0);
+
+    await forum.createPost(request);
+    expect(await receipts(request.id)).toEqual([recipient]);
+    expect(await count("select count(*)::int n from forum_post_attachments where post_id=$1", [request.id])).toBe(1);
+    expect(await count("select count(*)::int n from forum_publication_receipts"
+      + " where owner_id=$1 and context_key=$2 and draft_id=$3", [actor, contextKey, draftId])).toBe(1);
+    expect(await draftRefs()).toBe(0);
+    expect(await completed()).toBe(1);
   });
 
   it("existing delivered read_at remains unchanged; failed Mute write cannot silently filter replies", async () => {
