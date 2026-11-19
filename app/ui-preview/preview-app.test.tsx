@@ -561,8 +561,7 @@ describe("embedded preview routing", { timeout: 10_000 }, () => {
       identity="owner"
     />);
 
-    const runtime = document.querySelector('[data-monitor-key="system.runtime"]') as HTMLElement;
-    const runtimeHistory = runtime.querySelector(
+    const runtimeHistory = document.querySelector(
       'a[href="/en/super-admin/monitoring/system/system.runtime/history"]',
     );
     expect(runtimeHistory).not.toBeNull();
