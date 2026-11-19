@@ -1206,3 +1206,87 @@ main (permanent contract/current factual state/history, no staged production cla
 Deferred owner order unchanged: after full current task WatchP2, BookmarkP2/1 then
 BookmarkP2/2; titleP3 only later applicable UI/UX. #342 service-only never merge.
 **Лёва STOP после whole-PR PASS.**
+
+## 2026-11-19 — dedicated Mute/block necessity audit после whole-PR PASS
+
+Владелец отдельно спросил о костылях. Ответил честно: whole-PR review включал
+архитектурную проверку, но не отдельные comparison experiments. Выполнен этот
+дополнительный аудит того же stable0fc239a/base9eae385. PR всё ещё open/unmerged;
+head unchanged. Источник current workflow/edited6991888557 и owner defer order
+перечитаны. Code не исправлялся, новоеimplementation назначение не открывалось.
+
+Диагностические files в `/workspace/work/pf-necessity-diagnostics` (вне worktree),
+own loopback DB vico_pf_necessity_audit_test, PostgreSQL17/full clean migrations.
+Current passed assertions сравнивались с intentionally reduced variants, их FAIL
+не являются FAIL production или новыми findings. Повтор полного CI не выполнялся.
+
+### Сравнения
+
+- receipts.test.ts:2 actual publication/edit cases. Mute включён до reply mention,
+  Block до initial-topic mention. Notice отсутствует; OFF, затем настоящее
+  editPublishedPost старого @. Current2/2 PASS. no-receipt-policy.ts удаляет только
+  consumed CTE и previous receipt filter, immediate mute/block decision сохранён.
+  Alias затрагивает policy import только во внешнем run. Alternative сначала
+  suppresses, затем old edit выдаёт visibleAfterOldEdit1, consumed0 для обоих kinds;
+  оба final no-backfill assertions FAIL. Нужен durable consumed факт; visible inbox
+  flag затронул бы существующие readers/counts, read-time-only filtering вернуло
+  бы старые notices. Нынешний отдельный2-column receipt не лишняя notification система.
+- actor-history.test.tsx: production FiltersView vs memory-only-view.tsx, реальные
+  router navigation/revalidation/remount, current actor HeaderAuth provider совпадает
+  с data actor. Current3/3 PASS, useRef2/3 (credential unmount→B возвращает старый
+  beforeCreatedAt/beforeTargetId). Initial/same-actor foreign cursor сохраняется
+  обоими. Current tab storage переживает remount, не хранит pairs/credentials и
+  не заменяет SQL authority. Это navigation experiment, не новая BetterAuth session
+  acceptance; существующая actual connected49 уже отдельно проверена whole review.
+- snapshot config:2 selected current public-read tests (blocked body/reveal/anchors
+  и A→guest pending guest loader) PASS. Pre-transform external variant заменяет
+  blockSnapshotIsStale на false в compiled TopicView только для эксперимента.
+  Обычный blocked body case PASS, actor-transition FAIL: old A Block graph продолжает
+  давать guest специфичный placeholder/Reveal. Current barrier необходим, это
+  не лишний compensating layer для неопределённого user state.
+
+### Неблокирующее сокращение transient state — PF-SIMPLIFY-1
+
+PersonalFilterControl имеет needsRefresh для unknown/disable и failed для alert.
+В command success/error оба изменяются синхронно. Особая ветка — rejected refresh
+из начального loader state unavailable: там needsRefresh false/failed true, но
+presentation всё равно unknown. Можно одной needsRefresh=true также выразить
+failed refresh, сохранив initial unavailable без alert. Отдельная flag не нужна
+для проверенных текущих UI contracts.
+
+External one-flag-control.tsx удаляет failed/setFailed, отображает alert от
+needsRefresh и .catch устанавливает needsRefresh. Current vs prototype:
+**16/16 selected PASS у обоих,2 skips**. Из них existing11 personal-filter-control
+cases, новый refresh-rejection case,4 real-PG+Router cases из previous review harness
+(копия с собственной audit DB/schema). 2 list cases исключены -t control, поскольку
+этот prototype не меняет list. New rejection test mock только useRevalidator promise:
+unknown из loader без alert→rejected read даёт alert и не даёт mutation→next successful
+read показывает ON и снимает alert; route action calls0. Это отдельная UI ветка,
+не подмена actual PG persistence/concurrency проверок. Code уменьшен на transient
+state и его setters; no new versions/stores/effects/cache/POST replay.
+
+Это **optional local simplification, не functional bug/current blocker**. Не
+утверждаю формальную эквивалентность для непроверенных будущих code paths; текущие
+существенные ветки/freshness реально пройдены. Существующий whole-PR PASS остаётся
+валидным, пока implementation head неизменён; cleanup не shipped и не новый gate.
+
+Дополнительно архитектурное сопоставление: separate typed relations позволяют
+настоящие user/topic FKs без polymorphic triggers; PK/list/FK-support indexes имеют
+разные access paths. Одно SQL decision/receipt/notice даёт единый snapshot без
+per-recipient queries и не требует новых recipient/global locks. Альтернатива с
+несколькими SQL возможна при замороженном decision, но добавляет roundtrips/передачу
+decision и не исправляет подтверждённую проблему — её здесь нет. Scope-bound Reveal
+guard скрывает устаревший context сразу, reset предотвращает сохранение transient
+reveal через последующие context transitions. Canonical actions/strict fields/
+private no-store — текущие authority/privacy contracts, не новая recovery subsystem.
+
+Команды/evidence configs: receipts.config.mjs current2PASS; no-receipt.config.mjs
+2 intentional FAIL; actor.config.mjs current3PASS/ref2PASS1FAIL; snapshot.config.mjs
+2PASS107skips, no-snapshot1PASS1FAIL107skips; control.config.mjs и one-flag.config.mjs
+по16PASS2skips с -t control. Файлы/logs сохранены вне implementation worktree.
+
+**Итог dedicated audit:** необоснованных архитектурных mechanisms не подтверждено,
+одна небольшая возможность сокращения flag без доказанного production defect.
+Source/schema/tests не менялись. #351 owner merge/docs и deferred owner order
+сохранены; PF-SIMPLIFY-1 не активируется как новая обязательная correction.
+**STOP после Mute/block.**

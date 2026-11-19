@@ -331,3 +331,18 @@ Scope/causal coverage/evidence limits — в channel и файле Лёвы.
 **Владелец: Ready → merge #351 при неизменном head; затем Лира — отдельный docs
 closeout по фактическому merged main.** Deferred audits и owner order после #351
 сохранены; TITLE-AUDIT-1 только applicable UI/UX. **Лёва STOP.**
+
+## 2026-11-19 — отдельный Mute/block necessity audit по вопросу владельца
+
+После whole-PR PASS владелец уточнил «А на костыли проверил?». Проведён отдельно
+сравнительный аудит #351 на том же0fc239a, без production edits. Необоснованных
+архитектурных механизмов не подтверждено: удаление receipts возвращает старые
+уведомления, memory-only actor history ломает credential remount, удаление stale
+Block guard применяет прежний graph к guest. Эксперименты/границы — в channel.
+
+Найдено **неблокирующее локальное упрощение PF-SIMPLIFY-1**: объединить failed и
+needsRefresh в PersonalFilterControl; isolated one-flag prototype16/16 selected
+checks PASS (включая refresh rejection и4 real-PG/Router freshness cases).
+Это не функциональный defect и не новый gate/автоматическое correction-назначение.
+Previous whole-PR PASS/owner merge route сохранён; code/head не менялись.
+**Лёва STOP.** Watch/Bookmarks corrections и TITLE UI/UX идут по прежнему owner order.

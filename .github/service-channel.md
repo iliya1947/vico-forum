@@ -1976,3 +1976,53 @@ contract + factual PROJECT_STATE migration0070 + separate history, только 
 реальному merged состоянию. До полного завершения Mute/block deferred owner order
 не меняется: затем WATCH-AUDIT-1 →BOOKMARKS-AUDIT-1 →BOOKMARKS-AUDIT-2, TITLE-AUDIT-1
 в applicable UI/UX. #342 никогда не merge. **Лёва STOP после independent PASS.**
+
+## 2026-11-19 — Лёва: отдельная проверка Mute/block на необоснованные механизмы
+
+Владелец спросил «А на костыли проверил?». В предыдущем whole-PR review проверялись
+корректность/границы/явные лишние слои, но отдельный сравнительный necessity audit
+ещё не выполнялся. Теперь он выполнен для #351 exact0fc239a против main9eae385.
+Все эксперименты вне git worktree, production/schema/tests не менялись.
+
+**Необоснованных архитектурных механизмов не выявлено.** Проверены текущие варианты
+и более простые альтернативы с наблюдаемыми последствиями:
+
+1. **Suppression receipts обоснованы no-backfill.** Два real-PG17 publication/edit
+   cases: Mute(reply mention) и Block(initial-topic mention), затем OFF и edit старого
+   @. Current2/2 PASS. Изолированный вариант с тем же immediate policy, но без
+   receipt write/check, сначала корректно подавляет notice, а после снятия фильтра
+   создаёт старый notice: receipt0, visibleAfterOldEdit1 в обоих случаях;2/2
+   no-backfill assertions FAIL. Это действительный domain intent, а не лишний inbox.
+2. **Tab actor marker обоснован credential remount.** Current FiltersView3/3:
+   initial/same-actor cursor сохраняется, mounted A→B и A→credential-route→B
+   сбрасывают older position. Memory-only useRef alternative2/3, remount теряет A
+   и возвращает B на старый cursor. Не требует новых server auth/cursor protocols.
+3. **Stale Block snapshot barrier обоснован сменой identity.** Current2/2 selected
+   presentation checks PASS. Изолированное удаление barrier при сохранении collapse
+   ломает A→guest до fresh guest loader: остаются прежние private Block placeholder/
+   Reveal вместо fail-closed updating state.1 FAIL/1 PASS. Source current корректен.
+
+Также сопоставлены и обоснованы typed pair tables/PK/FK/list и FK-support indexes,
+target KEY SHARE→active actor mutex без global locks, common set-based decision в
+одном statement snapshot/atomic publication, scoped Reveal и canonical actions.
+Polymorphic generic store, read-time inbox filtering, per-recipient fanout/new
+cache/version/retry заменами проще не становятся: теряют FK/историю/ordering либо
+добавляют roundtrips/более широкую инфраструктуру. Единственность нынешней SQL записи
+не утверждается; мелкие синтаксические сокращения не выдаются за defect.
+
+**PF-SIMPLIFY-1 — небольшое необязательное упрощение, не функциональный дефект:**
+в `app/forum/personal-filter-control.tsx:18,41–44,52–53,78` failed дублирует
+needsRefresh для alert. Проверен вариант без failed: alert от needsRefresh,
+failed GET также устанавливает needsRefresh. **16/16 selected checks PASS** и на
+current, и на one-flag prototype (2 list tests skipped): existing11 control cases,
+новый initial-unavailable→refresh rejection→successful read case,4 actual PG/Router
+topic/user×ON/OFF freshness cases. Сохраняются initial unknown без alert, error/
+explicit refresh/no POST replay и loader authority. Новая проверка rejection —
+controlled UI dependency failure, не реальный injected PG outage через браузер.
+
+Это возможность сократить один transient flag/несколько setters, не архитектурный
+костыль уровня прежнего ACK mirror и не основание блокировать merge/создавать новый
+review cycle без изменений. Prototype не включён в #351. Предыдущий independent
+whole-PR PASS остаётся действующим; дополнительные production defects не подтверждены.
+**Лёва STOP после одного Mute/block audit.** Owner Ready/merge→docs route и отложенный
+WATCH→BOOKMARKS corrective order не изменён; optional cleanup автоматически не назначен.
