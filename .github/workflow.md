@@ -33,7 +33,7 @@
 
 ## Следующий шаг
 
-**Лира: subtask 4a НЕ завершена, STOP по требованию владельца о более мелкой декомпозиции.** Draft implementation #351, exact current head `83b32eb364d74a2fd85377dbc907f7723254edf4`; no merge/review. В 4a менялись только PG tests и один существующий Watch test для early promise rejection handler; production/schema/UI не менялись.
+**Лира STOP после успешной 4a.7; subtask 4a в целом НЕ завершена.** Draft implementation #351, exact current head `83b32eb364d74a2fd85377dbc907f7723254edf4`; no merge/review. В 4a менялись только PG tests и один существующий Watch test для early promise rejection handler; production/schema/UI не менялись.
 
 **4a — микроэтапы; после КАЖДОГО отдельный checkpoint и STOP до следующего `...`:**
 1. **4a.1 — real PG test harness и управляемые SQL barriers** — код добавлен.
@@ -42,10 +42,10 @@
 4. **4a.4 — suppression, no-backfill, reply→mention и replay** — код добавлен.
 5. **4a.5 — rollback initial/reply/edit/attachment/publication receipts** — код добавлен.
 6. **4a.6 — точечная регрессия Watch unhandled Promise rejection** — исправлен только test timing в `tests/database/topic-watch.test.ts`, commit `83b32eb364d74a2fd85377dbc907f7723254edf4`; production не менялся.
-7. **4a.7 — ПЕРВЫЙ следующий микрошаг:** подтвердить full `database` job на `83b32eb364d74a2fd85377dbc907f7723254edf4` с 27 новыми тестами, native PG17, no unhandled errors; при ошибке исправить только подтверждённую причину, повторить PG job; checkpoint и STOP.
-8. **4a.8 — после нового `...`:** подтвердить `checks` и действующие regression workflows на ТОЧНОМ финальном head; checkpoint и STOP.
+7. **4a.7 — VERIFIED / STOP:** exact implementation head `83b32eb364d74a2fd85377dbc907f7723254edf4`, GitHub run `44522424656`, job `database` id `135554174396` completed **SUCCESS**. Native PostgreSQL 17 full suite **109/109 test files, 1476/1476 tests PASS**, включая `personal-filters-concurrency.test.ts` **27/27 PASS**; нет Vitest unhandled errors. Existing Watch race test no longer fails the job. No implementation changes in this microstep.
+8. **4a.8 — СЛЕДУЮЩИЙ микрошаг только после `...`:** проверить `checks` и действующие regression workflows на точном `83b32eb364d74a2fd85377dbc907f7723254edf4`, включая **SA07 workflow с conclusion=failure**; установить реальную причину и current-scope relevance до возможного исправления. Checkpoint и STOP. Не утверждать total-CI success сейчас.
 9. **4a.9 — после нового `...`:** завершить 4a evidence в service files/#342, передать следующий маршрут 4b; STOP. Не запускать connected Mute/block 4b или финальный 4c автоматически.
 
-**Факты о предшествующем head `247e928bd845286e1946c77d51bbd162a08a4cb2`:** 1476/1476 PG test assertions PASS, но `database` job FAIL из-за unhandled rejection в существующем Watch race test; поэтому CI этого head НЕ считается PASS. На `83b32eb364d74a2fd85377dbc907f7723254edf4` CI на момент записи ещё выполнялся; результат не утверждать заранее.
+**Проверенное на `83b32eb364d74a2fd85377dbc907f7723254edf4` (4a.7):** `database` PASS, 1476/1476 tests PASS, 27/27 targeted PASS, unhandled errors = 0. Это **не** означает общий CI PASS: `SA07 Background Localization Files Data and Integrations connected Chromium acceptance` имеет failure на этом exact head; проверка его причины назначена отдельному 4a.8. Предыдущий head `247e928b…` имел database FAIL из-за Watch test unhandled rejection; fixed test timing на текущем head.
 
 **После явной команды после 4a.9:** part 4b dedicated Worker/Better Auth/PG17/Chromium Mute/block acceptance, также разделить на узкие slices с STOP; затем 4c final closeout отдельно. Мира/Лёва reviews только после 4c. #342 service-only/no merge; #351 Draft/no merge.
