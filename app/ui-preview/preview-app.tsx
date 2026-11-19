@@ -24,6 +24,9 @@ import { AdminShell } from "../admin/shell";
 import { HistoryEvents } from "../admin/history";
 import { SuperAdminOverview } from "../super-admin/overview";
 import { SuperAdminSa02Current } from "../super-admin/current-route";
+import { SuperAdminBackground } from "../super-admin/task-current";
+import { SuperAdminLocalization } from "../super-admin/localization-current";
+import { SuperAdminIntegrations } from "../super-admin/integration-current";
 import { SuperAdminMonitoringIndex, SuperAdminShell, SystemMonitorCards } from "../super-admin/view";
 import { superAdminMonitoringPath } from "../super-admin/paths";
 import type { AdminHistoryChange, AdminHistoryEvent } from "../../db/admin-history";
@@ -236,6 +239,9 @@ export const scenarios: readonly Scenario[] = [
   { id: "super-admin-system-owner", label: "Super-admin · System", locale: "en", direction: "ltr", identity: "owner", path: "/en/super-admin/monitoring/system", view: "super-admin", allowedIdentities: ["owner"] },
   { id: "super-admin-accounts-owner", label: "Super-admin · Accounts", locale: "en", direction: "ltr", identity: "owner", path: "/en/super-admin/monitoring/accounts", view: "super-admin", allowedIdentities: ["owner"] },
   { id: "super-admin-security-owner", label: "Super-admin · Security", locale: "en", direction: "ltr", identity: "owner", path: "/en/super-admin/monitoring/security", view: "super-admin", allowedIdentities: ["owner"] },
+  { id: "super-admin-background-owner", label: "Super-admin · Background processes", locale: "en", direction: "ltr", identity: "owner", path: "/en/super-admin/monitoring/background", view: "super-admin", allowedIdentities: ["owner"] },
+  { id: "super-admin-localization-owner", label: "Super-admin · Localization", locale: "en", direction: "ltr", identity: "owner", path: "/en/super-admin/monitoring/localization", view: "super-admin", allowedIdentities: ["owner"] },
+  { id: "super-admin-integrations-owner", label: "Super-admin · Integrations", locale: "en", direction: "ltr", identity: "owner", path: "/en/super-admin/monitoring/integrations", view: "super-admin", allowedIdentities: ["owner"] },
   { id: "super-admin-guest-unauthenticated", label: "Super-admin · guest unauthenticated", locale: "en", direction: "ltr", identity: "guest", path: "/en/super-admin", view: "super-admin", allowedIdentities: ["guest"] },
   { id: "super-admin-manager-forbidden", label: "Super-admin · manager forbidden", locale: "en", direction: "ltr", identity: "manager", path: "/en/super-admin", view: "super-admin", allowedIdentities: ["manager"] },
   { id: "admin", label: "Authorization", locale: "en", direction: "ltr", identity: "owner", path: "/en/admin/authorization", view: "admin", allowedIdentities: ["manager", "owner"] },
@@ -1663,6 +1669,191 @@ function PreviewSuperAdminSa02Route({ area }: { area: "accounts" | "security" })
   return <SuperAdminSa02Current locale={locale} area={area} state={state} />;
 }
 
+type PreviewTaskState = Parameters<typeof SuperAdminBackground>[0]["state"];
+type PreviewLocalizationState = Parameters<typeof SuperAdminLocalization>[0]["state"];
+type PreviewIntegrationsState = Parameters<typeof SuperAdminIntegrations>[0]["state"];
+
+function previewTaskState(): PreviewTaskState {
+  return {
+    monitorKey: "background.translation",
+    schemaVersion: 1,
+    source: "database",
+    quality: "measured",
+    observedAt: "2026-11-18T14:20:00.000Z",
+    values: {
+      pending: "7",
+      processing: "2",
+      stale: "1",
+      completed: "184",
+      failed: "3",
+      runtimeWired: false,
+      runtimeEnabled: false,
+      bestEffort: true,
+    },
+    recording: "available",
+    coverageFrom: "2026-11-02T08:00:00.000Z",
+    lastObservedAt: "2026-11-18T14:15:00.000Z",
+  };
+}
+
+function previewLocalizationState(): PreviewLocalizationState {
+  const observedAt = "2026-11-18T14:20:00.000Z";
+  const monitor = (
+    key: PreviewLocalizationState["monitors"][number]["key"],
+    source: PreviewLocalizationState["monitors"][number]["source"],
+    values: PreviewLocalizationState["monitors"][number]["values"],
+  ): PreviewLocalizationState["monitors"][number] => ({
+    key,
+    schemaVersion: 1,
+    source,
+    quality: "measured",
+    observedAt,
+    values,
+    recording: "available",
+    coverageFrom: "2026-11-02T08:00:00.000Z",
+    lastObservedAt: "2026-11-18T14:15:00.000Z",
+  });
+  return {
+    monitors: [
+      monitor("localization.registry", "localization-database", {
+        configuredLocales: "3",
+        activeLocales: "3",
+        registryHealthy: true,
+        defaultEnglishValid: true,
+        sourceStructuralValid: true,
+      }),
+      monitor("localization.ui", "localization-database", {
+        shippedKeys: "412",
+        targetLocales: "2",
+        bundlesCurrent: "4",
+        bundlesMissing: "0",
+        machinePolicyConfigured: false,
+      }),
+      monitor("localization.content", "web-database", {
+        titleRevisions: "84",
+        bodyRevisions: "326",
+        eligiblePairs: "601",
+        currentManual: "7",
+        currentMachine: "204",
+        missingPairs: "390",
+      }),
+      monitor("localization.budget", "web-database", {
+        budgetCounters: "4",
+        usedUnits: "1260",
+        activeUsedUnits: "1260",
+        expiredUsedUnits: "0",
+        limitsConfigured: false,
+      }),
+    ],
+    locales: [
+      { tag: "en", direction: "ltr", translationStatus: "source" },
+      { tag: "ru", direction: "ltr", translationStatus: "active" },
+      { tag: "he", direction: "rtl", translationStatus: "active" },
+    ],
+    bundles: [],
+    budgetWindows: [],
+  };
+}
+
+function previewIntegrationsState(): PreviewIntegrationsState {
+  const observedAt = "2026-11-18T14:20:00.000Z";
+  const monitor = (
+    key: PreviewIntegrationsState["monitors"][number]["key"],
+    values: PreviewIntegrationsState["monitors"][number]["values"],
+  ): PreviewIntegrationsState["monitors"][number] => ({
+    key,
+    schemaVersion: 1,
+    source: "application",
+    quality: "measured",
+    observedAt,
+    values,
+    recording: "available",
+    coverageFrom: "2026-11-02T08:00:00.000Z",
+    lastObservedAt: "2026-11-18T14:15:00.000Z",
+  });
+  return {
+    monitors: [
+      monitor("integrations.database", {
+        webBindingPresent: true,
+        localizationBindingPresent: true,
+        webRoutingRole: "vico_forum_web",
+        localizationRoutingRole: "localization-runtime",
+      }),
+      monitor("integrations.authentication", {
+        googleParametersPresent: false,
+        googleCallbackCoverageMeasured: false,
+        googleLinkedUsers: "64",
+        googleRegistrationEnabled: true,
+        emailRegistrationEnabled: true,
+      }),
+      monitor("integrations.storage", {
+        bucketBound: false,
+        fixedSampleSlots: "0",
+        recordingBestEffort: true,
+      }),
+      monitor("integrations.translation", {
+        generationEnabled: false,
+        generationAdmissionWired: true,
+        providerWired: false,
+        enqueuerWired: false,
+        consumerWired: false,
+      }),
+    ],
+    database: {
+      observedAt,
+      source: "existing-system-dependency-reader",
+      quality: "measured",
+      values: { component: "postgresql", state: "available", version: "17.6" },
+      recording: "available",
+      retainedSample: null,
+    },
+    requiredLocalizationRead: null,
+    authentication: {
+      source: "database",
+      observedAt,
+      values: {
+        googleLinkedUsers: "64",
+        genericSessionProviderKnown: true,
+        registrationVersion: 3,
+      },
+      googleMethodLink: null,
+      genericSession: null,
+    },
+    storageSamples: [],
+    translation: {
+      taskOutcome: null,
+      providerExecution: null,
+    },
+  };
+}
+
+function PreviewSuperAdminBackgroundRoute() {
+  const { locale, state, viewerId } = useLoaderData() as {
+    locale: string;
+    state: PreviewTaskState;
+    viewerId: string;
+  };
+  return <SuperAdminBackground locale={locale} state={state} viewerId={viewerId} />;
+}
+
+function PreviewSuperAdminLocalizationRoute() {
+  const { locale, state, viewerId } = useLoaderData() as {
+    locale: string;
+    state: PreviewLocalizationState;
+    viewerId: string;
+  };
+  return <SuperAdminLocalization locale={locale} state={state} viewerId={viewerId} />;
+}
+
+function PreviewSuperAdminIntegrationsRoute() {
+  const { locale, state, viewerId } = useLoaderData() as {
+    locale: string;
+    state: PreviewIntegrationsState;
+    viewerId: string;
+  };
+  return <SuperAdminIntegrations locale={locale} state={state} viewerId={viewerId} />;
+}
+
 function previewCredentialData(scenario: Scenario, request: Request) {
   const returnTo = credentialReturnPath(
     scenario.locale,
@@ -1792,6 +1983,33 @@ function previewRouter(
       loader: () => {
         previewSuperAdminAccessData(scenario);
         return { locale: scenario.locale, state: previewSa02State("security") };
+      },
+      ErrorBoundary: ForumRouteError,
+    },
+    {
+      path: "/:locale/super-admin/monitoring/background",
+      element: <PreviewSuperAdminBackgroundRoute />,
+      loader: () => {
+        const actor = previewSuperAdminAccessData(scenario);
+        return { locale: scenario.locale, state: previewTaskState(), viewerId: actor.id };
+      },
+      ErrorBoundary: ForumRouteError,
+    },
+    {
+      path: "/:locale/super-admin/monitoring/localization",
+      element: <PreviewSuperAdminLocalizationRoute />,
+      loader: () => {
+        const actor = previewSuperAdminAccessData(scenario);
+        return { locale: scenario.locale, state: previewLocalizationState(), viewerId: actor.id };
+      },
+      ErrorBoundary: ForumRouteError,
+    },
+    {
+      path: "/:locale/super-admin/monitoring/integrations",
+      element: <PreviewSuperAdminIntegrationsRoute />,
+      loader: () => {
+        const actor = previewSuperAdminAccessData(scenario);
+        return { locale: scenario.locale, state: previewIntegrationsState(), viewerId: actor.id };
       },
       ErrorBoundary: ForumRouteError,
     },
