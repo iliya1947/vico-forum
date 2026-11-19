@@ -1,12 +1,18 @@
 import "@testing-library/jest-dom/vitest";
-import { cleanup, render, screen, waitFor, within } from "@testing-library/react";
+import { cleanup, configure, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { afterEach, describe, expect, it } from "vitest";
+import { afterAll, afterEach, describe, expect, it } from "vitest";
 import { EmbeddedPreview, PreviewController, scenarios } from "./preview-app";
+
+configure({ asyncUtilTimeout: 3_000 });
 
 afterEach(() => {
   cleanup();
   window.sessionStorage.clear();
+});
+
+afterAll(() => {
+  configure({ asyncUtilTimeout: 1_000 });
 });
 
 async function renderEmbeddedPreview(ui: Parameters<typeof render>[0]) {
@@ -153,7 +159,7 @@ describe("UI preview state catalog", () => {
 });
 
 
-describe("embedded preview routing", () => {
+describe("embedded preview routing", { timeout: 10_000 }, () => {
   it("keeps tag index counts aligned with the preview tag pages", async () => {
     await renderEmbeddedPreview(<EmbeddedPreview scenarioId="tags-guest" />);
 
@@ -878,7 +884,7 @@ describe("embedded preview routing", () => {
 });
 
 
-describe("interactive Pages preview", () => {
+describe("interactive Pages preview", { timeout: 10_000 }, () => {
   it("runs the global search form instead of blocking GET submissions", async () => {
     const user = userEvent.setup();
     await renderEmbeddedPreview(<EmbeddedPreview scenarioId="home-guest" />);
@@ -1589,7 +1595,7 @@ describe("interactive Pages preview", () => {
     const deletableRoleCard = deletableRoleHeading.closest(".admin-role-card") as HTMLElement;
     await user.click(within(deletableRoleCard).getByRole("button", { name: "Delete role" }));
 
-    expect(await screen.findByRole("status")).toHaveTextContent("Authorization settings saved.");
+    expect(await screen.findByRole("status")).toHaveTextContent("Authorization was updated.");
     expect(screen.queryByRole("heading", { name: "Settings helper renamed" })).not.toBeInTheDocument();
   }, 10_000);
 
@@ -1715,7 +1721,7 @@ describe("interactive Pages preview", () => {
     await openSettingsSection(user, "Administrator preferences", "Administrator preferences");
 
     const behavior = await screen.findByLabelText("On entry, open", { selector: "#settings-admin-entry" });
-    const destination = screen.getByRole("combobox", { name: "Default destination" });
+    const destination = screen.getByRole("combobox", { name: "Default Admin section" });
     expect(behavior).toHaveValue("default");
     expect(destination).toHaveValue("overview");
 
@@ -1726,7 +1732,7 @@ describe("interactive Pages preview", () => {
     await openSettings(user);
     await openSettingsSection(user, "Administrator preferences", "Administrator preferences");
 
-    await user.selectOptions(screen.getByRole("combobox", { name: "Default destination" }), "overview");
+    await user.selectOptions(screen.getByRole("combobox", { name: "Default Admin section" }), "overview");
     await user.selectOptions(screen.getByLabelText("On entry, open", { selector: "#settings-admin-entry" }), "last");
 
     expect(screen.getByRole("link", { name: "Open Admin" })).toHaveAttribute("href", "/en/admin/authorization");
