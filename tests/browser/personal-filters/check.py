@@ -1058,6 +1058,40 @@ try:
         ).to_have_attribute("aria-pressed", "false")
         record("HE narrow keyboard Undo Block/Mute persists; EN/RU controls confirm OFF on reload")
 
+        # PF-REVIEW-3: sign out in the SAME mounted topic view, not a fresh
+        # guest browser. Better Auth clears the session; A's persisted Block
+        # pair must not govern guest presentation after route revalidation.
+        signout_viewer, signout_id = account("Filters sign-out transition viewer")
+        signout_block = signout_viewer.request.post(
+            base + profile_path, headers={"Origin": base},
+            form={"intent": "setUserBlock", "editorActorId": signout_id, "blocked": "true"},
+        )
+        private(signout_block)
+        assert sql("select blocked_user_id from forum_user_blocks where user_id=$1",
+                   [signout_id]) == [{"blocked_user_id": author_id}]
+        signout_page = signout_viewer.new_page()
+        signout_page.on("pageerror", lambda error: errors.append(str(error)))
+        private(signout_page.goto(base + topic_path, wait_until="networkidle"))
+        expect(signout_page.locator("#post-" + root_post + " [data-filtered-post]")).to_have_count(1)
+        expect(signout_page.locator("#post-" + root_post + " [data-message-body]")).to_have_count(0)
+        with signout_page.expect_response(
+            lambda response: response.request.method == "POST"
+            and "/api/auth/sign-out" in response.url
+        ) as signout_response:
+            signout_page.get_by_role("button", name="Sign out").click()
+        assert signout_response.value.status == 200, signout_response.value.status
+        expect(signout_page.locator('.auth-controls[data-state="guest"]')).to_have_count(1)
+        expect(signout_page.locator("#post-" + root_post + " [data-message-body]")).to_contain_text(
+            "Public original post")
+        expect(signout_page.locator("#post-" + b_post + " [data-message-body]")).to_contain_text(
+            "Blocked B to A")
+        expect(signout_page.locator("[data-filtered-post]")).to_have_count(0)
+        expect(signout_page.locator(".personal-filter-control")).to_have_count(0)
+        assert signout_viewer.request.get(base + "/en/filters.data").status == 401
+        assert sql("select blocked_user_id from forum_user_blocks where user_id=$1",
+                   [signout_id]) == [{"blocked_user_id": author_id}]
+        record("real Better Auth same-topic sign-out clears A Block collapse for guest while preserving A own pair")
+
         assert not errors, errors
         assert not external, external
         browser.close()
