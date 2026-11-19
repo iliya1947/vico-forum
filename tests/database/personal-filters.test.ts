@@ -98,8 +98,8 @@ describe("Personal filters: own-state PostgreSQL persistence and admission", () 
     await service.setUserBlock({ actorId: a, blockedUserId: b, blocked: false });
     await service.setUserBlock({ actorId: a, blockedUserId: b, blocked: false });
     expect(await repository.readUserBlock(a, b)).toBe(false);
-    await expect(service.setUserBlock({ actorId: a, blockedUserId: a, blocked: true }))
-      .rejects.toBeInstanceOf(InvalidForumContentError);
+    expect(() => service.setUserBlock({ actorId: a, blockedUserId: a, blocked: true }))
+      .toThrow(InvalidForumContentError);
     await expect(service.setUserBlock({ actorId: a, blockedUserId: uuid(), blocked: true }))
       .rejects.toBeInstanceOf(ForumEntityNotFoundError);
     await expect(fixture.query("insert into forum_user_blocks(user_id,blocked_user_id) values($1,$1)", [a]))

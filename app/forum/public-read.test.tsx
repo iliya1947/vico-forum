@@ -251,6 +251,8 @@ const reader: ForumReader = {
     category: topic.section.category,
   }],
   readTopicWatch: async () => false,
+  readTopicMute: async () => false,
+  readUserBlock: async () => false,
   readTopicBookmark: async () => false,
   readTopicBookmarks: async () => ({ items: [], next: null }),
   readTopicReadState: async (_userId, id) => id === topic.id ? {
