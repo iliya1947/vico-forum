@@ -1364,7 +1364,7 @@ describe("interactive Pages preview", { timeout: 10_000 }, () => {
     expect(screen.getByText("The answer was technical criticism, not a personal attack.")).toBeInTheDocument();
 
     await user.click(screen.getByRole("link", { name: "Open case" }));
-    expect(await screen.findByRole("heading", { level: 1, name: "Complaint case" })).toBeInTheDocument();
+    expect(await screen.findByRole("heading", { level: 1, name: "Complaint review" })).toBeInTheDocument();
   });
 
   it("runs the global search form instead of blocking GET submissions", async () => {
