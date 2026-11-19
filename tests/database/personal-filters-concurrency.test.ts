@@ -104,6 +104,20 @@ async function twoClients() {
   await Promise.all([left.connect(), right.connect()]);
   return [left, right] as const;
 }
+/** DrizzleQueryError wraps the original PG trigger error: assert the native cause. */
+async function expectDatabaseFailure(operation: Promise<unknown>, expectedCause: string) {
+  let thrown: unknown;
+  try { await operation; } catch (error) { thrown = error; }
+  expect(thrown).toBeInstanceOf(Error);
+  let current = thrown;
+  for (let i = 0; i < 5; i++) {
+    if (current instanceof Error && current.message.includes(expectedCause)) return;
+    current = current && typeof current === "object" && "cause" in current
+      ? current.cause : undefined;
+  }
+  throw new Error("Expected PostgreSQL cause was not present in the thrown error chain: " + expectedCause);
+}
+
 async function failingReceipt<T>(work: () => Promise<T>) {
   await fixture.query("create function filter_race_receipt_fault() returns trigger language plpgsql as $$"
     + " begin raise exception 'forced personal receipt failure'; end; $$");
@@ -348,7 +362,7 @@ describe("Mute/Block M5: receipt/notice publication atomicity", () => {
         bodyRevision: { id: bodyRevisionId, originalContent: mention(recipient), sourceLocale: "en" } },
     };
     await failingReceipt(async () => {
-      await expect(forum.createTopicWithInitialPost(request)).rejects.toThrow(/forced personal receipt failure/);
+      await expectDatabaseFailure(forum.createTopicWithInitialPost(request), "forced personal receipt failure");
     });
     for (const [table, id] of [
       ["forum_topics", topicId], ["forum_topic_title_revisions", titleRevisionId],
@@ -368,7 +382,7 @@ describe("Mute/Block M5: receipt/notice publication atomicity", () => {
       contextKey, draftId, attachmentIds: [],
     } };
     await failingReceipt(async () => {
-      await expect(forum.createPost(request)).rejects.toThrow(/forced personal receipt failure/);
+      await expectDatabaseFailure(forum.createPost(request), "forced personal receipt failure");
     });
     expect(await count("select count(*)::int n from forum_posts where id=$1", [request.id])).toBe(0);
     expect(await count("select count(*)::int n from forum_post_revisions where id=$1", [request.bodyRevision.id])).toBe(0);
@@ -394,7 +408,7 @@ describe("Mute/Block M5: receipt/notice publication atomicity", () => {
       attachmentIds: [], retainedAttachmentIds: [] };
     const originalCount = await count("select count(*)::int n from forum_post_revisions where post_id=$1", [first.id]);
     await failingReceipt(async () => {
-      await expect(forum.editPublishedPost(request)).rejects.toThrow(/forced personal receipt failure/);
+      await expectDatabaseFailure(forum.editPublishedPost(request), "forced personal receipt failure");
     });
     expect((await fixture.query("select current_revision_id,edited_at from forum_posts where id=$1", [first.id])).rows[0])
       .toEqual(before);
@@ -427,8 +441,10 @@ describe("Mute/Block M5: receipt/notice publication atomicity", () => {
     await fixture.query("create trigger filter_race_mute_fault before insert"
       + " on forum_topic_mutes for each row execute function filter_race_mute_fault()");
     try {
-      await expect(forum.setTopicMute({ actorId: recipient, topicId: x, muted: true }))
-        .rejects.toThrow(/forced personal preference failure/);
+      await expectDatabaseFailure(
+        forum.setTopicMute({ actorId: recipient, topicId: x, muted: true }),
+        "forced personal preference failure",
+      );
     } finally {
       await fixture.query("drop trigger filter_race_mute_fault on forum_topic_mutes");
       await fixture.query("drop function filter_race_mute_fault()");
