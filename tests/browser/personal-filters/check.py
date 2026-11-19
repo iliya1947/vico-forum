@@ -95,6 +95,25 @@ def suppression(post_id):
     )}
 
 
+def attach_metadata(post_id, owner_id, file_name):
+    """Metadata-only disposable PG attachment fixture; no R2 object/download claim."""
+    attachment_id = str(uuid4())
+    sql(
+        "insert into forum_attachments "
+        "(id,owner_id,object_key,file_name,declared_mime,detected_type,response_mime,"
+        "byte_size,verification_status,created_at) "
+        "values ($1,$2,$3,$4,'text/plain','text','text/plain; charset=utf-8',"
+        "12,'type-checked',now())",
+        [attachment_id, owner_id, "private/filters-" + uuid4().hex, file_name],
+    )
+    sql(
+        "insert into forum_post_attachments (post_id,attachment_id,created_at) "
+        "values ($1,$2,now())",
+        [post_id, attachment_id],
+    )
+    return attachment_id
+
+
 try:
     with sync_playwright() as pw:
         browser = pw.chromium.launch(
@@ -279,6 +298,82 @@ try:
             "select topic_id from forum_topic_watches where user_id=$1", [actor_id],
         )} == {seeded["topicId"], seeded["otherTopicId"]}
         record("C's ordinary reply still notifies A and B in B's topic, Watch unchanged")
+        # 4b.4: public root and a best answer authored by blocked B stay
+        # navigable, while A sees no B-authored body or attachment presentation.
+        root_post = sql(
+            "select id from forum_posts where topic_id=$1 "
+            "order by created_at,id limit 1", [seeded["topicId"]],
+        )[0]["id"]
+        root_file = "blocked-root-" + uuid4().hex + ".txt"
+        best_file = "blocked-best-" + uuid4().hex + ".txt"
+        attach_metadata(root_post, author_id, root_file)
+        attach_metadata(b_post, author_id, best_file)
+        answer = author.request.post(
+            base + topic_path, headers={"Origin": base},
+            form={"intent": "selectBestAnswer", "operationScope": "own", "postId": b_post},
+            max_redirects=0,
+        )
+        assert answer.status in (302, 303), (answer.status, answer.text()[:300])
+        assert sql("select best_answer_post_id from forum_topics where id=$1",
+                   [seeded["topicId"]]) == [{"best_answer_post_id": b_post}]
+        record("B selects own reply as best answer; two real PG attachment references exist")
+
+        private(page.goto(base + topic_path, wait_until="networkidle"))
+        root_node = page.locator("#post-" + root_post)
+        best_node = page.locator("#post-" + b_post)
+        child_node = page.locator("#post-" + c_post)
+        expect(root_node).to_have_class(__import__("re").compile(r".*original-question.*"))
+        expect(best_node).to_have_class(__import__("re").compile(r".*best-answer.*"))
+        for node in (root_node, best_node):
+            expect(node.locator("[data-filtered-post]")).to_have_count(1)
+            expect(node.locator("[data-message-body]")).to_have_count(0)
+            expect(node.locator(".topic-message-attachments")).to_have_count(0)
+            expect(node.get_by_role("button", name="Show message")).to_be_visible()
+        assert root_file not in root_node.inner_text()
+        assert best_file not in best_node.inner_text()
+        expect(page.locator("#post-" + a_post + " [data-message-body]")).to_have_count(1)
+        expect(child_node.locator("[data-message-body]")).to_have_count(1)
+        record("A sees blocked B root and best answer collapsed; visible A/C remain intact")
+
+        # Post anchors, the solution jump, and reply graph must survive collapse.
+        expect(root_node.locator('a.topic-message-anchor[href="#post-' + root_post + '"]')).to_have_count(1)
+        expect(best_node.locator('a.topic-message-anchor[href="#post-' + b_post + '"]')).to_have_count(1)
+        expect(root_node.locator('a.topic-solution-link[href="#post-' + b_post + '"]')).to_have_count(1)
+        expect(best_node.locator('a.topic-message-parent-link[href="#post-' + a_post + '"]')).to_have_count(1)
+        expect(child_node.locator('a.topic-message-parent-link[href="#post-' + b_post + '"]')).to_have_count(1)
+        expect(best_node.locator('nav.topic-message-direct-replies a[href="#post-' + c_post + '"]')).to_have_count(1)
+        child_node.locator('a.topic-message-parent-link[href="#post-' + b_post + '"]').click()
+        assert page.url.endswith("#post-" + b_post), page.url
+        expect(best_node.locator("[data-filtered-post]")).to_have_count(1)
+        record("collapsed root/best/parent/child preserve stable post anchors and relationships")
+
+        # Guest remains public and sees both exact bodies and attachment links.
+        assert guest_page.goto(base + topic_path, wait_until="networkidle").status == 200
+        guest_root = guest_page.locator("#post-" + root_post)
+        guest_best = guest_page.locator("#post-" + b_post)
+        expect(guest_root.locator("[data-message-body]")).to_contain_text("Public original post")
+        expect(guest_best.locator("[data-message-body]")).to_contain_text("Blocked B to A")
+        expect(guest_root.locator(".topic-message-attachments")).to_contain_text(root_file)
+        expect(guest_best.locator(".topic-message-attachments")).to_contain_text(best_file)
+        expect(guest_page.locator("[data-filtered-post]")).to_have_count(0)
+        record("guest still reads B's public root, answer, and attachment links")
+
+        # Revealing is post-local and presentation-only, never an implicit Unblock.
+        root_node.get_by_role("button", name="Show message").click()
+        expect(root_node.locator("[data-message-body]")).to_contain_text("Public original post")
+        expect(root_node.locator(".topic-message-attachments")).to_contain_text(root_file)
+        expect(best_node.locator("[data-filtered-post]")).to_have_count(1)
+        best_node.get_by_role("button", name="Show message").click()
+        expect(best_node.locator("[data-message-body]")).to_contain_text("Blocked B to A")
+        expect(best_node.locator(".topic-message-attachments")).to_contain_text(best_file)
+        assert sql("select blocked_user_id from forum_user_blocks where user_id=$1",
+                   [actor_id]) == [{"blocked_user_id": author_id}]
+        page.reload(wait_until="networkidle")
+        expect(page.locator("#post-" + root_post + " [data-filtered-post]")).to_have_count(1)
+        expect(page.locator("#post-" + b_post + " [data-filtered-post]")).to_have_count(1)
+        assert sql("select blocked_user_id from forum_user_blocks where user_id=$1",
+                   [actor_id]) == [{"blocked_user_id": author_id}]
+        record("independent per-post Reveal shows body/attachment metadata; reload collapses and Block persists")
         assert not errors, errors
         assert not external, external
         browser.close()
