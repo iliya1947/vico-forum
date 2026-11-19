@@ -1406,6 +1406,8 @@ export function EmbeddedPreview({ scenarioId, identity }: { scenarioId: string; 
           || intent === "acceptHelpDuplicateAppeal"
           || intent === "rejectHelpDuplicateAppeal")
           && form.classList.contains("attention-case-actions"))
+        || ((intent === "note" || intent === "decision")
+          && Boolean(form.closest(".complaint-review")))
         || ((intent === "create" || intent === "change" || intent === "lift" || intent === "review")
           && form.classList.contains("profile-form")
           && Boolean(form.closest(".admin-forum")))
