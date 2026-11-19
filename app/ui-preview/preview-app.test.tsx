@@ -1235,6 +1235,43 @@ describe("embedded preview routing", { timeout: 10_000 }, () => {
 
 
 describe("interactive Pages preview", { timeout: 10_000 }, () => {
+  it("opens a complaint case, adds a moderator note, and resolves it", async () => {
+    const user = userEvent.setup();
+    await renderEmbeddedPreview(<EmbeddedPreview
+      scenarioId="attention-complaints"
+      identity="manager"
+    />);
+
+    expect(await waitFor(() => document.querySelector(".complaint-queue"))).not.toBeNull();
+    const openCase = document.querySelector(".complaint-open-case");
+    expect(openCase).not.toBeNull();
+    await user.click(openCase!);
+
+    expect(await waitFor(() => document.querySelector(".complaint-review"))).not.toBeNull();
+
+    const note = document.querySelector('textarea[name="body"]');
+    expect(note).not.toBeNull();
+    await user.type(note!, "Preview moderator note");
+    const noteForm = note!.closest("form");
+    expect(noteForm).not.toBeNull();
+    const noteSubmit = noteForm!.querySelector('button[type="submit"]');
+    expect(noteSubmit).not.toBeNull();
+    await user.click(noteSubmit!);
+    expect(await screen.findByText("Preview moderator note")).toBeInTheDocument();
+
+    const reasoning = document.querySelector('textarea[name="reasoning"]');
+    expect(reasoning).not.toBeNull();
+    await user.type(reasoning!, "Preview moderator decision");
+    const decisionForm = reasoning!.closest("form");
+    expect(decisionForm).not.toBeNull();
+    const decisionSubmit = decisionForm!.querySelector('button[type="submit"]');
+    expect(decisionSubmit).not.toBeNull();
+    await user.click(decisionSubmit!);
+
+    expect(await screen.findByText("Preview moderator decision")).toBeInTheDocument();
+    expect(document.querySelector('textarea[name="reasoning"]')).toBeNull();
+  });
+
   it("runs the global search form instead of blocking GET submissions", async () => {
     const user = userEvent.setup();
     await renderEmbeddedPreview(<EmbeddedPreview scenarioId="home-guest" />);
