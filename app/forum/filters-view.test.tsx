@@ -109,7 +109,7 @@ describe("personal Filters list presentation", () => {
     async tab => {
       const original: FilterListItem = tab === "topics" ? topic : blocked;
       const newCreatedAt = "2026-11-19T17:45:13.327Z";
-      const linkName = tab === "topics" ? /literal title/i : "Deleted user";
+      const linkName = tab === "topics" ? /literal title/i : /Deleted user/i;
       const undoName = tab === "topics" ? "Unmute topic" : "Unblock user";
       let stored: FilterListItem | null = original;
       let release!: (value: unknown) => void;
