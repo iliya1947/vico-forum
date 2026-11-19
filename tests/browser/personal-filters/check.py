@@ -235,6 +235,50 @@ try:
         page.reload(wait_until="networkidle")
         expect(page.get_by_role("button", name="Mute topic", exact=True)).to_be_visible()
         record("Unmute restores only new ordinary fanout, no backfill, prior notices and Watch intact")
+        # 4b.3: Block is directional and keyed to the actual publication actor.
+        # A is the Watch subscriber, B owns the topic; both Mute states are OFF.
+        private(page.goto(base + profile_path, wait_until="networkidle"))
+        expect(page.get_by_role("button", name="Block user", exact=True)).to_be_visible()
+        with page.expect_response(lambda r: r.request.method == "POST"
+                                  and "/users/" + author_id in r.url) as blocked:
+            page.get_by_role("button", name="Block user", exact=True).click()
+        private(blocked.value)
+        expect(page.get_by_role("button", name="Unblock user", exact=True)).to_be_visible()
+        assert sql("select blocked_user_id from forum_user_blocks where user_id=$1",
+                   [actor_id]) == [{"blocked_user_id": author_id}]
+        assert sql("select blocked_user_id from forum_user_blocks where user_id=$1",
+                   [author_id]) == []
+        record("A blocks B through Chromium; the reverse B-to-A pair remains OFF")
+
+        # A's publication is still delivered to B, who has not blocked A.
+        a_post = reply(actor, topic_path, "A to B while A blocks B " + uuid4().hex)
+        assert notices(a_post) == {author_id: "reply"}, notices(a_post)
+        assert suppression(a_post) == set()
+        record("A-to-B Block does not suppress ordinary notifications delivered from A to B")
+
+        # B can publish and explicitly mention A; A's parent/Watch/mention
+        # sources all collapse to one suppressed pair, not a visible notice.
+        b_mentions_a = "[watching A](/en/users/" + actor_id + ")"
+        b_post = reply(author, topic_path, "Blocked B to A " + b_mentions_a, a_post)
+        assert notices(b_post) == {}, notices(b_post)
+        assert suppression(b_post) == {actor_id}, suppression(b_post)
+        assert sql("select blocked_user_id from forum_user_blocks where user_id=$1",
+                   [author_id]) == []
+        record("B's actual reply and mention to A are suppressed, with one PG receipt")
+
+        # Another publication actor C in B's own topic is still eligible for
+        # A via Watch/mention and for B via ordinary topic/parent authorship.
+        third_party, _ = account("Filters independent C publisher")
+        c_post = reply(third_party, topic_path, "C reply in B topic " + b_mentions_a, b_post)
+        expected_c = {actor_id: "reply", author_id: "reply"}
+        assert notices(c_post) == expected_c, (notices(c_post), expected_c)
+        assert suppression(c_post) == set()
+        assert sql("select blocked_user_id from forum_user_blocks where user_id=$1",
+                   [actor_id]) == [{"blocked_user_id": author_id}]
+        assert {row["topic_id"] for row in sql(
+            "select topic_id from forum_topic_watches where user_id=$1", [actor_id],
+        )} == {seeded["topicId"], seeded["otherTopicId"]}
+        record("C's ordinary reply still notifies A and B in B's topic, Watch unchanged")
         assert not errors, errors
         assert not external, external
         browser.close()
