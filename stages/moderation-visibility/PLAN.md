@@ -122,7 +122,7 @@ Complaint evidence/context/review, immutable Admin/Owner retained History и и�
 
 ## V8. Последовательность реализации и критерии готовности
 
-**Один Draft implementation PR** от актуального main, только task5. B1–B9 — внутренние bounded checkpoints с проверяемым результатом. После каждого Лира фиксирует краткий checkpoint в #342 и STOP; следующие изменения — отдельным следующим назначением. До B9 PR не review-ready; промежуточный зелёный CI не подтверждает feature acceptance. Backend commands не выставлять пользовательскому route до готовности read/asset/projection gates.
+**Каждый B1–B9 является отдельным bounded-этапом и выполняется в отдельном implementation PR** от актуального main в соответствии с действующим `AGENTS.md`. После завершения каждого этапа: author self-check → Mira whole-PR review stable exact head → Leva independent review того же head → owner merge → только затем следующий bounded-этап. Промежуточный зелёный CI не подтверждает готовность всей visibility feature. Backend commands не выставлять пользовательскому route до готовности соответствующих read/asset/projection gates.
 
 | Checkpoint | Результат и обязательная проверка до STOP |
 | --- | --- |
@@ -136,7 +136,7 @@ Complaint evidence/context/review, immutable Admin/Owner retained History и и�
 | **B8 — complete PG/connected acceptance** | Весь matrix ниже через real PG connections и actual Worker/Better Auth/Chromium/local R2 binding. Все public/private/old aliases и sentinel scans закрыты; local fault injection подтверждает fail-closed/atomicity. Не подменять разрешённый asset download ответом503. |
 | **B9 — exact-head closeout/handoff** | Author self-check всего PR; final lint/typecheck/unit/full PG/build/preview/history/metadata/manifest/privilege/provisioning + dedicated connected CI. Stable SHA, весь scope Мира→Лёва→owner merge; затем отдельный docs closeout. |
 
-First authorized implementation checkpoint после plan handoff — **только B1**. Точный номер implementation PR выбирается при открытии; в текущем planning-turn PR/code не создаются.
+First authorized implementation stage после plan handoff — **только B1** в отдельном implementation PR. Следующие B2–B9 открываются последовательно после полного review+merge предыдущего bounded-этапа. Точный номер implementation PR выбирается при открытии; в текущем planning-turn PR/code не создаются.
 
 ### Полная acceptance matrix
 
@@ -157,7 +157,7 @@ First authorized implementation checkpoint после plan handoff — **тол�
 
 ## V9. Handoff и границы текущего результата
 
-**Мире:** проверить полноту этой адаптации и checkpoint/dependency mapping, затем назначить Лире B1 в отдельном implementation PR. V-P1/V-P2/V-P3 уже приняты, не запрашивать их заново. V-T1/V-T2 совместимы с baseline; если появится реальный новый технический конфликт, локально скорректировать его до реализации, не переоткрывая весь scope.
+**Мире:** проверить полноту этой адаптации и dependency mapping, затем назначить Лире B1 в отдельном implementation PR. V-P1/V-P2/V-P3 уже приняты, не запрашивать их заново. V-T1/V-T2 совместимы с baseline; если появится реальный новый технический конфликт, локально скорректировать его до реализации, не переоткрывая весь scope.
 
 **Лире:** перед B1 перечитать current main/ceiling и актуальное назначение, выполнить только B1 и STOP. Не называть foundation завершённой visibility feature. Stable review возможен только после B2–B9 и закрытия всех public leaks. #342 не merge; implementation merge — владелец. Permanent contract/factual PROJECT_STATE/history — отдельным docs PR после фактического merge.
 
