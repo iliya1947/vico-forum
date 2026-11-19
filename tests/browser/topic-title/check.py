@@ -77,7 +77,8 @@ try:
                 expect(forbidden_page.locator('.topic-title-editor')).to_have_count(0)
                 forbidden_page.close()
             record('ordinary/Help guest401 and nonauthor403 with capability defaults')
-            page.get_by_role('button', name='Edit topic title', exact=True).click()
+            opener = page.get_by_role('button', name='Edit topic title', exact=True)
+            opener.click()
             title_input = page.locator('.topic-title-editor input[name="title"]')
             expect(title_input).to_have_value('Original ' + item['topicId'])
             replacement = 'Current title ' + str(index) + ' שלום <script>window.__titleExecuted=1</script>'
@@ -87,6 +88,17 @@ try:
             private(saved.value, 200)
             expect(page.locator('.topic-title-editor input[name="title"]')).to_have_count(0)
             expect(page.locator('h1')).to_have_text(replacement)
+            expect(opener).to_be_visible()
+            expect(opener).to_be_focused()
+            opener.click()
+            page.locator('.topic-title-editor input[name="title"]').fill('Discarded unsaved title')
+            page.get_by_role('button', name='Cancel', exact=True).click()
+            expect(opener).to_be_visible()
+            expect(opener).to_be_focused()
+            expect(page.locator('.topic-title-editor input[name="title"]')).to_have_count(0)
+            expect(page.locator('h1')).to_have_text(replacement)
+            if index == 0:
+                record('Save/Cancel restores keyboard focus after opener is visible; Cancel does not save')
             page.reload(wait_until='networkidle')
             expect(page.locator('h1')).to_have_text(replacement)
             assert page.evaluate('window.__titleExecuted') is None
