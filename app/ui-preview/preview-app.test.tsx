@@ -1730,7 +1730,7 @@ describe("interactive Pages preview", { timeout: 10_000 }, () => {
     const openAdmin = screen.getByRole("link", { name: "Open Admin workspace" });
     await waitFor(() => expect(openAdmin).toHaveAttribute("href", "/en/admin/authorization"));
     await user.click(openAdmin);
-    expect(await screen.findByRole("heading", { level: 2, name: "Roles & permissions" })).toBeInTheDocument();
+    expect(await screen.findByRole("heading", { level: 2, name: "Authorization management" })).toBeInTheDocument();
 
     await openSettings(user);
     await openSettingsSection(user, "Administrator preferences", "Administrator preferences");
