@@ -304,3 +304,14 @@ PROJECT_STATE date line not classified as defect because documented state dates 
 and no project contract binds it to docs PR calendar date.
 
 Coordinator PASS, current-doc defects 0. Next: Lev independent docs review same exact head.
+
+
+## 2026-11-19 — correction: no Lev review for docs #350
+
+Owner corrected my workflow extension: Lev is not needed for docs review.
+I had mechanically extended implementation PR review rules to a docs-only PR.
+
+Current AGENTS.md review section explicitly scopes coordinator → independent review to
+implementation PRs. #350 is docs-only, authored by Lira; my completed whole-PR docs review
+PASS + applicable CI is sufficient for merge readiness. Previous “Next: Lev independent docs
+review” line is superseded.
