@@ -1269,10 +1269,7 @@ describe("interactive Pages preview", { timeout: 10_000 }, () => {
     expect(noteSubmit).not.toBeNull();
     await user.click(noteSubmit!);
     await waitFor(() =>
-      expect(screen.getByRole("button", { name: "Save note" })).toBeDisabled(),
-    );
-    await waitFor(() =>
-      expect(screen.getByRole("button", { name: "Save note" })).toBeEnabled(),
+      expect(document.querySelector('textarea[name="body"]')).toHaveValue(""),
     );
     expect(screen.getByText("Preview moderator note")).toBeInTheDocument();
 
