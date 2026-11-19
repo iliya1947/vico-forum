@@ -534,9 +534,12 @@ describe("embedded preview routing", { timeout: 10_000 }, () => {
     });
     expect(document.querySelectorAll(".super-admin-timeline > li")).toHaveLength(4);
 
-    const area = filters.querySelector('select[name="area"]') as HTMLSelectElement;
-    await user.selectOptions(area, "notifications");
-    await user.click(filters.querySelector('button[type="submit"]') as HTMLButtonElement);
+    const area = filters.querySelector('select[name="area"]');
+    expect(area).not.toBeNull();
+    await user.selectOptions(area!, "notifications");
+    const apply = filters.querySelector('button[type="submit"]');
+    expect(apply).not.toBeNull();
+    await user.click(apply!);
 
     await waitFor(() => expect(document.querySelectorAll(".super-admin-timeline > li")).toHaveLength(1));
     expect(document.querySelector('[data-history-kind="notification.created"]')).not.toBeNull();
