@@ -374,6 +374,140 @@ try:
         assert sql("select blocked_user_id from forum_user_blocks where user_id=$1",
                    [actor_id]) == [{"blocked_user_id": author_id}]
         record("independent per-post Reveal shows body/attachment metadata; reload collapses and Block persists")
+        # 4b.5: real initial-topic mention is suppressed for a blocking viewer.
+        # Publication receipt replay is checked before and after Unblock.
+        new_author, new_author_id = account("Filters initial-topic sender")
+        new_profile_path = "/en/users/" + new_author_id
+        block_form = {"intent": "setUserBlock", "editorActorId": actor_id, "blocked": "true"}
+        block_result = actor.request.post(base + new_profile_path, headers={"Origin": base},
+                                          form=block_form)
+        private(block_result)
+        assert block_result.json()["blocked"] is True
+        section_id = sql("select section_id from forum_topics where id=$1",
+                         [seeded["topicId"]])[0]["section_id"]
+        create_form = {
+            "title": "Blocked initial mention " + uuid4().hex,
+            "body": "Initial mention " + b_mentions_a,
+            "editorOperationId": str(uuid4()), "editorAttachmentIds": "[]",
+        }
+        create_path = "/en/sections/" + section_id
+        first_create = new_author.request.post(base + create_path, headers={"Origin": base},
+                                               form=create_form, max_redirects=0)
+        assert first_create.status in (302, 303), (first_create.status, first_create.text()[:250])
+        created_location = first_create.headers["location"]
+        created_topic_id = urlparse(created_location).path.rstrip("/").rsplit("/", 1)[-1]
+        created_topic_path = "/en/topics/" + created_topic_id
+        initial_post = sql("select id from forum_posts where topic_id=$1",
+                           [created_topic_id])[0]["id"]
+        created_at = __import__("time").monotonic()
+        assert notices(initial_post) == {}, notices(initial_post)
+        assert suppression(initial_post) == {actor_id}, suppression(initial_post)
+        assert sql("select count(*)::int as n from forum_posts where topic_id=$1",
+                   [created_topic_id]) == [{"n": 1}]
+        record("Block suppresses initial-topic mention through real HTTP and persists one receipt")
+
+        repeat_create = new_author.request.post(base + create_path, headers={"Origin": base},
+                                                form=create_form, max_redirects=0)
+        assert repeat_create.status in (302, 303)
+        assert repeat_create.headers["location"] == created_location
+        assert sql("select count(*)::int as n from forum_posts where topic_id=$1",
+                   [created_topic_id]) == [{"n": 1}]
+        assert suppression(initial_post) == {actor_id}
+        record("identical initial-topic publication replay creates no extra post or notice")
+
+        unblock_form = {**block_form, "blocked": "false"}
+        unblock_result = actor.request.post(base + new_profile_path,
+                                            headers={"Origin": base}, form=unblock_form)
+        private(unblock_result)
+        assert unblock_result.json()["blocked"] is False
+        assert sql("select blocked_user_id from forum_user_blocks "
+                   "where user_id=$1 and blocked_user_id=$2",
+                   [actor_id, new_author_id]) == []
+        again_create = new_author.request.post(base + create_path, headers={"Origin": base},
+                                               form=create_form, max_redirects=0)
+        assert again_create.status in (302, 303)
+        assert again_create.headers["location"] == created_location
+        assert notices(initial_post) == {}
+        assert suppression(initial_post) == {actor_id}
+
+        def revision(post_id):
+            return sql("select current_revision_id from forum_posts where id=$1",
+                       [post_id])[0]["current_revision_id"]
+
+        def edit(ctx, path, post_id, body, form=None):
+            fields = form if form is not None else {
+                "intent": "editPost", "postId": post_id,
+                "expectedRevisionId": revision(post_id), "body": body,
+                "editorOperationId": str(uuid4()),
+                "editorAttachmentIds": "[]", "editorRetainedAttachmentIds": "[]",
+            }
+            result = ctx.request.post(base + path, headers={"Origin": base},
+                                      form=fields, max_redirects=0)
+            assert result.status in (302, 303), (result.status, result.text()[:300])
+            return fields
+
+        edit(new_author, created_topic_path, initial_post,
+             "Edited original, same recipient " + b_mentions_a)
+        edit(new_author, created_topic_path, initial_post, "Removed original mention")
+        edit(new_author, created_topic_path, initial_post,
+             "Reintroduced original mention " + b_mentions_a)
+        assert notices(initial_post) == {}
+        assert suppression(initial_post) == {actor_id}
+        record("Unblock and edit/remove/re-add initial mention cannot backfill consumed pair")
+
+        # Mute receipts from 4b.2 survive Unmute and published-post edits, while
+        # a new mention on that same post can notify a never-selected recipient.
+        assert sql("select user_id from forum_topic_mutes where topic_id=$1",
+                   [seeded["topicId"]]) == []
+        unseen, unseen_id = account("Filters newly mentioned on edited post")
+        edit(while_sender, topic_path, during_post, "Unrelated edit keeps " + mention)
+        assert notices(during_post) == {}, notices(during_post)
+        assert suppression(during_post) == set(recipients)
+        record("Unmute plus unrelated published edit does not revive old suppressed mentions")
+
+        edit(while_sender, topic_path, during_post, "Temporarily without mention")
+        unseen_link = "[first-time recipient](/en/users/" + unseen_id + ")"
+        final_edit = edit(while_sender, topic_path, during_post,
+                          "Re-added consumed mention " + mention + " " + unseen_link)
+        assert notices(during_post) == {unseen_id: "mention"}, notices(during_post)
+        assert suppression(during_post) == set(recipients)
+        assert notices(before_post) == recipients
+        record("remove/re-add leaves receipts; first-time mention after Unmute notifies only new recipient")
+
+        after_revision = revision(during_post)
+        before_revision_count = sql(
+            "select count(*)::int as n from forum_post_revisions where post_id=$1",
+            [during_post],
+        )
+        edit(while_sender, topic_path, during_post, final_edit["body"], final_edit)
+        assert revision(during_post) == after_revision
+        assert sql("select count(*)::int as n from forum_post_revisions where post_id=$1",
+                   [during_post]) == before_revision_count
+        assert notices(during_post) == {unseen_id: "mention"}
+        assert suppression(during_post) == set(recipients)
+        record("matching published-edit replay writes no revision, notice or new receipt")
+
+        later_sender, _ = account("Filters prospective unmuted reply")
+        after_filter_post = reply(later_sender, topic_path,
+                                  "Fresh post after Unmute " + mention, parent_post)
+        assert notices(after_filter_post) == recipients, notices(after_filter_post)
+        assert suppression(after_filter_post) == set()
+        assert notices(after_post) == recipients
+        assert notices(before_post) == recipients
+        record("fresh ordinary publication after Unmute notifies all four, prior inbox intact")
+
+        # Respect the real Worker write cooldown, not the PG fixture's zero
+        # cooldown: the same previously blocked topic author now publishes again.
+        elapsed = __import__("time").monotonic() - created_at
+        if elapsed < 5.2:
+            __import__("time").sleep(5.2 - elapsed)
+        next_block_post = reply(new_author, created_topic_path,
+                                "Fresh post from formerly blocked author " + b_mentions_a)
+        assert notices(next_block_post) == {actor_id: "mention"}, notices(next_block_post)
+        assert suppression(next_block_post) == set()
+        assert notices(initial_post) == {}
+        assert suppression(initial_post) == {actor_id}
+        record("new post after Unblock delivers to A; old Block suppression stays consumed")
         assert not errors, errors
         assert not external, external
         browser.close()
