@@ -668,3 +668,20 @@ Current-main recheck confirms the audited defect is still present: `TopicWatchCo
 Exact-head evidence independently checked: CI `44607510757` checks+database SUCCESS; 2746/2746 unit/route tests (218 files), 1476/1476 PG17 tests (109 files); dedicated Watch connected `44607510810` SUCCESS 11/11 markers; всего 7/7 associated workflows SUCCESS. PR head остался `afe23e08f0e54cafbfc2d803fe9f1cee59b2bbbf`, mergeable=true, Draft=true. Подтверждённых current-scope findings нет.
 
 **Next reviewer — Лёва / Codex-6.1 Sol**: independent whole-PR review #354 на том же exact head. При PASS — owner merge route; при finding — вернуть bounded finding через #342. BOOKMARKS-AUDIT-1/2 и TITLE-AUDIT-1 не активировать до закрытия Watch correction. #342 service-only/no merge.
+
+## 2026-11-19 — owner scope change: consolidate all audit defects in #354 before Leva review
+
+Owner directly changed the corrective route: do **not** send #354 to Leva after the Watch-only slice. Keep the same Draft implementation PR #354 open and use it as one consolidated corrective package for all confirmed defects from the completed Watch/Bookmarks/title audits.
+
+Current #354 exact head `afe23e08f0e54cafbfc2d803fe9f1cee59b2bbbf` already closes **WATCH-AUDIT-1 [P2]** and passed Mira's Watch-only coordinator review. That PASS is now only an intermediate slice result, not the final whole-PR gate, because implementation scope expands.
+
+**Remaining implementation for Лира / ChatGPT-6 in the same #354:**
+1. **BOOKMARKS-AUDIT-1 [P2]** — topic Bookmark control must not let an older successful mutation ACK overwrite a fresher authoritative loader snapshot in either state direction.
+2. **BOOKMARKS-AUDIT-2 [P2]** — Bookmarks list must not let an older Remove ACK / local removed latch hide a row that is present in a fresher authoritative list after re-add.
+3. **TITLE-AUDIT-1 [P3]** — after Save and Cancel, restore focus to the Edit-title opener only after it is rendered/visible again; title mutation/data semantics remain unchanged.
+
+Preserve existing transient/pending/error/explicit-refresh/actor-target protections and the already-validated Bookmarks cursor/session identity behavior. Do not introduce cache/version/timestamp/global-store/automatic-retry mechanisms to preserve stale local mirrors. Add deterministic regressions for the confirmed causal cases and run applicable checks.
+
+**Review route changed:** no Leva review now. After all four findings are closed on one stable final #354 head, Лира STOPs to Mira. Mira performs a fresh whole-PR coordinator review of the **entire consolidated PR**, not just the new delta. Only after that PASS does Leva perform one independent whole-PR review of the same exact head. Owner alone merges.
+
+This direct owner decision supersedes the earlier deferral of TITLE-AUDIT-1 to a later UI/UX pass.
