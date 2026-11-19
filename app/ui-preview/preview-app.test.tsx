@@ -1336,6 +1336,32 @@ describe("interactive Pages preview", { timeout: 10_000 }, () => {
     expect(screen.queryByRole("button", { name: "Record appeal result" })).not.toBeInTheDocument();
   });
 
+  it("opens complaint History and its resolved-case timeline", async () => {
+    const user = userEvent.setup();
+    await renderEmbeddedPreview(<EmbeddedPreview
+      scenarioId="attention-complaints"
+      identity="manager"
+    />);
+
+    const groupNav = document.querySelector(".attention-group-nav") as HTMLElement;
+    await user.click(within(groupNav).getByRole("link", { name: "History" }));
+
+    const history = await waitFor(() => {
+      const current = document.querySelector(".complaint-history") as HTMLElement | null;
+      expect(current).not.toBeNull();
+      return current!;
+    });
+    expect(within(history).getByText("Resolved cases: 1")).toBeInTheDocument();
+
+    await user.click(within(history).getByRole("link", { name: "History" }));
+    expect(await screen.findByRole("heading", { level: 1, name: "History" })).toBeInTheDocument();
+    expect(screen.getByText("Appeal submitted")).toBeInTheDocument();
+    expect(screen.getByText("The answer was technical criticism, not a personal attack.")).toBeInTheDocument();
+
+    await user.click(screen.getByRole("link", { name: "Open case" }));
+    expect(await screen.findByRole("heading", { level: 1, name: "Complaint case" })).toBeInTheDocument();
+  });
+
   it("runs the global search form instead of blocking GET submissions", async () => {
     const user = userEvent.setup();
     await renderEmbeddedPreview(<EmbeddedPreview scenarioId="home-guest" />);
