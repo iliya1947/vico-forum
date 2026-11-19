@@ -1169,3 +1169,43 @@ merge docs. #342 служебный и не merge; #300 не использов�
 
 Следовательно docs review cycle для #350 завершён без Лёвы. Следующее действие —
 готовность #350 к merge владельцем. После фактического merge — Mute/block implementation.
+
+
+## 2026-11-19 — Bookmarks docs #350 merged; Mute/block implementation активирован
+
+Bookmarks docs PR #350 фактически merged:
+- reviewed docs head: `446e4cc893160efc30392bfa43f03f5882823021`;
+- merge commit/current main: `9eae385571bf99e073df46f8541f7514c9626a29`;
+- merged_at: 2026-11-19 08:01:56 UTC.
+
+После merge полностью перечитаны current `PROJECT.md`, `PROJECT_STATE.md`,
+`docs/auth/AUTHORIZATION.md` и `docs/moderation/COMPLAINTS.md`; принятый Mute/block
+plan в `USER_ACTIONS_SERVICE_PLAN.md` сверён с новым main. Открытого Mute/block
+implementation PR не найдено.
+
+Product scope уже закрыт владельцем:
+- **M1 ACCEPT:** Mute конкретной темы подавляет для текущего пользователя все новые ordinary
+  reply/mention notifications из этой темы независимо от recipient source; не скрывает
+  контент, не меняет Watch, Unmute не делает backfill.
+- **M2 ACCEPT:** directional Block A→B подавляет для A новые ordinary reply/mention notices
+  от publication actor B и сворачивает posts B в ordinary TopicView A с explicit reveal;
+  не запрещает B читать/публиковать/отвечать/упоминать, не является moderation sanction и
+  не скрывает public profile/search/discovery.
+- Ранее принятые **M3/M4/M6** после owner M1/M2 являются окончательным bounded scope:
+  prospective suppression receipts без backfill; отдельные private self-state stores без
+  нового RBAC; canonical topic/profile actions + private `/:locale/filters`; viewer-only
+  collapse; Watch/Bookmarks/read/Complaints/Admin independence.
+
+**Следующий исполнитель — Лира / ChatGPT-6.** Реализовать Mute/block как один bounded
+implementation PR от current main `9eae385571bf99e073df46f8541f7514c9626a29` по уже
+принятому M1–M7 плану. Перед изменениями Лира повторно сверяет фактические current-main
+seams, выбирает следующий forward migration по реальному ceiling и не перепроектирует
+утверждённую модель без подтверждённого противоречия.
+
+Готовность: полный accepted implementation scope, применимые unit/route/component,
+real PostgreSQL concurrency/lifecycle и connected Worker/Better Auth/PG17/Chromium
+acceptance, stable exact head + применимые CI. Затем STOP Мире на coordinator whole-PR
+review. До PASS Миры Лёву не подключать.
+
+Не расширять в visibility moderation, structure/topic move, #320, Stage 6, общий UI/UX
+или production. #342 служебный и не merge; #300 не использовать.
