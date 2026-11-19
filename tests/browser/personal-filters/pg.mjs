@@ -2,6 +2,7 @@
 import crypto from "node:crypto";
 import process from "node:process";
 import readline from "node:readline";
+import { URL } from "node:url";
 import pg from "pg";
 import { drizzle } from "drizzle-orm/node-postgres";
 import { DrizzleForumRepository } from "../../../db/forum-repository.ts";
@@ -15,7 +16,7 @@ if (process.env.CI !== "true"
 const client = new pg.Client({ connectionString: url.toString() });
 await client.connect();
 const forum = new DrizzleForumRepository(drizzle(client), { cooldownMs: 0, now: () => new Date() });
-console.log("READY");
+process.stdout.write("READY\n");
 try {
   for await (const line of readline.createInterface({ input: process.stdin, crlfDelay: Infinity })) {
     try {
@@ -84,9 +85,9 @@ try {
       } else {
         throw new Error("Unknown Mute/Block fixture operation");
       }
-      console.log(JSON.stringify({ result }));
+      process.stdout.write(JSON.stringify({ result }) + "\n");
     } catch (error) {
-      console.log(JSON.stringify({ error: String(error) }));
+      process.stdout.write(JSON.stringify({ error: String(error) }) + "\n");
     }
   }
 } finally {
