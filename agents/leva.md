@@ -2,22 +2,23 @@
 
 ## Текущий статус
 
-Лёва сейчас STOP и **не должен** проверять #354 до fresh final Mira PASS всего consolidated corrective PR.
+Independent technical whole-PR review #354 завершён **PASS** на exact `b67e14d81cd20f2e42264e3d25d336ee19db626b`, base `a645fbe21110e77429025c428e498194b9a92ca2`. Current main `bb3d44f` отличается от base только service-regulation docs. Мира PASS того же SHA подтверждён свежим управляющим комментарием; прежний STOP до Mira PASS уже выполнен.
 
-## Audit findings, которые породили #354
+Все WATCH-AUDIT-1, BOOKMARKS-AUDIT-1/2, TITLE-AUDIT-1 и R1 CLOSED. Содержательный review/evidence — `stages/corrections/REVIEW.md`; не дублировать его здесь. Код реализации я не менял; диагностические prototypes вне shipped tree не являются authoring corrections Лиры.
 
-1. WATCH-AUDIT-1 [P2]: local confirmed mirror перекрывал fresher loader state старым successful ACK; оба направления воспроизведены real PG17 + Router.
-2. BOOKMARKS-AUDIT-1 [P2]: тот же causal class в TopicBookmarkControl.
-3. BOOKMARKS-AUDIT-2 [P2]: old Remove ACK ставил removed latch и скрывал re-added row вопреки fresh list loader/revalidation.
-4. TITLE-AUDIT-1 [P3]: Save/Cancel focus выполнялся до DOM commit; Chromium оставлял BODY focused. Post-commit prototype исправлял оба случая.
+## Полезный контекст проверки
 
-Диагностические prototypes вне shipped tree не являются implementation.
+- Clean detached worktree `/workspace/work/corrections-review` на final SHA.
+- `/workspace/work/corrections-diagnostics`: component log25PASS, actual PG/Router log8PASS и Chromium focus-result5PASS,0pageErrors. Это новые независимые executions, не копия author counts.
+- PG harness повторяет первоначальные causal сценарии audit на исправленном source, включая дополнительную revalidation после старого ACK. SQL/writes настоящие; задержан только ACK после COMMIT.
+- Chromium fixture использует production title component/Router и диагностические action/permission snapshots. Проверены Save/Cancel, initial no-autofocus, Cancel и successful Save при исчезнувшем opener, затем возврат permission с сохранением фокуса другого элемента. Это component/browser probe, не новый полный Worker acceptance.
+- Полный same-head CI и connected Worker logs проверены отдельно; claims не смешивать с локальными probes.
 
-## Будущий reviewer route
+## Следующий маршрут
 
-После того как Лира завершит все четыре corrections и Мира заново даст whole-PR PASS на одном stable exact head, Лёва выполняет **один independent whole-PR review всего #354**.
+Лёва STOP. Владелец Ready→merge #354 при неизменном head; новый implementation SHA требует нового Mira→Leva cycle. Будущие visibility/structure tasks этим review не активированы.
 
 ## Planning work
 
-- Полный visibility plan V1–V9 подготовлен; implementation не активирован.
-- Полный structure/topic-move plan S0–S10 подготовлен; Mira scope/fit PASS, S-P1–S-P4 и S-T1/S-T2 приняты.
+- Visibility V1–V9: `stages/moderation-visibility/PLAN.md`; перед implementation проверить/закрыть отмеченные scope/fit развилки на актуальном main.
+- Structure/topic move S0–S10: `stages/forum-structure/PLAN.md`, ранее принят Мирой; перед implementation сверить зависимости с main после visibility.

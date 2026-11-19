@@ -15,7 +15,7 @@
 - no automatic mutation replay;
 - regressions OFF→ON→OFF и ON→OFF→ON.
 
-Статус: bounded PASS в #354; финальный exact head `01cecb91090a2f29f90b7c6ae4a83db77a0f4910` подтверждён CI и connected Watch 11/11.
+Статус: CLOSED; Мира coordinator PASS + Лёва independent whole-PR PASS на final exact head `b67e14d81cd20f2e42264e3d25d336ee19db626b`; evidence — `REVIEW.md`.
 
 ## C2 — BOOKMARKS-AUDIT-1 [P2]
 
@@ -27,7 +27,7 @@
 - preserve pending/error/explicit refresh/actor-topic response guards;
 - regressions обоих направлений и realistic normal-success fixture.
 
-Статус: bounded PASS; loader-authoritative correction и обе регрессии, итоговый exact head `01cecb91090a2f29f90b7c6ae4a83db77a0f4910` зелёный.
+Статус: CLOSED; loader-authoritative correction и обе регрессии подтверждены final whole-PR reviews на `b67e14d81cd20f2e42264e3d25d336ee19db626b`; evidence — `REVIEW.md`.
 
 ## C3 — BOOKMARKS-AUDIT-2 [P2] — COMPLETE
 
@@ -41,7 +41,7 @@
 - не ломать accepted B5 pagination/cursor/account-switch/sessionStorage actor-marker semantics;
 - не вводить global store/version/cache/automatic retry.
 
-Статус: bounded PASS на exact head `6dd9c66c2d22158f41e76089436399082b6553c5`; local `removed` latch удалён, fresh loader authoritative, causal regression и обычное удаление покрыты, 7/7 exact-head workflows SUCCESS.
+Статус: CLOSED на final `b67e14d81cd20f2e42264e3d25d336ee19db626b`; local `removed` latch удалён, fresh loader authoritative, causal regression и обычное удаление подтверждены обоими whole-PR reviews; evidence — `REVIEW.md`.
 
 ## C4 — TITLE-AUDIT-1 [P3] — COMPLETE
 
@@ -53,7 +53,7 @@
 - не менять write/revision/CAS/conflict/rebase semantics;
 - component/browser regression для обоих случаев.
 
-Статус: post-commit focus Save/Cancel и реальный Chromium 9/9 PASS. В whole-PR review Миры предыдущего head `01cecb9...` найден P3 **TITLE-AUDIT-1-R1**: focus request оставался живым, когда Cancel происходил после потери permission и opener исчезал. Лира исправила: запрос теперь погашается при close, даже если opener недоступен, и не крадёт фокус при позднем восстановлении permission. Добавлена regression same mounted actor/topic + other focused action. Author checks на `b67e14d81cd20f2e42264e3d25d336ee19db626b`: 7/7 workflows SUCCESS, 2752/2752 unit (Title 6/6), PG17 1476/1476, Title Chromium 9/9. **Новый whole-PR Mira PASS ещё не получен.**
+Статус: post-commit focus Save/Cancel и реальный Chromium 9/9 PASS. В whole-PR review Миры предыдущего head `01cecb9...` найден P3 **TITLE-AUDIT-1-R1**: focus request оставался живым, когда Cancel происходил после потери permission и opener исчезал. Лира исправила: запрос теперь погашается при close, даже если opener недоступен, и не крадёт фокус при позднем восстановлении permission. Добавлена regression same mounted actor/topic + other focused action. Author checks на `b67e14d81cd20f2e42264e3d25d336ee19db626b`: 7/7 workflows SUCCESS, 2752/2752 unit (Title 6/6), PG17 1476/1476, Title Chromium 9/9. **На этом head получены Mira coordinator PASS и Leva independent whole-PR PASS; TITLE-AUDIT-1 и R1 CLOSED.** Дополнительная независимая Chromium-проверка подтверждает normal Save/Cancel и отсутствие delayed focus theft после обоих путей закрытия без permission. Evidence — `REVIEW.md`.
 
 ## Final gate
 

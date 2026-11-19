@@ -13,17 +13,9 @@
 
 Используется один Draft implementation PR #354. Подробный active-plan: `stages/corrections/PLAN.md`.
 
-Порядок внутри пакета:
-1. WATCH-AUDIT-1 — исправление уже находится в #354 и прошло промежуточный Watch-only review Миры на прежнем head.
-2. BOOKMARKS-AUDIT-1 — устранить второй owner подтверждённого bookmark-state.
-3. BOOKMARKS-AUDIT-2 — устранить stale removed-latch, который может скрыть row вопреки свежему loader list.
-4. TITLE-AUDIT-1 — восстановить keyboard focus на opener после фактического DOM commit Save/Cancel.
-5. После всех изменений Лира выполняет author self-check + применимые exact-head checks и STOP Мире.
-6. Мира проводит новый whole-PR review **всего #354** на final stable exact head.
-7. Только после Mira PASS Лёва один раз проводит independent whole-PR review того же head.
-8. Merge выполняет владелец.
+Все четыре corrections и TITLE-AUDIT-1-R1 завершены. Мира и Лёва дали whole-PR PASS на одном final exact head `b67e14d81cd20f2e42264e3d25d336ee19db626b`; детали — `stages/corrections/REVIEW.md`.
 
-Промежуточный Mira PASS Watch-среза не является final PASS расширенного #354.
+Остался owner Ready→merge #354 при неизменном head. Промежуточные review старых SHA не используются как final gate. Новое изменение implementation требует нового coordinator→independent review cycle.
 
 ## 3. Следующий продуктовый этап — moderation visibility
 

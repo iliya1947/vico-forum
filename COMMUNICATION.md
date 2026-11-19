@@ -22,9 +22,9 @@
 
 Owner решил закрыть **все четыре** в одном #354 и только после этого один раз подключать Лёву.
 
-Watch correction уже прошла промежуточную проверку Миры на head `afe23e08...`, но после расширения PR эта проверка не является final gate.
+Все четыре исходных finding и дополнительный TITLE-AUDIT-1-R1 **закрыты** на final exact head `b67e14d81cd20f2e42264e3d25d336ee19db626b`. Мира coordinator whole-PR PASS и Лёва independent whole-PR PASS относятся к одному SHA; confirmed current-scope defects = 0. Review охватывает все девять файлов, а не только последний title delta. Evidence и границы — `stages/corrections/REVIEW.md`.
 
-Mira fresh whole-PR review предыдущего head `01cecb91090a2f29f90b7c6ae4a83db77a0f4910` установила **один текущий P3 TITLE-AUDIT-1-R1**: deferred focus request мог пережить Cancel без opener при `canEdit=false` и красть фокус позднее при восстановлении права. **Лира исправила в том же Draft #354**, exact `b67e14d81cd20f2e42264e3d25d336ee19db626b`: request потребляется при закрытии редактора, даже когда opener отсутствует; regression проверяет permission-loss → Cancel → другой фокус → permission-return на той же смонтированной компоненте. Все девять файлов остаются в исходном correction scope, никаких backend/DB/RBAC/контрактов. Author self-check PASS. Exact-head [CI 44622509204](https://github.com/iliya1947/vico-forum/actions/runs/44622509204): **2752/2752 unit** и **1476/1476 PG17**, 7/7 workflows SUCCESS; Title Chromium [44622509311](https://github.com/iliya1947/vico-forum/actions/runs/44622509311): 9/9. **Следующий исполнитель — Мира, новый coordinator whole-PR review всего #354 на `b67e14d81cd20f2e42264e3d25d336ee19db626b`.** Прежний Mira HOLD относится к старому SHA; Лёва только после нового Mira PASS.
+Current #354 остаётся Draft/open; owner Ready→merge при неизменном head. Код PR во время review не менялся. Product main drift относительно base только документационный; новые scope/implementation changes не добавлялись.
 
 ## Ограничения correction
 
