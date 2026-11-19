@@ -1289,6 +1289,30 @@ describe("interactive Pages preview", { timeout: 10_000 }, () => {
     expect(screen.getByText("Preview moderator decision")).toBeInTheDocument();
   });
 
+  it("opens complaint priority triage and saves an override", async () => {
+    const user = userEvent.setup();
+    await renderEmbeddedPreview(<EmbeddedPreview
+      scenarioId="attention-complaints"
+      identity="manager"
+    />);
+
+    const openCase = await waitFor(() => {
+      const current = document.querySelector(".complaint-open-case") as HTMLElement | null;
+      expect(current).not.toBeNull();
+      return current!;
+    });
+    await user.click(openCase);
+    await user.click(await screen.findByRole("link", { name: "Processing priority" }));
+
+    expect(await screen.findByRole("heading", { level: 1, name: "Complaint case" })).toBeInTheDocument();
+    const priority = screen.getByRole("combobox", { name: "Processing priority" });
+    await user.selectOptions(priority, "3");
+    await user.click(screen.getByRole("button", { name: "Save priority" }));
+
+    expect(await screen.findByText("Priority saved.")).toBeInTheDocument();
+    expect(screen.getByRole("combobox", { name: "Processing priority" })).toHaveValue("3");
+  });
+
   it("runs the global search form instead of blocking GET submissions", async () => {
     const user = userEvent.setup();
     await renderEmbeddedPreview(<EmbeddedPreview scenarioId="home-guest" />);
