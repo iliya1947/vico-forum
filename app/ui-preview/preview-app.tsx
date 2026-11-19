@@ -367,6 +367,7 @@ type PreviewInteractionState = {
   createdTopics: Map<string, PreviewCreatedTopic>;
   replies: Map<string, PreviewReply[]>;
   topicOverrides: Map<string, PreviewTopicOverride>;
+  topicTitleEdits: Map<string, { id: string; originalContent: string; sourceLocale: string }>;
   topicTitleSourceLocales: Map<string, string>;
   postSourceLocales: Map<string, string>;
   profileOverrides: Map<string, ProfileFields>;
@@ -429,6 +430,7 @@ function createPreviewInteractionState(): PreviewInteractionState {
     createdTopics: new Map(),
     replies: new Map(),
     topicOverrides: new Map(),
+    topicTitleEdits: new Map(),
     topicTitleSourceLocales: new Map(),
     postSourceLocales: new Map(),
     profileOverrides: new Map(),
@@ -498,10 +500,11 @@ function previewApplyTopicState(topic: PreviewTopicPage, interactions: PreviewIn
     const sourceLocale = interactions.postSourceLocales.get(post.id);
     return sourceLocale ? { ...post, body: { ...post.body, sourceLocale } } : post;
   });
+  const editedTitle = interactions.topicTitleEdits.get(topic.id) ?? topic.title;
   const titleSourceLocale = interactions.topicTitleSourceLocales.get(topic.id);
   return {
     ...topic,
-    title: titleSourceLocale ? { ...topic.title, sourceLocale: titleSourceLocale } : topic.title,
+    title: titleSourceLocale ? { ...editedTitle, sourceLocale: titleSourceLocale } : editedTitle,
     isSolved: override?.isSolved ?? topic.isSolved,
     bestAnswerPostId: override?.bestAnswerPostId === undefined
       ? topic.bestAnswerPostId
@@ -3586,6 +3589,38 @@ async function previewTopicAction(
 
   const inline = form.get("inlineQuickAction") === "1";
 
+  if (intent === "editTopicTitle") {
+    const title = String(form.get("title") ?? "").trim();
+    const expectedRevisionId = String(form.get("expectedRevisionId") ?? "").trim();
+    const editorActorId = String(form.get("editorActorId") ?? "").trim();
+    const created = interactions.createdTopics.get(routeTopicId);
+    const baseTitle = created
+      ? { id: `${created.id}-title-r1`, originalContent: created.title, sourceLocale: created.sourceLocale }
+      : routeTopicId === topicId
+        ? topic.title
+        : null;
+    const authorId = created?.authorId ?? (routeTopicId === topicId ? topic.authorId : null);
+    if (!baseTitle || authorId !== actor.id || editorActorId !== actor.id) {
+      return { operation: "topicTitleEdit" as const, error: "forbidden" as const };
+    }
+    const currentTitle = interactions.topicTitleEdits.get(routeTopicId) ?? baseTitle;
+    if (!title || expectedRevisionId !== currentTitle.id) {
+      return {
+        operation: "topicTitleEdit" as const,
+        error: "conflict" as const,
+        currentTitle: { id: currentTitle.id, originalContent: currentTitle.originalContent },
+      };
+    }
+    const revisionId = `${routeTopicId}-title-preview-${++interactions.sequence}`;
+    interactions.topicTitleEdits.set(routeTopicId, {
+      id: revisionId,
+      originalContent: title,
+      sourceLocale: "und",
+    });
+    interactions.topicTitleSourceLocales.delete(routeTopicId);
+    return { operation: "topicTitleEdit" as const, ok: true as const, revisionId };
+  }
+
   if (intent === "correctTitleSourceLocale") {
     if (scenario.identity !== "manager") return null;
     const sourceLocale = String(form.get("sourceLocale") ?? "").trim();
@@ -3754,6 +3789,7 @@ function previewCreatedTopicData(
     canReply: scenario.identity !== "guest",
     canManageSolution: scenario.identity !== "guest",
     canConfirmOwnSolution: scenario.identity !== "guest",
+    canEditOwnTitle: previewUser(scenario)?.id === topic.authorId,
     canManageAnySolution: false,
     canModerateHelpSolution: false,
     isTopicAuthor: scenario.identity !== "guest",
@@ -5975,6 +6011,16 @@ function PreviewTopicRoute({ scenario, interactions }: {
       {...data}
       canUploadAttachments={false}
       topic={interactiveTopic}
+      titlePresentation={interactions.topicTitleEdits.has(interactiveTopic.id)
+        ? originalPresentation(
+            "topic-title",
+            interactiveTopic.id,
+            interactiveTopic.title.id,
+            interactiveTopic.title.originalContent,
+            interactiveTopic.title.sourceLocale,
+            scenario.direction,
+          )
+        : data.titlePresentation}
       postPresentations={previewPresentationsForTopic(data.postPresentations, interactiveTopic)}
     />;
   }
@@ -6439,6 +6485,7 @@ function topicData(
       ? topicToolsGenerationUnits(locale)
       : [],
     canReply: identity !== "guest",
+    canEditOwnTitle: identity === "user" && translatedTopic.authorId === "alex",
     canManageSolution: showSecondaryControls || solutionAuthor,
     canManageAnySolution: identity === "manager",
     canModerateHelpSolution: false,
