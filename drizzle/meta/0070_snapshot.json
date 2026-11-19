@@ -4671,8 +4671,8 @@
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
-        "forum_post_notification_suppressions_recipient_user_id_user_id_fk": {
-          "name": "forum_post_notification_suppressions_recipient_user_id_user_id_fk",
+        "forum_post_notification_suppressions_recipient_fk": {
+          "name": "forum_post_notification_suppressions_recipient_fk",
           "tableFrom": "forum_post_notification_suppressions",
           "tableTo": "user",
           "columnsFrom": [

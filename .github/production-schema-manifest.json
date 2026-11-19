@@ -4778,7 +4778,7 @@
           "initiallyDeferred": false
         },
         {
-          "name": "forum_post_notification_suppressions_recipient_user_id_user_id_fk",
+          "name": "forum_post_notification_suppressions_recipient_fk",
           "columns": [
             "recipient_user_id"
           ],
@@ -6898,8 +6898,8 @@
         {
           "name": "forum_user_blocks_not_self_check",
           "columns": [
-            "user_id",
-            "blocked_user_id"
+            "blocked_user_id",
+            "user_id"
           ],
           "definitionSha256": "9c56cd20ca352485b625b3c08717c92f70f34b330e91e45d36fd3e7b65939f70"
         }

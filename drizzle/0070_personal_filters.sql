@@ -41,7 +41,7 @@ CREATE TABLE "forum_post_notification_suppressions" (
   CONSTRAINT "forum_post_notification_suppressions_pk" PRIMARY KEY ("recipient_user_id", "post_id")
 );
 --> statement-breakpoint
-ALTER TABLE "forum_post_notification_suppressions" ADD CONSTRAINT "forum_post_notification_suppressions_recipient_user_id_user_id_fk"
+ALTER TABLE "forum_post_notification_suppressions" ADD CONSTRAINT "forum_post_notification_suppressions_recipient_fk"
   FOREIGN KEY ("recipient_user_id") REFERENCES "public"."user"("id") ON DELETE cascade ON UPDATE no action;
 --> statement-breakpoint
 ALTER TABLE "forum_post_notification_suppressions" ADD CONSTRAINT "forum_post_notification_suppressions_post_id_forum_posts_id_fk"
