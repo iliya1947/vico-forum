@@ -510,6 +510,138 @@ try:
         assert notices(initial_post) == {}
         assert suppression(initial_post) == {actor_id}
         record("new post after Unblock delivers to A; old Block suppression stays consumed")
+        # 4b.6: both canonical controls write to one own private list, with
+        # independent tabs, undo and persisted state after reload.
+        private(page.goto(base + other_topic_path, wait_until="networkidle"))
+        expect(page.get_by_role("button", name="Mute topic", exact=True)).to_be_visible()
+        with page.expect_response(lambda r: r.request.method == "POST"
+                                  and "/topics/" + seeded["otherTopicId"] in r.url) as ui_mute:
+            page.get_by_role("button", name="Mute topic", exact=True).click()
+        private(ui_mute.value)
+        expect(page.get_by_role("button", name="Unmute topic", exact=True)).to_be_visible()
+        assert sql("select topic_id from forum_topic_mutes where user_id=$1",
+                   [actor_id]) == [{"topic_id": seeded["otherTopicId"]}]
+
+        private(page.goto(base + new_profile_path, wait_until="networkidle"))
+        expect(page.get_by_role("button", name="Block user", exact=True)).to_be_visible()
+        with page.expect_response(lambda r: r.request.method == "POST"
+                                  and "/users/" + new_author_id in r.url) as ui_block:
+            page.get_by_role("button", name="Block user", exact=True).click()
+        private(ui_block.value)
+        expect(page.get_by_role("button", name="Unblock user", exact=True)).to_be_visible()
+        assert sql("select blocked_user_id from forum_user_blocks "
+                   "where user_id=$1 and blocked_user_id=$2",
+                   [actor_id, new_author_id]) == [{"blocked_user_id": new_author_id}]
+
+        private(page.goto(base + "/en/filters", wait_until="networkidle"))
+        expect(page.get_by_role("heading", name="Personal filters")).to_be_visible()
+        expect(page.get_by_role("link", name="Muted topics")).to_have_attribute("aria-current", "page")
+        expect(page.get_by_role("link", name="Unmuted comparison topic")).to_be_visible()
+        assert page.locator("ul.bookmarks-list > li").count() == 1
+        private(page.goto(base + "/en/filters?tab=users", wait_until="networkidle"))
+        expect(page.get_by_role("link", name="Blocked users")).to_have_attribute("aria-current", "page")
+        expect(page.get_by_role("link", name="Filters initial-topic sender")).to_be_visible()
+        expect(page.get_by_role("link", name="Filters author")).to_be_visible()
+        assert page.locator("ul.bookmarks-list > li").count() == 2
+        record("Chromium topic/profile controls persist own Mute and Block in separate private list tabs")
+
+        unblocking_row = page.locator(".bookmarks-list-row").filter(
+            has=page.get_by_role("link", name="Filters initial-topic sender"))
+        with page.expect_response(lambda r: r.request.method == "POST"
+                                  and "/users/" + new_author_id in r.url) as list_unblock:
+            unblocking_row.get_by_role("button", name="Unblock user").click()
+        private(list_unblock.value)
+        expect(page.get_by_role("link", name="Filters initial-topic sender")).to_have_count(0)
+        assert sql("select blocked_user_id from forum_user_blocks "
+                   "where user_id=$1 and blocked_user_id=$2",
+                   [actor_id, new_author_id]) == []
+        page.reload(wait_until="networkidle")
+        expect(page.get_by_role("link", name="Filters initial-topic sender")).to_have_count(0)
+        expect(page.get_by_role("link", name="Filters author")).to_be_visible()
+        private(page.goto(base + new_profile_path, wait_until="networkidle"))
+        expect(page.get_by_role("button", name="Block user", exact=True)).to_be_visible()
+
+        private(page.goto(base + "/en/filters", wait_until="networkidle"))
+        unmuting_row = page.locator(".bookmarks-list-row").filter(
+            has=page.get_by_role("link", name="Unmuted comparison topic"))
+        with page.expect_response(lambda r: r.request.method == "POST"
+                                  and "/topics/" + seeded["otherTopicId"] in r.url) as list_unmute:
+            unmuting_row.get_by_role("button", name="Unmute topic").click()
+        private(list_unmute.value)
+        expect(page.get_by_role("link", name="Unmuted comparison topic")).to_have_count(0)
+        assert sql("select topic_id from forum_topic_mutes where user_id=$1",
+                   [actor_id]) == []
+        page.reload(wait_until="networkidle")
+        expect(page.get_by_text("You have not muted any topics.")).to_be_visible()
+        private(page.goto(base + other_topic_path, wait_until="networkidle"))
+        expect(page.get_by_role("button", name="Mute topic", exact=True)).to_be_visible()
+        record("both private-list undo actions persist through reload and update canonical controls")
+
+        # Re-add via canonical controls to exercise persisted lists including
+        # user-authored test fixture pairs; source of each mutation is HTTP.
+        with page.expect_response(lambda r: r.request.method == "POST"
+                                  and "/topics/" + seeded["otherTopicId"] in r.url) as ui_re_mute:
+            page.get_by_role("button", name="Mute topic", exact=True).click()
+        private(ui_re_mute.value)
+        expect(page.get_by_role("button", name="Unmute topic", exact=True)).to_be_visible()
+
+        # SQL-only pagination fixture supplies 50 additional existing topics and
+        # people. The original real-HTTP own pair makes 51 in each tab; no
+        # fixture creates an alternative application command or cache.
+        seeded_pages = rpc({
+            "operation": "seedFilterPages", "count": 50, "actor": actor_id,
+            "author": author_id, "sectionId": section_id, "prefix": uuid4().hex,
+        })
+        assert sql("select count(*)::int as n from forum_topic_mutes where user_id=$1",
+                   [actor_id]) == [{"n": 51}]
+        assert sql("select count(*)::int as n from forum_user_blocks where user_id=$1",
+                   [actor_id]) == [{"n": 51}]
+        record("disposable PG17 supplies 50+1 Mute and Block own pairs for real list keysets")
+
+        def list_names():
+            return [value.strip() for value in page.locator(
+                "ul.bookmarks-list > li .bookmarks-topic-link strong").all_text_contents()]
+
+        private(page.goto(base + "/en/filters", wait_until="networkidle"))
+        expect(page.locator("ul.bookmarks-list > li")).to_have_count(50)
+        first_topics = list_names()
+        assert len(set(first_topics)) == 50
+        page.get_by_role("link", name="Older filters").click()
+        expect(page.get_by_role("link", name="Newest filters")).to_be_visible()
+        expect(page.locator("ul.bookmarks-list > li")).to_have_count(1)
+        older_topics = list_names()
+        assert set(first_topics + older_topics) == set(
+            seeded_pages["topicNames"] + ["Unmuted comparison topic"])
+        assert not set(first_topics).intersection(older_topics)
+        page.get_by_role("link", name="Newest filters").click()
+        expect(page.locator("ul.bookmarks-list > li")).to_have_count(50)
+        assert set(list_names()) == set(first_topics)
+        record("muted topic keyset: exactly 50+1 distinct own rows, Older and Newest round trip")
+
+        private(page.goto(base + "/en/filters?tab=users", wait_until="networkidle"))
+        expect(page.locator("ul.bookmarks-list > li")).to_have_count(50)
+        first_users = list_names()
+        assert len(set(first_users)) == 50
+        page.get_by_role("link", name="Older filters").click()
+        expect(page.get_by_role("link", name="Newest filters")).to_be_visible()
+        expect(page.locator("ul.bookmarks-list > li")).to_have_count(1)
+        assert "tab=users" in page.url
+        older_users = list_names()
+        assert set(first_users + older_users) == set(
+            seeded_pages["userNames"] + ["Filters author"])
+        assert not set(first_users).intersection(older_users)
+        page.get_by_role("link", name="Newest filters").click()
+        expect(page.locator("ul.bookmarks-list > li")).to_have_count(50)
+        assert set(list_names()) == set(first_users)
+        record("blocked users keyset: exactly 50+1 distinct own rows, tab and cursor preserved")
+
+        other_viewer = author.new_page()
+        private(other_viewer.goto(base + "/en/filters", wait_until="networkidle"))
+        expect(other_viewer.get_by_text("You have not muted any topics.")).to_be_visible()
+        private(other_viewer.goto(base + "/en/filters?tab=users", wait_until="networkidle"))
+        expect(other_viewer.get_by_text("You have not blocked any users.")).to_be_visible()
+        expect(other_viewer.locator("ul.bookmarks-list > li")).to_have_count(0)
+        record("same list routes expose no actor-A filter pairs to independently signed-in B")
         assert not errors, errors
         assert not external, external
         browser.close()
