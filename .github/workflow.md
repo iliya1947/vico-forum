@@ -33,6 +33,19 @@
 
 ## Следующий шаг
 
-**Лира STOP после part 3/4.** Следующая команда `...` запускает **только bounded subtask 4a: focused real PostgreSQL 17 concurrency/lifecycle/rollback acceptance** для Mute/block, по M7 (transaction snapshots, old-suppression no-backfill, topic-create/reply/edit, inactive actor & receipt atomicity), в том же Draft PR #351 на `a2b077fd2059d9e6c189b35d008d81d23ed6d4ba`. После 4a — STOP с checkpoint в #342.
+**Лира: subtask 4a НЕ завершена, STOP по требованию владельца о более мелкой декомпозиции.** Draft implementation #351, exact current head `83b32eb364d74a2fd85377dbc907f7723254edf4`; no merge/review. В 4a менялись только PG tests и один существующий Watch test для early promise rejection handler; production/schema/UI не менялись.
 
-После нового явного продолжения: **4b** отдельная connected real Worker + Better Auth + PostgreSQL 17 + Chromium Mute/block acceptance (не старые regressions), включая actor privacy, Mute/Block notices/reveal/undo, narrow RTL; затем STOP. После ещё одного продолжения **4c** final exact-head CI/manifest/ACL/contract closeout, self-check, служебный checkpoint; затем STOP и передача Мире whole-PR review. Каждый bounded subtask завершать отдельным STOP, без автоматического перехода. Мира coordinator → после PASS Лёва independent review → owner merge. #351 Draft / no merge, #342 служебный / no merge; no Stage6/visibility moderation/whole UI/UX.
+**4a — микроэтапы; после КАЖДОГО отдельный checkpoint и STOP до следующего `...`:**
+1. **4a.1 — real PG test harness и управляемые SQL barriers** — код добавлен.
+2. **4a.2 — snapshot order для initial/reply/edit и Mute/Block** — код добавлен.
+3. **4a.3 — actor ON/OFF, reciprocal Block, AccountState/deactivation races** — код добавлен.
+4. **4a.4 — suppression, no-backfill, reply→mention и replay** — код добавлен.
+5. **4a.5 — rollback initial/reply/edit/attachment/publication receipts** — код добавлен.
+6. **4a.6 — точечная регрессия Watch unhandled Promise rejection** — исправлен только test timing в `tests/database/topic-watch.test.ts`, commit `83b32eb364d74a2fd85377dbc907f7723254edf4`; production не менялся.
+7. **4a.7 — ПЕРВЫЙ следующий микрошаг:** подтвердить full `database` job на `83b32eb364d74a2fd85377dbc907f7723254edf4` с 27 новыми тестами, native PG17, no unhandled errors; при ошибке исправить только подтверждённую причину, повторить PG job; checkpoint и STOP.
+8. **4a.8 — после нового `...`:** подтвердить `checks` и действующие regression workflows на ТОЧНОМ финальном head; checkpoint и STOP.
+9. **4a.9 — после нового `...`:** завершить 4a evidence в service files/#342, передать следующий маршрут 4b; STOP. Не запускать connected Mute/block 4b или финальный 4c автоматически.
+
+**Факты о предшествующем head `247e928bd845286e1946c77d51bbd162a08a4cb2`:** 1476/1476 PG test assertions PASS, но `database` job FAIL из-за unhandled rejection в существующем Watch race test; поэтому CI этого head НЕ считается PASS. На `83b32eb364d74a2fd85377dbc907f7723254edf4` CI на момент записи ещё выполнялся; результат не утверждать заранее.
+
+**После явной команды после 4a.9:** part 4b dedicated Worker/Better Auth/PG17/Chromium Mute/block acceptance, также разделить на узкие slices с STOP; затем 4c final closeout отдельно. Мира/Лёва reviews только после 4c. #342 service-only/no merge; #351 Draft/no merge.
