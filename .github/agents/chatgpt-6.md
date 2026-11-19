@@ -326,3 +326,17 @@ Deliverables: forward migration `0070_personal_filters` с `forum_topic_mutes` o
 4. **GitHub exact-head CI: 13/13 workflow runs completed SUCCESS** на `e5989f0830a21fff5de100d3045b935e68be1524`; workflow `CI` содержит оба успешных jobs `checks` (lint/typecheck/unit/build) и `database` (full clean PG17 suite/schema parity/ACL + Worker smokes); остальные existing connected Chromium acceptance PASS. Run: https://github.com/iliya1947/vico-forum/actions/runs/44499837125. Dedicated connected Mute/block browser acceptance **не выполнялся** — часть 4/4.
 
 **Лира STOP после part 2/4.** Следующая работа по `...`: **part 3/4 M6 canonical topic/profile actions, private `/:locale/filters`, controls/undo and EN/RU/HE** в том же #351, затем отдельный STOP. Part 4/4 — final DB/concurrency/Worker+Chromium Mute/block acceptance. Coordinator Mira/independent Leva reviews только после whole implementation/final CI. #351 Draft/no merge, #342 служебный/no merge; #300/Stage6/visibility moderation/general UI/UX не открывать.
+
+
+## 2026-11-19 — Лира: Mute/block #351 part 3/4, исправленная декомпозиция, итоговый STOP
+
+По прямой коррекции владельца part 3/4 разделена на independently checkable subresults; ранее выполненные блоки не повторяются и новая реализация не начата:
+1. **3a** M6 canonical `setTopicMute` topic POST, `setUserBlock` public profile POST, strict authoritative actor/route-target/boolean/intent boundaries, own-state/private keyset readers with actor-scoped 50+lookahead.
+2. **3b** Isolated personal UI controls in topic and public profile; matching fetcher ACK, no optimistic success, explicit refresh on uncertain writes.
+3. **3c** `/:locale/filters` private actor-bound GET lists, topic/user tabs, ISO+target cursor, own undo via canonical actions, account switch isolation, navigation, EN/RU/HE resources.
+4. **3d** Route/component/fetcher tests; adjusted existing mocks/route catalogue/profile-privileged fixtures; Watch CSS selector collision diagnosed from connected Chromium failures and fixed by isolating personal-filter container/status selectors; Watch business logic untouched.
+5. **3e — verification**: **exact head `a2b077fd2059d9e6c189b35d008d81d23ed6d4ba`**, **15/15 GitHub workflow runs completed SUCCESS**, including `CI` jobs `checks` and `database` both PASS, clean PostgreSQL 17, Worker smokes, existing Watch/Bookmarks/SA-03/SA-04/SA-08/AP-10 connected Chromium. https://github.com/iliya1947/vico-forum/actions/runs/44509253542
+
+**Важно:** dedicated connected Mute/block acceptance из M7 **ещё не выполнялась**; реальные targeted concurrency/atomicity races тоже относятся к part 4. All current changes remain inside Draft implementation PR #351; no merge, no whole-PR review.
+
+**Лира STOP после part 3/4.** Part 4 заранее дробится на 3 независимых bounded subtasks с явной командой между ними: **4a** focused real PG17 concurrency/lifecycle/atomicity tests; **4b** real Worker/Better Auth/PG17/Chromium Mute/block connected acceptance; **4c** final exact-head CI/ACL/manifest and handoff. Начать 4a только по следующему `...`; остановиться после её результата и checkpoint, затем аналогично 4b и 4c. Мира/Лёва пока не reviewer. #342 — служебный, #300/Stage6/visibility moderation/overall UI/UX не открывать.
