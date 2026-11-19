@@ -2836,7 +2836,8 @@ describe("published edit revision fence", () => {
     expect(readBatch.mock.calls[0]?.[0]).not.toEqual(expect.arrayContaining([expect.objectContaining({ contentId: emptyPost.id })]));
     expect(readStatuses.mock.calls[0]?.[0]).not.toEqual(expect.arrayContaining([expect.objectContaining({ contentId: emptyPost.id })]));
     expect(loaded.generationUnits.some((unit) => unit.contentId === emptyPost.id)).toBe(false);
-    renderRoute(TopicRoute, loaded, "/he/topics/typed-api", "he", "rtl");
+    renderRoute(TopicRoute, loaded, "/he/topics/typed-api", "he", "rtl",
+      { id: "translation-capable-author", name: "Translation author" });
     expect(await screen.findByText("only-file.txt")).toBeInTheDocument();
     expect(screen.getByText("Adjacent translation")).toBeInTheDocument();
   });
