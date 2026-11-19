@@ -2166,3 +2166,21 @@ Correction criterion: заменить только эту формулиров�
 Следующий исполнитель — **Лира / ChatGPT-6**: только DOC-PF-1 в #353, затем
 applicable docs CI / stable exact head и STOP Мире для повторного docs review.
 Лёва для docs-only review не нужен. #353 остаётся Draft; #342 service-only/no merge.
+
+
+## 2026-11-19 — owner-directed micro-correction DOC-PF-1 by Mira
+
+По прямой команде владельца Мира сама внесла единственную docs-коррекцию DOC-PF-1
+в Draft #353, без передачи Лире.
+
+Old docs head: `f81fc47811cace99c97b1fbacea321d3881961d9`.
+New exact head: `709940dfe8e0c091c4c981b9bce1a412e3c7fd13`.
+
+Изменён только `PROJECT_STATE.md`, 1 строка:
+неточная формулировка «сохранение подавленных уведомлений без backfill» заменена на
+«учёт подавленных пар получатель–сообщение без backfill».
+
+Compare old→new подтверждает ровно 1 Markdown path, +1/-1; остальные три docs
+не изменились. Предыдущий whole-docs review установил, что иных findings нет.
+Автоматический CI нового exact head на момент записи ещё не появился в GitHub workflow list,
+поэтому финальный docs PASS/Ready не заявлен до проверки CI.
