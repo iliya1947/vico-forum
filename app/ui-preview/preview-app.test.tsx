@@ -148,6 +148,7 @@ describe("UI preview state catalog", () => {
       expect.objectContaining({ id: "super-admin-notifications-owner", allowedIdentities: ["owner"] }),
       expect.objectContaining({ id: "super-admin-events-owner", allowedIdentities: ["owner"] }),
       expect.objectContaining({ id: "super-admin-infrastructure-owner", allowedIdentities: ["owner"] }),
+      expect.objectContaining({ id: "super-admin-monitor-history-owner", allowedIdentities: ["owner"] }),
       expect.objectContaining({
         id: "super-admin-guest-unauthenticated",
         allowedIdentities: ["guest"],
@@ -551,6 +552,59 @@ describe("embedded preview routing", { timeout: 10_000 }, () => {
     expect(await screen.findByRole("heading", { level: 2, name: "Infrastructure" })).toBeInTheDocument();
     expect(document.querySelector(".super-admin-placeholder")).toBeInTheDocument();
     expect(document.querySelector("[data-monitor-key]")).toBeNull();
+  });
+
+  it("opens System and native monitor History links instead of falling through to 404", async () => {
+    const user = userEvent.setup();
+    await renderEmbeddedPreview(<EmbeddedPreview
+      scenarioId="super-admin-system-owner"
+      identity="owner"
+    />);
+
+    const runtime = document.querySelector('[data-monitor-key="system.runtime"]') as HTMLElement;
+    const runtimeHistory = runtime.querySelector(
+      'a[href="/en/super-admin/monitoring/system/system.runtime/history"]',
+    );
+    expect(runtimeHistory).not.toBeNull();
+    await user.click(runtimeHistory!);
+
+    expect(await waitFor(() =>
+      document.querySelector('[data-monitor-history-key="system.runtime"]'),
+    )).not.toBeNull();
+    expect(document.querySelector('[data-history-kind="monitor.observed"]')).not.toBeNull();
+    expect(document.querySelector("[data-history-filters]")).not.toBeNull();
+
+    const systemBack = document.querySelector('a[href="/en/super-admin/monitoring/system"]');
+    expect(systemBack).not.toBeNull();
+    await user.click(systemBack!);
+
+    const shellNav = document.querySelector(".super-admin-panel .admin-panel-nav") as HTMLElement;
+    await user.click(within(shellNav).getByRole("link", { name: "Monitoring" }));
+    const forumLink = await waitFor(() => {
+      const current = document.querySelector(
+        'a[href="/en/super-admin/monitoring/forum"]',
+      );
+      expect(current).not.toBeNull();
+      return current!;
+    });
+    await user.click(forumLink);
+
+    const forum = await waitFor(() => {
+      const current = document.querySelector('[data-monitor-key="forum.structure"]') as HTMLElement | null;
+      expect(current).not.toBeNull();
+      return current!;
+    });
+    const forumHistory = forum.querySelector(
+      'a[href="/en/super-admin/monitoring/forum/forum.structure/history"]',
+    );
+    expect(forumHistory).not.toBeNull();
+    await user.click(forumHistory!);
+
+    expect(await waitFor(() =>
+      document.querySelector('[data-monitor-history-key="forum.structure"]'),
+    )).not.toBeNull();
+    expect(document.querySelector('[data-history-kind="monitor.observed"]')).not.toBeNull();
+    expect(document.querySelector('a[href="/en/super-admin/monitoring/forum"]')).not.toBeNull();
   });
 
   it("requires sign-in for guest direct access to Admin topic", async () => {
