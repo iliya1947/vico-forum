@@ -2,25 +2,50 @@
 
 ## Активный этап
 
-**Moderation visibility: Leva plan adaptation COMPLETE; STOP для checkpoint Миры.** Implementation ещё не начат.
+Moderation visibility — **plan review HOLD**. Implementation ещё не активирован.
 
-## Проверенный baseline и решения
+## Baseline
 
-- Current main `6fa2a43b02c55515bbd46a0d74fe6cc0d4424caf`, #354 merged; прежние audit corrections CLOSED.
-- Migration ceiling0070; external evidence0020. Deployed state этим шагом не проверялось.
-- V-P1/V-P2/V-P3 **ACCEPTED ранее**, D-08; повторно на согласование не выносить.
-- V-T1/V-T2 technical fit **PASS**: отдельная capability/state/CAS/History, existing local lock conventions, без architecture rewrite.
-- Полный действующий V1–V9 и checkpoints B1–B9: `stages/moderation-visibility/PLAN.md`. Обязательные read/write/asset/retention границы восстановлены в current plan из полного исторического текста Git.
-- Сверены actual current schema/catalog/AP-10/History/Owner classifications, readers/writers/translation planning/assets и merged Watch/Bookmarks/Mute/Block seams. Новых product forks или подтверждённых конфликтов, требующих перепроектирования, нет.
+- Current main: `6fa2a43b02c55515bbd46a0d74fe6cc0d4424caf`.
+- #354 corrective package merged and closed.
+- V-P1/V-P2/V-P3 — ранее приняты и не переоткрываются.
+- V-T1/V-T2 — technical fit PASS на current main.
+- Лёва завершил адаптацию V1–V9 к current main и разложил delivery на B1–B9.
+
+## Mira plan review finding
+
+**VIS-PLAN-R1 — delivery topology противоречит действующему AGENTS.md.**
+
+Лёва зафиксировал: один Draft implementation PR для B1–B9, где B1–B9 названы bounded checkpoints и после каждого Лира должна STOP.
+
+Действующий `AGENTS.md` требует:
+- отдельный implementation PR для каждого завершённого bounded-этапа;
+- coordinator whole-PR review stable exact head каждого завершённого bounded-этапа;
+- после Mira PASS — independent review того же head;
+- owner merge;
+- только затем следующий bounded-этап стандартного цикла.
+
+Для moderation visibility нет owner-исключения, аналогичного специальному решению для corrective #354.
+
+Это реальный дефект текущего плана, потому что первый же B1 был бы выполнен в неправильной delivery/review topology.
+
+## Что проверено и не является finding
+
+Остальная адаптация V1–V9 по scope/fit не выявила нового подтверждённого конфликта:
+- принятые V-P1/V-P2/V-P3 сохранены;
+- schema/catalog/AP-10/History fit соответствует current main;
+- lock ordering остаётся локальным и не вводит глобальный mutex;
+- public/private projections, retained state, assets/translations/Complaints boundaries не расширяют принятый продуктовый scope;
+- acceptance matrix покрывает реальные PG/browser/privacy/cache/race границы.
 
 ## Назначение и следующий шаг
 
-**Мира** — проверить полноту технической адаптации V1–V9/B1–B9 и подготовить bounded handoff **Лире только на B1**. Это checkpoint плана, не повторное согласование принятых продуктовых решений.
+**Лёва / Codex-6.1 Sol** — исправить только delivery/checkpoint topology плана так, чтобы она соответствовала действующему `AGENTS.md`, сохранив техническое содержание и зависимости V1–V9.
 
-B1: один Draft implementation PR от свежего main; schema/catalog/History foundation, forward migration после текущего ceiling, focused migration/constraint/ACL tests, без route-exposed Hide. Ровно B1, запись результата и STOP. Остальные checkpoints не выполняются автоматически; весь vertical slice должен быть закончен до final implementation review/merge.
+Не переоткрывать V-P1/V-P2/V-P3 и не перепроектировать техническую модель без нового фактического конфликта.
 
-Лёва STOP после планирования. Код/schema/runtime не менялись, visibility feature tests/CI/browser не запускались. Если Мира подтвердит полноту, следующий implementation исполнитель — Лира по stage plan; агенты друг друга не запускают.
+После исправления — STOP Мире для повторной проверки плана. Лиру к B1 пока не подключать.
 
-## Дальше
+## После moderation visibility
 
-После полного visibility implementation/review/owner merge — отдельный docs closeout, затем forum structure/topic move → #320. #300, Stage6 и general UI/UX текущим заданием не активированы. #342 никогда не merge.
+Forum structure/topic move → затем #320. #300/Stage6/general UI/UX не активированы.
