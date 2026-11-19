@@ -5909,10 +5909,11 @@ function previewTopicAccessData(
   if (!routeTopicId) {
     throw new Response("Not Found", { status: 404 });
   }
-  if (interactions.createdTopics.has(routeTopicId)) return null;
-  if (routeTopicId === topicId) return null;
+  const snapshot = { revision: interactions.sequence };
+  if (interactions.createdTopics.has(routeTopicId)) return snapshot;
+  if (routeTopicId === topicId) return snapshot;
   if (previewHelpSolutions(scenario.locale).questions.some((question) => question.id === routeTopicId)) {
-    return null;
+    return snapshot;
   }
 
   const knownSectionTopic = homepageCategories(scenario.locale)
@@ -5922,7 +5923,7 @@ function previewTopicAccessData(
       )
     )
     .some((candidateTopic) => candidateTopic.id === routeTopicId);
-  if (knownSectionTopic || previewDiscoveryTopic(scenario.locale, routeTopicId)) return null;
+  if (knownSectionTopic || previewDiscoveryTopic(scenario.locale, routeTopicId)) return snapshot;
 
   throw new Response("Not Found", { status: 404 });
 }
@@ -5931,6 +5932,7 @@ function PreviewTopicRoute({ scenario, interactions }: {
   scenario: Scenario;
   interactions: PreviewInteractionState;
 }) {
+  useLoaderData<{ revision: number }>();
   const { topicId: routeTopicId } = useParams();
 
   const createdTopic = routeTopicId ? interactions.createdTopics.get(routeTopicId) : undefined;
