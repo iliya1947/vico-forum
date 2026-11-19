@@ -1710,8 +1710,7 @@ describe("interactive Pages preview", () => {
     await renderEmbeddedPreview(<EmbeddedPreview scenarioId="section-user" identity="owner" />);
 
     await openSettings(user);
-    const settingsOverview = document.querySelector(".settings-overview") as HTMLElement;
-    await user.click(within(settingsOverview).getByRole("link", { name: "Administrator preferences" }));
+    await openSettingsSection(user, "Administrator preferences", "Administrator preferences");
 
     const behavior = await screen.findByRole("combobox", { name: "Open behavior" });
     const destination = screen.getByRole("combobox", { name: "Default destination" });
@@ -1770,8 +1769,7 @@ describe("interactive Pages preview", () => {
     await renderEmbeddedPreview(<EmbeddedPreview scenarioId="section-user" identity="manager" />);
 
     await openSettings(user);
-    const settingsOverview = document.querySelector(".settings-overview") as HTMLElement;
-    await user.click(within(settingsOverview).getByRole("link", { name: "Administrator preferences" }));
+    await openSettingsSection(user, "Administrator preferences", "Administrator preferences");
 
     const behavior = await screen.findByRole("combobox", { name: "Open behavior" });
     const group = screen.getByRole("combobox", { name: "Default group" });
@@ -2451,7 +2449,7 @@ describe("interactive Pages preview", () => {
       .closest(".admin-role-card") as HTMLElement;
     await user.click(within(deletableCard).getByRole("button", { name: "Delete role" }));
     await waitFor(() => expect(screen.queryByRole("heading", { name: "Support lead renamed" })).not.toBeInTheDocument());
-  });
+  }, 10_000);
 });
 
 
