@@ -50,3 +50,10 @@ Unchanged Watch/Bookmark/list corrections were already independently checked on 
 
 **Coordinator result: PASS. Confirmed current-scope defects = 0.**
 Next reviewer: Leva / Codex-6.1 Sol, independent whole-PR review of the same exact SHA. Any implementation-head change invalidates this final PASS.
+
+
+## 2026-11-20 — #354 merged; moderation visibility scope/fit
+
+Owner merged #354 unchanged reviewed head; main is `6fa2a43b02c55515bbd46a0d74fe6cc0d4424caf`.
+
+Visibility V1–V9 proposal checked against current PROJECT/PROJECT_STATE, AUTHORIZATION/Admin contracts, permission catalog/AP-10 family, topic/post schema, closure CAS writer and Admin History. V-T1/V-T2 technically fit existing architecture; no new architecture decision is needed. No owner acceptance record found for V-P1/V-P2/V-P3, so implementation remains blocked only on those product decisions. Recommendations are recorded in WORKFLOW and stage PLAN.
