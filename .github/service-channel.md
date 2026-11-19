@@ -1031,3 +1031,28 @@ scope/whitespace и локальные Markdown links проверены, broken
 **Лёва STOP Мире:** сопоставить оба PASS одного head и зафиксировать merge readiness
 владельцу. Только после фактического merge #349 — отдельный Bookmarks docs PR Лиры.
 #349 ещё Draft, merge/deploy не выполнялись; #342 служебный и не merge.
+
+
+## 2026-11-19 — Мира: Watch docs #349 review synthesis, ready to merge
+
+Independent whole-PR docs PASS Лёвы на exact head
+`aa6584c6d600d807ebed9171adbde365b918b290` сопоставлен с coordinator PASS
+Миры на том же неизменном head.
+
+Оба review независимо подтверждают:
+- WATCH-DOC-1 закрыт permanent Watch contract в `PROJECT.md`;
+- `PROJECT_STATE.md` корректно отражает Watch и repo migration ceiling `0069`;
+- `PROJECT_HISTORY_30.md`/index содержат только исторический snapshot;
+- Stage 6 external evidence остаётся через `0020`;
+- production/deployed и owner visual acceptance не заявлены;
+- broken relative links = 0, docs diff только 4 Markdown files;
+- exact docs CI 2/2 success; Watch implementation evidence 17/17 success.
+
+**Review cycle #349 завершён: coordinator PASS + independent PASS,
+confirmed current-doc defects = 0.** Implementation/docs exact head после reviews не
+изменился. #349 переведён из Draft в Ready for review, mergeable=true.
+
+Следующее действие — merge владельцем exact head
+`aa6584c6d600d807ebed9171adbde365b918b290`. Только после фактического merge
+Лира открывает отдельный Bookmarks docs closeout. #342 служебный и не merge;
+#300 не использовать.
