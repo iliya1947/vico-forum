@@ -8,7 +8,7 @@
 
 ## Реализация
 
-- Edit own topic title: завершён.
+- Edit own topic title: завершён (#343/#344). Отдельный owner audit текущего main не выявил необоснованных feature mechanisms; открыт minor **TITLE-AUDIT-1 [P3]** (возврат фокуса после Save/Cancel), детали ниже. Production не менялся.
 - Watch: **implementation #345 merged** в main `9c4639d23ca075c8bb92fbb909b96593d7bee127`; дерево совпадает с проверенным technical head `76c1c456557c614171a3b472758498795a668b9a` (review base `7cc23edede57994cdedab49c1556ddb55034dd29`, 17/17 exact-head checks PASS, включая database и connected watch_browser).
 - Watch coordinator whole-PR review: **Мира PASS** на exact head `76c1c456557c614171a3b472758498795a668b9a`; подтверждённых current-scope findings нет.
 - Watch первоначальный independent technical review: **Лёва PASS** на exact head `76c1c456557c614171a3b472758498795a668b9a` против main `7cc23edede57994cdedab49c1556ddb55034dd29`. Позднейший отдельный owner audit выявил **открытый WATCH-AUDIT-1 [P2]**; актуальные evidence/маршрут — в отдельном разделе ниже. Production в аудите не менялся.
@@ -84,3 +84,26 @@ Tab actor marker в sessionStorage обоснован credential-route remount: 
 **WATCH-AUDIT-1 и BOOKMARKS-AUDIT-1/2 остаются открытыми и отложенными: сначала
 проверки, потом исправления. Лёва STOP после одного Bookmarks.** Дальнейший аудит
 оставшихся реализаций — отдельно, по одной; #351/4b.2 этим аудитом не выполнялся.
+
+## Отдельная проверка владельца — заголовок; аудит завершённых функций закончен
+
+По отдельной `...` Лёва проверил только edit-own-title #343 в current main
+`9eae385`. Это аудит собственной прежней реализации по прямому запросу владельца,
+не независимый whole-PR review. Unnecessary runtime layers не подтверждены:
+draft text/frozen revision, explicit rebase, own command/permission/admission и
+immutable revision/CAS сохраняют принятые контракты. **35/35 focused functional
+checks PASS**: 7 existing PG17, 4 новых PG+UI, 3 existing component, 21 route.
+
+**TITLE-AUDIT-1 [P3]:** Save/Cancel вызывает focus() до применения setDraft(null),
+когда opener ещё hidden. Настоящий Chromium на production component: в обоих
+случаях activeElement=BODY после закрытия; manual focus после DOM commit работает.
+Изолированный post-commit focus prototype проходит оба случая и 7/7 PG/UI checks.
+Это minor keyboard/focus defect, не ошибка записи и не новая recovery subsystem.
+
+Аудит трёх завершённых реализаций #342 закончен: **WATCH-AUDIT-1 [P2],
+BOOKMARKS-AUDIT-1/2 [P2], TITLE-AUDIT-1 [P3]** открыты. Только service records
+изменены, исправления/PR не начаты. Дальнейший маршрут — отдельные bounded
+corrections по одному: сначала Watch, затем Bookmarks; minor title focus отдельно
+или в applicable UI pass. Контекст следующего coordinator handoff Мире готов в
+channel; текущий audit сам corrections не запускает. **Лёва STOP.** Текущее отдельное
+назначение Лиры #351/4b.4 сохраняется; его код этим аудитом не проверялся.

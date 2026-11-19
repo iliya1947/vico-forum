@@ -948,3 +948,140 @@ Storage-blocked/privacy modes новым экспериментом не пок�
 BOOKMARKS-AUDIT-1/2 отложены владельцем до окончания проверок.** Production/schema/
 tests не менял, corrective PR не открывал. Дальнейший аудит оставшихся реализаций
 только отдельно, по одной. **STOP после Bookmarks**, текущий #351 route сохранён.
+
+## 2026-11-19 — edit-own-title necessity audit: mechanisms обоснованы, minor focus P3
+
+Отдельная `...` после вопроса владельца об оставшейся проверке разрешила аудит
+только собственного заголовка. Проверено current main9eae385 и исходный #343
+diff d8667f6 относительно base906d15d. Title editor/repository code не менялся
+после merge. Я автор этой реализации: текущая работа — self-audit по прямому
+назначению владельца, не независимый review собственной работы. Прежние independent
+reviews Марка/Лиры не переименовываются в мой review. Коррекции пока запрещены.
+
+Прочитаны accepted title plan с overrides (исходный cooldown proposal отклонён
+Мирой), E1/E2 и source seams, whole runtime diff, migration/metadata, affected tests.
+Runtime wrapper writeCorrection уже был в base до #343: не новый слой этой фичи;
+его возможный общий cleanup не обоснован текущей задачей. Узкий editOwnTopicTitle
+не является просто alias reviseTopicTitle: authoritative author/revision admission,
+active actor/posts.edit и no-op семантика реализованы именно здесь. Использование
+низкоуровневого revision primitive напрямую лишило бы route этих границ.
+
+### Проверка необходимости
+
+- Отдельный permission и forward catalog CHECK/seed — accepted E1, другой post/
+  source-locale permission не выражает эту capability. Owner immunity не отменяет
+  topic ownership. posts.edit — прямой accepted E2, нового restriction нет.
+- Topic FOR NO KEY UPDATE → actor admission — текущий content/lifecycle порядок;
+  latest revision проверяется до no-op, проигрыш CAS не оставляет orphan revision.
+  Новый текст получает und; old translations исторические, Save ничего не enqueue.
+- Local draft/text/revision — uncommitted intent, не server-state mirror. Его
+  удаление или синхронизация с loader стирала бы ввод/исходную CAS baseline.
+  Явный rebase необходим, чтобы не превратить stale Save в last-write-wins.
+- Actor/topic key изолирует buffer, независимый fetcher не смешивает editor actions;
+  permission loss оставляет draft/Cancel, блокирует Save. Нет server drafts,
+  localStorage/autosave, publication receipts, POST retries, cooldown или History.
+- Metadata0067 recursively отличается от0066 ровно по трём paths: /id, /prevId,
+  /tables/public.authz_permissions/checkConstraints/authz_permissions_catalog_check/value.
+  Manifest diff — targetMigration/catalog CHECK hash. Локальный BigInt serializer
+  при старом Drizzle generation — ранее документированный tooling workaround;
+  он не попал в feature/runtime/dependencies и не подтверждает generator parity.
+- Historical AP-10 admission seam только у migration-subset fixture, production
+  writer и новые current-schema checks используют настоящую measure admission.
+  Stage4 migration0067 нужна текущим INITIAL_ROLE_GRANTS, а не ослаблению auth.
+
+Подтверждённых необоснованных feature mechanisms нет. Это scoped conclusion, не
+утверждение об отсутствии любых дефектов или о полном аудите всего проекта.
+
+### Фактические проверки
+
+Все файлы диагностики вне git worktrees: `/workspace/work/title-audit-diagnostics`.
+Собственная loopback DB vico_title_audit_test, PostgreSQL17, полный forward chain
+main в isolated schemas; ни production DB, ни runtime credentials не используются.
+
+1. Existing `tests/database/topic-title-edit.test.ts` — **7/7 PASS**: immutable
+   revisions/no-op/no cooldown, authoritative denials, actual posts.edit/Owner,
+   same-baseline competing edits, deactivation race, source correction race,
+   old translations/new original. Source не менялся, suite повторно выполнен.
+2. Новый `title-state.test.tsx` — **4/4 PASS**, настоящий Drizzle repo/ForumService
+   + production editor + React Router, без SQL mocks:
+   - external edit COMMIT + explicit revalidation сохраняет draft/r1; Save409
+     не создаёт revision; explicit rebase на r2 не пишет; новый Save создаёт r3;
+   - first COMMIT + diagnostic 503 вместо ACK оставляет draft/r1. Даже после fresh
+     read он не закрывается как success; manual retry409 без дубля. Только явный
+     rebase+Save делает admitted no-op, revision count остаётся2, actions ровно3;
+   - first edit COMMIT, затем newer edit COMMIT до выпуска старого ACK: header
+     показывает newer title, повторное открытие берёт его, дополнительное чтение
+     ничего не портит. Нет Watch/Bookmarks ACK-over-loader mirror defect;
+   - unchanged title успехом закрывает форму, revision count1, old known locale
+     сохраняется. No-op остаётся admitted (real measures, default admission).
+3. Existing `topic-title-editor.test.tsx` — **3/3 PASS**: frozen buffer/rebase,
+   permission loss с Cancel, actor isolation. Итого UI suite7/7.
+4. `write-actions.test.ts -t 'own topic title action'` — **21/21 PASS**, 97 other
+   tests skipped: session/route target, origin/capability, malformed/stale input,
+   duplicate intents/fields, authoritative failures и conflict data/no retry.
+
+Всего original focused functional **35/35 PASS**. Full CI/build/Worker browser
+acceptance/owner visual acceptance не повторялись. Новый PG+UI harness исполняет
+repo/service и реальный Router, но action controlled responses в нём диагностические,
+не полный Worker auth pipeline. Existing route checks отдельно проверяют boundary.
+
+### TITLE-AUDIT-1 [P3]: restoration focus выполняется до DOM commit
+
+`app/forum/topic-title-editor.tsx:25–27,64–67`: оба пути закрытия выполняют
+setDraft(null), затем opener.current.focus(). В этот момент DOM button имеет
+hidden=true. После React commit opener видим, но activeElement=BODY, а не opener.
+Сохранение/отмена работают, данных не теряют; это minor keyboard/focus defect.
+
+`browser-entry.tsx` собирает настоящий production component/Router/React в
+отдельную маленькую Vite client fixture. `focus-check.py` запускает installed
+system Chromium через Playwright, проверяет Save и Cancel, закрытие формы и
+actual heading. Wrapper focus() сохраняет оригинальный метод и только пишет hidden
+на момент вызова. Оба restoration checks false; **pageErrors=0**. После commit
+тот же DOM button принимает manual focus, исключая browser/CSS refusal.
+Новый browser experiment — component-level, не real Worker/Better Auth acceptance.
+Merged connected suite проверяет save/conflict/RTL, но restoration не проверяет.
+
+```text
+original Cancel: opener visible; activeElement BODY; focus called while hidden
+original Save:   opener visible; current title saved; activeElement BODY;
+                 focus called while hidden
+manual same-button focus after render: PASS in both cases
+```
+
+Изолированный `candidate-editor.tsx` заменяет два преждевременных focus вызова
+на one-shot restoration после render (close-intent ref + effect при draft=null).
+Не добавляет initial autofocus и не меняет draft/command/server semantics.
+Vite candidate alias подменяет только этот импорт во внешней fixture. Настоящий
+Chromium: **2/2 restoration PASS**, focus call теперь hidden=false. Те же4 PG+UI
+и копия3 existing component regressions на candidate: **7/7 PASS**. Это causal
+experiment локального пути, не готовый corrective PR или production edit.
+
+Официальные React docs проверены 2026-11-19:
+https://react.dev/learn/manipulating-the-dom-with-refs (DOM access после commit;
+state update не меняет DOM синхронно); https://react.dev/learn/preserving-and-resetting-state
+(component key/context reset). Вывод основан на real browser/PG evidence.
+
+Команды evidence:
+```sh
+DATABASE_URL=<own-loopback-vico_title_audit_test> node node_modules/vitest/vitest.mjs \
+  run --config vitest.database.config.ts tests/database/topic-title-edit.test.ts --maxWorkers=1
+# 7/7 PASS
+DATABASE_URL=<same-own-db> node node_modules/vitest/vitest.mjs run \
+  --config /workspace/work/title-audit-diagnostics/vitest.config.mjs --maxWorkers=1
+# 7/7 PASS = 4 PG/UI + 3 existing component
+node node_modules/vitest/vitest.mjs run app/forum/write-actions.test.ts \
+  -t 'own topic title action' --maxWorkers=1
+# 21 PASS, 97 skipped
+python3 /workspace/work/title-audit-diagnostics/focus-check.py
+# original JSON: returnedFocus=false twice, normal save/cancel and manual focus PASS
+python3 /workspace/work/title-audit-diagnostics/focus-check.py candidate
+# candidate JSON: returnedFocus=true twice
+```
+
+Production/schema/tests не менялись. Все три завершённые реализации #342 отдельно
+проверены: Watch, Bookmarks, title. Открыты WATCH-AUDIT-1 и BOOKMARKS-AUDIT-1/2 P2,
+плюс TITLE-AUDIT-1 P3. Исправления не начаты: отдельный следующий маршрут — Watch,
+затем Bookmarks, minor title focus отдельно/applicable UI pass. Контекст bounded
+coordinator handoff Мире записан; текущий audit corrections не запускает.
+#351/4b.4 оставлен Лире, не проверялся/не переназначался мной.
+**STOP после title audit; не объявлять аудитом всех прежних функций проекта.**

@@ -1480,3 +1480,60 @@ No unrelated Watch audit corrections or production work in this step. Do not inf
 No need for production correction established in this bounded test. This is **not** 4b.4 blocked-message collapse/reveal, 4b.5 topic-create/edit mention consumption, 4b.6–4b.11, 4c or PR review/merge. Full exact-head workflows are not asserted complete; dedicated job is the verified gate.
 
 **Лира STOP после 4b.3.** Следующее отдельное `...` активирует **только 4b.4 — viewer-only Block TopicView collapse/reveal и anchors/root/parent/best answer**, затем checkpoint STOP перед 4b.5. #351 Draft, #342 service-only/no merge. Отложенные WATCH-AUDIT-1 и BOOKMARKS-AUDIT-1/2 не затронуты.
+
+## 2026-11-19 — Лёва: аудит edit-own-title завершён; проверки трёх реализаций закрыты
+
+По отдельной owner `...` проверена только завершённая реализация **#343** в main
+`9eae385571bf99e073df46f8541f7514c9626a29`; source editor/repository по сравнению
+с merge `d8667f6` не менялся. Это **самопроверка моей прежней реализации по прямому
+запросу**, не новый независимый whole-PR review. Production/schema/tests не менялись.
+
+**Подтверждённых необоснованных feature mechanisms не найдено.** Draft хранит
+неподтверждённый пользовательский текст и frozen revision, а не зеркало состояния
+сервера как Watch/Bookmarks. Revalidation сохраняет draft, новый current title
+остаётся loader-owned; после старого успешного ACK editor закрывает именно свою
+форму, но не подменяет более новый title. Реальный PG+UI эксперимент это подтвердил.
+После возможного COMMIT с 503 вместо ACK draft сохраняется; повтор старого Save
+получает 409 без новой revision; rebase и следующий Save только явно, no-op не
+создаёт дубль. Отдельные receipts/autosave/drafts storage/recovery layers не нужны.
+
+Own command, permission/catalog migration и ownership/active-account/posts.edit
+admission обоснованы принятыми E1/E2. Topic lock + immutable revision/pointer CAS
+сохраняют concurrency/lifecycle и revision-bound translations; существующие low-level
+reviseTopicTitle/source-correction primitives не являются безопасным own endpoint.
+Новых domain tables, cooldown, provider calls, queue или History write нет.
+Metadata0067 отличается от0066 только id/prevId и catalog CHECK; manifest — только
+target/check hash. Документированный локальный обход старого Drizzle BigInt generator
+остаётся tooling limitation, не скрытой runtime подсистемой этой функции.
+
+**TITLE-AUDIT-1 [P3], `app/forum/topic-title-editor.tsx:25–27,64–67`:**
+после Save и Cancel фокус не возвращается на Edit topic title: setDraft(null) ещё
+не применён к DOM, opener остаётся hidden при focus(), после render активен BODY.
+Воспроизведено в настоящем system Chromium с production component/React Router;
+сохранение и закрытие формы успешны, pageErrors=0. Тот же уже видимый opener после
+commit нормально принимает manual focus — проблема именно в ordering. Local
+diagnostic prototype переносит restoration после DOM commit: **2/2 focus cases
+PASS**, **7/7 PG+UI/component regressions PASS**, initial autofocus не добавлен.
+Prototype вне git worktrees, не shipped fix; minor keyboard issue не выдаётся за
+дефект данных или доказанный архитектурный костыль.
+
+**Новые focused evidence:** 7/7 existing real PG17 title tests; 4/4 новых PG+UI
+(external edit/frozen draft/explicit rebase, COMMIT+unavailable ACK и retry без
+дубля, delayed ACK после нового title, admitted no-op); 3/3 existing component;
+21/21 selected own-title route tests (остальные97 пропущены filter), итого **35/35
+functional PASS**. Chromium original focus restoration — **оба случая FAIL**,
+post-commit prototype — оба PASS. Full CI, полный Worker/Better Auth browser suite
+и owner visual acceptance повторно не запускались и не заявляются.
+
+Аудит завершённых функций #342 теперь выполнен **по одной**: Watch, Bookmarks,
+редактирование заголовка. Открыты три P2 UI state findings (WATCH-AUDIT-1,
+BOOKMARKS-AUDIT-1/2) и minor P3 TITLE-AUDIT-1. Никакие другие завершённые части
+проекта этим ограниченным аудитом не объявляются проверенными. Mute/block #351
+ещё отдельный in-progress track, не часть этой самопроверки.
+
+**Исправления не начаты, Лёва STOP после заголовка.** Теперь можно отдельно
+активировать bounded corrections: Watch → Bookmarks, minor title focus отдельно/
+applicable UI pass. Мире уже доступны конкретные файлы/causal traces/границы; не
+лечить state findings новым cache/version/store/retry. Мире — отдельным следующим шагом
+оформить bounded Watch corrective scope по уже записанным evidence и штатный
+implementation/review route; #351/4b.4 этим audit не переназначаю.
