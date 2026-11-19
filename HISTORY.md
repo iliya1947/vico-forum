@@ -44,3 +44,8 @@
 - WATCH-AUDIT-1, BOOKMARKS-AUDIT-1/2, TITLE-AUDIT-1 и TITLE-AUDIT-1-R1 закрыты; confirmed current-scope defects = 0.
 - Owner merged #354; merge commit/current main `6fa2a43b02c55515bbd46a0d74fe6cc0d4424caf`.
 - #342 перешёл к moderation visibility scope/fit gate.
+
+
+## 2026-11-20 — owner adopted stacked bounded PR workflow
+
+Владелец выбрал stacked delivery как общий рабочий паттерн для составных вертикальных задач: bounded PR-ступени строятся друг на друге, не merge в main по отдельности; после последней ступени весь final head сворачивается в первый PR, который проходит единый whole-feature review и owner merge. Для moderation visibility это B1→B9. Отдельный follow-up после #342: обновить AGENTS.md под этот штатный процесс.
