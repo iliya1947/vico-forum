@@ -22,8 +22,8 @@ function setup() {
   });
   function View() {
     const props = useLoaderData() as { title: typeof title; actorId: string; canEdit: boolean };
-    return <><h1>Displayed translation</h1><TopicTitleEditor key={props.actorId}
-      {...props} topicId="topic" locale="en" /></>;
+    return <><h1>Displayed translation</h1><button type="button">Other action</button>
+      <TopicTitleEditor key={props.actorId} {...props} topicId="topic" locale="en" /></>;
   }
   const router = createMemoryRouter([{ path: "/en/topics/topic", Component: View,
     loader: () => ({ title, actorId, canEdit }), action }], { initialEntries: ["/en/topics/topic"] });
@@ -32,6 +32,7 @@ function setup() {
   return { router, action,
     update: (value: typeof title) => { title = value; },
     reject: () => { rejected = true; canEdit = false; },
+    restorePermission: () => { rejected = false; canEdit = true; },
     changeActor: () => { actorId = "another-author"; },
   };
 }
@@ -55,6 +56,32 @@ describe("topic title form", () => {
       expect(screen.queryByRole("textbox")).not.toBeInTheDocument();
     });
     expect(action).toHaveBeenCalledTimes(actionLabel === "Save changes" ? 1 : 0);
+  });
+
+  it("discards a deferred Cancel focus request when permissions hide the opener", async () => {
+    const { router, reject, restorePermission } = setup();
+    const opener = await screen.findByRole("button", { name: "Edit topic title" });
+    fireEvent.click(opener);
+    expect(screen.getByRole("textbox")).toBeInTheDocument();
+
+    reject();
+    await act(async () => { await router.revalidate(); });
+    expect(screen.getByRole("textbox")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Cancel" }));
+    await waitFor(() => {
+      expect(screen.queryByRole("textbox")).not.toBeInTheDocument();
+      expect(screen.queryByRole("button", { name: "Edit topic title" })).not.toBeInTheDocument();
+    });
+
+    const otherAction = screen.getByRole("button", { name: "Other action" });
+    otherAction.focus();
+    expect(otherAction).toHaveFocus();
+
+    // Same mounted editor and actor; regaining permission must not replay old focus.
+    restorePermission();
+    await act(async () => { await router.revalidate(); });
+    expect(await screen.findByRole("button", { name: "Edit topic title" })).toBeVisible();
+    expect(otherAction).toHaveFocus();
   });
 
   it("edits original text, keeps its frozen revision across revalidation, and rebases only explicitly", async () => {
