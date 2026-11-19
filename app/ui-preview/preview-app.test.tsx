@@ -1410,6 +1410,22 @@ describe("interactive Pages preview", { timeout: 10_000 }, () => {
     expect(screen.getByLabelText("Attach")).toBeDisabled();
   });
 
+  it("edits the authenticated author's own topic title in the preview", async () => {
+    const user = userEvent.setup();
+    await renderEmbeddedPreview(<EmbeddedPreview scenarioId="topic-solved-user" identity="user" />);
+
+    expect(await screen.findByRole("heading", { level: 1, name: "How should I structure a typed API client?" })).toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: "Edit topic title" }));
+    const title = screen.getByRole("textbox", { name: "Topic title" });
+    await user.clear(title);
+    await user.type(title, "Edited preview topic title");
+    await user.click(screen.getByRole("button", { name: "Save" }));
+
+    expect(await screen.findByRole("heading", { level: 1, name: "Edited preview topic title" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Edit topic title" })).toBeInTheDocument();
+  });
+
   it("creates a topic, posts a reply, selects it as best answer, and marks the topic solved", async () => {
     const user = userEvent.setup();
     await renderEmbeddedPreview(<EmbeddedPreview scenarioId="section-user" identity="user" />);
