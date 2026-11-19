@@ -134,6 +134,9 @@ describe("UI preview state catalog", () => {
         view: "super-admin",
         allowedIdentities: ["owner"],
       }),
+      expect.objectContaining({ id: "super-admin-system-owner", allowedIdentities: ["owner"] }),
+      expect.objectContaining({ id: "super-admin-accounts-owner", allowedIdentities: ["owner"] }),
+      expect.objectContaining({ id: "super-admin-security-owner", allowedIdentities: ["owner"] }),
       expect.objectContaining({
         id: "super-admin-guest-unauthenticated",
         allowedIdentities: ["guest"],
@@ -324,6 +327,36 @@ describe("embedded preview routing", { timeout: 10_000 }, () => {
     expect(screen.getByRole("link", { name: "Accounts & authentication" })).toBeInTheDocument();
     const pending = document.querySelector(".super-admin-pending-areas") as HTMLElement;
     expect(within(pending).getByText("Infrastructure")).toBeInTheDocument();
+  });
+
+  it("opens System, Accounts, and Security from Super-admin Monitoring", async () => {
+    const user = userEvent.setup();
+    await renderEmbeddedPreview(<EmbeddedPreview
+      scenarioId="super-admin-monitoring-owner"
+      identity="owner"
+    />);
+
+    await user.click(await screen.findByRole("link", { name: "System" }));
+    expect(await screen.findByRole("heading", { level: 2, name: "System" })).toBeInTheDocument();
+    expect(document.querySelector(".super-admin-monitors"))
+      .toHaveAttribute("data-monitor-count", "3");
+
+    const superAdminNav = document.querySelector(".super-admin-panel .admin-panel-nav") as HTMLElement;
+    await user.click(within(superAdminNav).getByRole("link", { name: "Monitoring" }));
+    await user.click(await screen.findByRole("link", { name: "Accounts & authentication" }));
+    expect(await screen.findByRole("heading", {
+      level: 2,
+      name: "Accounts & authentication",
+    })).toBeInTheDocument();
+    expect(document.querySelector('[data-monitor-key="accounts.users"]')).not.toBeNull();
+    expect(document.querySelector('[data-monitor-key="accounts.registration"]')).not.toBeNull();
+
+    const accountsNav = document.querySelector(".super-admin-panel .admin-panel-nav") as HTMLElement;
+    await user.click(within(accountsNav).getByRole("link", { name: "Monitoring" }));
+    await user.click(await screen.findByRole("link", { name: "Security" }));
+    expect(await screen.findByRole("heading", { level: 2, name: "Security" })).toBeInTheDocument();
+    expect(document.querySelector('[data-monitor-key="security.auth"]')).not.toBeNull();
+    expect(document.querySelector('[data-monitor-key="security.attachments"]')).not.toBeNull();
   });
 
   it("requires sign-in for guest direct access to Admin topic", async () => {
