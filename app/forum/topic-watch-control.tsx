@@ -13,7 +13,7 @@ export function TopicWatchControl({ topicId, actorId, locale, state }: {
   const { t } = useTranslation("common");
   const fetcher = useFetcher<TopicWatchActionResult | ForumMutationError>();
   const revalidator = useRevalidator();
-  const [confirmed, setConfirmed] = useState<TopicWatchState>(state);
+  // The server loader is the sole authority for confirmed Watch state.
   const [requiresRefresh, setRequiresRefresh] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<ForumMutationError["error"] | null>(null);
@@ -21,10 +21,7 @@ export function TopicWatchControl({ topicId, actorId, locale, state }: {
   const handledResponse = useRef<unknown>(null);
   const pending = fetcher.state !== "idle";
 
-  // Use only this actor/topic's authoritative loader snapshot; do not overwrite a pending write.
-  useEffect(() => {
-    if (!pending && !submitted.current && !requiresRefresh && !refreshing) setConfirmed(state);
-  }, [state, pending, requiresRefresh, refreshing]);
+  const displayState: TopicWatchState = requiresRefresh ? "unavailable" : state;
 
   useEffect(() => {
     if (pending || !submitted.current || !fetcher.data || handledResponse.current === fetcher.data) return;
@@ -36,7 +33,6 @@ export function TopicWatchControl({ topicId, actorId, locale, state }: {
       && result.topicId === expected.topicId && result.actorId === expected.actorId
       && result.watching === expected.watching
       && expected.topicId === topicId && expected.actorId === actorId) {
-      setConfirmed(result.watching ? "on" : "off");
       setRequiresRefresh(false);
       setError(null);
     } else {
@@ -44,7 +40,6 @@ export function TopicWatchControl({ topicId, actorId, locale, state }: {
       // Preserve the previous state without claiming it is the new server state.
       setError("error" in result && typeof result.error === "string"
         ? result.error as ForumMutationError["error"] : "unexpected");
-      setConfirmed("unavailable");
       setRequiresRefresh(true);
     }
   }, [pending, fetcher.data, actorId, topicId]);
@@ -57,12 +52,12 @@ export function TopicWatchControl({ topicId, actorId, locale, state }: {
       .catch(() => setError("unexpected"))
       .finally(() => setRefreshing(false));
   };
-  const isWatching = confirmed === "on";
-  const blocked = pending || refreshing || requiresRefresh || confirmed === "unavailable";
+  const isWatching = displayState === "on";
+  const blocked = pending || refreshing || requiresRefresh || displayState === "unavailable";
   const next = !isWatching;
 
   return <div className="topic-watch-control" aria-busy={pending || refreshing}>
-    {confirmed !== "unavailable" && <fetcher.Form method="post" action={forumTopicPath(locale, topicId)}
+    {displayState !== "unavailable" && <fetcher.Form method="post" action={forumTopicPath(locale, topicId)}
       onSubmit={event => {
         if (blocked) { event.preventDefault(); return; }
         submitted.current = { topicId, actorId, watching: next };
@@ -75,11 +70,11 @@ export function TopicWatchControl({ topicId, actorId, locale, state }: {
       </button>
     </fetcher.Form>}
     <span className="topic-watch-status" role="status" aria-live="polite">
-      {confirmed === "unavailable" ? t("topicWatchUnavailable")
+      {displayState === "unavailable" ? t("topicWatchUnavailable")
         : t(isWatching ? "topicWatchOn" : "topicWatchOff")}
     </span>
     {error && <p role="alert">{t(`forumWriteError_${error}`)} {t("topicWatchVerify")}</p>}
-    {(requiresRefresh || confirmed === "unavailable") &&
+    {(requiresRefresh || displayState === "unavailable") &&
       <button type="button" onClick={refresh} disabled={pending || refreshing}>
         {t(refreshing ? "topicWatchUpdating" : "topicWatchRefresh")}
       </button>}
