@@ -92,7 +92,7 @@ try:
             expect(opener).to_be_focused()
             opener.click()
             page.locator('.topic-title-editor input[name="title"]').fill('Discarded unsaved title')
-            page.get_by_role('button', name='Cancel', exact=True).click()
+            page.locator('.topic-title-editor').get_by_role('button', name='Cancel', exact=True).click()
             expect(opener).to_be_visible()
             expect(opener).to_be_focused()
             expect(page.locator('.topic-title-editor input[name="title"]')).to_have_count(0)
