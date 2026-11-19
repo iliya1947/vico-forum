@@ -22,11 +22,11 @@
 
 Действующие важные адаптации: current Watch/Bookmarks/Mute/Block и unavailable own/inbox projections; новая visibility capability в existing AP-10/admin/History/Owner classification; atomic publication/recovery guards; parent-topic lock для новых body translation plans; public asset gate до bucket. Эти детали уже входят в stage plan и не являются новыми product forks.
 
-Feature implementation/tests/CI/browser visibility acceptance не выполнялись. Следующий шаг — checkpoint Миры на полноту плана, затем Лира только B1; current assignment не запускает implementation автоматически.
+**B1 author self-check PASS**, [Draft #355](https://github.com/iliya1947/vico-forum/pull/355) exact `736da519e3f3fcae716ec5fb1b81886cdac63a6e`: schema/permission/History foundation with forward repository migration 0071, default-visible topic/post, partial queue, AP-10, typed History, neutral labels and Owner mapping. CI 44640562493 checks 2752/2752, PG17 1483/1483, 74-table manifest parity, runtime privilege probes and Worker; **13/13 workflows SUCCESS**. Public Hide/Restore/write/read gates not present; no production/external migration acceptance. **Next Mira bounded B1 coordinator checkpoint**; B2 only after Mira PASS and owner continuation.
 
 ## Дальнейшие планы
 
-- Moderation visibility: current V1–V9/B1–B9 готов к plan checkpoint; implementation не активен.
+- Moderation visibility: B1 foundation implemented and author-verified in stacked Draft #355; next Mira B1 checkpoint. Remaining B2–B9 inactive.
 - Forum structure/topic move: S0–S10 plan принят Мирой; implementation не активен.
 
 
