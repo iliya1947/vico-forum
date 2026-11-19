@@ -1426,6 +1426,22 @@ describe("interactive Pages preview", { timeout: 10_000 }, () => {
     expect(screen.getByText("Not watching this topic.")).toBeInTheDocument();
   });
 
+  it("toggles topic Bookmark in the static Pages preview", async () => {
+    const user = userEvent.setup();
+    await renderEmbeddedPreview(<EmbeddedPreview scenarioId="topic-solved-user" identity="user" />);
+
+    expect(await screen.findByRole("button", { name: "Save topic" })).toHaveAttribute("aria-pressed", "false");
+    expect(screen.getByText("This topic is not saved.")).toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: "Save topic" }));
+    expect(await screen.findByRole("button", { name: "Remove bookmark" })).toHaveAttribute("aria-pressed", "true");
+    expect(screen.getByText("This topic is saved.")).toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: "Remove bookmark" }));
+    expect(await screen.findByRole("button", { name: "Save topic" })).toHaveAttribute("aria-pressed", "false");
+    expect(screen.getByText("This topic is not saved.")).toBeInTheDocument();
+  });
+
   it("edits the authenticated author's own topic title in the preview", async () => {
     const user = userEvent.setup();
     await renderEmbeddedPreview(<EmbeddedPreview scenarioId="topic-solved-user" identity="user" />);
