@@ -33,7 +33,7 @@
 
 ## Следующий шаг
 
-**Mute/block: Мира coordinator HOLD; PF-REVIEW-1 PASS. PF-REVIEW-2 assertion mismatch diagnosed/corrected; new exact-head CI IN PROGRESS (not PASS). Лира completes PF-REVIEW-2 verification before PF-REVIEW-3.** Implementation Draft PR #351: current head `37b7c8e991865a0352562fecbedf74d6f5aeeb53` (base `9eae385571bf99e073df46f8541f7514c9626a29`). Service PR #342 — рабочий канал, не merge.
+**Mute/block: Мира coordinator HOLD; PF-REVIEW-1 PASS; PF-REVIEW-2 bounded correction + exact-head verification PASS (16/16 workflows). Лира STOP before PF-REVIEW-3.** Implementation Draft PR #351: current head `37b7c8e991865a0352562fecbedf74d6f5aeeb53` (base `9eae385571bf99e073df46f8541f7514c9626a29`). Service PR #342 — рабочий канал, не merge.
 
 **Verified 4a:** real PostgreSQL 17 **27/27 targeted concurrency/atomicity tests** и full **1476/1476 tests, 109/109 files PASS**. `CI` jobs `database` и `checks` SUCCESS (run `44522424656`). **15/15 workflow SUCCESS после отдельного повторного SA07 job `135564876373` на том же head**, без code changes. Первый SA07 job `135554174007` FAIL: `/en/super-admin/monitoring/integrations.data` ответил 503 вместо 200. Точная первопричина **не установлена**; не подтверждена Mute/block regression. В 4a изменены только `tests/database/personal-filters-concurrency.test.ts` и `tests/database/topic-watch.test.ts` (timing rejection assertion), production/schema/UI без изменений.
 
@@ -255,3 +255,8 @@ Implementation Draft #351 remains at **`7bdf468fed9bebb74adf421cb5e231ba14218c8a
 **Verification boundary:** The new exact-head GitHub CI [run 44577496670](https://github.com/iliya1947/vico-forum/actions/runs/44577496670) `checks`/`database` and dedicated [run 44577496424](https://github.com/iliya1947/vico-forum/actions/runs/44577496424) are **QUEUED at last check**. NO PASS claim for the new tests/commit. Code was committed and source/diff reviewed, but runtime regression acceptance **not yet established**. Do not infer success from prior PF-REVIEW-1 CI. Neither PF-REVIEW-3 nor deferred Watch/Bookmarks corrections changed.
 
 **Лира STOP after PF-REVIEW-2 code/tests checkpoint.** Next distinct explicit `...` = **ONLY PF-REVIEW-2 exact-head CI verification** and, if required, diagnosis/local correction of *confirmed* failure; checkpoint and STOP before PF-REVIEW-3. Then separate `...` for PF-REVIEW-3. After all three correction steps, final exact-head full CI + Mira whole-PR coordinator review; Leva only after Mira PASS. #342 service-only/no merge; #351 remains Draft.
+
+
+## 2026-11-19 — Лира: PF-REVIEW-2 corrected exact-head CI PASS; STOP before PF-REVIEW-3
+
+Draft #351 stable exact head `37b7c8e991865a0352562fecbedf74d6f5aeeb53`. Old test-only assertion mismatch from `dac264877fd1969e1fd683cc731a8852e2848a16` corrected with one-line matcher change in `app/forum/filters-view.test.tsx`; production unchanged. CI `44587038549`: `checks` (job `135782670721`) SUCCESS, 2743/2743 unit tests / 218 files, `filters-view.test.tsx` 6/6 including both Mute/Block re-add+delayed Undo ACK; `database` (job `135782669976`) SUCCESS. Dedicated Mute/Block Chromium `44587038774` (job `135782671192`) SUCCESS, 48/48 `FILTERS_CONNECTED` markers. **All 16/16 exact-head GitHub workflows completed SUCCESS, no failed/pending.** PF-REVIEW-2 bounded correction PASS, not a new Mira whole-PR review. Next separate `...` = ONLY PF-REVIEW-3; after all three corrections new full whole-PR cycle starts with Mira, Leva only after Mira PASS. #342 service-only; #351 Draft; no merge/Stage6/deferred audits.
