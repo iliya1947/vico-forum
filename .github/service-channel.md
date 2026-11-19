@@ -2026,3 +2026,76 @@ review cycle без изменений. Prototype не включён в #351. �
 whole-PR PASS остаётся действующим; дополнительные production defects не подтверждены.
 **Лёва STOP после одного Mute/block audit.** Owner Ready/merge→docs route и отложенный
 WATCH→BOOKMARKS corrective order не изменён; optional cleanup автоматически не назначен.
+
+
+## 2026-11-19 — #351 merged; Mute/block docs closeout activated
+
+Implementation PR #351 **merged** at 2026-11-19T19:38:41Z.
+Reviewed implementation head:
+`0fc239a554c8df562e97bc600f59b6b7b06d36ab`.
+Merge commit = current main:
+`b87a6702b4f97634ee21426f95ece38f53c672ed`.
+
+После merge заново прочитаны актуальные `AGENTS.md`, `PROJECT.md`,
+`PROJECT_STATE.md` и history index на новом main. Permanent Mute/block contract
+ещё не зафиксирован, PROJECT_STATE всё ещё имеет migration ceiling `0069` и не
+описывает merged Mute/block. Следующий bounded этап — **отдельный docs closeout**.
+
+### Следующий исполнитель — Лира / ChatGPT-6
+
+Создать отдельный docs-only PR от current main
+`b87a6702b4f97634ee21426f95ece38f53c672ed`.
+
+Требуемый результат:
+
+1. **`PROJECT.md` — permanent product contract Mute/block.**
+   Зафиксировать только уже merged поведение:
+   - explicit own Topic Mute для active authenticated actor;
+   - Mute suppresses future ordinary reply/mention notifications из темы независимо
+     от author/parent/Watch/mention source, не скрывает content и не меняет Watch;
+   - Unmute prospective only, suppressed historical pairs не backfill;
+   - directional A→Block B: A не получает новые ordinary notices от actor B,
+     обычные B posts в TopicView для A collapsed с explicit per-post Reveal;
+   - Block не является ban: B продолжает читать/publish/reply/mention, public profile/
+     Search/discovery не скрываются; reverse direction independent, self-block invalid;
+   - suppression receipts сохраняют no-backfill после Unmute/Unblock/edit/replay;
+   - private `/:locale/filters` показывает только собственные muted topics / blocked users;
+   - Watch/Bookmarks/read-state и protected Complaint/Admin review surfaces независимы;
+   - отдельного RBAC permission для личных Mute/Block нет.
+   Не превращать PROJECT.md в implementation history или SQL/test ledger.
+
+2. **`PROJECT_STATE.md` — только factual current state.**
+   - migration history ceiling обновить `0000–0070`, указав
+     `0070_personal_filters`;
+   - в Forum core кратко добавить уже merged personal Mute + directional Block и
+     private filters surface;
+   - externally accepted migration evidence оставить `0000–0020`;
+   - не утверждать production/deployed acceptance, Stage6 rollout или owner visual acceptance;
+   - не переносить сюда PR/review/correction историю.
+
+3. **History — новый `docs/PROJECT_HISTORY/PROJECT_HISTORY_32.md` + index.**
+   Зафиксировать implementation #351 и значимую correction/review chain:
+   - migration 0070 / personal filter tables + suppression receipt;
+   - reviewed exact head `0fc239a554c8df562e97bc600f59b6b7b06d36ab`;
+   - Mira coordinator PASS и Leva independent PASS;
+   - PF-REVIEW-1/2/3 corrections;
+   - exact-head 16/16 workflows, 20/20 jobs,
+     unit 2744/2744, PG17 1476/1476, dedicated connected 49/49;
+   - Leva separate necessity audit: no unjustified architectural mechanisms found;
+     optional `PF-SIMPLIFY-1` prototype was **not merged** and is not a current requirement;
+   - merge #351 → main `b87a6702b4f97634ee21426f95ece38f53c672ed`;
+   - repository/local-CI evidence boundaries: no deployed production/real external
+     OAuth/Owner/R2 acceptance claim.
+
+4. **Не менять** code/schema/runtime/ACL/tests, `AUTHORIZATION.md`,
+   `COMPLAINTS.md` или unrelated docs без подтверждённой необходимости.
+   Mute/block не добавил новый RBAC и не менял Complaints authority.
+
+5. После stable docs head и applicable docs CI — **STOP Мире** для whole-docs review.
+   Для docs-only PR отдельный independent review Лёвы не требуется по текущему AGENTS.
+   Merge выполняет владелец только после Mira docs PASS.
+
+После фактического merge docs closeout Mute/block считается полностью закрытым.
+Следующий owner-ordered corrective block после этого:
+`WATCH-AUDIT-1` → `BOOKMARKS-AUDIT-1` → `BOOKMARKS-AUDIT-2`.
+`TITLE-AUDIT-1` остаётся для applicable UI/UX.
