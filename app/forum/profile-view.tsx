@@ -8,6 +8,7 @@ import type { ProfileActionData } from "../routes/profile";
 import { ForumAvatar } from "./avatar";
 import { forumIndexPath, forumProfilePath } from "./paths";
 import { ForumShell } from "./ui";
+import { PersonalFilterControl, type PersonalFilterState } from "./personal-filter-control";
 import { settingsAccountPath } from "../settings/paths";
 import { ownMeasuresPath } from "../measures/paths";
 import { useHeaderAuthUser } from "../auth/auth-controls";
@@ -19,10 +20,12 @@ import { GroupedMeasures } from "../measures/views";
 import { adminMeasuresPath } from "../measures/paths";
 
 export function ProfileView({ locale, profile, isSelf = false, canEditProfile = true,
-  editing = false, saved = false, privileged = {}, feedback }: {
+  editing = false, saved = false, privileged = {}, feedback,
+  blockActorId = null, blockState = null }: {
   locale: string; profile: Omit<ForumProfile, "joinedAt"> & { joinedAt: string };
   isSelf?: boolean; canEditProfile?: boolean; privileged?: ProfilePrivilegedSections;
   editing?: boolean; saved?: boolean; feedback?: ProfileActionData;
+  blockActorId?: string | null; blockState?: PersonalFilterState | null;
 }) {
   const { t } = useTranslation("common");
   const routing = useAdministrativeRouting();
@@ -68,6 +71,9 @@ export function ProfileView({ locale, profile, isSelf = false, canEditProfile = 
         <div className="profile-identity-copy"><p className="profile-eyebrow">{t("profileHeading")}</p><h1 id="profile-name"><bdi dir="auto">{publicName}</bdi></h1><span className="profile-role" dir="auto">{role}</span></div>
         {currentIsSelf && canEditProfile && !isDeleted && !editing && <Link className="profile-button" to={`${path}?edit=1`}>{t("profileEdit")}</Link>}
       </header>
+      {blockActorId && blockActorId === currentSessionUser?.id && blockActorId !== profile.id && blockState &&
+        <PersonalFilterControl key={JSON.stringify(["user", blockActorId, profile.id])}
+          kind="user" targetId={profile.id} actorId={blockActorId} locale={locale} state={blockState} />}
       {currentIsSelf ? <nav>
         <Link to={ownMeasuresPath(locale)}>{t("measuresOwn")}</Link>
         <Link to={settingsAccountPath(locale)}>{t("settingsAccount")}</Link>

@@ -75,6 +75,8 @@ const migrationFiles = [
   "0056_topic_closure.sql",
   "0065_sa04_account_state_foundation.sql",
   "0067_topic_title_edit_own.sql",
+  "0068_topic_watch.sql",
+  "0070_personal_filters.sql",
 ] as const;
 
 const client = new Client({ connectionString: databaseUrl, options: `-c search_path=${schemaName}` });

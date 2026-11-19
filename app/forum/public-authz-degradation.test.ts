@@ -4,10 +4,16 @@ import { authSessionContext, type AuthSession } from "../auth/request-context";
 import { authorizationContext } from "../authorization/request-context";
 import { userMeasureContext } from "../measures/request-context";
 import { AuthorizationUnavailableError } from "../../db/authorization-service";
+import { ForumStorageUnavailableError } from "../../db/hyperdrive-forum";
 import type { ForumReader } from "../../db/forum-repository";
 import { forumReaderContext } from "./request-context";
 import { loader as sectionLoader } from "../routes/section";
-import { loader as topicLoader } from "../routes/topic";
+import { loader as rawTopicLoader } from "../routes/topic";
+async function topicLoader(args: Parameters<typeof rawTopicLoader>[0]) {
+  const result = await rawTopicLoader(args);
+  return "data" in result && "init" in result ? result.data : result;
+}
+
 import { ContentTranslationPresentationService } from "../localization/content-translation-presentation";
 import { ContentTranslationStorageUnavailableError, type StoredContentTranslation } from "../localization/content-translation";
 import { ContentGenerationStatusStorageUnavailableError } from "../localization/content-generation-status";
@@ -92,6 +98,14 @@ const reader: ForumReader = {
   search: async () => [],
   readUnreadForUser: async () => [],
   readTopicReadState: async () => undefined,
+  readTopicWatch: async () => false,
+  readTopicMute: async () => false,
+  readMutedTopics: async () => ({ items: [], next: null }),
+  readBlockedUsers: async () => ({ items: [], next: null }),
+  readUserBlock: async () => false,
+  readTopicBlockedAuthors: async () => [],
+  readTopicBookmark: async () => false,
+  readTopicBookmarks: async () => ({ items: [], next: null }),
   readNotifications: async (_userId, page) => ({items:[],total:0,page,hasMore:false}),
   countUnreadNotifications: async () => 0,
   readReplyNotifications: async () => [],
@@ -208,6 +222,96 @@ function guestContext(translations: readonly StoredContentTranslation[] = []) {
 }
 
 describe("public forum authorization degradation", () => {
+
+  it("fails closed on unavailable mandatory Block matches instead of showing post bodies", async () => {
+    const ctx = contextWithPermissions("viewer-1", []);
+    ctx.set(forumReaderContext, {
+      ...reader, readTopicBlockedAuthors: async () => { throw new ForumStorageUnavailableError(); },
+    });
+    try {
+      await rawTopicLoader({ params: { locale: "en", topicId: topic.id }, context: ctx });
+      throw new Error("Expected unavailable private Block state");
+    } catch (error) {
+      expect(error).toBeInstanceOf(Response);
+      expect(error).toMatchObject({ status: 503 });
+      expect((error as Response).headers.get("Cache-Control")).toBe("private, no-store");
+    }
+    const guest = guestContext();
+    const unexpectedRead = vi.fn(async () => { throw new Error("guest should not read private Block"); });
+    guest.set(forumReaderContext, { ...reader, readTopicBlockedAuthors: unexpectedRead });
+    const result = await rawTopicLoader({ params: { locale: "en", topicId: topic.id }, context: guest });
+    expect(result).toHaveProperty("blockedAuthorIds");
+    expect(unexpectedRead).not.toHaveBeenCalled();
+  });
+  it("keeps authenticated Watch state private, independent of permission grants and status", async () => {
+    const ctx = contextWithPermissions("viewer-1", []);
+    const personal = vi.fn(async () => true);
+    ctx.set(forumReaderContext, { ...reader, readTopicWatch: personal });
+    const response = await rawTopicLoader({ params: { locale: "en", topicId: topic.id }, context: ctx });
+    expect(response).toHaveProperty("data.topicWatchState", "on");
+    expect(response).toHaveProperty("data.watchActorId", "viewer-1");
+    expect(response).toMatchObject({ init: { headers: { "Cache-Control": "private, no-store" } } });
+    expect(personal).toHaveBeenCalledWith("viewer-1", topic.id);
+  });
+
+  it("has no personal Watch read for guests and does not infer off on dependency failure", async () => {
+    const guest = guestContext();
+    const privateRead = vi.fn(async () => true);
+    guest.set(forumReaderContext, { ...reader, readTopicWatch: privateRead });
+    const guestResult = await rawTopicLoader({ params: { locale: "en", topicId: topic.id }, context: guest });
+    expect(guestResult).toHaveProperty("topicWatchState", null);
+    expect(guestResult).toHaveProperty("watchActorId", null);
+    expect(privateRead).not.toHaveBeenCalled();
+
+    const degraded = contextWithPermissions("viewer-1", []);
+    degraded.set(forumReaderContext, {
+      ...reader, readTopicWatch: async () => { throw new ForumStorageUnavailableError(); },
+    });
+    const unavailable = await rawTopicLoader({ params: { locale: "en", topicId: topic.id }, context: degraded });
+    expect(unavailable).toHaveProperty("data.topicWatchState", "unavailable");
+    expect(unavailable).toMatchObject({ init: { headers: { "Cache-Control": "private, no-store" } } });
+
+    const broken = contextWithPermissions("viewer-1", []);
+    const unexpected = new TypeError("bad Watch projection");
+    broken.set(forumReaderContext, {
+      ...reader, readTopicWatch: async () => { throw unexpected; },
+    });
+    await expect(rawTopicLoader({ params: { locale: "en", topicId: topic.id }, context: broken })).rejects.toBe(unexpected);
+  });
+
+  it("keeps optional Bookmark state actor-scoped, private and independent from Watch", async () => {
+    const ctx = contextWithPermissions("viewer-b", []);
+    const ownRead = vi.fn(async () => true);
+    ctx.set(forumReaderContext, { ...reader, readTopicBookmark: ownRead });
+    const result = await rawTopicLoader({ params: { locale: "en", topicId: topic.id }, context: ctx });
+    expect(result).toHaveProperty("data.topicBookmarkState", "on");
+    expect(result).toHaveProperty("data.bookmarkActorId", "viewer-b");
+    expect(result).toHaveProperty("data.topicWatchState", "off");
+    expect(result).toMatchObject({ init: { headers: { "Cache-Control": "private, no-store" } } });
+    expect(ownRead).toHaveBeenCalledWith("viewer-b", topic.id);
+
+    const guest = guestContext();
+    const guestRead = vi.fn(async () => true);
+    guest.set(forumReaderContext, { ...reader, readTopicBookmark: guestRead });
+    const anon = await rawTopicLoader({ params: { locale: "en", topicId: topic.id }, context: guest });
+    expect(anon).toHaveProperty("topicBookmarkState", null);
+    expect(anon).toHaveProperty("bookmarkActorId", null);
+    expect(guestRead).not.toHaveBeenCalled();
+
+    const offline = contextWithPermissions("viewer-b", []);
+    offline.set(forumReaderContext, { ...reader,
+      readTopicBookmark: async () => { throw new ForumStorageUnavailableError(); },
+    });
+    const unknown = await rawTopicLoader({ params: { locale: "en", topicId: topic.id }, context: offline });
+    expect(unknown).toHaveProperty("data.topicBookmarkState", "unavailable");
+
+    const broken = contextWithPermissions("viewer-b", []);
+    const bug = new TypeError("bookmark read projection bug");
+    broken.set(forumReaderContext, { ...reader, readTopicBookmark: async () => { throw bug; } });
+    await expect(rawTopicLoader({ params: { locale: "en", topicId: topic.id }, context: broken }))
+      .rejects.toBe(bug);
+  });
+
   it("offers title editing only for the owner with its independent capability and no posts.edit restriction", async () => {
     for (const [userId, permissions, expected] of [
       [topic.authorId, ["forum.topic.title.editOwn"], true],

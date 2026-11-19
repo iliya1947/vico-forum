@@ -84,6 +84,31 @@ export class ForumService {
     return this.repository.reviseTopicTitle(topicId, expectedRevisionId, normalizeRevision(revision), authorId);
   }
 
+  setTopicMute(input: { topicId: string; actorId: string; muted: boolean }) {
+    validateEntity(input.topicId, input.actorId);
+    if (typeof input.muted !== "boolean") throw new InvalidForumContentError("invalid mute state");
+    return this.repository.setTopicMute(input);
+  }
+
+  setUserBlock(input: { actorId: string; blockedUserId: string; blocked: boolean }) {
+    validateEntity(input.actorId, input.blockedUserId);
+    if (input.actorId === input.blockedUserId) throw new InvalidForumContentError("cannot block self");
+    if (typeof input.blocked !== "boolean") throw new InvalidForumContentError("invalid block state");
+    return this.repository.setUserBlock(input);
+  }
+
+  setTopicBookmark(input: { topicId: string; actorId: string; bookmarked: boolean }) {
+    validateEntity(input.topicId, input.actorId);
+    if (typeof input.bookmarked !== "boolean") throw new InvalidForumContentError("invalid bookmark state");
+    return this.repository.setTopicBookmark(input);
+  }
+
+  setTopicWatch(input: { topicId: string; actorId: string; watching: boolean }) {
+    validateEntity(input.topicId, input.actorId);
+    if (typeof input.watching !== "boolean") throw new InvalidForumContentError("invalid watch state");
+    return this.repository.setTopicWatch(input);
+  }
+
   editOwnTopicTitle(input: {
     topicId: string; actorId: string; expectedRevisionId: string; title: string;
   }) {
@@ -199,6 +224,25 @@ export class ForumService {
   readUnreadForUser(userId: string) {
     requireText(userId, "user id");
     return this.repository.readUnreadForUser(userId);
+  }
+
+  readTopicBookmark(userId: string, topicId: string) {
+    requireText(userId, "user id");
+    requireText(topicId, "topic id");
+    return this.repository.readTopicBookmark(userId, topicId);
+  }
+
+  readTopicBookmarks(userId: string, before?: import("./forum-repository").ForumTopicBookmarkCursor) {
+    requireText(userId, "user id");
+    if (before && (!(before.savedAt instanceof Date) || !Number.isFinite(before.savedAt.getTime())
+      || !before.topicId?.trim())) throw new InvalidForumContentError("invalid bookmark cursor");
+    return this.repository.readTopicBookmarks(userId, before);
+  }
+
+  readTopicWatch(userId: string, topicId: string) {
+    requireText(userId, "user id");
+    requireText(topicId, "topic id");
+    return this.repository.readTopicWatch(userId, topicId);
   }
 
   readTopicReadState(userId: string, topicId: string) {

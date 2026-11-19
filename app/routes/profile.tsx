@@ -3,7 +3,8 @@ import { useEffect, useRef } from "react";
 import { authSessionForRequest } from "../auth/request-context";
 import { measureRestrictionsForPresentation } from "../measures/presentation.server";
 import { forumReaderForRequest, forumWriterForRequest } from "../forum/request-context";
-import { requireSameOrigin } from "../forum/mutations.server";
+import { requireSameOrigin, type ForumMutationError, type UserBlockActionResult } from "../forum/mutations.server";
+import { InvalidForumContentError } from "../../db/forum-service";
 import { forumProfilePath } from "../forum/paths";
 import { InvalidProfileError, validateProfileFields } from "../forum/profile";
 import { ProfileView } from "../forum/profile-view";
@@ -27,7 +28,17 @@ export async function loader({ request, params, context }: ProfileArgs) {
   try {
     const profile = await forumReaderForRequest(context).readProfile(params.userId);
     if (!profile) throw new Response("Not Found", { status: 404, headers: { "Cache-Control": "private, no-store" } });
-    const isSelf = authSessionForRequest(context)?.user.id === profile.id;
+    const session = authSessionForRequest(context);
+    const isSelf = session?.user.id === profile.id;
+    let blockState: "on" | "off" | "unavailable" | null = null;
+    if (session && !isSelf) {
+      try {
+        blockState = await forumReaderForRequest(context).readUserBlock(session.user.id, profile.id) ? "on" : "off";
+      } catch (error) {
+        if (!(error instanceof ForumStorageUnavailableError)) throw error;
+        blockState = "unavailable";
+      }
+    }
     const canEditProfile = isSelf && profile.identityKind !== "deleted" &&
       !(await measureRestrictionsForPresentation(context,profile.id)).has("profile.edit");
     const query = new URL(request.url).searchParams;
@@ -42,6 +53,7 @@ export async function loader({ request, params, context }: ProfileArgs) {
         ...(profile.identityKind === "deleted" ? { identityKind: "deleted" as const } : {}),
       },
       isSelf, canEditProfile, privileged,
+      blockActorId: session?.user.id ?? null, blockState,
       editing: canEditProfile && query.get("edit") === "1", saved: isSelf && query.get("saved") === "1",
     }, { headers: { "Cache-Control": "private, no-store" } });
   } catch (error) {
@@ -56,10 +68,43 @@ export async function action({ request, params, context }: ProfileArgs) {
   const session = authSessionForRequest(context);
   if (!session) return failure("unauthenticated", 401);
   if (!requireSameOrigin(request)) return failure("origin", 403);
-  if (session.user.id !== params.userId) return failure("forbidden", 403);
   if (!params.locale) return failure("invalid", 400);
   let form: FormData;
   try { form = await request.formData(); } catch { return failure("invalid", 400); }
+  // Personal Block targets the public profile route and must precede the own-profile save guard.
+  const blockIntent = form.getAll("intent").includes("setUserBlock") || form.has("blocked");
+  if (blockIntent) {
+    const deny = (error: ForumMutationError["error"], status: number) => data<UserBlockActionResult>(
+      { operation: "userBlock", error }, { status, headers: { "Cache-Control": "private, no-store" } });
+    const fields = ["intent", "editorActorId", "blocked"];
+    if (form.get("intent") !== "setUserBlock" ||
+      fields.some(field => form.getAll(field).length !== 1) ||
+      [...form.keys()].some(key => !fields.includes(key))) return deny("invalid", 400);
+    const expectedActor = form.get("editorActorId");
+    const desired = form.get("blocked");
+    if (typeof expectedActor !== "string" || !expectedActor.trim()
+      || (desired !== "true" && desired !== "false")) return deny("invalid", 400);
+    if (expectedActor !== session.user.id) return deny("conflict", 409);
+    if (!params.userId) return deny("notFound", 404);
+    if (params.userId === session.user.id) return deny("invalid", 400);
+    try {
+      const blocked = await forumWriterForRequest(context).setUserBlock({
+        actorId: session.user.id, blockedUserId: params.userId, blocked: desired === "true",
+      });
+      return data<UserBlockActionResult>({
+        operation: "userBlock", ok: true, actorId: session.user.id,
+        targetId: params.userId, blocked,
+      }, { headers: { "Cache-Control": "private, no-store" } });
+    } catch (error) {
+      if (error instanceof AccountInactiveError || error instanceof AccountMissingError)
+        return deny("unauthenticated", 401);
+      if (error instanceof InvalidForumContentError) return deny("invalid", 400);
+      if (error instanceof ForumEntityNotFoundError) return deny("notFound", 404);
+      if (error instanceof ForumStorageUnavailableError) return deny("unavailable", 503);
+      throw error;
+    }
+  }
+  if (session.user.id !== params.userId) return failure("forbidden", 403);
   const values = [form.get("bio"), form.get("githubUrl"), form.get("websiteUrl")];
   if (values.some((value) => typeof value !== "string") || form.get("intent") !== "save-profile") return failure("invalid", 400);
   const [bio, githubUrl, websiteUrl] = values as string[];
@@ -85,7 +130,7 @@ export async function action({ request, params, context }: ProfileArgs) {
 }
 
 export default function ProfileRoute() {
-  return <ProfileView {...useLoaderData<typeof loader>()} feedback={useActionData<typeof action>()} />;
+  return <ProfileView {...useLoaderData<typeof loader>()} feedback={useActionData<ProfileActionData>()} />;
 }
 export function ErrorBoundary() {
   const error = useRouteError();

@@ -14,6 +14,10 @@ import {
   type HelpQuestionDraft,
   type PostEditConflictData,
   type HelpSimilarQuestionsActionData,
+  type TopicWatchActionResult,
+  type TopicBookmarkActionResult,
+  type TopicMuteActionResult,
+  type ForumMutationError,
 } from "./mutations.server";
 import { forumTopicPath } from "./paths";
 import { isForumAttachmentUuid } from "../../db/forum-attachments";
@@ -198,6 +202,90 @@ export async function topicAction({ request, params, context }: {
   let formData: FormData;
   try { formData = await request.formData(); } catch { return mutationFailure("invalid", 400); }
   const intent = requiredFormText(formData, "intent") ?? "reply";
+  const muteIntent = formData.getAll("intent").includes("setTopicMute") || formData.has("muted");
+  if (muteIntent) {
+    const fields = ["intent", "editorActorId", "muted"];
+    const failure = (error: ForumMutationError["error"], status: number) =>
+      data<TopicMuteActionResult>({ operation: "topicMute", error },
+        { status, headers: { "Cache-Control": "private, no-store" } });
+    if (request.method !== "POST" || intent !== "setTopicMute"
+      || fields.some(field => formData.getAll(field).length !== 1)
+      || [...formData.keys()].some(key => !fields.includes(key)))
+      return failure("invalid", 400);
+    const expectedActor = formData.get("editorActorId");
+    const requested = formData.get("muted");
+    if (typeof expectedActor !== "string" || !expectedActor.trim()
+      || (requested !== "true" && requested !== "false")) return failure("invalid", 400);
+    const changedIdentity = editorIdentityGuard(formData, context);
+    if (changedIdentity) return failure("conflict", 409);
+    const result = await runForumMutation(request, context, async (writer, actorId) => {
+      const muted = await writer.setTopicMute({ topicId, actorId, muted: requested === "true" });
+      return data<TopicMuteActionResult>({ operation: "topicMute", ok: true, topicId, actorId, muted },
+        { headers: { "Cache-Control": "private, no-store" } });
+    });
+    if ("error" in result.data) return data<TopicMuteActionResult>(
+      { operation: "topicMute", error: result.data.error }, result.init ?? undefined);
+    return result;
+  }
+  // Recognize a Bookmark intent anywhere in FormData; an earlier unrelated intent
+  // must never turn a mixed payload into another valid domain write.
+  const bookmarkIntent = formData.getAll("intent").includes("setTopicBookmark") || formData.has("bookmarked");
+  if (bookmarkIntent) {
+    const fields = ["intent", "editorActorId", "bookmarked"];
+    const invalid = () => data<TopicBookmarkActionResult>({ operation: "topicBookmark", error: "invalid" },
+      { status: 400, headers: { "Cache-Control": "private, no-store" } });
+    if (request.method !== "POST" || intent !== "setTopicBookmark"
+      || fields.some(field => formData.getAll(field).length !== 1)
+      || [...formData.keys()].some(key => !fields.includes(key))) return invalid();
+    const expectedActor = formData.get("editorActorId");
+    const desired = formData.get("bookmarked");
+    if (typeof expectedActor !== "string" || !expectedActor.trim()
+      || (desired !== "true" && desired !== "false")) return invalid();
+    const changedIdentity = editorIdentityGuard(formData, context);
+    if (changedIdentity)
+      return data<TopicBookmarkActionResult>({ operation: "topicBookmark", error: "conflict" },
+        changedIdentity.init ?? undefined);
+    const result = await runForumMutation(request, context, async (writer, actorId) => {
+      const confirmed = await writer.setTopicBookmark({
+        topicId, actorId, bookmarked: desired === "true",
+      });
+      return data<TopicBookmarkActionResult>({
+        operation: "topicBookmark", ok: true, topicId, actorId, bookmarked: confirmed,
+      }, { headers: { "Cache-Control": "private, no-store" } });
+    });
+    if ("error" in result.data)
+      return data<TopicBookmarkActionResult>({ operation: "topicBookmark", error: result.data.error },
+        result.init ?? undefined);
+    return result;
+  }
+  const watchIntent = formData.getAll("intent").includes("setTopicWatch") || formData.has("watching");
+  if (watchIntent) {
+    const fields = ["intent", "editorActorId", "watching"];
+    if (intent !== "setTopicWatch" || fields.some(field => formData.getAll(field).length !== 1)
+      || [...formData.keys()].some(key => !fields.includes(key)))
+      return data<TopicWatchActionResult>({ operation: "topicWatch", error: "invalid" },
+        { status: 400, headers: { "Cache-Control": "private, no-store" } });
+    const actorExpectation = formData.get("editorActorId");
+    const requested = formData.get("watching");
+    if (typeof actorExpectation !== "string" || !actorExpectation.trim()
+      || (requested !== "true" && requested !== "false"))
+      return data<TopicWatchActionResult>({ operation: "topicWatch", error: "invalid" },
+        { status: 400, headers: { "Cache-Control": "private, no-store" } });
+    const changedIdentity = editorIdentityGuard(formData, context);
+    if (changedIdentity)
+      return data<TopicWatchActionResult>({ operation: "topicWatch", error: "conflict" }, changedIdentity.init ?? undefined);
+    const watching = requested === "true";
+    const result = await runForumMutation(request, context, async (writer, actorId) => {
+      const confirmed = await writer.setTopicWatch({ topicId, actorId, watching });
+      return data<TopicWatchActionResult>(
+        { operation: "topicWatch", ok: true, topicId, actorId, watching: confirmed },
+        { headers: { "Cache-Control": "private, no-store" } },
+      );
+    });
+    if ("error" in result.data)
+      return data<TopicWatchActionResult>({ operation: "topicWatch", error: result.data.error }, result.init ?? undefined);
+    return result;
+  }
   if (formData.getAll("intent").includes("editTopicTitle")) {
     if (["intent", "title", "expectedRevisionId", "editorActorId"].some(
       (field) => formData.getAll(field).length !== 1,

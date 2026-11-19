@@ -63,6 +63,10 @@ const migrations = [
   "0055_complaint_appeal_notifications",
   "0056_topic_closure",
   "0065_sa04_account_state_foundation",
+  "0068_topic_watch",
+  // This legacy fixture invokes the current publication writer, whose personal
+  // suppression policy requires the three 0070 tables.
+  "0070_personal_filters",
 ];
 
 const ownerId = "attachment-owner";

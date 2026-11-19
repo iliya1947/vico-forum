@@ -1,5 +1,5 @@
 import { forumReadLoader } from "../forum/read-availability.server";
-import { useActionData, useLoaderData, type RouterContextProvider, type HeadersArgs } from "react-router";
+import { data, useActionData, useLoaderData, type RouterContextProvider, type HeadersArgs } from "react-router";
 import { authSessionForRequest } from "../auth/request-context";
 import { measureRestrictionsForPresentation } from "../measures/presentation.server";
 import { authorizationForRequest } from "../authorization/request-context";
@@ -28,6 +28,8 @@ import { ForumRouteError } from "../forum/ui";
 import { TopicView } from "../forum/views";
 import { ForumStorageUnavailableError } from "../../db/hyperdrive-forum";
 import type { ForumTopicReadState } from "../../db/forum-repository";
+import type { TopicWatchState } from "../forum/topic-watch-control";
+import type { PersonalFilterState } from "../forum/personal-filter-control";
 import { HELP_SOLUTIONS_SERVICE_SECTION_ID } from "../../db/forum-identifiers";
 import { DELETED_USER_NAME } from "../../db/public-identity";
 
@@ -118,7 +120,38 @@ export const loader = forumReadLoader(async function loader({ params, context }:
   let canSubmitComplaint = false;
   let canUploadAttachments = false;
   let topicReadState: ForumTopicReadState | null = null;
+  let topicWatchState: TopicWatchState | null = null;
+  let topicBookmarkState: TopicWatchState | null = null;
+  let topicMuteState: PersonalFilterState | null = null;
+  let blockedAuthorIds: string[] = [];
   if (session) {
+    // Block matches are mandatory private presentation state, not an optional control.
+    try {
+      blockedAuthorIds = await forumReaderForRequest(context).readTopicBlockedAuthors(session.user.id, topic.id);
+    } catch (error) {
+      if (!(error instanceof ForumStorageUnavailableError)) throw error;
+      throw new Response("Personal filters unavailable", { status: 503,
+        headers: { "Cache-Control": "private, no-store", "Retry-After": "60" } });
+    }
+    try {
+      topicMuteState = await forumReaderForRequest(context).readTopicMute(session.user.id, topic.id) ? "on" : "off";
+    } catch (error) {
+      if (!(error instanceof ForumStorageUnavailableError)) throw error;
+      topicMuteState = "unavailable";
+    }
+    try {
+      topicBookmarkState = await forumReaderForRequest(context).readTopicBookmark(session.user.id, topic.id) ? "on" : "off";
+    } catch (error) {
+      if (!(error instanceof ForumStorageUnavailableError)) throw error;
+      topicBookmarkState = "unavailable";
+    }
+    try {
+      topicWatchState = await forumReaderForRequest(context).readTopicWatch(session.user.id, topic.id) ? "on" : "off";
+    } catch (error) {
+      if (!(error instanceof ForumStorageUnavailableError)) throw error;
+      topicWatchState = "unavailable";
+    }
+
     try {
       topicReadState = await forumReaderForRequest(context).readTopicReadState(session.user.id, topic.id) ?? null;
     } catch (error) {
@@ -223,8 +256,16 @@ export const loader = forumReadLoader(async function loader({ params, context }:
     }
   }
 
-  return {
+  const page = {
     locale: resolvedLocale.translationLocale,
+    watchActorId: session?.user.id ?? null,
+    topicWatchState,
+    bookmarkActorId: session?.user.id ?? null,
+    topicBookmarkState,
+    muteActorId: session?.user.id ?? null,
+    topicMuteState,
+    blockedActorId: session?.user.id ?? null,
+    blockedAuthorIds,
     topic: !canManageHelpDuplicate && topic.duplicateRelationshipId
       ? { ...topic, duplicateRelationshipId: null }
       : topic,
@@ -254,6 +295,7 @@ export const loader = forumReadLoader(async function loader({ params, context }:
     canSubmitComplaint,
     topicReadState,
   };
+  return session ? data(page, { headers: { "Cache-Control": "private, no-store" } }) : page;
 });
 
 export default function TopicRoute() {

@@ -41,6 +41,9 @@ Git history и PR остаются первичными историческим
 27. [`PROJECT_HISTORY_27.md`](./PROJECT_HISTORY_27.md) — 2026-11-11 — 2026-11-16: Super-admin SA-04 A–S, AccountState migration 0065, neutral public identity и lifecycle enforcement, corrections/review, final connected acceptance и merge #327–#335 (с пропуском #331 — служебный PR).
 28. [`PROJECT_HISTORY_28.md`](./PROJECT_HISTORY_28.md) — 2026-11-16 — 2026-11-17: Super-admin SA-05–SA-08, canonical Owner деактивация, девять дополнительных native/operational Monitoring областей, final 13-area Overview/History, corrections, whole-SA08 reviews, exact-head CI и merge #337–#340.
 29. [`PROJECT_HISTORY_29.md`](./PROJECT_HISTORY_29.md) — 2026-11-18: редактирование заголовка своей темы, permission `forum.topic.title.editOwn`, AP-10 `posts.edit`, immutable title revision/CAS, независимые PASS и merge #343.
+30. [`PROJECT_HISTORY_30.md`](./PROJECT_HISTORY_30.md) — 2026-11-18: Watch/Unwatch тем, migration `0068`, set-based reply inbox fanout и ordered concurrency, coordinator/technical PASS, CI/connected Chromium и merge #345.
+31. [`PROJECT_HISTORY_31.md`](./PROJECT_HISTORY_31.md) — 2026-11-18: личные Bookmarks тем, migration `0069`, приватный keyset-список, real-PG B6 и account-switch B5-R1 corrections, финальные review/CI/Chromium и merge #346.
+32. [`PROJECT_HISTORY_32.md`](./PROJECT_HISTORY_32.md) — 2026-11-19: личные Topic Mute и направленный User Block, migration `0070`, suppression receipts, PF-REVIEW-1/2/3, whole-PR PASS Миры/Лёвы, exact-head CI/Chromium, necessity audit и merge #351.
 
 ## Архивные снимки
 

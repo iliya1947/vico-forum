@@ -57,7 +57,8 @@ function env(actorId: string | null, permissions: string[] = [], ownerId = "exac
   const readUserManagementState = vi.fn(async ()=>management);
   context.set(authorizationContext, {forUser:()=>({has}),readUserManagementState} as never);
   const readProfile = vi.fn(async()=>publicProfile);
-  context.set(forumReaderContext,{readProfile} as never);
+  const readUserBlock = vi.fn(async () => false);
+  context.set(forumReaderContext,{readProfile,readUserBlock} as never);
   const adminTarget = vi.fn(async()=>({id:targetId,name:"Public user",measures}));
   const ownList = vi.fn(async()=>measures);
   context.set(userMeasureContext,{activeRestrictions:async()=>[],adminTarget,ownList} as never);

@@ -1,6 +1,6 @@
 # PROJECT_STATE.md
 
-Последнее обновление: 2026-11-18
+Последнее обновление: 2026-11-19
 
 ## Назначение
 
@@ -45,7 +45,7 @@ Vico Forum находится в pre-release разработке.
 - PostgreSQL 17 + Drizzle ORM `0.45.2`;
 - Better Auth `1.7.7` + PostgreSQL Drizzle adapter;
 - generic `/:locale/*`, runtime `LocaleRegistry`, BCP-47, LTR/RTL и request-scoped i18next;
-- repository migration history: `0000`–`0067`;
+- repository migration history: `0000`–`0070` (Watch `0068_topic_watch`; Bookmarks `0069_topic_bookmarks`; personal Mute/Block `0070_personal_filters`);
 - externally accepted migration evidence: `0000`–`0020`.
 
 ## Реализованный продукт
@@ -63,6 +63,9 @@ Vico Forum находится в pre-release разработке.
 - solved topics и best answer;
 - immutable topic-title/post-body revisions с независимым source locale;
 - редактирование заголовка своей темы через отдельный `forum.topic.title.editOwn`: authoritative ownership/AccountState, immutable revision + current-revision CAS, `sourceLocale: "und"` для изменённого текста, revision-bound translations и AP-10 restriction `posts.edit`;
+- личное Watch/Unwatch темы для авторизованного активного пользователя, с сохранением own-подписки между сессиями и получением уведомлений о будущих ответах в существующем inbox; без auto-watch, отдельного inbox, изменения read-state или нового RBAC permission;
+- личные Bookmarks существующих тем: явные Add/Remove для активного пользователя, сохраняемый между сессиями приватный список `/:locale/bookmarks` с постраничным просмотром, актуальными заголовками и переходом к теме; независимы от Watch, уведомлений и read-state, без нового RBAC permission;
+- личные Topic Mute и направленный User Block для авторизованного активного пользователя: подавление будущих обычных уведомлений, свёрнутые сообщения заблокированного автора с явным Reveal, приватные списки `/:locale/filters` и учёт подавленных пар получатель–сообщение без backfill; независимо от Watch/Bookmarks/read-state и без нового RBAC permission;
 - dynamic PostgreSQL-backed roles, permissions и per-user overrides;
 - единый server-side `PermissionResolver`, snapshot-consistent authorization reads, fresh protected-request checks и serialized authorization mutations;
 - public discovery и participation surfaces, включая Popular, Unanswered, Tags, Search, permanent message links и Reply/Quote;

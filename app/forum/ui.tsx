@@ -1,7 +1,7 @@
 import type { ReactNode } from "react";
 import { Link, isRouteErrorResponse, useLocation, useNavigate, useParams, useRouteError } from "react-router";
 import { useTranslation } from "react-i18next";
-import { forumAttentionPath, forumIndexPath, forumNotificationsPath, forumPopularPath, forumSearchPath, forumTagsPath, forumUnansweredPath, forumUnreadPath, underDevelopmentPath } from "./paths";
+import { forumAttentionPath, forumBookmarksPath, forumFiltersPath, forumIndexPath, forumNotificationsPath, forumPopularPath, forumSearchPath, forumTagsPath, forumUnansweredPath, forumUnreadPath, underDevelopmentPath } from "./paths";
 import { AuthControls, useHeaderAuthUser } from "../auth/auth-controls";
 import { useAdministratorPreferences, selectAttentionEntry } from "../settings/administrator-preferences";
 import { useThemePreference } from "../theme-preference";
@@ -105,7 +105,7 @@ function BellIcon() {
 }
 
 function DiscoveryIcon({ kind }: {
-  kind: "unanswered" | "tags" | "popular" | "unread";
+  kind: "unanswered" | "tags" | "popular" | "unread" | "bookmarks";
 }) {
   if (kind === "unanswered") {
     return (
@@ -135,6 +135,12 @@ function DiscoveryIcon({ kind }: {
     );
   }
 
+  if (kind === "bookmarks") return (
+    <svg className="discovery-icon" aria-hidden="true" viewBox="0 0 24 24">
+      <path d="M6 4.5h12v15l-6-4-6 4z" />
+    </svg>
+  );
+
   return (
     <svg className="discovery-icon" aria-hidden="true" viewBox="0 0 24 24">
       <rect x="3.5" y="5.5" width="17" height="13" rx="1.5" />
@@ -150,7 +156,7 @@ export function ForumShell({
 }: {
   locale: string;
   children: ReactNode;
-  variant?: "attention" | "home" | "search" | "popular" | "unanswered" | "unread" | "notifications" | "tags" | "category" | "section" | "topic" | "admin" | "profile" | "system";
+  variant?: "attention" | "home" | "search" | "popular" | "unanswered" | "unread" | "bookmarks" | "notifications" | "tags" | "category" | "section" | "topic" | "admin" | "profile" | "system";
 }) {
   const { t } = useTranslation("common");
   const authUser = useHeaderAuthUser();
@@ -160,6 +166,7 @@ export function ForumShell({
     || variant === "popular"
     || variant === "unanswered"
     || variant === "unread"
+    || variant === "bookmarks"
     || variant === "attention"
     || variant === "notifications"
     || variant === "tags"
@@ -184,6 +191,8 @@ export function ForumShell({
             ? "forum-shell home-shell unanswered-shell"
             : variant === "unread"
               ? "forum-shell home-shell unread-shell"
+              : variant === "bookmarks"
+                ? "forum-shell home-shell bookmarks-shell"
               : variant === "notifications"
                 ? "forum-shell home-shell notifications-shell"
             : variant === "tags"
@@ -277,6 +286,20 @@ export function ForumShell({
                   >
                     <DiscoveryIcon kind="unread" />
                     <span>{t("unreadNav")}</span>
+                  </Link>
+                ) : null}
+                {authUser ? (
+                  <Link className="home-discovery-link" to={forumFiltersPath(locale)}
+                    aria-label={t("personalFiltersNav")} title={t("personalFiltersNav")}>
+                    <span aria-hidden="true">◉</span>
+                    <span>{t("personalFiltersNav")}</span>
+                  </Link>
+                ) : null}
+                {authUser ? (
+                  <Link className="home-discovery-link" to={forumBookmarksPath(locale)}
+                    aria-label={t("bookmarksNav")} title={t("bookmarksNav")}>
+                    <DiscoveryIcon kind="bookmarks" />
+                    <span>{t("bookmarksNav")}</span>
                   </Link>
                 ) : null}
               </>
