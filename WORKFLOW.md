@@ -2,24 +2,36 @@
 
 ## Активный этап
 
-Consolidated corrective implementation PR #354 — **Мира coordinator PASS + Лёва independent whole-PR PASS** на одном stable exact head `b67e14d81cd20f2e42264e3d25d336ee19db626b`.
+Moderation visibility — **scope/fit gate** перед implementation.
 
-## Текущее состояние
+## Завершённый corrective gate
 
-- Draft #354 открыт, не merged. Base `a645fbe21110e77429025c428e498194b9a92ca2`.
-- Current GitHub main `bb3d44f940f44a4f08c4a501d9d0b3deaa50eb02`; main drift от base только service-regulation docs, продуктовый код не менялся.
-- Scope ровно 9 файлов; implementation в review не менялся.
-- WATCH-AUDIT-1, BOOKMARKS-AUDIT-1/2, TITLE-AUDIT-1 и TITLE-AUDIT-1-R1 **CLOSED**.
-- 7/7 exact-head workflows и 8/8 jobs SUCCESS; unit 2752/2752, PG17 1476/1476; connected Watch11/11, Bookmarks11/11, Title9/9.
-- Независимо локально: component25/25, actual-PG/Router8/8 и Chromium focus5/5 PASS.
-- **Whole-PR result: PASS. Confirmed current-scope defects = 0.** Детали — `stages/corrections/REVIEW.md`.
+- #354 merged в main без изменения reviewed implementation head.
+- Reviewed head: `b67e14d81cd20f2e42264e3d25d336ee19db626b`.
+- Merge commit/current main: `6fa2a43b02c55515bbd46a0d74fe6cc0d4424caf`.
+- Mira whole-PR PASS + Leva independent PASS относились к одному exact head; confirmed current-scope defects = 0.
+- Corrections закрыты; к #354 не возвращаться без нового факта.
 
-## Назначение и следующий шаг
+## Moderation visibility scope/fit
 
-**Владелец — перевести #354 из Draft в Ready и merge при неизменном head.** Агенты merge не выполняли. Лира и Лёва STOP.
+План V1–V9 сверён с current main, PROJECT/PROJECT_STATE, authorization catalog, AP-10 restriction families, topic/post schema, closure writer и Admin History.
 
-Изменение implementation head отменяет final gate: новый coordinator cycle Миры, затем independent review нового exact head.
+### Technical fit — PASS
 
-## После #354
+- **V-T1**: proposed schema/catalog/History shape совместим с текущими seams. Нужна обычная forward migration после текущего ceiling 0070; новый code-backed permission, initial moderator/admin grants, включение в AP-10 `admin.forum`, visibility fields/CAS и typed Admin History events/reason. Existing Owner projection автоматически получает новый catalog permission.
+- **V-T2**: отдельный глобальный lock не требуется. Existing row-lock convention подходит: topic mutation locks topic; post mutation следует существующему stable order topic → post; History append last in same transaction. Public filtering должно происходить в SQL до rank/count/LIMIT. Architecture rewrite не требуется.
+- При реализации новые History actions также должны быть добавлены в schema constraint, labels и Owner/Super-admin monitoring classification; это integration requirement, не отдельный product fork.
 
-После owner merge #354: moderation visibility → forum structure/topic move → затем #320. Текущий шаг future implementation не активирует. #300/Stage6/general UI/UX не активированы; #342 никогда не merge.
+### Product forks — owner decision required
+
+Явного старого принятия в #342/новом workspace не найдено.
+
+1. **V-P1 — public model. Recommendation:** hidden topic = neutral public 404 без metadata/source; hidden post in visible topic = stable tombstone retaining id/number/relations, но без body/original/translation/revision/attachments.
+2. **V-P2 — authority/reason. Recommendation:** dedicated `forum.content.visibility.manage`; initial moderator+admin; AP-10 `admin.forum` suppresses it; nonblank reason required for each real Hide **and Restore** transition; no-op/stale/denied produce no History.
+3. **V-P3 — retained state. Recommendation:** Hide/Restore меняет только visibility. Preserve solution/duplicate/read/notifications/Watch/Bookmarks/Mute/Block and retained translation/attachment/revision data; no auto-unsolve/unpin/reopen/backfill. While hidden, public/current projections become unavailable-safe; protected Complaints/Admin evidence remains under its existing private authority.
+
+Implementation PR не открывать до owner решения V-P1–V-P3. После принятия Leva сверяет/финализирует full technical plan against current main, затем Lira начинает bounded implementation.
+
+## Дальше
+
+После moderation visibility: forum structure/topic move → затем #320. #300/Stage6/general UI/UX не активированы.
