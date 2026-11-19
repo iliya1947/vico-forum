@@ -241,7 +241,7 @@
             "action",
             "reason"
           ],
-          "definitionSha256": "PENDING"
+          "definitionSha256": "1872062326764a0b5e008a2e592bb5037c0a57223f4e8a05209844d94ed148a1"
         }
       ],
       "indexes": [
@@ -5041,7 +5041,7 @@
         },
         {
           "name": "visibility_changed_at",
-          "type": "timestamp with time zone",
+          "type": "timestamp(3) with time zone",
           "nullable": true,
           "defaultSha256": null
         }
@@ -5165,7 +5165,7 @@
             "visibility_changed_at",
             "visibility_version"
           ],
-          "definitionSha256": "PENDING"
+          "definitionSha256": "743c6a65a61ea53591da758a56b0755e5e087f0d4581c33dab903eb825b5adf2"
         }
       ],
       "indexes": [
@@ -5197,7 +5197,7 @@
               "nulls": "last"
             }
           ],
-          "predicateSha256": "PENDING"
+          "predicateSha256": "3a06896ddaeafab3373d658090efdf65fb8d2e5cab8defd973a71da12a24b8c6"
         },
         {
           "name": "forum_posts_parent_post_id_idx",
@@ -6792,7 +6792,7 @@
         },
         {
           "name": "visibility_changed_at",
-          "type": "timestamp with time zone",
+          "type": "timestamp(3) with time zone",
           "nullable": true,
           "defaultSha256": null
         }
@@ -6883,7 +6883,7 @@
             "visibility_changed_at",
             "visibility_version"
           ],
-          "definitionSha256": "PENDING"
+          "definitionSha256": "743c6a65a61ea53591da758a56b0755e5e087f0d4581c33dab903eb825b5adf2"
         }
       ],
       "indexes": [
@@ -6915,7 +6915,7 @@
               "nulls": "last"
             }
           ],
-          "predicateSha256": "PENDING"
+          "predicateSha256": "3a06896ddaeafab3373d658090efdf65fb8d2e5cab8defd973a71da12a24b8c6"
         },
         {
           "name": "forum_topics_section_id_idx",

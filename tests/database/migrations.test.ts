@@ -155,7 +155,7 @@ describe("PostgreSQL 17 locale migrations", () => {
       ["forum_topics_hidden_queue_idx", "forum_posts_hidden_queue_idx"],
     ]);
     const expected = Object.fromEntries([
-      ...["forum_topics","forum_posts","admin_history"].map((table, i) => [
+      ...["forum_topics","forum_posts","admin_history"].map(table => [
         "check:" + table + "." +
           (table==="admin_history" ? "admin_history_visibility_reason_check" : table+"_visibility_state_check"),
         source.tables[table].checks.find(c => c.name ===

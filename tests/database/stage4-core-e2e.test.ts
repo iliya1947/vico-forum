@@ -370,13 +370,15 @@ describe("Stage 4 connected forum authorization flow", () => {
       await authorization.replaceRoleGrants(
         "e2e-manager",
         "builtin-moderator",
-        INITIAL_ROLE_GRANTS.moderator.filter((permission) => permission !== "forum.solution.manageAny"),
+        INITIAL_ROLE_GRANTS.moderator.filter((permission) =>
+          permission !== "forum.solution.manageAny" && permission !== "forum.content.visibility.manage"),
       );
       const removedGrantTopic = await createTopic("e2e-author", "Author", "Grant removed");
       expect(responseStatus(await markSolved("e2e-replier", "Replier", removedGrantTopic))).toBe(403);
       expect((await forum.readTopicPage(removedGrantTopic))?.isSolved).toBe(false);
 
-      await authorization.replaceRoleGrants("e2e-manager", "builtin-moderator", [...INITIAL_ROLE_GRANTS.moderator]);
+      await authorization.replaceRoleGrants("e2e-manager", "builtin-moderator",
+          INITIAL_ROLE_GRANTS.moderator.filter(permission => permission !== "forum.content.visibility.manage"));
       expect(responseStatus(await markSolved("e2e-replier", "Replier", removedGrantTopic))).toBe(302);
 
       const deniedTopic = await createTopic("e2e-author", "Author", "Override denied");
