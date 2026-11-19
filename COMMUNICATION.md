@@ -24,7 +24,7 @@ Owner решил закрыть **все четыре** в одном #354 и т
 
 Watch correction уже прошла промежуточную проверку Миры на head `afe23e08...`, но после расширения PR эта проверка не является final gate.
 
-Текущий #354 head `79066ada...` уже содержит Bookmark-control correction вместе с Watch correction. Финальный self-check/CI и corrections list/title ещё не завершены.
+Текущий Draft #354 exact head `01cecb91090a2f29f90b7c6ae4a83db77a0f4910` содержит **все четыре** bounded corrections с компонентными регрессиями и отдельным реальным Title Chromium focus test. Exact-head CI `44614815069`: checks 2751/2751, PG17 1476/1476, семь workflow SUCCESS; dedicated Title run `44614815034` 9/9 markers. TITLE-AUDIT-1 исправлен без изменения title data/CAS semantics. Финальная авторская self-check всего PR и новый целостный coordinator review Миры ещё не выполнены; промежуточный Mira Watch-only PASS не является итоговым.
 
 ## Ограничения correction
 
