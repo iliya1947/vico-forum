@@ -15,6 +15,7 @@ import type { OwnerUserProfileSnapshot } from "../../db/owner-user-profile";
 import type { OwnerHistoryEntry, OwnerHistoryOptions } from "../../db/owner-sa02-history";
 import type { ComplaintPriority, ComplaintQueueCase, ComplaintQueuePage } from "../complaints/queue-contract";
 import type { ReviewCase } from "../complaints/review-contract";
+import type { AppealReviewPage, PendingAppealsPage } from "../../db/complaint-appeal-read";
 import { CredentialView } from "../auth/credential-view";
 import { credentialReturnPath } from "../auth/credential-path";
 import type { EmailAuthActions, AuthClientActions } from "../auth/auth-client";
@@ -27,6 +28,7 @@ import { AdminShell } from "../admin/shell";
 import { HistoryEvents } from "../admin/history";
 import { ComplaintReviewView } from "../complaints/review-view";
 import { ComplaintTriageView } from "../complaints/queue-view";
+import { ComplaintAppealReviewView } from "../complaints/appeal-review-view";
 import { SuperAdminOverview } from "../super-admin/overview";
 import { SuperAdminSa02Current } from "../super-admin/current-route";
 import { SuperAdminBackground } from "../super-admin/task-current";
@@ -373,6 +375,7 @@ type PreviewInteractionState = {
   complaintDecision: ReviewCase["decision"];
   complaintPriorityOverride: ComplaintPriority | null;
   complaintVersion: number;
+  complaintAppealResolution: { outcome: "upheld" | "overturned"; reasoning: string } | null;
   preferredLocale: PreviewLocale | null;
   localeSaved: boolean;
   showOnline: boolean;
@@ -434,6 +437,7 @@ function createPreviewInteractionState(): PreviewInteractionState {
     complaintDecision: null,
     complaintPriorityOverride: null,
     complaintVersion: 1,
+    complaintAppealResolution: null,
     preferredLocale: null,
     localeSaved: false,
     showOnline: true,
@@ -1412,6 +1416,7 @@ export function EmbeddedPreview({ scenarioId, identity }: { scenarioId: string; 
           && form.classList.contains("attention-case-actions"))
         || ((intent === "note" || intent === "decision")
           && Boolean(form.closest(".complaint-review")))
+        || (intent === "resolve" && Boolean(form.closest(".complaint-review")))
         || ((intent === "create" || intent === "change" || intent === "lift" || intent === "review")
           && form.classList.contains("profile-form")
           && Boolean(form.closest(".admin-forum")))
@@ -2519,6 +2524,20 @@ function previewRouter(
       },
       action: ({ request, params }) =>
         previewComplaintTriageAction(scenario, interactions, request, params.caseId),
+      ErrorBoundary: ForumRouteError,
+    },
+    {
+      path: "/:locale/attention/complaints/:caseId/appeals/:appealId",
+      element: <PreviewComplaintAppealReviewRoute />,
+      loader: ({ params }) => {
+        previewAttentionAccessData(scenario);
+        if (params.caseId !== PREVIEW_COMPLAINT_APPEAL_CASE_ID || params.appealId !== PREVIEW_COMPLAINT_APPEAL_ID) {
+          throw new Response("Not Found", { status: 404 });
+        }
+        return { locale: scenario.locale, result: previewComplaintAppealReview(interactions) };
+      },
+      action: ({ request, params }) =>
+        previewComplaintAppealAction(scenario, interactions, request, params.caseId, params.appealId),
       ErrorBoundary: ForumRouteError,
     },
     {
@@ -3889,6 +3908,8 @@ function previewAttentionAccessData(scenario: Scenario) {
 }
 
 const PREVIEW_COMPLAINT_CASE_ID = "22222222-2222-4222-8222-222222222222";
+const PREVIEW_COMPLAINT_APPEAL_CASE_ID = "33333333-3333-4333-8333-333333333333";
+const PREVIEW_COMPLAINT_APPEAL_ID = "44444444-4444-4444-8444-444444444444";
 
 function previewComplaintQueue(interactions: PreviewInteractionState): ComplaintQueuePage {
   if (interactions.complaintDecision) return { cases: [], total: 0, page: 0, hasMore: false };
@@ -4041,6 +4062,93 @@ function PreviewComplaintTriageRoute() {
   return <ComplaintTriageView locale={locale} item={item} />;
 }
 
+function previewComplaintAppeals(interactions: PreviewInteractionState): PendingAppealsPage {
+  if (interactions.complaintAppealResolution) return { appeals: [], total: 0, page: 0, hasMore: false };
+  return {
+    appeals: [{
+      id: PREVIEW_COMPLAINT_APPEAL_ID,
+      caseId: PREVIEW_COMPLAINT_APPEAL_CASE_ID,
+      ordinal: 1,
+      createdAt: new Date("2026-11-18T21:00:00.000Z"),
+      kind: "post",
+      excerpt: "Use a typed boundary at the HTTP edge, then keep domain code independent.",
+      sourceLocale: "en",
+      sourceDirection: "ltr",
+      initialOutcome: "confirmed",
+      effectiveOutcome: "confirmed",
+      ownInitialDecision: false,
+    }],
+    total: 1,
+    page: 0,
+    hasMore: false,
+  };
+}
+
+function previewComplaintAppealReview(interactions: PreviewInteractionState): AppealReviewPage {
+  const resolution = interactions.complaintAppealResolution;
+  const base = previewComplaintReview(interactions);
+  const caseReview: ReviewCase = {
+    ...base,
+    id: PREVIEW_COMPLAINT_APPEAL_CASE_ID,
+    state: "resolved",
+    version: 2,
+    decision: {
+      id: "preview-initial-decision",
+      outcome: "confirmed",
+      reasoning: "The reported message crossed the forum conduct boundary.",
+      reviewerName: "Maya Cohen",
+      createdAt: "2026-11-18T20:30:00.000Z",
+    },
+  };
+  const appeal = {
+    id: PREVIEW_COMPLAINT_APPEAL_ID,
+    caseId: PREVIEW_COMPLAINT_APPEAL_CASE_ID,
+    decisionId: "preview-initial-decision",
+    ordinal: 1,
+    side: "author" as const,
+    argument: "The answer was technical criticism, not a personal attack.",
+    status: resolution ? "resolved" as const : "pending" as const,
+    outcome: resolution?.outcome ?? null,
+    reasoning: resolution?.reasoning ?? null,
+    createdAt: new Date("2026-11-18T21:00:00.000Z"),
+    resolvedAt: resolution ? new Date("2026-11-18T21:20:00.000Z") : null,
+    initialOutcome: "confirmed" as const,
+    effectiveOutcome: resolution?.outcome === "overturned" ? "not-confirmed" as const : "confirmed" as const,
+    ownInitialDecision: false,
+    appellant: { id: "alex", name: "Alex Rivera" },
+  };
+  return { appeal, caseReview, appeals: [appeal] };
+}
+
+async function previewComplaintAppealAction(
+  scenario: Scenario,
+  interactions: PreviewInteractionState,
+  request: Request,
+  caseId?: string,
+  appealId?: string,
+) {
+  previewAttentionAccessData(scenario);
+  if (caseId !== PREVIEW_COMPLAINT_APPEAL_CASE_ID || appealId !== PREVIEW_COMPLAINT_APPEAL_ID) {
+    return { error: "notFound" as const };
+  }
+  if (interactions.complaintAppealResolution) return { error: "conflict" as const };
+  const form = await request.formData();
+  if (String(form.get("intent") ?? "") !== "resolve") return { error: "invalid" as const };
+  const operationId = String(form.get("operationId") ?? "");
+  const outcome = String(form.get("outcome") ?? "");
+  const reasoning = String(form.get("reasoning") ?? "").trim();
+  if (!operationId || (outcome !== "upheld" && outcome !== "overturned") || !reasoning) {
+    return { error: "invalid" as const };
+  }
+  interactions.complaintAppealResolution = { outcome, reasoning };
+  return { ok: true as const, operationId };
+}
+
+function PreviewComplaintAppealReviewRoute() {
+  const { locale, result } = useLoaderData() as { locale: string; result: AppealReviewPage };
+  return <ComplaintAppealReviewView locale={locale} result={result} />;
+}
+
 async function previewComplaintReviewAction(
   scenario: Scenario,
   interactions: PreviewInteractionState,
@@ -4124,7 +4232,11 @@ function PreviewAttentionRoute({ scenario, interactions }: {
     complaintQueue={mode === "complaints" && group === "group1"
       ? previewComplaintQueue(interactions)
       : null}
+    complaintAppeals={mode === "complaints" && group === "group2"
+      ? previewComplaintAppeals(interactions)
+      : null}
     canReviewComplaints={scenario.identity === "manager" || scenario.identity === "owner"}
+    canReviewAppeals={scenario.identity === "manager" || scenario.identity === "owner"}
     referenceTime={previewReferenceTime}
   />;
 }
