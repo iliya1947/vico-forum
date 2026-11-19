@@ -250,6 +250,7 @@ export const scenarios: readonly Scenario[] = [
   { id: "super-admin-forum-owner", label: "Super-admin · Forum", locale: "en", direction: "ltr", identity: "owner", path: "/en/super-admin/monitoring/forum", view: "super-admin", allowedIdentities: ["owner"] },
   { id: "super-admin-administration-owner", label: "Super-admin · Administration", locale: "en", direction: "ltr", identity: "owner", path: "/en/super-admin/monitoring/administration", view: "super-admin", allowedIdentities: ["owner"] },
   { id: "super-admin-moderation-owner", label: "Super-admin · Moderation", locale: "en", direction: "ltr", identity: "owner", path: "/en/super-admin/monitoring/moderation", view: "super-admin", allowedIdentities: ["owner"] },
+  { id: "super-admin-notifications-owner", label: "Super-admin · Notifications", locale: "en", direction: "ltr", identity: "owner", path: "/en/super-admin/monitoring/notifications", view: "super-admin", allowedIdentities: ["owner"] },
   { id: "super-admin-guest-unauthenticated", label: "Super-admin · guest unauthenticated", locale: "en", direction: "ltr", identity: "guest", path: "/en/super-admin", view: "super-admin", allowedIdentities: ["guest"] },
   { id: "super-admin-manager-forbidden", label: "Super-admin · manager forbidden", locale: "en", direction: "ltr", identity: "manager", path: "/en/super-admin", view: "super-admin", allowedIdentities: ["manager"] },
   { id: "admin", label: "Authorization", locale: "en", direction: "ltr", identity: "owner", path: "/en/admin/authorization", view: "admin", allowedIdentities: ["manager", "owner"] },
@@ -2149,7 +2150,25 @@ function previewNativeState(area: PreviewNativeArea): PreviewNativeState {
         },
       },
     ],
-    notifications: [],
+    notifications: [
+      {
+        ...common,
+        key: "notifications.inbox",
+        values: {
+          total: "146",
+          unread: "9",
+          read: "137",
+          notificationKind0: "88",
+          notificationKind1: "31",
+          notificationKind2: "18",
+          notificationKind3: "9",
+          oldestUnreadAt: "2026-11-17T09:40:00.000Z",
+          oldestUnreadAgeSeconds: "103200",
+          validTargets: "146",
+          missingTargets: "0",
+        },
+      },
+    ],
   };
   return { observedAt, recording: "available", monitors: monitors[area] };
 }
@@ -2364,6 +2383,15 @@ function previewRouter(
       loader: () => {
         const actor = previewSuperAdminAccessData(scenario);
         return { locale: scenario.locale, state: previewNativeState("moderation"), viewerId: actor.id };
+      },
+      ErrorBoundary: ForumRouteError,
+    },
+    {
+      path: "/:locale/super-admin/monitoring/notifications",
+      element: <PreviewSuperAdminNativeRoute area="notifications" />,
+      loader: () => {
+        const actor = previewSuperAdminAccessData(scenario);
+        return { locale: scenario.locale, state: previewNativeState("notifications"), viewerId: actor.id };
       },
       ErrorBoundary: ForumRouteError,
     },
