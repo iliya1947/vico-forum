@@ -1378,6 +1378,7 @@ export function EmbeddedPreview({ scenarioId, identity }: { scenarioId: string; 
       const allowed =
         (intent === "createTopic" && form.classList.contains("section-create-form"))
         || (intent === "reply" && form.classList.contains("topic-reply-form"))
+        || (intent === "editTopicTitle" && Boolean(form.closest(".topic-title-editor")))
         || (intent === "selectBestAnswer"
           && (form.classList.contains("topic-best-answer-form") || form.classList.contains("topic-admin-form")))
         || (intent === "markSolved"
@@ -5863,11 +5864,10 @@ function previewTopicAccessData(
   if (!routeTopicId) {
     throw new Response("Not Found", { status: 404 });
   }
-  const snapshot = { revision: interactions.sequence };
-  if (interactions.createdTopics.has(routeTopicId)) return snapshot;
-  if (routeTopicId === topicId) return snapshot;
+  if (interactions.createdTopics.has(routeTopicId)) return null;
+  if (routeTopicId === topicId) return null;
   if (previewHelpSolutions(scenario.locale).questions.some((question) => question.id === routeTopicId)) {
-    return snapshot;
+    return null;
   }
 
   const knownSectionTopic = homepageCategories(scenario.locale)
@@ -5877,7 +5877,7 @@ function previewTopicAccessData(
       )
     )
     .some((candidateTopic) => candidateTopic.id === routeTopicId);
-  if (knownSectionTopic || previewDiscoveryTopic(scenario.locale, routeTopicId)) return snapshot;
+  if (knownSectionTopic || previewDiscoveryTopic(scenario.locale, routeTopicId)) return null;
 
   throw new Response("Not Found", { status: 404 });
 }
@@ -5886,7 +5886,6 @@ function PreviewTopicRoute({ scenario, interactions }: {
   scenario: Scenario;
   interactions: PreviewInteractionState;
 }) {
-  useLoaderData<{ revision: number }>();
   const { topicId: routeTopicId } = useParams();
 
   const createdTopic = routeTopicId ? interactions.createdTopics.get(routeTopicId) : undefined;
