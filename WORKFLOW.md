@@ -2,7 +2,7 @@
 
 ## Активный этап
 
-Moderation visibility — **plan review HOLD**. Implementation ещё не активирован.
+Moderation visibility — **plan review PASS**. Следующий bounded-этап: B1.
 
 ## Baseline
 
@@ -12,39 +12,33 @@ Moderation visibility — **plan review HOLD**. Implementation ещё не ак�
 - V-T1/V-T2 — technical fit PASS на current main.
 - Лёва завершил адаптацию V1–V9 к current main и разложил delivery на B1–B9.
 
-## Mira plan review finding
+## Mira plan review
 
-**VIS-PLAN-R1 — delivery topology противоречит действующему AGENTS.md.**
+Технических дефектов плана не подтверждено.
 
-Лёва зафиксировал: один Draft implementation PR для B1–B9, где B1–B9 названы bounded checkpoints и после каждого Лира должна STOP.
+Ранее отмеченный `VIS-PLAN-R1` был ошибочно классифицирован как технический finding. Фактически это было несоответствие delivery topology действующему `AGENTS.md`, то есть процессный вопрос в зоне ответственности Миры.
 
-Действующий `AGENTS.md` требует:
-- отдельный implementation PR для каждого завершённого bounded-этапа;
-- coordinator whole-PR review stable exact head каждого завершённого bounded-этапа;
-- после Mira PASS — independent review того же head;
-- owner merge;
-- только затем следующий bounded-этап стандартного цикла.
+Мира самостоятельно исправила service plan:
+- B1–B9 остаются теми же техническими bounded-этапами;
+- каждый B-stage выполняется в отдельном implementation PR;
+- каждый этап проходит author self-check → Mira whole-PR → Leva independent review → owner merge;
+- только после merge предыдущего этапа начинается следующий;
+- техническое содержание V1–V9 и принятые продуктовые решения не изменены.
 
-Для moderation visibility нет owner-исключения, аналогичного специальному решению для corrective #354.
+## Следующий этап
 
-Это реальный дефект текущего плана, потому что первый же B1 был бы выполнен в неправильной delivery/review topology.
+**Лира / ChatGPT-6** — реализовать только **B1 — schema/catalog/History foundation** в отдельном implementation PR от актуального main.
 
-## Что проверено и не является finding
+B1 scope:
+- forward migration;
+- visibility fields/CHECK/partial indexes;
+- `forum.content.visibility.manage` + initial grants;
+- AP-10 `admin.forum` mapping;
+- typed Admin History + schema constraint/labels/Owner classification;
+- clean migration/default-visible/catalog/constraint/snapshot/manifest/ACL checks;
+- никаких route-exposed Hide/Restore и никакой реализации B2+.
 
-Остальная адаптация V1–V9 по scope/fit не выявила нового подтверждённого конфликта:
-- принятые V-P1/V-P2/V-P3 сохранены;
-- schema/catalog/AP-10/History fit соответствует current main;
-- lock ordering остаётся локальным и не вводит глобальный mutex;
-- public/private projections, retained state, assets/translations/Complaints boundaries не расширяют принятый продуктовый scope;
-- acceptance matrix покрывает реальные PG/browser/privacy/cache/race границы.
-
-## Назначение и следующий шаг
-
-**Лёва / Codex-6.1 Sol** — исправить только delivery/checkpoint topology плана так, чтобы она соответствовала действующему `AGENTS.md`, сохранив техническое содержание и зависимости V1–V9.
-
-Не переоткрывать V-P1/V-P2/V-P3 и не перепроектировать техническую модель без нового фактического конфликта.
-
-После исправления — STOP Мире для повторной проверки плана. Лиру к B1 пока не подключать.
+После B1 author self-check и applicable checks — STOP Мире для whole-PR review.
 
 ## После moderation visibility
 
