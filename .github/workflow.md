@@ -33,19 +33,34 @@
 
 ## Следующий шаг
 
-**Лира STOP после успешной 4a.8; subtask 4a в целом НЕ завершена.** Draft implementation #351, exact current head `83b32eb364d74a2fd85377dbc907f7723254edf4`; no merge/review. В 4a менялись только PG tests и один существующий Watch test для early promise rejection handler; production/schema/UI не менялись.
+**4a полностью закрыт.** Exact implementation head:
+`83b32eb364d74a2fd85377dbc907f7723254edf4`.
 
-**4a — микроэтапы; после КАЖДОГО отдельный checkpoint и STOP до следующего `...`:**
-1. **4a.1 — real PG test harness и управляемые SQL barriers** — код добавлен.
-2. **4a.2 — snapshot order для initial/reply/edit и Mute/Block** — код добавлен.
-3. **4a.3 — actor ON/OFF, reciprocal Block, AccountState/deactivation races** — код добавлен.
-4. **4a.4 — suppression, no-backfill, reply→mention и replay** — код добавлен.
-5. **4a.5 — rollback initial/reply/edit/attachment/publication receipts** — код добавлен.
-6. **4a.6 — точечная регрессия Watch unhandled Promise rejection** — исправлен только test timing в `tests/database/topic-watch.test.ts`, commit `83b32eb364d74a2fd85377dbc907f7723254edf4`; production не менялся.
-7. **4a.7 — VERIFIED / STOP:** exact implementation head `83b32eb364d74a2fd85377dbc907f7723254edf4`, GitHub run `44522424656`, job `database` id `135554174396` completed **SUCCESS**. Native PostgreSQL 17 full suite **109/109 test files, 1476/1476 tests PASS**, включая `personal-filters-concurrency.test.ts` **27/27 PASS**; нет Vitest unhandled errors. Existing Watch race test no longer fails the job. No implementation changes in this microstep.
-8. **4a.8 — VERIFIED / STOP:** SA07 failure на exact head `83b32eb364d74a2fd85377dbc907f7723254edf4` диагностирован Мирой. Первый SA07 job `135554174007` упал в `tests/browser/sa07/check.py:380`: expected 200, получил private 503 (первопричина не подтверждена) на `/en/super-admin/monitoring/integrations.data` после ~8.25s. Сравнение последнего полностью зелёного `a2b077fd...` → текущего head: **production/schema/UI не менялись вообще**, только `personal-filters-concurrency.test.ts` и timing-fix старого `topic-watch.test.ts`. Тот же SA07 workflow на том же exact head повторно завершился **SUCCESS** (job `135564876373`) без code changes. Current exact-head workflow set: **15/15 workflow SUCCESS** (оба CI jobs также SUCCESS). Вывод: подтверждённой Mute/block regression нет; production fix для SA07 не требуется.
-9. **4a.9 — СЛЕДУЮЩИЙ микрошаг только после `...`:** завершить 4a evidence/handoff в service files и передать маршрут 4b; STOP. Не запускать connected Mute/block 4b или финальный 4c автоматически.
+Подтверждённое 4a evidence:
+- PostgreSQL 17 full suite: 109/109 files, 1476/1476 tests PASS;
+- targeted personal-filters concurrency/lifecycle: 27/27 PASS;
+- Watch early-rejection timing regression устранён только в test harness;
+- SA07 transient failure независимо диагностирован Мирой и не признан current-scope regression;
+- тот же SA07 на том же exact head повторно SUCCESS без code changes;
+- текущий exact-head workflow set: **19/19 SUCCESS**.
 
-**Проверено на текущем head после 4a.8:** PostgreSQL17 database PASS (1476/1476 tests, 27/27 focused, unhandled=0), checks PASS; 15/15 workflows SUCCESS после отдельного повторного SA07 job. Первоначальный SA07 503 остаётся в истории как разовый факт; конкретная первопричина не проверена. Код в 4a.8 не изменялся.
+**Следующий bounded implementation/acceptance этап — 4b, исполнитель Лира / ChatGPT-6.**
+Выполнить dedicated connected Worker + Better Auth + PostgreSQL 17 + Chromium acceptance
+для personal Mute/block на существующем #351 без изменения принятого product scope.
 
-**После явной команды после 4a.9:** part 4b dedicated Worker/Better Auth/PG17/Chromium Mute/block acceptance, также разделить на узкие slices с STOP; затем 4c final closeout отдельно. Мира/Лёва reviews только после 4c. #342 service-only/no merge; #351 Draft/no merge.
+4b должен доказать через реальный connected path как минимум:
+- authenticated topic Mute ON/OFF и prospective notification suppression без backfill;
+- directional Block A→B suppression ordinary notifications;
+- viewer-only collapse/reveal постов B для A и отсутствие publication/read ban;
+- private `/:locale/filters` own-state и account isolation;
+- lifecycle/account-switch/private-cache boundaries;
+- независимость Watch/Bookmarks/read-state и отсутствие нового RBAC.
+
+Если connected acceptance выявит подтверждённый implementation defect — исправить локально в #351,
+добавить regression evidence и завершить новый stable exact head. Если defect не подтверждён —
+production код не трогать.
+
+После завершения 4b — отдельный checkpoint и **STOP**. Финальный 4c exact-head CI/ACL/manifest/
+handoff выполняется только после следующей команды владельца.
+
+#351 Draft/no merge; #342 service-only/no merge; #300 не использовать.
