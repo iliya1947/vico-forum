@@ -33,18 +33,16 @@
 
 ## Следующий шаг
 
-**Следующий reviewer — Лёва / Codex-6.1 Sol.** Independent whole-PR docs review
-Bookmarks docs PR #350 на stable exact head
-`446e4cc893160efc30392bfa43f03f5882823021` против main
-`405ab97116c5be750fb9c1d447431988802bdbb5`.
+**Следующее действие — владелец merge Bookmarks docs PR #350** на stable exact head
+`446e4cc893160efc30392bfa43f03f5882823021`.
 
-Мира завершила coordinator docs review: **PASS, confirmed current-doc defects = 0**.
-Проверены все 4 Markdown files, permanent/current/history layering, merged #346 semantics,
-migration 0069, implementation exact-head 18/18 success и docs exact-head 2/2 success.
+Коррекция Миры: назначение Лёвы на independent docs review было ошибочным.
+Раздел `Проверка PR` текущего `AGENTS.md` задаёт обязательный independent review
+для **implementation PR**; отдельного обязательного Codex-review для docs PR там нет.
+Docs #350 уже написаны Лирой, whole-PR docs review Миры завершён: **PASS,
+confirmed current-doc defects = 0**, exact-head CI 2/2 success.
 
-Лёве независимо проверить factual accuracy, B1–B7 semantics, SOT layering и отсутствие
-Stage-6/owner-visual overclaim. Код/docs не менять. PASS или confirmed finding → STOP Мире.
+#350 перевести/держать в Ready for review и merge выполняет владелец.
+Только после фактического merge #350 активируется Mute/block implementation.
 
-#350 остаётся Draft до independent result. После завершения review-cycle merge выполняет
-владелец; только после фактического merge #350 активируется Mute/block implementation.
 #342 служебный и не merge; #300 не использовать.
