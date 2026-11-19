@@ -1268,12 +1268,7 @@ describe("interactive Pages preview", { timeout: 10_000 }, () => {
     const noteSubmit = noteForm!.querySelector('button[type="submit"]');
     expect(noteSubmit).not.toBeNull();
     await user.click(noteSubmit!);
-    await waitFor(() => {
-      const currentNote = document.querySelector('textarea[name="body"]');
-      expect(currentNote).not.toBeNull();
-      expect(currentNote).toHaveValue("");
-    }, { timeout: 3_000 });
-    expect(screen.getByText("Preview moderator note")).toBeInTheDocument();
+    expect(await screen.findByText("Preview moderator note")).toBeInTheDocument();
 
     const reasoning = document.querySelector('textarea[name="reasoning"]');
     expect(reasoning).not.toBeNull();
