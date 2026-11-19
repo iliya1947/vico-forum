@@ -6,6 +6,7 @@ import { lockPrivacySubject } from "./user-privacy";
 import type {HelpSignalHistoryEffect} from "./admin-history";
 import { validateProfileFields, type ForumProfile, type ProfileFields } from "../app/forum/profile";
 import { publishedMentionRecipients } from "../app/forum/mentions";
+import { recordOrdinaryPostNotifications } from "./personal-notification-policy";
 import { and, asc, count, desc, eq, gt, gte, lt, inArray, min, isNotNull, isNull, lte, ne, or, sql } from "drizzle-orm";
 import type { NodePgDatabase } from "drizzle-orm/node-postgres";
 import { alias } from "drizzle-orm/pg-core";
@@ -497,6 +498,7 @@ export interface ForumReader {
   readTopicWatch(userId: string, topicId: string): Promise<boolean>;
   readTopicMute(userId: string, topicId: string): Promise<boolean>;
   readUserBlock(userId: string, blockedUserId: string): Promise<boolean>;
+  readTopicBlockedAuthors(userId: string, topicId: string): Promise<string[]>;
   readTopicBookmark(userId: string, topicId: string): Promise<boolean>;
   readTopicBookmarks(userId: string, before?: ForumTopicBookmarkCursor): Promise<ForumTopicBookmarksPage>;
   readNotifications(userId:string,page:number):Promise<ForumNotificationPage>;
@@ -1013,21 +1015,15 @@ export class DrizzleForumRepository {
         authorId: input.authorId,
       });
 
-      // Read watchers only after the topic mutex: Watch/Unwatch and reply agree on commit order.
-      // A set-based statement avoids per-watcher queries and parameter growth.
-      await tx.execute(sql`insert into forum_reply_notifications
-        (id,recipient_user_id,actor_user_id,topic_id,post_id,kind,created_at)
-        select gen_random_uuid()::text, recipients.user_id, ${input.authorId}, ${input.topicId}, ${input.id}, 'reply', ${createdAt}
-        from (
-          select ${topic.authorId}::text as user_id
-          union
-          select ${parentAuthorId}::text
-          union
-          select ${forumTopicWatches.userId} from ${forumTopicWatches}
-          where ${forumTopicWatches.topicId} = ${input.topicId}
-        ) recipients
-        where recipients.user_id is not null and recipients.user_id <> ${input.authorId}
-        on conflict(recipient_user_id,post_id) do nothing`);
+      // Watch candidates remain set-based and are decided after the topic mutex.
+      await recordOrdinaryPostNotifications(tx, {
+        actorId: input.authorId, topicId: input.topicId, postId: input.id,
+        createdAt, kind: "reply",
+        candidates: sql`select ${topic.authorId}::text as user_id
+          union select ${parentAuthorId}::text
+          union select ${forumTopicWatches.userId} from ${forumTopicWatches}
+          where ${forumTopicWatches.topicId} = ${input.topicId}`,
+      });
 
       await this.recordPublishedMentions(tx, {
         actorId: input.authorId, topicId: input.topicId, postId: input.id,
@@ -1060,10 +1056,11 @@ export class DrizzleForumRepository {
     if (!identifiers.length) return;
     const existing = await tx.select({ id: user.id }).from(user).where(inArray(user.id, identifiers));
     if (!existing.length) return;
-    await tx.execute(sql`insert into forum_reply_notifications
-      (id,recipient_user_id,actor_user_id,topic_id,post_id,kind,created_at)
-      values ${sql.join(existing.map(({id})=>sql`(${crypto.randomUUID()},${id},${input.actorId},${input.topicId},${input.postId},'mention',${input.createdAt})`),sql`,`)}
-      on conflict(recipient_user_id,post_id) do nothing`);
+    await recordOrdinaryPostNotifications(tx, {
+      ...input, kind: "mention",
+      candidates: sql`select mentions.user_id from
+        (values ${sql.join(existing.map(({id})=>sql`(${id}::text)`), sql`,`)}) as mentions(user_id)`,
+    });
   }
 
   private async publicationReceipt(
@@ -1608,6 +1605,16 @@ export class DrizzleForumRepository {
     const rows = await this.database.select({ id: forumUserBlocks.blockedUserId }).from(forumUserBlocks)
       .where(and(eq(forumUserBlocks.userId, userId), eq(forumUserBlocks.blockedUserId, blockedUserId))).limit(1);
     return rows.length > 0;
+  }
+
+  /** Only block matches among this topic's authors; never load a user's full block graph. */
+  async readTopicBlockedAuthors(userId: string, topicId: string): Promise<string[]> {
+    const rows = await this.database.select({ id: forumUserBlocks.blockedUserId })
+      .from(forumUserBlocks)
+      .innerJoin(forumPosts, eq(forumPosts.authorId, forumUserBlocks.blockedUserId))
+      .where(and(eq(forumUserBlocks.userId, userId), eq(forumPosts.topicId, topicId)))
+      .groupBy(forumUserBlocks.blockedUserId);
+    return rows.map(row => row.id);
   }
 
   async readTopicBookmark(userId: string, topicId: string): Promise<boolean> {

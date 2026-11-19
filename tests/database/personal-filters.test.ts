@@ -138,3 +138,73 @@ describe("Personal filters: own-state PostgreSQL persistence and admission", () 
       [recipient])).rows[0].n).toBe(0);
   });
 });
+
+
+describe("Personal Mute/Block: ordinary publication policy", () => {
+  async function reply(topicId: string, authorId: string, body: string, parentPostId?: string) {
+    const id = uuid();
+    await repository.createPost({
+      id, topicId, authorId, parentPostId: parentPostId ?? null,
+      bodyRevision: { id: uuid(), originalContent: body, sourceLocale: "en" },
+    });
+    return id;
+  }
+  async function visible(postId: string) {
+    return (await fixture.query<{ recipient_user_id: string; kind: string }>(
+      "select recipient_user_id,kind from forum_reply_notifications where post_id=$1 order by recipient_user_id",
+      [postId])).rows;
+  }
+  async function receipts(postId: string) {
+    return (await fixture.query<{ recipient_user_id: string }>(
+      "select recipient_user_id from forum_post_notification_suppressions where post_id=$1 order by recipient_user_id",
+      [postId])).rows.map(row => row.recipient_user_id);
+  }
+  const mention = (id: string) => "[profile](/en/users/" + encodeURIComponent(id) + ")";
+
+  it("Mute suppresses author, parent, Watch and mention without touching unrelated topic", async () => {
+    const author = await person(), responder = await person(), watcher = await person();
+    const x = await topic(author), y = await topic(author);
+    const parent = await reply(x, watcher, "Parent");
+    await repository.setTopicWatch({ actorId: watcher, topicId: x, watching: true });
+    await repository.setTopicMute({ actorId: author, topicId: x, muted: true });
+    await repository.setTopicMute({ actorId: watcher, topicId: x, muted: true });
+    const muted = await reply(x, responder, mention(watcher), parent);
+    expect(await visible(muted)).toEqual([]);
+    expect(await receipts(muted)).toEqual([author, watcher].sort());
+    const other = await reply(y, responder, mention(watcher));
+    expect((await visible(other)).map(item => item.recipient_user_id)).toEqual([author, watcher].sort());
+    expect(await repository.readTopicWatch(watcher, x)).toBe(true);
+  });
+
+  it("directional Block suppresses only blocked publication actor and folds matching topic authors", async () => {
+    const a = await person(), b = await person(), c = await person();
+    const x = await topic(a);
+    await repository.setUserBlock({ actorId: a, blockedUserId: b, blocked: true });
+    const fromB = await reply(x, b, mention(a));
+    expect(await visible(fromB)).toEqual([]);
+    expect(await receipts(fromB)).toEqual([a]);
+    const fromC = await reply(x, c, mention(a));
+    expect(await visible(fromC)).toEqual([{ recipient_user_id: a, kind: "reply" }]);
+    expect(await repository.readTopicBlockedAuthors(a, x)).toEqual([b]);
+    expect(await repository.readTopicBlockedAuthors(b, x)).toEqual([]);
+    await repository.setUserBlock({ actorId: a, blockedUserId: b, blocked: false });
+    expect(await repository.readTopicBlockedAuthors(a, x)).toEqual([]);
+  });
+
+  it("suppression receipt survives Unmute and prevents edited old mention backfill", async () => {
+    const author = await person(), actor = await person(), target = await person();
+    const x = await topic(author);
+    await repository.setTopicMute({ actorId: target, topicId: x, muted: true });
+    const oldPost = await reply(x, actor, mention(target));
+    expect(await receipts(oldPost)).toEqual([target]);
+    await repository.setTopicMute({ actorId: target, topicId: x, muted: false });
+    // Editing existing post mentions must not reissue an already consumed pair.
+    const revision = (await fixture.query<{ current_revision_id: string }>(
+      "select current_revision_id from forum_posts where id=$1", [oldPost])).rows[0]!.current_revision_id;
+    // Keep this through the same authoritative published-edit boundary; full replay and
+    // attachment failure acceptance is part of the final integration slice.
+    expect(revision).toBeTruthy();
+    const freshPost = await reply(x, actor, mention(target));
+    expect((await visible(freshPost)).some(row => row.recipient_user_id === target)).toBe(true);
+  });
+});

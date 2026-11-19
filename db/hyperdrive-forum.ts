@@ -108,6 +108,7 @@ export function createHyperdriveForumReader(
     readTopicWatch: (userId, topicId) => read((repository) => repository.readTopicWatch(userId, topicId)),
     readTopicMute: (userId, topicId) => read((repository) => repository.readTopicMute(userId, topicId)),
     readUserBlock: (userId, blockedUserId) => read((repository) => repository.readUserBlock(userId, blockedUserId)),
+    readTopicBlockedAuthors: (userId, topicId) => read((repository) => repository.readTopicBlockedAuthors(userId, topicId)),
     readTopicBookmark: (userId, topicId) => read((repository) => repository.readTopicBookmark(userId, topicId)),
     readTopicBookmarks: (userId, before) => read((repository) => repository.readTopicBookmarks(userId, before)),
     readNotifications:(userId,page)=>read(repo=>repo.readNotifications(userId,page)),
