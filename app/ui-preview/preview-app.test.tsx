@@ -1557,11 +1557,13 @@ describe("interactive Pages preview", () => {
     await user.selectOptions(override, "deny");
     await user.click(within(override.closest("form") as HTMLElement).getByRole("button", { name: "Save" }));
 
-    const overriddenAlex = screen.getByRole("heading", { name: "Alex Rivera" })
-      .closest(".admin-user-card") as HTMLElement;
-    expect(within(overriddenAlex).getByLabelText("forum.topic.pin: Permissions")).toHaveValue("deny");
-    const effectivePermissions = overriddenAlex.querySelector(".admin-effective-permissions") as HTMLElement;
-    expect(within(effectivePermissions).queryByText("forum.topic.pin")).not.toBeInTheDocument();
+    await waitFor(() => {
+      const overriddenAlex = screen.getByRole("heading", { name: "Alex Rivera" })
+        .closest(".admin-user-card") as HTMLElement;
+      expect(within(overriddenAlex).getByLabelText("forum.topic.pin: Permissions")).toHaveValue("deny");
+      const effectivePermissions = overriddenAlex.querySelector(".admin-effective-permissions") as HTMLElement;
+      expect(within(effectivePermissions).queryByText("forum.topic.pin")).not.toBeInTheDocument();
+    });
 
     const assignedRoleHeading = screen.getByRole("heading", { name: "Settings helper renamed" });
     const assignedRoleCard = assignedRoleHeading.closest(".admin-role-card") as HTMLElement;
@@ -1712,7 +1714,7 @@ describe("interactive Pages preview", () => {
     await openSettings(user);
     await openSettingsSection(user, "Administrator preferences", "Administrator preferences");
 
-    const behavior = await screen.findByRole("combobox", { name: "Open behavior" });
+    const behavior = await screen.findByRole("combobox", { name: "On entry, open" });
     const destination = screen.getByRole("combobox", { name: "Default destination" });
     expect(behavior).toHaveValue("default");
     expect(destination).toHaveValue("overview");
@@ -1725,7 +1727,7 @@ describe("interactive Pages preview", () => {
     await openSettingsSection(user, "Administrator preferences", "Administrator preferences");
 
     await user.selectOptions(screen.getByRole("combobox", { name: "Default destination" }), "overview");
-    await user.selectOptions(screen.getByRole("combobox", { name: "Open behavior" }), "last");
+    await user.selectOptions(screen.getByRole("combobox", { name: "On entry, open" }), "last");
 
     expect(screen.getByRole("link", { name: "Open Admin" })).toHaveAttribute("href", "/en/admin/authorization");
     expect(JSON.parse(window.localStorage.getItem(key) ?? "{}")).toMatchObject({
@@ -1771,7 +1773,7 @@ describe("interactive Pages preview", () => {
     await openSettings(user);
     await openSettingsSection(user, "Administrator preferences", "Administrator preferences");
 
-    const behavior = await screen.findByRole("combobox", { name: "Open behavior" });
+    const behavior = await screen.findByRole("combobox", { name: "On entry, open" });
     const group = screen.getByRole("combobox", { name: "Default group" });
     expect(behavior).toHaveValue("default");
     expect(group).toHaveValue("needs-details");
@@ -1790,7 +1792,7 @@ describe("interactive Pages preview", () => {
     await openSettingsSection(user, "Administrator preferences", "Administrator preferences");
 
     await user.selectOptions(screen.getByRole("combobox", { name: "Default group" }), "needs-details");
-    await user.selectOptions(screen.getByRole("combobox", { name: "Open behavior" }), "last");
+    await user.selectOptions(screen.getByRole("combobox", { name: "On entry, open" }), "last");
 
     expect(screen.getByRole("link", { name: "Open Needs attention" })).toHaveAttribute(
       "href",
