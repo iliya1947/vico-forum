@@ -1727,7 +1727,9 @@ describe("interactive Pages preview", { timeout: 10_000 }, () => {
     expect(destination).toHaveValue("overview");
 
     await user.selectOptions(destination, "roles");
-    await user.click(screen.getByRole("link", { name: "Open Admin workspace" }));
+    const openAdmin = screen.getByRole("link", { name: "Open Admin workspace" });
+    await waitFor(() => expect(openAdmin).toHaveAttribute("href", "/en/admin/authorization"));
+    await user.click(openAdmin);
     expect(await screen.findByRole("heading", { level: 2, name: "Roles & permissions" })).toBeInTheDocument();
 
     await openSettings(user);
@@ -1736,7 +1738,10 @@ describe("interactive Pages preview", { timeout: 10_000 }, () => {
     await user.selectOptions(screen.getByRole("combobox", { name: "Default Admin section" }), "overview");
     await user.selectOptions(screen.getByLabelText("On entry, open", { selector: "#settings-admin-entry" }), "last");
 
-    expect(screen.getByRole("link", { name: "Open Admin workspace" })).toHaveAttribute("href", "/en/admin/authorization");
+    await waitFor(() => {
+      expect(screen.getByRole("link", { name: "Open Admin workspace" }))
+        .toHaveAttribute("href", "/en/admin/authorization");
+    });
     expect(JSON.parse(window.localStorage.getItem(key) ?? "{}")).toMatchObject({
       adminEntry: "last",
       adminDefault: "overview",
