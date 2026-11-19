@@ -1103,3 +1103,52 @@ exact head STOP Мире на coordinator whole-PR docs review.
 **Docs PR #350 exact-head checks: 2/2 completed success**, `checks` job `135418343227` и `database` job `135418342868`, [run 44482643570](https://github.com/iliya1947/vico-forum/actions/runs/44482643570); 0 failures/pending. Compare base→head: ahead 1/behind 0, только четыре Markdown-документа. PR #350 остаётся Draft; merge и deploy не выполнялись. Лира не выполняла independent whole-PR review собственной документации.
 
 **Лира STOP.** Следующий исполнитель — **Мира / ChatGPT-5.6 Sol** для нового coordinator whole-PR docs review #350 на stable exact head `446e4cc893160efc30392bfa43f03f5882823021`. При подтверждённых current-doc findings — Лире одним пакетом. Только после Mira PASS — independent docs reviewer same head, затем owner merge. До merge #350 Mute/block implementation не открывать. #342 служебный, не merge; #300 не использовать.
+
+
+## 2026-11-19 — Мира: Bookmarks docs #350 coordinator whole-PR review — PASS
+
+Проверен весь Draft docs PR #350 на stable exact head
+`446e4cc893160efc30392bfa43f03f5882823021` против current main
+`405ab97116c5be750fb9c1d447431988802bdbb5`.
+
+Полностью проверен docs scope: `PROJECT.md`, `PROJECT_STATE.md`,
+`docs/PROJECT_HISTORY/PROJECT_HISTORY.md`, новый
+`docs/PROJECT_HISTORY/PROJECT_HISTORY_31.md`. Compare: 1 commit, 4 Markdown files,
+без code/schema/runtime изменений.
+
+Фактические Bookmarks claims independently сопоставлены с merged #346:
+- migration `0069_topic_bookmarks`: own pair, `saved_at timestamptz(3)`, required
+  user/topic FKs/indexes;
+- Add идемпотентен через ON CONFLICT DO NOTHING; Remove удаляет exact own pair;
+- active actor/topic existence и canonical `setTopicBookmark` server boundary;
+- private own list, server-side user filter до order/limit, 50+lookahead keyset по
+  `saved_at DESC, topic_id DESC`, current title/public projection;
+- A→B presentation cursor reset correction не превращает cursor в authority;
+- Watch/read/inbox независимы.
+
+Permanent/current/history layering корректный:
+- `PROJECT.md` хранит устойчивую product semantics;
+- `PROJECT_STATE.md` добавляет только краткий factual status и сохраняет repo ceiling 0069 /
+  external evidence 0020;
+- History 31 хранит #346 implementation/review/CI/corrections snapshot.
+
+GitHub independently подтверждает #346 merged 2026-11-18 21:43:51 UTC,
+reviewed head `a3e6c0e63c99078ece89303592e1f24b2fe440fb`, merge
+`34ddf42985f6dc348e77d0dcc90e0aecc37fd15e`; implementation exact head
+18/18 jobs success. Docs exact head: 2/2 jobs success (`checks`, `database`,
+run 44482643570). Current main не двигался.
+
+Проверена шапка `PROJECT_STATE.md` «Последнее обновление: 2026-11-18»:
+отдельным current-doc finding не классифицирована — добавляемое состояние Bookmarks
+фактически возникло 2026-11-18, а обязательного правила привязывать эту строку к
+calendar date docs PR/merge нет. Не создавать cosmetic churn без установленного дефекта.
+
+**Coordinator PASS; confirmed current-doc defects = 0.**
+
+Следующий reviewer — **Лёва / Codex-6.1 Sol**: independent whole-PR docs review того же
+exact head `446e4cc893160efc30392bfa43f03f5882823021`. Проверить factual accuracy,
+B1–B7 semantics, SOT layering и отсутствие Stage-6/owner-visual overclaim. Ничего не
+менять. PASS или confirmed finding → STOP Мире.
+
+#350 остаётся Draft до independent result; Mute/block не активировать до фактического
+merge docs. #342 служебный и не merge; #300 не использовать.
