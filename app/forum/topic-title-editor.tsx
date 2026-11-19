@@ -32,9 +32,10 @@ export function TopicTitleEditor({ topicId, actorId, locale, title, canEdit }: {
   }, [fetcher.state, fetcher.data, revalidator]);
 
   useEffect(() => {
-    if (draft !== null || !restoreOpenerFocus.current || !opener.current || opener.current.hidden) return;
+    if (draft !== null || !restoreOpenerFocus.current) return;
+    // A close can leave no opener (permission lost); consume the request anyway.
     restoreOpenerFocus.current = false;
-    opener.current.focus();
+    if (canEdit && opener.current && !opener.current.hidden) opener.current.focus();
   }, [draft, canEdit]);
 
   if (!canEdit && !draft) return null;
