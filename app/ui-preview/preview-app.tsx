@@ -30,6 +30,7 @@ import { SuperAdminIntegrations } from "../super-admin/integration-current";
 import { SuperAdminData } from "../super-admin/data-current";
 import { SuperAdminFiles } from "../super-admin/file-current";
 import { SuperAdminNativeCurrent } from "../super-admin/native-current";
+import { ownerAreaLabels, ownerAreaPath } from "../super-admin/area-navigation";
 import { HistoryFilters } from "../super-admin/history-filters";
 import type { HistoryFilterCatalog } from "../super-admin/history-filter-types";
 import { SuperAdminMonitoringIndex, SuperAdminShell, SystemMonitorCards, Timeline } from "../super-admin/view";
@@ -255,6 +256,7 @@ export const scenarios: readonly Scenario[] = [
   { id: "super-admin-notifications-owner", label: "Super-admin · Notifications", locale: "en", direction: "ltr", identity: "owner", path: "/en/super-admin/monitoring/notifications", view: "super-admin", allowedIdentities: ["owner"] },
   { id: "super-admin-events-owner", label: "Super-admin · Events", locale: "en", direction: "ltr", identity: "owner", path: "/en/super-admin/events", view: "super-admin", allowedIdentities: ["owner"] },
   { id: "super-admin-infrastructure-owner", label: "Super-admin · Infrastructure · Stage 6", locale: "en", direction: "ltr", identity: "owner", path: "/en/super-admin/infrastructure", view: "super-admin", allowedIdentities: ["owner"] },
+  { id: "super-admin-monitor-history-owner", label: "Super-admin · Monitor history", locale: "en", direction: "ltr", identity: "owner", path: "/en/super-admin/monitoring/system/system.runtime/history", view: "super-admin", allowedIdentities: ["owner"] },
   { id: "super-admin-guest-unauthenticated", label: "Super-admin · guest unauthenticated", locale: "en", direction: "ltr", identity: "guest", path: "/en/super-admin", view: "super-admin", allowedIdentities: ["guest"] },
   { id: "super-admin-manager-forbidden", label: "Super-admin · manager forbidden", locale: "en", direction: "ltr", identity: "manager", path: "/en/super-admin", view: "super-admin", allowedIdentities: ["manager"] },
   { id: "admin", label: "Authorization", locale: "en", direction: "ltr", identity: "owner", path: "/en/admin/authorization", view: "admin", allowedIdentities: ["manager", "owner"] },
@@ -2334,6 +2336,103 @@ function PreviewSuperAdminInfrastructureRoute() {
   </SuperAdminShell>;
 }
 
+function previewMonitorHistoryData(
+  scenario: Scenario,
+  request: Request,
+  area: string | undefined,
+  monitorKey: string | undefined,
+) {
+  const actor = previewSuperAdminAccessData(scenario);
+  const monitors = area ? previewEventAreas[area] : undefined;
+  if (!area || !monitorKey || !monitors?.includes(monitorKey)) {
+    throw new Response("Not Found", { status: 404 });
+  }
+  const monitor = monitorKey as NonNullable<OwnerHistoryOptions["monitorKey"]>;
+  const filters = previewEventFilters(request);
+  filters.area = area as NonNullable<OwnerHistoryOptions["area"]>;
+  filters.monitorKey = monitor;
+  const path = `/${scenario.locale}/super-admin/monitoring/${area}/${encodeURIComponent(monitorKey)}/history`;
+  const observation: OwnerHistoryEntry = {
+    origin: "system-observation",
+    id: `preview-observation-${area}-${monitorKey}`,
+    occurredAt: "2026-11-18T14:15:00.000000Z",
+    recordedAt: "2026-11-18T14:15:00.080000Z",
+    monitorKeys: [monitor],
+    kind: "monitor.observed",
+    source: "database",
+    quality: "measured",
+    values: { count: "1" },
+  };
+  const entries = [observation, ...previewEventEntries].filter(entry => {
+    if (!entry.monitorKeys.includes(monitor)) return false;
+    if (filters.origin && entry.origin !== filters.origin) return false;
+    if (filters.kind && entry.kind !== filters.kind) return false;
+    if (filters.from && entry.occurredAt < filters.from) return false;
+    if (filters.until && entry.occurredAt >= filters.until) return false;
+    return true;
+  });
+  const choices = [
+    { origin: "system-observation" as const, kinds: ["monitor.observed"] },
+    ...previewEventChoices.filter(choice =>
+      previewEventEntries.some(entry =>
+        entry.monitorKeys.includes(monitor) && entry.origin === choice.origin)),
+  ];
+  return {
+    locale: scenario.locale,
+    area: filters.area,
+    monitorKey: monitor,
+    viewerId: actor.id,
+    filters,
+    filterCatalog: {
+      areas: previewEventAreas,
+      scopes: { [`monitor:${monitorKey}`]: choices },
+    } satisfies HistoryFilterCatalog,
+    page: { entries, next: null, coverage: [] },
+    path,
+  };
+}
+
+function previewMonitorHistoryPath(
+  path: string,
+  filters: OwnerHistoryOptions,
+  before?: string,
+) {
+  const params = new URLSearchParams();
+  if (filters.origin) params.set("origin", filters.origin);
+  if (filters.kind) params.set("kind", filters.kind);
+  if (filters.from) params.set("from", filters.from);
+  if (filters.until) params.set("until", filters.until);
+  if (before) params.set("before", before);
+  const query = params.toString();
+  return query ? `${path}?${query}` : path;
+}
+
+function PreviewSuperAdminMonitorHistoryRoute() {
+  const data = useLoaderData() as ReturnType<typeof previewMonitorHistoryData>;
+  const { locale, area, monitorKey, page, viewerId, filters, filterCatalog, path } = data;
+  const { t } = useTranslation("common");
+  const routing = defaultAdministrativeRouting;
+  const currentArea = ownerAreaPath(routing, locale, area);
+  const currentAreaLabel = t(ownerAreaLabels[area]);
+  return <SuperAdminShell locale={locale} current="monitoring">
+    <p><Link to={currentArea}>{currentAreaLabel}</Link></p>
+    <HistoryFilters
+      key={JSON.stringify(filters)}
+      path={path}
+      filters={filters}
+      catalog={filterCatalog}
+      scoped
+    />
+    <Timeline
+      page={page}
+      locale={locale}
+      viewerId={viewerId}
+      path={before => previewMonitorHistoryPath(path, filters, before)}
+    />
+    <p data-monitor-history-key={monitorKey} hidden />
+  </SuperAdminShell>;
+}
+
 function previewCredentialData(scenario: Scenario, request: Request) {
   const returnTo = credentialReturnPath(
     scenario.locale,
@@ -2545,6 +2644,13 @@ function previewRouter(
         const actor = previewSuperAdminAccessData(scenario);
         return { locale: scenario.locale, state: previewNativeState("notifications"), viewerId: actor.id };
       },
+      ErrorBoundary: ForumRouteError,
+    },
+    {
+      path: "/:locale/super-admin/monitoring/:area/:monitorKey/history",
+      element: <PreviewSuperAdminMonitorHistoryRoute />,
+      loader: ({ request, params }) =>
+        previewMonitorHistoryData(scenario, request, params.area, params.monitorKey),
       ErrorBoundary: ForumRouteError,
     },
     {
