@@ -15,10 +15,11 @@
 - Review synthesis: оба review совпали на неизменном exact head, расхождений и подтверждённых current-scope defects нет. По действующему owner decision из `docs/UI_UX_PASS.md` функциональные bounded-срезы не задерживаются из-за косметики; финальная owner visual/product acceptance остаётся отдельным UI/UX pass перед публичным запуском. Поэтому отдельный Watch visual gate сейчас merge не блокирует.
 - Watch implementation review cycle завершён, #345 merged. Permanent/current-state docs closeout остаётся отдельным PR после implementation merge; это planning-задание не заменяет его.
 - Bookmarks #346 **merged** в main `34ddf42985f6dc348e77d0dcc90e0aecc37fd15e` 2026-11-18 21:43:51 UTC. Reviewed exact head `a3e6c0e63c99078ece89303592e1f24b2fe440fb`; Мира coordinator PASS + Лёва independent PASS; confirmed current-scope defects = 0; exact-head 18/18 jobs success.
-- Docs debt: Watch #345 имеет merged implementation, но отдельный docs closeout ещё не выполнен. Bookmarks #346 также требует отдельный docs closeout по принятому service-plan. Current PROJECT_STATE всё ещё на migration 0067 и не отражает Watch 0068 / Bookmarks 0069.
-- Следующий docs порядок: сначала отдельный Watch docs closeout, затем отдельный Bookmarks docs closeout. Минимально: factual PROJECT_STATE + отдельный PROJECT_HISTORY snapshot/index для каждого bounded-этапа; без RBAC/Admin, Stage 6 external evidence или owner visual claims.
+- Docs closeout: Watch #349 **merged** в main `405ab97116c5be750fb9c1d447431988802bdbb5`; Bookmarks #346 остаётся единственным текущим docs debt этого участка.
+- Следующий docs этап: отдельный Bookmarks docs closeout. Нужны permanent SOT + factual PROJECT_STATE + отдельный PROJECT_HISTORY snapshot/index; без RBAC/Admin, Stage 6 external evidence или owner visual claims.
 - Docs closeout выполняет **Лира / ChatGPT-6** как штатный следующий исполнитель; отдельное owner-назначение для автора docs PR не требуется. Мира docs diff не пишет.
-- Watch docs closeout: **PR #349 Draft**, stable exact head `aa6584c6d600d807ebed9171adbde365b918b290`, main `34ddf42985f6dc348e77d0dcc90e0aecc37fd15e`. Coordinator Миры и independent whole-PR docs review Лёвы: **оба PASS; confirmed current-doc defects = 0**. WATCH-DOC-1 закрыт permanent Watch contract в `PROJECT.md`; все 4 docs прочитаны/проверены, exact-head CI 2/2 success. Лёва STOP Мире для synthesis/merge readiness. Bookmarks docs closeout — отдельно после фактического merge #349.
+- Watch docs closeout: **PR #349 merged** в main `405ab97116c5be750fb9c1d447431988802bdbb5`; reviewed docs head `aa6584c6d600d807ebed9171adbde365b918b290`, Мира coordinator PASS + Лёва independent PASS, defects = 0. Permanent/current/history Watch docs теперь в main.
+- Bookmarks docs closeout: **текущий bounded этап**, исполнитель Лира / ChatGPT-6; отдельный docs PR от current main.
 - Mute/block: план принят, реализация ждёт закрытия накопленного docs debt либо прямого owner override.
 
 ## Опережающий planning-track
@@ -32,15 +33,22 @@
 
 ## Следующий шаг
 
-**Следующее действие — владелец merge Watch docs PR #349** на exact head
-`aa6584c6d600d807ebed9171adbde365b918b290`.
+**Следующий исполнитель — Лира / ChatGPT-6.** Выполнить отдельный **Bookmarks docs closeout**
+после уже merged implementation #346 на current main
+`405ab97116c5be750fb9c1d447431988802bdbb5`.
 
-Review cycle завершён: Мира coordinator PASS + Лёва independent whole-PR docs PASS,
-confirmed current-doc defects = 0. WATCH-DOC-1 закрыт; docs CI 2/2 success.
-#349 переведён из Draft в **Ready for review**, mergeable=true.
+Требуемый результат:
+- закрепить устойчивую Bookmarks product/domain semantics в permanent source-of-truth
+  (если более узкого профильного SOT по факту нет — использовать `PROJECT.md`);
+- кратко синхронизировать `PROJECT_STATE.md` с фактически реализованными Bookmarks;
+- добавить отдельный PROJECT_HISTORY snapshot + index entry по #346;
+- сохранить repository migration ceiling `0069` как уже корректный факт;
+- не менять code/schema/runtime, RBAC/Admin contracts и Stage 6 external evidence через `0020`;
+- не заявлять owner visual/deployed acceptance.
 
-**Только после фактического merge #349** следующий bounded этап — Лира открывает
-отдельный Bookmarks docs closeout (0069). Затем после его closeout/merge
-implementation-order переходит к Mute/block.
+Лира сверяет формулировки с merged #346 и принятым B1–B7, открывает отдельный docs PR,
+выполняет применимые checks и после stable exact head **STOP Мире** на coordinator
+whole-PR docs review.
 
+Mute/block не активировать до фактического merge Bookmarks docs.
 #342 служебный и не merge; #300 не использовать.
