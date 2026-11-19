@@ -33,7 +33,7 @@
 
 ## Следующий шаг
 
-**Mute/block: Мира coordinator HOLD по PF-REVIEW-1/2/3; Лира bounded corrections. PF-REVIEW-1 — PASS: 11/11 focused control tests, 2741/2741 unit, 1476/1476 real PG, 48/48 dedicated connected; all 16/16 exact-head workflows SUCCESS. Лира STOP перед отдельным PF-REVIEW-2.** Implementation Draft PR #351: current head `7bdf468fed9bebb74adf421cb5e231ba14218c8a` (base `9eae385571bf99e073df46f8541f7514c9626a29`). Service PR #342 — рабочий канал, не merge.
+**Mute/block: Мира coordinator HOLD; PF-REVIEW-1 PASS. PF-REVIEW-2 fix + 2 deterministic regressions COMMITTED / CI PENDING (not PASS); Лира STOP before PF-REVIEW-2 verification and PF-REVIEW-3.** Implementation Draft PR #351: current head `dac264877fd1969e1fd683cc731a8852e2848a16` (base `9eae385571bf99e073df46f8541f7514c9626a29`). Service PR #342 — рабочий канал, не merge.
 
 **Verified 4a:** real PostgreSQL 17 **27/27 targeted concurrency/atomicity tests** и full **1476/1476 tests, 109/109 files PASS**. `CI` jobs `database` и `checks` SUCCESS (run `44522424656`). **15/15 workflow SUCCESS после отдельного повторного SA07 job `135564876373` на том же head**, без code changes. Первый SA07 job `135554174007` FAIL: `/en/super-admin/monitoring/integrations.data` ответил 503 вместо 200. Точная первопричина **не установлена**; не подтверждена Mute/block regression. В 4a изменены только `tests/database/personal-filters-concurrency.test.ts` и `tests/database/topic-watch.test.ts` (timing rejection assertion), production/schema/UI без изменений.
 
@@ -242,3 +242,16 @@ Implementation Draft #351 remains at **`7bdf468fed9bebb74adf421cb5e231ba14218c8a
 **PF-REVIEW-1 result: PASS bounded correction.** `PersonalFilterControl` now treats loader `state` as presentation authority rather than a local successful-ACK mirror. Late matching response cannot overwrite a newer same-pair loader snapshot; no optimistic write, pending lock and explicit refresh for unknown outcome remain, actor/target checks and no automatic POST retry preserved. This is repository/CI acceptance for the stated race; independent coordinator verification after all corrections is still required.
 
 **Лира STOP after PF-REVIEW-1 verification.** Next separate explicit `...` activates **ONLY PF-REVIEW-2** (Filters list Undo latch / re-added own pair) with focused regression/CI checkpoint; **PF-REVIEW-3 requires another separate command**. Only after all three corrected: final exact-head CI/connected and new Mira whole-PR coordinator review; no Leva before Mira PASS. #342 service-only/no merge; #351 Draft. Deferred Watch/Bookmarks audit corrections out of scope.
+
+
+## 2026-11-19 — Лира: PF-REVIEW-2 fix/test checkpoint, CI QUEUED — STOP
+
+**Only PF-REVIEW-2 current-scope correction in Draft PR #351:** exact current head `dac264877fd1969e1fd683cc731a8852e2848a16` (base/main `9eae385571bf99e073df46f8541f7514c9626a29`), three commits starting `26289f823f07c06d634144f8dee81843ad4b1a41`. Changed only `app/forum/filters-view.tsx` and `app/forum/filters-view.test.tsx` (GitHub compare against PF-REVIEW-1 head `7bdf468fed9bebb74adf421cb5e231ba14218c8a` verified).
+
+**Implementation:** `FilterRow` no longer stores permanent local `removed` latch or returns `null` on an old successful Undo ACK. The existing server-scoped `/:locale/filters` loader is the source of visible own rows; React Router revalidates route data after a fetcher Form action. Valid Undo still clears uncertainty; errors preserve the row with explicit refresh, no automatic POST retry. No additional state/version/store/DB/ACL change.
+
+**Tests added:** two React Router loader-driven deterministic cases, one for Mute topic and one for Block user: Remove committed, old ACK delayed; another legitimate session re-adds same pair with fresh `createdAt`; route revalidates before old ACK arrives; late ACK must not hide the re-added row. Existing normal successful Undo test updated to model committed removal in loader instead of depending on local hiding. Existing uncertain/actor-isolation tests untouched.
+
+**Verification boundary:** The new exact-head GitHub CI [run 44577496670](https://github.com/iliya1947/vico-forum/actions/runs/44577496670) `checks`/`database` and dedicated [run 44577496424](https://github.com/iliya1947/vico-forum/actions/runs/44577496424) are **QUEUED at last check**. NO PASS claim for the new tests/commit. Code was committed and source/diff reviewed, but runtime regression acceptance **not yet established**. Do not infer success from prior PF-REVIEW-1 CI. Neither PF-REVIEW-3 nor deferred Watch/Bookmarks corrections changed.
+
+**Лира STOP after PF-REVIEW-2 code/tests checkpoint.** Next distinct explicit `...` = **ONLY PF-REVIEW-2 exact-head CI verification** and, if required, diagnosis/local correction of *confirmed* failure; checkpoint and STOP before PF-REVIEW-3. Then separate `...` for PF-REVIEW-3. After all three correction steps, final exact-head full CI + Mira whole-PR coordinator review; Leva only after Mira PASS. #342 service-only/no merge; #351 remains Draft.
