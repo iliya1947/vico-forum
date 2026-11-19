@@ -317,7 +317,7 @@ describe("embedded preview routing", () => {
     await user.type(within(createRole).getByLabelText("Display name"), "Preview Reviewer");
     await user.click(within(createRole).getByRole("button", { name: "Create custom role" }));
 
-    expect(await screen.findByRole("status")).toBeInTheDocument();
+    expect(await screen.findByRole("heading", { name: "Preview Reviewer" })).toBeInTheDocument();
     const nav = document.querySelector(".admin-panel-nav") as HTMLElement;
     await user.click(within(nav).getByRole("link", { name: "History" }));
 
@@ -1096,7 +1096,10 @@ describe("interactive Pages preview", () => {
     const email = await screen.findByRole("checkbox", { name: "Allow new accounts through email and password" });
     await user.click(email);
     await user.click(screen.getByRole("button", { name: "Save registration settings" }));
-    expect(await screen.findByRole("status")).toHaveTextContent("Registration settings updated.");
+    await waitFor(() => {
+      const version = document.querySelector('input[name="expectedVersion"]') as HTMLInputElement | null;
+      expect(version?.value).toBe("2");
+    });
 
     cleanup();
     await renderEmbeddedPreview(<EmbeddedPreview scenarioId="credentials-register" identity="guest" />);
@@ -1122,7 +1125,10 @@ describe("interactive Pages preview", () => {
     await user.click(google);
     await user.click(email);
     await user.click(screen.getByRole("button", { name: "Save registration settings" }));
-    expect(await screen.findByRole("status")).toHaveTextContent("Registration settings updated.");
+    await waitFor(() => {
+      const version = document.querySelector('input[name="expectedVersion"]') as HTMLInputElement | null;
+      expect(version?.value).toBe("2");
+    });
 
     cleanup();
     await renderEmbeddedPreview(<EmbeddedPreview scenarioId="credentials-register" identity="guest" />);
