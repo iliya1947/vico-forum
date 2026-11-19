@@ -1451,3 +1451,18 @@ typed unavailable и независимые fetchers обоснованы дей
 не активировать.** Не открывать corrective PR до окончания оставшихся проверок и
 выбора следующего этапа владельцем. **Лёва STOP после одного Bookmarks.** Текущее
 назначение Лиры #351/4b.2 сохранено, его реализация этим аудитом не проверялась.
+
+
+## 2026-11-19 — Лира: 4b.2 real connected Mute/Unmute fanout PASS, STOP
+
+**Exact implementation head** `a6dadd175ff58bbe24f7edb60e99f1dc2e1aab52`; Draft PR #351. Only test fixtures `tests/browser/personal-filters/check.py` and `pg.mjs` changed; production/schema/routes/UI/Watch code untouched. Fixture creates a second independent topic under same author; browser test uses separate real Better Auth sessions for topic author, parent-post author, Watch subscriber, mentioned recipient and fresh reply publishers (actual 5-second write cooldown preserved).
+
+**Dedicated acceptance:** Personal Mute/Block connected acceptance GitHub run `44531763113`, job `135586618085`, **completed SUCCESS** with all 8 `FILTERS_CONNECTED` markers (4 previous smoke, 4 new target checks):
+1. Worker publishes parent reply, Watch subscriber subscribes to both topics. Before Mute a real reply with explicit user mention delivers exact ordinary `reply` to topic author, parent author, Watch subscriber, and `mention` to mentioned recipient; no suppression receipt.
+2. Watch subscriber toggles topic Mute using Chromium fetcher POST; three other recipients set own Mute through their real authenticated canonical topic HTTP action. All four distinct Mute pairs persisted; Watch rows on both topics remain.
+3. A fresh publisher posts a reply to muted topic, parent + mention candidate source: **no visible notification for any of four**, exact 4 suppression receipt pairs. Separate unaffected topic still delivers to its author, Watch subscriber, mentioned recipient, with zero receipts.
+4. Watch subscriber Unmutes through Chromium; other three through authenticated canonical actions. Another fresh reply after Unmute delivers to all 4 original recipients. Previously suppressed post does **not** backfill, previously delivered row remains, receipts stay; Watch rows unaffected and UI OFF after reload.
+
+No unrelated Watch audit corrections or production work in this step. Do not infer 4b.3 Block, 4b.4 collapse/reveal, 4b.5 initial-topic/edit replay, 4b.6 private list/pagination, 4b.7 privacy, 4b.8 complaints, 4b.9 RTL from this PASS. Other current-head workflows were still pending at checkpoint; this microstep asserts only dedicated job PASS.
+
+**Лира STOP после 4b.2.** Next separate `...` = **4b.3 directional Block ordinary notification acceptance** only, service checkpoint and STOP; no 4b.4/4c/review/merge. Watch/Bookmarks audit workstream unchanged.
