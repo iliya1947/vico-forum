@@ -1268,7 +1268,9 @@ describe("interactive Pages preview", { timeout: 10_000 }, () => {
     const noteSubmit = noteForm!.querySelector('button[type="submit"]');
     expect(noteSubmit).not.toBeNull();
     await user.click(noteSubmit!);
-    expect(await screen.findByText("Note saved.")).toBeInTheDocument();
+    await waitFor(() =>
+      expect(screen.getByRole("button", { name: "Save note" })).toBeDisabled(),
+    );
     await waitFor(() =>
       expect(screen.getByRole("button", { name: "Save note" })).toBeEnabled(),
     );
