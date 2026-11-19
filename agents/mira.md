@@ -57,3 +57,8 @@ Next reviewer: Leva / Codex-6.1 Sol, independent whole-PR review of the same exa
 Owner merged #354 unchanged reviewed head; main is `6fa2a43b02c55515bbd46a0d74fe6cc0d4424caf`.
 
 Visibility V1–V9 proposal checked against current PROJECT/PROJECT_STATE, AUTHORIZATION/Admin contracts, permission catalog/AP-10 family, topic/post schema, closure CAS writer and Admin History. V-T1/V-T2 technically fit existing architecture; no new architecture decision is needed. No owner acceptance record found for V-P1/V-P2/V-P3, so implementation remains blocked only on those product decisions. Recommendations are recorded in WORKFLOW and stage PLAN.
+
+
+## Correction — visibility acceptance was already established
+
+My prior scope/fit step incorrectly treated missing migrated acceptance metadata as an open owner decision. Recovered prior discussion from 18 Nov matches V-P1/V-P2/V-P3 exactly, and owner explicitly corrected that this had already been passed. These product decisions are now recorded as accepted in DECISIONS/visibility plan. Do not ask owner to reconfirm them. Next step is Leva plan finalization against current main only.
