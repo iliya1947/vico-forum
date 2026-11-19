@@ -142,6 +142,9 @@ describe("UI preview state catalog", () => {
       expect.objectContaining({ id: "super-admin-integrations-owner", allowedIdentities: ["owner"] }),
       expect.objectContaining({ id: "super-admin-data-owner", allowedIdentities: ["owner"] }),
       expect.objectContaining({ id: "super-admin-files-owner", allowedIdentities: ["owner"] }),
+      expect.objectContaining({ id: "super-admin-forum-owner", allowedIdentities: ["owner"] }),
+      expect.objectContaining({ id: "super-admin-administration-owner", allowedIdentities: ["owner"] }),
+      expect.objectContaining({ id: "super-admin-moderation-owner", allowedIdentities: ["owner"] }),
       expect.objectContaining({
         id: "super-admin-guest-unauthenticated",
         allowedIdentities: ["guest"],
@@ -453,6 +456,40 @@ describe("embedded preview routing", { timeout: 10_000 }, () => {
     expect(document.querySelector('[data-monitor-key="files.assets"]')).not.toBeNull();
     expect(document.querySelector('[data-monitor-key="files.operations"]')).not.toBeNull();
     expect(document.querySelector('[data-monitor-key="background.attachments"]')).toBeNull();
+  });
+
+  it("opens Forum, Administration, and Moderation from Super-admin Monitoring", async () => {
+    const user = userEvent.setup();
+    await renderEmbeddedPreview(<EmbeddedPreview
+      scenarioId="super-admin-monitoring-owner"
+      identity="owner"
+    />);
+
+    for (const [area, path, firstKey, lastKey] of [
+      ["forum", "/en/super-admin/monitoring/forum", "forum.structure", "forum.presence"],
+      ["administration", "/en/super-admin/monitoring/administration", "administration.authorization", "administration.registration"],
+      ["moderation", "/en/super-admin/monitoring/moderation", "moderation.help", "moderation.complaints"],
+    ] as const) {
+      const link = await waitFor(() => {
+        const current = document.querySelector(`a[href="${path}"]`) as HTMLElement | null;
+        expect(current).not.toBeNull();
+        return current as HTMLElement;
+      });
+      await user.click(link);
+
+      expect(await waitFor(() => {
+        const current = document.querySelector(`[data-native-area="${area}"]`) as HTMLElement | null;
+        expect(current).not.toBeNull();
+        return current as HTMLElement;
+      })).toBeInTheDocument();
+      expect(document.querySelector(`[data-monitor-key="${firstKey}"]`)).not.toBeNull();
+      expect(document.querySelector(`[data-monitor-key="${lastKey}"]`)).not.toBeNull();
+
+      if (area !== "moderation") {
+        const shellNav = document.querySelector(".super-admin-panel .admin-panel-nav") as HTMLElement;
+        await user.click(within(shellNav).getByRole("link", { name: "Monitoring" }));
+      }
+    }
   });
 
   it("requires sign-in for guest direct access to Admin topic", async () => {
