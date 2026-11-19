@@ -14,24 +14,11 @@
 
 ## Consolidated correction #354
 
-Подтверждённые audit findings:
-1. WATCH-AUDIT-1 [P2]: local confirmed mirror мог перезаписать свежий loader state старым ACK.
-2. BOOKMARKS-AUDIT-1 [P2]: тот же causal class в topic bookmark control.
-3. BOOKMARKS-AUDIT-2 [P2]: old Remove ACK/local removed latch может скрыть row после нового Add и свежего list loader.
-4. TITLE-AUDIT-1 [P3]: Save/Cancel вызывает focus до возврата opener в DOM; Chromium оставляет BODY focused.
+#354 merged в main как `6fa2a43b02c55515bbd46a0d74fe6cc0d4424caf` после Mira+Leva PASS одного exact head. Все четыре исходных finding и TITLE-AUDIT-1-R1 CLOSED; current-scope defects = 0.
 
-Owner решил закрыть **все четыре** в одном #354 и только после этого один раз подключать Лёву.
+## Текущий этап
 
-Все четыре исходных finding и дополнительный TITLE-AUDIT-1-R1 **закрыты** на final exact head `b67e14d81cd20f2e42264e3d25d336ee19db626b`. Мира coordinator whole-PR PASS и Лёва independent whole-PR PASS относятся к одному SHA; confirmed current-scope defects = 0. Review охватывает все девять файлов, а не только последний title delta. Evidence и границы — `stages/corrections/REVIEW.md`.
-
-Current #354 остаётся Draft/open; owner Ready→merge при неизменном head. Код PR во время review не менялся. Product main drift относительно base только документационный; новые scope/implementation changes не добавлялись.
-
-## Ограничения correction
-
-- Fresh loader/list truth не должен проигрывать старому mutation ACK или local latch.
-- Не добавлять version/timestamp/CAS/client cache/global store/automatic POST retry только ради UI freshness.
-- Сохранить pending/error/explicit refresh, actor/target isolation и уже принятые Bookmarks cursor/session semantics.
-- Title focus correction не меняет title mutation/data contract.
+Moderation visibility scope/fit. Technical forks V-T1/V-T2 совместимы с current main и не требуют architecture rewrite. Product forks V-P1/V-P2/V-P3 не имеют найденного owner acceptance record; рекомендации и текущий gate находятся в `WORKFLOW.md` и `stages/moderation-visibility/PLAN.md`.
 
 ## Дальнейшие планы
 
