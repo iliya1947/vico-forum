@@ -11,7 +11,7 @@ import { PERMISSION_CATALOG, type PermissionKey } from "../authorization/catalog
 import { BLOCK_MANAGE_PRIVILEGED_PERMISSION } from "../../db/user-measure-authority";
 import type { ProfilePrivilegedSections } from "../profile/sections";
 import type { OwnerUserProfileSnapshot } from "../../db/owner-user-profile";
-import type { OwnerHistoryEntry } from "../../db/owner-sa02-history";
+import type { OwnerHistoryEntry, OwnerHistoryOptions } from "../../db/owner-sa02-history";
 import { CredentialView } from "../auth/credential-view";
 import { credentialReturnPath } from "../auth/credential-path";
 import type { EmailAuthActions, AuthClientActions } from "../auth/auth-client";
@@ -30,7 +30,9 @@ import { SuperAdminIntegrations } from "../super-admin/integration-current";
 import { SuperAdminData } from "../super-admin/data-current";
 import { SuperAdminFiles } from "../super-admin/file-current";
 import { SuperAdminNativeCurrent } from "../super-admin/native-current";
-import { SuperAdminMonitoringIndex, SuperAdminShell, SystemMonitorCards } from "../super-admin/view";
+import { HistoryFilters } from "../super-admin/history-filters";
+import type { HistoryFilterCatalog } from "../super-admin/history-filter-types";
+import { SuperAdminMonitoringIndex, SuperAdminShell, SystemMonitorCards, Timeline } from "../super-admin/view";
 import { superAdminMonitoringPath } from "../super-admin/paths";
 import type { AdminHistoryChange, AdminHistoryEvent } from "../../db/admin-history";
 import { projectAdminTopic } from "../admin/topic-model";
@@ -251,6 +253,8 @@ export const scenarios: readonly Scenario[] = [
   { id: "super-admin-administration-owner", label: "Super-admin · Administration", locale: "en", direction: "ltr", identity: "owner", path: "/en/super-admin/monitoring/administration", view: "super-admin", allowedIdentities: ["owner"] },
   { id: "super-admin-moderation-owner", label: "Super-admin · Moderation", locale: "en", direction: "ltr", identity: "owner", path: "/en/super-admin/monitoring/moderation", view: "super-admin", allowedIdentities: ["owner"] },
   { id: "super-admin-notifications-owner", label: "Super-admin · Notifications", locale: "en", direction: "ltr", identity: "owner", path: "/en/super-admin/monitoring/notifications", view: "super-admin", allowedIdentities: ["owner"] },
+  { id: "super-admin-events-owner", label: "Super-admin · Events", locale: "en", direction: "ltr", identity: "owner", path: "/en/super-admin/events", view: "super-admin", allowedIdentities: ["owner"] },
+  { id: "super-admin-infrastructure-owner", label: "Super-admin · Infrastructure · Stage 6", locale: "en", direction: "ltr", identity: "owner", path: "/en/super-admin/infrastructure", view: "super-admin", allowedIdentities: ["owner"] },
   { id: "super-admin-guest-unauthenticated", label: "Super-admin · guest unauthenticated", locale: "en", direction: "ltr", identity: "guest", path: "/en/super-admin", view: "super-admin", allowedIdentities: ["guest"] },
   { id: "super-admin-manager-forbidden", label: "Super-admin · manager forbidden", locale: "en", direction: "ltr", identity: "manager", path: "/en/super-admin", view: "super-admin", allowedIdentities: ["manager"] },
   { id: "admin", label: "Authorization", locale: "en", direction: "ltr", identity: "owner", path: "/en/admin/authorization", view: "admin", allowedIdentities: ["manager", "owner"] },
@@ -2182,6 +2186,154 @@ function PreviewSuperAdminNativeRoute({ area }: { area: PreviewNativeArea }) {
   return <SuperAdminNativeCurrent locale={locale} area={area} state={state} viewerId={viewerId} />;
 }
 
+const previewEventAreas: HistoryFilterCatalog["areas"] = {
+  system: ["system.runtime", "system.dependencies", "system.requests"],
+  accounts: ["accounts.users", "accounts.methods", "accounts.sessions", "accounts.registration"],
+  security: ["security.auth", "security.access", "security.attachments"],
+  background: ["background.translation", "background.attachments"],
+  localization: ["localization.registry", "localization.ui", "localization.content", "localization.budget"],
+  integrations: ["integrations.database", "integrations.authentication", "integrations.translation", "integrations.storage"],
+  data: ["data.application", "data.compatibility", "data.retention"],
+  files: ["files.assets", "files.operations"],
+  forum: ["forum.structure", "forum.state", "forum.content", "forum.presence"],
+  administration: ["administration.authorization", "administration.measures", "administration.registration"],
+  moderation: ["moderation.help", "moderation.complaints"],
+  notifications: ["notifications.inbox"],
+};
+
+const previewEventChoices: HistoryFilterCatalog["scopes"]["*"] = [
+  { origin: "system-event", kinds: ["system.requestFailed"] },
+  { origin: "admin-history", kinds: ["settings.registrationChanged"] },
+  { origin: "operational-event", kinds: ["task.reconciliationPass"] },
+  { origin: "notification-created", kinds: ["notification.created"] },
+];
+
+function previewEventCatalog(): HistoryFilterCatalog {
+  return {
+    areas: previewEventAreas,
+    scopes: {
+      "*": previewEventChoices,
+      "area:system": [{ origin: "system-event", kinds: ["system.requestFailed"] }],
+      "monitor:system.requests": [{ origin: "system-event", kinds: ["system.requestFailed"] }],
+      "area:administration": [{ origin: "admin-history", kinds: ["settings.registrationChanged"] }],
+      "monitor:administration.registration": [{ origin: "admin-history", kinds: ["settings.registrationChanged"] }],
+      "area:background": [{ origin: "operational-event", kinds: ["task.reconciliationPass"] }],
+      "monitor:background.translation": [{ origin: "operational-event", kinds: ["task.reconciliationPass"] }],
+      "area:notifications": [{ origin: "notification-created", kinds: ["notification.created"] }],
+      "monitor:notifications.inbox": [{ origin: "notification-created", kinds: ["notification.created"] }],
+    },
+  };
+}
+
+const previewEventEntries: OwnerHistoryEntry[] = [
+  {
+    origin: "system-event",
+    id: "preview-request-failure",
+    occurredAt: "2026-11-18T14:18:00.000000Z",
+    recordedAt: "2026-11-18T14:18:00.120000Z",
+    monitorKeys: ["system.requests"],
+    kind: "system.requestFailed",
+    source: "system",
+    quality: "best-effort",
+    values: { operation: "GET /en/topics/typed-api", httpStatus: "503" },
+  },
+  {
+    origin: "admin-history",
+    id: "preview-registration-change",
+    occurredAt: "2026-11-18T13:40:00.000000Z",
+    recordedAt: "2026-11-18T13:40:00.090000Z",
+    monitorKeys: ["accounts.registration", "administration.registration", "integrations.authentication"],
+    kind: "settings.registrationChanged",
+    source: "admin",
+    quality: null,
+    values: {
+      actorUserId: "owner",
+      beforeGoogleEnabled: true,
+      afterGoogleEnabled: true,
+      beforeEmailEnabled: false,
+      afterEmailEnabled: true,
+      beforeVersion: 2,
+      afterVersion: 3,
+    },
+  },
+  {
+    origin: "operational-event",
+    id: "preview-translation-reconciliation",
+    occurredAt: "2026-11-18T12:10:00.000000Z",
+    recordedAt: "2026-11-18T12:10:00.200000Z",
+    monitorKeys: ["background.translation", "integrations.translation"],
+    kind: "task.reconciliationPass",
+    source: "operation",
+    quality: "best-effort",
+    values: { runId: "preview-reconciliation-01", count: "7" },
+  },
+  {
+    origin: "notification-created",
+    id: "preview-notification-created",
+    occurredAt: "2026-11-18T11:25:00.000000Z",
+    recordedAt: "2026-11-18T11:25:00.050000Z",
+    monitorKeys: ["notifications.inbox"],
+    kind: "notification.created",
+    source: "forum_reply_notifications",
+    quality: "measured",
+    values: { notificationKind: "reply", topicId: "typed-api", postId: "typed-api-reply-2" },
+  },
+];
+
+function previewEventFilters(request: Request): OwnerHistoryOptions {
+  const params = new URL(request.url).searchParams;
+  return {
+    area: (params.get("area") ?? undefined) as OwnerHistoryOptions["area"],
+    monitorKey: (params.get("monitor") ?? undefined) as OwnerHistoryOptions["monitorKey"],
+    origin: (params.get("origin") ?? undefined) as OwnerHistoryOptions["origin"],
+    kind: params.get("kind") ?? undefined,
+    from: params.get("from") ?? undefined,
+    until: params.get("until") ?? undefined,
+  };
+}
+
+function previewSuperAdminEventsData(scenario: Scenario, request: Request) {
+  const actor = previewSuperAdminAccessData(scenario);
+  const filters = previewEventFilters(request);
+  const entries = previewEventEntries.filter(entry => {
+    if (filters.area && !entry.monitorKeys.some(key => key.startsWith(filters.area + "."))) return false;
+    if (filters.monitorKey && !entry.monitorKeys.includes(filters.monitorKey)) return false;
+    if (filters.origin && entry.origin !== filters.origin) return false;
+    if (filters.kind && entry.kind !== filters.kind) return false;
+    if (filters.from && entry.occurredAt < filters.from) return false;
+    if (filters.until && entry.occurredAt >= filters.until) return false;
+    return true;
+  });
+  return {
+    locale: scenario.locale,
+    viewerId: actor.id,
+    filters,
+    filterCatalog: previewEventCatalog(),
+    page: { entries, next: null, coverage: [] },
+  };
+}
+
+function PreviewSuperAdminEventsRoute() {
+  const { locale, page, viewerId, filters, filterCatalog } = useLoaderData() as ReturnType<typeof previewSuperAdminEventsData>;
+  const path = `/${locale}/super-admin/events`;
+  return <SuperAdminShell locale={locale} current="events">
+    <HistoryFilters key={JSON.stringify(filters)} path={path} filters={filters} catalog={filterCatalog} />
+    <Timeline page={page} locale={locale} viewerId={viewerId} path={() => path} />
+  </SuperAdminShell>;
+}
+
+function PreviewSuperAdminInfrastructureRoute() {
+  const { locale } = useLoaderData() as { locale: string };
+  const { t } = useTranslation("common");
+  return <SuperAdminShell locale={locale} current="infrastructure">
+    <section className="admin-overview" aria-labelledby="super-admin-infrastructure-heading">
+      <h2 id="super-admin-infrastructure-heading">{t("superAdminInfrastructure")}</h2>
+      <p className="super-admin-placeholder">{t("adminInDevelopment")} · {t("superAdminStage6")}</p>
+      <p>{t("superAdminInfrastructureBoundary")}</p>
+    </section>
+  </SuperAdminShell>;
+}
+
 function previewCredentialData(scenario: Scenario, request: Request) {
   const returnTo = credentialReturnPath(
     scenario.locale,
@@ -2392,6 +2544,21 @@ function previewRouter(
       loader: () => {
         const actor = previewSuperAdminAccessData(scenario);
         return { locale: scenario.locale, state: previewNativeState("notifications"), viewerId: actor.id };
+      },
+      ErrorBoundary: ForumRouteError,
+    },
+    {
+      path: "/:locale/super-admin/events",
+      element: <PreviewSuperAdminEventsRoute />,
+      loader: ({ request }) => previewSuperAdminEventsData(scenario, request),
+      ErrorBoundary: ForumRouteError,
+    },
+    {
+      path: "/:locale/super-admin/infrastructure",
+      element: <PreviewSuperAdminInfrastructureRoute />,
+      loader: () => {
+        previewSuperAdminAccessData(scenario);
+        return { locale: scenario.locale };
       },
       ErrorBoundary: ForumRouteError,
     },
