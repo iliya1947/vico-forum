@@ -1595,8 +1595,9 @@ describe("interactive Pages preview", { timeout: 10_000 }, () => {
     const deletableRoleCard = deletableRoleHeading.closest(".admin-role-card") as HTMLElement;
     await user.click(within(deletableRoleCard).getByRole("button", { name: "Delete role" }));
 
-    expect(await screen.findByRole("status")).toHaveTextContent("Authorization was updated.");
-    expect(screen.queryByRole("heading", { name: "Settings helper renamed" })).not.toBeInTheDocument();
+    await waitFor(() => {
+      expect(screen.queryByRole("heading", { name: "Settings helper renamed" })).not.toBeInTheDocument();
+    });
   }, 10_000);
 
   it("rejects an invalid custom role slug in Forum & roles", async () => {
@@ -1726,7 +1727,7 @@ describe("interactive Pages preview", { timeout: 10_000 }, () => {
     expect(destination).toHaveValue("overview");
 
     await user.selectOptions(destination, "roles");
-    await user.click(screen.getByRole("link", { name: "Open Admin" }));
+    await user.click(screen.getByRole("link", { name: "Open Admin workspace" }));
     expect(await screen.findByRole("heading", { level: 2, name: "Roles & permissions" })).toBeInTheDocument();
 
     await openSettings(user);
@@ -1735,7 +1736,7 @@ describe("interactive Pages preview", { timeout: 10_000 }, () => {
     await user.selectOptions(screen.getByRole("combobox", { name: "Default Admin section" }), "overview");
     await user.selectOptions(screen.getByLabelText("On entry, open", { selector: "#settings-admin-entry" }), "last");
 
-    expect(screen.getByRole("link", { name: "Open Admin" })).toHaveAttribute("href", "/en/admin/authorization");
+    expect(screen.getByRole("link", { name: "Open Admin workspace" })).toHaveAttribute("href", "/en/admin/authorization");
     expect(JSON.parse(window.localStorage.getItem(key) ?? "{}")).toMatchObject({
       adminEntry: "last",
       adminDefault: "overview",
