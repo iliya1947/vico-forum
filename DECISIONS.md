@@ -29,3 +29,14 @@ WATCH-AUDIT-1, BOOKMARKS-AUDIT-1, BOOKMARKS-AUDIT-2 и TITLE-AUDIT-1 закры�
 ## D-07 — future product stages не смешиваются с corrections
 
 Moderation visibility и structure/topic move не активируются, пока consolidated #354 не закрыт и merged.
+
+
+## D-08 — moderation visibility product model уже принят
+
+V-P1/V-P2/V-P3 не являются открытыми owner forks. Они были пройдены до migration service workspace и подтверждены owner correction в текущем чате.
+
+- V-P1: hidden topic → neutral public 404; hidden post in visible topic → stable sanitized tombstone.
+- V-P2: dedicated `forum.content.visibility.manage`; initial moderator/admin grants; AP-10 `admin.forum`; nonblank reason для real Hide/Restore.
+- V-P3: visibility transition не удаляет и не переписывает orthogonal state/data; related state сохраняется, public/current projections становятся unavailable-safe, без automatic backfill/state rewrites.
+
+Отсутствие отдельной migrated acceptance-записи не является основанием повторно открывать эти решения.
