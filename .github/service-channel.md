@@ -1262,3 +1262,34 @@ Deliverables: forward migration `0070_personal_filters` с `forum_topic_mutes` o
 Проверен текущий exact head Draft implementation #351 `83b32eb364d74a2fd85377dbc907f7723254edf4`, CI https://github.com/iliya1947/vico-forum/actions/runs/44522424656, job `database` id `135554174396`, **completed SUCCESS**. Лог Vitest: **109/109 files, 1476/1476 tests PASS**, в том числе `tests/database/personal-filters-concurrency.test.ts` **27/27 PASS** (READ COMMITTED snapshot order/actor mutex/deactivation/receipt and attachment rollback). Unhandled Errors/Unhandled Rejection **отсутствуют**. Ранее flaking Watch race test не оставил необработанного отклонения, production/schema/UI files не изменялись, новых commits в 4a.7 нет.
 
 **4a.7 закрыта; STOP.** Полный CI и aggregate workflows **не** объявляются зелёными: `SA07 Background Localization Files Data and Integrations connected Chromium acceptance` на том же head завершился **failure**, фактическая причина не изучалась в узком scope 4a.7. Следующий отдельный шаг **4a.8 по `...`** — проверить `checks`, SA07 и остальные existing regressions на exact head, определить relevance/реальную причину SA07 и при необходимости исправить только подтверждённую current-scope причину, затем STOP. Потом только по новой команде **4a.9** — служебный closeout/4b handoff, STOP. Нет перехода к 4b/4c.
+
+
+## 2026-11-19 — Мира: 4a.8 SA07 diagnosis complete — no current-scope regression
+
+Exact implementation head остаётся
+`83b32eb364d74a2fd85377dbc907f7723254edf4`.
+
+Диагностирован единственный красный regression workflow:
+`SA07 Background Localization Files Data and Integrations connected Chromium acceptance`.
+
+Факты:
+- первый SA07 job `135554174007` дошёл до Integrations и упал только на
+  `tests/browser/sa07/check.py:380`: direct private
+  `/en/super-admin/monitoring/integrations.data` вернул 503 вместо 200 после ~8.25 s;
+- route 503 в этом месте соответствует classified PostgreSQL availability/query-timeout;
+- непосредственно перед этим обычные Integrations document reads EN/RU/HE были 200;
+- compare последнего полностью зелёного head
+  `a2b077fd2059d9e6c189b35d008d81d23ed6d4ba` → current
+  `83b32eb364d74a2fd85377dbc907f7723254edf4` содержит только:
+  `tests/database/personal-filters-concurrency.test.ts` и timing-only
+  `tests/database/topic-watch.test.ts`; production/schema/UI changes = 0;
+- тот же SA07 workflow на том же exact head повторно завершился SUCCESS,
+  job `135564876373`, без code changes;
+- полный current exact-head workflow set теперь **19/19 SUCCESS**, pending/failure = 0.
+
+Вывод: первый SA07 failure — transient SA07/PostgreSQL availability timeout,
+не подтверждённая Mute/block regression и не основание менять production-код или
+строить workaround. 4a.8 закрыт без implementation changes.
+
+Следующий шаг по принятой декомпозиции — только 4a.9 после следующего `...`:
+закрыть 4a evidence/handoff и STOP перед 4b.
