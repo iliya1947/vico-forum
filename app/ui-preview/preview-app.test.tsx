@@ -137,6 +137,9 @@ describe("UI preview state catalog", () => {
       expect.objectContaining({ id: "super-admin-system-owner", allowedIdentities: ["owner"] }),
       expect.objectContaining({ id: "super-admin-accounts-owner", allowedIdentities: ["owner"] }),
       expect.objectContaining({ id: "super-admin-security-owner", allowedIdentities: ["owner"] }),
+      expect.objectContaining({ id: "super-admin-background-owner", allowedIdentities: ["owner"] }),
+      expect.objectContaining({ id: "super-admin-localization-owner", allowedIdentities: ["owner"] }),
+      expect.objectContaining({ id: "super-admin-integrations-owner", allowedIdentities: ["owner"] }),
       expect.objectContaining({
         id: "super-admin-guest-unauthenticated",
         allowedIdentities: ["guest"],
@@ -357,6 +360,56 @@ describe("embedded preview routing", { timeout: 10_000 }, () => {
     expect(await screen.findByRole("heading", { level: 2, name: "Security" })).toBeInTheDocument();
     expect(document.querySelector('[data-monitor-key="security.auth"]')).not.toBeNull();
     expect(document.querySelector('[data-monitor-key="security.attachments"]')).not.toBeNull();
+  });
+
+  it("opens Background, Localization, and Integrations from Super-admin Monitoring", async () => {
+    const user = userEvent.setup();
+    await renderEmbeddedPreview(<EmbeddedPreview
+      scenarioId="super-admin-monitoring-owner"
+      identity="owner"
+    />);
+
+    const backgroundLink = document.querySelector(
+      'a[href="/en/super-admin/monitoring/background"]',
+    ) as HTMLElement;
+    await user.click(backgroundLink);
+    expect(await waitFor(() => {
+      const current = document.querySelector("[data-task-current]") as HTMLElement | null;
+      expect(current).not.toBeNull();
+      return current as HTMLElement;
+    })).toBeInTheDocument();
+    expect(document.querySelector('[data-monitor-key="background.translation"]')).not.toBeNull();
+
+    const localizationLink = document.querySelector(
+      'a[href="/en/super-admin/monitoring/localization"]',
+    ) as HTMLElement;
+    await user.click(localizationLink);
+    expect(await waitFor(() => {
+      const current = document.querySelector("[data-localization-current]") as HTMLElement | null;
+      expect(current).not.toBeNull();
+      return current as HTMLElement;
+    })).toBeInTheDocument();
+    expect(document.querySelector('[data-monitor-key="localization.registry"]')).not.toBeNull();
+    expect(document.querySelector('[data-monitor-key="localization.budget"]')).not.toBeNull();
+
+    const shellNav = document.querySelector(".super-admin-panel .admin-panel-nav") as HTMLElement;
+    await user.click(within(shellNav).getByRole("link", { name: "Monitoring" }));
+    const integrationsLink = await waitFor(() => {
+      const link = document.querySelector(
+        'a[href="/en/super-admin/monitoring/integrations"]',
+      ) as HTMLElement | null;
+      expect(link).not.toBeNull();
+      return link as HTMLElement;
+    });
+    await user.click(integrationsLink);
+
+    expect(await waitFor(() => {
+      const current = document.querySelector("[data-integration-current]") as HTMLElement | null;
+      expect(current).not.toBeNull();
+      return current as HTMLElement;
+    })).toBeInTheDocument();
+    expect(document.querySelector('[data-monitor-key="integrations.database"]')).not.toBeNull();
+    expect(document.querySelector('[data-monitor-key="integrations.translation"]')).not.toBeNull();
   });
 
   it("requires sign-in for guest direct access to Admin topic", async () => {
