@@ -1,35 +1,30 @@
 # stages/corrections/REVIEW.md — coordinator review state for consolidated corrections #354
 
-## Reviewed head
+## Final reviewed head
 
 - PR: #354
 - Base: `a645fbe21110e77429025c428e498194b9a92ca2`
-- Exact head: `01cecb91090a2f29f90b7c6ae4a83db77a0f4910`
+- Exact head: `b67e14d81cd20f2e42264e3d25d336ee19db626b`
 - Reviewer: Мира / ChatGPT-5.6 Sol
-- Result: **HOLD**
+- Result: **PASS**
+- Confirmed current-scope defects: **0**
 
-## Confirmed sound on this head
+## Whole-PR result
 
 1. WATCH-AUDIT-1: loader-authoritative Watch state; old success ACK cannot overwrite fresher loader snapshot; uncertain refresh/no replay and topic isolation preserved.
-2. BOOKMARKS-AUDIT-1: equivalent loader-authoritative Bookmark control; transient/error/refresh and late-response isolation preserved.
-3. BOOKMARKS-AUDIT-2: list presence derives from loader; stale Remove ACK cannot hide a re-added row after fresh loader state; existing pagination/account-switch semantics retained.
-4. TITLE-AUDIT-1 normal path: Save/Cancel restoration moved post-DOM commit and works in component + connected Chromium; title data/write semantics unchanged.
-5. Scope: exactly 9 changed files; no backend, DB, schema, RBAC, dependency or product-contract expansion.
-6. Exact-head workflows: 7/7 SUCCESS including CI checks/database and dedicated Watch/Bookmarks/Title connected acceptance.
+2. BOOKMARKS-AUDIT-1: loader-authoritative Bookmark control; transient/error/refresh and late-response isolation preserved.
+3. BOOKMARKS-AUDIT-2: list presence derives from loader; stale Remove ACK cannot hide a re-added row after fresh loader state; pagination/account-switch semantics retained.
+4. TITLE-AUDIT-1: normal Save/Cancel focus restoration occurs after DOM commit; title mutation/revision/CAS/rebase semantics unchanged.
+5. TITLE-AUDIT-1-R1: pending focus request expires on the close transition even if permission loss means no opener exists; later permission restoration does not replay stale focus.
+6. Scope remains exactly 9 changed files; no backend, DB, schema, RBAC, dependency or product-contract expansion.
+7. Current main differs from PR base only by merged service-workspace regulation docs.
+8. Exact-head 7/7 GitHub workflows completed SUCCESS, including CI and dedicated Watch/Bookmarks/Title connected acceptance.
+9. PR review threads/comments contain no additional findings.
 
-## Finding
+## Review-cycle note
 
-### TITLE-AUDIT-1-R1 [P3] — stale deferred focus after permission loss
+The previous reviewed head `01cecb91090a2f29f90b7c6ae4a83db77a0f4910` was HOLD only for TITLE-AUDIT-1-R1. The new delta to final head changes only title editor + its component test and closes that lifecycle defect. Unchanged corrections were revalidated against the same final PR scope and remain sound.
 
-`restoreOpenerFocus.current` is set on Cancel/success. If the close transition ends with `canEdit=false`, the component remains mounted but returns `null`; opener ref is absent and the effect returns without clearing the request. A later same actor/topic revalidation restoring `canEdit=true` makes the opener reappear and the stale request focuses it unexpectedly.
+## Handoff
 
-This is a real current-scope focus lifecycle defect because permission loss for an open title draft is an existing supported path.
-
-## Required correction
-
-- Pending focus restoration must expire if immediate post-close restoration is impossible because opener is absent/hidden.
-- Keep normal Save/Cancel post-commit focus restoration when opener is available.
-- Add regression for permission loss → close/Cancel → later permission restoration without delayed focus steal.
-- No title mutation/revision/CAS/rebase changes.
-
-After correction: Lira self-check + applicable exact-head checks → Mira fresh whole-PR review on the new stable head. Leva only after Mira PASS.
+Leva / Codex-6.1 Sol performs one independent technical whole-PR review of **this same exact SHA**. If implementation head changes, this coordinator PASS is no longer final and Mira must review the new head again. Owner alone merges after independent PASS.
