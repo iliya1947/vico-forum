@@ -1420,7 +1420,7 @@ describe("interactive Pages preview", { timeout: 10_000 }, () => {
     const title = screen.getByRole("textbox", { name: "Topic title" });
     await user.clear(title);
     await user.type(title, "Edited preview topic title");
-    await user.click(screen.getByRole("button", { name: "Save" }));
+    await user.click(screen.getByRole("button", { name: "Save changes" }));
 
     expect(await screen.findByRole("heading", { level: 1, name: "Edited preview topic title" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Edit topic title" })).toBeInTheDocument();
