@@ -1274,8 +1274,10 @@ describe("interactive Pages preview", { timeout: 10_000 }, () => {
     expect(decisionSubmit).not.toBeNull();
     await user.click(decisionSubmit!);
 
-    expect(await screen.findByText("Preview moderator decision")).toBeInTheDocument();
-    expect(document.querySelector('textarea[name="reasoning"]')).toBeNull();
+    await waitFor(() =>
+      expect(document.querySelector('textarea[name="reasoning"]')).toBeNull(),
+    );
+    expect(screen.getByText("Preview moderator decision")).toBeInTheDocument();
   });
 
   it("runs the global search form instead of blocking GET submissions", async () => {
