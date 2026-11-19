@@ -61,7 +61,7 @@ export function PersonalFilterControl({ kind, targetId, actorId, locale, state }
   const action = kind === "topic" ? forumTopicPath(locale, targetId) : forumProfilePath(locale, targetId);
   const intent = kind === "topic" ? "setTopicMute" : "setUserBlock";
   const field = kind === "topic" ? "muted" : "blocked";
-  return <div className="topic-watch-control" aria-busy={pending || refreshing}>
+  return <div className="personal-filter-control" aria-busy={pending || refreshing}>
     {confirmed !== "unavailable" && <fetcher.Form method="post" action={action}
       onSubmit={event => {
         if (locked) { event.preventDefault(); return; }
