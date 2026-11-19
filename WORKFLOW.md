@@ -12,9 +12,9 @@ Consolidated audit corrections в Draft implementation PR #354.
 - PR #354 Draft/open.
 - На этом head изменены 4 файла: Watch control+tests и Bookmark control+tests.
 - WATCH-AUDIT-1 уже исправлен.
-- BOOKMARKS-AUDIT-1 implementation уже присутствует в текущем diff, но author checkpoint/final acceptance этого расширенного head ещё не зафиксирован.
+- BOOKMARKS-AUDIT-1 исправлен; авторский bounded PASS подтверждён на текущем head. Loader определяет состояние кнопки; matching ACK изменяет только transient result. Оба stale-ACK направления и обычный success покрыты.
 - BOOKMARKS-AUDIT-2 и TITLE-AUDIT-1 на текущем head ещё не реализованы.
-- Exact-head GitHub workflows на `79066ada...`: 7/7 completed SUCCESS, включая общий CI, Topic Watch, Topic Bookmarks, Own topic title и regression connected jobs. Это подтверждает текущий Watch+Bookmark-control slice, но не является final gate всего #354, потому что BOOKMARKS-AUDIT-2 и TITLE-AUDIT-1 ещё не реализованы.
+- Exact-head `79066ada...`: 7/7 GitHub workflows SUCCESS; CI `44610653172`: checks 2748/2748 unit/route tests в 218 файлах (Bookmark control 6/6), database 1476/1476 PG17 в 109 файлах; dedicated Bookmarks Chromium `44610653174` 11/11 connected markers. Это bounded PASS, **не** final gate всего #354.
 
 ## Назначение
 
@@ -28,11 +28,10 @@ Consolidated audit corrections в Draft implementation PR #354.
 
 Лира продолжает **в том же #354**, не открывая новый corrective PR:
 
-1. закончить BOOKMARKS-AUDIT-1 и его regression/evidence;
-2. исправить BOOKMARKS-AUDIT-2;
-3. исправить TITLE-AUDIT-1;
-4. выполнить self-check и применимые exact-head checks всего consolidated PR;
-5. STOP Мире.
+1. исправить BOOKMARKS-AUDIT-2, затем bounded checkpoint + STOP;
+2. исправить TITLE-AUDIT-1, затем bounded checkpoint + STOP;
+3. выполнить self-check и применимые exact-head checks всего consolidated PR;
+4. STOP Мире.
 
 Лёву до свежего whole-PR PASS Миры не подключать.
 
