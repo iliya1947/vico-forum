@@ -1056,3 +1056,35 @@ confirmed current-doc defects = 0.** Implementation/docs exact head после r
 `aa6584c6d600d807ebed9171adbde365b918b290`. Только после фактического merge
 Лира открывает отдельный Bookmarks docs closeout. #342 служебный и не merge;
 #300 не использовать.
+
+
+## 2026-11-19 — Watch docs #349 merged; переход к Bookmarks docs closeout
+
+Watch docs PR #349 фактически merged в main:
+- reviewed docs head: `aa6584c6d600d807ebed9171adbde365b918b290`;
+- merge commit/current main: `405ab97116c5be750fb9c1d447431988802bdbb5`;
+- merged_at: 2026-11-19 07:43:44 UTC.
+
+Актуальные `AGENTS.md`, `PROJECT.md` и `PROJECT_STATE.md` на новом main
+полностью перечитаны. Watch permanent/current/history closeout теперь находится в main.
+
+Следующий bounded этап по принятому #342 route — **Bookmarks docs closeout**.
+Исполнитель: **Лира / ChatGPT-6**. Отдельного owner-назначения для docs author не требуется.
+
+Цель: документировать только уже merged Bookmarks #346 без изменения code/schema/runtime:
+1. permanent product/domain semantics должны жить в постоянном source-of-truth
+   (при отсутствии более узкого профильного SOT — `PROJECT.md`), а не только в history;
+2. `PROJECT_STATE.md` должен кратко отразить фактически реализованные Bookmarks;
+   repository migration ceiling уже корректно равен `0069` и не должен искусственно меняться;
+3. отдельный `PROJECT_HISTORY` snapshot + index entry сохраняют implementation/review/CI/merge
+   evidence #346.
+
+Границы: не добавлять новый RBAC/Admin contract, не менять external migration evidence
+(остаётся через `0020`), не заявлять production/deployed или owner visual acceptance,
+не открывать Mute/block до фактического merge Bookmarks docs.
+
+Лира самостоятельно сверяет permanent wording с merged implementation/accepted B1–B7,
+открывает отдельный docs PR от current main, выполняет применимые checks и после stable
+exact head STOP Мире на coordinator whole-PR docs review.
+
+#342 остаётся служебным и не merge; #300 не использовать.
