@@ -1586,3 +1586,18 @@ corrective-блок по findings аудита завершённых функц
 Dedicated 4b.5 acceptance verified; no claim that all other exact-head workflows completed. Do not enter 4b.6–4b.11, 4c or review/merge now. Separate owner-ordered WATCH/BOOKMARKS corrections remain deferred until after Mute/block.
 
 **Лира STOP после 4b.5.** Next distinct `...` = **ONLY 4b.6 — private `/:locale/filters`: own list, pagination, undo/reload, topic/profile controls**, then checkpoint and STOP before 4b.7. #351 Draft; #342 service-only/no merge.
+
+## 2026-11-19 — Лира: 4b.6 private Mute/Block lists, Undo and pagination PASS; STOP
+
+**Bounded scope:** real Worker/Better Auth/PostgreSQL 17/Chromium acceptance for private `/:locale/filters` own lists and two tabs, topic/profile canonical controls, persistent Undo/Reload, keyset pagination and another authenticated viewer. Draft implementation PR #351 exact head `cf9b166c27c72b3f3ed44d172cfe08678fdf9707`. Only `tests/browser/personal-filters/pg.mjs` and `tests/browser/personal-filters/check.py` changed; fixture and acceptance only. No production/schema/UI/Watch/Bookmarks code changes.
+
+**Dedicated evidence:** [Personal Mute/Block connected acceptance run 44541827642](https://github.com/iliya1947/vico-forum/actions/runs/44541827642), job `135621886569` **completed SUCCESS** on exact SHA. Job log shows **31/31 `FILTERS_CONNECTED` markers**, prior 25 4b.1–4b.5 plus six new 4b.6:
+1. A uses actual Chromium topic Mute and public profile Block; own DB pairs appear in distinct private list tabs.
+2. Both list Undo actions issue canonical HTTP POST, hide confirmed row, persist OFF through reload, and source controls return to OFF.
+3. Disposable PG fixture creates 50 additional public topics and account targets with own Mute/Block pairs. Combined with one actual UI pair each tab gives **51** Mute and **51** Block entries. Fixture inserts only test data; it is not an alternative application mutation writer.
+4. On both tabs 50 rows on first page and one older row; Older/Newest links preserve cursor/tab, aggregated distinct names match exactly expected 51, no overlap/omission.
+5. Independently signed-in B sees empty own list on both tabs, not A's records.
+
+Dedicated 4b.6 gate verified; no claim all exact-head workflows complete. No scope extension to 4b.7–4b.11, 4c, whole-PR review, merge or owner-ordered WATCH/BOOKMARKS corrections.
+
+**Лира STOP после 4b.6.** Next separate `...` = **ONLY 4b.7 — privacy/errors: guest, actor switch, no reverse graph, no-store, unavailable and late responses**, then checkpoint STOP before 4b.8. #351 Draft; #342 service-only/no merge.
