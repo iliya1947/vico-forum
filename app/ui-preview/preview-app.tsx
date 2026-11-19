@@ -13,6 +13,8 @@ import { BLOCK_MANAGE_PRIVILEGED_PERMISSION } from "../../db/user-measure-author
 import type { ProfilePrivilegedSections } from "../profile/sections";
 import type { OwnerUserProfileSnapshot } from "../../db/owner-user-profile";
 import type { OwnerHistoryEntry, OwnerHistoryOptions } from "../../db/owner-sa02-history";
+import type { ComplaintQueuePage } from "../complaints/queue-contract";
+import type { ReviewCase } from "../complaints/review-contract";
 import { CredentialView } from "../auth/credential-view";
 import { credentialReturnPath } from "../auth/credential-path";
 import type { EmailAuthActions, AuthClientActions } from "../auth/auth-client";
@@ -23,6 +25,7 @@ import { AdminOverview } from "../admin/overview";
 import { AdminUsersIndex } from "../admin/users";
 import { AdminShell } from "../admin/shell";
 import { HistoryEvents } from "../admin/history";
+import { ComplaintReviewView } from "../complaints/review-view";
 import { SuperAdminOverview } from "../super-admin/overview";
 import { SuperAdminSa02Current } from "../super-admin/current-route";
 import { SuperAdminBackground } from "../super-admin/task-current";
@@ -191,7 +194,7 @@ export const scenarios: readonly Scenario[] = [
   { id: "attention-signals", label: "Moderation · Signals", locale: "en", direction: "ltr", identity: "manager", path: "/en/attention?mode=signals", view: "attention", allowedIdentities: ["manager"] },
   { id: "attention-guest-unauthenticated", label: "Moderation · guest unauthenticated", locale: "en", direction: "ltr", identity: "guest", path: "/en/attention?mode=signals", view: "attention", allowedIdentities: ["guest"] },
   { id: "attention-user-forbidden", label: "Moderation · ordinary user forbidden", locale: "en", direction: "ltr", identity: "user", path: "/en/attention?mode=signals", view: "attention", allowedIdentities: ["user"] },
-  { id: "attention-complaints", label: "Moderation · Complaints placeholder", locale: "en", direction: "ltr", identity: "manager", path: "/en/attention?mode=complaints", view: "attention", allowedIdentities: ["manager"] },
+  { id: "attention-complaints", label: "Moderation · Complaints queue", locale: "en", direction: "ltr", identity: "manager", path: "/en/attention?mode=complaints", view: "attention", allowedIdentities: ["manager"] },
   { id: "attention-security", label: "Moderation · Security placeholder", locale: "en", direction: "ltr", identity: "manager", path: "/en/attention?mode=security", view: "attention", allowedIdentities: ["manager"] },
   { id: "attention-empty", label: "Moderation · Signals · empty", locale: "en", direction: "ltr", identity: "manager", path: "/en/attention?mode=signals", view: "attention", variant: "attention-empty", allowedIdentities: ["manager"] },
   { id: "help-solutions-solutions", label: "Help & solutions · Solutions", locale: "en", direction: "ltr", identity: "guest", path: "/en/categories/help-solutions?mode=solutions", view: "category" },
@@ -365,6 +368,9 @@ type PreviewInteractionState = {
   profileOverrides: Map<string, ProfileFields>;
   readNotifications: Set<string>;
   resolvedAttentionCases: Set<string>;
+  complaintNotes: ReviewCase["notes"]["items"];
+  complaintDecision: ReviewCase["decision"];
+  complaintVersion: number;
   preferredLocale: PreviewLocale | null;
   localeSaved: boolean;
   showOnline: boolean;
@@ -422,6 +428,9 @@ function createPreviewInteractionState(): PreviewInteractionState {
     profileOverrides: new Map(),
     readNotifications: new Set(),
     resolvedAttentionCases: new Set(),
+    complaintNotes: [],
+    complaintDecision: null,
+    complaintVersion: 1,
     preferredLocale: null,
     localeSaved: false,
     showOnline: true,
@@ -2493,6 +2502,20 @@ function previewRouter(
       ErrorBoundary: ForumRouteError,
     },
     {
+      path: "/:locale/attention/complaints/:caseId/review",
+      element: <PreviewComplaintReviewRoute />,
+      loader: ({ params }) => {
+        previewAttentionAccessData(scenario);
+        if (params.caseId !== PREVIEW_COMPLAINT_CASE_ID) {
+          throw new Response("Not Found", { status: 404 });
+        }
+        return { locale: scenario.locale, item: previewComplaintReview(interactions) };
+      },
+      action: ({ request, params }) =>
+        previewComplaintReviewAction(scenario, interactions, request, params.caseId),
+      ErrorBoundary: ForumRouteError,
+    },
+    {
       path: "/:locale/categories/:categoryId",
       element: <PreviewCategoryRoute scenario={scenario} interactions={interactions} />,
       loader: ({ request, params }) => previewCategoryAccessData(
@@ -3845,6 +3868,174 @@ function previewAttentionAccessData(scenario: Scenario) {
   return null;
 }
 
+const PREVIEW_COMPLAINT_CASE_ID = "22222222-2222-4222-8222-222222222222";
+
+function previewComplaintQueue(interactions: PreviewInteractionState): ComplaintQueuePage {
+  if (interactions.complaintDecision) return { cases: [], total: 0, page: 0, hasMore: false };
+  return {
+    cases: [{
+      id: PREVIEW_COMPLAINT_CASE_ID,
+      version: interactions.complaintVersion,
+      state: "open",
+      kind: "post",
+      topicId: "typed-api",
+      postId: "answer",
+      revisionId: "post-r2",
+      topicTitle: "How should I structure a typed API client?",
+      topicLocale: "en",
+      excerpt: "Use a typed boundary at the HTTP edge, then keep domain code independent.",
+      sourceLocale: "en",
+      topicDirection: "ltr",
+      excerptDirection: "ltr",
+      reasons: { spam: 1, harassment: 1 },
+      reportCount: 2,
+      firstReportedAt: "2026-11-18T09:10:00.000Z",
+      lastReportedAt: "2026-11-18T09:42:00.000Z",
+      automaticPriority: 2,
+      priorityOverride: null,
+      priority: 2,
+      activeElsewhere: false,
+    }],
+    total: 1,
+    page: 0,
+    hasMore: false,
+  };
+}
+
+function previewComplaintReview(interactions: PreviewInteractionState): ReviewCase {
+  const topicTitle = {
+    revisionId: "title-r1",
+    originalContent: "How should I structure a typed API client?",
+    sourceLocale: "en",
+    createdAt: "2026-09-27T10:00:00.000Z",
+    direction: "ltr" as const,
+  };
+  const reported = {
+    revisionId: "post-r2",
+    originalContent: "Use a typed boundary at the HTTP edge, then keep domain code independent.",
+    sourceLocale: "en",
+    createdAt: "2026-09-27T10:15:00.000Z",
+    direction: "ltr" as const,
+  };
+  return {
+    id: PREVIEW_COMPLAINT_CASE_ID,
+    previousCaseId: null,
+    state: interactions.complaintDecision ? "resolved" : "open",
+    version: interactions.complaintVersion,
+    kind: "post",
+    targetId: "answer",
+    topicId: "typed-api",
+    postId: "answer",
+    activeElsewhere: false,
+    reported,
+    current: reported,
+    currentTopicTitle: topicTitle,
+    targetPresent: true,
+    automaticPriority: 2,
+    priorityOverride: null,
+    priority: 2,
+    reports: {
+      items: [{
+        id: "preview-report-1",
+        reason: "harassment",
+        explanation: "Representative complaint report for Pages preview.",
+        createdAt: "2026-11-18T09:42:00.000Z",
+        reporter: { id: "sam", name: "Sam Chen" },
+      }],
+      total: 1,
+      page: 0,
+      hasMore: false,
+    },
+    independentReporterCount: 2,
+    notes: {
+      items: interactions.complaintNotes,
+      total: interactions.complaintNotes.length,
+      page: 0,
+      hasMore: false,
+    },
+    evidence: { items: [], total: 0, page: 0, hasMore: false },
+    context: { items: [], total: 0, page: 0, hasMore: false },
+    topic: {
+      id: "typed-api",
+      title: topicTitle,
+      authorId: "alex",
+      sectionId: "typescript",
+      isPinned: true,
+      isSolved: true,
+      bestAnswerPostId: "answer",
+      duplicateRelationshipId: null,
+      duplicateOf: null,
+      bestAnswer: {
+        id: "answer",
+        solutionModerationStatus: null,
+        solutionOutdatedReason: null,
+      },
+      pendingHelpDuplicateAppeal: null,
+    },
+    decision: interactions.complaintDecision,
+    permissions: {
+      pin: false,
+      solution: false,
+      duplicate: false,
+      sourceLocale: false,
+      solutionModeration: false,
+      identity: false,
+    },
+  };
+}
+
+async function previewComplaintReviewAction(
+  scenario: Scenario,
+  interactions: PreviewInteractionState,
+  request: Request,
+  caseId?: string,
+) {
+  previewAttentionAccessData(scenario);
+  if (caseId !== PREVIEW_COMPLAINT_CASE_ID) return { error: "notFound" as const };
+  const actor = previewUser(scenario)!;
+  const form = await request.formData();
+  const intent = String(form.get("intent") ?? "");
+  const operationId = String(form.get("operationId") ?? "");
+  if (!operationId) return { error: "invalid" as const };
+
+  if (intent === "note") {
+    const body = String(form.get("body") ?? "").trim();
+    if (!body) return { error: "invalid" as const };
+    interactions.complaintNotes.push({
+      id: `preview-note-${++interactions.sequence}`,
+      body,
+      author: { id: actor.id, name: actor.name },
+      createdAt: "2026-11-18T20:10:00.000Z",
+    });
+    return { ok: true as const, intent, operationId };
+  }
+
+  if (intent === "decision") {
+    if (interactions.complaintDecision) return { error: "conflict" as const };
+    const expectedVersion = Number(form.get("expectedVersion"));
+    const outcome = String(form.get("outcome") ?? "");
+    const reasoning = String(form.get("reasoning") ?? "").trim();
+    if (expectedVersion !== interactions.complaintVersion
+      || (outcome !== "confirmed" && outcome !== "not-confirmed")
+      || !reasoning) return { error: "invalid" as const };
+    interactions.complaintDecision = {
+      id: `preview-decision-${++interactions.sequence}`,
+      outcome,
+      reasoning,
+      createdAt: "2026-11-18T20:20:00.000Z",
+      reviewerName: actor.name,
+    };
+    interactions.complaintVersion += 1;
+    return { ok: true as const, intent, operationId };
+  }
+  return { error: "invalid" as const };
+}
+
+function PreviewComplaintReviewRoute() {
+  const { locale, item } = useLoaderData() as { locale: string; item: ReviewCase };
+  return <ComplaintReviewView locale={locale} item={item} />;
+}
+
 function PreviewAttentionRoute({ scenario, interactions }: {
   scenario: Scenario;
   interactions: PreviewInteractionState;
@@ -3873,6 +4064,9 @@ function PreviewAttentionRoute({ scenario, interactions }: {
       ? { cases: selectedCases, hasMore: false, page: 0 }
       : null}
     counts={mode === "signals" ? counts : null}
+    complaintQueue={mode === "complaints" && group === "group1"
+      ? previewComplaintQueue(interactions)
+      : null}
     canReviewComplaints={scenario.identity === "manager" || scenario.identity === "owner"}
     referenceTime={previewReferenceTime}
   />;
