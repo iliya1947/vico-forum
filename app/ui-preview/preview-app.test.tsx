@@ -145,6 +145,7 @@ describe("UI preview state catalog", () => {
       expect.objectContaining({ id: "super-admin-forum-owner", allowedIdentities: ["owner"] }),
       expect.objectContaining({ id: "super-admin-administration-owner", allowedIdentities: ["owner"] }),
       expect.objectContaining({ id: "super-admin-moderation-owner", allowedIdentities: ["owner"] }),
+      expect.objectContaining({ id: "super-admin-notifications-owner", allowedIdentities: ["owner"] }),
       expect.objectContaining({
         id: "super-admin-guest-unauthenticated",
         allowedIdentities: ["guest"],
@@ -490,6 +491,27 @@ describe("embedded preview routing", { timeout: 10_000 }, () => {
         await user.click(within(shellNav).getByRole("link", { name: "Monitoring" }));
       }
     }
+  });
+
+  it("opens Notifications from Super-admin Monitoring", async () => {
+    const user = userEvent.setup();
+    await renderEmbeddedPreview(<EmbeddedPreview
+      scenarioId="super-admin-monitoring-owner"
+      identity="owner"
+    />);
+
+    const notificationsLink = document.querySelector(
+      'a[href="/en/super-admin/monitoring/notifications"]',
+    ) as HTMLElement;
+    await user.click(notificationsLink);
+
+    expect(await waitFor(() => {
+      const current = document.querySelector('[data-native-area="notifications"]') as HTMLElement | null;
+      expect(current).not.toBeNull();
+      return current as HTMLElement;
+    })).toBeInTheDocument();
+    expect(document.querySelector('[data-monitor-key="notifications.inbox"]')).not.toBeNull();
+    expect(screen.getByText("9", { selector: "bdi" })).toBeInTheDocument();
   });
 
   it("requires sign-in for guest direct access to Admin topic", async () => {
