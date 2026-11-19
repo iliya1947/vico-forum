@@ -3,8 +3,8 @@
 Статус: full plan V1–V9 подготовлен Лёвой; implementation не активирован. Scope/fit сверка выполнена Мирой на current main `6fa2a43b02c55515bbd46a0d74fe6cc0d4424caf`.
 
 - V-T1/V-T2: **technical fit PASS**; proposal совместим с current schema/CAS/permission/AP-10/History seams, architecture rewrite не нужен.
-- V-P1/V-P2/V-P3: явного принятого owner record не найдено; до implementation требуется owner decision. Рекомендованные значения перечислены в `WORKFLOW.md`.
-- После owner decision Лёва финализирует plan against current main, затем bounded implementation начинает Лира.
+- V-P1/V-P2/V-P3: **ACCEPTED ранее**; повторное согласование не требуется. Миграция workspace потеряла отдельную запись о принятии, но не отменяет принятое решение.
+- Следующий шаг: Лёва сверяет/финализирует уже принятый план против current main, затем bounded implementation начинает Лира.
 
 ## Product model proposal
 
@@ -83,8 +83,10 @@ Existing writers use topic row locks as the shared topic serialization seam and 
 
 New visibility History kinds must be wired through the admin_history action/target constraint, typed History union, localized labels and Owner/Super-admin native monitoring classification. AP-10 `admin.forum` must include the new capability if V-P2 is accepted as recommended.
 
-### Pending owner product decisions
+### Accepted product decisions
 
-- V-P1 recommendation: topic neutral 404; post stable sanitized tombstone.
-- V-P2 recommendation: dedicated capability; moderator/admin initial grants; mandatory reason on real Hide and Restore; AP-10 admin.forum applies.
-- V-P3 recommendation: retain all orthogonal state/data; only visibility projections change; no automatic state rewrites/backfills.
+- **V-P1 ACCEPTED:** topic neutral 404; post stable sanitized tombstone.
+- **V-P2 ACCEPTED:** dedicated capability; moderator/admin initial grants; mandatory reason on real Hide and Restore; AP-10 admin.forum applies.
+- **V-P3 ACCEPTED:** retain orthogonal state/data; only visibility projections change; no automatic state rewrites/backfills.
+
+Owner correction в текущем чате подтвердило, что эти пункты уже проходили ранее; повторно выносить их на согласование нельзя.
