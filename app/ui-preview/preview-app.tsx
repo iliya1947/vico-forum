@@ -1926,7 +1926,7 @@ function previewDataState(): PreviewDataState {
         }),
       ]),
     ],
-    compiledExpectedMigration: "0067",
+    compiledExpectedMigration: "0067_topic_title_edit_own",
     deployedMigration: "unchecked",
   };
 }
