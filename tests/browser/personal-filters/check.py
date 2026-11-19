@@ -642,6 +642,88 @@ try:
         expect(other_viewer.get_by_text("You have not blocked any users.")).to_be_visible()
         expect(other_viewer.locator("ul.bookmarks-list > li")).to_have_count(0)
         record("same list routes expose no actor-A filter pairs to independently signed-in B")
+        # 4b.7: real HTTP privacy boundaries and browser actor change.
+        # Guest gets an explicit private 401, never empty state or private graph.
+        private(guest.request.get(base + "/en/filters"), 401)
+        private(guest.request.get(base + "/en/filters?tab=users"), 401)
+        private(guest.request.get(base + "/en/filters.data?tab=users"), 401)
+        assert guest.request.get(base + topic_path).status == 200
+        assert guest.request.get(base + profile_path).status == 200
+        expect(guest_page.locator(".personal-filter-control")).to_have_count(0)
+        guest_mute = guest.request.post(base + topic_path, headers={"Origin": base},
+                                       form={"intent": "setTopicMute",
+                                             "editorActorId": actor_id, "muted": "true"})
+        private(guest_mute, 401)
+        guest_block = guest.request.post(base + profile_path, headers={"Origin": base},
+                                        form={"intent": "setUserBlock",
+                                              "editorActorId": actor_id, "blocked": "true"})
+        private(guest_block, 401)
+        assert sql("select count(*)::int as n from forum_topic_mutes where user_id=$1",
+                   [actor_id]) == [{"n": 51}]
+        assert sql("select count(*)::int as n from forum_user_blocks where user_id=$1",
+                   [actor_id]) == [{"n": 51}]
+        record("guest private list 401, public topic/profile intact; guest Mute/Block POST 401 without writes")
+
+        for route in ("/en/filters", "/en/filters?tab=users",
+                      "/en/filters.data", "/en/filters.data?tab=users",
+                      topic_path, topic_path + ".data",
+                      profile_path, profile_path + ".data"):
+            private(actor.request.get(base + route))
+        for invalid_query in ("?ownerId=" + author_id,
+                              "?tab=users&tab=topics",
+                              "?beforeTargetId=" + seeded["topicId"]):
+            private(actor.request.get(base + "/en/filters" + invalid_query), 400)
+            private(actor.request.get(base + "/en/filters.data" + invalid_query), 400)
+        stale_topic = actor.request.post(
+            base + other_topic_path, headers={"Origin": base},
+            form={"intent": "setTopicMute", "editorActorId": author_id, "muted": "false"})
+        private(stale_topic, 409)
+        stale_block = actor.request.post(
+            base + profile_path, headers={"Origin": base},
+            form={"intent": "setUserBlock", "editorActorId": author_id, "blocked": "false"})
+        private(stale_block, 409)
+        assert sql("select topic_id from forum_topic_mutes where user_id=$1 "
+                   "and topic_id=$2", [actor_id, seeded["otherTopicId"]]) == [
+                       {"topic_id": seeded["otherTopicId"]}]
+        assert sql("select blocked_user_id from forum_user_blocks where user_id=$1 "
+                   "and blocked_user_id=$2", [actor_id, author_id]) == [
+                       {"blocked_user_id": author_id}]
+        record("private document/data no-store, invalid/foreign queries 400 and stale actor POST 409")
+
+        # B can read own empty lists but cannot read who blocked B.
+        private(author.request.get(base + "/en/filters?tab=users"))
+        b_profile_of_a = author.request.get(base + "/en/users/" + actor_id + ".data")
+        private(b_profile_of_a)
+        b_profile_data = b_profile_of_a.text()
+        assert 'blockedAuthorIds' not in b_profile_data
+        assert 'forum_user_blocks' not in b_profile_data
+        assert 'blockState' in b_profile_data, b_profile_data[:400]
+        b_list = author.request.get(base + "/en/filters.data?tab=users")
+        private(b_list)
+        assert '"items":[]' in b_list.text().replace(" ", ""), b_list.text()[:500]
+        record("blocked target B reads no reverse Block graph via own list or A public profile")
+
+        # One browser context really changes from A's Better Auth cookie to B.
+        # An older cursor from A's list is not an authorization token.
+        private(page.goto(base + "/en/filters?tab=users", wait_until="networkidle"))
+        assert page.locator("ul.bookmarks-list > li").count() == 50
+        page.get_by_role("link", name="Older filters").click()
+        expect(page.locator("ul.bookmarks-list > li")).to_have_count(1)
+        old_cursor_url = page.url
+        cookies_b = author.storage_state()["cookies"]
+        assert cookies_b
+        actor.clear_cookies()
+        actor.add_cookies(cookies_b)
+        private(page.goto(old_cursor_url, wait_until="networkidle"))
+        expect(page.locator(".auth-user")).to_have_attribute("href", "/en/users/" + author_id)
+        expect(page.locator("ul.bookmarks-list > li")).to_have_count(0)
+        expect(page.get_by_role("link", name="Newest filters")).to_be_visible()
+        page.reload(wait_until="networkidle")
+        expect(page.locator("ul.bookmarks-list > li")).to_have_count(0)
+        private(page.goto(base + "/en/filters?tab=users", wait_until="networkidle"))
+        expect(page.get_by_text("You have not blocked any users.")).to_be_visible()
+        record("real Better Auth actor switch in same Chromium context cannot reuse A's cursor/list")
+
         assert not errors, errors
         assert not external, external
         browser.close()
