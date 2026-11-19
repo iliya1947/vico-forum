@@ -344,3 +344,15 @@ code changes (new job 135564876373). Current exact-head workflows are 19/19 succ
 
 Conclusion: transient SA07/PostgreSQL availability timeout, not a confirmed current-scope
 product defect. No production or test workaround warranted. 4a.8 complete.
+
+
+## 2026-11-19 — 4a.9 closed immediately
+
+Corrected my own routing mistake: 4a.9 was service evidence/handoff, not a developer-gated
+implementation step. Closed it myself after SA07 diagnosis.
+
+4a complete on implementation head 83b32eb... with PG17 1476/1476, targeted 27/27,
+same-head SA07 success, and total current workflows 19/19 success. No confirmed current-scope
+regression remains from 4a.
+
+Next: Lira runs only 4b dedicated connected Mute/block acceptance in #351, then STOP.
