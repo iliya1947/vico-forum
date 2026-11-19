@@ -122,6 +122,29 @@ describe("UI preview state catalog", () => {
     }));
   });
 
+  it("keeps Super-admin states scoped to the exact Owner boundary", () => {
+    expect(scenarios).toEqual(expect.arrayContaining([
+      expect.objectContaining({
+        id: "super-admin-overview-owner",
+        view: "super-admin",
+        allowedIdentities: ["owner"],
+      }),
+      expect.objectContaining({
+        id: "super-admin-monitoring-owner",
+        view: "super-admin",
+        allowedIdentities: ["owner"],
+      }),
+      expect.objectContaining({
+        id: "super-admin-guest-unauthenticated",
+        allowedIdentities: ["guest"],
+      }),
+      expect.objectContaining({
+        id: "super-admin-manager-forbidden",
+        allowedIdentities: ["manager"],
+      }),
+    ]));
+  });
+
   it("keeps dedicated editor states for create-topic, reply, and Help draft review", () => {
     expect(scenarios).toEqual(expect.arrayContaining([
       expect.objectContaining({ id: "editor-create-topic", view: "section" }),
@@ -256,6 +279,50 @@ describe("embedded preview routing", { timeout: 10_000 }, () => {
     expect(within(forbidden).getByRole("heading", { level: 1, name: "Access denied" })).toBeInTheDocument();
     expect(within(forbidden).getByText("You do not have permission to open this page.")).toBeInTheDocument();
     expect(screen.queryByRole("heading", { name: "Authorization management" })).not.toBeInTheDocument();
+  });
+
+  it("requires sign-in for guest direct access to Super-admin", async () => {
+    await renderEmbeddedPreview(<EmbeddedPreview scenarioId="super-admin-guest-unauthenticated" />);
+
+    const unauthenticated = await screen.findByRole("alert");
+    expect(unauthenticated).toHaveAttribute("data-status", "401");
+    expect(within(unauthenticated).getByRole("heading", {
+      level: 1,
+      name: "Sign in required",
+    })).toBeInTheDocument();
+    expect(document.querySelector(".super-admin-panel")).toBeNull();
+  });
+
+  it("denies Manager direct access to Super-admin", async () => {
+    await renderEmbeddedPreview(<EmbeddedPreview scenarioId="super-admin-manager-forbidden" />);
+
+    const forbidden = await screen.findByRole("alert");
+    expect(forbidden).toHaveAttribute("data-status", "403");
+    expect(within(forbidden).getByRole("heading", {
+      level: 1,
+      name: "Access denied",
+    })).toBeInTheDocument();
+    expect(document.querySelector(".super-admin-panel")).toBeNull();
+  });
+
+  it("opens Super-admin Overview and Monitoring for exact Owner", async () => {
+    const user = userEvent.setup();
+    await renderEmbeddedPreview(<EmbeddedPreview
+      scenarioId="super-admin-overview-owner"
+      identity="owner"
+    />);
+
+    expect(await screen.findByRole("heading", { level: 1, name: "Super-admin" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { level: 2, name: "Overview" })).toBeInTheDocument();
+    expect(document.querySelectorAll("[data-overview-area]")).toHaveLength(13);
+
+    const nav = document.querySelector(".super-admin-panel .admin-panel-nav") as HTMLElement;
+    await user.click(within(nav).getByRole("link", { name: "Monitoring" }));
+
+    expect(await screen.findByRole("heading", { level: 2, name: "Monitoring" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "System" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Accounts & authentication" })).toBeInTheDocument();
+    expect(screen.getByText("Infrastructure")).toBeInTheDocument();
   });
 
   it("requires sign-in for guest direct access to Admin topic", async () => {
