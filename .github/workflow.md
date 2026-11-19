@@ -20,7 +20,7 @@
 - Docs closeout выполняет **Лира / ChatGPT-6** как штатный следующий исполнитель; отдельное owner-назначение для автора docs PR не требуется. Мира docs diff не пишет.
 - Watch docs closeout: **PR #349 merged** в main `405ab97116c5be750fb9c1d447431988802bdbb5`; reviewed docs head `aa6584c6d600d807ebed9171adbde365b918b290`, Мира coordinator PASS + Лёва independent PASS, defects = 0. Permanent/current/history Watch docs теперь в main.
 - Bookmarks docs closeout: **PR #350 merged** в main `9eae385571bf99e073df46f8541f7514c9626a29`; reviewed docs head `446e4cc893160efc30392bfa43f03f5882823021`, Мира docs PASS, defects = 0. Permanent/current/history Bookmarks docs теперь в main.
-- Mute/block: **текущий implementation этап**. M1/M2 owner ACCEPT + M3/M4/M6 final scope; исполнитель Лира / ChatGPT-6.
+- Mute/block: **implementation Draft PR #351, part 1/4 завершена** на stable exact head `9c0216ddc96211dc889babf85d53d3bec4a39f7c` (base main `9eae385571bf99e073df46f8541f7514c9626a29`). Migration `0070_personal_filters` + 3 personal stores, schema/manifest/ACL, own-state repository/service/Hypderdrive и real-PG tests; exact-head **16/16 CI PASS**. Код пока **не содержит M5 notification filtering, M2 viewer collapse, M6 routes/UI и финальную connected acceptance**; PR не review-ready. Исполнитель следующей части — Лира.
 
 ## Опережающий planning-track
 
@@ -33,27 +33,6 @@
 
 ## Следующий шаг
 
-**Следующий исполнитель — Лира / ChatGPT-6.** Реализовать утверждённый **Mute/block**
-bounded scope в отдельном implementation PR от current main
-`9eae385571bf99e073df46f8541f7514c9626a29`.
+**Лира STOP после part 1/4 по правилу декомпозиции.** По следующей команде владельца `...` Лира продолжает **part 2/4 в том же Draft PR #351** на exact head `9c0216ddc96211dc889babf85d53d3bec4a39f7c`: M5/M3 suppression decision + receipt во всех ordinary reply/mention paths и viewer-only Block collapse ordinary TopicView (с сохранением author/public/complaint/Watch независимых границ). Затем отдельно part 3/4 routes/UI, part 4/4 DB/browser acceptance и стабильный final head.
 
-Источник scope — принятый Mute/block план M1–M7 в `USER_ACTIONS_SERVICE_PLAN.md`:
-- M1 owner ACCEPT: topic Mute подавляет все новые ordinary reply/mention notices из темы,
-  не скрывает контент и не меняет Watch; Unmute без backfill;
-- M2 owner ACCEPT: directional Block A→B подавляет A ordinary notices от B и сворачивает
-  posts B только в ordinary TopicView A с explicit reveal; publication/public reading
-  authority не меняется;
-- M3/M4/M6 окончательны: suppression receipt, отдельные private self-state stores без нового
-  RBAC, canonical topic/profile actions, private `/:locale/filters`, private/no-store,
-  viewer-only presentation и независимость Watch/Bookmarks/read/Complaints/Admin.
-
-Лира перед implementation повторно сверяет текущие Watch/Bookmarks/profile/notification seams
-и migration ceiling, но не перепроектирует уже утверждённый продуктовый контракт.
-Выполнить применимые focused tests, real PostgreSQL concurrency/lifecycle, connected
-Worker + Better Auth + PostgreSQL 17 + Chromium acceptance и exact-head CI.
-
-После stable implementation head — **STOP Мире** на coordinator whole-PR review.
-Только после coordinator PASS — independent technical review Лёвы того же exact head.
-
-Не активировать visibility moderation, structure/topic move, #320, Stage 6 или общий UI/UX.
-#342 служебный и не merge; #300 не использовать.
+Exact-head часть 1: **16/16 CI PASS**, включая `checks`, PostgreSQL17 `database`, браузерные регрессии. Migration `0070` и FK/manifest синхронизированы; это НЕ финальная приёмка Mute/block. При завершении каждой следующей части — STOP по команде декомпозиции. Только после **полной** реализации и final exact-head CI Мира проводит coordinator whole-PR review, затем Лёва независимый technical review. #351 Draft, no merge. #342 служебный, не merge; #300/Stage6/visibility moderation/general UIUX не открывать.

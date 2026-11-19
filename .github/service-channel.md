@@ -1209,3 +1209,16 @@ review. До PASS Миры Лёву не подключать.
 
 Не расширять в visibility moderation, structure/topic move, #320, Stage 6, общий UI/UX
 или production. #342 служебный и не merge; #300 не использовать.
+
+
+## 2026-11-19 — Лира: Mute/block #351 part 1/4 (persistence+own-state), локальный STOP
+
+Выполнена **первая из четырёх** заранее объявленных частей единого bounded implementation. Base main `9eae385571bf99e073df46f8541f7514c9626a29`; принятый Mute/block M1–M7 и current-main Watch/Bookmarks/AccountState/notification/schema/ACL seams сверены. Новый [Draft PR #351](https://github.com/iliya1947/vico-forum/pull/351), branch `feature/personal-mute-block`, **exact head `9c0216ddc96211dc889babf85d53d3bec4a39f7c`** (3 commits / 16 changed files), behind main 0. Ни code второй части, ни presentation/UI ещё нет.
+
+Deliverables: forward migration `0070_personal_filters` с `forum_topic_mutes` own pairs, `forum_user_blocks` directional own pairs + self CHECK, `forum_post_notification_suppressions` recipient/post PK; все FK cascade, Created_at server clock, keyset/index + FK cleanup indexes. `db/schema.ts`, Drizzle `0070_snapshot`/`_journal`, structural production-schema manifest, exact web runtime SELECT/INSERT/DELETE own stores и SELECT/INSERT receipts. `DrizzleForumRepository` + `ForumService` + `HyperdriveForumReader/Writer`: explicit idempotent Mute ON/OFF, Block ON/OFF, own-state reads; target FK KEY SHARE перед active actor AccountState admission в одной transaction. Self-block отвергается; inactive target допускается. Privacy авторизации обеспечивается будущими route boundaries: **эти reader/writer methods сами по себе ещё не complete end-to-end feature**.
+
+Начальные real PG17 tests `tests/database/personal-filters.test.ts` покрывают own-state/idempotence, inactive actor, missing target, self-check, независимость Watch/Bookmarks/read-state, suppression receipt PK/FK; M3 production suppression пока не подключён. CI после первого commit выявил только typed mock gaps и устаревшие table-count baseline (71→74), затем misassert sync self-block. Точечные fixes одним commit. На следующем head `database` выявил manifest parity mismatch: PostgreSQL обрезал исходное 65-byte FK имя до 63, а catalog CHECK columns order отличался. Исправлены имя нового FK в migration + Drizzle snapshot и manifest, и CHECK-column order, без изменений несвязанной схемы. Все corrections внутри текущего new migration.
+
+Итоговый stable exact head `9c0216ddc96211dc889babf85d53d3bec4a39f7c`: [CI run](https://github.com/iliya1947/vico-forum/actions) — **16/16 check-runs completed success**, включая `checks` (lint/typecheck/unit/build), `database` (clean PostgreSQL17 migration/integration, full schema manifest parity, ACL/probes, Worker smoke) и все существующие Chromium regression jobs; 0 fail/pending. Final Mute/block connected browser **пока не создан и не выполнялся**. Full implementation/review PASS **не заявляется**, PR Draft/no merge.
+
+**STOP Лиры после part 1/4**, как требует current owner decomposition. Следующий этап при `...`: **part 2/4 — suppression M5/M3 + viewer-only Block collapse**, в этом же PR, затем отдельные part 3/4 routes/UI и part 4/4 final acceptance. После полного implementation PR и exact-head evidence — Мира coordinator whole-PR, далее Лёва independent technical review. #342 служебный, не merge.
