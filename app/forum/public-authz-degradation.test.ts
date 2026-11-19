@@ -101,6 +101,7 @@ const reader: ForumReader = {
   readTopicWatch: async () => false,
   readTopicMute: async () => false,
   readUserBlock: async () => false,
+  readTopicBlockedAuthors: async () => [],
   readTopicBookmark: async () => false,
   readTopicBookmarks: async () => ({ items: [], next: null }),
   readNotifications: async (_userId, page) => ({items:[],total:0,page,hasMore:false}),
