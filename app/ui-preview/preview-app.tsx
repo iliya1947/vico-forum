@@ -165,7 +165,6 @@ export const scenarios: readonly Scenario[] = [
   { id: "home-guest", label: "Home", locale: "en", direction: "ltr", identity: "guest", path: "/en", view: "home" },
   { id: "auth-pending", label: "Authentication · pending", locale: "en", direction: "ltr", identity: "guest", path: "/en", view: "home", authPresentationState: "pending", allowedIdentities: ["guest"] },
   { id: "auth-error", label: "Authentication · failed", locale: "en", direction: "ltr", identity: "guest", path: "/en", view: "home", authPresentationState: "error", allowedIdentities: ["guest"] },
-  { id: "under-development-search", label: "Under development · search", locale: "en", direction: "ltr", identity: "guest", path: "/en/under-development?feature=search", view: "under-development" },
   { id: "notifications-user", label: "Notifications · mixed", locale: "en", direction: "ltr", identity: "user", path: "/en/notifications", view: "notifications", allowedIdentities: ["user", "manager"] },
   { id: "notifications-guest-unauthenticated", label: "Notifications · guest unauthenticated", locale: "en", direction: "ltr", identity: "guest", path: "/en/notifications", view: "notifications", allowedIdentities: ["guest"] },
   { id: "notifications-empty", label: "Notifications · empty", locale: "en", direction: "ltr", identity: "user", path: "/en/notifications", view: "notifications", variant: "notifications-empty", allowedIdentities: ["user", "manager"] },
