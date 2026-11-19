@@ -2312,11 +2312,9 @@ export function TopicView({
   const headerActorId = useHeaderAuthUser()?.id ?? null;
   // Canonical loaders supply an explicit private snapshot even for guests.
   // Legacy view-only test stubs without filter metadata do not represent a stale actor.
-  // Guest->authenticated and A->B transitions retain the old snapshot and fail closed.
+  // Guest->authenticated, A->B, and A->guest must not use a prior actor's graph.
   const hasBlockSnapshot = blockedAuthorIds !== undefined;
-  const blockSnapshotIsStale = Boolean(
-    headerActorId && hasBlockSnapshot && headerActorId !== blockedActorId,
-  );
+  const blockSnapshotIsStale = hasBlockSnapshot && headerActorId !== (blockedActorId ?? null);
   const blockedAuthorSet = new Set(blockedAuthorIds ?? []);
   const blockScope = JSON.stringify([headerActorId ?? blockedActorId, topic.id, [...(blockedAuthorIds ?? [])].sort()]);
   const [revealedBlockedPosts, setRevealedBlockedPosts] = useState<{ scope: string; ids: string[] }>({ scope: "", ids: [] });
