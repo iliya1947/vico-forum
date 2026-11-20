@@ -2500,6 +2500,65 @@ describe("B3 retained Help duplicate appeal visibility projection", () => {
   });
 });
 
+describe("B3 Help similar-question visible-only ranking", () => {
+  const similar = (term: string, limit = 5) =>
+    repository.searchHelpSolutionsSimilar({title:term,body:"",tags:[]},limit);
+
+  it("does not match hidden answer source and restores body matches without new activity", async () => {
+    const f=await fixture(
+      "B3_SIMILAR_VISIBLE_ROOT_6197", "B3_SIMILAR_UNRELATED_TOPIC_6197",
+      HELP_SOLUTIONS_SERVICE_SECTION_ID,
+    );
+    const answerId=randomUUID(),revisionId=randomUUID();
+    const token="camelliaquartz";
+    await repository.createPost({
+      id:answerId,topicId:f.topicId,authorId:"ordinary",parentPostId:f.postId,
+      bodyRevision:{id:revisionId,originalContent:`B3_SECRET_SIMILAR_ANSWER_6197 ${token}`,sourceLocale:"en"},
+    });
+    expect((await similar(token)).find(row=>row.id===f.topicId))
+      .toMatchObject({matchSource:"body",replyCount:1});
+    await service.setPostVisibility({
+      topicId:f.topicId,postId:answerId,actorId:"moderator1",hidden:true,
+      expectedVisibilityVersion:0,expectedRevisionId:revisionId,reason:"Hide matching answer",
+    });
+    expect((await similar(token)).map(row=>row.id)).not.toContain(f.topicId);
+    await service.setPostVisibility({
+      topicId:f.topicId,postId:answerId,actorId:"moderator1",hidden:false,
+      expectedVisibilityVersion:1,expectedRevisionId:revisionId,reason:"Restore matching answer",
+    });
+    expect((await similar(token)).find(row=>row.id===f.topicId))
+      .toMatchObject({matchSource:"body",replyCount:1});
+  });
+
+  it("filters a hidden exact-title hit before LIMIT so a visible body hit ranks", async () => {
+    const token="orionflintmatrix";
+    const visible=await fixture(
+      "B3_SIMILAR_VISIBLE_ROOT_6198","B3_SIMILAR_UNRELATED_TITLE_6198",
+      HELP_SOLUTIONS_SERVICE_SECTION_ID,
+    );
+    const matchId=randomUUID(),matchRevisionId=randomUUID();
+    await repository.createPost({
+      id:matchId,topicId:visible.topicId,authorId:"ordinary",parentPostId:visible.postId,
+      bodyRevision:{id:matchRevisionId,originalContent:`Visible body match ${token}`,sourceLocale:"en"},
+    });
+    const hidden=await fixture(
+      "B3_SIMILAR_OTHER_ROOT_6198",token,
+      HELP_SOLUTIONS_SERVICE_SECTION_ID,
+    );
+    expect((await similar(token,1))[0]).toMatchObject({
+      id:hidden.topicId,matchSource:"title",
+    });
+    await service.setTopicVisibility(topicCommand(hidden));
+    expect((await similar(token,1))[0]).toMatchObject({
+      id:visible.topicId,matchSource:"body",
+    });
+    await service.setTopicVisibility(topicCommand(hidden,"moderator1",false,1,"Restore ranked topic"));
+    expect((await similar(token,1))[0]).toMatchObject({
+      id:hidden.topicId,matchSource:"title",
+    });
+  });
+});
+
 describe("B3 public visibility projection and leak-safe discovery", () => {
   it("retains a hidden selected Help solution while masking its source and profile counts", async () => {
     const f=await fixture(
