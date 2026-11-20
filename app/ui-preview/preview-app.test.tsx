@@ -1428,7 +1428,6 @@ describe("interactive Pages preview", { timeout: 10_000 }, () => {
   it("projects complaint reporter and appellant identity only for the bound Owner", async () => {
     const manager = userEvent.setup();
     await renderEmbeddedPreview(<EmbeddedPreview scenarioId="attention-complaints" identity="manager" />);
-
     const managerCase = await waitFor(() => {
       const current = document.querySelector(".complaint-open-case") as HTMLElement | null;
       expect(current).not.toBeNull();
@@ -1438,17 +1437,19 @@ describe("interactive Pages preview", { timeout: 10_000 }, () => {
     expect(await screen.findByRole("heading", { level: 1, name: "Complaint review" })).toBeInTheDocument();
     expect(screen.queryByText(/Sam Chen \(sam\)/)).not.toBeInTheDocument();
 
-    await manager.click(screen.getByRole("link", { name: "Queue" }));
-    const managerGroupNav = await waitFor(() => {
+    cleanup();
+    await renderEmbeddedPreview(<EmbeddedPreview scenarioId="attention-complaints" identity="manager" />);
+    const managerAppealNav = await waitFor(() => {
       const current = document.querySelector(".attention-group-nav") as HTMLElement | null;
       expect(current).not.toBeNull();
       return current!;
     });
-    await manager.click(within(managerGroupNav).getByRole("link", { name: "Appeals" }));
+    await manager.click(within(managerAppealNav).getByRole("link", { name: "Appeals" }));
     await manager.click(screen.getByRole("link", { name: "Open appeal" }));
     expect(screen.queryByText("Alex Rivera")).not.toBeInTheDocument();
 
-    await manager.click(screen.getByRole("link", { name: "Appeals" }));
+    cleanup();
+    await renderEmbeddedPreview(<EmbeddedPreview scenarioId="attention-complaints" identity="manager" />);
     const managerHistoryNav = await waitFor(() => {
       const current = document.querySelector(".attention-group-nav") as HTMLElement | null;
       expect(current).not.toBeNull();
@@ -1476,23 +1477,25 @@ describe("interactive Pages preview", { timeout: 10_000 }, () => {
     await owner.click(ownerCase);
     expect(await screen.findByText(/Sam Chen \(sam\)/)).toBeInTheDocument();
 
-    await owner.click(screen.getByRole("link", { name: "Queue" }));
-    const groupNav = await waitFor(() => {
+    cleanup();
+    await renderEmbeddedPreview(<EmbeddedPreview scenarioId="attention-complaints" identity="owner" />);
+    const ownerAppealNav = await waitFor(() => {
       const current = document.querySelector(".attention-group-nav") as HTMLElement | null;
       expect(current).not.toBeNull();
       return current!;
     });
-    await owner.click(within(groupNav).getByRole("link", { name: "Appeals" }));
+    await owner.click(within(ownerAppealNav).getByRole("link", { name: "Appeals" }));
     await owner.click(screen.getByRole("link", { name: "Open appeal" }));
     expect(await screen.findByText("Alex Rivera")).toBeInTheDocument();
 
-    await owner.click(screen.getByRole("link", { name: "Appeals" }));
-    const ownerGroupNav = await waitFor(() => {
+    cleanup();
+    await renderEmbeddedPreview(<EmbeddedPreview scenarioId="attention-complaints" identity="owner" />);
+    const ownerHistoryNav = await waitFor(() => {
       const current = document.querySelector(".attention-group-nav") as HTMLElement | null;
       expect(current).not.toBeNull();
       return current!;
     });
-    await owner.click(within(ownerGroupNav).getByRole("link", { name: "History" }));
+    await owner.click(within(ownerHistoryNav).getByRole("link", { name: "History" }));
     const history = await waitFor(() => {
       const current = document.querySelector(".complaint-history") as HTMLElement | null;
       expect(current).not.toBeNull();
