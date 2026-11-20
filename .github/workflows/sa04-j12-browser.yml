@@ -2,6 +2,8 @@ name: SA04-J12 connected AccountState Chromium acceptance
 
 on:
   pull_request:
+    types:
+      - labeled
     paths:
       - "tests/browser/sa04-completion/**"
       - ".github/workflows/sa04-j12-browser.yml"
@@ -17,11 +19,14 @@ on:
       - "app/auth/**"
       - "workers/app.ts"
 
+  workflow_dispatch:
+
 permissions:
   contents: read
 
 jobs:
   lifecycle_browser:
+    if: github.event_name == 'workflow_dispatch' || github.event.label.name == 'run:acceptance'
     runs-on: ubuntu-24.04
     timeout-minutes: 35
     services:
