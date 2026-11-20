@@ -24,10 +24,10 @@ Implement the accepted B3 bounded scope from `stages/moderation-visibility/PLAN.
 
 ## Current batch handoff — STOP
 
-- Draft #359 B3 exact `055c3c4c2e43abf53707863b2dc9233f0157ee3f`; stacked base B2 #357 unchanged; B3 incomplete.
-- Latest two-step B3 batch: `readHelpSolutionsPage` Needs Attention question selection and badge counts now share a visible-target-post SQL predicate before LIMIT. Previously hidden selected-answer Help signals could select a topic and inflate `attention.signals` despite the Attention queue's separate fix. Targetless visible signals and retained Help appeals are preserved.
-- One new PG regression definition: `needs-review` targeting hidden answer disappears while targetless `needs-details` remains, both return on Restore; hidden topic excluded, restored topic included. **19/19 static source checks PASS; PostgreSQL/Vitest/HTTP execution NOT VERIFIED** without local runtime.
-- Next owner `...`: select one further small 2–3-step current-B3 slice from verified gaps; targeted checks, update #342 and STOP. **Do not inspect GitHub Actions/CI until whole B3 finished.** No B4/Mira/merge.
+- Active Draft #359 B3 exact `96a9376f78eb5eb5f0b0edb4bfbf40ad5263ffb7`, B2 base unchanged; B3 incomplete.
+- Latest two-test B3 Help similar-question search batch: confirmed existing SQL filters hidden topics/post bodies, reply counts and recent activity before ranking/LIMIT; no production defect confirmed. Added two PG regression definitions for hidden answer body matching Hide/Restore and hidden exact-topic-title exclusion before top-1 rank, with Restore.
+- **20/20 targeted static source-contract checks PASS** on exact head. **Vitest/PostgreSQL/HTTP execution NOT VERIFIED** (no test checkout/runtime); do not call runtime PASS. No GitHub Actions/CI inspection.
+- Next owner `...`: one new small 2–3-related-step B3 package based on a verified remaining current-stage issue; available focused checks, update #342 and STOP. Do not open Actions/CI before *entire* B3 finished. No B4/Mira/merge.
 
 ## Cadence
 
