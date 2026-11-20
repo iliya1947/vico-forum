@@ -1815,7 +1815,7 @@ export class DrizzleForumRepository {
     const [topic] = await database
       .select({ id: forumTopics.id })
       .from(forumTopics)
-      .where(eq(forumTopics.id, topicId));
+      .where(and(eq(forumTopics.id, topicId), eq(forumTopics.isHidden, false)));
     if (!topic) return undefined;
 
     const [marker] = await database
@@ -1827,12 +1827,13 @@ export class DrizzleForumRepository {
       ));
 
     const posts = await database
-      .select({ id: forumPosts.id })
+      .select({ id: forumPosts.id, isHidden: forumPosts.isHidden })
       .from(forumPosts)
       .where(eq(forumPosts.topicId, topicId))
       .orderBy(asc(forumPosts.createdAt), asc(forumPosts.id));
 
-    const latestPostId = posts.at(-1)?.id ?? null;
+    const visiblePosts = posts.filter((post) => !post.isHidden);
+    const latestPostId = visiblePosts.at(-1)?.id ?? null;
     if (!latestPostId) {
       return {
         topicId,
@@ -1848,7 +1849,7 @@ export class DrizzleForumRepository {
         topicId,
         state: "new",
         lastReadPostId: null,
-        firstUnreadPostId: posts[0]!.id,
+        firstUnreadPostId: visiblePosts[0]!.id,
         latestPostId,
       };
     }
@@ -1857,7 +1858,7 @@ export class DrizzleForumRepository {
     if (markerIndex < 0) {
       throw new ForumStateConflictError("topic read marker does not belong to current topic snapshot");
     }
-    const firstUnreadPostId = posts[markerIndex + 1]?.id ?? null;
+    const firstUnreadPostId = posts.slice(markerIndex + 1).find((post) => !post.isHidden)?.id ?? null;
     return {
       topicId,
       state: firstUnreadPostId ? "unread" : "read",
@@ -2713,10 +2714,12 @@ export class DrizzleForumRepository {
         and(
           eq(forumPosts.topicId, forumTopics.id),
           eq(forumPosts.authorId, userId),
+          eq(forumPosts.isHidden, false),
         ),
       )
       .where(and(
         eq(forumTopics.sectionId, HELP_SOLUTIONS_SERVICE_SECTION_ID),
+        eq(forumTopics.isHidden, false),
         or(
           eq(forumTopics.authorId, userId),
           eq(forumPosts.authorId, userId),
@@ -2754,10 +2757,16 @@ export class DrizzleForumRepository {
       : filters.relation === "duplicate"
         ? isNotNull(activeDuplicate.id)
         : undefined;
+    const visibleReplyCount = sql<number>`count(distinct ${forumPosts.id}) filter (
+      where ${forumPosts.id} <> (
+        select root.id from forum_posts root where root.topic_id = ${forumTopics.id}
+        order by root.created_at, root.id limit 1
+      )
+    )::int`;
     const answersCondition = filters.answers === "none"
-      ? sql`count(distinct ${forumPosts.id}) <= 1`
+      ? sql`${visibleReplyCount} = 0`
       : filters.answers === "has"
-        ? sql`count(distinct ${forumPosts.id}) > 1`
+        ? sql`${visibleReplyCount} > 0`
         : sql`true`;
 
     const rows = await this.database
@@ -2767,7 +2776,7 @@ export class DrizzleForumRepository {
         authorId: forumTopics.authorId, authorName: user.name,
         authorDeactivatedAt: user.deactivatedAt, authorDeactivatedByUserId: user.deactivatedByUserId,
         authorRetainAtLeastUntil: user.retainAtLeastUntil,
-        postCount: sql<number>`count(distinct ${forumPosts.id})::int`,
+        postCount: visibleReplyCount,
         isSolved: forumTopics.isSolved,
         bestAnswerPostId: forumTopics.bestAnswerPostId,
         solutionModerationStatus: currentBestAnswer.solutionModerationStatus,
@@ -2791,10 +2800,11 @@ export class DrizzleForumRepository {
           inArray(forumTopicTags.tagKey, interestTagKeys),
         ),
       )
-      .leftJoin(forumPosts, eq(forumPosts.topicId, forumTopics.id))
+      .leftJoin(forumPosts, and(eq(forumPosts.topicId, forumTopics.id), eq(forumPosts.isHidden, false)))
       .leftJoin(currentBestAnswer, and(
         eq(currentBestAnswer.topicId, forumTopics.id),
         eq(currentBestAnswer.id, forumTopics.bestAnswerPostId),
+        eq(currentBestAnswer.isHidden, false),
       ))
       .leftJoin(activeDuplicate, and(
         eq(activeDuplicate.duplicateTopicId, forumTopics.id),
@@ -2802,6 +2812,7 @@ export class DrizzleForumRepository {
       ))
       .where(and(
         eq(forumTopics.sectionId, HELP_SOLUTIONS_SERVICE_SECTION_ID),
+        eq(forumTopics.isHidden, false),
         eq(forumTopics.isSolved, false),
         ne(forumTopics.authorId, userId),
         solutionCondition,
@@ -2833,7 +2844,7 @@ export class DrizzleForumRepository {
         title: row.title,
         authorName: author.name,
         ...(author.kind === "deleted" ? { authorIdentityKind: "deleted" as const } : {}),
-        replyCount: Math.max(0, row.postCount - 1),
+        replyCount: row.postCount,
         isSolved: row.isSolved,
         hasBestAnswer: row.bestAnswerPostId !== null,
         solutionModerationStatus: row.solutionModerationStatus as HelpSolutionModerationStatus | null,
