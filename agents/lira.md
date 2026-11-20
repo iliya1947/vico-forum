@@ -28,6 +28,13 @@ Stacked [#359](https://github.com/iliya1947/vico-forum/pull/359) at `28b60ee3e40
 
 Next owner `...`: one limited 2–3-microstep B3 batch selected from remaining verified gaps; targeted checks, update this handoff, STOP. Do not modify unrelated SA04 test merely due to one transient failure.
 
+## Latest B3 microbatch
+
+- Draft #359 test-only commit `9e5a77a0dd33abf05a0b930cea7950f545628fb5`, after earlier green `28b60ee3`.
+- Two PostgreSQL boundary regressions: search/replyCount hidden non-root reply Hide→Restore; Unanswered with hidden chronological root and visible/hidden/restored non-root answer.
+- No production change or broadening of B3 scope. Automatically triggered CI initially in progress; mark author PASS only after checking relevant actual results.
+- Continue only after owner `...` and this batch's check result. Select no more than 2–3 related remaining B3 gaps; no B4.
+
 ## Cadence
 
 - Split B3 into **small batches of 2–3 related microsteps**. If one microstep becomes long, broad, or uncertain, stop the batch earlier rather than dragging the batch to its planned size.
