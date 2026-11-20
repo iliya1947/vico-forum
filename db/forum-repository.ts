@@ -3915,7 +3915,6 @@ export class DrizzleForumRepository {
       // Lock any existing post dependency before signals, then the entire
       // potentially affected pending signal set by stable ID, including the
       // third-topic proposed-original rows in duplicate review.
-      const reviewedTopic = topics.find((row) => row.id === snapshot.topicId);
       if (
         (kind === "needs-review" || kind === "solution-outdated")
         && snapshot.targetPostId
