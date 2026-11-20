@@ -101,17 +101,17 @@ describe("SA04-H native PostgreSQL post revision author lifecycle", () => {
     expect(original).toHaveLength(3);
     expect(await forum.readPostLocation("h-post")).toMatchObject({ topicId: "h-topic" });
     try {
-      await client.query("update forum_posts set is_hidden=true where id='h-post'");
+      await client.query("update forum_posts set is_hidden=true, visibility_version=visibility_version+1, visibility_changed_at=clock_timestamp() where id='h-post'");
       expect(await forum.readPostLocation("h-post")).toBeUndefined();
       expect(await forum.readPostHistory("h-post", "h-topic")).toEqual([]);
 
-      await client.query("update forum_posts set is_hidden=false where id='h-post'");
-      await client.query("update forum_topics set is_hidden=true where id='h-topic'");
+      await client.query("update forum_posts set is_hidden=false, visibility_version=visibility_version+1, visibility_changed_at=clock_timestamp() where id='h-post'");
+      await client.query("update forum_topics set is_hidden=true, visibility_version=visibility_version+1, visibility_changed_at=clock_timestamp() where id='h-topic'");
       expect(await forum.readPostLocation("h-post")).toBeUndefined();
       expect(await forum.readPostHistory("h-post", "h-topic")).toEqual([]);
     } finally {
-      await client.query("update forum_topics set is_hidden=false where id='h-topic'");
-      await client.query("update forum_posts set is_hidden=false where id='h-post'");
+      await client.query("update forum_topics set is_hidden=false, visibility_version=visibility_version+1, visibility_changed_at=clock_timestamp() where id='h-topic'");
+      await client.query("update forum_posts set is_hidden=false, visibility_version=visibility_version+1, visibility_changed_at=clock_timestamp() where id='h-post'");
     }
     const restored = await forum.readPostHistory("h-post", "h-topic");
     expect(restored.map(row => row.id)).toEqual(original.map(row => row.id));
