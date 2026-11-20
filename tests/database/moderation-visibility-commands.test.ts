@@ -9,6 +9,9 @@ import {
 } from "../../db/forum-repository";
 import { ForumService, InvalidForumContentError } from "../../db/forum-service";
 import { HELP_SOLUTIONS_SERVICE_SECTION_ID } from "../../db/forum-identifiers";
+import { DrizzleContentTopicTitlePlanningStore } from "../../db/content-topic-title-task-store";
+import { contentTopicTitleTaskSpecification } from "../../app/localization/content-translation-planning";
+import { CONTENT_TRANSLATION_REQUESTER_SUBJECT_KEY_LENGTH } from "../../app/localization/content-request-budget.server";
 import { withOwnerUserMeasureAdmission, UserMeasureRestrictedError } from "../../db/user-measure-policy";
 
 const url = process.env.DATABASE_URL!;
@@ -1483,4 +1486,166 @@ describe("V4 published edit recovery admission after Hide", () => {
     expect(recovered.receipts).toHaveLength(hidden.receipts.length + 1);
     expect(recovered.post.current_revision_id).not.toBe(committed.post.current_revision_id);
   });
+});
+
+describe("V4 real PostgreSQL title planning versus topic Hide/Restore", () => {
+  async function connected() {
+    const connection = new Client({ connectionString: url, options: "-c search_path=" + schema });
+    await connection.connect();
+    await connection.query("set statement_timeout='25000ms'");
+    const pid = (await connection.query<{ pid: number }>("select pg_backend_pid() as pid")).rows[0]!.pid;
+    return { connection, pid };
+  }
+
+  /** Synchronize against actual PostgreSQL row-lock waits, not JS invocation ordering. */
+  async function waitForPgLock(waiter: number, possibleBlockers: number[]) {
+    const deadline = Date.now() + 8_000;
+    let last: unknown;
+    while (Date.now() < deadline) {
+      const observed = await client.query<{
+        wait_event_type: string | null; blockers: number[];
+      }>(
+        "select wait_event_type,pg_blocking_pids(pid) as blockers " +
+          "from pg_stat_activity where pid=$1",
+        [waiter],
+      );
+      last = observed.rows[0];
+      if (observed.rows[0]?.wait_event_type === "Lock"
+        && observed.rows[0].blockers.some(pid => possibleBlockers.includes(pid))) return;
+      await new Promise(resolve => setTimeout(resolve, 25));
+    }
+    throw new Error("Expected real PostgreSQL row-lock wait: " +
+      JSON.stringify({ waiter, possibleBlockers, last }));
+  }
+
+  it.each([
+    { transition: "Hide", writerFirst: true, initialHidden: false, admitted: false },
+    { transition: "Hide", writerFirst: false, initialHidden: false, admitted: true },
+    { transition: "Restore", writerFirst: true, initialHidden: true, admitted: true },
+    { transition: "Restore", writerFirst: false, initialHidden: true, admitted: false },
+  ] as const)(
+    "$transition × title planning, writerFirst=$writerFirst: real lock order",
+    async ({ transition, writerFirst, initialHidden, admitted }) => {
+      const f = await fixture();
+      if (initialHidden) {
+        await service.setTopicVisibility(topicCommand(f));
+      }
+      const revision = {
+        contentType: "topic-title" as const,
+        contentId: f.topicId, revisionId: f.titleRevisionId,
+        originalContent: "PRIVATE TOPIC", sourceLocale: "en",
+      };
+      const specification = await contentTopicTitleTaskSpecification(
+        revision,
+        { kind: "revision", mayProceed: true, sourceLocale: "en",
+          resolutionOrigin: "revision-metadata" },
+        "en", "he", "visibility-race-v1",
+      );
+      const scopePrefix = "title-race-" + f.topicId.slice(0, 12);
+      const admission = {
+        subjectKey: "T".repeat(CONTENT_TRANSLATION_REQUESTER_SUBJECT_KEY_LENGTH),
+        cost: 1, windowSeconds: 60,
+        global: { name: scopePrefix + "-global", version: "race-v1", limit: 100 },
+        requester: { name: scopePrefix + "-requester", version: "race-v1", limit: 100 },
+      };
+      const [holder, planner, writer] = await Promise.all([
+        connected(), connected(), connected(),
+      ]);
+      const planning = new DrizzleContentTopicTitlePlanningStore(drizzle(planner.connection));
+      const moderation = new ForumService(new DrizzleForumRepository(
+        drizzle(writer.connection),
+        { cooldownMs: 0, now: () => new Date() },
+        withOwnerUserMeasureAdmission("owner"), undefined, "owner",
+      ));
+      const changingToHidden = transition === "Hide";
+      const command = topicCommand(f, "moderator1", changingToHidden,
+        initialHidden ? 1 : 0, transition + " under lock");
+      let held = false;
+      let planned: ReturnType<typeof planning.upsertPending> | undefined;
+      let changed: ReturnType<typeof moderation.setTopicVisibility> | undefined;
+      try {
+        await holder.connection.query("begin");
+        held = true;
+        await holder.connection.query(
+          "select id from forum_topics where id=$1 for no key update", [f.topicId],
+        );
+        // Both contenders must be blocked at the same real topic row before
+        // releasing the holder. Starting the first waiter decides lock order.
+        const startPlan = async () => {
+          planned = planning.upsertPending(specification, revision, admission, "author");
+          void planned.catch(() => {});
+          await waitForPgLock(planner.pid, [holder.pid, writer.pid]);
+        };
+        const startWriter = async () => {
+          changed = moderation.setTopicVisibility(command);
+          void changed.catch(() => {});
+          await waitForPgLock(writer.pid, [holder.pid, planner.pid]);
+        };
+        if (writerFirst) {
+          await startWriter();
+          await startPlan();
+        } else {
+          await startPlan();
+          await startWriter();
+        }
+        await holder.connection.query("commit");
+        held = false;
+        const [visibility, result] = await Promise.all([changed!, planned!]);
+        expect(visibility).toMatchObject({ hidden: changingToHidden, changed: true });
+        expect(result).toMatchObject(admitted
+          ? { outcome: "task", created: true }
+          : { outcome: "revision-changed" });
+        const rows = await client.query<{
+          hidden: boolean; version: number; heads: number; tasks: number; budget: number;
+        }>(
+          `select
+            (select is_hidden from forum_topics where id=$1) as hidden,
+            (select visibility_version from forum_topics where id=$1) as version,
+            (select count(*)::int from translation_task_generation_heads
+              where source_namespace='topic-title' and source_key=$1) as heads,
+            (select count(*)::int from translation_tasks
+              where source_namespace='topic-title' and source_key=$1) as tasks,
+            (select coalesce(sum(used_units),0)::int from content_translation_request_budget_counters
+              where scope in ($2,$3)) as budget`,
+          [f.topicId, admission.global.name + "@race-v1",
+            admission.requester.name + "@race-v1"],
+        );
+        expect(rows.rows[0]).toEqual({
+          hidden: changingToHidden, version: initialHidden ? 2 : 1,
+          heads: admitted ? 1 : 0, tasks: admitted ? 1 : 0,
+          budget: admitted ? 2 : 0,
+        });
+        const atRace = await events(f.topicId);
+        expect(atRace.map(event => event.action)).toEqual(
+          initialHidden ? ["topic.hidden", "topic.restored"] : ["topic.hidden"],
+        );
+
+        if (changingToHidden) {
+          await moderation.setTopicVisibility(
+            topicCommand(f, "moderator1", false, 1, "Restore after title race"),
+          );
+        }
+        const afterRestore = await planning.upsertPending(
+          specification, revision, admission, "author",
+        );
+        expect(afterRestore).toMatchObject({ outcome: "task", created: !admitted });
+        const tasks = await client.query<{ id: string; status: string }>(
+          "select id,status from translation_tasks " +
+            "where source_namespace='topic-title' and source_key=$1", [f.topicId],
+        );
+        expect(tasks.rows).toHaveLength(1);
+        expect(tasks.rows[0]).toMatchObject({ status: "pending" });
+        if (result.outcome === "task") expect(tasks.rows[0].id).toBe(result.task.id);
+      } finally {
+        if (held) await holder.connection.query("rollback");
+        await Promise.allSettled([planned, changed].filter(
+          (p): p is Promise<unknown> => p !== undefined,
+        ));
+        await Promise.all([
+          holder.connection.end(), planner.connection.end(), writer.connection.end(),
+        ]);
+      }
+    },
+    30_000,
+  );
 });
