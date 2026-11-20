@@ -6253,6 +6253,31 @@ function PreviewCategoryRoute({ scenario, interactions }: {
         : {}),
     };
     const basePage = previewHelpSolutions(scenario.locale);
+    const currentHelpQuestion = (question: typeof basePage.questions[number]) => {
+      const replies = interactions.replies.get(question.id) ?? [];
+      const override = interactions.topicOverrides.get(question.id);
+      const solutionModerationStatus = override?.solutionModerationStatus === undefined
+        ? question.solutionModerationStatus
+        : override.solutionModerationStatus;
+      return {
+        ...question,
+        title: interactions.topicTitleEdits.get(question.id)?.originalContent ?? question.title,
+        replyCount: question.replyCount + replies.length,
+        isSolved: override?.isSolved ?? question.isSolved,
+        hasBestAnswer: override?.bestAnswerPostId === undefined
+          ? question.hasBestAnswer
+          : Boolean(override.bestAnswerPostId),
+        solutionModerationStatus,
+        solutionOutdatedReason: override?.solutionModerationStatus === undefined
+          ? question.solutionOutdatedReason
+          : solutionModerationStatus === "outdated"
+            ? override.solutionOutdatedReason ?? null
+            : null,
+        duplicateOf: override?.duplicateOf === undefined ? question.duplicateOf : override.duplicateOf,
+        duplicateDisputed: override?.duplicateDisputed ?? question.duplicateDisputed,
+        activityAt: (replies.at(-1)?.createdAt ?? new Date(question.activityAt)).toISOString(),
+      };
+    };
     const createdQuestions = [...interactions.createdTopics.values()]
       .filter((topic) => topic.sectionId === HELP_SOLUTIONS_SERVICE_SECTION_ID)
       .map((topic) => {
@@ -6260,23 +6285,28 @@ function PreviewCategoryRoute({ scenario, interactions }: {
         const override = interactions.topicOverrides.get(topic.id);
         return {
           id: topic.id,
-          title: topic.title,
+          title: interactions.topicTitleEdits.get(topic.id)?.originalContent ?? topic.title,
           authorName: topic.authorName,
           replyCount: replies.length,
           isSolved: override?.isSolved ?? false,
           hasBestAnswer: Boolean(override?.bestAnswerPostId),
-          solutionModerationStatus: null,
-          solutionOutdatedReason: null,
+          solutionModerationStatus: override?.solutionModerationStatus ?? null,
+          solutionOutdatedReason: override?.solutionModerationStatus === "outdated"
+            ? override.solutionOutdatedReason ?? null
+            : null,
           solutionOutdatedReasonKind: null,
           needsDetails: false,
-          duplicateOf: null,
-          duplicateDisputed: false,
+          duplicateOf: override?.duplicateOf ?? null,
+          duplicateDisputed: override?.duplicateDisputed ?? false,
           createdAt: topic.createdAt.toISOString(),
           activityAt: (replies.at(-1)?.createdAt ?? topic.createdAt).toISOString(),
           tags: topic.tags,
         };
       });
-    const page = { ...basePage, questions: [...createdQuestions, ...basePage.questions] };
+    const page = {
+      ...basePage,
+      questions: [...createdQuestions, ...basePage.questions.map(currentHelpQuestion)],
+    };
     const previewIdentity = previewUser(scenario);
     const filteredPage = scenario.variant === "help-solutions-open-empty" && mode === "open"
       ? { ...page, questions: [] }
