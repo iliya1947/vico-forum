@@ -2263,6 +2263,48 @@ describe("V4 real PostgreSQL post Hide/Restore versus body planning, direct repl
 });
 
 describe("B3 public visibility projection and leak-safe discovery", () => {
+  it("filters hidden reply from search body matching and reply counts, then restores it", async () => {
+    const f=await fixture("B3_UNIQUE_SEARCH_ROOT_20261120");
+    const postId=randomUUID(),revisionId=randomUUID();
+    await repository.createPost({
+      id:postId,topicId:f.topicId,authorId:"ordinary",parentPostId:f.postId,
+      bodyRevision:{id:revisionId,originalContent:"B3_UNIQUE_SEARCH_REPLY_20261120",sourceLocale:"en"},
+    });
+    expect((await repository.search("B3_UNIQUE_SEARCH_ROOT_20261120")).find(x=>x.id===f.topicId)?.replyCount).toBe(1);
+    expect((await repository.search("B3_UNIQUE_SEARCH_REPLY_20261120")).map(x=>x.id)).toContain(f.topicId);
+    await service.setPostVisibility({topicId:f.topicId,postId,actorId:"moderator1",hidden:true,
+      expectedVisibilityVersion:0,expectedRevisionId:revisionId,reason:"Hide search reply"});
+    expect((await repository.search("B3_UNIQUE_SEARCH_REPLY_20261120")).map(x=>x.id)).not.toContain(f.topicId);
+    expect((await repository.search("B3_UNIQUE_SEARCH_ROOT_20261120")).find(x=>x.id===f.topicId)?.replyCount).toBe(0);
+    expect((await repository.readTopicPage(f.topicId))?.posts[1]).toEqual({
+      kind:"hidden",id:postId,topicId:f.topicId,parentPostId:f.postId,createdAt:expect.any(Date),
+    });
+    await service.setPostVisibility({topicId:f.topicId,postId,actorId:"moderator1",hidden:false,
+      expectedVisibilityVersion:1,expectedRevisionId:revisionId,reason:"Restore search reply"});
+    expect((await repository.search("B3_UNIQUE_SEARCH_REPLY_20261120")).map(x=>x.id)).toContain(f.topicId);
+    expect((await repository.search("B3_UNIQUE_SEARCH_ROOT_20261120")).find(x=>x.id===f.topicId)?.replyCount).toBe(1);
+  });
+
+  it("classifies unanswered using visible non-root replies with a hidden root", async () => {
+    const f=await fixture("B3_UNANSWERED_ROOT_20261120");
+    const postId=randomUUID(),revisionId=randomUUID();
+    const isUnanswered=async()=> (await repository.readUnanswered()).some(x=>x.id===f.topicId);
+    expect(await isUnanswered()).toBe(true);
+    await repository.createPost({
+      id:postId,topicId:f.topicId,authorId:"ordinary",parentPostId:f.postId,
+      bodyRevision:{id:revisionId,originalContent:"B3_UNANSWERED_REPLY_20261120",sourceLocale:"en"},
+    });
+    expect(await isUnanswered()).toBe(false);
+    await service.setPostVisibility(postCommand(f));
+    expect(await isUnanswered()).toBe(false);
+    await service.setPostVisibility({topicId:f.topicId,postId,actorId:"moderator1",hidden:true,
+      expectedVisibilityVersion:0,expectedRevisionId:revisionId,reason:"Hide sole answer"});
+    expect(await isUnanswered()).toBe(true);
+    await service.setPostVisibility({topicId:f.topicId,postId,actorId:"moderator1",hidden:false,
+      expectedVisibilityVersion:1,expectedRevisionId:revisionId,reason:"Restore sole answer"});
+    expect(await isUnanswered()).toBe(false);
+  });
+
   it("treats hidden topics as neutral absence across thread, lists, search and counts", async () => {
     const f = await fixture("B3_SECRET_HIDDEN_ROOT_TEXT_6492");
     const categoryBefore = await repository.readHomepage();
