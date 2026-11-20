@@ -24,11 +24,10 @@ Implement the accepted B3 bounded scope from `stages/moderation-visibility/PLAN.
 
 ## Current batch handoff — STOP
 
-- Active stacked Draft #359 exact `aac778dc00e158d09fbe5f42209ec8bd798f4266`, base B2 unchanged; B3 remains partial.
-- Latest B3 retained Help appeal batch: `readHelpAttentionCases("appeals")` continues to return/count protected pending appeals while hidden; title revision joins on duplicate/original now require each visible topic. Hidden duplicate is `topicTitle:"",topicUnavailable:true`, hidden canonical original is `original:null`, while guarded review-action topicId is preserved. `AttentionCaseCard` renders localized nonlinked unavailable labels without weakening accept/reject.
-- One PG test definition covers Hide/Restore masking and retained count/action resolution while hidden; one React test definition checks nonlinks and retained buttons/IDs. One canonical label added in catalog.
-- **27/27 targeted static source-contract checks PASS** on exact head. **PostgreSQL/Vitest/HTTP runtime execution NOT VERIFIED** (no checkout/runtime); don't claim runtime PASS. GitHub Actions/CI not inspected.
-- Next owner `...`: one small 2–3-microstep B3 batch based on verified remaining current-stage issues; targeted available checks, service handoff, STOP. **No GitHub Actions/CI inspection until entire B3 completed.** No B4/Mira/merge.
+- Draft #359 B3 exact `055c3c4c2e43abf53707863b2dc9233f0157ee3f`; stacked base B2 #357 unchanged; B3 incomplete.
+- Latest two-step B3 batch: `readHelpSolutionsPage` Needs Attention question selection and badge counts now share a visible-target-post SQL predicate before LIMIT. Previously hidden selected-answer Help signals could select a topic and inflate `attention.signals` despite the Attention queue's separate fix. Targetless visible signals and retained Help appeals are preserved.
+- One new PG regression definition: `needs-review` targeting hidden answer disappears while targetless `needs-details` remains, both return on Restore; hidden topic excluded, restored topic included. **19/19 static source checks PASS; PostgreSQL/Vitest/HTTP execution NOT VERIFIED** without local runtime.
+- Next owner `...`: select one further small 2–3-step current-B3 slice from verified gaps; targeted checks, update #342 and STOP. **Do not inspect GitHub Actions/CI until whole B3 finished.** No B4/Mira/merge.
 
 ## Cadence
 
