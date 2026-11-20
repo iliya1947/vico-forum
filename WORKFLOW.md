@@ -118,12 +118,11 @@ B3 result boundary: typed hidden tombstones/public topic 404, consistent thread 
 
 ## B3 current working batch — STOP
 
-- Active stacked Draft [#359](https://github.com/iliya1947/vico-forum/pull/359), exact head `b0977950b8792b2bbdad1715e004c4d48980120b`; base B2 #357 unchanged; B1/B2/B3 remain Draft/unmerged.
-- Existing B3 typed public tombstone, SQL visibility and search/count/rank/Help/profile/Popular regressions are still only partial author coverage. Recent route microbatches ensure `no-store` on Topic/Search, Tags/Tag; their local Vitest/HTTP execution has not been verified here.
-- **Current 2-route microbatch:** `app/routes/popular.tsx` and `app/routes/unanswered.tsx` set `Cache-Control: no-store` on public React Router `data()` loader responses and route `headers`, including errors and stale parent/error headers, preserving unrelated parent headers. Production SQL queries and domain contracts unchanged.
-- `app/forum/public-read.test.tsx`: two new focused cache/503 tests plus direct-call wrappers that unwrap `data()` for prior Popular and Unanswered assertions. Existing repository visibility SQL checked against these tests.
-- **14/14 targeted static contract assertions passed** on exact `b0977950`. **Vitest, HTTP and PostgreSQL runtime execution not verified:** no local checkout/test runtime. Do not claim these tests passed.
-- Strict owner cadence: no GitHub Actions/CI inspection until the **entire B3** is finished; ignore auto-triggered workflows completely. B3 remains incomplete: other public route no-store surfaces, HTML/JSON/.data/meta/error sentinel/leak, pagination/anchor boundaries and runtime acceptance remain.
-- No B4+, Mira coordinator checkpoint, fold or merge.
-- **Next owner `...`**: select one 2–3-related-microstep B3 package from verified remaining gaps, perform available targeted checks, update service handoff, STOP.
+- Active stacked Draft [#359](https://github.com/iliya1947/vico-forum/pull/359) exact `7f8b17dbd887a8ac470dfcbe6e2d69c1c591f48b`; base B2 #357 unchanged, B1/B2/B3 Draft/unmerged. B3 bounded scope incomplete.
+- **Current two-route microbatch:** `app/routes/section.tsx` and `app/routes/category.tsx`. Public Section/Category/Help loader data and document/error responses enforce `no-store`; signed-in Section read-state and Help user-specific presentation return `private, no-store`. Existing private action/no-store and `Retry-After` survive. Neutral hidden/missing Section/Category/Help 404 cannot inherit cacheable parent/error policies. No schema/query/domain changes.
+- `app/forum/public-read.test.tsx`: 3 route regressions for guest vs signed-in privacy, Help vs ordinary category, action header preservation, and Section/Category 404; direct-call test adapters unwrap React Router `data()` for existing tests.
+- **15/15 targeted static/source-contract checks PASS** on the exact head: source patterns, original SQL visibility filters, test assertions and stacked base. **Vitest/HTTP/PostgreSQL execution not verified** here (no checkout or runtime), no runtime PASS claim. Earlier regression execution remains unverified.
+- Prior B3 source changes include typed tombstone and visibility-filtered public discovery, plus Topic/Search, Tags/Tag, Popular/Unanswered no-store microbatches. Still open: remaining public/negative route headers, public leak sentinels (HTML/JSON/.data/meta/errors), pagination/unread/relationship boundaries, targeted runtime tests and whole-B3 author self-check.
+- Owner cadence: never open/poll/retry/analyze GitHub Actions/CI until **entire B3 is complete**; ignore auto workflows. No B4+, Mira checkpoint or merge.
+- **Next owner `...`**: one new 2–3-microstep verified B3 package, available targeted checks, service update, STOP.
 
