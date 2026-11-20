@@ -1653,8 +1653,6 @@ describe("V4 real PostgreSQL title planning versus topic Hide/Restore", () => {
 });
 
 describe("V4 real PostgreSQL topic Hide/Restore versus body planning, reply, edit and protected Complaint", () => {
-  type Kind = "body-plan" | "reply" | "edit" | "complaint-post" | "complaint-title";
-  type Transition = "Hide" | "Restore";
   async function connection() {
     const c = new Client({ connectionString: url, options: "-c search_path=" + schema });
     await c.connect();
@@ -1867,4 +1865,189 @@ describe("V4 real PostgreSQL topic Hide/Restore versus body planning, reply, edi
       30_000,
     );
   }
+});
+
+describe("V4 real PostgreSQL visibility actor admission and KEY SHARE compatibility", () => {
+  async function connection() {
+    const c = new Client({ connectionString: url, options: "-c search_path=" + schema });
+    await c.connect();
+    await c.query("set statement_timeout='25000ms'");
+    const pid = (await c.query<{ pid: number }>("select pg_backend_pid() as pid")).rows[0]!.pid;
+    return { c, pid };
+  }
+  async function waitBlocked(waiter: number, owner: number) {
+    const end = Date.now() + 8_000;
+    let last: unknown;
+    while (Date.now() < end) {
+      const r = await client.query<{ blockers: number[]; wait_event_type: string | null }>(
+        "select pg_blocking_pids(pid) as blockers,wait_event_type from pg_stat_activity where pid=$1",
+        [waiter],
+      );
+      last = r.rows[0];
+      if (r.rows[0]?.wait_event_type === "Lock" && r.rows[0].blockers.includes(owner)) return;
+      await new Promise(done => setTimeout(done, 25));
+    }
+    throw new Error("Expected actor lock wait: " + JSON.stringify({ waiter, owner, last }));
+  }
+  function moderation(c: Client) {
+    return new ForumService(new DrizzleForumRepository(drizzle(c),
+      { cooldownMs: 0, now: () => new Date() },
+      withOwnerUserMeasureAdmission("owner"), undefined, "owner"));
+  }
+  function pauseCommit(c: Client) {
+    const original = c.query;
+    let observe!: () => void, release!: () => void;
+    const observed = new Promise<void>(resolve => { observe = resolve; });
+    const allowed = new Promise<void>(resolve => { release = resolve; });
+    let used = false;
+    c.query = ((...args: unknown[]) => {
+      const arg = args[0];
+      const sql = typeof arg === "string" ? arg
+        : arg && typeof arg === "object" && "text" in arg && typeof arg.text === "string"
+          ? arg.text : "";
+      if (!used && /^commit$/iu.test(sql.trim())) {
+        used = true;
+        observe();
+        return allowed.then(() => Reflect.apply(original, c, args));
+      }
+      return Reflect.apply(original, c, args);
+    }) as typeof c.query;
+    return { observed, resume: release, restore: () => { c.query = original; } };
+  }
+  async function resetModerator() {
+    await client.query(
+      'update "user" set deactivated_at=null,deactivated_by_user_id=null,' +
+        "retain_at_least_until=null where id='moderator2'",
+    );
+  }
+
+  it("actor deactivation before visibility admission denies Hide without History or state writes", async () => {
+    const f = await fixture(), deactivator = await connection(), writer = await connection();
+    let held = false;
+    let pending: ReturnType<ForumService["setTopicVisibility"]> | undefined;
+    try {
+      await deactivator.c.query("begin");
+      held = true;
+      await deactivator.c.query(
+        'update "user" set deactivated_at=clock_timestamp(),deactivated_by_user_id=\'owner\',' +
+          "retain_at_least_until=clock_timestamp()+interval '1 year' where id='moderator2'",
+      );
+      pending = moderation(writer.c).setTopicVisibility(topicCommand(f, "moderator2"));
+      void pending.catch(() => undefined);
+      await waitBlocked(writer.pid, deactivator.pid);
+      await deactivator.c.query("commit");
+      held = false;
+      await expect(pending).rejects.toMatchObject({ name: "AccountInactiveError" });
+      expect((await client.query(
+        "select is_hidden,visibility_version from forum_topics where id=$1", [f.topicId],
+      )).rows[0]).toEqual({ is_hidden: false, visibility_version: 0 });
+      expect(await events(f.topicId)).toHaveLength(0);
+    } finally {
+      if (held) await deactivator.c.query("rollback");
+      await Promise.allSettled([pending]);
+      await resetModerator();
+      await Promise.all([deactivator.c.end(), writer.c.end()]);
+    }
+  }, 30_000);
+
+  it("visibility admission wins before actor deactivation; actor lock lasts through COMMIT", async () => {
+    const f = await fixture(), writer = await connection(), deactivator = await connection();
+    const gate = pauseCommit(writer.c);
+    let held = false;
+    let pending: ReturnType<ForumService["setTopicVisibility"]> | undefined;
+    let deactivation: Promise<unknown> | undefined;
+    try {
+      pending = moderation(writer.c).setTopicVisibility(topicCommand(f, "moderator2"));
+      void pending.catch(() => undefined);
+      await gate.observed;
+      await deactivator.c.query("begin");
+      held = true;
+      deactivation = deactivator.c.query(
+        'update "user" set deactivated_at=clock_timestamp(),deactivated_by_user_id=\'owner\',' +
+          "retain_at_least_until=clock_timestamp()+interval '1 year' where id='moderator2'",
+      );
+      void deactivation.catch(() => undefined);
+      await waitBlocked(deactivator.pid, writer.pid);
+      gate.resume();
+      await expect(pending).resolves.toMatchObject({ hidden: true, changed: true });
+      await deactivation;
+      await deactivator.c.query("commit");
+      held = false;
+      expect((await events(f.topicId)).map(x => x.action)).toEqual(["topic.hidden"]);
+      expect((await client.query(
+        "select is_hidden,visibility_version from forum_topics where id=$1", [f.topicId],
+      )).rows[0]).toEqual({ is_hidden: true, visibility_version: 1 });
+    } finally {
+      gate.resume();
+      gate.restore();
+      if (held) await deactivator.c.query("rollback").catch(() => undefined);
+      await Promise.allSettled([pending, deactivation]);
+      await resetModerator();
+      await Promise.all([writer.c.end(), deactivator.c.end()]);
+    }
+  }, 30_000);
+
+  it.each(["topic", "post"] as const)(
+    "%s visibility NO KEY UPDATE remains compatible with FK KEY SHARE while uncommitted",
+    async kind => {
+      const f = await fixture(), writer = await connection(), reader = await connection();
+      const gate = pauseCommit(writer.c);
+      let pending: Promise<unknown> | undefined;
+      try {
+        pending = kind === "topic"
+          ? moderation(writer.c).setTopicVisibility(topicCommand(f))
+          : moderation(writer.c).setPostVisibility(postCommand(f));
+        void pending.catch(() => undefined);
+        await gate.observed;
+        await reader.c.query("begin");
+        try {
+          await reader.c.query("set local lock_timeout='500ms'");
+          const [topic, post, actor] = await Promise.all([
+            reader.c.query("select id from forum_topics where id=$1 for key share", [f.topicId]),
+            reader.c.query("select id from forum_posts where id=$1 for key share", [f.postId]),
+            reader.c.query('select id from "user" where id=$1 for key share', ["moderator1"]),
+          ]);
+          expect(topic.rows).toHaveLength(1);
+          expect(post.rows).toHaveLength(1);
+          expect(actor.rows).toHaveLength(1);
+        } finally {
+          await reader.c.query("rollback");
+        }
+        gate.resume();
+        await expect(pending).resolves.toMatchObject({ hidden: true, changed: true });
+        expect((await events(kind === "topic" ? f.topicId : f.postId))).toHaveLength(1);
+      } finally {
+        gate.resume();
+        gate.restore();
+        await Promise.allSettled([pending]);
+        await Promise.all([writer.c.end(), reader.c.end()]);
+      }
+    },
+    30_000,
+  );
+
+  it("inactive content author does not prevent moderator Hide and Restore", async () => {
+    const f = await fixture();
+    await client.query(
+      'update "user" set deactivated_at=clock_timestamp(),deactivated_by_user_id=\'owner\',' +
+        "retain_at_least_until=clock_timestamp()+interval '1 year' where id='author'",
+    );
+    try {
+      await expect(service.setTopicVisibility(topicCommand(f))).resolves.toMatchObject({
+        hidden: true, visibilityVersion: 1, changed: true,
+      });
+      await expect(service.setTopicVisibility(
+        topicCommand(f, "moderator1", false, 1, "Restore author topic"),
+      )).resolves.toMatchObject({
+        hidden: false, visibilityVersion: 2, changed: true,
+      });
+      expect((await events(f.topicId)).map(e => e.action))
+        .toEqual(["topic.hidden", "topic.restored"]);
+    } finally {
+      await client.query(
+        'update "user" set deactivated_at=null,deactivated_by_user_id=null,' +
+          "retain_at_least_until=null where id='author'",
+      );
+    }
+  });
 });
