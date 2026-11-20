@@ -116,6 +116,14 @@ Delivery:
 
 B3 result boundary: typed hidden tombstones/public topic 404, consistent thread snapshot/anchors, SQL visibility filtering before rank/count/LIMIT across B3 public discovery/read paths, safe unavailable solution/duplicate projections, public history/edit/recovery denial, and leak/pagination/rank/count/root/parent acceptance. Do not implement B4 assets/private-file work, B5 own/inbox, B6 private moderation surfaces, B7 actions/UI, or later stages.
 
+## B3 batch: search/count and unanswered boundary regressions
+
+- Stacked Draft #359 updated with test-only commit `9e5a77a0dd33abf05a0b930cea7950f545628fb5` (parent `28b60ee3e40a7c6fa1c514a30f9cd47bf14c083d`).
+- Two related real PostgreSQL tests added to `tests/database/moderation-visibility-commands.test.ts`: hidden non-root reply is excluded from body search and replyCount and restored afterwards; Unanswered tracks visible non-root replies correctly when the chronological root is hidden, including hiding and restoring the only answer.
+- No production/schema/other-stage changes. Existing B3 remains partial; other B3 acceptance gaps remain.
+- GitHub automatically triggered CI on the new head; capture its actual result before marking this batch author PASS. No separate repeat of the old exact-head CI is needed.
+- On successful relevant checks, STOP for owner `...`; next batch must be selected from remaining verified B3 gaps, maximum 2–3 related microsteps.
+
 ## B3 current batch checkpoint — author STOP before next batch
 
 - [B3 stacked Draft #359](https://github.com/iliya1947/vico-forum/pull/359), base `feature/moderation-visibility-b2-commands`, exact `28b60ee3e40a7c6fa1c514a30f9cd47bf14c083d` (11 B3 commits). No B3 review/merge; B1 #355/B2 #357 unchanged Draft/unmerged.
