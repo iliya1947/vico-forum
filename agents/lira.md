@@ -22,6 +22,12 @@ Implement the accepted B3 bounded scope from `stages/moderation-visibility/PLAN.
 6. Public post/history/edit/recovery paths deny hidden source as required by B3.
 7. Add focused leak sentinels and boundary regressions for HTML/JSON/.data/meta/errors plus pagination/rank/count/root/parent behavior.
 
+## Current batch handoff — STOP
+
+Stacked [#359](https://github.com/iliya1947/vico-forum/pull/359) at `28b60ee3e40a7c6fa1c514a30f9cd47bf14c083d`. 11 B3 commits currently modify SQL discovery, thread/tombstone projection, public guards, Help/unread/profile and initial tests. This exceeds the owner's **new** preferred 2–3-microstep batch size; do not extend the current batch. `checks` passed. Real PG ran 1581 assertions successfully, but the database job failed with an unhandled rejection from existing SA04 Complaints test N4.2; unchanged-head database-job rerun pending. Whole B3 incomplete, Mira not assigned.
+
+Next owner `...`: inspect rerun first, then one limited 2–3-microstep B3 batch selected from remaining verified gaps; targeted checks, update this handoff, STOP. Do not modify unrelated SA04 test merely due to one transient failure.
+
 ## Cadence
 
 - Split B3 into **small batches of 2–3 related microsteps**. If one microstep becomes long, broad, or uncertain, stop the batch earlier rather than dragging the batch to its planned size.
