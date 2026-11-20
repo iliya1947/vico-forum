@@ -35,6 +35,7 @@ import { ComplaintTriageView } from "../complaints/queue-view";
 import { ComplaintAppealReviewView } from "../complaints/appeal-review-view";
 import { ComplaintTimelineView } from "../complaints/history-view";
 import { ComplaintPrioritySettingsView } from "../complaints/priority-settings-view";
+import { ComplaintResultView, type ComplaintParticipantResultPresentation } from "../complaints/result-view";
 import { SuperAdminOverview } from "../super-admin/overview";
 import { SuperAdminSa02Current } from "../super-admin/current-route";
 import { SuperAdminBackground } from "../super-admin/task-current";
@@ -403,6 +404,7 @@ type PreviewInteractionState = {
   complaintPriorityOverride: ComplaintPriority | null;
   complaintVersion: number;
   complaintPrioritySettings: ComplaintPrioritySettings;
+  participantComplaintAppeal: { id: string; operationId: string; argument: string } | null;
   complaintAppealResolution: { outcome: "upheld" | "overturned"; reasoning: string } | null;
   preferredLocale: PreviewLocale | null;
   localeSaved: boolean;
@@ -473,6 +475,7 @@ function createPreviewInteractionState(): PreviewInteractionState {
     complaintPriorityOverride: null,
     complaintVersion: 1,
     complaintPrioritySettings: { version: 1, weights: { ...DEFAULT_COMPLAINT_REASON_PRIORITY } },
+    participantComplaintAppeal: null,
     complaintAppealResolution: null,
     preferredLocale: null,
     localeSaved: false,
@@ -1519,6 +1522,17 @@ function previewNotifications(locale: PreviewLocale) {
       readAt: null,
     },
     {
+      id: "notification-complaint-decision",
+      kind: "complaint-decision" as const,
+      actorName: null,
+      topicId: null,
+      topicTitle: null,
+      postId: null,
+      caseId: PREVIEW_COMPLAINT_RESULT_CASE_ID,
+      createdAt: "2026-11-18T20:31:00.000Z",
+      readAt: null,
+    },
+    {
       id: "notification-3",
       kind: "reply" as const,
       actorName: hebrew ? "נועה לוי" : "Noa Levi",
@@ -1729,6 +1743,7 @@ export function EmbeddedPreview({ scenarioId, identity }: { scenarioId: string; 
         || ((intent === "create" || intent === "change" || intent === "lift" || intent === "review")
           && form.classList.contains("profile-form")
           && Boolean(form.closest(".admin-forum")))
+        || (intent === "appeal" && Boolean(form.closest(".complaint-review")))
         || (intent === "appeal"
           && form.classList.contains("profile-form")
           && Boolean(form.closest(".profile-card")));
@@ -2841,6 +2856,15 @@ function previewRouter(
       },
       action: ({ request, params }) =>
         previewComplaintTriageAction(scenario, interactions, request, params.caseId),
+      ErrorBoundary: ForumRouteError,
+    },
+    {
+      path: "/:locale/complaints/:caseId/result",
+      element: <PreviewComplaintResultRoute />,
+      loader: ({ params }) =>
+        previewComplaintParticipantResultData(scenario, interactions, params.caseId),
+      action: ({ request, params }) =>
+        previewComplaintParticipantResultAction(scenario, interactions, request, params.caseId),
       ErrorBoundary: ForumRouteError,
     },
     {
@@ -3975,6 +3999,9 @@ async function previewNotificationsAction(
 
   interactions.readNotifications.add(notificationId);
   const locale = previewMutationLocale(routeLocale, scenario.locale);
+  if (notification.kind === "complaint-decision") {
+    return redirect(`/${encodeURIComponent(locale)}/complaints/${encodeURIComponent(notification.caseId)}/result`);
+  }
   return redirect(
     `${forumTopicPath(locale, notification.topicId)}#post-${encodeURIComponent(notification.postId)}`,
   );
@@ -4617,6 +4644,93 @@ function previewAttentionAccessData(scenario: Scenario) {
 const PREVIEW_COMPLAINT_CASE_ID = "22222222-2222-4222-8222-222222222222";
 const PREVIEW_COMPLAINT_APPEAL_CASE_ID = "33333333-3333-4333-8333-333333333333";
 const PREVIEW_COMPLAINT_APPEAL_ID = "44444444-4444-4444-8444-444444444444";
+const PREVIEW_COMPLAINT_RESULT_CASE_ID = "55555555-5555-4555-8555-555555555555";
+const PREVIEW_COMPLAINT_RESULT_DECISION_ID = "66666666-6666-4666-8666-666666666666";
+const PREVIEW_COMPLAINT_RESULT_APPEAL_ID = "77777777-7777-4777-8777-777777777777";
+
+function previewComplaintParticipantResultData(
+  scenario: Scenario,
+  interactions: PreviewInteractionState,
+  caseId?: string,
+): { locale: string; result: ComplaintParticipantResultPresentation } {
+  previewAuthenticatedRouteData(scenario);
+  if (caseId !== PREVIEW_COMPLAINT_RESULT_CASE_ID) {
+    throw new Response("Not Found", { status: 404 });
+  }
+  const appeal = interactions.participantComplaintAppeal;
+  return {
+    locale: scenario.locale,
+    result: {
+      caseId: PREVIEW_COMPLAINT_RESULT_CASE_ID,
+      decisionId: PREVIEW_COMPLAINT_RESULT_DECISION_ID,
+      outcome: "confirmed",
+      reasoning: "The reported message crossed the forum conduct boundary.",
+      decidedAt: "2026-11-18T20:30:00.000Z",
+      affectedAuthor: true,
+      reporter: false,
+      initialOutcome: "confirmed",
+      effectiveOutcome: "confirmed",
+      eligibleSide: "author",
+      used: appeal ? 1 : 0,
+      remaining: appeal ? 2 : 3,
+      pending: Boolean(appeal),
+      canAppeal: !appeal,
+      appeals: appeal ? [{
+        id: appeal.id,
+        ordinal: 1,
+        side: "author",
+        status: "pending",
+        outcome: null,
+        reasoning: null,
+        resolvedAt: null,
+        ownArgument: appeal.argument,
+      }] : [],
+    },
+  };
+}
+
+async function previewComplaintParticipantResultAction(
+  scenario: Scenario,
+  interactions: PreviewInteractionState,
+  request: Request,
+  caseId?: string,
+) {
+  previewAuthenticatedRouteData(scenario);
+  if (caseId !== PREVIEW_COMPLAINT_RESULT_CASE_ID) return { error: "notFound" as const };
+  const form = await request.formData();
+  const intent = String(form.get("intent") ?? "");
+  const decisionId = String(form.get("decisionId") ?? "");
+  const operationId = String(form.get("operationId") ?? "").trim();
+  const argument = String(form.get("argument") ?? "").trim();
+  if (
+    intent !== "appeal"
+    || decisionId !== PREVIEW_COMPLAINT_RESULT_DECISION_ID
+    || !operationId
+    || !argument
+    || [...argument].length > 2000
+  ) {
+    return { error: "invalid" as const };
+  }
+
+  const existing = interactions.participantComplaintAppeal;
+  if (existing) {
+    return existing.operationId === operationId && existing.argument === argument
+      ? { ok: true as const, appealId: existing.id, operationId }
+      : { error: "conflict" as const };
+  }
+  interactions.participantComplaintAppeal = {
+    id: PREVIEW_COMPLAINT_RESULT_APPEAL_ID,
+    operationId,
+    argument,
+  };
+  return { ok: true as const, appealId: PREVIEW_COMPLAINT_RESULT_APPEAL_ID, operationId };
+}
+
+function PreviewComplaintResultRoute() {
+  return <ComplaintResultView
+    {...useLoaderData() as ReturnType<typeof previewComplaintParticipantResultData>}
+  />;
+}
 
 function previewComplaintPrioritySettingsAccessData(scenario: Scenario) {
   previewAuthenticatedRouteData(scenario);

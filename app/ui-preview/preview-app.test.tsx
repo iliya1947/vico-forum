@@ -3084,6 +3084,29 @@ describe("interactive Pages preview", { timeout: 10_000 }, () => {
     expect(within(reopened).getByText("Read")).toBeInTheDocument();
   });
 
+  it("opens a complaint decision notification and submits a participant appeal", async () => {
+    const user = userEvent.setup();
+    await renderEmbeddedPreview(<EmbeddedPreview scenarioId="notifications-user" identity="user" />);
+
+    const decision = screen.getByRole("button", { name: /Complaint decision/ });
+    expect(decision).toHaveClass("is-system");
+    expect(decision).toHaveClass("is-unread");
+    await user.click(decision);
+
+    expect(await screen.findByRole("heading", { level: 1, name: "Initial decision" })).toBeInTheDocument();
+    expect(screen.getAllByText("Violation confirmed").length).toBeGreaterThanOrEqual(1);
+    expect(screen.getByText("The reported message crossed the forum conduct boundary.")).toBeInTheDocument();
+
+    const argument = screen.getByRole("textbox", { name: "Appeal argument" });
+    await user.type(argument, "Preview participant appeal");
+    await user.click(screen.getByRole("button", { name: "Submit appeal" }));
+
+    expect(await screen.findByText("Appeal submitted.")).toBeInTheDocument();
+    expect(screen.getByText("Preview participant appeal")).toBeInTheDocument();
+    expect(screen.getByText("An appeal is awaiting review.")).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Submit appeal" })).not.toBeInTheDocument();
+  });
+
   it("requires sign-in for guest direct access to My questions", async () => {
     await renderEmbeddedPreview(<EmbeddedPreview scenarioId="help-solutions-mine-guest" />);
 
