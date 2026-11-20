@@ -3424,6 +3424,25 @@ describe("interactive Pages preview", { timeout: 10_000 }, () => {
     expect(screen.getByText("Best answer")).toBeInTheDocument();
   });
 
+  it("lets the bound Owner read public post history", async () => {
+    const owner = userEvent.setup();
+    await renderEmbeddedPreview(<EmbeddedPreview scenarioId="topic-solved-user" identity="owner" />);
+
+    const question = document.querySelector("#post-question") as HTMLElement | null;
+    expect(question).not.toBeNull();
+    const summary = question!.querySelector(".message-admin-tools > summary") as HTMLElement | null;
+    expect(summary).not.toBeNull();
+    await owner.click(summary!);
+
+    const actions = within(summary!.closest("details") as HTMLElement);
+    await owner.click(actions.getByRole("button", { name: "Edit history" }));
+
+    expect(await actions.findByRole("heading", { name: "Published revisions" })).toBeInTheDocument();
+    expect(actions.getByText(
+      "I want strong typing without coupling the whole app to one HTTP library.",
+    )).toBeInTheDocument();
+  });
+
   it("lets the bound Owner manage Help duplicates on the topic page", async () => {
     const owner = userEvent.setup();
     await renderEmbeddedPreview(<EmbeddedPreview scenarioId="help-duplicate-disputed" identity="owner" />);
