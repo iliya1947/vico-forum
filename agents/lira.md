@@ -24,9 +24,9 @@ Implement the accepted B3 bounded scope from `stages/moderation-visibility/PLAN.
 
 ## Current batch handoff — STOP
 
-- B3 #359 exact `b221da10cb033512d9ab4c03b55b95fbdae952b6`; exact CI `44826260876` still queued, no author PASS.
-- GitHub Actions bottleneck diagnosed: public repo; 116 workflow runs in_progress, 80 queued across multiple branches/old SHAs; B3 current head enqueues >=13 workflows, 18 PR workflows in main and none uses `concurrency`. Older SHA jobs actually executing; GitHub Status Actions operational. Backlog from repeated trigger fan-out is confirmed; precise runner-account limit/root cause not verified. Public standard hosted compute free; no billing-minute evidence.
-- No GitHub cancellation tool in connected actions. No code/YAML edits or rerun. Potential immediate relief = cancel superseded old-SHA runs, preserving exact B3; durable scoped PR-only cancel-in-progress requires workflow-policy decision. See WORKFLOW.md. Next: queue remedy/decision and exact-head F5 validation; B4 blocked. STOP.
+- B3 #359 exact `3fa0740c4bec304eb3912aedfffb8e6c4ff309e1` on unchanged B2 base. Old [CI #44826260876](https://github.com/iliya1947/vico-forum/actions/runs/44826260876) at `b221da10...`: PG17 1599 PASS, main checks Test 2776 PASS / 6 FAIL, unit (3 raw loader data wrapper assertions; 3 stale public Cache-Control expectations). Lint/typecheck passed on old head. Other 13/15 observed workflows success; AP-10 queued.
+- Three microsteps corrected **tests only** in `public-authz-degradation.test.ts`, `topic-headers.test.ts`, `section-category-headers.test.ts`: nested `data.*` and expected new B3 `no-store`. Commits `b351cbec...`, `c504b211...`, `3fa0740c...`. 9/9 source checks PASS; corrected unit/runtime not yet verified. Prior SQL Help Similar and ru/he translation fixes retained.
+- Next `...`: F5 fresh exact-head tests/CI and applicable workflows; correct confirmed blockers or if green author PASS → Мира bounded B3 checkpoint. No B4/merge. STOP.
 
 ## Cadence
 
