@@ -4512,7 +4512,9 @@ async function previewTopicAction(
   }
 
   if (intent === "pinTopic" || intent === "unpinTopic") {
-    if (scenario.identity !== "manager") return null;
+    if (scenario.identity !== "manager" && scenario.identity !== "owner") {
+      return { error: "forbidden" as const };
+    }
     const current = interactions.topicOverrides.get(routeTopicId) ?? {};
     interactions.topicOverrides.set(routeTopicId, {
       ...current,
@@ -4673,8 +4675,8 @@ function previewCreatedTopicData(
     isTopicAuthor: scenario.identity !== "guest",
     canCorrectTitleSourceLocale: false,
     canCorrectAnySourceLocale: false,
-    canManagePin: false,
-    canUseAdminPanel: false,
+    canManagePin: scenario.identity === "manager" || scenario.identity === "owner",
+    canUseAdminPanel: scenario.identity === "manager" || scenario.identity === "owner",
     topicReadState: null,
   };
 }
@@ -7163,7 +7165,7 @@ function PreviewTopicRoute({ scenario, interactions }: {
         isTopicAuthor={scenario.identity === "user"}
         canCorrectTitleSourceLocale={scenario.identity === "manager"}
         canCorrectAnySourceLocale={scenario.identity === "manager"}
-        canManagePin={scenario.identity === "manager"}
+        canManagePin={scenario.identity === "manager" || scenario.identity === "owner"}
         canUseAdminPanel={scenario.identity === "manager" || scenario.identity === "owner"}
         topicReadState={null}
       />
@@ -7318,8 +7320,8 @@ function PreviewTopicRoute({ scenario, interactions }: {
       canModerateHelpSolution={false}
       canCorrectTitleSourceLocale={scenario.identity === "manager"}
       canCorrectAnySourceLocale={scenario.identity === "manager"}
-      canManagePin={scenario.identity === "manager"}
-      canUseAdminPanel={scenario.identity === "manager"}
+      canManagePin={scenario.identity === "manager" || scenario.identity === "owner"}
+      canUseAdminPanel={scenario.identity === "manager" || scenario.identity === "owner"}
       topicReadState={null}
     />
   );
@@ -7715,8 +7717,8 @@ function topicData(
     canConfirmOwnSolution: solutionAuthor,
     canCorrectTitleSourceLocale: showSecondaryControls,
     canCorrectAnySourceLocale: identity === "manager",
-    canManagePin: identity === "manager",
-    canUseAdminPanel: identity === "manager",
+    canManagePin: identity === "manager" || identity === "owner",
+    canUseAdminPanel: identity === "manager" || identity === "owner",
     correctablePostIds: showSecondaryControls
       ? translatedTopic.posts.map((post) => post.id)
       : [],
