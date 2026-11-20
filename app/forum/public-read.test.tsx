@@ -5186,7 +5186,7 @@ describe("B3 public content cache policy", () => {
       params: { locale: "en", topicId: topic.id }, context: context(),
     });
     expect(result.data.topic.id).toBe(topic.id);
-    expect(new Headers(result.init.headers).get("Cache-Control")).toBe("no-store");
+    expect(new Headers(result.init?.headers).get("Cache-Control")).toBe("no-store");
 
     const headers = topicHeaders(routeHeaders("public, max-age=600"));
     expect(headers.get("Cache-Control")).toBe("no-store");
@@ -5212,6 +5212,11 @@ describe("B3 public content cache policy", () => {
     });
     expect(headers.get("Cache-Control")).toBe("no-store");
     expect(headers.get("X-Parent-Test")).toBe("retained");
+    const staleErrorHeaders = topicHeaders({
+      ...routeHeaders("public, max-age=600"),
+      errorHeaders: new Headers({ "Cache-Control": "public, max-age=3600" }),
+    });
+    expect(staleErrorHeaders.get("Cache-Control")).toBe("no-store");
   });
 
   it("sets no-store on search hits and misses in loader data and documents", async () => {
@@ -5220,15 +5225,20 @@ describe("B3 public content cache policy", () => {
       params: { locale: "en" }, context: context(),
     });
     expect(hits.data.results).toHaveLength(1);
-    expect(new Headers(hits.init.headers).get("Cache-Control")).toBe("no-store");
+    expect(new Headers(hits.init?.headers).get("Cache-Control")).toBe("no-store");
     const misses = await rawSearchLoader({
       request: new Request("https://forum.example/en/search?q=NoSuchTopic"),
       params: { locale: "en" }, context: context(),
     });
     expect(misses.data.results).toEqual([]);
-    expect(new Headers(misses.init.headers).get("Cache-Control")).toBe("no-store");
+    expect(new Headers(misses.init?.headers).get("Cache-Control")).toBe("no-store");
     const headers = searchHeaders(routeHeaders("public, max-age=600"));
     expect(headers.get("Cache-Control")).toBe("no-store");
     expect(headers.get("X-Parent-Test")).toBe("retained");
+    const staleErrorHeaders = searchHeaders({
+      ...routeHeaders("public, max-age=600"),
+      errorHeaders: new Headers({ "Cache-Control": "public, max-age=3600" }),
+    });
+    expect(staleErrorHeaders.get("Cache-Control")).toBe("no-store");
   });
 });
