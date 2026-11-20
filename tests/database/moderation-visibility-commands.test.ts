@@ -2549,6 +2549,47 @@ describe("B3 public visibility projection and leak-safe discovery", () => {
     expect((await repository.readUnreadForUser("ordinary")).map(x=>x.id)).not.toContain(f.topicId);
   });
 
+  it("does not disclose blocked authors whose only posts are hidden", async () => {
+    const f=await fixture("B3_VISIBLE_TOPIC_FOR_BLOCK_PROJECTION_6039");
+    const replyId=randomUUID(),revisionId=randomUUID();
+    await repository.createPost({
+      id:replyId,topicId:f.topicId,authorId:"ordinary",parentPostId:f.postId,
+      bodyRevision:{
+        id:revisionId,originalContent:"B3_PRIVATE_BLOCKED_AUTHOR_POST_6039",sourceLocale:"en",
+      },
+    });
+    await repository.setUserBlock({actorId:"author",blockedUserId:"ordinary",blocked:true});
+    try {
+      expect(await repository.readTopicBlockedAuthors("author",f.topicId)).toEqual(["ordinary"]);
+
+      await service.setPostVisibility({
+        topicId:f.topicId,postId:replyId,actorId:"moderator1",hidden:true,
+        expectedVisibilityVersion:0,expectedRevisionId:revisionId,
+        reason:"Hide the only post by a blocked author",
+      });
+      expect((await repository.readTopicPage(f.topicId))?.posts[1]).toEqual({
+        kind:"hidden",id:replyId,topicId:f.topicId,
+        parentPostId:f.postId,createdAt:expect.any(Date),
+      });
+      expect(await repository.readTopicBlockedAuthors("author",f.topicId)).toEqual([]);
+
+      await service.setPostVisibility({
+        topicId:f.topicId,postId:replyId,actorId:"moderator1",hidden:false,
+        expectedVisibilityVersion:1,expectedRevisionId:revisionId,
+        reason:"Restore blocked author's post",
+      });
+      expect(await repository.readTopicBlockedAuthors("author",f.topicId)).toEqual(["ordinary"]);
+
+      await service.setTopicVisibility(topicCommand(f));
+      expect(await repository.readTopicPage(f.topicId)).toBeUndefined();
+      expect(await repository.readTopicBlockedAuthors("author",f.topicId)).toEqual([]);
+      await service.setTopicVisibility(topicCommand(f,"moderator1",false,1,"Restore visible topic"));
+      expect(await repository.readTopicBlockedAuthors("author",f.topicId)).toEqual(["ordinary"]);
+    } finally {
+      await repository.setUserBlock({actorId:"author",blockedUserId:"ordinary",blocked:false});
+    }
+  });
+
   it("preserves retained duplicate state but removes a hidden canonical original's ID/title/link data", async () => {
     const makeQuestion=async(title:string)=>{
       const topicId=randomUUID(),postId=randomUUID(),titleRevisionId=randomUUID(),bodyRevisionId=randomUUID();
