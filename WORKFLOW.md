@@ -109,8 +109,9 @@ Delivery:
 - create a new stacked implementation PR with base `feature/moderation-visibility-b2-commands`;
 - keep B1 #355 and B2 #357 Draft/unmerged;
 - implement only the B3 bounded result from the accepted stage plan;
-- use focused checks between implementation microsteps **inside B3 only**;
-- do not STOP or run full repository CI after each such internal B3 microstep unless a concrete cross-cutting risk requires it;
-- **this does not remove the mandatory STOP between bounded stages**: when the whole B3 scope is complete, author self-check + one full exact-head CI/check set → STOP Mira for the B3 coordinator checkpoint; B4 must not start before Mira B3 PASS and a new owner continuation.
+- split B3 into **small working batches of 2–3 related microsteps**; if a microstep starts to sprawl or becomes uncertain, stop the batch earlier;
+- after each batch run only the targeted checks needed for that batch, record the result, then **STOP for owner `...`** before taking the next batch;
+- do not run full repository CI after each batch; full author self-check + one full exact-head CI/check set only when the entire B3 bounded scope is complete (or earlier only for a concrete cross-cutting risk);
+- after complete B3, STOP Mira for the coordinator checkpoint; B4 must not start before Mira B3 PASS and a new owner continuation.
 
 B3 result boundary: typed hidden tombstones/public topic 404, consistent thread snapshot/anchors, SQL visibility filtering before rank/count/LIMIT across B3 public discovery/read paths, safe unavailable solution/duplicate projections, public history/edit/recovery denial, and leak/pagination/rank/count/root/parent acceptance. Do not implement B4 assets/private-file work, B5 own/inbox, B6 private moderation surfaces, B7 actions/UI, or later stages.
