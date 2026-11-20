@@ -118,12 +118,12 @@ B3 result boundary: typed hidden tombstones/public topic 404, consistent thread 
 
 ## B3 current working batch — STOP
 
-- Active stacked Draft [#359](https://github.com/iliya1947/vico-forum/pull/359), exact head `e62ec37a16797f39f92c0307262716e4f7ada21c`; base B2 #357 unchanged. B1/B2/B3 stay Draft/unmerged.
-- Previous B3 core public projection/SQL discovery/hidden tombstone and PostgreSQL regression additions (through `fd0993af`) remain partial; runtime PostgreSQL execution of latest added regression tests is still **unverified**.
-- **Current 2-route microbatch** (Topic + Search): both public loader data and document/single-fetch route headers now enforce `no-store`. Topic retains `private, no-store` on authenticated data and authorized action/retry headers; anonymous GET and neutral hidden-topic 404 cannot inherit cacheable policy. Search hits, misses, error responses and route headers enforce `no-store`, overriding a cacheable parent. Added 3 focused route tests in `app/forum/public-read.test.tsx`; search test adapter unwraps React Router `data()` for existing direct-call cases.
-- Head code spans `0ad307ef`→`e62ec37a`, files: `app/routes/topic.tsx`, `app/routes/search.tsx`, `app/forum/public-read.test.tsx`. React Router official headers guidance: loader-provided headers require explicit route `headers` forwarding for document/data paths.
-- **Targeted static source/contract verification: 13/13 passed** at exact head. **Vitest/real HTTP execution not verified:** no local checkout/runtime. Do not claim runtime PASS.
-- Owner cadence: **no GitHub Actions/CI inspection at all until entire B3 completes**; ignore auto workflows. Do not start B4, coordinator review, fold or merge.
-- Remaining B3 includes other public discovery route no-store surfaces, HTML/JSON/.data/meta/error leak acceptance, root/parent/duplicate/unread boundaries, real targeted execution and whole-B3 author self-check.
-- **Next owner `...`:** one small B3 batch (2–3 related microsteps), available targeted checks, update service handoff, STOP.
+- Active stacked Draft [#359](https://github.com/iliya1947/vico-forum/pull/359), exact head `9c3c6cba930ee5e00ef4c622f001f4441c327a89`; base B2 #357 unchanged. B1/B2/B3 remain Draft/unmerged.
+- Previous B3 core public projection/SQL discovery/hidden tombstone and test regressions are still partial. Latest earlier Topic/Search route microbatch `e62ec37a` added `no-store` across public loader/document/error paths; its Vitest execution remains unverified here.
+- **Current 2-route microbatch:** `app/routes/tags.tsx` and `app/routes/tag.tsx` now enforce `Cache-Control: no-store` for public loader data, document/single-fetch headers, and errors, including neutral missing-tag 404. Cacheable parent and error header policies are overridden while unrelated parent headers are preserved. Tag SQL already excludes hidden topics/posts before counts; no repository query, schema or domain changes.
+- `app/forum/public-read.test.tsx` has 2 new focused cache tests (index and tagged page/404), with existing direct-call tests adapted to unwrap React Router `data()` responses.
+- **13/13 targeted static contract checks passed** against exact head `9c3c6cba`: route/header/loader/test alignment, neutral 404, preserved SQL visibility filter. **Vitest/HTTP/PostgreSQL execution not verified** in this environment (no local checkout/test runtime); do not claim runtime PASS.
+- Owner cadence: never inspect GitHub Actions/CI until the entire B3 is complete; ignore automatically triggered workflows. No broader checks between batches.
+- B3 remains incomplete: further public discovery/cache surfaces and HTML/JSON/.data/meta/error leak, pagination/anchor and real targeted execution acceptance. No B4+, coordinator checkpoint, fold or merge.
+- **Next owner `...`:** select one small 2–3-microstep B3 batch from verified current-stage gaps, perform available targeted checks, update service handoff and STOP.
 
