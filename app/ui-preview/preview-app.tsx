@@ -4524,15 +4524,30 @@ async function previewTopicAction(
   }
 
   if (intent === "closeTopic" || intent === "reopenTopic") {
-    if (scenario.identity !== "manager") return null;
+    if (scenario.identity !== "manager" && scenario.identity !== "owner") {
+      return { error: "forbidden" as const };
+    }
+    const rawVersion = String(form.get("expectedClosureVersion") ?? "").trim();
+    const actorExpectation = String(form.get("editorActorId") ?? "").trim();
+    if (!/^(?:0|[1-9][0-9]*)$/u.test(rawVersion) || Number(rawVersion) > 2_147_483_647 || !actorExpectation) {
+      return { error: "invalid" as const };
+    }
+    if (actorExpectation !== actor.id) return { error: "conflict" as const };
+
+    const currentPage = previewAdminTopicData(scenario, interactions, routeTopicId);
+    if (!currentPage) return { error: "notFound" as const };
+    const expectedClosureVersion = Number(rawVersion);
+    if (currentPage.topic.closureVersion !== expectedClosureVersion) {
+      return { error: "conflict" as const };
+    }
+
     const current = interactions.topicOverrides.get(routeTopicId) ?? {};
-    const baseVersion = current.closureVersion ?? (routeTopicId === topicId ? topic.closureVersion : 0);
     interactions.topicOverrides.set(routeTopicId, {
       ...current,
       isClosed: intent === "closeTopic",
-      closureVersion: baseVersion + 1,
+      closureVersion: expectedClosureVersion + 1,
     });
-    return inline ? { ok: true } : redirect(forumTopicPath(locale, routeTopicId));
+    return inline ? { ok: true as const } : redirect(forumTopicPath(locale, routeTopicId));
   }
 
   return null;
@@ -4676,6 +4691,7 @@ function previewCreatedTopicData(
     canCorrectTitleSourceLocale: false,
     canCorrectAnySourceLocale: false,
     canManagePin: scenario.identity === "manager" || scenario.identity === "owner",
+    canManageClosure: scenario.identity === "manager" || scenario.identity === "owner",
     canUseAdminPanel: scenario.identity === "manager" || scenario.identity === "owner",
     topicReadState: null,
   };
@@ -7166,6 +7182,7 @@ function PreviewTopicRoute({ scenario, interactions }: {
         canCorrectTitleSourceLocale={scenario.identity === "manager"}
         canCorrectAnySourceLocale={scenario.identity === "manager"}
         canManagePin={scenario.identity === "manager" || scenario.identity === "owner"}
+        canManageClosure={scenario.identity === "manager" || scenario.identity === "owner"}
         canUseAdminPanel={scenario.identity === "manager" || scenario.identity === "owner"}
         topicReadState={null}
       />
@@ -7321,6 +7338,7 @@ function PreviewTopicRoute({ scenario, interactions }: {
       canCorrectTitleSourceLocale={scenario.identity === "manager"}
       canCorrectAnySourceLocale={scenario.identity === "manager"}
       canManagePin={scenario.identity === "manager" || scenario.identity === "owner"}
+      canManageClosure={scenario.identity === "manager" || scenario.identity === "owner"}
       canUseAdminPanel={scenario.identity === "manager" || scenario.identity === "owner"}
       topicReadState={null}
     />
@@ -7718,6 +7736,7 @@ function topicData(
     canCorrectTitleSourceLocale: showSecondaryControls,
     canCorrectAnySourceLocale: identity === "manager",
     canManagePin: identity === "manager" || identity === "owner",
+    canManageClosure: identity === "manager" || identity === "owner",
     canUseAdminPanel: identity === "manager" || identity === "owner",
     correctablePostIds: showSecondaryControls
       ? translatedTopic.posts.map((post) => post.id)
