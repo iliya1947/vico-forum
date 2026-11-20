@@ -306,7 +306,7 @@ export type ForumAttentionQueueGroup = "needs-details" | "needs-review" | "solut
 
 export interface ForumAttentionQueueCase {
   type: "signal" | "appeal" | "review-status";
-  /** Retained appeal keeps its server-only action topicId even when no public topic link exists. */
+  /** Retained appeal keeps its guarded review-action topicId even when no topic link exists. */
   topicUnavailable?: boolean;
   id: string;
   kind: HelpSignalKind | "appeal" | "review-status";
