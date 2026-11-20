@@ -552,6 +552,16 @@ function previewEditablePostIds(scenario: Scenario, topic: PreviewTopicPage): st
   return topic.posts.filter((post) => post.authorId === actor.id).map((post) => post.id);
 }
 
+function previewPostEditRenderKey(
+  topic: PreviewTopicPage,
+  interactions: PreviewInteractionState,
+): string {
+  const editRevisionIds = topic.posts.map(
+    (post) => interactions.postEdits.get(post.id)?.at(-1)?.id ?? "",
+  );
+  return `${topic.id}:${editRevisionIds.join("|")}`;
+}
+
 function previewPresentationsForTopic(
   existing: readonly ContentTranslationPresentation[],
   topic: PreviewTopicPage,
@@ -2729,6 +2739,7 @@ function previewRouter(
     },
     {
       path: "/:locale/posts/:postId/edit",
+      element: <></>,
       loader: ({ params }) => previewPostEditRedirect(
         scenario, interactions, params.locale, params.postId,
       ),
@@ -6285,7 +6296,14 @@ function PreviewTopicRoute({ scenario, interactions }: {
 
   const createdTopic = routeTopicId ? interactions.createdTopics.get(routeTopicId) : undefined;
   if (createdTopic) {
-    return <TopicView {...previewCreatedTopicData(scenario, createdTopic, interactions)} canUploadAttachments={false} />;
+    const data = previewCreatedTopicData(scenario, createdTopic, interactions);
+    return (
+      <TopicView
+        key={previewPostEditRenderKey(data.topic, interactions)}
+        {...data}
+        canUploadAttachments={false}
+      />
+    );
   }
 
   const helpQuestion = previewHelpSolutions(scenario.locale).questions
@@ -6407,6 +6425,7 @@ function PreviewTopicRoute({ scenario, interactions }: {
     const data = primaryTopicScenarioData(scenario);
     const interactiveTopic = previewApplyTopicState(data.topic, interactions);
     return <TopicView
+      key={previewPostEditRenderKey(interactiveTopic, interactions)}
       {...data}
       canUploadAttachments={false}
       {...previewTopicWatchProps(scenario, interactions, interactiveTopic.id)}
