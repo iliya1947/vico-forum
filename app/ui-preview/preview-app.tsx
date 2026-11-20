@@ -4359,11 +4359,18 @@ async function previewTopicAction(
     }
     const helpQuestion = previewHelpSolutions(scenario.locale).questions
       .find((question) => question.id === routeTopicId);
-    if (!helpQuestion?.isSolved || !helpQuestion.hasBestAnswer) {
+    if (!helpQuestion) return { error: "notFound" as const };
+    const current = interactions.topicOverrides.get(routeTopicId) ?? {};
+    const postCount = helpQuestion.replyCount + 1;
+    const fixtureBestAnswerPostId = helpQuestion.hasBestAnswer && postCount > 1
+      ? `${helpQuestion.id}-post-${Math.min(5, postCount)}`
+      : null;
+    const bestAnswerPostId = current.bestAnswerPostId === undefined
+      ? fixtureBestAnswerPostId
+      : current.bestAnswerPostId;
+    if (!(current.isSolved ?? helpQuestion.isSolved) || !bestAnswerPostId) {
       return { error: "notFound" as const };
     }
-    const postCount = helpQuestion.replyCount + 1;
-    const bestAnswerPostId = `${helpQuestion.id}-post-${Math.min(5, postCount)}`;
     if (String(form.get("expectedBestAnswerPostId") ?? "") !== bestAnswerPostId) {
       return { error: "conflict" as const };
     }
@@ -4373,7 +4380,6 @@ async function previewTopicAction(
     if (intent === "markSolutionOutdated" && (!outdatedReason || [...outdatedReason].length > 1000)) {
       return { error: "invalid" as const };
     }
-    const current = interactions.topicOverrides.get(routeTopicId) ?? {};
     interactions.topicOverrides.set(routeTopicId, {
       ...current,
       solutionModerationStatus: intent === "markSolutionNeedsReview"
