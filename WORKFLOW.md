@@ -14,7 +14,9 @@ B2 — stacked Draft [#357](https://github.com/iliya1947/vico-forum/pull/357), b
 
 **B2.3c1 author PASS** — exact `c0160417f52b6c02237251c078f93248f74535ab`, [CI run 44709756666](https://github.com/iliya1947/vico-forum/actions/runs/44709756666): **22/22 check-runs, 18/18 workflows SUCCESS; 2758/2758 unit, 1504/1504 PostgreSQL17 (18/18 visibility commands)**. Hidden topics now reject setTopicClosed (including unchanged/ABA/CAS path), pinTopic and unpinTopic (including no-op) before actor/mutations, preserving topic NO KEY UPDATE and existing visible-topic semantics. Two PG regressions verify open and already closed+pinned state, no extra History, Restore recovery, and Owner/moderator denial.
 
-**Лира STOP перед B2.3c2.** Next only on owner continuation: first narrow Help writer visibility admission (Help attention/signal state); other Help/solution/duplicate, recovery/planning and real PG two-way races remain. Whole B2 not complete; no Mira checkpoint. B1/B2 Draft/unmerged.
+**B2.3c2 implementation and core CI PASS; full exact-head CI PENDING.** Draft #357 exact `0430b1db36b90e8f28d6f3d1b2cdc7d1f66e545e` includes Help signal create/withdraw/accepted/rejected visibility admission on primary and duplicate-original topics and selected answer. Topic→post→signal→actor lock order, ordered multi-topic acquisition, prior actor and History semantics retained. Seven PostgreSQL regressions cover hidden new and pending signals, selected answer, duplicate original, no mutations on refusal and Restore recovery. [CI run 44711821916](https://github.com/iliya1947/vico-forum/actions/runs/44711821916) completed **2758/2758 unit and 1511/1511 PG17, 25/25 visibility-command tests**; latest check snapshot **6/22 SUCCESS, 5 in progress, 11 queued**, other connected/browser checks pending. DO NOT claim full author PASS before all applicable exact-head checks succeed.
+
+**Лира STOP — before B2.3c2 CI closeout.** Next only after owner continuation: one exact-head final check, resolve actionable failures if any, record complete CI, then STOP before B2.3c3 (solution/Help writer gates). No B3+, no Mira checkpoint. B1/B2 Draft/unmerged.
 
 ## Baseline
 
@@ -38,7 +40,7 @@ B2 — stacked Draft [#357](https://github.com/iliya1947/vico-forum/pull/357), b
 8. Если нижняя ступень требует изменения до финальной сборки, зависимые верхние ступени должны быть синхронизированы с изменившимся основанием до продолжения.
 9. Этот owner decision имеет приоритет над текущей формулировкой `AGENTS.md`. После текущей задачи требуется отдельное process изменение `AGENTS.md`, чтобы закрепить stacked bounded PR delivery как общий штатный маршрут там, где bounded-этапы составляют одну неделимую вертикальную feature.
 
-## Moderation visibility delivery — B1 PASS; B2.1/B2.2/B2.3a/B2.3b/B2.3c1 author PASS
+## Moderation visibility delivery — B1 PASS; B2.1/B2.2/B2.3a/B2.3b/B2.3c1 author PASS; B2.3c2 core PASS / full CI pending
 
 - B1 Draft #355 exact `704d5a46d59841538524424296ac28eaa39aa5e6`: Mira bounded PASS, `VIS-B1-MIRA-01` closed; stays Draft/unmerged.
 - B2 Draft [#357](https://github.com/iliya1947/vico-forum/pull/357), branch `feature/moderation-visibility-b2-commands`, base = B1 branch.
@@ -51,8 +53,10 @@ B2 — stacked Draft [#357](https://github.com/iliya1947/vico-forum/pull/357), b
 - [Exact-head CI 44706419635](https://github.com/iliya1947/vico-forum/actions/runs/44706419635): **22/22 check-runs SUCCESS, 18/18 workflows SUCCESS, 2758/2758 unit, 1502/1502 PG17** including 16/16 visibility commands and 14/14 title-execution tests. Earlier intermediate failures resolved; final source/test scope reverified.
 - B2.3c1 exact `c0160417f52b6c02237251c078f93248f74535ab`: `setTopicClosed` (including no-op), `pinTopic`, `unpinTopic` (including idempotent paths) reject hidden topics under existing topic mutex. Exactly two files changed vs B2.3b: `db/forum-repository.ts` + `tests/database/moderation-visibility-commands.test.ts`; +2 PG regressions check state/History unchanged while hidden and recovery after Restore, including Owner and moderator actor.
 - [Exact-head CI 44709756666](https://github.com/iliya1947/vico-forum/actions/runs/44709756666): **22/22 check-runs SUCCESS, 18/18 workflows SUCCESS, 2758/2758 unit and 1504/1504 PG17**, including 18/18 visibility commands. No failed job on this head.
-- B2 remaining: B2.3c2 narrow Help writer guard, further Help/solution/duplicate and recovery/planning gates; real PG two-order races, actor deactivation, lock compatibility. No claim entire B2 ready.
-- **B2.3c1 author PASS / Lira STOP before B2.3c2.** Continue only on explicit owner command. After full B2 scope: exact-head author self-check and CI → Mira bounded checkpoint; no Leva independent review until folded final feature. B1/B2 remain Draft/unmerged.
+- B2.3c2 exact `0430b1db36b90e8f28d6f3d1b2cdc7d1f66e545e`: `createHelpSignal` checks hidden primary/duplicate original and selected answer under existing topic→post locks. `withdrawHelpSignal` and `resolveHelpSignal(rejected)` resolve immutable signal identity first, then lock all relevant topics in sorted order, optional post, then signal→actor; `resolveHelpSignal(accepted)` locks and checks same dependencies before effects. No hidden-signal mutation/History, Restore allows legitimate operations. Scope: `db/forum-repository.ts` and `tests/database/moderation-visibility-commands.test.ts`, seven PG regressions.
+- Exact-head [CI run 44711821916](https://github.com/iliya1947/vico-forum/actions/runs/44711821916): **checks unit 2758/2758 SUCCESS, PG17 database 1511/1511 SUCCESS (25/25 visibility)**. Connected/browser checks remain queued/running; snapshot 6 success, 5 in progress, 11 queued out of 22. Full exact-head author PASS **NOT YET** confirmed.
+- B2 remaining: first finalize B2.3c2 exact-head connected CI, then B2.3c3 Help/solution/duplicate writer guards, further recovery/planning gates, real PG two-order races, deactivation and lock compatibility. Entire B2 not complete.
+- **Lira STOP before B2.3c2 CI closeout.** On owner continuation: check final CI once and record success/failure; stop before B2.3c3. Later whole B2 author self-check/CI → Mira bounded checkpoint; no Leva until folded final feature. B1/B2 Draft/unmerged.
 
 ## Process follow-up
 
