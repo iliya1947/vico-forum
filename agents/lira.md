@@ -24,10 +24,9 @@ Implement the accepted B3 bounded scope from `stages/moderation-visibility/PLAN.
 
 ## Current batch handoff — STOP
 
-- **B3 F4 source/test-level package complete** in stacked Draft #359 exact `8a907374c797a33b233b6f244d090aa0725862fb`; base B2 #357 unchanged. F1–F4 done at source level, **not runtime verified**.
-- Added 3 PG regression definitions in `tests/database/moderation-visibility-commands.test.ts`: (1) hidden exact title must not consume Search LIMIT; visible title and tag match with zero visible posts and zero postCount; (2) isolated 8-topic Category latest/pin bounded windows fill after Hide, ignore hidden reply latest activity, counts and Restore; (3) Help answers/unanswered counts with hidden immutable root and middle parent, visible then hidden descendant, restored parent, stable anchors. No production edits; Search/Popular/Category/Help/Unread/Tag/Profile SQL gates already present.
-- Source-level assertion set **20/20 PASS** at exact head; **Vitest/PostgreSQL17/HTTP/browser NOT VERIFIED**; no GitHub Actions/CI inspection.
-- **Next owner `...`: F5 only** — whole-B3 author self-check, address confirmed bounded defects if encountered, then full exact-head CI/check gate once and Mira coordinator checkpoint handoff if PASS. No B4/merge; STOP.
+- **B3 F5 author source review performed, exact-head CI pending**. Draft #359 exact `8a907374c797a33b233b6f244d090aa0725862fb`, unchanged B2 base. Reviewed B3 30-file inventory, production diff and targeted regression coverage against V5/V8. No confirmed blocking source defect in inspected scope; **final author PASS not granted**.
+- First observed Actions page for exact SHA: 15 runs (1 SUCCESS, 2 IN_PROGRESS, 12 QUEUED, 0 FAILURE). `CI` run `44819865484`: database + checks both QUEUED. No real unit/PG/HTTP/build result to assert, no rerun initiated.
+- Next owner `...`: **continue F5 gate only**. Read exact-head workflow/jobs when available, diagnose actual failure before edits or on all required PASS record final author PASS and handoff **Мире bounded B3 checkpoint** through service PR #342. Do not start B4 or merge.
 
 ## Cadence
 
