@@ -1211,6 +1211,34 @@ describe("embedded preview routing", { timeout: 10_000 }, () => {
     expect(screen.getByText("This user is not blocked.")).toBeInTheDocument();
   });
 
+  it("projects a blocked user into collapsed topic messages", async () => {
+    const user = userEvent.setup();
+    await renderEmbeddedPreview(<EmbeddedPreview scenarioId="tag-typescript-guest" identity="user" />);
+
+    await user.click(await screen.findByRole("link", { name: /Mixed RTL content with code blocks/ }));
+    const authorLinks = await screen.findAllByRole("link", { name: "Noa Levi" });
+    await user.click(authorLinks[0]!);
+
+    await user.click(await screen.findByRole("button", { name: "Block user" }));
+    expect(await screen.findByRole("button", { name: "Unblock user" })).toBeInTheDocument();
+
+    const profileBreadcrumb = document.querySelector(".profile-breadcrumb") as HTMLElement;
+    await user.click(within(profileBreadcrumb).getByRole("link", { name: "Home" }));
+
+    await user.click(await screen.findByRole("link", { name: /TypeScript & architecture/ }));
+    await user.click(await screen.findByRole("link", { name: /Mixed RTL content with code blocks/ }));
+
+    const filtered = await waitFor(() => {
+      const current = document.querySelector("[data-filtered-post]") as HTMLElement | null;
+      expect(current).not.toBeNull();
+      return current as HTMLElement;
+    });
+    expect(within(filtered).getByText("Message from a blocked author is hidden.")).toBeInTheDocument();
+
+    await user.click(within(filtered).getByRole("button", { name: "Show message" }));
+    await waitFor(() => expect(document.querySelector("[data-filtered-post]")).toBeNull());
+  });
+
   it("opens the Attention reporter's matching profile", async () => {
     await renderEmbeddedPreview(<EmbeddedPreview scenarioId="attention-signals" identity="manager" />);
     await userEvent.click(await screen.findByRole("link", { name: "Appeals (1)" }));
