@@ -944,3 +944,110 @@ describe("V4 solved-state writer admission under hidden topic", () => {
     expect(restored.history.filter(e => e.action === "topic.solved")).toHaveLength(0);
   });
 });
+
+describe("V4 duplicate confirmation under hidden topic or canonical original", () => {
+  async function question() {
+    const topicId = randomUUID(), postId = randomUUID();
+    const titleRevisionId = randomUUID(), bodyRevisionId = randomUUID();
+    await repository.createTopicWithInitialPost({
+      id: topicId, sectionId: HELP_SOLUTIONS_SERVICE_SECTION_ID, authorId: "author",
+      titleRevision: { id: titleRevisionId, originalContent: "Help question", sourceLocale: "en" },
+      initialPost: {
+        id: postId, topicId, authorId: "author",
+        bodyRevision: { id: bodyRevisionId, originalContent: "Question body", sourceLocale: "en" },
+      },
+    });
+    return { topicId, postId, titleRevisionId, bodyRevisionId };
+  }
+  type Question = Awaited<ReturnType<typeof question>>;
+  const duplicateSignal = (f: Question, original: Question) => ({
+    kind: "duplicate" as const, topicId: f.topicId, actorId: "ordinary",
+    explanation: null, proposedOriginalTopicId: original.topicId,
+  });
+  const visibility = (f: Question, hidden: boolean, version: number) =>
+    service.setTopicVisibility(topicCommand(f, "moderator1", hidden, version, "Visibility review"));
+  async function facts(f: Question, original: Question) {
+    const ids = [f.topicId, original.topicId];
+    const [topics, relationships, signals, history] = await Promise.all([
+      client.query(
+        "select id,is_solved,best_answer_post_id from forum_topics where id in ($1,$2) order by id", ids,
+      ),
+      client.query(
+        "select id,duplicate_topic_id,original_topic_id,removed_at from forum_help_duplicate_relationships " +
+          "where duplicate_topic_id=$1 or original_topic_id=$2 order by id", ids,
+      ),
+      client.query(
+        "select id,topic_id,kind,status,resolved_by_user_id from forum_help_signals " +
+          "where topic_id in ($1,$2) order by id", ids,
+      ),
+      client.query(
+        "select action,target_id,actor_id,context from admin_history " +
+          "where target_id in ($1,$2) order by position", ids,
+      ),
+    ]);
+    return {
+      topics: topics.rows, relationships: relationships.rows,
+      signals: signals.rows, history: history.rows,
+    };
+  }
+
+  it("denies confirming a hidden duplicate before signal supersession, then admits after Restore", async () => {
+    const f = await question(), original = await question(), other = await question();
+    const pendingCandidate = await service.createHelpSignal(duplicateSignal(f, original));
+    const pendingOriginal = await service.createHelpSignal(duplicateSignal(original, other));
+    await visibility(f, true, 0);
+    const before = await facts(f, original);
+    for (const actorId of ["moderator1", "owner"]) {
+      await expect(service.confirmHelpDuplicate(f.topicId, original.topicId, actorId))
+        .rejects.toBeInstanceOf(ForumEntityNotFoundError);
+      expect(await facts(f, original)).toEqual(before);
+    }
+
+    await visibility(f, false, 1);
+    await service.confirmHelpDuplicate(f.topicId, original.topicId, "moderator1");
+    const after = await facts(f, original);
+    expect(after.relationships).toHaveLength(1);
+    expect(after.relationships[0]).toMatchObject({
+      duplicate_topic_id: f.topicId, original_topic_id: original.topicId, removed_at: null,
+    });
+    expect(after.signals.filter((s) => [pendingCandidate.id, pendingOriginal.id].includes(s.id)))
+      .toEqual(expect.arrayContaining([
+        expect.objectContaining({ id: pendingCandidate.id, status: "superseded", resolved_by_user_id: "moderator1" }),
+        expect.objectContaining({ id: pendingOriginal.id, status: "superseded", resolved_by_user_id: "moderator1" }),
+      ]));
+    expect(after.history.filter((h) => h.action === "help.duplicateConfirmed")).toHaveLength(1);
+    expect(after.topics.every((topic) => !topic.is_solved && topic.best_answer_post_id === null)).toBe(true);
+  });
+
+  it("protects hidden canonical original and already-confirmed hidden duplicate, retaining existing links", async () => {
+    const original = await question(), existing = await question(), candidate = await question();
+    await service.confirmHelpDuplicate(existing.topicId, original.topicId, "owner");
+    const pending = await service.createHelpSignal(duplicateSignal(candidate, original));
+    await visibility(original, true, 0);
+    const originalHidden = await facts(candidate, original);
+    for (const actorId of ["moderator1", "owner"]) {
+      await expect(service.confirmHelpDuplicate(candidate.topicId, original.topicId, actorId))
+        .rejects.toBeInstanceOf(ForumEntityNotFoundError);
+      expect(await facts(candidate, original)).toEqual(originalHidden);
+    }
+    await visibility(original, false, 1);
+    await service.confirmHelpDuplicate(candidate.topicId, original.topicId, "owner");
+    const confirmed = await facts(candidate, original);
+    expect(confirmed.relationships).toHaveLength(2);
+    expect(confirmed.relationships.map((r) => r.duplicate_topic_id)).toContain(existing.topicId);
+    expect(confirmed.relationships.map((r) => r.duplicate_topic_id)).toContain(candidate.topicId);
+    expect(confirmed.signals.find((s) => s.id === pending.id)).toMatchObject({
+      status: "superseded", resolved_by_user_id: "owner",
+    });
+    expect(confirmed.history.filter((h) => h.action === "help.duplicateConfirmed")).toHaveLength(1);
+
+    await visibility(candidate, true, 0);
+    const candidateHidden = await facts(candidate, original);
+    await expect(service.confirmHelpDuplicate(candidate.topicId, original.topicId, "owner"))
+      .rejects.toBeInstanceOf(ForumEntityNotFoundError);
+    expect(await facts(candidate, original)).toEqual(candidateHidden);
+    await visibility(candidate, false, 1);
+    await expect(service.confirmHelpDuplicate(candidate.topicId, original.topicId, "owner"))
+      .rejects.toBeInstanceOf(ForumStateConflictError);
+  });
+});

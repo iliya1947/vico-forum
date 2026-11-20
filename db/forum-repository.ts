@@ -4309,12 +4309,15 @@ export class DrizzleForumRepository {
           sectionId: forumTopics.sectionId,
           isSolved: forumTopics.isSolved,
           bestAnswerPostId: forumTopics.bestAnswerPostId,
+          isHidden: forumTopics.isHidden,
         })
         .from(forumTopics)
         .where(inArray(forumTopics.id, lockedIds))
         .orderBy(asc(forumTopics.id))
         .for("no key update");
-      if (topics.length !== 2) throw new ForumEntityNotFoundError("duplicate question or original question does not exist");
+      if (topics.length !== 2 || topics.some((topic) => topic.isHidden)) {
+        throw new ForumEntityNotFoundError("duplicate question or original question does not exist");
+      }
       if (topics.some((topic) => topic.sectionId !== HELP_SOLUTIONS_SERVICE_SECTION_ID)) {
         throw new ForumStateConflictError("duplicate relationships are only available between Help & solutions questions");
       }
