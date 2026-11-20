@@ -598,5 +598,50 @@ describe("V4 Help signal admission under hidden topics and answer", () => {
     await service.setPostVisibility(answerCommand(false, 3, "Restore answer visibility"));
     expect(await service.resolveHelpSignal(signal.id, "moderator1", "accepted")).toBe("accepted");
     expect((await facts(f)).signals[0]?.status).toBe("accepted");
+
+  it("denies withdrawal and rejected review of a duplicate while its proposed original is hidden", async () => {
+    const f = await helpFixture(), original = await helpFixture();
+    const signal = await service.createHelpSignal(duplicate(f, original));
+    await service.setTopicVisibility(topicCommand(original));
+    const before = await facts(f);
+    await expect(service.withdrawHelpSignal(signal.id, f.topicId, "ordinary"))
+      .rejects.toBeInstanceOf(ForumEntityNotFoundError);
+    await expect(service.resolveHelpSignal(signal.id, "moderator1", "rejected"))
+      .rejects.toBeInstanceOf(ForumEntityNotFoundError);
+    expect(await facts(f)).toEqual(before);
+    await service.setTopicVisibility(topicCommand(original, "moderator1", false, 1, "Reviewed original"));
+    expect(await service.resolveHelpSignal(signal.id, "moderator1", "rejected")).toBe("rejected");
+    expect((await facts(f)).signals[0]?.status).toBe("rejected");
+  });
+
+  it("denies withdrawal/rejection of a selected-answer signal while its post is hidden", async () => {
+    const f = await helpFixture(), answerId = randomUUID(), answerRevisionId = randomUUID();
+    await repository.createPost({
+      id: answerId, topicId: f.topicId, authorId: "ordinary",
+      bodyRevision: { id: answerRevisionId, originalContent: "Selected answer", sourceLocale: "en" },
+    });
+    await repository.selectBestAnswer(f.topicId, answerId, "author", "own");
+    await repository.markTopicSolved(f.topicId, "author", "own");
+    const signal = await service.createHelpSignal({
+      kind: "needs-review", topicId: f.topicId, actorId: "ordinary",
+      explanation: "Please check this solution", proposedOriginalTopicId: null,
+    });
+    await service.setPostVisibility({
+      topicId: f.topicId, postId: answerId, actorId: "moderator1", hidden: true,
+      expectedVisibilityVersion: 0, expectedRevisionId: answerRevisionId, reason: "Hide answer",
+    });
+    const before = await facts(f);
+    await expect(service.withdrawHelpSignal(signal.id, f.topicId, "ordinary"))
+      .rejects.toBeInstanceOf(ForumEntityNotFoundError);
+    await expect(service.resolveHelpSignal(signal.id, "moderator1", "rejected"))
+      .rejects.toBeInstanceOf(ForumEntityNotFoundError);
+    expect(await facts(f)).toEqual(before);
+    await service.setPostVisibility({
+      topicId: f.topicId, postId: answerId, actorId: "moderator1", hidden: false,
+      expectedVisibilityVersion: 1, expectedRevisionId: answerRevisionId, reason: "Restore answer",
+    });
+    await service.withdrawHelpSignal(signal.id, f.topicId, "ordinary");
+    expect((await facts(f)).signals[0]?.status).toBe("withdrawn");
+  });
   });
 });
