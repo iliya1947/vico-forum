@@ -7457,7 +7457,9 @@ function PreviewTopicRoute({ scenario, interactions }: {
       canManageSolution={scenario.identity === "manager" || scenario.identity === "owner"}
       canManageAnySolution={scenario.identity === "manager" || scenario.identity === "owner"}
       canModerateHelpSolution={false}
-      canCorrectTitleSourceLocale={scenario.identity === "manager" || scenario.identity === "owner"}
+      canCorrectTitleSourceLocale={scenario.identity === "manager"
+        || scenario.identity === "owner"
+        || previewUser(scenario)?.id === interactiveTopic.authorId}
       canCorrectAnySourceLocale={scenario.identity === "manager" || scenario.identity === "owner"}
       canManagePin={scenario.identity === "manager" || scenario.identity === "owner"}
       canManageClosure={scenario.identity === "manager" || scenario.identity === "owner"}
