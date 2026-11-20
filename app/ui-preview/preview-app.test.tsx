@@ -1805,6 +1805,19 @@ describe("interactive Pages preview", { timeout: 10_000 }, () => {
       .getByRole("button", { name: "Edit" })).toBeInTheDocument();
   });
 
+  it("opens an own Help post editor through the direct edit route", async () => {
+    const user = userEvent.setup();
+    await renderEmbeddedPreview(<EmbeddedPreview scenarioId="editor-help-published-post" identity="user" />);
+
+    const question = document.querySelector("#post-help-cloudflare-cache-post-1") as HTMLElement | null;
+    expect(question).not.toBeNull();
+    const form = await screen.findByRole("form", { name: "Edit published message" });
+    await user.click(within(form).getByRole("button", { name: "Advanced" }));
+
+    const body = form.querySelector("textarea") as HTMLTextAreaElement;
+    expect(body).toHaveValue("Representative technical question from Help & solutions.");
+  });
+
   it("opens the own published-post editor through the direct edit route and cancels without publishing", async () => {
     const user = userEvent.setup();
     await renderEmbeddedPreview(<EmbeddedPreview scenarioId="editor-published-post" identity="user" />);
