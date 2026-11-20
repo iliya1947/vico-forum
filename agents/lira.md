@@ -24,15 +24,11 @@ Implement the accepted B3 bounded scope from `stages/moderation-visibility/PLAN.
 
 ## Current batch handoff — STOP
 
-Stacked [#359](https://github.com/iliya1947/vico-forum/pull/359) at `28b60ee3e40a7c6fa1c514a30f9cd47bf14c083d`. 11 B3 commits currently modify SQL discovery, thread/tombstone projection, public guards, Help/unread/profile and initial tests. This exceeds the owner's **new** preferred 2–3-microstep batch size; do not extend the current batch. `checks` passed; on unchanged head, failed-only database-job retry passed. [CI 44765537615](https://github.com/iliya1947/vico-forum/actions/runs/44765537615): **19/19 checks, 15/15 workflows SUCCESS; 2759 unit, 1581 PG17**. Initial transient unhandled rejection was confined to a legacy SA04 Complaints test; no related production change. Whole B3 incomplete, Mira not assigned.
-
-Next owner `...`: one limited 2–3-microstep B3 batch selected from remaining verified gaps; targeted checks, update this handoff, STOP. Do not modify unrelated SA04 test merely due to one transient failure.
-
-## Latest B3 microbatch
-
-- Draft #359 current test-only head `8e98af76772a88b0c767d240e49105c65f447937`: search/reply-count and hidden-root Unanswered boundary regressions.
-- GitHub may automatically start broad workflows on push; **ignore them completely until whole B3 is finished**.
-- Continue only after owner `...`. Select no more than 2–3 related remaining B3 gaps; no B4.
+- Active implementation: stacked Draft #359, exact `7324fd9cfa9e13abdddbf86b352bb977d5cbea3f`, based on B2 #357. B3 still partial.
+- Previous two test regressions on `8e98af76`: hidden non-root search/count and hidden-root Unanswered. Correct `ForumSearchResult` property `postCount`, not `replyCount`.
+- Latest two-microstep test-only commit `7324fd9c`: fixes expected **visible postCount 2→1→2** for root+reply; adds search rank/`LIMIT 1` Hide→Restore with deterministic activity timestamps.
+- Seven targeted **static** checks passed. Real PostgreSQL execution is **not verified** in this environment (no checkout or database); do not report PG PASS.
+- Next `...`: select 2–3 related remaining B3 boundary gaps, work only on them, perform available targeted checks, update WORKFLOW and this file, STOP. Do not inspect GitHub Actions/CI until entire B3 is complete. No B4, Mira checkpoint or merge.
 
 ## Cadence
 
