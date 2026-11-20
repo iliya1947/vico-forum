@@ -97,6 +97,9 @@ beforeAll(async () => {
       .replaceAll('"public".', `"${schemaName}".`);
     await client.query(sql);
   }
+  // This deliberately selective migration fixture must include the current
+  // visibility admission column read by the published title writer.
+  await client.query("alter table forum_topics add column is_hidden boolean not null default false");
 });
 
 beforeEach(async () => {
